@@ -1,0 +1,13 @@
+{
+  "_description": "Test fixture (F170, Sprint 61): mid-RELEASE-CYCLE state with the next sprint's PLAN STUB present (SPRINT_62_PLAN.md, created at Phase 7.7 as SPRINT_CHECKLIST.md mandates) and plan_approved=false. TWO CORRECTIONS RECORDED FROM TESTING (2026-08-17): (1) Gate 1b branch (a) ALREADY covers this via plan_approved==false -- the plan-file check is only a FALLBACK, so a stub does NOT break the exemption. The Sprint 61 survey called this 'safe only by accident'; testing disproved that, and the record was corrected rather than left overstated. (2) A stale-status variant was written to pin Gate 1c's new Phase 8 markers and then DELETED: Gate 1c deliberately scopes its markers to current_sprint.number == the branch's sprint, because an unscoped check would exempt every historical sprint branch (a hole the hook's own comments record being caught before). Asking it to trust a status file that does not describe the branch would reopen that hole -- so the guard was kept and the test removed. This case therefore pins the ordinary release-cycle window: asking Harold questions mid-cycle is CORRECT.",
+  "_last_updated": "2026-08-17T14:00:00Z",
+  "current_sprint": {
+    "number": 62,
+    "branch": "feature/20260817_Sprint_62",
+    "status": "PHASE 8 RELEASE CYCLE -- store release in process, awaiting scope selection",
+    "plan_approved": false,
+    "pr_number": null,
+    "pr_url": null,
+    "scope": []
+  }
+}

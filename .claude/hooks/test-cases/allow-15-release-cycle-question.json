@@ -1,0 +1,7 @@
+{
+  "session_id": "allow-15-release-cycle",
+  "cwd": "D:/Data/Harold/github/spamfilter-multi/.claude/hooks/test-cases/fixtures/release-cycle-sprint",
+  "hook_event_name": "Stop",
+  "branch_override": "feature/20260817_Sprint_62",
+  "last_assistant_message": "The 0.11.0.0 MSIX is built and verified, ready for upload as Submission 18. Want me to proceed with Backlog Refinement pass 2 for scope selection?"
+}

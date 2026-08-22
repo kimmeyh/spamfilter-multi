@@ -118,6 +118,15 @@ git merge develop
 # Then create PR for release notes if needed
 ```
 
+### WHEN the develop -> main merge happens (F170, Sprint 61)
+
+The policy above says WHO merges and HOW. **When** is defined by **Phase 8: The Release Cycle**
+(`docs/SPRINT_EXECUTION_WORKFLOW.md`): after the sprint PR merges to `develop`, Harold merges
+`develop` -> `main` **in parallel** with Backlog Refinement pass 1 -- it does NOT block that work.
+It IS a hard precondition of the Store MSIX build, which is built from the prod worktree on `main`.
+
+**Rule: do not wait for the `main` merge; DO confirm it before building the MSIX.**
+
 ### Reference
 
 - See `docs/SPRINT_EXECUTION_WORKFLOW.md` Phase 6.3 for PR creation instructions
@@ -264,6 +273,7 @@ Do NOT bury the decision inside a multi-task code change. Do NOT proceed and "as
 
 7. **Phase Auto-Advance Rule (Sprint 35+)**: When the work for the current phase completes (tests pass / build succeeds / PR pushed / docs updated / etc.), proceed *immediately* to the next phase's first action. **DO NOT** ask "want me to proceed to Phase N+1?" -- sprint-plan approval at Phase 3 is durable authorization. The only acceptable mid-sprint pauses are the 9 SPRINT_STOPPING_CRITERIA listed above. "Confirming the next step" is not on that list.
    - **ENFORCEMENT WINDOW (Harold, 2026-07-30, Sprint 51 retro IMP-7)**: this rule applies **ONLY between Phase 3.7 plan approval and the beginning of Manual Validation (Phase 5.3)**. Harold's rationale: *"all questions for the sprint should have been asked by then."* BEFORE approval, asking is required (Phase 1 refinement; the 3.7 approval request itself). FROM Manual Validation onward, the work is Harold-driven -- validation feedback, retrospective input, improvement dispositions -- so asking is CORRECT, not a violation. Outside the window a question is never an auto-advance violation.
+   - **The Phase 8 Release Cycle sits ENTIRELY OUTSIDE this window** (F170, Sprint 61): everything from the `develop` merge through refinement pass 1, the Store release, and refinement pass 2 is post-Manual-Validation, so asking Harold questions there is CORRECT, never an auto-advance violation. Named explicitly because the window was previously defined only by its two in-sprint endpoints, leaving this region to be inferred.
    - Enforced by `.claude/hooks/sprint-auto-advance.ps1` (Gate 1b = lower bound, Gate 1c = upper bound). The upper bound is read from `.claude/sprint_status.json` `current_sprint.status`, so **keep that field current at phase transitions** -- it is what tells the hook which side of the window you are on.
    - State the next action in one sentence, then execute it. Example:
      - **WRONG**: "Phase 5.2 tests pass. Want me to proceed to Phase 5.3 (build app)?"

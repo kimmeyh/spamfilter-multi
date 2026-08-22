@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 
 import '../../adapters/storage/secure_credentials_store.dart';
+import '../../core/services/app_environment.dart';
+import '../../core/services/app_version.dart';
 import '../../core/utils/platform_inference.dart';
 import '../screens/account_selection_screen.dart';
 import '../screens/help_screen.dart';
@@ -68,6 +70,7 @@ class StandardAppBarActions {
     bool includeManualScan = true,
     bool includeNoRuleReview = true,
     bool includeScanHistory = true,
+    bool includeVersion = true,
     bool includeAccounts = true,
     bool includeSettings = true,
     bool includeHelp = true,
@@ -251,6 +254,18 @@ class StandardAppBarActions {
             platformDisplayName: platformDisplayName,
           ),
         ),
+      // F172 (Sprint 61, Harold): the app version, to the RIGHT of the Help
+      // icon -- "it is useful in all screenshot captures". Every screenshot in
+      // a bug report, MV round, or Store listing then carries the build it came
+      // from. Sprint 60 lost real time to exactly this gap: an Android session
+      // ran against an ancient com.example install and its differences were
+      // mistaken for current-code defects.
+      //
+      // Lives in the SHARED builder so all screens inherit it from one edit
+      // (Sprint 61 parity rule), and reads the runtime AppVersion rather than a
+      // literal -- a hardcoded string here would drift at the next release and
+      // is exactly what version_consistency_test greps lib/ to forbid.
+      if (includeVersion) const AppBarVersionLabel(),
     ];
   }
 
@@ -356,5 +371,81 @@ class StandardAppBarActions {
       default:
         return platformId;
     }
+  }
+}
+
+/// F172 (Sprint 61): the app-version label shown to the right of the Help icon
+/// on every screen using [StandardAppBarActions].
+///
+/// Async by nature -- `AppVersion.get()` reads the compiled version through a
+/// platform channel. Two consequences are handled deliberately:
+///   - it renders NOTHING until resolved, rather than a placeholder that would
+///     reflow the AppBar when the real value arrives;
+///   - it never throws if the channel is unavailable (AppVersion falls back to
+///     'unknown'), because an AppBar must not be able to crash a screen.
+///
+/// `AppEnvironment.displaySuffix` still appends, so dev builds keep their
+/// `[DEV]` marker -- the marker that would have caught the 0.5.5/0.5.6 Store
+/// dev-leak.
+///
+/// Narrow widths: this row already crowds on phones, so the label ellipsizes
+/// inside a bounded box instead of overflowing (pinned by the F172 tests at
+/// 411px and at the 1024x640 epx Windows minimum).
+class AppBarVersionLabel extends StatefulWidget {
+  const AppBarVersionLabel({super.key});
+
+  @override
+  State<AppBarVersionLabel> createState() => _AppBarVersionLabelState();
+}
+
+class _AppBarVersionLabelState extends State<AppBarVersionLabel> {
+  String? _version;
+
+  @override
+  void initState() {
+    super.initState();
+    AppVersion.get().then((v) {
+      if (mounted) setState(() => _version = v);
+    });
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final version = _version;
+    if (version == null) return const SizedBox.shrink();
+
+    // F172 + F171 (Sprint 61): this action row was ALREADY at its limit on
+    // phones before a text element was added -- adding the label unconditionally
+    // overflowed the AppBar by ~81px at 411px width (caught by the F169 tests,
+    // which render this screen at phone width).
+    //
+    // The label is a screenshot-provenance aid, not a control: dropping it on
+    // narrow screens costs nothing functional, whereas overflowing the AppBar
+    // clips real action buttons. Threshold matches the results screen's
+    // existing compact breakpoint (600) so the app has ONE notion of "compact".
+    // Windows at its 1024x640 epx minimum is comfortably above this, so the
+    // label is always present where screenshots are actually taken.
+    if (MediaQuery.of(context).size.width < 600) {
+      return const SizedBox.shrink();
+    }
+
+    return Padding(
+      padding: const EdgeInsets.only(left: 4, right: 12),
+      child: Center(
+        child: ConstrainedBox(
+          constraints: const BoxConstraints(maxWidth: 140),
+          child: Text(
+            'Version $version${AppEnvironment.displaySuffix}',
+            overflow: TextOverflow.ellipsis,
+            style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                  color: Theme.of(context)
+                      .appBarTheme
+                      .foregroundColor
+                      ?.withValues(alpha: 0.9),
+                ),
+          ),
+        ),
+      ),
+    );
   }
 }

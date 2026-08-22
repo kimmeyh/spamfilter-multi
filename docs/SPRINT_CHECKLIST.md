@@ -162,19 +162,31 @@ These documents MUST be created/updated during each sprint:
 - [ ] GitHub issues auto-closed (verify Closes #N references worked)
 - [ ] **Feature branch NEVER deleted** (sprint branches are retained permanently, local + remote -- see SPRINT_EXECUTION_WORKFLOW.md "Feature branch retention"; do not offer to clean up)
 
-## Post-Merge: Store Submission (if applicable)
+## Phase 8: The Release Cycle (MANDATORY after every merge to `develop`)
 
-If the sprint included changes that affect the Microsoft Store build (UI changes, bug fixes, MSIX fixes):
+**[REWRITTEN F170, Sprint 61]** This section was previously "Post-Merge: Store Submission (if
+applicable)" -- conditional, with `Merge develop to main` buried as a Store sub-step and NO
+refinement step at all. The cycle below is the real sequence. Authoritative definition:
+`SPRINT_EXECUTION_WORKFLOW.md` "Phase 8: The Release Cycle". Do not restate it here -- follow it.
 
-- [ ] Merge develop to main (user)
-- [ ] Build Store MSIX: set `store: true` in pubspec.yaml, run `dart run msix:create`
-- [ ] Upload MSIX to Microsoft Partner Center
-- [ ] Submit for certification
-- [ ] **Notify user** when build is ready for upload or when submission is complete
+- [ ] **8.1 `develop` merged to `main`** (Harold). **Does NOT block the next step** -- proceed to 8.2
+      while it happens. It IS a hard precondition of 8.3 (the MSIX build).
+- [ ] **8.2 Backlog Refinement pass 1 -- COMPLETENESS SWEEP**: walk the close-out items and confirm
+      each was actually captured and completed. **This pass does NOT select scope.**
+- [ ] **8.3 Microsoft Store release** -- follow `docs/STORE_RELEASE_PROCESS.md` in full (it is the
+      authority; do NOT use an abbreviated build command from memory, and do not skip its mandatory
+      prod-verification step).
+  - [ ] **PRECONDITION: confirm `main` contains this sprint's merge before building.** The MSIX is
+        built from the prod worktree on `main`. In Sprint 60 that worktree sat 33 commits behind
+        `origin/main` and it was caught only by checking.
+  - [ ] **Notify Harold** when the build is verified and ready for upload.
+- [ ] **8.4 Backlog Refinement pass 2 -- SCOPE SELECTION**, once the submission is in process.
+- [ ] **8.5** Then Phase 3 planning for the next sprint.
 
 ## Ready for Next Sprint
 
-- [ ] All post-merge steps complete
+- [ ] All Phase 8 Release Cycle steps complete (or explicitly N/A with a stated reason)
+- [ ] Scope selected in pass 2 (8.4) -- NOT in pass 1
 - [ ] Ready for next sprint
 
 ---

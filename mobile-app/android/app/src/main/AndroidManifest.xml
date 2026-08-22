@@ -1,4 +1,9 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android">
+    <!-- F161 (Sprint 61): required on Android 13+ for the background-scan
+         completion notification (the runtime request is made contextually in
+         Settings when the user enables background scanning; this declaration
+         is the manifest half). -->
+    <uses-permission android:name="android.permission.POST_NOTIFICATIONS"/>
     <application
         android:label="MyEmailSpamFilter"
         android:name="${applicationName}"

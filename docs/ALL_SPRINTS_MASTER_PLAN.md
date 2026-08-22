@@ -4,7 +4,7 @@
 
 **Audience**: Claude Code models planning sprints; User prioritizing future work
 
-**Last Updated**: 2026-08-16 (**Sprint 60 COMPLETE (retro done; PR #335 pending Harold's review/merge)** -- all 7 planned tasks (F160 audit, F156 Android walk-through, F157 gradle/minSdk adopted, F158 Android CI job, F159 metadata gates, F143 touch selection, F144 background-scan evaluation + dead-code removal) plus F166 executed mid-sprint. 2 CRITICAL Android bugs found+fixed via the walk-through/MV (PRAGMA scan failure; accounts-FK zero-persistence). 4 MV rounds; MV approved by Harold 2026-08-16. Retro: Cat 1 Good (2 python-on-Windows tooling errors -> IMP-1 memory rule applied), Cats 2-12 Very Good; IMP-2/3/4 declined. NEW backlog: F161 (Android scheduler), F162 (parity audit + ADR), F163 (skipped-test remediation), F164 (Android scan perf), F165 (cloud rules sharing), F167 (Android Help text per parity ADR). 0.9.0.0 Submission 16 in certification; Step 7 close-out on certification. Suite 1,859 passed / 26 skipped / 0 failed. Earlier history in prior revisions of this line (git).)
+**Last Updated**: 2026-08-21 (**Sprint 61 COMPLETE (retro + all 4 approved improvements applied; PR #347 ready for Harold's review/merge)** -- 9/9 tasks: Task 0 line endings, F170 Phase 8 Release Cycle encoded, F169 account-filter dropdown, F168 Inbox-scope warning, F172 AppBar version label, F171 1024x640 sweep, F162/ADR-0042 parity ADR ACCEPTED, F167 capability Help wording, F161 Android scheduler as the canonical ADR-0042 factory -- **validated for correctness on-device (count-parity PASS); Google Play shipment prerequisite MET**. MV forensics registered F174-F178 with proven root causes (LOW_MEMORY chunked-fetch cascade = F177/F175). 0.10.0.0 Submission 17 CERTIFIED 2026-08-16 22:17 in ~26 min (first real measurement). Suite 1,893 passed / 26 skipped / 0 failed; hooks 49/49. Earlier history in prior revisions of this line (git).)
 
 ## How to Maintain This Document
 
@@ -17,7 +17,9 @@ This section describes when and how to update this document during sprint execut
 | **Phase 2 (Pre-Kickoff)** | Verify "Last Completed Sprint" is current; confirm all items from completed sprint are marked done or removed |
 | **Phase 3 (Planning)** | Review "Next Sprint Candidates" for completeness; add any new items found in GitHub Issues; re-prioritize list; move selected items into sprint plan |
 | **Phase 7 (Retrospective)** | Update "Past Sprint Summary" table; update "Last Completed Sprint"; remove completed feature/bug detail sections; add new issues discovered during sprint |
-| **Backlog Refinement** | Full review of all sections; re-prioritize; add/remove items; verify GitHub Issue alignment |
+| **Phase 8.2 (Refinement pass 1 -- completeness sweep)** | Verify the completed sprint's items are marked done or removed; confirm "Last Completed Sprint" is current; prune shipped items from Next Sprint Candidates. Does NOT select scope. |
+| **Phase 8.3 (Store release)** | Update "Last Completed Sprint" with the store release outcome (`STORE_RELEASE_PROCESS.md` Step 7). **Added F170 -- the release mutates this document, and that trigger was previously unlisted.** |
+| **Phase 8.4 (Refinement pass 2 -- scope selection)** | Full review of all sections; re-prioritize; add/remove items; verify GitHub Issue alignment; capture the Product Owner's selection for Phase 3. |
 
 ### Maintenance Rules
 
@@ -43,7 +45,7 @@ This section describes when and how to update this document during sprint execut
 | **SPRINT_EXECUTION_WORKFLOW.md** | Step-by-step execution checklist | During sprint execution (Phases 1-7) |
 | **SPRINT_STOPPING_CRITERIA.md** | When/why to stop working | When uncertain if blocked or should continue |
 | **SPRINT_RETROSPECTIVE.md** | Sprint review and retrospective guide | After PR submission (Phase 7) |
-| **BACKLOG_REFINEMENT.md** | Backlog refinement process | When requested by Product Owner |
+| **BACKLOG_REFINEMENT.md** | Backlog refinement process | MANDATORY twice per cycle -- Phase 8.2 (completeness sweep) and Phase 8.4 (scope selection); extra passes on request |
 | **TESTING_STRATEGY.md** | Testing approach and requirements | When writing or reviewing tests |
 | **QUALITY_STANDARDS.md** | Quality standards for code and documentation | When writing code or documentation |
 | **TROUBLESHOOTING.md** | Common issues and solutions | When encountering errors or debugging |
@@ -124,12 +126,38 @@ Historical sprint information lives in individual documents in `docs/sprints/` a
 | 57 | docs/sprints/SPRINT_57_RETROSPECTIVE.md | [OK] Complete | Aug 13-14, 2026 (PR #314 -> develop, PR #316 -> main) |
 | 58 | docs/sprints/SPRINT_58_SUMMARY.md | [OK] Complete | Aug 14-15, 2026 (PR #317; 0.7.0.0 LIVE Aug 15) |
 | 59 | docs/sprints/SPRINT_59_SUMMARY.md | [OK] Complete | Aug 15, 2026 (PR #326; 0.8.0.0 LIVE Aug 15; Android builds restored) |
+| 60 | docs/sprints/SPRINT_60_SUMMARY.md | [OK] Complete | Aug 15-16, 2026 (PR #335; 0.9.0.0 LIVE Aug 16; scope shipped in 0.10.0.0 LIVE Aug 16 22:17) |
+| 61 | docs/sprints/SPRINT_61_SUMMARY.md | [OK] Complete | Aug 16-21, 2026 (PR #347; F161 Android scheduler validated, ADR-0042, Phase 8 encoded) |
 
 **Key Achievements**: See CHANGELOG.md for detailed feature history.
 
 ---
 
 ## Last Completed Sprint
+
+**Sprint 61** (2026-08-16 -- 2026-08-21; PR #347 -> develop)
+- **Type**: Process encoding + cross-platform parity + the Android scheduler. 9/9 tasks complete; Manual Validation complete 2026-08-20; retrospective + all 4 approved improvements applied 2026-08-21.
+- **F170**: the post-merge Release Cycle encoded as **Phase 8** across SPRINT_EXECUTION_WORKFLOW.md (authoritative), SPRINT_CHECKLIST.md 8.1-8.5, BACKLOG_REFINEMENT.md (two-pass model; mandatory-vs-on-demand contradiction fixed), CLAUDE.md, and both hooks (verify-closeout pr_number precondition; auto-advance Gate 1c release-cycle markers). Ran first as assigned.
+- **F162/ADR-0042**: cross-platform parity ADR ACCEPTED with Harold's platform-factories addition; audit found no systemic divergence.
+- **F161**: Android background-scan scheduling as the canonical ADR-0042 factory (shared `BackgroundScanCore` pipeline, per-platform scheduler adapters, WorkManager dispatcher, completion notifications, contextual POST_NOTIFICATIONS). **Validated for CORRECTNESS on-device: the manual-vs-background count-parity experiment PASSED with per-email-identical outcomes.** Google Play SHIPMENT PREREQUISITE met. MV round 1 caught the call-site escape (both settings call sites still Windows-gated) -- fixed and now pinned by the IMP-2 policy gate.
+- **Also delivered**: F169 account-filter dropdown (+ pre-existing selection-bar overflow fix), F172 AppBar version label (suppressed below 600px by design), F168 Inbox-omitted-scope warning, F171 1024x640 sweep (PASS incl. Harold's live judgment checks), F167 capability-not-mechanism Help wording with policy gate, Task 0 line-ending normalization.
+- **MV forensics registered 5 items with root causes**: F174 (silent empty-folder fetch), F175 (scan concurrency + orphan reconciliation + retry bounding), F176 (account email on scan screens), F177 (memory-bounded chunked fetch m=20 -- the proven LOW_MEMORY root cause of the scan-death cascade), F178 (Android popup clips Block Subject).
+- **Store**: 0.10.0.0 (Submission 17) uploaded 2026-08-16 21:51 and CERTIFIED 22:17 -- ~26 minutes, the first real submit-to-live measurement (10-minute Playwright polling; the old ~51-minute figure was observation-cadence bias). Recorded in docs/STORE_SUBMISSION_TIMING.md.
+- **Verification**: suite **1,893 passed / 26 skipped / 0 failed**; analyze clean; hook suite 49/49; every new gate mutation-verified.
+- **Retro**: Harold -- Testing Approach "Needs improvement" (the call-site escape), Process "Good" (3 turn-ending failures, all same-day resolved), everything else Good/Very Good. **All 4 improvements approved and applied same-session** (IMP-1 dangling-commitment hook gate, IMP-2 factory call-site policy gate + ADR rule, IMP-3 claimed-change verification memory, IMP-4 operational memories).
+- **Docs**: SPRINT_61_PLAN.md / SPRINT_61_RETROSPECTIVE.md / SPRINT_61_SUMMARY.md.
+
+_(Prior: **Sprint 60** below.)_
+
+**Sprint 60** (2026-08-15 -- 2026-08-16; PR #335 -> develop)
+- **Type**: Android quality gate + tooling truth. All 7 planned tasks (F160 skipped-tests audit, F156 Android walk-through, F157 gradle/minSdk adoption, F158 Android CI job, F159 metadata gates, F143 touch selection, F144 background-scan dead-code removal) plus F166 Scan Results header redesign executed mid-sprint.
+- **2 CRITICAL Android bugs found+fixed** via the walk-through/MV: value-returning PRAGMAs rejected by execSQL (every scan failed) and the accounts-FK gap (zero scan persistence -- masked for months because only Windows-only code created the accounts row).
+- **4 MV rounds**, approved by Harold 2026-08-16. NEW backlog registered: F161-F165, F167. Retro: Cat 1 Good (python-on-Windows tooling -> IMP-1 memory applied), Cats 2-12 Very Good.
+- **Store**: 0.9.0.0 (Submission 16) LIVE 2026-08-16; the sprint's merged scope shipped in 0.10.0.0 (Submission 17) LIVE 2026-08-16 22:17.
+- **Verification**: suite 1,859 passed / 26 skipped / 0 failed at close.
+- **Docs**: SPRINT_60_PLAN.md / SPRINT_60_RETROSPECTIVE.md / SPRINT_60_SUMMARY.md (summary created at Sprint 61 Phase 3.2.1 per the triad rule).
+
+_(Prior: **Sprint 59** below.)_
 
 **Sprint 59** (2026-08-15, single day; PR #326 -> develop)
 - **Type**: Android unblock + tooling truth + UX polish. 4/4 tasks complete plus unplanned WinWright sweep restoration; Manual Validation clean.
@@ -254,7 +282,7 @@ _(Prior: **Sprint 49** F119-c + prod-DB restoration, PR #276; **Sprint 48** F119
 
 ## Next Sprint Candidates
 
-**Last Reviewed**: August 15, 2026 (Sprint 60 Phase 1 refinement: F156-F159 re-prioritized 10/12/14/16 as a sprint-together set; F143/F144 PROMOTED from HOLD to 20/22 now that F150 unblocked the Android track. Prior review: August 3, 2026 (Sprint 53 Phase 1 refinement, post-PR-292/293 merge to develop/main, updated again same day during Sprint 53 execution. F137, F138 surfaced from Sprint 52's retro Category 14 + the F133 accessibility audit's dead-code finding; F138 decided and closed same-day. F139 (HOLD template) and F140 surfaced live during the F-STORE-53 smoke test -- see below.)
+**Last Reviewed**: August 17, 2026 (Sprint 61 Phase 1 refinement, post-Sprint-60 merge to develop/main: 8 shipped items pruned (F143/F144/F156/F157/F158/F159/F160/F166); closed decision item F138 removed from candidates (history lives in the Sprint 52/53 records); 8 items surfaced during Sprint 60 registered and prioritized -- F168 (6, production background-scope UX, Harold-targeted), F162 (18), F167 (22), F161 (24), F163 (26), F164 (28), F165 (30). Active non-HOLD slate is 8 items (F169 added 2026-08-16, Harold-assigned to Sprint 61); everything else is HOLD. Prior review: August 15, 2026 (Sprint 60 Phase 1: F156-F159 re-prioritized as a sprint-together set; F143/F144 promoted from HOLD once F150 unblocked the Android track).)
 
 All incomplete items in relative priority order. Priority in increments of 10; items that can sprint together in increments of 2. HOLD items grouped at bottom. See [Feature and Bug Details](#feature-and-bug-details) for deep-dive specs. See [BACKLOG_REFINEMENT.md](BACKLOG_REFINEMENT.md) for presentation format rules.
 
@@ -316,7 +344,48 @@ All incomplete items in relative priority order. Priority in increments of 10; i
 - Spec (Harold, 2026-08-16): (1) replace the summary chip rows with TWO chips on a single line: a single-select filter DROPDOWN (options with counts: No Rule -- the new DEFAULT filter; Safe or Safe (not processed) per mode; Deleted or Deleted (not processed) per mode; Errors; Processed) and the existing Folders chip; (2) move "Scan complete <duration>" onto the same line as, and after, "Live Scan" (both apps); (3) shorten the "0 of N "No rule" emails addressed" banner by removing the flag icon before it and the progress-bar element at the end. Design note recorded at planning: with No Rule as the default filter, rows leave the filtered view the moment they are addressed -- which also resolves Harold's "added safe senders but they still appear in the list" observation (Results rows are the scan's permanent record by design; the default filter now hides addressed ones).
 - Source: Harold, Sprint 60 Manual Validation, 2026-08-16.
 
-**F168. Background scan skipped Inbox while the manual scan caught it -- background-vs-manual folder-scope divergence (~1-2h investigate + fix) Priority 6 (NEW, Sprint 60 production observation -- Harold; TARGET NEXT SPRINT)**
+**F176. Show the account email on the Manual Scan and Live Scan screens (~1h) Priority 16 (NEW, Sprint 61 MV -- Harold)**
+- Phase: Core App Quality / UX
+- Platform: All (Harold: "If not already on Windows screens, should probably be added there as well")
+- Scope (Harold, 2026-08-19): "add current email address to Manual scan screen on mobile and the live scan screen (small in order to fit)." Small type so it fits phone width; per ADR-0042 land it shared once and verify both platforms. Rationale surfaced during multi-account MV: with two accounts configured, the scan screens do not say WHICH account is scanning -- the Settings Background tab got exactly this header in Sprint 38 for the same reason.
+- Source: Harold, Sprint 61 Manual Validation, 2026-08-19.
+
+**F177. Memory-bounded, chunked IMAP fetch with incremental progress (~4-6h) Priority 8 (NEW, Sprint 61 MV -- ROOT CAUSE of the Android scan deaths)**
+- Phase: Core App Quality / scanner
+- Platform: All (shared adapter; Android is where it kills the process, Windows carries the same unbounded shape)
+- **Root cause, proven from Android's process-exit records (`dumpsys activity exit-info`, 2026-08-19)**: the `daysBack=0` full-mailbox fetch loads EVERY matched message's full content into memory in one blocking `fetchMessages` call. On the ~137-message AOL mailbox this ballooned the app to **817MB-1.4GB PSS**; Android issued LOW_MEMORY kills at 02:31 and 07:24 (two more bloat states caught at force-stop: 1.4GB, 1.2GB, with ANR traces on file). Every death triggered WorkManager retry-on-relaunch, stacking duplicate scans that died faster -- the entire day's "hung scans" cascade. The 3-message gmail account never approached the limit, which is why gmail always completed in under a minute.
+- Fix shape (parameters set with Harold, 2026-08-19): **batch size m = 20 UIDs, applied UNIVERSALLY -- no folder-size threshold n.** Harold asked for "split attempts to run scans that are > n emails to batches of m"; analysis collapsed n into m: always fetching in batches of 20 needs no threshold (a 3-message folder is naturally one batch of 3, a 137-message folder is 7 batches), gives one code path instead of two, and makes every batch boundary a progress-report + memory-release point. Arithmetic behind m=20: the 137-message fetch drove the app from ~350MB baseline to 1.3-1.4GB, i.e. ~7-10MB retained per message; against a ~512MB Android ceiling with a ~150-200MB fetch budget, 20 x ~7-10MB fits with headroom for a concurrent scan until F175 lands. Folder-level iteration already exists (confirmed -- folders are fetched one at a time); this adds within-folder batching. Process/evaluate each batch before fetching the next; release references between batches; report per-batch progress to the provider (fixing the "0 emails for 20+ minutes" blindness in the same change); consider truncating bodies at FETCH time (body_preview already truncates at persist time), which would shrink per-message cost and allow raising m later.
+- Interacts with: F175 (concurrency multiplied the memory), F164 (Android scan performance -- this is likely its real answer), and the WorkManager retry policy (a one-off test task that retries forever on a crashing scan re-detonates on every launch; bound the retries).
+- Source: Sprint 61 F161 validation forensics, 2026-08-19.
+
+**F178. Android review popup clips its bottom sections -- "Block Subject" unreachable even when scrolled (~1-2h) Priority 14 (NEW, Sprint 61 MV -- Harold, with screenshots)**
+- Phase: Core App Quality / UX
+- Platform: Android (phone height); the same widget was already fixed for Windows in Sprint 60
+- Observation (Harold, 2026-08-20, emulator at phone size): on Scan Results, the per-email review popup cannot reveal its bottom content -- "Even when scrolled you cannot see the Subject part of the pop-up." The "Block Subject" row is clipped at the bottom edge with the inner scroll already at its end (two screenshots on file, unscrolled + fully scrolled).
+- Context: this is the Android sibling of the Sprint 60 Windows fix in `results_display_screen.dart` (~lines 1623-1700): that fix clamps `top` and hard-caps the popup at 60% of `MediaQuery.size.height` with an inner `SingleChildScrollView` fallback. Leading hypothesis (NOT yet confirmed): on Android, `MediaQuery.size.height` includes the system status/navigation bar areas, so the positioned popup's bottom edge can sit under the nav bar, and/or the scroll extent is computed against the un-inset height -- so the last section stays clipped even at full scroll. Fix shape: subtract view insets/padding when computing `popupHeight`/`maxTop` (use the safe-area height), verify at phone height that full scroll reaches "Block Subject" and the block-rule buttons below it; per ADR-0042 verify the Windows placement is unchanged by the shared edit.
+- Source: Harold, Sprint 61 Manual Validation, 2026-08-20.
+
+**Sprint 62 validation carry-over (not an F-item): Windows background-scan regression check (F161 AC-4).** Harold, 2026-08-20: Windows 1024x640 sweep and selection bar both PASS by inspection; the Windows background-scan-unchanged check "I believe it is working as expected" but was not explicitly exercised this sprint -- add it to Sprint 62's Manual Validation steps (one glance at Windows Scan History confirming scheduled background scans kept running normally through/after the Sprint 61 scheduler refactor).
+
+**F175. Android scan concurrency control -- mutual exclusion + active-scan detection with wait estimate (~3-4h) Priority 12 (NEW, Sprint 61 MV -- Harold)**
+- Phase: Core App Quality / background scanning
+- Platform: Android primarily (Windows already has per-account task serialization + foreground deferral, F109/ADR-0039); the detection/notify UX should be shared per ADR-0042
+- Scope (Harold, 2026-08-19, verbatim intent): "method to ensure that android background scans do not run concurrently, background do not run concurrently with manual live scans and that a manual live scan can detect if a background scan is actively running and notify to wait until the scan completes (present an average wait time for background scan completion, if reasonably possible)."
+- Three requirements: (1) background scans mutually exclusive with each other (per-account AND cross-account on one device -- they share one SQLite DB and one process); (2) background scans mutually exclusive with manual live scans; (3) a manual scan started while a background scan is active DETECTS it and notifies the user to wait, showing an average background-scan completion time where reasonably computable (scan_results has started_at/completed_at per scan_type, so a rolling average per account is cheap).
+- Evidence this is needed (Sprint 61 F161 validation, 2026-08-19): four AOL scans stacked concurrently (2 periodic + 1 test + 1 manual), each opening its own IMAP session; the earliest hung and the rest queued behind AOL's per-account session cap -- all four sat `in_progress` at 0 emails for 20+ minutes over a mailbox of only ~140 emails (Harold's steering: the volume does NOT excuse the duration). Meanwhile gmail scans completed in under a minute, proving the pipeline itself was fine. A socket reset (force-stop) unstuck everything instantly.
+- Related-but-separate defects found in the same incident, to fix with or alongside: no scan TIMEOUT (a hung scan stays `in_progress` forever with no error), and stale `in_progress` rows are never reconciled at startup (rows 44-46, 48, 50-52, 54-58, 60 are permanent orphans from the incident and its cleanup kills). Windows' F109 deferral + per-account serialization is the architectural reference; the WorkManager unique-name gives per-account background uniqueness already, so the missing pieces are cross-type (manual-vs-background) exclusion and the detection UX.
+- Also fold in (Sprint 61 close-out additions): (a) disabling the background toggle cancels the periodic work but NOT a stuck one-off test task -- WorkManager re-fires a killed task at every app launch until it succeeds (bound the retries / cancel the test task on disable); (b) the F168 R-3 settings-interplay recommendation -- Manual and Background tabs keep independent folder scopes AND independent Scan Range values, and BOTH have now produced a real surprise (Sprint 60: Inbox omitted from background scope; Sprint 61 MV: background Test ran daysBack=0 because only the Manual tab was updated). Evaluate one shared selection with explicit per-type opt-out.
+- Source: Harold, Sprint 61 Manual Validation, 2026-08-19.
+
+**F174. Per-folder IMAP fetch failure is silent -- errors=0 despite a folder failing to fetch (~1-2h) Priority 20 (NEW, Sprint 61 F161 on-device validation)**
+- Phase: Core App Quality / scanner
+- Platform: All (shared IMAP pipeline)
+- Observation (2026-08-18, during the F161 on-device test scan): fetching the "Unwanted" folder threw `InvalidArgumentException: no ID added to sequence`, the scan completed normally, and the results reported **errors=0**. So a whole folder silently contributed nothing, indistinguishable from "folder was clean".
+- **ROOT CAUSE CONFIRMED (2026-08-19, live trace)**: it is the EMPTY-FOLDER edge, not folder-specific. `[Gmail]/Spam` with `messagesExists=0` threw the identical exception -- UID SEARCH ALL on an empty mailbox returns an empty set, and building the UID FETCH sequence from it throws. The catch turns it into "returned 0 messages" + a log WARNING, errors=0. The COUNT is coincidentally correct for an empty folder, but exception-as-control-flow here means a REAL fetch failure would be equally invisible. Fix shape: detect the empty search result and return an empty list without attempting the fetch; reserve the error path for genuine failures, and surface those in errorCount.
+- Why it matters: this is the F168 silent-scope class in miniature -- a scan that looks healthy while quietly not looking somewhere. The per-folder failure should at minimum count toward errorCount or surface as a per-folder status, and the empty-sequence edge itself should be handled rather than thrown.
+- Source: device logcat during Sprint 61 F161 AC-2 verification.
+
+**F168. Background folder-scope visibility + Inbox-omitted warning -- [DONE Sprint 61, 2026-08-17: Settings warns when a background scope omits the Inbox (explains the consequence, does not block a deliberate Bulk-only scope); scope surfaced at selection time; `getEffectiveFolders` untouched per R-4. OPEN RECOMMENDATION (R-3, deferred at planning, surfaced at retro close-out): whether background and manual scopes -- and now Scan RANGE too, after the Sprint 61 MV daysBack=0 instance -- should remain independently editable at all; folded into F175's scope as the settings-interplay question. See SPRINT_61_PLAN.md Task 3.]**
 - Phase: Core App Quality / background scanning
 - Platform: Windows (production 0.9.0.0), applies to any platform once Android scheduling lands (F161)
 - Observation (Harold, 2026-08-16, PRODUCTION app): the 19:45 background scan reported **Found 0 / Processed 0** over **"Folder(s): Bulk, Bulk Mail"**, leaving spam sitting in the Inbox since 18:37 and earlier. A manual Live Scan at 20:06 over **"Folder(s): Bulk, Bulk Mail, Inbox"** found 152 and deleted 6 -- all 6 were Inbox rows matching existing Block_EntireDomain rules (everydayhealthguide.net, loyalobject.com, cookwiser.com, gothamdaily.com, plus goinggoing.com and modular.com). So the rules were correct and the scanner was correct; the BACKGROUND scan simply never looked at the Inbox.
@@ -327,21 +396,31 @@ All incomplete items in relative priority order. Priority in increments of 10; i
 - Reframed scope: (1) make the background scan's ACTIVE folder scope visible where the user decides it and where they read results (the results header already prints "Folder(s): Bulk, Bulk Mail" -- consider surfacing the same at selection time, plus a clear indication when Inbox is NOT included); (2) evaluate warning when a background scope omits Inbox, since inbox coverage is the app's core purpose; (3) re-examine whether background and manual scopes SHOULD be independently editable at all, or whether one selection with an explicit opt-out is less error-prone; (4) the resolution-order code-read below stands as background, but is no longer the suspected cause.
 - Source: Harold, Sprint 60 production observation with screenshots, 2026-08-16; cause confirmed by Harold same day.
 
-**F167. Android Help text adaptation -- platform-specific Help updates governed by the parity ADR (~2-3h) Priority 22 (NEW, Sprint 60 Retrospective Category 14 -- Harold)**
-- Phase: Android rollout track / content
-- Platform: Android (content lives in shared `assets/content/` per ADR-0038)
-- Scope (Harold, 2026-08-16, retro Category 14 verbatim intent): update Help text where it is Windows-specific, following the best practice of "everything the same unless that is not reasonably possible, then adapt for the platform as minimally as possible while still meeting what is reasonably needed" -- see the F162 parity ADR for the governing rules (this item should execute AFTER or WITH that ADR so its adaptations cite it).
-- Likely touchpoints: walkthrough.md and Help sections that reference Windows-only surfaces (Task Scheduler background scans, system tray, window sizing, keyboard/mouse selection idioms vs the F143 touch idioms).
+**F167. Android Help text adaptation -- [DONE Sprint 61, 2026-08-18: Help describes the CAPABILITY, not platform mechanisms ("the operating system's scheduler"); NO unshipped-platform caveats per Harold's steering (no Android customer exists to warn); pinned by `test/policy/help_platform_claims_test.dart`. See SPRINT_61_PLAN.md Task 7 + ADR-0042 deliberate non-parity.]**
 - Source: Harold, Sprint 60 Retrospective, 2026-08-16.
 
-**F162. Windows-vs-Android functionality parity audit (full walk-through) + parity ADR (~half-day audit + ADR authoring) Priority 18 (NEW, Sprint 60 Manual Validation -- Harold)**
-- Phase: Android rollout track / architecture governance
-- Platform: All
-- Scope (Harold, 2026-08-16): a full-functionality walk-through comparing the Windows app against the Android app, producing (1) a NEW ADR defining where architecture and functionality MUST be identical across platforms, where they MAY differ (platform conventions, input models, platform "cannots"), and HOW differences are managed/implemented going forward; (2) needed-update backlog items for every divergence found, each referencing the ADR's rules; (3) updates to EXISTING backlog items where they already cover a found divergence (per Harold: update rather than duplicate).
-- Context/cautionary tale from the same MV round: the suspected divergences Harold observed (10-sample demo data, dead summary-chip buttons, a "Select Scan Mode" dialog removed in Feb 2026) turned out to be an ANCIENT `com.example.spamfiltermobile` install still present on the emulator AVD (the AVD had also reverted state, dropping the current install) -- the audit must run against a VERIFIED current install (`pm list packages` + version check first; the stale package is now uninstalled). Real parity gaps may still exist; the audit finds them systematically instead of anecdotally.
-- Sequencing: natural companion to F156's walk-through method and F161's scheduler work; the ADR should land before or with the first parity-fix items.
-- **Known real datapoint for the audit (MV round 2)**: the AppBar icon row overflows at phone widths (widget tests assert ~21px overflow at 411 logical px; devices ellipsize and render acceptably) -- narrow-screen icon crowding needs an ADR-governed adaptation decision (overflow menu vs fewer icons on mobile).
-- **Steering (Harold, 2026-08-16, same MV session)**: the full re-audit "may not be necessary" now that the observations are known to have come from the stale app -- Harold is re-validating against the CURRENT Android app first. Keep this item pending that re-validation's outcome; descope or re-scope at the next refinement based on what the re-validation actually finds.
+**F171. Minimum-supported-window UI sweep: 1024x640 epx -- [DONE Sprint 61, 2026-08-20: automated sweep (no clipping at minimum size) + Harold's live judgment checks PASS ("looks good"); screen list recorded for repeatability. See SPRINT_61_PLAN.md Task 5 + Windows MV results.]**
+- Source: Harold, 2026-08-17.
+
+**F172. Version number right of the `?` icon on every major screen -- [DONE Sprint 61, 2026-08-17: `AppBarVersionLabel` in the shared AppBar actions widget, runtime version source + `[DEV]` suffix; DELIBERATELY ABSENT below 600px width (the predicted phone-width overflow, suppressed rather than crowding actions -- the one intentional platform-width difference this sprint, confirmed by Harold on Android). See SPRINT_61_PLAN.md Task 4.]**
+- Source: Harold, 2026-08-17.
+
+**F173. Periodic "Test Coverage and Appropriate Testing" Deep Dive (~4-8h per review) Priority HOLD (NEW, Sprint 61 -- Harold; recurring HOLD template)**
+- Phase: Testing / periodic review
+- Platform: All -- backend, frontend/UI, data layer, Windows app, Android app
+- Scope (Harold, 2026-08-17): a recurring deep dive answering TWO distinct questions, not one: (1) **coverage** -- what is tested and what is not, across backend, frontend/UI, data layer, and both apps; (2) **appropriateness** -- *does each test clearly test what it intends to test, AND does each SET of tests do what the set intends to do?* The second question is the one ordinary coverage metrics cannot answer.
+- Why this matters here specifically: Sprint 60 produced three concrete instances of tests that passed while proving nothing -- a popup-fit test that stayed green against the broken code until it was tightened, a chip-tooltip test that passed off unrelated AppBar tooltips after the widget it guarded was deleted, and a long-press test that would have passed with the gesture wiring removed. All three were caught only because mutation-verification was run by hand. A periodic sweep institutionalizes that check.
+- Method: mutation-verify a sample of existing gates (break what each guards, confirm red); look for assertions that prove EXISTENCE where the claim is about behavior, ordering, or sizing; check that test names still describe what the test does; check per-layer coverage gaps; report findings as backlog items.
+- Cadence: same periodic-HOLD model as F70 (Security) and F71 (Architecture) -- triggered by Harold, not calendar-automatic.
+- Source: Harold, 2026-08-17.
+
+**F170. Encode the post-merge Release Cycle -- [DONE Sprint 61, 2026-08-17: named "Phase 8: The Release Cycle" (deliberately NOT "Step 7"), authoritative in SPRINT_EXECUTION_WORKFLOW.md; SPRINT_CHECKLIST.md 8.1-8.5; two-pass model + mandatory-vs-on-demand contradiction fixed in BACKLOG_REFINEMENT.md; CLAUDE.md WHEN section; verify-closeout pr_number check gated on plan_approved; auto-advance Gate 1c release-cycle markers made deliberate; hook suite green with new post-merge/pre-scope cases. See SPRINT_61_PLAN.md Task 1.]**
+- Source: Harold, 2026-08-16, after the cycle ran manually end-to-end for Sprint 60 -> 0.10.0.0 and the hook misfired twice.
+
+**F169. Review No Rule Items account filter dropdown -- [DONE Sprint 61, 2026-08-17: F166-pattern single-select dropdown, default All Accounts, every account reachable at any width; plus the pre-existing selection-bar ~105px phone-width overflow found by its tests and fixed; confirmed on Android and Windows in MV. See SPRINT_61_PLAN.md Task 2.]**
+- Source: Harold, 2026-08-16, with Android emulator screenshot; assigned to Sprint 61 at registration.
+
+**F162. Windows-vs-Android parity audit + parity ADR -- [DONE Sprint 61, 2026-08-18: ADR-0042 ACCEPTED with Harold's platform-factories addition; code-level audit found no systemic divergence (per Harold's descope steering, no findings manufactured); live walk-through folded into MV, which validated the rule immediately (the F161 call-site escape was exactly the ADR's failure shape). See SPRINT_61_PLAN.md Task 6 + docs/adr/0042.]**
 - Source: Harold, Sprint 60 Manual Validation, 2026-08-16.
 
 **F163. Skipped-tests remediation -- implement the 11 approved update-to-working verdicts (~2-4h across 4 work items) Priority 26 (NEW, Sprint 60 F160 dispositions -- Harold approved all recommendations)**
@@ -350,12 +429,7 @@ All incomplete items in relative priority order. Priority in increments of 10; i
 - Scope: Harold approved every F160 recommendation (2026-08-16). The 3 discontinues were applied in-sprint (2 rejected-design yaml_migration tests + the rule_evaluator design-note skip deleted). This item carries the 4 update-to-working work items: (1) gmail_api_adapter no-auth error-path tests -- channel-stub seam, or discontinue if the adapter cannot run stubbed (fallback pre-approved); (2) delete_to_trash safety trio -- adapter mock-seam investigation (highest value: guards delete-recoverability); (3) email_scanner_readonly_mode group -- rebuild against the current provider architecture (read-only enforcement is the product's core safety promise, currently uncovered); (4) yaml_migration backup-creation test -- fix the assert-timing race. The 15 keep-for-special-purpose tests stay as-is by decision.
 - Source: F160 audit (SPRINT_60_PLAN.md Task 1) + Harold's blanket approval, Sprint 60 MV, 2026-08-16.
 
-**F161. Android background-scan scheduler mirroring the Windows per-account architecture + notifications + POST_NOTIFICATIONS (~3-5h) Priority 24 (NEW, Sprint 60 F144 follow-up)**
-- Phase: Android rollout track
-- Platform: Android
-- Background: F144 (Sprint 60) evaluated and REMOVED the unwired pre-architecture `BackgroundScanManager`/`BackgroundScanService`/worker/notification-service (zero call sites; workmanager dependency dropped with them). The design verdict (SPRINT_60_PLAN.md Task 6 completion notes) found a full mirror of the Windows architecture feasible: WorkManager unique periodic work per account maps 1:1 to the per-account Task Scheduler tasks (ADR-0039/0040); network constraints map to task conditions; the execution-alias mechanism has no Android analogue (WorkManager's in-process callback dispatch is the genuine substitution); WorkManager's 15-minute minimum period aligns with `ScanFrequency.every15min`. Cannot carry over: exact-time firing (WorkManager defers under Doze -- acceptable for this workload).
-- Scope: implement the mirrored scheduler (per-account scheduling driven by the same `ScanFrequency` settings the Windows path uses), rebuild the Android notification path on flutter_local_notifications v17, and add the `POST_NOTIFICATIONS` runtime request at the first-notification-need moment (deliberately deferred from F144: with no Android notification call site existing, a permission prompt would have asked for something nothing could fire -- premise corrected in-sprint). Re-add `workmanager` at implementation time.
-- Depends on: none (F150 build unblock + F144 clean slate both landed).
+**F161. Android background-scan scheduler -- [DONE Sprint 61, 2026-08-20: delivered as the canonical ADR-0042 platform factory (BackgroundScanCore shared pipeline + WindowsSchedulerAdapter/AndroidSchedulerAdapter/UnsupportedPlatformScheduler + WorkManager dispatcher + completion notifications + contextual POST_NOTIFICATIONS); validated for CORRECTNESS on-device -- the manual-vs-background count-parity experiment PASSED with per-email-identical outcomes. The Google Play SHIPMENT PREREQUISITE is now MET. MV round 1 caught the call-site escape (fixed + gated, retro IMP-2); Windows-unchanged check (AC-4) carried to Sprint 62 validation. See SPRINT_61_PLAN.md Task 8 + MV RESULT.]**
 - Source: F144 evaluation, Sprint 60, 2026-08-16.
 
 **F152. Periodic User-Centric First-Run Evaluation (~2-3h per review, plus fix-item time if findings warrant) Priority HOLD** _(TEMPLATE -- first run produced F151 above, Sprint 58 Backlog Refinement, 2026-08-15)_
@@ -369,13 +443,6 @@ All incomplete items in relative priority order. Priority in increments of 10; i
 - Source: Harold, 2026-08-15 -- "at the end this first-use analysis will be added as a permanent backlog ON HOLD item that we can re-use."
 
 _(F149 shipped Sprint 57 -- see `docs/sprints/SPRINT_57_PLAN.md` and CHANGELOG.md 2026-08-14. Root-caused as an always-existing gap in F91's (Sprint 39) design, not a regression: F91 only reconciled the SOURCE folder after a safe-sender move; F149 added a symmetric pre-move check against the TARGET folder using the existing `searchByMessageId` capability. F148 shipped Sprint 56 -- see `docs/sprints/SPRINT_56_PLAN.md` and CHANGELOG.md 2026-08-13. F145/F146/F147 all shipped Sprint 55 -- see `docs/sprints/SPRINT_55_PLAN.md`, CHANGELOG.md 2026-08-10, and `docs/WINWRIGHT_SELECTORS.md`'s new F145 entry (WinWright false-failure finding + the real HelpScreen scroll-timing bug it led to). F145 also produced `integration_test/help_deep_link_test.dart`, the durable regression suite for all 22 HelpSection values.)_
-
-**F138. Decide: should the 5 rule-editing screens gain account context? -- [CLOSED 2026-08-03, Harold: not needed]**
-- Phase: Core App Quality / UX
-- Platform: All
-- **Decision**: Harold reviewed and closed same-day -- "icons not needed in this context." `rules_management`, `safe_senders_management`, `rule_test`, `rule_quick_add`, and `yaml_import_export` stay deliberately Help-only focused editors with no Manual Scan/Settings/Accounts AppBar icons. Not a defect; working as intended.
-- Candidate for `.github/copilot-instructions.md`'s settled-decisions list, since these five screens keep surfacing in review passes as "missing" the icons other screens have.
-- Source: Sprint 52 retrospective Category 14.
 
 ### Sprint Assignment (Sprint 47 pre-kickoff rollover, 2026-07-11)
 

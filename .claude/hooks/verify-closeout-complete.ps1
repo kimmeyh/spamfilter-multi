@@ -157,10 +157,26 @@ if (-not (Test-Path -LiteralPath $statusPath)) {
 # and the miss stayed silent through all four. The primary guard is
 # require-sprint-cards.ps1 (blocks task commits); this is the backstop that
 # makes a close-out claim impossible while pr_number is still null.
-if ($status -and $null -ne $status.current_sprint) {
+#
+# PRECONDITION ADDED 2026-08-16 (F170, Sprint 61) after this check fired as a
+# FALSE POSITIVE three times in one session. Phase 3.3.1 creates the draft PR
+# AT PLAN APPROVAL -- so before approval a null pr_number is the CORRECT state,
+# not a miss. That window is not a rare edge: Harold's standing release cycle
+# runs merge -> `develop`, merge -> `main`, Backlog Refinement pass 1
+# (completeness sweep), Microsoft Store release, Backlog Refinement pass 2
+# (scope selection), THEN Phase 3 planning. `pr_number` is legitimately null
+# across that entire span, which is exactly when close-out claims are made
+# ("Sprint N closed, ready for next sprint").
+#
+# Same defect class as check 3c below and as the sprint-auto-advance Gate 1c
+# fix: a post-condition tested without its PRECONDITION. Gated on the same
+# signal require-sprint-cards.ps1 uses -- `plan_approved` -- so the three
+# sprint hooks now agree on when a PR is owed.
+if ($status -and $null -ne $status.current_sprint -and
+    $status.current_sprint.plan_approved -eq $true) {
     $prNum = $status.current_sprint.pr_number
     if ($null -eq $prNum -or [string]$prNum -eq '') {
-        $violations += "No pull request recorded for Sprint $sprintNum (.claude/sprint_status.json current_sprint.pr_number is null). Phase 3.3.1 requires a DRAFT PR created at plan approval, in parallel with the first execution task. Create it (gh pr create --draft --base develop) and record pr_number / pr_url. Keep it a DRAFT until the end of Phase 7.7."
+        $violations += "No pull request recorded for Sprint $sprintNum (.claude/sprint_status.json current_sprint.pr_number is null) even though plan_approved is true. Phase 3.3.1 requires a DRAFT PR created at plan approval, in parallel with the first execution task. Create it (gh pr create --draft --base develop) and record pr_number / pr_url. Keep it a DRAFT until the end of Phase 7.7."
     }
 }
 

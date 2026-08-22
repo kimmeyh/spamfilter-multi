@@ -23,7 +23,12 @@ param(
     [string]$Avd = "pixel34_updated",
     # PR #335 review (Copilot): SDK root configurable for other machines/CI;
     # default stays this box's validated install (the AVD lives under it).
-    [string]$SdkRoot = "C:\Android\android-sdk"
+    [string]$SdkRoot = "C:\Android\android-sdk",
+    # Sprint 61 MV: a corrupted quick-boot snapshot wedges the emulator with a
+    # frozen stale frame, unclickable UI, and adb reporting "offline". The fix
+    # is a cold boot (-no-snapshot-load), ~45s instead of ~10s. Use this switch
+    # whenever the emulator shows that signature or exits silently on start.
+    [switch]$ColdBoot
 )
 
 $sdkRoot = $SdkRoot
@@ -38,7 +43,12 @@ $env:ANDROID_SDK_ROOT = $sdkRoot
 $env:ANDROID_HOME = $sdkRoot
 
 Write-Host "[emulator] Starting AVD '$Avd' from $sdkRoot ..." -ForegroundColor Cyan
-Start-Process -FilePath $emulator -ArgumentList "-avd", $Avd
+$emuArgs = @("-avd", $Avd)
+if ($ColdBoot) {
+    Write-Host "[emulator] Cold boot requested (-no-snapshot-load); expect ~45s." -ForegroundColor Yellow
+    $emuArgs += "-no-snapshot-load"
+}
+Start-Process -FilePath $emulator -ArgumentList $emuArgs
 
 Write-Host "[emulator] Launched. Boot takes ~30-60s; check with: adb devices" -ForegroundColor Cyan
 Write-Host "[emulator] If a netsimd.exe crash dialog appears, click 'Close program' -- it is benign." -ForegroundColor DarkGray

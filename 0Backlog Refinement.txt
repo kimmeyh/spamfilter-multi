@@ -8,6 +8,131 @@ Do not stop to ask questions unless meeting the criteria in \docs\SPRINT_STOPPIN
 Sprint 6n Scope should include the below items. Please complete sprint planning (/docs/sprint_planning.md) for the below items and present for approval.  Note that everything needs to take into account both the Windows App and the Android app and ADR stating that everything should be functionally and UI the same unless it cannot be - and where it cannot be it should be implemented as a platform exception for what is needed -- this applies to all backend code, frontend code, data, architecture, development, security, testing, deployment.
 
 ---------------------------------------------------------------------------------------------------------
+Sprint 61 Scope should include the below items. Please complete sprint planning (/docs/sprint_planning.md) for the below items and present for approval.  Note that everything needs to take into account both the Windows App and the Android app and ADR stating that everything should be functionally and UI the same unless it cannot be - and where it cannot be it should be implemented as a platform exception for what is needed -- this applies to all backend code, frontend code, data, architecture, development, security, testing, deployment.
+
+Add to backlog and assign to this sprint
+- For windows app testing
+  - Microsoft lists "1024x640 epx for Windows 11 minimum display, maximized". Can we do the typical UI testing at this size to ensure everything is usable in this size window.
+- Add to the following windows the current version number "Version <n>.<n>.<n>" to the right of the ? icon - as it is useful in all screenshot captures: Review No Rule Items, Scan History, Scan Results, Manual Scan, Live Scan's Scan Results, Select Account, Settings, Help
+- A recurring HOLD item for - Periodic "Test Coverage" and "appropriate testing" (does each test clearly test what it intends to test AND does each set of tests do what they intend to do) Deep Dive - backend, frontend/ui, data layer, windows app, android app
+- F170. Encode the post-merge Release Cycle across process docs, hooks, and skills (~3-4h) Priority 2 — NEW, assigned, runs first
+- F169. Review No Rule Items account filter: scrolling chip row to single-select dropdown (~1-2h) Priority 4 — NEW, assigned
+- F168. Background/bulk scan folder scope is invisible until it is too late (~1-2h) Priority 6 — NEW, assigned
+- F162. Windows-vs-Android functionality parity audit + parity ADR (~half-day) Priority 18
+- F167. Android Help text adaptation, governed by the parity ADR (~2-3h) Priority 22
+- F161. Android background-scan scheduler + POST_NOTIFICATIONS (~3-5h) Priority 24
+NOTE: This one can be closed as I believe all these were completed? If not include: - F163. Skipped-tests remediation: the 11 approved update-to-working verdicts (~2-4h) Priority 26
+
+
+Candidates at a glance
+
+- F170. Encode the post-merge Release Cycle across process docs, hooks, and skills (~3-4h) Priority 2 — NEW, assigned, runs first
+- F169. Review No Rule Items account filter: scrolling chip row to single-select dropdown (~1-2h) Priority 4 — NEW, assigned
+- F168. Background/bulk scan folder scope is invisible until it is too late (~1-2h) Priority 6 — NEW, assigned
+- F162. Windows-vs-Android functionality parity audit + parity ADR (~half-day) Priority 18
+- F167. Android Help text adaptation, governed by the parity ADR (~2-3h) Priority 22
+- F161. Android background-scan scheduler + POST_NOTIFICATIONS (~3-5h) Priority 24
+- F163. Skipped-tests remediation: the 11 approved update-to-working verdicts (~2-4h) Priority 26
+- F164. Android live-scan performance investigation (~1-2h) Priority 28
+- F165. Cross-device rules-DB sharing + hosted tier exploration (~half-day) Priority 30
+
+F170. Encode the post-merge Release Cycle (merge → main → refinement pass 1 → Store release → refinement pass 2 → plan) across the process docs, hooks, and skills (~3-4h) Priority 2
+- Phase: Process / tooling
+- Platform: N/A (process documentation, hooks, skills)
+- Your standing cycle is encoded in no process doc; the only artifact describing it is sprint_status.json, a state file doing a process doc's job.
+- First slice already delivered (2026-08-16): the verify-closeout-complete hook's pr_number check is now gated on plan_approved, mutation-verified, hook suite 46/46. That stops the false positives; the documentation work remains.
+- Remaining: the two-pass refinement distinction, the wrong "Canonical Next Steps progression" (rule 5 jumps from the develop merge straight to Sprint N+1), the checklist's conditional Store section that buries the main merge as a Store sub-step, the backlog-refinement/startup-check/phase-check skills, and the mandatory-vs-on-demand contradiction between BACKLOG_REFINEMENT.md and two other docs.
+
+F169. Review No Rule Items account filter: replace the scrolling chip row with a single-select dropdown, default All Accounts (~1-2h) Priority 4
+- Phase: Core App Quality / UX
+- Platform: All (you approved the same treatment on Windows and Android)
+- With two accounts at phone width the second chip clips and the third is off-screen, with no affordance showing the row scrolls: "All account must be viewable."
+- Reuse the F166 dropdown pattern rather than inventing a second one. Preserve _clearSelection() on account change, which the current chip handler does.
+
+F168. Background/bulk scan folder scope is invisible until it is too late (~1-2h) Priority 6
+- Phase: Core App Quality / background scanning
+- Platform: Windows Desktop (production), extends to Android with F161
+- Confirmed not a scanner defect: Inbox genuinely was not in the production background scope. The defect is that a wrong scope and "no spam found" look identical.
+- Surface the active scope where it is chosen and read; consider warning when Inbox is omitted; re-examine whether background and manual scopes should be independently editable.
+
+F162. Windows-vs-Android functionality parity audit (full walk-through) + parity ADR (~half-day) Priority 18
+- Phase: Android rollout track / architecture governance
+- Platform: All
+- ADR defining where platforms must match, where they may differ, how differences are managed. Known datapoint: AppBar icon row overflows at phone widths.
+- Your steering: may descope after the current-app re-validation.
+
+F167. Android Help text adaptation (~2-3h) Priority 22
+- Phase: Android rollout track / content
+- Platform: Android (shared assets per ADR-0038)
+- Adapt Help minimally, only where identical text is not reasonable, per the parity ADR. Follows or accompanies F162.
+
+F161. Android background-scan scheduler mirroring the Windows per-account architecture (~3-5h) Priority 24
+- Phase: Android rollout track
+- Platform: Android
+- F144 concluded WorkManager per-account unique periodic work maps 1:1 to the Windows design; includes the POST_NOTIFICATIONS runtime request.
+
+F163. Skipped-tests remediation (~2-4h across 4 work items) Priority 26
+- Phase: Testing / suite hygiene
+- Platform: All
+- The 11 update-to-working verdicts you approved in F160. Would reduce standing skips from 26.
+
+F164. Android live-scan performance investigation (~1-2h) Priority 28
+- Phase: Core App Quality / performance
+- Platform: Android
+- Measure a release APK against Windows; analysis says the gap is debug-JIT plus emulator overhead, not architecture.
+
+F165. Cross-device rules-DB sharing via user cloud storage + hosted-tier option (~half-day exploration) Priority 30
+- Phase: Product direction / architecture exploration
+- Platform: All
+- iCloud/OneDrive/Box/Google Drive sync models, conflict handling, security posture, plus the ~$4/year hosted tier; ends in a recommendation.
+
+HOLD items follow, one line each:
+
+Periodic Reviews
+- F111. Periodic Windows App Store upload readiness verification (~110-175m per review) Priority HOLD
+- F139. Local-install smoke test for a release-candidate MSIX (~30-50m per review) Priority HOLD
+- F70. Periodic Security Deep Dive (~4-8h per review) Priority HOLD
+- F71. Periodic Architecture Deep Dive (~4-8h per review) Priority HOLD
+
+Android / Google Play Store
+- F94. Android dev/prod/store flavors (~6-8h) Priority HOLD
+- F95. iOS variants + cross-store hardening (~10-16h) Priority HOLD
+- F63. Responsive design framework (superseded by Sprint 54 F141's per-screen findings) Priority HOLD
+- F4. Background Scanning - Android (~14-16h) Priority HOLD
+- F6. Provider-Specific Optimizations (~10-12h) Priority HOLD
+- SEC-4. Android: Create network_security_config.xml (~1h) Priority HOLD
+- SEC-6. Android: Configure release signing (~2h) Priority HOLD
+- SEC-7. Android: Enable R8 obfuscation + Dart obfuscation (~2h) Priority HOLD — duplicate of GP-9
+- SEC-8b. Certificate pinning for IMAP endpoints (~4-6h) Priority HOLD
+- SEC-9. Move hardcoded Android client ID to build-time injection (~1h) Priority HOLD
+- SEC-15. IMAP host validation for custom servers (~1h) Priority HOLD
+- GP-2. Release Signing and Play App Signing (~4-6h) Priority HOLD
+- GP-3. Android Manifest Permissions (~1-2h remaining) Priority HOLD
+- GP-4. Gmail API OAuth Verification / CASA (~40-80h) Priority HOLD
+- GP-5. Privacy Policy and Legal Documents (~8-16h) Priority HOLD
+- GP-6. Play Store Listing and Assets (~8-12h) Priority HOLD
+- GP-7. Adaptive Icons and App Branding (~4-6h) Priority HOLD
+- GP-8. Android Target SDK + 16 KB Page Size (~1-2h verify) Priority HOLD
+- GP-9. ProGuard/R8 Code Optimization (~4-6h) Priority HOLD — duplicate of SEC-7
+- GP-10. Data Safety Form Declarations (~2-4h) Priority HOLD
+- GP-12. Firebase Analytics: execute the existing ADR-0030 removal decision (~1-2h) Priority HOLD
+- GP-16. Google Play Developer Account Setup (~2-4h) Priority HOLD
+
+Multi-Platform
+- F67. Platform validation - iOS, Linux, macOS (~4-6h per platform) Priority HOLD
+
+Post-MVP
+- SEC-11b. Database-at-rest encryption via SQLite3MultipleCiphers + migration (~8-12h) Priority HOLD
+- F106. SEC-11b verification-window cleanup (~30m) Priority HOLD
+- H1. GenAI Pattern Suggestions - Crowdsourced Spam Intelligence (TBD) Priority HOLD
+- H2. Rule Pattern Consistency - Domain Matching Standards (~4-6h) Priority HOLD
+- H3. Requirements Documentation System (TBD) Priority HOLD
+- H4. Sent Messages Scan for Safe Senders (~12-16h) Priority HOLD
+- H5. Outlook.com / Office 365 email provider adapter (~16-20h) Priority HOLD
+
+Refinement changes made: 8 shipped Sprint 60 items confirmed marked DONE, closed decision item F138 removed from the candidate list, and the Last Reviewed marker refreshed. Active non-HOLD slate is 7 items.
+
+---------------------------------------------------------------------------------------------------------
 Sprint 60 Scope should include the below items. Please complete sprint planning (/docs/sprint_planning.md) for the below items and present for approval:
 - Add to backlog and target for this sprint
   - For each of the 29 skipped tests """Verification: suite 1,893 / 29 skipped / 0 failed; deep-link integration 32/32; sweep 3/3; analyze

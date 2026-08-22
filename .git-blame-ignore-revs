@@ -1,0 +1,17 @@
+# Revisions to skip in `git blame` -- bulk, content-neutral rewrites only.
+#
+# Use with:
+#   git config blame.ignoreRevsFile .git-blame-ignore-revs
+# (GitHub honors this file automatically.)
+#
+# Sprint 61 Task 0 (line-ending normalization, 2026-08-17): `.gitattributes`
+# was added to normalize line endings to LF. The follow-up
+# `git add --renormalize .` produced ZERO changed files -- the repository was
+# already LF-consistent in storage, and the constant "LF will be replaced by
+# CRLF" warnings came from checkout-time conversion, not from mixed content.
+# There is therefore NO renormalization commit to list here, and blame history
+# is entirely unaffected. This file is kept in place so the next bulk
+# formatting change (a repo-wide formatter run, a mass rename) has an obvious
+# home rather than being added under time pressure.
+#
+# Format: one full 40-character SHA per line, with a comment saying what it was.

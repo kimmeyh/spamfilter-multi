@@ -257,7 +257,7 @@ void main() {
     expect(find.text('2 items'), findsOneWidget);
   });
 
-  testWidgets('account filter chip narrows the list to one account',
+  testWidgets('account filter dropdown narrows the list to one account',
       (tester) async {
     tester.view.physicalSize = const Size(1200, 2400);
     tester.view.devicePixelRatio = 1.0;
@@ -278,8 +278,13 @@ void main() {
       await mountAndLoad(tester);
     });
 
-    await tester.tap(find.text('a@example.com (2)'));
-    await tester.pump();
+    // F169 (Sprint 61): the account filter is a DROPDOWN now, not a chip row --
+    // open the menu, then pick the account. Behavior under test (narrowing the
+    // list to one account) is unchanged; only the affordance moved.
+    await tester.tap(find.byTooltip('Filter by account'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.textContaining('a@example.com (2)').last);
+    await tester.pumpAndSettle();
 
     expect(find.text('2 items'), findsOneWidget);
   });
