@@ -45,6 +45,13 @@ Format: `- **type**: Description (Issue #N)` where type is feat|fix|chore|docs
 - **chore**: Sprint 61 Task 0 -- `.gitattributes` added, normalizing line endings to LF (`.bat`/`.cmd`/`.ps1` pinned CRLF, binary types marked). Ends the recurring CRLF/LF warning noise on every commit. (Issue #340)
 
 
+## [0.10.0] - 2026-08-16
+
+Sprint 60's merged scope, released as Store Submission 17 (submitted 2026-08-16 21:51, certified
+and live 22:17 -- the first submission measured at a fixed polling cadence: ~26 minutes).
+Release-section cut added during the Sprint 61 PR #347 review (Copilot): these entries sat under
+[Unreleased] after the release went live.
+
 ### 2026-08-16 (Sprint 60)
 - **fix**: PR #335 review round (GitHub Copilot + Claude cowork) -- 13 findings addressed. User-visible: a never-scanned account no longer reads "No Matching Emails" (the F166 No-rule DEFAULT filter made the empty-state chain think a filter was hiding results); the F151c plain-language explanations for every summary category survive the chip-to-dropdown redesign (restored verbatim as dropdown entries plus the chip-face tooltip, now pinned by an assertion on the strings themselves rather than a Tooltip count that passed vacuously); the filter banner says "Tap X to clear filters" instead of naming chips that no longer exist; the email popup can no longer sit up to 8px off-window in its show-above branch; "Scan complete <duration>" is frozen at completion instead of growing with every rebuild during triage; ScanStartedEmptyState is overflow-proof; and the Review No Rule Items shortcut on Scan History is no longer Windows-gated (the last holdout after F143 un-gated the rest). Internal: scan persistence takes an explicit platformId instead of guess-splitting accountIds on dashes (`my-name@gmail.com` was becoming platform "my"), the CI stub key no longer looks like a Google API key, `start-emulator.ps1` takes -SdkRoot, dead `SpecialFilter.found` and an inert popup minWidth removed, and two weak tests (filter-X, long-press) were made mutation-meaningful. Known gap recorded: the empty-state fix ships without a widget test (the empty-account path hangs the test harness). (PR #335 review)
 - **fix**: Sprint 60 MV round 4 -- a Demo scan in Scan History was badged "Background": the card label was a binary manual-or-background choice, so scanType 'demo' fell into the Background bucket (on Android, a platform with no background scheduler at all). Three-way Manual/Demo/Background label, pinned by a mutation-verified test. Round 4 also root-caused "Review No Rule Items empty despite No Rule 12 in history" as CORRECT behavior via on-device DB forensics: the items belong to the Demo scan, and demo results never feed Review No Rule on any platform (it aggregates configured accounts only). (Sprint 60 MV, Harold)
@@ -1179,7 +1186,8 @@ See git history for detailed changes prior to Phase 3.1.
 
 ## Version Links
 
-[Unreleased]: https://github.com/kimmeyh/spamfilter-multi/compare/v0.9.0...HEAD
+[Unreleased]: https://github.com/kimmeyh/spamfilter-multi/compare/v0.10.0...HEAD
+[0.10.0]: https://github.com/kimmeyh/spamfilter-multi/compare/v0.9.0...v0.10.0
 [0.9.0]: https://github.com/kimmeyh/spamfilter-multi/compare/v0.8.0...v0.9.0
 [0.8.0]: https://github.com/kimmeyh/spamfilter-multi/compare/v0.7.0...v0.8.0
 [0.7.0]: https://github.com/kimmeyh/spamfilter-multi/compare/v0.6.2...v0.7.0

@@ -7,7 +7,7 @@
 folder-scope warning, Issue #339), F172 (AppBar version label, Issue #342), F171 (1024x640
 minimum-window sweep, Issue #343), F162 (parity audit + ADR-0042, Issue #344), F167 (Help
 capability wording, Issue #345), F161 (Android background-scan scheduler, Issue #346). Same-window
-context: 0.10.0.0 / Submission 17 uploaded and CERTIFIED 2026-08-18 in ~26 minutes -- the first
+context: 0.10.0.0 / Submission 17 uploaded 2026-08-16 21:51, CERTIFIED 22:17 (~26 minutes) -- the first
 real submit-to-live measurement (10-minute polling; the old ~51-minute figure was
 observation-cadence bias; recorded in `docs/STORE_SUBMISSION_TIMING.md`).
 

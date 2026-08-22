@@ -806,13 +806,21 @@ class _NoRuleReviewScreenState extends State<NoRuleReviewScreen> {
   /// inventing a second account-selection idiom. Shared widget: identical on
   /// Windows and Android per the Sprint 61 parity rule.
   Widget _buildAccountFilter() {
+    // PR #347 review (Copilot): count per account in ONE pass over _allItems
+    // instead of a where().length scan per account (O(accounts x items) per
+    // rebuild on a screen that rebuilds per selection tap).
+    final countsByAccount = <String, int>{};
+    for (final item in _allItems) {
+      countsByAccount.update(item.accountId, (c) => c + 1, ifAbsent: () => 1);
+    }
+
     // (label, value) in display order: All Accounts first, then each account.
     final options = <(String, String)>[
       ('All Accounts (${_allItems.length})', 'all'),
       for (final accountId in _distinctAccounts)
         (
           '${_accountEmails[accountId] ?? accountId} '
-              '(${_allItems.where((i) => i.accountId == accountId).length})',
+              '(${countsByAccount[accountId] ?? 0})',
           accountId,
         ),
     ];

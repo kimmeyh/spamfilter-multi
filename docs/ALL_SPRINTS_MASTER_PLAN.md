@@ -4,7 +4,7 @@
 
 **Audience**: Claude Code models planning sprints; User prioritizing future work
 
-**Last Updated**: 2026-08-21 (**Sprint 61 COMPLETE (retro + all 4 approved improvements applied; PR #347 ready for Harold's review/merge)** -- 9/9 tasks: Task 0 line endings, F170 Phase 8 Release Cycle encoded, F169 account-filter dropdown, F168 Inbox-scope warning, F172 AppBar version label, F171 1024x640 sweep, F162/ADR-0042 parity ADR ACCEPTED, F167 capability Help wording, F161 Android scheduler as the canonical ADR-0042 factory -- **validated for correctness on-device (count-parity PASS); Google Play shipment prerequisite MET**. MV forensics registered F174-F178 with proven root causes (LOW_MEMORY chunked-fetch cascade = F177/F175). 0.10.0.0 Submission 17 CERTIFIED 2026-08-18 in ~26 min (first real measurement). Suite 1,893 passed / 26 skipped / 0 failed; hooks 49/49. Earlier history in prior revisions of this line (git).)
+**Last Updated**: 2026-08-21 (**Sprint 61 COMPLETE (retro + all 4 approved improvements applied; PR #347 ready for Harold's review/merge)** -- 9/9 tasks: Task 0 line endings, F170 Phase 8 Release Cycle encoded, F169 account-filter dropdown, F168 Inbox-scope warning, F172 AppBar version label, F171 1024x640 sweep, F162/ADR-0042 parity ADR ACCEPTED, F167 capability Help wording, F161 Android scheduler as the canonical ADR-0042 factory -- **validated for correctness on-device (count-parity PASS); Google Play shipment prerequisite MET**. MV forensics registered F174-F178 with proven root causes (LOW_MEMORY chunked-fetch cascade = F177/F175). 0.10.0.0 Submission 17 CERTIFIED 2026-08-16 22:17 in ~26 min (first real measurement). Suite 1,893 passed / 26 skipped / 0 failed; hooks 49/49. Earlier history in prior revisions of this line (git).)
 
 ## How to Maintain This Document
 
@@ -126,7 +126,7 @@ Historical sprint information lives in individual documents in `docs/sprints/` a
 | 57 | docs/sprints/SPRINT_57_RETROSPECTIVE.md | [OK] Complete | Aug 13-14, 2026 (PR #314 -> develop, PR #316 -> main) |
 | 58 | docs/sprints/SPRINT_58_SUMMARY.md | [OK] Complete | Aug 14-15, 2026 (PR #317; 0.7.0.0 LIVE Aug 15) |
 | 59 | docs/sprints/SPRINT_59_SUMMARY.md | [OK] Complete | Aug 15, 2026 (PR #326; 0.8.0.0 LIVE Aug 15; Android builds restored) |
-| 60 | docs/sprints/SPRINT_60_SUMMARY.md | [OK] Complete | Aug 15-16, 2026 (PR #335; 0.9.0.0 LIVE Aug 16; scope shipped in 0.10.0.0 LIVE Aug 18) |
+| 60 | docs/sprints/SPRINT_60_SUMMARY.md | [OK] Complete | Aug 15-16, 2026 (PR #335; 0.9.0.0 LIVE Aug 16; scope shipped in 0.10.0.0 LIVE Aug 16 22:17) |
 | 61 | docs/sprints/SPRINT_61_SUMMARY.md | [OK] Complete | Aug 16-21, 2026 (PR #347; F161 Android scheduler validated, ADR-0042, Phase 8 encoded) |
 
 **Key Achievements**: See CHANGELOG.md for detailed feature history.
@@ -142,7 +142,7 @@ Historical sprint information lives in individual documents in `docs/sprints/` a
 - **F161**: Android background-scan scheduling as the canonical ADR-0042 factory (shared `BackgroundScanCore` pipeline, per-platform scheduler adapters, WorkManager dispatcher, completion notifications, contextual POST_NOTIFICATIONS). **Validated for CORRECTNESS on-device: the manual-vs-background count-parity experiment PASSED with per-email-identical outcomes.** Google Play SHIPMENT PREREQUISITE met. MV round 1 caught the call-site escape (both settings call sites still Windows-gated) -- fixed and now pinned by the IMP-2 policy gate.
 - **Also delivered**: F169 account-filter dropdown (+ pre-existing selection-bar overflow fix), F172 AppBar version label (suppressed below 600px by design), F168 Inbox-omitted-scope warning, F171 1024x640 sweep (PASS incl. Harold's live judgment checks), F167 capability-not-mechanism Help wording with policy gate, Task 0 line-ending normalization.
 - **MV forensics registered 5 items with root causes**: F174 (silent empty-folder fetch), F175 (scan concurrency + orphan reconciliation + retry bounding), F176 (account email on scan screens), F177 (memory-bounded chunked fetch m=20 -- the proven LOW_MEMORY root cause of the scan-death cascade), F178 (Android popup clips Block Subject).
-- **Store**: 0.10.0.0 (Submission 17) uploaded and CERTIFIED 2026-08-18 in ~26 minutes -- first real submit-to-live measurement (10-minute Playwright polling; the old ~51-minute figure was observation-cadence bias). Recorded in docs/STORE_SUBMISSION_TIMING.md.
+- **Store**: 0.10.0.0 (Submission 17) uploaded 2026-08-16 21:51 and CERTIFIED 22:17 -- ~26 minutes, the first real submit-to-live measurement (10-minute Playwright polling; the old ~51-minute figure was observation-cadence bias). Recorded in docs/STORE_SUBMISSION_TIMING.md.
 - **Verification**: suite **1,893 passed / 26 skipped / 0 failed**; analyze clean; hook suite 49/49; every new gate mutation-verified.
 - **Retro**: Harold -- Testing Approach "Needs improvement" (the call-site escape), Process "Good" (3 turn-ending failures, all same-day resolved), everything else Good/Very Good. **All 4 improvements approved and applied same-session** (IMP-1 dangling-commitment hook gate, IMP-2 factory call-site policy gate + ADR rule, IMP-3 claimed-change verification memory, IMP-4 operational memories).
 - **Docs**: SPRINT_61_PLAN.md / SPRINT_61_RETROSPECTIVE.md / SPRINT_61_SUMMARY.md.
@@ -153,7 +153,7 @@ _(Prior: **Sprint 60** below.)_
 - **Type**: Android quality gate + tooling truth. All 7 planned tasks (F160 skipped-tests audit, F156 Android walk-through, F157 gradle/minSdk adoption, F158 Android CI job, F159 metadata gates, F143 touch selection, F144 background-scan dead-code removal) plus F166 Scan Results header redesign executed mid-sprint.
 - **2 CRITICAL Android bugs found+fixed** via the walk-through/MV: value-returning PRAGMAs rejected by execSQL (every scan failed) and the accounts-FK gap (zero scan persistence -- masked for months because only Windows-only code created the accounts row).
 - **4 MV rounds**, approved by Harold 2026-08-16. NEW backlog registered: F161-F165, F167. Retro: Cat 1 Good (python-on-Windows tooling -> IMP-1 memory applied), Cats 2-12 Very Good.
-- **Store**: 0.9.0.0 (Submission 16) LIVE 2026-08-16; the sprint's merged scope shipped in 0.10.0.0 (Submission 17) LIVE 2026-08-18.
+- **Store**: 0.9.0.0 (Submission 16) LIVE 2026-08-16; the sprint's merged scope shipped in 0.10.0.0 (Submission 17) LIVE 2026-08-16 22:17.
 - **Verification**: suite 1,859 passed / 26 skipped / 0 failed at close.
 - **Docs**: SPRINT_60_PLAN.md / SPRINT_60_RETROSPECTIVE.md / SPRINT_60_SUMMARY.md (summary created at Sprint 61 Phase 3.2.1 per the triad rule).
 
