@@ -1,6 +1,6 @@
 {
   "_description": "Sprint status file that persists across context compaction. Update after each phase/sub-phase completion.",
-  "_last_updated": "2026-08-21 (Sprint 61 MERGED to develop + main; Sprint 62 branch open, Phase 8 Release Cycle in progress)",
+  "_last_updated": "2026-08-22 (Phase 8.3: 0.11.0.0 MSIX built+verified, awaiting upload)",
   "_usage": "Read this file after context compaction to restore sprint approval state and progress.",
   "_staleness_note": "This file had drifted 15 sprints (last updated at Sprint 35, 2026-04-19) before being refreshed at Sprint 50 close-out. It is a Phase 7.7 checklist item -- update it at every sprint close-out, not opportunistically.",
   "current_sprint": {
@@ -9,7 +9,7 @@
     "pr_number": null,
     "_pr_number_null_reason": "Phase 8 Release Cycle in progress -- no scope selected, no plan, no cards, no PR yet. Legitimate until Phase 3.3.1.",
     "start_date": "2026-08-21",
-    "status": "PHASE 8 RELEASE CYCLE (post-merge, pre-scope): 8.1 main merge DONE (Harold, PR #348). NEXT: 8.2 refinement pass 1 completeness sweep, then 8.3 Store release per STORE_RELEASE_PROCESS.md (Harold directed: build+prep BEFORE scope selection; dev 0.10.0 EQUALS live -- bump at Step 1), then 8.4 refinement pass 2 scope selection.",
+    "status": "PHASE 8 RELEASE CYCLE: 8.1 DONE (main merged, PR #348). 8.2 DONE (pass-1 sweep, 16 stubs pruned). 8.3 BUILD VERIFIED -- 0.11.0.0 MSIX ready, notified Harold for upload. NEXT: Harold uploads; once submission in process -> 8.4 refinement pass 2 scope selection.",
     "plan_approved": false,
     "plan_approval_date": null,
     "blanket_execution_approved": false,
@@ -40,8 +40,8 @@
     "live_version": "0.10.0.0",
     "submission": 17,
     "certified_date": "2026-08-16",
-    "pending_upload_version": null,
-    "submission_pending": null,
+    "pending_upload_version": "0.11.0.0",
+    "submission_pending": "MSIX built and verified 2026-08-22 (self-test 6/6 PASS, manifest 0.11.0.0, 17.9 MB); awaiting Harold upload to Partner Center (expected Submission 18). Artifact: D:\\Data\\Harold\\github\\spamfilter-multi-prod\\mobile-app\\build\\windows\\x64\\runner\\Release\\my_email_spam_filter.msix",
     "submitted_date": "2026-08-16"
   },
   "environment_notes": [
