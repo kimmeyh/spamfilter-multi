@@ -1,6 +1,6 @@
 {
   "_description": "Sprint status file that persists across context compaction. Update after each phase/sub-phase completion.",
-  "_last_updated": "2026-08-22 (Phase 8.3: 0.11.0.0 MSIX built+verified, awaiting upload)",
+  "_last_updated": "2026-08-22 (0.11.0.0 LIVE; pass-2 slate presented, awaiting scope selection)",
   "_usage": "Read this file after context compaction to restore sprint approval state and progress.",
   "_staleness_note": "This file had drifted 15 sprints (last updated at Sprint 35, 2026-04-19) before being refreshed at Sprint 50 close-out. It is a Phase 7.7 checklist item -- update it at every sprint close-out, not opportunistically.",
   "current_sprint": {
@@ -9,7 +9,7 @@
     "pr_number": null,
     "_pr_number_null_reason": "Phase 8 Release Cycle in progress -- no scope selected, no plan, no cards, no PR yet. Legitimate until Phase 3.3.1.",
     "start_date": "2026-08-21",
-    "status": "PHASE 8 RELEASE CYCLE: 8.1 DONE (main merged, PR #348). 8.2 DONE (pass-1 sweep, 16 stubs pruned). 8.3 BUILD VERIFIED -- 0.11.0.0 MSIX ready, notified Harold for upload. NEXT: Harold uploads; once submission in process -> 8.4 refinement pass 2 scope selection.",
+    "status": "PHASE 8 RELEASE CYCLE: 8.1 DONE (main merged), 8.2 DONE (pass-1 sweep), 8.3 DONE (0.11.0.0 LIVE, Submission 18), 8.4 IN PROGRESS -- pass-2 slate presented 2026-08-22, awaiting Harold scope selection for Sprint 62. Then Phase 3 planning.",
     "plan_approved": false,
     "plan_approval_date": null,
     "blanket_execution_approved": false,
@@ -36,13 +36,13 @@
     "_note": "Run full suites with --concurrency=4 (Sprint 49 IMP-5)."
   },
   "store_release": {
-    "status": "0.10.0.0 / Submission 17 CERTIFIED AND LIVE 2026-08-16 22:17 -- verified by DIRECT Partner Center observation (authenticated Playwright session): Store presence = Submission 17, certification badge cleared, 'Congrats! Your product is now updated'. Submit-to-live ~26 MINUTES (21:51 -> 22:17), the first submission measured at a fixed 10-minute polling cadence -- half the previous apparent best case, which was an observation-cadence artifact (Harold's correction). Fourth MINOR release. Build evidence: Check A dart-defines PASS; Check B self-test 6/6 PASS; manifest Identity 0.10.0.0, 17.07 MB. NEXT RELEASE: dev currently EQUALS live at 0.10.0 -- bump dev at that release's Step 1.",
-    "live_version": "0.10.0.0",
-    "submission": 17,
-    "certified_date": "2026-08-16",
-    "pending_upload_version": "0.11.0.0",
-    "submission_pending": "MSIX built and verified 2026-08-22 (self-test 6/6 PASS, manifest 0.11.0.0, 17.9 MB); awaiting Harold upload to Partner Center (expected Submission 18). Artifact: D:\\Data\\Harold\\github\\spamfilter-multi-prod\\mobile-app\\build\\windows\\x64\\runner\\Release\\my_email_spam_filter.msix",
-    "submitted_date": "2026-08-16"
+    "status": "0.11.0.0 / Submission 18 CERTIFIED AND LIVE 2026-08-22 ~10:41 -- direct Partner Center observation (authenticated Playwright, 5-min polling): \"Congrats! Your product is now updated.\" Uploaded ~10:10; ~25-30 min submit-to-live, confirming the ~26-min figure. Fifth MINOR release. Installed-build check pending Harold. NEXT RELEASE: dev EQUALS live at 0.11.0 -- bump at that release Step 1.",
+    "live_version": "0.11.0.0",
+    "submission": 18,
+    "certified_date": "2026-08-22",
+    "pending_upload_version": null,
+    "submission_pending": null,
+    "submitted_date": "2026-08-22"
   },
   "environment_notes": [
     "RESOLVED 2026-07-29 (verified 07-30): the Store fault was an Acronis file-system filter blocking AppXSvc cleanup, fixed by an Acronis Protection exclusion. 23h uptime with ZERO Id-493 events vs a 176-file/6-min baseline; Store client self-updated 22606.1401.6.0 -> .10.0 (requires a working deployment pipeline). Filter drivers remain loaded -- backup protection was NOT disabled. See ALL_SPRINTS_MASTER_PLAN ENV-1 for the picker gotcha if it recurs.",

@@ -10,12 +10,10 @@ Do not stop to ask questions unless meeting the criteria in \docs\SPRINT_STOPPIN
 
 Github Copilot Review Requests:
 I have requested a github.com copilot review.
-Then check to see if it has completed and wait until completed.
-Address any comments provided by github.com copilot review and:
+If not completed, setup a way for it to notify you once completed, then address any comments provided by github.com copilot review and:
 - address them now (preferred) OR add them to the backlog targeted for the next sprint
 - Then update the comment with how it was/will be fixed and mark the comment as resolved.
 Let me know when completed so I can review and merge the PR
-Please wait 7 minutes for it to complete.
 
 Common Sprint PR merged prompt:
 PR merged to develop, then PR merged develop to main.  Please continue following the sprint checklist and \docs\SPRINT_EXECUTION_WORKFLOW.md until backlog refinement (docs\BACKLOG_REFINEMENT.md). Then before selecting sprint scope, please follow the Microsoft Store release process in docs/STORE_RELEASE_PROCESS.md to build and prep the next store update.

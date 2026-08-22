@@ -1,0 +1,235 @@
+- generic [active] [ref=f7e1]:
+  - generic [ref=f7e3] [cursor=pointer]: Skip to main content
+  - generic [ref=f7e4]:
+    - generic [ref=f7e5]:
+      - button "Toggle the navigation pane" [ref=f7e8] [cursor=pointer]
+      - text: Microsoft Partner Center
+    - searchbox "Search" [ref=f7e26]
+    - generic [ref=f7e27]:
+      - button "Action Center" [ref=f7e28] [cursor=pointer]
+      - list [ref=f7e33]:
+        - listitem [ref=f7e34]:
+          - button "AI assistant and Support" [ref=f7e35] [cursor=pointer]
+        - listitem [ref=f7e40]:
+          - generic:
+            - button "Settings" [ref=f7e74] [cursor=pointer]
+            - generic:
+              - generic: Site map
+              - generic: Contact us
+              - generic: Privacy and cookies
+              - generic: Terms of use
+              - generic: Service agreement
+              - generic: Trademark
+              - generic: About our ads
+              - generic: Close
+        - listitem [ref=f7e42]:
+          - button [ref=f7e81] [cursor=pointer]:
+            - img "Harold" [ref=f7e82]
+    - generic [ref=f7e46]:
+      - navigation "Breadcrumb" [ref=f7e48]:
+        - list [ref=f7e49]:
+          - generic:
+            - listitem [ref=f7e51] [cursor=pointer]:
+              - link "Home" [ref=f7e52]:
+                - /url: /dashboard/v2/home
+            - listitem [ref=f7e84]:
+              - link "Apps and games" [ref=f7e85] [cursor=pointer]:
+                - /url: "#"
+      - navigation "Breadcrumb" [ref=f7e92]:
+        - list [ref=f7e93]:
+          - listitem [ref=f7e95] [cursor=pointer]:
+            - link "MyEmailSpamFilter" [ref=f7e96]:
+              - /url: "#"
+  - generic [ref=f7e100]:
+    - generic [ref=f7e103]:
+      - navigation [ref=f7e105]:
+        - list [ref=f7e108]:
+          - generic:
+            - listitem [ref=f7e109]:
+              - link "Application overview" [ref=f7e112] [cursor=pointer]:
+                - /url: /en-us/dashboard/products/9N5QK9G904C0/overview
+            - listitem [ref=f7e115]:
+              - link "Add-ons" [ref=f7e118] [cursor=pointer]:
+                - /url: /en-us/dashboard/products/9N5QK9G904C0/addons
+            - listitem [ref=f7e121]:
+              - generic [ref=f7e122]: Product page experiment
+              - list [ref=f7e125]:
+                - listitem [ref=f7e126]:
+                  - link "Experiment details" [ref=f7e129] [cursor=pointer]:
+                    - /url: /en-us/dashboard/products/9N5QK9G904C0/product-page-experiment
+            - listitem [ref=f7e132]:
+              - generic [ref=f7e133]: Product management
+              - list [ref=f7e136]:
+                - generic:
+                  - listitem [ref=f7e137]:
+                    - link "Product Identity" [ref=f7e140] [cursor=pointer]:
+                      - /url: /en-us/dashboard/products/9N5QK9G904C0/identity
+                  - listitem [ref=f7e143]:
+                    - link "Manage app names" [ref=f7e146] [cursor=pointer]:
+                      - /url: /en-us/dashboard/products/9N5QK9G904C0/names
+                  - listitem [ref=f7e149]:
+                    - link "Manage packages" [ref=f7e152] [cursor=pointer]:
+                      - /url: /en-us/dashboard/apps/9N5QK9G904C0/managepackages
+                  - listitem [ref=f7e155]:
+                    - link "WNS/MPNS" [ref=f7e158] [cursor=pointer]:
+                      - /url: /en-us/dashboard/apps/9N5QK9G904C0/pushnotifications
+            - listitem [ref=f7e161]:
+              - generic [ref=f7e162]: Services
+              - list [ref=f7e165]:
+                - generic:
+                  - listitem [ref=f7e166]:
+                    - link "Xbox services" [ref=f7e169] [cursor=pointer]:
+                      - /url: /en-us/xboxconfig?appid=9N5QK9G904C0
+                  - listitem [ref=f7e172]:
+                    - link "Xbox Insider Program" [ref=f7e175] [cursor=pointer]:
+                      - /url: /en-us/dashboard/windows/xboxinsiders/onboarding?productId=9N5QK9G904C0
+                  - listitem [ref=f7e178]:
+                    - link "Maps" [ref=f7e181] [cursor=pointer]:
+                      - /url: /en-us/dashboard/apps/9N5QK9G904C0/maps
+                  - listitem [ref=f7e184]:
+                    - link "Product collections and purchases" [ref=f7e187] [cursor=pointer]:
+                      - /url: /en-us/dashboard/apps/9N5QK9G904C0/b2bsubscription
+                  - listitem [ref=f7e190]:
+                    - link "Administrator consent" [ref=f7e193] [cursor=pointer]:
+                      - /url: /en-us/dashboard/products/9N5QK9G904C0/administrator-consent
+            - listitem [ref=f7e196]:
+              - generic [ref=f7e197]: Supplemental info
+              - list [ref=f7e200]:
+                - listitem [ref=f7e201]:
+                  - link "Additional Testing Information" [ref=f7e204] [cursor=pointer]:
+                    - /url: /en-us/dashboard/products/9N5QK9G904C0/suppinfo/additionaltestinginfo
+      - main [ref=f7e208]:
+        - generic [ref=f7e213]:
+          - generic [ref=f7e215]:
+            - generic [ref=f7e216]:
+              - heading "MyEmailSpamFilter" [level=1] [ref=f7e218]
+              - paragraph [ref=f7e219]: MSIX or PWA app
+              - generic [ref=f7e220]:
+                - generic [ref=f7e221]: In Microsoft Store
+                - generic [ref=f7e222]: Update in certification
+            - generic [ref=f7e225]:
+              - generic [ref=f7e226]: Need Help?
+              - link "Contact Support" [ref=f7e227] [cursor=pointer]:
+                - /url: https://aka.ms/storedevsupport
+          - generic [ref=f7e236]:
+            - generic [ref=f7e237]:
+              - generic [ref=f7e238]: Analytics
+              - generic [ref=f7e239]: Check how your app is performing.
+            - button "View analytics" [ref=f7e242] [cursor=pointer]
+          - generic [ref=f7e245]:
+            - generic [ref=f7e247]:
+              - text: Product release
+              - paragraph [ref=f7e248]: Use this section to update your product.
+            - generic [ref=f7e251]:
+              - generic [ref=f7e256]:
+                - generic [ref=f7e257]:
+                  - generic [ref=f7e258]: Certification status
+                  - generic [ref=f7e263]:
+                    - text: The certification step usually takes a few hours, but in some cases can take up to 3 business days.
+                    - link "Learn more" [ref=f7e264] [cursor=pointer]:
+                      - /url: http://go.microsoft.com/fwlink/?LinkId=528698
+                - button "Cancel certification" [ref=f7e267] [cursor=pointer]
+              - generic [ref=f7e271]:
+                - generic [ref=f7e276]:
+                  - progressbar "Publishing Status" [ref=f7e277]: Step 3 of 4
+                  - list [ref=f7e278]:
+                    - listitem [ref=f7e280]:
+                      - alert [ref=f7e281]:
+                        - img "Complete" [ref=f7e286]
+                        - generic [ref=f7e290]: Submission
+                    - listitem [ref=f7e293]:
+                      - alert [ref=f7e294]:
+                        - generic [ref=f7e302]: Pre-processing
+                    - listitem [ref=f7e305]:
+                      - alert [ref=f7e306]:
+                        - img "In progress" [ref=f7e311]
+                        - generic [ref=f7e315]: Certification
+                    - listitem [ref=f7e318]:
+                      - alert [ref=f7e319]:
+                        - img "Not started" [ref=f7e324]
+                        - generic [ref=f7e328]: Publishing
+                - generic [ref=f7e333]:
+                  - generic [ref=f7e334]: Your product will start publishing as soon as it passes certification.
+                  - text: Modify publishing time
+            - generic [ref=f7e343]:
+              - generic [ref=f7e344]:
+                - generic [ref=f7e345]:
+                  - generic [ref=f7e346]: "Product update: In certification"
+                  - generic [ref=f7e347]: "(Submission 18: Last modified on 08/22/2026)"
+                - generic [ref=f7e349]:
+                  - text: Please follow the steps below to submit your product to the Store. Refer to the
+                  - link "Documentation for Product submission" [ref=f7e350] [cursor=pointer]:
+                    - /url: https://go.microsoft.com/fwlink/?linkid=2247663
+                    - text: documentation
+                  - text: needed for submission.
+              - button "Toggle Product Update" [expanded] [ref=f7e353] [cursor=pointer]:
+                - generic [ref=f7e354]: 
+            - generic [ref=f7e357]:
+              - generic [ref=f7e362]:
+                - generic [ref=f7e363]:
+                  - generic [ref=f7e364]:
+                    - text: Store presence
+                    - generic [ref=f7e365]: "(Submission 17: Last modified on 08/17/2026)"
+                  - generic [ref=f7e366]: Check your product's details which are currently live in Store. This is a read-only section.
+                - button "View product details" [ref=f7e370] [cursor=pointer]
+              - generic [ref=f7e379]:
+                - generic [ref=f7e380]: Your product is currently available in the Microsoft Store based on the discoverability configured in the Availability module.
+                - button "Modify availability" [ref=f7e387] [cursor=pointer]
+          - generic [ref=f7e390]:
+            - generic [ref=f7e391]: Additional features
+            - generic [ref=f7e399]:
+              - generic [ref=f7e400]:
+                - generic [ref=f7e401]: Product page experiments
+                - generic [ref=f7e402]: Experiment with logos and screenshots to optimize your product page in the Store.
+              - button "Create experiment" [ref=f7e405] [cursor=pointer]
+            - generic [ref=f7e408]:
+              - generic [ref=f7e416]:
+                - generic [ref=f7e417]:
+                  - generic [ref=f7e418]: Manage add-ons
+                  - generic [ref=f7e420]:
+                    - text: Add-ons are supplementary items for your product that can be purchased by customers. Refer to this
+                    - link "Documentation for Add-Ons" [ref=f7e421] [cursor=pointer]:
+                      - /url: https://go.microsoft.com/fwlink/?linkid=2248017
+                      - text: documentation
+                    - text: to learn more.
+                - generic [ref=f7e422]:
+                  - button "Create add-on" [ref=f7e424] [cursor=pointer]
+                  - button "Toggle Addons" [ref=f7e428] [cursor=pointer]:
+                    - generic [ref=f7e429]: 
+              - generic [ref=f7e437]:
+                - generic [ref=f7e438]:
+                  - generic [ref=f7e439]: Manage package flights
+                  - generic [ref=f7e441]:
+                    - text: You can use package flights to distribute specific packages to a limited group of testers. Refer to this
+                    - link "Documentation for Package Flighting" [ref=f7e442] [cursor=pointer]:
+                      - /url: http://go.microsoft.com/fwlink/?LinkId=626101
+                      - text: documentation
+                    - text: to learn more.
+                - generic [ref=f7e443]:
+                  - button "Create new package flight" [ref=f7e445] [cursor=pointer]
+                  - button "Toggle Package Flighting" [ref=f7e449] [cursor=pointer]:
+                    - generic [ref=f7e450]: 
+          - generic [ref=f7e451]:
+            - generic [ref=f7e452]: General
+            - generic [ref=f7e460]:
+              - generic [ref=f7e461]:
+                - generic [ref=f7e462]: Share on social media
+                - generic [ref=f7e463]: Promote your product by sharing it with your social network.
+              - generic [ref=f7e464]:
+                - link "View Product on Store" [ref=f7e465] [cursor=pointer]:
+                  - /url: ""
+                - button "Share now" [ref=f7e472] [cursor=pointer]
+            - generic [ref=f7e480]:
+              - generic [ref=f7e482]:
+                - generic [ref=f7e483]:
+                  - generic [ref=f7e484]: View product identity
+                  - generic [ref=f7e485]: You can share the Store deep link to help customers find your product on the store.
+                - progressbar "In progress" [ref=f7e488]
+              - text: 
+    - progressbar "Progress bar" [ref=f7e65]
+  - generic [ref=f7e494]:
+    - generic [ref=f7e495] [cursor=pointer]: Apps and games
+    - generic [ref=f7e496] [cursor=pointer]: Earnings
+    - generic [ref=f7e497] [cursor=pointer]: Insights
+    - generic [ref=f7e498] [cursor=pointer]: Help + support
+  - generic [ref=f7e499] [cursor=pointer]

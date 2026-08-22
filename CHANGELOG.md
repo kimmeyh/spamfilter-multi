@@ -26,6 +26,12 @@ Format: `- **type**: Description (Issue #N)` where type is feat|fix|chore|docs
 
 ## [Unreleased]
 
+## [0.11.0] - 2026-08-22
+
+Sprint 61's merged scope, released as Store Submission 18 (uploaded ~10:10, certified and live
+~10:41 -- ~25-30 minutes measured at a 5-minute polling cadence, confirming Submission 17's
+~26-minute figure).
+
 ### 2026-08-21 (Sprint 61)
 - **chore**: Sprint 61 retrospective improvements (Harold approved all): the sprint stop-hook now also blocks ending a turn by announcing the next action without executing it (the sprint's headline process issue, 3 occurrences); a new policy gate pins the F161 scheduler call sites as platform-free, so a factory reroute can never again silently leave a platform-gated caller behind -- the exact escape Manual Validation round 1 caught live. Both mutation-verified. (Sprint 61 retro IMP-1/IMP-2)
 - **chore**: `start-emulator.ps1` gains `-ColdBoot` (`-no-snapshot-load`), the recovery for the corrupted quick-boot snapshot wedge (frozen stale frame, unclickable UI, adb offline, or silent exit). (Sprint 61 MV)
@@ -1186,7 +1192,8 @@ See git history for detailed changes prior to Phase 3.1.
 
 ## Version Links
 
-[Unreleased]: https://github.com/kimmeyh/spamfilter-multi/compare/v0.10.0...HEAD
+[Unreleased]: https://github.com/kimmeyh/spamfilter-multi/compare/v0.11.0...HEAD
+[0.11.0]: https://github.com/kimmeyh/spamfilter-multi/compare/v0.10.0...v0.11.0
 [0.10.0]: https://github.com/kimmeyh/spamfilter-multi/compare/v0.9.0...v0.10.0
 [0.9.0]: https://github.com/kimmeyh/spamfilter-multi/compare/v0.8.0...v0.9.0
 [0.8.0]: https://github.com/kimmeyh/spamfilter-multi/compare/v0.7.0...v0.8.0
