@@ -1,6 +1,6 @@
 {
   "_description": "Sprint status file that persists across context compaction. Update after each phase/sub-phase completion.",
-  "_last_updated": "2026-08-22 (Sprint 62 approved, execution started)",
+  "_last_updated": "2026-08-22 (Sprint 62 dev complete, entering Manual Validation)",
   "_usage": "Read this file after context compaction to restore sprint approval state and progress.",
   "_staleness_note": "This file had drifted 15 sprints (last updated at Sprint 35, 2026-04-19) before being refreshed at Sprint 50 close-out. It is a Phase 7.7 checklist item -- update it at every sprint close-out, not opportunistically.",
   "current_sprint": {
@@ -8,7 +8,7 @@
     "branch": "feature/20260821_Sprint_62",
     "pr_number": 355,
     "start_date": "2026-08-21",
-    "status": "Phase 4 EXECUTION (approved 2026-08-22, blanket through MV): Task 1 F177 in progress. Order: F177 -> F174 -> F175 -> F178 -> F176 -> F163.",
+    "status": "Phase 5.3 MANUAL VALIDATION -- ALL 6 TASKS COMPLETE (cards #349-#354 closed). Suite 1,931 passed / 15 skipped / 0 failed; analyze clean; every change mutation-verified. Windows dev build + Android debug APK building for MV. MV includes: F161 AC-4 Windows glance (Sprint 61 carry-over), F177 daysBack=0 AOL memory run, F175 concurrency demo + R-7 Class-1 settings-interplay DECISION (Harold), F178 popup visual, F176 email labels. From MV onward asking is CORRECT (auto-advance window closed).",
     "plan_approved": true,
     "plan_approval_date": "2026-08-22",
     "blanket_execution_approved": true,
@@ -39,11 +39,11 @@
   ],
   "_github_issues_note": "Sprint 62 cards created at Phase 3.3.1 (2026-08-22): #349 F177, #350 F174, #351 F175, #352 F178, #353 F176, #354 F163. KEEP numbers listed after closure; array empties only at the NEXT sprint rollover.",
   "test_metrics": {
-    "tests_passing": 1893,
-    "tests_skipped": 26,
+    "tests_passing": 1931,
+    "tests_skipped": 15,
     "tests_failing": 0,
     "analyzer_warnings": 0,
-    "_test_metrics_note": "1,893 passed / 26 skipped / 0 failed at Phase 7 close (2026-08-21, full run --concurrency=4), analyze clean. Adds factory_call_site_test (IMP-2).",
+    "_test_metrics_note": "1,931 passed / 15 skipped / 0 failed at Sprint 62 dev-complete (2026-08-22). F163 dropped skips 26->15 (all approved keeps). Run with --concurrency=4.",
     "hook_test_cases": "49/49 passing -- +2 IMP-1 cases (violation-13 dangling commitment, allow-16 past-tense).",
     "winwright_sweep": "End-of-sprint sweep RUN 2026-08-16 at close-out (lib/ui touched): 3/3 scripts PASS (f124_rule_labels 10 steps, f129_no_rule_review 10 steps, mt2c_no_rule_sweep 25 steps), DB drift none. First run failed mt2c at its DOCUMENTED data-precondition (Harold's MV rule/safe-sender adds addressed the old baseline rows); baselines refreshed from the live dev DB per the script's own maintenance note, re-run PASS.",
     "coverage_percent": null,

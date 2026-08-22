@@ -360,6 +360,14 @@ All incomplete items in relative priority order. Priority in increments of 10; i
 - Scope: Harold approved every F160 recommendation (2026-08-16). The 3 discontinues were applied in-sprint (2 rejected-design yaml_migration tests + the rule_evaluator design-note skip deleted). This item carries the 4 update-to-working work items: (1) gmail_api_adapter no-auth error-path tests -- channel-stub seam, or discontinue if the adapter cannot run stubbed (fallback pre-approved); (2) delete_to_trash safety trio -- adapter mock-seam investigation (highest value: guards delete-recoverability); (3) email_scanner_readonly_mode group -- rebuild against the current provider architecture (read-only enforcement is the product's core safety promise, currently uncovered); (4) yaml_migration backup-creation test -- fix the assert-timing race. The 15 keep-for-special-purpose tests stay as-is by decision.
 - Source: F160 audit (SPRINT_60_PLAN.md Task 1) + Harold's blanket approval, Sprint 60 MV, 2026-08-16.
 
+**F179. Subject-blocking phrase picker -- user selects (or GenAI recommends) the blocking SUBSET of a subject (~3-5h) Priority HOLD (NEW, Sprint 62 MV -- Harold; gated on the GenAI track)**
+- Phase: Core App Quality / rules UX
+- Platform: All (shared review popup)
+- Scope (Harold, 2026-08-22, verbatim intent): "The scan results of a single email needs to have a 'from' dialog as it is not normal to mark an entire subject as a blocking phrase, but often a subset phrase and will need to have the user pick the subset -- likely this will wait until after the genai integration as an app 'recommended' subject phrase or matching string would be far better than have the user guess."
+- Today's Block Subject action uses the whole (20-char-previewed) subject; a subset-phrase picker dialog is the right shape, and an H1-style GenAI-recommended phrase beats manual guessing.
+- HOLD rationale: deliberately sequenced AFTER the GenAI integration (H1) so the recommendation flow ships with it rather than building a manual picker twice.
+- Source: Harold, Sprint 62 Manual Validation, 2026-08-22.
+
 **F152. Periodic User-Centric First-Run Evaluation (~2-3h per review, plus fix-item time if findings warrant) Priority HOLD** _(TEMPLATE -- first run produced F151 above, Sprint 58 Backlog Refinement, 2026-08-15)_
 - Phase: UX Spike (reusable template)
 - Platform: Windows Desktop (this run); extend per-platform when other platforms are release-ready

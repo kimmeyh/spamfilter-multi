@@ -243,6 +243,12 @@ void main() {
           reason: 'F178: the popup bottom must stay ABOVE the system '
               'navigation bar -- a bottom edge under the inset is exactly '
               'the unreachable-"Block Subject" defect');
+      // F178 round 2 (Harold): compact widths BOTTOM-ANCHOR the popup (the
+      // Windows small-window pattern) -- tied to the safe bottom, growing
+      // upward as needed.
+      expect(popupRect.bottom, closeTo(safeBottom, 1.0),
+          reason: 'on compact screens the popup is tied to the bottom of '
+              'the safe area, not floated near its source row');
 
       // The bottom-most action must be reachable by scrolling the popup's
       // own inner scroll view to its end.
