@@ -1625,9 +1625,21 @@ class _ResultsDisplayScreenState extends State<ResultsDisplayScreen> {
       barrierColor: Colors.black54,
       builder: (dialogContext) {
         // Get screen dimensions
-        final screenSize = MediaQuery.of(context).size;
+        final mediaQuery = MediaQuery.of(context);
+        final screenSize = mediaQuery.size;
         final screenHeight = screenSize.height;
-        final popupHeight = screenHeight * 0.6; // Approximate popup height
+        // F178 (Sprint 62, found by Harold with screenshots): on a phone,
+        // `size.height` includes the system status/navigation bar areas, so
+        // the Sprint 60 clamp below let the popup's BOTTOM sit under the
+        // Android navigation bar -- "Block Subject" and the rows below it
+        // were unreachable even at full scroll. All height/position math now
+        // works within the SAFE area. On desktop the insets are zero, so
+        // this is a no-op there (ADR-0042: parity by construction).
+        final safeTop = mediaQuery.padding.top;
+        final safeBottom = mediaQuery.padding.bottom;
+        final safeScreenBottom = screenHeight - safeBottom;
+        final popupHeight =
+            (screenHeight - safeTop - safeBottom) * 0.6; // within safe area
 
         // Calculate position
         double? top;
@@ -1643,11 +1655,13 @@ class _ResultsDisplayScreenState extends State<ResultsDisplayScreen> {
         // (see the ConstrainedBox below), so the clamp is against the REAL
         // maximum height, with the existing inner SingleChildScrollView as
         // the graceful fallback if content ever exceeds the cap.
-        final maxTop = (screenHeight - popupHeight - 8).clamp(8.0, screenHeight);
+        // F178: clamp against the SAFE bottom, and never above the safe top.
+        final maxTop = (safeScreenBottom - popupHeight - 8)
+            .clamp(safeTop + 8.0, screenHeight);
 
         if (itemPosition != null && itemSize != null) {
           final itemBottom = itemPosition.dy + itemSize.height;
-          final spaceBelow = screenHeight - itemBottom;
+          final spaceBelow = safeScreenBottom - itemBottom;
           final spaceAbove = itemPosition.dy;
           // Sprint 46 manual-testing feedback (Harold 2026-07-11): when the
           // screen has room, drop the popup one additional email-height lower

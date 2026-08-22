@@ -384,7 +384,16 @@ at phone height -- an action the user simply cannot perform.
 **Model**: Haiku -- single widget file, confirmed hypothesis, existing test harness from the
 Sprint 60 sibling fix. Escalate to Sonnet only if the inset hypothesis proves wrong.
 
-**Executed-by** (filled at completion):
+**Executed-by** (filled at completion): Fable 5 -- single-session sprint execution.
+
+**COMPLETION NOTES (2026-08-22)**: DONE, ~25m. The inset hypothesis held exactly. AC-1: new
+phone-height test with a simulated 48px navigation-bar inset (FakeViewPadding) asserts the
+popup bottom and the fully-scrolled "Block Subject" row stay inside the safe area; mutation
+(un-inset math restored) goes red. AC-2: the two Sprint 60/F151e desktop regression tests pass
+UNTOUCHED -- desktop is a no-op by construction (insets are zero). Test-environment note: the
+new test runs at 500px width, not 411, because this screen's AppBar has a KNOWN unrelated
+~21px icon overflow at 411 (the open F162 adaptation question) that throws in widget tests --
+documented in the test. Harold's visual confirmation is the MV step.
 
 **Step-types**: UI-MOVE+TEST-WIDGET
 

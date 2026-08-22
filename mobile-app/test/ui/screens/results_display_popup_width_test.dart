@@ -200,5 +200,66 @@ void main() {
       expect(popupRect.top, greaterThanOrEqualTo(0),
           reason: 'the clamp must never push the popup off the top either');
     });
+
+    testWidgets(
+        'F178 (Sprint 62): at phone height WITH a system bottom inset, the '
+        'popup stays inside the safe area and "Block Subject" is reachable '
+        'at full scroll', (tester) async {
+      // Phone-shaped window with a simulated Android navigation-bar inset.
+      // Harold's screenshots: even fully scrolled, "Block Subject" sat under
+      // the nav bar because the Sprint 60 clamp worked against the FULL
+      // screen height (which includes the system bars).
+      const bottomInset = 48.0;
+      // 500px wide, not 411: this screen's AppBar has a KNOWN ~21px icon-row
+      // overflow at 411 (documented at F162 registration as an open
+      // adaptation question; devices ellipsize) which throws in widget tests
+      // and is unrelated to F178 -- the popup defect is about HEIGHT and
+      // system insets, which 500x731 exercises identically.
+      tester.view.physicalSize = const Size(500, 731);
+      tester.view.devicePixelRatio = 1.0;
+      tester.view.padding = FakeViewPadding(bottom: bottomInset);
+      addTearDown(tester.view.resetPhysicalSize);
+      addTearDown(tester.view.resetDevicePixelRatio);
+      addTearDown(tester.view.resetPadding);
+
+      late RuleSetProvider ruleProvider;
+      await tester.runAsync(() async {
+        ruleProvider = await buildRuleProvider();
+        final scanProvider = EmailScanProvider();
+        await mountAndLoadDbWidget(
+            tester, wrapScreen(ruleProvider, scanProvider));
+      });
+
+      await tester.tap(find.text('bad@spam.com'));
+      await tester.pumpAndSettle();
+
+      final popupFinder =
+          find.byWidgetPredicate((w) => w is Material && w.elevation == 8);
+      expect(popupFinder, findsOneWidget);
+
+      final popupRect = tester.getRect(popupFinder);
+      const safeBottom = 731.0 - bottomInset;
+      expect(popupRect.bottom, lessThanOrEqualTo(safeBottom),
+          reason: 'F178: the popup bottom must stay ABOVE the system '
+              'navigation bar -- a bottom edge under the inset is exactly '
+              'the unreachable-"Block Subject" defect');
+
+      // The bottom-most action must be reachable by scrolling the popup's
+      // own inner scroll view to its end.
+      final scrollable = find.descendant(
+          of: popupFinder, matching: find.byType(SingleChildScrollView));
+      expect(scrollable, findsOneWidget);
+      await tester.drag(scrollable, const Offset(0, -2000));
+      await tester.pumpAndSettle();
+
+      final blockSubject = find.text('Block Subject');
+      expect(blockSubject, findsOneWidget,
+          reason: 'the Block Subject action must exist in the popup');
+      final blockSubjectRect = tester.getRect(blockSubject);
+      expect(blockSubjectRect.bottom, lessThanOrEqualTo(safeBottom),
+          reason: 'at full scroll, Block Subject must be fully inside the '
+              'safe area -- Harold\'s screenshots showed it clipped at the '
+              'bottom edge with the scroll already at its end');
+    });
   });
 }
