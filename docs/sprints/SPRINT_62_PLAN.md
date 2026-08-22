@@ -178,11 +178,21 @@ feed into).
 **Model**: Haiku -- fix shape fully specified with confirmed root cause, 2 files, established
 test seams.
 
-**Executed-by** (filled at completion):
+**Executed-by** (filled at completion): Fable 5 -- single-session sprint execution (same
+justification as Task 1).
 
 **Step-types**: SVC-EDIT+TEST-UNIT
 
 **Est-Effort**: 20-35m
+
+**COMPLETION NOTES (2026-08-22)**: DONE, ~25m. AC-1: empty and unlistable search sequences
+return an empty list with no FETCH attempted and no throw (adapter tests cover both, including
+a `fromAll()` star-sequence modeling the live failure shape). AC-2: a genuine per-folder fetch
+failure increments the scan's errorCount via the new `EmailScanProvider.recordFolderFetchError`
+(chosen over `recordResult(success:false)`, which would have polluted the no-rule counters and
+persisted a fake unmatched row) while surrounding folders complete -- proven end to end with an
+injected failing folder; mutation (silent catch restored) goes red. Three files touched
+(adapter guard, provider method, scanner catch); analyze clean.
 
 ---
 

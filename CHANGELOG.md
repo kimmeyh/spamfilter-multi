@@ -27,6 +27,7 @@ Format: `- **type**: Description (Issue #N)` where type is feat|fix|chore|docs
 ## [Unreleased]
 
 ### 2026-08-22 (Sprint 62)
+- **fix**: F174 -- a folder that fails to fetch now counts as a scan error instead of silently looking like a clean empty folder. Previously an empty mailbox's search response could throw inside the fetch builder, the error was swallowed, and the scan reported "0 messages, 0 errors" -- making a REAL fetch failure equally invisible (a scan that looks healthy while quietly not looking somewhere). The empty-folder case is now an explicit non-event, and genuine per-folder failures appear in the scan's error count while the remaining folders still complete. (Issue #350)
 - **feat**: F177 -- scans now fetch mail in bounded batches of 20 messages, evaluating each batch and releasing full message content before fetching the next, with progress reported at every batch. Previously a "scan all" over even a modest mailbox loaded every message's full content at once -- on Android this ballooned the app past 800MB and the system killed the scan, which then looked permanently stuck at "0 emails". Scan results are unchanged: batching changes how messages are fetched and held, never which messages are evaluated or what the outcomes are (pinned by an outcome-equivalence test against an unbatched evaluation of the same messages). (Issue #349)
 
 ## [0.11.0] - 2026-08-22

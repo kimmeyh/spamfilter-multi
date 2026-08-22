@@ -44,6 +44,33 @@ class _TestAppPaths extends AppPaths {
   String get databaseFilePath => testDbPath;
 }
 
+/// F174: demo-compatible provider whose fetch THROWS for one named folder,
+/// so the per-folder failure path is testable end to end.
+class _FailingFolderMockProvider extends MockEmailProvider {
+  static const String badFolder = 'BAD';
+
+  @override
+  Future<List<EmailMessage>> fetchMessages({
+    required int daysBack,
+    required List<String> folderNames,
+  }) async {
+    if (folderNames.first == badFolder) {
+      throw Exception('simulated per-folder fetch failure');
+    }
+    return [
+      EmailMessage(
+        id: '${folderNames.first}-1',
+        from: 'sender@example.com',
+        subject: 'ok',
+        body: 'short body',
+        headers: const {},
+        receivedDate: DateTime(2026, 1, 1),
+        folderName: folderNames.first,
+      ),
+    ];
+  }
+}
+
 /// Demo-compatible provider serving messages with bodies far LARGER than
 /// the retention cap -- the demo mock set's own bodies are all under 100
 /// chars (probed at authoring: max 92), so it can never exercise the
@@ -193,5 +220,39 @@ void main() {
               'retention that drove 817MB-1.4GB PSS and the LOW_MEMORY '
               'kills -- truncation after evaluation is the F177 bound');
     }
+  });
+
+  test(
+      'F174: a folder whose fetch THROWS surfaces errorCount >= 1 while the '
+      'other folders still complete', () async {
+    final previous = PlatformRegistry.overrideFactoryForTest(
+        'demo', () => _FailingFolderMockProvider());
+    addTearDown(() =>
+        PlatformRegistry.overrideFactoryForTest('demo', previous));
+
+    final scanProvider = EmailScanProvider()
+      ..initializeScanMode(mode: ScanMode.readOnly);
+    final scanner = EmailScanner(
+      platformId: 'demo',
+      accountId: 'demo@example.com',
+      ruleSetProvider: RuleSetProvider(),
+      scanProvider: scanProvider,
+    );
+
+    await scanner.scanInbox(
+      daysBack: 0,
+      folderNames: ['INBOX', _FailingFolderMockProvider.badFolder, 'Second'],
+    );
+
+    expect(scanProvider.errorCount, 1,
+        reason: 'pre-F174 a failed folder was indistinguishable from a '
+            'clean empty one: the scan reported errors=0 while a whole '
+            'folder silently contributed nothing');
+    expect(scanProvider.totalEmails, 2,
+        reason: 'the folders around the failure still complete (INBOX + '
+            'Second, one message each)');
+    expect(scanProvider.status, isNot(ScanStatus.error),
+        reason: 'a per-folder failure degrades, not aborts -- unchanged '
+            'behavior, now visible');
   });
 }

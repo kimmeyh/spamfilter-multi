@@ -414,7 +414,12 @@ class EmailScanner {
           if (isLiveScan) {
             await LiveScanLogger.log('Step 4: EXCEPTION fetching folder "$folderName": $e');
           }
-          // Continue with other folders even if one fails
+          // F174 (Sprint 62): a genuine per-folder fetch failure surfaces in
+          // errorCount instead of vanishing -- pre-F174 this catch made a
+          // failed folder indistinguishable from a clean empty one
+          // (errors=0 either way). The scan still continues with the
+          // remaining folders, as before.
+          scanProvider.recordFolderFetchError(folderName, e.toString());
         }
       }
       AppLogger.scan('Step 4: COMPLETE - Total messages across all folders: $totalFetched');

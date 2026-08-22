@@ -43,6 +43,12 @@ class _FakeImapClient extends ImapClient {
         flags: [],
       );
 
+  /// F174: when set, the scripted search returns an UNLISTABLE sequence
+  /// (contains `*`, so `toList()` throws InvalidArgumentException) --
+  /// modeling the empty-mailbox response shape that used to reach the
+  /// UID FETCH builder and throw "no ID added to sequence".
+  bool returnUnlistableSequence = false;
+
   @override
   Future<SearchImapResult> uidSearchMessages({
     String searchCriteria = 'UNSEEN',
@@ -50,7 +56,9 @@ class _FakeImapClient extends ImapClient {
     Duration? responseTimeout,
   }) async {
     final result = SearchImapResult();
-    if (totalUids > 0) {
+    if (returnUnlistableSequence) {
+      result.matchingSequence = MessageSequence.fromAll();
+    } else if (totalUids > 0) {
       result.matchingSequence = MessageSequence.fromIds(
         List<int>.generate(totalUids, (i) => i + 1),
         isUid: true,
@@ -174,6 +182,35 @@ void main() {
       expect(result.newCursor, 25,
           reason: 'the cursor is computed from the SEARCH result before '
               'fetching, so streaming must not lose it');
+    });
+
+    test(
+        'F174: an empty folder yields 0 messages, 0 FETCH requests, and no '
+        'throw (the live [Gmail]/Spam messagesExists=0 case)', () async {
+      final client = _FakeImapClient(0);
+      final adapter = _adapterWith(client);
+
+      final messages =
+          await adapter.fetchMessages(daysBack: 0, folderNames: ['Spam']);
+
+      expect(messages, isEmpty);
+      expect(client.fetchRequestSizes, isEmpty,
+          reason: 'no UID FETCH may be attempted for an empty search -- '
+              'building a fetch from zero UIDs is the exception-as-control-'
+              'flow path F174 removes');
+    });
+
+    test(
+        'F174: an unlistable search sequence (contains *) is treated as an '
+        'empty folder, not an error', () async {
+      final client = _FakeImapClient(0)..returnUnlistableSequence = true;
+      final adapter = _adapterWith(client);
+
+      final messages =
+          await adapter.fetchMessages(daysBack: 0, folderNames: ['Spam']);
+
+      expect(messages, isEmpty);
+      expect(client.fetchRequestSizes, isEmpty);
     });
 
     test('batches hand back converted EmailMessage objects with their UIDs',

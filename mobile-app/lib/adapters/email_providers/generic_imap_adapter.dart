@@ -1381,11 +1381,35 @@ class GenericIMAPAdapter with BatchOperationsMixin implements SpamFilterPlatform
   }) async {
     final messages = <EmailMessage>[];
 
+    // F174 (Sprint 62): an EMPTY or unlistable search result must return an
+    // empty list, never reach a UID FETCH. Pre-F174, building the fetch
+    // command from an empty-mailbox search threw enough_mail's
+    // InvalidArgumentException ("no ID added to sequence"), which the
+    // per-folder catch converted into "returned 0 messages" with errors=0 --
+    // exception-as-control-flow that made a REAL fetch failure equally
+    // invisible (confirmed live on [Gmail]/Spam with messagesExists=0,
+    // Sprint 61). The empty case is now an explicit, logged non-event; the
+    // error path below is reserved for genuine failures.
+    final List<int> uids;
+    try {
+      uids = sequence.toList();
+    } on InvalidArgumentException catch (e) {
+      _logger.i(
+          '[IMAP] _fetchMessageDetails: unlistable search sequence for '
+          '"$folderName" (${e.message}) -- treating as empty folder');
+      return messages;
+    }
+    if (uids.isEmpty) {
+      _logger.i(
+          '[IMAP] _fetchMessageDetails: empty UID list for "$folderName" -- '
+          'nothing to fetch');
+      return messages;
+    }
+
     // F177: chunk the UID list so each UID FETCH is bounded to
     // [fetchBatchSize] messages. When [onBatch] is provided, each converted
     // batch is handed off and NOT accumulated here -- the caller owns
     // per-batch processing and release; the returned list is empty.
-    final uids = sequence.toList();
     var fetchedSoFar = 0;
     for (var i = 0; i < uids.length; i += fetchBatchSize) {
       final end =
