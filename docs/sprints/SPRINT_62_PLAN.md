@@ -505,7 +505,33 @@ seams are stable).
 the current adapter/provider architecture (the reason these tests rotted); R-1/R-4 alone would
 be Haiku.
 
-**Executed-by** (filled at completion):
+**Executed-by** (filled at completion): Fable 5 -- single-session sprint execution.
+
+**COMPLETION NOTES (2026-08-22)**: DONE, ~70m. Skips 26 -> 15 (all approved keeps); suite
+1,931 passed / 15 skipped / 0 failed.
+- R-1: the three gmail no-auth tests needed NO channel stub -- their guard clauses are pure
+  Dart (null `_gmailApi` -> fast StateError/failure); the skip reason was stale. Un-skipped
+  as-is; the pre-approved fallback was not needed.
+- R-2: delete-recoverability trio rewritten to run the REAL adapters: IMAP via the F177
+  `debugSetImapClient` seam (asserts UID MOVE to Trash/Junk, expunge NEVER called; +1 bonus
+  case for a configured deleted-rule folder), Gmail via a NEW `debugSetGmailApi` seam over a
+  recording `http.BaseClient` (asserts the POST .../trash endpoint, asserts NO DELETE endpoint).
+  The old skipped file contained mock classes wired to nothing. Mutation-relevant by
+  construction (endpoint assertions).
+- R-3: read-only enforcement group REBUILT to run the real full `scanInbox` pipeline (new
+  `EmailScanner` `credStore` constructor seam + `PlatformRegistry.overrideFactoryForTest` +
+  DB-loaded rules per the F160-recommended pattern). The core safety promise (read-only never
+  calls `takeAction`; Issue #9's 526-deleted-emails class) is now REAL coverage;
+  mutation (canExecuteRules forced true) goes red.
+- R-4: the "timing" skip was a wrong-directory assertion -- the migration writes backups to
+  `Archive/yaml_pre_migration_<ts>`, the test checked `backupDirectory`. Fixed to assert the
+  real location AND the backup's pre-migration content.
+- **OBSERVATION flagged for the backlog (not fixed -- out of scope)**: `ScanMode.rulesOnly`'s
+  email test limit (user-reachable via account_setup_screen's scan-mode dialog) appears
+  UNENFORCED at the platform layer since the Issue #144 batch architecture -- the provider
+  still tracks `_emailTestLimit` per record, but phase 6b executes the whole batch without
+  consulting it. The old skipped test's 2-of-5 expectation was therefore dropped rather than
+  falsely pinned; registered for Harold's review at close-out.
 
 **Step-types**: TEST-UNIT+SVC-EDIT(seams only)
 

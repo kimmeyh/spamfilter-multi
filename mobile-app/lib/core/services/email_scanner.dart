@@ -33,7 +33,7 @@ class EmailScanner {
   final String accountId;
   final RuleSetProvider ruleSetProvider;
   final EmailScanProvider scanProvider;
-  final SecureCredentialsStore _credStore = SecureCredentialsStore();
+  final SecureCredentialsStore _credStore;
   final SettingsStore _settingsStore = SettingsStore();
 
   /// Sprint 38 F86 (Issue #254), revised in Sprint 38 Round 1 (post-retro):
@@ -61,12 +61,17 @@ class EmailScanner {
   /// (NOT once per batch boundary).
   final Map<String, int?> _daysBackUidFloorCache = {};
 
+  /// F163 R-3 (Sprint 62): [credStore] is injectable so behavior tests can
+  /// run the REAL full scan pipeline against a fake platform without the
+  /// platform-channel-backed secure storage (which cannot run in unit
+  /// tests). Production callers omit it and get the real store.
   EmailScanner({
     required this.platformId,
     required this.accountId,
     required this.ruleSetProvider,
     required this.scanProvider,
-  });
+    SecureCredentialsStore? credStore,
+  }) : _credStore = credStore ?? SecureCredentialsStore();
 
   /// Sprint 38 F86: increments the pending-change counter as if the user
   /// added/edited/deleted a rule during the scan. Visible for testing.
