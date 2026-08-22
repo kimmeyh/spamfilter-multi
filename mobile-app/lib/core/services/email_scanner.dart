@@ -19,6 +19,7 @@ import '../storage/unmatched_email_store.dart';
 import '../utils/app_logger.dart';
 import '../../util/redact.dart';
 import 'live_scan_logger.dart';
+import 'scan_coordinator.dart';
 import '../../adapters/email_providers/generic_imap_adapter.dart';
 import '../../adapters/email_providers/gmail_api_adapter.dart';
 import '../../adapters/email_providers/platform_registry.dart';
@@ -90,6 +91,7 @@ class EmailScanner {
     String scanType = 'manual',
   }) async {
     SpamFilterPlatform? platform;
+    ScanLease? scanLease;
 
     // Sprint 38 F86 (Issue #254), revised Round 1: subscribe to rule-set
     // changes for the duration of this scan for diagnostic counting. The
@@ -131,6 +133,40 @@ class EmailScanner {
         databaseHelper: dbHelper,
       );
       scanProvider.setCurrentAccountId(accountId);
+
+      // F175 (Sprint 62): the ONE scan-exclusion chokepoint. Every scan type
+      // funnels through scanInbox, so acquiring here serializes manual,
+      // background, test, and demo scans within the process -- BEFORE any
+      // IMAP session is opened (AC-2). Waiters queue FIFO; the wait itself
+      // is bounded (a dead predecessor cannot block forever). Released in
+      // the `finally` below on every path, including crashes.
+      // Windows cross-process exception documented in ScanCoordinator.
+      if (ScanCoordinator.instance.active != null) {
+        final holder = ScanCoordinator.instance.active!;
+        AppLogger.scan(
+            'F175: waiting for the active ${holder.scanType} scan to finish '
+            'before starting this $scanType scan');
+        scanProvider.updateProgress(
+          email: EmailMessage(
+            id: '',
+            from: '',
+            subject:
+                'Waiting for the ${holder.scanType} scan in progress...',
+            body: '',
+            headers: const {},
+            receivedDate: DateTime.now(),
+            folderName: '',
+          ),
+          message:
+              'Waiting for the ${holder.scanType} scan in progress to finish...',
+        );
+      }
+
+
+      scanLease = await ScanCoordinator.instance.acquire(
+        scanType: scanType,
+        accountId: accountId,
+      );
 
       // 1. Get platform adapter
       platform = PlatformRegistry.getPlatform(platformId);
@@ -904,6 +940,12 @@ class EmailScanner {
       await scanProvider.errorScan(msg);
       rethrow;
     } finally {
+      // F175 (Sprint 62): release the scan lease on EVERY path -- a crashed
+      // scan must hand the lease to the next waiter, never hold it dead.
+      if (scanLease != null) {
+        ScanCoordinator.instance.release(scanLease);
+      }
+
       // Sprint 38 F86: always deregister the rule-set listener, including
       // on error paths, to avoid leaking listeners across scans.
       ruleSetProvider.removeListener(_onRuleSetChanged);

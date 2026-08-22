@@ -63,6 +63,8 @@ class _FakeWorkmanagerPlatform extends WorkmanagerPlatform
       'inputData': inputData,
       'networkType': constraints?.networkType,
       'existingWorkPolicy': existingWorkPolicy,
+      'backoffPolicy': backoffPolicy,
+      'backoffPolicyDelay': backoffPolicyDelay,
     });
     scheduledNames.add(uniqueName);
   }
@@ -86,6 +88,7 @@ class _FakeWorkmanagerPlatform extends WorkmanagerPlatform
       'uniqueName': uniqueName,
       'taskName': taskName,
       'inputData': inputData,
+      'backoffPolicy': backoffPolicy,
     });
   }
 
@@ -169,14 +172,38 @@ void main() {
               'warns factories can hide');
     });
 
-    test('cancel removes exactly the per-account unique name', () async {
+    test(
+        'cancel removes the per-account periodic work AND any pending test '
+        'one-off (F175 R-6)', () async {
       await adapter.schedule(
           accountId: accountId, frequency: ScanFrequency.every1hour);
       final ok = await adapter.cancel(accountId);
 
       expect(ok, isTrue);
-      expect(fake.cancelledUniqueNames,
-          [AndroidSchedulerAdapter.uniqueNameFor(accountId)]);
+      expect(fake.cancelledUniqueNames, [
+        AndroidSchedulerAdapter.uniqueNameFor(accountId),
+        '${AndroidSchedulerAdapter.uniqueNameFor(accountId)}_test',
+      ],
+          reason: 'Sprint 61 escape: disabling background scanning cancelled '
+              'only the periodic work, leaving a failed test one-off to '
+              'retry at EVERY app launch until WorkManager\'s database was '
+              'deleted by hand');
+    });
+
+    test('registrations carry the bounded exponential backoff (F175 R-6)',
+        () async {
+      await adapter.schedule(
+          accountId: accountId, frequency: ScanFrequency.every1hour);
+      await adapter.runTestScan(accountId);
+
+      expect(fake.periodicRegistrations.single['backoffPolicy'],
+          BackoffPolicy.exponential,
+          reason: 'a killed task must re-fire with backoff, not immediately '
+              'at every app launch (the Sprint 61 retry re-detonation)');
+      expect(fake.periodicRegistrations.single['backoffPolicyDelay'],
+          const Duration(minutes: 10));
+      expect(fake.oneOffRegistrations.single['backoffPolicy'],
+          BackoffPolicy.exponential);
     });
 
     test('isScheduled round-trips through the platform query', () async {

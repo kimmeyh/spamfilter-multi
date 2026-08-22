@@ -282,7 +282,51 @@ platform exception to reason through (the one place this sprint where ADR-0042 j
 fixed recipe, decides the shape); Sonnet heuristics cover multi-file work but not novel
 concurrency-abstraction design on the core scan path.
 
-**Executed-by** (filled at completion):
+**Executed-by** (filled at completion): Fable 5 -- as assigned.
+
+**COMPLETION NOTES (2026-08-22)**: DONE (code); AC-2's live demonstration and AC-5's decision
+are MV items as planned. Shipped:
+- **`ScanCoordinator`** (NEW): FIFO async mutex with ONE acquisition chokepoint --
+  `EmailScanner.scanInbox` acquires before any IMAP session opens and releases in its `finally`,
+  so manual/background/test/demo scans are serialized in-process (R-1 + R-2); a queued waiter
+  gives up with TimeoutException at its wait limit rather than waiting forever on a dead
+  predecessor. Declared ADR-0042 exception documented in the class doc: Windows cross-process
+  exclusion stays with F109/ADR-0039.
+- **Detection + wait estimate (R-3)**: DATABASE-backed (`getActiveBackgroundScan`, age-guarded),
+  so it sees the Windows worker's separate process too -- platform-uniform, no exception needed
+  for detection. `startRealScan` shows the notice with `formatBackgroundWaitEstimate` (rolling
+  average of the last 10 completed background scans via `getAverageScanDuration`; no history
+  says so honestly). "Wait and start" proceeds into the coordinator queue; "Cancel" backs out.
+- **Timeout (R-4)**: background scans are wrapped in `ScanCoordinator.scanTimeout` (30 min) in
+  `BackgroundScanCore` -- a hung scan is marked `error` (timeout message) instead of sitting
+  `in_progress` forever. Manual scans deliberately carry no timeout (a user is watching and can
+  cancel); reconciliation is their backstop -- documented in the wrap's comment.
+- **Reconciliation (R-5)**: `reconcileStaleInProgressScans` at app startup marks `in_progress`
+  rows older than the timeout as `interrupted` (covers the Sprint 61 orphan rows 44-60 class on
+  next prod/dev launch). Age guard makes it safe against a LIVE cross-process Windows scan.
+- **R-6**: `cancel()` now also cancels the pending `_test` one-off (the Sprint 61 stuck-retry
+  escape), and BOTH registrations carry `BackoffPolicy.exponential` + 10-minute delay so a
+  killed task cannot re-detonate at every app launch.
+- **Tests (14 new/updated, all mutation-relevant)**: coordinator contract (exclusion, FIFO,
+  idempotent/stale release, wait-limit timeout) + an END-TO-END no-overlap proof running two
+  concurrent real `scanInbox` calls (mutation: acquire removed -> red); store tests for
+  reconcile/detection/average (manual + stale + errored rows excluded); estimate-wording units;
+  scheduler cancel-both-names + backoff payload assertions. Dialog RENDERING is deliberately
+  not widget-tested (needs the full account+DB screen harness); the wording function is
+  unit-tested and the dialog itself is MV step 2 with the live demonstration DoD.
+
+**R-7 RECOMMENDATION (Class-1, for Harold's decision at MV -- NOT implemented)**: Manual and
+Background settings should move to ONE shared per-account selection (folders AND Scan Range)
+with an explicit per-type override. Evidence: both independent-settings surprises were real
+incidents -- Sprint 60 (background folder scope silently omitted Inbox while the manual scope
+had it) and Sprint 61 MV (background Scan Range stayed 0 after the manual range was set,
+re-triggering the full-mailbox fetch). In both cases the user changed the setting where they
+expected it to apply and the background scan silently used something else. Proposed shape:
+account-level "Scan folders" + "Scan Range" used by BOTH scan types by default; each Background
+tab field becomes an opt-in "Override for background scans" that shows the inherited value when
+off. The F168 warning and effective-settings resolution keep working unchanged (`getEffective*`
+gains an inheritance step). Estimated ~2-3h with migration of existing overrides. Decision is
+Harold's; status quo remains fully functional either way.
 
 **Step-types**: SVC-NEW+SVC-EDIT+UI-MOVE+TEST-UNIT+TEST-WIDGET
 
