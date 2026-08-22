@@ -443,7 +443,16 @@ account is configured (Harold hit it live during multi-account MV).
 **Model**: Haiku -- two-screen mechanical UI addition with a named precedent and existing
 harnesses.
 
-**Executed-by** (filled at completion):
+**Executed-by** (filled at completion): Fable 5 -- single-session sprint execution.
+
+**COMPLETION NOTES (2026-08-22)**: DONE, ~20m. Premise corrected by reading the code first:
+both screens ALREADY show the email in their AppBar titles -- the gap is phone-width title
+truncation behind the action icons (exactly Harold's MV experience). Delivered as one shared
+`AccountEmailLabel` widget (small type, single-line ellipsis, renders nothing for an empty
+email -- the demo-safety AC-2 answer) in ScanProgressScreen's header and ResultsDisplayScreen's
+summary card; identical on both platforms, no exception. AC-1 pinned incl. a 411px
+absurd-address no-overflow test; mutation (label removed) red. R-2 satisfied: the label IS the
+Windows addition too (shared body render).
 
 **Step-types**: UI-MOVE+TEST-WIDGET
 

@@ -12,6 +12,7 @@ import '../../core/storage/scan_result_store.dart'; // F175 (Sprint 62)
 import '../../core/storage/settings_store.dart'; // [NEW] ISSUE #138: Load scan mode from settings
 import '../../main.dart' show routeObserver;
 import '../../util/error_messages.dart';
+import '../widgets/account_email_label.dart'; // F176 (Sprint 62)
 import '../widgets/app_bar_with_exit.dart';
 import '../widgets/standard_app_bar_actions.dart';
 import 'results_display_screen.dart';
@@ -271,6 +272,10 @@ class _ScanProgressScreenState extends State<ScanProgressScreen> with RouteAware
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
+        // F176 (Sprint 62): which account this Manual Scan runs against --
+        // the AppBar title carries it too, but truncates at phone width.
+        AccountEmailLabel(email: widget.accountEmail),
+        const SizedBox(height: 4),
         Row(
           children: [
             Expanded(
