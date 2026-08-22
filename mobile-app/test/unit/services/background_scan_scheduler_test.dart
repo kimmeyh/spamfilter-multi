@@ -22,6 +22,7 @@ library;
 
 import 'package:flutter_test/flutter_test.dart';
 import 'package:plugin_platform_interface/plugin_platform_interface.dart';
+import 'package:workmanager/workmanager.dart';
 import 'package:workmanager_platform_interface/workmanager_platform_interface.dart';
 
 import 'package:my_email_spam_filter/core/services/app_environment.dart';
@@ -105,6 +106,18 @@ class _FakeWorkmanagerPlatform extends WorkmanagerPlatform
 
 void main() {
   const accountId = 'aol-user@aol.com';
+
+  // Construct the Workmanager singleton BEFORE any fake is injected. Its
+  // one-time constructor runs _ensurePlatformImplementation(), which
+  // REPLACES WorkmanagerPlatform.instance whenever the instance is not a
+  // recognized platform implementation -- on a Linux host (GitHub CI) that
+  // replaced the injected fake with WorkmanagerLinux, whose no-op
+  // registerPeriodicTask made the first test's registration vanish (ok ==
+  // true, nothing recorded). Windows has no replacement branch, which is
+  // why the suite was green locally and red only on CI. With the singleton
+  // already constructed, the per-test instance injection below sticks on
+  // every host.
+  setUpAll(Workmanager.new);
 
   group('AndroidSchedulerAdapter (real adapter, fake platform)', () {
     late _FakeWorkmanagerPlatform fake;
