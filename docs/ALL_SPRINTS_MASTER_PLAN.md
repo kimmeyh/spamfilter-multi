@@ -399,7 +399,7 @@ Recorded sequencing honored (see 'Recommended Sequencing' in the GP section belo
 **GP-12. Firebase Analytics -- execute the existing ADR-0030 removal decision (~1-2h) Priority 24 (ACTIVATED off HOLD 2026-08-24 -- Harold: 'everything Android related... along with the gp-n items')**
 - Phase: Android Google Play Store Readiness
 - Platform: All
-- **RE-VERIFIED Sprint 54 (2026-08-03)**: ADR-0030 (Accepted) already decided "zero telemetry -- remove Firebase Analytics," but `firebase-analytics`/`firebase-bom` are STILL active dependencies in `build.gradle.kts` with zero Dart-side code anywhere calling them -- dead native-layer weight. ADR-0033 (the analytics/crash-reporting strategy ADR) is still "Proposed," inconsistent with ADR-0030 having already made the call. This is no longer a "~2-4h decision" task -- re-scoped to "~1-2h execute the removal + formally reconcile/accept ADR-0033 referencing ADR-0030's existing decision."
+- **RE-VERIFIED Sprint 54 (2026-08-03)**: ADR-0030 (Accepted) already decided "zero telemetry -- remove Firebase Analytics," but `firebase-analytics`/`firebase-bom` are STILL active dependencies in `build.gradle.kts` with zero Dart-side code anywhere calling them -- dead native-layer weight. ADR-0033 is Accepted in the ADR file itself (2026-02-15); the "still Proposed" reading here was stale master-plan rows, corrected 2026-08-24 -- the remaining work is purely the dependency removal. This is no longer a "~2-4h decision" task -- re-scoped to "~1-2h execute the removal + formally reconcile/accept ADR-0033 referencing ADR-0030's existing decision."
 
 **F94. Android dev/prod/store flavors + applicationId diagnosis (~6-8h) Priority 26 (ACTIVATED off HOLD 2026-08-24 -- Harold: 'everything Android related... along with the gp-n items')**
 - Phase: Build and Release Infrastructure / Android Google Play Store Readiness
@@ -1400,7 +1400,7 @@ Register Google Play Developer account ($25 one-time), complete identity verific
 | ADR-0030 | Privacy and Data Governance Strategy | GP-5 | Accepted |
 | ADR-0031 | App Icon and Visual Identity | GP-7 | Proposed |
 | ADR-0032 | User Data Deletion Strategy | GP-11 | Proposed |
-| ADR-0033 | Analytics and Crash Reporting Strategy | GP-12 | Proposed |
+| ADR-0033 | Analytics and Crash Reporting Strategy | GP-12 | Accepted (2026-02-15; registry corrected 2026-08-24 -- rows here were stale) |
 | ADR-0034 | Gmail Access Method for Production | GP-14 | Accepted |
 
 ### Recommended Sequencing (when taken off hold)
