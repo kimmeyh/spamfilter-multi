@@ -26,6 +26,8 @@ Format: `- **type**: Description (Issue #N)` where type is feat|fix|chore|docs
 
 ## [Unreleased]
 
+## [0.12.0] - 2026-08-24
+
 ### 2026-08-24 (Sprint 62, Copilot review round)
 - **fix**: F175 -- Scan History rows for scans marked "interrupted" by startup reconciliation now show "Interrupted" as their duration instead of "In progress" (they never get a completion time by design, and the old text recreated exactly the forever-running impression reconciliation exists to end). (Issue #351)
 
@@ -1210,7 +1212,8 @@ See git history for detailed changes prior to Phase 3.1.
 
 ## Version Links
 
-[Unreleased]: https://github.com/kimmeyh/spamfilter-multi/compare/v0.11.0...HEAD
+[Unreleased]: https://github.com/kimmeyh/spamfilter-multi/compare/v0.12.0...HEAD
+[0.12.0]: https://github.com/kimmeyh/spamfilter-multi/compare/v0.11.0...v0.12.0
 [0.11.0]: https://github.com/kimmeyh/spamfilter-multi/compare/v0.10.0...v0.11.0
 [0.10.0]: https://github.com/kimmeyh/spamfilter-multi/compare/v0.9.0...v0.10.0
 [0.9.0]: https://github.com/kimmeyh/spamfilter-multi/compare/v0.8.0...v0.9.0

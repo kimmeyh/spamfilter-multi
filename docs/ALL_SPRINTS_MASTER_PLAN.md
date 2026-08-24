@@ -148,6 +148,7 @@ Historical sprint information lives in individual documents in `docs/sprints/` a
 - **New backlog registered**: F179 (HOLD, GenAI-gated), F180 (P10), F181 (P18), F182 (P30), F183 (HOLD external).
 - **Verification**: suite **1,931+ passed / 15 skipped / 0 failed**; analyze clean; hook suite 51/51; sweep green with sweep-head recorded.
 - **Retro**: Harold -- Testing "Needs improvement as noted by dev team during sprint", Process "Good - see issues noted by dev team", all else Good/Very Good; Cats 13/14 "none". **All 7 improvement proposals decided as recommended: 5 applied same-session (Phase 5 evidence gate, sweep-at-HEAD rule, serialized builds, inset-test rule, f129 retirement), 2 to backlog (F182, F183).**
+- **Store release outcome (Phase 8.3, 2026-08-24)**: Sprint 62's merged scope shipped as **0.12.0.0 (Submission 19), CERTIFIED AND LIVE ~9:12am ET** -- uploaded ~8:5x, ~20-25 minutes submit-to-live (third consecutive 20-30 min measurement). Sixth MINOR release. Verification: Check A dart-defines PASS, `--release-self-test` 6/6 PASS, manifest 0.12.0.0, 17.9 MB.
 - **Docs**: SPRINT_62_PLAN.md / SPRINT_62_RETROSPECTIVE.md / SPRINT_62_SUMMARY.md.
 
 _(Prior: **Sprint 61** below.)_

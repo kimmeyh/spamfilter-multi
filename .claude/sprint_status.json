@@ -35,12 +35,12 @@
     "_note": "Run full suites with --concurrency=4 (Sprint 49 IMP-5)."
   },
   "store_release": {
-    "status": "0.12.0.0 / Submission 19 UPLOADED AND IN CERTIFICATION (Harold's Partner Center screenshot 2026-08-24, ~8:5x am ET: 'Product update: In certification', progress at Pre-processing, auto-publish on pass). Prior verification: self-test 6/6 PASS, manifest 0.12.0.0, 17.9 MB. Expected submit-to-live ~25-30 min per Submissions 17/18. Post-cert: installed-build check, STORE_VERSION_STATUS rows, CHANGELOG release cut, STORE_SUBMISSION_TIMING row.",
-    "live_version": "0.11.0.0",
-    "submission": 18,
-    "certified_date": "2026-08-22",
-    "pending_upload_version": "0.12.0.0",
-    "submission_pending": 19,
+    "status": "0.12.0.0 / Submission 19 CERTIFIED AND LIVE 2026-08-24 ~9:12am ET -- direct Partner Center observation (authenticated Playwright): \"Congrats! Your product is now updated\"; Store presence \"currently available\". Uploaded ~8:5x; ~20-25 min submit-to-live (third consecutive 20-30 min measurement). Sixth MINOR release. Installed-build check pending Harold. NEXT RELEASE: dev EQUALS live at 0.12.0 -- bump at that release Step 1.",
+    "live_version": "0.12.0.0",
+    "submission": 19,
+    "certified_date": "2026-08-24",
+    "pending_upload_version": null,
+    "submission_pending": null,
     "submitted_date": "2026-08-24"
   },
   "environment_notes": [
