@@ -1,43 +1,28 @@
 {
   "_description": "Sprint status file that persists across context compaction. Update after each phase/sub-phase completion.",
-  "_last_updated": "2026-08-23 (Phase 7.7 close-out)",
+  "_last_updated": "2026-08-24 (Sprint 62 merged; Phase 8 cycle in progress)",
   "_usage": "Read this file after context compaction to restore sprint approval state and progress.",
   "_staleness_note": "This file had drifted 15 sprints (last updated at Sprint 35, 2026-04-19) before being refreshed at Sprint 50 close-out. It is a Phase 7.7 checklist item -- update it at every sprint close-out, not opportunistically.",
   "current_sprint": {
+    "number": 63,
+    "branch": "feature/20260824_Sprint_63",
+    "pr_number": null,
+    "start_date": "2026-08-24",
+    "status": "Phase 8 Release Cycle (pre-planning; auto-advance window NOT active). 8.1 develop->main DONE (Harold). 8.2 pass-1 sweep DONE 2026-08-24: six shipped candidate entries pruned (claimed-but-unexecuted pruning caught), Copilot-round CHANGELOG gap-fill, status file rolled. NEXT: 8.3 Store release per STORE_RELEASE_PROCESS.md (dev EQUALS live at 0.11.0 -- bump at Step 1; confirm prod worktree main contains the Sprint 62 merge BEFORE building), then 8.4 pass-2 scope selection (Harold), then Phase 3 planning. Cards + draft PR are owed at Phase 3.3.1 after plan approval, not before.",
+    "plan_approved": false,
+    "blanket_execution_approved": false,
+    "scope": [],
+    "_scope_note": "Scope selection happens at Phase 8.4. Candidates flagged at Sprint 62 close: F180 (P10, fresh evidence), F181 (P18), F182 (P30); carry-ins in SPRINT_63_PLAN.md stub.",
+    "pr_url": null
+  },
+  "previous_sprint": {
     "number": 62,
     "branch": "feature/20260821_Sprint_62",
     "pr_number": 355,
-    "start_date": "2026-08-21",
-    "status": "Phase 7.7 COMPLETE -- MV complete 2026-08-22 (all items disposed; R-7 DECLINED by Harold as deliberate design; F179/F180/F181 registered). Phase 5 evidence pass 2026-08-23: code review 2C/3H/4M all dispositioned (C-2 real -- hung-scan lease release fixed, mutation-verified), F-PRECHECK clean on PR, WinWright sweep repaired from Sprint 61 F169 rot and green (f129 retired into mt2c per retro IMP-5). Retrospective complete (Harold: Testing needs-improvement, Process good-see-dev-notes, rest Good/Very Good; Cats 13/14 none); ALL 7 improvement decisions executed as recommended: IMP-1 Phase 5 evidence hook gate (3d) + IMP-2 sweep-at-HEAD (3e) enforced Sprint 63+, IMP-3 serialized-builds rule+memory, IMP-4 inset-test rule, IMP-5 f129 retirement; IMP-6 -> F182, IMP-7 -> F183. PR #355 Ready-for-Review at end of 7.7; awaiting Harold's merge to develop, then Phase 8 cycle.",
-    "plan_approved": true,
-    "plan_approval_date": "2026-08-22",
-    "blanket_execution_approved": true,
-    "scope": [
-      "F177",
-      "F175",
-      "F178",
-      "F176",
-      "F174",
-      "F163"
-    ],
-    "_scope_note": "Scope selection happens at Phase 8.4. Candidates flagged at Sprint 61 close: F168 follow-on/F175/F177 (fresh evidence), F178 (small, screenshot-documented), F163. Category 13 carry-ins in SPRINT_62_PLAN.md stub.",
-    "pr_url": "https://github.com/kimmeyh/spamfilter-multi/pull/355"
+    "status": "CLOSED -- PR #355 merged to develop 2026-08-24 12:07Z, develop merged to main by Harold same day. Cards #349-#354 all closed; zero open sprint issues verified. Shipped: F177 chunked fetch (survival PASS), F175 scan serialization + wait notice + reconciliation (R-7 DECLINED by design), F174 folder-error surfacing, F178 bottom-anchored popup, F176 account labels, F163 skips 26->15, CI draft gating + Workmanager Linux fix. Retro complete, 7/7 improvement decisions executed (5 applied, F182/F183 registered). Copilot review 3/3 fixed+resolved (cc255b7). CI 3/3 green twice. Final suite 1,931+/15/0; hooks 51/51; sweep 2/2 at sweep-head d87b828."
   },
-  "previous_sprint": {
-    "number": 61,
-    "branch": "feature/20260816_Sprint_61",
-    "pr_number": 347,
-    "status": "CLOSED -- PR #347 merged to develop 2026-08-21 (merge 0ad1107), develop merged to main by Harold (PR #348, 64e6ed7). Cards #338-#346 all closed; zero open issues verified. Shipped: Task 0 line endings, F170 Phase 8 encoding, F169 dropdown, F168 scope warning, F172 version label, F171 min-window sweep, F162/ADR-0042, F167 Help wording, F161 Android scheduler (count-parity PASS; Play prerequisite MET). Retro complete, all 4 IMPs applied; Copilot review 2/2 addressed+resolved. Final suite 1,893/26/0; hooks 49/49."
-  },
-  "github_issues": [
-    349,
-    350,
-    351,
-    352,
-    353,
-    354
-  ],
-  "_github_issues_note": "Sprint 62 cards created at Phase 3.3.1 (2026-08-22): #349 F177, #350 F174, #351 F175, #352 F178, #353 F176, #354 F163. KEEP numbers listed after closure; array empties only at the NEXT sprint rollover.",
+  "github_issues": [],
+  "_github_issues_note": "Sprint 62 cards #349-#354 closed at post-merge cleanup 2026-08-24. Array empties at rollover per convention; Sprint 63 cards created at Phase 3.3.1.",
   "test_metrics": {
     "tests_passing": 1931,
     "tests_skipped": 15,
@@ -65,11 +50,8 @@
   ],
   "blocking_issues": [],
   "next_actions": [
-    "Harold: final approval + merge PR #355 to develop, then develop -> main",
-    "ON MERGE (6.6): branch feature/<date>_Sprint_63 FROM feature/20260821_Sprint_62 immediately, before any further commits",
-    "Post-merge cleanup: close issues #349-#354 (gh issue list --label sprint --state open must return empty)",
-    "Phase 8.1-8.5 Release Cycle: refinement pass 1, Store release per STORE_RELEASE_PROCESS.md (dev EQUALS live at 0.11.0 -- bump at release Step 1), refinement pass 2 scope selection, Phase 3 planning",
-    "Watch CI's first live run on PR #355 ready-flip (proof of the Workmanager Linux fix + draft gating)",
-    "Sprint 63 carry-ins (Cat 13): E2E coverage for F178 popup / F175 wait dialog / F176 label"
+    "Phase 8.3: Store release per STORE_RELEASE_PROCESS.md -- verify prod worktree main has the Sprint 62 merge, bump versions (dev equals live at 0.11.0), build MSIX, verify, notify Harold for upload",
+    "Phase 8.4: refinement pass 2 -- Harold selects Sprint 63 scope",
+    "Phase 3: Sprint 63 planning (SPRINT_63_PLAN.md stub carries Cat 13 carry-ins + new Sprint 63 process rules)"
   ]
 }

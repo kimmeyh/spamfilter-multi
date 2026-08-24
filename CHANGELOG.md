@@ -26,6 +26,9 @@ Format: `- **type**: Description (Issue #N)` where type is feat|fix|chore|docs
 
 ## [Unreleased]
 
+### 2026-08-24 (Sprint 62, Copilot review round)
+- **fix**: F175 -- Scan History rows for scans marked "interrupted" by startup reconciliation now show "Interrupted" as their duration instead of "In progress" (they never get a completion time by design, and the old text recreated exactly the forever-running impression reconciliation exists to end). (Issue #351)
+
 ### 2026-08-23 (Sprint 62)
 - **test**: Sprint 62 retro improvements: WinWright script test_f129_no_rule_review retired (coverage a strict subset of test_mt2c_no_rule_sweep post-F135/F169; absorption documented); Phase 5 evidence gate + sweep-at-HEAD rule added to the close-out hook (2 new test cases, suite 51/51); inset-sensitive widget-test rule added to TESTING_STRATEGY.md; concurrent-platform-build ban recorded in CLAUDE.md.
 - **fix**: F175 -- a background scan that hangs past its 30-minute timeout now also releases the scan-exclusion lock it holds, so the next queued scan starts instead of waiting its full limit and failing (the hung-scan case the serialization feature exists for; found by the Sprint 62 automated code review). The release is owner-matched, so a timeout can never evict a different live scan. (Issue #351)

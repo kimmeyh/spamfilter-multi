@@ -618,7 +618,11 @@ Phase 7; all three were executed on 2026-08-23:
   2026-08-23: **3/3 PASS (f124 31 steps, f129 19 steps, mt2c 29 steps), DB drift none**.
   Post-retrospective (IMP-5 retired f129 into mt2c): Windows binary REBUILT at HEAD and the
   final sweep re-run -- **2/2 PASS (f124 31 steps, mt2c 29 steps), DB drift none**.
-  - sweep-head: d87b828 Coverage gap per 5.1.5 step 5: none of the
+  - sweep-head: d87b828
+  - Post-sweep lib/ui commit `cc255b7` (Copilot review round): Scan History duration TEXT
+    only ("Interrupted" for reconciled rows) -- no structural/selector change to any swept
+    screen (the sweep only navigates Scan History and Backs out); pinned by its own widget
+    test instead of a sweep re-run. Coverage gap per 5.1.5 step 5: none of the
   active scripts exercise this sprint's new UI (F178 bottom-anchored popup, F175 wait dialog,
   F176 AccountEmailLabel) -- Sprint 63 carry-in filed for that coverage (F99 integration_test
   is the right home for the dialog).
