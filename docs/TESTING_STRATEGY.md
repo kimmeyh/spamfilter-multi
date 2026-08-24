@@ -205,6 +205,19 @@ void main() {
 - Navigation (screen transitions)
 - State-driven UI updates (Provider changes)
 
+**MANDATORY for inset/safe-area assertions** (Sprint 62 retro IMP-4):
+
+Any widget test asserting safe-area or system-inset behavior (content stays above the
+navigation bar, below the status bar, inside the notch region) MUST (1) simulate the inset
+explicitly with `tester.view.padding = FakeViewPadding(...)` (reset in tearDown), AND
+(2) mount the widget inside the real production structure (the actual Scaffold/SafeArea
+nesting the screen uses), not a bare `MaterialApp(home: ...)` wrapper. Reason (Sprint 62
+F178 round 1): Scaffold and SafeArea CONSUME inherited MediaQuery padding, so a flat test
+harness keeps padding the production tree strips -- the round 1 fix passed its test while
+being completely inert on-device, and the divergence was caught only by Harold's screenshot.
+A test green under (1)+(2) is asserting what the device actually does; a test green without
+them may be asserting a widget tree that cannot exist in the app.
+
 **MANDATORY for UX Flow Changes** (Sprint 36 retro IMP-2):
 
 When a fix or feature changes **dialog flow or screen flow** (a dialog newly appears, a dialog is now skipped, a navigation step is added/removed/reordered), a widget test that exercises the flow is **required** before the change ships. Pure-data changes (validator returns a different message, DB column added) do NOT require a widget test if the data-path tests cover them.

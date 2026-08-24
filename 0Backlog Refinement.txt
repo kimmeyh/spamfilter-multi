@@ -7,6 +7,135 @@ Do not stop to ask questions unless meeting the criteria in \docs\SPRINT_STOPPIN
 ---------------------------------------------------------------------------------------------------------
 Sprint 6n Scope should include the below items. Please complete sprint planning (/docs/sprint_planning.md) for the below items and present for approval.  Note that everything needs to take into account both the Windows App and the Android app and ADR stating that everything should be functionally and UI the same unless it cannot be - and where it cannot be it should be implemented as a platform exception for what is needed -- this applies to all backend code, frontend code, data, architecture, development, security, testing, deployment.
 
+
+---------------------------------------------------------------------------------------------------------
+Sprint 62 Scope should include the below items. Please complete sprint planning (/docs/sprint_planning.md) for the below items and present for approval.  Note that everything needs to take into account both the Windows App and the Android app and ADR stating that everything should be functionally and UI the same unless it cannot be - and where it cannot be it should be implemented as a platform exception for what is needed -- this applies to all backend code, frontend code, data, architecture, development, security, testing, deployment.
+
+- F177. Memory-bounded, chunked IMAP fetch with incremental progress (~4-6h) Priority 8
+- F175. Android scan concurrency control -- mutual exclusion + active-scan detection with wait estimate (~3-4h) Priority 12
+- F178. Android review popup clips its bottom sections -- "Block Subject" unreachable even when scrolled (~1-2h) Priority 14
+- F176. Show the account email on the Manual Scan and Live Scan screens (~1h) Priority 16
+- F174. Per-folder IMAP fetch failure is silent -- errors=0 despite a folder failing to fetch (~1-2h) Priority 20
+- F163. Skipped-tests remediation -- implement the 11 approved update-to-working verdicts (~2-4h) Priority 26
+- Plus (not an F-item): Sprint 62 Manual Validation carry-over -- Windows background-scan regression glance (F161 AC-4), ~5m.
+
+
+
+Candidates at a glance
+My recommendation for Sprint 62: the scan-robustness set that Manual Validation just proved out — F177 + F175 + F174 (one coherent theme, every root cause already diagnosed) + F178 + F176 (small UX items, both from your MV findings), with the F161 AC-4 validation glance in MV. Roughly 11 to 17 hours estimated; F163/F164/F165 stay for Sprint 63 unless you want one added.
+
+- F177. Memory-bounded, chunked IMAP fetch with incremental progress (~4-6h) Priority 8
+- F175. Android scan concurrency control -- mutual exclusion + active-scan detection with wait estimate (~3-4h) Priority 12
+- F178. Android review popup clips its bottom sections -- "Block Subject" unreachable even when scrolled (~1-2h) Priority 14
+- F176. Show the account email on the Manual Scan and Live Scan screens (~1h) Priority 16
+- F174. Per-folder IMAP fetch failure is silent -- errors=0 despite a folder failing to fetch (~1-2h) Priority 20
+- F163. Skipped-tests remediation -- implement the 11 approved update-to-working verdicts (~2-4h) Priority 26
+- Plus (not an F-item): Sprint 62 Manual Validation carry-over -- Windows background-scan regression glance (F161 AC-4), ~5m.
+
+- F94. Android dev/prod/store flavors + applicationId diagnosis (~6-8h) Priority HOLD
+- SEC-4. Android network_security_config.xml (~1h) Priority HOLD
+- SEC-6. Android release signing (~2h) Priority HOLD
+- SEC-7. Android R8 + Dart obfuscation (~2h) Priority HOLD
+- SEC-9. Android client ID build-time injection (~1h) Priority HOLD
+
+- GP-2. Release Signing and Play App Signing (~4-6h) Priority HOLD
+- GP-3. Android Manifest Permissions (~1-2h remaining) Priority HOLD
+- GP-4. Gmail API OAuth Verification / CASA (~40-80h) Priority HOLD
+- GP-5. Privacy Policy and Legal Documents (~8-16h) Priority HOLD
+- GP-6. Play Store Listing and Assets (~8-12h) Priority HOLD
+- GP-7. Adaptive Icons and App Branding (~4-6h) Priority HOLD
+- GP-8. Android Target SDK + 16 KB Page Size (~1-2h verify) Priority HOLD
+- GP-9. ProGuard/R8 Code Optimization (~4-6h, duplicate of SEC-7) Priority HOLD
+- GP-10. Data Safety Form Declarations (~2-4h) Priority HOLD
+- GP-12. Firebase Analytics -- execute the ADR-0030 removal decision (~1-2h) Priority HOLD
+- GP-16. Google Play Developer Account Setup (~2-4h) Priority HOLD
+
+- F164. Android live-scan performance investigation -- debug-vs-release + emulator factors (~1-2h) Priority 28
+- F165. Cross-device rules-DB sharing + hosted-tier exploration (~half-day) Priority 30
+- HOLD items follow, ONE LINE EACH:
+- F173. Periodic "Test Coverage and Appropriate Testing" Deep Dive (~4-8h per review) Priority HOLD
+- F152. Periodic User-Centric First-Run Evaluation (~2-3h per review) Priority HOLD
+- F111. Periodic Windows App Store upload readiness verification (~110-175m per review) Priority HOLD
+- F139. Local-install smoke test for a release-candidate MSIX (~30-50m per review) Priority HOLD
+- F70. Periodic Security Deep Dive (~4-8h per review) Priority HOLD
+- F71. Periodic Architecture Deep Dive (~4-8h per review) Priority HOLD
+- F130. Periodic Process-Docs Consistency Deep Dive ([no-history] unbounded discovery) Priority HOLD
+
+- F95. iOS variants + cross-store hardening (~10-16h) Priority HOLD
+- F63. Responsive design framework [SUPERSEDED by Sprint 54 F141 findings] Priority HOLD
+- SEC-15. IMAP host validation for custom servers (~1h) Priority HOLD
+- SEC-8b. Certificate pinning for IMAP endpoints (~4-6h) Priority HOLD
+- F6. Provider-Specific Optimizations (~10-12h) Priority HOLD
+- Issue #163. Android app not tested in several sprints (~2-4h) Priority HOLD
+- F4. Background Scanning - Android (~14-16h) Priority HOLD (largely superseded by F161 -- flag for pruning)
+
+- F67. Platform validation - iOS, Linux, macOS (~4-6h per platform) Priority HOLD
+- SEC-11b. Database-at-rest encryption via sqlite3mc + migration (~8-12h) Priority HOLD
+- F106. SEC-11b verification-window cleanup (~30m) Priority HOLD
+- H1. GenAI Pattern Suggestions - Crowdsourced Spam Intelligence (TBD) Priority HOLD
+- H2. Rule Pattern Consistency - Domain Matching Standards (~4-6h) Priority HOLD
+- H3. Requirements Documentation System (TBD) Priority HOLD
+- H4. Sent Messages Scan for Safe Senders (~12-16h) Priority HOLD
+- H5. Outlook.com / Office 365 email provider adapter (~16-20h) Priority HOLD
+
+Core App Quality / scanner
+
+F177. Memory-bounded, chunked IMAP fetch with incremental progress (~4-6h) Priority 8
+- Phase: Core App Quality / scanner
+- Platform: All (shared adapter; Android is where it kills the process)
+- PROVEN root cause of the Sprint 61 scan-death cascade: daysBack=0 full-mailbox fetch retains ~7-10MB per message, ballooning to 817MB-1.4GB PSS and drawing Android LOW_MEMORY kills. Fix parameters already set with you: batch size m = 20 UIDs, applied universally, no folder-size threshold; per-batch progress reporting fixes the "0 emails for 20 minutes" blindness in the same change.
+- Depends on: none. Interacts with F175 and F164 (likely its real answer).
+
+F175. Android scan concurrency control -- mutual exclusion + active-scan detection with wait estimate (~3-4h) Priority 12
+- Phase: Core App Quality / background scanning
+- Platform: Android primarily; detection/notify UX shared per ADR-0042
+- Your verbatim scope: background scans never concurrent, background never concurrent with manual, and a manual scan detects an active background scan and offers an average wait time.
+- Also folded in from Sprint 61 close-out: scan timeout + orphaned in_progress reconciliation (rows 44-60 incident), bounding the WorkManager retry-forever behavior, and F168's R-3 settings-interplay question (independent folder scopes AND Scan Range values have now each caused one real surprise).
+- Depends on: pairs naturally with F177.
+
+F174. Per-folder IMAP fetch failure is silent -- errors=0 despite a folder failing to fetch (~1-2h) Priority 20
+- Phase: Core App Quality / scanner
+- Platform: All
+- Root cause confirmed live: empty-folder UID SEARCH throws building the fetch sequence; the catch reports "0 messages" with errors=0. Handle the empty result properly; surface REAL fetch failures in errorCount.
+
+Core App Quality / UX
+
+F178. Android review popup clips its bottom sections -- "Block Subject" unreachable even when scrolled (~1-2h) Priority 14
+- Phase: Core App Quality / UX
+- Platform: Android (phone height); Windows sibling was fixed Sprint 60
+- Your screenshots on file; leading hypothesis is un-inset MediaQuery height putting the popup bottom under the system bar. Fix in the shared widget; verify Windows placement unchanged per ADR-0042.
+
+F176. Show the account email on the Manual Scan and Live Scan screens (~1h) Priority 16
+- Phase: Core App Quality / UX
+- Platform: All (your note: add to Windows too if absent)
+- Small type to fit phone width; the Settings Background tab got the same header in Sprint 38 for the same reason.
+
+Testing
+
+F163. Skipped-tests remediation (~2-4h across 4 work items) Priority 26
+- Phase: Testing / suite hygiene
+- Platform: All
+- The 11 approved update-to-working verdicts from F160; 22 skip sites remain across 7 files. Highest-value: the delete_to_trash safety trio and the read-only enforcement group.
+
+Android rollout track
+
+F164. Android live-scan performance investigation (~1-2h measured comparison) Priority 28
+- Phase: Android rollout track / performance
+- Platform: Android
+- Measure a --release APK against the same mailbox; F177 landing first would change (likely resolve) this — recommend sequencing after F177 or folding its measurement into F177's acceptance.
+
+Product direction
+
+F165. Cross-device rules-DB sharing + hosted-tier exploration (~half-day) Priority 30
+- Phase: Product direction / architecture exploration
+- Platform: All
+- Sync-model options, per-provider effort, security posture, recommendation; pricing decision stays with you.
+
+HOLD Items
+
+Detail bullets for all HOLD items live in ALL_SPRINTS_MASTER_PLAN.md; one flag from this pass: F4 (Background Scanning - Android, ~14-16h) is largely superseded by F161 and should probably be pruned or re-scoped to whatever residue remains.
+
+My recommendation for Sprint 62: the scan-robustness set that Manual Validation just proved out — F177 + F175 + F174 (one coherent theme, every root cause already diagnosed) + F178 + F176 (small UX items, both from your MV findings), with the F161 AC-4 validation glance in MV. Roughly 11 to 17 hours estimated; F163/F164/F165 stay for Sprint 63 unless you want one added.
 ---------------------------------------------------------------------------------------------------------
 Sprint 61 Scope should include the below items. Please complete sprint planning (/docs/sprint_planning.md) for the below items and present for approval.  Note that everything needs to take into account both the Windows App and the Android app and ADR stating that everything should be functionally and UI the same unless it cannot be - and where it cannot be it should be implemented as a platform exception for what is needed -- this applies to all backend code, frontend code, data, architecture, development, security, testing, deployment.
 

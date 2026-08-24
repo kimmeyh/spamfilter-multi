@@ -304,7 +304,13 @@ safe_senders:
       expect(results.isComplete, isTrue);
     });
 
-    test('10. Migration creates backups of YAML files', skip: 'Backup creation timing differs from test expectation', () async {
+    // F163 R-4 (Sprint 62): un-skipped. The old skip reason said "timing",
+    // but the real defect was a WRONG-DIRECTORY assertion: the migration
+    // writes backups to appSupportDirectory/Archive/yaml_pre_migration_<ts>
+    // (MigrationManager._createYamlBackups), while the test asserted
+    // appPaths.backupDirectory -- a location the migration never touches.
+    // The assertions below check the directory the code actually writes.
+    test('10. Migration creates backups of YAML files', () async {
       // Arrange: Create YAML files
       final rulesYaml = r'''
 version: "1.0"
@@ -327,13 +333,29 @@ rules:
       // Act: Run migration
       await migrationManager.migrate();
 
-      // Assert: Backup directory created
-      final backupDir = Directory(path.join(appPaths.backupDirectory.path));
-      expect(await backupDir.exists(), isTrue);
+      // Assert: the timestamped pre-migration backup directory exists under
+      // Archive/ and contains the backed-up rules.yaml.
+      final archiveDir =
+          Directory(path.join(appPaths.appSupportDirectory.path, 'Archive'));
+      expect(await archiveDir.exists(), isTrue,
+          reason: 'migration Step 2 creates Archive/ for YAML backups');
 
-      // Check for backup files (timestamped)
-      final backupFiles = await backupDir.list().toList();
-      expect(backupFiles.length, greaterThan(0));
+      final backupDirs = archiveDir
+          .listSync()
+          .whereType<Directory>()
+          .where((d) =>
+              path.basename(d.path).startsWith('yaml_pre_migration_'))
+          .toList();
+      expect(backupDirs, isNotEmpty,
+          reason: 'a timestamped yaml_pre_migration_<ts> directory must be '
+              'created by _createYamlBackups');
+
+      final backedUpRules =
+          File(path.join(backupDirs.first.path, 'rules.yaml'));
+      expect(await backedUpRules.exists(), isTrue,
+          reason: 'rules.yaml must be copied into the backup directory');
+      expect(await backedUpRules.readAsString(), contains('BackupTestRule'),
+          reason: 'the backup must be the PRE-migration content');
     });
   });
 

@@ -6,6 +6,8 @@
 /// - Phase-based feature rollout information
 library;
 
+import 'package:flutter/foundation.dart' show visibleForTesting;
+
 import 'spam_filter_platform.dart';
 import 'generic_imap_adapter.dart';
 import 'gmail_api_adapter.dart';
@@ -32,8 +34,27 @@ class PlatformRegistry {
     // 'outlook': () => OutlookAdapter(),
   };
 
+  /// F177 (Sprint 62): test-only factory override, so a scan test can
+  /// substitute a scripted provider (for example, long-bodied messages to
+  /// exercise the retention bound) behind an existing platform id. Returns
+  /// the previous factory so the test can restore it in tearDown --
+  /// ALWAYS restore, the registry is process-global.
+  @visibleForTesting
+  static SpamFilterPlatform Function()? overrideFactoryForTest(
+    String platformId,
+    SpamFilterPlatform Function()? factory,
+  ) {
+    final previous = _factories[platformId];
+    if (factory == null) {
+      if (previous != null) _factories.remove(platformId);
+    } else {
+      _factories[platformId] = factory;
+    }
+    return previous;
+  }
+
   /// Get platform instance by ID
-  /// 
+  ///
   /// Returns null if platform ID is not recognized
   static SpamFilterPlatform? getPlatform(String platformId) {
     final factory = _factories[platformId];

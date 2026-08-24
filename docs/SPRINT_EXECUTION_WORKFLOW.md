@@ -669,6 +669,13 @@ This change was introduced after Sprint 36 kickoff skipped Phase 1 (prior "OPTIO
     5. For new screens / new flows added by the sprint that have NO existing script, add one of these to the Sprint N+1 carry-in list: "Add WinWright coverage for [screen/flow]".
     6. State restoration: every script must restore all state it modifies (Sprint 37 retro policy, retained).
   - **Exit criteria**: All WinWright scripts that exercise sprint-touched UI are green, OR a backlog entry is filed for any unfixable regressions.
+  - **ARTIFACT (Sprint 59 retro IMP-5; extended Sprint 62 retro IMP-2)**: record in the sprint
+    plan's completion notes the sweep's date, script count, pass/fail summary, AND the commit
+    the sweep ran at as a `sweep-head: <hash>` line. Close-out (the
+    `verify-closeout-complete` hook, check 3e) verifies no `mobile-app/lib/ui` commit is
+    newer than the recorded hash -- if one is, the sweep proved an OLDER UI and must re-run.
+    This is the check that would have caught Sprint 61 shipping F169 (account chips ->
+    dropdown) with every script selector left silently rotten.
   - **If no WinWright scripts exist for the sprint's UI surface**: that itself is a finding -- add a Sprint N+1 carry-in for the missing coverage and document in the retrospective.
 
 - [ ] **5.2 Run Complete Test Suite**

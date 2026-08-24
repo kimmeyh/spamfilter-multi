@@ -92,14 +92,18 @@ title and closes it at end-of-run. Consequences for script authors:
 > `test_text_selection`, `test_f25_rule_test_tool`, and `test_f35_rule_edit`. See ALL_SPRINTS_MASTER_PLAN.md
 > F100 and docs/TESTING_STRATEGY.md (two-harness section).
 
-Sprint 51 (F129) added 3 read-only scripts covering the Sprint-50-touched surfaces. These DO run in the
-default sweep and pass green with zero DB drift (verified 2026-07-28):
+Sprint 51 (F129) added 3 read-only scripts covering the Sprint-50-touched surfaces; the default sweep
+runs the 2 below and passes green with zero DB drift. `test_f129_no_rule_review.json` was RETIRED
+2026-08-23 (Sprint 62 retro IMP-5, Harold-approved): post-F135 (the Review No Rule screen IS home)
+and post-F169 (the account chips became one dropdown), its coverage had become a strict subset of
+`test_mt2c_no_rule_sweep.json`'s three cases, and keeping it only doubled the settle-buffer-sensitive
+dropdown surface (the runner replays no ww_wait -- re-confirmed 2026-08-23). The absorption is
+recorded in mt2c's own description block.
 
 | Script | Purpose | Origin |
 |--------|--------|--------|
-| `test_f129_no_rule_review.json` | MT-3 entry point + account filter chips + reload path on the Review No Rule Items screen | S51 F129 (new) |
 | `test_f124_rule_labels.json` | F124: Manage Rules category/sub-type display -- row accessible names, the details dialog's labelled `Category`/`Sub-Type` fields and their values, and all 7 filter chips (each paired with the `Clear` button that exists only while a filter is active) | S51 F129 (new) |
-| `test_mt2c_no_rule_sweep.json` | MT-2c: the covered-item sweep is idempotent across an in-place Refresh AND a full screen re-entry -- named rows must SURVIVE (guards over-collection, the Sprint 50 bug shape) | S51 F129 (new) |
+| `test_mt2c_no_rule_sweep.json` | MT-2c: the covered-item sweep is idempotent across an in-place Refresh AND a full screen re-entry -- named rows must SURVIVE (guards over-collection, the Sprint 50 bug shape). Also carries the F169 account-filter dropdown coverage and the MT-3 reachability proof (absorbed from the retired f129 script) | S51 F129 (new); F169 repair + f129 absorption S62 |
 
 The create/lifecycle flows below are kept as the F99 reference and remain EXCLUDED from any default
 sweep -- their reliable unattended execution lives in `integration_test`:

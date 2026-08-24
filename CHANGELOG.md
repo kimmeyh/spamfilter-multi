@@ -26,6 +26,27 @@ Format: `- **type**: Description (Issue #N)` where type is feat|fix|chore|docs
 
 ## [Unreleased]
 
+### 2026-08-23 (Sprint 62)
+- **test**: Sprint 62 retro improvements: WinWright script test_f129_no_rule_review retired (coverage a strict subset of test_mt2c_no_rule_sweep post-F135/F169; absorption documented); Phase 5 evidence gate + sweep-at-HEAD rule added to the close-out hook (2 new test cases, suite 51/51); inset-sensitive widget-test rule added to TESTING_STRATEGY.md; concurrent-platform-build ban recorded in CLAUDE.md.
+- **fix**: F175 -- a background scan that hangs past its 30-minute timeout now also releases the scan-exclusion lock it holds, so the next queued scan starts instead of waiting its full limit and failing (the hung-scan case the serialization feature exists for; found by the Sprint 62 automated code review). The release is owner-matched, so a timeout can never evict a different live scan. (Issue #351)
+- **fix**: F177 -- a failure inside per-batch rule evaluation is no longer mislabeled as an IMAP "failed to fetch message details" error; fetch errors and evaluation errors now surface as what they are, so a rule or database problem cannot masquerade as a mail-server problem. (Issue #349)
+- **fix**: F178 -- two follow-on hardenings from the code review: the desktop show-above popup placement now respects the screen's top inset (latent on tablets/foldables; no visible change on current devices), and the popup's width breakpoint reads the same screen-size source as its position math so the two can never disagree. (Issue #352)
+- **test**: WinWright E2E scripts repaired for the Sprint 61 F169 account-filter dropdown (the chip selectors had rotted silently because Sprint 61 shipped the UI change without a script sweep); sweep green 3/3 with baselines refreshed and settle buffers documented. (Issue #354)
+
+### 2026-08-22 (Sprint 62)
+- **test**: F163 -- the 11 approved skipped-test remediations are live coverage: the read-only enforcement group (the product's core safety promise -- a read-only scan never touches the mailbox -- previously uncovered since Sprint 11) rebuilt to run the real full scan pipeline; the delete-recoverability trio (delete means move-to-Trash, never permanent delete/expunge, on both IMAP and Gmail) rewritten against the new adapter test seams; the three Gmail no-auth guard tests un-skipped (their skip reason was stale -- they never needed credentials); and the YAML-migration backup test fixed (it asserted a directory the migration never writes to). Standing skip count drops 26 to 15, all deliberate keeps. (Issue #354)
+- **feat**: F176 -- the Manual Scan and scan results screens now show the account email in the page body, in small type. The window title carries it too, but on a phone the title truncates behind the action icons, leaving no way to tell which account a scan is running against once more than one account is configured. Long addresses ellipsize instead of breaking the layout. Same on Windows and Android. (Issue #353)
+- **fix**: F178 -- on phones, the email review popup could clip its bottom actions ("Block Subject" and the block-rule buttons below it) under the system navigation bar, unreachable even at full scroll. The popup's height and position now stay within the screen's safe area; on desktop, where there are no system bars, nothing changes. (Issue #352)
+- **feat**: F175 -- scans no longer run concurrently. Background, manual, test, and demo scans are serialized within the app, so a running scan can never stack a second IMAP session behind a provider's connection cap (the cause of the "four scans all stuck at 0 emails" cascade). Starting a manual scan while a background scan is running now shows a notice naming the active scan with an average completion estimate from recent scan history, and the manual scan waits its turn instead of colliding. Background scans that hang are failed after 30 minutes instead of running forever; scans orphaned by a crash or force-stop are marked "interrupted" at the next app start instead of showing as permanently in progress; and turning background scanning off now also clears any stuck pending test scan (previously it could retry at every app launch indefinitely). (Issue #351)
+- **fix**: F174 -- a folder that fails to fetch now counts as a scan error instead of silently looking like a clean empty folder. Previously an empty mailbox's search response could throw inside the fetch builder, the error was swallowed, and the scan reported "0 messages, 0 errors" -- making a REAL fetch failure equally invisible (a scan that looks healthy while quietly not looking somewhere). The empty-folder case is now an explicit non-event, and genuine per-folder failures appear in the scan's error count while the remaining folders still complete. (Issue #350)
+- **feat**: F177 -- scans now fetch mail in bounded batches of 20 messages, evaluating each batch and releasing full message content before fetching the next, with progress reported at every batch. Previously a "scan all" over even a modest mailbox loaded every message's full content at once -- on Android this ballooned the app past 800MB and the system killed the scan, which then looked permanently stuck at "0 emails". Scan results are unchanged: batching changes how messages are fetched and held, never which messages are evaluated or what the outcomes are (pinned by an outcome-equivalence test against an unbatched evaluation of the same messages). (Issue #349)
+
+## [0.11.0] - 2026-08-22
+
+Sprint 61's merged scope, released as Store Submission 18 (uploaded ~10:10, certified and live
+~10:41 -- ~25-30 minutes measured at a 5-minute polling cadence, confirming Submission 17's
+~26-minute figure).
+
 ### 2026-08-21 (Sprint 61)
 - **chore**: Sprint 61 retrospective improvements (Harold approved all): the sprint stop-hook now also blocks ending a turn by announcing the next action without executing it (the sprint's headline process issue, 3 occurrences); a new policy gate pins the F161 scheduler call sites as platform-free, so a factory reroute can never again silently leave a platform-gated caller behind -- the exact escape Manual Validation round 1 caught live. Both mutation-verified. (Sprint 61 retro IMP-1/IMP-2)
 - **chore**: `start-emulator.ps1` gains `-ColdBoot` (`-no-snapshot-load`), the recovery for the corrupted quick-boot snapshot wedge (frozen stale frame, unclickable UI, adb offline, or silent exit). (Sprint 61 MV)
@@ -1186,7 +1207,8 @@ See git history for detailed changes prior to Phase 3.1.
 
 ## Version Links
 
-[Unreleased]: https://github.com/kimmeyh/spamfilter-multi/compare/v0.10.0...HEAD
+[Unreleased]: https://github.com/kimmeyh/spamfilter-multi/compare/v0.11.0...HEAD
+[0.11.0]: https://github.com/kimmeyh/spamfilter-multi/compare/v0.10.0...v0.11.0
 [0.10.0]: https://github.com/kimmeyh/spamfilter-multi/compare/v0.9.0...v0.10.0
 [0.9.0]: https://github.com/kimmeyh/spamfilter-multi/compare/v0.8.0...v0.9.0
 [0.8.0]: https://github.com/kimmeyh/spamfilter-multi/compare/v0.7.0...v0.8.0

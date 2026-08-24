@@ -1,191 +1,169 @@
-import 'package:flutter_test/flutter_test.dart';
-import 'package:my_email_spam_filter/core/models/email_message.dart';
-import 'package:my_email_spam_filter/adapters/email_providers/spam_filter_platform.dart';
-import 'package:my_email_spam_filter/adapters/email_providers/generic_imap_adapter.dart';
-import 'package:my_email_spam_filter/adapters/email_providers/gmail_api_adapter.dart';
-import 'package:my_email_spam_filter/adapters/email_providers/email_provider.dart';
+/// Delete-to-trash behavior (Sprint 11 Critical Fix) -- UN-SKIPPED F163 R-2
+/// (Sprint 62). These guard the product's delete-RECOVERABILITY promise:
+/// a spam-filter mistake must be recoverable, so delete means "move to
+/// Trash", never a permanent delete/EXPUNGE.
+///
+/// The trio had been skipped since Sprint 11 as "requires adapter
+/// refactoring for DI" -- the old file even contained mock classes that were
+/// never wired to anything (a test of a mock of nothing). The DI seams now
+/// exist: `GenericIMAPAdapter.debugSetImapClient` (F177) and
+/// `GmailApiAdapter.debugSetGmailApi` (added for this remediation) -- so the
+/// REAL adapters' takeAction paths run against scripted clients.
+///
+/// Mutation-verified at authoring: switching the IMAP delete branch to
+/// `uidExpunge` semantics (recording client) turns the trash test red.
+library;
+
 import 'package:enough_mail/enough_mail.dart';
+import 'package:flutter_test/flutter_test.dart';
+import 'package:googleapis/gmail/v1.dart' as gmail;
+import 'package:http/http.dart' as http;
 
-/// Integration test for delete-to-trash behavior (Sprint 11 Critical Fix)
-///
-/// CRITICAL: This test ensures delete operations move emails to Trash (recoverable)
-/// instead of permanently deleting them (not recoverable).
-///
-/// Test coverage:
-/// - IMAP adapter moves to "Trash" folder (not EXPUNGE)
-/// - Gmail adapter uses trash API (not permanent delete)
-/// - Both providers support recovery of "deleted" emails
-///
-/// NOTE: These tests are currently skipped because the adapter implementations
-/// do not support dependency injection of mock clients. The adapters need to be
-/// refactored to accept an optional client parameter for testing.
-/// TODO: Refactor adapters to support dependency injection for testability.
-void main() {
-  group('Delete-to-Trash Behavior (Sprint 11 Critical Fix)', () {
-    test('IMAP adapter moves to Trash folder (not permanent delete)', skip: 'Requires adapter refactoring for DI', () async {
-      // Arrange: Create IMAP adapter with mock client
-      final mockImapClient = MockImapClient();
-      final adapter = TestableGenericIMAPAdapter(mockImapClient);
+import 'package:my_email_spam_filter/adapters/email_providers/generic_imap_adapter.dart';
+import 'package:my_email_spam_filter/adapters/email_providers/spam_filter_platform.dart';
+import 'package:my_email_spam_filter/adapters/email_providers/gmail_api_adapter.dart';
+import 'package:my_email_spam_filter/core/models/email_message.dart';
 
-      // Load mock credentials
-      await adapter.loadCredentials(Credentials(
-        email: 'test@example.com',
-        password: 'test-password',
-      ));
+/// Fake ImapClient recording move/expunge calls issued by the REAL adapter.
+class _RecordingImapClient extends ImapClient {
+  _RecordingImapClient() : super(isLogEnabled: false);
 
-      // Create test email
-      final testEmail = EmailMessage(
-        id: '123',
-        from: 'spammer@test.com',
-        subject: 'Test',
-        body: 'Test',
-        headers: {},
-        receivedDate: DateTime.now(),
-        folderName: 'INBOX',
-      );
-
-      // Act: Delete the email
-      await adapter.takeAction(
-        message: testEmail,
-        action: FilterAction.delete,
-      );
-
-      // Assert: Verify move to Trash was called (NOT expunge)
-      expect(mockImapClient.moveToTrashCalled, true,
-        reason: 'CRITICAL: Delete must move to Trash, not permanent delete');
-      expect(mockImapClient.expungeCalled, false,
-        reason: 'CRITICAL: Expunge must NOT be called (irreversible)');
-      expect(mockImapClient.lastMoveTarget, 'Trash',
-        reason: 'Must move to Trash folder');
-    });
-
-    test('Gmail adapter uses trash API (not permanent delete)', skip: 'Requires adapter refactoring for DI', () async {
-      // Arrange: Create Gmail adapter with mock API
-      final mockGmailApi = MockGmailApi();
-      final adapter = TestableGmailApiAdapter(mockGmailApi);
-
-      // Create test email
-      final testEmail = EmailMessage(
-        id: 'gmail-message-id-123',
-        from: 'spammer@test.com',
-        subject: 'Test',
-        body: 'Test',
-        headers: {},
-        receivedDate: DateTime.now(),
-        folderName: 'INBOX',
-      );
-
-      // Act: Delete the email
-      await adapter.takeAction(
-        message: testEmail,
-        action: FilterAction.delete,
-      );
-
-      // Assert: Verify trash API was called (NOT messages.delete)
-      expect(mockGmailApi.trashCalled, true,
-        reason: 'Gmail must use trash API (recoverable)');
-      expect(mockGmailApi.permanentDeleteCalled, false,
-        reason: 'CRITICAL: Permanent delete must NOT be called');
-      expect(mockGmailApi.lastTrashedMessageId, 'gmail-message-id-123',
-        reason: 'Correct message ID trashed');
-    });
-
-    test('IMAP moveToJunk uses move command (not copy+delete)', skip: 'Requires adapter refactoring for DI', () async {
-      // Arrange
-      final mockImapClient = MockImapClient();
-      final adapter = TestableGenericIMAPAdapter(mockImapClient);
-
-      await adapter.loadCredentials(Credentials(
-        email: 'test@example.com',
-        password: 'test-password',
-      ));
-
-      final testEmail = EmailMessage(
-        id: '456',
-        from: 'spammer@test.com',
-        subject: 'Test',
-        body: 'Test',
-        headers: {},
-        receivedDate: DateTime.now(),
-        folderName: 'INBOX',
-      );
-
-      // Act: Move to junk
-      await adapter.takeAction(
-        message: testEmail,
-        action: FilterAction.moveToJunk,
-      );
-
-      // Assert: Verify move to Junk was called
-      expect(mockImapClient.moveToJunkCalled, true,
-        reason: 'Move to junk should use move command');
-      expect(mockImapClient.lastMoveTarget, 'Junk',
-        reason: 'Must move to Junk folder');
-    });
-  });
-}
-
-/// Testable IMAP adapter that exposes internal client for mocking
-class TestableGenericIMAPAdapter extends GenericIMAPAdapter {
-  final MockImapClient mockClient;
-
-  TestableGenericIMAPAdapter(this.mockClient) : super(
-    imapHost: 'test.example.com',
-    imapPort: 993,
-    isSecure: true,
-  );
+  final List<String> moveTargets = [];
+  bool expungeCalled = false;
 
   @override
-  Future<void> loadCredentials(Credentials credentials) async {
-    // Override to inject mock client instead of real connection
-    // In real implementation, this would require refactoring to inject ImapClient
-    // For now, we document the expected behavior
-  }
-}
+  Future<Mailbox> selectMailboxByPath(
+    String path, {
+    bool enableCondStore = false,
+    QResyncParameters? qresync,
+  }) async =>
+      Mailbox(
+        encodedName: path,
+        encodedPath: path,
+        pathSeparator: '/',
+        flags: [],
+      );
 
-/// Testable Gmail adapter that exposes internal API for mocking
-class TestableGmailApiAdapter extends GmailApiAdapter {
-  final MockGmailApi mockApi;
-
-  TestableGmailApiAdapter(this.mockApi);
-
-  // Override to inject mock API
-  // In real implementation, this would require refactoring to inject GmailApi
-}
-
-/// Mock IMAP client to verify delete behavior
-class MockImapClient {
-  bool moveToTrashCalled = false;
-  bool moveToJunkCalled = false;
-  bool expungeCalled = false;
-  String? lastMoveTarget;
-
-  Future<void> move(MessageSequence sequence, {required String targetMailboxPath}) async {
-    lastMoveTarget = targetMailboxPath;
-    if (targetMailboxPath == 'Trash') {
-      moveToTrashCalled = true;
-    } else if (targetMailboxPath == 'Junk') {
-      moveToJunkCalled = true;
-    }
+  @override
+  Future<GenericImapResult> uidMove(
+    MessageSequence sequence, {
+    Mailbox? targetMailbox,
+    String? targetMailboxPath,
+  }) async {
+    moveTargets.add(targetMailboxPath ?? targetMailbox?.path ?? '?');
+    return GenericImapResult();
   }
 
-  Future<void> expunge() async {
+  @override
+  Future<Mailbox?> uidExpunge(MessageSequence sequence) async {
     expungeCalled = true;
+    return null;
+  }
+
+  @override
+  Future<Mailbox> expunge() async {
+    expungeCalled = true;
+    return Mailbox(
+        encodedName: 'INBOX',
+        encodedPath: 'INBOX',
+        pathSeparator: '/',
+        flags: []);
   }
 }
 
-/// Mock Gmail API to verify trash behavior
-class MockGmailApi {
-  bool trashCalled = false;
-  bool permanentDeleteCalled = false;
-  String? lastTrashedMessageId;
+/// Fake HTTP client recording every Gmail API request the REAL GmailApi
+/// issues -- the standard googleapis testing pattern: assert WHICH endpoint
+/// was hit (POST .../trash is recoverable; DELETE .../messages/{id} is not).
+class _RecordingHttpClient extends http.BaseClient {
+  final List<String> requests = []; // "METHOD path"
 
-  Future<void> trash(String messageId) async {
-    trashCalled = true;
-    lastTrashedMessageId = messageId;
+  @override
+  Future<http.StreamedResponse> send(http.BaseRequest request) async {
+    requests.add('${request.method} ${request.url.path}');
+    return http.StreamedResponse(
+      Stream.value('{}'.codeUnits),
+      200,
+      headers: {'content-type': 'application/json'},
+    );
   }
+}
 
-  Future<void> delete(String messageId) async {
-    permanentDeleteCalled = true;
-  }
+EmailMessage _email(String id) => EmailMessage(
+      id: id,
+      from: 'spammer@test.com',
+      subject: 'Test',
+      body: 'Test',
+      headers: const {},
+      receivedDate: DateTime.now(),
+      folderName: 'INBOX',
+    );
+
+void main() {
+  group('Delete-to-Trash Behavior (Sprint 11 Critical Fix)', () {
+    test('IMAP delete moves to Trash via UID MOVE -- never expunges',
+        () async {
+      final client = _RecordingImapClient();
+      final adapter =
+          GenericIMAPAdapter(imapHost: 'imap.example.com', platformId: 'aol')
+            ..debugSetImapClient(client);
+
+      await adapter.takeAction(
+          message: _email('123'), action: FilterAction.delete);
+
+      expect(client.moveTargets, ['Trash'],
+          reason: 'CRITICAL: delete must be a recoverable move to Trash');
+      expect(client.expungeCalled, isFalse,
+          reason: 'CRITICAL: expunge is irreversible and must never be '
+              'part of the delete path');
+    });
+
+    test('IMAP delete honors a configured deleted-rule folder', () async {
+      final client = _RecordingImapClient();
+      final adapter =
+          GenericIMAPAdapter(imapHost: 'imap.example.com', platformId: 'aol')
+            ..debugSetImapClient(client)
+            ..setDeletedRuleFolder('MySpamArchive');
+
+      await adapter.takeAction(
+          message: _email('124'), action: FilterAction.delete);
+
+      expect(client.moveTargets, ['MySpamArchive']);
+      expect(client.expungeCalled, isFalse);
+    });
+
+    test('IMAP moveToJunk uses UID MOVE to Junk (not copy+delete)', () async {
+      final client = _RecordingImapClient();
+      final adapter =
+          GenericIMAPAdapter(imapHost: 'imap.example.com', platformId: 'aol')
+            ..debugSetImapClient(client);
+
+      await adapter.takeAction(
+          message: _email('456'), action: FilterAction.moveToJunk);
+
+      expect(client.moveTargets, ['Junk']);
+      expect(client.expungeCalled, isFalse);
+    });
+
+    test('Gmail delete calls the trash endpoint -- never the permanent '
+        'delete endpoint', () async {
+      final httpClient = _RecordingHttpClient();
+      final adapter = GmailApiAdapter()
+        ..debugSetGmailApi(gmail.GmailApi(httpClient));
+
+      await adapter.takeAction(
+          message: _email('gmail-message-id-123'),
+          action: FilterAction.delete);
+
+      expect(httpClient.requests, hasLength(1));
+      expect(httpClient.requests.single,
+          'POST /gmail/v1/users/me/messages/gmail-message-id-123/trash',
+          reason: 'Gmail delete must use the recoverable trash API');
+      expect(
+          httpClient.requests
+              .where((r) => r.startsWith('DELETE ')),
+          isEmpty,
+          reason: 'CRITICAL: the permanent-delete endpoint must never be '
+              'called');
+    });
+  });
 }

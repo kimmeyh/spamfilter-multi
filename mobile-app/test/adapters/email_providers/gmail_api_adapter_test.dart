@@ -226,10 +226,14 @@ void main() {
       adapter = GmailApiAdapter();
     });
 
-    // Skip actual Google API tests - require real credentials
+    // F163 R-1 (Sprint 62): UN-SKIPPED. The old skip reason ('requires
+    // real Gmail account and OAuth') was simply wrong for these three: they
+    // test the NO-AUTH guard clauses, which are pure Dart (no platform
+    // channel, no network) -- _gmailApi is null and each method must fail
+    // fast and clearly. Harold's pre-approved channel-stub fallback was not
+    // needed.
     test(
       'should throw error when fetching without authentication',
-      skip: true, // Requires real Gmail account and OAuth
       () async {
         expect(
           () => adapter.fetchMessages(daysBack: 30, folderNames: ['INBOX']),
@@ -240,7 +244,6 @@ void main() {
 
     test(
       'should throw error when listing folders without authentication',
-      skip: true, // Requires real Gmail account and OAuth
       () async {
         expect(
           () => adapter.listFolders(),
@@ -251,7 +254,6 @@ void main() {
 
     test(
       'should throw error when testing connection without authentication',
-      skip: true, // Requires real Gmail account and OAuth
       () async {
         final status = await adapter.testConnection();
         expect(status.isConnected, false);
