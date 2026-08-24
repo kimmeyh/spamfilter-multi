@@ -320,6 +320,19 @@ class EmailScanProvider extends ChangeNotifier {
     notifyListeners();
   }
 
+  /// F174 (Sprint 62): a per-folder FETCH FAILURE must be visible on the
+  /// scan record, not indistinguishable from a clean empty folder. Counts
+  /// toward [errorCount] (persisted as `error_count`) WITHOUT touching the
+  /// per-email counters -- a failed folder is not a no-rule email.
+  /// Pre-F174, a whole folder could silently contribute nothing while the
+  /// scan reported errors=0 (the F168 silent-scope class in miniature).
+  void recordFolderFetchError(String folderName, String error) {
+    _errorCount++;
+    _logger.e('Folder fetch FAILED for "$folderName": $error '
+        '(errorCount now $_errorCount)');
+    notifyListeners();
+  }
+
   /// Mark current email and update progress
   /// 
   /// [NEW] PHASE 3.3: Throttles UI updates to every 10 emails OR 3 seconds (whichever comes first)

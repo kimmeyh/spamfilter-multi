@@ -1,12 +1,23 @@
 name: CI
 
+# Sprint 62 MV (Harold, 2026-08-22): CI used to run all three jobs on EVERY
+# push to a DRAFT PR -- wasteful, since the sprint PR stays draft through
+# Phases 3-7 and the local per-change loop (flutter analyze + flutter test +
+# mutation checks) already gates each commit. CI now runs only once the PR is
+# marked "Ready for Review" (the end-of-Phase-7.7 step) and on subsequent
+# pushes to a ready PR. The `ready_for_review` event type is what fires the
+# checks at the moment the draft flips. Draft pushes show the jobs as
+# "skipped" (a no-cost no-op), so branch-protection style expectations still
+# resolve once the PR is ready.
 on:
   pull_request:
     branches: [develop]
+    types: [opened, synchronize, reopened, ready_for_review]
 
 jobs:
   analyze-and-test:
     name: Analyze and Test
+    if: github.event.pull_request.draft == false
     runs-on: ubuntu-latest
     defaults:
       run:
@@ -31,6 +42,7 @@ jobs:
 
   android-build:
     name: Android Build Verification
+    if: github.event.pull_request.draft == false
     runs-on: ubuntu-latest
     defaults:
       run:
@@ -70,6 +82,7 @@ jobs:
 
   windows-build:
     name: Windows Build Verification
+    if: github.event.pull_request.draft == false
     runs-on: windows-latest
     defaults:
       run:

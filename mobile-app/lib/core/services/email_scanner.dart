@@ -19,6 +19,7 @@ import '../storage/unmatched_email_store.dart';
 import '../utils/app_logger.dart';
 import '../../util/redact.dart';
 import 'live_scan_logger.dart';
+import 'scan_coordinator.dart';
 import '../../adapters/email_providers/generic_imap_adapter.dart';
 import '../../adapters/email_providers/gmail_api_adapter.dart';
 import '../../adapters/email_providers/platform_registry.dart';
@@ -32,7 +33,7 @@ class EmailScanner {
   final String accountId;
   final RuleSetProvider ruleSetProvider;
   final EmailScanProvider scanProvider;
-  final SecureCredentialsStore _credStore = SecureCredentialsStore();
+  final SecureCredentialsStore _credStore;
   final SettingsStore _settingsStore = SettingsStore();
 
   /// Sprint 38 F86 (Issue #254), revised in Sprint 38 Round 1 (post-retro):
@@ -60,12 +61,17 @@ class EmailScanner {
   /// (NOT once per batch boundary).
   final Map<String, int?> _daysBackUidFloorCache = {};
 
+  /// F163 R-3 (Sprint 62): [credStore] is injectable so behavior tests can
+  /// run the REAL full scan pipeline against a fake platform without the
+  /// platform-channel-backed secure storage (which cannot run in unit
+  /// tests). Production callers omit it and get the real store.
   EmailScanner({
     required this.platformId,
     required this.accountId,
     required this.ruleSetProvider,
     required this.scanProvider,
-  });
+    SecureCredentialsStore? credStore,
+  }) : _credStore = credStore ?? SecureCredentialsStore();
 
   /// Sprint 38 F86: increments the pending-change counter as if the user
   /// added/edited/deleted a rule during the scan. Visible for testing.
@@ -90,6 +96,7 @@ class EmailScanner {
     String scanType = 'manual',
   }) async {
     SpamFilterPlatform? platform;
+    ScanLease? scanLease;
 
     // Sprint 38 F86 (Issue #254), revised Round 1: subscribe to rule-set
     // changes for the duration of this scan for diagnostic counting. The
@@ -131,6 +138,39 @@ class EmailScanner {
         databaseHelper: dbHelper,
       );
       scanProvider.setCurrentAccountId(accountId);
+
+      // F175 (Sprint 62): the ONE scan-exclusion chokepoint. Every scan type
+      // funnels through scanInbox, so acquiring here serializes manual,
+      // background, test, and demo scans within the process -- BEFORE any
+      // IMAP session is opened (AC-2). Waiters queue FIFO; the wait itself
+      // is bounded (a dead predecessor cannot block forever). Released in
+      // the `finally` below on every path, including crashes.
+      // Windows cross-process exception documented in ScanCoordinator.
+      if (ScanCoordinator.instance.active != null) {
+        final holder = ScanCoordinator.instance.active!;
+        AppLogger.scan(
+            'F175: waiting for the active ${holder.scanType} scan to finish '
+            'before starting this $scanType scan');
+        scanProvider.updateProgress(
+          email: EmailMessage(
+            id: '',
+            from: '',
+            subject:
+                'Waiting for the ${holder.scanType} scan in progress...',
+            body: '',
+            headers: const {},
+            receivedDate: DateTime.now(),
+            folderName: '',
+          ),
+          message:
+              'Waiting for the ${holder.scanType} scan in progress to finish...',
+        );
+      }
+
+      scanLease = await ScanCoordinator.instance.acquire(
+        scanType: scanType,
+        accountId: accountId,
+      );
 
       // 1. Get platform adapter
       platform = PlatformRegistry.getPlatform(platformId);
@@ -177,92 +217,19 @@ class EmailScanner {
       );
       AppLogger.scan('Step 3: scanProvider.status AFTER startScan: ${scanProvider.status}');
 
-      // 4. [UPDATED] ISSUE #128: Fetch messages folder-by-folder for progress reporting
-      final List<EmailMessage> messages = [];
-      AppLogger.scan('Step 4: Starting folder-by-folder fetch. Total folders: ${folderNames.length}');
-      for (final folderName in folderNames) {
-        AppLogger.scan('Step 4: Fetching folder "$folderName" (daysBack=$daysBack)...');
-        // [NEW] ISSUE #128: Report folder being fetched
-        scanProvider.setCurrentFolder(folderName);
-        scanProvider.updateProgress(
-          email: EmailMessage(
-            id: '',
-            from: '',
-            subject: 'Searching folder "$folderName"...',
-            body: '',
-            headers: {},
-            receivedDate: DateTime.now(),
-            folderName: folderName,
-          ),
-          message: 'Searching folder "$folderName"...',
-        );
+      // F177 (Sprint 62): the evaluator is constructed BEFORE the fetch loop
+      // because evaluation now happens PER FETCH BATCH (m=20, universal)
+      // instead of after a whole-mailbox fetch. Rationale and parameters:
+      // the Sprint 61 forensics proved an unbounded fetch retains ~7-10MB
+      // per message (817MB-1.4GB PSS -> Android LOW_MEMORY kills). Each
+      // batch is fetched, evaluated, and reduced to a body-truncated record
+      // before the next batch is fetched; full bodies are never accumulated.
+      // The Issue #144 two-phase design is PRESERVED: actions are still
+      // collected from the evaluated records and executed in batches (6b),
+      // and persistence stays at its established points -- what changed is
+      // that phase 6a's evaluation runs per batch inside Step 4.
 
-        // Fetch messages from this folder
-        try {
-          // Sprint 38 F6c Phase 2 (Issue #250): Gmail-specific incremental
-          // delta scan via historyId, falling back to the provider-agnostic
-          // full-folder fetch on first-ever scan, historyId expiry, or any
-          // non-Gmail platform.
-          final folderMessages = await _fetchFolderMessages(
-            platform: platform,
-            folderName: folderName,
-            daysBack: daysBack,
-          );
-          AppLogger.scan('Step 4: Folder "$folderName" returned ${folderMessages.length} messages');
-          if (isLiveScan) {
-            await LiveScanLogger.log('Step 4: Folder "$folderName" returned ${folderMessages.length} messages');
-          }
-
-          messages.addAll(folderMessages);
-
-          // [NEW] ISSUE #128: Increment found count and report folder completion
-          if (folderMessages.isNotEmpty) {
-            scanProvider.incrementFoundEmails(folderMessages.length);
-            scanProvider.updateProgress(
-              email: EmailMessage(
-                id: '',
-                from: '',
-                subject: 'Found ${folderMessages.length} emails in "$folderName"',
-                body: '',
-                headers: {},
-                receivedDate: DateTime.now(),
-                folderName: folderName,
-              ),
-              message: 'Found ${folderMessages.length} emails in "$folderName", continuing...',
-            );
-          } else {
-            AppLogger.scan('Step 4: WARNING - Folder "$folderName" returned 0 messages');
-            scanProvider.updateProgress(
-              email: EmailMessage(
-                id: '',
-                from: '',
-                subject: 'No emails found in "$folderName"',
-                body: '',
-                headers: {},
-                receivedDate: DateTime.now(),
-                folderName: folderName,
-              ),
-              message: 'No emails found in "$folderName", continuing...',
-            );
-          }
-        } catch (e, st) {
-          AppLogger.error('Step 4: EXCEPTION fetching folder "$folderName"', error: e, stackTrace: st);
-          if (isLiveScan) {
-            await LiveScanLogger.log('Step 4: EXCEPTION fetching folder "$folderName": $e');
-          }
-          // Continue with other folders even if one fails
-        }
-      }
-      AppLogger.scan('Step 4: COMPLETE - Total messages across all folders: ${messages.length}');
-      if (isLiveScan) {
-        await LiveScanLogger.log('Step 4 COMPLETE: total messages across all folders = ${messages.length}');
-        await LiveScanLogger.log(
-          'Step 5: Rules loaded: ${ruleSetProvider.rules.rules.length}, '
-          'Safe senders loaded: ${ruleSetProvider.safeSenders.safeSenders.length}',
-        );
-      }
-
-      // 5. Get rule evaluator
+      // 5. Get rule evaluator (hoisted above Step 4 by F177)
       // DIAGNOSTIC: Log rule and safe sender counts for troubleshooting
       AppLogger.scan('=== SCAN DIAGNOSTICS ===');
       AppLogger.rules('Rules loaded: ${ruleSetProvider.rules.rules.length}');
@@ -294,15 +261,6 @@ class EmailScanner {
         compiler: PatternCompiler(),
       );
 
-      // 6. [UPDATED] ISSUE #144: Two-phase processing - evaluate all, then batch execute
-      //
-      // Phase 6a: Evaluate all emails and determine actions
-      // Phase 6b: Execute actions in batches using platform batch APIs
-      //
-      // This reduces IMAP/API calls from 3N (markAsRead + applyFlag + takeAction per email)
-      // to ~3 batch operations total, significantly improving performance for large scans.
-
-      // --- Phase 6a: Evaluate all emails ---
       final evaluatedEmails = <_EvaluatedEmail>[];
       final safeSenderFolder = await _settingsStore.getAccountSafeSenderFolder(accountId);
       // Normalize INBOX to uppercase for RFC 3501 compliance (INBOX is case-insensitive
@@ -311,69 +269,217 @@ class EmailScanner {
       final safeSenderTarget = rawTarget.toLowerCase() == 'inbox' ? 'INBOX' : rawTarget;
       AppLogger.scan('Safe sender target folder: "$safeSenderTarget" (raw: "$rawTarget")');
 
-      for (final message in messages) {
-        // Sprint 38 F86 mid-scan evaluator rebuild was removed in
-        // Sprint 38 Round 1 (post-retro 2026-05-16). Per Harold's clarified
-        // requirement, rules should reload AFTER each scan completes and
-        // AFTER rule-add in Scan Results -- not mid-scan. The post-scan
-        // reload happens after `await scanProvider.completeScan()` below.
-        // The `_rulesDirty` listener is still registered so the diagnostic
-        // counter `pendingRuleSetChanges` keeps working for any future
-        // pre-scan sync-pending message.
+      // F177: phase 6a's per-message evaluation, applied to ONE fetch batch.
+      // After evaluation each retained record carries a body TRUNCATED to
+      // the persistence preview cap (kBodyPreviewMaxLength, SEC-14) --
+      // rule evaluation sees the full body first; nothing downstream (6b
+      // actions, dedup, persistence, UI) reads more than the preview.
+      Future<void> evaluateBatch(List<EmailMessage> batch) async {
+        for (final message in batch) {
+          // Sprint 38 F86 mid-scan evaluator rebuild was removed in
+          // Sprint 38 Round 1 (post-retro 2026-05-16). Per Harold's clarified
+          // requirement, rules should reload AFTER each scan completes and
+          // AFTER rule-add in Scan Results -- not mid-scan. The post-scan
+          // reload happens after `await scanProvider.completeScan()` below.
+          // The `_rulesDirty` listener is still registered so the diagnostic
+          // counter `pendingRuleSetChanges` keeps working for any future
+          // pre-scan sync-pending message.
 
-        scanProvider.updateProgress(
-          email: message,
-          message: 'Evaluating: ${message.subject}',
-        );
+          scanProvider.updateProgress(
+            email: message,
+            message: 'Evaluating: ${message.subject}',
+          );
 
-        final result = await evaluator.evaluate(message);
-        EmailActionType action = EmailActionType.none;
+          final result = await evaluator.evaluate(message);
+          EmailActionType action = EmailActionType.none;
 
-        if (result.matchedRule.isNotEmpty) {
-          if (result.isSafeSender) {
-            // If email is already in the safe sender folder, skip entirely --
-            // do not count, do not display, do not process. It is already
-            // where it belongs. Other rule types (delete, no rule) in the
-            // safe sender folder ARE still shown. See
-            // shouldSkipSafeSenderAlreadyInTarget's doc comment for the F151d
-            // (Sprint 58) Demo Mode exception.
-            if (shouldSkipSafeSenderAlreadyInTarget(
-              platformId: platformId,
-              messageFolderName: message.folderName,
-              safeSenderTarget: safeSenderTarget,
-            )) {
-              AppLogger.scan('Skipping safe sender in target folder: '
-                  'from="${message.from}", folder="${message.folderName}", '
-                  'target="$safeSenderTarget"');
-              continue; // Skip this email entirely
+          if (result.matchedRule.isNotEmpty) {
+            if (result.isSafeSender) {
+              // If email is already in the safe sender folder, skip entirely --
+              // do not count, do not display, do not process. It is already
+              // where it belongs. Other rule types (delete, no rule) in the
+              // safe sender folder ARE still shown. See
+              // shouldSkipSafeSenderAlreadyInTarget's doc comment for the F151d
+              // (Sprint 58) Demo Mode exception.
+              if (shouldSkipSafeSenderAlreadyInTarget(
+                platformId: platformId,
+                messageFolderName: message.folderName,
+                safeSenderTarget: safeSenderTarget,
+              )) {
+                AppLogger.scan('Skipping safe sender in target folder: '
+                    'from="${message.from}", folder="${message.folderName}", '
+                    'target="$safeSenderTarget"');
+                continue; // Skip this email entirely
+              }
+              action = EmailActionType.safeSender;
+            } else if (result.shouldDelete) {
+              action = EmailActionType.delete;
+            } else if (result.shouldMove) {
+              action = EmailActionType.moveToJunk;
             }
-            action = EmailActionType.safeSender;
-          } else if (result.shouldDelete) {
-            action = EmailActionType.delete;
-          } else if (result.shouldMove) {
-            action = EmailActionType.moveToJunk;
+          }
+
+          // F177: retain only the body-truncated copy from here on.
+          final retained = message.copyWithTruncatedBody(kBodyPreviewMaxLength);
+
+          final evaluated = _EvaluatedEmail(
+            message: retained,
+            result: result,
+            action: action,
+          );
+          evaluatedEmails.add(evaluated);
+
+          // Record no-rule-match results immediately (no batch processing needed)
+          if (action == EmailActionType.none) {
+            scanProvider.recordResult(
+              EmailActionResult(
+                email: retained,
+                evaluationResult: result,
+                action: action,
+                success: true,
+              ),
+            );
           }
         }
+      }
 
-        final evaluated = _EvaluatedEmail(
-          message: message,
-          result: result,
-          action: action,
+      // 4. [UPDATED] ISSUE #128: Fetch messages folder-by-folder for progress reporting
+      // (F177: fetched in m=20 batches, evaluated per batch -- see above)
+      var totalFetched = 0;
+      AppLogger.scan('Step 4: Starting folder-by-folder fetch. Total folders: ${folderNames.length}');
+      for (final folderName in folderNames) {
+        AppLogger.scan('Step 4: Fetching folder "$folderName" (daysBack=$daysBack)...');
+        // [NEW] ISSUE #128: Report folder being fetched
+        scanProvider.setCurrentFolder(folderName);
+        scanProvider.updateProgress(
+          email: EmailMessage(
+            id: '',
+            from: '',
+            subject: 'Searching folder "$folderName"...',
+            body: '',
+            headers: {},
+            receivedDate: DateTime.now(),
+            folderName: folderName,
+          ),
+          message: 'Searching folder "$folderName"...',
         );
-        evaluatedEmails.add(evaluated);
 
-        // Record no-rule-match results immediately (no batch processing needed)
-        if (action == EmailActionType.none) {
-          scanProvider.recordResult(
-            EmailActionResult(
-              email: message,
-              evaluationResult: result,
-              action: action,
-              success: true,
-            ),
+        // Fetch messages from this folder
+        try {
+          // F177 (Sprint 62): per-batch sink -- each m=20 batch is counted,
+          // reported as progress, evaluated, and reduced to truncated
+          // records BEFORE the next batch is fetched (AC-2: monotonic
+          // per-batch progress; the fix for "0 emails for 20+ minutes").
+          var folderCount = 0;
+          Future<void> batchSink(List<EmailMessage> batch) async {
+            if (batch.isEmpty) return;
+            folderCount += batch.length;
+            scanProvider.incrementFoundEmails(batch.length);
+            scanProvider.updateProgress(
+              email: EmailMessage(
+                id: '',
+                from: '',
+                subject: 'Fetched $folderCount emails from "$folderName"...',
+                body: '',
+                headers: {},
+                receivedDate: DateTime.now(),
+                folderName: folderName,
+              ),
+              message: 'Fetched $folderCount emails from "$folderName", evaluating...',
+            );
+            await evaluateBatch(batch);
+          }
+
+          // Sprint 38 F6c Phase 2 (Issue #250): Gmail-specific incremental
+          // delta scan via historyId, falling back to the provider-agnostic
+          // full-folder fetch on first-ever scan, historyId expiry, or any
+          // non-Gmail platform.
+          // F177: the IMAP path STREAMS batches into [batchSink] and returns
+          // an empty list; list-returning paths (Gmail, demo, mock) are fed
+          // through the same sink in m=20 slices below, so every path gets
+          // identical per-batch evaluation and body-truncated retention.
+          final folderMessages = await _fetchFolderMessages(
+            platform: platform,
+            folderName: folderName,
+            daysBack: daysBack,
+            onBatch: batchSink,
           );
+          for (var i = 0;
+              i < folderMessages.length;
+              i += GenericIMAPAdapter.fetchBatchSize) {
+            final end =
+                (i + GenericIMAPAdapter.fetchBatchSize < folderMessages.length)
+                    ? i + GenericIMAPAdapter.fetchBatchSize
+                    : folderMessages.length;
+            await batchSink(folderMessages.sublist(i, end));
+          }
+
+          totalFetched += folderCount;
+          AppLogger.scan('Step 4: Folder "$folderName" returned $folderCount messages');
+          if (isLiveScan) {
+            await LiveScanLogger.log('Step 4: Folder "$folderName" returned $folderCount messages');
+          }
+
+          // [NEW] ISSUE #128: Report folder completion
+          if (folderCount > 0) {
+            scanProvider.updateProgress(
+              email: EmailMessage(
+                id: '',
+                from: '',
+                subject: 'Found $folderCount emails in "$folderName"',
+                body: '',
+                headers: {},
+                receivedDate: DateTime.now(),
+                folderName: folderName,
+              ),
+              message: 'Found $folderCount emails in "$folderName", continuing...',
+            );
+          } else {
+            AppLogger.scan('Step 4: WARNING - Folder "$folderName" returned 0 messages');
+            scanProvider.updateProgress(
+              email: EmailMessage(
+                id: '',
+                from: '',
+                subject: 'No emails found in "$folderName"',
+                body: '',
+                headers: {},
+                receivedDate: DateTime.now(),
+                folderName: folderName,
+              ),
+              message: 'No emails found in "$folderName", continuing...',
+            );
+          }
+        } catch (e, st) {
+          AppLogger.error('Step 4: EXCEPTION fetching folder "$folderName"', error: e, stackTrace: st);
+          if (isLiveScan) {
+            await LiveScanLogger.log('Step 4: EXCEPTION fetching folder "$folderName": $e');
+          }
+          // F174 (Sprint 62): a genuine per-folder fetch failure surfaces in
+          // errorCount instead of vanishing -- pre-F174 this catch made a
+          // failed folder indistinguishable from a clean empty one
+          // (errors=0 either way). The scan still continues with the
+          // remaining folders, as before.
+          scanProvider.recordFolderFetchError(folderName, e.toString());
         }
       }
+      AppLogger.scan('Step 4: COMPLETE - Total messages across all folders: $totalFetched');
+      if (isLiveScan) {
+        await LiveScanLogger.log('Step 4 COMPLETE: total messages across all folders = $totalFetched');
+        await LiveScanLogger.log(
+          'Step 5: Rules loaded: ${ruleSetProvider.rules.rules.length}, '
+          'Safe senders loaded: ${ruleSetProvider.safeSenders.safeSenders.length}',
+        );
+      }
+
+      // 6. [UPDATED] ISSUE #144: Two-phase processing - evaluate, then batch execute
+      //
+      // Phase 6a: Evaluate emails and determine actions -- F177 (Sprint 62):
+      // this now ran PER FETCH BATCH inside Step 4 (see evaluateBatch above);
+      // evaluatedEmails is fully populated here with body-truncated records.
+      // Phase 6b: Execute actions in batches using platform batch APIs
+      //
+      // This reduces IMAP/API calls from 3N (markAsRead + applyFlag + takeAction per email)
+      // to ~3 batch operations total, significantly improving performance for large scans.
 
       // Summary of evaluation results
       final noneCount = evaluatedEmails.where((e) => e.action == EmailActionType.none).length;
@@ -838,6 +944,12 @@ class EmailScanner {
       await scanProvider.errorScan(msg);
       rethrow;
     } finally {
+      // F175 (Sprint 62): release the scan lease on EVERY path -- a crashed
+      // scan must hand the lease to the next waiter, never hold it dead.
+      if (scanLease != null) {
+        ScanCoordinator.instance.release(scanLease);
+      }
+
       // Sprint 38 F86: always deregister the rule-set listener, including
       // on error paths, to avoid leaking listeners across scans.
       ruleSetProvider.removeListener(_onRuleSetChanged);
@@ -1240,16 +1352,26 @@ class EmailScanner {
   /// All three paths persist the new cursor after a successful scan so the
   /// next scan resumes correctly. After a Gmail-expiry fallback or an IMAP
   /// first scan, the cursor is captured for the next run.
+  /// F177 (Sprint 62): [onBatch], when provided, streams m=20 batches from
+  /// the IMAP path (which then returns an empty list). The Gmail and
+  /// generic paths still return whole lists -- their caller (scanInbox
+  /// Step 4) feeds those through the same sink in m=20 slices, so every
+  /// provider gets identical per-batch evaluation. R-5 note: the Gmail
+  /// adapter fetches message content one message at a time (messages.get
+  /// per id), so its network granularity is already bounded; the list it
+  /// RETURNS is the retention concern, handled by the caller's slicing.
   Future<List<EmailMessage>> _fetchFolderMessages({
     required SpamFilterPlatform platform,
     required String folderName,
     required int daysBack,
+    Future<void> Function(List<EmailMessage> batch)? onBatch,
   }) async {
     if (platform is GmailApiAdapter) {
       return _fetchFolderMessagesGmail(platform, folderName, daysBack);
     }
     if (platform is GenericIMAPAdapter) {
-      return _fetchFolderMessagesImap(platform, folderName, daysBack);
+      return _fetchFolderMessagesImap(platform, folderName, daysBack,
+          onBatch: onBatch);
     }
     // Other (demo, etc.) -- no incremental, full fetch.
     return platform.fetchMessages(
@@ -1326,8 +1448,15 @@ class EmailScanner {
   Future<List<EmailMessage>> _fetchFolderMessagesImap(
     GenericIMAPAdapter imap,
     String folderName,
-    int daysBack,
-  ) async {
+    int daysBack, {
+    Future<void> Function(List<EmailMessage> batch)? onBatch,
+  }) async {
+    // F177: adapt the scanner's batch sink to the adapter's richer
+    // (batch, fetchedSoFar, totalUids) callback shape.
+    Future<void> Function(List<EmailMessage>, int, int)? adapterOnBatch;
+    if (onBatch != null) {
+      adapterOnBatch = (batch, fetchedSoFar, totalUids) => onBatch(batch);
+    }
     // Sprint 38 Round 4 redesign (2026-05-17): cursor semantics inverted.
     //
     // The cursor (cursorTypeOldestNoRuleUid) now points at the OLDEST UID
@@ -1370,6 +1499,7 @@ class EmailScanner {
       return imap.fetchMessages(
         daysBack: daysBack,
         folderNames: [folderName],
+        onBatch: adapterOnBatch,
       );
     }
 
@@ -1385,6 +1515,7 @@ class EmailScanner {
     final result = await imap.fetchMessagesIncremental(
       startUid: oldestNoRuleUid - 1,
       folderName: folderName,
+      onBatch: adapterOnBatch,
     );
     AppLogger.scan(
         'Step 4: IMAP backlog re-scan returned ${result.emails.length} messages (cursor was $oldestNoRuleUid)');

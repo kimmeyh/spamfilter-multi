@@ -12,6 +12,7 @@ library;
 import 'package:logger/logger.dart';
 
 import '../../util/redact.dart';
+import '../services/scan_coordinator.dart';
 import 'database_helper.dart';
 
 /// Model class for scan results
@@ -29,7 +30,7 @@ class ScanResult {
   final int safeSenderCount; // safe sender matches
   final int noRuleCount; // emails with no rule match
   final int errorCount; // scan errors
-  final String status; // 'in_progress', 'completed', 'error'
+  final String status; // 'in_progress', 'completed', 'error', 'interrupted' (F175)
   final String? errorMessage; // error details if status='error'
   final List<String> foldersScanned; // folders that were scanned
 
@@ -430,6 +431,119 @@ class ScanResultStore {
     } catch (e) {
       _logger.e('Failed to mark scan as error: $e');
       rethrow;
+    }
+  }
+
+  /// F175 (Sprint 62): reconcile STALE `in_progress` rows -- scans whose
+  /// process died without marking their row (LOW_MEMORY kill, force-stop,
+  /// crash). Any `in_progress` row whose `started_at` is older than
+  /// [staleAfter] is marked `interrupted`, so Scan History stops showing
+  /// dead scans as forever-running (the Sprint 61 rows 44-60 class).
+  ///
+  /// The age guard is what makes this SAFE cross-process: on Windows the
+  /// background worker scans in a SEPARATE process, so at app startup a
+  /// fresh `in_progress` row may be a genuinely LIVE scan -- only rows
+  /// older than the scan timeout are stale by definition on both
+  /// platforms (ADR-0042: one shared rule, no platform branch needed).
+  ///
+  /// Returns the number of rows reconciled.
+  Future<int> reconcileStaleInProgressScans({
+    // Sprint 62 code review (M-3): default derived from the ONE timeout
+    // constant, so a future change to scanTimeout cannot silently leave
+    // reconciliation on a stale literal.
+    Duration staleAfter = ScanCoordinator.scanTimeout,
+  }) async {
+    try {
+      final db = await _databaseHelper.database;
+      final cutoff =
+          DateTime.now().subtract(staleAfter).millisecondsSinceEpoch;
+
+      final count = await db.update(
+        'scan_results',
+        {
+          'status': 'interrupted',
+          'error_message':
+              'Scan never completed -- interrupted (process ended or scan '
+                  'timed out); reconciled at startup',
+        },
+        where: 'status = ? AND started_at < ?',
+        whereArgs: ['in_progress', cutoff],
+      );
+
+      if (count > 0) {
+        _logger.i('F175: reconciled $count stale in_progress scan(s) '
+            'to interrupted');
+      }
+      return count;
+    } catch (e) {
+      _logger.e('Failed to reconcile stale in_progress scans: $e');
+      return 0;
+    }
+  }
+
+  /// F175 (Sprint 62): the ACTIVE background scan, if any -- an
+  /// `in_progress` row with scan_type `background` whose `started_at` is
+  /// within [freshWithin]. Database-backed so it sees background scans in
+  /// OTHER processes too (the Windows Task Scheduler worker shares this
+  /// database), which an in-process registry cannot -- this is what makes
+  /// the manual-scan wait notice platform-uniform.
+  Future<ScanResult?> getActiveBackgroundScan({
+    // Sprint 62 code review (M-3): same single-source rule as above -- a
+    // row older than the scan timeout is stale by definition, never active.
+    Duration freshWithin = ScanCoordinator.scanTimeout,
+  }) async {
+    try {
+      final db = await _databaseHelper.database;
+      final cutoff =
+          DateTime.now().subtract(freshWithin).millisecondsSinceEpoch;
+
+      final maps = await db.query(
+        'scan_results',
+        where: 'status = ? AND scan_type = ? AND started_at >= ?',
+        whereArgs: ['in_progress', 'background', cutoff],
+        orderBy: 'started_at DESC',
+        limit: 1,
+      );
+
+      if (maps.isEmpty) return null;
+      return ScanResult.fromMap(maps.first);
+    } catch (e) {
+      _logger.e('Failed to query active background scan: $e');
+      return null;
+    }
+  }
+
+  /// F175 (Sprint 62): average background-scan duration for [accountId]
+  /// over the last [sampleSize] COMPLETED background scans, or null when
+  /// there is no history ("no history" is a legitimate answer the UI must
+  /// handle -- never fabricate an estimate).
+  Future<Duration?> getAverageScanDuration(
+    String accountId, {
+    String scanType = 'background',
+    int sampleSize = 10,
+  }) async {
+    try {
+      final db = await _databaseHelper.database;
+      final maps = await db.query(
+        'scan_results',
+        columns: ['started_at', 'completed_at'],
+        where: 'account_id = ? AND scan_type = ? AND status = ? '
+            'AND completed_at IS NOT NULL',
+        whereArgs: [accountId, scanType, 'completed'],
+        orderBy: 'completed_at DESC',
+        limit: sampleSize,
+      );
+
+      if (maps.isEmpty) return null;
+      var totalMs = 0;
+      for (final map in maps) {
+        totalMs = totalMs +
+            ((map['completed_at']! as int) - (map['started_at']! as int));
+      }
+      return Duration(milliseconds: totalMs ~/ maps.length);
+    } catch (e) {
+      _logger.e('Failed to compute average scan duration: $e');
+      return null;
     }
   }
 

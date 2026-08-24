@@ -28,6 +28,8 @@ import 'core/services/background_deferral_ingest.dart';
 import 'adapters/storage/app_paths.dart';
 import 'adapters/storage/secure_credentials_store.dart';
 import 'core/security/certificate_pinner.dart';
+import 'core/services/scan_coordinator.dart'; // F175 (Sprint 62)
+import 'core/storage/scan_result_store.dart'; // F175 (Sprint 62)
 import 'util/redact.dart';
 // import 'ui/screens/platform_selection_screen.dart'; // OLD: Direct to platform selection.
 import 'ui/screens/main_navigation_screen.dart'; // NEW: Main navigation with bottom nav (Android)
@@ -264,6 +266,20 @@ void main(List<String> args) async {
       }
     } catch (e) {
       Logger().w('Unmatched email retention cleanup failed: $e');
+    }
+
+    // F175 (Sprint 62): reconcile scans left `in_progress` by a dead process
+    // (LOW_MEMORY kill, force-stop, crash) -- they are marked `interrupted`
+    // so Scan History stops showing them as forever-running. Age-guarded to
+    // the scan timeout, so a genuinely LIVE background scan in the separate
+    // Windows worker process is never clobbered (both platforms share the
+    // rule; see reconcileStaleInProgressScans).
+    try {
+      await ScanResultStore(DatabaseHelper()).reconcileStaleInProgressScans(
+        staleAfter: ScanCoordinator.scanTimeout,
+      );
+    } catch (e) {
+      Logger().w('Stale in_progress scan reconciliation failed: $e');
     }
 
     // SEC-8 (Sprint 33): apply persisted certificate-pinning preference.

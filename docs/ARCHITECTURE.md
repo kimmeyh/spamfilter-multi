@@ -167,9 +167,14 @@ Business logic and domain services.
 2. Load credentials from `SecureCredentialsStore`
 3. Connect to email provider
 4. Initialize scan result persistence (database)
-5. For each folder: fetch messages, evaluate against rules, take actions (batch operations)
+5. For each folder: fetch messages **in bounded batches of 20 (F177, Sprint 62)** -- each batch
+   is evaluated against rules immediately and reduced to a body-truncated record
+   (`kBodyPreviewMaxLength`) before the next batch is fetched, so full message content is never
+   accumulated (the fix for the Sprint 61 unbounded-fetch LOW_MEMORY kills); actions are then
+   taken from the evaluated records in batch operations (Issue #144 two-phase design preserved)
 6. Persist individual email actions to database
-7. Update UI progress (throttled per [ADR-0022](adr/0022-throttled-ui-progress-updates.md))
+7. Update UI progress (throttled per [ADR-0022](adr/0022-throttled-ui-progress-updates.md);
+   per-batch fetch progress since F177)
 8. Finalize scan results
 
 #### RuleConflictDetector
@@ -181,6 +186,7 @@ Business logic and domain services.
 | Service | Purpose |
 |---------|---------|
 | **BackgroundModeService** | Detects `--background-scan` CLI flag in main.dart |
+| **ScanCoordinator** (`scan_coordinator.dart`, F175 Sprint 62) | In-process scan mutual exclusion: EVERY scan type acquires a FIFO lease inside `EmailScanner.scanInbox` (released in its `finally`), so manual/background/test/demo scans never run concurrently within a process; carries the 30-minute `scanTimeout` used by the background-scan timeout wrap and startup stale-`in_progress` reconciliation; on background-scan timeout the hung scan's lease is force-released (owner-matched, `releaseActiveByOwner`) so queued scans proceed instead of waiting out their own limit. **Declared ADR-0042 exception**: Windows background scans run in a separate Task Scheduler process the in-process lock cannot see -- cross-process exclusion there stays with F109 foreground-deferral; cross-process DETECTION (the manual-scan wait notice with average-duration estimate) is database-backed and platform-uniform |
 | **BackgroundScanCore** (`background_scan_core.dart`, F161 Sprint 61) | The per-account scan orchestration BOTH platforms run (settings resolution with `isBackground: true`, headless EmailScanProvider, shared EmailScanner, persistence) -- extracted verbatim from the Windows worker so background scans are the identical pipeline everywhere |
 | **BackgroundScanScheduler** (`background_scan_scheduler.dart`, F161 Sprint 61, ADR-0042 platform factory) | Shared scheduling contract (isSupported/isScheduled/schedule/cancel) with `WindowsSchedulerAdapter` (Task Scheduler), `AndroidSchedulerAdapter` (WorkManager per-account unique work, 15-min floor, network-required, UPDATE policy), and `UnsupportedPlatformScheduler` (explicit named no-op); resolved by `BackgroundScanSchedulerFactory` with a test override seam |
 | **AndroidBackgroundScanWorker** (`android_background_scan_worker.dart`, F161 Sprint 61) | WorkManager dispatcher (`@pragma('vm:entry-point')`) + worker mirroring the Windows preamble; completion notification via flutter_local_notifications |

@@ -1,0 +1,12 @@
+{
+  "_description": "Test fixture: Sprint 63 at close-out, plan approved with PR recorded -- isolates check 3d (Phase 5 evidence markers in the sprint plan).",
+  "_last_updated": "2026-08-23T20:00:00Z",
+  "current_sprint": {
+    "number": 63,
+    "branch": "feature/20260823_Sprint_63",
+    "status": "Phase 7.7 close-out",
+    "plan_approved": true,
+    "pr_number": 360,
+    "pr_url": "https://github.com/kimmeyh/spamfilter-multi/pull/360"
+  }
+}

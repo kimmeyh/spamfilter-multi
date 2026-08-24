@@ -18,6 +18,7 @@ import 'dart:async';
 import 'dart:io';
 
 import 'package:enough_mail/enough_mail.dart';
+import 'package:flutter/foundation.dart' show visibleForTesting;
 import 'package:logger/logger.dart';
 
 import '../../core/models/batch_action_result.dart';
@@ -240,10 +241,22 @@ class GenericIMAPAdapter with BatchOperationsMixin implements SpamFilterPlatform
     }
   }
 
+  /// F177 (Sprint 62): [onBatch], when provided, receives each
+  /// [fetchBatchSize]-bounded batch of messages as it is fetched (with
+  /// fetched-so-far / total-UIDs progress for the CURRENT folder) and the
+  /// returned list is empty -- the caller owns per-batch processing so no
+  /// full-folder list is ever retained. Without [onBatch] the pre-F177
+  /// list-returning contract is unchanged (fetching is still internally
+  /// batched).
   @override
   Future<List<EmailMessage>> fetchMessages({
     required int daysBack,
     required List<String> folderNames,
+    Future<void> Function(
+      List<EmailMessage> batch,
+      int fetchedSoFar,
+      int totalUids,
+    )? onBatch,
   }) async {
     if (_imapClient == null) {
       _logger.e('[IMAP] fetchMessages called but _imapClient is NULL');
@@ -285,9 +298,11 @@ class GenericIMAPAdapter with BatchOperationsMixin implements SpamFilterPlatform
         _logger.i('[IMAP] fetchMessages: Found ${searchResult.matchingSequence!.length} UIDs in "$folderName"');
 
         // [ISSUE #145] Fetch message details using UID FETCH
+        // (F177: internally batched; streams to onBatch when provided)
         final fetchedMessages = await _fetchMessageDetails(
           searchResult.matchingSequence!,
           folderName,
+          onBatch: onBatch,
         );
 
         _logger.i('[IMAP] fetchMessages: Fetched ${fetchedMessages.length} message details from "$folderName"');
@@ -317,9 +332,17 @@ class GenericIMAPAdapter with BatchOperationsMixin implements SpamFilterPlatform
   /// Returns ImapIncrementalFetchResult.empty() when no new UIDs exist
   /// (caller still persists the cursor, which advances on every server
   /// state change). Throws on connection errors.
+  /// F177 (Sprint 62): [onBatch] as on [fetchMessages] -- when provided,
+  /// batches stream to the caller and the result's `emails` list is empty
+  /// (the `newCursor` is still returned and correct).
   Future<ImapIncrementalFetchResult> fetchMessagesIncremental({
     required int startUid,
     required String folderName,
+    Future<void> Function(
+      List<EmailMessage> batch,
+      int fetchedSoFar,
+      int totalUids,
+    )? onBatch,
   }) async {
     if (_imapClient == null) {
       _logger.e('[IMAP] fetchMessagesIncremental called but _imapClient is NULL');
@@ -358,7 +381,8 @@ class GenericIMAPAdapter with BatchOperationsMixin implements SpamFilterPlatform
 
       _logger.i('[IMAP] fetchMessagesIncremental: found ${sequence.length} new UIDs in $folderName (new cursor=$maxUid)');
 
-      final fetched = await _fetchMessageDetails(sequence, folderName);
+      final fetched =
+          await _fetchMessageDetails(sequence, folderName, onBatch: onBatch);
       _logger.i('[IMAP] fetchMessagesIncremental: fetched ${fetched.length} message details');
 
       return ImapIncrementalFetchResult(
@@ -1324,29 +1348,105 @@ class GenericIMAPAdapter with BatchOperationsMixin implements SpamFilterPlatform
   }
 
   /// [ISSUE #145] Fetch message details using UID FETCH for stable identifiers
+  /// F177 (Sprint 62): test-only injection of a fake [ImapClient] so the
+  /// batched fetch path is unit-testable against scripted SEARCH/FETCH
+  /// responses without a live server. Production code never calls this;
+  /// [loadCredentials] remains the only production path that sets the
+  /// client.
+  @visibleForTesting
+  void debugSetImapClient(ImapClient client) {
+    _imapClient = client;
+    _currentMailbox = null;
+  }
+
+  /// F177 (Sprint 62): the universal within-folder fetch batch size.
+  ///
+  /// Every UID FETCH is bounded to at most this many messages, so at no
+  /// point does the adapter hold more than one batch of full MIME content
+  /// in memory. 20 was set with Harold (2026-08-19) from the Sprint 61
+  /// forensics: an unbounded 137-message fetch retained ~7-10MB per message
+  /// and drove the Android app to 817MB-1.4GB PSS, drawing LOW_MEMORY
+  /// kills. No folder-size threshold exists on purpose -- a 3-message
+  /// folder is simply one batch of 3.
+  static const int fetchBatchSize = 20;
+
   Future<List<EmailMessage>> _fetchMessageDetails(
     MessageSequence sequence,
-    String folderName,
-  ) async {
+    String folderName, {
+    Future<void> Function(
+      List<EmailMessage> batch,
+      int fetchedSoFar,
+      int totalUids,
+    )? onBatch,
+  }) async {
     final messages = <EmailMessage>[];
 
+    // F174 (Sprint 62): an EMPTY or unlistable search result must return an
+    // empty list, never reach a UID FETCH. Pre-F174, building the fetch
+    // command from an empty-mailbox search threw enough_mail's
+    // InvalidArgumentException ("no ID added to sequence"), which the
+    // per-folder catch converted into "returned 0 messages" with errors=0 --
+    // exception-as-control-flow that made a REAL fetch failure equally
+    // invisible (confirmed live on [Gmail]/Spam with messagesExists=0,
+    // Sprint 61). The empty case is now an explicit, logged non-event; the
+    // error path below is reserved for genuine failures.
+    final List<int> uids;
     try {
-      // [ISSUE #145] Use UID FETCH to get message UIDs alongside content
-      final fetchResult = await _imapClient!.uidFetchMessages(
-        sequence,
-        'BODY.PEEK[]', // Fetch full message without marking as read
-      );
+      uids = sequence.toList();
+    } on InvalidArgumentException catch (e) {
+      _logger.i(
+          '[IMAP] _fetchMessageDetails: unlistable search sequence for '
+          '"$folderName" (${e.message}) -- treating as empty folder');
+      return messages;
+    }
+    if (uids.isEmpty) {
+      _logger.i(
+          '[IMAP] _fetchMessageDetails: empty UID list for "$folderName" -- '
+          'nothing to fetch');
+      return messages;
+    }
 
-      for (final mimeMessage in fetchResult.messages) {
-        try {
-          messages.add(_convertMimeMessage(mimeMessage, folderName));
-        } catch (e) {
-          _logger.w('Failed to parse message: $e');
-          // Continue with other messages
+    // F177: chunk the UID list so each UID FETCH is bounded to
+    // [fetchBatchSize] messages. When [onBatch] is provided, each converted
+    // batch is handed off and NOT accumulated here -- the caller owns
+    // per-batch processing and release; the returned list is empty.
+    var fetchedSoFar = 0;
+    for (var i = 0; i < uids.length; i += fetchBatchSize) {
+      final end =
+          (i + fetchBatchSize < uids.length) ? i + fetchBatchSize : uids.length;
+      final chunk = MessageSequence.fromIds(uids.sublist(i, end), isUid: true);
+
+      final converted = <EmailMessage>[];
+      try {
+        // [ISSUE #145] Use UID FETCH to get message UIDs alongside content
+        final fetchResult = await _imapClient!.uidFetchMessages(
+          chunk,
+          'BODY.PEEK[]', // Fetch full message without marking as read
+        );
+
+        for (final mimeMessage in fetchResult.messages) {
+          try {
+            converted.add(_convertMimeMessage(mimeMessage, folderName));
+          } catch (e) {
+            _logger.w('Failed to parse message: $e');
+            // Continue with other messages
+          }
         }
+      } catch (e) {
+        throw FetchException('Failed to fetch message details', e);
       }
-    } catch (e) {
-      throw FetchException('Failed to fetch message details', e);
+
+      // Sprint 62 code review (H-1): the [onBatch] handoff runs OUTSIDE the
+      // fetch guard. onBatch is the scanner's evaluation pipeline; wrapping
+      // it above relabeled a rule/provider/DB failure as
+      // 'Failed to fetch message details' -- the F174 misdiagnosis class,
+      // in the opposite direction.
+      fetchedSoFar += end - i;
+      if (onBatch != null) {
+        await onBatch(converted, fetchedSoFar, uids.length);
+      } else {
+        messages.addAll(converted);
+      }
     }
 
     return messages;

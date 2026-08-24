@@ -5,6 +5,7 @@ import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 import 'package:logger/logger.dart';
 import 'package:path_provider/path_provider.dart';
+import '../widgets/account_email_label.dart'; // F176 (Sprint 62)
 import '../widgets/app_bar_with_exit.dart';
 import '../widgets/standard_app_bar_actions.dart';
 import '../widgets/auth_warning_dialog.dart';
@@ -1017,6 +1018,10 @@ class _ResultsDisplayScreenState extends State<ResultsDisplayScreen> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
+            // F176 (Sprint 62): which account these results belong to -- the
+            // AppBar title carries it too, but truncates at phone width.
+            AccountEmailLabel(email: widget.accountEmail),
+            const SizedBox(height: 2),
             Text(
               _buildSummaryTitle(
                   hasLiveResults, showingHistorical, scanProvider, allResults),
@@ -1623,11 +1628,51 @@ class _ResultsDisplayScreenState extends State<ResultsDisplayScreen> {
     showDialog(
       context: context,
       barrierColor: Colors.black54,
+      // F178 round 2: control the safe area OURSELVES. showDialog's default
+      // useSafeArea:true wraps the Stack in a SafeArea whose size and
+      // clipping do not match the GLOBAL anchor coordinates the position
+      // math uses -- the popup overflowed the SafeArea'd Stack and was
+      // flush-CLIPPED at its bottom edge (Harold's first-row screenshot:
+      // "Block Subject" simply cut off). With useSafeArea:false the Stack
+      // spans the full screen (matching the anchors), and the inset math
+      // below keeps the popup inside the safe area explicitly.
+      useSafeArea: false,
       builder: (dialogContext) {
-        // Get screen dimensions
-        final screenSize = MediaQuery.of(context).size;
+        // Get screen dimensions.
+        // F178 round 2 (Sprint 62 MV, Harold's first-row screenshot): read
+        // the insets from the ROOT VIEW, not an inherited MediaQuery. Both
+        // the screen's context (Scaffold body) and the dialog's context
+        // (inside showDialog's SafeArea, when enabled) see CONSUMED padding
+        // -- zeros -- which silently degenerated round 1's safe-area math to
+        // the old full-screen math on a real phone, while the flat
+        // widget-test harness kept the padding and stayed green.
+        // MediaQueryData.fromView cannot be consumed by anything.
+        final mediaQuery = MediaQueryData.fromView(View.of(context));
+        final screenSize = mediaQuery.size;
         final screenHeight = screenSize.height;
-        final popupHeight = screenHeight * 0.6; // Approximate popup height
+        // F178 (Sprint 62, found by Harold with screenshots): on a phone,
+        // `size.height` includes the system status/navigation bar areas, so
+        // the Sprint 60 clamp below let the popup's BOTTOM sit under the
+        // Android navigation bar -- "Block Subject" and the rows below it
+        // were unreachable even at full scroll. All height/position math now
+        // works within the SAFE area. On desktop the insets are zero, so
+        // this is a no-op there (ADR-0042: parity by construction).
+        final safeTop = mediaQuery.padding.top;
+        final safeBottom = mediaQuery.padding.bottom;
+        final safeScreenBottom = screenHeight - safeBottom;
+        final safeHeight = screenHeight - safeTop - safeBottom;
+        // F178 round 2 (Harold, Sprint 62 MV): on COMPACT widths the popup
+        // is TIED TO THE BOTTOM of the safe area and grows upward as large
+        // as its content needs -- the same pattern the Windows app uses at
+        // very small window sizes. Anchor-relative placement is a desktop
+        // affordance (it keeps the source row and the NEXT row visible
+        // beside the popup); on a phone the popup covers the list anyway,
+        // and bottom-anchoring guarantees the bottom actions ("Block
+        // Subject") are always at a fixed, reachable place.
+        final isCompactWidth = screenSize.width < 600;
+        final popupHeight = isCompactWidth
+            ? safeHeight - 24 // grow toward the top, small breathing gap
+            : safeHeight * 0.6; // desktop: within safe area (Sprint 60 cap)
 
         // Calculate position
         double? top;
@@ -1643,11 +1688,19 @@ class _ResultsDisplayScreenState extends State<ResultsDisplayScreen> {
         // (see the ConstrainedBox below), so the clamp is against the REAL
         // maximum height, with the existing inner SingleChildScrollView as
         // the graceful fallback if content ever exceeds the cap.
-        final maxTop = (screenHeight - popupHeight - 8).clamp(8.0, screenHeight);
+        // F178: clamp against the SAFE bottom, and never above the safe top.
+        final maxTop = (safeScreenBottom - popupHeight - 8)
+            .clamp(safeTop + 8.0, screenHeight);
 
-        if (itemPosition != null && itemSize != null) {
+        if (isCompactWidth) {
+          // Bottom-anchored: Positioned(bottom:) measures from the STACK's
+          // bottom (the full screen with useSafeArea: false), so the system
+          // inset is added explicitly. The ConstrainedBox cap lets content
+          // grow upward to popupHeight; shorter content hugs the bottom.
+          bottom = safeBottom;
+        } else if (itemPosition != null && itemSize != null) {
           final itemBottom = itemPosition.dy + itemSize.height;
-          final spaceBelow = screenHeight - itemBottom;
+          final spaceBelow = safeScreenBottom - itemBottom;
           final spaceAbove = itemPosition.dy;
           // Sprint 46 manual-testing feedback (Harold 2026-07-11): when the
           // screen has room, drop the popup one additional email-height lower
@@ -1663,10 +1716,14 @@ class _ResultsDisplayScreenState extends State<ResultsDisplayScreen> {
           } else if (spaceBelow >= popupHeight) {
             // Show directly below email (no room to also expose the next item)
             top = (itemBottom + 8).clamp(0.0, maxTop);
-          } else if (spaceAbove >= popupHeight + 8) {
+          } else if (spaceAbove - safeTop >= popupHeight + 8) {
             // Show above email. PR #335 cowork review: the +8 belongs in the
             // guard too -- with spaceAbove in [popupHeight, popupHeight+8)
             // the 8px gap pushed the popup's top edge up to 8px off-window.
+            // Sprint 62 code review (M-1): spaceAbove measures from y=0, but
+            // only the space below safeTop is usable -- without subtracting
+            // it, a top inset (large-screen Android/foldable; zero on
+            // desktop) let the popup's top edge extend into the status bar.
             bottom = screenHeight - itemPosition.dy + 8; // 8px gap
           } else {
             // Not enough room above or below -- as high as needed to fit.
@@ -1703,8 +1760,11 @@ class _ResultsDisplayScreenState extends State<ResultsDisplayScreen> {
               // anyway); desktop keeps the F151e/MV-8 right-65% layout.
               child: FractionallySizedBox(
                 alignment: Alignment.centerRight,
-                widthFactor:
-                    MediaQuery.of(context).size.width < 600 ? 1.0 : 0.65,
+                // Sprint 62 code review (M-2): reuse the fromView-based
+                // isCompactWidth so position math and width factor cannot
+                // disagree when the inherited MediaQuery diverges from the
+                // raw view size.
+                widthFactor: isCompactWidth ? 1.0 : 0.65,
                 child: ConstrainedBox(
                   // maxHeight (Sprint 60 MV): the hard cap that makes the
                   // clamped `top` a real fit guarantee -- content beyond the

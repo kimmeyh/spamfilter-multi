@@ -2,12 +2,17 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:logger/logger.dart';
 
+import 'package:flutter/foundation.dart' show visibleForTesting;
+
 import '../../core/providers/email_scan_provider.dart';
 import '../../core/providers/rule_set_provider.dart';
 import '../../core/services/email_scanner.dart';
+import '../../core/storage/database_helper.dart'; // F175 (Sprint 62)
+import '../../core/storage/scan_result_store.dart'; // F175 (Sprint 62)
 import '../../core/storage/settings_store.dart'; // [NEW] ISSUE #138: Load scan mode from settings
 import '../../main.dart' show routeObserver;
 import '../../util/error_messages.dart';
+import '../widgets/account_email_label.dart'; // F176 (Sprint 62)
 import '../widgets/app_bar_with_exit.dart';
 import '../widgets/standard_app_bar_actions.dart';
 import 'results_display_screen.dart';
@@ -267,6 +272,10 @@ class _ScanProgressScreenState extends State<ScanProgressScreen> with RouteAware
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
+        // F176 (Sprint 62): which account this Manual Scan runs against --
+        // the AppBar title carries it too, but truncates at phone width.
+        AccountEmailLabel(email: widget.accountEmail),
+        const SizedBox(height: 4),
         Row(
           children: [
             Expanded(
@@ -564,6 +573,44 @@ class _ScanProgressScreenState extends State<ScanProgressScreen> with RouteAware
 ///     not stack an ever-growing chain of Results screens on the
 ///     Navigator -- each new scan's Results replaces the previous one, and
 ///     "Back" still returns to whatever was before Results in either case.
+/// F175 (Sprint 62): human wording for "how much longer will the active
+/// background scan take", from its start time and the rolling average of
+/// recent completed background scans. Pure and extracted so the estimate
+/// logic is unit-testable without the dialog.
+///
+/// Harold's requirement: "present an average wait time for background scan
+/// completion, if reasonably possible" -- so a missing history says so
+/// honestly instead of fabricating a number.
+@visibleForTesting
+String formatBackgroundWaitEstimate({
+  required DateTime startedAt,
+  required Duration? average,
+}) {
+  if (average == null) {
+    return 'There is no scan history yet to estimate its completion time.';
+  }
+  final elapsed = DateTime.now().difference(startedAt);
+  final remaining = average - elapsed;
+  if (remaining <= Duration.zero) {
+    return 'Based on recent scans (average '
+        '${_formatMinutes(average)}), it should finish shortly.';
+  }
+  // MV copy fix (Harold's live run, 2026-08-22): "about under a minute
+  // remaining" read awkwardly -- sub-minute remainders get their own wording.
+  if (remaining < const Duration(minutes: 1)) {
+    return 'Based on recent scans (average ${_formatMinutes(average)}), '
+        'less than a minute remaining.';
+  }
+  return 'Based on recent scans (average ${_formatMinutes(average)}), '
+      'about ${_formatMinutes(remaining)} remaining.';
+}
+
+String _formatMinutes(Duration d) {
+  if (d.inMinutes < 1) return 'under a minute';
+  final minutes = (d.inSeconds / 60).ceil();
+  return minutes == 1 ? '1 minute' : '$minutes minutes';
+}
+
 Future<void> startRealScan({
   required BuildContext context,
   required EmailScanProvider scanProvider,
@@ -583,6 +630,54 @@ Future<void> startRealScan({
   // unhandled async error with no user-facing feedback. The whole body is
   // now one try/catch so every failure path reports consistently.
   try {
+    // F175 (Sprint 62, Harold's verbatim intent): a manual live scan DETECTS
+    // an active background scan and notifies the user to wait, with an
+    // average completion time where reasonably computable. Detection is
+    // database-backed so it sees background scans in OTHER processes too
+    // (the Windows Task Scheduler worker shares this database). If the user
+    // chooses "Wait and start", the scan proceeds into scanInbox, whose
+    // ScanCoordinator lease queues it behind the active in-process scan --
+    // no second IMAP session opens until the background scan finishes
+    // (in-process case) or the user has explicitly proceeded past the
+    // notice (cross-process case).
+    final scanResultStore = ScanResultStore(DatabaseHelper());
+    final activeBg = await scanResultStore.getActiveBackgroundScan();
+    if (activeBg != null) {
+      final average =
+          await scanResultStore.getAverageScanDuration(activeBg.accountId);
+      final estimate = formatBackgroundWaitEstimate(
+        startedAt: DateTime.fromMillisecondsSinceEpoch(activeBg.startedAt),
+        average: average,
+      );
+      if (!context.mounted) return;
+      final proceed = await showDialog<bool>(
+        context: context,
+        builder: (dialogContext) => AlertDialog(
+          title: const Text('Background scan in progress'),
+          content: Text(
+            'A background scan of ${activeBg.accountId} is currently '
+            'running. $estimate\n\n'
+            'Starting now will wait for it to finish before scanning.',
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(dialogContext).pop(false),
+              child: const Text('Cancel'),
+            ),
+            FilledButton(
+              onPressed: () => Navigator.of(dialogContext).pop(true),
+              child: const Text('Wait and start'),
+            ),
+          ],
+        ),
+      );
+      if (proceed != true) {
+        logger.i('[SCAN_SCREEN] F175: manual scan cancelled -- background '
+            'scan active');
+        return;
+      }
+    }
+    if (!context.mounted) return;
     // Load scan configuration directly from Settings (no dialog popup)
     final settingsStore = SettingsStore();
     final daysBack = await settingsStore.getEffectiveDaysBack(
