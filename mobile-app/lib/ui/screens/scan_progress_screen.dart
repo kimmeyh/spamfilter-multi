@@ -595,6 +595,12 @@ String formatBackgroundWaitEstimate({
     return 'Based on recent scans (average '
         '${_formatMinutes(average)}), it should finish shortly.';
   }
+  // MV copy fix (Harold's live run, 2026-08-22): "about under a minute
+  // remaining" read awkwardly -- sub-minute remainders get their own wording.
+  if (remaining < const Duration(minutes: 1)) {
+    return 'Based on recent scans (average ${_formatMinutes(average)}), '
+        'less than a minute remaining.';
+  }
   return 'Based on recent scans (average ${_formatMinutes(average)}), '
       'about ${_formatMinutes(remaining)} remaining.';
 }

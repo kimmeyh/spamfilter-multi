@@ -198,6 +198,17 @@ void main() {
       expect(text, contains('about 8 minutes remaining'));
     });
 
+    test(
+        'sub-minute remainders read "less than a minute remaining" '
+        '(MV copy fix, Harold 2026-08-22)', () {
+      final text = formatBackgroundWaitEstimate(
+        startedAt:
+            DateTime.now().subtract(const Duration(minutes: 4, seconds: 30)),
+        average: const Duration(minutes: 5),
+      );
+      expect(text, contains('less than a minute remaining'));
+    });
+
     test('overdue scans read as finishing shortly, never negative', () {
       final text = formatBackgroundWaitEstimate(
         startedAt: DateTime.now().subtract(const Duration(minutes: 30)),

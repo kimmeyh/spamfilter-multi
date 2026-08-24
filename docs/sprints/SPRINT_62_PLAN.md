@@ -547,6 +547,37 @@ be Haiku.
 - **Cards**: GitHub issues created at Phase 3.3.1 (numbers recorded in `sprint_status.json`).
 - **Draft PR**: created at Phase 3.3.1, stays DRAFT until end of Phase 7.7.
 
+## MANUAL VALIDATION RESULTS (2026-08-22) -- COMPLETE, ALL ITEMS DISPOSED
+
+- **F177 (survival run, the previously-fatal case)**: PASS. Manual daysBack=0 AOL scan (181
+  emails, all folders) completed in 6m17s with progress moving throughout; no LOW_MEMORY kill
+  (last sprint this exact case died repeatedly). Memory: peak ~1,006MB PSS vs the old
+  817MB-1.4GB WITH death; in-flight cost ~1.6MB/message vs ~6MB. Registered **F180** (fetch/eval
+  body caps) as phase 2 for the remaining peak -- full bodies through fetch+evaluation are the
+  residual allocation source; Dart keeps freed heap pages mapped (no manual release exists; a
+  live `am send-trim-memory` could not reduce it -- answered Harold's question empirically).
+- **F175**: PASS. Wait notice rendered live with account name + rolling-average estimate
+  ("average under a minute"); Cancel path verified live; queueing pinned by the automated
+  no-overlap test. Startup reconciliation verified on-device: all 29 orphaned in_progress rows
+  (incl. the Sprint 61 44-60 class) now `interrupted`, zero remaining. Copy nit fixed
+  post-demo: sub-minute remainders now read "less than a minute remaining".
+- **F175 R-7 DECISION (Harold, Class-1)**: recommendation DECLINED -- the fully-independent
+  Manual/Background settings tabs are "correct and the desired behavior". Recorded as a
+  deliberate Product Owner design decision; do not re-raise.
+- **F178**: round 1 was INERT on-device (consumed MediaQuery padding read zero insets; the flat
+  test harness kept padding and lied green) -- caught by Harold's first-row screenshot. Round 2
+  redesigned per Harold's direction: compact screens BOTTOM-ANCHOR the popup (the Windows
+  small-window pattern), insets from the unconsumable root view, useSafeArea false. **Harold:
+  "popup looks good from both rows" -- PASS.**
+- **F176**: PASS both platforms (labels visible in Harold's Windows and Android screenshots).
+- **F161 AC-4 (Sprint 61 carry-over)**: PASS -- Harold: Windows Scan History "looks good".
+- **testLimit observation -> F181 registered**: Harold decided the 50-email limit option is
+  removed outright ("no longer appropriate... fully planned and executed with precision").
+- **CI feedback**: draft PRs no longer run CI (fires at Ready-for-Review); the Linux-only
+  scheduler-test failure root-caused (Workmanager singleton replaces injected fakes on hosts
+  with a platform branch) and fixed.
+- New backlog from MV: F179 (subject-phrase picker, GenAI-gated HOLD), F180, F181.
+
 ## Manual Validation -- planned steps (to be refined at Phase 5.3)
 
 1. **F161 AC-4 carry-over (Windows, ~5m)**: open Windows Scan History and confirm scheduled
