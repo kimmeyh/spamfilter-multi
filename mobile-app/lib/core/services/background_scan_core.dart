@@ -152,6 +152,17 @@ class BackgroundScanCore {
       final minutes = ScanCoordinator.scanTimeout.inMinutes;
       _logger.e('Background scan TIMED OUT after $minutes minutes for '
           '${Redact.accountId(accountId)} -- marking failed (F175)');
+      // Sprint 62 code review (C-2): the hung scanInbox still holds the
+      // coordinator lease -- its `finally` cannot run until the hang
+      // resolves, which may be never. Without this, every queued scan
+      // waits its full limit and then fails, defeating exactly the
+      // hung-scan case F175 exists for. Owner-matched, so a timeout that
+      // fired while this scan was still QUEUED cannot evict a different
+      // live scan.
+      ScanCoordinator.instance.releaseActiveByOwner(
+        scanType: 'background',
+        accountId: accountId,
+      );
       await scanProvider
           .errorScan('Scan timed out after $minutes minutes (F175)');
       rethrow;

@@ -47,6 +47,13 @@ void main() {
       'email': 'user@aol.com',
       'date_added': DateTime.now().millisecondsSinceEpoch,
     });
+    // Second account for the H-2 cross-account detection test.
+    await database.insert('accounts', {
+      'account_id': 'gmail-other@gmail.com',
+      'platform_id': 'gmail',
+      'email': 'other@gmail.com',
+      'date_added': DateTime.now().millisecondsSinceEpoch,
+    });
   });
 
   tearDown(() async {
@@ -59,9 +66,10 @@ void main() {
     required String status,
     required DateTime startedAt,
     DateTime? completedAt,
+    String forAccountId = accountId,
   }) {
     return store.addScanResult(ScanResult(
-      accountId: accountId,
+      accountId: forAccountId,
       scanType: scanType,
       scanMode: 'readOnly',
       startedAt: startedAt.millisecondsSinceEpoch,
@@ -138,6 +146,27 @@ void main() {
       expect(active, isNotNull);
       expect(active!.scanType, 'background');
       expect(active.status, 'in_progress');
+    });
+
+    test(
+        'detection is deliberately NOT account-scoped: a background scan of '
+        'ANY account triggers the wait notice (Sprint 62 code review H-2 -- '
+        'intended design, pinned)', () async {
+      // The ScanCoordinator serializes ALL scans in the process regardless
+      // of account, so a manual scan of account A genuinely WILL wait for a
+      // background scan of account B -- the notice must therefore fire for
+      // it, and it names the other account so the wait is explainable.
+      await seedScan(
+        scanType: 'background',
+        status: 'in_progress',
+        startedAt: DateTime.now().subtract(const Duration(minutes: 2)),
+        forAccountId: 'gmail-other@gmail.com',
+      );
+      final active = await store.getActiveBackgroundScan();
+      expect(active, isNotNull,
+          reason: 'cross-account detection is the point: the coordinator '
+              'blocks across accounts, so the notice must too');
+      expect(active!.accountId, 'gmail-other@gmail.com');
     });
   });
 

@@ -3,7 +3,7 @@
   "appId": "",
   "mode": "test",
   "attachTitle": "MyEmailSpamFilter [DEV]",
-  "description": "F129 (Sprint 51): Review No Rule Items screen -- filter chips and the covered-item sweep's reload path. COVERS the Sprint 50 surfaces MT-3 (the screen is reachable -- post-F135 it IS the home screen when accounts exist, so reachability is proven by its chips resolving on launch, not by an entry-point click) and MT-2c (sweep runs on every load). READ-ONLY: clicks filter chips and navigates only -- creates no rules, adds no safe senders, marks nothing processed -- so it is inherently net-zero on the dev DB; the final steps return to the home screen. TWO HARNESS CONSTRAINTS drove this design (Sprint 51 discovery, both re-confirmed live): (1) `ww_assert*` is NOT replayable by the script runner (README line 195) -- a case containing only asserts reports FAILED even when the UI is correct, so verification here is expressed as CLICKS: a click that resolves proves the element exists with that exact name, and a missing element errors the step. (2) The Windows UIA projection of Flutter semantics surfaces only widgets carrying a `tooltip:` plus screen titles and Text nodes; `Semantics(label:)` on a merged container does NOT project, so account ROWS are unaddressable by name and are deliberately not used. SELECTORS VERIFIED LIVE 2026-07-28 against dev build 0.5.8; REWORKED 2026-08-15 (Sprint 59): F135 (Sprint 52) made this screen the app default -- the home-screen entry-point click and 'Back' teardown steps were structurally stale (the screen has no self-referential icon and no Back; it is the root) and the reload tooltip was renamed from 'Refresh' to 'Re-check the last scan (does not fetch new mail)' per Harold's Sprint 52 feedback. Screen-name renamed to 'Review No Rule Items' per F155.",
+  "description": "F129 (Sprint 51): Review No Rule Items screen -- account filter and the covered-item sweep's reload path. COVERS the Sprint 50 surfaces MT-3 (the screen is reachable -- post-F135 it IS the home screen when accounts exist, so reachability is proven by its account-filter face resolving on launch, not by an entry-point click) and MT-2c (sweep runs on every load). READ-ONLY: drives the account-filter dropdown and navigates only -- creates no rules, adds no safe senders, marks nothing processed -- so it is inherently net-zero on the dev DB; every filter change is restored to All Accounts before the script ends. TWO HARNESS CONSTRAINTS drove this design (Sprint 51 discovery, both re-confirmed live): (1) `ww_assert*` is NOT replayable by the script runner (README line 195) -- a case containing only asserts reports FAILED even when the UI is correct, so verification here is expressed as CLICKS: a click that resolves proves the element exists with that exact name, and a missing element errors the step. (2) The Windows UIA projection of Flutter semantics surfaces only widgets carrying a `tooltip:` plus screen titles and Text nodes; `Semantics(label:)` on a merged container does NOT project, so account ROWS are unaddressable by name and are deliberately not used. SELECTORS VERIFIED LIVE 2026-07-28 against dev build 0.5.8; REWORKED 2026-08-15 (Sprint 59) for F135/F155; REPAIRED 2026-08-23 (Sprint 62 sweep) for F169 (Sprint 61): the horizontally-scrolling account filter CHIPS were replaced by a single-select DROPDOWN (PopupMenuButton faced by a Chip). The face projects as a Text node named with the ACTIVE selection and its live count (e.g. 'All Accounts (3)'); the open menu's entries project as Buttons with the same 'label (count)' names. THE FACE DOES NOT RESPOND TO InvokePattern -- ww_invoke/ww_click-with-invoke reports success WITHOUT opening the menu (verified live 2026-08-23) -- so every face click uses ww_click with useInvokePattern:false (physical mouse). Face = Text, menu entry = Button, so the two are never ambiguous even when the open menu contains the same label as the face. Every face click OPENS the menu, so each is paired with a menu-entry selection that closes it; a bare existence-proof of the face is expressed as the pair (open, re-select).",
   "runConfig": {
     "captureScreenshots": false,
     "screenshotFormat": "png",
@@ -15,25 +15,43 @@
   "testCases": [
     {
       "id": "F129-NR-1",
-      "title": "Post-F135 home screen renders filter chips; reload re-runs the sweep; navigation round-trip survives",
+      "title": "Post-F135 home screen renders the F169 account-filter dropdown; reload re-runs the sweep; navigation round-trip survives",
       "steps": [
         { "_comment": "PRIMING QUERY -- also guarantees a maximized window so nothing is off-screen.",
           "tool": "ww_window_state", "state": "maximize" },
 
-        { "_comment": "MT-3 (post-F135 form): the app opens ON the Review No Rule Items screen when accounts exist. The 'All Accounts' chip exists only on this screen, so it resolving IS the reachability proof. MT-2c evidence: the count chips carry the post-sweep totals -- counts are data-dependent, prefix match keeps the script valid across scans.",
-          "tool": "ww_invoke", "selector": "type=Button[name*='All Accounts (']" },
-        { "tool": "ww_invoke", "selector": "type=Button[name*='@aol.com (']" },
-        { "tool": "ww_invoke", "selector": "type=Button[name*='@gmail.com (']" },
-        { "tool": "ww_invoke", "selector": "type=Button[name*='All Accounts (']" },
+        { "_comment": "MT-3 (post-F135 form): the app opens ON the Review No Rule Items screen when accounts exist. The account-filter FACE exists only on this screen, so it resolving IS the reachability proof. MT-2c evidence: the face carries the post-sweep total in its name -- counts are data-dependent, prefix match keeps the script valid across scans. This click OPENS the dropdown menu.",
+          "tool": "ww_click", "selector": "type=Text[name*='All Accounts (']", "useInvokePattern": false },
+        { "_comment": "Menu entry resolving proves the menu actually opened (F169 contract); clicking it selects the AOL account and closes the menu.",
+          "tool": "ww_click", "selector": "type=Button[name*='@aol.com (']", "useInvokePattern": false },
+        { "_comment": "SETTLE BUFFER: the runner replays no ww_wait (re-confirmed 2026-08-23 -- it SKIPS the step), and a face click dispatched during the popup-close animation is swallowed by the closing barrier (observed twice live: the next menu query then times out). A harmless resolving click on the static screen title costs one selector round-trip, which outlasts the close animation. Same class of harmless-click-as-anchor as f124's label clicks.",
+          "tool": "ww_click", "selector": "type=Group[name='Review No Rule Items']", "useInvokePattern": false },
+        { "_comment": "PROOF OF EFFECT: the face is RENAMED to the active selection -- it resolving under the AOL name proves the filter genuinely applied. Opens the menu again.",
+          "tool": "ww_click", "selector": "type=Text[name*='@aol.com (']", "useInvokePattern": false },
+        { "tool": "ww_click", "selector": "type=Button[name*='@gmail.com (']", "useInvokePattern": false },
+        { "_comment": "SETTLE BUFFER: the runner replays no ww_wait (re-confirmed 2026-08-23 -- it SKIPS the step), and a face click dispatched during the popup-close animation is swallowed by the closing barrier (observed twice live: the next menu query then times out). A harmless resolving click on the static screen title costs one selector round-trip, which outlasts the close animation. Same class of harmless-click-as-anchor as f124's label clicks.",
+          "tool": "ww_click", "selector": "type=Group[name='Review No Rule Items']", "useInvokePattern": false },
+        { "tool": "ww_click", "selector": "type=Text[name*='@gmail.com (']", "useInvokePattern": false },
+        { "_comment": "Restore All Accounts (net-zero policy).",
+          "tool": "ww_click", "selector": "type=Button[name*='All Accounts (']", "useInvokePattern": false },
 
-        { "_comment": "MT-2c: the reload button re-enters _loadItems, which runs the covered-item sweep before display. The screen must survive the reload with its chips intact. Tooltip renamed from 'Refresh' in Sprint 52 (Harold: 'Refresh' read as 'go check for new mail', which this does not do).",
+        { "_comment": "SETTLE BUFFER: the runner replays no ww_wait (re-confirmed 2026-08-23 -- it SKIPS the step), and a face click dispatched during the popup-close animation is swallowed by the closing barrier (observed twice live: the next menu query then times out). A harmless resolving click on the static screen title costs one selector round-trip, which outlasts the close animation. Same class of harmless-click-as-anchor as f124's label clicks.",
+          "tool": "ww_click", "selector": "type=Group[name='Review No Rule Items']", "useInvokePattern": false },
+        { "_comment": "MT-2c: the reload button re-enters _loadItems, which runs the covered-item sweep before display. The screen must survive the reload with its filter face intact. Tooltip renamed from 'Refresh' in Sprint 52 (Harold: 'Refresh' read as 'go check for new mail', which this does not do).",
           "tool": "ww_invoke", "selector": "type=Button[name='Re-check the last scan (does not fetch new mail)']" },
-        { "tool": "ww_invoke", "selector": "type=Button[name*='All Accounts (']" },
+        { "_comment": "Face survived the reload (opens menu); cycle through AOL and back to All so the menu is closed and the filter ends where it started.",
+          "tool": "ww_click", "selector": "type=Text[name*='All Accounts (']", "useInvokePattern": false },
+        { "tool": "ww_click", "selector": "type=Button[name*='@aol.com (']", "useInvokePattern": false },
+        { "_comment": "SETTLE BUFFER: the runner replays no ww_wait (re-confirmed 2026-08-23 -- it SKIPS the step), and a face click dispatched during the popup-close animation is swallowed by the closing barrier (observed twice live: the next menu query then times out). A harmless resolving click on the static screen title costs one selector round-trip, which outlasts the close animation. Same class of harmless-click-as-anchor as f124's label clicks.",
+          "tool": "ww_click", "selector": "type=Group[name='Review No Rule Items']", "useInvokePattern": false },
+        { "tool": "ww_click", "selector": "type=Text[name*='@aol.com (']", "useInvokePattern": false },
+        { "tool": "ww_click", "selector": "type=Button[name*='All Accounts (']", "useInvokePattern": false },
 
-        { "_comment": "Navigation round-trip: away to Scan History and Back. Post-F135 there is no 'Back' FROM this screen (it is the root; the X is Exit Application) -- teardown is simply being back on it, proven by the chip resolving again.",
+        { "_comment": "Navigation round-trip: away to Scan History and Back. Post-F135 there is no 'Back' FROM this screen (it is the root; the X is Exit Application).",
           "tool": "ww_invoke", "selector": "type=Button[name='View Scan History']" },
         { "tool": "ww_invoke", "selector": "type=Button[name='Back']" },
-        { "tool": "ww_invoke", "selector": "type=Button[name*='All Accounts (']" }
+        { "_comment": "PROOF OF RETURN HOME without touching the dropdown: the reload button exists only on this screen and is read-only.",
+          "tool": "ww_invoke", "selector": "type=Button[name='Re-check the last scan (does not fetch new mail)']" }
       ]
     }
   ]

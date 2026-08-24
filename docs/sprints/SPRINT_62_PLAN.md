@@ -578,6 +578,49 @@ be Haiku.
   with a platform branch) and fixed.
 - New backlog from MV: F179 (subject-phrase picker, GenAI-gated HOLD), F180, F181.
 
+## Phase 5 evidence completed post-MV (2026-08-23)
+
+Three mandatory Phase 5 items had no recorded evidence when the checklist was walked before
+Phase 7; all three were executed on 2026-08-23:
+
+- **5.1.2 F-PRECHECK**: all six classes ran against the sprint diff -- CLEAN. Full record in
+  the PR #355 description (dogfood rule).
+- **5.1.1 Automated code review** (`pr-review-toolkit:code-reviewer` on the 40-file sprint
+  diff): 2 critical / 3 high / 4 medium findings; every one verified against the code before
+  acting. Fixed in-sprint: C-2 (background-scan timeout never released the coordinator lease --
+  the hung-scan case F175 exists for; new `releaseActiveByOwner`, owner-matched, mutation-
+  verified test), C-1 (timed-out-waiter handoff guard -- analysis and a fakeAsync reproduction
+  attempt showed the wedge interleaving is UNREACHABLE under the single-threaded event loop, so
+  this is a zero-cost defensive guard, recorded honestly as such), H-1 (adapter wrapped the
+  onBatch evaluation callback in the FETCH try/catch, relabeling scanner failures as
+  FetchException -- hoisted out), H-3 (coordinator double-release and idle-after-timeout
+  contracts pinned by new tests), M-1 (desktop show-above branch now respects safeTop),
+  M-2 (width breakpoint unified on the fromView MediaQuery), M-3 (store defaults reference
+  ScanCoordinator.scanTimeout instead of duplicated literals), M-4 (stray blank line), plus two
+  F163 test-quality nits (vacuous retention loop removed; overclaiming reason reworded).
+  NO CHANGE (intended design, now pinned by a test): H-2 -- getActiveBackgroundScan is
+  deliberately NOT account-scoped, because the ScanCoordinator serializes ALL scans in the
+  process regardless of account, so the wait notice must fire (and name the blocking account)
+  across accounts. Verdicts: F174/F176/CI clean; F177/F175/F178/F163 findings all dispositioned
+  above.
+- **5.1.5 WinWright sweep (IMP-5 artifact)**: ran 2026-08-23, 3 active scripts (f37 + both f56
+  remain documented exclusions). First run 0/3: f124/f129 hit a launch-flake class; the
+  deterministic breakage was **F169 (Sprint 61) replacing the account-filter chips with a
+  dropdown -- Sprint 61 shipped that UI change without a sweep, so all chip selectors rotted
+  silently** (the exact Sprint 52-58 rot class; retro item). Repair, verified live against the
+  running app: the dropdown face projects as a Text node (menu entries as Buttons), responds
+  only to physical mouse clicks (InvokePattern reports success without opening the menu), and
+  face clicks during the popup-close animation are swallowed -- the runner still replays no
+  ww_wait (re-confirmed: it SKIPS the step), so f129 carries harmless resolving clicks on the
+  screen title as settle buffers. mt2c baselines refreshed to the current unaddressed pool
+  (@hiram.edu, @alphaxiv.org). Result after repair: **f124 PASS 31/31, mt2c PASS 29/29, f129
+  PASS 19/19 (single-script rerun); DB drift none on every run**; final full-sweep
+  confirmation 2026-08-23: **3/3 PASS (f124 31 steps, f129 19 steps, mt2c 29 steps), DB drift
+  none**. Coverage gap per 5.1.5 step 5: none of the
+  active scripts exercise this sprint's new UI (F178 bottom-anchored popup, F175 wait dialog,
+  F176 AccountEmailLabel) -- Sprint 63 carry-in filed for that coverage (F99 integration_test
+  is the right home for the dialog).
+
 ## Manual Validation -- planned steps (to be refined at Phase 5.3)
 
 1. **F161 AC-4 carry-over (Windows, ~5m)**: open Windows Scan History and confirm scheduled

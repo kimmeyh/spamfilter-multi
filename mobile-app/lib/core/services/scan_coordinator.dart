@@ -121,7 +121,18 @@ class ScanCoordinator {
       return await waiter.completer.future
           .timeout(waitLimit ?? scanTimeout);
     } on TimeoutException {
-      _waiters.remove(waiter);
+      final stillQueued = _waiters.remove(waiter);
+      if (!stillQueued) {
+        // Sprint 62 code review (C-1), defensive: release() popped this
+        // waiter around the moment the timeout fired, so the lease it
+        // granted belongs to a caller that is throwing -- hand it straight
+        // back, or `_active` stays pinned to a scan that will never run
+        // and the coordinator is wedged until app restart. Analysis (and a
+        // fakeAsync reproduction attempt) says the single-threaded event
+        // loop cannot actually open this gap today; the guard is kept
+        // because it costs nothing and the wedge would be permanent.
+        unawaited(waiter.completer.future.then(release));
+      }
       _logger.e('ScanCoordinator: $scanType scan gave up waiting for the '
           'lease after ${(waitLimit ?? scanTimeout).inMinutes} minutes');
       rethrow;
@@ -142,22 +153,58 @@ class ScanCoordinator {
       return;
     }
 
-    if (_waiters.isEmpty) {
-      _active = null;
-      _logger.i('ScanCoordinator: lease released, idle');
+    _handOffOrIdle();
+  }
+
+  /// Force-release the active lease WITHOUT its [ScanLease] handle -- for
+  /// the background-scan timeout path (Sprint 62 code review, C-2), where
+  /// the hung scan still holds the lease object inside its own stack and
+  /// its `finally` will not run until (unless) the hang ever resolves.
+  ///
+  /// Releases ONLY when the active holder matches [scanType] AND
+  /// [accountId], so a timeout can never evict an unrelated live scan --
+  /// in particular, a timed-out scan that was still QUEUED (never active)
+  /// must not free somebody else's lease. If the zombie scan later
+  /// completes, its own `finally` releases a stale lease, which the
+  /// `identical()` guard above already ignores.
+  void releaseActiveByOwner({
+    required String scanType,
+    required String accountId,
+  }) {
+    final holder = _active;
+    if (holder == null) return;
+    if (holder.scanType != scanType || holder.accountId != accountId) {
+      _logger.w('ScanCoordinator: timeout force-release skipped -- the '
+          'active holder is a ${holder.scanType} scan, not the timed-out '
+          '$scanType scan');
       return;
     }
+    _logger.w('ScanCoordinator: force-releasing the ${holder.scanType} '
+        'lease -- its scan timed out without completing');
+    _handOffOrIdle();
+  }
 
-    final next = _waiters.removeFirst();
-    next.info = ActiveScanInfo(
-      scanType: next.info.scanType,
-      accountId: next.info.accountId,
-      startedAt: DateTime.now(),
-    );
-    _active = next.info;
-    _logger.i('ScanCoordinator: lease handed to queued '
-        '${next.info.scanType} scan (${_waiters.length} still waiting)');
-    next.completer.complete(ScanLease._(next.info));
+  /// Hand the lease to the next LIVE FIFO waiter, or go idle. Waiters whose
+  /// completer already completed (timed out in the C-1 race) are drained
+  /// and skipped -- their acquire() side hands any granted lease back via
+  /// release(), never runs a scan on it.
+  void _handOffOrIdle() {
+    while (_waiters.isNotEmpty) {
+      final next = _waiters.removeFirst();
+      if (next.completer.isCompleted) continue;
+      next.info = ActiveScanInfo(
+        scanType: next.info.scanType,
+        accountId: next.info.accountId,
+        startedAt: DateTime.now(),
+      );
+      _active = next.info;
+      _logger.i('ScanCoordinator: lease handed to queued '
+          '${next.info.scanType} scan (${_waiters.length} still waiting)');
+      next.completer.complete(ScanLease._(next.info));
+      return;
+    }
+    _active = null;
+    _logger.i('ScanCoordinator: lease released, idle');
   }
 }
 

@@ -12,6 +12,7 @@ library;
 import 'package:logger/logger.dart';
 
 import '../../util/redact.dart';
+import '../services/scan_coordinator.dart';
 import 'database_helper.dart';
 
 /// Model class for scan results
@@ -447,7 +448,10 @@ class ScanResultStore {
   ///
   /// Returns the number of rows reconciled.
   Future<int> reconcileStaleInProgressScans({
-    Duration staleAfter = const Duration(minutes: 30),
+    // Sprint 62 code review (M-3): default derived from the ONE timeout
+    // constant, so a future change to scanTimeout cannot silently leave
+    // reconciliation on a stale literal.
+    Duration staleAfter = ScanCoordinator.scanTimeout,
   }) async {
     try {
       final db = await _databaseHelper.database;
@@ -484,7 +488,9 @@ class ScanResultStore {
   /// database), which an in-process registry cannot -- this is what makes
   /// the manual-scan wait notice platform-uniform.
   Future<ScanResult?> getActiveBackgroundScan({
-    Duration freshWithin = const Duration(minutes: 30),
+    // Sprint 62 code review (M-3): same single-source rule as above -- a
+    // row older than the scan timeout is stale by definition, never active.
+    Duration freshWithin = ScanCoordinator.scanTimeout,
   }) async {
     try {
       final db = await _databaseHelper.database;

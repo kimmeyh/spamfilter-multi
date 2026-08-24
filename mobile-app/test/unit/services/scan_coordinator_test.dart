@@ -129,6 +129,88 @@ void main() {
       expect(c.active, isNull);
     });
 
+    test(
+        'double-releasing the ACTIVE lease hands off only ONCE -- the '
+        'second release must not also pop the next queued waiter '
+        '(Sprint 62 code review H-3: the finally-double-invocation shape)',
+        () async {
+      final c = ScanCoordinator.instance;
+      final lease1 = await c.acquire(scanType: 'manual', accountId: 'a');
+      final w1 = c.acquire(scanType: 'background', accountId: 'b');
+      final w2 = c.acquire(scanType: 'manual', accountId: 'c');
+
+      c.release(lease1);
+      c.release(lease1); // the double release, while a waiter is queued
+      final lease2 = await w1;
+      expect(c.active?.accountId, 'b',
+          reason: 'exactly one handoff: the first waiter holds the lease; '
+              'a second handoff would have popped waiter c too');
+
+      c.release(lease2);
+      final lease3 = await w2;
+      expect(c.active?.accountId, 'c');
+      c.release(lease3);
+      expect(c.active, isNull);
+    });
+
+    test(
+        'release after a waiter timed out leaves the coordinator IDLE and '
+        'immediately grantable (Sprint 62 code review C-1 contract)',
+        () async {
+      // NOTE on scope: the exact C-1 wedge interleaving (release popping a
+      // waiter between its timeout-timer firing and its catch running)
+      // proved UNREACHABLE under the single-threaded event loop -- a
+      // fakeAsync reproduction was attempted at authoring and the gap
+      // cannot be opened (elapseBlocking leaves the timer unfired; elapse
+      // drains the catch before control returns). The acquire-side
+      // hand-back stays as a zero-cost invariant guard; this test pins the
+      // REACHABLE contract.
+      final c = ScanCoordinator.instance;
+      final lease1 = await c.acquire(scanType: 'background', accountId: 'a');
+      await expectLater(
+        c.acquire(
+          scanType: 'manual',
+          accountId: 'b',
+          waitLimit: const Duration(milliseconds: 50),
+        ),
+        throwsA(isA<TimeoutException>()),
+      );
+      c.release(lease1);
+      await Future<void>.delayed(Duration.zero);
+      expect(c.active, isNull,
+          reason: 'the lease must not stay pinned to the timed-out waiter');
+      final lease2 = await c.acquire(scanType: 'manual', accountId: 'c');
+      c.release(lease2);
+      expect(c.active, isNull);
+    });
+
+    test(
+        'releaseActiveByOwner frees a hung scan\'s lease ONLY on an exact '
+        'owner match (Sprint 62 code review C-2: the background-timeout '
+        'path has no ScanLease handle)', () async {
+      final c = ScanCoordinator.instance;
+      await c.acquire(scanType: 'background', accountId: 'a@x.com');
+      final waiter = c.acquire(scanType: 'manual', accountId: 'b@x.com');
+
+      // Wrong owner (the timed-out scan was still queued, not active):
+      // must NOT evict the live holder.
+      c.releaseActiveByOwner(scanType: 'manual', accountId: 'b@x.com');
+      expect(c.active?.scanType, 'background',
+          reason: 'a non-matching force-release must be a no-op');
+
+      // Matching owner: the hung scan's lease is freed and handed on.
+      c.releaseActiveByOwner(scanType: 'background', accountId: 'a@x.com');
+      final lease = await waiter;
+      expect(c.active?.scanType, 'manual');
+
+      // The zombie scan's own finally later releases a STALE lease -- the
+      // identical() guard must ignore it without disturbing the new holder.
+      c.releaseActiveByOwner(scanType: 'background', accountId: 'a@x.com');
+      expect(c.active?.scanType, 'manual');
+      c.release(lease);
+      expect(c.active, isNull);
+    });
+
     test('a queued waiter gives up with TimeoutException at its waitLimit '
         'instead of waiting forever', () async {
       final c = ScanCoordinator.instance;

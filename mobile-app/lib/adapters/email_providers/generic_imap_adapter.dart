@@ -1416,6 +1416,7 @@ class GenericIMAPAdapter with BatchOperationsMixin implements SpamFilterPlatform
           (i + fetchBatchSize < uids.length) ? i + fetchBatchSize : uids.length;
       final chunk = MessageSequence.fromIds(uids.sublist(i, end), isUid: true);
 
+      final converted = <EmailMessage>[];
       try {
         // [ISSUE #145] Use UID FETCH to get message UIDs alongside content
         final fetchResult = await _imapClient!.uidFetchMessages(
@@ -1423,7 +1424,6 @@ class GenericIMAPAdapter with BatchOperationsMixin implements SpamFilterPlatform
           'BODY.PEEK[]', // Fetch full message without marking as read
         );
 
-        final converted = <EmailMessage>[];
         for (final mimeMessage in fetchResult.messages) {
           try {
             converted.add(_convertMimeMessage(mimeMessage, folderName));
@@ -1432,15 +1432,20 @@ class GenericIMAPAdapter with BatchOperationsMixin implements SpamFilterPlatform
             // Continue with other messages
           }
         }
-
-        fetchedSoFar += end - i;
-        if (onBatch != null) {
-          await onBatch(converted, fetchedSoFar, uids.length);
-        } else {
-          messages.addAll(converted);
-        }
       } catch (e) {
         throw FetchException('Failed to fetch message details', e);
+      }
+
+      // Sprint 62 code review (H-1): the [onBatch] handoff runs OUTSIDE the
+      // fetch guard. onBatch is the scanner's evaluation pipeline; wrapping
+      // it above relabeled a rule/provider/DB failure as
+      // 'Failed to fetch message details' -- the F174 misdiagnosis class,
+      // in the opposite direction.
+      fetchedSoFar += end - i;
+      if (onBatch != null) {
+        await onBatch(converted, fetchedSoFar, uids.length);
+      } else {
+        messages.addAll(converted);
       }
     }
 

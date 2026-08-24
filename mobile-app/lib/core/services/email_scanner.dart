@@ -167,7 +167,6 @@ class EmailScanner {
         );
       }
 
-
       scanLease = await ScanCoordinator.instance.acquire(
         scanType: scanType,
         accountId: accountId,

@@ -175,14 +175,11 @@ void main() {
         reason: 'per-batch evaluation must produce the same per-email '
             'verdicts as one unbatched pass over the same set');
 
-    // Retention bound: nothing the scan keeps holds a full body. (The demo
-    // set's bodies are all under the cap, so this loop alone is vacuous --
-    // the dedicated long-body test below is the real retention gate.)
+    // Retention is NOT asserted here: the demo set's bodies are all under
+    // the preview cap, so a body-length loop over these results would be
+    // vacuous (it survived mutation at authoring). The dedicated long-body
+    // test below is the retention gate.
     expect(scanProvider.results, isNotEmpty);
-    for (final result in scanProvider.results) {
-      expect(result.email.body.length,
-          lessThanOrEqualTo(kBodyPreviewMaxLength));
-    }
   });
 
   test(
@@ -208,7 +205,10 @@ void main() {
     await scanner.scanInbox(daysBack: 0, folderNames: ['INBOX']);
 
     expect(scanProvider.totalEmails, 25,
-        reason: '25 long-body messages -> 2 batches (20/5); all found');
+        reason: 'all 25 long-body messages found. (This mock provider '
+            'returns one full list -- the scanner re-slices it for '
+            'evaluation; ADAPTER-side chunk sizing is pinned in '
+            'generic_imap_adapter_chunked_fetch_test.dart.)');
     expect(scanProvider.results, isNotEmpty);
     expect(_LongBodyMockProvider.bodyLength,
         greaterThan(kBodyPreviewMaxLength),

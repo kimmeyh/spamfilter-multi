@@ -1716,10 +1716,14 @@ class _ResultsDisplayScreenState extends State<ResultsDisplayScreen> {
           } else if (spaceBelow >= popupHeight) {
             // Show directly below email (no room to also expose the next item)
             top = (itemBottom + 8).clamp(0.0, maxTop);
-          } else if (spaceAbove >= popupHeight + 8) {
+          } else if (spaceAbove - safeTop >= popupHeight + 8) {
             // Show above email. PR #335 cowork review: the +8 belongs in the
             // guard too -- with spaceAbove in [popupHeight, popupHeight+8)
             // the 8px gap pushed the popup's top edge up to 8px off-window.
+            // Sprint 62 code review (M-1): spaceAbove measures from y=0, but
+            // only the space below safeTop is usable -- without subtracting
+            // it, a top inset (large-screen Android/foldable; zero on
+            // desktop) let the popup's top edge extend into the status bar.
             bottom = screenHeight - itemPosition.dy + 8; // 8px gap
           } else {
             // Not enough room above or below -- as high as needed to fit.
@@ -1756,8 +1760,11 @@ class _ResultsDisplayScreenState extends State<ResultsDisplayScreen> {
               // anyway); desktop keeps the F151e/MV-8 right-65% layout.
               child: FractionallySizedBox(
                 alignment: Alignment.centerRight,
-                widthFactor:
-                    MediaQuery.of(context).size.width < 600 ? 1.0 : 0.65,
+                // Sprint 62 code review (M-2): reuse the fromView-based
+                // isCompactWidth so position math and width factor cannot
+                // disagree when the inherited MediaQuery diverges from the
+                // raw view size.
+                widthFactor: isCompactWidth ? 1.0 : 0.65,
                 child: ConstrainedBox(
                   // maxHeight (Sprint 60 MV): the hard cap that makes the
                   // clamped `top` a real fit guarantee -- content beyond the
