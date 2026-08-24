@@ -158,4 +158,24 @@ three roles). His words are recorded verbatim. He also answered
 
 ## Improvement Decisions (Step 6)
 
-(To be recorded after Harold's decisions on the Step 5 proposals.)
+Harold, 2026-08-23: "all as recommended".
+
+1. **Phase 5 evidence gate** -- APPLY NOW. Applied: `verify-closeout-complete.ps1` check 3d
+   (all three evidence markers required in the sprint plan at any close-out claim, enforced
+   Sprint 63+), SPRINT_CHECKLIST.md gate line, 2 new hook test cases + 2 fixtures (hook suite
+   51/51 green).
+2. **Sweep-at-HEAD rule** -- APPLY NOW. Applied: sweep artifact must record
+   `sweep-head: <hash>`; `verify-closeout-complete.ps1` check 3e verifies no
+   `mobile-app/lib/ui` commit is newer; SPRINT_EXECUTION_WORKFLOW.md 5.1.5 artifact rule and
+   SPRINT_CHECKLIST.md updated; Sprint 62's own artifact records its hash.
+3. **Serialize platform builds** -- APPLY NOW. Applied: CLAUDE.md Windows Development rule +
+   `feedback_serialize_platform_builds` memory.
+4. **Inset-sensitive widget-test rule** -- APPLY NOW. Applied: TESTING_STRATEGY.md Widget
+   Tests section, "MANDATORY for inset/safe-area assertions" (FakeViewPadding + real
+   production Scaffold structure).
+5. **Merge f129 into mt2c** -- APPLY NOW. Applied: `test_f129_no_rule_review.json` retired
+   (its coverage was a strict subset post-F135/F169); absorption recorded in mt2c's
+   description and the winwright README; post-retirement sweep re-run green.
+6. **mt2c deterministic seeding preamble** -- BACKLOG. Registered as **F182** (Priority 30).
+7. **Upstream ww_wait request** -- BACKLOG. Registered as **F183** (HOLD, external
+   dependency).

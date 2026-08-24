@@ -128,12 +128,29 @@ Historical sprint information lives in individual documents in `docs/sprints/` a
 | 59 | docs/sprints/SPRINT_59_SUMMARY.md | [OK] Complete | Aug 15, 2026 (PR #326; 0.8.0.0 LIVE Aug 15; Android builds restored) |
 | 60 | docs/sprints/SPRINT_60_SUMMARY.md | [OK] Complete | Aug 15-16, 2026 (PR #335; 0.9.0.0 LIVE Aug 16; scope shipped in 0.10.0.0 LIVE Aug 16 22:17) |
 | 61 | docs/sprints/SPRINT_61_SUMMARY.md | [OK] Complete | Aug 16-21, 2026 (PR #347; F161 Android scheduler validated, ADR-0042, Phase 8 encoded) |
+| 62 | docs/sprints/SPRINT_62_SUMMARY.md | [OK] Complete | Aug 21-23, 2026 (PR #355; scan robustness F177/F175/F174, MV UX F178/F176, F163 skips 26->15) |
 
 **Key Achievements**: See CHANGELOG.md for detailed feature history.
 
 ---
 
 ## Last Completed Sprint
+
+**Sprint 62** (2026-08-21 -- 2026-08-23; PR #355 -> develop, Ready-for-Review at close-out)
+- **Type**: Scan robustness (the Sprint 61 MV forensics quintet) + test hygiene. All 6 tasks + F161 AC-4 carry-over complete; Manual Validation complete 2026-08-22 with every item disposed; retrospective + all 7 improvement decisions executed 2026-08-23.
+- **F177**: memory-bounded chunked fetch (fetchBatchSize=20, universal; per-batch evaluation + body-truncated retention). **Survival PASS on the previously-fatal case**: daysBack=0 AOL scan, 181 emails, 6m17s, NO LOW_MEMORY kill (peak ~1.0GB vs 817MB-1.4GB WITH death; in-flight ~1.6MB/message vs ~6MB). Residual peak registered as F180.
+- **F175**: ScanCoordinator FIFO serialization (one chokepoint in scanInbox; declared ADR-0042 Windows cross-process exception), DB-backed cross-process detection with wait notice + rolling-average estimate, 30-min background timeout, startup reconciliation ('interrupted'; 29 orphans cleared on-device), scheduler cancel-both + exponential backoff. **R-7 settings-interplay recommendation DECLINED by Harold (Class-1): fully-independent Manual/Background tabs are the deliberate design -- do not re-raise.**
+- **F174**: unlistable/empty fetch sequences are explicit non-events; real per-folder failures surface in errorCount.
+- **F178**: two rounds -- round 1 inert on-device (consumed MediaQuery padding; flat harness lied green), round 2 per Harold's direction bottom-anchors the popup on compact widths from root-view insets. PASS both rows.
+- **F176** account email labels on scan screens (shared widget, both platforms); **F163** 11 skipped-test remediations live, skips 26 -> 15 (all deliberate keeps).
+- **Post-MV Phase 5 evidence pass**: automated code review (2C/3H/4M -- C-2 REAL: hung background scan never released the lease; fixed owner-matched + mutation-verified; C-1 honestly downgraded to unreachable-but-guarded), F-PRECHECK clean (on PR), WinWright sweep repaired from the Sprint 61 F169 rot (chips -> dropdown) and green 3/3 -> 2/2 after f129 retirement.
+- **CI**: draft PRs no longer run CI (fires at Ready-for-Review); Linux-only scheduler test root-caused (Workmanager singleton replaces injected fakes) and fixed.
+- **New backlog registered**: F179 (HOLD, GenAI-gated), F180 (P10), F181 (P18), F182 (P30), F183 (HOLD external).
+- **Verification**: suite **1,931+ passed / 15 skipped / 0 failed**; analyze clean; hook suite 51/51; sweep green with sweep-head recorded.
+- **Retro**: Harold -- Testing "Needs improvement as noted by dev team during sprint", Process "Good - see issues noted by dev team", all else Good/Very Good; Cats 13/14 "none". **All 7 improvement proposals decided as recommended: 5 applied same-session (Phase 5 evidence gate, sweep-at-HEAD rule, serialized builds, inset-test rule, f129 retirement), 2 to backlog (F182, F183).**
+- **Docs**: SPRINT_62_PLAN.md / SPRINT_62_RETROSPECTIVE.md / SPRINT_62_SUMMARY.md.
+
+_(Prior: **Sprint 61** below.)_
 
 **Sprint 61** (2026-08-16 -- 2026-08-21; PR #347 -> develop)
 - **Type**: Process encoding + cross-platform parity + the Android scheduler. 9/9 tasks complete; Manual Validation complete 2026-08-20; retrospective + all 4 approved improvements applied 2026-08-21.
@@ -374,6 +391,19 @@ All incomplete items in relative priority order. Priority in increments of 10; i
 - Evidence (2026-08-22 live F177 validation): the m=20 batching PASSED its survival test -- the previously-fatal daysBack=0 scan (181 emails) completed in 6m17s with no kill, in-flight cost down from ~6MB to ~1.6MB per message -- but peak PSS still reached ~1.0GB, and Dart keeps freed heap pages mapped afterward (no manual GC/release exists; a live `am send-trim-memory` attempt could not reduce it). The remaining allocation source is FULL message bodies: `BODY.PEEK[]` pulls multi-MB MIME per message, and rule evaluation runs the whole regex set over the full decoded body.
 - Fix shape (pre-recorded in F177's registration as the next lever): (1) fetch headers + a bounded text portion (`BODY.PEEK[HEADER]` + partial `BODY.PEEK[TEXT]<0.N>`), or (2) cap the body handed to the evaluator (e.g., first 256KB -- body rules match marketing phrases, not megabyte tails), or both. Outcome-equivalence test must define what a body-rule match against a truncated body means (document the cap as a matching contract, not silently).
 - Source: Sprint 62 F177 on-device validation, 2026-08-22.
+
+**F182. Deterministic seeding preamble for the WinWright no-rule sweep script (~2-3h) Priority 30 (NEW, Sprint 62 retro IMP-6 -- Harold approved to backlog)**
+- Phase: Testing / E2E tooling
+- Platform: Windows Desktop (WinWright harness)
+- Scope: `test_mt2c_no_rule_sweep.json` asserts named baseline rows survive the covered-item sweep, using senders from Harold's LIVE dev data -- so its baselines rot every time MV rule/safe-sender work addresses them (refreshed Sprint 59, Sprint 60, and Sprint 62). Add a seeding preamble/teardown around the sweep run (insert then remove synthetic `unmatched_emails` rows tied to a reserved synthetic domain) so the two baseline selectors are constant forever. The script's own header already records this as the designed future work. Must preserve the DB-snapshot drift guard's net-zero contract (seed and unseed inside the guarded window, or teach the guard about the reserved domain).
+- Source: mt2c script header (Sprint 51) + Sprint 62 retrospective IMP-6, 2026-08-23.
+
+**F183. Upstream civyk-winwright request: script-runner replay support for ww_wait (~15m to file, then external) Priority HOLD (NEW, Sprint 62 retro IMP-7 -- external dependency)**
+- Phase: Testing / E2E tooling (external)
+- Platform: Windows Desktop (WinWright harness)
+- Scope: the WinWright script runner does not replay `ww_wait` steps -- re-confirmed live 2026-08-23 (the runner SKIPS the step: "Replay of 'ww_wait' is not supported by the script runner"). This forces the settle-buffer workaround in the sweep scripts (harmless resolving clicks to outlast Flutter popup animations) and is the root reason the f37/f56 dialog-settle scripts stay EXCLUDED from the default sweep. File the feature request with civyk-winwright (ww_wait mode=element_state would suffice); when it lands, remove the settle buffers and re-evaluate readmitting the excluded scripts.
+- HOLD rationale: external project owns the fix; our action is filing + tracking.
+- Source: Sprint 62 sweep repair + retrospective IMP-7, 2026-08-23.
 
 **F179. Subject-blocking phrase picker -- user selects (or GenAI recommends) the blocking SUBSET of a subject (~3-5h) Priority HOLD (NEW, Sprint 62 MV -- Harold; gated on the GenAI track)**
 - Phase: Core App Quality / rules UX

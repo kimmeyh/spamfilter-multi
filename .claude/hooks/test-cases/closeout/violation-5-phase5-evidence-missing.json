@@ -1,0 +1,9 @@
+{
+  "cwd": "D:/Data/Harold/github/spamfilter-multi/.claude/hooks/test-cases/fixtures/evidence-missing-sprint",
+  "branch_override": "feature/20260823_Sprint_63",
+  "hook_event_name": "Stop",
+  "dirty_zero_files_override": "",
+  "skip_git_checks": true,
+  "session_id": "closeout-violation-5",
+  "last_assistant_message": "Sprint 63 is fully closed out. Ready for the next sprint."
+}

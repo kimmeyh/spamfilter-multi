@@ -614,9 +614,11 @@ Phase 7; all three were executed on 2026-08-23:
   ww_wait (re-confirmed: it SKIPS the step), so f129 carries harmless resolving clicks on the
   screen title as settle buffers. mt2c baselines refreshed to the current unaddressed pool
   (@hiram.edu, @alphaxiv.org). Result after repair: **f124 PASS 31/31, mt2c PASS 29/29, f129
-  PASS 19/19 (single-script rerun); DB drift none on every run**; final full-sweep
-  confirmation 2026-08-23: **3/3 PASS (f124 31 steps, f129 19 steps, mt2c 29 steps), DB drift
-  none**. Coverage gap per 5.1.5 step 5: none of the
+  PASS 19/19 (single-script rerun); DB drift none on every run**; full-sweep confirmation
+  2026-08-23: **3/3 PASS (f124 31 steps, f129 19 steps, mt2c 29 steps), DB drift none**.
+  Post-retrospective (IMP-5 retired f129 into mt2c): Windows binary REBUILT at HEAD and the
+  final sweep re-run -- **2/2 PASS (f124 31 steps, mt2c 29 steps), DB drift none**.
+  - sweep-head: d87b828 Coverage gap per 5.1.5 step 5: none of the
   active scripts exercise this sprint's new UI (F178 bottom-anchored popup, F175 wait dialog,
   F176 AccountEmailLabel) -- Sprint 63 carry-in filed for that coverage (F99 integration_test
   is the right home for the dialog).

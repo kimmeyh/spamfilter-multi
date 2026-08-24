@@ -1,6 +1,6 @@
 {
   "_description": "Sprint status file that persists across context compaction. Update after each phase/sub-phase completion.",
-  "_last_updated": "2026-08-22 ~2:00pm (paused for token reset until ~3:20pm)",
+  "_last_updated": "2026-08-23 (Phase 7.7 close-out)",
   "_usage": "Read this file after context compaction to restore sprint approval state and progress.",
   "_staleness_note": "This file had drifted 15 sprints (last updated at Sprint 35, 2026-04-19) before being refreshed at Sprint 50 close-out. It is a Phase 7.7 checklist item -- update it at every sprint close-out, not opportunistically.",
   "current_sprint": {
@@ -8,7 +8,7 @@
     "branch": "feature/20260821_Sprint_62",
     "pr_number": 355,
     "start_date": "2026-08-21",
-    "status": "Phase 5.3 MANUAL VALIDATION, PAUSED ~2:00pm for token reset (~3:20pm). ALL 6 tasks complete + MV feedback round 1 addressed (commits through b5c8103, all pushed). DONE: CI draft-gating + Linux-only scheduler-test fix (28d78e7); F175 reconciliation VERIFIED on-device (29 orphans -> interrupted, 0 in_progress); F178 ROUND 2 (root-view insets + Harold-directed bottom-anchored popup on compact, b5c8103) -- APK REBUILT AND INSTALLED 2:0x pm, app relaunched. F179 registered (HOLD, GenAI-gated). RESUME WITH: (1) on-device verify round-2 popup from FIRST and SECOND result rows (bottom-anchored, Block Subject reachable); (2) Harold F177 daysBack=0 AOL run + F175 wait-notice demo -- monitors be4b5su2x (scan milestones) + b5fc07d6c (PSS peaks, idle baseline ~517-529MB) may need re-arming after pause; (3) Harold decisions pending: F175 R-7 settings-interplay (Class-1), rulesOnly testLimit observation, F161 AC-4 Windows glance verdict. Windows MV: F176/F178 good (Harold).",
+    "status": "Phase 7.7 COMPLETE -- MV complete 2026-08-22 (all items disposed; R-7 DECLINED by Harold as deliberate design; F179/F180/F181 registered). Phase 5 evidence pass 2026-08-23: code review 2C/3H/4M all dispositioned (C-2 real -- hung-scan lease release fixed, mutation-verified), F-PRECHECK clean on PR, WinWright sweep repaired from Sprint 61 F169 rot and green (f129 retired into mt2c per retro IMP-5). Retrospective complete (Harold: Testing needs-improvement, Process good-see-dev-notes, rest Good/Very Good; Cats 13/14 none); ALL 7 improvement decisions executed as recommended: IMP-1 Phase 5 evidence hook gate (3d) + IMP-2 sweep-at-HEAD (3e) enforced Sprint 63+, IMP-3 serialized-builds rule+memory, IMP-4 inset-test rule, IMP-5 f129 retirement; IMP-6 -> F182, IMP-7 -> F183. PR #355 Ready-for-Review at end of 7.7; awaiting Harold's merge to develop, then Phase 8 cycle.",
     "plan_approved": true,
     "plan_approval_date": "2026-08-22",
     "blanket_execution_approved": true,
@@ -44,8 +44,8 @@
     "tests_failing": 0,
     "analyzer_warnings": 0,
     "_test_metrics_note": "1,931 passed / 15 skipped / 0 failed at Sprint 62 dev-complete (2026-08-22). F163 dropped skips 26->15 (all approved keeps). Run with --concurrency=4.",
-    "hook_test_cases": "49/49 passing -- +2 IMP-1 cases (violation-13 dangling commitment, allow-16 past-tense).",
-    "winwright_sweep": "End-of-sprint sweep RUN 2026-08-16 at close-out (lib/ui touched): 3/3 scripts PASS (f124_rule_labels 10 steps, f129_no_rule_review 10 steps, mt2c_no_rule_sweep 25 steps), DB drift none. First run failed mt2c at its DOCUMENTED data-precondition (Harold's MV rule/safe-sender adds addressed the old baseline rows); baselines refreshed from the live dev DB per the script's own maintenance note, re-run PASS.",
+    "hook_test_cases": "51/51 passing -- +2 Sprint 62 IMP-1 cases (violation-5 phase5-evidence-missing, allow-7 evidence-present).",
+    "winwright_sweep": "Sprint 62 sweep 2026-08-23 (lib/ui touched): first run 0/3 -- Sprint 61 F169 (chips->dropdown) had rotted every chip selector (shipped without a sweep); scripts repaired live (dropdown face=Text node, physical mouse clicks only, settle buffers -- runner still replays no ww_wait), mt2c baselines refreshed (@hiram.edu, @alphaxiv.org). Green 3/3 pre-retirement; f129 RETIRED (strict subset of mt2c, retro IMP-5); final post-retirement sweep at HEAD recorded with sweep-head in SPRINT_62_PLAN.md. DB drift none on every run.",
     "coverage_percent": null,
     "_note": "Run full suites with --concurrency=4 (Sprint 49 IMP-5)."
   },
@@ -65,9 +65,11 @@
   ],
   "blocking_issues": [],
   "next_actions": [
-    "Phase 8.2: Backlog Refinement pass 1 (completeness sweep -- does NOT select scope)",
-    "Phase 8.3: Store release per STORE_RELEASE_PROCESS.md -- confirm main contains 0ad1107 in the prod worktree, bump versions (dev equals live at 0.10.0), build MSIX, verify, notify Harold for upload",
-    "Phase 8.4: refinement pass 2 -- Harold selects Sprint 62 scope",
-    "Sprint 62 MV carry-over: Windows background-scan regression glance (F161 AC-4)"
+    "Harold: final approval + merge PR #355 to develop, then develop -> main",
+    "ON MERGE (6.6): branch feature/<date>_Sprint_63 FROM feature/20260821_Sprint_62 immediately, before any further commits",
+    "Post-merge cleanup: close issues #349-#354 (gh issue list --label sprint --state open must return empty)",
+    "Phase 8.1-8.5 Release Cycle: refinement pass 1, Store release per STORE_RELEASE_PROCESS.md (dev EQUALS live at 0.11.0 -- bump at release Step 1), refinement pass 2 scope selection, Phase 3 planning",
+    "Watch CI's first live run on PR #355 ready-flip (proof of the Workmanager Linux fix + draft gating)",
+    "Sprint 63 carry-ins (Cat 13): E2E coverage for F178 popup / F175 wait dialog / F176 label"
   ]
 }

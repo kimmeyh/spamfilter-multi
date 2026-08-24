@@ -210,6 +210,70 @@ try {
     }
 } catch { }
 
+# 3d. Phase 5 evidence artifacts exist (Sprint 62 retro IMP-1, Harold-approved
+#     2026-08-23). Sprint 62 reached Manual Validation with 5.1.1 (automated
+#     code review), 5.1.2 (F-PRECHECK), and 5.1.5 (WinWright sweep) silently
+#     unrun -- caught only by the line-by-line checklist walk before Phase 7,
+#     after which the review surfaced a REAL user-affecting bug (C-2) that
+#     should have been found before Harold validated. A close-out claim now
+#     requires all three evidence markers in the sprint plan.
+#
+#     Enforced for Sprint 63 onward only: earlier plans predate the artifact
+#     conventions, and this hook's history (F130-S51, the 3a-1 and 3c false
+#     positives) says a check that fires on historically-correct state trains
+#     bypass. Marker matching is deliberately loose -- the artifact FORMAT
+#     lives in SPRINT_EXECUTION_WORKFLOW.md 5.1.2/5.1.5; this only proves the
+#     evidence sections exist at all.
+if ($sprintNum -ge 63 -and $status -and $null -ne $status.current_sprint -and
+    $status.current_sprint.plan_approved -eq $true) {
+    $planPath = Join-Path $cwd ("docs/sprints/SPRINT_{0}_PLAN.md" -f $sprintNum)
+    if (Test-Path -LiteralPath $planPath) {
+        $planText = Get-Content -LiteralPath $planPath -Raw
+        $evidence = @(
+            @{ Name = '5.1.1 automated code review record'; Pattern = '(?i)(5\.1\.1|automated code review|code[- ]reviewer)' },
+            @{ Name = '5.1.2 F-PRECHECK record';            Pattern = '(?i)F-PRECHECK' },
+            @{ Name = '5.1.5 WinWright sweep artifact';     Pattern = '(?i)WinWright[\s\S]{0,200}?sweep|sweep[\s\S]{0,200}?WinWright' }
+        )
+        foreach ($e in $evidence) {
+            if ($planText -notmatch $e.Pattern) {
+                $violations += "Phase 5 evidence missing from SPRINT_${sprintNum}_PLAN.md: no $($e.Name). SPRINT_CHECKLIST.md Phase 5 requires all three BEFORE Manual Validation; a close-out claim with any of them absent means Phase 5 was skipped, not finished (Sprint 62 escape: the post-hoc review then found a real bug after Harold had already validated)."
+            }
+        }
+
+        # 3e. Sweep-at-HEAD (Sprint 62 retro IMP-2, Harold-approved 2026-08-23):
+        #     the sweep artifact must record the commit it ran at as
+        #     `sweep-head: <hash>`, and no lib/ui commit may be newer -- this is
+        #     what would have caught Sprint 61 shipping F169 (chips -> dropdown)
+        #     with every script selector left rotting. Git-dependent, so it
+        #     skips silently in fixture tests (skip_git_checks) or when git
+        #     cannot resolve the recorded hash.
+        if (-not $payload.skip_git_checks) {
+            $sweepHead = $null
+            if ($planText -match '(?im)^\s*-?\s*sweep-head:\s*([0-9a-f]{7,40})\b') {
+                $sweepHead = $Matches[1]
+            }
+            if ($sweepHead) {
+                try {
+                    $newerUi = & git -C $cwd log --oneline "$sweepHead..HEAD" -- 'mobile-app/lib/ui' 2>$null
+                    if ($LASTEXITCODE -eq 0 -and $newerUi) {
+                        $violations += "The WinWright sweep artifact records sweep-head: $sweepHead, but lib/ui commits exist AFTER it: $(@($newerUi).Count) commit(s). The sweep proved an OLDER UI; re-run it at HEAD and update sweep-head (this is the Sprint 61 F169 rot class -- a UI change shipped after the last sweep)."
+                    }
+                } catch { }
+            } else {
+                try {
+                    $uiChanged = & git -C $cwd diff --name-only 'origin/develop...HEAD' -- 'mobile-app/lib/ui' 2>$null
+                    if ($LASTEXITCODE -ne 0) {
+                        $uiChanged = & git -C $cwd diff --name-only 'develop...HEAD' -- 'mobile-app/lib/ui' 2>$null
+                    }
+                    if ($uiChanged) {
+                        $violations += "This sprint changed mobile-app/lib/ui but SPRINT_${sprintNum}_PLAN.md's sweep artifact records no 'sweep-head: <hash>' line. Record the commit the sweep ran at so close-out can prove the sweep covered the FINAL UI (Sprint 62 retro IMP-2)."
+                    }
+                } catch { }
+            }
+        }
+    }
+}
+
 # 3b. previous sprint summary exists (Phase 3.2.1 background process)
 $prevSprint = $sprintNum - 1
 if ($prevSprint -gt 0) {
