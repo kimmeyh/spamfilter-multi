@@ -19,6 +19,7 @@ configured; the dashboard requires an interactive authenticated session).
 | Submission | Version | Submitted (recorded) | Certified/live (recorded) | Elapsed (upper bound) |
 |---|---|---|---|---|
 | 18 | 0.11.0.0 | 2026-08-22 ~10:10 (Harold's upload, a few minutes before polling began 10:13) | 2026-08-22 between 10:33 and 10:41 (Playwright, 5-min poll; "Congrats! Your product is now updated" at the 10:41 check; certification had PASSED by the 10:28 check, publishing took the remainder) | **~25-30 minutes** (measured at 5-min cadence -- confirms the ~26-min Submission 17 figure; pre-processing ~5-10 min, certification ~5-10 min, publishing ~10 min) |
+| 19 | 0.12.0.0 | 2026-08-24 ~8:5x am ET (Harold's upload; screenshot shows "In certification" at Pre-processing) | (pending -- fill from direct Partner Center observation) | (pending) |
 | 17 | 0.10.0.0 | 2026-08-16 21:51 | 2026-08-16 22:17 (Playwright, 10-min poll) | **~26 minutes** (measured) |
 | 16 | 0.9.0.0 | 2026-08-15 22:56 | 2026-08-16 (Harold, Partner Center screenshot) | < 24h |
 | 15 | 0.8.0.0 | 2026-08-15 18:45 | 2026-08-15 19:36 | **~51 minutes** |

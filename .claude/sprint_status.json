@@ -35,13 +35,13 @@
     "_note": "Run full suites with --concurrency=4 (Sprint 49 IMP-5)."
   },
   "store_release": {
-    "status": "0.12.0.0 MSIX BUILT AND VERIFIED 2026-08-24 ~8:14am, READY FOR HAROLD'S UPLOAD (Submission 19). Built from prod worktree main (tree byte-identical to origin/main incl. the Sprint 62 merge dfe69c7/60c6683). Verification: Check A dart-defines in build log PASS; --release-self-test --expected-version=0.12.0 6/6 PASS (APP_ENV=prod, NATIVE_APP_ENV=prod, suffixes empty, no [DEV], version match); manifest Identity Version 0.12.0.0; 17.9 MB (17,933,546 bytes -- matches 0.11.0.0's size class). Sixth MINOR release (Sprint 62 feat entries F175/F176/F177). Artifact: D:\\Data\\Harold\\github\\spamfilter-multi-prod\\mobile-app\build\\windowsd\runner\\Release\\my_email_spam_filter.msix. Post-cert: installed-build check, STORE_VERSION_STATUS rows, CHANGELOG release cut, timing row.",
+    "status": "0.12.0.0 / Submission 19 UPLOADED AND IN CERTIFICATION (Harold's Partner Center screenshot 2026-08-24, ~8:5x am ET: 'Product update: In certification', progress at Pre-processing, auto-publish on pass). Prior verification: self-test 6/6 PASS, manifest 0.12.0.0, 17.9 MB. Expected submit-to-live ~25-30 min per Submissions 17/18. Post-cert: installed-build check, STORE_VERSION_STATUS rows, CHANGELOG release cut, STORE_SUBMISSION_TIMING row.",
     "live_version": "0.11.0.0",
     "submission": 18,
     "certified_date": "2026-08-22",
     "pending_upload_version": "0.12.0.0",
     "submission_pending": 19,
-    "submitted_date": null
+    "submitted_date": "2026-08-24"
   },
   "environment_notes": [
     "RESOLVED 2026-07-29 (verified 07-30): the Store fault was an Acronis file-system filter blocking AppXSvc cleanup, fixed by an Acronis Protection exclusion. 23h uptime with ZERO Id-493 events vs a 176-file/6-min baseline; Store client self-updated 22606.1401.6.0 -> .10.0 (requires a working deployment pipeline). Filter drivers remain loaded -- backup protection was NOT disabled. See ALL_SPRINTS_MASTER_PLAN ENV-1 for the picker gotcha if it recurs.",
