@@ -98,4 +98,39 @@ void main() {
         reason: 'exactly one Background text: the filter chip -- a second '
             'one would be a scan card mislabeled as Background');
   });
+
+  testWidgets(
+      'an interrupted scan\'s duration reads "Interrupted", not '
+      '"In progress" (PR #355 Copilot review)', (tester) async {
+    // F175 startup reconciliation marks orphaned scans 'interrupted' and
+    // deliberately never fabricates a completed_at -- but the duration
+    // renderer keyed only on completed_at == null, so a reconciled row
+    // still READ as forever-running, which is exactly the impression
+    // reconciliation exists to end.
+    tester.view.physicalSize = const Size(1600, 900);
+    tester.view.devicePixelRatio = 1.0;
+    addTearDown(tester.view.resetPhysicalSize);
+    addTearDown(tester.view.resetDevicePixelRatio);
+
+    await tester.runAsync(() async {
+      await testHelper.createTestScanResult(
+        'aol-user@aol.com',
+        scanType: 'background',
+        scanMode: 'readonly',
+        totalEmails: 3,
+        status: 'interrupted',
+      );
+      await mountAndLoadDbWidget(
+        tester,
+        const MaterialApp(home: ScanHistoryScreen()),
+      );
+    });
+    await tester.pump();
+
+    // The duration is joined into the details row text
+    // ("Interrupted  |  <mode>  |  Folders: ..."), so match by containment.
+    expect(find.textContaining('Interrupted'), findsOneWidget,
+        reason: 'an interrupted row (completed_at null by design) must name '
+            'its state, never render as "In progress"');
+  });
 }

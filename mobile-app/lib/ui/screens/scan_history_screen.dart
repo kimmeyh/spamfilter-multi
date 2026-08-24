@@ -532,8 +532,12 @@ class _ScanHistoryScreenState extends State<ScanHistoryScreen> {
         ? DateTime.fromMillisecondsSinceEpoch(scan.completedAt!).toLocal()
         : null;
 
-    // Calculate duration
-    String durationStr = 'In progress';
+    // Calculate duration. PR #355 Copilot review: an 'interrupted' row (F175
+    // startup reconciliation) never gets a completed_at, and labeling it
+    // "In progress" is exactly the forever-running impression reconciliation
+    // exists to end -- name the state instead.
+    String durationStr =
+        scan.status == 'interrupted' ? 'Interrupted' : 'In progress';
     if (completedDate != null) {
       final duration = completedDate.difference(startDate);
       if (duration.inMinutes > 0) {

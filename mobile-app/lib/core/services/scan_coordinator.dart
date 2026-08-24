@@ -121,8 +121,10 @@ class ScanCoordinator {
       return await waiter.completer.future
           .timeout(waitLimit ?? scanTimeout);
     } on TimeoutException {
-      final stillQueued = _waiters.remove(waiter);
-      if (!stillQueued) {
+      // remove() returns true when the waiter WAS found and removed here --
+      // false means release() already popped it (naming per PR #355 review).
+      final removedFromQueue = _waiters.remove(waiter);
+      if (!removedFromQueue) {
         // Sprint 62 code review (C-1), defensive: release() popped this
         // waiter around the moment the timeout fired, so the lease it
         // granted belongs to a caller that is throwing -- hand it straight
@@ -133,8 +135,14 @@ class ScanCoordinator {
         // because it costs nothing and the wedge would be permanent.
         unawaited(waiter.completer.future.then(release));
       }
+      // PR #355 review: inMinutes truncates a sub-minute limit to
+      // "0 minutes" -- log seconds below one minute.
+      final limit = waitLimit ?? scanTimeout;
+      final limitText = limit.inMinutes >= 1
+          ? '${limit.inMinutes} minutes'
+          : '${limit.inSeconds} seconds';
       _logger.e('ScanCoordinator: $scanType scan gave up waiting for the '
-          'lease after ${(waitLimit ?? scanTimeout).inMinutes} minutes');
+          'lease after $limitText');
       rethrow;
     }
   }
