@@ -1,6 +1,6 @@
 # Sprint 63 Plan
 
-**Status**: DRAFT -- awaiting Phase 3.7 approval.
+**Status**: APPROVED (Harold, 2026-08-25) -- 'All Sprint tasks and sub-tasks are approved.' Cards #357-#365; draft PR #366.
 **Dates**: 2026-08-24 start | **Branch**: `feature/20260824_Sprint_63` | **PR**: created at 3.3.1 after approval
 **Theme**: Sprint 62 follow-through (E2E coverage, testLimit removal, deferred body fetch, sweep seeding, Android perf truth) + the first four steps of the ACTIVATED Google Play track.
 **Scope selected by Harold (2026-08-24, Phase 8.4 pass 2)**: F184 (new -- E2E coverage), F182, F181, F164, F180 (re-scoped per Harold's body-rules feedback), GP-16, GP-5, GP-12, F94.
@@ -392,6 +392,7 @@ it.
   which argues for evaluating the organization route), the verification artifact checklist (ID,
   payment, 2SV, device), and what the 14-day closed-test gate means for the track's schedule if
   personal is chosen (12 testers must be sourced).
+- **DECIDED at approval (Harold, 2026-08-25): PERSONAL account -- no D-U-N-S available; the 12-testers/14-continuous-days closed-test gate is accepted.** The prep doc focuses the personal route; the closed-test window becomes a tracked prerequisite of the first production release (12 testers to be sourced).
 - R-2 (Harold): create the account per the doc; record account type, the exact
   requirements Google presented (they change), and verification status.
 - R-3 (Claude): record the decision + status in the master plan GP section; adjust downstream GP

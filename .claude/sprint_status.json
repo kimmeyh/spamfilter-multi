@@ -6,14 +6,25 @@
   "current_sprint": {
     "number": 63,
     "branch": "feature/20260824_Sprint_63",
-    "pr_number": null,
+    "pr_number": 366,
     "start_date": "2026-08-24",
-    "status": "Phase 8 Release Cycle (pre-planning; auto-advance window NOT active). 8.1 develop->main DONE (Harold). 8.2 pass-1 sweep DONE 2026-08-24: six shipped candidate entries pruned (claimed-but-unexecuted pruning caught), Copilot-round CHANGELOG gap-fill, status file rolled. NEXT: 8.3 Store release per STORE_RELEASE_PROCESS.md (dev EQUALS live at 0.11.0 -- bump at Step 1; confirm prod worktree main contains the Sprint 62 merge BEFORE building), then 8.4 pass-2 scope selection (Harold), then Phase 3 planning. Cards + draft PR are owed at Phase 3.3.1 after plan approval, not before.",
-    "plan_approved": false,
-    "blanket_execution_approved": false,
-    "scope": [],
+    "status": "Phase 4 EXECUTION (auto-advance window ACTIVE until Phase 5.3). Plan approved 2026-08-25 with Harold's GP-16 decision: PERSONAL Play account, 12-testers/14-day closed-test gate accepted (no D-U-N-S). Cards #357-#365 created; draft PR pending record. Execution order: T1 F181 -> T2 F180 -> T3 F184 -> T4 F182 -> T6 GP-12 -> T9 F94 -> T5 F164; GP-16 doc + GP-5 draft interleave. Harold decision gates inside sprint: GP-5 publication approval only (GP-16 type decided).",
+    "plan_approved": true,
+    "blanket_execution_approved": true,
+    "scope": [
+      "F181",
+      "F180",
+      "F184",
+      "F182",
+      "F164",
+      "GP-12",
+      "GP-16",
+      "GP-5",
+      "F94"
+    ],
     "_scope_note": "Scope selection happens at Phase 8.4. Candidates flagged at Sprint 62 close: F180 (P10, fresh evidence), F181 (P18), F182 (P30); carry-ins in SPRINT_63_PLAN.md stub.",
-    "pr_url": null
+    "pr_url": "https://github.com/kimmeyh/spamfilter-multi/pull/366",
+    "plan_approval_date": "2026-08-25"
   },
   "previous_sprint": {
     "number": 62,
@@ -21,8 +32,18 @@
     "pr_number": 355,
     "status": "CLOSED -- PR #355 merged to develop 2026-08-24 12:07Z, develop merged to main by Harold same day. Cards #349-#354 all closed; zero open sprint issues verified. Shipped: F177 chunked fetch (survival PASS), F175 scan serialization + wait notice + reconciliation (R-7 DECLINED by design), F174 folder-error surfacing, F178 bottom-anchored popup, F176 account labels, F163 skips 26->15, CI draft gating + Workmanager Linux fix. Retro complete, 7/7 improvement decisions executed (5 applied, F182/F183 registered). Copilot review 3/3 fixed+resolved (cc255b7). CI 3/3 green twice. Final suite 1,931+/15/0; hooks 51/51; sweep 2/2 at sweep-head d87b828."
   },
-  "github_issues": [],
-  "_github_issues_note": "Sprint 62 cards #349-#354 closed at post-merge cleanup 2026-08-24. Array empties at rollover per convention; Sprint 63 cards created at Phase 3.3.1.",
+  "github_issues": [
+    357,
+    358,
+    359,
+    360,
+    361,
+    362,
+    363,
+    364,
+    365
+  ],
+  "_github_issues_note": "Sprint 63 cards created at Phase 3.3.1 (2026-08-25): #357 F181, #358 F180, #359 F184, #360 F182, #361 F164, #362 GP-12, #363 GP-16, #364 GP-5, #365 F94.",
   "test_metrics": {
     "tests_passing": 1931,
     "tests_skipped": 15,
