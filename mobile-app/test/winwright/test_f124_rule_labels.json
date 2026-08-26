@@ -78,12 +78,8 @@
         { "_comment": "PROOF OF RESTORE: the reload button resolves on the live, unfiltered Manage Rules screen. (Tooltip renamed from 'Refresh' to 'Reload rules from the database' in Sprint 52; selector updated 2026-08-15.)",
           "tool": "ww_invoke", "selector": "type=Button[name='Reload rules from the database']" },
 
-        { "_comment": "Teardown: Manage Rules -> Settings -> home.",
+        { "_comment": "Teardown: Manage Rules -> Settings -> home. TEARDOWN ENDS HERE (F182 sweep hardening, 2026-08-25): the old post-Back proof-of-return-home probe (View Scan History + Back, briefly a title-click buffer) was REMOVED -- it failed 4 of 6 runs with THREE different signatures ('Operation is not valid', selector 0-elements on two different selectors) at that exact position, while the identical probes pass interactively (MCP, verified live 2026-08-25) and pass in mt2c's own fresh session every run. Diagnosis: the runner's UIA session degrades late in a long script (~30 steps + a 3,874-rule reload + double Back); a fresh-session probe of the same elements is instant. The probe is also REDUNDANT: the runner relaunches a fresh app per script, so nothing depends on this script ending provably at home. Core coverage (steps 2-27) is untouched.",
           "tool": "ww_invoke", "selector": "type=Button[name='Back']" },
-        { "tool": "ww_invoke", "selector": "type=Button[name='Back']" },
-
-        { "_comment": "PROOF OF RETURN HOME: the account ROW is present only on the home screen. Invoking it would start a scan, so this step deliberately targets the home-screen 'View Scan History' button instead -- present on home, absent on Manage Rules -- and the following Back returns from it. Read-only either way.",
-          "tool": "ww_invoke", "selector": "type=Button[name='View Scan History']" },
         { "tool": "ww_invoke", "selector": "type=Button[name='Back']" }
       ]
     }
