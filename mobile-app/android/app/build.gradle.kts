@@ -53,10 +53,12 @@ android {
 }
 
 dependencies {
-    // Import the Firebase Bill of Materials for consistent versions
-    implementation(platform("com.google.firebase:firebase-bom:34.7.0"))
-    // Example Firebase SDK (analytics); add others as needed
-    implementation("com.google.firebase:firebase-analytics")
+    // GP-12 (Sprint 63): firebase-bom + firebase-analytics REMOVED per
+    // ADR-0030 ("zero telemetry") / ADR-0033 (Accepted 2026-02-15). Nothing
+    // else consumed the BOM (verified at planning: zero Dart-side Firebase
+    // usage; pubspec has no firebase package). The google-services PLUGIN and
+    // google-services.json stay -- Google Sign-In requires them (ADR-0030
+    // implementation notes; do not remove them with any future cleanup).
 
     // Core library desugaring for Java 8+ compatibility (required by flutter_local_notifications)
     coreLibraryDesugaring("com.android.tools:desugar_jdk_libs:2.0.4")
