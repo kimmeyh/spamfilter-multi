@@ -319,6 +319,21 @@ void main() {
       expect(full.matchedRule, 'late-header');
     });
 
+    test('safe-sender match decides WITHOUT a fetch even when body rules '
+        'exist (whitelist short-circuits before any rule)', () async {
+      final e = RuleEvaluator(
+        ruleSet: rules,
+        safeSenderList: SafeSenderList(safeSenders: [r'^trusted@ok\.com$']),
+        compiler: PatternCompiler(),
+        silent: true,
+      );
+      final oracle =
+          await e.evaluateWithoutBody(_msg(id: '11', from: 'trusted@ok.com'));
+      expect(oracle, isNotNull,
+          reason: 'safe senders are from-based -- never body-dependent');
+      expect(oracle!.isSafeSender, isTrue);
+    });
+
     test('no body rules anywhere: no-match is FINAL without a fetch',
         () async {
       final headerOnlyRules =

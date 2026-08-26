@@ -54,7 +54,6 @@ void main() {
       expect(provider.scanMode, ScanMode.readOnly);
     });
 
-
     test('Scan mode persists during scan lifecycle', () async {
       provider.initializeScanMode(mode: ScanMode.readOnly);
 
@@ -103,7 +102,17 @@ void main() {
 
     test('rulesOnly mode has no email cap (F181: testLimit removed)', () {
       provider.initializeScanMode(mode: ScanMode.rulesOnly);
-      expect(provider.scanMode, ScanMode.rulesOnly);
+      // Record 5 actions -- with the cap gone, EVERY one must be executed
+      // and revert-tracked (the old 3-of-5 cap shape must stay dead).
+      for (int i = 0; i < 5; i++) {
+        provider.recordResult(EmailActionResult(
+          email: _createTestEmail('spam$i@example.com', 'SPAM $i'),
+          action: EmailActionType.delete,
+          success: true,
+        ));
+      }
+      expect(provider.revertableActionCount, 5,
+          reason: 'F181: no cap -- all recorded actions are revertable');
     });
   });
 

@@ -219,6 +219,18 @@ try {
     Write-Host ""
 
     # If -Run flag is set, use flutter run instead of build+install
+    # F94: ensure the dev flavor's google-services stub is in place (the real
+    # per-flavor file is gitignored and does not exist until the console
+    # registrations land; the committed stub lets the dev flavor build).
+    $devGsDir  = Join-Path $mobileAppDir 'android\app\src\dev'
+    $devGsFile = Join-Path $devGsDir 'google-services.json'
+    $devGsStub = Join-Path $mobileAppDir 'android\ci\google-services.dev-stub.json'
+    if (-not (Test-Path $devGsFile) -and (Test-Path $devGsStub)) {
+        New-Item -ItemType Directory -Force $devGsDir | Out-Null
+        Copy-Item $devGsStub $devGsFile
+        Write-Host "[INFO] F94: dev-flavor google-services STUB installed (sign-in on dev flavor pending console registrations)" -ForegroundColor Yellow
+    }
+
     if ($Run) {
         Write-Host "[INFO] Running app with debugger attached (hot reload enabled)..." -ForegroundColor Cyan
         Write-Host "   Press 'r' for hot reload, 'R' for hot restart, 'q' to quit" -ForegroundColor Gray
@@ -343,17 +355,6 @@ try {
         $supportsFromFile = $false
     }
 
-    # F94: ensure the dev flavor's google-services stub is in place (the real
-    # per-flavor file is gitignored and does not exist until the console
-    # registrations land; the committed stub lets the dev flavor build).
-    $devGsDir  = Join-Path $mobileAppDir 'androidpp\src\dev'
-    $devGsFile = Join-Path $devGsDir 'google-services.json'
-    $devGsStub = Join-Path $mobileAppDir 'android\ci\google-services.dev-stub.json'
-    if (-not (Test-Path $devGsFile) -and (Test-Path $devGsStub)) {
-        New-Item -ItemType Directory -Force $devGsDir | Out-Null
-        Copy-Item $devGsStub $devGsFile
-        Write-Host "[INFO] F94: dev-flavor google-services STUB installed (sign-in on dev flavor pending console registrations)" -ForegroundColor Yellow
-    }
 
     $flavorArgs = @('--flavor', $Env, "--dart-define=APP_ENV=$Env")
     Write-Host "[INFO] F94: building flavor '$Env' with APP_ENV=$Env" -ForegroundColor Cyan
@@ -382,16 +383,10 @@ try {
     Write-Host ""
     Write-Host "[INFO] Build successful!" -ForegroundColor Green
     
-    # F94: flavored builds emit app-<flavor>-<buildtype>.apk
-    $apkPath = "buildpp\outputslutter-apkpp-$Env-$BuildType.apk"
-    if (-not (Test-Path $apkPath)) {
-        # Fallback for any un-flavored output layout
-        $apkPath = if ($BuildType -eq 'release') {
-            "buildpp\outputslutter-apkpp-release.apk"
-        } else {
-            "buildpp\outputslutter-apkpp-debug.apk"
-        }
-    }
+    # F94: flavored builds ALWAYS emit app-<flavor>-<buildtype>.apk (no
+    # un-flavored fallback -- with productFlavors defined it could only ever
+    # pick up a stale pre-flavor artifact and install the wrong APK).
+    $apkPath = "build\app\outputs\flutter-apk\app-$Env-$BuildType.apk"
     
     Write-Host "[INFO] APK location: $apkPath" -ForegroundColor Gray
     Write-Host ""

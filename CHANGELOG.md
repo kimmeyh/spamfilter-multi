@@ -26,6 +26,10 @@ Format: `- **type**: Description (Issue #N)` where type is feat|fix|chore|docs
 
 ## [Unreleased]
 
+### 2026-08-26 (Sprint 63, review round)
+- **fix**: F185 -- Gmail message bodies are now base64url-DECODED before rule evaluation; previously body rules on the Gmail path compared against raw base64 text and could essentially never match (pre-existing since the adapter's origin, surfaced by this sprint's review because deferred body fetch made the path load-bearing; Harold pulled the fix into the sprint). Pinned by decoder and conversion-call-site tests, mutation-verified. (Issue #358)
+- **fix**: Sprint 63 code-review round -- invisible control bytes (from a scripting escape bug) corrupted four paths in the Android build script, masked locally by an untracked file: repaired byte-verified, the dev-flavor path re-proven on an unmasked run; the google-services stub now also installs on the -Run path; a vacuous scan-mode test got a real uncapped assertion; the IMAP on-demand body fetch guards loudly against an unexpected mid-batch mailbox switch; stale testLimit references swept from two docs. (Issues #365, #357, #358)
+
 ### 2026-08-25 (Sprint 63)
 - **chore**: GP-12 -- Firebase Analytics dependencies removed from the Android build per the accepted zero-telemetry decision (ADR-0030/0033); the app now has structurally zero telemetry on both platforms. Google Sign-In's google-services plugin and config are unchanged. (Issue #362)
 - **feat**: F94 -- Android dev/prod build flavors, mirroring the Windows dev/prod split: side-by-side installable packages (com.myemailspamfilter and .dev), a [DEV]-suffixed launcher label, per-package isolated data, and APP_ENV passed in lockstep with the flavor by the build script's new -Env parameter (default prod preserves today's behavior). Dev-flavor Google Sign-In awaits the Firebase/GCP console registrations for the .dev package (external prerequisite); it builds against a committed stub meanwhile. Also fixes the build script's launch step, which had silently targeted a pre-rename package name. (Issue #365)

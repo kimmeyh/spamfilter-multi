@@ -1,5 +1,5 @@
 import 'dart:async';
-import 'dart:convert' show jsonDecode;
+import 'dart:convert' show base64Url, jsonDecode, utf8;
 import 'dart:io' show Platform;
 import 'package:flutter/foundation.dart' show visibleForTesting;
 import 'package:googleapis/gmail/v1.dart' as gmail;
@@ -1033,14 +1033,19 @@ class GmailApiAdapter with BatchOperationsMixin implements SpamFilterPlatform {
             '';
       }
 
-      // Extract body (prefer text/plain)
+      // Extract body (prefer text/plain).
+      // F185 (Sprint 63): Gmail returns body data base64url-ENCODED; the raw
+      // string was previously assigned directly, so body rules evaluated
+      // against base64 text and could essentially never match on the Gmail
+      // path (pre-existing since the adapter's origin; made load-bearing by
+      // F180's on-demand body fetch). Decode before use.
       String body = '';
       if (gmailMessage.payload?.body?.data != null) {
-        body = gmailMessage.payload!.body!.data!;
+        body = decodeGmailBodyData(gmailMessage.payload!.body!.data!);
       } else if (gmailMessage.payload?.parts != null) {
         for (var part in gmailMessage.payload!.parts!) {
           if (part.mimeType == 'text/plain' && part.body?.data != null) {
-            body = part.body!.data!;
+            body = decodeGmailBodyData(part.body!.data!);
             break;
           }
         }
@@ -1075,6 +1080,27 @@ class GmailApiAdapter with BatchOperationsMixin implements SpamFilterPlatform {
     } catch (e) {
       Redact.logError('Error converting Gmail message', e);
       return null;
+    }
+  }
+
+  /// F185 test seam: converts a raw Gmail API message exactly as the fetch
+  /// paths do (private _convertGmailMessage), so the decode-at-call-site
+  /// contract is pinnable without a live API.
+  @visibleForTesting
+  EmailMessage? debugConvertGmailMessage(
+          gmail.Message gmailMessage, String folderName) =>
+      _convertGmailMessage(gmailMessage, folderName);
+
+  /// F185 (Sprint 63): decode Gmail's base64url body data to text. Public
+  /// static so the decoding contract is directly unit-testable. Undecodable
+  /// input degrades to the raw string (never throws inside conversion);
+  /// malformed UTF-8 is replaced rather than fatal.
+  static String decodeGmailBodyData(String data) {
+    try {
+      return utf8.decode(base64Url.decode(base64Url.normalize(data)),
+          allowMalformed: true);
+    } catch (_) {
+      return data;
     }
   }
 

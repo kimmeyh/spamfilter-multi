@@ -347,6 +347,13 @@ All incomplete items in relative priority order. Priority in increments of 10; i
 - Fix shape (pre-recorded in F177's registration as the next lever): (1) fetch headers + a bounded text portion (`BODY.PEEK[HEADER]` + partial `BODY.PEEK[TEXT]<0.N>`), or (2) cap the body handed to the evaluator (e.g., first 256KB -- body rules match marketing phrases, not megabyte tails), or both. Outcome-equivalence test must define what a body-rule match against a truncated body means (document the cap as a matching contract, not silently).
 - Source: Sprint 62 F177 on-device validation, 2026-08-22.
 
+**F185. Gmail body rules match against UNDECODED base64 text -- PULLED INTO SPRINT 63 by Harold (2026-08-26) and DELIVERED same day (decode + call-site tests, mutation-verified); prune this entry at close-out**
+- Phase: Core App Quality / scanner correctness
+- Platform: All (Gmail adapter; IMAP path unaffected)
+- Finding (Sprint 63 automated review, verified pre-existing on develop): `_convertGmailMessage` assigns `payload.body.data` DIRECTLY as the message body, but Gmail returns it base64url-ENCODED -- so any body-rule regex evaluates against base64 text and can essentially never match on the Gmail path. The IMAP path decodes properly (`decodeTextPlainPart`). F180 makes this load-bearing: every Gmail body-rule match now routes through `fetchFullBody` -> this conversion.
+- Fix shape: base64url-decode `payload.body.data` (and part data) with charset handling; add an outcome test with a known body-rule match through the Gmail conversion path. Live impact check: 732 body rules exist in the live set -- confirm with Harold whether Gmail body matches were ever observed (they should not have been).
+- Source: Sprint 63 Phase 5 automated code review, 2026-08-26.
+
 **F182. Deterministic seeding preamble for the WinWright no-rule sweep script (~2-3h) Priority 30 (NEW, Sprint 62 retro IMP-6 -- Harold approved to backlog)**
 - Phase: Testing / E2E tooling
 - Platform: Windows Desktop (WinWright harness)

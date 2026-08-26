@@ -110,7 +110,7 @@ This document tracks the Phase 3.4 Flutter-based integration tests for the Windo
 ### EmailScanProvider Workflow
 
 The actual email scanner workflow is:
-1. `initializeScanMode(mode, testLimit?)` - Set scan mode
+1. `initializeScanMode(mode, (removed by F181))` - Set scan mode
 2. `startScan(totalEmails)` - Initialize scan, reset counts
 3. For each email:
    - `updateProgress(email, message)` - Increments `processedCount`

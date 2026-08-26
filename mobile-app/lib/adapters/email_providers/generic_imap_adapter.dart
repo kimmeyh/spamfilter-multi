@@ -1473,7 +1473,21 @@ class GenericIMAPAdapter with BatchOperationsMixin implements SpamFilterPlatform
       return message;
     }
     try {
+      // Sprint 63 code review (M-1): this runs from evaluateBatch INSIDE the
+      // chunked fetch loop, whose UID sequence is bound to the CURRENTLY
+      // selected mailbox. Today the caller processes one folder at a time so
+      // this select is a no-op; if that invariant ever breaks (interleaved
+      // folders, mid-batch reconnect), switching mailboxes here would make
+      // the OUTER loop resolve its UIDs against the wrong mailbox. Guard
+      // loudly instead of switching silently.
+      final selectedBefore = _currentMailbox;
       await _selectMailbox(message.folderName);
+      if (selectedBefore != null && selectedBefore != _currentMailbox) {
+        _logger.w('[IMAP] fetchFullBody SWITCHED mailbox '
+            '"$selectedBefore" -> "$_currentMailbox" mid-batch -- '
+            'the enclosing chunk loop\'s UID sequence may now be invalid '
+            '(caller invariant broken; investigate before trusting results)');
+      }
       final fetchResult = await _imapClient!.uidFetchMessages(
         MessageSequence.fromIds([uid], isUid: true),
         'BODY.PEEK[]',
