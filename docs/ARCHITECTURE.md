@@ -50,12 +50,12 @@ Email providers implement the `SpamFilterPlatform` abstract class. Each provider
 - `EmailMessage`: Normalized email representation
 - `EvaluationResult`: Standardized rule evaluation result with pattern type tracking
 
-### 3. Four Scan Modes (ADR-0006)
-Progressive scan modes with boolean enforcement flags to prevent accidental data loss:
-- `readonly` (default): Scan only, no modifications
-- `testLimit`: Modify up to N emails, then stop
-- `testAll`: Evaluate safe senders only
-- `fullScan`: Production mode - permanent delete/move operations
+### 3. Four Scan Modes (ADR-0006; names modernized -- F181 removed the 50-email cap, Sprint 63)
+Progressive scan modes to prevent accidental data loss:
+- `readOnly` (default): Scan only, no modifications
+- `rulesOnly`: Execute spam rule actions only (revertable); formerly the "testLimit" mode -- its unenforced 50-email cap was removed by F181
+- `safeSendersOnly`: Execute safe sender actions only (revertable)
+- `safeSendersAndRules`: Production mode - permanent delete/move operations
 
 ### 4. State Management (ADR-0009)
 Uses Provider pattern (`ChangeNotifier`) for reactive state management with automatic UI updates.
@@ -161,6 +161,20 @@ Business logic and domain services.
 #### EmailScanner
 
 **Purpose**: Orchestrates the full scanning pipeline
+
+**Android build flavors (F94, Sprint 63; ADR-0035 / ADR-0042)**: `dev` / `prod`
+productFlavors mirror the Windows APP_ENV split -- `--flavor` and `--dart-define=APP_ENV` are
+passed in lockstep (`build-with-secrets.ps1 -Env dev|prod`, default `prod` = the registered
+package with working Google Sign-In). The applicationId split (`com.myemailspamfilter[.dev]`)
+is the DECLARED ADR-0042 platform exception: Android side-by-side install requires distinct
+OS-level identity, which Windows achieves with mutex + data-dir suffix alone. The dev flavor
+builds against a committed structurally-valid google-services STUB
+(`android/ci/google-services.dev-stub.json`, copied to `app/src/dev/` by the build script)
+until the Firebase/GCP console registrations for the `.dev` package land; the launcher label
+carries the same `[DEV]` suffix as the Windows window title, and each flavor's data lives in
+its own OS package sandbox. CI builds the prod flavor. The activity component is always
+`<pkg>/com.myemailspamfilter.MainActivity` (the suffix changes the package, not the class
+namespace).
 
 **Workflow**:
 1. Get platform adapter via `PlatformRegistry.getPlatform(platformId)`

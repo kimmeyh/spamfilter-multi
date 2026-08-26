@@ -77,8 +77,11 @@ jobs:
       - name: flutter pub get
         run: flutter pub get
 
-      - name: flutter build apk --debug
-        run: flutter build apk --debug
+      - name: flutter build apk --debug (prod flavor)
+        # F94 (Sprint 63): flavors exist now, so a flavor is mandatory. CI
+        # builds the PROD flavor -- its applicationId is the base package,
+        # which is what the committed CI google-services stub declares.
+        run: flutter build apk --debug --flavor prod --dart-define=APP_ENV=prod
 
   windows-build:
     name: Windows Build Verification

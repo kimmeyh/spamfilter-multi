@@ -1,0 +1,30 @@
+{
+  "_comment": "F94 (Sprint 63): committed structurally-valid STUB for the DEV FLAVOR's suffixed package (com.myemailspamfilter.dev). The dev flavor cannot use the real gitignored google-services.json until Harold's Firebase/GCP console registrations for the .dev package land (F94 external prerequisites) -- this stub lets the dev flavor BUILD and install side-by-side meanwhile (same F158 philosophy as the CI stub above: the google-services gradle task only needs a client matching the applicationId). Google Sign-In on the DEV flavor does NOT work with this stub -- use the PROD flavor (registered package) for sign-in work until the console registrations land, then replace the copied src/dev/google-services.json with the real one. Every value except package_name is deliberately fake.",
+  "project_info": {
+    "project_number": "000000000000",
+    "project_id": "ci-stub-project",
+    "storage_bucket": "ci-stub-project.appspot.com"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:000000000000:android:0000000000000000000000",
+        "android_client_info": {
+          "package_name": "com.myemailspamfilter.dev"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "ci-stub-not-a-real-api-key"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
