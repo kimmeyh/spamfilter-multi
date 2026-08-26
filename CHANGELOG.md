@@ -27,6 +27,7 @@ Format: `- **type**: Description (Issue #N)` where type is feat|fix|chore|docs
 ## [Unreleased]
 
 ### 2026-08-25 (Sprint 63)
+- **feat**: F180 -- scans now fetch message HEADERS first and retrieve a full body only for the specific messages whose rule evaluation actually needs one (body rules or body exceptions), one at a time. Most spam is decided from headers alone (the live rule set is ~80% header rules), and a rule set with no body rules never downloads a body at all. Body rules always match against the complete body -- never a truncated stub -- and scan verdicts are pinned identical to the previous single-pass evaluation. This removes the remaining memory peak from holding 20 full messages in flight per batch. (Issue #358)
 - **feat**: F181 -- the "Test Limited Emails" scan-mode option (50-email cap) is removed. The cap was never enforced by the batch execution path, so it promised a safety limit the app did not keep; the mode is now honestly named "Process Rules Only" and executes (revertably) on every matching email. Accounts that stored the legacy mode value continue to work unchanged. (Issue #357)
 
 ## [0.12.0] - 2026-08-24

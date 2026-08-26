@@ -5,6 +5,9 @@ import '../models/evaluation_result.dart';
 import '../utils/app_logger.dart';
 import 'pattern_compiler.dart';
 
+/// F180: tri-state outcome of a body-free condition check.
+enum _BodyFreeMatch { yes, no, undecided }
+
 /// Evaluates emails against rules to determine actions
 class RuleEvaluator {
   final RuleSet ruleSet;
@@ -98,6 +101,119 @@ class RuleEvaluator {
       _eval(() => 'Email "${message.subject}" from ${message.from} did not match any of $enabledRuleCount enabled rules or safe senders');
     }
     return EvaluationResult.noMatch();
+  }
+
+  /// F180 (Sprint 63): body-free evaluation oracle for the deferred body
+  /// fetch. Evaluates [message] exactly like [evaluate] EXCEPT that the
+  /// body is treated as NOT AVAILABLE (regardless of its current content).
+  ///
+  /// Returns the final [EvaluationResult] when the outcome is provably
+  /// identical to a full evaluation -- i.e. no body-dependent branch could
+  /// change it -- or `null` when the body is required, in which case the
+  /// caller fetches the full body and re-runs [evaluate]. Equivalence
+  /// argument, per rule in execution order:
+  /// - A non-body exception match skips the rule with or without the body
+  ///   (exceptions are OR).
+  /// - Conditions resolve tri-state without the body: OR with a decidable
+  ///   match is YES; AND with a decidable failure is NO; a non-empty body
+  ///   list otherwise leaves the rule UNDECIDED.
+  /// - A YES rule whose exceptions carry body patterns is UNDECIDED (the
+  ///   body could still rescue it); a YES rule without body exceptions is a
+  ///   final match. The FIRST undecided rule aborts to `null` -- a later
+  ///   decided match may not overtake an earlier undecided rule, because
+  ///   rule order is priority order.
+  /// - All rules NO -> noMatch is final: no body content can create a match
+  ///   that this pass did not already flag as undecided.
+  Future<EvaluationResult?> evaluateWithoutBody(EmailMessage message) async {
+    // Safe senders are from-based -- body-independent, identical to evaluate.
+    final safeSenderMatch = safeSenderList.findMatch(message.from);
+    if (safeSenderMatch != null) {
+      _eval(() => 'Email from ${message.from} matched safe sender (pattern: ${safeSenderMatch.pattern})');
+      return EvaluationResult.safeSender(
+        safeSenderMatch.pattern,
+        patternType: safeSenderMatch.patternType,
+      );
+    }
+
+    final sortedRules = List<Rule>.from(ruleSet.rules)
+      ..sort((a, b) => a.executionOrder.compareTo(b.executionOrder));
+
+    int enabledRuleCount = 0;
+    for (final rule in sortedRules) {
+      if (!rule.enabled) continue;
+      enabledRuleCount++;
+
+      final exc = rule.exceptions;
+      if (exc != null &&
+          (_matchesPatternList(message.from, exc.from) ||
+              _matchesHeaderList(message, exc.header) ||
+              _matchesPatternList(message.subject, exc.subject))) {
+        // Skipped regardless of body content.
+        continue;
+      }
+
+      final tri = _matchesConditionsWithoutBody(message, rule.conditions);
+      if (tri == _BodyFreeMatch.no) continue;
+
+      if (tri == _BodyFreeMatch.undecided ||
+          (exc != null && exc.body.isNotEmpty)) {
+        // Body required: either the conditions cannot resolve without it, or
+        // a body exception could still rescue an otherwise-matching rule.
+        _debug(() => 'F180: rule "${rule.name}" needs the body for '
+            '"${message.subject}" from ${message.from} -- deferring');
+        return null;
+      }
+
+      // Decided match with no body-dependent escape hatch -- final.
+      final matchInfo = _getMatchedPatternWithType(message, rule.conditions);
+      _eval(() => 'Email from ${message.from} matched rule "${rule.name}" '
+          '(pattern: ${matchInfo.pattern}, type: ${matchInfo.patternType}, '
+          'subject: "${message.subject}") [header-only pass]');
+      return EvaluationResult(
+        shouldDelete: rule.actions.delete,
+        shouldMove: rule.actions.moveToFolder != null,
+        targetFolder: rule.actions.moveToFolder,
+        matchedRule: rule.name,
+        matchedPattern: matchInfo.pattern,
+        matchedPatternType: matchInfo.patternType,
+      );
+    }
+
+    if (enabledRuleCount == 0) {
+      if (!silent) {
+        AppLogger.rules('No rules available for evaluation of "${message.subject}" from ${message.from}');
+      }
+    } else {
+      _eval(() => 'Email "${message.subject}" from ${message.from} did not match any of $enabledRuleCount enabled rules or safe senders [header-only pass]');
+    }
+    return EvaluationResult.noMatch();
+  }
+
+  _BodyFreeMatch _matchesConditionsWithoutBody(
+      EmailMessage message, RuleConditions conditions) {
+    final matches = <bool>[];
+    if (conditions.from.isNotEmpty) {
+      matches.add(_matchesPatternList(message.from, conditions.from));
+    }
+    if (conditions.header.isNotEmpty) {
+      matches.add(_matchesHeaderList(message, conditions.header));
+    }
+    if (conditions.subject.isNotEmpty) {
+      matches.add(_matchesPatternList(message.subject, conditions.subject));
+    }
+    final bodyUndecided = conditions.body.isNotEmpty;
+
+    if (matches.isEmpty && !bodyUndecided) {
+      return _BodyFreeMatch.no; // no patterns at all -- same as evaluate
+    }
+
+    if (conditions.type == 'AND') {
+      if (matches.any((m) => !m)) return _BodyFreeMatch.no;
+      return bodyUndecided ? _BodyFreeMatch.undecided : _BodyFreeMatch.yes;
+    } else {
+      if (matches.any((m) => m)) return _BodyFreeMatch.yes;
+      return bodyUndecided ? _BodyFreeMatch.undecided : _BodyFreeMatch.no;
+    }
   }
 
   bool _matchesConditions(EmailMessage message, RuleConditions conditions) {

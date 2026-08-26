@@ -444,7 +444,11 @@ class GmailApiAdapter with BatchOperationsMixin implements SpamFilterPlatform {
       bodyBuf.write('Content-Type: application/http\r\n');
       bodyBuf.write('Content-ID: <item-$i>\r\n');
       bodyBuf.write('\r\n');
-      bodyBuf.write('GET /gmail/v1/users/me/messages/$id?format=full\r\n');
+      // F180 (Sprint 63): headers-only batch fetch (format=metadata returns
+      // every header, no body payload) -- full bodies come per-message via
+      // [fetchFullBody] only when body-rule evaluation needs one. Symmetric
+      // with the IMAP adapter's BODY.PEEK[HEADER] chunk fetch.
+      bodyBuf.write('GET /gmail/v1/users/me/messages/$id?format=metadata\r\n');
       bodyBuf.write('\r\n');
     }
     bodyBuf.write('--$boundary--\r\n');
@@ -543,10 +547,11 @@ class GmailApiAdapter with BatchOperationsMixin implements SpamFilterPlatform {
       final fetched = await Future.wait(
         chunk.map((id) async {
           try {
+            // F180: headers-only, matching the batch path; bodies on demand.
             final fullMessage = await _gmailApi!.users.messages.get(
               'me',
               id,
-              format: 'full',
+              format: 'metadata',
             );
             if (applyExcludedLabelFilter && _excludedLabels != null) {
               final labels = fullMessage.labelIds ?? const <String>[];
@@ -986,6 +991,31 @@ class GmailApiAdapter with BatchOperationsMixin implements SpamFilterPlatform {
   }
 
   /// Convert Gmail message to EmailMessage
+  /// F180 (Sprint 63): fetch ONE message's full body on demand (the batch
+  /// fetch is format=metadata / headers-only). Runs only for messages whose
+  /// evaluation genuinely needs the body; evaluation is always against the
+  /// COMPLETE body. A failed fetch degrades to the header-only record with
+  /// a logged warning, never a failed scan.
+  @override
+  Future<EmailMessage> fetchFullBody(EmailMessage message) async {
+    if (_gmailApi == null || message.id.isEmpty) return message;
+    try {
+      final full = await _gmailApi!.users.messages.get(
+        'me',
+        message.id,
+        format: 'full',
+      );
+      final converted = _convertGmailMessage(full, message.folderName);
+      return converted ?? message;
+    } catch (e) {
+      Redact.logError(
+          'F180 fetchFullBody failed for Gmail message ${message.id} -- '
+          'evaluating without body',
+          e);
+      return message;
+    }
+  }
+
   EmailMessage? _convertGmailMessage(
     gmail.Message gmailMessage,
     String folderName,

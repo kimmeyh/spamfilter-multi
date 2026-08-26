@@ -167,11 +167,19 @@ Business logic and domain services.
 2. Load credentials from `SecureCredentialsStore`
 3. Connect to email provider
 4. Initialize scan result persistence (database)
-5. For each folder: fetch messages **in bounded batches of 20 (F177, Sprint 62)** -- each batch
-   is evaluated against rules immediately and reduced to a body-truncated record
-   (`kBodyPreviewMaxLength`) before the next batch is fetched, so full message content is never
-   accumulated (the fix for the Sprint 61 unbounded-fetch LOW_MEMORY kills); actions are then
-   taken from the evaluated records in batch operations (Issue #144 two-phase design preserved)
+5. For each folder: fetch messages **in bounded batches of 20 (F177, Sprint 62), HEADERS-ONLY
+   (F180, Sprint 63)** -- IMAP `BODY.PEEK[HEADER]` / Gmail `format=metadata`. Each message is
+   evaluated in two stages: `RuleEvaluator.evaluateWithoutBody` (the body-free oracle) decides
+   from safe senders + header + subject rules when the outcome provably cannot depend on the
+   body; otherwise ONE full body is fetched on demand (`SpamFilterPlatform.fetchFullBody`,
+   per-message) and the standard full evaluation runs against the COMPLETE body -- body
+   matching is never truncated (Harold, Sprint 63 planning). Stage-B trigger predicate: the
+   first rule (in execution order) whose conditions are undecidable without the body (non-empty
+   body list not short-circuited by AND/OR on decidable lists) OR whose otherwise-matching
+   conditions carry body EXCEPTIONS. Retained records stay body-truncated
+   (`kBodyPreviewMaxLength`) exactly as F177 built; at most one full MIME body is in flight
+   (the residual ~1.0GB peak lever after F177). Actions are then taken from the evaluated
+   records in batch operations (Issue #144 two-phase design preserved)
 6. Persist individual email actions to database
 7. Update UI progress (throttled per [ADR-0022](adr/0022-throttled-ui-progress-updates.md);
    per-batch fetch progress since F177)

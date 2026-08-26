@@ -1418,10 +1418,15 @@ class GenericIMAPAdapter with BatchOperationsMixin implements SpamFilterPlatform
 
       final converted = <EmailMessage>[];
       try {
-        // [ISSUE #145] Use UID FETCH to get message UIDs alongside content
+        // [ISSUE #145] Use UID FETCH to get message UIDs alongside content.
+        // F180 (Sprint 63): HEADERS ONLY at this stage -- full bodies are
+        // fetched per-message on demand via [fetchFullBody] when (and only
+        // when) body-rule evaluation requires one, so at most ONE full body
+        // is in flight instead of a whole chunk of 20 (the residual ~1.0GB
+        // peak after F177). PEEK keeps the message unread.
         final fetchResult = await _imapClient!.uidFetchMessages(
           chunk,
-          'BODY.PEEK[]', // Fetch full message without marking as read
+          'BODY.PEEK[HEADER]',
         );
 
         for (final mimeMessage in fetchResult.messages) {
@@ -1450,6 +1455,45 @@ class GenericIMAPAdapter with BatchOperationsMixin implements SpamFilterPlatform
     }
 
     return messages;
+  }
+
+  /// F180 (Sprint 63): fetch ONE message's full body on demand. The batch
+  /// fetch is headers-only; this runs only for messages whose evaluation
+  /// genuinely needs the body (body rules / body exceptions undecided), so
+  /// at most one full MIME body is in memory at a time. The full converted
+  /// message is returned; the caller evaluates against the COMPLETE body
+  /// (truncated matching is rejected by design) and releases it.
+  @override
+  Future<EmailMessage> fetchFullBody(EmailMessage message) async {
+    if (_imapClient == null || message.id.isEmpty) return message;
+    final uid = int.tryParse(message.id);
+    if (uid == null) {
+      _logger.w('[IMAP] fetchFullBody: non-UID id "${message.id}" -- '
+          'returning header-only message');
+      return message;
+    }
+    try {
+      await _selectMailbox(message.folderName);
+      final fetchResult = await _imapClient!.uidFetchMessages(
+        MessageSequence.fromIds([uid], isUid: true),
+        'BODY.PEEK[]',
+      );
+      if (fetchResult.messages.isEmpty) {
+        _logger.w('[IMAP] fetchFullBody: uid $uid not found in '
+            '"${message.folderName}" -- returning header-only message');
+        return message;
+      }
+      final full = _convertMimeMessage(
+          fetchResult.messages.first, message.folderName);
+      return full;
+    } catch (e) {
+      // A failed body fetch must not fail the whole scan: evaluation falls
+      // back to the header-only record (its body rules simply cannot match),
+      // and the miss is visible in the log.
+      _logger.w('[IMAP] fetchFullBody FAILED for uid $uid in '
+          '"${message.folderName}": $e -- evaluating without body');
+      return message;
+    }
   }
 
   EmailMessage _convertMimeMessage(MimeMessage mimeMessage, String folderName) {
