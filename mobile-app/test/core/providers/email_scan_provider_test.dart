@@ -26,7 +26,6 @@ void main() {
     /// Test readonly mode by default
     test('readonly mode is default (safe)', () {
       expect(provider.scanMode, ScanMode.readOnly);
-      expect(provider.emailTestLimit, isNull);
     });
 
     /// Test scan mode initialization
@@ -35,16 +34,14 @@ void main() {
         provider.initializeScanMode(mode: ScanMode.readOnly);
 
         expect(provider.scanMode, ScanMode.readOnly);
-        expect(provider.emailTestLimit, isNull);
         expect(provider.hasActionsToRevert, isFalse);
         expect(provider.revertableActionCount, 0);
       });
 
-      test('initializes testLimit mode with limit', () {
-        provider.initializeScanMode(mode: ScanMode.rulesOnly, testLimit: 50);
+      test('initializes rulesOnly mode (F181: no test limit exists)', () {
+        provider.initializeScanMode(mode: ScanMode.rulesOnly);
 
         expect(provider.scanMode, ScanMode.rulesOnly);
-        expect(provider.emailTestLimit, 50);
         expect(provider.hasActionsToRevert, isFalse);
       });
 
@@ -52,7 +49,6 @@ void main() {
         provider.initializeScanMode(mode: ScanMode.safeSendersOnly);
 
         expect(provider.scanMode, ScanMode.safeSendersOnly);
-        expect(provider.emailTestLimit, isNull);
         expect(provider.hasActionsToRevert, isFalse);
       });
 
@@ -208,10 +204,12 @@ void main() {
       });
     });
 
-    /// Test testLimit mode behavior
-    group('testLimit mode', () {
-      test('limits email modifications to N actions', () {
-        provider.initializeScanMode(mode: ScanMode.rulesOnly, testLimit: 3);
+    /// F181 (Sprint 63): the 50-email testLimit cap is REMOVED -- rulesOnly
+    /// executes and revert-tracks every action, uncapped. These tests were
+    /// inverted from the old cap assertions.
+    group('rulesOnly mode (uncapped, F181)', () {
+      test('executes and tracks ALL actions -- no 3-of-5 cap (F181)', () {
+        provider.initializeScanMode(mode: ScanMode.rulesOnly);
 
         for (int i = 0; i < 5; i++) {
           final email = EmailMessage(
@@ -234,14 +232,14 @@ void main() {
           provider.recordResult(result);
         }
 
-        // [NEW] PHASE 3.1: Counts show all proposed actions (5), but only 3 executed
-        expect(provider.deletedCount, 5); // All proposed actions
-        expect(provider.revertableActionCount, 3); // Only executed (within limit)
+        // F181: all 5 proposed actions execute AND are revert-tracked.
+        expect(provider.deletedCount, 5);
+        expect(provider.revertableActionCount, 5);
         expect(provider.hasActionsToRevert, isTrue);
       });
 
-      test('respects zero test limit', () {
-        provider.initializeScanMode(mode: ScanMode.rulesOnly, testLimit: 0);
+      test('single action executes and is revertable (F181: no zero-cap)', () {
+        provider.initializeScanMode(mode: ScanMode.rulesOnly);
 
         final email = EmailMessage(
           id: 'test-1',
@@ -262,13 +260,13 @@ void main() {
 
         provider.recordResult(result);
 
-        // [NEW] PHASE 3.1: Counts show proposed actions (1), but none executed (limit = 0)
-        expect(provider.deletedCount, 1); // Proposed action
-        expect(provider.hasActionsToRevert, isFalse); // Not executed
+        // F181: the action executes and is tracked (the old limit=0 case is gone).
+        expect(provider.deletedCount, 1);
+        expect(provider.hasActionsToRevert, isTrue);
       });
 
-      test('tracks different action types within limit', () {
-        provider.initializeScanMode(mode: ScanMode.rulesOnly, testLimit: 5);
+      test('tracks different action types (uncapped)', () {
+        provider.initializeScanMode(mode: ScanMode.rulesOnly);
 
         final baseDate = DateTime.now();
 
@@ -506,15 +504,13 @@ void main() {
       provider.initializeScanMode(mode: ScanMode.readOnly);
       expect(provider.scanMode, ScanMode.readOnly);
 
-      // Switch to testLimit
-      provider.initializeScanMode(mode: ScanMode.rulesOnly, testLimit: 50);
+      // Switch to rulesOnly (F181: no limit parameter)
+      provider.initializeScanMode(mode: ScanMode.rulesOnly);
       expect(provider.scanMode, ScanMode.rulesOnly);
-      expect(provider.emailTestLimit, 50);
 
       // Switch to testAll
       provider.initializeScanMode(mode: ScanMode.safeSendersOnly);
       expect(provider.scanMode, ScanMode.safeSendersOnly);
-      expect(provider.emailTestLimit, isNull);
 
       // Switch back to readonly
       provider.initializeScanMode(mode: ScanMode.readOnly);

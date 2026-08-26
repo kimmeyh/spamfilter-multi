@@ -1000,10 +1000,12 @@ class _AccountSetupScreenState extends State<AccountSetupScreen> {
 /// Scan mode selector widget
 ///
 /// Allows user to choose how to handle email modifications:
-/// - readonly (default): Safe for testing, no modifications made
-/// - testLimit: Test on limited number of emails (user-specified)
-/// - testAll: Full scan with revert capability after
+/// - readOnly (default): Safe for testing, no modifications made
+/// - rulesOnly / safeSendersOnly: execute one action family, revertable
+/// - safeSendersAndRules: full scan, permanent
 ///
+/// F181 (Sprint 63): the 50-email test-limit option was removed (unenforced
+/// promise -- see the F181 card).
 /// [NEW] PHASE 2 SPRINT 3: Read-only mode by default, safe testing
 class _ScanModeSelector extends StatefulWidget {
   final BuildContext parentContext;
@@ -1026,8 +1028,6 @@ class _ScanModeSelector extends StatefulWidget {
 
 class _ScanModeSelectorState extends State<_ScanModeSelector> {
   late ScanMode _selectedMode;
-  int _testLimit = 50;
-  final _testLimitController = TextEditingController(text: '50');
   final _logger = Logger();
 
   @override
@@ -1035,12 +1035,6 @@ class _ScanModeSelectorState extends State<_ScanModeSelector> {
     super.initState();
     // readonly is default (safe)
     _selectedMode = ScanMode.readOnly;
-  }
-
-  @override
-  void dispose() {
-    _testLimitController.dispose();
-    super.dispose();
   }
 
   /// Proceed with selected scan mode
@@ -1087,21 +1081,10 @@ class _ScanModeSelectorState extends State<_ScanModeSelector> {
 
     final scanProvider = widget.parentContext.read<EmailScanProvider>();
 
-    // Initialize scan mode before proceeding
-    int? testLimit;
-    if (_selectedMode == ScanMode.rulesOnly) {
-      testLimit = _testLimit;
-    }
+    // Initialize scan mode before proceeding (F181: no test limit).
+    scanProvider.initializeScanMode(mode: _selectedMode);
 
-    scanProvider.initializeScanMode(
-      mode: _selectedMode,
-      testLimit: testLimit,
-    );
-
-    _logger.i(
-      '[INVESTIGATION] Initialized scan mode: $_selectedMode'
-      '${testLimit != null ? ' (limit: $testLimit emails)' : ''}',
-    );
+    _logger.i('[INVESTIGATION] Initialized scan mode: $_selectedMode');
 
     // Close the dialog first
     if (mounted) {
@@ -1224,15 +1207,17 @@ class _ScanModeSelectorState extends State<_ScanModeSelector> {
             ),
             const SizedBox(height: 12),
 
-            // Test limit mode -- see the Read-Only selector above for why this
+            // Rules-only mode -- see the Read-Only selector above for why this
             // uses inMutuallyExclusiveGroup + checked rather than
-            // excludeSemantics (F133-S52 R-2).
+            // excludeSemantics (F133-S52 R-2). F181 (Sprint 63): renamed from
+            // the removed "Test Limited Emails" framing -- the 50-email cap
+            // was never enforced and is gone.
             Semantics(
               container: true,
               inMutuallyExclusiveGroup: true,
               checked: _selectedMode == ScanMode.rulesOnly,
-              label: 'Test Limited Emails. '
-                  'Apply changes to first N emails only',
+              label: 'Process Rules Only. '
+                  'Apply spam rule actions only (can be reverted)',
               onTap: () {
                 setState(() => _selectedMode = ScanMode.rulesOnly);
               },
@@ -1268,12 +1253,12 @@ class _ScanModeSelectorState extends State<_ScanModeSelector> {
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
                               const Text(
-                                'Test Limited Emails',
+                                'Process Rules Only',
                                 style: TextStyle(fontWeight: FontWeight.bold),
                               ),
                               const SizedBox(height: 4),
                               const Text(
-                                '[NOTES] Apply changes to first N emails only',
+                                '[NOTES] Apply spam rule actions only (can be reverted)',
                                 style: TextStyle(
                                   fontSize: 12,
                                   color: Colors.orange,
@@ -1284,30 +1269,6 @@ class _ScanModeSelectorState extends State<_ScanModeSelector> {
                         ),
                       ],
                     ),
-                    if (_selectedMode == ScanMode.rulesOnly) ...[
-                      const SizedBox(height: 12),
-                      Row(
-                        children: [
-                          const SizedBox(width: 40),
-                          Expanded(
-                            child: TextField(
-                              controller: _testLimitController,
-                              keyboardType: TextInputType.number,
-                              decoration: const InputDecoration(
-                                labelText: 'Number of emails',
-                                border: OutlineInputBorder(),
-                                hintText: '50',
-                              ),
-                              onChanged: (value) {
-                                setState(() {
-                                  _testLimit = int.tryParse(value) ?? 50;
-                                });
-                              },
-                            ),
-                          ),
-                        ],
-                      ),
-                    ],
                   ],
                 ),
               ),
@@ -1466,7 +1427,7 @@ class _ScanModeSelectorState extends State<_ScanModeSelector> {
                       _selectedMode == ScanMode.readOnly
                           ? 'No emails will be modified. Safe for testing.'
                           : _selectedMode == ScanMode.rulesOnly
-                              ? 'Only first $_testLimit emails will be modified.'
+                              ? 'Spam rule actions will be applied to every matching email. Can be reverted using "Revert Last Run".'
                               : _selectedMode == ScanMode.safeSendersOnly
                                   ? 'All actions can be reverted using "Revert Last Run" option.'
                                   : '[WARNING] PERMANENT changes - emails will be DELETED or MOVED. This action CANNOT be undone!',

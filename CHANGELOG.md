@@ -26,6 +26,9 @@ Format: `- **type**: Description (Issue #N)` where type is feat|fix|chore|docs
 
 ## [Unreleased]
 
+### 2026-08-25 (Sprint 63)
+- **feat**: F181 -- the "Test Limited Emails" scan-mode option (50-email cap) is removed. The cap was never enforced by the batch execution path, so it promised a safety limit the app did not keep; the mode is now honestly named "Process Rules Only" and executes (revertably) on every matching email. Accounts that stored the legacy mode value continue to work unchanged. (Issue #357)
+
 ## [0.12.0] - 2026-08-24
 
 ### 2026-08-24 (Sprint 62, Copilot review round)

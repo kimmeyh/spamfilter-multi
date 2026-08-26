@@ -44,7 +44,7 @@ void main() {
       provider.initializeScanMode(mode: ScanMode.safeSendersAndRules);
       expect(provider.scanMode, ScanMode.safeSendersAndRules);
 
-      provider.initializeScanMode(mode: ScanMode.rulesOnly, testLimit: 5);
+      provider.initializeScanMode(mode: ScanMode.rulesOnly);
       expect(provider.scanMode, ScanMode.rulesOnly);
 
       provider.initializeScanMode(mode: ScanMode.safeSendersOnly);
@@ -54,10 +54,6 @@ void main() {
       expect(provider.scanMode, ScanMode.readOnly);
     });
 
-    test('Test limit is stored when mode is testLimit', () {
-      provider.initializeScanMode(mode: ScanMode.rulesOnly, testLimit: 10);
-      expect(provider.emailTestLimit, 10);
-    });
 
     test('Scan mode persists during scan lifecycle', () async {
       provider.initializeScanMode(mode: ScanMode.readOnly);
@@ -100,15 +96,14 @@ void main() {
 
     test('fullScan mode is the only fully destructive mode', () {
       // fullScan is the only mode that permanently deletes
-      // Other modes either do nothing (readonly) or have limits
+      // Other modes either do nothing (readonly) or are revertable
       provider.initializeScanMode(mode: ScanMode.safeSendersAndRules);
       expect(provider.scanMode, ScanMode.safeSendersAndRules);
     });
 
-    test('testLimit mode respects email limit', () {
-      provider.initializeScanMode(mode: ScanMode.rulesOnly, testLimit: 3);
+    test('rulesOnly mode has no email cap (F181: testLimit removed)', () {
+      provider.initializeScanMode(mode: ScanMode.rulesOnly);
       expect(provider.scanMode, ScanMode.rulesOnly);
-      expect(provider.emailTestLimit, 3);
     });
   });
 
