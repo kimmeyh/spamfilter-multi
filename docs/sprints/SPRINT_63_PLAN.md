@@ -653,10 +653,18 @@ The two scans above double as the F164 dataset (debug build): 36s/456 MB header-
 1m16s/529 MB with 40 deferred fetches. Optional prod-icon release-build run remains Harold's
 call; verdict may be recorded on the debug evidence.
 
-### Still open (Harold-driven)
-- F181 scan-mode dialog glance (no limit option visible).
-- F94 launcher-label confirmation (dev `[DEV]` + prod side by side). Noted during setup: Gmail
-  sign-in WORKED on the dev flavor despite the stub google-services.json (appauth
-  redirect-scheme flow does not use google-services.json).
-- GP-12 AC-2: Gmail sign-in in the PROD Android app post-Firebase-dependency-removal.
-- GP-5 privacy-policy/terms text approval + hosting URL choice; GP-16 account creation.
+### Final MV verdicts (Harold, 2026-08-26) -- MANUAL VALIDATION COMPLETE
+1. Demo body rule: LEAVE in the Android dev DB for Harold's own experimenting (tagged
+   `created_by='sprint63_mv_demo'`; removable on request).
+2. F164: CLOSED on the debug-build evidence (36s/456 MB header-only; 1m16s/529 MB with 40
+   deferred fetches). Optional prod-icon release-build run waived.
+3. F181: PASS -- scan-mode dialog correct, no limit option.
+4. F94: PASS -- dev `[DEV]` and prod launcher labels correct side by side. Noted during setup:
+   Gmail sign-in WORKED on the dev flavor despite the stub google-services.json (appauth
+   redirect-scheme flow does not use google-services.json).
+5. GP-12 AC-2: VERIFIED -- Gmail sign-in works in the PROD Android app after the Firebase
+   dependency removal.
+6. GP-5: privacy-policy and terms TEXT APPROVED as drafted. Hosting URL decision deferred to
+   the Sprint 64 GP-16 walkthrough (placeholders stay "[SET AT PUBLICATION]" until then).
+7. GP-16: Harold wants to be walked through account creation -- carried as the FIRST TASK of
+   Sprint 64 (guided walkthrough; includes the GP-5 hosting/URL decision at publication).

@@ -1,6 +1,6 @@
 {
   "_description": "Sprint status file that persists across context compaction. Update after each phase/sub-phase completion.",
-  "_last_updated": "2026-08-24 (Sprint 62 merged; Phase 8 cycle in progress)",
+  "_last_updated": "2026-08-26 (Sprint 63 Manual Validation COMPLETE; Phase 6/7 in progress)",
   "_usage": "Read this file after context compaction to restore sprint approval state and progress.",
   "_staleness_note": "This file had drifted 15 sprints (last updated at Sprint 35, 2026-04-19) before being refreshed at Sprint 50 close-out. It is a Phase 7.7 checklist item -- update it at every sprint close-out, not opportunistically.",
   "current_sprint": {
@@ -8,7 +8,7 @@
     "branch": "feature/20260824_Sprint_63",
     "pr_number": 366,
     "start_date": "2026-08-24",
-    "status": "Sprint 63 Phase 5 -- code COMPLETE on all 9 tasks + F185 pulled in-sprint (Harold). Commits through 9a291fe. DONE: F181 (3 keeps annotated), F180 deferred body fetch (oracle equivalence + fetch-sequence + mutation), F184 in-VM E2E (4 tests + mutation), F182 synthetic sweep seeding (2 consecutive green sweeps, sweep-head c1039ae), GP-12 Firebase removal, GP-16 setup guide (PERSONAL route decided), GP-5 privacy/terms DRAFTS (publication gated on Harold), F94 flavors (side-by-side proven live, both pids concurrent; C-1 control-byte defect found by review, fixed byte-verified, unmasked re-proof green), F185 Gmail base64url decode. Phase 5 evidence COMPLETE and recorded on PR #366 (review 1C/2H/3M all fixed; F-PRECHECK clean; sweep artifact). ENVIRONMENT: emulator AVD resized 6G->16G (wipe-data; accounts lost -- Harold re-added AOL); dev-flavor debug + prod-release installed side-by-side. PENDING FOR MV (Harold-driven): F180 AC-3 full-mailbox survival measurement (Scan Range must be set to all -- fresh-install default produced 9-email scans), F164 release-vs-debug timing comparison, GP-12 AC-2 Google sign-in re-check, GP-16 account creation, GP-5 text approval + URL choice, F94 dev-flavor sign-in = deferred-external (console registrations).",
+    "status": "Sprint 63 Phase 5.3 Manual Validation COMPLETE (2026-08-26, all 7 verdicts in SPRINT_63_PLAN.md 'Final MV verdicts') -- entering Phase 6/7. MV: F180 PASS (36s/456MB/0 fetches vs 6m17s/~1.0GB anchor; deferral demo 40 fetches 1m16s/529MB; headers-only audit 4-line CONFIRMED), F164 CLOSED on debug evidence, F181 PASS, F94 PASS (dev-flavor Gmail sign-in WORKED despite stub -- appauth), GP-12 AC-2 VERIFIED, GP-5 text APPROVED (URL at Sprint 64 publication), GP-16 -> Sprint 64 FIRST TASK (guided walkthrough). Demo body rule LEFT in Android dev DB per Harold (created_by='sprint63_mv_demo'). New backlog from MV: F186 body-rule authoring, F187 URL-shape rule cleanup (647 of 732), F188 silent rule neutralization. Master plan updated with DONE stubs (F164/F180/F181/F182/F185/F94/GP-12) + GP-5/GP-16 carries. IN FLIGHT: Claude PR review agent (second pass, post-C-1 commits) + Copilot review watcher on PR #366; resolve both, then Phase 7 retro (7-Step Protocol).",
     "plan_approved": true,
     "blanket_execution_approved": true,
     "scope": [
@@ -45,11 +45,11 @@
   ],
   "_github_issues_note": "Sprint 63 cards created at Phase 3.3.1 (2026-08-25): #357 F181, #358 F180, #359 F184, #360 F182, #361 F164, #362 GP-12, #363 GP-16, #364 GP-5, #365 F94.",
   "test_metrics": {
-    "tests_passing": 1931,
+    "tests_passing": 1952,
     "tests_skipped": 15,
     "tests_failing": 0,
     "analyzer_warnings": 0,
-    "_test_metrics_note": "1,931 passed / 15 skipped / 0 failed at Sprint 62 dev-complete (2026-08-22). F163 dropped skips 26->15 (all approved keeps). Run with --concurrency=4.",
+    "_test_metrics_note": "1,952 passed / 15 skipped / 0 failed at Sprint 63 dev-complete (2026-08-26). +21 vs Sprint 62 (F180 oracle/pipeline, F184 E2E, F185 decode, F181/F94 gates). Run with --concurrency=4.",
     "hook_test_cases": "51/51 passing -- +2 Sprint 62 IMP-1 cases (violation-5 phase5-evidence-missing, allow-7 evidence-present).",
     "winwright_sweep": "Sprint 62 sweep 2026-08-23 (lib/ui touched): first run 0/3 -- Sprint 61 F169 (chips->dropdown) had rotted every chip selector (shipped without a sweep); scripts repaired live (dropdown face=Text node, physical mouse clicks only, settle buffers -- runner still replays no ww_wait), mt2c baselines refreshed (@hiram.edu, @alphaxiv.org). Green 3/3 pre-retirement; f129 RETIRED (strict subset of mt2c, retro IMP-5); final post-retirement sweep at HEAD recorded with sweep-head in SPRINT_62_PLAN.md. DB drift none on every run.",
     "coverage_percent": null,
@@ -71,8 +71,8 @@
   ],
   "blocking_issues": [],
   "next_actions": [
-    "Phase 8.3: Store release per STORE_RELEASE_PROCESS.md -- verify prod worktree main has the Sprint 62 merge, bump versions (dev equals live at 0.11.0), build MSIX, verify, notify Harold for upload",
-    "Phase 8.4: refinement pass 2 -- Harold selects Sprint 63 scope",
-    "Phase 3: Sprint 63 planning (SPRINT_63_PLAN.md stub carries Cat 13 carry-ins + new Sprint 63 process rules)"
+    "Resolve Claude PR review findings (agent running) + Copilot review comments (watcher armed) on PR #366; reply + resolve each, notify Harold",
+    "Phase 7: retro 7-Step Protocol (send 7.3 prompt, draft Claude feedback in parallel), then close-out docs (CHANGELOG, master plan roll, RETROSPECTIVE + SUMMARY, Sprint 64 stub with GP-16 walkthrough as FIRST task, sprint_status roll), gh pr ready 366 at end of 7.7",
+    "Sprint 64 first task (Harold decision 2026-08-26): GP-16 guided account-creation walkthrough incl. GP-5 hosting/URL decision"
   ]
 }
