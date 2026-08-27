@@ -45,11 +45,11 @@
   ],
   "_github_issues_note": "Sprint 63 cards created at Phase 3.3.1 (2026-08-25): #357 F181, #358 F180, #359 F184, #360 F182, #361 F164, #362 GP-12, #363 GP-16, #364 GP-5, #365 F94.",
   "test_metrics": {
-    "tests_passing": 1952,
+    "tests_passing": 1955,
     "tests_skipped": 15,
     "tests_failing": 0,
     "analyzer_warnings": 0,
-    "_test_metrics_note": "1,952 passed / 15 skipped / 0 failed at Sprint 63 dev-complete (2026-08-26). +21 vs Sprint 62 (F180 oracle/pipeline, F184 E2E, F185 decode, F181/F94 gates). Run with --concurrency=4.",
+    "_test_metrics_note": "1,955 passed / 15 skipped / 0 failed after review round 2 (2026-08-26; +3 F180 isolated guard tests). +24 vs Sprint 62. Run with --concurrency=4.",
     "hook_test_cases": "51/51 passing -- +2 Sprint 62 IMP-1 cases (violation-5 phase5-evidence-missing, allow-7 evidence-present).",
     "winwright_sweep": "Sprint 62 sweep 2026-08-23 (lib/ui touched): first run 0/3 -- Sprint 61 F169 (chips->dropdown) had rotted every chip selector (shipped without a sweep); scripts repaired live (dropdown face=Text node, physical mouse clicks only, settle buffers -- runner still replays no ww_wait), mt2c baselines refreshed (@hiram.edu, @alphaxiv.org). Green 3/3 pre-retirement; f129 RETIRED (strict subset of mt2c, retro IMP-5); final post-retirement sweep at HEAD recorded with sweep-head in SPRINT_62_PLAN.md. DB drift none on every run.",
     "coverage_percent": null,

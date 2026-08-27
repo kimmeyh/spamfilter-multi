@@ -26,6 +26,10 @@ Format: `- **type**: Description (Issue #N)` where type is feat|fix|chore|docs
 
 ## [Unreleased]
 
+### 2026-08-26 (Sprint 63, review round 2 + Copilot)
+- **test**: F180 -- three isolated guard tests close a mutation-survivable gap found by the second review pass: the clause deferring a header-matched rule that carries a BODY exception (the branch preventing header-only deletion of mail the user explicitly protected) could be deleted with the whole suite staying green, because the shared test rule set's body-only rule always deferred first. Each new test makes its branch the only possible deciding factor; the mutation now fails exactly one test. Implementation was correct throughout -- regression protection only. (Issue #358)
+- **fix**: WinWright runner seeds the synthetic no-rule baselines only when the selected test set actually includes the sweep that consumes them, and the seeding script's sqlite invocation is space-safe (Copilot review). (Issue #360)
+
 ### 2026-08-26 (Sprint 63, review round)
 - **fix**: F185 -- Gmail message bodies are now base64url-DECODED before rule evaluation; previously body rules on the Gmail path compared against raw base64 text and could essentially never match (pre-existing since the adapter's origin, surfaced by this sprint's review because deferred body fetch made the path load-bearing; Harold pulled the fix into the sprint). Pinned by decoder and conversion-call-site tests, mutation-verified. (Issue #358)
 - **fix**: Sprint 63 code-review round -- invisible control bytes (from a scripting escape bug) corrupted four paths in the Android build script, masked locally by an untracked file: repaired byte-verified, the dev-flavor path re-proven on an unmasked run; the google-services stub now also installs on the -Run path; a vacuous scan-mode test got a real uncapped assertion; the IMAP on-demand body fetch guards loudly against an unexpected mid-batch mailbox switch; stale testLimit references swept from two docs. (Issues #365, #357, #358)
