@@ -668,3 +668,19 @@ call; verdict may be recorded on the debug evidence.
    the Sprint 64 GP-16 walkthrough (placeholders stay "[SET AT PUBLICATION]" until then).
 7. GP-16: Harold wants to be walked through account creation -- carried as the FIRST TASK of
    Sprint 64 (guided walkthrough; includes the GP-5 hosting/URL decision at publication).
+
+### Post-MV review rounds (Phase 6, 2026-08-26)
+- **Copilot review (3 comments)**: 2 fixed in fa19623 (mt2c-gated seeding preamble; quoted
+  sqlite `.read` temp path), 1 no-change (F180 log sender addresses = documented F110 policy
+  keep). All three threads replied and resolved.
+- **Claude review agent (second pass, post-C-1 commits)**: amended report after live mutation
+  verification -- 1 HIGH: the `exc.body` deferral clause in `evaluateWithoutBody` (the branch
+  preventing header-only deletion of body-exception-protected mail) was UNGUARDED; deleting it
+  left the committed suite fully green because the shared test rule set's body-only rule
+  always deferred first. Fixed test-only: 3 isolated single-rule guard tests added (body
+  exception ALONE -> defer; body-only OR rule -> defer; conditions.from -> decide).
+  Re-verified: mutation now produces exactly 1 red (the new guard); clause restored
+  byte-identical (empty `git diff -- lib/`); file suite 14/14; analyzer clean. Implementation
+  itself confirmed CORRECT throughout -- this was a regression-protection gap, not a live bug.
+  Also standing from that review: build script byte-scan clean, F185 decode verified at all
+  three conversion sites, Gmail nested-multipart gap stays a LOW backlog note.

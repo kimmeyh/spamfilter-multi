@@ -47,6 +47,7 @@ Rule _rule({
   List<String> header = const [],
   List<String> subject = const [],
   List<String> body = const [],
+  List<String> from = const [],
   String type = 'OR',
   RuleExceptions? exceptions,
 }) {
@@ -56,11 +57,18 @@ Rule _rule({
     isLocal: true,
     executionOrder: order,
     conditions: RuleConditions(
-        type: type, header: header, subject: subject, body: body),
+        type: type, header: header, subject: subject, body: body, from: from),
     actions: RuleActions(delete: true),
     exceptions: exceptions,
   );
 }
+
+RuleEvaluator _isolatedEvaluator(List<Rule> rules) => RuleEvaluator(
+      ruleSet: RuleSet(version: '1.0', settings: const {}, rules: rules),
+      safeSenderList: SafeSenderList(safeSenders: []),
+      compiler: PatternCompiler(),
+      silent: true,
+    );
 
 EmailMessage _msg({
   required String id,
@@ -264,6 +272,57 @@ void main() {
       await expectEquivalent(
           _msg(id: '6', from: 'x@newsletter.com'), 'ordinary content',
           expectFetch: true);
+    });
+
+    // The three ISOLATED single-rule tests below exist because the shared
+    // rule set above cannot pin their branches: its body-only rule (order 30)
+    // defers first for any unmatched message, so a mutation deleting a LATER
+    // deferral reason still passes every shared-set test. Each test here makes
+    // its branch the ONLY possible deciding factor (Sprint 63 review, HIGH:
+    // the exc.body clause was deletable with a fully green suite).
+
+    test(
+        'body exception ALONE forces deferral -- guards the exc.body clause '
+        'against silent header-only deletion of protected mail', () async {
+      final e = _isolatedEvaluator([
+        _rule(
+            name: 'news',
+            order: 10,
+            header: [r'@newsletter\.com$'],
+            exceptions: RuleExceptions(body: [r'unsubscribe-token-xyz'])),
+      ]);
+      final oracle =
+          await e.evaluateWithoutBody(_msg(id: '9', from: 'x@newsletter.com'));
+      expect(oracle, isNull,
+          reason: 'a body exception could rescue this message: the oracle '
+              'must fetch, never decide delete from headers alone');
+      // And the fetched body DOES rescue it.
+      final full = await e.evaluate(_msg(
+          id: '9',
+          from: 'x@newsletter.com',
+          body: 'footer unsubscribe-token-xyz footer'));
+      expect(full.shouldDelete, isFalse);
+    });
+
+    test('OR rule whose ONLY condition is body defers', () async {
+      final e = _isolatedEvaluator([
+        _rule(name: 'body-only', order: 10, body: [r'miracle cure']),
+      ]);
+      expect(await e.evaluateWithoutBody(_msg(id: '10', from: 'x@ok.com')),
+          isNull,
+          reason: 'nothing header-side can decide a body-only rule');
+    });
+
+    test('conditions.from decides WITHOUT a body fetch', () async {
+      final e = _isolatedEvaluator([
+        _rule(name: 'from-rule', order: 10, from: [r'@fromspam\.com$']),
+      ]);
+      final oracle =
+          await e.evaluateWithoutBody(_msg(id: '11', from: 'x@fromspam.com'));
+      expect(oracle, isNotNull,
+          reason: 'a from condition is header data -- no fetch needed');
+      expect(oracle!.matchedRule, 'from-rule');
+      expect(oracle.shouldDelete, isTrue);
     });
 
     test(
