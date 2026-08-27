@@ -609,3 +609,54 @@ well-bounded.
 4. GP-12: Google Sign-In works post-removal.
 5. GP-5 text review + GP-16 account-type decision (Harold).
 6. F164 numbers reviewed; verdict agreed.
+
+## Manual Validation -- Results (Phase 5.3, recorded 2026-08-26)
+
+### F180 live survival scan -- PASS
+Android dev build, kimmeyharold@aol.com, full live scan, all folders, read-only.
+- 175 messages, wall clock 36 seconds, `0 deferred body fetch(es) performed` (all 175 decided
+  header-only; the seeded rule set contains no body rules).
+- Peak PSS 456 MB. Sprint 62 anchor for the same scan: 6m17s and ~1.0 GB with near-kill
+  pressure. Roughly 10x faster with less than half the peak memory; no kill, no freeze.
+- Gmail account scan on the same build: 22 seconds (screenshot 208).
+
+### Headers-only audit (Harold request) -- CONFIRMED
+Four independent lines of evidence that the scan pulled headers only:
+1. All 44 scan-result records had an empty `body_preview` while subjects/senders were present.
+2. Process network traffic for the whole evening was ~14.9 MB total; body downloads for 175
+   messages would require tens of MB at minimum.
+3. 36-second wall clock is consistent with header-batch fetches only.
+4. The `deferred body fetch(es)` counter is pinned by unit tests to increment on every body
+   fetch; it read 0.
+
+### F180 deferral demo (one-time body rule inserted in the Android dev DB) -- PASS
+Rule `body_united__nations__compensation__commissioncom` (body list:
+`united nations compensation commission`) inserted with `created_by='sprint63_mv_demo'`.
+Retry of the same AOL full scan:
+- 155 messages: `header-only pass decided 115 message(s); 40 deferred body fetch(es) performed`.
+- The 115 header-decided are exactly the messages body content cannot affect: 112 matched safe
+  senders (from-based whitelist short-circuit) and 3 matched header delete rules.
+- Each of the 40 deferrals logged individually (`F180: rule "body_united..." needs the body for
+  "<subject>" from <sender> -- deferring`), fetched its full body on demand, and evaluated
+  against the complete body. All 40 came back No-rule (the phrase appears in none of them),
+  which is the correct outcome.
+- Wall clock 1m16s (the ~40 extra seconds are 40 serial on-demand body downloads, ~1s each).
+  Peak PSS 529 MB, one body in flight at a time; min 282 MB (fresh process baseline).
+- Verdicts in Results screen: 43 shown (40 No-rule, 3 delete-proposed) -- same 3 header
+  matches as the first run. Harold confirmed the run was in the dev build (correct target).
+- Side finding registered as F188: the initial rule insert stored invalid JSON in the body
+  list and `_decodeJsonArray` silently returned an empty list, neutralizing the rule with no
+  warning. Demo rule to be removed after MV (tagged `created_by='sprint63_mv_demo'`).
+
+### F164 measurement data -- captured; verdict pending Harold
+The two scans above double as the F164 dataset (debug build): 36s/456 MB header-only,
+1m16s/529 MB with 40 deferred fetches. Optional prod-icon release-build run remains Harold's
+call; verdict may be recorded on the debug evidence.
+
+### Still open (Harold-driven)
+- F181 scan-mode dialog glance (no limit option visible).
+- F94 launcher-label confirmation (dev `[DEV]` + prod side by side). Noted during setup: Gmail
+  sign-in WORKED on the dev flavor despite the stub google-services.json (appauth
+  redirect-scheme flow does not use google-services.json).
+- GP-12 AC-2: Gmail sign-in in the PROD Android app post-Firebase-dependency-removal.
+- GP-5 privacy-policy/terms text approval + hosting URL choice; GP-16 account creation.
