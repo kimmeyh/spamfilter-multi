@@ -669,6 +669,24 @@ call; verdict may be recorded on the debug evidence.
 7. GP-16: Harold wants to be walked through account creation -- carried as the FIRST TASK of
    Sprint 64 (guided walkthrough; includes the GP-5 hosting/URL decision at publication).
 
+### Phase 5 evidence record (gate items 5.1.1 / 5.1.2 / 5.1.5 -- ran BEFORE MV, 2026-08-26)
+- **5.1.1 automated code review (pr-review-toolkit:code-reviewer)**: ran on the sprint diff
+  BEFORE Manual Validation. Findings: 1 critical + 2 high + 3 medium, ALL fixed in-sprint
+  (C-1 control-byte corruption in build-with-secrets.ps1 -- byte-verified repair + unmasked
+  clean-path re-proof; C-1b dead fallback; H-1 stub-on-Run; H-2 vacuous test replaced with a
+  real uncapped assertion; M-1 mailbox-switch guard; doc sweeps), plus M-2 pulled in-sprint
+  by Harold as F185 (Gmail base64url decode, mutation-verified). Full record on PR #366.
+- **5.1.2 F-PRECHECK (six recurring-review classes)**: CLEAN, recorded on PR #366 --
+  (1) parallel sites: IMAP+Gmail changed symmetrically for F180, CI updated for F94 flavors;
+  (2) helpers wired to production: evaluateWithoutBody + fetchFullBody on the scan path,
+  seed script wired into the runner; (3) doc-vs-code: scan-mode docs modernized;
+  (4) fragile parsing: only a guarded int.tryParse on IMAP UIDs; (5) API scope: metadata
+  fetches header-only, on-demand fetch single-message; (6) silent failure: the two
+  fetchFullBody catches DELIBERATELY degrade to header-only evaluation with a logged warning
+  (recorded decision).
+- **5.1.5 WinWright sweep**: see the F182 sweep artifact above (2 consecutive greens, drift
+  none, sweep-head c1039ae; no lib/ui commits after it).
+
 ### Post-MV review rounds (Phase 6, 2026-08-26)
 - **Copilot review (3 comments)**: 2 fixed in fa19623 (mt2c-gated seeding preamble; quoted
   sqlite `.read` temp path), 1 no-change (F180 log sender addresses = documented F110 policy
