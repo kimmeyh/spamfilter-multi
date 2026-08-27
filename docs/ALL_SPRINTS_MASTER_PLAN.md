@@ -316,13 +316,11 @@ _(Prior: **Sprint 49** F119-c + prod-DB restoration, PR #276; **Sprint 48** F119
 
 ## Next Sprint Candidates
 
-**Last Reviewed**: August 21, 2026 (Sprint 62 cycle, Phase 8.2 pass-1 COMPLETENESS SWEEP -- no scope selected: all 16 DONE stubs cleared from candidates (Sprint 61's F161/F162/F167/F168/F169/F170/F171/F172 + Sprint 60's F143/F144/F156/F157/F158/F159/F160/F166); close-out verified complete (cards closed, docs triad, master plan rolled, status file rolled to Sprint 62, CHANGELOG incl. the 0.10.0 release cut, retro IMPs 4/4 applied, Copilot review 2/2 resolved). Active non-HOLD slate for pass 2: F177 (8), F175 (12), F178 (14), F176 (16), F174 (20), F163 (26), F164 (28), F165 (30), plus the Sprint 62 validation carry-over (F161 AC-4 Windows glance). Prior review: August 17, 2026 (Sprint 61 Phase 1).)
+**Last Reviewed**: August 27, 2026 (Sprint 63 cycle, Phase 8.2 pass-1 COMPLETENESS SWEEP -- no scope selected: 7 Sprint 63 DONE stubs cleared from candidates (F164, F180, F181, F182, F185, F94, GP-12); close-out verified complete (cards #357-#365 closed with zero open issues, docs triad + Sprint 64 stub, master plan rolled to Sprint 63, sprint_status current, CHANGELOG through the retro-improvements entry, retro IMPs 8/8 applied, Copilot 3/3 + Claude review round 2 resolved, Phase 5 evidence mirrored into the plan per the close-out hook). Carries remaining in candidates: GP-16 (Sprint 64 FIRST task, guided walkthrough) + GP-5 (publication at that walkthrough). Fresh MV-sourced items: F186 (P22), F187 (P24), F188 (P26). Prior review: August 21, 2026 (Sprint 62 cycle, Phase 8.2).)
 
 All incomplete items in relative priority order. Priority in increments of 10; items that can sprint together in increments of 2. HOLD items grouped at bottom. See [Feature and Bug Details](#feature-and-bug-details) for deep-dive specs. See [BACKLOG_REFINEMENT.md](BACKLOG_REFINEMENT.md) for presentation format rules.
 
 ### Core App Quality
-
-**F164. Android live-scan performance investigation -- DONE/CLOSED (Sprint 63, PR #366; Harold verdict 2026-08-26 on debug-build evidence: F180 removed the real gap -- 36s/456MB header-only vs the 6m17s/~1.0GB Sprint 62 anchor on the SAME debug emulator, so the dominant factor was body fetching, not debug/emulator overhead; optional prod-icon release run waived)**
 
 **F165. Cross-device rules-DB sharing -- user cloud storage (iCloud/OneDrive/Box/Google Drive) exploration + hosted-tier option (~half-day exploration) Priority 30 (NEW, Sprint 60 MV -- Harold; product direction)**
 - Phase: Product direction / architecture exploration
@@ -339,12 +337,6 @@ All incomplete items in relative priority order. Priority in increments of 10; i
 - Method: mutation-verify a sample of existing gates (break what each guards, confirm red); look for assertions that prove EXISTENCE where the claim is about behavior, ordering, or sizing; check that test names still describe what the test does; check per-layer coverage gaps; report findings as backlog items.
 - Cadence: same periodic-HOLD model as F70 (Security) and F71 (Architecture) -- triggered by Harold, not calendar-automatic.
 - Source: Harold, 2026-08-17.
-
-**F181. Remove the 50-email testLimit scan-mode option -- DONE (Sprint 63, PR #366; MV verdict PASS 2026-08-26; deliberate keeps documented at the 3 F181 DELIBERATE KEEP comment sites)**
-
-**F180. Deferred body fetch -- header-only first pass with on-demand full-body fetch -- DONE (Sprint 63, PR #366; supersedes the original body-size-cap shape. Live: 175 msgs 36s/456MB/0 fetches vs 6m17s/~1.0GB anchor; deferral demo 40 fetches 1m16s/529MB. MV verdict PASS 2026-08-26)**
-
-**F185. Gmail body rules match against UNDECODED base64 text -- DONE (Sprint 63, PR #366; pulled in-sprint by Harold 2026-08-26, decode + call-site tests, mutation-verified)**
 
 **F188. A rule with a corrupted condition string is silently neutralized (~1h) Priority 26 (NEW, Sprint 63 MV -- silent-failure class, found live)**
 - Phase: Core App Quality / rules integrity
@@ -372,8 +364,6 @@ All incomplete items in relative priority order. Priority in increments of 10; i
 - R-2: Manage Rules filtering/labels already display the Body category (F124 chips) -- verify create/edit/display round-trip end to end and that the F25 rule tester exercises body patterns against sample bodies.
 - Context that makes this timely: F185 (Sprint 63) just fixed Gmail body matching (base64 decode), and F180 fetches bodies on demand when body rules exist -- authoring them is now the missing piece of the body-rule story.
 - Source: Harold, Sprint 63 Manual Validation, 2026-08-26.
-
-**F182. Deterministic seeding preamble for the WinWright no-rule sweep script -- DONE (Sprint 63, PR #366; winwright-seed-no-rule.ps1 seed/unseed/status with RFC 2606 .invalid domains, runner-integrated, drift-guard net-zero preserved; 2 consecutive green sweeps recorded)**
 
 **F183. Upstream civyk-winwright request: script-runner replay support for ww_wait (~15m to file, then external) Priority HOLD (NEW, Sprint 62 retro IMP-7 -- external dependency)**
 - Phase: Testing / E2E tooling (external)
@@ -414,10 +404,6 @@ Recorded sequencing honored (see 'Recommended Sequencing' in the GP section belo
 - Sequencing: 'Immediate' -- everything Play-side blocks on it; Google's verification has multi-day external lead time. $25 one-time. Harold-driven, Claude walks him through step by step.
 
 **GP-5. Privacy Policy and Legal Documents -- MOSTLY DONE (Sprint 63, PR #366: docs/legal/PRIVACY_POLICY.md + TERMS.md drafted per ADR-0030; TEXT APPROVED by Harold 2026-08-26). REMAINING: hosting URL choice + publication, folded into the Sprint 64 GP-16 walkthrough (placeholders stay '[SET AT PUBLICATION]' until then). Feeds GP-10 and the listing; GitHub Pages is the recorded default.**
-
-**GP-12. Firebase Analytics removal (ADR-0030) -- DONE (Sprint 63, PR #366: firebase-analytics/firebase-bom removed from build.gradle.kts per ADR-0030/0033; google-services plugin + JSON kept for OAuth registration. AC-2 VERIFIED by Harold 2026-08-26: Gmail sign-in works in the prod Android app post-removal)**
-
-**F94. Android dev/prod flavors -- DONE (Sprint 63, PR #366: productFlavors dev/prod with `.dev` applicationIdSuffix + ' [DEV]' label, build-with-secrets.ps1 -Env param, dev google-services stub, side-by-side install verified; MV verdict PASS 2026-08-26. SURPRISE finding: Gmail sign-in WORKS on the dev flavor despite the stub -- appauth redirect-scheme flow does not use google-services.json, so the 4 console prerequisites were NOT needed for dev sign-in. 'store' flavor deliberately not created -- prod serves the Play build until proven otherwise)**
 
 **SEC-9. Move hardcoded Android client ID to build-time injection (~1h) Priority 28 (ACTIVATED off HOLD 2026-08-24 -- Harold: 'everything Android related... along with the gp-n items')**
 - Phase: Security / Android Google Play Store Readiness
