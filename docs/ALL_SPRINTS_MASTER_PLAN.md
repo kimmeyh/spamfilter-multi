@@ -354,6 +354,14 @@ All incomplete items in relative priority order. Priority in increments of 10; i
 - Fix shape: base64url-decode `payload.body.data` (and part data) with charset handling; add an outcome test with a known body-rule match through the Gmail conversion path. Live impact check: 732 body rules exist in the live set -- confirm with Harold whether Gmail body matches were ever observed (they should not have been).
 - Source: Sprint 63 Phase 5 automated code review, 2026-08-26.
 
+**F188. A rule with a corrupted condition string is silently neutralized (~1h) Priority 26 (NEW, Sprint 63 MV -- silent-failure class, found live)**
+- Phase: Core App Quality / rules integrity
+- Platform: All (RuleDatabaseStore)
+- Found live 2026-08-26: a rules row whose condition JSON fails to parse (observed with an invalid escape) loads as a rule with EMPTY condition lists -- it displays normally in Manage Rules and can simply never match, with no log line, no UI signal, nothing. The trigger was a hand-inserted row, but disk corruption or an import defect would behave identically: a protection the user believes exists silently is not evaluated.
+- Fix shape: `_decodeJsonArray` logs a WARNING naming the rule and column on parse failure (Logger.w minimum), and Manage Rules flags rules whose every condition list is empty as "invalid -- matches nothing" instead of rendering them as healthy. Consider a one-time integrity sweep counting unparseable condition columns.
+- This is exactly the F-PRECHECK class 6 shape (an unreadable input converted into a silent no-op) applied to rule data instead of code paths.
+- Source: Sprint 63 Manual Validation body-rule demo forensics, 2026-08-26.
+
 **F187. Remove the personal URL-shape body rules (domain.tld link-block rules) (~1-2h) Priority 24 (NEW, Sprint 63 MV -- Harold)**
 - Phase: Core App Quality / rules data cleanup
 - Platform: All (Harold's personal rule DBs: dev AND prod installs)
