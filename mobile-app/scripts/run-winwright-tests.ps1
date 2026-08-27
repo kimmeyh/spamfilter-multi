@@ -286,7 +286,11 @@ Write-Host ""
 # ---------------------------------------------------------------------------
 $seedScript = Join-Path $PSScriptRoot "winwright-seed-no-rule.ps1"
 $didSeed = $false
-if (Test-Path $seedScript) {
+$needsSeed = @($tests | Where-Object { $_.Name -like "*mt2c*" }).Count -gt 0
+if (-not $needsSeed) {
+    # Only mt2c consumes the synthetic baseline rows -- do not touch the DB
+    # for runs that do not include it (Copilot review, PR #366).
+} elseif (Test-Path $seedScript) {
     & $seedScript seed
     if ($LASTEXITCODE -eq 0) { $didSeed = $true }
     else { Write-Warning "[WW-SEED] Seeding failed -- mt2c may hit its data precondition." }

@@ -66,7 +66,9 @@ function Invoke-Sql([string]$Sql) {
     $tmp = Join-Path $env:TEMP ("ww_seed_" + [guid]::NewGuid().ToString("N") + ".sql")
     [System.IO.File]::WriteAllText($tmp, $Sql, [System.Text.UTF8Encoding]::new($false))
     try {
-        $out = & $Sqlite3 $DbPath ".read $($tmp -replace '\\', '/')" 2>&1
+        # Quote the path for the dot-command: an unquoted temp path with a
+        # space would be parsed as multiple arguments (Copilot review, PR #366).
+        $out = & $Sqlite3 $DbPath ".read `"$($tmp -replace '\\', '/')`"" 2>&1
         if ($LASTEXITCODE -ne 0) { throw "[WW-SEED] sqlite3 failed: $out" }
         return $out
     } finally {
