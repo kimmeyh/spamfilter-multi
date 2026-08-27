@@ -614,6 +614,42 @@ test('should return delete action when from matches spam pattern', () {
 });
 ```
 
+### Isolated-Branch Guard Tests (Sprint 63 retro IMP-1)
+
+**When a test group shares one fixture (a common rule set, seeded database, or message set),
+every safety-critical branch of the code under test needs at least one ISOLATED test in which
+that branch is the ONLY possible deciding factor.** Shared fixtures mask deletable clauses: a
+test can exercise a branch's inputs while an earlier rule, row, or condition in the shared
+fixture actually decides the outcome, so deleting the branch leaves the suite green.
+
+The Sprint 63 escape that created this rule: the F180 suite's shared rule set placed a
+body-only rule before the rule with a body exception, so the oracle always deferred on the
+body-only rule first -- the clause deferring on `exceptions.body` (the branch preventing
+header-only deletion of user-protected mail) was never the decider, and deleting it passed
+the entire suite. The fix was a single-rule fixture where that clause alone forces the
+deferral.
+
+Checklist when writing tests against a shared fixture:
+1. List the distinct decision branches the feature has (not the input classes).
+2. For each branch whose failure has user-facing consequence, add one test with a MINIMAL
+   fixture where no other rule/row/condition can produce the expected outcome.
+3. Mutation-verify the branch itself (delete or invert the clause): exactly the isolated
+   test must go red.
+
+### Scratch Probe Tests Stay Out of the Repo (Sprint 63 retro IMP-2)
+
+**Throwaway probe/diagnostic tests written during development or review (mutation probes,
+oracle spot-checks, "does this API behave like I think" experiments) MUST be written to the
+session scratchpad directory or another location OUTSIDE the repository -- never under
+`test/`.** An in-repo probe is one `git add` away from becoming a committed test nobody
+designed; in Sprint 63 stray `zz_probe*_test.dart` files nearly reached a commit twice (once
+from the developer session, once from a review subagent). If a probe proves something worth
+keeping, rewrite it as a named, documented test in the proper suite -- do not promote the
+probe file itself. `flutter test <absolute path outside the repo>` does not resolve package
+imports, so scratch probes that need the package context may instead use a reserved
+`test/scratch/` directory which is gitignored -- verify the ignore rule exists before using
+it, and delete the file in the same session either way.
+
 ### Test Independence
 
 **Tests MUST be independent**:

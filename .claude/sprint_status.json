@@ -1,6 +1,6 @@
 {
   "_description": "Sprint status file that persists across context compaction. Update after each phase/sub-phase completion.",
-  "_last_updated": "2026-08-26 (Sprint 63 Manual Validation COMPLETE; Phase 6/7 in progress)",
+  "_last_updated": "2026-08-27 (Sprint 63 Phase 7.7 close-out complete; PR #366 Ready-for-Review pending; awaiting Harold merge, then Phase 8 cycle)",
   "_usage": "Read this file after context compaction to restore sprint approval state and progress.",
   "_staleness_note": "This file had drifted 15 sprints (last updated at Sprint 35, 2026-04-19) before being refreshed at Sprint 50 close-out. It is a Phase 7.7 checklist item -- update it at every sprint close-out, not opportunistically.",
   "current_sprint": {
@@ -8,7 +8,7 @@
     "branch": "feature/20260824_Sprint_63",
     "pr_number": 366,
     "start_date": "2026-08-24",
-    "status": "Sprint 63 Phase 5.3 Manual Validation COMPLETE (2026-08-26, all 7 verdicts in SPRINT_63_PLAN.md 'Final MV verdicts') -- entering Phase 6/7. MV: F180 PASS (36s/456MB/0 fetches vs 6m17s/~1.0GB anchor; deferral demo 40 fetches 1m16s/529MB; headers-only audit 4-line CONFIRMED), F164 CLOSED on debug evidence, F181 PASS, F94 PASS (dev-flavor Gmail sign-in WORKED despite stub -- appauth), GP-12 AC-2 VERIFIED, GP-5 text APPROVED (URL at Sprint 64 publication), GP-16 -> Sprint 64 FIRST TASK (guided walkthrough). Demo body rule LEFT in Android dev DB per Harold (created_by='sprint63_mv_demo'). New backlog from MV: F186 body-rule authoring, F187 URL-shape rule cleanup (647 of 732), F188 silent rule neutralization. Master plan updated with DONE stubs (F164/F180/F181/F182/F185/F94/GP-12) + GP-5/GP-16 carries. IN FLIGHT: Claude PR review agent (second pass, post-C-1 commits) + Copilot review watcher on PR #366; resolve both, then Phase 7 retro (7-Step Protocol).",
+    "status": "Sprint 63 Phase 7.7 CLOSE-OUT COMPLETE (2026-08-27). MV complete 2026-08-26 (all 7 verdicts in SPRINT_63_PLAN.md). Review rounds resolved: Copilot 3/3 (2 fixed fa19623, 1 F110 policy keep, threads resolved); Claude round 2 HIGH (unguarded exc.body deferral clause) closed with 3 isolated guard tests f9a7448, mutation-verified red. Retro complete per 7-Step Protocol: Harold Testing 'Needs improvement as noted by dev team', Process 'Good - see issues noted by dev team', rest Good/Very Good, Cats 13/14 none; ALL 8 improvement decisions 'all now' APPLIED 2026-08-27 (TESTING_STRATEGY isolated-branch + scratch-probe rules, test/scratch/ gitignored, CLAUDE.md build-input-edit ban, 5 memory rules incl. Harold's timestamp footer, SPRINT_64_PLAN.md stub, SEC-9 unblocked note). Docs triad complete (PLAN/RETROSPECTIVE/SUMMARY) + master plan rolled (Last Completed Sprint = 63, Past Sprint table row, DONE stubs). Windows build verified (7.1). REMAINING: gh pr ready 366 + 7.7.5 announcement, Harold merges, then Phase 6.6 branch-from-current + Phase 8 cycle (8.1 main merge Harold, 8.2 pass-1 sweep incl. DONE-stub pruning, 8.3 Store release 0.13.0 bump, 8.4 scope selection).",
     "plan_approved": true,
     "blanket_execution_approved": true,
     "scope": [
@@ -71,8 +71,8 @@
   ],
   "blocking_issues": [],
   "next_actions": [
-    "Resolve Claude PR review findings (agent running) + Copilot review comments (watcher armed) on PR #366; reply + resolve each, notify Harold",
-    "Phase 7: retro 7-Step Protocol (send 7.3 prompt, draft Claude feedback in parallel), then close-out docs (CHANGELOG, master plan roll, RETROSPECTIVE + SUMMARY, Sprint 64 stub with GP-16 walkthrough as FIRST task, sprint_status roll), gh pr ready 366 at end of 7.7",
-    "Sprint 64 first task (Harold decision 2026-08-26): GP-16 guided account-creation walkthrough incl. GP-5 hosting/URL decision"
+    "gh pr ready 366 + 7.7.5 readiness announcement to Harold (final approval + merge are his)",
+    "ON MERGE: Phase 6.6 -- branch feature/<date>_Sprint_64 FROM feature/20260824_Sprint_63 immediately; close cards #357-#365 (no auto-close on develop merges)",
+    "Phase 8 cycle: 8.1 Harold merges develop->main (does not block 8.2); 8.2 pass-1 completeness sweep (prune Sprint 63 DONE stubs); 8.3 Store release per STORE_RELEASE_PROCESS.md (dev equals live at 0.12.0 -- bump at Step 1); 8.4 scope selection (Sprint 64 first task fixed: GP-16 guided walkthrough incl. GP-5 hosting/URL + publication)"
   ]
 }

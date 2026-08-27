@@ -26,6 +26,9 @@ Format: `- **type**: Description (Issue #N)` where type is feat|fix|chore|docs
 
 ## [Unreleased]
 
+### 2026-08-27 (Sprint 63, retrospective improvements)
+- **docs**: Sprint 63 retro improvements, all 8 applied same-session: isolated-branch guard-test rule + scratch-probe convention added to TESTING_STRATEGY.md (with gitignored test/scratch/); build-input-edit ban added to the CLAUDE.md serialize-builds rule; Sprint 64 stub created with the GP-16 walkthrough as first task; SEC-9 unblocked note; plus five behavioral memory rules (compound questions, background-launch announcements, python escape hard rule, timestamp footer).
+
 ### 2026-08-26 (Sprint 63, review round 2 + Copilot)
 - **test**: F180 -- three isolated guard tests close a mutation-survivable gap found by the second review pass: the clause deferring a header-matched rule that carries a BODY exception (the branch preventing header-only deletion of mail the user explicitly protected) could be deleted with the whole suite staying green, because the shared test rule set's body-only rule always deferred first. Each new test makes its branch the only possible deciding factor; the mutation now fails exactly one test. Implementation was correct throughout -- regression protection only. (Issue #358)
 - **fix**: WinWright runner seeds the synthetic no-rule baselines only when the selected test set actually includes the sweep that consumes them, and the seeding script's sqlite invocation is space-safe (Copilot review). (Issue #360)

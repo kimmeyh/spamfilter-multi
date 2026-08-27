@@ -119,3 +119,6 @@ web/secrets.js
 !**/ios/**/default.mode2v3
 !**/ios/**/default.pbxuser
 !**/ios/**/default.perspectivev3
+
+# Scratch probe tests (TESTING_STRATEGY.md, Sprint 63 retro IMP-2) -- never committed
+test/scratch/

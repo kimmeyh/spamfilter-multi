@@ -129,12 +129,27 @@ Historical sprint information lives in individual documents in `docs/sprints/` a
 | 60 | docs/sprints/SPRINT_60_SUMMARY.md | [OK] Complete | Aug 15-16, 2026 (PR #335; 0.9.0.0 LIVE Aug 16; scope shipped in 0.10.0.0 LIVE Aug 16 22:17) |
 | 61 | docs/sprints/SPRINT_61_SUMMARY.md | [OK] Complete | Aug 16-21, 2026 (PR #347; F161 Android scheduler validated, ADR-0042, Phase 8 encoded) |
 | 62 | docs/sprints/SPRINT_62_SUMMARY.md | [OK] Complete | Aug 21-23, 2026 (PR #355; scan robustness F177/F175/F174, MV UX F178/F176, F163 skips 26->15) |
+| 63 | docs/sprints/SPRINT_63_SUMMARY.md | [OK] Complete | Aug 24-27, 2026 (PR #366; F180 deferred body fetch ~10x, F185 Gmail decode, F94 flavors, Android/GP track opened) |
 
 **Key Achievements**: See CHANGELOG.md for detailed feature history.
 
 ---
 
 ## Last Completed Sprint
+
+**Sprint 63** (2026-08-24 -- 2026-08-27; PR #366 -> develop, Ready-for-Review at close-out)
+- **Type**: Scanner architecture (F180 deferred body fetch) + Android/Google Play track opening (activated off HOLD at this cycle's refinement). All 9 tasks + F185 pulled in-sprint complete; Manual Validation complete 2026-08-26 with all 7 verdicts recorded; retrospective + all 8 improvement decisions executed 2026-08-27.
+- **F180 (headline)**: header-first evaluation -- `evaluateWithoutBody` tri-state oracle + per-message on-demand full-body fetch on both adapters (IMAP `BODY.PEEK[HEADER]` chunks, Gmail `format=metadata` batches); full-body matching always (truncation rejected at planning by Harold). **Live: 36s / 456MB / 0 fetches vs the 6m17s / ~1.0GB Sprint 62 anchor (~10x); with a body rule, exactly the 40 undecidable messages fetched (1m16s / 529MB), each deferral logged.** Headers-only confirmed by a 4-line independent audit. Failed fetch degrades loudly to header-only (recorded decision).
+- **F185** (pulled in-sprint): Gmail bodies were evaluated as RAW base64url -- body rules could essentially never match on the Gmail path; decoded at all conversion sites, mutation-verified.
+- **F181**: unenforced 50-email testLimit mode removed; renamed "Process Rules Only"; 3 deliberate keeps annotated. **F184**: in-VM E2E for the three Sprint 62 UI surfaces. **F182**: synthetic `.invalid` sweep seeding ends the mt2c baseline rot (post-Copilot: gated on mt2c selection). **F164 CLOSED**: the Android speed gap WAS body fetching (same debug emulator, F180 removed it).
+- **Android/GP**: **F94** dev/prod flavors (side-by-side, [DEV] label, -Env script wiring; dev-flavor Gmail sign-in WORKS via appauth despite the stub -- console prereqs optional); **GP-12** Firebase Analytics removed per ADR-0030/0033 (prod sign-in verified); **GP-16** personal-route setup guide (walkthrough = Sprint 64 first task); **GP-5** privacy/terms drafted + text approved (publication at the Sprint 64 walkthrough).
+- **Review rounds**: in-sprint review 1C/2H/3M all fixed (C-1 = self-inflicted control-byte corruption of the build script, byte-verified repair + unmasked re-proof); round 2 mutation-tested its own conclusion and found the exc.body deferral clause UNGUARDED (deletable with a green suite) -- closed with 3 isolated guard tests, mutation now red on exactly one. Copilot 3 comments: 2 fixed, 1 F110 policy keep, all resolved.
+- **New backlog registered**: F186 (body-rule authoring, P22), F187 (remove 647 URL-shape body rules, P24), F188 (silent rule neutralization, P26).
+- **Verification**: suite **1,955 passed / 15 skipped / 0 failed**; analyze clean; hooks 51/51; Windows build verified; Phase 5 evidence gate held on its first sprint (evidence recorded BEFORE MV).
+- **Retro**: Harold -- Testing "Needs improvement as noted by dev team during sprint", Process "Good - see issues noted by dev team", all else Good/Very Good; Cats 13/14 "none". **All 7 proposals "all now" + an 8th added by Harold (timestamp footer); all 8 applied same-session** (isolated-branch guard rule, scratch-probe convention + gitignored test/scratch/, no compound questions, announce background launches, python escape hard rule, build-input-edit ban, Sprint 64 stub carry-ins, timestamp footer memory).
+- **Docs**: SPRINT_63_PLAN.md / SPRINT_63_RETROSPECTIVE.md / SPRINT_63_SUMMARY.md / SPRINT_64_PLAN.md stub / GOOGLE_PLAY_ACCOUNT_SETUP.md / legal drafts.
+
+_(Prior: **Sprint 62** below.)_
 
 **Sprint 62** (2026-08-21 -- 2026-08-23; PR #355 -> develop, Ready-for-Review at close-out)
 - **Type**: Scan robustness (the Sprint 61 MV forensics quintet) + test hygiene. All 6 tasks + F161 AC-4 carry-over complete; Manual Validation complete 2026-08-22 with every item disposed; retrospective + all 7 improvement decisions executed 2026-08-23.
@@ -409,6 +424,7 @@ Recorded sequencing honored (see 'Recommended Sequencing' in the GP section belo
 - Platform: Android
 - Move _androidClientId to --dart-define or google-services.json. Source: Sprint 31 security audit (S5).
 - **RE-VERIFIED Sprint 54 (2026-08-03)**: confirmed still hardcoded in `build.gradle.kts` + `AndroidManifest.xml` (the OAuth redirect scheme, inherently manifest-declared for Android). No client *secret* found hardcoded anywhere -- Android installed-app OAuth clients typically do not use one, unlike Windows' desktop client. Real fix is avoiding a per-flavor literal `build.gradle.kts` edit once F94 lands, not a security leak of a secret. Sequence after/alongside F94.
+- **UNBLOCKED (Sprint 63 retro IMP-7, 2026-08-27)**: F94 shipped in Sprint 63 (PR #366), so the sequencing dependency is satisfied -- SEC-9 is selectable. Related finding to fold in: the .dev-flavor Firebase/GCP console registrations proved OPTIONAL for Gmail sign-in (appauth redirect-scheme flow does not consult google-services.json), so SEC-9's design should target the appauth client id path, and F94's four console-prerequisite items can be re-scoped or closed at refinement.
 
 **GP-2. Release Signing and Play App Signing (~4-6h) Priority 30 (ACTIVATED off HOLD 2026-08-24 -- Harold: 'everything Android related... along with the gp-n items') -- MERGED SEC-6 (2026-08-24)**
 - Phase: Android Google Play Store Readiness
