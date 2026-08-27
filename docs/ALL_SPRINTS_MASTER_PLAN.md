@@ -354,6 +354,16 @@ All incomplete items in relative priority order. Priority in increments of 10; i
 - Fix shape: base64url-decode `payload.body.data` (and part data) with charset handling; add an outcome test with a known body-rule match through the Gmail conversion path. Live impact check: 732 body rules exist in the live set -- confirm with Harold whether Gmail body matches were ever observed (they should not have been).
 - Source: Sprint 63 Phase 5 automated code review, 2026-08-26.
 
+**F186. Add/update BODY rules through the UI, including via Manage Rules (~2-4h) Priority 22 (NEW, Sprint 63 MV -- Harold)**
+- Phase: Core App Quality / rules UX
+- Platform: All (shared rule screens)
+- Harold's asks (2026-08-26, verbatim enumeration): "1) Add a way to add/update body rules. 2) Add a way to add/update body rules via Manage Rules"
+- Verified current state (2026-08-26): `RuleEditScreen` (F35) already round-trips a body condition when EDITING an existing body rule (`case 'body'` at rule_edit_screen.dart:378-380), but `ManualRuleCreateScreen` offers NO Body rule type at all (zero body-condition support) -- so body rules cannot be CREATED from any UI surface; the 732 live body rules exist only from legacy import.
+- R-1: the manual rule CREATE flow (reached from Manage Rules) gains a Body rule type -- pattern entry with the same plaintext-to-regex assist the other types have; category/sub-type recorded as 'body'.
+- R-2: Manage Rules filtering/labels already display the Body category (F124 chips) -- verify create/edit/display round-trip end to end and that the F25 rule tester exercises body patterns against sample bodies.
+- Context that makes this timely: F185 (Sprint 63) just fixed Gmail body matching (base64 decode), and F180 fetches bodies on demand when body rules exist -- authoring them is now the missing piece of the body-rule story.
+- Source: Harold, Sprint 63 Manual Validation, 2026-08-26.
+
 **F182. Deterministic seeding preamble for the WinWright no-rule sweep script (~2-3h) Priority 30 (NEW, Sprint 62 retro IMP-6 -- Harold approved to backlog)**
 - Phase: Testing / E2E tooling
 - Platform: Windows Desktop (WinWright harness)
