@@ -129,12 +129,27 @@ Historical sprint information lives in individual documents in `docs/sprints/` a
 | 60 | docs/sprints/SPRINT_60_SUMMARY.md | [OK] Complete | Aug 15-16, 2026 (PR #335; 0.9.0.0 LIVE Aug 16; scope shipped in 0.10.0.0 LIVE Aug 16 22:17) |
 | 61 | docs/sprints/SPRINT_61_SUMMARY.md | [OK] Complete | Aug 16-21, 2026 (PR #347; F161 Android scheduler validated, ADR-0042, Phase 8 encoded) |
 | 62 | docs/sprints/SPRINT_62_SUMMARY.md | [OK] Complete | Aug 21-23, 2026 (PR #355; scan robustness F177/F175/F174, MV UX F178/F176, F163 skips 26->15) |
+| 63 | docs/sprints/SPRINT_63_SUMMARY.md | [OK] Complete | Aug 24-27, 2026 (PR #366; F180 deferred body fetch ~10x, F185 Gmail decode, F94 flavors, Android/GP track opened) |
 
 **Key Achievements**: See CHANGELOG.md for detailed feature history.
 
 ---
 
 ## Last Completed Sprint
+
+**Sprint 63** (2026-08-24 -- 2026-08-27; PR #366 -> develop, Ready-for-Review at close-out)
+- **Type**: Scanner architecture (F180 deferred body fetch) + Android/Google Play track opening (activated off HOLD at this cycle's refinement). All 9 tasks + F185 pulled in-sprint complete; Manual Validation complete 2026-08-26 with all 7 verdicts recorded; retrospective + all 8 improvement decisions executed 2026-08-27.
+- **F180 (headline)**: header-first evaluation -- `evaluateWithoutBody` tri-state oracle + per-message on-demand full-body fetch on both adapters (IMAP `BODY.PEEK[HEADER]` chunks, Gmail `format=metadata` batches); full-body matching always (truncation rejected at planning by Harold). **Live: 36s / 456MB / 0 fetches vs the 6m17s / ~1.0GB Sprint 62 anchor (~10x); with a body rule, exactly the 40 undecidable messages fetched (1m16s / 529MB), each deferral logged.** Headers-only confirmed by a 4-line independent audit. Failed fetch degrades loudly to header-only (recorded decision).
+- **F185** (pulled in-sprint): Gmail bodies were evaluated as RAW base64url -- body rules could essentially never match on the Gmail path; decoded at all conversion sites, mutation-verified.
+- **F181**: unenforced 50-email testLimit mode removed; renamed "Process Rules Only"; 3 deliberate keeps annotated. **F184**: in-VM E2E for the three Sprint 62 UI surfaces. **F182**: synthetic `.invalid` sweep seeding ends the mt2c baseline rot (post-Copilot: gated on mt2c selection). **F164 CLOSED**: the Android speed gap WAS body fetching (same debug emulator, F180 removed it).
+- **Android/GP**: **F94** dev/prod flavors (side-by-side, [DEV] label, -Env script wiring; dev-flavor Gmail sign-in WORKS via appauth despite the stub -- console prereqs optional); **GP-12** Firebase Analytics removed per ADR-0030/0033 (prod sign-in verified); **GP-16** personal-route setup guide (walkthrough = Sprint 64 first task); **GP-5** privacy/terms drafted + text approved (publication at the Sprint 64 walkthrough).
+- **Review rounds**: in-sprint review 1C/2H/3M all fixed (C-1 = self-inflicted control-byte corruption of the build script, byte-verified repair + unmasked re-proof); round 2 mutation-tested its own conclusion and found the exc.body deferral clause UNGUARDED (deletable with a green suite) -- closed with 3 isolated guard tests, mutation now red on exactly one. Copilot 3 comments: 2 fixed, 1 F110 policy keep, all resolved.
+- **New backlog registered**: F186 (body-rule authoring, P22), F187 (remove 647 URL-shape body rules, P24), F188 (silent rule neutralization, P26).
+- **Verification**: suite **1,955 passed / 15 skipped / 0 failed**; analyze clean; hooks 51/51; Windows build verified; Phase 5 evidence gate held on its first sprint (evidence recorded BEFORE MV).
+- **Retro**: Harold -- Testing "Needs improvement as noted by dev team during sprint", Process "Good - see issues noted by dev team", all else Good/Very Good; Cats 13/14 "none". **All 7 proposals "all now" + an 8th added by Harold (timestamp footer); all 8 applied same-session** (isolated-branch guard rule, scratch-probe convention + gitignored test/scratch/, no compound questions, announce background launches, python escape hard rule, build-input-edit ban, Sprint 64 stub carry-ins, timestamp footer memory).
+- **Docs**: SPRINT_63_PLAN.md / SPRINT_63_RETROSPECTIVE.md / SPRINT_63_SUMMARY.md / SPRINT_64_PLAN.md stub / GOOGLE_PLAY_ACCOUNT_SETUP.md / legal drafts.
+
+_(Prior: **Sprint 62** below.)_
 
 **Sprint 62** (2026-08-21 -- 2026-08-23; PR #355 -> develop, Ready-for-Review at close-out)
 - **Type**: Scan robustness (the Sprint 61 MV forensics quintet) + test hygiene. All 6 tasks + F161 AC-4 carry-over complete; Manual Validation complete 2026-08-22 with every item disposed; retrospective + all 7 improvement decisions executed 2026-08-23.
@@ -148,6 +163,7 @@ Historical sprint information lives in individual documents in `docs/sprints/` a
 - **New backlog registered**: F179 (HOLD, GenAI-gated), F180 (P10), F181 (P18), F182 (P30), F183 (HOLD external).
 - **Verification**: suite **1,931+ passed / 15 skipped / 0 failed**; analyze clean; hook suite 51/51; sweep green with sweep-head recorded.
 - **Retro**: Harold -- Testing "Needs improvement as noted by dev team during sprint", Process "Good - see issues noted by dev team", all else Good/Very Good; Cats 13/14 "none". **All 7 improvement proposals decided as recommended: 5 applied same-session (Phase 5 evidence gate, sweep-at-HEAD rule, serialized builds, inset-test rule, f129 retirement), 2 to backlog (F182, F183).**
+- **Store release outcome (Phase 8.3, 2026-08-24)**: Sprint 62's merged scope shipped as **0.12.0.0 (Submission 19), CERTIFIED AND LIVE ~9:12am ET** -- uploaded ~8:5x, ~20-25 minutes submit-to-live (third consecutive 20-30 min measurement). Sixth MINOR release. Verification: Check A dart-defines PASS, `--release-self-test` 6/6 PASS, manifest 0.12.0.0, 17.9 MB.
 - **Docs**: SPRINT_62_PLAN.md / SPRINT_62_RETROSPECTIVE.md / SPRINT_62_SUMMARY.md.
 
 _(Prior: **Sprint 61** below.)_
@@ -306,13 +322,7 @@ All incomplete items in relative priority order. Priority in increments of 10; i
 
 ### Core App Quality
 
-**F164. Android live-scan performance investigation -- debug-vs-release + emulator factors (~1-2h measured comparison) Priority 28 (NEW, Sprint 60 MV -- Harold)**
-- Phase: Android rollout track / performance
-- Platform: Android
-- Observation (Harold, 2026-08-16): Manual Scan > Live Scan is noticeably slower on the Android emulator than the Windows app against the same mailbox.
-- Analysis at registration (answering Harold's "any inherent architectural reason?"): NO -- the scan pipeline (EmailScanner, adapters, rule evaluation, DB writes) is the same shared Dart code on both platforms. The measurable differences are environmental: (1) the Android build under test is a DEBUG APK -- Dart runs JIT with assertions, typically 2-10x slower than AOT; the Windows dev build is a RELEASE build (build-windows.ps1 builds --release); (2) emulator overhead (QEMU/WHPX virtualization, NAT'd network stack adds IMAP round-trip latency); (3) WAL was silently absent on Android until the Sprint 60 PRAGMA fix (now active -- DB writes should already be better than what Harold measured).
-- Scope: measure a `--release` APK on the emulator (and a physical device if available) against the same mailbox/folder set as Windows; record per-phase timings (connect, fetch, evaluate, persist); conclude whether any REAL gap remains after removing the debug/emulator factors; file fixes only if a genuine gap survives.
-- Source: Harold, Sprint 60 Manual Validation, 2026-08-16.
+**F164. Android live-scan performance investigation -- DONE/CLOSED (Sprint 63, PR #366; Harold verdict 2026-08-26 on debug-build evidence: F180 removed the real gap -- 36s/456MB header-only vs the 6m17s/~1.0GB Sprint 62 anchor on the SAME debug emulator, so the dominant factor was body fetching, not debug/emulator overhead; optional prod-icon release run waived)**
 
 **F165. Cross-device rules-DB sharing -- user cloud storage (iCloud/OneDrive/Box/Google Drive) exploration + hosted-tier option (~half-day exploration) Priority 30 (NEW, Sprint 60 MV -- Harold; product direction)**
 - Phase: Product direction / architecture exploration
@@ -320,47 +330,6 @@ All incomplete items in relative priority order. Priority in increments of 10; i
 - Direction (Harold, 2026-08-16): long-term, the recommended deployment is a PHONE (Android/iPhone) doing the periodic background scans instead of the Windows app -- which makes the rules DB per-device divergence a real problem. Explore letting the user share their rules DB between devices via THEIR OWN cloud storage (iCloud / OneDrive / Box / Google Drive), e.g. exported-snapshot sync or file-provider integration. Additionally evaluate a hosted-sync option as a paid tier (~$4/year, non-free app option) -- pricing/product decision stays with Harold.
 - Exploration deliverables: sync-model options (file-based snapshot vs true sync; conflict handling for rule edits on two devices), per-provider integration effort, security posture (rules contain sender addresses -- privacy note), and a recommendation. Builds on the existing YAML export invariants as the likely interchange format.
 - Source: Harold, Sprint 60 Manual Validation, 2026-08-16.
-
-**F176. Show the account email on the Manual Scan and Live Scan screens (~1h) Priority 16 (NEW, Sprint 61 MV -- Harold)**
-- Phase: Core App Quality / UX
-- Platform: All (Harold: "If not already on Windows screens, should probably be added there as well")
-- Scope (Harold, 2026-08-19): "add current email address to Manual scan screen on mobile and the live scan screen (small in order to fit)." Small type so it fits phone width; per ADR-0042 land it shared once and verify both platforms. Rationale surfaced during multi-account MV: with two accounts configured, the scan screens do not say WHICH account is scanning -- the Settings Background tab got exactly this header in Sprint 38 for the same reason.
-- Source: Harold, Sprint 61 Manual Validation, 2026-08-19.
-
-**F177. Memory-bounded, chunked IMAP fetch with incremental progress (~4-6h) Priority 8 (NEW, Sprint 61 MV -- ROOT CAUSE of the Android scan deaths)**
-- Phase: Core App Quality / scanner
-- Platform: All (shared adapter; Android is where it kills the process, Windows carries the same unbounded shape)
-- **Root cause, proven from Android's process-exit records (`dumpsys activity exit-info`, 2026-08-19)**: the `daysBack=0` full-mailbox fetch loads EVERY matched message's full content into memory in one blocking `fetchMessages` call. On the ~137-message AOL mailbox this ballooned the app to **817MB-1.4GB PSS**; Android issued LOW_MEMORY kills at 02:31 and 07:24 (two more bloat states caught at force-stop: 1.4GB, 1.2GB, with ANR traces on file). Every death triggered WorkManager retry-on-relaunch, stacking duplicate scans that died faster -- the entire day's "hung scans" cascade. The 3-message gmail account never approached the limit, which is why gmail always completed in under a minute.
-- Fix shape (parameters set with Harold, 2026-08-19): **batch size m = 20 UIDs, applied UNIVERSALLY -- no folder-size threshold n.** Harold asked for "split attempts to run scans that are > n emails to batches of m"; analysis collapsed n into m: always fetching in batches of 20 needs no threshold (a 3-message folder is naturally one batch of 3, a 137-message folder is 7 batches), gives one code path instead of two, and makes every batch boundary a progress-report + memory-release point. Arithmetic behind m=20: the 137-message fetch drove the app from ~350MB baseline to 1.3-1.4GB, i.e. ~7-10MB retained per message; against a ~512MB Android ceiling with a ~150-200MB fetch budget, 20 x ~7-10MB fits with headroom for a concurrent scan until F175 lands. Folder-level iteration already exists (confirmed -- folders are fetched one at a time); this adds within-folder batching. Process/evaluate each batch before fetching the next; release references between batches; report per-batch progress to the provider (fixing the "0 emails for 20+ minutes" blindness in the same change); consider truncating bodies at FETCH time (body_preview already truncates at persist time), which would shrink per-message cost and allow raising m later.
-- Interacts with: F175 (concurrency multiplied the memory), F164 (Android scan performance -- this is likely its real answer), and the WorkManager retry policy (a one-off test task that retries forever on a crashing scan re-detonates on every launch; bound the retries).
-- Source: Sprint 61 F161 validation forensics, 2026-08-19.
-
-**F178. Android review popup clips its bottom sections -- "Block Subject" unreachable even when scrolled (~1-2h) Priority 14 (NEW, Sprint 61 MV -- Harold, with screenshots)**
-- Phase: Core App Quality / UX
-- Platform: Android (phone height); the same widget was already fixed for Windows in Sprint 60
-- Observation (Harold, 2026-08-20, emulator at phone size): on Scan Results, the per-email review popup cannot reveal its bottom content -- "Even when scrolled you cannot see the Subject part of the pop-up." The "Block Subject" row is clipped at the bottom edge with the inner scroll already at its end (two screenshots on file, unscrolled + fully scrolled).
-- Context: this is the Android sibling of the Sprint 60 Windows fix in `results_display_screen.dart` (~lines 1623-1700): that fix clamps `top` and hard-caps the popup at 60% of `MediaQuery.size.height` with an inner `SingleChildScrollView` fallback. Leading hypothesis (NOT yet confirmed): on Android, `MediaQuery.size.height` includes the system status/navigation bar areas, so the positioned popup's bottom edge can sit under the nav bar, and/or the scroll extent is computed against the un-inset height -- so the last section stays clipped even at full scroll. Fix shape: subtract view insets/padding when computing `popupHeight`/`maxTop` (use the safe-area height), verify at phone height that full scroll reaches "Block Subject" and the block-rule buttons below it; per ADR-0042 verify the Windows placement is unchanged by the shared edit.
-- Source: Harold, Sprint 61 Manual Validation, 2026-08-20.
-
-**Sprint 62 validation carry-over (not an F-item): Windows background-scan regression check (F161 AC-4).** Harold, 2026-08-20: Windows 1024x640 sweep and selection bar both PASS by inspection; the Windows background-scan-unchanged check "I believe it is working as expected" but was not explicitly exercised this sprint -- add it to Sprint 62's Manual Validation steps (one glance at Windows Scan History confirming scheduled background scans kept running normally through/after the Sprint 61 scheduler refactor).
-
-**F175. Android scan concurrency control -- mutual exclusion + active-scan detection with wait estimate (~3-4h) Priority 12 (NEW, Sprint 61 MV -- Harold)**
-- Phase: Core App Quality / background scanning
-- Platform: Android primarily (Windows already has per-account task serialization + foreground deferral, F109/ADR-0039); the detection/notify UX should be shared per ADR-0042
-- Scope (Harold, 2026-08-19, verbatim intent): "method to ensure that android background scans do not run concurrently, background do not run concurrently with manual live scans and that a manual live scan can detect if a background scan is actively running and notify to wait until the scan completes (present an average wait time for background scan completion, if reasonably possible)."
-- Three requirements: (1) background scans mutually exclusive with each other (per-account AND cross-account on one device -- they share one SQLite DB and one process); (2) background scans mutually exclusive with manual live scans; (3) a manual scan started while a background scan is active DETECTS it and notifies the user to wait, showing an average background-scan completion time where reasonably computable (scan_results has started_at/completed_at per scan_type, so a rolling average per account is cheap).
-- Evidence this is needed (Sprint 61 F161 validation, 2026-08-19): four AOL scans stacked concurrently (2 periodic + 1 test + 1 manual), each opening its own IMAP session; the earliest hung and the rest queued behind AOL's per-account session cap -- all four sat `in_progress` at 0 emails for 20+ minutes over a mailbox of only ~140 emails (Harold's steering: the volume does NOT excuse the duration). Meanwhile gmail scans completed in under a minute, proving the pipeline itself was fine. A socket reset (force-stop) unstuck everything instantly.
-- Related-but-separate defects found in the same incident, to fix with or alongside: no scan TIMEOUT (a hung scan stays `in_progress` forever with no error), and stale `in_progress` rows are never reconciled at startup (rows 44-46, 48, 50-52, 54-58, 60 are permanent orphans from the incident and its cleanup kills). Windows' F109 deferral + per-account serialization is the architectural reference; the WorkManager unique-name gives per-account background uniqueness already, so the missing pieces are cross-type (manual-vs-background) exclusion and the detection UX.
-- Also fold in (Sprint 61 close-out additions): (a) disabling the background toggle cancels the periodic work but NOT a stuck one-off test task -- WorkManager re-fires a killed task at every app launch until it succeeds (bound the retries / cancel the test task on disable); (b) the F168 R-3 settings-interplay recommendation -- Manual and Background tabs keep independent folder scopes AND independent Scan Range values, and BOTH have now produced a real surprise (Sprint 60: Inbox omitted from background scope; Sprint 61 MV: background Test ran daysBack=0 because only the Manual tab was updated). Evaluate one shared selection with explicit per-type opt-out.
-- Source: Harold, Sprint 61 Manual Validation, 2026-08-19.
-
-**F174. Per-folder IMAP fetch failure is silent -- errors=0 despite a folder failing to fetch (~1-2h) Priority 20 (NEW, Sprint 61 F161 on-device validation)**
-- Phase: Core App Quality / scanner
-- Platform: All (shared IMAP pipeline)
-- Observation (2026-08-18, during the F161 on-device test scan): fetching the "Unwanted" folder threw `InvalidArgumentException: no ID added to sequence`, the scan completed normally, and the results reported **errors=0**. So a whole folder silently contributed nothing, indistinguishable from "folder was clean".
-- **ROOT CAUSE CONFIRMED (2026-08-19, live trace)**: it is the EMPTY-FOLDER edge, not folder-specific. `[Gmail]/Spam` with `messagesExists=0` threw the identical exception -- UID SEARCH ALL on an empty mailbox returns an empty set, and building the UID FETCH sequence from it throws. The catch turns it into "returned 0 messages" + a log WARNING, errors=0. The COUNT is coincidentally correct for an empty folder, but exception-as-control-flow here means a REAL fetch failure would be equally invisible. Fix shape: detect the empty search result and return an empty list without attempting the fetch; reserve the error path for genuine failures, and surface those in errorCount.
-- Why it matters: this is the F168 silent-scope class in miniature -- a scan that looks healthy while quietly not looking somewhere. The per-folder failure should at minimum count toward errorCount or surface as a per-folder status, and the empty-sequence edge itself should be handled rather than thrown.
-- Source: device logcat during Sprint 61 F161 AC-2 verification.
 
 **F173. Periodic "Test Coverage and Appropriate Testing" Deep Dive (~4-8h per review) Priority HOLD (NEW, Sprint 61 -- Harold; recurring HOLD template)**
 - Phase: Testing / periodic review
@@ -371,32 +340,40 @@ All incomplete items in relative priority order. Priority in increments of 10; i
 - Cadence: same periodic-HOLD model as F70 (Security) and F71 (Architecture) -- triggered by Harold, not calendar-automatic.
 - Source: Harold, 2026-08-17.
 
-**F163. Skipped-tests remediation -- implement the 11 approved update-to-working verdicts (~2-4h across 4 work items) Priority 26 (NEW, Sprint 60 F160 dispositions -- Harold approved all recommendations)**
-- Phase: Testing / suite hygiene
-- Platform: All
-- Scope: Harold approved every F160 recommendation (2026-08-16). The 3 discontinues were applied in-sprint (2 rejected-design yaml_migration tests + the rule_evaluator design-note skip deleted). This item carries the 4 update-to-working work items: (1) gmail_api_adapter no-auth error-path tests -- channel-stub seam, or discontinue if the adapter cannot run stubbed (fallback pre-approved); (2) delete_to_trash safety trio -- adapter mock-seam investigation (highest value: guards delete-recoverability); (3) email_scanner_readonly_mode group -- rebuild against the current provider architecture (read-only enforcement is the product's core safety promise, currently uncovered); (4) yaml_migration backup-creation test -- fix the assert-timing race. The 15 keep-for-special-purpose tests stay as-is by decision.
-- Source: F160 audit (SPRINT_60_PLAN.md Task 1) + Harold's blanket approval, Sprint 60 MV, 2026-08-16.
+**F181. Remove the 50-email testLimit scan-mode option -- DONE (Sprint 63, PR #366; MV verdict PASS 2026-08-26; deliberate keeps documented at the 3 F181 DELIBERATE KEEP comment sites)**
 
-**F181. Remove the "test on a limited number of emails" (50-email testLimit) scan-mode option (~2-3h incl. full impact plan) Priority 18 (NEW, Sprint 62 MV -- Harold)**
-- Phase: Core App Quality / scan modes
-- Platform: All (account_setup_screen scan-mode dialog + ScanMode/provider plumbing)
-- Decision (Harold, 2026-08-22): "the 50 email limit can be removed for first-time users as it is no longer appropriate. Add to backlog to ensure it is fully planned and executed with precision."
-- Background: the F163 remediation surfaced that the limit appears UNENFORCED at the platform layer since the Issue #144 batch architecture (the provider tracks `_emailTestLimit` per record, but batch execution never consults it) -- a setting that promises a safety cap and does not deliver one. Removal supersedes fixing the enforcement.
-- Precision requirements: enumerate EVERY touchpoint before executing (scan-mode dialog UI + its 'testLimit' copy, ScanMode enum semantics if any value exists solely for this, `initializeScanMode(testLimit:)` parameter and `_emailTestLimit`/`_lastRunActionIds` revert-tracking plumbing, persisted per-account scan-mode values that may reference it -- migration for existing users, Help/walkthrough mentions, and the tests that reference testLimit). Follow the F144 dead-code-removal discipline: verdict first, then delete with gates.
-- Source: Harold, Sprint 62 Manual Validation, 2026-08-22.
+**F180. Deferred body fetch -- header-only first pass with on-demand full-body fetch -- DONE (Sprint 63, PR #366; supersedes the original body-size-cap shape. Live: 175 msgs 36s/456MB/0 fetches vs 6m17s/~1.0GB anchor; deferral demo 40 fetches 1m16s/529MB. MV verdict PASS 2026-08-26)**
 
-**F180. Bound message-body size at FETCH and EVALUATION time (~2-3h) Priority 10 (NEW, Sprint 62 MV -- F177 phase 2)**
-- Phase: Core App Quality / scanner
-- Platform: All (shared adapter + evaluator input)
-- Evidence (2026-08-22 live F177 validation): the m=20 batching PASSED its survival test -- the previously-fatal daysBack=0 scan (181 emails) completed in 6m17s with no kill, in-flight cost down from ~6MB to ~1.6MB per message -- but peak PSS still reached ~1.0GB, and Dart keeps freed heap pages mapped afterward (no manual GC/release exists; a live `am send-trim-memory` attempt could not reduce it). The remaining allocation source is FULL message bodies: `BODY.PEEK[]` pulls multi-MB MIME per message, and rule evaluation runs the whole regex set over the full decoded body.
-- Fix shape (pre-recorded in F177's registration as the next lever): (1) fetch headers + a bounded text portion (`BODY.PEEK[HEADER]` + partial `BODY.PEEK[TEXT]<0.N>`), or (2) cap the body handed to the evaluator (e.g., first 256KB -- body rules match marketing phrases, not megabyte tails), or both. Outcome-equivalence test must define what a body-rule match against a truncated body means (document the cap as a matching contract, not silently).
-- Source: Sprint 62 F177 on-device validation, 2026-08-22.
+**F185. Gmail body rules match against UNDECODED base64 text -- DONE (Sprint 63, PR #366; pulled in-sprint by Harold 2026-08-26, decode + call-site tests, mutation-verified)**
 
-**F182. Deterministic seeding preamble for the WinWright no-rule sweep script (~2-3h) Priority 30 (NEW, Sprint 62 retro IMP-6 -- Harold approved to backlog)**
-- Phase: Testing / E2E tooling
-- Platform: Windows Desktop (WinWright harness)
-- Scope: `test_mt2c_no_rule_sweep.json` asserts named baseline rows survive the covered-item sweep, using senders from Harold's LIVE dev data -- so its baselines rot every time MV rule/safe-sender work addresses them (refreshed Sprint 59, Sprint 60, and Sprint 62). Add a seeding preamble/teardown around the sweep run (insert then remove synthetic `unmatched_emails` rows tied to a reserved synthetic domain) so the two baseline selectors are constant forever. The script's own header already records this as the designed future work. Must preserve the DB-snapshot drift guard's net-zero contract (seed and unseed inside the guarded window, or teach the guard about the reserved domain).
-- Source: mt2c script header (Sprint 51) + Sprint 62 retrospective IMP-6, 2026-08-23.
+**F188. A rule with a corrupted condition string is silently neutralized (~1h) Priority 26 (NEW, Sprint 63 MV -- silent-failure class, found live)**
+- Phase: Core App Quality / rules integrity
+- Platform: All (RuleDatabaseStore)
+- Found live 2026-08-26: a rules row whose condition JSON fails to parse (observed with an invalid escape) loads as a rule with EMPTY condition lists -- it displays normally in Manage Rules and can simply never match, with no log line, no UI signal, nothing. The trigger was a hand-inserted row, but disk corruption or an import defect would behave identically: a protection the user believes exists silently is not evaluated.
+- Fix shape: `_decodeJsonArray` logs a WARNING naming the rule and column on parse failure (Logger.w minimum), and Manage Rules flags rules whose every condition list is empty as "invalid -- matches nothing" instead of rendering them as healthy. Consider a one-time integrity sweep counting unparseable condition columns.
+- This is exactly the F-PRECHECK class 6 shape (an unreadable input converted into a silent no-op) applied to rule data instead of code paths.
+- Source: Sprint 63 Manual Validation body-rule demo forensics, 2026-08-26.
+
+**F187. Remove the personal URL-shape body rules (domain.tld link-block rules) (~1-2h) Priority 24 (NEW, Sprint 63 MV -- Harold)**
+- Phase: Core App Quality / rules data cleanup
+- Platform: All (Harold's personal rule DBs: dev AND prod installs)
+- Harold's ask (2026-08-26): "remove all my personal body rules that roughly match a url (domain.top-level domain)".
+- Measured at registration (dev DB, read-only, 2026-08-26): 732 body rules total, of which **647 match the URL shape** `(?:://|[/.])domain\.tld` (the F33-era link-domain blocks); the remaining 85 are phrase/phone/address body patterns and are NOT in scope -- they stay.
+- Discipline: F33/F144 cleanup pattern -- enumerate the exact removal set by pattern shape (not by name prefix; only 306 carry the `body_.` name), present the count + samples for confirmation, timestamped backup before deletion, YAML export invariants preserved, applied to BOTH dev and prod databases (a migration or a guarded one-time cleanup script), post-delete count verification with an untruncated grep/query.
+- Interaction note: F180 makes these rules the main body-fetch trigger on Harold's real rule set -- removing 647 of 732 body rules will ALSO cut most deferred body fetches on real scans (faster + lighter), while F186 (body-rule authoring) covers future intentional body rules.
+- Source: Harold, Sprint 63 Manual Validation, 2026-08-26.
+
+**F186. Add/update BODY rules through the UI, including via Manage Rules (~2-4h) Priority 22 (NEW, Sprint 63 MV -- Harold)**
+- Phase: Core App Quality / rules UX
+- Platform: All (shared rule screens)
+- Harold's asks (2026-08-26, verbatim enumeration): "1) Add a way to add/update body rules. 2) Add a way to add/update body rules via Manage Rules"
+- Verified current state (2026-08-26): `RuleEditScreen` (F35) already round-trips a body condition when EDITING an existing body rule (`case 'body'` at rule_edit_screen.dart:378-380), but `ManualRuleCreateScreen` offers NO Body rule type at all (zero body-condition support) -- so body rules cannot be CREATED from any UI surface; the 732 live body rules exist only from legacy import.
+- R-1: the manual rule CREATE flow (reached from Manage Rules) gains a Body rule type -- pattern entry with the same plaintext-to-regex assist the other types have; category/sub-type recorded as 'body'.
+- R-2: Manage Rules filtering/labels already display the Body category (F124 chips) -- verify create/edit/display round-trip end to end and that the F25 rule tester exercises body patterns against sample bodies.
+- Context that makes this timely: F185 (Sprint 63) just fixed Gmail body matching (base64 decode), and F180 fetches bodies on demand when body rules exist -- authoring them is now the missing piece of the body-rule story.
+- Source: Harold, Sprint 63 Manual Validation, 2026-08-26.
+
+**F182. Deterministic seeding preamble for the WinWright no-rule sweep script -- DONE (Sprint 63, PR #366; winwright-seed-no-rule.ps1 seed/unseed/status with RFC 2606 .invalid domains, runner-integrated, drift-guard net-zero preserved; 2 consecutive green sweeps recorded)**
 
 **F183. Upstream civyk-winwright request: script-runner replay support for ww_wait (~15m to file, then external) Priority HOLD (NEW, Sprint 62 retro IMP-7 -- external dependency)**
 - Phase: Testing / E2E tooling (external)
@@ -426,6 +403,73 @@ All incomplete items in relative priority order. Priority in increments of 10; i
 _(Sprint 61 shipped and pruned at the 2026-08-21 Phase 8.2 pass-1 sweep: F161, F162, F167, F168 (its R-3 settings-interplay question is now DECIDED -- Harold, 2026-08-22: the fully-independent Manual/Background tabs are "correct and the desired behavior"; a deliberate Product Owner design decision, do NOT re-raise), F169, F170, F171, F172 -- history in `docs/sprints/SPRINT_61_PLAN.md` / `SPRINT_61_SUMMARY.md` and CHANGELOG.md. F143, F144, F156, F157, F158, F159, F160, and F166 shipped Sprint 60 (stubs also cleared this sweep) -- see `SPRINT_60_PLAN.md` / `SPRINT_60_SUMMARY.md`.)_
 
 _(F149 shipped Sprint 57 -- see `docs/sprints/SPRINT_57_PLAN.md` and CHANGELOG.md 2026-08-14. Root-caused as an always-existing gap in F91's (Sprint 39) design, not a regression: F91 only reconciled the SOURCE folder after a safe-sender move; F149 added a symmetric pre-move check against the TARGET folder using the existing `searchByMessageId` capability. F148 shipped Sprint 56 -- see `docs/sprints/SPRINT_56_PLAN.md` and CHANGELOG.md 2026-08-13. F145/F146/F147 all shipped Sprint 55 -- see `docs/sprints/SPRINT_55_PLAN.md`, CHANGELOG.md 2026-08-10, and `docs/WINWRIGHT_SELECTORS.md`'s new F145 entry (WinWright false-failure finding + the real HelpScreen scroll-timing bug it led to). F145 also produced `integration_test/help_deep_link_test.dart`, the durable regression suite for all 22 HelpSection values.)_
+
+### Android / Google Play Store Readiness (track ACTIVATED 2026-08-24 -- Harold took all Android + GP-n items off HOLD)
+
+Recorded sequencing honored (see 'Recommended Sequencing' in the GP section below): account first, privacy early, technical features as sprint work, Data Safety after privacy, listing before submission, CASA trigger-gated last. Supersessions recorded this refinement: F4 (Android background scanning) was DELIVERED as F161 in Sprint 61; Issue #163 (Android untested) is RESOLVED by the continuous Sprint 59-62 on-device validation.
+
+**GP-16. Google Play Developer Account Setup -- CARRY to Sprint 64 as its FIRST TASK (Harold 2026-08-26: 'Need to be walked through this'; guided walkthrough, PERSONAL account, 12 testers/14 days route -- no DUNS). Sprint 63 prep DONE: docs/GOOGLE_PLAY_ACCOUNT_SETUP.md written for the personal route. Includes the GP-5 hosting/URL decision at publication.**
+- Phase: Android Google Play Store Readiness
+- Platform: Android
+- Sequencing: 'Immediate' -- everything Play-side blocks on it; Google's verification has multi-day external lead time. $25 one-time. Harold-driven, Claude walks him through step by step.
+
+**GP-5. Privacy Policy and Legal Documents -- MOSTLY DONE (Sprint 63, PR #366: docs/legal/PRIVACY_POLICY.md + TERMS.md drafted per ADR-0030; TEXT APPROVED by Harold 2026-08-26). REMAINING: hosting URL choice + publication, folded into the Sprint 64 GP-16 walkthrough (placeholders stay '[SET AT PUBLICATION]' until then). Feeds GP-10 and the listing; GitHub Pages is the recorded default.**
+
+**GP-12. Firebase Analytics removal (ADR-0030) -- DONE (Sprint 63, PR #366: firebase-analytics/firebase-bom removed from build.gradle.kts per ADR-0030/0033; google-services plugin + JSON kept for OAuth registration. AC-2 VERIFIED by Harold 2026-08-26: Gmail sign-in works in the prod Android app post-removal)**
+
+**F94. Android dev/prod flavors -- DONE (Sprint 63, PR #366: productFlavors dev/prod with `.dev` applicationIdSuffix + ' [DEV]' label, build-with-secrets.ps1 -Env param, dev google-services stub, side-by-side install verified; MV verdict PASS 2026-08-26. SURPRISE finding: Gmail sign-in WORKS on the dev flavor despite the stub -- appauth redirect-scheme flow does not use google-services.json, so the 4 console prerequisites were NOT needed for dev sign-in. 'store' flavor deliberately not created -- prod serves the Play build until proven otherwise)**
+
+**SEC-9. Move hardcoded Android client ID to build-time injection (~1h) Priority 28 (ACTIVATED off HOLD 2026-08-24 -- Harold: 'everything Android related... along with the gp-n items')**
+- Phase: Security / Android Google Play Store Readiness
+- Platform: Android
+- Move _androidClientId to --dart-define or google-services.json. Source: Sprint 31 security audit (S5).
+- **RE-VERIFIED Sprint 54 (2026-08-03)**: confirmed still hardcoded in `build.gradle.kts` + `AndroidManifest.xml` (the OAuth redirect scheme, inherently manifest-declared for Android). No client *secret* found hardcoded anywhere -- Android installed-app OAuth clients typically do not use one, unlike Windows' desktop client. Real fix is avoiding a per-flavor literal `build.gradle.kts` edit once F94 lands, not a security leak of a secret. Sequence after/alongside F94.
+- **UNBLOCKED (Sprint 63 retro IMP-7, 2026-08-27)**: F94 shipped in Sprint 63 (PR #366), so the sequencing dependency is satisfied -- SEC-9 is selectable. Related finding to fold in: the .dev-flavor Firebase/GCP console registrations proved OPTIONAL for Gmail sign-in (appauth redirect-scheme flow does not consult google-services.json), so SEC-9's design should target the appauth client id path, and F94's four console-prerequisite items can be re-scoped or closed at refinement.
+
+**GP-2. Release Signing and Play App Signing (~4-6h) Priority 30 (ACTIVATED off HOLD 2026-08-24 -- Harold: 'everything Android related... along with the gp-n items') -- MERGED SEC-6 (2026-08-24)**
+- Phase: Android Google Play Store Readiness
+- Platform: Android
+- Merged scope from SEC-6 (Sprint 31 audit S12): create the release keystore, configure `build.gradle.kts` signing config; ADR-0027 (Proposed) is decided as part of this work.
+
+**GP-9. ProGuard/R8 + Dart obfuscation (~2-4h) Priority 32 (ACTIVATED off HOLD 2026-08-24 -- Harold: 'everything Android related... along with the gp-n items') -- MERGED SEC-7 (2026-08-24, the twice-recommended merge)**
+- Phase: Android Google Play Store Readiness
+- Platform: Android
+- **RE-VERIFIED Sprint 54 (2026-08-03)**: same investigation as SEC-7 (above) -- confirmed no divergence, no minification/shrinking config exists. Recommend merging into one item at next refinement.
+- Merged scope from SEC-7 (Sprint 31 audit S13): `minifyEnabled` + `proguard-rules.pro` + Dart `--obfuscate --split-debug-info`; Sprint 54 re-verify confirmed the two items were literally the same investigation. Requires release-build validation on-device (obfuscation can break plugin reflection).
+
+**GP-8. Android Target SDK + 16 KB Page Size -- verify (~1-2h re-scoped) Priority 34 (ACTIVATED off HOLD 2026-08-24 -- Harold: 'everything Android related... along with the gp-n items')**
+- Phase: Android Google Play Store Readiness
+- Platform: Android
+- **RE-VERIFIED Sprint 54 (2026-08-03)**: the installed Flutter 3.38.5's gradle plugin already defaults `compileSdk`/`targetSdk` to API 36 (no explicit override needed in `build.gradle.kts`) -- the SDK-level part of this item is likely already satisfied by the current toolchain. The 16KB native page-size alignment is unverified and needs an actual APK build + inspection of NDK-touching plugin `.so` files, not a source read. Policy-currency against LIVE Play Console requirements also needs a manual check (not verifiable from a read-only repo investigation). Re-scoped down to ~1-2h "verify + confirm."
+
+**GP-3. Android Manifest Permissions -- merged-manifest verify (~1-2h re-scoped) Priority 36 (ACTIVATED off HOLD 2026-08-24 -- Harold: 'everything Android related... along with the gp-n items')**
+- Phase: Android Google Play Store Readiness
+- Platform: Android
+- **RE-VERIFIED Sprint 54 (2026-08-03)**: the app's own manifest declares zero `<uses-permission>` entries, but direct inspection of bundled plugin manifests confirms auto-merge already provides `INTERNET` (via `google_sign_in_android`), `ACCESS_NETWORK_STATE` (via `connectivity_plus`), and `POST_NOTIFICATIONS` (via `flutter_local_notifications`/`workmanager_android`). Genuinely missing: `RECEIVE_BOOT_COMPLETED`, `WAKE_LOCK`, `FOREGROUND_SERVICE`/`FOREGROUND_SERVICE_DATA_SYNC` -- but WorkManager periodic tasks do not inherently need a foreground service, so add these ONLY if F144's background-scan design actually requires one. Re-scoped: verify auto-merge via a real merged-manifest build, add the 3-4 missing declarations only if needed.
+- **Refinement update (2026-08-24)**: F161 (Sprint 61) SHIPPED the Android background scheduler on WorkManager periodic tasks with NO foreground service -- so verify against the ACTUAL shipped design; the FOREGROUND_SERVICE additions are expected to be unnecessary.
+
+**SEC-4. Android: Create network_security_config.xml (~1h) Priority 38 (ACTIVATED off HOLD 2026-08-24 -- Harold: 'everything Android related... along with the gp-n items')**
+- Phase: Security / Android Google Play Store Readiness
+- Platform: Android
+- Block cleartext traffic, pin domains for OAuth and IMAP; reference in AndroidManifest.xml
+- Moved to HOLD with the rest of the Android track per Harold (2026-05-25) -- gated by the Google Play release, which is on HOLD. Source: Sprint 31 security audit (S11).
+
+**GP-10. Data Safety Form Declarations (~2-4h) Priority 40 (ACTIVATED off HOLD 2026-08-24 -- Harold: 'everything Android related... along with the gp-n items') -- after GP-5**
+- Phase: Android Google Play Store Readiness
+- Platform: Android
+
+**GP-6. Play Store Listing and Assets (~8-12h) Priority 42 (ACTIVATED off HOLD 2026-08-24 -- Harold: 'everything Android related... along with the gp-n items') -- before submission**
+- Phase: Android Google Play Store Readiness
+- Platform: Android
+
+**GP-7. Adaptive Icons and App Branding (~4-6h) Priority 44 (ACTIVATED off HOLD 2026-08-24 -- Harold: 'everything Android related... along with the gp-n items')**
+- Phase: Android Google Play Store Readiness
+- Platform: Android
+
+**GP-4. Gmail API OAuth Verification / CASA (~40-80h) Priority 60 (ACTIVATED off HOLD 2026-08-24 -- Harold: 'everything Android related... along with the gp-n items') -- keep LAST per its recorded trigger**
+- Phase: Android Google Play Store Readiness
+- Platform: Android
+- Trigger: 2,500+ users or $5K/yr revenue
 
 ### Sprint Assignment (Sprint 47 pre-kickoff rollover, 2026-07-11)
 
@@ -566,6 +610,9 @@ _(Sprint 51-52 detail sections pruned per Maintenance Rule 2 -- all shipped/reso
 
 ### HOLD Items (Android / Google Play Store)
 
+_(Track activated 2026-08-24: F94, SEC-4, SEC-9 and all GP-n items moved to the active 'Android / Google Play Store Readiness' section above with numeric priorities. SEC-6 MERGED into GP-2; SEC-7 MERGED into GP-9. **F4. Background Scanning - Android -- SUPERSEDED: delivered as F161 (Sprint 61), count-parity validated.** **Issue #163. Android app not tested -- RESOLVED: Android validated continuously on-device in Sprints 59-62.** Remaining below: non-Android or still-deferred items.)_
+
+
 > **[NEXT MAJOR TRACK -- TRIGGER FIRED 2026-07-24]**: `0.5.7` is verified LIVE (clean prod title). Per Harold's 2026-07-15 promotion trigger, this Android / Google Play track is now **OFF HOLD** and is the next focus. Android development is intentionally stagnant only until that Windows release lands. At promotion, refine this section into an active sprint: start with the `google-services.json` applicationId mismatch diagnosis (F94 pre-existing investigation item -- likely root of intermittent Android Gmail OAuth), then F94 flavors, then the F108 Android-device dep-bump retest carry-in, then the Google-Play-gated security items below.
 
 > **[GOVERNING DIRECTION -- Harold, 2026-08-03, Sprint 54 F141 deep dive]**: *"All the UIs (now with the Windows UI being the default) should use the same UI and tools unless they cannot -- then they should adapt as needed for the needs of the platform"* (UI/navigation), and *"same architectural principle for all the non-UI components -- reuse whatever possible, exactly as is, but adjust where necessary"* (services/backend). **Clarified same day**: the app was built Android-first for early MVP speed, then switched to the Windows Store App style UI and architecture once that became the priority -- so **Windows' current architecture and tooling is the baseline that takes precedence, not "whichever platform already has code."** It is explicitly OK to REMOVE existing Android UI and backend code and replace it with the Windows-side pattern, adjusting only where Android has a genuine platform constraint (no keyboard modifiers, no hover state, no Windows Task Scheduler equivalent) -- never merely to preserve old Android-first code for its own sake. This is DURABLE guidance for every future Android-track item, not scoped to one sprint. See `docs/sprints/SPRINT_54_F141_ANDROID_DEEP_DIVE.md` for the full deep dive this direction came from.
@@ -577,21 +624,6 @@ _(Sprint 51-52 detail sections pruned per Maintenance Rule 2 -- all shipped/reso
 > - Not evaluated as primary candidates: Windows Subsystem for Android (discontinued), gaming-only emulators with no credible dev/testing workflow.
 
 _(F142 shipped Sprint 57 -- see `docs/sprints/SPRINT_57_PLAN.md` and CHANGELOG.md 2026-08-14. `MainNavigationScreen`'s `Platform.isAndroid` bottom-nav branch removed entirely; both platforms now share the same default-screen decision, `appDefaultScreenFor`, formerly `_DesktopDefaultScreen`/`desktopDefaultScreenFor`. Manual on-device Android validation was blocked by the pre-existing F94/F150 build issue -- see F150 below.)_
-
-**F94. Android dev/prod/store flavors (~6-8h) Priority HOLD (Issue #248) -- RENUMBERED from "F52 Phase 2" + MOVED TO HOLD (Sprint 39 Backlog Refinement, 2026-05-25)**
-- Phase: Build and Release Infrastructure / Android Google Play Store Readiness
-- Platform: Android
-- Renumbered from the ambiguous "F52 Phase 2" to a distinct F# (was sharing F52 with the iOS phase, now F95). Sprint 37 shipped F52 Phase 1 (Windows distinct .exe + dirs); this Android-flavors work was deferred and is now grouped with the Android/GP HOLD track per Harold (2026-05-25).
-- Android `productFlavors` with `applicationIdSuffix .dev` / `.prod`.
-- **Prerequisites (external -- must be done BEFORE this work can produce a runnable Android build):**
-  1. Firebase Console -- register SHA-1 fingerprint for `com.myemailspamfilter.dev` applicationId
-  2. Firebase Console -- register SHA-1 fingerprint for `com.myemailspamfilter.prod` applicationId
-  3. Google Cloud Console -- create OAuth client ID for `.dev` package + matching SHA-1
-  4. Google Cloud Console -- create OAuth client ID for `.prod` package + matching SHA-1
-- **Pre-existing investigation item**: `mobile-app/android/app/google-services.json` has `applicationId="com.example.spamfiltermobile"` while `build.gradle.kts` declares `applicationId="com.myemailspamfilter"`. Diagnose and fix this mismatch BEFORE adding flavor complexity (may explain intermittent Android Gmail OAuth). **RE-VERIFIED Sprint 54 (2026-08-03), still open**: same mismatch confirmed present today, no `.dev`/`.prod` variants exist, single OAuth Android client tied to the old package name -- Firebase/GCP prerequisites (items 1-4 above) confirmed not done. External prerequisites remain unconfirmable from repo evidence alone.
-- Memory note: `project_f52_phase2_blockers.md` has full Sprint 37 deferral context.
-- **Full #248 Phase 2 task list** (from the issue, deferred here): configure `productFlavors` in `android/app/build.gradle.kts` (dev/prod/store) with distinct `applicationId` suffixes, flavor-specific `google-services.json`, flavor-aware build scripts, and verify side-by-side install of dev + prod APKs on one device/emulator.
-- Source: Sprint 37 retrospective Category 11 + Category 13; Issue [#248](https://github.com/kimmeyh/spamfilter-multi/issues/248) (closed 2026-06-23 -- Phase 1 Windows SHIPPED in Sprint 37; Phase 2 Android = this item F94; Phase 3 iOS = F95).
 
 **F95. iOS variants + cross-store hardening (~10-16h) Priority HOLD -- RENUMBERED from "F52 Phase 3+" + MOVED TO HOLD (Sprint 39 Backlog Refinement, 2026-05-25)**
 - Phase: Build and Release Infrastructure
@@ -623,91 +655,7 @@ _(F142 shipped Sprint 57 -- see `docs/sprints/SPRINT_57_PLAN.md` and CHANGELOG.m
 - Platform: All
 - Moved to HOLD per Harold (2026-05-25). [Detail](#f6-provider-specific-optimizations)
 
-**SEC-4. Android: Create network_security_config.xml (~1h) Priority HOLD -- MOVED TO HOLD (Sprint 39 Backlog Refinement, 2026-05-25)**
-- Phase: Security / Android Google Play Store Readiness
-- Platform: Android
-- Block cleartext traffic, pin domains for OAuth and IMAP; reference in AndroidManifest.xml
-- Moved to HOLD with the rest of the Android track per Harold (2026-05-25) -- gated by the Google Play release, which is on HOLD. Source: Sprint 31 security audit (S11).
-
-**SEC-6. Android: Configure release signing (~2h) Priority HOLD -- MOVED TO HOLD (Sprint 39 Backlog Refinement, 2026-05-25)**
-- Phase: Security / Android Google Play Store Readiness
-- Platform: Android
-- Create release keystore, configure in build.gradle.kts. Overlaps with GP-2 (release signing). Source: Sprint 31 security audit (S12).
-
-**SEC-7. Android: Enable R8 obfuscation + Dart obfuscation (~2h) Priority HOLD -- MOVED TO HOLD (Sprint 39 Backlog Refinement, 2026-05-25) -- DUPLICATE of GP-9, recommend merging**
-- Phase: Security / Android Google Play Store Readiness
-- Platform: Android
-- Enable minifyEnabled, create proguard-rules.pro; use --obfuscate --split-debug-info for Dart. Overlaps with GP-9 (ProGuard/R8). Source: Sprint 31 security audit (S13).
-- **RE-VERIFIED Sprint 54 (2026-08-03)**: confirmed still fully unresolved -- no `isMinifyEnabled`/`isShrinkResources`/`proguardFiles`/`proguard-rules.pro` anywhere in the Android tree. SEC-7 and GP-9 are literally the same investigation and fix; recommend merging at next refinement rather than tracking twice.
-
-**SEC-9. Move hardcoded Android client ID to build-time injection (~1h) Priority HOLD -- MOVED TO HOLD (Sprint 39 Backlog Refinement, 2026-05-25)**
-- Phase: Security / Android Google Play Store Readiness
-- Platform: Android
-- Move _androidClientId to --dart-define or google-services.json. Source: Sprint 31 security audit (S5).
-- **RE-VERIFIED Sprint 54 (2026-08-03)**: confirmed still hardcoded in `build.gradle.kts` + `AndroidManifest.xml` (the OAuth redirect scheme, inherently manifest-declared for Android). No client *secret* found hardcoded anywhere -- Android installed-app OAuth clients typically do not use one, unlike Windows' desktop client. Real fix is avoiding a per-flavor literal `build.gradle.kts` edit once F94 lands, not a security leak of a secret. Sequence after/alongside F94.
-
-**Issue #163. Android app not tested in several sprints (~2-4h) Priority HOLD**
-- Phase: Android Google Play Store Readiness
-- Platform: Android
-- Validation sprint needed to verify Android app still works
-- Expanded scope (Sprint 30 review): ADR-0028 permission validation (POST_NOTIFICATIONS not needed initially, add when background scanning implemented)
-- Expanded scope (Sprint 30 review): Include unique UI tests via Playwright/WinWright as needed/appropriate
-
-**F4. Background Scanning - Android (~14-16h) Priority HOLD**
-- Phase: Android Google Play Store Readiness
-- Platform: Android
-- [Detail](#f4-background-scanning-android)
-
-**GP-2. Release Signing and Play App Signing (~4-6h) Priority HOLD**
-- Phase: Android Google Play Store Readiness
-- Platform: Android
-
-**GP-3. Android Manifest Permissions (~4-6h -> re-scoped ~1-2h remaining) Priority HOLD**
-- Phase: Android Google Play Store Readiness
-- Platform: Android
-- **RE-VERIFIED Sprint 54 (2026-08-03)**: the app's own manifest declares zero `<uses-permission>` entries, but direct inspection of bundled plugin manifests confirms auto-merge already provides `INTERNET` (via `google_sign_in_android`), `ACCESS_NETWORK_STATE` (via `connectivity_plus`), and `POST_NOTIFICATIONS` (via `flutter_local_notifications`/`workmanager_android`). Genuinely missing: `RECEIVE_BOOT_COMPLETED`, `WAKE_LOCK`, `FOREGROUND_SERVICE`/`FOREGROUND_SERVICE_DATA_SYNC` -- but WorkManager periodic tasks do not inherently need a foreground service, so add these ONLY if F144's background-scan design actually requires one. Re-scoped: verify auto-merge via a real merged-manifest build, add the 3-4 missing declarations only if needed.
-
-**GP-4. Gmail API OAuth Verification / CASA (~40-80h) Priority HOLD**
-- Phase: Android Google Play Store Readiness
-- Platform: Android
-- Trigger: 2,500+ users or $5K/yr revenue
-
-**GP-5. Privacy Policy and Legal Documents (~8-16h) Priority HOLD**
-- Phase: Android Google Play Store Readiness
-- Platform: All
-
-**GP-6. Play Store Listing and Assets (~8-12h) Priority HOLD**
-- Phase: Android Google Play Store Readiness
-- Platform: Android
-
-**GP-7. Adaptive Icons and App Branding (~4-6h) Priority HOLD**
-- Phase: Android Google Play Store Readiness
-- Platform: Android
-
-**GP-8. Android Target SDK + 16 KB Page Size (~4-8h -> re-scoped ~1-2h verify) Priority HOLD**
-- Phase: Android Google Play Store Readiness
-- Platform: Android
-- **RE-VERIFIED Sprint 54 (2026-08-03)**: the installed Flutter 3.38.5's gradle plugin already defaults `compileSdk`/`targetSdk` to API 36 (no explicit override needed in `build.gradle.kts`) -- the SDK-level part of this item is likely already satisfied by the current toolchain. The 16KB native page-size alignment is unverified and needs an actual APK build + inspection of NDK-touching plugin `.so` files, not a source read. Policy-currency against LIVE Play Console requirements also needs a manual check (not verifiable from a read-only repo investigation). Re-scoped down to ~1-2h "verify + confirm."
-
-**GP-9. ProGuard/R8 Code Optimization (~4-6h) Priority HOLD -- DUPLICATE of SEC-7, recommend merging**
-- Phase: Android Google Play Store Readiness
-- Platform: Android
-- **RE-VERIFIED Sprint 54 (2026-08-03)**: same investigation as SEC-7 (above) -- confirmed no divergence, no minification/shrinking config exists. Recommend merging into one item at next refinement.
-
-**GP-10. Data Safety Form Declarations (~2-4h) Priority HOLD**
-- Phase: Android Google Play Store Readiness
-- Platform: Android
-
 **GP-11. Account and Data Deletion Feature** -- Moved to F66 (off HOLD, all platforms including Windows Store). See F66 in Core App section above.
-
-**GP-12. Firebase Analytics -- [RE-SCOPED 2026-08-03] Execute the existing ADR-0030 removal decision, not a new decision (~1-2h) Priority HOLD**
-- Phase: Android Google Play Store Readiness
-- Platform: All
-- **RE-VERIFIED Sprint 54 (2026-08-03)**: ADR-0030 (Accepted) already decided "zero telemetry -- remove Firebase Analytics," but `firebase-analytics`/`firebase-bom` are STILL active dependencies in `build.gradle.kts` with zero Dart-side code anywhere calling them -- dead native-layer weight. ADR-0033 (the analytics/crash-reporting strategy ADR) is still "Proposed," inconsistent with ADR-0030 having already made the call. This is no longer a "~2-4h decision" task -- re-scoped to "~1-2h execute the removal + formally reconcile/accept ADR-0033 referencing ADR-0030's existing decision."
-
-**GP-16. Google Play Developer Account Setup (~2-4h) Priority HOLD**
-- Phase: Android Google Play Store Readiness
-- Platform: Android
 
 ### HOLD Items (Multi-Platform)
 
@@ -1455,7 +1403,7 @@ Register Google Play Developer account ($25 one-time), complete identity verific
 | ADR-0030 | Privacy and Data Governance Strategy | GP-5 | Accepted |
 | ADR-0031 | App Icon and Visual Identity | GP-7 | Proposed |
 | ADR-0032 | User Data Deletion Strategy | GP-11 | Proposed |
-| ADR-0033 | Analytics and Crash Reporting Strategy | GP-12 | Proposed |
+| ADR-0033 | Analytics and Crash Reporting Strategy | GP-12 | Accepted (2026-02-15; registry corrected 2026-08-24 -- rows here were stale) |
 | ADR-0034 | Gmail Access Method for Production | GP-14 | Accepted |
 
 ### Recommended Sequencing (when taken off hold)

@@ -574,7 +574,7 @@ graph LR
 | ID | Requirement | Acceptance Criteria | ADR Reference |
 |----|-------------|---------------------|---------------|
 | BR-1 | Multi-provider email filtering | Gmail, AOL, Yahoo, iCloud, custom IMAP, Demo mode all functional | [ADR-0002](adr/0002-adapter-pattern-email-providers.md) |
-| BR-2 | Four progressive scan modes | readonly (default), testLimit, testAll, fullScan with enforcement | [ADR-0006](adr/0006-four-progressive-scan-modes.md) |
+| BR-2 | Four progressive scan modes | readOnly (default), rulesOnly, safeSendersOnly, safeSendersAndRules (names modernized; F181 Sprint 63 removed the legacy 50-email cap) | [ADR-0006](adr/0006-four-progressive-scan-modes.md) |
 | BR-3 | Safe sender whitelist | Safe senders evaluated before rules, pattern type detection | [ADR-0005](adr/0005-safe-senders-evaluated-before-rules.md) |
 | BR-4 | Multi-account support | Per-account settings with 3-tier inheritance | [ADR-0013](adr/0013-per-account-settings-with-inheritance.md) |
 | BR-5 | Demo mode | Synthetic emails across multiple categories, no live account needed | [ADR-0020](adr/0020-demo-mode-synthetic-emails.md) |
@@ -750,7 +750,7 @@ graph LR
 | **SpamFilterPlatform** | Abstract class defining the email provider interface (ADR-0002) |
 | **PlatformRegistry** | Factory that instantiates email provider adapters by platform ID |
 | **EvaluationResult** | Value object containing the outcome of evaluating one email against all rules |
-| **ScanMode** | Enum: readonly, testLimit, testAll, fullScan (ADR-0006) |
+| **ScanMode** | Enum: readOnly, rulesOnly, safeSendersOnly, safeSendersAndRules (ADR-0006; F181 removed the legacy cap) |
 | **CanonicalFolder** | Normalized folder names across providers: INBOX, JUNK, TRASH, SENT, DRAFTS, ARCHIVE, CUSTOM |
 | **Dual-Write** | Pattern where data is written to SQLite (primary) and YAML (secondary) simultaneously |
 | **Safe Sender** | A regex pattern on the whitelist; emails from matching senders bypass all rules |

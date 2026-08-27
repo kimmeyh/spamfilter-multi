@@ -103,7 +103,7 @@ recorded in mt2c's own description block.
 | Script | Purpose | Origin |
 |--------|--------|--------|
 | `test_f124_rule_labels.json` | F124: Manage Rules category/sub-type display -- row accessible names, the details dialog's labelled `Category`/`Sub-Type` fields and their values, and all 7 filter chips (each paired with the `Clear` button that exists only while a filter is active) | S51 F129 (new) |
-| `test_mt2c_no_rule_sweep.json` | MT-2c: the covered-item sweep is idempotent across an in-place Refresh AND a full screen re-entry -- named rows must SURVIVE (guards over-collection, the Sprint 50 bug shape). Also carries the F169 account-filter dropdown coverage and the MT-3 reachability proof (absorbed from the retired f129 script) | S51 F129 (new); F169 repair + f129 absorption S62 |
+| `test_mt2c_no_rule_sweep.json` | MT-2c: the covered-item sweep is idempotent across an in-place Refresh AND a full screen re-entry -- named rows must SURVIVE (guards over-collection, the Sprint 50 bug shape). Also carries the F169 account-filter dropdown coverage and the MT-3 reachability proof (absorbed from the retired f129 script) | S51 F129 (new); F169 repair + f129 absorption S62; F182 synthetic self-seeded baselines S63 (runner seeds/unseeds reserved-domain rows -- baselines never rot with live data again) |
 
 The create/lifecycle flows below are kept as the F99 reference and remain EXCLUDED from any default
 sweep -- their reliable unattended execution lives in `integration_test`:

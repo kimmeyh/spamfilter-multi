@@ -849,6 +849,9 @@ class SettingsStore {
       // Legacy names (backwards compatibility with existing DB records)
       case 'readonly':
         return ScanMode.readOnly;
+      // F181 DELIBERATE KEEP: the testLimit OPTION is removed, but rows
+      // persisted before Issue #123/#124 hold this string -- deleting the
+      // case silently degrades those accounts to readOnly.
       case 'testLimit':
         return ScanMode.rulesOnly;
       case 'testAll':

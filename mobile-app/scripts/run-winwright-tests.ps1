@@ -277,6 +277,27 @@ Write-Host ""
 Write-Host "Running $($tests.Count) WinWright test(s)..." -ForegroundColor Green
 Write-Host ""
 
+# ---------------------------------------------------------------------------
+# F182 (Sprint 63): deterministic no-rule seeding. mt2c's baseline rows are
+# synthetic reserved-domain rows seeded here and removed after the sweep
+# (also on failure paths), ending the live-data baseline rot of Sprints
+# 59/60/62. The seeded tables (scan_results, unmatched_emails) are NOT
+# drift-guard tables, and unseed restores them regardless.
+# ---------------------------------------------------------------------------
+$seedScript = Join-Path $PSScriptRoot "winwright-seed-no-rule.ps1"
+$didSeed = $false
+$needsSeed = @($tests | Where-Object { $_.Name -like "*mt2c*" }).Count -gt 0
+if (-not $needsSeed) {
+    # Only mt2c consumes the synthetic baseline rows -- do not touch the DB
+    # for runs that do not include it (Copilot review, PR #366).
+} elseif (Test-Path $seedScript) {
+    & $seedScript seed
+    if ($LASTEXITCODE -eq 0) { $didSeed = $true }
+    else { Write-Warning "[WW-SEED] Seeding failed -- mt2c may hit its data precondition." }
+} else {
+    Write-Warning "[WW-SEED] winwright-seed-no-rule.ps1 not found -- mt2c relies on live data."
+}
+
 $passed  = 0
 $failed  = 0
 $results = @()
@@ -317,6 +338,13 @@ foreach ($test in $tests) {
 # normally closes it, but a hung script could leave one). Keeps the machine clean
 # and prevents a leftover instance from interfering with the post-sweep snapshot.
 Get-Process $appProcName -ErrorAction SilentlyContinue | Stop-Process -Force -ErrorAction SilentlyContinue
+
+# F182: remove the synthetic no-rule rows -- runs whether the sweep passed or
+# failed (the loop above never throws), restoring the seeded tables.
+if ($didSeed) {
+    & $seedScript unseed
+    if ($LASTEXITCODE -ne 0) { Write-Warning "[WW-SEED] Unseed FAILED -- run '.\winwright-seed-no-rule.ps1 unseed' manually." }
+}
 
 # ---------------------------------------------------------------------------
 # Post-sweep DB snapshot + drift check

@@ -43,6 +43,35 @@ android {
         manifestPlaceholders["appAuthRedirectScheme"] = "com.googleusercontent.apps.577022808534-0ejdbmoouklgtucjo3tooovn2pr01ga2"
     }
 
+    // F94 (Sprint 63): dev/prod flavors mirroring the Windows ADR-0035 split.
+    // The applicationId split is the DECLARED ADR-0042 platform exception:
+    // Android side-by-side install requires distinct OS-level identity, which
+    // Windows achieves with mutex + data-dir suffix alone. Pass
+    // --dart-define=APP_ENV in LOCKSTEP with --flavor (build-with-secrets.ps1
+    // -Env does both) so AppEnvironment/AppPaths agree with the installed
+    // package. The launcher label carries the same [DEV] suffix as the
+    // Windows window title.
+    //
+    // GOOGLE SIGN-IN STATUS: the PROD flavor keeps today's registered
+    // package (com.myemailspamfilter) and working sign-in. The DEV flavor's
+    // suffixed package builds against a committed structurally-valid STUB
+    // google-services config (android/ci/google-services.dev-stub.json,
+    // copied to src/dev/ by the build script -- same F158 pattern CI uses);
+    // dev-flavor sign-in activates when Harold's four console registrations
+    // land (Firebase SHA-1 x2 + GCP OAuth client x2, F94 prerequisites).
+    flavorDimensions += "env"
+    productFlavors {
+        create("dev") {
+            dimension = "env"
+            applicationIdSuffix = ".dev"
+            manifestPlaceholders["appLabelSuffix"] = " [DEV]"
+        }
+        create("prod") {
+            dimension = "env"
+            manifestPlaceholders["appLabelSuffix"] = ""
+        }
+    }
+
     buildTypes {
         release {
             // TODO: Add your own signing config for the release build.
@@ -53,10 +82,12 @@ android {
 }
 
 dependencies {
-    // Import the Firebase Bill of Materials for consistent versions
-    implementation(platform("com.google.firebase:firebase-bom:34.7.0"))
-    // Example Firebase SDK (analytics); add others as needed
-    implementation("com.google.firebase:firebase-analytics")
+    // GP-12 (Sprint 63): firebase-bom + firebase-analytics REMOVED per
+    // ADR-0030 ("zero telemetry") / ADR-0033 (Accepted 2026-02-15). Nothing
+    // else consumed the BOM (verified at planning: zero Dart-side Firebase
+    // usage; pubspec has no firebase package). The google-services PLUGIN and
+    // google-services.json stay -- Google Sign-In requires them (ADR-0030
+    // implementation notes; do not remove them with any future cleanup).
 
     // Core library desugaring for Java 8+ compatibility (required by flutter_local_notifications)
     coreLibraryDesugaring("com.android.tools:desugar_jdk_libs:2.0.4")

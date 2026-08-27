@@ -49,6 +49,17 @@
 param(
     [ValidateSet('debug', 'release')]
     [string]$BuildType = 'release',
+
+    # F94 (Sprint 63): dev/prod flavor selection, passed as --flavor AND
+    # --dart-define=APP_ENV in lockstep (mirrors build-windows.ps1
+    # -Environment). DEFAULT 'prod' PRESERVES the pre-F94 daily behavior:
+    # the registered package com.myemailspamfilter with working Google
+    # Sign-In. 'dev' builds the .dev-suffixed package (side-by-side install,
+    # isolated data dir, [DEV] launcher label) against a committed STUB
+    # google-services config -- dev-flavor sign-in activates when the F94
+    # console registrations land; flip this default to 'dev' then.
+    [ValidateSet('dev', 'prod')]
+    [string]$Env = 'prod',
     
     [switch]$InstallToEmulator,
     
@@ -208,6 +219,18 @@ try {
     Write-Host ""
 
     # If -Run flag is set, use flutter run instead of build+install
+    # F94: ensure the dev flavor's google-services stub is in place (the real
+    # per-flavor file is gitignored and does not exist until the console
+    # registrations land; the committed stub lets the dev flavor build).
+    $devGsDir  = Join-Path $mobileAppDir 'android\app\src\dev'
+    $devGsFile = Join-Path $devGsDir 'google-services.json'
+    $devGsStub = Join-Path $mobileAppDir 'android\ci\google-services.dev-stub.json'
+    if (-not (Test-Path $devGsFile) -and (Test-Path $devGsStub)) {
+        New-Item -ItemType Directory -Force $devGsDir | Out-Null
+        Copy-Item $devGsStub $devGsFile
+        Write-Host "[INFO] F94: dev-flavor google-services STUB installed (sign-in on dev flavor pending console registrations)" -ForegroundColor Yellow
+    }
+
     if ($Run) {
         Write-Host "[INFO] Running app with debugger attached (hot reload enabled)..." -ForegroundColor Cyan
         Write-Host "   Press 'r' for hot reload, 'R' for hot restart, 'q' to quit" -ForegroundColor Gray
@@ -243,9 +266,9 @@ try {
         if ($deviceId) {
             Write-Host "[INFO] Running on device: $deviceId" -ForegroundColor Green
             if ($BuildType -eq 'release') {
-                flutter run --release --dart-define-from-file=secrets.dev.json -d $deviceId
+                flutter run --release --flavor $Env --dart-define=APP_ENV=$Env --dart-define-from-file=secrets.dev.json -d $deviceId
             } else {
-                flutter run --debug --dart-define-from-file=secrets.dev.json -d $deviceId
+                flutter run --debug --flavor $Env --dart-define=APP_ENV=$Env --dart-define-from-file=secrets.dev.json -d $deviceId
             }
         } else {
             Write-Host "[ERROR] No emulator available. Start one manually or use -InstallToEmulator instead." -ForegroundColor Red
@@ -332,19 +355,23 @@ try {
         $supportsFromFile = $false
     }
 
+
+    $flavorArgs = @('--flavor', $Env, "--dart-define=APP_ENV=$Env")
+    Write-Host "[INFO] F94: building flavor '$Env' with APP_ENV=$Env" -ForegroundColor Cyan
+
     if ($supportsFromFile) {
         Write-Host "[INFO] Using --dart-define-from-file=secrets.dev.json" -ForegroundColor Cyan
         if ($BuildType -eq 'release') {
-            flutter build apk --release --dart-define-from-file=secrets.dev.json
+            flutter build apk --release @flavorArgs --dart-define-from-file=secrets.dev.json
         } else {
-            flutter build apk --debug --dart-define-from-file=secrets.dev.json
+            flutter build apk --debug @flavorArgs --dart-define-from-file=secrets.dev.json
         }
     } else {
         Write-Host "[INFO] Using explicit --dart-define flags" -ForegroundColor Cyan
         if ($BuildType -eq 'release') {
-            flutter build apk --release $dartDefines
+            flutter build apk --release @flavorArgs $dartDefines
         } else {
-            flutter build apk --debug $dartDefines
+            flutter build apk --debug @flavorArgs $dartDefines
         }
     }
 
@@ -356,11 +383,10 @@ try {
     Write-Host ""
     Write-Host "[INFO] Build successful!" -ForegroundColor Green
     
-    $apkPath = if ($BuildType -eq 'release') {
-        "build\app\outputs\flutter-apk\app-release.apk"
-    } else {
-        "build\app\outputs\flutter-apk\app-debug.apk"
-    }
+    # F94: flavored builds ALWAYS emit app-<flavor>-<buildtype>.apk (no
+    # un-flavored fallback -- with productFlavors defined it could only ever
+    # pick up a stale pre-flavor artifact and install the wrong APK).
+    $apkPath = "build\app\outputs\flutter-apk\app-$Env-$BuildType.apk"
     
     Write-Host "[INFO] APK location: $apkPath" -ForegroundColor Gray
     Write-Host ""
@@ -511,6 +537,10 @@ try {
             Write-Host "[Step 4/6] Skipping uninstall (-SkipUninstall flag - preserving saved accounts)..." -ForegroundColor Cyan
         } elseif ($BuildType -eq 'release') {
             Write-Host "[Step 4/6] Uninstalling previous APKs (release build - clean install)..."
+            # F94: uninstall the CURRENT flavor's package; the two legacy
+            # pre-rename names are kept as harmless cleanup no-ops.
+            $pkg = if ($Env -eq 'dev') { 'com.myemailspamfilter.dev' } else { 'com.myemailspamfilter' }
+            & adb uninstall $pkg | Out-Null
             & adb uninstall com.example.spamfiltermobile | Out-Null
             & adb uninstall com.example.spamfilter_mobile | Out-Null
         } else {
@@ -563,12 +593,17 @@ try {
         # Launch the app automatically
         Write-Host ""
         Write-Host "[Step 6/6] Launching app on emulator..." -ForegroundColor Cyan
-        adb shell am start -n com.example.spamfilter_mobile/.MainActivity 2>&1 | Out-Null
+        # F94 R-5: the pre-rename package here silently no-opped since the
+        # applicationId rename; launch the CURRENT flavor's package.
+        $launchPkg = if ($Env -eq 'dev') { 'com.myemailspamfilter.dev' } else { 'com.myemailspamfilter' }
+        # NOTE: applicationIdSuffix changes the PACKAGE, not the activity
+        # class namespace -- the component is always <pkg>/com.myemailspamfilter.MainActivity.
+        adb shell am start -n "$launchPkg/com.myemailspamfilter.MainActivity" 2>&1 | Out-Null
         if ($LASTEXITCODE -eq 0) {
-            Write-Host "  [OK] App launched successfully" -ForegroundColor Green
+            Write-Host "  [OK] App launched successfully ($launchPkg)" -ForegroundColor Green
         } else {
             Write-Host "  [WARNING] App launch command may not have succeeded" -ForegroundColor Yellow
-            Write-Host "  Launch manually with: adb shell am start -n com.example.spamfilter_mobile/.MainActivity" -ForegroundColor Gray
+            Write-Host "  Launch manually with: adb shell am start -n $launchPkg/com.myemailspamfilter.MainActivity" -ForegroundColor Gray
         }
     } else {
         Write-Host ""

@@ -274,8 +274,13 @@ class EmailScanner {
       // the persistence preview cap (kBodyPreviewMaxLength, SEC-14) --
       // rule evaluation sees the full body first; nothing downstream (6b
       // actions, dedup, persistence, UI) reads more than the preview.
+      // F180 (Sprint 63): deferred-body counters for the scan log -- how
+      // often the header-only pass decided outright vs needed a body fetch.
+      var f180HeaderDecided = 0;
+      var f180BodyFetches = 0;
+
       Future<void> evaluateBatch(List<EmailMessage> batch) async {
-        for (final message in batch) {
+        for (var message in batch) {
           // Sprint 38 F86 mid-scan evaluator rebuild was removed in
           // Sprint 38 Round 1 (post-retro 2026-05-16). Per Harold's clarified
           // requirement, rules should reload AFTER each scan completes and
@@ -290,7 +295,20 @@ class EmailScanner {
             message: 'Evaluating: ${message.subject}',
           );
 
-          final result = await evaluator.evaluate(message);
+          // F180 (Sprint 63): two-stage evaluation. Stage A runs body-free
+          // (batches arrive headers-only); when -- and only when -- the
+          // oracle reports the outcome depends on the body, stage B fetches
+          // THIS message's full body and re-runs the standard evaluation
+          // against the COMPLETE body. At most one full body is in flight,
+          // and a rule set with no body rules/exceptions never fetches any.
+          var result = await evaluator.evaluateWithoutBody(message);
+          if (result == null) {
+            f180BodyFetches++;
+            message = await platform!.fetchFullBody(message);
+            result = await evaluator.evaluate(message);
+          } else {
+            f180HeaderDecided++;
+          }
           EmailActionType action = EmailActionType.none;
 
           if (result.matchedRule.isNotEmpty) {
@@ -488,6 +506,9 @@ class EmailScanner {
       final safeCount = evaluatedEmails.where((e) => e.action == EmailActionType.safeSender).length;
       AppLogger.scan('Step 6a COMPLETE: Evaluated ${evaluatedEmails.length} emails: none=$noneCount, delete=$deleteCount, moveToJunk=$moveCount, safeSender=$safeCount');
       AppLogger.scan('Step 6a: scanProvider counts after eval: processed=${scanProvider.processedCount}, noRule=${scanProvider.noRuleCount}, deleted=${scanProvider.deletedCount}, moved=${scanProvider.movedCount}, safe=${scanProvider.safeSendersCount}');
+      AppLogger.scan('Step 6a (F180): header-only pass decided '
+          '$f180HeaderDecided message(s); $f180BodyFetches deferred body '
+          'fetch(es) performed');
       if (isLiveScan) {
         await LiveScanLogger.log(
           'Step 6a COMPLETE: evaluated=${evaluatedEmails.length} '

@@ -450,7 +450,7 @@ flutter analyze
 
 **CRITICAL**: Always use `build-windows.ps1` for Windows builds and tests (not `flutter build windows` directly):
 
-**CRITICAL -- NEVER run Windows and Android Flutter builds concurrently** (Sprint 62 retro IMP-3): both builds share `mobile-app/build/` and the Android build's clean step deletes the Windows build's generated `.vcxproj` files mid-compile, failing the Windows build in ways that look like toolchain corruption. Serialize them -- finish one before starting the other.
+**CRITICAL -- NEVER run Windows and Android Flutter builds concurrently** (Sprint 62 retro IMP-3): both builds share `mobile-app/build/` and the Android build's clean step deletes the Windows build's generated `.vcxproj` files mid-compile, failing the Windows build in ways that look like toolchain corruption. Serialize them -- finish one before starting the other. **This also bans EDITING build inputs while any build runs** (Sprint 63 retro IMP-6): do not edit gradle files, pubspec.yaml, or build scripts while a Flutter build is in flight -- Sprint 63 edited build.gradle.kts mid-build and broke the running build. Queue build-config edits until the build completes.
 
 ```powershell
 cd mobile-app/scripts

@@ -986,6 +986,8 @@ class _ResultsDisplayScreenState extends State<ResultsDisplayScreen> {
       isReadOnly = historicalMode == 'readOnly' || historicalMode == 'readonly';
       isSafeSendersOnly =
           historicalMode == 'safeSendersOnly' || historicalMode == 'testAll';
+      // F181 DELIBERATE KEEP: 'testLimit' is a legacy persisted value on old
+      // scan records; the option itself is removed.
       isRulesOnly =
           historicalMode == 'rulesOnly' || historicalMode == 'testLimit';
     } else {
