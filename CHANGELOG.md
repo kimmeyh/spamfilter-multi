@@ -26,6 +26,32 @@ Format: `- **type**: Description (Issue #N)` where type is feat|fix|chore|docs
 
 ## [Unreleased]
 
+### 2026-08-27 (Sprint 63, retrospective improvements)
+- **docs**: Sprint 63 retro improvements, all 8 applied same-session: isolated-branch guard-test rule + scratch-probe convention added to TESTING_STRATEGY.md (with gitignored test/scratch/); build-input-edit ban added to the CLAUDE.md serialize-builds rule; Sprint 64 stub created with the GP-16 walkthrough as first task; SEC-9 unblocked note; plus five behavioral memory rules (compound questions, background-launch announcements, python escape hard rule, timestamp footer).
+
+### 2026-08-26 (Sprint 63, review round 2 + Copilot)
+- **test**: F180 -- three isolated guard tests close a mutation-survivable gap found by the second review pass: the clause deferring a header-matched rule that carries a BODY exception (the branch preventing header-only deletion of mail the user explicitly protected) could be deleted with the whole suite staying green, because the shared test rule set's body-only rule always deferred first. Each new test makes its branch the only possible deciding factor; the mutation now fails exactly one test. Implementation was correct throughout -- regression protection only. (Issue #358)
+- **fix**: WinWright runner seeds the synthetic no-rule baselines only when the selected test set actually includes the sweep that consumes them, and the seeding script's sqlite invocation is space-safe (Copilot review). (Issue #360)
+
+### 2026-08-26 (Sprint 63, review round)
+- **fix**: F185 -- Gmail message bodies are now base64url-DECODED before rule evaluation; previously body rules on the Gmail path compared against raw base64 text and could essentially never match (pre-existing since the adapter's origin, surfaced by this sprint's review because deferred body fetch made the path load-bearing; Harold pulled the fix into the sprint). Pinned by decoder and conversion-call-site tests, mutation-verified. (Issue #358)
+- **fix**: Sprint 63 code-review round -- invisible control bytes (from a scripting escape bug) corrupted four paths in the Android build script, masked locally by an untracked file: repaired byte-verified, the dev-flavor path re-proven on an unmasked run; the google-services stub now also installs on the -Run path; a vacuous scan-mode test got a real uncapped assertion; the IMAP on-demand body fetch guards loudly against an unexpected mid-batch mailbox switch; stale testLimit references swept from two docs. (Issues #365, #357, #358)
+
+### 2026-08-25 (Sprint 63)
+- **chore**: GP-12 -- Firebase Analytics dependencies removed from the Android build per the accepted zero-telemetry decision (ADR-0030/0033); the app now has structurally zero telemetry on both platforms. Google Sign-In's google-services plugin and config are unchanged. (Issue #362)
+- **feat**: F94 -- Android dev/prod build flavors, mirroring the Windows dev/prod split: side-by-side installable packages (com.myemailspamfilter and .dev), a [DEV]-suffixed launcher label, per-package isolated data, and APP_ENV passed in lockstep with the flavor by the build script's new -Env parameter (default prod preserves today's behavior). Dev-flavor Google Sign-In awaits the Firebase/GCP console registrations for the .dev package (external prerequisite); it builds against a committed stub meanwhile. Also fixes the build script's launch step, which had silently targeted a pre-rename package name. (Issue #365)
+- **test**: F182 -- the WinWright end-to-end sweep now seeds its own synthetic baseline rows (reserved .invalid domains, one per account) before running and removes them after, ending the thrice-repeated baseline rot from live mail data; plus a flaky redundant teardown probe removed from the rule-labels script after live diagnosis. Sweep verified green twice consecutively with zero database drift. (Issue #360)
+- **docs**: GP-16 -- Google Play developer-account setup guide (docs/GOOGLE_PLAY_ACCOUNT_SETUP.md) for the decided personal-account route, including the 12-testers/14-day closed-test gate's schedule implications and the verified 2026 requirements checklist. (Issue #363)
+- **docs**: GP-5 -- Privacy Policy and Terms of Use drafted (docs/legal/) from ADR-0030's zero-telemetry/local-only decisions, verified against current app behavior (including honest disclosure of locally-stored scan history and the header-first body handling) with the Google API Limited Use statement; publication awaits Harold's approval and URL choice. (Issue #364)
+- **test**: F184 -- in-VM E2E coverage for the three Sprint 62 UI surfaces that shipped without any E2E asset: the F175 background-scan wait dialog (shown / Cancel / Wait-and-start / stale-row negative, DB-seeded through the real startRealScan entry point), the F178 bottom-anchored popup with a simulated system inset (Block Subject reachable at full scroll), and the F176 account email label. One shared platform-neutral suite per ADR-0042; WinWright deliberately not extended (a replayed script cannot arrange an active background scan). (Issue #359)
+- **feat**: F180 -- scans now fetch message HEADERS first and retrieve a full body only for the specific messages whose rule evaluation actually needs one (body rules or body exceptions), one at a time. Most spam is decided from headers alone (the live rule set is ~80% header rules), and a rule set with no body rules never downloads a body at all. Body rules always match against the complete body -- never a truncated stub -- and scan verdicts are pinned identical to the previous single-pass evaluation. This removes the remaining memory peak from holding 20 full messages in flight per batch. (Issue #358)
+- **feat**: F181 -- the "Test Limited Emails" scan-mode option (50-email cap) is removed. The cap was never enforced by the batch execution path, so it promised a safety limit the app did not keep; the mode is now honestly named "Process Rules Only" and executes (revertably) on every matching email. Accounts that stored the legacy mode value continue to work unchanged. (Issue #357)
+
+## [0.12.0] - 2026-08-24
+
+### 2026-08-24 (Sprint 62, Copilot review round)
+- **fix**: F175 -- Scan History rows for scans marked "interrupted" by startup reconciliation now show "Interrupted" as their duration instead of "In progress" (they never get a completion time by design, and the old text recreated exactly the forever-running impression reconciliation exists to end). (Issue #351)
+
 ### 2026-08-23 (Sprint 62)
 - **test**: Sprint 62 retro improvements: WinWright script test_f129_no_rule_review retired (coverage a strict subset of test_mt2c_no_rule_sweep post-F135/F169; absorption documented); Phase 5 evidence gate + sweep-at-HEAD rule added to the close-out hook (2 new test cases, suite 51/51); inset-sensitive widget-test rule added to TESTING_STRATEGY.md; concurrent-platform-build ban recorded in CLAUDE.md.
 - **fix**: F175 -- a background scan that hangs past its 30-minute timeout now also releases the scan-exclusion lock it holds, so the next queued scan starts instead of waiting its full limit and failing (the hung-scan case the serialization feature exists for; found by the Sprint 62 automated code review). The release is owner-matched, so a timeout can never evict a different live scan. (Issue #351)
@@ -1207,7 +1233,8 @@ See git history for detailed changes prior to Phase 3.1.
 
 ## Version Links
 
-[Unreleased]: https://github.com/kimmeyh/spamfilter-multi/compare/v0.11.0...HEAD
+[Unreleased]: https://github.com/kimmeyh/spamfilter-multi/compare/v0.12.0...HEAD
+[0.12.0]: https://github.com/kimmeyh/spamfilter-multi/compare/v0.11.0...v0.12.0
 [0.11.0]: https://github.com/kimmeyh/spamfilter-multi/compare/v0.10.0...v0.11.0
 [0.10.0]: https://github.com/kimmeyh/spamfilter-multi/compare/v0.9.0...v0.10.0
 [0.9.0]: https://github.com/kimmeyh/spamfilter-multi/compare/v0.8.0...v0.9.0

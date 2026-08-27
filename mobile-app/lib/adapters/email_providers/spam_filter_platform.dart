@@ -41,8 +41,23 @@ abstract class SpamFilterPlatform {
     required List<String> folderNames,
   });
 
+  /// F180 (Sprint 63): fetch the FULL body for one already-fetched message.
+  ///
+  /// The scan pipeline fetches HEADERS-ONLY batches and defers body
+  /// retrieval to the moment a specific message actually needs body-rule
+  /// evaluation -- at most one full body is then in flight at a time (the
+  /// remaining lever after F177's m=20 chunking; peak was ~1.0GB with 20
+  /// full MIME bodies per chunk). Body matching is always against the FULL
+  /// body -- truncated matching was rejected by design (Harold, Sprint 63
+  /// planning: body rules must match the entire body, never a stub).
+  ///
+  /// Returns a copy of [message] with its body populated. Providers whose
+  /// fetch path already returns full bodies inherit the mixin default
+  /// (returns the message unchanged).
+  Future<EmailMessage> fetchFullBody(EmailMessage message);
+
   /// Apply compiled rules with platform-native filtering when available
-  /// 
+  ///
   /// Some platforms (Gmail, Outlook) support server-side filtering which
   /// can be more efficient than client-side regex matching.
   /// 
@@ -182,6 +197,13 @@ abstract class SpamFilterPlatform {
 /// to get working batch methods that process messages one at a time.
 /// Adapters with native batch support (IMAP, Gmail) should override these methods.
 mixin BatchOperationsMixin implements SpamFilterPlatform {
+  /// F180 default: providers whose fetch already returns full bodies (mock,
+  /// demo, any adapter not yet converted to headers-first) need no second
+  /// phase -- the message is returned unchanged. Headers-first adapters
+  /// (IMAP, Gmail) override this with a real per-message body fetch.
+  @override
+  Future<EmailMessage> fetchFullBody(EmailMessage message) async => message;
+
   @override
   Future<BatchActionResult> markAsReadBatch(List<EmailMessage> messages) async {
     final succeeded = <String>[];

@@ -44,7 +44,7 @@ void main() {
       provider.initializeScanMode(mode: ScanMode.safeSendersAndRules);
       expect(provider.scanMode, ScanMode.safeSendersAndRules);
 
-      provider.initializeScanMode(mode: ScanMode.rulesOnly, testLimit: 5);
+      provider.initializeScanMode(mode: ScanMode.rulesOnly);
       expect(provider.scanMode, ScanMode.rulesOnly);
 
       provider.initializeScanMode(mode: ScanMode.safeSendersOnly);
@@ -52,11 +52,6 @@ void main() {
 
       provider.initializeScanMode(mode: ScanMode.readOnly);
       expect(provider.scanMode, ScanMode.readOnly);
-    });
-
-    test('Test limit is stored when mode is testLimit', () {
-      provider.initializeScanMode(mode: ScanMode.rulesOnly, testLimit: 10);
-      expect(provider.emailTestLimit, 10);
     });
 
     test('Scan mode persists during scan lifecycle', () async {
@@ -100,15 +95,24 @@ void main() {
 
     test('fullScan mode is the only fully destructive mode', () {
       // fullScan is the only mode that permanently deletes
-      // Other modes either do nothing (readonly) or have limits
+      // Other modes either do nothing (readonly) or are revertable
       provider.initializeScanMode(mode: ScanMode.safeSendersAndRules);
       expect(provider.scanMode, ScanMode.safeSendersAndRules);
     });
 
-    test('testLimit mode respects email limit', () {
-      provider.initializeScanMode(mode: ScanMode.rulesOnly, testLimit: 3);
-      expect(provider.scanMode, ScanMode.rulesOnly);
-      expect(provider.emailTestLimit, 3);
+    test('rulesOnly mode has no email cap (F181: testLimit removed)', () {
+      provider.initializeScanMode(mode: ScanMode.rulesOnly);
+      // Record 5 actions -- with the cap gone, EVERY one must be executed
+      // and revert-tracked (the old 3-of-5 cap shape must stay dead).
+      for (int i = 0; i < 5; i++) {
+        provider.recordResult(EmailActionResult(
+          email: _createTestEmail('spam$i@example.com', 'SPAM $i'),
+          action: EmailActionType.delete,
+          success: true,
+        ));
+      }
+      expect(provider.revertableActionCount, 5,
+          reason: 'F181: no cap -- all recorded actions are revertable');
     });
   });
 

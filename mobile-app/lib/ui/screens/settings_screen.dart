@@ -1725,7 +1725,7 @@ class _SettingsScreenState extends State<SettingsScreen> with SingleTickerProvid
     // Scan mode mapping:
     // - readonly: neither safe senders nor rules
     // - testAll: safe senders only
-    // - testLimit: rules only (repurposed)
+    // - rulesOnly (legacy DB string 'testLimit' -- F181 keep in settings_store)
     // - fullScan: both safe senders and rules
     final bool isReadOnly = value == ScanMode.readOnly;
     final bool processSafeSenders = value == ScanMode.safeSendersOnly || value == ScanMode.safeSendersAndRules;
@@ -1781,7 +1781,7 @@ class _SettingsScreenState extends State<SettingsScreen> with SingleTickerProvid
                     await onChanged(ScanMode.safeSendersOnly); // Safe senders only
                   }
                 } else {
-                  // [FIXED] ISSUE #123+#124: Disable safe senders - use testLimit for rules only
+                  // [FIXED] ISSUE #123+#124: Disable safe senders - rules-only mode
                   if (processRules) {
                     await onChanged(ScanMode.rulesOnly); // Rules only, no safe senders
                   } else {

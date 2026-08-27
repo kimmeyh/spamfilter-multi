@@ -6,7 +6,7 @@
 /// - Scan lifecycle (idle -> scanning -> completed)
 /// - Multi-account folder selection isolation
 /// - Progressive update throttling
-/// - Scan mode behavior (readonly, testLimit, testAll, fullScan)
+/// - Scan mode behavior (readOnly, rulesOnly, safeSendersOnly, safeSendersAndRules)
 library;
 
 /// - Revert capability tracking
@@ -183,24 +183,20 @@ void main() {
       print('[OK] Readonly mode verified - counts show proposed actions, no revertable actions');
     });
 
-    test('TestLimit mode should track revertable actions up to limit', () {
-      const testLimit = 3;
-      provider.initializeScanMode(mode: ScanMode.rulesOnly, testLimit: testLimit);
+    test('rulesOnly mode tracks ALL actions as revertable (F181: no cap)', () {
+      provider.initializeScanMode(mode: ScanMode.rulesOnly);
       provider.startScan(totalEmails: 10);
 
-      // Record 5 delete actions (but only 3 should be revertable)
+      // Record 5 delete actions -- every one executes and is revert-tracked.
       for (int i = 0; i < 5; i++) {
         _recordSimpleResult(provider, EmailActionType.delete, 'spam$i@example.com');
       }
 
-      // All 5 should be counted
       expect(provider.deletedCount, equals(5));
-
-      // But only 3 should be revertable (due to limit)
       expect(provider.hasActionsToRevert, isTrue);
-      expect(provider.revertableActionCount, equals(testLimit));
+      expect(provider.revertableActionCount, equals(5));
 
-      print('[OK] TestLimit mode verified - limit of $testLimit respected');
+      print('[OK] rulesOnly mode verified - uncapped, all 5 revertable (F181)');
     });
 
     test('TestAll mode should track all actions as revertable', () {

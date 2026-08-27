@@ -7,6 +7,193 @@ Do not stop to ask questions unless meeting the criteria in \docs\SPRINT_STOPPIN
 ---------------------------------------------------------------------------------------------------------
 Sprint 6n Scope should include the below items. Please complete sprint planning (/docs/sprint_planning.md) for the below items and present for approval.  Note that everything needs to take into account both the Windows App and the Android app and ADR stating that everything should be functionally and UI the same unless it cannot be - and where it cannot be it should be implemented as a platform exception for what is needed -- this applies to all backend code, frontend code, data, architecture, development, security, testing, deployment.
 
+---------------------------------------------------------------------------------------------------------
+Sprint 63 Scope should include the below items. Please complete sprint planning (/docs/sprint_planning.md) for the below items and present for approval.  Note that everything needs to take into account both the Windows App and the Android app and ADR stating that everything should be functionally and UI the same unless it cannot be - and where it cannot be it should be implemented as a platform exception for what is needed -- this applies to all backend code, frontend code, data, architecture, development, security, testing, deployment.
+
+  - do full sprint card planning for these and include them: E2E coverage for Sprint 62's new UI (F178 popup / F175 wait dialog / F176 label)
+  - F182. Deterministic seeding preamble for the WinWright no-rule sweep script (~2-3h) Priority 30
+  - F181. Remove the "test on a limited number of emails" (50-email testLimit) scan-mode option (~2-3h incl. full impact plan) Priority 18
+  - F164. Android live-scan performance investigation -- debug-vs-release + emulator factors (~1-2h measured comparison) Priority 28
+
+  - F180. Bound message-body size at FETCH and EVALUATION time (~2-3h) Priority 10
+Noting: Can't really do this as there are body rules that apply to the body and they would need to be matched to the entire body contents, not a stub.  Now if there is a way to request body contents only if there is a match or not a match, then that would be possible.  Is there a way to discard body contents if it there is no match.  Noting also that 99% of spam filtering is against header data (real email address with real domain... and subject are in the header)
+
+For the next 4, please do a deep dive during planning to ensure they are up-to-date, accurate, meet the current architecture and overall code base, and are still needed (as the original backlog items were written a couple of months ago):
+  1. GP-16. Google Play Developer Account Setup (~2-4h) Priority 20
+  Everything Play-side blocks on it, and Google's identity verification has multi-day external lead time — starting it first lets it run in the
+  background of all other work. $25 one-time. You drive; I prep.
+
+  2. GP-5. Privacy Policy and Legal Documents (~8-16h) Priority 22
+  "Early" per the recorded sequencing and the second-longest lead: it feeds the Data Safety form (GP-10) and the listing, ADR-0030 (Accepted)
+  already governs the content, and GitHub Pages hosting is free.
+
+  3. GP-12. Firebase Analytics removal (~1-2h) Priority 24
+  Executes the already-decided ADR-0030 removal (dead native dependencies, zero Dart callers) and reconciles ADR-0033. Cheap, and doing it
+  before signing/obfuscation work means those validate against the final dependency set — it also makes the Data Safety declarations honest by
+  construction.
+
+  4. F94. Android dev/prod/store flavors (~6-8h) Priority 26
+  The build-infrastructure foundation for everything after it. Sprint 59 cleared the base-package blocker; needs your four Firebase/GCP console
+  registrations for .dev/.prod.
+
+
+ Backlog updated as directed: every Android item and all GP-n items are off HOLD and re-prioritized in the master plan per the recorded GP
+  sequencing. While doing it I recorded four truth-corrections: F4 (Android background scanning) marked SUPERSEDED — it was delivered as F161
+  in Sprint 61; Issue #163 (Android untested) marked RESOLVED — Android has been validated on-device every sprint since 59; SEC-6 merged into
+  GP-2 and SEC-7 merged into GP-9 (the twice-recommended duplicate merges); and F94's note now records that Sprint 59 cleared its base-package
+  Firebase blocker (the .dev/.prod console registrations remain outstanding, your side).
+
+  The next 10 I recommend, in order (excluding sprint-bound F180, F181, F164, F182)
+
+  1. GP-16. Google Play Developer Account Setup (~2-4h) Priority 20
+  Everything Play-side blocks on it, and Google's identity verification has multi-day external lead time — starting it first lets it run in the
+  background of all other work. $25 one-time. You drive; I prep.
+
+  2. GP-5. Privacy Policy and Legal Documents (~8-16h) Priority 22
+  "Early" per the recorded sequencing and the second-longest lead: it feeds the Data Safety form (GP-10) and the listing, ADR-0030 (Accepted)
+  already governs the content, and GitHub Pages hosting is free.
+
+  3. GP-12. Firebase Analytics removal (~1-2h) Priority 24
+  Executes the already-decided ADR-0030 removal (dead native dependencies, zero Dart callers) and reconciles ADR-0033. Cheap, and doing it
+  before signing/obfuscation work means those validate against the final dependency set — it also makes the Data Safety declarations honest by
+  construction.
+
+  4. F94. Android dev/prod/store flavors (~6-8h) Priority 26
+  The build-infrastructure foundation for everything after it. Sprint 59 cleared the base-package blocker; needs your four Firebase/GCP console
+  registrations for .dev/.prod.
+
+  5. SEC-9. Android client ID to build-time injection (~1h) Priority 28
+  Its own entry says to sequence with/after F94 — per-flavor client IDs make the hardcode untenable anyway.
+
+  6. GP-2 (+SEC-6). Release signing + Play App Signing (~4-6h) Priority 30
+  Keystore, build.gradle.kts signing config, Play App Signing enrollment; decides ADR-0027. Needs GP-16 done.
+
+  7. GP-9 (+SEC-7). R8 + Dart obfuscation (~2-4h) Priority 32
+  First real release-build hardening; needs on-device validation because obfuscation can break plugin reflection — which is also why it comes
+  after flavors and signing exist.
+
+  8. GP-8. Target SDK + 16 KB page-size verify (~1-2h) Priority 34
+  Re-scoped down in Sprint 54: the toolchain already targets API 36; what remains is APK inspection of native libs plus a live Play-policy
+  currency check.
+
+  9. GP-3. Manifest permissions verify (~1-2h) Priority 36
+  Re-scoped to a merged-manifest verification. Fresh input: F161 shipped background scanning on WorkManager periodic tasks with no foreground
+  service, so the once-feared FOREGROUND_SERVICE additions are probably unnecessary — verify against the shipped design.
+
+  10. SEC-4. network_security_config.xml (~1h) Priority 38
+  One hour of cleartext-blocking/domain-pinning hardening that belongs in the first store-bound build rather than a follow-up.
+
+  Just outside the 10: GP-10 Data Safety (P40, needs GP-5) → GP-6 Listing (P42) → GP-7 Icons (P44) → F165 cross-device rules exploration (P46 —
+  it complements the phone-first direction, so worth slotting once the Play chain is moving) → GP-4 CASA (P60, deliberately last per its
+  recorded revenue/user trigger).
+  Candidates at a glance
+
+  - F180. Bound message-body size at FETCH and EVALUATION time (~2-3h) Priority 10
+  - F181. Remove the "test on a limited number of emails" (50-email testLimit) scan-mode option (~2-3h incl. full impact plan) Priority 18
+  - F164. Android live-scan performance investigation -- debug-vs-release + emulator factors (~1-2h measured comparison) Priority 28
+  - F165. Cross-device rules-DB sharing -- user cloud storage exploration + hosted-tier option (~half-day exploration) Priority 30
+  - F182. Deterministic seeding preamble for the WinWright no-rule sweep script (~2-3h) Priority 30
+  - HOLD items follow, one line each:
+  - F173. Periodic "Test Coverage and Appropriate Testing" Deep Dive (~4-8h per review) Priority HOLD
+  - F183. Upstream civyk-winwright request: script-runner replay support for ww_wait (~15m to file, then external) Priority HOLD
+  - F179. Subject-blocking phrase picker -- user selects (or GenAI recommends) the blocking SUBSET of a subject (~3-5h) Priority HOLD
+  - F152. Periodic User-Centric First-Run Evaluation (~2-3h per review, plus fix-item time) Priority HOLD
+  - F111. Periodic Windows App Store upload readiness verification (~110-175m per review) Priority HOLD
+  - F139. Local-install smoke test for a release-candidate MSIX (~30-50m per review) Priority HOLD
+  - F70. Periodic Security Deep Dive (~4-8h per review) Priority HOLD
+  - F130. Periodic Process-Docs Consistency Deep Dive ([no-history] -- unbounded discovery) Priority HOLD
+  - F71. Periodic Architecture Deep Dive (~4-8h per review) Priority HOLD
+  - F94. Android dev/prod/store flavors (~6-8h) Priority HOLD
+  - F95. iOS variants + cross-store hardening (~10-16h) Priority HOLD
+  - F63. Responsive design framework [SUPERSEDED by F141 per-screen findings] Priority HOLD
+  - SEC-15. IMAP host validation for custom servers (~1h) Priority HOLD
+  - SEC-8b. Certificate pinning for IMAP endpoints (~4-6h) Priority HOLD
+  - F6. Provider-Specific Optimizations (~10-12h) Priority HOLD
+  - SEC-4. Android: Create network_security_config.xml (~1h) Priority HOLD
+  - SEC-6. Android: Configure release signing (~2h) Priority HOLD
+  - SEC-7. Android: Enable R8 obfuscation + Dart obfuscation (~2h) Priority HOLD
+  - SEC-9. Move hardcoded Android client ID to build-time injection (~1h) Priority HOLD
+  - F4. Background Scanning - Android (~14-16h) Priority HOLD
+  - GP-2. Release Signing and Play App Signing (~4-6h) Priority HOLD
+  - GP-3. Android Manifest Permissions (re-scoped ~1-2h remaining) Priority HOLD
+  - GP-4. Gmail API OAuth Verification / CASA (~40-80h) Priority HOLD
+  - GP-5. Privacy Policy and Legal Documents (~8-16h) Priority HOLD
+  - GP-6. Play Store Listing and Assets (~8-12h) Priority HOLD
+  - GP-7. Adaptive Icons and App Branding (~4-6h) Priority HOLD
+  - GP-8. Android Target SDK + 16 KB Page Size (re-scoped ~1-2h verify) Priority HOLD
+  - GP-9. ProGuard/R8 Code Optimization (~4-6h) Priority HOLD
+  - GP-10. Data Safety Form Declarations (~2-4h) Priority HOLD
+  - GP-12. Firebase Analytics -- execute the existing ADR-0030 removal decision (~1-2h) Priority HOLD
+  - GP-16. Google Play Developer Account Setup (~2-4h) Priority HOLD
+  - F67. Platform validation - iOS, Linux, macOS (~4-6h per platform) Priority HOLD
+  - SEC-11b. Database-at-rest encryption via sqlite3mc + migration (~8-12h) Priority HOLD
+  - F106. SEC-11b verification-window cleanup (~30m) Priority HOLD
+  - H1. GenAI Pattern Suggestions - Crowdsourced Spam Intelligence (TBD) Priority HOLD
+  - H2. Rule Pattern Consistency - Domain Matching Standards (~4-6h) Priority HOLD
+  - H3. Requirements Documentation System (TBD) Priority HOLD
+  - H4. Sent Messages Scan for Safe Senders (~12-16h) Priority HOLD
+  - H5. Outlook.com / Office 365 email provider adapter (~16-20h) Priority HOLD
+
+  Core App Quality
+
+  F180. Bound message-body size at FETCH and EVALUATION time (~2-3h) Priority 10
+  - Phase: Core App Quality / scanner
+  - Platform: All (shared adapter + evaluator input)
+  - Evidence (2026-08-22 live F177 validation): m=20 batching PASSED its survival test, but peak PSS still reached ~1.0GB; the remaining
+    allocation source is FULL message bodies -- BODY.PEEK[] pulls multi-MB MIME per message and rule evaluation runs the whole regex set over
+    the full decoded body
+  - Fix shape (pre-recorded at F177 registration): fetch headers + a bounded text portion, and/or cap the body handed to the evaluator (e.g.
+    first 256KB); the outcome-equivalence test must define what a body-rule match against a truncated body means -- documented as a matching
+    contract, never silently
+
+  F181. Remove the "test on a limited number of emails" (50-email testLimit) scan-mode option (~2-3h incl. full impact plan) Priority 18
+  - Phase: Core App Quality / scan modes
+  - Platform: All (account_setup_screen scan-mode dialog + ScanMode/provider plumbing)
+  - Your decision (2026-08-22): "the 50 email limit can be removed for first-time users as it is no longer appropriate... fully planned and
+    executed with precision"
+  - The limit appears UNENFORCED at the platform layer since the Issue #144 batch architecture -- a setting that promises a safety cap and does
+    not deliver one; removal supersedes fixing enforcement
+  - Precision requirements: enumerate EVERY touchpoint before executing (dialog UI + copy, ScanMode semantics, initializeScanMode(testLimit:)
+    plumbing, persisted per-account values + migration, Help mentions, tests); F144 dead-code-removal discipline
+
+  Android Rollout Track
+
+  F164. Android live-scan performance investigation -- debug-vs-release + emulator factors (~1-2h measured comparison) Priority 28
+  - Phase: Android rollout track / performance
+  - Platform: Android
+  - Your Sprint 60 observation: Live Scan noticeably slower on the Android emulator than Windows against the same mailbox; analysis says no
+    architectural reason -- debug-JIT APK, emulator overhead, and the (since-fixed) missing WAL are the expected explanations
+  - Scope: measure a --release APK against the same mailbox; per-phase timings; file fixes only if a genuine gap survives
+  - Refinement note (2026-08-24): the baseline changed -- F177 rebuilt fetch/evaluate into bounded batches; measure on post-F177 code (Sprint
+    62's 181-email / 6m17s debug-APK run is the fresh anchor)
+
+  Product Direction
+
+  F165. Cross-device rules-DB sharing -- user cloud storage exploration + hosted-tier option (~half-day exploration) Priority 30
+  - Phase: Product direction / architecture exploration
+  - Platform: All
+  - Your direction (2026-08-16): long-term the recommended deployment is a phone doing periodic background scans, making per-device rules
+    divergence a real problem; explore sync via the user's own cloud storage (iCloud/OneDrive/Box/Google Drive) plus a hosted-sync paid-tier
+    option (~$4/year; pricing stays with you)
+  - Deliverables: sync-model options (snapshot vs true sync; conflict handling), per-provider effort, security posture, recommendation; builds
+    on the YAML export invariants
+
+  Testing / E2E Tooling
+
+  F182. Deterministic seeding preamble for the WinWright no-rule sweep script (~2-3h) Priority 30
+  - Phase: Testing / E2E tooling
+  - Platform: Windows Desktop
+  - mt2c's baselines are your live scanned senders and have rotted three times (Sprints 59/60/62); a seed/unseed preamble around the run with a
+    reserved synthetic domain makes them constant forever
+  - Must preserve the DB-snapshot drift guard's net-zero contract
+
+  HOLD Items (gated, periodic templates, or future tracks)
+
+  (One-liners above; full details unchanged in ALL_SPRINTS_MASTER_PLAN.md. Nearest-to-activation: F183 needs only the ~15m upstream filing;
+  F179 waits on the GenAI track (H1); the GP-* set waits on the Google Play prioritization call.)
+
+  Plan-level carry-in (not a backlog item): E2E coverage for Sprint 62's new UI (F178 popup / F175 wait dialog / F176 label) is recorded in the
+  SPRINT_63_PLAN.md stub for Phase 3, per the retro.
 
 ---------------------------------------------------------------------------------------------------------
 Sprint 62 Scope should include the below items. Please complete sprint planning (/docs/sprint_planning.md) for the below items and present for approval.  Note that everything needs to take into account both the Windows App and the Android app and ADR stating that everything should be functionally and UI the same unless it cannot be - and where it cannot be it should be implemented as a platform exception for what is needed -- this applies to all backend code, frontend code, data, architecture, development, security, testing, deployment.

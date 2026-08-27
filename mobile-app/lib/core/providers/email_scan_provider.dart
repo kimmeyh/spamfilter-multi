@@ -140,8 +140,10 @@ class EmailScanProvider extends ChangeNotifier {
   int _safeSenderDedupCount = 0;
 
   // [NEW] PHASE 2 SPRINT 3: Read-only mode & revert capability
+  // F181 (Sprint 63): the 50-email testLimit option was removed -- the cap
+  // was never enforced by the Issue #144 batch execution path, so it was a
+  // safety promise the app did not keep.
   ScanMode _scanMode = ScanMode.readOnly;  // Default: read-only
-  int? _emailTestLimit;  // How many emails to actually modify (for testLimit mode)
   final List<String> _lastRunActionIds = [];  // Track email IDs of actions for revert
   final List<EmailActionResult> _lastRunActions = [];  // Track actual actions for revert
 
@@ -195,7 +197,6 @@ class EmailScanProvider extends ChangeNotifier {
 
   // [NEW] PHASE 3.1: Scan mode getters
   ScanMode get scanMode => _scanMode;
-  int? get emailTestLimit => _emailTestLimit;
   bool get hasActionsToRevert => _lastRunActionIds.isNotEmpty;
   int get revertableActionCount => _lastRunActionIds.length;
   
@@ -215,7 +216,6 @@ class EmailScanProvider extends ChangeNotifier {
       case ScanMode.readOnly:
         return 'Read-Only';
       case ScanMode.rulesOnly:
-        // [UPDATED] ISSUE #123+#124: Repurposed testLimit for "rules only" mode
         return 'Process Rules Only';
       case ScanMode.safeSendersOnly:
         return 'Process Safe Senders Only';
@@ -292,7 +292,7 @@ class EmailScanProvider extends ChangeNotifier {
         final scanResult = ScanResult(
           accountId: _currentAccountId!,
           scanType: scanType,
-          scanMode: _scanMode.toString().split('.').last,  // 'readonly', 'testLimit', etc.
+          scanMode: _scanMode.toString().split('.').last,  // 'readOnly', 'rulesOnly', etc. (legacy rows may hold 'testLimit' -- F181 keep in settings_store parse)
           startedAt: DateTime.now().millisecondsSinceEpoch,
           totalEmails: totalEmails,
           foldersScanned: foldersScanned.isNotEmpty ? foldersScanned : ['INBOX'],
@@ -663,16 +663,13 @@ class EmailScanProvider extends ChangeNotifier {
   /// - safeSendersAndRules: execute both safe sender and spam rule actions
   void initializeScanMode({
     ScanMode mode = ScanMode.readOnly,
-    int? testLimit,
   }) {
     _scanMode = mode;
-    _emailTestLimit = testLimit;
     _lastRunActionIds.clear();
     _lastRunActions.clear();
-    
+
     String modeStr = mode.toString().split('.').last;
-    String limitStr = (testLimit != null) ? ' (limit: $testLimit)' : '';
-    _logger.i('Initialized scan mode: $modeStr$limitStr');
+    _logger.i('Initialized scan mode: $modeStr');
     notifyListeners();
   }
 
@@ -731,13 +728,14 @@ class EmailScanProvider extends ChangeNotifier {
       // In readonly mode, actions are never executed
       shouldExecuteAction = false;
     } else {
-      // In test modes, respect the optional email test limit
-      shouldExecuteAction = _emailTestLimit == null ||
-          _lastRunActionIds.length < _emailTestLimit!;
+      // F181 (Sprint 63): test modes always execute/track -- the old optional
+      // 50-email cap here only gated REVERT-TRACKING while the Issue #144
+      // batch path executed actions uncapped, so it was removed outright.
+      shouldExecuteAction = true;
     }
 
     if (shouldExecuteAction) {
-      // Track action for potential revert (only for testLimit and testAll, NOT fullScan)
+      // Track action for potential revert (only for the revertable test modes, NOT fullScan)
       if (_scanMode == ScanMode.rulesOnly || _scanMode == ScanMode.safeSendersOnly) {
         _lastRunActionIds.add(result.email.id);
         _lastRunActions.add(result);
@@ -746,12 +744,9 @@ class EmailScanProvider extends ChangeNotifier {
         _logger.i('[WARNING] Action executed (PERMANENT): ${result.action} - ${result.email.from}');
       }
     } else {
-      // Read-only or limit reached: log what would happen
-      if (_scanMode == ScanMode.readOnly) {
-        _logger.i('[CHECKLIST] [READONLY] Would ${result.action} email: ${result.email.from}');
-      } else {
-        _logger.i('[CHECKLIST] [LIMIT REACHED] Would ${result.action} email: ${result.email.from}');
-      }
+      // Read-only: log what would happen (F181: the limit-reached branch is
+      // gone with the testLimit cap; readOnly is the only non-executing mode).
+      _logger.i('[CHECKLIST] [READONLY] Would ${result.action} email: ${result.email.from}');
     }
 
     // Always record the result for UI/history

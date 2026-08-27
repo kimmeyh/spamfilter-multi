@@ -717,6 +717,7 @@ class _ScanHistoryScreenState extends State<ScanHistoryScreen> {
       // Legacy names (backwards compatibility with existing scan records)
       case 'readonly':
         return 'Read-Only';
+      // F181 DELIBERATE KEEP: legacy persisted value on old scan records.
       case 'testLimit':
         return 'Process Rules Only';
       case 'testAll':

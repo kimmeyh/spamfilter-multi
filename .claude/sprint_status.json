@@ -1,62 +1,68 @@
 {
   "_description": "Sprint status file that persists across context compaction. Update after each phase/sub-phase completion.",
-  "_last_updated": "2026-08-23 (Phase 7.7 close-out)",
+  "_last_updated": "2026-08-27 (Sprint 63 Phase 7.7 close-out complete; PR #366 Ready-for-Review pending; awaiting Harold merge, then Phase 8 cycle)",
   "_usage": "Read this file after context compaction to restore sprint approval state and progress.",
   "_staleness_note": "This file had drifted 15 sprints (last updated at Sprint 35, 2026-04-19) before being refreshed at Sprint 50 close-out. It is a Phase 7.7 checklist item -- update it at every sprint close-out, not opportunistically.",
   "current_sprint": {
+    "number": 63,
+    "branch": "feature/20260824_Sprint_63",
+    "pr_number": 366,
+    "start_date": "2026-08-24",
+    "status": "Sprint 63 Phase 7.7 CLOSE-OUT COMPLETE (2026-08-27). MV complete 2026-08-26 (all 7 verdicts in SPRINT_63_PLAN.md). Review rounds resolved: Copilot 3/3 (2 fixed fa19623, 1 F110 policy keep, threads resolved); Claude round 2 HIGH (unguarded exc.body deferral clause) closed with 3 isolated guard tests f9a7448, mutation-verified red. Retro complete per 7-Step Protocol: Harold Testing 'Needs improvement as noted by dev team', Process 'Good - see issues noted by dev team', rest Good/Very Good, Cats 13/14 none; ALL 8 improvement decisions 'all now' APPLIED 2026-08-27 (TESTING_STRATEGY isolated-branch + scratch-probe rules, test/scratch/ gitignored, CLAUDE.md build-input-edit ban, 5 memory rules incl. Harold's timestamp footer, SPRINT_64_PLAN.md stub, SEC-9 unblocked note). Docs triad complete (PLAN/RETROSPECTIVE/SUMMARY) + master plan rolled (Last Completed Sprint = 63, Past Sprint table row, DONE stubs). Windows build verified (7.1). REMAINING: gh pr ready 366 + 7.7.5 announcement, Harold merges, then Phase 6.6 branch-from-current + Phase 8 cycle (8.1 main merge Harold, 8.2 pass-1 sweep incl. DONE-stub pruning, 8.3 Store release 0.13.0 bump, 8.4 scope selection).",
+    "plan_approved": true,
+    "blanket_execution_approved": true,
+    "scope": [
+      "F181",
+      "F180",
+      "F184",
+      "F182",
+      "F164",
+      "GP-12",
+      "GP-16",
+      "GP-5",
+      "F94"
+    ],
+    "_scope_note": "Scope selection happens at Phase 8.4. Candidates flagged at Sprint 62 close: F180 (P10, fresh evidence), F181 (P18), F182 (P30); carry-ins in SPRINT_63_PLAN.md stub.",
+    "pr_url": "https://github.com/kimmeyh/spamfilter-multi/pull/366",
+    "plan_approval_date": "2026-08-25"
+  },
+  "previous_sprint": {
     "number": 62,
     "branch": "feature/20260821_Sprint_62",
     "pr_number": 355,
-    "start_date": "2026-08-21",
-    "status": "Phase 7.7 COMPLETE -- MV complete 2026-08-22 (all items disposed; R-7 DECLINED by Harold as deliberate design; F179/F180/F181 registered). Phase 5 evidence pass 2026-08-23: code review 2C/3H/4M all dispositioned (C-2 real -- hung-scan lease release fixed, mutation-verified), F-PRECHECK clean on PR, WinWright sweep repaired from Sprint 61 F169 rot and green (f129 retired into mt2c per retro IMP-5). Retrospective complete (Harold: Testing needs-improvement, Process good-see-dev-notes, rest Good/Very Good; Cats 13/14 none); ALL 7 improvement decisions executed as recommended: IMP-1 Phase 5 evidence hook gate (3d) + IMP-2 sweep-at-HEAD (3e) enforced Sprint 63+, IMP-3 serialized-builds rule+memory, IMP-4 inset-test rule, IMP-5 f129 retirement; IMP-6 -> F182, IMP-7 -> F183. PR #355 Ready-for-Review at end of 7.7; awaiting Harold's merge to develop, then Phase 8 cycle.",
-    "plan_approved": true,
-    "plan_approval_date": "2026-08-22",
-    "blanket_execution_approved": true,
-    "scope": [
-      "F177",
-      "F175",
-      "F178",
-      "F176",
-      "F174",
-      "F163"
-    ],
-    "_scope_note": "Scope selection happens at Phase 8.4. Candidates flagged at Sprint 61 close: F168 follow-on/F175/F177 (fresh evidence), F178 (small, screenshot-documented), F163. Category 13 carry-ins in SPRINT_62_PLAN.md stub.",
-    "pr_url": "https://github.com/kimmeyh/spamfilter-multi/pull/355"
-  },
-  "previous_sprint": {
-    "number": 61,
-    "branch": "feature/20260816_Sprint_61",
-    "pr_number": 347,
-    "status": "CLOSED -- PR #347 merged to develop 2026-08-21 (merge 0ad1107), develop merged to main by Harold (PR #348, 64e6ed7). Cards #338-#346 all closed; zero open issues verified. Shipped: Task 0 line endings, F170 Phase 8 encoding, F169 dropdown, F168 scope warning, F172 version label, F171 min-window sweep, F162/ADR-0042, F167 Help wording, F161 Android scheduler (count-parity PASS; Play prerequisite MET). Retro complete, all 4 IMPs applied; Copilot review 2/2 addressed+resolved. Final suite 1,893/26/0; hooks 49/49."
+    "status": "CLOSED -- PR #355 merged to develop 2026-08-24 12:07Z, develop merged to main by Harold same day. Cards #349-#354 all closed; zero open sprint issues verified. Shipped: F177 chunked fetch (survival PASS), F175 scan serialization + wait notice + reconciliation (R-7 DECLINED by design), F174 folder-error surfacing, F178 bottom-anchored popup, F176 account labels, F163 skips 26->15, CI draft gating + Workmanager Linux fix. Retro complete, 7/7 improvement decisions executed (5 applied, F182/F183 registered). Copilot review 3/3 fixed+resolved (cc255b7). CI 3/3 green twice. Final suite 1,931+/15/0; hooks 51/51; sweep 2/2 at sweep-head d87b828."
   },
   "github_issues": [
-    349,
-    350,
-    351,
-    352,
-    353,
-    354
+    357,
+    358,
+    359,
+    360,
+    361,
+    362,
+    363,
+    364,
+    365
   ],
-  "_github_issues_note": "Sprint 62 cards created at Phase 3.3.1 (2026-08-22): #349 F177, #350 F174, #351 F175, #352 F178, #353 F176, #354 F163. KEEP numbers listed after closure; array empties only at the NEXT sprint rollover.",
+  "_github_issues_note": "Sprint 63 cards created at Phase 3.3.1 (2026-08-25): #357 F181, #358 F180, #359 F184, #360 F182, #361 F164, #362 GP-12, #363 GP-16, #364 GP-5, #365 F94.",
   "test_metrics": {
-    "tests_passing": 1931,
+    "tests_passing": 1955,
     "tests_skipped": 15,
     "tests_failing": 0,
     "analyzer_warnings": 0,
-    "_test_metrics_note": "1,931 passed / 15 skipped / 0 failed at Sprint 62 dev-complete (2026-08-22). F163 dropped skips 26->15 (all approved keeps). Run with --concurrency=4.",
+    "_test_metrics_note": "1,955 passed / 15 skipped / 0 failed after review round 2 (2026-08-26; +3 F180 isolated guard tests). +24 vs Sprint 62. Run with --concurrency=4.",
     "hook_test_cases": "51/51 passing -- +2 Sprint 62 IMP-1 cases (violation-5 phase5-evidence-missing, allow-7 evidence-present).",
     "winwright_sweep": "Sprint 62 sweep 2026-08-23 (lib/ui touched): first run 0/3 -- Sprint 61 F169 (chips->dropdown) had rotted every chip selector (shipped without a sweep); scripts repaired live (dropdown face=Text node, physical mouse clicks only, settle buffers -- runner still replays no ww_wait), mt2c baselines refreshed (@hiram.edu, @alphaxiv.org). Green 3/3 pre-retirement; f129 RETIRED (strict subset of mt2c, retro IMP-5); final post-retirement sweep at HEAD recorded with sweep-head in SPRINT_62_PLAN.md. DB drift none on every run.",
     "coverage_percent": null,
     "_note": "Run full suites with --concurrency=4 (Sprint 49 IMP-5)."
   },
   "store_release": {
-    "status": "0.11.0.0 / Submission 18 CERTIFIED AND LIVE 2026-08-22 ~10:41 -- direct Partner Center observation (authenticated Playwright, 5-min polling): \"Congrats! Your product is now updated.\" Uploaded ~10:10; ~25-30 min submit-to-live, confirming the ~26-min figure. Fifth MINOR release. Installed-build check pending Harold. NEXT RELEASE: dev EQUALS live at 0.11.0 -- bump at that release Step 1.",
-    "live_version": "0.11.0.0",
-    "submission": 18,
-    "certified_date": "2026-08-22",
+    "status": "0.12.0.0 / Submission 19 CERTIFIED AND LIVE 2026-08-24 ~9:12am ET -- direct Partner Center observation (authenticated Playwright): \"Congrats! Your product is now updated\"; Store presence \"currently available\". Uploaded ~8:5x; ~20-25 min submit-to-live (third consecutive 20-30 min measurement). Sixth MINOR release. Installed-build check pending Harold. NEXT RELEASE: dev EQUALS live at 0.12.0 -- bump at that release Step 1.",
+    "live_version": "0.12.0.0",
+    "submission": 19,
+    "certified_date": "2026-08-24",
     "pending_upload_version": null,
     "submission_pending": null,
-    "submitted_date": "2026-08-22"
+    "submitted_date": "2026-08-24"
   },
   "environment_notes": [
     "RESOLVED 2026-07-29 (verified 07-30): the Store fault was an Acronis file-system filter blocking AppXSvc cleanup, fixed by an Acronis Protection exclusion. 23h uptime with ZERO Id-493 events vs a 176-file/6-min baseline; Store client self-updated 22606.1401.6.0 -> .10.0 (requires a working deployment pipeline). Filter drivers remain loaded -- backup protection was NOT disabled. See ALL_SPRINTS_MASTER_PLAN ENV-1 for the picker gotcha if it recurs.",
@@ -65,11 +71,8 @@
   ],
   "blocking_issues": [],
   "next_actions": [
-    "Harold: final approval + merge PR #355 to develop, then develop -> main",
-    "ON MERGE (6.6): branch feature/<date>_Sprint_63 FROM feature/20260821_Sprint_62 immediately, before any further commits",
-    "Post-merge cleanup: close issues #349-#354 (gh issue list --label sprint --state open must return empty)",
-    "Phase 8.1-8.5 Release Cycle: refinement pass 1, Store release per STORE_RELEASE_PROCESS.md (dev EQUALS live at 0.11.0 -- bump at release Step 1), refinement pass 2 scope selection, Phase 3 planning",
-    "Watch CI's first live run on PR #355 ready-flip (proof of the Workmanager Linux fix + draft gating)",
-    "Sprint 63 carry-ins (Cat 13): E2E coverage for F178 popup / F175 wait dialog / F176 label"
+    "gh pr ready 366 + 7.7.5 readiness announcement to Harold (final approval + merge are his)",
+    "ON MERGE: Phase 6.6 -- branch feature/<date>_Sprint_64 FROM feature/20260824_Sprint_63 immediately; close cards #357-#365 (no auto-close on develop merges)",
+    "Phase 8 cycle: 8.1 Harold merges develop->main (does not block 8.2); 8.2 pass-1 completeness sweep (prune Sprint 63 DONE stubs); 8.3 Store release per STORE_RELEASE_PROCESS.md (dev equals live at 0.12.0 -- bump at Step 1); 8.4 scope selection (Sprint 64 first task fixed: GP-16 guided walkthrough incl. GP-5 hosting/URL + publication)"
   ]
 }

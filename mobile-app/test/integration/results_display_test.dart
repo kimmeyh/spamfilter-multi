@@ -219,7 +219,7 @@ void main() {
       };
 
       for (var entry in modeDisplayNames.entries) {
-        provider.initializeScanMode(mode: entry.key, testLimit: 10);
+        provider.initializeScanMode(mode: entry.key);
         expect(provider.getScanModeDisplayName(), equals(entry.value),
           reason: '${entry.key.name} should display as "${entry.value}"');
       }
