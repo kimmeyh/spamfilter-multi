@@ -354,6 +354,15 @@ All incomplete items in relative priority order. Priority in increments of 10; i
 - Fix shape: base64url-decode `payload.body.data` (and part data) with charset handling; add an outcome test with a known body-rule match through the Gmail conversion path. Live impact check: 732 body rules exist in the live set -- confirm with Harold whether Gmail body matches were ever observed (they should not have been).
 - Source: Sprint 63 Phase 5 automated code review, 2026-08-26.
 
+**F187. Remove the personal URL-shape body rules (domain.tld link-block rules) (~1-2h) Priority 24 (NEW, Sprint 63 MV -- Harold)**
+- Phase: Core App Quality / rules data cleanup
+- Platform: All (Harold's personal rule DBs: dev AND prod installs)
+- Harold's ask (2026-08-26): "remove all my personal body rules that roughly match a url (domain.top-level domain)".
+- Measured at registration (dev DB, read-only, 2026-08-26): 732 body rules total, of which **647 match the URL shape** `(?:://|[/.])domain\.tld` (the F33-era link-domain blocks); the remaining 85 are phrase/phone/address body patterns and are NOT in scope -- they stay.
+- Discipline: F33/F144 cleanup pattern -- enumerate the exact removal set by pattern shape (not by name prefix; only 306 carry the `body_.` name), present the count + samples for confirmation, timestamped backup before deletion, YAML export invariants preserved, applied to BOTH dev and prod databases (a migration or a guarded one-time cleanup script), post-delete count verification with an untruncated grep/query.
+- Interaction note: F180 makes these rules the main body-fetch trigger on Harold's real rule set -- removing 647 of 732 body rules will ALSO cut most deferred body fetches on real scans (faster + lighter), while F186 (body-rule authoring) covers future intentional body rules.
+- Source: Harold, Sprint 63 Manual Validation, 2026-08-26.
+
 **F186. Add/update BODY rules through the UI, including via Manage Rules (~2-4h) Priority 22 (NEW, Sprint 63 MV -- Harold)**
 - Phase: Core App Quality / rules UX
 - Platform: All (shared rule screens)
