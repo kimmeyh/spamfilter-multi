@@ -481,7 +481,15 @@ one-line reason comment (no cargo-cult rules).
 **Model**: Sonnet -- *why not the cheaper tier*: plugin-reflection breakage diagnosis across
 the dependency set is investigative; a Haiku rule-file copy risks cargo-cult keep rules.
 
-**Executed-by** (filled at completion):
+**Executed-by** (filled at completion): Sonnet (background agent). CODE COMPLETE 2026-08-28
+-- per-plugin audit (15 native packages, consumer-rules checked in each package cache)
+produced exactly ONE keep rule (workmanager: WorkManager instantiates BackgroundWorker by
+name via reflection; silent background-scan failure class), all exclusions reasoned in the
+file header. Verified by a REAL minified signed release build (throwaway scratchpad
+keystore, deleted after): 67.4MB vs same-commit unminified 77.3MB (-12.8%), mapping.txt
+present, missing_rules EMPTY. Dart --obfuscate/--split-debug-info wired, symbols outside
+repo. AC-2 on-device surface validation deferred to chain validation as planned. Suite
+1,985 green (run strictly serialized after builds). ~75m, in estimate.
 
 **Step-types**: NATIVE-AND (gradle), SVC-EDIT (script), TEST-INTEGRATION (on-device)
 **Est-Effort**: 60-150m

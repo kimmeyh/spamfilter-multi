@@ -426,17 +426,37 @@ try {
     }
     $buildTarget = if ($Output -eq 'aab') { 'appbundle' } else { 'apk' }
 
+    # GP-9 (Sprint 64): Dart-side obfuscation for RELEASE builds only (R-3:
+    # debug builds are completely unchanged -- no obfuscate args added to the
+    # debug branches below). Symbol files are retained OUTSIDE the repository
+    # so obfuscated stack traces stay readable at crash-triage time without
+    # ever committing them; the version comes from pubspec.yaml so each
+    # release's symbols land in their own directory.
+    $obfuscateArgs = @()
+    $symbolsDir = $null
+    if ($BuildType -eq 'release') {
+        $pubspecPath = Join-Path $mobileAppDir 'pubspec.yaml'
+        $versionLine = Select-String -Path $pubspecPath -Pattern '^version:\s*(\S+)' | Select-Object -First 1
+        $pubspecVersion = if ($versionLine) { $versionLine.Matches[0].Groups[1].Value } else { 'unknown-version' }
+        $symbolsDir = Join-Path "$env:USERPROFILE\.myemailspamfilter\symbols" "$pubspecVersion-$Env"
+        if (-not (Test-Path $symbolsDir)) {
+            New-Item -ItemType Directory -Force -Path $symbolsDir | Out-Null
+        }
+        $obfuscateArgs = @('--obfuscate', "--split-debug-info=$symbolsDir")
+        Write-Host "[INFO] GP-9: Dart obfuscation enabled; symbols will be written to $symbolsDir" -ForegroundColor Cyan
+    }
+
     if ($supportsFromFile) {
         Write-Host "[INFO] Using --dart-define-from-file=secrets.dev.json" -ForegroundColor Cyan
         if ($BuildType -eq 'release') {
-            flutter build $buildTarget --release @flavorArgs --dart-define-from-file=secrets.dev.json @gradleProjectArgs
+            flutter build $buildTarget --release @flavorArgs --dart-define-from-file=secrets.dev.json @gradleProjectArgs @obfuscateArgs
         } else {
             flutter build $buildTarget --debug @flavorArgs --dart-define-from-file=secrets.dev.json @gradleProjectArgs
         }
     } else {
         Write-Host "[INFO] Using explicit --dart-define flags" -ForegroundColor Cyan
         if ($BuildType -eq 'release') {
-            flutter build $buildTarget --release @flavorArgs $dartDefines @gradleProjectArgs
+            flutter build $buildTarget --release @flavorArgs $dartDefines @gradleProjectArgs @obfuscateArgs
         } else {
             flutter build $buildTarget --debug @flavorArgs $dartDefines @gradleProjectArgs
         }
@@ -449,6 +469,12 @@ try {
 
     Write-Host ""
     Write-Host "[INFO] Build successful!" -ForegroundColor Green
+
+    # GP-9: print the symbol-file path for this release so crash triage knows
+    # where to find them (they are never committed to the repo).
+    if ($BuildType -eq 'release' -and $symbolsDir) {
+        Write-Host "[INFO] GP-9: Dart obfuscation symbols written to $symbolsDir" -ForegroundColor Cyan
+    }
 
     # F94: flavored builds ALWAYS emit app-<flavor>-<buildtype>.apk (no
     # un-flavored fallback -- with productFlavors defined it could only ever

@@ -157,6 +157,20 @@ android {
 
     buildTypes {
         release {
+            // GP-9 (Sprint 64): R8 code shrinking + resource shrinking ON for
+            // release builds. proguard-rules.pro carries only the keep rules
+            // our actual plugin set needs beyond what each plugin's own
+            // consumer-rules.pro (auto-applied from its AAR) already
+            // provides -- see the file's header for the plugin-by-plugin
+            // audit. Debug builds are untouched (R-3): isMinifyEnabled /
+            // isShrinkResources default to false there and are not set here.
+            isMinifyEnabled = true
+            isShrinkResources = true
+            proguardFiles(
+                getDefaultProguardFile("proguard-android-optimize.txt"),
+                "proguard-rules.pro"
+            )
+
             if (haveAllSigningParams) {
                 signingConfig = signingConfigs.getByName("release")
             } else {
