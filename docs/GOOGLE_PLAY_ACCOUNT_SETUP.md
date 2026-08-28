@@ -21,6 +21,11 @@
   Google review = the critical path), (2) Android device access via the Play Console app,
   (3) contact phone (auto-unlocks after identity approval). App creation is LOCKED until
   verifications complete ("Create app" greyed out).
+- **VERIFICATIONS CLEARED same session (2026-08-28, ~30-60 min after ID submission)**: the
+  console home shows no setup banner and "Create app" is ACTIVE. The guide's "may take a
+  few days" is the worst case; a clean ID submission cleared in under an hour. Account is
+  fully operational. "Create app" deliberately deferred until the listing inputs exist
+  (GP-5 published URL, GP-6/GP-7 assets, signed AAB from GP-2).
 
 **Decision (Harold, 2026-08-25, at Sprint 63 plan approval)**: PERSONAL account. No D-U-N-S
 number is available, and the 12-testers / 14-continuous-days closed-test gate is accepted.
