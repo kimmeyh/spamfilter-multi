@@ -17,7 +17,7 @@ Partner Center before saying anything about the Store version.
 
 | | Version | Last verified | Notes |
 |---|---|---|---|
-| **Live/certified on Store** (cache) | 0.12.0.0 | 2026-08-24 (direct Partner Center observation ~9:12am ET: "Congrats! Your product is now updated", Submission 19; Store presence "currently available". Installed-build check pending Harold.) | Submission 19, uploaded ~8:5x am and live by ~9:12 -- ~20-25 minutes, consistent with Submissions 17/18. Sixth MINOR release (Sprint 62 feat entries F175/F176/F177). Superseded 0.11.0.0/Submission 18. |
+| **Live/certified on Store** (cache) | 0.13.0.0 | 2026-08-27 ~10:55pm ET (direct Partner Center observation, Harold's screenshot: "Congrats! Your product is now updated"; Store presence Submission 20 "currently available") | Submission 20, uploaded ~7:0x am ET 2026-08-27; certification completed sometime before the evening check (single-shot observation -- true elapsed unmeasured, likely the usual 20-30 min band). Seventh MINOR release (Sprint 63 feat entries F180/F94/F181). Superseded 0.12.0.0/Submission 19. |
 | **Dev worktree** (authoritative -- mirrors `pubspec.yaml`) | 0.13.0+1 | 2026-08-27 | Bumped MINOR (0.12.0 -> 0.13.0) at the 0.13.0.0 release Step 1 on `feature/20260827_Sprint_64` (Sprint 63's `feat` entries: F180 deferred body fetch, F94 Android flavors, F181 scan-mode change), per the enforced semver policy. Post-F-VERSION-DERIVE the bump is the two pubspec fields only (gate-verified, zero literals). |
 
 ## msix_version convention (which worktree's value ships)

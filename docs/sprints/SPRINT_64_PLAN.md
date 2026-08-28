@@ -1,6 +1,8 @@
 # Sprint 64 Plan
 
-**Status**: DRAFT -- presented for Phase 3.7 approval 2026-08-27.
+**Status**: APPROVED (Harold, 2026-08-27: "sprint approved as planned"). Standing approval
+through Manual Validation per Phase 3.7; the three pre-declared decision points (ADR-0027,
+F187 deletion set, GP-5 URL) remain interactive by design.
 **Branch**: `feature/20260827_Sprint_64` | **PR**: draft (created at 3.3.1)
 **Sprint theme**: Google Play readiness -- account + release-build chain -- plus the body-rules
 follow-through trio from Sprint 63 MV.

@@ -26,6 +26,8 @@ Format: `- **type**: Description (Issue #N)` where type is feat|fix|chore|docs
 
 ## [Unreleased]
 
+## [0.13.0] - 2026-08-27
+
 ### 2026-08-27 (Sprint 63, retrospective improvements)
 - **docs**: Sprint 63 retro improvements, all 8 applied same-session: isolated-branch guard-test rule + scratch-probe convention added to TESTING_STRATEGY.md (with gitignored test/scratch/); build-input-edit ban added to the CLAUDE.md serialize-builds rule; Sprint 64 stub created with the GP-16 walkthrough as first task; SEC-9 unblocked note; plus five behavioral memory rules (compound questions, background-launch announcements, python escape hard rule, timestamp footer).
 
@@ -1233,7 +1235,8 @@ See git history for detailed changes prior to Phase 3.1.
 
 ## Version Links
 
-[Unreleased]: https://github.com/kimmeyh/spamfilter-multi/compare/v0.12.0...HEAD
+[Unreleased]: https://github.com/kimmeyh/spamfilter-multi/compare/v0.13.0...HEAD
+[0.13.0]: https://github.com/kimmeyh/spamfilter-multi/compare/v0.12.0...v0.13.0
 [0.12.0]: https://github.com/kimmeyh/spamfilter-multi/compare/v0.11.0...v0.12.0
 [0.11.0]: https://github.com/kimmeyh/spamfilter-multi/compare/v0.10.0...v0.11.0
 [0.10.0]: https://github.com/kimmeyh/spamfilter-multi/compare/v0.9.0...v0.10.0

@@ -4,27 +4,29 @@
   "_usage": "Read this file after context compaction to restore sprint approval state and progress.",
   "_staleness_note": "This file had drifted 15 sprints (last updated at Sprint 35, 2026-04-19) before being refreshed at Sprint 50 close-out. It is a Phase 7.7 checklist item -- update it at every sprint close-out, not opportunistically.",
   "current_sprint": {
-    "number": 63,
-    "branch": "feature/20260824_Sprint_63",
-    "pr_number": 366,
-    "start_date": "2026-08-24",
-    "status": "Sprint 63 Phase 7.7 CLOSE-OUT COMPLETE (2026-08-27). MV complete 2026-08-26 (all 7 verdicts in SPRINT_63_PLAN.md). Review rounds resolved: Copilot 3/3 (2 fixed fa19623, 1 F110 policy keep, threads resolved); Claude round 2 HIGH (unguarded exc.body deferral clause) closed with 3 isolated guard tests f9a7448, mutation-verified red. Retro complete per 7-Step Protocol: Harold Testing 'Needs improvement as noted by dev team', Process 'Good - see issues noted by dev team', rest Good/Very Good, Cats 13/14 none; ALL 8 improvement decisions 'all now' APPLIED 2026-08-27 (TESTING_STRATEGY isolated-branch + scratch-probe rules, test/scratch/ gitignored, CLAUDE.md build-input-edit ban, 5 memory rules incl. Harold's timestamp footer, SPRINT_64_PLAN.md stub, SEC-9 unblocked note). Docs triad complete (PLAN/RETROSPECTIVE/SUMMARY) + master plan rolled (Last Completed Sprint = 63, Past Sprint table row, DONE stubs). Windows build verified (7.1). REMAINING: gh pr ready 366 + 7.7.5 announcement, Harold merges, then Phase 6.6 branch-from-current + Phase 8 cycle (8.1 main merge Harold, 8.2 pass-1 sweep incl. DONE-stub pruning, 8.3 Store release 0.13.0 bump, 8.4 scope selection).",
+    "number": 64,
+    "branch": "feature/20260827_Sprint_64",
+    "pr_number": 378,
+    "start_date": "2026-08-27",
+    "status": "Sprint 64 Phase 4 EXECUTION -- plan APPROVED 2026-08-27 (Harold: 'sprint approved as planned'), standing approval through Manual Validation. 10 task cards #368-#377 (11 items; GP-5 folded into GP-16 card), draft PR #378. ORDER: Task 1 GP-16 walkthrough FIRST (Harold-driven, starts Google verification clock; includes GP-5 URL decision + legal publication) -> Group A (F186 body-rule authoring, F188 neutralization warning, F187 cleanup AFTER Harold approves the enumerated set) -> release-build chain SEC-9 -> GP-2 (ADR-0027 Class-1 interrupt) -> GP-9 -> SEC-4 -> ONE signed-minified prod release validation -> GP-8 + GP-3 verifies against that artifact. Pre-declared interactive points: ADR-0027 decision, F187 set confirmation, GP-5 hosting URL. Release-chain rule: no build-input edits during builds; Windows/Android builds serialized. Store context: 0.13.0.0/Submission 20 in certification (Phase 8 tail of prior cycle -- at cert: STORE_VERSION_STATUS live row, CHANGELOG [0.13.0] cut, master plan outcome).",
     "plan_approved": true,
     "blanket_execution_approved": true,
     "scope": [
-      "F181",
-      "F180",
-      "F184",
-      "F182",
-      "F164",
-      "GP-12",
       "GP-16",
       "GP-5",
-      "F94"
+      "F186",
+      "F187",
+      "F188",
+      "SEC-9",
+      "GP-2",
+      "GP-9",
+      "GP-8",
+      "GP-3",
+      "SEC-4"
     ],
-    "_scope_note": "Scope selection happens at Phase 8.4. Candidates flagged at Sprint 62 close: F180 (P10, fresh evidence), F181 (P18), F182 (P30); carry-ins in SPRINT_63_PLAN.md stub.",
-    "pr_url": "https://github.com/kimmeyh/spamfilter-multi/pull/366",
-    "plan_approval_date": "2026-08-25"
+    "_scope_note": "All 11 selected by Harold at Phase 8.4 (2026-08-27), option 1: one sprint, Group B release-build chain intact.",
+    "pr_url": "https://github.com/kimmeyh/spamfilter-multi/pull/378",
+    "plan_approval_date": "2026-08-27"
   },
   "previous_sprint": {
     "number": 62,
@@ -56,12 +58,12 @@
     "_note": "Run full suites with --concurrency=4 (Sprint 49 IMP-5)."
   },
   "store_release": {
-    "status": "0.13.0.0 / Submission 20 SUBMITTED and IN CERTIFICATION -- direct Partner Center observation 2026-08-27 ~7:0x am ET (Harold's screenshot: 'Update in certification', Submission checkpoint complete, Pre-processing in progress; Store presence = 0.12.0.0/Submission 19 still live). Build verification recorded pre-upload: Check A PASS, --release-self-test 6/6 PASS, manifest 0.13.0.0, 17.9 MB. Seventh MINOR release (Sprint 63 feat: F180/F94/F181). AT CERTIFICATION: update STORE_VERSION_STATUS live row (direct observation), cut CHANGELOG [0.13.0], master plan store outcome (dev bump deferred to next release Step 1 per current practice -- dev EQUALS pending release at 0.13.0). Prod worktree note: 5 local-only pure merge commits since Sprint 60, content-identical to origin/main -- optional reset cleanup, Harold's call.",
-    "live_version": "0.12.0.0",
+    "status": "0.13.0.0 / Submission 20 CERTIFIED AND LIVE 2026-08-27 -- direct Partner Center observation ~10:55pm ET (Harold's screenshot: 'Congrats! Your product is now updated'; Store presence Submission 20 'currently available'). Uploaded ~7:0x am ET; single evening check, true cert time unmeasured (prior band 20-30 min). Seventh MINOR release (Sprint 63 feat: F180/F94/F181). Step 7 complete: STORE_VERSION_STATUS live row, CHANGELOG [0.13.0] cut + links, master plan outcome, timing row. Dev EQUALS live at 0.13.0 -- bump at next release Step 1. Prod worktree note: 5 local-only pure merge commits since Sprint 60, content-identical to origin/main -- optional reset cleanup, Harold's call.",
+    "live_version": "0.13.0.0",
     "submission": 20,
-    "certified_date": null,
-    "pending_upload_version": "0.13.0.0",
-    "submission_pending": "Submission 20 in certification (pre-processing observed 2026-08-27)",
+    "certified_date": "2026-08-27",
+    "pending_upload_version": null,
+    "submission_pending": null,
     "submitted_date": "2026-08-27"
   },
   "environment_notes": [
