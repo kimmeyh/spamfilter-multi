@@ -2,9 +2,14 @@
 <!-- SEC-4 (Sprint 64, Issue #377): Disable cleartext traffic app-wide.
      IMAP, OAuth, and all email provider connections are TLS-only.
      Localhost HTTP redirect is Windows-only (gmail_windows_oauth_handler.dart);
-     Android uses appauth custom-scheme redirect (com.googleusercontent.apps.*),
+     Android uses the appauth custom-scheme redirect (com.googleusercontent.apps.*),
      which does not require cleartext or loopback HTTP.
-     This configuration makes the TLS-only policy explicit and visible to Play reviewers. -->
-<domain-config cleartextTrafficPermitted="false">
-    <domain includeSubdomains="true">example.com</domain>
-</domain-config>
+     STRUCTURE NOTE (chain-validation lesson, 2026-08-28): the root element MUST
+     be network-security-config with a base-config child for an app-wide policy.
+     A domain-config root passes AAPT (well-formedness only) but Android's
+     RUNTIME parser rejects it and the app crashes at startup with "Failed to
+     parse XML configuration from network_security_config". The runtime parse
+     is only exercised by launching a build that carries this file. -->
+<network-security-config>
+    <base-config cleartextTrafficPermitted="false" />
+</network-security-config>

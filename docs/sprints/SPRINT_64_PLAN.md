@@ -669,11 +669,20 @@ doubles as AC-1 evidence.
 **Model**: Haiku -- (single config file + manifest attribute with a written spec; the one
 judgment point (loopback) has an explicit verify instruction).
 
-**Executed-by** (filled at completion): Haiku (background agent). CODE COMPLETE 2026-08-28
--- cleartext disabled app-wide, NO loopback exception (verified with 4-line evidence: the
-Android flow uses the custom-scheme redirect; localhost:8080 is Windows-only); manifest
-reference added with the SEC-9 wiring untouched; policy gates 53/53, analyze clean; ~40m.
-Merged-manifest + live sign-in/scan proof (AC-1/AC-2) at chain validation as planned.
+**Executed-by** (filled at completion): Haiku (background agent) + Fable chain-validation
+fix. Agent code 2026-08-28 (~40m): loopback verify solid, manifest wiring correct -- but the
+config file itself was WRONG TWICE: root element domain-config (runtime-invalid; must be
+network-security-config) scoped to a literal example.com (not app-wide). AAPT accepted it
+(well-formedness only); the app CRASHED AT STARTUP on the first real launch of the chain
+build ("Failed to parse XML configuration from network_security_config") -- caught by chain
+validation within minutes, exactly the step designed to catch it. Fable fix: correct
+base-config structure with a structure-note comment; policy gate hardened from
+attribute-grep to structure pins (network-security-config root + base-config +
+no-domain-config, comments stripped before matching; 4/4 green; mutation-equivalent proof =
+the live crash itself). Fixed build relaunched: process stable, Flutter engine up. Retro
+Cat-2 seed: a Haiku config task with a runtime-only failure mode needs either a
+structure-pinning gate up front or an immediate launch check -- attribute greps prove
+existence, not validity (source-gates-verify-shape, third instance this sprint).
 
 **Step-types**: NATIVE-AND, DOCS
 **Est-Effort**: 20-40m

@@ -27,6 +27,27 @@ void main() {
         reason: 'network_security_config.xml must disable cleartext traffic app-wide');
   });
 
+  test(
+      'config has the RUNTIME-valid app-wide structure: '
+      'network-security-config root with a base-config child', () {
+    // Chain-validation lesson (2026-08-28): a domain-config ROOT passed AAPT
+    // (well-formedness only) but crashed the app at startup -- Android's
+    // runtime schema parser rejects it, and even parseable domain-config
+    // scoping would apply the policy to one domain instead of app-wide. The
+    // attribute grep above proves the SETTING exists; this test pins the
+    // STRUCTURE that makes it valid and app-wide. Live startup on a release
+    // build remains the behavior proof (source gates verify shape).
+    final content = configFile.readAsStringSync();
+    final stripped =
+        content.replaceAll(RegExp(r'<!--.*?-->', dotAll: true), '');
+    expect(stripped, contains('<network-security-config>'),
+        reason: 'root element must be network-security-config');
+    expect(stripped, contains('<base-config cleartextTrafficPermitted="false"'),
+        reason: 'app-wide policy lives on base-config, not domain-config');
+    expect(stripped, isNot(contains('<domain-config')),
+        reason: 'no domain-scoped carve-outs are expected in this app');
+  });
+
   test('AndroidManifest.xml references @xml/network_security_config', () {
     final manifest = manifestFile.readAsStringSync();
     expect(manifest, contains('android:networkSecurityConfig="@xml/network_security_config"'),
