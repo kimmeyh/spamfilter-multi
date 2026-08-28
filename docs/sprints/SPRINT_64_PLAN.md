@@ -1,47 +1,619 @@
-# Sprint 64 Plan -- STUB (created at Sprint 63 close-out, 2026-08-27)
+# Sprint 64 Plan
 
-**Status**: STUB. Scope is selected at Phase 8.4 (refinement pass 2) after the Sprint 63 PR
-merges and the Store release is in process. This stub carries the Sprint 63 retrospective
-Category 13 items and standing process rules forward.
+**Status**: DRAFT -- presented for Phase 3.7 approval 2026-08-27.
+**Branch**: `feature/20260827_Sprint_64` | **PR**: draft (created at 3.3.1)
+**Sprint theme**: Google Play readiness -- account + release-build chain -- plus the body-rules
+follow-through trio from Sprint 63 MV.
+**Scope selected by Harold (Phase 8.4, 2026-08-27)**: GP-16 (+GP-5 folded), F186, F187, F188,
+SEC-9, GP-2, GP-9, GP-8, GP-3, SEC-4 -- all 11 items in one sprint (Harold chose option 1:
+Group A + the intact Group B release-build chain together).
 
-## Decided carry-ins (Sprint 63 retro Category 13 / MV decisions)
+**Governing constraint (ADR-0042, restated by Harold at selection)**: everything takes into
+account BOTH the Windows app and the Android app; functionally and UI the same unless it
+cannot be, and where it cannot, implemented as a platform exception for what is needed --
+backend, frontend, data, architecture, development, security, testing, deployment. Per-card
+ADR-0042 notes below classify each task as shared or declared-platform-exception.
 
-1. **FIRST TASK (Harold decision, 2026-08-26): GP-16 guided Google Play account-creation
-   walkthrough.** Harold: "Need to be walked through this." Claude walks him through
-   step-by-step per `docs/GOOGLE_PLAY_ACCOUNT_SETUP.md` (PERSONAL account route, $25
-   one-time, 12 testers / 14 days closed-test gate, no DUNS). This task ALSO includes the
-   GP-5 publication step: hosting/URL decision (GitHub Pages is the recorded default) and
-   replacing the "[SET AT PUBLICATION]" placeholders in `docs/legal/PRIVACY_POLICY.md` and
-   `TERMS.md` (text already approved 2026-08-26).
-2. **F94 follow-on at refinement**: the four Firebase/GCP console prerequisites for the .dev
-   package proved OPTIONAL (dev-flavor Gmail sign-in works via the appauth redirect-scheme
-   flow, which does not consult google-services.json). Re-scope or close those items.
-3. **SEC-9 unblocked**: F94 shipped, so SEC-9 (hardcoded Android client id -> build-time
-   injection) is selectable; design should target the appauth client id path.
+**Release-build chain rule (from selection discussion)**: SEC-9, GP-2, GP-9, SEC-4 all change
+what the signed release AAB IS; GP-8 and GP-3 are verifies OF it. They execute in dependency
+order and converge on ONE final signed-minified release-build validation cycle at the end of
+Phase 4 -- no interim per-task release validations, and no build-input edits while any build
+runs (Sprint 63 IMP-6).
 
-## Fresh MV-sourced candidates (registered Sprint 63, prioritized in master plan)
+**Store context**: 0.13.0.0 / Submission 20 in certification at planning time; certification
+watch is a Phase 8 tail of the PREVIOUS cycle, not sprint scope.
 
-- F186 (P22): body-rule authoring via Manual Rule Create + Manage Rules round-trip.
-- F187 (P24): remove Harold's 647 URL-shape body rules (dev AND prod DBs, F33/F144
-  discipline) -- also cuts most F180 deferred fetches on real scans.
-- F188 (P26): silent neutralization of rules with unparseable condition JSON (Logger.w +
-  Manage Rules "invalid" flag + integrity sweep).
+---
 
-## Standing process rules (apply from Sprint 63 retro, all applied 2026-08-27)
+## Task 1 -- GP-16 (+GP-5): Google Play account setup -- guided walkthrough + legal publication (Priority 20)
 
-- Isolated-branch guard tests for shared-fixture suites (TESTING_STRATEGY.md).
-- Scratch probes never under test/ (scratchpad or gitignored test/scratch/).
-- No compound decision questions; unanswered halves are re-ask triggers.
-- Announce background launches in the next user-visible message.
-- Python raw-string/SyntaxWarning hard rule; verify through the real consuming code path.
-- No build-input edits while any Flutter build runs (CLAUDE.md).
-- Timestamp footer on decision-point/milestone responses.
+**Value**: This unblocks every Play-side deliverable (uploads, forms, listing) and starts
+Google's multi-day identity verification at the earliest possible moment.
 
-## Notes
+**Requirements** (numbered, detailed):
+- R-1: Harold is walked step-by-step through creating the PERSONAL Google Play developer
+  account per `docs/GOOGLE_PLAY_ACCOUNT_SETUP.md` (personal route, $25 one-time, no DUNS),
+  with the 12-testers/14-day closed-test gate's schedule implications restated at the start.
+- R-2: The GP-5 hosting/URL decision is made during the walkthrough (GitHub Pages is the
+  recorded default) and the approved `docs/legal/PRIVACY_POLICY.md` + `TERMS.md` are
+  published at that URL.
+- R-3: Every `[SET AT PUBLICATION -- Harold approval required]` placeholder in both legal
+  docs is replaced with the real URL/date and the published copies match the approved text.
+- R-4: Account state at sprint end is recorded (verification submitted / verified), including
+  any external wait that carries past the sprint.
 
-- Demo body rule `body_united__nations__compensation__commissioncom`
-  (`created_by='sprint63_mv_demo'`) was deliberately LEFT in the Android dev DB at Harold's
-  request for his own experimenting; removable on request (F187 cleanup will not target it --
-  it is a phrase rule, not URL-shape).
-- Sprint 63 PR: #366. Branch policy: on merge, branch feature/YYYYMMDD_Sprint_64 FROM
-  feature/20260824_Sprint_63 immediately (Phase 6.6).
+**Affected components / files**:
+- `docs/GOOGLE_PLAY_ACCOUNT_SETUP.md` -- walkthrough source; annotate with any step that
+  deviated from the guide (guide-accuracy feedback loop).
+- `docs/legal/PRIVACY_POLICY.md`, `docs/legal/TERMS.md` -- placeholder fill + publication.
+- Hosting target (GitHub Pages branch/settings) per the decision made in R-2.
+
+**Dependencies / blockers**: Harold-driven (payment, identity documents); external Google
+verification lead time (multi-day) -- the walkthrough STARTS first for exactly this reason.
+
+**Non-functional requirements**:
+- Security: no credentials or identity-document contents ever enter the repo or logs.
+- Platform: N/A (console + docs work). ADR-0042: platform exception, deployment
+  infrastructure -- Google Play has no Windows counterpart; the Microsoft Store equivalent
+  (Partner Center) already exists, so parity holds at the "each store has an account" level.
+
+**Acceptance criteria** (measurable, traceable):
+- AC-1: Play Console account exists and identity verification is submitted (or complete).
+- AC-2: Privacy Policy + Terms are reachable at a public URL over HTTPS and their text
+  matches the Harold-approved drafts (diff = placeholder fills only).
+- AC-3: Zero remaining `[SET AT PUBLICATION` markers in `docs/legal/` (untruncated grep).
+- AC-4: Account/verification state + the chosen URL recorded in the plan and sprint_status.
+
+**Tests to write**:
+- T-1 (verifies AC-3) -- TEST-UNIT in `test/policy/legal_docs_test.dart`: policy gate
+  asserting no `[SET AT PUBLICATION` marker remains in `docs/legal/` once the URL is set
+  (skips/passes trivially while GP-5 publication has not happened; goes permanent after).
+  (Reference: TESTING_STRATEGY.md; intent only.)
+
+**Definition of Done**: default task-level DoD PLUS:
+- Publication URL cross-referenced from `docs/GOOGLE_PLAY_ACCOUNT_SETUP.md` and the master
+  plan GP-10 entry (it is GP-10's input).
+
+**Model**: Fable/Opus -- *why not the cheaper tier*: live interactive walkthrough of an
+external console with real payment/identity steps and a publication decision; judgment and
+recovery matter more than throughput.
+
+**Executed-by** (filled at completion):
+
+**Step-types**: DOCS, DATA (publication), HOOK-none
+**Est-Effort**: 120-240m (Harold-driven pace dominates)
+_**Risk & rollback**_: external-service steps are not rollback-able (payment); mitigation is
+the written guide + confirming each console step before Harold commits it. Publication is
+rollback-able (unpublish/re-publish).
+
+## Task 2 -- F186: Add/update BODY rules through the UI, including via Manage Rules (Priority 22)
+
+**Value**: This enables authoring the body rules that F180/F185 made first-class -- today the
+732 live body rules exist only from legacy import and cannot be created in-app.
+
+**Requirements** (numbered, detailed):
+- R-1: The manual rule CREATE flow (reached from Manage Rules) gains a Body rule type with
+  pattern entry using the same plaintext-to-regex assist the other types have; category/
+  sub-type recorded as 'body' (Harold ask 1 and 2, verbatim enumeration 2026-08-26).
+- R-2: Create -> display -> edit round-trip: a body rule created in R-1 appears in Manage
+  Rules under the Body category (F124 chips), opens in `RuleEditScreen`, and its body
+  condition round-trips through the existing `case 'body'` edit path unchanged.
+- R-3: The F25 rule tester exercises body patterns against sample bodies for rules created
+  via R-1 (verify; extend only if it does not).
+- R-4: Follow the sibling pattern of the existing rule types in `ManualRuleCreateScreen` --
+  no new abstraction, no opt-in divergence (Sprint 52 IMP-5 sibling-pattern rule).
+
+**Affected components / files**:
+- `mobile-app/lib/ui/screens/manual_rule_create_screen.dart` -- add Body type (sibling of
+  existing types).
+- `mobile-app/lib/ui/screens/rule_edit_screen.dart:378-380` -- existing body edit path
+  (verify round-trip; expected no change).
+- `mobile-app/lib/ui/screens/rule_test_screen.dart` -- R-3 verify.
+
+**Dependencies / blockers**: None.
+
+**Non-functional requirements**:
+- Platform: shared Dart UI -- identical on Windows and Android (ADR-0042: shared, no
+  exception). MV checks both.
+- Accessibility: new controls follow QUALITY_STANDARDS.md semantics like their siblings.
+
+**Acceptance criteria** (measurable, traceable):
+- AC-1: Given Manage Rules -> create rule, When the user selects the Body type, enters a
+  plaintext phrase, and saves, Then a rule with a 'body' condition list containing the
+  assisted regex exists in the DB and is enabled.
+- AC-2: The created rule displays under the Body category chip and re-opens in RuleEditScreen
+  with the same body pattern (round-trip byte-equal after normalization).
+- AC-3: A scan (or rule-tester run) against a message whose body matches the created pattern
+  produces a match; a non-matching body does not (proves F180 defer + F185 decode path
+  end-to-end with an authored rule).
+- AC-4: Existing rule types' create flow behavior is unchanged (regression AC).
+
+**Tests to write**:
+- T-1 (AC-1) -- TEST-WIDGET in `test/widget/manual_rule_create_screen_test.dart`: body-type
+  create flow persists a body-condition rule.
+- T-2 (AC-2) -- TEST-WIDGET (same file or rule_edit test): created body rule round-trips
+  through edit.
+- T-3 (AC-3) -- TEST-UNIT in `test/unit/services/` (extend rule evaluator/scanner tests):
+  authored-shape body rule matches through evaluateWithoutBody-defer -> full evaluate.
+  Isolated single-rule fixture per the Sprint 63 isolated-branch rule.
+- T-4 (AC-4) -- TEST-WIDGET: one existing type's create flow still green (regression intent).
+
+**Definition of Done**: default task-level DoD PLUS:
+- Mutation-verify T-1/T-3 (break the wiring, confirm red) per feedback_mutation_verify_new_tests.
+- WinWright sweep impact check: if selectors on Manage Rules/create screens changed, update
+  scripts in the 5.1.5 sweep (lib/ui touched -> sweep-at-HEAD required).
+
+**Model**: Sonnet -- *why not the cheaper tier*: new rule-type surface across the create flow
+with regex-assist integration and cross-screen round-trip semantics; beyond a mechanical
+Haiku pattern-copy, below Fable-tier design work.
+
+**Executed-by** (filled at completion):
+
+**Step-types**: UI-MOVE, SVC-EDIT, TEST-WIDGET, TEST-UNIT
+**Est-Effort**: 90-150m
+
+## Task 3 -- F187: Remove the personal URL-shape body rules (Priority 24)
+
+**Value**: This removes 647 obsolete link-block body rules from Harold's live rule sets --
+and with F180 live, removes the main trigger of deferred body fetches on his real scans.
+
+**Requirements** (numbered, detailed):
+- R-1: The removal set is enumerated by PATTERN SHAPE `(?:://|[/.])domain\.tld` (the F33-era
+  link-domain blocks), NOT by name prefix (only 306 carry the `body_.` prefix). Measured at
+  registration: 647 of 732 body rules in the dev DB; the 85 phrase/phone/address body rules
+  are OUT of scope and stay.
+- R-2: F33/F144 discipline: present the exact count + samples for Harold's confirmation
+  BEFORE deletion; timestamped DB backup before deleting; YAML export invariants preserved;
+  post-delete count verification with an UNTRUNCATED query.
+- R-3: Applied to BOTH Windows installs (dev `MyEmailSpamFilter_Dev` and prod
+  `MyEmailSpamFilter` databases) via a guarded one-time cleanup script.
+- R-4: The Android dev DB is NOT separately cleaned this sprint unless Harold asks -- it is a
+  test environment seeded from the same lineage; record the decision either way. The
+  sprint63_mv_demo rule is explicitly excluded from the removal set (phrase rule, not
+  URL-shape; Harold chose to keep it).
+
+**Affected components / files**:
+- New guarded script under `mobile-app/scripts/` (pattern: prior F126/F123 live-data repair
+  scripts) -- enumerate, back up, delete, verify.
+- Harold's live databases (dev + prod) -- DATA, not code.
+
+**Dependencies / blockers**: Harold confirmation of the enumerated set (R-2) at MV or a
+mid-sprint natural break.
+
+**Non-functional requirements**:
+- Data safety: timestamped backups retained; rollback = restore backup.
+- Platform: ADR-0042 shared-data note -- the rule DB schema and script logic are platform
+  neutral; execution targets Windows installs where the live data lives (declared exception:
+  data residency, not behavior).
+
+**Acceptance criteria** (measurable, traceable):
+- AC-1: Dry-run output lists exactly the shape-matched set with count + 10 samples, and
+  Harold approves it verbatim before any delete.
+- AC-2: Post-delete: shape-matched count = 0; total body rules reduced by exactly the
+  approved count; the 85 out-of-scope body rules all still present (untruncated queries).
+- AC-3: Backups exist for both DBs with pre-delete counts recorded.
+- AC-4: A post-delete full scan on the dev build completes normally (no rule-load errors) --
+  and the F180 Step 6a counter shows deferred fetches reduced vs the Sprint 63 baseline.
+
+**Tests to write**:
+- T-1 (AC-1/AC-2 logic) -- TEST-UNIT in `test/unit/` or script self-test: the shape matcher
+  classifies known URL-shape patterns IN and the phrase/phone/address samples OUT (fixture
+  set drawn from real anonymized shapes).
+  (The live apply itself is DATA, verified by AC queries, not unit tests.)
+
+**Definition of Done**: default task-level DoD PLUS:
+- Both backups' paths recorded in the plan; scratch probes stay out of test/ (Sprint 63 rule).
+
+**Model**: Fable/Opus -- *why not the cheaper tier*: destructive deletion on BOTH of Harold's
+live personal databases; asymmetric error cost dominates the mechanical simplicity
+(precedent: Sprint 50 live prod-data repairs ran top tier).
+
+**Executed-by** (filled at completion):
+
+**Step-types**: DATA, SVC-EDIT (script), TEST-UNIT
+**Est-Effort**: 45-90m
+_**Risk & rollback**_: wrong-set deletion of live rules; mitigated by dry-run + Harold
+approval + timestamped backups; rollback = restore backup file.
+
+## Task 4 -- F188: Warn when a rule's condition string is silently neutralized (Priority 26)
+
+**Value**: This prevents a protection the user believes exists from silently not being
+evaluated (live-found silent-failure class, F-PRECHECK class 6).
+
+**Requirements** (numbered, detailed):
+- R-1: `_decodeJsonArray` (RuleDatabaseStore) logs a WARNING via Logger naming the rule and
+  column when condition JSON fails to parse (today: silent empty list).
+- R-2: Manage Rules flags a rule whose EVERY condition list is empty as "invalid -- matches
+  nothing" instead of rendering it as healthy.
+- R-3: One-time integrity sweep at rules load (or a callable maintenance action) counts
+  unparseable condition columns and logs the total when nonzero.
+
+**Affected components / files**:
+- `mobile-app/lib/core/storage/rule_database_store.dart` -- `_decodeJsonArray` + sweep.
+- `mobile-app/lib/ui/screens/rules_management_screen.dart` -- invalid flag rendering.
+
+**Dependencies / blockers**: None. (F187 ordering note: run F188's sweep AFTER F187's
+cleanup on live DBs so the sweep baseline reflects the cleaned set -- soft ordering only.)
+
+**Non-functional requirements**:
+- Platform: shared Dart -- identical both platforms (ADR-0042: shared, no exception).
+- Logging: rule NAMES are fine in logs; no account identifiers (F110 policy unchanged).
+
+**Acceptance criteria** (measurable, traceable):
+- AC-1: A rules row with invalid condition JSON produces exactly one Logger warning naming
+  rule and column at load, and the rule loads (does not crash the load path).
+- AC-2: Given Manage Rules with such a rule present, Then it renders with the invalid
+  marker; a healthy rule with a deliberately empty optional list does NOT get the marker
+  (marker fires only when ALL condition lists are empty).
+- AC-3: The integrity sweep reports the correct count on a fixture DB containing 2 corrupted
+  of N rules.
+
+**Tests to write**:
+- T-1 (AC-1) -- TEST-UNIT in `test/unit/storage/rule_database_store_test.dart` (extend):
+  invalid JSON -> warning logged + empty-list load (no throw).
+- T-2 (AC-2) -- TEST-WIDGET in `test/widget/`: invalid-flag rendering, both branches
+  (isolated fixtures per the Sprint 63 isolated-branch rule).
+- T-3 (AC-3) -- TEST-UNIT: sweep count on fixture DB.
+
+**Definition of Done**: default task-level DoD PLUS: mutation-verify T-1 (remove the warning
+call, confirm red).
+
+**Model**: Haiku -- (cheapest tier fits: single-store change + one rendering flag with a
+clear spec and named sites; escalate on any surprise in the load path).
+
+**Executed-by** (filled at completion):
+
+**Step-types**: SVC-EDIT, UI-MOVE, TEST-UNIT, TEST-WIDGET
+**Est-Effort**: 30-60m
+
+## Task 5 -- SEC-9: Move hardcoded Android client ID to build-time injection (Priority 28)
+
+**Value**: This removes the per-flavor literal-edit trap in build config and aligns Android
+credential handling with the Windows dart-define pattern.
+
+**Requirements** (numbered, detailed):
+- R-1: The Android OAuth client id currently embedded in
+  `mobile-app/android/app/build.gradle.kts:43` (`appAuthRedirectScheme` placeholder) and any
+  Dart-side literal (grep `_androidClientId` -- currently referenced from
+  `gmail_windows_oauth_handler.dart`'s family; enumerate ALL sites first, F-PRECHECK class 1)
+  is sourced from build-time injection (`--dart-define` via `secrets.*.json` for Dart;
+  gradle property/manifest placeholder fed from the same source for the manifest scheme).
+- R-2: Design targets the APPAUTH path (the flow that actually consumes the id -- Sprint 63
+  finding: google-services.json is NOT consulted by sign-in).
+- R-3: Existing behavior is bit-identical when the injected value equals today's literal:
+  same redirect scheme, same client id, dev and prod flavors both sign in.
+- R-4: A missing injected value FAILS THE BUILD loudly (no silent empty credential -- the
+  F119 lesson applied to Android).
+
+**Affected components / files**:
+- `mobile-app/android/app/build.gradle.kts:43` -- placeholder sourcing.
+- `mobile-app/scripts/build-with-secrets.ps1` -- passes the value per -Env.
+- Dart site(s) of `_androidClientId` -- switch to `String.fromEnvironment` per the Windows
+  handler pattern (mirror the working sibling).
+- `mobile-app/secrets.dev.json.template` -- document the key.
+
+**Dependencies / blockers**: None; MUST land before GP-2/GP-9 validation (part of the
+release-build chain -- its build-config edit belongs inside the one validation cycle).
+
+**Non-functional requirements**:
+- Security: client id is not a secret (public in the APK by nature) -- the goal is
+  maintainability + flavor-correctness, not concealment; record this in the card outcome.
+- Platform: ADR-0042 -- mirrors the Windows dart-define mechanism (parity of METHOD);
+  manifest-placeholder half is a declared Android platform exception (manifests are
+  Android-only).
+
+**Acceptance criteria** (measurable, traceable):
+- AC-1: Zero hardcoded client-id literals in gradle/Dart outside the secrets files
+  (untruncated grep for the id fragment).
+- AC-2: Dev-flavor debug build signs in to Gmail on the emulator exactly as before.
+- AC-3: A build invoked without the key fails with an actionable message (R-4 proven).
+
+**Tests to write**:
+- T-1 (AC-1) -- TEST-UNIT policy gate (extend `test/policy/`): asserts the literal id
+  fragment does not reappear in build.gradle.kts / lib (the F119-style regression pin).
+- T-2 (AC-3) -- script-level check in build-with-secrets.ps1 (verified by invocation, not
+  Dart test).
+
+**Definition of Done**: default task-level DoD PLUS: live dev-flavor sign-in check at MV
+(AC-2 is Harold-observable).
+
+**Model**: Sonnet -- *why not the cheaper tier*: build-injection change with a documented
+silent-failure history (F119 family); requires enumerating consumption sites across
+gradle/manifest/Dart and designing the loud-fail path.
+
+**Executed-by** (filled at completion):
+
+**Step-types**: SVC-EDIT, HOOK (build script), TEST-UNIT, DOCS
+**Est-Effort**: 30-60m
+_**Risk & rollback**_: broken sign-in if a site is missed; mitigated by the all-sites grep +
+AC-2 live check; rollback = revert commit (no data involved).
+
+## Task 6 -- GP-2: Release Signing and Play App Signing (Priority 30)
+
+**Value**: This enables ANY Play upload (closed test included) -- nothing ships unsigned --
+and decides ADR-0027.
+
+**Requirements** (numbered, detailed):
+- R-1: Create the upload keystore (Harold holds the passwords; never committed -- stored
+  outside the repo, documented location + backup guidance).
+- R-2: `signingConfigs` in `build.gradle.kts` sources keystore path/passwords from
+  `key.properties` (gitignored) or env -- release builds signed with it
+  (`build.gradle.kts:79` currently debug-signs release: the exact line this replaces).
+- R-3: Play App Signing decision (Google holds the app signing key; our keystore = upload
+  key) is taken with Harold and recorded in ADR-0027 (Proposed -> Accepted/amended).
+- R-4: `.gitignore` covers key.properties + keystore files BEFORE they exist (order matters).
+- R-5: Both flavors x debug/release still build; debug behavior unchanged.
+
+**Affected components / files**:
+- `mobile-app/android/app/build.gradle.kts` -- signingConfigs + release signingConfig swap.
+- `mobile-app/android/key.properties` (NEW, gitignored), keystore file (outside repo).
+- `.gitignore`, `docs/adr/0027-*.md`, `mobile-app/scripts/build-with-secrets.ps1` (release
+  path passes nothing secret -- gradle reads key.properties directly).
+
+**Dependencies / blockers**: Harold for keystore passwords + the ADR-0027 decision (Class-1
+surface: "This would decide ADR-0027: upload-key + Play App Signing. Should I proceed?" at a
+natural break). Part of the release-build chain.
+
+**Non-functional requirements**:
+- Security: keystore + passwords never in repo/logs; loud build failure if key.properties
+  missing for a release build (debug unaffected).
+- Platform: ADR-0042 declared exception -- Android release signing has no Windows
+  counterpart (MSIX signing is Store-managed); parity holds at the "store manages final
+  signing" level (Play App Signing chosen for exactly that symmetry).
+
+**Acceptance criteria** (measurable, traceable):
+- AC-1: `flutter build appbundle --flavor prod` (with dart-defines per Sprint 64 chain)
+  produces an AAB signed by the upload key (verified via apksigner/keytool fingerprint).
+- AC-2: Release build FAILS with an actionable message when key.properties is absent; debug
+  builds remain unaffected.
+- AC-3: ADR-0027 status Accepted with the Play App Signing decision recorded.
+- AC-4: No keystore/password material in git (untruncated grep + git status accounting).
+
+**Tests to write**:
+- T-1 (AC-4) -- TEST-UNIT policy gate (extend `test/policy/`): no key.properties/keystore
+  path committed; gitignore rule present.
+  (AC-1/AC-2 are build-invocation verifications recorded in the plan, not Dart tests.)
+
+**Definition of Done**: default task-level DoD PLUS: fingerprint of the upload key recorded
+in the plan (public info, needed later for API console registrations).
+
+**Model**: Fable/Opus -- *why not the cheaper tier*: carries the ADR-0027 architecture
+decision + release-credential handling design (Class-1 adjacent); the gradle mechanics alone
+would be Sonnet, the decision record is what pulls the tier.
+
+**Executed-by** (filled at completion):
+
+**Step-types**: SVC-EDIT, NATIVE-AND (gradle), DOCS (ADR), TEST-UNIT
+**Est-Effort**: 120-240m (includes Harold keystore + ADR interaction)
+_**Risk & rollback**_: losing the upload key = Play recovery process (mitigated by Play App
+Signing + documented backup); a leaked keystore = rotate via Play Console. Rollback of the
+gradle change = revert commit.
+
+## Task 7 -- GP-9: ProGuard/R8 + Dart obfuscation (Priority 32)
+
+**Value**: This prevents our FIRST minified build from being the Play submission itself --
+minification breakage gets found and fixed this sprint, inside our own validation cycle.
+
+**Requirements** (numbered, detailed):
+- R-1: Release builds enable R8 (`isMinifyEnabled = true`, `isShrinkResources = true`) with a
+  `proguard-rules.pro` covering our plugin set (appauth, sqlite/sqflite, workmanager,
+  flutter_secure_storage, mail libs -- enumerate from pubspec).
+- R-2: Dart-side `--obfuscate --split-debug-info=<dir>` wired into the release build path of
+  `build-with-secrets.ps1` (and documented for the AAB command); symbol files retained
+  outside the repo, path recorded.
+- R-3: Debug builds unchanged (no minification).
+- R-4: The FULL app surface is exercised on the minified release build at validation:
+  sign-in (both providers), scan, rules CRUD incl. the new F186 body create, background scan
+  registration -- reflection breakage hides in rarely-exercised paths.
+
+**Affected components / files**:
+- `mobile-app/android/app/build.gradle.kts` -- release buildType minify/shrink + proguard ref.
+- `mobile-app/android/app/proguard-rules.pro` (NEW).
+- `mobile-app/scripts/build-with-secrets.ps1` -- obfuscation flags on release.
+
+**Dependencies / blockers**: After GP-2 (signing config exists first so the validation build
+is the real artifact shape). Part of the release-build chain.
+
+**Non-functional requirements**:
+- Platform: ADR-0042 declared exception -- R8 is Android-only; Windows release has no
+  equivalent step (Dart obfuscation applies to both in principle; Windows adoption is NOT in
+  scope -- note for a future refinement item rather than silent divergence).
+- Crash triage: split-debug-info symbols retained so obfuscated stack traces stay readable.
+
+**Acceptance criteria** (measurable, traceable):
+- AC-1: Signed prod-flavor release AAB/APK builds with R8 on; size delta recorded.
+- AC-2: The R-4 surface list passes on the minified build on-device/emulator with zero
+  runtime errors attributable to minification (logcat clean of ClassNotFound/NoSuchMethod).
+- AC-3: Debug build behavior/config unchanged (diff of debug buildType = none).
+- AC-4: Symbol files exist for the built version at the recorded path.
+
+**Tests to write**:
+- T-1 -- the validation checklist itself (AC-2) recorded step-by-step in the plan; no Dart
+  test can see minification. TEST-INTEGRATION intent: existing suite still runs against
+  non-minified debug (unchanged) -- minified verification is manual/scripted on-device.
+
+**Definition of Done**: default task-level DoD PLUS: proguard-rules.pro entries each carry a
+one-line reason comment (no cargo-cult rules).
+
+**Model**: Sonnet -- *why not the cheaper tier*: plugin-reflection breakage diagnosis across
+the dependency set is investigative; a Haiku rule-file copy risks cargo-cult keep rules.
+
+**Executed-by** (filled at completion):
+
+**Step-types**: NATIVE-AND (gradle), SVC-EDIT (script), TEST-INTEGRATION (on-device)
+**Est-Effort**: 60-150m
+_**Risk & rollback**_: runtime breakage on minified builds only; rollback = flip
+isMinifyEnabled off (one line) while keeping rules for retry.
+
+## Task 8 -- GP-8: Android Target SDK + 16 KB Page Size -- verify (Priority 34)
+
+**Value**: This surfaces any Play-requirement gap (target API level, 16 KB page-size native
+alignment) THIS sprint, while a fix still has runway before submission.
+
+**Requirements** (numbered, detailed):
+- R-1: Resolve and record the EFFECTIVE compileSdk/targetSdk/minSdk (build.gradle.kts uses
+  `flutter.targetSdkVersion` indirection -- resolve the actual numbers from the toolchain).
+- R-2: Check against CURRENT Play requirements (verify the requirement itself from Google's
+  documentation -- target API level policy and the 16 KB page-size mandate timeline -- do not
+  answer from memory).
+- R-3: 16 KB check: verify all packaged native `.so` libraries (ours + plugins) are 16
+  KB-aligned per Google's guidance on the release AAB from the chain build.
+- R-4: Findings-only task: any gap found becomes a fix item (in-sprint if small per stopping
+  criterion 4a, else carded for Sprint 65 with the measurement attached).
+
+**Affected components / files**: none expected (verify); report lands in the plan.
+
+**Dependencies / blockers**: Runs against the chain's release AAB (after GP-2/GP-9).
+
+**Non-functional requirements**: Platform: Android-only verify (ADR-0042 exception:
+platform-requirement compliance).
+
+**Acceptance criteria** (measurable, traceable):
+- AC-1: Effective SDK numbers recorded with the resolution evidence.
+- AC-2: Pass/fail verdict against the verified-current Play requirements, each with a source
+  link and checked-date.
+- AC-3: 16 KB alignment result per packaged .so listed (untruncated).
+
+**Tests to write**: none (verify task; evidence recorded in plan).
+
+**Definition of Done**: default DoD items 1/7/8 apply; test items N/A (no code change).
+
+**Model**: Haiku -- (verify-and-report with an explicit method; escalate only if a gap needs
+design).
+
+**Executed-by** (filled at completion):
+
+**Step-types**: DOCS (verification report), NATIVE-AND (inspection)
+**Est-Effort**: 30-60m
+
+## Task 9 -- GP-3: Android Manifest Permissions -- merged-manifest verify (Priority 36)
+
+**Value**: This prevents a Play review rejection from a stray transitive-plugin permission
+nobody declared on purpose.
+
+**Requirements** (numbered, detailed):
+- R-1: Produce the MERGED release manifest for the prod flavor (gradle merged-manifest
+  output from the chain build) -- not the source manifest.
+- R-2: Every permission in it is classified: required (with the feature that needs it) or
+  unexpected (with the contributing library via manifest-merger blame).
+- R-3: Unexpected permissions are removed (`tools:node="remove"`) or justified in writing;
+  removals re-verified on the merged output.
+- R-4: The final permission list is recorded as the input for GP-10's Data Safety form.
+
+**Affected components / files**:
+- `mobile-app/android/app/src/main/AndroidManifest.xml` -- only if removals needed.
+- Report in the plan (GP-10 input).
+
+**Dependencies / blockers**: Chain build (after GP-2/GP-9 so the merged output is the real
+artifact's).
+
+**Non-functional requirements**: Platform: Android-only (ADR-0042 exception: manifests).
+Windows parity note: capabilities in the MSIX manifest are the Windows analogue and are
+already minimal (internetClient family) -- record the comparison line in the report.
+
+**Acceptance criteria** (measurable, traceable):
+- AC-1: Merged-manifest permission list captured verbatim (untruncated) with per-permission
+  classification.
+- AC-2: Zero unexpected permissions remain unhandled (removed or written justification).
+- AC-3: Post-removal merged manifest re-captured proving removals took effect.
+
+**Tests to write**: none mandatory (verify task); optional policy pin if a removal lands
+(assert the removed permission stays absent from the merged output is build-level, not Dart).
+
+**Definition of Done**: default DoD items 1/7/8; report cross-linked from GP-10's master-plan
+entry.
+
+**Model**: Haiku -- (mechanical extract-classify-report with a defined method; merger-blame
+reading is documented gradle tooling).
+
+**Executed-by** (filled at completion):
+
+**Step-types**: NATIVE-AND (inspection), DOCS
+**Est-Effort**: 30-60m
+
+## Task 10 -- SEC-4: Android network_security_config.xml (Priority 38)
+
+**Value**: This makes TLS-only network policy explicit and Play-reviewer-visible instead of
+implicit in library defaults.
+
+**Requirements** (numbered, detailed):
+- R-1: `network_security_config.xml` declaring cleartext traffic DISABLED app-wide (no
+  per-domain exceptions -- IMAP/OAuth endpoints are all TLS; localhost OAuth loopback is
+  Windows-only and does not exist on Android's appauth flow -- verify this claim against the
+  Android sign-in flow before finalizing, and add the loopback exception ONLY if the verify
+  proves it needed).
+- R-2: Referenced from the application element of the manifest.
+- R-3: Live verification on-device: Gmail sign-in + AOL IMAP scan still work with the config
+  active (proves no hidden cleartext dependency).
+
+**Affected components / files**:
+- `mobile-app/android/app/src/main/res/xml/network_security_config.xml` (NEW).
+- `mobile-app/android/app/src/main/AndroidManifest.xml` -- `android:networkSecurityConfig`.
+
+**Dependencies / blockers**: Part of the release-build chain (manifest edit -- lands before
+the final validation cycle).
+
+**Non-functional requirements**: Platform: Android-only mechanism (ADR-0042 exception);
+parity note: both platforms are TLS-only in behavior -- this makes Android's declaration
+explicit.
+
+**Acceptance criteria** (measurable, traceable):
+- AC-1: Config present, referenced, and `cleartextTrafficPermitted="false"` effective
+  (merged-manifest + resource verified in the chain build).
+- AC-2: R-3 live checks pass on the release-chain build.
+
+**Tests to write**: none mandatory (config + live verify); the GP-3 merged-manifest capture
+doubles as AC-1 evidence.
+
+**Definition of Done**: default DoD.
+
+**Model**: Haiku -- (single config file + manifest attribute with a written spec; the one
+judgment point (loopback) has an explicit verify instruction).
+
+**Executed-by** (filled at completion):
+
+**Step-types**: NATIVE-AND, DOCS
+**Est-Effort**: 20-40m
+
+---
+
+## Execution order and the single validation cycle
+
+1. **Task 1 GP-16 (+GP-5) FIRST** (Harold's fixed decision) -- starts Google's external
+   verification clock; Harold-driven.
+2. Group A parallel-friendly: Task 2 (F186), Task 4 (F188), then Task 3 (F187 -- needs
+   Harold's set confirmation; F188 sweep runs after F187's cleanup).
+3. Release-build chain in order: Task 5 (SEC-9) -> Task 6 (GP-2) -> Task 7 (GP-9) -> Task 10
+   (SEC-4) -> ONE signed-minified prod-flavor release build -> Task 8 (GP-8 verify) + Task 9
+   (GP-3 verify) against that artifact -> full on-device validation list (GP-9 R-4).
+4. No build-input edits while any build runs; Windows and Android builds serialized.
+
+## Sprint-level notes
+
+- **Model summary**: Fable/Opus 3 (Tasks 1, 3, 6 -- walkthrough judgment, live-data
+  deletion, ADR decision), Sonnet 3 (Tasks 2, 5, 7), Haiku 4 (Tasks 4, 8, 9, 10).
+  Cheapest-first walked per card; "why not cheaper" on every non-Haiku line.
+- **Est total**: 575-1,060m coding/verify (~10-18h) plus Harold-driven walkthrough pace.
+- **Decision-class interrupts known in advance**: ADR-0027 signing decision (Task 6,
+  Class-1, surfaced at a natural break); F187 deletion-set confirmation (Task 3, data
+  approval); GP-5 hosting URL (Task 1, in-walkthrough).
+- **Architecture Impact Check (3.6.1)**: ADR-0027 decided in-sprint (Task 6);
+  ARCHITECTURE.md gains the Android release-build chain (signing/R8/netsec) section;
+  ADR-0042 exception register grows by the declared exceptions above; no other ADR touched.
+- **Carry context**: 0.13.0.0/Submission 20 certification watch is Phase 8 tail work, not
+  sprint scope. F94 console-prereq re-scope note stands in the master plan (SEC-9 R-2
+  embodies the appauth finding).
+- **MV preview (refined at 5.3)**: GP-16 account state review; published legal URLs; F186
+  body-rule create/round-trip on BOTH apps; F187 set approval + post-delete scan; F188
+  invalid-rule flag; SEC-9 dev sign-in; chain validation -- signed minified prod AAB installed,
+  full surface list (GP-9 R-4) on the emulator; GP-8/GP-3 reports reviewed.
+
+## Manual Validation -- planned steps (to be refined at Phase 5.3)
+
+1. Task 1 outcomes: account + verification state, URLs live, placeholders gone.
+2. F186: create a body rule on Windows AND Android; round-trip + live match demo.
+3. F187: approve enumerated set; post-delete counts + scan; deferred-fetch delta vs Sprint 63.
+4. F188: corrupted-rule fixture shows the invalid marker + warning log.
+5. Release chain: install the signed minified prod AAB; run the full GP-9 R-4 surface list;
+   review GP-8/GP-3/SEC-4 evidence.
+6. SEC-9: dev-flavor sign-in unchanged.
