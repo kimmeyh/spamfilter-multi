@@ -351,16 +351,24 @@ AC-2 live check; rollback = revert commit (no data involved).
 **Value**: This enables ANY Play upload (closed test included) -- nothing ships unsigned --
 and decides ADR-0027.
 
-**Requirements** (numbered, detailed):
-- R-1: Create the upload keystore (Harold holds the passwords; never committed -- stored
-  outside the repo, documented location + backup guidance).
-- R-2: `signingConfigs` in `build.gradle.kts` sources keystore path/passwords from
-  `key.properties` (gitignored) or env -- release builds signed with it
-  (`build.gradle.kts:79` currently debug-signs release: the exact line this replaces).
-- R-3: Play App Signing decision (Google holds the app signing key; our keystore = upload
-  key) is taken with Harold and recorded in ADR-0027 (Proposed -> Accepted/amended).
-- R-4: `.gitignore` covers key.properties + keystore files BEFORE they exist (order matters).
-- R-5: Both flavors x debug/release still build; debug behavior unchanged.
+**Requirements** (numbered, detailed) -- CORRECTED at execution (2026-08-28): ADR-0027 was
+found already ACCEPTED (2026-02-15) with Option B decided -- build-time keystore injection
+via the build-with-secrets.ps1 pattern, key.properties explicitly REJECTED (its Option A),
+Play App Signing enrollment, AAB for Play + APK for testing. The card as planned assumed a
+Proposed ADR and the key.properties shape; the card is corrected to EXECUTE the accepted
+decision (the GP-12 pattern -- no new architecture decision is being made):
+- R-1: Create the upload keystore with Harold (he holds the passwords; keystore stored
+  OUTSIDE the repository with documented location + backup guidance).
+- R-2: `signingConfigs` in `build.gradle.kts` sources keystore path/alias/passwords from
+  build-time parameters (environment variables / gradle -P) supplied by
+  `build-with-secrets.ps1` at release-build time -- per the accepted ADR, NO key.properties
+  file (`build.gradle.kts:79` currently debug-signs release: the exact line this replaces).
+- R-3: Play App Signing enrollment (Google holds the app signing key; ours = upload key) is
+  the ADR's accepted choice -- happens at first Play Console upload; record enrollment
+  outcome when it occurs.
+- R-4: `.gitignore` covers `*.jks`/`*.keystore` BEFORE the keystore exists (order matters).
+- R-5: Both flavors x debug/release still build; debug behavior unchanged; release build
+  FAILS loudly when signing parameters are absent.
 
 **Affected components / files**:
 - `mobile-app/android/app/build.gradle.kts` -- signingConfigs + release signingConfig swap.
