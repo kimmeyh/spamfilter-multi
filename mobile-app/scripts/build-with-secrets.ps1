@@ -410,11 +410,18 @@ try {
             Write-Host "[ERROR] GP-2: keystore not found at $($signing.keystorePath)." -ForegroundColor Red
             exit 1
         }
-        $gradleProjectArgs += "-PandroidKeystorePath=$($signing.keystorePath)"
-        $gradleProjectArgs += "-PandroidKeystorePassword=$($signing.keystorePassword)"
-        $gradleProjectArgs += "-PandroidKeyAlias=$($signing.keyAlias)"
-        $gradleProjectArgs += "-PandroidKeyPassword=$($signing.keyPassword)"
-        Write-Host "[INFO] GP-2: release signing injected from $SigningConfigPath (keystore: $($signing.keystorePath))" -ForegroundColor Cyan
+        # ENVIRONMENT VARIABLES, not -P args, deliberately: flutter is a .bat
+        # shim on Windows and cmd.exe treats &, ?, and friends in argument
+        # values as metacharacters -- a password containing & silently ATE the
+        # rest of the argument list on first live use (2026-08-28). Env vars
+        # cross the shim byte-clean, gradle already reads them as the
+        # documented fallback (ANDROID_* in build.gradle.kts), and secrets
+        # stay out of process command lines. Cleared in this script's finally.
+        $env:ANDROID_KEYSTORE_PATH = $signing.keystorePath
+        $env:ANDROID_KEYSTORE_PASSWORD = $signing.keystorePassword
+        $env:ANDROID_KEY_ALIAS = $signing.keyAlias
+        $env:ANDROID_KEY_PASSWORD = $signing.keyPassword
+        Write-Host "[INFO] GP-2: release signing injected via environment from $SigningConfigPath (keystore: $($signing.keystorePath))" -ForegroundColor Cyan
     }
 
     # GP-2 (ADR-0027): AAB is the Play Store upload format; APK stays the
@@ -714,6 +721,9 @@ try {
     Write-Host "[FATAL ERROR] $($_.Exception.Message)" -ForegroundColor Red
     Write-Host $_.ScriptStackTrace -ForegroundColor Yellow
     exit 1
-} # Close main try/catch block
+} finally {
+    # GP-2: signing material never outlives the build invocation.
+    Remove-Item Env:ANDROID_KEYSTORE_PATH, Env:ANDROID_KEYSTORE_PASSWORD, Env:ANDROID_KEY_ALIAS, Env:ANDROID_KEY_PASSWORD -ErrorAction SilentlyContinue
+} # Close main try/catch/finally block
 
 # End of script

@@ -426,15 +426,26 @@ in the plan (public info, needed later for API console registrations).
 decision + release-credential handling design (Class-1 adjacent); the gradle mechanics alone
 would be Sonnet, the decision record is what pulls the tier.
 
-**Executed-by** (filled at completion): Fable (main session). CODE COMPLETE 2026-08-28 --
-gradle signingConfigs from four -P props (env fallback) per the accepted ADR-0027 Option B
+**Executed-by** (filled at completion): Fable (main session). COMPLETE 2026-08-28 --
+gradle signingConfigs from four signing parameters per the accepted ADR-0027 Option B
 (key.properties correctly NOT used); release-without-params throws (proven by direct gradle
 invocation); debug path proven unaffected; build-with-secrets.ps1 injects from the
 outside-repo signing JSON, gains -Output aab; .gitignore + policy gate
 android_signing_test.dart (4 tests, incl. git ls-files scan); ADR-0027 implementation note;
 suite 1,982/15/0 (one flaky-red run traced to my gradle dry-runs executing DURING the
-suite -- retro note: serialize gradle invocations against test runs). REMAINING: Harold's
-keystore ceremony, then the signed-AAB proof (AC-1 fingerprint) in the chain validation.
+suite -- retro note: serialize gradle invocations against test runs).
+CEREMONY + PROOF (2026-08-28 morning): Harold created the upload keystore (regenerated once
+for a stronger password; old file deleted pre-upload so zero consequence) + signing JSON;
+JSON-opens-keystore verified via keytool -list without displaying secrets. LIVE DEFECT
+found on first real use: the -P command-line injection was EATEN by the flutter .bat shim
+when the password contained cmd metacharacters (&) -- switched to ENVIRONMENT-VARIABLE
+injection (gradle's documented fallback), which also keeps secrets out of process command
+lines; cleared in the script's finally. First genuinely-signed AAB built:
+app-prod-release.aab 55.85 MB; **AC-1 PASS: keystore cert SHA-256 == AAB signer SHA-256
+(68:75:8B:9B:7B:EB:CE:0E:C3:EA:3F:A4:05:12:1F:0D:0A:9A:D8:35:01:62:67:5C:61:C3:4C:DA:AD:CD:49:58)**.
+Play App Signing enrollment happens at first upload (Sprint 65). Harold's DPAPI-vs-plaintext
+storage decision for the signing JSON: OPEN at completion (asked; env-var change already
+removed command-line exposure) -- carry to MV/retro if unanswered.
 
 **Step-types**: SVC-EDIT, NATIVE-AND (gradle), DOCS (ADR), TEST-UNIT
 **Est-Effort**: 120-240m (includes Harold keystore + ADR interaction)
