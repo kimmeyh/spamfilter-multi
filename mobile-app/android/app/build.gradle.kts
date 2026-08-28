@@ -125,11 +125,61 @@ android {
         }
     }
 
+    // GP-2 (Sprint 64, executes ADR-0027 Option B -- Accepted 2026-02-15):
+    // release signing via BUILD-TIME INJECTION, not key.properties (the ADR's
+    // rejected Option A). Four parameters arrive as gradle -P properties
+    // (build-with-secrets.ps1 supplies them from a signing JSON stored
+    // OUTSIDE the repository) with environment-variable fallback for CI/CD
+    // futures. The keystore file itself also lives outside the repository;
+    // .gitignore additionally bans *.jks/*.keystore as a belt-and-suspenders
+    // guard (test/policy/android_signing_test.dart pins all of this).
+    fun signingParam(prop: String, env: String): String? =
+        (project.findProperty(prop) as String?)?.takeIf { it.isNotBlank() }
+            ?: System.getenv(env)?.takeIf { it.isNotBlank() }
+
+    val ksPath = signingParam("androidKeystorePath", "ANDROID_KEYSTORE_PATH")
+    val ksStorePassword = signingParam("androidKeystorePassword", "ANDROID_KEYSTORE_PASSWORD")
+    val ksAlias = signingParam("androidKeyAlias", "ANDROID_KEY_ALIAS")
+    val ksKeyPassword = signingParam("androidKeyPassword", "ANDROID_KEY_PASSWORD")
+    val haveAllSigningParams =
+        listOf(ksPath, ksStorePassword, ksAlias, ksKeyPassword).all { it != null }
+
+    signingConfigs {
+        if (haveAllSigningParams) {
+            create("release") {
+                storeFile = file(ksPath!!)
+                storePassword = ksStorePassword
+                keyAlias = ksAlias
+                keyPassword = ksKeyPassword
+            }
+        }
+    }
+
     buildTypes {
         release {
-            // TODO: Add your own signing config for the release build.
-            // Signing with the debug keys for now, so `flutter run --release` works.
-            signingConfig = signingConfigs.getByName("debug")
+            if (haveAllSigningParams) {
+                signingConfig = signingConfigs.getByName("release")
+            } else {
+                val isReleaseBuild = gradle.startParameter.taskNames.any {
+                    it.contains("Release", ignoreCase = true)
+                }
+                if (isReleaseBuild) {
+                    throw GradleException(
+                        "GP-2: release signing parameters are missing for a RELEASE " +
+                        "build (need androidKeystorePath / androidKeystorePassword / " +
+                        "androidKeyAlias / androidKeyPassword gradle properties, or " +
+                        "their ANDROID_* environment variables). " +
+                        "build-with-secrets.ps1 -BuildType release supplies them from " +
+                        "the signing JSON outside the repository (ADR-0027). A release " +
+                        "build must never fall back to debug signing silently."
+                    )
+                }
+                // Debug tasks still configure the release buildType; keep the
+                // historical debug-signing fallback there so debug workflows
+                // are untouched. Only an actual Release task hits the throw
+                // above.
+                signingConfig = signingConfigs.getByName("debug")
+            }
         }
     }
 }

@@ -2,7 +2,12 @@
 
 ## Status
 
-Accepted
+Accepted -- IMPLEMENTED Sprint 64 (2026-08-28, Issue #373): gradle signingConfigs read the
+four `-P` properties (env-var fallback) supplied by `build-with-secrets.ps1` from
+`%USERPROFILE%\.myemailspamfilter\android-signing.json` (outside the repo, per Option B --
+no key.properties); a Release task without them throws; `-Output aab` added for the Play
+bundle; keystore material gitignore-banned and pinned by
+`test/policy/android_signing_test.dart`.
 
 ## Date
 

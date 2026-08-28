@@ -416,7 +416,15 @@ in the plan (public info, needed later for API console registrations).
 decision + release-credential handling design (Class-1 adjacent); the gradle mechanics alone
 would be Sonnet, the decision record is what pulls the tier.
 
-**Executed-by** (filled at completion):
+**Executed-by** (filled at completion): Fable (main session). CODE COMPLETE 2026-08-28 --
+gradle signingConfigs from four -P props (env fallback) per the accepted ADR-0027 Option B
+(key.properties correctly NOT used); release-without-params throws (proven by direct gradle
+invocation); debug path proven unaffected; build-with-secrets.ps1 injects from the
+outside-repo signing JSON, gains -Output aab; .gitignore + policy gate
+android_signing_test.dart (4 tests, incl. git ls-files scan); ADR-0027 implementation note;
+suite 1,982/15/0 (one flaky-red run traced to my gradle dry-runs executing DURING the
+suite -- retro note: serialize gradle invocations against test runs). REMAINING: Harold's
+keystore ceremony, then the signed-AAB proof (AC-1 fingerprint) in the chain validation.
 
 **Step-types**: SVC-EDIT, NATIVE-AND (gradle), DOCS (ADR), TEST-UNIT
 **Est-Effort**: 120-240m (includes Harold keystore + ADR interaction)

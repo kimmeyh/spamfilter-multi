@@ -60,6 +60,17 @@ param(
     # console registrations land; flip this default to 'dev' then.
     [ValidateSet('dev', 'prod')]
     [string]$Env = 'prod',
+
+    # GP-2 (Sprint 64, ADR-0027 Option B): signing parameters for RELEASE
+    # builds live in a JSON file OUTSIDE the repository (keys: keystorePath,
+    # keystorePassword, keyAlias, keyPassword). Never committed, never inside
+    # the repo tree. Debug builds ignore this entirely.
+    [string]$SigningConfigPath = "$env:USERPROFILE\.myemailspamfilter\android-signing.json",
+
+    # GP-2: 'apk' for local testing/emulator installs (default, unchanged
+    # behavior); 'aab' for the Play Store upload bundle (release only).
+    [ValidateSet('apk', 'aab')]
+    [string]$Output = 'apk',
     
     [switch]$InstallToEmulator,
     
@@ -376,19 +387,58 @@ try {
         Write-Host "[WARNING] ANDROID_GMAIL_CLIENT_ID not set in secrets.dev.json -- gradle will warn (debug) or fail (release)." -ForegroundColor Yellow
     }
 
+    # GP-2 (Sprint 64, ADR-0027): RELEASE builds are signed with the upload
+    # keystore via build-time -P injection. The signing JSON (and the keystore
+    # it points at) live OUTSIDE the repository. Missing config on a release
+    # build fails HERE with instructions; gradle's own GradleException is the
+    # second net. Debug builds skip signing injection entirely.
+    if ($BuildType -eq 'release') {
+        if (-not (Test-Path $SigningConfigPath)) {
+            Write-Host "[ERROR] GP-2: release signing config not found at $SigningConfigPath" -ForegroundColor Red
+            Write-Host "        Create it (JSON keys: keystorePath, keystorePassword, keyAlias, keyPassword)" -ForegroundColor Red
+            Write-Host "        pointing at the upload keystore (docs/adr/0027 + SPRINT_64_PLAN.md Task 6)." -ForegroundColor Red
+            exit 1
+        }
+        $signing = Get-Content $SigningConfigPath -Raw | ConvertFrom-Json
+        foreach ($k in @('keystorePath', 'keystorePassword', 'keyAlias', 'keyPassword')) {
+            if (-not $signing.$k) {
+                Write-Host "[ERROR] GP-2: signing config $SigningConfigPath is missing key '$k'." -ForegroundColor Red
+                exit 1
+            }
+        }
+        if (-not (Test-Path $signing.keystorePath)) {
+            Write-Host "[ERROR] GP-2: keystore not found at $($signing.keystorePath)." -ForegroundColor Red
+            exit 1
+        }
+        $gradleProjectArgs += "-PandroidKeystorePath=$($signing.keystorePath)"
+        $gradleProjectArgs += "-PandroidKeystorePassword=$($signing.keystorePassword)"
+        $gradleProjectArgs += "-PandroidKeyAlias=$($signing.keyAlias)"
+        $gradleProjectArgs += "-PandroidKeyPassword=$($signing.keyPassword)"
+        Write-Host "[INFO] GP-2: release signing injected from $SigningConfigPath (keystore: $($signing.keystorePath))" -ForegroundColor Cyan
+    }
+
+    # GP-2 (ADR-0027): AAB is the Play Store upload format; APK stays the
+    # local-testing format. -Output aab requires -BuildType release (Play
+    # accepts release bundles only).
+    if ($Output -eq 'aab' -and $BuildType -ne 'release') {
+        Write-Host "[ERROR] GP-2: -Output aab requires -BuildType release." -ForegroundColor Red
+        exit 1
+    }
+    $buildTarget = if ($Output -eq 'aab') { 'appbundle' } else { 'apk' }
+
     if ($supportsFromFile) {
         Write-Host "[INFO] Using --dart-define-from-file=secrets.dev.json" -ForegroundColor Cyan
         if ($BuildType -eq 'release') {
-            flutter build apk --release @flavorArgs --dart-define-from-file=secrets.dev.json @gradleProjectArgs
+            flutter build $buildTarget --release @flavorArgs --dart-define-from-file=secrets.dev.json @gradleProjectArgs
         } else {
-            flutter build apk --debug @flavorArgs --dart-define-from-file=secrets.dev.json @gradleProjectArgs
+            flutter build $buildTarget --debug @flavorArgs --dart-define-from-file=secrets.dev.json @gradleProjectArgs
         }
     } else {
         Write-Host "[INFO] Using explicit --dart-define flags" -ForegroundColor Cyan
         if ($BuildType -eq 'release') {
-            flutter build apk --release @flavorArgs $dartDefines @gradleProjectArgs
+            flutter build $buildTarget --release @flavorArgs $dartDefines @gradleProjectArgs
         } else {
-            flutter build apk --debug @flavorArgs $dartDefines @gradleProjectArgs
+            flutter build $buildTarget --debug @flavorArgs $dartDefines @gradleProjectArgs
         }
     }
 
@@ -399,13 +449,16 @@ try {
 
     Write-Host ""
     Write-Host "[INFO] Build successful!" -ForegroundColor Green
-    
+
     # F94: flavored builds ALWAYS emit app-<flavor>-<buildtype>.apk (no
     # un-flavored fallback -- with productFlavors defined it could only ever
     # pick up a stale pre-flavor artifact and install the wrong APK).
     $apkPath = "build\app\outputs\flutter-apk\app-$Env-$BuildType.apk"
-    
-    Write-Host "[INFO] APK location: $apkPath" -ForegroundColor Gray
+    if ($Output -eq 'aab') {
+        $apkPath = "build\app\outputs\bundle\${Env}Release\app-$Env-release.aab"
+    }
+
+    Write-Host "[INFO] Artifact location: $apkPath" -ForegroundColor Gray
     Write-Host ""
 
     # Install to emulator if requested
