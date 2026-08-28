@@ -149,7 +149,17 @@ rollback-able (unpublish/re-publish).
 with regex-assist integration and cross-screen round-trip semantics; beyond a mechanical
 Haiku pattern-copy, below Fable-tier design work.
 
-**Executed-by** (filled at completion):
+**Executed-by** (filled at completion): Sonnet (as assigned; background agent). COMPLETE
+2026-08-28 -- 36/36 widget + 4/4 unit green, full suite 1,965/15/0, analyze clean; T-1 and
+T-3 mutation-verified (exactly one red each, reverts byte-clean). Bonus fix in scope-shape:
+pre-existing `_isDuplicate()` hardcoded `header_from` category -- now routes by type. R-3
+verified: RuleTestScreen already supports body patterns, no change. Recorded deviations:
+tests live in existing `test/ui/screens/` path (house convention); T-1/T-4 verify the
+confirm-dialog content + exact DB write shape rather than tapping Save end-to-end (a
+pre-existing FakeAsync/DB widget-test hazard on this screen, reproduced on the unmodified
+sibling path -- honest gap documented; the evaluator path is independently covered by T-3).
+Actual ~340m vs 90-150m est: ~110m implementation (in estimate) + ~230m diagnosing the
+pre-existing test-harness hazard (velocity row logged).
 
 **Step-types**: UI-MOVE, SVC-EDIT, TEST-WIDGET, TEST-UNIT
 **Est-Effort**: 90-150m

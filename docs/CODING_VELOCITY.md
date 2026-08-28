@@ -224,6 +224,7 @@ Append one row per completed task. `Est` = pre-task estimate (min). `Actual` = r
 | 2026-05-25 | 39 | S38-CI-2 info-card relocate | UI-MOVE | 10-20 | ~3 | Shared widget extracted; analyze clean. Est 3-7x high. |
 | 2026-05-25 | 39 | F77 hookify proceed-rule | HOOK | 15-25 | ~5 | Routed through existing hook (no separate rule); decision doc written. |
 | 2026-05-25 | 39 | F93 hook Phase-1 exempt | HOOK | 15-30 | ~6 | 13/13 hook tests pass. Est 3-5x high. |
+| 2026-08-28 | 64 | F186 body-rule authoring (Sonnet agent) | UI-MOVE+TEST-WIDGET+TEST-UNIT | 90-150 | ~340 | Implementation itself ~110m (in estimate); +230m diagnosing a PRE-EXISTING widget-test hazard (DB calls outside tester.runAsync hang under FakeAsync -- reproduced on the unmodified sibling path). Est miss is harness cost, not scope; lesson: budget separately for first-touch of a screen's widget-test harness. |
 
 ## How This Improves Over Time
 

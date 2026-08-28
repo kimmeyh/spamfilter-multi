@@ -177,6 +177,9 @@ class _RuleEditScreenState extends State<RuleEditScreen> {
         return 'exact_domain';
       case ManualRuleType.exactEmail:
         return 'exact_email';
+      case ManualRuleType.bodyPhrase:
+        // F186 (Sprint 64): matches ManualRuleCreateScreen._blockRuleSubType.
+        return 'keyword';
     }
   }
 
@@ -194,10 +197,12 @@ class _RuleEditScreenState extends State<RuleEditScreen> {
         return 30;
       case ManualRuleType.exactEmail:
         return 40;
+      case ManualRuleType.bodyPhrase:
+        return 50;
     }
   }
 
-  /// Available types for block rules (all four; safe senders are not editable here).
+  /// Available types for block rules (all five; safe senders are not editable here).
   List<ManualRuleType> get _availableTypes => ManualRuleType.values.toList();
 
   String get _inputHint {
@@ -209,6 +214,8 @@ class _RuleEditScreenState extends State<RuleEditScreen> {
         return 'Enter email, domain, or URL';
       case ManualRuleType.exactEmail:
         return 'Enter email address';
+      case ManualRuleType.bodyPhrase:
+        return 'Enter a phrase to match in the email body';
     }
   }
 
@@ -221,6 +228,8 @@ class _RuleEditScreenState extends State<RuleEditScreen> {
         return 'Examples: spam@example.com, example.com';
       case ManualRuleType.exactEmail:
         return 'Example: spam@example.com';
+      case ManualRuleType.bodyPhrase:
+        return 'Examples: click here to claim, act now';
     }
   }
 
@@ -253,6 +262,9 @@ class _RuleEditScreenState extends State<RuleEditScreen> {
       case ManualRuleType.exactEmail:
         result = ManualRulePatternGenerator.generateExactEmail(input);
         break;
+      case ManualRuleType.bodyPhrase:
+        result = ManualRulePatternGenerator.generateBodyPhrase(input);
+        break;
     }
 
     String pattern = result.pattern;
@@ -274,6 +286,11 @@ class _RuleEditScreenState extends State<RuleEditScreen> {
           break;
         case ManualRuleType.exactEmail:
           sourceDomain = cleaned;
+          break;
+        case ManualRuleType.bodyPhrase:
+          // Body phrases have no domain concept -- matches
+          // ManualRuleCreateScreen._generatePattern.
+          sourceDomain = '';
           break;
       }
     }

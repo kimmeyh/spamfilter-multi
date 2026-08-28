@@ -25,6 +25,7 @@ Format: `- **type**: Description (Issue #N)` where type is feat|fix|chore|docs
 ---
 
 ## [Unreleased]
+- **feat**: F186 -- the manual rule create flow (Manage Rules) gains a Body Phrase rule type: enter a phrase, get the same plaintext-to-regex assist as the other four types, and the rule is saved as a body condition matched anywhere in the email body. Created rules display under the Body category in Manage Rules and round-trip through the existing rule-edit screen unchanged. (Issue #369)
 
 ## [0.13.0] - 2026-08-27
 

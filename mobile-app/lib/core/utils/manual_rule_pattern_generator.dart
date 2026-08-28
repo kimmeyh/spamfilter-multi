@@ -13,6 +13,12 @@
 /// Auto-detection (`generateFromPlaintext`) infers the type from input shape
 /// without requiring the user to select a type first. This is the entry point
 /// for Sub-feature 2 of F25 (plain text auto-regex in RuleTestScreen).
+///
+/// F186 (Sprint 64) adds `generateBodyPhrase`: a fifth, non-domain pattern
+/// type for the manual rule CREATE flow. Body content is free text, not a
+/// domain/email/URL, so it does not fit the four domain-shape generators
+/// above -- the plaintext-to-regex assist for Body is a literal-phrase
+/// escape instead of domain extraction.
 library;
 
 import 'domain_validation.dart';
@@ -148,6 +154,37 @@ class ManualRulePatternGenerator {
     final escaped = RegExp.escape(cleaned);
     return PatternGenerationResult.success(
       pattern: '^$escaped\$',
+      typeLabel: typeLabel,
+    );
+  }
+
+  /// Generate a body-phrase block pattern (F186, Sprint 64).
+  ///
+  /// [input] is a free-text phrase to match literally, case-insensitively,
+  /// anywhere in the email body -- not a domain, email, or URL.
+  ///
+  /// Returns a pattern like `cancer\ lawsuit` (via [RegExp.escape]), which
+  /// matches the literal phrase anywhere in the (normalized) body text.
+  ///
+  /// Validation: the trimmed phrase must be non-empty and at least 3
+  /// characters, mirroring the minimum-length floor already enforced for
+  /// domain/TLD input by [DomainValidation] so a single stray character
+  /// cannot become an overly broad body rule.
+  static PatternGenerationResult generateBodyPhrase(String input) {
+    const typeLabel = 'Body Phrase';
+    final phrase = input.trim();
+    if (phrase.isEmpty) {
+      return PatternGenerationResult.failure(
+          typeLabel: typeLabel, error: 'Please enter a phrase to match');
+    }
+    if (phrase.length < 3) {
+      return PatternGenerationResult.failure(
+          typeLabel: typeLabel,
+          error: 'Phrase must be at least 3 characters');
+    }
+    final escaped = RegExp.escape(phrase.toLowerCase());
+    return PatternGenerationResult.success(
+      pattern: escaped,
       typeLabel: typeLabel,
     );
   }
