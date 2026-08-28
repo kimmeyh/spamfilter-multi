@@ -38,8 +38,15 @@ Prerequisites to have ready BEFORE starting:
 - [ ] A payment method for the **$25 one-time** registration fee.
 - [ ] An Android device with the **Play Console app** installed (new personal accounts must
       verify device access through it).
-- [ ] A developer contact email and phone number (Google verifies both; the email is shown
-      publicly on the listing unless a separate contact is configured later).
+- [ ] A developer contact email and phone number (Google OTP-verifies both). CORRECTED
+      2026-08-27 against the requirements page: the contact email/phone are PRIVATE ("NOT
+      shown to users on Google Play") -- the publicly shown address is the separate
+      "developer email" field on the public developer profile, set later before the listing
+      goes live. Personal email is fine for the private contact fields.
+- Ownership note (verified 2026-08-27): the owning Google account can be CHANGED later via
+  the supported self-service ownership transfer (Users and permissions -> Make account
+  owner; new owner re-verifies identity, must not already own a console account,
+  payments-profile admin added first). Choosing an account now is not a lock-in.
 
 Steps:
 1. Go to https://play.google.com/console/signup and choose **Yourself** (personal account).
