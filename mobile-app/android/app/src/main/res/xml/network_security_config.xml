@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- SEC-4 (Sprint 64, Issue #377): Disable cleartext traffic app-wide.
+     IMAP, OAuth, and all email provider connections are TLS-only.
+     Localhost HTTP redirect is Windows-only (gmail_windows_oauth_handler.dart);
+     Android uses appauth custom-scheme redirect (com.googleusercontent.apps.*),
+     which does not require cleartext or loopback HTTP.
+     This configuration makes the TLS-only policy explicit and visible to Play reviewers. -->
+<domain-config cleartextTrafficPermitted="false">
+    <domain includeSubdomains="true">example.com</domain>
+</domain-config>

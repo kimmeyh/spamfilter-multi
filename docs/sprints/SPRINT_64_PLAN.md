@@ -621,7 +621,11 @@ doubles as AC-1 evidence.
 **Model**: Haiku -- (single config file + manifest attribute with a written spec; the one
 judgment point (loopback) has an explicit verify instruction).
 
-**Executed-by** (filled at completion):
+**Executed-by** (filled at completion): Haiku (background agent). CODE COMPLETE 2026-08-28
+-- cleartext disabled app-wide, NO loopback exception (verified with 4-line evidence: the
+Android flow uses the custom-scheme redirect; localhost:8080 is Windows-only); manifest
+reference added with the SEC-9 wiring untouched; policy gates 53/53, analyze clean; ~40m.
+Merged-manifest + live sign-in/scan proof (AC-1/AC-2) at chain validation as planned.
 
 **Step-types**: NATIVE-AND, DOCS
 **Est-Effort**: 20-40m

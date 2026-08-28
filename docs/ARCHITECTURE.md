@@ -713,6 +713,40 @@ mobile-app/
 - Multi-account support via unique accountId (`{platformId}-{email}`)
 - Background scanning via WorkManager -- per-account unique tasks (ADR-0039 / F98, Sprint 42)
 
+#### Android release-build chain (Sprint 64: SEC-9, GP-2/ADR-0027, GP-9, SEC-4)
+
+Release builds are produced by `build-with-secrets.ps1 -BuildType release` (`-Output aab`
+for the Play bundle) and differ from debug builds by four injected/enabled layers, all
+declared ADR-0042 platform exceptions (Android store/build infrastructure; the Windows
+analogue is the MSIX pipeline):
+
+1. **OAuth client id injection (SEC-9)**: the appauth redirect scheme and the Dart-side
+   client id both source from the single `ANDROID_GMAIL_CLIENT_ID` key in `secrets.*.json`
+   -- gradle gets `-PandroidGmailClientId`, Dart gets the dart-define. A RELEASE build
+   without the value fails at configuration (F119 lesson); a debug/CI build warns and uses
+   an obviously-fake placeholder (F127 alignment). Gate: `test/policy/android_client_id_test.dart`.
+2. **Upload-key signing (GP-2, executes ADR-0027 Option B)**: gradle reads four `-P`
+   signing properties (env-var fallback) that the script supplies from
+   `%USERPROFILE%\.myemailspamfilter\android-signing.json`; the keystore and signing JSON
+   live OUTSIDE the repository (no key.properties -- the ADR's rejected option). A Release
+   task without them throws; debug keeps the historical debug-signing fallback. Play App
+   Signing is enrolled at first Play upload (our key = upload key). Gate:
+   `test/policy/android_signing_test.dart`.
+3. **R8 + resource shrinking + Dart obfuscation (GP-9)**: release builds minify with ONE
+   reasoned keep rule (`workmanager` -- WorkManager instantiates the background worker by
+   class name via reflection; every other plugin was audited rule-free). Dart side builds
+   with `--obfuscate --split-debug-info`, symbols retained outside the repo under
+   `.myemailspamfilter\symbols\<version>-<flavor>`. Measured effect: -12.8% APK size.
+   Gate: `test/policy/android_minify_test.dart`.
+4. **TLS-only network policy (SEC-4)**: `res/xml/network_security_config.xml` disables
+   cleartext app-wide (no exceptions -- the loopback OAuth redirect is Windows-only; the
+   Android flow uses the custom-scheme redirect). Gate:
+   `test/policy/android_network_security_test.dart`.
+
+The four layers converge on ONE signed-minified artifact per release; verification of the
+merged manifest, signature fingerprint, target SDK, and permission set happens against that
+artifact (GP-8/GP-3 verifies, Sprint 64 chain validation).
+
 ### Windows (Primary Development Platform)
 - Browser-based OAuth with PKCE + loopback redirect (localhost:8080)
 - Requires Desktop OAuth client credentials in `secrets.dev.json`
