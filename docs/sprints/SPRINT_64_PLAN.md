@@ -532,7 +532,21 @@ platform-requirement compliance).
 **Model**: Haiku -- (verify-and-report with an explicit method; escalate only if a gap needs
 design).
 
-**Executed-by** (filled at completion):
+**Executed-by** (filled at completion): Fable (main session; ran directly against the chain
+artifact rather than spawning an agent). COMPLETE 2026-08-28, verdict **PASS on all
+requirements**:
+- Effective SDKs from the merged release manifest: **targetSdk 36, minSdk 24** (resolved
+  from flutter.targetSdkVersion by the current toolchain).
+- Requirement (verified from Google's pages, checked 2026-08-28): new apps submitted after
+  Aug 31, 2026 must target **API 36**; extension to Nov 1, 2026 available. WE ALREADY
+  TARGET 36 -- no gap (sources: Play target-API policy pages, support.google.com answers
+  11926878/16561298).
+- 16 KB page size (required for API 35+ targets; update deadline Feb 1, 2027): `zipalign -c
+  -P 16 -v 4` = "Verification successful"; ELF LOAD alignment, ALL 64-bit libs, untruncated:
+  arm64-v8a libapp.so 2**16, libflutter.so 2**16, libsqlite3.arm64.android.so 2**14;
+  x86_64 libapp.so 2**16, libflutter.so 2**16, libsqlite3.x64.android.so 2**14 -- all at or
+  above the 2**14 requirement. PASS.
+- No fix items produced; nothing carried to Sprint 65 from this verify.
 
 **Step-types**: DOCS (verification report), NATIVE-AND (inspection)
 **Est-Effort**: 30-60m
@@ -577,7 +591,20 @@ entry.
 **Model**: Haiku -- (mechanical extract-classify-report with a defined method; merger-blame
 reading is documented gradle tooling).
 
-**Executed-by** (filled at completion):
+**Executed-by** (filled at completion): Fable (main session; ran directly against the chain
+artifact). COMPLETE 2026-08-28. Merged RELEASE manifest captured (untruncated): 12
+permissions found, 9 required-and-justified (POST_NOTIFICATIONS F161; INTERNET IMAP/OAuth;
+FOREGROUND_SERVICE + SHORT_SERVICE, WAKE_LOCK, RECEIVE_BOOT_COMPLETED workmanager; VIBRATE
+notifications; ACCESS_NETWORK_STATE connectivity_plus; DYNAMIC_RECEIVER_NOT_EXPORTED
+androidx self-permission), 3 UNEXPECTED with merger blame: NFC (com.yubico.yubikit) and
+USE_BIOMETRIC + USE_FINGERPRINT (androidx.biometric), all transitive via msal_auth whose
+code path is dead (outlook_adapter fully commented out). REMOVED via tools:node="remove"
+with written justification in the manifest; post-removal merged manifest re-captured:
+exactly the 9 justified remain. This final permission list is GP-10's Data Safety input.
+Bonus lesson: my removal comment initially used the house double-hyphen and broke the XML
+parse -- the same defect class the SEC-9 agent documented an hour earlier; comment now
+warns against "fixing" the punctuation. Windows-parity note: the MSIX capability set
+(internetClient family) remains the minimal Windows analogue.
 
 **Step-types**: NATIVE-AND (inspection), DOCS
 **Est-Effort**: 30-60m

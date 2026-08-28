@@ -1,9 +1,24 @@
-<manifest xmlns:android="http://schemas.android.com/apk/res/android">
+<manifest xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools">
     <!-- F161 (Sprint 61): required on Android 13+ for the background-scan
          completion notification (the runtime request is made contextually in
          Settings when the user enables background scanning; this declaration
          is the manifest half). -->
     <uses-permission android:name="android.permission.POST_NOTIFICATIONS"/>
+    <!-- GP-3 (Sprint 64, Issue #376): these three permissions are injected by
+         TRANSITIVE libraries of msal_auth (androidx.biometric brings the
+         biometric pair; com.yubico.yubikit brings NFC), and the MSAL/Outlook
+         code path is entirely dead code today (outlook_adapter is fully
+         commented out; H5 tracks future Outlook support). The app uses none
+         of these capabilities, so they are stripped from the merged manifest:
+         a spam filter requesting NFC invites Play-review questions and user
+         distrust. REMOVE these removals in the sprint that activates
+         MSAL/Outlook sign-in, if that flow actually needs them. (Note: XML
+         comments cannot contain double hyphens; do not "fix" this comment's
+         punctuation back to the house dash style.) -->
+    <uses-permission android:name="android.permission.NFC" tools:node="remove"/>
+    <uses-permission android:name="android.permission.USE_BIOMETRIC" tools:node="remove"/>
+    <uses-permission android:name="android.permission.USE_FINGERPRINT" tools:node="remove"/>
     <application
         android:label="MyEmailSpamFilter${appLabelSuffix}"
         android:name="${applicationName}"
