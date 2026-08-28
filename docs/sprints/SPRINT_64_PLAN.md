@@ -339,7 +339,16 @@ release-build chain -- its build-config edit belongs inside the one validation c
 silent-failure history (F119 family); requires enumerating consumption sites across
 gradle/manifest/Dart and designing the loud-fail path.
 
-**Executed-by** (filled at completion):
+**Executed-by** (filled at completion): Sonnet (background agent). COMPLETE 2026-08-28 --
+4 consumption sites enumerated (+1 dead reference: the manifest embedded the literal
+directly, so the gradle placeholder was never referenced -- pre-existing bug, fixed);
+release builds FAIL loudly without the property, debug/CI warn + obvious placeholder (F127
+alignment); merged-manifest scheme verified BYTE-IDENTICAL to the pre-change literal; dev
+APK build-verified; policy gate 8/8, all gates 42/42, suite 1,978/15/0, mutation-verified.
+Two real defects caught only by the actual build (XML comment syntax; suffix leak into the
+scheme). Deviation: local secrets.dev.json had a STALE mismatched ANDROID_GMAIL_CLIENT_ID
+value (F94-era) -- corrected locally to the working literal. AC-2 live sign-in check
+deferred to MV per DoD. ~130m vs 30-60m est (defect diagnosis; velocity row logged).
 
 **Step-types**: SVC-EDIT, HOOK (build script), TEST-UNIT, DOCS
 **Est-Effort**: 30-60m

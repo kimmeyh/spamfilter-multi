@@ -38,9 +38,62 @@ android {
         targetSdk = flutter.targetSdkVersion
         versionCode = flutter.versionCode
         versionName = flutter.versionName
-        
-        // flutter_appauth redirect scheme (reversed Android OAuth client ID)
-        manifestPlaceholders["appAuthRedirectScheme"] = "com.googleusercontent.apps.577022808534-0ejdbmoouklgtucjo3tooovn2pr01ga2"
+
+        // SEC-9 (Sprint 64): flutter_appauth redirect scheme (reversed Android
+        // OAuth client ID), sourced from a gradle property instead of a
+        // hardcoded literal. build-with-secrets.ps1 supplies
+        // -PandroidGmailClientId=<id> per -Env, reading the SAME
+        // ANDROID_GMAIL_CLIENT_ID key from secrets.*.json that the Dart side
+        // reads via --dart-define (single source of truth, both sides in
+        // lockstep). Loud-fail policy (F119 lesson, adapted for CI): a
+        // RELEASE build with no value fails the build outright -- a signed
+        // release with an empty/placeholder redirect scheme cannot sign in
+        // and must never ship silently. A DEBUG build (including the CI
+        // Android-build-verification job, which passes no client-id property
+        // per the F127 decision) logs a loud warning and falls back to an
+        // OBVIOUSLY-FAKE placeholder so the compile still succeeds -- CI
+        // never runs the app, so the fallback only needs to be build-shaped,
+        // never a real (even if non-secret) credential. This keeps the real
+        // id fragment out of gradle entirely (test/policy/
+        // android_client_id_test.dart pins the source file, not just the
+        // resolved manifest scheme).
+        val androidGmailClientId = (project.findProperty("androidGmailClientId") as String?)
+            ?.takeIf { it.isNotBlank() }
+        val fallbackClientId = "000000000000-debugbuildplaceholderfallback"
+        val resolvedClientId = if (androidGmailClientId != null) {
+            androidGmailClientId
+        } else {
+            val isReleaseBuild = gradle.startParameter.taskNames.any {
+                it.contains("Release", ignoreCase = true)
+            }
+            if (isReleaseBuild) {
+                throw GradleException(
+                    "SEC-9: androidGmailClientId gradle property is missing for a " +
+                    "RELEASE build. Build with " +
+                    "-PandroidGmailClientId=<id> (build-with-secrets.ps1 supplies " +
+                    "this from secrets.*.json's ANDROID_GMAIL_CLIENT_ID key). " +
+                    "A release build must never ship with an empty OAuth redirect " +
+                    "scheme (F119 lesson)."
+                )
+            }
+            logger.warn(
+                "SEC-9 WARNING: androidGmailClientId gradle property not set; " +
+                "falling back to a placeholder value for this DEBUG build only " +
+                "(Gmail sign-in will NOT work with this build). Pass " +
+                "-PandroidGmailClientId=<id> to override. This is expected in " +
+                "CI (F127 decision) but NOT for a real device build that needs " +
+                "working Gmail sign-in."
+            )
+            fallbackClientId
+        }
+        // secrets.*.json's ANDROID_GMAIL_CLIENT_ID carries the FULL OAuth
+        // client id (e.g. "<prefix>.apps.googleusercontent.com"), matching
+        // the Google Cloud Console copy-paste format and the Dart-side
+        // dart-define value. The redirect scheme needs only the id prefix
+        // (before the first dot) -- mirrors the Dart _mobileRedirectUri
+        // getter's `.split('.').first`.
+        val schemeIdPrefix = resolvedClientId.substringBefore(".")
+        manifestPlaceholders["appAuthRedirectScheme"] = "com.googleusercontent.apps.$schemeIdPrefix"
     }
 
     // F94 (Sprint 63): dev/prod flavors mirroring the Windows ADR-0035 split.

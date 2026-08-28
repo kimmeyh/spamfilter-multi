@@ -31,12 +31,19 @@
                 <category android:name="android.intent.category.LAUNCHER"/>
             </intent-filter>
             <!-- OAuth callback for flutter_appauth -->
-            <!-- Redirect URI scheme is reversed Android client ID -->
+            <!-- Redirect URI scheme is reversed Android client ID. -->
+            <!-- SEC-9 (Sprint 64): now sourced from the appAuthRedirectScheme
+                 manifestPlaceholder (build.gradle.kts defaultConfig), which is
+                 itself derived from the androidGmailClientId gradle property
+                 instead of a hardcoded literal. Previously this line embedded
+                 the literal directly, leaving the gradle placeholder unused;
+                 fixed as part of the same change (both must source from one
+                 place). -->
             <intent-filter>
                 <action android:name="android.intent.action.VIEW"/>
                 <category android:name="android.intent.category.DEFAULT"/>
                 <category android:name="android.intent.category.BROWSABLE"/>
-                <data android:scheme="com.googleusercontent.apps.577022808534-0ejdbmoouklgtucjo3tooovn2pr01ga2"/>
+                <data android:scheme="${appAuthRedirectScheme}"/>
             </intent-filter>
         </activity>
         <!-- Don't delete the meta-data below.

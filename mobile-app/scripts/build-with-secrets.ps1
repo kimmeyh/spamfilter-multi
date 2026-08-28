@@ -340,6 +340,9 @@ try {
         $dartDefines += "--dart-define=GMAIL_DESKTOP_CLIENT_ID=$($secrets.GMAIL_DESKTOP_CLIENT_ID)"
         $dartDefines += "--dart-define=GMAIL_OAUTH_CLIENT_SECRET=$($secrets.GMAIL_OAUTH_CLIENT_SECRET)"
         $dartDefines += "--dart-define=GMAIL_REDIRECT_URI=$($secrets.GMAIL_REDIRECT_URI)"
+        if ($secrets.ANDROID_GMAIL_CLIENT_ID) {
+            $dartDefines += "--dart-define=ANDROID_GMAIL_CLIENT_ID=$($secrets.ANDROID_GMAIL_CLIENT_ID)"
+        }
     }
     if ($aolValid) {
         Write-Host "   [INFO] Including AOL (IMAP)" -ForegroundColor Cyan
@@ -359,19 +362,33 @@ try {
     $flavorArgs = @('--flavor', $Env, "--dart-define=APP_ENV=$Env")
     Write-Host "[INFO] F94: building flavor '$Env' with APP_ENV=$Env" -ForegroundColor Cyan
 
+    # SEC-9 (Sprint 64): pass ANDROID_GMAIL_CLIENT_ID to the gradle side too,
+    # via -P (--android-project-arg), so build.gradle.kts's manifest
+    # placeholder reads the SAME value the Dart side gets from
+    # --dart-define-from-file. Both sides source from the single
+    # ANDROID_GMAIL_CLIENT_ID key in secrets.dev.json -- single source of
+    # truth. Missing from secrets.dev.json -> gradle's own loud-fail (release)
+    # or warning (debug) fires; this script does not duplicate that check.
+    $gradleProjectArgs = @()
+    if ($secrets.ANDROID_GMAIL_CLIENT_ID) {
+        $gradleProjectArgs += "-PandroidGmailClientId=$($secrets.ANDROID_GMAIL_CLIENT_ID)"
+    } else {
+        Write-Host "[WARNING] ANDROID_GMAIL_CLIENT_ID not set in secrets.dev.json -- gradle will warn (debug) or fail (release)." -ForegroundColor Yellow
+    }
+
     if ($supportsFromFile) {
         Write-Host "[INFO] Using --dart-define-from-file=secrets.dev.json" -ForegroundColor Cyan
         if ($BuildType -eq 'release') {
-            flutter build apk --release @flavorArgs --dart-define-from-file=secrets.dev.json
+            flutter build apk --release @flavorArgs --dart-define-from-file=secrets.dev.json @gradleProjectArgs
         } else {
-            flutter build apk --debug @flavorArgs --dart-define-from-file=secrets.dev.json
+            flutter build apk --debug @flavorArgs --dart-define-from-file=secrets.dev.json @gradleProjectArgs
         }
     } else {
         Write-Host "[INFO] Using explicit --dart-define flags" -ForegroundColor Cyan
         if ($BuildType -eq 'release') {
-            flutter build apk --release @flavorArgs $dartDefines
+            flutter build apk --release @flavorArgs $dartDefines @gradleProjectArgs
         } else {
-            flutter build apk --debug @flavorArgs $dartDefines
+            flutter build apk --debug @flavorArgs $dartDefines @gradleProjectArgs
         }
     }
 
