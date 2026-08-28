@@ -1,5 +1,27 @@
 # Google Play Developer Account Setup (GP-16)
 
+## ACCOUNT CREATED (Sprint 64, 2026-08-28)
+
+- **Developer name (public)**: Kimmey Consulting, Ohio (matches the Microsoft Store
+  publisher identity)
+- **Account type**: Personal | **Account ID**: 6597324007880348667
+- **Developer Google account**: myemailspamfilter.dev@gmail.com (dedicated account created
+  same night; 2-Step Verification ON; Gmail auto-forwards to Harold's personal address --
+  spam is NOT forwarded, check the dedicated spam folder during verification windows)
+- **Public developer email**: myemailspamfilter.dev@gmail.com (deliberately the dedicated
+  address, not the personal one)
+- **Private contact email/phone**: Harold's personal (OTP-verified at signup; phone
+  verification completes AFTER identity approval per the console)
+- **Signup walkthrough deviations from this guide**: signup asked for a Website
+  (identity-verification aid, not shown publicly) -- used the Microsoft Store listing
+  https://apps.microsoft.com/detail/9N5QK9G904C0; an "About you" experience questionnaire
+  and sensitive-app-categories checklist (None of the above) were presented; contact phone
+  field requires strict E.164 with no spaces (+1216...).
+- **Verification state at creation**: 3 pending -- (1) identity (ID upload; multi-day
+  Google review = the critical path), (2) Android device access via the Play Console app,
+  (3) contact phone (auto-unlocks after identity approval). App creation is LOCKED until
+  verifications complete ("Create app" greyed out).
+
 **Decision (Harold, 2026-08-25, at Sprint 63 plan approval)**: PERSONAL account. No D-U-N-S
 number is available, and the 12-testers / 14-continuous-days closed-test gate is accepted.
 
