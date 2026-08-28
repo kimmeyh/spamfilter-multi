@@ -25,6 +25,9 @@ Format: `- **type**: Description (Issue #N)` where type is feat|fix|chore|docs
 ---
 
 ## [Unreleased]
+
+### 2026-08-28 (Sprint 64)
+- **docs**: GP-5 -- the Privacy Policy and Terms of Use are published: effective date August 28, 2026, contact and canonical URLs set (https://myemailspamfilter.com/legal/), with a policy gate ensuring editorial placeholders can never reach the live site again. The site serves main:/docs on the existing custom domain, so the final text goes live with this branch's merge. (Issue #368)
 - **fix**: F188 -- invalid condition JSON now logs a warning at rule load (naming rule and column); Manage Rules shows rules with all-empty condition lists as "invalid -- matches nothing"; integrity sweep counts unparseable condition columns and logs the total when nonzero (Issue #371)
 - **feat**: F186 -- the manual rule create flow (Manage Rules) gains a Body Phrase rule type: enter a phrase, get the same plaintext-to-regex assist as the other four types, and the rule is saved as a body condition matched anywhere in the email body. Created rules display under the Body category in Manage Rules and round-trip through the existing rule-edit screen unchanged. (Issue #369)
 

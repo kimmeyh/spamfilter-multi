@@ -404,7 +404,7 @@ Recorded sequencing honored (see 'Recommended Sequencing' in the GP section belo
 - Platform: Android
 - Sequencing: 'Immediate' -- everything Play-side blocks on it; Google's verification has multi-day external lead time. $25 one-time. Harold-driven, Claude walks him through step by step.
 
-**GP-5. Privacy Policy and Legal Documents -- MOSTLY DONE (Sprint 63, PR #366: docs/legal/PRIVACY_POLICY.md + TERMS.md drafted per ADR-0030; TEXT APPROVED by Harold 2026-08-26). REMAINING: hosting URL choice + publication, folded into the Sprint 64 GP-16 walkthrough (placeholders stay '[SET AT PUBLICATION]' until then). Feeds GP-10 and the listing; GitHub Pages is the recorded default.**
+**GP-5. Privacy Policy and Legal Documents -- DONE (Sprint 64: PUBLISHED at https://myemailspamfilter.com/legal/ -- Pages was already live on Harold's custom domain serving main:/docs; placeholders filled (effective 2026-08-28, contact = the public developer email), regression gate test/policy/legal_docs_test.dart; filled text live at the Sprint 64 merge to main. Feeds GP-10 and the listing.)**
 
 **SEC-9. Move hardcoded Android client ID to build-time injection (~1h) Priority 28 (ACTIVATED off HOLD 2026-08-24 -- Harold: 'everything Android related... along with the gp-n items')**
 - Phase: Security / Android Google Play Store Readiness

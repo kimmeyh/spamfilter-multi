@@ -26,6 +26,15 @@
   few days" is the worst case; a clean ID submission cleared in under an hour. Account is
   fully operational. "Create app" deliberately deferred until the listing inputs exist
   (GP-5 published URL, GP-6/GP-7 assets, signed AAB from GP-2).
+- **GP-5 PUBLISHED (2026-08-28)**: discovery during publication -- GitHub Pages was ALREADY
+  enabled on the repo with Harold's custom domain https://myemailspamfilter.com serving
+  `main:/docs`, so the legal docs were already live (with placeholders showing). Canonical
+  URLs: https://myemailspamfilter.com/legal/PRIVACY_POLICY.html and .../TERMS.html.
+  Placeholders filled in docs/legal (effective date August 28, 2026; contact
+  myemailspamfilter.dev@gmail.com -- same address as the public developer email); the
+  filled text goes live when the Sprint 64 branch reaches main (next merge). Placeholder
+  regression gate: test/policy/legal_docs_test.dart. A briefly-created gh-pages branch was
+  removed as redundant (the site serves main, not gh-pages).
 
 **Decision (Harold, 2026-08-25, at Sprint 63 plan approval)**: PERSONAL account. No D-U-N-S
 number is available, and the 12-testers / 14-continuous-days closed-test gate is accepted.
