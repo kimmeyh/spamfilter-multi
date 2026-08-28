@@ -220,7 +220,17 @@ mid-sprint natural break.
 live personal databases; asymmetric error cost dominates the mechanical simplicity
 (precedent: Sprint 50 live prod-data repairs ran top tier).
 
-**Executed-by** (filled at completion):
+**Executed-by** (filled at completion): Fable (main session). COMPLETE 2026-08-28, both DBs:
+- Dev (approved 647 set): 647 deleted, 85 keepers, backup f187_backup_20260828_002529,
+  untruncated verify 0-remaining PASS.
+- Prod: found at DIFFERENT numbers than presented (1470 total / 1300 matched / 170 keep) --
+  the per-DB approval discipline (AC-1) STOPPED the apply; analysis showed the 1300 = 368
+  distinct link-domains duplicated 2-4x by legacy import eras (same semantic class, all
+  single-body-pattern/zero-other-conditions); Harold explicitly approved the prod numbers;
+  applied with backup f187_backup_20260828_082559, verify: 0 shape-matched remaining,
+  exactly 170 keepers. App confirmed not running at both applies.
+- SelfTest fixtures 3-in/5-out green; sprint63_mv_demo rule untouched (phrase class).
+- AC-4 (post-delete scan + deferred-fetch delta vs Sprint 63) lands at MV chain validation.
 
 **Step-types**: DATA, SVC-EDIT (script), TEST-UNIT
 **Est-Effort**: 45-90m
