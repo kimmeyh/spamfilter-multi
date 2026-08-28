@@ -46,9 +46,13 @@ class RuleDatabaseStorageException implements Exception {
 /// ```
 class RuleDatabaseStore {
   final RuleDatabaseProvider databaseProvider;
-  final Logger _logger = Logger();
+  final Logger _logger;
 
-  RuleDatabaseStore(RuleDatabaseProvider provider) : databaseProvider = provider;
+  /// [logger] is injectable so tests can assert the F188 parse warnings are
+  /// actually emitted (a warning nobody can observe is not a warning).
+  RuleDatabaseStore(RuleDatabaseProvider provider, {Logger? logger})
+      : databaseProvider = provider,
+        _logger = logger ?? Logger();
 
   /// Load all rules from database as RuleSet
   ///
@@ -84,6 +88,61 @@ class RuleDatabaseStore {
       return ruleSet;
     } catch (e) {
       throw RuleDatabaseStorageException('Failed to load rules from database', e);
+    }
+  }
+
+  /// Scan all rules and count those with unparseable condition columns
+  ///
+  /// Logs the count via Logger when nonzero (F188 integrity sweep).
+  /// Returns the count of rules with at least one unparseable condition column.
+  Future<int> auditUnparseableConditions() async {
+    try {
+      final rulesData = await databaseProvider.queryRules();
+      int corruptedCount = 0;
+
+      for (final ruleData in rulesData) {
+        bool isCorrupted = false;
+
+        // Check each condition column for parse failures
+        for (final column in ['condition_from', 'condition_header', 'condition_subject', 'condition_body']) {
+          final value = ruleData[column];
+          if (value != null && value is String) {
+            try {
+              jsonDecode(value);
+            } catch (e) {
+              isCorrupted = true;
+              break;
+            }
+          }
+        }
+
+        // Check each exception column for parse failures
+        if (!isCorrupted) {
+          for (final column in ['exception_from', 'exception_header', 'exception_subject', 'exception_body']) {
+            final value = ruleData[column];
+            if (value != null && value is String) {
+              try {
+                jsonDecode(value);
+              } catch (e) {
+                isCorrupted = true;
+                break;
+              }
+            }
+          }
+        }
+
+        if (isCorrupted) {
+          corruptedCount++;
+        }
+      }
+
+      if (corruptedCount > 0) {
+        _logger.w('F188: Found $corruptedCount rule(s) with unparseable condition columns');
+      }
+
+      return corruptedCount;
+    } catch (e) {
+      throw RuleDatabaseStorageException('Failed to audit unparseable conditions', e);
     }
   }
 
@@ -382,17 +441,18 @@ class RuleDatabaseStore {
 
   /// Map database row to Rule object
   Rule _mapDatabaseRowToRule(Map<String, dynamic> row) {
+    final ruleName = row['name'] as String;
     return Rule(
-      name: row['name'] as String,
+      name: ruleName,
       enabled: (row['enabled'] as int?) == 1,
       isLocal: (row['is_local'] as int?) == 1,
       executionOrder: row['execution_order'] as int,
       conditions: RuleConditions(
         type: row['condition_type'] as String? ?? 'AND',
-        from: _decodeJsonArray(row['condition_from']),
-        header: _decodeJsonArray(row['condition_header']),
-        subject: _decodeJsonArray(row['condition_subject']),
-        body: _decodeJsonArray(row['condition_body']),
+        from: _decodeJsonArray(row['condition_from'], ruleName, 'condition_from'),
+        header: _decodeJsonArray(row['condition_header'], ruleName, 'condition_header'),
+        subject: _decodeJsonArray(row['condition_subject'], ruleName, 'condition_subject'),
+        body: _decodeJsonArray(row['condition_body'], ruleName, 'condition_body'),
       ),
       actions: RuleActions(
         delete: (row['action_delete'] as int?) == 1,
@@ -401,10 +461,10 @@ class RuleDatabaseStore {
       ),
       exceptions: row['exception_from'] != null || row['exception_header'] != null || row['exception_subject'] != null || row['exception_body'] != null
           ? RuleExceptions(
-              from: _decodeJsonArray(row['exception_from']),
-              header: _decodeJsonArray(row['exception_header']),
-              subject: _decodeJsonArray(row['exception_subject']),
-              body: _decodeJsonArray(row['exception_body']),
+              from: _decodeJsonArray(row['exception_from'], ruleName, 'exception_from'),
+              header: _decodeJsonArray(row['exception_header'], ruleName, 'exception_header'),
+              subject: _decodeJsonArray(row['exception_subject'], ruleName, 'exception_subject'),
+              body: _decodeJsonArray(row['exception_body'], ruleName, 'exception_body'),
             )
           : null,
       metadata: row['metadata'] != null ? jsonDecode(row['metadata'] as String) as Map<String, dynamic> : null,
@@ -415,7 +475,7 @@ class RuleDatabaseStore {
   }
 
   /// Decode JSON array from database string
-  List<String> _decodeJsonArray(dynamic value) {
+  List<String> _decodeJsonArray(dynamic value, String ruleName, String columnName) {
     if (value == null) return [];
     if (value is String) {
       try {
@@ -424,7 +484,7 @@ class RuleDatabaseStore {
           return decoded.cast<String>();
         }
       } catch (e) {
-        _logger.w('Failed to decode JSON array: $e');
+        _logger.w('F188: Failed to parse condition JSON for rule "$ruleName" column "$columnName": $e');
       }
     }
     return [];

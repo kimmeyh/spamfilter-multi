@@ -108,6 +108,9 @@ class FakeRuleDatabaseStore implements RuleDatabaseStore {
 
   @override
   RuleDatabaseProvider get databaseProvider => FakeDatabaseProvider();
+
+  @override
+  Future<int> auditUnparseableConditions() async => 0;
 }
 
 void main() {

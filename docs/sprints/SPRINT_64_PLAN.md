@@ -273,7 +273,13 @@ call, confirm red).
 **Model**: Haiku -- (cheapest tier fits: single-store change + one rendering flag with a
 clear spec and named sites; escalate on any surprise in the load path).
 
-**Executed-by** (filled at completion):
+**Executed-by** (filled at completion): Haiku (background agent) + Fable hardening pass.
+COMPLETE 2026-08-28 -- warning + invalid marker + auditUnparseableConditions sweep; suite
+1,968/15/0, analyze clean. Main-session verification found the agent's T-1 did NOT assert
+the warning (deleting Logger.w stayed green -- the Sprint 63 isolated-branch class);
+hardened with an injectable Logger + MemoryOutput assertion, mutation re-run: exactly T-1
+red ("expected 1 F188 warning, got 0"), restored, all green. Lesson feeds retro Category 2:
+agent mutation claims are verified by re-running the mutation, not by reading the report.
 
 **Step-types**: SVC-EDIT, UI-MOVE, TEST-UNIT, TEST-WIDGET
 **Est-Effort**: 30-60m

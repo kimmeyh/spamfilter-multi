@@ -225,6 +225,8 @@ Append one row per completed task. `Est` = pre-task estimate (min). `Actual` = r
 | 2026-05-25 | 39 | F77 hookify proceed-rule | HOOK | 15-25 | ~5 | Routed through existing hook (no separate rule); decision doc written. |
 | 2026-05-25 | 39 | F93 hook Phase-1 exempt | HOOK | 15-30 | ~6 | 13/13 hook tests pass. Est 3-5x high. |
 | 2026-08-28 | 64 | F186 body-rule authoring (Sonnet agent) | UI-MOVE+TEST-WIDGET+TEST-UNIT | 90-150 | ~340 | Implementation itself ~110m (in estimate); +230m diagnosing a PRE-EXISTING widget-test hazard (DB calls outside tester.runAsync hang under FakeAsync -- reproduced on the unmodified sibling path). Est miss is harness cost, not scope; lesson: budget separately for first-touch of a screen's widget-test harness. |
+| 2026-08-28 | 64 | F188 neutralization warning (Haiku agent + Fable hardening) | SVC-EDIT+UI-MOVE+TEST-UNIT+TEST-WIDGET | 30-60 | ~57 | Agent ~42m, in estimate. +15m main-session: agent's T-1 did not assert the WARNING (mutation deleting Logger.w stayed green -- the isolated-branch class again); injectable Logger seam + MemoryOutput assertion added, mutation re-run red on exactly T-1. |
+| 2026-08-28 | 64 | F187 URL-rule cleanup -- script + dev apply (Fable) | DATA+SVC-EDIT | 45-90 | ~25 (dev half) | SelfTest 3-in/5-out; dev DB: 647 deleted, 85 keep, backup f187_backup_20260828_002529, verified untruncated. Prod found at DIFFERENT numbers (1300/1470, legacy-import duplicates 368 distinct) -- per-DB approval discipline caught it; prod awaiting Harold. |
 
 ## How This Improves Over Time
 

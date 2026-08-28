@@ -1,4 +1,5 @@
 import 'package:flutter_test/flutter_test.dart';
+import 'package:logger/logger.dart';
 import 'package:sqflite/sqflite.dart';
 import 'package:sqflite_common_ffi/sqflite_ffi.dart';
 
@@ -486,6 +487,124 @@ void main() {
         store.updateRule(bad),
         throwsA(isA<RuleDatabaseStorageException>()),
       );
+    });
+  });
+
+  group('F188 - Invalid JSON condition parsing', () {
+    late Database testDb;
+    late RuleDatabaseStore store;
+    late MockRuleDatabaseProvider mockHelper;
+
+    setUp(() async {
+      testDb = await createTestDatabase();
+      mockHelper = createMockHelper(testDb);
+      store = RuleDatabaseStore(mockHelper);
+    });
+
+    tearDown(() async {
+      await testDb.close();
+    });
+
+    test('loadRules with invalid condition JSON logs warning and returns empty list (AC-1)', () async {
+      // Insert a rule with invalid JSON in condition_header column
+      await testDb.insert('rules', {
+        'name': 'TestRuleInvalidJson',
+        'enabled': 1,
+        'is_local': 0,
+        'execution_order': 10,
+        'condition_type': 'AND',
+        'condition_from': null,
+        'condition_header': '{invalid json]', // intentionally malformed
+        'condition_subject': null,
+        'condition_body': null,
+        'action_delete': 0,
+        'action_move_to_folder': null,
+        'action_assign_category': null,
+        'date_added': DateTime.now().millisecondsSinceEpoch,
+      });
+
+      // Capture the store's log output so the WARNING itself is asserted --
+      // load-succeeds alone would stay green if the warning were deleted
+      // (the exact silent-failure class F188 exists to close).
+      final memoryOutput = MemoryOutput();
+      final capturingStore = RuleDatabaseStore(
+        mockHelper,
+        logger: Logger(output: memoryOutput, filter: ProductionFilter()),
+      );
+
+      // Load rules -- should not throw
+      final ruleSet = await capturingStore.loadRules();
+
+      // Rule should load with empty header condition list
+      expect(ruleSet.rules.length, 1);
+      final loadedRule = ruleSet.rules.first;
+      expect(loadedRule.name, 'TestRuleInvalidJson');
+      expect(loadedRule.conditions.header, isEmpty);
+
+      // Exactly one F188 warning, naming the rule and the column.
+      final warnings = memoryOutput.buffer
+          .where((e) => e.origin.level == Level.warning)
+          .map((e) => e.origin.message.toString())
+          .where((m) => m.contains('F188'))
+          .toList();
+      expect(warnings.length, 1,
+          reason: 'the parse failure must emit exactly one F188 warning');
+      expect(warnings.single, contains('TestRuleInvalidJson'));
+      expect(warnings.single, contains('condition_header'));
+    });
+
+    test('auditUnparseableConditions counts rules with invalid JSON (AC-3)', () async {
+      // Insert one valid rule and two rules with invalid condition JSON
+      await testDb.insert('rules', {
+        'name': 'ValidRule',
+        'enabled': 1,
+        'is_local': 0,
+        'execution_order': 10,
+        'condition_type': 'AND',
+        'condition_from': null,
+        'condition_header': '["valid"]',
+        'condition_subject': null,
+        'condition_body': null,
+        'action_delete': 0,
+        'action_move_to_folder': null,
+        'action_assign_category': null,
+        'date_added': DateTime.now().millisecondsSinceEpoch,
+      });
+
+      await testDb.insert('rules', {
+        'name': 'CorruptedRule1',
+        'enabled': 1,
+        'is_local': 0,
+        'execution_order': 20,
+        'condition_type': 'AND',
+        'condition_from': null,
+        'condition_header': '{invalid}',
+        'condition_subject': null,
+        'condition_body': null,
+        'action_delete': 0,
+        'action_move_to_folder': null,
+        'action_assign_category': null,
+        'date_added': DateTime.now().millisecondsSinceEpoch,
+      });
+
+      await testDb.insert('rules', {
+        'name': 'CorruptedRule2',
+        'enabled': 1,
+        'is_local': 0,
+        'execution_order': 30,
+        'condition_type': 'AND',
+        'condition_from': null,
+        'condition_header': null,
+        'condition_subject': null,
+        'condition_body': '[invalid',
+        'action_delete': 0,
+        'action_move_to_folder': null,
+        'action_assign_category': null,
+        'date_added': DateTime.now().millisecondsSinceEpoch,
+      });
+
+      final corruptedCount = await store.auditUnparseableConditions();
+      expect(corruptedCount, 2);
     });
   });
 }

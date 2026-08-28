@@ -25,6 +25,7 @@ Format: `- **type**: Description (Issue #N)` where type is feat|fix|chore|docs
 ---
 
 ## [Unreleased]
+- **fix**: F188 -- invalid condition JSON now logs a warning at rule load (naming rule and column); Manage Rules shows rules with all-empty condition lists as "invalid -- matches nothing"; integrity sweep counts unparseable condition columns and logs the total when nonzero (Issue #371)
 - **feat**: F186 -- the manual rule create flow (Manage Rules) gains a Body Phrase rule type: enter a phrase, get the same plaintext-to-regex assist as the other four types, and the rule is saved as a body condition matched anywhere in the email body. Created rules display under the Body category in Manage Rules and round-trip through the existing rule-edit screen unchanged. (Issue #369)
 
 ## [0.13.0] - 2026-08-27

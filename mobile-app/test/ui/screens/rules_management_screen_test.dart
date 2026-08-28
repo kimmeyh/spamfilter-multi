@@ -87,4 +87,60 @@ void main() {
     // wording (tile instance + 2 dialog instances may coexist).
     expect(find.text('Uncategorized (legacy)'), findsNWidgets(3));
   });
+
+  testWidgets(
+      'F188: rule with all empty condition lists renders invalid marker; rule '
+      'with one empty optional list does not (AC-2)',
+      (tester) async {
+    tester.view.physicalSize = const Size(1200, 2400);
+    tester.view.devicePixelRatio = 1.0;
+    addTearDown(tester.view.resetPhysicalSize);
+    addTearDown(tester.view.resetDevicePixelRatio);
+
+    await tester.runAsync(() async {
+      final db = await testHelper.dbHelper.database;
+
+      // Insert rule with ALL empty condition lists (invalid)
+      await db.insert('rules', {
+        'name': 'AllEmptyConditionsRule',
+        'enabled': 1,
+        'is_local': 1,
+        'execution_order': 10,
+        'condition_type': 'AND',
+        'condition_from': null,
+        'condition_header': null,
+        'condition_subject': null,
+        'condition_body': null,
+        'action_delete': 1,
+        'date_added': DateTime.now().millisecondsSinceEpoch,
+        'created_by': 'test',
+      });
+
+      // Insert rule with one populated list and some empty (healthy)
+      await db.insert('rules', {
+        'name': 'HealthyWithEmptyOptional',
+        'enabled': 1,
+        'is_local': 1,
+        'execution_order': 20,
+        'condition_type': 'AND',
+        'condition_from': '["valid@example.com"]',
+        'condition_header': null,
+        'condition_subject': null,
+        'condition_body': null,
+        'action_delete': 1,
+        'date_added': DateTime.now().millisecondsSinceEpoch,
+        'created_by': 'test',
+        'pattern_category': 'header_from',
+      });
+
+      await mountAndLoadDbWidget(tester, buildTestWidget());
+    });
+
+    // AC-2a: The all-empty rule should show the invalid marker in the subtitle
+    expect(find.text('invalid -- matches nothing'), findsOneWidget);
+
+    // AC-2b: The healthy rule should NOT show the invalid marker
+    // (it should show its category instead)
+    expect(find.text('Header / From'), findsOneWidget); // Category label for healthy rule
+  });
 }
