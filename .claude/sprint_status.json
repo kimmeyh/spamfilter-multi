@@ -56,13 +56,13 @@
     "_note": "Run full suites with --concurrency=4 (Sprint 49 IMP-5)."
   },
   "store_release": {
-    "status": "0.13.0.0 BUILT AND VERIFIED 2026-08-27 (~6:55am), READY FOR HAROLD'S UPLOAD (Submission 20 expected). Verification: Check A build-log dart-defines PASS; --release-self-test --expected-version=0.13.0 6/6 PASS (APP_ENV=prod, NATIVE_APP_ENV=prod, suffixes empty, no [DEV], version match); manifest Identity Version 0.13.0.0; 17.9 MB. Artifact: D:\\Data\\Harold\\github\\spamfilter-multi-prod\\mobile-app\\build\\windows\\x64\\runner\\Release\\my_email_spam_filter.msix. Seventh MINOR release (Sprint 63 feat: F180/F94/F181). BUILT is not SUBMITTED -- verify in Partner Center after upload. Live remains 0.12.0.0 (Submission 19, certified 2026-08-24). Prod worktree note: 5 local-only pure merge commits since Sprint 60, content-identical to origin/main (verified empty diff) -- optional reset cleanup, Harold's call.",
+    "status": "0.13.0.0 / Submission 20 SUBMITTED and IN CERTIFICATION -- direct Partner Center observation 2026-08-27 ~7:0x am ET (Harold's screenshot: 'Update in certification', Submission checkpoint complete, Pre-processing in progress; Store presence = 0.12.0.0/Submission 19 still live). Build verification recorded pre-upload: Check A PASS, --release-self-test 6/6 PASS, manifest 0.13.0.0, 17.9 MB. Seventh MINOR release (Sprint 63 feat: F180/F94/F181). AT CERTIFICATION: update STORE_VERSION_STATUS live row (direct observation), cut CHANGELOG [0.13.0], master plan store outcome (dev bump deferred to next release Step 1 per current practice -- dev EQUALS pending release at 0.13.0). Prod worktree note: 5 local-only pure merge commits since Sprint 60, content-identical to origin/main -- optional reset cleanup, Harold's call.",
     "live_version": "0.12.0.0",
-    "submission": 19,
-    "certified_date": "2026-08-24",
+    "submission": 20,
+    "certified_date": null,
     "pending_upload_version": "0.13.0.0",
-    "submission_pending": "built 2026-08-27, awaiting Partner Center upload (Harold)",
-    "submitted_date": null
+    "submission_pending": "Submission 20 in certification (pre-processing observed 2026-08-27)",
+    "submitted_date": "2026-08-27"
   },
   "environment_notes": [
     "RESOLVED 2026-07-29 (verified 07-30): the Store fault was an Acronis file-system filter blocking AppXSvc cleanup, fixed by an Acronis Protection exclusion. 23h uptime with ZERO Id-493 events vs a 176-file/6-min baseline; Store client self-updated 22606.1401.6.0 -> .10.0 (requires a working deployment pipeline). Filter drivers remain loaded -- backup protection was NOT disabled. See ALL_SPRINTS_MASTER_PLAN ENV-1 for the picker gotcha if it recurs.",
