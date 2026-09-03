@@ -26,6 +26,9 @@ Format: `- **type**: Description (Issue #N)` where type is feat|fix|chore|docs
 
 ## [Unreleased]
 
+### 2026-09-02 (Sprint 64, Manual Validation)
+- **fix**: F186 -- a Body Phrase rule created in Manage Rules now displays as its phrase (list, detail dialog, search) instead of leaking the internal `manual_<slug>_<timestamp>` name, and its generated pattern escapes spaces the same way the 84 imported body keyword rules do (`a\ local\ girl`), so the duplicate check recognises an existing legacy rule for the same phrase. Matching behaviour is unchanged: a backslash-space is a literal space in a regex. Found on the first Android chain-validation create against a legacy Windows rule. (Issue #369)
+
 ### 2026-08-28 (Sprint 64)
 - **chore**: F187 -- the obsolete F33-era URL-shape body rules are removed from both live rule databases (dev: 647 of 732; prod: 1300 of 1470, which collapse to 368 distinct link-domains duplicated by successive legacy imports), each behind a Harold-approved per-database dry-run, timestamped backups, and untruncated post-delete verification; the phrase/phone/address body rules remain. With deferred body fetch live, this also removes the main trigger of on-demand body downloads on real scans. (Issue #370)
 - **chore**: GP-3 -- the Android release manifest sheds three permissions no feature uses (NFC and the biometric pair, injected by transitive libraries of the dormant Outlook/MSAL dependency): stripped via manifest removal rules with written justification, leaving exactly the nine permissions the app's features require. GP-8 verify: the release build already targets API 36 (ahead of Google Play's Aug 31, 2026 requirement) and every 64-bit native library passes the 16 KB page-size alignment checks. (Issues #375, #376)

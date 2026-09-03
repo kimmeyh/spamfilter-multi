@@ -8,6 +8,172 @@ Do not stop to ask questions unless meeting the criteria in \docs\SPRINT_STOPPIN
 Sprint 6n Scope should include the below items. Please complete sprint planning (/docs/sprint_planning.md) for the below items and present for approval.  Note that everything needs to take into account both the Windows App and the Android app and ADR stating that everything should be functionally and UI the same unless it cannot be - and where it cannot be it should be implemented as a platform exception for what is needed -- this applies to all backend code, frontend code, data, architecture, development, security, testing, deployment.
 
 ---------------------------------------------------------------------------------------------------------
+Sprint 64 Scope should include the below items. Please complete sprint planning (/docs/sprint_planning.md) for the below items and present for approval.  Note that everything needs to take into account both the Windows App and the Android app and ADR stating that everything should be functionally and UI the same unless it cannot be - and where it cannot be it should be implemented as a platform exception for what is needed -- this applies to all backend code, frontend code, data, architecture, development, security, testing, deployment.
+  - GP-16. Google Play Developer Account Setup -- guided walkthrough (~2-4h) Priority 20 (FIXED as Sprint 64 first task per your MV decision)
+  - GP-5. Privacy Policy publication -- hosting/URL + placeholder fill (~1h remaining) Priority 22 (folded into the GP-16 walkthrough)
+  - F186. Add/update BODY rules through the UI, including via Manage Rules (~2-4h) Priority 22
+  - F187. Remove the personal URL-shape body rules (domain.tld link-block rules) (~1-2h) Priority 24
+  - F188. A rule with a corrupted condition string is silently neutralized (~1h) Priority 26
+  - SEC-9. Move hardcoded Android client ID to build-time injection (~1h) Priority 28
+  - GP-2. Release Signing and Play App Signing (~4-6h) Priority 30
+  - GP-9. ProGuard/R8 + Dart obfuscation (~2-4h) Priority 32
+  - GP-8. Android Target SDK + 16 KB Page Size -- verify (~1-2h) Priority 34
+  - GP-3. Android Manifest Permissions -- merged-manifest verify (~1-2h) Priority 36
+  - SEC-4. Android: Create network_security_config.xml (~1h) Priority 38
+
+
+ My recommendation for Sprint 64, given the GP-16 walkthrough's external lead time (Google's multi-day identity verification) makes it ideal
+  to START first and let it verify in the background: GP-16 (+GP-5 publication) first, then F186 + F187 + F188 (the body-rules follow-through
+  trio, ~4-7h), then SEC-9 + GP-2 (~5-7h) — that clears the whole body-rule story while the Play account verifies, and puts the signing
+  keystone in place for the Play chain.
+
+
+  Candidates at a glance
+
+  - GP-16. Google Play Developer Account Setup -- guided walkthrough (~2-4h) Priority 20 (FIXED as Sprint 64 first task per your MV decision)
+  - GP-5. Privacy Policy publication -- hosting/URL + placeholder fill (~1h remaining) Priority 22 (folded into the GP-16 walkthrough)
+  - F186. Add/update BODY rules through the UI, including via Manage Rules (~2-4h) Priority 22
+  - F187. Remove the personal URL-shape body rules (domain.tld link-block rules) (~1-2h) Priority 24
+  - F188. A rule with a corrupted condition string is silently neutralized (~1h) Priority 26
+  - SEC-9. Move hardcoded Android client ID to build-time injection (~1h) Priority 28
+
+  - F165. Cross-device rules-DB sharing -- user cloud storage exploration + hosted-tier option (~half-day exploration) Priority 30
+  - GP-2. Release Signing and Play App Signing (~4-6h) Priority 30
+  - GP-9. ProGuard/R8 + Dart obfuscation (~2-4h) Priority 32
+  - GP-8. Android Target SDK + 16 KB Page Size -- verify (~1-2h) Priority 34
+  - GP-3. Android Manifest Permissions -- merged-manifest verify (~1-2h) Priority 36
+  - SEC-4. Android: Create network_security_config.xml (~1h) Priority 38
+  - GP-10. Data Safety Form Declarations (~2-4h) Priority 40
+  - GP-6. Play Store Listing and Assets (~8-12h) Priority 42
+  - GP-7. Adaptive Icons and App Branding (~4-6h) Priority 44
+  - GP-4. Gmail API OAuth Verification / CASA (~40-80h) Priority 60
+  - HOLD items follow, one line each:
+  - F173. Periodic "Test Coverage and Appropriate Testing" Deep Dive (~4-8h per review) Priority HOLD
+  - F183. Upstream civyk-winwright ww_wait replay request (~15m to file, then external) Priority HOLD
+  - F179. Subject-blocking phrase picker (~3-5h) Priority HOLD (GenAI-gated)
+  - F152. Periodic User-Centric First-Run Evaluation (~2-3h per review) Priority HOLD
+  - F111. Periodic Windows App Store upload readiness verification (~110-175m per review) Priority HOLD
+  - F139. Local-install smoke test for a release-candidate MSIX (~30-50m per review) Priority HOLD
+  - F70. Periodic Security Deep Dive (~4-8h per review) Priority HOLD
+  - F130. Periodic Process-Docs Consistency Deep Dive ([no-history]) Priority HOLD
+  - F71. Periodic Architecture Deep Dive (~4-8h per review) Priority HOLD
+  - F95. iOS variants + cross-store hardening (~10-16h) Priority HOLD
+  - F63. Responsive design framework (superseded by F141 findings) Priority HOLD
+  - SEC-15. IMAP host validation for custom servers (~1h) Priority HOLD
+  - SEC-8b. Certificate pinning for IMAP endpoints (~4-6h) Priority HOLD
+  - F6. Provider-Specific Optimizations (~10-12h) Priority HOLD
+  - F67. Platform validation - iOS, Linux, macOS (~4-6h per platform) Priority HOLD
+  - SEC-11b. Database-at-rest encryption via sqlite3mc (~8-12h) Priority HOLD (Post-MVP)
+  - F106. SEC-11b verification-window cleanup (~30m) Priority HOLD (Post-MVP)
+  - H1. GenAI Pattern Suggestions (TBD) Priority HOLD
+  - H2. Rule Pattern Consistency - Domain Matching Standards (~4-6h) Priority HOLD
+  - H3. Requirements Documentation System (TBD) Priority HOLD
+  - H4. Sent Messages Scan for Safe Senders (~12-16h) Priority HOLD
+  - H5. Outlook.com / Office 365 provider adapter (~16-20h) Priority HOLD
+
+  Android / Google Play Store Readiness
+
+  GP-16. Google Play Developer Account Setup -- guided walkthrough (~2-4h) Priority 20
+  - Phase: Android Google Play Store Readiness
+  - Platform: Android
+  - FIXED as Sprint 64's first task (your MV decision): step-by-step walkthrough per docs/GOOGLE_PLAY_ACCOUNT_SETUP.md -- PERSONAL account, $25
+    one-time, 12 testers/14 days route, no DUNS
+  - Includes GP-5 publication: hosting/URL decision (GitHub Pages is the recorded default) + filling the "[SET AT PUBLICATION]" placeholders in
+    the approved legal drafts
+  - Google's identity verification has multi-day external lead time -- starting it first unblocks everything Play-side
+
+  SEC-9. Move hardcoded Android client ID to build-time injection (~1h) Priority 28
+  - Phase: Security / Android Google Play Store Readiness
+  - Platform: Android
+  - Unblocked now that F94 shipped; design should target the appauth client id path (the flow that actually consumes it)
+
+  GP-2. Release Signing and Play App Signing (~4-6h) Priority 30
+  - Phase: Android Google Play Store Readiness
+  - Platform: Android
+  - Create the release keystore, configure signing in build.gradle.kts; decides ADR-0027. Merged SEC-6 scope
+
+  GP-9. ProGuard/R8 + Dart obfuscation (~2-4h) Priority 32
+  - Phase: Android Google Play Store Readiness
+  - Platform: Android
+  - No minification/shrinking config exists today; merged SEC-7 scope
+
+  GP-8. Android Target SDK + 16 KB Page Size -- verify (~1-2h) Priority 34
+  - Phase: Android Google Play Store Readiness
+  - Platform: Android
+  - Verify current target SDK meets Play requirements + 16 KB page-size compliance
+
+  GP-3. Android Manifest Permissions -- merged-manifest verify (~1-2h) Priority 36
+  - Phase: Android Google Play Store Readiness
+  - Platform: Android
+  - Verify the MERGED manifest's permission set is minimal and declarable
+
+  SEC-4. Android: Create network_security_config.xml (~1h) Priority 38
+  - Phase: Security / Android Google Play Store Readiness
+  - Platform: Android
+  - Explicit TLS-only network security config
+
+  GP-10. Data Safety Form Declarations (~2-4h) Priority 40
+  - Phase: Android Google Play Store Readiness
+  - Platform: Android
+  - Sequenced after GP-5 (the approved privacy policy feeds the declarations)
+
+  GP-6. Play Store Listing and Assets (~8-12h) Priority 42
+  - Phase: Android Google Play Store Readiness
+  - Platform: Android
+  - Listing copy, screenshots, feature graphic; before submission
+
+  GP-7. Adaptive Icons and App Branding (~4-6h) Priority 44
+  - Phase: Android Google Play Store Readiness
+  - Platform: Android
+  - Adaptive icon layers + branding polish
+
+  GP-4. Gmail API OAuth Verification / CASA (~40-80h) Priority 60
+  - Phase: Android Google Play Store Readiness
+  - Platform: All
+  - Keep LAST per its recorded trigger (external verification program, large effort)
+
+  Core App Quality
+
+  F186. Add/update BODY rules through the UI, including via Manage Rules (~2-4h) Priority 22
+  - Phase: Core App Quality / rules UX
+  - Platform: All (shared rule screens)
+  - Your two asks verbatim; verified: RuleEditScreen already edits body conditions, but ManualRuleCreateScreen cannot CREATE one -- the 732
+    live body rules exist only from legacy import
+  - Timely: F185 fixed Gmail body matching and F180 fetches bodies on demand -- authoring is the missing piece
+
+  F187. Remove the personal URL-shape body rules (domain.tld link-block rules) (~1-2h) Priority 24
+  - Phase: Core App Quality / rules data cleanup
+  - Platform: All (your dev AND prod rule DBs)
+  - Measured: 647 of 732 body rules match the URL shape; 85 phrase/phone/address rules stay
+  - F33/F144 discipline: enumerated set, count + samples for confirmation, timestamped backups, both DBs, untruncated post-verify
+  - Also cuts most F180 deferred body fetches on your real scans (faster + lighter)
+
+  F188. A rule with a corrupted condition string is silently neutralized (~1h) Priority 26
+  - Phase: Core App Quality / rules integrity
+  - Platform: All (RuleDatabaseStore)
+  - Found live during the MV demo: unparseable condition JSON loads as empty lists -- displays healthy, matches nothing, no warning
+  - Fix: Logger.w naming rule and column; Manage Rules flags all-empty-condition rules "invalid -- matches nothing"; consider a one-time
+    integrity sweep
+
+  F165. Cross-device rules-DB sharing -- user cloud storage exploration + hosted-tier option (~half-day exploration) Priority 30
+  - Phase: Product direction / architecture exploration
+  - Platform: All
+  - Your product direction: phone becomes the primary scanner long-term; explore rules-DB sync via the user's own cloud storage plus a paid
+    hosted-sync option (~$4/yr); deliverable is options + recommendation
+
+  HOLD Items (periodic templates, external dependencies, gated tracks)
+
+  Detail bullets unchanged in the master plan for: F173, F183, F179, F152, F111, F139, F70, F130, F71 (periodic/external), F95, F63, SEC-15,
+  SEC-8b, F6, F67 (platform tracks), SEC-11b, F106 (Post-MVP), H1-H5 (ideas).
+
+  ---
+
+  My recommendation for Sprint 64, given the GP-16 walkthrough's external lead time (Google's multi-day identity verification) makes it ideal
+  to START first and let it verify in the background: GP-16 (+GP-5 publication) first, then F186 + F187 + F188 (the body-rules follow-through
+  trio, ~4-7h), then SEC-9 + GP-2 (~5-7h) — that clears the whole body-rule story while the Play account verifies, and puts the signing
+  keystone in place for the Play chain.
+
+---------------------------------------------------------------------------------------------------------
 Sprint 63 Scope should include the below items. Please complete sprint planning (/docs/sprint_planning.md) for the below items and present for approval.  Note that everything needs to take into account both the Windows App and the Android app and ADR stating that everything should be functionally and UI the same unless it cannot be - and where it cannot be it should be implemented as a platform exception for what is needed -- this applies to all backend code, frontend code, data, architecture, development, security, testing, deployment.
 
   - do full sprint card planning for these and include them: E2E coverage for Sprint 62's new UI (F178 popup / F175 wait dialog / F176 label)

@@ -242,5 +242,37 @@ void main() {
         expect(result.error, 'Something went wrong');
       });
     });
+
+    group('generateBodyPhrase (F186, Sprint 64)', () {
+      test('escapes every space as backslash-space, matching the legacy '
+          'body keyword form (Sprint 64 MV finding)', () {
+        // 84 of 85 imported body rules carry the Python re.escape form
+        // (`a\ local\ girl`); the duplicate checker compares pattern TEXT,
+        // so the generator must emit the identical form.
+        final result = ManualRulePatternGenerator.generateBodyPhrase('A Local Girl');
+        expect(result.isSuccess, isTrue);
+        expect(result.pattern, r'a\ local\ girl');
+      });
+
+      test('escapes regex metacharacters AND spaces together', () {
+        final result =
+            ManualRulePatternGenerator.generateBodyPhrase('act now (limited offer)');
+        expect(result.pattern, r'act\ now\ \(limited\ offer\)');
+      });
+
+      test('the escaped-space pattern still matches the literal phrase', () {
+        final pattern = ManualRulePatternGenerator.generateBodyPhrase('a local girl').pattern;
+        final re = RegExp(pattern, caseSensitive: false);
+        expect(re.hasMatch('meet A LOCAL GIRL tonight'), isTrue);
+        expect(re.hasMatch('a local  girl'), isFalse,
+            reason: 'two spaces must not match one escaped space');
+        expect(re.hasMatch('nothing relevant'), isFalse);
+      });
+
+      test('rejects empty and sub-3-character phrases', () {
+        expect(ManualRulePatternGenerator.generateBodyPhrase('   ').isSuccess, isFalse);
+        expect(ManualRulePatternGenerator.generateBodyPhrase('ab').isSuccess, isFalse);
+      });
+    });
   });
 }

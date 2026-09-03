@@ -160,6 +160,18 @@ pre-existing FakeAsync/DB widget-test hazard on this screen, reproduced on the u
 sibling path -- honest gap documented; the evaluator path is independently covered by T-3).
 Actual ~340m vs 90-150m est: ~110m implementation (in estimate) + ~230m diagnosing the
 pre-existing test-harness hazard (velocity row logged).
+**MV finding + fix (2026-09-02, Harold option 1 of 3)**: the first real Android create
+("a local girl") displayed the internal `manual_a_local_girl_<ms>` name and stored the
+bare-space pattern `a local girl`, while the legacy Windows rule showed `a\ local\ girl`.
+Regex-equivalent (backslash-space is a literal space), but two gaps: (1) `source_domain`
+was left NULL for body rules, and it is the UI display value (`sourceDomain ?? name`), so the
+internal name leaked; (2) `RegExp.escape` does not escape spaces, so the text-comparing
+duplicate checker could not recognise the 84/85 legacy body rules in the `\ ` form. Fixed:
+generator now emits `\ ` for spaces; create screen stores the plain phrase as the display
+value, names the rule from the plain phrase, and labels the dialog line "Phrase:" for body
+rules. +4 generator unit tests (mutation-verified: escape removal reds exactly the 2 escape
+tests), T-1 widget test updated to the new shape; analyze clean. Both platforms rebuilt
+(signed prod release APK installed in place on the AVD; Windows dev exe). ~45m.
 
 **Step-types**: UI-MOVE, SVC-EDIT, TEST-WIDGET, TEST-UNIT
 **Est-Effort**: 90-150m
@@ -729,3 +741,31 @@ existence, not validity (source-gates-verify-shape, third instance this sprint).
 5. Release chain: install the signed minified prod AAB; run the full GP-9 R-4 surface list;
    review GP-8/GP-3/SEC-4 evidence.
 6. SEC-9: dev-flavor sign-in unchanged.
+
+## Manual Validation -- results (Phase 5.3, IN PROGRESS 2026-09-02)
+
+**Android chain validation** on `pixel34_updated`, signed + R8-minified + Dart-obfuscated
+prod release APK (0.13.0, uid 10193). The release build's Logger filter is silent by design,
+so evidence is device-level (sockets, activity state, logcat system lines), not app logs.
+
+- Setup note: the AVD had restored a pre-08-28 snapshot (the 08-28 emulator was killed
+  without a snapshot save), so the debug-signed 0.12.0 was back; `adb install -r` refused the
+  upload-key build (`INSTALL_FAILED_UPDATE_INCOMPATIBLE`) -> uninstall + fresh install. Later
+  in-place installs (same key) kept accounts and rules.
+- Item 1 Gmail sign-in -- **PASS** (Harold): the prod uid holds an ESTABLISHED port-993
+  session to a Google IMAP address; that session only authenticates with a live XOAUTH2
+  token, so the injected client id produced a working consent flow on the minified build
+  (SEC-9 AC-2).
+- Item 2 AOL re-add -- **PASS** (Harold): ESTABLISHED port-993 session to an AOL address
+  from the same uid with cleartext disabled app-wide (SEC-4 AC-2 live TLS).
+- Item 3 live scan -- **PASS** as the Android chain proof (Harold: "scan complete"; zero
+  FATAL/AndroidRuntime lines, pid stable). Note: F187 AC-4's deferred-fetch delta is defined
+  against the WINDOWS dev build (the cleaned DB); the Android DB was deliberately untouched
+  (F187 R-4). The fresh install seeds 1,824 bundled rules and reported 97 no-rule messages;
+  the Windows dev DB (~2,580 rules post-F187) left 2 of 181 unmatched on 08-22. Windows scan
+  for AC-4 pending (dev exe built).
+- Item 4 Body Phrase create -- **FINDING -> FIXED** (see F186 card); retest pending on the
+  rebuilt in-place install.
+- Item 5 F188 glance -- pending.
+- Item 6 Background registration (workmanager keep rule) -- pending.
+- Open decision carried to this break: signing JSON password at rest (DPAPI vs plaintext).

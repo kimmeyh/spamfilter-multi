@@ -524,11 +524,9 @@ void main() {
         'Confirm dialog for the assisted body pattern, and the resulting '
         'insert (same shape _saveBlockRule writes) persists a body-condition '
         'rule enabled in the DB', (tester) async {
-      // A phrase with parentheses so the escaped pattern text visibly
-      // differs from the raw typed text (RegExp.escape does not escape
-      // plain spaces in this Dart version, so a space-only phrase would
-      // render identically to its own input field, defeating find.text's
-      // count-based assertions below).
+      // The escaped pattern text (`act\ now\ \(limited\ offer\)`) visibly
+      // differs from the raw typed text, so find.text's count-based
+      // assertions below cannot be satisfied by the input field itself.
       const phrase = 'act now (limited offer)';
       await openConfirmDialog(tester, type: ManualRuleType.bodyPhrase, input: phrase);
 
@@ -542,13 +540,16 @@ void main() {
       final expectedPattern = ManualRulePatternGenerator.generateBodyPhrase(phrase).pattern;
       expect(find.text(expectedPattern), findsNWidgets(2));
       expect(find.text('Type: Body Phrase'), findsNWidgets(2));
-      // No "Source:" line for a body phrase (no domain concept).
+      // The display value is the plain phrase, labelled "Phrase:" rather
+      // than "Source:" (Sprint 64 MV finding: an empty display value leaked
+      // the internal manual_<slug>_<ms> name into Manage Rules).
       expect(find.textContaining('Source:'), findsNothing);
+      expect(find.text('Phrase: $phrase'), findsNWidgets(2));
 
       // The write itself: same DB row shape _saveBlockRule inserts for
       // ManualRuleType.bodyPhrase (pattern_category 'body', condition_body,
-      // pattern_sub_type 'keyword', execution_order 50, source_domain
-      // null). Confirm dialog's Save action performs exactly this insert;
+      // pattern_sub_type 'keyword', execution_order 50, source_domain =
+      // the plain phrase). Confirm dialog's Save action performs exactly this insert;
       // see openConfirmDialog's doc comment for why the tap itself is not
       // exercised here. Wrapped in runDb -- see its doc comment.
       final rows = await runDb(tester, () async {
@@ -565,7 +566,7 @@ void main() {
           'created_by': 'manual',
           'pattern_category': 'body',
           'pattern_sub_type': 'keyword',
-          'source_domain': null,
+          'source_domain': phrase,
         });
         return db.query('rules', where: "pattern_category = 'body'");
       });

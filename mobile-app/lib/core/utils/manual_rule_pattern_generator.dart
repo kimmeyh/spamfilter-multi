@@ -163,8 +163,14 @@ class ManualRulePatternGenerator {
   /// [input] is a free-text phrase to match literally, case-insensitively,
   /// anywhere in the email body -- not a domain, email, or URL.
   ///
-  /// Returns a pattern like `cancer\ lawsuit` (via [RegExp.escape]), which
-  /// matches the literal phrase anywhere in the (normalized) body text.
+  /// Returns a pattern like `cancer\ lawsuit`: [RegExp.escape] for the regex
+  /// metacharacters, plus every space escaped as `\ `. The space escape is
+  /// regex-neutral (a backslash-space is a literal space) but deliberate:
+  /// 84 of the 85 imported body keyword rules carry the Python-era
+  /// `re.escape` form, and the duplicate checker compares pattern TEXT, so
+  /// emitting the same form keeps new rules visually identical to their
+  /// neighbours and lets the duplicate check catch a legacy row (Sprint 64
+  /// Manual Validation finding, Harold 2026-09-02).
   ///
   /// Validation: the trimmed phrase must be non-empty and at least 3
   /// characters, mirroring the minimum-length floor already enforced for
@@ -182,7 +188,8 @@ class ManualRulePatternGenerator {
           typeLabel: typeLabel,
           error: 'Phrase must be at least 3 characters');
     }
-    final escaped = RegExp.escape(phrase.toLowerCase());
+    final escaped =
+        RegExp.escape(phrase.toLowerCase()).replaceAll(' ', r'\ ');
     return PatternGenerationResult.success(
       pattern: escaped,
       typeLabel: typeLabel,

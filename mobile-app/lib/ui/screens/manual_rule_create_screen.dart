@@ -202,10 +202,14 @@ class _ManualRuleCreateScreenState extends State<ManualRuleCreateScreen> {
           sourceDomain = cleaned;
           break;
         case ManualRuleType.bodyPhrase:
-          // Body phrases have no domain concept -- leave sourceDomain empty,
-          // matching the DB shape of imported 'keyword' body rules (F187
-          // enumeration confirmed source_domain is NULL for all 84).
-          sourceDomain = '';
+          // Body phrases have no domain concept, but source_domain doubles
+          // as the DISPLAY value everywhere a rule is listed (Manage Rules
+          // list, detail dialog, search): `rule.sourceDomain ?? rule.name`.
+          // Leaving it empty leaked the internal 'manual_<slug>_<ms>' name
+          // into the UI (Sprint 64 Manual Validation finding, Harold
+          // 2026-09-02). Store the plain phrase so the rule displays as
+          // its phrase, exactly as domain rules display as their domain.
+          sourceDomain = input.toLowerCase();
           break;
       }
     }
@@ -482,12 +486,13 @@ class _ManualRuleCreateScreenState extends State<ManualRuleCreateScreen> {
       throw _DuplicateRuleException();
     }
 
-    // Generate a unique name. Body phrases have no source domain, so the
-    // name is derived from the phrase itself (mirrors the imported
+    // Generate a unique name. _sourceDomain is the domain for domain rules
+    // and the plain phrase for body phrases (mirrors the imported
     // 'body_<slug>' naming shape without colliding with it -- 'manual_'
-    // prefix keeps namespaces separate).
-    final nameBasis = isBody ? _generatedPattern : _sourceDomain;
-    final name = 'manual_${nameBasis.replaceAll(RegExp(r'[^\w.-]'), '_')}_${DateTime.now().millisecondsSinceEpoch}';
+    // prefix keeps namespaces separate). The plain phrase, not the escaped
+    // pattern, is the basis so the slug stays 'a_local_girl' rather than
+    // 'a__local__girl'.
+    final name = 'manual_${_sourceDomain.replaceAll(RegExp(r'[^\w.-]'), '_')}_${DateTime.now().millisecondsSinceEpoch}';
 
     await db.insert('rules', {
       'name': name,
@@ -501,7 +506,9 @@ class _ManualRuleCreateScreenState extends State<ManualRuleCreateScreen> {
       'created_by': 'manual',
       'pattern_category': patternCategory,
       'pattern_sub_type': patternSubType,
-      'source_domain': isBody ? null : _sourceDomain,
+      // Display value for every rule type (see _generatePattern): the
+      // domain for domain rules, the plain phrase for body phrases.
+      'source_domain': _sourceDomain,
     });
 
     _logger.i('Created block rule: $name (pattern: $_generatedPattern)');
@@ -614,12 +621,12 @@ class _ManualRuleCreateScreenState extends State<ManualRuleCreateScreen> {
                 'Type: ${_selectedType.label}',
                 style: Theme.of(context).textTheme.bodySmall,
               ),
-              // Body phrases have no domain concept -- _sourceDomain is
-              // always empty for that type, so the Source line is omitted
-              // rather than showing a bare "Source: ".
+              // _sourceDomain is the domain for domain rules and the plain
+              // phrase for body phrases; label it accordingly. Omitted when
+              // empty rather than showing a bare "Source: ".
               if (_sourceDomain.isNotEmpty)
                 Text(
-                  'Source: $_sourceDomain',
+                  '${_selectedType == ManualRuleType.bodyPhrase ? 'Phrase' : 'Source'}: $_sourceDomain',
                   style: Theme.of(context).textTheme.bodySmall,
                 ),
             ],
@@ -800,11 +807,11 @@ class _ManualRuleCreateScreenState extends State<ManualRuleCreateScreen> {
                           'Type: ${_selectedType.label}',
                           style: Theme.of(context).textTheme.bodySmall,
                         ),
-                        // Body phrases have no domain concept -- omit the
-                        // Source line rather than showing "Source: ".
+                        // Domain for domain rules, plain phrase for body
+                        // phrases; omitted when empty rather than "Source: ".
                         if (_sourceDomain.isNotEmpty)
                           Text(
-                            'Source: $_sourceDomain',
+                            '${_selectedType == ManualRuleType.bodyPhrase ? 'Phrase' : 'Source'}: $_sourceDomain',
                             style: Theme.of(context).textTheme.bodySmall,
                           ),
                       ],
