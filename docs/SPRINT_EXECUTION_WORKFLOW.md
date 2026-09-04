@@ -678,6 +678,29 @@ This change was introduced after Sprint 36 kickoff skipped Phase 1 (prior "OPTIO
     dropdown) with every script selector left silently rotten.
   - **If no WinWright scripts exist for the sprint's UI surface**: that itself is a finding -- add a Sprint N+1 carry-in for the missing coverage and document in the retrospective.
 
+- [ ] **5.1.6 Runtime Launch Gate -- ONE launch per sprint** (Sprint 64 retro IMP-6)
+  - **Purpose**: some Android configuration is parsed only by the OS AT RUNTIME, so it can pass
+    every static gate and still crash the app at startup. Sprint 64 SEC-4:
+    `network_security_config.xml` had a `domain-config` ROOT, which is well-formed XML, passed
+    AAPT, and passed its own policy gate -- and the app died at launch with "Failed to parse XML
+    configuration from network_security_config". No test in the suite could have caught it.
+  - **Trigger (CONDITIONAL -- this gate is deliberately cheap)**: run it ONCE per sprint, only if
+    the sprint touched any of: `android/app/src/main/res/xml/**`, `AndroidManifest.xml`,
+    `build.gradle.kts` (buildTypes/signing/minify), or ProGuard/R8 rules. Skip entirely if none
+    were touched, and record `N/A -- no Android config touched`.
+  - **Efficiency rule (Harold, 2026-09-03)**: this is ONE integration-style launch immediately
+    before Phase 5.3 Manual Validation -- NOT a per-change check and NOT a per-commit check.
+    It is time- and token-expensive, so it runs on the FINAL build of the sprint, where it
+    covers every config change at once.
+  - **Steps** (about 2 minutes):
+    1. Install the sprint's final release build on the emulator.
+    2. `adb logcat -c`, launch the activity, wait 10 seconds.
+    3. `adb shell pidof <package>` -- a live pid after 10s is the pass condition.
+    4. `grep -cE "FATAL EXCEPTION|AndroidRuntime: "` the logcat -- must be 0.
+  - **Exit criteria**: pid alive at 10s AND zero FATAL lines, recorded in the sprint plan as a
+    one-line result. A dead pid with zero app log lines is the signature of a runtime config
+    parse failure -- read the SYSTEM logcat lines, not the app's.
+
 - [ ] **5.2 Run Complete Test Suite**
   - Execute full test suite: `flutter test`
   - Verify all tests pass (not just new ones)

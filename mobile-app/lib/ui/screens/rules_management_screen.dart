@@ -922,6 +922,12 @@ class _RulesManagementScreenState extends State<RulesManagementScreen>
     final categoryLabel = _categoryLabels[rule.patternCategory] ?? rule.patternCategory ?? _uncategorizedLabel;
     final subTypeLabel = _subTypeLabels[rule.patternSubType] ?? rule.patternSubType ?? '';
 
+    // F188: check if rule has all empty condition lists (invalid -- matches nothing)
+    final hasAllEmptyConditions = rule.conditions.from.isEmpty &&
+        rule.conditions.header.isEmpty &&
+        rule.conditions.subject.isEmpty &&
+        rule.conditions.body.isEmpty;
+
     // Sprint 37 Phase 7 Imp-1 round 6 (Alt-2 final UX, supersedes rounds
     // 1-5b). Design rationale:
     //   - Leading icon is purely decorative (category badge). NOT clickable.
@@ -983,7 +989,7 @@ class _RulesManagementScreenState extends State<RulesManagementScreen>
           container: true,
           button: true,
           label: '$displayName - '
-              '${subTypeLabel.isEmpty ? categoryLabel : '$categoryLabel - $subTypeLabel'}'
+              '${hasAllEmptyConditions ? 'invalid -- matches nothing' : (subTypeLabel.isEmpty ? categoryLabel : '$categoryLabel - $subTypeLabel')}'
               '${rule.enabled ? '' : ' (disabled)'}',
           hint: 'View rule details',
           onTap: () => handleRowTap(index, _filteredRules.length),
@@ -1035,10 +1041,14 @@ class _RulesManagementScreenState extends State<RulesManagementScreen>
             overflow: TextOverflow.ellipsis,
           ),
           subtitle: Text(
-            subTypeLabel.isEmpty ? categoryLabel : '$categoryLabel - $subTypeLabel',
+            hasAllEmptyConditions
+                ? 'invalid -- matches nothing'
+                : (subTypeLabel.isEmpty ? categoryLabel : '$categoryLabel - $subTypeLabel'),
             style: TextStyle(
               fontSize: 11,
-              color: rule.enabled ? _getSubTypeColor(rule.patternSubType) : Colors.grey.shade400,
+              color: hasAllEmptyConditions
+                  ? Colors.red.shade600
+                  : (rule.enabled ? _getSubTypeColor(rule.patternSubType) : Colors.grey.shade400),
             ),
           ),
           trailing: Focus(

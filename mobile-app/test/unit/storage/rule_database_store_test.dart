@@ -1,4 +1,5 @@
 import 'package:flutter_test/flutter_test.dart';
+import 'package:logger/logger.dart';
 import 'package:sqflite/sqflite.dart';
 import 'package:sqflite_common_ffi/sqflite_ffi.dart';
 
@@ -486,6 +487,255 @@ void main() {
         store.updateRule(bad),
         throwsA(isA<RuleDatabaseStorageException>()),
       );
+    });
+  });
+
+  group('F188 - Invalid JSON condition parsing', () {
+    late Database testDb;
+    late RuleDatabaseStore store;
+    late MockRuleDatabaseProvider mockHelper;
+
+    setUp(() async {
+      testDb = await createTestDatabase();
+      mockHelper = createMockHelper(testDb);
+      store = RuleDatabaseStore(mockHelper);
+    });
+
+    tearDown(() async {
+      await testDb.close();
+    });
+
+    test('loadRules with invalid condition JSON logs warning and returns empty list (AC-1)', () async {
+      // Insert a rule with invalid JSON in condition_header column
+      await testDb.insert('rules', {
+        'name': 'TestRuleInvalidJson',
+        'enabled': 1,
+        'is_local': 0,
+        'execution_order': 10,
+        'condition_type': 'AND',
+        'condition_from': null,
+        'condition_header': '{invalid json]', // intentionally malformed
+        'condition_subject': null,
+        'condition_body': null,
+        'action_delete': 0,
+        'action_move_to_folder': null,
+        'action_assign_category': null,
+        'date_added': DateTime.now().millisecondsSinceEpoch,
+      });
+
+      // Capture the store's log output so the WARNING itself is asserted --
+      // load-succeeds alone would stay green if the warning were deleted
+      // (the exact silent-failure class F188 exists to close).
+      final memoryOutput = MemoryOutput();
+      final capturingStore = RuleDatabaseStore(
+        mockHelper,
+        logger: Logger(output: memoryOutput, filter: ProductionFilter()),
+      );
+
+      // Load rules -- should not throw
+      final ruleSet = await capturingStore.loadRules();
+
+      // Rule should load with empty header condition list
+      expect(ruleSet.rules.length, 1);
+      final loadedRule = ruleSet.rules.first;
+      expect(loadedRule.name, 'TestRuleInvalidJson');
+      expect(loadedRule.conditions.header, isEmpty);
+
+      // Exactly one F188 warning, naming the rule and the column.
+      final warnings = memoryOutput.buffer
+          .where((e) => e.origin.level == Level.warning)
+          .map((e) => e.origin.message.toString())
+          .where((m) => m.contains('F188'))
+          .toList();
+      // Two F188 warnings now: the per-column parse warning (R-1) and the
+      // load-time integrity sweep total (R-3, wired in from the PR #378
+      // review -- the sweep had been defined but never invoked outside tests).
+      expect(warnings.length, 2,
+          reason: 'the parse failure must emit one per-column F188 warning '
+              'plus the load-time sweep total');
+
+      final perColumn = warnings
+          .where((m) => m.contains('TestRuleInvalidJson'))
+          .toList();
+      expect(perColumn.length, 1,
+          reason: 'exactly one per-column warning naming the rule');
+      expect(perColumn.single, contains('condition_header'));
+
+      final sweep =
+          warnings.where((m) => m.contains('unparseable condition')).toList();
+      expect(sweep.length, 1,
+          reason: 'the integrity sweep must run AT LOAD, not only when '
+              'auditUnparseableConditions() is called explicitly');
+      expect(sweep.single, contains('1 rule(s)'));
+    });
+
+    test('valid JSON of the wrong TYPE warns and counts as corrupted',
+        () async {
+      // Phase 5.1.1 review finding: jsonDecode SUCCEEDS on `5` / `{}` / `null`,
+      // so the old code fell past the `is List` check to `return []` and
+      // logged nothing at all -- the rule loaded with empty conditions and
+      // matched nothing, silently.
+      await testDb.insert('rules', {
+        'name': 'WrongTypeRule',
+        'enabled': 1,
+        'is_local': 0,
+        'execution_order': 10,
+        'condition_type': 'AND',
+        'condition_header': '5', // valid JSON, not a list
+        'action_delete': 0,
+        'date_added': DateTime.now().millisecondsSinceEpoch,
+      });
+
+      final memoryOutput = MemoryOutput();
+      final capturingStore = RuleDatabaseStore(
+        mockHelper,
+        logger: Logger(output: memoryOutput, filter: ProductionFilter()),
+      );
+
+      final ruleSet = await capturingStore.loadRules();
+      expect(ruleSet.rules.single.conditions.header, isEmpty);
+
+      final warnings = memoryOutput.buffer
+          .where((e) => e.origin.level == Level.warning)
+          .map((e) => e.origin.message.toString())
+          .where((m) => m.contains('F188'))
+          .toList();
+
+      expect(warnings.any((m) => m.contains('expected a list')), isTrue,
+          reason: 'a non-list must warn, not fail silently');
+      expect(warnings.any((m) => m.contains('1 rule(s)')), isTrue,
+          reason: 'the sweep total must count it as corrupted');
+    });
+
+    test('a list of NON-STRINGS warns without dropping the whole rule',
+        () async {
+      // The old .cast<String>() threw LAZILY, outside the try, so the
+      // exception escaped to the outer handler and the entire rule vanished
+      // from the loaded set rather than one column being reported.
+      await testDb.insert('rules', {
+        'name': 'NonStringElementsRule',
+        'enabled': 1,
+        'is_local': 0,
+        'execution_order': 10,
+        'condition_type': 'AND',
+        'condition_header': '[1,2]',
+        'action_delete': 0,
+        'date_added': DateTime.now().millisecondsSinceEpoch,
+      });
+
+      final memoryOutput = MemoryOutput();
+      final capturingStore = RuleDatabaseStore(
+        mockHelper,
+        logger: Logger(output: memoryOutput, filter: ProductionFilter()),
+      );
+
+      final ruleSet = await capturingStore.loadRules();
+      expect(ruleSet.rules.length, 1,
+          reason: 'the rule must survive with an empty condition list, not be '
+              'dropped from the loaded set entirely');
+      expect(ruleSet.rules.single.name, 'NonStringElementsRule');
+      expect(ruleSet.rules.single.conditions.header, isEmpty);
+
+      final warnings = memoryOutput.buffer
+          .where((e) => e.origin.level == Level.warning)
+          .map((e) => e.origin.message.toString())
+          .where((m) => m.contains('F188'))
+          .toList();
+      expect(warnings.any((m) => m.contains('NonStringElementsRule')), isTrue);
+      expect(warnings.any((m) => m.contains('1 rule(s)')), isTrue);
+    });
+
+    test('the load-time integrity sweep counts every corrupted rule (R-3)',
+        () async {
+      // Two corrupted rules, one valid: the sweep total must be 2 even though
+      // the per-column warnings fire independently. This is the assertion that
+      // fails if loadRules stops running the sweep.
+      for (final row in [
+        {'name': 'Valid', 'condition_header': '["valid"]', 'order': 10},
+        {'name': 'Bad1', 'condition_header': '{invalid}', 'order': 20},
+        {'name': 'Bad2', 'condition_header': '[invalid', 'order': 30},
+      ]) {
+        await testDb.insert('rules', {
+          'name': row['name'],
+          'enabled': 1,
+          'is_local': 0,
+          'execution_order': row['order'],
+          'condition_type': 'AND',
+          'condition_header': row['condition_header'],
+          'action_delete': 0,
+          'date_added': DateTime.now().millisecondsSinceEpoch,
+        });
+      }
+
+      final memoryOutput = MemoryOutput();
+      final capturingStore = RuleDatabaseStore(
+        mockHelper,
+        logger: Logger(output: memoryOutput, filter: ProductionFilter()),
+      );
+
+      await capturingStore.loadRules();
+
+      final sweep = memoryOutput.buffer
+          .where((e) => e.origin.level == Level.warning)
+          .map((e) => e.origin.message.toString())
+          .where((m) => m.contains('unparseable condition'))
+          .toList();
+      expect(sweep.length, 1);
+      expect(sweep.single, contains('2 rule(s)'));
+    });
+
+    test('auditUnparseableConditions counts rules with invalid JSON (AC-3)', () async {
+      // Insert one valid rule and two rules with invalid condition JSON
+      await testDb.insert('rules', {
+        'name': 'ValidRule',
+        'enabled': 1,
+        'is_local': 0,
+        'execution_order': 10,
+        'condition_type': 'AND',
+        'condition_from': null,
+        'condition_header': '["valid"]',
+        'condition_subject': null,
+        'condition_body': null,
+        'action_delete': 0,
+        'action_move_to_folder': null,
+        'action_assign_category': null,
+        'date_added': DateTime.now().millisecondsSinceEpoch,
+      });
+
+      await testDb.insert('rules', {
+        'name': 'CorruptedRule1',
+        'enabled': 1,
+        'is_local': 0,
+        'execution_order': 20,
+        'condition_type': 'AND',
+        'condition_from': null,
+        'condition_header': '{invalid}',
+        'condition_subject': null,
+        'condition_body': null,
+        'action_delete': 0,
+        'action_move_to_folder': null,
+        'action_assign_category': null,
+        'date_added': DateTime.now().millisecondsSinceEpoch,
+      });
+
+      await testDb.insert('rules', {
+        'name': 'CorruptedRule2',
+        'enabled': 1,
+        'is_local': 0,
+        'execution_order': 30,
+        'condition_type': 'AND',
+        'condition_from': null,
+        'condition_header': null,
+        'condition_subject': null,
+        'condition_body': '[invalid',
+        'action_delete': 0,
+        'action_move_to_folder': null,
+        'action_assign_category': null,
+        'date_added': DateTime.now().millisecondsSinceEpoch,
+      });
+
+      final corruptedCount = await store.auditUnparseableConditions();
+      expect(corruptedCount, 2);
     });
   });
 }

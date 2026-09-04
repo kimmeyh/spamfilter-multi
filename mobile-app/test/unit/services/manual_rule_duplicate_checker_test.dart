@@ -48,6 +48,30 @@ void main() {
     });
   }
 
+  /// F186 body rule shape: pattern lives in condition_body, condition_header
+  /// is NULL (exactly what _saveBlockRule writes for ManualRuleType.bodyPhrase
+  /// and what the legacy body keyword imports look like).
+  Future<void> seedBodyRule({
+    required String pattern,
+    String name = 'seeded_body_rule',
+  }) async {
+    final db = await testHelper.dbHelper.database;
+    await db.insert('rules', {
+      'name': name,
+      'enabled': 1,
+      'is_local': 1,
+      'execution_order': 50,
+      'condition_type': 'OR',
+      'condition_body': jsonEncode([pattern]),
+      'action_delete': 1,
+      'date_added': DateTime.now().millisecondsSinceEpoch,
+      'created_by': 'manual',
+      'pattern_category': 'body',
+      'pattern_sub_type': 'keyword',
+      'source_domain': pattern,
+    });
+  }
+
   Future<void> seedSafeSender({
     required String pattern,
     required String patternType,
@@ -196,6 +220,141 @@ void main() {
           reason: 'sub-type $subType should detect duplicate',
         );
       }
+    });
+  });
+
+  group('ManualRuleDuplicateChecker - body phrases (F186, Sprint 64 MV finding)', () {
+    // Before the fix the query compared condition_header for every category,
+    // which is NULL on body rules, so body duplicates were never detected.
+    test('detects an exact duplicate body phrase (escaped-space form)', () async {
+      await seedBodyRule(pattern: r'a\ local\ girl');
+      final checker = ManualRuleDuplicateChecker(await testHelper.dbHelper.database);
+
+      expect(
+        await checker.blockRuleExists(
+          pattern: r'a\ local\ girl',
+          patternCategory: 'body',
+          patternSubType: 'keyword',
+        ),
+        isTrue,
+      );
+    });
+
+    test('detects a legacy bare-space row from the generator\'s escaped form '
+        '(Android dev DB shape)', () async {
+      await seedBodyRule(pattern: 'a local girl');
+      final checker = ManualRuleDuplicateChecker(await testHelper.dbHelper.database);
+
+      expect(
+        await checker.blockRuleExists(
+          pattern: r'a\ local\ girl',
+          patternCategory: 'body',
+          patternSubType: 'keyword',
+        ),
+        isTrue,
+        reason: r'`\ ` and ` ` are regex-equivalent and must compare equal',
+      );
+    });
+
+    test('detects an escaped-space row from a bare-space query '
+        '(Windows DB shape, 84 of 85 legacy body rules)', () async {
+      await seedBodyRule(pattern: r'a\ local\ girl');
+      final checker = ManualRuleDuplicateChecker(await testHelper.dbHelper.database);
+
+      expect(
+        await checker.blockRuleExists(
+          pattern: 'A Local Girl',
+          patternCategory: 'body',
+          patternSubType: 'keyword',
+        ),
+        isTrue,
+      );
+    });
+
+    test('a different body phrase is NOT a duplicate', () async {
+      await seedBodyRule(pattern: r'a\ local\ girl');
+      final checker = ManualRuleDuplicateChecker(await testHelper.dbHelper.database);
+
+      expect(
+        await checker.blockRuleExists(
+          pattern: r'local\ girls',
+          patternCategory: 'body',
+          patternSubType: 'keyword',
+        ),
+        isFalse,
+      );
+    });
+
+    test('a body query does NOT match a header rule carrying the same text '
+        '(column follows the category)', () async {
+      await seedBlockRule(
+        pattern: r'a\ local\ girl',
+        subType: 'keyword',
+        category: 'header_from',
+      );
+      final checker = ManualRuleDuplicateChecker(await testHelper.dbHelper.database);
+
+      expect(
+        await checker.blockRuleExists(
+          pattern: r'a\ local\ girl',
+          patternCategory: 'body',
+          patternSubType: 'keyword',
+        ),
+        isFalse,
+      );
+    });
+
+    // Sprint 64 Phase 5.1.1 review finding: `%` and `_` are SQL LIKE
+    // wildcards and RegExp.escape leaves both untouched, so an unescaped
+    // phrase widened the match and REJECTED a genuinely distinct rule as a
+    // duplicate -- with no way for the user to force it through.
+    test('an underscore in the phrase does not wildcard-match a space', () async {
+      await seedBodyRule(pattern: r'act\ now', name: 'seeded_act_now');
+      final checker = ManualRuleDuplicateChecker(await testHelper.dbHelper.database);
+
+      expect(
+        await checker.blockRuleExists(
+          pattern: r'act_now',
+          patternCategory: 'body',
+          patternSubType: 'keyword',
+        ),
+        isFalse,
+        reason: r'`act_now` is a DIFFERENT phrase from `act now`; the `_` must '
+            'not match the space as a LIKE wildcard',
+      );
+    });
+
+    test('a percent sign in the phrase does not wildcard-match', () async {
+      await seedBodyRule(
+          pattern: r'save\ 50\ percent', name: 'seeded_save_percent');
+      final checker = ManualRuleDuplicateChecker(await testHelper.dbHelper.database);
+
+      expect(
+        await checker.blockRuleExists(
+          pattern: r'save%percent',
+          patternCategory: 'body',
+          patternSubType: 'keyword',
+        ),
+        isFalse,
+        reason: 'a literal % must not match "50 " as a LIKE wildcard',
+      );
+    });
+
+    test('escaping the wildcards does not break real duplicate detection',
+        () async {
+      // The escaping must not over-correct: a phrase that genuinely contains
+      // an underscore still matches an existing rule for the SAME phrase.
+      await seedBodyRule(pattern: r'act_now', name: 'seeded_underscore');
+      final checker = ManualRuleDuplicateChecker(await testHelper.dbHelper.database);
+
+      expect(
+        await checker.blockRuleExists(
+          pattern: r'act_now',
+          patternCategory: 'body',
+          patternSubType: 'keyword',
+        ),
+        isTrue,
+      );
     });
   });
 

@@ -233,7 +233,8 @@ namespace).
 | **DefaultRuleSetService** | Seed bundled rules on first launch; reset to defaults; SEC-1b marks seeded patterns as `bundled` provenance so they skip ReDoS checks. Includes F53 `ensureTldBlockRules` post-seed migration for existing installs, plus the BUG-S37-2 ccTLD gap-fill reconciling the bundled `top_level_domain` set against the ISO 3166-1 list. **Current bundled coverage (BUG-S37-2 audit, Sprint 42): 247 of 248 IANA ccTLDs blocked -- only `.us` is unblocked** (`.uk`/`.ca` ARE blocked; the bundled list is an initial load the user overrides per-account via safe-sender rules). DB v6/v7 migrations remove malformed TLD typos (`.c`, `.giw`, `.sweepss`, ... and Sprint-42 `.sho`/`.sweeps`) |
 | **LiveScanLogger** (F90, Sprint 39 warmup) | Persists live-scan runtime log + per-account CSV/XLSX to `{appDataDir}/logs/`, env-aware path (dev/prod), append-mode, setting-gated CSV export. Parity with the background-scan log pipeline |
 | **AuthResultsParser** (F89, Sprint 39) | Parses `Authentication-Results` / `Received-SPF` / DKIM / ARC headers (RFC 8601, tolerant of AOL/Yahoo/Gmail variants) into an `EmailAuthResult {spf, dkim, dmarc, raw}`, and classifies to GREEN/YELLOW/RED/GREY. Drives the auth badge + warn-then-confirm dialog on rule / safe-sender quick-add prompts so a user does not whitelist a sender whose mail failed authentication |
-| **ManualRulePatternGenerator** (F25, Sprint 40) | Public utility (`lib/core/utils/manual_rule_pattern_generator.dart`) with 5 static methods: `generateTopLevelDomain`, `generateEntireDomain`, `generateExactDomain`, `generateExactEmail`, `generateFromPlaintext` (auto-detect). Extracted from `ManualRuleCreateScreen`'s previously-private generators so create-flow, edit-flow (F35 `RuleEditScreen`), and rule-test plaintext->regex conversion (F25) all share the same source of truth |
+| **ManualRulePatternGenerator** (F25, Sprint 40; extended F186, Sprint 64) | Public utility (`lib/core/utils/manual_rule_pattern_generator.dart`) with 6 static methods: `generateTopLevelDomain`, `generateEntireDomain`, `generateExactDomain`, `generateExactEmail`, `generateFromPlaintext` (auto-detect), and `generateBodyPhrase`. Extracted from `ManualRuleCreateScreen`'s previously-private generators so create-flow, edit-flow (F35 `RuleEditScreen`), and rule-test plaintext->regex conversion (F25) all share the same source of truth |
+| **Body Phrase rule type** (F186, Sprint 64) | The fifth manual rule type, and the only non-domain one: free text matched literally anywhere in the message body. It writes `condition_body` with `pattern_category='body'` and `pattern_sub_type='keyword'`, where the four domain types write `condition_header`/`header_from`. Three cross-cutting contracts follow from that split and are each pinned by a gate: (1) `source_domain` is the UI DISPLAY value everywhere a rule is listed (`sourceDomain ?? name`), so a body rule stores its plain phrase there rather than NULL; (2) `ManualRuleDuplicateChecker` selects the condition column FROM the category, since comparing `condition_header` for a body rule compares a column that is always NULL; (3) `RuleEditScreen` must map the sub-type in BOTH directions and derive the category from the SELECTED type, or an edited rule silently changes type or lands in the wrong condition bucket. Generated patterns escape spaces as `\ ` to match the 84/85 legacy imported body keyword rules, which is regex-neutral but keeps the text-comparing duplicate check working across both forms |
 | **RuleQuickActionService** (F39, Sprint 46) | Screen-agnostic core of the "quick add safe sender" / "quick add block rule" actions (`addSafeSender`, `createBlockRule` -- pattern generation, Issue #154 conflict resolution via `RuleConflictResolver`, DB persist + provider reload, BUG-S39-1 rule-name sanitization). Extracted from `ResultsDisplayScreen`'s previously-inline `_addSafeSender`/`_createBlockRule` so the per-email detail-sheet flow and the F39 cross-account bulk actions share one implementation. Deliberately excludes the re-evaluate/re-process/notify tail, which stays screen-owned (it depends on per-screen in-memory scan state). Companion extraction: `PatternNormalization.extractRootDomain` (subdomain -> registrable-domain heuristic) |
 
 ---
@@ -712,6 +713,40 @@ mobile-app/
 - Emulator must use "Google APIs" image (NOT AOSP) for Google Sign-In
 - Multi-account support via unique accountId (`{platformId}-{email}`)
 - Background scanning via WorkManager -- per-account unique tasks (ADR-0039 / F98, Sprint 42)
+
+#### Android release-build chain (Sprint 64: SEC-9, GP-2/ADR-0027, GP-9, SEC-4)
+
+Release builds are produced by `build-with-secrets.ps1 -BuildType release` (`-Output aab`
+for the Play bundle) and differ from debug builds by four injected/enabled layers, all
+declared ADR-0042 platform exceptions (Android store/build infrastructure; the Windows
+analogue is the MSIX pipeline):
+
+1. **OAuth client id injection (SEC-9)**: the appauth redirect scheme and the Dart-side
+   client id both source from the single `ANDROID_GMAIL_CLIENT_ID` key in `secrets.*.json`
+   -- gradle gets `-PandroidGmailClientId`, Dart gets the dart-define. A RELEASE build
+   without the value fails at configuration (F119 lesson); a debug/CI build warns and uses
+   an obviously-fake placeholder (F127 alignment). Gate: `test/policy/android_client_id_test.dart`.
+2. **Upload-key signing (GP-2, executes ADR-0027 Option B)**: gradle reads four `-P`
+   signing properties (env-var fallback) that the script supplies from
+   `%USERPROFILE%\.myemailspamfilter\android-signing.json`; the keystore and signing JSON
+   live OUTSIDE the repository (no key.properties -- the ADR's rejected option). A Release
+   task without them throws; debug keeps the historical debug-signing fallback. Play App
+   Signing is enrolled at first Play upload (our key = upload key). Gate:
+   `test/policy/android_signing_test.dart`.
+3. **R8 + resource shrinking + Dart obfuscation (GP-9)**: release builds minify with ONE
+   reasoned keep rule (`workmanager` -- WorkManager instantiates the background worker by
+   class name via reflection; every other plugin was audited rule-free). Dart side builds
+   with `--obfuscate --split-debug-info`, symbols retained outside the repo under
+   `.myemailspamfilter\symbols\<version>-<flavor>`. Measured effect: -12.8% APK size.
+   Gate: `test/policy/android_minify_test.dart`.
+4. **TLS-only network policy (SEC-4)**: `res/xml/network_security_config.xml` disables
+   cleartext app-wide (no exceptions -- the loopback OAuth redirect is Windows-only; the
+   Android flow uses the custom-scheme redirect). Gate:
+   `test/policy/android_network_security_test.dart`.
+
+The four layers converge on ONE signed-minified artifact per release; verification of the
+merged manifest, signature fingerprint, target SDK, and permission set happens against that
+artifact (GP-8/GP-3 verifies, Sprint 64 chain validation).
 
 ### Windows (Primary Development Platform)
 - Browser-based OAuth with PKCE + loopback redirect (localhost:8080)

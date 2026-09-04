@@ -46,9 +46,13 @@ class RuleDatabaseStorageException implements Exception {
 /// ```
 class RuleDatabaseStore {
   final RuleDatabaseProvider databaseProvider;
-  final Logger _logger = Logger();
+  final Logger _logger;
 
-  RuleDatabaseStore(RuleDatabaseProvider provider) : databaseProvider = provider;
+  /// [logger] is injectable so tests can assert the F188 parse warnings are
+  /// actually emitted (a warning nobody can observe is not a warning).
+  RuleDatabaseStore(RuleDatabaseProvider provider, {Logger? logger})
+      : databaseProvider = provider,
+        _logger = logger ?? Logger();
 
   /// Load all rules from database as RuleSet
   ///
@@ -81,9 +85,90 @@ class RuleDatabaseStore {
       );
 
       _logger.i('Loaded ${rules.length} rules from database');
+
+      // F188 R-3: the integrity sweep runs AT RULES LOAD, as the requirement
+      // specifies. It counts from the rows already in hand rather than calling
+      // auditUnparseableConditions(), which would re-query the whole table on
+      // every load -- same count, no second query.
+      // (Copilot review of PR #378 caught that the sweep was defined but never
+      // invoked outside tests, so the described behaviour never happened for
+      // real users. The per-column warning in _decodeJsonArray was always
+      // live; this restores the aggregate total.)
+      final corruptedCount = _countUnparseableRows(rulesData);
+      if (corruptedCount > 0) {
+        _logger.w(
+            'F188: Found $corruptedCount rule(s) with unparseable condition columns');
+      }
+
       return ruleSet;
     } catch (e) {
       throw RuleDatabaseStorageException('Failed to load rules from database', e);
+    }
+  }
+
+  /// Columns whose values are JSON arrays and can therefore fail to parse.
+  static const List<String> _jsonConditionColumns = [
+    'condition_from',
+    'condition_header',
+    'condition_subject',
+    'condition_body',
+    'exception_from',
+    'exception_header',
+    'exception_subject',
+    'exception_body',
+  ];
+
+  /// Count rows with at least one unparseable JSON condition/exception column.
+  ///
+  /// Shared by [loadRules] (which passes rows it already holds) and
+  /// [auditUnparseableConditions] (which queries them), so the two can never
+  /// disagree about what "corrupted" means.
+  int _countUnparseableRows(List<Map<String, dynamic>> rulesData) {
+    var corruptedCount = 0;
+    for (final ruleData in rulesData) {
+      for (final column in _jsonConditionColumns) {
+        final value = ruleData[column];
+        if (value is String) {
+          try {
+            final decoded = jsonDecode(value);
+            // Matches _decodeJsonArray's definition of healthy: a list of
+            // strings. Counting only decode THROWS would under-report the
+            // two shapes that parse successfully but are still unusable
+            // (valid JSON of the wrong type, and a list of non-strings).
+            if (decoded is! List || decoded.any((e) => e is! String)) {
+              corruptedCount++;
+              break;
+            }
+          } catch (_) {
+            corruptedCount++;
+            break;
+          }
+        }
+      }
+    }
+    return corruptedCount;
+  }
+
+  /// Scan all rules and count those with unparseable condition columns
+  ///
+  /// Logs the count via Logger when nonzero (F188 integrity sweep).
+  /// Returns the count of rules with at least one unparseable condition column.
+  ///
+  /// [loadRules] already runs this sweep over the rows it loads, so this
+  /// method exists for the callable-maintenance-action half of F188 R-3:
+  /// auditing on demand without a full rule load.
+  Future<int> auditUnparseableConditions() async {
+    try {
+      final rulesData = await databaseProvider.queryRules();
+      final corruptedCount = _countUnparseableRows(rulesData);
+
+      if (corruptedCount > 0) {
+        _logger.w('F188: Found $corruptedCount rule(s) with unparseable condition columns');
+      }
+
+      return corruptedCount;
+    } catch (e) {
+      throw RuleDatabaseStorageException('Failed to audit unparseable conditions', e);
     }
   }
 
@@ -382,17 +467,18 @@ class RuleDatabaseStore {
 
   /// Map database row to Rule object
   Rule _mapDatabaseRowToRule(Map<String, dynamic> row) {
+    final ruleName = row['name'] as String;
     return Rule(
-      name: row['name'] as String,
+      name: ruleName,
       enabled: (row['enabled'] as int?) == 1,
       isLocal: (row['is_local'] as int?) == 1,
       executionOrder: row['execution_order'] as int,
       conditions: RuleConditions(
         type: row['condition_type'] as String? ?? 'AND',
-        from: _decodeJsonArray(row['condition_from']),
-        header: _decodeJsonArray(row['condition_header']),
-        subject: _decodeJsonArray(row['condition_subject']),
-        body: _decodeJsonArray(row['condition_body']),
+        from: _decodeJsonArray(row['condition_from'], ruleName, 'condition_from'),
+        header: _decodeJsonArray(row['condition_header'], ruleName, 'condition_header'),
+        subject: _decodeJsonArray(row['condition_subject'], ruleName, 'condition_subject'),
+        body: _decodeJsonArray(row['condition_body'], ruleName, 'condition_body'),
       ),
       actions: RuleActions(
         delete: (row['action_delete'] as int?) == 1,
@@ -401,10 +487,10 @@ class RuleDatabaseStore {
       ),
       exceptions: row['exception_from'] != null || row['exception_header'] != null || row['exception_subject'] != null || row['exception_body'] != null
           ? RuleExceptions(
-              from: _decodeJsonArray(row['exception_from']),
-              header: _decodeJsonArray(row['exception_header']),
-              subject: _decodeJsonArray(row['exception_subject']),
-              body: _decodeJsonArray(row['exception_body']),
+              from: _decodeJsonArray(row['exception_from'], ruleName, 'exception_from'),
+              header: _decodeJsonArray(row['exception_header'], ruleName, 'exception_header'),
+              subject: _decodeJsonArray(row['exception_subject'], ruleName, 'exception_subject'),
+              body: _decodeJsonArray(row['exception_body'], ruleName, 'exception_body'),
             )
           : null,
       metadata: row['metadata'] != null ? jsonDecode(row['metadata'] as String) as Map<String, dynamic> : null,
@@ -415,16 +501,38 @@ class RuleDatabaseStore {
   }
 
   /// Decode JSON array from database string
-  List<String> _decodeJsonArray(dynamic value) {
+  ///
+  /// F188 (Sprint 64, hardened at the Phase 5.1.1 review): a column is only
+  /// "healthy" if it decodes to a list OF STRINGS. Two failure shapes were
+  /// previously silent:
+  ///
+  /// - **Valid JSON, wrong type** (`5`, `{}`, `null` as text): `jsonDecode`
+  ///   SUCCEEDS, so the old code fell past the `is List` check straight to
+  ///   `return []` and logged nothing. The rule loaded with empty conditions
+  ///   and matched nothing, with no warning anywhere.
+  /// - **Valid list, wrong element type** (`[1,2]`): `.cast<String>()` throws
+  ///   LAZILY, OUTSIDE this try, so the exception escaped to the caller's
+  ///   handler and the ENTIRE rule was dropped from the loaded set rather
+  ///   than one column being reported.
+  ///
+  /// Both now warn and degrade to an empty condition list, which is the same
+  /// outcome a parse failure already had.
+  List<String> _decodeJsonArray(dynamic value, String ruleName, String columnName) {
     if (value == null) return [];
     if (value is String) {
       try {
         final decoded = jsonDecode(value);
-        if (decoded is List) {
-          return decoded.cast<String>();
+        if (decoded is! List) {
+          _logger.w(
+              'F188: Condition JSON for rule "$ruleName" column "$columnName" '
+              'is ${decoded.runtimeType}, expected a list');
+          return [];
         }
+        // Eager, so a non-string element is caught HERE rather than thrown
+        // lazily at the first read by a caller.
+        return List<String>.from(decoded.map((e) => e as String));
       } catch (e) {
-        _logger.w('Failed to decode JSON array: $e');
+        _logger.w('F188: Failed to parse condition JSON for rule "$ruleName" column "$columnName": $e');
       }
     }
     return [];

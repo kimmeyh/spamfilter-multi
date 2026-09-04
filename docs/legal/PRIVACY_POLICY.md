@@ -1,6 +1,7 @@
 # MyEmailSpamFilter Privacy Policy
 
-**Effective date**: [SET AT PUBLICATION -- Harold approval required first (GP-5 R-5)]
+**Effective date**: August 28, 2026
+**Canonical URL**: https://myemailspamfilter.com/legal/PRIVACY_POLICY.html
 **Applies to**: the MyEmailSpamFilter application on all platforms (Windows, Android).
 
 ## The short version
@@ -13,7 +14,7 @@ according to rules you control. Uninstalling the app removes everything.
 ## Who we are
 
 MyEmailSpamFilter is published by Kimmey Consulting - Ohio. Contact:
-[CONTACT EMAIL -- Harold to confirm at publication].
+myemailspamfilter.dev@gmail.com.
 
 ## What the app accesses, and why
 
@@ -81,4 +82,4 @@ app sends us nothing, changes cannot retroactively affect data -- there is none 
 
 ## Contact
 
-Questions about this policy: [CONTACT EMAIL -- Harold to confirm at publication].
+Questions about this policy: myemailspamfilter.dev@gmail.com.

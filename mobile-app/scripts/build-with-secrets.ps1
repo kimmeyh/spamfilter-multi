@@ -60,6 +60,17 @@ param(
     # console registrations land; flip this default to 'dev' then.
     [ValidateSet('dev', 'prod')]
     [string]$Env = 'prod',
+
+    # GP-2 (Sprint 64, ADR-0027 Option B): signing parameters for RELEASE
+    # builds live in a JSON file OUTSIDE the repository (keys: keystorePath,
+    # keystorePassword, keyAlias, keyPassword). Never committed, never inside
+    # the repo tree. Debug builds ignore this entirely.
+    [string]$SigningConfigPath = "$env:USERPROFILE\.myemailspamfilter\android-signing.json",
+
+    # GP-2: 'apk' for local testing/emulator installs (default, unchanged
+    # behavior); 'aab' for the Play Store upload bundle (release only).
+    [ValidateSet('apk', 'aab')]
+    [string]$Output = 'apk',
     
     [switch]$InstallToEmulator,
     
@@ -73,6 +84,32 @@ param(
 )
 
 $ErrorActionPreference = 'Stop'
+
+# Reject flag combinations that cannot work, BEFORE any long build runs.
+# Both were found by the Sprint 64 Phase 5.1.1 review of the release chain.
+#
+# 1. -Run takes an early-exit path that sits ABOVE the GP-2 signing, SEC-9
+#    client-id, and GP-9 obfuscation blocks, so a release build started that
+#    way reaches gradle with none of them injected. The release guards then
+#    fire "missing signing parameters" and "missing client id" at a user who
+#    did nothing wrong, and the natural workaround (exporting the values by
+#    hand) yields an UNOBFUSCATED build that silently violates GP-9. Use
+#    -InstallToEmulator for release: it runs the full injected path.
+if ($Run -and $BuildType -eq 'release') {
+    Write-Host "[ERROR] -Run does not support -BuildType release: it bypasses signing, client-id, and obfuscation injection." -ForegroundColor Red
+    Write-Host "        Use: -BuildType release -InstallToEmulator" -ForegroundColor Yellow
+    exit 1
+}
+
+# 2. adb cannot install an .aab. -Output aab reassigns the artifact path that
+#    -InstallToEmulator later hands to `adb install`, so the pair fails with
+#    INSTALL_PARSE_FAILED_NOT_APK only AFTER a full release build -- which
+#    reads like a signing fault and sends debugging at the wrong thing.
+if ($Output -eq 'aab' -and $InstallToEmulator) {
+    Write-Host "[ERROR] -Output aab cannot be installed with -InstallToEmulator (adb cannot install a bundle)." -ForegroundColor Red
+    Write-Host "        Build an APK for on-device testing, or use bundletool to install the AAB." -ForegroundColor Yellow
+    exit 1
+}
 
 # Navigate to mobile-app directory
 $mobileAppDir = Split-Path -Parent $PSScriptRoot
@@ -340,6 +377,9 @@ try {
         $dartDefines += "--dart-define=GMAIL_DESKTOP_CLIENT_ID=$($secrets.GMAIL_DESKTOP_CLIENT_ID)"
         $dartDefines += "--dart-define=GMAIL_OAUTH_CLIENT_SECRET=$($secrets.GMAIL_OAUTH_CLIENT_SECRET)"
         $dartDefines += "--dart-define=GMAIL_REDIRECT_URI=$($secrets.GMAIL_REDIRECT_URI)"
+        if ($secrets.ANDROID_GMAIL_CLIENT_ID) {
+            $dartDefines += "--dart-define=ANDROID_GMAIL_CLIENT_ID=$($secrets.ANDROID_GMAIL_CLIENT_ID)"
+        }
     }
     if ($aolValid) {
         Write-Host "   [INFO] Including AOL (IMAP)" -ForegroundColor Cyan
@@ -359,19 +399,99 @@ try {
     $flavorArgs = @('--flavor', $Env, "--dart-define=APP_ENV=$Env")
     Write-Host "[INFO] F94: building flavor '$Env' with APP_ENV=$Env" -ForegroundColor Cyan
 
+    # SEC-9 (Sprint 64): pass ANDROID_GMAIL_CLIENT_ID to the gradle side too,
+    # via -P (--android-project-arg), so build.gradle.kts's manifest
+    # placeholder reads the SAME value the Dart side gets from
+    # --dart-define-from-file. Both sides source from the single
+    # ANDROID_GMAIL_CLIENT_ID key in secrets.dev.json -- single source of
+    # truth. Missing from secrets.dev.json -> gradle's own loud-fail (release)
+    # or warning (debug) fires; this script does not duplicate that check.
+    $gradleProjectArgs = @()
+    if ($secrets.ANDROID_GMAIL_CLIENT_ID) {
+        $gradleProjectArgs += "-PandroidGmailClientId=$($secrets.ANDROID_GMAIL_CLIENT_ID)"
+    } else {
+        Write-Host "[WARNING] ANDROID_GMAIL_CLIENT_ID not set in secrets.dev.json -- gradle will warn (debug) or fail (release)." -ForegroundColor Yellow
+    }
+
+    # GP-2 (Sprint 64, ADR-0027): RELEASE builds are signed with the upload
+    # keystore via build-time -P injection. The signing JSON (and the keystore
+    # it points at) live OUTSIDE the repository. Missing config on a release
+    # build fails HERE with instructions; gradle's own GradleException is the
+    # second net. Debug builds skip signing injection entirely.
+    if ($BuildType -eq 'release') {
+        if (-not (Test-Path $SigningConfigPath)) {
+            Write-Host "[ERROR] GP-2: release signing config not found at $SigningConfigPath" -ForegroundColor Red
+            Write-Host "        Create it (JSON keys: keystorePath, keystorePassword, keyAlias, keyPassword)" -ForegroundColor Red
+            Write-Host "        pointing at the upload keystore (docs/adr/0027 + SPRINT_64_PLAN.md Task 6)." -ForegroundColor Red
+            exit 1
+        }
+        $signing = Get-Content $SigningConfigPath -Raw | ConvertFrom-Json
+        foreach ($k in @('keystorePath', 'keystorePassword', 'keyAlias', 'keyPassword')) {
+            if (-not $signing.$k) {
+                Write-Host "[ERROR] GP-2: signing config $SigningConfigPath is missing key '$k'." -ForegroundColor Red
+                exit 1
+            }
+        }
+        if (-not (Test-Path $signing.keystorePath)) {
+            Write-Host "[ERROR] GP-2: keystore not found at $($signing.keystorePath)." -ForegroundColor Red
+            exit 1
+        }
+        # ENVIRONMENT VARIABLES, not -P args, deliberately: flutter is a .bat
+        # shim on Windows and cmd.exe treats &, ?, and friends in argument
+        # values as metacharacters -- a password containing & silently ATE the
+        # rest of the argument list on first live use (2026-08-28). Env vars
+        # cross the shim byte-clean, gradle already reads them as the
+        # documented fallback (ANDROID_* in build.gradle.kts), and secrets
+        # stay out of process command lines. Cleared in this script's finally.
+        $env:ANDROID_KEYSTORE_PATH = $signing.keystorePath
+        $env:ANDROID_KEYSTORE_PASSWORD = $signing.keystorePassword
+        $env:ANDROID_KEY_ALIAS = $signing.keyAlias
+        $env:ANDROID_KEY_PASSWORD = $signing.keyPassword
+        Write-Host "[INFO] GP-2: release signing injected via environment from $SigningConfigPath (keystore: $($signing.keystorePath))" -ForegroundColor Cyan
+    }
+
+    # GP-2 (ADR-0027): AAB is the Play Store upload format; APK stays the
+    # local-testing format. -Output aab requires -BuildType release (Play
+    # accepts release bundles only).
+    if ($Output -eq 'aab' -and $BuildType -ne 'release') {
+        Write-Host "[ERROR] GP-2: -Output aab requires -BuildType release." -ForegroundColor Red
+        exit 1
+    }
+    $buildTarget = if ($Output -eq 'aab') { 'appbundle' } else { 'apk' }
+
+    # GP-9 (Sprint 64): Dart-side obfuscation for RELEASE builds only (R-3:
+    # debug builds are completely unchanged -- no obfuscate args added to the
+    # debug branches below). Symbol files are retained OUTSIDE the repository
+    # so obfuscated stack traces stay readable at crash-triage time without
+    # ever committing them; the version comes from pubspec.yaml so each
+    # release's symbols land in their own directory.
+    $obfuscateArgs = @()
+    $symbolsDir = $null
+    if ($BuildType -eq 'release') {
+        $pubspecPath = Join-Path $mobileAppDir 'pubspec.yaml'
+        $versionLine = Select-String -Path $pubspecPath -Pattern '^version:\s*(\S+)' | Select-Object -First 1
+        $pubspecVersion = if ($versionLine) { $versionLine.Matches[0].Groups[1].Value } else { 'unknown-version' }
+        $symbolsDir = Join-Path "$env:USERPROFILE\.myemailspamfilter\symbols" "$pubspecVersion-$Env"
+        if (-not (Test-Path $symbolsDir)) {
+            New-Item -ItemType Directory -Force -Path $symbolsDir | Out-Null
+        }
+        $obfuscateArgs = @('--obfuscate', "--split-debug-info=$symbolsDir")
+        Write-Host "[INFO] GP-9: Dart obfuscation enabled; symbols will be written to $symbolsDir" -ForegroundColor Cyan
+    }
+
     if ($supportsFromFile) {
         Write-Host "[INFO] Using --dart-define-from-file=secrets.dev.json" -ForegroundColor Cyan
         if ($BuildType -eq 'release') {
-            flutter build apk --release @flavorArgs --dart-define-from-file=secrets.dev.json
+            flutter build $buildTarget --release @flavorArgs --dart-define-from-file=secrets.dev.json @gradleProjectArgs @obfuscateArgs
         } else {
-            flutter build apk --debug @flavorArgs --dart-define-from-file=secrets.dev.json
+            flutter build $buildTarget --debug @flavorArgs --dart-define-from-file=secrets.dev.json @gradleProjectArgs
         }
     } else {
         Write-Host "[INFO] Using explicit --dart-define flags" -ForegroundColor Cyan
         if ($BuildType -eq 'release') {
-            flutter build apk --release @flavorArgs $dartDefines
+            flutter build $buildTarget --release @flavorArgs $dartDefines @gradleProjectArgs @obfuscateArgs
         } else {
-            flutter build apk --debug @flavorArgs $dartDefines
+            flutter build $buildTarget --debug @flavorArgs $dartDefines @gradleProjectArgs
         }
     }
 
@@ -382,13 +502,22 @@ try {
 
     Write-Host ""
     Write-Host "[INFO] Build successful!" -ForegroundColor Green
-    
+
+    # GP-9: print the symbol-file path for this release so crash triage knows
+    # where to find them (they are never committed to the repo).
+    if ($BuildType -eq 'release' -and $symbolsDir) {
+        Write-Host "[INFO] GP-9: Dart obfuscation symbols written to $symbolsDir" -ForegroundColor Cyan
+    }
+
     # F94: flavored builds ALWAYS emit app-<flavor>-<buildtype>.apk (no
     # un-flavored fallback -- with productFlavors defined it could only ever
     # pick up a stale pre-flavor artifact and install the wrong APK).
     $apkPath = "build\app\outputs\flutter-apk\app-$Env-$BuildType.apk"
-    
-    Write-Host "[INFO] APK location: $apkPath" -ForegroundColor Gray
+    if ($Output -eq 'aab') {
+        $apkPath = "build\app\outputs\bundle\${Env}Release\app-$Env-release.aab"
+    }
+
+    Write-Host "[INFO] Artifact location: $apkPath" -ForegroundColor Gray
     Write-Host ""
 
     # Install to emulator if requested
@@ -618,6 +747,9 @@ try {
     Write-Host "[FATAL ERROR] $($_.Exception.Message)" -ForegroundColor Red
     Write-Host $_.ScriptStackTrace -ForegroundColor Yellow
     exit 1
-} # Close main try/catch block
+} finally {
+    # GP-2: signing material never outlives the build invocation.
+    Remove-Item Env:ANDROID_KEYSTORE_PATH, Env:ANDROID_KEYSTORE_PASSWORD, Env:ANDROID_KEY_ALIAS, Env:ANDROID_KEY_PASSWORD -ErrorAction SilentlyContinue
+} # Close main try/catch/finally block
 
 # End of script

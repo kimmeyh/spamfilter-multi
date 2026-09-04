@@ -1,6 +1,7 @@
 # MyEmailSpamFilter Terms of Use
 
-**Effective date**: [SET AT PUBLICATION -- Harold approval required first (GP-5 R-5)]
+**Effective date**: August 28, 2026
+**Canonical URL**: https://myemailspamfilter.com/legal/TERMS.html
 
 1. **What the app does.** MyEmailSpamFilter evaluates email in accounts you connect against
    filtering rules you configure, and moves or deletes messages according to those rules.
@@ -22,4 +23,4 @@
    leaves your device.
 7. **Changes.** Updated terms will be published at this URL with a new effective date.
 
-Contact: [CONTACT EMAIL -- Harold to confirm at publication].
+Contact: myemailspamfilter.dev@gmail.com.

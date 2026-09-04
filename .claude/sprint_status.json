@@ -1,68 +1,71 @@
 {
   "_description": "Sprint status file that persists across context compaction. Update after each phase/sub-phase completion.",
-  "_last_updated": "2026-08-27 (Sprint 63 Phase 7.7 close-out complete; PR #366 Ready-for-Review pending; awaiting Harold merge, then Phase 8 cycle)",
+  "_last_updated": "2026-09-04 (Sprint 64 Phase 7.7 close-out: retrospective + all 6 improvements applied, Phase 5 evidence gates recorded, docs triad complete; PR #378 Ready-for-Review pending final checks)",
   "_usage": "Read this file after context compaction to restore sprint approval state and progress.",
   "_staleness_note": "This file had drifted 15 sprints (last updated at Sprint 35, 2026-04-19) before being refreshed at Sprint 50 close-out. It is a Phase 7.7 checklist item -- update it at every sprint close-out, not opportunistically.",
   "current_sprint": {
-    "number": 63,
-    "branch": "feature/20260824_Sprint_63",
-    "pr_number": 366,
-    "start_date": "2026-08-24",
-    "status": "Sprint 63 Phase 7.7 CLOSE-OUT COMPLETE (2026-08-27). MV complete 2026-08-26 (all 7 verdicts in SPRINT_63_PLAN.md). Review rounds resolved: Copilot 3/3 (2 fixed fa19623, 1 F110 policy keep, threads resolved); Claude round 2 HIGH (unguarded exc.body deferral clause) closed with 3 isolated guard tests f9a7448, mutation-verified red. Retro complete per 7-Step Protocol: Harold Testing 'Needs improvement as noted by dev team', Process 'Good - see issues noted by dev team', rest Good/Very Good, Cats 13/14 none; ALL 8 improvement decisions 'all now' APPLIED 2026-08-27 (TESTING_STRATEGY isolated-branch + scratch-probe rules, test/scratch/ gitignored, CLAUDE.md build-input-edit ban, 5 memory rules incl. Harold's timestamp footer, SPRINT_64_PLAN.md stub, SEC-9 unblocked note). Docs triad complete (PLAN/RETROSPECTIVE/SUMMARY) + master plan rolled (Last Completed Sprint = 63, Past Sprint table row, DONE stubs). Windows build verified (7.1). REMAINING: gh pr ready 366 + 7.7.5 announcement, Harold merges, then Phase 6.6 branch-from-current + Phase 8 cycle (8.1 main merge Harold, 8.2 pass-1 sweep incl. DONE-stub pruning, 8.3 Store release 0.13.0 bump, 8.4 scope selection).",
+    "number": 64,
+    "branch": "feature/20260827_Sprint_64",
+    "pr_number": 378,
+    "start_date": "2026-08-27",
+    "status": "Sprint 64 COMPLETE through Phase 7.7 (2026-09-04). All 11 tasks done. Android chain validation 6/6 PASS on the signed R8-minified 0.13.0 release APK -- strongest evidence: WorkManager resolved dev.fluttercommunity.workmanager.BackgroundWorker BY FULL NAME on the minified build with the job registered in dumpsys jobscheduler, proving the single R8 keep rule rather than inferring it. MANUAL VALIDATION (2026-09-02/03): F186 produced 2 findings, Harold chose option 1 (fix both now) -- retest PASS incl. the duplicate refusal; signing-file password left plaintext (Harold option 2). PHASE 5.1.1 REVIEW (3 parallel passes incl. a dedicated silent-failure hunt): 8 findings, 2 CRITICAL, all verified against source before fixing, all fixed with tests. The 2 criticals were both silent and user-reachable in RuleEditScreen: no INBOUND 'keyword' mapping (a body rule reopened as a DOMAIN rule and a plain Save rewrote its type), and the save path derived the condition bucket from the ORIGINAL rule while sub-type followed the selection (switching any rule to Body Phrase wrote the phrase into condition_header -- looked correct in the list, could never match). F-PRECHECK class 1 independently caught RuleEditScreen as the un-swept parallel site. MUTATION VERIFICATION REVERSED A CONCLUSION TWICE: an agent's F188 mutation claim did not survive re-running it, and the edit-screen category fix stayed GREEN under mutation -- proof the fix had no test, which prompted the round-trip save test that now reds it. Copilot: 1 real finding (the F188 sweep was defined but never invoked outside tests), fixed + replied. RETRO: Harold rated all 12 rated categories 'Very Good', Cats 13/14 'none'; all 6 proposals 'apply all now', all applied same-session (AVD stale-snapshot fix, display-value gate, ADR-0027 keystore backup procedure, 2 memory hardenings, new Phase 5.1.6 runtime launch gate scoped by Harold to once-per-sprint). Suite 2,011/15/0, analyze clean, WinWright 2/2 at sweep-head 80180b3 with no DB drift. REMAINING: 5.1.6 launch gate on the final rebuilt artifact, then gh pr ready 378 + readiness announcement (final approval + merge are Harold's).",
     "plan_approved": true,
     "blanket_execution_approved": true,
     "scope": [
-      "F181",
-      "F180",
-      "F184",
-      "F182",
-      "F164",
-      "GP-12",
       "GP-16",
       "GP-5",
-      "F94"
+      "F186",
+      "F187",
+      "F188",
+      "SEC-9",
+      "GP-2",
+      "GP-9",
+      "GP-8",
+      "GP-3",
+      "SEC-4"
     ],
-    "_scope_note": "Scope selection happens at Phase 8.4. Candidates flagged at Sprint 62 close: F180 (P10, fresh evidence), F181 (P18), F182 (P30); carry-ins in SPRINT_63_PLAN.md stub.",
-    "pr_url": "https://github.com/kimmeyh/spamfilter-multi/pull/366",
-    "plan_approval_date": "2026-08-25"
+    "_scope_note": "All 11 selected by Harold at Phase 8.4 (2026-08-27), option 1: one sprint, Group B release-build chain intact.",
+    "pr_url": "https://github.com/kimmeyh/spamfilter-multi/pull/378",
+    "plan_approval_date": "2026-08-27"
   },
   "previous_sprint": {
-    "number": 62,
-    "branch": "feature/20260821_Sprint_62",
-    "pr_number": 355,
-    "status": "CLOSED -- PR #355 merged to develop 2026-08-24 12:07Z, develop merged to main by Harold same day. Cards #349-#354 all closed; zero open sprint issues verified. Shipped: F177 chunked fetch (survival PASS), F175 scan serialization + wait notice + reconciliation (R-7 DECLINED by design), F174 folder-error surfacing, F178 bottom-anchored popup, F176 account labels, F163 skips 26->15, CI draft gating + Workmanager Linux fix. Retro complete, 7/7 improvement decisions executed (5 applied, F182/F183 registered). Copilot review 3/3 fixed+resolved (cc255b7). CI 3/3 green twice. Final suite 1,931+/15/0; hooks 51/51; sweep 2/2 at sweep-head d87b828."
+    "number": 63,
+    "branch": "feature/20260824_Sprint_63",
+    "pr_number": 366,
+    "status": "CLOSED -- PR #366 merged to develop 2026-08-27, develop merged to main by Harold same day; shipped as 0.13.0.0 / Submission 20, CERTIFIED AND LIVE 2026-08-27. Cards #357-#365 closed."
   },
   "github_issues": [
-    357,
-    358,
-    359,
-    360,
-    361,
-    362,
-    363,
-    364,
-    365
+    368,
+    369,
+    370,
+    371,
+    372,
+    373,
+    374,
+    375,
+    376,
+    377
   ],
-  "_github_issues_note": "Sprint 63 cards created at Phase 3.3.1 (2026-08-25): #357 F181, #358 F180, #359 F184, #360 F182, #361 F164, #362 GP-12, #363 GP-16, #364 GP-5, #365 F94.",
+  "_github_issues_note": "Sprint 64 cards: #368 GP-16(+GP-5), #369 F186, #370 F187, #371 F188, #372 SEC-9, #373 GP-2, #374 GP-9, #375 GP-8, #376 GP-3, #377 SEC-4. Close on merge to develop (no auto-close).",
   "test_metrics": {
-    "tests_passing": 1955,
+    "tests_passing": 2011,
     "tests_skipped": 15,
     "tests_failing": 0,
     "analyzer_warnings": 0,
-    "_test_metrics_note": "1,955 passed / 15 skipped / 0 failed after review round 2 (2026-08-26; +3 F180 isolated guard tests). +24 vs Sprint 62. Run with --concurrency=4.",
+    "_test_metrics_note": "2,011 passed / 15 skipped / 0 failed at Sprint 64 close-out (+56 vs Sprint 63's 1,955). Includes +11 tests from the Phase 5.1.1 review fixes and +4 from the retro display-value gate. Run with --concurrency=4.",
     "hook_test_cases": "51/51 passing -- +2 Sprint 62 IMP-1 cases (violation-5 phase5-evidence-missing, allow-7 evidence-present).",
-    "winwright_sweep": "Sprint 62 sweep 2026-08-23 (lib/ui touched): first run 0/3 -- Sprint 61 F169 (chips->dropdown) had rotted every chip selector (shipped without a sweep); scripts repaired live (dropdown face=Text node, physical mouse clicks only, settle buffers -- runner still replays no ww_wait), mt2c baselines refreshed (@hiram.edu, @alphaxiv.org). Green 3/3 pre-retirement; f129 RETIRED (strict subset of mt2c, retro IMP-5); final post-retirement sweep at HEAD recorded with sweep-head in SPRINT_62_PLAN.md. DB drift none on every run.",
+    "winwright_sweep": "Sprint 64 sweep 2026-09-04 at sweep-head 80180b38fb2c7d01745c68301e9cedcc5c24d395: 2/2 PASSED (test_f124_rule_labels 29/29, test_mt2c_no_rule_sweep 29/29). 3 dialog-settle scripts excluded by the runner's own documented policy (not re-derived -- Sprint 52 IMP-3). DB drift: none.",
     "coverage_percent": null,
     "_note": "Run full suites with --concurrency=4 (Sprint 49 IMP-5)."
   },
   "store_release": {
-    "status": "0.12.0.0 / Submission 19 CERTIFIED AND LIVE 2026-08-24 ~9:12am ET -- direct Partner Center observation (authenticated Playwright): \"Congrats! Your product is now updated\"; Store presence \"currently available\". Uploaded ~8:5x; ~20-25 min submit-to-live (third consecutive 20-30 min measurement). Sixth MINOR release. Installed-build check pending Harold. NEXT RELEASE: dev EQUALS live at 0.12.0 -- bump at that release Step 1.",
-    "live_version": "0.12.0.0",
-    "submission": 19,
-    "certified_date": "2026-08-24",
+    "status": "0.13.0.0 / Submission 20 CERTIFIED AND LIVE 2026-08-27 -- direct Partner Center observation ~10:55pm ET (Harold's screenshot: 'Congrats! Your product is now updated'; Store presence Submission 20 'currently available'). Uploaded ~7:0x am ET; single evening check, true cert time unmeasured (prior band 20-30 min). Seventh MINOR release (Sprint 63 feat: F180/F94/F181). Step 7 complete: STORE_VERSION_STATUS live row, CHANGELOG [0.13.0] cut + links, master plan outcome, timing row. Dev EQUALS live at 0.13.0 -- bump at next release Step 1. Prod worktree note: 5 local-only pure merge commits since Sprint 60, content-identical to origin/main -- optional reset cleanup, Harold's call.",
+    "live_version": "0.13.0.0",
+    "submission": 20,
+    "certified_date": "2026-08-27",
     "pending_upload_version": null,
     "submission_pending": null,
-    "submitted_date": "2026-08-24"
+    "submitted_date": "2026-08-27"
   },
   "environment_notes": [
     "RESOLVED 2026-07-29 (verified 07-30): the Store fault was an Acronis file-system filter blocking AppXSvc cleanup, fixed by an Acronis Protection exclusion. 23h uptime with ZERO Id-493 events vs a 176-file/6-min baseline; Store client self-updated 22606.1401.6.0 -> .10.0 (requires a working deployment pipeline). Filter drivers remain loaded -- backup protection was NOT disabled. See ALL_SPRINTS_MASTER_PLAN ENV-1 for the picker gotcha if it recurs.",
@@ -71,8 +74,10 @@
   ],
   "blocking_issues": [],
   "next_actions": [
-    "gh pr ready 366 + 7.7.5 readiness announcement to Harold (final approval + merge are his)",
-    "ON MERGE: Phase 6.6 -- branch feature/<date>_Sprint_64 FROM feature/20260824_Sprint_63 immediately; close cards #357-#365 (no auto-close on develop merges)",
-    "Phase 8 cycle: 8.1 Harold merges develop->main (does not block 8.2); 8.2 pass-1 completeness sweep (prune Sprint 63 DONE stubs); 8.3 Store release per STORE_RELEASE_PROCESS.md (dev equals live at 0.12.0 -- bump at Step 1); 8.4 scope selection (Sprint 64 first task fixed: GP-16 guided walkthrough incl. GP-5 hosting/URL + publication)"
+    "5.1.6 runtime launch gate on the FINAL rebuilt release artifact (the recorded chain-validation launch predates the Phase 5.1.1 review fixes)",
+    "gh pr ready 378 + Phase 7.7.5 readiness announcement to Harold (final approval + merge are HIS -- Claude never merges)",
+    "ON MERGE: Phase 6.6 -- branch feature/<date>_Sprint_65 FROM feature/20260827_Sprint_64 immediately; close cards #368-#377",
+    "Phase 8 cycle: 8.1 Harold merges develop->main; 8.2 pass-1 completeness sweep; 8.3 Store release (dev EQUALS live at 0.13.0 -- bump at Step 1); 8.4 scope selection",
+    "Sprint 65 runway (sequenced): GP-7 -> GP-6 -> GP-10 -> closed-test submission. Play App Signing enrolls at first upload. The 12-tester/14-day closed-test gate is the long pole -- start tester recruitment BEFORE the code work. GP-10's Data Safety input is already prepared: the 9-permission list from GP-3."
   ]
 }

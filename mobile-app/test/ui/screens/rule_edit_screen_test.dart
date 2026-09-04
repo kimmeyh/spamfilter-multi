@@ -20,6 +20,8 @@ import 'package:sqflite_common_ffi/sqflite_ffi.dart' show Database;
 import 'package:my_email_spam_filter/core/models/rule_set.dart';
 import 'package:my_email_spam_filter/core/storage/database_helper.dart';
 import 'package:my_email_spam_filter/core/storage/rule_database_store.dart';
+import 'package:my_email_spam_filter/ui/screens/manual_rule_create_screen.dart'
+    show ManualRuleType;
 import 'package:my_email_spam_filter/ui/screens/rule_edit_screen.dart';
 
 // ---------------------------------------------------------------------------
@@ -279,6 +281,58 @@ void main() {
     });
   });
 
+  group('RuleEditScreen -- Body Phrase round-trip (Sprint 64 Phase 5.1.1)', () {
+    // The review found this screen had ZERO body-phrase coverage: all its
+    // tests passed while a body rule reopened as a domain rule.
+    Rule makeBodyRule() => Rule(
+          name: 'manual_a_local_girl_12345',
+          enabled: true,
+          isLocal: true,
+          executionOrder: 50,
+          conditions: RuleConditions(type: 'OR', body: [r'a\ local\ girl']),
+          actions: RuleActions(delete: true),
+          patternCategory: 'body',
+          patternSubType: 'keyword',
+          sourceDomain: 'a local girl',
+        );
+
+    testWidgets('a body rule reopens AS a Body Phrase, not a domain rule',
+        (tester) async {
+      // _subTypeToManualRuleType had no 'keyword' case, so it fell through
+      // `default` to entireDomain: the screen re-ran the DOMAIN generator over
+      // the phrase, and a plain Save silently rewrote pattern_sub_type,
+      // leaving pattern_category='body' + pattern_sub_type='entire_domain' --
+      // a state the create path cannot produce and the duplicate checker
+      // (which keys on both) can never match again.
+      await tester.pumpWidget(_buildScreen(makeBodyRule()));
+      await tester.pumpAndSettle();
+
+      final selected = tester
+          .widgetList<RadioListTile<ManualRuleType>>(
+              find.byType(RadioListTile<ManualRuleType>))
+          .where((w) => w.value == w.groupValue)
+          .toList();
+
+      expect(selected, hasLength(1),
+          reason: 'exactly one rule type should be selected');
+      expect(selected.single.value, ManualRuleType.bodyPhrase,
+          reason: 'a pattern_sub_type of "keyword" must map back to Body '
+              'Phrase, not fall through to Entire Domain');
+    });
+
+    testWidgets('the phrase is pre-filled and its pattern regenerates intact',
+        (tester) async {
+      await tester.pumpWidget(_buildScreen(makeBodyRule()));
+      await tester.pumpAndSettle();
+
+      // Pre-filled from source_domain (the display value), and the guided
+      // generator reproduces the stored escaped pattern from it -- which is
+      // what keeps the screen in guided rather than direct-regex mode.
+      expect(find.text('a local girl'), findsAtLeastNWidgets(1));
+      expect(find.text(r'a\ local\ girl'), findsAtLeastNWidgets(1));
+    });
+  });
+
   group('RuleEditScreen -- mode switching', () {
     testWidgets('can switch from guided to direct-regex mode', (tester) async {
       await tester.pumpWidget(_buildScreen(_makeHeaderRule()));
@@ -446,6 +500,50 @@ void main() {
 
       expect(stubStore.lastUpdatedRule, isNotNull);
       expect(stubStore.lastUpdatedRule!.name, equals('manual_example_com_12345'));
+    });
+
+    testWidgets(
+        'switching a header rule to Body Phrase moves the pattern into the '
+        'BODY condition and rewrites pattern_category (Sprint 64 5.1.1)',
+        (tester) async {
+      // The save path derived the condition bucket from the ORIGINAL rule's
+      // patternCategory while pattern_sub_type DID follow the selection. So
+      // switching any rule to Body Phrase wrote the phrase into
+      // condition_header with pattern_category='header_from' +
+      // pattern_sub_type='keyword': the save succeeded, Manage Rules rendered
+      // it as a body/keyword rule (the label comes from the sub-type), and the
+      // rule could never match -- an unanchored literal tested against the
+      // From header. It was also invisible to the duplicate checker.
+      tester.view.physicalSize = const Size(1080, 1920);
+      tester.view.devicePixelRatio = 1.0;
+      addTearDown(tester.view.resetPhysicalSize);
+      addTearDown(tester.view.resetDevicePixelRatio);
+
+      final stubStore = _StubRuleDatabaseStore();
+      await tester.pumpWidget(_buildScreen(_makeHeaderRule(), store: stubStore));
+      await tester.pumpAndSettle();
+
+      await tester.tap(find.text('Body Phrase'));
+      await tester.pumpAndSettle();
+
+      await tester.enterText(
+          find.byKey(const Key('rule_edit_input_field')), 'a local girl');
+      await tester.pumpAndSettle();
+
+      await tester.tap(find.byKey(const Key('rule_edit_save_button')));
+      await tester.pumpAndSettle();
+
+      final saved = stubStore.lastUpdatedRule;
+      expect(saved, isNotNull);
+      expect(saved!.patternCategory, 'body',
+          reason: 'the category must follow the SELECTED type, not the '
+              'original rule');
+      expect(saved.patternSubType, 'keyword');
+      expect(saved.conditions.body, isNotEmpty,
+          reason: 'the phrase belongs in the body condition bucket');
+      expect(saved.conditions.header, isEmpty,
+          reason: 'a body phrase must not be left in the header bucket, where '
+              'it can never match');
     });
 
     testWidgets('Save Changes preserves rule name (PK)', (tester) async {

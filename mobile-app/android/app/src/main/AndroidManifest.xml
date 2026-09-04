@@ -1,14 +1,30 @@
-<manifest xmlns:android="http://schemas.android.com/apk/res/android">
+<manifest xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools">
     <!-- F161 (Sprint 61): required on Android 13+ for the background-scan
          completion notification (the runtime request is made contextually in
          Settings when the user enables background scanning; this declaration
          is the manifest half). -->
     <uses-permission android:name="android.permission.POST_NOTIFICATIONS"/>
+    <!-- GP-3 (Sprint 64, Issue #376): these three permissions are injected by
+         TRANSITIVE libraries of msal_auth (androidx.biometric brings the
+         biometric pair; com.yubico.yubikit brings NFC), and the MSAL/Outlook
+         code path is entirely dead code today (outlook_adapter is fully
+         commented out; H5 tracks future Outlook support). The app uses none
+         of these capabilities, so they are stripped from the merged manifest:
+         a spam filter requesting NFC invites Play-review questions and user
+         distrust. REMOVE these removals in the sprint that activates
+         MSAL/Outlook sign-in, if that flow actually needs them. (Note: XML
+         comments cannot contain double hyphens; do not "fix" this comment's
+         punctuation back to the house dash style.) -->
+    <uses-permission android:name="android.permission.NFC" tools:node="remove"/>
+    <uses-permission android:name="android.permission.USE_BIOMETRIC" tools:node="remove"/>
+    <uses-permission android:name="android.permission.USE_FINGERPRINT" tools:node="remove"/>
     <application
         android:label="MyEmailSpamFilter${appLabelSuffix}"
         android:name="${applicationName}"
         android:icon="@mipmap/ic_launcher"
-        android:allowBackup="false">
+        android:allowBackup="false"
+        android:networkSecurityConfig="@xml/network_security_config">
         <activity
             android:name=".MainActivity"
             android:exported="true"
@@ -31,12 +47,19 @@
                 <category android:name="android.intent.category.LAUNCHER"/>
             </intent-filter>
             <!-- OAuth callback for flutter_appauth -->
-            <!-- Redirect URI scheme is reversed Android client ID -->
+            <!-- Redirect URI scheme is reversed Android client ID. -->
+            <!-- SEC-9 (Sprint 64): now sourced from the appAuthRedirectScheme
+                 manifestPlaceholder (build.gradle.kts defaultConfig), which is
+                 itself derived from the androidGmailClientId gradle property
+                 instead of a hardcoded literal. Previously this line embedded
+                 the literal directly, leaving the gradle placeholder unused;
+                 fixed as part of the same change (both must source from one
+                 place). -->
             <intent-filter>
                 <action android:name="android.intent.action.VIEW"/>
                 <category android:name="android.intent.category.DEFAULT"/>
                 <category android:name="android.intent.category.BROWSABLE"/>
-                <data android:scheme="com.googleusercontent.apps.577022808534-0ejdbmoouklgtucjo3tooovn2pr01ga2"/>
+                <data android:scheme="${appAuthRedirectScheme}"/>
             </intent-filter>
         </activity>
         <!-- Don't delete the meta-data below.
