@@ -85,56 +85,74 @@ class RuleDatabaseStore {
       );
 
       _logger.i('Loaded ${rules.length} rules from database');
+
+      // F188 R-3: the integrity sweep runs AT RULES LOAD, as the requirement
+      // specifies. It counts from the rows already in hand rather than calling
+      // auditUnparseableConditions(), which would re-query the whole table on
+      // every load -- same count, no second query.
+      // (Copilot review of PR #378 caught that the sweep was defined but never
+      // invoked outside tests, so the described behaviour never happened for
+      // real users. The per-column warning in _decodeJsonArray was always
+      // live; this restores the aggregate total.)
+      final corruptedCount = _countUnparseableRows(rulesData);
+      if (corruptedCount > 0) {
+        _logger.w(
+            'F188: Found $corruptedCount rule(s) with unparseable condition columns');
+      }
+
       return ruleSet;
     } catch (e) {
       throw RuleDatabaseStorageException('Failed to load rules from database', e);
     }
   }
 
+  /// Columns whose values are JSON arrays and can therefore fail to parse.
+  static const List<String> _jsonConditionColumns = [
+    'condition_from',
+    'condition_header',
+    'condition_subject',
+    'condition_body',
+    'exception_from',
+    'exception_header',
+    'exception_subject',
+    'exception_body',
+  ];
+
+  /// Count rows with at least one unparseable JSON condition/exception column.
+  ///
+  /// Shared by [loadRules] (which passes rows it already holds) and
+  /// [auditUnparseableConditions] (which queries them), so the two can never
+  /// disagree about what "corrupted" means.
+  int _countUnparseableRows(List<Map<String, dynamic>> rulesData) {
+    var corruptedCount = 0;
+    for (final ruleData in rulesData) {
+      for (final column in _jsonConditionColumns) {
+        final value = ruleData[column];
+        if (value is String) {
+          try {
+            jsonDecode(value);
+          } catch (_) {
+            corruptedCount++;
+            break;
+          }
+        }
+      }
+    }
+    return corruptedCount;
+  }
+
   /// Scan all rules and count those with unparseable condition columns
   ///
   /// Logs the count via Logger when nonzero (F188 integrity sweep).
   /// Returns the count of rules with at least one unparseable condition column.
+  ///
+  /// [loadRules] already runs this sweep over the rows it loads, so this
+  /// method exists for the callable-maintenance-action half of F188 R-3:
+  /// auditing on demand without a full rule load.
   Future<int> auditUnparseableConditions() async {
     try {
       final rulesData = await databaseProvider.queryRules();
-      int corruptedCount = 0;
-
-      for (final ruleData in rulesData) {
-        bool isCorrupted = false;
-
-        // Check each condition column for parse failures
-        for (final column in ['condition_from', 'condition_header', 'condition_subject', 'condition_body']) {
-          final value = ruleData[column];
-          if (value != null && value is String) {
-            try {
-              jsonDecode(value);
-            } catch (e) {
-              isCorrupted = true;
-              break;
-            }
-          }
-        }
-
-        // Check each exception column for parse failures
-        if (!isCorrupted) {
-          for (final column in ['exception_from', 'exception_header', 'exception_subject', 'exception_body']) {
-            final value = ruleData[column];
-            if (value != null && value is String) {
-              try {
-                jsonDecode(value);
-              } catch (e) {
-                isCorrupted = true;
-                break;
-              }
-            }
-          }
-        }
-
-        if (isCorrupted) {
-          corruptedCount++;
-        }
-      }
+      final corruptedCount = _countUnparseableRows(rulesData);
 
       if (corruptedCount > 0) {
         _logger.w('F188: Found $corruptedCount rule(s) with unparseable condition columns');

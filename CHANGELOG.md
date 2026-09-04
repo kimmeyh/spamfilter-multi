@@ -28,6 +28,7 @@ Format: `- **type**: Description (Issue #N)` where type is feat|fix|chore|docs
 
 ### 2026-09-02 (Sprint 64, Manual Validation)
 - **fix**: F186 -- a Body Phrase rule created in Manage Rules now displays as its phrase (list, detail dialog, search) instead of leaking the internal `manual_<slug>_<timestamp>` name, and its generated pattern escapes spaces the same way the 84 imported body keyword rules do (`a\ local\ girl`), so the duplicate check recognises an existing legacy rule for the same phrase. Matching behaviour is unchanged: a backslash-space is a literal space in a regex. Found on the first Android chain-validation create against a legacy Windows rule. (Issue #369)
+- **fix**: F188 -- the rule-integrity sweep now actually runs when rules are loaded. It was written and tested but never called from the app, so the total it reports was only ever produced in tests, never for a real user. The per-rule warning was unaffected and always worked. Found by the automated review of the sprint's pull request. (Issue #371)
 - **fix**: F186 -- the pre-insert duplicate check never detected a duplicate body phrase: it compared the header column for every rule category, and that column is empty on body rules. It now compares the column that matches the category, and treats escaped and bare spaces as the same pattern, so the Windows `a\ local\ girl` rows and the Android `a local girl` rows both count as an existing rule. Mutation-verified with 5 new checker tests. (Issue #369)
 
 ### 2026-08-28 (Sprint 64)

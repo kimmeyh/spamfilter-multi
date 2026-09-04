@@ -547,10 +547,65 @@ void main() {
           .map((e) => e.origin.message.toString())
           .where((m) => m.contains('F188'))
           .toList();
-      expect(warnings.length, 1,
-          reason: 'the parse failure must emit exactly one F188 warning');
-      expect(warnings.single, contains('TestRuleInvalidJson'));
-      expect(warnings.single, contains('condition_header'));
+      // Two F188 warnings now: the per-column parse warning (R-1) and the
+      // load-time integrity sweep total (R-3, wired in from the PR #378
+      // review -- the sweep had been defined but never invoked outside tests).
+      expect(warnings.length, 2,
+          reason: 'the parse failure must emit one per-column F188 warning '
+              'plus the load-time sweep total');
+
+      final perColumn = warnings
+          .where((m) => m.contains('TestRuleInvalidJson'))
+          .toList();
+      expect(perColumn.length, 1,
+          reason: 'exactly one per-column warning naming the rule');
+      expect(perColumn.single, contains('condition_header'));
+
+      final sweep =
+          warnings.where((m) => m.contains('unparseable condition')).toList();
+      expect(sweep.length, 1,
+          reason: 'the integrity sweep must run AT LOAD, not only when '
+              'auditUnparseableConditions() is called explicitly');
+      expect(sweep.single, contains('1 rule(s)'));
+    });
+
+    test('the load-time integrity sweep counts every corrupted rule (R-3)',
+        () async {
+      // Two corrupted rules, one valid: the sweep total must be 2 even though
+      // the per-column warnings fire independently. This is the assertion that
+      // fails if loadRules stops running the sweep.
+      for (final row in [
+        {'name': 'Valid', 'condition_header': '["valid"]', 'order': 10},
+        {'name': 'Bad1', 'condition_header': '{invalid}', 'order': 20},
+        {'name': 'Bad2', 'condition_header': '[invalid', 'order': 30},
+      ]) {
+        await testDb.insert('rules', {
+          'name': row['name'],
+          'enabled': 1,
+          'is_local': 0,
+          'execution_order': row['order'],
+          'condition_type': 'AND',
+          'condition_header': row['condition_header'],
+          'action_delete': 0,
+          'date_added': DateTime.now().millisecondsSinceEpoch,
+        });
+      }
+
+      final memoryOutput = MemoryOutput();
+      final capturingStore = RuleDatabaseStore(
+        mockHelper,
+        logger: Logger(output: memoryOutput, filter: ProductionFilter()),
+      );
+
+      await capturingStore.loadRules();
+
+      final sweep = memoryOutput.buffer
+          .where((e) => e.origin.level == Level.warning)
+          .map((e) => e.origin.message.toString())
+          .where((m) => m.contains('unparseable condition'))
+          .toList();
+      expect(sweep.length, 1);
+      expect(sweep.single, contains('2 rule(s)'));
     });
 
     test('auditUnparseableConditions counts rules with invalid JSON (AC-3)', () async {
