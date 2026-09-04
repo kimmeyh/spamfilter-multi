@@ -1,38 +1,24 @@
 {
   "_description": "Sprint status file that persists across context compaction. Update after each phase/sub-phase completion.",
-  "_last_updated": "2026-09-04 (Sprint 64 Phase 7.7 close-out: retrospective + all 6 improvements applied, Phase 5 evidence gates recorded, docs triad complete; PR #378 Ready-for-Review pending final checks)",
+  "_last_updated": "2026-09-04 (Phase 8: Sprint 64 merged to develop+main, Sprint 65 branched, refinement pass 1 complete, 0.14.0.0 MSIX BUILT + VERIFIED awaiting Harold's upload)",
   "_usage": "Read this file after context compaction to restore sprint approval state and progress.",
   "_staleness_note": "This file had drifted 15 sprints (last updated at Sprint 35, 2026-04-19) before being refreshed at Sprint 50 close-out. It is a Phase 7.7 checklist item -- update it at every sprint close-out, not opportunistically.",
   "current_sprint": {
+    "number": 65,
+    "branch": "feature/20260904_Sprint_65",
+    "pr_number": null,
+    "start_date": "2026-09-04",
+    "status": "Phase 8 release cycle IN PROGRESS. DONE: 8.1 Harold merged develop->main (PR #379); Phase 6.6 branch + all 10 Sprint 64 cards closed (#368-#377, zero sprint cards open); 8.2 refinement pass 1 COMPLETENESS SWEEP (all 6 close-out outputs verified present; 11 shipped detail sections pruned; GP table corrected -- GP-12 shipped in Sprint 63 but still read HOLD, ADR-0027 still read Proposed; remaining runway marked ACTIVE in dependency order); 8.3 Store release Steps 1-4 COMPLETE (version bump 0.13.0->0.14.0 MINOR, CHANGELOG [0.14.0] cut, prod worktree reset to origin/main after diverging by 5 empty merge commits -- verified no file existed only there before resetting -- MSIX built and fully verified). AWAITING HAROLD: Step 6 Partner Center upload + submit (Claude never submits). NOT STARTED (deliberately, per Harold's instruction to stop before scope selection): 8.4 refinement pass 2 / scope selection, Phase 3 Sprint 65 planning.",
+    "plan_approved": false,
+    "blanket_execution_approved": false,
+    "scope": [],
+    "_scope_note": "Sprint 65 scope NOT yet selected. Harold's instruction was to run the checklist to backlog refinement, then do the Store release BEFORE selecting scope. Recorded runway (not yet approved): GP-7 -> GP-6 -> GP-10 -> closed-test submission."
+  },
+  "previous_sprint": {
     "number": 64,
     "branch": "feature/20260827_Sprint_64",
     "pr_number": 378,
-    "start_date": "2026-08-27",
-    "status": "Sprint 64 COMPLETE through Phase 7.7 (2026-09-04). All 11 tasks done. Android chain validation 6/6 PASS on the signed R8-minified 0.13.0 release APK -- strongest evidence: WorkManager resolved dev.fluttercommunity.workmanager.BackgroundWorker BY FULL NAME on the minified build with the job registered in dumpsys jobscheduler, proving the single R8 keep rule rather than inferring it. MANUAL VALIDATION (2026-09-02/03): F186 produced 2 findings, Harold chose option 1 (fix both now) -- retest PASS incl. the duplicate refusal; signing-file password left plaintext (Harold option 2). PHASE 5.1.1 REVIEW (3 parallel passes incl. a dedicated silent-failure hunt): 8 findings, 2 CRITICAL, all verified against source before fixing, all fixed with tests. The 2 criticals were both silent and user-reachable in RuleEditScreen: no INBOUND 'keyword' mapping (a body rule reopened as a DOMAIN rule and a plain Save rewrote its type), and the save path derived the condition bucket from the ORIGINAL rule while sub-type followed the selection (switching any rule to Body Phrase wrote the phrase into condition_header -- looked correct in the list, could never match). F-PRECHECK class 1 independently caught RuleEditScreen as the un-swept parallel site. MUTATION VERIFICATION REVERSED A CONCLUSION TWICE: an agent's F188 mutation claim did not survive re-running it, and the edit-screen category fix stayed GREEN under mutation -- proof the fix had no test, which prompted the round-trip save test that now reds it. Copilot: 1 real finding (the F188 sweep was defined but never invoked outside tests), fixed + replied. RETRO: Harold rated all 12 rated categories 'Very Good', Cats 13/14 'none'; all 6 proposals 'apply all now', all applied same-session (AVD stale-snapshot fix, display-value gate, ADR-0027 keystore backup procedure, 2 memory hardenings, new Phase 5.1.6 runtime launch gate scoped by Harold to once-per-sprint). Suite 2,011/15/0, analyze clean, WinWright 2/2 at sweep-head 80180b3 with no DB drift. REMAINING: 5.1.6 launch gate on the final rebuilt artifact, then gh pr ready 378 + readiness announcement (final approval + merge are Harold's).",
-    "plan_approved": true,
-    "blanket_execution_approved": true,
-    "scope": [
-      "GP-16",
-      "GP-5",
-      "F186",
-      "F187",
-      "F188",
-      "SEC-9",
-      "GP-2",
-      "GP-9",
-      "GP-8",
-      "GP-3",
-      "SEC-4"
-    ],
-    "_scope_note": "All 11 selected by Harold at Phase 8.4 (2026-08-27), option 1: one sprint, Group B release-build chain intact.",
-    "pr_url": "https://github.com/kimmeyh/spamfilter-multi/pull/378",
-    "plan_approval_date": "2026-08-27"
-  },
-  "previous_sprint": {
-    "number": 63,
-    "branch": "feature/20260824_Sprint_63",
-    "pr_number": 366,
-    "status": "CLOSED -- PR #366 merged to develop 2026-08-27, develop merged to main by Harold same day; shipped as 0.13.0.0 / Submission 20, CERTIFIED AND LIVE 2026-08-27. Cards #357-#365 closed."
+    "status": "CLOSED -- PR #378 merged to develop 2026-09-04 12:38Z, develop merged to main same day via PR #379. All 10 cards (#368-#377) closed. Shipped the full Android release chain (app is Play-submittable), the Play developer account + published legal docs, F186/F187/F188. Final: 2,011 tests / 15 skipped / 0 failed, analyze clean, WinWright 2/2, Android chain validation 6/6, all 3 CI checks SUCCESS."
   },
   "github_issues": [
     368,
@@ -59,13 +45,13 @@
     "_note": "Run full suites with --concurrency=4 (Sprint 49 IMP-5)."
   },
   "store_release": {
-    "status": "0.13.0.0 / Submission 20 CERTIFIED AND LIVE 2026-08-27 -- direct Partner Center observation ~10:55pm ET (Harold's screenshot: 'Congrats! Your product is now updated'; Store presence Submission 20 'currently available'). Uploaded ~7:0x am ET; single evening check, true cert time unmeasured (prior band 20-30 min). Seventh MINOR release (Sprint 63 feat: F180/F94/F181). Step 7 complete: STORE_VERSION_STATUS live row, CHANGELOG [0.13.0] cut + links, master plan outcome, timing row. Dev EQUALS live at 0.13.0 -- bump at next release Step 1. Prod worktree note: 5 local-only pure merge commits since Sprint 60, content-identical to origin/main -- optional reset cleanup, Harold's call.",
+    "status": "0.14.0.0 BUILT AND VERIFIED 2026-09-04 ~8:55am ET -- NOT YET UPLOADED. MSIX 17.1 MB at spamfilter-multi-prod/mobile-app/build/windows/x64/runner/Release/my_email_spam_filter.msix. Check A PASS (inner build carried --dart-define=APP_ENV=prod --dart-define-from-file=secrets.prod.json -- the F119 key-name class is clear); --release-self-test --expected-version=0.14.0 RESULT: PASS on all 6 checks incl. BOTH APP_ENV and NATIVE_APP_ENV (the F119-c class); manifest Version=0.14.0.0, identity KimmeyConsulting-Ohio.MyEmailSpamFilter, publisher matches. Release notes drafted at docs/store-assets/RELEASE_NOTES_0.14.0.md (user-visible only). MINOR bump because [Unreleased] contained a feat entry (F186 Body Phrase). REMEMBER: BUILT + VERIFIED IS NOT SUBMITTED -- verify in Partner Center, never from a tracking file.",
     "live_version": "0.13.0.0",
     "submission": 20,
     "certified_date": "2026-08-27",
-    "pending_upload_version": null,
+    "pending_upload_version": "0.14.0.0",
     "submission_pending": null,
-    "submitted_date": "2026-08-27"
+    "submitted_date": null
   },
   "environment_notes": [
     "RESOLVED 2026-07-29 (verified 07-30): the Store fault was an Acronis file-system filter blocking AppXSvc cleanup, fixed by an Acronis Protection exclusion. 23h uptime with ZERO Id-493 events vs a 176-file/6-min baseline; Store client self-updated 22606.1401.6.0 -> .10.0 (requires a working deployment pipeline). Filter drivers remain loaded -- backup protection was NOT disabled. See ALL_SPRINTS_MASTER_PLAN ENV-1 for the picker gotcha if it recurs.",
@@ -74,10 +60,9 @@
   ],
   "blocking_issues": [],
   "next_actions": [
-    "5.1.6 runtime launch gate on the FINAL rebuilt release artifact (the recorded chain-validation launch predates the Phase 5.1.1 review fixes)",
-    "gh pr ready 378 + Phase 7.7.5 readiness announcement to Harold (final approval + merge are HIS -- Claude never merges)",
-    "ON MERGE: Phase 6.6 -- branch feature/<date>_Sprint_65 FROM feature/20260827_Sprint_64 immediately; close cards #368-#377",
-    "Phase 8 cycle: 8.1 Harold merges develop->main; 8.2 pass-1 completeness sweep; 8.3 Store release (dev EQUALS live at 0.13.0 -- bump at Step 1); 8.4 scope selection",
-    "Sprint 65 runway (sequenced): GP-7 -> GP-6 -> GP-10 -> closed-test submission. Play App Signing enrolls at first upload. The 12-tester/14-day closed-test gate is the long pole -- start tester recruitment BEFORE the code work. GP-10's Data Safety input is already prepared: the 9-permission list from GP-3."
+    "HAROLD: upload build/windows/x64/runner/Release/my_email_spam_filter.msix (0.14.0.0) at Partner Center -> Start update -> Packages; then Store listings -> English (US) -> 'What's new in this version' using docs/store-assets/RELEASE_NOTES_0.14.0.md (that field only appears AFTER a package is attached); then Submit for certification.",
+    "AFTER submission: record submitted timestamp in STORE_SUBMISSION_TIMING.md row 21 and flip STORE_VERSION_STATUS.md from BUILT to submitted.",
+    "THEN 8.4 refinement pass 2 -- scope selection for Sprint 65 (Harold's call; recorded runway GP-7 -> GP-6 -> GP-10 -> closed test).",
+    "Sprint 65 note: the 12-tester/14-day Play closed test is the long pole -- start tester recruitment BEFORE the code work."
   ]
 }
