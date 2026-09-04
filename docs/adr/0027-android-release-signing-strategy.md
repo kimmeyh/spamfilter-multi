@@ -3,7 +3,12 @@
 ## Status
 
 Accepted -- IMPLEMENTED Sprint 64 (2026-08-28, Issue #373): gradle signingConfigs read the
-four `-P` properties (env-var fallback) supplied by `build-with-secrets.ps1` from
+four values as project properties with an `ANDROID_*` ENVIRONMENT-VARIABLE fallback, and
+`build-with-secrets.ps1` supplies them by the ENVIRONMENT route (not `-P`), because
+flutter's `.bat` shim let cmd metacharacters in a real password eat the argument list --
+found on the first live use. The env route is gradle's documented fallback and keeps the
+password off every process command line; the variables are cleared in a `finally`. Values
+come from
 `%USERPROFILE%\.myemailspamfilter\android-signing.json` (outside the repo, per Option B --
 no key.properties); a Release task without them throws; `-Output aab` added for the Play
 bundle; keystore material gitignore-banned and pinned by

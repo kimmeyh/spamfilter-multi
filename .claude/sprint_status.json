@@ -1,6 +1,6 @@
 {
   "_description": "Sprint status file that persists across context compaction. Update after each phase/sub-phase completion.",
-  "_last_updated": "2026-08-27 (Sprint 63 Phase 7.7 close-out complete; PR #366 Ready-for-Review pending; awaiting Harold merge, then Phase 8 cycle)",
+  "_last_updated": "2026-09-04 (Sprint 64 Phase 7.7 close-out: retrospective + all 6 improvements applied, Phase 5 evidence gates recorded, docs triad complete; PR #378 Ready-for-Review pending final checks)",
   "_usage": "Read this file after context compaction to restore sprint approval state and progress.",
   "_staleness_note": "This file had drifted 15 sprints (last updated at Sprint 35, 2026-04-19) before being refreshed at Sprint 50 close-out. It is a Phase 7.7 checklist item -- update it at every sprint close-out, not opportunistically.",
   "current_sprint": {
@@ -8,7 +8,7 @@
     "branch": "feature/20260827_Sprint_64",
     "pr_number": 378,
     "start_date": "2026-08-27",
-    "status": "Sprint 64 Phase 4 ~COMPLETE except Harold-gated items (2026-08-28 ~2am, commits through ff7ce44). DONE: Task 1 GP-16+GP-5 (Play account 'Kimmey Consulting, Ohio' ID 6597324007880348667 created + ALL verifications cleared same night; legal docs PUBLISHED at myemailspamfilter.com/legal -- Pages already served main:/docs on Harold's custom domain; placeholders filled effective 2026-08-28, gate test/policy/legal_docs_test.dart), Task 2 F186 (Body Phrase create type, mutation-verified), Task 4 F188 (warning + invalid marker + sweep; T-1 hardened w/ injectable Logger after agent's mutation claim failed my re-run), Task 5 SEC-9 (client-id injection, release loud-fail, merged-scheme byte-identical; fixed pre-existing dead manifest placeholder), Task 6 GP-2 CODE (ADR-0027 Option B executed -- found already Accepted, card corrected; release-without-params throws PROVEN; -Output aab), Task 7 GP-9 (R8+shrink, ONE reasoned keep rule, -12.8% APK, mapping.txt, Dart obfuscate+symbols outside repo), Task 10 SEC-4 (cleartext off, no loopback exception -- verified custom-scheme-only), Task 8 GP-8 VERIFY PASS (targetSdk 36 ALREADY meets post-Aug-31 API-36 rule -- sources checked 2026-08-28; 16KB zipalign + ELF 2**14+ all 64-bit libs), Task 9 GP-3 (12 permissions blamed; NFC+biometric pair from dormant msal_auth transitives REMOVED via tools:node=remove, re-verified: exactly 9 justified remain = GP-10 input). Task 3 F187: dev DB DONE (647 deleted, 85 keep, backup f187_backup_20260828_002529); PROD AWAITING HAROLD (its numbers differ: 1300 of 1470, = 368 distinct domains x legacy-import duplicates; per-DB approval discipline). HAROLD-GATED REMAINDER: (1) F187 prod 1/2, (2) GP-2 keystore ceremony (instructions given; keytool at Microsoft JDK17 path; signing JSON at ~/.myemailspamfilter/android-signing.json) then signed-AAB fingerprint proof, (3) chain validation on-device at MV (GP-9 R-4 surface list on the minified build, SEC-9 AC-2 sign-in, SEC-4 AC-2 live checks). Suite 1,985/15/0 (policy 52 -- the '53' was an agent miscount, all 16 gate files verified present); analyze clean. Retro seeds: XML double-hyphen defect class hit twice (SEC-9 agent, then me after reading its lesson); background-command output trimmed twice before the full-log rule was re-followed; gradle-vs-test-suite contention flake.",
+    "status": "Sprint 64 COMPLETE through Phase 7.7 (2026-09-04). All 11 tasks done. Android chain validation 6/6 PASS on the signed R8-minified 0.13.0 release APK -- strongest evidence: WorkManager resolved dev.fluttercommunity.workmanager.BackgroundWorker BY FULL NAME on the minified build with the job registered in dumpsys jobscheduler, proving the single R8 keep rule rather than inferring it. MANUAL VALIDATION (2026-09-02/03): F186 produced 2 findings, Harold chose option 1 (fix both now) -- retest PASS incl. the duplicate refusal; signing-file password left plaintext (Harold option 2). PHASE 5.1.1 REVIEW (3 parallel passes incl. a dedicated silent-failure hunt): 8 findings, 2 CRITICAL, all verified against source before fixing, all fixed with tests. The 2 criticals were both silent and user-reachable in RuleEditScreen: no INBOUND 'keyword' mapping (a body rule reopened as a DOMAIN rule and a plain Save rewrote its type), and the save path derived the condition bucket from the ORIGINAL rule while sub-type followed the selection (switching any rule to Body Phrase wrote the phrase into condition_header -- looked correct in the list, could never match). F-PRECHECK class 1 independently caught RuleEditScreen as the un-swept parallel site. MUTATION VERIFICATION REVERSED A CONCLUSION TWICE: an agent's F188 mutation claim did not survive re-running it, and the edit-screen category fix stayed GREEN under mutation -- proof the fix had no test, which prompted the round-trip save test that now reds it. Copilot: 1 real finding (the F188 sweep was defined but never invoked outside tests), fixed + replied. RETRO: Harold rated all 12 rated categories 'Very Good', Cats 13/14 'none'; all 6 proposals 'apply all now', all applied same-session (AVD stale-snapshot fix, display-value gate, ADR-0027 keystore backup procedure, 2 memory hardenings, new Phase 5.1.6 runtime launch gate scoped by Harold to once-per-sprint). Suite 2,011/15/0, analyze clean, WinWright 2/2 at sweep-head 80180b3 with no DB drift. REMAINING: 5.1.6 launch gate on the final rebuilt artifact, then gh pr ready 378 + readiness announcement (final approval + merge are Harold's).",
     "plan_approved": true,
     "blanket_execution_approved": true,
     "scope": [
@@ -29,31 +29,32 @@
     "plan_approval_date": "2026-08-27"
   },
   "previous_sprint": {
-    "number": 62,
-    "branch": "feature/20260821_Sprint_62",
-    "pr_number": 355,
-    "status": "CLOSED -- PR #355 merged to develop 2026-08-24 12:07Z, develop merged to main by Harold same day. Cards #349-#354 all closed; zero open sprint issues verified. Shipped: F177 chunked fetch (survival PASS), F175 scan serialization + wait notice + reconciliation (R-7 DECLINED by design), F174 folder-error surfacing, F178 bottom-anchored popup, F176 account labels, F163 skips 26->15, CI draft gating + Workmanager Linux fix. Retro complete, 7/7 improvement decisions executed (5 applied, F182/F183 registered). Copilot review 3/3 fixed+resolved (cc255b7). CI 3/3 green twice. Final suite 1,931+/15/0; hooks 51/51; sweep 2/2 at sweep-head d87b828."
+    "number": 63,
+    "branch": "feature/20260824_Sprint_63",
+    "pr_number": 366,
+    "status": "CLOSED -- PR #366 merged to develop 2026-08-27, develop merged to main by Harold same day; shipped as 0.13.0.0 / Submission 20, CERTIFIED AND LIVE 2026-08-27. Cards #357-#365 closed."
   },
   "github_issues": [
-    357,
-    358,
-    359,
-    360,
-    361,
-    362,
-    363,
-    364,
-    365
+    368,
+    369,
+    370,
+    371,
+    372,
+    373,
+    374,
+    375,
+    376,
+    377
   ],
-  "_github_issues_note": "Sprint 63 cards created at Phase 3.3.1 (2026-08-25): #357 F181, #358 F180, #359 F184, #360 F182, #361 F164, #362 GP-12, #363 GP-16, #364 GP-5, #365 F94.",
+  "_github_issues_note": "Sprint 64 cards: #368 GP-16(+GP-5), #369 F186, #370 F187, #371 F188, #372 SEC-9, #373 GP-2, #374 GP-9, #375 GP-8, #376 GP-3, #377 SEC-4. Close on merge to develop (no auto-close).",
   "test_metrics": {
-    "tests_passing": 1955,
+    "tests_passing": 2011,
     "tests_skipped": 15,
     "tests_failing": 0,
     "analyzer_warnings": 0,
-    "_test_metrics_note": "1,955 passed / 15 skipped / 0 failed after review round 2 (2026-08-26; +3 F180 isolated guard tests). +24 vs Sprint 62. Run with --concurrency=4.",
+    "_test_metrics_note": "2,011 passed / 15 skipped / 0 failed at Sprint 64 close-out (+56 vs Sprint 63's 1,955). Includes +11 tests from the Phase 5.1.1 review fixes and +4 from the retro display-value gate. Run with --concurrency=4.",
     "hook_test_cases": "51/51 passing -- +2 Sprint 62 IMP-1 cases (violation-5 phase5-evidence-missing, allow-7 evidence-present).",
-    "winwright_sweep": "Sprint 62 sweep 2026-08-23 (lib/ui touched): first run 0/3 -- Sprint 61 F169 (chips->dropdown) had rotted every chip selector (shipped without a sweep); scripts repaired live (dropdown face=Text node, physical mouse clicks only, settle buffers -- runner still replays no ww_wait), mt2c baselines refreshed (@hiram.edu, @alphaxiv.org). Green 3/3 pre-retirement; f129 RETIRED (strict subset of mt2c, retro IMP-5); final post-retirement sweep at HEAD recorded with sweep-head in SPRINT_62_PLAN.md. DB drift none on every run.",
+    "winwright_sweep": "Sprint 64 sweep 2026-09-04 at sweep-head 80180b38fb2c7d01745c68301e9cedcc5c24d395: 2/2 PASSED (test_f124_rule_labels 29/29, test_mt2c_no_rule_sweep 29/29). 3 dialog-settle scripts excluded by the runner's own documented policy (not re-derived -- Sprint 52 IMP-3). DB drift: none.",
     "coverage_percent": null,
     "_note": "Run full suites with --concurrency=4 (Sprint 49 IMP-5)."
   },
@@ -73,8 +74,10 @@
   ],
   "blocking_issues": [],
   "next_actions": [
-    "gh pr ready 366 + 7.7.5 readiness announcement to Harold (final approval + merge are his)",
-    "ON MERGE: Phase 6.6 -- branch feature/<date>_Sprint_64 FROM feature/20260824_Sprint_63 immediately; close cards #357-#365 (no auto-close on develop merges)",
-    "Phase 8 cycle: 8.1 Harold merges develop->main (does not block 8.2); 8.2 pass-1 completeness sweep (prune Sprint 63 DONE stubs); 8.3 Store release per STORE_RELEASE_PROCESS.md (dev equals live at 0.12.0 -- bump at Step 1); 8.4 scope selection (Sprint 64 first task fixed: GP-16 guided walkthrough incl. GP-5 hosting/URL + publication)"
+    "5.1.6 runtime launch gate on the FINAL rebuilt release artifact (the recorded chain-validation launch predates the Phase 5.1.1 review fixes)",
+    "gh pr ready 378 + Phase 7.7.5 readiness announcement to Harold (final approval + merge are HIS -- Claude never merges)",
+    "ON MERGE: Phase 6.6 -- branch feature/<date>_Sprint_65 FROM feature/20260827_Sprint_64 immediately; close cards #368-#377",
+    "Phase 8 cycle: 8.1 Harold merges develop->main; 8.2 pass-1 completeness sweep; 8.3 Store release (dev EQUALS live at 0.13.0 -- bump at Step 1); 8.4 scope selection",
+    "Sprint 65 runway (sequenced): GP-7 -> GP-6 -> GP-10 -> closed-test submission. Play App Signing enrolls at first upload. The 12-tester/14-day closed-test gate is the long pole -- start tester recruitment BEFORE the code work. GP-10's Data Safety input is already prepared: the 9-permission list from GP-3."
   ]
 }

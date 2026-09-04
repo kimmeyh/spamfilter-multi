@@ -797,3 +797,39 @@ so evidence is device-level (sockets, activity state, logcat system lines), not 
 
 **Android chain validation COMPLETE: 6 of 6 PASS.** Remaining MV work is Windows-side
 (F187 AC-4 deferred-fetch delta on the dev build) plus Harold's overall MV verdicts.
+
+## Phase 5 evidence gates
+
+- **5.1.1 Automated code review** (2026-09-04, at `80180b3`): three parallel passes -- Android
+  release chain, rule authoring, and a dedicated silent-failure hunt (chosen because this
+  sprint had ALREADY produced three silent-failure defects, so the class was known live).
+  **8 findings, every one verified against source before fixing, all fixed with tests.**
+  2 critical (both in `RuleEditScreen`, both silent and user-reachable: the `'keyword'`
+  sub-type had no INBOUND mapping so a body rule reopened as a domain rule and a plain Save
+  rewrote its type; and the save path derived the condition bucket from the ORIGINAL rule
+  while the sub-type followed the selection, so switching any rule to Body Phrase wrote the
+  phrase into `condition_header` -- looked right in the list, could never match). 6 more:
+  LIKE-wildcard false-positive duplicates, the edit screen as the un-swept parallel site,
+  two unlogged `_decodeJsonArray` shapes, two build-script flag combinations that failed
+  late or silently dropped obfuscation, and five unguarded sqlite calls plus a two-instant
+  WAL backup in the F187 script. **Notably, the category fix stayed GREEN under mutation --
+  proof the fix had no test -- which is what prompted the round-trip save test that now reds
+  it.** +11 tests.
+- **5.1.2 F-PRECHECK six classes** (2026-09-04): **class 1 (mirror/parallel-site sync) CAUGHT
+  A REAL ONE** -- `RuleEditScreen` calls the same generator as the create screen and still
+  held the pre-fix empty display value plus the wrong "Source" label. Classes 2-6 clean, each
+  by an actual detection command rather than a read-through: class 2 confirmed every new
+  helper has a live production call site; class 3 found no stale doc comment on a changed
+  default; class 4's single new `split` is on a Google client id, a fixed-shape public
+  identifier; class 5 added no external API call; class 6's only new bare `catch` is the JSON
+  probe where the parse failure IS the counted signal, reported via the aggregate warning.
+- **5.1.5 WinWright UI sweep** (2026-09-04, `sweep-head: 80180b38fb2c7d01745c68301e9cedcc5c24d395`):
+  **2/2 PASSED** (`test_f124_rule_labels` 29/29, `test_mt2c_no_rule_sweep` 29/29). 3
+  dialog-settle scripts excluded by the runner's own documented policy, not re-derived.
+  DB drift: none.
+- **5.1.6 Runtime launch gate** (the new IMP-6 gate, first use): PENDING at the time of
+  writing -- the launch recorded during chain validation predates the Phase 5.1.1 review
+  fixes, and the gate's whole point is that it runs on the sprint's FINAL build. Result
+  recorded below once the rebuilt artifact is launched. This sprint is exactly why the gate
+  exists (SEC-4).
+- **5.2 Full suite**: 2,011 passed / 15 skipped / 0 failed; analyzer clean.
