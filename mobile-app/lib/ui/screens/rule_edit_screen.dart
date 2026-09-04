@@ -160,11 +160,28 @@ class _RuleEditScreenState extends State<RuleEditScreen> {
         return ManualRuleType.exactDomain;
       case 'exact_email':
         return ManualRuleType.exactEmail;
+      // F186 (Sprint 64): the INBOUND half of the map. _manualRuleTypeToSubType
+      // writes 'keyword' for a body phrase, so without this case a body rule
+      // reopened for editing fell through to entireDomain: the screen re-ran
+      // the DOMAIN generator over the phrase and a plain Save silently
+      // rewrote pattern_sub_type, leaving pattern_category='body' with
+      // pattern_sub_type='entire_domain' -- a combination the create path
+      // cannot produce, and one the duplicate checker (which keys on both)
+      // would never match again. Caught by the Phase 5.1.1 review.
+      case 'keyword':
+        return ManualRuleType.bodyPhrase;
       case 'entire_domain':
       default:
         return ManualRuleType.entireDomain;
     }
   }
+
+  /// Return the DB `pattern_category` for [type] -- the condition bucket the
+  /// pattern belongs in. Mirrors `ManualRuleCreateScreen`'s
+  /// `isBody ? 'body' : 'header_from'` split, so the two screens can never
+  /// disagree about where a rule of a given type is stored.
+  String _manualRuleTypeToCategory(ManualRuleType type) =>
+      type == ManualRuleType.bodyPhrase ? 'body' : 'header_from';
 
   /// Return the DB `pattern_sub_type` string for the current [_selectedType].
   String _manualRuleTypeToSubType(ManualRuleType type) {
@@ -288,9 +305,17 @@ class _RuleEditScreenState extends State<RuleEditScreen> {
           sourceDomain = cleaned;
           break;
         case ManualRuleType.bodyPhrase:
-          // Body phrases have no domain concept -- matches
-          // ManualRuleCreateScreen._generatePattern.
-          sourceDomain = '';
+          // Body phrases have no domain concept, but source_domain doubles as
+          // the UI DISPLAY value (`sourceDomain ?? name` in
+          // rules_management_screen), so it carries the plain phrase --
+          // matches ManualRuleCreateScreen._generatePattern.
+          //
+          // This screen is the create screen's parallel site (F-PRECHECK
+          // class 1). Before this fix it kept the empty-string form: the save
+          // path's `_sourceDomain.isNotEmpty ? ... : widget.rule.sourceDomain`
+          // fallback meant EDITING a body phrase left the rule titled with the
+          // OLD phrase, and the preview showed no Phrase line.
+          sourceDomain = input.toLowerCase();
           break;
       }
     }
@@ -384,9 +409,25 @@ class _RuleEditScreenState extends State<RuleEditScreen> {
         int.tryParse(_executionOrderController.text.trim()) ?? _executionOrder;
 
     // Determine the condition list to store the pattern in.
-    // The original rule's patternCategory determines which condition bucket to
-    // use. For the edit case we preserve the same bucket.
-    final category = widget.rule.patternCategory ?? 'header_from';
+    //
+    // The category must follow the SELECTED type, not the original rule's, so
+    // that changing the type moves the pattern into the matching condition
+    // bucket. Direct-regex mode keeps the original, because that mode edits
+    // the raw pattern without a type selection.
+    //
+    // F186 (Sprint 64 Phase 5.1.1 review): this previously always preserved
+    // `widget.rule.patternCategory` while pattern_sub_type DID follow the
+    // selection. Switching any existing rule to Body Phrase therefore wrote
+    // the phrase into condition_header with pattern_category='header_from'
+    // and pattern_sub_type='keyword' -- a combination the create path cannot
+    // produce. The save succeeded, Manage Rules rendered it as a body/keyword
+    // rule because the label comes from the sub-type, and the rule could
+    // never match anything: an unanchored literal phrase tested against the
+    // From header. It was also invisible to the duplicate checker, which
+    // keys on category + sub-type.
+    final category = _isDirectRegexMode
+        ? (widget.rule.patternCategory ?? 'header_from')
+        : _manualRuleTypeToCategory(_selectedType);
     final RuleConditions conditions;
     switch (category) {
       case 'subject':
@@ -422,7 +463,7 @@ class _RuleEditScreenState extends State<RuleEditScreen> {
       actions: actions,
       exceptions: widget.rule.exceptions,
       metadata: widget.rule.metadata,
-      patternCategory: widget.rule.patternCategory,
+      patternCategory: category,
       patternSubType: _isDirectRegexMode
           ? widget.rule.patternSubType
           : _manualRuleTypeToSubType(_selectedType),
@@ -754,6 +795,11 @@ class _RuleEditScreenState extends State<RuleEditScreen> {
         ),
         const SizedBox(height: 8),
         TextFormField(
+          // Stable handle for widget tests: the label text is type-dependent
+          // (_inputHint), so a label-based finder breaks whenever the selected
+          // rule type changes -- which is exactly what the round-trip tests
+          // need to do.
+          key: const Key('rule_edit_input_field'),
           controller: _inputController,
           decoration: InputDecoration(
             labelText: _inputHint,
@@ -889,9 +935,12 @@ class _RuleEditScreenState extends State<RuleEditScreen> {
             'Type: $typeLabel',
             style: Theme.of(context).textTheme.bodySmall,
           ),
-          if (sourceDomain != null)
+          // "Phrase" for a body rule, "Source" for a domain rule -- matches
+          // ManualRuleCreateScreen's preview and confirm dialog. An empty
+          // value renders no line at all rather than a bare label.
+          if (sourceDomain != null && sourceDomain.isNotEmpty)
             Text(
-              'Source: $sourceDomain',
+              '${_selectedType == ManualRuleType.bodyPhrase ? 'Phrase' : 'Source'}: $sourceDomain',
               style: Theme.of(context).textTheme.bodySmall,
             ),
         ],

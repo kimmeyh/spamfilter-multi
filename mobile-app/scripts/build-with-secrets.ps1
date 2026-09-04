@@ -85,6 +85,32 @@ param(
 
 $ErrorActionPreference = 'Stop'
 
+# Reject flag combinations that cannot work, BEFORE any long build runs.
+# Both were found by the Sprint 64 Phase 5.1.1 review of the release chain.
+#
+# 1. -Run takes an early-exit path that sits ABOVE the GP-2 signing, SEC-9
+#    client-id, and GP-9 obfuscation blocks, so a release build started that
+#    way reaches gradle with none of them injected. The release guards then
+#    fire "missing signing parameters" and "missing client id" at a user who
+#    did nothing wrong, and the natural workaround (exporting the values by
+#    hand) yields an UNOBFUSCATED build that silently violates GP-9. Use
+#    -InstallToEmulator for release: it runs the full injected path.
+if ($Run -and $BuildType -eq 'release') {
+    Write-Host "[ERROR] -Run does not support -BuildType release: it bypasses signing, client-id, and obfuscation injection." -ForegroundColor Red
+    Write-Host "        Use: -BuildType release -InstallToEmulator" -ForegroundColor Yellow
+    exit 1
+}
+
+# 2. adb cannot install an .aab. -Output aab reassigns the artifact path that
+#    -InstallToEmulator later hands to `adb install`, so the pair fails with
+#    INSTALL_PARSE_FAILED_NOT_APK only AFTER a full release build -- which
+#    reads like a signing fault and sends debugging at the wrong thing.
+if ($Output -eq 'aab' -and $InstallToEmulator) {
+    Write-Host "[ERROR] -Output aab cannot be installed with -InstallToEmulator (adb cannot install a bundle)." -ForegroundColor Red
+    Write-Host "        Build an APK for on-device testing, or use bundletool to install the AAB." -ForegroundColor Yellow
+    exit 1
+}
+
 # Navigate to mobile-app directory
 $mobileAppDir = Split-Path -Parent $PSScriptRoot
 Push-Location $mobileAppDir

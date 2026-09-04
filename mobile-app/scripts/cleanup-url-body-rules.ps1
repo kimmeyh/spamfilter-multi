@@ -74,8 +74,25 @@ if ($Mode -eq "SelfTest") {
 if (-not $DbPath -or -not (Test-Path $DbPath)) { throw "[F187] -DbPath required and must exist (got '$DbPath')" }
 $sqlite = Get-Sqlite
 
-$total    = & $sqlite $DbPath "SELECT COUNT(*) FROM rules WHERE condition_body IS NOT NULL AND condition_body != '[]' AND condition_body != '';"
-$matched  = & $sqlite $DbPath "SELECT COUNT(*) FROM rules WHERE $Where;"
+# Every sqlite invocation is checked. PowerShell's $ErrorActionPreference =
+# 'Stop' does NOT stop on a native executable's non-zero exit, so an unguarded
+# call leaves the ERROR TEXT in the variable and the next [int] cast dies with
+# "Cannot convert ... to type System.Int32" -- naming neither the database nor
+# the real cause. This matters concretely here: json_array_length ABORTS the
+# whole statement on any malformed condition_body, and F188 in this same sprint
+# exists precisely because such rows occur in real databases.
+# (Sprint 64 Phase 5.1.1 review.)
+function Invoke-Sqlite {
+    param([string]$Db, [string]$Sql, [string]$What)
+    $out = & $script:sqlite $Db $Sql
+    if ($LASTEXITCODE -ne 0) {
+        throw "[F187] $What failed (sqlite exit $LASTEXITCODE): $out"
+    }
+    return $out
+}
+
+$total    = Invoke-Sqlite $DbPath "SELECT COUNT(*) FROM rules WHERE condition_body IS NOT NULL AND condition_body != '[]' AND condition_body != '';" "body-rule count"
+$matched  = Invoke-Sqlite $DbPath "SELECT COUNT(*) FROM rules WHERE $Where;" "delete-set count"
 $keepers  = [int]$total - [int]$matched
 Write-Host "[F187] DB: $DbPath"
 Write-Host "[F187] Body rules total: $total | URL-shape (delete set): $matched | keep: $keepers"
@@ -89,15 +106,22 @@ if ($Mode -eq "DryRun") {
 # Apply
 $stamp = Get-Date -Format "yyyyMMdd_HHmmss"
 $backup = "$DbPath.f187_backup_$stamp"
-Copy-Item $DbPath $backup -Force
-if (Test-Path "$DbPath-wal") { Copy-Item "$DbPath-wal" "$backup-wal" -Force }
+
+# ONE consistent file, via sqlite's own .backup. Copying the .db and then the
+# -wal as two separate file copies captures a WAL-mode database at two
+# different instants with no checkpoint and no lock -- and this IS the live
+# rules database. If anything writes between the two copies the pair is
+# internally inconsistent and may not open. .backup checkpoints and produces a
+# single self-contained file, so rollback is one copy with no -wal/-shm
+# handling to get wrong. (Sprint 64 Phase 5.1.1 review.)
+Invoke-Sqlite $DbPath ".backup '$($backup -replace "'", "''")'" "backup" | Out-Null
+if (-not (Test-Path $backup)) { throw "[F187] backup file was not created at $backup" }
 Write-Host "[F187] Backup: $backup (pre-delete body-rule count: $total, delete set: $matched)"
 
-& $sqlite $DbPath "DELETE FROM rules WHERE $Where;"
-if ($LASTEXITCODE -ne 0) { throw "[F187] DELETE failed -- DB untouched content is in the backup" }
+Invoke-Sqlite $DbPath "DELETE FROM rules WHERE $Where;" "DELETE" | Out-Null
 
-$remainingMatched = & $sqlite $DbPath "SELECT COUNT(*) FROM rules WHERE $Where;"
-$remainingBody    = & $sqlite $DbPath "SELECT COUNT(*) FROM rules WHERE condition_body IS NOT NULL AND condition_body != '[]' AND condition_body != '';"
+$remainingMatched = Invoke-Sqlite $DbPath "SELECT COUNT(*) FROM rules WHERE $Where;" "post-delete delete-set count"
+$remainingBody    = Invoke-Sqlite $DbPath "SELECT COUNT(*) FROM rules WHERE condition_body IS NOT NULL AND condition_body != '[]' AND condition_body != '';" "post-delete body-rule count"
 Write-Host "[F187] Post-delete: shape-matched remaining: $remainingMatched (expect 0); body rules remaining: $remainingBody (expect $keepers)"
 if ([int]$remainingMatched -ne 0 -or [int]$remainingBody -ne $keepers) {
     throw "[F187] VERIFICATION FAILED -- restore from $backup"

@@ -130,7 +130,15 @@ class RuleDatabaseStore {
         final value = ruleData[column];
         if (value is String) {
           try {
-            jsonDecode(value);
+            final decoded = jsonDecode(value);
+            // Matches _decodeJsonArray's definition of healthy: a list of
+            // strings. Counting only decode THROWS would under-report the
+            // two shapes that parse successfully but are still unusable
+            // (valid JSON of the wrong type, and a list of non-strings).
+            if (decoded is! List || decoded.any((e) => e is! String)) {
+              corruptedCount++;
+              break;
+            }
           } catch (_) {
             corruptedCount++;
             break;
@@ -493,14 +501,36 @@ class RuleDatabaseStore {
   }
 
   /// Decode JSON array from database string
+  ///
+  /// F188 (Sprint 64, hardened at the Phase 5.1.1 review): a column is only
+  /// "healthy" if it decodes to a list OF STRINGS. Two failure shapes were
+  /// previously silent:
+  ///
+  /// - **Valid JSON, wrong type** (`5`, `{}`, `null` as text): `jsonDecode`
+  ///   SUCCEEDS, so the old code fell past the `is List` check straight to
+  ///   `return []` and logged nothing. The rule loaded with empty conditions
+  ///   and matched nothing, with no warning anywhere.
+  /// - **Valid list, wrong element type** (`[1,2]`): `.cast<String>()` throws
+  ///   LAZILY, OUTSIDE this try, so the exception escaped to the caller's
+  ///   handler and the ENTIRE rule was dropped from the loaded set rather
+  ///   than one column being reported.
+  ///
+  /// Both now warn and degrade to an empty condition list, which is the same
+  /// outcome a parse failure already had.
   List<String> _decodeJsonArray(dynamic value, String ruleName, String columnName) {
     if (value == null) return [];
     if (value is String) {
       try {
         final decoded = jsonDecode(value);
-        if (decoded is List) {
-          return decoded.cast<String>();
+        if (decoded is! List) {
+          _logger.w(
+              'F188: Condition JSON for rule "$ruleName" column "$columnName" '
+              'is ${decoded.runtimeType}, expected a list');
+          return [];
         }
+        // Eager, so a non-string element is caught HERE rather than thrown
+        // lazily at the first read by a caller.
+        return List<String>.from(decoded.map((e) => e as String));
       } catch (e) {
         _logger.w('F188: Failed to parse condition JSON for rule "$ruleName" column "$columnName": $e');
       }

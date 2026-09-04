@@ -569,6 +569,82 @@ void main() {
       expect(sweep.single, contains('1 rule(s)'));
     });
 
+    test('valid JSON of the wrong TYPE warns and counts as corrupted',
+        () async {
+      // Phase 5.1.1 review finding: jsonDecode SUCCEEDS on `5` / `{}` / `null`,
+      // so the old code fell past the `is List` check to `return []` and
+      // logged nothing at all -- the rule loaded with empty conditions and
+      // matched nothing, silently.
+      await testDb.insert('rules', {
+        'name': 'WrongTypeRule',
+        'enabled': 1,
+        'is_local': 0,
+        'execution_order': 10,
+        'condition_type': 'AND',
+        'condition_header': '5', // valid JSON, not a list
+        'action_delete': 0,
+        'date_added': DateTime.now().millisecondsSinceEpoch,
+      });
+
+      final memoryOutput = MemoryOutput();
+      final capturingStore = RuleDatabaseStore(
+        mockHelper,
+        logger: Logger(output: memoryOutput, filter: ProductionFilter()),
+      );
+
+      final ruleSet = await capturingStore.loadRules();
+      expect(ruleSet.rules.single.conditions.header, isEmpty);
+
+      final warnings = memoryOutput.buffer
+          .where((e) => e.origin.level == Level.warning)
+          .map((e) => e.origin.message.toString())
+          .where((m) => m.contains('F188'))
+          .toList();
+
+      expect(warnings.any((m) => m.contains('expected a list')), isTrue,
+          reason: 'a non-list must warn, not fail silently');
+      expect(warnings.any((m) => m.contains('1 rule(s)')), isTrue,
+          reason: 'the sweep total must count it as corrupted');
+    });
+
+    test('a list of NON-STRINGS warns without dropping the whole rule',
+        () async {
+      // The old .cast<String>() threw LAZILY, outside the try, so the
+      // exception escaped to the outer handler and the entire rule vanished
+      // from the loaded set rather than one column being reported.
+      await testDb.insert('rules', {
+        'name': 'NonStringElementsRule',
+        'enabled': 1,
+        'is_local': 0,
+        'execution_order': 10,
+        'condition_type': 'AND',
+        'condition_header': '[1,2]',
+        'action_delete': 0,
+        'date_added': DateTime.now().millisecondsSinceEpoch,
+      });
+
+      final memoryOutput = MemoryOutput();
+      final capturingStore = RuleDatabaseStore(
+        mockHelper,
+        logger: Logger(output: memoryOutput, filter: ProductionFilter()),
+      );
+
+      final ruleSet = await capturingStore.loadRules();
+      expect(ruleSet.rules.length, 1,
+          reason: 'the rule must survive with an empty condition list, not be '
+              'dropped from the loaded set entirely');
+      expect(ruleSet.rules.single.name, 'NonStringElementsRule');
+      expect(ruleSet.rules.single.conditions.header, isEmpty);
+
+      final warnings = memoryOutput.buffer
+          .where((e) => e.origin.level == Level.warning)
+          .map((e) => e.origin.message.toString())
+          .where((m) => m.contains('F188'))
+          .toList();
+      expect(warnings.any((m) => m.contains('NonStringElementsRule')), isTrue);
+      expect(warnings.any((m) => m.contains('1 rule(s)')), isTrue);
+    });
+
     test('the load-time integrity sweep counts every corrupted rule (R-3)',
         () async {
       // Two corrupted rules, one valid: the sweep total must be 2 even though

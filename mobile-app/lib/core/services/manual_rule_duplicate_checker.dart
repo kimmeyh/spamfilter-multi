@@ -66,7 +66,7 @@ class ManualRuleDuplicateChecker {
         AND pattern_sub_type = ?
         AND (
           REPLACE(LOWER(TRIM($column)), ?, ' ') = LOWER(?)
-          OR REPLACE(LOWER(TRIM($column)), ?, ' ') LIKE ?
+          OR REPLACE(LOWER(TRIM($column)), ?, ' ') LIKE ? ESCAPE '\\'
         )
       ''',
       whereArgs: [
@@ -75,13 +75,31 @@ class ManualRuleDuplicateChecker {
         _jsonEscapedSpace,
         storedExact,
         _jsonEscapedSpace,
-        '%"${normalized.replaceAll('"', '\\"')}"%',
+        '%"${_escapeForLike(normalized)}"%',
       ],
       limit: 1,
     );
 
     return results.isNotEmpty;
   }
+
+  /// Escape a value for use inside a SQL `LIKE` pattern.
+  ///
+  /// `%` and `_` are LIKE wildcards, and `RegExp.escape` leaves both untouched,
+  /// so an unescaped phrase silently widened the match: the genuinely distinct
+  /// phrase `act_now` matched a stored `act now` (the `_` matching the space)
+  /// and was REJECTED as a duplicate, with no way for the user to force it
+  /// through. Same for `save%percent` against `save 50 percent`, and for any
+  /// address containing an underscore on the header path. Found by the
+  /// Sprint 64 Phase 5.1.1 review.
+  ///
+  /// The backslash is escaped FIRST so it cannot double-escape the wildcards
+  /// added after it. Paired with `ESCAPE '\'` on the LIKE clause.
+  static String _escapeForLike(String value) => value
+      .replaceAll(r'\', r'\\')
+      .replaceAll('%', r'\%')
+      .replaceAll('_', r'\_')
+      .replaceAll('"', r'\"');
 
   /// A regex escaped space (`\ `) as it appears INSIDE the JSON-encoded
   /// condition column text: JSON doubles the backslash, so the stored bytes

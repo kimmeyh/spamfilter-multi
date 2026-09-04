@@ -303,6 +303,59 @@ void main() {
         isFalse,
       );
     });
+
+    // Sprint 64 Phase 5.1.1 review finding: `%` and `_` are SQL LIKE
+    // wildcards and RegExp.escape leaves both untouched, so an unescaped
+    // phrase widened the match and REJECTED a genuinely distinct rule as a
+    // duplicate -- with no way for the user to force it through.
+    test('an underscore in the phrase does not wildcard-match a space', () async {
+      await seedBodyRule(pattern: r'act\ now', name: 'seeded_act_now');
+      final checker = ManualRuleDuplicateChecker(await testHelper.dbHelper.database);
+
+      expect(
+        await checker.blockRuleExists(
+          pattern: r'act_now',
+          patternCategory: 'body',
+          patternSubType: 'keyword',
+        ),
+        isFalse,
+        reason: r'`act_now` is a DIFFERENT phrase from `act now`; the `_` must '
+            'not match the space as a LIKE wildcard',
+      );
+    });
+
+    test('a percent sign in the phrase does not wildcard-match', () async {
+      await seedBodyRule(
+          pattern: r'save\ 50\ percent', name: 'seeded_save_percent');
+      final checker = ManualRuleDuplicateChecker(await testHelper.dbHelper.database);
+
+      expect(
+        await checker.blockRuleExists(
+          pattern: r'save%percent',
+          patternCategory: 'body',
+          patternSubType: 'keyword',
+        ),
+        isFalse,
+        reason: 'a literal % must not match "50 " as a LIKE wildcard',
+      );
+    });
+
+    test('escaping the wildcards does not break real duplicate detection',
+        () async {
+      // The escaping must not over-correct: a phrase that genuinely contains
+      // an underscore still matches an existing rule for the SAME phrase.
+      await seedBodyRule(pattern: r'act_now', name: 'seeded_underscore');
+      final checker = ManualRuleDuplicateChecker(await testHelper.dbHelper.database);
+
+      expect(
+        await checker.blockRuleExists(
+          pattern: r'act_now',
+          patternCategory: 'body',
+          patternSubType: 'keyword',
+        ),
+        isTrue,
+      );
+    });
   });
 
   group('ManualRuleDuplicateChecker - safe senders', () {

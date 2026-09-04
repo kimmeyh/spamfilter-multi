@@ -30,6 +30,7 @@ import 'package:flutter_test/flutter_test.dart';
 void main() {
   final createScreen =
       File('lib/ui/screens/manual_rule_create_screen.dart');
+  final editScreen = File('lib/ui/screens/rule_edit_screen.dart');
   final rulesScreen =
       File('lib/ui/screens/rules_management_screen.dart');
 
@@ -88,6 +89,38 @@ void main() {
             'type. If a future type genuinely has no natural display string, '
             'change the UI contract deliberately rather than emptying this '
             'field. Offending line: $line',
+      );
+    }
+  });
+
+  test('the EDIT screen assigns the same display values as the create screen',
+      () {
+    // The edit screen is the create screen's parallel site: both run a
+    // per-type switch producing sourceDomain, and both feed the same UI
+    // contract. F-PRECHECK class 1 (mirror/parallel-site sync) caught it
+    // still holding the pre-fix `sourceDomain = ''` for body phrases after
+    // the create screen was fixed. The user-visible effect was narrower but
+    // real: the save path falls back to the rule's ORIGINAL sourceDomain when
+    // the new one is empty, so editing a body phrase left the rule titled
+    // with the OLD phrase, and the preview showed no Phrase line.
+    final source = editScreen.readAsStringSync();
+
+    final localAssignments = const LineSplitter()
+        .convert(source)
+        .map((l) => l.trim())
+        .where((l) => l.startsWith('sourceDomain ='))
+        .toList();
+
+    expect(localAssignments, isNotEmpty,
+        reason: 'could not locate the edit screen per-type sourceDomain '
+            'assignments -- if they were refactored, update this gate');
+
+    for (final line in localAssignments) {
+      expect(
+        line == "sourceDomain = '';",
+        isFalse,
+        reason: 'the edit screen must assign a display value for every type, '
+            'exactly as the create screen does. Offending line: $line',
       );
     }
   });
