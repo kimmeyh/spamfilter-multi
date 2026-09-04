@@ -26,6 +26,8 @@ Format: `- **type**: Description (Issue #N)` where type is feat|fix|chore|docs
 
 ## [Unreleased]
 
+## [0.14.0] - 2026-09-04
+
 ### 2026-09-02 (Sprint 64, Manual Validation)
 - **fix**: F186 -- a Body Phrase rule created in Manage Rules now displays as its phrase (list, detail dialog, search) instead of leaking the internal `manual_<slug>_<timestamp>` name, and its generated pattern escapes spaces the same way the 84 imported body keyword rules do (`a\ local\ girl`), so the duplicate check recognises an existing legacy rule for the same phrase. Matching behaviour is unchanged: a backslash-space is a literal space in a regex. Found on the first Android chain-validation create against a legacy Windows rule. (Issue #369)
 - **fix**: F186 -- editing a Body Phrase rule now works correctly. Reopening one showed it as a domain rule, and a plain Save silently changed its type. Switching any rule to Body Phrase wrote the phrase into the sender condition instead of the body, producing a rule that looked right in the list and could never match an email. Both halves of the rule type are now read and written consistently, and the rule keeps its phrase as its title after an edit. Found by the sprint's code review. (Issue #369)
@@ -1255,7 +1257,8 @@ See git history for detailed changes prior to Phase 3.1.
 
 ## Version Links
 
-[Unreleased]: https://github.com/kimmeyh/spamfilter-multi/compare/v0.13.0...HEAD
+[Unreleased]: https://github.com/kimmeyh/spamfilter-multi/compare/v0.14.0...HEAD
+[0.14.0]: https://github.com/kimmeyh/spamfilter-multi/compare/v0.13.0...v0.14.0
 [0.13.0]: https://github.com/kimmeyh/spamfilter-multi/compare/v0.12.0...v0.13.0
 [0.12.0]: https://github.com/kimmeyh/spamfilter-multi/compare/v0.11.0...v0.12.0
 [0.11.0]: https://github.com/kimmeyh/spamfilter-multi/compare/v0.10.0...v0.11.0
