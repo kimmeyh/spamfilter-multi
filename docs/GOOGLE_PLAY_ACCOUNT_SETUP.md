@@ -1,5 +1,41 @@
 # Google Play Developer Account Setup (GP-16)
 
+## ACCOUNT CREATED (Sprint 64, 2026-08-28)
+
+- **Developer name (public)**: Kimmey Consulting, Ohio (matches the Microsoft Store
+  publisher identity)
+- **Account type**: Personal | **Account ID**: 6597324007880348667
+- **Developer Google account**: myemailspamfilter.dev@gmail.com (dedicated account created
+  same night; 2-Step Verification ON; Gmail auto-forwards to Harold's personal address --
+  spam is NOT forwarded, check the dedicated spam folder during verification windows)
+- **Public developer email**: myemailspamfilter.dev@gmail.com (deliberately the dedicated
+  address, not the personal one)
+- **Private contact email/phone**: Harold's personal (OTP-verified at signup; phone
+  verification completes AFTER identity approval per the console)
+- **Signup walkthrough deviations from this guide**: signup asked for a Website
+  (identity-verification aid, not shown publicly) -- used the Microsoft Store listing
+  https://apps.microsoft.com/detail/9N5QK9G904C0; an "About you" experience questionnaire
+  and sensitive-app-categories checklist (None of the above) were presented; contact phone
+  field requires strict E.164 with no spaces (+1216...).
+- **Verification state at creation**: 3 pending -- (1) identity (ID upload; multi-day
+  Google review = the critical path), (2) Android device access via the Play Console app,
+  (3) contact phone (auto-unlocks after identity approval). App creation is LOCKED until
+  verifications complete ("Create app" greyed out).
+- **VERIFICATIONS CLEARED same session (2026-08-28, ~30-60 min after ID submission)**: the
+  console home shows no setup banner and "Create app" is ACTIVE. The guide's "may take a
+  few days" is the worst case; a clean ID submission cleared in under an hour. Account is
+  fully operational. "Create app" deliberately deferred until the listing inputs exist
+  (GP-5 published URL, GP-6/GP-7 assets, signed AAB from GP-2).
+- **GP-5 PUBLISHED (2026-08-28)**: discovery during publication -- GitHub Pages was ALREADY
+  enabled on the repo with Harold's custom domain https://myemailspamfilter.com serving
+  `main:/docs`, so the legal docs were already live (with placeholders showing). Canonical
+  URLs: https://myemailspamfilter.com/legal/PRIVACY_POLICY.html and .../TERMS.html.
+  Placeholders filled in docs/legal (effective date August 28, 2026; contact
+  myemailspamfilter.dev@gmail.com -- same address as the public developer email); the
+  filled text goes live when the Sprint 64 branch reaches main (next merge). Placeholder
+  regression gate: test/policy/legal_docs_test.dart. A briefly-created gh-pages branch was
+  removed as redundant (the site serves main, not gh-pages).
+
 **Decision (Harold, 2026-08-25, at Sprint 63 plan approval)**: PERSONAL account. No D-U-N-S
 number is available, and the 12-testers / 14-continuous-days closed-test gate is accepted.
 
@@ -38,8 +74,15 @@ Prerequisites to have ready BEFORE starting:
 - [ ] A payment method for the **$25 one-time** registration fee.
 - [ ] An Android device with the **Play Console app** installed (new personal accounts must
       verify device access through it).
-- [ ] A developer contact email and phone number (Google verifies both; the email is shown
-      publicly on the listing unless a separate contact is configured later).
+- [ ] A developer contact email and phone number (Google OTP-verifies both). CORRECTED
+      2026-08-27 against the requirements page: the contact email/phone are PRIVATE ("NOT
+      shown to users on Google Play") -- the publicly shown address is the separate
+      "developer email" field on the public developer profile, set later before the listing
+      goes live. Personal email is fine for the private contact fields.
+- Ownership note (verified 2026-08-27): the owning Google account can be CHANGED later via
+  the supported self-service ownership transfer (Users and permissions -> Make account
+  owner; new owner re-verifies identity, must not already own a console account,
+  payments-profile admin added first). Choosing an account now is not a lock-in.
 
 Steps:
 1. Go to https://play.google.com/console/signup and choose **Yourself** (personal account).

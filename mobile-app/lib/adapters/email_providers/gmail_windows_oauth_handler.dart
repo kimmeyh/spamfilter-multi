@@ -35,13 +35,24 @@ class GmailWindowsOAuthHandler {
   );
   
   // Android OAuth client ID (for flutter_appauth with custom scheme)
-  static const String _androidClientId = '577022808534-0ejdbmoouklgtucjo3tooovn2pr01ga2.apps.googleusercontent.com';
-  
+  // SEC-9 (Sprint 64): injected at build time via --dart-define, mirroring
+  // the Windows _clientId pattern above. Previously a hardcoded literal;
+  // the redirect scheme must be derived from the SAME injected value (the
+  // manifest half is fed separately by the gradle property in
+  // build.gradle.kts -- both sides source from secrets.*.json's
+  // ANDROID_GMAIL_CLIENT_ID key, the single source of truth). Empty default
+  // triggers the fail-fast in authenticateWithBrowser() for the mobile path,
+  // matching the existing SEC-13 Windows behavior.
+  static const String _androidClientId = String.fromEnvironment(
+    'ANDROID_GMAIL_CLIENT_ID',
+    defaultValue: '',
+  );
+
   // Mobile redirect URI uses custom scheme based on reversed Android client ID
   static String get _mobileRedirectUri {
     // Format: com.googleusercontent.apps.<client_id_prefix>:/oauthredirect
-    // For Android client ID: 577022808534-0ejdbmoouklgtucjo3tooovn2pr01ga2
-    return 'com.googleusercontent.apps.577022808534-0ejdbmoouklgtucjo3tooovn2pr01ga2:/oauthredirect';
+    final idPrefix = _androidClientId.split('.').first;
+    return 'com.googleusercontent.apps.$idPrefix:/oauthredirect';
   }
   
   static const String _authEndpoint = 'https://accounts.google.com/o/oauth2/v2/auth';
@@ -77,6 +88,15 @@ class GmailWindowsOAuthHandler {
       if (_clientId.isEmpty) {
         _logger.w('  WARNING: OAuth client ID is empty! Build with --dart-define or --dart-define-from-file to inject real credentials.');
       }
+      // SEC-9 (Sprint 64): Android client ID is a separate injected value.
+      if (Platform.isAndroid) {
+        if (_androidClientId.isEmpty) {
+          _logger.e('  ERROR: ANDROID_GMAIL_CLIENT_ID is not set! Gmail OAuth will fail on Android. '
+              'Build with --dart-define-from-file=secrets.dev.json to inject credentials.');
+        } else {
+          _logger.i('  Using ANDROID_GMAIL_CLIENT_ID for Android Gmail OAuth.');
+        }
+      }
     }
   }
 
@@ -86,17 +106,28 @@ class GmailWindowsOAuthHandler {
   ///
   /// Throws [StateError] if OAuth client ID is not configured.
   static Future<Map<String, String>?> authenticateWithBrowser() async {
-    // SEC-13: Fail fast if client ID is not configured
-    if (_clientId.isEmpty) {
+    // Check if we're on mobile (Android/iOS)
+    final isMobile = Platform.isAndroid || Platform.isIOS;
+
+    // SEC-13/SEC-9: Fail fast if the client ID used on this platform is not
+    // configured. Mobile consumes _androidClientId (flutter_appauth custom
+    // scheme); desktop consumes _clientId (loopback flow).
+    if (isMobile) {
+      if (_androidClientId.isEmpty) {
+        throw StateError(
+          'Android Gmail OAuth client ID is not configured. '
+          'Build with --dart-define-from-file=secrets.dev.json (key '
+          'ANDROID_GMAIL_CLIENT_ID) to inject credentials. '
+          'See CLAUDE.md "OAuth and Secrets Management" section for setup instructions.',
+        );
+      }
+    } else if (_clientId.isEmpty) {
       throw StateError(
         'Gmail OAuth client ID is not configured. '
         'Build with --dart-define-from-file=secrets.dev.json to inject credentials. '
         'See CLAUDE.md "OAuth and Secrets Management" section for setup instructions.',
       );
     }
-
-    // Check if we're on mobile (Android/iOS)
-    final isMobile = Platform.isAndroid || Platform.isIOS;
 
     if (isMobile) {
       return await _authenticateWithBrowserMobile();

@@ -4,14 +4,19 @@
 /// an email address, domain, URL, or TLD. The screen auto-detects the input type
 /// and generates the appropriate regex pattern.
 ///
-/// Block rules (4 types, accessible from Manage Rules):
+/// Block rules (5 types, accessible from Manage Rules):
 /// - Top-level domain: user enters TLD (e.g., .cc) -> @.*\.cc$
 /// - Exact domain: user enters domain -> @domain\.com$
 /// - Entire domain: user enters domain -> @(?:[a-z0-9-]+\.)*domain\.com$
 /// - Exact email: user enters email -> ^user@domain\.com$
+/// - Body Phrase (F186, Sprint 64): user enters a phrase -> literal-escaped
+///   regex matched against the email body (pattern_category 'body',
+///   pattern_sub_type 'keyword'; round-trips through RuleEditScreen's
+///   existing case 'body' edit path unchanged).
 ///
 /// Safe sender rules (3 types, accessible from Manage Safe Senders):
-/// - Exact domain, entire domain, exact email (no TLD for safe senders)
+/// - Exact domain, entire domain, exact email (no TLD, no Body Phrase for
+///   safe senders)
 library;
 
 import 'dart:convert';
@@ -36,7 +41,11 @@ enum ManualRuleType {
   topLevelDomain('Top-Level Domain', 'Block all emails from a TLD (e.g., .cc, .xyz)'),
   entireDomain('Entire Domain', 'Block domain and all subdomains'),
   exactDomain('Exact Domain', 'Block only the exact domain'),
-  exactEmail('Exact Email', 'Block a specific email address');
+  exactEmail('Exact Email', 'Block a specific email address'),
+  // F186 (Sprint 64): body-phrase rule type. Block-rule-only (not offered for
+  // safe senders -- allowlisting a sender is a from-based concept, not a
+  // body-content one). See _availableTypes.
+  bodyPhrase('Body Phrase', 'Block emails whose body contains a phrase');
 
   final String label;
   final String description;
@@ -84,7 +93,8 @@ class _ManualRuleCreateScreenState extends State<ManualRuleCreateScreen> {
   /// Available types based on mode
   List<ManualRuleType> get _availableTypes {
     if (widget.mode == ManualRuleMode.safeSender) {
-      // No TLD for safe senders
+      // No TLD, no Body Phrase for safe senders -- allowlisting a sender is
+      // a from-based concept, not a body-content one.
       return [
         ManualRuleType.entireDomain,
         ManualRuleType.exactDomain,
@@ -110,6 +120,8 @@ class _ManualRuleCreateScreenState extends State<ManualRuleCreateScreen> {
         return 'Enter email, domain, or URL';
       case ManualRuleType.exactEmail:
         return 'Enter email address';
+      case ManualRuleType.bodyPhrase:
+        return 'Enter a phrase to match in the email body';
     }
   }
 
@@ -123,6 +135,8 @@ class _ManualRuleCreateScreenState extends State<ManualRuleCreateScreen> {
         return 'Examples: spam@example.com, example.com';
       case ManualRuleType.exactEmail:
         return 'Example: spam@example.com';
+      case ManualRuleType.bodyPhrase:
+        return 'Examples: click here to claim, act now';
     }
   }
 
@@ -163,6 +177,9 @@ class _ManualRuleCreateScreenState extends State<ManualRuleCreateScreen> {
       case ManualRuleType.exactEmail:
         result = ManualRulePatternGenerator.generateExactEmail(input);
         break;
+      case ManualRuleType.bodyPhrase:
+        result = ManualRulePatternGenerator.generateBodyPhrase(input);
+        break;
     }
 
     String pattern = result.pattern;
@@ -183,6 +200,16 @@ class _ManualRuleCreateScreenState extends State<ManualRuleCreateScreen> {
           break;
         case ManualRuleType.exactEmail:
           sourceDomain = cleaned;
+          break;
+        case ManualRuleType.bodyPhrase:
+          // Body phrases have no domain concept, but source_domain doubles
+          // as the DISPLAY value everywhere a rule is listed (Manage Rules
+          // list, detail dialog, search): `rule.sourceDomain ?? rule.name`.
+          // Leaving it empty leaked the internal 'manual_<slug>_<ms>' name
+          // into the UI (Sprint 64 Manual Validation finding, Harold
+          // 2026-09-02). Store the plain phrase so the rule displays as
+          // its phrase, exactly as domain rules display as their domain.
+          sourceDomain = input.toLowerCase();
           break;
       }
     }
@@ -311,6 +338,12 @@ class _ManualRuleCreateScreenState extends State<ManualRuleCreateScreen> {
 
     if (widget.mode == ManualRuleMode.blockRule) {
       final subType = _blockRuleSubType();
+      // F186 (Sprint 64): body-phrase rules live under pattern_category
+      // 'body', not 'header_from' -- matches _saveBlockRule's category
+      // routing so the pre-confirm duplicate check queries the same bucket
+      // the insert actually writes to.
+      final patternCategory =
+          _selectedType == ManualRuleType.bodyPhrase ? 'body' : 'header_from';
 
       // Subsumption check first -- if a broader rule already covers this,
       // surface that with a more informative error than the exact-duplicate
@@ -318,7 +351,7 @@ class _ManualRuleCreateScreenState extends State<ManualRuleCreateScreen> {
       final subsuming = await checker.findSubsumingBlockRule(
         sourceDomain: _sourceDomain,
         patternSubType: subType,
-        patternCategory: 'header_from',
+        patternCategory: patternCategory,
       );
       if (subsuming != null) {
         return _DuplicateOutcome.subsumed(subsuming);
@@ -326,7 +359,7 @@ class _ManualRuleCreateScreenState extends State<ManualRuleCreateScreen> {
 
       final exact = await checker.blockRuleExists(
         pattern: _generatedPattern,
-        patternCategory: 'header_from',
+        patternCategory: patternCategory,
         patternSubType: subType,
       );
       return exact ? _DuplicateOutcome.exact() : null;
@@ -359,6 +392,10 @@ class _ManualRuleCreateScreenState extends State<ManualRuleCreateScreen> {
         return 'exact_domain';
       case ManualRuleType.exactEmail:
         return 'exact_email';
+      case ManualRuleType.bodyPhrase:
+        // Matches the 'keyword' pattern_sub_type already used by the 84
+        // imported phrase/phone/address body rules (F187 enumeration).
+        return 'keyword';
     }
   }
 
@@ -372,6 +409,8 @@ class _ManualRuleCreateScreenState extends State<ManualRuleCreateScreen> {
         return 'exact_email';
       case ManualRuleType.topLevelDomain:
         return 'top_level_domain';
+      case ManualRuleType.bodyPhrase:
+        return 'keyword'; // Unreachable: _availableTypes excludes this for safe senders.
     }
   }
 
@@ -396,7 +435,21 @@ class _ManualRuleCreateScreenState extends State<ManualRuleCreateScreen> {
         executionOrder = 40;
         patternSubType = 'exact_email';
         break;
+      case ManualRuleType.bodyPhrase:
+        // Matches the execution_order already used by the 84 imported
+        // 'keyword' body rules (F187 enumeration: all at 50).
+        executionOrder = 50;
+        patternSubType = 'keyword';
+        break;
     }
+
+    // F186 (Sprint 64): body-phrase rules use pattern_category 'body' and
+    // the condition_body column, mirroring RuleEditScreen's existing
+    // case 'body' round-trip (rule_edit_screen.dart:378-380). All other
+    // types remain header_from/condition_header, unchanged.
+    final isBody = _selectedType == ManualRuleType.bodyPhrase;
+    final patternCategory = isBody ? 'body' : 'header_from';
+    final conditionColumn = isBody ? 'condition_body' : 'condition_header';
 
     final db = await dbHelper.database;
 
@@ -410,10 +463,15 @@ class _ManualRuleCreateScreenState extends State<ManualRuleCreateScreen> {
     // is the fallback. _confirmAndSave already runs both before showing the
     // Confirm dialog, so reaching this code with a duplicate would only
     // happen via a race between dialog open and Save tap.
+    //
+    // Body phrases have no domain concept (_sourceDomain is always empty),
+    // so findSubsumingBlockRule's _baseDomainFor returns null for the
+    // 'keyword' sub-type and the subsumption check is a correct no-op --
+    // the exact-duplicate check below is the only line of defense for body.
     final subsuming = await checker.findSubsumingBlockRule(
       sourceDomain: _sourceDomain,
       patternSubType: patternSubType,
-      patternCategory: 'header_from',
+      patternCategory: patternCategory,
     );
     if (subsuming != null) {
       throw _DuplicateRuleException();
@@ -421,14 +479,19 @@ class _ManualRuleCreateScreenState extends State<ManualRuleCreateScreen> {
 
     final isDuplicate = await checker.blockRuleExists(
       pattern: _generatedPattern,
-      patternCategory: 'header_from',
+      patternCategory: patternCategory,
       patternSubType: patternSubType,
     );
     if (isDuplicate) {
       throw _DuplicateRuleException();
     }
 
-    // Generate a unique name
+    // Generate a unique name. _sourceDomain is the domain for domain rules
+    // and the plain phrase for body phrases (mirrors the imported
+    // 'body_<slug>' naming shape without colliding with it -- 'manual_'
+    // prefix keeps namespaces separate). The plain phrase, not the escaped
+    // pattern, is the basis so the slug stays 'a_local_girl' rather than
+    // 'a__local__girl'.
     final name = 'manual_${_sourceDomain.replaceAll(RegExp(r'[^\w.-]'), '_')}_${DateTime.now().millisecondsSinceEpoch}';
 
     await db.insert('rules', {
@@ -437,12 +500,14 @@ class _ManualRuleCreateScreenState extends State<ManualRuleCreateScreen> {
       'is_local': 1,
       'execution_order': executionOrder,
       'condition_type': 'OR',
-      'condition_header': jsonEncode([_generatedPattern]),
+      conditionColumn: jsonEncode([_generatedPattern]),
       'action_delete': 1,
       'date_added': DateTime.now().millisecondsSinceEpoch,
       'created_by': 'manual',
-      'pattern_category': 'header_from',
+      'pattern_category': patternCategory,
       'pattern_sub_type': patternSubType,
+      // Display value for every rule type (see _generatePattern): the
+      // domain for domain rules, the plain phrase for body phrases.
       'source_domain': _sourceDomain,
     });
 
@@ -463,6 +528,9 @@ class _ManualRuleCreateScreenState extends State<ManualRuleCreateScreen> {
         break;
       case ManualRuleType.topLevelDomain:
         patternType = 'top_level_domain'; // Should not happen for safe senders
+        break;
+      case ManualRuleType.bodyPhrase:
+        patternType = 'keyword'; // Unreachable: _availableTypes excludes this for safe senders.
         break;
     }
 
@@ -553,10 +621,14 @@ class _ManualRuleCreateScreenState extends State<ManualRuleCreateScreen> {
                 'Type: ${_selectedType.label}',
                 style: Theme.of(context).textTheme.bodySmall,
               ),
-              Text(
-                'Source: $_sourceDomain',
-                style: Theme.of(context).textTheme.bodySmall,
-              ),
+              // _sourceDomain is the domain for domain rules and the plain
+              // phrase for body phrases; label it accordingly. Omitted when
+              // empty rather than showing a bare "Source: ".
+              if (_sourceDomain.isNotEmpty)
+                Text(
+                  '${_selectedType == ManualRuleType.bodyPhrase ? 'Phrase' : 'Source'}: $_sourceDomain',
+                  style: Theme.of(context).textTheme.bodySmall,
+                ),
             ],
           ),
         ),
@@ -735,10 +807,13 @@ class _ManualRuleCreateScreenState extends State<ManualRuleCreateScreen> {
                           'Type: ${_selectedType.label}',
                           style: Theme.of(context).textTheme.bodySmall,
                         ),
-                        Text(
-                          'Source: $_sourceDomain',
-                          style: Theme.of(context).textTheme.bodySmall,
-                        ),
+                        // Domain for domain rules, plain phrase for body
+                        // phrases; omitted when empty rather than "Source: ".
+                        if (_sourceDomain.isNotEmpty)
+                          Text(
+                            '${_selectedType == ManualRuleType.bodyPhrase ? 'Phrase' : 'Source'}: $_sourceDomain',
+                            style: Theme.of(context).textTheme.bodySmall,
+                          ),
                       ],
                     ),
                   ),

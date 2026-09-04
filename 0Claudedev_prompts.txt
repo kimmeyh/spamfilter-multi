@@ -9,6 +9,7 @@ Continue without addition approvals until Manual Validation, providing your reco
 Do not stop to ask questions unless meeting the criteria in \docs\SPRINT_STOPPING_CRITERIA.md
 
 Github Copilot Review Requests:
+Please start plugin for claude pr review and resolve all issues
 I have requested a github.com copilot review.
 If not completed, setup a way for it to notify you once completed, then address any comments provided by github.com copilot review and:
 - address them now (preferred) OR add them to the backlog targeted for the next sprint
@@ -25,11 +26,6 @@ Please review the "Sprint Execution Docs", Sprint plan and sprint checklist to d
 Common prompt when it did not follow instructions:
 Figure out how this happened and update all "sprint execution docs", memories, skills, agents, claude.md, commands, hooks... so that it does not occur in the future.
 
-Sprint plan approval:
-Sprint plan approved, proceed with execution. 
-All Sprint tasks and sub-tasks are approved.  
-Continue without addition approvals until Manual Validation, providing your recommendation for Manual Validation steps.
-Do not stop to ask questions unless meeting the criteria in \docs\SPRINT_STOPPING_CRITERIA.md
 
 Microsoft Store Update:
 Follow the Microsoft Store release process in docs/STORE_RELEASE_PROCESS.md to build and prep the next update.

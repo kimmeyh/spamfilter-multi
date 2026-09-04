@@ -251,3 +251,10 @@ cython_debug/
 
 # Kotlin compiler session artifacts (build byproducts)
 mobile-app/android/.kotlin/
+
+# GP-2 (Sprint 64, ADR-0027): Android release signing material must NEVER be
+# committed. The keystore and signing JSON live OUTSIDE the repository; these
+# rules are the belt-and-suspenders net if one is ever misplaced into the tree.
+*.jks
+*.keystore
+android-signing.json
