@@ -106,6 +106,54 @@ The signing configuration must integrate with this PowerShell build infrastructu
 ### Neutral
 - Both APK and AAB build targets are needed (testing vs Play Store), adding two output formats to maintain
 
+## Upload Keystore Backup and Recovery (Sprint 64 retro IMP-3)
+
+**Why this section exists**: the upload keystore is a single point of failure. Google Play
+identifies the developer by the UPLOAD key on every submission. Losing it does not lose the
+published app (Play App Signing holds the separate app signing key), but it does block every
+future update until a key reset is requested from Google, which is a manual support process
+measured in days.
+
+**What must be backed up** (all three, together -- a keystore without its password is useless):
+
+| Item | Location | Notes |
+|------|----------|-------|
+| Upload keystore | `%USERPROFILE%\.myemailspamfilter\upload-keystore.jks` | The private key. Irreplaceable. |
+| Signing config | `%USERPROFILE%\.myemailspamfilter\android-signing.json` | Holds keystore path, alias `upload`, and the password. Plaintext by decision (Sprint 64 MV, Harold chose option 2: file lives outside the repo on a single-user machine). |
+| Fingerprint record | This ADR, below | The verification value -- proves a restored keystore is the RIGHT one. |
+
+**Identity of the current upload key** (public information, safe to record):
+
+- Alias: `upload`
+- SHA-256: `68:75:8B:9B:7B:EB:CE:0E:C3:EA:3F:A4:05:12:1F:0D:0A:9A:D8:35:01:62:67:5C:61:C3:4C:DA:AD:CD:49:58`
+- Created: Sprint 64 (2026-08-28), OU "Information Technology", O "Kimmey Consulting", Ohio
+- Verified identical on the keystore, the signed AAB (`keytool -printcert -jarfile`), and the
+  signed APK (`apksigner verify --print-certs` -- note `keytool -jarfile` returns NOTHING for an
+  APK, because APKs use signature scheme v2/v3 rather than the v1 JAR manifest).
+
+**Backup procedure** (Harold-owned, off-machine):
+
+1. Copy the whole `%USERPROFILE%\.myemailspamfilter\` directory to durable storage that is NOT
+   this machine -- an encrypted archive in cloud storage, or a password manager's secure file
+   attachment. Both files must travel together.
+2. Never commit either file. `.gitignore` already covers `*.jks`, `*.keystore`, and
+   `android-signing.json`, but the real protection is that they live outside the repository.
+3. Re-verify the backup whenever the keystore is regenerated (it was regenerated once during the
+   Sprint 64 ceremony, for a stronger password).
+
+**Recovery verification** (run this after ANY restore, before trusting it):
+
+```powershell
+keytool -list -v -keystore "$env:USERPROFILE\.myemailspamfilter\upload-keystore.jks" -alias upload
+```
+
+Compare the printed SHA-256 against the fingerprint above. A mismatch means the restored file is
+a DIFFERENT key and Play will reject every upload signed with it.
+
+**If the keystore is lost entirely**: request an upload key reset through Play Console support.
+The published app survives because Google holds the app signing key under Play App Signing; only
+the upload key needs replacing.
+
 ## References
 
 - `mobile-app/android/app/build.gradle.kts` - Current release signing config (lines 40-46)
