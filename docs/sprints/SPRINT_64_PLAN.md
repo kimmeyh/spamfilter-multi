@@ -827,9 +827,12 @@ so evidence is device-level (sockets, activity state, logcat system lines), not 
   **2/2 PASSED** (`test_f124_rule_labels` 29/29, `test_mt2c_no_rule_sweep` 29/29). 3
   dialog-settle scripts excluded by the runner's own documented policy, not re-derived.
   DB drift: none.
-- **5.1.6 Runtime launch gate** (the new IMP-6 gate, first use): PENDING at the time of
-  writing -- the launch recorded during chain validation predates the Phase 5.1.1 review
-  fixes, and the gate's whole point is that it runs on the sprint's FINAL build. Result
-  recorded below once the rebuilt artifact is launched. This sprint is exactly why the gate
-  exists (SEC-4).
+- **5.1.6 Runtime launch gate** (the new IMP-6 gate, FIRST USE): **PASS** (2026-09-04, on the
+  final signed release APK rebuilt at `d4ae5d7`, installed in place on a cold-booted AVD).
+  Live pid 5049 at the 10s mark, zero FATAL/AndroidRuntime lines, no
+  network_security_config parse errors. Cost: about 2 minutes, as scoped.
+  The gate was initially recorded as PASS from the chain-validation launch -- caught and
+  corrected before close-out, because that launch predated the Phase 5.1.1 review fixes and
+  the gate's entire purpose is to exercise the sprint's FINAL artifact. This sprint is
+  exactly why it exists (SEC-4 passed every static gate and crashed at startup).
 - **5.2 Full suite**: 2,011 passed / 15 skipped / 0 failed; analyzer clean.
