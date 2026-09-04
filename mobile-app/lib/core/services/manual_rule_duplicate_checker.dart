@@ -32,21 +32,31 @@ class ManualRuleDuplicateChecker {
   /// Parameters:
   /// - [pattern]: the generated regex pattern string. Compared case-insensitively
   ///   after trimming.
-  /// - [patternCategory]: e.g. 'header_from'.
+  /// - [patternCategory]: 'header_from' (domain shapes) or 'body' (F186
+  ///   body phrases). Selects which condition column is compared.
   /// - [patternSubType]: e.g. 'top_level_domain', 'entire_domain', 'exact_domain',
-  ///   'exact_email'.
+  ///   'exact_email', or 'keyword' for body phrases.
   Future<bool> blockRuleExists({
     required String pattern,
     required String patternCategory,
     required String patternSubType,
   }) async {
-    final normalized = _normalize(pattern);
+    final normalized = _normalizeSpaces(_normalize(pattern));
     if (normalized.isEmpty) return false;
 
-    // The stored `condition_header` is a JSON-encoded list of patterns.
-    // The manual-create path always writes a single-element list, so we
-    // match against both the exact stored form and a LIKE to catch
-    // legacy rows where whitespace differs.
+    // Sprint 64 MV finding (F186): this query compared condition_header for
+    // EVERY category, so a body phrase was checked against a column that is
+    // NULL on body rules and duplicates were never detected. The column now
+    // follows the category (a fixed map -- never caller-supplied text).
+    final column = _conditionColumnFor(patternCategory);
+
+    // The stored column is a JSON-encoded list of patterns. The manual-create
+    // path always writes a single-element list, so we match against both the
+    // exact stored form and a LIKE to catch legacy rows where whitespace
+    // differs. Both sides are space-normalized (see _normalizeSpaces): the
+    // Windows DBs hold the Python-era `a\ local\ girl` form (JSON text
+    // `a\\ local\\ girl`), the Android dev DB holds `a local girl`, and the
+    // generator emits `\ ` -- all three must compare equal.
     final storedExact = jsonEncode([normalized]);
 
     final results = await _db.query(
@@ -55,14 +65,16 @@ class ManualRuleDuplicateChecker {
         pattern_category = ?
         AND pattern_sub_type = ?
         AND (
-          LOWER(TRIM(condition_header)) = LOWER(?)
-          OR LOWER(TRIM(condition_header)) LIKE ?
+          REPLACE(LOWER(TRIM($column)), ?, ' ') = LOWER(?)
+          OR REPLACE(LOWER(TRIM($column)), ?, ' ') LIKE ?
         )
       ''',
       whereArgs: [
         patternCategory,
         patternSubType,
+        _jsonEscapedSpace,
         storedExact,
+        _jsonEscapedSpace,
         '%"${normalized.replaceAll('"', '\\"')}"%',
       ],
       limit: 1,
@@ -70,6 +82,29 @@ class ManualRuleDuplicateChecker {
 
     return results.isNotEmpty;
   }
+
+  /// A regex escaped space (`\ `) as it appears INSIDE the JSON-encoded
+  /// condition column text: JSON doubles the backslash, so the stored bytes
+  /// are backslash, backslash, space.
+  static const String _jsonEscapedSpace = r'\\ ';
+
+  /// Condition column that a manual block rule of [patternCategory] writes.
+  /// Fixed map so the interpolated column name can never be caller text.
+  static String _conditionColumnFor(String patternCategory) {
+    switch (patternCategory) {
+      case 'body':
+        return 'condition_body';
+      case 'subject':
+        return 'condition_subject';
+      default:
+        return 'condition_header';
+    }
+  }
+
+  /// Collapse a regex escaped space (`\ `) to a plain space. The two are
+  /// regex-equivalent (a backslash-space is a literal space), so patterns
+  /// differing only in that escaping are the same rule.
+  static String _normalizeSpaces(String pattern) => pattern.replaceAll(r'\ ', ' ');
 
   /// Returns `true` if a safe sender with the same normalized pattern already
   /// exists. Matches on normalized pattern + `pattern_type`.

@@ -172,6 +172,15 @@ value, names the rule from the plain phrase, and labels the dialog line "Phrase:
 rules. +4 generator unit tests (mutation-verified: escape removal reds exactly the 2 escape
 tests), T-1 widget test updated to the new shape; analyze clean. Both platforms rebuilt
 (signed prod release APK installed in place on the AVD; Windows dev exe). ~45m.
+**Second MV finding (2026-09-03, from Harold's item-5 screenshot)**: the duplicate checker
+queried `condition_header` for EVERY category, so a body phrase was compared against a
+NULL column and body duplicates were never detected on any platform (the Sprint 64 "bonus
+fix" routed the category but not the column). Also learned the Android dev DB holds legacy
+body rules in the BARE-space form (`united nations compensation commission`) while both
+Windows DBs hold `\ `, so one emitted form cannot text-match both. Fixed: column follows the
+category via a fixed map; both sides space-normalized (`REPLACE` on the JSON text, `\ ` ->
+space in Dart). +5 checker tests, mutation-verified twice (column routing removed -> 3 red;
+Dart-side normalization removed -> 2 red; restored 33/33). Both builds rebuilt again. ~35m.
 
 **Step-types**: UI-MOVE, SVC-EDIT, TEST-WIDGET, TEST-UNIT
 **Est-Effort**: 90-150m
