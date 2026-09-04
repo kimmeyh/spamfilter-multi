@@ -773,8 +773,27 @@ so evidence is device-level (sockets, activity state, logcat system lines), not 
   (F187 R-4). The fresh install seeds 1,824 bundled rules and reported 97 no-rule messages;
   the Windows dev DB (~2,580 rules post-F187) left 2 of 181 unmatched on 08-22. Windows scan
   for AC-4 pending (dev exe built).
-- Item 4 Body Phrase create -- **FINDING -> FIXED** (see F186 card); retest pending on the
-  rebuilt in-place install.
-- Item 5 F188 glance -- pending.
-- Item 6 Background registration (workmanager keep rule) -- pending.
+- Item 4 Body Phrase create -- **FINDING x2 -> FIXED -> RETEST PASS** (2026-09-03, Harold,
+  on the rebuilt 0.13.0 release APK). Screenshot evidence: the Manage Rules row and the
+  detail dialog both title the rule `a local girl` (the internal
+  `manual_a_local_girl_1788485170302` now appears only on its own "Rule Name" detail line,
+  which is the domain-rule convention); Body filter count 1; pattern renders `a\ local\ girl`,
+  identical to the legacy Windows form; the create screen's summary reads "Phrase: a local
+  girl" (not "Source:"). Second create of the same phrase was REFUSED with "A block rule with
+  this pattern already exists" -- the duplicate-check fix working against a body rule, which
+  was impossible before (header column compared for every category).
+- Item 5 F188 glance -- **PASS** (Harold): 1,825 rules seeded and listed with zero false
+  invalid markers; category counts consistent (Header/From 1824 = 1370 entire + 9 exact + 445
+  TLD; Subject 0; Body 1); "1825 active" badge agrees with the row count.
+- Item 6 Background registration (workmanager keep rule) -- **PASS** (device evidence, the
+  sprint's strongest R8 proof): on the MINIFIED build WorkManager resolved
+  `dev.fluttercommunity.workmanager.BackgroundWorker` BY FULL NAME and started it
+  (`WM-WorkerWrapper: Starting work for dev.fluttercommunity.workmanager.BackgroundWorker`),
+  and `dumpsys jobscheduler` shows the registered SystemJobService job for uid u0a193
+  RUNNABLE/ALLOWED_IN_DOZE. Without the ONE reasoned keep rule R8 would have renamed that
+  class and instantiation would have failed -- GP-9 R-4 surface proven, not inferred.
+  Zero FATAL/AndroidRuntime lines across the segment; pid stable.
 - Open decision carried to this break: signing JSON password at rest (DPAPI vs plaintext).
+
+**Android chain validation COMPLETE: 6 of 6 PASS.** Remaining MV work is Windows-side
+(F187 AC-4 deferred-fetch delta on the dev build) plus Harold's overall MV verdicts.

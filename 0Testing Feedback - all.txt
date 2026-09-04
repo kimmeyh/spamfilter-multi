@@ -7,6 +7,21 @@ Manual Validation complete
 Sprint 6n Manual Validation Feedback 
 
 ---------------------------------------------------------------------------------------------------------
+Sprint 64 Manual Validation Feedback 
+  Retest list, in order:
+  1. Add the Gmail account, then the AOL account.
+done
+  2. Create the Body Phrase rule "a local girl" in Manage Rules. Expected: the title shows the phrase, not an internal name, the pattern reads
+     a\ local\ girl, and the confirm dialog says "Phrase:" rather than "Source:".
+done
+  3. Create it a second time. Expected: it is now refused as a duplicate. That is the second fix.
+done
+  4. Glance at Manage Rules for false "invalid" markers. That is item 5.
+see image
+  5. Enable the scan on the Background tab. That is item 6, and it only counts on this minified build.
+done
+
+---------------------------------------------------------------------------------------------------------
 Sprint 62 Manual Validation Feedback 
 
 - Is there a way to prevent the CI checks after every commit and only have them run once the PR is "Ready for Review"? Seems very wasteful of resources and may eventually incur personal cost due to misuse. (see image #189)
