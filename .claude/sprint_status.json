@@ -1,6 +1,6 @@
 {
   "_description": "Sprint status file that persists across context compaction. Update after each phase/sub-phase completion.",
-  "_last_updated": "2026-09-04 (Phase 8: Sprint 64 merged to develop+main, Sprint 65 branched, refinement pass 1 complete, 0.14.0.0 MSIX BUILT + VERIFIED awaiting Harold's upload)",
+  "_last_updated": "2026-09-05 (0.14.0.0 SUBMITTED for certification as Submission 21; awaiting Partner Center outcome. Next: Phase 8.4 scope selection for Sprint 65 -- Harold's call.)",
   "_usage": "Read this file after context compaction to restore sprint approval state and progress.",
   "_staleness_note": "This file had drifted 15 sprints (last updated at Sprint 35, 2026-04-19) before being refreshed at Sprint 50 close-out. It is a Phase 7.7 checklist item -- update it at every sprint close-out, not opportunistically.",
   "current_sprint": {
@@ -8,7 +8,7 @@
     "branch": "feature/20260904_Sprint_65",
     "pr_number": null,
     "start_date": "2026-09-04",
-    "status": "Phase 8 release cycle IN PROGRESS. DONE: 8.1 Harold merged develop->main (PR #379); Phase 6.6 branch + all 10 Sprint 64 cards closed (#368-#377, zero sprint cards open); 8.2 refinement pass 1 COMPLETENESS SWEEP (all 6 close-out outputs verified present; 11 shipped detail sections pruned; GP table corrected -- GP-12 shipped in Sprint 63 but still read HOLD, ADR-0027 still read Proposed; remaining runway marked ACTIVE in dependency order); 8.3 Store release Steps 1-4 COMPLETE (version bump 0.13.0->0.14.0 MINOR, CHANGELOG [0.14.0] cut, prod worktree reset to origin/main after diverging by 5 empty merge commits -- verified no file existed only there before resetting -- MSIX built and fully verified). AWAITING HAROLD: Step 6 Partner Center upload + submit (Claude never submits). NOT STARTED (deliberately, per Harold's instruction to stop before scope selection): 8.4 refinement pass 2 / scope selection, Phase 3 Sprint 65 planning.",
+    "status": "Phase 8 release cycle IN PROGRESS. DONE: 8.1 Harold merged develop->main (PR #379); Phase 6.6 branch + all 10 Sprint 64 cards closed (#368-#377, zero sprint cards open); 8.2 refinement pass 1 COMPLETENESS SWEEP (all 6 close-out outputs verified present; 11 shipped detail sections pruned; GP table corrected -- GP-12 shipped in Sprint 63 but still read HOLD, ADR-0027 still read Proposed; remaining runway marked ACTIVE in dependency order); 8.3 Store release Steps 1-4 COMPLETE (version bump 0.13.0->0.14.0 MINOR, CHANGELOG [0.14.0] cut, prod worktree reset to origin/main after diverging by 5 empty merge commits -- verified no file existed only there before resetting -- MSIX built and fully verified). 8.3 COMPLETE: Harold submitted 0.14.0.0 for certification 2026-09-05 (Submission 21); Step 7 post-submission records written. NOT STARTED (deliberately, per Harold's instruction to stop before scope selection): 8.4 refinement pass 2 / scope selection, Phase 3 Sprint 65 planning.",
     "plan_approved": false,
     "blanket_execution_approved": false,
     "scope": [],
@@ -45,13 +45,13 @@
     "_note": "Run full suites with --concurrency=4 (Sprint 49 IMP-5)."
   },
   "store_release": {
-    "status": "0.14.0.0 BUILT AND VERIFIED 2026-09-04 ~8:55am ET -- NOT YET UPLOADED. MSIX 17.1 MB at spamfilter-multi-prod/mobile-app/build/windows/x64/runner/Release/my_email_spam_filter.msix. Check A PASS (inner build carried --dart-define=APP_ENV=prod --dart-define-from-file=secrets.prod.json -- the F119 key-name class is clear); --release-self-test --expected-version=0.14.0 RESULT: PASS on all 6 checks incl. BOTH APP_ENV and NATIVE_APP_ENV (the F119-c class); manifest Version=0.14.0.0, identity KimmeyConsulting-Ohio.MyEmailSpamFilter, publisher matches. Release notes drafted at docs/store-assets/RELEASE_NOTES_0.14.0.md (user-visible only). MINOR bump because [Unreleased] contained a feat entry (F186 Body Phrase). REMEMBER: BUILT + VERIFIED IS NOT SUBMITTED -- verify in Partner Center, never from a tracking file.",
+    "status": "0.14.0.0 SUBMITTED FOR CERTIFICATION 2026-09-05 12:01am ET (Harold), Submission 21. Exact upload time NOT observed -- it happened somewhere between the ~9:22am ET 2026-09-04 handoff and the 12:01am confirmation; the timing row records that range rather than inventing a point. Pre-submission verification (2026-09-04): Check A PASS (inner build carried both dart-defines -- F119 key-name class clear); --release-self-test --expected-version=0.14.0 RESULT: PASS on all 6 checks incl. BOTH APP_ENV and NATIVE_APP_ENV (F119-c class); manifest Version=0.14.0.0, correct identity + publisher; 17.1 MB. Eighth MINOR release (Sprint 64 feat: F186 Body Phrase). SUBMITTED IS NOT LIVE: 0.13.0.0 remains live until Partner Center confirms otherwise -- verify there, never from a tracking file.",
     "live_version": "0.13.0.0",
     "submission": 20,
     "certified_date": "2026-08-27",
     "pending_upload_version": "0.14.0.0",
-    "submission_pending": null,
-    "submitted_date": null
+    "submission_pending": 21,
+    "submitted_date": "2026-09-05"
   },
   "environment_notes": [
     "RESOLVED 2026-07-29 (verified 07-30): the Store fault was an Acronis file-system filter blocking AppXSvc cleanup, fixed by an Acronis Protection exclusion. 23h uptime with ZERO Id-493 events vs a 176-file/6-min baseline; Store client self-updated 22606.1401.6.0 -> .10.0 (requires a working deployment pipeline). Filter drivers remain loaded -- backup protection was NOT disabled. See ALL_SPRINTS_MASTER_PLAN ENV-1 for the picker gotcha if it recurs.",
@@ -60,9 +60,9 @@
   ],
   "blocking_issues": [],
   "next_actions": [
-    "HAROLD: upload build/windows/x64/runner/Release/my_email_spam_filter.msix (0.14.0.0) at Partner Center -> Start update -> Packages; then Store listings -> English (US) -> 'What's new in this version' using docs/store-assets/RELEASE_NOTES_0.14.0.md (that field only appears AFTER a package is attached); then Submit for certification.",
-    "AFTER submission: record submitted timestamp in STORE_SUBMISSION_TIMING.md row 21 and flip STORE_VERSION_STATUS.md from BUILT to submitted.",
-    "THEN 8.4 refinement pass 2 -- scope selection for Sprint 65 (Harold's call; recorded runway GP-7 -> GP-6 -> GP-10 -> closed test).",
-    "Sprint 65 note: the 12-tester/14-day Play closed test is the long pole -- start tester recruitment BEFORE the code work."
+    "Phase 8.4 refinement pass 2 -- SCOPE SELECTION for Sprint 65. This is Harold's call and the next thing that needs him. Recorded runway (NOT yet approved): GP-7 adaptive icons -> GP-6 listing assets -> GP-10 Data Safety form -> closed-test submission.",
+    "Sprint 65 planning note: the 12-tester/14-day Play closed test is the LONG POLE -- tester recruitment should start BEFORE the code work, not after.",
+    "WATCH: 0.14.0.0 / Submission 21 certification outcome. Record the certified timestamp in STORE_SUBMISSION_TIMING.md row 21 and flip STORE_VERSION_STATUS.md to live. Verify in Partner Center directly -- prior cycles show the Store client and winget lag Partner Center by hours on certification day.",
+    "GP-10's Data Safety input is already prepared: the 9-permission list from Sprint 64's GP-3."
   ]
 }
