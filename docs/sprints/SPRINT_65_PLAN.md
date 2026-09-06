@@ -455,6 +455,30 @@ step-type, cross-checked against Sprint 64's actuals for comparable work (GP-8+G
 
 ## Phase 5 evidence gates
 
+- **5.1.1 Automated code review** (2026-09-06, at `e9625d6`): **2 findings, both real, both
+  fixed.** The reviewer mutation-tested the gates rather than reading them, which is what
+  produced both findings.
+  1. **A FALSE PLAY DECLARATION reached HEAD.** While proving the app-content gate could
+     fail, the reviewer flipped "Is this a news app?" No -> Yes; my evidence-gates commit
+     (`c5fb46b`) landed inside that window and captured the mutated line, and the
+     reviewer's restore re-applied it because its own backup had been overwritten by a
+     second mutation. HEAD asserted the app IS a news app while the justification in the
+     same table row explained it aggregates and publishes nothing. Repaired in `2b8d454`'s
+     predecessor commit and verified with `git show HEAD:` plus an empty `git diff e9625d6`
+     -- byte-identical to the last-good blob, not a hand-retyped approximation.
+  2. **A gate that asserted a document's claim about itself.** The Ads check required the
+     prose to contain "verified by grep" -- which passes if somebody types the phrase
+     without running anything, and never touched `pubspec.yaml`. Concrete miss: add
+     `google_mobile_ads`, declaration still says No, gate still green, false "contains ads:
+     No" ships. Replaced with a real manifest check across seven ad-SDK markers,
+     mutation-verified on exactly that case (RED with the intended message, restored
+     byte-identical). Latent gap, not a live defect -- no ad/analytics/crash SDK is present.
+  Categories the reviewer verified clean ON THE MERITS rather than by assertion: the
+  conditional-skip design (a planted 512x512 feature graphic failed hard, so a present-but-
+  wrong asset cannot slip through); the factual declarations (zero ad/analytics/crash SDK in
+  `pubspec.yaml`; the 100-character preview cap is enforced at the WRITE boundary in
+  `toMap()`, so a caller cannot bypass it); cross-document consistency; PII hygiene; and
+  test quality.
 - **5.1.2 F-PRECHECK six classes** (2026-09-06): **four of the six are structurally
   inapplicable this sprint** -- `git diff --stat -- mobile-app/lib` is EMPTY, so no product
   code changed at all. That is not a pass by assertion; it is a pass by there being no
