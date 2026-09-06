@@ -390,15 +390,24 @@ _(F149 shipped Sprint 57 -- see `docs/sprints/SPRINT_57_PLAN.md` and CHANGELOG.m
 
 Recorded sequencing honored (see 'Recommended Sequencing' in the GP section below): account first, privacy early, technical features as sprint work, Data Safety after privacy, listing before submission, CASA trigger-gated last. Supersessions recorded this refinement: F4 (Android background scanning) was DELIVERED as F161 in Sprint 61; Issue #163 (Android untested) is RESOLVED by the continuous Sprint 59-62 on-device validation.
 
-**GP-17. Closed-test tester recruitment + closed-track rollout -- START THE 14-DAY CLOCK (~2-4h active, then a 14-day wait) Priority 30 (NEW, Sprint 65 refinement -- Harold asked the ordering question this item answers)**
+**GP-18. App content declarations for Play review -- incl. APP ACCESS reviewer credentials (~3-5h) Priority 33 (NEW, Sprint 65 refinement -- surfaced by the closed-track gating research, previously untracked)**
+- Phase: Android Google Play Store Readiness
+- Platform: Android
+- **Every item in Play's "App content" checklist blocks a CLOSED-track rollout, not just production** -- Google's rule is "you can start a closed test after completing your app setup". Nothing here can be deferred to the production application.
+- Items: content rating questionnaire, target audience and content, ads declaration, government apps declaration, financial features declaration, news app declaration, health apps declaration (conditional ones still must be ANSWERED, not skipped).
+- **APP ACCESS is the sharp edge and the likely long pole.** A spam filter demonstrates nothing without a working email account, so the reviewer needs either dedicated test credentials or written instructions. Decide which: a dedicated throwaway mail account with seeded spam is the more reliable route, since instructions alone leave a reviewer unable to exercise the core flow. This blocks the closed rollout.
+- Depends on: GP-5 privacy policy (DONE, Sprint 64).
+- Source: closed-track gating research, 2026-09-05. Nothing in GOOGLE_PLAY_ACCOUNT_SETUP.md or this plan tracked App access before this entry -- it would have been discovered as a blocker mid-rollout.
+
+**GP-17. Closed-test tester recruitment + closed-track rollout -- START THE 14-DAY CLOCK (~2-4h active, then a 14-day wait) Priority 38 (RE-ORDERED 2026-09-05: the rollout is LAST, because everything else gates it; recruitment still starts FIRST and runs in parallel) (NEW, Sprint 65 refinement -- Harold asked the ordering question this item answers)**
 - Phase: Android Google Play Store Readiness
 - Platform: Android
 - **This is the critical path to a live Play listing, and it is a CALENDAR dependency, not a code one.** A personal developer account created after 2023-11-13 cannot reach production until 12 testers have been opted in CONTINUOUSLY for 14 days, after which Google reviews the testing evidence.
 - The 14-day clock starts on tester OPT-IN, not on upload and not on invitation, so recruitment is the true long pole. Testers count only after they open the closed-track link AND complete opt-in; each needs a Google account and an Android device.
-- The signed uploadable build ALREADY EXISTS (Sprint 64 shipped the whole release chain), so nothing in GP-6/GP-7/GP-10 blocks a closed-track upload on code grounds.
+- **CORRECTED 2026-09-05 by the gating research**: an earlier draft of this item assumed the clock could start before the listing work. It cannot. Closed testing sits behind the SAME "complete app setup" wall as production -- full store listing (icon, feature graphic, 2+ screenshots, descriptions), Data safety, content rating and every App content declaration must be complete BEFORE a closed-track rollout. Only INTERNAL testing skips setup, and internal-test days earn ZERO credit toward the 12/14. The signed build exists (Sprint 64), but the build was never the blocker.
 - Scope: recruit and confirm 12 testers, create the closed-testing track, roll out a build to it, distribute the opt-in link, and CONFIRM each opt-in landed. Then the wait runs while the listing work proceeds in parallel.
 - Ordering consequence: done LAST, the 14 days begin after all listing work and cost ~2 extra weeks of wall time for nothing. Done FIRST, the listing work fills the wait.
-- Depends on: whatever Play actually gates a closed-track rollout on (verified at Sprint 65 planning -- Data Safety and content rating may be required even for a closed track, in which case GP-10 precedes the rollout by a few hours, not weeks).
+- Depends on: GP-6, GP-7, GP-10 and GP-18 ALL complete -- verified, not assumed. Recruit 14-16 testers rather than exactly 12: opt-out breaks the streak and re-opting-in restarts the 14 days from zero, so margin protects the schedule. Production access is then a SUBSTANTIVE ~7-day review asking what testers reported and what changed as a result -- so collect real feedback during the wait; thin answers are a known rejection cause.
 - Source: Harold, 2026-09-05 -- "does the list include known timing dependencies that should drive the order these are completed to get onto the Google Play store as quickly as reasonably possible?" The refinement slate had ordered by BUILD dependency and buried the calendar dependency in prose; this item exists so the schedule driver is a tracked backlog entry rather than a remark.
 
 **GP-10. Data Safety Form Declarations (~2-4h) Priority 32 (ACTIVATED off HOLD 2026-08-24; RE-PRIORITISED 2026-09-05 by time-to-live) -- after GP-5, and BEFORE the closed-track rollout if Play gates one on it**
