@@ -241,7 +241,7 @@ silently skipped and nothing has to be re-derived from memory on the next submis
 
 | Item | Answer | Justification |
 |---|---|---|
-| Is this a news app? | No | The app does not aggregate, curate, or publish news content of any kind; it only filters the user's own existing email. |
+| Is this a news app? | Yes | The app does not aggregate, curate, or publish news content of any kind; it only filters the user's own existing email. |
 
 ### Health apps
 

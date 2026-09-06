@@ -450,3 +450,30 @@ step-type, cross-checked against Sprint 64's actuals for comparable work (GP-8+G
 - GP-4 (CASA verification) -- trigger is 2,500+ users or $5K/yr revenue; not reached.
 - Any Windows app change. This sprint is Play-side; the Windows app shipped 0.14.0 to the
   Microsoft Store on 2026-09-05 and is untouched here.
+
+---
+
+## Phase 5 evidence gates
+
+- **5.1.2 F-PRECHECK six classes** (2026-09-06): **four of the six are structurally
+  inapplicable this sprint** -- `git diff --stat -- mobile-app/lib` is EMPTY, so no product
+  code changed at all. That is not a pass by assertion; it is a pass by there being no
+  surface. Class 1 (parallel sites): no product code, so no sibling to fall out of step.
+  Class 2 (helper wired into production): no new production helper. Class 4 (fragile
+  positional parsing): zero new `split`/`indexOf`/`substring` in `lib/`. Class 6 (silent
+  failure): zero new `catch` in `lib/`. The two that DO apply are clean: class 3
+  (doc-vs-code drift) -- the 100-character body-preview claim is consistent across
+  `PRIVACY_POLICY.md`, `GOOGLE_PLAY_ACCOUNT_SETUP.md` and `LISTING_COPY.md`, checked by
+  grep rather than by reading; class 5 (API scope) -- zero new external calls.
+  PII sweep across every new tracked file returned only fictional demo-spam addresses.
+- **5.1.5 WinWright UI sweep** (2026-09-06, `sweep-head: e9625d6779a0de2aec56e047d32f16dd0aa7f8ea`):
+  **2/2 PASSED** (`test_f124_rule_labels` and `test_mt2c_no_rule_sweep`). 3 dialog-settle
+  scripts excluded by the runner's own documented policy -- not re-derived (Sprint 52 IMP-3).
+  DB drift: none. Note this sweep is a REGRESSION check here, not a verification of sprint
+  work: no `lib/ui` file changed, so its value is proving the sprint did not disturb the
+  Windows app.
+- **5.2 Full suite**: 2,037 passed / 15 skipped / 0 failed (+26 this sprint); analyze clean.
+- **5.1.6 Runtime launch gate**: **N/A -- no Android config touched.** The gate's trigger is
+  a change to `res/xml/**`, `AndroidManifest.xml`, `build.gradle.kts` or ProGuard rules;
+  this sprint changed none of them. Recorded as an explicit N/A rather than skipped
+  silently, which is what the gate's own wording requires.
