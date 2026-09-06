@@ -1,6 +1,6 @@
 {
   "_description": "Sprint status file that persists across context compaction. Update after each phase/sub-phase completion.",
-  "_last_updated": "2026-09-05 (Sprint 65 plan APPROVED by Harold; Phase 4 execution starting)",
+  "_last_updated": "2026-09-06 (Sprint 65 Phase 4: 4 of 5 tasks COMMITTED and pushed; GP-6 was mid-flight when Harold rebooted -- restart it, nothing lost)",
   "_usage": "Read this file after context compaction to restore sprint approval state and progress.",
   "_staleness_note": "This file had drifted 15 sprints (last updated at Sprint 35, 2026-04-19) before being refreshed at Sprint 50 close-out. It is a Phase 7.7 checklist item -- update it at every sprint close-out, not opportunistically.",
   "current_sprint": {
@@ -8,7 +8,7 @@
     "branch": "feature/20260904_Sprint_65",
     "pr_number": 385,
     "start_date": "2026-09-04",
-    "status": "Sprint 65 Phase 4 EXECUTION STARTING (2026-09-05). Plan approved. 5 tasks: GP-10 data safety, GP-18 app content + App access, GP-7 icons, GP-6 listing masters, GP-17 roster/rollout records. Coding est 125-225m; wall-clock 60-110m with parallel agents. Ordering follows VERIFIED Play gating (closed track sits behind the same complete-setup wall as production), not build dependency.",
+    "status": "Sprint 65 Phase 4 IN PROGRESS. Working tree CLEAN, everything pushed through 3248c29 -- the reboot costs nothing. DONE + COMMITTED: GP-10 data safety declarations (c2ec59b; every answer traced to CODE -- no analytics/crash/ad SDK anywhere, nothing shared, stored message content is sender+subject+folder+100-char preview; NO contradiction with the published privacy policy). GP-7 icons (c2ec59b; AUDIT FIRST paid off exactly as planned -- adaptive config and all five densities were ALREADY correct, nothing regenerated, same shape as Sprint 64's GP-8; produced the 512x512 listing icon, PNG colour type 2 no-alpha verified by ME not just the agent; AC-4 parity confirmed: Windows msix logo_path and the Android pipeline both derive from assets/icon/icon.png). GP-17 roster (c2ec59b; distinguishes invitation from CONFIRMED opt-in because an invitation starts no clock, derives the earliest application date from the LAST opt-in). GP-18 app content + reviewer access (3248c29; R-2 verdict Demo Mode = option (b), VERIFIED not assumed -- the agent traced the path and found it sturdier than my preliminary read: EmailScanner special-cases platformId=='demo' to use MockEmailData's own rule set, so it works on a fresh install with no seeded rules; traced run deletes 26 of 59 sample messages, so a reviewer sees real filtering. NO live test credential is ever created). REMAINING: GP-6 listing masters (Issue #383) -- agent was mid-flight at reboot and wrote NO files; restart it. Then Phase 5 evidence gates (5.1.1 review, 5.1.2 F-PRECHECK, 5.1.5 WinWright, 5.1.6 launch gate), then MV recommendations to Harold. PROCESS DEFECT recorded for the retro: commit c2ec59b swept up a live mutation probe an agent had injected into mock_email_data.dart seconds earlier (it disabled every demo rule -- the exact opposite of what the reviewer path needs). Cause was mine: broad stage on a branch with agents actively writing, reviewed the file LIST instead of the DIFF. The agent independently caught the race and restored it; 3248c29 carries the correction. Suite: policy 78 green, analyze clean.",
     "plan_approved": true,
     "blanket_execution_approved": true,
     "scope": [
@@ -63,8 +63,9 @@
   ],
   "blocking_issues": [],
   "next_actions": [
-    "Phase 3.3.1: create the 5 sprint cards + draft PR, THEN execute tasks",
-    "Execute GP-10, GP-18, GP-7 in parallel (independent); GP-6 after GP-7 (needs the icon); GP-17 records last",
-    "Phase 5 evidence gates (5.1.1 review, 5.1.2 F-PRECHECK, 5.1.5 WinWright, 5.1.6 launch gate), then present MV recommendations to Harold"
+    "RESTART the GP-6 agent (Sprint 65 Task 4, Issue #383): listing-copy master, asset spec, cross-store claim comparison, and the play_listing_assets_test gate. Scope boundary: screenshot CAPTURE and final copywriting are Harold's people time and are NOT in this task.",
+    "Then Phase 5 evidence gates in order: 5.1.1 automated code review, 5.1.2 F-PRECHECK six classes, 5.1.5 WinWright sweep (lib/ touched? mock_email_data only -- check), 5.1.6 runtime launch gate on the final build.",
+    "Then present Manual Validation recommendations to Harold (he asked for these explicitly at approval).",
+    "RETRO SEED: the c2ec59b commit race -- do not run a broad `git add -A` while background agents are writing to the tree; stage reviewed paths, or wait for agents to report."
   ]
 }
