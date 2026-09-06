@@ -103,17 +103,46 @@ void main() {
     }
   });
 
-  test('the Ads declaration is backed by a grep-verified "No" answer', () {
+  test('the Ads declaration matches what pubspec.yaml actually declares', () {
     final content = setupDoc.readAsStringSync();
     final adsIndex = content.indexOf('### Ads declaration');
     expect(adsIndex, greaterThan(-1));
     final adsSection = content.substring(adsIndex, adsIndex + 800);
     expect(adsSection.contains('| No |'), isTrue,
         reason: 'the Ads declaration must record No, not an empty cell');
-    expect(adsSection.toLowerCase(), contains('verified by grep'),
-        reason: 'the task instructions required grepping for an ad SDK '
-            'before asserting "no ads" -- the justification must show that '
-            'work was actually done, not assumed');
+
+    // Check the FACT, not the document's claim about itself.
+    //
+    // This assertion previously required the justification prose to contain
+    // the phrase "verified by grep". That is a document asserting its own
+    // diligence: it passes if somebody types the phrase without running
+    // anything, and it never touches the thing that actually determines the
+    // answer. Concrete failure it would have missed (Sprint 65 Phase 5.1.1
+    // review): someone adds google_mobile_ads to pubspec.yaml, the
+    // declaration still reads No, the prose still says "verified by grep",
+    // the gate stays green, and a FALSE "contains ads: No" ships to Play.
+    //
+    // So read the dependency manifest instead. If an ad SDK ever appears,
+    // this fails and the declaration has to be revisited -- which is the
+    // whole point of a gate.
+    final pubspec = File('pubspec.yaml').readAsStringSync().toLowerCase();
+    const adSdkMarkers = [
+      'google_mobile_ads',
+      'admob',
+      'applovin',
+      'unity_ads',
+      'facebook_audience_network',
+      'ironsource',
+      'appodeal',
+    ];
+    for (final marker in adSdkMarkers) {
+      expect(pubspec.contains(marker), isFalse,
+          reason: 'pubspec.yaml declares "$marker", but the Play Ads '
+              'declaration records "No". One of the two is wrong, and a '
+              'false ads declaration is a compliance defect. Either remove '
+              'the dependency or change the declaration to Yes and complete '
+              "Play's ads questionnaire.");
+    }
   });
 
   test('the App access section exists with step-by-step reviewer '
