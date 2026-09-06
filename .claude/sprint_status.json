@@ -1,6 +1,6 @@
 {
   "_description": "Sprint status file that persists across context compaction. Update after each phase/sub-phase completion.",
-  "_last_updated": "2026-09-05 (0.14.0.0 SUBMITTED for certification as Submission 21; awaiting Partner Center outcome. Next: Phase 8.4 scope selection for Sprint 65 -- Harold's call.)",
+  "_last_updated": "2026-09-05 (0.14.0.0 / Submission 21 CERTIFIED AND LIVE, installed-build check confirmed. Phase 8 complete except 8.4 scope selection -- Harold's call, the next thing needing him.)",
   "_usage": "Read this file after context compaction to restore sprint approval state and progress.",
   "_staleness_note": "This file had drifted 15 sprints (last updated at Sprint 35, 2026-04-19) before being refreshed at Sprint 50 close-out. It is a Phase 7.7 checklist item -- update it at every sprint close-out, not opportunistically.",
   "current_sprint": {
@@ -8,7 +8,7 @@
     "branch": "feature/20260904_Sprint_65",
     "pr_number": null,
     "start_date": "2026-09-04",
-    "status": "Phase 8 release cycle IN PROGRESS. DONE: 8.1 Harold merged develop->main (PR #379); Phase 6.6 branch + all 10 Sprint 64 cards closed (#368-#377, zero sprint cards open); 8.2 refinement pass 1 COMPLETENESS SWEEP (all 6 close-out outputs verified present; 11 shipped detail sections pruned; GP table corrected -- GP-12 shipped in Sprint 63 but still read HOLD, ADR-0027 still read Proposed; remaining runway marked ACTIVE in dependency order); 8.3 Store release Steps 1-4 COMPLETE (version bump 0.13.0->0.14.0 MINOR, CHANGELOG [0.14.0] cut, prod worktree reset to origin/main after diverging by 5 empty merge commits -- verified no file existed only there before resetting -- MSIX built and fully verified). 8.3 COMPLETE: Harold submitted 0.14.0.0 for certification 2026-09-05 (Submission 21); Step 7 post-submission records written. NOT STARTED (deliberately, per Harold's instruction to stop before scope selection): 8.4 refinement pass 2 / scope selection, Phase 3 Sprint 65 planning.",
+    "status": "Phase 8 release cycle COMPLETE except scope selection. DONE: 8.1 Harold merged develop->main (PR #379); Phase 6.6 branch + all 10 Sprint 64 cards closed (#368-#377); 8.2 refinement pass 1 completeness sweep (all 6 close-out outputs verified; 11 shipped detail sections pruned; GP table corrected -- GP-12 had shipped in Sprint 63 but still read HOLD, ADR-0027 still read Proposed); 8.3 Store release ALL 7 STEPS COMPLETE -- 0.14.0.0 / Submission 21 CERTIFIED AND LIVE 2026-09-05 with an installed-build check. REMAINING AND AWAITING HAROLD: 8.4 refinement pass 2 / scope selection for Sprint 65, then Phase 3 planning. Recorded runway (NOT approved): GP-7 -> GP-6 -> GP-10 -> closed-test submission.",
     "plan_approved": false,
     "blanket_execution_approved": false,
     "scope": [],
@@ -45,12 +45,12 @@
     "_note": "Run full suites with --concurrency=4 (Sprint 49 IMP-5)."
   },
   "store_release": {
-    "status": "0.14.0.0 SUBMITTED FOR CERTIFICATION 2026-09-05 12:01am ET (Harold), Submission 21. Exact upload time NOT observed -- it happened somewhere between the ~9:22am ET 2026-09-04 handoff and the 12:01am confirmation; the timing row records that range rather than inventing a point. Pre-submission verification (2026-09-04): Check A PASS (inner build carried both dart-defines -- F119 key-name class clear); --release-self-test --expected-version=0.14.0 RESULT: PASS on all 6 checks incl. BOTH APP_ENV and NATIVE_APP_ENV (F119-c class); manifest Version=0.14.0.0, correct identity + publisher; 17.1 MB. Eighth MINOR release (Sprint 64 feat: F186 Body Phrase). SUBMITTED IS NOT LIVE: 0.13.0.0 remains live until Partner Center confirms otherwise -- verify there, never from a tracking file.",
-    "live_version": "0.13.0.0",
-    "submission": 20,
-    "certified_date": "2026-08-27",
-    "pending_upload_version": "0.14.0.0",
-    "submission_pending": 21,
+    "status": "0.14.0.0 / Submission 21 CERTIFIED AND LIVE 2026-09-05, observed ~10:32pm ET by direct Partner Center observation (\"Congrats! Your product is now updated\", Store presence = Submission 21) PLUS an INSTALLED-BUILD CHECK -- the running Store app header reads Version 0.14.0 with no [DEV] marker, which is the strongest verification class and the one that would have caught the F119 family. Eighth MINOR release (Sprint 64 feat: F186 Body Phrase rule type). Certification elapsed NOT measurable this cycle: both the upload and the observation are ranges, so the true time is unknown rather than slow -- do not read it as a regression against the prior 20-30 min band. Pre-submission verification held: Check A dart-defines present, --release-self-test 6/6 PASS incl. both APP_ENV and NATIVE_APP_ENV.",
+    "live_version": "0.14.0.0",
+    "submission": 21,
+    "certified_date": "2026-09-05",
+    "pending_upload_version": null,
+    "submission_pending": null,
     "submitted_date": "2026-09-05"
   },
   "environment_notes": [
@@ -60,9 +60,9 @@
   ],
   "blocking_issues": [],
   "next_actions": [
-    "Phase 8.4 refinement pass 2 -- SCOPE SELECTION for Sprint 65. This is Harold's call and the next thing that needs him. Recorded runway (NOT yet approved): GP-7 adaptive icons -> GP-6 listing assets -> GP-10 Data Safety form -> closed-test submission.",
-    "Sprint 65 planning note: the 12-tester/14-day Play closed test is the LONG POLE -- tester recruitment should start BEFORE the code work, not after.",
-    "WATCH: 0.14.0.0 / Submission 21 certification outcome. Record the certified timestamp in STORE_SUBMISSION_TIMING.md row 21 and flip STORE_VERSION_STATUS.md to live. Verify in Partner Center directly -- prior cycles show the Store client and winget lag Partner Center by hours on certification day.",
-    "GP-10's Data Safety input is already prepared: the 9-permission list from Sprint 64's GP-3."
+    "Phase 8.4 refinement pass 2 -- SCOPE SELECTION for Sprint 65. Harold's call; this is the only thing outstanding. Recorded runway (NOT yet approved): GP-7 adaptive icons -> GP-6 listing assets -> GP-10 Data Safety form -> closed-test submission.",
+    "Sprint 65 planning note: the 12-tester/14-day Play closed test is the LONG POLE and its clock does not start until testers are enrolled -- recruitment before the code work saves ~2 weeks of wall time.",
+    "GP-10's Data Safety input is already prepared: the 9-permission list from Sprint 64's GP-3.",
+    "Dev worktree is at 0.14.0 and now EQUALS the live version -- bump at the NEXT release's Step 1, not before."
   ]
 }
