@@ -258,3 +258,4 @@ mobile-app/android/.kotlin/
 *.jks
 *.keystore
 android-signing.json
+.claude/mutation-locks/
