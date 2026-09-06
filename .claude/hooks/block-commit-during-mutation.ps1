@@ -53,17 +53,38 @@ try {
 $command = $payload.tool_input.command
 if (-not $command) { exit 0 }
 
+# Strip quoted strings before ANY matching decision.
+#
+# Everything below asks "does this command DO something", never "does this
+# text mention something". A commit message is data, not instruction: both
+# `git commit -m "explain allow_mutation_commit"` and an echoed example of a
+# git command are text, and neither should change the gate's behaviour.
+# Removing quoted spans first makes that distinction structural instead of
+# leaving each individual regex to re-litigate it.
+#
+# Found by an automated security review of this very hook (2026-09-06), and
+# CONFIRMED BY PROBE before fixing: a commit whose MESSAGE contained the
+# override token silently bypassed the gate. That is the worst possible
+# failure for this file, because the message is the one part of a commit an
+# author writes freely.
+$scannable = $command
+$scannable = [regex]::Replace($scannable, '"[^"]*"', '""')
+$scannable = [regex]::Replace($scannable, "'[^']*'", "''")
+
 # Only guard commits. Everything else -- status, diff, add, push -- is fine
 # while a mutation is in flight; it is the permanent record that must not
 # capture a temporary state.
 #
-# The match must be anchored to a real invocation, not to the word appearing
-# anywhere in the command. Caught immediately on this hook's own first live
-# run: a self-test command that merely CONTAINED "git commit" inside a quoted
-# JSON payload was blocked, which would have made every future test of this
-# hook impossible to run. Require the command to START with git (optionally
-# after cd/&&/;/|) so quoted occurrences and echoed text do not trigger it.
-if ($command -notmatch '(^|[;&|]\s*|\bcd\s+[^;&|]+[;&|]\s*)git\s+(-C\s+\S+\s+)?commit\b') { exit 0 }
+# Match `git` at any command position, then allow any number of GLOBAL
+# options before the `commit` subcommand. The earlier pattern only tolerated
+# `-C <path>`, so `git --no-pager commit` and `git --git-dir=.git commit`
+# both slipped through -- confirmed by probe, not assumed.
+#
+# The original version of this line was looser still: it matched the words
+# "git commit" anywhere, and immediately blocked the self-test written to
+# verify it. Quoted-span stripping above now handles that case properly,
+# which is why this pattern no longer needs its own start-of-command anchor.
+if ($scannable -notmatch '\bgit\b(?:\s+(?:--[^\s]+(?:=\S+)?|-c\s+\S+|-C\s+\S+))*\s+commit\b') { exit 0 }
 
 $projectDir = $env:CLAUDE_PROJECT_DIR
 if (-not $projectDir) { $projectDir = (Get-Location).Path }
@@ -74,24 +95,45 @@ if (-not (Test-Path $lockDir)) { exit 0 }
 $locks = @(Get-ChildItem -Path $lockDir -Filter '*.json' -ErrorAction SilentlyContinue)
 if ($locks.Count -eq 0) { exit 0 }
 
-$active = @()
-$stale  = @()
-$now    = Get-Date
+$active     = @()
+$stale      = @()
+$staleFiles = @()   # exact paths, kept separate from the display strings
+# UTC on both sides of every age comparison. $created is a UTC
+# DateTimeOffset, so a local $now here would reintroduce the offset bug this
+# block was just fixed for.
+$now        = [DateTimeOffset]::UtcNow
 
 foreach ($lock in $locks) {
     try {
         $info = Get-Content $lock.FullName -Raw | ConvertFrom-Json
-        $created = [DateTime]::Parse($info.createdUtc).ToLocalTime()
+        # Parse to a UTC DateTimeOffset and compare against UTC. The earlier
+        # form was `[DateTime]::Parse(...).ToLocalTime()`, which DOUBLE-
+        # CONVERTS when the stored value carries an explicit offset:
+        # ::Parse already normalises to local, and .ToLocalTime() then shifts
+        # it by the offset AGAIN. Found while testing the stale path -- a
+        # freshly-written lock was reported as 240 minutes old (exactly this
+        # machine's 4-hour offset) and deleted as stale, silently reopening
+        # the window this hook exists to close. The lock writer uses
+        # PowerShell's Z-suffixed 'o' format so production was unaffected,
+        # but a clock bug that only misfires on some inputs is worth removing
+        # rather than depending on one writer never changing.
+        $created = [DateTimeOffset]::Parse(
+            $info.createdUtc,
+            [System.Globalization.CultureInfo]::InvariantCulture,
+            [System.Globalization.DateTimeStyles]::AssumeUniversal -bor
+                [System.Globalization.DateTimeStyles]::AdjustToUniversal)
     } catch {
         # An unparseable lock is treated as stale rather than as a block:
         # failing open here is correct, because the alternative is an
         # unclearable deadlock caused by a malformed file.
-        $stale += $lock.Name
+        $stale      += $lock.Name
+        $staleFiles += $lock.FullName
         continue
     }
 
     if (($now - $created).TotalMinutes -gt $StaleMinutes) {
-        $stale += "$($lock.Name) (age $([int]($now - $created).TotalMinutes)m)"
+        $stale      += "$($lock.Name) (age $([int]($now - $created).TotalMinutes)m)"
+        $staleFiles += $lock.FullName
     } else {
         $active += [PSCustomObject]@{
             File   = $info.file
@@ -104,11 +146,15 @@ foreach ($lock in $locks) {
 
 if ($stale.Count -gt 0) {
     Write-Host "[mutation-lock] Ignoring $($stale.Count) stale lock(s) older than $StaleMinutes minutes: $($stale -join ', ')"
-    foreach ($lock in $locks) {
-        if ($stale -match [regex]::Escape($lock.Name)) {
-            Remove-Item $lock.FullName -Force -ErrorAction SilentlyContinue
-        }
-    }
+    # Delete by EXACT PATH, collected alongside the display strings above.
+    #
+    # The earlier version matched each lock's name against the $stale display
+    # array, which carries an "(age Nm)" suffix -- mixing a human-readable
+    # status string with the identifier used for deletion. With names that
+    # share a prefix, that substring match could delete an ACTIVE lock and
+    # silently reopen the very window this hook exists to close. Identifiers
+    # and display text are now kept strictly apart.
+    $staleFiles | Remove-Item -Force -ErrorAction SilentlyContinue
 }
 
 if ($active.Count -eq 0) { exit 0 }
@@ -145,8 +191,14 @@ Deliberate override (rare, and you must have verified the tree yourself):
 add the literal token allow_mutation_commit to the command.
 "@
 
-# Deliberate, documented escape hatch -- same pattern as the stash guard.
-if ($command -match 'allow_mutation_commit') {
+# Deliberate, documented escape hatch.
+#
+# Checked against $scannable, so the token must be a real command token and
+# not text inside a commit message. It must also stand alone as its own
+# argument: a substring match let `-m "... allow_mutation_commit ..."`
+# disable the gate, which is exactly backwards -- the freest-form part of a
+# commit was the easiest place to trip the override.
+if ($scannable -match '(^|\s)allow_mutation_commit(\s|$)') {
     Write-Host "[mutation-lock] Override token present; allowing commit despite $($active.Count) active lock(s)."
     exit 0
 }
