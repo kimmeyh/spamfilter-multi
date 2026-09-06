@@ -1040,6 +1040,24 @@ The quoted-string case is not hypothetical: the hook's first live version matche
 anywhere in the command, and immediately blocked the very self-test written to verify it.
 The match is now anchored to a real invocation.
 
+**An automated security review of this hook then found three more holes, all confirmed by
+probe before fixing** (2026-09-06):
+
+| Bypass | Why it worked | Fix |
+|---|---|---|
+| `git commit -m "explain allow_mutation_commit"` | The override token was matched anywhere in the command, so a commit MESSAGE could disable the gate -- the freest-form part of a commit was the easiest place to trip it. | Quoted spans are stripped before any matching decision, and the token must stand alone as its own argument. |
+| `git --no-pager commit` | The subcommand pattern only tolerated `-C <path>` between `git` and `commit`. | Any number of global options are now allowed before the subcommand. |
+| Stale-lock cleanup | Deletion matched each lock's filename against the DISPLAY strings, which carry an `(age Nm)` suffix. With prefix-sharing names it could delete an ACTIVE lock and silently reopen the window. | Exact paths are collected alongside the display strings and deleted by path. |
+
+A fourth bug surfaced while testing that third fix: `[DateTime]::Parse(...).ToLocalTime()`
+DOUBLE-CONVERTS a timestamp carrying an explicit offset, aging a fresh lock by the machine's
+timezone offset and deleting it as stale. Now parsed as a UTC `DateTimeOffset` and compared
+against `[DateTimeOffset]::UtcNow`.
+
+**Test this hook under `powershell` (5.1), which is what `settings.json` invokes -- not
+`pwsh` (7).** A scratch harness using the wrong runtime reported an already-fixed bug as
+still broken and cost a diagnosis cycle.
+
 ## Version History
 
 **Version**: 1.0
