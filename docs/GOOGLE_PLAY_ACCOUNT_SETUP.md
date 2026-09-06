@@ -310,9 +310,12 @@ the platform-agnostic form of this same guarantee (T-2).
 This app requires no login for a reviewer to evaluate its core functionality. Follow these
 steps from a fresh install:
 
-1. Launch the app. The first screen shown is "Select Email Provider".
-2. Tap the card labeled "Try Demo Mode" (subtitle: "Test with 50+ sample emails (no email
-   account needed)"), near the top of the screen, above the list of email providers.
+1. Launch the app. On a fresh install the first screen is "Select Account", showing
+   "No Accounts Yet" with two options: "+ Add Account" and, below it,
+   "Try Demo Mode instead".
+2. Tap "Try Demo Mode instead". (If the app instead opens "Select Email Provider" --
+   which happens when an account already exists -- tap the "Try Demo Mode" card near the
+   top, above the provider list. Both routes reach the same place.)
 3. The app opens a "Ready to Scan" screen showing a "DEMO MODE" badge.
 4. Tap the button labeled "Start Demo Scan (Testing)" (the second of two buttons on this
    screen -- do NOT tap "Start Live Scan", which requires a real email account).

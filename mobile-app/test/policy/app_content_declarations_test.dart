@@ -157,9 +157,26 @@ void main() {
     // The instructions must name the EXACT on-screen text a reviewer taps,
     // per the task's own requirement -- a paraphrase would leave a reviewer
     // unable to find the button.
+    //
+    // "Try Demo Mode instead" is listed SEPARATELY from "Try Demo Mode", and
+    // that is the point rather than redundancy. There are two Demo Mode
+    // entry points with DIFFERENT labels: the zero-account screen offers
+    // "Try Demo Mode instead" (empty_state.dart), while the provider screen
+    // offers a "Try Demo Mode" card (platform_selection_screen.dart). A
+    // fresh install -- which is exactly what a Play reviewer gets -- lands on
+    // the FORMER.
+    //
+    // Sprint 65 Manual Validation caught the instructions naming only the
+    // provider-screen label and asserting the first screen was "Select Email
+    // Provider", which a fresh install never shows. This gate did not catch
+    // it because "Try Demo Mode" is a SUBSTRING of "Try Demo Mode instead",
+    // so the assertion passed while the instructions were wrong. Requiring
+    // the longer string too closes that hole.
     for (final exactText in [
+      'Try Demo Mode instead',
       'Try Demo Mode',
       'Start Demo Scan (Testing)',
+      'No Accounts Yet',
     ]) {
       expect(accessSection, contains(exactText),
           reason: 'the App access instructions must name the exact '

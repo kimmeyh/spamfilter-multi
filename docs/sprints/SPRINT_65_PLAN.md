@@ -501,3 +501,50 @@ step-type, cross-checked against Sprint 64's actuals for comparable work (GP-8+G
   a change to `res/xml/**`, `AndroidManifest.xml`, `build.gradle.kts` or ProGuard rules;
   this sprint changed none of them. Recorded as an explicit N/A rather than skipped
   silently, which is what the gate's own wording requires.
+
+---
+
+## Manual Validation -- results (Phase 5.3, 2026-09-06)
+
+Harold walked the four-step recommendation on the emulator, from a genuinely fresh state
+(`pm clear` before launch, so no account existed -- exactly what a Play reviewer gets).
+
+- **Step 1, Demo Mode entry** -- PASS with a FINDING (below). "Worked as expected."
+- **Step 2, "Start Demo Scan (Testing)"** -- PASS. "Working as expected."
+- **Step 3, real deletions** -- **PASS, and the numbers match the prediction exactly**:
+  processed 59, deleted 26, safe 21, no rule 12, errors 0. This is the same result
+  `demo_mode_reviewer_path_test.dart` asserts in the VM, now confirmed on a real device --
+  the widget test and the device agree, which is the pairing
+  `feedback_source_gates_verify_shape` asks for.
+- **Step 4, launcher icon** -- PASS. The adaptive icon renders correctly on the Android home
+  screen, confirming the GP-7 audit finding (the icon was already correct at all five
+  densities) survives to the device. AC-3 met.
+
+### MV FINDING: the reviewer instructions named the wrong first screen
+
+Harold's zero-account screenshot shows **"Select Account"** with **"No Accounts Yet"** and a
+**"Try Demo Mode instead"** link. The App access instructions asserted the first screen is
+"Select Email Provider" and told the reviewer to tap a card labelled "Try Demo Mode".
+
+There are TWO Demo Mode entry points with DIFFERENT labels:
+- `empty_state.dart:124` -- "Try Demo Mode instead" (the zero-account screen)
+- `platform_selection_screen.dart:127` -- "Try Demo Mode" (the provider screen)
+
+**A fresh install lands on the former**, which is precisely the reviewer's situation. A
+reviewer following the instructions literally would have looked for a card that was not on
+screen. That is the rejection risk GP-18 exists to remove, so the instructions were wrong in
+the one place it mattered most.
+
+**Why the gate did not catch it**: it asserted the instructions contain "Try Demo Mode",
+and that string is a SUBSTRING of "Try Demo Mode instead" -- so the assertion passed while
+the instructions were wrong. A containment check cannot distinguish a label from a longer
+label that contains it.
+
+**Fixed**: instructions now name the fresh-install screen and its actual link text, with the
+provider-screen route recorded as the alternate path for the already-has-an-account case.
+The gate now requires "Try Demo Mode instead" and "No Accounts Yet" as separate strings.
+Mutation-verified by reverting to the exact pre-MV wording: RED, then restored GREEN.
+
+This was also the **first real use of the new mutation-lock gate** (committed earlier this
+session in response to Harold's semaphore question): the lock was taken before mutating a
+tracked file and released after restoring, and commits were blocked throughout.
