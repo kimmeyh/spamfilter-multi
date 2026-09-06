@@ -108,7 +108,9 @@ answer is a compliance defect, not a typo.
 **Executed-by** (filled at completion):
 
 **Step-types**: DOCS, TEST-UNIT
-**Est-Effort**: 120-240m
+**Est-Effort**: **25-45m CODING** (DOCS 15-20 + TEST-UNIT 4-10, both from the Estimate Table; the
+Sprint 64 GP-8/GP-3 DOCS+verify pair actually ran ~50m for two items). EXCLUDED from this number,
+per the CODING_VELOCITY two-metric rule: Harold's Play Console form entry, which is people time.
 _**Risk & rollback**_: an inaccurate declaration is a policy violation with real consequences.
 Mitigation is R-2's code-traceability rule. Rollback: the form is editable and resubmittable.
 
@@ -176,7 +178,9 @@ security-adjacent task is planned WITH its hardening pass rather than treating i
 **Executed-by** (filled at completion):
 
 **Step-types**: DOCS, TEST-UNIT, TEST-WIDGET
-**Est-Effort**: 180-300m
+**Est-Effort**: **30-55m CODING** (DOCS 15-20 + TEST-UNIT 4-10 + TEST-WIDGET 20-25 if R-2 picks the
+Demo Mode path; the widget harness is the real cost, per the table's TEST-WIDGET note). EXCLUDED:
+Harold's console declarations, test-account creation, and the R-3 on-device reviewer walk.
 _**Risk & rollback**_: a reviewer who cannot exercise the app is a rejection, and a rejection
 costs a resubmission cycle. Mitigation is R-3's end-to-end walk. Rollback: declarations are
 editable.
@@ -246,7 +250,10 @@ should be planned rather than discovered.
 **Executed-by** (filled at completion):
 
 **Step-types**: DATA (assets), TEST-UNIT
-**Est-Effort**: 120-240m (R-1 may find the work is largely already done)
+**Est-Effort**: **20-40m CODING** (DATA 15-19 for asset regeneration + TEST-UNIT 4-10 x2 gates).
+R-1 may find the work is largely already done -- adaptive icons exist at all five densities today --
+in which case this lands at the low end, the way Sprint 64's GP-8 did when the answer was already
+true in the codebase. EXCLUDED: the AC-3 on-device visual check across adaptive masks.
 _**Risk & rollback**_: low. Assets are version-controlled; rollback is a revert.
 
 ---
@@ -315,7 +322,11 @@ across two live store listings, and the copy is public-facing and hard to walk b
 **Executed-by** (filled at completion):
 
 **Step-types**: DATA (assets), DOCS, TEST-UNIT
-**Est-Effort**: 480-720m (the largest task; screenshot capture across device sizes dominates)
+**Est-Effort**: **35-60m CODING** (DOCS 15-20 for the listing-copy master + TEST-UNIT 4-10 x2 gates,
+plus DATA 15-19 for asset processing). **This is the estimate that was most wrong before**: the
+previous 480-720m was an hour-anchored guess that counted SCREENSHOT CAPTURE AND COPYWRITING --
+both people time, not coding. Capturing screenshots on devices and writing public listing copy are
+Harold-side; the coding is the masters, the gates, and the recorded comparison.
 _**Risk & rollback**_: public-facing copy. Mitigation is R-4's cross-store comparison and
 Harold's preview confirmation. Rollback: listings are editable, though a published listing is
 briefly visible.
@@ -380,7 +391,10 @@ recruitment adequacy and evidence quality.
 **Executed-by** (filled at completion):
 
 **Step-types**: DOCS, DATA (console configuration), TEST-UNIT
-**Est-Effort**: 120-240m active (Harold-driven pace dominates), then a 14-day external wait
+**Est-Effort**: **15-25m CODING** (DOCS 15-20 for the roster/feedback-log structure + TEST-UNIT 4-10
+for the privacy/date gate). Everything else in this task is people time or waiting: recruitment,
+console configuration, per-tester opt-in confirmation, and the 14-day external wait. None of it is
+coding and none of it belongs in a coding estimate.
 _**Risk & rollback**_: the highest-consequence task in the sprint and the least reversible. A
 tester dropping out restarts their 14 days; R-2's margin is the mitigation. Rolling out to the
 closed track is reversible (halt the release), but the clock is not recoverable.
@@ -401,10 +415,34 @@ fact, not a plan assumption. If any of them slips, this task cannot start early.
 
 ## Sprint totals
 
-- 5 tasks, estimated **1,020-1,740 minutes** (~17-29h) of active work.
-- Largest: GP-6 (screenshot capture across device sizes).
+**Coding effort (the only thing estimated here, per Harold 2026-09-05): 125-225 minutes.**
+
+| Task | Coding Est-Effort | Dominant step-types |
+|------|-------------------|---------------------|
+| GP-10 Data safety | 25-45m | DOCS + TEST-UNIT |
+| GP-18 App content + App access | 30-55m | DOCS + TEST-UNIT + TEST-WIDGET |
+| GP-7 Icons | 20-40m | DATA + TEST-UNIT |
+| GP-6 Listing masters | 35-60m | DOCS + DATA + TEST-UNIT |
+| GP-17 Roster + rollout records | 15-25m | DOCS + TEST-UNIT |
+| **Total** | **125-225m** | |
+
+**Wall-clock ("when can I come back?")**: ~60-110m if the independent tasks run as parallel
+sub-agents. GP-6 depends on GP-7's icon; the other three are independent of each other.
+
+**These estimates were rebuilt, not converted.** The first draft gave 1,020-1,740 minutes, which
+was hour-anchored guessing -- exactly the error CODING_VELOCITY.md was created to stop (Sprint 39:
+"hour-based estimates ran ~10x too high"). The rebuild uses the Estimate Table medians per
+step-type, cross-checked against Sprint 64's actuals for comparable work (GP-8+GP-3 DOCS+verify
+~50m for two items; SEC-4 NATIVE-AND+TEST-UNIT ~40m; F188 ~57m).
+
+**NOT included in any number above** (Harold's rule: coding estimates only):
+- Play Console form entry, listing submission, tester recruitment -- people time.
+- Screenshot capture on devices and public listing copywriting -- people time, and the single
+  biggest reason the old GP-6 figure was inflated ~12x.
+- On-device verification walks (adaptive masks, the reviewer path).
+- The 14-day closed-test wait and the subsequent ~7-day production-access review -- external.
+
 - Model mix: 1 Haiku (with a planned review pass), 3 Sonnet, 1 Fable/Opus.
-- External wait: 14 days minimum after Task 5, then up to ~7 days of production-access review.
 
 ## What this sprint does NOT include
 
