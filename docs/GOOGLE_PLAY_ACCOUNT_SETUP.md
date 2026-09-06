@@ -189,6 +189,153 @@ Zero contradictions found between these declarations and `docs/legal/PRIVACY_POL
 matching, non-contradictory statement in the privacy policy; every "not collected" answer is
 independently confirmed by the absence of the corresponding permission, package, or code path.
 
+## App content declarations (as submitted) (GP-18, Sprint 65, Issue #381)
+
+**Why this section exists**: Play's "App content" checklist gates a closed-track rollout, not
+only production -- "you can start a closed test after completing your app setup" (Play Console
+help). A conditional item left unanswered is an incomplete setup, and an incomplete setup blocks
+the rollout the same way a wrong answer would. Every item below is recorded as ANSWERED, with a
+one-line justification traced to the code or to the plain fact of what this app is, so nothing is
+silently skipped and nothing has to be re-derived from memory on the next submission.
+
+### Content rating questionnaire
+
+| Item | Answer | Justification |
+|---|---|---|
+| App category for rating | Utility / Tools | The app is a client-side email spam filter: it reads a user's own mailbox (their configured account) and applies user-authored or default pattern rules to flag, move, or delete matching messages. No content is created, browsed, or shared through the app. |
+| Violence | None | No such content exists in the app. The only body text the app ever displays is the user's own email content, rendered as-is (never generated or curated by the app). |
+| Sexual content / nudity | None | Same as above -- no generated content, and the app does not moderate or display third-party media. |
+| Profanity / crude humor | None | Same as above. |
+| Controlled substances (alcohol, tobacco, drugs) | None | The app has no content or feature related to controlled substances. |
+| Gambling (simulated or real-money) | None | No gambling mechanic exists anywhere in `lib/`. |
+| User-generated content shared with other users | No | Rules and safe-sender patterns a user types are stored locally per-device only (`RuleDatabaseStore`, `SafeSenderDatabaseStore`) and are never transmitted to any other user or to the developer -- confirmed by the Data safety section above ("Data sharing, all categories": no data is shared with any third party). |
+| Unrestricted internet access / web browsing | No | The app's only network destinations are the user's own configured email provider and Google's OAuth token-revoke endpoint (Data safety section above); there is no in-app browser or unrestricted URL navigation surface. |
+
+### Target audience and content
+
+| Item | Answer | Justification |
+|---|---|---|
+| Target age group | Adults (18+) primarily; not designed or marketed for children | An email account presupposes an email provider account, which itself requires an adult or a supervised account under the provider's own terms (Gmail's minimum age policy, for example). The app has no child-directed design, content, or marketing. |
+| Appeals to children (COPPA / Designed For Families) | No | No child-directed UI, characters, or content exists anywhere in `lib/ui/`; confirmed by grep -- no "children", "kids", or age-gating code path exists in the codebase (the only textual hits are unrelated Dart `children:` widget-list parameters). |
+| Ads targeted to children | Not applicable | The app shows no ads at all (see Ads declaration below), so no ad-targeting question applies. |
+
+### Ads declaration
+
+| Item | Answer | Justification |
+|---|---|---|
+| Does the app contain ads? | No | Verified by grep across `pubspec.yaml` for every ad SDK Play recognizes (AdMob, Google Mobile Ads, Unity Ads, AppLovin, Facebook Audience Network, ironSource, Vungle, Chartboost) -- zero matches. `pubspec.yaml`'s dependency list contains no ads/monetization package of any kind. The Android manifest carries no `com.google.android.gms.ads` metadata and no `AD_ID` permission (also independently confirmed in the Data safety section's "Device or other IDs" row). |
+
+### Government apps
+
+| Item | Answer | Justification |
+|---|---|---|
+| Is this a government app? | No | The app is developed and published under a personal developer account (Kimmey Consulting, Ohio -- see ACCOUNT CREATED above) with no affiliation to any government entity, and implements no government service, ID, or benefit. |
+
+### Financial features
+
+| Item | Answer | Justification |
+|---|---|---|
+| Does the app provide financial services (payments, lending, crypto, trading, etc.)? | No | No payment, billing, lending, or financial-account code exists anywhere in `lib/` -- confirmed by grep for payment/billing/card/crypto SDK names and fields, zero matches (same grep already relied on by the Data safety section's "Financial info" row). The one "banking" hit in the codebase is inside `mock_email_data.dart`, a hardcoded Demo Mode SAMPLE email subject line ("New Features in Mobile Banking") used to exercise the spam-filtering rule engine -- decoy content, not a real financial feature. |
+
+### News app
+
+| Item | Answer | Justification |
+|---|---|---|
+| Is this a news app? | No | The app does not aggregate, curate, or publish news content of any kind; it only filters the user's own existing email. |
+
+### Health apps
+
+| Item | Answer | Justification |
+|---|---|---|
+| Does the app provide health-related services (medical records, fitness tracking, telehealth, etc.)? | No | No health, medical, or fitness code, permission, or data model exists anywhere in `lib/`. |
+
+## App access (GP-18, R-2, Sprint 65)
+
+**The decision (R-2)**: option (b) -- written reviewer instructions pointing at the app's existing
+Demo Mode, NOT a dedicated test email account (option a). Below is the verification that led to
+this choice, followed by the exact instructions to paste into Play Console.
+
+### Why Demo Mode was verified, not assumed (R-2 decision record)
+
+A spam filter demonstrates nothing without a working email account, so option (b) is only valid
+if a reviewer with NO account can reach a state that actually shows filtering happening -- not
+merely a screen that LOOKS like the app. The full path was traced through the source, end to end,
+before this decision was recorded:
+
+1. **Reachability with no account.** `PlatformSelectionScreen`
+   (`mobile-app/lib/ui/screens/platform_selection_screen.dart`, ~line 122) shows a direct-launch
+   card, "Try Demo Mode" / "Test with 50+ sample emails (no email account needed)", on the FIRST
+   screen the app shows -- no account picker, no setup form, no credential prompt precedes it.
+   `_startDemoMode` (~line 30) navigates straight to `ScanProgressScreen` with
+   `platformId: 'demo'`.
+2. **A second, unambiguous tap target.** `ScanProgressScreen` shows two buttons: "Start Live
+   Scan" (would fail with no account -- NOT the reviewer's path) and "Start Demo Scan (Testing)"
+   (`_startDemoScan`, ~line 479), which is the one that must be named in the instructions.
+3. **The scan is self-contained -- no rule-seeding dependency.** `EmailScanner.scanInbox`
+   (`mobile-app/lib/core/services/email_scanner.dart`, ~line 246) special-cases
+   `platformId == 'demo'`: it uses `MockEmailData.getDemoRuleSet()` /
+   `getDemoSafeSenderList()` instead of the app's real `RuleSetProvider.rules`. This means Demo
+   Mode does not depend on default rules having been seeded, or on any rule ever having been
+   configured -- it carries its own purpose-built rule set matched to its own sample data,
+   regardless of what state the rest of the app is in.
+4. **The sample data is deliberately spam-shaped.** `MockEmailData.generateSampleEmails()`
+   (`mobile-app/lib/core/services/mock_email_data.dart`) returns 59 messages including senders
+   like `winner@lottery-scam.com` ("YOU WON $1,000,000!!!"), `security@paypa1-verification.com`
+   ("URGENT: Verify Your PayPal Account Now"), and `sales@cheap-meds-online.biz`
+   ("V1AGRA & C1AL1S - 70% OFF TODAY") -- an obvious phishing/scam/spam mix, not neutral filler.
+5. **A real deletion outcome, not just navigation.** On completion, `_startDemoScan` navigates to
+   `ResultsDisplayScreen` showing the scan summary. This was verified with an actual run of the
+   traced code path (not inferred): **found=59, processed=59, deleted=26, moved=0, safe=21,
+   noRule=12, errors=0** -- a demo scan run this way deletes 26 of 59 sample messages via the real
+   `RuleEvaluator`, and the results screen shows the matched rule name against each. A reviewer
+   following the instructions below sees actual spam-filtering behavior, not a static
+   demonstration.
+
+Option (a) was rejected on this evidence, not by default: option (b) reaches a materially
+equivalent (arguably clearer, since the sample data is deliberately spam-shaped) demonstration of
+the core value with no live credential to create, rotate, or ever risk leaking, which is exactly
+the NFR this card calls out ("option (a) creates a real credential that lives outside the repo
+and must be maintained").
+
+**ADR-0042 note**: the entire traced path (`PlatformSelectionScreen`, `ScanProgressScreen`,
+`EmailScanner`, `MockEmailProvider`, `MockEmailData`) is shared Dart code with no `Platform.is*`
+branch anywhere in it -- Demo Mode is not an Android-specific feature, so the reviewer path
+behaves identically on Windows. `test/ui/screens/demo_mode_reviewer_path_test.dart` proves
+reachability and a real filtering outcome from a zero-account, zero-initialization state, which is
+the platform-agnostic form of this same guarantee (T-2).
+
+### Reviewer instructions (paste verbatim into Play Console's App access form)
+
+```
+This app requires no login for a reviewer to evaluate its core functionality. Follow these
+steps from a fresh install:
+
+1. Launch the app. The first screen shown is "Select Email Provider".
+2. Tap the card labeled "Try Demo Mode" (subtitle: "Test with 50+ sample emails (no email
+   account needed)"), near the top of the screen, above the list of email providers.
+3. The app opens a "Ready to Scan" screen showing a "DEMO MODE" badge.
+4. Tap the button labeled "Start Demo Scan (Testing)" (the second of two buttons on this
+   screen -- do NOT tap "Start Live Scan", which requires a real email account).
+5. The app processes a built-in set of 50+ realistic sample emails (a mix of obvious spam --
+   fake lottery winnings, phishing/account-verification scams, pharmacy spam -- and normal
+   mail) against its spam-filtering rule engine. This takes a few seconds.
+6. The app navigates automatically to a Results screen showing a scan summary: counts of
+   emails processed, deleted (identified as spam and simulated/removed), and left
+   unmatched, plus a per-email list showing which rule matched each deleted message.
+
+No account, credentials, or network access to any email provider is required to reach this
+screen. This exercises the same rule-evaluation engine used for a real account's live scan.
+```
+
+### R-3: end-to-end reviewer-path walk (record when performed)
+
+R-3 requires the reviewer path above to be walked end to end on a real device before
+submission -- not assumed to work from the source trace alone. Record here when performed:
+
+| Date | Device | What was seen | Matches instructions above? |
+|---|---|---|---|
+| (pending) | | | |
+
 ## Closed-test tester roster and the 14-day clock (GP-17, Sprint 65)
 
 **Why this section exists**: the 12-tester / 14-continuous-day closed test is the single longest

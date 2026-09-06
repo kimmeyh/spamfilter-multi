@@ -885,10 +885,6 @@ class MockEmailData {
       version: '1.0',
       settings: {},
       rules: [
-        // MUTATION-TEST PROBE (GP-18 T-2, temporary): disabling every demo
-        // rule simulates the exact regression this test guards against --
-        // Demo Mode reachable but no longer demonstrating spam filtering.
-        // Removed immediately after confirming RED.
         Rule(
           name: 'DemoBlockHeader',
           enabled: true,
