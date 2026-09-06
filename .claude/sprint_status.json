@@ -1,18 +1,26 @@
 {
   "_description": "Sprint status file that persists across context compaction. Update after each phase/sub-phase completion.",
-  "_last_updated": "2026-09-05 (0.14.0.0 / Submission 21 CERTIFIED AND LIVE, installed-build check confirmed. Phase 8 complete except 8.4 scope selection -- Harold's call, the next thing needing him.)",
+  "_last_updated": "2026-09-05 (Sprint 65 plan APPROVED by Harold; Phase 4 execution starting)",
   "_usage": "Read this file after context compaction to restore sprint approval state and progress.",
   "_staleness_note": "This file had drifted 15 sprints (last updated at Sprint 35, 2026-04-19) before being refreshed at Sprint 50 close-out. It is a Phase 7.7 checklist item -- update it at every sprint close-out, not opportunistically.",
   "current_sprint": {
     "number": 65,
     "branch": "feature/20260904_Sprint_65",
-    "pr_number": null,
+    "pr_number": 385,
     "start_date": "2026-09-04",
-    "status": "Phase 8 release cycle COMPLETE except scope selection. DONE: 8.1 Harold merged develop->main (PR #379); Phase 6.6 branch + all 10 Sprint 64 cards closed (#368-#377); 8.2 refinement pass 1 completeness sweep (all 6 close-out outputs verified; 11 shipped detail sections pruned; GP table corrected -- GP-12 had shipped in Sprint 63 but still read HOLD, ADR-0027 still read Proposed); 8.3 Store release ALL 7 STEPS COMPLETE -- 0.14.0.0 / Submission 21 CERTIFIED AND LIVE 2026-09-05 with an installed-build check. REMAINING AND AWAITING HAROLD: 8.4 refinement pass 2 / scope selection for Sprint 65, then Phase 3 planning. Recorded runway (NOT approved): GP-7 -> GP-6 -> GP-10 -> closed-test submission.",
-    "plan_approved": false,
-    "blanket_execution_approved": false,
-    "scope": [],
-    "_scope_note": "Sprint 65 scope NOT yet selected. Harold's instruction was to run the checklist to backlog refinement, then do the Store release BEFORE selecting scope. Recorded runway (not yet approved): GP-7 -> GP-6 -> GP-10 -> closed-test submission."
+    "status": "Sprint 65 Phase 4 EXECUTION STARTING (2026-09-05). Plan approved. 5 tasks: GP-10 data safety, GP-18 app content + App access, GP-7 icons, GP-6 listing masters, GP-17 roster/rollout records. Coding est 125-225m; wall-clock 60-110m with parallel agents. Ordering follows VERIFIED Play gating (closed track sits behind the same complete-setup wall as production), not build dependency.",
+    "plan_approved": true,
+    "blanket_execution_approved": true,
+    "scope": [
+      "GP-10",
+      "GP-18",
+      "GP-7",
+      "GP-6",
+      "GP-17"
+    ],
+    "_scope_note": "Harold 2026-09-05: 'Sprint plan approved, proceed with execution. All Sprint tasks and sub-tasks are approved. Continue without additional approvals until Manual Validation.' Standing approval through MV per Phase 3.7.",
+    "plan_approval_date": "2026-09-05",
+    "pr_url": "https://github.com/kimmeyh/spamfilter-multi/pull/385"
   },
   "previous_sprint": {
     "number": 64,
@@ -21,18 +29,13 @@
     "status": "CLOSED -- PR #378 merged to develop 2026-09-04 12:38Z, develop merged to main same day via PR #379. All 10 cards (#368-#377) closed. Shipped the full Android release chain (app is Play-submittable), the Play developer account + published legal docs, F186/F187/F188. Final: 2,011 tests / 15 skipped / 0 failed, analyze clean, WinWright 2/2, Android chain validation 6/6, all 3 CI checks SUCCESS."
   },
   "github_issues": [
-    368,
-    369,
-    370,
-    371,
-    372,
-    373,
-    374,
-    375,
-    376,
-    377
+    380,
+    381,
+    382,
+    383,
+    384
   ],
-  "_github_issues_note": "Sprint 64 cards: #368 GP-16(+GP-5), #369 F186, #370 F187, #371 F188, #372 SEC-9, #373 GP-2, #374 GP-9, #375 GP-8, #376 GP-3, #377 SEC-4. Close on merge to develop (no auto-close).",
+  "_github_issues_note": "Sprint 65 cards created at Phase 3.3.1 (2026-09-05): #380 GP-10, #381 GP-18, #382 GP-7, #383 GP-6, #384 GP-17. Close by hand at Post-Merge Cleanup.",
   "test_metrics": {
     "tests_passing": 2011,
     "tests_skipped": 15,
@@ -60,9 +63,8 @@
   ],
   "blocking_issues": [],
   "next_actions": [
-    "Phase 8.4 refinement pass 2 -- SCOPE SELECTION for Sprint 65. Harold's call; this is the only thing outstanding. Recorded runway (NOT yet approved): GP-7 adaptive icons -> GP-6 listing assets -> GP-10 Data Safety form -> closed-test submission.",
-    "Sprint 65 planning note: the 12-tester/14-day Play closed test is the LONG POLE and its clock does not start until testers are enrolled -- recruitment before the code work saves ~2 weeks of wall time.",
-    "GP-10's Data Safety input is already prepared: the 9-permission list from Sprint 64's GP-3.",
-    "Dev worktree is at 0.14.0 and now EQUALS the live version -- bump at the NEXT release's Step 1, not before."
+    "Phase 3.3.1: create the 5 sprint cards + draft PR, THEN execute tasks",
+    "Execute GP-10, GP-18, GP-7 in parallel (independent); GP-6 after GP-7 (needs the icon); GP-17 records last",
+    "Phase 5 evidence gates (5.1.1 review, 5.1.2 F-PRECHECK, 5.1.5 WinWright, 5.1.6 launch gate), then present MV recommendations to Harold"
   ]
 }
