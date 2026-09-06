@@ -390,15 +390,26 @@ _(F149 shipped Sprint 57 -- see `docs/sprints/SPRINT_57_PLAN.md` and CHANGELOG.m
 
 Recorded sequencing honored (see 'Recommended Sequencing' in the GP section below): account first, privacy early, technical features as sprint work, Data Safety after privacy, listing before submission, CASA trigger-gated last. Supersessions recorded this refinement: F4 (Android background scanning) was DELIVERED as F161 in Sprint 61; Issue #163 (Android untested) is RESOLVED by the continuous Sprint 59-62 on-device validation.
 
-**GP-10. Data Safety Form Declarations (~2-4h) Priority 40 (ACTIVATED off HOLD 2026-08-24 -- Harold: 'everything Android related... along with the gp-n items') -- after GP-5**
+**GP-17. Closed-test tester recruitment + closed-track rollout -- START THE 14-DAY CLOCK (~2-4h active, then a 14-day wait) Priority 30 (NEW, Sprint 65 refinement -- Harold asked the ordering question this item answers)**
+- Phase: Android Google Play Store Readiness
+- Platform: Android
+- **This is the critical path to a live Play listing, and it is a CALENDAR dependency, not a code one.** A personal developer account created after 2023-11-13 cannot reach production until 12 testers have been opted in CONTINUOUSLY for 14 days, after which Google reviews the testing evidence.
+- The 14-day clock starts on tester OPT-IN, not on upload and not on invitation, so recruitment is the true long pole. Testers count only after they open the closed-track link AND complete opt-in; each needs a Google account and an Android device.
+- The signed uploadable build ALREADY EXISTS (Sprint 64 shipped the whole release chain), so nothing in GP-6/GP-7/GP-10 blocks a closed-track upload on code grounds.
+- Scope: recruit and confirm 12 testers, create the closed-testing track, roll out a build to it, distribute the opt-in link, and CONFIRM each opt-in landed. Then the wait runs while the listing work proceeds in parallel.
+- Ordering consequence: done LAST, the 14 days begin after all listing work and cost ~2 extra weeks of wall time for nothing. Done FIRST, the listing work fills the wait.
+- Depends on: whatever Play actually gates a closed-track rollout on (verified at Sprint 65 planning -- Data Safety and content rating may be required even for a closed track, in which case GP-10 precedes the rollout by a few hours, not weeks).
+- Source: Harold, 2026-09-05 -- "does the list include known timing dependencies that should drive the order these are completed to get onto the Google Play store as quickly as reasonably possible?" The refinement slate had ordered by BUILD dependency and buried the calendar dependency in prose; this item exists so the schedule driver is a tracked backlog entry rather than a remark.
+
+**GP-10. Data Safety Form Declarations (~2-4h) Priority 32 (ACTIVATED off HOLD 2026-08-24; RE-PRIORITISED 2026-09-05 by time-to-live) -- after GP-5, and BEFORE the closed-track rollout if Play gates one on it**
 - Phase: Android Google Play Store Readiness
 - Platform: Android
 
-**GP-6. Play Store Listing and Assets (~8-12h) Priority 42 (ACTIVATED off HOLD 2026-08-24 -- Harold: 'everything Android related... along with the gp-n items') -- before submission**
+**GP-6. Play Store Listing and Assets (~8-12h) Priority 36 (ACTIVATED off HOLD 2026-08-24; RE-PRIORITISED 2026-09-05 -- runs DURING the 14-day wait; needs GP-7's icon) -- before submission**
 - Phase: Android Google Play Store Readiness
 - Platform: Android
 
-**GP-7. Adaptive Icons and App Branding (~4-6h) Priority 44 (ACTIVATED off HOLD 2026-08-24 -- Harold: 'everything Android related... along with the gp-n items')**
+**GP-7. Adaptive Icons and App Branding (~4-6h) Priority 34 (ACTIVATED off HOLD 2026-08-24; RE-PRIORITISED 2026-09-05 -- runs DURING the 14-day wait, not before it)**
 - Phase: Android Google Play Store Readiness
 - Platform: Android
 
