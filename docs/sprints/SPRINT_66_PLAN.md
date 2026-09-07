@@ -309,3 +309,35 @@ A clean-tree baseline is what exposed it: 2,039/15/0 in 1:40 with my work stashe
 **Lesson: restoring `pubspec.yaml` does not restore what resolving it produced.** A mutation
 on a dependency manifest has to revert the lock file and any generated registration too. Worth
 carrying into the mutation-lock contract.
+
+---
+
+## Manual Validation -- results (Phase 5.3, IN PROGRESS 2026-09-07)
+
+- **Version display** -- PASS. The dev app now reads 0.14.0 [DEV]. Harold's earlier "0.13.0
+  [DEV] while production shows 0.14.0" was a STALE BINARY, not a source defect: the exe dated
+  09-03, one day before the version bump landed on 09-04. Both worktrees and the live Store
+  agree at 0.14.0. Rebuilt and confirmed.
+- **Gmail background scan (Windows)** -- **PASS** (Harold: "Started background scan on gmail
+  and it completed. as expected"). **This is the regression check that mattered most this
+  sprint.** GP-4 removed two scope declarations from SHARED authentication code
+  (`google_auth_service.dart`); both had zero call sites, but "zero call sites" is a static
+  claim. A background scan that completes end to end exercises authentication, token handling,
+  the provider connection and rule evaluation together, which is the behavioural proof the
+  static check cannot give (`feedback_source_gates_verify_shape`).
+- **AOL background scan (Windows)** -- Harold ran it; result pending. Worth having as a
+  SECOND provider on a DIFFERENT code path: AOL authenticates by app password over IMAP while
+  Gmail here uses the Gmail API path, so the two together cover both authentication routes the
+  app ships.
+- Steps 3-5 (Play Console entry, asset capture, tester recruitment) are Harold-driven and
+  outstanding.
+
+### A launch-diagnosis mistake worth recording
+
+Harold reported the Windows app "not running" shortly after I had confirmed it launched
+cleanly. Both were true: my diagnostic launch started the app, verified it, and then
+deliberately killed it to read the exit state -- which from his side is indistinguishable from
+a failed launch. Fixed by a new standing rule
+(`feedback_launch_apps_without_asking`): never ask whether to start an app (the answer is
+always yes), and LEAVE IT RUNNING; if a probe must terminate the process, relaunch it and say
+so.
