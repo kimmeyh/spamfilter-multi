@@ -18,6 +18,22 @@
 > This file is the REPO COPY. The LIVE Partner Center listing must be edited by Harold for
 > the correction to reach users; presented to him 2026-09-06.
 
+> **SUBMISSION 22 (2026-09-06/07), listing-only update -- no new package.** Three changes,
+> all made by Harold in Partner Center:
+> 1. Description "Privacy First" paragraph rewritten (text below) so the local-only promise
+>    LEADS rather than arriving as an exception, and so the 100-character preview is
+>    explicitly described as saved on the device.
+> 2. Privacy policy URL set to the canonical GP-5 address.
+> 3. **Product declaration "Windows can include this product's data in automatic backups to
+>    OneDrive" UNCHECKED.** Found while reviewing the Properties page against the new
+>    description. The app transmits nothing, so the claim was literally true either way --
+>    but that declaration lets WINDOWS copy the app-support folder (rules DB, scan history,
+>    the 100-character previews, encrypted credentials) to the user's OneDrive. A reader of
+>    "Everything stays on your device" would not expect their scan history in the cloud.
+>    Unchecking it keeps the description true with no asterisk, which is the whole value of
+>    the rewrite. Trade-off accepted: no automatic backup, mitigated by the app's existing
+>    YAML rule import/export.
+
 **Privacy Policy URL**: https://myemailspamfilter.com/legal/PRIVACY_POLICY.html
 **Website**: https://myemailspamfilter.com
 **Support Contact**: kimmeyh@outlook.com
@@ -68,7 +84,7 @@ Set up automatic background scans to check your inbox periodically. Configure sc
 Run manual scans on demand to check your inbox immediately. Try Demo Mode with 50+ sample emails to explore the app features without connecting a real email account.
 
 **Privacy First**
-Your privacy is a core design principle. MyEmailSpamFilter does not collect analytics, telemetry, or usage data. Email content is read during scans and is not retained, except that a short excerpt of up to 100 characters is kept for messages awaiting your review, so you can decide what to do with them. All credentials are encrypted and stored locally on your device. You are in full control of your data and can delete everything at any time.
+Your privacy is a core design principle. Everything stays on your device. MyEmailSpamFilter does not collect analytics, telemetry, or usage data, and it sends nothing to us or to anyone else. Your rules, your scan history, and your credentials are stored locally and encrypted on your device. Email content is read during a scan and is not kept, apart from a short excerpt of up to 100 characters saved on your device for messages awaiting your review, so you can see what they were when you decide what to do with them. All credentials are encrypted and stored locally on your device. You are in full control of your data and can delete everything at any time.
 
 **Offline Operation**
 Rules and configuration are stored locally. The app only connects to the internet when scanning your email server. No cloud account or subscription required.
