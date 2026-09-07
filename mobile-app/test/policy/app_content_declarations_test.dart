@@ -207,24 +207,48 @@ void main() {
     final declarationsStart =
         content.indexOf('App content declarations (as submitted)');
     expect(declarationsStart, greaterThan(-1));
-    final rosterStart = content.indexOf('Closed-test tester roster');
-    expect(rosterStart, greaterThan(declarationsStart));
-    final section = content.substring(declarationsStart, rosterStart);
+    // End the scanned range at whichever GP-19 section comes first. Sprint 66
+    // inserted "Tester onboarding instructions" between the declarations and
+    // the roster, and the original end-anchor silently swallowed it.
+    final endCandidates = [
+      content.indexOf('Tester onboarding instructions'),
+      content.indexOf('Closed-test tester roster'),
+    ].where((i) => i > declarationsStart);
+    expect(endCandidates, isNotEmpty,
+        reason: 'could not find a section boundary after the App content '
+            'declarations -- update this gate rather than widening its range');
+    final section =
+        content.substring(declarationsStart, endCandidates.reduce((a, b) => a < b ? a : b));
 
-    // A password/credential field shape: "password", "pwd", or a literal
-    // assignment-like pattern (key: value where key suggests a secret).
-    final credentialMarkers = <String>[
-      'password:',
-      'Password:',
-      'app password',
-      'App Password',
+    // Look for a credential VALUE, not the WORDS for one.
+    //
+    // The original list included the bare phrases "app password" and "App
+    // Password", which made the gate unable to tell "a tester must create an
+    // app password" from an actual pasted secret. GP-19's tester instructions
+    // use that phrase legitimately dozens of times -- the gate fired on
+    // correct documentation, which is a false positive that trains people to
+    // weaken gates.
+    //
+    // The real leak shape is an assignment: a key that names a secret,
+    // followed by a value. That is what these patterns match, and it is what
+    // the App access decision (Demo Mode over a test account) exists to keep
+    // out of this file.
+    final credentialPatterns = <RegExp>[
+      // Dart's RegExp has no inline (?i) flag -- use caseSensitive: false.
+      RegExp(r'\b(password|passwd|pwd|secret|token|api[_ ]?key)\s*[:=]\s*\S+',
+          caseSensitive: false),
+      RegExp(r'\bapp[- ]password\s*[:=]\s*\S+', caseSensitive: false),
     ];
-    final foundMarkers =
-        credentialMarkers.where((m) => section.contains(m)).toList();
+    final foundMarkers = credentialPatterns
+        .map((p) => p.firstMatch(section)?.group(0))
+        .where((m) => m != null)
+        .toList();
     expect(foundMarkers, isEmpty,
         reason: 'the App content / App access sections must never carry a '
-            'credential field -- found marker(s): $foundMarkers. This is '
-            'exactly the leak option (b) was chosen to avoid.');
+            'credential VALUE -- found: $foundMarkers. This is exactly the '
+            'leak that choosing Demo Mode over a test account avoids. Note '
+            'this matches an assignment, not the words: documentation may '
+            'freely SAY "app password" while never containing one.');
 
     // Bare email-address shape, EXCLUDING addresses this test can prove are
     // NOT a reviewer credential: the developer's own already-public address

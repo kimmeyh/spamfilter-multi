@@ -339,6 +339,68 @@ submission -- not assumed to work from the source trace alone. Record here when 
 |---|---|---|---|
 | (pending) | | | |
 
+## Tester onboarding instructions (GP-19, Sprint 66)
+
+**Send this to each tester.** Recruitment is the long pole -- the 14-day clock starts when a
+tester OPTS IN, not when the build is rolled out -- so send it as soon as the closed track
+exists rather than waiting for everything else to be perfect.
+
+### Why App Password and not "Sign in with Google"
+
+The app offers both. **Testers should use App Password (IMAP)**, which is the option the app
+already labels "(Recommended)" on the Gmail sign-in screen.
+
+The reason is specific to a 14-day test: an app password does not expire on a schedule, so a
+tester signs in ONCE and stays connected for the whole test. Google Sign-In on an app that has
+not completed OAuth verification expires its token after about 7 days, which would sign every
+tester out halfway through and generate "the app logged me out" reports that have nothing to do
+with spam filtering -- during exactly the window whose evidence Google reviews.
+
+This applies to Gmail testers too. They do NOT need a second, non-Gmail account: Gmail via app
+password is a first-class path in the app.
+
+### What to send a tester
+
+> Thanks for helping test MyEmailSpamFilter on Android.
+>
+> **What it does**: it scans your inbox and filters spam using rules you control. Everything
+> runs on your device -- nothing is sent anywhere.
+>
+> **Before you start**, you need an app password for your email account. This requires 2-Step
+> Verification to be turned on. For Gmail: turn on 2-Step Verification in your Google account
+> security settings, then create an app password there. AOL, Yahoo and iCloud have the same
+> feature under their own security settings.
+>
+> **Then**:
+> 1. Open the closed-test link I sent and tap to join. **This step is what counts** -- if you
+>    do not complete it, you are not registered as a tester.
+> 2. Install the app from Google Play.
+> 3. Open it, tap "Add Account", choose your provider.
+> 4. For Gmail, choose **"App Password (IMAP)"** -- the first option, marked Recommended. Do
+>    NOT choose "Google Sign-In".
+> 5. Enter your email address and the app password you created (not your normal password).
+> 6. Run a scan and see what it finds.
+>
+> **Please stay opted in for at least 14 days.** If you leave and rejoin, the clock restarts
+> for you, which delays the whole launch.
+>
+> **Tell me anything you notice** -- confusing screens, wrong decisions about your mail, things
+> you expected and did not find. Google asks what testers reported and what changed as a
+> result, so genuine feedback is more useful than reassurance.
+
+### The one step that trips people
+
+Creating an app password requires 2-Step Verification to be enabled first. If a tester says the
+app password option is missing from their account settings, that is why. Say it up front rather
+than debugging it later.
+
+### What counts, and what does not
+
+- An INVITATION is not an opt-in. A tester counts only after they open the link and complete
+  the join. Confirm each one rather than assuming.
+- Opting out breaks the streak. Re-joining restarts that tester's 14 days from ZERO, which is
+  why the target is 14-16 testers rather than exactly 12.
+
 ## Closed-test tester roster and the 14-day clock (GP-17, Sprint 65)
 
 **Why this section exists**: the 12-tester / 14-continuous-day closed test is the single longest
