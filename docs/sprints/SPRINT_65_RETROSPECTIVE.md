@@ -183,6 +183,31 @@ label containing the asserted substring exists in `lib/`.
 
 ---
 
+## Improvement Decisions (Phase 7.6)
+
+**Harold's decision (2026-09-06): "All now as amended"**, with two amendments recorded
+verbatim:
+
+- On IMP-1: *"needs to include understanding how it happened and making a change so that it
+  is very unlikely to not happen again (maybe something done in a deterministic way --
+  specific process and checklist to follow after every task completes or the next task
+  starts or before commit of the validated changes...)"*
+- On IMP-4: *"if you present to me, I can do it while you are completing the other
+  recommendations - do now."*
+
+| # | Improvement | Type | Decision | Applied |
+|---|-------------|------|----------|---------|
+| 1 | Velocity actuals + a gate for the rule that let them go missing | process | apply now, AMENDED | Root cause: Rule 4 is a coverage guarantee and Rule 6 calls it a Phase 7 exit gate -- in PROSE ONLY. Cards and the draft PR have hard hooks and are never missed; velocity had documentation and was missed silently. `verify-closeout-complete.ps1` now fails a close-out claim when the Actuals Log has no row for the sprint. 6 rows recorded from MEASURED agent durations. |
+| 2 | Audit-first check in the card template | process | apply now | New MANDATORY section in `SPRINT_PLANNING.md`: before writing a "build X" card, answer "is X already true in the codebase?" Two sprints running (S64 GP-8, S65 GP-7) a build card was really a verify card. |
+| 3 | Substring-shadow guard for UI-string assertions | tests | apply now | New `ui_string_assertion_shadow_test.dart`. Registers each exact UI string a gate asserts and fails if a LONGER label in `lib/` contains it. Mutation-verified against the original defect: registering the shadowed "Try Demo Mode" goes RED and names "Try Demo Mode instead" as the shadowing label. |
+| 4 | Correct the two stale Windows Store listing claims | docs | apply now (presented first, per Harold) | Corrected text handed to Harold for the LIVE Partner Center edit; repo copy fixed with a note recording that the repo copy alone does not reach users. |
+| 5 | Mutation lock as standing agent behaviour | process | apply now | Added to `CLAUDE.md` beside the staging rule it complements, with both Sprint 65 incidents and the reason vigilance was insufficient. |
+
+**Post-improvement verification**: 2,039 tests passing / 15 skipped / 0 failing (+2 from the
+shadow guard). Analyzer clean.
+
+---
+
 ## Sprint 65 Outcome Summary
 
 **Delivered**: 5 of 5 tasks. The Android app is now Play-submittable end to end: every
