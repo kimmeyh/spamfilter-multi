@@ -116,8 +116,20 @@ void main() {
         // Real-event-loop time for ScanProgressScreen.initState's
         // SettingsStore (sqflite-FFI) load to resolve, per the documented
         // pumpAndSettle-hangs-on-FFI hazard.
-        await Future<void>.delayed(const Duration(milliseconds: 400));
-        await tester.pump();
+        //
+        // Polled rather than slept for the same reason as the scan wait
+        // below: a flat 400ms is a guess about how long an FFI database read
+        // takes, and a loaded CI machine can exceed it. Waiting for the
+        // BUTTON to exist is waiting for the actual precondition -- the next
+        // assertion needs it, so poll for it directly.
+        final startDemoScanFinder = find.text('Start Demo Scan (Testing)');
+        final settleDeadline =
+            DateTime.now().add(const Duration(seconds: 10));
+        while (DateTime.now().isBefore(settleDeadline) &&
+            startDemoScanFinder.evaluate().isEmpty) {
+          await Future<void>.delayed(const Duration(milliseconds: 50));
+          await tester.pump();
+        }
 
         // AC-2 step 2: the reviewer instructions must name a SECOND button
         // -- "Start Live Scan" would fail with no account. This is the one
@@ -126,7 +138,10 @@ void main() {
         // By TEXT, not byType(ElevatedButton): ElevatedButton.icon
         // constructs a private subtype whose runtimeType does not match
         // byType (established pattern, settings_null_account_test.dart).
-        final startDemoScan = find.text('Start Demo Scan (Testing)');
+        // Declared above as startDemoScanFinder because the settle poll
+        // waits on this exact widget -- one finder, so the thing waited for
+        // and the thing asserted can never drift apart.
+        final startDemoScan = startDemoScanFinder;
         expect(startDemoScan, findsOneWidget,
             reason: 'the reviewer instructions must point at this button '
                 'specifically, not "Start Live Scan"');
@@ -135,11 +150,38 @@ void main() {
 
         // The demo scan processes 50+ sample emails through MockEmailProvider
         // (simulated per-call network delay) and the real RuleEvaluator
-        // against MockEmailData.getDemoRuleSet(). Give the real event loop
-        // enough time for the whole batch to complete and the navigation to
-        // ResultsDisplayScreen to occur.
-        await Future<void>.delayed(const Duration(seconds: 5));
-        await tester.pump();
+        // against MockEmailData.getDemoRuleSet(). `pumpAndSettle` cannot be
+        // used here -- see this file's header for the documented FFI hang --
+        // so the wait is driven manually.
+        //
+        // POLL, do not sleep a fixed budget (Copilot review of PR #385). The
+        // previous form waited a flat 5 seconds. MockEmailProvider's default
+        // operationDelayMs is 100ms and the demo set is 59 emails, so the
+        // scan's own wall time sits within a second of that budget: the test
+        // was coupled to BOTH the mock delay and the sample count, and would
+        // start failing intermittently if either grew or CI ran loaded. The
+        // failure would look like a product defect rather than a timing one,
+        // which is the expensive part.
+        //
+        // Polling is also FASTER in the normal case: it exits the moment the
+        // screen appears rather than always paying the worst case.
+        const pollInterval = Duration(milliseconds: 100);
+        const pollTimeout = Duration(seconds: 30);
+        final deadline = DateTime.now().add(pollTimeout);
+        var arrived = false;
+        while (DateTime.now().isBefore(deadline)) {
+          await Future<void>.delayed(pollInterval);
+          await tester.pump();
+          if (find.byType(ResultsDisplayScreen).evaluate().isNotEmpty) {
+            arrived = true;
+            break;
+          }
+        }
+        expect(arrived, isTrue,
+            reason: 'the demo scan did not reach ResultsDisplayScreen within '
+                '${pollTimeout.inSeconds}s. The timeout is generous on '
+                'purpose -- if this fires, suspect a real hang or a broken '
+                'navigation contract, not a slow machine');
         await tester.pump(const Duration(milliseconds: 100));
 
         expect(find.byType(ResultsDisplayScreen), findsOneWidget,
