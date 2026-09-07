@@ -406,37 +406,15 @@ _(F149 shipped Sprint 57 -- see `docs/sprints/SPRINT_57_PLAN.md` and CHANGELOG.m
 
 Recorded sequencing honored (see 'Recommended Sequencing' in the GP section below): account first, privacy early, technical features as sprint work, Data Safety after privacy, listing before submission, CASA trigger-gated last. Supersessions recorded this refinement: F4 (Android background scanning) was DELIVERED as F161 in Sprint 61; Issue #163 (Android untested) is RESOLVED by the continuous Sprint 59-62 on-device validation.
 
-**GP-18. App content declarations for Play review -- incl. APP ACCESS reviewer credentials (~3-5h) Priority 33 (NEW, Sprint 65 refinement -- surfaced by the closed-track gating research, previously untracked)**
+**GP-19. Play Console entry + asset capture + closed-track rollout -- START THE 14-DAY CLOCK (~2-4h Harold-driven, then a 14-day wait) Priority 30 (NEW, Sprint 66 refinement -- the remaining half of Sprint 65's repo work)**
 - Phase: Android Google Play Store Readiness
 - Platform: Android
-- **Every item in Play's "App content" checklist blocks a CLOSED-track rollout, not just production** -- Google's rule is "you can start a closed test after completing your app setup". Nothing here can be deferred to the production application.
-- Items: content rating questionnaire, target audience and content, ads declaration, government apps declaration, financial features declaration, news app declaration, health apps declaration (conditional ones still must be ANSWERED, not skipped).
-- **APP ACCESS is the sharp edge and the likely long pole.** A spam filter demonstrates nothing without a working email account, so the reviewer needs either dedicated test credentials or written instructions. Decide which: a dedicated throwaway mail account with seeded spam is the more reliable route, since instructions alone leave a reviewer unable to exercise the core flow. This blocks the closed rollout.
-- Depends on: GP-5 privacy policy (DONE, Sprint 64).
-- Source: closed-track gating research, 2026-09-05. Nothing in GOOGLE_PLAY_ACCOUNT_SETUP.md or this plan tracked App access before this entry -- it would have been discovered as a blocker mid-rollout.
-
-**GP-17. Closed-test tester recruitment + closed-track rollout -- START THE 14-DAY CLOCK (~2-4h active, then a 14-day wait) Priority 38 (RE-ORDERED 2026-09-05: the rollout is LAST, because everything else gates it; recruitment still starts FIRST and runs in parallel) (NEW, Sprint 65 refinement -- Harold asked the ordering question this item answers)**
-- Phase: Android Google Play Store Readiness
-- Platform: Android
-- **This is the critical path to a live Play listing, and it is a CALENDAR dependency, not a code one.** A personal developer account created after 2023-11-13 cannot reach production until 12 testers have been opted in CONTINUOUSLY for 14 days, after which Google reviews the testing evidence.
-- The 14-day clock starts on tester OPT-IN, not on upload and not on invitation, so recruitment is the true long pole. Testers count only after they open the closed-track link AND complete opt-in; each needs a Google account and an Android device.
-- **CORRECTED 2026-09-05 by the gating research**: an earlier draft of this item assumed the clock could start before the listing work. It cannot. Closed testing sits behind the SAME "complete app setup" wall as production -- full store listing (icon, feature graphic, 2+ screenshots, descriptions), Data safety, content rating and every App content declaration must be complete BEFORE a closed-track rollout. Only INTERNAL testing skips setup, and internal-test days earn ZERO credit toward the 12/14. The signed build exists (Sprint 64), but the build was never the blocker.
-- Scope: recruit and confirm 12 testers, create the closed-testing track, roll out a build to it, distribute the opt-in link, and CONFIRM each opt-in landed. Then the wait runs while the listing work proceeds in parallel.
-- Ordering consequence: done LAST, the 14 days begin after all listing work and cost ~2 extra weeks of wall time for nothing. Done FIRST, the listing work fills the wait.
-- Depends on: GP-6, GP-7, GP-10 and GP-18 ALL complete -- verified, not assumed. Recruit 14-16 testers rather than exactly 12: opt-out breaks the streak and re-opting-in restarts the 14 days from zero, so margin protects the schedule. Production access is then a SUBSTANTIVE ~7-day review asking what testers reported and what changed as a result -- so collect real feedback during the wait; thin answers are a known rejection cause.
-- Source: Harold, 2026-09-05 -- "does the list include known timing dependencies that should drive the order these are completed to get onto the Google Play store as quickly as reasonably possible?" The refinement slate had ordered by BUILD dependency and buried the calendar dependency in prose; this item exists so the schedule driver is a tracked backlog entry rather than a remark.
-
-**GP-10. Data Safety Form Declarations (~2-4h) Priority 32 (ACTIVATED off HOLD 2026-08-24; RE-PRIORITISED 2026-09-05 by time-to-live) -- after GP-5, and BEFORE the closed-track rollout if Play gates one on it**
-- Phase: Android Google Play Store Readiness
-- Platform: Android
-
-**GP-6. Play Store Listing and Assets (~8-12h) Priority 36 (ACTIVATED off HOLD 2026-08-24; RE-PRIORITISED 2026-09-05 -- runs DURING the 14-day wait; needs GP-7's icon) -- before submission**
-- Phase: Android Google Play Store Readiness
-- Platform: Android
-
-**GP-7. Adaptive Icons and App Branding (~4-6h) Priority 34 (ACTIVATED off HOLD 2026-08-24; RE-PRIORITISED 2026-09-05 -- runs DURING the 14-day wait, not before it)**
-- Phase: Android Google Play Store Readiness
-- Platform: Android
+- **Sprint 65 finished everything that could be done IN THE REPO. This is the half that can only be done in the console and on a device**, and it is the last thing standing between the app and a live Play listing.
+- Scope: (a) enter the GP-10 Data safety declarations and the GP-18 App content declarations from `docs/GOOGLE_PLAY_ACCOUNT_SETUP.md`; (b) capture the feature graphic and 5 phone screenshots per `docs/store-assets/android/ASSET_SPEC.md` -- from the REAL Android build, using Demo Mode so no personal address or subject reaches a public listing; (c) enter the GP-6 listing copy; (d) roll out to the closed track.
+- **RECRUITMENT STARTS FIRST, in parallel with all of the above.** The 14-day clock begins on tester OPT-IN, not on rollout, so testers found late extend the calendar directly. Target 14-16, not exactly 12: opt-out restarts that tester's 14 days from zero.
+- The `play_listing_assets_test` gate already names every expected asset filename and prints a PENDING list until they exist, so progress is mechanically visible rather than remembered.
+- After the 14 days: production access is a SUBSTANTIVE ~7-day review asking what testers reported and what changed as a result. Thin answers are a documented rejection cause, so the feedback log in the roster is a deliverable.
+- Depends on: nothing in the repo. Everything it needs was shipped in Sprint 65.
 
 **GP-4. Gmail API OAuth Verification / CASA (~40-80h) Priority 60 (ACTIVATED off HOLD 2026-08-24 -- Harold: 'everything Android related... along with the gp-n items') -- keep LAST per its recorded trigger**
 - Phase: Android Google Play Store Readiness
@@ -1215,11 +1193,11 @@ is the long pole**, so tester recruitment should start BEFORE the code work, not
 | GP-3 | Android Manifest Permissions | ~4-6h | ADR-0028 (Proposed) | BLOCKING | [OK] COMPLETE (Sprint 64) -- exactly 9 justified permissions; GP-10's input |
 | GP-4 | Gmail API OAuth Verification (CASA) | ~40-80h | ADR-0029 (Accepted) | BLOCKING | HOLD -- trigger: 2,500+ users or $5K/yr revenue |
 | GP-5 | Privacy Policy and Legal Documents | ~8-16h | ADR-0030 (Accepted) | BLOCKING | [OK] COMPLETE (Sprint 64) -- PUBLISHED at myemailspamfilter.com/legal |
-| GP-6 | Play Store Listing and Assets | ~8-12h | -- | HIGH | ACTIVE -- Sprint 65 runway (after GP-7) |
-| GP-7 | Adaptive Icons and App Branding | ~4-6h | ADR-0031 (Proposed) | HIGH | ACTIVE -- Sprint 65 runway (first) |
+| GP-6 | Play Store Listing and Assets | ~8-12h | -- | HIGH | [OK] REPO WORK COMPLETE (Sprint 65) -- listing copy + asset spec + cross-store comparison + gate. CONSOLE ENTRY and SCREENSHOT CAPTURE remain Harold's (Sprint 66). |
+| GP-7 | Adaptive Icons and App Branding | ~4-6h | ADR-0031 (Proposed) | HIGH | [OK] COMPLETE (Sprint 65) -- audit found the adaptive icons ALREADY correct at all five densities; only the 512x512 listing icon was produced. |
 | GP-8 | Android Target SDK + 16 KB Page Size | ~4-8h | -- | MEDIUM | [OK] COMPLETE (Sprint 64) -- verify PASS: already API 36, 16KB aligned |
 | GP-9 | ProGuard/R8 Code Optimization | ~4-6h | -- | HIGH | [OK] COMPLETE (Sprint 64) -- R8 + obfuscation, -12.8% APK |
-| GP-10 | Data Safety Form Declarations | ~2-4h | -- | BLOCKING | ACTIVE -- Sprint 65 runway (after GP-6); input ready = the 9 permissions from GP-3 |
+| GP-10 | Data Safety Form Declarations | ~2-4h | -- | BLOCKING | [OK] REPO WORK COMPLETE (Sprint 65) -- declarations recorded WITH code evidence and gated. CONSOLE ENTRY remains Harold's (Sprint 66). |
 | GP-11 | Account and Data Deletion Feature | ~8-12h | ADR-0032 (Proposed) | HIGH | HOLD |
 | GP-12 | Firebase Analytics Decision | ~2-4h | ADR-0033 (Accepted) | MEDIUM | [OK] COMPLETE (Sprint 63) -- Firebase Analytics removed |
 | GP-13 | Persistent Gmail Auth for Production | 0h | -- | -- | RESOLVED (merged with F12, see ADR-0029/0034) |
