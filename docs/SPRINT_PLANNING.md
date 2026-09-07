@@ -333,6 +333,28 @@ A task is "done" only when all of the following are true (a card lists only *add
 7. Docs / ADR / ARCHITECTURE updated if behavior or architecture changed (architecture-docs-no-defer rule).
 8. Decision-class check: no un-surfaced Class-1/2/3 change was made (CLAUDE.md Decision-Class Taxonomy).
 
+### Audit-first check (MANDATORY at planning -- Sprint 65 retro IMP-2)
+
+Before writing a card that says "build X", answer one question in the card itself:
+
+> **Is X already true in the codebase?**
+
+Two sprints running, a "build it" card turned out to be a "verify it" card:
+
+- **Sprint 64 GP-8** (target API level + 16KB alignment): the build ALREADY met the
+  post-August-2026 Play requirement. The task was the verification, not a change.
+- **Sprint 65 GP-7** (adaptive icons): the adaptive config and all five densities were
+  ALREADY correct. Only the 512x512 listing icon genuinely had to be produced, and the task
+  came in under estimate BECAUSE the card required an audit before any regeneration.
+
+The cost of asking is a grep. The cost of not asking is a card estimated and staffed as
+implementation work that is really an audit -- and worse, an agent that "fixes" something
+already correct and has to be reviewed for what it disturbed. Where the answer is "partly",
+say which part, so the card scopes to the gap rather than the whole surface.
+
+This is a planning question, not an execution one: it belongs in the card's Requirements
+(as an R-1 "audit first, build second"), which is exactly how GP-7 was written.
+
 ### Definition of Ready (one line)
 
 A task is **Ready** to start when Value, Requirements, Affected files, Dependencies, Acceptance criteria, and Tests-to-write are filled in, and no open Class-1/2/3 question remains.

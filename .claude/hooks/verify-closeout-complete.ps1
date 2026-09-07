@@ -284,6 +284,35 @@ if ($prevSprint -gt 0) {
     }
 }
 
+# 3b-2. CODING_VELOCITY.md actuals coverage (Sprint 65 retro IMP-1)
+#
+# WHY THIS EXISTS. CODING_VELOCITY.md Rule 4 is a COVERAGE GUARANTEE: every
+# Item that gets implemented gets a row, logged at task completion rather
+# than batched at sprint end, because memory decays. Rule 6 makes it a Phase
+# 7 EXIT GATE in words -- but nothing enforced it, so Sprint 65 reached its
+# retrospective with ZERO rows recorded and I only noticed while writing the
+# retrospective itself.
+#
+# That is the whole failure mode: the rule was documented, agreed, and
+# invisible. Cards and the draft PR have hard gates and are never missed;
+# velocity had only prose and was missed silently. Same class of gap, so it
+# gets the same class of fix.
+#
+# The check is deliberately coarse -- it asks whether this sprint appears in
+# the Actuals Log at all, not whether every task is present. A precise
+# per-task check would need to parse the plan's task list and would fail on
+# legitimate shapes (verify-only tasks, mid-sprint scope). Catching "zero
+# rows" catches the real failure; the estimates only degrade when the sprint
+# contributes nothing.
+$velocityPath = Join-Path $cwd 'docs/CODING_VELOCITY.md'
+if (Test-Path -LiteralPath $velocityPath) {
+    $velocityText = Get-Content -LiteralPath $velocityPath -Raw
+    # Actuals Log rows carry the sprint number in its own table column.
+    if ($velocityText -notmatch "\|\s*$sprintNum\s*\|\s*DONE\s*\|") {
+        $violations += "docs/CODING_VELOCITY.md has NO Actuals Log row for Sprint $sprintNum. Rule 4 is a coverage guarantee -- every implemented Item gets a row, recorded AT TASK COMPLETION, not batched at sprint end. Rule 6 makes it a Phase 7 exit gate. Without actuals this sprint contributes nothing to the estimate table, which is the entire purpose of the tracker, and the next sprint's estimates are guesses again. Add a row per Item: | <Item> | $sprintNum | DONE | <est> | <est-wall> | <act> | <act-wall> | <notes> |"
+    }
+}
+
 # 3c. open sprint-labeled GitHub issues -- POST-MERGE ONLY
 #
 # "Review and close all resolved GitHub issues" lives under the checklist's

@@ -1,71 +1,60 @@
 {
   "_description": "Sprint status file that persists across context compaction. Update after each phase/sub-phase completion.",
-  "_last_updated": "2026-09-04 (Sprint 64 Phase 7.7 close-out: retrospective + all 6 improvements applied, Phase 5 evidence gates recorded, docs triad complete; PR #378 Ready-for-Review pending final checks)",
+  "_last_updated": "2026-09-07 (Sprint 65 Phase 7.7 close-out complete; PR #385 Ready-for-Review pending Harold's merge)",
   "_usage": "Read this file after context compaction to restore sprint approval state and progress.",
   "_staleness_note": "This file had drifted 15 sprints (last updated at Sprint 35, 2026-04-19) before being refreshed at Sprint 50 close-out. It is a Phase 7.7 checklist item -- update it at every sprint close-out, not opportunistically.",
   "current_sprint": {
-    "number": 64,
-    "branch": "feature/20260827_Sprint_64",
-    "pr_number": 378,
-    "start_date": "2026-08-27",
-    "status": "Sprint 64 COMPLETE through Phase 7.7 (2026-09-04). All 11 tasks done. Android chain validation 6/6 PASS on the signed R8-minified 0.13.0 release APK -- strongest evidence: WorkManager resolved dev.fluttercommunity.workmanager.BackgroundWorker BY FULL NAME on the minified build with the job registered in dumpsys jobscheduler, proving the single R8 keep rule rather than inferring it. MANUAL VALIDATION (2026-09-02/03): F186 produced 2 findings, Harold chose option 1 (fix both now) -- retest PASS incl. the duplicate refusal; signing-file password left plaintext (Harold option 2). PHASE 5.1.1 REVIEW (3 parallel passes incl. a dedicated silent-failure hunt): 8 findings, 2 CRITICAL, all verified against source before fixing, all fixed with tests. The 2 criticals were both silent and user-reachable in RuleEditScreen: no INBOUND 'keyword' mapping (a body rule reopened as a DOMAIN rule and a plain Save rewrote its type), and the save path derived the condition bucket from the ORIGINAL rule while sub-type followed the selection (switching any rule to Body Phrase wrote the phrase into condition_header -- looked correct in the list, could never match). F-PRECHECK class 1 independently caught RuleEditScreen as the un-swept parallel site. MUTATION VERIFICATION REVERSED A CONCLUSION TWICE: an agent's F188 mutation claim did not survive re-running it, and the edit-screen category fix stayed GREEN under mutation -- proof the fix had no test, which prompted the round-trip save test that now reds it. Copilot: 1 real finding (the F188 sweep was defined but never invoked outside tests), fixed + replied. RETRO: Harold rated all 12 rated categories 'Very Good', Cats 13/14 'none'; all 6 proposals 'apply all now', all applied same-session (AVD stale-snapshot fix, display-value gate, ADR-0027 keystore backup procedure, 2 memory hardenings, new Phase 5.1.6 runtime launch gate scoped by Harold to once-per-sprint). Suite 2,011/15/0, analyze clean, WinWright 2/2 at sweep-head 80180b3 with no DB drift. REMAINING: 5.1.6 launch gate on the final rebuilt artifact, then gh pr ready 378 + readiness announcement (final approval + merge are Harold's).",
+    "number": 65,
+    "branch": "feature/20260904_Sprint_65",
+    "pr_number": 385,
+    "start_date": "2026-09-04",
+    "status": "Sprint 65 COMPLETE through Phase 7.7 (2026-09-07). All 5 tasks done, MV 4/4 PASS, retrospective + all 5 improvements applied. MV step 3 matched the widget test's numbers EXACTLY on a real device (59 processed, 26 deleted, 21 safe, 12 no-rule, 0 errors). REVIEWS: Phase 5.1.1 found 2 real findings (a FALSE Play declaration that reached committed history via the sprint's second commit race, and a gate that asserted the document's own claim of diligence instead of reading pubspec.yaml); Copilot found 1 (a flat 5s test wait for a scan whose own wall time is ~5.9s -- now a bounded poll, mutation-verified by tripling the mock delay). All fixed, replied, and the Copilot thread RESOLVED. Suite 2,039/15/0, analyze clean, WinWright 2/2 no drift, ZERO product-code diff. Store Submission 22 (listing-only, no package) certified live mid-sprint. NEXT: gh pr ready 385 + readiness announcement -- final approval and merge are Harold's.",
     "plan_approved": true,
     "blanket_execution_approved": true,
     "scope": [
-      "GP-16",
-      "GP-5",
-      "F186",
-      "F187",
-      "F188",
-      "SEC-9",
-      "GP-2",
-      "GP-9",
-      "GP-8",
-      "GP-3",
-      "SEC-4"
+      "GP-10",
+      "GP-18",
+      "GP-7",
+      "GP-6",
+      "GP-17"
     ],
-    "_scope_note": "All 11 selected by Harold at Phase 8.4 (2026-08-27), option 1: one sprint, Group B release-build chain intact.",
-    "pr_url": "https://github.com/kimmeyh/spamfilter-multi/pull/378",
-    "plan_approval_date": "2026-08-27"
+    "_scope_note": "Harold 2026-09-05: 'Sprint plan approved, proceed with execution. All Sprint tasks and sub-tasks are approved. Continue without additional approvals until Manual Validation.' Standing approval through MV per Phase 3.7.",
+    "plan_approval_date": "2026-09-05",
+    "pr_url": "https://github.com/kimmeyh/spamfilter-multi/pull/385"
   },
   "previous_sprint": {
-    "number": 63,
-    "branch": "feature/20260824_Sprint_63",
-    "pr_number": 366,
-    "status": "CLOSED -- PR #366 merged to develop 2026-08-27, develop merged to main by Harold same day; shipped as 0.13.0.0 / Submission 20, CERTIFIED AND LIVE 2026-08-27. Cards #357-#365 closed."
+    "number": 64,
+    "branch": "feature/20260827_Sprint_64",
+    "pr_number": 378,
+    "status": "CLOSED -- merged to develop and main 2026-09-04. Shipped the full Android release chain (Play-submittable), the Play developer account, published legal docs, F186/F187/F188."
   },
   "github_issues": [
-    368,
-    369,
-    370,
-    371,
-    372,
-    373,
-    374,
-    375,
-    376,
-    377
+    380,
+    381,
+    382,
+    383,
+    384
   ],
-  "_github_issues_note": "Sprint 64 cards: #368 GP-16(+GP-5), #369 F186, #370 F187, #371 F188, #372 SEC-9, #373 GP-2, #374 GP-9, #375 GP-8, #376 GP-3, #377 SEC-4. Close on merge to develop (no auto-close).",
+  "_github_issues_note": "Sprint 65 cards created at Phase 3.3.1 (2026-09-05): #380 GP-10, #381 GP-18, #382 GP-7, #383 GP-6, #384 GP-17. Close by hand at Post-Merge Cleanup.",
   "test_metrics": {
-    "tests_passing": 2011,
+    "tests_passing": 2039,
     "tests_skipped": 15,
     "tests_failing": 0,
     "analyzer_warnings": 0,
-    "_test_metrics_note": "2,011 passed / 15 skipped / 0 failed at Sprint 64 close-out (+56 vs Sprint 63's 1,955). Includes +11 tests from the Phase 5.1.1 review fixes and +4 from the retro display-value gate. Run with --concurrency=4.",
+    "_test_metrics_note": "2,039 passed / 15 skipped / 0 failed at Sprint 65 close-out (+28 vs Sprint 64's 2,011). All additions are policy gates and one widget test -- zero product-code diff this sprint.",
     "hook_test_cases": "51/51 passing -- +2 Sprint 62 IMP-1 cases (violation-5 phase5-evidence-missing, allow-7 evidence-present).",
-    "winwright_sweep": "Sprint 64 sweep 2026-09-04 at sweep-head 80180b38fb2c7d01745c68301e9cedcc5c24d395: 2/2 PASSED (test_f124_rule_labels 29/29, test_mt2c_no_rule_sweep 29/29). 3 dialog-settle scripts excluded by the runner's own documented policy (not re-derived -- Sprint 52 IMP-3). DB drift: none.",
+    "winwright_sweep": "Sprint 65 sweep 2026-09-06 at sweep-head e9625d6: 2/2 PASSED, DB drift none. Note this was a REGRESSION check, not a verification of sprint work -- no lib/ui file changed.",
     "coverage_percent": null,
     "_note": "Run full suites with --concurrency=4 (Sprint 49 IMP-5)."
   },
   "store_release": {
-    "status": "0.13.0.0 / Submission 20 CERTIFIED AND LIVE 2026-08-27 -- direct Partner Center observation ~10:55pm ET (Harold's screenshot: 'Congrats! Your product is now updated'; Store presence Submission 20 'currently available'). Uploaded ~7:0x am ET; single evening check, true cert time unmeasured (prior band 20-30 min). Seventh MINOR release (Sprint 63 feat: F180/F94/F181). Step 7 complete: STORE_VERSION_STATUS live row, CHANGELOG [0.13.0] cut + links, master plan outcome, timing row. Dev EQUALS live at 0.13.0 -- bump at next release Step 1. Prod worktree note: 5 local-only pure merge commits since Sprint 60, content-identical to origin/main -- optional reset cleanup, Harold's call.",
-    "live_version": "0.13.0.0",
-    "submission": 20,
-    "certified_date": "2026-08-27",
+    "status": "0.14.0.0 LIVE. Submission 22 (listing-only, NO new package) CERTIFIED AND LIVE 2026-09-07 -- three metadata corrections: privacy paragraph rewritten so the local-only promise LEADS and the 100-char preview is stated as saved ON THE DEVICE; canonical privacy policy URL; OneDrive automatic-backup declaration UNCHECKED so the description needs no asterisk. Certification elapsed NOT measured (submitted ~12:02am, observed ~10:40am -- neither endpoint is the real event; do NOT read the bound as slow, a metadata-only submission has no package to scan).",
+    "live_version": "0.14.0.0",
+    "submission": 22,
+    "certified_date": "2026-09-07",
     "pending_upload_version": null,
     "submission_pending": null,
-    "submitted_date": "2026-08-27"
+    "submitted_date": "2026-09-07"
   },
   "environment_notes": [
     "RESOLVED 2026-07-29 (verified 07-30): the Store fault was an Acronis file-system filter blocking AppXSvc cleanup, fixed by an Acronis Protection exclusion. 23h uptime with ZERO Id-493 events vs a 176-file/6-min baseline; Store client self-updated 22606.1401.6.0 -> .10.0 (requires a working deployment pipeline). Filter drivers remain loaded -- backup protection was NOT disabled. See ALL_SPRINTS_MASTER_PLAN ENV-1 for the picker gotcha if it recurs.",
@@ -74,10 +63,9 @@
   ],
   "blocking_issues": [],
   "next_actions": [
-    "5.1.6 runtime launch gate on the FINAL rebuilt release artifact (the recorded chain-validation launch predates the Phase 5.1.1 review fixes)",
-    "gh pr ready 378 + Phase 7.7.5 readiness announcement to Harold (final approval + merge are HIS -- Claude never merges)",
-    "ON MERGE: Phase 6.6 -- branch feature/<date>_Sprint_65 FROM feature/20260827_Sprint_64 immediately; close cards #368-#377",
-    "Phase 8 cycle: 8.1 Harold merges develop->main; 8.2 pass-1 completeness sweep; 8.3 Store release (dev EQUALS live at 0.13.0 -- bump at Step 1); 8.4 scope selection",
-    "Sprint 65 runway (sequenced): GP-7 -> GP-6 -> GP-10 -> closed-test submission. Play App Signing enrolls at first upload. The 12-tester/14-day closed-test gate is the long pole -- start tester recruitment BEFORE the code work. GP-10's Data Safety input is already prepared: the 9-permission list from GP-3."
+    "gh pr ready 385 + Phase 7.7.5 readiness announcement to Harold (final approval and merge are HIS -- Claude never merges)",
+    "ON MERGE: Phase 6.6 -- branch feature/<date>_Sprint_66 FROM feature/20260904_Sprint_65 immediately; close cards #380-#384 by hand",
+    "Sprint 66 is HAROLD-DRIVEN console work: enter the declarations and listing in Play Console, capture assets per docs/store-assets/android/ASSET_SPEC.md, then roll out to the closed track. START TESTER RECRUITMENT FIRST -- the 14-day clock cannot begin until every deliverable reaches the console AND testers have opted in.",
+    "After the 14 days: production access is a SUBSTANTIVE ~7-day review asking what testers reported and what changed as a result. Collect real feedback during the wait -- thin answers are a documented rejection cause."
   ]
 }

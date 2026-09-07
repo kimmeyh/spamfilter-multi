@@ -26,6 +26,15 @@ Format: `- **type**: Description (Issue #N)` where type is feat|fix|chore|docs
 
 ## [Unreleased]
 
+### 2026-09-06 (Sprint 65)
+- **docs**: GP-10 -- the Google Play Data safety declarations are recorded in the repository, with the code evidence behind each answer, and a gate keeps them from drifting apart from the published privacy policy. Confirmed against the code: no analytics, crash-reporting or advertising library is present, nothing is shared with anyone, and the only stored message content is a sender, subject, folder and a body preview capped at 100 characters. (Issue #380)
+- **chore**: GP-7 -- the Google Play listing icon is produced and gated (512x512, no alpha channel, which Play rejects at upload). The Android adaptive launcher icons were audited before any regeneration and found already complete and correct at all five densities, and both the Windows and Android icons still derive from the same source image. (Issue #382)
+- **docs**: GP-6 -- the Google Play store listing copy and asset specification are recorded in the repository, with a gate that measures the description lengths against Play's limits rather than trusting a written count. A claim-by-claim comparison against the Microsoft Store listing found two places where the WINDOWS listing is now stale: it points at a superseded privacy policy address, and it claims email content is "never stored" when a bounded 100-character preview is kept for messages awaiting review. Both are recorded for correction at the next Windows listing edit. (Issue #383)
+- **docs**: GP-18 -- the Google Play App content declarations are recorded with their justification, including reviewer access. Rather than create a live test email account, the reviewer is pointed at the app's existing Demo Mode, which needs no account: the traced path deletes 26 of 59 sample messages, so a reviewer sees real filtering rather than a static screen. (Issue #381)
+- **docs**: GP-17 -- the closed-test tester roster records opt-in confirmation separately from invitation, because only a completed opt-in starts a tester's 14-day clock, and it computes the earliest application date from the last tester rather than the first. A gate keeps tester email addresses out of the repository. (Issue #384)
+
+## [0.14.0] - 2026-09-04
+
 ### 2026-09-02 (Sprint 64, Manual Validation)
 - **fix**: F186 -- a Body Phrase rule created in Manage Rules now displays as its phrase (list, detail dialog, search) instead of leaking the internal `manual_<slug>_<timestamp>` name, and its generated pattern escapes spaces the same way the 84 imported body keyword rules do (`a\ local\ girl`), so the duplicate check recognises an existing legacy rule for the same phrase. Matching behaviour is unchanged: a backslash-space is a literal space in a regex. Found on the first Android chain-validation create against a legacy Windows rule. (Issue #369)
 - **fix**: F186 -- editing a Body Phrase rule now works correctly. Reopening one showed it as a domain rule, and a plain Save silently changed its type. Switching any rule to Body Phrase wrote the phrase into the sender condition instead of the body, producing a rule that looked right in the list and could never match an email. Both halves of the rule type are now read and written consistently, and the rule keeps its phrase as its title after an edit. Found by the sprint's code review. (Issue #369)
@@ -1255,7 +1264,8 @@ See git history for detailed changes prior to Phase 3.1.
 
 ## Version Links
 
-[Unreleased]: https://github.com/kimmeyh/spamfilter-multi/compare/v0.13.0...HEAD
+[Unreleased]: https://github.com/kimmeyh/spamfilter-multi/compare/v0.14.0...HEAD
+[0.14.0]: https://github.com/kimmeyh/spamfilter-multi/compare/v0.13.0...v0.14.0
 [0.13.0]: https://github.com/kimmeyh/spamfilter-multi/compare/v0.12.0...v0.13.0
 [0.12.0]: https://github.com/kimmeyh/spamfilter-multi/compare/v0.11.0...v0.12.0
 [0.11.0]: https://github.com/kimmeyh/spamfilter-multi/compare/v0.10.0...v0.11.0

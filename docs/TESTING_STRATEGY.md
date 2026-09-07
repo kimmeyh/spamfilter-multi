@@ -966,6 +966,98 @@ test('should fetch emails', () async {
 
 ---
 
+## Mutation-test locks (Sprint 65)
+
+Mutation verification requires deliberately breaking a tracked file to prove a test goes
+red. That leaves a window in which the working tree contains a knowingly-wrong file. If a
+commit lands inside that window, the broken state becomes permanent history.
+
+**This happened twice in Sprint 65**, both times on a shared tree while a background agent
+was mid-mutation:
+
+- `c2ec59b` captured a probe that disabled every demo rule -- the opposite of what the Play
+  reviewer path needs.
+- `c5fb46b` captured a FALSE Google Play declaration: "Is this a news app?" read `Yes`
+  while the justification in the same table row explained the app aggregates and publishes
+  nothing.
+
+Both commits were diff-reviewed before landing. Neither review caught it, because a
+one-word `No` -> `Yes` inside a 150-line document is exactly what diff review misses.
+Vigilance was not the missing ingredient.
+
+### The contract
+
+Two lines around every mutation of a TRACKED file:
+
+```powershell
+. .claude\hooks\mutation-lock.ps1
+New-MutationLock -File "docs/SOME_FILE.md" -Reason "flip X to prove the gate fails"
+# ... break it, run the test, confirm RED, restore it ...
+Remove-MutationLock
+```
+
+While a lock is held, `.claude/hooks/block-commit-during-mutation.ps1` (a PreToolUse hook)
+refuses any `git commit` in the repository and names the locked files. `Get-MutationLock`
+lists what is held.
+
+### Why a lock and not a semaphore
+
+The two parties are not symmetric. Agents mutate for seconds and always restore; commits
+are rare and permanent. A counting semaphore models N interchangeable holders, which is not
+this situation -- this is plain mutual exclusion.
+
+The enforcement deliberately sits on the COMMIT side, not the mutation side. Blocking the
+mutation would stall the verification work that makes tests trustworthy; blocking the
+commit costs only a short wait.
+
+### Safety valves
+
+- **Stale locks expire.** A lock older than 15 minutes is ignored and deleted, so a crashed
+  agent can never deadlock a sprint. An unparseable lock file is treated the same way --
+  failing open is correct there, because the alternative is an unclearable deadlock.
+- **Deliberate override.** Adding the literal token `allow_mutation_commit` to the command
+  proceeds anyway, for the case where the tree has been verified by hand. Same pattern as
+  the stash guard.
+- **Scratch files need no lock.** Probes that live in the scratchpad or in gitignored
+  `test/scratch/` cannot reach a commit, so they are outside this contract entirely (see
+  `feedback_scratch_probes_outside_repo`).
+
+### Verified behaviour
+
+The hook was tested before being trusted -- six command shapes plus the stale path:
+
+| Case | Expected | Result |
+|---|---|---|
+| `git commit -m x` while locked | blocked | PASS |
+| `git -C <path> commit` while locked | blocked | PASS |
+| `cd foo && git commit` while locked | blocked | PASS |
+| The words "git commit" inside a quoted string | allowed | PASS |
+| `git status --short` while locked | allowed | PASS |
+| `allow_mutation_commit` override | allowed | PASS |
+| 40-minute-old stale lock | allowed, lock auto-cleaned | PASS |
+
+The quoted-string case is not hypothetical: the hook's first live version matched the word
+anywhere in the command, and immediately blocked the very self-test written to verify it.
+The match is now anchored to a real invocation.
+
+**An automated security review of this hook then found three more holes, all confirmed by
+probe before fixing** (2026-09-06):
+
+| Bypass | Why it worked | Fix |
+|---|---|---|
+| `git commit -m "explain allow_mutation_commit"` | The override token was matched anywhere in the command, so a commit MESSAGE could disable the gate -- the freest-form part of a commit was the easiest place to trip it. | Quoted spans are stripped before any matching decision, and the token must stand alone as its own argument. |
+| `git --no-pager commit` | The subcommand pattern only tolerated `-C <path>` between `git` and `commit`. | Any number of global options are now allowed before the subcommand. |
+| Stale-lock cleanup | Deletion matched each lock's filename against the DISPLAY strings, which carry an `(age Nm)` suffix. With prefix-sharing names it could delete an ACTIVE lock and silently reopen the window. | Exact paths are collected alongside the display strings and deleted by path. |
+
+A fourth bug surfaced while testing that third fix: `[DateTime]::Parse(...).ToLocalTime()`
+DOUBLE-CONVERTS a timestamp carrying an explicit offset, aging a fresh lock by the machine's
+timezone offset and deleting it as stale. Now parsed as a UTC `DateTimeOffset` and compared
+against `[DateTimeOffset]::UtcNow`.
+
+**Test this hook under `powershell` (5.1), which is what `settings.json` invokes -- not
+`pwsh` (7).** A scratch harness using the wrong runtime reported an already-fixed bug as
+still broken and cost a diagnosis cycle.
+
 ## Version History
 
 **Version**: 1.0
