@@ -269,3 +269,43 @@ demo video, the 14-day closed test, and Google's review.
   future sprint at Harold's direction**. Both remain periodic HOLD templates.
 - The production-access application, which needs the 14 days to have elapsed.
 - Any Google Sign-In path validation -- see the accepted trade-off above.
+
+---
+
+## Phase 5 evidence gates
+
+- **5.1.2 F-PRECHECK six classes** (2026-09-07): one production file changed all sprint
+  (`google_auth_service.dart`, the scope narrowing), so most classes have no surface. Class 1
+  (parallel sites) is the exception and is the sprint's headline risk: the Gmail scope set is
+  declared in TWO independent literals. That is not merely checked, it is now GATED by
+  `gmail_scope_parity_test.dart`, mutation-verified in both directions. Class 4: zero new
+  positional parsing. Class 6: zero new `catch` blocks. Classes 2, 3, 5: no new production
+  helper, no changed default, no new external call.
+- **5.1.5 WinWright UI sweep** (2026-09-07, `sweep-head: 511dd2c034f1823bc320a64230f6cb78bd0179c5`):
+  **2/2 PASSED** on the retry, DB drift none. The FIRST run failed one script (MT2C-1, an
+  errored step) -- Harold was interacting with the machine during it, which the sweep drives
+  by real mouse and keyboard input. Retried clean rather than investigated, because the cause
+  was known and stated. 3 dialog-settle scripts excluded by the runner's own documented policy
+  (Sprint 52 IMP-3: do not re-derive a documented exclusion).
+- **5.2 Full suite**: 2,048 passed / 15 skipped / 0 failed (+9 this sprint); analyze clean.
+- **5.1.6 Runtime launch gate**: **N/A -- no Android config touched.** The trigger is a change
+  to `res/xml/**`, `AndroidManifest.xml`, `build.gradle.kts` or ProGuard rules; this sprint
+  changed none. Recorded as an explicit N/A per the gate's own wording rather than skipped.
+
+### A false alarm worth recording, because it cost real time
+
+The suite failed 4 tests twice, with DIFFERENT tests failing each run and every one passing in
+isolation -- the textbook signature of concurrency flake. It was not flake.
+
+My own earlier mutation test had added `sentry_flutter` to `pubspec.yaml` to prove the
+data-residency gate fires. I restored `pubspec.yaml`, but **flutter had already resolved the
+dependency**: `pubspec.lock` and the generated Windows plugin registration
+(`generated_plugin_registrant.cc`, `generated_plugins.cmake`) still carried it, and were
+compiled into every subsequent run. Runs went from ~1:45 to 6+ minutes, which was the real
+tell.
+
+A clean-tree baseline is what exposed it: 2,039/15/0 in 1:40 with my work stashed.
+
+**Lesson: restoring `pubspec.yaml` does not restore what resolving it produced.** A mutation
+on a dependency manifest has to revert the lock file and any generated registration too. Worth
+carrying into the mutation-lock contract.
