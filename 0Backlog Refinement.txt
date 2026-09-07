@@ -8,6 +8,299 @@ Do not stop to ask questions unless meeting the criteria in \docs\SPRINT_STOPPIN
 Sprint 6n Scope should include the below items. Please complete sprint planning (/docs/sprint_planning.md) for the below items and present for approval.  Note that everything needs to take into account both the Windows App and the Android app and ADR stating that everything should be functionally and UI the same unless it cannot be - and where it cannot be it should be implemented as a platform exception for what is needed -- this applies to all backend code, frontend code, data, architecture, development, security, testing, deployment.
 
 ---------------------------------------------------------------------------------------------------------
+F189 will become another Perodic backlog item (like F152, F173, F70...) that we could pull into a sprint as needed. At the end of planning can you display what the full
+  F189 sprint card (like F152 a couple of prompts ago).  Yes, not all possible skills will be accepted - will need enough details for each proposed skills to evaluate
+  similar to ADR: what it does, pro's, con's, why we would do it.  Noting that a proposed skill may need other tools in order for them to be effective and they can be
+  part of the proposed skill (hook, memories, doc updates...). After updating F189 from feedback, 
+Sprint 66 Scope should include the below items. Please complete sprint planning (/docs/sprint_planning.md) for the below items and present for approval.  Note that everything needs to take into account both the Windows App and the Android app and ADR stating that everything should be functionally and UI the same unless it cannot be - and where it cannot be it should be implemented as a platform exception for what is needed -- this applies to all backend code, frontend code, data, architecture, development, security, testing, deployment.
+  - GP-4. Gmail API OAuth verification / CASA (~40-80h) Priority 60
+  - GP-19. Play Console entry + asset capture + closed-track rollout, starts the 14-day clock (~2-4h Harold-driven, then a 14-day wait) Priority 30
+  - F173
+  - F189
+
+Candidates at a glance
+
+
+  - F179. Subject-blocking phrase picker, user or AI selects the blocking subset of a subject (~3-5h) Priority 40
+  - F165. Cross-device rules-database sharing + hosted-tier exploration (~half-day exploration) Priority 50
+
+
+  HOLD items:
+  - F183. Upstream WinWright request: script-runner replay support for wait steps (~15m to file, then external) Priority HOLD
+  - F152. Periodic User-Centric First-Run Evaluation (~2-3h per review) Priority HOLD
+  - F173. Periodic Test Coverage and Appropriate Testing Deep Dive (~4-8h per review) Priority HOLD
+  - F70. Periodic Security Deep Dive (~4-8h per review) Priority HOLD
+  - F71. Periodic Architecture Deep Dive (~4-8h per review) Priority HOLD
+  - F130. Periodic Process-Docs Consistency Deep Dive (unbounded discovery) Priority HOLD
+  - F111. Periodic Windows App Store upload readiness verification (~110-175m per review) Priority HOLD
+  - F139. Local-install smoke test for a release-candidate MSIX (~30-50m per review) Priority HOLD
+  - F95. iOS variants + cross-store hardening (~10-16h) Priority HOLD
+  - F67. Platform validation, iOS/Linux/macOS (~4-6h per platform) Priority HOLD
+  - F63. Responsive design framework, superseded by per-screen findings Priority HOLD
+  - F106. Verification-window cleanup (~30m) Priority HOLD
+  - SEC-15. IMAP host validation for custom servers (~1h) Priority HOLD
+  - F6. Provider-Specific Optimizations (~10-12h) Priority HOLD
+  - H1. GenAI Pattern Suggestions, crowdsourced spam intelligence (TBD) Priority HOLD
+  - H2. Rule Pattern Consistency, domain matching standards (~4-6h) Priority HOLD
+  - H3. Requirements Documentation System (TBD) Priority HOLD
+  - H4. Sent Messages Scan for Safe Senders (~12-16h) Priority HOLD
+  - H5. Outlook.com / Office 365 email provider adapter (~16-20h) Priority HOLD
+
+  Android Google Play Store Readiness
+
+  GP-19. Play Console entry + asset capture + closed-track rollout (~2-4h Harold-driven, then a 14-day wait) Priority 30
+  - Phase: Android Google Play Store Readiness
+  - Platform: Android
+  - Enter the Data safety and App content declarations from the setup document, capture the feature graphic and five phone screenshots per the asset specification, enter
+    the listing copy, then roll out to the closed track
+  - Recruitment starts first and runs in parallel: the clock begins on tester opt-in, not on rollout
+  - Depends on: nothing in the repository. Everything it needs shipped in Sprint 65
+
+  GP-4. Gmail API OAuth verification / CASA (~40-80h) Priority 60
+  - Phase: Android Google Play Store Readiness
+  - Platform: Android
+  - Third-party security assessment for restricted Gmail scopes
+  - Depends on: its trigger, which is 2,500 users or 5,000 dollars annual revenue. Not reached, and not on the path to launch
+
+  Core App Quality
+
+  F179. Subject-blocking phrase picker (~3-5h) Priority 40
+  - Phase: Core App Quality / rules UX
+  - Platform: All (shared review popup)
+  - Let the user pick which part of a subject line becomes the blocking pattern, rather than blocking the entire subject
+  - Depends on: nothing
+
+  Product direction
+
+  F165. Cross-device rules-database sharing + hosted-tier exploration (~half-day exploration) Priority 50
+  - Phase: Product direction / architecture exploration
+  - Platform: All
+  - Explore sharing one rules database across devices via user cloud storage, and whether a hosted tier is worth offering
+  - Exploration only. It produces a decision, not an implementation
+
+  HOLD Items (recurring reviews, deferred features, externally gated work)
+
+  The nineteen HOLD items above are unchanged. They are the periodic review templates (F70, F71, F111, F130, F139, F152, F173), unreleased-platform work (F63, F67, F95),
+  the externally-owned tooling request (F183), and the deferred feature set (F6, F106, SEC-15, H1 through H5). Their detail sections are unchanged in the master plan.
+
+  What is left for the Google Play release
+
+  You asked specifically, so here it is plainly.
+
+  Only one item stands between the app and a live Play listing: GP-19. Everything else Play requires is done. The account exists and is verified, the legal documents are
+  published, the release chain produces a signed and minified build, the declarations are written with their code evidence, the listing copy and asset specification are
+  ready, and the tester roster machinery is in place.
+
+  GP-19 is not repository work. It is console entry, screenshot capture on a device, and the rollout. That is why it did not fit in Sprint 65.
+
+  The critical path is calendar, not effort. Roughly two to four hours of your time, then:
+
+  - Fourteen days minimum of continuous tester opt-in, which cannot start until every declaration and the listing are complete in the console
+  - Then a substantive review of up to about seven days, which asks what testers reported and what changed as a result
+
+  So three to four weeks from today at best, and almost all of it is waiting.
+
+  The single highest-value action is recruiting testers now. The clock starts when testers opt in, not when you roll out. Recruiting during the console work rather than
+  after it is worth about two weeks. Aim for fourteen to sixteen rather than exactly twelve, because one person opting out restarts that person's fourteen days from zero.
+
+  GP-4 is listed but not on the path. Its trigger is scale you have not reached.
+
+  Observations
+
+  Sprint 66 has an unusual shape. GP-19 is almost entirely your work, and the fourteen-day wait is dead calendar time for the codebase. That makes it a natural sprint to
+  pair with development work that does not block the launch: F179 is the strongest candidate at three to five hours, since it is a real user-facing improvement to the
+  review flow, and F165 is a half-day exploration producing a decision rather than code.
+
+---------------------------------------------------------------------------------------------------------
+
+  Task N -- F70: Periodic Security Deep Dive (Priority HOLD)
+
+  Value: This prevents a security defect reaching users through an unreviewed surface, and keeps store-compliance claims true as the app's platforms grow.
+
+  Requirements (numbered, detailed):
+  - R-1: Review against current-year OWASP Mobile Top 10 and application development best practices.
+  - R-2: Audit dependency vulnerabilities (flutter pub outdated plus known vulnerability databases).
+  - R-3: Audit SQL parameterisation and regex injection, including patterns vulnerable to catastrophic backtracking.
+  - R-4: Audit credential storage and every logging path for leakage.
+  - R-5: Review platform-specific security per shipped platform: Windows Store sandbox and AppContainer, Android signing, manifest permissions and code shrinking, iOS
+    transport security and keychain if applicable.
+  - R-6: Verify store-compliance claims remain accurate: Microsoft Store certification requirements, Google Play data safety declarations, Apple review guidelines if
+    applicable.
+  - R-7: Review device-level concerns: biometric authentication, secure enclave, clipboard, screenshot protection.
+
+  Affected components / files: determined by findings. Expect lib/core/storage/ (credentials, database), lib/core/services/ (logging), android/app/ (manifest, signing,
+  ProGuard), pubspec.yaml.
+
+  Dependencies / blockers: none. Harold-triggered, not calendar-automatic.
+
+  Non-functional requirements:
+  - Security: findings involving a live credential or a real account identifier are described by class, never reproduced verbatim in the repository.
+  - Platform: ADR-0042 applies per finding. A Windows-only or Android-only defect must be recorded as a declared platform exception rather than silently fixed on one side.
+
+  Acceptance criteria (measurable, traceable):
+  - AC-1: Every scope area R-1 through R-7 is explicitly dispositioned as a finding or as clean, with evidence. Silence is not a pass.
+  - AC-2: Each finding carries a severity and a decision: fixed this sprint, or registered as a backlog item with an identifier.
+  - AC-3: Store-compliance claims are verified against the actual declarations currently submitted, not against the repository copy alone.
+
+  Tests to write: per finding. A security fix without a test proving the hole is closed is not done; mutation-verify each new gate.
+
+  Definition of Done: default task-level DoD PLUS the template is retained for the next review, and the review outcome is recorded with its date.
+
+  Model: Fable/Opus. Why not the cheaper tier: judgment about exploitability across several platforms, where a wrong "not a risk" is expensive and invisible.
+
+  Step-types: DOCS, SVC-EDIT, TEST-UNIT
+  Est-Effort: 240-480m per review
+
+  Risk and rollback: the real risk is a false clean. Mitigation is AC-1's explicit disposition per area.
+
+---------------------------------------------------------------------------------------------------------
+
+  Task N -- F71: Periodic Architecture Deep Dive (Priority HOLD)
+
+  Value: This prevents architecture documentation drifting from the code until it misleads rather than guides.
+
+  Requirements (numbered, detailed):
+  - R-1: Detect decision-record drift: compare every ADR against its current implementation.
+  - R-2: Verify ARCHITECTURE.md components, services and patterns match the code.
+  - R-3: Verify ARSD.md requirements and standards remain current.
+  - R-4: Review platform-specific architecture: Windows packaging, single-instance mutex and data paths; Android lifecycle, background scheduling and flavors; iOS if
+    applicable.
+  - R-5: Review store constraints: sandboxing, capability declarations, update mechanisms.
+  - R-6: Review device constraints: screen breakpoints, input methods, offline capability.
+  - R-7: Detect dead code and deprecated classes.
+  - R-8: Identify test-coverage gaps relative to architecture, distinct from F173's deeper coverage question.
+
+  Affected components / files: docs/adr/*, docs/ARCHITECTURE.md, docs/ARSD.md, plus whatever R-1 finds diverging.
+
+  Dependencies / blockers: none.
+
+  Non-functional requirements:
+  - Platform: ADR-0042 is itself under review here. Any divergence found must be either corrected or recorded as a declared exception.
+
+  Acceptance criteria (measurable, traceable):
+  - AC-1: Every ADR is dispositioned as implemented-as-written, drifted with the drift described, or superseded with a marker.
+  - AC-2: Every architecture document change is committed in the same sprint as the review. Deferring these is banned.
+  - AC-3: Dead code found is either removed or recorded with the reason it stays.
+
+  Tests to write: gates for any contract the review finds unprotected, mutation-verified.
+
+  Definition of Done: default DoD PLUS the template retained and the review outcome dated.
+
+  Model: Fable/Opus. Why not the cheaper tier: cross-cutting comparison of documented intent against real code, where the finding is usually a subtle mismatch rather than
+  an absence.
+
+  Step-types: DOCS, TEST-UNIT
+  Est-Effort: 240-480m per review
+
+---------------------------------------------------------------------------------------------------------
+
+  Task N -- F130: Periodic Process-Docs Consistency Deep Dive (Priority HOLD)
+
+  Value: This prevents the sprint instruction surface contradicting itself, which produces model-independent execution errors that look like model mistakes.
+
+  Requirements (numbered, detailed):
+  - R-1: Audit the full instruction surface, not just docs/: the eleven sprint execution documents, CLAUDE.md and AGENTS.md, .claude/hooks/*, .claude/skills/*/SKILL.md,
+    .claude/settings.json registrations, the status file schema, and auto-memory including MEMORY.md and every feedback_*.md.
+  - R-2: Hunt five seeded defect classes: contradictory recipes for one instruction; summary-versus-detail drift; superseded recipes without a supersession marker;
+    memory-versus-document divergence; and orphan instructions defined nowhere.
+  - R-3: Memory is in scope and is the highest-risk surface, because recall silently re-teaches whatever it says, overriding corrected documents.
+  - R-4: Verify hook enforcement matches what the documents claim, and that hooks do not produce false positives.
+
+  Affected components / files: the surfaces in R-1.
+
+  Dependencies / blockers: none. Triggered when the process documents have accumulated enough change, or after a close-out escape traced to instructions rather than model
+  error.
+
+  Non-functional requirements:
+  - Platform: not applicable. Repository documentation and harness configuration only.
+
+  Acceptance criteria (measurable, traceable):
+  - AC-1: Every defect class in R-2 is explicitly dispositioned with findings or an evidenced clean result.
+  - AC-2: Every contradiction found resolves to exactly one authoritative statement, with the others removed or marked superseded.
+  - AC-3: Any hook changed is verified in both directions: it fires when it should and stays silent when it should not.
+
+  Tests to write: hook test cases for any enforcement changed, added to the existing hook suite.
+
+  Definition of Done: default DoD PLUS the template retained and the review outcome dated.
+
+  Model: Fable/Opus. Why not the cheaper tier: the defects are contradictions between documents rather than errors within one, so the work is holding many sources in view
+  at once.
+
+  Step-types: DOCS, HOOK
+  Est-Effort: [no-history] — unbounded discovery. Time-box rather than estimate, and record the actual.
+
+  Risk and rollback: the honest risk is scope. Discovery is unbounded, so agree a time box before starting.
+
+---------------------------------------------------------------------------------------------------------
+
+  Task N -- F152: Periodic User-Centric First-Run Evaluation (Priority HOLD)
+
+  Value: This finds the friction a first-time user hits, which the team cannot see because it already knows how the app works.
+
+  Requirements (numbered, detailed):
+  - R-1: Re-run the user-centric test script and the seven-section first-run checklist: installation and launch, first-run orientation, completing the primary task,
+    feedback and confirmation, emotional experience, environment compatibility, and quick feedback capture.
+  - R-2: Use the validated two-stage method. First a static analysis pass to form a cheap baseline hypothesis, then confirm or refute it live against a real build.
+  - R-3: Produce a gap analysis against the seven sections, plus concrete backlog candidates for anything found, sized and scoped.
+
+  Affected components / files: determined by findings. The first run produced a registered backlog item.
+
+  Dependencies / blockers: needs a runnable build on the platform under review.
+
+  Non-functional requirements:
+  - Platform: Windows Desktop for the current run. Extend per platform once others are release-ready. An Android run is now newly meaningful, since the Play launch will
+    produce genuine first-time users.
+
+  Acceptance criteria (measurable, traceable):
+  - AC-1: All seven sections dispositioned with observations, not impressions.
+  - AC-2: Every gap becomes a registered candidate with an identifier, or is explicitly recorded as accepted.
+  - AC-3: The live pass is genuinely first-run, from a cleared state rather than a configured one.
+
+  Tests to write: per resulting item, not for the review itself.
+
+  Definition of Done: default DoD PLUS the template retained and the review outcome dated.
+
+  Model: Fable/Opus. Why not the cheaper tier: judging experience quality, which is exactly what a cheaper tier reports blandly.
+
+  Step-types: DOCS, UI-MOVE if findings warrant
+  Est-Effort: 120-180m per review, plus fix time if findings warrant
+
+---------------------------------------------------------------------------------------------------------
+
+  Task N -- F173: Periodic Test Coverage and Appropriate Testing Deep Dive (Priority HOLD)
+
+  Value: This prevents a green suite that proves nothing, which is more dangerous than a red one because it actively signals safety.
+
+  Requirements (numbered, detailed):
+  - R-1: Answer two distinct questions, not one. First, coverage: what is tested and what is not, across backend, frontend, data layer, Windows and Android. Second,
+    appropriateness: do the existing tests actually prove what they claim?
+  - R-2: Mutation-verify a sample of existing gates. Break what each one guards and confirm it goes red.
+  - R-3: Look specifically for assertions proving existence where the claim is about behavior.
+  - R-4: Record findings as coverage gaps or as proving-nothing tests, since the two have different fixes.
+
+  Affected components / files: mobile-app/test/**, plus any production code a coverage gap exposes.
+
+  Dependencies / blockers: none.
+
+  Non-functional requirements:
+  - Platform: both platforms in scope. A test asserting a shared behavior must not be platform-gated in a way that silently skips one side.
+
+  Acceptance criteria (measurable, traceable):
+  - AC-1: A sampled set of gates is mutation-verified, with each result recorded as red-on-mutation or as proving nothing.
+  - AC-2: Every proving-nothing test is either strengthened or deleted. Leaving it is not an option, because it reports false safety.
+  - AC-3: Coverage gaps are registered as candidates with identifiers.
+
+  Tests to write: strengthened replacements for anything R-2 finds hollow, each mutation-verified.
+
+  Definition of Done: default DoD PLUS the template retained and the review outcome dated.
+
+  Model: Fable/Opus. Why not the cheaper tier: the core skill is recognizing that a passing test proves nothing, which requires reasoning about what could have been
+  asserted and was not.
+
+  Step-types: TEST-UNIT, TEST-WIDGET, DOCS
+  Est-Effort: 240-480m per review
+
+---------------------------------------------------------------------------------------------------------
 Sprint 65 Scope should include the below items. Please complete sprint planning (/docs/sprint_planning.md) for the below items and present for approval.  Note that everything needs to take into account both the Windows App and the Android app and ADR stating that everything should be functionally and UI the same unless it cannot be - and where it cannot be it should be implemented as a platform exception for what is needed -- this applies to all backend code, frontend code, data, architecture, development, security, testing, deployment.
 
 ❯ 1 yes 2 all of it | add/update backlogs as needed
