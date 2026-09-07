@@ -7,6 +7,16 @@ Manual Validation complete
 Sprint 6n Manual Validation Feedback 
 
 ---------------------------------------------------------------------------------------------------------
+Sprint 65 Manual Validation Feedback 
+  1. Tap "Try Demo Mode" on the first screen, the card above the provider list.
+Done - worked as expected
+  2. Tap "Start Demo Scan (Testing)", not "Start Live Scan". Live fails without an account, which is why the reviewer instructions name the second button.
+Done - working as expected
+  3. Confirm real deletions appear, roughly 26 of 59 messages.
+see image
+  4. Check the launcher icon renders correctly on the home screen.
+see image of home screen
+---------------------------------------------------------------------------------------------------------
 Sprint 64 Manual Validation Feedback 
   Retest list, in order:
   1. Add the Gmail account, then the AOL account.
