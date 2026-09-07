@@ -329,6 +329,17 @@ carrying into the mutation-lock contract.
   SECOND provider on a DIFFERENT code path: AOL authenticates by app password over IMAP while
   Gmail here uses the Gmail API path, so the two together cover both authentication routes the
   app ships.
+- **Android: Gmail account REMOVED, RE-ADDED via App Password (IMAP), live scan run** --
+  **PASS, and this is the sprint's strongest evidence** (Harold, 2026-09-07). 12 processed,
+  0 errors, 15s, across INBOX + Unwanted + [Gmail]/Spam. Android reads **0.14.1 [DEV]**,
+  confirming the F190 bump displays correctly.
+  Why it outranks the earlier scans: those ran against an ALREADY-CONFIGURED account, so they
+  proved a stored session still worked. This one tore the account down and rebuilt it from
+  nothing, which exercises the sign-in flow itself -- the exact surface GP-4's scope removal
+  touched. It also validates the App Password (IMAP) route end to end, which is the decision
+  this whole sprint was replanned around after Harold disproved the 7-day-expiry premise.
+- **Windows** reads 0.14.0 because it was built BEFORE the bump; Android 0.14.1 after. Not a
+  defect -- rebuild aligns them.
 - Steps 3-5 (Play Console entry, asset capture, tester recruitment) are Harold-driven and
   outstanding.
 

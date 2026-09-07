@@ -492,6 +492,14 @@ This change was introduced after Sprint 36 kickoff skipped Phase 1 (prior "OPTIO
   - **If Phase 3.4 already ran normally** (cards created before 3.7 approval, the standard-flow case): this step is a no-op verification -- confirm the cards exist and are open, do not create duplicates.
   - Do NOT proceed to 3.7.1 or any Phase 4 task work until this step's cards exist.
 
+- [ ] **3.7.0b Bump the version -- FIRST thing, so testers can tell this build from production** (MANDATORY, F190, Sprint 66)
+  - **When**: same turn as plan approval, alongside 3.7.0's card creation.
+  - **Why this exists (Harold, 2026-09-07)**: if production is at n.n.n and the dev build contains changes, a tester has NO WAY to tell the two apart unless the version moves. The bump used to happen at Store-release Step 1 -- the very END -- so for an entire sprint the dev build reported the SAME version as production. That is backwards: the window where the distinction matters most is while the changes are being tested. Sprint 66 MV produced the symptom -- Harold saw "0.13.0 [DEV] while production is showing 0.14.0" and reasonably asked whether the repo was wrong.
+  - **Which digit**: if the approved plan contains a `feat`, bump MINOR (reset PATCH to 0). Otherwise bump PATCH. **When in doubt, take PATCH** -- a bump later found to be the wrong KIND is cheap to correct at 7.7; a MISSING bump is invisible until a tester is already confused.
+  - **Action**: update BOTH `version:` and `msix_config.msix_version` in `mobile-app/pubspec.yaml`, then run `flutter test test/policy/version_consistency_test.dart` -- that gate asserts every version literal in `lib/`, `windows/runner/` and `scripts/` matches pubspec, so it is what proves the bump was complete rather than partial.
+  - **Verified by**: `test/policy/dev_version_ahead_test.dart` (F190) asserts the dev version is STRICTLY GREATER than the last released version in CHANGELOG.md -- the invariant "a tester can tell", expressed mechanically instead of remembered.
+  - Re-verified at **7.7** (below) once retrospective improvements have landed, and again at Store-release Step 1 as a last cheap check.
+
 - [ ] **3.7.1 Update the PR to the APPROVED plan** (PR lifecycle checkpoint #2 -- Sprint 42, Harold's spec)
   - **When**: immediately after Phase 3.7 approval ("plan approved").
   - **Action**: update the draft PR body (created at 3.3.1) to reflect the **approved** sprint plan -- final task list, scope, issues (reference the Phase 3.7.0 issue numbers). (If the PR does not exist yet -- e.g. 3.3.1 was skipped -- create it now as a draft.)
@@ -1259,6 +1267,13 @@ Before conducting sprint review, build and test the Windows desktop app:
   - The moment every retrospective suggestion marked for implementation is implemented + committed + pushed (and analyzer/tests are green), convert the PR from draft to ready: `gh pr ready <PR#>`.
   - Verify: `gh pr view <PR#> --json isDraft,mergeable` shows `isDraft:false`, `mergeable:MERGEABLE`.
   - This is the GitHub STATE change (draft -> Ready for Review). It is distinct from the PO/SM readiness NOTIFICATION, which happens at 7.7.5 after the full final-gate checklist passes. (If there are no "apply now" improvements, set the PR ready here once the retrospective itself is complete.)
+
+  **RE-VERIFY THE VERSION BUMP FIRST (F190, Sprint 66).** The bump happened at 3.7.0b, before
+  the sprint's content was fully known. Now that retrospective improvements have landed, confirm
+  the KIND is still right: if `[Unreleased]` contains a `feat` but the sprint took a PATCH bump,
+  correct it to MINOR now. This is the LAST cheap moment -- after this the number is what testers
+  and the Store see. It does NOT normally change during PR review; if it changes here, say so in
+  the retrospective so the reason is on record.
 
   After all approved improvements are applied and committed, proceed to the remaining Phase 7.7 mandatory completion updates (CHANGELOG entry for sprint summary if not already present, ALL_SPRINTS_MASTER_PLAN.md Last Completed Sprint update, Past Sprint Summary table row, etc.) and then to Phase 7.8.
 

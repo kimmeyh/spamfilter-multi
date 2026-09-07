@@ -17,13 +17,12 @@ Sprint 66 Scope should include the below items. Please complete sprint planning 
   - GP-19. Play Console entry + asset capture + closed-track rollout, starts the 14-day clock (~2-4h Harold-driven, then a 14-day wait) Priority 30
   - F173
   - F189
+- Plan as a full backlog item, then do now: General best practice for versioning - if Production version is n.n.n and development includes changes, then in order for the testers of the changes to know it is different from production version is to bump the version. If it is known that it is not a feature bump, then can do a bug-fix (non-feature bump). This should be done early in the process (a good place would be to trigger the bump at Sprint Plan approval where we have other items that get updated via checklist or gating to ensure they happen). After Sprint Retrospective improvements are done, the version bump should be verified as feature or non-feature and updated as needed (does not normally change during PR reviews).  Remove the bump from the "store update" process (but verification and update if needed). Full sprint card, find all documents and tools (hooks, memories, skills, commands...) that should be updated, then update all occurrences. Create a test to verify this will work as expected.
+
 
 Candidates at a glance
-
-
   - F179. Subject-blocking phrase picker, user or AI selects the blocking subset of a subject (~3-5h) Priority 40
   - F165. Cross-device rules-database sharing + hosted-tier exploration (~half-day exploration) Priority 50
-
 
   HOLD items:
   - F183. Upstream WinWright request: script-runner replay support for wait steps (~15m to file, then external) Priority HOLD
