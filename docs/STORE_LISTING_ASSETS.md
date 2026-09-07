@@ -6,7 +6,19 @@
 **Store ID**: 9N5QK9G904C0
 **Partner Center ID**: 768eaaca-92b9-4871-a10f-da17dbf92e91
 **Category**: Productivity / Utilities & Tools
-**Privacy Policy URL**: https://myemailspamfilter.com/privacy
+> **CORRECTED 2026-09-06 (Sprint 65 GP-6 cross-store comparison).** Two claims here had
+> drifted from the shipped behaviour and from the published privacy policy:
+> 1. The description said email content is "never stored". A bounded 100-character preview
+>    IS retained for messages awaiting review (`kBodyPreviewMaxLength`, enforced at the
+>    write boundary in `unmatched_email_store.dart`). The Play listing was written with the
+>    accurate wording rather than inheriting this one.
+> 2. The privacy policy URL predated the canonical address published in Sprint 64. Both
+>    resolve, so nothing was broken -- but two live addresses for one policy invites drift.
+>
+> This file is the REPO COPY. The LIVE Partner Center listing must be edited by Harold for
+> the correction to reach users; presented to him 2026-09-06.
+
+**Privacy Policy URL**: https://myemailspamfilter.com/legal/PRIVACY_POLICY.html
 **Website**: https://myemailspamfilter.com
 **Support Contact**: kimmeyh@outlook.com
 **Discoverability**: Direct link only (soft launch)
@@ -56,7 +68,7 @@ Set up automatic background scans to check your inbox periodically. Configure sc
 Run manual scans on demand to check your inbox immediately. Try Demo Mode with 50+ sample emails to explore the app features without connecting a real email account.
 
 **Privacy First**
-Your privacy is a core design principle. MyEmailSpamFilter does not collect analytics, telemetry, or usage data. Email content is read transiently during scans and never stored. All credentials are encrypted and stored locally on your device. You are in full control of your data and can delete everything at any time.
+Your privacy is a core design principle. MyEmailSpamFilter does not collect analytics, telemetry, or usage data. Email content is read during scans and is not retained, except that a short excerpt of up to 100 characters is kept for messages awaiting your review, so you can decide what to do with them. All credentials are encrypted and stored locally on your device. You are in full control of your data and can delete everything at any time.
 
 **Offline Operation**
 Rules and configuration are stored locally. The app only connects to the internet when scanning your email server. No cloud account or subscription required.
@@ -160,7 +172,7 @@ Five screenshots captured from the Windows Desktop application:
 - [x] App name reserved: MyEmailSpamFilter
 - [x] Short description (under 100 characters)
 - [x] Long description (under 10,000 characters)
-- [x] Privacy policy URL (https://myemailspamfilter.com/privacy)
+- [x] Privacy policy URL (https://myemailspamfilter.com/legal/PRIVACY_POLICY.html)
 - [x] Keywords defined
 - [x] Age rating questionnaire completed (IARC 3+)
 - [x] 5 screenshots uploaded
