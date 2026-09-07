@@ -131,12 +131,28 @@ Historical sprint information lives in individual documents in `docs/sprints/` a
 | 62 | docs/sprints/SPRINT_62_SUMMARY.md | [OK] Complete | Aug 21-23, 2026 (PR #355; scan robustness F177/F175/F174, MV UX F178/F176, F163 skips 26->15) |
 | 63 | docs/sprints/SPRINT_63_SUMMARY.md | [OK] Complete | Aug 24-27, 2026 (PR #366; F180 deferred body fetch ~10x, F185 Gmail decode, F94 flavors, Android/GP track opened) |
 | 64 | docs/sprints/SPRINT_64_SUMMARY.md | [OK] Complete | Aug 27 - Sep 4, 2026 (PR #378; full Android release chain SEC-9/GP-2/GP-9/GP-8/GP-3/SEC-4 Play-submittable, Play account + legal docs live, F186 Body Phrase rules, F187 1,947 URL-shape rules purged, F188) |
+| 65 | docs/sprints/SPRINT_65_SUMMARY.md | [OK] Complete | Sep 4-7, 2026 (PR #385; Google Play closed-test readiness -- Data safety, App content + reviewer access via Demo Mode, icons, listing copy/assets, tester roster. Zero product-code diff. Store Submission 22 listing-only corrections shipped mid-sprint) |
 
 **Key Achievements**: See CHANGELOG.md for detailed feature history.
 
 ---
 
 ## Last Completed Sprint
+
+**Sprint 65** (2026-09-04 -- 2026-09-07; PR #385 -> develop, Ready-for-Review at close-out)
+- **Type**: Google Play closed-test readiness -- everything Play requires BEFORE the 14-day clock can start. All 5 tasks complete; Manual Validation 4/4 PASS; retrospective + all 5 improvement decisions executed 2026-09-06.
+- **THE SPRINT'S DEFINING MOMENT was Harold's refinement question**: "does the list include known timing dependencies that should drive the order?" It did not -- my slate was ordered by BUILD dependency while the CALENDAR was governed by the 12-tester/14-continuous-day closed test. My first correction was ALSO wrong (start the clock, do listing work during the wait); verified research overturned it, because closed testing sits behind the SAME complete-app-setup wall as production and only INTERNAL testing skips setup, earning zero credit toward the 12/14. That research also surfaced **GP-18 (App access)** -- a Play requirement nothing in the project tracked, which would otherwise have been found as a blocker mid-rollout.
+- **GP-10**: Data safety declarations recorded WITH code evidence per answer. Verified: no analytics/crash/ad SDK anywhere, nothing shared, stored content limited to sender/subject/folder plus a 100-char preview enforced at the WRITE boundary. Zero contradictions with the published privacy policy.
+- **GP-18**: every App content item answered, and reviewer access resolved as **Demo Mode rather than a test account** -- the agent verified rather than accepted the premise and found `EmailScanner` special-cases `platformId=='demo'` to use its own rule set, so it works on a fresh install with no seeded rules. No live credential ever exists.
+- **GP-7**: **audit-first paid off again** (second sprint running, after S64's GP-8) -- adaptive config and all five densities were ALREADY correct, nothing regenerated; only the 512x512 listing icon was produced (no-alpha verified).
+- **GP-6**: listing copy (78/80 and 2694/4000, both MEASURED), asset spec, and a cross-store comparison that found **two stale claims in the LIVE Windows listing**. **GP-17**: roster distinguishing CONFIRMED opt-in from invitation, with the application date computed from the LAST opt-in.
+- **Findings worth remembering**: a FALSE Play declaration ("news app: Yes") reached committed history via the sprint's SECOND commit race -- both races were diff-reviewed and neither review caught them, because a one-word change inside a 150-line document is what diff review misses. Harold asked whether a semaphore could prevent it; the answer was a **mutation-lock gate** (asymmetric parties, so enforcement belongs on the COMMIT, not the mutation), which a security review then found three holes in, plus a 4th timezone bug found while fixing those. Also: a gate that asserted a document's own claim of diligence, a gate defeated by a substring ("Try Demo Mode" inside "Try Demo Mode instead"), and a fixed 5s test wait for a ~5.9s scan (Copilot).
+- **Verification**: suite **2,039 passed / 15 skipped / 0 failed** (+28); analyze clean; WinWright 2/2, no DB drift; **zero product-code diff**. MV step 3 matched prediction EXACTLY (59 processed, 26 deleted, 21 safe, 12 no-rule, 0 errors) -- the widget test's numbers, confirmed on a device.
+- **Retro**: Harold rated all 12 rated categories "Very Good"; Cats 13/14 "none". **All 5 proposals "all now as amended"**, with Harold's amendment on IMP-1 requiring a DETERMINISTIC mechanism, not just a backfill -- so `verify-closeout-complete.ps1` now fails a close-out claim when CODING_VELOCITY.md has no row for the sprint (the rule existed in prose only, which is exactly why it was missed silently).
+- **Store release outcome (mid-sprint, 2026-09-07)**: **Submission 22, listing-only (NO new package), CERTIFIED AND LIVE.** Three metadata corrections found by the GP-6 comparison and the Properties review: the privacy paragraph rewritten so the local-only promise LEADS and the 100-char preview is stated as saved ON THE DEVICE; the canonical privacy policy URL; and the **OneDrive automatic-backup declaration UNCHECKED** so the description needs no asterisk. 0.14.0.0 stayed live throughout.
+- **Docs**: SPRINT_65_PLAN.md / SPRINT_65_RETROSPECTIVE.md / SPRINT_65_SUMMARY.md / GOOGLE_PLAY_ACCOUNT_SETUP.md (3 new sections) / store-assets/android/ / STORE_LISTING_ASSETS.md / TESTING_STRATEGY.md (mutation-lock contract) / SPRINT_PLANNING.md (audit-first check) / CLAUDE.md (mutation-lock rule).
+
+_(Prior: **Sprint 64** below.)_
 
 **Sprint 64** (2026-08-27 -- 2026-09-04; PR #378 -> develop, Ready-for-Review at close-out)
 - **Type**: Google Play submittability (the entire Android release chain) + the body-rules follow-through trio. All 11 tasks complete -- Harold's option 1 at Phase 8.4 kept Group B intact in ONE sprint because six of the items converge on a single signed artifact. Manual Validation 2026-09-02/03; retrospective + all 6 improvement decisions executed 2026-09-03.
@@ -150,6 +166,7 @@ Historical sprint information lives in individual documents in `docs/sprints/` a
 - **Verification**: suite **2,011 passed / 15 skipped / 0 failed** (+56); analyze clean; WinWright sweep 2/2 at `sweep-head 80180b3`, DB drift none.
 - **Retro**: Harold rated all 12 rated categories "Very Good"; Cats 13/14 "none". **All 6 proposals "apply now", all applied same-session** (AVD stale-snapshot fix, display-value gate, upload-keystore backup procedure in ADR-0027, two memory hardenings, and a new Phase 5.1.6 runtime launch gate -- scoped by Harold to ONCE per sprint before Manual Validation under the efficiency guideline).
 - **Notable**: SEC-4 shipped a `network_security_config.xml` that passed AAPT and its own policy gate and CRASHED the app at startup -- Android's runtime parser rejects a `domain-config` root. Nothing in the suite could catch it; that is the defect that produced the new launch gate. Separately, the AVD's stale quickboot snapshot silently reverted the installed build three times and Harold tested the WRONG build once.
+- **Store release outcome (Phase 8.3, 2026-09-05)**: Sprint 64's merged scope shipped as **0.14.0.0 (Submission 21), CERTIFIED AND LIVE** -- confirmed by direct Partner Center observation ~10:32pm ET ("Congrats! Your product is now updated", Store presence = Submission 21) **plus an installed-build check** (running Store app reads Version 0.14.0, no [DEV] marker). Eighth MINOR release (feat: F186 Body Phrase rule type). Certification elapsed NOT measurable this cycle -- both the upload and the observation are ranges, so treat it as unmeasured rather than slow. Verification pre-upload: Check A dart-defines PASS, `--release-self-test --expected-version=0.14.0` 6/6 PASS (incl. both APP_ENV and NATIVE_APP_ENV), manifest 0.14.0.0, 17.1 MB.
 - **Docs**: SPRINT_64_PLAN.md / SPRINT_64_RETROSPECTIVE.md / SPRINT_64_SUMMARY.md / ARCHITECTURE.md (release chain + Body Phrase contracts) / ADR-0027 (IMPLEMENTED + keystore backup and recovery) / GOOGLE_PLAY_ACCOUNT_SETUP.md / published legal docs.
 
 _(Prior: **Sprint 63** below.)_
@@ -356,33 +373,6 @@ All incomplete items in relative priority order. Priority in increments of 10; i
 - Cadence: same periodic-HOLD model as F70 (Security) and F71 (Architecture) -- triggered by Harold, not calendar-automatic.
 - Source: Harold, 2026-08-17.
 
-**F188. A rule with a corrupted condition string is silently neutralized (~1h) Priority 26 (NEW, Sprint 63 MV -- silent-failure class, found live)**
-- Phase: Core App Quality / rules integrity
-- Platform: All (RuleDatabaseStore)
-- Found live 2026-08-26: a rules row whose condition JSON fails to parse (observed with an invalid escape) loads as a rule with EMPTY condition lists -- it displays normally in Manage Rules and can simply never match, with no log line, no UI signal, nothing. The trigger was a hand-inserted row, but disk corruption or an import defect would behave identically: a protection the user believes exists silently is not evaluated.
-- Fix shape: `_decodeJsonArray` logs a WARNING naming the rule and column on parse failure (Logger.w minimum), and Manage Rules flags rules whose every condition list is empty as "invalid -- matches nothing" instead of rendering them as healthy. Consider a one-time integrity sweep counting unparseable condition columns.
-- This is exactly the F-PRECHECK class 6 shape (an unreadable input converted into a silent no-op) applied to rule data instead of code paths.
-- Source: Sprint 63 Manual Validation body-rule demo forensics, 2026-08-26.
-
-**F187. Remove the personal URL-shape body rules (domain.tld link-block rules) (~1-2h) Priority 24 (NEW, Sprint 63 MV -- Harold)**
-- Phase: Core App Quality / rules data cleanup
-- Platform: All (Harold's personal rule DBs: dev AND prod installs)
-- Harold's ask (2026-08-26): "remove all my personal body rules that roughly match a url (domain.top-level domain)".
-- Measured at registration (dev DB, read-only, 2026-08-26): 732 body rules total, of which **647 match the URL shape** `(?:://|[/.])domain\.tld` (the F33-era link-domain blocks); the remaining 85 are phrase/phone/address body patterns and are NOT in scope -- they stay.
-- Discipline: F33/F144 cleanup pattern -- enumerate the exact removal set by pattern shape (not by name prefix; only 306 carry the `body_.` name), present the count + samples for confirmation, timestamped backup before deletion, YAML export invariants preserved, applied to BOTH dev and prod databases (a migration or a guarded one-time cleanup script), post-delete count verification with an untruncated grep/query.
-- Interaction note: F180 makes these rules the main body-fetch trigger on Harold's real rule set -- removing 647 of 732 body rules will ALSO cut most deferred body fetches on real scans (faster + lighter), while F186 (body-rule authoring) covers future intentional body rules.
-- Source: Harold, Sprint 63 Manual Validation, 2026-08-26.
-
-**F186. Add/update BODY rules through the UI, including via Manage Rules (~2-4h) Priority 22 (NEW, Sprint 63 MV -- Harold)**
-- Phase: Core App Quality / rules UX
-- Platform: All (shared rule screens)
-- Harold's asks (2026-08-26, verbatim enumeration): "1) Add a way to add/update body rules. 2) Add a way to add/update body rules via Manage Rules"
-- Verified current state (2026-08-26): `RuleEditScreen` (F35) already round-trips a body condition when EDITING an existing body rule (`case 'body'` at rule_edit_screen.dart:378-380), but `ManualRuleCreateScreen` offers NO Body rule type at all (zero body-condition support) -- so body rules cannot be CREATED from any UI surface; the 732 live body rules exist only from legacy import.
-- R-1: the manual rule CREATE flow (reached from Manage Rules) gains a Body rule type -- pattern entry with the same plaintext-to-regex assist the other types have; category/sub-type recorded as 'body'.
-- R-2: Manage Rules filtering/labels already display the Body category (F124 chips) -- verify create/edit/display round-trip end to end and that the F25 rule tester exercises body patterns against sample bodies.
-- Context that makes this timely: F185 (Sprint 63) just fixed Gmail body matching (base64 decode), and F180 fetches bodies on demand when body rules exist -- authoring them is now the missing piece of the body-rule story.
-- Source: Harold, Sprint 63 Manual Validation, 2026-08-26.
-
 **F183. Upstream civyk-winwright request: script-runner replay support for ww_wait (~15m to file, then external) Priority HOLD (NEW, Sprint 62 retro IMP-7 -- external dependency)**
 - Phase: Testing / E2E tooling (external)
 - Platform: Windows Desktop (WinWright harness)
@@ -416,57 +406,35 @@ _(F149 shipped Sprint 57 -- see `docs/sprints/SPRINT_57_PLAN.md` and CHANGELOG.m
 
 Recorded sequencing honored (see 'Recommended Sequencing' in the GP section below): account first, privacy early, technical features as sprint work, Data Safety after privacy, listing before submission, CASA trigger-gated last. Supersessions recorded this refinement: F4 (Android background scanning) was DELIVERED as F161 in Sprint 61; Issue #163 (Android untested) is RESOLVED by the continuous Sprint 59-62 on-device validation.
 
-**GP-16. Google Play Developer Account Setup -- CARRY to Sprint 64 as its FIRST TASK (Harold 2026-08-26: 'Need to be walked through this'; guided walkthrough, PERSONAL account, 12 testers/14 days route -- no DUNS). Sprint 63 prep DONE: docs/GOOGLE_PLAY_ACCOUNT_SETUP.md written for the personal route. Includes the GP-5 hosting/URL decision at publication.**
+**GP-18. App content declarations for Play review -- incl. APP ACCESS reviewer credentials (~3-5h) Priority 33 (NEW, Sprint 65 refinement -- surfaced by the closed-track gating research, previously untracked)**
 - Phase: Android Google Play Store Readiness
 - Platform: Android
-- Sequencing: 'Immediate' -- everything Play-side blocks on it; Google's verification has multi-day external lead time. $25 one-time. Harold-driven, Claude walks him through step by step.
+- **Every item in Play's "App content" checklist blocks a CLOSED-track rollout, not just production** -- Google's rule is "you can start a closed test after completing your app setup". Nothing here can be deferred to the production application.
+- Items: content rating questionnaire, target audience and content, ads declaration, government apps declaration, financial features declaration, news app declaration, health apps declaration (conditional ones still must be ANSWERED, not skipped).
+- **APP ACCESS is the sharp edge and the likely long pole.** A spam filter demonstrates nothing without a working email account, so the reviewer needs either dedicated test credentials or written instructions. Decide which: a dedicated throwaway mail account with seeded spam is the more reliable route, since instructions alone leave a reviewer unable to exercise the core flow. This blocks the closed rollout.
+- Depends on: GP-5 privacy policy (DONE, Sprint 64).
+- Source: closed-track gating research, 2026-09-05. Nothing in GOOGLE_PLAY_ACCOUNT_SETUP.md or this plan tracked App access before this entry -- it would have been discovered as a blocker mid-rollout.
 
-**GP-5. Privacy Policy and Legal Documents -- DONE (Sprint 64: PUBLISHED at https://myemailspamfilter.com/legal/ -- Pages was already live on Harold's custom domain serving main:/docs; placeholders filled (effective 2026-08-28, contact = the public developer email), regression gate test/policy/legal_docs_test.dart; filled text live at the Sprint 64 merge to main. Feeds GP-10 and the listing.)**
-
-**SEC-9. Move hardcoded Android client ID to build-time injection (~1h) Priority 28 (ACTIVATED off HOLD 2026-08-24 -- Harold: 'everything Android related... along with the gp-n items')**
-- Phase: Security / Android Google Play Store Readiness
-- Platform: Android
-- Move _androidClientId to --dart-define or google-services.json. Source: Sprint 31 security audit (S5).
-- **RE-VERIFIED Sprint 54 (2026-08-03)**: confirmed still hardcoded in `build.gradle.kts` + `AndroidManifest.xml` (the OAuth redirect scheme, inherently manifest-declared for Android). No client *secret* found hardcoded anywhere -- Android installed-app OAuth clients typically do not use one, unlike Windows' desktop client. Real fix is avoiding a per-flavor literal `build.gradle.kts` edit once F94 lands, not a security leak of a secret. Sequence after/alongside F94.
-- **UNBLOCKED (Sprint 63 retro IMP-7, 2026-08-27)**: F94 shipped in Sprint 63 (PR #366), so the sequencing dependency is satisfied -- SEC-9 is selectable. Related finding to fold in: the .dev-flavor Firebase/GCP console registrations proved OPTIONAL for Gmail sign-in (appauth redirect-scheme flow does not consult google-services.json), so SEC-9's design should target the appauth client id path, and F94's four console-prerequisite items can be re-scoped or closed at refinement.
-
-**GP-2. Release Signing and Play App Signing (~4-6h) Priority 30 (ACTIVATED off HOLD 2026-08-24 -- Harold: 'everything Android related... along with the gp-n items') -- MERGED SEC-6 (2026-08-24)**
+**GP-17. Closed-test tester recruitment + closed-track rollout -- START THE 14-DAY CLOCK (~2-4h active, then a 14-day wait) Priority 38 (RE-ORDERED 2026-09-05: the rollout is LAST, because everything else gates it; recruitment still starts FIRST and runs in parallel) (NEW, Sprint 65 refinement -- Harold asked the ordering question this item answers)**
 - Phase: Android Google Play Store Readiness
 - Platform: Android
-- Merged scope from SEC-6 (Sprint 31 audit S12): create the release keystore, configure `build.gradle.kts` signing config; ADR-0027 (Proposed) is decided as part of this work.
+- **This is the critical path to a live Play listing, and it is a CALENDAR dependency, not a code one.** A personal developer account created after 2023-11-13 cannot reach production until 12 testers have been opted in CONTINUOUSLY for 14 days, after which Google reviews the testing evidence.
+- The 14-day clock starts on tester OPT-IN, not on upload and not on invitation, so recruitment is the true long pole. Testers count only after they open the closed-track link AND complete opt-in; each needs a Google account and an Android device.
+- **CORRECTED 2026-09-05 by the gating research**: an earlier draft of this item assumed the clock could start before the listing work. It cannot. Closed testing sits behind the SAME "complete app setup" wall as production -- full store listing (icon, feature graphic, 2+ screenshots, descriptions), Data safety, content rating and every App content declaration must be complete BEFORE a closed-track rollout. Only INTERNAL testing skips setup, and internal-test days earn ZERO credit toward the 12/14. The signed build exists (Sprint 64), but the build was never the blocker.
+- Scope: recruit and confirm 12 testers, create the closed-testing track, roll out a build to it, distribute the opt-in link, and CONFIRM each opt-in landed. Then the wait runs while the listing work proceeds in parallel.
+- Ordering consequence: done LAST, the 14 days begin after all listing work and cost ~2 extra weeks of wall time for nothing. Done FIRST, the listing work fills the wait.
+- Depends on: GP-6, GP-7, GP-10 and GP-18 ALL complete -- verified, not assumed. Recruit 14-16 testers rather than exactly 12: opt-out breaks the streak and re-opting-in restarts the 14 days from zero, so margin protects the schedule. Production access is then a SUBSTANTIVE ~7-day review asking what testers reported and what changed as a result -- so collect real feedback during the wait; thin answers are a known rejection cause.
+- Source: Harold, 2026-09-05 -- "does the list include known timing dependencies that should drive the order these are completed to get onto the Google Play store as quickly as reasonably possible?" The refinement slate had ordered by BUILD dependency and buried the calendar dependency in prose; this item exists so the schedule driver is a tracked backlog entry rather than a remark.
 
-**GP-9. ProGuard/R8 + Dart obfuscation (~2-4h) Priority 32 (ACTIVATED off HOLD 2026-08-24 -- Harold: 'everything Android related... along with the gp-n items') -- MERGED SEC-7 (2026-08-24, the twice-recommended merge)**
-- Phase: Android Google Play Store Readiness
-- Platform: Android
-- **RE-VERIFIED Sprint 54 (2026-08-03)**: same investigation as SEC-7 (above) -- confirmed no divergence, no minification/shrinking config exists. Recommend merging into one item at next refinement.
-- Merged scope from SEC-7 (Sprint 31 audit S13): `minifyEnabled` + `proguard-rules.pro` + Dart `--obfuscate --split-debug-info`; Sprint 54 re-verify confirmed the two items were literally the same investigation. Requires release-build validation on-device (obfuscation can break plugin reflection).
-
-**GP-8. Android Target SDK + 16 KB Page Size -- verify (~1-2h re-scoped) Priority 34 (ACTIVATED off HOLD 2026-08-24 -- Harold: 'everything Android related... along with the gp-n items')**
-- Phase: Android Google Play Store Readiness
-- Platform: Android
-- **RE-VERIFIED Sprint 54 (2026-08-03)**: the installed Flutter 3.38.5's gradle plugin already defaults `compileSdk`/`targetSdk` to API 36 (no explicit override needed in `build.gradle.kts`) -- the SDK-level part of this item is likely already satisfied by the current toolchain. The 16KB native page-size alignment is unverified and needs an actual APK build + inspection of NDK-touching plugin `.so` files, not a source read. Policy-currency against LIVE Play Console requirements also needs a manual check (not verifiable from a read-only repo investigation). Re-scoped down to ~1-2h "verify + confirm."
-
-**GP-3. Android Manifest Permissions -- merged-manifest verify (~1-2h re-scoped) Priority 36 (ACTIVATED off HOLD 2026-08-24 -- Harold: 'everything Android related... along with the gp-n items')**
-- Phase: Android Google Play Store Readiness
-- Platform: Android
-- **RE-VERIFIED Sprint 54 (2026-08-03)**: the app's own manifest declares zero `<uses-permission>` entries, but direct inspection of bundled plugin manifests confirms auto-merge already provides `INTERNET` (via `google_sign_in_android`), `ACCESS_NETWORK_STATE` (via `connectivity_plus`), and `POST_NOTIFICATIONS` (via `flutter_local_notifications`/`workmanager_android`). Genuinely missing: `RECEIVE_BOOT_COMPLETED`, `WAKE_LOCK`, `FOREGROUND_SERVICE`/`FOREGROUND_SERVICE_DATA_SYNC` -- but WorkManager periodic tasks do not inherently need a foreground service, so add these ONLY if F144's background-scan design actually requires one. Re-scoped: verify auto-merge via a real merged-manifest build, add the 3-4 missing declarations only if needed.
-- **Refinement update (2026-08-24)**: F161 (Sprint 61) SHIPPED the Android background scheduler on WorkManager periodic tasks with NO foreground service -- so verify against the ACTUAL shipped design; the FOREGROUND_SERVICE additions are expected to be unnecessary.
-
-**SEC-4. Android: Create network_security_config.xml (~1h) Priority 38 (ACTIVATED off HOLD 2026-08-24 -- Harold: 'everything Android related... along with the gp-n items')**
-- Phase: Security / Android Google Play Store Readiness
-- Platform: Android
-- Block cleartext traffic, pin domains for OAuth and IMAP; reference in AndroidManifest.xml
-- Moved to HOLD with the rest of the Android track per Harold (2026-05-25) -- gated by the Google Play release, which is on HOLD. Source: Sprint 31 security audit (S11).
-
-**GP-10. Data Safety Form Declarations (~2-4h) Priority 40 (ACTIVATED off HOLD 2026-08-24 -- Harold: 'everything Android related... along with the gp-n items') -- after GP-5**
+**GP-10. Data Safety Form Declarations (~2-4h) Priority 32 (ACTIVATED off HOLD 2026-08-24; RE-PRIORITISED 2026-09-05 by time-to-live) -- after GP-5, and BEFORE the closed-track rollout if Play gates one on it**
 - Phase: Android Google Play Store Readiness
 - Platform: Android
 
-**GP-6. Play Store Listing and Assets (~8-12h) Priority 42 (ACTIVATED off HOLD 2026-08-24 -- Harold: 'everything Android related... along with the gp-n items') -- before submission**
+**GP-6. Play Store Listing and Assets (~8-12h) Priority 36 (ACTIVATED off HOLD 2026-08-24; RE-PRIORITISED 2026-09-05 -- runs DURING the 14-day wait; needs GP-7's icon) -- before submission**
 - Phase: Android Google Play Store Readiness
 - Platform: Android
 
-**GP-7. Adaptive Icons and App Branding (~4-6h) Priority 44 (ACTIVATED off HOLD 2026-08-24 -- Harold: 'everything Android related... along with the gp-n items')**
+**GP-7. Adaptive Icons and App Branding (~4-6h) Priority 34 (ACTIVATED off HOLD 2026-08-24; RE-PRIORITISED 2026-09-05 -- runs DURING the 14-day wait, not before it)**
 - Phase: Android Google Play Store Readiness
 - Platform: Android
 
@@ -1234,24 +1202,30 @@ The app is approximately 60-70% ready for Play Store publication. Core spam filt
 
 GP items on HOLD. When taken off hold, they are added to "Next Sprint Candidates" above.
 
+**Status as of Sprint 64 close (2026-09-04)**: the Android release chain is COMPLETE -- the app is
+Play-submittable. GP-2/GP-3/GP-5/GP-8/GP-9/GP-16 shipped in Sprint 64; GP-12 in Sprint 63. The
+remaining runway to a live Play listing is **GP-7 -> GP-6 -> GP-10 -> closed-test submission**.
+Play App Signing enrolls automatically at the first upload. The **12-tester / 14-day closed test
+is the long pole**, so tester recruitment should start BEFORE the code work, not after.
+
 | ID | Title | Est. Effort | ADR | Priority | Status |
 |----|-------|-------------|-----|----------|--------|
 | GP-1 | Application Identity and Branding | ~4-6h | ADR-0026 (Accepted) | BLOCKING | [OK] COMPLETE (Sprint 19) |
-| GP-2 | Release Signing and Play App Signing | ~4-6h | ADR-0027 (Proposed) | BLOCKING | HOLD |
-| GP-3 | Android Manifest Permissions | ~4-6h | ADR-0028 (Proposed) | BLOCKING | HOLD |
+| GP-2 | Release Signing and Play App Signing | ~4-6h | ADR-0027 (Accepted, IMPLEMENTED) | BLOCKING | [OK] COMPLETE (Sprint 64) |
+| GP-3 | Android Manifest Permissions | ~4-6h | ADR-0028 (Proposed) | BLOCKING | [OK] COMPLETE (Sprint 64) -- exactly 9 justified permissions; GP-10's input |
 | GP-4 | Gmail API OAuth Verification (CASA) | ~40-80h | ADR-0029 (Accepted) | BLOCKING | HOLD -- trigger: 2,500+ users or $5K/yr revenue |
-| GP-5 | Privacy Policy and Legal Documents | ~8-16h | ADR-0030 (Accepted) | BLOCKING | HOLD |
-| GP-6 | Play Store Listing and Assets | ~8-12h | -- | HIGH | HOLD |
-| GP-7 | Adaptive Icons and App Branding | ~4-6h | ADR-0031 (Proposed) | HIGH | HOLD |
-| GP-8 | Android Target SDK + 16 KB Page Size | ~4-8h | -- | MEDIUM | HOLD |
-| GP-9 | ProGuard/R8 Code Optimization | ~4-6h | -- | HIGH | HOLD |
-| GP-10 | Data Safety Form Declarations | ~2-4h | -- | BLOCKING | HOLD |
+| GP-5 | Privacy Policy and Legal Documents | ~8-16h | ADR-0030 (Accepted) | BLOCKING | [OK] COMPLETE (Sprint 64) -- PUBLISHED at myemailspamfilter.com/legal |
+| GP-6 | Play Store Listing and Assets | ~8-12h | -- | HIGH | ACTIVE -- Sprint 65 runway (after GP-7) |
+| GP-7 | Adaptive Icons and App Branding | ~4-6h | ADR-0031 (Proposed) | HIGH | ACTIVE -- Sprint 65 runway (first) |
+| GP-8 | Android Target SDK + 16 KB Page Size | ~4-8h | -- | MEDIUM | [OK] COMPLETE (Sprint 64) -- verify PASS: already API 36, 16KB aligned |
+| GP-9 | ProGuard/R8 Code Optimization | ~4-6h | -- | HIGH | [OK] COMPLETE (Sprint 64) -- R8 + obfuscation, -12.8% APK |
+| GP-10 | Data Safety Form Declarations | ~2-4h | -- | BLOCKING | ACTIVE -- Sprint 65 runway (after GP-6); input ready = the 9 permissions from GP-3 |
 | GP-11 | Account and Data Deletion Feature | ~8-12h | ADR-0032 (Proposed) | HIGH | HOLD |
-| GP-12 | Firebase Analytics Decision | ~2-4h | ADR-0033 (Proposed) | MEDIUM | HOLD |
+| GP-12 | Firebase Analytics Decision | ~2-4h | ADR-0033 (Accepted) | MEDIUM | [OK] COMPLETE (Sprint 63) -- Firebase Analytics removed |
 | GP-13 | Persistent Gmail Auth for Production | 0h | -- | -- | RESOLVED (merged with F12, see ADR-0029/0034) |
 | GP-14 | IMAP vs Gmail REST API Decision | 0h | ADR-0034 (Accepted) | -- | RESOLVED (dual-path, no migration needed) |
 | GP-15 | Version Numbering and Release Strategy | ~2-4h | -- | HIGH | [OK] COMPLETE (Sprint 19) |
-| GP-16 | Google Play Developer Account Setup | ~2-4h | -- | BLOCKING | HOLD |
+| GP-16 | Google Play Developer Account Setup | ~2-4h | -- | BLOCKING | [OK] COMPLETE (Sprint 64) -- account created, all verifications cleared |
 
 **Total Estimated Effort**: ~112-202 hours (plus 2-6 months for CASA verification if triggered)
 
