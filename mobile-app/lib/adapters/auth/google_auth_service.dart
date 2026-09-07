@@ -36,20 +36,35 @@ import 'package:my_email_spam_filter/adapters/email_providers/gmail_windows_oaut
 import 'package:my_email_spam_filter/util/redact.dart';
 
 /// Gmail API scopes.
+///
+/// **Declare only what is REQUESTED** (GP-4, Sprint 66). Google's OAuth
+/// verification reviews the scopes an app declares, and every restricted scope
+/// widens what a reviewer must assess and what the app must justify. Two
+/// constants were removed here because nothing requested them:
+///
+/// - `readonly` (`gmail.readonly`) -- restricted, and redundant: `modify`
+///   already covers reading. Zero usages.
+/// - `send` (`gmail.send`) -- the app never sends mail. Declaring a send scope
+///   on a spam filter invites exactly the question a reviewer should not have
+///   to ask. Zero usages.
+///
+/// Removing them is not tidying: it is narrowing the verification surface
+/// before submitting. Do not re-add a constant here speculatively -- add it
+/// when a code path actually requests it.
 class GmailScopes {
-  /// Read-only access to Gmail messages and settings.
-  static const String readonly = 'https://www.googleapis.com/auth/gmail.readonly';
-
-  /// Full access to Gmail (read, send, delete, manage).
+  /// Read and modify Gmail messages: the app deletes and moves mail, so
+  /// read-only is insufficient.
   static const String modify = 'https://www.googleapis.com/auth/gmail.modify';
 
-  /// Send email only.
-  static const String send = 'https://www.googleapis.com/auth/gmail.send';
-
-  /// User info email scope.
+  /// User info email scope -- identifies WHICH account was authorised, so
+  /// multi-account bookkeeping can attribute rules and scans correctly.
   static const String userInfoEmail = 'https://www.googleapis.com/auth/userinfo.email';
 
-  /// Default scopes for spam filter (need to read and modify/delete).
+  /// The scopes actually requested. Must stay identical to the Windows
+  /// handler's own list (`gmail_windows_oauth_handler.dart`) -- the two are
+  /// separate declarations that today agree, and `test/policy/
+  /// gmail_scope_parity_test.dart` is what keeps them agreeing (ADR-0042
+  /// shared-behaviour parity).
   static const List<String> defaultScopes = [modify, userInfoEmail];
 }
 

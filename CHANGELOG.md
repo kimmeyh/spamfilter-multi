@@ -26,6 +26,10 @@ Format: `- **type**: Description (Issue #N)` where type is feat|fix|chore|docs
 
 ## [Unreleased]
 
+### 2026-09-07 (Sprint 66)
+- **chore**: GP-4 -- the app now asks Google for only the two permissions it actually uses. Two unused permission declarations were removed: one for sending mail, which the app never does, and one redundant read-only permission already covered by the permission it keeps. A gate keeps the Windows and Android permission requests identical, so the two platforms can never drift into asking for different things. (Issue #388)
+- **docs**: GP-4 -- the Gmail verification submission's data-residency determination is recorded with its evidence: every outbound connection in the app is enumerated, and none of them carries mail anywhere except between the user's own device and their own mail provider. A gate fails the build if an analytics, crash-reporting, or advertising library is ever added, because that would quietly contradict a claim made to Google. (Issue #388)
+
 ### 2026-09-06 (Sprint 65)
 - **docs**: GP-10 -- the Google Play Data safety declarations are recorded in the repository, with the code evidence behind each answer, and a gate keeps them from drifting apart from the published privacy policy. Confirmed against the code: no analytics, crash-reporting or advertising library is present, nothing is shared with anyone, and the only stored message content is a sender, subject, folder and a body preview capped at 100 characters. (Issue #380)
 - **chore**: GP-7 -- the Google Play listing icon is produced and gated (512x512, no alpha channel, which Play rejects at upload). The Android adaptive launcher icons were audited before any regeneration and found already complete and correct at all five densities, and both the Windows and Android icons still derive from the same source image. (Issue #382)

@@ -409,3 +409,78 @@ Collected during the 14 days and used verbatim in the production-access applicat
 | Release rolled out | (pending) |
 | Version / build | (pending -- the signed release chain shipped in Sprint 64, so the build is not the blocker) |
 | Opt-in link distributed | (pending) |
+
+## Gmail OAuth verification -- data-residency determination (GP-4, Sprint 66)
+
+**Why this section decides the cost of verification.** Google requires an annual third-party
+security assessment (CASA) for restricted-scope apps **that store or transmit restricted-scope
+data on servers**. An app that keeps Gmail data on the user's own device is a different case.
+The difference is roughly two weeks of documentation versus several weeks plus an assessment
+fee that recurs annually, so this is the single most consequential question in the submission.
+
+**Determination: no Gmail-derived data ever leaves the user's device.**
+
+Evidence, gathered from the code rather than asserted:
+
+| Claim | Evidence |
+|---|---|
+| No backend of any kind | The app has no server component. Every outbound host in `lib/` is enumerated below. |
+| No analytics, crash reporting, or advertising | `pubspec.yaml` contains zero matches for analytics, crashlytics, sentry, amplitude, mixpanel or admob. Firebase Analytics was deliberately REMOVED in Sprint 63 (GP-12) per ADR-0030/0033. |
+| Mail is read directly from the provider to the device | Gmail API calls go from the device to `gmail.googleapis.com`; IMAP connects device-to-provider. Nothing intermediates. |
+| Mail content is stored locally only | The rules database, scan history and unmatched-email previews live in the app-support directory (`app_paths.dart`). Nothing uploads them. |
+| Body retention is bounded and local | `kBodyPreviewMaxLength = 100`, enforced at the write boundary in `unmatched_email_store.dart` so a caller cannot bypass it. Full bodies are never persisted. |
+
+**Every outbound host in `lib/`** (complete enumeration, not a sample):
+
+- `accounts.google.com`, `oauth2.googleapis.com`, `www.googleapis.com` -- Google's own OAuth
+  endpoints. Authentication only.
+- `gmail.googleapis.com` -- Google's own Gmail API. The user's mail, from Google to the user's
+  device.
+- `data.iana.org` -- the public TLD list, used for rule validation. Carries no user data.
+- `graph.microsoft.com`, `login.microsoftonline.com` -- **unreachable**. Both appear only as
+  COMMENTED-OUT constants in `outlook_adapter.dart`, an adapter that is not registered in
+  `platform_registry.dart` (its factory and its `PlatformInfo` entry are both commented out).
+  Outlook support is deferred, not shipped.
+- `developer.mozilla.org`, `developers.google.com`, `github.com`, `example.com` --
+  documentation links and test fixtures. Not network calls with user data.
+
+**No third party ever receives Gmail data**, because there is no third party in the path at all.
+
+### What to state in the verification submission
+
+Raise this explicitly and ask Google to rule, rather than assuming the exemption applies.
+Google's developer-facing pages state the server-side condition plainly, but the authoritative
+API Services User Data Policy does not repeat the carve-out. **Asking is cheap; assuming is
+not** -- and a wrong assumption surfaces late, after the submission has been reviewed on the
+wrong basis.
+
+Suggested wording:
+
+> This application has no server component. Gmail data is requested by the user's own device
+> directly from Google's APIs and is stored only in the application's local data directory on
+> that device. It is never transmitted to any server operated by the developer or by any third
+> party. The application contains no analytics, crash-reporting, or advertising SDK. We
+> understand the annual third-party security assessment applies to applications that store or
+> transmit restricted-scope data on servers, and we request confirmation that it does not apply
+> to this architecture.
+
+### Scopes requested (narrowed for this submission)
+
+| Scope | Classification | Why the app needs it |
+|---|---|---|
+| `gmail.modify` | Restricted | The app deletes spam and moves mail between folders. Read-only is insufficient. |
+| `userinfo.email` | Non-sensitive | Identifies WHICH account was authorised, so rules and scan history attribute correctly in a multi-account app. |
+
+**Two scopes were REMOVED before submitting** (Sprint 66, GP-4 R-3): `gmail.readonly`, which
+was redundant because `modify` already covers reading, and `gmail.send`, which the app never
+uses. Both were declared constants with zero call sites. A reviewer assesses what is declared,
+and a send scope on a spam filter invites a question that should never arise.
+`test/policy/gmail_scope_parity_test.dart` now fails if either is re-declared, and fails if the
+Windows and Android scope sets ever diverge.
+
+### The one irreversible action to avoid
+
+**Do not set the OAuth consent screen to "In production" before verification completes.**
+Publishing while unverified imposes a cap of 100 new users **for the lifetime of the project**,
+which cannot be reset or raised. Leave the publishing status alone until Google confirms
+verification.
