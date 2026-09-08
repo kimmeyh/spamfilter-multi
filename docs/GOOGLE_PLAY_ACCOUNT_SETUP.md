@@ -143,9 +143,42 @@ cleartext connection.
 
 **Privacy policy URL for the form**: https://myemailspamfilter.com/legal/PRIVACY_POLICY.html
 
-### Per-category declarations
+### [SUBMITTED 2026-09-08] The answer given to Play was "No data collected"
 
-| Play category | Collected | Shared | Ephemeral processing | User can request deletion | Code evidence |
+**This supersedes the per-category "Collected" column below for the purpose of the Play
+form.** The submitted Data safety declaration reads:
+
+- **Does your app collect or share any of the required user data types? NO**
+- Store listing renders: "No data collection declared" and "No data shared with third parties"
+- Privacy policy: https://myemailspamfilter.com/legal/PRIVACY_POLICY.html
+- Submitted 2026-09-08 (Sprint 66, GP-19), alongside the rest of App content.
+
+**Why "No", when the table below says "Yes" for two categories.** The table was written
+against the ordinary-English meaning of "collected" -- data the app holds. That is NOT
+Play's definition. The Data safety overview page defines it precisely:
+
+> "Collected" means data that is **transmitted off the user's device**.
+
+Under that definition this app collects nothing. Mail moves between the user's own device
+and their own mail provider over IMAP or the Gmail API; there is no backend, no analytics,
+no crash reporter, and no server operated by the developer anywhere in the path. Data the
+app STORES on the device -- the account email in encrypted storage, the `email_actions`
+rows, the 100-character `body_preview` -- is not "collected" in Play's sense, because none
+of it is transmitted anywhere.
+
+This was corrected during submission: the original answer prepared from the table below was
+"Yes", with two data types checked. Reading Google's own definition on the page changed the
+answer to "No". Recorded here rather than silently fixed, because the per-category rows are
+still CORRECT and USEFUL for what they actually describe -- on-device storage, the privacy
+policy's accuracy, and the deletion paths -- and deleting them would lose that evidence.
+
+**Read the two columns this way**: "Collected" below means "stored on the device", which is
+what the code evidence supports. Play's form asks a different question, and its answer is
+No.
+
+### Per-category declarations (ON-DEVICE STORAGE -- see the note above before reusing the "Collected" column on a Play form)
+
+| Play category | Stored on device | Shared | Ephemeral processing | User can request deletion | Code evidence |
 |---|---|---|---|---|---|
 | Personal info (name, email address) | Yes (email address only) | No | No -- persisted locally | Yes | `mobile-app/lib/adapters/storage/secure_credentials_store.dart` stores the account email under `credentials_<accountId>_email` in `FlutterSecureStorage` (OS-encrypted: EncryptedSharedPreferences on Android). `mobile-app/lib/core/services/data_deletion_service.dart` `deleteAccountData()` / `wipeAllData()` remove it. No name field is requested or stored beyond what the provider's own OAuth/IMAP handshake returns. |
 | Financial info | No | No | N/A | N/A | No payment, billing, or financial-account code exists anywhere in `lib/`. Confirmed by grep: zero matches for payment/billing/card SDKs or fields in the codebase. |
@@ -330,6 +363,53 @@ No account, credentials, or network access to any email provider is required to 
 screen. This exercises the same rule-evaluation engine used for a real account's live scan.
 ```
 
+### CONSOLE LIMIT: the instructions field caps at 500 CHARACTERS (found 2026-09-07)
+
+The full text above is ~1,100 characters and **will not fit**. Play Console's Sign in details
+instructions field (the declaration formerly called "App access") accepts 500 characters.
+Nothing in Google's documentation warned about this -- Harold hit it while pasting.
+
+**Paste THIS version instead (485 characters, MEASURED -- not estimated):**
+
+```
+No login needed to evaluate this app.
+
+1. Launch it. First screen "Select Account" shows "No Accounts Yet".
+2. Tap "Try Demo Mode instead" (below "+ Add Account").
+3. A "Ready to Scan" screen opens, showing a "DEMO MODE" badge.
+4. Tap "Start Demo Scan (Testing)" -- NOT "Start Live Scan", which needs a real account.
+5. The app filters 50+ built-in sample spam and normal emails through its rule engine.
+6. A Results screen shows the counts and which rule matched each deleted message.
+```
+
+> **Count it, do not eyeball it.** My first "short" version was labelled 486 characters and was
+> actually 575 -- it would have been rejected exactly like the original. A second attempt came
+> in at 523. Only the third fits. Any future edit to this text must be re-measured
+> (`python -c "print(len(open('f').read()))"`), because a character limit is precisely the kind
+> of claim that is cheap to verify and embarrassing to assert.
+
+**What was kept, and why** -- the cuts were chosen against the rejection risk, not by trimming
+from the end:
+- **Exact button labels** ("Try Demo Mode instead", "Start Demo Scan (Testing)"). A reviewer
+  hunting for text that is not on screen is the precise failure this declaration exists to
+  prevent, and it is what Sprint 65's MV finding caught.
+- **The "NOT Start Live Scan" warning.** Tapping the wrong button fails with no account and
+  looks like a broken app.
+- **What the reviewer sees at the end**, so they know the demonstration succeeded rather than
+  wondering whether something went wrong.
+
+**What was dropped**: the alternate route for when an account already exists (a reviewer always
+has a fresh install, so it cannot apply), and the closing sentence that this exercises the same
+engine as a live scan (reassurance, not instruction).
+
+**Username and password fields: leave BLANK.** No credential exists -- that is the entire point
+of choosing Demo Mode over a test account (GP-18 R-2).
+
+**Answer to "Is any part of your app restricted?": YES.** The Yes bullet reads "account sign in
+details, such as an email address", which is exactly what connecting a mailbox requires. No
+would assert that no account sign-in is needed anywhere in the app, which is false. Answering
+Yes is also what unlocks the instructions field.
+
 ### R-3: end-to-end reviewer-path walk (record when performed)
 
 R-3 requires the reviewer path above to be walked end to end on a real device before
@@ -338,6 +418,95 @@ submission -- not assumed to work from the source trace alone. Record here when 
 | Date | Device | What was seen | Matches instructions above? |
 |---|---|---|---|
 | (pending) | | | |
+
+## APP CREATED in Play Console (GP-19, Sprint 66, 2026-09-07)
+
+Deferred from Sprint 64 until the listing inputs existed; created now that they do.
+
+| Field | Value | Note |
+|---|---|---|
+| App name | MyEmailSpamFilter | Matches the Microsoft Store listing exactly (GP-6 cross-store rule). |
+| **Package name** | `com.myemailspamfilter` | **PERMANENT -- cannot ever be changed.** Read from `android/app/build.gradle.kts:27` at creation time rather than from memory. Dev builds carry the `.dev` suffix; the Store listing takes the unsuffixed production id. |
+| App ID (console) | 4976219499322735108 | From the dashboard URL. |
+| Default language | English (United States) | |
+| Type | App | |
+| Price | Free | One-way door: free can become paid later, paid can NEVER become free. Free is both correct and the safe direction. |
+
+**Declarations accepted**: Developer Program Policies, **Play App Signing**, US export laws.
+
+The Play App Signing acceptance is the one worth understanding rather than just ticking. Google
+now holds the key that signs what users download; the Sprint 64 keystore becomes the UPLOAD
+key. Two consequences: (1) losing the upload keystore is recoverable -- Google can reset it and
+the published app keeps working, whereas without Play App Signing a lost key means the app can
+never be updated again; (2) it is REQUIRED for app bundles, which is the format Play accepts,
+so it was never optional. This is what the Sprint 64 fingerprint verification was preparing for.
+
+**Dashboard confirms the research** (Sprint 66 planning) verbatim: closed testing shows
+"To start a closed test, finish setting up your app" -- app setup gates the closed track, not
+just production. Production access requires: publish a closed-testing release, **at least 12
+testers opted in (currently 0)**, and run the test for **at least 14 days**.
+
+## Tester onboarding instructions (GP-19, Sprint 66)
+
+**Send this to each tester.** Recruitment is the long pole -- the 14-day clock starts when a
+tester OPTS IN, not when the build is rolled out -- so send it as soon as the closed track
+exists rather than waiting for everything else to be perfect.
+
+### Why App Password and not "Sign in with Google"
+
+The app offers both. **Testers should use App Password (IMAP)**, which is the option the app
+already labels "(Recommended)" on the Gmail sign-in screen.
+
+The reason is specific to a 14-day test: an app password does not expire on a schedule, so a
+tester signs in ONCE and stays connected for the whole test. Google Sign-In on an app that has
+not completed OAuth verification expires its token after about 7 days, which would sign every
+tester out halfway through and generate "the app logged me out" reports that have nothing to do
+with spam filtering -- during exactly the window whose evidence Google reviews.
+
+This applies to Gmail testers too. They do NOT need a second, non-Gmail account: Gmail via app
+password is a first-class path in the app.
+
+### What to send a tester
+
+> Thanks for helping test MyEmailSpamFilter on Android.
+>
+> **What it does**: it scans your inbox and filters spam using rules you control. Everything
+> runs on your device -- nothing is sent anywhere.
+>
+> **Before you start**, you need an app password for your email account. This requires 2-Step
+> Verification to be turned on. For Gmail: turn on 2-Step Verification in your Google account
+> security settings, then create an app password there. AOL, Yahoo and iCloud have the same
+> feature under their own security settings.
+>
+> **Then**:
+> 1. Open the closed-test link I sent and tap to join. **This step is what counts** -- if you
+>    do not complete it, you are not registered as a tester.
+> 2. Install the app from Google Play.
+> 3. Open it, tap "Add Account", choose your provider.
+> 4. For Gmail, choose **"App Password (IMAP) (Recommended)"** -- the first option. Do
+>    NOT choose "Google Sign-In".
+> 5. Enter your email address and the app password you created (not your normal password).
+> 6. Run a scan and see what it finds.
+>
+> **Please stay opted in for at least 14 days.** If you leave and rejoin, the clock restarts
+> for you, which delays the whole launch.
+>
+> **Tell me anything you notice** -- confusing screens, wrong decisions about your mail, things
+> you expected and did not find. Google asks what testers reported and what changed as a
+> result, so genuine feedback is more useful than reassurance.
+
+### The one step that trips people
+
+Creating an app password requires 2-Step Verification to be enabled first. If a tester says the
+app password option is missing from their account settings, that is why. Say it up front rather
+than debugging it later.
+
+### What counts, and what does not
+
+- An INVITATION is not an opt-in. A tester counts only after they open the link and complete
+  the join. Confirm each one rather than assuming.
+- Opting out breaks the streak. Re-joining restarts that tester's 14 days from ZERO, which is
+  why the target is 14-16 testers rather than exactly 12.
 
 ## Closed-test tester roster and the 14-day clock (GP-17, Sprint 65)
 
@@ -409,3 +578,236 @@ Collected during the 14 days and used verbatim in the production-access applicat
 | Release rolled out | (pending) |
 | Version / build | (pending -- the signed release chain shipped in Sprint 64, so the build is not the blocker) |
 | Opt-in link distributed | (pending) |
+
+## Gmail OAuth verification -- data-residency determination (GP-4, Sprint 66)
+
+**Why this section decides the cost of verification.** Google requires an annual third-party
+security assessment (CASA) for restricted-scope apps **that store or transmit restricted-scope
+data on servers**. An app that keeps Gmail data on the user's own device is a different case.
+The difference is roughly two weeks of documentation versus several weeks plus an assessment
+fee that recurs annually, so this is the single most consequential question in the submission.
+
+**Determination: no Gmail-derived data ever leaves the user's device.**
+
+Evidence, gathered from the code rather than asserted:
+
+| Claim | Evidence |
+|---|---|
+| No backend of any kind | The app has no server component. Every outbound host in `lib/` is enumerated below. |
+| No analytics, crash reporting, or advertising | `pubspec.yaml` contains zero matches for analytics, crashlytics, sentry, amplitude, mixpanel or admob. Firebase Analytics was deliberately REMOVED in Sprint 63 (GP-12) per ADR-0030/0033. |
+| Mail is read directly from the provider to the device | Gmail API calls go from the device to `gmail.googleapis.com`; IMAP connects device-to-provider. Nothing intermediates. |
+| Mail content is stored locally only | The rules database, scan history and unmatched-email previews live in the app-support directory (`app_paths.dart`). Nothing uploads them. |
+| Body retention is bounded and local | `kBodyPreviewMaxLength = 100`, enforced at the write boundary in `unmatched_email_store.dart` so a caller cannot bypass it. Full bodies are never persisted. |
+
+**Every outbound host in `lib/`** (complete enumeration, not a sample):
+
+- `accounts.google.com`, `oauth2.googleapis.com`, `www.googleapis.com` -- Google's own OAuth
+  endpoints. Authentication only.
+- `gmail.googleapis.com` -- Google's own Gmail API. The user's mail, from Google to the user's
+  device.
+- `data.iana.org` -- the public TLD list, used for rule validation. Carries no user data.
+- `graph.microsoft.com`, `login.microsoftonline.com` -- **unreachable**. Both appear only as
+  COMMENTED-OUT constants in `outlook_adapter.dart`, an adapter that is not registered in
+  `platform_registry.dart` (its factory and its `PlatformInfo` entry are both commented out).
+  Outlook support is deferred, not shipped.
+- `developer.mozilla.org`, `developers.google.com`, `github.com`, `example.com` --
+  documentation links and test fixtures. Not network calls with user data.
+
+**No third party ever receives Gmail data**, because there is no third party in the path at all.
+
+### What to state in the verification submission
+
+Raise this explicitly and ask Google to rule, rather than assuming the exemption applies.
+Google's developer-facing pages state the server-side condition plainly, but the authoritative
+API Services User Data Policy does not repeat the carve-out. **Asking is cheap; assuming is
+not** -- and a wrong assumption surfaces late, after the submission has been reviewed on the
+wrong basis.
+
+Suggested wording:
+
+> This application has no server component. Gmail data is requested by the user's own device
+> directly from Google's APIs and is stored only in the application's local data directory on
+> that device. It is never transmitted to any server operated by the developer or by any third
+> party. The application contains no analytics, crash-reporting, or advertising SDK. We
+> understand the annual third-party security assessment applies to applications that store or
+> transmit restricted-scope data on servers, and we request confirmation that it does not apply
+> to this architecture.
+
+### Scopes requested (narrowed for this submission)
+
+| Scope | Classification | Why the app needs it |
+|---|---|---|
+| `gmail.modify` | Restricted | The app deletes spam and moves mail between folders. Read-only is insufficient. |
+| `userinfo.email` | Non-sensitive | Identifies WHICH account was authorised, so rules and scan history attribute correctly in a multi-account app. |
+
+**Two scopes were REMOVED before submitting** (Sprint 66, GP-4 R-3): `gmail.readonly`, which
+was redundant because `modify` already covers reading, and `gmail.send`, which the app never
+uses. Both were declared constants with zero call sites. A reviewer assesses what is declared,
+and a send scope on a spam filter invites a question that should never arise.
+`test/policy/gmail_scope_parity_test.dart` now fails if either is re-declared, and fails if the
+Windows and Android scope sets ever diverge.
+
+### The one irreversible action to avoid
+
+**Do not set the OAuth consent screen to "In production" before verification completes.**
+Publishing while unverified imposes a cap of 100 new users **for the lifetime of the project**,
+which cannot be reset or raised. Leave the publishing status alone until Google confirms
+verification.
+
+---
+
+## CLOSED TEST SUBMITTED FOR REVIEW (GP-19, Sprint 66, 2026-09-08)
+
+The full console pass ran on 2026-09-08 and 14 changes were submitted for Google's review.
+Everything below is what was actually entered, so the next submission re-verifies from this
+record rather than re-deriving it.
+
+### Content ratings -- ISSUED
+
+Submitted 2026-09-08 00:03 via the IARC questionnaire. Category selected: **All Other App
+Types** (Play's own description names "utilities, tools", which is what a spam filter is;
+"Social or Communication" was rejected because the app never lets users meet or message
+anyone).
+
+Every questionnaire answer was **No** across all five sections (Downloaded App, User Content
+Sharing, Online Content, Age-Restricted Products, Miscellaneous).
+
+The one answer worth recording the reasoning for is **Online Content: No**. The app does
+fetch mail over IMAP, but that question targets apps that surface a catalogue of third-party
+content (its own examples are Netflix, Amazon, Spotify, NYT). Retrieving the user's own
+private mailbox for the user is not featuring or promoting content.
+
+Ratings issued, with **no content descriptors** on any territory:
+
+| Territory | Authority | Rating |
+|---|---|---|
+| Brazil | ClassInd | L (All ages) |
+| North America | ESRB | Everyone |
+| Europe | PEGI | PEGI 3 |
+| Germany | USK | USK 0 (All ages) |
+| Rest of world | IARC Generic | 3+ |
+| Russia | Google Play | 3+ |
+| South Korea | Google Play | 3+ |
+
+IARC certificate ID was blank at submission. That is normal -- it populates after the rating
+authorities process the submission, and it blocks nothing.
+
+Contact address given to IARC: the public developer address recorded under ACCOUNT
+CREATED at the top of this file (shared with rating
+authorities, not shown publicly).
+
+### Target audience and content
+
+**18 and over only.** Every younger bracket left unchecked, which keeps the app clear of
+Google's Families policy and its additional ads/data/content requirements.
+
+The optional **"Restrict users that Google has determined to be minors"** checkbox was
+deliberately left UNCHECKED. It is a hard availability restriction (blocks those users from
+finding or downloading the app), and 18+ here reflects who the app is designed for, not a
+legal age gate on restricted content.
+
+Steps 2-4 of that flow (App details, Ads, Store presence) were skipped automatically by the
+console: selecting 18-and-over exclusively means all three -- which exist to probe
+child-appeal -- have nothing to ask.
+
+### Store settings
+
+| Field | Value |
+|---|---|
+| App or game | App |
+| Category | **Productivity** |
+| Contact email (public on listing) | the public developer address (see ACCOUNT CREATED) |
+| Website | https://myemailspamfilter.com |
+| Phone | left blank (optional) |
+| External marketing | left ON (allows Google to advertise the app off-platform; changes take 60 days) |
+
+**Category note.** This was first set to "Tools", then corrected to "Productivity" to match
+`docs/store-assets/android/LISTING_COPY.md`, which had recorded Productivity all along. Both
+are defensible for a mail utility; what matters is that the console and the repo agree.
+
+### Privacy policy -- WHERE THE FIELD ACTUALLY LIVES
+
+`https://myemailspamfilter.com/legal/PRIVACY_POLICY.html`
+
+**It is NOT under Store settings, and NOT under Store listings.** It is a step INSIDE the
+Data safety flow itself (App content -> Data safety). Two guesses were wasted looking for it
+under Properties and then under Store settings, both wrong. Go straight to Data safety.
+
+### Store listing
+
+App name, short description, full description, icon, feature graphic and five phone
+screenshots -- all from `docs/store-assets/android/`. Status after save: "Ready to send for
+review".
+
+**AI asset declaration: "Don't label assets".** The feature graphic was composed
+programmatically (PIL: the existing icon composited with text on the launcher-blue
+background) and the screenshots are direct captures of the running app. No generative AI
+produced any listing asset.
+
+**A false claim was caught and corrected at this step.** See
+`docs/store-assets/android/LISTING_COPY.md` -- the copy advertised five email providers when
+the app offers two. Corrected before saving, and `test/policy/play_listing_assets_test.dart`
+now fails if the copy ever names a provider that is not phase 1 in the registry.
+
+### Release
+
+| Item | Value |
+|---|---|
+| Track | Closed testing - Alpha |
+| Release name | Closed testing 0.14.1 |
+| Artifact | `app-prod-release.aab`, version code 1 (0.14.1), 53.3 MB |
+| Delivered size | 12.4 MB for new installs (Play splits the bundle per device) |
+| Target SDK | 36 |
+| Min API | 24+ |
+| ABIs | 3 |
+| Countries | United States |
+| Tester list | `ClosedTest14-day` (email list) |
+| Feedback channel | the public developer address (see ACCOUNT CREATED) |
+| Managed publishing | OFF -- approval publishes immediately |
+
+**Build the AAB with the script, not by hand.** `flutter build appbundle` invoked directly
+fails at `android/app/build.gradle.kts:70` with "SEC-9: androidGmailClientId gradle property
+is missing for a RELEASE build" -- the gate that exists because F119 shipped a
+credential-less build to the Microsoft Store. The supported command is:
+
+```powershell
+cd D:\Data\Harold\github\spamfilter-multi\mobile-app\scripts
+.\build-with-secrets.ps1 -BuildType release -Output aab
+```
+
+Verified before upload: the bundle's `base/manifest/AndroidManifest.xml` contains a real
+`com.googleusercontent.apps.*` redirect scheme (2 entries, non-empty), version 0.14.1, and no
+`.dev` package suffix.
+
+### Release notes (494 chars, Play's limit is 500 per language)
+
+The field requires `<en-US>` language tags around the text. Written as orientation for
+first-time testers rather than as a changelog, because nothing in 0.14.1 is user-visible --
+everything since 0.14.0 was store-readiness work.
+
+### The 14-day clock -- how it actually works
+
+Google's requirement, quoted from
+https://support.google.com/googleplay/android-developer/answer/14151465:
+
+> "At least 12 testers must be opted in to your closed test when you apply for production
+> access, and they must have been opted in continuously for the preceding 14 days."
+
+And: if testers "opt out and opt back in later, the 14 days must be consecutive."
+
+**Each tester accumulates their own 14 days from their own opt-in; nobody's clock resets
+when someone else joins.** But the application date is 14 days after the **12th** person
+opts in, because that is the first moment twelve clocks have all reached 14. Testers 13+ are
+insurance and never push the date out.
+
+Practical consequence: get every address into the list BEFORE sending the join link, so the
+opt-ins cluster. A trickle of late joiners stretches the timeline; recruiting 15-16 absorbs
+an opt-out without costing two weeks.
+
+**The join link does not exist until the track is published and approved.** It appears on
+Closed testing -> Testers ("The link will be shown here when you publish your app").
+
+### Tester email addresses are NOT kept in this repository
+
+Deliberate, and gated. Play Console is the system of record for the roster; Harold keeps his
+own tracking outside the repo. What belongs here is counts and dates, never identities.

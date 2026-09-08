@@ -2,6 +2,8 @@ import 'dart:io';
 
 import 'package:flutter_test/flutter_test.dart';
 
+import 'section_scope.dart';
+
 /// GP-10 Data safety declarations policy gate (Sprint 65, Issue #380).
 ///
 /// **What this protects.** Play's Data safety form and the published privacy
@@ -88,9 +90,10 @@ void main() {
             'wording; if this fails, re-check the Data safety section '
             'against the new wording');
 
-    final dataSafetyStart = setupContent.indexOf('Data safety declarations (as submitted)');
-    expect(dataSafetyStart, greaterThan(-1));
-    final dataSafetySection = setupContent.substring(dataSafetyStart);
+    final dataSafetySection =
+        sectionFrom(setupContent, 'Data safety declarations (as submitted)');
+    expect(dataSafetySection, isNotNull,
+        reason: 'the Data safety declarations section is missing');
     expect(dataSafetySection, contains('No data is shared with any third party'),
         reason: 'the Data safety section must assert no sharing in every '
             'category, matching the privacy policy\'s "We share data with '
@@ -113,8 +116,10 @@ void main() {
             'deletion wording; if this fails, re-check the Data safety '
             'section against the new wording');
 
-    final dataSafetyStart = setupContent.indexOf('Data safety declarations (as submitted)');
-    final dataSafetySection = setupContent.substring(dataSafetyStart);
+    final dataSafetySection =
+        sectionFrom(setupContent, 'Data safety declarations (as submitted)');
+    expect(dataSafetySection, isNotNull,
+        reason: 'the Data safety declarations section is missing');
     expect(dataSafetySection, contains(deletionClaim),
         reason: 'the Data safety section must record the same deletion '
             'behaviour the privacy policy promises publicly -- a mismatch '

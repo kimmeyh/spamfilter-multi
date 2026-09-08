@@ -46,7 +46,7 @@ the listing icon. The gate checks the PNG colour type for this reason.
 
 | Field | Value |
 |---|---|
-| Dimensions | Each side between 320 and 3840 pixels; aspect ratio between 16:9 and 9:16. A standard portrait phone capture (for example 1080 x 2340, the `pixel34_updated` AVD's resolution) satisfies this. |
+| Dimensions | Each side between 320 and 3840 pixels. A standard portrait phone capture (for example 1080 x 2340, the `pixel34_updated` AVD's resolution) is accepted -- **verified empirically 2026-09-08**: all five 1080 x 2340 captures uploaded to the Play Console without complaint. This line previously also asserted "aspect ratio between 16:9 and 9:16", which 1080 x 2340 (1:2.167) EXCEEDS by 1.22x -- so the row contradicted its own worked example. Play accepts modern tall-phone ratios; the stated bound was stale. Do not crop captures to satisfy a limit Play does not enforce. |
 | Format | PNG or JPEG, 24-bit, no alpha |
 | Source | The REAL Android build. The signed release APK from Sprint 64 is already installed on the `pixel34_updated` AVD. |
 
@@ -58,7 +58,24 @@ unattended.
 |---|---|---|---|---|
 | 1 | `phone_01_choose_provider.png` | Provider selection on first run, showing the "Try Demo Mode" card | `01_choose_provider.png` | First thing a new user sees; shows the supported providers and that Demo Mode needs no account. |
 | 2 | `phone_02_scan_results.png` | Results after a Demo Mode scan, showing deleted and safe counts | `03_scan_results.png` | The core value in one image: real filtering outcomes, not a settings screen. |
-| 3 | `phone_03_review_no_rule.png` | The Review No Rule Items list | `04_email_quick_actions.png` | Shows the human-in-the-loop step -- messages no rule matched, awaiting the user's decision. |
+| 3 | `phone_03_review_no_rule.png` | **Results screen filtered to the "No rule" items** (the `No rule: 12` chip active), NOT the Review No Rule Items screen | `04_email_quick_actions.png` | Shows the human-in-the-loop step -- messages no rule matched, awaiting the user's decision. |
+
+**Why slot 3 is not the Review No Rule Items screen (discovered 2026-09-08 during capture).**
+That screen cannot be captured from Demo Mode: it renders "0 items / No unaddressed items"
+even immediately after a demo scan reports 12 remaining. This is not a defect.
+`no_rule_review_screen.dart` `_loadItems()` reads persisted scans per stored account via
+`_scanResultStore.getLatestCompletedScan(accountId)`, and Demo Mode runs without a saved
+account, so there is no persisted scan for it to find; the results screen counts in-memory
+from the scan that just ran. The two are reading different sources, and both are correct.
+
+The substitute tells the same story with real content: the same 12 unmatched messages, each
+labelled "No rule", on a screen Demo Mode genuinely reaches. Capturing the empty state would
+have shown a "nothing to do here" screen as the illustration of a feature.
+
+If this slot is ever to show the real screen, it needs a capture from a build with a
+connected account and a completed persisted scan -- which cannot use Demo Mode, and would
+therefore put real sender addresses in a public listing. That is why Demo Mode is mandated
+for captures in the first place. Prefer the substitute.
 | 4 | `phone_04_manage_rules.png` | Manage Rules with the category filter chips visible | `05_manage_rules.png` | Shows user control over the rule set, including the Body Phrase rules added in Sprint 64. |
 | 5 | `phone_05_background_scan.png` | Settings, Background tab, showing scan frequency | `06_settings_general.png` | Shows unattended operation, which is the reason to keep the app installed. |
 
