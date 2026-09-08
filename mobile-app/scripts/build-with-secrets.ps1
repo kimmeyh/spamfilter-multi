@@ -539,6 +539,17 @@ try {
                 Start-Sleep -Seconds 2
             }
             $adbDevices = & adb devices 2>&1
+            # Check SUCCESS first. `adb devices` prints BOTH "daemon not running;
+            # starting now" AND "List of devices attached" in the same output when
+            # it auto-starts -- that is the NORMAL cold-start path, not a failure.
+            # Testing the failure pattern first made the script kill the daemon it
+            # had just started, loop, and abort with [FATAL] on a build whose APK
+            # had already been produced successfully (Sprint 66: cost four
+            # misdiagnosed rebuild attempts).
+            if ($adbDevices -match "List of devices attached") {
+                $adbStarted = $true
+                break
+            }
             if ($adbDevices -match "daemon not running" -or $adbDevices -match "cannot connect") {
                 Write-Host "[ADB] Daemon not running or connection refused. Restarting..." -ForegroundColor Yellow
                 & adb kill-server

@@ -35,6 +35,11 @@ void main() {
     'Try Demo Mode instead': 'app_content_declarations_test.dart',
     'Start Demo Scan (Testing)': 'app_content_declarations_test.dart',
     'No Accounts Yet': 'app_content_declarations_test.dart',
+    // GP-19 (Sprint 66): the tester instructions assert this label.
+    // Registered in its FULL form -- 'App Password (IMAP)' alone is a
+    // substring of 'App Password (IMAP) (Recommended)', which is the
+    // exact shadow this gate exists to catch.
+    'App Password (IMAP) (Recommended)': 'tester_instructions_test.dart',
   };
 
   /// Collect user-facing string literals from lib/. Deliberately coarse: it

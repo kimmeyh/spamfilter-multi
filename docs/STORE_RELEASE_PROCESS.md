@@ -55,7 +55,29 @@ If any of the above are not true, complete them before proceeding. A store relea
 
 ---
 
-## Step 1: Version Bump
+## Step 1: Version VERIFICATION (the bump already happened)
+
+> **CHANGED 2026-09-07 (F190).** The version is no longer bumped here. It is bumped at
+> **Sprint Plan approval (Phase 3.7.0b)** and re-verified at **Phase 7.7**, so that a tester
+> running a dev build can always tell it apart from production. Bumping at release time meant
+> the dev build reported the SAME version as production for the entire sprint -- exactly when
+> the distinction matters most.
+>
+> **What Step 1 does now**: VERIFY, do not bump.
+> 1. Confirm `mobile-app/pubspec.yaml` `version:` and `msix_config.msix_version` are already
+>    ahead of the live Store version (`docs/STORE_VERSION_STATUS.md`).
+> 2. Confirm the KIND is right: a `feat` in `[Unreleased]` means MINOR, otherwise PATCH.
+> 3. Run `flutter test test/policy/version_consistency_test.dart` and
+>    `test/policy/dev_version_ahead_test.dart`.
+>
+> If the version is NOT ahead, that means Phase 3.7.0b was skipped. Bump it here -- this is the
+> last cheap moment -- and record the miss in the sprint's retrospective, because a skipped gate
+> is a process defect worth seeing rather than a one-off to paper over.
+>
+> The prod-worktree convention is unchanged: its `msix_version` is set locally and uncommitted
+> at release time to match the dev version being shipped.
+
+## Historical: Version Bump (retained for the file-list and MINOR/PATCH rule)
 
 The version string is referenced in **5 files** in the dev worktree. Miss any one and the MSIX version, the in-app "About" screen, and the background-scan log filename can drift.
 

@@ -6,6 +6,140 @@ Manual Validation complete
 ---------------------------------------------------------------------------------------------------------
 Sprint 6n Manual Validation Feedback 
 
+ Play Console declarations, step by step
+
+  Create the app first. Click Create app on the screen you are looking at.
+
+  You will get a short form. Here are the answers:
+
+  App name
+  MyEmailSpamFilter
+  This matches the Microsoft Store listing exactly, which the cross-store comparison requires.
+
+ Enter this as the Package name:
+
+  com.myemailspamfilter
+
+  Default language: English (United States).
+
+  App or game: App.
+
+  Free or paid: Free.
+
+  Two important notes on that last one. It is what your listing copy states, and it matches the Microsoft Store. More importantly, you can change free to paid later, but
+  you can never change paid to free, so free is also the safe direction.
+
+  Declarations: two checkboxes at the bottom. Confirm the app meets Google's developer program policies, and confirm it complies with United States export laws. Both apply.
+
+  Then click Create app.
+
+  That takes you to the app dashboard, where Data safety and App content finally appear in the left sidebar under Policy. At that point my walkthrough applies exactly as
+  written.
+
+---
+
+  Two separate forms. I will do Data safety first, then App content. Around 20 minutes total.
+
+  ---
+
+  Step 1. Open the Data safety form
+
+  https://play.google.com/console
+
+  Select MyEmailSpamFilter, then in the left sidebar go to Policy and programs, then App content. Find Data safety in the list and click Start.
+
+  ---
+
+  Step 2. Data collection overview
+
+  The first page asks whether your app collects or shares any required user data types.
+
+  Answer Yes.
+
+  That may feel wrong for a privacy-focused app, but it is correct. Your app stores the user's email address and, for messages awaiting review, a short body excerpt. Both
+  live only on their device, and Google's next questions capture that distinction properly.
+
+  The second question asks whether all collected data is encrypted in transit. Answer Yes. Cleartext is disabled at the app level and every mail connection uses TLS.
+
+  Third question: whether you provide a way for users to request data deletion. Answer Yes. The app can delete one account's data or wipe everything.
+
+  ---
+
+  Step 3. Select the data types you collect
+
+  You will see a long checklist of categories. Check exactly two:
+
+  Under Personal info, check Email address.
+
+  Under Messages, check Emails.
+
+  Leave everything else unchecked. Specifically, do not check location, financial info, photos, contacts, app activity, crash logs, or device identifiers. Each was verified
+  against the code as not collected.
+
+  ---
+
+  Step 4. Answer the follow-up for Email address
+
+  For each type you checked, Google asks four questions. For Email address:
+
+  - Is this data collected, shared, or both? Collected only. Nothing is shared.
+  - Is it processed ephemerally? No. It is stored on the device so the account persists.
+  - Is it required or optional? Required. The app cannot connect to a mailbox without it.
+  - Why is it collected? Check App functionality only. Do not check analytics, personalisation, or advertising.
+
+  ---
+
+  Step 5. Answer the follow-up for Emails
+
+  Same four questions for Emails:
+
+  - Collected or shared? Collected only.
+  - Processed ephemerally? No. Most evaluation is header-only and discards content, but a short excerpt is kept for messages awaiting your review, so the honest answer is
+    no.
+  - Required or optional? Required. Reading mail is the entire function.
+  - Why collected? App functionality only.
+
+  ---
+
+  Step 6. Review and submit
+
+  Google shows a summary. Confirm it says data is encrypted in transit and users can request deletion, then click Submit.
+
+  Tell me when Data safety shows complete, and I will walk you through App content, which is seven shorter declarations.
+
+  One thing worth flagging as you go: if any question surprises you or seems to want a different answer than I have given, stop and tell me rather than guessing. These are
+  declarations to Google, and a wrong answer is a policy matter rather than a form to correct later.
+
+
+
+  Manual Validation recommendations
+
+  Five steps, roughly 30 minutes, mostly console work only you can do.
+
+  1. Confirm the dev app shows 0.14.0 with the DEV marker. This closes the version question you raised. Thirty seconds.
+- yes
+  2. Verify Gmail sign-in still works on Windows. This is the regression check that matters most. I removed two OAuth permission declarations, and although both had zero
+  call sites, that is shared code touching authentication. Sign out and back in with App Password, then confirm a scan runs.
+- yes
+  3. Enter the Play Console declarations. Data safety and App content, transcribed from the recorded answers. Confirm no section shows as needing attention.
+- 
+  4. Capture the listing assets. Feature graphic and five phone screenshots per the specification, using Demo Mode so no personal mail reaches a public listing. The gate
+  currently prints them as pending, so it flipping to verified is the evidence.
+- 
+  5. Send the tester instructions and start recruiting. This is the schedule-critical one. The fourteen-day clock starts on tester opt-in, so every day of delay here is a
+  day added to the launch.
+- 
+
+---------------------------------------------------------------------------------------------------------
+Sprint 65 Manual Validation Feedback 
+  1. Tap "Try Demo Mode" on the first screen, the card above the provider list.
+Done - worked as expected
+  2. Tap "Start Demo Scan (Testing)", not "Start Live Scan". Live fails without an account, which is why the reviewer instructions name the second button.
+Done - working as expected
+  3. Confirm real deletions appear, roughly 26 of 59 messages.
+see image
+  4. Check the launcher icon renders correctly on the home screen.
+see image of home screen
 ---------------------------------------------------------------------------------------------------------
 Sprint 64 Manual Validation Feedback 
   Retest list, in order:

@@ -1,41 +1,35 @@
 {
   "_description": "Sprint status file that persists across context compaction. Update after each phase/sub-phase completion.",
-  "_last_updated": "2026-09-07 (Sprint 65 Phase 7.7 close-out complete; PR #385 Ready-for-Review pending Harold's merge)",
+  "_last_updated": "2026-09-08 (Sprint 66 CLOSE-OUT complete; retrospective + all 4 improvements applied; PR #389 ready for review)",
   "_usage": "Read this file after context compaction to restore sprint approval state and progress.",
   "_staleness_note": "This file had drifted 15 sprints (last updated at Sprint 35, 2026-04-19) before being refreshed at Sprint 50 close-out. It is a Phase 7.7 checklist item -- update it at every sprint close-out, not opportunistically.",
   "current_sprint": {
+    "number": 66,
+    "branch": "feature/20260907_Sprint_66",
+    "pr_number": 389,
+    "start_date": "2026-09-07",
+    "status": "Sprint 66 COMPLETE (2026-09-08). Manual Validation COMPLETE -- Harold confirmed. Google Play CLOSED TEST IS LIVE: Submission 1 (14 changes) submitted 1:50 PM, PUBLISHED 2:00 PM. Both scope tasks (GP-4, GP-19) delivered, plus F190 taken mid-sprint. Retrospective COMPLETE: 14 categories x 4 roles; Harold rated all 12 rated categories Very Good, Cats 13/14 none; all 4 improvement proposals decided \"apply all now\" and applied (2 CLAUDE.md rules, 1 LISTING_COPY.md rule, 1 verified). Docs triad complete (PLAN + RETROSPECTIVE + SUMMARY). Master plan rolled. Verification: suite 2,048/15/0, policy suite 96 passing, analyze clean, WinWright 2/2 at sweep-head 511dd2c. CARRIED TO SPRINT 67: tester recruitment + opt-in tracking, then the production-access application (external dependency -- 12 testers x 14 continuous days, clock starts per tester at opt-in). POST-CLOSE-OUT FINDING: 5.1.1 automated code review was NEVER RUN this sprint -- caught by verify-closeout-complete, not by the checklist walk I performed in the same turn. Review run immediately on 85b906b..HEAD. F193 registered and targeted for Sprint 67. Retrospective amended with the miss (Category 9 was rated before this was known).",
+    "plan_approved": true,
+    "blanket_execution_approved": true,
+    "plan_approval_date": "2026-09-07",
+    "scope": [
+      "GP-19",
+      "GP-4"
+    ],
+    "_scope_note": "Harold 2026-09-07: 'Sprint plan approved, proceed with execution. All Sprint tasks and sub-tasks are approved. Continue without additional approvals until Manual Validation.' F173 and F189 were considered and DEFERRED to a future sprint at his direction; both remain periodic HOLD templates.",
+    "pr_url": "https://github.com/kimmeyh/spamfilter-multi/pull/389"
+  },
+  "previous_sprint": {
     "number": 65,
     "branch": "feature/20260904_Sprint_65",
     "pr_number": 385,
-    "start_date": "2026-09-04",
-    "status": "Sprint 65 COMPLETE through Phase 7.7 (2026-09-07). All 5 tasks done, MV 4/4 PASS, retrospective + all 5 improvements applied. MV step 3 matched the widget test's numbers EXACTLY on a real device (59 processed, 26 deleted, 21 safe, 12 no-rule, 0 errors). REVIEWS: Phase 5.1.1 found 2 real findings (a FALSE Play declaration that reached committed history via the sprint's second commit race, and a gate that asserted the document's own claim of diligence instead of reading pubspec.yaml); Copilot found 1 (a flat 5s test wait for a scan whose own wall time is ~5.9s -- now a bounded poll, mutation-verified by tripling the mock delay). All fixed, replied, and the Copilot thread RESOLVED. Suite 2,039/15/0, analyze clean, WinWright 2/2 no drift, ZERO product-code diff. Store Submission 22 (listing-only, no package) certified live mid-sprint. NEXT: gh pr ready 385 + readiness announcement -- final approval and merge are Harold's.",
-    "plan_approved": true,
-    "blanket_execution_approved": true,
-    "scope": [
-      "GP-10",
-      "GP-18",
-      "GP-7",
-      "GP-6",
-      "GP-17"
-    ],
-    "_scope_note": "Harold 2026-09-05: 'Sprint plan approved, proceed with execution. All Sprint tasks and sub-tasks are approved. Continue without additional approvals until Manual Validation.' Standing approval through MV per Phase 3.7.",
-    "plan_approval_date": "2026-09-05",
-    "pr_url": "https://github.com/kimmeyh/spamfilter-multi/pull/385"
-  },
-  "previous_sprint": {
-    "number": 64,
-    "branch": "feature/20260827_Sprint_64",
-    "pr_number": 378,
-    "status": "CLOSED -- merged to develop and main 2026-09-04. Shipped the full Android release chain (Play-submittable), the Play developer account, published legal docs, F186/F187/F188."
+    "status": "CLOSED -- PR #385 merged to develop and main 2026-09-07. Cards #380-#384 closed. Shipped Google Play closed-test readiness: Data safety, App content + reviewer access via Demo Mode, icons, listing copy/assets, tester roster. 2,039 tests, zero product-code diff."
   },
   "github_issues": [
-    380,
-    381,
-    382,
-    383,
-    384
+    387,
+    388
   ],
-  "_github_issues_note": "Sprint 65 cards created at Phase 3.3.1 (2026-09-05): #380 GP-10, #381 GP-18, #382 GP-7, #383 GP-6, #384 GP-17. Close by hand at Post-Merge Cleanup.",
+  "_github_issues_note": "Sprint 66 cards created at Phase 3.3.1 (2026-09-07): #387 GP-19, #388 GP-4. Close by hand at Post-Merge Cleanup.",
   "test_metrics": {
     "tests_passing": 2039,
     "tests_skipped": 15,
@@ -63,9 +57,16 @@
   ],
   "blocking_issues": [],
   "next_actions": [
-    "gh pr ready 385 + Phase 7.7.5 readiness announcement to Harold (final approval and merge are HIS -- Claude never merges)",
-    "ON MERGE: Phase 6.6 -- branch feature/<date>_Sprint_66 FROM feature/20260904_Sprint_65 immediately; close cards #380-#384 by hand",
-    "Sprint 66 is HAROLD-DRIVEN console work: enter the declarations and listing in Play Console, capture assets per docs/store-assets/android/ASSET_SPEC.md, then roll out to the closed track. START TESTER RECRUITMENT FIRST -- the 14-day clock cannot begin until every deliverable reaches the console AND testers have opted in.",
-    "After the 14 days: production access is a SUBSTANTIVE ~7-day review asking what testers reported and what changed as a result. Collect real feedback during the wait -- thin answers are a documented rejection cause."
-  ]
+    "Phase 3.3.1: create the 2 sprint cards + draft PR BEFORE any task commit (the hook enforces this)",
+    "Execute GP-4's coding half (scope cleanup + parity gate) and GP-19's records half; console work is Harold's",
+    "Phase 5 evidence gates, then present MV recommendations to Harold"
+  ],
+  "next_sprint_targeted": {
+    "number": 67,
+    "items": [
+      "F193 -- gate Phase 5 evidence at the MANUAL-VALIDATION boundary, not at close-out (Harold 2026-09-08: \"Need a permanent, will never happen again, fix\"; targeted for next sprint)",
+      "GP-19 carry-forward -- tester recruitment, opt-in tracking, then the production-access application (external dependency: 12 testers x 14 continuous days, per-tester clock starting at opt-in)"
+    ],
+    "_note": "Recorded at Sprint 66 close-out. The Sprint 67 branch and stub are created at Phase 8 after the PR merges."
+  }
 }
