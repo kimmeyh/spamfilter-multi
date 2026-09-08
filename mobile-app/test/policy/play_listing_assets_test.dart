@@ -2,6 +2,8 @@ import 'dart:io';
 
 import 'package:flutter_test/flutter_test.dart';
 
+import 'section_scope.dart';
+
 /// GP-6 Play listing policy gate (Sprint 65, Issue #383).
 ///
 /// **What this protects.** Play rejects a listing at UPLOAD for things that are
@@ -99,17 +101,15 @@ void main() {
 
   test('the cross-store claim comparison exists and is populated (AC-4)', () {
     final content = listingCopy.readAsStringSync();
-    final start = content.indexOf('## Cross-store claim comparison');
-    expect(start, greaterThan(-1),
+    final section = sectionFrom(content, '## Cross-store claim comparison');
+    expect(section, isNotNull,
         reason: 'AC-4 requires a recorded claim-by-claim comparison against '
             'the Microsoft Store listing -- same product, same claims, with '
             'any deliberate difference justified');
-
-    final section = content.substring(start);
     // Table rows, not prose: the comparison is only useful if it actually
     // enumerates claims. A heading with an empty body would satisfy a
     // presence check and prove nothing.
-    final rows = section
+    final rows = section!
         .split('\n')
         .where((l) => l.trimLeft().startsWith('|') && l.contains('|'))
         .length;
@@ -282,8 +282,27 @@ void main() {
     String brandWord(String displayName) =>
         displayName.split(RegExp(r'[\s(]')).first;
 
+    // RAW-STRING BOUNDARIES, and the reason is not stylistic.
+    //
+    // This was written as RegExp('\\b${RegExp.escape(word)}\\b', ...) and that
+    // form is INERT. In a non-raw Dart string `\\b` does not survive as the
+    // regex word-boundary `\b`: the lexer resolves it to U+0008, the BACKSPACE
+    // control character. The compiled pattern's code units were
+    // [8, 89, 97, 104, 111, 111, 8] -- literally <BS>Yahoo<BS> -- which cannot
+    // match ordinary prose. Every provider check silently returned false.
+    //
+    // Caught by the Phase 5.1.1 automated code review (Sprint 66), which ran
+    // late; the executable probe re-inserted the exact false line this gate
+    // exists to catch and the gate PASSED it.
+    //
+    // The deeper lesson, and the reason this comment is long: version 1 of
+    // this assertion WAS mutation-tested, failed correctly, and was then
+    // rewritten to fix a substring-shadow bug -- and the mutation was never
+    // re-run against the rewrite. **A gate's verification does not survive its
+    // own rewrite.** Re-mutate after every edit to an assertion, not only when
+    // first authoring it.
     bool namesProvider(String word) =>
-        RegExp('\\b${RegExp.escape(word)}\\b', caseSensitive: false)
+        RegExp(r'\b' + RegExp.escape(word) + r'\b', caseSensitive: false)
             .hasMatch(submitted);
 
     final wrongly = <String>[];

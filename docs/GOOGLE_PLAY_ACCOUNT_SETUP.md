@@ -483,7 +483,7 @@ password is a first-class path in the app.
 >    do not complete it, you are not registered as a tester.
 > 2. Install the app from Google Play.
 > 3. Open it, tap "Add Account", choose your provider.
-> 4. For Gmail, choose **"App Password (IMAP)"** -- the first option, marked Recommended. Do
+> 4. For Gmail, choose **"App Password (IMAP) (Recommended)"** -- the first option. Do
 >    NOT choose "Google Sign-In".
 > 5. Enter your email address and the app password you created (not your normal password).
 > 6. Run a scan and see what it finds.

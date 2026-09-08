@@ -2,6 +2,8 @@ import 'dart:io';
 
 import 'package:flutter_test/flutter_test.dart';
 
+import 'section_scope.dart';
+
 /// Tester onboarding instructions gate (GP-19, Sprint 66, Issue #387).
 ///
 /// **Why this is gated at all.** Sprint 66 was replanned around one fact: an
@@ -33,18 +35,20 @@ void main() {
   test('the instructions name App Password, and explicitly steer away from '
       'Google Sign-In', () {
     final content = setupDoc.readAsStringSync();
-    final start = content.indexOf('Tester onboarding instructions');
-    final section = content.substring(start);
+    final section = sectionFrom(content, 'Tester onboarding instructions');
+    expect(section, isNotNull,
+        reason: 'the Tester onboarding instructions section is missing');
+    final body = section!;
 
     // Full label, not a prefix -- see this file's header for why.
-    expect(section, contains('App Password (IMAP)'),
+    expect(body, contains('App Password (IMAP) (Recommended)'),
         reason: 'the instructions must name the exact on-screen option; a '
             'paraphrase leaves a tester guessing');
 
     // Naming the right option is not enough. The wrong option sits directly
     // beneath it on the same screen and is the more familiar choice, so the
     // instructions must actively steer away from it.
-    expect(section.contains('Google Sign-In'), isTrue,
+    expect(body.contains('Google Sign-In'), isTrue,
         reason: 'the instructions must mention Google Sign-In in order to tell '
             'testers NOT to use it -- it is the adjacent option on the same '
             'screen and the one a user would otherwise reach for');
@@ -55,8 +59,8 @@ void main() {
     // created without it, and a tester who hits that wall usually stops rather
     // than asking.
     final content = setupDoc.readAsStringSync();
-    final start = content.indexOf('Tester onboarding instructions');
-    expect(content.substring(start), contains('2-Step Verification'),
+    expect(sectionFrom(content, 'Tester onboarding instructions'),
+        contains('2-Step Verification'),
         reason: 'creating an app password requires 2-Step Verification to be '
             'enabled first. Stating it up front prevents the most predictable '
             'drop-off in the recruitment funnel');
@@ -67,9 +71,11 @@ void main() {
     // never completes the join does not count, and that failure is invisible
     // unless each opt-in is confirmed.
     final content = setupDoc.readAsStringSync();
-    final start = content.indexOf('Tester onboarding instructions');
-    final section = content.substring(start);
-    expect(section.toLowerCase(), contains('opt'),
+    final section = sectionFrom(content, 'Tester onboarding instructions');
+    expect(section, isNotNull,
+        reason: 'the Tester onboarding instructions section is missing');
+    final body = section!;
+    expect(body.toLowerCase(), contains('opt'),
         reason: 'the instructions must make clear that joining the test is the '
             'step that counts -- an invitation starts no clock');
   });
