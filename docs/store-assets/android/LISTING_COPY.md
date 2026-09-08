@@ -21,11 +21,30 @@ stores.
 
 ## Short description (80 character limit)
 
-> Filter spam across Gmail, AOL, Yahoo and IMAP with rules you control. Offline.
+> Filter spam in Gmail and AOL with rules you control. Runs entirely offline.
 
-**Character count: 78** (measured with the exact text above; `test/policy/
+**Character count: 75** (measured with the exact text above; `test/policy/
 play_listing_assets_test.dart` re-measures this mechanically against the parsed section
 below, not this prose restatement).
+
+**CORRECTED 2026-09-08 (Sprint 66, GP-19 listing submission).** The original line read
+"Filter spam across Gmail, AOL, Yahoo and IMAP with rules you control. Offline." That was
+FALSE against the shipped app and was caught at submission time, with the contradicting
+evidence sitting in the same listing: `phone_01_choose_provider.png` shows Yahoo under a
+"Coming Soon" heading with a "Phase 2" badge.
+
+Root cause of the bad claim: this document traced the provider list to
+`platform_registry.dart` `getSupportedPlatforms()`, which returns every registered entry
+regardless of phase. It never checked the SCREEN. `platform_selection_screen.dart:26`
+filters to `phase <= 2`, renders `phase == 1` under "Available Now" and `phase == 2`
+under "Coming Soon", and disables the latter outright (`enabled: !isPhase2`). So the
+registry is a catalogue of intent; the screen is the shipped truth. What a user can
+actually connect today is Gmail (phase 1) and AOL (phase 1) -- nothing else. Yahoo
+(phase 2) is visible but not selectable; iCloud (phase 3) and Custom IMAP (phase 4) are
+filtered out of the UI entirely and never appear.
+
+Lesson for the next listing edit: a store claim about what the app DOES must be traced to
+the code path a user reaches, not to a data structure that merely contains the capability.
 
 Traced to the actually-registered providers only (`mobile-app/lib/adapters/
 email_providers/platform_registry.dart` `_factories`: `aol`, `gmail`, `gmail-imap`,
@@ -42,10 +61,9 @@ traffic is to the user's own provider.
 > entirely on your device. Nothing is sent to any server: there is no backend, no
 > analytics, and no advertising of any kind.
 >
-> Multi-Provider Support
-> Connect accounts from Gmail (Google Sign-In), AOL, Yahoo, iCloud, and any other
-> IMAP-based email provider. Manage every account in one place and scan them all for
-> spam.
+> Connect Your Account
+> Connect a Gmail account with Google Sign-In, or an AOL Mail account with an app
+> password. Manage your accounts in one place and scan them for spam.
 >
 > Customizable Rules
 > The built-in default rules work for most spam out of the box. Build your own rules to
@@ -91,16 +109,21 @@ traffic is to the user's own provider.
 > No Subscription
 > MyEmailSpamFilter is free, with no account, subscription, or in-app purchase required.
 
-**Character count: 2694** (measured with the exact text above, blockquote markers
+**Character count: 2672** (measured with the exact text above, blockquote markers
 stripped, paragraph line-wraps counted as single spaces the way Play's text field would
 join them; well under the 4000 limit -- deliberately, so Harold has headroom to add
 Google Play's own required disclosures such as the Families policy answer or the Data
 safety summary line if Play's editor prompts for one at submission time).
 
 Every paragraph is traced:
-- "Multi-Provider Support" providers: `platform_registry.dart` `getSupportedPlatforms()`
-  (`aol`, `gmail`, `yahoo`, `icloud`, `imap` all `phase <= 4`, all reachable from the
-  provider list).
+- "Connect Your Account" providers: traced to the SCREEN, not the registry --
+  `platform_selection_screen.dart:26` filters to `phase <= 2`, lists `phase == 1` under
+  "Available Now" and disables `phase == 2` (`enabled: !isPhase2`). Only `gmail` and
+  `aol` are phase 1, so only those two are claimed. `yahoo` (phase 2) renders as
+  "Coming Soon" and is not selectable; `icloud` (phase 3) and `imap` (phase 4) never
+  reach the UI at all. The earlier version of this bullet cited
+  `getSupportedPlatforms()`, which returns the whole catalogue irrespective of phase --
+  that is what produced the false multi-provider claim corrected above.
 - "Customizable Rules" phrase-rule claim: F186 (Sprint 64, Issue #369), the Body Phrase
   rule type in Manage Rules, confirmed shipped and Android-validated
   (`CHANGELOG.md` 2026-08-27 Sprint 64 chain-validation entry: "Item 4 retest confirms
@@ -163,7 +186,7 @@ deliberately differs, why.
 | Publisher | Kimmey Consulting - Ohio | Kimmey Consulting, Ohio (Play Console "Developer name (public)") | Same identity; punctuation is each console's own convention. |
 | Category | Productivity / Utilities & Tools | Productivity | Same substance -- Play's category taxonomy has no combined "Utilities & Tools" leaf; the closest single Play category is used. |
 | Privacy policy | https://myemailspamfilter.com/privacy | https://myemailspamfilter.com/legal/PRIVACY_POLICY.html | Deliberate difference: the Windows listing predates the GP-5 (Sprint 64) publication of the canonical `/legal/` path. The Windows Store entry is stale and should be updated to the canonical URL at the next Windows listing edit -- recorded here as a follow-up, not silently left inconsistent. |
-| Providers supported | "multiple email providers... including AOL Mail and Gmail" (short description names AOL/Gmail only; long description does not enumerate further) | Gmail, AOL, Yahoo, iCloud, and any IMAP account | Play's copy is more complete, not contradictory -- Yahoo and iCloud are registered providers today (`platform_registry.dart`) that the Windows copy simply never enumerated. No claim on either store is false; Play's is more precise for the same shared codebase. |
+| Providers supported | "multiple email providers... including AOL Mail and Gmail" (short description names AOL/Gmail only; long description does not enumerate further) | Gmail and AOL | Agree. **This row previously claimed Play supported "Gmail, AOL, Yahoo, iCloud, and any IMAP account" and argued Play's copy was "more precise" than Windows'. That was backwards** -- the Windows copy naming only AOL and Gmail was the accurate one, and this comparison talked itself into the error by reasoning from the provider registry rather than the provider screen (see the CORRECTED note under Short description). Corrected 2026-09-08. |
 | Local/offline processing | "All processing happens locally on your device with no data sent to external servers"; "Works offline" | "rules that run entirely on your device"; "Offline" | Same claim. |
 | Customizable rules | "define your own spam filtering rules using powerful regular expression patterns... Match against sender addresses, subject lines, and email content" | "match sender addresses, domains, or a phrase anywhere in the message body... Advanced users can write full regular expression patterns" | Same substance. Play's copy additionally names the plain-language Body Phrase assist (F186, shipped after the Windows copy was last written) -- an addition, not a contradiction. |
 | Safe sender whitelist | "adding trusted senders to your safe sender list... bypass all spam rules" | "trusted senders... bypassing every block rule" | Same claim. |

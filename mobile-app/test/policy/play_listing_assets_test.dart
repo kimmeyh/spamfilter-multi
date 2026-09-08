@@ -155,14 +155,31 @@ void main() {
       }
       presentScreenshots++;
       final h = readPngHeader(f);
-      // Play: each side 320-3840px, aspect ratio between 16:9 and 9:16.
+      // Play: each side 320-3840px.
       expect(h.width, inInclusiveRange(320, 3840),
           reason: '$path width ${h.width} is outside Play\'s 320-3840 range');
       expect(h.height, inInclusiveRange(320, 3840),
           reason: '$path height ${h.height} is outside Play\'s 320-3840 range');
-      final ratio = h.width / h.height;
-      expect(ratio, inInclusiveRange(9 / 16, 16 / 9),
-          reason: '$path aspect ratio must be between 9:16 and 16:9');
+
+      // NO ASPECT-RATIO ASSERTION, deliberately.
+      //
+      // This test previously required the ratio to fall between 9:16 and 16:9.
+      // That bound is not what Play enforces, and the assertion actively
+      // obstructed correct work: on 2026-09-08 all five screenshots were
+      // captured at 1080x2340 -- the `pixel34_updated` AVD's native resolution,
+      // and the exact example the ASSET_SPEC row itself offered as satisfying
+      // the rule -- uploaded to the Play Console without complaint, and then
+      // failed this gate at 1:2.167, which exceeds 9:16 by 1.22x.
+      //
+      // A modern portrait phone is 20:9 or taller. A gate that rejects the
+      // native resolution of the very emulator the spec names is not
+      // protecting anything; it invites someone to crop real content off a
+      // screenshot to satisfy a limit that does not exist, or to weaken the
+      // gate under time pressure and take its other assertions down with it.
+      //
+      // The side-length bounds above ARE real and stay. If Play ever does
+      // reject a tall capture, restore a ratio check with the console's own
+      // error text quoted here as evidence -- not from a remembered rule.
     }
 
     // Only enforce the minimum count once capture has started. Enforcing it
@@ -186,5 +203,107 @@ void main() {
         print('  - $p');
       }
     }
+  });
+
+  test('the listing claims no email provider a user cannot actually connect',
+      () {
+    // WHY THIS EXISTS. Every other assertion in this file checks the SHAPE of
+    // the copy -- how long it is, whether a section is present. None of them
+    // checks whether the copy is TRUE, and on 2026-09-08 a false claim went
+    // all the way to the Play Console with this gate green: the descriptions
+    // advertised "Gmail, AOL, Yahoo, iCloud, and any other IMAP-based email
+    // provider" while the shipped app offers exactly two connectable
+    // providers. The contradiction was caught by eye, against a screenshot in
+    // the same listing showing Yahoo marked "Coming Soon".
+    //
+    // The bad claim came from reading `platform_registry.dart`, which is a
+    // catalogue of every provider the codebase knows about regardless of
+    // whether the UI exposes it. The screen is the shipped truth:
+    // `platform_selection_screen.dart` renders `phase == 1` as "Available Now"
+    // and DISABLES `phase == 2` ("Coming Soon"), while phases 3+ are filtered
+    // out before render. So this test derives the permitted names from the
+    // registry's phase-1 entries and fails if the copy names anything else.
+    //
+    // Deliberately narrow: it checks provider NAMES, the specific class of
+    // claim that broke. It cannot verify the copy's other factual claims, and
+    // pretending otherwise would be the same over-trust that let this through.
+    final registry = File(
+            'lib/adapters/email_providers/platform_registry.dart')
+        .readAsStringSync();
+
+    // Parse `id: 'x'` / `displayName: 'Y'` / `phase: N` triples.
+    final entries = RegExp(
+      r"id:\s*'([^']+)',\s*displayName:\s*'([^']+)',\s*phase:\s*(\d+)",
+      multiLine: true,
+    ).allMatches(registry);
+    expect(entries, isNotEmpty,
+        reason: 'could not parse provider entries from platform_registry.dart '
+            '-- if its shape changed, fix this gate rather than removing it');
+
+    final connectable = <String>{};
+    final notConnectable = <String>{};
+    for (final m in entries) {
+      final display = m.group(2)!;
+      final phase = int.parse(m.group(3)!);
+      if (phase == 1) {
+        connectable.add(display);
+      } else if (phase > 1) {
+        notConnectable.add(display);
+      }
+    }
+    expect(connectable, isNotEmpty,
+        reason: 'no phase-1 (Available Now) providers found -- that would mean '
+            'the app exposes nothing, so this gate is misreading the registry');
+
+    final copy = listingCopy.readAsStringSync();
+    final shortDesc =
+        extractQuotedBlock(copy, '## Short description', '**Character count');
+    final fullDesc =
+        extractQuotedBlock(copy, '## Full description', '**Character count');
+    final submitted = '$shortDesc\n$fullDesc';
+
+    // A not-yet-connectable provider must not be NAMED in the submitted copy.
+    // "Coming Soon" providers are the trap: they are visible in the app, which
+    // makes them feel shipped when writing copy.
+    //
+    // Match the BRAND WORD, not the registry's full displayName. The first
+    // version of this assertion did `submitted.contains(displayName)` and was
+    // mutation-tested by reintroducing the exact false line that shipped --
+    // it PASSED, catching nothing. The registry says "Yahoo Mail"; the copy
+    // said "Yahoo". A substring test anchored on the longer string can never
+    // see the shorter one, so the gate was decorative. (Same defect family as
+    // the substring shadow in app_content_declarations_test.dart, inverted:
+    // there the short string masked the long one, here the long string missed
+    // the short one.)
+    //
+    // The brand word is the leading token of displayName with any parenthetical
+    // dropped: "Yahoo Mail" -> "Yahoo", "iCloud Mail" -> "iCloud",
+    // "Custom IMAP Server" -> "Custom" (so IMAP is checked explicitly below).
+    String brandWord(String displayName) =>
+        displayName.split(RegExp(r'[\s(]')).first;
+
+    bool namesProvider(String word) =>
+        RegExp('\\b${RegExp.escape(word)}\\b', caseSensitive: false)
+            .hasMatch(submitted);
+
+    final wrongly = <String>[];
+    for (final name in notConnectable) {
+      // Demo Mode is phase 0 and is not a provider a user "connects" -- the
+      // copy legitimately describes it as a feature, so it is exempt.
+      if (name.startsWith('Demo Mode')) continue;
+      final word = brandWord(name);
+      // "Custom IMAP Server" -> guard the meaningful token, not "Custom".
+      final probe = word == 'Custom' ? 'IMAP' : word;
+      if (namesProvider(probe)) wrongly.add(name);
+    }
+    wrongly.sort();
+    expect(wrongly, isEmpty,
+        reason: 'the listing copy names provider(s) $wrongly, but they are not '
+            'phase 1 in platform_registry.dart, so a user CANNOT connect them '
+            '-- `platform_selection_screen.dart` either disables them ("Coming '
+            'Soon", phase 2) or filters them out entirely (phase 3+). This is '
+            'a false store claim. Either remove the name from the copy, or, if '
+            'the provider genuinely shipped, move it to phase 1 first. '
+            'Connectable today: ${connectable.toList()..sort()}');
   });
 }
