@@ -357,6 +357,26 @@ All incomplete items in relative priority order. Priority in increments of 10; i
 
 ### Core App Quality
 
+**F191. Ship Yahoo Mail and iCloud Mail -- open the provider phase gate (~60-90m) Priority 20 (NEW, Sprint 66 GP-19 -- discovered while correcting a false Play listing claim)**
+- Phase: Core App Quality
+- Platform: All
+- Both providers are ALREADY BUILT and unreachable only because of a display gate. `platform_registry.dart` `_factories` maps `'yahoo' => GenericIMAPAdapter.yahoo()` and `'icloud' => GenericIMAPAdapter.icloud()`; both named constructors are complete (host, port 993, TLS, displayName, platformId) and structurally IDENTICAL to `GenericIMAPAdapter.aol()`, which ships today and runs against Harold's real AOL mailbox. The only thing standing between a user and a Yahoo account is `phase: 2` in the registry, which makes `platform_selection_screen.dart` render the card under "Coming Soon" and set `enabled: false`.
+- The change itself is two integers: `yahoo` phase 2 -> 1, `icloud` phase 3 -> 1. The WORK is proving they actually function end to end, which the gate has never allowed anyone to check: a live scan against a real Yahoo account and a real iCloud account, app-password auth, folder discovery, delete and safe-sender paths -- the same manual validation AOL gets. Both require Harold to create an app password on each service.
+- Why this matters beyond the feature: Sprint 66 shipped a Play listing that CLAIMED Yahoo and iCloud support, because the listing copy was traced to the registry (which lists them) rather than the screen (which hides them). Closing this gate makes the richer claim true, and the copy can then be widened deliberately rather than by accident.
+- Watch item: iCloud may require an Apple ID app-specific password AND have IMAP-access preconditions on the account. If it does not authenticate cleanly, ship Yahoo alone and keep iCloud gated rather than shipping a provider that fails at sign-in.
+- Depends on: nothing in code. Depends on Harold having (or creating) a Yahoo and an iCloud account to validate against.
+- Source: Sprint 66 GP-19 listing submission, 2026-09-08 -- Harold asked for this to be backlogged and suggested for the next sprint.
+
+**F192. Custom IMAP Server support -- build the host-entry UI (~4-6h) Priority 32 (NEW, Sprint 66 GP-19 -- split from F191; genuinely unbuilt)**
+- Phase: Core App Quality
+- Platform: All
+- **Deliberately SEPARATE from F191, because it is not the same kind of work.** Yahoo and iCloud need a gate opened; Custom IMAP needs a feature built. `GenericIMAPAdapter.custom()` defaults `imapHost: ''` -- it expects the host, port and TLS flag to be supplied by a caller, and no caller supplies them: `grep -rn "imapHost" lib/ui/` returns ZERO matches. There is no screen anywhere that collects a server address, so flipping `imap` to phase 1 would ship a provider that cannot connect to anything.
+- Scope: a server-details form (host, port defaulting to 993, TLS toggle, username, password), validation and a "Test Connection" affordance mirroring the existing `AccountSetupScreen` connection test, plus persistence of the per-account server settings so a saved custom account reconnects without re-entry.
+- Cross-platform parity (ADR-0042): the form is shared Flutter UI and must behave identically on Windows and Android; no platform exception is anticipated, and if one is needed it must be declared.
+- Value: this is the item that turns "Gmail and AOL" into "and any IMAP provider" -- the single largest addressable-market claim in the listing copy, and the one most often asked about for self-hosted and workplace mail.
+- Depends on: nothing. Independent of F191, though shipping both together would let the Play listing be rewritten once instead of twice.
+- Source: Sprint 66 GP-19 listing submission, 2026-09-08.
+
 **F165. Cross-device rules-DB sharing -- user cloud storage (iCloud/OneDrive/Box/Google Drive) exploration + hosted-tier option (~half-day exploration) Priority 30 (NEW, Sprint 60 MV -- Harold; product direction)**
 - Phase: Product direction / architecture exploration
 - Platform: All
