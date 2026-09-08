@@ -1,6 +1,6 @@
 {
   "_description": "Sprint status file that persists across context compaction. Update after each phase/sub-phase completion.",
-  "_last_updated": "2026-09-07 (Sprint 66 plan APPROVED by Harold; Phase 4 execution starting)",
+  "_last_updated": "2026-09-08 (Sprint 66 CLOSE-OUT complete; retrospective + all 4 improvements applied; PR #389 ready for review)",
   "_usage": "Read this file after context compaction to restore sprint approval state and progress.",
   "_staleness_note": "This file had drifted 15 sprints (last updated at Sprint 35, 2026-04-19) before being refreshed at Sprint 50 close-out. It is a Phase 7.7 checklist item -- update it at every sprint close-out, not opportunistically.",
   "current_sprint": {
@@ -8,7 +8,7 @@
     "branch": "feature/20260907_Sprint_66",
     "pr_number": 389,
     "start_date": "2026-09-07",
-    "status": "Sprint 66 Phase 5.3 MANUAL VALIDATION IN PROGRESS (2026-09-07). Both coding tasks COMMITTED (GP-4 scope narrowing + data-residency determination + 2 gates; GP-19 tester instructions + gate). Phase 5 evidence gates recorded: suite 2,048/15/0, WinWright 2/2 at sweep-head 511dd2c, F-PRECHECK clean, launch gate N/A. MV results so far: version display PASS (0.14.1 both platforms after the F190 bump); Gmail background scan PASS; AOL background scan PASS (184 found, 0 errors); Android Gmail account REMOVED + RE-ADDED via App Password + live scan PASS (12 processed, 0 errors) -- the strongest evidence, since it rebuilds the sign-in flow GP-4 touched rather than reusing a session. MV REMAINDER IS HAROLD-DRIVEN AND IN FLIGHT: Play Console declarations (app CREATED, package com.myemailspamfilter, Play App Signing accepted; Ads=No actioned; Data safety answered No per Google's 'transmitted off device' definition, pending privacy-policy URL + target-audience; Sign in details in progress), then asset capture and tester recruitment.",
+    "status": "Sprint 66 COMPLETE (2026-09-08). Manual Validation COMPLETE -- Harold confirmed. Google Play CLOSED TEST IS LIVE: Submission 1 (14 changes) submitted 1:50 PM, PUBLISHED 2:00 PM. Both scope tasks (GP-4, GP-19) delivered, plus F190 taken mid-sprint. Retrospective COMPLETE: 14 categories x 4 roles; Harold rated all 12 rated categories Very Good, Cats 13/14 none; all 4 improvement proposals decided \"apply all now\" and applied (2 CLAUDE.md rules, 1 LISTING_COPY.md rule, 1 verified). Docs triad complete (PLAN + RETROSPECTIVE + SUMMARY). Master plan rolled. Verification: suite 2,048/15/0, policy suite 96 passing, analyze clean, WinWright 2/2 at sweep-head 511dd2c. CARRIED TO SPRINT 67: tester recruitment + opt-in tracking, then the production-access application (external dependency -- 12 testers x 14 continuous days, clock starts per tester at opt-in).",
     "plan_approved": true,
     "blanket_execution_approved": true,
     "plan_approval_date": "2026-09-07",

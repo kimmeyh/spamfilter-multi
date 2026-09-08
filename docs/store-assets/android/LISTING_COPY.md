@@ -5,6 +5,27 @@ listing. Every claim below is traced to a code path or an existing repo record r
 written from assumption, per R-5: no claim of a capability the Android build does not have,
 and no "not available on Android yet" caveat for anything not shipped on any platform.
 
+> **[RULE, Sprint 66 IMP-3] Trace every claim to the SCREEN a user reaches, not to a data
+> structure that merely contains the capability.**
+>
+> A registry, a factory map, an enum, or a config table describes what the codebase KNOWS
+> ABOUT. The screen describes what a user can actually DO. Those two diverge whenever a
+> feature is built but gated -- which is a normal, healthy state for a codebase and a
+> catastrophic one for a store listing.
+>
+> This document made exactly that error and it reached the Play Console: the provider claim
+> was traced to `platform_registry.dart` `getSupportedPlatforms()` (which returns every
+> registered provider regardless of phase) instead of to `platform_selection_screen.dart`
+> (which filters to `phase <= 2`, disables `phase == 2` as "Coming Soon", and never renders
+> phase 3+). The listing advertised five providers; the app offers two. It was caught only
+> because Harold's own screenshot of that screen -- destined for the same listing -- showed
+> Yahoo marked "Coming Soon".
+>
+> `test/policy/play_listing_assets_test.dart` now mechanically enforces this for PROVIDER
+> names. It cannot enforce it for the other claims in this file, so the rule applies by
+> hand: before writing that the app does something, open the screen where a user would do
+> it.
+
 Screenshot capture and any further public copywriting polish are Harold's people time
 (excluded from this task's estimate); this document is the coding deliverable -- the words
 and the structure Harold submits from, plus the gates that keep it honest.
