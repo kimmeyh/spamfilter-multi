@@ -60,7 +60,25 @@ void main() {
     final content = setupDoc.readAsStringSync();
     final rosterStart = content.indexOf('Closed-test tester roster');
     expect(rosterStart, greaterThan(-1));
-    final roster = content.substring(rosterStart);
+
+    // End the scan at the next top-level heading, NOT at end-of-file.
+    //
+    // This previously ran `substring(rosterStart)` -- everything from the
+    // roster heading onward -- which silently made the restriction apply to
+    // any section ever appended below it. The comment below already claimed
+    // the check was "scoped to the roster section rather than the whole
+    // file", so the to-EOF range was a latent bug, not the intent.
+    //
+    // It surfaced on 2026-09-08: appending the closed-test submission record
+    // (which legitimately cites the app's PUBLIC developer contact address,
+    // the same one printed at the top of this file and on the Play listing)
+    // failed this test with three matches. The address was never a tester's.
+    // Narrowing the range fixes the actual defect; loosening the pattern
+    // would have weakened a privacy gate to accommodate unrelated prose.
+    final afterRoster = content.indexOf('\n## ', rosterStart);
+    final roster = afterRoster > rosterStart
+        ? content.substring(rosterStart, afterRoster)
+        : content.substring(rosterStart);
 
     // A bare address shape. The doc legitimately mentions the published
     // contact address in other sections, which is why this is scoped to the

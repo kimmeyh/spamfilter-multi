@@ -143,9 +143,42 @@ cleartext connection.
 
 **Privacy policy URL for the form**: https://myemailspamfilter.com/legal/PRIVACY_POLICY.html
 
-### Per-category declarations
+### [SUBMITTED 2026-09-08] The answer given to Play was "No data collected"
 
-| Play category | Collected | Shared | Ephemeral processing | User can request deletion | Code evidence |
+**This supersedes the per-category "Collected" column below for the purpose of the Play
+form.** The submitted Data safety declaration reads:
+
+- **Does your app collect or share any of the required user data types? NO**
+- Store listing renders: "No data collection declared" and "No data shared with third parties"
+- Privacy policy: https://myemailspamfilter.com/legal/PRIVACY_POLICY.html
+- Submitted 2026-09-08 (Sprint 66, GP-19), alongside the rest of App content.
+
+**Why "No", when the table below says "Yes" for two categories.** The table was written
+against the ordinary-English meaning of "collected" -- data the app holds. That is NOT
+Play's definition. The Data safety overview page defines it precisely:
+
+> "Collected" means data that is **transmitted off the user's device**.
+
+Under that definition this app collects nothing. Mail moves between the user's own device
+and their own mail provider over IMAP or the Gmail API; there is no backend, no analytics,
+no crash reporter, and no server operated by the developer anywhere in the path. Data the
+app STORES on the device -- the account email in encrypted storage, the `email_actions`
+rows, the 100-character `body_preview` -- is not "collected" in Play's sense, because none
+of it is transmitted anywhere.
+
+This was corrected during submission: the original answer prepared from the table below was
+"Yes", with two data types checked. Reading Google's own definition on the page changed the
+answer to "No". Recorded here rather than silently fixed, because the per-category rows are
+still CORRECT and USEFUL for what they actually describe -- on-device storage, the privacy
+policy's accuracy, and the deletion paths -- and deleting them would lose that evidence.
+
+**Read the two columns this way**: "Collected" below means "stored on the device", which is
+what the code evidence supports. Play's form asks a different question, and its answer is
+No.
+
+### Per-category declarations (ON-DEVICE STORAGE -- see the note above before reusing the "Collected" column on a Play form)
+
+| Play category | Stored on device | Shared | Ephemeral processing | User can request deletion | Code evidence |
 |---|---|---|---|---|---|
 | Personal info (name, email address) | Yes (email address only) | No | No -- persisted locally | Yes | `mobile-app/lib/adapters/storage/secure_credentials_store.dart` stores the account email under `credentials_<accountId>_email` in `FlutterSecureStorage` (OS-encrypted: EncryptedSharedPreferences on Android). `mobile-app/lib/core/services/data_deletion_service.dart` `deleteAccountData()` / `wipeAllData()` remove it. No name field is requested or stored beyond what the provider's own OAuth/IMAP handshake returns. |
 | Financial info | No | No | N/A | N/A | No payment, billing, or financial-account code exists anywhere in `lib/`. Confirmed by grep: zero matches for payment/billing/card SDKs or fields in the codebase. |
@@ -620,3 +653,161 @@ Windows and Android scope sets ever diverge.
 Publishing while unverified imposes a cap of 100 new users **for the lifetime of the project**,
 which cannot be reset or raised. Leave the publishing status alone until Google confirms
 verification.
+
+---
+
+## CLOSED TEST SUBMITTED FOR REVIEW (GP-19, Sprint 66, 2026-09-08)
+
+The full console pass ran on 2026-09-08 and 14 changes were submitted for Google's review.
+Everything below is what was actually entered, so the next submission re-verifies from this
+record rather than re-deriving it.
+
+### Content ratings -- ISSUED
+
+Submitted 2026-09-08 00:03 via the IARC questionnaire. Category selected: **All Other App
+Types** (Play's own description names "utilities, tools", which is what a spam filter is;
+"Social or Communication" was rejected because the app never lets users meet or message
+anyone).
+
+Every questionnaire answer was **No** across all five sections (Downloaded App, User Content
+Sharing, Online Content, Age-Restricted Products, Miscellaneous).
+
+The one answer worth recording the reasoning for is **Online Content: No**. The app does
+fetch mail over IMAP, but that question targets apps that surface a catalogue of third-party
+content (its own examples are Netflix, Amazon, Spotify, NYT). Retrieving the user's own
+private mailbox for the user is not featuring or promoting content.
+
+Ratings issued, with **no content descriptors** on any territory:
+
+| Territory | Authority | Rating |
+|---|---|---|
+| Brazil | ClassInd | L (All ages) |
+| North America | ESRB | Everyone |
+| Europe | PEGI | PEGI 3 |
+| Germany | USK | USK 0 (All ages) |
+| Rest of world | IARC Generic | 3+ |
+| Russia | Google Play | 3+ |
+| South Korea | Google Play | 3+ |
+
+IARC certificate ID was blank at submission. That is normal -- it populates after the rating
+authorities process the submission, and it blocks nothing.
+
+Contact address given to IARC: the public developer address recorded under ACCOUNT
+CREATED at the top of this file (shared with rating
+authorities, not shown publicly).
+
+### Target audience and content
+
+**18 and over only.** Every younger bracket left unchecked, which keeps the app clear of
+Google's Families policy and its additional ads/data/content requirements.
+
+The optional **"Restrict users that Google has determined to be minors"** checkbox was
+deliberately left UNCHECKED. It is a hard availability restriction (blocks those users from
+finding or downloading the app), and 18+ here reflects who the app is designed for, not a
+legal age gate on restricted content.
+
+Steps 2-4 of that flow (App details, Ads, Store presence) were skipped automatically by the
+console: selecting 18-and-over exclusively means all three -- which exist to probe
+child-appeal -- have nothing to ask.
+
+### Store settings
+
+| Field | Value |
+|---|---|
+| App or game | App |
+| Category | **Productivity** |
+| Contact email (public on listing) | the public developer address (see ACCOUNT CREATED) |
+| Website | https://myemailspamfilter.com |
+| Phone | left blank (optional) |
+| External marketing | left ON (allows Google to advertise the app off-platform; changes take 60 days) |
+
+**Category note.** This was first set to "Tools", then corrected to "Productivity" to match
+`docs/store-assets/android/LISTING_COPY.md`, which had recorded Productivity all along. Both
+are defensible for a mail utility; what matters is that the console and the repo agree.
+
+### Privacy policy -- WHERE THE FIELD ACTUALLY LIVES
+
+`https://myemailspamfilter.com/legal/PRIVACY_POLICY.html`
+
+**It is NOT under Store settings, and NOT under Store listings.** It is a step INSIDE the
+Data safety flow itself (App content -> Data safety). Two guesses were wasted looking for it
+under Properties and then under Store settings, both wrong. Go straight to Data safety.
+
+### Store listing
+
+App name, short description, full description, icon, feature graphic and five phone
+screenshots -- all from `docs/store-assets/android/`. Status after save: "Ready to send for
+review".
+
+**AI asset declaration: "Don't label assets".** The feature graphic was composed
+programmatically (PIL: the existing icon composited with text on the launcher-blue
+background) and the screenshots are direct captures of the running app. No generative AI
+produced any listing asset.
+
+**A false claim was caught and corrected at this step.** See
+`docs/store-assets/android/LISTING_COPY.md` -- the copy advertised five email providers when
+the app offers two. Corrected before saving, and `test/policy/play_listing_assets_test.dart`
+now fails if the copy ever names a provider that is not phase 1 in the registry.
+
+### Release
+
+| Item | Value |
+|---|---|
+| Track | Closed testing - Alpha |
+| Release name | Closed testing 0.14.1 |
+| Artifact | `app-prod-release.aab`, version code 1 (0.14.1), 53.3 MB |
+| Delivered size | 12.4 MB for new installs (Play splits the bundle per device) |
+| Target SDK | 36 |
+| Min API | 24+ |
+| ABIs | 3 |
+| Countries | United States |
+| Tester list | `ClosedTest14-day` (email list) |
+| Feedback channel | the public developer address (see ACCOUNT CREATED) |
+| Managed publishing | OFF -- approval publishes immediately |
+
+**Build the AAB with the script, not by hand.** `flutter build appbundle` invoked directly
+fails at `android/app/build.gradle.kts:70` with "SEC-9: androidGmailClientId gradle property
+is missing for a RELEASE build" -- the gate that exists because F119 shipped a
+credential-less build to the Microsoft Store. The supported command is:
+
+```powershell
+cd D:\Data\Harold\github\spamfilter-multi\mobile-app\scripts
+.\build-with-secrets.ps1 -BuildType release -Output aab
+```
+
+Verified before upload: the bundle's `base/manifest/AndroidManifest.xml` contains a real
+`com.googleusercontent.apps.*` redirect scheme (2 entries, non-empty), version 0.14.1, and no
+`.dev` package suffix.
+
+### Release notes (494 chars, Play's limit is 500 per language)
+
+The field requires `<en-US>` language tags around the text. Written as orientation for
+first-time testers rather than as a changelog, because nothing in 0.14.1 is user-visible --
+everything since 0.14.0 was store-readiness work.
+
+### The 14-day clock -- how it actually works
+
+Google's requirement, quoted from
+https://support.google.com/googleplay/android-developer/answer/14151465:
+
+> "At least 12 testers must be opted in to your closed test when you apply for production
+> access, and they must have been opted in continuously for the preceding 14 days."
+
+And: if testers "opt out and opt back in later, the 14 days must be consecutive."
+
+**Each tester accumulates their own 14 days from their own opt-in; nobody's clock resets
+when someone else joins.** But the application date is 14 days after the **12th** person
+opts in, because that is the first moment twelve clocks have all reached 14. Testers 13+ are
+insurance and never push the date out.
+
+Practical consequence: get every address into the list BEFORE sending the join link, so the
+opt-ins cluster. A trickle of late joiners stretches the timeline; recruiting 15-16 absorbs
+an opt-out without costing two weeks.
+
+**The join link does not exist until the track is published and approved.** It appears on
+Closed testing -> Testers ("The link will be shown here when you publish your app").
+
+### Tester email addresses are NOT kept in this repository
+
+Deliberate, and gated. Play Console is the system of record for the roster; Harold keeps his
+own tracking outside the repo. What belongs here is counts and dates, never identities.
