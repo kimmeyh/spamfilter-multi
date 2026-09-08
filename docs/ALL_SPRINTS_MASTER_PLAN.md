@@ -441,20 +441,6 @@ _(F149 shipped Sprint 57 -- see `docs/sprints/SPRINT_57_PLAN.md` and CHANGELOG.m
 
 Recorded sequencing honored (see 'Recommended Sequencing' in the GP section below): account first, privacy early, technical features as sprint work, Data Safety after privacy, listing before submission, CASA trigger-gated last. Supersessions recorded this refinement: F4 (Android background scanning) was DELIVERED as F161 in Sprint 61; Issue #163 (Android untested) is RESOLVED by the continuous Sprint 59-62 on-device validation.
 
-**F190. Move the version bump to Sprint Plan approval, so a tester can always tell a dev build from production (~60-90m) Priority 30 (NEW, Sprint 66 -- Harold)**
-- Phase: Process / release engineering
-- Platform: All (the version is shared; both stores consume it)
-- **The problem, in Harold's terms (2026-09-07)**: if production is at n.n.n and development contains changes, a tester has no way to tell the two apart unless the version moves. Today the bump happens at STORE RELEASE Step 1 -- the very end -- so for the whole sprint the dev build reports the same version as production. That is exactly backwards: the window where the distinction matters most is while the changes are being tested, not after they ship.
-- **Concrete evidence this bites**: Sprint 66 MV, Harold saw "0.13.0 [DEV] while production is showing 0.14.0" and reasonably asked whether the repo was wrong. It was not -- the exe was stale -- but the confusion is the symptom. A version that only moves at release cannot answer "is this build newer than production?".
-- **The change**: bump at **Sprint Plan approval (Phase 3.7)**, where other gated updates already happen and where a checklist/hook can enforce it. If the sprint's content is not yet known to be a feature, take the non-feature (PATCH) bump -- a bump that is later found to be wrong is cheap to correct, a missing bump is invisible.
-- **Re-verify at the END, after retrospective improvements land**: confirm the bump is still the right KIND (feature vs non-feature) and correct it if the sprint turned out to contain a feat. It does NOT normally change during PR review.
-- **Remove the bump from the Store release process** (`STORE_RELEASE_PROCESS.md` Step 1) -- but KEEP a verification there, because the release is the last point where a wrong version is still cheap to fix.
-- **Surfaces to update** (enumerate ALL, then change ALL -- this is the F130 "same instruction, contradictory recipes" class waiting to happen): `SPRINT_EXECUTION_WORKFLOW.md` (Phase 3.7 gains the bump; Phase 8.3 loses it), `STORE_RELEASE_PROCESS.md` Step 1 (bump -> verify), `SPRINT_CHECKLIST.md`, `CHANGELOG_POLICY.md` (the MINOR/PATCH decision rule moves earlier), `CLAUDE.md` if it states the timing, `.claude/hooks/` (a Phase 3.7 gate, and the close-out hook should verify the bump happened), `.claude/skills/` (`plan-sprint`, `startup-check` if they mention it), and auto-memory (`feedback_version_consistency_gate` and any sibling).
-- **Test to prove it works**: extend the existing version-consistency gate, or add a sibling, asserting that on a sprint branch with an approved plan the dev version is STRICTLY GREATER than the last released version. That is the invariant Harold actually wants -- "a tester can tell" -- expressed mechanically rather than as a rule people remember.
-- **Watch for**: the existing `version_consistency_test` already asserts every version literal matches `pubspec.yaml`, so the bump must update all of them together (it is gate-verified, currently 2 fields post-F-VERSION-DERIVE). Also the prod worktree's `msix_version` is bumped LOCALLY and uncommitted at release time -- that convention interacts with this change and must be re-stated, not left ambiguous.
-- Depends on: nothing.
-- Source: Harold, 2026-09-07, after the 0.13.0-vs-0.14.0 confusion during Sprint 66 MV.
-
 **F189. Periodic Skills Audit -- what tooling would make sprints, development, recovery and prevention measurably better (~4-8h per review, research-led) Priority HOLD** _(TEMPLATE -- first run assigned to Sprint 66; keep this item for reuse)_
 - Phase: Process / tooling (repo instruction surface)
 - Platform: N/A (repository tooling, harness configuration, agent definitions)
@@ -471,20 +457,12 @@ Recorded sequencing honored (see 'Recommended Sequencing' in the GP section belo
 - Depends on: nothing. Reads the repository and its history; changes nothing without approval.
 - Source: Harold, 2026-09-07. Made a periodic template at his direction, alongside F70 (Security), F71 (Architecture), F130 (Process-Docs), F152 (First-Run) and F173 (Test Coverage).
 
-**GP-19. Play Console entry + asset capture + closed-track rollout -- START THE 14-DAY CLOCK (~2-4h Harold-driven, then a 14-day wait) Priority 30 (NEW, Sprint 66 refinement -- the remaining half of Sprint 65's repo work)**
+**GP-4. Gmail API OAuth Verification / CASA -- THE SUBMISSION ITSELF (~40-80h) Priority 60 (PREP DONE Sprint 66; submission still gated by its trigger)**
 - Phase: Android Google Play Store Readiness
 - Platform: Android
-- **Sprint 65 finished everything that could be done IN THE REPO. This is the half that can only be done in the console and on a device**, and it is the last thing standing between the app and a live Play listing.
-- Scope: (a) enter the GP-10 Data safety declarations and the GP-18 App content declarations from `docs/GOOGLE_PLAY_ACCOUNT_SETUP.md`; (b) capture the feature graphic and 5 phone screenshots per `docs/store-assets/android/ASSET_SPEC.md` -- from the REAL Android build, using Demo Mode so no personal address or subject reaches a public listing; (c) enter the GP-6 listing copy; (d) roll out to the closed track.
-- **RECRUITMENT STARTS FIRST, in parallel with all of the above.** The 14-day clock begins on tester OPT-IN, not on rollout, so testers found late extend the calendar directly. Target 14-16, not exactly 12: opt-out restarts that tester's 14 days from zero.
-- The `play_listing_assets_test` gate already names every expected asset filename and prints a PENDING list until they exist, so progress is mechanically visible rather than remembered.
-- After the 14 days: production access is a SUBSTANTIVE ~7-day review asking what testers reported and what changed as a result. Thin answers are a documented rejection cause, so the feedback log in the roster is a deliverable.
-- Depends on: nothing in the repo. Everything it needs was shipped in Sprint 65.
-
-**GP-4. Gmail API OAuth Verification / CASA (~40-80h) Priority 60 (ACTIVATED off HOLD 2026-08-24 -- Harold: 'everything Android related... along with the gp-n items') -- keep LAST per its recorded trigger**
-- Phase: Android Google Play Store Readiness
-- Platform: Android
-- Trigger: 2,500+ users or $5K/yr revenue
+- Trigger: 2,500+ users or $5K/yr revenue. **Do NOT set the OAuth consent screen to "In production" before verification completes** -- publishing while unverified caps the project at 100 new users FOR ITS LIFETIME, and that cap cannot be raised or reset.
+- **Sprint 66 delivered the PREPARATION, not the submission**: scopes narrowed to `gmail.modify` + `userinfo.email` (removing `gmail.send`, never called, and the redundant `gmail.readonly`); the data-residency determination recorded with every outbound connection enumerated; and two gates -- Windows/Android scope parity, and a build failure if any analytics/crash/ad SDK ever enters `pubspec.yaml`. A Phase 5.1.1 review independently confirmed no live call path needs a removed scope.
+- What remains on this card: the verification submission to Google, and the CASA security assessment IF it applies. Current determination is that it does NOT -- CASA is required only where restricted-scope data is stored or transmitted on servers, and this app is client-only with no backend. Re-verify that determination at submission time rather than trusting this line.
 
 ### Sprint Assignment (Sprint 47 pre-kickoff rollover, 2026-07-11)
 
@@ -508,6 +486,28 @@ Recent sprints complete -- detail blocks removed per the Maintenance Guide (hist
 _(No active Core App candidates -- F96 shipped in Sprint 43.)_
 
 ### Process
+
+**F194. Background scan hangs on Android -- "running" forever with every counter at zero (~60-120m) Priority 2 (NEW, Sprint 66 Play closed-test self-testing, 2026-09-08 -- Harold on a Galaxy S24+)**
+- Phase: Core App Quality
+- Platform: Android (Windows behaviour unverified -- confirm before assuming it is Android-only, per ADR-0042)
+- **Symptom, from the real Play-installed 0.14.1 build on Harold's S24+**: Settings > Background, read-only, notifications configured, scan started. At 1 minute: no completion notification, Scan History shows the scan RUNNING. At 4 minutes: still running, and **every counter is zero** -- processed 0, deleted 0, moved 0, safe 0, no rule 0, errors 0.
+- **Why zeroes matter more than the duration.** A slow scan shows partial progress. Zero processed after 4 minutes means the work never STARTED -- the scan was created and recorded as running, then nothing ran. That is a different defect from "slow", and it points at the WorkManager task never firing, or firing and failing before the first fetch without recording an error.
+- **Context that makes this a priority-2**: the same session's MANUAL scans on the same accounts worked perfectly -- 176 emails in 26s, then 19s on rescan. So credentials, IMAP, and the rule engine are all fine. The defect is in the background path specifically, which is the reason a user keeps the app installed, and it is what every closed-test tester will exercise over 14 days.
+- **Known-adjacent history, check FIRST before investigating**: `project_workmanager_retry_persistence` (Sprint 61) -- WorkManager re-fires killed tasks at EVERY launch until success, and the recovery is to clear `no_backup/androidx.work.workdb*` while force-stopped. Also Sprint 61's finding that Manual and Background tabs carry SEPARATE Scan Range values; Harold set both, so an unset range is NOT the explanation here.
+- **First diagnostic, cheapest**: the Background tab's own "Test Background Scan" button runs the scan immediately rather than waiting for the schedule. If Test completes and writes history, the scan logic is sound and the defect is in scheduling/wake-up. If Test also hangs, the defect is in the scan path itself. This one observation halves the search space and was not available when the report came in (no device attached).
+- Also needed: `adb logcat` from a device with USB debugging while a background scan is pending, and the background-scan log file the app writes.
+- Depends on: nothing.
+- Source: Harold's own closed-test walkthrough, 2026-09-08.
+
+**F195. Account header box is nearly unreadable -- contrast defect (~20-40m) Priority 22 (NEW, Sprint 66 Play closed-test self-testing, 2026-09-08)**
+- Phase: Core App Quality
+- Platform: Android observed; **check Windows too** -- if the widget is shared, the defect is shared (ADR-0042 parity), and a platform exception must be declared if the fix genuinely cannot be common.
+- Harold, on the real device: *"settings > Manual and Background tabs (box at the top with email address in it is almost unreadable due to colors)"*.
+- The affected element is the account/email header at the top of the Settings Manual Scan and Background tabs. Foreground and background colours are too close in value to read comfortably.
+- **Why this is worth more than its size suggests**: it is on a screen every closed-test tester visits (Background is where they enable the thing the app is for), and low contrast reads as unfinished to a Play reviewer. It may also be an accessibility failure -- check the computed contrast ratio against WCAG AA (4.5:1 for normal text) rather than judging by eye, and fix to the standard rather than to "looks better".
+- Scope note: verify whether the same header widget is reused on other screens before changing it; a colour fixed in one place and not its siblings is the recurring shape of this project's UI defects.
+- Depends on: nothing.
+- Source: Harold's own closed-test walkthrough, 2026-09-08.
 
 **F193. Gate Phase 5 evidence at the MANUAL-VALIDATION boundary, not at close-out (~45-70m) Priority 12 (NEW, Sprint 66 close-out -- Harold: "Need a permanent, will never happen again, fix")**
 - Phase: Process
