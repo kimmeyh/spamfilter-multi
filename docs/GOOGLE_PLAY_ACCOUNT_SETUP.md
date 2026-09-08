@@ -339,6 +339,33 @@ submission -- not assumed to work from the source trace alone. Record here when 
 |---|---|---|---|
 | (pending) | | | |
 
+## APP CREATED in Play Console (GP-19, Sprint 66, 2026-09-07)
+
+Deferred from Sprint 64 until the listing inputs existed; created now that they do.
+
+| Field | Value | Note |
+|---|---|---|
+| App name | MyEmailSpamFilter | Matches the Microsoft Store listing exactly (GP-6 cross-store rule). |
+| **Package name** | `com.myemailspamfilter` | **PERMANENT -- cannot ever be changed.** Read from `android/app/build.gradle.kts:27` at creation time rather than from memory. Dev builds carry the `.dev` suffix; the Store listing takes the unsuffixed production id. |
+| App ID (console) | 4976219499322735108 | From the dashboard URL. |
+| Default language | English (United States) | |
+| Type | App | |
+| Price | Free | One-way door: free can become paid later, paid can NEVER become free. Free is both correct and the safe direction. |
+
+**Declarations accepted**: Developer Program Policies, **Play App Signing**, US export laws.
+
+The Play App Signing acceptance is the one worth understanding rather than just ticking. Google
+now holds the key that signs what users download; the Sprint 64 keystore becomes the UPLOAD
+key. Two consequences: (1) losing the upload keystore is recoverable -- Google can reset it and
+the published app keeps working, whereas without Play App Signing a lost key means the app can
+never be updated again; (2) it is REQUIRED for app bundles, which is the format Play accepts,
+so it was never optional. This is what the Sprint 64 fingerprint verification was preparing for.
+
+**Dashboard confirms the research** (Sprint 66 planning) verbatim: closed testing shows
+"To start a closed test, finish setting up your app" -- app setup gates the closed track, not
+just production. Production access requires: publish a closed-testing release, **at least 12
+testers opted in (currently 0)**, and run the test for **at least 14 days**.
+
 ## Tester onboarding instructions (GP-19, Sprint 66)
 
 **Send this to each tester.** Recruitment is the long pole -- the 14-day clock starts when a
