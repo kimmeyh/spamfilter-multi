@@ -330,6 +330,53 @@ No account, credentials, or network access to any email provider is required to 
 screen. This exercises the same rule-evaluation engine used for a real account's live scan.
 ```
 
+### CONSOLE LIMIT: the instructions field caps at 500 CHARACTERS (found 2026-09-07)
+
+The full text above is ~1,100 characters and **will not fit**. Play Console's Sign in details
+instructions field (the declaration formerly called "App access") accepts 500 characters.
+Nothing in Google's documentation warned about this -- Harold hit it while pasting.
+
+**Paste THIS version instead (485 characters, MEASURED -- not estimated):**
+
+```
+No login needed to evaluate this app.
+
+1. Launch it. First screen "Select Account" shows "No Accounts Yet".
+2. Tap "Try Demo Mode instead" (below "+ Add Account").
+3. A "Ready to Scan" screen opens, showing a "DEMO MODE" badge.
+4. Tap "Start Demo Scan (Testing)" -- NOT "Start Live Scan", which needs a real account.
+5. The app filters 50+ built-in sample spam and normal emails through its rule engine.
+6. A Results screen shows the counts and which rule matched each deleted message.
+```
+
+> **Count it, do not eyeball it.** My first "short" version was labelled 486 characters and was
+> actually 575 -- it would have been rejected exactly like the original. A second attempt came
+> in at 523. Only the third fits. Any future edit to this text must be re-measured
+> (`python -c "print(len(open('f').read()))"`), because a character limit is precisely the kind
+> of claim that is cheap to verify and embarrassing to assert.
+
+**What was kept, and why** -- the cuts were chosen against the rejection risk, not by trimming
+from the end:
+- **Exact button labels** ("Try Demo Mode instead", "Start Demo Scan (Testing)"). A reviewer
+  hunting for text that is not on screen is the precise failure this declaration exists to
+  prevent, and it is what Sprint 65's MV finding caught.
+- **The "NOT Start Live Scan" warning.** Tapping the wrong button fails with no account and
+  looks like a broken app.
+- **What the reviewer sees at the end**, so they know the demonstration succeeded rather than
+  wondering whether something went wrong.
+
+**What was dropped**: the alternate route for when an account already exists (a reviewer always
+has a fresh install, so it cannot apply), and the closing sentence that this exercises the same
+engine as a live scan (reassurance, not instruction).
+
+**Username and password fields: leave BLANK.** No credential exists -- that is the entire point
+of choosing Demo Mode over a test account (GP-18 R-2).
+
+**Answer to "Is any part of your app restricted?": YES.** The Yes bullet reads "account sign in
+details, such as an email address", which is exactly what connecting a mailbox requires. No
+would assert that no account sign-in is needed anywhere in the app, which is false. Answering
+Yes is also what unlocks the instructions field.
+
 ### R-3: end-to-end reviewer-path walk (record when performed)
 
 R-3 requires the reviewer path above to be walked end to end on a real device before
