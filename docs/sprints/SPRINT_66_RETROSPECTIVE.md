@@ -182,3 +182,40 @@ names; the rest of the file's claims are covered by the written rule.
 sprint, verified at close-out: `GOOGLE_PLAY_ACCOUNT_SETUP.md` records that the privacy policy
 field lives inside the Data safety flow (not Store settings, not Properties), the supported
 AAB build command, and that the join link does not exist until the track is published.
+
+
+---
+
+## Post-close-out finding: Phase 5.1.1 was never run (2026-09-08)
+
+Recorded AFTER the retrospective was written, because that is when it was found -- by
+`verify-closeout-complete.ps1` blocking a completion claim, not by any human or by me.
+
+**The miss.** Sprint 66 reached Manual Validation, Harold validated on real devices, the
+sprint closed out, this retrospective was written, four improvements were applied, and PR
+#389 was marked ready -- with **5.1.1 (automated code review) never run**. The plan records
+5.1.2 and 5.1.5 from 2026-09-07; 5.1.1 has no entry because it did not happen.
+
+**The aggravating detail.** In the same turn that produced this miss, I walked the close-out
+checklist line by line and reported three genuine findings from it. I had the checklist open
+and still missed Phase 5's evidence, because I was auditing close-out items and 5.1.1 is a
+Phase 5 item. A self-audit finds what the auditor is looking for. This is the second time
+the class has escaped (Sprint 62 was the first), and on that occasion the late review found
+a real user-affecting bug after Harold had already validated.
+
+**Why this correction belongs in the record rather than being quietly fixed.** Category 9
+(Process Issues) above says the mutation-lock discipline held and names reading-order as the
+recurring problem. Both are true, and both are incomplete: the sprint also skipped a
+mandatory gate outright and did not notice until a hook said so. Harold's rating of "Very
+Good" for Process Issues was given without this information.
+
+**Corrective action.** The review was run immediately on the sprint diff (commit range
+85b906b..HEAD), with particular attention to whether any code path still calls an API
+requiring the removed `gmail.send` / `gmail.readonly` scopes -- a surviving call site would
+403 at runtime for every Gmail user, and the scope-parity gate cannot detect it because it
+only proves the two declarations match each other.
+
+**F193** was registered and targeted for Sprint 67: move the Phase 5 evidence check from the
+close-out claim to the Manual-Validation boundary, where the requirement actually lives.
+Explicitly not another prose rule -- CLAUDE.md's existing "open the checklist" rule was
+followed here and still failed.

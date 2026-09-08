@@ -8,7 +8,7 @@
     "branch": "feature/20260907_Sprint_66",
     "pr_number": 389,
     "start_date": "2026-09-07",
-    "status": "Sprint 66 COMPLETE (2026-09-08). Manual Validation COMPLETE -- Harold confirmed. Google Play CLOSED TEST IS LIVE: Submission 1 (14 changes) submitted 1:50 PM, PUBLISHED 2:00 PM. Both scope tasks (GP-4, GP-19) delivered, plus F190 taken mid-sprint. Retrospective COMPLETE: 14 categories x 4 roles; Harold rated all 12 rated categories Very Good, Cats 13/14 none; all 4 improvement proposals decided \"apply all now\" and applied (2 CLAUDE.md rules, 1 LISTING_COPY.md rule, 1 verified). Docs triad complete (PLAN + RETROSPECTIVE + SUMMARY). Master plan rolled. Verification: suite 2,048/15/0, policy suite 96 passing, analyze clean, WinWright 2/2 at sweep-head 511dd2c. CARRIED TO SPRINT 67: tester recruitment + opt-in tracking, then the production-access application (external dependency -- 12 testers x 14 continuous days, clock starts per tester at opt-in).",
+    "status": "Sprint 66 COMPLETE (2026-09-08). Manual Validation COMPLETE -- Harold confirmed. Google Play CLOSED TEST IS LIVE: Submission 1 (14 changes) submitted 1:50 PM, PUBLISHED 2:00 PM. Both scope tasks (GP-4, GP-19) delivered, plus F190 taken mid-sprint. Retrospective COMPLETE: 14 categories x 4 roles; Harold rated all 12 rated categories Very Good, Cats 13/14 none; all 4 improvement proposals decided \"apply all now\" and applied (2 CLAUDE.md rules, 1 LISTING_COPY.md rule, 1 verified). Docs triad complete (PLAN + RETROSPECTIVE + SUMMARY). Master plan rolled. Verification: suite 2,048/15/0, policy suite 96 passing, analyze clean, WinWright 2/2 at sweep-head 511dd2c. CARRIED TO SPRINT 67: tester recruitment + opt-in tracking, then the production-access application (external dependency -- 12 testers x 14 continuous days, clock starts per tester at opt-in). POST-CLOSE-OUT FINDING: 5.1.1 automated code review was NEVER RUN this sprint -- caught by verify-closeout-complete, not by the checklist walk I performed in the same turn. Review run immediately on 85b906b..HEAD. F193 registered and targeted for Sprint 67. Retrospective amended with the miss (Category 9 was rated before this was known).",
     "plan_approved": true,
     "blanket_execution_approved": true,
     "plan_approval_date": "2026-09-07",
@@ -60,5 +60,13 @@
     "Phase 3.3.1: create the 2 sprint cards + draft PR BEFORE any task commit (the hook enforces this)",
     "Execute GP-4's coding half (scope cleanup + parity gate) and GP-19's records half; console work is Harold's",
     "Phase 5 evidence gates, then present MV recommendations to Harold"
-  ]
+  ],
+  "next_sprint_targeted": {
+    "number": 67,
+    "items": [
+      "F193 -- gate Phase 5 evidence at the MANUAL-VALIDATION boundary, not at close-out (Harold 2026-09-08: \"Need a permanent, will never happen again, fix\"; targeted for next sprint)",
+      "GP-19 carry-forward -- tester recruitment, opt-in tracking, then the production-access application (external dependency: 12 testers x 14 continuous days, per-tester clock starting at opt-in)"
+    ],
+    "_note": "Recorded at Sprint 66 close-out. The Sprint 67 branch and stub are created at Phase 8 after the PR merges."
+  }
 }
