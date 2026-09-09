@@ -573,18 +573,36 @@ _(No active Core App candidates -- F96 shipped in Sprint 43.)_
 
 ### Process
 
-**F199. Rename the publisher to "Kimmey Consulting LLC" everywhere it appears (~60-100m) Priority 8 (NEW, Sprint 68 -- Harold, 2026-09-09; ASSIGNED TO THIS SPRINT)**
+**F199. Rename the publisher to "Kimmey Consulting LLC" everywhere it appears (~60-100m) Priority 8 (Sprint 68 -- SUBSTANTIALLY DELIVERED 2026-09-09; ONE console item remains)**
 - Phase: Release Readiness
 - Platform: All (both stores + the repo)
-- Harold: *"Can you help update my company name to 'Kimmey Consulting LLC' in all Microsoft Partner Center and store locations and the repository (it might have 'Kimmey Consulting Ohio' or 'Kimmey Consulting, OH' or similar."*
-- **The scope is wider than the string he named, and his own screenshot proved it.** Partner Center's Additional information page carries `Copyright 2026 Harold Kimmey. All rights reserved.` and `Developed by: Harold Kimmey` -- PERSONAL-name attributions that no search for "Kimmey Consulting" would ever find. **Audit for attribution of OWNERSHIP, not for a spelling.**
-- Repo inventory (2026-09-09): two variants, `Kimmey Consulting - Ohio` (12 occurrences) and `Kimmey Consulting, Ohio` (4), across `pubspec.yaml` `msix_config.publisher_display_name`, `STORE_LISTING_ASSETS.md`, `GOOGLE_PLAY_ACCOUNT_SETUP.md`, `LISTING_COPY.md` and the legal docs.
-- **Do NOT touch `msix_config.publisher`** -- `CN=84EA8722-0CA5-4EC0-9B10-07EE79B66062` is the GUID Partner Center assigns, not a name. Changing it breaks package identity and every installed copy's upgrade path.
-- **Leave internal-doc authorship alone.** "Harold Kimmey" as Product Owner in ARSD.md, retrospectives and sprint docs is a PERSON, correctly. Only PUBLIC-facing ownership/attribution changes.
-- Console-side surfaces to enumerate and check individually: Partner Center publisher display name, the Additional information page (copyright + Developed by), the Store listing's own attribution, Google Play's "Developer name (public)", the Play Data safety contact, and both legal documents on the published site.
-- **Sequencing risk worth stating**: a publisher-name change on a LIVE store listing is a metadata submission with its own certification round trip, and Play is mid closed-test. Decide per store whether to bundle it with the next content release or ship it alone -- do not assume either.
-- **Legal precondition, and it is Harold's to confirm, not Claude's**: the LLC must actually be the registered entity behind the developer account before the stores are told so. If the Partner Center account is registered to an individual, changing a display name does not change the account holder, and Microsoft may require account-level verification. Check before editing.
-- Depends on: Harold confirming the LLC registration status.
+- **DONE -- repo (commit `8558aa3`)**: 10 replacements across 7 live files -- `pubspec.yaml`
+  `msix_config.publisher_display_name`, `PRIVACY_POLICY.md`, `TERMS.md`,
+  `STORE_LISTING_ASSETS.md`, `LISTING_COPY.md`, `GOOGLE_PLAY_ACCOUNT_SETUP.md`,
+  `STORE_RELEASE_PROCESS.md`.
+- **DONE -- Play developer name** (2026-09-09, Developer account -> About you). Console reads
+  `Kimmey Consulting LLC`. No friction, and it went through WHILE 0.14.2 was in review without
+  disturbing the release or the closed test -- the caution about waiting proved unnecessary.
+- **DONE -- Partner Center Additional information** (Copyright / Developed by), folded into
+  Submission 25 rather than paying a separate listing-only certification pass.
+- **STILL OPEN -- Partner Center publisher display name.** Currently `Kimmey Consulting - Ohio`.
+  **Microsoft's own documentation contradicts itself**: the Windows Store FAQ says publisher
+  display name "cannot be changed after registration", while the Partner Center account doc
+  says you can "select the Update link to change your contact info, such as publisher display
+  name" -- and the console UI does show that link. Unresolvable from documentation; ask
+  support (https://aka.ms/windowsdevelopersupport). See `docs/LEGAL_ENTITY.md`.
+- **Deliberately NOT changed, and the distinctions are the durable part**: `msix_config.publisher`
+  (`CN=84EA8722-...`) is the Partner-Center-assigned GUID, not a name -- changing it breaks
+  package identity and every installed copy's upgrade path. Sprint docs and ADRs keep the old
+  name because they are dated records. `GOOGLE_PLAY_ACCOUNT_SETUP.md`'s "Is this a government
+  app?" row keeps the SUBMITTED name: a declaration already filed under the old name stays
+  under it (this one was caught only after being wrongly rewritten -- see `5865794`).
+- **Legal precondition RESOLVED**: Harold confirmed the LLC is a one-person entity (Harold
+  Kimmey), so the account holder does not change; this is a display-name edit, not an account
+  restructuring. Ohio LLC doc. 202624702988, effective 2026-09-05 -- see `docs/LEGAL_ENTITY.md`.
+- **Account type question CLOSED**: both stores stay Personal/Individual. Company/Organization
+  conversion was researched against both vendors' documentation and declined.
+- Depends on: nothing. The remaining item is gated on a Microsoft support answer.
 - Source: Harold, 2026-09-09.
 
 **F198. Forcing function for the numbered-question format (~45-75m) Priority 18 (NEW, Sprint 67 retro IMP-4 -- Harold: backlog, TENTATIVELY next sprint)**
