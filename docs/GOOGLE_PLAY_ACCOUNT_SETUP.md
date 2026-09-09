@@ -2,14 +2,21 @@
 
 ## ACCOUNT CREATED (Sprint 64, 2026-08-28)
 
-- **Developer name (public)**: Kimmey Consulting, Ohio -- **AS CURRENTLY SET IN THE CONSOLE**.
-  F199 (Sprint 68) renames this to **Kimmey Consulting LLC**; this line records what the
-  console says TODAY and must be updated only after the console is actually changed. A record
-  of external state is not a place to write an intention.
-- **Account type**: Personal | **Account ID**: 6597324007880348667
+- **Developer name (public)**: Kimmey Consulting LLC -- **AS CURRENTLY SET IN THE CONSOLE**,
+  changed 2026-09-09 (F199, Sprint 68) from the original `Kimmey Consulting, Ohio`. Changed
+  via Developer account -> About you; Google reviews the new name before it appears publicly
+  on Play, so the LISTING may lag this value. This line records what the console says TODAY.
+- **Account type**: Personal | **Account ID**: 6597324007880348667. Still Personal, and
+  deliberately so -- see `LEGAL_ENTITY.md` for why converting to Organization was considered
+  and declined for now.
 - **Legal entity**: Kimmey Consulting LLC (Ohio, doc. 202624702988, effective 2026-09-05).
-  See `LEGAL_ENTITY.md`. The LLC exists as of Sprint 68; the CONSOLE still shows the
-  pre-LLC name above. Those are different facts and this file records the console's.
+  See `LEGAL_ENTITY.md`. Note this is a PERSONAL account whose developer NAME is the LLC.
+  Those are two different facts, and Google permits the combination: "Your developer name
+  does not need to match the organization name."
+- **Legal name and address (held by Google, NOT shown on Play)**: Harold's personal name and
+  home address. A Personal account does not publish these. An Organization account WOULD
+  publish the legal address plus a phone number on every listing -- one of the costs weighed
+  in `LEGAL_ENTITY.md`.
 - **Developer Google account**: myemailspamfilter.dev@gmail.com (dedicated account created
   same night; 2-Step Verification ON; Gmail auto-forwards to Harold's personal address --
   spam is NOT forwarded, check the dedicated spam folder during verification windows)

@@ -39,7 +39,7 @@ These are NOT typos. Each is what the named system actually holds today, and the
 | System | String held today | Notes |
 |---|---|---|
 | Microsoft Partner Center (publisher name) | `Kimmey Consulting - Ohio` | hyphen; account type **Individual** |
-| Google Play (developer name, public) | `Kimmey Consulting, Ohio` | comma |
+| Google Play (developer name, public) | `Kimmey Consulting LLC` | **DONE 2026-09-09** (F199) |
 | `pubspec.yaml` `publisher_display_name` | `Kimmey Consulting LLC` | F199; used for the MSIX package |
 | `pubspec.yaml` `identity_name` | `KimmeyConsulting-Ohio.MyEmailSpamFilter` | **Store-assigned. NEVER change.** |
 | `pubspec.yaml` `publisher` | `CN=84EA8722-...` | **Partner Center GUID, not a name. NEVER change.** |
@@ -130,11 +130,11 @@ document"; a D-U-N-S number avoids a 2-5 day manual review there.
 
 ### Sequence
 
-1. Play developer name -> `Kimmey Consulting LLC` (safe; wait for 0.14.2 to clear review
-   only to avoid introducing a variable, not because an interaction is known).
-2. Partner Center listing fields (Copyright, Developed by) -- per-app text, no
-   account-type interaction. Fold into the next MSIX submission rather than paying for a
-   listing-only certification pass.
+1. ~~Play developer name -> `Kimmey Consulting LLC`~~ **DONE 2026-09-09.** Developer
+   account -> About you. No friction; the console accepted it while 0.14.2 was still in
+   review, and nothing about the in-flight release or the closed test was disturbed. Google
+   reviews the name before it shows publicly, so the Play LISTING may lag the console.
+2. ~~Partner Center listing fields (Copyright, Developed by)~~ **DONE 2026-09-09.**
 3. Partner Center account type -- **do not act**. Open a support ticket asking (a) can this
    Individual account publisher display name be changed, and (b) can a published app be
    transferred to a new Company account. Those two answers decide everything.
