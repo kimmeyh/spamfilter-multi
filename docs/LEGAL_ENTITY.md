@@ -52,3 +52,85 @@ installed app to its updates, and changing either orphans every installed copy.
 `GOOGLE_PLAY_ACCOUNT_SETUP.md` -- the "Is this a government app?" justification names
 `Kimmey Consulting, Ohio` because that is what was submitted to Google. Records of external
 state are not updated to reflect intentions.
+
+## Account type: Individual/Personal vs Company/Organization (researched 2026-09-09)
+
+Researched against MICROSOFT and GOOGLE OWN documentation when Harold formed the LLC and
+asked whether company accounts are worth it. Recording it because the answer is
+non-obvious, the documentation contradicts itself in two places, and re-deriving this
+costs an hour.
+
+**Decision: stay Individual/Personal for now. Change only the customer-visible NAMES.**
+
+### Google Play
+
+- **Developer name: change it any time.** Play Console -> Developer account -> About you.
+  Google: the name "can be changed any time" and "does not need to match the organization
+  name". Goes through review. **No documented effect on a running closed test** -- the
+  14-day clock is defined purely by tester opt-in continuity.
+- **The organization exemption from the 12x14 testing gate is NOT documented by Google.**
+  Every official page scopes the rule positively -- "personal developer accounts created
+  after November 13, 2023" -- and is SILENT on organizations. The explicit "organizations
+  are exempt" statements come only from Product Experts, who are Google-recognized
+  VOLUNTEERS, not employees, on pages carrying the Google disclaimer "may not be verified
+  or up-to-date". Strong signal, not a guarantee. Do not repeat it as fact.
+- **Conversion is supported, one-way, and SLOW**: requires a D-U-N-S number ("can take up
+  to 30 days"), a VERIFIED organization website as a gate before the option even appears,
+  identity verification, then "wait at least 72 hours ... before you submit any new apps".
+  "You cannot change the account type from an organization to an individual account."
+- **Converting mid-test is undocumented and the community evidence CONFLICTS**: a Gold
+  Product Expert said the requirement survives conversion; the original poster reported
+  five days later that production unlocked immediately. One anecdote against one
+  prediction. Whether conversion preserves, resets or voids accumulated tester days is
+  unknown.
+- **Cost of converting**: an Organization account publishes the legal ADDRESS and a PHONE
+  NUMBER on every listing. Personal publishes neither -- though monetizing displays the
+  full address either way.
+- Note: `Kimmey Consulting, Ohio` on a PERSONAL account was the riskier configuration under
+  the Google Impersonation policy (no "falsely imply a relationship to another company /
+  entity"). The LLC makes the name MORE defensible, not less.
+
+### Microsoft Store
+
+- **Individual -> Company conversion is NOT SUPPORTED.** "To publish as a company, you will
+  need to create a new Company developer account." A new account means a new
+  `Package/Identity/Publisher`, i.e. a NEW PRODUCT LISTING, not an update. Whether an app
+  can be TRANSFERRED between accounts is **undocumented** -- the transfer procedure in
+  search results is from a Microsoft Q&A page labelled "AI answer".
+- **The Microsoft docs CONTRADICT each other on the display name.** The Windows Store FAQ
+  says publisher display name "cannot be changed after registration". The Partner Center
+  account doc says you can "select the Update link to change your contact info, such as
+  publisher display name". The console UI shows the Update link. Unresolved -- ask support.
+- **Store Policy 10.14 is the finding that matters**: a company account is required "if a
+  reasonable consumer would interpret your application or publisher name to be that of a
+  business entity." `Kimmey Consulting - Ohio` on an Individual account arguably already
+  meets that trigger. Stated as a reading of the policy TEXT: Microsoft documents no
+  enforcement mechanism, notice process, or consequence, and this is NOT a prediction.
+- Registration fee is now **$0 for both types** via storedeveloper.microsoft.com (the old
+  $19/$99 split is obsolete through that flow). Only ONE capability is gated on account
+  type (10.8.3, financial account information) and it does not apply to this app.
+
+### Blockers if a company account is ever pursued
+
+Both platforms require infrastructure the LLC does not have yet:
+
+- Microsoft: a **work email on the organization domain**. "Personal emails like Gmail or
+  Yahoo are not supported."
+- Google: a **verified organization website**.
+
+Microsoft would accept the Ohio Articles of Organization as an "equivalent formation
+document"; a D-U-N-S number avoids a 2-5 day manual review there.
+
+### Sequence
+
+1. Play developer name -> `Kimmey Consulting LLC` (safe; wait for 0.14.2 to clear review
+   only to avoid introducing a variable, not because an interaction is known).
+2. Partner Center listing fields (Copyright, Developed by) -- per-app text, no
+   account-type interaction. Fold into the next MSIX submission rather than paying for a
+   listing-only certification pass.
+3. Partner Center account type -- **do not act**. Open a support ticket asking (a) can this
+   Individual account publisher display name be changed, and (b) can a published app be
+   transferred to a new Company account. Those two answers decide everything.
+
+Finish the closed test on the Personal account first. Conversion cannot accelerate this
+launch -- the account is ~12 days old and D-U-N-S alone can take 30.
