@@ -439,39 +439,66 @@ Recorded as it happens. A missing cell is a MISSING RESULT, not an assumed pass.
 - 41 emails evaluated across Inbox and Bulk, all "No rule" -- expected, since no
   Yahoo-specific rules exist yet. Rule EVALUATION ran on every message; nothing matched.
 
-**FOLDER HANDLING -- corrected twice, so here is what the screens actually prove.**
+**FOLDER HANDLING -- corrected THREE times. Harold's account is the authority; the
+screenshots were not.**
 
-First version of this record said the adapter "found Bulk with no configuration". Harold
-corrected that: he set the folders himself. I then over-corrected to "the adapter did not
-decide to scan Bulk". His folder-picker screenshots show the truth is in between, and closer
-to the original:
+The sequence, kept because the mistake is more instructive than the fact:
 
-- **`Select Folders to Scan` shows Inbox and Bulk BOTH tagged `Recommended` and BOTH
-  pre-checked.** The app proposed exactly the right pair for Yahoo before Harold touched
-  anything.
-- The mechanism is `folder_selection_screen.dart:150`,
-  `PRESELECT_FOLDER_TYPES = {CanonicalFolder.inbox, CanonicalFolder.junk}` (Trash is
-  deliberately excluded -- "users typically do not want to scan deleted items"). So the
-  automatic part is the **classification**: Yahoo's `Bulk` was mapped to the
-  provider-agnostic `CanonicalFolder.junk`, which is what earns the badge and the tick.
-- **`Bulk` is labelled "Spam/Junk folder" IN THE APP**, with the same trash-can icon used for
-  Trash and distinct from the plain folder icon on custom folders. The app states the
-  Bulk/Spam equivalence itself.
+1. I wrote that the adapter found Bulk "with no configuration".
+2. Harold: he set the folders himself. I over-corrected to "the adapter did not decide to
+   scan Bulk".
+3. I saw his folder-picker screenshot showing Inbox and Bulk both ticked with "Recommended"
+   badges and swung back, claiming the app pre-checked them.
+4. Harold: *"I checked them... they were not both pre-checked."*
 
-**Accurate version: the app recommended and pre-checked Inbox + Bulk; Harold confirmed that
-in Manual Scan and replicated it in Background.** Both halves matter -- an automatic
-recommendation nobody accepted would not have scanned anything, and a manual selection with
-no recommendation would have meant the provider mapping was untested. Here BOTH were
-exercised.
+**Step 3 was my error, and it is a repeat of a class already hit this sprint.** The
+screenshot was taken AFTER his edit, and I read a post-change state as a pre-change one --
+the same mistake as the Play Console line reverted in `5865794`, where a record of CURRENT
+state was treated as a target. Two ticked boxes are exactly what his own edit produces, so
+that screenshot could not distinguish the two explanations, and I chose the one that
+flattered the app.
 
-Also demonstrated by these screens, and not by the scan alone:
+**What the CODE says, traced rather than inferred from pixels**
+(`folder_selection_screen.dart:269-277`):
 
-- **All 9 Yahoo folders enumerated over IMAP**, including Harold's custom folders (Diet, Misc,
-  SBC) alongside the standard set (Inbox, Trash, Archive, Bulk, Draft, Sent).
-- **Per-folder message counts are read** ("0 messages" on the empty custom folders).
-- The Safe Sender picker is correctly single-select ("Select one folder (9 available)") while
-  the scan picker is multi-select with a Select All -- different affordances for different
-  jobs, both listing the same 9 folders.
+```dart
+if (widget.initialSelectedFolders != null) {
+  selections[folder.id] = widget.initialSelectedFolders!.contains(folder.displayName);
+} else {
+  selections[folder.id] = PRESELECT_FOLDER_TYPES.contains(folder.canonicalName);
+}
+```
+
+**`initialSelectedFolders` WINS over the canonical pre-select.** The account already carried a
+saved selection of Inbox alone from setup, so that branch ran and Bulk loaded UNCHECKED.
+`PRESELECT_FOLDER_TYPES = {inbox, junk}` applies only when there is NO prior selection.
+
+The "Recommended" badge is unconditional (line 469: it renders for any folder in
+`PRESELECT_FOLDER_TYPES`, independent of the tick). So Bulk showed **a Recommended badge on an
+unchecked box** -- recommendation and selection are separate, and only the badge was
+automatic.
+
+**Accurate version: the app CLASSIFIED Yahoo's `Bulk` as `CanonicalFolder.junk` and labelled
+it "Spam/Junk folder", but did NOT select it. Harold ticked it in Manual Scan and again in
+Background.**
+
+**This is a finding, not just a record correction.** A user who accepts the defaults at
+account setup gets Inbox only, and their spam folder is never scanned -- for a SPAM FILTER
+that is the folder that matters most. The pre-select exists and is correct; a prior saved
+selection silently outranks it. Whether setup should seed the junk folder, or the picker
+should surface "Recommended but not selected" more loudly, is a product question worth a
+backlog item. Not raised as a defect here: it is pre-existing behavior, unrelated to F191,
+and outside this sprint's approved scope.
+
+**What IS proven by these screens, independent of who ticked what:**
+
+- **All 9 Yahoo folders enumerated over IMAP**, including Harold's custom ones (Diet, Misc,
+  SBC) alongside the standard set.
+- **`Bulk` classified and labelled "Spam/Junk folder"** with the junk icon, distinct from the
+  plain icon on custom folders -- the app states the Bulk/Spam equivalence itself.
+- **Per-folder message counts read** ("0 messages" on the empty custom folders).
+- Safe Sender picker correctly single-select ("Select one folder (9 available)"); scan picker
+  multi-select with Select All.
 
 **The counts reconcile exactly, and the apparent mismatch is a Yahoo WEB UI artifact.**
 Harold flagged that the Yahoo web screens "don't match up to the scan results" -- worth
