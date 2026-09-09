@@ -436,24 +436,47 @@ Recorded as it happens. A missing cell is a MISSING RESULT, not an assumed pass.
   existing AOL and Gmail accounts. It was selectable at all, which is the phase-gate change
   (AC-1) demonstrated end to end.
 - Live scan **completed in 35s**, read-only mode, against `kimmeyh@yahoo.com`.
-- **Folder discovery worked, and this is the non-obvious part**: the summary reads
-  "Folder(s): **Bulk**, Inbox". Yahoo names its spam folder `Bulk`, not `Junk` or `Spam`, and
-  the adapter found it with no configuration (AC-2).
-- 41 emails evaluated, all "No rule" -- expected, since no Yahoo-specific rules exist yet.
-  Rule EVALUATION ran (every message was assessed and reported); no rule matched.
+- 41 emails evaluated across Inbox and Bulk, all "No rule" -- expected, since no
+  Yahoo-specific rules exist yet. Rule EVALUATION ran on every message; nothing matched.
+
+**CORRECTION to the first version of this record.** It said folder discovery found "Bulk"
+automatically and credited the adapter with it. **That was wrong.** Harold selected the
+folders himself, via Settings > (each) folder picker, changing BOTH Manual Scan and Background
+from Inbox alone to Inbox + Bulk. The adapter ENUMERATED the folders so they could be picked
+from a list; it did not decide to scan Bulk. Those are different claims and the first one
+overstated what was proven.
+
+**The counts reconcile exactly, and the apparent mismatch is a Yahoo WEB UI artifact.**
+Harold flagged that the Yahoo web screens "don't match up to the scan results" -- worth
+chasing, and it resolves cleanly:
+
+- Yahoo web **Inbox badge: 40**. Yahoo web **Spam: 1**. Total **41** = the scan's 41.
+- The Inbox screenshot is filtered to the **Primary** tab. Primary / Offers / Social /
+  Newsletters are a Yahoo web feature ("Newsletters 11 new" is visible in the same
+  screenshot); **IMAP has no concept of them** and sees the whole Inbox. The ~40
+  fantasy-sports messages live in the other tabs -- present over IMAP, invisible on Primary.
+  Yahoo's own hint appears at the bottom of that screenshot: "Looking for older messages? Try
+  checking the All tab."
+- The single message in Yahoo's **Spam** folder ("Changes to your Yahoo Mail Storage are
+  coming soon") is **row 1 of the scan results, tagged `Bulk`**.
+
+**So `Bulk` is Yahoo's IMAP name for the folder the web UI labels `Spam`.** The scan saying
+"Bulk" while the browser says "Spam" is CORRECT, not a discrepancy.
+`junk_folder_config.dart:77` already carries both: `defaultJunkFolders: ['Bulk', 'Spam']`.
+Worth recording because it will look like a bug to the next person who compares the two
+screens.
 
 **The app-password instructions are independently confirmed by the scan itself.** Two Yahoo
 notification emails appear in the results: *"An app password was generated for your Yahoo
 account"* and *"Your app password was used to sign in to a third-party app."* Yahoo
-acknowledged both halves of the flow -- generation and third-party use -- so
-`docs/APP_PASSWORD_SETUP.md`'s Yahoo section is verified against a real account, not just
-against Yahoo's documentation.
+acknowledged both halves of the flow, so `docs/APP_PASSWORD_SETUP.md`'s Yahoo section is
+verified against a real account rather than only against Yahoo's help pages. Both messages
+are also visible in Harold's Yahoo web Inbox, timestamped 7:29 PM and 7:30 PM.
 
-**One open question this run did NOT answer**: whether Yahoo requires 2-step verification
-before "Create app password" appears. Yahoo does not document it either way, and the doc
-treats 2SV as a FALLBACK rather than a stated requirement. Harold's account state at the time
-is unknown, so this remains unverified -- correctly, since a single successful run cannot
-prove the negative.
+**On the 2SV question**: Harold does not believe two-step verification was required to reach
+"Create app password" (2026-09-09). Recorded as HIS OBSERVATION, which is the best evidence
+available -- Yahoo documents it neither way. The doc continues to present 2SV as a FALLBACK if
+the option is missing rather than as a stated requirement, which remains the right shape.
 
 ### Remaining cells
 
