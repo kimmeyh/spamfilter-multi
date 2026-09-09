@@ -1,23 +1,24 @@
 {
   "_description": "Sprint status file that persists across context compaction. Update after each phase/sub-phase completion.",
-  "_last_updated": "2026-09-08 (Sprint 66 CLOSE-OUT complete; retrospective + all 4 improvements applied; PR #389 ready for review)",
+  "_last_updated": "2026-09-08 (Sprint 67 APPROVED; Phase 4 execution -- F194 and F195 committed)",
   "_usage": "Read this file after context compaction to restore sprint approval state and progress.",
   "_staleness_note": "This file had drifted 15 sprints (last updated at Sprint 35, 2026-04-19) before being refreshed at Sprint 50 close-out. It is a Phase 7.7 checklist item -- update it at every sprint close-out, not opportunistically.",
   "current_sprint": {
-    "number": 66,
-    "branch": "feature/20260907_Sprint_66",
-    "pr_number": 389,
-    "start_date": "2026-09-07",
-    "status": "Sprint 66 COMPLETE (2026-09-08). Manual Validation COMPLETE -- Harold confirmed. Google Play CLOSED TEST IS LIVE: Submission 1 (14 changes) submitted 1:50 PM, PUBLISHED 2:00 PM. Both scope tasks (GP-4, GP-19) delivered, plus F190 taken mid-sprint. Retrospective COMPLETE: 14 categories x 4 roles; Harold rated all 12 rated categories Very Good, Cats 13/14 none; all 4 improvement proposals decided \"apply all now\" and applied (2 CLAUDE.md rules, 1 LISTING_COPY.md rule, 1 verified). Docs triad complete (PLAN + RETROSPECTIVE + SUMMARY). Master plan rolled. Verification: suite 2,048/15/0, policy suite 96 passing, analyze clean, WinWright 2/2 at sweep-head 511dd2c. CARRIED TO SPRINT 67: tester recruitment + opt-in tracking, then the production-access application (external dependency -- 12 testers x 14 continuous days, clock starts per tester at opt-in). POST-CLOSE-OUT FINDING: 5.1.1 automated code review was NEVER RUN this sprint -- caught by verify-closeout-complete, not by the checklist walk I performed in the same turn. Review run immediately on 85b906b..HEAD. F193 registered and targeted for Sprint 67. Retrospective amended with the miss (Category 9 was rated before this was known).",
+    "number": 67,
+    "branch": "feature/20260908_Sprint_67",
+    "pr_number": 396,
+    "start_date": "2026-09-08",
+    "status": "Sprint 67 Phase 4 EXECUTION. Plan APPROVED by Harold 2026-09-08 with standing approval through Manual Validation. Scope F194/F195/F193/F196 (Issues #392-#395). F194 DONE: the defect was in the DISPLAY, not the scan -- Scan History drew `interrupted` rows with the running-scan clock (two-branch ternary over four states). Two earlier fixes were written and WITHDRAWN as redundant (scanInbox already errors the row and releases the lease); both were caught only because the mutation refused to fail. F195 DONE: account header measured 1.14:1 in dark mode vs a 4.5:1 requirement -- hardcoded surface with theme-derived text. Harold's Default Folders counter-example (7.56:1, both halves pinned) identified the real rule: the defect is MIXING, not hardcoding. F197 registered for the audit. F193 and F196 IN PROGRESS.",
     "plan_approved": true,
     "blanket_execution_approved": true,
-    "plan_approval_date": "2026-09-07",
+    "plan_approval_date": "2026-09-08",
     "scope": [
-      "GP-19",
-      "GP-4"
+      "F194",
+      "F195",
+      "F193",
+      "F196"
     ],
-    "_scope_note": "Harold 2026-09-07: 'Sprint plan approved, proceed with execution. All Sprint tasks and sub-tasks are approved. Continue without additional approvals until Manual Validation.' F173 and F189 were considered and DEFERRED to a future sprint at his direction; both remain periodic HOLD templates.",
-    "pr_url": "https://github.com/kimmeyh/spamfilter-multi/pull/389"
+    "pr_url": "https://github.com/kimmeyh/spamfilter-multi/pull/396"
   },
   "previous_sprint": {
     "number": 65,
