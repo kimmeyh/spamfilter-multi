@@ -27,6 +27,7 @@ Format: `- **type**: Description (Issue #N)` where type is feat|fix|chore|docs
 ## [Unreleased]
 
 ### 2026-09-09 (Sprint 68)
+- **feat**: Yahoo Mail and iCloud Mail can now be added as accounts. Both were fully implemented but hidden behind a "Coming Soon" flag -- iCloud did not appear on the provider list at all. Each needs an app-specific password; see `docs/APP_PASSWORD_SETUP.md`. (Issue #400)
 - **test** [internal]: a build-failing gate now catches the dark-mode defect class behind Issue #393 -- a container pinned to a fixed colour wrapping text that follows the theme, which is readable in one mode and not the other. The two known instances were already fixed; this stops the third. (Issue #402)
 
 ### 2026-09-08 (Sprint 67)
