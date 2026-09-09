@@ -472,34 +472,60 @@ Recorded sequencing honored (see 'Recommended Sequencing' in the GP section belo
 - Depends on: nothing. Reads the repository and its history; changes nothing without approval.
 - Source: Harold, 2026-09-07. Made a periodic template at his direction, alongside F70 (Security), F71 (Architecture), F130 (Process-Docs), F152 (First-Run) and F173 (Test Coverage).
 
-**F200. Name the publisher and add contact info on myemailspamfilter.com (~1h) Priority 45**
-- Phase: Android / Google Play Store Readiness (web property; serves neither store's gate)
+**F200. myemailspamfilter.com serves a STALE privacy policy that contradicts the real one (~2-3h) Priority 8**
+- Phase: Android / Google Play Store Readiness (web property; user-facing and store-cited)
 - Platform: N/A (web property; no app code)
-- **Scope collapsed 2026-09-09, same day it was filed.** It was filed to make the site
-  satisfy both stores' COMPANY-ACCOUNT prerequisites. Harold then decided both accounts stay
-  Personal/Individual (see `docs/LEGAL_ENTITY.md`), which removes every one of those
-  requirements: Google's verified-organization-website gate, Microsoft's domain-matched work
-  email, and the domain-ownership documents. **None of that is required and none of it is in
-  scope.** What survives is a small consistency fix that stands on its own merits.
-- **The actual defect**: `docs/index.html` (GitHub Pages, `main:/docs`, CNAME
-  `myemailspamfilter.com`) names Kimmey Consulting **zero times** and carries **no contact
-  information**. Footer reads `(c) 2026 MyEmailSpamFilter`. Meanwhile
-  `docs/legal/PRIVACY_POLICY.md` and `TERMS.md` -- linked FROM that page, and cited as the
-  privacy policy URL in the Play listing -- both name Kimmey Consulting LLC as publisher and
-  give a contact address. A user who follows the link goes from an anonymous product page to
-  a named legal entity with no explanation.
-- **Scope**: name Kimmey Consulting LLC as publisher on the landing page; add the contact
-  address already used in the legal documents (`myemailspamfilter.dev@gmail.com`); update the
-  footer copyright to match. That is the whole item.
-- **Explicitly NOT in scope**: domain email, DNS/website verification, D-U-N-S, any
-  account-type work. Those return only if the company-account decision is ever revisited.
-- **Do it alongside the next legal-docs change**, not as its own errand -- the three files
-  are one surface and should agree.
-- **Sequencing**: not urgent and not blocking. Priority 45 puts it below active work and above
-  HOLD. It must not compete with the closed test's remaining testers.
-- Depends on: nothing.
-- Source: Harold, 2026-09-09, during the F199 publisher rename. Scope reduced by his decision
-  the same day to keep both accounts Personal/Individual.
+- **Purpose of the site, per Harold 2026-09-09**: a landing page for the MyEmailSpamFilter
+  apps on BOTH stores, the host for the privacy policy, and the domain behind a contact email.
+  Not a company-verification asset -- the account-type question is closed
+  (`docs/LEGAL_ENTITY.md`). Harold: "willing to update so that it is useful to the users."
+- **RAISED IN PRIORITY from 45 to 8. This is a live public inaccuracy, not tidying.** Found
+  while scoping the cosmetic version of this item.
+- **Finding 1 -- the site contradicts the privacy policy on a factual claim.**
+  `docs/index.html:235` states email content "is processed in-memory only and **is never
+  persisted to disk**." That is FALSE for the shipped app and the repo already knew it:
+  `PRIVACY_POLICY.md` was deliberately corrected during Sprint 63 to disclose that scan
+  history stores, per evaluated message, "sender address, subject, folder, the action taken,
+  and -- for messages awaiting your review -- a short body preview (at most 100 characters)."
+  See `CODING_VELOCITY.md` 2026-08-25: "the ADR's 'email content in-memory only' table
+  predates unmatched_emails/email_actions persistence." **The correction was made to the
+  legal document and never propagated to the landing page.**
+- **Finding 2 -- TWO different privacy policies are live, and the landing page links the
+  wrong one.**
+  - `/privacy` (`docs/privacy/index.html`) -- dated **March 20, 2026**, 13 sections,
+    hand-written HTML from Sprint 24. **This is what the landing page's "Privacy Policy"
+    link points at.**
+  - `/legal/PRIVACY_POLICY.html` -- dated **August 28, 2026**, the Sprint 64 rewrite,
+    rendered by Pages directly from the `.md`. **This is the URL cited in the Play listing
+    and in the app.**
+  A user clicking from the landing page gets a six-month-old document. A user arriving from
+  Play gets the current one.
+- **Finding 3 -- the live August policy still says "Kimmey Consulting - Ohio".** F199 updated
+  `PRIVACY_POLICY.md` in the repo, but the published page had not picked it up at the time of
+  checking. Re-verify after this sprint's commits reach `main` -- Pages serves from `main`,
+  and the F199 edits are on the sprint branch.
+- **Finding 4 -- `docs/privacy/` and `docs/website/privacy/` are byte-identical duplicates**,
+  and `docs/website/` appears to be a second unused copy of the whole site (CNAME, index,
+  privacy, delete). Two copies of a stale page is how one gets fixed and the other does not.
+- **Root cause, and the reason this went unnoticed for ~6 months**: the legal docs are
+  MARKDOWN rendered by Pages, so they update whenever the `.md` changes. The landing page and
+  `/privacy` are HAND-WRITTEN HTML that nothing regenerates and no gate checks.
+  `test/policy/legal_docs_test.dart` validates the Markdown only -- **it does not look at the
+  served site at all** (verified by grep, 2026-09-09).
+- **Scope**: (a) correct or delete the stale `/privacy` and `/delete` pages and point every
+  link at the canonical `/legal/` documents -- deleting is likely right, since a second
+  privacy policy has no reason to exist; (b) fix the false persistence claim on the landing
+  page to match `PRIVACY_POLICY.md`; (c) resolve the `docs/website/` duplicate; (d) name
+  Kimmey Consulting LLC as publisher and add the contact address, the original cosmetic ask;
+  (e) extend `legal_docs_test.dart` so a claim on the SERVED site that contradicts the policy
+  fails the build -- otherwise this recurs.
+- **Deliberately NOT in scope**: domain email setup (wanted, but it is a registrar/DNS errand
+  with no code and no gate -- do it whenever); D-U-N-S, website verification, account-type
+  work, all closed.
+- Depends on: nothing. Note Pages serves `main`, so a fix is not live until it merges.
+- Source: Harold, 2026-09-09, asking whether the domain could serve both stores. The
+  company-account premise evaporated the same day; the site inspection it prompted found
+  something materially worse.
 
 **GP-4. Gmail API OAuth Verification / CASA -- THE SUBMISSION ITSELF (~40-80h) Priority 60 (PREP DONE Sprint 66; submission still gated by its trigger)**
 - Phase: Android Google Play Store Readiness
