@@ -646,6 +646,52 @@ _(Track activated 2026-08-24: F94, SEC-4, SEC-9 and all GP-n items moved to the 
 
 _(F142 shipped Sprint 57 -- see `docs/sprints/SPRINT_57_PLAN.md` and CHANGELOG.md 2026-08-14. `MainNavigationScreen`'s `Platform.isAndroid` bottom-nav branch removed entirely; both platforms now share the same default-screen decision, `appDefaultScreenFor`, formerly `_DesktopDefaultScreen`/`desktopDefaultScreenFor`. Manual on-device Android validation was blocked by the pre-existing F94/F150 build issue -- see F150 below.)_
 
+**F200. Make myemailspamfilter.com serve as the LLC business site for both stores (~2-4h) Priority HOLD**
+- Phase: Android / Google Play Store Readiness (serves the Microsoft side too)
+- Platform: N/A (web property + domain email; no app code)
+- **The ask (Harold, 2026-09-09)**: he already owns `myemailspamfilter.com`, asked whether it
+  could satisfy both stores' company-account prerequisites, and asked for a backlog item to
+  make it do so.
+- **Verified answer: the DOMAIN works; the SITE as it stands does not.** `docs/index.html`
+  (GitHub Pages, `main:/docs`, CNAME `myemailspamfilter.com`) names Kimmey Consulting **zero
+  times**. Footer is `(c) 2026 MyEmailSpamFilter`; there is an "About the App" section but no
+  company/ownership section and **no contact information of any kind**. It describes a
+  PRODUCT, not a BUSINESS.
+- **The two stores want DIFFERENT things, and only one wants a website:**
+  - **Microsoft requires NO website.** It requires "a **work email address** associated with
+    your organization's domain -- Personal emails like Gmail or Yahoo aren't supported." So
+    the Microsoft need is `<something>@myemailspamfilter.com`, i.e. mail forwarding on a
+    domain already owned -- NOT a site change.
+  - **Google requires a verified website, as a GATE**: "Before changing your account type,
+    you need to provide and verify your official organization website" -- the account-type
+    option does not appear until it is verified.
+- **KNOWN UNKNOWN, do not paper over it**: Google's actual website-verification METHOD and
+  content requirements were NOT obtained (its "Verifying your website" article 404'd on the
+  URL tried, 2026-09-09). Whether it is a DNS record, an HTML file, Search Console, or a
+  human content review is **unverified**. Establish this FIRST when the item is picked up;
+  the scope below could change materially.
+- **Anticipated mismatch worth planning for**: the domain is `myemailspamfilter.com` but the
+  organization is `Kimmey Consulting LLC`. Microsoft says that where "your email domain
+  doesn't match your organization's domain, we may request additional documentation" --
+  specifically "an official domain ownership record" or "domain purchase invoice or registry
+  confirmation." That is obtainable from the registrar. Not a blocker, but expect the ask.
+- **Scope**: (a) add a business-identity section to `docs/index.html` naming Kimmey Consulting
+  LLC as publisher, with contact information; (b) set up a domain email address and forwarding;
+  (c) confirm Google's verification method and satisfy it; (d) update the Play account Website
+  field, which currently points at the **Microsoft Store listing**
+  (`apps.microsoft.com/detail/9N5QK9G904C0`) -- fine as a signup-time identity aid, wrong as an
+  "official organization website".
+- **HOLD rationale, and it is the honest one: NEITHER STORE NEEDS THIS NOW.** Both accounts are
+  deliberately Individual/Personal (see `docs/LEGAL_ENTITY.md`). This is groundwork for a
+  decision not yet made, and it must not compete with the closed test's remaining testers.
+  Take it off HOLD only if a company/organization account is actually pursued.
+- **Cheap partial win available independently**: naming the LLC and adding contact details to
+  the landing page is worth doing on its own merits once the publisher rename lands, entirely
+  separate from any account-type decision.
+- Depends on: nothing technical. Gated on the company-account decision, which is itself gated
+  on the Microsoft support answers recorded in `LEGAL_ENTITY.md`.
+- Source: Harold, 2026-09-09, during the F199 publisher rename.
+
 **F95. iOS variants + cross-store hardening (~10-16h) Priority HOLD -- RENUMBERED from "F52 Phase 3+" + MOVED TO HOLD (Sprint 39 Backlog Refinement, 2026-05-25)**
 - Phase: Build and Release Infrastructure
 - Platform: iOS, plus polish across all 9 variants (3 stores x 3 channels: dev, production, store)
