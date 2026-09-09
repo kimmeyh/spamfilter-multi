@@ -397,7 +397,7 @@ All incomplete items in relative priority order. Priority in increments of 10; i
 - Depends on: nothing in code. Depends on Harold having (or creating) a Yahoo and an iCloud account to validate against.
 - Source: Sprint 66 GP-19 listing submission, 2026-09-08 -- Harold asked for this to be backlogged and suggested for the next sprint.
 
-**F192. Custom IMAP Server support -- build the host-entry UI (~4-6h) Priority 32 (NEW, Sprint 66 GP-19 -- split from F191; genuinely unbuilt)**
+**F192. Custom IMAP Server support -- build the host-entry UI (~4-6h) Priority 32 (PLANNED FOR SPRINT 69 -- Harold, 2026-09-09, Sprint 68 scope selection; split from F191, genuinely unbuilt)**
 - Phase: Core App Quality
 - Platform: All
 - **Deliberately SEPARATE from F191, because it is not the same kind of work.** Yahoo and iCloud need a gate opened; Custom IMAP needs a feature built. `GenericIMAPAdapter.custom()` defaults `imapHost: ''` -- it expects the host, port and TLS flag to be supplied by a caller, and no caller supplies them: `grep -rn "imapHost" lib/ui/` returns ZERO matches. There is no screen anywhere that collects a server address, so flipping `imap` to phase 1 would ship a provider that cannot connect to anything.
@@ -407,7 +407,7 @@ All incomplete items in relative priority order. Priority in increments of 10; i
 - Depends on: nothing. Independent of F191, though shipping both together would let the Play listing be rewritten once instead of twice.
 - Source: Sprint 66 GP-19 listing submission, 2026-09-08.
 
-**F165. Cross-device rules-DB sharing -- user cloud storage (iCloud/OneDrive/Box/Google Drive) exploration + hosted-tier option (~half-day exploration) Priority 30 (NEW, Sprint 60 MV -- Harold; product direction)**
+**F165. Cross-device rules-DB sharing -- user cloud storage (iCloud/OneDrive/Box/Google Drive) exploration + hosted-tier option (~half-day exploration) Priority HOLD (MOVED TO HOLD by Harold, 2026-09-09, Sprint 68 scope selection)**
 - Phase: Product direction / architecture exploration
 - Platform: All
 - Direction (Harold, 2026-08-16): long-term, the recommended deployment is a PHONE (Android/iPhone) doing the periodic background scans instead of the Windows app -- which makes the rules DB per-device divergence a real problem. Explore letting the user share their rules DB between devices via THEIR OWN cloud storage (iCloud / OneDrive / Box / Google Drive), e.g. exported-snapshot sync or file-provider integration. Additionally evaluate a hosted-sync option as a paid tier (~$4/year, non-free app option) -- pricing/product decision stays with Harold.
@@ -543,7 +543,7 @@ Recorded sequencing honored (see 'Recommended Sequencing' in the GP section belo
 - Source: Harold, 2026-09-09. Originally filed as a company-verification question; that
   premise closed the same day, and he redirected it to a deep dive with a periodic companion.
 
-**GP-4. Gmail API OAuth Verification / CASA -- THE SUBMISSION ITSELF (~40-80h) Priority 60 (PREP DONE Sprint 66; submission still gated by its trigger)**
+**GP-4. Gmail API OAuth Verification / CASA -- THE SUBMISSION ITSELF (~40-80h) Priority HOLD (MOVED TO HOLD by Harold, 2026-09-09, Sprint 68 scope selection; PREP DONE Sprint 66, submission remains trigger-gated at 2,500+ users or $5K/yr)**
 - Phase: Android Google Play Store Readiness
 - Platform: Android
 - Trigger: 2,500+ users or $5K/yr revenue. **Do NOT set the OAuth consent screen to "In production" before verification completes** -- publishing while unverified caps the project at 100 new users FOR ITS LIFETIME, and that cap cannot be raised or reset.
