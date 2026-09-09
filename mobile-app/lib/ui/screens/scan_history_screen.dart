@@ -551,8 +551,13 @@ class _ScanHistoryScreenState extends State<ScanHistoryScreen> {
     // startup reconciliation) never gets a completed_at, and labeling it
     // "In progress" is exactly the forever-running impression reconciliation
     // exists to end -- name the state instead.
+    // "Not finished", not "Interrupted" (Harold, 2026-09-09 Manual Validation).
+    // The stored STATUS value stays `interrupted` -- this is display text only,
+    // so the database, F175 reconciliation and the icon logic are untouched.
+    // "Interrupted" describes what happened to the process; "Not finished"
+    // describes what the user actually needs to know about their scan.
     String durationStr =
-        scan.status == 'interrupted' ? 'Interrupted' : 'In progress';
+        scan.status == 'interrupted' ? 'Not finished' : 'In progress';
     if (completedDate != null) {
       final duration = completedDate.difference(startDate);
       if (duration.inMinutes > 0) {
