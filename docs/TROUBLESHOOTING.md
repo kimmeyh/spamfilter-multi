@@ -599,6 +599,52 @@ adb -e emu kill
 # Then restart emulator from Android Studio
 ```
 
+### Emulator fails: "Can't find 'Linux version' string in kernel image file"
+
+**Symptom**: the emulator exits immediately with
+
+```
+emulator: ERROR: Can't find 'Linux version ' string in kernel image file:
+C:\Android\android-sdk\system-images\android-34-ext12\...\kernel-ranchu
+```
+
+**This does NOT mean the system image is corrupt.** Check before deleting or
+re-downloading anything: `kernel-ranchu` should be ~16.5 MB and `system.img`
+~3 GB. If they are full-sized, the image is fine.
+
+**Cause: THIS MACHINE HAS TWO ANDROID SDK INSTALLS, with very different
+emulator versions.**
+
+| Path | Emulator version |
+|---|---|
+| `C:\Android\android-sdk\emulator` | **36.2.12.0** -- current, and what `ANDROID_HOME` points at |
+| `%LOCALAPPDATA%\Android\Sdk\emulator` | **29.3.4.0** -- a 2019 leftover |
+
+Emulator 29 predates the kernel format used by Android 34 images, so it cannot
+parse a kernel it is perfectly able to read. The error describes a version
+mismatch, not damage.
+
+**Fix: use `ANDROID_HOME`, never a hardcoded path.**
+
+```powershell
+Start-Process -FilePath "$env:ANDROID_HOME\emulator\emulator.exe" `
+  -ArgumentList '-avd','pixel34_updated' -WindowStyle Minimized
+```
+
+Verify which binary you are about to run when in doubt:
+
+```powershell
+& "$env:ANDROID_HOME\emulator\emulator.exe" -version | Select-Object -First 1
+```
+
+**Found 2026-09-09 (Sprint 67).** I hardcoded the `%LOCALAPPDATA%` path,
+watched it fail, and reported the emulator as broken and unfixable -- Harold
+correctly refused that, since the emulator is the only pre-Store Android test
+path. The install needed no repair at all. The lesson generalises past
+emulators: on a machine with two toolchain installs, a hardcoded path silently
+selects the wrong one, and the resulting error describes a symptom rather than
+the cause.
+
 ### Check Flutter doctor
 ```powershell
 flutter doctor -v
