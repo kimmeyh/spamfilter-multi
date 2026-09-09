@@ -20,11 +20,24 @@
 /// somebody changes the theme's `secondaryContainer` and has no idea this
 /// header depends on it. R-1 of the card is explicit: measure, do not judge.
 ///
-/// **What this does NOT cover.** F195's sibling check found 28 instances of the
-/// same hardcoded-surface pattern across `lib/ui/`, concentrated in
-/// `account_setup_screen.dart`. Fixing those is F197 -- a separate item,
-/// because absorbing 28 sites into a 20-40 minute card would be a silent scope
-/// change. This test guards the one widget F195 owns.
+/// **The sibling audit, corrected.** An earlier version of this comment said
+/// the pattern appeared "28 times, concentrated in `account_setup_screen.dart`".
+/// Both halves were wrong, and the 5.1.1 review caught it. 28 (in fact 29) is
+/// the count of hardcoded `Colors.*.shadeNN` occurrences repo-wide -- and most
+/// of those are CORRECT, because they also pin their text colour. Harold's own
+/// counter-example makes the point: Settings > Manual Scan > Default Folders is
+/// `blue.shade900` on `blue.shade50`, fully hardcoded, and measures 7.56:1.
+///
+/// The defect is MIXING a hardcoded surface with theme-derived text. Auditing
+/// for that specifically -- a `shadeNN` surface with a `textTheme` reference
+/// within a dozen lines -- finds exactly ONE other instance
+/// (`scan_history_screen.dart`, the background-scan info strip), fixed in the
+/// same commit as this correction. `account_setup_screen.dart` contains no
+/// `textTheme` usage at all, so the pattern is structurally impossible there.
+///
+/// The lesson is the one this sprint keeps teaching: a count produced by
+/// grepping the easy proxy is not a count of the defect.
+///
 library;
 
 import 'dart:math' as math;

@@ -472,18 +472,33 @@ class _ScanHistoryScreenState extends State<ScanHistoryScreen> {
       key: const Key('scan_history_deferral_hint'),
       width: double.infinity,
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-      color: Colors.blueGrey.shade50,
+      // F195/F197 (Sprint 67): theme colours, not a hardcoded surface.
+      //
+      // This was `Colors.blueGrey.shade50` -- a fixed near-white -- with text
+      // from `textTheme.bodySmall`, which the theme lightens in dark mode. That
+      // is the SAME mixing defect measured at 1.14:1 on the Settings account
+      // header: light text landing on a pale surface.
+      //
+      // A repo-wide audit for the pattern (hardcoded shadeNN surface WITH
+      // theme-derived text nearby) found exactly ONE other instance, and this
+      // is it. Fixed here rather than deferred, because it is two lines and it
+      // sits on a screen this sprint already touches.
+      color: Theme.of(context).colorScheme.surfaceContainerHighest,
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Icon(Icons.info_outline, size: 16, color: Colors.blueGrey.shade400),
+          Icon(Icons.info_outline,
+              size: 16,
+              color: Theme.of(context).colorScheme.onSurfaceVariant),
           const SizedBox(width: 8),
           Expanded(
             child: Text(
               'Background scans pause while this app is open; they resume on the '
               'next interval after you close it. Deferred runs appear here as '
               '"deferred".',
-              style: Theme.of(context).textTheme.bodySmall,
+              style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                    color: Theme.of(context).colorScheme.onSurfaceVariant,
+                  ),
             ),
           ),
         ],

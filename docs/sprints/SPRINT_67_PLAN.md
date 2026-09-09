@@ -262,7 +262,31 @@ task. That will be surfaced as a Class-2 decision if the evidence points there.
 
 ## Phase 5 evidence (filled during execution)
 
-- **5.1.1 automated code review**: PENDING
+- **5.1.1 automated code review** (2026-09-09, `pr-review-toolkit:code-reviewer` on
+  `cd8ff34..HEAD`): RUN BEFORE Manual Validation, which is the whole point of F193 --
+  and it immediately justified itself by finding a LIVE regression.
+  - **CRITICAL 1 (fixed, `e37d0d9`)**: the F193 gate fired during Phase 4 and broke
+    **6 of this hook's own test cases**. Gate 1c matched "Manual Validation" as a
+    SUBSTRING, and the live status says "...standing approval through Manual
+    Validation" as prose. Anchored to the start of the status string.
+  - **CRITICAL 2 (fixed, `e37d0d9`)**: the block message went to stdout while every
+    other blocking path in `.claude/hooks/` uses stderr -- and the test runner
+    discards stdout. The gate would have blocked with its reason thrown away.
+  - **HIGH 3 (fixed, `e37d0d9`)**: the gate had ZERO test coverage, which is how the
+    two criticals shipped. Added `violation-14` and `allow-17` with Sprint-67
+    fixtures. Hook suite now 53/53 (was 45/6).
+  - **HIGH 4 (fixed)**: the F195 test asserted Flutter's stock themes, not
+    `AppTheme`. Independently caught here while preparing the MV steps.
+  - **MEDIUM 5 (accepted, recorded)**: the F194 test mirrors the screen's ternary
+    rather than calling it, so it guards the DESIGN RULE but cannot catch
+    divergence. The reviewer mutation-tested it and confirmed the assertions are
+    live logic, not vacuous -- materially better than the Sprint 66 gates. Left as
+    is; the honest fix (extract a shared function) is recorded rather than rushed.
+  - **MEDIUM 6 (fixed below)**: the F196 leak regex missed `F1234` (capped at 3
+    digits) and lowercase `issue #392`.
+  - **Verified clean by the reviewer**: the Sprint 66 ``-in-a-non-raw-string class
+    does not recur (all 194 `RegExp(` sites use raw strings); F194 is complete for
+    the display path; F195's `copyWith(color:)` does win over enclosing styles.
 - **5.1.2 F-PRECHECK six classes** (2026-09-09, against `cd8ff34..HEAD`):
   1. *Mirror-site sync*: CLEAN. `Icons.access_time` appears at exactly one site
      (`scan_history_screen.dart:661`) -- the icon logic is not duplicated, so the F194 fix

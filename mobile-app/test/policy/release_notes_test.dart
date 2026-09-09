@@ -84,7 +84,13 @@ void main() {
     // than derived.
     final v = currentVersion();
     final internalMarker =
-        RegExp(r'\b(F\d{2,3}|GP-\d+|SEC-\d+|Issue #\d+)\b');
+        // F\d{2,4}: the original capped at 3 digits, so F1234 slipped through --
+        // and feature ids are already at F197, so four digits is a matter of
+        // time. `(?i)issue\s*#`: the original required a capital I, but a
+        // release note would naturally write "issue #392" mid-sentence. Both
+        // were MISSES (silently permissive), not false positives -- verified
+        // empirically by the Sprint 67 5.1.1 review.
+        RegExp(r'\b(F\d{2,4}|GP-\d+|SEC-\d+|issue\s*#\d+)\b', caseSensitive: false);
 
     for (final store in ['windows', 'play']) {
       final f = File('../docs/store-assets/RELEASE_NOTES_${v}_$store.md');
