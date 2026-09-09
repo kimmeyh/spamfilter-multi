@@ -419,6 +419,54 @@ other.
 2. **F200 overlap**: you expected to fix much of this directly. Should F200 stay at full scope,
    or be re-scoped at kickoff to whatever remains?
 
+## Phase 5.3 Manual Validation evidence
+
+Recorded as it happens. A missing cell is a MISSING RESULT, not an assumed pass.
+
+### F191 -- four cells (2 providers x 2 platforms, ADR-0042)
+
+| Provider | Windows | Android |
+|---|---|---|
+| Yahoo Mail | **PASS** 2026-09-09 | pending |
+| iCloud Mail | pending | pending |
+
+**Yahoo / Windows -- PASS (2026-09-09, Harold, screenshots)**
+
+- Account added and listed: `kimmeyh@yahoo.com - Yahoo Mail - App Password`, alongside the
+  existing AOL and Gmail accounts. It was selectable at all, which is the phase-gate change
+  (AC-1) demonstrated end to end.
+- Live scan **completed in 35s**, read-only mode, against `kimmeyh@yahoo.com`.
+- **Folder discovery worked, and this is the non-obvious part**: the summary reads
+  "Folder(s): **Bulk**, Inbox". Yahoo names its spam folder `Bulk`, not `Junk` or `Spam`, and
+  the adapter found it with no configuration (AC-2).
+- 41 emails evaluated, all "No rule" -- expected, since no Yahoo-specific rules exist yet.
+  Rule EVALUATION ran (every message was assessed and reported); no rule matched.
+
+**The app-password instructions are independently confirmed by the scan itself.** Two Yahoo
+notification emails appear in the results: *"An app password was generated for your Yahoo
+account"* and *"Your app password was used to sign in to a third-party app."* Yahoo
+acknowledged both halves of the flow -- generation and third-party use -- so
+`docs/APP_PASSWORD_SETUP.md`'s Yahoo section is verified against a real account, not just
+against Yahoo's documentation.
+
+**One open question this run did NOT answer**: whether Yahoo requires 2-step verification
+before "Create app password" appears. Yahoo does not document it either way, and the doc
+treats 2SV as a FALLBACK rather than a stated requirement. Harold's account state at the time
+is unknown, so this remains unverified -- correctly, since a single successful run cannot
+prove the negative.
+
+### Remaining cells
+
+- **Yahoo / Android** -- pending
+- **iCloud / Windows** -- pending. Read the two hard requirements in
+  `docs/APP_PASSWORD_SETUP.md` first: Apple 2FA is REQUIRED, and an Apple Account on a
+  non-Apple address has NO mailbox until an @icloud.com address is created (the app password
+  will generate successfully and then fail to connect). IMAP username is the LOCAL PART first.
+- **iCloud / Android** -- pending
+
+Per R-3, if iCloud does not authenticate cleanly, ship Yahoo alone and leave iCloud gated.
+Per R-4, no listing copy claims either provider until its cells pass.
+
 ## Definition of Done (sprint level)
 
 Per `SPRINT_EXECUTION_WORKFLOW.md` Phases 5-7. Additions for this sprint:
