@@ -12,10 +12,11 @@ attached, so upload the MSIX and let validation finish first.
 
 Scan history now tells you when a scan actually stopped.
 
-- A scan that was interrupted -- because the app closed, the device slept, or a
-  connection stalled -- now shows its own icon in Scan History instead of the
-  spinning-clock icon used for a scan that is still running. Previously an
-  interrupted scan looked like it was still going, sometimes for hours.
+- A scan that stopped early -- because the app closed, the device slept, or a
+  connection stalled -- now shows its own icon in Scan History and reads
+  "Not finished", instead of the clock icon used for a scan that is still
+  running. Previously a stopped scan looked like it was still going, sometimes
+  for hours.
 - The account box at the top of Settings is readable in dark mode. It was
   drawing light text on a light background, which made the email address nearly
   invisible.
