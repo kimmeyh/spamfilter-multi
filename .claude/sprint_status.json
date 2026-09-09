@@ -8,13 +8,14 @@
     "branch": "feature/20260909_Sprint_68",
     "pr_number": null,
     "start_date": "2026-09-09",
-    "status": "Sprint 68 PHASE 8.4 BACKLOG REFINEMENT PASS 2 (scope selection) IN PROGRESS -- NOT YET PLANNED, NOT APPROVED. Phase 8.3 COMPLETE: BOTH stores are LIVE on 0.14.2 -- Microsoft Store Submission 25 (verified in Partner Center; NOT yet verified by installing from the Store) and Google Play Submission 2 on the Closed testing - Alpha track (submitted 2026-09-09 1:59 PM, published 2:58 PM, a 59-minute turnaround). F199 (LLC rename) is SUBSTANTIALLY DELIVERED -- repo, Play developer name, and the Partner Center listing fields are all done; only the Partner Center publisher DISPLAY NAME remains, blocked on a Microsoft support answer because their own docs contradict each other. Account-type question CLOSED: both stores stay Personal/Individual.",
+    "status": "Sprint 68 MANUAL VALIDATION (Phase 5.3) -- all 5 tasks IMPLEMENTED and committed. F197 (contrast gate, mutation-verified), F191 (Yahoo+iCloud phase gate + APP_PASSWORD_SETUP.md), F198 (CLAUDE.md rule; hook deliberately NOT built -- see docs/F198_QUESTION_FORMAT_ANALYSIS.md), F200 (false privacy claim removed, 2nd policy + duplicate site tree deleted, served-site gate added), F199 (verified complete except the Partner Center publisher display name, blocked on Microsoft support). Suite 2,070/15/0. Policy 105. Hook suite 53/53. Analyzer clean. AWAITING HAROLD: 4 live-validation cells (Yahoo + iCloud x Windows + Android) -- these need app-specific passwords per docs/APP_PASSWORD_SETUP.md. No listing copy claims either provider until they pass (R-4).",
     "plan_approved": false,
     "blanket_execution_approved": false,
     "scope": [
       "F199 (pre-assigned, blocked)"
     ],
-    "_scope_note": "Harold assigned F199 mid-cycle. Full scope is selected at Phase 8.4 after the store releases."
+    "_scope_note": "Harold assigned F199 mid-cycle. Full scope is selected at Phase 8.4 after the store releases.",
+    "pr": "#403 (draft)"
   },
   "previous_sprint": {
     "number": 67,
