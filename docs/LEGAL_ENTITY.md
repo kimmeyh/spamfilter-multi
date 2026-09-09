@@ -83,6 +83,13 @@ costs an hour.
   five days later that production unlocked immediately. One anecdote against one
   prediction. Whether conversion preserves, resets or voids accumulated tester days is
   unknown.
+- **Play supports APP TRANSFERS between developer accounts.** Play Console -> Settings ->
+  Developer account -> General -> **App transfers**, "Transfer your apps to another
+  developer account". Observed in the console 2026-09-09. This is a real asymmetry with
+  Microsoft, where transferring an app between accounts is UNDOCUMENTED -- so the
+  "new account means abandoning the listing" risk applies to the Microsoft side and NOT
+  necessarily to Play. Not needed today; it matters if the company-account question
+  returns.
 - **Cost of converting**: an Organization account publishes the legal ADDRESS and a PHONE
   NUMBER on every listing. Personal publishes neither -- though monetizing displays the
   full address either way.
