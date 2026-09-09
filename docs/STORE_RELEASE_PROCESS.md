@@ -115,6 +115,58 @@ Commit the version bump as `chore: version bump X.Y.Z.0 -> X.Y.(Z+1).0` on the s
 
 ---
 
+## Step 1b: Derive the per-store release notes (F196, Sprint 67)
+
+**Do this BEFORE building.** Deriving the notes forces you to read what actually
+changed for THIS store's users, which is exactly the judgement that gets skipped
+when the field is filled in under time pressure at upload.
+
+Produce two files under `docs/store-assets/`:
+
+- `RELEASE_NOTES_<version>_windows.md`
+- `RELEASE_NOTES_<version>_play.md`
+
+**How to derive them.** Read `CHANGELOG.md` from the last version THAT STORE
+received -- not the last version, because per ADR-0043 a version may advance
+without being submitted everywhere. Check `STORE_VERSION_STATUS.md` for each
+store's current live version.
+
+For each entry in that range:
+
+| Entry tag | Windows notes | Play notes |
+|---|---|---|
+| `[windows]` | include | omit |
+| `[android]` | omit | include |
+| `[internal]` | omit | omit |
+| *no tag* | include | include |
+
+Then rewrite what survives for that store's USERS. A changelog entry is written
+for an engineer; a release note is written for someone deciding whether to care
+about an update. Drop issue numbers, drop internal identifiers (F190, GP-4),
+and say what changed for them.
+
+**Hard limits, both learned the hard way in Sprint 66:**
+
+- **Google Play: 500 characters per language**, and the field requires
+  `<en-US>` language tags around the text. MEASURE the count, do not estimate it
+  -- Sprint 66 estimated three times in a row and was wrong every time (claimed
+  486, then 523, actual 485).
+- **Microsoft Store**: the "What's new in this version" field lives under Store
+  listings and **only appears once a package is attached**, so upload the MSIX
+  and let validation finish before looking for it.
+
+**If a store's derived notes come out empty or trivial**, that is a signal worth
+heeding rather than a formatting problem: the release may not be worth
+submitting to that store yet. Windows Submission 23 was exactly this case --
+nine of ten entries were Google Play work, leaving one user-facing change.
+Submitting anyway is a legitimate choice (Harold's, that time); doing it
+*without noticing* is not.
+
+`test/policy/release_notes_test.dart` measures the Play file against the
+500-character limit so the count is a fact rather than a claim.
+
+---
+
 ## Step 2: Recreate secrets.prod.json (if missing from prod worktree)
 
 The project uses a **single shared Gmail OAuth Desktop client** for both dev and prod builds. If `mobile-app/secrets.prod.json` is missing from the prod worktree (it is `.gitignore`d and can be deleted/lost when rebuilding the worktree), recreate it by copying from the dev worktree.

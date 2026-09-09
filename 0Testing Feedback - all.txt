@@ -6,6 +6,28 @@ Manual Validation complete
 ---------------------------------------------------------------------------------------------------------
 Sprint 6n Manual Validation Feedback 
 
+---------------------------------------------------------------------------------------------------------
+Sprint 67 Manual Validation Feedback 
+
+
+  Validation steps, all reachable on Windows
+
+  1. Account header, dark mode. Switch Windows to dark theme, open Settings, check the Account, Manual Scan and Background tabs. The email address should be clearly
+     readable. It measured 1.14:1 before, against a 4.5:1 standard.
+- looks good on Windows
+  2. Account header, light mode. Same tabs, confirming light-mode users did not regress.
+- looks good
+  3. Scan History, interrupted row. Any older interrupted scan should now show a grey cancel icon instead of the orange clock, with "Interrupted" beside it.
+- looks good
+  4. Scan History, running scan. Start one and confirm it still shows the orange clock. This change's risk is making a live scan look dead.
+- while running scan, orange clock shows. When reloaded (icon) and scan was complete, changes to complete (green checkmark
+  5. Scan History, dark mode. The background-scan info strip at the top, which was the second contrast instance the code review's challenge uncovered.
+- looks good
+
+---------------------------------------------------------------------------------------------------------
+Sprint 66 Manual Validation Feedback 
+
+
  Play Console declarations, step by step
 
   Create the app first. Click Create app on the screen you are looking at.

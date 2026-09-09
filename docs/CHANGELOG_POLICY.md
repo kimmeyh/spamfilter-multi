@@ -27,6 +27,40 @@ This project follows [Keep a Changelog](https://keepachangelog.com/) conventions
 - **feat**: Add AOL Bulk/Bulk Email folder recognition as junk folders (Issue #48)
 ```
 
+### Platform applicability tag (F196, Sprint 67)
+
+An entry MAY carry a platform tag immediately after the type:
+
+```markdown
+- **fix** [android]: the Android build script no longer aborts when adb starts normally (Issue #390)
+- **fix** [windows]: MSIX packaging no longer drops OAuth credentials (Issue #119)
+- **feat**: Body Phrase rule type in Manage Rules (Issue #369)          <- no tag = ALL platforms
+```
+
+Valid tags: `[android]`, `[windows]`, `[internal]`. **No tag means the change
+affects every platform**, which is the common case and stays the default so the
+convention costs nothing to ignore.
+
+`[internal]` marks work with no user-visible effect on ANY platform -- store
+declarations, repo documentation, CI, test gates. Those entries are the
+engineering record and must never reach a store listing.
+
+**Why this exists.** Release notes were improvised at submission time from
+whatever `[Unreleased]` happened to contain, and that list makes no distinction
+between platforms. Sprint 66 paid for it twice: the Play closed-test notes were
+drafted from scratch against a 500-character limit discovered mid-write, and
+Windows Submission 23 had almost no user-facing content to describe because nine
+of its ten entries were Google Play work meaningless to a Store customer. Neither
+store's users were served by the other's changelog.
+
+The tag is what lets `STORE_RELEASE_PROCESS.md` derive per-store notes
+mechanically instead of by re-reading and re-judging every entry at submission
+time, under pressure, with a character limit in the way.
+
+**This does NOT create a second changelog.** `CHANGELOG.md` remains the single
+engineering record. The tag adds one fact per entry so the store-facing text can
+be DERIVED from it.
+
 ## Releasing (After PR Merge to main)
 
 This project uses **GitFlow**: feature branches -> `develop` -> `main`

@@ -26,6 +26,12 @@ Format: `- **type**: Description (Issue #N)` where type is feat|fix|chore|docs
 
 ## [Unreleased]
 
+### 2026-09-08 (Sprint 67)
+- **fix**: Scan History now shows an interrupted scan with its own icon instead of the running-scan clock. A scan stopped by the app closing, the device sleeping, or a stalled connection previously looked like it was still running -- sometimes for hours -- because the icon had two branches for four possible states. (Issue #392)
+- **fix**: the account box at the top of Settings is readable in dark mode. It drew a hardcoded light background with theme-coloured text, which paired light-on-light and measured 1.14:1 against a 4.5:1 accessibility requirement. (Issue #393)
+- **chore** [internal]: the Phase 5 evidence check now fires when Manual Validation is declared rather than at sprint close-out, so no one validates unreviewed code. (Issue #394)
+- **docs** [internal]: release notes are now derived per store from one changelog, with a platform tag per entry and a gate that measures Google Play's 500-character limit rather than estimating it. ADR-0043 records the decision that all platforms share one version number. (Issue #395)
+
 ### 2026-09-07 (Sprint 66)
 - **chore**: F190 -- the app version is now bumped when a sprint is approved rather than when it is released, so anyone testing a development build can tell at a glance that it differs from the published version. A test enforces it: the development version must always be ahead of the last release. (Issue #390)
 - **fix**: the Android build script no longer aborts when the Android debug bridge starts up normally. It was treating the bridge's ordinary startup message as a fatal error, killing the connection it had just established, and failing the install step even though the app itself had built successfully. (Issue #390)

@@ -239,7 +239,190 @@ if ($branch -match '_Sprint_(\d+)') {
                 # (no plan file existed yet, so Gate 1b exited first); the moment a
                 # next-sprint plan stub is created -- which SPRINT_CHECKLIST.md MANDATES
                 # at Phase 7.7 -- that accident breaks. This makes the exemption deliberate.
-                if ($statusText -match '(?i)(manual validation|manual-validation|phase 5\.3|phase 5\.[4-9]|phase 6|phase 7|phase 8|retrospective|code review|awaiting harold|validation feedback|release cycle|pre-kickoff|store release|completeness sweep|scope selection|awaiting scope)') {
+                # ANCHORED to the start of the status string, not searched anywhere
+                # within it (Sprint 67, found by the 5.1.1 review).
+                #
+                # This was a substring search, and the live status field opens with:
+                #   "Sprint 67 Phase 4 EXECUTION. Plan APPROVED ... with standing
+                #    approval through Manual Validation."
+                # "Manual Validation" there is PROSE describing the scope of Harold's
+                # approval -- the sprint is in Phase 4. The search matched it anyway,
+                # so the window was treated as closed during execution, and the F193
+                # evidence block below then fired on a sprint whose Phase 5 artifacts
+                # are LEGITIMATELY still pending. Six of this hook's own allow-cases
+                # went red, including allow-2, whose whole point is that a turn ending
+                # in a period is not a violation.
+                #
+                # Exactly the defect the F193 marker patterns were hardened against a
+                # commit earlier -- a pattern matching something OTHER than the thing
+                # it checks -- surviving one level up, in the condition that decides
+                # whether to run the check at all. Fixing the inner pattern while
+                # leaving the outer one is how a bug appears to move rather than die.
+                #
+                # The phase marker is the LEADING fact of the status line by
+                # convention ("Sprint 67 Phase 5.3 MANUAL VALIDATION ..."), so
+                # anchoring costs nothing and makes prose harmless.
+                if ($statusText -match '(?i)^\s*(sprint\s+\d+\s+)?(manual validation|manual-validation|phase 5\.3|phase 5\.[4-9]|phase 6|phase 7|phase 8|retrospective|code review|awaiting harold|validation feedback|release cycle|pre-kickoff|store release|completeness sweep|scope selection|awaiting scope)') {
+
+                    # === F193 (Sprint 67): Phase 5 evidence gate, AT the MV boundary ===
+                    #
+                    # WHY HERE, and not where this check already lived.
+                    # verify-closeout-complete.ps1 performs the same check correctly
+                    # but fires on a CLOSE-OUT CLAIM. SPRINT_CHECKLIST.md requires the
+                    # three Phase 5 artifacts BEFORE Manual Validation is declared --
+                    # and between those two points sits the entire sprint: Harold's
+                    # device testing, the retrospective, the improvements. Catching it
+                    # at close-out is a smoke alarm in the driveway.
+                    #
+                    # Sprint 66 proved the cost twice over. 5.1.1 was never run; Harold
+                    # validated on real devices, the sprint closed out, the retro was
+                    # written and four improvements applied before the close-out hook
+                    # spoke. When the review finally ran it found THREE policy gates
+                    # that passed while catching nothing, one completely inert. Sprint
+                    # 62 was the same shape: the late review found a real
+                    # user-affecting bug after Harold had already validated.
+                    #
+                    # This block is deliberately NOT another prose rule. CLAUDE.md
+                    # already carries "don't report a checklist section complete
+                    # without OPENING the checklist" -- that rule was FOLLOWED in
+                    # Sprint 66 and still failed, because a self-audit finds what the
+                    # auditor is looking for.
+                    #
+                    # Scoped to sprints >= 63: earlier plans predate the artifact
+                    # conventions, and this hook's own history (the 3a-1 and 3c false
+                    # positives) says a check that fires on historically-correct state
+                    # trains bypass.
+                    if ([int]$sprintNumW -ge 63 -and $stW.current_sprint.plan_approved -eq $true) {
+                        $planPathF193 = Join-Path $cwd ("docs/sprints/SPRINT_{0}_PLAN.md" -f $sprintNumW)
+                        if (Test-Path -LiteralPath $planPathF193) {
+                            $planTextF193 = Get-Content -LiteralPath $planPathF193 -Raw
+
+                            # A marker must be RECORDED, not merely mentioned. The plan
+                            # template seeds "5.1.1 automated code review: PENDING", so a
+                            # bare name match would pass on the placeholder that exists
+                            # precisely to say the work is NOT done. Each pattern below
+                            # requires the marker AND rejects a PENDING/TBD value on the
+                            # same line.
+                            # Match the MARKER LINE, not any line that mentions the
+                            # marker's name.
+                            #
+                            # The first cut matched '^.*5\.1\.1.*$' and was defeated
+                            # within minutes of shipping -- by my own F-PRECHECK prose,
+                            # which twice referred to "the 5.1.1 reviewer" in sentences
+                            # that carried no PENDING. The gate found a matching line
+                            # without a placeholder and declared the marker recorded,
+                            # while the real marker line two lines above still read
+                            # PENDING.
+                            #
+                            # That is the Sprint 66 defect class exactly: a pattern
+                            # broad enough to match something OTHER than the thing it
+                            # is checking. So the marker must now appear in its
+                            # canonical list form -- a bullet whose label is the marker
+                            # and whose value follows a colon:
+                            #
+                            #   - **5.1.1 automated code review**: <evidence>
+                            #
+                            # Prose that merely mentions "5.1.1" cannot satisfy it,
+                            # because prose is not a leading bullet with a colon.
+                            $missingF193 = @()
+                            $evidenceF193 = @(
+                                @{ Name = '5.1.1 automated code review';
+                                   Pattern = '(?im)^\s*-\s*\**\s*5\.1\.1\b[^:\r\n]*\**\s*:\s*(.*)$' },
+                                @{ Name = '5.1.2 F-PRECHECK';
+                                   Pattern = '(?im)^\s*-\s*\**\s*5\.1\.2\b[^:\r\n]*\**\s*:\s*(.*)$' },
+                                @{ Name = '5.1.5 WinWright sweep';
+                                   Pattern = '(?im)^\s*-\s*\**\s*5\.1\.5\b[^:\r\n]*\**\s*:\s*(.*)$' }
+                            )
+                            foreach ($eF in $evidenceF193) {
+                                $lines = [regex]::Matches($planTextF193, $eF.Pattern)
+                                $recorded = $false
+                                # A marker may be recorded on ONE line
+                                #   - **5.1.2 F-PRECHECK**: 2026-09-09, all six clean
+                                # or as a heading over an indented block
+                                #   - **5.1.2 F-PRECHECK** (2026-09-09):
+                                #     1. Mirror-site sync: CLEAN
+                                #     ...
+                                # Both are legitimate; the second is better for
+                                # multi-part evidence. So an EMPTY value counts as
+                                # recorded only when indented detail follows it --
+                                # otherwise "5.1.2:" with nothing at all would pass.
+                                foreach ($ln in $lines) {
+                                    $val = ''
+                                    if ($ln.Groups.Count -gt 1) { $val = $ln.Groups[1].Value.Trim() }
+                                    if ($val -eq '') {
+                                        $after = $planTextF193.Substring(
+                                            $ln.Index + $ln.Length)
+                                        # Next non-blank line must be indented detail.
+                                        if ($after -match '^(\r?\n)+(\s{2,}\S)') {
+                                            $recorded = $true; break
+                                        }
+                                        continue
+                                    }
+                                    # N/A COUNTS AS RECORDED -- but only with a reason
+                                    # after it. "N/A" alone is a shrug; "N/A -- no
+                                    # lib/ui change this sprint" is a decision someone
+                                    # can check later. PENDING/TBD/TODO never count:
+                                    # those placeholders exist to say NOT DONE, and the
+                                    # plan template seeds them, so treating them as
+                                    # evidence would make this gate pass on a fresh
+                                    # plan -- inert in exactly the way Sprint 66's
+                                    # gates were.
+                                    # Judge the VALUE after the colon, not the whole
+                                    # line -- the label itself may legitimately contain
+                                    # words this rejects.
+                                    $isPlaceholder = $val -match '(?i)^\W*(PENDING|TBD|TODO|not yet)\b'
+                                    # "N/A" counts only WITH a reason after it:
+                                    # "N/A -- no lib/ui change" is checkable, a bare
+                                    # "N/A" is a shrug. \bN/?A\b cannot match inside a
+                                    # word (NASA, banana) because \b requires a
+                                    # non-word char on each side.
+                                    $isBareNA = ($val -match '(?i)^\W*N/?A\b') -and
+                                                ($val -notmatch '(?i)^\W*N/?A\b\s*[-:(,]+\s*\S')
+                                    if (-not $isPlaceholder -and -not $isBareNA) {
+                                        $recorded = $true; break
+                                    }
+                                }
+                                if (-not $recorded) { $missingF193 += $eF.Name }
+                            }
+
+                            if ($missingF193.Count -gt 0) {
+                                $names = $missingF193 -join ', '
+                                # STDERR, not stdout -- the hook contract in this
+                                # file's own header says "stderr contains a
+                                # corrective instruction that is fed back to
+                                # Claude". run-test-cases.ps1 DISCARDS stdout, so
+                                # the first cut blocked the stop with the reason
+                                # thrown away -- blocked, with no idea why.
+                                [Console]::Error.WriteLine(@"
+[BLOCKED by sprint-auto-advance -- F193 Phase 5 evidence gate]
+
+Manual Validation is being declared for Sprint $sprintNumW, but these Phase 5
+artifacts are not RECORDED in docs/sprints/SPRINT_${sprintNumW}_PLAN.md:
+
+  $names
+
+SPRINT_CHECKLIST.md requires all three BEFORE Manual Validation starts, so that
+Harold never validates unreviewed code. A marker that still reads PENDING/TBD
+does not count -- that placeholder exists to say the work is NOT done.
+
+Run the missing step(s), record the evidence in the plan, then declare MV.
+
+Why this fires here rather than at close-out: in Sprint 66 the close-out hook
+caught exactly this, but only AFTER Harold had validated, the retrospective was
+written, and four improvements were applied. The late review then found three
+policy gates that passed while catching nothing. Sprint 62 was the same shape
+and its late review found a real user-affecting bug.
+
+If a step genuinely does not apply, record it as such WITH the reason (e.g.
+"5.1.5 WinWright sweep: N/A -- no lib/ui change this sprint") rather than
+leaving it PENDING.
+"@)
+                                exit 2
+                            }
+                        }
+                    }
+                    # === end F193 ===
+
                     exit 0  # past the enforcement window -> asking is legitimate
                 }
             }

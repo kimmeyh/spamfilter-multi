@@ -249,7 +249,22 @@ if ($sprintNum -ge 63 -and $status -and $null -ne $status.current_sprint -and
         #     cannot resolve the recorded hash.
         if (-not $payload.skip_git_checks) {
             $sweepHead = $null
-            if ($planText -match '(?im)^\s*-?\s*sweep-head:\s*([0-9a-f]{7,40})\b') {
+            # Tolerate markdown around the marker -- backticks, bold, list
+            # bullets, blockquote markers.
+            #
+            # The pattern was '^\s*-?\s*sweep-head:', which accepts a hyphen but
+            # NOT a backtick. Both SPRINT_CHECKLIST.md:93 and
+            # SPRINT_EXECUTION_WORKFLOW.md:682 write the requirement AS
+            # `sweep-head: <hash>` in backticks, so following the documentation
+            # produced a line this check could not see -- it then reported "no
+            # sweep-head line" while the line was right there, sending the
+            # reader to look for a missing artifact instead of a formatting
+            # mismatch.
+            #
+            # Hit during Sprint 67 close-out (2026-09-09). The check is right to
+            # be strict about the HASH; it has no business being strict about
+            # markdown it never specified.
+            if ($planText -match '(?im)^[\s>*_`-]*sweep-head:[\s`*_]*([0-9a-f]{7,40})\b') {
                 $sweepHead = $Matches[1]
             }
             if ($sweepHead) {

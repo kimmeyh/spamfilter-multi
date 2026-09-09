@@ -913,20 +913,37 @@ class _SettingsScreenState extends State<SettingsScreen> with SingleTickerProvid
     final headerText = _accountEmail.isNotEmpty
         ? 'Account Settings - $_accountEmail'
         : 'Account Settings';
+    // F195 (Sprint 67): both colours come from the THEME, not from a
+    // hardcoded swatch.
+    //
+    // This card was `Colors.blue.shade50` -- a fixed near-white -- while its
+    // text took its colour from `titleMedium`, which the theme darkens or
+    // lightens to suit the mode. In LIGHT mode that pairs dark text on pale
+    // blue and measures 18.39:1, comfortably past WCAG AA. In DARK mode the
+    // theme supplies light text, which lands on the SAME pale blue and
+    // measures **1.14:1** -- against a 4.5:1 requirement. Effectively
+    // invisible, which is what Harold reported from his device: "box at the
+    // top with email address in it is almost unreadable due to colors".
+    //
+    // Using the colour scheme's own container/onContainer pair makes the
+    // relationship hold in both modes by construction: Material guarantees
+    // the pairing, so this cannot drift back when the theme changes.
+    final scheme = Theme.of(context).colorScheme;
     return Card(
-      color: Colors.blue.shade50,
+      color: scheme.secondaryContainer,
       child: Padding(
         padding: const EdgeInsets.all(12),
         child: Row(
           children: [
-            Icon(Icons.email, color: Colors.blue.shade700),
+            Icon(Icons.email, color: scheme.onSecondaryContainer),
             const SizedBox(width: 12),
             Expanded(
               child: Text(
                 headerText,
                 style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                  fontWeight: FontWeight.bold,
-                ),
+                      fontWeight: FontWeight.bold,
+                      color: scheme.onSecondaryContainer,
+                    ),
               ),
             ),
           ],
