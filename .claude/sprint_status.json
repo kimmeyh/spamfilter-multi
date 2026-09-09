@@ -1,6 +1,6 @@
 {
   "_description": "Sprint status file that persists across context compaction. Update after each phase/sub-phase completion.",
-  "_last_updated": "2026-09-09 (Sprint 67 Phase 5.3 Manual Validation -- all Phase 5 evidence recorded)",
+  "_last_updated": "2026-09-09 (Sprint 67 CLOSE-OUT complete; retrospective done, IMP-1/2/3 applied, IMP-4 backlogged as F198)",
   "_usage": "Read this file after context compaction to restore sprint approval state and progress.",
   "_staleness_note": "This file had drifted 15 sprints (last updated at Sprint 35, 2026-04-19) before being refreshed at Sprint 50 close-out. It is a Phase 7.7 checklist item -- update it at every sprint close-out, not opportunistically.",
   "current_sprint": {
@@ -8,7 +8,7 @@
     "branch": "feature/20260908_Sprint_67",
     "pr_number": 396,
     "start_date": "2026-09-08",
-    "status": "Phase 5.3 MANUAL VALIDATION -- awaiting Harold. Sprint 67 code-complete: F194, F195, F193, F196 (Issues #392-#395), 7 commits. Phase 5 evidence ALL RECORDED in SPRINT_67_PLAN.md: 5.1.1 review (found a LIVE regression -- the F193 gate fired during Phase 4 and broke 6 hook tests; fixed), 5.1.2 F-PRECHECK six classes, 5.1.5 WinWright 2/2 at sweep-head 52fbc7d. Verification: suite 2,060/15/0, policy 99, hook suite 53/53, analyzer clean. Windows app built and RUNNING; Android emulator booting for install. MV steps recommended to Harold: dark+light account header on both platforms, interrupted-vs-running Scan History icons, and the dark-mode info strip.",
+    "status": "Sprint 67 COMPLETE (2026-09-09). Manual Validation PASSED on Windows, all 5 steps; one wording change applied (\"Interrupted\" -> \"Not finished\"). Scope F194/F195/F193/F196 all delivered. Retrospective COMPLETE: 14 categories x 4 roles; Harold rated 11 \"Very Good\", Cats 13/14 none; Category 1 was a doc request (Copilot reviewer visibility) verified empirically and applied. IMP-1/2/3 APPLIED, IMP-4 backlogged as F198 tentatively for Sprint 68. Docs triad complete; master plan rolled; 6 CODING_VELOCITY rows added. Verification: suite 2,060/15/0, policy 99, HOOK SUITE 53/53 (was 45/6), analyzer clean, WinWright 2/2 at sweep-head 52fbc7d. THE SPRINT LESSON: three of Claude's own artifacts looked like proof and were not -- none found by reading, all by mutation/review/hook-suite.",
     "plan_approved": true,
     "blanket_execution_approved": true,
     "plan_approval_date": "2026-09-08",
@@ -63,11 +63,12 @@
     "Phase 5 evidence gates, then present MV recommendations to Harold"
   ],
   "next_sprint_targeted": {
-    "number": 67,
+    "number": 68,
     "items": [
-      "F193 -- gate Phase 5 evidence at the MANUAL-VALIDATION boundary, not at close-out (Harold 2026-09-08: \"Need a permanent, will never happen again, fix\"; targeted for next sprint)",
-      "GP-19 carry-forward -- tester recruitment, opt-in tracking, then the production-access application (external dependency: 12 testers x 14 continuous days, per-tester clock starting at opt-in)"
+      "F198 (TENTATIVE, Harold) -- forcing function for the numbered-question format, after a 4th correction of the same rule",
+      "GP-19 carry-forward -- tester recruitment for the Play closed test; 9 more needed, and the application date is set by the 12th person to opt in",
+      "F197 -- contrast GATE (rescoped from a sweep; both known instances are already fixed)"
     ],
-    "_note": "Recorded at Sprint 66 close-out. The Sprint 67 branch and stub are created at Phase 8 after the PR merges."
+    "_note": "Recorded at Sprint 67 close-out. The Sprint 68 branch and stub are created at Phase 8 after the PR merges."
   }
 }
