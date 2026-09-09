@@ -502,6 +502,20 @@ _(No active Core App candidates -- F96 shipped in Sprint 43.)_
 
 ### Process
 
+**F199. Rename the publisher to "Kimmey Consulting LLC" everywhere it appears (~60-100m) Priority 8 (NEW, Sprint 68 -- Harold, 2026-09-09; ASSIGNED TO THIS SPRINT)**
+- Phase: Release Readiness
+- Platform: All (both stores + the repo)
+- Harold: *"Can you help update my company name to 'Kimmey Consulting LLC' in all Microsoft Partner Center and store locations and the repository (it might have 'Kimmey Consulting Ohio' or 'Kimmey Consulting, OH' or similar."*
+- **The scope is wider than the string he named, and his own screenshot proved it.** Partner Center's Additional information page carries `Copyright 2026 Harold Kimmey. All rights reserved.` and `Developed by: Harold Kimmey` -- PERSONAL-name attributions that no search for "Kimmey Consulting" would ever find. **Audit for attribution of OWNERSHIP, not for a spelling.**
+- Repo inventory (2026-09-09): two variants, `Kimmey Consulting - Ohio` (12 occurrences) and `Kimmey Consulting, Ohio` (4), across `pubspec.yaml` `msix_config.publisher_display_name`, `STORE_LISTING_ASSETS.md`, `GOOGLE_PLAY_ACCOUNT_SETUP.md`, `LISTING_COPY.md` and the legal docs.
+- **Do NOT touch `msix_config.publisher`** -- `CN=84EA8722-0CA5-4EC0-9B10-07EE79B66062` is the GUID Partner Center assigns, not a name. Changing it breaks package identity and every installed copy's upgrade path.
+- **Leave internal-doc authorship alone.** "Harold Kimmey" as Product Owner in ARSD.md, retrospectives and sprint docs is a PERSON, correctly. Only PUBLIC-facing ownership/attribution changes.
+- Console-side surfaces to enumerate and check individually: Partner Center publisher display name, the Additional information page (copyright + Developed by), the Store listing's own attribution, Google Play's "Developer name (public)", the Play Data safety contact, and both legal documents on the published site.
+- **Sequencing risk worth stating**: a publisher-name change on a LIVE store listing is a metadata submission with its own certification round trip, and Play is mid closed-test. Decide per store whether to bundle it with the next content release or ship it alone -- do not assume either.
+- **Legal precondition, and it is Harold's to confirm, not Claude's**: the LLC must actually be the registered entity behind the developer account before the stores are told so. If the Partner Center account is registered to an individual, changing a display name does not change the account holder, and Microsoft may require account-level verification. Check before editing.
+- Depends on: Harold confirming the LLC registration status.
+- Source: Harold, 2026-09-09.
+
 **F198. Forcing function for the numbered-question format (~45-75m) Priority 18 (NEW, Sprint 67 retro IMP-4 -- Harold: backlog, TENTATIVELY next sprint)**
 - Phase: Process
 - Platform: N/A (tooling)

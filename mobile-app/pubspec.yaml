@@ -1,6 +1,6 @@
 name: my_email_spam_filter
 description: Cross-platform email spam filter app
-version: 0.14.2+1
+version: 0.14.2+2
 publish_to: 'none'
 
 environment:
