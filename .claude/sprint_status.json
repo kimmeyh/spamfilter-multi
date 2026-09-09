@@ -1,29 +1,25 @@
 {
   "_description": "Sprint status file that persists across context compaction. Update after each phase/sub-phase completion.",
-  "_last_updated": "2026-09-09 (Sprint 67 CLOSE-OUT complete; retrospective done, IMP-1/2/3 applied, IMP-4 backlogged as F198)",
+  "_last_updated": "2026-09-09 (Sprint 68 opened; Phase 8 RELEASE CYCLE -- both store packages built and awaiting Harold)",
   "_usage": "Read this file after context compaction to restore sprint approval state and progress.",
   "_staleness_note": "This file had drifted 15 sprints (last updated at Sprint 35, 2026-04-19) before being refreshed at Sprint 50 close-out. It is a Phase 7.7 checklist item -- update it at every sprint close-out, not opportunistically.",
   "current_sprint": {
-    "number": 67,
-    "branch": "feature/20260908_Sprint_67",
-    "pr_number": 396,
-    "start_date": "2026-09-08",
-    "status": "Sprint 67 COMPLETE (2026-09-09). Manual Validation PASSED on Windows, all 5 steps; one wording change applied (\"Interrupted\" -> \"Not finished\"). Scope F194/F195/F193/F196 all delivered. Retrospective COMPLETE: 14 categories x 4 roles; Harold rated 11 \"Very Good\", Cats 13/14 none; Category 1 was a doc request (Copilot reviewer visibility) verified empirically and applied. IMP-1/2/3 APPLIED, IMP-4 backlogged as F198 tentatively for Sprint 68. Docs triad complete; master plan rolled; 6 CODING_VELOCITY rows added. Verification: suite 2,060/15/0, policy 99, HOOK SUITE 53/53 (was 45/6), analyzer clean, WinWright 2/2 at sweep-head 52fbc7d. THE SPRINT LESSON: three of Claude's own artifacts looked like proof and were not -- none found by reading, all by mutation/review/hook-suite.",
-    "plan_approved": true,
-    "blanket_execution_approved": true,
-    "plan_approval_date": "2026-09-08",
+    "number": 68,
+    "branch": "feature/20260909_Sprint_68",
+    "pr_number": null,
+    "start_date": "2026-09-09",
+    "status": "Sprint 68 PHASE 8 RELEASE CYCLE -- NOT YET PLANNED, NOT APPROVED. Phase 8.2 completeness sweep DONE (4 shipped items pruned; issues #392-#395 closed manually, all still open after the merge as the checklist warns). Phase 8.3 BOTH STORE PACKAGES BUILT AND AWAITING HAROLD: MSIX 0.14.2.0 (17MB, prod worktree at 9e0e515, OAuth verified in data/app.so) and AAB 0.14.2 versionCode 2 (53.3MB, OAuth verified in the manifest). Writing GOOGLE_PLAY_RELEASE_PROCESS.md CAUGHT a rejection before it happened: versionCode derives from the pubspec +N build number, 0.14.1 shipped as +1, and the 0.14.2 bump left +1 -- Play would have refused it. Now 0.14.2+2. Phase 8.4 scope selection NOT started -- Harold stops before it per his instruction. F199 (LLC rename) is pre-assigned to this sprint by Harold and BLOCKED on his answer about whether the LLC is the registered Partner Center entity.",
+    "plan_approved": false,
+    "blanket_execution_approved": false,
     "scope": [
-      "F194",
-      "F195",
-      "F193",
-      "F196"
+      "F199 (pre-assigned, blocked)"
     ],
-    "pr_url": "https://github.com/kimmeyh/spamfilter-multi/pull/396"
+    "_scope_note": "Harold assigned F199 mid-cycle. Full scope is selected at Phase 8.4 after the store releases."
   },
   "previous_sprint": {
-    "number": 66,
-    "pr": 389,
-    "deliverables": "GP-4 Gmail scope narrowing + data-residency determination; GP-19 Play Console entry through a PUBLISHED closed test; F190 version-bump timing. Store Submission 23 (0.14.1.0) certified live."
+    "number": 67,
+    "pr": 396,
+    "deliverables": "F194 Scan History interrupted icon; F195 account-header contrast (1.14:1 -> pass); F193 Phase 5 evidence gate at the MV boundary; F196 per-store release notes + ADR-0043. Merged to develop (#396) and main (#397); issues #392-#395 closed manually."
   },
   "github_issues": {
     "sprint_67": [
@@ -59,9 +55,9 @@
     "measured": "2026-09-09"
   },
   "store_release": {
-    "windows": "0.14.1.0 LIVE (Submission 23, certified 2026-09-09, verified by installing from the Store)",
-    "play": "0.14.1 published to the closed-test track; 3 of 12 testers opted in",
-    "note": "0.14.2 release notes are already written for BOTH stores (ADR-0043 derivation). Submitting is a separate decision from versioning."
+    "windows": "0.14.1.0 LIVE (Submission 23). 0.14.2.0 MSIX BUILT and verified, awaiting Harold upload.",
+    "play": "0.14.1 on the closed track, 3 of 12 testers opted in. 0.14.2 AAB (versionCode 2) BUILT and verified, awaiting Harold upload.",
+    "note": "Harold 2026-09-09: Play SHOULD get 0.14.2 -- the fixes are defects testers will hit and would generate unnecessary feedback. An update does NOT reset any tester 14-day clock; only opting out does."
   },
   "environment_notes": [
     "RESOLVED 2026-07-29 (verified 07-30): the Store fault was an Acronis file-system filter blocking AppXSvc cleanup, fixed by an Acronis Protection exclusion. 23h uptime with ZERO Id-493 events vs a 176-file/6-min baseline; Store client self-updated 22606.1401.6.0 -> .10.0 (requires a working deployment pipeline). Filter drivers remain loaded -- backup protection was NOT disabled. See ALL_SPRINTS_MASTER_PLAN ENV-1 for the picker gotcha if it recurs.",
@@ -70,10 +66,10 @@
   ],
   "blocking_issues": [],
   "next_actions": [
-    "Harold: merge PR #396 -> develop, then develop -> main",
-    "On merge: open the Sprint 68 branch FROM the Sprint 67 branch (Phase 6.6), before any post-merge commits",
-    "On merge: manually close #392-#395 -- Closes #N does NOT auto-fire when merging feature->develop",
-    "Phase 8.2: backlog refinement pass 1 (completeness sweep)",
+    "Harold: upload the MSIX to Partner Center + paste RELEASE_NOTES_0.14.2_windows.md",
+    "Harold: upload the AAB to Play closed testing + paste RELEASE_NOTES_0.14.2_play.md (tags included)",
+    "Harold: answer the F199 legal precondition -- is Kimmey Consulting LLC the registered Partner Center entity?",
+    "Then Phase 8.4: backlog refinement pass 2 (scope selection) for Sprint 68",
     "CRITICAL PATH, not code: recruit 9 more Play testers; the application date is set by the 12th to opt in"
   ],
   "next_sprint_targeted": {
