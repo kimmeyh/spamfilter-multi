@@ -1,1 +1,1 @@
-{"session_id":"test4","cwd":"D:/Data/Harold/github/spamfilter-multi","hook_event_name":"Stop","last_assistant_message":"Sprint 36 kickoff complete. 1363 tests passing, PR #245 drafted. Moving to Phase 4 task 1 (F81) now."}
+{"session_id": "test4", "cwd": "D:/Data/Harold/github/spamfilter-multi/.claude/hooks/test-cases/fixtures/approved-sprint", "hook_event_name": "Stop", "last_assistant_message": "Sprint 36 kickoff complete. 1363 tests passing, PR #245 drafted. F81 is implemented and committed as a1b2c3d.", "branch_override": "feature/20260727_Sprint_51"}

@@ -239,7 +239,30 @@ if ($branch -match '_Sprint_(\d+)') {
                 # (no plan file existed yet, so Gate 1b exited first); the moment a
                 # next-sprint plan stub is created -- which SPRINT_CHECKLIST.md MANDATES
                 # at Phase 7.7 -- that accident breaks. This makes the exemption deliberate.
-                if ($statusText -match '(?i)(manual validation|manual-validation|phase 5\.3|phase 5\.[4-9]|phase 6|phase 7|phase 8|retrospective|code review|awaiting harold|validation feedback|release cycle|pre-kickoff|store release|completeness sweep|scope selection|awaiting scope)') {
+                # ANCHORED to the start of the status string, not searched anywhere
+                # within it (Sprint 67, found by the 5.1.1 review).
+                #
+                # This was a substring search, and the live status field opens with:
+                #   "Sprint 67 Phase 4 EXECUTION. Plan APPROVED ... with standing
+                #    approval through Manual Validation."
+                # "Manual Validation" there is PROSE describing the scope of Harold's
+                # approval -- the sprint is in Phase 4. The search matched it anyway,
+                # so the window was treated as closed during execution, and the F193
+                # evidence block below then fired on a sprint whose Phase 5 artifacts
+                # are LEGITIMATELY still pending. Six of this hook's own allow-cases
+                # went red, including allow-2, whose whole point is that a turn ending
+                # in a period is not a violation.
+                #
+                # Exactly the defect the F193 marker patterns were hardened against a
+                # commit earlier -- a pattern matching something OTHER than the thing
+                # it checks -- surviving one level up, in the condition that decides
+                # whether to run the check at all. Fixing the inner pattern while
+                # leaving the outer one is how a bug appears to move rather than die.
+                #
+                # The phase marker is the LEADING fact of the status line by
+                # convention ("Sprint 67 Phase 5.3 MANUAL VALIDATION ..."), so
+                # anchoring costs nothing and makes prose harmless.
+                if ($statusText -match '(?i)^\s*(sprint\s+\d+\s+)?(manual validation|manual-validation|phase 5\.3|phase 5\.[4-9]|phase 6|phase 7|phase 8|retrospective|code review|awaiting harold|validation feedback|release cycle|pre-kickoff|store release|completeness sweep|scope selection|awaiting scope)') {
 
                     # === F193 (Sprint 67): Phase 5 evidence gate, AT the MV boundary ===
                     #
@@ -364,7 +387,13 @@ if ($branch -match '_Sprint_(\d+)') {
 
                             if ($missingF193.Count -gt 0) {
                                 $names = $missingF193 -join ', '
-                                Write-Output @"
+                                # STDERR, not stdout -- the hook contract in this
+                                # file's own header says "stderr contains a
+                                # corrective instruction that is fed back to
+                                # Claude". run-test-cases.ps1 DISCARDS stdout, so
+                                # the first cut blocked the stop with the reason
+                                # thrown away -- blocked, with no idea why.
+                                [Console]::Error.WriteLine(@"
 [BLOCKED by sprint-auto-advance -- F193 Phase 5 evidence gate]
 
 Manual Validation is being declared for Sprint $sprintNumW, but these Phase 5
@@ -387,7 +416,7 @@ and its late review found a real user-affecting bug.
 If a step genuinely does not apply, record it as such WITH the reason (e.g.
 "5.1.5 WinWright sweep: N/A -- no lib/ui change this sprint") rather than
 leaving it PENDING.
-"@
+"@)
                                 exit 2
                             }
                         }
