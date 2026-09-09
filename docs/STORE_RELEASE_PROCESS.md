@@ -484,3 +484,8 @@ From `mobile-app/pubspec.yaml` `msix_config`:
 | install_certificate | false |
 
 These fields rarely change between releases. Do not edit them unless the publisher identity is being reissued.
+
+`identity_name` and `publisher` are assigned by the Store and are how Windows matches an
+installed app to its updates. Changing either orphans every installed copy. The publishing
+entity of record is `Kimmey Consulting LLC`; see `LEGAL_ENTITY.md` for the entity facts and
+for why the filed Articles are deliberately NOT in this repository.

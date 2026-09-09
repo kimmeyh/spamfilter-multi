@@ -7,6 +7,9 @@
   console says TODAY and must be updated only after the console is actually changed. A record
   of external state is not a place to write an intention.
 - **Account type**: Personal | **Account ID**: 6597324007880348667
+- **Legal entity**: Kimmey Consulting LLC (Ohio, doc. 202624702988, effective 2026-09-05).
+  See `LEGAL_ENTITY.md`. The LLC exists as of Sprint 68; the CONSOLE still shows the
+  pre-LLC name above. Those are different facts and this file records the console's.
 - **Developer Google account**: myemailspamfilter.dev@gmail.com (dedicated account created
   same night; 2-Step Verification ON; Gmail auto-forwards to Harold's personal address --
   spam is NOT forwarded, check the dedicated spam folder during verification windows)
