@@ -509,6 +509,20 @@ _(No active Core App candidates -- F96 shipped in Sprint 43.)_
 - Depends on: nothing.
 - Source: Harold's own closed-test walkthrough, 2026-09-08.
 
+**F197. Dark-mode contrast: 28 hardcoded `shade50` surfaces with theme-derived text (~2-4h) Priority 16 (NEW, Sprint 67 -- found by F195's sibling check)**
+- Phase: Core App Quality
+- Platform: All (shared Flutter UI; no platform exception anticipated)
+- **The defect class is MIXING, not hardcoding -- and that distinction decides the scope.** A card hardcodes a pale background while its text takes its colour from the THEME. In light mode that pairs dark-on-pale (18.39:1, fine); in dark mode the theme supplies LIGHT text onto the same pale surface (**1.14:1** against a 4.5:1 requirement, effectively invisible).
+- **A fully-hardcoded card is FINE and must not be "fixed".** Harold supplied the counter-example from his own device: Settings > Manual Scan > Default Folders is a `Colors.blue.shade50` card that reads perfectly, because it also pins its text (`Colors.blue.shade900`) -- measured **7.56:1**. Its pair holds in any theme precisely because neither half moves. A sweep that replaced every `shade50` would churn working code and could easily make it worse.
+- So the audit criterion is narrow: find surfaces where the background is hardcoded AND the text colour is not explicitly set. That is a much smaller set than the 28 raw `shade50` occurrences, and it is the set worth measuring.
+- F195 fixed ONE instance of this -- the Settings account header, which Harold reported as "almost unreadable" from his own device. Its sibling check then found **28 occurrences** of the same `Colors.*.shade50` pattern across `lib/ui/`, concentrated in `account_setup_screen.dart` (8+, including the Gmail auth-method info box every tester reads while following the onboarding instructions).
+- **Why this is its own item rather than folded into F195**: F195 was approved at 20-40 minutes for one widget. Twenty-eight sites across multiple screens, each needing the right semantic colour-scheme pair chosen (`secondaryContainer`, `errorContainer`, `tertiaryContainer` -- they are not all the same), plus dark-mode visual verification on both platforms, is a different task. Absorbing it silently would be a Class-3 scope change.
+- Fix shape, already proven by F195: replace the hardcoded pair with the colour scheme's own container/onContainer pair, so Material guarantees the relationship in both modes by construction and it cannot drift back when the theme changes.
+- **Add a gate.** The reason this reached a user is that nothing forbids the pattern. A lint or policy test that fails on a hardcoded `Colors.*.shadeNN` used as a container colour without an explicit `on*` text colour would prevent the 29th.
+- Worth checking during the work: whether the app has an explicit dark theme at all, or inherits the platform's. That determines whether this is reachable on Windows as well as Android.
+- Depends on: nothing. F195 is the worked example.
+- Source: F195 sibling check, 2026-09-08.
+
 **F196. Per-store release notes as a release deliverable, not an afterthought (~50-80m) Priority 14 (NEW, Sprint 67 -- Harold, 2026-09-08)**
 - Phase: Process
 - Platform: All (the mechanism is shared; the OUTPUT is deliberately per-store)
