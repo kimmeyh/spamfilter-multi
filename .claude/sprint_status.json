@@ -21,35 +21,47 @@
     "pr_url": "https://github.com/kimmeyh/spamfilter-multi/pull/396"
   },
   "previous_sprint": {
-    "number": 65,
-    "branch": "feature/20260904_Sprint_65",
-    "pr_number": 385,
-    "status": "CLOSED -- PR #385 merged to develop and main 2026-09-07. Cards #380-#384 closed. Shipped Google Play closed-test readiness: Data safety, App content + reviewer access via Demo Mode, icons, listing copy/assets, tester roster. 2,039 tests, zero product-code diff."
+    "number": 66,
+    "pr": 389,
+    "deliverables": "GP-4 Gmail scope narrowing + data-residency determination; GP-19 Play Console entry through a PUBLISHED closed test; F190 version-bump timing. Store Submission 23 (0.14.1.0) certified live."
   },
-  "github_issues": [
-    387,
-    388
-  ],
+  "github_issues": {
+    "sprint_67": [
+      {
+        "number": 392,
+        "item": "F194 Scan History interrupted icon",
+        "state": "open -- closes on merge; verify manually, Closes #N does NOT auto-fire on feature->develop"
+      },
+      {
+        "number": 393,
+        "item": "F195 account-header contrast",
+        "state": "open -- same"
+      },
+      {
+        "number": 394,
+        "item": "F193 Phase 5 evidence gate at MV",
+        "state": "open -- same"
+      },
+      {
+        "number": 395,
+        "item": "F196 per-store release notes + ADR-0043",
+        "state": "open -- same"
+      }
+    ]
+  },
   "_github_issues_note": "Sprint 66 cards created at Phase 3.3.1 (2026-09-07): #387 GP-19, #388 GP-4. Close by hand at Post-Merge Cleanup.",
   "test_metrics": {
-    "tests_passing": 2039,
-    "tests_skipped": 15,
-    "tests_failing": 0,
-    "analyzer_warnings": 0,
-    "_test_metrics_note": "2,039 passed / 15 skipped / 0 failed at Sprint 65 close-out (+28 vs Sprint 64's 2,011). All additions are policy gates and one widget test -- zero product-code diff this sprint.",
-    "hook_test_cases": "51/51 passing -- +2 Sprint 62 IMP-1 cases (violation-5 phase5-evidence-missing, allow-7 evidence-present).",
-    "winwright_sweep": "Sprint 65 sweep 2026-09-06 at sweep-head e9625d6: 2/2 PASSED, DB drift none. Note this was a REGRESSION check, not a verification of sprint work -- no lib/ui file changed.",
-    "coverage_percent": null,
-    "_note": "Run full suites with --concurrency=4 (Sprint 49 IMP-5)."
+    "suite": "2,060 passed / 15 skipped / 0 failed",
+    "policy_suite": "99 passed",
+    "hook_suite": "53 passed / 0 failed (was 45/6 before the 5.1.1 review found the F193 regression)",
+    "analyzer": "clean",
+    "winwright": "2/2, 29 assertions, RE-RUN at HEAD 04890ec after lib/ui changed post-sweep",
+    "measured": "2026-09-09"
   },
   "store_release": {
-    "status": "0.14.0.0 LIVE. Submission 22 (listing-only, NO new package) CERTIFIED AND LIVE 2026-09-07 -- three metadata corrections: privacy paragraph rewritten so the local-only promise LEADS and the 100-char preview is stated as saved ON THE DEVICE; canonical privacy policy URL; OneDrive automatic-backup declaration UNCHECKED so the description needs no asterisk. Certification elapsed NOT measured (submitted ~12:02am, observed ~10:40am -- neither endpoint is the real event; do NOT read the bound as slow, a metadata-only submission has no package to scan).",
-    "live_version": "0.14.0.0",
-    "submission": 22,
-    "certified_date": "2026-09-07",
-    "pending_upload_version": null,
-    "submission_pending": null,
-    "submitted_date": "2026-09-07"
+    "windows": "0.14.1.0 LIVE (Submission 23, certified 2026-09-09, verified by installing from the Store)",
+    "play": "0.14.1 published to the closed-test track; 3 of 12 testers opted in",
+    "note": "0.14.2 release notes are already written for BOTH stores (ADR-0043 derivation). Submitting is a separate decision from versioning."
   },
   "environment_notes": [
     "RESOLVED 2026-07-29 (verified 07-30): the Store fault was an Acronis file-system filter blocking AppXSvc cleanup, fixed by an Acronis Protection exclusion. 23h uptime with ZERO Id-493 events vs a 176-file/6-min baseline; Store client self-updated 22606.1401.6.0 -> .10.0 (requires a working deployment pipeline). Filter drivers remain loaded -- backup protection was NOT disabled. See ALL_SPRINTS_MASTER_PLAN ENV-1 for the picker gotcha if it recurs.",
@@ -58,9 +70,11 @@
   ],
   "blocking_issues": [],
   "next_actions": [
-    "Phase 3.3.1: create the 2 sprint cards + draft PR BEFORE any task commit (the hook enforces this)",
-    "Execute GP-4's coding half (scope cleanup + parity gate) and GP-19's records half; console work is Harold's",
-    "Phase 5 evidence gates, then present MV recommendations to Harold"
+    "Harold: merge PR #396 -> develop, then develop -> main",
+    "On merge: open the Sprint 68 branch FROM the Sprint 67 branch (Phase 6.6), before any post-merge commits",
+    "On merge: manually close #392-#395 -- Closes #N does NOT auto-fire when merging feature->develop",
+    "Phase 8.2: backlog refinement pass 1 (completeness sweep)",
+    "CRITICAL PATH, not code: recruit 9 more Play testers; the application date is set by the 12th to opt in"
   ],
   "next_sprint_targeted": {
     "number": 68,

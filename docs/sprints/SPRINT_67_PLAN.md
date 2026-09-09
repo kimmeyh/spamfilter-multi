@@ -307,7 +307,15 @@ task. That will be surfaced as a Class-2 decision if the evidence points there.
      matches in the diff are inside prose and comments.
 - **5.1.5 WinWright UI sweep** (2026-09-09): RUN, not waived. 2 scripts, 29 assertions,
   **2/2 PASS, 0 failed, 0 errors**, ~35s total.
-  `sweep-head: 52fbc7d8f69a71a66e97d6cededbad275b2e5796`
+  `sweep-head: 04890ecff86a713c427b0bb349aa842ec7ab7e04`
+  **RE-RUN at HEAD 2026-09-09**, and the re-run was the point. The first sweep recorded
+  `52fbc7d`, and TWO later commits then changed `scan_history_screen.dart` -- including the
+  "Interrupted" -> "Not finished" wording Harold requested at Manual Validation. The recorded
+  sweep therefore proved an OLDER UI, which is exactly the Sprint 61 F169 rot class the
+  sweep-head rule exists to catch. The close-out hook caught it; I did not.
+  Recording a hash is only half the rule -- the other half is RE-RUNNING when `lib/ui` changes
+  after it. Second run: 2/2 PASS, 29 assertions, 0 failed, 0 errors (~10.5 min, slower only
+  because each script launches a cold-built app).
   Scripts: `test_f124_rule_labels.json`, `test_mt2c_no_rule_sweep.json` -- the two that
   exercise the screens this sprint touched (Scan History, Settings).
   It would have been defensible to claim N/A here: every `lib/ui/` change is an icon or
