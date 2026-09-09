@@ -509,6 +509,19 @@ _(No active Core App candidates -- F96 shipped in Sprint 43.)_
 - Depends on: nothing.
 - Source: Harold's own closed-test walkthrough, 2026-09-08.
 
+**F196. Per-store release notes as a release deliverable, not an afterthought (~50-80m) Priority 14 (NEW, Sprint 67 -- Harold, 2026-09-08)**
+- Phase: Process
+- Platform: All (the mechanism is shared; the OUTPUT is deliberately per-store)
+- Harold: *"when providing new app updates to be updated for Android Google Play and Microsoft Store, provide specific release notes content for each when doing them (Microsoft Store with release notes applicable for Microsoft Store version) and release notes as applicable for the Google Play Store."*
+- **The problem this solves, observed twice in Sprint 66.** Release notes are currently improvised at submission time from whatever `[Unreleased]` happens to contain, and `[Unreleased]` is a single undifferentiated list. Both submissions this sprint exposed the cost: the Play closed-test notes were drafted from scratch under a 500-char limit discovered mid-write (three re-measurements to fit), and Submission 23's Windows notes had no obvious content at all because nine of ten CHANGELOG entries were Google Play work that means nothing to a Store customer. Neither store's users were served by the other's changelog.
+- **This is NOT "write two changelogs".** The repo keeps ONE `CHANGELOG.md` -- that stays the engineering record. What is missing is the derivation step: given a version, produce the text each store should show ITS users, omitting what does not apply to them, within that store's limits.
+- Scope: a documented procedure (and a gate where mechanisable) that, at release time, produces `RELEASE_NOTES_<version>_windows.md` and `RELEASE_NOTES_<version>_play.md`. Must handle the version-in-sync-but-not-submitted case (see the versioning ADR item below): a version may ship to one store and not the other, so a store's notes must cover EVERY change since the last version THAT STORE received, not since the last version.
+- Known limits to encode: Play caps release notes at **500 characters per language** and requires `<en-US>` tags; the Microsoft Store field is "What's new in this version" under Store listings and only appears once a package is attached. Both were learned the hard way in Sprint 66 and are recorded in `docs/GOOGLE_PLAY_ACCOUNT_SETUP.md` and `docs/STORE_RELEASE_PROCESS.md`.
+- **Cross-platform parity note (ADR-0042)**: the notes DIFFER per store by design, and that is not a parity violation -- the app's behaviour is identical, only the audience differs. What must stay identical is the underlying claim: a feature described to Play users must not be described differently to Store users, and neither may describe something the other platform lacks without saying so.
+- Also fold in the versioning question Harold raised 2026-09-08 (keep all platforms on one version even when a release applies to only one) -- currently decided in conversation only, which is exactly how a decision gets re-litigated in six months. An ADR is the right home.
+- Depends on: nothing.
+- Source: Harold, 2026-09-08, at Sprint 67 scope selection.
+
 **F193. Gate Phase 5 evidence at the MANUAL-VALIDATION boundary, not at close-out (~45-70m) Priority 12 (NEW, Sprint 66 close-out -- Harold: "Need a permanent, will never happen again, fix")**
 - Phase: Process
 - Platform: N/A
