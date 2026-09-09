@@ -60,7 +60,24 @@ asked whether company accounts are worth it. Recording it because the answer is
 non-obvious, the documentation contradicts itself in two places, and re-deriving this
 costs an hour.
 
-**Decision: stay Individual/Personal for now. Change only the customer-visible NAMES.**
+**DECISION (Harold, 2026-09-09): stay Individual/Personal on BOTH stores. Not "for now" --
+decided. Only the customer-visible NAMES change.**
+
+This closes the question rather than deferring it. Everything below is retained as the
+REASONING behind that decision and as the reference if it is ever reopened -- not as
+pending work. Concretely, the following are NOT requirements for this project and should
+not be treated as blockers by any future reader:
+
+- a verified organization website (Google's account-type gate)
+- a work email on the organization's domain (Microsoft's company prerequisite)
+- a D-U-N-S number
+- domain ownership records or purchase invoices
+- the Microsoft support ticket about Individual -> Company conversion
+
+The one Microsoft question still worth asking, and it is unrelated to account type: **can
+this Individual account's publisher display name be changed** from `Kimmey Consulting - Ohio`
+to `Kimmey Consulting LLC`? The vendor docs contradict each other on that point (below), and
+it is the last open piece of F199.
 
 ### Google Play
 
@@ -135,9 +152,11 @@ document"; a D-U-N-S number avoids a 2-5 day manual review there.
    review, and nothing about the in-flight release or the closed test was disturbed. Google
    reviews the name before it shows publicly, so the Play LISTING may lag the console.
 2. ~~Partner Center listing fields (Copyright, Developed by)~~ **DONE 2026-09-09.**
-3. Partner Center account type -- **do not act**. Open a support ticket asking (a) can this
-   Individual account publisher display name be changed, and (b) can a published app be
-   transferred to a new Company account. Those two answers decide everything.
+3. Partner Center publisher display name -- the ONLY F199 item still open. Ask support
+   whether an Individual account can change it; the docs contradict each other. This is a
+   NAME question, not an account-type question: the account-type decision is closed.
 
-Finish the closed test on the Personal account first. Conversion cannot accelerate this
-launch -- the account is ~12 days old and D-U-N-S alone can take 30.
+**Account type: CLOSED, 2026-09-09.** Both stores stay Personal/Individual. Conversion was
+never going to accelerate this launch anyway -- the Play account is ~12 days old and D-U-N-S
+alone can take 30 days -- but the decision is on the merits, not the timing, and it is not
+revisited unless Harold reopens it.
