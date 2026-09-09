@@ -281,4 +281,12 @@ task. That will be surfaced as a Class-2 decision if the evidence points there.
      surface, no signature changes.
   6. *Silent failure*: CLEAN. No new catch blocks in production code; the only `catch`
      matches in the diff are inside prose and comments.
-- **5.1.5 WinWright UI sweep**: PENDING
+- **5.1.5 WinWright UI sweep** (2026-09-09): RUN, not waived. 2 scripts, 29 assertions,
+  **2/2 PASS, 0 failed, 0 errors**, ~35s total.
+  `sweep-head: 52fbc7d8f69a71a66e97d6cededbad275b2e5796`
+  Scripts: `test_f124_rule_labels.json`, `test_mt2c_no_rule_sweep.json` -- the two that
+  exercise the screens this sprint touched (Scan History, Settings).
+  It would have been defensible to claim N/A here: every `lib/ui/` change is an icon or
+  colour VALUE, and WinWright selectors match on text, structure and automation ids, none
+  of which moved. But that is reasoning, and the sweep is cheap -- so it was run rather
+  than argued.

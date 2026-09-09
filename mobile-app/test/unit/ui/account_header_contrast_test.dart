@@ -32,6 +32,8 @@ import 'dart:math' as math;
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 
+import 'package:my_email_spam_filter/ui/theme/app_theme.dart';
+
 /// Relative luminance per WCAG 2.1, and the contrast ratio built from it.
 /// Implemented locally rather than pulled from a package -- it is a dozen lines
 /// of a fixed, published formula, and a dependency for that is a worse trade.
@@ -61,7 +63,7 @@ void main() {
   const wcagAaNormal = 4.5;
 
   test('the account header meets WCAG AA in the LIGHT theme', () {
-    final scheme = ThemeData.light().colorScheme;
+    final scheme = AppTheme.lightTheme.colorScheme;
     final ratio =
         contrastRatio(scheme.onSecondaryContainer, scheme.secondaryContainer);
     expect(ratio, greaterThanOrEqualTo(wcagAaNormal),
@@ -75,7 +77,7 @@ void main() {
     // theme-derived text with a hardcoded Colors.blue.shade50 and measured
     // 1.14:1 here while passing comfortably in light mode -- so anyone testing
     // in light mode saw nothing wrong.
-    final scheme = ThemeData.dark().colorScheme;
+    final scheme = AppTheme.darkTheme.colorScheme;
     final ratio =
         contrastRatio(scheme.onSecondaryContainer, scheme.secondaryContainer);
     expect(ratio, greaterThanOrEqualTo(wcagAaNormal),
@@ -90,7 +92,7 @@ void main() {
     // the two tests above pass for a fix that was never needed -- which is
     // exactly how this sprint shipped an inert gate twice.
     const hardcodedSurface = Color(0xFFE3F2FD); // Colors.blue.shade50
-    final darkText = ThemeData.dark().colorScheme.onSurface;
+    final darkText = AppTheme.darkTheme.colorScheme.onSurface;
     final ratio = contrastRatio(darkText, hardcodedSurface);
     expect(ratio, lessThan(wcagAaNormal),
         reason: 'if this ever PASSES, the measurement is wrong -- the original '
