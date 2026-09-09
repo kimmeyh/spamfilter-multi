@@ -264,7 +264,7 @@ silently skipped and nothing has to be re-derived from memory on the next submis
 
 | Item | Answer | Justification |
 |---|---|---|
-| Is this a government app? | No | The app is developed and published under a personal developer account (Kimmey Consulting LLC -- see ACCOUNT CREATED above) with no affiliation to any government entity, and implements no government service, ID, or benefit. |
+| Is this a government app? | No | The app is developed and published under a personal developer account (Kimmey Consulting, Ohio -- the name AS SUBMITTED in this declaration; see ACCOUNT CREATED above, and F199) with no affiliation to any government entity, and implements no government service, ID, or benefit. |
 
 ### Financial features
 
