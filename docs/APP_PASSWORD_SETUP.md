@@ -21,15 +21,21 @@ confident and is wrong costs more than one that admits a gap.
 5. **Copy the password immediately** -- it is shown once
 6. Click **Done**
 
-### If "Create app password" is not there
+### Two-step verification is NOT required (verified 2026-09-09)
 
-Yahoo's documentation does **not** state that two-step verification is required, and their
-help page that relates the two says the opposite -- that using 2SV may mean you *need* an app
-password. Many third-party guides claim 2SV is a prerequisite; Yahoo has never published that.
+**Widely-repeated advice says you must enable 2-step verification first. That is wrong, and it
+was tested directly on this account.**
 
-So: if the option is missing, **turn on two-step verification** (Account Security -> Two-step
-verification) and look again. That is the most likely fix. It is offered here as a fallback
-rather than a stated requirement, because Yahoo does not document it either way.
+Harold generated a working app password with **2SV turned OFF**, signing in with his password
+alone, and the resulting password authenticated a real IMAP scan. So the option is available
+without 2SV.
+
+This matters because Yahoo's own documentation does not answer the question either way, and
+nearly every third-party guide asserts the requirement. The claim appears to be stale advice
+from an earlier era, carried forward. **Do not turn on 2SV just to get app passwords.**
+
+If "Create app password" is genuinely missing, the likelier causes are Yahoo's own warnings
+below -- a browser it does not recognise, or a private window -- not a missing 2SV setting.
 
 ### Settings the app uses
 
@@ -137,7 +143,7 @@ authentication fails, retry with the hyphens removed.
 |---|---|---|
 | Main password change | app passwords **survive** | app passwords **all revoked** |
 | Separators | remove spaces | **keep** the hyphens (first attempt) |
-| 2FA/2SV required | **not documented** either way | **required**, documented |
+| 2FA/2SV required | **NO** -- tested with 2SV off, 2026-09-09 | **required**, documented |
 | Username for IMAP | full address | local part first, then full address |
 | Mailbox exists by default | yes | **no** -- needs an @icloud.com address first |
 
@@ -155,6 +161,8 @@ sign-in fails, check those before assuming the password was mistyped.
 - Apple: [Create a primary email address for iCloud Mail](https://support.apple.com/guide/icloud/create-a-primary-icloudcom-email-address-mmdd8d1c5c/icloud)
 
 **Note on freshness**: Apple's pages carry publication dates and state their requirements
-explicitly. Yahoo's carry no dates at all and are silent on the 2SV question, so Yahoo's
-section above is written to degrade gracefully rather than assert what Yahoo has not
-published.
+explicitly. Yahoo's carry no dates at all and are silent on the 2SV question -- so the Yahoo
+2SV answer here does not come from Yahoo at all. It comes from a direct test on a real account
+(2026-09-09, 2SV off, password-only sign-in, app password generated and used for a successful
+IMAP scan). A tested negative beats an undocumented assumption, and it beats the near-unanimous
+third-party advice that says the opposite.
