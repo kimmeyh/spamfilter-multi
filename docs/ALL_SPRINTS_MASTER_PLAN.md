@@ -472,60 +472,76 @@ Recorded sequencing honored (see 'Recommended Sequencing' in the GP section belo
 - Depends on: nothing. Reads the repository and its history; changes nothing without approval.
 - Source: Harold, 2026-09-07. Made a periodic template at his direction, alongside F70 (Security), F71 (Architecture), F130 (Process-Docs), F152 (First-Run) and F173 (Test Coverage).
 
-**F200. myemailspamfilter.com serves a STALE privacy policy that contradicts the real one (~2-3h) Priority 8**
-- Phase: Android / Google Play Store Readiness (web property; user-facing and store-cited)
-- Platform: N/A (web property; no app code)
-- **Purpose of the site, per Harold 2026-09-09**: a landing page for the MyEmailSpamFilter
-  apps on BOTH stores, the host for the privacy policy, and the domain behind a contact email.
-  Not a company-verification asset -- the account-type question is closed
-  (`docs/LEGAL_ENTITY.md`). Harold: "willing to update so that it is useful to the users."
-- **RAISED IN PRIORITY from 45 to 8. This is a live public inaccuracy, not tidying.** Found
-  while scoping the cosmetic version of this item.
-- **Finding 1 -- the site contradicts the privacy policy on a factual claim.**
-  `docs/index.html:235` states email content "is processed in-memory only and **is never
-  persisted to disk**." That is FALSE for the shipped app and the repo already knew it:
-  `PRIVACY_POLICY.md` was deliberately corrected during Sprint 63 to disclose that scan
-  history stores, per evaluated message, "sender address, subject, folder, the action taken,
-  and -- for messages awaiting your review -- a short body preview (at most 100 characters)."
-  See `CODING_VELOCITY.md` 2026-08-25: "the ADR's 'email content in-memory only' table
-  predates unmatched_emails/email_actions persistence." **The correction was made to the
-  legal document and never propagated to the landing page.**
-- **Finding 2 -- TWO different privacy policies are live, and the landing page links the
-  wrong one.**
-  - `/privacy` (`docs/privacy/index.html`) -- dated **March 20, 2026**, 13 sections,
-    hand-written HTML from Sprint 24. **This is what the landing page's "Privacy Policy"
-    link points at.**
-  - `/legal/PRIVACY_POLICY.html` -- dated **August 28, 2026**, the Sprint 64 rewrite,
-    rendered by Pages directly from the `.md`. **This is the URL cited in the Play listing
-    and in the app.**
-  A user clicking from the landing page gets a six-month-old document. A user arriving from
-  Play gets the current one.
-- **Finding 3 -- the live August policy still says "Kimmey Consulting - Ohio".** F199 updated
-  `PRIVACY_POLICY.md` in the repo, but the published page had not picked it up at the time of
-  checking. Re-verify after this sprint's commits reach `main` -- Pages serves from `main`,
-  and the F199 edits are on the sprint branch.
-- **Finding 4 -- `docs/privacy/` and `docs/website/privacy/` are byte-identical duplicates**,
-  and `docs/website/` appears to be a second unused copy of the whole site (CNAME, index,
-  privacy, delete). Two copies of a stale page is how one gets fixed and the other does not.
-- **Root cause, and the reason this went unnoticed for ~6 months**: the legal docs are
-  MARKDOWN rendered by Pages, so they update whenever the `.md` changes. The landing page and
-  `/privacy` are HAND-WRITTEN HTML that nothing regenerates and no gate checks.
-  `test/policy/legal_docs_test.dart` validates the Markdown only -- **it does not look at the
-  served site at all** (verified by grep, 2026-09-09).
-- **Scope**: (a) correct or delete the stale `/privacy` and `/delete` pages and point every
-  link at the canonical `/legal/` documents -- deleting is likely right, since a second
-  privacy policy has no reason to exist; (b) fix the false persistence claim on the landing
-  page to match `PRIVACY_POLICY.md`; (c) resolve the `docs/website/` duplicate; (d) name
-  Kimmey Consulting LLC as publisher and add the contact address, the original cosmetic ask;
-  (e) extend `legal_docs_test.dart` so a claim on the SERVED site that contradicts the policy
-  fails the build -- otherwise this recurs.
-- **Deliberately NOT in scope**: domain email setup (wanted, but it is a registrar/DNS errand
-  with no code and no gate -- do it whenever); D-U-N-S, website verification, account-type
-  work, all closed.
-- Depends on: nothing. Note Pages serves `main`, so a fix is not live until it merges.
-- Source: Harold, 2026-09-09, asking whether the domain could serve both stores. The
-  company-account premise evaporated the same day; the site inspection it prompted found
-  something materially worse.
+**F200. Web Property Deep Dive -- bring myemailspamfilter.com and GitHub Pages up to date for BOTH stores (~4-8h, unbounded discovery) Priority 20**
+- Phase: Android / Google Play Store Readiness (web property; serves both stores)
+- Platform: All (the site represents Windows Desktop AND Android)
+- **Goal (Harold, 2026-09-09)**: the site is a landing page for the MyEmailSpamFilter apps on
+  BOTH stores, the host for the privacy policy, and the domain behind a contact email. Make it
+  **useful to the users of the apps**. It is NOT a company-verification asset -- that question
+  is closed (`docs/LEGAL_ENTITY.md`).
+- **Framing (Harold, 2026-09-09)**: the site and its GitHub Pages content are **old,
+  Microsoft-Store-centric, and expected to be out of date -- that is OK and is not a defect
+  report.** It was built before the Play launch and before the LLC. This item is a **deep
+  dive** to bring it current, not a patch list. Discovery is expected to exceed the findings
+  below; treat those as the seed, not the scope.
+- **ONE EXCEPTION to "staleness is OK", and it should not wait for this item to be scheduled**:
+  `docs/index.html:235` asserts email content "is processed in-memory only and **is never
+  persisted to disk**." That is not stale, it is **false** -- `PRIVACY_POLICY.md` discloses
+  that scan history stores, per evaluated message, sender address, subject, folder, the action
+  taken, and a body preview of at most 100 characters. The rest of the page misleads by
+  OMISSION (no Play, no LLC, wrong links); this one line misleads by ASSERTION, about data
+  handling, on a page the Play listing cites. Fix it standalone if this item is not scheduled
+  promptly.
+- **Seed findings from the 2026-09-09 inspection** (starting points, not the whole job):
+  1. The false persistence claim above.
+  2. **Two live privacy policies.** `/privacy` (`docs/privacy/index.html`) is dated **March 20,
+     2026** (Sprint 24, hand-written HTML); `/legal/PRIVACY_POLICY.html` is the **August 28,
+     2026** rewrite rendered from Markdown. The landing page links the STALE one; the Play
+     listing and the app cite the CURRENT one.
+  3. The live August policy still reads `Kimmey Consulting - Ohio` (F199 updated the Markdown
+     on the sprint branch; Pages serves `main`). Re-verify after merge.
+  4. `docs/privacy/` and `docs/website/privacy/` are **byte-identical duplicates**;
+     `docs/website/` appears to be a second unused copy of the whole site (CNAME, index,
+     privacy, delete).
+  5. Content is Windows/Microsoft-Store-centric throughout -- no Google Play presence, no
+     store badges or links, "Supported Platforms" lists Android but the page does not present
+     it as shipping.
+  6. Publisher is unnamed and there is no contact information anywhere, while the legal
+     documents both name Kimmey Consulting LLC and give a contact address.
+- **Root cause worth fixing, not just its symptoms**: the legal documents are MARKDOWN that
+  Pages renders, so they track their source automatically. The landing page and `/privacy` are
+  HAND-WRITTEN HTML that nothing regenerates and no gate inspects.
+  `test/policy/legal_docs_test.dart` validates the Markdown and **does not look at the served
+  site at all** (verified by grep, 2026-09-09). That asymmetry is why a corrected policy and a
+  contradicting landing page coexisted for ~6 months. A deep dive that fixes the text without
+  closing this gap will be re-run against the same drift later.
+- **Method**: (a) inventory everything actually served under the domain -- both directory
+  trees, every page, every internal link, and what each URL resolves to LIVE, not what the repo
+  suggests; (b) establish which pages are canonical and DELETE the rest, since a second privacy
+  policy has no reason to exist; (c) audit every factual and privacy claim against
+  `PRIVACY_POLICY.md`, `TERMS.md` and the shipped app behavior; (d) bring content current for
+  both stores -- Play presence, store links, platform status, publisher identity, contact;
+  (e) close the gate gap so a served claim contradicting the policy fails the build.
+- **Also wanted, low effort, no code**: a contact email on the domain
+  (`<something>@myemailspamfilter.com`), replacing the Gmail address the legal documents
+  currently use. Registrar/DNS errand; can happen independently at any time.
+- **Acceptance criteria** (all of the following; the last is one criterion among them, not a
+  substitute for the rest):
+  - Every URL the site serves is inventoried, and each is either current or deleted.
+  - No page makes a claim contradicting `PRIVACY_POLICY.md` or the actual app behavior.
+  - Exactly ONE privacy policy and ONE account-deletion page are reachable, and every internal
+    link points at them.
+  - The site presents BOTH stores accurately.
+  - Publisher (Kimmey Consulting LLC) and contact information are present.
+  - A gate covers served-site claims, so this class of drift fails the build rather than
+    waiting for a human to notice.
+  - **As a final criterion (Harold, 2026-09-09): F201 -- the periodic re-review template
+    below -- exists as a HOLD backlog item.** The deep dive is one-shot; the drift is
+    continuous. This is the LAST criterion in sequence, not the only one that matters: the
+    six above are each independently required, and creating F201 does not discharge them.
+- Depends on: nothing. Pages serves `main`, so nothing is live until merge.
+- Source: Harold, 2026-09-09. Originally filed as a company-verification question; that
+  premise closed the same day, and he redirected it to a deep dive with a periodic companion.
 
 **GP-4. Gmail API OAuth Verification / CASA -- THE SUBMISSION ITSELF (~40-80h) Priority 60 (PREP DONE Sprint 66; submission still gated by its trigger)**
 - Phase: Android Google Play Store Readiness
@@ -700,6 +716,35 @@ _(Track activated 2026-08-24: F94, SEC-4, SEC-9 and all GP-n items moved to the 
 > - Not evaluated as primary candidates: Windows Subsystem for Android (discontinued), gaming-only emulators with no credible dev/testing workflow.
 
 _(F142 shipped Sprint 57 -- see `docs/sprints/SPRINT_57_PLAN.md` and CHANGELOG.md 2026-08-14. `MainNavigationScreen`'s `Platform.isAndroid` bottom-nav branch removed entirely; both platforms now share the same default-screen decision, `appDefaultScreenFor`, formerly `_DesktopDefaultScreen`/`desktopDefaultScreenFor`. Manual on-device Android validation was blocked by the pre-existing F94/F150 build issue -- see F150 below.)_
+
+**F201. Periodic Web Property Accuracy Re-Review -- myemailspamfilter.com + GitHub Pages (~1-2h per review, plus fix time if findings warrant) Priority HOLD** _(TEMPLATE -- created by the F200 final acceptance criterion, Harold 2026-09-09)_
+- Phase: Web Property (reusable template)
+- Platform: All (the site represents every shipped platform)
+- **Generic scope**: re-review everything served at `https://myemailspamfilter.com/` and from
+  GitHub Pages (`main:/docs`) for ACCURACY against the current app, the current legal
+  documents, and the current store presence -- then make the updates the review finds.
+- **Method**: (1) enumerate what is actually served LIVE, following every internal link, rather
+  than reasoning from the repo -- the two have already diverged once; (2) diff every factual and
+  privacy claim against `docs/legal/PRIVACY_POLICY.md`, `TERMS.md` and the shipped behavior;
+  (3) verify publisher identity, contact details and store links against reality -- names and
+  account facts change (F199); (4) confirm exactly one canonical privacy policy and one
+  deletion page remain reachable; (5) check that any gate covering the served site still
+  actually covers it.
+- **Why this is periodic and not one-shot**: the site is hand-written HTML with no build step,
+  so it does not track the app. It drifted ~6 months carrying a privacy claim the app had
+  already stopped honoring, while the Markdown legal documents beside it stayed correct
+  automatically. Anything without a build step or a gate needs a human on a schedule.
+- **Suggested triggers**: after any change to `PRIVACY_POLICY.md` or `TERMS.md`; after a
+  publisher/account identity change; after a new store or platform ships; after a feature
+  changes what the app stores or transmits; otherwise periodically (suggested: every 10-15
+  sprints).
+- **How to use**: Duplicate this item, assign a sprint, and remove HOLD. After completion, keep
+  this template for the next review.
+- HOLD rationale: Template item, reusable. Dormant until a trigger above fires.
+- Depends on: F200 (which establishes the canonical state this re-review checks against).
+- Source: Harold, 2026-09-09 -- the periodic companion is the F200 final acceptance criterion,
+  alongside F70 (Security), F71 (Architecture), F130 (Process-Docs), F152 (First-Run), F173
+  (Test Coverage) and F189 (Skills).
 
 **F95. iOS variants + cross-store hardening (~10-16h) Priority HOLD -- RENUMBERED from "F52 Phase 3+" + MOVED TO HOLD (Sprint 39 Backlog Refinement, 2026-05-25)**
 - Phase: Build and Release Infrastructure
