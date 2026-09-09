@@ -26,6 +26,9 @@ Format: `- **type**: Description (Issue #N)` where type is feat|fix|chore|docs
 
 ## [Unreleased]
 
+### 2026-09-09 (Sprint 68)
+- **test** [internal]: a build-failing gate now catches the dark-mode defect class behind Issue #393 -- a container pinned to a fixed colour wrapping text that follows the theme, which is readable in one mode and not the other. The two known instances were already fixed; this stops the third. (Issue #402)
+
 ### 2026-09-08 (Sprint 67)
 - **fix**: Scan History now shows an interrupted scan with its own icon instead of the running-scan clock. A scan stopped by the app closing, the device sleeping, or a stalled connection previously looked like it was still running -- sometimes for hours -- because the icon had two branches for four possible states. (Issue #392)
 - **fix**: the account box at the top of Settings is readable in dark mode. It drew a hardcoded light background with theme-coloured text, which paired light-on-light and measured 1.14:1 against a 4.5:1 accessibility requirement. (Issue #393)
