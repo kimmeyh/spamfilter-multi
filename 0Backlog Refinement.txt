@@ -8,6 +8,12 @@ Do not stop to ask questions unless meeting the criteria in \docs\SPRINT_STOPPIN
 Sprint 6n Scope should include the below items. Please complete sprint planning (/docs/sprint_planning.md) for the below items and present for approval.  Note that everything needs to take into account both the Windows App and the Android app and ADR stating that everything should be functionally and UI the same unless it cannot be - and where it cannot be it should be implemented as a platform exception for what is needed -- this applies to all backend code, frontend code, data, architecture, development, security, testing, deployment.
 
 ---------------------------------------------------------------------------------------------------------
+Sprint 67 Scope should include the below items. Please complete sprint planning (/docs/sprint_planning.md) for the below items and present for approval.  Note that everything needs to take into account both the Windows App and the Android app and ADR stating that everything should be functionally and UI the same unless it cannot be - and where it cannot be it should be implemented as a platform exception for what is needed -- this applies to all backend code, frontend code, data, architecture, development, security, testing, deployment.
+F194, F195, F193 and
+add to backlog and do this sprint:  when providing new app updates to be updated for Android Google Play and Microsoft Store, provide specific release notes content for
+  each when doing them (Microsoft Store with release notes applicable for Microsoft Store version) and release notes as applicable for the Google Play Store.
+
+---------------------------------------------------------------------------------------------------------
 F189 will become another Parodic backlog item (like F152, F173, F70...) that we could pull into a sprint as needed. At the end of planning can you display what the full
   F189 sprint card (like F152 a couple of prompts ago).  Yes, not all possible skills will be accepted - will need enough details for each proposed skills to evaluate
   similar to ADR: what it does, pro's, con's, why we would do it.  Noting that a proposed skill may need other tools in order for them to be effective and they can be

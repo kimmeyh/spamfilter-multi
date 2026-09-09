@@ -1,54 +1,67 @@
 {
   "_description": "Sprint status file that persists across context compaction. Update after each phase/sub-phase completion.",
-  "_last_updated": "2026-09-08 (Sprint 66 CLOSE-OUT complete; retrospective + all 4 improvements applied; PR #389 ready for review)",
+  "_last_updated": "2026-09-09 (Sprint 67 CLOSE-OUT complete; retrospective done, IMP-1/2/3 applied, IMP-4 backlogged as F198)",
   "_usage": "Read this file after context compaction to restore sprint approval state and progress.",
   "_staleness_note": "This file had drifted 15 sprints (last updated at Sprint 35, 2026-04-19) before being refreshed at Sprint 50 close-out. It is a Phase 7.7 checklist item -- update it at every sprint close-out, not opportunistically.",
   "current_sprint": {
-    "number": 66,
-    "branch": "feature/20260907_Sprint_66",
-    "pr_number": 389,
-    "start_date": "2026-09-07",
-    "status": "Sprint 66 COMPLETE (2026-09-08). Manual Validation COMPLETE -- Harold confirmed. Google Play CLOSED TEST IS LIVE: Submission 1 (14 changes) submitted 1:50 PM, PUBLISHED 2:00 PM. Both scope tasks (GP-4, GP-19) delivered, plus F190 taken mid-sprint. Retrospective COMPLETE: 14 categories x 4 roles; Harold rated all 12 rated categories Very Good, Cats 13/14 none; all 4 improvement proposals decided \"apply all now\" and applied (2 CLAUDE.md rules, 1 LISTING_COPY.md rule, 1 verified). Docs triad complete (PLAN + RETROSPECTIVE + SUMMARY). Master plan rolled. Verification: suite 2,048/15/0, policy suite 96 passing, analyze clean, WinWright 2/2 at sweep-head 511dd2c. CARRIED TO SPRINT 67: tester recruitment + opt-in tracking, then the production-access application (external dependency -- 12 testers x 14 continuous days, clock starts per tester at opt-in). POST-CLOSE-OUT FINDING: 5.1.1 automated code review was NEVER RUN this sprint -- caught by verify-closeout-complete, not by the checklist walk I performed in the same turn. Review run immediately on 85b906b..HEAD. F193 registered and targeted for Sprint 67. Retrospective amended with the miss (Category 9 was rated before this was known).",
+    "number": 67,
+    "branch": "feature/20260908_Sprint_67",
+    "pr_number": 396,
+    "start_date": "2026-09-08",
+    "status": "Sprint 67 COMPLETE (2026-09-09). Manual Validation PASSED on Windows, all 5 steps; one wording change applied (\"Interrupted\" -> \"Not finished\"). Scope F194/F195/F193/F196 all delivered. Retrospective COMPLETE: 14 categories x 4 roles; Harold rated 11 \"Very Good\", Cats 13/14 none; Category 1 was a doc request (Copilot reviewer visibility) verified empirically and applied. IMP-1/2/3 APPLIED, IMP-4 backlogged as F198 tentatively for Sprint 68. Docs triad complete; master plan rolled; 6 CODING_VELOCITY rows added. Verification: suite 2,060/15/0, policy 99, HOOK SUITE 53/53 (was 45/6), analyzer clean, WinWright 2/2 at sweep-head 52fbc7d. THE SPRINT LESSON: three of Claude's own artifacts looked like proof and were not -- none found by reading, all by mutation/review/hook-suite.",
     "plan_approved": true,
     "blanket_execution_approved": true,
-    "plan_approval_date": "2026-09-07",
+    "plan_approval_date": "2026-09-08",
     "scope": [
-      "GP-19",
-      "GP-4"
+      "F194",
+      "F195",
+      "F193",
+      "F196"
     ],
-    "_scope_note": "Harold 2026-09-07: 'Sprint plan approved, proceed with execution. All Sprint tasks and sub-tasks are approved. Continue without additional approvals until Manual Validation.' F173 and F189 were considered and DEFERRED to a future sprint at his direction; both remain periodic HOLD templates.",
-    "pr_url": "https://github.com/kimmeyh/spamfilter-multi/pull/389"
+    "pr_url": "https://github.com/kimmeyh/spamfilter-multi/pull/396"
   },
   "previous_sprint": {
-    "number": 65,
-    "branch": "feature/20260904_Sprint_65",
-    "pr_number": 385,
-    "status": "CLOSED -- PR #385 merged to develop and main 2026-09-07. Cards #380-#384 closed. Shipped Google Play closed-test readiness: Data safety, App content + reviewer access via Demo Mode, icons, listing copy/assets, tester roster. 2,039 tests, zero product-code diff."
+    "number": 66,
+    "pr": 389,
+    "deliverables": "GP-4 Gmail scope narrowing + data-residency determination; GP-19 Play Console entry through a PUBLISHED closed test; F190 version-bump timing. Store Submission 23 (0.14.1.0) certified live."
   },
-  "github_issues": [
-    387,
-    388
-  ],
+  "github_issues": {
+    "sprint_67": [
+      {
+        "number": 392,
+        "item": "F194 Scan History interrupted icon",
+        "state": "open -- closes on merge; verify manually, Closes #N does NOT auto-fire on feature->develop"
+      },
+      {
+        "number": 393,
+        "item": "F195 account-header contrast",
+        "state": "open -- same"
+      },
+      {
+        "number": 394,
+        "item": "F193 Phase 5 evidence gate at MV",
+        "state": "open -- same"
+      },
+      {
+        "number": 395,
+        "item": "F196 per-store release notes + ADR-0043",
+        "state": "open -- same"
+      }
+    ]
+  },
   "_github_issues_note": "Sprint 66 cards created at Phase 3.3.1 (2026-09-07): #387 GP-19, #388 GP-4. Close by hand at Post-Merge Cleanup.",
   "test_metrics": {
-    "tests_passing": 2039,
-    "tests_skipped": 15,
-    "tests_failing": 0,
-    "analyzer_warnings": 0,
-    "_test_metrics_note": "2,039 passed / 15 skipped / 0 failed at Sprint 65 close-out (+28 vs Sprint 64's 2,011). All additions are policy gates and one widget test -- zero product-code diff this sprint.",
-    "hook_test_cases": "51/51 passing -- +2 Sprint 62 IMP-1 cases (violation-5 phase5-evidence-missing, allow-7 evidence-present).",
-    "winwright_sweep": "Sprint 65 sweep 2026-09-06 at sweep-head e9625d6: 2/2 PASSED, DB drift none. Note this was a REGRESSION check, not a verification of sprint work -- no lib/ui file changed.",
-    "coverage_percent": null,
-    "_note": "Run full suites with --concurrency=4 (Sprint 49 IMP-5)."
+    "suite": "2,060 passed / 15 skipped / 0 failed",
+    "policy_suite": "99 passed",
+    "hook_suite": "53 passed / 0 failed (was 45/6 before the 5.1.1 review found the F193 regression)",
+    "analyzer": "clean",
+    "winwright": "2/2, 29 assertions, RE-RUN at HEAD 04890ec after lib/ui changed post-sweep",
+    "measured": "2026-09-09"
   },
   "store_release": {
-    "status": "0.14.0.0 LIVE. Submission 22 (listing-only, NO new package) CERTIFIED AND LIVE 2026-09-07 -- three metadata corrections: privacy paragraph rewritten so the local-only promise LEADS and the 100-char preview is stated as saved ON THE DEVICE; canonical privacy policy URL; OneDrive automatic-backup declaration UNCHECKED so the description needs no asterisk. Certification elapsed NOT measured (submitted ~12:02am, observed ~10:40am -- neither endpoint is the real event; do NOT read the bound as slow, a metadata-only submission has no package to scan).",
-    "live_version": "0.14.0.0",
-    "submission": 22,
-    "certified_date": "2026-09-07",
-    "pending_upload_version": null,
-    "submission_pending": null,
-    "submitted_date": "2026-09-07"
+    "windows": "0.14.1.0 LIVE (Submission 23, certified 2026-09-09, verified by installing from the Store)",
+    "play": "0.14.1 published to the closed-test track; 3 of 12 testers opted in",
+    "note": "0.14.2 release notes are already written for BOTH stores (ADR-0043 derivation). Submitting is a separate decision from versioning."
   },
   "environment_notes": [
     "RESOLVED 2026-07-29 (verified 07-30): the Store fault was an Acronis file-system filter blocking AppXSvc cleanup, fixed by an Acronis Protection exclusion. 23h uptime with ZERO Id-493 events vs a 176-file/6-min baseline; Store client self-updated 22606.1401.6.0 -> .10.0 (requires a working deployment pipeline). Filter drivers remain loaded -- backup protection was NOT disabled. See ALL_SPRINTS_MASTER_PLAN ENV-1 for the picker gotcha if it recurs.",
@@ -57,16 +70,19 @@
   ],
   "blocking_issues": [],
   "next_actions": [
-    "Phase 3.3.1: create the 2 sprint cards + draft PR BEFORE any task commit (the hook enforces this)",
-    "Execute GP-4's coding half (scope cleanup + parity gate) and GP-19's records half; console work is Harold's",
-    "Phase 5 evidence gates, then present MV recommendations to Harold"
+    "Harold: merge PR #396 -> develop, then develop -> main",
+    "On merge: open the Sprint 68 branch FROM the Sprint 67 branch (Phase 6.6), before any post-merge commits",
+    "On merge: manually close #392-#395 -- Closes #N does NOT auto-fire when merging feature->develop",
+    "Phase 8.2: backlog refinement pass 1 (completeness sweep)",
+    "CRITICAL PATH, not code: recruit 9 more Play testers; the application date is set by the 12th to opt in"
   ],
   "next_sprint_targeted": {
-    "number": 67,
+    "number": 68,
     "items": [
-      "F193 -- gate Phase 5 evidence at the MANUAL-VALIDATION boundary, not at close-out (Harold 2026-09-08: \"Need a permanent, will never happen again, fix\"; targeted for next sprint)",
-      "GP-19 carry-forward -- tester recruitment, opt-in tracking, then the production-access application (external dependency: 12 testers x 14 continuous days, per-tester clock starting at opt-in)"
+      "F198 (TENTATIVE, Harold) -- forcing function for the numbered-question format, after a 4th correction of the same rule",
+      "GP-19 carry-forward -- tester recruitment for the Play closed test; 9 more needed, and the application date is set by the 12th person to opt in",
+      "F197 -- contrast GATE (rescoped from a sweep; both known instances are already fixed)"
     ],
-    "_note": "Recorded at Sprint 66 close-out. The Sprint 67 branch and stub are created at Phase 8 after the PR merges."
+    "_note": "Recorded at Sprint 67 close-out. The Sprint 68 branch and stub are created at Phase 8 after the PR merges."
   }
 }

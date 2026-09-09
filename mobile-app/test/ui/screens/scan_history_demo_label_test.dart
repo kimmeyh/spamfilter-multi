@@ -128,8 +128,13 @@ void main() {
     await tester.pump();
 
     // The duration is joined into the details row text
-    // ("Interrupted  |  <mode>  |  Folders: ..."), so match by containment.
-    expect(find.textContaining('Interrupted'), findsOneWidget,
+    // ("Not finished  |  <mode>  |  Folders: ..."), so match by containment.
+    //
+    // The STORED status is still `interrupted` -- only the display text
+    // changed (Harold, Sprint 67 Manual Validation): "Interrupted" describes
+    // what happened to the process, "Not finished" describes what the user
+    // needs to know about their scan.
+    expect(find.textContaining('Not finished'), findsOneWidget,
         reason: 'an interrupted row (completed_at null by design) must name '
             'its state, never render as "In progress"');
   });

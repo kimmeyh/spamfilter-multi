@@ -472,18 +472,33 @@ class _ScanHistoryScreenState extends State<ScanHistoryScreen> {
       key: const Key('scan_history_deferral_hint'),
       width: double.infinity,
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-      color: Colors.blueGrey.shade50,
+      // F195/F197 (Sprint 67): theme colours, not a hardcoded surface.
+      //
+      // This was `Colors.blueGrey.shade50` -- a fixed near-white -- with text
+      // from `textTheme.bodySmall`, which the theme lightens in dark mode. That
+      // is the SAME mixing defect measured at 1.14:1 on the Settings account
+      // header: light text landing on a pale surface.
+      //
+      // A repo-wide audit for the pattern (hardcoded shadeNN surface WITH
+      // theme-derived text nearby) found exactly ONE other instance, and this
+      // is it. Fixed here rather than deferred, because it is two lines and it
+      // sits on a screen this sprint already touches.
+      color: Theme.of(context).colorScheme.surfaceContainerHighest,
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Icon(Icons.info_outline, size: 16, color: Colors.blueGrey.shade400),
+          Icon(Icons.info_outline,
+              size: 16,
+              color: Theme.of(context).colorScheme.onSurfaceVariant),
           const SizedBox(width: 8),
           Expanded(
             child: Text(
               'Background scans pause while this app is open; they resume on the '
               'next interval after you close it. Deferred runs appear here as '
               '"deferred".',
-              style: Theme.of(context).textTheme.bodySmall,
+              style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                    color: Theme.of(context).colorScheme.onSurfaceVariant,
+                  ),
             ),
           ),
         ],
@@ -536,8 +551,13 @@ class _ScanHistoryScreenState extends State<ScanHistoryScreen> {
     // startup reconciliation) never gets a completed_at, and labeling it
     // "In progress" is exactly the forever-running impression reconciliation
     // exists to end -- name the state instead.
+    // "Not finished", not "Interrupted" (Harold, 2026-09-09 Manual Validation).
+    // The stored STATUS value stays `interrupted` -- this is display text only,
+    // so the database, F175 reconciliation and the icon logic are untouched.
+    // "Interrupted" describes what happened to the process; "Not finished"
+    // describes what the user actually needs to know about their scan.
     String durationStr =
-        scan.status == 'interrupted' ? 'Interrupted' : 'In progress';
+        scan.status == 'interrupted' ? 'Not finished' : 'In progress';
     if (completedDate != null) {
       final duration = completedDate.difference(startDate);
       if (duration.inMinutes > 0) {
@@ -549,6 +569,9 @@ class _ScanHistoryScreenState extends State<ScanHistoryScreen> {
 
     final isCompleted = scan.status == 'completed';
     final isError = scan.status == 'error';
+    // F194: the third terminal state. A scan reconciled by F175 is DEAD, not
+    // running -- it must not share an icon with a live scan.
+    final isInterrupted = scan.status == 'interrupted';
     final isManual = scan.scanType == 'manual';
     // Sprint 60 MV (Harold): demo scans record scanType 'demo' but the old
     // binary manual/background labeling showed them as "Background" -- on a
@@ -631,17 +654,38 @@ class _ScanHistoryScreenState extends State<ScanHistoryScreen> {
                       style: const TextStyle(fontWeight: FontWeight.w600),
                     ),
                   ),
+                  // F194 (Sprint 67): `interrupted` gets its OWN icon.
+                  //
+                  // This ternary had two branches for three states, so an
+                  // `interrupted` row -- one that startup reconciliation had
+                  // already detected as dead and marked (F175) -- fell through
+                  // to the same orange clock as a genuinely running scan. The
+                  // DURATION text beside it already said "Interrupted" (added
+                  // by a PR #355 Copilot review for exactly this reason); the
+                  // icon was simply never updated to match, so the two
+                  // disagreed.
+                  //
+                  // Harold, 2026-09-08: a background scan showed the clock
+                  // hours after it died, across an app relaunch, well past the
+                  // 30-minute reconciliation window. The backend had done its
+                  // job correctly. The screen had not, and the app looked stuck
+                  // when it had already recovered -- which is worse than the
+                  // original failure, because it is the state a user reads.
                   Icon(
                     isCompleted
                         ? Icons.check_circle
                         : isError
                             ? Icons.error
-                            : Icons.access_time,
+                            : isInterrupted
+                                ? Icons.cancel
+                                : Icons.access_time,
                     color: isCompleted
                         ? Colors.green
                         : isError
                             ? Colors.red
-                            : Colors.orange,
+                            : isInterrupted
+                                ? Colors.grey
+                                : Colors.orange,
                     size: 20,
                   ),
                 ],

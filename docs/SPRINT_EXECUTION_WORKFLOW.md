@@ -994,10 +994,31 @@ After Phase 5.2 all tests pass, context can be compacted for efficiency:
 - [ ] **6.4 Assign Code Review**
   - **@kimmeyh** is auto-assigned via `.github/CODEOWNERS`.
   - **Copilot review is OPTIONAL** (Sprint 37 retrospective Imp-6, Phase 7.6 decision). Copilot is auto-assigned via Repository Ruleset (Settings -> Rules -> Rulesets -> enable "Automatically request Copilot code review") IF the Copilot reviewer is configured as a collaborator on the repository. Note: CODEOWNERS does NOT support the Copilot bot; the Ruleset is the only supported mechanism.
-  - **Quick availability check before requesting Copilot**:
-    `gh pr edit <PR#> --add-reviewer copilot-pull-request-reviewer 2>&1`
-    A `422` response (validation failed: reviewer is not a collaborator) means Copilot is not wired up on this repo -- proceed without Copilot review and skip Phase 6.4.1. A `0` exit means Copilot was successfully requested.
-  - Fallback if Ruleset is not configured and Copilot review IS available: `gh pr edit <PR#> --add-reviewer "@copilot"` (requires gh CLI v2.88.0+).
+  - **[CORRECTED Sprint 67, Harold -- verified empirically on PR #396]** The `gh pr edit --add-reviewer` forms below **FAIL SILENTLY**. They print success output and exit 0 with nothing attached, which is worse than a 422 because it looks like it worked.
+
+    **Use the REST endpoint, with the `[bot]` suffix:**
+
+    ```bash
+    gh api -X POST repos/<owner>/<repo>/pulls/<PR#>/requested_reviewers \
+      -f "reviewers[]=copilot-pull-request-reviewer[bot]"
+    ```
+
+    **VERIFY VIA THE TIMELINE, NOT `reviewRequests`.** This is the part that costs time:
+
+    ```bash
+    # WRONG -- returns [] even on SUCCESS. gh does not render bot reviewers.
+    gh pr view <PR#> --json reviewRequests --jq '.reviewRequests'
+
+    # RIGHT -- the only reliable check
+    gh api repos/<owner>/<repo>/issues/<PR#>/timeline \
+      --jq '[.[] | select(.event=="review_requested")] | length'
+    ```
+
+    Confirmed in both directions during Sprint 67: immediately after a successful REST request, `reviewRequests` returned `[]` while the timeline returned `1`. Harold: *"gh pr view --json reviewRequests returns [] even on success because it does not render bot reviewers, so the timeline is the only reliable check."*
+
+    A `422` from the REST call (validation failed: reviewer is not a collaborator) still means Copilot is not wired up on this repo -- proceed without it and skip Phase 6.4.1.
+
+  - Superseded forms, kept only so nobody re-derives them: `gh pr edit <PR#> --add-reviewer copilot-pull-request-reviewer` and `gh pr edit <PR#> --add-reviewer "@copilot"`. Both report success and attach nothing.
   - Copilot instructions come from `.github/copilot-instructions.md` on the PR base branch (develop).
   - **Sprint 35-37 history note**: Copilot reviewer was NOT a collaborator on this repo across Sprints 35, 36, and 37; the auto-assignment + manual fallback both returned 422. Treat Copilot review as "if available" rather than mandatory; document its absence in the retrospective Process Issues category if it remains unavailable.
 
