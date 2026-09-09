@@ -263,5 +263,22 @@ task. That will be surfaced as a Class-2 decision if the evidence points there.
 ## Phase 5 evidence (filled during execution)
 
 - **5.1.1 automated code review**: PENDING
-- **5.1.2 F-PRECHECK six classes**: PENDING
+- **5.1.2 F-PRECHECK six classes** (2026-09-09, against `cd8ff34..HEAD`):
+  1. *Mirror-site sync*: CLEAN. `Icons.access_time` appears at exactly one site
+     (`scan_history_screen.dart:661`) -- the icon logic is not duplicated, so the F194 fix
+     has no sibling to drift from.
+  2. *Helper-wired-to-production*: CLEAN, but noted as a real limitation rather than a
+     pass. `presentationFor` exists only in the test; it MIRRORS the screen's ternary
+     rather than calling it, so the test can stay green if the screen alone regresses.
+     Raised explicitly with the 5.1.1 reviewer instead of being defended.
+  3. *Doc-vs-code drift*: CLEAN. The plan's own PENDING markers were the only mismatch,
+     and this entry is what resolves one of them.
+  4. *Fragile parsing*: FOUR new regexes, all reviewed. The one carrying real risk is the
+     hook's `N/?A` -- word-boundary behaviour around a slash is worth an adversarial
+     read, so it was named specifically in the 5.1.1 brief rather than assumed correct.
+  5. *API scope*: CLEAN. Production changes are confined to two UI files
+     (`scan_history_screen.dart`, `settings_screen.dart`), 47 insertions. No new external
+     surface, no signature changes.
+  6. *Silent failure*: CLEAN. No new catch blocks in production code; the only `catch`
+     matches in the diff are inside prose and comments.
 - **5.1.5 WinWright UI sweep**: PENDING

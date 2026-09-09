@@ -280,19 +280,61 @@ if ($branch -match '_Sprint_(\d+)') {
                             # precisely to say the work is NOT done. Each pattern below
                             # requires the marker AND rejects a PENDING/TBD value on the
                             # same line.
+                            # Match the MARKER LINE, not any line that mentions the
+                            # marker's name.
+                            #
+                            # The first cut matched '^.*5\.1\.1.*$' and was defeated
+                            # within minutes of shipping -- by my own F-PRECHECK prose,
+                            # which twice referred to "the 5.1.1 reviewer" in sentences
+                            # that carried no PENDING. The gate found a matching line
+                            # without a placeholder and declared the marker recorded,
+                            # while the real marker line two lines above still read
+                            # PENDING.
+                            #
+                            # That is the Sprint 66 defect class exactly: a pattern
+                            # broad enough to match something OTHER than the thing it
+                            # is checking. So the marker must now appear in its
+                            # canonical list form -- a bullet whose label is the marker
+                            # and whose value follows a colon:
+                            #
+                            #   - **5.1.1 automated code review**: <evidence>
+                            #
+                            # Prose that merely mentions "5.1.1" cannot satisfy it,
+                            # because prose is not a leading bullet with a colon.
                             $missingF193 = @()
                             $evidenceF193 = @(
                                 @{ Name = '5.1.1 automated code review';
-                                   Pattern = '(?im)^.*(5\.1\.1|automated code review|code[- ]reviewer).*$' },
+                                   Pattern = '(?im)^\s*-\s*\**\s*5\.1\.1\b[^:\r\n]*\**\s*:\s*(.*)$' },
                                 @{ Name = '5.1.2 F-PRECHECK';
-                                   Pattern = '(?im)^.*F-PRECHECK.*$' },
+                                   Pattern = '(?im)^\s*-\s*\**\s*5\.1\.2\b[^:\r\n]*\**\s*:\s*(.*)$' },
                                 @{ Name = '5.1.5 WinWright sweep';
-                                   Pattern = '(?im)^.*WinWright.*(sweep|sweep-head).*$' }
+                                   Pattern = '(?im)^\s*-\s*\**\s*5\.1\.5\b[^:\r\n]*\**\s*:\s*(.*)$' }
                             )
                             foreach ($eF in $evidenceF193) {
                                 $lines = [regex]::Matches($planTextF193, $eF.Pattern)
                                 $recorded = $false
+                                # A marker may be recorded on ONE line
+                                #   - **5.1.2 F-PRECHECK**: 2026-09-09, all six clean
+                                # or as a heading over an indented block
+                                #   - **5.1.2 F-PRECHECK** (2026-09-09):
+                                #     1. Mirror-site sync: CLEAN
+                                #     ...
+                                # Both are legitimate; the second is better for
+                                # multi-part evidence. So an EMPTY value counts as
+                                # recorded only when indented detail follows it --
+                                # otherwise "5.1.2:" with nothing at all would pass.
                                 foreach ($ln in $lines) {
+                                    $val = ''
+                                    if ($ln.Groups.Count -gt 1) { $val = $ln.Groups[1].Value.Trim() }
+                                    if ($val -eq '') {
+                                        $after = $planTextF193.Substring(
+                                            $ln.Index + $ln.Length)
+                                        # Next non-blank line must be indented detail.
+                                        if ($after -match '^(\r?\n)+(\s{2,}\S)') {
+                                            $recorded = $true; break
+                                        }
+                                        continue
+                                    }
                                     # N/A COUNTS AS RECORDED -- but only with a reason
                                     # after it. "N/A" alone is a shrug; "N/A -- no
                                     # lib/ui change this sprint" is a decision someone
@@ -302,9 +344,17 @@ if ($branch -match '_Sprint_(\d+)') {
                                     # evidence would make this gate pass on a fresh
                                     # plan -- inert in exactly the way Sprint 66's
                                     # gates were.
-                                    $isPlaceholder = $ln.Value -match '(?i)\b(PENDING|TBD|TODO|not yet)\b'
-                                    $isBareNA = ($ln.Value -match '(?i)\bN/?A\b') -and
-                                                ($ln.Value -notmatch '(?i)\bN/?A\b\s*[-:(]+\s*\S')
+                                    # Judge the VALUE after the colon, not the whole
+                                    # line -- the label itself may legitimately contain
+                                    # words this rejects.
+                                    $isPlaceholder = $val -match '(?i)^\W*(PENDING|TBD|TODO|not yet)\b'
+                                    # "N/A" counts only WITH a reason after it:
+                                    # "N/A -- no lib/ui change" is checkable, a bare
+                                    # "N/A" is a shrug. \bN/?A\b cannot match inside a
+                                    # word (NASA, banana) because \b requires a
+                                    # non-word char on each side.
+                                    $isBareNA = ($val -match '(?i)^\W*N/?A\b') -and
+                                                ($val -notmatch '(?i)^\W*N/?A\b\s*[-:(,]+\s*\S')
                                     if (-not $isPlaceholder -and -not $isBareNA) {
                                         $recorded = $true; break
                                     }
