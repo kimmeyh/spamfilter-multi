@@ -14,8 +14,8 @@
 3. **No warranty.** The app is provided "as is", without warranty of any kind. Email
    filtering is inherently imperfect: rules you configure may match messages you did not
    intend. You are responsible for reviewing your rules and choosing appropriate scan modes.
-4. **Limitation of liability.** To the maximum extent permitted by law, Kimmey Consulting -
-   Ohio is not liable for lost messages, missed messages, or any indirect or consequential
+4. **Limitation of liability.** To the maximum extent permitted by law, Kimmey Consulting
+   LLC is not liable for lost messages, missed messages, or any indirect or consequential
    damages arising from use of the app.
 5. **Your email provider's terms.** Your use of Gmail, AOL, or any other connected provider
    remains governed by that provider's own terms of service.

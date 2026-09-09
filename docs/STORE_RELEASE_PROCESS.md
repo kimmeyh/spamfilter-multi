@@ -475,7 +475,7 @@ From `mobile-app/pubspec.yaml` `msix_config`:
 | Field | Value |
 |-------|-------|
 | display_name | MyEmailSpamFilter |
-| publisher_display_name | Kimmey Consulting - Ohio |
+| publisher_display_name | Kimmey Consulting LLC |
 | identity_name | KimmeyConsulting-Ohio.MyEmailSpamFilter |
 | publisher | CN=84EA8722-0CA5-4EC0-9B10-07EE79B66062 |
 | logo_path | assets/icon/icon.png |

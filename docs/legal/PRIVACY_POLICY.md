@@ -13,7 +13,7 @@ according to rules you control. Uninstalling the app removes everything.
 
 ## Who we are
 
-MyEmailSpamFilter is published by Kimmey Consulting - Ohio. Contact:
+MyEmailSpamFilter is published by Kimmey Consulting LLC. Contact:
 myemailspamfilter.dev@gmail.com.
 
 ## What the app accesses, and why
