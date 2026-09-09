@@ -27,6 +27,7 @@ Format: `- **type**: Description (Issue #N)` where type is feat|fix|chore|docs
 ## [Unreleased]
 
 ### 2026-09-09 (Sprint 68)
+- **fix**: myemailspamfilter.com no longer states that email content is never written to disk. The app stores scan history locally -- sender, subject, folder, action, and a short preview for messages awaiting review -- which the Privacy Policy has disclosed since August. The site now says the same thing, names its publisher, gives a contact address, and describes both the Windows and Android apps. A superseded second privacy policy and a duplicate copy of the site were removed. (Issue #401)
 - **docs** [internal]: the numbered-question format rule now lives in CLAUDE.md, which is read every session, instead of only in selectively-recalled memory. A Stop hook was evaluated and deliberately not built -- every violation happened outside the window the existing hook gates. (Issue #399)
 - **feat**: Yahoo Mail and iCloud Mail can now be added as accounts. Both were fully implemented but hidden behind a "Coming Soon" flag -- iCloud did not appear on the provider list at all. Each needs an app-specific password; see `docs/APP_PASSWORD_SETUP.md`. (Issue #400)
 - **test** [internal]: a build-failing gate now catches the dark-mode defect class behind Issue #393 -- a container pinned to a fixed colour wrapping text that follows the theme, which is readable in one mode and not the other. The two known instances were already fixed; this stops the third. (Issue #402)
