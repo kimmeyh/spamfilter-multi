@@ -521,6 +521,34 @@ than debugging it later.
 - Opting out breaks the streak. Re-joining restarts that tester's 14 days from ZERO, which is
   why the target is 14-16 testers rather than exactly 12.
 
+## Scan mode by environment (Harold, 2026-09-10) -- READ THIS BEFORE INTERPRETING SCAN EVIDENCE
+
+Deliberate configuration. The same app behaves differently per environment BY DESIGN, so a
+difference between two screens is usually this, not a defect.
+
+| Environment | Scan mode | Background scanning |
+|---|---|---|
+| Windows DEV | **Read-only**, all accounts | **OFF** |
+| Windows Prod | **Read-only**, all accounts | **OFF** |
+| Android emulator | Read-only (planned, mirrors Windows) | OFF (planned) |
+| **Android CLOSED TESTING (S24+)** | **LIVE -- Safe Senders AND all other rules** | **ON, every 15 min, EVERY account** |
+
+**The closed-test Android app is the ONLY build that actually moves or deletes mail.** Every
+other environment observes without acting.
+
+Consequences when reading a screenshot, a scan history row, or a live-scan log:
+
+- Windows showing `Deleted: 0 / Moved: 0` while rules matched is **correct** -- read-only logs
+  the action without executing it. Not a rule failure.
+- Windows scan history with no background entries is **correct** -- background is off there.
+  Not a scheduler bug.
+- The same account WILL show different counts on Windows and on the S24+, because the phone
+  acts on mail and Windows does not. That divergence is the design.
+- Mail moved or deleted on the S24+ is expected. The same on Windows would be a real defect.
+
+**Why**: the closed test needs real tester-visible behaviour to be worth running, while the
+development machines must never touch Harold's live mailboxes.
+
 ## Closed-test tester roster and the 14-day clock (GP-17, Sprint 65)
 
 **Why this section exists**: the 12-tester / 14-continuous-day closed test is the single longest
