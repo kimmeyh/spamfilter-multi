@@ -55,7 +55,7 @@
   ],
   "next_sprint_targeted": {
     "sprint": 69,
-    "items": "F202 (per-provider folder defaults, Harold-targeted), F192 (Custom IMAP host-entry UI), F203 (Found-vs-evaluated disclosure)",
+    "items": "F202 (per-provider folder defaults, Harold-targeted), F192 (Custom IMAP host-entry UI), F203 (Found-vs-evaluated disclosure), F204 (gate 3 documented Play requirements)",
     "note": "Candidates, not committed scope. Phase 8.4 selects."
   }
 }

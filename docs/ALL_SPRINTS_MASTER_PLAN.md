@@ -526,6 +526,77 @@ All incomplete items in relative priority order. Priority in increments of 10; i
 - Source: Harold, 2026-09-09, Sprint 68 Manual Validation. Explicitly deferred OUT of Sprint 68
   as a scope change surfaced at a natural break (Decision-Class Taxonomy, class 3).
 
+**F204. Gate the three Play requirements that are documented but not asserted (~2-3h) Priority 24 (NEW, 2026-09-10 -- Harold, from the pre-review-checks research)**
+- Phase: Android / Google Play Store Readiness
+- Platform: Android
+- **Origin**: Harold asked whether Play's "quick checks" could be replicated locally so a
+  submission would "nearly guarantee" a clean pass. The honest answer split in two, and the
+  split is the card:
+  - **The checks themselves CANNOT be replicated.** Google publishes a page for the feature
+    ([pre-review checks](https://support.google.com/googleplay/android-developer/answer/14807773))
+    and explicitly declines to enumerate them: its own FAQ "What pre-review checks does Play
+    Console run?" answers with **two examples and no list**. One of the two is **aggregate crash
+    rates by device/Android version** -- telemetry that lives on Google's side and cannot be
+    checked locally by anyone. Google also states plainly that passing pre-review checks does
+    NOT guarantee passing review.
+  - **The documented REQUIREMENTS can be, and three are not.** That is this card.
+- **DO NOT build a gate that claims to predict pre-review checks.** It would assert something
+  Google has never published, and would give false confidence -- the same shape as the Sprint 66
+  provider gate that passed mutation while catching nothing.
+
+- **Gap 1: `targetSdk` is INHERITED, never asserted (~30m).** `android/app/build.gradle.kts:38`
+  reads `targetSdk = flutter.targetSdkVersion`, so the value comes from the pinned Flutter SDK
+  rather than from this repo. It is CORRECT today -- the 0.15.0 AAB declares
+  `targetSdkVersion 36`, verified 2026-09-10 by reading the built bundle's manifest -- but
+  nothing would catch a regression. Google's deadline is LIVE: from **2026-08-31**, new apps and
+  updates must target API 36 ([doc](https://support.google.com/googleplay/android-developer/answer/11926878)),
+  extension available to 2026-11-01. A Flutter downgrade would silently drop below it and the
+  first symptom would be a rejected upload.
+  **Check**: assert the built AAB's manifest declares `targetSdkVersion >= 36`, or assert the
+  resolved gradle value. Prefer reading the ARTIFACT over the config -- the config is a pointer.
+
+- **Gap 2: no NEGATIVE gate on `AD_ID` (~20m).** Targeting Android 13+ requires declaring
+  `com.google.android.gms.permission.AD_ID` if the ad ID is used
+  ([doc](https://support.google.com/googleplay/android-developer/answer/6048248)). Verified
+  ABSENT from the 0.15.0 AAB on 2026-09-10, and this app has no ads and no analytics (Firebase
+  Analytics removed under GP-12/ADR-0030).
+  **Why gate an absence**: this repo has ALREADY been bitten by transitive manifest injection --
+  GP-3 had to strip NFC and biometric permissions an SDK pulled in via manifest merge. An
+  analytics or ads dependency arriving transitively would inject `AD_ID` and silently turn the
+  "no ads / no analytics" Data safety declaration into a FALSE one. That is a policy problem,
+  not a build problem, and `data_safety_declarations_test` cannot see it because it reads
+  documents, not the merged manifest.
+  **Check**: assert `AD_ID` never appears in the built AAB's merged manifest.
+
+- **Gap 3: 16 KB page-size alignment (~1-2h).** Flutter ships native `.so` libraries, so this
+  applies -- a pure Java/Kotlin app would be exempt.
+  **CORRECTION worth recording, because the wrong date is everywhere**: multiple community
+  sources say enforcement began 2025-11-01. Google's own page says **2027-02-01**:
+  "Starting February 1, 2027, if your app updates don't support 16 KB memory page sizes, you
+  won't be able to release these updates" ([doc](https://developer.android.com/guide/practices/page-sizes)).
+  Not urgent; do it before that date, not this sprint.
+  **Check**: `apkanalyzer` or Android Studio's alignment detection over the bundle's `.so` files.
+
+- **What is NOT applicable, verified rather than assumed** (2026-09-10, by enumerating the built
+  AAB's manifest): no sensitive permissions -- no `QUERY_ALL_PACKAGES`, `MANAGE_EXTERNAL_STORAGE`,
+  SMS/Call Log, or `SCHEDULE_EXACT_ALARM` -- so no Permissions Declaration Form. No ads, no IAP,
+  no location, no camera, no analytics. Bundle is 53 MB against a 500 MB limit. The shipped set
+  is 11 permissions, all mundane (INTERNET, WAKE_LOCK, POST_NOTIFICATIONS,
+  FOREGROUND_SERVICE_SHORT_SERVICE, etc.).
+- **Already covered, do NOT rebuild**: this repo has **56 tests across 13 Play-relevant policy
+  gates**. Notably `app_content_declarations_test` (7 tests) covers App content declarations --
+  which is the ONE check family Google explicitly names as mandatory. Of the two checks Google
+  actually identifies, the coverable one is already covered.
+- **Community evidence, labelled**: aggregator blogs converge on "Data safety form drift" as a
+  common rejection cause -- the form describing an older SDK set than the shipped binary. MEDIUM
+  confidence (multiple independent sources, and it matches Google's documented emphasis), and
+  already gated here by `data_safety_declarations_test`. Deliberately NOT reproducing those
+  sources' longer rejection lists: they are mutually copied and several repeat the 16 KB date
+  error corrected above.
+- Depends on: nothing. All three checks read the built AAB, which the release process already
+  produces.
+- Source: Harold, 2026-09-10 -- *"target is not perfection, but as good as reasonably possible."*
+
 **F203. "Found N, evaluated 0" is unexplainable to the user -- surface the safe-sender-already-in-target skip (~1-2h) Priority 22 (NEW, Sprint 68 MV -- Harold)**
 - Phase: Core App Quality
 - Platform: All (shared scanner + results UI)
