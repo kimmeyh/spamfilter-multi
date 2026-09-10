@@ -522,6 +522,40 @@ All incomplete items in relative priority order. Priority in increments of 10; i
 - Source: Harold, 2026-09-09, Sprint 68 Manual Validation. Explicitly deferred OUT of Sprint 68
   as a scope change surfaced at a natural break (Decision-Class Taxonomy, class 3).
 
+**F203. "Found N, evaluated 0" is unexplainable to the user -- surface the safe-sender-already-in-target skip (~1-2h) Priority 22 (NEW, Sprint 68 MV -- Harold)**
+- Phase: Core App Quality
+- Platform: All (shared scanner + results UI)
+- **Harold, 2026-09-09, looking at a real scan**: *"Found 2, but 'no rules' 0?"* The Scan
+  History row read `Found: 2 | Processed: 0 | No Rule: 0 | Errors: 0`, and the Results screen
+  said **"No emails were found in the selected folders for the specified time period."** Those
+  two statements contradict each other on screen.
+- **NOT A BUG in the scan. The behavior is correct** -- diagnosed from
+  `dev_live_scan_v0.14.2.log` and the source, not guessed:
+  - `Step 4: Folder "INBOX" returned 2 messages` -- the fetch worked.
+  - `Step 6a COMPLETE: evaluated=0` -- neither reached the evaluated list.
+  - Cause: `email_scanner.dart:330`, the ONLY `continue` that bypasses
+    `evaluatedEmails.add`. Both messages matched a SAFE SENDER and were already sitting in
+    INBOX, which is this account's Safe Sender target folder, so
+    `shouldSkipSafeSenderAlreadyInTarget` skipped them "entirely -- do not count, do not
+    display, do not process. It is already where it belongs."
+  - With 623 safe senders loaded, a test message and an Apple welcome mail matching is
+    unremarkable.
+- **The defect is that the user cannot possibly know this.** Every counter is individually
+  truthful (Found = fetched; Processed/No Rule = needed action) but the combination reads as a
+  malfunction, and the empty-state text actively asserts something false -- emails WERE found.
+  The skip is logged at debug level only. Harold had to ask, and answering it required reading
+  the scan log and the scanner source.
+- **Scope**: (a) count the skips and surface them, e.g. a `Safe (already filed): N` chip
+  alongside the existing counters; (b) fix the empty-state text so it distinguishes "no emails
+  fetched" from "nothing required action"; (c) consider whether Scan History should carry the
+  same number, since that row is where the contradiction is starkest.
+- **Watch item**: do NOT "fix" this by counting skipped emails as Processed. They deliberately
+  are not processed, and the Sprint 58 F151d Demo Mode exception in
+  `shouldSkipSafeSenderAlreadyInTarget` shows this path already has subtle cases. The fix is
+  DISCLOSURE, not recounting.
+- Depends on: nothing. Independent of F202, though both surfaced in the same iCloud session.
+- Source: Harold, 2026-09-09, Sprint 68 Manual Validation (F191 iCloud/Windows cell).
+
 **F192. Custom IMAP Server support -- build the host-entry UI (~4-6h) Priority 32 (PLANNED FOR SPRINT 69 -- Harold, 2026-09-09, Sprint 68 scope selection; split from F191, genuinely unbuilt)**
 - Phase: Core App Quality
 - Platform: All
