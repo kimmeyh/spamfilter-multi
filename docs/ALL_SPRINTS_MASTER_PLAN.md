@@ -465,6 +465,17 @@ All incomplete items in relative priority order. Priority in increments of 10; i
     account is the only authority -- exactly the ADR-0042 argument this card rests on.
     **Confirmed iCloud value: Deleted Rule Folder = `Deleted Messages`.** Junk folder name still
     unknown; it has not materialised yet.
+    **THE PRE-SELECT PATH VERIFIED CLEAN, on the one account that could prove it.** Harold's
+    `Select Folders to Scan` on this NEW account shows INBOX tagged "Recommended" and
+    PRE-CHECKED, with `Deleted Messages` correctly neither. A new account has no saved
+    selection, so `initialSelectedFolders` is null and `PRESELECT_FOLDER_TYPES = {inbox, junk}`
+    actually runs -- which is what the Yahoo screenshots could NOT show, because that account
+    already had a saved selection shadowing it. The pre-select works; a prior selection is what
+    disables it.
+    **And it sharpens the card again**: no folder here classifies as junk (iCloud has not made
+    one), so the recommendation is INBOX alone. Correct for today's mailbox -- but once a junk
+    folder DOES appear, the saved selection will shadow the pre-select and that user never
+    scans it. That interaction, not just the default values, is what F202 must resolve.
     **This is the whole card in one screenshot**: a hardcoded default, provider-inaccurate,
     naming a folder that is not there. And per the missing-folder finding above it would land
     in `errorCount` rather than being skipped silently. Do not guess iCloud's real values --
