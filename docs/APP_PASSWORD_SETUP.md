@@ -87,7 +87,33 @@ iCloud Mail."
 feature independent of Mail. Then the connection fails, and it looks like a password problem.
 It is not.
 
-To create the address:
+### How to find out whether you already have one
+
+**The definitive test: go to icloud.com/mail and sign in with your Apple Account.**
+
+- A mailbox opens -> you have an iCloud address. Find the exact address under **Settings**
+  (gear icon) -> your account.
+- You see a **"Create Email Address"** prompt instead -> you do NOT have one yet, and that
+  prompt is how you create it.
+
+That test is definitive because Apple's documentation does not say where the address is
+displayed, and does not state whether an Apple Account whose ID is a third-party address (AOL,
+Gmail) has a mailbox at all. Rather than infer, just ask iCloud Mail.
+
+Two quicker checks that can confirm a YES but cannot prove a NO:
+
+- **account.apple.com -> Personal Information -> Reachable At** lists any @icloud.com, @me.com
+  or @mac.com address you own.
+- **iPhone/iPad: Settings -> [your name] -> iCloud -> iCloud Mail.** If it is on, the address
+  is shown.
+
+**Do not look only for `@icloud.com`.** Apple (support.apple.com/en-us/118230): accounts created
+on or after **September 19, 2012** get `@icloud.com`; accounts created BEFORE that date have
+both `@me.com` and `@icloud.com`; and qualifying legacy accounts have `@mac.com` as well. An
+older account's mailbox may be sitting there under a domain you were not looking for.
+
+### To create the address
+
 - **iPhone/iPad**: Settings -> [your name] -> iCloud -> iCloud Mail, then follow the prompts
 - **Mac**: System Settings -> [your name] -> iCloud -> Mail, turn on sync, follow the prompts
 - **Web**: icloud.com/mail -> Create Email Address
