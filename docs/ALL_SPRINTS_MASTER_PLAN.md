@@ -4,7 +4,7 @@
 
 **Audience**: Claude Code models planning sprints; User prioritizing future work
 
-**Last Updated**: 2026-08-21 (**Sprint 61 COMPLETE (retro + all 4 approved improvements applied; PR #347 ready for Harold's review/merge)** -- 9/9 tasks: Task 0 line endings, F170 Phase 8 Release Cycle encoded, F169 account-filter dropdown, F168 Inbox-scope warning, F172 AppBar version label, F171 1024x640 sweep, F162/ADR-0042 parity ADR ACCEPTED, F167 capability Help wording, F161 Android scheduler as the canonical ADR-0042 factory -- **validated for correctness on-device (count-parity PASS); Google Play shipment prerequisite MET**. MV forensics registered F174-F178 with proven root causes (LOW_MEMORY chunked-fetch cascade = F177/F175). 0.10.0.0 Submission 17 CERTIFIED 2026-08-16 22:17 in ~26 min (first real measurement). Suite 1,893 passed / 26 skipped / 0 failed; hooks 49/49. Earlier history in prior revisions of this line (git).)
+**Last Updated**: 2026-09-10 (**Sprint 68 COMPLETE** -- PR #403 -> develop, #404 -> main. 5/5 tasks: F199 publisher rename finished, F198 question-format rule (hook deliberately NOT built), F191 Yahoo + iCloud shipped, F200 web-property deep dive, F197 dark-mode contrast gate. Manual Validation 4/4 cells PASS across 2 providers x 2 platforms. Retrospective complete, all 5 improvements applied. BOTH PR reviews ran (Copilot 4 findings, code-review agent 4) -- all 8 addressed in-sprint, none deferred. Suite 2,074 / 15 skipped / 0 failed; policy gates 109; hooks 53/53; analyzer clean. Dev version 0.15.0+3. NEW backlog: F201, F202 (targeted Sprint 69), F203. Earlier history in prior revisions of this line (git).)
 
 ## How to Maintain This Document
 
@@ -139,6 +139,20 @@ Historical sprint information lives in individual documents in `docs/sprints/` a
 
 ## Last Completed Sprint
 
+**Sprint 68** (2026-09-09 -- 2026-09-10; PR #403 -> develop, PR #404 develop -> main)
+- **Type**: ship two providers that were already built, and convert three recurring failure classes into things that cannot recur. Scope F199, F198, F191, F200, F197.
+- **F191**: Yahoo and iCloud were FINISHED and unreachable -- both adapters carry real hosts, port 993, TLS, structurally identical to `aol()`. The gap was a `phase` integer. Worse for iCloud: the selection screen keeps `p.phase <= 2`, so phase-3 iCloud was **not rendered at all**. This is also the defect behind the Sprint 66 Play listing claiming both providers -- the copy was traced to the REGISTRY (which lists them) rather than the SCREEN (which hid them). Code change: two integers. The work was proving they function and writing app-password instructions that do not fail.
+- **F200**: `myemailspamfilter.com` told the public email content "is never persisted to disk" -- FALSE, and **the repo already knew**: Sprint 63 corrected `PRIVACY_POLICY.md` to disclose the 100-char preview, the correction never reached the landing page, and the honest disclosure sat one click from the false claim for ~6 months on the page the Play listing cites. Inventory also found TWO live privacy policies (landing page linked the stale March one; Play cited the August one), `docs/website/` as a byte-identical copy of the whole site, and an About section claiming Outlook.com + ProtonMail support that does not exist.
+- **F197**: the card said "28 sites to fix"; that was a grep of `Colors.*.shadeNN`, not the defect. The real pattern (hardcoded surface + theme-derived text) finds exactly TWO instances, both already fixed in Sprint 67 -- so the value was entirely the gate that stops the third.
+- **F198 shipped NO HOOK, deliberately.** R-1 found the four rule violations are not one failure mode (three tool-reflex, one PROSE, and the guidance addressed only the tool), and that a hook could not live where they happen -- `sprint-auto-advance.ps1` Gate 1c exits at Manual Validation BY DESIGN, and all four occurred outside the window. The real gap, found by grep: the rule was **not in `CLAUDE.md` at all**. Decision and counter-argument recorded in `docs/F198_QUESTION_FORMAT_ANALYSIS.md`.
+- **THE SPRINT'S DEFINING PATTERN: four screenshots read wrong, three caught by Harold.** Each time an artifact supported two readings and Claude chose the more interesting one: (1) Harold's folder ticks read as the app's pre-selection -- the code showed `initialSelectedFolders` silently outranks the pre-select, so the app RECOMMENDED without SELECTING; (2) a Play Console record of CURRENT state rewritten as a target; (3) a saved setting read as runtime resolution, which wrongly narrowed F202's blast radius; (4) a PRE-scan Android screen compared against a POST-scan Windows screen, inventing a platform difference that does not exist. **A screenshot cannot distinguish "the app did this" from "Harold did this" -- the source can.** Became retro IMP-1.
+- **BOTH PR reviews found real defects in Claude's OWN new gates.** The F197 gate had the exact defect its doc comment warns about: `isHardcodedSurface` checked for `TextStyle` on the same line, but `dart format` splits it -- **63 lines matched as "surfaces" and 31 were text colours**. Green only by luck. And Copilot's `plan_approved: false` catch had a second half: setting it true IMMEDIATELY BLOCKED the next commit, because the re-enabled hook found `pr_number` null despite PR #403 existing. Card/PR enforcement had been silently disabled for the whole sprint, and the flag was hiding it.
+- **MV**: F191 four cells (Yahoo/iCloud x Windows/Android) ALL PASS. Yahoo returned the same 41 messages with the same outcome on both platforms -- parity OBSERVED, not assumed. iCloud thin by volume (new mailbox), recorded with that limit stated. Two findings filed rather than fixed in-sprint: **F202** (a new iCloud mailbox has ONE folder, and the app defaulted Deleted Rule Folder to `Trash` -- iCloud calls it `Deleted Messages` and will never have `Trash`) and **F203** (`Found: 2, Processed: 0` is correct behaviour the user cannot see).
+- **Verification**: suite 2,074 / 15 skipped / 0 failed (was 2,060); policy gates 99 -> 109; hooks 53/53; analyzer clean. Effort ~245m against a 400-755m estimate.
+- **Retro**: 12 categories "Very Good", Cats 13/14 "none". All 5 improvements approved and applied -- IMP-1 screenshot rule, IMP-2 version gate now reads BOTH store rows (the old one compared against the CHANGELOG heading, which lags the stores, so a version live on both passed while byte-identical to production), IMP-3 in-app-vs-doc gate (found a real gap on its first run -- no AOL section in the doc), IMP-4 single-session model deviation, IMP-5 `git commit -F` for backticked messages.
+
+### Sprint 67 (previous)
+
 **Sprint 67** (2026-09-08 -- 2026-09-09; PR #396 -> develop)
 - **Type**: fix what the closed test will hit, and close the two process gaps Sprint 66 exposed. Scope F194, F195, F193, F196.
 - **F194**: the background scan was NEVER broken. `scan_history_screen.dart` chose its status icon with a TWO-branch ternary over FOUR statuses, so an `interrupted` row -- one F175 reconciliation had ALREADY detected and marked -- drew the same orange clock as a live scan. The duration text beside it was already correct (a PR #355 Copilot review added it); the icon was never updated to match, so text and icon contradicted each other on one row. Now a grey `Icons.cancel`, reading **"Not finished"** (Harold's wording at MV).
@@ -152,7 +166,7 @@ Historical sprint information lives in individual documents in `docs/sprints/` a
 - **Verification**: suite 2,060/15/0; policy 99; **hook suite 53/53** (was 45/6 when the review found the regression); analyzer clean; WinWright 2/2 at sweep-head `52fbc7d`.
 - **Retro**: 11 categories "Very Good", Cats 13/14 "none". Category 1 was a documentation request -- the Copilot reviewer-visibility finding, verified empirically (`gh pr view --json reviewRequests` returns `[]` even after a SUCCESSFUL request; the timeline is the only reliable check). **IMP-1/2/3 applied now**, IMP-4 backlogged as **F198** tentatively for Sprint 68.
 
-### Sprint 66 (previous)
+### Sprint 66
 
 **Sprint 66** (2026-09-07 -- 2026-09-08; PR #389 -> develop, Ready-for-Review at close-out)
 - **Type**: Google Play console entry. Scope GP-4 + GP-19; F173/F189 deferred at Harold's direction; F190 taken mid-sprint on his request.
@@ -386,16 +400,6 @@ _(Prior: **Sprint 49** F119-c + prod-DB restoration, PR #276; **Sprint 48** F119
 All incomplete items in relative priority order. Priority in increments of 10; items that can sprint together in increments of 2. HOLD items grouped at bottom. See [Feature and Bug Details](#feature-and-bug-details) for deep-dive specs. See [BACKLOG_REFINEMENT.md](BACKLOG_REFINEMENT.md) for presentation format rules.
 
 ### Core App Quality
-
-**F191. Ship Yahoo Mail and iCloud Mail -- open the provider phase gate (~60-90m) Priority 20 (NEW, Sprint 66 GP-19 -- discovered while correcting a false Play listing claim)**
-- Phase: Core App Quality
-- Platform: All
-- Both providers are ALREADY BUILT and unreachable only because of a display gate. `platform_registry.dart` `_factories` maps `'yahoo' => GenericIMAPAdapter.yahoo()` and `'icloud' => GenericIMAPAdapter.icloud()`; both named constructors are complete (host, port 993, TLS, displayName, platformId) and structurally IDENTICAL to `GenericIMAPAdapter.aol()`, which ships today and runs against Harold's real AOL mailbox. The only thing standing between a user and a Yahoo account is `phase: 2` in the registry, which makes `platform_selection_screen.dart` render the card under "Coming Soon" and set `enabled: false`.
-- The change itself is two integers: `yahoo` phase 2 -> 1, `icloud` phase 3 -> 1. The WORK is proving they actually function end to end, which the gate has never allowed anyone to check: a live scan against a real Yahoo account and a real iCloud account, app-password auth, folder discovery, delete and safe-sender paths -- the same manual validation AOL gets. Both require Harold to create an app password on each service.
-- Why this matters beyond the feature: Sprint 66 shipped a Play listing that CLAIMED Yahoo and iCloud support, because the listing copy was traced to the registry (which lists them) rather than the screen (which hides them). Closing this gate makes the richer claim true, and the copy can then be widened deliberately rather than by accident.
-- Watch item: iCloud may require an Apple ID app-specific password AND have IMAP-access preconditions on the account. If it does not authenticate cleanly, ship Yahoo alone and keep iCloud gated rather than shipping a provider that fails at sign-in.
-- Depends on: nothing in code. Depends on Harold having (or creating) a Yahoo and an iCloud account to validate against.
-- Source: Sprint 66 GP-19 listing submission, 2026-09-08 -- Harold asked for this to be backlogged and suggested for the next sprint.
 
 **F202. Per-provider folder defaults -- overall default plus provider overrides for all four folder settings (~6-10h, fully analyzed + planned + tested) Priority 10 (NEW, Sprint 68 MV -- Harold; TARGET SPRINT 69)**
 - Phase: Core App Quality
@@ -656,77 +660,6 @@ Recorded sequencing honored (see 'Recommended Sequencing' in the GP section belo
 - Depends on: nothing. Reads the repository and its history; changes nothing without approval.
 - Source: Harold, 2026-09-07. Made a periodic template at his direction, alongside F70 (Security), F71 (Architecture), F130 (Process-Docs), F152 (First-Run) and F173 (Test Coverage).
 
-**F200. Web Property Deep Dive -- bring myemailspamfilter.com and GitHub Pages up to date for BOTH stores (~4-8h, unbounded discovery) Priority 20**
-- Phase: Android / Google Play Store Readiness (web property; serves both stores)
-- Platform: All (the site represents Windows Desktop AND Android)
-- **Goal (Harold, 2026-09-09)**: the site is a landing page for the MyEmailSpamFilter apps on
-  BOTH stores, the host for the privacy policy, and the domain behind a contact email. Make it
-  **useful to the users of the apps**. It is NOT a company-verification asset -- that question
-  is closed (`docs/LEGAL_ENTITY.md`).
-- **Framing (Harold, 2026-09-09)**: the site and its GitHub Pages content are **old,
-  Microsoft-Store-centric, and expected to be out of date -- that is OK and is not a defect
-  report.** It was built before the Play launch and before the LLC. This item is a **deep
-  dive** to bring it current, not a patch list. Discovery is expected to exceed the findings
-  below; treat those as the seed, not the scope.
-- **ONE EXCEPTION to "staleness is OK", and it should not wait for this item to be scheduled**:
-  `docs/index.html:235` asserts email content "is processed in-memory only and **is never
-  persisted to disk**." That is not stale, it is **false** -- `PRIVACY_POLICY.md` discloses
-  that scan history stores, per evaluated message, sender address, subject, folder, the action
-  taken, and a body preview of at most 100 characters. The rest of the page misleads by
-  OMISSION (no Play, no LLC, wrong links); this one line misleads by ASSERTION, about data
-  handling, on a page the Play listing cites. Fix it standalone if this item is not scheduled
-  promptly.
-- **Seed findings from the 2026-09-09 inspection** (starting points, not the whole job):
-  1. The false persistence claim above.
-  2. **Two live privacy policies.** `/privacy` (`docs/privacy/index.html`) is dated **March 20,
-     2026** (Sprint 24, hand-written HTML); `/legal/PRIVACY_POLICY.html` is the **August 28,
-     2026** rewrite rendered from Markdown. The landing page links the STALE one; the Play
-     listing and the app cite the CURRENT one.
-  3. The live August policy still reads `Kimmey Consulting - Ohio` (F199 updated the Markdown
-     on the sprint branch; Pages serves `main`). Re-verify after merge.
-  4. `docs/privacy/` and `docs/website/privacy/` are **byte-identical duplicates**;
-     `docs/website/` appears to be a second unused copy of the whole site (CNAME, index,
-     privacy, delete).
-  5. Content is Windows/Microsoft-Store-centric throughout -- no Google Play presence, no
-     store badges or links, "Supported Platforms" lists Android but the page does not present
-     it as shipping.
-  6. Publisher is unnamed and there is no contact information anywhere, while the legal
-     documents both name Kimmey Consulting LLC and give a contact address.
-- **Root cause worth fixing, not just its symptoms**: the legal documents are MARKDOWN that
-  Pages renders, so they track their source automatically. The landing page and `/privacy` are
-  HAND-WRITTEN HTML that nothing regenerates and no gate inspects.
-  `test/policy/legal_docs_test.dart` validates the Markdown and **does not look at the served
-  site at all** (verified by grep, 2026-09-09). That asymmetry is why a corrected policy and a
-  contradicting landing page coexisted for ~6 months. A deep dive that fixes the text without
-  closing this gap will be re-run against the same drift later.
-- **Method**: (a) inventory everything actually served under the domain -- both directory
-  trees, every page, every internal link, and what each URL resolves to LIVE, not what the repo
-  suggests; (b) establish which pages are canonical and DELETE the rest, since a second privacy
-  policy has no reason to exist; (c) audit every factual and privacy claim against
-  `PRIVACY_POLICY.md`, `TERMS.md` and the shipped app behavior; (d) bring content current for
-  both stores -- Play presence, store links, platform status, publisher identity, contact;
-  (e) close the gate gap so a served claim contradicting the policy fails the build.
-- **Also wanted, low effort, no code**: a contact email on the domain
-  (`<something>@myemailspamfilter.com`), replacing the Gmail address the legal documents
-  currently use. Registrar/DNS errand; can happen independently at any time.
-- **Acceptance criteria** (all of the following; the last is one criterion among them, not a
-  substitute for the rest):
-  - Every URL the site serves is inventoried, and each is either current or deleted.
-  - No page makes a claim contradicting `PRIVACY_POLICY.md` or the actual app behavior.
-  - Exactly ONE privacy policy and ONE account-deletion page are reachable, and every internal
-    link points at them.
-  - The site presents BOTH stores accurately.
-  - Publisher (Kimmey Consulting LLC) and contact information are present.
-  - A gate covers served-site claims, so this class of drift fails the build rather than
-    waiting for a human to notice.
-  - **As a final criterion (Harold, 2026-09-09): F201 -- the periodic re-review template
-    below -- exists as a HOLD backlog item.** The deep dive is one-shot; the drift is
-    continuous. This is the LAST criterion in sequence, not the only one that matters: the
-    six above are each independently required, and creating F201 does not discharge them.
-- Depends on: nothing. Pages serves `main`, so nothing is live until merge.
-- Source: Harold, 2026-09-09. Originally filed as a company-verification question; that
-  premise closed the same day, and he redirected it to a deep dive with a periodic companion.
-
 **GP-4. Gmail API OAuth Verification / CASA -- THE SUBMISSION ITSELF (~40-80h) Priority HOLD (MOVED TO HOLD by Harold, 2026-09-09, Sprint 68 scope selection; PREP DONE Sprint 66, submission remains trigger-gated at 2,500+ users or $5K/yr)**
 - Phase: Android Google Play Store Readiness
 - Platform: Android
@@ -757,58 +690,26 @@ _(No active Core App candidates -- F96 shipped in Sprint 43.)_
 
 ### Process
 
-**F199. Rename the publisher to "Kimmey Consulting LLC" everywhere it appears (~60-100m) Priority 8 (Sprint 68 -- SUBSTANTIALLY DELIVERED 2026-09-09; ONE console item remains)**
+**F199-b. Partner Center publisher display name -- the last surface of the LLC rename (~15m once unblocked) Priority 12 (Sprint 68 remnant; EXTERNALLY BLOCKED)**
 - Phase: Release Readiness
-- Platform: All (both stores + the repo)
-- **DONE -- repo (commit `8558aa3`)**: 10 replacements across 7 live files -- `pubspec.yaml`
-  `msix_config.publisher_display_name`, `PRIVACY_POLICY.md`, `TERMS.md`,
-  `STORE_LISTING_ASSETS.md`, `LISTING_COPY.md`, `GOOGLE_PLAY_ACCOUNT_SETUP.md`,
-  `STORE_RELEASE_PROCESS.md`.
-- **DONE -- Play developer name** (2026-09-09, Developer account -> About you). Console reads
-  `Kimmey Consulting LLC`. No friction, and it went through WHILE 0.14.2 was in review without
-  disturbing the release or the closed test -- the caution about waiting proved unnecessary.
-- **DONE -- Partner Center Additional information** (Copyright / Developed by), folded into
-  Submission 25 rather than paying a separate listing-only certification pass.
-- **STILL OPEN -- Partner Center publisher display name.** Currently `Kimmey Consulting - Ohio`.
-  **Microsoft's own documentation contradicts itself**: the Windows Store FAQ says publisher
-  display name "cannot be changed after registration", while the Partner Center account doc
-  says you can "select the Update link to change your contact info, such as publisher display
-  name" -- and the console UI does show that link. Unresolvable from documentation; ask
-  support (https://aka.ms/windowsdevelopersupport). See `docs/LEGAL_ENTITY.md`.
-- **Deliberately NOT changed, and the distinctions are the durable part**: `msix_config.publisher`
-  (`CN=84EA8722-...`) is the Partner-Center-assigned GUID, not a name -- changing it breaks
-  package identity and every installed copy's upgrade path. Sprint docs and ADRs keep the old
-  name because they are dated records. `GOOGLE_PLAY_ACCOUNT_SETUP.md`'s "Is this a government
-  app?" row keeps the SUBMITTED name: a declaration already filed under the old name stays
-  under it (this one was caught only after being wrongly rewritten -- see `5865794`).
-- **Legal precondition RESOLVED**: Harold confirmed the LLC is a one-person entity (Harold
-  Kimmey), so the account holder does not change; this is a display-name edit, not an account
-  restructuring. Ohio LLC doc. 202624702988, effective 2026-09-05 -- see `docs/LEGAL_ENTITY.md`.
-- **Account type question CLOSED**: both stores stay Personal/Individual. Company/Organization
-  conversion was researched against both vendors' documentation and declined.
-- Depends on: nothing. The remaining item is gated on a Microsoft support answer.
-- Source: Harold, 2026-09-09.
-
-**F198. Forcing function for the numbered-question format (~45-75m) Priority 18 (NEW, Sprint 67 retro IMP-4 -- Harold: backlog, TENTATIVELY next sprint)**
-- Phase: Process
-- Platform: N/A (tooling)
-- **The problem is repetition, not ignorance.** `feedback_qa_style_plain_numbered` says a decision question must be a PLAIN NUMBERED LIST the user answers by typing a digit. It was corrected three times on 2026-08-10 and again in Sprint 67, when I asked the emulator uninstall decision as two bolded prose paragraphs with a recommendation. Harold: *"noting this is not how I have requested you ask questions."* **Four corrections of the same rule is not a memory problem, it is a missing forcing function** -- which is the same reasoning that produced the auto-advance hook (Sprint 36) and the mutation-lock gate (Sprint 65).
-- Direction: a Stop-hook check that blocks a turn ending in a decision question NOT presented as a numbered list. `sprint-auto-advance.ps1` already parses the last assistant message for question shapes, so the detection half largely exists; the new part is recognising the numbered-list form and allowing it.
-- **The risk is real and this card should not pretend otherwise.** A badly tuned check is worse than the current prose rule: it would fire on rhetorical questions, on quoted user text, on questions inside code blocks, and on the legitimate Phase 7 retro prompt. Sprint 67 shipped a gate that blocked correct work (the F193 Phase 4 regression) and that is exactly the failure mode to avoid twice. Whoever builds this must add allow-cases FIRST, covering at minimum: a numbered question (allow), a prose question (block), a question inside a fenced code block (allow), a quoted question from Harold (allow), and the Phase 7 retro prompt (allow).
-- **Acceptance**: mutation-verified in both directions, and `run-test-cases.ps1` green -- the very suite Sprint 67 IMP-2 exists because I failed to run.
-- Alternative worth evaluating before building it: whether a lighter change suffices -- e.g. moving the rule from memory into CLAUDE.md's "Things Claude Should NOT Do" list, which is read every session, versus memory files that are recalled selectively. Cheaper, and it may be enough. The card should compare both rather than assume a hook.
-- Depends on: nothing.
-- Source: Sprint 67 retrospective IMP-4, 2026-09-09. Harold: *"add 4 to backlog and tentatively for the next sprint"*.
-
-**F197. Dark-mode contrast: add a GATE for the hardcoded-surface + theme-text pattern (~45-90m) Priority 26 (NEW Sprint 67; SCOPE CORRECTED 2026-09-09 after measuring)**
-- Phase: Core App Quality
-- Platform: All (shared Flutter UI)
-- **This card was originally written as "28 sites to fix" and that was wrong.** 28 (in fact 29) is the count of hardcoded `Colors.*.shadeNN` occurrences repo-wide -- a grep of the easy proxy, not a count of the defect. Most are CORRECT: a fully-hardcoded card pins BOTH halves and holds in any theme. Harold's own counter-example proves it -- Settings > Manual Scan > Default Folders is `blue.shade900` on `blue.shade50` and measures **7.56:1**.
-- The defect is **MIXING** a hardcoded surface with theme-derived text. Auditing for that specifically (a `shadeNN` surface with a `textTheme` reference within ~12 lines) finds **exactly two** instances in the whole tree, and **both are already fixed**: the Settings account header (F195) and the Scan History background-scan info strip (fixed alongside the F197 correction).
-- **So the remaining work is NOT a sweep -- it is the GATE.** The reason two instances reached users is that nothing forbids the pattern. Add a policy test or lint that fails when a hardcoded `Colors.*.shadeNN` is used as a container colour while the text inside takes its colour from the theme. That is what stops the third instance, and it is the only part of this card with lasting value.
-- Also worth doing while in here: confirm the pattern cannot re-enter through `AppTheme` itself, and consider whether `ColorScheme.fromSeed` guarantees the container/onContainer pairs the fixes now rely on (measured: `AppTheme.darkTheme` 7.20:1, `AppTheme.lightTheme` 13.26:1 -- both pass, but that is a measurement, not a guarantee anyone documented).
-- Depends on: nothing. F195 and the Scan History fix are the worked examples.
-- Source: F195 sibling check, 2026-09-08; scope corrected after the Sprint 67 5.1.1 review challenged the count, 2026-09-09.
+- Platform: Windows Desktop (Microsoft Store account surface)
+- Sprint 68 delivered every other surface: the repo (10 replacements, 7 files), the Play
+  developer name, and the Partner Center listing fields (Copyright / Developed by), the latter
+  folded into Submission 25 rather than paying a separate listing-only certification pass.
+- **What remains**: Partner Center still shows `Kimmey Consulting - Ohio` as the publisher
+  display name. **Microsoft's own documentation contradicts itself** on whether an Individual
+  account can change it -- the Windows Store FAQ says publisher display name "cannot be changed
+  after registration", while the Partner Center account doc says you can "select the Update
+  link to change your contact info, such as publisher display name", and the console DOES show
+  that link. Unresolvable from documentation.
+- **Next action is Harold's, not code**: a support ticket at
+  https://aka.ms/windowsdevelopersupport asking (a) can this Individual account's publisher
+  display name be changed, and (b) can a published app be transferred to a new Company account.
+- **Do NOT touch** `msix_config.publisher` (`CN=84EA8722-...`) -- that is the Partner-Center
+  assigned GUID, not a name; changing it breaks package identity and every installed copy's
+  upgrade path.
+- Account type is CLOSED: both stores stay Personal/Individual (`docs/LEGAL_ENTITY.md`).
+- Depends on: a Microsoft support answer. Nothing in the repo blocks it.
 
 **F111. Periodic Windows App Store upload readiness verification (~110-175m per review) Priority HOLD**
 - Phase: Release Readiness (reusable template)
