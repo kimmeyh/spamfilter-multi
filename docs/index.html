@@ -181,7 +181,7 @@
         Nothing is sent to any server. All processing happens locally.
       </p>
       <p>
-        The app supports Gmail (via OAuth) and standard IMAP email providers including AOL, Yahoo, Outlook.com, and ProtonMail.
+        The app supports Gmail (via OAuth) and, using an app password, AOL Mail, Yahoo Mail and iCloud Mail.
       </p>
     </section>
 
@@ -216,14 +216,23 @@
     </section>
 
     <section>
-      <h2>Supported Platforms</h2>
-      <p>MyEmailSpamFilter is built with Flutter and supports the following platforms:</p>
+      <h2>Where to get it</h2>
+      <p>
+        MyEmailSpamFilter is built with Flutter from a single codebase, so the Windows and
+        Android apps work the same way.
+      </p>
       <ul class="platform-list">
-        <li>Windows Desktop</li>
-        <li>Android</li>
-        <li>macOS (planned)</li>
-        <li>Linux (planned)</li>
-        <li>iOS (planned)</li>
+        <li>
+          <strong>Windows</strong> &mdash;
+          <a href="https://apps.microsoft.com/detail/9N5QK9G904C0">available on the Microsoft
+          Store</a>
+        </li>
+        <li>
+          <strong>Android</strong> &mdash; in closed testing on Google Play. Not yet publicly
+          available; testing is by invitation while the app completes Google&rsquo;s review
+          requirements.
+        </li>
+        <li>macOS, Linux and iOS &mdash; supported by the codebase, not yet released</li>
       </ul>
     </section>
 
@@ -232,8 +241,16 @@
       <p>
         Privacy is a foundational principle of MyEmailSpamFilter. The app has no backend server.
         No user data is ever transmitted to or stored on any external server.
-        Email content is processed in-memory only and is never persisted to disk.
         Credentials are stored in encrypted, platform-native secure storage.
+      </p>
+      <p>
+        Some data is stored locally on your device, so you can review what the app did.
+        Scan history keeps, for each evaluated message, the sender address, subject, folder,
+        the action taken, and &mdash; only for messages awaiting your review &mdash; a short
+        body preview of at most 100 characters. Full message bodies are never stored.
+        Everything stays on your device and is yours to delete at any time.
+        The <a href="/legal/PRIVACY_POLICY.html">Privacy Policy</a> is the authoritative
+        description.
       </p>
       <div class="privacy-highlight">
         <p>
@@ -244,9 +261,21 @@
     </section>
 
     <section>
+      <h2>About the publisher</h2>
+      <p>
+        MyEmailSpamFilter is published by <strong>Kimmey Consulting LLC</strong>, an Ohio
+        limited liability company.
+      </p>
+      <p>
+        Questions, problems or feedback:
+        <a href="mailto:myemailspamfilter.dev@gmail.com">myemailspamfilter.dev@gmail.com</a>
+      </p>
+    </section>
+
+    <section>
       <h2>Legal</h2>
       <nav class="links">
-        <a href="/privacy">Privacy Policy</a>
+        <a href="/legal/PRIVACY_POLICY.html">Privacy Policy</a>
         <a href="/delete">Account Deletion</a>
       </nav>
     </section>
@@ -255,8 +284,8 @@
 
   <footer>
     <p>
-      &copy; 2026 MyEmailSpamFilter &nbsp;|&nbsp;
-      <a href="/privacy">Privacy Policy</a> &nbsp;|&nbsp;
+      &copy; 2026 Kimmey Consulting LLC &nbsp;|&nbsp;
+      <a href="/legal/PRIVACY_POLICY.html">Privacy Policy</a> &nbsp;|&nbsp;
       <a href="/delete">Account Deletion</a>
     </p>
   </footer>

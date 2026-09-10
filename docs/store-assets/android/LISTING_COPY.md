@@ -204,7 +204,7 @@ deliberately differs, why.
 | Claim | Microsoft Store (Windows) | Google Play (Android, this document) | Agreement |
 |---|---|---|---|
 | App name | MyEmailSpamFilter | MyEmailSpamFilter | Same. |
-| Publisher | Kimmey Consulting - Ohio | Kimmey Consulting, Ohio (Play Console "Developer name (public)") | Same identity; punctuation is each console's own convention. |
+| Publisher | Kimmey Consulting LLC | Kimmey Consulting LLC (Play Console "Developer name (public)") | Same identity; punctuation is each console's own convention. |
 | Category | Productivity / Utilities & Tools | Productivity | Same substance -- Play's category taxonomy has no combined "Utilities & Tools" leaf; the closest single Play category is used. |
 | Privacy policy | https://myemailspamfilter.com/privacy | https://myemailspamfilter.com/legal/PRIVACY_POLICY.html | Deliberate difference: the Windows listing predates the GP-5 (Sprint 64) publication of the canonical `/legal/` path. The Windows Store entry is stale and should be updated to the canonical URL at the next Windows listing edit -- recorded here as a follow-up, not silently left inconsistent. |
 | Providers supported | "multiple email providers... including AOL Mail and Gmail" (short description names AOL/Gmail only; long description does not enumerate further) | Gmail and AOL | Agree. **This row previously claimed Play supported "Gmail, AOL, Yahoo, iCloud, and any IMAP account" and argued Play's copy was "more precise" than Windows'. That was backwards** -- the Windows copy naming only AOL and Gmail was the accurate one, and this comparison talked itself into the error by reasoning from the provider registry rather than the provider screen (see the CORRECTED note under Short description). Corrected 2026-09-08. |

@@ -2,7 +2,7 @@
 
 **App Name**: MyEmailSpamFilter
 **Developer Account**: kimmeyh@outlook.com (Microsoft Store developer account)
-**Publisher Display Name**: Kimmey Consulting - Ohio
+**Publisher Display Name**: Kimmey Consulting LLC
 **Store ID**: 9N5QK9G904C0
 **Partner Center ID**: 768eaaca-92b9-4871-a10f-da17dbf92e91
 **Category**: Productivity / Utilities & Tools
@@ -49,7 +49,7 @@
 |-------|-------|
 | Package/Identity/Name | KimmeyConsulting-Ohio.MyEmailSpamFilter |
 | Package/Identity/Publisher | CN=84EA8722-0CA5-4EC0-9B10-07EE79B66062 |
-| Package/Properties/PublisherDisplayName | Kimmey Consulting - Ohio |
+| Package/Properties/PublisherDisplayName | Kimmey Consulting LLC |
 | Package Family Name (PFN) | KimmeyConsulting-Ohio.MyEmailSpamFilter_3t07cykjy5226 |
 
 ---

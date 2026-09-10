@@ -8,6 +8,145 @@ Do not stop to ask questions unless meeting the criteria in \docs\SPRINT_STOPPIN
 Sprint 6n Scope should include the below items. Please complete sprint planning (/docs/sprint_planning.md) for the below items and present for approval.  Note that everything needs to take into account both the Windows App and the Android app and ADR stating that everything should be functionally and UI the same unless it cannot be - and where it cannot be it should be implemented as a platform exception for what is needed -- this applies to all backend code, frontend code, data, architecture, development, security, testing, deployment.
 
 ---------------------------------------------------------------------------------------------------------
+Sprint 68 Scope should include the below items. Please complete sprint planning (/docs/sprint_planning.md) for the below items and present for approval.  Note that everything needs to take into account both the Windows App and the Android app and ADR stating that everything should be functionally and UI the same unless it cannot be - and where it cannot be it should be implemented as a platform exception for what is needed -- this applies to all backend code, frontend code, data, architecture, development, security, testing, deployment.
+ My recommendation: F199 finish + F198 + F197, with F191 added if you have Yahoo and iCloud accounts ready. 
+  - F199. Rename the publisher to "Kimmey Consulting LLC" everywhere it appears (~60-100m) Priority 8 — already assigned, substantially delivered
+  - F198. Forcing function for the numbered-question format (~45-75m) Priority 18
+  - F191. Ship Yahoo Mail and iCloud Mail — open the provider phase gate (~60-90m) Priority 20
+  - F200. Web Property Deep Dive — bring myemailspamfilter.com and GitHub Pages up to date for BOTH stores (~4-8h) Priority 20
+  - F197. Dark-mode contrast: add a GATE for the hardcoded-surface + theme-text pattern (~45-90m) Priority 26
+Can you put these 2 on HOLD
+  - F165. Cross-device rules-DB sharing + hosted-tier exploration (~half-day) Priority 30
+  - GP-4. Gmail API OAuth Verification / CASA — the submission itself (~40-80h) Priority 60 — trigger-gated
+Plan to include in Sprint 69
+  - F192. Custom IMAP Server support — build the host-entry UI (~4-6h) Priority 32
+
+
+
+  Backlog Refinement — Sprint 68 Scope Selection
+
+  Candidates at a glance
+
+  - F199. Rename the publisher to "Kimmey Consulting LLC" everywhere it appears (~60-100m) Priority 8 — already assigned, substantially delivered
+  - F198. Forcing function for the numbered-question format (~45-75m) Priority 18
+  - F191. Ship Yahoo Mail and iCloud Mail — open the provider phase gate (~60-90m) Priority 20
+  - F200. Web Property Deep Dive — bring myemailspamfilter.com and GitHub Pages up to date for BOTH stores (~4-8h) Priority 20
+  - F197. Dark-mode contrast: add a GATE for the hardcoded-surface + theme-text pattern (~45-90m) Priority 26
+
+  - F192. Custom IMAP Server support — build the host-entry UI (~4-6h) Priority 32
+
+  - F165. Cross-device rules-DB sharing + hosted-tier exploration (~half-day) Priority 30
+  - GP-4. Gmail API OAuth Verification / CASA — the submission itself (~40-80h) Priority 60 — trigger-gated
+  - HOLD items:
+  - F111. Periodic Windows App Store upload readiness verification (~110-175m per review) Priority HOLD
+  - F130. Periodic Process-Docs Consistency Deep Dive (unbounded discovery) Priority HOLD
+  - F139. Local-install smoke test for a release-candidate MSIX (~30-50m per review) Priority HOLD
+  - F152. Periodic User-Centric First-Run Evaluation (~2-3h per review) Priority HOLD
+  - F173. Periodic Test Coverage and Appropriate Testing Deep Dive (~4-8h per review) Priority HOLD
+  - F179. Subject-blocking phrase picker (~3-5h) Priority HOLD
+  - F183. Upstream civyk-winwright request: script-runner replay support for ww_wait (~15m to file) Priority HOLD
+  - F189. Periodic Skills Audit (~4-8h per review) Priority HOLD
+  - F201. Periodic Web Property Accuracy Re-Review (~1-2h per review) Priority HOLD
+  - F70. Periodic Security Deep Dive (~4-8h per review) Priority HOLD
+  - F71. Periodic Architecture Deep Dive (~4-8h per review) Priority HOLD
+  - F95. iOS variants + cross-store hardening (~10-16h) Priority HOLD
+  - F63. Responsive design framework (SUPERSEDED) Priority HOLD
+  - F67. Platform validation — iOS, Linux, macOS (~4-6h per platform) Priority HOLD
+  - F6. Provider-Specific Optimizations (~10-12h) Priority HOLD
+  - SEC-8b. Certificate pinning for IMAP endpoints (~4-6h) Priority HOLD
+  - SEC-15. IMAP host validation for custom servers (~1h) Priority HOLD
+  - SEC-11b. Database-at-rest encryption via sqlite3mc (~8-12h) Priority HOLD
+  - F106. SEC-11b verification-window cleanup (~30m) Priority HOLD
+  - H1. GenAI Pattern Suggestions — Crowdsourced Spam Intelligence (TBD) Priority HOLD
+  - H2. Rule Pattern Consistency — Domain Matching Standards (~4-6h) Priority HOLD
+  - H3. Requirements Documentation System (TBD) Priority HOLD
+  - H4. Sent Messages Scan for Safe Senders (~12-16h) Priority HOLD
+  - H5. Outlook.com / Office 365 email provider adapter (~16-20h) Priority HOLD
+
+  ---
+
+  Release Readiness
+
+  F199. Rename the publisher to "Kimmey Consulting LLC" everywhere it appears (~60-100m) Priority 8
+  - Phase: Release Readiness
+  - Platform: All (both stores + the repo)
+  - Already assigned to this sprint and substantially delivered: repo (10 replacements, 7 files), Play developer name, Partner Center listing fields.
+  - Remaining: the Partner Center publisher display name, blocked on a Microsoft support answer — their FAQ and their Partner Center doc contradict each other on whether an
+    Individual account can change it.
+  - Depends on: nothing in the repo; the open item is gated externally.
+
+  Process
+
+  F198. Forcing function for the numbered-question format (~45-75m) Priority 18
+  - Phase: Process
+  - Platform: N/A (tooling)
+  - Four corrections of the same rule is a missing forcing function, not a memory problem.
+  - Card explicitly requires allow-cases FIRST and mutation verification in both directions, because Sprint 67 shipped a gate that blocked correct work.
+  - Card also asks whether a CLAUDE.md entry suffices instead of a hook — cheaper, possibly enough.
+  - Depends on: nothing.
+
+  Core App Quality
+
+  F191. Ship Yahoo Mail and iCloud Mail — open the provider phase gate (~60-90m) Priority 20
+  - Phase: Core App Quality
+  - Platform: All
+  - The code change is two integers; the work is proving both providers function end to end.
+  - Makes the Play listing's existing provider claim true rather than aspirational.
+  - Depends on: Harold having or creating a Yahoo and an iCloud account with app passwords.
+
+  F197. Dark-mode contrast: add a GATE for the hardcoded-surface + theme-text pattern (~45-90m) Priority 26
+  - Phase: Core App Quality
+  - Platform: All (shared Flutter UI)
+  - Both known instances are already fixed. The remaining value is entirely the gate that stops the third.
+  - Depends on: nothing. F195 and the Scan History fix are the worked examples.
+
+  F192. Custom IMAP Server support — build the host-entry UI (~4-6h) Priority 32
+  - Phase: Core App Quality
+  - Platform: All
+  - Genuinely unbuilt: GenericIMAPAdapter.custom() expects a host nothing supplies; zero imapHost references in lib/ui/.
+  - Depends on: nothing. Independent of F191, though shipping both lets the listing copy be rewritten once.
+
+  Android / Google Play Store Readiness
+
+  F200. Web Property Deep Dive — bring myemailspamfilter.com and GitHub Pages up to date for BOTH stores (~4-8h) Priority 20
+  - Phase: Android / Google Play Store Readiness
+  - Platform: All
+  - Deep dive, not a patch list. Site is old and Microsoft-centric, which is expected; the false persistence claim is the one exception and is scoped to be fixable
+    standalone.
+  - Final acceptance criterion creates F201.
+  - Depends on: nothing. Pages serves main.
+
+  Product direction / architecture exploration
+
+  F165. Cross-device rules-DB sharing + hosted-tier exploration (~half-day) Priority 30
+  - Phase: Product direction / architecture exploration
+  - Platform: All
+  - Exploration deliverable, not an implementation.
+  - Depends on: nothing.
+
+  ---
+
+  Observations
+
+  Zero open issues and both stores live on 0.14.2 — an unusually clean starting position.
+
+  The critical path is not on this list. Play production access needs 12 testers × 14 continuous days; 3 of 12 are opted in. That is recruiting, not engineering, and no
+  item here advances it. Worth weighing when sizing the sprint — a heavy sprint does not shorten that clock.
+
+  Two natural compositions:
+
+  Small and coherent (~3-5h): F199 finish + F198 + F197. All three are process and quality hardening, all small, all independent. This leaves room for tester recruiting and
+  keeps the sprint short while the Play clock runs.
+
+  Product-facing (~6-9h): F199 finish + F191 + F192. Ships real user-visible capability and lets the Play listing copy be rewritten once. F191 depends on you having Yahoo
+  and iCloud accounts to validate against.
+
+  F200 is awkward to pair. At 4-8h with unbounded discovery it is the largest non-HOLD item, and you said it will likely be fixed by tomorrow — if you handle it directly it
+  should come off this slate.
+
+  My recommendation: F199 finish + F198 + F197, with F191 added if you have Yahoo and iCloud accounts ready. The first three are all things that prevent recurrence rather
+  than add surface, which suits a sprint whose real bottleneck is a 14-day clock you cannot compress.
+---------------------------------------------------------------------------------------------------------
 Sprint 67 Scope should include the below items. Please complete sprint planning (/docs/sprint_planning.md) for the below items and present for approval.  Note that everything needs to take into account both the Windows App and the Android app and ADR stating that everything should be functionally and UI the same unless it cannot be - and where it cannot be it should be implemented as a platform exception for what is needed -- this applies to all backend code, frontend code, data, architecture, development, security, testing, deployment.
 F194, F195, F193 and
 add to backlog and do this sprint:  when providing new app updates to be updated for Android Google Play and Microsoft Store, provide specific release notes content for

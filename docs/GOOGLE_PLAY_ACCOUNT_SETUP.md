@@ -2,9 +2,22 @@
 
 ## ACCOUNT CREATED (Sprint 64, 2026-08-28)
 
-- **Developer name (public)**: Kimmey Consulting, Ohio (matches the Microsoft Store
-  publisher identity)
-- **Account type**: Personal | **Account ID**: 6597324007880348667
+- **Developer name (public)**: Kimmey Consulting LLC -- **AS CURRENTLY SET IN THE CONSOLE**,
+  changed 2026-09-09 (F199, Sprint 68) from the original `Kimmey Consulting, Ohio`. Changed
+  via Developer account -> About you; Google reviews the new name before it appears publicly
+  on Play, so the LISTING may lag this value. This line records what the console says TODAY.
+- **Account type**: Personal | **Account ID**: 6597324007880348667. Still Personal, and
+  deliberately so -- see `LEGAL_ENTITY.md` for why converting to Organization was considered
+  and DECLINED -- a closed decision, not a deferral. `LEGAL_ENTITY.md` is authoritative:
+  "Account type: CLOSED, 2026-09-09." Do not re-open it as pending work.
+- **Legal entity**: Kimmey Consulting LLC (Ohio, doc. 202624702988, effective 2026-09-05).
+  See `LEGAL_ENTITY.md`. Note this is a PERSONAL account whose developer NAME is the LLC.
+  Those are two different facts, and Google permits the combination: "Your developer name
+  does not need to match the organization name."
+- **Legal name and address (held by Google, NOT shown on Play)**: Harold's personal name and
+  home address. A Personal account does not publish these. An Organization account WOULD
+  publish the legal address plus a phone number on every listing -- one of the costs weighed
+  in `LEGAL_ENTITY.md`.
 - **Developer Google account**: myemailspamfilter.dev@gmail.com (dedicated account created
   same night; 2-Step Verification ON; Gmail auto-forwards to Harold's personal address --
   spam is NOT forwarded, check the dedicated spam folder during verification windows)
@@ -103,7 +116,7 @@ Steps:
 
 ## The road not taken (recorded for completeness)
 
-An **organization** account (e.g. "Kimmey Consulting - Ohio", the Microsoft Store publisher
+An **organization** account (e.g. "Kimmey Consulting, Ohio", the Microsoft Store publisher
 identity) is exempt from the 12-tester/14-day gate but requires a D-U-N-S number (free;
 issuance can take up to ~30 days), organization verification documents, and an organization
 website/email. Declined 2026-08-25: no D-U-N-S available, and the tester gate is acceptable.
@@ -262,7 +275,7 @@ silently skipped and nothing has to be re-derived from memory on the next submis
 
 | Item | Answer | Justification |
 |---|---|---|
-| Is this a government app? | No | The app is developed and published under a personal developer account (Kimmey Consulting, Ohio -- see ACCOUNT CREATED above) with no affiliation to any government entity, and implements no government service, ID, or benefit. |
+| Is this a government app? | No | The app is developed and published under a personal developer account (Kimmey Consulting, Ohio -- the name AS SUBMITTED in this declaration; see ACCOUNT CREATED above, and F199) with no affiliation to any government entity, and implements no government service, ID, or benefit. |
 
 ### Financial features
 

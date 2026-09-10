@@ -475,7 +475,7 @@ From `mobile-app/pubspec.yaml` `msix_config`:
 | Field | Value |
 |-------|-------|
 | display_name | MyEmailSpamFilter |
-| publisher_display_name | Kimmey Consulting - Ohio |
+| publisher_display_name | Kimmey Consulting LLC |
 | identity_name | KimmeyConsulting-Ohio.MyEmailSpamFilter |
 | publisher | CN=84EA8722-0CA5-4EC0-9B10-07EE79B66062 |
 | logo_path | assets/icon/icon.png |
@@ -484,3 +484,8 @@ From `mobile-app/pubspec.yaml` `msix_config`:
 | install_certificate | false |
 
 These fields rarely change between releases. Do not edit them unless the publisher identity is being reissued.
+
+`identity_name` and `publisher` are assigned by the Store and are how Windows matches an
+installed app to its updates. Changing either orphans every installed copy. The publishing
+entity of record is `Kimmey Consulting LLC`; see `LEGAL_ENTITY.md` for the entity facts and
+for why the filed Articles are deliberately NOT in this repository.
