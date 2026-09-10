@@ -205,4 +205,71 @@ void main() {
       });
     }
   });
+
+  /// The manifest's publisher name is a MIRROR of the Partner Center account,
+  /// not a branding choice.
+  ///
+  /// **Submission 26 was rejected at package validation on 2026-09-10:**
+  ///
+  /// > The PublisherDisplayName element in the app manifest of
+  /// > my_email_spam_filter.msix is **Kimmey Consulting LLC**, which doesn't
+  /// > match your publisher display name: **Kimmey Consulting - Ohio**.
+  ///
+  /// F199 (Sprint 68) renamed the publisher across every "live surface" in the
+  /// repo. That was right for the legal documents and the store LISTING copy,
+  /// and WRONG here: `publisher_display_name` is not a surface the repo owns.
+  /// The console owns it, and the manifest has to agree or the upload is
+  /// refused outright.
+  ///
+  /// The same sprint reverted TWO Play edits for exactly this reason -- lines
+  /// recording what a console CURRENTLY says are not rename targets. The
+  /// distinction was applied to the docs and missed here, where it is
+  /// enforceable rather than merely advisory.
+  ///
+  /// **Console leads, repo follows.** When the Partner Center display name is
+  /// actually changed (F199-b, blocked on a Microsoft support answer because
+  /// their own docs contradict each other on whether an Individual account can
+  /// change it), update the console FIRST, then this constant, then pubspec.
+  group('MSIX publisher identity matches the Partner Center account', () {
+    /// The value Partner Center holds TODAY. Verified against the console, not
+    /// inferred from the legal entity name -- those differ on purpose.
+    const consolePublisherDisplayName = 'Kimmey Consulting - Ohio';
+
+    test('publisher_display_name mirrors the console exactly', () {
+      final pubspec = File('pubspec.yaml').readAsStringSync();
+      final m = RegExp(r'^\s*publisher_display_name:\s*(.+?)\s*$',
+              multiLine: true)
+          .firstMatch(pubspec);
+
+      expect(m, isNotNull,
+          reason: 'msix_config.publisher_display_name not found in pubspec.yaml');
+
+      expect(m!.group(1), consolePublisherDisplayName,
+          reason: 'publisher_display_name does not match the Partner Center '
+              'account, so the MSIX WILL BE REJECTED at package validation -- '
+              'this exact mismatch failed Submission 26 on 2026-09-10.\n\n'
+              'This field mirrors the CONSOLE, not the legal entity. The entity '
+              'is Kimmey Consulting LLC (docs/LEGAL_ENTITY.md); the console '
+              'still says "$consolePublisherDisplayName".\n\n'
+              'If the console name was genuinely changed, update '
+              '`consolePublisherDisplayName` in this test IN THE SAME COMMIT, '
+              'and record the change in docs/STORE_VERSION_STATUS.md. Never '
+              'change pubspec alone -- that is what produced the rejection.');
+    });
+
+    test('identity_name and publisher GUID are untouched', () {
+      // Store-ASSIGNED values. identity_name still reads
+      // "KimmeyConsulting-Ohio.MyEmailSpamFilter" and MUST: it is how Windows
+      // matches an installed app to its updates. Renaming it orphans every
+      // installed copy. The GUID is not a name at all.
+      final pubspec = File('pubspec.yaml').readAsStringSync();
+      expect(pubspec, contains('identity_name: KimmeyConsulting-Ohio.MyEmailSpamFilter'),
+          reason: 'identity_name is Store-assigned package identity. Changing '
+              'it breaks the upgrade path for every installed copy -- it is '
+              'NOT part of any rename, however much it looks like a name.');
+      expect(pubspec, contains('publisher: CN=84EA8722-0CA5-4EC0-9B10-07EE79B66062'),
+          reason: 'msix_config.publisher is the GUID Partner Center assigns, '
+              'not a display name. It never changes.');
+    });
+  });
 }

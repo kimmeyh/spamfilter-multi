@@ -125,7 +125,15 @@ flutter:
 # MSIX Configuration for Windows Desktop
 msix_config:
   display_name: MyEmailSpamFilter
-  publisher_display_name: Kimmey Consulting LLC
+  # MUST MATCH PARTNER CENTER EXACTLY -- this is a MIRROR of the account, not a
+  # branding choice. Partner Center rejects the package outright when they differ:
+  #   "The PublisherDisplayName element in the app manifest ... doesn't match your
+  #    publisher display name: Kimmey Consulting - Ohio"
+  # F199 (Sprint 68) changed this to "Kimmey Consulting LLC" ahead of the console and
+  # Submission 26 was REJECTED at package validation. The console still holds the
+  # hyphenated name; changing it is F199-b and is blocked on Microsoft support.
+  # DO NOT change this until the CONSOLE changes first. Console leads, repo follows.
+  publisher_display_name: Kimmey Consulting - Ohio
   identity_name: KimmeyConsulting-Ohio.MyEmailSpamFilter
   publisher: CN=84EA8722-0CA5-4EC0-9B10-07EE79B66062
   msix_version: 0.15.0.0

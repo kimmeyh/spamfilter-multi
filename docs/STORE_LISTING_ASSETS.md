@@ -2,7 +2,10 @@
 
 **App Name**: MyEmailSpamFilter
 **Developer Account**: kimmeyh@outlook.com (Microsoft Store developer account)
-**Publisher Display Name**: Kimmey Consulting LLC
+**Publisher Display Name**: Kimmey Consulting - Ohio -- **AS SET IN PARTNER CENTER**, and
+the manifest MUST mirror it exactly or the package fails validation. The legal entity is
+Kimmey Consulting LLC (`LEGAL_ENTITY.md`); renaming the console is F199-b, blocked on
+Microsoft support. This line records the CONSOLE, not the entity.
 **Store ID**: 9N5QK9G904C0
 **Partner Center ID**: 768eaaca-92b9-4871-a10f-da17dbf92e91
 **Category**: Productivity / Utilities & Tools
@@ -49,7 +52,7 @@
 |-------|-------|
 | Package/Identity/Name | KimmeyConsulting-Ohio.MyEmailSpamFilter |
 | Package/Identity/Publisher | CN=84EA8722-0CA5-4EC0-9B10-07EE79B66062 |
-| Package/Properties/PublisherDisplayName | Kimmey Consulting LLC |
+| Package/Properties/PublisherDisplayName | Kimmey Consulting - Ohio (must match the console) |
 | Package Family Name (PFN) | KimmeyConsulting-Ohio.MyEmailSpamFilter_3t07cykjy5226 |
 
 ---

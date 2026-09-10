@@ -1738,8 +1738,34 @@ blocking refinement on it wastes time. But the Store MSIX is built from the PROD
 so a build started before the merge lands silently packages stale code.
 
 The confirmation is a build-time PRECONDITION, not a waiting step: verify `main` actually contains
-this sprint's merge before building. In Sprint 60 the prod worktree sat **33 commits behind**
-`origin/main`, which was caught only by checking -- exactly the failure this precondition prevents.
+this sprint's merge before building.
+
+**And it is not only a verification -- PULL THE PROD WORKTREE. Every release. No exceptions.**
+
+The prod worktree is a SEPARATE checkout that nothing in the sprint updates. Not the sprint
+branch, not the PR merge, not the `develop` -> `main` merge. It sits at whatever commit the last
+release left it at, so **it is stale by default at every release** -- the normal case, not the
+exception.
+
+```powershell
+cd D:\Data\Harold\github\spamfilter-multi-prod
+git checkout main
+git pull origin main
+git status -sb          # must NOT report "behind"
+git log --oneline -1    # must match origin/main
+```
+
+**Caught three sprints running, and getting worse: 33 commits behind in Sprint 60, 52 in Sprint
+66, 47 in Sprint 68.** None was noticed by looking; each was caught only because the step was
+walked deliberately.
+
+**A stale worktree fails SILENTLY and convincingly.** `flutter clean`, `pub get` and
+`msix:create` all succeed. The MSIX builds. It carries the NEW version number wrapped around the
+OLD code. Every Step 4 verification still passes, because those checks prove the build is a
+genuine prod build -- they cannot tell you it was built from the wrong commit. The failure
+surfaces only after customers install it and the sprint's fixes are missing.
+
+Full procedure: `STORE_RELEASE_PROCESS.md` Step 3.0.
 
 ### Version bump independence (Harold, 2026-08-17)
 

@@ -75,6 +75,15 @@ last version, because the two stores can sit at different points in the same seq
 
 Produce `docs/store-assets/RELEASE_NOTES_<version>_play.md`.
 
+**FULL PATH, ready to open and copy from:**
+
+```
+D:\Data\Harold\github\spamfilter-multi\docs\store-assets\RELEASE_NOTES_<version>_play.md
+```
+
+Paste the `<en-US>` block INCLUDING its tags. Everything above the `---` separator is the
+derivation header and audit trail, which never goes into the console.
+
 **Hard limits, both learned by hitting them:**
 
 - **500 characters per language.** MEASURE it, never estimate -- Sprint 66 estimated three
@@ -106,7 +115,15 @@ is missing for a RELEASE build"*, because it drops the gradle properties the scr
 from `secrets.*.json`. That gate exists because F119 shipped a credential-less build to the
 Microsoft Store. (Sprint 66 IMP-1.)
 
-Output: `build/app/outputs/bundle/prodRelease/app-prod-release.aab`.
+**Output -- FULL PATH, ready to paste into the Play Console upload dialog:**
+
+```
+D:\Data\Harold\github\spamfilter-multi\mobile-appuildpp\outputsundle\prodReleasepp-prod-release.aab
+```
+
+Approx 53 MB. **Note this is the DEV worktree** -- unlike the Windows MSIX, the Play bundle is
+built from `spamfilter-multi\`, not `spamfilter-multi-prod\`. The two releases build from
+different worktrees, which is easy to get backwards.
 
 Unlike Windows, Play builds come from the DEV worktree -- there is no separate prod worktree
 for Android, and the `prod` flavor is selected by the script's default.
