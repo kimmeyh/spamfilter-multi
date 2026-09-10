@@ -570,8 +570,23 @@ Record ROLES and dates only. **No names, no email addresses** -- this file is in
 | 13 | (pending, margin) | | | | |
 | 14 | (pending, margin) | | | | |
 
-**Confirmed opt-ins**: 0 of 12 required (target 14-16)
-**Latest confirmed opt-in date**: (none yet)
+**On the official Play tester list**: **8 of 12** as of 2026-09-10 (Harold added 3 that day,
+up from 3). FOUR SHORT.
+
+**Confirmed opt-ins**: UNKNOWN -- not yet reconciled against the console.
+
+**These are two different numbers and only the second one gates production access.** Being on
+the tester list makes someone ELIGIBLE; the 14-day clock starts for that person when they
+actually accept the invitation and install. A list of 8 could be 8 opt-ins or 2. Check
+Play Console -> Closed testing -> Testers, and fill the table above from the console rather
+than from the invite list.
+
+**Cheapest next move, if the two numbers differ**: chase the outstanding opt-ins before
+recruiting new names. An invited-but-not-installed tester is already found, already willing,
+and one reminder away from counting -- whereas a new name has to be found, asked, and then
+still opt in.
+
+**Latest confirmed opt-in date**: (unknown -- see above)
 **Earliest valid production-access application date**: (latest opt-in date) + 14 days -- compute
 from the LAST tester to opt in, not the first. One late joiner moves this date.
 
