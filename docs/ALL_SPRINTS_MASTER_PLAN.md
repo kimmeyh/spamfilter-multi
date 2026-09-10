@@ -558,6 +558,17 @@ All incomplete items in relative priority order. Priority in increments of 10; i
   `?? 'Trash'` at `email_scanner.dart:670` remains unproven-benign rather than
   proven-harmless. F202's blast radius is NOT narrowed. Same error class as the folder-picker
   screenshots: reading a post-change state as a pre-change one.
+- **PLATFORM SCOPE, refined 2026-09-09 after seeing Android Scan History.** Android's EMPTY
+  STATE wording is correct where Windows' is not: Android reads *"No Results Yet -- Run a scan
+  to see email processing results here"*, while Windows asserts *"No emails were found in the
+  selected folders"* when emails WERE found and skipped. **Adopt Android's wording; do not
+  invent new copy.**
+  **But Android is NOT immune to the counter contradiction itself.** Its iCloud history row
+  reads `Found: 0 | Processed: 0`, which is self-consistent only because that mailbox had
+  nothing to return -- Android has simply not yet scanned a mailbox where safe-sender skips
+  occur. The counters come from shared scanner code, so Android would show `Found: 2 |
+  Processed: 0` in the same situation. **The empty-state text is a Windows-only fix; the
+  missing `Safe (already filed): N` disclosure is a SHARED fix for both platforms.**
 - **Watch item**: do NOT "fix" this by counting skipped emails as Processed. They deliberately
   are not processed, and the Sprint 58 F151d Demo Mode exception in
   `shouldSkipSafeSenderAlreadyInTarget` shows this path already has subtle cases. The fix is
