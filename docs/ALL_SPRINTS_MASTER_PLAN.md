@@ -455,6 +455,16 @@ All incomplete items in relative priority order. Priority in increments of 10; i
     account, and `junk_folder_config.dart:84` compounds it by listing `['Junk', 'Trash']` for
     iCloud -- neither of which exists on a new mailbox, and `Trash` being a DELETED
     destination miscategorised as a junk scan target.
+    **UPDATE, same session**: Harold sent a test message to the account and deleted one. The
+    deleted folder materialised as **`Deleted Messages`** -- NOT `Trash`. The picker now reads
+    "2 available" (INBOX + Deleted Messages) and the app classified it correctly (trash icon,
+    "Deleted items"). **So the hardcoded `?? 'Trash'` is not merely absent on a new mailbox --
+    it is WRONG FOR ICLOUD PERMANENTLY**, and `junk_folder_config.dart:84`'s
+    `['Junk', 'Trash']` is wrong on both entries. Apple does NOT document its IMAP folder names
+    (checked support.apple.com/en-us/102525, which covers server/port/SSL only), so the live
+    account is the only authority -- exactly the ADR-0042 argument this card rests on.
+    **Confirmed iCloud value: Deleted Rule Folder = `Deleted Messages`.** Junk folder name still
+    unknown; it has not materialised yet.
     **This is the whole card in one screenshot**: a hardcoded default, provider-inaccurate,
     naming a folder that is not there. And per the missing-folder finding above it would land
     in `errorCount` rather than being skipped silently. Do not guess iCloud's real values --
