@@ -427,8 +427,10 @@ Recorded as it happens. A missing cell is a MISSING RESULT, not an assumed pass.
 
 | Provider | Windows | Android |
 |---|---|---|
-| Yahoo Mail | **PASS** 2026-09-09 | pending |
-| iCloud Mail | pending | pending |
+| Yahoo Mail | **PASS** 2026-09-09 | **PASS** 2026-09-09 |
+| iCloud Mail | **PASS** 2026-09-09 | **PASS** 2026-09-09 |
+
+**All four cells PASS. AC-1, AC-2, AC-3 and AC-5 are met.**
 
 **Yahoo / Windows -- PASS (2026-09-09, Harold, screenshots)**
 
@@ -532,17 +534,48 @@ are also visible in Harold's Yahoo web Inbox, timestamped 7:29 PM and 7:30 PM.
 available -- Yahoo documents it neither way. The doc continues to present 2SV as a FALLBACK if
 the option is missing rather than as a stated requirement, which remains the right shape.
 
-### Remaining cells
+### Android cells (2026-09-09, after rebuilding at 0.15.0)
 
-- **Yahoo / Android** -- pending
-- **iCloud / Windows** -- pending. Read the two hard requirements in
-  `docs/APP_PASSWORD_SETUP.md` first: Apple 2FA is REQUIRED, and an Apple Account on a
-  non-Apple address has NO mailbox until an @icloud.com address is created (the app password
-  will generate successfully and then fail to connect). IMAP username is the LOCAL PART first.
-- **iCloud / Android** -- pending
+The emulator first showed the PRE-F191 build -- Yahoo under "Coming Soon / Phase 2", iCloud
+absent entirely. Harold spotted it. Rebuilt and reinstalled, then both cells ran.
 
-Per R-3, if iCloud does not authenticate cleanly, ship Yahoo alone and leave iCloud gated.
-Per R-4, no listing copy claims either provider until its cells pass.
+**Version confirmed on device**: Android Settings > General reads **Version 0.15.0**, so the
+F190 bump propagated to the platform it exists for -- a tester can now tell this build from the
+0.14.2 in production at a glance.
+
+**Yahoo / Android -- PASS.** Scan completed in **15s**: 41 emails, **Processed: 41, No rule:
+41, Safe: 0, Deleted: 0, Errors: 0**.
+
+**This is the ADR-0042 parity evidence the card required (R-5/AC-5).** Same account, same
+mailbox, same 41 messages as the Windows run, same all-"No rule" outcome. The two platforms
+agree, which is the whole point of validating both rather than assuming shared code behaves
+identically. The Yahoo notification mails ("An app password was generated...", "...used to
+sign in to a third-party app") appear in the Android results too.
+
+**iCloud / Android -- PASS.** Account present and selectable, scan ran cleanly, all counters 0.
+
+Different from the Windows iCloud run ("Found 2") and that difference is EXPECTED, not a
+discrepancy: those 2 were safe-sender-skipped at `email_scanner.dart:330` on Windows (see
+F203), and no new mail has arrived since. A near-empty new mailbox proves authentication,
+folder enumeration and a clean scan -- it does not exercise rule evaluation, and this cell is
+recorded with that limit stated rather than implying Yahoo-grade coverage.
+
+**An unplanned F203 data point, worth more than the cell itself**: Android's empty state reads
+**"No Results Yet -- Run a scan to see email processing results here."** That is honest.
+Windows says **"No emails were found in the selected folders for the specified time period"**
+even when 2 WERE found and skipped. So the two platforms already word this differently, and
+**Android's wording is the correct one**. F203 should adopt it rather than invent new copy --
+this is a Windows-side defect, not a shared one.
+
+### Cells NOT run, and why that is fine
+
+Nothing outstanding. All four ran. Two limits stated honestly rather than buried:
+
+- iCloud's evidence is thin by VOLUME on both platforms (a new mailbox with 2 then 0
+  messages). It proves the provider works end to end; it does not prove much about rule
+  evaluation at scale. Yahoo's 41 messages carry that weight on both platforms.
+- No listing copy has been widened to claim either provider (R-4). That stays true until
+  Harold decides to update store copy, which is a separate action from this sprint.
 
 ## Definition of Done (sprint level)
 
