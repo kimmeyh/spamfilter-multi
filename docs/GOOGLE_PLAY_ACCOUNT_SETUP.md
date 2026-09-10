@@ -549,6 +549,11 @@ Consequences when reading a screenshot, a scan history row, or a live-scan log:
 **Why**: the closed test needs real tester-visible behaviour to be worth running, while the
 development machines must never touch Harold's live mailboxes.
 
+**This is the state AS OF 2026-09-10, not a historical invariant.** Windows scan history still
+carries Background runs that deleted mail (dated Sep 08) and one deliberate `safeSendersAndRules`
+live run on Yahoo (2026-09-09 20:13, confirmed as a test). Both predate the configuration above.
+Check a row's DATE before reading deletions on Windows as a contradiction.
+
 ## Closed-test tester roster and the 14-day clock (GP-17, Sprint 65)
 
 **Why this section exists**: the 12-tester / 14-continuous-day closed test is the single longest
