@@ -444,7 +444,21 @@ All incomplete items in relative priority order. Priority in increments of 10; i
     corrected by Harold 2026-09-09: *"unwanted is a common gmail folder"*, not his personal
     one. My first draft wrongly excluded it as a user folder.
   - **Yahoo**: Safe Sender `Inbox`; Manual + Background `Inbox, Bulk`.
-  - **iCloud**: pending. Harold, 2026-09-09: *"I will update icloud once I add it."* Do not guess these values; the whole point of the card is that the provider decides.
+  - **iCloud**: pending Harold's values -- but a LIVE EXAMPLE OF THE DEFECT was captured while
+    he added the account on 2026-09-09, and it is the best evidence this card has. A
+    **brand-new** iCloud mailbox has exactly **ONE folder: INBOX**. iCloud does not create
+    Junk, Trash, Sent or Archive until something uses them. Both folder pickers correctly read
+    "Select one folder (1 available)".
+    **Yet Account Settings displayed `Deleted Rule Folder: Trash (default)`** -- the app
+    defaulting to a folder that DOES NOT EXIST on that account. That is
+    `email_scanner.dart:670`'s hardcoded `deletedRuleFolder ?? 'Trash'` firing on a real
+    account, and `junk_folder_config.dart:84` compounds it by listing `['Junk', 'Trash']` for
+    iCloud -- neither of which exists on a new mailbox, and `Trash` being a DELETED
+    destination miscategorised as a junk scan target.
+    **This is the whole card in one screenshot**: a hardcoded default, provider-inaccurate,
+    naming a folder that is not there. And per the missing-folder finding above it would land
+    in `errorCount` rather than being skipped silently. Do not guess iCloud's real values --
+    Harold supplies them once the folders materialise.
   - **Outlook**: unknown -- provider not shipped (phase 2).
 - **Harold will verify the remaining providers before the card runs**: *"Only changes existing if
   they need specifics - I can check on them and report before run the card next sprint."* So the
