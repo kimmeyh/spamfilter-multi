@@ -566,10 +566,18 @@ All incomplete items in relative priority order. Priority in increments of 10; i
     sheet or SAF picker) over requesting a broad storage permission -- **`MANAGE_EXTERNAL_STORAGE`
     would drag in a Play Permissions Declaration Form** (see F204), which is a large cost for a
     diagnostic convenience.
-  - What to export: scan history rows with per-scan and per-error detail, as CSV or JSON. The
-    per-scan CSV toggle already exists (`settings_screen.dart:1152`) and writes to the Downloads
-    folder -- **check whether that already solves half of this before building anything**, since
-    Downloads IS MTP-visible.
+  - **The existing CSV toggle DOES NOT WORK ON ANDROID -- verified empirically, 2026-09-10.**
+    Harold enabled "Export CSV After Each Scan" and let two background scans run. Nothing landed:
+    `Internal storage\Download` and `\Documents` were both enumerated over MTP and contain no
+    scan CSV. Root cause found in the source, not guessed: the background CSV writer lives in
+    **`background_scan_windows_worker.dart:434`** -- Windows-only, exactly like the file-logging
+    block in `main.dart:152`. Android's WorkManager path never reaches it, and
+    `live_scan_logger.dart:103` writes into the app-private directory MTP cannot see.
+    **So the toggle is a Windows-only feature exposed in the SHARED Settings UI**: on Android it
+    stores a setting and changes nothing else. That is a user-visible ADR-0042 parity break in
+    its own right -- a control that appears to work and silently does not -- and it should be
+    either implemented for Android or hidden there.
+  - What to export: scan history rows with per-scan and per-error detail, as CSV or JSON.
   - Windows parity: the equivalent already works, because its logs live in a browsable AppData
     directory. So the ADR-0042 answer is likely "same feature, and on Windows it is a
     convenience rather than the only access path" -- worth stating rather than implying the
