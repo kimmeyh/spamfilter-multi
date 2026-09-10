@@ -549,6 +549,15 @@ All incomplete items in relative priority order. Priority in increments of 10; i
   alongside the existing counters; (b) fix the empty-state text so it distinguishes "no emails
   fetched" from "nothing required action"; (c) consider whether Scan History should carry the
   same number, since that row is where the contradiction is starkest.
+- **CORRECTION to a side finding first recorded here (2026-09-09)**: I read
+  `Step 2.5: deletedRuleFolder=Deleted Messages` in the scan log as the SCAN resolving the real
+  folder at runtime, and concluded the settings screen's `Trash (default)` was a harmless
+  display-layer default. **Harold had already changed the setting to `Deleted Messages` before
+  running the scan.** So that log line reflects his SAVED VALUE, not runtime resolution.
+  **There is no evidence the scan resolves the folder itself**, and the hardcoded
+  `?? 'Trash'` at `email_scanner.dart:670` remains unproven-benign rather than
+  proven-harmless. F202's blast radius is NOT narrowed. Same error class as the folder-picker
+  screenshots: reading a post-change state as a pre-change one.
 - **Watch item**: do NOT "fix" this by counting skipped emails as Processed. They deliberately
   are not processed, and the Sprint 58 F151d Demo Mode exception in
   `shouldSkipSafeSenderAlreadyInTarget` shows this path already has subtle cases. The fix is
