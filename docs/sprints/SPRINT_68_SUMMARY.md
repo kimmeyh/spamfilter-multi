@@ -148,6 +148,17 @@ Harold's **physical Galaxy S24+** through the Play closed track -- and it arrive
 **UPGRADE, not a fresh install**: 0.14.1 -> 0.14.2 -> 0.15.0, the same path every closed tester
 walks.
 
+**F191 CONFIRMED ON PHYSICAL HARDWARE.** Harold checked the Add Account list on the S24+ after
+the upgrade: **Yahoo and iCloud are selectable there**, not "Coming Soon". That is the phase-gate
+change verified on a real device rather than on the emulator, which was the sprint's only Android
+evidence at Manual Validation.
+
+Also worth recording because it LOOKS like a defect and is not: the phone shows **two** saved
+accounts while Windows shows four. Accounts live in the app's local database and are per-device;
+Yahoo and iCloud were added on Windows and never existed on the phone. Two saved accounts plus
+four SELECTABLE providers is the correct state, and the distinction between "saved" and
+"available" is what makes it correct.
+
 That exercises things no emulator run touched:
 
 - The full Play chain end to end -- versionCode 3 accepted, pre-review checks passed with no
