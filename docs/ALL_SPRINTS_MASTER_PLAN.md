@@ -526,6 +526,38 @@ All incomplete items in relative priority order. Priority in increments of 10; i
 - Source: Harold, 2026-09-09, Sprint 68 Manual Validation. Explicitly deferred OUT of Sprint 68
   as a scope change surfaced at a natural break (Decision-Class Taxonomy, class 3).
 
+**F205. Closed-test error rate: 53 errors in 3,833 scanned on the S24+ -- find out what they ARE (~1-2h investigation) Priority 18 (NEW, 2026-09-10 -- observed on the closed-test device)**
+- Phase: Core App Quality
+- Platform: Android (closed test); check Windows for the same class
+- **Observation, from the S24+ Scan History 90-day totals on 2026-09-10**: Total 3,833,
+  Processed 892, Deleted 374, Moved 0, Safe 43, No Rule 475, **Errors 53**. That is ~1.4% of
+  scanned mail, and it is the only number on that screen that is not self-explanatory.
+- **The per-scan rows all read `Errors: 0`.** The three visible background runs (AOL 6:34 PM
+  Deleted 19, Gmail 6:34 PM, AOL 4:06 PM Deleted 6) each report zero. So the 53 are concentrated
+  in runs not visible without scrolling, which makes them a cluster rather than background noise
+  -- worth finding, because a cluster usually has ONE cause.
+- **What was ruled out rather than assumed** (2026-09-10): the obvious hypothesis was F202's
+  missing-folder finding -- a folder that does not exist routes through `recordFolderFetchError`
+  into `errorCount`, so a wrong Gmail folder name would produce exactly this shape. **Checked and
+  it does not hold**: `junk_folder_config.dart:70` correctly uses the bracketed `[Gmail]/Spam`
+  form, and the Windows dev log has **zero** `EXCEPTION fetching folder` entries. The Scan
+  History screen displays `Gmail/Spam` without brackets, but that is a DISPLAY string, not the
+  IMAP name.
+- **Why it stopped there**: the errors are on the PHONE, and its logs are not readable from the
+  development machine. Diagnosing further from screenshots would be guessing -- see retro IMP-1.
+- **Method when picked up**: get the device log off the S24+ (the closed-test build writes
+  `background_scan_v0.15.0.log` under the app's data directory), then group the error entries by
+  cause. Do NOT start from a hypothesis; read the log first.
+- **Why this matters more here than elsewhere**: the closed test is the ONLY build that acts on
+  real mail (see `GOOGLE_PLAY_ACCOUNT_SETUP.md` "Scan mode by environment"). An error rate that
+  is benign in read-only could be a failed delete or a half-applied action here. It is also the
+  build 8 testers are about to be watching.
+- **Not urgent, and not a launch blocker**: scans complete, the green check appears, and 3,780 of
+  3,833 messages were handled without error. But an unexplained 1.4% on the build that touches
+  real mail is worth an hour before the tester count reaches 12.
+- Depends on: access to the device log. No code change is implied until the cause is known.
+- Source: observed by Claude in Harold's 2026-09-10 S24+ screenshots.
+
 **F204. Gate the three Play requirements that are documented but not asserted (~2-3h) Priority 24 (NEW, 2026-09-10 -- Harold, from the pre-review-checks research)**
 - Phase: Android / Google Play Store Readiness
 - Platform: Android
