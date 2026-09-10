@@ -140,6 +140,24 @@ Deleted Rule Folder to `Trash`, which iCloud calls `Deleted Messages` and will n
 **F203** (`Found: 2, Processed: 0` is correct behaviour the user cannot see -- both messages
 matched a safe sender already in the target folder).
 
+## Post-merge: 0.15.0 reached a real device
+
+Recorded because it is stronger evidence than the sprint itself produced. All Android
+validation during Sprint 68 ran on the **emulator**. On 2026-09-10 at ~3:17pm, 0.15.0 reached
+Harold's **physical Galaxy S24+** through the Play closed track -- and it arrived as an
+**UPGRADE, not a fresh install**: 0.14.1 -> 0.14.2 -> 0.15.0, the same path every closed tester
+walks.
+
+That exercises things no emulator run touched:
+
+- The full Play chain end to end -- versionCode 3 accepted, pre-review checks passed with no
+  critical issues, review approved, published.
+- **Package identity and signing key held across two version bumps.** An upgrade only succeeds
+  if `applicationId` and the signing key match; a break shows as "app not installed", not a
+  silent failure.
+- The app updated **in place over an installed 0.14.2 carrying four configured accounts**,
+  which is the only way to learn that a MINOR bump does not disturb existing user data.
+
 ## Retrospective outcome
 
 Harold: Very Good across all 12 rated categories, none for 13 and 14. Five improvements
