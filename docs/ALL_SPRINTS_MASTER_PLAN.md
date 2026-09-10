@@ -579,6 +579,33 @@ All incomplete items in relative priority order. Priority in increments of 10; i
   closed test is the only build that acts on real mail, 8 testers are watching it, and right now
   the only diagnostic available is a screenshot of a total. A tester reporting "it deleted
   something odd" cannot be investigated at all.
+- **PART C -- a SHARE path for testers (~2-3h), and the privacy design is the hard part.**
+  Harold, 2026-09-10: *"Do we need to add a means for users to send log files to us? email
+  (creates an email, attaches the file to the email in a draft email and the user hits send?"*
+  The mechanism is standard. The framing needs care, and here is why.
+  - **This app's whole proposition is that nothing leaves the device.** The Privacy Policy says
+    so, the Data safety declaration says so, and F200 existed because the website said it too
+    strongly. A user-initiated share does not violate that -- but it creates the FIRST path by
+    which a user's mail data can leave, and that path has to be described honestly.
+  - **What the CSV actually contains, inspected 2026-09-10 rather than assumed**: each row is
+    timestamp, message date, outcome, folder, rule verdict, **sender address**, **full subject
+    line**, and a message id. A tester sharing this is sharing who emails them and what about.
+  - **Prefer the SHARE SHEET over a `mailto:` draft.** `share_plus` lets the user pick email,
+    Drive, or anything else; no hardcoded recipient, no assumption they use a mail client that
+    handles attachments. A mailto: with an attachment is also unreliable across Android clients.
+  - **Show what is being shared BEFORE sharing.** A preview, or at minimum a plain statement of
+    the fields included. "Send logs" buttons that quietly ship correspondence are how apps lose
+    the trust this one is built on.
+  - **STRONGEST RECOMMENDATION: a REDACTED export as the default.** Counts, error types, error
+    messages, timings, folder names, durations -- no sender addresses, no subjects, no previews.
+    For diagnosing something like F205's 53 errors, the error TYPE and COUNT are what matter;
+    the messages are not needed. Offer the full export as a deliberate second choice for when it
+    genuinely is. This is the same instinct as `Redact.accountId` already used in the logs.
+  - **Check the Data safety declaration before shipping this.** It currently states no data is
+    collected or transmitted. A user-initiated share is arguably not "collection" by Google's
+    definition -- but if Harold is the recipient, that is worth VERIFYING against Google's
+    wording rather than assuming, and `data_safety_declarations_test` will need to agree with
+    whatever is decided.
 - **Deliberately NOT in scope**: remote logging, crash reporting, telemetry of any kind. This app
   ships with no analytics by design (ADR-0030) and the Data safety declaration says so. Export
   is user-initiated and local; anything else would make that declaration false.
