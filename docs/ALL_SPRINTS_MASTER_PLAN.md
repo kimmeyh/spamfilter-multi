@@ -526,99 +526,117 @@ All incomplete items in relative priority order. Priority in increments of 10; i
 - Source: Harold, 2026-09-09, Sprint 68 Manual Validation. Explicitly deferred OUT of Sprint 68
   as a scope change surfaced at a natural break (Decision-Class Taxonomy, class 3).
 
-**F206. Diagnostics you cannot get at: reset the counters, and export scan data to a folder MTP can see (~3-5h) Priority 14 (NEW, 2026-09-10 -- Harold)**
+**F206. Diagnostic export as a PLATFORM CAPABILITY -- reset the counters, and get scan data off the device on every platform (~5-8h) Priority 14 (NEW, 2026-09-10 -- Harold; REFRAMED same day)**
 - Phase: Core App Quality
-- Platform: All (ADR-0042 parity; Android has the harder half)
-- **Harold, 2026-09-10, two asks that turn out to be the same problem**: *"there should be a
-  'reset the numbers' mechanism somewhere, somehow as they have been accumulating for several
-  days (Errors 53)"* and *"can we make the files available through the s24+ file transfer
-  interface? Where should they be located"*.
-- **Both are the same shape: the app has diagnostics the user cannot get at.** One is a number
-  that cannot be zeroed; the other is detail that cannot leave the device.
+- Platform: All -- **and the storage mechanism is a declared ADR-0042 platform exception**
+- **REFRAMED BY HAROLD, 2026-09-10**: *"Needs to be expanded as a platform feature, true for
+  every platform where how and where to store is likely to be platform dependent."*
+  The first draft of this card treated Android as a BROKEN CASE of a Windows feature. That was
+  the wrong shape. **Diagnostic export is a first-class capability that every platform must
+  have; only the DESTINATION and the MECHANISM differ**, and ADR-0042 says that is precisely
+  when a platform exception is justified -- "the API does not exist", "a platform policy
+  forbids it".
 
-- **PART A -- reset the counters (~1h).**
-  - Scan History totals accumulate over the retention window (7/14/30/90 days/1 year, Settings >
-    General). **Retention prunes by AGE, not on demand**, so there is no way to say "start
-    counting from now".
-  - Concretely: Errors 53 against Total 3,833 on the S24+ tells you nothing about WHEN. Fifty-
-    three errors last week and fifty-three this afternoon are the same number on that screen. A
-    reset makes the next observation a measurement instead of a guess.
-  - **Audited 2026-09-10: no clear/reset affordance exists anywhere in `lib/`.** Not partially,
-    not hidden -- `clearScanHistory`, `deleteAllScans`, `clearHistory` return nothing.
-  - Scope: a "Clear scan history" action in Settings > General beside the retention selector,
-    behind the existing confirmation-dialog setting. Deleting history must NOT delete rules,
-    safe senders, or credentials -- state that explicitly in the card, because "clear data" is
-    exactly the kind of button that grows scope later.
+- **THE SHAPE: a platform factory.** ADR-0042 names this as "the preferred shape for a
+  WHOLE-CAPABILITY exception", approved by Harold 2026-08-18, with prior art in F161 (the
+  Android scheduler). One shared interface, one implementation resolved per platform:
 
-- **PART B -- export where MTP can see it (~2-4h). This is the harder half and it is
-  Android-specific.**
-  - **Why the phone's data is currently unreachable at all**:
-    `getApplicationSupportDirectory()` on Android resolves to app-private internal storage
-    (`/data/data/com.myemailspamfilter/...`). **MTP cannot see it and no file manager can browse
-    it** without root. MTP exposes only shared storage -- which is why DCIM screenshots come
-    across fine and nothing else does.
-  - Target location, chosen to sit beside where screenshots already land:
-    `/storage/emulated/0/Documents/MyEmailSpamFilter/` -> appears over MTP as
-    `Internal storage\\Documents\\MyEmailSpamFilter`.
-  - **Android 11+ scoped storage makes this a real feature, not a path change.** Writing to
-    shared storage needs either MediaStore or the Storage Access Framework; a silent
-    `File(...).writeAsString()` to that path will fail. Prefer a user-initiated export (share
-    sheet or SAF picker) over requesting a broad storage permission -- **`MANAGE_EXTERNAL_STORAGE`
-    would drag in a Play Permissions Declaration Form** (see F204), which is a large cost for a
-    diagnostic convenience.
-  - **The existing CSV toggle DOES NOT WORK ON ANDROID -- verified empirically, 2026-09-10.**
-    Harold enabled "Export CSV After Each Scan" and let two background scans run. Nothing landed:
-    `Internal storage\Download` and `\Documents` were both enumerated over MTP and contain no
-    scan CSV. Root cause found in the source, not guessed: the background CSV writer lives in
-    **`background_scan_windows_worker.dart:434`** -- Windows-only, exactly like the file-logging
-    block in `main.dart:152`. Android's WorkManager path never reaches it, and
-    `live_scan_logger.dart:103` writes into the app-private directory MTP cannot see.
-    **So the toggle is a Windows-only feature exposed in the SHARED Settings UI**: on Android it
-    stores a setting and changes nothing else. That is a user-visible ADR-0042 parity break in
-    its own right -- a control that appears to work and silently does not -- and it should be
-    either implemented for Android or hidden there.
-  - What to export: scan history rows with per-scan and per-error detail, as CSV or JSON.
-  - Windows parity: the equivalent already works, because its logs live in a browsable AppData
-    directory. So the ADR-0042 answer is likely "same feature, and on Windows it is a
-    convenience rather than the only access path" -- worth stating rather than implying the
-    platforms are equally blocked.
+  ```
+  DiagnosticExporter          <- shared interface: what to export, redaction, formatting
+    WindowsDiagnosticExporter <- writes to a browsable AppData path
+    AndroidDiagnosticExporter <- SAF / share sheet; app-private storage is unreachable
+    (iOS/macOS/Linux later)   <- the interface exists before the platforms do
+  ```
 
-- **Why this matters now**: F205 (53 unexplained errors) is **BLOCKED** without Part B. The
-  closed test is the only build that acts on real mail, 8 testers are watching it, and right now
-  the only diagnostic available is a screenshot of a total. A tester reporting "it deleted
-  something odd" cannot be investigated at all.
-- **PART C -- a SHARE path for testers (~2-3h), and the privacy design is the hard part.**
-  Harold, 2026-09-10: *"Do we need to add a means for users to send log files to us? email
-  (creates an email, attaches the file to the email in a draft email and the user hits send?"*
-  The mechanism is standard. The framing needs care, and here is why.
+  **The redaction and the content live in the SHARED half.** Only "where does the byte land"
+  forks. That keeps the privacy decision in one place rather than three, which matters more
+  here than anywhere else in the app.
+
+- **What each platform can actually do, and why they differ:**
+  - **Windows**: app data lives in a browsable `AppData\Roaming` path. Export is a
+    convenience -- the user could already navigate there. Current CSV writer:
+    `background_scan_windows_worker.dart:434`.
+  - **Android**: app-private internal storage (`/data/data/com.myemailspamfilter/`) is
+    **unreachable by MTP AND by the phone's own Files app** -- Android hides it from everything
+    without root. So export is the ONLY access path, not a convenience. Android 11+ scoped
+    storage means writing to shared storage needs MediaStore or SAF; a plain
+    `File(...).writeAsString()` to `/storage/emulated/0/Documents/` fails.
+    **Do NOT solve this with `MANAGE_EXTERNAL_STORAGE`** -- it triggers a Play Permissions
+    Declaration Form (F204), a large cost for a diagnostic convenience.
+  - **iOS** (not yet shipped): the same app-private constraint as Android, resolved through the
+    share sheet / Files app rather than a writable public directory. Designing the interface now
+    means iOS does not arrive as a third special case.
+  - **macOS/Linux**: browsable paths, like Windows.
+
+- **PART A -- reset the counters (~1h), and it is genuinely platform-neutral.**
+  - Scan History totals accumulate over the retention window (7/14/30/90 days/1 year). Retention
+    prunes by AGE, never on demand, so there is no way to say "start counting from now".
+  - Concretely: Errors 53 against Total 3,833 on the S24+ says nothing about WHEN. Fifty-three
+    errors last week and fifty-three this afternoon are the same number on that screen.
+  - **Audited 2026-09-10: no clear/reset exists anywhere in `lib/`** -- `clearScanHistory`,
+    `deleteAllScans`, `clearHistory` all return nothing.
+  - Scope: "Clear scan history" in Settings > General beside the retention selector, behind the
+    existing confirmation-dialog setting. **Must NOT touch rules, safe senders or credentials** --
+    state it explicitly, because "clear data" is exactly the button that grows scope later.
+
+- **PART B -- the export capability (~3-5h).**
+  - **VERIFIED EMPIRICALLY 2026-09-10, and it is why this card was reframed**: Harold enabled
+    "Export CSV After Each Scan" and let two background scans run. **Nothing landed.** Both
+    `Internal storage\Download` and `\Documents` were enumerated over MTP -- no scan CSV.
+    Root cause found in source, not guessed: the writer is
+    `background_scan_windows_worker.dart:434`, **Windows-only**, exactly like the file-logging
+    block at `main.dart:152`. Android's WorkManager path never reaches either.
+  - **So the existing toggle is a Windows-only feature exposed in the SHARED Settings UI.** On
+    Android it stores a setting and does nothing. That is a user-visible parity break on its own
+    terms -- a control that looks functional and silently is not -- and a tester could enable it,
+    wait, and reasonably conclude the app is broken. Fix it as part of this capability, or hide
+    it on platforms that cannot honour it. **Do not leave it as-is.**
+  - Content: scan history rows with per-scan AND per-error detail.
+
+- **PART C -- what the export CONTAINS, and the share path (~2-3h). The privacy design is the
+  hard part.**
+  - Harold, 2026-09-10: *"Do we need to add a means for users to send log files to us? email
+    (creates an email, attaches the file to the email in a draft email and the user hits send?"*
   - **This app's whole proposition is that nothing leaves the device.** The Privacy Policy says
     so, the Data safety declaration says so, and F200 existed because the website said it too
     strongly. A user-initiated share does not violate that -- but it creates the FIRST path by
-    which a user's mail data can leave, and that path has to be described honestly.
-  - **What the CSV actually contains, inspected 2026-09-10 rather than assumed**: each row is
-    timestamp, message date, outcome, folder, rule verdict, **sender address**, **full subject
-    line**, and a message id. A tester sharing this is sharing who emails them and what about.
-  - **Prefer the SHARE SHEET over a `mailto:` draft.** `share_plus` lets the user pick email,
-    Drive, or anything else; no hardcoded recipient, no assumption they use a mail client that
-    handles attachments. A mailto: with an attachment is also unreliable across Android clients.
-  - **Show what is being shared BEFORE sharing.** A preview, or at minimum a plain statement of
-    the fields included. "Send logs" buttons that quietly ship correspondence are how apps lose
-    the trust this one is built on.
-  - **STRONGEST RECOMMENDATION: a REDACTED export as the default.** Counts, error types, error
-    messages, timings, folder names, durations -- no sender addresses, no subjects, no previews.
-    For diagnosing something like F205's 53 errors, the error TYPE and COUNT are what matter;
-    the messages are not needed. Offer the full export as a deliberate second choice for when it
-    genuinely is. This is the same instinct as `Redact.accountId` already used in the logs.
-  - **Check the Data safety declaration before shipping this.** It currently states no data is
+    which a user's mail data can leave, and that path must be described honestly.
+  - **What the CSV contains today, inspected rather than assumed (2026-09-10)**: timestamp,
+    message date, outcome, folder, rule verdict, **sender address**, **full subject line**,
+    message id. A tester sharing that file is sharing who emails them and what about.
+  - **STRONGEST RECOMMENDATION -- a REDACTED export as the DEFAULT.** Field-level split, and it
+    follows from what a diagnosis actually needs:
+    - **INCLUDE**: timestamp, duration, account PLATFORM (not the address), folder name, scan
+      mode, outcome, rule verdict, error type, error message, per-scan counts.
+    - **EXCLUDE**: sender address, subject line, body preview, message id.
+    - For F205's 53 errors, the error TYPE and COUNT are what matter. The correspondence is not
+      needed and should not travel. Same instinct as the existing `Redact.accountId`.
+    - Full export stays available as a deliberate second choice, with what it contains stated
+      plainly at the point of sharing.
+  - **Share sheet, not a `mailto:` draft** -- `share_plus` lets the user pick email, Drive,
+    anything; no hardcoded recipient, and `mailto:` with an attachment is unreliable across
+    Android mail clients.
+  - **Verify the Data safety declaration before shipping.** It currently states no data is
     collected or transmitted. A user-initiated share is arguably not "collection" by Google's
-    definition -- but if Harold is the recipient, that is worth VERIFYING against Google's
-    wording rather than assuming, and `data_safety_declarations_test` will need to agree with
-    whatever is decided.
+    definition -- but if Harold is the recipient, VERIFY against Google's wording rather than
+    assume, and `data_safety_declarations_test` must agree with whatever is decided.
+
+- **ADR-0042 obligations this card must satisfy** (from the ADR's "How an exception is
+  implemented"): fork at the narrowest point (only the destination); declare WHAT cannot be
+  shared and WHY in a comment; prefer a testable seam over `dart:io Platform`; **cover BOTH
+  branches with tests**; degrade rather than disappear. An ADR amendment or a new ADR is likely
+  warranted for the capability itself -- decide at planning, not during execution.
+- **Why this matters now**: F205 (53 unexplained errors) is **BLOCKED** without Part B. The
+  closed test is the only build that acts on real mail, 8 testers are watching it, and the only
+  diagnostic available today is a screenshot of a total. A tester reporting "it deleted something
+  odd" cannot be investigated at all.
 - **Deliberately NOT in scope**: remote logging, crash reporting, telemetry of any kind. This app
-  ships with no analytics by design (ADR-0030) and the Data safety declaration says so. Export
-  is user-initiated and local; anything else would make that declaration false.
-- Depends on: nothing. Part A is independent and cheap; Part B unblocks F205.
-- Source: Harold, 2026-09-10, after reading the S24+ Scan History totals.
+  ships with no analytics by design (ADR-0030) and the Data safety declaration says so. Export is
+  user-initiated and local; anything else would make that declaration false.
+- Depends on: nothing. Part A is independent and cheap; Part B unblocks F205; Part C is the
+  design decision that should be made ONCE, before either B or C ships.
+- Source: Harold, 2026-09-10 -- filed after the S24+ Scan History totals, reframed by him the
+  same day from "fix Android" to "a platform capability".
 
 **F205. Closed-test error rate: 53 errors in 3,833 scanned on the S24+ -- find out what they ARE (~1-2h investigation) Priority 18 (NEW, 2026-09-10 -- observed on the closed-test device)**
 - Phase: Core App Quality
