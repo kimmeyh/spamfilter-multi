@@ -67,6 +67,28 @@ advice is safe whichever way Yahoo displays it.
 
 ---
 
+## AOL Mail
+
+AOL runs on the same Yahoo account platform, so the flow and the wording are identical.
+
+1. Sign in at **https://login.aol.com/account/security**
+2. Under **External connections**, click **Create app password**
+3. Enter a name (for example `MyEmailSpamFilter`)
+4. Click **Generate password**
+5. **Copy the password immediately** -- it is shown once
+
+**Everything in the Yahoo section above applies to AOL**: two-step verification is not
+required, app passwords survive a main-password change and must be deleted explicitly, and a
+password that stops working should be deleted and regenerated rather than retyped.
+
+**Settings the app uses**: server `imap.aol.com`, port `993`, SSL required. Username is your
+full AOL address.
+
+**AOL has TWO junk folders**, `Bulk` and `Bulk Mail`, and both may hold spam. Harold scans
+both. See F202 for the per-provider folder defaults work this drove.
+
+---
+
 ## iCloud Mail
 
 ### Before you start -- two hard requirements

@@ -7,6 +7,56 @@ Manual Validation complete
 Sprint 6n Manual Validation Feedback 
 
 ---------------------------------------------------------------------------------------------------------
+Sprint 68 Manual Validation Feedback 
+Recommended Manual Validation steps
+
+  Step 1 — F197 contrast gate (no app interaction; ~1 min)
+  Nothing to click. Confirm the two Sprint 67 fixes still look right in dark mode: Settings account header, and Scan History's background-scan strip. The gate is
+  mutation-verified, so this is a spot-check, not a test.
+see images
+  Step 2 — F191 Yahoo, Windows (~10 min)
+  1. Generate a Yahoo app password using docs/APP_PASSWORD_SETUP.md
+  2. Add Account → confirm Yahoo Mail now appears under "Available Now", not "Coming Soon"
+  3. Add the account, run a scan, confirm folders are discovered and rules apply
+  This is the step that matters most, because you asked that the instructions not fail. If any instruction is wrong or a screen differs, that is the finding.
+Yahoo default folders for Manual and Background should be: "Inbox" and "Spam"
+Default Safe Sender folder should be "Inbox"
+Default Deleted Rule Folder should be "Trash"
+I selected "Start Demo Scan" and it ran as expected
+Confirmed via Yahoo Email before live scan: 5 emails in Inbox and 1 in Spam
+I Selected "Start Live Scan" 
+  Step 3 — F191 iCloud, Windows (~10 min)
+  Same, but read the two hard requirements first. Apple requires 2FA, and if your Apple ID is a non-Apple address you may have no iCloud mailbox at all — in which case the
+  app password will generate successfully and then fail to connect. That is the documented trap, not a bug. Username is the local part first (harold, not
+  harold@icloud.com).
+
+  Step 4 — F191 on Android (~15 min)
+  Both providers again on the emulator. Per ADR-0042 this is required, not optional: a provider working on Windows but not Android is a parity violation. Four cells total.
+
+  Step 5 — F200 web property (~5 min, after merge)
+  Pages serves main, so the site is unchanged until then. After merge, check myemailspamfilter.com: no "never persisted to disk", publisher named, contact present, both
+  stores described, and /privacy gone with links pointing at /legal/PRIVACY_POLICY.html.
+
+  Step 6 — F198 (no validation possible)
+  A documentation rule. Its test is whether I ask questions correctly going forward.
+
+  Three things you should know before validating
+
+  F198 shipped no hook, deliberately. The R-1 analysis found all four violations happened outside the window the existing hook gates — violation 4 during Manual Validation
+  itself, where Gate 1c exits by design. A format hook would have had to gate the one region this repo deliberately leaves ungated. The real gap was that the rule was never
+  in CLAUDE.md at all, only in selectively-recalled memory. Full reasoning in docs/F198_QUESTION_FORMAT_ANALYSIS.md — including the honest counter-argument that you asked
+  for a forcing function and got a better-placed rule instead.
+
+  F200 found more than the cosmetic ask. Two live privacy policies with the landing page linking the stale one; docs/website/ a byte-identical copy of the entire site; and
+  an About section claiming Outlook.com and ProtonMail support that does not exist.
+
+  F199 has one item still open — the Partner Center publisher display name, blocked on Microsoft support.
+
+  What I could not validate
+
+  The four F191 cells need real Yahoo and iCloud accounts. No listing copy claims either provider until they pass.
+
+---------------------------------------------------------------------------------------------------------
 Sprint 67 Manual Validation Feedback 
 
 

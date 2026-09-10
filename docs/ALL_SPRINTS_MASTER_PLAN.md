@@ -940,6 +940,12 @@ _(F142 shipped Sprint 57 -- see `docs/sprints/SPRINT_57_PLAN.md` and CHANGELOG.m
   publisher/account identity change; after a new store or platform ships; after a feature
   changes what the app stores or transmits; otherwise periodically (suggested: every 10-15
   sprints).
+- **ALSO RE-REVIEW THE IN-APP PROVIDER SETUP STEPS** (added Sprint 68 IMP-3):
+  `platform_selection_screen.dart`'s `_build{Aol,Yahoo,ICloud}Steps` name vendor URLs and UI
+  labels, and they went stale exactly the way the website did -- four of six iCloud steps were
+  wrong, pointing at a page Apple had renamed. `test/policy/provider_setup_steps_test.dart`
+  now gates app-vs-doc AGREEMENT, but **no gate can watch someone else's website**: only a
+  human re-checking the vendor pages catches a rename. That is this item's job.
 - **How to use**: Duplicate this item, assign a sprint, and remove HOLD. After completion, keep
   this template for the next review.
 - HOLD rationale: Template item, reusable. Dormant until a trigger above fires.
