@@ -587,10 +587,17 @@ All incomplete items in relative priority order. Priority in increments of 10; i
     `background_scan_windows_worker.dart:434`, **Windows-only**, exactly like the file-logging
     block at `main.dart:152`. Android's WorkManager path never reaches either.
   - **So the existing toggle is a Windows-only feature exposed in the SHARED Settings UI.** On
-    Android it stores a setting and does nothing. That is a user-visible parity break on its own
-    terms -- a control that looks functional and silently is not -- and a tester could enable it,
-    wait, and reasonably conclude the app is broken. Fix it as part of this capability, or hide
-    it on platforms that cannot honour it. **Do not leave it as-is.**
+    Android it stores a setting and does nothing.
+  - **WORSE THAN A SILENT NO-OP, confirmed by screenshot 2026-09-10**: Android's Settings >
+    General renders **"CSV Export Directory -- Downloads folder (default)"** with a folder
+    picker beside it. The UI actively TELLS the user where the files will be written, and
+    nothing is ever written there. A tester enabling it would check Downloads, find nothing, and
+    reasonably conclude the app is broken rather than that the feature is desktop-only. Fix it
+    as part of this capability, or hide the whole block on platforms that cannot honour it.
+    **Do not leave it as-is.**
+  - **Retention selector is TRUE PARITY** (same screenshot): 7/14/30/90 days/1 year, 90
+    selected, identical to Windows. So Part A is genuine shared work with no platform fork --
+    only Part B needs the factory.
   - Content: scan history rows with per-scan AND per-error detail.
 
 - **PART C -- what the export CONTAINS, and the share path (~2-3h). The privacy design is the
@@ -638,9 +645,48 @@ All incomplete items in relative priority order. Priority in increments of 10; i
 - Source: Harold, 2026-09-10 -- filed after the S24+ Scan History totals, reframed by him the
   same day from "fix Android" to "a platform capability".
 
+**F207. A manual scan is refused while a background scan is "in progress" -- and the block appears to outlive the scan (~1-2h) Priority 20 (NEW, 2026-09-10 -- Harold, on the S24+)**
+- Phase: Core App Quality
+- Platform: Android (closed test); check Windows for the same lock
+- **Harold, 2026-09-10**: Gmail *"won't currently run a manual scan saying that a background
+  scan is in progress"*.
+- **The refusal itself is probably CORRECT** -- concurrent scans on one account would race on the
+  same folders and the same UID cursor. A mutual exclusion is the right design. `ScanCoordinator`
+  already owns a lease with a 30-minute `scanTimeout`, and F175 exists precisely because leases
+  can be left behind (`reconcileStaleInProgressScans` reconciles them at STARTUP only).
+- **What needs investigating is whether the block is HONEST.** Three possibilities, and they need
+  different fixes:
+  1. A background scan genuinely was running. Correct behaviour; the only issue is whether the
+     message tells the user when to retry.
+  2. A previous background scan died and left its lease held. F175 reconciles those **at startup
+     only** -- so on a phone, where the app may not be restarted for days, a stale lease could
+     block manual scans indefinitely. That is the failure mode to rule out first.
+  3. The 15-minute background cadence means a scan is *often* in flight, so manual scanning is
+     effectively unavailable on the closed-test build much of the time.
+- **Why it matters on THIS build specifically**: the closed test runs background scans every 15
+  minutes on every account. If (2) or (3) holds, a tester who wants to scan on demand simply
+  cannot -- and their natural report would be "the scan button does not work", which is a
+  usability defect rather than the correctness one it actually is.
+- **Scope**: reproduce; determine which of the three it is; then either (a) make the message
+  actionable ("a background scan is running, try again in N minutes"), (b) extend F175's
+  reconciliation beyond startup, or (c) queue the manual request behind the running scan instead
+  of refusing it. Decide AFTER reproducing, not before.
+- **Do not "fix" this by removing the lock.** Concurrent scans on one mailbox are the thing the
+  lock exists to prevent, and this build acts on real mail.
+- Depends on: nothing. Overlaps F205 only in that both are closed-test observations.
+- Source: Harold, 2026-09-10, while gathering Android screenshots.
+
 **F205. Closed-test error rate: 53 errors in 3,833 scanned on the S24+ -- find out what they ARE (~1-2h investigation) Priority 18 (NEW, 2026-09-10 -- observed on the closed-test device)**
 - Phase: Core App Quality
 - Platform: Android (closed test); check Windows for the same class
+- **NARROWED 2026-09-10 by Harold's per-account sweep, and this is the useful half**: he
+  filtered Scan History by account and scan type. **kimmeyharold@aol.com: NO rows with Errors > 0**,
+  background or manual. **kimmeyh@gmail.com background: 21 errors, ALL on a PRIOR VERSION.**
+  Gmail manual: also all prior-version.
+  So the errors are **Gmail-only and pre-0.15.0** -- not spread across accounts, and not
+  occurring on the current build. That is a substantially smaller and colder problem than the
+  raw total suggested, and it may already be fixed. **Confirm no NEW errors accrue on 0.15.0
+  before spending time on the historical ones.**
 - **Observation, from the S24+ Scan History 90-day totals on 2026-09-10**: Total 3,833,
   Processed 892, Deleted 374, Moved 0, Safe 43, No Rule 475, **Errors 53**. That is ~1.4% of
   scanned mail, and it is the only number on that screen that is not self-explanatory.
