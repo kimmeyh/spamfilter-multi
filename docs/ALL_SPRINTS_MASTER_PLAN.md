@@ -526,6 +526,65 @@ All incomplete items in relative priority order. Priority in increments of 10; i
 - Source: Harold, 2026-09-09, Sprint 68 Manual Validation. Explicitly deferred OUT of Sprint 68
   as a scope change surfaced at a natural break (Decision-Class Taxonomy, class 3).
 
+**F206. Diagnostics you cannot get at: reset the counters, and export scan data to a folder MTP can see (~3-5h) Priority 14 (NEW, 2026-09-10 -- Harold)**
+- Phase: Core App Quality
+- Platform: All (ADR-0042 parity; Android has the harder half)
+- **Harold, 2026-09-10, two asks that turn out to be the same problem**: *"there should be a
+  'reset the numbers' mechanism somewhere, somehow as they have been accumulating for several
+  days (Errors 53)"* and *"can we make the files available through the s24+ file transfer
+  interface? Where should they be located"*.
+- **Both are the same shape: the app has diagnostics the user cannot get at.** One is a number
+  that cannot be zeroed; the other is detail that cannot leave the device.
+
+- **PART A -- reset the counters (~1h).**
+  - Scan History totals accumulate over the retention window (7/14/30/90 days/1 year, Settings >
+    General). **Retention prunes by AGE, not on demand**, so there is no way to say "start
+    counting from now".
+  - Concretely: Errors 53 against Total 3,833 on the S24+ tells you nothing about WHEN. Fifty-
+    three errors last week and fifty-three this afternoon are the same number on that screen. A
+    reset makes the next observation a measurement instead of a guess.
+  - **Audited 2026-09-10: no clear/reset affordance exists anywhere in `lib/`.** Not partially,
+    not hidden -- `clearScanHistory`, `deleteAllScans`, `clearHistory` return nothing.
+  - Scope: a "Clear scan history" action in Settings > General beside the retention selector,
+    behind the existing confirmation-dialog setting. Deleting history must NOT delete rules,
+    safe senders, or credentials -- state that explicitly in the card, because "clear data" is
+    exactly the kind of button that grows scope later.
+
+- **PART B -- export where MTP can see it (~2-4h). This is the harder half and it is
+  Android-specific.**
+  - **Why the phone's data is currently unreachable at all**:
+    `getApplicationSupportDirectory()` on Android resolves to app-private internal storage
+    (`/data/data/com.myemailspamfilter/...`). **MTP cannot see it and no file manager can browse
+    it** without root. MTP exposes only shared storage -- which is why DCIM screenshots come
+    across fine and nothing else does.
+  - Target location, chosen to sit beside where screenshots already land:
+    `/storage/emulated/0/Documents/MyEmailSpamFilter/` -> appears over MTP as
+    `Internal storage\\Documents\\MyEmailSpamFilter`.
+  - **Android 11+ scoped storage makes this a real feature, not a path change.** Writing to
+    shared storage needs either MediaStore or the Storage Access Framework; a silent
+    `File(...).writeAsString()` to that path will fail. Prefer a user-initiated export (share
+    sheet or SAF picker) over requesting a broad storage permission -- **`MANAGE_EXTERNAL_STORAGE`
+    would drag in a Play Permissions Declaration Form** (see F204), which is a large cost for a
+    diagnostic convenience.
+  - What to export: scan history rows with per-scan and per-error detail, as CSV or JSON. The
+    per-scan CSV toggle already exists (`settings_screen.dart:1152`) and writes to the Downloads
+    folder -- **check whether that already solves half of this before building anything**, since
+    Downloads IS MTP-visible.
+  - Windows parity: the equivalent already works, because its logs live in a browsable AppData
+    directory. So the ADR-0042 answer is likely "same feature, and on Windows it is a
+    convenience rather than the only access path" -- worth stating rather than implying the
+    platforms are equally blocked.
+
+- **Why this matters now**: F205 (53 unexplained errors) is **BLOCKED** without Part B. The
+  closed test is the only build that acts on real mail, 8 testers are watching it, and right now
+  the only diagnostic available is a screenshot of a total. A tester reporting "it deleted
+  something odd" cannot be investigated at all.
+- **Deliberately NOT in scope**: remote logging, crash reporting, telemetry of any kind. This app
+  ships with no analytics by design (ADR-0030) and the Data safety declaration says so. Export
+  is user-initiated and local; anything else would make that declaration false.
+- Depends on: nothing. Part A is independent and cheap; Part B unblocks F205.
+- Source: Harold, 2026-09-10, after reading the S24+ Scan History totals.
+
 **F205. Closed-test error rate: 53 errors in 3,833 scanned on the S24+ -- find out what they ARE (~1-2h investigation) Priority 18 (NEW, 2026-09-10 -- observed on the closed-test device)**
 - Phase: Core App Quality
 - Platform: Android (closed test); check Windows for the same class
@@ -545,9 +604,18 @@ All incomplete items in relative priority order. Priority in increments of 10; i
   IMAP name.
 - **Why it stopped there**: the errors are on the PHONE, and its logs are not readable from the
   development machine. Diagnosing further from screenshots would be guessing -- see retro IMP-1.
-- **Method when picked up**: get the device log off the S24+ (the closed-test build writes
-  `background_scan_v0.15.0.log` under the app's data directory), then group the error entries by
-  cause. Do NOT start from a hypothesis; read the log first.
+- **CORRECTION (2026-09-10, same day)**: this card originally said to "get the device log off
+  the S24+ ... `background_scan_v0.15.0.log`". **That file does not exist on Android.**
+  `main.dart:152` gates the whole file-logging block on
+  `BackgroundModeService.isBackgroundMode`, which is the WINDOWS Task Scheduler path; Android
+  background scans run through WorkManager and never reach it. The path is even built with a
+  hardcoded `\\` separator. I assumed a file rather than checking -- the same shape as retro
+  IMP-1, one level up: assuming an ARTIFACT exists rather than assuming what one means.
+- **So there is currently NO way to diagnose this.** The counters are visible on-device and the
+  underlying detail is not retrievable at all. That is what F206 is for, and F205 is BLOCKED on
+  it: without per-error detail, any diagnosis from the totals alone is guesswork.
+- **Method when picked up (after F206 ships)**: export the scan history, group the error entries
+  by cause, then fix. Do NOT start from a hypothesis; read the data first.
 - **Why this matters more here than elsewhere**: the closed test is the ONLY build that acts on
   real mail (see `GOOGLE_PLAY_ACCOUNT_SETUP.md` "Scan mode by environment"). An error rate that
   is benign in read-only could be a failed delete or a half-applied action here. It is also the
