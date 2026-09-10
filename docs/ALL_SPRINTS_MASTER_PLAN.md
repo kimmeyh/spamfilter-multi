@@ -558,17 +558,22 @@ All incomplete items in relative priority order. Priority in increments of 10; i
   `?? 'Trash'` at `email_scanner.dart:670` remains unproven-benign rather than
   proven-harmless. F202's blast radius is NOT narrowed. Same error class as the folder-picker
   screenshots: reading a post-change state as a pre-change one.
-- **PLATFORM SCOPE, refined 2026-09-09 after seeing Android Scan History.** Android's EMPTY
-  STATE wording is correct where Windows' is not: Android reads *"No Results Yet -- Run a scan
-  to see email processing results here"*, while Windows asserts *"No emails were found in the
-  selected folders"* when emails WERE found and skipped. **Adopt Android's wording; do not
-  invent new copy.**
-  **But Android is NOT immune to the counter contradiction itself.** Its iCloud history row
-  reads `Found: 0 | Processed: 0`, which is self-consistent only because that mailbox had
-  nothing to return -- Android has simply not yet scanned a mailbox where safe-sender skips
-  occur. The counters come from shared scanner code, so Android would show `Found: 2 |
-  Processed: 0` in the same situation. **The empty-state text is a Windows-only fix; the
-  missing `Safe (already filed): N` disclosure is a SHARED fix for both platforms.**
+- **PLATFORM SCOPE: this is a SHARED defect. There is no platform difference.** Recorded
+  because I claimed one twice and was wrong both times, and Harold caught it: *"Not sure this
+  was true or just the timing of results pasted were out of order."* It was the timing.
+  The Android screenshot reading "No Results Yet" was the **pre-scan** screen (11:25, before
+  the run); Windows' "No emails were found" was a **post-scan** screen. Comparing them was not
+  like-for-like.
+  Traced to the source rather than to more screenshots: **both strings live in
+  `lib/ui/widgets/empty_state.dart`** -- `NoResultsEmptyState` ("No Results Yet") and
+  `ScanCompleteNoEmailsEmptyState` ("No emails were found...") -- and
+  `results_display_screen.dart:791-797` picks between them with ONE shared conditional:
+  never-scanned gets the former, scanned-and-found-nothing gets the latter. Shared widget,
+  shared chain, identical on both platforms. **Android would show exactly the same text in
+  exactly the same state.**
+  So the whole card is a SHARED fix: both the misleading post-scan message and the missing
+  `Safe (already filed): N` disclosure. **Do NOT scope any part of this as Windows-only** --
+  that would ship a half fix and leave Android to surface the same confusion.
 - **Watch item**: do NOT "fix" this by counting skipped emails as Processed. They deliberately
   are not processed, and the Sprint 58 F151d Demo Mode exception in
   `shouldSkipSafeSenderAlreadyInTarget` shows this path already has subtle cases. The fix is
