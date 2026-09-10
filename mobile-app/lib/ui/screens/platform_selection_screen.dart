@@ -522,25 +522,36 @@ class _SetupInstructionsDialogState extends State<_SetupInstructionsDialog> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        _buildStep(1, 'Go to AOL Account Settings'),
-        _buildStep(2, 'Select "Account Security" from the left menu'),
-        _buildStep(3, 'Click "Generate app password"'),
-        _buildStep(4, 'Choose "Other App" from the dropdown'),
-        _buildStep(5, 'Enter "Spam Filter" as the app name'),
-        _buildStep(6, 'Copy the generated 16-character password'),
+        // AOL runs on the same Yahoo account platform, so it received the
+        // same relabelling: "External connections" / "Create app password".
+        _buildStep(1, 'Go to login.aol.com/account/security'),
+        _buildStep(2, 'Under "External connections", click "Create app '
+            'password"'),
+        _buildStep(3, 'Enter a name, for example "MyEmailSpamFilter"'),
+        _buildStep(4, 'Click "Generate password"'),
+        _buildStep(5, 'Copy the password now -- it is shown only once'),
       ],
     );
   }
 
+  // Steps below match each vendor's CURRENT page, verified 2026-09-09 against
+  // help.yahoo.com SLN15241 and support.apple.com/en-us/102654. The previous
+  // wording described UI that no longer exists and actively misdirected Harold
+  // during F191 validation -- see docs/APP_PASSWORD_SETUP.md for the full
+  // walkthrough, the preconditions and the known failure modes.
   Widget _buildYahooSteps() {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        _buildStep(1, 'Go to Yahoo Account Security'),
-        _buildStep(2, 'Click "Generate app password"'),
-        _buildStep(3, 'Select "Other App" from the dropdown'),
-        _buildStep(4, 'Enter "Spam Filter" as the app name'),
-        _buildStep(5, 'Copy the generated 16-character password'),
+        // The section is "External connections" and the button is "Create app
+        // password". The old "Generate app password" wording, and the "Other
+        // App" dropdown step, are both gone from Yahoo's flow.
+        _buildStep(1, 'Go to login.yahoo.com/account/security'),
+        _buildStep(2, 'Under "External connections", click "Create app '
+            'password"'),
+        _buildStep(3, 'Enter a name, for example "MyEmailSpamFilter"'),
+        _buildStep(4, 'Click "Generate password"'),
+        _buildStep(5, 'Copy the password now -- it is shown only once'),
       ],
     );
   }
@@ -549,12 +560,20 @@ class _SetupInstructionsDialogState extends State<_SetupInstructionsDialog> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        _buildStep(1, 'Go to appleid.apple.com'),
-        _buildStep(2, 'Sign in with your Apple ID'),
-        _buildStep(3, 'Go to "Account Security" section'),
-        _buildStep(4, 'Under "App Passwords", click "Generate password"'),
-        _buildStep(5, 'Select "Other (specify)" and enter "Spam Filter"'),
-        _buildStep(6, 'Copy the generated password'),
+        // FOUR of the six previous steps were wrong: appleid.apple.com (now
+        // account.apple.com), "Account Security" (now "Sign-In and Security"),
+        // "App Passwords" (now "App-Specific Passwords"), and an "Other
+        // (specify)" step that does not exist. Apple ALSO surfaces a
+        // Two-Factor Authentication panel on the same page, which is a
+        // different thing and is where Harold landed first.
+        _buildStep(1, 'Go to account.apple.com and sign in'),
+        _buildStep(2, 'Requires two-factor authentication -- Apple does not '
+            'offer app-specific passwords without it'),
+        _buildStep(3, 'In "Sign-In and Security", select "App-Specific '
+            'Passwords" (NOT the Two-Factor Authentication panel)'),
+        _buildStep(4, 'Select "Generate an app-specific password"'),
+        _buildStep(5, 'Name it, for example "MyEmailSpamFilter"'),
+        _buildStep(6, 'Copy it WITH the hyphens (abcd-efgh-ijkl-mnop)'),
       ],
     );
   }
