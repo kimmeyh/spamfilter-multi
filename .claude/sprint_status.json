@@ -6,7 +6,7 @@
   "current_sprint": {
     "number": 69,
     "branch": "feature/20260910_Sprint_69",
-    "status": "Sprint 69 NOT PLANNED, NOT APPROVED. Phase 8 Release Cycle in progress: 8.1 develop->main DONE (PR #404). Phase 6.6 branch created from feature/20260909_Sprint_68 at 1f2eb8c. Sprint 68 close-out COMPLETE (5 cards closed, docs triad present, master plan rolled, 4 shipped items pruned). NEXT: 8.2 backlog refinement pass 1 (completeness sweep -- does NOT select scope), then the two store releases, then 8.4 scope selection.",
+    "status": "Sprint 69 NOT PLANNED, NOT APPROVED. Phase 8 Release Cycle: 8.1 develop->main DONE (#404); 8.2 completeness sweep DONE (all 7 checks pass; found and fixed the missing Sprint 69 branch and SPRINT_68_SUMMARY.md); 8.3 BOTH 0.15.0 PACKAGES BUILT AND VERIFIED, awaiting Harold's uploads. NEXT: Harold uploads, then Phase 8.4 scope selection for Sprint 69.",
     "plan_approved": false,
     "blanket_execution_approved": false,
     "pr_number": null,
@@ -34,9 +34,9 @@
     "as_of": "2026-09-10, Sprint 68 close-out at 1f2eb8c"
   },
   "store_release": {
-    "windows": "0.14.2.0 LIVE (Submission 25, Partner Center verified 2026-09-09). NOT yet verified by installing from the Store. Sprint 68 content (0.15.0) is NOT yet submitted.",
-    "play": "0.14.2 (versionCode 2) LIVE on the CLOSED TESTING track (Submission 2, published 2026-09-09 2:58 PM -- 59 minutes after submission). NOT production. Sprint 68 content (0.15.0, versionCode 3) is NOT yet submitted.",
-    "note": "Production access on Play is gated on 12 testers x 14 CONTINUOUS days. That is a TESTER-COUNT gate, not a version gate -- shipping another version does not advance it. 3 of 12 opted in at last count. Recruiting the remaining testers is the critical path."
+    "windows": "0.15.0.0 MSIX BUILT and VERIFIED, awaiting Harold upload. Path: D:\\Data\\Harold\\github\\spamfilter-multi-prod\\mobile-app\build\\windowsd\runner\\Release\\my_email_spam_filter.msix (17.9 MB). Check A build log showed APP_ENV=prod + secrets.prod.json; Check B --print-env returned all five expected lines incl. NATIVE_APP_ENV=prod; OAuth client id confirmed PRESENT in data/app.so. LIVE on Store: 0.14.2.0 (Submission 25).",
+    "play": "0.15.0 versionCode 3 AAB BUILT and VERIFIED, awaiting Harold upload. Path: mobile-app\build\u0007pp\\outputs\bundle\\prodRelease\u0007pp-prod-release.aab (53.3 MB). versionName 0.15.0, no .dev suffix, OAuth scheme present, package com.myemailspamfilter. versionCodes 1 and 2 are consumed by the live 0.14.1 and 0.14.2; 3 is unused. LIVE on Play: 0.14.2 closed testing (Submission 2).",
+    "note": "PROD WORKTREE WAS 47 COMMITS BEHIND at Phase 8.3 and was updated before building -- the precondition STORE_RELEASE_PROCESS names, which caught Sprint 66 (52 behind) and Sprint 60 (33). Building from the stale worktree would have shipped Sprint 67 code labelled 0.15.0. Play production access remains gated on 12 testers x 14 CONTINUOUS days -- a TESTER-COUNT gate, not a version gate. 3 of 12 opted in at last count."
   },
   "environment_notes": [
     "RESOLVED 2026-07-29 (verified 07-30): the Store fault was an Acronis file-system filter blocking AppXSvc cleanup, fixed by an Acronis Protection exclusion. 23h uptime with ZERO Id-493 events vs a 176-file/6-min baseline; Store client self-updated 22606.1401.6.0 -> .10.0 (requires a working deployment pipeline). Filter drivers remain loaded -- backup protection was NOT disabled. See ALL_SPRINTS_MASTER_PLAN ENV-1 for the picker gotcha if it recurs.",
