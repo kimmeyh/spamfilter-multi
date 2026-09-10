@@ -159,6 +159,41 @@ void main() {
       return true;
     }
 
+    /// Is line [i] a colour INSIDE a `TextStyle(...)` that opened on an
+    /// earlier line?
+    ///
+    /// **Why a single-line check was not enough (PR #403 review).** The
+    /// original `isHardcodedSurface` rejected text colours with
+    /// `line.contains('TextStyle')`, which only works when `TextStyle(` and
+    /// `color:` share a line. `dart format` splits them as soon as the call
+    /// grows:
+    ///
+    /// ```dart
+    /// style: TextStyle(
+    ///   color: Colors.blue.shade900,   // <- read as a SURFACE
+    /// ),
+    /// ```
+    ///
+    /// Measured against the real tree: 63 lines matched `isHardcodedSurface`
+    /// and **31 of them were text colours inside a multi-line TextStyle**.
+    /// The gate did not fire only because none of those 31 happened to have
+    /// theme-derived text within the window below it -- so a correct,
+    /// fully-hardcoded card would have started failing the moment someone
+    /// added a themed label to it. That is the exact false positive the group
+    /// doc warns about, hiding inside the check meant to prevent it.
+    ///
+    /// Walks BACKWARD tracking bracket depth: a `TextStyle(` found while depth
+    /// is negative is still open at line [i].
+    bool insideMultiLineTextStyle(List<String> lines, int i) {
+      var depth = 0;
+      for (var k = i - 1; k >= 0 && k >= i - 6; k--) {
+        depth += ')'.allMatches(lines[k]).length -
+            '('.allMatches(lines[k]).length;
+        if (lines[k].contains('TextStyle(') && depth < 0) return true;
+      }
+      return false;
+    }
+
     /// Text whose colour resolves through the theme, so it FLIPS with the
     /// theme while the surface above does not.
     final themeDerivedText =
@@ -195,6 +230,33 @@ void main() {
               'flagged -- this is the false positive that would make the gate '
               'block correct work');
 
+      // THE REGRESSION CASE (PR #403 review): `dart format` splits a long
+      // TextStyle across lines, so the colour line carries no 'TextStyle'
+      // token at all. isHardcodedSurface alone says "surface"; the bracket
+      // walk is what says "text".
+      const splitTextStyle = [
+        'style: TextStyle(',
+        '  color: Colors.blue.shade900,',
+        '  fontSize: 13,',
+        '),',
+      ];
+      expect(isHardcodedSurface(splitTextStyle[1]), isTrue,
+          reason: 'the single-line check cannot see the TextStyle above it -- '
+              'this is why insideMultiLineTextStyle exists');
+      expect(insideMultiLineTextStyle(splitTextStyle, 1), isTrue,
+          reason: 'a hardcoded TEXT colour must never be treated as a surface, '
+              'however dart format chose to wrap it');
+
+      // A real surface must still be seen as one when it follows a CLOSED
+      // TextStyle -- the walk must not over-reach.
+      const closedThenSurface = [
+        'style: TextStyle(fontSize: 13),',
+        'color: Colors.blue.shade50,',
+      ];
+      expect(insideMultiLineTextStyle(closedThenSurface, 1), isFalse,
+          reason: 'the TextStyle on the previous line is CLOSED; the surface '
+              'below it is a genuine surface');
+
       // An icon tint on a hardcoded surface is decoration, not text.
       expect(isHardcodedSurface('Icon(Icons.info, color: Colors.blue.shade700)'),
           isFalse);
@@ -224,6 +286,8 @@ void main() {
 
         for (var i = 0; i < lines.length; i++) {
           if (!isHardcodedSurface(lines[i])) continue;
+          // PR #403 review: 31 real lines reach here as false "surfaces".
+          if (insideMultiLineTextStyle(lines, i)) continue;
 
           final end = i + windowLines >= lines.length
               ? lines.length

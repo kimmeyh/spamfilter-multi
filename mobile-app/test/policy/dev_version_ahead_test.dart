@@ -126,11 +126,18 @@ void main() {
       multiLine: true,
     ).allMatches(storeStatus.readAsStringSync()).toList();
 
-    expect(liveRows, isNotEmpty,
-        reason: 'no "Live ..." rows found in STORE_VERSION_STATUS.md. If the '
-            'table format changed, THIS GATE must be updated with it -- a '
-            'pattern that silently matches nothing is a gate that passes '
-            'everything.');
+    // PR #403 review: `isNotEmpty` catches TOTAL failure but not PARTIAL. If
+    // the Store row keeps its format and the Play row is reworded, one row
+    // still matches, this guard passes, and the Play version goes UNCHECKED --
+    // which is precisely the half-a-check this gate exists to replace.
+    // Two stores ship today, so require two rows.
+    expect(liveRows.length, greaterThanOrEqualTo(2),
+        reason: 'expected one "Live ..." row per shipping store (Microsoft '
+            'Store and Google Play) in STORE_VERSION_STATUS.md, found '
+            '${liveRows.length}. A row that was reworded, un-bolded, or had '
+            'its version moved out of the first cell no longer matches -- '
+            'UPDATE THIS GATE with the table rather than letting it check '
+            'fewer stores than actually ship.');
 
     for (final row in liveRows) {
       final liveRaw = row.group(1)!;

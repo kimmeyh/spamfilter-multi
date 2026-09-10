@@ -34,18 +34,48 @@ import 'dart:io';
 import 'package:flutter_test/flutter_test.dart';
 
 void main() {
-  final screen =
-      File('lib/ui/screens/platform_selection_screen.dart').readAsStringSync();
-  final doc = File('../docs/APP_PASSWORD_SETUP.md').readAsStringSync();
+  // Copilot review (PR #403): reading these at the top of main() without an
+  // existence check throws a bare FileSystemException before any test runs,
+  // which surfaces as a stack trace rather than a reason. Fail with the reason.
+  File requireFile(String path, String why) {
+    final f = File(path);
+    if (!f.existsSync()) {
+      throw StateError('$path not found. $why '
+          '(policy tests run from mobile-app/ -- check the working directory '
+          'before assuming the file moved.)');
+    }
+    return f;
+  }
+
+  final screen = requireFile(
+    'lib/ui/screens/platform_selection_screen.dart',
+    'It holds the in-app provider setup steps this gate reads.',
+  ).readAsStringSync();
+  final doc = requireFile(
+    '../docs/APP_PASSWORD_SETUP.md',
+    'It is the reference this gate compares the in-app steps against.',
+  ).readAsStringSync();
 
   /// Only the user-visible step text. Comments in this file legitimately cite
   /// the RETIRED strings to explain what changed and why -- reading raw file
   /// text would flag that history as a defect, which is exactly backwards.
-  List<String> stepStrings() => RegExp(r"_buildStep\(\s*\d+\s*,\s*(.+?)\),\s*$",
-          multiLine: true, dotAll: true)
-      .allMatches(screen)
-      .map((m) => m.group(1)!)
-      .toList();
+  /// PR #403 review: the anchor was `\),\s*$`, so ANY trailing line comment
+  /// made a step invisible -- verified, `_buildStep(1, '...'), // legacy`
+  /// parsed to ZERO matches. That is the likeliest way a stale step returns:
+  /// someone edits it and leaves a note. The `isNotEmpty` guard below does not
+  /// help, because the other 20-odd steps still parse and the gate stays green
+  /// while silently skipping one.
+  ///
+  /// `dotAll` is also dropped. With a lazy `(.+?)` it let a single match span
+  /// two widget methods when a call lacked a trailing comma. Harmless today
+  /// (every call site has one) but it made BOTH failure modes silent -- match
+  /// nothing, or match too much.
+  List<String> stepStrings() =>
+      RegExp(r"_buildStep\(\s*\d+\s*,\s*(.+?)\),\s*(?://.*)?$",
+              multiLine: true)
+          .allMatches(screen)
+          .map((m) => m.group(1)!)
+          .toList();
 
   test('the matcher self-checks: it reads steps and ignores comments', () {
     final steps = stepStrings();

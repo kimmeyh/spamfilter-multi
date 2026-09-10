@@ -6,16 +6,17 @@
   "current_sprint": {
     "number": 68,
     "branch": "feature/20260909_Sprint_68",
-    "pr_number": null,
+    "pr_number": 403,
     "start_date": "2026-09-09",
-    "status": "Sprint 68 MANUAL VALIDATION (Phase 5.3) -- all 5 tasks IMPLEMENTED and committed. F197 (contrast gate, mutation-verified), F191 (Yahoo+iCloud phase gate + APP_PASSWORD_SETUP.md), F198 (CLAUDE.md rule; hook deliberately NOT built -- see docs/F198_QUESTION_FORMAT_ANALYSIS.md), F200 (false privacy claim removed, 2nd policy + duplicate site tree deleted, served-site gate added), F199 (verified complete except the Partner Center publisher display name, blocked on Microsoft support). Suite 2,070/15/0. Policy 105. Hook suite 53/53. Analyzer clean. AWAITING HAROLD: 4 live-validation cells (Yahoo + iCloud x Windows + Android) -- these need app-specific passwords per docs/APP_PASSWORD_SETUP.md. No listing copy claims either provider until they pass (R-4).",
-    "plan_approved": false,
-    "blanket_execution_approved": false,
+    "status": "Sprint 68 CLOSE-OUT (Phase 7.7.5). All 5 tasks delivered and Manual Validation COMPLETE (F191 4/4 cells PASS across Yahoo/iCloud x Windows/Android). Retrospective complete, all 5 approved improvements applied. PR #403 READY FOR REVIEW; Copilot review returned 4 comments and the pr-review-toolkit code review returned 4 -- all 8 addressed in-sprint. Suite 2,074 passing / 0 failing. Policy gates 109. Hook suite 53/53. Analyzer clean. AWAITING HAROLD: final PR review and merge.",
+    "plan_approved": true,
+    "blanket_execution_approved": true,
     "scope": [
       "F199 (pre-assigned, blocked)"
     ],
     "_scope_note": "Harold assigned F199 mid-cycle. Full scope is selected at Phase 8.4 after the store releases.",
-    "pr": "#403 (draft)"
+    "pr": "#403 (READY FOR REVIEW)",
+    "pr_url": "https://github.com/kimmeyh/spamfilter-multi/pull/403"
   },
   "previous_sprint": {
     "number": 67,

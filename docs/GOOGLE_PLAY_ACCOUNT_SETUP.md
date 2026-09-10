@@ -8,7 +8,8 @@
   on Play, so the LISTING may lag this value. This line records what the console says TODAY.
 - **Account type**: Personal | **Account ID**: 6597324007880348667. Still Personal, and
   deliberately so -- see `LEGAL_ENTITY.md` for why converting to Organization was considered
-  and declined for now.
+  and DECLINED -- a closed decision, not a deferral. `LEGAL_ENTITY.md` is authoritative:
+  "Account type: CLOSED, 2026-09-09." Do not re-open it as pending work.
 - **Legal entity**: Kimmey Consulting LLC (Ohio, doc. 202624702988, effective 2026-09-05).
   See `LEGAL_ENTITY.md`. Note this is a PERSONAL account whose developer NAME is the LLC.
   Those are two different facts, and Google permits the combination: "Your developer name

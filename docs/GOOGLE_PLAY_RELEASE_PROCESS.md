@@ -116,9 +116,13 @@ for Android, and the `prod` flavor is selected by the script's default.
 Never infer from the build log. F119 shipped a credential-less package whose build log looked
 correct.
 
+**This block was a bash heredoc labelled `powershell` and would FAIL if pasted** (PR #403
+review). PowerShell has no `<<'PY'`. Rewritten as a here-string, which is the PowerShell
+equivalent -- note the closing `'@` MUST be at column 0.
+
 ```powershell
 cd D:\Data\Harold\github\spamfilter-multi\mobile-app
-python - <<'PY'
+@'
 import zipfile, re
 z = zipfile.ZipFile('build/app/outputs/bundle/prodRelease/app-prod-release.aab')
 txt = z.read('base/manifest/AndroidManifest.xml').decode('utf-8', 'ignore')
@@ -126,7 +130,8 @@ print('versionName :', set(re.findall(r'0\.\d+\.\d+', txt)))
 print('.dev suffix :', '.dev' in txt[:4000], '(must be False -- that is the DEV package)')
 hits = set(re.findall(r'com\.googleusercontent\.apps\.[0-9A-Za-z\-]+', txt))
 print('OAuth scheme:', 'PRESENT' if hits else '*** MISSING -- F119 failure mode ***')
-PY
+'@ | Out-File -Encoding utf8 "$env:TEMPerify_aab.py"
+python "$env:TEMPerify_aab.py"
 ```
 
 Confirm: the version name matches, there is no `.dev` package suffix, and the OAuth redirect
