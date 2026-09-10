@@ -440,26 +440,45 @@ All incomplete items in relative priority order. Priority in increments of 10; i
   - **AOL**: Safe Sender `Inbox`; Deleted Rule `Trash`; Manual + Background selected folders
     `Inbox, Bulk, Bulk Mail` (AOL genuinely has BOTH Bulk and Bulk Mail).
   - **Gmail**: Safe Sender `INBOX`; Deleted Rule `[Gmail]/Trash`; Manual + Background selected
-    folders `INBOX, [Gmail]/Spam, Unwanted` (`Unwanted` is a custom Harold folder -- **a USER
-    folder, NOT a Gmail default**; the shipped Gmail default must be `INBOX, [Gmail]/Spam`).
+    folders `INBOX, [Gmail]/Spam, Unwanted`. **All three ship as the Gmail default** --
+    corrected by Harold 2026-09-09: *"unwanted is a common gmail folder"*, not his personal
+    one. My first draft wrongly excluded it as a user folder.
   - **Yahoo**: Safe Sender `Inbox`; Manual + Background `Inbox, Bulk`.
-  - **iCloud**: unknown -- pending F191 iCloud validation.
+  - **iCloud**: pending. Harold, 2026-09-09: *"I will update icloud once I add it."* Do not guess these values; the whole point of the card is that the provider decides.
   - **Outlook**: unknown -- provider not shipped (phase 2).
 - **Harold will verify the remaining providers before the card runs**: *"Only changes existing if
   they need specifics - I can check on them and report before run the card next sprint."* So the
   card starts with HIS confirmed values per provider; the team does not invent any.
 
-- **Decisions to make AT PLANNING, not during execution** (each is Class-1/Class-2):
-  1. **Do EXISTING accounts adopt new defaults, or only new accounts?** Silently changing what an
-     installed app scans -- especially in a non-read-only mode -- is a different risk from
-     seeding a new account. Recommend: new accounts only, with an explicit opt-in for existing.
-  2. **Scanning a junk folder in delete mode acts on mail the provider already called spam.**
-     Safe in read-only; needs a deliberate decision for delete/move modes.
-  3. **Where does the override live?** Extending `junk_folder_config.dart` into a fuller
-     per-provider folder-defaults map is the obvious path, but it must first separate
-     junk-scan-targets from deleted-destinations.
-  4. **What happens when a provider default names a folder the account does not have?** (An AOL
-     account with no `Bulk Mail`.) Skip silently, or surface it.
+- **DECIDED BY HAROLD, 2026-09-09 -- these are no longer open questions**:
+  1. **Existing accounts: NO migration, NO opt-in prompt.** *"It is a default and should only
+     apply to new users after implemented. no opt-in for existing as they can select the folders
+     they want through settings."* Simplest correct answer, and it removes the risk that
+     silently changing what an installed app scans in a non-read-only mode surprises someone.
+     Existing accounts keep their saved selection; Settings is the path for changing it.
+  2. **Scale context**: *"There are no new account (max 2 as I am one on both platforms)."* The
+     real-world blast radius today is Harold's own accounts. That lowers the migration risk to
+     near zero and reinforces decision 1 -- but the mechanism still has to be right for the
+     users who follow.
+  3. **A default naming a folder the account lacks, or an empty folder, is NOT an error.**
+     *"if any of the default folders do not exist or are empty, the scan just continues (and it
+     should as it is not an error if the folder is empty or does not exist)."* The user can then
+     select and unselect whatever the picker offers, since it enumerates folders live.
+- **VERIFIED against the code at card-writing time (2026-09-09), because decision 3 is the one
+  that could bite**:
+  - **EMPTY folder -- already behaves exactly as required.** `email_scanner.dart:454` logs
+    "0 messages", reports "No emails found ... continuing...", and the scan proceeds. Not an
+    error. No change needed.
+  - **MISSING folder -- the scan DOES continue** (`email_scanner.dart:470-481`, then the loop
+    moves to the next folder), so Harold's requirement is met. **BUT** F174 (Sprint 62) routes
+    the exception through `recordFolderFetchError`, so it lands in `errorCount`. **A folder that
+    simply does not exist is currently COUNTED AS AN ERROR even though nothing failed.**
+  - That is deliberate -- F174 exists precisely so a genuine fetch failure cannot vanish into an
+    "empty folder" reading -- so this card must not simply revert it. **The work is to
+    distinguish "folder does not exist" (expected, silent) from "folder failed to fetch"
+    (a real error worth surfacing).** Without that, shipping a default naming a folder some
+    accounts lack -- AOL `Bulk Mail`, say -- produces a phantom error on every scan for those
+    users, which is exactly the kind of noise that trains people to ignore error counts.
 - **Testing**: per-provider unit coverage for all four settings; a gate asserting no NEW
   hardcoded `['INBOX']` / `'Trash'` fallback re-enters the scan path; and mutation verification
   that the provider map is actually consulted rather than shadowed by a fallback.
