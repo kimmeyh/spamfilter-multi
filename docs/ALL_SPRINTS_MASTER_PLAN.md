@@ -397,6 +397,77 @@ All incomplete items in relative priority order. Priority in increments of 10; i
 - Depends on: nothing in code. Depends on Harold having (or creating) a Yahoo and an iCloud account to validate against.
 - Source: Sprint 66 GP-19 listing submission, 2026-09-08 -- Harold asked for this to be backlogged and suggested for the next sprint.
 
+**F202. Per-provider folder defaults -- overall default plus provider overrides for all four folder settings (~6-10h, fully analyzed + planned + tested) Priority 10 (NEW, Sprint 68 MV -- Harold; TARGET SPRINT 69)**
+- Phase: Core App Quality
+- Platform: All (shared provider/adapter layer; ADR-0042 parity, no exception anticipated)
+- **Harold's requirement, 2026-09-09, verbatim intent**: "for all email providers we will need to
+  provide an overall default and a way to have email provider default overrides for **Safe
+  Senders Folder, Deleted Rule Folder, Manual Scan Selected Folders and Background Scan Selected
+  Folders**." Target Sprint 69, "fully analyzed for impact, fully planned, full testing".
+- **The ADR-0042 argument, and it is the reason this is an override mechanism rather than better
+  defaults** (Harold): *"the development team cannot choose or override for the providers what
+  they deem as the defaults (names of folders and how folders are used), so it requires an
+  override by provider."* Each provider decides what its folders are CALLED and what they are
+  FOR. Yahoo calls its spam folder `Bulk`; AOL has BOTH `Bulk` and `Bulk Mail`; Gmail namespaces
+  as `[Gmail]/Spam`. The app must RECORD those facts per provider, not infer them.
+- **How this surfaced**: during F191 Yahoo validation Harold found his spam folder was not being
+  scanned until he added it by hand. He then realised his AOL account had the same history --
+  *"I already scan the AOL junk folders (Bulk and Bulk Mail) and did not realize that was what I
+  updated it to and it wasn't the default."* A defaulting gap he had personally worked around
+  twice without noticing.
+- **Why it matters beyond convenience**: a user who accepts the defaults gets **INBOX only** and
+  their spam folder is never scanned. For a spam filter that is the folder that matters most.
+
+- **AUDIT FIRST -- the current state, verified 2026-09-09, and it is worse than "no defaults"**:
+  - **FIVE hardcoded fallbacks across two files, none provider-aware**:
+    `email_scan_provider.dart:207-208, 298, 687, 704` all fall back to `['INBOX']`;
+    `email_scanner.dart:268` uses `safeSenderFolder ?? 'INBOX'`; `email_scanner.dart:670` uses
+    `deletedRuleFolder ?? 'Trash'`. Plain `'Trash'` is WRONG for Gmail, whose real folder is
+    `[Gmail]/Trash`.
+  - **A partial provider map ALREADY EXISTS** and should be extended rather than duplicated:
+    `junk_folder_config.dart` carries `defaultJunkFolders` + `alternativeFolderNames` for aol,
+    gmail, gmail-imap, yahoo, icloud, outlook. **But it conflates two concepts** -- the `gmail`
+    entry lists `Trash` as a JUNK folder, and Trash is the DELETED destination, not a scan
+    target. Untangling that is part of this card.
+  - **`initialSelectedFolders` silently outranks the canonical pre-select**
+    (`folder_selection_screen.dart:269-277`). Any account with a prior saved selection ignores
+    `PRESELECT_FOLDER_TYPES = {inbox, junk}` entirely -- which is why Bulk showed a
+    "Recommended" badge on an UNCHECKED box. The badge is unconditional (line 469) and
+    independent of the tick, so the UI recommends without selecting.
+
+- **Provider values CONFIRMED BY HAROLD from his live accounts (2026-09-09 screenshots).** These
+  are observed truth, not proposals:
+  - **AOL**: Safe Sender `Inbox`; Deleted Rule `Trash`; Manual + Background selected folders
+    `Inbox, Bulk, Bulk Mail` (AOL genuinely has BOTH Bulk and Bulk Mail).
+  - **Gmail**: Safe Sender `INBOX`; Deleted Rule `[Gmail]/Trash`; Manual + Background selected
+    folders `INBOX, [Gmail]/Spam, Unwanted` (`Unwanted` is a custom Harold folder -- **a USER
+    folder, NOT a Gmail default**; the shipped Gmail default must be `INBOX, [Gmail]/Spam`).
+  - **Yahoo**: Safe Sender `Inbox`; Manual + Background `Inbox, Bulk`.
+  - **iCloud**: unknown -- pending F191 iCloud validation.
+  - **Outlook**: unknown -- provider not shipped (phase 2).
+- **Harold will verify the remaining providers before the card runs**: *"Only changes existing if
+  they need specifics - I can check on them and report before run the card next sprint."* So the
+  card starts with HIS confirmed values per provider; the team does not invent any.
+
+- **Decisions to make AT PLANNING, not during execution** (each is Class-1/Class-2):
+  1. **Do EXISTING accounts adopt new defaults, or only new accounts?** Silently changing what an
+     installed app scans -- especially in a non-read-only mode -- is a different risk from
+     seeding a new account. Recommend: new accounts only, with an explicit opt-in for existing.
+  2. **Scanning a junk folder in delete mode acts on mail the provider already called spam.**
+     Safe in read-only; needs a deliberate decision for delete/move modes.
+  3. **Where does the override live?** Extending `junk_folder_config.dart` into a fuller
+     per-provider folder-defaults map is the obvious path, but it must first separate
+     junk-scan-targets from deleted-destinations.
+  4. **What happens when a provider default names a folder the account does not have?** (An AOL
+     account with no `Bulk Mail`.) Skip silently, or surface it.
+- **Testing**: per-provider unit coverage for all four settings; a gate asserting no NEW
+  hardcoded `['INBOX']` / `'Trash'` fallback re-enters the scan path; and mutation verification
+  that the provider map is actually consulted rather than shadowed by a fallback.
+- Depends on: nothing in code. Harold's per-provider confirmation is an input, not a blocker --
+  the mechanism can be built against the confirmed AOL/Gmail/Yahoo values.
+- Source: Harold, 2026-09-09, Sprint 68 Manual Validation. Explicitly deferred OUT of Sprint 68
+  as a scope change surfaced at a natural break (Decision-Class Taxonomy, class 3).
+
 **F192. Custom IMAP Server support -- build the host-entry UI (~4-6h) Priority 32 (PLANNED FOR SPRINT 69 -- Harold, 2026-09-09, Sprint 68 scope selection; split from F191, genuinely unbuilt)**
 - Phase: Core App Quality
 - Platform: All
