@@ -120,6 +120,11 @@ older account's mailbox may be sitting there under a domain you were not looking
 
 **Choose carefully: Apple does not let you delete or rename this address afterward.**
 
+**Your Apple ID does NOT change when you do this.** Confirmed 2026-09-09: Harold's Apple ID
+remains `kimmeyharold@aol.com` while his new mailbox is `kimmeyharold@icloud.com`. The two
+coexist, and `account.apple.com` keeps showing the AOL address as the account name. **When
+adding the account to this app, use the @icloud.com address, not the Apple ID.**
+
 iCloud+ (paid) is **not** required for a plain @icloud.com address. It is only needed for a
 custom email domain -- and if your address is on a custom domain, letting iCloud+ lapse breaks
 that mail.
