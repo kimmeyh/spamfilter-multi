@@ -560,12 +560,21 @@ F203), and no new mail has arrived since. A near-empty new mailbox proves authen
 folder enumeration and a clean scan -- it does not exercise rule evaluation, and this cell is
 recorded with that limit stated rather than implying Yahoo-grade coverage.
 
-**An unplanned F203 data point, worth more than the cell itself**: Android's empty state reads
-**"No Results Yet -- Run a scan to see email processing results here."** That is honest.
-Windows says **"No emails were found in the selected folders for the specified time period"**
-even when 2 WERE found and skipped. So the two platforms already word this differently, and
-**Android's wording is the correct one**. F203 should adopt it rather than invent new copy --
-this is a Windows-side defect, not a shared one.
+**A CLAIM MADE HERE AND RETRACTED (2026-09-09).** This section briefly recorded that Android's
+empty-state wording was honest where Windows' was misleading, and called it "worth more than
+the cell itself". **It was wrong**, and Harold caught it: *"Not sure this was true or just the
+timing of results pasted were out of order."*
+
+It was the timing. The Android screen reading "No Results Yet" was captured BEFORE that scan
+ran; the Windows screen was captured AFTER. Different states, not different platforms. Both
+strings live in the shared `lib/ui/widgets/empty_state.dart`, and
+`results_display_screen.dart:791-797` selects between them with one shared conditional --
+never-scanned versus scanned-and-found-nothing. Android renders identical text in identical
+state.
+
+Kept rather than deleted because the error matters more than the finding did: it was the
+fourth time this session I resolved an ambiguous screenshot toward the more interesting
+conclusion instead of reading the code. See F203 for the corrected, SHARED scope.
 
 ### Cells NOT run, and why that is fine
 
