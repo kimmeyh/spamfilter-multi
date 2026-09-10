@@ -100,7 +100,20 @@ void main() {
       // header explaining where the content came from, and that header
       // legitimately cites the identifiers -- it is the audit trail, and it is
       // not pasted into any console.
-      final content = f.readAsStringSync();
+      // NORMALISE LINE ENDINGS FIRST.
+      //
+      // This searched for '\n---\n' against the raw file, which cannot match
+      // '\r\n---\r\n'. Every file in this repo is on Windows, so any tool that
+      // rewrites one -- an editor, a Python script, git's autocrlf -- can flip
+      // it to CRLF and make this gate report "no --- separator" about a file
+      // whose separator is plainly there on line 10.
+      //
+      // Hit on 2026-09-09, one day after this gate was written: a Python
+      // rewrite of the release notes converted them to CRLF and the gate failed
+      // with a message pointing at a missing rule rather than at line endings.
+      // A gate that fails for a reason its message does not name is worse than
+      // no gate, because the reader debugs the wrong thing.
+      final content = f.readAsStringSync().replaceAll('\r\n', '\n');
       final sep = content.indexOf('\n---\n');
       expect(sep, greaterThan(-1),
           reason: 'each notes file separates its derivation header from the '

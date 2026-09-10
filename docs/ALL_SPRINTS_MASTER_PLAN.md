@@ -397,7 +397,191 @@ All incomplete items in relative priority order. Priority in increments of 10; i
 - Depends on: nothing in code. Depends on Harold having (or creating) a Yahoo and an iCloud account to validate against.
 - Source: Sprint 66 GP-19 listing submission, 2026-09-08 -- Harold asked for this to be backlogged and suggested for the next sprint.
 
-**F192. Custom IMAP Server support -- build the host-entry UI (~4-6h) Priority 32 (NEW, Sprint 66 GP-19 -- split from F191; genuinely unbuilt)**
+**F202. Per-provider folder defaults -- overall default plus provider overrides for all four folder settings (~6-10h, fully analyzed + planned + tested) Priority 10 (NEW, Sprint 68 MV -- Harold; TARGET SPRINT 69)**
+- Phase: Core App Quality
+- Platform: All (shared provider/adapter layer; ADR-0042 parity, no exception anticipated)
+- **Harold's requirement, 2026-09-09, verbatim intent**: "for all email providers we will need to
+  provide an overall default and a way to have email provider default overrides for **Safe
+  Senders Folder, Deleted Rule Folder, Manual Scan Selected Folders and Background Scan Selected
+  Folders**." Target Sprint 69, "fully analyzed for impact, fully planned, full testing".
+- **The ADR-0042 argument, and it is the reason this is an override mechanism rather than better
+  defaults** (Harold): *"the development team cannot choose or override for the providers what
+  they deem as the defaults (names of folders and how folders are used), so it requires an
+  override by provider."* Each provider decides what its folders are CALLED and what they are
+  FOR. Yahoo calls its spam folder `Bulk`; AOL has BOTH `Bulk` and `Bulk Mail`; Gmail namespaces
+  as `[Gmail]/Spam`. The app must RECORD those facts per provider, not infer them.
+- **How this surfaced**: during F191 Yahoo validation Harold found his spam folder was not being
+  scanned until he added it by hand. He then realised his AOL account had the same history --
+  *"I already scan the AOL junk folders (Bulk and Bulk Mail) and did not realize that was what I
+  updated it to and it wasn't the default."* A defaulting gap he had personally worked around
+  twice without noticing.
+- **Why it matters beyond convenience**: a user who accepts the defaults gets **INBOX only** and
+  their spam folder is never scanned. For a spam filter that is the folder that matters most.
+
+- **AUDIT FIRST -- the current state, verified 2026-09-09, and it is worse than "no defaults"**:
+  - **FIVE hardcoded fallbacks across two files, none provider-aware**:
+    `email_scan_provider.dart:207-208, 298, 687, 704` all fall back to `['INBOX']`;
+    `email_scanner.dart:268` uses `safeSenderFolder ?? 'INBOX'`; `email_scanner.dart:670` uses
+    `deletedRuleFolder ?? 'Trash'`. Plain `'Trash'` is WRONG for Gmail, whose real folder is
+    `[Gmail]/Trash`.
+  - **A partial provider map ALREADY EXISTS** and should be extended rather than duplicated:
+    `junk_folder_config.dart` carries `defaultJunkFolders` + `alternativeFolderNames` for aol,
+    gmail, gmail-imap, yahoo, icloud, outlook. **But it conflates two concepts** -- the `gmail`
+    entry lists `Trash` as a JUNK folder, and Trash is the DELETED destination, not a scan
+    target. Untangling that is part of this card.
+  - **`initialSelectedFolders` silently outranks the canonical pre-select**
+    (`folder_selection_screen.dart:269-277`). Any account with a prior saved selection ignores
+    `PRESELECT_FOLDER_TYPES = {inbox, junk}` entirely -- which is why Bulk showed a
+    "Recommended" badge on an UNCHECKED box. The badge is unconditional (line 469) and
+    independent of the tick, so the UI recommends without selecting.
+
+- **Provider values CONFIRMED BY HAROLD from his live accounts (2026-09-09 screenshots).** These
+  are observed truth, not proposals:
+  - **AOL**: Safe Sender `Inbox`; Deleted Rule `Trash`; Manual + Background selected folders
+    `Inbox, Bulk, Bulk Mail` (AOL genuinely has BOTH Bulk and Bulk Mail).
+  - **Gmail**: Safe Sender `INBOX`; Deleted Rule `[Gmail]/Trash`; Manual + Background selected
+    folders `INBOX, [Gmail]/Spam, Unwanted`. **All three ship as the Gmail default** --
+    corrected by Harold 2026-09-09: *"unwanted is a common gmail folder"*, not his personal
+    one. My first draft wrongly excluded it as a user folder.
+  - **Yahoo**: Safe Sender `Inbox`; Manual + Background `Inbox, Bulk`.
+  - **iCloud**: pending Harold's values -- but a LIVE EXAMPLE OF THE DEFECT was captured while
+    he added the account on 2026-09-09, and it is the best evidence this card has. A
+    **brand-new** iCloud mailbox has exactly **ONE folder: INBOX**. iCloud does not create
+    Junk, Trash, Sent or Archive until something uses them. Both folder pickers correctly read
+    "Select one folder (1 available)".
+    **Yet Account Settings displayed `Deleted Rule Folder: Trash (default)`** -- the app
+    defaulting to a folder that DOES NOT EXIST on that account. That is
+    `email_scanner.dart:670`'s hardcoded `deletedRuleFolder ?? 'Trash'` firing on a real
+    account, and `junk_folder_config.dart:84` compounds it by listing `['Junk', 'Trash']` for
+    iCloud -- neither of which exists on a new mailbox, and `Trash` being a DELETED
+    destination miscategorised as a junk scan target.
+    **UPDATE, same session**: Harold sent a test message to the account and deleted one. The
+    deleted folder materialised as **`Deleted Messages`** -- NOT `Trash`. The picker now reads
+    "2 available" (INBOX + Deleted Messages) and the app classified it correctly (trash icon,
+    "Deleted items"). **So the hardcoded `?? 'Trash'` is not merely absent on a new mailbox --
+    it is WRONG FOR ICLOUD PERMANENTLY**, and `junk_folder_config.dart:84`'s
+    `['Junk', 'Trash']` is wrong on both entries. Apple does NOT document its IMAP folder names
+    (checked support.apple.com/en-us/102525, which covers server/port/SSL only), so the live
+    account is the only authority -- exactly the ADR-0042 argument this card rests on.
+    **Confirmed iCloud value: Deleted Rule Folder = `Deleted Messages`.** Junk folder name still
+    unknown; it has not materialised yet.
+    **THE PRE-SELECT PATH VERIFIED CLEAN, on the one account that could prove it.** Harold's
+    `Select Folders to Scan` on this NEW account shows INBOX tagged "Recommended" and
+    PRE-CHECKED, with `Deleted Messages` correctly neither. A new account has no saved
+    selection, so `initialSelectedFolders` is null and `PRESELECT_FOLDER_TYPES = {inbox, junk}`
+    actually runs -- which is what the Yahoo screenshots could NOT show, because that account
+    already had a saved selection shadowing it. The pre-select works; a prior selection is what
+    disables it.
+    **And it sharpens the card again**: no folder here classifies as junk (iCloud has not made
+    one), so the recommendation is INBOX alone. Correct for today's mailbox -- but once a junk
+    folder DOES appear, the saved selection will shadow the pre-select and that user never
+    scans it. That interaction, not just the default values, is what F202 must resolve.
+    **This is the whole card in one screenshot**: a hardcoded default, provider-inaccurate,
+    naming a folder that is not there. And per the missing-folder finding above it would land
+    in `errorCount` rather than being skipped silently. Do not guess iCloud's real values --
+    Harold supplies them once the folders materialise.
+  - **Outlook**: unknown -- provider not shipped (phase 2).
+- **Harold will verify the remaining providers before the card runs**: *"Only changes existing if
+  they need specifics - I can check on them and report before run the card next sprint."* So the
+  card starts with HIS confirmed values per provider; the team does not invent any.
+
+- **DECIDED BY HAROLD, 2026-09-09 -- these are no longer open questions**:
+  1. **Existing accounts: NO migration, NO opt-in prompt.** *"It is a default and should only
+     apply to new users after implemented. no opt-in for existing as they can select the folders
+     they want through settings."* Simplest correct answer, and it removes the risk that
+     silently changing what an installed app scans in a non-read-only mode surprises someone.
+     Existing accounts keep their saved selection; Settings is the path for changing it.
+  2. **Scale context**: *"There are no new account (max 2 as I am one on both platforms)."* The
+     real-world blast radius today is Harold's own accounts. That lowers the migration risk to
+     near zero and reinforces decision 1 -- but the mechanism still has to be right for the
+     users who follow.
+  3. **A default naming a folder the account lacks, or an empty folder, is NOT an error.**
+     *"if any of the default folders do not exist or are empty, the scan just continues (and it
+     should as it is not an error if the folder is empty or does not exist)."* The user can then
+     select and unselect whatever the picker offers, since it enumerates folders live.
+- **VERIFIED against the code at card-writing time (2026-09-09), because decision 3 is the one
+  that could bite**:
+  - **EMPTY folder -- already behaves exactly as required.** `email_scanner.dart:454` logs
+    "0 messages", reports "No emails found ... continuing...", and the scan proceeds. Not an
+    error. No change needed.
+  - **MISSING folder -- the scan DOES continue** (`email_scanner.dart:470-481`, then the loop
+    moves to the next folder), so Harold's requirement is met. **BUT** F174 (Sprint 62) routes
+    the exception through `recordFolderFetchError`, so it lands in `errorCount`. **A folder that
+    simply does not exist is currently COUNTED AS AN ERROR even though nothing failed.**
+  - That is deliberate -- F174 exists precisely so a genuine fetch failure cannot vanish into an
+    "empty folder" reading -- so this card must not simply revert it. **The work is to
+    distinguish "folder does not exist" (expected, silent) from "folder failed to fetch"
+    (a real error worth surfacing).** Without that, shipping a default naming a folder some
+    accounts lack -- AOL `Bulk Mail`, say -- produces a phantom error on every scan for those
+    users, which is exactly the kind of noise that trains people to ignore error counts.
+- **Testing**: per-provider unit coverage for all four settings; a gate asserting no NEW
+  hardcoded `['INBOX']` / `'Trash'` fallback re-enters the scan path; and mutation verification
+  that the provider map is actually consulted rather than shadowed by a fallback.
+- Depends on: nothing in code. Harold's per-provider confirmation is an input, not a blocker --
+  the mechanism can be built against the confirmed AOL/Gmail/Yahoo values.
+- Source: Harold, 2026-09-09, Sprint 68 Manual Validation. Explicitly deferred OUT of Sprint 68
+  as a scope change surfaced at a natural break (Decision-Class Taxonomy, class 3).
+
+**F203. "Found N, evaluated 0" is unexplainable to the user -- surface the safe-sender-already-in-target skip (~1-2h) Priority 22 (NEW, Sprint 68 MV -- Harold)**
+- Phase: Core App Quality
+- Platform: All (shared scanner + results UI)
+- **Harold, 2026-09-09, looking at a real scan**: *"Found 2, but 'no rules' 0?"* The Scan
+  History row read `Found: 2 | Processed: 0 | No Rule: 0 | Errors: 0`, and the Results screen
+  said **"No emails were found in the selected folders for the specified time period."** Those
+  two statements contradict each other on screen.
+- **NOT A BUG in the scan. The behavior is correct** -- diagnosed from
+  `dev_live_scan_v0.14.2.log` and the source, not guessed:
+  - `Step 4: Folder "INBOX" returned 2 messages` -- the fetch worked.
+  - `Step 6a COMPLETE: evaluated=0` -- neither reached the evaluated list.
+  - Cause: `email_scanner.dart:330`, the ONLY `continue` that bypasses
+    `evaluatedEmails.add`. Both messages matched a SAFE SENDER and were already sitting in
+    INBOX, which is this account's Safe Sender target folder, so
+    `shouldSkipSafeSenderAlreadyInTarget` skipped them "entirely -- do not count, do not
+    display, do not process. It is already where it belongs."
+  - With 623 safe senders loaded, a test message and an Apple welcome mail matching is
+    unremarkable.
+- **The defect is that the user cannot possibly know this.** Every counter is individually
+  truthful (Found = fetched; Processed/No Rule = needed action) but the combination reads as a
+  malfunction, and the empty-state text actively asserts something false -- emails WERE found.
+  The skip is logged at debug level only. Harold had to ask, and answering it required reading
+  the scan log and the scanner source.
+- **Scope**: (a) count the skips and surface them, e.g. a `Safe (already filed): N` chip
+  alongside the existing counters; (b) fix the empty-state text so it distinguishes "no emails
+  fetched" from "nothing required action"; (c) consider whether Scan History should carry the
+  same number, since that row is where the contradiction is starkest.
+- **CORRECTION to a side finding first recorded here (2026-09-09)**: I read
+  `Step 2.5: deletedRuleFolder=Deleted Messages` in the scan log as the SCAN resolving the real
+  folder at runtime, and concluded the settings screen's `Trash (default)` was a harmless
+  display-layer default. **Harold had already changed the setting to `Deleted Messages` before
+  running the scan.** So that log line reflects his SAVED VALUE, not runtime resolution.
+  **There is no evidence the scan resolves the folder itself**, and the hardcoded
+  `?? 'Trash'` at `email_scanner.dart:670` remains unproven-benign rather than
+  proven-harmless. F202's blast radius is NOT narrowed. Same error class as the folder-picker
+  screenshots: reading a post-change state as a pre-change one.
+- **PLATFORM SCOPE: this is a SHARED defect. There is no platform difference.** Recorded
+  because I claimed one twice and was wrong both times, and Harold caught it: *"Not sure this
+  was true or just the timing of results pasted were out of order."* It was the timing.
+  The Android screenshot reading "No Results Yet" was the **pre-scan** screen (11:25, before
+  the run); Windows' "No emails were found" was a **post-scan** screen. Comparing them was not
+  like-for-like.
+  Traced to the source rather than to more screenshots: **both strings live in
+  `lib/ui/widgets/empty_state.dart`** -- `NoResultsEmptyState` ("No Results Yet") and
+  `ScanCompleteNoEmailsEmptyState` ("No emails were found...") -- and
+  `results_display_screen.dart:791-797` picks between them with ONE shared conditional:
+  never-scanned gets the former, scanned-and-found-nothing gets the latter. Shared widget,
+  shared chain, identical on both platforms. **Android would show exactly the same text in
+  exactly the same state.**
+  So the whole card is a SHARED fix: both the misleading post-scan message and the missing
+  `Safe (already filed): N` disclosure. **Do NOT scope any part of this as Windows-only** --
+  that would ship a half fix and leave Android to surface the same confusion.
+- **Watch item**: do NOT "fix" this by counting skipped emails as Processed. They deliberately
+  are not processed, and the Sprint 58 F151d Demo Mode exception in
+  `shouldSkipSafeSenderAlreadyInTarget` shows this path already has subtle cases. The fix is
+  DISCLOSURE, not recounting.
+- Depends on: nothing. Independent of F202, though both surfaced in the same iCloud session.
+- Source: Harold, 2026-09-09, Sprint 68 Manual Validation (F191 iCloud/Windows cell).
+
+**F192. Custom IMAP Server support -- build the host-entry UI (~4-6h) Priority 32 (PLANNED FOR SPRINT 69 -- Harold, 2026-09-09, Sprint 68 scope selection; split from F191, genuinely unbuilt)**
 - Phase: Core App Quality
 - Platform: All
 - **Deliberately SEPARATE from F191, because it is not the same kind of work.** Yahoo and iCloud need a gate opened; Custom IMAP needs a feature built. `GenericIMAPAdapter.custom()` defaults `imapHost: ''` -- it expects the host, port and TLS flag to be supplied by a caller, and no caller supplies them: `grep -rn "imapHost" lib/ui/` returns ZERO matches. There is no screen anywhere that collects a server address, so flipping `imap` to phase 1 would ship a provider that cannot connect to anything.
@@ -407,7 +591,7 @@ All incomplete items in relative priority order. Priority in increments of 10; i
 - Depends on: nothing. Independent of F191, though shipping both together would let the Play listing be rewritten once instead of twice.
 - Source: Sprint 66 GP-19 listing submission, 2026-09-08.
 
-**F165. Cross-device rules-DB sharing -- user cloud storage (iCloud/OneDrive/Box/Google Drive) exploration + hosted-tier option (~half-day exploration) Priority 30 (NEW, Sprint 60 MV -- Harold; product direction)**
+**F165. Cross-device rules-DB sharing -- user cloud storage (iCloud/OneDrive/Box/Google Drive) exploration + hosted-tier option (~half-day exploration) Priority HOLD (MOVED TO HOLD by Harold, 2026-09-09, Sprint 68 scope selection)**
 - Phase: Product direction / architecture exploration
 - Platform: All
 - Direction (Harold, 2026-08-16): long-term, the recommended deployment is a PHONE (Android/iPhone) doing the periodic background scans instead of the Windows app -- which makes the rules DB per-device divergence a real problem. Explore letting the user share their rules DB between devices via THEIR OWN cloud storage (iCloud / OneDrive / Box / Google Drive), e.g. exported-snapshot sync or file-provider integration. Additionally evaluate a hosted-sync option as a paid tier (~$4/year, non-free app option) -- pricing/product decision stays with Harold.
@@ -472,7 +656,78 @@ Recorded sequencing honored (see 'Recommended Sequencing' in the GP section belo
 - Depends on: nothing. Reads the repository and its history; changes nothing without approval.
 - Source: Harold, 2026-09-07. Made a periodic template at his direction, alongside F70 (Security), F71 (Architecture), F130 (Process-Docs), F152 (First-Run) and F173 (Test Coverage).
 
-**GP-4. Gmail API OAuth Verification / CASA -- THE SUBMISSION ITSELF (~40-80h) Priority 60 (PREP DONE Sprint 66; submission still gated by its trigger)**
+**F200. Web Property Deep Dive -- bring myemailspamfilter.com and GitHub Pages up to date for BOTH stores (~4-8h, unbounded discovery) Priority 20**
+- Phase: Android / Google Play Store Readiness (web property; serves both stores)
+- Platform: All (the site represents Windows Desktop AND Android)
+- **Goal (Harold, 2026-09-09)**: the site is a landing page for the MyEmailSpamFilter apps on
+  BOTH stores, the host for the privacy policy, and the domain behind a contact email. Make it
+  **useful to the users of the apps**. It is NOT a company-verification asset -- that question
+  is closed (`docs/LEGAL_ENTITY.md`).
+- **Framing (Harold, 2026-09-09)**: the site and its GitHub Pages content are **old,
+  Microsoft-Store-centric, and expected to be out of date -- that is OK and is not a defect
+  report.** It was built before the Play launch and before the LLC. This item is a **deep
+  dive** to bring it current, not a patch list. Discovery is expected to exceed the findings
+  below; treat those as the seed, not the scope.
+- **ONE EXCEPTION to "staleness is OK", and it should not wait for this item to be scheduled**:
+  `docs/index.html:235` asserts email content "is processed in-memory only and **is never
+  persisted to disk**." That is not stale, it is **false** -- `PRIVACY_POLICY.md` discloses
+  that scan history stores, per evaluated message, sender address, subject, folder, the action
+  taken, and a body preview of at most 100 characters. The rest of the page misleads by
+  OMISSION (no Play, no LLC, wrong links); this one line misleads by ASSERTION, about data
+  handling, on a page the Play listing cites. Fix it standalone if this item is not scheduled
+  promptly.
+- **Seed findings from the 2026-09-09 inspection** (starting points, not the whole job):
+  1. The false persistence claim above.
+  2. **Two live privacy policies.** `/privacy` (`docs/privacy/index.html`) is dated **March 20,
+     2026** (Sprint 24, hand-written HTML); `/legal/PRIVACY_POLICY.html` is the **August 28,
+     2026** rewrite rendered from Markdown. The landing page links the STALE one; the Play
+     listing and the app cite the CURRENT one.
+  3. The live August policy still reads `Kimmey Consulting - Ohio` (F199 updated the Markdown
+     on the sprint branch; Pages serves `main`). Re-verify after merge.
+  4. `docs/privacy/` and `docs/website/privacy/` are **byte-identical duplicates**;
+     `docs/website/` appears to be a second unused copy of the whole site (CNAME, index,
+     privacy, delete).
+  5. Content is Windows/Microsoft-Store-centric throughout -- no Google Play presence, no
+     store badges or links, "Supported Platforms" lists Android but the page does not present
+     it as shipping.
+  6. Publisher is unnamed and there is no contact information anywhere, while the legal
+     documents both name Kimmey Consulting LLC and give a contact address.
+- **Root cause worth fixing, not just its symptoms**: the legal documents are MARKDOWN that
+  Pages renders, so they track their source automatically. The landing page and `/privacy` are
+  HAND-WRITTEN HTML that nothing regenerates and no gate inspects.
+  `test/policy/legal_docs_test.dart` validates the Markdown and **does not look at the served
+  site at all** (verified by grep, 2026-09-09). That asymmetry is why a corrected policy and a
+  contradicting landing page coexisted for ~6 months. A deep dive that fixes the text without
+  closing this gap will be re-run against the same drift later.
+- **Method**: (a) inventory everything actually served under the domain -- both directory
+  trees, every page, every internal link, and what each URL resolves to LIVE, not what the repo
+  suggests; (b) establish which pages are canonical and DELETE the rest, since a second privacy
+  policy has no reason to exist; (c) audit every factual and privacy claim against
+  `PRIVACY_POLICY.md`, `TERMS.md` and the shipped app behavior; (d) bring content current for
+  both stores -- Play presence, store links, platform status, publisher identity, contact;
+  (e) close the gate gap so a served claim contradicting the policy fails the build.
+- **Also wanted, low effort, no code**: a contact email on the domain
+  (`<something>@myemailspamfilter.com`), replacing the Gmail address the legal documents
+  currently use. Registrar/DNS errand; can happen independently at any time.
+- **Acceptance criteria** (all of the following; the last is one criterion among them, not a
+  substitute for the rest):
+  - Every URL the site serves is inventoried, and each is either current or deleted.
+  - No page makes a claim contradicting `PRIVACY_POLICY.md` or the actual app behavior.
+  - Exactly ONE privacy policy and ONE account-deletion page are reachable, and every internal
+    link points at them.
+  - The site presents BOTH stores accurately.
+  - Publisher (Kimmey Consulting LLC) and contact information are present.
+  - A gate covers served-site claims, so this class of drift fails the build rather than
+    waiting for a human to notice.
+  - **As a final criterion (Harold, 2026-09-09): F201 -- the periodic re-review template
+    below -- exists as a HOLD backlog item.** The deep dive is one-shot; the drift is
+    continuous. This is the LAST criterion in sequence, not the only one that matters: the
+    six above are each independently required, and creating F201 does not discharge them.
+- Depends on: nothing. Pages serves `main`, so nothing is live until merge.
+- Source: Harold, 2026-09-09. Originally filed as a company-verification question; that
+  premise closed the same day, and he redirected it to a deep dive with a periodic companion.
+
+**GP-4. Gmail API OAuth Verification / CASA -- THE SUBMISSION ITSELF (~40-80h) Priority HOLD (MOVED TO HOLD by Harold, 2026-09-09, Sprint 68 scope selection; PREP DONE Sprint 66, submission remains trigger-gated at 2,500+ users or $5K/yr)**
 - Phase: Android Google Play Store Readiness
 - Platform: Android
 - Trigger: 2,500+ users or $5K/yr revenue. **Do NOT set the OAuth consent screen to "In production" before verification completes** -- publishing while unverified caps the project at 100 new users FOR ITS LIFETIME, and that cap cannot be raised or reset.
@@ -502,27 +757,37 @@ _(No active Core App candidates -- F96 shipped in Sprint 43.)_
 
 ### Process
 
-**F194. Background scan hangs on Android -- "running" forever with every counter at zero (~60-120m) Priority 2 (NEW, Sprint 66 Play closed-test self-testing, 2026-09-08 -- Harold on a Galaxy S24+)**
-- Phase: Core App Quality
-- Platform: Android (Windows behaviour unverified -- confirm before assuming it is Android-only, per ADR-0042)
-- **Symptom, from the real Play-installed 0.14.1 build on Harold's S24+**: Settings > Background, read-only, notifications configured, scan started. At 1 minute: no completion notification, Scan History shows the scan RUNNING. At 4 minutes: still running, and **every counter is zero** -- processed 0, deleted 0, moved 0, safe 0, no rule 0, errors 0.
-- **Why zeroes matter more than the duration.** A slow scan shows partial progress. Zero processed after 4 minutes means the work never STARTED -- the scan was created and recorded as running, then nothing ran. That is a different defect from "slow", and it points at the WorkManager task never firing, or firing and failing before the first fetch without recording an error.
-- **Context that makes this a priority-2**: the same session's MANUAL scans on the same accounts worked perfectly -- 176 emails in 26s, then 19s on rescan. So credentials, IMAP, and the rule engine are all fine. The defect is in the background path specifically, which is the reason a user keeps the app installed, and it is what every closed-test tester will exercise over 14 days.
-- **Known-adjacent history, check FIRST before investigating**: `project_workmanager_retry_persistence` (Sprint 61) -- WorkManager re-fires killed tasks at EVERY launch until success, and the recovery is to clear `no_backup/androidx.work.workdb*` while force-stopped. Also Sprint 61's finding that Manual and Background tabs carry SEPARATE Scan Range values; Harold set both, so an unset range is NOT the explanation here.
-- **First diagnostic, cheapest**: the Background tab's own "Test Background Scan" button runs the scan immediately rather than waiting for the schedule. If Test completes and writes history, the scan logic is sound and the defect is in scheduling/wake-up. If Test also hangs, the defect is in the scan path itself. This one observation halves the search space and was not available when the report came in (no device attached).
-- Also needed: `adb logcat` from a device with USB debugging while a background scan is pending, and the background-scan log file the app writes.
-- Depends on: nothing.
-- Source: Harold's own closed-test walkthrough, 2026-09-08.
-
-**F195. Account header box is nearly unreadable -- contrast defect (~20-40m) Priority 22 (NEW, Sprint 66 Play closed-test self-testing, 2026-09-08)**
-- Phase: Core App Quality
-- Platform: Android observed; **check Windows too** -- if the widget is shared, the defect is shared (ADR-0042 parity), and a platform exception must be declared if the fix genuinely cannot be common.
-- Harold, on the real device: *"settings > Manual and Background tabs (box at the top with email address in it is almost unreadable due to colors)"*.
-- The affected element is the account/email header at the top of the Settings Manual Scan and Background tabs. Foreground and background colours are too close in value to read comfortably.
-- **Why this is worth more than its size suggests**: it is on a screen every closed-test tester visits (Background is where they enable the thing the app is for), and low contrast reads as unfinished to a Play reviewer. It may also be an accessibility failure -- check the computed contrast ratio against WCAG AA (4.5:1 for normal text) rather than judging by eye, and fix to the standard rather than to "looks better".
-- Scope note: verify whether the same header widget is reused on other screens before changing it; a colour fixed in one place and not its siblings is the recurring shape of this project's UI defects.
-- Depends on: nothing.
-- Source: Harold's own closed-test walkthrough, 2026-09-08.
+**F199. Rename the publisher to "Kimmey Consulting LLC" everywhere it appears (~60-100m) Priority 8 (Sprint 68 -- SUBSTANTIALLY DELIVERED 2026-09-09; ONE console item remains)**
+- Phase: Release Readiness
+- Platform: All (both stores + the repo)
+- **DONE -- repo (commit `8558aa3`)**: 10 replacements across 7 live files -- `pubspec.yaml`
+  `msix_config.publisher_display_name`, `PRIVACY_POLICY.md`, `TERMS.md`,
+  `STORE_LISTING_ASSETS.md`, `LISTING_COPY.md`, `GOOGLE_PLAY_ACCOUNT_SETUP.md`,
+  `STORE_RELEASE_PROCESS.md`.
+- **DONE -- Play developer name** (2026-09-09, Developer account -> About you). Console reads
+  `Kimmey Consulting LLC`. No friction, and it went through WHILE 0.14.2 was in review without
+  disturbing the release or the closed test -- the caution about waiting proved unnecessary.
+- **DONE -- Partner Center Additional information** (Copyright / Developed by), folded into
+  Submission 25 rather than paying a separate listing-only certification pass.
+- **STILL OPEN -- Partner Center publisher display name.** Currently `Kimmey Consulting - Ohio`.
+  **Microsoft's own documentation contradicts itself**: the Windows Store FAQ says publisher
+  display name "cannot be changed after registration", while the Partner Center account doc
+  says you can "select the Update link to change your contact info, such as publisher display
+  name" -- and the console UI does show that link. Unresolvable from documentation; ask
+  support (https://aka.ms/windowsdevelopersupport). See `docs/LEGAL_ENTITY.md`.
+- **Deliberately NOT changed, and the distinctions are the durable part**: `msix_config.publisher`
+  (`CN=84EA8722-...`) is the Partner-Center-assigned GUID, not a name -- changing it breaks
+  package identity and every installed copy's upgrade path. Sprint docs and ADRs keep the old
+  name because they are dated records. `GOOGLE_PLAY_ACCOUNT_SETUP.md`'s "Is this a government
+  app?" row keeps the SUBMITTED name: a declaration already filed under the old name stays
+  under it (this one was caught only after being wrongly rewritten -- see `5865794`).
+- **Legal precondition RESOLVED**: Harold confirmed the LLC is a one-person entity (Harold
+  Kimmey), so the account holder does not change; this is a display-name edit, not an account
+  restructuring. Ohio LLC doc. 202624702988, effective 2026-09-05 -- see `docs/LEGAL_ENTITY.md`.
+- **Account type question CLOSED**: both stores stay Personal/Individual. Company/Organization
+  conversion was researched against both vendors' documentation and declined.
+- Depends on: nothing. The remaining item is gated on a Microsoft support answer.
+- Source: Harold, 2026-09-09.
 
 **F198. Forcing function for the numbered-question format (~45-75m) Priority 18 (NEW, Sprint 67 retro IMP-4 -- Harold: backlog, TENTATIVELY next sprint)**
 - Phase: Process
@@ -544,53 +809,6 @@ _(No active Core App candidates -- F96 shipped in Sprint 43.)_
 - Also worth doing while in here: confirm the pattern cannot re-enter through `AppTheme` itself, and consider whether `ColorScheme.fromSeed` guarantees the container/onContainer pairs the fixes now rely on (measured: `AppTheme.darkTheme` 7.20:1, `AppTheme.lightTheme` 13.26:1 -- both pass, but that is a measurement, not a guarantee anyone documented).
 - Depends on: nothing. F195 and the Scan History fix are the worked examples.
 - Source: F195 sibling check, 2026-09-08; scope corrected after the Sprint 67 5.1.1 review challenged the count, 2026-09-09.
-
-**F196. Per-store release notes as a release deliverable, not an afterthought (~50-80m) Priority 14 (NEW, Sprint 67 -- Harold, 2026-09-08)**
-- Phase: Process
-- Platform: All (the mechanism is shared; the OUTPUT is deliberately per-store)
-- Harold: *"when providing new app updates to be updated for Android Google Play and Microsoft Store, provide specific release notes content for each when doing them (Microsoft Store with release notes applicable for Microsoft Store version) and release notes as applicable for the Google Play Store."*
-- **The problem this solves, observed twice in Sprint 66.** Release notes are currently improvised at submission time from whatever `[Unreleased]` happens to contain, and `[Unreleased]` is a single undifferentiated list. Both submissions this sprint exposed the cost: the Play closed-test notes were drafted from scratch under a 500-char limit discovered mid-write (three re-measurements to fit), and Submission 23's Windows notes had no obvious content at all because nine of ten CHANGELOG entries were Google Play work that means nothing to a Store customer. Neither store's users were served by the other's changelog.
-- **This is NOT "write two changelogs".** The repo keeps ONE `CHANGELOG.md` -- that stays the engineering record. What is missing is the derivation step: given a version, produce the text each store should show ITS users, omitting what does not apply to them, within that store's limits.
-- Scope: a documented procedure (and a gate where mechanisable) that, at release time, produces `RELEASE_NOTES_<version>_windows.md` and `RELEASE_NOTES_<version>_play.md`. Must handle the version-in-sync-but-not-submitted case (see the versioning ADR item below): a version may ship to one store and not the other, so a store's notes must cover EVERY change since the last version THAT STORE received, not since the last version.
-- Known limits to encode: Play caps release notes at **500 characters per language** and requires `<en-US>` tags; the Microsoft Store field is "What's new in this version" under Store listings and only appears once a package is attached. Both were learned the hard way in Sprint 66 and are recorded in `docs/GOOGLE_PLAY_ACCOUNT_SETUP.md` and `docs/STORE_RELEASE_PROCESS.md`.
-- **Cross-platform parity note (ADR-0042)**: the notes DIFFER per store by design, and that is not a parity violation -- the app's behaviour is identical, only the audience differs. What must stay identical is the underlying claim: a feature described to Play users must not be described differently to Store users, and neither may describe something the other platform lacks without saying so.
-- Also fold in the versioning question Harold raised 2026-09-08 (keep all platforms on one version even when a release applies to only one) -- currently decided in conversation only, which is exactly how a decision gets re-litigated in six months. An ADR is the right home.
-- Depends on: nothing.
-- Source: Harold, 2026-09-08, at Sprint 67 scope selection.
-
-**F193. Gate Phase 5 evidence at the MANUAL-VALIDATION boundary, not at close-out (~45-70m) Priority 12 (NEW, Sprint 66 close-out -- Harold: "Need a permanent, will never happen again, fix")**
-- Phase: Process
-- Platform: N/A
-- **What happened.** Sprint 66 reached Manual Validation, Harold validated on real devices, the sprint was closed out, the retrospective was written, improvements were applied, and PR #389 was marked ready -- all with **5.1.1 (automated code review) never run**. `verify-closeout-complete.ps1` caught it, correctly, at the Stop hook. But it caught it at CLOSE-OUT, which is far too late: SPRINT_CHECKLIST.md requires all three Phase 5 evidence artifacts (5.1.1 review, 5.1.2 F-PRECHECK, 5.1.5 WinWright sweep) **BEFORE** Manual Validation is declared started, precisely so Harold never validates unreviewed code. He did.
-- **Why the existing control did not prevent it.** The check is real and it works -- it is simply wired to the wrong event. Hook check 3d fires on a close-out CLAIM. Between "MV starts" and "close-out claimed" sits the entire sprint: Harold's device testing, the retrospective, the improvements. The hook is a smoke alarm in the driveway.
-- **Why "walk the checklist more carefully" is NOT the fix.** In the very turn that missed this, I DID walk the close-out checklist line by line and reported three real findings from it (uncommitted `0*` file, missing CODING_VELOCITY rows, open issues). I had the document open and still did not verify Phase 5's own evidence, because I was checking close-out items and 5.1.1 is a Phase 5 item. **A self-audit finds what the auditor is looking for.** Any fix resting on my diligence has already been falsified once here and once in Sprint 62.
-- **The specific risk this sprint, which makes it concrete rather than procedural**: GP-4 removed two OAuth scopes from live Gmail authentication. A surviving call site needing `gmail.send` or `gmail.readonly` would 403 at runtime for every Gmail user, and the scope-parity gate cannot see it -- that gate only proves the two DECLARATIONS match each other, not that the app stays within them. This is exactly the class the automated review is supposed to catch before a human validates.
-- **Direction (design at sprint planning, not prescribed here)**: make the MV boundary itself the enforcement point rather than adding a fourth soft reminder. Candidates worth evaluating: a hook that fails any attempt to record MV-started state (`sprint_status.json` `status` containing "MANUAL VALIDATION") while the plan lacks the three markers; folding the check into the existing `sprint-auto-advance.ps1`, which already reads that field for its Gate 1c upper bound and is therefore already watching the exact transition; or a Phase 5 completion command that writes the evidence block and refuses to write a partial one. **Explicitly NOT another prose rule** -- CLAUDE.md already carries "Don't report a checklist section as complete without OPENING the checklist", and that rule was followed and still failed here.
-- **Acceptance**: the mechanism must FAIL when MV is declared with any of the three markers absent, verified by mutation (remove a marker, confirm red; restore, confirm green) -- not by inspection. It must not fire on sprints before 63, which predate the artifact conventions, per the same false-positive discipline already documented in the hook.
-- Depends on: nothing. Self-contained process work.
-- Source: Sprint 66 close-out, 2026-09-08. Harold: *"Need a permanent, will never happen again, fix... Add to backlog and target for next sprint."*
-
-_(F100 shipped in Sprint 43. F-VERSION-DERIVE shipped Sprint 49 -- see SPRINT_49_SUMMARY.md. F-PRECHECK shipped Sprint 49, now SPRINT_EXECUTION_WORKFLOW.md 5.1.2. F-COPILOT-INSTR's goal (documenting settled decisions so Copilot stops re-flagging them) is being fulfilled organically each sprint a real false-positive occurs -- most recently Sprint 54's CHANGELOG-placement note; closing as effectively-fulfilled rather than carrying as an open candidate. F125 one-shot release self-test probe and F141 Android/Google Play deep dive both shipped in Sprint 54 -- see CHANGELOG.md 2026-08-03 and `docs/sprints/SPRINT_54_F141_ANDROID_DEEP_DIVE.md`. F141's backlog outputs are F142/F143/F144 below.)_
-
-### Security Hardening (Sprint 31 Audit)
-
-_(F107, F108, F109 shipped in Sprint 44 -- see docs/sprints/SPRINT_44_SUMMARY.md. F106 is HOLD/Post-MVP, paired under SEC-11b below.)_
-
-### Release Readiness
-
-_(F-WINSTORE-ASSETS: **DONE 2026-07-25** -- 7 screenshot masters captured from the live 0.5.7 build, committed to `docs/store-assets/windows/`, and uploaded by Harold to Partner Center. Logo/tile audit was not needed (icon source unchanged).)_
-
-_(F111 shipped in Sprint 45 -- GO recommendation delivered; see docs/sprints/SPRINT_45_F111_STORE_READINESS.md and SPRINT_45_SUMMARY.md. Store upload of 0.5.4 is a pending Harold action, targeted Sat/Sun on a stable network -- not a backlog item.)_
-
-_(F103 Architecture Deep Dive and F104 Security Deep Dive ran in Sprint 43 -- see `docs/sprints/SPRINT_43_F103_ARCHITECTURE_DEEP_DIVE.md` and `SPRINT_43_F104_SECURITY_DEEP_DIVE.md`; their reusable templates F71 / F70 remain HOLD below. F105 version bump shipped.)_
-
-### DevOps
-
-_(F64 CI/CD pipeline shipped in Sprint 46 -- `.github/workflows/ci.yml`; see CHANGELOG 2026-07-02 and SPRINT_46_RETROSPECTIVE.md.)_
-
-_(F127 CI_* repo secrets: **RESOLVED-RESCOPED** (Harold 2026-07-24) -- the secrets stay deliberately UNSET; the real defect (ci.yml writing pre-Sprint-36 legacy key names) was fixed in `5c4e0ce` and verified green. Documented in CLAUDE.md. Re-open ONLY if CI gains a runtime step that would use credentials.)_
-
-### HOLD Items (Periodic Reviews)
 
 **F111. Periodic Windows App Store upload readiness verification (~110-175m per review) Priority HOLD**
 - Phase: Release Readiness (reusable template)
@@ -700,6 +918,41 @@ _(Track activated 2026-08-24: F94, SEC-4, SEC-9 and all GP-n items moved to the 
 > - Not evaluated as primary candidates: Windows Subsystem for Android (discontinued), gaming-only emulators with no credible dev/testing workflow.
 
 _(F142 shipped Sprint 57 -- see `docs/sprints/SPRINT_57_PLAN.md` and CHANGELOG.md 2026-08-14. `MainNavigationScreen`'s `Platform.isAndroid` bottom-nav branch removed entirely; both platforms now share the same default-screen decision, `appDefaultScreenFor`, formerly `_DesktopDefaultScreen`/`desktopDefaultScreenFor`. Manual on-device Android validation was blocked by the pre-existing F94/F150 build issue -- see F150 below.)_
+
+**F201. Periodic Web Property Accuracy Re-Review -- myemailspamfilter.com + GitHub Pages (~1-2h per review, plus fix time if findings warrant) Priority HOLD** _(TEMPLATE -- created by the F200 final acceptance criterion, Harold 2026-09-09)_
+- Phase: Web Property (reusable template)
+- Platform: All (the site represents every shipped platform)
+- **Generic scope**: re-review everything served at `https://myemailspamfilter.com/` and from
+  GitHub Pages (`main:/docs`) for ACCURACY against the current app, the current legal
+  documents, and the current store presence -- then make the updates the review finds.
+- **Method**: (1) enumerate what is actually served LIVE, following every internal link, rather
+  than reasoning from the repo -- the two have already diverged once; (2) diff every factual and
+  privacy claim against `docs/legal/PRIVACY_POLICY.md`, `TERMS.md` and the shipped behavior;
+  (3) verify publisher identity, contact details and store links against reality -- names and
+  account facts change (F199); (4) confirm exactly one canonical privacy policy and one
+  deletion page remain reachable; (5) check that any gate covering the served site still
+  actually covers it.
+- **Why this is periodic and not one-shot**: the site is hand-written HTML with no build step,
+  so it does not track the app. It drifted ~6 months carrying a privacy claim the app had
+  already stopped honoring, while the Markdown legal documents beside it stayed correct
+  automatically. Anything without a build step or a gate needs a human on a schedule.
+- **Suggested triggers**: after any change to `PRIVACY_POLICY.md` or `TERMS.md`; after a
+  publisher/account identity change; after a new store or platform ships; after a feature
+  changes what the app stores or transmits; otherwise periodically (suggested: every 10-15
+  sprints).
+- **ALSO RE-REVIEW THE IN-APP PROVIDER SETUP STEPS** (added Sprint 68 IMP-3):
+  `platform_selection_screen.dart`'s `_build{Aol,Yahoo,ICloud}Steps` name vendor URLs and UI
+  labels, and they went stale exactly the way the website did -- four of six iCloud steps were
+  wrong, pointing at a page Apple had renamed. `test/policy/provider_setup_steps_test.dart`
+  now gates app-vs-doc AGREEMENT, but **no gate can watch someone else's website**: only a
+  human re-checking the vendor pages catches a rename. That is this item's job.
+- **How to use**: Duplicate this item, assign a sprint, and remove HOLD. After completion, keep
+  this template for the next review.
+- HOLD rationale: Template item, reusable. Dormant until a trigger above fires.
+- Depends on: F200 (which establishes the canonical state this re-review checks against).
+- Source: Harold, 2026-09-09 -- the periodic companion is the F200 final acceptance criterion,
+  alongside F70 (Security), F71 (Architecture), F130 (Process-Docs), F152 (First-Run), F173
+  (Test Coverage) and F189 (Skills).
 
 **F95. iOS variants + cross-store hardening (~10-16h) Priority HOLD -- RENUMBERED from "F52 Phase 3+" + MOVED TO HOLD (Sprint 39 Backlog Refinement, 2026-05-25)**
 - Phase: Build and Release Infrastructure

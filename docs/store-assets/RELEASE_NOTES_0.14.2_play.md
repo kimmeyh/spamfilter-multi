@@ -12,7 +12,7 @@ estimated.
 <en-US>
 Scan history now shows when a scan actually stopped.
 
-A scan interrupted by the app closing, the device sleeping, or a stalled connection now has its own icon, instead of looking like it was still running.
+A scan that stopped early -- app closed, device slept, connection stalled -- now has its own icon and reads "Not finished", instead of looking like it was still running.
 
 The account box at the top of Settings is readable in dark mode. It was drawing light text on a light background.
 

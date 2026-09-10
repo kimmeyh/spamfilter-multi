@@ -2,10 +2,15 @@
 
 **This file is a CACHE, not a source of truth.** The dev version below is
 authoritative (it mirrors `mobile-app/pubspec.yaml`, which lives in git). The
-Store version is NOT authoritative here -- Microsoft Partner Center is the only
-source of truth for what is actually certified/live, and git has no visibility
-into it. This file is a timestamped snapshot of the last time someone actually
+STORE versions are NOT authoritative here -- **Microsoft Partner Center and the
+Google Play Console are the only sources of truth** for what is actually
+certified/live on their respective stores, and git has no visibility into
+either. This file is a timestamped snapshot of the last time someone actually
 looked.
+
+**Two stores since 2026-09-09** (ADR-0043: one version across platforms, which
+may advance without being submitted everywhere). The two rows can legitimately
+disagree, and a version live on one store says nothing about the other.
 
 **Before treating the Store row below as current fact, re-verify in Partner
 Center**: https://partner.microsoft.com/dashboard/products/9N5QK9G904C0/submissions
@@ -17,8 +22,9 @@ Partner Center before saying anything about the Store version.
 
 | | Version | Last verified | Notes |
 |---|---|---|---|
-| **Live/certified on Store** (cache) | 0.14.1.0 | 2026-09-09 (Partner Center: "Congrats! Your product is now updated"; Store presence = Submission 23, last modified 09/09/2026; VERIFIED by installing from the Store -- the running app reports Version 0.14.1) | **Submission 23 -- NEW PACKAGE, built from the prod worktree at `761e2c4` (PR #391, all of Sprint 66).** Submitted 2026-09-08 1:50pm ET, certified and live by 2026-09-09. The one user-facing Windows change is the GP-4 Gmail scope narrowing (sign-in now requests `gmail.modify` + `userinfo.email` only); everything else in that range was Google Play readiness and repo docs. **Two pre-build catches worth keeping**: the prod worktree was 52 commits behind `origin/main` with a stale 0.14.0 `msix_version` pin -- the exact failure STORE_RELEASE_PROCESS names as a precondition (Sprint 60: 33 behind) -- and the OAuth client ID was verified PRESENT in the compiled `data/app.so` rather than inferred from the build log, which is the check F119 taught. |
-| **Dev worktree** (authoritative -- mirrors `pubspec.yaml`) | 0.14.1+1 | 2026-09-08 | Bumped PATCH (0.14.0 -> 0.14.1) at Sprint 66 PLAN APPROVAL, not at release -- the first bump under **F190**, which moved it from Store-release Step 1 to Phase 3.7.0b so a tester can always tell a dev build from production. PATCH is correct because `[Unreleased]` contains no `feat` (3 chore, 6 docs, 1 fix), per the enforced semver policy. Two gates cover it: `version_consistency_test` (every literal matches pubspec) and `dev_version_ahead_test` (dev strictly ahead of the last released version, and `version:` agrees with `msix_version`). Post-F-VERSION-DERIVE the bump is the two pubspec fields only. Release Step 1 is now VERIFICATION, not a bump. |
+| **Live/certified on Store** (cache) | 0.14.2.0 | 2026-09-09 (Partner Center: "Congrats! Your product is now updated"; Store presence = **Submission 25**, last modified 09/09/2026; product confirmed "currently available in the Microsoft Store") | **Submission 25 -- 0.14.2**, built from the prod worktree on `main` at `9e0e515` (PR #397). Carries the Sprint 67 UI fixes (F194 scan-status icons, F195 account-header contrast) plus the F199 listing-field edits (Copyright / Developed by -> Kimmey Consulting LLC), folded into this submission rather than paying a separate listing-only certification pass. **NOT yet verified by installing from the Store** -- the cached value above it was, and this one is Partner-Center-only so far. Do that before treating the installed-build behavior as confirmed. |
+| **Live on Google Play** (cache) | 0.14.2 (versionCode 2) | 2026-09-09 (Play Console notification: "App update published. Users should see changes immediately"; Closed testing - Alpha track) | **Closed testing only -- NOT production.** 0.14.2 cleared review and is live to the closed-test track the same day it was submitted; 0.14.1 was the prior release (Sep 8, 2:00 PM). Production access is still gated on 12 testers x 14 CONTINUOUS days, which is a TESTER-COUNT gate, not a version gate -- shipping a new version does not advance it. Play is the source of truth here, same rule as the Store row above. |
+| **Dev worktree** (authoritative -- mirrors `pubspec.yaml`) | 0.15.0+3 | 2026-09-10 | Bumped PATCH (0.14.0 -> 0.14.1) at Sprint 66 PLAN APPROVAL, not at release -- the first bump under **F190**, which moved it from Store-release Step 1 to Phase 3.7.0b so a tester can always tell a dev build from production. PATCH is correct because `[Unreleased]` contains no `feat` (3 chore, 6 docs, 1 fix), per the enforced semver policy. Two gates cover it: `version_consistency_test` (every literal matches pubspec) and `dev_version_ahead_test` (dev strictly ahead of the last released version, and `version:` agrees with `msix_version`). Post-F-VERSION-DERIVE the bump is the two pubspec fields only. Release Step 1 is now VERIFICATION, not a bump. **Sprint 68: bumped 0.14.2 -> 0.15.0 (MINOR -- `[Unreleased]` contains a `feat`, F191 shipping Yahoo and iCloud), and the build number +2 -> +3 because Play refuses a versionCode already consumed by the live 0.14.2 submission.** This row was found STALE at 0.14.1+1 by the PR #403 review while calling itself authoritative -- and it is a test INPUT, not just prose, since `dev_version_ahead_test` reads the Live rows out of this same file. |
 
 ## msix_version convention (which worktree's value ships)
 

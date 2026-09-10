@@ -124,14 +124,21 @@ class PlatformRegistry {
       //   setupInstructions: 'Sign in with your Microsoft account',
       // ),
 
+      // F191 (Sprint 68): phase 2 → 1. The adapter was always complete and
+      // structurally identical to aol(); only this integer hid it behind the
+      // "Coming Soon" section of the provider list.
       PlatformInfo(
         id: 'yahoo',
         displayName: 'Yahoo Mail',
-        phase: 2,
+        phase: 1,
         authMethod: AuthMethod.appPassword,
         icon: 'assets/icons/yahoo.png',
         description: 'Yahoo Mail via IMAP (requires app password)',
-        setupInstructions: 'Go to Yahoo Account Security → Generate app password',
+        // Wording follows Yahoo's own current page (help.yahoo.com SLN15241):
+        // the section is "External connections" and the button is "Create app
+        // password". The older "Generate app password" label is gone.
+        setupInstructions: 'Yahoo Account Security → External connections → '
+            'Create app password',
         imapConfig: IMAPConfig(
           host: 'imap.mail.yahoo.com',
           port: 993,
@@ -140,14 +147,19 @@ class PlatformRegistry {
       ),
 
       // Phase 3 - Additional consumer platforms
+      // F191 (Sprint 68): phase 3 → 1, same as Yahoo above.
       PlatformInfo(
         id: 'icloud',
         displayName: 'iCloud Mail',
-        phase: 3,
+        phase: 1,
         authMethod: AuthMethod.appPassword,
         icon: 'assets/icons/icloud.png',
         description: 'Apple iCloud Mail via IMAP (requires app-specific password)',
-        setupInstructions: 'Go to Apple ID → Security → Generate app-specific password',
+        // Apple moved this to account.apple.com (appleid.apple.com redirects).
+        // Two-factor authentication is REQUIRED -- Apple states it outright, so
+        // the option is simply absent without it (support.apple.com/en-us/102654).
+        setupInstructions: 'account.apple.com → Sign-In and Security → '
+            'App-Specific Passwords (requires two-factor authentication)',
         imapConfig: IMAPConfig(
           host: 'imap.mail.me.com',
           port: 993,

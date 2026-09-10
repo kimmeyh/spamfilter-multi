@@ -355,6 +355,29 @@ say which part, so the card scopes to the gap rather than the whole surface.
 This is a planning question, not an execution one: it belongs in the card's Requirements
 (as an R-1 "audit first, build second"), which is exactly how GP-7 was written.
 
+### Single-session sprints and model deviation (Sprint 68 IMP-4)
+
+A sprint that runs as ONE continuous interactive session -- Harold validating live between
+tasks, with no natural handoff point -- will execute every task on the session's model
+regardless of assignment. Sprint 68 assigned Haiku x1 and Sonnet x4 and executed all five on
+Opus for exactly that reason.
+
+That is not a planning error and should not be written up as five identical per-task
+deviations. The ASSIGNMENTS were still correct: F199 was genuinely Haiku-shaped work, and
+recording it as such keeps the cheapest-first discipline honest.
+
+**When a sprint is expected to run this way, do ONE of:**
+
+- **(a) Record the deviation ONCE, up front**, in the plan's model-assignment summary: "expected
+  to run as a single interactive session; assignments reflect task shape, execution will be the
+  session model." Then `Executed-by` per task cites that line rather than repeating the reason.
+- **(b) Batch the cheaper-tier tasks into a delegable block** scheduled BEFORE manual validation
+  begins, so they can actually run on the assigned tier.
+
+Prefer (b) when the cheap tasks are independent and front-loadable; (a) when validation feedback
+is expected to interleave with implementation, which is what makes the session continuous in the
+first place.
+
 ### Definition of Ready (one line)
 
 A task is **Ready** to start when Value, Requirements, Affected files, Dependencies, Acceptance criteria, and Tests-to-write are filled in, and no open Class-1/2/3 question remains.
