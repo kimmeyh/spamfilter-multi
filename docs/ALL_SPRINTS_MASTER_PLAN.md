@@ -595,6 +595,13 @@ All incomplete items in relative priority order. Priority in increments of 10; i
     reasonably conclude the app is broken rather than that the feature is desktop-only. Fix it
     as part of this capability, or hide the whole block on platforms that cannot honour it.
     **Do not leave it as-is.**
+  - **BACKGROUND EXPORT CONFIRMED NON-FUNCTIONAL, 2026-09-11.** After Harold changed the export
+    folder to Documents, the phone was re-checked: `Documents` contains exactly ONE csv,
+    `scan_results_2026-09-10T20-32-31.csv` at 8:32 PM -- the MANUAL export. Background scans have
+    run on the 15-minute cycle continuously since, including overnight, and **not one has written
+    a file**. `Download` contains no csv at all. So the folder change did not help, because the
+    background writer is `background_scan_windows_worker.dart` and Android never reaches it.
+    **Manual export works; background export does not. That is the whole of Part B.**
   - **CONFIRMED 2026-09-10: Harold could NOT select Downloads as the export folder on Android,
     and had to choose Documents instead** -- and even then, no file appeared (`Documents`
     enumerated over MTP: only pre-existing, unrelated files). Two separate things are therefore
@@ -650,6 +657,50 @@ All incomplete items in relative priority order. Priority in increments of 10; i
   design decision that should be made ONCE, before either B or C ships.
 - Source: Harold, 2026-09-10 -- filed after the S24+ Scan History totals, reframed by him the
   same day from "fix Android" to "a platform capability".
+
+**F211. TESTER BLOCKER -- Google Sign-In fails for every tester: "Custom URI scheme is not enabled for your Android client" (~30m, console-side) Priority 2 (NEW, 2026-09-10 -- FIRST REAL TESTER FEEDBACK)**
+- Phase: Android / Google Play Store Readiness
+- Platform: Android (closed test)
+- **THIS IS THE FIRST FEEDBACK FROM A REAL TESTER**, Jamey Livingston, relayed by Harold
+  2026-09-10. It is a blocker, not a polish item, and it almost certainly affects EVERY tester --
+  not just him.
+- **What the tester saw**: adding a Google account without an app password produces
+  `Access blocked: spamfilter-multi's request is invalid` / `Error 400: invalid_request`.
+  Tapping "error details" gives the actual cause, verbatim from Google:
+  > **Custom URI scheme is not enabled for your Android client.**
+  > Request details: `flowName=GeneralOAuthFlow`
+- **Confirmed against the app**: `AndroidManifest.xml:62` registers
+  `<data android:scheme="${appAuthRedirectScheme}"/>`, the reversed Android client ID, used by
+  `flutter_appauth`. So the app IS using a custom URI scheme -- exactly what Google says is
+  disabled for this OAuth client.
+- **The fix is in the GOOGLE CLOUD CONSOLE, not the app.** No code change, no release, no new
+  submission. Google disabled custom URI schemes by default for newly-created Android OAuth
+  clients; the setting must be enabled explicitly on that client. **Verify the current wording
+  and location in the console before changing anything** -- Google has moved this setting more
+  than once, and the exact control name should be read rather than recalled.
+- **Why it is Priority 2 -- above everything else on the slate:**
+  - It blocks the PRIMARY sign-in path. Gmail is the most common provider a tester will try.
+  - **8 testers are recruited and 4 more are needed for the 14-day clock.** A tester who cannot
+    sign in may opt OUT -- and an opt-out resets that person's clock to zero, which is the one
+    kind of damage that cannot be recovered by working faster later.
+  - It costs the project credibility at exactly the wrong moment: this is the first thing a new
+    tester does.
+- **The app-password path still works**, which is why Harold's own accounts were unaffected and
+  why this went unnoticed through all of Sprint 68's validation. Harold's reply to the tester --
+  *"App passwords is the way it works best"* -- is a correct WORKAROUND, but it should not be the
+  answer: the in-app Help already presents Google Sign-In as an available option
+  (`help_platform_claims_test` asserts the wording), so the app promises something the console
+  currently forbids.
+- **Also visible in the tester's screenshot**: the account-setup screen offers "Google Sign-In
+  (OAuth 2.0)" and "Manual Token Entry" and then shows a red "Sign-In Error" panel. Worth
+  checking whether that error text is actionable, or whether it simply relays Google's opaque
+  400 -- a tester hitting a dead end should be told to use an app password instead.
+- **After fixing, RE-TEST AS A TESTER**, not as Harold: a fresh Google account that has never
+  authorised this app. Harold's accounts may carry prior consent that masks the failure.
+- Depends on: Google Cloud Console access. No repo change expected; if one IS needed, that
+  changes the priority because it would require a new Play submission.
+- Source: Jamey Livingston via Harold, 2026-09-10. The first defect this project has learned
+  about from someone other than Harold.
 
 **F210. Dark-mode contrast, THIRD variant: a hardcoded surface with text that is theme-derived by OMISSION -- and the F197 gate cannot see it (~1-2h) Priority 6 (NEW, 2026-09-10 -- Harold, on the S24+)**
 - Phase: Core App Quality
