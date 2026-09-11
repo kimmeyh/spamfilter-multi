@@ -651,6 +651,48 @@ All incomplete items in relative priority order. Priority in increments of 10; i
 - Source: Harold, 2026-09-10 -- filed after the S24+ Scan History totals, reframed by him the
   same day from "fix Android" to "a platform capability".
 
+**F210. Dark-mode contrast, THIRD variant: a hardcoded surface with text that is theme-derived by OMISSION -- and the F197 gate cannot see it (~1-2h) Priority 6 (NEW, 2026-09-10 -- Harold, on the S24+)**
+- Phase: Core App Quality
+- Platform: All (shared Flutter UI) -- observed on Android dark mode
+- **Harold, 2026-09-10**: *"one where the background and font color are almost the same like the
+  2 or 3 we fixed earlier"*. He is right, and it is the same defect class as F195 and F197.
+- **Where**: the "Export Successful" dialog, `results_display_screen.dart:413-423`. The exported
+  file path renders near-white on near-white and is barely legible -- **the one piece of text the
+  dialog exists to convey**, sitting directly above the instruction "Select the path above to
+  copy it."
+- **The code**:
+  ```dart
+  Container(
+    decoration: BoxDecoration(color: Colors.grey[200]),   // hardcoded near-white surface
+    child: SelectableText(
+      filePath,
+      style: const TextStyle(fontSize: 12, fontFamily: 'monospace'),  // NO COLOUR
+    ),
+  )
+  ```
+- **WHY THE F197 GATE MISSES IT, and this is the important part.** F197 detects a hardcoded
+  surface wrapping text whose colour comes from `Theme.of(context).textTheme`. Here the text is
+  theme-derived **BY OMISSION** -- `TextStyle` specifies no colour at all, so Flutter inherits
+  the theme default, which is near-white in dark mode. **There is no `textTheme` token for the
+  gate to match.** Same defect, invisible to the detector.
+  This is a genuine gap in a gate shipped one day earlier, and it is the third distinct variant
+  of one pattern:
+  1. **F195**: hardcoded surface + explicit `Theme.of(context).textTheme` text. Gated.
+  2. **F197**: same, generalised into the detector. Gated.
+  3. **F210 (this)**: hardcoded surface + text with NO colour specified. **NOT gated.**
+- **The fix to the CODE is small**; the fix to the GATE is the valuable half. Extend the F197
+  detector so a hardcoded surface whose enclosed `Text`/`SelectableText` specifies no colour is
+  treated the same as one referencing `textTheme` -- because Flutter resolves both from the
+  theme. Mutation-verify against this exact dialog.
+- **Also worth checking in the same pass**: `Colors.grey[600]` on the line below ("Select the
+  path above to copy it") is hardcoded text on the DIALOG's theme surface -- the inverse pairing.
+  Measure it in dark mode rather than assuming it passes.
+- **Dialogs were never audited.** F197's sweep covered cards and containers in screens. This is a
+  `showDialog` body, and the audit that found "exactly two instances" did not look here. Re-run
+  the corrected detector across dialogs specifically.
+- Depends on: nothing. Overlaps F197's gate, which it extends rather than replaces.
+- Source: Harold, 2026-09-10, from an Android dark-mode screenshot.
+
 **F208. YAML Import is BROKEN on Android -- FilePicker rejects the .yaml filter (~1-2h) Priority 8 (NEW, 2026-09-10 -- Harold, on the S24+)**
 - Phase: Core App Quality
 - Platform: **Android only** -- Windows is unaffected
@@ -768,8 +810,18 @@ All incomplete items in relative priority order. Priority in increments of 10; i
   form, and the Windows dev log has **zero** `EXCEPTION fetching folder` entries. The Scan
   History screen displays `Gmail/Spam` without brackets, but that is a DISPLAY string, not the
   IMAP name.
-- **Why it stopped there**: the errors are on the PHONE, and its logs are not readable from the
-  development machine. Diagnosing further from screenshots would be guessing -- see retro IMP-1.
+- **UNBLOCKED 2026-09-10 -- data IS retrievable after all, and I was wrong to say otherwise.**
+  Harold changed the CSV export folder to Documents and ran a MANUAL scan; the file written and
+  pulled over MTP:
+  `/storage/emulated/0/Documents/scan_results_2026-09-10T20-32-31.csv`. So **manual-scan export
+  works on Android**; it is the BACKGROUND path (`background_scan_windows_worker.dart`) that does
+  not. My earlier "nothing landed" was checked BEFORE he changed the folder and re-scanned -- a
+  moment-in-time observation reported as a conclusion.
+  The CSV carries exactly what a diagnosis needs: `Scan Date, Received Date, From, Folder,
+  Subject, Rule, Match Condition, Action, Status, Email ID` -- including the **matched rule and
+  its regex**, which is more than the Windows CSV header shows.
+  **So F205 is only PARTLY blocked**: manual scans can be exported today. If a Gmail manual scan
+  reproduces an error row, the cause is diagnosable now rather than after F206.
 - **CORRECTION (2026-09-10, same day)**: this card originally said to "get the device log off
   the S24+ ... `background_scan_v0.15.0.log`". **That file does not exist on Android.**
   `main.dart:152` gates the whole file-logging block on
