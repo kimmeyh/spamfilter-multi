@@ -595,6 +595,12 @@ All incomplete items in relative priority order. Priority in increments of 10; i
     reasonably conclude the app is broken rather than that the feature is desktop-only. Fix it
     as part of this capability, or hide the whole block on platforms that cannot honour it.
     **Do not leave it as-is.**
+  - **CONFIRMED 2026-09-10: Harold could NOT select Downloads as the export folder on Android,
+    and had to choose Documents instead** -- and even then, no file appeared (`Documents`
+    enumerated over MTP: only pre-existing, unrelated files). Two separate things are therefore
+    broken: the picker cannot reach Downloads, AND nothing writes regardless of the folder
+    chosen. That is Android scoped storage exactly as described above -- the picker returns a
+    SAF URI, and the writer expects a filesystem path.
   - **Retention selector is TRUE PARITY** (same screenshot): 7/14/30/90 days/1 year, 90
     selected, identical to Windows. So Part A is genuine shared work with no platform fork --
     only Part B needs the factory.
@@ -644,6 +650,67 @@ All incomplete items in relative priority order. Priority in increments of 10; i
   design decision that should be made ONCE, before either B or C ships.
 - Source: Harold, 2026-09-10 -- filed after the S24+ Scan History totals, reframed by him the
   same day from "fix Android" to "a platform capability".
+
+**F208. YAML Import is BROKEN on Android -- FilePicker rejects the .yaml filter (~1-2h) Priority 8 (NEW, 2026-09-10 -- Harold, on the S24+)**
+- Phase: Core App Quality
+- Platform: **Android only** -- Windows is unaffected
+- **Reproduced on the closed-test build, screenshot 2026-09-10**: tapping Import Rules (or Import
+  Safe Senders) fails immediately with
+  `Import failed: PlatformException(FilePicker, Unsupported filter. Make sure that you are only
+  using the extension without the dot, (ie., jpg instead of .jpg). This could also have happened
+  because you are using an unsupported file...`
+- **The plugin's suggested cause is a RED HERRING.** `yaml_import_export_screen.dart:255` (and
+  300, 334, 395) already passes `allowedExtensions: ['yaml', 'yml']` -- dotless, exactly as the
+  message demands. The advice in the error does not apply.
+- **The real cause**: on Android, `FileType.custom` is resolved through **MIME types**, not file
+  extensions. `.yaml` and `.yml` have no registered MIME mapping on Android, so the picker
+  rejects the filter outright before any file is chosen. Windows filters by extension directly,
+  which is exactly why this breaks on one platform and not the other -- an ADR-0042 platform
+  difference hiding inside a shared call.
+- **Severity is higher than it looks**: YAML import/export is the app's ONLY backup-and-restore
+  path and its only way to move rules between devices. On Android it is currently impossible to
+  restore rules at all. The rules DB is the user's accumulated work.
+- **Four call sites**, so fix once in a shared helper rather than four times.
+- **Candidate fixes, to evaluate rather than assume**: (a) `FileType.any` plus post-selection
+  extension validation -- simplest, and the validation is needed anyway since a MIME filter
+  cannot be trusted; (b) register a custom MIME type; (c) a platform fork using
+  `FileType.custom` on desktop and `FileType.any` on Android, declared per ADR-0042.
+  **(a) is likely correct** and removes the platform difference rather than encoding it.
+- **Test it with a REAL exported file**, not a hand-made one -- the export half works, so
+  export-then-import is the natural round trip and the only proof the fix actually restores data.
+- Depends on: nothing. Independent of F206, though both touch file access on Android.
+- Source: Harold, 2026-09-10, exercising Import/Export on the S24+.
+
+**F209. Android navigation bar overlaps the bottom of most screens (~2-4h) Priority 16 (NEW, 2026-09-10 -- Harold)**
+- Phase: Core App Quality
+- Platform: **Android** (and iOS later -- the same class applies to the home indicator)
+- **Harold, 2026-09-10**: *"didn't you find that almost all the pages had the bottom bit covered
+  by the android 3 buttons - should we fix that?"* **Yes, and I should have raised it.** I saw it
+  across the screenshots today -- Settings, Scan History, Import/Export -- and treated it as a
+  screenshot artifact rather than reporting it. It is a real layout defect.
+- **Clearest example, from the same session**: the Import failure message on the Import/Export
+  screen is CUT OFF MID-SENTENCE by the navigation bar. A user hitting that error cannot read
+  what it says -- the diagnostic text is physically behind the system buttons.
+- **Cause**: content is not inset for the system navigation area. Flutter needs either
+  `SafeArea` or explicit `MediaQuery.viewPadding.bottom` handling; a `Scaffold` body does not
+  inset for the nav bar on its own, and Android 15+ enforces edge-to-edge by default, which
+  makes this WORSE rather than better on newer devices.
+- **Not cosmetic**: it hides error text (proven above), and on scrollable screens it can hide the
+  final list row or a bottom action button -- exactly the elements a user needs.
+- **Scope**: fix in the shared scaffold/layout rather than per screen. Harold's phrasing --
+  "almost all the pages" -- points at a single shared container, which is also what ADR-0042
+  prefers ("fork at the narrowest possible point", and here there may be no fork at all).
+  **Inventory first**: confirm whether one shared widget covers every affected screen before
+  editing any of them individually.
+- **Gate it**: a widget test asserting bottom content clears `viewPadding.bottom` would stop the
+  next screen from reintroducing it. Without that, this returns the first time someone adds a
+  screen.
+- **Windows is unaffected** -- no system nav bar -- so this is Android-shaped work that should
+  not change desktop layout. Prove the no-regression side, per ADR-0042's "cover BOTH branches".
+- Depends on: nothing.
+- Source: Harold, 2026-09-10. Observed by Claude across many screenshots and NOT raised -- a miss
+  worth recording as its own lesson: noticing a defect and not reporting it is indistinguishable
+  from not noticing it.
 
 **F207. A manual scan is refused while a background scan is "in progress" -- and the block appears to outlive the scan (~1-2h) Priority 20 (NEW, 2026-09-10 -- Harold, on the S24+)**
 - Phase: Core App Quality
