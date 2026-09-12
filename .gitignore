@@ -274,3 +274,7 @@ android-signing.json
 # survives even though the images do not).
 validation-screenshots/**
 !validation-screenshots/README.md
+# A per-sprint INDEX.md naming what each image SHOWS is the part worth keeping:
+# a description outlives the image, and a phone filename says nothing.
+!validation-screenshots/*/
+!validation-screenshots/*/INDEX.md
