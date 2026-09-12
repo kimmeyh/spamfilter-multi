@@ -799,8 +799,26 @@ All incomplete items in relative priority order. Priority in increments of 10; i
   why nothing prunes today -- but it is a decision, not an oversight, and should be recorded as
   one.
 - Depends on: nothing. The folder and its gitignore rules already exist.
+- **CORRECTION (Harold, 2026-09-11): screenshots ARE cached, and the earlier "kept nowhere" was
+  wrong.** Claude Code writes every pasted image to
+  `C:\Users\kimme\.claude\image-cache\<session-guid>\<n>.png`. Harold asked "aren't the
+  screenshots in the scratchpad?" -- not the scratchpad, but a real on-disk cache.
+  **This does not remove the need for this card**, for three reasons:
+  1. **Per-session, and it does not survive.** At the time of checking, the cache held ONE
+     session folder with 9 files, all from that evening. Every image from earlier in Sprint 69
+     and from Sprint 68 -- the No Rule popups, the "Re-processed 0 of 8" screens that F212 was
+     written from -- was already gone.
+  2. **It is a tool cache, not an archive.** Files are named by session GUID and sequence
+     number, with no documented retention. Nothing should be built on the assumption that an
+     image is still there tomorrow.
+  3. **Sequence numbers carry no meaning.** `167.png` says nothing about what it shows. The
+     whole point of `validation-screenshots/sprint-NN/<what-it-shows>.png` is that a file name
+     survives as evidence.
+  The cache IS useful WITHIN a session -- an image Harold sent an hour ago can be re-read
+  rather than re-requested -- and this card should say so rather than implying the only copy
+  is the chat transcript.
 - Source: Harold, 2026-09-11, after asking where validation screenshots were being stored and
-  learning the answer was nowhere.
+  learning the answer was "nowhere durable" (corrected above: cached per session, not archived).
 
 **F214. Scan Range slider does not align with the controls above it -- left/right margins read as too wide (~1-2h) Priority 34 (NEW, 2026-09-11 -- reported by a TESTER)**
 - Phase: Core App Quality
