@@ -658,6 +658,44 @@ All incomplete items in relative priority order. Priority in increments of 10; i
 - Source: Harold, 2026-09-10 -- filed after the S24+ Scan History totals, reframed by him the
   same day from "fix Android" to "a platform capability".
 
+**F212. Re-processing after adding rules FAILS 100% on the closed-test build -- "Re-processed 0 of 8 (8 failed)" (~2-4h) Priority 4 (NEW, 2026-09-11 -- Harold, on the S24+)**
+- Phase: Core App Quality
+- Platform: Android (closed test) observed; Windows unverified -- CHECK BOTH
+- **Observed 2026-09-11 on the S24+**, adding rules to "No rule" emails from a background-scan
+  result set (AOL, folders Bulk/Bulk Mail/Inbox, scan completed 17:20). Two screenshots minutes
+  apart show the failure count CLIMBING with each rule added: **"Re-processed 0 of 6 (6 failed)"**
+  then **"Re-processed 0 of 8 (8 failed)"**. Not one succeeded.
+- **The RULES saved.** A blue confirmation banner reads `rule to block entire domain
+  "*.heypocket.com"`. What failed is the RE-PROCESSING -- the follow-up pass that applies a
+  newly-added rule to the emails already on screen, deleting or moving them.
+- **Two contradictory messages on the SAME screen**, which is its own defect: a green
+  **"All 9 'No rule' emails addressed."** above an orange **"0 of 8 (8 failed)"**. The green
+  banner counts rules CREATED; the orange counts actions EXECUTED. A user cannot tell that
+  nothing actually happened to their mailbox.
+- **Where it is**: `results_display_screen.dart` `_reProcess...`, message at line 3164. The
+  outer `catch` at line 3142 sets `failCount = toDelete.length + toMoveSafe.length` -- a
+  WHOLE-BATCH failure. 6-of-6 and 8-of-8 match that shape exactly, so this is almost certainly
+  ONE exception thrown before or during the batch, not N independent failures.
+- **Candidate causes, to diagnose rather than assume**: (a) the connection/credential path at
+  lines 3064-3075 -- it builds a FRESH platform and loads credentials, so a failure there fails
+  everything; (b) the result set came from a BACKGROUND scan, so the messages may be stale --
+  UIDs expired, already moved by a later background run (the closed test scans every 15 minutes,
+  and deletes really happen); (c) IMAP folder/UIDVALIDITY mismatch on a re-connect.
+  **(b) is the most interesting**: a background scan's results can be acted on minutes later,
+  after another background scan has already deleted the same mail.
+- **Diagnosis is cheap and available today**: the app writes `scan_results_*.csv` to Documents on
+  manual export, and `logger.e('[F38] Re-processing failed: $e')` at line 3142 carries the actual
+  exception. Get that line before designing a fix.
+- **Why it ranks at 4** -- above every other Android finding except the sign-in blocker: this is
+  the app's PRIMARY WORKFLOW. Reviewing "No rule" mail and adding rules is what the product is
+  for, and on the build 8 testers are using, it silently does nothing to the mailbox while
+  telling them it worked. A tester would conclude the app does not filter their mail.
+- **Fix the message regardless of the cause.** Even once the failure is fixed, the green
+  "addressed" banner must not appear alongside a failed batch -- see F203, which is the same
+  class of counter dishonesty and should probably be done in the same pass.
+- Depends on: nothing. Diagnosable from the device log/CSV today.
+- Source: Harold, 2026-09-11, adding rules on the S24+.
+
 **F211. TESTER BLOCKER -- Google Sign-In fails for every tester: "Custom URI scheme is not enabled for your Android client" (~30m, console-side) Priority 2 (NEW, 2026-09-10 -- FIRST REAL TESTER FEEDBACK)**
 - Phase: Android / Google Play Store Readiness
 - Platform: Android (closed test)
