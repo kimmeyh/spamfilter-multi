@@ -668,9 +668,14 @@ class _SafeSenderQuickAddScreenState extends State<SafeSenderQuickAddScreen> {
                     width: double.infinity,
                     padding: const EdgeInsets.all(12),
                     decoration: BoxDecoration(
-                      color: Colors.grey[100],
+                      // F210: was Colors.grey[100] under a colourless
+                      // TextStyle -- unreadable in dark mode.
+                      color:
+                          Theme.of(context).colorScheme.surfaceContainerHighest,
                       borderRadius: BorderRadius.circular(4),
-                      border: Border.all(color: Colors.grey[300]!),
+                      border: Border.all(
+                        color: Theme.of(context).colorScheme.outlineVariant,
+                      ),
                     ),
                     child: SelectableText(
                       _generatedPattern.isNotEmpty ? _generatedPattern : '(empty)',

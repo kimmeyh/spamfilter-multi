@@ -470,7 +470,10 @@ class _YamlImportExportScreenState extends State<YamlImportExportScreen> {
             Container(
               padding: const EdgeInsets.all(8),
               decoration: BoxDecoration(
-                color: Colors.grey.shade100,
+                // F210: was Colors.grey.shade100 under a colourless
+                // TextStyle -- the file path being imported was unreadable in
+                // dark mode, in the dialog that asks you to confirm it.
+                color: Theme.of(context).colorScheme.surfaceContainerHighest,
                 borderRadius: BorderRadius.circular(4),
               ),
               child: Text(

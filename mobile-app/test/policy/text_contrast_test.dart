@@ -320,4 +320,260 @@ void main() {
       );
     });
   });
+
+  /// F210 (Sprint 69): the THIRD variant -- a hardcoded surface wrapping text
+  /// that is theme-derived **BY OMISSION**.
+  ///
+  /// **Why the F197 gate above cannot see this.** F197 looks for text whose
+  /// colour comes from `Theme.of(context).textTheme`. Here the `TextStyle`
+  /// specifies NO colour at all:
+  ///
+  /// ```dart
+  /// Container(
+  ///   decoration: BoxDecoration(color: Colors.grey[200]),  // pinned surface
+  ///   child: SelectableText(
+  ///     filePath,
+  ///     style: TextStyle(fontSize: 12, fontFamily: 'monospace'),  // NO colour
+  ///   ),
+  /// )
+  /// ```
+  ///
+  /// Flutter resolves that omission from the theme, so it is near-white in dark
+  /// mode on a near-white surface -- identical in effect to F197, with no
+  /// `textTheme` token anywhere for the detector to match. Harold found it on
+  /// an S24+ one day after the F197 gate shipped, on the Export Successful
+  /// dialog: the file path, the one thing the dialog exists to convey.
+  ///
+  /// **Two additional gaps this group closes, both found by the audit:**
+  ///
+  /// 1. **Bracket-index shades were never matched.** F197's surface regex reads
+  ///    `Colors\.[a-z]+\.shade\d+` only, so `Colors.grey[200]` -- the form all
+  ///    four F210 instances actually used -- was invisible to it.
+  /// 2. **Dialogs were never audited.** F197's sweep covered cards and
+  ///    containers in screens. `showDialog` bodies were not looked at, which is
+  ///    why the Export dialog survived. Nothing here special-cases dialogs; the
+  ///    scan is over the same tree, and the point is that the SHAPE now matches.
+  ///
+  /// **The false positive to avoid is the same one F197 documents**: a fully
+  /// hardcoded card pins both halves and is correct in any theme. Text with no
+  /// colour is only a defect when the surface above it is pinned.
+  group('Dark-mode surface/colourless-text invariant (F210, Sprint 69)', () {
+    /// A pinned surface, in EITHER spelling: `Colors.grey.shade200` (F197's
+    /// form) or `Colors.grey[200]` (the form F210 found in the wild).
+    ///
+    /// Excludes the same non-text shapes F197 excludes, for the same reasons:
+    /// an icon tint and a border are decoration, and a hardcoded TEXT colour
+    /// pins its own foreground and belongs to the F133 gate.
+    bool isPinnedSurface(String line) {
+      final hasShade = RegExp(
+        r'(?:^|[\s(,])(?:color|backgroundColor):\s*Colors\.[a-zA-Z]+'
+        r'(?:\.shade\d+|\[\d+\])',
+      ).hasMatch(line);
+      if (!hasShade) return false;
+      if (line.contains('TextStyle')) return false;
+      if (line.contains('Icon(')) return false;
+      if (line.contains('BorderSide') || line.contains('border:')) return false;
+      return true;
+    }
+
+    /// Is line [i] a colour inside an `Icon(...)` that opened on an earlier
+    /// line?
+    ///
+    /// The same `dart format` wrapping problem the F197 group hit with
+    /// `TextStyle`, and it bit here for the identical reason. When the call
+    /// grows past the line limit the tint lands on its own line, carrying no
+    /// `Icon(` token for the single-line exclusion to see:
+    ///
+    /// ```dart
+    /// Icon(Icons.check_circle_outline,
+    ///   color: Colors.green.shade600, size: 16),   // <- read as a SURFACE
+    /// ```
+    ///
+    /// Both real occurrences (`account_setup_screen.dart:546`,
+    /// `safe_senders_management_screen.dart:689`) are icon tints, which WCAG
+    /// 1.4.3 does not hold to the text minimum. Without this the gate reports
+    /// two false positives -- and a gate that blocks correct work trains
+    /// bypass, which is the failure mode the F197 group doc names explicitly.
+    bool insideMultiLineIcon(List<String> lines, int i) {
+      var depth = 0;
+      for (var k = i - 1; k >= 0 && k >= i - 4; k--) {
+        depth +=
+            ')'.allMatches(lines[k]).length - '('.allMatches(lines[k]).length;
+        if (RegExp(r'\bIcon\(').hasMatch(lines[k]) && depth < 0) return true;
+      }
+      return false;
+    }
+
+    /// Reuses F197's bracket walk: a colour inside a `TextStyle(` that opened
+    /// on an earlier line is TEXT, not a surface, however `dart format` wrapped
+    /// it. Duplicated rather than shared because the two groups are read
+    /// independently and a silent change to one must not alter the other.
+    bool insideMultiLineTextStyle(List<String> lines, int i) {
+      var depth = 0;
+      for (var k = i - 1; k >= 0 && k >= i - 6; k--) {
+        depth +=
+            ')'.allMatches(lines[k]).length - '('.allMatches(lines[k]).length;
+        if (lines[k].contains('TextStyle(') && depth < 0) return true;
+      }
+      return false;
+    }
+
+    /// Does the `TextStyle(...)` opening at [start] declare a colour?
+    ///
+    /// Scans forward to the matching close bracket, so a multi-line style is
+    /// read whole. `color:` ANYWHERE inside it -- hardcoded, theme-derived, or
+    /// a conditional -- means the foreground is deliberate and out of scope.
+    /// Only a style that never mentions colour inherits from the theme.
+    bool textStyleDeclaresColour(List<String> lines, int start) {
+      var depth = 0;
+      var seenOpen = false;
+      for (var k = start; k < lines.length && k <= start + 12; k++) {
+        final line = lines[k];
+        if (line.contains('color:')) return true;
+        depth += '('.allMatches(line).length - ')'.allMatches(line).length;
+        if (line.contains('TextStyle(')) seenOpen = true;
+        if (seenOpen && depth <= 0 && k > start) return false;
+      }
+      return false;
+    }
+
+    /// Same window as F197, and for the same reason: far enough to cross a
+    /// Container + padding + child into its text, not so far as to reach the
+    /// next widget. Verified against all four real F210 instances.
+    const windowLines = 12;
+
+    test('the matcher self-checks: colourless text on a pinned surface only',
+        () {
+      // THE DEFECT (Export Successful dialog, results_display_screen.dart).
+      const defect = [
+        'decoration: BoxDecoration(color: Colors.grey[200]),',
+        'child: SelectableText(',
+        '  filePath,',
+        "  style: const TextStyle(fontSize: 12, fontFamily: 'monospace'),",
+        '),',
+      ];
+      expect(isPinnedSurface(defect[0]), isTrue,
+          reason: 'Colors.grey[200] is a pinned surface -- the bracket form '
+              'F197 could not match at all');
+      expect(textStyleDeclaresColour(defect, 3), isFalse,
+          reason: 'no colour: in the style means Flutter resolves it from the '
+              'theme, which is the whole defect');
+
+      // NOT a defect: a fully hardcoded card pins BOTH halves (Default
+      // Folders, 7.56:1). This is the false positive that would make the gate
+      // block correct work.
+      const hardcoded = [
+        'color: Colors.blue.shade50,',
+        'child: Text("Default folders",',
+        '  style: TextStyle(color: Colors.blue.shade900, fontSize: 13)),',
+      ];
+      expect(textStyleDeclaresColour(hardcoded, 2), isTrue,
+          reason: 'the foreground is pinned, so the card holds in any theme');
+
+      // NOT a defect: a multi-line style that declares a colour further down.
+      const multiLineWithColour = [
+        'style: TextStyle(',
+        '  fontSize: 12,',
+        '  fontFamily: "monospace",',
+        '  color: Colors.blue.shade900,',
+        '),',
+      ];
+      expect(textStyleDeclaresColour(multiLineWithColour, 0), isTrue,
+          reason: 'the colour is declared, just not on the opening line');
+
+      // The F197 exclusions still hold in this group.
+      expect(isPinnedSurface('Icon(Icons.info, color: Colors.blue[700])'),
+          isFalse);
+      expect(
+          isPinnedSurface('border: Border.all(color: Colors.grey[300]!),'),
+          isFalse);
+      expect(
+          isPinnedSurface(
+              'style: TextStyle(color: Colors.grey[600], fontSize: 12),'),
+          isFalse);
+
+      // The bracket walk must not treat a wrapped TEXT colour as a surface.
+      const splitTextStyle = [
+        'style: TextStyle(',
+        '  color: Colors.blue[900],',
+        '),',
+      ];
+      expect(insideMultiLineTextStyle(splitTextStyle, 1), isTrue);
+
+      // Nor a wrapped ICON tint -- the real shape from
+      // account_setup_screen.dart:546, where dart format pushed the tint onto
+      // its own line and the single-line `Icon(` exclusion could not see it.
+      const splitIcon = [
+        'Icon(Icons.check_circle_outline,',
+        '  color: Colors.green.shade600, size: 16),',
+      ];
+      expect(isPinnedSurface(splitIcon[1]), isTrue,
+          reason: 'the single-line check cannot see the Icon( above it -- '
+              'this is why insideMultiLineIcon exists');
+      expect(insideMultiLineIcon(splitIcon, 1), isTrue,
+          reason: 'an icon tint is decoration, not text (WCAG 1.4.3)');
+
+      // The icon walk must not over-reach past a CLOSED Icon().
+      const closedIconThenSurface = [
+        'Icon(Icons.info, size: 16),',
+        'color: Colors.grey[100],',
+      ];
+      expect(insideMultiLineIcon(closedIconThenSurface, 1), isFalse,
+          reason: 'the Icon on the previous line is CLOSED; the surface below '
+              'it is a genuine surface');
+    });
+
+    test('no pinned surface wraps text that omits its colour', () {
+      final uiDir = Directory('lib/ui');
+      expect(uiDir.existsSync(), isTrue,
+          reason: 'run this test from the mobile-app/ directory');
+
+      final violations = <String>[];
+
+      for (final entity in uiDir.listSync(recursive: true)) {
+        if (entity is! File || !entity.path.endsWith('.dart')) continue;
+        final fileName = entity.uri.pathSegments.last;
+        final lines = entity.readAsLinesSync();
+
+        for (var i = 0; i < lines.length; i++) {
+          if (!isPinnedSurface(lines[i])) continue;
+          if (insideMultiLineTextStyle(lines, i)) continue;
+          if (insideMultiLineIcon(lines, i)) continue;
+
+          final end = i + windowLines >= lines.length
+              ? lines.length
+              : i + windowLines + 1;
+          for (var j = i + 1; j < end; j++) {
+            if (!lines[j].contains('TextStyle(')) continue;
+            if (textStyleDeclaresColour(lines, j)) continue;
+
+            violations.add(
+              '$fileName:${i + 1} pins a surface -- ${lines[i].trim()}\n'
+              '    but $fileName:${j + 1} styles text with NO colour -- '
+              '${lines[j].trim()}\n'
+              '    Flutter resolves an omitted colour from the THEME, so the '
+              'text flips with the theme while this surface does not. In dark '
+              'mode that is near-white on near-white. This is the F197 defect '
+              'with no textTheme token to match on -- which is exactly how it '
+              'reached a shipped build one day after the F197 gate. Fix by '
+              'making the surface theme-derived '
+              '(`colorScheme.surfaceContainerHighest`), which is what F210 '
+              'did, or by pinning the text colour if the surface must stay '
+              'fixed.',
+            );
+            break;
+          }
+        }
+      }
+
+      expect(
+        violations,
+        isEmpty,
+        reason: 'A pinned surface wrapping text that inherits its colour from '
+            'the theme is unreadable in one of the two themes (ADR-0037, '
+            'WCAG 2.1 AA 4.5:1). See docs/ACCESSIBILITY_STANDARDS.md '
+            'section 4.\n\n${violations.join('\n\n')}',
+      );
+    });
+  });
 }

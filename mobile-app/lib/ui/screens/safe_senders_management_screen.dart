@@ -215,7 +215,10 @@ class _SafeSendersManagementScreenState
             Container(
               padding: const EdgeInsets.all(8),
               decoration: BoxDecoration(
-                color: Colors.grey.shade100,
+                // F210: was Colors.grey.shade100 under a colourless
+                // TextStyle -- the pattern being deleted was unreadable in
+                // dark mode.
+                color: Theme.of(context).colorScheme.surfaceContainerHighest,
                 borderRadius: BorderRadius.circular(4),
               ),
               child: Text(

@@ -413,7 +413,11 @@ class _ResultsDisplayScreenState extends State<ResultsDisplayScreen> {
                 Container(
                   padding: const EdgeInsets.all(8),
                   decoration: BoxDecoration(
-                    color: Colors.grey[200],
+                    // F210: was Colors.grey[200] -- a fixed near-white surface
+                    // under text with NO colour, so the path rendered
+                    // near-white on near-white in dark mode.
+                    color:
+                        Theme.of(context).colorScheme.surfaceContainerHighest,
                     borderRadius: BorderRadius.circular(4),
                   ),
                   child: SelectableText(
@@ -425,7 +429,12 @@ class _ResultsDisplayScreenState extends State<ResultsDisplayScreen> {
                 const SizedBox(height: 8),
                 Text(
                   'Select the path above to copy it.',
-                  style: TextStyle(fontSize: 11, color: Colors.grey[600]),
+                  style: TextStyle(
+                    fontSize: 11,
+                    // F210: was Colors.grey[600] on the theme surface of the
+                    // dialog -- the inverse pairing, dark-on-dark in dark mode.
+                    color: Theme.of(context).colorScheme.onSurfaceVariant,
+                  ),
                 ),
               ],
             ),

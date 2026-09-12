@@ -259,7 +259,10 @@ class _RulesManagementScreenState extends State<RulesManagementScreen>
             Container(
               padding: const EdgeInsets.all(8),
               decoration: BoxDecoration(
-                color: Colors.grey.shade100,
+                // F210: was Colors.grey.shade100 under a colourless
+                // TextStyle -- the rule name being deleted was unreadable in
+                // dark mode, in the dialog that asks you to confirm it.
+                color: Theme.of(context).colorScheme.surfaceContainerHighest,
                 borderRadius: BorderRadius.circular(4),
               ),
               child: Text(

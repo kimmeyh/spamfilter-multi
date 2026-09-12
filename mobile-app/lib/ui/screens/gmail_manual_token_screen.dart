@@ -198,19 +198,30 @@ class _GmailManualTokenScreenState extends State<GmailManualTokenScreen> {
             Container(
               padding: const EdgeInsets.all(8),
               decoration: BoxDecoration(
-                color: Colors.red.shade50,
+                // F210: was Colors.red.shade50 under a colourless TextStyle --
+                // a SECURITY warning that was unreadable in dark mode.
+                // errorContainer keeps it reading as a warning in both modes.
+                color: Theme.of(context).colorScheme.errorContainer,
                 borderRadius: BorderRadius.circular(4),
-                border: Border.all(color: Colors.red.shade200),
+                border: Border.all(
+                  color: Theme.of(context).colorScheme.error,
+                ),
               ),
               child: Row(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Icon(Icons.warning_amber, color: Colors.red.shade700, size: 20),
+                  Icon(Icons.warning_amber,
+                      color: Theme.of(context).colorScheme.onErrorContainer,
+                      size: 20),
                   const SizedBox(width: 8),
-                  const Expanded(
+                  Expanded(
                     child: Text(
                       'Security Warning: Keep your tokens secure and never share them with anyone!',
-                      style: TextStyle(fontSize: 12, fontWeight: FontWeight.w500),
+                      style: TextStyle(
+                        fontSize: 12,
+                        fontWeight: FontWeight.w500,
+                        color: Theme.of(context).colorScheme.onErrorContainer,
+                      ),
                     ),
                   ),
                 ],

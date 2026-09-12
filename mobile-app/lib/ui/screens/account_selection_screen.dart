@@ -822,7 +822,11 @@ class _AccountSelectionScreenState extends State<AccountSelectionScreen> with Wi
                         child: Card(
                         margin: const EdgeInsets.only(bottom: 12),
                         elevation: 2,
-                        color: Colors.red[50],
+                        // F210: errorContainer/onErrorContainer is the theme
+                        // error pairing and is legible in both modes.
+                        // Colors.red[50] was a fixed near-white surface under a
+                        // title and subtitle that both omit a colour.
+                        color: Theme.of(context).colorScheme.errorContainer,
                         child: ListTile(
                           leading: CircleAvatar(
                             backgroundColor: Colors.red.withValues(alpha: 0.2),
@@ -830,11 +834,19 @@ class _AccountSelectionScreenState extends State<AccountSelectionScreen> with Wi
                           ),
                           title: Text(
                             accountId,
-                            style: const TextStyle(fontSize: 14),
+                            style: TextStyle(
+                              fontSize: 14,
+                              color:
+                                  Theme.of(context).colorScheme.onErrorContainer,
+                            ),
                           ),
-                          subtitle: const Text(
+                          subtitle: Text(
                             'Error: Missing credentials\nTap delete to remove',
-                            style: TextStyle(fontSize: 12),
+                            style: TextStyle(
+                              fontSize: 12,
+                              color:
+                                  Theme.of(context).colorScheme.onErrorContainer,
+                            ),
                           ),
                           trailing: IconButton(
                             icon: const Icon(Icons.delete_outline),

@@ -372,7 +372,11 @@ class _RuleTestScreenState extends State<RuleTestScreen> {
             const SizedBox(height: 6),
             Row(
               children: [
-                Icon(Icons.auto_fix_high, size: 14, color: Colors.grey[600]),
+                Icon(
+                  Icons.auto_fix_high,
+                  size: 14,
+                  color: Theme.of(context).colorScheme.onSurfaceVariant,
+                ),
                 const SizedBox(width: 4),
                 Expanded(
                   child: Text(
@@ -380,7 +384,9 @@ class _RuleTestScreenState extends State<RuleTestScreen> {
                     style: TextStyle(
                       fontSize: 11,
                       fontFamily: 'monospace',
-                      color: Colors.grey[700],
+                      // F210: was Colors.grey[700] on the THEME surface -- the
+                      // inverse pairing (F195 class), dark-on-dark in dark mode.
+                      color: Theme.of(context).colorScheme.onSurfaceVariant,
                     ),
                     overflow: TextOverflow.ellipsis,
                   ),
