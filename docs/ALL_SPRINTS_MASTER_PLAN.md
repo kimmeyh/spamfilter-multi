@@ -723,6 +723,46 @@ All incomplete items in relative priority order. Priority in increments of 10; i
 - Source: Harold, 2026-09-11, adding rules on the S24+. Root-cause hypothesis contributed by
   Harold the same day and code-confirmed as a real coordinator bypass.
 
+**F215. Wire the validation-screenshot folder into every process that handles Android screenshots (~1-2h) Priority 30 (NEW, 2026-09-11 -- Harold)**
+- Phase: Developer Workflow / Tooling
+- Platform: N/A (process and docs)
+- **Harold, 2026-09-11**: *"I would like to keep a history of them in the directory, but not in
+  the repo... add to backlog so that we can update all the 'processing of future screenshots from
+  android' know to put them there and reference them there"*.
+- **ALREADY DONE in Sprint 69** (the location itself, so this card is only the wiring):
+  - `validation-screenshots/` created, with `sprint-NN/` subfolders.
+  - `.gitignore:275-276` excludes everything under it EXCEPT `README.md`, so the convention is
+    tracked even though the images never are.
+  - `validation-screenshots/README.md` records the layout, the naming rule (name by WHAT IT
+    SHOWS, not when it was taken), why images stay out of git, and the standing Sprint 68 rule
+    that a screenshot proves STATE and never CAUSE.
+- **WHAT REMAINS -- the actual work of this card.** Every place that handles an Android
+  screenshot still behaves as though the images are ephemeral. Each needs updating to pull from,
+  and write to, the new folder:
+  1. **`SPRINT_EXECUTION_WORKFLOW.md` Phase 5.3** -- Manual Validation should instruct that
+     screenshots are saved to `validation-screenshots/sprint-NN/` before being discussed, so the
+     evidence outlives the chat session.
+  2. **The MTP shell-COM retrieval recipe** (established Sprint 68, currently living only in a
+     transcript) -- it pulls screenshots off the phone over the MTP namespace, where `Test-Path`
+     fails and `Shell.Application` works. It should land files directly in the sprint folder, and
+     the recipe itself should be written down somewhere durable rather than rediscovered.
+  3. **Backlog-card authoring** -- when a card is written from an image, cite the relative path
+     so a later reader knows the evidence exists and where it is. F210, F208, F209, F212 and F214
+     were all written from images that no longer exist anywhere.
+  4. **`SPRINT_RETROSPECTIVE.md`** -- validation evidence referenced in a retrospective should
+     point at the folder rather than at a screenshot nobody can open any more.
+  5. **`TESTING_STRATEGY.md`** -- name the folder as the home for manual-validation evidence,
+     alongside the existing WinWright artifact conventions.
+- **Do NOT** start committing the images to make them easier to reference. Phone screenshots run
+  1-3 MB each and git history never forgets a binary; that trade was considered and declined.
+- **Worth deciding while doing this**: whether a sprint's folder should be pruned at close-out or
+  kept indefinitely. Keeping everything is simplest and costs nothing but local disk, which is
+  why nothing prunes today -- but it is a decision, not an oversight, and should be recorded as
+  one.
+- Depends on: nothing. The folder and its gitignore rules already exist.
+- Source: Harold, 2026-09-11, after asking where validation screenshots were being stored and
+  learning the answer was nowhere.
+
 **F214. Scan Range slider does not align with the controls above it -- left/right margins read as too wide (~1-2h) Priority 34 (NEW, 2026-09-11 -- reported by a TESTER)**
 - Phase: Core App Quality
 - Platform: All (shared Flutter UI) -- reported on Android

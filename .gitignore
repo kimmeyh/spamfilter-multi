@@ -259,3 +259,18 @@ mobile-app/android/.kotlin/
 *.keystore
 android-signing.json
 .claude/mutation-locks/
+
+# Manual Validation screenshots (F215, Sprint 69, Harold 2026-09-11).
+# Harold's requirement, verbatim: "I would like to keep a history of them in
+# the directory, but not in the repo."
+#
+# So the folder lives INSIDE the working directory -- easy to find, easy to
+# drop a phone screenshot into, and one path to reference from a backlog card
+# -- but nothing under it is ever committed. Phone screenshots run 1-3 MB each
+# and a git history never forgets a binary.
+#
+# Layout: validation-screenshots/sprint-NN/<something-descriptive>.png
+# See validation-screenshots/README.md (which IS tracked, so the convention
+# survives even though the images do not).
+validation-screenshots/**
+!validation-screenshots/README.md

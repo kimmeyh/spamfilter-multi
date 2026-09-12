@@ -832,6 +832,21 @@ After Phase 5.2 all tests pass, context can be compacted for efficiency:
 
   **CRITICAL**: Claude Code MUST build and run the Windows Desktop App (or target platform) BEFORE declaring the sprint ready for manual validation. User should NOT have to build app themselves. This step is MANDATORY - do NOT skip it.
 
+  **CRITICAL -- RE-PRESENT THE VALIDATION PLAN IN FULL, EVERY TIME** (Harold, 2026-09-11).
+  Manual Validation is handed over once and then the conversation keeps going -- code review,
+  fixes, rebuilds, hook blocks, sometimes hours. By the time Harold is ready to validate, the
+  steps are buried behind build logs and test output. Harold, verbatim: *"'the plan from earlier'
+  could be 5, 20, 50 screens back and that isn't good. Can you always re-present them each time
+  so they don't have to be chased down."*
+  - **Every message that asks Harold to validate carries the WHOLE list**, not a pointer to it.
+    That includes follow-ups: after a rebuild, after a fix, after a blocked turn.
+  - Same rule for console steps he must perform himself, and for numbered questions he has not
+    answered yet -- if you are asking him to act, the instructions ship in the same message.
+  - The trade is deliberately asymmetric: repeating a checklist is cheap and slightly redundant;
+    making him search scrollback is expensive and lands exactly when he is trying to start.
+  - Also recorded in CLAUDE.md "Things Claude Should NOT Do", because it applies outside Phase
+    5.3 as well.
+
   **Pre-Testing Checklist** (Claude Code completes BEFORE handing to user):
   - [ ] **5.3.a Build the application**
     - Windows: `cd mobile-app/scripts && .\build-windows.ps1`
