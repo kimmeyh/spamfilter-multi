@@ -723,7 +723,7 @@ All incomplete items in relative priority order. Priority in increments of 10; i
 - Source: Harold, 2026-09-11, adding rules on the S24+. Root-cause hypothesis contributed by
   Harold the same day and code-confirmed as a real coordinator bypass.
 
-**F216. Rule Tester / Safe Sender quick-add: supporting text is two size steps smaller than the text it sits beside (~1-2h) Priority 32 (NEW, 2026-09-11 -- Harold, Sprint 69 Manual Validation)**
+**F216. Supporting text is smaller than the text it should match -- Rule Tester, Safe Sender quick-add, AND the email action popup (~2-4h) Priority 32 (NEW, 2026-09-11, EXPANDED 2026-09-12 -- Harold)**
 - Phase: Core App Quality
 - Platform: All (shared Flutter UI) -- observed on Windows dark mode
 - **Harold, 2026-09-11**, during Sprint 69 Manual Validation: *"Examples:...", "Enter a phrase...",
@@ -758,6 +758,47 @@ All incomplete items in relative priority order. Priority in increments of 10; i
   screens rather than two.
 - **Verify in BOTH themes after changing.** A size change alters the contrast-to-background ratio
   at small sizes; the F210 gate covers colour pairing, not size.
+- **SECOND INSTANCE, added 2026-09-12 at Harold's direction ("1. a") -- the email action popup.**
+  Harold: *"the font on the scan results for the folder, subject, date and domain are acceptable,
+  but the font size in the pop-up is much smaller and too small. Can the pop-up text for the
+  folder, subject, date and domain use the same size as in the scan results page?"*
+- **Proven from a BEFORE/AFTER pair of the SAME email**, not from two similar screens:
+  `validation-screenshots/sprint-69/Screenshot_20260910_183529.png` (the list) and
+  `Screenshot_20260910_183550.png` (the popup), both showing `kkrmlexjnr@hotaucage.net`.
+- **Measured sizes** (`results_display_screen.dart`):
+
+  | Field | List row | Popup | Gap |
+  |---|---|---|---|
+  | sender | **16sp** (ListTile `title`, Material bodyLarge) | 14sp (`:1858`) | -2 |
+  | `folder - subject - rule` | **14sp** (ListTile `subtitle`, bodyMedium) | **12sp** (`:1906`) | **-2** |
+  | date | -- | 11sp (`:1921`) | -- |
+  | sender domain | -- | 11sp (`:1932`) | -- |
+  | rule chip | -- | 11sp | -- |
+
+  The list row is a plain `ListTile` with **no `fontSize` overrides at all**, so it inherits
+  Material's defaults. Every size in the popup is hardcoded and every one is smaller.
+- **DECISION (Harold, 2026-09-12, answer "2. a")**: match the list's SUBTITLE line -- the one
+  carrying those same four fields -- not its sender line. So:
+  - popup `folder - subject - rule`: 12sp -> **14sp**
+  - popup date and domain: 11sp -> **14sp**, so the popup is internally consistent rather than
+    trading one mismatch for another
+  - the sender at 14sp is NOT part of this change. Harold called the list acceptable and did not
+    raise the sender; leaving it avoids widening the card into a redesign.
+- **Why this one matters more than the Rule Tester instance**: the popup exists SO THAT a user
+  can confirm they tapped the right email before blocking a sender or a whole domain. Making its
+  metadata harder to read than the list it came from is backwards at exactly the moment accuracy
+  matters. The actions on that sheet are destructive.
+- **Two corrections recorded so they are not repeated.** Both came from grepping `fontSize` and
+  matching values to a code region rather than reading the rendering:
+  1. The popup was first reported as 11sp throughout. 11sp is the date/domain row; the metadata
+     line is 12sp.
+  2. The list was first reported as 14sp sender / 12sp subtitle. It overrides nothing and
+     inherits 16/14.
+  The relationship Harold described was right in both cases; the numbers were not. **Read the
+  widget, not a nearby grep hit.**
+- **Check for the same shape elsewhere before editing**: `no_rule_review_screen.dart` renders a
+  comparable metadata line, and `scan_history_screen.dart` has its own. If only the popup is
+  changed, the inconsistency moves rather than resolving.
 - Depends on: nothing.
 - Source: Harold, 2026-09-11, Sprint 69 Manual Validation, Windows dark mode. Two screenshots
   (Rule Tester with a Body Phrase rule, Safe Sender quick-add with an Exact Email rule).
