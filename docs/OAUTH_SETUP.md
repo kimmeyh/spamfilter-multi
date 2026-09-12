@@ -119,6 +119,22 @@ cause of F211 than the scheme setting was.
      so the client was configured for a local debug build of an app that no longer exists
      under that name.
 
+**THE TWO FINGERPRINTS FOR THIS PROJECT** (recorded 2026-09-11 so nobody has to hunt again):
+
+| Which | SHA-1 | Used by |
+|---|---|---|
+| **Play App Signing** | `C3:A5:47:E0:E9:26:B4:30:DF:62:CC:2D:55:1A:88:4C:C8:43:2C:31` | every build a tester or customer installs from Play |
+| Local debug keystore | `F6:CF:21:00:94:7A:D9:4E:8A:E9:25:66:5F:8F:20:DB:55:15:8F:17` | `~/.android/debug.keystore`, local debug builds only |
+
+These are NOT secrets -- a certificate fingerprint is public by design, which is why recording
+it here is safe and why it belongs in the repo rather than in a chat transcript.
+
+Found via Play Console -> **Protected with Play** -> **Play Store protection** -> *Protect app
+signing key* -> **Manage Play app signing**. (Google has moved this twice: it was under "App
+integrity", and before that under "Setup > App signing".) The same page shows *Releases signed
+by Play*, which is the confirmation that Google re-signs the app and therefore that the Play
+fingerprint -- never the local one -- is what Google sees at sign-in.
+
 **How to tell this has been wrong all along**: the client page shows a **Last used date** and,
 after six months of no matching requests, a warning that the client will be deleted. A client
 that the shipped app has never successfully reached shows exactly that. Read those two fields
