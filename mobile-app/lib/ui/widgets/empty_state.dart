@@ -141,11 +141,47 @@ class NoResultsEmptyState extends StatelessWidget {
 }
 
 /// [NEW] ISSUE #123+#124: Show when scan completed but no emails were found
+/// F203 (Sprint 69): the scan finished with nothing to show.
+///
+/// **Two different things used to share one message, and one of them was
+/// false.** The original text always read "No emails were found in the
+/// selected folders for the specified time period." That is true when the
+/// fetch came back empty. It is NOT true when emails were fetched and then
+/// skipped because they already sit in the safe-sender folder -- a correct
+/// behaviour (`email_scanner.dart`: "do not count, do not display, do not
+/// process") that was completely invisible to the user.
+///
+/// The visible result was a screen reading "Found 40, evaluated 0" above an
+/// empty list above "No emails were found" -- three statements a person cannot
+/// reconcile. Pass [skippedAlreadyFiled] so the state can say which case this
+/// is.
+///
+/// Shared by Windows and Android (ADR-0042): this widget and the conditional
+/// that selects it in `results_display_screen.dart` are single, platform-blind
+/// code paths.
 class ScanCompleteNoEmailsEmptyState extends StatelessWidget {
-  const ScanCompleteNoEmailsEmptyState({super.key});
+  const ScanCompleteNoEmailsEmptyState({
+    super.key,
+    this.skippedAlreadyFiled = 0,
+  });
+
+  /// Emails fetched and then skipped as already filed. Zero means the fetch
+  /// itself came back empty.
+  final int skippedAlreadyFiled;
 
   @override
   Widget build(BuildContext context) {
+    if (skippedAlreadyFiled > 0) {
+      final plural = skippedAlreadyFiled == 1 ? '' : 's';
+      return EmptyState(
+        icon: Icons.verified_outlined,
+        title: 'Nothing Needed Action',
+        message: '$skippedAlreadyFiled safe sender email$plural '
+            '${skippedAlreadyFiled == 1 ? 'was' : 'were'} already filed in '
+            'your safe sender folder, so no action was needed. Nothing else '
+            'matched a rule.',
+      );
+    }
     return const EmptyState(
       icon: Icons.check_circle_outline,
       title: 'Scan Complete',
