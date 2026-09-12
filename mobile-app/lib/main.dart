@@ -34,6 +34,7 @@ import 'util/redact.dart';
 // import 'ui/screens/platform_selection_screen.dart'; // OLD: Direct to platform selection.
 import 'ui/screens/main_navigation_screen.dart'; // NEW: Main navigation with bottom nav (Android)
 import 'ui/theme/app_theme.dart';
+import 'ui/widgets/system_inset_wrapper.dart'; // F209 (Sprint 69)
 import 'package:workmanager/workmanager.dart';
 import 'core/services/android_background_scan_worker.dart';
 
@@ -475,6 +476,13 @@ class SpamFilterApp extends StatelessWidget {
             themeMode: ThemeMode.system, // Follow system theme preference
             // Track navigation events for account list refresh
             navigatorObservers: [routeObserver],
+            // F209 (Sprint 69): inset every route for the Android system
+            // navigation bar. Applied here rather than in 21 screens because
+            // each screen builds its own Scaffold and no shared body container
+            // exists -- and because a route added LATER inherits it for free.
+            // No-op on Windows (declared ADR-0042 platform exception).
+            builder: (context, child) =>
+                SystemInsetWrapper(child: child ?? const SizedBox.shrink()),
             // Initialize rules after providers are created
             home: const _AppInitializer(),
           ),
