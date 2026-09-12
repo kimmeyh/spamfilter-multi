@@ -121,13 +121,27 @@ cause of F211 than the scheme setting was.
 
 **THE TWO FINGERPRINTS FOR THIS PROJECT** (recorded 2026-09-11 so nobody has to hunt again):
 
-| Which | SHA-1 | Used by |
-|---|---|---|
-| **Play App Signing** | `C3:A5:47:E0:E9:26:B4:30:DF:62:CC:2D:55:1A:88:4C:C8:43:2C:31` | every build a tester or customer installs from Play |
-| Local debug keystore | `F6:CF:21:00:94:7A:D9:4E:8A:E9:25:66:5F:8F:20:DB:55:15:8F:17` | `~/.android/debug.keystore`, local debug builds only |
+| Which | SHA-1 | Used by | Goes in the OAuth client? |
+|---|---|---|---|
+| **App signing key** (Classical) | `3B:C2:42:60:27:14:4F:7F:AD:6E:10:D1:5E:DF:42:8F:E2:01:33:92` | what Google sees when ANY Play-installed build requests sign-in | **YES -- this one** |
+| Upload key | `C3:A5:47:E0:E9:26:B4:30:DF:62:CC:2D:55:1A:88:4C:C8:43:2C:31` | signing the bundle before upload; never leaves the build pipeline | NO |
+| Local debug keystore | `F6:CF:21:00:94:7A:D9:4E:8A:E9:25:66:5F:8F:20:DB:55:15:8F:17` | `~/.android/debug.keystore`, local debug builds only | only for a separate `.dev` client |
+
+**THE UPLOAD KEY IS THE TRAP, and it nearly cost a cycle here.** Both fingerprints live on the
+same Play Console page, but the upload key is displayed as plain text while the app signing key
+is hidden behind a copy button in the "App signing key / Classical key" panel at the TOP. The
+visible one is the wrong one. Entering it would have produced a sign-in that still failed, after
+Google's multi-hour propagation window, with nothing to distinguish "wrong fingerprint" from
+"fix did not work".
+
+The rule that disambiguates them: **Play RE-SIGNS the app**, so only the app signing key reaches
+Google at sign-in time. The upload key proves to Google that a bundle came from you.
+
+Ignore the **Post-quantum cryptography key** column -- it is a Google beta, and OAuth client
+registration expects the classical fingerprint.
 
 These are NOT secrets -- a certificate fingerprint is public by design, which is why recording
-it here is safe and why it belongs in the repo rather than in a chat transcript.
+them here is safe and why they belong in the repo rather than in a chat transcript.
 
 Found via Play Console -> **Protected with Play** -> **Play Store protection** -> *Protect app
 signing key* -> **Manage Play app signing**. (Google has moved this twice: it was under "App
