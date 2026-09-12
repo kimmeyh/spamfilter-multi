@@ -14,6 +14,8 @@ library;
 
 import 'dart:io';
 
+import 'package:flutter/foundation.dart' show visibleForTesting;
+
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
 import 'package:logger/logger.dart';
@@ -31,6 +33,24 @@ import '../widgets/standard_app_bar_actions.dart';
 /// Screen for importing and exporting YAML rule files
 class YamlImportExportScreen extends StatefulWidget {
   const YamlImportExportScreen({super.key});
+
+  /// F208 (Sprint 69): the extensions a YAML rule/safe-sender file may carry.
+  ///
+  /// Lower-case, no dot. Compared against a lower-cased path, so a file saved
+  /// as `Rules.YAML` is accepted -- Android's Downloads and Documents pickers
+  /// hand back whatever casing the file was created with.
+  static const _yamlExtensions = ['.yaml', '.yml'];
+
+  /// Does [path] name a YAML file?
+  ///
+  /// Public so the invariant is testable without a file picker: this is the
+  /// only thing standing between a wrongly-chosen file and an import that
+  /// REPLACES every rule of its type.
+  @visibleForTesting
+  static bool isYamlPath(String path) {
+    final lower = path.toLowerCase();
+    return _yamlExtensions.any(lower.endsWith);
+  }
 
   @override
   State<YamlImportExportScreen> createState() => _YamlImportExportScreenState();
@@ -248,6 +268,11 @@ class _YamlImportExportScreenState extends State<YamlImportExportScreen> {
       }
 
       // Let user pick save location
+      // F208: saveFile is deliberately LEFT as FileType.custom. The Android
+      // MIME failure is in the OPEN path, where the picker must resolve a
+      // filter against existing files; a save dialog takes a typed name and
+      // has nothing to match. Export was verified working on the S24+ while
+      // import was broken, which is the evidence for that split.
       final outputPath = await FilePicker.platform.saveFile(
         dialogTitle: 'Export Rules YAML',
         fileName: 'rules.yaml',
@@ -322,25 +347,82 @@ class _YamlImportExportScreenState extends State<YamlImportExportScreen> {
 
   // --- Import Operations ---
 
+  /// Pick a YAML file to import.
+  ///
+  /// **DECLARED PLATFORM EXCEPTION (ADR-0042) -- resolved by REMOVING the
+  /// difference rather than forking on it.**
+  ///
+  /// `FileType.custom` + `allowedExtensions` is resolved by EXTENSION on
+  /// Windows and by MIME TYPE on Android. `.yaml` and `.yml` have no registered
+  /// MIME mapping on Android, so the picker rejected the filter outright,
+  /// before any file was chosen:
+  ///
+  /// ```
+  /// PlatformException(FilePicker, Unsupported filter. Make sure that you are
+  /// only using the extension without the dot, (ie., jpg instead of .jpg) ...
+  /// ```
+  ///
+  /// **That message is a red herring** and cost real time when this was first
+  /// read. The call already passed dotless `['yaml', 'yml']`, exactly as the
+  /// text demands. The extensions were never the problem; the MIME lookup was.
+  ///
+  /// So the fix is `FileType.any` plus validation HERE, on both platforms:
+  ///
+  /// - A MIME filter cannot be trusted to keep a wrong file out, so the
+  ///   validation is needed regardless of platform. Adding it means the
+  ///   platforms no longer need to differ at all.
+  /// - One code path is verifiable on both platforms. A fork would leave the
+  ///   Android branch exercised only on a device.
+  ///
+  /// The cost is that the picker no longer greys out non-YAML files, so a user
+  /// can select one. That is what the check below is for -- and it fails with a
+  /// sentence a person can act on, instead of a PlatformException.
+  ///
+  /// Returns the chosen path, or null when the user cancelled or picked a file
+  /// that is not YAML (the status message is shown here in that case).
+  Future<String?> _pickYamlFile(String dialogTitle) async {
+    final result = await FilePicker.platform.pickFiles(
+      dialogTitle: dialogTitle,
+      type: FileType.any,
+    );
+
+    if (result == null || result.files.isEmpty) return null;
+
+    final path = result.files.single.path;
+    if (path == null) {
+      _showStatus('Could not read the selected file.', isError: true);
+      return null;
+    }
+
+    if (!YamlImportExportScreen.isYamlPath(path)) {
+      final name = path.split(Platform.pathSeparator).last;
+      _showStatus(
+        'Not a YAML file: $name. Select a file ending in .yaml or .yml -- '
+        'the file this app exports.',
+        isError: true,
+      );
+      return null;
+    }
+
+    return path;
+  }
+
   Future<void> _importRules() async {
     setState(() => _isProcessing = true);
     try {
       _logger.i('Starting rules import');
 
-      // Let user pick a YAML file
-      final result = await FilePicker.platform.pickFiles(
-        dialogTitle: 'Select Rules YAML File',
-        type: FileType.custom,
-        allowedExtensions: ['yaml', 'yml'],
-      );
+      // Let user pick a YAML file. F208: _pickYamlFile validates the
+      // extension itself -- see its doc for why FileType.custom cannot be
+      // used on Android.
+      final filePath = await _pickYamlFile('Select Rules YAML File');
 
-      if (result == null || result.files.isEmpty) {
-        _showStatus('Import cancelled');
+      if (filePath == null) {
+        // Cancelled, or not a YAML file -- _pickYamlFile has already said
+        // which.
         setState(() => _isProcessing = false);
         return;
       }
-
-      final filePath = result.files.single.path!;
 
       // Validate the YAML file first
       RuleSet importedRules;
@@ -388,20 +470,13 @@ class _YamlImportExportScreenState extends State<YamlImportExportScreen> {
     try {
       _logger.i('Starting safe senders import');
 
-      // Let user pick a YAML file
-      final result = await FilePicker.platform.pickFiles(
-        dialogTitle: 'Select Safe Senders YAML File',
-        type: FileType.custom,
-        allowedExtensions: ['yaml', 'yml'],
-      );
+      // Let user pick a YAML file. F208: see _pickYamlFile.
+      final filePath = await _pickYamlFile('Select Safe Senders YAML File');
 
-      if (result == null || result.files.isEmpty) {
-        _showStatus('Import cancelled');
+      if (filePath == null) {
         setState(() => _isProcessing = false);
         return;
       }
-
-      final filePath = result.files.single.path!;
 
       // Validate the YAML file first
       SafeSenderList importedSafeSenders;
