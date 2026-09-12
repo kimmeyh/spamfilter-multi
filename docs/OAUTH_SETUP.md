@@ -93,9 +93,41 @@ impersonation). This app uses `flutter_appauth`, which is built on exactly that 
 2. Select the project used for this app.
 3. Under **OAuth 2.0 Client IDs**, open the **Android** client whose id matches
    `ANDROID_GMAIL_CLIENT_ID` in `secrets.prod.json` / `secrets.dev.json`.
+   **Match on the ID, never on the name.** This project has a client called
+   "spamfilter-multi Android OAuth Client ID" whose Type is **Web application**, which is not
+   the one you want.
 4. Open the **Advanced Settings** section of that client's configuration page.
 5. Enable the **Custom URI scheme** method.
 6. Save.
+
+**Then check the other two fields on that same page.** An Android OAuth client is bound to a
+package name AND a certificate fingerprint, and the scheme setting is worth nothing if either
+is wrong. Found 2026-09-11: this project's client had BOTH wrong, which is the likelier root
+cause of F211 than the scheme setting was.
+
+7. **Package name** must equal `applicationId` in `android/app/build.gradle.kts` --
+   `com.myemailspamfilter`. It read `com.example.spamfiltermobile`, the unedited Flutter
+   template default, left behind when the app was renamed.
+8. **SHA-1 certificate fingerprint** must be the **Play App Signing** certificate for any
+   build installed from Play, NOT your local keystore. Google re-signs the app with its own
+   key, so the fingerprint Google sees at sign-in is Play's. Get it from Play Console ->
+   your app -> **Protected with Play** -> **App signing** -> **App signing key certificate**
+   (Google moved this out of "App integrity" in 2026).
+   - Keep the debug fingerprint as well. A client accepts multiple, and the debug one is what
+     lets local debug builds sign in.
+   - The value found here was `F6:CF:21:...:8F:17`, which is `~/.android/debug.keystore` --
+     so the client was configured for a local debug build of an app that no longer exists
+     under that name.
+
+**How to tell this has been wrong all along**: the client page shows a **Last used date** and,
+after six months of no matching requests, a warning that the client will be deleted. A client
+that the shipped app has never successfully reached shows exactly that. Read those two fields
+as evidence, not decoration.
+
+**Dev builds need their own client.** `build.gradle.kts:119` appends `.dev` to the
+applicationId, so `com.myemailspamfilter.dev` is a DIFFERENT package and one OAuth client
+cannot serve both. Google Sign-In in a dev build requires a second Android client registered
+against the `.dev` package and the debug fingerprint.
 
 **Changes take 5 minutes to a few hours to take effect** (Google's own stated range), so a
 failure immediately after saving is not proof the fix did not work.

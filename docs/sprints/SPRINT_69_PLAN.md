@@ -133,6 +133,59 @@ sprint's scope, not a mechanical edit.
 
 ### R-1 DETERMINATION (recorded 2026-09-11) -- CONSOLE-ONLY. No repo change required.
 
+> **CORRECTED 2026-09-11, after Harold opened the client.** The "no repo change" half of this
+> determination still holds and is unchanged. The "one console setting" half was WRONG, and the
+> error is worth naming precisely: I established that the redirect scheme is derived from the
+> client id, concluded the fix was the Custom URI scheme checkbox, and never asked whether the
+> client was otherwise correctly configured. Reading the client's own page took one screenshot
+> and showed **three** problems, not one.
+>
+> **What the client actually says** (`577022808534-0ejd...`, the id in `secrets.*.json`):
+>
+> | Field | Console says | The shipped app is | Match? |
+> |---|---|---|---|
+> | Custom URI scheme | enabled (ticked) | required by `flutter_appauth` | OK |
+> | Package name | `com.example.spamfiltermobile` | `com.myemailspamfilter` (`build.gradle.kts:27`) | **NO** |
+> | SHA-1 | `F6:CF:21:...:8F:17` | that is `~/.android/debug.keystore` | **NO** for Play builds |
+>
+> An Android OAuth client is bound to a package name AND a certificate fingerprint. This one is
+> configured for a LOCAL DEBUG build of an app whose package name is the unedited Flutter
+> template default. Testers run a PLAY-SIGNED RELEASE build of `com.myemailspamfilter`. No field
+> matches, so no request from the shipped app has ever reached this client.
+>
+> **Corroborated by the console itself, which I should have read as evidence rather than
+> decoration**: "Last used date: January 17, 2026" and a warning that the client "will be deleted
+> because it has not been used for over 6 months or it has no usage data recorded at all." That
+> is what zero matching requests looks like.
+>
+> **Also found**: `google-services.json` registers TWO packages -- `com.example.spamfilter_mobile`
+> (a third spelling, with an underscore) and `com.myemailspamfilter` -- and NEITHER records a
+> certificate hash. The Firebase side likely needs the same fingerprint once the OAuth client is
+> correct. Deliberately not changed in the same pass, so that one variable moves at a time.
+>
+> **Revised console work** (Harold chose option 1, 2026-09-11):
+> 1. Save the Custom URI scheme checkbox. DONE on Harold's screen.
+> 2. Change the package name to `com.myemailspamfilter`, and save.
+> 3. Add the **Play App Signing** SHA-1 to the client, KEEPING the debug fingerprint so local
+>    debug builds still work. Play re-signs the app with its own key, so the fingerprint Google
+>    sees at sign-in is Play's, never the local keystore's.
+>
+> **Open decision, surfaced not decided**: dev builds append `.dev`
+> (`build.gradle.kts:119`), so `com.myemailspamfilter.dev` and `com.myemailspamfilter` are two
+> distinct packages and ONE OAuth client cannot serve both. Google Sign-In in dev builds needs a
+> SECOND Android client. Not required for the tester blocker; recorded so it is a choice rather
+> than a later surprise.
+>
+> **AC-1 still cannot be verified until all three console changes are in place and have
+> propagated** (Google states 5 minutes to a few hours), and until it is tested with a Google
+> account that has never authorised this app.
+>
+> **The lesson, for the retrospective**: this is the screenshot rule (Sprint 68 IMP-1) in a new
+> costume. I did not misread an artifact -- I declined to look at one at all, and reasoned about
+> the client from the code that consumes its id instead. "The fix is console-side" was a
+> conclusion about a console I had never opened.
+
+
 **Answer: the fix needs NO code change, NO rebuild and NO new Play submission.** The
 stop-and-re-plan branch Harold set at approval is NOT triggered.
 
