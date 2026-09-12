@@ -1,6 +1,6 @@
 # Sprint 69 Plan
 
-**Status**: AWAITING PHASE 3.7 APPROVAL (not approved; no task work has started)
+**Status**: APPROVED -- Harold, 2026-09-11. Blanket execution approval through Manual Validation.
 **Branch**: `feature/20260910_Sprint_69`
 **Planned**: 2026-09-11
 **Scope selected by**: Harold, 2026-09-11 (Phase 8.4 backlog refinement pass 2)
@@ -14,20 +14,22 @@ shipped app on real hardware, and four of the five block or mislead a tester on 
 ## Scope
 
 - **F211** -- Google Sign-In fails for every tester (console-side). Priority 2. Est 30-60m.
-- **F212** -- Re-processing after adding rules fails 100%. Priority 4. Est 120-240m. **NEW, see below.**
 - **F210** -- Dark-mode contrast: hardcoded surface + colourless text. Priority 6. Est 90-150m.
 - **F208** -- YAML Import broken on Android. Priority 8. Est 60-120m.
 - **F209** -- Android navigation bar overlaps screen bottoms. Priority 16. Est 120-240m.
 - **F203** -- "Found N, evaluated 0" is unexplainable. Priority 22. Est 60-120m.
 
-**Total estimated coding time**: 480-930 minutes (approximately 8 to 15.5 hours).
+**Total estimated coding time**: 360-690 minutes (approximately 6 to 11.5 hours), inside
+Harold's 6-10h target.
 
-**SCOPE ADDITION, surfaced for approval**: Harold selected F211 + F210 + F208 + F209 + F203.
-**F212 was filed DURING this planning session** from screenshots supplied with the scope
-request, and is proposed at Priority 4. It is a 100 percent failure of the app's primary
-workflow on the closed-test build. **This is a Class-3 decision (sprint scope) and needs
-explicit approval.** If declined, the sprint is the five originally selected items and F212
-moves to Sprint 70.
+**F212 was DECLINED for this sprint (Harold, 2026-09-11): "next sprint".** It was filed during
+planning from the S24+ screenshots and is proposed for Sprint 70 at Priority 4. Harold's
+concurrency hypothesis materially improved that card during this same conversation -- see
+`ALL_SPRINTS_MASTER_PLAN.md` F212, which now leads with the ScanCoordinator bypass.
+
+**F211 branch decision (Harold, 2026-09-11)**: if R-1 finds a NEW OAuth client is required --
+a repo change plus a new Play submission -- **STOP and re-plan**. Do not proceed inside this
+sprint. This is recorded in the F211 card's DoD below.
 
 ## Standing constraint -- ADR-0042 cross-platform parity (Harold, restated verbatim)
 
@@ -46,10 +48,6 @@ Applied per task, honestly:
   platforms. Fixes must be verified on BOTH, and the F203 empty-state strings live in the
   shared `empty_state.dart` behind one conditional (proven in Sprint 68 after I wrongly
   claimed a platform difference).
-- **F212 is UNKNOWN, and that is the point.** Observed on Android;
-  `results_display_screen.dart` is shared code, so Windows is likely affected too and has
-  simply not been exercised the same way. **R-1 requires reproducing on Windows before
-  concluding it is Android-specific.**
 - **F211 is console-side**, with no platform surface in the repo.
 
 **One platform exception is anticipated (F209 inset handling) and one is confirmed (F208
@@ -139,76 +137,7 @@ Rollback: revert the console setting.
 
 ---
 
-## Task 2 -- F212: Re-processing after adding rules fails 100% (Priority 4)
-
-**Value**: This restores the app's primary workflow -- review "No rule" mail, add a rule, and
-have it actually applied.
-
-**Requirements**:
-- R-1: **Reproduce on BOTH platforms before diagnosing.** `results_display_screen.dart` is
-  shared code. If Windows also fails, this is a core defect; if only Android fails, the fork
-  is itself the finding. Do not assume Android-specific merely because that is where it was
-  seen.
-- R-2: **Get the exception before designing a fix.** The logger call at
-  `results_display_screen.dart:3142` carries it. The outer catch sets
-  `failCount = toDelete.length + toMoveSafe.length`, so "6 of 6" and "8 of 8" indicate ONE
-  throw, not N independent failures.
-- R-3: Evaluate the stale-result hypothesis explicitly. The result set came from a BACKGROUND
-  scan, and the closed-test build scans every 15 minutes and really deletes. The messages may
-  already be gone when the user acts. If so, the fix concerns staleness, not connectivity.
-- R-4: **Fix the contradictory messaging REGARDLESS of the cause.** A green "All 9 'No rule'
-  emails addressed." must never appear alongside a failed batch. Same class as F203, so do
-  them in one pass.
-- R-5 (ADR-0042): shared code. Verify the fix on Windows and Android.
-
-**Affected components / files**:
-- `mobile-app/lib/ui/screens/results_display_screen.dart` -- re-process path, approx 3040-3170
-- Possibly `mobile-app/lib/adapters/email_providers/generic_imap_adapter.dart`, depending on
-  R-2
-
-**Dependencies / blockers**:
-- Needs a reproduction. The device log or a manual CSV export supplies the exception.
-
-**Non-functional requirements**:
-- Account-scoping: the re-process path builds a fresh platform per account. Keep it scoped.
-- Security: credentials are loaded in this path. Do not log them.
-- Platform: shared. No exception anticipated.
-
-**Acceptance criteria**:
-- AC-1: The actual exception is recorded in the card and the commit before any fix is written.
-- AC-2 (behavioral): Given a scan result containing "No rule" emails, When a blocking rule is
-  added, Then the matching emails are acted on and the counter reports the true number.
-- AC-3: No success message is displayed when the batch failed, in whole or in part.
-- AC-4: Verified on Windows AND Android.
-
-**Tests to write**:
-- T-1 (verifies AC-2) -- TEST-UNIT: the re-process path reports a `successCount` matching the
-  actions actually executed.
-- T-2 (verifies AC-3) -- TEST-WIDGET: a failed batch does not render the "addressed" banner.
-- T-3 (verifies AC-4) -- MANUAL, both platforms, recorded in Phase 5 evidence.
-
-**Definition of Done**: default task-level DoD PLUS:
-- The root cause is stated in the commit. "Fixed by retrying" without a named cause is not
-  done.
-
-**Model**: Fable/Opus -- *why not Sonnet*: unknown root cause in the app's primary workflow,
-touching IMAP state and possibly stale-UID semantics. Sprint 38 showed that cursor and state
-semantics in this area produce Class-1 decisions.
-
-**Step-types**: SVC-EDIT, UI-MOVE, TEST-UNIT, TEST-WIDGET
-
-**Est-Effort**: 120-240m
-
-**Risk and rollback**: Re-processing DELETES real mail on the closed-test build. Test in
-read-only mode first; do not iterate against a live mailbox. Rollback: revert the screen file.
-
-**Decision-class interrupts**: if R-3 proves the cause is stale background-scan results, the
-fix may change when results are considered valid. That is a Class-1 (data semantics) decision
-to surface, not to implement.
-
----
-
-## Task 3 -- F210: Dark-mode contrast, surface plus colourless text (Priority 6)
+## Task 2 -- F210: Dark-mode contrast, surface plus colourless text (Priority 6)
 
 **Value**: This prevents unreadable text in dark mode and closes the gap that let the F197
 gate miss an entire variant.
@@ -262,7 +191,7 @@ true/false-positive boundary is the whole difficulty.
 
 ---
 
-## Task 4 -- F208: YAML Import broken on Android (Priority 8)
+## Task 3 -- F208: YAML Import broken on Android (Priority 8)
 
 **Value**: This restores the app's only backup-and-restore path on Android.
 
@@ -316,7 +245,7 @@ replacing and test against a backup. Rollback: re-import the known-good export.
 
 ---
 
-## Task 5 -- F209: Android navigation bar overlaps screen bottoms (Priority 16)
+## Task 4 -- F209: Android navigation bar overlaps screen bottoms (Priority 16)
 
 **Value**: This makes the bottom of every screen readable and reachable on Android, including
 error text that is currently cut off mid-sentence.
@@ -373,7 +302,7 @@ container, both-branch tests, manual sweep. Rollback: revert the wrapper.
 
 ---
 
-## Task 6 -- F203: "Found N, evaluated 0" is unexplainable (Priority 22)
+## Task 5 -- F203: "Found N, evaluated 0" is unexplainable (Priority 22)
 
 **Value**: This stops the app reporting that nothing was found when messages were found and
 deliberately skipped.
@@ -391,7 +320,9 @@ deliberately skipped.
 - R-5 (ADR-0042): **SHARED, both halves.** Both empty-state strings live in `empty_state.dart`
   behind one conditional in `results_display_screen.dart:797-798`, verified in Sprint 68 after
   I wrongly claimed a platform difference. Scope nothing here as Windows-only.
-- R-6: Coordinate with F212 R-4. The same class of counter dishonesty. Do them in one pass.
+- R-6: F212 (Sprint 70) is the same class of counter dishonesty -- a success message shown
+  beside a failed batch. It is NOT in this sprint. Where F203 touches the counter row, leave the
+  shape such that F212 extends it rather than rewriting it, but do not implement F212 here.
 
 **Affected components / files**:
 - `mobile-app/lib/core/services/email_scanner.dart` -- count the skips
@@ -399,7 +330,7 @@ deliberately skipped.
 - `mobile-app/lib/ui/screens/results_display_screen.dart` -- the counter row
 
 **Dependencies / blockers**:
-- Overlaps F212 (Task 2). Sequence F212 first so both messaging fixes land together.
+- None. (The F212 overlap is noted in R-6; F212 ships in Sprint 70.)
 
 **Non-functional requirements**:
 - Platform: shared. No exception.
@@ -429,8 +360,6 @@ distinction is easy to get wrong.
 ## Model assignment summary
 
 - **F211** -- Sonnet. Why not Haiku: R-1 is a branching diagnosis that can change sprint scope.
-- **F212** -- Fable/Opus. Why not Sonnet: unknown root cause in the primary workflow, possible
-  Class-1 state semantics.
 - **F210** -- Sonnet. Why not Haiku: extending a live gate with an exemption map.
 - **F208** -- Sonnet. Why not Haiku: platform-fork design choice on a data-replacing path.
 - **F209** -- Sonnet. Why not Haiku: shared-layout change across 21 screens with a desktop
@@ -441,17 +370,17 @@ Planner and analyst tier stays top (Opus) per SPRINT_PLANNING.md.
 
 **Single-session note (Sprint 68 IMP-4)**: if this sprint runs as one continuous interactive
 session, execution will be on the session model regardless of assignment. Recorded once here
-rather than as six per-task deviations.
+rather than as five per-task deviations.
 
 ## Sequencing
 
-1. **F211** -- 30-60m, unblocks testers, and R-1 may change the sprint's shape. Do it first.
-2. **F212** -- largest and most valuable. R-2 needs a reproduction that may take wall-clock
-   time, so start it early.
-3. **F203** -- immediately after F212, so both messaging fixes land in one pass (F212 R-4).
-4. **F210** -- self-contained.
-5. **F208** -- self-contained.
-6. **F209** -- last. A shared-layout change is best landed when nothing else is in flight.
+1. **F211** -- 30-60m, unblocks testers, and R-1 may change the sprint's shape (stop-and-re-plan
+   if it needs a new OAuth client). Do it first so that branch is known early.
+2. **F210** -- self-contained, and the gate extension is the sprint's most reusable output.
+3. **F208** -- self-contained.
+4. **F203** -- scanner counting plus empty-state text.
+5. **F209** -- last. A shared-layout change touching 21 screens is best landed when nothing
+   else is in flight, so the manual sweep is against a stable tree.
 
 F210 and F208 are mutually independent and could run in parallel across agents.
 
@@ -471,18 +400,24 @@ recorded here so the change is on the record rather than lost:
 No action is requested. If either was meant to stay in, say so at approval and the sprint is
 re-planned around it.
 
-## Open questions for Phase 3.7 approval
+## Phase 3.7 approval (CLOSED)
 
-1. **F212 scope addition**: approve adding it at Priority 4 (recommended), or hold it for
-   Sprint 70 and run the five originally selected?
-2. **F211 branch**: if R-1 finds a NEW OAuth client is required -- a repo change plus a Play
-   submission -- proceed within this sprint, or stop and re-plan?
+Approved by Harold, 2026-09-11: *"All Sprint tasks and sub-tasks are approved. Continue without
+addition approvals until Manual Validation."* Both open questions were answered at approval:
+
+1. **F212**: DECLINED for this sprint -- *"next sprint"*. Moves to Sprint 70 at Priority 4.
+2. **F211 branch**: if R-1 finds a new OAuth client is required, **STOP and re-plan**. Do not
+   proceed inside this sprint.
+
+Standing approval covers all task execution, commits, pushes to the sprint branch, and PR
+updates through Phase 5.3 Manual Validation. The 9 SPRINT_STOPPING_CRITERIA remain the only
+valid mid-sprint pauses.
 
 ## Definition of Done (sprint level)
 
 Per `SPRINT_EXECUTION_WORKFLOW.md` Phases 5-7. Additions for this sprint:
 
-- F212 and F203 manual validation recorded on BOTH platforms.
+- F203 manual validation recorded on BOTH platforms.
 - F210 and F209 mutation and no-regression evidence recorded.
 - F208 round trip proven with a real exported file on Android.
 - Every platform exception declared in a code comment per ADR-0042.

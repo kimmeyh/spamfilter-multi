@@ -1,17 +1,18 @@
 {
   "_description": "Sprint status file that persists across context compaction. Update after each phase/sub-phase completion.",
-  "_last_updated": "2026-09-10",
+  "_last_updated": "2026-09-11",
   "_usage": "Read this file after context compaction to restore sprint approval state and progress.",
   "_staleness_note": "This file had drifted 15 sprints (last updated at Sprint 35, 2026-04-19) before being refreshed at Sprint 50 close-out. It is a Phase 7.7 checklist item -- update it at every sprint close-out, not opportunistically.",
   "current_sprint": {
     "number": 69,
     "branch": "feature/20260910_Sprint_69",
-    "status": "Sprint 69 NOT PLANNED, NOT APPROVED. Phase 8 Release Cycle COMPLETE except Harold-side waits: 8.1 develop->main DONE (#404); 8.2 completeness sweep DONE; 8.3 BOTH STORES SUBMITTED -- Play 0.15.0 LIVE on closed testing and verified on the S24+, Windows Submission 26 in certification. NEXT: Phase 8.4 backlog refinement pass 2 (SCOPE SELECTION) -- not started, awaiting Harold. Slate has 11 candidates, 7 of them found 2026-09-10/11 by using the app on real hardware. F211 (Google Sign-In broken for ALL testers, console-side fix) is Priority 2 and is the only item touching the tester clock.",
-    "plan_approved": false,
-    "blanket_execution_approved": false,
-    "pr_number": null,
-    "pr_url": null,
-    "pr": null
+    "status": "Sprint 69 APPROVED 2026-09-11 (Phase 3.7). Scope: F211 + F210 + F208 + F209 + F203 -- Android tester-experience, 360-690 min est. F212 was proposed at planning and DECLINED by Harold (\"next sprint\") -> Sprint 70 Priority 4. F211 branch rule: if a NEW OAuth client is required, STOP and re-plan. Audit-first changed 4 cards: F210 is 4 instances not 1; F209 is app-wide (2 of 23 screens use SafeArea); F208 is 4 call sites; F211 may not be console-only. Blanket execution approved through Manual Validation (Phase 5.3). NEXT: Phase 3.3.1 create cards + draft PR.",
+    "plan_approved": true,
+    "blanket_execution_approved": true,
+    "pr_number": 410,
+    "pr_url": "https://github.com/kimmeyh/spamfilter-multi/pull/410",
+    "pr": 410,
+    "version": "0.15.1+4 / msix 0.15.1.0 -- PATCH bump at Phase 3.7.0b (F190). All five tasks are fixes, no feat. Both stores are at 0.15.0, so dev is one patch ahead as required. versionCode 3 -> 4 (Play requires strictly increasing)."
   },
   "previous_sprint": {
     "number": 68,
@@ -23,7 +24,8 @@
   },
   "github_issues": {
     "sprint_68": "#398 #399 #400 #401 #402 -- ALL CLOSED 2026-09-10 (manually; Closes #N does not auto-fire on feature->develop)",
-    "open": "none"
+    "open": "#405 #406 #407 #408 #409 (Sprint 69)",
+    "sprint_69": "#405 F211, #406 F210, #407 F208, #408 F209, #409 F203 -- created 2026-09-11 at Phase 3.7.0, all OPEN. Close by hand at Post-Merge Cleanup (Closes #N does not auto-fire on feature->develop)."
   },
   "_github_issues_note": "Sprint 66 cards created at Phase 3.3.1 (2026-09-07): #387 GP-19, #388 GP-4. Close by hand at Post-Merge Cleanup.",
   "test_metrics": {

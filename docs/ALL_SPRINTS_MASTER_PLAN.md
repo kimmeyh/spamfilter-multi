@@ -676,13 +676,37 @@ All incomplete items in relative priority order. Priority in increments of 10; i
   outer `catch` at line 3142 sets `failCount = toDelete.length + toMoveSafe.length` -- a
   WHOLE-BATCH failure. 6-of-6 and 8-of-8 match that shape exactly, so this is almost certainly
   ONE exception thrown before or during the batch, not N independent failures.
-- **Candidate causes, to diagnose rather than assume**: (a) the connection/credential path at
-  lines 3064-3075 -- it builds a FRESH platform and loads credentials, so a failure there fails
-  everything; (b) the result set came from a BACKGROUND scan, so the messages may be stale --
-  UIDs expired, already moved by a later background run (the closed test scans every 15 minutes,
-  and deletes really happen); (c) IMAP folder/UIDVALIDITY mismatch on a re-connect.
-  **(b) is the most interesting**: a background scan's results can be acted on minutes later,
-  after another background scan has already deleted the same mail.
+- **LEADING HYPOTHESIS -- the re-process path BYPASSES ScanCoordinator (Harold, 2026-09-11).**
+  Harold asked whether concurrent background jobs could have caused this and whether scans
+  should be scheduled so they do not overlap. The second half is already true and the first
+  half is very likely the cause, but by a different mechanism than "the scheduler let two
+  background scans overlap" -- it did not.
+  - `ScanCoordinator` (F175, Sprint 62) is a process-wide FIFO lease built from Harold's own
+    2026-08-19 requirement: background scans must not run concurrently with each other, nor
+    with manual scans. On Android every scan shares one process, so the coordinator IS the
+    whole guarantee. It was written after the Sprint 61 incident where four stacked AOL scans
+    each opened their own IMAP session, hit AOL's per-account session cap, and sat at 0 emails
+    for 20+ minutes -- **the same symptom shape seen here**.
+  - **The only acquisition site is `EmailScanner.scanInbox` (`email_scanner.dart:170`).** The
+    re-process path at `results_display_screen.dart:3064` builds its own `SpamFilterPlatform`,
+    loads credentials and connects DIRECTLY -- no lease, no queue, no detection. So while a
+    background scan holds the lease and an open IMAP session, tapping "add rule" opens a
+    SECOND session to the same account, outside the mechanism designed to prevent exactly that.
+  - **Fits the evidence better than anything else**: whole-batch failure (one throw at connect
+    time, not N per-message failures); the rules saved fine because that is local DB with no
+    IMAP; failures CLIMBED as more rules were added, each attempt reopening a colliding
+    session; and the AOL scan acted on had completed at 17:20 while the closed-test build
+    re-scans every 15 minutes, so a background scan starting underneath is near-certain.
+  - **One correction to the framing**: Gmail and AOL scanning at the same time is NOT the
+    fault. Different accounts, different servers, and the coordinator serializes them anyway.
+    The collision is SAME-ACCOUNT -- the background scan and the re-processing both hitting
+    the AOL session cap.
+  - **Likely fix shape**: route re-processing through `ScanCoordinator.acquire` so it queues
+    behind an active scan, plus the manual-scan-style detection notice. Confirm against the
+    exception first.
+- **Remaining candidates, if the above is disproven**: (b) the result set came from a
+  BACKGROUND scan, so the messages may be stale -- UIDs expired, already moved by a later
+  background run; (c) IMAP folder/UIDVALIDITY mismatch on a re-connect.
 - **Diagnosis is cheap and available today**: the app writes `scan_results_*.csv` to Documents on
   manual export, and `logger.e('[F38] Re-processing failed: $e')` at line 3142 carries the actual
   exception. Get that line before designing a fix.
@@ -694,7 +718,10 @@ All incomplete items in relative priority order. Priority in increments of 10; i
   "addressed" banner must not appear alongside a failed batch -- see F203, which is the same
   class of counter dishonesty and should probably be done in the same pass.
 - Depends on: nothing. Diagnosable from the device log/CSV today.
-- Source: Harold, 2026-09-11, adding rules on the S24+.
+- **Sprint 69 disposition**: proposed at planning, DECLINED by Harold 2026-09-11 ("next
+  sprint"). Targeted at Sprint 70 at Priority 4.
+- Source: Harold, 2026-09-11, adding rules on the S24+. Root-cause hypothesis contributed by
+  Harold the same day and code-confirmed as a real coordinator bypass.
 
 **F211. TESTER BLOCKER -- Google Sign-In fails for every tester: "Custom URI scheme is not enabled for your Android client" (~30m, console-side) Priority 2 (NEW, 2026-09-10 -- FIRST REAL TESTER FEEDBACK)**
 - Phase: Android / Google Play Store Readiness
