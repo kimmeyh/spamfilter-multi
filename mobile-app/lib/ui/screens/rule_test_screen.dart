@@ -9,6 +9,7 @@ import '../../core/storage/scan_result_store.dart';
 import '../../core/storage/unmatched_email_store.dart';
 import '../../core/utils/pattern_normalization.dart';
 import '../widgets/standard_app_bar_actions.dart';
+import '../widgets/system_inset_wrapper.dart'; // F209 (Sprint 69)
 
 /// Screen for testing rule patterns against sample emails.
 ///
@@ -251,34 +252,36 @@ class _RuleTestScreenState extends State<RuleTestScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(
-        title: const Text('Test Rule Pattern'),
-        // F134 (Sprint 52): declared via the ONE shared builder. This screen
-        // only ever had Help, which is already last -- the value is that a
-        // future addition here cannot land in the wrong position.
-        actions: StandardAppBarActions.build(
-          context: context,
-          helpSection: HelpSection.ruleTest,
-          includeNoRuleReview: false,
-          includeScanHistory: false,
-          includeAccounts: false,
-          includeSettings: false,
-        ),
-      ),
-      body: SelectionArea(child: Column(
-        children: [
-          // Pattern input area
-          _buildPatternInput(),
-          const Divider(height: 1),
-          // Results area
-          Expanded(
-            child: _isLoading
-                ? const Center(child: CircularProgressIndicator())
-                : _buildResults(),
+    return SystemInsetWrapper(
+      child: Scaffold(
+        appBar: AppBar(
+          title: const Text('Test Rule Pattern'),
+          // F134 (Sprint 52): declared via the ONE shared builder. This screen
+          // only ever had Help, which is already last -- the value is that a
+          // future addition here cannot land in the wrong position.
+          actions: StandardAppBarActions.build(
+            context: context,
+            helpSection: HelpSection.ruleTest,
+            includeNoRuleReview: false,
+            includeScanHistory: false,
+            includeAccounts: false,
+            includeSettings: false,
           ),
-        ],
-      )),
+        ),
+        body: SelectionArea(child: Column(
+          children: [
+            // Pattern input area
+            _buildPatternInput(),
+            const Divider(height: 1),
+            // Results area
+            Expanded(
+              child: _isLoading
+                  ? const Center(child: CircularProgressIndicator())
+                  : _buildResults(),
+            ),
+          ],
+        )),
+      ),
     );
   }
 
@@ -372,7 +375,11 @@ class _RuleTestScreenState extends State<RuleTestScreen> {
             const SizedBox(height: 6),
             Row(
               children: [
-                Icon(Icons.auto_fix_high, size: 14, color: Colors.grey[600]),
+                Icon(
+                  Icons.auto_fix_high,
+                  size: 14,
+                  color: Theme.of(context).colorScheme.onSurfaceVariant,
+                ),
                 const SizedBox(width: 4),
                 Expanded(
                   child: Text(
@@ -380,7 +387,9 @@ class _RuleTestScreenState extends State<RuleTestScreen> {
                     style: TextStyle(
                       fontSize: 11,
                       fontFamily: 'monospace',
-                      color: Colors.grey[700],
+                      // F210: was Colors.grey[700] on the THEME surface -- the
+                      // inverse pairing (F195 class), dark-on-dark in dark mode.
+                      color: Theme.of(context).colorScheme.onSurfaceVariant,
                     ),
                     overflow: TextOverflow.ellipsis,
                   ),

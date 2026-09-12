@@ -13,6 +13,7 @@ import 'help_screen.dart';
 import 'scan_progress_screen.dart';
 import 'gmail_oauth_screen.dart';
 import '../widgets/standard_app_bar_actions.dart';
+import '../widgets/system_inset_wrapper.dart'; // F209 (Sprint 69)
 
 /// Gmail authentication method choices
 ///
@@ -364,95 +365,97 @@ class _AccountSetupScreenState extends State<AccountSetupScreen> {
 
   /// [ISSUE #178] Build the Gmail auth method choice screen
   Widget _buildGmailAuthMethodSelector(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(
-        title: const Text('Gmail - Sign In Method'),
-        // F134 (Sprint 52): declared via the ONE shared builder (was already
-        // Accounts then Help; the builder makes that structural).
-        actions: StandardAppBarActions.build(
-          context: context,
-          helpSection: HelpSection.accountSetup,
-          includeNoRuleReview: false,
-          includeScanHistory: false,
-          includeSettings: false,
+    return SystemInsetWrapper(
+      child: Scaffold(
+        appBar: AppBar(
+          title: const Text('Gmail - Sign In Method'),
+          // F134 (Sprint 52): declared via the ONE shared builder (was already
+          // Accounts then Help; the builder makes that structural).
+          actions: StandardAppBarActions.build(
+            context: context,
+            helpSection: HelpSection.accountSetup,
+            includeNoRuleReview: false,
+            includeScanHistory: false,
+            includeSettings: false,
+          ),
         ),
-      ),
-      body: SelectionArea(
-        child: SingleChildScrollView(
-          padding: const EdgeInsets.all(16.0),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              const Text(
-                'How would you like to sign in to Gmail?',
-              style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
-            ),
-            const SizedBox(height: 8),
-            Text(
-              'Choose your preferred authentication method',
-              style: TextStyle(color: Colors.grey.shade600, fontSize: 14),
-            ),
-            const SizedBox(height: 24),
-
-            // Option 1: App Password (IMAP) - Recommended
-            _buildAuthMethodCard(
-              icon: Icons.key,
-              iconColor: Colors.orange.shade700,
-              title: 'App Password (IMAP) (Recommended)',
-              subtitle: 'Connect via IMAP using a Google App Password',
-              benefits: const [
-                'Reliable, persistent connection',
-                'Standard IMAP protocol',
-                'Requires 2-Step Verification enabled',
-              ],
-              borderColor: Colors.orange,
-              onTap: () => _selectGmailAuthMethod(GmailAuthMethod.appPassword),
-            ),
-
-            const SizedBox(height: 16),
-
-            // Option 2: Google Sign-In (OAuth)
-            _buildAuthMethodCard(
-              icon: Icons.login,
-              iconColor: Colors.blue.shade700,
-              title: 'Google Sign-In',
-              subtitle: 'Sign in with your Google account using OAuth 2.0',
-              benefits: const [
-                'No app password needed',
-                'Secure OAuth 2.0 authentication',
-                'Note: May require more frequent re-authentication',
-              ],
-              borderColor: Colors.blue,
-              onTap: () => _selectGmailAuthMethod(GmailAuthMethod.oauth),
-            ),
-
-            const SizedBox(height: 24),
-
-            // Info box
-            Container(
-              padding: const EdgeInsets.all(12),
-              decoration: BoxDecoration(
-                color: Colors.blue.shade50,
-                borderRadius: BorderRadius.circular(8),
+        body: SelectionArea(
+          child: SingleChildScrollView(
+            padding: const EdgeInsets.all(16.0),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                const Text(
+                  'How would you like to sign in to Gmail?',
+                style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
               ),
-              child: Row(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Icon(Icons.info_outline, color: Colors.blue.shade700, size: 20),
-                  const SizedBox(width: 8),
-                  Expanded(
-                    child: Text(
-                      'Both methods are secure. App Password is recommended '
-                      'for most users. Google Sign-In is an alternative but '
-                      'may require more frequent re-authentication. This may '
-                      'be resolved in a future update.',
-                      style: TextStyle(color: Colors.blue.shade900, fontSize: 13),
-                    ),
-                  ),
+              const SizedBox(height: 8),
+              Text(
+                'Choose your preferred authentication method',
+                style: TextStyle(color: Colors.grey.shade600, fontSize: 14),
+              ),
+              const SizedBox(height: 24),
+
+              // Option 1: App Password (IMAP) - Recommended
+              _buildAuthMethodCard(
+                icon: Icons.key,
+                iconColor: Colors.orange.shade700,
+                title: 'App Password (IMAP) (Recommended)',
+                subtitle: 'Connect via IMAP using a Google App Password',
+                benefits: const [
+                  'Reliable, persistent connection',
+                  'Standard IMAP protocol',
+                  'Requires 2-Step Verification enabled',
                 ],
+                borderColor: Colors.orange,
+                onTap: () => _selectGmailAuthMethod(GmailAuthMethod.appPassword),
               ),
+
+              const SizedBox(height: 16),
+
+              // Option 2: Google Sign-In (OAuth)
+              _buildAuthMethodCard(
+                icon: Icons.login,
+                iconColor: Colors.blue.shade700,
+                title: 'Google Sign-In',
+                subtitle: 'Sign in with your Google account using OAuth 2.0',
+                benefits: const [
+                  'No app password needed',
+                  'Secure OAuth 2.0 authentication',
+                  'Note: May require more frequent re-authentication',
+                ],
+                borderColor: Colors.blue,
+                onTap: () => _selectGmailAuthMethod(GmailAuthMethod.oauth),
+              ),
+
+              const SizedBox(height: 24),
+
+              // Info box
+              Container(
+                padding: const EdgeInsets.all(12),
+                decoration: BoxDecoration(
+                  color: Colors.blue.shade50,
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: Row(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Icon(Icons.info_outline, color: Colors.blue.shade700, size: 20),
+                    const SizedBox(width: 8),
+                    Expanded(
+                      child: Text(
+                        'Both methods are secure. App Password is recommended '
+                        'for most users. Google Sign-In is an alternative but '
+                        'may require more frequent re-authentication. This may '
+                        'be resolved in a future update.',
+                        style: TextStyle(color: Colors.blue.shade900, fontSize: 13),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              ],
             ),
-            ],
           ),
         ),
       ),
@@ -568,196 +571,198 @@ class _AccountSetupScreenState extends State<AccountSetupScreen> {
     final showPasswordField = !_isGmail || _isGmailAppPassword;
     final showOAuthInfo = _isGmailOAuth;
 
-    return Scaffold(
-      appBar: AppBar(
-        title: Text('${_effectiveDisplayName} - Account Setup'),
-        leading: _isGmail
-            ? IconButton(
-                icon: const Icon(Icons.arrow_back),
-                onPressed: () {
-                  // Go back to auth method selector
-                  setState(() {
-                    _gmailAuthMethod = null;
-                    _connectionStatus = null;
-                  });
-                },
-              )
-            : null,
-        // F134 (Sprint 52): declared via the ONE shared builder.
-        actions: StandardAppBarActions.build(
-          context: context,
-          helpSection: HelpSection.accountSetup,
-          includeNoRuleReview: false,
-          includeScanHistory: false,
-          includeSettings: false,
+    return SystemInsetWrapper(
+      child: Scaffold(
+        appBar: AppBar(
+          title: Text('${_effectiveDisplayName} - Account Setup'),
+          leading: _isGmail
+              ? IconButton(
+                  icon: const Icon(Icons.arrow_back),
+                  onPressed: () {
+                    // Go back to auth method selector
+                    setState(() {
+                      _gmailAuthMethod = null;
+                      _connectionStatus = null;
+                    });
+                  },
+                )
+              : null,
+          // F134 (Sprint 52): declared via the ONE shared builder.
+          actions: StandardAppBarActions.build(
+            context: context,
+            helpSection: HelpSection.accountSetup,
+            includeNoRuleReview: false,
+            includeScanHistory: false,
+            includeSettings: false,
+          ),
         ),
-      ),
-      body: SelectionArea(
-        child: SingleChildScrollView(
-          padding: const EdgeInsets.all(16.0),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              Text(
-                '${_effectiveDisplayName} Email Setup',
-              style: const TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
-            ),
+        body: SelectionArea(
+          child: SingleChildScrollView(
+            padding: const EdgeInsets.all(16.0),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                Text(
+                  '${_effectiveDisplayName} Email Setup',
+                style: const TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
+              ),
 
-            // [ISSUE #178] Show auth method indicator for Gmail
-            if (_isGmail) ...[
-              const SizedBox(height: 8),
-              Container(
-                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-                decoration: BoxDecoration(
-                  color: _isGmailAppPassword
-                      ? Colors.orange.shade50
-                      : Colors.blue.shade50,
-                  borderRadius: BorderRadius.circular(20),
-                ),
-                child: Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Icon(
-                      _isGmailAppPassword ? Icons.key : Icons.login,
-                      size: 16,
-                      color: _isGmailAppPassword
-                          ? Colors.orange.shade700
-                          : Colors.blue.shade700,
-                    ),
-                    const SizedBox(width: 6),
-                    Text(
-                      _isGmailAppPassword
-                          ? 'App Password (IMAP)'
-                          : 'Google Sign-In (OAuth 2.0)',
-                      style: TextStyle(
-                        fontSize: 12,
-                        fontWeight: FontWeight.w500,
+              // [ISSUE #178] Show auth method indicator for Gmail
+              if (_isGmail) ...[
+                const SizedBox(height: 8),
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                  decoration: BoxDecoration(
+                    color: _isGmailAppPassword
+                        ? Colors.orange.shade50
+                        : Colors.blue.shade50,
+                    borderRadius: BorderRadius.circular(20),
+                  ),
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Icon(
+                        _isGmailAppPassword ? Icons.key : Icons.login,
+                        size: 16,
                         color: _isGmailAppPassword
-                            ? Colors.orange.shade900
-                            : Colors.blue.shade900,
+                            ? Colors.orange.shade700
+                            : Colors.blue.shade700,
                       ),
-                    ),
-                  ],
+                      const SizedBox(width: 6),
+                      Text(
+                        _isGmailAppPassword
+                            ? 'App Password (IMAP)'
+                            : 'Google Sign-In (OAuth 2.0)',
+                        style: TextStyle(
+                          fontSize: 12,
+                          fontWeight: FontWeight.w500,
+                          color: _isGmailAppPassword
+                              ? Colors.orange.shade900
+                              : Colors.blue.shade900,
+                        ),
+                      ),
+                    ],
+                  ),
                 ),
-              ),
-            ],
-
-            const SizedBox(height: 24),
-            TextField(
-              controller: _emailController,
-              decoration: const InputDecoration(
-                labelText: 'Email Address',
-                border: OutlineInputBorder(),
-                prefixIcon: Icon(Icons.email),
-              ),
-              keyboardType: TextInputType.emailAddress,
-            ),
-            const SizedBox(height: 16),
-
-            if (showPasswordField) ...[
-              TextField(
-                controller: _passwordController,
-                decoration: const InputDecoration(
-                  labelText: 'App Password',
-                  border: OutlineInputBorder(),
-                  prefixIcon: Icon(Icons.lock),
-                ),
-                obscureText: true,
-              ),
-              // [ISSUE #178] Show App Password setup instructions for Gmail IMAP
-              if (_isGmailAppPassword) ...[
-                const SizedBox(height: 12),
-                _buildAppPasswordInstructions(),
               ],
-            ] else if (showOAuthInfo)
-              Container(
-                padding: const EdgeInsets.all(12),
-                decoration: BoxDecoration(
-                  color: Colors.blue.shade50,
-                  borderRadius: BorderRadius.circular(8),
+
+              const SizedBox(height: 24),
+              TextField(
+                controller: _emailController,
+                decoration: const InputDecoration(
+                  labelText: 'Email Address',
+                  border: OutlineInputBorder(),
+                  prefixIcon: Icon(Icons.email),
                 ),
-                child: Row(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Icon(Icons.lock_open, color: Colors.blue.shade700),
-                    const SizedBox(width: 8),
-                    Expanded(
-                      child: Text(
-                        'Gmail uses Google Sign-In. No app password needed. Tap below to sign in.',
-                        style: TextStyle(color: Colors.blue.shade900, fontSize: 13),
+                keyboardType: TextInputType.emailAddress,
+              ),
+              const SizedBox(height: 16),
+
+              if (showPasswordField) ...[
+                TextField(
+                  controller: _passwordController,
+                  decoration: const InputDecoration(
+                    labelText: 'App Password',
+                    border: OutlineInputBorder(),
+                    prefixIcon: Icon(Icons.lock),
+                  ),
+                  obscureText: true,
+                ),
+                // [ISSUE #178] Show App Password setup instructions for Gmail IMAP
+                if (_isGmailAppPassword) ...[
+                  const SizedBox(height: 12),
+                  _buildAppPasswordInstructions(),
+                ],
+              ] else if (showOAuthInfo)
+                Container(
+                  padding: const EdgeInsets.all(12),
+                  decoration: BoxDecoration(
+                    color: Colors.blue.shade50,
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  child: Row(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Icon(Icons.lock_open, color: Colors.blue.shade700),
+                      const SizedBox(width: 8),
+                      Expanded(
+                        child: Text(
+                          'Gmail uses Google Sign-In. No app password needed. Tap below to sign in.',
+                          style: TextStyle(color: Colors.blue.shade900, fontSize: 13),
+                        ),
                       ),
+                    ],
+                  ),
+                ),
+              const SizedBox(height: 24),
+
+              // Test connection button
+              OutlinedButton.icon(
+                onPressed: _isTesting || _isLoading ? null : _testConnection,
+                icon: _isTesting
+                    ? const SizedBox(
+                        width: 16,
+                        height: 16,
+                        child: CircularProgressIndicator(strokeWidth: 2),
+                      )
+                    : Icon(showOAuthInfo ? Icons.login : Icons.wifi_tethering),
+                label: Text(
+                  _isTesting
+                      ? 'Testing...'
+                      : showOAuthInfo
+                          ? 'Google Sign-In (OAuth 2.0)'
+                          : 'Test Connection',
+                ),
+              ),
+
+              // Connection status message
+              if (_connectionStatus != null) ...[
+                const SizedBox(height: 12),
+                Container(
+                  padding: const EdgeInsets.all(12),
+                  decoration: BoxDecoration(
+                    color: _connectionStatus!.startsWith('[OK]')
+                        ? Colors.green.shade50
+                        : Colors.red.shade50,
+                    borderRadius: BorderRadius.circular(8),
+                    border: Border.all(
+                      color: _connectionStatus!.startsWith('[OK]')
+                          ? Colors.green
+                          : Colors.red,
                     ),
-                  ],
-                ),
-              ),
-            const SizedBox(height: 24),
-
-            // Test connection button
-            OutlinedButton.icon(
-              onPressed: _isTesting || _isLoading ? null : _testConnection,
-              icon: _isTesting
-                  ? const SizedBox(
-                      width: 16,
-                      height: 16,
-                      child: CircularProgressIndicator(strokeWidth: 2),
-                    )
-                  : Icon(showOAuthInfo ? Icons.login : Icons.wifi_tethering),
-              label: Text(
-                _isTesting
-                    ? 'Testing...'
-                    : showOAuthInfo
-                        ? 'Google Sign-In (OAuth 2.0)'
-                        : 'Test Connection',
-              ),
-            ),
-
-            // Connection status message
-            if (_connectionStatus != null) ...[
-              const SizedBox(height: 12),
-              Container(
-                padding: const EdgeInsets.all(12),
-                decoration: BoxDecoration(
-                  color: _connectionStatus!.startsWith('[OK]')
-                      ? Colors.green.shade50
-                      : Colors.red.shade50,
-                  borderRadius: BorderRadius.circular(8),
-                  border: Border.all(
-                    color: _connectionStatus!.startsWith('[OK]')
-                        ? Colors.green
-                        : Colors.red,
+                  ),
+                  child: Text(
+                    _connectionStatus!,
+                    textAlign: TextAlign.center,
+                    style: TextStyle(
+                      color: _connectionStatus!.startsWith('[OK]')
+                          ? Colors.green.shade900
+                          : Colors.red.shade900,
+                    ),
                   ),
                 ),
-                child: Text(
-                  _connectionStatus!,
-                  textAlign: TextAlign.center,
-                  style: TextStyle(
-                    color: _connectionStatus!.startsWith('[OK]')
-                        ? Colors.green.shade900
-                        : Colors.red.shade900,
-                  ),
-                ),
+              ],
+
+              const SizedBox(height: 16),
+
+              // Save and proceed button
+              ElevatedButton(
+                onPressed: _isLoading || _isTesting ? null : _handleConnect,
+                child: _isLoading
+                    ? const CircularProgressIndicator()
+                    : Text(showOAuthInfo
+                        ? 'Sign in with Google (OAuth 2.0)'
+                        : 'Save Credentials & Continue'),
               ),
-            ],
 
-            const SizedBox(height: 16),
-
-            // Save and proceed button
-            ElevatedButton(
-              onPressed: _isLoading || _isTesting ? null : _handleConnect,
-              child: _isLoading
-                  ? const CircularProgressIndicator()
-                  : Text(showOAuthInfo
-                      ? 'Sign in with Google (OAuth 2.0)'
-                      : 'Save Credentials & Continue'),
+              const SizedBox(height: 16),
+              Text(
+                'Platform: $_effectiveDisplayName ($_effectivePlatformId)',
+                style: TextStyle(color: Colors.grey.shade600, fontSize: 12),
+                textAlign: TextAlign.center,
+              ),
+              ],
             ),
-
-            const SizedBox(height: 16),
-            Text(
-              'Platform: $_effectiveDisplayName ($_effectivePlatformId)',
-              style: TextStyle(color: Colors.grey.shade600, fontSize: 12),
-              textAlign: TextAlign.center,
-            ),
-            ],
           ),
         ),
       ),

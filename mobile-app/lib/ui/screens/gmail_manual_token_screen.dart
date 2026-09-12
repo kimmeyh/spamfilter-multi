@@ -9,6 +9,7 @@ import 'package:my_email_spam_filter/adapters/storage/secure_credentials_store.d
 import 'package:my_email_spam_filter/adapters/email_providers/email_provider.dart';
 import 'package:my_email_spam_filter/ui/screens/folder_selection_screen.dart';
 import 'package:my_email_spam_filter/util/redact.dart';
+import '../widgets/system_inset_wrapper.dart'; // F209 (Sprint 69)
 
 /// Manual token entry for Gmail OAuth (fallback option)
 /// 
@@ -111,33 +112,35 @@ class _GmailManualTokenScreenState extends State<GmailManualTokenScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(
-        title: const Text('Manual Token Entry'),
-        leading: IconButton(
-          icon: const Icon(Icons.arrow_back),
-          onPressed: () => Navigator.pop(context),
+    return SystemInsetWrapper(
+      child: Scaffold(
+        appBar: AppBar(
+          title: const Text('Manual Token Entry'),
+          leading: IconButton(
+            icon: const Icon(Icons.arrow_back),
+            onPressed: () => Navigator.pop(context),
+          ),
         ),
-      ),
-      body: SingleChildScrollView(
-        padding: const EdgeInsets.all(16.0),
-        child: Form(
-          key: _formKey,
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              _buildInstructions(),
-              const SizedBox(height: 24),
-              _buildAccessTokenField(),
-              const SizedBox(height: 16),
-              _buildRefreshTokenField(),
-              const SizedBox(height: 24),
-              _buildSubmitButton(),
-              if (_errorMessage != null) ...[
+        body: SingleChildScrollView(
+          padding: const EdgeInsets.all(16.0),
+          child: Form(
+            key: _formKey,
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                _buildInstructions(),
+                const SizedBox(height: 24),
+                _buildAccessTokenField(),
                 const SizedBox(height: 16),
-                _buildErrorMessage(),
+                _buildRefreshTokenField(),
+                const SizedBox(height: 24),
+                _buildSubmitButton(),
+                if (_errorMessage != null) ...[
+                  const SizedBox(height: 16),
+                  _buildErrorMessage(),
+                ],
               ],
-            ],
+            ),
           ),
         ),
       ),
@@ -198,19 +201,30 @@ class _GmailManualTokenScreenState extends State<GmailManualTokenScreen> {
             Container(
               padding: const EdgeInsets.all(8),
               decoration: BoxDecoration(
-                color: Colors.red.shade50,
+                // F210: was Colors.red.shade50 under a colourless TextStyle --
+                // a SECURITY warning that was unreadable in dark mode.
+                // errorContainer keeps it reading as a warning in both modes.
+                color: Theme.of(context).colorScheme.errorContainer,
                 borderRadius: BorderRadius.circular(4),
-                border: Border.all(color: Colors.red.shade200),
+                border: Border.all(
+                  color: Theme.of(context).colorScheme.error,
+                ),
               ),
               child: Row(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Icon(Icons.warning_amber, color: Colors.red.shade700, size: 20),
+                  Icon(Icons.warning_amber,
+                      color: Theme.of(context).colorScheme.onErrorContainer,
+                      size: 20),
                   const SizedBox(width: 8),
-                  const Expanded(
+                  Expanded(
                     child: Text(
                       'Security Warning: Keep your tokens secure and never share them with anyone!',
-                      style: TextStyle(fontSize: 12, fontWeight: FontWeight.w500),
+                      style: TextStyle(
+                        fontSize: 12,
+                        fontWeight: FontWeight.w500,
+                        color: Theme.of(context).colorScheme.onErrorContainer,
+                      ),
                     ),
                   ),
                 ],

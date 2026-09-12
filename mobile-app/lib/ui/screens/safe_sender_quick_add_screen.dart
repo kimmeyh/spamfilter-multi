@@ -9,6 +9,7 @@ import '../../core/utils/pattern_normalization.dart';
 import '../../core/utils/pattern_generation.dart';
 import '../widgets/auth_warning_dialog.dart';
 import '../widgets/email_auth_badge.dart';
+import '../widgets/system_inset_wrapper.dart'; // F209 (Sprint 69)
 
 /// Pattern type enumeration
 enum PatternType {
@@ -353,52 +354,54 @@ class _SafeSenderQuickAddScreenState extends State<SafeSenderQuickAddScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(
-        title: Text('Add Safe Sender - $_normalizedEmail'),
-        elevation: 0,
-      ),
-      body: Form(
-        key: _formKey,
-        child: SingleChildScrollView(
-          padding: const EdgeInsets.all(16),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              // Email Context Card (Read-only)
-              _buildEmailContextCard(),
+    return SystemInsetWrapper(
+      child: Scaffold(
+        appBar: AppBar(
+          title: Text('Add Safe Sender - $_normalizedEmail'),
+          elevation: 0,
+        ),
+        body: Form(
+          key: _formKey,
+          child: SingleChildScrollView(
+            padding: const EdgeInsets.all(16),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                // Email Context Card (Read-only)
+                _buildEmailContextCard(),
 
-              const SizedBox(height: 24),
+                const SizedBox(height: 24),
 
-              // Pattern Type Selection
-              _buildPatternTypeSelection(),
+                // Pattern Type Selection
+                _buildPatternTypeSelection(),
 
-              const SizedBox(height: 16),
-
-              // Custom Pattern Field (only for Type 4)
-              if (_selectedType == PatternType.custom) ...[
-                _buildCustomPatternField(),
                 const SizedBox(height: 16),
+
+                // Custom Pattern Field (only for Type 4)
+                if (_selectedType == PatternType.custom) ...[
+                  _buildCustomPatternField(),
+                  const SizedBox(height: 16),
+                ],
+
+                // Pattern Preview (Expandable)
+                _buildPatternPreview(),
+
+                const SizedBox(height: 24),
+
+                // Exception Denylist Toggle
+                _buildExceptionToggle(),
+
+                if (_enableExceptions) ...[
+                  const SizedBox(height: 16),
+                  _buildExceptionList(),
+                ],
+
+                const SizedBox(height: 32),
+
+                // Save/Cancel Buttons
+                _buildActionButtons(),
               ],
-
-              // Pattern Preview (Expandable)
-              _buildPatternPreview(),
-
-              const SizedBox(height: 24),
-
-              // Exception Denylist Toggle
-              _buildExceptionToggle(),
-
-              if (_enableExceptions) ...[
-                const SizedBox(height: 16),
-                _buildExceptionList(),
-              ],
-
-              const SizedBox(height: 32),
-
-              // Save/Cancel Buttons
-              _buildActionButtons(),
-            ],
+            ),
           ),
         ),
       ),
@@ -668,9 +671,14 @@ class _SafeSenderQuickAddScreenState extends State<SafeSenderQuickAddScreen> {
                     width: double.infinity,
                     padding: const EdgeInsets.all(12),
                     decoration: BoxDecoration(
-                      color: Colors.grey[100],
+                      // F210: was Colors.grey[100] under a colourless
+                      // TextStyle -- unreadable in dark mode.
+                      color:
+                          Theme.of(context).colorScheme.surfaceContainerHighest,
                       borderRadius: BorderRadius.circular(4),
-                      border: Border.all(color: Colors.grey[300]!),
+                      border: Border.all(
+                        color: Theme.of(context).colorScheme.outlineVariant,
+                      ),
                     ),
                     child: SelectableText(
                       _generatedPattern.isNotEmpty ? _generatedPattern : '(empty)',

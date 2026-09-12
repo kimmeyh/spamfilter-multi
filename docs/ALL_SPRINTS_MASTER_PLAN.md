@@ -4,7 +4,7 @@
 
 **Audience**: Claude Code models planning sprints; User prioritizing future work
 
-**Last Updated**: 2026-08-21 (**Sprint 61 COMPLETE (retro + all 4 approved improvements applied; PR #347 ready for Harold's review/merge)** -- 9/9 tasks: Task 0 line endings, F170 Phase 8 Release Cycle encoded, F169 account-filter dropdown, F168 Inbox-scope warning, F172 AppBar version label, F171 1024x640 sweep, F162/ADR-0042 parity ADR ACCEPTED, F167 capability Help wording, F161 Android scheduler as the canonical ADR-0042 factory -- **validated for correctness on-device (count-parity PASS); Google Play shipment prerequisite MET**. MV forensics registered F174-F178 with proven root causes (LOW_MEMORY chunked-fetch cascade = F177/F175). 0.10.0.0 Submission 17 CERTIFIED 2026-08-16 22:17 in ~26 min (first real measurement). Suite 1,893 passed / 26 skipped / 0 failed; hooks 49/49. Earlier history in prior revisions of this line (git).)
+**Last Updated**: 2026-09-10 (**Sprint 68 COMPLETE** -- PR #403 -> develop, #404 -> main. 5/5 tasks: F199 publisher rename finished, F198 question-format rule (hook deliberately NOT built), F191 Yahoo + iCloud shipped, F200 web-property deep dive, F197 dark-mode contrast gate. Manual Validation 4/4 cells PASS across 2 providers x 2 platforms. Retrospective complete, all 5 improvements applied. BOTH PR reviews ran (Copilot 4 findings, code-review agent 4) -- all 8 addressed in-sprint, none deferred. Suite 2,074 / 15 skipped / 0 failed; policy gates 109; hooks 53/53; analyzer clean. Dev version 0.15.0+3. NEW backlog: F201, F202 (targeted Sprint 69), F203. Earlier history in prior revisions of this line (git).)
 
 ## How to Maintain This Document
 
@@ -139,6 +139,20 @@ Historical sprint information lives in individual documents in `docs/sprints/` a
 
 ## Last Completed Sprint
 
+**Sprint 68** (2026-09-09 -- 2026-09-10; PR #403 -> develop, PR #404 develop -> main)
+- **Type**: ship two providers that were already built, and convert three recurring failure classes into things that cannot recur. Scope F199, F198, F191, F200, F197.
+- **F191**: Yahoo and iCloud were FINISHED and unreachable -- both adapters carry real hosts, port 993, TLS, structurally identical to `aol()`. The gap was a `phase` integer. Worse for iCloud: the selection screen keeps `p.phase <= 2`, so phase-3 iCloud was **not rendered at all**. This is also the defect behind the Sprint 66 Play listing claiming both providers -- the copy was traced to the REGISTRY (which lists them) rather than the SCREEN (which hid them). Code change: two integers. The work was proving they function and writing app-password instructions that do not fail.
+- **F200**: `myemailspamfilter.com` told the public email content "is never persisted to disk" -- FALSE, and **the repo already knew**: Sprint 63 corrected `PRIVACY_POLICY.md` to disclose the 100-char preview, the correction never reached the landing page, and the honest disclosure sat one click from the false claim for ~6 months on the page the Play listing cites. Inventory also found TWO live privacy policies (landing page linked the stale March one; Play cited the August one), `docs/website/` as a byte-identical copy of the whole site, and an About section claiming Outlook.com + ProtonMail support that does not exist.
+- **F197**: the card said "28 sites to fix"; that was a grep of `Colors.*.shadeNN`, not the defect. The real pattern (hardcoded surface + theme-derived text) finds exactly TWO instances, both already fixed in Sprint 67 -- so the value was entirely the gate that stops the third.
+- **F198 shipped NO HOOK, deliberately.** R-1 found the four rule violations are not one failure mode (three tool-reflex, one PROSE, and the guidance addressed only the tool), and that a hook could not live where they happen -- `sprint-auto-advance.ps1` Gate 1c exits at Manual Validation BY DESIGN, and all four occurred outside the window. The real gap, found by grep: the rule was **not in `CLAUDE.md` at all**. Decision and counter-argument recorded in `docs/F198_QUESTION_FORMAT_ANALYSIS.md`.
+- **THE SPRINT'S DEFINING PATTERN: four screenshots read wrong, three caught by Harold.** Each time an artifact supported two readings and Claude chose the more interesting one: (1) Harold's folder ticks read as the app's pre-selection -- the code showed `initialSelectedFolders` silently outranks the pre-select, so the app RECOMMENDED without SELECTING; (2) a Play Console record of CURRENT state rewritten as a target; (3) a saved setting read as runtime resolution, which wrongly narrowed F202's blast radius; (4) a PRE-scan Android screen compared against a POST-scan Windows screen, inventing a platform difference that does not exist. **A screenshot cannot distinguish "the app did this" from "Harold did this" -- the source can.** Became retro IMP-1.
+- **BOTH PR reviews found real defects in Claude's OWN new gates.** The F197 gate had the exact defect its doc comment warns about: `isHardcodedSurface` checked for `TextStyle` on the same line, but `dart format` splits it -- **63 lines matched as "surfaces" and 31 were text colours**. Green only by luck. And Copilot's `plan_approved: false` catch had a second half: setting it true IMMEDIATELY BLOCKED the next commit, because the re-enabled hook found `pr_number` null despite PR #403 existing. Card/PR enforcement had been silently disabled for the whole sprint, and the flag was hiding it.
+- **MV**: F191 four cells (Yahoo/iCloud x Windows/Android) ALL PASS. Yahoo returned the same 41 messages with the same outcome on both platforms -- parity OBSERVED, not assumed. iCloud thin by volume (new mailbox), recorded with that limit stated. Two findings filed rather than fixed in-sprint: **F202** (a new iCloud mailbox has ONE folder, and the app defaulted Deleted Rule Folder to `Trash` -- iCloud calls it `Deleted Messages` and will never have `Trash`) and **F203** (`Found: 2, Processed: 0` is correct behaviour the user cannot see).
+- **Verification**: suite 2,074 / 15 skipped / 0 failed (was 2,060); policy gates 99 -> 109; hooks 53/53; analyzer clean. Effort ~245m against a 400-755m estimate.
+- **Retro**: 12 categories "Very Good", Cats 13/14 "none". All 5 improvements approved and applied -- IMP-1 screenshot rule, IMP-2 version gate now reads BOTH store rows (the old one compared against the CHANGELOG heading, which lags the stores, so a version live on both passed while byte-identical to production), IMP-3 in-app-vs-doc gate (found a real gap on its first run -- no AOL section in the doc), IMP-4 single-session model deviation, IMP-5 `git commit -F` for backticked messages.
+
+### Sprint 67 (previous)
+
 **Sprint 67** (2026-09-08 -- 2026-09-09; PR #396 -> develop)
 - **Type**: fix what the closed test will hit, and close the two process gaps Sprint 66 exposed. Scope F194, F195, F193, F196.
 - **F194**: the background scan was NEVER broken. `scan_history_screen.dart` chose its status icon with a TWO-branch ternary over FOUR statuses, so an `interrupted` row -- one F175 reconciliation had ALREADY detected and marked -- drew the same orange clock as a live scan. The duration text beside it was already correct (a PR #355 Copilot review added it); the icon was never updated to match, so text and icon contradicted each other on one row. Now a grey `Icons.cancel`, reading **"Not finished"** (Harold's wording at MV).
@@ -152,7 +166,7 @@ Historical sprint information lives in individual documents in `docs/sprints/` a
 - **Verification**: suite 2,060/15/0; policy 99; **hook suite 53/53** (was 45/6 when the review found the regression); analyzer clean; WinWright 2/2 at sweep-head `52fbc7d`.
 - **Retro**: 11 categories "Very Good", Cats 13/14 "none". Category 1 was a documentation request -- the Copilot reviewer-visibility finding, verified empirically (`gh pr view --json reviewRequests` returns `[]` even after a SUCCESSFUL request; the timeline is the only reliable check). **IMP-1/2/3 applied now**, IMP-4 backlogged as **F198** tentatively for Sprint 68.
 
-### Sprint 66 (previous)
+### Sprint 66
 
 **Sprint 66** (2026-09-07 -- 2026-09-08; PR #389 -> develop, Ready-for-Review at close-out)
 - **Type**: Google Play console entry. Scope GP-4 + GP-19; F173/F189 deferred at Harold's direction; F190 taken mid-sprint on his request.
@@ -387,16 +401,6 @@ All incomplete items in relative priority order. Priority in increments of 10; i
 
 ### Core App Quality
 
-**F191. Ship Yahoo Mail and iCloud Mail -- open the provider phase gate (~60-90m) Priority 20 (NEW, Sprint 66 GP-19 -- discovered while correcting a false Play listing claim)**
-- Phase: Core App Quality
-- Platform: All
-- Both providers are ALREADY BUILT and unreachable only because of a display gate. `platform_registry.dart` `_factories` maps `'yahoo' => GenericIMAPAdapter.yahoo()` and `'icloud' => GenericIMAPAdapter.icloud()`; both named constructors are complete (host, port 993, TLS, displayName, platformId) and structurally IDENTICAL to `GenericIMAPAdapter.aol()`, which ships today and runs against Harold's real AOL mailbox. The only thing standing between a user and a Yahoo account is `phase: 2` in the registry, which makes `platform_selection_screen.dart` render the card under "Coming Soon" and set `enabled: false`.
-- The change itself is two integers: `yahoo` phase 2 -> 1, `icloud` phase 3 -> 1. The WORK is proving they actually function end to end, which the gate has never allowed anyone to check: a live scan against a real Yahoo account and a real iCloud account, app-password auth, folder discovery, delete and safe-sender paths -- the same manual validation AOL gets. Both require Harold to create an app password on each service.
-- Why this matters beyond the feature: Sprint 66 shipped a Play listing that CLAIMED Yahoo and iCloud support, because the listing copy was traced to the registry (which lists them) rather than the screen (which hides them). Closing this gate makes the richer claim true, and the copy can then be widened deliberately rather than by accident.
-- Watch item: iCloud may require an Apple ID app-specific password AND have IMAP-access preconditions on the account. If it does not authenticate cleanly, ship Yahoo alone and keep iCloud gated rather than shipping a provider that fails at sign-in.
-- Depends on: nothing in code. Depends on Harold having (or creating) a Yahoo and an iCloud account to validate against.
-- Source: Sprint 66 GP-19 listing submission, 2026-09-08 -- Harold asked for this to be backlogged and suggested for the next sprint.
-
 **F202. Per-provider folder defaults -- overall default plus provider overrides for all four folder settings (~6-10h, fully analyzed + planned + tested) Priority 10 (NEW, Sprint 68 MV -- Harold; TARGET SPRINT 69)**
 - Phase: Core App Quality
 - Platform: All (shared provider/adapter layer; ADR-0042 parity, no exception anticipated)
@@ -521,6 +525,711 @@ All incomplete items in relative priority order. Priority in increments of 10; i
   the mechanism can be built against the confirmed AOL/Gmail/Yahoo values.
 - Source: Harold, 2026-09-09, Sprint 68 Manual Validation. Explicitly deferred OUT of Sprint 68
   as a scope change surfaced at a natural break (Decision-Class Taxonomy, class 3).
+
+**F206. Diagnostic export as a PLATFORM CAPABILITY -- reset the counters, and get scan data off the device on every platform (~5-8h) Priority 14 (NEW, 2026-09-10 -- Harold; REFRAMED same day)**
+- Phase: Core App Quality
+- Platform: All -- **and the storage mechanism is a declared ADR-0042 platform exception**
+- **REFRAMED BY HAROLD, 2026-09-10**: *"Needs to be expanded as a platform feature, true for
+  every platform where how and where to store is likely to be platform dependent."*
+  The first draft of this card treated Android as a BROKEN CASE of a Windows feature. That was
+  the wrong shape. **Diagnostic export is a first-class capability that every platform must
+  have; only the DESTINATION and the MECHANISM differ**, and ADR-0042 says that is precisely
+  when a platform exception is justified -- "the API does not exist", "a platform policy
+  forbids it".
+
+- **THE SHAPE: a platform factory.** ADR-0042 names this as "the preferred shape for a
+  WHOLE-CAPABILITY exception", approved by Harold 2026-08-18, with prior art in F161 (the
+  Android scheduler). One shared interface, one implementation resolved per platform:
+
+  ```
+  DiagnosticExporter          <- shared interface: what to export, redaction, formatting
+    WindowsDiagnosticExporter <- writes to a browsable AppData path
+    AndroidDiagnosticExporter <- SAF / share sheet; app-private storage is unreachable
+    (iOS/macOS/Linux later)   <- the interface exists before the platforms do
+  ```
+
+  **The redaction and the content live in the SHARED half.** Only "where does the byte land"
+  forks. That keeps the privacy decision in one place rather than three, which matters more
+  here than anywhere else in the app.
+
+- **What each platform can actually do, and why they differ:**
+  - **Windows**: app data lives in a browsable `AppData\Roaming` path. Export is a
+    convenience -- the user could already navigate there. Current CSV writer:
+    `background_scan_windows_worker.dart:434`.
+  - **Android**: app-private internal storage (`/data/data/com.myemailspamfilter/`) is
+    **unreachable by MTP AND by the phone's own Files app** -- Android hides it from everything
+    without root. So export is the ONLY access path, not a convenience. Android 11+ scoped
+    storage means writing to shared storage needs MediaStore or SAF; a plain
+    `File(...).writeAsString()` to `/storage/emulated/0/Documents/` fails.
+    **Do NOT solve this with `MANAGE_EXTERNAL_STORAGE`** -- it triggers a Play Permissions
+    Declaration Form (F204), a large cost for a diagnostic convenience.
+  - **iOS** (not yet shipped): the same app-private constraint as Android, resolved through the
+    share sheet / Files app rather than a writable public directory. Designing the interface now
+    means iOS does not arrive as a third special case.
+  - **macOS/Linux**: browsable paths, like Windows.
+
+- **PART A -- reset the counters (~1h), and it is genuinely platform-neutral.**
+  - Scan History totals accumulate over the retention window (7/14/30/90 days/1 year). Retention
+    prunes by AGE, never on demand, so there is no way to say "start counting from now".
+  - Concretely: Errors 53 against Total 3,833 on the S24+ says nothing about WHEN. Fifty-three
+    errors last week and fifty-three this afternoon are the same number on that screen.
+  - **Audited 2026-09-10: no clear/reset exists anywhere in `lib/`** -- `clearScanHistory`,
+    `deleteAllScans`, `clearHistory` all return nothing.
+  - Scope: "Clear scan history" in Settings > General beside the retention selector, behind the
+    existing confirmation-dialog setting. **Must NOT touch rules, safe senders or credentials** --
+    state it explicitly, because "clear data" is exactly the button that grows scope later.
+
+- **PART B -- the export capability (~3-5h).**
+  - **VERIFIED EMPIRICALLY 2026-09-10, and it is why this card was reframed**: Harold enabled
+    "Export CSV After Each Scan" and let two background scans run. **Nothing landed.** Both
+    `Internal storage\Download` and `\Documents` were enumerated over MTP -- no scan CSV.
+    Root cause found in source, not guessed: the writer is
+    `background_scan_windows_worker.dart:434`, **Windows-only**, exactly like the file-logging
+    block at `main.dart:152`. Android's WorkManager path never reaches either.
+  - **So the existing toggle is a Windows-only feature exposed in the SHARED Settings UI.** On
+    Android it stores a setting and does nothing.
+  - **WORSE THAN A SILENT NO-OP, confirmed by screenshot 2026-09-10**: Android's Settings >
+    General renders **"CSV Export Directory -- Downloads folder (default)"** with a folder
+    picker beside it. The UI actively TELLS the user where the files will be written, and
+    nothing is ever written there. A tester enabling it would check Downloads, find nothing, and
+    reasonably conclude the app is broken rather than that the feature is desktop-only. Fix it
+    as part of this capability, or hide the whole block on platforms that cannot honour it.
+    **Do not leave it as-is.**
+  - **BACKGROUND EXPORT CONFIRMED NON-FUNCTIONAL, 2026-09-11.** After Harold changed the export
+    folder to Documents, the phone was re-checked: `Documents` contains exactly ONE csv,
+    `scan_results_2026-09-10T20-32-31.csv` at 8:32 PM -- the MANUAL export. Background scans have
+    run on the 15-minute cycle continuously since, including overnight, and **not one has written
+    a file**. `Download` contains no csv at all. So the folder change did not help, because the
+    background writer is `background_scan_windows_worker.dart` and Android never reaches it.
+    **Manual export works; background export does not. That is the whole of Part B.**
+  - **CONFIRMED 2026-09-10: Harold could NOT select Downloads as the export folder on Android,
+    and had to choose Documents instead** -- and even then, no file appeared (`Documents`
+    enumerated over MTP: only pre-existing, unrelated files). Two separate things are therefore
+    broken: the picker cannot reach Downloads, AND nothing writes regardless of the folder
+    chosen. That is Android scoped storage exactly as described above -- the picker returns a
+    SAF URI, and the writer expects a filesystem path.
+  - **Retention selector is TRUE PARITY** (same screenshot): 7/14/30/90 days/1 year, 90
+    selected, identical to Windows. So Part A is genuine shared work with no platform fork --
+    only Part B needs the factory.
+  - Content: scan history rows with per-scan AND per-error detail.
+
+- **PART C -- what the export CONTAINS, and the share path (~2-3h). The privacy design is the
+  hard part.**
+  - Harold, 2026-09-10: *"Do we need to add a means for users to send log files to us? email
+    (creates an email, attaches the file to the email in a draft email and the user hits send?"*
+  - **This app's whole proposition is that nothing leaves the device.** The Privacy Policy says
+    so, the Data safety declaration says so, and F200 existed because the website said it too
+    strongly. A user-initiated share does not violate that -- but it creates the FIRST path by
+    which a user's mail data can leave, and that path must be described honestly.
+  - **What the CSV contains today, inspected rather than assumed (2026-09-10)**: timestamp,
+    message date, outcome, folder, rule verdict, **sender address**, **full subject line**,
+    message id. A tester sharing that file is sharing who emails them and what about.
+  - **STRONGEST RECOMMENDATION -- a REDACTED export as the DEFAULT.** Field-level split, and it
+    follows from what a diagnosis actually needs:
+    - **INCLUDE**: timestamp, duration, account PLATFORM (not the address), folder name, scan
+      mode, outcome, rule verdict, error type, error message, per-scan counts.
+    - **EXCLUDE**: sender address, subject line, body preview, message id.
+    - For F205's 53 errors, the error TYPE and COUNT are what matter. The correspondence is not
+      needed and should not travel. Same instinct as the existing `Redact.accountId`.
+    - Full export stays available as a deliberate second choice, with what it contains stated
+      plainly at the point of sharing.
+  - **Share sheet, not a `mailto:` draft** -- `share_plus` lets the user pick email, Drive,
+    anything; no hardcoded recipient, and `mailto:` with an attachment is unreliable across
+    Android mail clients.
+  - **Verify the Data safety declaration before shipping.** It currently states no data is
+    collected or transmitted. A user-initiated share is arguably not "collection" by Google's
+    definition -- but if Harold is the recipient, VERIFY against Google's wording rather than
+    assume, and `data_safety_declarations_test` must agree with whatever is decided.
+
+- **ADR-0042 obligations this card must satisfy** (from the ADR's "How an exception is
+  implemented"): fork at the narrowest point (only the destination); declare WHAT cannot be
+  shared and WHY in a comment; prefer a testable seam over `dart:io Platform`; **cover BOTH
+  branches with tests**; degrade rather than disappear. An ADR amendment or a new ADR is likely
+  warranted for the capability itself -- decide at planning, not during execution.
+- **Why this matters now**: F205 (53 unexplained errors) is **BLOCKED** without Part B. The
+  closed test is the only build that acts on real mail, 8 testers are watching it, and the only
+  diagnostic available today is a screenshot of a total. A tester reporting "it deleted something
+  odd" cannot be investigated at all.
+- **Deliberately NOT in scope**: remote logging, crash reporting, telemetry of any kind. This app
+  ships with no analytics by design (ADR-0030) and the Data safety declaration says so. Export is
+  user-initiated and local; anything else would make that declaration false.
+- Depends on: nothing. Part A is independent and cheap; Part B unblocks F205; Part C is the
+  design decision that should be made ONCE, before either B or C ships.
+- Source: Harold, 2026-09-10 -- filed after the S24+ Scan History totals, reframed by him the
+  same day from "fix Android" to "a platform capability".
+
+**F212. Re-processing after adding rules FAILS 100% on the closed-test build -- "Re-processed 0 of 8 (8 failed)" (~2-4h) Priority 4 (NEW, 2026-09-11 -- Harold, on the S24+)**
+- Phase: Core App Quality
+- Platform: Android (closed test) observed; Windows unverified -- CHECK BOTH
+- **Observed 2026-09-11 on the S24+**, adding rules to "No rule" emails from a background-scan
+  result set (AOL, folders Bulk/Bulk Mail/Inbox, scan completed 17:20). Two screenshots minutes
+  apart show the failure count CLIMBING with each rule added: **"Re-processed 0 of 6 (6 failed)"**
+  then **"Re-processed 0 of 8 (8 failed)"**. Not one succeeded.
+- **The RULES saved.** A blue confirmation banner reads `rule to block entire domain
+  "*.heypocket.com"`. What failed is the RE-PROCESSING -- the follow-up pass that applies a
+  newly-added rule to the emails already on screen, deleting or moving them.
+- **Two contradictory messages on the SAME screen**, which is its own defect: a green
+  **"All 9 'No rule' emails addressed."** above an orange **"0 of 8 (8 failed)"**. The green
+  banner counts rules CREATED; the orange counts actions EXECUTED. A user cannot tell that
+  nothing actually happened to their mailbox.
+- **Where it is**: `results_display_screen.dart` `_reProcess...`, message at line 3164. The
+  outer `catch` at line 3142 sets `failCount = toDelete.length + toMoveSafe.length` -- a
+  WHOLE-BATCH failure. 6-of-6 and 8-of-8 match that shape exactly, so this is almost certainly
+  ONE exception thrown before or during the batch, not N independent failures.
+- **LEADING HYPOTHESIS -- the re-process path BYPASSES ScanCoordinator (Harold, 2026-09-11).**
+  Harold asked whether concurrent background jobs could have caused this and whether scans
+  should be scheduled so they do not overlap. The second half is already true and the first
+  half is very likely the cause, but by a different mechanism than "the scheduler let two
+  background scans overlap" -- it did not.
+  - `ScanCoordinator` (F175, Sprint 62) is a process-wide FIFO lease built from Harold's own
+    2026-08-19 requirement: background scans must not run concurrently with each other, nor
+    with manual scans. On Android every scan shares one process, so the coordinator IS the
+    whole guarantee. It was written after the Sprint 61 incident where four stacked AOL scans
+    each opened their own IMAP session, hit AOL's per-account session cap, and sat at 0 emails
+    for 20+ minutes -- **the same symptom shape seen here**.
+  - **The only acquisition site is `EmailScanner.scanInbox` (`email_scanner.dart:170`).** The
+    re-process path at `results_display_screen.dart:3064` builds its own `SpamFilterPlatform`,
+    loads credentials and connects DIRECTLY -- no lease, no queue, no detection. So while a
+    background scan holds the lease and an open IMAP session, tapping "add rule" opens a
+    SECOND session to the same account, outside the mechanism designed to prevent exactly that.
+  - **Fits the evidence better than anything else**: whole-batch failure (one throw at connect
+    time, not N per-message failures); the rules saved fine because that is local DB with no
+    IMAP; failures CLIMBED as more rules were added, each attempt reopening a colliding
+    session; and the AOL scan acted on had completed at 17:20 while the closed-test build
+    re-scans every 15 minutes, so a background scan starting underneath is near-certain.
+  - **One correction to the framing**: Gmail and AOL scanning at the same time is NOT the
+    fault. Different accounts, different servers, and the coordinator serializes them anyway.
+    The collision is SAME-ACCOUNT -- the background scan and the re-processing both hitting
+    the AOL session cap.
+  - **Likely fix shape**: route re-processing through `ScanCoordinator.acquire` so it queues
+    behind an active scan, plus the manual-scan-style detection notice. Confirm against the
+    exception first.
+- **Remaining candidates, if the above is disproven**: (b) the result set came from a
+  BACKGROUND scan, so the messages may be stale -- UIDs expired, already moved by a later
+  background run; (c) IMAP folder/UIDVALIDITY mismatch on a re-connect.
+- **Diagnosis is cheap and available today**: the app writes `scan_results_*.csv` to Documents on
+  manual export, and `logger.e('[F38] Re-processing failed: $e')` at line 3142 carries the actual
+  exception. Get that line before designing a fix.
+- **Why it ranks at 4** -- above every other Android finding except the sign-in blocker: this is
+  the app's PRIMARY WORKFLOW. Reviewing "No rule" mail and adding rules is what the product is
+  for, and on the build 8 testers are using, it silently does nothing to the mailbox while
+  telling them it worked. A tester would conclude the app does not filter their mail.
+- **Fix the message regardless of the cause.** Even once the failure is fixed, the green
+  "addressed" banner must not appear alongside a failed batch -- see F203, which is the same
+  class of counter dishonesty and should probably be done in the same pass.
+- Depends on: nothing. Diagnosable from the device log/CSV today.
+- **Sprint 69 disposition**: proposed at planning, DECLINED by Harold 2026-09-11 ("next
+  sprint"). Targeted at Sprint 70 at Priority 4.
+- Source: Harold, 2026-09-11, adding rules on the S24+. Root-cause hypothesis contributed by
+  Harold the same day and code-confirmed as a real coordinator bypass.
+
+**F216. Supporting text is smaller than the text it should match -- Rule Tester, Safe Sender quick-add, AND the email action popup (~2-4h) Priority 32 (NEW, 2026-09-11, EXPANDED 2026-09-12 -- Harold)**
+- Phase: Core App Quality
+- Platform: All (shared Flutter UI) -- observed on Windows dark mode
+- **Harold, 2026-09-11**, during Sprint 69 Manual Validation: *"Examples:...", "Enter a phrase...",
+  "justin\ timberlake", Type: "Body Phrase", and "Phrase:..." are too small. Can they match the
+  size of "Block emails whose body..." (in the same image)*
+- **Confirmed in code -- a real inconsistency, not a rendering artifact.** The reference text he
+  names is a `RadioListTile` subtitle, which Material renders at **bodyMedium (14sp)**. Everything
+  he flagged is **bodySmall (12sp)** or the ~12sp floating field label, so the supporting text is
+  two steps below the text immediately above it on the same screen.
+- **Where** (`manual_rule_create_screen.dart`, which serves BOTH block rules and safe senders --
+  hence the identical finding on two screenshots):
+  - the `Examples: ...` hint under the Input heading
+  - the input field's floating label (`Enter a phrase to match in the email body`)
+  - `:808` `Type: ${_selectedType.label}` -- `textTheme.bodySmall`
+  - `:816` `Source:/Phrase: $_sourceDomain` -- `textTheme.bodySmall`
+  - the same pair again in the confirm dialog at `:622` and `:631`
+- **This is NOT F210 and was deliberately not fixed in Sprint 69.** F210 is a CONTRAST defect --
+  text unreadable because of colour. This is a LEGIBILITY defect -- text hard to read because of
+  size. Fixing it during Manual Validation would have been an unapproved Class-3 scope addition,
+  so it was filed instead.
+- **Do the survey before the edit.** `bodySmall` is used widely and correctly for genuinely
+  secondary text; promoting every instance would flatten the hierarchy the theme exists to
+  express. The question to answer first is which of these are SUPPORTING text for a control the
+  user is actively filling in (promote) versus genuinely ambient labelling (leave). The generated
+  pattern's `Type:`/`Phrase:` lines describe what the app is about to create from the user's
+  input, which argues for promotion.
+- **Check `rule_edit_screen.dart:938`** in the same pass -- it has the same `Type: $typeLabel`
+  shape and will look inconsistent if only one screen is changed.
+- **Kin to F214** (the tester's slider-margin report). Both are "this control does not visually
+  match its neighbours" on a form-style screen, and both came from someone using the app rather
+  than from a test. Worth considering whether they are one card about visual consistency on input
+  screens rather than two.
+- **Verify in BOTH themes after changing.** A size change alters the contrast-to-background ratio
+  at small sizes; the F210 gate covers colour pairing, not size.
+- **SECOND INSTANCE, added 2026-09-12 at Harold's direction ("1. a") -- the email action popup.**
+  Harold: *"the font on the scan results for the folder, subject, date and domain are acceptable,
+  but the font size in the pop-up is much smaller and too small. Can the pop-up text for the
+  folder, subject, date and domain use the same size as in the scan results page?"*
+- **Proven from a BEFORE/AFTER pair of the SAME email**, not from two similar screens:
+  `validation-screenshots/sprint-69/Screenshot_20260910_183529.png` (the list) and
+  `Screenshot_20260910_183550.png` (the popup), both showing `kkrmlexjnr@hotaucage.net`.
+- **Measured sizes** (`results_display_screen.dart`):
+
+  | Field | List row | Popup | Gap |
+  |---|---|---|---|
+  | sender | **16sp** (ListTile `title`, Material bodyLarge) | 14sp (`:1858`) | -2 |
+  | `folder - subject - rule` | **14sp** (ListTile `subtitle`, bodyMedium) | **12sp** (`:1906`) | **-2** |
+  | date | -- | 11sp (`:1921`) | -- |
+  | sender domain | -- | 11sp (`:1932`) | -- |
+  | rule chip | -- | 11sp | -- |
+
+  The list row is a plain `ListTile` with **no `fontSize` overrides at all**, so it inherits
+  Material's defaults. Every size in the popup is hardcoded and every one is smaller.
+- **DECISION (Harold, 2026-09-12, answer "2. a")**: match the list's SUBTITLE line -- the one
+  carrying those same four fields -- not its sender line. So:
+  - popup `folder - subject - rule`: 12sp -> **14sp**
+  - popup date and domain: 11sp -> **14sp**, so the popup is internally consistent rather than
+    trading one mismatch for another
+  - the sender at 14sp is NOT part of this change. Harold called the list acceptable and did not
+    raise the sender; leaving it avoids widening the card into a redesign.
+- **Why this one matters more than the Rule Tester instance**: the popup exists SO THAT a user
+  can confirm they tapped the right email before blocking a sender or a whole domain. Making its
+  metadata harder to read than the list it came from is backwards at exactly the moment accuracy
+  matters. The actions on that sheet are destructive.
+- **Two corrections recorded so they are not repeated.** Both came from grepping `fontSize` and
+  matching values to a code region rather than reading the rendering:
+  1. The popup was first reported as 11sp throughout. 11sp is the date/domain row; the metadata
+     line is 12sp.
+  2. The list was first reported as 14sp sender / 12sp subtitle. It overrides nothing and
+     inherits 16/14.
+  The relationship Harold described was right in both cases; the numbers were not. **Read the
+  widget, not a nearby grep hit.**
+- **Check for the same shape elsewhere before editing**: `no_rule_review_screen.dart` renders a
+  comparable metadata line, and `scan_history_screen.dart` has its own. If only the popup is
+  changed, the inconsistency moves rather than resolving.
+- Depends on: nothing.
+- Source: Harold, 2026-09-11, Sprint 69 Manual Validation, Windows dark mode. Two screenshots
+  (Rule Tester with a Body Phrase rule, Safe Sender quick-add with an Exact Email rule).
+
+**F215. Wire the validation-screenshot folder into every process that handles Android screenshots (~1-2h) Priority 30 (NEW, 2026-09-11 -- Harold)**
+- Phase: Developer Workflow / Tooling
+- Platform: N/A (process and docs)
+- **Harold, 2026-09-11**: *"I would like to keep a history of them in the directory, but not in
+  the repo... add to backlog so that we can update all the 'processing of future screenshots from
+  android' know to put them there and reference them there"*.
+- **ALREADY DONE in Sprint 69** (the location itself, so this card is only the wiring):
+  - `validation-screenshots/` created, with `sprint-NN/` subfolders.
+  - `.gitignore:275-276` excludes everything under it EXCEPT `README.md`, so the convention is
+    tracked even though the images never are.
+  - `validation-screenshots/README.md` records the layout, the naming rule (name by WHAT IT
+    SHOWS, not when it was taken), why images stay out of git, and the standing Sprint 68 rule
+    that a screenshot proves STATE and never CAUSE.
+- **WHAT REMAINS -- the actual work of this card.** Every place that handles an Android
+  screenshot still behaves as though the images are ephemeral. Each needs updating to pull from,
+  and write to, the new folder:
+  1. **`SPRINT_EXECUTION_WORKFLOW.md` Phase 5.3** -- Manual Validation should instruct that
+     screenshots are saved to `validation-screenshots/sprint-NN/` before being discussed, so the
+     evidence outlives the chat session.
+  2. **The MTP shell-COM retrieval recipe** (established Sprint 68, currently living only in a
+     transcript) -- it pulls screenshots off the phone over the MTP namespace, where `Test-Path`
+     fails and `Shell.Application` works. It should land files directly in the sprint folder, and
+     the recipe itself should be written down somewhere durable rather than rediscovered.
+  3. **Backlog-card authoring** -- when a card is written from an image, cite the relative path
+     so a later reader knows the evidence exists and where it is. F210, F208, F209, F212 and F214
+     were all written from images that no longer exist anywhere.
+  4. **`SPRINT_RETROSPECTIVE.md`** -- validation evidence referenced in a retrospective should
+     point at the folder rather than at a screenshot nobody can open any more.
+  5. **`TESTING_STRATEGY.md`** -- name the folder as the home for manual-validation evidence,
+     alongside the existing WinWright artifact conventions.
+- **Do NOT** start committing the images to make them easier to reference. Phone screenshots run
+  1-3 MB each and git history never forgets a binary; that trade was considered and declined.
+- **Worth deciding while doing this**: whether a sprint's folder should be pruned at close-out or
+  kept indefinitely. Keeping everything is simplest and costs nothing but local disk, which is
+  why nothing prunes today -- but it is a decision, not an oversight, and should be recorded as
+  one.
+- Depends on: nothing. The folder and its gitignore rules already exist.
+- **CORRECTION (Harold, 2026-09-11): screenshots ARE cached, and the earlier "kept nowhere" was
+  wrong.** Claude Code writes every pasted image to
+  `C:\Users\kimme\.claude\image-cache\<session-guid>\<n>.png`. Harold asked "aren't the
+  screenshots in the scratchpad?" -- not the scratchpad, but a real on-disk cache.
+  **This does not remove the need for this card**, for three reasons:
+  1. **Per-session, and it does not survive.** At the time of checking, the cache held ONE
+     session folder with 9 files, all from that evening. Every image from earlier in Sprint 69
+     and from Sprint 68 -- the No Rule popups, the "Re-processed 0 of 8" screens that F212 was
+     written from -- was already gone.
+  2. **It is a tool cache, not an archive.** Files are named by session GUID and sequence
+     number, with no documented retention. Nothing should be built on the assumption that an
+     image is still there tomorrow.
+  3. **Sequence numbers carry no meaning.** `167.png` says nothing about what it shows. The
+     whole point of `validation-screenshots/sprint-NN/<what-it-shows>.png` is that a file name
+     survives as evidence.
+  The cache IS useful WITHIN a session -- an image Harold sent an hour ago can be re-read
+  rather than re-requested -- and this card should say so rather than implying the only copy
+  is the chat transcript.
+- Source: Harold, 2026-09-11, after asking where validation screenshots were being stored and
+  learning the answer was "nowhere durable" (corrected above: cached per session, not archived).
+
+**F214. Scan Range slider does not align with the controls above it -- left/right margins read as too wide (~1-2h) Priority 34 (NEW, 2026-09-11 -- reported by a TESTER)**
+- Phase: Core App Quality
+- Platform: All (shared Flutter UI) -- reported on Android
+- **Tester, via Harold 2026-09-11**: *"i think the l-r margins look wide between the slider and the
+  screen border."* The second piece of feedback this project has received from someone other than
+  Harold.
+- **Where**: the Scan Range slider, `settings_screen.dart:2179-2196`.
+- **Confirmed in the code as a real misalignment, not a matter of taste.** Three insets stack on
+  each side, and only the slider carries all three:
+  1. `EdgeInsets.all(16)` on the enclosing Card.
+  2. The `Text('1')` and `Text('90')` that flank the `Expanded` slider inside a `Row`.
+  3. Flutter's `Slider` adds its own overlay padding (roughly 24 logical pixels) so the thumb
+     target is not clipped at the ends of the track.
+  The result is a track starting about 50-60px from the card edge, while the "Scan all emails"
+  checkbox directly above it sets `contentPadding: EdgeInsets.zero` and starts at 16px. The
+  slider is the ONE control in that card that does not line up with its neighbours, which is what
+  makes it read as wrong without an obvious cause.
+- **Candidate fixes, to evaluate rather than assume**: (a) drop the flanking "1"/"90" labels and
+  rely on the slider's own `label`, which already shows the live value on drag -- fewest moving
+  parts; (b) move the min/max labels BELOW the track, aligned to the card gutter; (c) negative
+  horizontal margin on the slider so its TRACK, not its overlay box, aligns to 16px.
+  **(a) is likely correct** and also removes two widgets.
+- **Check the other sliders in the same pass.** If any other screen uses the same Row + Expanded +
+  flanking-label shape, it has the same misalignment; fix them together or the inconsistency just
+  moves.
+- **NOT a dark-mode or contrast issue** -- unrelated to F210, despite arriving in the same batch of
+  tester feedback.
+- **Verification caveat recorded honestly**: this was diagnosed by reading the layout code against
+  the tester's words. Claude has NOT seen the screenshot and has NOT measured it on a device. A
+  screenshot proves what it looks like; the code explains why. Confirm the screen matches this
+  description before implementing.
+- Depends on: nothing.
+- Source: a closed tester via Harold, 2026-09-11. Filed at Harold's instruction during Sprint 69
+  execution; deliberately NOT pulled into Sprint 69 scope.
+
+**F213. Migrate Android Gmail OAuth off Custom URI schemes to Google Identity Services (~4-8h) Priority 40 (NEW, 2026-09-11 -- found while fixing F211)**
+- Phase: Android / Google Play Store Readiness
+- Platform: Android only (Windows uses a loopback redirect and is unaffected)
+- **Not urgent. Filed so it is not rediscovered under pressure**, which is exactly how F211
+  arrived -- as a tester-blocking surprise.
+- Google now disables Custom URI schemes BY DEFAULT on newly-created Android OAuth clients,
+  because the scheme can be claimed by another app on the device (app impersonation). F211's
+  fix re-enables the setting on the existing client, which works today and required no code
+  change.
+- **But Google describes this as the legacy path.** Verbatim from their developer blog: *"In
+  the future, we may disallow Custom URI scheme methods."* The recommended replacement is the
+  **Google Identity Services for Android SDK**, which delivers the OAuth 2.0 response directly
+  to the app instead of via a registered URI scheme.
+- **No cutoff date has been published.** That is the reason to file rather than schedule: there
+  is nothing to race, but if Google does set a date, the migration becomes urgent on their
+  timetable rather than ours, and it touches the sign-in path every tester uses first.
+- **What it would touch**: `flutter_appauth` is built on the custom-scheme mechanism, so this
+  is a dependency swap, not a settings change -- `AndroidManifest.xml`'s
+  `${appAuthRedirectScheme}` intent filter, `build.gradle.kts:96`'s placeholder derivation, and
+  `google_auth_service.dart`. A new Play submission would be required.
+- **Do NOT start this speculatively.** Re-check Google's stated position before scheduling; the
+  recommendation may change again, and the current setup is working.
+- Depends on: nothing. Blocks nothing.
+- Source: found 2026-09-11 while verifying Google's current wording for F211 R-2. Sources:
+  developers.googleblog.com "Improving user safety in OAuth flows through new OAuth Custom URI
+  scheme restrictions"; developers.google.com/identity/protocols/oauth2/native-app.
+
+**F211. TESTER BLOCKER -- Google Sign-In fails for every tester: "Custom URI scheme is not enabled for your Android client" (~30m, console-side) Priority 2 (NEW, 2026-09-10 -- FIRST REAL TESTER FEEDBACK)**
+- Phase: Android / Google Play Store Readiness
+- Platform: Android (closed test)
+- **THIS IS THE FIRST FEEDBACK FROM A REAL TESTER**, Jamey Livingston, relayed by Harold
+  2026-09-10. It is a blocker, not a polish item, and it almost certainly affects EVERY tester --
+  not just him.
+- **What the tester saw**: adding a Google account without an app password produces
+  `Access blocked: spamfilter-multi's request is invalid` / `Error 400: invalid_request`.
+  Tapping "error details" gives the actual cause, verbatim from Google:
+  > **Custom URI scheme is not enabled for your Android client.**
+  > Request details: `flowName=GeneralOAuthFlow`
+- **Confirmed against the app**: `AndroidManifest.xml:62` registers
+  `<data android:scheme="${appAuthRedirectScheme}"/>`, the reversed Android client ID, used by
+  `flutter_appauth`. So the app IS using a custom URI scheme -- exactly what Google says is
+  disabled for this OAuth client.
+- **The fix is in the GOOGLE CLOUD CONSOLE, not the app.** No code change, no release, no new
+  submission. Google disabled custom URI schemes by default for newly-created Android OAuth
+  clients; the setting must be enabled explicitly on that client. **Verify the current wording
+  and location in the console before changing anything** -- Google has moved this setting more
+  than once, and the exact control name should be read rather than recalled.
+- **Why it is Priority 2 -- above everything else on the slate:**
+  - It blocks the PRIMARY sign-in path. Gmail is the most common provider a tester will try.
+  - **8 testers are recruited and 4 more are needed for the 14-day clock.** A tester who cannot
+    sign in may opt OUT -- and an opt-out resets that person's clock to zero, which is the one
+    kind of damage that cannot be recovered by working faster later.
+  - It costs the project credibility at exactly the wrong moment: this is the first thing a new
+    tester does.
+- **The app-password path still works**, which is why Harold's own accounts were unaffected and
+  why this went unnoticed through all of Sprint 68's validation. Harold's reply to the tester --
+  *"App passwords is the way it works best"* -- is a correct WORKAROUND, but it should not be the
+  answer: the in-app Help already presents Google Sign-In as an available option
+  (`help_platform_claims_test` asserts the wording), so the app promises something the console
+  currently forbids.
+- **Also visible in the tester's screenshot**: the account-setup screen offers "Google Sign-In
+  (OAuth 2.0)" and "Manual Token Entry" and then shows a red "Sign-In Error" panel. Worth
+  checking whether that error text is actionable, or whether it simply relays Google's opaque
+  400 -- a tester hitting a dead end should be told to use an app password instead.
+- **After fixing, RE-TEST AS A TESTER**, not as Harold: a fresh Google account that has never
+  authorised this app. Harold's accounts may carry prior consent that masks the failure.
+- Depends on: Google Cloud Console access. No repo change expected; if one IS needed, that
+  changes the priority because it would require a new Play submission.
+- Source: Jamey Livingston via Harold, 2026-09-10. The first defect this project has learned
+  about from someone other than Harold.
+
+**F210. Dark-mode contrast, THIRD variant: a hardcoded surface with text that is theme-derived by OMISSION -- and the F197 gate cannot see it (~1-2h) Priority 6 (NEW, 2026-09-10 -- Harold, on the S24+)**
+- Phase: Core App Quality
+- Platform: All (shared Flutter UI) -- observed on Android dark mode
+- **Harold, 2026-09-10**: *"one where the background and font color are almost the same like the
+  2 or 3 we fixed earlier"*. He is right, and it is the same defect class as F195 and F197.
+- **Where**: the "Export Successful" dialog, `results_display_screen.dart:413-423`. The exported
+  file path renders near-white on near-white and is barely legible -- **the one piece of text the
+  dialog exists to convey**, sitting directly above the instruction "Select the path above to
+  copy it."
+- **The code**:
+  ```dart
+  Container(
+    decoration: BoxDecoration(color: Colors.grey[200]),   // hardcoded near-white surface
+    child: SelectableText(
+      filePath,
+      style: const TextStyle(fontSize: 12, fontFamily: 'monospace'),  // NO COLOUR
+    ),
+  )
+  ```
+- **WHY THE F197 GATE MISSES IT, and this is the important part.** F197 detects a hardcoded
+  surface wrapping text whose colour comes from `Theme.of(context).textTheme`. Here the text is
+  theme-derived **BY OMISSION** -- `TextStyle` specifies no colour at all, so Flutter inherits
+  the theme default, which is near-white in dark mode. **There is no `textTheme` token for the
+  gate to match.** Same defect, invisible to the detector.
+  This is a genuine gap in a gate shipped one day earlier, and it is the third distinct variant
+  of one pattern:
+  1. **F195**: hardcoded surface + explicit `Theme.of(context).textTheme` text. Gated.
+  2. **F197**: same, generalised into the detector. Gated.
+  3. **F210 (this)**: hardcoded surface + text with NO colour specified. **NOT gated.**
+- **The fix to the CODE is small**; the fix to the GATE is the valuable half. Extend the F197
+  detector so a hardcoded surface whose enclosed `Text`/`SelectableText` specifies no colour is
+  treated the same as one referencing `textTheme` -- because Flutter resolves both from the
+  theme. Mutation-verify against this exact dialog.
+- **Also worth checking in the same pass**: `Colors.grey[600]` on the line below ("Select the
+  path above to copy it") is hardcoded text on the DIALOG's theme surface -- the inverse pairing.
+  Measure it in dark mode rather than assuming it passes.
+- **Dialogs were never audited.** F197's sweep covered cards and containers in screens. This is a
+  `showDialog` body, and the audit that found "exactly two instances" did not look here. Re-run
+  the corrected detector across dialogs specifically.
+- Depends on: nothing. Overlaps F197's gate, which it extends rather than replaces.
+- Source: Harold, 2026-09-10, from an Android dark-mode screenshot.
+
+**F208. YAML Import is BROKEN on Android -- FilePicker rejects the .yaml filter (~1-2h) Priority 8 (NEW, 2026-09-10 -- Harold, on the S24+)**
+- Phase: Core App Quality
+- Platform: **Android only** -- Windows is unaffected
+- **Reproduced on the closed-test build, screenshot 2026-09-10**: tapping Import Rules (or Import
+  Safe Senders) fails immediately with
+  `Import failed: PlatformException(FilePicker, Unsupported filter. Make sure that you are only
+  using the extension without the dot, (ie., jpg instead of .jpg). This could also have happened
+  because you are using an unsupported file...`
+- **The plugin's suggested cause is a RED HERRING.** `yaml_import_export_screen.dart:255` (and
+  300, 334, 395) already passes `allowedExtensions: ['yaml', 'yml']` -- dotless, exactly as the
+  message demands. The advice in the error does not apply.
+- **The real cause**: on Android, `FileType.custom` is resolved through **MIME types**, not file
+  extensions. `.yaml` and `.yml` have no registered MIME mapping on Android, so the picker
+  rejects the filter outright before any file is chosen. Windows filters by extension directly,
+  which is exactly why this breaks on one platform and not the other -- an ADR-0042 platform
+  difference hiding inside a shared call.
+- **Severity is higher than it looks**: YAML import/export is the app's ONLY backup-and-restore
+  path and its only way to move rules between devices. On Android it is currently impossible to
+  restore rules at all. The rules DB is the user's accumulated work.
+- **Four call sites**, so fix once in a shared helper rather than four times.
+- **Candidate fixes, to evaluate rather than assume**: (a) `FileType.any` plus post-selection
+  extension validation -- simplest, and the validation is needed anyway since a MIME filter
+  cannot be trusted; (b) register a custom MIME type; (c) a platform fork using
+  `FileType.custom` on desktop and `FileType.any` on Android, declared per ADR-0042.
+  **(a) is likely correct** and removes the platform difference rather than encoding it.
+- **Test it with a REAL exported file**, not a hand-made one -- the export half works, so
+  export-then-import is the natural round trip and the only proof the fix actually restores data.
+- Depends on: nothing. Independent of F206, though both touch file access on Android.
+- Source: Harold, 2026-09-10, exercising Import/Export on the S24+.
+
+**F209. Android navigation bar overlaps the bottom of most screens (~2-4h) Priority 16 (NEW, 2026-09-10 -- Harold)**
+- Phase: Core App Quality
+- Platform: **Android** (and iOS later -- the same class applies to the home indicator)
+- **Harold, 2026-09-10**: *"didn't you find that almost all the pages had the bottom bit covered
+  by the android 3 buttons - should we fix that?"* **Yes, and I should have raised it.** I saw it
+  across the screenshots today -- Settings, Scan History, Import/Export -- and treated it as a
+  screenshot artifact rather than reporting it. It is a real layout defect.
+- **Clearest example, from the same session**: the Import failure message on the Import/Export
+  screen is CUT OFF MID-SENTENCE by the navigation bar. A user hitting that error cannot read
+  what it says -- the diagnostic text is physically behind the system buttons.
+- **Cause**: content is not inset for the system navigation area. Flutter needs either
+  `SafeArea` or explicit `MediaQuery.viewPadding.bottom` handling; a `Scaffold` body does not
+  inset for the nav bar on its own, and Android 15+ enforces edge-to-edge by default, which
+  makes this WORSE rather than better on newer devices.
+- **Not cosmetic**: it hides error text (proven above), and on scrollable screens it can hide the
+  final list row or a bottom action button -- exactly the elements a user needs.
+- **Scope**: fix in the shared scaffold/layout rather than per screen. Harold's phrasing --
+  "almost all the pages" -- points at a single shared container, which is also what ADR-0042
+  prefers ("fork at the narrowest possible point", and here there may be no fork at all).
+  **Inventory first**: confirm whether one shared widget covers every affected screen before
+  editing any of them individually.
+- **Gate it**: a widget test asserting bottom content clears `viewPadding.bottom` would stop the
+  next screen from reintroducing it. Without that, this returns the first time someone adds a
+  screen.
+- **Windows is unaffected** -- no system nav bar -- so this is Android-shaped work that should
+  not change desktop layout. Prove the no-regression side, per ADR-0042's "cover BOTH branches".
+- Depends on: nothing.
+- Source: Harold, 2026-09-10. Observed by Claude across many screenshots and NOT raised -- a miss
+  worth recording as its own lesson: noticing a defect and not reporting it is indistinguishable
+  from not noticing it.
+
+**F207. A manual scan is refused while a background scan is "in progress" -- and the block appears to outlive the scan (~1-2h) Priority 20 (NEW, 2026-09-10 -- Harold, on the S24+)**
+- Phase: Core App Quality
+- Platform: Android (closed test); check Windows for the same lock
+- **Harold, 2026-09-10**: Gmail *"won't currently run a manual scan saying that a background
+  scan is in progress"*.
+- **The refusal itself is probably CORRECT** -- concurrent scans on one account would race on the
+  same folders and the same UID cursor. A mutual exclusion is the right design. `ScanCoordinator`
+  already owns a lease with a 30-minute `scanTimeout`, and F175 exists precisely because leases
+  can be left behind (`reconcileStaleInProgressScans` reconciles them at STARTUP only).
+- **What needs investigating is whether the block is HONEST.** Three possibilities, and they need
+  different fixes:
+  1. A background scan genuinely was running. Correct behaviour; the only issue is whether the
+     message tells the user when to retry.
+  2. A previous background scan died and left its lease held. F175 reconciles those **at startup
+     only** -- so on a phone, where the app may not be restarted for days, a stale lease could
+     block manual scans indefinitely. That is the failure mode to rule out first.
+  3. The 15-minute background cadence means a scan is *often* in flight, so manual scanning is
+     effectively unavailable on the closed-test build much of the time.
+- **Why it matters on THIS build specifically**: the closed test runs background scans every 15
+  minutes on every account. If (2) or (3) holds, a tester who wants to scan on demand simply
+  cannot -- and their natural report would be "the scan button does not work", which is a
+  usability defect rather than the correctness one it actually is.
+- **Scope**: reproduce; determine which of the three it is; then either (a) make the message
+  actionable ("a background scan is running, try again in N minutes"), (b) extend F175's
+  reconciliation beyond startup, or (c) queue the manual request behind the running scan instead
+  of refusing it. Decide AFTER reproducing, not before.
+- **Do not "fix" this by removing the lock.** Concurrent scans on one mailbox are the thing the
+  lock exists to prevent, and this build acts on real mail.
+- Depends on: nothing. Overlaps F205 only in that both are closed-test observations.
+- Source: Harold, 2026-09-10, while gathering Android screenshots.
+
+**F205. Closed-test error rate: 53 errors in 3,833 scanned on the S24+ -- find out what they ARE (~1-2h investigation) Priority 18 (NEW, 2026-09-10 -- observed on the closed-test device)**
+- Phase: Core App Quality
+- Platform: Android (closed test); check Windows for the same class
+- **NARROWED 2026-09-10 by Harold's per-account sweep, and this is the useful half**: he
+  filtered Scan History by account and scan type. **kimmeyharold@aol.com: NO rows with Errors > 0**,
+  background or manual. **kimmeyh@gmail.com background: 21 errors, ALL on a PRIOR VERSION.**
+  Gmail manual: also all prior-version.
+  So the errors are **Gmail-only and pre-0.15.0** -- not spread across accounts, and not
+  occurring on the current build. That is a substantially smaller and colder problem than the
+  raw total suggested, and it may already be fixed. **Confirm no NEW errors accrue on 0.15.0
+  before spending time on the historical ones.**
+- **Observation, from the S24+ Scan History 90-day totals on 2026-09-10**: Total 3,833,
+  Processed 892, Deleted 374, Moved 0, Safe 43, No Rule 475, **Errors 53**. That is ~1.4% of
+  scanned mail, and it is the only number on that screen that is not self-explanatory.
+- **The per-scan rows all read `Errors: 0`.** The three visible background runs (AOL 6:34 PM
+  Deleted 19, Gmail 6:34 PM, AOL 4:06 PM Deleted 6) each report zero. So the 53 are concentrated
+  in runs not visible without scrolling, which makes them a cluster rather than background noise
+  -- worth finding, because a cluster usually has ONE cause.
+- **What was ruled out rather than assumed** (2026-09-10): the obvious hypothesis was F202's
+  missing-folder finding -- a folder that does not exist routes through `recordFolderFetchError`
+  into `errorCount`, so a wrong Gmail folder name would produce exactly this shape. **Checked and
+  it does not hold**: `junk_folder_config.dart:70` correctly uses the bracketed `[Gmail]/Spam`
+  form, and the Windows dev log has **zero** `EXCEPTION fetching folder` entries. The Scan
+  History screen displays `Gmail/Spam` without brackets, but that is a DISPLAY string, not the
+  IMAP name.
+- **UNBLOCKED 2026-09-10 -- data IS retrievable after all, and I was wrong to say otherwise.**
+  Harold changed the CSV export folder to Documents and ran a MANUAL scan; the file written and
+  pulled over MTP:
+  `/storage/emulated/0/Documents/scan_results_2026-09-10T20-32-31.csv`. So **manual-scan export
+  works on Android**; it is the BACKGROUND path (`background_scan_windows_worker.dart`) that does
+  not. My earlier "nothing landed" was checked BEFORE he changed the folder and re-scanned -- a
+  moment-in-time observation reported as a conclusion.
+  The CSV carries exactly what a diagnosis needs: `Scan Date, Received Date, From, Folder,
+  Subject, Rule, Match Condition, Action, Status, Email ID` -- including the **matched rule and
+  its regex**, which is more than the Windows CSV header shows.
+  **So F205 is only PARTLY blocked**: manual scans can be exported today. If a Gmail manual scan
+  reproduces an error row, the cause is diagnosable now rather than after F206.
+- **CORRECTION (2026-09-10, same day)**: this card originally said to "get the device log off
+  the S24+ ... `background_scan_v0.15.0.log`". **That file does not exist on Android.**
+  `main.dart:152` gates the whole file-logging block on
+  `BackgroundModeService.isBackgroundMode`, which is the WINDOWS Task Scheduler path; Android
+  background scans run through WorkManager and never reach it. The path is even built with a
+  hardcoded `\\` separator. I assumed a file rather than checking -- the same shape as retro
+  IMP-1, one level up: assuming an ARTIFACT exists rather than assuming what one means.
+- **So there is currently NO way to diagnose this.** The counters are visible on-device and the
+  underlying detail is not retrievable at all. That is what F206 is for, and F205 is BLOCKED on
+  it: without per-error detail, any diagnosis from the totals alone is guesswork.
+- **Method when picked up (after F206 ships)**: export the scan history, group the error entries
+  by cause, then fix. Do NOT start from a hypothesis; read the data first.
+- **Why this matters more here than elsewhere**: the closed test is the ONLY build that acts on
+  real mail (see `GOOGLE_PLAY_ACCOUNT_SETUP.md` "Scan mode by environment"). An error rate that
+  is benign in read-only could be a failed delete or a half-applied action here. It is also the
+  build 8 testers are about to be watching.
+- **Not urgent, and not a launch blocker**: scans complete, the green check appears, and 3,780 of
+  3,833 messages were handled without error. But an unexplained 1.4% on the build that touches
+  real mail is worth an hour before the tester count reaches 12.
+- Depends on: access to the device log. No code change is implied until the cause is known.
+- Source: observed by Claude in Harold's 2026-09-10 S24+ screenshots.
+
+**F204. Gate the three Play requirements that are documented but not asserted (~2-3h) Priority 24 (NEW, 2026-09-10 -- Harold, from the pre-review-checks research)**
+- Phase: Android / Google Play Store Readiness
+- Platform: Android
+- **Origin**: Harold asked whether Play's "quick checks" could be replicated locally so a
+  submission would "nearly guarantee" a clean pass. The honest answer split in two, and the
+  split is the card:
+  - **The checks themselves CANNOT be replicated.** Google publishes a page for the feature
+    ([pre-review checks](https://support.google.com/googleplay/android-developer/answer/14807773))
+    and explicitly declines to enumerate them: its own FAQ "What pre-review checks does Play
+    Console run?" answers with **two examples and no list**. One of the two is **aggregate crash
+    rates by device/Android version** -- telemetry that lives on Google's side and cannot be
+    checked locally by anyone. Google also states plainly that passing pre-review checks does
+    NOT guarantee passing review.
+  - **The documented REQUIREMENTS can be, and three are not.** That is this card.
+- **DO NOT build a gate that claims to predict pre-review checks.** It would assert something
+  Google has never published, and would give false confidence -- the same shape as the Sprint 66
+  provider gate that passed mutation while catching nothing.
+
+- **Gap 1: `targetSdk` is INHERITED, never asserted (~30m).** `android/app/build.gradle.kts:38`
+  reads `targetSdk = flutter.targetSdkVersion`, so the value comes from the pinned Flutter SDK
+  rather than from this repo. It is CORRECT today -- the 0.15.0 AAB declares
+  `targetSdkVersion 36`, verified 2026-09-10 by reading the built bundle's manifest -- but
+  nothing would catch a regression. Google's deadline is LIVE: from **2026-08-31**, new apps and
+  updates must target API 36 ([doc](https://support.google.com/googleplay/android-developer/answer/11926878)),
+  extension available to 2026-11-01. A Flutter downgrade would silently drop below it and the
+  first symptom would be a rejected upload.
+  **Check**: assert the built AAB's manifest declares `targetSdkVersion >= 36`, or assert the
+  resolved gradle value. Prefer reading the ARTIFACT over the config -- the config is a pointer.
+
+- **Gap 2: no NEGATIVE gate on `AD_ID` (~20m).** Targeting Android 13+ requires declaring
+  `com.google.android.gms.permission.AD_ID` if the ad ID is used
+  ([doc](https://support.google.com/googleplay/android-developer/answer/6048248)). Verified
+  ABSENT from the 0.15.0 AAB on 2026-09-10, and this app has no ads and no analytics (Firebase
+  Analytics removed under GP-12/ADR-0030).
+  **Why gate an absence**: this repo has ALREADY been bitten by transitive manifest injection --
+  GP-3 had to strip NFC and biometric permissions an SDK pulled in via manifest merge. An
+  analytics or ads dependency arriving transitively would inject `AD_ID` and silently turn the
+  "no ads / no analytics" Data safety declaration into a FALSE one. That is a policy problem,
+  not a build problem, and `data_safety_declarations_test` cannot see it because it reads
+  documents, not the merged manifest.
+  **Check**: assert `AD_ID` never appears in the built AAB's merged manifest.
+
+- **Gap 3: 16 KB page-size alignment (~1-2h).** Flutter ships native `.so` libraries, so this
+  applies -- a pure Java/Kotlin app would be exempt.
+  **CORRECTION worth recording, because the wrong date is everywhere**: multiple community
+  sources say enforcement began 2025-11-01. Google's own page says **2027-02-01**:
+  "Starting February 1, 2027, if your app updates don't support 16 KB memory page sizes, you
+  won't be able to release these updates" ([doc](https://developer.android.com/guide/practices/page-sizes)).
+  Not urgent; do it before that date, not this sprint.
+  **Check**: `apkanalyzer` or Android Studio's alignment detection over the bundle's `.so` files.
+
+- **What is NOT applicable, verified rather than assumed** (2026-09-10, by enumerating the built
+  AAB's manifest): no sensitive permissions -- no `QUERY_ALL_PACKAGES`, `MANAGE_EXTERNAL_STORAGE`,
+  SMS/Call Log, or `SCHEDULE_EXACT_ALARM` -- so no Permissions Declaration Form. No ads, no IAP,
+  no location, no camera, no analytics. Bundle is 53 MB against a 500 MB limit. The shipped set
+  is 11 permissions, all mundane (INTERNET, WAKE_LOCK, POST_NOTIFICATIONS,
+  FOREGROUND_SERVICE_SHORT_SERVICE, etc.).
+- **Already covered, do NOT rebuild**: this repo has **56 tests across 13 Play-relevant policy
+  gates**. Notably `app_content_declarations_test` (7 tests) covers App content declarations --
+  which is the ONE check family Google explicitly names as mandatory. Of the two checks Google
+  actually identifies, the coverable one is already covered.
+- **Community evidence, labelled**: aggregator blogs converge on "Data safety form drift" as a
+  common rejection cause -- the form describing an older SDK set than the shipped binary. MEDIUM
+  confidence (multiple independent sources, and it matches Google's documented emphasis), and
+  already gated here by `data_safety_declarations_test`. Deliberately NOT reproducing those
+  sources' longer rejection lists: they are mutually copied and several repeat the 16 KB date
+  error corrected above.
+- Depends on: nothing. All three checks read the built AAB, which the release process already
+  produces.
+- Source: Harold, 2026-09-10 -- *"target is not perfection, but as good as reasonably possible."*
 
 **F203. "Found N, evaluated 0" is unexplainable to the user -- surface the safe-sender-already-in-target skip (~1-2h) Priority 22 (NEW, Sprint 68 MV -- Harold)**
 - Phase: Core App Quality
@@ -656,77 +1365,6 @@ Recorded sequencing honored (see 'Recommended Sequencing' in the GP section belo
 - Depends on: nothing. Reads the repository and its history; changes nothing without approval.
 - Source: Harold, 2026-09-07. Made a periodic template at his direction, alongside F70 (Security), F71 (Architecture), F130 (Process-Docs), F152 (First-Run) and F173 (Test Coverage).
 
-**F200. Web Property Deep Dive -- bring myemailspamfilter.com and GitHub Pages up to date for BOTH stores (~4-8h, unbounded discovery) Priority 20**
-- Phase: Android / Google Play Store Readiness (web property; serves both stores)
-- Platform: All (the site represents Windows Desktop AND Android)
-- **Goal (Harold, 2026-09-09)**: the site is a landing page for the MyEmailSpamFilter apps on
-  BOTH stores, the host for the privacy policy, and the domain behind a contact email. Make it
-  **useful to the users of the apps**. It is NOT a company-verification asset -- that question
-  is closed (`docs/LEGAL_ENTITY.md`).
-- **Framing (Harold, 2026-09-09)**: the site and its GitHub Pages content are **old,
-  Microsoft-Store-centric, and expected to be out of date -- that is OK and is not a defect
-  report.** It was built before the Play launch and before the LLC. This item is a **deep
-  dive** to bring it current, not a patch list. Discovery is expected to exceed the findings
-  below; treat those as the seed, not the scope.
-- **ONE EXCEPTION to "staleness is OK", and it should not wait for this item to be scheduled**:
-  `docs/index.html:235` asserts email content "is processed in-memory only and **is never
-  persisted to disk**." That is not stale, it is **false** -- `PRIVACY_POLICY.md` discloses
-  that scan history stores, per evaluated message, sender address, subject, folder, the action
-  taken, and a body preview of at most 100 characters. The rest of the page misleads by
-  OMISSION (no Play, no LLC, wrong links); this one line misleads by ASSERTION, about data
-  handling, on a page the Play listing cites. Fix it standalone if this item is not scheduled
-  promptly.
-- **Seed findings from the 2026-09-09 inspection** (starting points, not the whole job):
-  1. The false persistence claim above.
-  2. **Two live privacy policies.** `/privacy` (`docs/privacy/index.html`) is dated **March 20,
-     2026** (Sprint 24, hand-written HTML); `/legal/PRIVACY_POLICY.html` is the **August 28,
-     2026** rewrite rendered from Markdown. The landing page links the STALE one; the Play
-     listing and the app cite the CURRENT one.
-  3. The live August policy still reads `Kimmey Consulting - Ohio` (F199 updated the Markdown
-     on the sprint branch; Pages serves `main`). Re-verify after merge.
-  4. `docs/privacy/` and `docs/website/privacy/` are **byte-identical duplicates**;
-     `docs/website/` appears to be a second unused copy of the whole site (CNAME, index,
-     privacy, delete).
-  5. Content is Windows/Microsoft-Store-centric throughout -- no Google Play presence, no
-     store badges or links, "Supported Platforms" lists Android but the page does not present
-     it as shipping.
-  6. Publisher is unnamed and there is no contact information anywhere, while the legal
-     documents both name Kimmey Consulting LLC and give a contact address.
-- **Root cause worth fixing, not just its symptoms**: the legal documents are MARKDOWN that
-  Pages renders, so they track their source automatically. The landing page and `/privacy` are
-  HAND-WRITTEN HTML that nothing regenerates and no gate inspects.
-  `test/policy/legal_docs_test.dart` validates the Markdown and **does not look at the served
-  site at all** (verified by grep, 2026-09-09). That asymmetry is why a corrected policy and a
-  contradicting landing page coexisted for ~6 months. A deep dive that fixes the text without
-  closing this gap will be re-run against the same drift later.
-- **Method**: (a) inventory everything actually served under the domain -- both directory
-  trees, every page, every internal link, and what each URL resolves to LIVE, not what the repo
-  suggests; (b) establish which pages are canonical and DELETE the rest, since a second privacy
-  policy has no reason to exist; (c) audit every factual and privacy claim against
-  `PRIVACY_POLICY.md`, `TERMS.md` and the shipped app behavior; (d) bring content current for
-  both stores -- Play presence, store links, platform status, publisher identity, contact;
-  (e) close the gate gap so a served claim contradicting the policy fails the build.
-- **Also wanted, low effort, no code**: a contact email on the domain
-  (`<something>@myemailspamfilter.com`), replacing the Gmail address the legal documents
-  currently use. Registrar/DNS errand; can happen independently at any time.
-- **Acceptance criteria** (all of the following; the last is one criterion among them, not a
-  substitute for the rest):
-  - Every URL the site serves is inventoried, and each is either current or deleted.
-  - No page makes a claim contradicting `PRIVACY_POLICY.md` or the actual app behavior.
-  - Exactly ONE privacy policy and ONE account-deletion page are reachable, and every internal
-    link points at them.
-  - The site presents BOTH stores accurately.
-  - Publisher (Kimmey Consulting LLC) and contact information are present.
-  - A gate covers served-site claims, so this class of drift fails the build rather than
-    waiting for a human to notice.
-  - **As a final criterion (Harold, 2026-09-09): F201 -- the periodic re-review template
-    below -- exists as a HOLD backlog item.** The deep dive is one-shot; the drift is
-    continuous. This is the LAST criterion in sequence, not the only one that matters: the
-    six above are each independently required, and creating F201 does not discharge them.
-- Depends on: nothing. Pages serves `main`, so nothing is live until merge.
-- Source: Harold, 2026-09-09. Originally filed as a company-verification question; that
-  premise closed the same day, and he redirected it to a deep dive with a periodic companion.
-
 **GP-4. Gmail API OAuth Verification / CASA -- THE SUBMISSION ITSELF (~40-80h) Priority HOLD (MOVED TO HOLD by Harold, 2026-09-09, Sprint 68 scope selection; PREP DONE Sprint 66, submission remains trigger-gated at 2,500+ users or $5K/yr)**
 - Phase: Android Google Play Store Readiness
 - Platform: Android
@@ -757,58 +1395,26 @@ _(No active Core App candidates -- F96 shipped in Sprint 43.)_
 
 ### Process
 
-**F199. Rename the publisher to "Kimmey Consulting LLC" everywhere it appears (~60-100m) Priority 8 (Sprint 68 -- SUBSTANTIALLY DELIVERED 2026-09-09; ONE console item remains)**
+**F199-b. Partner Center publisher display name -- the last surface of the LLC rename (~15m once unblocked) Priority 12 (Sprint 68 remnant; EXTERNALLY BLOCKED)**
 - Phase: Release Readiness
-- Platform: All (both stores + the repo)
-- **DONE -- repo (commit `8558aa3`)**: 10 replacements across 7 live files -- `pubspec.yaml`
-  `msix_config.publisher_display_name`, `PRIVACY_POLICY.md`, `TERMS.md`,
-  `STORE_LISTING_ASSETS.md`, `LISTING_COPY.md`, `GOOGLE_PLAY_ACCOUNT_SETUP.md`,
-  `STORE_RELEASE_PROCESS.md`.
-- **DONE -- Play developer name** (2026-09-09, Developer account -> About you). Console reads
-  `Kimmey Consulting LLC`. No friction, and it went through WHILE 0.14.2 was in review without
-  disturbing the release or the closed test -- the caution about waiting proved unnecessary.
-- **DONE -- Partner Center Additional information** (Copyright / Developed by), folded into
-  Submission 25 rather than paying a separate listing-only certification pass.
-- **STILL OPEN -- Partner Center publisher display name.** Currently `Kimmey Consulting - Ohio`.
-  **Microsoft's own documentation contradicts itself**: the Windows Store FAQ says publisher
-  display name "cannot be changed after registration", while the Partner Center account doc
-  says you can "select the Update link to change your contact info, such as publisher display
-  name" -- and the console UI does show that link. Unresolvable from documentation; ask
-  support (https://aka.ms/windowsdevelopersupport). See `docs/LEGAL_ENTITY.md`.
-- **Deliberately NOT changed, and the distinctions are the durable part**: `msix_config.publisher`
-  (`CN=84EA8722-...`) is the Partner-Center-assigned GUID, not a name -- changing it breaks
-  package identity and every installed copy's upgrade path. Sprint docs and ADRs keep the old
-  name because they are dated records. `GOOGLE_PLAY_ACCOUNT_SETUP.md`'s "Is this a government
-  app?" row keeps the SUBMITTED name: a declaration already filed under the old name stays
-  under it (this one was caught only after being wrongly rewritten -- see `5865794`).
-- **Legal precondition RESOLVED**: Harold confirmed the LLC is a one-person entity (Harold
-  Kimmey), so the account holder does not change; this is a display-name edit, not an account
-  restructuring. Ohio LLC doc. 202624702988, effective 2026-09-05 -- see `docs/LEGAL_ENTITY.md`.
-- **Account type question CLOSED**: both stores stay Personal/Individual. Company/Organization
-  conversion was researched against both vendors' documentation and declined.
-- Depends on: nothing. The remaining item is gated on a Microsoft support answer.
-- Source: Harold, 2026-09-09.
-
-**F198. Forcing function for the numbered-question format (~45-75m) Priority 18 (NEW, Sprint 67 retro IMP-4 -- Harold: backlog, TENTATIVELY next sprint)**
-- Phase: Process
-- Platform: N/A (tooling)
-- **The problem is repetition, not ignorance.** `feedback_qa_style_plain_numbered` says a decision question must be a PLAIN NUMBERED LIST the user answers by typing a digit. It was corrected three times on 2026-08-10 and again in Sprint 67, when I asked the emulator uninstall decision as two bolded prose paragraphs with a recommendation. Harold: *"noting this is not how I have requested you ask questions."* **Four corrections of the same rule is not a memory problem, it is a missing forcing function** -- which is the same reasoning that produced the auto-advance hook (Sprint 36) and the mutation-lock gate (Sprint 65).
-- Direction: a Stop-hook check that blocks a turn ending in a decision question NOT presented as a numbered list. `sprint-auto-advance.ps1` already parses the last assistant message for question shapes, so the detection half largely exists; the new part is recognising the numbered-list form and allowing it.
-- **The risk is real and this card should not pretend otherwise.** A badly tuned check is worse than the current prose rule: it would fire on rhetorical questions, on quoted user text, on questions inside code blocks, and on the legitimate Phase 7 retro prompt. Sprint 67 shipped a gate that blocked correct work (the F193 Phase 4 regression) and that is exactly the failure mode to avoid twice. Whoever builds this must add allow-cases FIRST, covering at minimum: a numbered question (allow), a prose question (block), a question inside a fenced code block (allow), a quoted question from Harold (allow), and the Phase 7 retro prompt (allow).
-- **Acceptance**: mutation-verified in both directions, and `run-test-cases.ps1` green -- the very suite Sprint 67 IMP-2 exists because I failed to run.
-- Alternative worth evaluating before building it: whether a lighter change suffices -- e.g. moving the rule from memory into CLAUDE.md's "Things Claude Should NOT Do" list, which is read every session, versus memory files that are recalled selectively. Cheaper, and it may be enough. The card should compare both rather than assume a hook.
-- Depends on: nothing.
-- Source: Sprint 67 retrospective IMP-4, 2026-09-09. Harold: *"add 4 to backlog and tentatively for the next sprint"*.
-
-**F197. Dark-mode contrast: add a GATE for the hardcoded-surface + theme-text pattern (~45-90m) Priority 26 (NEW Sprint 67; SCOPE CORRECTED 2026-09-09 after measuring)**
-- Phase: Core App Quality
-- Platform: All (shared Flutter UI)
-- **This card was originally written as "28 sites to fix" and that was wrong.** 28 (in fact 29) is the count of hardcoded `Colors.*.shadeNN` occurrences repo-wide -- a grep of the easy proxy, not a count of the defect. Most are CORRECT: a fully-hardcoded card pins BOTH halves and holds in any theme. Harold's own counter-example proves it -- Settings > Manual Scan > Default Folders is `blue.shade900` on `blue.shade50` and measures **7.56:1**.
-- The defect is **MIXING** a hardcoded surface with theme-derived text. Auditing for that specifically (a `shadeNN` surface with a `textTheme` reference within ~12 lines) finds **exactly two** instances in the whole tree, and **both are already fixed**: the Settings account header (F195) and the Scan History background-scan info strip (fixed alongside the F197 correction).
-- **So the remaining work is NOT a sweep -- it is the GATE.** The reason two instances reached users is that nothing forbids the pattern. Add a policy test or lint that fails when a hardcoded `Colors.*.shadeNN` is used as a container colour while the text inside takes its colour from the theme. That is what stops the third instance, and it is the only part of this card with lasting value.
-- Also worth doing while in here: confirm the pattern cannot re-enter through `AppTheme` itself, and consider whether `ColorScheme.fromSeed` guarantees the container/onContainer pairs the fixes now rely on (measured: `AppTheme.darkTheme` 7.20:1, `AppTheme.lightTheme` 13.26:1 -- both pass, but that is a measurement, not a guarantee anyone documented).
-- Depends on: nothing. F195 and the Scan History fix are the worked examples.
-- Source: F195 sibling check, 2026-09-08; scope corrected after the Sprint 67 5.1.1 review challenged the count, 2026-09-09.
+- Platform: Windows Desktop (Microsoft Store account surface)
+- Sprint 68 delivered every other surface: the repo (10 replacements, 7 files), the Play
+  developer name, and the Partner Center listing fields (Copyright / Developed by), the latter
+  folded into Submission 25 rather than paying a separate listing-only certification pass.
+- **What remains**: Partner Center still shows `Kimmey Consulting - Ohio` as the publisher
+  display name. **Microsoft's own documentation contradicts itself** on whether an Individual
+  account can change it -- the Windows Store FAQ says publisher display name "cannot be changed
+  after registration", while the Partner Center account doc says you can "select the Update
+  link to change your contact info, such as publisher display name", and the console DOES show
+  that link. Unresolvable from documentation.
+- **Next action is Harold's, not code**: a support ticket at
+  https://aka.ms/windowsdevelopersupport asking (a) can this Individual account's publisher
+  display name be changed, and (b) can a published app be transferred to a new Company account.
+- **Do NOT touch** `msix_config.publisher` (`CN=84EA8722-...`) -- that is the Partner-Center
+  assigned GUID, not a name; changing it breaks package identity and every installed copy's
+  upgrade path.
+- Account type is CLOSED: both stores stay Personal/Individual (`docs/LEGAL_ENTITY.md`).
+- Depends on: a Microsoft support answer. Nothing in the repo blocks it.
 
 **F111. Periodic Windows App Store upload readiness verification (~110-175m per review) Priority HOLD**
 - Phase: Release Readiness (reusable template)

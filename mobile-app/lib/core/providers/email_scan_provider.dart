@@ -129,6 +129,25 @@ class EmailScanProvider extends ChangeNotifier {
   int _movedCount = 0;
   int _safeSendersCount = 0;
   int _noRuleCount = 0;  // [NEW] PHASE 3.1: Emails with no rule match
+
+  /// F203 (Sprint 69): safe-sender emails that were FETCHED and then skipped
+  /// because they already sit in the safe-sender folder.
+  ///
+  /// These are deliberately not processed and deliberately not displayed --
+  /// they are already where they belong, and `email_scanner.dart` says so:
+  /// "do not count, do not display, do not process". That behaviour is
+  /// correct and is NOT changed here.
+  ///
+  /// What was wrong is that the skip was INVISIBLE. A scan could fetch 40
+  /// emails, skip all 40, and report "Found 40, evaluated 0" with an empty
+  /// list and the message "No emails were found" -- three statements the user
+  /// cannot reconcile, one of which is false.
+  ///
+  /// This counter exists to DISCLOSE the skip, not to reclassify it.
+  /// Deliberately NOT added to [processedCount]: these emails genuinely were
+  /// not processed, and inflating that number to make a screen look tidier
+  /// would make the count dishonest in the other direction.
+  int _skippedAlreadyFiledCount = 0;
   int _errorCount = 0;
 
   /// F91 (Sprint 39): number of source-folder duplicate messages removed
@@ -174,6 +193,17 @@ class EmailScanProvider extends ChangeNotifier {
   int get movedCount => _movedCount;
   int get safeSendersCount => _safeSendersCount;
   int get noRuleCount => _noRuleCount;  // [NEW] PHASE 3.1: Emails with no rule match
+
+  /// F203: fetched, then skipped as already filed. See the field doc.
+  int get skippedAlreadyFiledCount => _skippedAlreadyFiledCount;
+
+  /// F203: record one skipped safe-sender email.
+  ///
+  /// Does NOT touch [processedCount] -- see the field doc for why that is the
+  /// whole point.
+  void recordSkippedAlreadyFiled() {
+    _skippedAlreadyFiledCount++;
+  }
   int get errorCount => _errorCount;
 
   /// F91 (Sprint 39): count of source-folder duplicates removed during
@@ -264,6 +294,7 @@ class EmailScanProvider extends ChangeNotifier {
     _movedCount = 0;
     _safeSendersCount = 0;
     _noRuleCount = 0;  // [NEW] FIX: Reset no-rule count on new scan
+    _skippedAlreadyFiledCount = 0;  // F203
     _errorCount = 0;
     _safeSenderDedupCount = 0;  // F91 (Sprint 39): reset dedup count on new scan
     _currentEmail = null;
@@ -587,6 +618,7 @@ class EmailScanProvider extends ChangeNotifier {
     _movedCount = 0;
     _safeSendersCount = 0;
     _noRuleCount = 0;  // [NEW] PHASE 3.1: Reset no-rule count
+    _skippedAlreadyFiledCount = 0;  // F203
     _errorCount = 0;
     _safeSenderDedupCount = 0;  // F91 (Sprint 39): reset dedup count
 

@@ -8,6 +8,221 @@ Do not stop to ask questions unless meeting the criteria in \docs\SPRINT_STOPPIN
 Sprint 6n Scope should include the below items. Please complete sprint planning (/docs/sprint_planning.md) for the below items and present for approval.  Note that everything needs to take into account both the Windows App and the Android app and ADR stating that everything should be functionally and UI the same unless it cannot be - and where it cannot be it should be implemented as a platform exception for what is needed -- this applies to all backend code, frontend code, data, architecture, development, security, testing, deployment.
 
 ---------------------------------------------------------------------------------------------------------
+Sprint 69 Scope should include the below items. Please complete sprint planning (/docs/sprint_planning.md) for the below items and present for approval.  Note that everything needs to take into account both the Windows App and the Android app and ADR stating that everything should be functionally and UI the same unless it cannot be - and where it cannot be it should be implemented as a platform exception for what is needed -- this applies to all backend code, frontend code, data, architecture, development, security, testing, deployment.
+  Android tester-experience sprint (~6-10h): F211 + F210 + F208 + F209 + F203. 
+
+
+Updated Backlog Refinement — 2026-09-11 — Phase 8.4 Pass 2 (Scope Selection)
+
+  Zero open GitHub issues. Sprint 68 shipped and closed; both stores are on 0.15.0 (Play live to closed testing, Windows Submission 26 in certification).
+
+  Candidates at a glance
+
+  - F211. TESTER BLOCKER -- Google Sign-In fails for every tester: "Custom URI scheme is not enabled for your Android client" (~30m, console-side) Priority 2
+  - F210. Dark-mode contrast, THIRD variant: a hardcoded surface with text that is theme-derived by OMISSION (~1-2h) Priority 6
+  - F208. YAML Import is BROKEN on Android -- FilePicker rejects the .yaml filter (~1-2h) Priority 8
+  - F202. Per-provider folder defaults -- overall default plus provider overrides for all four folder settings (~6-10h) Priority 10
+  - F199-b. Partner Center publisher display name -- the last surface of the LLC rename (~15m once unblocked) Priority 12
+  - F206. Diagnostic export as a PLATFORM CAPABILITY -- reset the counters, and get scan data off the device on every platform (~5-8h) Priority 14
+  - F209. Android navigation bar overlaps the bottom of most screens (~2-4h) Priority 16
+  - F205. Closed-test error rate: 53 errors in 3,833 scanned on the S24+ -- find out what they ARE (~1-2h investigation) Priority 18
+  - F207. A manual scan is refused while a background scan is "in progress" (~1-2h) Priority 20
+  - F203. "Found N, evaluated 0" is unexplainable to the user (~1-2h) Priority 22
+  - F204. Gate the three Play requirements that are documented but not asserted (~2-3h) Priority 24
+  - F192. Custom IMAP Server support -- build the host-entry UI (~4-6h) Priority 32
+  - HOLD items:
+  - F165. Cross-device rules-DB sharing + hosted-tier exploration (~half-day) Priority HOLD
+  - F173. Periodic "Test Coverage and Appropriate Testing" Deep Dive (~4-8h per review) Priority HOLD
+  - F183. Upstream civyk-winwright request: script-runner replay support for ww_wait (~15m to file) Priority HOLD
+  - F179. Subject-blocking phrase picker (~3-5h) Priority HOLD
+  - F152. Periodic User-Centric First-Run Evaluation (~2-3h per review) Priority HOLD
+  - F189. Periodic Skills Audit (~4-8h per review) Priority HOLD
+  - F201. Periodic Web Property Accuracy Re-Review (~1-2h per review) Priority HOLD
+  - GP-4. Gmail API OAuth Verification / CASA -- the submission itself (~40-80h) Priority HOLD
+  - F111. Periodic Windows App Store upload readiness verification (~110-175m per review) Priority HOLD
+  - F139. Local-install smoke test for a release-candidate MSIX (~30-50m per review) Priority HOLD
+  - F70. Periodic Security Deep Dive (~4-8h per review) Priority HOLD
+  - F130. Periodic Process-Docs Consistency Deep Dive (unbounded discovery) Priority HOLD
+  - F71. Periodic Architecture Deep Dive (~4-8h per review) Priority HOLD
+  - F95. iOS variants + cross-store hardening (~10-16h) Priority HOLD
+  - F63. Responsive design framework (SUPERSEDED) Priority HOLD
+  - F67. Platform validation -- iOS, Linux, macOS (~4-6h per platform) Priority HOLD
+  - F6. Provider-Specific Optimizations (~10-12h) Priority HOLD
+  - SEC-8b. Certificate pinning for IMAP endpoints (~4-6h) Priority HOLD
+  - SEC-15. IMAP host validation for custom servers (~1h) Priority HOLD
+  - SEC-11b. Database-at-rest encryption via sqlite3mc (~8-12h) Priority HOLD
+  - F106. SEC-11b verification-window cleanup (~30m) Priority HOLD
+  - H1. GenAI Pattern Suggestions -- Crowdsourced Spam Intelligence (TBD) Priority HOLD
+  - H2. Rule Pattern Consistency -- Domain Matching Standards (~4-6h) Priority HOLD
+  - H3. Requirements Documentation System (TBD) Priority HOLD
+  - H4. Sent Messages Scan for Safe Senders (~12-16h) Priority HOLD
+  - H5. Outlook.com / Office 365 email provider adapter (~16-20h) Priority HOLD
+
+  ---
+
+  Android / Google Play Store Readiness
+
+  F211. TESTER BLOCKER -- Google Sign-In fails for every tester: "Custom URI scheme is not enabled for your Android client" (~30m, console-side) Priority 2
+  - Phase: Android / Google Play Store Readiness
+  - Platform: Android (closed test)
+  - First real tester feedback (Jamey Livingston). Error 400: invalid_request; Google's own detail names the cause. Confirmed against AndroidManifest.xml:62, which
+    registers the reversed-client-ID scheme for flutter_appauth.
+  - Fix is in the Google Cloud Console, not the code -- no release, no submission.
+  - Depends on: Google Cloud Console access.
+
+  F204. Gate the three Play requirements that are documented but not asserted (~2-3h) Priority 24
+  - Phase: Android / Google Play Store Readiness
+  - Platform: Android
+  - targetSdk inherited from the Flutter pin rather than asserted; no negative AD_ID gate; 16 KB alignment (Google's deadline is 2027-02-01, not the 2025 date community
+    sources repeat).
+  - Depends on: nothing.
+
+  Core App Quality
+
+  F210. Dark-mode contrast, THIRD variant: a hardcoded surface with text that is theme-derived by OMISSION (~1-2h) Priority 6
+  - Phase: Core App Quality
+  - Platform: All (shared Flutter UI)
+  - results_display_screen.dart:413 -- Colors.grey[200] surface, TextStyle with no colour, so it inherits the theme. Near-white on near-white in dark mode.
+  - The F197 gate cannot see it -- there is no textTheme token to match. Extending the detector is the valuable half.
+  - Depends on: nothing.
+
+  F208. YAML Import is BROKEN on Android -- FilePicker rejects the .yaml filter (~1-2h) Priority 8
+  - Phase: Core App Quality
+  - Platform: Android only -- Windows unaffected
+  - Android resolves FileType.custom through MIME types; .yaml has no mapping. The plugin's "drop the dot" message is a red herring -- the code already passes dotless
+    extensions.
+  - YAML import/export is the app's only backup-and-restore path; on Android it currently cannot restore rules at all.
+  - Depends on: nothing.
+
+  F202. Per-provider folder defaults -- overall default plus provider overrides for all four folder settings (~6-10h) Priority 10
+  - Phase: Core App Quality
+  - Platform: All (shared provider/adapter layer)
+  - Harold-targeted for Sprint 69. Four decisions already made; AOL/Gmail/Yahoo values recorded as observed truth; iCloud pending.
+  - Depends on: nothing in code.
+
+  F206. Diagnostic export as a PLATFORM CAPABILITY (~5-8h) Priority 14
+  - Phase: Core App Quality
+  - Platform: All -- storage mechanism is a declared ADR-0042 platform exception
+  - Part A: reset the counters (no clear/reset exists anywhere). Part B: export where MTP can see it. Part C: redacted share path.
+  - Confirmed 2026-09-11: background scans ran overnight on the 15-minute cycle and wrote nothing. Manual export works; background does not.
+  - Depends on: nothing. Part B partly unblocks F205.
+
+  F209. Android navigation bar overlaps the bottom of most screens (~2-4h) Priority 16
+  - Phase: Core App Quality
+  - Platform: Android (and iOS later)
+  - Proven non-cosmetic: the Import failure message is cut off mid-sentence by the nav buttons.
+  - Depends on: nothing.
+
+  F205. Closed-test error rate: 53 errors in 3,833 scanned on the S24+ (~1-2h investigation) Priority 18
+  - Phase: Core App Quality
+  - Platform: Android (closed test); check Windows
+  - Narrowed: AOL has zero error rows; Gmail's 21 are all on a prior version. Gmail-only and pre-0.15.0.
+  - Depends on: partly on F206 Part B, though manual-scan export works today.
+
+  F207. A manual scan is refused while a background scan is "in progress" (~1-2h) Priority 20
+  - Phase: Core App Quality
+  - Platform: Android (closed test); check Windows
+  - The refusal is probably correct. What needs checking is whether the block is honest -- F175 reconciles stale leases at startup only, and a phone may not restart for
+    days.
+  - Depends on: nothing.
+
+  F203. "Found N, evaluated 0" is unexplainable to the user (~1-2h) Priority 22
+  - Phase: Core App Quality
+  - Platform: All (shared scanner + results UI)
+  - Correct behaviour the user cannot see: safe-sender-already-in-target skips are invisible, and the empty-state text asserts no emails were found when some were.
+  - Depends on: nothing.
+
+  F192. Custom IMAP Server support -- build the host-entry UI (~4-6h) Priority 32
+  - Phase: Core App Quality
+  - Platform: All
+  - GenericIMAPAdapter.custom() expects a host nothing supplies; zero imapHost references in lib/ui/.
+  - Depends on: nothing.
+
+  Release Readiness
+
+  F199-b. Partner Center publisher display name -- the last surface of the LLC rename (~15m once unblocked) Priority 12
+  - Phase: Release Readiness
+  - Platform: Windows Desktop
+  - Microsoft's own docs contradict each other on whether an Individual account can change it. Resolved by a support ticket, not by editing.
+  - Now costlier than before: changing it requires updating pubspec.yaml and the gate constant in the same commit, console-first.
+  - Depends on: a Microsoft support answer.
+
+  ---
+
+  Observations
+
+  Seven of the twelve came from two days of real-hardware use (F205, F206, F207, F208, F209, F210, F211). None came from a test suite. That is worth weighing when sizing:
+  the same activity will likely keep producing findings.
+
+  F211 is the only item touching the tester clock. It is 30 minutes, console-side, needs no release — and every tester who tries Gmail hits it. A tester who cannot sign in
+  may opt out, which resets that person to zero. I would do it regardless of what else you select.
+
+  Two natural compositions:
+
+  Android tester-experience sprint (~6-10h): F211 + F210 + F208 + F209 + F203. Everything a closed tester actually touches — sign-in, backup, layout, legibility, and a
+  confusing results screen. Highest value per hour while 8 testers are watching.
+
+  Harold's stated plan (~12-18h): F202 + F192 + F203, as targeted at the last selection. F202 is well-specified with decisions already made.
+
+  F202 and F192 are related — F192 (Custom IMAP host entry) will need per-provider defaults for whatever server the user enters, so doing F202 first makes F192 cheaper.
+
+  A caution on F206: Part C's redaction design should be decided once, before any of B or C ships. It is the piece that touches your privacy posture.
+
+
+Phase 8.2 — Backlog Refinement Pass 1: Completeness Sweep
+
+  This pass does NOT select scope (F170). Scope selection is Phase 8.4, after the store releases.
+
+  Close-out verification — all seven items confirmed
+
+  - Cards closed: 0 open issues. #398-#402 closed manually, since Closes #N does not auto-fire on feature → develop.
+  - Docs triad: all three Sprint 68 docs present. SUMMARY.md was missing and has been written.
+  - Next-sprint stub: SPRINT_69_PLAN.md created, recording that Category 13 was NONE from all four roles.
+  - Master plan rolled: Sprint 68 is now Last Completed, Sprint 67 demoted. The "Last Updated" line was stale at Sprint 61 and is current.
+  - Status file: rolled to current 69 / previous 68, by reading it first as the checklist requires.
+  - Shipped items pruned: F191, F197, F198, F200 removed from candidates.
+  - No uncommitted 0* files.
+
+  Two gaps the sweep found and fixed: the Sprint 69 branch did not exist (Phase 6.6 — created from the feature branch at 1f2eb8c, not from develop), and
+  SPRINT_68_SUMMARY.md was missing.
+
+  One judgment call worth surfacing: F199 was not pruned. Its Partner Center publisher display name is genuinely still open, so it converted to F199-b rather than being
+  deleted. Pruning it would have buried a real open item under a "shipped" label.
+
+  Candidates at a glance
+
+  - F202. Per-provider folder defaults -- overall default plus provider overrides for all four folder settings (~6-10h) Priority 10
+  - F199-b. Partner Center publisher display name -- the last surface of the LLC rename (~15m once unblocked) Priority 12
+  - F203. "Found N, evaluated 0" is unexplainable to the user (~1-2h) Priority 22
+  - F192. Custom IMAP Server support -- build the host-entry UI (~4-6h) Priority 32
+  - HOLD items:
+  - F201. Periodic Web Property Accuracy Re-Review -- myemailspamfilter.com + GitHub Pages (~1-2h per review) Priority HOLD
+  - F165. Cross-device rules-DB sharing + hosted-tier exploration (~half-day) Priority HOLD
+  - GP-4. Gmail API OAuth Verification / CASA -- the submission itself (~40-80h) Priority HOLD
+  - F70. Periodic Security Deep Dive (~4-8h per review) Priority HOLD
+  - F71. Periodic Architecture Deep Dive (~4-8h per review) Priority HOLD
+  - F111. Periodic Windows App Store upload readiness verification (~110-175m per review) Priority HOLD
+  - F130. Periodic Process-Docs Consistency Deep Dive (unbounded discovery) Priority HOLD
+  - F139. Local-install smoke test for a release-candidate MSIX (~30-50m per review) Priority HOLD
+  - F152. Periodic User-Centric First-Run Evaluation (~2-3h per review) Priority HOLD
+  - F173. Periodic Test Coverage and Appropriate Testing Deep Dive (~4-8h per review) Priority HOLD
+  - F189. Periodic Skills Audit (~4-8h per review) Priority HOLD
+  - F179. Subject-blocking phrase picker (~3-5h) Priority HOLD
+  - F183. Upstream civyk-winwright request: script-runner replay support for ww_wait (~15m to file) Priority HOLD
+  - F95. iOS variants + cross-store hardening (~10-16h) Priority HOLD
+  - F67. Platform validation -- iOS, Linux, macOS (~4-6h per platform) Priority HOLD
+  - F63. Responsive design framework (SUPERSEDED) Priority HOLD
+  - F6. Provider-Specific Optimizations (~10-12h) Priority HOLD
+  - SEC-8b. Certificate pinning for IMAP endpoints (~4-6h) Priority HOLD
+  - SEC-15. IMAP host validation for custom servers (~1h) Priority HOLD
+  - SEC-11b. Database-at-rest encryption via sqlite3mc (~8-12h) Priority HOLD
+  - F106. SEC-11b verification-window cleanup (~30m) Priority HOLD
+  - H1. GenAI Pattern Suggestions -- Crowdsourced Spam Intelligence (TBD) Priority HOLD
+  - H2. Rule Pattern Consistency -- Domain Matching Standards (~4-6h) Priority HOLD
+  - H3. Requirements Documentation System (TBD) Priority HOLD
+  - H4. Sent Messages Scan for Safe Senders (~12-16h) Priority HOLD
+
+---------------------------------------------------------------------------------------------------------
 Sprint 68 Scope should include the below items. Please complete sprint planning (/docs/sprint_planning.md) for the below items and present for approval.  Note that everything needs to take into account both the Windows App and the Android app and ADR stating that everything should be functionally and UI the same unless it cannot be - and where it cannot be it should be implemented as a platform exception for what is needed -- this applies to all backend code, frontend code, data, architecture, development, security, testing, deployment.
  My recommendation: F199 finish + F198 + F197, with F191 added if you have Yahoo and iCloud accounts ready. 
   - F199. Rename the publisher to "Kimmey Consulting LLC" everywhere it appears (~60-100m) Priority 8 — already assigned, substantially delivered

@@ -24,6 +24,7 @@ import 'help_screen.dart' show HelpSection;
 import '../widgets/provider_group_markers.dart';
 import '../widgets/auth_warning_dialog.dart';
 import '../widgets/empty_state.dart';
+import '../widgets/system_inset_wrapper.dart'; // F209 (Sprint 69)
 
 /// F39 (Sprint 46): cross-account "No rule" review screen.
 ///
@@ -724,57 +725,59 @@ class _NoRuleReviewScreenState extends State<NoRuleReviewScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBarWithExit(
-        title: const Text('Review No Rule Items'),
-        // F134 (Sprint 52): canonical order from the ONE shared builder --
-        // Refresh (screen-specific, first), then View Scan History, Accounts,
-        // Settings, Help, then the auto-appended Exit. Harold specified this
-        // screen explicitly: "Need to add the following icons ... so they
-        // appear in this order: Refresh, View Scan History, Accounts,
-        // Settings, Help".
-        //
-        // includeNoRuleReview: false -- this IS the Review No Rule Items screen; a
-        // self-referential entry point would be noise.
-        // Settings is account-scoped while this screen is cross-account, so the
-        // accountId comes from the F135 resolver (which never prompts here);
-        // when it returns null the builder omits the Settings icon rather than
-        // pushing a bogus id.
-        actions: StandardAppBarActions.build(
-          context: context,
-          // F154 (Sprint 59): this screen finally has its own Help section
-          // (previously deep-linked to resultsDisplay as a nearest-match
-          // stand-in, a gap filed in the F133-S52 findings).
-          helpSection: HelpSection.reviewNoRuleItems,
-          accountId: _resolveAccountIdForSettings(),
-          includeNoRuleReview: false,
-          // Own handler (not the builder's default) purely so this screen can
-          // RELOAD when the scan returns -- a scan can resolve items shown
-          // here. The account/platform resolution itself still lives in the
-          // shared builder.
+    return SystemInsetWrapper(
+      child: Scaffold(
+        appBar: AppBarWithExit(
+          title: const Text('Review No Rule Items'),
+          // F134 (Sprint 52): canonical order from the ONE shared builder --
+          // Refresh (screen-specific, first), then View Scan History, Accounts,
+          // Settings, Help, then the auto-appended Exit. Harold specified this
+          // screen explicitly: "Need to add the following icons ... so they
+          // appear in this order: Refresh, View Scan History, Accounts,
+          // Settings, Help".
           //
-          // NOTE (corrected, PR #292 re-review): because this handler is
-          // non-null, the builder's `onManualScan != null || accountId != null`
-          // guard shows the icon EVEN WITH ZERO ACCOUNTS -- an earlier comment
-          // here claimed the opposite. The zero-account press is handled inside
-          // _openManualScan with an explicit "add an account first" message
-          // rather than a silent return.
-          onManualScan: _openManualScan,
-          leading: [
-            IconButton(
-              icon: const Icon(Icons.refresh),
-              // Harold 2026-07-31: "Refresh" alone reads as "go check for new
-              // mail", which this does NOT do -- it re-reads the scan already
-              // stored locally. Only a Manual Scan contacts the mail server.
-              tooltip: 'Re-check the last scan (does not fetch new mail)',
-              onPressed: _refreshFromUserAction,
-            ),
-          ],
+          // includeNoRuleReview: false -- this IS the Review No Rule Items screen; a
+          // self-referential entry point would be noise.
+          // Settings is account-scoped while this screen is cross-account, so the
+          // accountId comes from the F135 resolver (which never prompts here);
+          // when it returns null the builder omits the Settings icon rather than
+          // pushing a bogus id.
+          actions: StandardAppBarActions.build(
+            context: context,
+            // F154 (Sprint 59): this screen finally has its own Help section
+            // (previously deep-linked to resultsDisplay as a nearest-match
+            // stand-in, a gap filed in the F133-S52 findings).
+            helpSection: HelpSection.reviewNoRuleItems,
+            accountId: _resolveAccountIdForSettings(),
+            includeNoRuleReview: false,
+            // Own handler (not the builder's default) purely so this screen can
+            // RELOAD when the scan returns -- a scan can resolve items shown
+            // here. The account/platform resolution itself still lives in the
+            // shared builder.
+            //
+            // NOTE (corrected, PR #292 re-review): because this handler is
+            // non-null, the builder's `onManualScan != null || accountId != null`
+            // guard shows the icon EVEN WITH ZERO ACCOUNTS -- an earlier comment
+            // here claimed the opposite. The zero-account press is handled inside
+            // _openManualScan with an explicit "add an account first" message
+            // rather than a silent return.
+            onManualScan: _openManualScan,
+            leading: [
+              IconButton(
+                icon: const Icon(Icons.refresh),
+                // Harold 2026-07-31: "Refresh" alone reads as "go check for new
+                // mail", which this does NOT do -- it re-reads the scan already
+                // stored locally. Only a Manual Scan contacts the mail server.
+                tooltip: 'Re-check the last scan (does not fetch new mail)',
+                onPressed: _refreshFromUserAction,
+              ),
+            ],
+          ),
         ),
+        body: _isLoading
+            ? const Center(child: CircularProgressIndicator())
+            : SelectionArea(child: _buildBody()),
       ),
-      body: _isLoading
-          ? const Center(child: CircularProgressIndicator())
-          : SelectionArea(child: _buildBody()),
     );
   }
 

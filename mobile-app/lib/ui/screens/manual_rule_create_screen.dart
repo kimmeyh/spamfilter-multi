@@ -32,6 +32,7 @@ import '../../core/utils/manual_rule_pattern_generator.dart';
 import '../testing/widget_keys.dart';
 import '../utils/accessibility_helper.dart';
 import 'help_screen.dart';
+import '../widgets/system_inset_wrapper.dart'; // F209 (Sprint 69)
 
 /// Whether we are creating a block rule or a safe sender
 enum ManualRuleMode { blockRule, safeSender }
@@ -653,195 +654,197 @@ class _ManualRuleCreateScreenState extends State<ManualRuleCreateScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(
-        title: Semantics(
-          header: true,
-          child: Text(_screenTitle),
+    return SystemInsetWrapper(
+      child: Scaffold(
+        appBar: AppBar(
+          title: Semantics(
+            header: true,
+            child: Text(_screenTitle),
+          ),
+          leading: IconButton(
+            icon: const Icon(Icons.arrow_back),
+            tooltip: AccessibilityHelper.backLabel,
+            onPressed: () => Navigator.of(context).pop(),
+          ),
         ),
-        leading: IconButton(
-          icon: const Icon(Icons.arrow_back),
-          tooltip: AccessibilityHelper.backLabel,
-          onPressed: () => Navigator.of(context).pop(),
-        ),
-      ),
-      body: SelectionArea(
-        child: Form(
-          key: _formKey,
-          child: ListView(
-            padding: const EdgeInsets.all(16),
-            children: [
-              // Rule type selector
-              Text(
-                'Rule Type',
-                style: Theme.of(context).textTheme.titleMedium,
-              ),
-              const SizedBox(height: 8),
-              ..._availableTypes.map((type) => Semantics(
-                    label: '${type.label}: ${type.description}',
-                    child: RadioListTile<ManualRuleType>(
-                      title: Text(type.label),
-                      subtitle: Text(type.description),
-                      value: type,
-                      groupValue: _selectedType,
-                      onChanged: (value) {
-                        setState(() {
-                          _selectedType = value!;
-                          _generatedPattern = '';
-                          _patternError = null;
-                        });
-                        if (_inputController.text.isNotEmpty) {
-                          _generatePattern();
-                        }
-                      },
-                    ),
-                  )),
-
-              // F74 (Sprint 39): cross-reference to the Help FAQ, which
-              // explains TLD rules, the IANA list, and the difference between
-              // the four rule types in plain language.
-              Align(
-                alignment: Alignment.centerLeft,
-                child: TextButton.icon(
-                  icon: const Icon(Icons.help_outline, size: 18),
-                  label: const Text('Learn more about rule types and TLDs'),
-                  onPressed: () => openHelp(context, HelpSection.faq),
-                ),
-              ),
-
-              const SizedBox(height: 16),
-              const Divider(),
-              const SizedBox(height: 16),
-
-              // Input field
-              Text(
-                'Input',
-                style: Theme.of(context).textTheme.titleMedium,
-              ),
-              const SizedBox(height: 4),
-              Text(
-                _inputExample,
-                style: Theme.of(context).textTheme.bodySmall,
-              ),
-              const SizedBox(height: 8),
-              TextFormField(
-                controller: _inputController,
-                decoration: InputDecoration(
-                  labelText: _inputHint,
-                  border: const OutlineInputBorder(),
-                  suffixIcon: _inputController.text.isNotEmpty
-                      ? IconButton(
-                          icon: const Icon(Icons.clear),
-                          tooltip: 'Clear input',
-                          onPressed: () {
-                            _inputController.clear();
-                            setState(() {
-                              _generatedPattern = '';
-                              _sourceDomain = '';
-                              _patternError = null;
-                            });
-                          },
-                        )
-                      : null,
-                ),
-                onChanged: (_) => _generatePattern(),
-                validator: (value) {
-                  if (value == null || value.trim().isEmpty) {
-                    return 'Please enter a value';
-                  }
-                  return null;
-                },
-              ),
-
-              // Pattern preview
-              if (_generatedPattern.isNotEmpty || _patternError != null) ...[
-                const SizedBox(height: 16),
-                const Divider(),
-                const SizedBox(height: 16),
+        body: SelectionArea(
+          child: Form(
+            key: _formKey,
+            child: ListView(
+              padding: const EdgeInsets.all(16),
+              children: [
+                // Rule type selector
                 Text(
-                  'Generated Pattern',
+                  'Rule Type',
                   style: Theme.of(context).textTheme.titleMedium,
                 ),
                 const SizedBox(height: 8),
-                if (_patternError != null)
-                  Container(
-                    padding: const EdgeInsets.all(12),
-                    decoration: BoxDecoration(
-                      color: Theme.of(context).colorScheme.errorContainer,
-                      borderRadius: BorderRadius.circular(8),
-                    ),
-                    child: Row(
-                      children: [
-                        Icon(Icons.error_outline,
-                            color: Theme.of(context).colorScheme.error),
-                        const SizedBox(width: 8),
-                        Expanded(
-                          child: SelectableText(
-                            _patternError!,
-                            style: TextStyle(
-                                color: Theme.of(context).colorScheme.error),
+                ..._availableTypes.map((type) => Semantics(
+                      label: '${type.label}: ${type.description}',
+                      child: RadioListTile<ManualRuleType>(
+                        title: Text(type.label),
+                        subtitle: Text(type.description),
+                        value: type,
+                        groupValue: _selectedType,
+                        onChanged: (value) {
+                          setState(() {
+                            _selectedType = value!;
+                            _generatedPattern = '';
+                            _patternError = null;
+                          });
+                          if (_inputController.text.isNotEmpty) {
+                            _generatePattern();
+                          }
+                        },
+                      ),
+                    )),
+
+                // F74 (Sprint 39): cross-reference to the Help FAQ, which
+                // explains TLD rules, the IANA list, and the difference between
+                // the four rule types in plain language.
+                Align(
+                  alignment: Alignment.centerLeft,
+                  child: TextButton.icon(
+                    icon: const Icon(Icons.help_outline, size: 18),
+                    label: const Text('Learn more about rule types and TLDs'),
+                    onPressed: () => openHelp(context, HelpSection.faq),
+                  ),
+                ),
+
+                const SizedBox(height: 16),
+                const Divider(),
+                const SizedBox(height: 16),
+
+                // Input field
+                Text(
+                  'Input',
+                  style: Theme.of(context).textTheme.titleMedium,
+                ),
+                const SizedBox(height: 4),
+                Text(
+                  _inputExample,
+                  style: Theme.of(context).textTheme.bodySmall,
+                ),
+                const SizedBox(height: 8),
+                TextFormField(
+                  controller: _inputController,
+                  decoration: InputDecoration(
+                    labelText: _inputHint,
+                    border: const OutlineInputBorder(),
+                    suffixIcon: _inputController.text.isNotEmpty
+                        ? IconButton(
+                            icon: const Icon(Icons.clear),
+                            tooltip: 'Clear input',
+                            onPressed: () {
+                              _inputController.clear();
+                              setState(() {
+                                _generatedPattern = '';
+                                _sourceDomain = '';
+                                _patternError = null;
+                              });
+                            },
+                          )
+                        : null,
+                  ),
+                  onChanged: (_) => _generatePattern(),
+                  validator: (value) {
+                    if (value == null || value.trim().isEmpty) {
+                      return 'Please enter a value';
+                    }
+                    return null;
+                  },
+                ),
+
+                // Pattern preview
+                if (_generatedPattern.isNotEmpty || _patternError != null) ...[
+                  const SizedBox(height: 16),
+                  const Divider(),
+                  const SizedBox(height: 16),
+                  Text(
+                    'Generated Pattern',
+                    style: Theme.of(context).textTheme.titleMedium,
+                  ),
+                  const SizedBox(height: 8),
+                  if (_patternError != null)
+                    Container(
+                      padding: const EdgeInsets.all(12),
+                      decoration: BoxDecoration(
+                        color: Theme.of(context).colorScheme.errorContainer,
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                      child: Row(
+                        children: [
+                          Icon(Icons.error_outline,
+                              color: Theme.of(context).colorScheme.error),
+                          const SizedBox(width: 8),
+                          Expanded(
+                            child: SelectableText(
+                              _patternError!,
+                              style: TextStyle(
+                                  color: Theme.of(context).colorScheme.error),
+                            ),
                           ),
-                        ),
-                      ],
-                    ),
-                  )
-                else
-                  Container(
-                    padding: const EdgeInsets.all(12),
-                    decoration: BoxDecoration(
-                      color: Theme.of(context)
-                          .colorScheme
-                          .surfaceContainerHighest,
-                      borderRadius: BorderRadius.circular(8),
-                    ),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        SelectableText(
-                          _generatedPattern,
-                          style: const TextStyle(
-                              fontFamily: 'monospace', fontSize: 13),
-                        ),
-                        const SizedBox(height: 8),
-                        Text(
-                          'Type: ${_selectedType.label}',
-                          style: Theme.of(context).textTheme.bodySmall,
-                        ),
-                        // Domain for domain rules, plain phrase for body
-                        // phrases; omitted when empty rather than "Source: ".
-                        if (_sourceDomain.isNotEmpty)
+                        ],
+                      ),
+                    )
+                  else
+                    Container(
+                      padding: const EdgeInsets.all(12),
+                      decoration: BoxDecoration(
+                        color: Theme.of(context)
+                            .colorScheme
+                            .surfaceContainerHighest,
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          SelectableText(
+                            _generatedPattern,
+                            style: const TextStyle(
+                                fontFamily: 'monospace', fontSize: 13),
+                          ),
+                          const SizedBox(height: 8),
                           Text(
-                            '${_selectedType == ManualRuleType.bodyPhrase ? 'Phrase' : 'Source'}: $_sourceDomain',
+                            'Type: ${_selectedType.label}',
                             style: Theme.of(context).textTheme.bodySmall,
                           ),
-                      ],
+                          // Domain for domain rules, plain phrase for body
+                          // phrases; omitted when empty rather than "Source: ".
+                          if (_sourceDomain.isNotEmpty)
+                            Text(
+                              '${_selectedType == ManualRuleType.bodyPhrase ? 'Phrase' : 'Source'}: $_sourceDomain',
+                              style: Theme.of(context).textTheme.bodySmall,
+                            ),
+                        ],
+                      ),
                     ),
+                ],
+
+                const SizedBox(height: 24),
+
+                // Save button
+                Semantics(
+                  label: 'Save ${widget.mode == ManualRuleMode.blockRule ? "block rule" : "safe sender"}',
+                  child: FilledButton.icon(
+                    key: WidgetKeys.saveRuleButton,
+                    onPressed: _isSaving ||
+                            _generatedPattern.isEmpty ||
+                            _patternError != null
+                        ? null
+                        : _confirmAndSave,
+                    icon: _isSaving
+                        ? const SizedBox(
+                            width: 16,
+                            height: 16,
+                            child: CircularProgressIndicator(strokeWidth: 2),
+                          )
+                        : const Icon(Icons.save),
+                    label: Text(_isSaving ? 'Saving...' : 'Save Rule'),
                   ),
-              ],
-
-              const SizedBox(height: 24),
-
-              // Save button
-              Semantics(
-                label: 'Save ${widget.mode == ManualRuleMode.blockRule ? "block rule" : "safe sender"}',
-                child: FilledButton.icon(
-                  key: WidgetKeys.saveRuleButton,
-                  onPressed: _isSaving ||
-                          _generatedPattern.isEmpty ||
-                          _patternError != null
-                      ? null
-                      : _confirmAndSave,
-                  icon: _isSaving
-                      ? const SizedBox(
-                          width: 16,
-                          height: 16,
-                          child: CircularProgressIndicator(strokeWidth: 2),
-                        )
-                      : const Icon(Icons.save),
-                  label: Text(_isSaving ? 'Saving...' : 'Save Rule'),
                 ),
-              ),
-            ],
+              ],
+            ),
           ),
         ),
       ),

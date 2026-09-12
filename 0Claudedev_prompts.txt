@@ -9,7 +9,7 @@ Continue without addition approvals until Manual Validation, providing your reco
 Do not stop to ask questions unless meeting the criteria in \docs\SPRINT_STOPPING_CRITERIA.md
 
 Github Copilot Review Requests:
-Please trigger the Copilot and Claude PR reviews.
+Please trigger the Claude PR reviews and Copilot PR Review ("id": 175728472, "login": "copilot-pull-request-reviewer[bot]", "node_id": "BOT_kgDOCnlnWA").
 Setup a way for the reviews to notify you once completed.
 As each completes, address any comments provided and:
 - if an comment is mentioned by both reviews, preference is to address the one from Copilot.

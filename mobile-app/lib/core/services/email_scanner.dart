@@ -327,6 +327,12 @@ class EmailScanner {
                 AppLogger.scan('Skipping safe sender in target folder: '
                     'from="${message.from}", folder="${message.folderName}", '
                     'target="$safeSenderTarget"');
+                // F203: count the skip so it can be DISCLOSED. The email is
+                // still not processed and still not displayed -- that is
+                // correct. What was wrong is that it vanished silently, so a
+                // scan that fetched N and skipped all N reported finding
+                // nothing. Deliberately not added to processedCount.
+                scanProvider.recordSkippedAlreadyFiled();
                 continue; // Skip this email entirely
               }
               action = EmailActionType.safeSender;

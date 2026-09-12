@@ -172,6 +172,14 @@ refinement step at all. The cycle below is the real sequence. Authoritative defi
 
 - [ ] **8.1 `develop` merged to `main`** (Harold). **Does NOT block the next step** -- proceed to 8.2
       while it happens. It IS a hard precondition of 8.3 (the MSIX build).
+- [ ] **8.3.0 PULL THE PROD WORKTREE to current `main` BEFORE building the MSIX** -- `cd
+      D:\Data\Harold\github\spamfilter-multi-prod; git checkout main; git pull origin main`.
+      It is a SEPARATE checkout that nothing in the sprint updates, so it is stale by default
+      EVERY release. Found behind by 33 / 52 / 47 commits in Sprints 60 / 66 / 68. A stale
+      worktree BUILDS SUCCESSFULLY and packages the previous sprint's code under the new
+      version number -- and every Step 4 check still passes, because they verify the build is
+      a real prod build, not that it came from the right commit. See
+      `STORE_RELEASE_PROCESS.md` Step 3.0.
 - [ ] **8.2 Backlog Refinement pass 1 -- COMPLETENESS SWEEP**: walk the close-out items and confirm
       each was actually captured and completed. **This pass does NOT select scope.**
 - [ ] **8.3 Microsoft Store release** -- follow `docs/STORE_RELEASE_PROCESS.md` in full (it is the

@@ -28,6 +28,7 @@ import 'manual_rule_create_screen.dart';
 import 'rule_edit_screen.dart';
 import 'rule_test_screen.dart';
 import '../widgets/standard_app_bar_actions.dart';
+import '../widgets/system_inset_wrapper.dart'; // F209 (Sprint 69)
 
 /// Screen for managing spam filtering rules
 class RulesManagementScreen extends StatefulWidget {
@@ -259,7 +260,10 @@ class _RulesManagementScreenState extends State<RulesManagementScreen>
             Container(
               padding: const EdgeInsets.all(8),
               decoration: BoxDecoration(
-                color: Colors.grey.shade100,
+                // F210: was Colors.grey.shade100 under a colourless
+                // TextStyle -- the rule name being deleted was unreadable in
+                // dark mode, in the dialog that asks you to confirm it.
+                color: Theme.of(context).colorScheme.surfaceContainerHighest,
                 borderRadius: BorderRadius.circular(4),
               ),
               child: Text(
@@ -580,339 +584,341 @@ class _RulesManagementScreenState extends State<RulesManagementScreen>
     final subTypeCounts = _getSubTypeCounts();
     final hasFilters = _selectedCategories.isNotEmpty || _selectedSubTypes.isNotEmpty;
 
-    return Scaffold(
-      appBar: AppBarWithExit(
-        title: const Text('Manage Rules'),
-        // F134 (Sprint 52): canonical order via the ONE shared builder. Help
-        // was FIRST here, ahead of three screen-specific actions -- the exact
-        // inverse of the rule (screen-specific first, Help last). The three
-        // screen-specific actions keep their existing relative order as
-        // `leading`.
-        actions: StandardAppBarActions.build(
-          context: context,
-          helpSection: HelpSection.manageRules,
-          includeNoRuleReview: false,
-          includeScanHistory: false,
-          includeAccounts: false,
-          includeSettings: false,
-          leading: [
-            IconButton(
-              icon: const Icon(Icons.science),
-              tooltip: 'Test a pattern against sample emails',
-              onPressed: () {
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(builder: (_) => const RuleTestScreen()),
-                );
-              },
-            ),
-            IconButton(
-              icon: const Icon(Icons.refresh),
-              tooltip: 'Reload rules from the database',
-              onPressed: _refreshFromUserAction,
-            ),
-            // Sprint 37 round 6: filter-aware bulk export. Exports the
-            // currently-shown subset (search + filter chips applied) as CSV.
-            // Respects the "filter is the selection" UX -- power users
-            // narrow the list to what they want, then export.
-            IconButton(
-              icon: const Icon(Icons.file_download_outlined),
-              tooltip: _filteredRules.isEmpty
-                  ? 'Nothing to export'
-                  : 'Export ${_filteredRules.length} shown rule${_filteredRules.length == 1 ? '' : 's'} as CSV',
-              onPressed: _filteredRules.isEmpty ? null : _exportFilteredRules,
-            ),
-          ],
-        ),
-      ),
-      // Sprint 38 F84 Sub-task A (Issue #253): Ctrl+A / Cmd+A copies the
-      // ENTIRE filtered rule list to clipboard, not just the viewport
-      // subset. Bypasses Flutter's selection model -- writes joined row
-      // text directly.
-      //
-      // Sprint 39 S38-CI-3 (Sub-tasks B/C): when the user has made a
-      // multi-region row selection (Shift+Click extend / Ctrl+Click
-      // disjoint), Ctrl+A copies just the SELECTED rows. With no row
-      // selection it falls back to copying the whole filtered list (the
-      // original Sub-task A behavior).
-      body: CopyAllShortcut(
-        itemLabel: 'rules',
-        textBuilder: () {
-          if (_filteredRules.isEmpty) return '';
-          final indices = hasRowSelection
-              ? selectedRowIndices
-              : List<int>.generate(_filteredRules.length, (i) => i);
-          return indices.map((i) {
-            final rule = _filteredRules[i];
-            final name = rule.sourceDomain ?? rule.name;
-            final pattern = (rule.conditions.header.isNotEmpty
-                    ? rule.conditions.header.join('; ')
-                    : (rule.conditions.from.isNotEmpty
-                        ? rule.conditions.from.join('; ')
-                        : (rule.conditions.subject.isNotEmpty
-                            ? rule.conditions.subject.join('; ')
-                            : rule.conditions.body.join('; '))));
-            return '$name\t$pattern';
-          }).join('\n');
-        },
-        child: Column(
-        children: [
-          // Search bar
-          Padding(
-            padding: const EdgeInsets.fromLTRB(16, 16, 16, 8),
-            child: TextField(
-              controller: _searchController,
-              decoration: InputDecoration(
-                hintText: 'Search by domain, email, or keyword...',
-                prefixIcon: const Icon(Icons.search),
-                suffixIcon: _searchQuery.isNotEmpty
-                    ? IconButton(
-                        icon: const Icon(Icons.clear),
-                        onPressed: () {
-                          _searchController.clear();
-                          setState(() {
-                            _searchQuery = '';
-                            _applyFilter();
-                          });
-                        },
-                      )
-                    : null,
-                border: const OutlineInputBorder(),
-                contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+    return SystemInsetWrapper(
+      child: Scaffold(
+        appBar: AppBarWithExit(
+          title: const Text('Manage Rules'),
+          // F134 (Sprint 52): canonical order via the ONE shared builder. Help
+          // was FIRST here, ahead of three screen-specific actions -- the exact
+          // inverse of the rule (screen-specific first, Help last). The three
+          // screen-specific actions keep their existing relative order as
+          // `leading`.
+          actions: StandardAppBarActions.build(
+            context: context,
+            helpSection: HelpSection.manageRules,
+            includeNoRuleReview: false,
+            includeScanHistory: false,
+            includeAccounts: false,
+            includeSettings: false,
+            leading: [
+              IconButton(
+                icon: const Icon(Icons.science),
+                tooltip: 'Test a pattern against sample emails',
+                onPressed: () {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(builder: (_) => const RuleTestScreen()),
+                  );
+                },
               ),
-              onChanged: (value) {
-                setState(() {
-                  _searchQuery = value;
-                  _applyFilter();
-                });
-              },
-            ),
+              IconButton(
+                icon: const Icon(Icons.refresh),
+                tooltip: 'Reload rules from the database',
+                onPressed: _refreshFromUserAction,
+              ),
+              // Sprint 37 round 6: filter-aware bulk export. Exports the
+              // currently-shown subset (search + filter chips applied) as CSV.
+              // Respects the "filter is the selection" UX -- power users
+              // narrow the list to what they want, then export.
+              IconButton(
+                icon: const Icon(Icons.file_download_outlined),
+                tooltip: _filteredRules.isEmpty
+                    ? 'Nothing to export'
+                    : 'Export ${_filteredRules.length} shown rule${_filteredRules.length == 1 ? '' : 's'} as CSV',
+                onPressed: _filteredRules.isEmpty ? null : _exportFilteredRules,
+              ),
+            ],
           ),
+        ),
+        // Sprint 38 F84 Sub-task A (Issue #253): Ctrl+A / Cmd+A copies the
+        // ENTIRE filtered rule list to clipboard, not just the viewport
+        // subset. Bypasses Flutter's selection model -- writes joined row
+        // text directly.
+        //
+        // Sprint 39 S38-CI-3 (Sub-tasks B/C): when the user has made a
+        // multi-region row selection (Shift+Click extend / Ctrl+Click
+        // disjoint), Ctrl+A copies just the SELECTED rows. With no row
+        // selection it falls back to copying the whole filtered list (the
+        // original Sub-task A behavior).
+        body: CopyAllShortcut(
+          itemLabel: 'rules',
+          textBuilder: () {
+            if (_filteredRules.isEmpty) return '';
+            final indices = hasRowSelection
+                ? selectedRowIndices
+                : List<int>.generate(_filteredRules.length, (i) => i);
+            return indices.map((i) {
+              final rule = _filteredRules[i];
+              final name = rule.sourceDomain ?? rule.name;
+              final pattern = (rule.conditions.header.isNotEmpty
+                      ? rule.conditions.header.join('; ')
+                      : (rule.conditions.from.isNotEmpty
+                          ? rule.conditions.from.join('; ')
+                          : (rule.conditions.subject.isNotEmpty
+                              ? rule.conditions.subject.join('; ')
+                              : rule.conditions.body.join('; '))));
+              return '$name\t$pattern';
+            }).join('\n');
+          },
+          child: Column(
+          children: [
+            // Search bar
+            Padding(
+              padding: const EdgeInsets.fromLTRB(16, 16, 16, 8),
+              child: TextField(
+                controller: _searchController,
+                decoration: InputDecoration(
+                  hintText: 'Search by domain, email, or keyword...',
+                  prefixIcon: const Icon(Icons.search),
+                  suffixIcon: _searchQuery.isNotEmpty
+                      ? IconButton(
+                          icon: const Icon(Icons.clear),
+                          onPressed: () {
+                            _searchController.clear();
+                            setState(() {
+                              _searchQuery = '';
+                              _applyFilter();
+                            });
+                          },
+                        )
+                      : null,
+                  border: const OutlineInputBorder(),
+                  contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                ),
+                onChanged: (value) {
+                  setState(() {
+                    _searchQuery = value;
+                    _applyFilter();
+                  });
+                },
+              ),
+            ),
 
-          // Category filter chips
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 16),
-            child: SizedBox(
-              width: double.infinity,
-              child: Wrap(
-              spacing: 8,
-              runSpacing: 4,
-              alignment: WrapAlignment.start,
-              runAlignment: WrapAlignment.start,
-              children: [
-                ..._categoryLabels.entries.map((entry) {
-                  final count = categoryCounts[entry.key] ?? 0;
-                  final isSelected = _selectedCategories.contains(entry.key);
+            // Category filter chips
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 16),
+              child: SizedBox(
+                width: double.infinity,
+                child: Wrap(
+                spacing: 8,
+                runSpacing: 4,
+                alignment: WrapAlignment.start,
+                runAlignment: WrapAlignment.start,
+                children: [
+                  ..._categoryLabels.entries.map((entry) {
+                    final count = categoryCounts[entry.key] ?? 0;
+                    final isSelected = _selectedCategories.contains(entry.key);
+                    return FilterChip(
+                      label: Text('${entry.value} ($count)'),
+                      selected: isSelected,
+                      onSelected: (selected) {
+                        setState(() {
+                          if (selected) {
+                            _selectedCategories.add(entry.key);
+                          } else {
+                            _selectedCategories.remove(entry.key);
+                          }
+                          _applyFilter();
+                        });
+                      },
+                      selectedColor: Colors.blue.shade100,
+                      checkmarkColor: Colors.blue.shade800,
+                    );
+                  }),
+                  // F124: legacy uncategorized rules get their own filter chip
+                  // (shown only when such rules exist).
+                  if ((categoryCounts[_uncategorizedKey] ?? 0) > 0)
+                    FilterChip(
+                      label: Text(
+                          '$_uncategorizedLabel (${categoryCounts[_uncategorizedKey]})'),
+                      selected: _selectedCategories.contains(_uncategorizedKey),
+                      onSelected: (selected) {
+                        setState(() {
+                          if (selected) {
+                            _selectedCategories.add(_uncategorizedKey);
+                          } else {
+                            _selectedCategories.remove(_uncategorizedKey);
+                          }
+                          _applyFilter();
+                        });
+                      },
+                      selectedColor: Colors.blue.shade100,
+                      checkmarkColor: Colors.blue.shade800,
+                    ),
+                  if (hasFilters)
+                    ActionChip(
+                      label: const Text('Clear'),
+                      avatar: const Icon(Icons.clear, size: 16),
+                      onPressed: () {
+                        setState(() {
+                          _selectedCategories.clear();
+                          _selectedSubTypes.clear();
+                          _applyFilter();
+                        });
+                      },
+                    ),
+                ],
+              ),
+              ),
+            ),
+
+            // Sub-type filter chips (header_from scope only -- subject/body
+            // rules do not have these sub-types)
+            Padding(
+              padding: const EdgeInsets.fromLTRB(16, 4, 16, 0),
+              child: Align(
+                alignment: Alignment.centerLeft,
+                child: Text(
+                  'Header / From sub-types:',
+                  style: TextStyle(
+                    fontSize: 11,
+                    color: Colors.grey.shade600,
+                    fontStyle: FontStyle.italic,
+                  ),
+                ),
+              ),
+            ),
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 16),
+              child: SizedBox(
+                width: double.infinity,
+                child: Wrap(
+                spacing: 8,
+                runSpacing: 4,
+                alignment: WrapAlignment.start,
+                runAlignment: WrapAlignment.start,
+                children: _subTypeLabels.entries.map((entry) {
+                  final count = subTypeCounts[entry.key] ?? 0;
+                  if (count == 0) return const SizedBox.shrink();
+                  final isSelected = _selectedSubTypes.contains(entry.key);
                   return FilterChip(
                     label: Text('${entry.value} ($count)'),
                     selected: isSelected,
                     onSelected: (selected) {
                       setState(() {
                         if (selected) {
-                          _selectedCategories.add(entry.key);
+                          _selectedSubTypes.add(entry.key);
                         } else {
-                          _selectedCategories.remove(entry.key);
+                          _selectedSubTypes.remove(entry.key);
                         }
                         _applyFilter();
                       });
                     },
-                    selectedColor: Colors.blue.shade100,
-                    checkmarkColor: Colors.blue.shade800,
+                    selectedColor: Colors.teal.shade100,
+                    checkmarkColor: Colors.teal.shade800,
                   );
-                }),
-                // F124: legacy uncategorized rules get their own filter chip
-                // (shown only when such rules exist).
-                if ((categoryCounts[_uncategorizedKey] ?? 0) > 0)
-                  FilterChip(
-                    label: Text(
-                        '$_uncategorizedLabel (${categoryCounts[_uncategorizedKey]})'),
-                    selected: _selectedCategories.contains(_uncategorizedKey),
-                    onSelected: (selected) {
-                      setState(() {
-                        if (selected) {
-                          _selectedCategories.add(_uncategorizedKey);
-                        } else {
-                          _selectedCategories.remove(_uncategorizedKey);
-                        }
-                        _applyFilter();
-                      });
-                    },
-                    selectedColor: Colors.blue.shade100,
-                    checkmarkColor: Colors.blue.shade800,
-                  ),
-                if (hasFilters)
-                  ActionChip(
-                    label: const Text('Clear'),
-                    avatar: const Icon(Icons.clear, size: 16),
-                    onPressed: () {
-                      setState(() {
-                        _selectedCategories.clear();
-                        _selectedSubTypes.clear();
-                        _applyFilter();
-                      });
-                    },
-                  ),
-              ],
-            ),
-            ),
-          ),
-
-          // Sub-type filter chips (header_from scope only -- subject/body
-          // rules do not have these sub-types)
-          Padding(
-            padding: const EdgeInsets.fromLTRB(16, 4, 16, 0),
-            child: Align(
-              alignment: Alignment.centerLeft,
-              child: Text(
-                'Header / From sub-types:',
-                style: TextStyle(
-                  fontSize: 11,
-                  color: Colors.grey.shade600,
-                  fontStyle: FontStyle.italic,
-                ),
+                }).toList(),
+              ),
               ),
             ),
-          ),
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 16),
-            child: SizedBox(
-              width: double.infinity,
-              child: Wrap(
-              spacing: 8,
-              runSpacing: 4,
-              alignment: WrapAlignment.start,
-              runAlignment: WrapAlignment.start,
-              children: _subTypeLabels.entries.map((entry) {
-                final count = subTypeCounts[entry.key] ?? 0;
-                if (count == 0) return const SizedBox.shrink();
-                final isSelected = _selectedSubTypes.contains(entry.key);
-                return FilterChip(
-                  label: Text('${entry.value} ($count)'),
-                  selected: isSelected,
-                  onSelected: (selected) {
-                    setState(() {
-                      if (selected) {
-                        _selectedSubTypes.add(entry.key);
-                      } else {
-                        _selectedSubTypes.remove(entry.key);
-                      }
-                      _applyFilter();
-                    });
-                  },
-                  selectedColor: Colors.teal.shade100,
-                  checkmarkColor: Colors.teal.shade800,
-                );
-              }).toList(),
-            ),
-            ),
-          ),
 
-          const SizedBox(height: 4),
+            const SizedBox(height: 4),
 
-          // Summary bar
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 16),
-            child: Row(
-              children: [
-                Text(
-                  hasFilters || _searchQuery.isNotEmpty
-                      ? '${_filteredRules.length} of ${_rules.length} shown'
-                      : '${_rules.length} rules',
-                  style: TextStyle(color: Colors.grey.shade600, fontSize: 13),
-                ),
-                const SizedBox(width: 8),
-                IconButton(
-                  icon: Icon(
-                    Icons.add_circle,
-                    // ADR-0037: use theme color so dark mode + high-contrast
-                    // mode get appropriate adjustments automatically.
-                    color: Theme.of(context).colorScheme.primary,
+            // Summary bar
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 16),
+              child: Row(
+                children: [
+                  Text(
+                    hasFilters || _searchQuery.isNotEmpty
+                        ? '${_filteredRules.length} of ${_rules.length} shown'
+                        : '${_rules.length} rules',
+                    style: TextStyle(color: Colors.grey.shade600, fontSize: 13),
                   ),
-                  iconSize: 24,
-                  tooltip: 'Add block rule',
-                  visualDensity: VisualDensity.compact,
-                  onPressed: () async {
-                    final result = await Navigator.push<bool>(
-                      context,
-                      MaterialPageRoute(
-                        builder: (_) => const ManualRuleCreateScreen(
-                          mode: ManualRuleMode.blockRule,
-                        ),
-                      ),
-                    );
-                    if (result == true) {
-                      await _loadRules();
-                    }
-                  },
-                ),
-                const Spacer(),
-                Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
-                  decoration: BoxDecoration(
-                    color: Colors.green.shade50,
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                  child: Text(
-                    '${_rules.where((r) => r.enabled).length} active',
-                    style: TextStyle(fontSize: 12, color: Colors.green.shade700),
-                  ),
-                ),
-              ],
-            ),
-          ),
-          const SizedBox(height: 8),
-
-          // Rules list
-          // Sprint 37 Phase 7 Imp-1 (round 2): wrap the list in a single
-          // SelectionArea so a drag selection can span MULTIPLE rows and
-          // both fields per row. Per-row SelectableText creates isolated
-          // selection scopes (Round 1 issue: only one field selectable
-          // at a time). SelectionArea + plain Text widgets share one
-          // selection so users can sweep-select N rules at once.
-          Expanded(
-            child: _isLoading
-                ? const Center(child: CircularProgressIndicator())
-                : _filteredRules.isEmpty
-                    ? Center(
-                        child: Column(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            Icon(
-                              _searchQuery.isEmpty && !hasFilters
-                                  ? Icons.rule
-                                  : Icons.search_off,
-                              size: 64,
-                              color: Colors.grey.shade400,
-                            ),
-                            const SizedBox(height: 16),
-                            Text(
-                              _searchQuery.isEmpty && !hasFilters
-                                  ? 'No rules configured'
-                                  : 'No rules match current filters',
-                              style: TextStyle(
-                                color: Colors.grey.shade600,
-                                fontSize: 16,
-                              ),
-                            ),
-                          ],
-                        ),
-                      )
-                    : SelectionArea(
-                        child: RefreshIndicator(
-                          onRefresh: _loadRules,
-                          child: ListView.builder(
-                            itemCount: _filteredRules.length,
-                            padding: const EdgeInsets.symmetric(horizontal: 8),
-                            itemBuilder: (context, index) {
-                              return _buildRuleTile(
-                                  _filteredRules[index], index);
-                            },
+                  const SizedBox(width: 8),
+                  IconButton(
+                    icon: Icon(
+                      Icons.add_circle,
+                      // ADR-0037: use theme color so dark mode + high-contrast
+                      // mode get appropriate adjustments automatically.
+                      color: Theme.of(context).colorScheme.primary,
+                    ),
+                    iconSize: 24,
+                    tooltip: 'Add block rule',
+                    visualDensity: VisualDensity.compact,
+                    onPressed: () async {
+                      final result = await Navigator.push<bool>(
+                        context,
+                        MaterialPageRoute(
+                          builder: (_) => const ManualRuleCreateScreen(
+                            mode: ManualRuleMode.blockRule,
                           ),
                         ),
-                      ),
-          ),
-        ],
-      ),
+                      );
+                      if (result == true) {
+                        await _loadRules();
+                      }
+                    },
+                  ),
+                  const Spacer(),
+                  Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                    decoration: BoxDecoration(
+                      color: Colors.green.shade50,
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    child: Text(
+                      '${_rules.where((r) => r.enabled).length} active',
+                      style: TextStyle(fontSize: 12, color: Colors.green.shade700),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(height: 8),
+
+            // Rules list
+            // Sprint 37 Phase 7 Imp-1 (round 2): wrap the list in a single
+            // SelectionArea so a drag selection can span MULTIPLE rows and
+            // both fields per row. Per-row SelectableText creates isolated
+            // selection scopes (Round 1 issue: only one field selectable
+            // at a time). SelectionArea + plain Text widgets share one
+            // selection so users can sweep-select N rules at once.
+            Expanded(
+              child: _isLoading
+                  ? const Center(child: CircularProgressIndicator())
+                  : _filteredRules.isEmpty
+                      ? Center(
+                          child: Column(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Icon(
+                                _searchQuery.isEmpty && !hasFilters
+                                    ? Icons.rule
+                                    : Icons.search_off,
+                                size: 64,
+                                color: Colors.grey.shade400,
+                              ),
+                              const SizedBox(height: 16),
+                              Text(
+                                _searchQuery.isEmpty && !hasFilters
+                                    ? 'No rules configured'
+                                    : 'No rules match current filters',
+                                style: TextStyle(
+                                  color: Colors.grey.shade600,
+                                  fontSize: 16,
+                                ),
+                              ),
+                            ],
+                          ),
+                        )
+                      : SelectionArea(
+                          child: RefreshIndicator(
+                            onRefresh: _loadRules,
+                            child: ListView.builder(
+                              itemCount: _filteredRules.length,
+                              padding: const EdgeInsets.symmetric(horizontal: 8),
+                              itemBuilder: (context, index) {
+                                return _buildRuleTile(
+                                    _filteredRules[index], index);
+                              },
+                            ),
+                          ),
+                        ),
+            ),
+          ],
+        ),
+        ),
       ),
     );
   }

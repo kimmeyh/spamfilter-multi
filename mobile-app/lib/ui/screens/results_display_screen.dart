@@ -413,7 +413,11 @@ class _ResultsDisplayScreenState extends State<ResultsDisplayScreen> {
                 Container(
                   padding: const EdgeInsets.all(8),
                   decoration: BoxDecoration(
-                    color: Colors.grey[200],
+                    // F210: was Colors.grey[200] -- a fixed near-white surface
+                    // under text with NO colour, so the path rendered
+                    // near-white on near-white in dark mode.
+                    color:
+                        Theme.of(context).colorScheme.surfaceContainerHighest,
                     borderRadius: BorderRadius.circular(4),
                   ),
                   child: SelectableText(
@@ -425,7 +429,12 @@ class _ResultsDisplayScreenState extends State<ResultsDisplayScreen> {
                 const SizedBox(height: 8),
                 Text(
                   'Select the path above to copy it.',
-                  style: TextStyle(fontSize: 11, color: Colors.grey[600]),
+                  style: TextStyle(
+                    fontSize: 11,
+                    // F210: was Colors.grey[600] on the theme surface of the
+                    // dialog -- the inverse pairing, dark-on-dark in dark mode.
+                    color: Theme.of(context).colorScheme.onSurfaceVariant,
+                  ),
                 ),
               ],
             ),
@@ -795,7 +804,15 @@ class _ResultsDisplayScreenState extends State<ResultsDisplayScreen> {
                                         : (_historicalLoaded &&
                                                 !_hasEverScanned)
                                             ? const NoResultsEmptyState()
-                                            : const ScanCompleteNoEmailsEmptyState(),
+                                            // F203: pass the skip count so
+                                            // the state can distinguish
+                                            // "fetched nothing" from
+                                            // "fetched, all already filed".
+                                            : ScanCompleteNoEmailsEmptyState(
+                                                skippedAlreadyFiled:
+                                                    scanProvider
+                                                        .skippedAlreadyFiledCount,
+                                              ),
                               ),
                             ],
                           )
@@ -1130,6 +1147,37 @@ class _ResultsDisplayScreenState extends State<ResultsDisplayScreen> {
                         ? 'Safe (not processed)'
                         : 'Safe',
                   ),
+                  // F203 (Sprint 69): emails that were FETCHED and then
+                  // skipped because they already sit in the safe-sender
+                  // folder. Correct behaviour -- "do not count, do not
+                  // display, do not process" -- but it was invisible, so a
+                  // scan that fetched 40 and skipped all 40 reported
+                  // "Found 40, evaluated 0" with no way to learn why.
+                  //
+                  // Shown only when non-zero and only for a LIVE scan:
+                  // historical rows carry no skip count, and rendering a
+                  // hard zero would read like a bug (the F151c lesson that
+                  // removed the always-zero "Moved" chip).
+                  if (!showingHistorical &&
+                      scanProvider.skippedAlreadyFiledCount > 0)
+                    Tooltip(
+                      message:
+                          'Safe senders already in your safe sender folder. '
+                          'They were found, but needed no action, so they are '
+                          'not processed or listed.',
+                      child: Chip(
+                        label: Text(
+                          '${scanProvider.skippedAlreadyFiledCount} already filed',
+                        ),
+                        backgroundColor:
+                            Theme.of(context).colorScheme.secondaryContainer,
+                        labelStyle: TextStyle(
+                          color: Theme.of(context)
+                              .colorScheme
+                              .onSecondaryContainer,
+                        ),
+                      ),
+                    ),
                   if (scanProvider.safeSenderDedupCount > 0)
                     Tooltip(
                       message:

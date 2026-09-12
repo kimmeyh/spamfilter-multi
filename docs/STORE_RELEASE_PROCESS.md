@@ -50,6 +50,7 @@ Before starting a store release, confirm all of these:
 - [ ] Target version is chosen. By convention we release from production worktree at `X.Y.Z.0` and dev is always `X.Y.(Z+1).0` (per ADR-0035 patch+1). Cross-check against `mobile-app/pubspec.yaml`'s current `version:` -- if dev has not been bumped since the last release, the target is dev's CURRENT version, not current+1.
 - [ ] `docs/ALL_SPRINTS_MASTER_PLAN.md` "Last Completed Sprint" is up to date.
 - [ ] CHANGELOG.md entries for the version are assembled under `## [Unreleased]` ready to move under a versioned heading.
+- [ ] **The PROD WORKTREE has been pulled to current `main`** (Step 3.0). It is a separate checkout that nothing in the sprint updates, so it is stale by default at every release. Behind by 33 / 52 / 47 commits in Sprints 60 / 66 / 68 -- a stale worktree builds successfully and silently packages the PREVIOUS sprint's code under the new version number.
 
 If any of the above are not true, complete them before proceeding. A store release is not the place to cut corners.
 
@@ -125,6 +126,18 @@ Produce two files under `docs/store-assets/`:
 
 - `RELEASE_NOTES_<version>_windows.md`
 - `RELEASE_NOTES_<version>_play.md`
+
+**FULL PATHS, ready to open and copy from** (both live in the DEV worktree, even the Windows
+one -- the notes are authored in `spamfilter-multi\`, only the MSIX is built in
+`spamfilter-multi-prod\`):
+
+```
+D:\Data\Harold\github\spamfilter-multi\docs\store-assets\RELEASE_NOTES_<version>_windows.md
+D:\Data\Harold\github\spamfilter-multi\docs\store-assets\RELEASE_NOTES_<version>_play.md
+```
+
+Paste the text BELOW the `---` separator; everything above it is the derivation header and the
+"Excluded from this file" audit trail, which never goes into a console.
 
 **How to derive them.** Read `CHANGELOG.md` from the last version THAT STORE
 received -- not the last version, because per ADR-0043 a version may advance
@@ -211,18 +224,49 @@ Copy-Item D:\Data\Harold\github\spamfilter-multi\mobile-app\secrets.dev.json `
 > It is NOT a reason to idle: Harold performs the `develop` -> `main` merge in parallel while
 > Backlog Refinement pass 1 runs (Phase 8.2). Do not wait for it; DO confirm it here.
 >
-> **Verify before building** (Sprint 60 hit exactly this -- the prod worktree sat 33 commits behind):
->
-> ```powershell
-> cd D:\Data\Harold\github\spamfilter-multi-prod
-> git fetch origin
-> git status -sb          # must NOT report "behind"
-> git log --oneline -1    # must show this sprint's merge
-> ```
->
 > **Version-bump independence**: the dev version bump may happen before OR after the `main` merge --
 > it lands in the NEXT sprint's branch, which never touches `main`. The two are independent; only
 > the precondition above constrains ordering.
+
+### Step 3.0: PULL THE PROD WORKTREE. Every release. No exceptions.
+
+**This is an ACTION, not a check.** The prod worktree does not update itself: it is a separate
+checkout that only moves when someone runs `git pull` in it. Nothing in the sprint touches it --
+not the sprint branch, not the PR merge, not the `develop` -> `main` merge. It sits at whatever
+commit it was left at after the LAST release, which by definition is a release ago.
+
+```powershell
+cd D:\Data\Harold\github\spamfilter-multi-prod
+git checkout main
+git pull origin main
+git status -sb          # must NOT report "behind"
+git log --oneline -1    # must match origin/main exactly
+```
+
+**Confirm the last line matches `origin/main` before running a single build command.**
+
+**THIS HAS BEEN CAUGHT THREE SPRINTS RUNNING, and the numbers are getting worse:**
+
+| Sprint | Prod worktree was behind by |
+|---|---|
+| 60 | 33 commits |
+| 66 | 52 commits |
+| 68 | 47 commits |
+
+Not one of those was noticed by looking at the worktree; each was caught only because this
+step was walked deliberately. **A stale worktree fails SILENTLY and convincingly**: `flutter
+clean`, `pub get` and `msix:create` all succeed, the MSIX builds, and the package carries the
+NEW version number wrapped around the OLD code. Every verification in Step 4 still passes,
+because those checks confirm the build is a genuine prod build -- they cannot tell you it was
+built from the wrong commit. The failure only surfaces after customers install it and the
+sprint's fixes are missing.
+
+**Why the previous wording was not enough** (corrected 2026-09-10 after the third occurrence):
+this section used to say `git status -sb  # must NOT report "behind"` and stop there. It told
+the reader how to DETECT the problem and never told them what to do about it, so a reader who
+found the worktree behind had to invent the remedy. Detection without a remedy is half a step.
+It is now an explicit `git pull` with its own heading, ordered BEFORE the build commands rather
+than buried in a note above them.
 
 **Supported command** (the only path that injects dart-defines correctly):
 
@@ -253,7 +297,15 @@ Without the `windows_build_args` line (or with a wrong key), the MSIX builds suc
 
 **Do NOT use `mobile-app/scripts/build-msix.ps1`**. That script uses a separate makeappx.exe code path that does not inject dart-defines, and any MSIX built with it will ship with empty OAuth credentials. It was deprecated in Sprint 36; the file header now notes this.
 
-**Output**: `mobile-app/build/windows/x64/runner/Release/my_email_spam_filter.msix` (approx 16-17 MB).
+**Output -- FULL PATH, ready to paste into the Partner Center upload dialog:**
+
+```
+D:\Data\Harold\github\spamfilter-multi-prod\mobile-appuild\windowsdunner\Release\my_email_spam_filter.msix
+```
+
+Approx 17-18 MB. **Note the `-prod` worktree** -- the MSIX is built there, never in the dev
+worktree, so a path starting `spamfilter-multi\` instead of `spamfilter-multi-prod\` is the
+wrong file.
 
 ---
 
@@ -475,7 +527,7 @@ From `mobile-app/pubspec.yaml` `msix_config`:
 | Field | Value |
 |-------|-------|
 | display_name | MyEmailSpamFilter |
-| publisher_display_name | Kimmey Consulting LLC |
+| publisher_display_name | Kimmey Consulting - Ohio (**must match Partner Center exactly**) |
 | identity_name | KimmeyConsulting-Ohio.MyEmailSpamFilter |
 | publisher | CN=84EA8722-0CA5-4EC0-9B10-07EE79B66062 |
 | logo_path | assets/icon/icon.png |
@@ -487,5 +539,8 @@ These fields rarely change between releases. Do not edit them unless the publish
 
 `identity_name` and `publisher` are assigned by the Store and are how Windows matches an
 installed app to its updates. Changing either orphans every installed copy. The publishing
-entity of record is `Kimmey Consulting LLC`; see `LEGAL_ENTITY.md` for the entity facts and
+entity of record is `Kimmey Consulting LLC`, but **`publisher_display_name` must carry the
+CONSOLE's value (`Kimmey Consulting - Ohio`), not the entity's** -- Partner Center rejects a
+package whose manifest disagrees with the account (Submission 26, 2026-09-10). See
+`LEGAL_ENTITY.md` for the entity facts and
 for why the filed Articles are deliberately NOT in this repository.
