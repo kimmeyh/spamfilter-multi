@@ -131,6 +131,39 @@ sprint's scope, not a mechanical edit.
 
 **Est-Effort**: 30-60m
 
+### R-1 DETERMINATION (recorded 2026-09-11) -- CONSOLE-ONLY. No repo change required.
+
+**Answer: the fix needs NO code change, NO rebuild and NO new Play submission.** The
+stop-and-re-plan branch Harold set at approval is NOT triggered.
+
+**Evidence**: `android/app/build.gradle.kts:96` computes the redirect scheme from whatever
+client id the secrets file supplies --
+`manifestPlaceholders["appAuthRedirectScheme"] = "com.googleusercontent.apps.$schemeIdPrefix"`,
+where `schemeIdPrefix = resolvedClientId.substringBefore(".")`. Enabling the Custom URI scheme
+setting on the EXISTING client leaves the id unchanged, so the manifest, the build and the
+published package are all untouched. Only a change of client ID would force a rebuild and a
+resubmission.
+
+**R-2 (console wording, verified rather than recalled)**: Google's own developer blog says to
+"enable the Custom URI scheme method for your app in the 'Advanced Settings' section of the
+client configuration page on the Google API Console". Google disables this BY DEFAULT on
+newly-created Android OAuth clients because a custom scheme can be claimed by another app on
+the device. Changes take "5 minutes to a few hours" to take effect. Sources cited in
+`docs/OAUTH_SETUP.md`.
+
+**Standing migration risk recorded, not acted on**: Google calls Custom URI schemes the legacy
+path, recommends the Google Identity Services for Android SDK, and states "In the future, we
+may disallow Custom URI scheme methods." No cutoff date is published. Filed as future backlog
+rather than sprint work.
+
+**AC-3 compliance**: no repo change was needed for the sign-in fix itself. The code change made
+under this task is R-4 only -- the actionable error hint -- which is a separate improvement to
+the dead end, not part of the console repair.
+
+**Remaining for Harold (external)**: the console change itself. Steps are in
+`docs/OAUTH_SETUP.md`, Android Setup Step 5. AC-1 cannot be verified until that is done and has
+propagated.
+
 **Risk and rollback**: Changing the OAuth client could break the app-password path or the
 Windows flow. Mitigation: change only the custom-URI-scheme setting and re-verify both paths.
 Rollback: revert the console setting.

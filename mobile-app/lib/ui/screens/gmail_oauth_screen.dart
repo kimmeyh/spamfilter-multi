@@ -1,4 +1,5 @@
 import 'dart:io' show Platform;
+import 'package:flutter/foundation.dart' show visibleForTesting;
 import 'package:flutter/material.dart';
 import 'package:logger/logger.dart';
 import 'package:provider/provider.dart';
@@ -22,6 +23,39 @@ class GmailOAuthScreen extends StatefulWidget {
     Key? key,
     required this.platformId,
   }) : super(key: key);
+
+  /// F211 (Sprint 69): a hint appended under a raw provider error, when the
+  /// error is one a user can actually do something about.
+  ///
+  /// Google's own text for a disabled Custom URI scheme is "Error 400:
+  /// invalid_request" with the real cause buried behind an "error details"
+  /// link. The project's first external tester hit exactly that and could not
+  /// proceed. Google Sign-In is unusable until the OAuth client is changed in
+  /// the Google Cloud Console, but an App Password is unaffected and is
+  /// already offered on the previous screen as the recommended option -- so a
+  /// user is one step from a working account and is not told.
+  ///
+  /// Matching is on substrings of the message the provider returns. It is a
+  /// best-effort improvement to a dead end, never a correctness guarantee: an
+  /// unmatched message simply renders as before.
+  @visibleForTesting
+  static String? actionableHint(String? message) {
+    if (message == null) return null;
+    final lower = message.toLowerCase();
+
+    final isCustomUriScheme = lower.contains('custom uri scheme') ||
+        lower.contains('custom_uri_scheme');
+    final isInvalidRequest = lower.contains('invalid_request') ||
+        lower.contains('error 400') ||
+        lower.contains('access blocked');
+
+    if (isCustomUriScheme || isInvalidRequest) {
+      return 'Google Sign-In is not available for this app right now. '
+          'Go back and choose "App Password (IMAP)" instead -- it connects the '
+          'same mailbox and does not depend on this setting.';
+    }
+    return null;
+  }
 
   @override
   State<GmailOAuthScreen> createState() => _GmailOAuthScreenState();
@@ -574,6 +608,18 @@ class _GmailOAuthScreenState extends State<GmailOAuthScreen> {
                         _errorMessage!,
                         style: TextStyle(color: Colors.red[900]),
                       ),
+                      // F211: turn a dead end into a next step when the error
+                      // is one the user can route around.
+                      if (GmailOAuthScreen.actionableHint(_errorMessage) != null) ...[
+                        const SizedBox(height: 12),
+                        Text(
+                          GmailOAuthScreen.actionableHint(_errorMessage)!,
+                          style: TextStyle(
+                            color: Colors.red[900],
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                      ],
                     ],
                   ),
                 ),

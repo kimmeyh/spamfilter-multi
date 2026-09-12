@@ -26,6 +26,10 @@ Format: `- **type**: Description (Issue #N)` where type is feat|fix|chore|docs
 
 ## [Unreleased]
 
+### 2026-09-11 (Sprint 69)
+- **fix**: when Google Sign-In is refused by Google itself, the error now tells you to use an App Password instead of leaving you at a dead end. Google returns a generic "Error 400: invalid_request" and hides the real reason behind a details link, so the screen previously showed a message that explained nothing and offered no way forward. An App Password connects the same mailbox and is unaffected. (Issue #405)
+- **docs**: `docs/OAUTH_SETUP.md` now documents the Google Cloud Console setting that must be enabled for Google Sign-In to work on Android at all, why Google disables it by default on new OAuth clients, and how to verify the fix with an account that has never signed in before. (Issue #405)
+
 ### 2026-09-09 (Sprint 68)
 - **fix**: the in-app app-password setup steps for iCloud, Yahoo and AOL now match each provider's current website. The iCloud steps sent users to a page name Apple retired and to the wrong panel; four of its six steps were out of date. (Issue #400)
 - **fix**: myemailspamfilter.com no longer states that email content is never written to disk. The app stores scan history locally -- sender, subject, folder, action, and a short preview for messages awaiting review -- which the Privacy Policy has disclosed since August. The site now says the same thing, names its publisher, gives a contact address, and describes both the Windows and Android apps. A superseded second privacy policy and a duplicate copy of the site were removed. (Issue #401)

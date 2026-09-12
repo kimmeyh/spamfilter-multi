@@ -723,6 +723,33 @@ All incomplete items in relative priority order. Priority in increments of 10; i
 - Source: Harold, 2026-09-11, adding rules on the S24+. Root-cause hypothesis contributed by
   Harold the same day and code-confirmed as a real coordinator bypass.
 
+**F213. Migrate Android Gmail OAuth off Custom URI schemes to Google Identity Services (~4-8h) Priority 40 (NEW, 2026-09-11 -- found while fixing F211)**
+- Phase: Android / Google Play Store Readiness
+- Platform: Android only (Windows uses a loopback redirect and is unaffected)
+- **Not urgent. Filed so it is not rediscovered under pressure**, which is exactly how F211
+  arrived -- as a tester-blocking surprise.
+- Google now disables Custom URI schemes BY DEFAULT on newly-created Android OAuth clients,
+  because the scheme can be claimed by another app on the device (app impersonation). F211's
+  fix re-enables the setting on the existing client, which works today and required no code
+  change.
+- **But Google describes this as the legacy path.** Verbatim from their developer blog: *"In
+  the future, we may disallow Custom URI scheme methods."* The recommended replacement is the
+  **Google Identity Services for Android SDK**, which delivers the OAuth 2.0 response directly
+  to the app instead of via a registered URI scheme.
+- **No cutoff date has been published.** That is the reason to file rather than schedule: there
+  is nothing to race, but if Google does set a date, the migration becomes urgent on their
+  timetable rather than ours, and it touches the sign-in path every tester uses first.
+- **What it would touch**: `flutter_appauth` is built on the custom-scheme mechanism, so this
+  is a dependency swap, not a settings change -- `AndroidManifest.xml`'s
+  `${appAuthRedirectScheme}` intent filter, `build.gradle.kts:96`'s placeholder derivation, and
+  `google_auth_service.dart`. A new Play submission would be required.
+- **Do NOT start this speculatively.** Re-check Google's stated position before scheduling; the
+  recommendation may change again, and the current setup is working.
+- Depends on: nothing. Blocks nothing.
+- Source: found 2026-09-11 while verifying Google's current wording for F211 R-2. Sources:
+  developers.googleblog.com "Improving user safety in OAuth flows through new OAuth Custom URI
+  scheme restrictions"; developers.google.com/identity/protocols/oauth2/native-app.
+
 **F211. TESTER BLOCKER -- Google Sign-In fails for every tester: "Custom URI scheme is not enabled for your Android client" (~30m, console-side) Priority 2 (NEW, 2026-09-10 -- FIRST REAL TESTER FEEDBACK)**
 - Phase: Android / Google Play Store Readiness
 - Platform: Android (closed test)
