@@ -603,6 +603,62 @@ is decided by the line that opened the bracket. The three repros are pinned as s
   without understanding why it moved is how a script quietly stops testing anything. Recorded
   here so the failure is not rediscovered as new.
 
+## Phase 5.3 Manual Validation results (Harold, 2026-09-11)
+
+**Windows pass: COMPLETE. Android pass: DEFERRED** -- Harold: *"These have to wait until live on
+Google Play (after next update)"*. F208 and F209 cannot be validated until the next Play release,
+so their acceptance criteria carry into the release cycle rather than closing here.
+
+### F210 -- dark-mode contrast: 7 of 9 PASS, 2 untestable
+
+| Instance | Result |
+|---|---|
+| Export Successful dialog: file path + hint | **good** |
+| Delete a rule: rule name in confirmation | **good** |
+| Delete a safe sender: pattern in confirmation | **good** |
+| Import YAML: file path in confirmation | **good** |
+| Rule tester: generated regex line | **good** (font-size finding raised separately, below) |
+| Safe Sender quick-add: pattern block | **good** (same font-size finding) |
+| Account with missing credentials: error card | **good** |
+| Sign-in failure: "Show technical details" | **NOT TESTABLE NOW** -- carried to next sprint's validation |
+| Gmail manual token screen: red security warning | **NOT TESTABLE NOW** -- carried to next sprint's validation |
+
+The two untestable cells both require provoking a real sign-in failure. Harold: *"can't test now,
+add test to next sprint validation testing."* They are NOT failures and NOT waived -- the contrast
+fix is in the code and gated, but a human has not seen them rendered. Carried as an explicit
+validation carry-in rather than silently closed.
+
+### F203 -- "Nothing Needed Action" plus the already-filed count: **good**
+
+### Windows no-regression (ADR-0042 branch that must NOT change): **good**
+
+### F208, F209 -- deferred to the next Play release
+
+Android-only by necessity. Both need a build installed FROM PLAY, not a local debug build.
+
+### NEW FINDING from validation -- font sizes, NOT F210 and NOT in scope
+
+Harold, on the Rule Tester and Safe Sender quick-add screens: *"Examples:...", "Enter a phrase...",
+"justin\ timberlake", Type: "Body Phrase", and "Phrase:..." are too small. Can they match the size
+of "Block emails whose body..." (in the same image)*
+
+Confirmed in code, and he is right that it is a real inconsistency rather than a rendering
+artifact. The reference text is a `RadioListTile` subtitle, which Material renders at **bodyMedium
+(14sp)**. The flagged items are two steps smaller:
+
+- `manual_rule_create_screen.dart` "Examples:" hint -- `bodySmall` (12sp)
+- the input field's floating label -- ~12sp
+- `:808` `Type: ...` and `:816` `Source:/Phrase: ...` -- `bodySmall` (12sp)
+
+The same screen serves BOTH block rules and safe senders, which is why the identical finding
+appears on both screenshots.
+
+**Deliberately NOT fixed in Sprint 69.** F210 is a CONTRAST defect (unreadable because of colour);
+this is a LEGIBILITY defect (small because of size). Different class, and fixing it here would be
+an unapproved Class-3 scope addition at Manual Validation. Filed as F216 instead, and noted as
+kin to F214 (the tester's slider-margin report) -- both are "this control does not visually match
+its neighbours".
+
 ## Definition of Done (sprint level)
 
 Per `SPRINT_EXECUTION_WORKFLOW.md` Phases 5-7. Additions for this sprint:

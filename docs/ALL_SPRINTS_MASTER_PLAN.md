@@ -723,6 +723,45 @@ All incomplete items in relative priority order. Priority in increments of 10; i
 - Source: Harold, 2026-09-11, adding rules on the S24+. Root-cause hypothesis contributed by
   Harold the same day and code-confirmed as a real coordinator bypass.
 
+**F216. Rule Tester / Safe Sender quick-add: supporting text is two size steps smaller than the text it sits beside (~1-2h) Priority 32 (NEW, 2026-09-11 -- Harold, Sprint 69 Manual Validation)**
+- Phase: Core App Quality
+- Platform: All (shared Flutter UI) -- observed on Windows dark mode
+- **Harold, 2026-09-11**, during Sprint 69 Manual Validation: *"Examples:...", "Enter a phrase...",
+  "justin\ timberlake", Type: "Body Phrase", and "Phrase:..." are too small. Can they match the
+  size of "Block emails whose body..." (in the same image)*
+- **Confirmed in code -- a real inconsistency, not a rendering artifact.** The reference text he
+  names is a `RadioListTile` subtitle, which Material renders at **bodyMedium (14sp)**. Everything
+  he flagged is **bodySmall (12sp)** or the ~12sp floating field label, so the supporting text is
+  two steps below the text immediately above it on the same screen.
+- **Where** (`manual_rule_create_screen.dart`, which serves BOTH block rules and safe senders --
+  hence the identical finding on two screenshots):
+  - the `Examples: ...` hint under the Input heading
+  - the input field's floating label (`Enter a phrase to match in the email body`)
+  - `:808` `Type: ${_selectedType.label}` -- `textTheme.bodySmall`
+  - `:816` `Source:/Phrase: $_sourceDomain` -- `textTheme.bodySmall`
+  - the same pair again in the confirm dialog at `:622` and `:631`
+- **This is NOT F210 and was deliberately not fixed in Sprint 69.** F210 is a CONTRAST defect --
+  text unreadable because of colour. This is a LEGIBILITY defect -- text hard to read because of
+  size. Fixing it during Manual Validation would have been an unapproved Class-3 scope addition,
+  so it was filed instead.
+- **Do the survey before the edit.** `bodySmall` is used widely and correctly for genuinely
+  secondary text; promoting every instance would flatten the hierarchy the theme exists to
+  express. The question to answer first is which of these are SUPPORTING text for a control the
+  user is actively filling in (promote) versus genuinely ambient labelling (leave). The generated
+  pattern's `Type:`/`Phrase:` lines describe what the app is about to create from the user's
+  input, which argues for promotion.
+- **Check `rule_edit_screen.dart:938`** in the same pass -- it has the same `Type: $typeLabel`
+  shape and will look inconsistent if only one screen is changed.
+- **Kin to F214** (the tester's slider-margin report). Both are "this control does not visually
+  match its neighbours" on a form-style screen, and both came from someone using the app rather
+  than from a test. Worth considering whether they are one card about visual consistency on input
+  screens rather than two.
+- **Verify in BOTH themes after changing.** A size change alters the contrast-to-background ratio
+  at small sizes; the F210 gate covers colour pairing, not size.
+- Depends on: nothing.
+- Source: Harold, 2026-09-11, Sprint 69 Manual Validation, Windows dark mode. Two screenshots
+  (Rule Tester with a Body Phrase rule, Safe Sender quick-add with an Exact Email rule).
+
 **F215. Wire the validation-screenshot folder into every process that handles Android screenshots (~1-2h) Priority 30 (NEW, 2026-09-11 -- Harold)**
 - Phase: Developer Workflow / Tooling
 - Platform: N/A (process and docs)
