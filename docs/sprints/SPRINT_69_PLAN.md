@@ -448,6 +448,22 @@ valid mid-sprint pauses.
 
 ## Phase 5.1 evidence (recorded 2026-09-11, BEFORE Manual Validation)
 
+All three ran at `190a37f`, before Manual Validation was declared. Detail follows each marker.
+
+- **5.1.1 automated code review**: 2026-09-11, `pr-review-toolkit:code-reviewer` over
+  `408c84a..HEAD`. **7 findings, 3 CRITICAL, all addressed in-sprint, none deferred.** Two would
+  have reached the S24+ (the F178 popup regression and the keyboard overshoot); the third was the
+  F210 gate passing vacuously. Fixed in `190a37f`. Full detail below.
+- **5.1.2 F-PRECHECK**: 2026-09-11, all six detection actions run against the sprint diff.
+  **2 findings, both fixed**: a doc comment describing a message that was never shown, and
+  `Platform.pathSeparator` parsing that would print a whole content URI where a file name belongs.
+  Classes 1, 2, 5 and 6 clean. Per-class detail below.
+- **5.1.5 WinWright sweep**: 2026-09-11, sweep-head `bd4bbc2`. 5 scripts present, 2 run
+  (`f56`/`f37` excluded by a documented Class-3 decision). **1 PASS, 1 FAIL**, DB drift none.
+  The failure is a selector this sprint never touched and is assessed as pre-existing; recorded
+  rather than fixed blind. Detail below.
+
+
 ### 5.1.1 Automated code review -- DONE
 
 Ran `pr-review-toolkit:code-reviewer` over `408c84a..HEAD` (the five task commits). It reported
