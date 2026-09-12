@@ -29,6 +29,7 @@ import '../../core/storage/rule_database_store.dart';
 import '../widgets/app_bar_with_exit.dart';
 import 'help_screen.dart';
 import '../widgets/standard_app_bar_actions.dart';
+import '../widgets/system_inset_wrapper.dart'; // F209 (Sprint 69)
 
 /// Screen for importing and exporting YAML rule files
 class YamlImportExportScreen extends StatefulWidget {
@@ -51,6 +52,15 @@ class YamlImportExportScreen extends StatefulWidget {
     final lower = path.toLowerCase();
     return _yamlExtensions.any(lower.endsWith);
   }
+
+  /// The file name at the end of [path], for a user-facing message.
+  ///
+  /// Splits on BOTH separators rather than [Platform.pathSeparator] alone
+  /// (F-PRECHECK class 4, fragile parsing): a Windows path may contain forward
+  /// slashes, and Android returns content URIs that always use them. Either
+  /// would print a whole path where a file name belongs.
+  @visibleForTesting
+  static String fileNameOf(String path) => path.split(RegExp(r'[/\\]')).last;
 
   @override
   State<YamlImportExportScreen> createState() => _YamlImportExportScreenState();
@@ -92,145 +102,147 @@ class _YamlImportExportScreenState extends State<YamlImportExportScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBarWithExit(
-        title: const Text('Import / Export YAML'),
-        // F134 (Sprint 52): declared via the ONE shared builder.
-        actions: StandardAppBarActions.build(
-          context: context,
-          helpSection: HelpSection.yamlImportExport,
-          includeNoRuleReview: false,
-          includeScanHistory: false,
-          includeAccounts: false,
-          includeSettings: false,
+    return SystemInsetWrapper(
+      child: Scaffold(
+        appBar: AppBarWithExit(
+          title: const Text('Import / Export YAML'),
+          // F134 (Sprint 52): declared via the ONE shared builder.
+          actions: StandardAppBarActions.build(
+            context: context,
+            helpSection: HelpSection.yamlImportExport,
+            includeNoRuleReview: false,
+            includeScanHistory: false,
+            includeAccounts: false,
+            includeSettings: false,
+          ),
         ),
-      ),
-      body: SelectionArea(
-        child: ListView(
-        padding: const EdgeInsets.all(16),
-        children: [
-          // Info card
-          Card(
-            color: Colors.blue.shade50,
-            child: Padding(
-              padding: const EdgeInsets.all(16),
-              child: Row(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Icon(Icons.info_outline, color: Colors.blue.shade700),
-                  const SizedBox(width: 12),
-                  Expanded(
-                    child: Text(
-                      'Export your rules and safe senders as YAML files for backup '
-                      'or version control. Import YAML files to replace current data.',
-                      style: TextStyle(color: Colors.blue.shade900, fontSize: 13),
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          ),
-          const SizedBox(height: 24),
-
-          // Export section
-          Text(
-            'Export',
-            style: Theme.of(context).textTheme.titleMedium?.copyWith(
-              fontWeight: FontWeight.bold,
-            ),
-          ),
-          const SizedBox(height: 8),
-          Text(
-            'Save current rules or safe senders to a YAML file',
-            style: TextStyle(color: Colors.grey.shade600, fontSize: 13),
-          ),
-          const SizedBox(height: 16),
-
-          _buildActionCard(
-            icon: Icons.upload_file,
-            iconColor: Colors.green.shade700,
-            title: 'Export Rules',
-            subtitle: 'Save all block rules to a YAML file',
-            onPressed: _isProcessing || !_isInitialized ? null : _exportRules,
-          ),
-          const SizedBox(height: 8),
-          _buildActionCard(
-            icon: Icons.upload_file,
-            iconColor: Colors.green.shade700,
-            title: 'Export Safe Senders',
-            subtitle: 'Save all safe sender patterns to a YAML file',
-            onPressed: _isProcessing || !_isInitialized ? null : _exportSafeSenders,
-          ),
-
-          const SizedBox(height: 32),
-
-          // Import section
-          Text(
-            'Import',
-            style: Theme.of(context).textTheme.titleMedium?.copyWith(
-              fontWeight: FontWeight.bold,
-            ),
-          ),
-          const SizedBox(height: 8),
-          Text(
-            'Load rules or safe senders from a YAML file. '
-            'This will replace all existing data of that type.',
-            style: TextStyle(color: Colors.grey.shade600, fontSize: 13),
-          ),
-          const SizedBox(height: 16),
-
-          _buildActionCard(
-            icon: Icons.download,
-            iconColor: Colors.orange.shade700,
-            title: 'Import Rules',
-            subtitle: 'Replace all block rules from a YAML file',
-            onPressed: _isProcessing || !_isInitialized ? null : _importRules,
-          ),
-          const SizedBox(height: 8),
-          _buildActionCard(
-            icon: Icons.download,
-            iconColor: Colors.orange.shade700,
-            title: 'Import Safe Senders',
-            subtitle: 'Replace all safe sender patterns from a YAML file',
-            onPressed: _isProcessing || !_isInitialized ? null : _importSafeSenders,
-          ),
-
-          // Status message
-          if (_statusMessage != null) ...[
-            const SizedBox(height: 24),
+        body: SelectionArea(
+          child: ListView(
+          padding: const EdgeInsets.all(16),
+          children: [
+            // Info card
             Card(
-              color: _statusIsError ? Colors.red.shade50 : Colors.green.shade50,
+              color: Colors.blue.shade50,
               child: Padding(
                 padding: const EdgeInsets.all(16),
                 child: Row(
+                  crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Icon(
-                      _statusIsError ? Icons.error_outline : Icons.check_circle_outline,
-                      color: _statusIsError ? Colors.red.shade700 : Colors.green.shade700,
-                    ),
+                    Icon(Icons.info_outline, color: Colors.blue.shade700),
                     const SizedBox(width: 12),
                     Expanded(
                       child: Text(
-                        _statusMessage!,
-                        style: TextStyle(
-                          color: _statusIsError ? Colors.red.shade900 : Colors.green.shade900,
-                          fontSize: 13,
-                        ),
+                        'Export your rules and safe senders as YAML files for backup '
+                        'or version control. Import YAML files to replace current data.',
+                        style: TextStyle(color: Colors.blue.shade900, fontSize: 13),
                       ),
                     ),
                   ],
                 ),
               ),
             ),
-          ],
+            const SizedBox(height: 24),
 
-          // Processing indicator
-          if (_isProcessing) ...[
+            // Export section
+            Text(
+              'Export',
+              style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+            const SizedBox(height: 8),
+            Text(
+              'Save current rules or safe senders to a YAML file',
+              style: TextStyle(color: Colors.grey.shade600, fontSize: 13),
+            ),
             const SizedBox(height: 16),
-            const Center(child: CircularProgressIndicator()),
+
+            _buildActionCard(
+              icon: Icons.upload_file,
+              iconColor: Colors.green.shade700,
+              title: 'Export Rules',
+              subtitle: 'Save all block rules to a YAML file',
+              onPressed: _isProcessing || !_isInitialized ? null : _exportRules,
+            ),
+            const SizedBox(height: 8),
+            _buildActionCard(
+              icon: Icons.upload_file,
+              iconColor: Colors.green.shade700,
+              title: 'Export Safe Senders',
+              subtitle: 'Save all safe sender patterns to a YAML file',
+              onPressed: _isProcessing || !_isInitialized ? null : _exportSafeSenders,
+            ),
+
+            const SizedBox(height: 32),
+
+            // Import section
+            Text(
+              'Import',
+              style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+            const SizedBox(height: 8),
+            Text(
+              'Load rules or safe senders from a YAML file. '
+              'This will replace all existing data of that type.',
+              style: TextStyle(color: Colors.grey.shade600, fontSize: 13),
+            ),
+            const SizedBox(height: 16),
+
+            _buildActionCard(
+              icon: Icons.download,
+              iconColor: Colors.orange.shade700,
+              title: 'Import Rules',
+              subtitle: 'Replace all block rules from a YAML file',
+              onPressed: _isProcessing || !_isInitialized ? null : _importRules,
+            ),
+            const SizedBox(height: 8),
+            _buildActionCard(
+              icon: Icons.download,
+              iconColor: Colors.orange.shade700,
+              title: 'Import Safe Senders',
+              subtitle: 'Replace all safe sender patterns from a YAML file',
+              onPressed: _isProcessing || !_isInitialized ? null : _importSafeSenders,
+            ),
+
+            // Status message
+            if (_statusMessage != null) ...[
+              const SizedBox(height: 24),
+              Card(
+                color: _statusIsError ? Colors.red.shade50 : Colors.green.shade50,
+                child: Padding(
+                  padding: const EdgeInsets.all(16),
+                  child: Row(
+                    children: [
+                      Icon(
+                        _statusIsError ? Icons.error_outline : Icons.check_circle_outline,
+                        color: _statusIsError ? Colors.red.shade700 : Colors.green.shade700,
+                      ),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: Text(
+                          _statusMessage!,
+                          style: TextStyle(
+                            color: _statusIsError ? Colors.red.shade900 : Colors.green.shade900,
+                            fontSize: 13,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ],
+
+            // Processing indicator
+            if (_isProcessing) ...[
+              const SizedBox(height: 16),
+              const Center(child: CircularProgressIndicator()),
+            ],
           ],
-        ],
-      ),
+        ),
+        ),
       ),
     );
   }
@@ -386,7 +398,15 @@ class _YamlImportExportScreenState extends State<YamlImportExportScreen> {
       type: FileType.any,
     );
 
-    if (result == null || result.files.isEmpty) return null;
+    if (result == null || result.files.isEmpty) {
+      // Say so. Before F208 the caller showed this; folding the picker into a
+      // helper dropped it, leaving a tap on Import with no acknowledgement at
+      // all. F203 in this same sprint is about exactly that -- an app that
+      // does nothing and says nothing is indistinguishable from one that is
+      // broken.
+      _showStatus('Import cancelled');
+      return null;
+    }
 
     final path = result.files.single.path;
     if (path == null) {
@@ -395,7 +415,11 @@ class _YamlImportExportScreenState extends State<YamlImportExportScreen> {
     }
 
     if (!YamlImportExportScreen.isYamlPath(path)) {
-      final name = path.split(Platform.pathSeparator).last;
+      // F-PRECHECK class 4 (fragile parsing): split on BOTH separators
+      // rather than Platform.pathSeparator alone. A Windows path may contain
+      // forward slashes, and Android hands back content URIs that always use
+      // them -- either would print the whole path where a file name belongs.
+      final name = YamlImportExportScreen.fileNameOf(path);
       _showStatus(
         'Not a YAML file: $name. Select a file ending in .yaml or .yml -- '
         'the file this app exports.',
@@ -418,8 +442,8 @@ class _YamlImportExportScreenState extends State<YamlImportExportScreen> {
       final filePath = await _pickYamlFile('Select Rules YAML File');
 
       if (filePath == null) {
-        // Cancelled, or not a YAML file -- _pickYamlFile has already said
-        // which.
+        // Cancelled, wrong file type, or unreadable -- _pickYamlFile has
+        // shown the message for whichever it was.
         setState(() => _isProcessing = false);
         return;
       }

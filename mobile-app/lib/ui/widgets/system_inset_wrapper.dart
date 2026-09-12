@@ -6,38 +6,59 @@ import 'package:flutter/material.dart';
 /// navigation bar.
 ///
 /// **The defect.** Harold, on a Galaxy S24+: *"didn't you find that almost all
-/// the pages had the bottom bit covered by the android 3 buttons"*. He was
-/// right, and the audit at sprint planning showed how far it went -- only **2
-/// of 23 screens** used `SafeArea` at all. This was not a handful of missed
-/// insets; it was the app-wide default.
+/// the pages had the bottom bit covered by the android 3 buttons"*. The audit
+/// at sprint planning showed how far it went -- only **2 of 23 screens** used
+/// `SafeArea` at all. This was not a handful of missed insets; it was the
+/// app-wide default.
 ///
-/// **Not cosmetic.** The clearest case is the Import/Export screen, where a
-/// failure message is cut off mid-sentence by the navigation buttons: the user
-/// cannot read the diagnostic that explains what went wrong. On scrollable
-/// screens it can also hide the last list row or a bottom action.
+/// **Not cosmetic.** On the Import/Export screen a failure message is cut off
+/// mid-sentence by the navigation buttons, so the user cannot read the
+/// diagnostic that explains what went wrong. On scrollable screens it can also
+/// hide the last list row or a bottom action.
 ///
-/// **Why here and not in 21 screens.** Every one of the 23 screens builds its
-/// own `Scaffold`; there is no shared body container to fix, and no shared
-/// wrapper existed (`AppBarWithExit` is top-of-screen only and cannot address a
-/// bottom inset). Applying this through `MaterialApp.builder` covers every
-/// route -- including ones added later, which is the part that matters. A gate
-/// alone would only catch the next screen after someone had already written it.
+/// ## Why this applies `SafeArea`, and why that choice is load-bearing
+///
+/// The first implementation added raw `Padding` at `MaterialApp.builder`. Code
+/// review found three defects in that approach, all of which come from the
+/// same root cause: **padding shrinks the subtree without telling anything
+/// inside that the inset has been handled.** Every descendant still read
+/// `viewPadding.bottom == 48` and inset a second time.
+///
+/// 1. **Double-inset.** A `SafeArea`-wrapped bottom sheet ended 48 logical
+///    pixels above the navigation bar rather than flush against it -- a dead
+///    strip where content used to be.
+/// 2. **The F178 popup regressed.** `results_display_screen.dart` reads insets
+///    from the ROOT VIEW (`MediaQueryData.fromView`) on purpose, because
+///    inherited MediaQuery gets consumed and silently degenerated its
+///    safe-area math on a real phone (Sprint 62, found by Harold from a
+///    screenshot showing "Block Subject" clipped). `fromView` cannot be
+///    consumed -- so it still reported the full screen height while the Stack
+///    it positions inside had been shrunk by 48. The popup would have been
+///    clipped again, re-breaking a fix that already cost a sprint.
+/// 3. **Keyboard handling broke.** `viewPadding` reports the physical inset
+///    regardless of the keyboard; `padding` reports what is *not already
+///    consumed by something else*, and Flutter correctly zeroes it when the
+///    keyboard covers the navigation bar. Using `viewPadding` pushed every
+///    text-entry screen 48 pixels too high while typing.
+///
+/// `SafeArea` avoids all three: it reads `padding` (so the keyboard case is
+/// correct by construction) and it CONSUMES what it applies (so nothing
+/// downstream insets twice).
+///
+/// ## Why it wraps the Scaffold BODY, not the whole app
+///
+/// Applying this above the `Navigator` would also wrap dialog routes, modal
+/// sheets and the `ScaffoldMessenger` overlay -- which is how defects 1 and 2
+/// above happened. Those surfaces already manage their own insets, correctly
+/// and deliberately. So this widget is applied per screen, around the body
+/// only, leaving app bars, bottom sheets, dialogs and snackbars untouched.
 ///
 /// **DECLARED PLATFORM EXCEPTION (ADR-0042).** Windows has no system
 /// navigation bar, so this is a no-op there and desktop layout is unchanged.
-/// The fork is `Platform.isAndroid`, at the narrowest possible point -- one
+/// The fork is `Platform.isAndroid` at the narrowest possible point -- one
 /// widget, one condition -- rather than a forked layout per screen. The
-/// exception is necessary, not a choice: there is no cross-platform way to
+/// exception is necessary, not chosen: there is no cross-platform way to
 /// express "inset for a thing that only one platform has".
-///
-/// **Why `viewPadding` and not `SafeArea`.** `SafeArea` consumes
-/// `MediaQuery.padding`, which a scrolling body can zero out; `viewPadding`
-/// reports the physical inset regardless. Android 15 and later enforce
-/// edge-to-edge rendering by default, so this grows worse on newer devices
-/// rather than better, and the reported padding is the only reliable source.
-///
-/// Applied as bottom padding on the whole subtree, so the inset is added once
-/// and every screen inherits it.
 class SystemInsetWrapper extends StatelessWidget {
   const SystemInsetWrapper({
     super.key,
@@ -63,31 +84,18 @@ class SystemInsetWrapper extends StatelessWidget {
   @visibleForTesting
   static bool appliesTo({required bool isAndroid}) => isAndroid;
 
-  /// The bottom inset to add, given the window's [viewPaddingBottom].
-  ///
-  /// Returns 0 on every non-Android platform and whenever the platform reports
-  /// no inset -- a device using gesture navigation reports a much smaller
-  /// value, and a keyboard-covered screen is handled by Flutter separately.
-  @visibleForTesting
-  static double bottomInset({
-    required bool isAndroid,
-    required double viewPaddingBottom,
-  }) {
-    if (!appliesTo(isAndroid: isAndroid)) return 0;
-    return viewPaddingBottom;
-  }
-
   @override
   Widget build(BuildContext context) {
-    final inset = bottomInset(
-      isAndroid: debugIsAndroid ?? Platform.isAndroid,
-      viewPaddingBottom: MediaQuery.of(context).viewPadding.bottom,
-    );
+    if (!appliesTo(isAndroid: debugIsAndroid ?? Platform.isAndroid)) {
+      return child;
+    }
 
-    if (inset == 0) return child;
-
-    return Padding(
-      padding: EdgeInsets.only(bottom: inset),
+    // bottom only: the app bar owns the top inset, and horizontal insets
+    // belong to cutouts this app has no reason to fight.
+    return SafeArea(
+      top: false,
+      left: false,
+      right: false,
       child: child,
     );
   }

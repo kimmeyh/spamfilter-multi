@@ -25,6 +25,7 @@ import '../widgets/app_bar_with_exit.dart';
 import 'help_screen.dart';
 import 'manual_rule_create_screen.dart';
 import '../widgets/standard_app_bar_actions.dart';
+import '../widgets/system_inset_wrapper.dart'; // F209 (Sprint 69)
 
 /// Categories for filtering safe sender patterns by structure
 enum SafeSenderCategory {
@@ -382,219 +383,221 @@ class _SafeSendersManagementScreenState
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBarWithExit(
-        title: const Text('Manage Safe Senders'),
-        // F134 (Sprint 52): canonical order via the ONE shared builder. Help
-        // was FIRST, ahead of the screen-specific actions; it is now LAST, and
-        // Refresh / Export keep their existing relative order as `leading`.
-        actions: StandardAppBarActions.build(
-          context: context,
-          helpSection: HelpSection.safeSenders,
-          includeNoRuleReview: false,
-          includeScanHistory: false,
-          includeAccounts: false,
-          includeSettings: false,
-          leading: [
-            IconButton(
-              icon: const Icon(Icons.refresh),
-              tooltip: 'Reload safe senders from the database',
-              onPressed: _refreshFromUserAction,
+    return SystemInsetWrapper(
+      child: Scaffold(
+        appBar: AppBarWithExit(
+          title: const Text('Manage Safe Senders'),
+          // F134 (Sprint 52): canonical order via the ONE shared builder. Help
+          // was FIRST, ahead of the screen-specific actions; it is now LAST, and
+          // Refresh / Export keep their existing relative order as `leading`.
+          actions: StandardAppBarActions.build(
+            context: context,
+            helpSection: HelpSection.safeSenders,
+            includeNoRuleReview: false,
+            includeScanHistory: false,
+            includeAccounts: false,
+            includeSettings: false,
+            leading: [
+              IconButton(
+                icon: const Icon(Icons.refresh),
+                tooltip: 'Reload safe senders from the database',
+                onPressed: _refreshFromUserAction,
+              ),
+              // Sprint 37 round 6: filter-aware bulk export.
+              IconButton(
+                icon: const Icon(Icons.file_download_outlined),
+                tooltip: _filteredSenders.isEmpty
+                    ? 'Nothing to export'
+                    : 'Export ${_filteredSenders.length} shown safe sender${_filteredSenders.length == 1 ? '' : 's'} as CSV',
+                onPressed:
+                    _filteredSenders.isEmpty ? null : _exportFilteredSafeSenders,
+              ),
+            ],
+          ),
+        ),
+        // Sprint 38 F84 Sub-task A (Issue #253): Ctrl+A / Cmd+A copies the
+        // ENTIRE filtered safe-sender list to clipboard, not just the
+        // viewport subset. Bypasses Flutter's selection model -- writes
+        // joined row text directly.
+        //
+        // Sprint 39 S38-CI-3 (Sub-tasks B/C): when a multi-region row
+        // selection exists (Shift+Click extend / Ctrl+Click disjoint),
+        // Ctrl+A copies only the SELECTED rows; otherwise it copies the
+        // whole filtered list (original Sub-task A behavior).
+        body: CopyAllShortcut(
+          itemLabel: 'safe senders',
+          textBuilder: () {
+            if (_filteredSenders.isEmpty) return '';
+            final indices = hasRowSelection
+                ? selectedRowIndices
+                : List<int>.generate(_filteredSenders.length, (i) => i);
+            return indices
+                .map((i) =>
+                    '${_filteredSenders[i].pattern}\t${_filteredSenders[i].patternType}')
+                .join('\n');
+          },
+          child: SelectionArea(
+            child: Column(
+          children: [
+            // Search bar
+            Padding(
+              padding: const EdgeInsets.all(16),
+              child: TextField(
+                controller: _searchController,
+                decoration: InputDecoration(
+                  hintText: 'Search patterns...',
+                  prefixIcon: const Icon(Icons.search),
+                  suffixIcon: _searchQuery.isNotEmpty
+                      ? IconButton(
+                          icon: const Icon(Icons.clear),
+                          onPressed: () {
+                            _searchController.clear();
+                            setState(() {
+                              _searchQuery = '';
+                              _applyFilter();
+                            });
+                          },
+                        )
+                      : null,
+                  border: const OutlineInputBorder(),
+                  contentPadding:
+                      const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                ),
+                onChanged: (value) {
+                  setState(() {
+                    _searchQuery = value;
+                    _applyFilter();
+                  });
+                },
+              ),
             ),
-            // Sprint 37 round 6: filter-aware bulk export.
-            IconButton(
-              icon: const Icon(Icons.file_download_outlined),
-              tooltip: _filteredSenders.isEmpty
-                  ? 'Nothing to export'
-                  : 'Export ${_filteredSenders.length} shown safe sender${_filteredSenders.length == 1 ? '' : 's'} as CSV',
-              onPressed:
-                  _filteredSenders.isEmpty ? null : _exportFilteredSafeSenders,
+
+            // Filter chips
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 16),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Wrap(
+                    spacing: 8,
+                    runSpacing: 4,
+                    children: [
+                      for (final category in SafeSenderCategory.values)
+                        _buildFilterChip(category),
+                      if (_selectedCategories.isNotEmpty)
+                        ActionChip(
+                          label: const Text('Clear'),
+                          avatar: const Icon(Icons.clear, size: 16),
+                          labelStyle: TextStyle(fontSize: 12, color: Colors.grey.shade700),
+                          visualDensity: VisualDensity.compact,
+                          onPressed: () {
+                            setState(() {
+                              _selectedCategories.clear();
+                              _applyFilter();
+                            });
+                          },
+                        ),
+                    ],
+                  ),
+                  const SizedBox(height: 6),
+                  Row(
+                    children: [
+                      Text(
+                        _selectedCategories.isEmpty && _searchQuery.isEmpty
+                            ? '${_safeSenders.length} safe sender${_safeSenders.length == 1 ? '' : 's'}'
+                            : '${_filteredSenders.length} of ${_safeSenders.length} shown',
+                        style: TextStyle(
+                          color: Colors.grey.shade600,
+                          fontSize: 13,
+                        ),
+                      ),
+                      const SizedBox(width: 8),
+                      IconButton(
+                        icon: Icon(
+                          Icons.add_circle,
+                          // ADR-0037: use theme color (secondary for safe sender
+                          // affordance to differentiate from block-rule add).
+                          color: Theme.of(context).colorScheme.secondary,
+                        ),
+                        iconSize: 24,
+                        tooltip: 'Add safe sender',
+                        visualDensity: VisualDensity.compact,
+                        onPressed: () async {
+                          final result = await Navigator.push<bool>(
+                            context,
+                            MaterialPageRoute(
+                              builder: (_) => const ManualRuleCreateScreen(
+                                mode: ManualRuleMode.safeSender,
+                              ),
+                            ),
+                          );
+                          if (result == true) {
+                            await _loadSafeSenders();
+                          }
+                        },
+                      ),
+                    ],
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(height: 8),
+
+            // Safe senders list
+            Expanded(
+              child: _isLoading
+                  ? const Center(child: CircularProgressIndicator())
+                  : _filteredSenders.isEmpty
+                      ? Center(
+                          child: Column(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Icon(
+                                _hasActiveFilters
+                                    ? Icons.filter_list_off
+                                    : Icons.security,
+                                size: 64,
+                                color: Colors.grey.shade400,
+                              ),
+                              const SizedBox(height: 16),
+                              Text(
+                                _hasActiveFilters
+                                    ? 'No patterns match current filters'
+                                    : 'No safe senders configured',
+                                style: TextStyle(
+                                  color: Colors.grey.shade600,
+                                  fontSize: 16,
+                                ),
+                              ),
+                              if (!_hasActiveFilters) ...[
+                                const SizedBox(height: 8),
+                                Text(
+                                  'Add safe senders from scan results using Quick Add',
+                                  style: TextStyle(
+                                    color: Colors.grey.shade600,
+                                    fontSize: 13,
+                                  ),
+                                ),
+                              ],
+                            ],
+                          ),
+                        )
+                      : RefreshIndicator(
+                          onRefresh: _loadSafeSenders,
+                          child: ListView.builder(
+                            itemCount: _filteredSenders.length,
+                            padding: const EdgeInsets.symmetric(horizontal: 8),
+                            itemBuilder: (context, index) {
+                              return _buildSafeSenderTile(
+                                  _filteredSenders[index], index);
+                            },
+                          ),
+                        ),
             ),
           ],
         ),
-      ),
-      // Sprint 38 F84 Sub-task A (Issue #253): Ctrl+A / Cmd+A copies the
-      // ENTIRE filtered safe-sender list to clipboard, not just the
-      // viewport subset. Bypasses Flutter's selection model -- writes
-      // joined row text directly.
-      //
-      // Sprint 39 S38-CI-3 (Sub-tasks B/C): when a multi-region row
-      // selection exists (Shift+Click extend / Ctrl+Click disjoint),
-      // Ctrl+A copies only the SELECTED rows; otherwise it copies the
-      // whole filtered list (original Sub-task A behavior).
-      body: CopyAllShortcut(
-        itemLabel: 'safe senders',
-        textBuilder: () {
-          if (_filteredSenders.isEmpty) return '';
-          final indices = hasRowSelection
-              ? selectedRowIndices
-              : List<int>.generate(_filteredSenders.length, (i) => i);
-          return indices
-              .map((i) =>
-                  '${_filteredSenders[i].pattern}\t${_filteredSenders[i].patternType}')
-              .join('\n');
-        },
-        child: SelectionArea(
-          child: Column(
-        children: [
-          // Search bar
-          Padding(
-            padding: const EdgeInsets.all(16),
-            child: TextField(
-              controller: _searchController,
-              decoration: InputDecoration(
-                hintText: 'Search patterns...',
-                prefixIcon: const Icon(Icons.search),
-                suffixIcon: _searchQuery.isNotEmpty
-                    ? IconButton(
-                        icon: const Icon(Icons.clear),
-                        onPressed: () {
-                          _searchController.clear();
-                          setState(() {
-                            _searchQuery = '';
-                            _applyFilter();
-                          });
-                        },
-                      )
-                    : null,
-                border: const OutlineInputBorder(),
-                contentPadding:
-                    const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-              ),
-              onChanged: (value) {
-                setState(() {
-                  _searchQuery = value;
-                  _applyFilter();
-                });
-              },
-            ),
-          ),
-
-          // Filter chips
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 16),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Wrap(
-                  spacing: 8,
-                  runSpacing: 4,
-                  children: [
-                    for (final category in SafeSenderCategory.values)
-                      _buildFilterChip(category),
-                    if (_selectedCategories.isNotEmpty)
-                      ActionChip(
-                        label: const Text('Clear'),
-                        avatar: const Icon(Icons.clear, size: 16),
-                        labelStyle: TextStyle(fontSize: 12, color: Colors.grey.shade700),
-                        visualDensity: VisualDensity.compact,
-                        onPressed: () {
-                          setState(() {
-                            _selectedCategories.clear();
-                            _applyFilter();
-                          });
-                        },
-                      ),
-                  ],
-                ),
-                const SizedBox(height: 6),
-                Row(
-                  children: [
-                    Text(
-                      _selectedCategories.isEmpty && _searchQuery.isEmpty
-                          ? '${_safeSenders.length} safe sender${_safeSenders.length == 1 ? '' : 's'}'
-                          : '${_filteredSenders.length} of ${_safeSenders.length} shown',
-                      style: TextStyle(
-                        color: Colors.grey.shade600,
-                        fontSize: 13,
-                      ),
-                    ),
-                    const SizedBox(width: 8),
-                    IconButton(
-                      icon: Icon(
-                        Icons.add_circle,
-                        // ADR-0037: use theme color (secondary for safe sender
-                        // affordance to differentiate from block-rule add).
-                        color: Theme.of(context).colorScheme.secondary,
-                      ),
-                      iconSize: 24,
-                      tooltip: 'Add safe sender',
-                      visualDensity: VisualDensity.compact,
-                      onPressed: () async {
-                        final result = await Navigator.push<bool>(
-                          context,
-                          MaterialPageRoute(
-                            builder: (_) => const ManualRuleCreateScreen(
-                              mode: ManualRuleMode.safeSender,
-                            ),
-                          ),
-                        );
-                        if (result == true) {
-                          await _loadSafeSenders();
-                        }
-                      },
-                    ),
-                  ],
-                ),
-              ],
-            ),
-          ),
-          const SizedBox(height: 8),
-
-          // Safe senders list
-          Expanded(
-            child: _isLoading
-                ? const Center(child: CircularProgressIndicator())
-                : _filteredSenders.isEmpty
-                    ? Center(
-                        child: Column(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            Icon(
-                              _hasActiveFilters
-                                  ? Icons.filter_list_off
-                                  : Icons.security,
-                              size: 64,
-                              color: Colors.grey.shade400,
-                            ),
-                            const SizedBox(height: 16),
-                            Text(
-                              _hasActiveFilters
-                                  ? 'No patterns match current filters'
-                                  : 'No safe senders configured',
-                              style: TextStyle(
-                                color: Colors.grey.shade600,
-                                fontSize: 16,
-                              ),
-                            ),
-                            if (!_hasActiveFilters) ...[
-                              const SizedBox(height: 8),
-                              Text(
-                                'Add safe senders from scan results using Quick Add',
-                                style: TextStyle(
-                                  color: Colors.grey.shade600,
-                                  fontSize: 13,
-                                ),
-                              ),
-                            ],
-                          ],
-                        ),
-                      )
-                    : RefreshIndicator(
-                        onRefresh: _loadSafeSenders,
-                        child: ListView.builder(
-                          itemCount: _filteredSenders.length,
-                          padding: const EdgeInsets.symmetric(horizontal: 8),
-                          itemBuilder: (context, index) {
-                            return _buildSafeSenderTile(
-                                _filteredSenders[index], index);
-                          },
-                        ),
-                      ),
-          ),
-        ],
-      ),
-      ),
+        ),
+        ),
       ),
     );
   }

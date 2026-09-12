@@ -45,6 +45,37 @@ void main() {
       expect(isYaml('/Documents/my.yml.zip'), isFalse);
     });
 
+    group('the file name shown in the rejection message', () {
+      // F-PRECHECK class 4 (fragile parsing), found at 5.1.2: the original
+      // split on Platform.pathSeparator alone, so on Windows a path using
+      // forward slashes -- and on Android a content URI, which always does --
+      // printed the WHOLE path where a file name belongs.
+      String name(String path) => YamlImportExportScreen.fileNameOf(path);
+
+      test('handles a Windows path', () {
+        expect(name(r'D:\Data\Harold\photo.jpg'), 'photo.jpg');
+      });
+
+      test('handles a POSIX path', () {
+        expect(name('/storage/emulated/0/Documents/photo.jpg'), 'photo.jpg');
+      });
+
+      test('handles a Windows path written with forward slashes', () {
+        expect(name('D:/Data/Harold/photo.jpg'), 'photo.jpg');
+      });
+
+      test('handles an Android content URI', () {
+        expect(
+          name('content://com.android.providers.downloads/document/msf%3A42'),
+          'msf%3A42',
+        );
+      });
+
+      test('a bare file name is returned unchanged', () {
+        expect(name('photo.jpg'), 'photo.jpg');
+      });
+    });
+
     test('rejects an extensionless file', () {
       expect(isYaml('/Documents/rules'), isFalse);
       expect(isYaml(''), isFalse);

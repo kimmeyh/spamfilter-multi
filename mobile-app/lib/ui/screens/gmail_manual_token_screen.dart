@@ -9,6 +9,7 @@ import 'package:my_email_spam_filter/adapters/storage/secure_credentials_store.d
 import 'package:my_email_spam_filter/adapters/email_providers/email_provider.dart';
 import 'package:my_email_spam_filter/ui/screens/folder_selection_screen.dart';
 import 'package:my_email_spam_filter/util/redact.dart';
+import '../widgets/system_inset_wrapper.dart'; // F209 (Sprint 69)
 
 /// Manual token entry for Gmail OAuth (fallback option)
 /// 
@@ -111,33 +112,35 @@ class _GmailManualTokenScreenState extends State<GmailManualTokenScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(
-        title: const Text('Manual Token Entry'),
-        leading: IconButton(
-          icon: const Icon(Icons.arrow_back),
-          onPressed: () => Navigator.pop(context),
+    return SystemInsetWrapper(
+      child: Scaffold(
+        appBar: AppBar(
+          title: const Text('Manual Token Entry'),
+          leading: IconButton(
+            icon: const Icon(Icons.arrow_back),
+            onPressed: () => Navigator.pop(context),
+          ),
         ),
-      ),
-      body: SingleChildScrollView(
-        padding: const EdgeInsets.all(16.0),
-        child: Form(
-          key: _formKey,
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              _buildInstructions(),
-              const SizedBox(height: 24),
-              _buildAccessTokenField(),
-              const SizedBox(height: 16),
-              _buildRefreshTokenField(),
-              const SizedBox(height: 24),
-              _buildSubmitButton(),
-              if (_errorMessage != null) ...[
+        body: SingleChildScrollView(
+          padding: const EdgeInsets.all(16.0),
+          child: Form(
+            key: _formKey,
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                _buildInstructions(),
+                const SizedBox(height: 24),
+                _buildAccessTokenField(),
                 const SizedBox(height: 16),
-                _buildErrorMessage(),
+                _buildRefreshTokenField(),
+                const SizedBox(height: 24),
+                _buildSubmitButton(),
+                if (_errorMessage != null) ...[
+                  const SizedBox(height: 16),
+                  _buildErrorMessage(),
+                ],
               ],
-            ],
+            ),
           ),
         ),
       ),

@@ -186,10 +186,16 @@ void main() {
     /// is negative is still open at line [i].
     bool insideMultiLineTextStyle(List<String> lines, int i) {
       var depth = 0;
-      for (var k = i - 1; k >= 0 && k >= i - 6; k--) {
-        depth += ')'.allMatches(lines[k]).length -
-            '('.allMatches(lines[k]).length;
-        if (lines[k].contains('TextStyle(') && depth < 0) return true;
+      for (var k = i - 1; k >= 0; k--) {
+        depth +=
+            ')'.allMatches(lines[k]).length - '('.allMatches(lines[k]).length;
+        if (depth < 0) {
+          // This line opened the bracket we sit inside. It DECIDES: a
+          // TextStyle( here means we are inside text, anything else means we
+          // are not. Returning true merely because a TextStyle( appeared
+          // somewhere above is what made the gate skip real surfaces.
+          return lines[k].contains('TextStyle(');
+        }
       }
       return false;
     }
@@ -396,10 +402,16 @@ void main() {
     /// bypass, which is the failure mode the F197 group doc names explicitly.
     bool insideMultiLineIcon(List<String> lines, int i) {
       var depth = 0;
-      for (var k = i - 1; k >= 0 && k >= i - 4; k--) {
+      for (var k = i - 1; k >= 0; k--) {
         depth +=
             ')'.allMatches(lines[k]).length - '('.allMatches(lines[k]).length;
-        if (RegExp(r'\bIcon\(').hasMatch(lines[k]) && depth < 0) return true;
+        if (depth < 0) {
+          // Same rule as the TextStyle walk: the opener decides. The previous
+          // version used a 4-line window, which a five-argument wrapped Icon
+          // stepped straight past -- a false positive that would have blocked
+          // correct work, the exact failure mode the group doc warns about.
+          return RegExp(r'\bIcon\(').hasMatch(lines[k]);
+        }
       }
       return false;
     }
@@ -410,10 +422,19 @@ void main() {
     /// independently and a silent change to one must not alter the other.
     bool insideMultiLineTextStyle(List<String> lines, int i) {
       var depth = 0;
-      for (var k = i - 1; k >= 0 && k >= i - 6; k--) {
+      for (var k = i - 1; k >= 0; k--) {
         depth +=
             ')'.allMatches(lines[k]).length - '('.allMatches(lines[k]).length;
-        if (lines[k].contains('TextStyle(') && depth < 0) return true;
+        if (depth < 0) {
+          // The line that opened the bracket we sit inside DECIDES. The
+          // previous version returned true whenever a TextStyle( appeared
+          // anywhere in a 6-line window while depth was negative -- but depth
+          // goes negative on the Container( the surface itself lives in, so a
+          // CLOSED TextStyle above an unrelated Container made the gate skip
+          // a genuine pinned surface. Verified by probe against the real
+          // Export-dialog defect.
+          return lines[k].contains('TextStyle(');
+        }
       }
       return false;
     }
@@ -425,14 +446,23 @@ void main() {
     /// a conditional -- means the foreground is deliberate and out of scope.
     /// Only a style that never mentions colour inherits from the theme.
     bool textStyleDeclaresColour(List<String> lines, int start) {
-      var depth = 0;
-      var seenOpen = false;
-      for (var k = start; k < lines.length && k <= start + 12; k++) {
-        final line = lines[k];
-        if (line.contains('color:')) return true;
-        depth += '('.allMatches(line).length - ')'.allMatches(line).length;
-        if (line.contains('TextStyle(')) seenOpen = true;
-        if (seenOpen && depth <= 0 && k > start) return false;
+      // Decide the OPENING line on its own terms first. A single-line
+      // `TextStyle(fontSize: 12),` closes here, so the loop below must never
+      // run -- the previous version fell through to the NEXT line and read a
+      // sibling widget's `color:`, suppressing a real violation.
+      if (lines[start].contains('color:')) return true;
+      var depth = '('.allMatches(lines[start]).length -
+          ')'.allMatches(lines[start]).length;
+      if (depth <= 0) return false;
+
+      // Multi-line: walk to the matching close. Terminated by DEPTH, not by a
+      // line count -- a fixed cap reported a long style as colourless, which
+      // is a false positive that blocks correct work.
+      for (var k = start + 1; k < lines.length; k++) {
+        if (lines[k].contains('color:')) return true;
+        depth +=
+            '('.allMatches(lines[k]).length - ')'.allMatches(lines[k]).length;
+        if (depth <= 0) return false;
       }
       return false;
     }
@@ -499,6 +529,81 @@ void main() {
         '),',
       ];
       expect(insideMultiLineTextStyle(splitTextStyle, 1), isTrue);
+
+      // ---------------------------------------------------------------------
+      // THE THREE REGRESSIONS CODE REVIEW FOUND IN THIS GROUP'S OWN
+      // HEURISTICS. Each one made the gate pass on code it was written to
+      // catch, or fail on code it was written to allow. They are pinned here
+      // because "the gate is green" was true in every case.
+      // ---------------------------------------------------------------------
+
+      // FALSE NEGATIVE, the worst of the three: a CLOSED TextStyle above an
+      // unrelated Container made the walk skip a genuine pinned surface,
+      // because depth goes negative on the `Container(` itself. This is the
+      // real Export-dialog defect with a labelled Text above it -- the single
+      // most common layout in the codebase.
+      const closedStyleThenRealSurface = [
+        "Text('Exported to:', style: TextStyle(fontSize: 12)),",
+        'const SizedBox(height: 8),',
+        'Container(',
+        'decoration: BoxDecoration(color: Colors.grey[200]),',
+      ];
+      expect(isPinnedSurface(closedStyleThenRealSurface[3]), isTrue);
+      expect(insideMultiLineTextStyle(closedStyleThenRealSurface, 3), isFalse,
+          reason: 'the Container( opened the bracket, not the TextStyle -- '
+              'treating this as text is how the gate passed vacuously on the '
+              'defect it exists to catch');
+
+      // FALSE POSITIVE: a five-argument wrapped Icon stepped past the old
+      // 4-line window, so its tint was read as a surface and any themed text
+      // below it failed the build. A gate that blocks correct work trains
+      // bypass, which this group's doc warns about explicitly.
+      const wideIcon = [
+        'Icon(',
+        '  Icons.check_circle_outline,',
+        '  size: 16,',
+        "  semanticLabel: 'ok',",
+        '  weight: 2,',
+        '  color: Colors.green.shade600,',
+        '),',
+      ];
+      expect(insideMultiLineIcon(wideIcon, 5), isTrue,
+          reason: 'an icon tint is decoration however many arguments precede '
+              'it -- the walk must terminate on DEPTH, never on a line count');
+
+      // SUPPRESSED VIOLATION: for a single-line TextStyle the colour check ran
+      // before any bracket bookkeeping, so it read the NEXT widget's colour
+      // and dropped a real violation.
+      const styleThenSiblingColour = [
+        'style: TextStyle(fontSize: 12),',
+        'color: Colors.blue,',
+      ];
+      expect(textStyleDeclaresColour(styleThenSiblingColour, 0), isFalse,
+          reason: 'the style on line 0 closes on line 0; the colour below it '
+              'belongs to a SIBLING widget and must not count as this text '
+              'declaring its own colour');
+
+      // And the inverse: a long style that declares its colour late is NOT
+      // colourless. The old 12-line cap reported it as such.
+      const longStyle = [
+        'style: TextStyle(',
+        '  fontSize: 12,',
+        '  height: 1.2,',
+        '  letterSpacing: 0.5,',
+        '  wordSpacing: 1,',
+        '  fontWeight: FontWeight.w600,',
+        '  fontStyle: FontStyle.italic,',
+        '  decorationThickness: 1,',
+        '  fontFamily: "monospace",',
+        '  overflow: TextOverflow.ellipsis,',
+        '  backgroundColor: Colors.transparent,',
+        '  decorationStyle: TextDecorationStyle.solid,',
+        '  textBaseline: TextBaseline.alphabetic,',
+        '  color: Colors.blue.shade900,',
+        '),',
+      ];
+      expect(textStyleDeclaresColour(longStyle, 0), isTrue,
+          reason: 'a declared colour is declared however far down it sits');
 
       // Nor a wrapped ICON tint -- the real shape from
       // account_setup_screen.dart:546, where dart format pushed the tint onto

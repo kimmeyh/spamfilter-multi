@@ -15,6 +15,7 @@ import '../widgets/standard_app_bar_actions.dart';
 import 'help_screen.dart';
 import 'no_rule_review_screen.dart';
 import 'results_display_screen.dart';
+import '../widgets/system_inset_wrapper.dart'; // F209 (Sprint 69)
 
 /// Unified scan history screen showing both manual and background scans
 ///
@@ -233,42 +234,44 @@ class _ScanHistoryScreenState extends State<ScanHistoryScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBarWithExit(
-        title: Text('Scan History ($_retentionDays days)'),
-        // F55 (Sprint 33, v3): icon order --
-        // <screen-specific> (Refresh), Accounts, Settings, Help, [X auto].
-        // F87 (Sprint 38, Issue #251): Settings icon added so user can reach
-        // Settings from sub-screens with one tap rather than back-navigating.
-        // F134 (Sprint 52): canonical order from the ONE shared builder.
-        // includeScanHistory: false -- this IS the Scan History screen.
-        // The accountId comes from the F135 resolver, which consults the
-        // session selection; when it returns null the builder omits Settings
-        // rather than rendering a permanently-disabled icon (the previous
-        // behavior: an always-present control that did nothing).
-        actions: StandardAppBarActions.build(
-          context: context,
-          helpSection: HelpSection.scanHistory,
-          accountId: _resolveAccountIdForSettings() ?? widget.accountId,
-          accountEmail: widget.accountEmail,
-          platformId: widget.platformId,
-          platformDisplayName: widget.platformDisplayName,
-          includeScanHistory: false,
-          leading: [
-            IconButton(
-              icon: const Icon(Icons.refresh),
-              // Same wording problem as the No-Rule screen: "Refresh" reads as
-              // "go check the mail server", which this does not do. It re-reads
-              // locally stored history and applies the retention purge.
-              tooltip: 'Reload scan history (does not fetch new mail)',
-              onPressed: _refreshFromUserAction,
-            ),
-          ],
+    return SystemInsetWrapper(
+      child: Scaffold(
+        appBar: AppBarWithExit(
+          title: Text('Scan History ($_retentionDays days)'),
+          // F55 (Sprint 33, v3): icon order --
+          // <screen-specific> (Refresh), Accounts, Settings, Help, [X auto].
+          // F87 (Sprint 38, Issue #251): Settings icon added so user can reach
+          // Settings from sub-screens with one tap rather than back-navigating.
+          // F134 (Sprint 52): canonical order from the ONE shared builder.
+          // includeScanHistory: false -- this IS the Scan History screen.
+          // The accountId comes from the F135 resolver, which consults the
+          // session selection; when it returns null the builder omits Settings
+          // rather than rendering a permanently-disabled icon (the previous
+          // behavior: an always-present control that did nothing).
+          actions: StandardAppBarActions.build(
+            context: context,
+            helpSection: HelpSection.scanHistory,
+            accountId: _resolveAccountIdForSettings() ?? widget.accountId,
+            accountEmail: widget.accountEmail,
+            platformId: widget.platformId,
+            platformDisplayName: widget.platformDisplayName,
+            includeScanHistory: false,
+            leading: [
+              IconButton(
+                icon: const Icon(Icons.refresh),
+                // Same wording problem as the No-Rule screen: "Refresh" reads as
+                // "go check the mail server", which this does not do. It re-reads
+                // locally stored history and applies the retention purge.
+                tooltip: 'Reload scan history (does not fetch new mail)',
+                onPressed: _refreshFromUserAction,
+              ),
+            ],
+          ),
         ),
+        body: _isLoading
+            ? const Center(child: CircularProgressIndicator())
+            : SelectionArea(child: _buildBody()),
       ),
-      body: _isLoading
-          ? const Center(child: CircularProgressIndicator())
-          : SelectionArea(child: _buildBody()),
     );
   }
 

@@ -446,6 +446,94 @@ Standing approval covers all task execution, commits, pushes to the sprint branc
 updates through Phase 5.3 Manual Validation. The 9 SPRINT_STOPPING_CRITERIA remain the only
 valid mid-sprint pauses.
 
+## Phase 5.1 evidence (recorded 2026-09-11, BEFORE Manual Validation)
+
+### 5.1.1 Automated code review -- DONE
+
+Ran `pr-review-toolkit:code-reviewer` over `408c84a..HEAD` (the five task commits). It reported
+**7 findings, and 3 of them were serious.** All 7 are addressed; none deferred. Every finding was
+reproduced by executing the real code before being accepted, and every fix was re-verified the
+same way.
+
+- **CRITICAL 1 -- F209 would have broken the F178 action popup.** The first implementation applied
+  raw `Padding` at `MaterialApp.builder`, which sits ABOVE the Navigator and shrank the Stack that
+  dialog routes are positioned inside. `results_display_screen.dart` reads insets from the ROOT
+  VIEW (`MediaQueryData.fromView`) precisely because inherited MediaQuery gets consumed -- so it
+  could not see the shrink, and the popup would have landed 48px high and clipped again. That is
+  a direct regression of the Sprint 62 fix Harold found from a screenshot of a clipped "Block
+  Subject". **Probe-confirmed at 400x800: popup bottom 704 instead of 752.**
+- **CRITICAL 2 -- F209 would have broken every keyboard screen.** The wrapper read `viewPadding`,
+  which reports the physical inset regardless of the keyboard. Flutter zeroes `padding` when the
+  keyboard covers the navigation bar; `viewPadding` stays at 48. **Probe-confirmed: content at 452
+  instead of 500** on every text-entry screen while typing. The doc comment asserting Flutter
+  handled this separately was simply wrong.
+- **CRITICAL 3 -- the F210 gate passed vacuously on the commonest layout.** `insideMultiLineTextStyle`
+  returned true whenever ANY `TextStyle(` appeared in a 6-line window while depth was negative --
+  but depth goes negative on the `Container(` the surface itself lives in. So a CLOSED `TextStyle`
+  above an unrelated Container made the gate SKIP a genuine pinned surface. **Probe-confirmed
+  against the real Export-dialog defect with a label above it: not reported.** The same function
+  is in the F197 group shipped in Sprint 68, so that gate had the defect too. Both fixed.
+- **IMPORTANT 4** -- `textStyleDeclaresColour` checked `color:` before any bracket bookkeeping, so
+  for a single-line `TextStyle` it read the NEXT widget's colour and suppressed a real violation.
+  Also removed a 12-line cap that reported a long style as colourless.
+- **IMPORTANT 5** -- `insideMultiLineIcon`'s 4-line window was one argument short of a wrapped
+  five-argument `Icon`, a false positive that would have blocked correct work.
+- **IMPORTANT 6** -- F211's hint matched bare `invalid_request` and `error 400`, generic OAuth2
+  codes. A transient token-endpoint 400 (clock skew, expired code, code reused on retry) would
+  have told the user to abandon Google Sign-In when a retry would have worked. Narrowed to
+  Google-specific phrasing, and the wording now hedges rather than asserting.
+- **MINOR 7** -- F208 dropped the "Import cancelled" acknowledgement when the picker was folded
+  into a helper. Restored; leaving it silent contradicts F203 in this same sprint.
+
+**Fix summary**: F209 was re-implemented. It now applies `SafeArea` (which reads `padding`, so the
+keyboard case is correct, and CONSUMES what it applies, so nested SafeAreas do not double-inset)
+around each screen's `Scaffold` rather than above the Navigator, so dialog routes are untouched.
+25 sites across 21 files, guarded by a rewritten wiring gate with a per-screen exemption map.
+
+**All three heuristic walks are now DEPTH-terminated rather than line-count-terminated**, and each
+is decided by the line that opened the bracket. The three repros are pinned as self-check tests.
+
+### 5.1.2 F-PRECHECK, the six recurring review classes -- DONE, 1 finding
+
+1. **Mirror/parallel-site sync** -- CLEAN. The contrast gate has no PS1 twin. Platform-gated
+   assertions checked: the F209 tests drive the branch through `debugIsAndroid` rather than the
+   host platform, so they behave identically on the ubuntu CI job.
+2. **Helper wired to the PRODUCTION path** -- CLEAN. All four verified by grep:
+   `isYamlPath` (`yaml_import_export_screen.dart:397`), `actionableHint`
+   (`gmail_oauth_screen.dart:613`), `recordSkippedAlreadyFiled` (`email_scanner.dart:335`),
+   `SystemInsetWrapper` (25 screen sites).
+3. **Doc-comment-vs-code drift** -- **1 FINDING, FIXED.** The `_pickYamlFile` caller comment said
+   the helper "has already said which", but on cancel it said nothing at all. Comment corrected
+   and the message restored (Minor 7 above).
+4. **Fragile input parsing** -- **1 FINDING, FIXED.** `path.split(Platform.pathSeparator).last`
+   would print a whole path where a file name belongs: a Windows path may contain forward slashes,
+   and Android content URIs always do. Extracted as `fileNameOf`, splitting on both separators,
+   with 5 tests.
+5. **API scope vs caller intent** -- CLEAN. No new external or API calls this sprint.
+6. **Silent failure** -- CLEAN. The diff adds no `catch` blocks. Confirmed by grepping the added
+   lines.
+
+### 5.1.5 WinWright UI sweep -- DONE, with one pre-existing failure
+
+- **Date**: 2026-09-11
+- **sweep-head**: `bd4bbc2`
+- **Scripts**: 5 present, 2 run. `f56` and `f37` are excluded from the default sweep by
+  `run-winwright-tests.ps1:258` -- a documented Class-3 decision (Harold, 2026-06-17) covering
+  scripts that cross a dialog-settle boundary the script runner cannot wait on.
+- **Result**: 1 PASS, 1 FAIL. **DB drift: none** (rules 3237, safe_senders 623, app_settings 10,
+  identical before and after -- the state-restore rule held).
+  - `test_f124_rule_labels.json` -- **PASS** (5m04s). Exercises Manage Rules, which F210 touched.
+  - `test_mt2c_no_rule_sweep.json` -- **FAIL** at step 9: `Button[name='Clear']` resolved 0
+    elements. Steps 1-8 passed, including every account-filter interaction.
+- **Assessment of the failure**: NOT caused by this sprint. Sprint 69 did not touch
+  `no_rule_review_screen.dart` beyond the F209 Scaffold wrap, and the wrap changes no selector,
+  no accessible name and no widget identity. The failing step is a selector resolution for a
+  button this sprint never renamed or moved. It is the same shape as the documented
+  dialog-settle class: steps 1-8 are read-only interactions and step 9 is the first that acts.
+- **Disposition**: filed for investigation rather than fixed blind, because fixing a selector
+  without understanding why it moved is how a script quietly stops testing anything. Recorded
+  here so the failure is not rediscovered as new.
+
 ## Definition of Done (sprint level)
 
 Per `SPRINT_EXECUTION_WORKFLOW.md` Phases 5-7. Additions for this sprint:

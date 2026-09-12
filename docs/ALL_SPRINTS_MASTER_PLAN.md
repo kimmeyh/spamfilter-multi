@@ -723,6 +723,41 @@ All incomplete items in relative priority order. Priority in increments of 10; i
 - Source: Harold, 2026-09-11, adding rules on the S24+. Root-cause hypothesis contributed by
   Harold the same day and code-confirmed as a real coordinator bypass.
 
+**F214. Scan Range slider does not align with the controls above it -- left/right margins read as too wide (~1-2h) Priority 34 (NEW, 2026-09-11 -- reported by a TESTER)**
+- Phase: Core App Quality
+- Platform: All (shared Flutter UI) -- reported on Android
+- **Tester, via Harold 2026-09-11**: *"i think the l-r margins look wide between the slider and the
+  screen border."* The second piece of feedback this project has received from someone other than
+  Harold.
+- **Where**: the Scan Range slider, `settings_screen.dart:2179-2196`.
+- **Confirmed in the code as a real misalignment, not a matter of taste.** Three insets stack on
+  each side, and only the slider carries all three:
+  1. `EdgeInsets.all(16)` on the enclosing Card.
+  2. The `Text('1')` and `Text('90')` that flank the `Expanded` slider inside a `Row`.
+  3. Flutter's `Slider` adds its own overlay padding (roughly 24 logical pixels) so the thumb
+     target is not clipped at the ends of the track.
+  The result is a track starting about 50-60px from the card edge, while the "Scan all emails"
+  checkbox directly above it sets `contentPadding: EdgeInsets.zero` and starts at 16px. The
+  slider is the ONE control in that card that does not line up with its neighbours, which is what
+  makes it read as wrong without an obvious cause.
+- **Candidate fixes, to evaluate rather than assume**: (a) drop the flanking "1"/"90" labels and
+  rely on the slider's own `label`, which already shows the live value on drag -- fewest moving
+  parts; (b) move the min/max labels BELOW the track, aligned to the card gutter; (c) negative
+  horizontal margin on the slider so its TRACK, not its overlay box, aligns to 16px.
+  **(a) is likely correct** and also removes two widgets.
+- **Check the other sliders in the same pass.** If any other screen uses the same Row + Expanded +
+  flanking-label shape, it has the same misalignment; fix them together or the inconsistency just
+  moves.
+- **NOT a dark-mode or contrast issue** -- unrelated to F210, despite arriving in the same batch of
+  tester feedback.
+- **Verification caveat recorded honestly**: this was diagnosed by reading the layout code against
+  the tester's words. Claude has NOT seen the screenshot and has NOT measured it on a device. A
+  screenshot proves what it looks like; the code explains why. Confirm the screen matches this
+  description before implementing.
+- Depends on: nothing.
+- Source: a closed tester via Harold, 2026-09-11. Filed at Harold's instruction during Sprint 69
+  execution; deliberately NOT pulled into Sprint 69 scope.
+
 **F213. Migrate Android Gmail OAuth off Custom URI schemes to Google Identity Services (~4-8h) Priority 40 (NEW, 2026-09-11 -- found while fixing F211)**
 - Phase: Android / Google Play Store Readiness
 - Platform: Android only (Windows uses a loopback redirect and is unaffected)

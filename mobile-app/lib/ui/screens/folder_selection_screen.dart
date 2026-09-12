@@ -25,6 +25,7 @@ import '../../adapters/storage/secure_credentials_store.dart';
 import '../../adapters/auth/google_auth_service.dart';
 import 'help_screen.dart';
 import '../widgets/standard_app_bar_actions.dart';
+import '../widgets/system_inset_wrapper.dart'; // F209 (Sprint 69)
 
 /// Groups folders into a two-level tree structure for multi-select display.
 ///
@@ -563,230 +564,232 @@ class _FolderSelectionScreenState extends State<FolderSelectionScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(
-        title: Text(widget.title ?? 'Select Folders to Scan'),
-        elevation: 0,
-        // F134 (Sprint 52): canonical order via the ONE shared builder -- was
-        // Help then Settings, the inverse of the rule (Settings then Help).
-        actions: StandardAppBarActions.build(
-          context: context,
-          helpSection: HelpSection.folderSelection,
-          accountId: widget.accountId,
-          platformId: widget.platformId,
-          includeNoRuleReview: false,
-          includeScanHistory: false,
-          includeAccounts: false,
-        ),
-      ),
-      body: SelectionArea(child: Column(
-        children: [
-          // Account info
-          Container(
-            padding: const EdgeInsets.all(16),
-            color: Colors.blue.shade50,
-            child: Row(
-              children: [
-                Icon(Icons.email, color: Colors.blue.shade700),
-                const SizedBox(width: 12),
-                Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      widget.platformId.toUpperCase(),
-                      style: TextStyle(
-                        fontWeight: FontWeight.bold,
-                        color: Colors.blue.shade700,
-                      ),
-                    ),
-                    if (widget.accountEmail != null)
-                      Text(
-                        widget.accountEmail!,
-                        style: TextStyle(fontSize: 12, color: Colors.grey.shade600),
-                      ),
-                  ],
-                ),
-              ],
-            ),
+    return SystemInsetWrapper(
+      child: Scaffold(
+        appBar: AppBar(
+          title: Text(widget.title ?? 'Select Folders to Scan'),
+          elevation: 0,
+          // F134 (Sprint 52): canonical order via the ONE shared builder -- was
+          // Help then Settings, the inverse of the rule (Settings then Help).
+          actions: StandardAppBarActions.build(
+            context: context,
+            helpSection: HelpSection.folderSelection,
+            accountId: widget.accountId,
+            platformId: widget.platformId,
+            includeNoRuleReview: false,
+            includeScanHistory: false,
+            includeAccounts: false,
           ),
-
-          const Divider(height: 1),
-
-          // [NEW] PHASE 3.3: Show loading/error states (Issue #37)
-          if (_isLoading)
-            const Expanded(
-              child: Center(
-                child: Column(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    CircularProgressIndicator(),
-                    SizedBox(height: 16),
-                    Text('Fetching folders from email account...'),
-                  ],
-                ),
-              ),
-            )
-          else if (_errorMessage != null)
-            Expanded(
-              child: Center(
-                child: Column(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    Icon(Icons.error_outline, size: 48, color: Colors.red),
-                    const SizedBox(height: 16),
-                    Text(
-                      _errorMessage!,
-                      style: const TextStyle(color: Colors.red),
-                      textAlign: TextAlign.center,
-                    ),
-                    const SizedBox(height: 16),
-                    ElevatedButton(
-                      onPressed: _fetchFoldersDynamically,
-                      child: const Text('Retry'),
-                    ),
-                  ],
-                ),
-              ),
-            )
-          else
-            ...[
-              // [NEW] PHASE 3.3: Search/filter box (Issue #37)
-              Padding(
-                padding: const EdgeInsets.all(12),
-                child: TextField(
-                  controller: _searchController,
-                  decoration: InputDecoration(
-                    hintText: 'Search folders...',
-                    prefixIcon: const Icon(Icons.search),
-                    suffixIcon: _searchQuery.isNotEmpty
-                        ? IconButton(
-                            icon: const Icon(Icons.clear),
-                            onPressed: () {
-                              _searchController.clear();
-                            },
-                          )
-                        : null,
-                    border: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(8),
-                    ),
-                  ),
-                ),
-              ),
-
-              // "Select All" checkbox (hidden in single select mode)
-              if (!widget.singleSelect) ...[
-                CheckboxListTile(
-                  title: const Text(
-                    'Select All Folders',
-                    style: TextStyle(fontWeight: FontWeight.bold),
-                  ),
-                  subtitle: Text(
-                    '${_allFolders.length} folders available',
-                    style: const TextStyle(fontSize: 11),
-                  ),
-                  value: _selectAllChecked,
-                  onChanged: (value) => _toggleAll(value ?? false),
-                  activeColor: Colors.blue,
-                ),
-                const Divider(),
-              ] else ...[
-                // [NEW] Sprint 14: Single select mode instruction
-                Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                  child: Text(
-                    'Select one folder (${_allFolders.length} available)',
-                    style: TextStyle(
-                      fontSize: 13,
-                      color: Colors.grey.shade600,
-                      fontWeight: FontWeight.w500,
-                    ),
-                  ),
-                ),
-                const Divider(),
-              ],
-
-              // [UPDATED] Sprint 40 F37:
-              // - Single-select: flat list (RadioListTile), canonical default first (Part B)
-              // - Multi-select: two-level collapsible tree (ExpansionTile, Part A)
-              Expanded(
-                child: widget.singleSelect
-                    ? ListView.builder(
-                        itemCount: _filteredFolders.length,
-                        itemBuilder: (context, index) {
-                          final folder = _filteredFolders[index];
-                          final isSelected = _selectedFolders[folder.id] ?? false;
-                          return RadioListTile<String>(
-                            title: Row(
-                              children: [
-                                Icon(
-                                  _getFolderIcon(folder),
-                                  size: 20,
-                                  color: isSelected ? Colors.blue : Colors.grey,
-                                ),
-                                const SizedBox(width: 12),
-                                Expanded(child: Text(folder.displayName)),
-                              ],
-                            ),
-                            subtitle: _getFolderDescription(folder) != null
-                                ? Text(
-                                    _getFolderDescription(folder)!,
-                                    style: const TextStyle(fontSize: 11),
-                                  )
-                                : null,
-                            value: folder.id,
-                            groupValue: _selectedFolders.entries
-                                .where((e) => e.value)
-                                .map((e) => e.key)
-                                .firstOrNull,
-                            onChanged: (value) {
-                              if (value != null) {
-                                _toggleFolder(value, true);
-                              }
-                            },
-                            activeColor: Colors.blue,
-                          );
-                        },
-                      )
-                    : ListView(
-                        children: _buildTreeItems(_filteredFolders),
-                      ),
-              ),
-            ],
-
-          // [UPDATED] F43: Both single and multi-select save on each toggle
-          if (!_isLoading && _errorMessage == null)
-            // [NEW] Sprint 19 F27: Selection count summary for multi-select
+        ),
+        body: SelectionArea(child: Column(
+          children: [
+            // Account info
             Container(
-              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-              decoration: BoxDecoration(
-                color: Colors.grey.shade100,
-                border: Border(top: BorderSide(color: Colors.grey.shade300)),
-              ),
+              padding: const EdgeInsets.all(16),
+              color: Colors.blue.shade50,
               child: Row(
                 children: [
-                  Icon(Icons.check_circle, size: 16, color: Colors.blue.shade700),
-                  const SizedBox(width: 8),
-                  Text(
-                    '${_selectedFolders.values.where((v) => v).length} of ${_allFolders.length} folders selected',
-                    style: TextStyle(
-                      fontSize: 13,
-                      color: Colors.grey.shade700,
-                    ),
-                  ),
-                  const Spacer(),
-                  Text(
-                    'Changes saved automatically',
-                    style: TextStyle(
-                      fontSize: 11,
-                      color: Colors.grey.shade600,
-                      fontStyle: FontStyle.italic,
-                    ),
+                  Icon(Icons.email, color: Colors.blue.shade700),
+                  const SizedBox(width: 12),
+                  Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        widget.platformId.toUpperCase(),
+                        style: TextStyle(
+                          fontWeight: FontWeight.bold,
+                          color: Colors.blue.shade700,
+                        ),
+                      ),
+                      if (widget.accountEmail != null)
+                        Text(
+                          widget.accountEmail!,
+                          style: TextStyle(fontSize: 12, color: Colors.grey.shade600),
+                        ),
+                    ],
                   ),
                 ],
               ),
             ),
-        ],
-      )),
+
+            const Divider(height: 1),
+
+            // [NEW] PHASE 3.3: Show loading/error states (Issue #37)
+            if (_isLoading)
+              const Expanded(
+                child: Center(
+                  child: Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      CircularProgressIndicator(),
+                      SizedBox(height: 16),
+                      Text('Fetching folders from email account...'),
+                    ],
+                  ),
+                ),
+              )
+            else if (_errorMessage != null)
+              Expanded(
+                child: Center(
+                  child: Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Icon(Icons.error_outline, size: 48, color: Colors.red),
+                      const SizedBox(height: 16),
+                      Text(
+                        _errorMessage!,
+                        style: const TextStyle(color: Colors.red),
+                        textAlign: TextAlign.center,
+                      ),
+                      const SizedBox(height: 16),
+                      ElevatedButton(
+                        onPressed: _fetchFoldersDynamically,
+                        child: const Text('Retry'),
+                      ),
+                    ],
+                  ),
+                ),
+              )
+            else
+              ...[
+                // [NEW] PHASE 3.3: Search/filter box (Issue #37)
+                Padding(
+                  padding: const EdgeInsets.all(12),
+                  child: TextField(
+                    controller: _searchController,
+                    decoration: InputDecoration(
+                      hintText: 'Search folders...',
+                      prefixIcon: const Icon(Icons.search),
+                      suffixIcon: _searchQuery.isNotEmpty
+                          ? IconButton(
+                              icon: const Icon(Icons.clear),
+                              onPressed: () {
+                                _searchController.clear();
+                              },
+                            )
+                          : null,
+                      border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                    ),
+                  ),
+                ),
+
+                // "Select All" checkbox (hidden in single select mode)
+                if (!widget.singleSelect) ...[
+                  CheckboxListTile(
+                    title: const Text(
+                      'Select All Folders',
+                      style: TextStyle(fontWeight: FontWeight.bold),
+                    ),
+                    subtitle: Text(
+                      '${_allFolders.length} folders available',
+                      style: const TextStyle(fontSize: 11),
+                    ),
+                    value: _selectAllChecked,
+                    onChanged: (value) => _toggleAll(value ?? false),
+                    activeColor: Colors.blue,
+                  ),
+                  const Divider(),
+                ] else ...[
+                  // [NEW] Sprint 14: Single select mode instruction
+                  Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                    child: Text(
+                      'Select one folder (${_allFolders.length} available)',
+                      style: TextStyle(
+                        fontSize: 13,
+                        color: Colors.grey.shade600,
+                        fontWeight: FontWeight.w500,
+                      ),
+                    ),
+                  ),
+                  const Divider(),
+                ],
+
+                // [UPDATED] Sprint 40 F37:
+                // - Single-select: flat list (RadioListTile), canonical default first (Part B)
+                // - Multi-select: two-level collapsible tree (ExpansionTile, Part A)
+                Expanded(
+                  child: widget.singleSelect
+                      ? ListView.builder(
+                          itemCount: _filteredFolders.length,
+                          itemBuilder: (context, index) {
+                            final folder = _filteredFolders[index];
+                            final isSelected = _selectedFolders[folder.id] ?? false;
+                            return RadioListTile<String>(
+                              title: Row(
+                                children: [
+                                  Icon(
+                                    _getFolderIcon(folder),
+                                    size: 20,
+                                    color: isSelected ? Colors.blue : Colors.grey,
+                                  ),
+                                  const SizedBox(width: 12),
+                                  Expanded(child: Text(folder.displayName)),
+                                ],
+                              ),
+                              subtitle: _getFolderDescription(folder) != null
+                                  ? Text(
+                                      _getFolderDescription(folder)!,
+                                      style: const TextStyle(fontSize: 11),
+                                    )
+                                  : null,
+                              value: folder.id,
+                              groupValue: _selectedFolders.entries
+                                  .where((e) => e.value)
+                                  .map((e) => e.key)
+                                  .firstOrNull,
+                              onChanged: (value) {
+                                if (value != null) {
+                                  _toggleFolder(value, true);
+                                }
+                              },
+                              activeColor: Colors.blue,
+                            );
+                          },
+                        )
+                      : ListView(
+                          children: _buildTreeItems(_filteredFolders),
+                        ),
+                ),
+              ],
+
+            // [UPDATED] F43: Both single and multi-select save on each toggle
+            if (!_isLoading && _errorMessage == null)
+              // [NEW] Sprint 19 F27: Selection count summary for multi-select
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                decoration: BoxDecoration(
+                  color: Colors.grey.shade100,
+                  border: Border(top: BorderSide(color: Colors.grey.shade300)),
+                ),
+                child: Row(
+                  children: [
+                    Icon(Icons.check_circle, size: 16, color: Colors.blue.shade700),
+                    const SizedBox(width: 8),
+                    Text(
+                      '${_selectedFolders.values.where((v) => v).length} of ${_allFolders.length} folders selected',
+                      style: TextStyle(
+                        fontSize: 13,
+                        color: Colors.grey.shade700,
+                      ),
+                    ),
+                    const Spacer(),
+                    Text(
+                      'Changes saved automatically',
+                      style: TextStyle(
+                        fontSize: 11,
+                        color: Colors.grey.shade600,
+                        fontStyle: FontStyle.italic,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+          ],
+        )),
+      ),
     );
   }
 }

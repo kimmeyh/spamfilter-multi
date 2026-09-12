@@ -19,6 +19,7 @@ import 'scan_history_screen.dart';
 import 'scan_progress_screen.dart';
 import 'help_screen.dart';
 import 'settings_screen.dart';
+import '../widgets/system_inset_wrapper.dart'; // F209 (Sprint 69)
 
 /// Display data for an account in the account selection list.
 class AccountDisplayData {
@@ -708,16 +709,18 @@ class _AccountSelectionScreenState extends State<AccountSelectionScreen> with Wi
 
     // Loading state with skeleton loaders
     if (_isLoading) {
-      return Scaffold(
-        appBar: AppBarWithExit(
-          title: const Text('Select Account'),
-          actions: _buildAppBarActions(),
-        ),
-        body: Padding(
-          padding: const EdgeInsets.all(16.0),
-          child: ListView.builder(
-            itemCount: 3, // Show 3 skeleton cards
-            itemBuilder: (context, index) => const AccountCardSkeleton(),
+      return SystemInsetWrapper(
+        child: Scaffold(
+          appBar: AppBarWithExit(
+            title: const Text('Select Account'),
+            actions: _buildAppBarActions(),
+          ),
+          body: Padding(
+            padding: const EdgeInsets.all(16.0),
+            child: ListView.builder(
+              itemCount: 3, // Show 3 skeleton cards
+              itemBuilder: (context, index) => const AccountCardSkeleton(),
+            ),
           ),
         ),
       );
@@ -725,246 +728,252 @@ class _AccountSelectionScreenState extends State<AccountSelectionScreen> with Wi
 
     // Error state with recovery action
     if (_error != null) {
-      return Scaffold(
-        appBar: AppBarWithExit(title: const Text('Error')),
-        body: GenericErrorDisplay(
-          errorMessage: _error!,
-          onRetry: () {
-            setState(() {
-              _error = null;
-              _isLoading = true;
-            });
-            _loadSavedAccounts();
-          },
+      return SystemInsetWrapper(
+        child: Scaffold(
+          appBar: AppBarWithExit(title: const Text('Error')),
+          body: GenericErrorDisplay(
+            errorMessage: _error!,
+            onRetry: () {
+              setState(() {
+                _error = null;
+                _isLoading = true;
+              });
+              _loadSavedAccounts();
+            },
+          ),
         ),
       );
     }
 
     // No saved accounts - show empty state
     if (_savedAccounts.isEmpty) {
-      return Scaffold(
-        appBar: AppBarWithExit(
-          title: const Text('Select Account'),
-          elevation: 2,
-          actions: _buildAppBarActions(),
-        ),
-        body: NoAccountsEmptyState(
-          onAddAccount: _addNewAccount,
-          onTryDemoMode: _startDemoMode,
+      return SystemInsetWrapper(
+        child: Scaffold(
+          appBar: AppBarWithExit(
+            title: const Text('Select Account'),
+            elevation: 2,
+            actions: _buildAppBarActions(),
+          ),
+          body: NoAccountsEmptyState(
+            onAddAccount: _addNewAccount,
+            onTryDemoMode: _startDemoMode,
+          ),
         ),
       );
     }
 
     // Show saved accounts
-    return Scaffold(
-      appBar: AppBarWithExit(
-        title: const Text('Select Account'),
-        elevation: 2,
-        actions: _buildAppBarActions(),
-      ),
-      body: SelectionArea(
-        child: Column(
-          children: [
-            // Header section
-            Container(
-            width: double.infinity,
-            padding: const EdgeInsets.all(16),
-            color: Theme.of(context).colorScheme.surface,
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  'Saved Accounts',
-                  style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                        fontWeight: FontWeight.bold,
-                      ),
-                ),
-                const SizedBox(height: 4),
-                Text(
-                  'Select an account to scan',
-                  style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                        color: Colors.grey[600],
-                      ),
-                ),
-              ],
-            ),
-          ),
-
-          // Saved accounts list
-          Expanded(
-            child: ListView.builder(
+    return SystemInsetWrapper(
+      child: Scaffold(
+        appBar: AppBarWithExit(
+          title: const Text('Select Account'),
+          elevation: 2,
+          actions: _buildAppBarActions(),
+        ),
+        body: SelectionArea(
+          child: Column(
+            children: [
+              // Header section
+              Container(
+              width: double.infinity,
               padding: const EdgeInsets.all(16),
-              itemCount: _savedAccounts.length,
-              itemBuilder: (context, index) {
-                final accountId = _savedAccounts[index];
+              color: Theme.of(context).colorScheme.surface,
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    'Saved Accounts',
+                    style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                          fontWeight: FontWeight.bold,
+                        ),
+                  ),
+                  const SizedBox(height: 4),
+                  Text(
+                    'Select an account to scan',
+                    style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                          color: Colors.grey[600],
+                        ),
+                  ),
+                ],
+              ),
+            ),
+
+            // Saved accounts list
+            Expanded(
+              child: ListView.builder(
+                padding: const EdgeInsets.all(16),
+                itemCount: _savedAccounts.length,
+                itemBuilder: (context, index) {
+                  final accountId = _savedAccounts[index];
                 
-                // Load credentials which includes the actual email address
-                return FutureBuilder<AccountDisplayData?>(
-                  future: _loadAccountDisplayData(accountId),
-                  builder: (context, snapshot) {
-                    // Handle errors
-                    if (snapshot.hasError) {
-                      _logger.e('Error loading account ${Redact.accountId(accountId)}: ${snapshot.error}');
-                    }
+                  // Load credentials which includes the actual email address
+                  return FutureBuilder<AccountDisplayData?>(
+                    future: _loadAccountDisplayData(accountId),
+                    builder: (context, snapshot) {
+                      // Handle errors
+                      if (snapshot.hasError) {
+                        _logger.e('Error loading account ${Redact.accountId(accountId)}: ${snapshot.error}');
+                      }
 
-                    final displayData = snapshot.data;
-                    if (displayData == null) {
-                      // Fallback if data couldn't be loaded - show delete option
-                      // F129 (Sprint 51): same semantics treatment as the
-                      // healthy row below -- an error row must announce WHICH
-                      // account failed and why, not surface as an unnamed
-                      // Group.
-                      return Semantics(
-                        container: true,
-                        excludeSemantics: true,
-                        label: '$accountId - error: missing credentials',
-                        hint: 'Use the delete button to remove this account',
-                        child: Card(
-                        margin: const EdgeInsets.only(bottom: 12),
-                        elevation: 2,
-                        // F210: errorContainer/onErrorContainer is the theme
-                        // error pairing and is legible in both modes.
-                        // Colors.red[50] was a fixed near-white surface under a
-                        // title and subtitle that both omit a colour.
-                        color: Theme.of(context).colorScheme.errorContainer,
-                        child: ListTile(
-                          leading: CircleAvatar(
-                            backgroundColor: Colors.red.withValues(alpha: 0.2),
-                            child: const Icon(Icons.error_outline, color: Colors.red),
-                          ),
-                          title: Text(
-                            accountId,
-                            style: TextStyle(
-                              fontSize: 14,
-                              color:
-                                  Theme.of(context).colorScheme.onErrorContainer,
+                      final displayData = snapshot.data;
+                      if (displayData == null) {
+                        // Fallback if data couldn't be loaded - show delete option
+                        // F129 (Sprint 51): same semantics treatment as the
+                        // healthy row below -- an error row must announce WHICH
+                        // account failed and why, not surface as an unnamed
+                        // Group.
+                        return Semantics(
+                          container: true,
+                          excludeSemantics: true,
+                          label: '$accountId - error: missing credentials',
+                          hint: 'Use the delete button to remove this account',
+                          child: Card(
+                          margin: const EdgeInsets.only(bottom: 12),
+                          elevation: 2,
+                          // F210: errorContainer/onErrorContainer is the theme
+                          // error pairing and is legible in both modes.
+                          // Colors.red[50] was a fixed near-white surface under a
+                          // title and subtitle that both omit a colour.
+                          color: Theme.of(context).colorScheme.errorContainer,
+                          child: ListTile(
+                            leading: CircleAvatar(
+                              backgroundColor: Colors.red.withValues(alpha: 0.2),
+                              child: const Icon(Icons.error_outline, color: Colors.red),
                             ),
-                          ),
-                          subtitle: Text(
-                            'Error: Missing credentials\nTap delete to remove',
-                            style: TextStyle(
-                              fontSize: 12,
-                              color:
-                                  Theme.of(context).colorScheme.onErrorContainer,
+                            title: Text(
+                              accountId,
+                              style: TextStyle(
+                                fontSize: 14,
+                                color:
+                                    Theme.of(context).colorScheme.onErrorContainer,
+                              ),
                             ),
-                          ),
-                          trailing: IconButton(
-                            icon: const Icon(Icons.delete_outline),
-                            onPressed: () => _deleteAccount(accountId),
-                            tooltip: 'Delete account',
-                            color: Colors.red[700],
-                          ),
-                        ),
-                        ),
-                      );
-                    }
-
-                    final platformName = _getPlatformName(displayData.platformId);
-                    final platformIcon = _getPlatformIcon(displayData.platformId);
-                    final platformColor = _getPlatformColor(displayData.platformId);
-                    final authMethod = _getAuthMethodDisplay(displayData.platformId);
-
-                    _logger.d(
-                      'Account: $accountId, Email: ${displayData.email}, Platform: ${displayData.platformId}, Auth: $authMethod',
-                    );
-
-                    // F129 (Sprint 51): the account row is an unnamed Group in
-                    // the accessibility tree without this wrapper -- the child
-                    // Text widgets are not merged into the tappable ancestor,
-                    // so screen readers announce nothing actionable and
-                    // WinWright name-based selectors resolve 0 elements.
-                    // `container` + `explicitChildNodes: false` merges the
-                    // email/provider/auth text into ONE named, tappable node
-                    // while leaving the trailing icon buttons (which carry
-                    // their own tooltips) individually addressable.
-                    return Semantics(
-                      container: true,
-                      button: true,
-                      // excludeSemantics: ListTile builds its own semantics
-                      // node; without this the descendant node wins and the
-                      // container label never reaches UIA (verified against a
-                      // live build, Sprint 51). Excluding descendants makes
-                      // this row announce as ONE named, tappable element.
-                      excludeSemantics: true,
-                      label: '${displayData.email} - $platformName - $authMethod',
-                      hint: 'Select account to scan',
-                      // onTap on the SEMANTICS node is mandatory whenever
-                      // excludeSemantics drops the child's own gesture node:
-                      // without it the row announces as a Button that
-                      // assistive technology cannot ACTIVATE. Found by Copilot
-                      // on PR #285 (it flagged the test helper; the same gap
-                      // was live HERE). Same defect that shipped in the
-                      // account-picker dialog mid-Sprint-51 -- named but
-                      // unclickable. The ListTile keeps its own onTap so
-                      // ordinary mouse/touch input is unchanged.
-                      onTap: () => _selectAccount(accountId,
-                          platformId: displayData.platformId,
-                          accountEmail: displayData.email),
-                      child: Card(
-                      margin: const EdgeInsets.only(bottom: 12),
-                      elevation: 2,
-                      child: ListTile(
-                        contentPadding: const EdgeInsets.all(16),
-                        leading: CircleAvatar(
-                          backgroundColor: platformColor.withValues(alpha: 0.2),
-                          child: Icon(platformIcon, color: platformColor),
-                        ),
-                        // Display: email - provider - auth method
-                        title: Text(
-                          '${displayData.email} - $platformName - $authMethod',
-                          style: const TextStyle(
-                            fontSize: 14,
-                          ),
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                        ),
-                        subtitle: Padding(
-                          padding: const EdgeInsets.only(top: 4),
-                          child: Text(
-                            accountId,
-                            style: TextStyle(
-                              fontSize: 12,
-                              color: Colors.grey[600],
+                            subtitle: Text(
+                              'Error: Missing credentials\nTap delete to remove',
+                              style: TextStyle(
+                                fontSize: 12,
+                                color:
+                                    Theme.of(context).colorScheme.onErrorContainer,
+                              ),
                             ),
-                          ),
-                        ),
-                        trailing: Row(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            IconButton(
-                              icon: const Icon(Icons.play_arrow, color: Colors.green),
-                              onPressed: () => _selectAccount(accountId,
-                                  platformId: displayData.platformId,
-                                  accountEmail: displayData.email),
-                              tooltip: 'Start Scan',
-                            ),
-                            IconButton(
+                            trailing: IconButton(
                               icon: const Icon(Icons.delete_outline),
                               onPressed: () => _deleteAccount(accountId),
                               tooltip: 'Delete account',
-                              color: Colors.red[300],
+                              color: Colors.red[700],
                             ),
-                          ],
-                        ),
+                          ),
+                          ),
+                        );
+                      }
+
+                      final platformName = _getPlatformName(displayData.platformId);
+                      final platformIcon = _getPlatformIcon(displayData.platformId);
+                      final platformColor = _getPlatformColor(displayData.platformId);
+                      final authMethod = _getAuthMethodDisplay(displayData.platformId);
+
+                      _logger.d(
+                        'Account: $accountId, Email: ${displayData.email}, Platform: ${displayData.platformId}, Auth: $authMethod',
+                      );
+
+                      // F129 (Sprint 51): the account row is an unnamed Group in
+                      // the accessibility tree without this wrapper -- the child
+                      // Text widgets are not merged into the tappable ancestor,
+                      // so screen readers announce nothing actionable and
+                      // WinWright name-based selectors resolve 0 elements.
+                      // `container` + `explicitChildNodes: false` merges the
+                      // email/provider/auth text into ONE named, tappable node
+                      // while leaving the trailing icon buttons (which carry
+                      // their own tooltips) individually addressable.
+                      return Semantics(
+                        container: true,
+                        button: true,
+                        // excludeSemantics: ListTile builds its own semantics
+                        // node; without this the descendant node wins and the
+                        // container label never reaches UIA (verified against a
+                        // live build, Sprint 51). Excluding descendants makes
+                        // this row announce as ONE named, tappable element.
+                        excludeSemantics: true,
+                        label: '${displayData.email} - $platformName - $authMethod',
+                        hint: 'Select account to scan',
+                        // onTap on the SEMANTICS node is mandatory whenever
+                        // excludeSemantics drops the child's own gesture node:
+                        // without it the row announces as a Button that
+                        // assistive technology cannot ACTIVATE. Found by Copilot
+                        // on PR #285 (it flagged the test helper; the same gap
+                        // was live HERE). Same defect that shipped in the
+                        // account-picker dialog mid-Sprint-51 -- named but
+                        // unclickable. The ListTile keeps its own onTap so
+                        // ordinary mouse/touch input is unchanged.
                         onTap: () => _selectAccount(accountId,
                             platformId: displayData.platformId,
                             accountEmail: displayData.email),
-                      ),
-                      ),
-                    );
-                  },
-                );
-              },
+                        child: Card(
+                        margin: const EdgeInsets.only(bottom: 12),
+                        elevation: 2,
+                        child: ListTile(
+                          contentPadding: const EdgeInsets.all(16),
+                          leading: CircleAvatar(
+                            backgroundColor: platformColor.withValues(alpha: 0.2),
+                            child: Icon(platformIcon, color: platformColor),
+                          ),
+                          // Display: email - provider - auth method
+                          title: Text(
+                            '${displayData.email} - $platformName - $authMethod',
+                            style: const TextStyle(
+                              fontSize: 14,
+                            ),
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                          subtitle: Padding(
+                            padding: const EdgeInsets.only(top: 4),
+                            child: Text(
+                              accountId,
+                              style: TextStyle(
+                                fontSize: 12,
+                                color: Colors.grey[600],
+                              ),
+                            ),
+                          ),
+                          trailing: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              IconButton(
+                                icon: const Icon(Icons.play_arrow, color: Colors.green),
+                                onPressed: () => _selectAccount(accountId,
+                                    platformId: displayData.platformId,
+                                    accountEmail: displayData.email),
+                                tooltip: 'Start Scan',
+                              ),
+                              IconButton(
+                                icon: const Icon(Icons.delete_outline),
+                                onPressed: () => _deleteAccount(accountId),
+                                tooltip: 'Delete account',
+                                color: Colors.red[300],
+                              ),
+                            ],
+                          ),
+                          onTap: () => _selectAccount(accountId,
+                              platformId: displayData.platformId,
+                              accountEmail: displayData.email),
+                        ),
+                        ),
+                      );
+                    },
+                  );
+                },
+              ),
             ),
+            ],
           ),
-          ],
         ),
-      ),
-      floatingActionButton: FloatingActionButton.extended(
-        onPressed: _addNewAccount,
-        icon: const Icon(Icons.add),
-        label: const Text('Add Account'),
-        tooltip: 'Add New Account',
+        floatingActionButton: FloatingActionButton.extended(
+          onPressed: _addNewAccount,
+          icon: const Icon(Icons.add),
+          label: const Text('Add Account'),
+          tooltip: 'Add New Account',
+        ),
       ),
     );
   }

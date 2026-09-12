@@ -12,6 +12,7 @@ import 'gmail_manual_token_screen.dart';
 import '../../util/redact.dart';
 import 'folder_selection_screen.dart';
 import 'scan_progress_screen.dart';
+import '../widgets/system_inset_wrapper.dart'; // F209 (Sprint 69)
 
 /// Gmail OAuth authentication screen
 /// Handles Google Sign-In flow and credential storage
@@ -38,19 +39,35 @@ class GmailOAuthScreen extends StatefulWidget {
   /// Matching is on substrings of the message the provider returns. It is a
   /// best-effort improvement to a dead end, never a correctness guarantee: an
   /// unmatched message simply renders as before.
+  ///
+  /// **Deliberately NARROW, and the narrowness is the point (code review,
+  /// Sprint 69).** A first version also matched bare `invalid_request` and
+  /// `error 400`. Those are generic OAuth2 error codes, not Google-client
+  /// diagnoses: `_errorMessage` is assigned from several sites that
+  /// interpolate arbitrary exception text, so a transient token-endpoint 400
+  /// -- clock skew, an expired authorization code, a code reused on retry --
+  /// would have told the user to abandon Google Sign-In when a retry would
+  /// have worked. Wrong advice delivered confidently is worse than no advice.
+  ///
+  /// What remains are phrases only Google's consent screen produces for a
+  /// misconfigured client. The wording also hedges ("may not be available")
+  /// rather than asserting, because this is a text match, not a diagnosis.
   @visibleForTesting
   static String? actionableHint(String? message) {
     if (message == null) return null;
     final lower = message.toLowerCase();
 
-    final isCustomUriScheme = lower.contains('custom uri scheme') ||
+    // The verbatim cause, when the user has opened Google's "error details".
+    final namesCustomUriScheme = lower.contains('custom uri scheme') ||
         lower.contains('custom_uri_scheme');
-    final isInvalidRequest = lower.contains('invalid_request') ||
-        lower.contains('error 400') ||
-        lower.contains('access blocked');
 
-    if (isCustomUriScheme || isInvalidRequest) {
-      return 'Google Sign-In is not available for this app right now. '
+    // Google's consent-screen refusal. "Access blocked" is Google-specific
+    // and always means the CLIENT was refused, never a transient failure.
+    final googleRefusedTheClient = lower.contains('access blocked') ||
+        (lower.contains('invalid_request') && lower.contains('request is invalid'));
+
+    if (namesCustomUriScheme || googleRefusedTheClient) {
+      return 'Google Sign-In may not be available for this app right now. '
           'Go back and choose "App Password (IMAP)" instead -- it connects the '
           'same mailbox and does not depend on this setting.';
     }
@@ -470,167 +487,169 @@ class _GmailOAuthScreenState extends State<GmailOAuthScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(
-        title: const Text('Gmail Sign-In'),
-        elevation: 0,
-      ),
-      body: SelectionArea(
-        child: SingleChildScrollView(
-          child: Padding(
-            padding: const EdgeInsets.all(24.0),
-            child: Column(
-            mainAxisAlignment: MainAxisAlignment.start,
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              const SizedBox(height: 40),
+    return SystemInsetWrapper(
+      child: Scaffold(
+        appBar: AppBar(
+          title: const Text('Gmail Sign-In'),
+          elevation: 0,
+        ),
+        body: SelectionArea(
+          child: SingleChildScrollView(
+            child: Padding(
+              padding: const EdgeInsets.all(24.0),
+              child: Column(
+              mainAxisAlignment: MainAxisAlignment.start,
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                const SizedBox(height: 40),
 
-              // Gmail Logo
-              Container(
-                padding: const EdgeInsets.all(24),
-                decoration: BoxDecoration(
-                  shape: BoxShape.circle,
-                  color: Colors.red[50],
-                ),
-                child: Icon(
-                  Icons.email,
-                  size: 80,
-                  color: Colors.red[700],
-                ),
-              ),
-              const SizedBox(height: 32),
-
-              // Title
-              Text(
-                'Sign in with Gmail',
-                style: Theme.of(context).textTheme.headlineSmall,
-                textAlign: TextAlign.center,
-              ),
-              const SizedBox(height: 16),
-
-              // Description
-              Text(
-                'You\'ll be redirected to Google sign-in to authorize access to your Gmail account securely.',
-                style: Theme.of(context).textTheme.bodyMedium,
-                textAlign: TextAlign.center,
-              ),
-              const SizedBox(height: 40),
-
-              // Sign-in button or loading indicator
-              if (_isSigningIn)
-                const Center(
-                  child: Column(
-                    children: [
-                      CircularProgressIndicator(),
-                      SizedBox(height: 16),
-                      Text('Redirecting to authentication...'),
-                    ],
-                  ),
-                )
-              else if (Platform.isAndroid)
-                // On Android, show OAuth methods - native with appauth fallback is primary
-                Column(
-                  crossAxisAlignment: CrossAxisAlignment.stretch,
-                  children: [
-                    ElevatedButton.icon(
-                      onPressed: _handleSignIn,
-                      icon: const Icon(Icons.login),
-                      label: const Text('Google Sign-In (OAuth 2.0)'),
-                      style: ElevatedButton.styleFrom(
-                        padding: const EdgeInsets.symmetric(vertical: 16),
-                        backgroundColor: Colors.red[600],
-                        foregroundColor: Colors.white,
-                      ),
-                    ),
-                    const SizedBox(height: 12),
-                    OutlinedButton.icon(
-                      onPressed: _handleManualTokenEntry,
-                      icon: const Icon(Icons.vpn_key),
-                      label: const Text('Manual Token Entry'),
-                      style: OutlinedButton.styleFrom(
-                        padding: const EdgeInsets.symmetric(vertical: 16),
-                      ),
-                    ),
-                  ],
-                )
-              else
-                ElevatedButton.icon(
-                  onPressed: _handleSignIn,
-                  icon: const Icon(Icons.login),
-                  label: const Text('Sign in with Google'),
-                  style: ElevatedButton.styleFrom(
-                    padding: const EdgeInsets.symmetric(vertical: 16),
-                    backgroundColor: Colors.red[600],
-                    foregroundColor: Colors.white,
-                  ),
-                ),
-
-              // Alternate methods helper (Windows/other platforms)
-              if (!Platform.isAndroid) ...[
-                const SizedBox(height: 12),
-                TextButton.icon(
-                  onPressed: _showAlternateOAuthOptions,
-                  icon: const Icon(Icons.help_outline),
-                  label: const Text('Trouble signing in? Try WebView or manual tokens'),
-                ),
-              ],
-
-              // Error message
-              if (_errorMessage != null) ...[
-                const SizedBox(height: 24),
+                // Gmail Logo
                 Container(
-                  padding: const EdgeInsets.all(16),
+                  padding: const EdgeInsets.all(24),
                   decoration: BoxDecoration(
+                    shape: BoxShape.circle,
                     color: Colors.red[50],
-                    borderRadius: BorderRadius.circular(8),
-                    border: Border.all(color: Colors.red[300]!),
                   ),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
+                  child: Icon(
+                    Icons.email,
+                    size: 80,
+                    color: Colors.red[700],
+                  ),
+                ),
+                const SizedBox(height: 32),
+
+                // Title
+                Text(
+                  'Sign in with Gmail',
+                  style: Theme.of(context).textTheme.headlineSmall,
+                  textAlign: TextAlign.center,
+                ),
+                const SizedBox(height: 16),
+
+                // Description
+                Text(
+                  'You\'ll be redirected to Google sign-in to authorize access to your Gmail account securely.',
+                  style: Theme.of(context).textTheme.bodyMedium,
+                  textAlign: TextAlign.center,
+                ),
+                const SizedBox(height: 40),
+
+                // Sign-in button or loading indicator
+                if (_isSigningIn)
+                  const Center(
+                    child: Column(
+                      children: [
+                        CircularProgressIndicator(),
+                        SizedBox(height: 16),
+                        Text('Redirecting to authentication...'),
+                      ],
+                    ),
+                  )
+                else if (Platform.isAndroid)
+                  // On Android, show OAuth methods - native with appauth fallback is primary
+                  Column(
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
                     children: [
-                      Row(
-                        children: [
-                          Icon(Icons.error_outline, color: Colors.red[700]),
-                          const SizedBox(width: 8),
-                          Expanded(
-                            child: Text(
-                              'Sign-In Error',
-                              style: TextStyle(
-                                fontWeight: FontWeight.bold,
-                                color: Colors.red[900],
+                      ElevatedButton.icon(
+                        onPressed: _handleSignIn,
+                        icon: const Icon(Icons.login),
+                        label: const Text('Google Sign-In (OAuth 2.0)'),
+                        style: ElevatedButton.styleFrom(
+                          padding: const EdgeInsets.symmetric(vertical: 16),
+                          backgroundColor: Colors.red[600],
+                          foregroundColor: Colors.white,
+                        ),
+                      ),
+                      const SizedBox(height: 12),
+                      OutlinedButton.icon(
+                        onPressed: _handleManualTokenEntry,
+                        icon: const Icon(Icons.vpn_key),
+                        label: const Text('Manual Token Entry'),
+                        style: OutlinedButton.styleFrom(
+                          padding: const EdgeInsets.symmetric(vertical: 16),
+                        ),
+                      ),
+                    ],
+                  )
+                else
+                  ElevatedButton.icon(
+                    onPressed: _handleSignIn,
+                    icon: const Icon(Icons.login),
+                    label: const Text('Sign in with Google'),
+                    style: ElevatedButton.styleFrom(
+                      padding: const EdgeInsets.symmetric(vertical: 16),
+                      backgroundColor: Colors.red[600],
+                      foregroundColor: Colors.white,
+                    ),
+                  ),
+
+                // Alternate methods helper (Windows/other platforms)
+                if (!Platform.isAndroid) ...[
+                  const SizedBox(height: 12),
+                  TextButton.icon(
+                    onPressed: _showAlternateOAuthOptions,
+                    icon: const Icon(Icons.help_outline),
+                    label: const Text('Trouble signing in? Try WebView or manual tokens'),
+                  ),
+                ],
+
+                // Error message
+                if (_errorMessage != null) ...[
+                  const SizedBox(height: 24),
+                  Container(
+                    padding: const EdgeInsets.all(16),
+                    decoration: BoxDecoration(
+                      color: Colors.red[50],
+                      borderRadius: BorderRadius.circular(8),
+                      border: Border.all(color: Colors.red[300]!),
+                    ),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Row(
+                          children: [
+                            Icon(Icons.error_outline, color: Colors.red[700]),
+                            const SizedBox(width: 8),
+                            Expanded(
+                              child: Text(
+                                'Sign-In Error',
+                                style: TextStyle(
+                                  fontWeight: FontWeight.bold,
+                                  color: Colors.red[900],
+                                ),
                               ),
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: 8),
+                        Text(
+                          _errorMessage!,
+                          style: TextStyle(color: Colors.red[900]),
+                        ),
+                        // F211: turn a dead end into a next step when the error
+                        // is one the user can route around.
+                        if (GmailOAuthScreen.actionableHint(_errorMessage) != null) ...[
+                          const SizedBox(height: 12),
+                          Text(
+                            GmailOAuthScreen.actionableHint(_errorMessage)!,
+                            style: TextStyle(
+                              color: Colors.red[900],
+                              fontWeight: FontWeight.w600,
                             ),
                           ),
                         ],
-                      ),
-                      const SizedBox(height: 8),
-                      Text(
-                        _errorMessage!,
-                        style: TextStyle(color: Colors.red[900]),
-                      ),
-                      // F211: turn a dead end into a next step when the error
-                      // is one the user can route around.
-                      if (GmailOAuthScreen.actionableHint(_errorMessage) != null) ...[
-                        const SizedBox(height: 12),
-                        Text(
-                          GmailOAuthScreen.actionableHint(_errorMessage)!,
-                          style: TextStyle(
-                            color: Colors.red[900],
-                            fontWeight: FontWeight.w600,
-                          ),
-                        ),
                       ],
-                    ],
+                    ),
                   ),
-                ),
+                ],
+
+                const SizedBox(height: 32),
+
+                // Privacy notice
+                _buildPrivacyNotice(context),
               ],
-
-              const SizedBox(height: 32),
-
-              // Privacy notice
-              _buildPrivacyNotice(context),
-            ],
-          ),
+            ),
+            ),
           ),
         ),
       ),
