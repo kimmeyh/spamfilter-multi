@@ -218,3 +218,63 @@ by Harold's decision, since both need a Play-installed build.
 - **Claude Code Development Team**: none blocking. Two dependencies stay open by design: the F211
   console changes (package name and SHA-1) and the Android validation of F208/F209, both of which
   need Harold or a Play release rather than sprint work.
+
+---
+
+## Improvement Decisions (Step 6, Harold 2026-09-13)
+
+| IMP | Title | Decision | Where applied |
+|---|---|---|---|
+| IMP-1 | Verify the artifact before writing the conclusion down | **APPLY NOW** | `CLAUDE.md` |
+| IMP-2 | A policy gate must prove it FAILS on the real defect | **APPLY NOW** | `TESTING_STRATEGY.md` |
+| IMP-3 | Heuristic walks terminate on DEPTH, not a line count | **APPLY NOW** | `TESTING_STRATEGY.md` |
+| IMP-4 | ~~Budget for the rework tail~~ | **REJECTED AND REPLACED** | see below |
+| IMP-5 | Re-derive release notes at 7.7 | **APPLY NOW** | `SPRINT_CHECKLIST.md` + both 0.15.1 files |
+
+### IMP-4 was rejected, and the rejection is the most valuable thing in this retrospective
+
+**Harold, 2026-09-13**: *"instead of expecting re-work, we should be improving the prompts sent in
+order to reduce the chance of rework. Eliminating waste is much more important than improving
+estimates to account for it. What did we learn from the recent (last couple of sprints) rework
+events that could be used to minimize them?"*
+
+He is right. Budgeting for rework makes it permanent. So the 13 rework events across Sprints 68
+and 69 were sorted by CAUSE rather than symptom, and **11 of 13 fall into exactly two buckets**:
+
+**Bucket A -- concluded without opening the thing being concluded about (7 events).**
+S68: the Partner Center field renamed without reading the account (MSIX rejected); a submitted Play
+declaration edited; folder ticks read as the app's pre-selection; "nothing landed" checked before
+Harold moved the folder. S69: F211's "console-only" determination; the upload key recorded as the
+app-signing key; "screenshots kept nowhere".
+
+Every one had reachable evidence, and every one reasoned from an adjacent source instead. The
+purest case is R-1: `build.gradle.kts` was read to decide what the Google Cloud Console contained.
+**This is not a knowledge gap, it is a SEQUENCE failure** -- look first, then claim.
+
+**Bucket B -- verified the happy path and not the failure path (4 events).**
+S68: the F197 gate shipped with the defect its own doc warned about; a `re.sub` accepted twice
+because it produced output. S69: the F210 gate passing vacuously; F209 built on a mechanism that
+worked and broke its neighbours.
+
+Each was confirmed to DO something and never confirmed to fail when it should, or to leave
+neighbours alone. **Working is not the same as correct.**
+
+The remaining two (the nav-bar overlap seen and not raised; F210's four instances really being
+nine) are scope underestimation -- real, but the minority pattern.
+
+**Two rules replace IMP-4**, both in `CLAUDE.md`:
+
+1. **Before claiming what an EXTERNAL system contains, open it.** Anything outside the repo whose
+   state cannot be read from source: a vendor console, a store listing, OS settings, a rendered
+   screen. The tell is a sentence of the form "X is configured as Y" where Y was deduced. If the
+   screen, file or command cannot be named, the claim is a guess -- write **unverified** and say
+   what would settle it.
+2. **Verify the FAILURE path, not just the happy path.** Three questions before calling anything
+   done: does it FAIL when it should, proven by breaking what it guards? What does it do to its
+   NEIGHBOURS? What happens on the UNHAPPY input? The cheapest form is a probe -- Sprint 69's F209
+   rewrite was chosen by probing three placements and reading measured positions, which took
+   minutes and replaced an argument with an answer.
+
+**Expected effect on the two buckets**: rule 1 addresses all 7 of Bucket A, since each needed only
+a look before the claim. Rule 2 addresses all 4 of Bucket B and generalises past policy gates,
+which is where IMP-2 stops.

@@ -145,6 +145,7 @@ These documents MUST be created/updated during each sprint:
 
 **Mandatory sprint completion updates (Phase 7.7 continued)**:
   - [ ] CHANGELOG.md updated (all sprint entries present, including any Step 7 improvements)
+  - [ ] **RE-DERIVE the per-store release notes** (Sprint 69 IMP-5). The F190 bump happens at Phase 3.7.0b, so the F196 gate makes release notes due at PLAN APPROVAL -- they necessarily describe a sprint that has not happened yet. Sprint 69's 0.15.1 notes were written after task 2 of 5 and omitted F203 and F209 entirely. Re-derive BOTH `docs/store-assets/RELEASE_NOTES_<version>_windows.md` and `_play.md` from the finished CHANGELOG per STORE_RELEASE_PROCESS.md Step 1b, and drop the PROVISIONAL marker. Then re-run `flutter test test/policy/release_notes_test.dart` -- the Play file has a MEASURED 500-character limit and adding the rest of the sprint is exactly what pushes it over.
   - [ ] ALL_SPRINTS_MASTER_PLAN.md updated (per Maintenance Guide rules) -- includes Category 14 backlog additions and Step 6 backlog dispositions
   - [ ] Next Sprint Plan stub created/updated with Category 13 carry-ins
   - [ ] `docs/sprints/SPRINT_N_RETROSPECTIVE.md` created/finalized (MANDATORY -- with all 14 categories x 4 roles filled + "Improvement Decisions" section from Step 6)
