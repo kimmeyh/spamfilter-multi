@@ -1,38 +1,36 @@
 {
   "_description": "Sprint status file that persists across context compaction. Update after each phase/sub-phase completion.",
-  "_last_updated": "2026-09-11",
+  "_last_updated": "2026-09-14",
   "_usage": "Read this file after context compaction to restore sprint approval state and progress.",
   "_staleness_note": "This file had drifted 15 sprints (last updated at Sprint 35, 2026-04-19) before being refreshed at Sprint 50 close-out. It is a Phase 7.7 checklist item -- update it at every sprint close-out, not opportunistically.",
   "current_sprint": {
-    "number": 69,
-    "branch": "feature/20260910_Sprint_69",
-    "status": "Sprint 69 Phase 5.3 MANUAL VALIDATION COMPLETE (Windows). Harold validated 2026-09-11: F210 7 of 9 good, 2 untestable now (sign-in failure technical details; Gmail manual token warning) -> carried to next sprint validation. F203 good. Windows no-regression good. F208 + F209 DEFERRED to the next Play release -- Harold: \"These have to wait until live on Google Play (after next update)\". One NEW finding filed as F216 (supporting text two size steps smaller than adjacent text on Rule Tester / Safe Sender quick-add) -- NOT F210, deliberately not fixed in-sprint. F211 console work in progress with Harold: custom URI scheme enabled; package name and SHA-1 (3B:C2:42:...:33:92, the APP SIGNING key, not the upload key) pending. NEXT: Phase 7 retrospective once F211 is confirmed or explicitly carried.",
-    "plan_approved": true,
-    "blanket_execution_approved": true,
-    "pr_number": 410,
-    "pr_url": "https://github.com/kimmeyh/spamfilter-multi/pull/410",
-    "pr": 410,
-    "version": "0.15.1+4 / msix 0.15.1.0 -- PATCH bump at Phase 3.7.0b (F190). All five tasks are fixes, no feat. Both stores are at 0.15.0, so dev is one patch ahead as required. versionCode 3 -> 4 (Play requires strictly increasing)."
+    "number": 70,
+    "branch": "feature/20260914_Sprint_70",
+    "status": "Sprint 70 NOT PLANNED, NOT APPROVED. Phase 8 Release Cycle IN PROGRESS: 8.1 develop->main DONE (#411); 8.3.0 prod worktree pulled (was 44 commits behind, stale AGAIN -- 4th consecutive release) and now at #411 with 0.15.1; 8.2 completeness sweep DONE, which found the SPRINT_69_SUMMARY missing and this file stale. NEXT: 8.3 Microsoft Store release, then 8.4 scope selection. F217 (background scans deferred for hours on Android, Priority 6) is the strongest candidate for Sprint 70 scope.",
+    "plan_approved": false,
+    "blanket_execution_approved": false,
+    "pr_number": null,
+    "pr_url": null,
+    "pr": null
   },
   "previous_sprint": {
-    "number": 68,
-    "pr": 403,
-    "pr_to_main": 404,
-    "deliverables": "F199 publisher rename finished (one console item externally blocked -> F199-b); F198 numbered-question rule moved into CLAUDE.md, hook deliberately NOT built; F191 Yahoo Mail + iCloud Mail shipped (phase gate opened, 4/4 MV cells PASS); F200 web-property deep dive (removed a FALSE privacy claim served ~6 months, deleted a second live privacy policy and a duplicate copy of the whole site, added a served-site gate); F197 dark-mode surface/text mix gate.",
-    "retro_improvements": "5 proposed, 5 approved, 5 applied: IMP-1 screenshot-proves-STATE-not-CAUSE rule; IMP-2 version gate now reads every Live row in STORE_VERSION_STATUS.md (the old one compared against the CHANGELOG heading, which lags the stores); IMP-3 in-app-vs-doc provider-steps gate; IMP-4 single-session model deviation; IMP-5 git commit -F for backticked messages.",
-    "pr_reviews": "BOTH ran. Copilot 4 findings, pr-review-toolkit code-reviewer 4 findings, no overlap, all 8 addressed in-sprint (1f2eb8c), none deferred. Two were defects in Claude's OWN new gates: F197 misread 31 text colours as surfaces (dart format splits TextStyle across lines), and plan_approved:false had silently disabled card/PR enforcement for the whole sprint."
+    "number": 69,
+    "pr": 410,
+    "pr_to_main": 411,
+    "deliverables": "F211 actionable sign-in error + the console defect diagnosed (3 problems, not 1); F210 dark-mode contrast 9 instances + a gate that sees theme-by-omission; F208 YAML import restored on Android by removing the platform difference rather than encoding it; F209 nav-bar overlap fixed across 21 of 23 screens, delivered TWICE after review found the first mechanism would re-break the F178 popup and every keyboard screen; F203 skipped safe senders disclosed without being recounted as processed.",
+    "retro_improvements": "5 proposed, 4 approved as written, IMP-4 REJECTED and replaced. Harold: \"Eliminating waste is much more important than improving estimates to account for it.\" 13 rework events across Sprints 68-69 sorted by cause: 7 were concluding without opening the thing being concluded about, 4 were verifying the happy path only. Two rules in CLAUDE.md replace the estimate-padding proposal. IMP-1 artifact-before-conclusion; IMP-2 a gate must prove it FAILS; IMP-3 depth-terminated walks; IMP-5 re-derive release notes at 7.7 (applied to this sprint too -- the 0.15.1 notes had been written after task 2 of 5 and omitted F203 and F209).",
+    "pr_reviews": "BOTH ran. Code-review agent: 7 findings first pass (3 critical, incl. the F209 mechanism), then 1 CRITICAL second pass -- results_display_screen and scan_progress_screen return a wrapper around their Scaffold, so a gate matching \"return Scaffold(\" skipped them entirely while reporting green. A third defect surfaced fixing that: the rewritten gate was satisfied by a COMMENT mentioning the widget. Copilot: 1 finding, a copy-paste path corrupted by consumed escape sequences, which a sweep turned into 5 across 3 files. All addressed in-sprint, none deferred."
   },
   "github_issues": {
-    "sprint_68": "#398 #399 #400 #401 #402 -- ALL CLOSED 2026-09-10 (manually; Closes #N does not auto-fire on feature->develop)",
-    "open": "#405 #406 #407 #408 #409 (Sprint 69)",
-    "sprint_69": "#405 F211, #406 F210, #407 F208, #408 F209, #409 F203 -- created 2026-09-11 at Phase 3.7.0, all OPEN. Close by hand at Post-Merge Cleanup (Closes #N does not auto-fire on feature->develop)."
+    "sprint_69": "#406 #407 #408 #409 CLOSED 2026-09-14 with outcomes. #405 (F211) LEFT OPEN deliberately -- AC-1 requires the Google Cloud Console changes plus a test with an account that has never authorised the app.",
+    "open": "#405 (F211, awaiting console change + fresh-account verification)"
   },
   "_github_issues_note": "Sprint 66 cards created at Phase 3.3.1 (2026-09-07): #387 GP-19, #388 GP-4. Close by hand at Post-Merge Cleanup.",
   "test_metrics": {
-    "suite": "2,111 passed / 15 skipped / 0 failed",
-    "policy_suite": "113 passed (was 109 at Sprint 69 start)",
+    "suite": "2,119 passed / 15 skipped / 0 failed",
+    "policy_suite": "114 passed (was 109 at Sprint 69 start)",
     "analyzer": "clean",
-    "as_of": "2026-09-11, Sprint 69 Phase 5.2 at 5795740"
+    "as_of": "2026-09-14, Sprint 69 close-out at b5f6ae0"
   },
   "store_release": {
     "windows": "0.15.0.0 SUBMITTED -- Partner Center Submission 26, In certification as of 2026-09-10. REBUILT after Submission 26 was REJECTED at package validation: publisher_display_name said \"Kimmey Consulting LLC\" while the account says \"Kimmey Consulting - Ohio\" (F199 overreach). Reverted in 6 places + gated by msix_config_test. Rebuilt manifest verified: PublisherDisplayName \"Kimmey Consulting - Ohio\", version 0.15.0.0, identity + GUID untouched, --print-env all five lines correct incl. NATIVE_APP_ENV=prod. MSIX 17.1 MB at: D:\\Data\\Harold\\github\\spamfilter-multi-prod\\mobile-app\\build\\windows\\x64\\runner\\Release\\my_email_spam_filter.msix. LIVE on Store remains 0.14.2.0 (Submission 25) until 26 certifies.",
