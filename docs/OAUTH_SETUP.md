@@ -119,6 +119,21 @@ cause of F211 than the scheme setting was.
      so the client was configured for a local debug build of an app that no longer exists
      under that name.
 
+**WHICH CLIENT THE PLAY BUILD ACTUALLY USES** (settled by Harold, 2026-09-14):
+
+`build-with-secrets.ps1` passes `--dart-define-from-file=secrets.dev.json` for EVERY build
+including release, and `secrets.prod.json` does not exist in the dev worktree at all -- so a Play
+bundle is always built with the DEV worktree credentials. The two worktrees hold DIFFERENT Android
+client ids (dev `577022808534-0ejd...`, prod `577022808534-v94j...`).
+
+Harold confirmed the dev client (`0ejd`) is correct and is what ships: it is what 0.15.0 shipped
+with, and it is the client the F211 console fixes are being applied to. **Do not fix this by
+pointing the Play build at the prod worktree secrets** -- that would apply the F211 repairs to one
+client while shipping another.
+
+Recorded because the Play release process does not state which secrets file it uses, and the
+mismatch looks like a defect until you know it is deliberate.
+
 **THE TWO FINGERPRINTS FOR THIS PROJECT** (recorded 2026-09-11 so nobody has to hunt again):
 
 | Which | SHA-1 | Used by | Goes in the OAuth client? |

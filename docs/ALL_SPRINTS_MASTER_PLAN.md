@@ -658,6 +658,68 @@ All incomplete items in relative priority order. Priority in increments of 10; i
 - Source: Harold, 2026-09-10 -- filed after the S24+ Scan History totals, reframed by him the
   same day from "fix Android" to "a platform capability".
 
+**F218. Upgrade the Flutter SDK (9 months stale), re-apply the native-assets patch, re-resolve 35 dependencies, and REMOVE the one-time Gradle workaround (~4-8h) Priority 8 (NEW, 2026-09-14 -- Harold, during the 0.15.1 Play release)**
+- Phase: Developer Workflow / Tooling
+- Platform: All -- the SDK is shared, and both platforms need re-verification
+- **Harold, 2026-09-14**, after approving a one-time workaround to unblock the release:
+  *"Backlog for next sprint the update of SDK, re-applying patch if needed and re-resolving 35
+  dependencies"*.
+- **WHY THIS EXISTS**: `flutter build appbundle --release` fails on Flutter 3.38.5 with
+  `GeneratedPluginRegistrant.java:64: error: package dev.flutter.plugins.integration_test does
+  not exist`. The generator writes an `integration_test` registration into the registrant for
+  EVERY variant, while the release variant's classpath does not carry it.
+- **Proven by asking Gradle rather than inferring** (the diagnosis is recorded so it is not
+  re-derived):
+  - `gradlew projects` lists `:integration_test` -- it IS an included project.
+  - `:app:dependencies --configuration prodDebugCompileClasspath` -> `project :integration_test`
+    PRESENT.
+  - `:app:dependencies --configuration prodReleaseCompileClasspath` -> ABSENT.
+  - Nothing in this project's Gradle files filters dev-dependency plugins, so the asymmetry is
+    SDK behaviour.
+- **THE ONE-TIME WORKAROUND NOW IN THE TREE, WHICH THIS CARD MUST REMOVE**:
+  `android/app/build.gradle.kts` adds `releaseImplementation(project(":integration_test"))` --
+  ONE line, buildType-scoped so it covers both flavors. (First attempt used
+  `prodReleaseImplementation`/`devReleaseImplementation`; Gradle rejects those with
+  "Configuration with name ... not found" -- flavor+buildType implementation configurations are
+  not created by default. Recorded so the next person does not repeat it.) **Cost, stated plainly: a test-only library is linked into the
+  shipped AAB.** That is why it is one-time. Delete both lines and their comment block once the
+  SDK upgrade makes them unnecessary, and verify the release build still succeeds WITHOUT them --
+  removing them is the test that the upgrade actually fixed the underlying defect.
+- **WHAT THE UPGRADE INVOLVES, and none of it is optional:**
+  1. **The SDK is 4,163 commits / 9 months behind stable.** Current `3.38.5` (2025-12-11);
+     `origin/stable` was at 2026-09-10 when checked.
+  2. **`flutter upgrade` REFUSES to run**, because the SDK checkout carries a local modification.
+     It is not accidental: `D:\dev\flutter\packages\flutter_tools\lib\src\isolated\native_assets\native_assets.dart`
+     has a documented 5-line patch (`docs/TROUBLESHOOTING.md`, "install_code_assets runs twice")
+     that skips a duplicate `sqlite3.x64.windows.dll` copy which otherwise throws
+     `PathExistsException` and **fails every Windows build**. The doc already warns: *"This patch
+     will be lost when Flutter is upgraded. Re-apply after any flutter upgrade."*
+  3. **Re-apply the patch -- IF it is still needed.** Check first whether upstream fixed the
+     double-run; if so, drop the patch rather than carrying a redundant local modification. If the
+     surrounding code moved, the patch may not apply cleanly and needs re-deriving from the
+     symptom, not pasted.
+  4. **35 caret-ranged dependencies will re-resolve.** Back up `pubspec.lock` first. Expect
+     churn, and read the diff rather than assuming it is benign.
+  5. **Re-verify BOTH platforms.** The Windows MSIX in Submission 27 was built on the OLD SDK, so
+     a Windows regression would not surface from the Play side alone.
+- **A workaround that did NOT work, recorded to save the next attempt:** the Flutter issue thread
+  (#169336) recommends `flutter pub get` followed by `flutter build --config-only`.
+  **`--config-only` does not exist for `appbundle` in 3.38.5** -- the flag is rejected outright.
+  That issue is also `--no-pub`-specific, and `build-with-secrets.ps1` does not pass `--no-pub`,
+  so it is a related symptom rather than the same defect. No maintainer statement names a fix
+  version, so **the upgrade is not GUARANTEED to fix this** -- confirm by removing the workaround,
+  not by reading release notes.
+- **Do this EARLY in a sprint, never on a release day.** The decision to defer it was made
+  precisely because upgrading a 9-month-old SDK, losing a patch that keeps Windows building, and
+  re-resolving 35 dependencies -- hours after submitting a Store package built on the old SDK --
+  is the shape of change that produced F119.
+- **Rollback point recorded 2026-09-14**: repo at `c1473a0`, Flutter SDK at `f6ff1529fd6`,
+  `pubspec.lock` backed up before the attempt.
+- Depends on: nothing. Blocks nothing, but the workaround it removes ships a test library to
+  users until it is done.
+- Source: Harold, 2026-09-14, during the 0.15.1 Play release. He approved the one-time workaround
+  and asked for the real fix to be scheduled rather than improvised.
+
 **F217. Android background scans do not run while the app is backgrounded or the phone is locked -- and no notification arrives (~4-8h investigation + fix) Priority 6 (NEW, 2026-09-13 -- Harold, Sprint 69 retrospective Category 14)**
 - Phase: Android / Google Play Store Readiness
 - Platform: **Android only** (Windows uses Task Scheduler, ADR-0039, and is unaffected)
