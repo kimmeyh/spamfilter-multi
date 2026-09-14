@@ -118,7 +118,7 @@ Microsoft Store. (Sprint 66 IMP-1.)
 **Output -- FULL PATH, ready to paste into the Play Console upload dialog:**
 
 ```
-D:\Data\Harold\github\spamfilter-multi\mobile-appuildpp\outputsundle\prodReleasepp-prod-release.aab
+D:\Data\Harold\github\spamfilter-multi\mobile-app\build\app\outputs\bundle\prodRelease\app-prod-release.aab
 ```
 
 Approx 53 MB. **Note this is the DEV worktree** -- unlike the Windows MSIX, the Play bundle is
@@ -147,8 +147,8 @@ print('versionName :', set(re.findall(r'0\.\d+\.\d+', txt)))
 print('.dev suffix :', '.dev' in txt[:4000], '(must be False -- that is the DEV package)')
 hits = set(re.findall(r'com\.googleusercontent\.apps\.[0-9A-Za-z\-]+', txt))
 print('OAuth scheme:', 'PRESENT' if hits else '*** MISSING -- F119 failure mode ***')
-'@ | Out-File -Encoding utf8 "$env:TEMPerify_aab.py"
-python "$env:TEMPerify_aab.py"
+'@ | Out-File -Encoding utf8 "$env:TEMP\verify_aab.py"
+python "$env:TEMP\verify_aab.py"
 ```
 
 Confirm: the version name matches, there is no `.dev` package suffix, and the OAuth redirect

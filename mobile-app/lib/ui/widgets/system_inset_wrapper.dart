@@ -45,13 +45,24 @@ import 'package:flutter/material.dart';
 /// correct by construction) and it CONSUMES what it applies (so nothing
 /// downstream insets twice).
 ///
-/// ## Why it wraps the Scaffold BODY, not the whole app
+/// ## Why it wraps EACH SCAFFOLD, not the whole app
 ///
 /// Applying this above the `Navigator` would also wrap dialog routes, modal
 /// sheets and the `ScaffoldMessenger` overlay -- which is how defects 1 and 2
 /// above happened. Those surfaces already manage their own insets, correctly
-/// and deliberately. So this widget is applied per screen, around the body
-/// only, leaving app bars, bottom sheets, dialogs and snackbars untouched.
+/// and deliberately.
+///
+/// So this widget is applied per screen, immediately OUTSIDE that screen's
+/// `Scaffold`. A dialog route is pushed above this wrapper by the Navigator,
+/// so dialogs, bottom sheets and snackbars are untouched, while the Scaffold
+/// itself -- app bar, body, `bottomNavigationBar` and FAB alike -- lays out
+/// inside the inset box. Wrapping the body ALONE would leave a
+/// `bottomNavigationBar` under the system buttons.
+///
+/// Some screens return a wrapper of their own (`Focus`, `PopScope`), in which
+/// case this goes outside that too. Those two shapes are exactly what the
+/// first version of the wiring gate could not see, so they shipped unwrapped
+/// for one round -- see `test/policy/system_inset_wiring_test.dart`.
 ///
 /// **DECLARED PLATFORM EXCEPTION (ADR-0042).** Windows has no system
 /// navigation bar, so this is a no-op there and desktop layout is unchanged.

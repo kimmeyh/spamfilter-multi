@@ -18,6 +18,7 @@ import '../widgets/standard_app_bar_actions.dart';
 import 'results_display_screen.dart';
 import 'scan_history_screen.dart';
 import 'help_screen.dart';
+import '../widgets/system_inset_wrapper.dart'; // F209 (Sprint 69)
 
 /// Displays live scan progress bound to EmailScanProvider.
 /// Provides controls to start/pause/resume/reset a scan and
@@ -129,122 +130,128 @@ class _ScanProgressScreenState extends State<ScanProgressScreen> with RouteAware
     // push is needed. Scan Progress stays alive underneath Results so
     // back from Results returns here (didPopNext resets to clean state).
 
-    return PopScope(
-      // Handle back button to return to account selection with confirmation during scan
-      canPop: false,
-      onPopInvoked: (didPop) async {
-        if (didPop) return;
+    // F209: SystemInsetWrapper goes OUTSIDE PopScope so the inset applies to
+    // the whole screen. Missed by the first pass for the same reason as
+    // results_display_screen.dart -- see the note there. The bottom action
+    // buttons on this screen were sitting under the navigation buttons.
+    return SystemInsetWrapper(
+      child: PopScope(
+        // Handle back button to return to account selection with confirmation during scan
+        canPop: false,
+        onPopInvoked: (didPop) async {
+          if (didPop) return;
         
-        if (scanProvider.status == ScanStatus.scanning) {
-          // Confirm before leaving during active scan
-          final shouldPop = await showDialog<bool>(
-            context: context,
-            builder: (context) => AlertDialog(
-              title: const Text('Cancel Scan?'),
-              content: const Text('A scan is in progress. Are you sure you want to go back?'),
-              actions: [
-                TextButton(
-                  onPressed: () => Navigator.pop(context, false),
-                  child: const Text('Continue Scanning'),
-                ),
-                TextButton(
-                  onPressed: () => Navigator.pop(context, true),
-                  style: TextButton.styleFrom(foregroundColor: Colors.orange),
-                  child: const Text('Cancel Scan'),
-                ),
-              ],
-            ),
-          );
-          if (shouldPop == true && context.mounted) {
-            Navigator.pop(context);
-          }
-        } else {
-          // No scan active, allow back
-          if (context.mounted) {
-            Navigator.pop(context);
-          }
-        }
-      },
-      child: Scaffold(
-        appBar: AppBarWithExit(
-          title: Text('Manual Scan - ${widget.accountEmail}'),
-          // Add explicit back button that returns to account selection
-          leading: IconButton(
-            icon: const Icon(Icons.arrow_back),
-            tooltip: 'Back to Account Selection',
-            onPressed: () async {
-              if (scanProvider.status == ScanStatus.scanning) {
-                final shouldPop = await showDialog<bool>(
-                  context: context,
-                  builder: (context) => AlertDialog(
-                    title: const Text('Cancel Scan?'),
-                    content: const Text('A scan is in progress. Are you sure you want to go back?'),
-                    actions: [
-                      TextButton(
-                        onPressed: () => Navigator.pop(context, false),
-                        child: const Text('Continue Scanning'),
-                      ),
-                      TextButton(
-                        onPressed: () => Navigator.pop(context, true),
-                        style: TextButton.styleFrom(foregroundColor: Colors.orange),
-                        child: const Text('Cancel Scan'),
-                      ),
-                    ],
+          if (scanProvider.status == ScanStatus.scanning) {
+            // Confirm before leaving during active scan
+            final shouldPop = await showDialog<bool>(
+              context: context,
+              builder: (context) => AlertDialog(
+                title: const Text('Cancel Scan?'),
+                content: const Text('A scan is in progress. Are you sure you want to go back?'),
+                actions: [
+                  TextButton(
+                    onPressed: () => Navigator.pop(context, false),
+                    child: const Text('Continue Scanning'),
                   ),
-                );
-                if (shouldPop == true && context.mounted) {
+                  TextButton(
+                    onPressed: () => Navigator.pop(context, true),
+                    style: TextButton.styleFrom(foregroundColor: Colors.orange),
+                    child: const Text('Cancel Scan'),
+                  ),
+                ],
+              ),
+            );
+            if (shouldPop == true && context.mounted) {
+              Navigator.pop(context);
+            }
+          } else {
+            // No scan active, allow back
+            if (context.mounted) {
+              Navigator.pop(context);
+            }
+          }
+        },
+        child: Scaffold(
+          appBar: AppBarWithExit(
+            title: Text('Manual Scan - ${widget.accountEmail}'),
+            // Add explicit back button that returns to account selection
+            leading: IconButton(
+              icon: const Icon(Icons.arrow_back),
+              tooltip: 'Back to Account Selection',
+              onPressed: () async {
+                if (scanProvider.status == ScanStatus.scanning) {
+                  final shouldPop = await showDialog<bool>(
+                    context: context,
+                    builder: (context) => AlertDialog(
+                      title: const Text('Cancel Scan?'),
+                      content: const Text('A scan is in progress. Are you sure you want to go back?'),
+                      actions: [
+                        TextButton(
+                          onPressed: () => Navigator.pop(context, false),
+                          child: const Text('Continue Scanning'),
+                        ),
+                        TextButton(
+                          onPressed: () => Navigator.pop(context, true),
+                          style: TextButton.styleFrom(foregroundColor: Colors.orange),
+                          child: const Text('Cancel Scan'),
+                        ),
+                      ],
+                    ),
+                  );
+                  if (shouldPop == true && context.mounted) {
+                    Navigator.pop(context);
+                  }
+                } else {
                   Navigator.pop(context);
                 }
-              } else {
-                Navigator.pop(context);
-              }
-            },
+              },
+            ),
+            // F134 (Sprint 51 retro IMP-2): the canonical icon order now comes
+            // from ONE shared builder -- Review No Rule Items, View Scan
+            // History, Accounts, Settings, Help, [X auto].
+            //
+            // This screen previously carried a comment asserting a
+            // "standardized icon order -- History, Accounts, Help, Settings"
+            // that matched no other screen: five screens had drifted into four
+            // different orders, each hand-rolling the same five IconButtons.
+            // That is the duplication-drift defect class the F130 audit keeps
+            // finding, reproduced in code. Change the order in
+            // StandardAppBarActions, never here.
+            actions: StandardAppBarActions.build(
+              context: context,
+              // Demo mode deep-links to a different help section.
+              helpSection: widget.platformId == 'demo'
+                  ? HelpSection.demoScan
+                  : HelpSection.manualScan,
+              accountId: widget.accountId,
+              accountEmail: widget.accountEmail,
+              platformId: widget.platformId,
+              platformDisplayName: widget.platformDisplayName,
+              // includeManualScan: false -- this IS the Manual Scan screen; a
+              // self-referential entry point would be noise, and re-pushing it
+              // would stack a second scan screen on top of a running scan.
+              // Harold chose this variant: "all screens EXCEPT the Manual Scan
+              // screen", matching how No-Rule / Settings / Scan History each
+              // suppress their own icon.
+              includeManualScan: false,
+            ),
           ),
-          // F134 (Sprint 51 retro IMP-2): the canonical icon order now comes
-          // from ONE shared builder -- Review No Rule Items, View Scan
-          // History, Accounts, Settings, Help, [X auto].
-          //
-          // This screen previously carried a comment asserting a
-          // "standardized icon order -- History, Accounts, Help, Settings"
-          // that matched no other screen: five screens had drifted into four
-          // different orders, each hand-rolling the same five IconButtons.
-          // That is the duplication-drift defect class the F130 audit keeps
-          // finding, reproduced in code. Change the order in
-          // StandardAppBarActions, never here.
-          actions: StandardAppBarActions.build(
-            context: context,
-            // Demo mode deep-links to a different help section.
-            helpSection: widget.platformId == 'demo'
-                ? HelpSection.demoScan
-                : HelpSection.manualScan,
-            accountId: widget.accountId,
-            accountEmail: widget.accountEmail,
-            platformId: widget.platformId,
-            platformDisplayName: widget.platformDisplayName,
-            // includeManualScan: false -- this IS the Manual Scan screen; a
-            // self-referential entry point would be noise, and re-pushing it
-            // would stack a second scan screen on top of a running scan.
-            // Harold chose this variant: "all screens EXCEPT the Manual Scan
-            // screen", matching how No-Rule / Settings / Scan History each
-            // suppress their own icon.
-            includeManualScan: false,
-          ),
-        ),
-        body: Padding(
-          padding: const EdgeInsets.all(16.0),
-          child: SelectionArea(
-            child: Column(
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              _buildHeader(scanProvider),
-              const SizedBox(height: 16),
-              _buildStats(scanProvider),
-              const SizedBox(height: 16),
-              _buildControls(context, scanProvider),
-              const SizedBox(height: 16),
-              Expanded(child: _buildRecentActivity(scanProvider)),
-            ],
-          ),
+          body: Padding(
+            padding: const EdgeInsets.all(16.0),
+            child: SelectionArea(
+              child: Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                _buildHeader(scanProvider),
+                const SizedBox(height: 16),
+                _buildStats(scanProvider),
+                const SizedBox(height: 16),
+                _buildControls(context, scanProvider),
+                const SizedBox(height: 16),
+                Expanded(child: _buildRecentActivity(scanProvider)),
+              ],
+            ),
+            ),
           ),
         ),
       ),

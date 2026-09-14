@@ -300,7 +300,7 @@ Without the `windows_build_args` line (or with a wrong key), the MSIX builds suc
 **Output -- FULL PATH, ready to paste into the Partner Center upload dialog:**
 
 ```
-D:\Data\Harold\github\spamfilter-multi-prod\mobile-appuild\windowsdunner\Release\my_email_spam_filter.msix
+D:\Data\Harold\github\spamfilter-multi-prod\mobile-app\build\windows\x64\runner\Release\my_email_spam_filter.msix
 ```
 
 Approx 17-18 MB. **Note the `-prod` worktree** -- the MSIX is built there, never in the dev
