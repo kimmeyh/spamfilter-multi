@@ -658,6 +658,75 @@ All incomplete items in relative priority order. Priority in increments of 10; i
 - Source: Harold, 2026-09-10 -- filed after the S24+ Scan History totals, reframed by him the
   same day from "fix Android" to "a platform capability".
 
+**F217. Android background scans do not run while the app is backgrounded or the phone is locked -- and no notification arrives (~4-8h investigation + fix) Priority 6 (NEW, 2026-09-13 -- Harold, Sprint 69 retrospective Category 14)**
+- Phase: Android / Google Play Store Readiness
+- Platform: **Android only** (Windows uses Task Scheduler, ADR-0039, and is unaffected)
+- **Harold, 2026-09-13, verbatim**: *"Noted several times today and yesterday on the Android app
+  that background tasks did not run when I was not actively looking at the app (meaning that when
+  the app was in the background and not the focus or the phone was 'locked' the background tasks
+  did not run), and no notifications. As soon as I switched to the app, went to the Scan History
+  and did a refresh, both the aol and gmail background tasks would be running and incomplete). I
+  would refresh until both completed and then would immediately get the notification. It does not
+  appear to be running every 15 minutes in the background, regardless of screen focus or phone
+  locked."*
+- **CORROBORATED by the Scan History screenshot**
+  (`validation-screenshots/sprint-69/Screenshot_20260913_202951.png`, captured 8:29 PM):
+  - `kimmeyharold@aol.com` Background **5:15 PM**, then Background **7:57 PM**.
+    **That is 2 hours 42 minutes apart, not 15 minutes.**
+  - `kimmeyh@gmail.com` Background **5:15 PM** -- both accounts fired at the same minute, which is
+    the signature of Android BATCHING deferred work and releasing it together rather than of two
+    independent 15-minute timers.
+  - Settings confirm the schedule is active: background scanning ON, and `Errors: 0` on the runs
+    that did execute, so this is not a crash loop.
+- **THE SCHEDULING CODE IS CORRECT -- do not start by rewriting it.**
+  `background_scan_scheduler.dart:238` registers a genuine `registerPeriodicTask` with
+  `Duration(minutes: 15)`, `NetworkType.connected`, `ExistingPeriodicWorkPolicy.update` and
+  exponential backoff. Per-account unique names. Nothing there explains a 2h42m gap.
+- **The class doc at `:188` already predicted this and called it acceptable**: *"Android batches
+  periodic work for battery (Doze, App Standby); a '15 minutes' task fires approximately, not on
+  the minute... Accepted difference -- the scan is periodic hygiene, not a deadline."*
+  **That judgement now looks wrong in practice, and this card exists to revisit it.** "Approximate"
+  was written expecting minutes of drift. Harold is seeing HOURS, plus a pattern where the work
+  appears to start only when the app is foregrounded.
+- **LEADING HYPOTHESIS -- Doze and App Standby buckets, not a bug in our code.** Android places an
+  app the user has not opened recently into a restricted standby bucket, and in Doze the OS
+  defers WorkManager jobs to periodic maintenance windows that can be hours apart. Opening the app
+  promotes the bucket and flushes the deferred work, which is EXACTLY the behaviour Harold
+  describes: refresh, and suddenly both scans are running and incomplete.
+  **Evidence for this rather than a code fault**: `AndroidManifest.xml` declares NO battery-related
+  permission -- no `REQUEST_IGNORE_BATTERY_OPTIMIZATIONS`, no `FOREGROUND_SERVICE`, no
+  `WAKE_LOCK`. The app has never asked the OS for any exemption, so it is subject to every default
+  restriction. Samsung is additionally more aggressive than stock Android here, and the device is
+  an S24+.
+- **Why the notifications follow the same pattern**: the notification is posted by the scan when it
+  completes. If the scan never runs, there is nothing to notify. So "no notifications" is very
+  likely a SYMPTOM of the deferral rather than a second defect -- but confirm that rather than
+  assuming it, because a broken notification path would look identical from the outside.
+- **Why this is Priority 6, above most of the open slate**: background scanning is the app's core
+  value proposition on Android and the ONLY build where it acts on mail. A tester who installs the
+  app, locks the phone, and finds nothing happened for three hours concludes the product does not
+  work. It also silently undermines every closed-test observation made so far, because scans were
+  probably running on app-open rather than on schedule.
+- **Investigation order, and the first step is NOT a code change**:
+  1. `adb shell dumpsys deferredjobs` / `dumpsys jobscheduler` and
+     `adb shell am get-standby-bucket com.myemailspamfilter` while the phone sits idle -- establish
+     what the OS thinks it is doing before touching anything.
+  2. Check whether Samsung's own battery settings have the app in "Optimised" or "Restricted"
+     (Settings > Battery > Background usage limits). This alone can explain the whole report.
+  3. Only then consider code: requesting a battery-optimisation exemption, or a foreground service
+     with a persistent notification for the scan window.
+- **Class-1 decision, to SURFACE rather than implement**: making scans reliable in Doze means
+  either asking the user for a battery-optimisation exemption (a permission prompt Google Play
+  scrutinises, and which needs a policy justification on the listing) or running a foreground
+  service with a permanent notification. Both change the app's relationship with the OS and with
+  the Play listing. Neither should be chosen without Harold.
+- **ADR-0042**: this is Android-shaped by necessity. Windows Task Scheduler fires exactly and has
+  no Doze equivalent, so the fix -- whatever it is -- will be a declared platform exception, and
+  the existing declaration at `background_scan_scheduler.dart:188` should be REWRITTEN once the
+  real behaviour is known, because it currently records an expectation that the field contradicts.
+- Depends on: nothing. Diagnosable on the S24+ today.
+- Source: Harold, 2026-09-13, Sprint 69 retrospective Category 14, with Scan History evidence.
+
 **F212. Re-processing after adding rules FAILS 100% on the closed-test build -- "Re-processed 0 of 8 (8 failed)" (~2-4h) Priority 4 (NEW, 2026-09-11 -- Harold, on the S24+)**
 - Phase: Core App Quality
 - Platform: Android (closed test) observed; Windows unverified -- CHECK BOTH
