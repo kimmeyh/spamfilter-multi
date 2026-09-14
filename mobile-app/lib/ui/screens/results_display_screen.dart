@@ -41,6 +41,7 @@ import '../../adapters/email_providers/spam_filter_platform.dart'
     show SpamFilterPlatform, FilterAction;
 import '../../adapters/storage/secure_credentials_store.dart';
 import '../widgets/empty_state.dart';
+import '../widgets/system_inset_wrapper.dart'; // F209 (Sprint 69)
 
 /// Displays summary of scan results bound to EmailScanProvider.
 class ResultsDisplayScreen extends StatefulWidget {
@@ -413,7 +414,11 @@ class _ResultsDisplayScreenState extends State<ResultsDisplayScreen> {
                 Container(
                   padding: const EdgeInsets.all(8),
                   decoration: BoxDecoration(
-                    color: Colors.grey[200],
+                    // F210: was Colors.grey[200] -- a fixed near-white surface
+                    // under text with NO colour, so the path rendered
+                    // near-white on near-white in dark mode.
+                    color:
+                        Theme.of(context).colorScheme.surfaceContainerHighest,
                     borderRadius: BorderRadius.circular(4),
                   ),
                   child: SelectableText(
@@ -425,7 +430,12 @@ class _ResultsDisplayScreenState extends State<ResultsDisplayScreen> {
                 const SizedBox(height: 8),
                 Text(
                   'Select the path above to copy it.',
-                  style: TextStyle(fontSize: 11, color: Colors.grey[600]),
+                  style: TextStyle(
+                    fontSize: 11,
+                    // F210: was Colors.grey[600] on the theme surface of the
+                    // dialog -- the inverse pairing, dark-on-dark in dark mode.
+                    color: Theme.of(context).colorScheme.onSurfaceVariant,
+                  ),
                 ),
               ],
             ),
@@ -585,311 +595,328 @@ class _ResultsDisplayScreenState extends State<ResultsDisplayScreen> {
     }
 
     // Issue 2: Wrap with Focus to detect Ctrl+F keyboard shortcut
-    return Focus(
-      autofocus: true,
-      onKeyEvent: (node, event) {
-        // Detect Ctrl+F (or Cmd+F on macOS)
-        if (event is KeyDownEvent) {
-          final isFPressed = event.logicalKey == LogicalKeyboardKey.keyF;
+    // F209: SystemInsetWrapper goes OUTSIDE Focus so the inset applies to the
+    // whole screen. This file returns a WRAPPER rather than a bare Scaffold,
+    // which is the exact shape the first wiring gate could not see -- it
+    // matched `return Scaffold(`, so this screen and scan_progress_screen.dart
+    // were skipped while the gate reported green. The last row of the results
+    // list sat under the navigation buttons, on the screen the feature exists
+    // to serve.
+    return SystemInsetWrapper(
+      child: Focus(
+        autofocus: true,
+        onKeyEvent: (node, event) {
+          // Detect Ctrl+F (or Cmd+F on macOS)
+          if (event is KeyDownEvent) {
+            final isFPressed = event.logicalKey == LogicalKeyboardKey.keyF;
 
-          // Check if Ctrl/Cmd + F is pressed
-          if ((HardwareKeyboard.instance.isControlPressed ||
-                  HardwareKeyboard.instance.isMetaPressed) &&
-              isFPressed) {
-            setState(() {
-              _showSearch = true;
-            });
-            // Issue 2a: Auto-focus the search field after opening
-            WidgetsBinding.instance.addPostFrameCallback((_) {
-              _searchFocusNode.requestFocus();
-            });
-            return KeyEventResult.handled;
-          }
+            // Check if Ctrl/Cmd + F is pressed
+            if ((HardwareKeyboard.instance.isControlPressed ||
+                    HardwareKeyboard.instance.isMetaPressed) &&
+                isFPressed) {
+              setState(() {
+                _showSearch = true;
+              });
+              // Issue 2a: Auto-focus the search field after opening
+              WidgetsBinding.instance.addPostFrameCallback((_) {
+                _searchFocusNode.requestFocus();
+              });
+              return KeyEventResult.handled;
+            }
 
-          // MV-3 (Sprint 58 Manual Validation): Escape closes the search box
-          // when it is open -- standard Windows desktop convention (Escape
-          // dismisses transient UI). Key events bubble from the focused
-          // TextField up through this ancestor Focus, so this fires while
-          // typing in the search field. Only handled when search is open;
-          // otherwise Escape is ignored and does nothing else on this screen.
-          if (_showSearch &&
-              event.logicalKey == LogicalKeyboardKey.escape) {
-            _closeSearch();
-            return KeyEventResult.handled;
+            // MV-3 (Sprint 58 Manual Validation): Escape closes the search box
+            // when it is open -- standard Windows desktop convention (Escape
+            // dismisses transient UI). Key events bubble from the focused
+            // TextField up through this ancestor Focus, so this fires while
+            // typing in the search field. Only handled when search is open;
+            // otherwise Escape is ignored and does nothing else on this screen.
+            if (_showSearch &&
+                event.logicalKey == LogicalKeyboardKey.escape) {
+              _closeSearch();
+              return KeyEventResult.handled;
+            }
           }
-        }
-        return KeyEventResult.ignored;
-      },
-      child: Scaffold(
-        appBar: AppBarWithExit(
-          title: _showSearch
-              ? TextField(
-                  controller: _searchController,
-                  focusNode: _searchFocusNode, // Issue 2a: Connect focus node
-                  autofocus: true,
-                  style: const TextStyle(
-                      color: Colors.black), // Issue 2b: Black text
-                  decoration: const InputDecoration(
-                    hintText: 'Search emails...',
-                    hintStyle: TextStyle(
-                        color: Colors.black54), // Issue 2b: Dark gray hint
-                    border: InputBorder.none,
-                  ),
-                  onChanged: (value) {
-                    setState(() {
-                      _searchQuery = value;
-                    });
-                  },
-                )
-              : Text(
-                  'Results - ${widget.accountEmail} - ${widget.platformDisplayName}'),
-          // Add explicit back button that returns to account selection
-          // MV-2 (Sprint 58 Manual Validation): close-search icon changed
-          // from Icons.close (X) to Icons.arrow_back -- the X visually
-          // collided with the app-exit X on the opposite end of the AppBar.
-          // Back-arrow is the standard Material convention for leaving an
-          // in-AppBar search mode (Gmail et al.): "go back from search" on
-          // the left edge, matching this screen's own non-search leading
-          // back-arrow semantics (leave the current mode/screen).
-          leading: _showSearch
-              ? IconButton(
-                  icon: const Icon(Icons.arrow_back),
-                  tooltip: 'Close Search',
-                  onPressed: _closeSearch,
-                )
-              : IconButton(
-                  icon: const Icon(Icons.arrow_back),
-                  tooltip: widget.historicalScanId != null
-                      ? 'Back to Scan History'
-                      : 'Back to Manual Scan',
-                  onPressed: () {
-                    // Dismiss any showing snackbar before navigating
-                    ScaffoldMessenger.of(context).hideCurrentSnackBar();
-                    // F55 (Sprint 33, v3): pop to Manual Scan (ScanProgress).
-                    // ScanProgress subscribes to routeObserver and resets its
-                    // scan provider on didPopNext, so the user lands on a
-                    // clean "Ready to Scan" screen -- no partial results.
-                    Navigator.pop(context);
-                  },
-                ),
-          // F134 (Sprint 52): canonical order from the ONE shared builder --
-          // Download, Find (screen-specific, leading), then Review No Rule
-          // Items, View Scan History, Accounts, Settings, Help, then the
-          // auto-appended Exit. Exactly Harold's spec for this screen.
-          // Previously this ran Download, Search, No-Rule, History, Accounts,
-          // HELP, Settings -- Help and Settings inverted. Change the order in
-          // StandardAppBarActions, never here.
-          //
-          // The whole block stays gated on !_showSearch: when the search field
-          // is open it takes over the AppBar, so every action is hidden.
-          actions: [
-            if (!_showSearch)
-              ...StandardAppBarActions.build(
-                context: context,
-                // Demo scans deep-link to a different help section.
-                helpSection: widget.platformId == 'demo'
-                    ? HelpSection.demoScan
-                    : HelpSection.resultsDisplay,
-                accountId: widget.accountId,
-                accountEmail: widget.accountEmail,
-                platformId: widget.platformId,
-                platformDisplayName: widget.platformDisplayName,
-                leading: [
-                  IconButton(
-                    tooltip: 'Export Results to CSV',
-                    icon: const Icon(Icons.file_download),
-                    onPressed: () => _exportResults(context, scanProvider),
-                  ),
-                  IconButton(
-                    tooltip: 'Search (Ctrl+F)',
-                    icon: const Icon(Icons.search),
-                    onPressed: () {
-                      setState(() {
-                        _showSearch = true;
-                      });
-                      // MV-1 (Sprint 58 Manual Validation): the icon path was
-                      // missing the focus request the Ctrl+F path already had,
-                      // so the user had to click the text box before typing.
-                      // The TextField's own autofocus loses the race against
-                      // this screen's outer Focus(autofocus: true) wrapper --
-                      // an explicit post-frame request is required on BOTH
-                      // open paths.
-                      WidgetsBinding.instance.addPostFrameCallback((_) {
-                        _searchFocusNode.requestFocus();
-                      });
-                    },
-                  ),
-                ],
-              ),
-          ],
-        ),
-        body: SelectionArea(
-          child: Padding(
-            padding: const EdgeInsets.all(16.0),
-            child: Builder(builder: (context) {
-              // Sprint 60 MV (Harold, Android re-validation): on a phone the
-              // fixed header stack (summary card + banners) consumed nearly
-              // the whole height, leaving a ~one-row list viewport ("not
-              // enough room to scroll"). On COMPACT widths the header items
-              // scroll WITH the list (folded into the same ListView), giving
-              // the list the full screen; desktop keeps the fixed header
-              // exactly as before (600px threshold: phones fold, the 1600px
-              // default Windows window never does).
-              final isCompact = MediaQuery.of(context).size.width < 600;
-              final headerItems = <Widget>[
-                _buildSummary(summary, scanProvider, allResults),
-                // F38: Non-blocking re-processing banner
-                if (_isReProcessing) ...[
-                  const SizedBox(height: 8),
-                  _buildReProcessingBanner(),
-                ],
-                const SizedBox(height: 16),
-                // Show filter status if active
-                if (_filter != null ||
-                    _specialFilter != null ||
-                    _selectedFolders.isNotEmpty) ...[
-                  _buildFilterStatus(filteredResults.length, allResults.length),
-                  const SizedBox(height: 8),
-                ],
-                // Sprint 38 F82 (Issue #252): "M of N no-rules addressed"
-                // indicator when there were any no-rule emails to triage.
-                _buildNoRuleProgressFooter(),
-              ];
-              final headerLen = isCompact ? headerItems.length : 0;
-              return Column(
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: [
-                if (!isCompact) ...headerItems,
-                Expanded(
-                  child: RefreshIndicator(
-                    onRefresh: () async {
-                      // Trigger a rebuild to refresh the results display
-                      // Results are already in scan provider, just refresh UI
-                      setState(() {});
-                      // Small delay to show refresh animation
-                      await Future.delayed(const Duration(milliseconds: 300));
-                    },
-                    child: filteredResults.isEmpty
-                        ? ListView(
-                            // Wrap empty state in ListView for pull-to-refresh gesture
-                            children: [
-                              if (isCompact) ...headerItems,
-                              SizedBox(
-                                height:
-                                    MediaQuery.of(context).size.height * 0.4,
-                                // [UPDATED] Testing feedback FB-5: Only show "No Results Yet"
-                                // if no scan has EVER been run for this account
-                                // PR #335 cowork review: this chain predated
-                                // the F166 "No rule" DEFAULT filter, which
-                                // made `_filter != null` true on every idle
-                                // screen -- so never-scanned and found-zero
-                                // states wrongly showed "No Matching Emails".
-                                // Filters only explain an empty list when
-                                // there was something to filter: branch on
-                                // allResults, not on the filter fields.
-                                child: scanProvider.status ==
-                                        ScanStatus.scanning
-                                    ? const ScanStartedEmptyState()
-                                    : allResults.isNotEmpty
-                                        ? const NoMatchingEmailsEmptyState()
-                                        : (_historicalLoaded &&
-                                                !_hasEverScanned)
-                                            ? const NoResultsEmptyState()
-                                            : const ScanCompleteNoEmailsEmptyState(),
-                              ),
-                            ],
-                          )
-                        : ListView.separated(
-                            itemCount: headerLen +
-                                filteredResults.length +
-                                (_providerGroupCount > 0 ? 2 : 0),
-                            // No dividers between the folded-in header items,
-                            // dividers between email rows as before.
-                            separatorBuilder: (_, index) => index < headerLen
-                                ? const SizedBox.shrink()
-                                : const Divider(height: 1),
-                            itemBuilder: (_, index) => index < headerLen
-                                ? headerItems[index]
-                                : _buildGroupedRow(
-                                    filteredResults, index - headerLen),
-                          ),
-                  ),
-                ),
-                // Action buttons at bottom
-                const SizedBox(height: 16),
-                if (widget.historicalScanId != null)
-                  // [FIX] FB-1: When viewing from Scan History, show single back button
-                  SizedBox(
-                    width: double.infinity,
-                    child: ElevatedButton.icon(
-                      onPressed: () {
-                        ScaffoldMessenger.of(context).hideCurrentSnackBar();
-                        Navigator.pop(context);
-                      },
-                      icon: const Icon(Icons.arrow_back),
-                      label: const Text('Back to Scan History'),
+          return KeyEventResult.ignored;
+        },
+        child: Scaffold(
+          appBar: AppBarWithExit(
+            title: _showSearch
+                ? TextField(
+                    controller: _searchController,
+                    focusNode: _searchFocusNode, // Issue 2a: Connect focus node
+                    autofocus: true,
+                    style: const TextStyle(
+                        color: Colors.black), // Issue 2b: Black text
+                    decoration: const InputDecoration(
+                      hintText: 'Search emails...',
+                      hintStyle: TextStyle(
+                          color: Colors.black54), // Issue 2b: Dark gray hint
+                      border: InputBorder.none,
                     ),
+                    onChanged: (value) {
+                      setState(() {
+                        _searchQuery = value;
+                      });
+                    },
                   )
-                else
-                  Row(
-                    children: [
-                      Expanded(
-                        child: ElevatedButton.icon(
-                          onPressed: () {
-                            // Dismiss any showing snackbar before navigating
-                            ScaffoldMessenger.of(context).hideCurrentSnackBar();
-                            // Pop back to Account Selection Screen (past Scan Progress)
-                            Navigator.popUntil(
-                              context,
-                              (route) => route.isFirst,
-                            );
-                          },
-                          icon: const Icon(Icons.home),
-                          label: const Text('Back to Accounts'),
-                        ),
+                : Text(
+                    'Results - ${widget.accountEmail} - ${widget.platformDisplayName}'),
+            // Add explicit back button that returns to account selection
+            // MV-2 (Sprint 58 Manual Validation): close-search icon changed
+            // from Icons.close (X) to Icons.arrow_back -- the X visually
+            // collided with the app-exit X on the opposite end of the AppBar.
+            // Back-arrow is the standard Material convention for leaving an
+            // in-AppBar search mode (Gmail et al.): "go back from search" on
+            // the left edge, matching this screen's own non-search leading
+            // back-arrow semantics (leave the current mode/screen).
+            leading: _showSearch
+                ? IconButton(
+                    icon: const Icon(Icons.arrow_back),
+                    tooltip: 'Close Search',
+                    onPressed: _closeSearch,
+                  )
+                : IconButton(
+                    icon: const Icon(Icons.arrow_back),
+                    tooltip: widget.historicalScanId != null
+                        ? 'Back to Scan History'
+                        : 'Back to Manual Scan',
+                    onPressed: () {
+                      // Dismiss any showing snackbar before navigating
+                      ScaffoldMessenger.of(context).hideCurrentSnackBar();
+                      // F55 (Sprint 33, v3): pop to Manual Scan (ScanProgress).
+                      // ScanProgress subscribes to routeObserver and resets its
+                      // scan provider on didPopNext, so the user lands on a
+                      // clean "Ready to Scan" screen -- no partial results.
+                      Navigator.pop(context);
+                    },
+                  ),
+            // F134 (Sprint 52): canonical order from the ONE shared builder --
+            // Download, Find (screen-specific, leading), then Review No Rule
+            // Items, View Scan History, Accounts, Settings, Help, then the
+            // auto-appended Exit. Exactly Harold's spec for this screen.
+            // Previously this ran Download, Search, No-Rule, History, Accounts,
+            // HELP, Settings -- Help and Settings inverted. Change the order in
+            // StandardAppBarActions, never here.
+            //
+            // The whole block stays gated on !_showSearch: when the search field
+            // is open it takes over the AppBar, so every action is hidden.
+            actions: [
+              if (!_showSearch)
+                ...StandardAppBarActions.build(
+                  context: context,
+                  // Demo scans deep-link to a different help section.
+                  helpSection: widget.platformId == 'demo'
+                      ? HelpSection.demoScan
+                      : HelpSection.resultsDisplay,
+                  accountId: widget.accountId,
+                  accountEmail: widget.accountEmail,
+                  platformId: widget.platformId,
+                  platformDisplayName: widget.platformDisplayName,
+                  leading: [
+                    IconButton(
+                      tooltip: 'Export Results to CSV',
+                      icon: const Icon(Icons.file_download),
+                      onPressed: () => _exportResults(context, scanProvider),
+                    ),
+                    IconButton(
+                      tooltip: 'Search (Ctrl+F)',
+                      icon: const Icon(Icons.search),
+                      onPressed: () {
+                        setState(() {
+                          _showSearch = true;
+                        });
+                        // MV-1 (Sprint 58 Manual Validation): the icon path was
+                        // missing the focus request the Ctrl+F path already had,
+                        // so the user had to click the text box before typing.
+                        // The TextField's own autofocus loses the race against
+                        // this screen's outer Focus(autofocus: true) wrapper --
+                        // an explicit post-frame request is required on BOTH
+                        // open paths.
+                        WidgetsBinding.instance.addPostFrameCallback((_) {
+                          _searchFocusNode.requestFocus();
+                        });
+                      },
+                    ),
+                  ],
+                ),
+            ],
+          ),
+          body: SelectionArea(
+            child: Padding(
+              padding: const EdgeInsets.all(16.0),
+              child: Builder(builder: (context) {
+                // Sprint 60 MV (Harold, Android re-validation): on a phone the
+                // fixed header stack (summary card + banners) consumed nearly
+                // the whole height, leaving a ~one-row list viewport ("not
+                // enough room to scroll"). On COMPACT widths the header items
+                // scroll WITH the list (folded into the same ListView), giving
+                // the list the full screen; desktop keeps the fixed header
+                // exactly as before (600px threshold: phones fold, the 1600px
+                // default Windows window never does).
+                final isCompact = MediaQuery.of(context).size.width < 600;
+                final headerItems = <Widget>[
+                  _buildSummary(summary, scanProvider, allResults),
+                  // F38: Non-blocking re-processing banner
+                  if (_isReProcessing) ...[
+                    const SizedBox(height: 8),
+                    _buildReProcessingBanner(),
+                  ],
+                  const SizedBox(height: 16),
+                  // Show filter status if active
+                  if (_filter != null ||
+                      _specialFilter != null ||
+                      _selectedFolders.isNotEmpty) ...[
+                    _buildFilterStatus(filteredResults.length, allResults.length),
+                    const SizedBox(height: 8),
+                  ],
+                  // Sprint 38 F82 (Issue #252): "M of N no-rules addressed"
+                  // indicator when there were any no-rule emails to triage.
+                  _buildNoRuleProgressFooter(),
+                ];
+                final headerLen = isCompact ? headerItems.length : 0;
+                return Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  if (!isCompact) ...headerItems,
+                  Expanded(
+                    child: RefreshIndicator(
+                      onRefresh: () async {
+                        // Trigger a rebuild to refresh the results display
+                        // Results are already in scan provider, just refresh UI
+                        setState(() {});
+                        // Small delay to show refresh animation
+                        await Future.delayed(const Duration(milliseconds: 300));
+                      },
+                      child: filteredResults.isEmpty
+                          ? ListView(
+                              // Wrap empty state in ListView for pull-to-refresh gesture
+                              children: [
+                                if (isCompact) ...headerItems,
+                                SizedBox(
+                                  height:
+                                      MediaQuery.of(context).size.height * 0.4,
+                                  // [UPDATED] Testing feedback FB-5: Only show "No Results Yet"
+                                  // if no scan has EVER been run for this account
+                                  // PR #335 cowork review: this chain predated
+                                  // the F166 "No rule" DEFAULT filter, which
+                                  // made `_filter != null` true on every idle
+                                  // screen -- so never-scanned and found-zero
+                                  // states wrongly showed "No Matching Emails".
+                                  // Filters only explain an empty list when
+                                  // there was something to filter: branch on
+                                  // allResults, not on the filter fields.
+                                  child: scanProvider.status ==
+                                          ScanStatus.scanning
+                                      ? const ScanStartedEmptyState()
+                                      : allResults.isNotEmpty
+                                          ? const NoMatchingEmailsEmptyState()
+                                          : (_historicalLoaded &&
+                                                  !_hasEverScanned)
+                                              ? const NoResultsEmptyState()
+                                              // F203: pass the skip count so
+                                              // the state can distinguish
+                                              // "fetched nothing" from
+                                              // "fetched, all already filed".
+                                              : ScanCompleteNoEmailsEmptyState(
+                                                  skippedAlreadyFiled:
+                                                      scanProvider
+                                                          .skippedAlreadyFiledCount,
+                                                ),
+                                ),
+                              ],
+                            )
+                          : ListView.separated(
+                              itemCount: headerLen +
+                                  filteredResults.length +
+                                  (_providerGroupCount > 0 ? 2 : 0),
+                              // No dividers between the folded-in header items,
+                              // dividers between email rows as before.
+                              separatorBuilder: (_, index) => index < headerLen
+                                  ? const SizedBox.shrink()
+                                  : const Divider(height: 1),
+                              itemBuilder: (_, index) => index < headerLen
+                                  ? headerItems[index]
+                                  : _buildGroupedRow(
+                                      filteredResults, index - headerLen),
+                            ),
+                    ),
+                  ),
+                  // Action buttons at bottom
+                  const SizedBox(height: 16),
+                  if (widget.historicalScanId != null)
+                    // [FIX] FB-1: When viewing from Scan History, show single back button
+                    SizedBox(
+                      width: double.infinity,
+                      child: ElevatedButton.icon(
+                        onPressed: () {
+                          ScaffoldMessenger.of(context).hideCurrentSnackBar();
+                          Navigator.pop(context);
+                        },
+                        icon: const Icon(Icons.arrow_back),
+                        label: const Text('Back to Scan History'),
                       ),
-                      const SizedBox(width: 12),
-                      Expanded(
-                        child: ElevatedButton.icon(
-                          onPressed: () {
-                            // Testing feedback (Sprint 57): "Scan Again"
-                            // used to return to the "Ready to Scan" screen,
-                            // requiring a second tap on "Start Live Scan".
-                            // Trigger the Live Scan directly instead --
-                            // useReplacement: true so repeated taps replace
-                            // the current Results screen rather than
-                            // stacking a new one on the Navigator each time.
-                            final ruleProvider = Provider.of<RuleSetProvider>(
+                    )
+                  else
+                    Row(
+                      children: [
+                        Expanded(
+                          child: ElevatedButton.icon(
+                            onPressed: () {
+                              // Dismiss any showing snackbar before navigating
+                              ScaffoldMessenger.of(context).hideCurrentSnackBar();
+                              // Pop back to Account Selection Screen (past Scan Progress)
+                              Navigator.popUntil(
                                 context,
-                                listen: false);
-                            startRealScan(
-                              context: context,
-                              scanProvider: scanProvider,
-                              ruleProvider: ruleProvider,
-                              platformId: widget.platformId,
-                              platformDisplayName: widget.platformDisplayName,
-                              accountId: widget.accountId,
-                              accountEmail: widget.accountEmail,
-                              useReplacement: true,
-                            );
-                          },
-                          icon: const Icon(Icons.refresh),
-                          label: const Text('Scan Again'),
-                          style: ElevatedButton.styleFrom(
-                            backgroundColor: Colors.green,
-                            foregroundColor: Colors.white,
+                                (route) => route.isFirst,
+                              );
+                            },
+                            icon: const Icon(Icons.home),
+                            label: const Text('Back to Accounts'),
                           ),
                         ),
-                      ),
-                    ],
-                  ),
-              ],
-            );
-            }),
-          ),
-        ), // Close SelectionArea
+                        const SizedBox(width: 12),
+                        Expanded(
+                          child: ElevatedButton.icon(
+                            onPressed: () {
+                              // Testing feedback (Sprint 57): "Scan Again"
+                              // used to return to the "Ready to Scan" screen,
+                              // requiring a second tap on "Start Live Scan".
+                              // Trigger the Live Scan directly instead --
+                              // useReplacement: true so repeated taps replace
+                              // the current Results screen rather than
+                              // stacking a new one on the Navigator each time.
+                              final ruleProvider = Provider.of<RuleSetProvider>(
+                                  context,
+                                  listen: false);
+                              startRealScan(
+                                context: context,
+                                scanProvider: scanProvider,
+                                ruleProvider: ruleProvider,
+                                platformId: widget.platformId,
+                                platformDisplayName: widget.platformDisplayName,
+                                accountId: widget.accountId,
+                                accountEmail: widget.accountEmail,
+                                useReplacement: true,
+                              );
+                            },
+                            icon: const Icon(Icons.refresh),
+                            label: const Text('Scan Again'),
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: Colors.green,
+                              foregroundColor: Colors.white,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                ],
+              );
+              }),
+            ),
+          ), // Close SelectionArea
+        ),
       ),
-    ); // Close Focus widget for Issue 2: Ctrl+F shortcut
+    );
   }
 
   Widget _buildFilterStatus(int filteredCount, int totalCount) {
@@ -1130,6 +1157,37 @@ class _ResultsDisplayScreenState extends State<ResultsDisplayScreen> {
                         ? 'Safe (not processed)'
                         : 'Safe',
                   ),
+                  // F203 (Sprint 69): emails that were FETCHED and then
+                  // skipped because they already sit in the safe-sender
+                  // folder. Correct behaviour -- "do not count, do not
+                  // display, do not process" -- but it was invisible, so a
+                  // scan that fetched 40 and skipped all 40 reported
+                  // "Found 40, evaluated 0" with no way to learn why.
+                  //
+                  // Shown only when non-zero and only for a LIVE scan:
+                  // historical rows carry no skip count, and rendering a
+                  // hard zero would read like a bug (the F151c lesson that
+                  // removed the always-zero "Moved" chip).
+                  if (!showingHistorical &&
+                      scanProvider.skippedAlreadyFiledCount > 0)
+                    Tooltip(
+                      message:
+                          'Safe senders already in your safe sender folder. '
+                          'They were found, but needed no action, so they are '
+                          'not processed or listed.',
+                      child: Chip(
+                        label: Text(
+                          '${scanProvider.skippedAlreadyFiledCount} already filed',
+                        ),
+                        backgroundColor:
+                            Theme.of(context).colorScheme.secondaryContainer,
+                        labelStyle: TextStyle(
+                          color: Theme.of(context)
+                              .colorScheme
+                              .onSecondaryContainer,
+                        ),
+                      ),
+                    ),
                   if (scanProvider.safeSenderDedupCount > 0)
                     Tooltip(
                       message:

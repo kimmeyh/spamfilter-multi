@@ -19,6 +19,7 @@ import '../../core/storage/safe_sender_database_store.dart';
 import '../../core/storage/unmatched_email_store.dart';
 import 'rule_quick_add_screen.dart';
 import 'safe_sender_quick_add_screen.dart';
+import '../widgets/system_inset_wrapper.dart'; // F209 (Sprint 69)
 
 /// [NEW] SPRINT 4: Detailed view for reviewing individual unmatched emails
 /// [NEW] SPRINT 6: Added quick-add screen integration
@@ -605,54 +606,56 @@ class _EmailDetailViewState extends State<EmailDetailView>
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(
-        title: const Text('Email Details'),
-        elevation: 0,
-        bottom: TabBar(
-          controller: _tabController,
-          tabs: [
-            const Tab(text: 'Summary'),
-            const Tab(text: 'Body'),
-            Tab(
-              child: Row(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  const Text('Domains'),
-                  if (_extractedDomains.domains.isNotEmpty) ...[
-                    const SizedBox(width: 4),
-                    Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-                      decoration: BoxDecoration(
-                        color: Theme.of(context).colorScheme.primary,
-                        borderRadius: BorderRadius.circular(10),
+    return SystemInsetWrapper(
+      child: Scaffold(
+        appBar: AppBar(
+          title: const Text('Email Details'),
+          elevation: 0,
+          bottom: TabBar(
+            controller: _tabController,
+            tabs: [
+              const Tab(text: 'Summary'),
+              const Tab(text: 'Body'),
+              Tab(
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    const Text('Domains'),
+                    if (_extractedDomains.domains.isNotEmpty) ...[
+                      const SizedBox(width: 4),
+                      Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                        decoration: BoxDecoration(
+                          color: Theme.of(context).colorScheme.primary,
+                          borderRadius: BorderRadius.circular(10),
+                        ),
+                        child: Text(
+                          '${_extractedDomains.domains.length}',
+                          style: const TextStyle(fontSize: 12, color: Colors.white),
+                        ),
                       ),
-                      child: Text(
-                        '${_extractedDomains.domains.length}',
-                        style: const TextStyle(fontSize: 12, color: Colors.white),
-                      ),
-                    ),
+                    ],
                   ],
+                ),
+              ),
+            ],
+          ),
+        ),
+        body: Column(
+          children: [
+            Expanded(
+              child: TabBarView(
+                controller: _tabController,
+                children: [
+                  _buildSummaryTab(),
+                  _buildBodyTab(),
+                  _buildDomainsTab(),
                 ],
               ),
             ),
+            _buildActionButtons(),
           ],
         ),
-      ),
-      body: Column(
-        children: [
-          Expanded(
-            child: TabBarView(
-              controller: _tabController,
-              children: [
-                _buildSummaryTab(),
-                _buildBodyTab(),
-                _buildDomainsTab(),
-              ],
-            ),
-          ),
-          _buildActionButtons(),
-        ],
       ),
     );
   }

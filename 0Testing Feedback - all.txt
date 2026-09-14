@@ -7,6 +7,52 @@ Manual Validation complete
 Sprint 6n Manual Validation Feedback 
 
 ---------------------------------------------------------------------------------------------------------
+Sprint 69 Manual Validation Feedback 
+
+
+ 2. F210 — dark mode on Windows, now (~15 min)
+
+  Nine places. Confirm each is readable:
+
+  - Export a scan result → Export Successful dialog: the file path, and the hint beneath it
+good
+  - Delete a rule → the rule name in the confirmation
+good
+  - Delete a safe sender → the pattern in the confirmation
+good
+  - Import YAML → the file path in the confirmation
+good
+  - Rule tester with plain-text input → the generated regex line
+yes, but see image as "Examples:...", "Enter a phrase...", justin\ timberlake", Type: "Body Phrase", and "Phrase:..." are too small. Can they match the size of "Block emails whose body..." (in the same image)
+  - Safe Sender quick-add → the regex pattern block
+same font size concern as Rule tester (see image)
+  - A sign-in failure → Show technical details
+can't test now, add test to next sprint validation testing
+  - Gmail manual token screen → the red security warning
+can't test now, add test to next sprint validation testing
+  - An account with missing credentials → the error card on the account list
+good
+
+  3. F203 — Windows (~10 min)
+
+  Run a scan where every match is a safe sender already sitting in your safe-sender folder. Expect "Nothing Needed Action" naming the count, plus an "N already filed" chip
+  — not "No emails were found."
+Good
+  4. Windows no-regression (~5 min)
+Good
+
+  The layout should look exactly as before. F209 is a deliberate no-op on Windows.
+
+  5. F208 + F209 — the S24+ (needs an Android build; say the word and I'll start one)
+These have to wait until live on Google Play (after next update)
+
+  - F208 round trip: export rules to Documents → import that exact file back → the rule count matches. Then try importing a .csv and confirm it refuses in plain language,
+    not a PlatformException.
+  - F209 sweep: walk the screens, confirm nothing sits under the three nav buttons. The Import/Export failure message is the one that was cut off mid-sentence.
+  - Two additions from the code review — these are specifically what my first F209 attempt would have broken:
+    - Open an email's action popup (the "Block Subject" one you found clipped in Sprint 62)
+    - Open any text-entry screen with the keyboard up (rule create, safe-sender add, account setup)
+---------------------------------------------------------------------------------------------------------
 Sprint 68 Manual Validation Feedback 
 Recommended Manual Validation steps
 

@@ -14,6 +14,7 @@ import '../widgets/email_auth_badge.dart';
 import 'help_screen.dart';
 import 'rule_test_screen.dart';
 import '../widgets/standard_app_bar_actions.dart';
+import '../widgets/system_inset_wrapper.dart'; // F209 (Sprint 69)
 
 enum RuleActionType { delete, move }
 enum ConditionBucket { fromHeader, subject, body, bodyUrl }
@@ -422,78 +423,80 @@ class _RuleQuickAddScreenState extends State<RuleQuickAddScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(
-        title: const Text('Create Auto-Delete Rule'),
-        elevation: 0,
-        // F134 (Sprint 52): canonical order via the ONE shared builder -- Help
-        // was FIRST, ahead of the screen-specific Test action; it is now LAST.
-        actions: StandardAppBarActions.build(
-          context: context,
-          helpSection: HelpSection.ruleQuickAdd,
-          includeNoRuleReview: false,
-          includeScanHistory: false,
-          includeAccounts: false,
-          includeSettings: false,
-          leading: [
-          IconButton(
-            icon: const Icon(Icons.science),
-            tooltip: 'Test pattern against sample emails',
-            onPressed: () {
-              // Determine the active pattern and condition type
-              String? pattern;
-              String conditionType = 'from';
-              if (_selectedBuckets[ConditionBucket.fromHeader] == true &&
-                  _fromPatternController.text.isNotEmpty) {
-                pattern = _fromPatternController.text;
-                conditionType = 'header';
-              } else if (_selectedBuckets[ConditionBucket.subject] == true &&
-                  _subjectPatternController.text.isNotEmpty) {
-                pattern = _subjectPatternController.text;
-                conditionType = 'subject';
-              } else if (_selectedBuckets[ConditionBucket.body] == true &&
-                  _bodyPatternController.text.isNotEmpty) {
-                pattern = _bodyPatternController.text;
-                conditionType = 'body';
-              }
-              Navigator.push(
-                context,
-                MaterialPageRoute(
-                  builder: (_) => RuleTestScreen(
-                    initialPattern: pattern,
-                    initialConditionType: conditionType,
+    return SystemInsetWrapper(
+      child: Scaffold(
+        appBar: AppBar(
+          title: const Text('Create Auto-Delete Rule'),
+          elevation: 0,
+          // F134 (Sprint 52): canonical order via the ONE shared builder -- Help
+          // was FIRST, ahead of the screen-specific Test action; it is now LAST.
+          actions: StandardAppBarActions.build(
+            context: context,
+            helpSection: HelpSection.ruleQuickAdd,
+            includeNoRuleReview: false,
+            includeScanHistory: false,
+            includeAccounts: false,
+            includeSettings: false,
+            leading: [
+            IconButton(
+              icon: const Icon(Icons.science),
+              tooltip: 'Test pattern against sample emails',
+              onPressed: () {
+                // Determine the active pattern and condition type
+                String? pattern;
+                String conditionType = 'from';
+                if (_selectedBuckets[ConditionBucket.fromHeader] == true &&
+                    _fromPatternController.text.isNotEmpty) {
+                  pattern = _fromPatternController.text;
+                  conditionType = 'header';
+                } else if (_selectedBuckets[ConditionBucket.subject] == true &&
+                    _subjectPatternController.text.isNotEmpty) {
+                  pattern = _subjectPatternController.text;
+                  conditionType = 'subject';
+                } else if (_selectedBuckets[ConditionBucket.body] == true &&
+                    _bodyPatternController.text.isNotEmpty) {
+                  pattern = _bodyPatternController.text;
+                  conditionType = 'body';
+                }
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (_) => RuleTestScreen(
+                      initialPattern: pattern,
+                      initialConditionType: conditionType,
+                    ),
                   ),
-                ),
-              );
-            },
-          ),
-          ],
-        ),
-      ),
-      body: Form(
-        key: _formKey,
-        child: SelectionArea(
-          child: SingleChildScrollView(
-          padding: const EdgeInsets.all(16),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              _buildEmailContextCard(),
-              const SizedBox(height: 24),
-              _buildRuleNameField(),
-              const SizedBox(height: 24),
-              _buildConditionBuckets(),
-              const SizedBox(height: 24),
-              _buildConditionLogic(),
-              const SizedBox(height: 24),
-              _buildActionSelection(),
-              const SizedBox(height: 24),
-              _buildExecutionOrderField(),
-              const SizedBox(height: 32),
-              _buildActionButtons(),
+                );
+              },
+            ),
             ],
           ),
         ),
+        body: Form(
+          key: _formKey,
+          child: SelectionArea(
+            child: SingleChildScrollView(
+            padding: const EdgeInsets.all(16),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                _buildEmailContextCard(),
+                const SizedBox(height: 24),
+                _buildRuleNameField(),
+                const SizedBox(height: 24),
+                _buildConditionBuckets(),
+                const SizedBox(height: 24),
+                _buildConditionLogic(),
+                const SizedBox(height: 24),
+                _buildActionSelection(),
+                const SizedBox(height: 24),
+                _buildExecutionOrderField(),
+                const SizedBox(height: 32),
+                _buildActionButtons(),
+              ],
+            ),
+          ),
+          ),
         ),
       ),
     );

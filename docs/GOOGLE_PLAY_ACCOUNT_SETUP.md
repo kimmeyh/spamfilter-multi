@@ -521,6 +521,39 @@ than debugging it later.
 - Opting out breaks the streak. Re-joining restarts that tester's 14 days from ZERO, which is
   why the target is 14-16 testers rather than exactly 12.
 
+## Scan mode by environment (Harold, 2026-09-10) -- READ THIS BEFORE INTERPRETING SCAN EVIDENCE
+
+Deliberate configuration. The same app behaves differently per environment BY DESIGN, so a
+difference between two screens is usually this, not a defect.
+
+| Environment | Scan mode | Background scanning |
+|---|---|---|
+| Windows DEV | **Read-only**, all accounts | **OFF** |
+| Windows Prod | **Read-only**, all accounts | **OFF** |
+| Android emulator | Read-only (planned, mirrors Windows) | OFF (planned) |
+| **Android CLOSED TESTING (S24+)** | **LIVE -- Safe Senders AND all other rules** | **ON, every 15 min, EVERY account** |
+
+**The closed-test Android app is the ONLY build that actually moves or deletes mail.** Every
+other environment observes without acting.
+
+Consequences when reading a screenshot, a scan history row, or a live-scan log:
+
+- Windows showing `Deleted: 0 / Moved: 0` while rules matched is **correct** -- read-only logs
+  the action without executing it. Not a rule failure.
+- Windows scan history with no background entries is **correct** -- background is off there.
+  Not a scheduler bug.
+- The same account WILL show different counts on Windows and on the S24+, because the phone
+  acts on mail and Windows does not. That divergence is the design.
+- Mail moved or deleted on the S24+ is expected. The same on Windows would be a real defect.
+
+**Why**: the closed test needs real tester-visible behaviour to be worth running, while the
+development machines must never touch Harold's live mailboxes.
+
+**This is the state AS OF 2026-09-10, not a historical invariant.** Windows scan history still
+carries Background runs that deleted mail (dated Sep 08) and one deliberate `safeSendersAndRules`
+live run on Yahoo (2026-09-09 20:13, confirmed as a test). Both predate the configuration above.
+Check a row's DATE before reading deletions on Windows as a contradiction.
+
 ## Closed-test tester roster and the 14-day clock (GP-17, Sprint 65)
 
 **Why this section exists**: the 12-tester / 14-continuous-day closed test is the single longest
@@ -570,8 +603,23 @@ Record ROLES and dates only. **No names, no email addresses** -- this file is in
 | 13 | (pending, margin) | | | | |
 | 14 | (pending, margin) | | | | |
 
-**Confirmed opt-ins**: 0 of 12 required (target 14-16)
-**Latest confirmed opt-in date**: (none yet)
+**On the official Play tester list**: **8 of 12** as of 2026-09-10 (Harold added 3 that day,
+up from 3). FOUR SHORT.
+
+**Confirmed opt-ins**: UNKNOWN -- not yet reconciled against the console.
+
+**These are two different numbers and only the second one gates production access.** Being on
+the tester list makes someone ELIGIBLE; the 14-day clock starts for that person when they
+actually accept the invitation and install. A list of 8 could be 8 opt-ins or 2. Check
+Play Console -> Closed testing -> Testers, and fill the table above from the console rather
+than from the invite list.
+
+**Cheapest next move, if the two numbers differ**: chase the outstanding opt-ins before
+recruiting new names. An invited-but-not-installed tester is already found, already willing,
+and one reminder away from counting -- whereas a new name has to be found, asked, and then
+still opt in.
+
+**Latest confirmed opt-in date**: (unknown -- see above)
 **Earliest valid production-access application date**: (latest opt-in date) + 14 days -- compute
 from the LAST tester to opt in, not the first. One late joiner moves this date.
 
