@@ -145,6 +145,7 @@ These documents MUST be created/updated during each sprint:
 
 **Mandatory sprint completion updates (Phase 7.7 continued)**:
   - [ ] CHANGELOG.md updated (all sprint entries present, including any Step 7 improvements)
+  - [ ] **RE-DERIVE the per-store release notes** (Sprint 69 IMP-5). The F190 bump happens at Phase 3.7.0b, so the F196 gate makes release notes due at PLAN APPROVAL -- they necessarily describe a sprint that has not happened yet. Sprint 69's 0.15.1 notes were written after task 2 of 5 and omitted F203 and F209 entirely. Re-derive BOTH `docs/store-assets/RELEASE_NOTES_<version>_windows.md` and `_play.md` from the finished CHANGELOG per STORE_RELEASE_PROCESS.md Step 1b, and drop the PROVISIONAL marker. Then re-run `flutter test test/policy/release_notes_test.dart` -- the Play file has a MEASURED 500-character limit and adding the rest of the sprint is exactly what pushes it over.
   - [ ] ALL_SPRINTS_MASTER_PLAN.md updated (per Maintenance Guide rules) -- includes Category 14 backlog additions and Step 6 backlog dispositions
   - [ ] Next Sprint Plan stub created/updated with Category 13 carry-ins
   - [ ] `docs/sprints/SPRINT_N_RETROSPECTIVE.md` created/finalized (MANDATORY -- with all 14 categories x 4 roles filled + "Improvement Decisions" section from Step 6)
@@ -172,6 +173,14 @@ refinement step at all. The cycle below is the real sequence. Authoritative defi
 
 - [ ] **8.1 `develop` merged to `main`** (Harold). **Does NOT block the next step** -- proceed to 8.2
       while it happens. It IS a hard precondition of 8.3 (the MSIX build).
+- [ ] **8.3.0 PULL THE PROD WORKTREE to current `main` BEFORE building the MSIX** -- `cd
+      D:\Data\Harold\github\spamfilter-multi-prod; git checkout main; git pull origin main`.
+      It is a SEPARATE checkout that nothing in the sprint updates, so it is stale by default
+      EVERY release. Found behind by 33 / 52 / 47 commits in Sprints 60 / 66 / 68. A stale
+      worktree BUILDS SUCCESSFULLY and packages the previous sprint's code under the new
+      version number -- and every Step 4 check still passes, because they verify the build is
+      a real prod build, not that it came from the right commit. See
+      `STORE_RELEASE_PROCESS.md` Step 3.0.
 - [ ] **8.2 Backlog Refinement pass 1 -- COMPLETENESS SWEEP**: walk the close-out items and confirm
       each was actually captured and completed. **This pass does NOT select scope.**
 - [ ] **8.3 Microsoft Store release** -- follow `docs/STORE_RELEASE_PROCESS.md` in full (it is the

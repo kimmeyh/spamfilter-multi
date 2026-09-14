@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import '../../adapters/storage/secure_credentials_store.dart';
 import 'account_selection_screen.dart';
 import 'no_rule_review_screen.dart';
+import '../widgets/system_inset_wrapper.dart'; // F209 (Sprint 69)
 
 /// Main navigation entry point, shared across every platform (F142, Sprint
 /// 57).
@@ -82,8 +83,10 @@ class _AppDefaultScreenState extends State<_AppDefaultScreen> {
 @visibleForTesting
 Widget appDefaultScreenFor({required bool? hasAccounts}) {
   if (hasAccounts == null) {
-    return const Scaffold(
-      body: Center(child: CircularProgressIndicator()),
+    return SystemInsetWrapper(
+      child: const Scaffold(
+        body: Center(child: CircularProgressIndicator()),
+      ),
     );
   }
   return hasAccounts

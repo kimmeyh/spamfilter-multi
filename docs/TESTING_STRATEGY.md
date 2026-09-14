@@ -966,6 +966,94 @@ test('should fetch emails', () async {
 
 ---
 
+## Source-text gates: prove the gate FAILS, not only that it passes
+
+**A gate that is green because nothing matched looks identical to one that is green because
+nothing is wrong.** Every source-text policy gate must carry a self-check that pins the exact
+shape it exists to catch, and that self-check must include at least one case drawn from the REAL
+tree rather than an idealised snippet.
+
+**Why this rule exists (Sprint 69, F210).** The new contrast gate passed its mutation test and was
+still blind to its own defect in the commonest layout in the codebase:
+
+```dart
+Text('Exported to:', style: TextStyle(fontSize: 12)),   // CLOSED, harmless
+const SizedBox(height: 8),
+Container(                                               // depth -> -1 here
+  decoration: BoxDecoration(color: Colors.grey[200]),    // a REAL surface
+  child: SelectableText(path,
+    style: TextStyle(fontSize: 12, fontFamily: 'monospace')),  // no colour
+)
+```
+
+`insideMultiLineTextStyle` returned true -- so the surface was skipped and the violation never
+reported -- because bracket depth goes negative on the `Container(` as readily as on a
+`TextStyle(`. The identical function had shipped in the F197 gate a sprint earlier, so the flaw
+was reviewed, merged, and wrong twice.
+
+**What the self-check must contain:**
+
+1. The defect shape, asserted to be DETECTED.
+2. The nearest CORRECT shape, asserted NOT to be detected -- the false positive that would make
+   the gate block legitimate work.
+3. At least one shape taken from the real tree, formatting included. `dart format` wraps
+   arguments onto their own lines, and both F197 and F210 were defeated by exactly that.
+
+Mutation-verifying the FIX is necessary and not sufficient: it proves the gate notices one
+instance, not that its matcher is sound.
+
+## A source-text gate must read CODE, not comments
+
+When a gate searches Dart source for a token, strip `//` comments first. **A mention is not a
+use.**
+
+**Why (PR #410 review, Sprint 69).** The F209 wiring gate asked
+`source.contains('SystemInsetWrapper')`. A screen whose only mention was the explanatory comment
+above its own build method --
+
+```dart
+// F209: SystemInsetWrapper goes OUTSIDE PopScope so the inset applies ...
+return PopScope(
+  child: Scaffold(   // <- no wrapper anywhere
+```
+
+-- satisfied the gate completely. The mutation test that should have caught this ALSO passed,
+because removing the widget left the comment behind, so the token was still present. The gate was
+verifying its own documentation.
+
+This is the same failure the F193 evidence gate was built to avoid: it deliberately rejects prose
+that merely says "5.1.1" and requires a structured marker instead. The lesson transfers to every
+source-text gate.
+
+**Two rules:**
+
+1. **Strip comments before matching.** One helper, applied to both the scope filter and the
+   assertion -- a comment containing `Scaffold(` is not a Scaffold either.
+2. **Match a CONSTRUCTION, not a name.** `SystemInsetWrapper(` with the parenthesis proves the
+   constructor is called; the bare identifier proves only that someone typed it.
+
+**Known remaining exposure, recorded rather than silently patched**:
+`appbar_action_order_test.dart:138,153` matches `includeManualScan: false` against unstripped
+source. Not exploitable today -- no comment in the tree contains that string -- but it is the same
+shape. Gates reading YAML, JSON or asset files (`msix_config`, `play_listing_assets`,
+`app_content_declarations`, `tester_instructions`) are lower risk, since their inputs are not
+Dart and a stray token in a comment is far less likely.
+
+## Heuristic source walks terminate on DEPTH, never on a line count
+
+Any walk over source text looking for an enclosing construct must terminate when bracket depth
+resolves, not after N lines.
+
+**Why (Sprint 69).** Three walks in the contrast gate used fixed windows -- 4, 6 and 12 lines --
+and all three were one argument away from a wrong answer. A five-argument wrapped `Icon(` stepped
+past the 4-line window and had its tint read as a surface; a `TextStyle` declaring its colour on
+the thirteenth line was reported as colourless. Both are false positives, and a gate that blocks
+correct work trains bypass, which is worse than no gate.
+
+**The correct shape**: walk outward tracking depth, and let the line that opened the bracket you
+are inside DECIDE. Presence of a token anywhere in a window proves nothing about nesting.
+
+
 ## Mutation-test locks (Sprint 65)
 
 Mutation verification requires deliberately breaking a tracked file to prove a test goes

@@ -143,9 +143,15 @@ class _SafeSenderAuthWarningDialogState
                     width: double.infinity,
                     padding: const EdgeInsets.all(8),
                     decoration: BoxDecoration(
-                      color: Colors.grey.shade100,
+                      // F210: was Colors.grey.shade100 under a colourless
+                      // TextStyle -- the raw auth error was unreadable in dark
+                      // mode, which is the one thing this panel exists to show.
+                      color:
+                          Theme.of(context).colorScheme.surfaceContainerHighest,
                       borderRadius: BorderRadius.circular(4),
-                      border: Border.all(color: Colors.grey.shade300),
+                      border: Border.all(
+                        color: Theme.of(context).colorScheme.outlineVariant,
+                      ),
                     ),
                     child: SelectableText(
                       auth.raw,

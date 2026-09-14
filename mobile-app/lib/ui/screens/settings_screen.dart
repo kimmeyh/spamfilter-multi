@@ -34,6 +34,7 @@ import 'scan_history_screen.dart';
 import 'rules_management_screen.dart';
 import 'safe_senders_management_screen.dart';
 import 'yaml_import_export_screen.dart';
+import '../widgets/system_inset_wrapper.dart'; // F209 (Sprint 69)
 
 /// Settings screen for app-wide configuration
 ///
@@ -531,68 +532,70 @@ class _SettingsScreenState extends State<SettingsScreen> with SingleTickerProvid
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBarWithExit(
-        title: const Text('Settings'),
-        // F55 (Sprint 33, v3): icon order --
-        // History, Accounts, Help, [X auto]. Help deep-links to the section
-        // matching the currently visible tab.
-        // F134 (Sprint 52): canonical order from the ONE shared builder --
-        // Review No Rule Items, View Scan History, Accounts, Settings, Help,
-        // then the auto-appended Exit. Previously this screen ran
-        // No-Rule / History / Accounts / HELP, with Help third-from-last
-        // instead of last. Change the order in StandardAppBarActions, not here.
-        //
-        // includeSettings: false -- this IS the Settings screen; a
-        // self-referential entry point would be noise (the same reason the
-        // No-Rule screen suppresses its own Review-No-Rule icon).
-        //
-        // Help deep-links to the section matching the VISIBLE TAB, so the
-        // helpSection is computed per-build rather than fixed (F54, Sprint 33).
-        actions: StandardAppBarActions.build(
-          context: context,
-          helpSection: _helpSectionForActiveTab(),
-          // NULLABLE field, not the throwing `_requireAccountId` getter (PR #292
-          // review). The AppBar is chrome shared by ALL FOUR tabs, including
-          // the cross-account General tab, so it builds before any account is
-          // resolved -- which is the entire point of R-10. Reading the getter
-          // here threw `StateError` on the FIRST frame of the no-account path,
-          // making the screen an unrecoverable red box: the tab listener that
-          // resolves an account lazily could never fire, because the user could
-          // never see a tab to tap.
+    return SystemInsetWrapper(
+      child: Scaffold(
+        appBar: AppBarWithExit(
+          title: const Text('Settings'),
+          // F55 (Sprint 33, v3): icon order --
+          // History, Accounts, Help, [X auto]. Help deep-links to the section
+          // matching the currently visible tab.
+          // F134 (Sprint 52): canonical order from the ONE shared builder --
+          // Review No Rule Items, View Scan History, Accounts, Settings, Help,
+          // then the auto-appended Exit. Previously this screen ran
+          // No-Rule / History / Accounts / HELP, with Help third-from-last
+          // instead of last. Change the order in StandardAppBarActions, not here.
           //
-          // The builder already treats a null accountId as "omit the
-          // account-scoped icons" -- that is its documented contract -- so
-          // passing the nullable field degrades correctly instead of crashing.
-          accountId: _resolvedAccountId,
-          includeSettings: false,
-          // Unconditional: _navigateToScanHistory is itself null-safe now
-          // (pre-filters to the resolved account when one exists, opens
-          // cross-account otherwise), so the same handler serves both states.
-          // The in-body View Scan History buttons on the tabs use it too.
-          onScanHistory: _navigateToScanHistory,
+          // includeSettings: false -- this IS the Settings screen; a
+          // self-referential entry point would be noise (the same reason the
+          // No-Rule screen suppresses its own Review-No-Rule icon).
+          //
+          // Help deep-links to the section matching the VISIBLE TAB, so the
+          // helpSection is computed per-build rather than fixed (F54, Sprint 33).
+          actions: StandardAppBarActions.build(
+            context: context,
+            helpSection: _helpSectionForActiveTab(),
+            // NULLABLE field, not the throwing `_requireAccountId` getter (PR #292
+            // review). The AppBar is chrome shared by ALL FOUR tabs, including
+            // the cross-account General tab, so it builds before any account is
+            // resolved -- which is the entire point of R-10. Reading the getter
+            // here threw `StateError` on the FIRST frame of the no-account path,
+            // making the screen an unrecoverable red box: the tab listener that
+            // resolves an account lazily could never fire, because the user could
+            // never see a tab to tap.
+            //
+            // The builder already treats a null accountId as "omit the
+            // account-scoped icons" -- that is its documented contract -- so
+            // passing the nullable field degrades correctly instead of crashing.
+            accountId: _resolvedAccountId,
+            includeSettings: false,
+            // Unconditional: _navigateToScanHistory is itself null-safe now
+            // (pre-filters to the resolved account when one exists, opens
+            // cross-account otherwise), so the same handler serves both states.
+            // The in-body View Scan History buttons on the tabs use it too.
+            onScanHistory: _navigateToScanHistory,
+          ),
+          bottom: TabBar(
+            controller: _tabController,
+            tabs: const [
+              Tab(text: 'General'),
+              Tab(text: 'Account'),
+              Tab(text: 'Manual Scan'),
+              Tab(text: 'Background'),
+            ],
+          ),
         ),
-        bottom: TabBar(
-          controller: _tabController,
-          tabs: const [
-            Tab(text: 'General'),
-            Tab(text: 'Account'),
-            Tab(text: 'Manual Scan'),
-            Tab(text: 'Background'),
-          ],
-        ),
+        body: _isLoading
+            ? const Center(child: CircularProgressIndicator())
+            : TabBarView(
+                controller: _tabController,
+                children: [
+                  _buildGeneralTab(),
+                  _buildAccountTab(),
+                  _buildManualScanTab(),
+                  _buildBackgroundScanTab(),
+                ],
+              ),
       ),
-      body: _isLoading
-          ? const Center(child: CircularProgressIndicator())
-          : TabBarView(
-              controller: _tabController,
-              children: [
-                _buildGeneralTab(),
-                _buildAccountTab(),
-                _buildManualScanTab(),
-                _buildBackgroundScanTab(),
-              ],
-            ),
     );
   }
 

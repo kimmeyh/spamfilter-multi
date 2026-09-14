@@ -29,6 +29,7 @@ import '../../core/storage/rule_database_store.dart';
 import '../../core/utils/manual_rule_pattern_generator.dart';
 import '../utils/accessibility_helper.dart';
 import 'manual_rule_create_screen.dart' show ManualRuleType;
+import '../widgets/system_inset_wrapper.dart'; // F209 (Sprint 69)
 
 /// Screen for editing an existing block rule.
 class RuleEditScreen extends StatefulWidget {
@@ -514,65 +515,67 @@ class _RuleEditScreenState extends State<RuleEditScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(
-        title: Semantics(
-          header: true,
-          child: const Text('Edit Rule'),
+    return SystemInsetWrapper(
+      child: Scaffold(
+        appBar: AppBar(
+          title: Semantics(
+            header: true,
+            child: const Text('Edit Rule'),
+          ),
+          leading: IconButton(
+            icon: const Icon(Icons.arrow_back),
+            tooltip: AccessibilityHelper.backLabel,
+            onPressed: () => Navigator.of(context).pop(),
+          ),
         ),
-        leading: IconButton(
-          icon: const Icon(Icons.arrow_back),
-          tooltip: AccessibilityHelper.backLabel,
-          onPressed: () => Navigator.of(context).pop(),
-        ),
-      ),
-      body: SelectionArea(
-        child: Form(
-          key: _formKey,
-          child: ListView(
-            padding: const EdgeInsets.all(16),
-            children: [
-              // Read-only rule name banner
-              _buildRuleNameBanner(),
-              const SizedBox(height: 16),
+        body: SelectionArea(
+          child: Form(
+            key: _formKey,
+            child: ListView(
+              padding: const EdgeInsets.all(16),
+              children: [
+                // Read-only rule name banner
+                _buildRuleNameBanner(),
+                const SizedBox(height: 16),
 
-              // Enabled toggle
-              _buildEnabledToggle(),
-              const SizedBox(height: 8),
+                // Enabled toggle
+                _buildEnabledToggle(),
+                const SizedBox(height: 8),
 
-              // Execution order
-              _buildExecutionOrderField(),
-              const SizedBox(height: 16),
-              const Divider(),
-              const SizedBox(height: 16),
+                // Execution order
+                _buildExecutionOrderField(),
+                const SizedBox(height: 16),
+                const Divider(),
+                const SizedBox(height: 16),
 
-              // Action section
-              _buildActionSection(),
-              const SizedBox(height: 16),
-              const Divider(),
-              const SizedBox(height: 16),
+                // Action section
+                _buildActionSection(),
+                const SizedBox(height: 16),
+                const Divider(),
+                const SizedBox(height: 16),
 
-              // Pattern section
-              _buildPatternSection(),
-              const SizedBox(height: 24),
+                // Pattern section
+                _buildPatternSection(),
+                const SizedBox(height: 24),
 
-              // Save button
-              Semantics(
-                label: 'Save rule edits',
-                child: FilledButton.icon(
-                  key: const Key('rule_edit_save_button'),
-                  onPressed: _isSaving || !_patternReady ? null : _save,
-                  icon: _isSaving
-                      ? const SizedBox(
-                          width: 16,
-                          height: 16,
-                          child: CircularProgressIndicator(strokeWidth: 2),
-                        )
-                      : const Icon(Icons.save),
-                  label: Text(_isSaving ? 'Saving...' : 'Save Changes'),
+                // Save button
+                Semantics(
+                  label: 'Save rule edits',
+                  child: FilledButton.icon(
+                    key: const Key('rule_edit_save_button'),
+                    onPressed: _isSaving || !_patternReady ? null : _save,
+                    icon: _isSaving
+                        ? const SizedBox(
+                            width: 16,
+                            height: 16,
+                            child: CircularProgressIndicator(strokeWidth: 2),
+                          )
+                        : const Icon(Icons.save),
+                    label: Text(_isSaving ? 'Saving...' : 'Save Changes'),
+                  ),
                 ),
-              ),
-            ],
+              ],
+            ),
           ),
         ),
       ),

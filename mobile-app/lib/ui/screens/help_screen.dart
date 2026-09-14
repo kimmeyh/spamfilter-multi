@@ -25,6 +25,7 @@ import '../../core/services/app_environment.dart';
 import '../../core/services/content_loader.dart';
 import '../widgets/app_bar_with_exit.dart';
 import '../widgets/standard_app_bar_actions.dart';
+import '../widgets/system_inset_wrapper.dart'; // F209 (Sprint 69)
 
 /// Anchors for each primary screen / settings-tab section in [HelpScreen].
 enum HelpSection {
@@ -218,161 +219,163 @@ class _HelpScreenState extends State<HelpScreen> {
     // (e.g. Select Account).
     final effectiveAccountId = widget.accountId ?? _resolvedAccountId;
     final hasAccount = effectiveAccountId != null;
-    return Scaffold(
-      appBar: AppBarWithExit(
-        title: const Text('Help'),
-        // F134 (Sprint 52): canonical order via the ONE shared builder.
-        // includeHelp: false -- this IS the Help screen.
-        // History and Settings stay account-scoped: passing a null accountId
-        // makes the builder omit Settings, and includeScanHistory follows
-        // hasAccount, preserving the previous conditional behavior exactly.
-        actions: StandardAppBarActions.build(
-          context: context,
-          helpSection: HelpSection.settings, // unused -- includeHelp is false
-          accountId: effectiveAccountId,
-          accountEmail: widget.accountEmail ?? effectiveAccountId,
-          platformId: widget.platformId ?? '',
-          platformDisplayName: widget.platformDisplayName ?? '',
-          // MV-5 (Sprint 58 Manual Validation, Harold 2026-08-15): the
-          // Review No Rule Items icon now appears on Help too (previously
-          // suppressed here) -- the builder's default includes it.
-          includeScanHistory: hasAccount,
-          includeHelp: false,
+    return SystemInsetWrapper(
+      child: Scaffold(
+        appBar: AppBarWithExit(
+          title: const Text('Help'),
+          // F134 (Sprint 52): canonical order via the ONE shared builder.
+          // includeHelp: false -- this IS the Help screen.
+          // History and Settings stay account-scoped: passing a null accountId
+          // makes the builder omit Settings, and includeScanHistory follows
+          // hasAccount, preserving the previous conditional behavior exactly.
+          actions: StandardAppBarActions.build(
+            context: context,
+            helpSection: HelpSection.settings, // unused -- includeHelp is false
+            accountId: effectiveAccountId,
+            accountEmail: widget.accountEmail ?? effectiveAccountId,
+            platformId: widget.platformId ?? '',
+            platformDisplayName: widget.platformDisplayName ?? '',
+            // MV-5 (Sprint 58 Manual Validation, Harold 2026-08-15): the
+            // Review No Rule Items icon now appears on Help too (previously
+            // suppressed here) -- the builder's default includes it.
+            includeScanHistory: hasAccount,
+            includeHelp: false,
+          ),
         ),
-      ),
-      // Round 2 feedback: wrap in Scrollbar with thumbVisibility: true so
-      // the scroll position is always visible, not hover-only.
-      //
-      // Round 3 fix: switched from ListView (lazy-built) to
-      // SingleChildScrollView + Column. ListView defers building offscreen
-      // children until the scroll position reaches them, so GlobalKey
-      // contexts for far-away sections return null during the post-frame
-      // ensureVisible call and the scroll is a no-op. Column builds every
-      // section up front, so every key is live and deep-links always work.
-      body: Scrollbar(
-        controller: _scrollController,
-        thumbVisibility: true,
-        child: SelectionArea(
-          child: SingleChildScrollView(
-            controller: _scrollController,
-            padding: const EdgeInsets.all(16),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: [
-                // F140 (Sprint 54): duplicated near the top so the version is
-                // visible without scrolling -- the full footer (with the
-                // issue-tracker link) stays at the bottom of this page.
-                // Neither a human tester nor WinWright/UIA automation could
-                // reach the bottom-of-page footer without scrolling, and no
-                // working scroll mechanism was found (see
-                // docs/WINWRIGHT_SELECTORS.md).
-                FutureBuilder<PackageInfo>(
-                  future: PackageInfo.fromPlatform(),
-                  builder: (context, snapshot) {
-                    final version = snapshot.hasData
-                        ? snapshot.data!.version
-                        : '...';
-                    return Padding(
-                      padding: const EdgeInsets.only(bottom: 16),
-                      child: Text(
-                        'Version $version${AppEnvironment.displaySuffix}',
-                        style: TextStyle(color: Colors.grey.shade600, fontSize: 12),
-                      ),
-                    );
-                  },
-                ),
-                // F151b (Sprint 58): "First time? Start here" callout, near
-                // the top so it is visible without scrolling -- closes the
-                // gap F75 (Sprint 34) explicitly deferred. The walkthrough
-                // section itself stays last (line ~259) so screen-anchored
-                // reference sections are not pushed down for readers who
-                // already know the app; this callout is the discoverable
-                // shortcut for first-time users instead.
-                Card(
-                  color: Theme.of(context).colorScheme.primaryContainer,
-                  child: ListTile(
-                    leading: const Icon(Icons.explore_outlined),
-                    title: const Text('First time? Start here'),
-                    subtitle: const Text(
-                        'Jump to the step-by-step walkthrough for getting started.'),
-                    trailing: const Icon(Icons.arrow_forward_ios, size: 16),
-                    onTap: () => _scrollTo(HelpSection.walkthrough),
+        // Round 2 feedback: wrap in Scrollbar with thumbVisibility: true so
+        // the scroll position is always visible, not hover-only.
+        //
+        // Round 3 fix: switched from ListView (lazy-built) to
+        // SingleChildScrollView + Column. ListView defers building offscreen
+        // children until the scroll position reaches them, so GlobalKey
+        // contexts for far-away sections return null during the post-frame
+        // ensureVisible call and the scroll is a no-op. Column builds every
+        // section up front, so every key is live and deep-links always work.
+        body: Scrollbar(
+          controller: _scrollController,
+          thumbVisibility: true,
+          child: SelectionArea(
+            child: SingleChildScrollView(
+              controller: _scrollController,
+              padding: const EdgeInsets.all(16),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  // F140 (Sprint 54): duplicated near the top so the version is
+                  // visible without scrolling -- the full footer (with the
+                  // issue-tracker link) stays at the bottom of this page.
+                  // Neither a human tester nor WinWright/UIA automation could
+                  // reach the bottom-of-page footer without scrolling, and no
+                  // working scroll mechanism was found (see
+                  // docs/WINWRIGHT_SELECTORS.md).
+                  FutureBuilder<PackageInfo>(
+                    future: PackageInfo.fromPlatform(),
+                    builder: (context, snapshot) {
+                      final version = snapshot.hasData
+                          ? snapshot.data!.version
+                          : '...';
+                      return Padding(
+                        padding: const EdgeInsets.only(bottom: 16),
+                        child: Text(
+                          'Version $version${AppEnvironment.displaySuffix}',
+                          style: TextStyle(color: Colors.grey.shade600, fontSize: 12),
+                        ),
+                      );
+                    },
                   ),
-                ),
-                const SizedBox(height: 16),
-                // Sprint 38 F85 (ADR-0038): all section bodies now load
-                // from `assets/content/help/*.md` via the asset manifest.
-                // Titles remain inline because they are short labels, not
-                // content. Adding a new section: declare the HelpSection
-                // enum case, add an entry to assets/content/manifest.yaml,
-                // and write the corresponding .md file. The validator at
-                // scripts/validate-content-manifest.ps1 enforces drift.
-                _section(HelpSection.selectAccount, title: 'Select Account'),
-                _section(HelpSection.accountSetup, title: 'Account Setup'),
-                _section(HelpSection.demoScan, title: 'Demo Scan'),
-                _section(HelpSection.manualScan, title: 'Manual Scan'),
-                _section(HelpSection.resultsDisplay, title: 'Results'),
-                _section(HelpSection.scanHistory, title: 'Scan History'),
-                _section(HelpSection.reviewNoRuleItems,
-                    title: 'Review No Rule Items'),
-                _section(HelpSection.settings, title: 'Settings'),
-                // --- Settings > General sub-sections (in on-screen order) ---
-                _section(HelpSection.generalRulesManagement,
-                    title: 'General > Rules Management'),
-                _section(HelpSection.generalScanHistoryRetention,
-                    title: 'General > Scan History'),
-                _section(HelpSection.generalPrivacyLogging,
-                    title: 'General > Privacy & Logging'),
-                // --- Settings > Account, Manual Scan, Background tabs ---
-                _section(HelpSection.folderSettings,
-                    title: 'Account > Folder Settings'),
-                _section(HelpSection.manualScanSettings,
-                    title: 'Manual Scan Settings'),
-                _section(HelpSection.backgroundScanning,
-                    title: 'Background Scanning'),
-                _section(HelpSection.manageRules, title: 'Manage Rules'),
-                _section(HelpSection.ruleQuickAdd, title: 'Rule Quick Add'),
-                _section(HelpSection.ruleTest, title: 'Rule Test'),
-                _section(HelpSection.safeSenders, title: 'Manage Safe Senders'),
-                _section(HelpSection.folderSelection, title: 'Folder Selection'),
-                _section(HelpSection.yamlImportExport,
-                    title: 'YAML Import / Export'),
-                _section(HelpSection.otherWaysToReduceJunk,
-                    title:
-                        'Other ways to reduce junk email, mail, texts, and phone calls'),
-                _section(HelpSection.faq,
-                    title: 'Frequently Asked Questions'),
-                _section(HelpSection.walkthrough,
-                    title: 'First-Use Walkthrough'),
-                const SizedBox(height: 24),
-                // F117 (Sprint 47): show the app version from the compiled
-                // package (package_info_plus) instead of a hardcoded sprint #,
-                // which drifted stale every sprint. Always accurate, zero
-                // manual upkeep. Falls back to no version string if the
-                // platform channel is unavailable.
-                FutureBuilder<PackageInfo>(
-                  future: PackageInfo.fromPlatform(),
-                  builder: (context, snapshot) {
-                    final version = snapshot.hasData
-                        ? 'Version ${snapshot.data!.version}${AppEnvironment.displaySuffix}. '
-                        : '';
-                    return Text(
-                      '${version}Report issues at '
-                      'github.com/kimmeyh/spamfilter-multi/issues.',
-                      style: TextStyle(
-                        color: Colors.grey.shade600,
-                        fontSize: 12,
-                      ),
-                    );
-                  },
-                ),
-                // Trailing filler so Scrollable.ensureVisible can always
-                // pin the target section to the TOP of the viewport, even
-                // when the target is the last real section. Without this,
-                // the scroll view cannot offset past its own content height
-                // and late sections end up mid-screen.
-                SizedBox(height: viewportHeight * 0.8),
-              ],
+                  // F151b (Sprint 58): "First time? Start here" callout, near
+                  // the top so it is visible without scrolling -- closes the
+                  // gap F75 (Sprint 34) explicitly deferred. The walkthrough
+                  // section itself stays last (line ~259) so screen-anchored
+                  // reference sections are not pushed down for readers who
+                  // already know the app; this callout is the discoverable
+                  // shortcut for first-time users instead.
+                  Card(
+                    color: Theme.of(context).colorScheme.primaryContainer,
+                    child: ListTile(
+                      leading: const Icon(Icons.explore_outlined),
+                      title: const Text('First time? Start here'),
+                      subtitle: const Text(
+                          'Jump to the step-by-step walkthrough for getting started.'),
+                      trailing: const Icon(Icons.arrow_forward_ios, size: 16),
+                      onTap: () => _scrollTo(HelpSection.walkthrough),
+                    ),
+                  ),
+                  const SizedBox(height: 16),
+                  // Sprint 38 F85 (ADR-0038): all section bodies now load
+                  // from `assets/content/help/*.md` via the asset manifest.
+                  // Titles remain inline because they are short labels, not
+                  // content. Adding a new section: declare the HelpSection
+                  // enum case, add an entry to assets/content/manifest.yaml,
+                  // and write the corresponding .md file. The validator at
+                  // scripts/validate-content-manifest.ps1 enforces drift.
+                  _section(HelpSection.selectAccount, title: 'Select Account'),
+                  _section(HelpSection.accountSetup, title: 'Account Setup'),
+                  _section(HelpSection.demoScan, title: 'Demo Scan'),
+                  _section(HelpSection.manualScan, title: 'Manual Scan'),
+                  _section(HelpSection.resultsDisplay, title: 'Results'),
+                  _section(HelpSection.scanHistory, title: 'Scan History'),
+                  _section(HelpSection.reviewNoRuleItems,
+                      title: 'Review No Rule Items'),
+                  _section(HelpSection.settings, title: 'Settings'),
+                  // --- Settings > General sub-sections (in on-screen order) ---
+                  _section(HelpSection.generalRulesManagement,
+                      title: 'General > Rules Management'),
+                  _section(HelpSection.generalScanHistoryRetention,
+                      title: 'General > Scan History'),
+                  _section(HelpSection.generalPrivacyLogging,
+                      title: 'General > Privacy & Logging'),
+                  // --- Settings > Account, Manual Scan, Background tabs ---
+                  _section(HelpSection.folderSettings,
+                      title: 'Account > Folder Settings'),
+                  _section(HelpSection.manualScanSettings,
+                      title: 'Manual Scan Settings'),
+                  _section(HelpSection.backgroundScanning,
+                      title: 'Background Scanning'),
+                  _section(HelpSection.manageRules, title: 'Manage Rules'),
+                  _section(HelpSection.ruleQuickAdd, title: 'Rule Quick Add'),
+                  _section(HelpSection.ruleTest, title: 'Rule Test'),
+                  _section(HelpSection.safeSenders, title: 'Manage Safe Senders'),
+                  _section(HelpSection.folderSelection, title: 'Folder Selection'),
+                  _section(HelpSection.yamlImportExport,
+                      title: 'YAML Import / Export'),
+                  _section(HelpSection.otherWaysToReduceJunk,
+                      title:
+                          'Other ways to reduce junk email, mail, texts, and phone calls'),
+                  _section(HelpSection.faq,
+                      title: 'Frequently Asked Questions'),
+                  _section(HelpSection.walkthrough,
+                      title: 'First-Use Walkthrough'),
+                  const SizedBox(height: 24),
+                  // F117 (Sprint 47): show the app version from the compiled
+                  // package (package_info_plus) instead of a hardcoded sprint #,
+                  // which drifted stale every sprint. Always accurate, zero
+                  // manual upkeep. Falls back to no version string if the
+                  // platform channel is unavailable.
+                  FutureBuilder<PackageInfo>(
+                    future: PackageInfo.fromPlatform(),
+                    builder: (context, snapshot) {
+                      final version = snapshot.hasData
+                          ? 'Version ${snapshot.data!.version}${AppEnvironment.displaySuffix}. '
+                          : '';
+                      return Text(
+                        '${version}Report issues at '
+                        'github.com/kimmeyh/spamfilter-multi/issues.',
+                        style: TextStyle(
+                          color: Colors.grey.shade600,
+                          fontSize: 12,
+                        ),
+                      );
+                    },
+                  ),
+                  // Trailing filler so Scrollable.ensureVisible can always
+                  // pin the target section to the TOP of the viewport, even
+                  // when the target is the last real section. Without this,
+                  // the scroll view cannot offset past its own content height
+                  // and late sections end up mid-screen.
+                  SizedBox(height: viewportHeight * 0.8),
+                ],
+              ),
             ),
           ),
         ),
