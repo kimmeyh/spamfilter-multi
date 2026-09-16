@@ -134,6 +134,41 @@ client while shipping another.
 Recorded because the Play release process does not state which secrets file it uses, and the
 mismatch looks like a defect until you know it is deliberate.
 
+**STATUS 2026-09-16: ALL THREE CONSOLE FIELDS ARE CORRECT AND SAVED.** Harold opened the client
+page and every value was already right on load -- package name `com.myemailspamfilter`, SHA-1
+`3B:C2:42:...:33:92` (the Play App Signing key), Custom URI scheme enabled. A form loads from the
+server, so those are the persisted values, not unsaved edits.
+
+**What this does NOT yet prove**: that sign-in works. The client page's "Last used date" and its
+pending-deletion warning are HISTORICAL -- neither updates until a real request matches the
+client. Only a successful sign-in closes this out.
+
+**Two conditions must BOTH hold before a test means anything:**
+
+1. **The test account must be a listed test user.** Publishing status is **Testing**, so only
+   accounts on the Audience page can sign in at all. An unlisted account fails with a DIFFERENT
+   error and sends the diagnosis the wrong way. Add it at
+   `console.cloud.google.com/auth/audience` -> Test users -> Add users.
+2. **The build must be installed FROM PLAY.** The SHA-1 now registered is the Play App Signing
+   key, so only a Play-installed build presents it. A local debug build presents the debug
+   fingerprint and will fail regardless.
+
+**OPEN ANOMALY, unproven, recorded so it is not rediscovered**: the **Data Access** page shows
+ALL THREE scope tables EMPTY -- no `gmail.modify`, no `userinfo.email` -- while the app requests
+both in code (`google_auth_service.dart:57,61`). That is not a normal configuration and is a
+plausible second cause of the `Error 400: invalid_request`. It has NOT been shown to cause the
+failure; it is a candidate sitting alongside the two confirmed misconfigurations. **If sign-in
+still fails after propagation, look here next.**
+
+**Cost question, settled 2026-09-16.** Harold's concern was a $5,000/year verification fee. The
+console says otherwise: Verification Center reads *"Verification is not required since your app
+is configured with a Testing publishing status."* The $5,000 figure is CASA Tier 2, which
+attaches to **restricted** scopes (`https://mail.google.com/`). This app requests
+**`gmail.modify`**, which Google classifies as **sensitive** -- OAuth verification on publish, a
+review rather than a paid third-party security audit. **The real constraint is the 100-user
+LIFETIME cap in Testing**, which at 12 testers is not close, but would need resolving before Play
+production.
+
 **THE TWO FINGERPRINTS FOR THIS PROJECT** (recorded 2026-09-11 so nobody has to hunt again):
 
 | Which | SHA-1 | Used by | Goes in the OAuth client? |
