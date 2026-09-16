@@ -746,11 +746,28 @@ All incomplete items in relative priority order. Priority in increments of 10; i
   See https://github.com/MaikuB/flutter_appauth/issues/493 and issue #252.
 - **Reported as WORSE on Samsung devices specifically** (flutter_appauth issue #128), and the
   device here is an S24+. Worth knowing before concluding a fix works on one handset.
-- **DO NOT simply delete the taskAffinity line and ship it.** Find out WHY it is there first --
-  it is not a Flutter default, so someone added it deliberately and git history should say who
-  and for what. Removing a line whose purpose is unknown, to fix a symptom, is how the next
-  defect gets created. If its original reason no longer applies, remove it and say so; if it
-  does, the fix is a distinct task affinity rather than an empty one.
+- **INVESTIGATED 2026-09-16, and the premise of my own warning was WRONG.** I wrote "it is not a
+  Flutter default, so someone added it deliberately." Both halves are false, and checking took
+  two commands:
+  - `git log -S taskAffinity` returns exactly ONE commit: `2976d0e`, *"feat: Initialize Android
+    project structure and configurations"*, **2025-12-04** -- the initial Android scaffolding,
+    nine months before this app had OAuth at all. `launchMode="singleTop"` came from the same
+    commit. Neither was a decision about anything.
+  - `flutter create` on a **stock template** (Flutter 3.38.5, the version in use) emits
+    **`android:launchMode="singleTop"` and `android:taskAffinity=""`** verbatim. They ARE the
+    Flutter default.
+  So there is no original reason to preserve. Nobody chose this; it is template scaffolding that
+  happens to conflict with `flutter_appauth`'s redirect delivery.
+- **What that changes**: removing or overriding `taskAffinity` does not undo a deliberate design
+  decision, which lowers the risk considerably. It does NOT make the change free -- task affinity
+  governs which task an activity launches into, so it affects recents-screen grouping and
+  back-stack behaviour app-wide, not just the OAuth flow. Verify the app still behaves correctly
+  on: launching from the launcher, returning from recents, and the deep-link paths
+  (`app_links` is a dependency).
+- **The remaining open question is which fix, not whether to touch it.** The flutter_appauth
+  threads discuss removing the empty affinity versus setting an explicit one; both appear, and
+  neither is stated as canonical. Probe on the S24+ rather than reasoning from the issue tracker,
+  because the reports single out Samsung.
 - **Also verify `launchMode="singleTop"` (line 31) is right for this flow.** AppAuth's docs
   discuss launch mode interactions with the redirect receiver; `singleTop` plus an empty
   affinity is the combination the issue threads describe.
