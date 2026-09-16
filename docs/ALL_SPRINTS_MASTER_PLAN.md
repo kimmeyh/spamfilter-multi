@@ -720,6 +720,54 @@ All incomplete items in relative priority order. Priority in increments of 10; i
 - Source: Harold, 2026-09-14, during the 0.15.1 Play release. He approved the one-time workaround
   and asked for the real fix to be scheduled rather than improvised.
 
+**F219. Google Sign-In returns `null_intent` -- the OAuth callback cannot get back into the app (~2-4h) Priority 4 (NEW, 2026-09-16 -- Harold, on the S24+, Play-installed 0.15.1)**
+- Phase: Android / Google Play Store Readiness
+- Platform: **Android only** (Windows uses a loopback redirect and is unaffected)
+- **THIS IS THE SUCCESSOR TO F211, NOT A REPEAT OF IT.** The error CHANGED, which is the whole
+  point: F211 produced `Error 400: invalid_request` -- Google REFUSING the client. After the
+  three console fields were corrected, the same test now produces
+  `PlatformException(null_intent, Failed to authorize: Null intent received, , null)`.
+  **Google is no longer rejecting anything.** The consent flow gets far enough to come back, and
+  the RESPONSE fails to reach the app. Different layer, different defect.
+- **Evidence**: `validation-screenshots/sprint-70/Screenshot_20260916_100743.png` and
+  `_100752.png`, 10:07 on 2026-09-16. Harold signed up as a test user, accepted all four consent
+  screens, and landed back on the Gmail Sign-In page carrying this error. Reaching the consent
+  screens at all is itself proof the F211 console repairs worked.
+- **The error does NOT come from this project's code.** `grep -rn "null_intent" lib/` returns
+  nothing; it is raised by the `flutter_appauth` plugin's Android side when `onActivityResult`
+  receives a null data intent -- the authorization response could not be delivered back.
+- **LEADING SUSPECT, with the manifest line to match**: `AndroidManifest.xml:32` sets
+  `android:taskAffinity=""` on `MainActivity`. The flutter_appauth issue tracker names exactly
+  this: *"If the authorization flow does not return to your Flutter app even though the intent
+  filter is correctly set and RedirectUriReceiverActivity is invoked, the issue might be due to
+  the `android:taskAffinity=""` line in your AndroidManifest.xml."* An empty task affinity puts
+  the redirect receiver in a different task from the activity waiting for the result, so the
+  response lands somewhere the plugin is not listening.
+  See https://github.com/MaikuB/flutter_appauth/issues/493 and issue #252.
+- **Reported as WORSE on Samsung devices specifically** (flutter_appauth issue #128), and the
+  device here is an S24+. Worth knowing before concluding a fix works on one handset.
+- **DO NOT simply delete the taskAffinity line and ship it.** Find out WHY it is there first --
+  it is not a Flutter default, so someone added it deliberately and git history should say who
+  and for what. Removing a line whose purpose is unknown, to fix a symptom, is how the next
+  defect gets created. If its original reason no longer applies, remove it and say so; if it
+  does, the fix is a distinct task affinity rather than an empty one.
+- **Also verify `launchMode="singleTop"` (line 31) is right for this flow.** AppAuth's docs
+  discuss launch mode interactions with the redirect receiver; `singleTop` plus an empty
+  affinity is the combination the issue threads describe.
+- **Test conditions that must hold, or the result means nothing** (both were satisfied in
+  Harold's 10:07 test): the account must be a LISTED TEST USER (publishing status is Testing, so
+  unlisted accounts cannot sign in at all), and the build must be installed FROM PLAY (the
+  registered SHA-1 is the Play App Signing key).
+- **Still unproven and still worth checking**: the Google Cloud Console **Data Access** page
+  lists NO scopes at all -- neither `gmail.modify` nor `userinfo.email` -- while the app requests
+  both in code. That anomaly predates this card and has not been shown to cause anything. It is
+  a second candidate, not a finding.
+- **Why Priority 4**: Google Sign-In is the primary path a new tester tries first, and the
+  app-password workaround -- while it works -- is not what the in-app Help promises. This is the
+  remaining half of the original tester blocker.
+- Depends on: nothing. Reproducible on the S24+ today.
+- Source: Harold, 2026-09-16, testing the F211 console fix on the Play-installed 0.15.1 build.
+
 **F217. Android background scans do not run while the app is backgrounded or the phone is locked -- and no notification arrives (~4-8h investigation + fix) Priority 6 (NEW, 2026-09-13 -- Harold, Sprint 69 retrospective Category 14)**
 - Phase: Android / Google Play Store Readiness
 - Platform: **Android only** (Windows uses Task Scheduler, ADR-0039, and is unaffected)
