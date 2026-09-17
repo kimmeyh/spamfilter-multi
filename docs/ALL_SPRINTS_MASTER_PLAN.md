@@ -857,12 +857,50 @@ All incomplete items in relative priority order. Priority in increments of 10; i
   NO sort by `receivedDate` anywhere in `results_display_screen.dart` -- rows appear in whatever
   order the scan produced them, which is per-folder fetch order, not chronological. Every mail
   client the user has ever used sorts newest-first, so the list looks shuffled.
-- **Worth scoping carefully rather than adding a one-line sort:**
-  - **Which date?** `receivedDate` is the obvious choice and matches the inbox. Confirm the field
-    is populated for every provider -- an adapter that leaves it null would sort those rows into
-    a clump.
-  - **Which direction?** Newest-first matches a mail client. Oldest-first matches "work through
-    the backlog". Newest-first is the convention and the safer default.
+- **HAROLD SPECIFIED THE ORDERING, 2026-09-17.** This is no longer "sort by date" -- it is a
+  domain-clustered chronological sort, and the distinction matters because a naive date sort
+  would NOT satisfy it.
+
+  **1. The email-provider section stays pinned at the top, unchanged.** That partition already
+  exists (`ProviderSenderGrouping.partitionProviderFirst`, Sprint 46 retro IMP-1, exposed as
+  `_providerGroupCount`). The new ordering applies WITHIN each of the two groups, not across
+  them.
+
+  **2. Everything else is ordered newest-first, but clustered by base domain**:
+    - take the NEWEST remaining email;
+    - emit it, then immediately emit EVERY other remaining email sharing its base domain,
+      newest-first within the cluster;
+    - return to the newest of what remains and repeat.
+
+  So a domain's POSITION is set by its newest member, and all of its mail is contiguous.
+
+  **Worked example** -- `a@spam.com` 10:00, `b@good.com` 09:00, `c@spam.com` 08:00,
+  `d@other.com` 07:00 produces:
+
+  ```
+  a@spam.com   10:00   newest overall
+  c@spam.com   08:00   same base domain, pulled up out of date order
+  b@good.com   09:00   newest of what remains
+  d@other.com  07:00
+  ```
+
+  `c` precedes `b` despite being an hour older. **That is the intent, not a side effect**: the
+  user meets each domain once and decides about it once, instead of encountering the same
+  spammer three times while scrolling.
+
+  **Base domain means the registrable domain** -- `*.baddomain.tld` clusters together, so
+  `news.baddomain.com` and `mail.baddomain.com` are ONE cluster. Do not write a second extractor:
+  `manual_rule_duplicate_checker.dart:171` already has `_baseDomainFor`, and two different
+  notions of "same domain" in one app is a defect waiting to happen. If it needs promoting to a
+  shared helper, promote it rather than copying it.
+
+- **Still to decide during implementation:**
+  - **Which date?** `receivedDate`. Confirm it is populated for EVERY provider -- an adapter that
+    leaves it null would sort those rows into a clump at one end, and the clustering would make
+    that clump look deliberate.
+  - **Direction is SETTLED: newest first** (Harold, 2026-09-17).
+  - **Ties.** Two emails with the same timestamp, or a whole domain whose newest matches another
+    domain's newest, need a deterministic tiebreak or the list reshuffles between rebuilds.
   - **Does it interact with the "No rule" review flow?** That flow advances through items in
     order; changing the order changes the sequence a user is walked through. Check
     `no_rule_review_screen.dart` before assuming the change is local.
