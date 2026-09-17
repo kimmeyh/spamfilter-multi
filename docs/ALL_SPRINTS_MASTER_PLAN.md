@@ -901,6 +901,39 @@ recorded here so it is not a surprise at the next upgrade.
 - Depends on: overlaps F220 and F207.
 - Source: Sean Jarvis via Harold, 2026-09-17.
 
+**F224. Let the user CANCEL a running scan from where they actually are (~4-8h) Priority 6 (NEW, 2026-09-17 -- Harold, alongside the F221 timeout reversal)**
+- Phase: Core App Quality
+- Platform: All (shared UI and coordinator; ADR-0042 -- no platform exception expected)
+- **Why this exists.** Sprint 70 gave manual scans a 30-minute timeout because the old
+  justification for having none -- *"a user is watching and can cancel"* -- stops being true the
+  moment the user leaves the scan screen. The timeout makes a hung scan survivable. It does NOT
+  give the user back the control the old comment assumed they had: 30 minutes is a long time to
+  wait for something you already know you want to stop.
+- **Two cancel affordances, both requested verbatim by Harold (2026-09-17):**
+  1. **From View Scan Results**: *"there should be a new way from the View Scan Results page to
+     cancel (click on the scan 'bar' and pop-up to cancel."* Tapping the in-progress scan bar
+     opens a popup offering cancel. This is the screen a user lands on after starting a scan, so
+     it is where they will look.
+  2. **From the Manual Scan popup**: *"Also add to the Manual Scan pop-up that a background scan
+     is in process an option to cancel the background scan, so they can run an manual scan
+     instead."* The popup at `scan_progress_screen.dart` (startRealScan, the getActiveBackgroundScan
+     branch) already tells the user a background scan is running and offers "Wait and start". Add
+     a third option: cancel the background scan and run mine now.
+- **The hard part is cancellation itself, not the buttons.** `Future.timeout` does NOT cancel the
+  underlying work -- Sprint 62 recorded this explicitly, and both timeout paths work around it by
+  force-releasing the coordinator lease while the zombie scan keeps running. A user-facing Cancel
+  that only releases the lease would let a second scan start while the first is still holding an
+  IMAP session, which is the Sprint 61 per-account session-cap failure. **Design the cooperative
+  cancellation first** (a cancellation token the fetch/evaluate loop checks between batches, which
+  `email_scanner.dart` already has natural boundaries for at m=20), then add the two UI entries.
+- **Cross-process caveat**: on Windows the background worker scans in a SEPARATE process. Cancel
+  from the app cannot reach into it directly; needs a database-backed cancel flag the worker polls,
+  or the scope must be explicitly limited to in-process scans with the limit stated in the UI.
+- Depends on: F220 and F221 (both Sprint 70) -- the lease lifetime and the timeout are the
+  foundation this sits on.
+- Source: Harold, 2026-09-17, in the same message that reversed the manual-scan no-timeout
+  decision.
+
 **F222. Scan results are not ordered by received date (~1-3h) Priority 22 (NEW, 2026-09-17 -- Sean Jarvis, tester)**
 - Phase: Core App Quality
 - Platform: All (shared results screen)
