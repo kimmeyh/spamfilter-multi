@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:io' show Directory, File, FileMode, Platform, exit;
 import 'package:flutter/foundation.dart' show kReleaseMode;
 import 'package:flutter/material.dart';
@@ -492,10 +493,14 @@ class _AppInitializer extends StatefulWidget {
   State<_AppInitializer> createState() => _AppInitializerState();
 }
 
-class _AppInitializerState extends State<_AppInitializer> {
+class _AppInitializerState extends State<_AppInitializer>
+    with WidgetsBindingObserver {
   @override
   void initState() {
     super.initState();
+    // F220 R-4 (Sprint 70): reconcile stale in-progress scans on RESUME, not
+    // only at startup. See didChangeAppLifecycleState below.
+    WidgetsBinding.instance.addObserver(this);
     // Initialize the rule set provider
     Future.microtask(() async {
       if (mounted) {
@@ -503,6 +508,53 @@ class _AppInitializerState extends State<_AppInitializer> {
         await ruleProvider.initialize();
       }
     });
+  }
+
+  @override
+  void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
+    super.dispose();
+  }
+
+  /// F220 R-4 / F221 R-3 (Sprint 70): a stuck `in_progress` row should not
+  /// need an app RESTART to clear.
+  ///
+  /// **The gap this closes.** `reconcileStaleInProgressScans` has existed since
+  /// Sprint 62 and is sound, but it had exactly ONE caller -- the startup path
+  /// above. Nothing ran it on resume, on scan start, or on screen entry. That
+  /// is why a restart was the only thing that cleared a row left behind by a
+  /// killed or interrupted scan, and why two testers independently described
+  /// "restart the app" as the workaround.
+  ///
+  /// This is a BACKSTOP, deliberately independent of F220's real fix (failing
+  /// an interrupted scan so its lease is released). Both can be true: the scan
+  /// screen handles the case it can see, and this catches anything that died
+  /// without anyone watching -- a process kill, a crash, a force-stop.
+  ///
+  /// **Uses the SAME age guard as the startup call.** A genuinely live scan is
+  /// never clobbered: on Windows background scans run in a separate worker
+  /// process this app cannot observe, so only rows older than the scan timeout
+  /// are touched.
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (state != AppLifecycleState.resumed) return;
+    unawaited(_reconcileStaleScans());
+  }
+
+  Future<void> _reconcileStaleScans() async {
+    try {
+      final n = await ScanResultStore(DatabaseHelper())
+          .reconcileStaleInProgressScans(
+        staleAfter: ScanCoordinator.scanTimeout,
+      );
+      if (n > 0) {
+        Logger().i('F220: reconciled $n stale in_progress scan(s) on resume');
+      }
+    } catch (e) {
+      // A backstop that throws is worse than one that quietly does nothing --
+      // this must never block the app coming back to the foreground.
+      Logger().w('Stale scan reconciliation on resume failed: $e');
+    }
   }
 
   @override

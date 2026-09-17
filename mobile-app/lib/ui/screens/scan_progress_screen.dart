@@ -44,13 +44,20 @@ class ScanProgressScreen extends StatefulWidget {
   State<ScanProgressScreen> createState() => _ScanProgressScreenState();
 }
 
-class _ScanProgressScreenState extends State<ScanProgressScreen> with RouteAware {
+class _ScanProgressScreenState extends State<ScanProgressScreen>
+    with RouteAware, WidgetsBindingObserver {
   List<String> _configuredFolders = ['INBOX'];
   ScanMode _configuredMode = ScanMode.readOnly;
 
   @override
   void initState() {
     super.initState();
+
+    // F220 (Sprint 70): observe the app lifecycle so a scan interrupted by
+    // backgrounding is FAILED rather than left hanging. Mirrors the existing
+    // observer in account_selection_screen.dart rather than inventing a
+    // second pattern.
+    WidgetsBinding.instance.addObserver(this);
 
     final scanProvider = Provider.of<EmailScanProvider>(context, listen: false);
 
@@ -80,8 +87,46 @@ class _ScanProgressScreenState extends State<ScanProgressScreen> with RouteAware
 
   @override
   void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
     routeObserver.unsubscribe(this);
     super.dispose();
+  }
+
+  /// F220 (Sprint 70): a live scan interrupted by backgrounding must FAIL,
+  /// not hang.
+  ///
+  /// **The defect this fixes** (Sean Jarvis, tester, 2026-09-17): start a live
+  /// scan, background the app, and live scanning stops working entirely until
+  /// the app is restarted.
+  ///
+  /// **Why a restart was the only escape.** Android tears down an idle app's
+  /// sockets, which is correct OS behaviour. Nothing told the scan. It neither
+  /// completed nor failed, so the `finally` in `EmailScanner.scanInbox` never
+  /// ran, so the `ScanCoordinator` lease was never released -- and every later
+  /// scan queued FIFO behind a scan that could never finish. The coordinator is
+  /// process-global, so only a restart cleared it.
+  ///
+  /// **Failing the scan IS the fix.** The wedge was a held lease, not a stalled
+  /// socket; `errorScan` resolves the provider state and marks the database row,
+  /// and the scanner's own `finally` then releases the lease.
+  ///
+  /// **ADR-0042**: this file is shared. The TRIGGER is Android-shaped -- Windows
+  /// does not tear down sockets when a window is minimised -- but the handler is
+  /// deliberately NOT forked. On desktop `paused` fires rarely and a scan that
+  /// is genuinely interrupted there deserves the same treatment, so there is
+  /// nothing platform-specific to declare.
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (state != AppLifecycleState.paused) return;
+
+    final scanProvider = Provider.of<EmailScanProvider>(context, listen: false);
+    if (scanProvider.status != ScanStatus.scanning) return;
+
+    scanProvider.errorScan(
+      'Scan stopped because the app was moved to the background. '
+      'The connection to your mail server is closed when the app is not in '
+      'use. Start the scan again.',
+    );
   }
 
   /// Called when Results is popped and this screen becomes visible again.
