@@ -5,9 +5,148 @@ All Sprint tasks and sub-tasks are approved.
 Continue without addition approvals until Manual Validation, providing your recommendation for Manual Validation steps.
 Do not stop to ask questions unless meeting the criteria in \docs\SPRINT_STOPPING_CRITERIA.md
 ---------------------------------------------------------------------------------------------------------
-Sprint 6n Scope should include the below items. Please complete sprint planning (/docs/sprint_planning.md) for the below items and present for approval.  Note that everything needs to take into account both the Windows App and the Android app and ADR stating that everything should be functionally and UI the same unless it cannot be - and where it cannot be it should be implemented as a platform exception for what is needed -- this applies to all backend code, frontend code, data, architecture, development, security, testing, deployment.
+Sprint 7n Scope should include the below items. Please complete sprint planning (/docs/sprint_planning.md) for the below items and present for approval.  Note that everything needs to take into account both the Windows App and the Android app and ADR stating that everything should be functionally and UI the same unless it cannot be - and where it cannot be it should be implemented as a platform exception for what is needed -- this applies to all backend code, frontend code, data, architecture, development, security, testing, deployment.
+
+---------------------------------------------------------------------------------------------------------
+Sprint 7n Scope should include the below items. Please complete sprint planning (/docs/sprint_planning.md) for the below items and present for approval.  Note that everything needs to take into account both the Windows App and the Android app and ADR stating that everything should be functionally and UI the same unless it cannot be - and where it cannot be it should be implemented as a platform exception for what is needed -- this applies to all backend code, frontend code, data, architecture, development, security, testing, deployment.
 
 
+
+
+  Backlog Refinement — Phase 8.4 pass 2, Sprint 70 scope selection
+
+  Candidates at a glance
+
+  - F219. Google Sign-In returns null_intent — the OAuth callback cannot get back into the app (~2-4h) Priority 4
+  - F212. Re-processing after adding rules FAILS 100% on the closed-test build (~2-4h) Priority 4
+  - F217. Android background scans do not run while backgrounded or locked, and no notification arrives (~4-8h) Priority 6
+  - F218. Upgrade the Flutter SDK, re-apply the native-assets patch, re-resolve 35 dependencies, remove the one-time Gradle workaround (~4-8h) Priority 8
+  - F202. Per-provider folder defaults (~6-10h) Priority 10
+  - F206. Diagnostic export as a platform capability (~3-5h) Priority 14
+  - F205. Closed-test error rate: 53 errors in 3,833 scanned — find out what they are (~2-4h) Priority 18
+  - F207. A manual scan is refused while a background scan is "in progress" (~2-3h) Priority 20
+  - F204. Gate the three Play requirements that are documented but not asserted (~2-3h) Priority 24
+  - F215. Wire the validation-screenshot folder into every process (~1-2h) Priority 30
+  - F192. Custom IMAP Server support — host-entry UI (~4-6h) Priority 32
+  - F216. Supporting text smaller than the text it should match, three screens (~2-4h) Priority 32
+  - F214. Scan Range slider margins (~1-2h) Priority 34
+  - F213. Migrate Android Gmail OAuth off Custom URI schemes (~4-8h) Priority 40
+
+  HOLD ids: F165, F173, F183, F179, F152, F189, F111, F139, F70, F130, F71, F201, F95, F63, F6, F67, F106
+
+  ---
+
+  Android / Google Play Store Readiness
+
+  F219. Google Sign-In returns null_intent — the OAuth callback cannot get back into the app (~2-4h) Priority 4
+  - Phase: Android / Google Play Store Readiness
+  - Platform: Android
+  - The successor to F211, not a repeat. Your console fix worked — the error moved from Google refusing the client to the consent flow completing and the response failing
+    to return. Leading suspect is AndroidManifest.xml:32's taskAffinity="", which I confirmed today is Flutter template default rather than a deliberate choice.
+  - Depends on: nothing. Reproducible on the S24+ today.
+
+  F217. Android background scans do not run while backgrounded or locked, and no notification arrives (~4-8h) Priority 6
+  - Phase: Android / Google Play Store Readiness
+  - Platform: Android
+  - Corroborated by your Scan History screenshot: AOL scans at 5:15 PM and 7:57 PM — 2h42m apart against a 15-minute schedule, both accounts firing the same minute. The
+    scheduling code is correct; leading hypothesis is Doze/App Standby. The fix is a Class-1 decision — battery-optimisation exemption or foreground service — to surface,
+    not choose.
+  - Depends on: nothing.
+
+  F218. Upgrade the Flutter SDK, re-apply the native-assets patch, re-resolve 35 dependencies, remove the one-time Gradle workaround (~4-8h) Priority 8
+  - Phase: Developer Workflow / Tooling
+  - Platform: All
+  - Removes the workaround now shipping a test-only library in the AAB. SDK is 4,163 commits behind. Not guaranteed to fix the underlying defect — confirm by removing the
+    workaround, not by reading release notes.
+  - Depends on: nothing. Do it early in a sprint, never on a release day.
+
+  Core App Quality
+
+  F212. Re-processing after adding rules FAILS 100% (~2-4h) Priority 4
+  - Phase: Core App Quality
+  - Platform: Android observed; Windows unverified
+  - Your own hypothesis is code-confirmed: the re-process path bypasses ScanCoordinator entirely.
+  - Depends on: nothing.
+
+  F205. Closed-test error rate: 53 errors in 3,833 scanned (~2-4h) Priority 18
+  - Phase: Core App Quality
+  - Platform: Android
+  - Depends on: nothing.
+
+  F207. A manual scan is refused while a background scan is "in progress" (~2-3h) Priority 20
+  - Phase: Core App Quality
+  - Platform: All
+  - Depends on: may be resolved or reshaped by F217.
+
+  F216. Supporting text smaller than the text it should match (~2-4h) Priority 32
+  - Phase: Core App Quality
+  - Platform: All
+  - Sizes measured; you chose to match the list subtitle at 14sp.
+  - Depends on: nothing.
+
+  F214. Scan Range slider margins (~1-2h) Priority 34
+  - Phase: Core App Quality
+  - Platform: All
+  - From your tester.
+  - Depends on: nothing.
+
+  Feature Work
+
+  F202. Per-provider folder defaults (~6-10h) Priority 10
+  - Phase: Feature Work
+  - Platform: All
+  - Fully analyzed, groundwork settled. Targeted at Sprint 69 and displaced twice.
+  - Depends on: nothing.
+
+  F206. Diagnostic export as a platform capability (~3-5h) Priority 14
+  - Phase: Feature Work
+  - Platform: All
+  - Depends on: nothing.
+
+  F192. Custom IMAP Server support (~4-6h) Priority 32
+  - Phase: Feature Work
+  - Platform: All
+  - Depends on: nothing.
+
+  F213. Migrate Android Gmail OAuth off Custom URI schemes (~4-8h) Priority 40
+  - Phase: Android / Google Play Store Readiness
+  - Platform: Android
+  - Not urgent; no published cutoff. Re-check Google's position before scheduling.
+  - Depends on: nothing.
+
+  Developer Workflow / Tooling
+
+  F204. Gate the three Play requirements that are documented but not asserted (~2-3h) Priority 24
+  - Phase: Developer Workflow / Tooling
+  - Platform: N/A
+  - Depends on: nothing.
+
+  F215. Wire the validation-screenshot folder into every process (~1-2h) Priority 30
+  - Phase: Developer Workflow / Tooling
+  - Platform: N/A
+  - Folder and gitignore already exist; this is the five places that still treat screenshots as ephemeral.
+  - Depends on: nothing.
+
+  ---
+
+  Observations
+
+  Five shipped items were pruned from this slate before presenting it (F211, F210, F208, F209, F203) — leaving them would have made the list misrepresent what is open.
+
+  All 8 remaining closed-test testers are on 0.15.1, and the two highest-priority items are things a tester hits directly. F219 and F212 are both ~2-4h and both fully
+  diagnosed — no investigation phase.
+
+  F217 is the one with a decision in it. The investigation is cheap; the fix changes the app's relationship with the OS and the Play listing. Worth scoping knowing you
+  will be asked to choose mid-sprint.
+
+  F218 has a dependency nobody owns yet. The workaround currently ships a test-only library to your users. Not urgent, but it does not expire on its own.
+
+  Suggested compositions
+
+  - Tester-blocker sprint (~8-16h): F219 + F212 + F217 — everything a tester hits, all diagnosed
+  - Blockers plus hygiene (~12-24h): add F218, clearing the shipped workaround
+  - Blockers plus the deferred feature (~14-26h): F219 + F212 + F217 + F202 — but F202 has now been displaced twice, so it either goes in or should be honestly
+    re-prioritised
 
 ---------------------------------------------------------------------------------------------------------
 Sprint 69 Scope should include the below items. Please complete sprint planning (/docs/sprint_planning.md) for the below items and present for approval.  Note that everything needs to take into account both the Windows App and the Android app and ADR stating that everything should be functionally and UI the same unless it cannot be - and where it cannot be it should be implemented as a platform exception for what is needed -- this applies to all backend code, frontend code, data, architecture, development, security, testing, deployment.

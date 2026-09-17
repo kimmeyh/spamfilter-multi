@@ -785,6 +785,95 @@ All incomplete items in relative priority order. Priority in increments of 10; i
 - Depends on: nothing. Reproducible on the S24+ today.
 - Source: Harold, 2026-09-16, testing the F211 console fix on the Play-installed 0.15.1 build.
 
+**F220. Backgrounding the app during a LIVE SCAN wedges it -- no further live scan until restart (~3-6h) Priority 4 (NEW, 2026-09-17 -- Sean Jarvis, tester)**
+- Phase: Core App Quality
+- Platform: **Android** reported; Windows NOT verified -- the coordinator is shared, so check both
+- **Sean Jarvis, verbatim**: *"If doing a live scan and putting app in background causes android to
+  close network stack as intended but livescan does not stop errors into a weird state where you
+  cannot livescan until app is restarted."*
+- **His diagnosis is correct and better than the report suggests.** Android tearing down sockets
+  for a backgrounded app is expected OS behaviour. The defect is that the app does not NOTICE:
+  the scan neither completes nor fails, so it never releases its `ScanCoordinator` lease, and
+  every later live scan queues behind a scan that will never finish. Restarting the app is the
+  only escape because it rebuilds the process-global coordinator.
+- **Confirmed in code, three findings that compound:**
+  1. **Nothing observes the lifecycle during a scan.** `scan_progress_screen.dart` and
+     `email_scanner.dart` contain no `AppLifecycleState` / `didChangeAppLifecycleState` handler
+     at all, so backgrounding is invisible to the scan.
+  2. **A manual scan has NO timeout.** `background_scan_core.dart:140` says so deliberately:
+     *"Manual scans deliberately have no timeout wrap: a user is watching and can cancel; startup
+     reconciliation (reconcileStaleInProgressScans) is their backstop."* That reasoning assumes a
+     user who is WATCHING. A backgrounded app has no watcher, and the named backstop only runs at
+     STARTUP -- which is exactly why a restart clears it and nothing else does.
+  3. **The lease is released in a `finally`** that cannot run while the scan is wedged
+     (`email_scanner.dart:971`), so the coordinator stays occupied.
+- **Why Priority 4**: backgrounding an app mid-task is ordinary user behaviour, not an edge case.
+  A tester who does it loses live scanning for the rest of the session with no error and no
+  explanation -- the app simply stops working and does not say why.
+- **Candidate fixes, to evaluate rather than assume**: (a) observe `AppLifecycleState.paused`
+  during an active scan and fail it explicitly, releasing the lease; (b) give manual scans a
+  timeout after all, since the "user is watching" premise is false once backgrounded; (c) run
+  `reconcileStaleInProgressScans` on RESUME as well as startup. **(a) is the root-cause fix**; (c)
+  is a cheap backstop worth having regardless.
+- **Related but DISTINCT from F207** (manual scan refused while a background scan is in progress).
+  F207 is about a legitimate holder blocking; this is about a DEAD holder never letting go. A fix
+  for this may resolve F207's symptom, which is worth checking before scoping both.
+- Depends on: nothing. Reproducible on the S24+ today.
+- Source: Sean Jarvis via Harold, 2026-09-17. The second defect found by someone other than Harold.
+
+**F221. Starting a live scan again leaves the previous one stuck "in progress" forever (~2-4h) Priority 6 (NEW, 2026-09-17 -- Sean Jarvis, tester)**
+- Phase: Core App Quality
+- Platform: All (the coordinator and the scan-result store are both shared)
+- **Sean Jarvis, verbatim**: *"Starting a livescan multiple times doesn't mark the previous scan as
+  cancelled; it stays as in progress."*
+- **Confirmed in code.** `email_scanner.dart:149-172`: when a scan is already active, a new one
+  does NOT cancel it -- it prints *"Waiting for the active ... scan to finish"* and **queues FIFO**
+  behind it. That is deliberate (F175, Sprint 62, built after four stacked AOL scans hit the
+  per-account session cap) and it is the right behaviour for CONCURRENCY. What is wrong is the
+  RECORD: the superseded scan's row stays `in_progress` indefinitely, so Scan History accumulates
+  rows that never resolve.
+- **Two defects wearing one symptom, and they should be separated when scoping:**
+  1. **The stuck ROW** -- a scan the user abandoned still reads `in_progress`. Cosmetic-ish, but
+     it makes Scan History untrustworthy, and `reconcileStaleInProgressScans` only runs at
+     startup.
+  2. **The absent user SIGNAL** -- tapping scan again while one is running gives a queue with no
+     visible explanation. The user reasonably concludes the button did nothing.
+- **Do NOT "fix" this by making a new scan CANCEL the running one.** That would undo F175 and
+  re-open the Sprint 61 failure it was built for: four concurrent scans, each opening its own IMAP
+  session, all stalled behind AOL's per-account session cap. The queue is correct; the bookkeeping
+  and the messaging are not.
+- **Likely interacts with F220** -- if a wedged scan never releases its lease, every subsequent
+  scan queues behind it forever, which is how a user would SEE both defects at once. Investigate
+  them together even if they are fixed separately.
+- Depends on: overlaps F220 and F207.
+- Source: Sean Jarvis via Harold, 2026-09-17.
+
+**F222. Scan results are not ordered by received date (~1-3h) Priority 22 (NEW, 2026-09-17 -- Sean Jarvis, tester)**
+- Phase: Core App Quality
+- Platform: All (shared results screen)
+- **Sean Jarvis, verbatim**: *"Not really a bug but emails should be ordered by incoming date to
+  match the inbox if possible. Quite confusing."*
+- **He is right, and he is right to call it confusing rather than broken.** The results list has
+  NO sort by `receivedDate` anywhere in `results_display_screen.dart` -- rows appear in whatever
+  order the scan produced them, which is per-folder fetch order, not chronological. Every mail
+  client the user has ever used sorts newest-first, so the list looks shuffled.
+- **Worth scoping carefully rather than adding a one-line sort:**
+  - **Which date?** `receivedDate` is the obvious choice and matches the inbox. Confirm the field
+    is populated for every provider -- an adapter that leaves it null would sort those rows into
+    a clump.
+  - **Which direction?** Newest-first matches a mail client. Oldest-first matches "work through
+    the backlog". Newest-first is the convention and the safer default.
+  - **Does it interact with the "No rule" review flow?** That flow advances through items in
+    order; changing the order changes the sequence a user is walked through. Check
+    `no_rule_review_screen.dart` before assuming the change is local.
+  - **Multi-folder scans interleave.** Sorting globally by date mixes folders together, which is
+    what the inbox does but may not be what the user expects from a "Folders: Bulk, Inbox" scan.
+    Worth a deliberate choice rather than a side effect.
+- **Lowest priority of the three** because nothing is broken -- but it is the one every user meets
+  on every scan, so its cost is spread wider than a defect that only fires in one flow.
+- Depends on: nothing.
+- Source: Sean Jarvis via Harold, 2026-09-17.
+
 **F217. Android background scans do not run while the app is backgrounded or the phone is locked -- and no notification arrives (~4-8h investigation + fix) Priority 6 (NEW, 2026-09-13 -- Harold, Sprint 69 retrospective Category 14)**
 - Phase: Android / Google Play Store Readiness
 - Platform: **Android only** (Windows uses Task Scheduler, ADR-0039, and is unaffected)
@@ -1119,153 +1208,6 @@ All incomplete items in relative priority order. Priority in increments of 10; i
   developers.googleblog.com "Improving user safety in OAuth flows through new OAuth Custom URI
   scheme restrictions"; developers.google.com/identity/protocols/oauth2/native-app.
 
-**F211. TESTER BLOCKER -- Google Sign-In fails for every tester: "Custom URI scheme is not enabled for your Android client" (~30m, console-side) Priority 2 (NEW, 2026-09-10 -- FIRST REAL TESTER FEEDBACK)**
-- Phase: Android / Google Play Store Readiness
-- Platform: Android (closed test)
-- **THIS IS THE FIRST FEEDBACK FROM A REAL TESTER**, Jamey Livingston, relayed by Harold
-  2026-09-10. It is a blocker, not a polish item, and it almost certainly affects EVERY tester --
-  not just him.
-- **What the tester saw**: adding a Google account without an app password produces
-  `Access blocked: spamfilter-multi's request is invalid` / `Error 400: invalid_request`.
-  Tapping "error details" gives the actual cause, verbatim from Google:
-  > **Custom URI scheme is not enabled for your Android client.**
-  > Request details: `flowName=GeneralOAuthFlow`
-- **Confirmed against the app**: `AndroidManifest.xml:62` registers
-  `<data android:scheme="${appAuthRedirectScheme}"/>`, the reversed Android client ID, used by
-  `flutter_appauth`. So the app IS using a custom URI scheme -- exactly what Google says is
-  disabled for this OAuth client.
-- **The fix is in the GOOGLE CLOUD CONSOLE, not the app.** No code change, no release, no new
-  submission. Google disabled custom URI schemes by default for newly-created Android OAuth
-  clients; the setting must be enabled explicitly on that client. **Verify the current wording
-  and location in the console before changing anything** -- Google has moved this setting more
-  than once, and the exact control name should be read rather than recalled.
-- **Why it is Priority 2 -- above everything else on the slate:**
-  - It blocks the PRIMARY sign-in path. Gmail is the most common provider a tester will try.
-  - **8 testers are recruited and 4 more are needed for the 14-day clock.** A tester who cannot
-    sign in may opt OUT -- and an opt-out resets that person's clock to zero, which is the one
-    kind of damage that cannot be recovered by working faster later.
-  - It costs the project credibility at exactly the wrong moment: this is the first thing a new
-    tester does.
-- **The app-password path still works**, which is why Harold's own accounts were unaffected and
-  why this went unnoticed through all of Sprint 68's validation. Harold's reply to the tester --
-  *"App passwords is the way it works best"* -- is a correct WORKAROUND, but it should not be the
-  answer: the in-app Help already presents Google Sign-In as an available option
-  (`help_platform_claims_test` asserts the wording), so the app promises something the console
-  currently forbids.
-- **Also visible in the tester's screenshot**: the account-setup screen offers "Google Sign-In
-  (OAuth 2.0)" and "Manual Token Entry" and then shows a red "Sign-In Error" panel. Worth
-  checking whether that error text is actionable, or whether it simply relays Google's opaque
-  400 -- a tester hitting a dead end should be told to use an app password instead.
-- **After fixing, RE-TEST AS A TESTER**, not as Harold: a fresh Google account that has never
-  authorised this app. Harold's accounts may carry prior consent that masks the failure.
-- Depends on: Google Cloud Console access. No repo change expected; if one IS needed, that
-  changes the priority because it would require a new Play submission.
-- Source: Jamey Livingston via Harold, 2026-09-10. The first defect this project has learned
-  about from someone other than Harold.
-
-**F210. Dark-mode contrast, THIRD variant: a hardcoded surface with text that is theme-derived by OMISSION -- and the F197 gate cannot see it (~1-2h) Priority 6 (NEW, 2026-09-10 -- Harold, on the S24+)**
-- Phase: Core App Quality
-- Platform: All (shared Flutter UI) -- observed on Android dark mode
-- **Harold, 2026-09-10**: *"one where the background and font color are almost the same like the
-  2 or 3 we fixed earlier"*. He is right, and it is the same defect class as F195 and F197.
-- **Where**: the "Export Successful" dialog, `results_display_screen.dart:413-423`. The exported
-  file path renders near-white on near-white and is barely legible -- **the one piece of text the
-  dialog exists to convey**, sitting directly above the instruction "Select the path above to
-  copy it."
-- **The code**:
-  ```dart
-  Container(
-    decoration: BoxDecoration(color: Colors.grey[200]),   // hardcoded near-white surface
-    child: SelectableText(
-      filePath,
-      style: const TextStyle(fontSize: 12, fontFamily: 'monospace'),  // NO COLOUR
-    ),
-  )
-  ```
-- **WHY THE F197 GATE MISSES IT, and this is the important part.** F197 detects a hardcoded
-  surface wrapping text whose colour comes from `Theme.of(context).textTheme`. Here the text is
-  theme-derived **BY OMISSION** -- `TextStyle` specifies no colour at all, so Flutter inherits
-  the theme default, which is near-white in dark mode. **There is no `textTheme` token for the
-  gate to match.** Same defect, invisible to the detector.
-  This is a genuine gap in a gate shipped one day earlier, and it is the third distinct variant
-  of one pattern:
-  1. **F195**: hardcoded surface + explicit `Theme.of(context).textTheme` text. Gated.
-  2. **F197**: same, generalised into the detector. Gated.
-  3. **F210 (this)**: hardcoded surface + text with NO colour specified. **NOT gated.**
-- **The fix to the CODE is small**; the fix to the GATE is the valuable half. Extend the F197
-  detector so a hardcoded surface whose enclosed `Text`/`SelectableText` specifies no colour is
-  treated the same as one referencing `textTheme` -- because Flutter resolves both from the
-  theme. Mutation-verify against this exact dialog.
-- **Also worth checking in the same pass**: `Colors.grey[600]` on the line below ("Select the
-  path above to copy it") is hardcoded text on the DIALOG's theme surface -- the inverse pairing.
-  Measure it in dark mode rather than assuming it passes.
-- **Dialogs were never audited.** F197's sweep covered cards and containers in screens. This is a
-  `showDialog` body, and the audit that found "exactly two instances" did not look here. Re-run
-  the corrected detector across dialogs specifically.
-- Depends on: nothing. Overlaps F197's gate, which it extends rather than replaces.
-- Source: Harold, 2026-09-10, from an Android dark-mode screenshot.
-
-**F208. YAML Import is BROKEN on Android -- FilePicker rejects the .yaml filter (~1-2h) Priority 8 (NEW, 2026-09-10 -- Harold, on the S24+)**
-- Phase: Core App Quality
-- Platform: **Android only** -- Windows is unaffected
-- **Reproduced on the closed-test build, screenshot 2026-09-10**: tapping Import Rules (or Import
-  Safe Senders) fails immediately with
-  `Import failed: PlatformException(FilePicker, Unsupported filter. Make sure that you are only
-  using the extension without the dot, (ie., jpg instead of .jpg). This could also have happened
-  because you are using an unsupported file...`
-- **The plugin's suggested cause is a RED HERRING.** `yaml_import_export_screen.dart:255` (and
-  300, 334, 395) already passes `allowedExtensions: ['yaml', 'yml']` -- dotless, exactly as the
-  message demands. The advice in the error does not apply.
-- **The real cause**: on Android, `FileType.custom` is resolved through **MIME types**, not file
-  extensions. `.yaml` and `.yml` have no registered MIME mapping on Android, so the picker
-  rejects the filter outright before any file is chosen. Windows filters by extension directly,
-  which is exactly why this breaks on one platform and not the other -- an ADR-0042 platform
-  difference hiding inside a shared call.
-- **Severity is higher than it looks**: YAML import/export is the app's ONLY backup-and-restore
-  path and its only way to move rules between devices. On Android it is currently impossible to
-  restore rules at all. The rules DB is the user's accumulated work.
-- **Four call sites**, so fix once in a shared helper rather than four times.
-- **Candidate fixes, to evaluate rather than assume**: (a) `FileType.any` plus post-selection
-  extension validation -- simplest, and the validation is needed anyway since a MIME filter
-  cannot be trusted; (b) register a custom MIME type; (c) a platform fork using
-  `FileType.custom` on desktop and `FileType.any` on Android, declared per ADR-0042.
-  **(a) is likely correct** and removes the platform difference rather than encoding it.
-- **Test it with a REAL exported file**, not a hand-made one -- the export half works, so
-  export-then-import is the natural round trip and the only proof the fix actually restores data.
-- Depends on: nothing. Independent of F206, though both touch file access on Android.
-- Source: Harold, 2026-09-10, exercising Import/Export on the S24+.
-
-**F209. Android navigation bar overlaps the bottom of most screens (~2-4h) Priority 16 (NEW, 2026-09-10 -- Harold)**
-- Phase: Core App Quality
-- Platform: **Android** (and iOS later -- the same class applies to the home indicator)
-- **Harold, 2026-09-10**: *"didn't you find that almost all the pages had the bottom bit covered
-  by the android 3 buttons - should we fix that?"* **Yes, and I should have raised it.** I saw it
-  across the screenshots today -- Settings, Scan History, Import/Export -- and treated it as a
-  screenshot artifact rather than reporting it. It is a real layout defect.
-- **Clearest example, from the same session**: the Import failure message on the Import/Export
-  screen is CUT OFF MID-SENTENCE by the navigation bar. A user hitting that error cannot read
-  what it says -- the diagnostic text is physically behind the system buttons.
-- **Cause**: content is not inset for the system navigation area. Flutter needs either
-  `SafeArea` or explicit `MediaQuery.viewPadding.bottom` handling; a `Scaffold` body does not
-  inset for the nav bar on its own, and Android 15+ enforces edge-to-edge by default, which
-  makes this WORSE rather than better on newer devices.
-- **Not cosmetic**: it hides error text (proven above), and on scrollable screens it can hide the
-  final list row or a bottom action button -- exactly the elements a user needs.
-- **Scope**: fix in the shared scaffold/layout rather than per screen. Harold's phrasing --
-  "almost all the pages" -- points at a single shared container, which is also what ADR-0042
-  prefers ("fork at the narrowest possible point", and here there may be no fork at all).
-  **Inventory first**: confirm whether one shared widget covers every affected screen before
-  editing any of them individually.
-- **Gate it**: a widget test asserting bottom content clears `viewPadding.bottom` would stop the
-  next screen from reintroducing it. Without that, this returns the first time someone adds a
-  screen.
-- **Windows is unaffected** -- no system nav bar -- so this is Android-shaped work that should
-  not change desktop layout. Prove the no-regression side, per ADR-0042's "cover BOTH branches".
-- Depends on: nothing.
-- Source: Harold, 2026-09-10. Observed by Claude across many screenshots and NOT raised -- a miss
-  worth recording as its own lesson: noticing a defect and not reporting it is indistinguishable
-  from not noticing it.
-
 **F207. A manual scan is refused while a background scan is "in progress" -- and the block appears to outlive the scan (~1-2h) Priority 20 (NEW, 2026-09-10 -- Harold, on the S24+)**
 - Phase: Core App Quality
 - Platform: Android (closed test); check Windows for the same lock
@@ -1426,65 +1368,6 @@ All incomplete items in relative priority order. Priority in increments of 10; i
 - Depends on: nothing. All three checks read the built AAB, which the release process already
   produces.
 - Source: Harold, 2026-09-10 -- *"target is not perfection, but as good as reasonably possible."*
-
-**F203. "Found N, evaluated 0" is unexplainable to the user -- surface the safe-sender-already-in-target skip (~1-2h) Priority 22 (NEW, Sprint 68 MV -- Harold)**
-- Phase: Core App Quality
-- Platform: All (shared scanner + results UI)
-- **Harold, 2026-09-09, looking at a real scan**: *"Found 2, but 'no rules' 0?"* The Scan
-  History row read `Found: 2 | Processed: 0 | No Rule: 0 | Errors: 0`, and the Results screen
-  said **"No emails were found in the selected folders for the specified time period."** Those
-  two statements contradict each other on screen.
-- **NOT A BUG in the scan. The behavior is correct** -- diagnosed from
-  `dev_live_scan_v0.14.2.log` and the source, not guessed:
-  - `Step 4: Folder "INBOX" returned 2 messages` -- the fetch worked.
-  - `Step 6a COMPLETE: evaluated=0` -- neither reached the evaluated list.
-  - Cause: `email_scanner.dart:330`, the ONLY `continue` that bypasses
-    `evaluatedEmails.add`. Both messages matched a SAFE SENDER and were already sitting in
-    INBOX, which is this account's Safe Sender target folder, so
-    `shouldSkipSafeSenderAlreadyInTarget` skipped them "entirely -- do not count, do not
-    display, do not process. It is already where it belongs."
-  - With 623 safe senders loaded, a test message and an Apple welcome mail matching is
-    unremarkable.
-- **The defect is that the user cannot possibly know this.** Every counter is individually
-  truthful (Found = fetched; Processed/No Rule = needed action) but the combination reads as a
-  malfunction, and the empty-state text actively asserts something false -- emails WERE found.
-  The skip is logged at debug level only. Harold had to ask, and answering it required reading
-  the scan log and the scanner source.
-- **Scope**: (a) count the skips and surface them, e.g. a `Safe (already filed): N` chip
-  alongside the existing counters; (b) fix the empty-state text so it distinguishes "no emails
-  fetched" from "nothing required action"; (c) consider whether Scan History should carry the
-  same number, since that row is where the contradiction is starkest.
-- **CORRECTION to a side finding first recorded here (2026-09-09)**: I read
-  `Step 2.5: deletedRuleFolder=Deleted Messages` in the scan log as the SCAN resolving the real
-  folder at runtime, and concluded the settings screen's `Trash (default)` was a harmless
-  display-layer default. **Harold had already changed the setting to `Deleted Messages` before
-  running the scan.** So that log line reflects his SAVED VALUE, not runtime resolution.
-  **There is no evidence the scan resolves the folder itself**, and the hardcoded
-  `?? 'Trash'` at `email_scanner.dart:670` remains unproven-benign rather than
-  proven-harmless. F202's blast radius is NOT narrowed. Same error class as the folder-picker
-  screenshots: reading a post-change state as a pre-change one.
-- **PLATFORM SCOPE: this is a SHARED defect. There is no platform difference.** Recorded
-  because I claimed one twice and was wrong both times, and Harold caught it: *"Not sure this
-  was true or just the timing of results pasted were out of order."* It was the timing.
-  The Android screenshot reading "No Results Yet" was the **pre-scan** screen (11:25, before
-  the run); Windows' "No emails were found" was a **post-scan** screen. Comparing them was not
-  like-for-like.
-  Traced to the source rather than to more screenshots: **both strings live in
-  `lib/ui/widgets/empty_state.dart`** -- `NoResultsEmptyState` ("No Results Yet") and
-  `ScanCompleteNoEmailsEmptyState` ("No emails were found...") -- and
-  `results_display_screen.dart:791-797` picks between them with ONE shared conditional:
-  never-scanned gets the former, scanned-and-found-nothing gets the latter. Shared widget,
-  shared chain, identical on both platforms. **Android would show exactly the same text in
-  exactly the same state.**
-  So the whole card is a SHARED fix: both the misleading post-scan message and the missing
-  `Safe (already filed): N` disclosure. **Do NOT scope any part of this as Windows-only** --
-  that would ship a half fix and leave Android to surface the same confusion.
-- **Watch item**: do NOT "fix" this by counting skipped emails as Processed. They deliberately
-  are not processed, and the Sprint 58 F151d Demo Mode exception in
-  `shouldSkipSafeSenderAlreadyInTarget` shows this path already has subtle cases. The fix is
-  DISCLOSURE, not recounting.
-- Depends on: nothing. Independent of F202, though both surfaced in the same iCloud session.
-- Source: Harold, 2026-09-09, Sprint 68 Manual Validation (F191 iCloud/Windows cell).
 
 **F192. Custom IMAP Server support -- build the host-entry UI (~4-6h) Priority 32 (PLANNED FOR SPRINT 69 -- Harold, 2026-09-09, Sprint 68 scope selection; split from F191, genuinely unbuilt)**
 - Phase: Core App Quality
