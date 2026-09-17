@@ -297,7 +297,31 @@ After patching, delete the tools snapshot to force recompilation:
 rm D:/dev/flutter/bin/cache/flutter_tools.snapshot
 ```
 
-**Important**: This patch will be lost when Flutter is upgraded. Re-apply after any `flutter upgrade`.
+**OBSOLETE AS OF 2026-09-17 -- DO NOT RE-APPLY THIS PATCH. Upstream fixed it.**
+
+Verified during the Sprint 70 SDK upgrade (F218): on Flutter **3.47.4** with the SDK
+**UNPATCHED**, `build-windows.ps1` completed successfully and
+`build/native_assets/windows/sqlite3.x64.windows.dll` was installed cleanly. No
+`PathExistsException`, no MSB8066. The double-run this patch worked around no longer occurs.
+
+Keep the section below as the historical record of a real defect and its diagnosis -- it explains
+why a local SDK modification existed for nine months -- but the instruction to re-apply after an
+upgrade **no longer applies**. If a future upgrade brings the symptom back, re-derive the fix from
+the symptom rather than pasting the code below, because the upstream function has already been
+restructured once (it now collects results into an `installedFiles` list).
+
+---
+
+**Historical note, superseded: the patch above CANNOT be pasted into Flutter 3.47.4.** The SDK
+upgraded 3.38.5 -> 3.47.4 during Sprint 70 (F218) and
+`_copyNativeCodeAssetsToBundleOnWindowsLinux` has been RESTRUCTURED upstream: it now collects
+results into an `installedFiles` list rather than copying inline, so the recorded 5-line edit has
+no matching context. The unguarded `.copy()` is still present (`native_assets.dart:951`), so the
+double-copy defect may well still exist -- but the remedy must be RE-DERIVED from the symptom
+rather than pasted from this page.
+
+**Important**: This patch is lost on every `flutter upgrade`. Re-apply after one -- and re-read
+the surrounding code first, because this page has now been wrong once.
 
 **Upstream**: This should be reported to [flutter/flutter](https://github.com/flutter/flutter/issues) as a Windows native assets build bug.
 

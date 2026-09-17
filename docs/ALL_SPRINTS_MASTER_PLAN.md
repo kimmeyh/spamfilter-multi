@@ -658,6 +658,59 @@ All incomplete items in relative priority order. Priority in increments of 10; i
 - Source: Harold, 2026-09-10 -- filed after the S24+ Scan History totals, reframed by him the
   same day from "fix Android" to "a platform capability".
 
+**F218 OUTCOME (Sprint 70, 2026-09-17): SDK UPGRADED 3.38.5 -> 3.47.4. The upgrade did NOT fix the `integration_test` defect, and the workaround is RESTORED -- deliberately, per the card's own DoD.**
+
+This is the outcome R-5 named as possible and the DoD pre-authorised: *"If the upgrade does NOT
+fix the integration_test defect, say so and RESTORE the workaround rather than shipping a broken
+Play build. That is a legitimate outcome, not a failure."*
+
+**What was done:**
+- Upgraded `3.38.5` -> `3.47.4` (9 months, 4,163 commits). `flutter doctor`: no issues found.
+- Removed `releaseImplementation(project(":integration_test"))` and built the AAB. **It failed with
+  the IDENTICAL error**: `GeneratedPluginRegistrant.java:64: error: package
+  dev.flutter.plugins.integration_test does not exist`. Nine months of SDK releases did not change
+  this behaviour.
+- Restored the workaround. AAB builds successfully on the new SDK with it in place.
+
+**So the workaround stays, and the reason is now EVIDENCE rather than caution.** Before today it
+was "the upgrade might fix this"; now it is "the current stable does not". A future attempt should
+not repeat the upgrade hoping for a different result -- it needs a different approach entirely
+(the dev-dependency plugin registration itself, or an upstream issue).
+
+**THREE FINDINGS from the upgrade, all worth keeping:**
+
+1. **The Windows native-assets patch is now OBSOLETE -- upstream fixed it.** Proven, not assumed:
+   `build-windows.ps1` completed successfully on 3.47.4 with the SDK **UNPATCHED**, and
+   `build/native_assets/windows/sqlite3.x64.windows.dll` was installed cleanly with no
+   `PathExistsException`. Three checks agree -- `git status` in the SDK shows no modification, the
+   exe is freshly dated, and the exact DLL the patch existed for is present.
+   **This is the sprint's one unambiguous win from the upgrade**: a nine-month-old local SDK
+   modification, which had to be re-applied by hand after every upgrade and which
+   `TROUBLESHOOTING.md` warned about, is simply gone. That page now says DO NOT RE-APPLY, with the
+   evidence, and keeps the diagnosis as history.
+
+2. **Flutter silently rewrote `analysis_options.yaml`**, adding exclusions for `build/`,
+   `android/`, `ios/`, `windows/`. Checked rather than accepted: ZERO Dart files exist in any
+   excluded directory, and `version_consistency_test` greps rather than analyzes, so nothing is
+   weakened. Recorded because a silent tooling edit to an analysis config deserves a look.
+
+3. **A new lint found four REAL latent defects**, not style issues. `unawaited_return_in_try_block`
+   flags a `Future` returned without `await` inside a `try` -- meaning **the `catch` never fires
+   for that future's errors**:
+   - `generic_imap_adapter.dart:533` (`searchByMessageId` -> `_fetchMessageDetails`)
+   - `gmail_api_adapter.dart:471` and `:489` (`_fetchMessagesIndividually` fallbacks)
+   - `email_scanner.dart:1344`
+   Every one is in an error-handling path in the IMAP or Gmail fetch code -- precisely where a
+   swallowed exception is most expensive. **Filed as F223** rather than fixed inside F218, because
+   they are unrelated to the toolchain and deserve their own verification.
+
+**Dependency re-resolution (R-4), reviewed not assumed**: 6 packages moved, all patch/minor, none
+a direct dependency. The Dart SDK floor moved `3.10.0` -> `3.11.0-0`.
+
+**Kotlin warning surfaced by the new SDK**: *"Flutter support for your project's Kotlin version
+(2.2.20) will soon be dropped. Please upgrade to at least 2.3.20 soon."* Not actioned this sprint;
+recorded here so it is not a surprise at the next upgrade.
+
 **F218. Upgrade the Flutter SDK (9 months stale), re-apply the native-assets patch, re-resolve 35 dependencies, and REMOVE the one-time Gradle workaround (~4-8h) Priority 8 (NEW, 2026-09-14 -- Harold, during the 0.15.1 Play release)**
 - Phase: Developer Workflow / Tooling
 - Platform: All -- the SDK is shared, and both platforms need re-verification
@@ -917,6 +970,46 @@ All incomplete items in relative priority order. Priority in increments of 10; i
   on every scan, so its cost is spread wider than a defect that only fires in one flow.
 - Depends on: nothing.
 - Source: Sean Jarvis via Harold, 2026-09-17.
+
+**F223. Four `Future`s returned without `await` inside `try` -- the catch never fires (~30m) Priority 2 -- FIXED IN SPRINT 70 (2026-09-17, forced by the Windows build gate)**
+- Phase: Core App Quality
+- Platform: All (shared adapter and scanner code)
+- **Not a style issue.** `unawaited_return_in_try_block`, a lint new in Flutter 3.47.4, flags a
+  `Future` RETURNED from inside a `try` without `await`. The try block exits before the future
+  completes, so **the surrounding `catch` never sees its errors** -- they surface as an unhandled
+  async error somewhere else, or vanish.
+- **All four are in error-handling paths in the mail-fetch code**, which is where a swallowed
+  exception costs the most:
+  - `generic_imap_adapter.dart:533` -- `searchByMessageId` returns `_fetchMessageDetails(...)`
+    inside a `try` whose `catch` logs `[IMAP] searchByMessageId ERROR`. A fetch failure bypasses
+    that log entirely.
+  - `gmail_api_adapter.dart:471` and `:489` -- the `_fetchMessagesIndividually` fallbacks, which
+    exist BECAUSE something already failed. A failure in the fallback is unlogged.
+  - `email_scanner.dart:1344`
+- **Fix is small per site** (`return await ...`), but **verify rather than assume**: adding
+  `await` changes WHERE the error surfaces, so a caller that currently handles the async error
+  may now see it caught upstream instead. Check each call site before changing it.
+- **Worth a gate**: the lint is now in the analyzer, so keeping `flutter analyze` at zero
+  warnings enforces this permanently -- no custom gate needed, provided the warnings are not
+  suppressed.
+- **FIXED 2026-09-17 IN SPRINT 70, and the reason it could not wait is worth recording.** The card
+  originally said *"do NOT fix these inside F218 -- they are unrelated to the toolchain."* That
+  was wrong about the consequence, though right about the cause. `build-windows.ps1:189` halts the
+  build on ANY non-zero `flutter analyze` exit -- deliberately, *"to avoid shipping a stale
+  binary."* So four new analyzer warnings **blocked every Windows build**. Deferring them would
+  have left the platform unbuildable for the rest of the sprint.
+- **The fix is `return await` at each site**, with a comment naming what the catch was failing to
+  cover:
+  - `generic_imap_adapter.dart` -- the catch degrades dedup to a no-op so it "must never break the
+    scan"; without the await a fetch failure bypassed exactly that safety net.
+  - `gmail_api_adapter.dart` x2 -- both `_fetchMessagesIndividually` fallbacks, which run BECAUSE
+    batchGet already failed. A silent failure there left no record of either failure.
+  - `email_scanner.dart` -- the catch runs `platform.disconnect()`; a bare return leaked the
+    connection on failure.
+- **Verified**: `flutter analyze` clean, full suite green. Behaviour changes only in the failure
+  case, which is the entire point.
+- Depends on: surfaced by F218's upgrade; fixed in the same sprint out of necessity.
+- Source: found 2026-09-17 by Flutter 3.47.4's analyzer during the F218 upgrade.
 
 **F217. Android background scans do not run while the app is backgrounded or the phone is locked -- and no notification arrives (~4-8h investigation + fix) Priority 6 (NEW, 2026-09-13 -- Harold, Sprint 69 retrospective Category 14)**
 - Phase: Android / Google Play Store Readiness

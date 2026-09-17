@@ -530,7 +530,11 @@ class GenericIMAPAdapter with BatchOperationsMixin implements SpamFilterPlatform
       }
 
       _logger.i('[IMAP] searchByMessageId: ${sequence.length} match(es) in "$folderName"');
-      return _fetchMessageDetails(sequence, folderName);
+      // F223: `return await`, not a bare `return`. Without the await this try
+      // block exits before the fetch completes, so the catch below -- which
+      // exists to degrade dedup to a no-op rather than break the scan -- never
+      // sees a fetch failure.
+      return await _fetchMessageDetails(sequence, folderName);
     } catch (e, st) {
       _logger.e('[IMAP] searchByMessageId ERROR in "$folderName": $e\n$st');
       // Degrade to no-op: dedup must never break the scan.
