@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:logger/logger.dart';
@@ -8,6 +10,7 @@ import '../../core/providers/email_scan_provider.dart';
 import '../../core/providers/rule_set_provider.dart';
 import '../../core/services/email_scanner.dart';
 import '../../core/storage/database_helper.dart'; // F175 (Sprint 62)
+import '../../core/services/scan_coordinator.dart'; // F221 (Sprint 70)
 import '../../core/storage/scan_result_store.dart'; // F175 (Sprint 62)
 import '../../core/storage/settings_store.dart'; // [NEW] ISSUE #138: Load scan mode from settings
 import '../../main.dart' show routeObserver;
@@ -839,7 +842,53 @@ Future<void> startRealScan({
     scanLogger.i('[SCAN_SCREEN] Starting scan: folders=$foldersToScan, daysBack=$daysBack');
 
     // Start scan in background (will call startScan again with real count)
-    await scanner.scanInbox(daysBack: daysBack, folderNames: foldersToScan);
+    //
+    // F221 / F220 R-3 (Sprint 70): manual scans now have a HARD TIMEOUT, the
+    // same 30 minutes background scans use.
+    //
+    // **This REVERSES a prior development decision** (Class-2, decided by
+    // Harold 2026-09-17). `background_scan_core.dart` justified giving manual
+    // scans no timeout as *"a user is watching and can cancel"*. Harold's
+    // correction: that premise expires the moment the user navigates away --
+    // *"Once a user switches screens they can no longer cancel. In addition
+    // some timeout is still valid."* F220's lifecycle fix covers only the
+    // backgrounded case, not a user who simply moves to another screen.
+    //
+    // **Why the timeout lives HERE and not in the State class.**
+    // `startRealScan` is a TOP-LEVEL function, so this Future is not owned by
+    // the screen and keeps running after the user navigates away -- which is
+    // exactly the requirement: *"If the user switches from the Manual scan to
+    // other screens, the 30 minute time should continue and cancel."* Putting
+    // it in `_ScanProgressScreenState` would tie it to the widget lifetime and
+    // silently fail the case it exists for.
+    //
+    // 30 minutes matches background deliberately. Harold: *"The 30 minute
+    // timeout now for background jobs is likely too long since no known scans
+    // take that long, but lets set both at 30 minutes for now."* One constant,
+    // both paths, tightened together later.
+    //
+    // As in the background path, Dart's timeout does not cancel the underlying
+    // work, so the lease is force-released by owner -- otherwise the hung scan
+    // holds it and every queued scan waits the full limit, which is the wedge
+    // F220 just fixed.
+    try {
+      await scanner
+          .scanInbox(daysBack: daysBack, folderNames: foldersToScan)
+          .timeout(ScanCoordinator.scanTimeout);
+    } on TimeoutException {
+      final minutes = ScanCoordinator.scanTimeout.inMinutes;
+      scanLogger.e('[SCAN_SCREEN] manual scan TIMED OUT after $minutes '
+          'minutes -- marking failed (F221)');
+      ScanCoordinator.instance.releaseActiveByOwner(
+        scanType: 'manual',
+        accountId: accountId,
+      );
+      await scanProvider.errorScan(
+        'Scan stopped after $minutes minutes without finishing. The mail '
+        'server may have stopped responding. Start the scan again.',
+      );
+      rethrow;
+    }
     scanLogger.i('[SCAN_SCREEN] scanInbox() completed successfully');
   } catch (e, st) {
     logger.e('[SCAN_SCREEN] SCAN EXCEPTION: $e\n$st');
