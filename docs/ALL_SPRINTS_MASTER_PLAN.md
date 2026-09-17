@@ -895,12 +895,18 @@ All incomplete items in relative priority order. Priority in increments of 10; i
   shared helper, promote it rather than copying it.
 
 - **Still to decide during implementation:**
-  - **Which date?** `receivedDate`. Confirm it is populated for EVERY provider -- an adapter that
-    leaves it null would sort those rows into a clump at one end, and the clustering would make
-    that clump look deliberate.
-  - **Direction is SETTLED: newest first** (Harold, 2026-09-17).
-  - **Ties.** Two emails with the same timestamp, or a whole domain whose newest matches another
-    domain's newest, need a deterministic tiebreak or the list reshuffles between rebuilds.
+  - **Which date? SETTLED (Harold, 2026-09-17): `receivedDate`, and a null needs no special
+    handling.** His reasoning: *"If it is there use it, if it is not the sort by null does
+    nothing, but leaves them clumped by base domain and that works as the next best
+    alternative."* So do NOT build a fallback-date path or a null-guard branch -- a null simply
+    contributes no ordering, and the domain clustering still groups those rows usefully. Degrading
+    to the clustering alone IS the designed behaviour, not an accident to defend against.
+  - **Direction SETTLED: newest first.**
+  - **Ties: NO tiebreak needed (Harold, 2026-09-17).** His reasoning: *"No Rules processed once at
+    99.99% rate. So it is very unlikely to appear in a second order a second time because there
+    will be no second time."* A user addresses a No-rule item once and it leaves the list, so the
+    re-render stability a tiebreak buys is worth nothing here. Do not add one for theoretical
+    tidiness.
   - **Does it interact with the "No rule" review flow?** That flow advances through items in
     order; changing the order changes the sequence a user is walked through. Check
     `no_rule_review_screen.dart` before assuming the change is local.

@@ -1,15 +1,17 @@
 ***BELOW IS NOT FOR CLAUDE CODE, GITHUB COPILOT, CHATGPT OR COPILOT PULL REQUEST (PR) REVIEW USE***
 Sprint plan approval:
-Sprint plan approved, proceed with execution. 
+Sprint plan approved as recommended, proceed with execution. 
 All Sprint tasks and sub-tasks are approved.  
-Continue without addition approvals until Manual Validation, providing your recommendation for Manual Validation steps.
+Do not stop between tasks as they are all approved, please continue to complete all tasks and without addition approvals until Manual Validation, providing your recommendation for Manual Validation steps.
 Do not stop to ask questions unless meeting the criteria in \docs\SPRINT_STOPPING_CRITERIA.md
 ---------------------------------------------------------------------------------------------------------
 Sprint 7n Scope should include the below items. Please complete sprint planning (/docs/sprint_planning.md) for the below items and present for approval.  Note that everything needs to take into account both the Windows App and the Android app and ADR stating that everything should be functionally and UI the same unless it cannot be - and where it cannot be it should be implemented as a platform exception for what is needed -- this applies to all backend code, frontend code, data, architecture, development, security, testing, deployment.
 
 ---------------------------------------------------------------------------------------------------------
-Sprint 7n Scope should include the below items. Please complete sprint planning (/docs/sprint_planning.md) for the below items and present for approval.  Note that everything needs to take into account both the Windows App and the Android app and ADR stating that everything should be functionally and UI the same unless it cannot be - and where it cannot be it should be implemented as a platform exception for what is needed -- this applies to all backend code, frontend code, data, architecture, development, security, testing, deployment.
-
+Sprint 70 Scope should include the below items. Please complete sprint planning (/docs/sprint_planning.md) for the below items and present for approval.  Note that everything needs to take into account both the Windows App and the Android app and ADR stating that everything should be functionally and UI the same unless it cannot be - and where it cannot be it should be implemented as a platform exception for what is needed -- this applies to all backend code, frontend code, data, architecture, development, security, testing, deployment.
+  Priority 4: F219 (Google Sign-In null_intent) · F212 (re-processing fails 100%) · F220 (backgrounding wedges scanning)
+  Priority 6: F217 (background scans deferred) · F221 (stuck in-progress rows)
+  Priority 8: F218 (Flutter SDK upgrade)
 
 
 
@@ -21,6 +23,7 @@ Sprint 7n Scope should include the below items. Please complete sprint planning 
   - F212. Re-processing after adding rules FAILS 100% on the closed-test build (~2-4h) Priority 4
   - F217. Android background scans do not run while backgrounded or locked, and no notification arrives (~4-8h) Priority 6
   - F218. Upgrade the Flutter SDK, re-apply the native-assets patch, re-resolve 35 dependencies, remove the one-time Gradle workaround (~4-8h) Priority 8
+
   - F202. Per-provider folder defaults (~6-10h) Priority 10
   - F206. Diagnostic export as a platform capability (~3-5h) Priority 14
   - F205. Closed-test error rate: 53 errors in 3,833 scanned — find out what they are (~2-4h) Priority 18
