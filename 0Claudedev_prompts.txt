@@ -7,6 +7,7 @@ Sprint plan approved as recommended, proceed with execution.
 All Sprint tasks and sub-tasks are approved.  
 Do not stop between tasks as they are all approved, please continue to complete all tasks and without addition approvals until Manual Validation, providing your recommendation for Manual Validation steps.
 Do not stop to ask questions unless meeting the criteria in \docs\SPRINT_STOPPING_CRITERIA.md
+If questions must be asked, ask as late as possible - do everything that can be done (all tasks and parts of takss, without the answer to the question(s), then ask the question(s)
 
 Github Copilot Review Requests:
 Please trigger the Claude PR reviews and Copilot PR Review ("id": 175728472, "login": "copilot-pull-request-reviewer[bot]", "node_id": "BOT_kgDOCnlnWA").

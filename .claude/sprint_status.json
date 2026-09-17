@@ -1,17 +1,18 @@
 {
   "_description": "Sprint status file that persists across context compaction. Update after each phase/sub-phase completion.",
-  "_last_updated": "2026-09-14",
+  "_last_updated": "2026-09-17",
   "_usage": "Read this file after context compaction to restore sprint approval state and progress.",
   "_staleness_note": "This file had drifted 15 sprints (last updated at Sprint 35, 2026-04-19) before being refreshed at Sprint 50 close-out. It is a Phase 7.7 checklist item -- update it at every sprint close-out, not opportunistically.",
   "current_sprint": {
     "number": 70,
     "branch": "feature/20260914_Sprint_70",
-    "status": "Sprint 70 NOT PLANNED, NOT APPROVED. Phase 8 Release Cycle IN PROGRESS: 8.1 develop->main DONE (#411); 8.3.0 prod worktree pulled (was 44 commits behind, stale AGAIN -- 4th consecutive release) and now at #411 with 0.15.1; 8.2 completeness sweep DONE, which found the SPRINT_69_SUMMARY missing and this file stale. NEXT: 8.3 Microsoft Store release, then 8.4 scope selection. F217 (background scans deferred for hours on Android, Priority 6) is the strongest candidate for Sprint 70 scope.",
-    "plan_approved": false,
-    "blanket_execution_approved": false,
-    "pr_number": null,
-    "pr_url": null,
-    "pr": null
+    "status": "Sprint 70 APPROVED 2026-09-17 (Phase 3.7), Harold: \"as recommended\", blanket execution through Manual Validation. Scope: F218 + F220 + F221 + F212 + F219 + F217, 17-34h, Risk Level HIGH. Sequencing: F218 FIRST (toolchain baseline), then the coordinator cluster F220 -> F221 -> F212, F219 in parallel, F217 last. Two decision-class interrupts PRE-DECLARED: F220 R-3 is Class-2 (reversing the no-timeout-for-manual-scans decision) and F217 is Class-1 (the card is scoped to DIAGNOSE and RECOMMEND, not to land a fix). Audit-first confirmed all six cards and found two details: F220 has prior art at account_selection_screen:113, and reconcileStaleInProgressScans has exactly ONE caller (main.dart:278, startup only).",
+    "plan_approved": true,
+    "blanket_execution_approved": true,
+    "pr_number": 418,
+    "pr_url": "https://github.com/kimmeyh/spamfilter-multi/pull/418",
+    "pr": 418,
+    "version": "0.15.2+5 / msix 0.15.2.0 -- PATCH bump at Phase 3.7.0b (F190). All six tasks are fixes or tooling, no feat. Play consumes versionCode permanently, so +4 -> +5."
   },
   "previous_sprint": {
     "number": 69,
@@ -22,8 +23,8 @@
     "pr_reviews": "BOTH ran. Code-review agent: 7 findings first pass (3 critical, incl. the F209 mechanism), then 1 CRITICAL second pass -- results_display_screen and scan_progress_screen return a wrapper around their Scaffold, so a gate matching \"return Scaffold(\" skipped them entirely while reporting green. A third defect surfaced fixing that: the rewritten gate was satisfied by a COMMENT mentioning the widget. Copilot: 1 finding, a copy-paste path corrupted by consumed escape sequences, which a sweep turned into 5 across 3 files. All addressed in-sprint, none deferred."
   },
   "github_issues": {
-    "sprint_69": "#406 #407 #408 #409 CLOSED 2026-09-14 with outcomes. #405 (F211) LEFT OPEN deliberately -- AC-1 requires the Google Cloud Console changes plus a test with an account that has never authorised the app.",
-    "open": "#405 (F211, awaiting console change + fresh-account verification)"
+    "sprint_70": "#412 F218, #413 F220, #414 F221, #415 F212, #416 F219, #417 F217 -- created 2026-09-17 at Phase 3.7.0, all OPEN. Close by hand at Post-Merge Cleanup.",
+    "open": "#412 #413 #414 #415 #416 #417 (Sprint 70)"
   },
   "_github_issues_note": "Sprint 66 cards created at Phase 3.3.1 (2026-09-07): #387 GP-19, #388 GP-4. Close by hand at Post-Merge Cleanup.",
   "test_metrics": {

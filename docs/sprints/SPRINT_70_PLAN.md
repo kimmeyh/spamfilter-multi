@@ -1,6 +1,7 @@
 # Sprint 70 Plan
 
-**Status**: AWAITING PHASE 3.7 APPROVAL (not approved; no task work has started)
+**Status**: APPROVED -- Harold, 2026-09-17, "as recommended". Blanket execution approval
+through Manual Validation.
 **Branch**: `feature/20260914_Sprint_70`
 **Planned**: 2026-09-17
 **Scope selected by**: Harold, 2026-09-17 (Phase 8.4 backlog refinement pass 2)
@@ -477,12 +478,21 @@ every scan depends on, and a fourth changes the toolchain beneath both platforms
 6. **F217** -- last. Diagnosis-heavy, needs the phone idle for real intervals, and its Class-1
    decision is better raised once the rest is stable.
 
-## Open questions for Phase 3.7 approval
+## Phase 3.7 approval (CLOSED)
 
-1. **Sprint size**: 17-34h is roughly three Sprint 69s. Approve as-is, or trim (F218 and F217 are
-   the two most deferrable)?
-2. **F217 scope**: the card is scoped to DIAGNOSE and RECOMMEND, with the fix as a Class-1
-   decision surfaced mid-sprint. Confirm that is the intent rather than expecting a fix to land.
+Approved by Harold, 2026-09-17: *"Sprint plan approved as recommended, proceed with execution.
+All Sprint tasks and sub-tasks are approved. Do not stop between tasks."*
+
+Both open questions were answered by "as recommended":
+
+1. **Sprint size**: APPROVED AS-IS at 17-34h, with the stated sequencing.
+2. **F217 scope**: CONFIRMED as diagnose-and-recommend. The Class-1 fix is surfaced mid-sprint,
+   not landed silently.
+
+Standing approval covers all task execution, commits, pushes to the sprint branch, and PR updates
+through Phase 5.3 Manual Validation. The 9 SPRINT_STOPPING_CRITERIA remain the only valid
+mid-sprint pauses -- and the two pre-declared decision-class interrupts (F220 R-3 Class-2,
+F217 Class-1) are surfacings, not stops.
 
 ## Definition of Done (sprint level)
 
