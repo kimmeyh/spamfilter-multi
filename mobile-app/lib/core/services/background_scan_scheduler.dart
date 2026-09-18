@@ -185,10 +185,30 @@ class WindowsSchedulerAdapter implements BackgroundScanScheduler {
 ///     than every 15 minutes. `ScanFrequency.every15min` is the app's own
 ///     minimum, so the floor guard below is defensive rather than reachable
 ///     through the UI today.
-///   - **Inexact timing**: Android batches periodic work for battery (Doze,
-///     App Standby); a "15 minutes" task fires approximately, not on the
-///     minute. Windows Task Scheduler is exact. Accepted difference -- the
-///     scan is periodic hygiene, not a deadline.
+///   - **Inexact timing -- REWRITTEN F217 (Sprint 70) to match MEASURED
+///     behaviour.** This declaration previously read: *"a 15 minutes task
+///     fires approximately, not on the minute ... Accepted difference -- the
+///     scan is periodic hygiene, not a deadline."* That was written expecting
+///     drift of MINUTES. The field shows **2h42m** on a Samsung S24+ with the
+///     phone locked and idle.
+///
+///     The old wording is not a smaller version of the truth, it is a
+///     different claim. "Fires approximately" describes jitter around a
+///     schedule; what actually happens is that Doze and App Standby DEFER the
+///     work indefinitely while the device is idle, then release it in a batch
+///     at a maintenance window. On a phone that is locked overnight the scan
+///     may not run at all for hours. A user would not recognise that as
+///     "every 15 minutes", so the parity claim ("accepted difference") no
+///     longer holds on its own terms.
+///
+///     **This is DECLARED, not fixed.** The remedy is a Class-1 decision
+///     (Harold's): a battery-optimisation exemption prompt or a foreground
+///     service with a permanent notification both change the app's
+///     relationship with the OS and with the Play listing. F217 is scoped to
+///     diagnose and recommend. See the F217 section in
+///     `docs/ALL_SPRINTS_MASTER_PLAN.md` for the options and the evidence.
+///
+///     Windows Task Scheduler is exact and is unaffected.
 ///   - **Network constraint**: registered with `NetworkType.connected`, since
 ///     an IMAP scan without a network can only fail and burn the work budget.
 class AndroidSchedulerAdapter implements BackgroundScanScheduler {

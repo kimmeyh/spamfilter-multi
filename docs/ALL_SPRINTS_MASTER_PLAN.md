@@ -1066,6 +1066,70 @@ recorded here so it is not a surprise at the next upgrade.
 - Depends on: surfaced by F218's upgrade; fixed in the same sprint out of necessity.
 - Source: found 2026-09-17 by Flutter 3.47.4's analyzer during the F218 upgrade.
 
+**F217 DIAGNOSIS (Sprint 70, 2026-09-18) -- CODE SIDE COMPLETE, OS-SIDE MEASUREMENT STILL OWED. The fix is a CLASS-1 DECISION and is NOT chosen.**
+
+**What was verified in code (no device needed):**
+
+- **R-3 CONFIRMED: the scheduling code is correct. Do not rewrite it.** `registerPeriodicTask` at
+  `background_scan_scheduler.dart:238` passes a per-account unique name, a 15-minute period,
+  `NetworkType.connected`, `ExistingPeriodicWorkPolicy.update` (idempotent re-registration), and
+  exponential backoff with a 10-minute floor. Every one of these is right. Nothing here explains
+  the deferral.
+- **R-4 CONFIRMED and it is the strongest evidence.** `AndroidManifest.xml` declares NO
+  battery-related permission at all: no `REQUEST_IGNORE_BATTERY_OPTIMIZATIONS`, no
+  `FOREGROUND_SERVICE`, no `WAKE_LOCK`, no exact-alarm permission. **The app has never asked the
+  OS for any exemption**, so Doze and App Standby are free to defer its work indefinitely. This is
+  not a bug in the app's code; it is the documented default for an app that asks for nothing.
+- **R-6 ANSWERED: "no notifications" is a SYMPTOM, not a second defect.**
+  `_notifyScanComplete` is called from inside `android_background_scan_worker.dart` only AFTER a
+  scan completes. If the OS never runs the worker there is nothing to notify. One cause, two
+  reported symptoms. (The notification path itself is sound and deliberately best-effort, so a
+  denied POST_NOTIFICATIONS cannot fail a scan.)
+- **R-5 DONE (AC-2): the ADR-0042 declaration was REWRITTEN** at
+  `background_scan_scheduler.dart:188`. It claimed inexact timing was an "accepted difference"
+  because "the scan is periodic hygiene, not a deadline" -- wording written expecting drift of
+  MINUTES. The field shows 2h42m. That is not a smaller version of the same claim: "fires
+  approximately" describes jitter around a schedule, whereas Doze DEFERS work while the device is
+  idle and releases it in a batch at a maintenance window. On a phone locked overnight the scan
+  may not run for hours, which no user would call "every 15 minutes".
+
+**STILL OWED -- needs the S24+ (AC-1, R-1, R-2).** These were NOT performed; no Android device was
+attached during implementation. Do not record F217 as diagnosed until they are:
+
+1. `adb shell am get-standby-bucket com.myemailspamfilter` after the phone has sat idle. Expect
+   RARE or RESTRICTED if Doze is the cause; ACTIVE or WORKING_SET would falsify the hypothesis.
+2. `adb shell dumpsys jobscheduler | findstr myemailspamfilter` to see what the OS thinks it has
+   scheduled and when it last ran.
+3. **Samsung Settings > Battery > Background usage limits** (R-2). Check whether the app is in
+   "Sleeping apps" or "Deep sleeping apps". **This alone may explain the entire report and costs
+   nothing to check.** Samsung's own aggressive battery management is separate from stock Android
+   Doze and is a well-known cause of exactly this symptom.
+
+**THE FIX IS A CLASS-1 DECISION -- HAROLD'S TO MAKE, NOT CLAUDE'S.** Three options, with the
+trade each one actually carries:
+
+1. **Ask the user for a battery-optimisation exemption**
+   (`REQUEST_IGNORE_BATTERY_OPTIMIZATIONS` + a runtime prompt). Keeps the current architecture;
+   the user sees one system dialog. **Play scrutinises this permission at review** and requires a
+   justification in the listing; Google's policy expects it only where core functionality
+   genuinely requires it. A spam filter that scans on a schedule is a defensible case, but it IS
+   a review surface, and users can still decline.
+2. **Foreground service with a permanent notification.** The most reliable option: a foreground
+   service is largely exempt from Doze. The cost is a permanent, non-dismissable notification and
+   `FOREGROUND_SERVICE` + `FOREGROUND_SERVICE_DATA_SYNC` permissions, plus a Play declaration for
+   the foreground-service type. It changes what the app looks like to a user every day.
+3. **Accept it and change what the app PROMISES.** No permission, no review surface, no
+   notification. Instead the UI stops implying "every 15 minutes" and says scans run periodically
+   when the device allows, and the app scans on resume (which F220 already wired for stale-row
+   reconciliation). Cheapest and least invasive; it makes the product honest rather than making it
+   punctual.
+
+**Recommendation: settle the measurement first (step 3 above, the Samsung setting, costs one
+minute), because if Samsung's battery limits are the cause then option 1 may not even help** --
+Samsung's restrictions operate independently of the stock battery-optimisation exemption. Choosing
+a remedy before that check risks shipping a Play-scrutinised permission that does not fix the
+reported behaviour.
+
 **F217. Android background scans do not run while the app is backgrounded or the phone is locked -- and no notification arrives (~4-8h investigation + fix) Priority 6 (NEW, 2026-09-13 -- Harold, Sprint 69 retrospective Category 14)**
 - Phase: Android / Google Play Store Readiness
 - Platform: **Android only** (Windows uses Task Scheduler, ADR-0039, and is unaffected)
