@@ -901,6 +901,28 @@ recorded here so it is not a surprise at the next upgrade.
 - Depends on: overlaps F220 and F207.
 - Source: Sean Jarvis via Harold, 2026-09-17.
 
+**F225. `verify-closeout-complete` hook fails its OWN allow-case (~1-2h) Priority 14 (NEW, 2026-09-18 -- found while fixing the auto-advance gate)**
+- Phase: Developer Tooling
+- Platform: N/A (repo tooling)
+- **PRE-EXISTING, not caused by the Sprint 70 hook work.** Verified by restoring the original
+  `sprint-auto-advance.ps1` and re-running: the same case fails identically, so the two are
+  unrelated.
+- `.claude/hooks/run-test-cases.ps1` reports **52 passed, 1 failed**. The failure is
+  `closeout/allow-6-prekickoff-no-pr-owed` (expected exit 0, got 2), and the hook that rejects it
+  is `verify-closeout-complete.ps1`, not the auto-advance hook.
+- The case is a legitimate pre-kickoff message: *"Sprint 60 is closed out and 0.10.0.0 is live on
+  the Store. Sprint 61 is at pre-kickoff awaiting your scope decision."* The hook reads that as a
+  close-out CLAIM for Sprint 61 and demands Sprint 61 artifacts that correctly do not exist yet.
+- **Why this matters more than one red test.** A gate that blocks correct work trains bypass --
+  the exact lesson from Sprint 67 IMP-2, where the F193 gate broke six of this hook's own
+  allow-cases. A permanently-red suite also destroys its value as a regression signal: the next
+  person to edit a hook cannot tell their change from the standing failure.
+- Fix direction: the close-out claim detector must distinguish "sprint N is closed out" (a claim
+  about a FINISHED sprint) from "sprint N+1 is at pre-kickoff" (a statement about the NEXT one).
+  Scope the artifact check to the sprint actually named as complete.
+- Source: found 2026-09-18 running the hook suite after editing `sprint-auto-advance.ps1`, per the
+  CLAUDE.md rule that a hook edit is followed by that hook's own suite.
+
 **F224. Let the user CANCEL a running scan from where they actually are (~4-8h) Priority 6 (NEW, 2026-09-17 -- Harold, alongside the F221 timeout reversal)**
 - Phase: Core App Quality
 - Platform: All (shared UI and coordinator; ADR-0042 -- no platform exception expected)
