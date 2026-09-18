@@ -93,6 +93,25 @@ void main() {
       expect(result.failureCount, messages.length);
     });
 
+    test('IMAP markAsReadBatch does NOT claim success when unconnected',
+        () async {
+      // Code review gap (Sprint 70): two of the FOUR changed methods had no
+      // disconnected test. A fix applied to four call sites but verified on
+      // two is half-verified.
+      final adapter = GenericIMAPAdapter.aol();
+      final result = await adapter.markAsReadBatch(messages);
+      expect(result.successCount, 0);
+      expect(result.failureCount, messages.length);
+    });
+
+    test('IMAP applyFlagBatch does NOT claim success when unconnected',
+        () async {
+      final adapter = GenericIMAPAdapter.aol();
+      final result = await adapter.applyFlagBatch(messages, r'$Junk');
+      expect(result.successCount, 0);
+      expect(result.failureCount, messages.length);
+    });
+
     test('Gmail already reports failure -- this is the CORRECT behaviour',
         () async {
       // Pinned so the fix brings IMAP UP to Gmail's contract rather than
@@ -143,9 +162,24 @@ void main() {
       final gmailResult =
           await gmail.moveToFolderBatch(const <EmailMessage>[], 'Trash');
 
-      for (final r in <BatchActionResult>[imapResult, gmailResult]) {
+      // All four IMAP methods, not just the two originally covered.
+      final imapMarkRead = await imap.markAsReadBatch(const <EmailMessage>[]);
+      final imapFlag =
+          await imap.applyFlagBatch(const <EmailMessage>[], r'$Junk');
+      final imapAction = await imap.takeActionBatch(
+          const <EmailMessage>[], FilterAction.delete);
+
+      for (final r in <BatchActionResult>[
+        imapResult,
+        gmailResult,
+        imapMarkRead,
+        imapFlag,
+        imapAction,
+      ]) {
         expect(r.successCount, 0);
-        expect(r.failureCount, 0);
+        expect(r.failureCount, 0,
+            reason: 'nothing was asked for, so nothing failed -- if this '
+                'flipped, every no-op re-process would report an error');
       }
     });
   });

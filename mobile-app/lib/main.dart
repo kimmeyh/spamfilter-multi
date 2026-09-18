@@ -537,8 +537,63 @@ class _AppInitializerState extends State<_AppInitializer>
   /// are touched.
   @override
   void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (state == AppLifecycleState.paused) {
+      _failScanInterruptedByBackgrounding();
+      return;
+    }
     if (state != AppLifecycleState.resumed) return;
     unawaited(_reconcileStaleScans());
+  }
+
+  /// F220 / code review H-4 (Sprint 70): fail a live scan when the app is
+  /// backgrounded -- from HERE, the app root, not from the scan screen.
+  ///
+  /// **Why it moved.** The handler originally lived only on
+  /// `ScanProgressScreen`. But "Scan Again" on the results screen calls
+  /// `startRealScan(..., useReplacement: true)`, which does a
+  /// `pushReplacement` and DISPOSES the caller's route -- so on that path
+  /// `ScanProgressScreen` is not in the stack at all, and
+  /// `ResultsDisplayScreen` has no lifecycle observer. A scan started the way
+  /// testers actually restart scans was backgrounded with nobody listening,
+  /// and stayed wedged.
+  ///
+  /// `_AppInitializerState` is above every route, so this covers every path
+  /// that can start a scan, present and future. Releasing by OWNER needs no
+  /// widget context, which is what makes the move possible.
+  ///
+  /// **ADR-0042 platform exception, same as the scan screen's**: Android tears
+  /// down sockets for a backgrounded app, so the scan is genuinely dead.
+  /// Windows minimise does not, and killing a healthy scan there would be a
+  /// regression. [debugIsAndroid] is the test seam.
+  @visibleForTesting
+  static bool? debugIsAndroid;
+
+  void _failScanInterruptedByBackgrounding() {
+    if (!(debugIsAndroid ?? Platform.isAndroid)) return;
+
+    if (!mounted) return;
+    // EmailScanProvider is created at the MultiProvider root, above this
+    // widget, so read() cannot fail for a missing ancestor here.
+    final scanProvider = context.read<EmailScanProvider>();
+    if (scanProvider.status != ScanStatus.scanning) return;
+
+    final accountId = scanProvider.currentAccountId;
+    if (accountId != null) {
+      // Release the lease OURSELVES. errorScan does not do it: the provider
+      // never touches ScanCoordinator and the scanner never reads the
+      // provider's status, so without this the coordinator stays wedged
+      // (code review C-1).
+      ScanCoordinator.instance.releaseActiveByOwner(
+        scanType: 'manual',
+        accountId: accountId,
+      );
+    }
+
+    unawaited(scanProvider.errorScan(
+      'Scan stopped because the app was moved to the background. '
+      'The connection to your mail server is closed when the app is not in '
+      'use. Start the scan again.',
+    ));
   }
 
   Future<void> _reconcileStaleScans() async {

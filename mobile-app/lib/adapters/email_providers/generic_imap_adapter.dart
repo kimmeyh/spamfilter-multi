@@ -828,7 +828,7 @@ class GenericIMAPAdapter with BatchOperationsMixin implements SpamFilterPlatform
     // All FOUR batch methods carried this guard. Fixing only the two the bug
     // report named would have left the same lie in the other two.
     if (messages.isEmpty) {
-      return const BatchActionResult(succeededIds: [], failedIds: {});
+      return BatchActionResult.allSuccess(const []);
     }
     if (_imapClient == null) {
       _logger.e('[IMAP] markAsReadBatch FAILED: not connected '
@@ -902,7 +902,7 @@ class GenericIMAPAdapter with BatchOperationsMixin implements SpamFilterPlatform
     // All FOUR batch methods carried this guard. Fixing only the two the bug
     // report named would have left the same lie in the other two.
     if (messages.isEmpty) {
-      return const BatchActionResult(succeededIds: [], failedIds: {});
+      return BatchActionResult.allSuccess(const []);
     }
     if (_imapClient == null) {
       _logger.e('[IMAP] applyFlagBatch FAILED: not connected '
@@ -971,7 +971,7 @@ class GenericIMAPAdapter with BatchOperationsMixin implements SpamFilterPlatform
     // All FOUR batch methods carried this guard. Fixing only the two the bug
     // report named would have left the same lie in the other two.
     if (messages.isEmpty) {
-      return const BatchActionResult(succeededIds: [], failedIds: {});
+      return BatchActionResult.allSuccess(const []);
     }
     if (_imapClient == null) {
       _logger.e('[IMAP] moveToFolderBatch FAILED: not connected '
@@ -1135,7 +1135,7 @@ class GenericIMAPAdapter with BatchOperationsMixin implements SpamFilterPlatform
     // All FOUR batch methods carried this guard. Fixing only the two the bug
     // report named would have left the same lie in the other two.
     if (messages.isEmpty) {
-      return const BatchActionResult(succeededIds: [], failedIds: {});
+      return BatchActionResult.allSuccess(const []);
     }
     if (_imapClient == null) {
       _logger.e('[IMAP] takeActionBatch FAILED: not connected '
@@ -1374,12 +1374,26 @@ class GenericIMAPAdapter with BatchOperationsMixin implements SpamFilterPlatform
       if (_imapClient != null) {
         _logger.i('[IMAP] Disconnecting from $displayName (total ops: $_operationCount)');
         await _imapClient!.logout();
-        _imapClient = null;
-        _currentMailbox = null;
-        _operationCount = 0;
       }
     } catch (e) {
       _logger.w('Error during disconnect: $e');
+    } finally {
+      // M-8 (code review, Sprint 70): clear the client on EVERY path, not only
+      // the clean one.
+      //
+      // These assignments used to sit inside the `try`, after `logout()`. A
+      // logout on a TORN-DOWN socket throws -- which is precisely the F220
+      // scenario -- so the catch swallowed it and left `_imapClient` pointing
+      // at a dead client. The F212 batch guards test `_imapClient == null`, so
+      // a dead-socket adapter sailed past them and failed deeper with whatever
+      // the underlying client threw.
+      //
+      // That bounded the F212 fix to "never connected" when the failure mode
+      // users actually hit is "connection died". Clearing here makes the guard
+      // cover both.
+      _imapClient = null;
+      _currentMailbox = null;
+      _operationCount = 0;
     }
   }
 

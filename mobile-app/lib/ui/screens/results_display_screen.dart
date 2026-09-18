@@ -2958,11 +2958,6 @@ class _ResultsDisplayScreenState extends State<ResultsDisplayScreen> {
     }
   }
 
-  /// Sprint 38 F82 (Issue #252): "M of N no-rules addressed" progress footer.
-  /// Shows under the chip strip when the scan had any no-rule emails. Renders
-  /// nothing if the user has nothing to triage (clean scan). Updates as the
-  /// user adds rules / safe senders inline -- `addressed` increments and
-  /// `remaining` decrements at the same time.
   /// F212 R-4 (Sprint 70): mark the emails whose IMAP action did not succeed.
   ///
   /// [attempted] is everything sent in the batch; [failedIds] is the subset the
@@ -2975,15 +2970,34 @@ class _ResultsDisplayScreenState extends State<ResultsDisplayScreen> {
     Set<String> failedIds,
   ) {
     if (failedIds.isEmpty) return;
-    for (final email in attempted) {
-      if (!failedIds.contains(email.id)) continue;
-      final key = _getEmailKey(email);
-      _reProcessFailedKeys.add(key);
-      _reProcessedEmailKeys.remove(key);
-      _hiddenEmailKeys.remove(key);
+    // H-3 (code review, Sprint 70): mutate inside setState. The footer reads
+    // `_reProcessFailedKeys.length` to decide whether to show the green
+    // "all addressed" banner, so without this the correction depended on an
+    // unrelated rebuild happening to land afterwards. The delete/move blocks
+    // have a nearby setState that covered it by accident; the OUTER CATCH path
+    // -- the total-failure case F212 exists for -- had none.
+    void apply() {
+      for (final email in attempted) {
+        if (!failedIds.contains(email.id)) continue;
+        final key = _getEmailKey(email);
+        _reProcessFailedKeys.add(key);
+        _reProcessedEmailKeys.remove(key);
+        _hiddenEmailKeys.remove(key);
+      }
+    }
+
+    if (mounted) {
+      setState(apply);
+    } else {
+      apply();
     }
   }
 
+  /// Sprint 38 F82 (Issue #252): "M of N no-rules addressed" progress footer.
+  /// Shows under the chip strip when the scan had any no-rule emails. Renders
+  /// nothing if the user has nothing to triage (clean scan). Updates as the
+  /// user adds rules / safe senders inline -- `addressed` increments and
+  /// `remaining` decrements at the same time.
   Widget _buildNoRuleProgressFooter() {
     // Capture the initial no-rule count on the first render where any
     // results are available. Subsequent renders use the cached value so
@@ -3232,9 +3246,18 @@ class _ResultsDisplayScreenState extends State<ResultsDisplayScreen> {
           _recordBatchFailures(toDelete, toDelete.map((m) => m.id).toSet());
         }
 
-        // Mark as re-processed and update banner
+        // Mark as re-processed and update banner.
+        // H-2 (code review, Sprint 70): SKIP the keys that failed. This loop
+        // used to be unconditional, which immediately re-added every key
+        // `_recordBatchFailures` had just removed -- defeating its whole
+        // purpose and leaving a failed email permanently unretryable, because
+        // `_reProcessAffectedEmails` skips anything in this set. The bug was
+        // invisible on the total-failure path (the outer catch runs after this
+        // loop) and only bit the COMMON partial-failure case.
         for (final email in toDelete) {
-          _reProcessedEmailKeys.add(_getEmailKey(email));
+          final key = _getEmailKey(email);
+          if (_reProcessFailedKeys.contains(key)) continue;
+          _reProcessedEmailKeys.add(key);
         }
         if (mounted) {
           setState(() {
@@ -3263,9 +3286,12 @@ class _ResultsDisplayScreenState extends State<ResultsDisplayScreen> {
           _recordBatchFailures(toMoveSafe, toMoveSafe.map((m) => m.id).toSet());
         }
 
-        // Mark as re-processed and update banner
+        // Mark as re-processed and update banner.
+        // H-2: skip failed keys -- see the delete block above.
         for (final email in toMoveSafe) {
-          _reProcessedEmailKeys.add(_getEmailKey(email));
+          final key = _getEmailKey(email);
+          if (_reProcessFailedKeys.contains(key)) continue;
+          _reProcessedEmailKeys.add(key);
         }
         if (mounted) {
           setState(() {
@@ -3279,9 +3305,10 @@ class _ResultsDisplayScreenState extends State<ResultsDisplayScreen> {
       // F212 R-4: this is the path that produced Harold's 6-of-6 / 8-of-8.
       // An exception here (e.g. AuthenticationException from loadCredentials)
       // fails the ENTIRE batch, so nothing in it was addressed.
+      final allAttempted = [...toDelete, ...toMoveSafe];
       _recordBatchFailures(
-        [...toDelete, ...toMoveSafe],
-        [...toDelete, ...toMoveSafe].map((m) => m.id).toSet(),
+        allAttempted,
+        allAttempted.map((m) => m.id).toSet(),
       );
     } finally {
       // Close platform connection

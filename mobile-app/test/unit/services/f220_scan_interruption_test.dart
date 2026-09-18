@@ -123,6 +123,67 @@ void main() {
     });
   });
 
+  group('F220 C-1: errorScan alone does NOT free the coordinator', () {
+    test('THE GAP: a provider error leaves the lease held', () async {
+      // Code review C-1 (Sprint 70) found that F220's stated mechanism was
+      // FALSE. The handler's doc comment claimed "errorScan resolves the
+      // provider state ... and the scanner's own finally then releases the
+      // lease". Verified against the code: EmailScanProvider.errorScan never
+      // touches ScanCoordinator, EmailScanner.scanInbox never reads
+      // scanProvider.status (its only two mentions are log lines), and there
+      // is no cancellation token anywhere in the scanner. So the in-flight
+      // scan is completely unaffected, its `finally` still cannot run, and the
+      // lease is STILL HELD.
+      //
+      // The original F220 test asserted only that the provider reached
+      // ScanStatus.error -- the cosmetic half. It was green because it tested
+      // the thing that worked, not the thing that was claimed. This test pins
+      // the distinction so the claim cannot drift back.
+      final coordinator = ScanCoordinator.instance;
+      final provider = EmailScanProvider();
+
+      await coordinator.acquire(
+        scanType: 'manual',
+        accountId: 'aol-test@example.com',
+      );
+      provider.startScan(totalEmails: 10);
+
+      await provider.errorScan('backgrounded');
+
+      expect(provider.status, ScanStatus.error,
+          reason: 'the provider half always worked');
+      expect(coordinator.active, isNotNull,
+          reason: 'C-1: errorScan does NOT release the lease. The screen looks '
+              'recovered while the coordinator stays wedged -- which is why '
+              'the handler must release the lease ITSELF.');
+    });
+
+    test('releaseActiveByOwner + errorScan together DO free the coordinator',
+        () async {
+      // The shape the fixed handler uses: release by owner, THEN report the
+      // error. This is what the original F220 test should have asserted.
+      final coordinator = ScanCoordinator.instance;
+      final provider = EmailScanProvider();
+
+      await coordinator.acquire(
+        scanType: 'manual',
+        accountId: 'aol-test@example.com',
+      );
+      provider.startScan(totalEmails: 10);
+
+      coordinator.releaseActiveByOwner(
+        scanType: 'manual',
+        accountId: 'aol-test@example.com',
+      );
+      await provider.errorScan('backgrounded');
+
+      expect(coordinator.active, isNull,
+          reason: 'the coordinator must be free for the next scan -- this is '
+              'the assertion whose absence let C-1 ship green');
+      expect(provider.status, ScanStatus.error);
+    });
+  });
+
   group('F220 interrupted scan reports an actionable error', () {
     test('errorScan moves the provider out of scanning', () async {
       final provider = EmailScanProvider();

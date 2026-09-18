@@ -95,42 +95,19 @@ class _ScanProgressScreenState extends State<ScanProgressScreen>
     super.dispose();
   }
 
-  /// F220 (Sprint 70): a live scan interrupted by backgrounding must FAIL,
-  /// not hang.
-  ///
-  /// **The defect this fixes** (Sean Jarvis, tester, 2026-09-17): start a live
-  /// scan, background the app, and live scanning stops working entirely until
-  /// the app is restarted.
-  ///
-  /// **Why a restart was the only escape.** Android tears down an idle app's
-  /// sockets, which is correct OS behaviour. Nothing told the scan. It neither
-  /// completed nor failed, so the `finally` in `EmailScanner.scanInbox` never
-  /// ran, so the `ScanCoordinator` lease was never released -- and every later
-  /// scan queued FIFO behind a scan that could never finish. The coordinator is
-  /// process-global, so only a restart cleared it.
-  ///
-  /// **Failing the scan IS the fix.** The wedge was a held lease, not a stalled
-  /// socket; `errorScan` resolves the provider state and marks the database row,
-  /// and the scanner's own `finally` then releases the lease.
-  ///
-  /// **ADR-0042**: this file is shared. The TRIGGER is Android-shaped -- Windows
-  /// does not tear down sockets when a window is minimised -- but the handler is
-  /// deliberately NOT forked. On desktop `paused` fires rarely and a scan that
-  /// is genuinely interrupted there deserves the same treatment, so there is
-  /// nothing platform-specific to declare.
-  @override
-  void didChangeAppLifecycleState(AppLifecycleState state) {
-    if (state != AppLifecycleState.paused) return;
-
-    final scanProvider = Provider.of<EmailScanProvider>(context, listen: false);
-    if (scanProvider.status != ScanStatus.scanning) return;
-
-    scanProvider.errorScan(
-      'Scan stopped because the app was moved to the background. '
-      'The connection to your mail server is closed when the app is not in '
-      'use. Start the scan again.',
-    );
-  }
+  // F220 / code review H-4 (Sprint 70): the paused-handler that used to live
+  // here MOVED to `_AppInitializerState` in main.dart.
+  //
+  // It was unreachable on the path testers actually use: "Scan Again" on the
+  // results screen calls startRealScan(useReplacement: true), which
+  // pushReplacement-es and disposes this route, so this screen is not in the
+  // stack at all and its observer never fires. At the app root the handler
+  // covers every scan-start path. Releasing the lease by OWNER needs no widget
+  // context, which is what made the move possible.
+  //
+  // This screen keeps its WidgetsBindingObserver registration only because
+  // RouteAware/dispose symmetry is simpler to read than a partial removal; it
+  // no longer acts on `paused`.
 
   /// Called when Results is popped and this screen becomes visible again.
   /// Resets scan state so the screen returns to its "Ready to Scan" view
@@ -871,21 +848,53 @@ Future<void> startRealScan({
     // work, so the lease is force-released by owner -- otherwise the hung scan
     // holds it and every queued scan waits the full limit, which is the wedge
     // F220 just fixed.
+    //
+    // **H-5 (code review, Sprint 70): a timeout has TWO possible causes and
+    // they must not be treated alike.** `scanInbox` calls `acquire()` with no
+    // `waitLimit`, so it defaults to the same 30 minutes. A scan that simply
+    // QUEUED behind another scan therefore throws TimeoutException from inside
+    // `acquire`, looking identical to a scan that hung mid-fetch.
+    //
+    // Force-releasing in the queued case is actively harmful. Owner matching
+    // checks only scanType and accountId, NOT lease identity, so two manual
+    // scans on the SAME account (the user taps Scan Again while the first is
+    // still running) would have the second one's timeout evict the first one's
+    // LIVE lease. The background path's equivalent reasoning holds only because
+    // the scheduler serialises background scans per account; a user can tap
+    // Scan Again whenever they like.
+    //
+    // So: only force-release when this scan actually reached the point of
+    // holding the lease. `ScanCoordinator.active` is captured before the call
+    // and compared after -- if the active holder is the SAME object we were
+    // queued behind, we never held it and must not release it.
+    final holderBefore = ScanCoordinator.instance.active;
     try {
       await scanner
           .scanInbox(daysBack: daysBack, folderNames: foldersToScan)
           .timeout(ScanCoordinator.scanTimeout);
     } on TimeoutException {
+      final holderNow = ScanCoordinator.instance.active;
+      final neverHeldTheLease =
+          holderBefore != null && identical(holderBefore, holderNow);
       final minutes = ScanCoordinator.scanTimeout.inMinutes;
       scanLogger.e('[SCAN_SCREEN] manual scan TIMED OUT after $minutes '
           'minutes -- marking failed (F221)');
-      ScanCoordinator.instance.releaseActiveByOwner(
-        scanType: 'manual',
-        accountId: accountId,
-      );
+      if (!neverHeldTheLease) {
+        ScanCoordinator.instance.releaseActiveByOwner(
+          scanType: 'manual',
+          accountId: accountId,
+        );
+      }
+      // H-5: the message must match the actual cause. "The mail server may
+      // have stopped responding" is wrong when the server was never contacted.
       await scanProvider.errorScan(
-        'Scan stopped after $minutes minutes without finishing. The mail '
-        'server may have stopped responding. Start the scan again.',
+        neverHeldTheLease
+            ? 'Scan did not start within $minutes minutes because another '
+                'scan was still running. Start the scan again once it '
+                'finishes.'
+            : 'Scan stopped after $minutes minutes without finishing. The '
+                'mail server may have stopped responding. Start the scan '
+                'again.',
       );
       rethrow;
     }
