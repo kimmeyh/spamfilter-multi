@@ -901,6 +901,29 @@ recorded here so it is not a surprise at the next upgrade.
 - Depends on: overlaps F220 and F207.
 - Source: Sean Jarvis via Harold, 2026-09-17.
 
+**F226. WinWright scripts fail intermittently when run back-to-back in one sweep (~2-4h) Priority 14 (NEW, 2026-09-18 -- found during the Sprint 70 5.1.5 sweep)**
+- Phase: Developer Tooling
+- Platform: Windows Desktop (WinWright is Windows-only)
+- **Symptom**: in a full sweep one of the two runnable scripts fails, and WHICH ONE SWAPS between
+  runs. Sprint 70 run 1: `test_f124_rule_labels` FAIL, `test_mt2c_no_rule_sweep` PASS. Run 2 on the
+  same build: exactly reversed. Run individually, **both pass 29/29 with no DB drift**.
+- **Not a sprint regression**, and that is the point of filing it: the sweep is the gate that is
+  supposed to tell us whether sprint UI changes broke a screen. A gate that is red for unrelated
+  reasons cannot answer that question, and it trains the reader to discount failures -- the same
+  bypass-training problem as [[F225]].
+- **Likely cause** (hypothesis, NOT verified): residual app state between scripts in one sweep. The
+  runner drives a single long-lived app instance; the first script leaves a screen, filter, or
+  dialog in a state the second does not expect. Each script is required to restore the state it
+  modifies (Sprint 37 retro policy) -- the swap pattern suggests one of them does not fully do so,
+  or that restoration races the next script's first selector.
+- **Investigation direction**: run the pair in both orders with the runner's per-script logs kept,
+  and diff the accessibility tree at each script's first step against the tree when that script
+  runs alone. The `ww_get_state_hash` / `ww_diff_state` tools exist for exactly this.
+- **Do NOT fix by adding sleeps.** That is the shape of the f56/f37 dialog-settle problem that was
+  already quarantined out of the sweep; another timing patch grows the same debt.
+- Source: Sprint 70 Phase 5.1.5 sweep, 2026-09-18. Recorded in `SPRINT_70_PLAN.md` Phase 5
+  completion notes.
+
 **F225. `verify-closeout-complete` hook fails its OWN allow-case (~1-2h) Priority 14 (NEW, 2026-09-18 -- found while fixing the auto-advance gate)**
 - Phase: Developer Tooling
 - Platform: N/A (repo tooling)

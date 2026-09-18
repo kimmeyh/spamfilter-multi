@@ -503,3 +503,96 @@ Per `SPRINT_EXECUTION_WORKFLOW.md` Phases 5-7. Additions for this sprint:
 - Both platform exceptions (F219 manifest, F217 background policy) declared in code.
 - F218's outcome stated plainly, including if the upgrade did not fix the defect.
 - No un-surfaced Class-1 or Class-2 decisions -- F220 R-3 and F217's fix are both expected.
+
+---
+
+## Phase 5 Completion Notes (evidence gate -- recorded before Manual Validation)
+
+### 5.1.1 Automated code review -- DONE, and it found a CRITICAL defect
+
+Run 2026-09-18 via `pr-review-toolkit:code-reviewer` over `37d9816~1..HEAD`, scoped to
+`mobile-app/lib/` (8 production files). Every finding was independently verified against the code
+before acting; all were real.
+
+**C-1 (CRITICAL): F220 was NOT actually fixed.** The handler called `errorScan` and its doc comment
+claimed "the scanner's own `finally` then releases the lease". False: `EmailScanProvider.errorScan`
+never touches `ScanCoordinator`, `EmailScanner.scanInbox` never reads `scanProvider.status` (its two
+mentions are log lines), and there is no cancellation token. The lease stayed HELD and the
+coordinator stayed wedged; only the screen looked recovered. **My own test is why it shipped green
+-- it asserted `provider.status == ScanStatus.error` and never asserted `coordinator.active == null`,
+testing the half that worked.** Fixed by releasing the lease in the handler; new test is
+mutation-verified (reverting turns three tests red).
+
+Also fixed: **H-4** (handler lived on a screen that the "Scan Again" path disposes, so the main
+rescan route was unwatched -- moved to the app root), **H-2** (F212's R-4 defeated on the common
+partial-failure path by an unconditional re-add loop), **H-3** (state mutated outside `setState`),
+**H-5** (a queued scan's timeout could force-release a LIVE scan's lease), **M-6/M-7** (ADR-0042:
+declared parity while delivering divergence -- the handler killed healthy Windows scans, since
+`paused` means "sockets gone" on Android but only "window hidden" on Windows; now a narrow declared
+exception with both branches tested), **M-8** (`disconnect()` left `_imapClient` non-null when
+`logout()` threw, so the new F212 guards never fired for "connection died" -- the failure mode users
+actually hit), plus L-11 and M-10.
+
+Commit: `f180ad0`. Suite 2,138 -> 2,148.
+
+### 5.1.2 F-PRECHECK (six recurring review classes) -- DONE, clean
+
+Each detection ACTION was run against the Sprint 70 diff, not merely read:
+
+1. **Mirror/parallel-site sync**: CLEAN. The manual and background timeouts both read
+   `ScanCoordinator.scanTimeout` (verified at `scan_progress_screen.dart` and
+   `background_scan_core.dart`), and `f221_superseded_scan_row_test.dart` gates against either
+   hardcoding a literal. No `BatchActionResult.allSuccess` call sites remain in either adapter.
+2. **Helper wired to PRODUCTION path**: CLEAN. `_recordBatchFailures` has 6 call sites on the
+   re-process path; `_reProcessFailedKeys` is consumed by the footer;
+   `reconcileStaleInProgressScans` went from ONE caller (startup) to two (startup + resume).
+3. **Doc-comment-vs-code drift**: FOUND AND FIXED (2). The `background_scan_core.dart` comment
+   still said manual scans deliberately have no timeout after F221 gave them one; the
+   `background_scan_scheduler.dart` ADR-0042 declaration still called 2h42m drift an "accepted
+   difference". Both rewritten rather than deleted, so the reversal stays readable.
+4. **Fragile input parsing**: N/A -- no new `split`/`indexOf`/`substring` on id-shaped input in
+   this diff (verified by grepping the diff, not assumed).
+5. **API scope matches caller intent**: CLEAN. `acquire()` is process-wide and the re-process
+   caller wants exactly that (closing the bypass IS the fix); `releaseActiveByOwner` is
+   owner-matched so it cannot evict another scan -- though the review's H-5 showed owner-matching
+   alone was insufficient for two manual scans on one account, now fixed by a lease-identity check.
+6. **Silent failure**: CLEAN. One new `catch` in the diff (`main.dart` resume backstop); it logs at
+   `Logger().w()` and converts no unreadable input into a destructive classification.
+
+### 5.1.5 WinWright UI sweep -- DONE
+
+- **Date**: 2026-09-18
+- **sweep-head**: `f180ad0`
+- **Scripts run**: 2 of 5. `test_f56_create_block_rule` and `test_f56_create_safe_sender` are
+  QUARANTINED and `f37` is excluded by the runner itself (`run-winwright-tests.ps1:258`,
+  `$excludedFromSweep = @("f56","f37")`) -- a documented dialog-settle limitation moved to F99
+  integration_test, checked BEFORE investigating rather than re-derived.
+- **Result**: BOTH PASS, 29/29 assertions each, no DB drift.
+  - `test_mt2c_no_rule_sweep.json` PASS -- this is the script that exercises
+    `results_display_screen.dart`, the screen F212 changed. This is the coverage that matters.
+  - `test_f124_rule_labels.json` PASS
+- **Finding (filed, not swept under)**: the two scripts fail INTERMITTENTLY when run back-to-back
+  in one sweep, and the failure swaps between them run to run (f124 failed in run 1, mt2c in run 2).
+  Each passes 29/29 in isolation. That is a runner/app-state interaction, not a sprint regression --
+  filed as **F226**. Recorded rather than ignored because a sweep that is red for unrelated reasons
+  destroys its own value as a signal.
+- **Re-run after the code-review fixes**: yes. `lib/ui` changed in `f180ad0` after the first sweep,
+  so the sweep was re-run against the rebuilt app and `sweep-head` names the later commit.
+
+### 5.1.6 Runtime launch gate
+
+DONE. `AndroidManifest.xml` was touched (F219 `taskAffinity` removal), which triggers this gate.
+The Windows app was built and launched successfully twice for the WinWright sweeps
+(`build-windows.ps1`). **Android runtime launch is still OWED** and is part of the device
+validation below -- an XML change that AAPT accepts can still fail at OS parse time (Sprint 64
+SEC-4), so the manifest edit is not proven until the app launches on the S24+.
+
+### Still owed at Manual Validation (stated plainly, not implied complete)
+
+- **F219 AC-1/AC-2**: device testing on a Play-installed build (sign-in; launcher start, return
+  from recents, deep links). No Android device was attached during implementation.
+- **F217 AC-1/R-1/R-2**: `adb` standby-bucket and jobscheduler capture, plus the Samsung
+  Background usage limits check.
+- **F212 AC-4**: re-processing verified on BOTH platforms.
+- **F217 remedy**: a Class-1 decision, three options recorded in `ALL_SPRINTS_MASTER_PLAN.md`,
+  awaiting Harold. Not chosen by Claude.
