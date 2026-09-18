@@ -508,6 +508,25 @@ Per `SPRINT_EXECUTION_WORKFLOW.md` Phases 5-7. Additions for this sprint:
 
 ## Phase 5 Completion Notes (evidence gate -- recorded before Manual Validation)
 
+**Evidence markers (canonical list form -- the detail for each is in the sections below):**
+
+- **5.1.1 automated code review**: DONE 2026-09-18, `pr-review-toolkit:code-reviewer` over
+  `37d9816~1..HEAD` scoped to `mobile-app/lib/`. Found 1 CRITICAL (C-1: F220 was not actually
+  fixed), 4 HIGH, 4 MEDIUM, 2 LOW. All verified against the code and all fixed in commit `f180ad0`.
+  Suite 2,138 -> 2,148.
+- **5.1.2 F-PRECHECK**: DONE 2026-09-18, all six detection ACTIONS run against the sprint diff.
+  Clean on classes 1, 2, 5, 6; class 4 N/A (no new positional parsing in the diff); class 3 found
+  and fixed two stale doc comments (`background_scan_core.dart` manual-timeout claim,
+  `background_scan_scheduler.dart` ADR-0042 drift declaration).
+- **5.1.5 WinWright sweep**: DONE 2026-09-18, sweep-head `f180ad0`, re-run after the code-review
+  fixes because `lib/ui` changed. 2 of 5 scripts runnable (`f56` x2 and `f37` are the runner's own
+  documented exclusions at `run-winwright-tests.ps1:258`); BOTH pass 29/29 in isolation with no DB
+  drift, including `test_mt2c_no_rule_sweep` which covers `results_display_screen.dart`, the screen
+  F212 changed. Back-to-back sweep flakiness filed as F226.
+- **5.1.6 runtime launch gate**: PARTIAL -- Windows launched successfully twice via
+  `build-windows.ps1`. Android runtime launch is OWED and listed under "Still owed" below; the
+  F219 `AndroidManifest.xml` edit is not proven until the app starts on the S24+.
+
 ### 5.1.1 Automated code review -- DONE, and it found a CRITICAL defect
 
 Run 2026-09-18 via `pr-review-toolkit:code-reviewer` over `37d9816~1..HEAD`, scoped to
