@@ -25,11 +25,43 @@
         android:icon="@mipmap/ic_launcher"
         android:allowBackup="false"
         android:networkSecurityConfig="@xml/network_security_config">
+        <!-- F219 (Sprint 70): android:taskAffinity="" was REMOVED from
+             MainActivity below.
+
+             THE DEFECT. Google Sign-In failed on Android with `null_intent`.
+             This activity carries the OAuth redirect intent filter (scheme
+             ${appAuthRedirectScheme}), and an EMPTY task affinity means the
+             activity belongs to no task. When the browser fired the redirect,
+             Android had no task to route it back into, so the intent never
+             arrived and flutter_appauth reported it as `null_intent`.
+
+             WHY THE LINE EXISTED: nothing deliberate. `git log -S taskAffinity`
+             places it in "Initialize Android project structure", the Flutter
+             template default. There is no original intent to protect.
+
+             WHY REMOVED rather than set to an explicit value: the
+             flutter_appauth threads show BOTH remedies and neither is stated as
+             canonical, so this was decided on THIS app's facts. build.gradle.kts
+             sets applicationIdSuffix ".dev", so dev and prod are SEPARATE
+             installed apps. Removing the attribute gives each build Android's
+             default affinity, which is its own applicationId, keeping the two in
+             separate tasks automatically. A hardcoded explicit affinity would
+             collapse dev and prod into one task, trading an OAuth bug for a
+             side by side install bug.
+
+             BLAST RADIUS (R-3): task affinity governs EVERY activity launch, not
+             only OAuth. Three neighbour paths must be re-verified on device:
+             launcher start, return from recents, and deep links (app_links is a
+             dependency). That is AC-2 and it is MANUAL. No automated test covers
+             an OS level task switch.
+
+             ADR-0042 PLATFORM EXCEPTION (R-5): Android only by necessity.
+             Windows uses a loopback redirect (127.0.0.1) and has no task
+             affinity concept, so it is unaffected and must stay so. -->
         <activity
             android:name=".MainActivity"
             android:exported="true"
             android:launchMode="singleTop"
-            android:taskAffinity=""
             android:theme="@style/LaunchTheme"
             android:configChanges="orientation|keyboardHidden|keyboard|screenSize|smallestScreenSize|locale|layoutDirection|fontScale|screenLayout|density|uiMode"
             android:hardwareAccelerated="true"

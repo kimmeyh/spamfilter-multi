@@ -303,6 +303,61 @@ flutter run --dart-define-from-file=secrets.dev.json
 
 ## Troubleshooting
 
+### Android: Google Sign-In fails with `null_intent` (F219, Sprint 70)
+
+**Status (2026-09-18): CODE FIX APPLIED, DEVICE VERIFICATION STILL OPEN.** The manifest change is
+committed and gated by a test. AC-1 and AC-2 are MANUAL on a Play-installed build and have NOT yet
+been performed -- no Android device was attached during implementation. **Do not treat this entry
+as a confirmed fix until the device checks below pass.**
+
+**Cause**: `android:taskAffinity=""` on `MainActivity` in `AndroidManifest.xml`.
+
+`MainActivity` carries the OAuth redirect intent filter (scheme `${appAuthRedirectScheme}`). An
+EMPTY task affinity means the activity belongs to no task, so when the browser fires the redirect,
+Android has no task to route it back into. The intent never arrives, and `flutter_appauth` reports
+the missing intent as `null_intent`.
+
+**Where the line came from**: nothing deliberate. `git log -S taskAffinity` places it in
+"Initialize Android project structure" -- the Flutter Android template default. There was no
+original intent to protect, which is why removal was safe to consider at all.
+
+**Which Android sign-in path this affects, and a correction worth recording.** The sprint card
+named `flutter_appauth` as the suspect library. That is right, but not the whole picture:
+`google_auth_service.dart` tries NATIVE `google_sign_in` 7.x FIRST and falls back to the
+`flutter_appauth` browser flow only when the native attempt throws (`_signInNative` catch block,
+Android only). So `null_intent` is a FALLBACK-path failure. A native-path failure looks different
+and is diagnosed separately -- do not assume every Android sign-in failure is this bug.
+
+**Fix**: remove the attribute. Do NOT set an explicit value.
+
+The upstream `flutter_appauth` threads show both remedies with neither stated as canonical, so the
+choice was made on this app's facts: `build.gradle.kts` sets `applicationIdSuffix ".dev"`, so dev
+and prod are SEPARATE installed apps. Removing the attribute gives each build Android's default
+affinity, which is its own `applicationId`, keeping the two in separate tasks automatically. A
+hardcoded explicit affinity would collapse dev and prod into one task, trading an OAuth bug for a
+side-by-side-install bug.
+
+**Regression gate**: `test/policy/f219_task_affinity_test.dart` fails the build if the attribute
+returns. It strips XML comments before searching, because the manifest's own rationale comment
+quotes the attribute it removed. The gate is mutation-verified: reintroducing the line turns it
+red.
+
+**Blast radius, and the MANUAL checks that remain (AC-2)**: task affinity governs EVERY activity
+launch, not only OAuth. These three must be re-verified on a device, and they are the part most
+likely to be skipped:
+
+1. Launcher start (cold start from the app icon)
+2. Return from recents (background the app, reopen from the recents switcher)
+3. Deep links (`app_links` is a dependency)
+
+Plus AC-1: a listed test user completes Google Sign-In on a **Play-installed** build with no app
+password.
+
+**If device testing shows this was NOT the fix**: say so here explicitly and revert the manifest
+change rather than leaving a changed line that did nothing. The next candidate on the list is the
+Google Cloud Console **Data Access** page listing NO scopes while the app requests `gmail.modify`
+and `userinfo.email` -- recorded as a candidate, not a finding.
+
 ### Android: "Sign in was cancelled"
 
 **Cause**: SHA-1 fingerprint not registered in Firebase Console.
