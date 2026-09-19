@@ -4,7 +4,9 @@ import 'package:flutter_test/flutter_test.dart';
 
 /// F219 (Sprint 70): `android:taskAffinity=""` must not return to MainActivity.
 ///
-/// **What it broke.** MainActivity carries the OAuth redirect intent filter.
+/// **What it broke.** MainActivity USED TO carry the OAuth redirect intent
+/// filter (F227 removed it; the scheme now belongs solely to AppAuth's own
+/// receiver).
 /// An EMPTY task affinity means the activity belongs to no task, so when the
 /// browser fired the redirect Android had no task to route it into. The intent
 /// never arrived and flutter_appauth surfaced it as `null_intent` -- Google

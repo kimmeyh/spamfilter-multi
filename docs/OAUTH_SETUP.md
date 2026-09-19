@@ -84,7 +84,10 @@ unnoticed through a full sprint of validation on accounts that already had app p
 **Why it happens**: Google now disables Custom URI schemes BY DEFAULT on newly-created Android
 OAuth clients, because the scheme can be claimed by another app on the device (app
 impersonation). This app uses `flutter_appauth`, which is built on exactly that mechanism:
-`AndroidManifest.xml` registers `<data android:scheme="${appAuthRedirectScheme}"/>`, and
+The redirect scheme is registered by `flutter_appauth`'s own bundled manifest (via
+`RedirectUriReceiverActivity`), fed by the `appAuthRedirectScheme` manifestPlaceholder that
+`build.gradle.kts` derives from the Android client id. Our `AndroidManifest.xml` deliberately does
+NOT register it -- see F227 below. And
 `android/app/build.gradle.kts` derives that placeholder from the client id prefix.
 
 **The fix is entirely in the Google Cloud Console. No code change, no rebuild, no new release.**
@@ -312,7 +315,11 @@ as a confirmed fix until the device checks below pass.**
 
 **Cause**: `android:taskAffinity=""` on `MainActivity` in `AndroidManifest.xml`.
 
-`MainActivity` carries the OAuth redirect intent filter (scheme `${appAuthRedirectScheme}`). An
+`net.openid.appauth.RedirectUriReceiverActivity` carries the OAuth redirect intent filter (scheme
+`${appAuthRedirectScheme}`), declared by `flutter_appauth` in its own bundled manifest. **F227
+(Sprint 70) REMOVED the duplicate filter that `MainActivity` used to carry** -- two activities
+claiming one scheme made Android show a chooser instead of delivering the callback. `MainActivity`
+now declares only MAIN/LAUNCHER. An
 EMPTY task affinity means the activity belongs to no task, so when the browser fires the redirect,
 Android has no task to route it back into. The intent never arrives, and `flutter_appauth` reports
 the missing intent as `null_intent`.

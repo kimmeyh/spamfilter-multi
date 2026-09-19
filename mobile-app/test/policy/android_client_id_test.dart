@@ -102,12 +102,41 @@ void main() {
 
     test('AndroidManifest.xml wires the redirect scheme through the '
         'gradle-fed placeholder', () {
-      final content = File('android/app/src/main/AndroidManifest.xml')
-          .readAsStringSync();
-      expect(content, contains(r'${appAuthRedirectScheme}'),
-          reason: 'SEC-9: the manifest intent-filter scheme must reference '
-              'the gradle placeholder, not a literal -- otherwise the '
-              'placeholder set in build.gradle.kts is dead code.');
+      // F227 (Sprint 70) REWROTE THIS ASSERTION. It used to read the
+      // MANIFEST for `${appAuthRedirectScheme}` -- and F227 removed the only
+      // real occurrence, leaving just two mentions inside XML COMMENTS. The
+      // gate stayed green on the strength of an English sentence.
+      //
+      // Proven by mutation: editing ONLY the comment text at
+      // AndroidManifest.xml:33 turned this test red while no code changed.
+      // Worse, it contradicted f219_task_affinity_test.dart, which asserts the
+      // placeholder is ABSENT from the manifest -- two shipping tests making
+      // opposite claims about one file, both passing.
+      //
+      // This is the F197/F210 defect class (a gate matching something other
+      // than the thing it checks), avoided in the new F219 file and
+      // reintroduced next door.
+      //
+      // WHERE THE SCHEME IS ACTUALLY WIRED post-F227: build.gradle.kts assigns
+      // the manifestPlaceholder, and flutter_appauth's own bundled manifest
+      // consumes it via RedirectUriReceiverActivity. So the real SEC-9
+      // invariant is that the gradle ASSIGNMENT exists and derives from the
+      // client id rather than a hardcoded literal. That is what is checked now.
+      final gradle =
+          File('android/app/build.gradle.kts').readAsStringSync();
+      final gradleCode = gradle
+          .split(RegExp(r'\r?\n'))
+          .where((l) => !l.trimLeft().startsWith('//'))
+          .join('\n');
+
+      expect(
+          gradleCode.contains('manifestPlaceholders["appAuthRedirectScheme"]'),
+          isTrue,
+          reason: 'SEC-9: build.gradle.kts must ASSIGN the '
+              'appAuthRedirectScheme placeholder. Without it nothing supplies '
+              "the redirect scheme to AppAuth's receiver and OAuth cannot "
+              'complete. Comment lines are stripped before matching so prose '
+              'mentioning the name cannot satisfy this gate.');
     });
 
     test('gmail_windows_oauth_handler.dart sources the Android client id '

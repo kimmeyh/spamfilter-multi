@@ -2969,7 +2969,23 @@ class _ResultsDisplayScreenState extends State<ResultsDisplayScreen> {
     List<EmailMessage> attempted,
     Set<String> failedIds,
   ) {
-    if (failedIds.isEmpty) return;
+    // Copilot review (PR #418, HIGH): a key that LATER SUCCEEDS must be
+    // CLEARED, not left in the cumulative set forever. The first version of
+    // this method returned early when nothing failed, so a successful retry
+    // never removed the key -- the footer then reported "could not be applied"
+    // permanently, `isComplete` could never become true, and
+    // `_reProcessAffectedEmails` re-attempted the same email on every future
+    // rule add. This early return is exactly what made the H-2 fix incomplete:
+    // I added the skip guard without ever clearing the set.
+    //
+    // So: do NOT return early. Succeeded keys are the ones attempted but not
+    // in failedIds, and they are cleared below.
+    final succeededKeys = <String>{};
+    for (final email in attempted) {
+      if (failedIds.contains(email.id)) continue;
+      succeededKeys.add(_getEmailKey(email));
+    }
+    if (failedIds.isEmpty && succeededKeys.isEmpty) return;
     // H-3 (code review, Sprint 70): mutate inside setState. The footer reads
     // `_reProcessFailedKeys.length` to decide whether to show the green
     // "all addressed" banner, so without this the correction depended on an
@@ -2977,6 +2993,9 @@ class _ResultsDisplayScreenState extends State<ResultsDisplayScreen> {
     // have a nearby setState that covered it by accident; the OUTER CATCH path
     // -- the total-failure case F212 exists for -- had none.
     void apply() {
+      // A key that succeeded this time is no longer failed, whatever happened
+      // on a previous attempt.
+      _reProcessFailedKeys.removeAll(succeededKeys);
       for (final email in attempted) {
         if (!failedIds.contains(email.id)) continue;
         final key = _getEmailKey(email);
@@ -3228,11 +3247,16 @@ class _ResultsDisplayScreenState extends State<ResultsDisplayScreen> {
           platform.setDeletedRuleFolder(deletedRuleFolder);
         }
 
+        // Copilot review (PR #418): the marking loop below must test THIS
+        // batch's failures, not the cumulative set. Hoisted so the loop can
+        // see it after the try/catch.
+        var deleteFailedIds = <String>{};
         try {
           final result =
               await platform.takeActionBatch(toDelete, FilterAction.delete);
           successCount += result.successCount;
           failCount += result.failureCount;
+          deleteFailedIds = result.failedIds.keys.toSet();
           // F212 R-4: record WHICH emails failed, so the progress footer can
           // stop calling them "addressed". The batch result reports failures
           // per id; map them back to the keys the footer counts.
@@ -3243,7 +3267,8 @@ class _ResultsDisplayScreenState extends State<ResultsDisplayScreen> {
           logger.e('[F38] Delete batch failed: $e');
           failCount += toDelete.length;
           // A throw means the WHOLE batch failed -- none of it was addressed.
-          _recordBatchFailures(toDelete, toDelete.map((m) => m.id).toSet());
+          deleteFailedIds = toDelete.map((m) => m.id).toSet();
+          _recordBatchFailures(toDelete, deleteFailedIds);
         }
 
         // Mark as re-processed and update banner.
@@ -3255,9 +3280,8 @@ class _ResultsDisplayScreenState extends State<ResultsDisplayScreen> {
         // invisible on the total-failure path (the outer catch runs after this
         // loop) and only bit the COMMON partial-failure case.
         for (final email in toDelete) {
-          final key = _getEmailKey(email);
-          if (_reProcessFailedKeys.contains(key)) continue;
-          _reProcessedEmailKeys.add(key);
+          if (deleteFailedIds.contains(email.id)) continue;
+          _reProcessedEmailKeys.add(_getEmailKey(email));
         }
         if (mounted) {
           setState(() {
@@ -3272,26 +3296,28 @@ class _ResultsDisplayScreenState extends State<ResultsDisplayScreen> {
             await settingsStore.getAccountSafeSenderFolder(widget.accountId);
         final targetFolder = safeSenderFolder ?? 'INBOX';
 
+        var moveFailedIds = <String>{};
         try {
           final result =
               await platform.moveToFolderBatch(toMoveSafe, targetFolder);
           successCount += result.successCount;
           failCount += result.failureCount;
+          moveFailedIds = result.failedIds.keys.toSet();
           _recordBatchFailures(toMoveSafe, result.failedIds.keys.toSet());
           logger.i(
               '[F38] Safe sender move batch: ${result.successCount} succeeded, ${result.failureCount} failed');
         } catch (e) {
           logger.e('[F38] Safe sender move batch failed: $e');
           failCount += toMoveSafe.length;
-          _recordBatchFailures(toMoveSafe, toMoveSafe.map((m) => m.id).toSet());
+          moveFailedIds = toMoveSafe.map((m) => m.id).toSet();
+          _recordBatchFailures(toMoveSafe, moveFailedIds);
         }
 
         // Mark as re-processed and update banner.
         // H-2: skip failed keys -- see the delete block above.
         for (final email in toMoveSafe) {
-          final key = _getEmailKey(email);
-          if (_reProcessFailedKeys.contains(key)) continue;
-          _reProcessedEmailKeys.add(key);
+          if (moveFailedIds.contains(email.id)) continue;
+          _reProcessedEmailKeys.add(_getEmailKey(email));
         }
         if (mounted) {
           setState(() {

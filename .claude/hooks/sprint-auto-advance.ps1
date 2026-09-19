@@ -262,7 +262,28 @@ if ($branch -match '_Sprint_(\d+)') {
                 # The phase marker is the LEADING fact of the status line by
                 # convention ("Sprint 67 Phase 5.3 MANUAL VALIDATION ..."), so
                 # anchoring costs nothing and makes prose harmless.
-                if ($statusText -match '(?i)^\s*(sprint\s+\d+\s+)?(manual validation|manual-validation|phase 5\.3|phase 5\.[4-9]|phase 6|phase 7|phase 8|retrospective|code review|awaiting harold|validation feedback|release cycle|pre-kickoff|store release|completeness sweep|scope selection|awaiting scope)') {
+                # PR #418 review I-2: the anchor alone was too strict. It
+                # correctly killed the Sprint 67 false positive (prose deep in
+                # the field saying "standing approval through Manual
+                # Validation"), but this repo's OWN status strings do not always
+                # lead with the phase. Verified against real history -- all of
+                # these are genuinely POST-MV and were being treated as
+                # in-window, blocking legitimate Phase 7/8 questions:
+                #   "Sprint 68 CLOSE-OUT (Phase 7.7.5). ... Manual Validation COMPLETE."
+                #   "Sprint 69 NOT PLANNED, NOT APPROVED. Phase 8 Release Cycle IN PROGRESS"
+                #   "Sprint 61 CLOSE-OUT (Phase 7.7)"
+                # CLAUDE.md is explicit that asking is CORRECT in the Phase 8
+                # release cycle, so this blocked exactly what it should allow.
+                #
+                # Two additions, both still SHAPE-anchored rather than free
+                # substring searches: a leading CLOSE-OUT/COMPLETE marker, and a
+                # "(Phase N.N)" parenthetical near the start. Prose later in the
+                # field still cannot trigger either.
+                $windowClosed =
+                    ($statusText -match '(?i)^\s*(sprint\s+\d+\s+)?(manual validation|manual-validation|phase 5\.3|phase 5\.[4-9]|phase 6|phase 7|phase 8|retrospective|code review|awaiting harold|validation feedback|release cycle|pre-kickoff|store release|completeness sweep|scope selection|awaiting scope)') -or
+                    ($statusText -match '(?i)^\s*(sprint\s+\d+\s+)?(close-?out|complete[d]?|not planned)') -or
+                    ($statusText -match '(?i)^[^.]{0,60}\(phase\s+(5\.[3-9]|[678])[\d.]*\s*\)')
+                if ($windowClosed) {
 
                     # === F193 (Sprint 67): Phase 5 evidence gate, AT the MV boundary ===
                     #
@@ -532,21 +553,37 @@ $commitmentPatterns = @(
     # ---- FORM 4: "next" as the operative word, any position.
     '(?i)(^|[.!?]\s+|\n)\s*[*_>#\s-]*next\b[^.!?]*[.!]\s*$'
     '(?i)\b(up next|next up)\b[^.!?]*[.!]\s*$'
-    '(?i)\b\w+\s+next[.!]\s*$'
+    # PR #418 review I-1: require the sentence to be SHORT and subject-free.
+    # Unanchored this blocked "Diagnostics are written to the log file, and the
+    # count is reported next."
+    # "<subject> is/are next." COMMITS to doing it. A passive report such as
+    # "the count is reported next." does not -- the tell is a PAST PARTICIPLE
+    # immediately before "next" (reported/written/logged/shown/listed/...).
+    '(?i)(^|[.!?]\s+|\n)\s*[*_>#\s-]*(?!.*\b(reported|written|logged|shown|listed|described|explained|documented|covered|discussed|handled|addressed)\s+next\b)\w+(\s+\w+){0,4}\s+next[.!]\s*$'
     '(?i)\bnext[,:]? (i|we)[^.!?]*[.!]\s*$'
 
     # ---- FORM 5: directional preposition, no verb. "On to <x>."
     '(?i)(^|[.!?]\s+|\n)\s*[*_>#\s-]*(on to|onward|onwards|off to|over to|back to)\b[^.!?]*[.!]\s*$'
 
     # ---- FORM 6: verb + to/with/into target.
-    '(?i)\b(proceeding|moving|continuing|switching|turning|heading|advancing|going) (to|on to|with|into|back to)\b[^.!?]*[.!]\s*$'
+    # PR #418 review I-1: a COPULAR verb before the gerund makes this
+    # descriptive, not a commitment. "The retry is continuing with the same
+    # backoff." describes; "Continuing with the retry." commits. The
+    # $descriptiveGerund exclusion below cannot catch these because it looks
+    # for the verb AFTER the gerund.
+    '(?i)(?<!\b(is|are|was|were|been|being)\s)\b(proceeding|moving|continuing|switching|turning|heading|advancing|going) (to|on to|with|into|back to)\b[^.!?]*[.!]\s*$'
 
     # ---- FORM 7: "now" paired with an action verb, either order.
     '(?i)\bnow (executing|starting|beginning|building|running|implementing|fixing|writing|doing|tackling)\b[^.!?]*[.!]\s*$'
     '(?i)\b(start|begin|resume|continue|execute|run|tackle|do)(ing|s)?\b[^.!?]{0,80}\bnow[.!]\s*$'
 
     # ---- FORM 8: "time to X" / "ready to X" as a closing beat.
-    '(?i)\b(time to|ready to|on to the|first up)\b[^.!?]*[.!]\s*$'
+    # PR #418 review I-1: anchored to a CLAUSE START. Unanchored, this blocked
+    # "The MSIX is ready to upload." and "The AAB is built and ready to
+    # submit." -- sentences this repo's own release process produces routinely
+    # (feedback_release_artifact_paths REQUIRES reporting built artifacts).
+    # "Time to start X." commits; "<noun> is ready to X." reports a state.
+    '(?i)(^|[.!?]\s+|\n)\s*[*_>#\s-]*(time to|ready to|on to the|first up)\b[^.!?]*[.!]\s*$'
 
     # ---- FORM 9: trailing relative clause committing to future work.
     "(?i)\b(which|that)\s+(i|we)\s*('ll| will| am going to)[^.!?]*[.!]\s*$"

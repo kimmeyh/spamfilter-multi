@@ -210,9 +210,23 @@ dependencies {
     coreLibraryDesugaring("com.android.tools:desugar_jdk_libs:2.0.4")
 
     // ---------------------------------------------------------------------
-    // ONE-TIME WORKAROUND, approved by Harold 2026-09-14 for the 0.15.1 Play
-    // release only. REMOVE when the Flutter SDK upgrade lands -- tracked as
-    // F218.
+    // WORKAROUND -- NOW INDEFINITE. Originally approved by Harold 2026-09-14
+    // as ONE-TIME for the 0.15.1 Play release, to be removed "when the Flutter
+    // SDK upgrade lands (F218)".
+    //
+    // F218 LANDED IN SPRINT 70 AND DISPROVED THAT PREMISE. The SDK was
+    // upgraded 3.38.5 -> 3.47.4 (nine months, 4,163 commits), the workaround
+    // was removed, and the AAB build failed with the IDENTICAL error:
+    //   GeneratedPluginRegistrant.java:64: error: package
+    //   dev.flutter.plugins.integration_test does not exist
+    // The workaround was restored deliberately, which the F218 card's own
+    // Definition of Done pre-authorised as a legitimate outcome.
+    //
+    // DO NOT remove this on the strength of another SDK upgrade -- that
+    // experiment has been run and the answer was no. Removing it needs a
+    // DIFFERENT approach: the dev-dependency plugin registration itself, or an
+    // upstream fix. Until then this ships a test-only library in the release
+    // AAB, which is the cost being knowingly accepted.
     // ---------------------------------------------------------------------
     //
     // THE DEFECT (Flutter 3.38.5): `flutter build appbundle --release` fails
@@ -252,7 +266,7 @@ dependencies {
     // shipped AAB. That is the price of the workaround and the reason it is
     // one-time rather than permanent.
     //
-    // The real fix is the SDK upgrade (F218). This exists so the 0.15.1 Play
+    // The SDK upgrade (F218) was tried in Sprint 70 and did NOT fix this; a different approach is required. This exists so the 0.15.1 Play
     // release -- which carries the F208 and F209 tester fixes and is what
     // unblocks their on-device validation -- is not held hostage to a
     // 9-month SDK jump performed under release-day pressure.

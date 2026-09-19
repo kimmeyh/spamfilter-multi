@@ -486,6 +486,52 @@ class SpamFilterApp extends StatelessWidget {
 }
 
 /// Widget to initialize rule provider before showing UI
+/// F220 / code review C-2 (Sprint 70): the backgrounded-scan handler, as a
+/// TOP-LEVEL function so tests exercise THIS code rather than a copy.
+///
+/// **Why it was extracted.** The first version of this logic lived entirely
+/// inside `_AppInitializerState`, which is library-private, so
+/// `f220_lifecycle_handler_test.dart` re-implemented it in a local harness and
+/// asserted against that. The review proved the consequence by mutation:
+/// deleting the `releaseActiveByOwner` call from production -- the exact C-1
+/// defect this sprint fixed -- left all six tests GREEN, because they were
+/// asserting against the test's own copy. The harness had also already drifted
+/// (no `mounted` check, no `unawaited`, a different message), and no test could
+/// see it.
+///
+/// A test that cannot detect the regression it exists to prevent is worse than
+/// no test, because it reports coverage it does not provide. Moving the body
+/// here makes the harness signature the production signature.
+///
+/// [isAndroid] is passed in rather than read from `Platform` so BOTH ADR-0042
+/// branches are reachable from a test. Android tears down an app's sockets when
+/// it is backgrounded, so the scan is genuinely dead; Windows minimise does not,
+/// and failing a healthy scan there would be a regression.
+void failScanInterruptedByBackgrounding({
+  required EmailScanProvider scanProvider,
+  required bool isAndroid,
+}) {
+  if (!isAndroid) return;
+  if (scanProvider.status != ScanStatus.scanning) return;
+
+  final accountId = scanProvider.currentAccountId;
+  if (accountId != null) {
+    // Release the lease OURSELVES. errorScan does not do it: the provider never
+    // touches ScanCoordinator and the scanner never reads the provider's
+    // status, so without this the coordinator stays wedged (code review C-1).
+    ScanCoordinator.instance.releaseActiveByOwner(
+      scanType: 'manual',
+      accountId: accountId,
+    );
+  }
+
+  unawaited(scanProvider.errorScan(
+    'Scan stopped because the app was moved to the background. '
+    'The connection to your mail server is closed when the app is not in '
+    'use. Start the scan again.',
+  ));
+}
+
 class _AppInitializer extends StatefulWidget {
   const _AppInitializer();
 
@@ -569,31 +615,15 @@ class _AppInitializerState extends State<_AppInitializer>
   static bool? debugIsAndroid;
 
   void _failScanInterruptedByBackgrounding() {
-    if (!(debugIsAndroid ?? Platform.isAndroid)) return;
-
     if (!mounted) return;
     // EmailScanProvider is created at the MultiProvider root, above this
-    // widget, so read() cannot fail for a missing ancestor here.
-    final scanProvider = context.read<EmailScanProvider>();
-    if (scanProvider.status != ScanStatus.scanning) return;
-
-    final accountId = scanProvider.currentAccountId;
-    if (accountId != null) {
-      // Release the lease OURSELVES. errorScan does not do it: the provider
-      // never touches ScanCoordinator and the scanner never reads the
-      // provider's status, so without this the coordinator stays wedged
-      // (code review C-1).
-      ScanCoordinator.instance.releaseActiveByOwner(
-        scanType: 'manual',
-        accountId: accountId,
-      );
-    }
-
-    unawaited(scanProvider.errorScan(
-      'Scan stopped because the app was moved to the background. '
-      'The connection to your mail server is closed when the app is not in '
-      'use. Start the scan again.',
-    ));
+    // widget, so read() cannot fail for a missing ancestor here. The widget
+    // does ONLY this lookup; every decision lives in the top-level function
+    // below so it can be tested against the real code.
+    failScanInterruptedByBackgrounding(
+      scanProvider: context.read<EmailScanProvider>(),
+      isAndroid: debugIsAndroid ?? Platform.isAndroid,
+    );
   }
 
   Future<void> _reconcileStaleScans() async {

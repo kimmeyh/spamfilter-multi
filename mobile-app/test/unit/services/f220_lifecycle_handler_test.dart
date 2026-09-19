@@ -24,31 +24,20 @@ import 'package:flutter_test/flutter_test.dart';
 
 import 'package:my_email_spam_filter/core/providers/email_scan_provider.dart';
 import 'package:my_email_spam_filter/core/services/scan_coordinator.dart';
+import 'package:my_email_spam_filter/main.dart';
 
-/// Mirrors the app-root handler's decision logic exactly.
+/// Calls the REAL production handler -- `failScanInterruptedByBackgrounding`
+/// in `lib/main.dart` -- not a copy of it.
 ///
-/// The real handler reads `EmailScanProvider` from the widget tree, which needs
-/// a pumped app; this harness isolates the DECISIONS (platform gate, status
-/// gate, release-then-report order) so they can be asserted directly. The
-/// production code and this harness must be changed together -- if they drift,
-/// these tests stop protecting anything.
-void handleBackgrounded({
-  required bool isAndroid,
-  required EmailScanProvider scanProvider,
-}) {
-  if (!isAndroid) return;
-  if (scanProvider.status != ScanStatus.scanning) return;
-
-  final accountId = scanProvider.currentAccountId;
-  if (accountId != null) {
-    ScanCoordinator.instance.releaseActiveByOwner(
-      scanType: 'manual',
-      accountId: accountId,
-    );
-  }
-  scanProvider.errorScan('backgrounded');
-}
-
+/// **This file previously kept its own harness** that re-implemented the
+/// handler's logic, and the Sprint 70 PR review proved it hollow: deleting the
+/// `releaseActiveByOwner` call from production left all six tests GREEN,
+/// because they asserted against the test's copy. The harness had also drifted
+/// (no `mounted` guard, no `unawaited`, a different message) with no test able
+/// to notice.
+///
+/// The handler was lifted to a top-level function so these tests bind to
+/// production. If the release call is removed again, these go red.
 void main() {
   const accountId = 'aol-test@example.com';
 
@@ -68,7 +57,8 @@ void main() {
       await coordinator.acquire(scanType: 'manual', accountId: accountId);
       final provider = await scanningProvider();
 
-      handleBackgrounded(isAndroid: true, scanProvider: provider);
+      failScanInterruptedByBackgrounding(
+          isAndroid: true, scanProvider: provider);
 
       expect(coordinator.active, isNull,
           reason: 'THE C-1 ASSERTION. Its absence is why the defect shipped: '
@@ -85,7 +75,8 @@ void main() {
       await coordinator.acquire(scanType: 'manual', accountId: accountId);
       final provider = await scanningProvider();
 
-      handleBackgrounded(isAndroid: true, scanProvider: provider);
+      failScanInterruptedByBackgrounding(
+          isAndroid: true, scanProvider: provider);
 
       final next = await coordinator
           .acquire(scanType: 'manual', accountId: accountId)
@@ -103,7 +94,8 @@ void main() {
       await coordinator.acquire(scanType: 'manual', accountId: accountId);
       final provider = await scanningProvider();
 
-      handleBackgrounded(isAndroid: false, scanProvider: provider);
+      failScanInterruptedByBackgrounding(
+          isAndroid: false, scanProvider: provider);
 
       expect(provider.status, ScanStatus.scanning,
           reason: 'a minimised Windows window has a live socket and a live '
@@ -116,7 +108,8 @@ void main() {
       await coordinator.acquire(scanType: 'manual', accountId: accountId);
       final provider = await scanningProvider();
 
-      handleBackgrounded(isAndroid: true, scanProvider: provider);
+      failScanInterruptedByBackgrounding(
+          isAndroid: true, scanProvider: provider);
 
       expect(provider.status, ScanStatus.error);
       expect(coordinator.active, isNull);
@@ -131,7 +124,8 @@ void main() {
       provider.setCurrentAccountId(accountId);
       // never started -- status is idle
 
-      handleBackgrounded(isAndroid: true, scanProvider: provider);
+      failScanInterruptedByBackgrounding(
+          isAndroid: true, scanProvider: provider);
 
       expect(coordinator.active, isNotNull,
           reason: 'backgrounding with no live scan must not disturb a '
@@ -146,7 +140,8 @@ void main() {
       await coordinator.acquire(scanType: 'background', accountId: accountId);
       final provider = await scanningProvider();
 
-      handleBackgrounded(isAndroid: true, scanProvider: provider);
+      failScanInterruptedByBackgrounding(
+          isAndroid: true, scanProvider: provider);
 
       expect(coordinator.active, isNotNull,
           reason: 'the active holder is a BACKGROUND scan; releasing it from '
