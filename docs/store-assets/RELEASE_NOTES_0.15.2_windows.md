@@ -1,32 +1,42 @@
 # Release notes -- 0.15.2 -- Microsoft Store
 
 **Derived from** `CHANGELOG.md` `[Unreleased]`, Sprint 70 entries, per ADR-0043.
-**PROVISIONAL -- written at the Phase 3.7.0b version bump, before any task work.** The F196 gate
-requires per-store notes for the current version, so this exists now and describes what the sprint
-is SCOPED to do. **Re-derive at Phase 7.7** (Sprint 69 IMP-5) from the finished CHANGELOG, and
-drop this marker.
+**RE-DERIVED at Phase 7.7 from the finished CHANGELOG** (Sprint 69 IMP-5). The provisional version
+flagged the backgrounding fix for re-check because it touches shared code. It does, and the shared
+half changes Windows behaviour, so it is now described below.
 **Not yet submitted.** 0.15.1 is in certification as Submission 27.
+
+**No internal identifiers anywhere in this file** -- the gate scans the whole file, not just the
+user-facing section, because a paste error can ship any line of it. Sprint card ids live in the
+CHANGELOG and the sprint plan.
 
 ---
 
 Fixes for problems found by people using the app.
 
-Re-processing after adding a rule now works. Adding a blocking rule to a reviewed email reported
-that every action had failed, and nothing was applied to the mailbox.
+Re-processing after adding a rule now works, and reports the truth. Adding a blocking rule to a
+reviewed email could report that every action failed while, on some account types, quietly
+reporting success without touching any mail. Failures are now named with a count, and a failed
+email can be retried.
 
-Starting a second scan while one is running no longer leaves the first showing as still in
-progress forever.
+A manual scan that never finishes now stops after 30 minutes instead of running indefinitely. The
+limit keeps counting while you are on other screens.
+
+Scans interrupted by a crash or a shutdown no longer sit in Scan History as permanently "in
+progress". They are resolved when the app next starts or returns to the foreground.
 
 ---
 
-**Excluded from this file** (ADR-0043: each store sees only what applies to it):
+**Re-check outcomes** (the provisional file flagged two):
 
-- **F219** (Google Sign-In `null_intent`) -- Android only. Windows uses a loopback redirect and
-  was never affected.
-- **F220** (backgrounding wedges live scanning) -- the trigger is Android tearing down sockets for
-  a backgrounded app. Windows does not do this. **Re-check at 7.7**: the fix touches shared code,
-  so if it changes Windows behaviour at all, it belongs in this file.
-- **F217** (background scans deferred) -- Android Doze and App Standby. Windows uses Task
-  Scheduler and is unaffected.
-- **F218** (Flutter SDK upgrade) -- developer tooling. No user-visible change, unless the upgrade
-  itself alters behaviour, which is exactly what its acceptance criteria exist to catch.
+- **Backgrounding a live scan -- the Windows-relevant half is the manual-scan timeout above.** The
+  original trigger is Android-only: Windows does not tear down sockets when a window is minimised.
+  An early version of that fix ran on every platform and would have killed healthy Windows scans;
+  a code review caught it, and the handler is now a declared ADR-0042 Android exception. The
+  timeout is shared, so it is described for Windows users here.
+- **Toolchain upgrade -- still excluded.** Developer tooling. Its acceptance criteria specifically
+  checked for behaviour changes and found none a user would see.
+
+**Also excluded**: the Android OAuth sign-in fixes (Windows uses a loopback redirect and was never
+affected) and the deferred-background-scan diagnosis (Android power management; Windows uses Task
+Scheduler).
