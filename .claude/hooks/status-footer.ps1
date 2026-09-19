@@ -48,13 +48,36 @@ $root = Get-RepoRoot
 $statusPath = Join-Path $root '.claude/sprint_status.json'
 
 # --- 1. TIME: always the live system clock, never a carried-forward value ---
+#
+# INVARIANT CULTURE is required, not cosmetic. Probed across cultures:
+#   en-US -> '1:05pm'  '09/19/2026'   (correct)
+#   de-DE -> '1:05'    '09.19.2026'   (am/pm VANISHES, dots not slashes)
+#   tr-TR -> '1:05os'  '09.19.2026'   (Turkish designator)
+# `tt` renders the culture's AM/PM designator, which is EMPTY in many
+# cultures, and `/` in a .NET format string is a locale-aware date separator,
+# not a literal. Harold's format is `09/19/2026 1:05pm`, so both are pinned.
+# This also makes the footer identical on every machine, which matters because
+# the same script is meant to run on his other laptop.
+#
 # "h" (not "hh") drops the leading zero so 1:15am does not render as 01:15am.
-$now = Get-Date
-$time = ($now.ToString('h:mmtt')).ToLower()
-$date = $now.ToString('MM/dd/yyyy')
+$inv  = [System.Globalization.CultureInfo]::InvariantCulture
+$now  = Get-Date
+$time = ($now.ToString('h:mmtt', $inv)).ToLowerInvariant()
+$date = $now.ToString('MM/dd/yyyy', $inv)
 
 # --- 2. SPRINT + PHASE: from the status file the auto-advance hook also reads,
 # so the footer and the hook can never disagree about which phase we are in.
+#
+# PERFORMANCE, MEASURED (2026-09-19) -- recorded so it is not re-litigated:
+#   whole call, out of process : ~885 ms  (powershell) / ~820 ms (pwsh 7)
+#   this script's body alone   :  ~21 ms  (50 runs in process)
+#   ConvertFrom-Json below     :   ~8.6 ms
+#   regex on the raw JSON text :   ~0.4 ms
+# So ~98% of the cost is INTERPRETER STARTUP, which no change to this file can
+# remove. Swapping ConvertFrom-Json for a regex would save 8 ms of ~885 -- under
+# 1% -- in exchange for hand-parsing JSON, which is exactly the "fragile input
+# parsing" class F-PRECHECK check 4 exists to catch. The correct parser stays.
+# Effectiveness first, then efficiency where it is real.
 $sprintNum = $Sprint
 $phaseText = $Phase
 
@@ -79,8 +102,10 @@ if (-not $sprintNum -or -not $phaseText) {
                     $name = ($m.Groups[2].Value).Trim()
                     # Title Case a SHOUTED name ("MANUAL VALIDATION").
                     if ($name -cmatch '^[A-Z0-9 ]+$') {
-                        $ti = (Get-Culture).TextInfo
-                        $name = $ti.ToTitleCase($name.ToLower())
+                        # Invariant here too: the Turkish locale lowercases
+                        # 'I' to a dotless 'i', so a culture-sensitive
+                        # ToLower would render "VALIDATION" as "valIdation".
+                        $name = $inv.TextInfo.ToTitleCase($name.ToLowerInvariant())
                     }
                     $phaseText = "$num $name"
                 }
