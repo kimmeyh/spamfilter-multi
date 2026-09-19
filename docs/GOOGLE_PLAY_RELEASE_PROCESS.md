@@ -109,6 +109,39 @@ cd D:\Data\Harold\github\spamfilter-multi\mobile-app\scripts
 .\build-with-secrets.ps1 -BuildType release -Output aab
 ```
 
+### If the build fails on `GeneratedPluginRegistrant.java` (2026-09-14)
+
+```
+GeneratedPluginRegistrant.java:64: error: package dev.flutter.plugins.integration_test does not exist
+```
+
+**Cause**: `GeneratedPluginRegistrant.java` is generated output and is gitignored
+(`android/.gitignore:7`). Running an `integration_test` regenerates it WITH the integration-test
+plugin registered. `integration_test` is a `dev_dependency`, so a RELEASE build does not resolve
+it -- and the stale file still references it. The file then outlives the test run and breaks
+the next release build, which is why this surfaces at release time rather than when the test
+was run.
+
+**Fix** -- delete it and let Flutter regenerate:
+
+```powershell
+cd D:\Data\Harold\github\spamfilter-multi\mobile-app
+Remove-Item android\app\src\main\java\io\flutter\plugins\GeneratedPluginRegistrant.java
+cd scripts
+.\build-with-secrets.ps1 -BuildType release -Output aab
+```
+
+Deleting it is safe: it is gitignored generated output, not source. `flutter pub get` rewrites it
+from the resolved dependency set, which for a release build correctly omits the dev-only plugin.
+
+**Do NOT** "fix" this by moving `integration_test` out of `dev_dependencies` -- that would ship a
+test harness in the production bundle. **Do NOT** edit the generated file; the next `pub get`
+overwrites it.
+
+**Why it is worth a heading**: `flutter clean` does NOT remove it (it lives under `android/`, not
+`build/`), so the usual clean-and-retry reflex leaves the failure in place and makes it look like
+a dependency problem rather than a stale artifact.
+
 **Use the script. Do NOT hand-write `flutter build appbundle`.** A hand-written invocation
 fails at `android/app/build.gradle.kts:70` with *"SEC-9: androidGmailClientId gradle property
 is missing for a RELEASE build"*, because it drops the gradle properties the script injects

@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:io' show Directory, File, FileMode, Platform, exit;
 import 'package:flutter/foundation.dart' show kReleaseMode;
 import 'package:flutter/material.dart';
@@ -485,6 +486,52 @@ class SpamFilterApp extends StatelessWidget {
 }
 
 /// Widget to initialize rule provider before showing UI
+/// F220 / code review C-2 (Sprint 70): the backgrounded-scan handler, as a
+/// TOP-LEVEL function so tests exercise THIS code rather than a copy.
+///
+/// **Why it was extracted.** The first version of this logic lived entirely
+/// inside `_AppInitializerState`, which is library-private, so
+/// `f220_lifecycle_handler_test.dart` re-implemented it in a local harness and
+/// asserted against that. The review proved the consequence by mutation:
+/// deleting the `releaseActiveByOwner` call from production -- the exact C-1
+/// defect this sprint fixed -- left all six tests GREEN, because they were
+/// asserting against the test's own copy. The harness had also already drifted
+/// (no `mounted` check, no `unawaited`, a different message), and no test could
+/// see it.
+///
+/// A test that cannot detect the regression it exists to prevent is worse than
+/// no test, because it reports coverage it does not provide. Moving the body
+/// here makes the harness signature the production signature.
+///
+/// [isAndroid] is passed in rather than read from `Platform` so BOTH ADR-0042
+/// branches are reachable from a test. Android tears down an app's sockets when
+/// it is backgrounded, so the scan is genuinely dead; Windows minimise does not,
+/// and failing a healthy scan there would be a regression.
+void failScanInterruptedByBackgrounding({
+  required EmailScanProvider scanProvider,
+  required bool isAndroid,
+}) {
+  if (!isAndroid) return;
+  if (scanProvider.status != ScanStatus.scanning) return;
+
+  final accountId = scanProvider.currentAccountId;
+  if (accountId != null) {
+    // Release the lease OURSELVES. errorScan does not do it: the provider never
+    // touches ScanCoordinator and the scanner never reads the provider's
+    // status, so without this the coordinator stays wedged (code review C-1).
+    ScanCoordinator.instance.releaseActiveByOwner(
+      scanType: 'manual',
+      accountId: accountId,
+    );
+  }
+
+  unawaited(scanProvider.errorScan(
+    'Scan stopped because the app was moved to the background. '
+    'The connection to your mail server is closed when the app is not in '
+    'use. Start the scan again.',
+  ));
+}
+
 class _AppInitializer extends StatefulWidget {
   const _AppInitializer();
 
@@ -492,10 +539,14 @@ class _AppInitializer extends StatefulWidget {
   State<_AppInitializer> createState() => _AppInitializerState();
 }
 
-class _AppInitializerState extends State<_AppInitializer> {
+class _AppInitializerState extends State<_AppInitializer>
+    with WidgetsBindingObserver {
   @override
   void initState() {
     super.initState();
+    // F220 R-4 (Sprint 70): reconcile stale in-progress scans on RESUME, not
+    // only at startup. See didChangeAppLifecycleState below.
+    WidgetsBinding.instance.addObserver(this);
     // Initialize the rule set provider
     Future.microtask(() async {
       if (mounted) {
@@ -503,6 +554,92 @@ class _AppInitializerState extends State<_AppInitializer> {
         await ruleProvider.initialize();
       }
     });
+  }
+
+  @override
+  void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
+    super.dispose();
+  }
+
+  /// F220 R-4 / F221 R-3 (Sprint 70): a stuck `in_progress` row should not
+  /// need an app RESTART to clear.
+  ///
+  /// **The gap this closes.** `reconcileStaleInProgressScans` has existed since
+  /// Sprint 62 and is sound, but it had exactly ONE caller -- the startup path
+  /// above. Nothing ran it on resume, on scan start, or on screen entry. That
+  /// is why a restart was the only thing that cleared a row left behind by a
+  /// killed or interrupted scan, and why two testers independently described
+  /// "restart the app" as the workaround.
+  ///
+  /// This is a BACKSTOP, deliberately independent of F220's real fix (failing
+  /// an interrupted scan so its lease is released). Both can be true: the scan
+  /// screen handles the case it can see, and this catches anything that died
+  /// without anyone watching -- a process kill, a crash, a force-stop.
+  ///
+  /// **Uses the SAME age guard as the startup call.** A genuinely live scan is
+  /// never clobbered: on Windows background scans run in a separate worker
+  /// process this app cannot observe, so only rows older than the scan timeout
+  /// are touched.
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (state == AppLifecycleState.paused) {
+      _failScanInterruptedByBackgrounding();
+      return;
+    }
+    if (state != AppLifecycleState.resumed) return;
+    unawaited(_reconcileStaleScans());
+  }
+
+  /// F220 / code review H-4 (Sprint 70): fail a live scan when the app is
+  /// backgrounded -- from HERE, the app root, not from the scan screen.
+  ///
+  /// **Why it moved.** The handler originally lived only on
+  /// `ScanProgressScreen`. But "Scan Again" on the results screen calls
+  /// `startRealScan(..., useReplacement: true)`, which does a
+  /// `pushReplacement` and DISPOSES the caller's route -- so on that path
+  /// `ScanProgressScreen` is not in the stack at all, and
+  /// `ResultsDisplayScreen` has no lifecycle observer. A scan started the way
+  /// testers actually restart scans was backgrounded with nobody listening,
+  /// and stayed wedged.
+  ///
+  /// `_AppInitializerState` is above every route, so this covers every path
+  /// that can start a scan, present and future. Releasing by OWNER needs no
+  /// widget context, which is what makes the move possible.
+  ///
+  /// **ADR-0042 platform exception, same as the scan screen's**: Android tears
+  /// down sockets for a backgrounded app, so the scan is genuinely dead.
+  /// Windows minimise does not, and killing a healthy scan there would be a
+  /// regression. [debugIsAndroid] is the test seam.
+  @visibleForTesting
+  static bool? debugIsAndroid;
+
+  void _failScanInterruptedByBackgrounding() {
+    if (!mounted) return;
+    // EmailScanProvider is created at the MultiProvider root, above this
+    // widget, so read() cannot fail for a missing ancestor here. The widget
+    // does ONLY this lookup; every decision lives in the top-level function
+    // below so it can be tested against the real code.
+    failScanInterruptedByBackgrounding(
+      scanProvider: context.read<EmailScanProvider>(),
+      isAndroid: debugIsAndroid ?? Platform.isAndroid,
+    );
+  }
+
+  Future<void> _reconcileStaleScans() async {
+    try {
+      final n = await ScanResultStore(DatabaseHelper())
+          .reconcileStaleInProgressScans(
+        staleAfter: ScanCoordinator.scanTimeout,
+      );
+      if (n > 0) {
+        Logger().i('F220: reconciled $n stale in_progress scan(s) on resume');
+      }
+    } catch (e) {
+      // A backstop that throws is worse than one that quietly does nothing --
+      // this must never block the app coming back to the foreground.
+      Logger().w('Stale scan reconciliation on resume failed: $e');
+    }
   }
 
   @override

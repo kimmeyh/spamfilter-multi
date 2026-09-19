@@ -137,9 +137,16 @@ class BackgroundScanCore {
     // with no error; now it is failed loudly. Dart's timeout does not
     // cancel the underlying work -- if the zombie scan later completes it
     // will honestly overwrite the row to completed -- but the WORKER is
-    // unblocked and the row records the timeout. Manual scans deliberately
-    // have no timeout wrap: a user is watching and can cancel; startup
-    // reconciliation (reconcileStaleInProgressScans) is their backstop.
+    // unblocked and the row records the timeout.
+    //
+    // F221 (Sprint 70) -- SUPERSEDED: this comment used to read *"Manual
+    // scans deliberately have no timeout wrap: a user is watching and can
+    // cancel."* That premise was wrong once the user navigates away, and
+    // Harold reversed the decision on 2026-09-17 (Class-2). Manual scans now
+    // take the SAME 30-minute timeout, applied in `startRealScan`
+    // (`scan_progress_screen.dart`) -- a top-level function, so the timeout
+    // survives the screen being left. Both paths read
+    // ScanCoordinator.scanTimeout, so they tighten together.
     try {
       await scanner
           .scanInbox(

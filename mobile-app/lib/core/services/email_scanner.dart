@@ -1341,7 +1341,9 @@ class EmailScanner {
       await platform.disconnect();
 
       // Scan filtered folders
-      return scanInbox(daysBack: daysBack, folderNames: scanFolders);
+      // F223: awaited so the catch below runs its platform.disconnect()
+      // cleanup when the scan fails. A bare return leaves the connection open.
+      return await scanInbox(daysBack: daysBack, folderNames: scanFolders);
     } catch (e) {
       if (platform != null) {
         try {

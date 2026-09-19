@@ -25,11 +25,43 @@
         android:icon="@mipmap/ic_launcher"
         android:allowBackup="false"
         android:networkSecurityConfig="@xml/network_security_config">
+        <!-- F219 (Sprint 70): android:taskAffinity="" was REMOVED from
+             MainActivity below.
+
+             THE DEFECT. Google Sign-In failed on Android with `null_intent`.
+             This activity carries the OAuth redirect intent filter (scheme
+             ${appAuthRedirectScheme}), and an EMPTY task affinity means the
+             activity belongs to no task. When the browser fired the redirect,
+             Android had no task to route it back into, so the intent never
+             arrived and flutter_appauth reported it as `null_intent`.
+
+             WHY THE LINE EXISTED: nothing deliberate. `git log -S taskAffinity`
+             places it in "Initialize Android project structure", the Flutter
+             template default. There is no original intent to protect.
+
+             WHY REMOVED rather than set to an explicit value: the
+             flutter_appauth threads show BOTH remedies and neither is stated as
+             canonical, so this was decided on THIS app's facts. build.gradle.kts
+             sets applicationIdSuffix ".dev", so dev and prod are SEPARATE
+             installed apps. Removing the attribute gives each build Android's
+             default affinity, which is its own applicationId, keeping the two in
+             separate tasks automatically. A hardcoded explicit affinity would
+             collapse dev and prod into one task, trading an OAuth bug for a
+             side by side install bug.
+
+             BLAST RADIUS (R-3): task affinity governs EVERY activity launch, not
+             only OAuth. Three neighbour paths must be re-verified on device:
+             launcher start, return from recents, and deep links (app_links is a
+             dependency). That is AC-2 and it is MANUAL. No automated test covers
+             an OS level task switch.
+
+             ADR-0042 PLATFORM EXCEPTION (R-5): Android only by necessity.
+             Windows uses a loopback redirect (127.0.0.1) and has no task
+             affinity concept, so it is unaffected and must stay so. -->
         <activity
             android:name=".MainActivity"
             android:exported="true"
             android:launchMode="singleTop"
-            android:taskAffinity=""
             android:theme="@style/LaunchTheme"
             android:configChanges="orientation|keyboardHidden|keyboard|screenSize|smallestScreenSize|locale|layoutDirection|fontScale|screenLayout|density|uiMode"
             android:hardwareAccelerated="true"
@@ -46,21 +78,48 @@
                 <action android:name="android.intent.action.MAIN"/>
                 <category android:name="android.intent.category.LAUNCHER"/>
             </intent-filter>
-            <!-- OAuth callback for flutter_appauth -->
-            <!-- Redirect URI scheme is reversed Android client ID. -->
-            <!-- SEC-9 (Sprint 64): now sourced from the appAuthRedirectScheme
-                 manifestPlaceholder (build.gradle.kts defaultConfig), which is
-                 itself derived from the androidGmailClientId gradle property
-                 instead of a hardcoded literal. Previously this line embedded
-                 the literal directly, leaving the gradle placeholder unused;
-                 fixed as part of the same change (both must source from one
-                 place). -->
-            <intent-filter>
-                <action android:name="android.intent.action.VIEW"/>
-                <category android:name="android.intent.category.DEFAULT"/>
-                <category android:name="android.intent.category.BROWSABLE"/>
-                <data android:scheme="${appAuthRedirectScheme}"/>
-            </intent-filter>
+            <!-- F227 (Sprint 70): the OAuth redirect intent filter that used to
+                 sit HERE has been REMOVED. Do not add it back.
+
+                 THE DEFECT. Two activities in this same app registered the
+                 redirect scheme: this MainActivity filter, and
+                 net.openid.appauth.RedirectUriReceiverActivity, which
+                 flutter_appauth declares in its OWN manifest
+                 (flutter_appauth 12.0.2, android/src/main/AndroidManifest.xml).
+                 Android cannot choose between two identical filters, so the
+                 redirect landed on the system chooser
+                 (com.android.internal.app.ResolverActivity) instead of
+                 reaching the app.
+
+                 MEASURED, not inferred: on an Android 14 emulator,
+                 `pm query-activities` for the redirect scheme returned BOTH
+                 activities, and firing the real redirect intent opened the
+                 chooser. `dumpsys package` showed both filters carrying an
+                 identical VIEW plus DEFAULT plus BROWSABLE plus scheme set.
+
+                 WHY IT PRODUCED null_intent. flutter_appauth waits for ITS
+                 receiver to deliver the authorization response. When the
+                 chooser routed the redirect to MainActivity instead, that
+                 receiver never ran, so the pending intent resolved to nothing
+                 and AppAuth reported the missing intent as null_intent.
+
+                 THE SCHEME IS STILL WIRED. The appAuthRedirectScheme
+                 manifestPlaceholder (build.gradle.kts defaultConfig, derived
+                 from the androidGmailClientId gradle property per SEC-9,
+                 Sprint 64) is consumed by AppAuth's own receiver. Removing
+                 this duplicate does not unregister the scheme; it leaves
+                 exactly ONE owner, which is how the library is designed to
+                 work.
+
+                 CHECKED BEFORE REMOVING: no other scheme or host used this
+                 filter, and app_links (a declared dependency) never
+                 constructs an AppLinks instance anywhere in lib/, so no deep
+                 link path depended on MainActivity receiving this scheme.
+
+                 Related: F219 removed android:taskAffinity from this same
+                 activity. Both were defects on the OAuth redirect path and
+                 both fixes were needed. An empty task affinity would break the
+                 redirect even with this duplicate gone. -->
         </activity>
         <!-- Don't delete the meta-data below.
              This is used by the Flutter tool to generate GeneratedPluginRegistrant.java -->

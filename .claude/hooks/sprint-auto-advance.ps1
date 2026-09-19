@@ -262,7 +262,28 @@ if ($branch -match '_Sprint_(\d+)') {
                 # The phase marker is the LEADING fact of the status line by
                 # convention ("Sprint 67 Phase 5.3 MANUAL VALIDATION ..."), so
                 # anchoring costs nothing and makes prose harmless.
-                if ($statusText -match '(?i)^\s*(sprint\s+\d+\s+)?(manual validation|manual-validation|phase 5\.3|phase 5\.[4-9]|phase 6|phase 7|phase 8|retrospective|code review|awaiting harold|validation feedback|release cycle|pre-kickoff|store release|completeness sweep|scope selection|awaiting scope)') {
+                # PR #418 review I-2: the anchor alone was too strict. It
+                # correctly killed the Sprint 67 false positive (prose deep in
+                # the field saying "standing approval through Manual
+                # Validation"), but this repo's OWN status strings do not always
+                # lead with the phase. Verified against real history -- all of
+                # these are genuinely POST-MV and were being treated as
+                # in-window, blocking legitimate Phase 7/8 questions:
+                #   "Sprint 68 CLOSE-OUT (Phase 7.7.5). ... Manual Validation COMPLETE."
+                #   "Sprint 69 NOT PLANNED, NOT APPROVED. Phase 8 Release Cycle IN PROGRESS"
+                #   "Sprint 61 CLOSE-OUT (Phase 7.7)"
+                # CLAUDE.md is explicit that asking is CORRECT in the Phase 8
+                # release cycle, so this blocked exactly what it should allow.
+                #
+                # Two additions, both still SHAPE-anchored rather than free
+                # substring searches: a leading CLOSE-OUT/COMPLETE marker, and a
+                # "(Phase N.N)" parenthetical near the start. Prose later in the
+                # field still cannot trigger either.
+                $windowClosed =
+                    ($statusText -match '(?i)^\s*(sprint\s+\d+\s+)?(manual validation|manual-validation|phase 5\.3|phase 5\.[4-9]|phase 6|phase 7|phase 8|retrospective|code review|awaiting harold|validation feedback|release cycle|pre-kickoff|store release|completeness sweep|scope selection|awaiting scope)') -or
+                    ($statusText -match '(?i)^\s*(sprint\s+\d+\s+)?(close-?out|complete[d]?|not planned)') -or
+                    ($statusText -match '(?i)^[^.]{0,60}\(phase\s+(5\.[3-9]|[678])[\d.]*\s*\)')
+                if ($windowClosed) {
 
                     # === F193 (Sprint 67): Phase 5 evidence gate, AT the MV boundary ===
                     #
@@ -476,16 +497,109 @@ foreach ($pat in $procPatterns) {
 # Checked against the message TAIL only, so mid-message narration that is
 # followed by more content does not trip it. A commitment is only a violation
 # inside the enforcement window (Gates 1b/1c above already scoped that).
+#
+# SPRINT 70 (2026-09-18) -- THIS CHECK FAILED TWICE IN ONE SPRINT. Two holes,
+# found by feeding the hook the exact message that escaped it:
+#
+#   "Starting **F219** (Google Sign-In null_intent) now.
+#
+#    09/18/2026 12:22am | Phase 4.2 Testing Cycle (Per Task)"
+#
+# HOLE 1 -- BARE GERUND. Every pattern required a subject ("I'll start") or the
+# specific word order "now starting". A bare "Starting X now." has neither, so
+# all four missed. That is the MOST NATURAL way to announce an action, which is
+# exactly why it is the form that escaped.
+#
+# HOLE 2 -- THE TIMESTAMP FOOTER, and this one is self-inflicted. Harold asked
+# on 2026-09-17 for milestone replies to end with a date/time + phase footer.
+# Every commitment pattern was anchored with [.!]\s*$ -- the commitment had to
+# be the LAST thing in the message. The footer now always follows it, so the
+# anchor could never match again. A documentation preference silently disabled
+# a Stop gate; nothing announced it, the gate just went quiet.
+#
+# THE FIX, three parts:
+#   (a) strip a trailing timestamp/phase footer before analysis;
+#   (b) add bare-gerund forms that need no subject;
+#   (c) keep the sentence anchor, but apply it to the footer-stripped tail.
+#
+# General lesson, recorded because it will recur: an END-ANCHORED pattern is
+# coupled to the message's closing convention. Change the convention and the
+# gate dies silently.
 $tail = if ($trimmed.Length -gt 300) { $trimmed.Substring($trimmed.Length - 300) } else { $trimmed }
+
+# (a) Remove a trailing footer so it cannot shield a commitment from the anchor.
+# Shape: "09/18/2026 12:22am | Phase 4.2 Testing Cycle (Per Task)".
+$tailNoFooter = $tail -replace '(?im)^\s*\d{1,2}/\d{1,2}/\d{4}\s+\d{1,2}:\d{2}\s*(am|pm)\s*(\|.*)?\s*$', ''
+$tailNoFooter = $tailNoFooter.TrimEnd()
+
 $commitmentPatterns = @(
-    "(?i)\b(i|we)('ll| will)( now| next)? (start|begin|proceed|do|run|build|create|update|fix|implement|write|execute|extract|wire|add|move on|continue|tackle|pick up)\b[^.!?]*[.!]\s*$"
+    # NOTE ON TARGETS (Harold, 2026-09-18): every pattern matches the ANNOUNCING
+    # PHRASE only and treats the target as opaque ([^.!?]*). The thing being
+    # started may be a feature id, a bug number, a task name, a file, or a plain
+    # English phrase -- matching any specific token would make the gate useless
+    # the first time the naming changed.
+
+    # ---- FORM 1: bare gerund, no subject. "Starting <x> now."
+    # The form that escaped TWICE in Sprint 70 -- the most natural way to
+    # announce an action, and the one no original pattern covered.
+    '(?i)(^|[.!?]\s+|\n)\s*[*_>#\s-]*(starting|continuing|proceeding|beginning|moving|executing|running|building|implementing|fixing|writing|creating|updating|tackling|resuming|picking up|kicking off|turning|heading|switching|diving|jumping)\b[^.!?]*[.!]\s*$'
+
+    # ---- FORM 2: explicit subject + modal. "I'll start <x>."
+    "(?i)\b(i|we)('ll| will|'m going to| am going to|'m| am)( now| next)? (start|begin|proceed|do|run|build|create|update|fix|implement|write|execute|extract|wire|add|move on|continue|tackle|pick up|resume|switch|turn|dive|jump)\b[^.!?]*[.!]\s*$"
+
+    # ---- FORM 3: hortative. "Let me start <x>." / "Let's move on."
+    "(?i)\blet('s| us| me)\b[^.!?]*\b(start|begin|proceed|do|run|move|continue|tackle|pick|resume|switch|turn|go|dive|get)\b[^.!?]*[.!]\s*$"
+
+    # ---- FORM 4: "next" as the operative word, any position.
+    '(?i)(^|[.!?]\s+|\n)\s*[*_>#\s-]*next\b[^.!?]*[.!]\s*$'
+    '(?i)\b(up next|next up)\b[^.!?]*[.!]\s*$'
+    # PR #418 review I-1: require the sentence to be SHORT and subject-free.
+    # Unanchored this blocked "Diagnostics are written to the log file, and the
+    # count is reported next."
+    # "<subject> is/are next." COMMITS to doing it. A passive report such as
+    # "the count is reported next." does not -- the tell is a PAST PARTICIPLE
+    # immediately before "next" (reported/written/logged/shown/listed/...).
+    '(?i)(^|[.!?]\s+|\n)\s*[*_>#\s-]*(?!.*\b(reported|written|logged|shown|listed|described|explained|documented|covered|discussed|handled|addressed)\s+next\b)\w+(\s+\w+){0,4}\s+next[.!]\s*$'
     '(?i)\bnext[,:]? (i|we)[^.!?]*[.!]\s*$'
-    '(?i)\b(proceeding|moving) (to|on to)\b[^.!?]*[.!]\s*$'
-    '(?i)\bnow (executing|starting|beginning|building|running|implementing)\b[^.!?]*[.!]\s*$'
+
+    # ---- FORM 5: directional preposition, no verb. "On to <x>."
+    '(?i)(^|[.!?]\s+|\n)\s*[*_>#\s-]*(on to|onward|onwards|off to|over to|back to)\b[^.!?]*[.!]\s*$'
+
+    # ---- FORM 6: verb + to/with/into target.
+    # PR #418 review I-1: a COPULAR verb before the gerund makes this
+    # descriptive, not a commitment. "The retry is continuing with the same
+    # backoff." describes; "Continuing with the retry." commits. The
+    # $descriptiveGerund exclusion below cannot catch these because it looks
+    # for the verb AFTER the gerund.
+    '(?i)(?<!\b(is|are|was|were|been|being)\s)\b(proceeding|moving|continuing|switching|turning|heading|advancing|going) (to|on to|with|into|back to)\b[^.!?]*[.!]\s*$'
+
+    # ---- FORM 7: "now" paired with an action verb, either order.
+    '(?i)\bnow (executing|starting|beginning|building|running|implementing|fixing|writing|doing|tackling)\b[^.!?]*[.!]\s*$'
+    '(?i)\b(start|begin|resume|continue|execute|run|tackle|do)(ing|s)?\b[^.!?]{0,80}\bnow[.!]\s*$'
+
+    # ---- FORM 8: "time to X" / "ready to X" as a closing beat.
+    # PR #418 review I-1: anchored to a CLAUSE START. Unanchored, this blocked
+    # "The MSIX is ready to upload." and "The AAB is built and ready to
+    # submit." -- sentences this repo's own release process produces routinely
+    # (feedback_release_artifact_paths REQUIRES reporting built artifacts).
+    # "Time to start X." commits; "<noun> is ready to X." reports a state.
+    '(?i)(^|[.!?]\s+|\n)\s*[*_>#\s-]*(time to|ready to|on to the|first up)\b[^.!?]*[.!]\s*$'
+
+    # ---- FORM 9: trailing relative clause committing to future work.
+    "(?i)\b(which|that)\s+(i|we)\s*('ll| will| am going to)[^.!?]*[.!]\s*$"
 )
+# A gerund that is the SUBJECT of a descriptive sentence is not a commitment.
+# "Starting the app was not required." describes; "Starting the app now."
+# commits. The tell is a past-tense/copular verb after the gerund phrase.
+# This exclusion exists because a gate that blocks correct work trains bypass
+# (Sprint 67 IMP-2: the F193 gate broke six of this hook's own allow-cases).
+$descriptiveGerund = '(?i)\w+ing\b[^.!?]*\b(was|were|is|are|had been|has been|would be|will be|did|does|turned out|proved|seems|appears|means|explains|matters|costs|took)\b[^.!?]*[.!]\s*$'
+
 $matchedCommitment = $false
 foreach ($pat in $commitmentPatterns) {
-    if ($tail -match $pat) {
+    if ($tailNoFooter -match $pat) {
+        # Suppress only when the SAME trailing sentence is descriptive.
+        if ($tailNoFooter -match $descriptiveGerund) { continue }
         $matchedCommitment = $true
         break
     }

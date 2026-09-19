@@ -26,6 +26,10 @@ Format: `- **type**: Description (Issue #N)` where type is feat|fix|chore|docs
 
 ## [Unreleased]
 
+### 2026-09-17 (Sprint 70)
+- **fix**: four places where an error during mail fetching could go unreported. Each returned a result from inside an error-handling block without waiting for it, so the handler that was supposed to catch a failure never ran -- including two fallback paths that only run because something has already gone wrong, and one that leaves a mailbox connection open. (Issue #412)
+- **chore** [internal]: upgraded the Flutter toolchain from 3.38.5 to 3.47.4, nine months of releases. A local modification to the toolchain that had been required for every Windows build since December is no longer needed -- the upstream defect it worked around has been fixed. (Issue #412)
+
 ### 2026-09-11 (Sprint 69)
 - **fix**: when Google Sign-In is refused by Google itself, the error now tells you to use an App Password instead of leaving you at a dead end. Google returns a generic "Error 400: invalid_request" and hides the real reason behind a details link, so the screen previously showed a message that explained nothing and offered no way forward. An App Password connects the same mailbox and is unaffected. (Issue #405)
 - **fix** [android]: the bottom of every screen is no longer hidden behind the system navigation buttons. Error messages were being cut off mid-sentence, and the last row of a list or a button at the bottom of a screen could sit underneath the buttons. (Issue #408)

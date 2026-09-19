@@ -39,6 +39,11 @@ analyzer:
     prefer_final_fields: ignore
     # Library doc comments placement varies by file structure
     dangling_library_doc_comments: ignore
+  exclude:
+    - build/**
+    - android/**
+    - ios/**
+    - windows/**
 
 linter:
   # The lint rules applied to this project can be customized in the

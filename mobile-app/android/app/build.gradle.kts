@@ -208,6 +208,69 @@ dependencies {
 
     // Core library desugaring for Java 8+ compatibility (required by flutter_local_notifications)
     coreLibraryDesugaring("com.android.tools:desugar_jdk_libs:2.0.4")
+
+    // ---------------------------------------------------------------------
+    // WORKAROUND -- NOW INDEFINITE. Originally approved by Harold 2026-09-14
+    // as ONE-TIME for the 0.15.1 Play release, to be removed "when the Flutter
+    // SDK upgrade lands (F218)".
+    //
+    // F218 LANDED IN SPRINT 70 AND DISPROVED THAT PREMISE. The SDK was
+    // upgraded 3.38.5 -> 3.47.4 (nine months, 4,163 commits), the workaround
+    // was removed, and the AAB build failed with the IDENTICAL error:
+    //   GeneratedPluginRegistrant.java:64: error: package
+    //   dev.flutter.plugins.integration_test does not exist
+    // The workaround was restored deliberately, which the F218 card's own
+    // Definition of Done pre-authorised as a legitimate outcome.
+    //
+    // DO NOT remove this on the strength of another SDK upgrade -- that
+    // experiment has been run and the answer was no. Removing it needs a
+    // DIFFERENT approach: the dev-dependency plugin registration itself, or an
+    // upstream fix. Until then this ships a test-only library in the release
+    // AAB, which is the cost being knowingly accepted.
+    // ---------------------------------------------------------------------
+    //
+    // THE DEFECT (Flutter 3.38.5): `flutter build appbundle --release` fails
+    // with
+    //
+    //   GeneratedPluginRegistrant.java:64: error: package
+    //   dev.flutter.plugins.integration_test does not exist
+    //
+    // `GeneratedPluginRegistrant.java` is generated output, compiled into
+    // EVERY variant, and the generator writes an `integration_test`
+    // registration into it unconditionally -- even though
+    // `.flutter-plugins-dependencies` correctly marks that plugin
+    // `dev_dependency: true`.
+    //
+    // PROVEN BY ASKING GRADLE, not inferred. `:integration_test` IS an
+    // included Gradle project (`gradlew projects` lists it), and:
+    //
+    //   prodDebugCompileClasspath    -> project :integration_test  PRESENT
+    //   prodReleaseCompileClasspath  -> (absent)
+    //
+    // So the registrant references a class that the release variant's
+    // classpath does not carry. That asymmetry is SDK behaviour, not
+    // anything this project configures -- nothing in our Gradle files
+    // filters dev-dependency plugins.
+    //
+    // WHY A DEPENDENCY RATHER THAN STRIPPING THE REGISTRANT: the file is
+    // gitignored generated output and `flutter pub get` rewrites it on every
+    // build, so an edit there does not survive. Adding the project to the
+    // release classpath makes the existing reference resolve, which is the
+    // narrower change.
+    //
+    // WHY NOT MOVE integration_test OUT OF dev_dependencies: that would ship
+    // a test harness in the production bundle. Not an option.
+    //
+    // COST, STATED PLAINLY: this puts the integration_test plugin on the
+    // release classpath, so a small test-only library is linked into the
+    // shipped AAB. That is the price of the workaround and the reason it is
+    // one-time rather than permanent.
+    //
+    // The SDK upgrade (F218) was tried in Sprint 70 and did NOT fix this; a different approach is required. This exists so the 0.15.1 Play
+    // release -- which carries the F208 and F209 tester fixes and is what
+    // unblocks their on-device validation -- is not held hostage to a
+    // 9-month SDK jump performed under release-day pressure.
+    releaseImplementation(project(":integration_test"))
 }
 
 flutter {
