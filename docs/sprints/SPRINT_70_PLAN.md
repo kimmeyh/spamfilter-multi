@@ -615,3 +615,60 @@ SEC-4), so the manifest edit is not proven until the app launches on the S24+.
 - **F212 AC-4**: re-processing verified on BOTH platforms.
 - **F217 remedy**: a Class-1 decision, three options recorded in `ALL_SPRINTS_MASTER_PLAN.md`,
   awaiting Harold. Not chosen by Claude.
+
+---
+
+## Device / Emulator Validation Results (2026-09-19)
+
+Harold validated on Windows and on the S24+ where possible; the emulator covered what a
+Play-signed build is not required for. Android 14 emulator `pixel34_updated`
+(`google_apis_playstore`), emulator 36.2.12.0 resolved through `ANDROID_HOME`.
+
+### PASSED
+
+- **F212 AC-4 (Windows half)**: Harold -- *"verified on windows"*. The Android half is still owed.
+- **F219 5.1.6 runtime launch gate**: app starts cleanly after the `taskAffinity` removal. No
+  `AndroidRuntime` fatal, no manifest parse error. This was the Sprint 64 SEC-4 risk -- an XML
+  change AAPT accepts can still kill the app at OS parse time -- and it is now cleared.
+- **F219 AC-2 task affinity**: `dumpsys activity activities` reports
+  `taskAffinity=10195:com.myemailspamfilter`. **This is the fix working, measured directly**: the
+  activity now has a real affinity derived from the applicationId where it previously had the empty
+  string (no task at all).
+- **F219 AC-2 launcher start**: cold start from the launcher works.
+- **F219 AC-2 return from recents**: HOME then relaunch gives *"its current task has been brought
+  to the front"* with the SAME PID -- resumed into its task rather than restarted. That is the
+  behaviour an empty affinity made impossible.
+
+### FAILED -- and it found a SECOND defect (F227), filed
+
+- **F219 AC-2 deep link / OAuth redirect**: firing the real redirect intent lands on
+  `com.android.internal.app.ResolverActivity`, a chooser, not on the app.
+- **Root cause, measured via `pm query-activities`**: TWO activities in the SAME app register the
+  scheme -- our `MainActivity` filter AND `net.openid.appauth.RedirectUriReceiverActivity`, which
+  `flutter_appauth` declares itself. Android cannot choose, so it asks.
+- **This is very likely the REAL `null_intent` cause.** AppAuth waits on its own receiver; if the
+  chooser sends the redirect to `MainActivity` instead, that receiver never runs and the pending
+  intent resolves to nothing.
+- **F219's fix is still correct and still needed.** An empty `taskAffinity` would break the
+  redirect even after F227 is fixed. Two separate defects on one path.
+- **A wrong turn worth recording**: my first explanation was that the dev and prod builds both
+  registered the scheme. I uninstalled the dev build and the chooser still appeared -- so I asked
+  the OS instead of theorising, and `pm query-activities` gave the real answer. The first
+  explanation was plausible and wrong.
+
+### STILL OWED -- requires a Play-signed build on the S24+
+
+Harold: *"can't test on S24+ until uploaded in new upload to Google Play."*
+
+- **F219 AC-1**: a listed test user completes Google Sign-In on a Play-installed build. **Cannot be
+  emulator-tested**: the Android OAuth client is bound to the Play App Signing SHA-1, so a debug or
+  locally-signed build presents the wrong fingerprint and Google rejects it before the redirect is
+  ever reached. This is a genuine external dependency, not a skipped step.
+- **F212 AC-4 (Android half)**: re-processing on a real account.
+- **F217 R-1 on a genuinely idle device**: the emulator reported standby bucket 10 (ACTIVE)
+  immediately after install, which is expected and proves nothing about Doze. The meaningful
+  reading needs the S24+ idle for hours.
+
+**Recommendation: fix F227 BEFORE the next Play upload.** F219 AC-1 needs an upload to test, and if
+F227 is the real `null_intent` cause then uploading without it spends an upload cycle to re-observe
+a defect already identified and understood.

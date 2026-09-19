@@ -901,6 +901,40 @@ recorded here so it is not a surprise at the next upgrade.
 - Depends on: overlaps F220 and F207.
 - Source: Sean Jarvis via Harold, 2026-09-17.
 
+**F227. TWO activities register the OAuth redirect scheme, so Android shows a chooser instead of delivering the callback (~1-3h) Priority 2 (NEW, 2026-09-19 -- found by emulator probe during F219 validation)**
+- Phase: Core App Quality
+- Platform: Android (declared ADR-0042 exception -- Windows uses a loopback redirect)
+- **Very likely the ACTUAL `null_intent` cause, more directly than F219's `taskAffinity`.** Found by
+  firing the real redirect intent on an Android 14 emulator and asking the OS who resolves it.
+- **Measured, not inferred.** `pm query-activities` for the redirect scheme returns TWO activities
+  IN THE SAME APP:
+  - `com.myemailspamfilter.MainActivity` -- from our own `AndroidManifest.xml` intent filter
+  - `net.openid.appauth.RedirectUriReceiverActivity` -- declared by `flutter_appauth` ITSELF
+  `dumpsys package` confirms both carry an identical filter (VIEW + DEFAULT + BROWSABLE + the same
+  scheme). Android cannot choose between them, so the redirect lands on
+  `com.android.internal.app.ResolverActivity` -- a disambiguation dialog -- instead of reaching
+  AppAuth's receiver.
+- **Why this produces `null_intent`.** `flutter_appauth` waits for its OWN receiver to deliver the
+  authorization response. If the user picks `MainActivity` at the chooser (or the chooser is
+  dismissed), AppAuth's receiver never runs, so the pending intent it is waiting on resolves to
+  nothing -- which is exactly what `null_intent` reports.
+- **The duplicate is ours.** `flutter_appauth-12.0.2/android/src/main/AndroidManifest.xml` already
+  declares `RedirectUriReceiverActivity`, and the `appAuthRedirectScheme` manifest placeholder is
+  designed to wire the scheme to THAT activity. Our `MainActivity` filter (added when the app also
+  used a custom-scheme flow) now duplicates it.
+- **Proposed fix**: REMOVE the redirect intent filter from `MainActivity` and let AppAuth's own
+  receiver own the scheme, as the library intends. **Verify before assuming**: confirm nothing else
+  depends on `MainActivity` receiving that scheme (check `app_links` deep-link handling, which is a
+  separate dependency), and re-run the emulator probe -- `pm query-activities` must return exactly
+  ONE activity afterwards.
+- **Relationship to F219**: F219's `taskAffinity` removal is still correct and independently
+  verified on the emulator (`taskAffinity=com.myemailspamfilter`, launcher start, return from
+  recents, and clean launch all pass). An empty affinity would break the redirect even after F227
+  is fixed. The two are separate defects on the same path; F219 removed one, this removes the other.
+- Depends on: nothing. Testable on the emulator without a Play-signed build.
+- Source: emulator probe 2026-09-19 (`pixel34_updated`, Android 14, emulator 36.2.12.0) during
+  Sprint 70 F219 device validation.
+
 **F226. WinWright scripts fail intermittently when run back-to-back in one sweep (~2-4h) Priority 14 (NEW, 2026-09-18 -- found during the Sprint 70 5.1.5 sweep)**
 - Phase: Developer Tooling
 - Platform: Windows Desktop (WinWright is Windows-only)
@@ -1088,6 +1122,72 @@ recorded here so it is not a surprise at the next upgrade.
   case, which is the entire point.
 - Depends on: surfaced by F218's upgrade; fixed in the same sprint out of necessity.
 - Source: found 2026-09-17 by Flutter 3.47.4's analyzer during the F218 upgrade.
+
+**F217 R-1 MEASURED ON EMULATOR (2026-09-19) -- and it CORRECTS my own earlier claim.**
+
+Android 14 emulator (`pixel34_updated`, `google_apis_playstore`, emulator 36.2.12.0 from
+`ANDROID_HOME`), prod-debug APK installed.
+
+**CORRECTION.** The Sprint 70 diagnosis stated: *"`AndroidManifest.xml` declares NO battery-related
+permission at all: no `REQUEST_IGNORE_BATTERY_OPTIMIZATIONS`, no `FOREGROUND_SERVICE`, no
+`WAKE_LOCK`."* That was derived by grepping the SOURCE manifest. The MERGED manifest -- what the OS
+actually sees -- tells a different story:
+
+```
+ACCESS_NETWORK_STATE, FOREGROUND_SERVICE, FOREGROUND_SERVICE_SHORT_SERVICE,
+INTERNET, POST_NOTIFICATIONS, RECEIVE_BOOT_COMPLETED, VIBRATE, WAKE_LOCK
+```
+
+`FOREGROUND_SERVICE` and `WAKE_LOCK` ARE present, injected transitively by
+`workmanager_android-0.10.6`, and `dumpsys package` confirms both `granted=true`. I reasoned from
+a file next to the answer instead of reading the answer -- the same sequence error CLAUDE.md
+records for the F211 console claim.
+
+**What survives the correction, and it is the part that matters.**
+`REQUEST_IGNORE_BATTERY_OPTIMIZATIONS` is genuinely ABSENT (grep count 0 in the merged manifest),
+and `dumpsys deviceidle whitelist` does NOT list the app. So the conclusion holds -- **the app has
+never been exempt from Doze** -- but the reason is narrower than stated: it is missing the ONE
+permission that governs Doze exemption, not "all battery permissions". `WAKE_LOCK` keeps the CPU
+awake during work the OS has already allowed; it does not stop the OS deferring that work.
+
+**Standby bucket: 10 (ACTIVE)** immediately after install. Expected -- a freshly installed and
+recently interacted-with app is ACTIVE. It is NOT evidence against the Doze hypothesis; the
+meaningful reading is after the device has idled, which needs the S24+ over hours, not a fresh
+emulator. Recorded so the number is not later misread as a falsification.
+
+**Net effect on the decision: none.** Option 1 remains correct, and is now supported by a direct
+observation (`deviceidle whitelist` does not contain the app) rather than by an absence inferred
+from source.
+
+**F217 DECISION (Harold, 2026-09-19): OPTION 1 -- request a battery-optimisation exemption. AND the Samsung hypothesis is FALSIFIED.**
+
+**R-2 CHECKED AND RULED OUT.** Harold inspected the S24+: *"Settings > Battery > Background usage
+limits > Put unused apps to sleep is off, MyEmailSpamFilter is in none of these lists: Never
+autosleeping apps, sleeping apps, deep sleeping apps."*
+
+This matters more than it looks. Samsung's aggressive battery management was the CHEAP explanation
+and the one that would have made option 1 useless (Samsung's restrictions operate independently of
+the stock exemption). It is now eliminated by direct observation of the device, not by reasoning.
+**Stock Android Doze / App Standby is the remaining cause, and R-4 stands as the explanation: the
+app has never requested any exemption, so the OS is free to defer its work indefinitely.**
+
+**Corroborating**: battery usage reads **0.1%**. An app genuinely scanning every 15 minutes across
+a day does not sit at 0.1%. That figure is consistent with the scans largely not running, and it is
+evidence for the same conclusion rather than a separate finding.
+
+**Decision**: implement option 1 -- `REQUEST_IGNORE_BATTERY_OPTIMIZATIONS` plus a contextual runtime
+prompt. Harold answered `1`.
+
+**Implementation constraints carried into the implementing sprint:**
+- The permission is scrutinised at Play review and needs a listing justification. A spam filter
+  that scans on a schedule is a defensible case, but the justification text is part of the work,
+  not an afterthought.
+- The prompt must be CONTEXTUAL -- requested at the moment the user enables background scanning,
+  mirroring the F161 POST_NOTIFICATIONS pattern already in `settings_screen.dart`, not fired at
+  startup.
+- The user can still decline. The app must behave honestly when they do: option 3's messaging
+  (scans run when the device allows) becomes the fallback path, not a discarded alternative.
+- ADR-0042: Android-only, declared. Windows Task Scheduler is exact and unaffected (AC-4).
 
 **F217 DIAGNOSIS (Sprint 70, 2026-09-18) -- CODE SIDE COMPLETE, OS-SIDE MEASUREMENT STILL OWED. The fix is a CLASS-1 DECISION and is NOT chosen.**
 
