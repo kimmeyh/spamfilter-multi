@@ -901,6 +901,40 @@ recorded here so it is not a surprise at the next upgrade.
 - Depends on: overlaps F220 and F207.
 - Source: Sean Jarvis via Harold, 2026-09-17.
 
+**F227 FIXED AND VERIFIED ON DEVICE (Sprint 70, 2026-09-19). Harold approved the in-sprint fix: "1 fix now".**
+
+**The fix**: removed the duplicate OAuth redirect intent filter from `MainActivity`, leaving
+`net.openid.appauth.RedirectUriReceiverActivity` -- which `flutter_appauth` declares itself -- as
+the single owner of the scheme.
+
+**Verified on an Android 14 emulator, before and after, by asking the OS rather than reasoning:**
+
+- `pm query-activities` for the redirect scheme: **2 activities BEFORE, 1 AFTER**. The survivor is
+  AppAuth's receiver, which is the library's intended design.
+- Firing the real redirect intent: **landed on `com.android.internal.app.ResolverActivity` (the
+  system chooser) BEFORE; lands in `Task A=10196:com.myemailspamfilter` (the app's own task)
+  AFTER.** No chooser. This is the behaviour `null_intent` was the absence of.
+
+**Checked before removing** (the filter carried no other scheme or host, and `app_links` never
+constructs an `AppLinks` instance anywhere in `lib/`, so no deep-link path depended on
+`MainActivity` receiving it).
+
+**Regression gate**: `test/policy/f219_task_affinity_test.dart` now asserts the INVERSE of what it
+originally did. It previously required `MainActivity` to carry the filter, as a paired check so the
+F219 `taskAffinity` fix could not guard a filter that had moved away. Emulator probing showed that
+pairing was itself the bug. The gate now fails if the filter returns, and a second test asserts the
+`appAuthRedirectScheme` placeholder still exists in `build.gradle.kts` -- so removing the duplicate
+cannot silently unregister the scheme altogether. Mutation-verified: re-adding the filter turns the
+gate red.
+
+**F219 remains correct and was independently verified**: `taskAffinity=10195:com.myemailspamfilter`
+where it was previously the empty string. Two separate defects on one path; both fixes were needed.
+
+**Still requires a Play-signed build**: F219 AC-1 (a listed test user completing sign-in end to
+end). The emulator cannot test it because the Android OAuth client is bound to the Play App Signing
+SHA-1. What the emulator HAS now proven is that the redirect reaches the app, which was the failing
+step.
+
 **F227. TWO activities register the OAuth redirect scheme, so Android shows a chooser instead of delivering the callback (~1-3h) Priority 2 (NEW, 2026-09-19 -- found by emulator probe during F219 validation)**
 - Phase: Core App Quality
 - Platform: Android (declared ADR-0042 exception -- Windows uses a loopback redirect)

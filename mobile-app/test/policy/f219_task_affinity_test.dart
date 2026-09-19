@@ -34,16 +34,41 @@ void main() {
             'prod are separate apps that must stay in separate tasks.');
   });
 
-  test('the OAuth redirect intent filter is still present', () {
-    // The paired assertion. Removing taskAffinity is only meaningful while this
-    // activity is still the redirect target; if the filter moved, the fix above
-    // would be guarding nothing and this gate would pass vacuously.
+  test('F227: MainActivity does NOT re-register the OAuth redirect scheme', () {
+    // UPDATED BY F227 (Sprint 70). This test previously asserted the OPPOSITE --
+    // that MainActivity still carried the redirect filter -- as a paired check
+    // so the taskAffinity fix could not guard a filter that had moved away.
+    //
+    // Emulator probing showed that pairing was wrong. flutter_appauth declares
+    // its own net.openid.appauth.RedirectUriReceiverActivity with the same
+    // filter, so MainActivity carrying one meant TWO activities claimed the
+    // scheme and Android showed a chooser instead of delivering the callback --
+    // which is what produced null_intent. Verified on an Android 14 emulator:
+    // `pm query-activities` returned 2 activities before the fix and 1 after,
+    // and the redirect now lands in the app's own task rather than
+    // ResolverActivity.
+    //
+    // So the invariant inverted: MainActivity must NOT declare this filter.
     final manifest =
         File('android/app/src/main/AndroidManifest.xml').readAsStringSync();
     final code = manifest.replaceAll(RegExp(r'<!--.*?-->', dotAll: true), '');
 
-    expect(code.contains(r'${appAuthRedirectScheme}'), isTrue,
-        reason: 'the redirect scheme placeholder is what makes MainActivity '
-            'the OAuth return target');
+    expect(code.contains(r'${appAuthRedirectScheme}'), isFalse,
+        reason: "F227: the redirect scheme belongs to AppAuth's own "
+            "RedirectUriReceiverActivity, which flutter_appauth declares. "
+            "Re-adding it here makes TWO activities claim the scheme, Android "
+            "shows a chooser, AppAuth's receiver never runs, and the flow "
+            "fails with null_intent.");
+  });
+
+  test('F227: the scheme is still WIRED, just not here', () {
+    // The paired assertion, corrected. Removing the filter must not silently
+    // unregister the scheme -- the gradle placeholder that feeds AppAuth's
+    // receiver has to survive, or the redirect resolves to nothing at all.
+    final gradle = File('android/app/build.gradle.kts').readAsStringSync();
+    expect(gradle.contains('appAuthRedirectScheme'), isTrue,
+        reason: "the manifestPlaceholder in build.gradle.kts is what supplies "
+            "the scheme to AppAuth's receiver (SEC-9, Sprint 64). Without it "
+            "nothing registers the redirect.");
   });
 }
