@@ -468,7 +468,10 @@ class GmailApiAdapter with BatchOperationsMixin implements SpamFilterPlatform {
           'batchGet HTTP ${response.statusCode}; falling back to individual fetches',
           StateError('status ${response.statusCode}'),
         );
-        return _fetchMessagesIndividually(
+        // F223: awaited so the enclosing catch covers the fallback too. This
+        // path runs because batchGet ALREADY failed; a silent failure here
+        // leaves no record of either.
+        return await _fetchMessagesIndividually(
           messageIds,
           folderForLabel,
           applyExcludedLabelFilter: applyExcludedLabelFilter,
@@ -486,7 +489,8 @@ class GmailApiAdapter with BatchOperationsMixin implements SpamFilterPlatform {
           'batchGet response missing boundary; falling back to individual',
           StateError('no boundary in Content-Type'),
         );
-        return _fetchMessagesIndividually(
+        // F223: awaited -- same reasoning as the HTTP-status fallback above.
+        return await _fetchMessagesIndividually(
           messageIds,
           folderForLabel,
           applyExcludedLabelFilter: applyExcludedLabelFilter,

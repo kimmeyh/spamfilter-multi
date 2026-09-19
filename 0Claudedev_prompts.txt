@@ -3,13 +3,14 @@ claude --continue # generally the best option
 claude --continue --model claude-fable-5 # to request the Fable 5 model when continuing
 
 Sprint plan approval:
-Sprint plan approved, proceed with execution. 
+Sprint plan approved as recommended, proceed with execution. 
 All Sprint tasks and sub-tasks are approved.  
-Continue without addition approvals until Manual Validation, providing your recommendation for Manual Validation steps.
+Do not stop between tasks as they are all approved, please continue to complete all tasks and without addition approvals until Manual Validation, providing your recommendation for Manual Validation steps.
 Do not stop to ask questions unless meeting the criteria in \docs\SPRINT_STOPPING_CRITERIA.md
+If questions must be asked, ask as late as possible - do everything that can be done (all tasks and parts of takss, without the answer to the question(s), then ask the question(s)
 
-Github Copilot Review Requests:
-Please trigger the Claude PR reviews and Copilot PR Review ("id": 175728472, "login": "copilot-pull-request-reviewer[bot]", "node_id": "BOT_kgDOCnlnWA").
+PR Review Requests:
+Please trigger the Claude PR review (pr-review-toolkit plugin) and Copilot PR Review ("id": 175728472, "login": "copilot-pull-request-reviewer[bot]", "node_id": "BOT_kgDOCnlnWA").
 Setup a way for the reviews to notify you once completed.
 As each completes, address any comments provided and:
 - if an comment is mentioned by both reviews, preference is to address the one from Copilot.

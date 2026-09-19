@@ -84,7 +84,10 @@ unnoticed through a full sprint of validation on accounts that already had app p
 **Why it happens**: Google now disables Custom URI schemes BY DEFAULT on newly-created Android
 OAuth clients, because the scheme can be claimed by another app on the device (app
 impersonation). This app uses `flutter_appauth`, which is built on exactly that mechanism:
-`AndroidManifest.xml` registers `<data android:scheme="${appAuthRedirectScheme}"/>`, and
+The redirect scheme is registered by `flutter_appauth`'s own bundled manifest (via
+`RedirectUriReceiverActivity`), fed by the `appAuthRedirectScheme` manifestPlaceholder that
+`build.gradle.kts` derives from the Android client id. Our `AndroidManifest.xml` deliberately does
+NOT register it -- see F227 below. And
 `android/app/build.gradle.kts` derives that placeholder from the client id prefix.
 
 **The fix is entirely in the Google Cloud Console. No code change, no rebuild, no new release.**
@@ -118,6 +121,56 @@ cause of F211 than the scheme setting was.
    - The value found here was `F6:CF:21:...:8F:17`, which is `~/.android/debug.keystore` --
      so the client was configured for a local debug build of an app that no longer exists
      under that name.
+
+**WHICH CLIENT THE PLAY BUILD ACTUALLY USES** (settled by Harold, 2026-09-14):
+
+`build-with-secrets.ps1` passes `--dart-define-from-file=secrets.dev.json` for EVERY build
+including release, and `secrets.prod.json` does not exist in the dev worktree at all -- so a Play
+bundle is always built with the DEV worktree credentials. The two worktrees hold DIFFERENT Android
+client ids (dev `577022808534-0ejd...`, prod `577022808534-v94j...`).
+
+Harold confirmed the dev client (`0ejd`) is correct and is what ships: it is what 0.15.0 shipped
+with, and it is the client the F211 console fixes are being applied to. **Do not fix this by
+pointing the Play build at the prod worktree secrets** -- that would apply the F211 repairs to one
+client while shipping another.
+
+Recorded because the Play release process does not state which secrets file it uses, and the
+mismatch looks like a defect until you know it is deliberate.
+
+**STATUS 2026-09-16: ALL THREE CONSOLE FIELDS ARE CORRECT AND SAVED.** Harold opened the client
+page and every value was already right on load -- package name `com.myemailspamfilter`, SHA-1
+`3B:C2:42:...:33:92` (the Play App Signing key), Custom URI scheme enabled. A form loads from the
+server, so those are the persisted values, not unsaved edits.
+
+**What this does NOT yet prove**: that sign-in works. The client page's "Last used date" and its
+pending-deletion warning are HISTORICAL -- neither updates until a real request matches the
+client. Only a successful sign-in closes this out.
+
+**Two conditions must BOTH hold before a test means anything:**
+
+1. **The test account must be a listed test user.** Publishing status is **Testing**, so only
+   accounts on the Audience page can sign in at all. An unlisted account fails with a DIFFERENT
+   error and sends the diagnosis the wrong way. Add it at
+   `console.cloud.google.com/auth/audience` -> Test users -> Add users.
+2. **The build must be installed FROM PLAY.** The SHA-1 now registered is the Play App Signing
+   key, so only a Play-installed build presents it. A local debug build presents the debug
+   fingerprint and will fail regardless.
+
+**OPEN ANOMALY, unproven, recorded so it is not rediscovered**: the **Data Access** page shows
+ALL THREE scope tables EMPTY -- no `gmail.modify`, no `userinfo.email` -- while the app requests
+both in code (`google_auth_service.dart:57,61`). That is not a normal configuration and is a
+plausible second cause of the `Error 400: invalid_request`. It has NOT been shown to cause the
+failure; it is a candidate sitting alongside the two confirmed misconfigurations. **If sign-in
+still fails after propagation, look here next.**
+
+**Cost question, settled 2026-09-16.** Harold's concern was a $5,000/year verification fee. The
+console says otherwise: Verification Center reads *"Verification is not required since your app
+is configured with a Testing publishing status."* The $5,000 figure is CASA Tier 2, which
+attaches to **restricted** scopes (`https://mail.google.com/`). This app requests
+**`gmail.modify`**, which Google classifies as **sensitive** -- OAuth verification on publish, a
+review rather than a paid third-party security audit. **The real constraint is the 100-user
+LIFETIME cap in Testing**, which at 12 testers is not close, but would need resolving before Play
+production.
 
 **THE TWO FINGERPRINTS FOR THIS PROJECT** (recorded 2026-09-11 so nobody has to hunt again):
 
@@ -252,6 +305,65 @@ flutter run --dart-define-from-file=secrets.dev.json
 ---
 
 ## Troubleshooting
+
+### Android: Google Sign-In fails with `null_intent` (F219, Sprint 70)
+
+**Status (2026-09-18): CODE FIX APPLIED, DEVICE VERIFICATION STILL OPEN.** The manifest change is
+committed and gated by a test. AC-1 and AC-2 are MANUAL on a Play-installed build and have NOT yet
+been performed -- no Android device was attached during implementation. **Do not treat this entry
+as a confirmed fix until the device checks below pass.**
+
+**Cause**: `android:taskAffinity=""` on `MainActivity` in `AndroidManifest.xml`.
+
+`net.openid.appauth.RedirectUriReceiverActivity` carries the OAuth redirect intent filter (scheme
+`${appAuthRedirectScheme}`), declared by `flutter_appauth` in its own bundled manifest. **F227
+(Sprint 70) REMOVED the duplicate filter that `MainActivity` used to carry** -- two activities
+claiming one scheme made Android show a chooser instead of delivering the callback. `MainActivity`
+now declares only MAIN/LAUNCHER. An
+EMPTY task affinity means the activity belongs to no task, so when the browser fires the redirect,
+Android has no task to route it back into. The intent never arrives, and `flutter_appauth` reports
+the missing intent as `null_intent`.
+
+**Where the line came from**: nothing deliberate. `git log -S taskAffinity` places it in
+"Initialize Android project structure" -- the Flutter Android template default. There was no
+original intent to protect, which is why removal was safe to consider at all.
+
+**Which Android sign-in path this affects, and a correction worth recording.** The sprint card
+named `flutter_appauth` as the suspect library. That is right, but not the whole picture:
+`google_auth_service.dart` tries NATIVE `google_sign_in` 7.x FIRST and falls back to the
+`flutter_appauth` browser flow only when the native attempt throws (`_signInNative` catch block,
+Android only). So `null_intent` is a FALLBACK-path failure. A native-path failure looks different
+and is diagnosed separately -- do not assume every Android sign-in failure is this bug.
+
+**Fix**: remove the attribute. Do NOT set an explicit value.
+
+The upstream `flutter_appauth` threads show both remedies with neither stated as canonical, so the
+choice was made on this app's facts: `build.gradle.kts` sets `applicationIdSuffix ".dev"`, so dev
+and prod are SEPARATE installed apps. Removing the attribute gives each build Android's default
+affinity, which is its own `applicationId`, keeping the two in separate tasks automatically. A
+hardcoded explicit affinity would collapse dev and prod into one task, trading an OAuth bug for a
+side-by-side-install bug.
+
+**Regression gate**: `test/policy/f219_task_affinity_test.dart` fails the build if the attribute
+returns. It strips XML comments before searching, because the manifest's own rationale comment
+quotes the attribute it removed. The gate is mutation-verified: reintroducing the line turns it
+red.
+
+**Blast radius, and the MANUAL checks that remain (AC-2)**: task affinity governs EVERY activity
+launch, not only OAuth. These three must be re-verified on a device, and they are the part most
+likely to be skipped:
+
+1. Launcher start (cold start from the app icon)
+2. Return from recents (background the app, reopen from the recents switcher)
+3. Deep links (`app_links` is a dependency)
+
+Plus AC-1: a listed test user completes Google Sign-In on a **Play-installed** build with no app
+password.
+
+**If device testing shows this was NOT the fix**: say so here explicitly and revert the manifest
+change rather than leaving a changed line that did nothing. The next candidate on the list is the
+Google Cloud Console **Data Access** page listing NO scopes while the app requests `gmail.modify`
+and `userinfo.email` -- recorded as a candidate, not a finding.
 
 ### Android: "Sign in was cancelled"
 

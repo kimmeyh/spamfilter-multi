@@ -30,6 +30,7 @@ import '../../core/services/pattern_compiler.dart';
 import '../../core/services/rule_evaluator.dart';
 import '../../core/services/rule_quick_action_service.dart';
 import '../../core/storage/database_helper.dart';
+import '../../core/services/scan_coordinator.dart'; // F212 (Sprint 70)
 import '../../core/storage/scan_result_store.dart';
 import '../../core/storage/settings_store.dart';
 import '../../core/utils/pattern_normalization.dart';
@@ -125,6 +126,17 @@ class _ResultsDisplayScreenState extends State<ResultsDisplayScreen> {
   // Track emails to hide from the list after rule change (removed immediately
   // before IMAP action completes for instant visual feedback).
   final Set<String> _hiddenEmailKeys = {};
+
+  // F212 R-4 (Sprint 70): emails whose IMAP action FAILED.
+  //
+  // Before this, "addressed" was computed purely from rule EVALUATION -- an
+  // email counted as addressed the moment a matching rule existed, whether or
+  // not the server accepted the action. So a batch that failed 100% still
+  // produced the green "All N 'No rule' emails addressed." banner. R-4 is
+  // explicit that this must be fixed regardless of the underlying cause,
+  // because a success message beside a failed batch is its own defect: it
+  // tells the user their mail is filed when it is not.
+  final Set<String> _reProcessFailedKeys = {};
 
   // F38: Non-blocking re-processing state
   bool _isReProcessing = false;
@@ -2946,6 +2958,60 @@ class _ResultsDisplayScreenState extends State<ResultsDisplayScreen> {
     }
   }
 
+  /// F212 R-4 (Sprint 70): mark the emails whose IMAP action did not succeed.
+  ///
+  /// [attempted] is everything sent in the batch; [failedIds] is the subset the
+  /// adapter reported as failed. A key that fails is REMOVED from the
+  /// re-processed set as well, so a later retry is not skipped as "already
+  /// done" -- otherwise a failed email would be permanently unactionable
+  /// without a restart, which is the same shape of trap F220 fixed.
+  void _recordBatchFailures(
+    List<EmailMessage> attempted,
+    Set<String> failedIds,
+  ) {
+    // Copilot review (PR #418, HIGH): a key that LATER SUCCEEDS must be
+    // CLEARED, not left in the cumulative set forever. The first version of
+    // this method returned early when nothing failed, so a successful retry
+    // never removed the key -- the footer then reported "could not be applied"
+    // permanently, `isComplete` could never become true, and
+    // `_reProcessAffectedEmails` re-attempted the same email on every future
+    // rule add. This early return is exactly what made the H-2 fix incomplete:
+    // I added the skip guard without ever clearing the set.
+    //
+    // So: do NOT return early. Succeeded keys are the ones attempted but not
+    // in failedIds, and they are cleared below.
+    final succeededKeys = <String>{};
+    for (final email in attempted) {
+      if (failedIds.contains(email.id)) continue;
+      succeededKeys.add(_getEmailKey(email));
+    }
+    if (failedIds.isEmpty && succeededKeys.isEmpty) return;
+    // H-3 (code review, Sprint 70): mutate inside setState. The footer reads
+    // `_reProcessFailedKeys.length` to decide whether to show the green
+    // "all addressed" banner, so without this the correction depended on an
+    // unrelated rebuild happening to land afterwards. The delete/move blocks
+    // have a nearby setState that covered it by accident; the OUTER CATCH path
+    // -- the total-failure case F212 exists for -- had none.
+    void apply() {
+      // A key that succeeded this time is no longer failed, whatever happened
+      // on a previous attempt.
+      _reProcessFailedKeys.removeAll(succeededKeys);
+      for (final email in attempted) {
+        if (!failedIds.contains(email.id)) continue;
+        final key = _getEmailKey(email);
+        _reProcessFailedKeys.add(key);
+        _reProcessedEmailKeys.remove(key);
+        _hiddenEmailKeys.remove(key);
+      }
+    }
+
+    if (mounted) {
+      setState(apply);
+    } else {
+      apply();
+    }
+  }
+
   /// Sprint 38 F82 (Issue #252): "M of N no-rules addressed" progress footer.
   /// Shows under the chip strip when the scan had any no-rule emails. Renders
   /// nothing if the user has nothing to triage (clean scan). Updates as the
@@ -2962,7 +3028,13 @@ class _ResultsDisplayScreenState extends State<ResultsDisplayScreen> {
     final addressed = stats.addressed;
     final initial = stats.initial;
     final remaining = stats.remaining;
-    final isComplete = remaining == 0 && initial > 0;
+    // F212 R-4 (Sprint 70): a failed IMAP action must never read as
+    // "addressed". `stats.addressed` is computed from rule EVALUATION alone --
+    // an email counts the moment a matching rule exists, regardless of whether
+    // the server accepted the action. That is why a batch that failed 100%
+    // still showed the green "All N addressed." banner.
+    final failed = _reProcessFailedKeys.length;
+    final isComplete = remaining == 0 && initial > 0 && failed == 0;
 
     return Padding(
       padding: const EdgeInsets.only(bottom: 8),
@@ -2980,7 +3052,11 @@ class _ResultsDisplayScreenState extends State<ResultsDisplayScreen> {
         child: Text(
           isComplete
               ? 'All $initial "No rule" emails addressed.'
-              : '$addressed of $initial "No rule" emails addressed -- $remaining remaining.',
+              : failed > 0
+                  ? '$addressed of $initial "No rule" emails addressed -- '
+                      '$failed could not be applied to your mailbox. '
+                      'Check your connection and try again.'
+                  : '$addressed of $initial "No rule" emails addressed -- $remaining remaining.',
           style: TextStyle(
             fontSize: 13,
             color: isComplete ? Colors.green.shade900 : Colors.amber.shade900,
@@ -3118,7 +3194,32 @@ class _ResultsDisplayScreenState extends State<ResultsDisplayScreen> {
     var successCount = 0;
     var failCount = 0;
 
+    // F212 R-3 (Sprint 70): acquire the scan lease BEFORE opening a session.
+    //
+    // This path used to bypass `ScanCoordinator` entirely -- `email_scanner
+    // .dart:170` was the only acquisition site in the app. So a background
+    // scan holding an IMAP session and a user tapping "add rule" opened TWO
+    // sessions to the same account, which is exactly the per-account session
+    // cap failure F175 was built to prevent (Sprint 61: four stacked AOL
+    // scans).
+    //
+    // This was the card's leading hypothesis (R-2) for the 100% failure. It
+    // was NOT the cause -- that was the adapter contract divergence fixed in
+    // `generic_imap_adapter.dart` -- but the bypass is real and worth closing
+    // on its own merits, so it is fixed here rather than left because the
+    // hypothesis missed.
+    //
+    // The user now waits behind an active scan. R-3 calls for the same
+    // "waiting" signal the scanner shows; the re-processing banner already
+    // renders while this runs, so the wait is visible rather than silent.
+    ScanLease? lease;
+
     try {
+      lease = await ScanCoordinator.instance.acquire(
+        scanType: 'reprocess',
+        accountId: widget.accountId,
+      );
+
       // Create platform connection
       platform = PlatformRegistry.getPlatform(widget.platformId);
       if (platform == null) {
@@ -3146,20 +3247,40 @@ class _ResultsDisplayScreenState extends State<ResultsDisplayScreen> {
           platform.setDeletedRuleFolder(deletedRuleFolder);
         }
 
+        // Copilot review (PR #418): the marking loop below must test THIS
+        // batch's failures, not the cumulative set. Hoisted so the loop can
+        // see it after the try/catch.
+        var deleteFailedIds = <String>{};
         try {
           final result =
               await platform.takeActionBatch(toDelete, FilterAction.delete);
           successCount += result.successCount;
           failCount += result.failureCount;
+          deleteFailedIds = result.failedIds.keys.toSet();
+          // F212 R-4: record WHICH emails failed, so the progress footer can
+          // stop calling them "addressed". The batch result reports failures
+          // per id; map them back to the keys the footer counts.
+          _recordBatchFailures(toDelete, result.failedIds.keys.toSet());
           logger.i(
               '[F38] Delete batch: ${result.successCount} succeeded, ${result.failureCount} failed');
         } catch (e) {
           logger.e('[F38] Delete batch failed: $e');
           failCount += toDelete.length;
+          // A throw means the WHOLE batch failed -- none of it was addressed.
+          deleteFailedIds = toDelete.map((m) => m.id).toSet();
+          _recordBatchFailures(toDelete, deleteFailedIds);
         }
 
-        // Mark as re-processed and update banner
+        // Mark as re-processed and update banner.
+        // H-2 (code review, Sprint 70): SKIP the keys that failed. This loop
+        // used to be unconditional, which immediately re-added every key
+        // `_recordBatchFailures` had just removed -- defeating its whole
+        // purpose and leaving a failed email permanently unretryable, because
+        // `_reProcessAffectedEmails` skips anything in this set. The bug was
+        // invisible on the total-failure path (the outer catch runs after this
+        // loop) and only bit the COMMON partial-failure case.
         for (final email in toDelete) {
+          if (deleteFailedIds.contains(email.id)) continue;
           _reProcessedEmailKeys.add(_getEmailKey(email));
         }
         if (mounted) {
@@ -3175,20 +3296,27 @@ class _ResultsDisplayScreenState extends State<ResultsDisplayScreen> {
             await settingsStore.getAccountSafeSenderFolder(widget.accountId);
         final targetFolder = safeSenderFolder ?? 'INBOX';
 
+        var moveFailedIds = <String>{};
         try {
           final result =
               await platform.moveToFolderBatch(toMoveSafe, targetFolder);
           successCount += result.successCount;
           failCount += result.failureCount;
+          moveFailedIds = result.failedIds.keys.toSet();
+          _recordBatchFailures(toMoveSafe, result.failedIds.keys.toSet());
           logger.i(
               '[F38] Safe sender move batch: ${result.successCount} succeeded, ${result.failureCount} failed');
         } catch (e) {
           logger.e('[F38] Safe sender move batch failed: $e');
           failCount += toMoveSafe.length;
+          moveFailedIds = toMoveSafe.map((m) => m.id).toSet();
+          _recordBatchFailures(toMoveSafe, moveFailedIds);
         }
 
-        // Mark as re-processed and update banner
+        // Mark as re-processed and update banner.
+        // H-2: skip failed keys -- see the delete block above.
         for (final email in toMoveSafe) {
+          if (moveFailedIds.contains(email.id)) continue;
           _reProcessedEmailKeys.add(_getEmailKey(email));
         }
         if (mounted) {
@@ -3200,6 +3328,14 @@ class _ResultsDisplayScreenState extends State<ResultsDisplayScreen> {
     } catch (e) {
       logger.e('[F38] Re-processing failed: $e');
       failCount = toDelete.length + toMoveSafe.length;
+      // F212 R-4: this is the path that produced Harold's 6-of-6 / 8-of-8.
+      // An exception here (e.g. AuthenticationException from loadCredentials)
+      // fails the ENTIRE batch, so nothing in it was addressed.
+      final allAttempted = [...toDelete, ...toMoveSafe];
+      _recordBatchFailures(
+        allAttempted,
+        allAttempted.map((m) => m.id).toSet(),
+      );
     } finally {
       // Close platform connection
       if (platform != null) {
@@ -3208,6 +3344,12 @@ class _ResultsDisplayScreenState extends State<ResultsDisplayScreen> {
         } catch (e) {
           logger.w('[F38] Failed to disconnect platform: $e');
         }
+      }
+      // F212 R-3: release on EVERY path, including the throw. A lease leaked
+      // here would wedge every later scan behind work that already finished --
+      // the same process-global wedge F220 fixed for the scan screen.
+      if (lease != null) {
+        ScanCoordinator.instance.release(lease);
       }
     }
 

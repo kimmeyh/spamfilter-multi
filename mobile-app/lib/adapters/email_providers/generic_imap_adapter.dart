@@ -530,7 +530,11 @@ class GenericIMAPAdapter with BatchOperationsMixin implements SpamFilterPlatform
       }
 
       _logger.i('[IMAP] searchByMessageId: ${sequence.length} match(es) in "$folderName"');
-      return _fetchMessageDetails(sequence, folderName);
+      // F223: `return await`, not a bare `return`. Without the await this try
+      // block exits before the fetch completes, so the catch below -- which
+      // exists to degrade dedup to a no-op rather than break the scan -- never
+      // sees a fetch failure.
+      return await _fetchMessageDetails(sequence, folderName);
     } catch (e, st) {
       _logger.e('[IMAP] searchByMessageId ERROR in "$folderName": $e\n$st');
       // Degrade to no-op: dedup must never break the scan.
@@ -805,8 +809,34 @@ class GenericIMAPAdapter with BatchOperationsMixin implements SpamFilterPlatform
 
   @override
   Future<BatchActionResult> markAsReadBatch(List<EmailMessage> messages) async {
-    if (_imapClient == null || messages.isEmpty) {
-      return BatchActionResult.allSuccess(messages.map((m) => m.id).toList());
+    // F212 (Sprint 70): an EMPTY batch is success (nothing was asked for), but
+    // a MISSING CLIENT is a failure -- two different conditions that used to
+    // share one `allSuccess` return.
+    //
+    // **The defect that return caused.** With `_imapClient == null` this
+    // adapter reported every message as SUCCEEDED without touching the
+    // mailbox. The re-process path in `results_display_screen.dart` then
+    // showed a green "Re-processed N emails" while nothing had moved. Nobody
+    // filed that as a bug because it looks exactly like success -- it surfaced
+    // only because GmailApiAdapter answers the SAME condition with
+    // `allFailed`, so the identical code path failed loudly on Gmail (Harold's
+    // 6-of-6, 8-of-8) and lied quietly on AOL.
+    //
+    // ADR-0042: this aligns IMAP with Gmail rather than the reverse. Gmail was
+    // never the broken adapter; it was the one telling the truth.
+    //
+    // All FOUR batch methods carried this guard. Fixing only the two the bug
+    // report named would have left the same lie in the other two.
+    if (messages.isEmpty) {
+      return BatchActionResult.allSuccess(const []);
+    }
+    if (_imapClient == null) {
+      _logger.e('[IMAP] markAsReadBatch FAILED: not connected '
+          '(${messages.length} message(s) not marked read)');
+      return BatchActionResult.allFailed(
+        messages.map((m) => m.id).toList(),
+        'Not connected. Call loadCredentials() first.',
+      );
     }
 
     await _checkAndReconnect();
@@ -853,8 +883,34 @@ class GenericIMAPAdapter with BatchOperationsMixin implements SpamFilterPlatform
     List<EmailMessage> messages,
     String flagName,
   ) async {
-    if (_imapClient == null || messages.isEmpty) {
-      return BatchActionResult.allSuccess(messages.map((m) => m.id).toList());
+    // F212 (Sprint 70): an EMPTY batch is success (nothing was asked for), but
+    // a MISSING CLIENT is a failure -- two different conditions that used to
+    // share one `allSuccess` return.
+    //
+    // **The defect that return caused.** With `_imapClient == null` this
+    // adapter reported every message as SUCCEEDED without touching the
+    // mailbox. The re-process path in `results_display_screen.dart` then
+    // showed a green "Re-processed N emails" while nothing had moved. Nobody
+    // filed that as a bug because it looks exactly like success -- it surfaced
+    // only because GmailApiAdapter answers the SAME condition with
+    // `allFailed`, so the identical code path failed loudly on Gmail (Harold's
+    // 6-of-6, 8-of-8) and lied quietly on AOL.
+    //
+    // ADR-0042: this aligns IMAP with Gmail rather than the reverse. Gmail was
+    // never the broken adapter; it was the one telling the truth.
+    //
+    // All FOUR batch methods carried this guard. Fixing only the two the bug
+    // report named would have left the same lie in the other two.
+    if (messages.isEmpty) {
+      return BatchActionResult.allSuccess(const []);
+    }
+    if (_imapClient == null) {
+      _logger.e('[IMAP] applyFlagBatch FAILED: not connected '
+          '(${messages.length} message(s) not flagged)');
+      return BatchActionResult.allFailed(
+        messages.map((m) => m.id).toList(),
+        'Not connected. Call loadCredentials() first.',
+      );
     }
 
     final sanitized = _sanitizeFlagName(flagName);
@@ -896,9 +952,34 @@ class GenericIMAPAdapter with BatchOperationsMixin implements SpamFilterPlatform
     String targetFolder,
   ) async {
     _logger.i('[IMAP] moveToFolderBatch called: ${messages.length} messages to "$targetFolder"');
-    if (_imapClient == null || messages.isEmpty) {
-      _logger.i('[IMAP] moveToFolderBatch skipped: client=${_imapClient != null}, messages=${messages.length}');
-      return BatchActionResult.allSuccess(messages.map((m) => m.id).toList());
+    // F212 (Sprint 70): an EMPTY batch is success (nothing was asked for), but
+    // a MISSING CLIENT is a failure -- two different conditions that used to
+    // share one `allSuccess` return.
+    //
+    // **The defect that return caused.** With `_imapClient == null` this
+    // adapter reported every message as SUCCEEDED without touching the
+    // mailbox. The re-process path in `results_display_screen.dart` then
+    // showed a green "Re-processed N emails" while nothing had moved. Nobody
+    // filed that as a bug because it looks exactly like success -- it surfaced
+    // only because GmailApiAdapter answers the SAME condition with
+    // `allFailed`, so the identical code path failed loudly on Gmail (Harold's
+    // 6-of-6, 8-of-8) and lied quietly on AOL.
+    //
+    // ADR-0042: this aligns IMAP with Gmail rather than the reverse. Gmail was
+    // never the broken adapter; it was the one telling the truth.
+    //
+    // All FOUR batch methods carried this guard. Fixing only the two the bug
+    // report named would have left the same lie in the other two.
+    if (messages.isEmpty) {
+      return BatchActionResult.allSuccess(const []);
+    }
+    if (_imapClient == null) {
+      _logger.e('[IMAP] moveToFolderBatch FAILED: not connected '
+          '(${messages.length} message(s) not moved)');
+      return BatchActionResult.allFailed(
+        messages.map((m) => m.id).toList(),
+        'Not connected. Call loadCredentials() first.',
+      );
     }
 
     await _checkAndReconnect();
@@ -1035,8 +1116,34 @@ class GenericIMAPAdapter with BatchOperationsMixin implements SpamFilterPlatform
     List<EmailMessage> messages,
     FilterAction action,
   ) async {
-    if (_imapClient == null || messages.isEmpty) {
-      return BatchActionResult.allSuccess(messages.map((m) => m.id).toList());
+    // F212 (Sprint 70): an EMPTY batch is success (nothing was asked for), but
+    // a MISSING CLIENT is a failure -- two different conditions that used to
+    // share one `allSuccess` return.
+    //
+    // **The defect that return caused.** With `_imapClient == null` this
+    // adapter reported every message as SUCCEEDED without touching the
+    // mailbox. The re-process path in `results_display_screen.dart` then
+    // showed a green "Re-processed N emails" while nothing had moved. Nobody
+    // filed that as a bug because it looks exactly like success -- it surfaced
+    // only because GmailApiAdapter answers the SAME condition with
+    // `allFailed`, so the identical code path failed loudly on Gmail (Harold's
+    // 6-of-6, 8-of-8) and lied quietly on AOL.
+    //
+    // ADR-0042: this aligns IMAP with Gmail rather than the reverse. Gmail was
+    // never the broken adapter; it was the one telling the truth.
+    //
+    // All FOUR batch methods carried this guard. Fixing only the two the bug
+    // report named would have left the same lie in the other two.
+    if (messages.isEmpty) {
+      return BatchActionResult.allSuccess(const []);
+    }
+    if (_imapClient == null) {
+      _logger.e('[IMAP] takeActionBatch FAILED: not connected '
+          '(${messages.length} message(s) not actioned)');
+      return BatchActionResult.allFailed(
+        messages.map((m) => m.id).toList(),
+        'Not connected. Call loadCredentials() first.',
+      );
     }
 
     // Route to specific batch method based on action type
@@ -1267,12 +1374,26 @@ class GenericIMAPAdapter with BatchOperationsMixin implements SpamFilterPlatform
       if (_imapClient != null) {
         _logger.i('[IMAP] Disconnecting from $displayName (total ops: $_operationCount)');
         await _imapClient!.logout();
-        _imapClient = null;
-        _currentMailbox = null;
-        _operationCount = 0;
       }
     } catch (e) {
       _logger.w('Error during disconnect: $e');
+    } finally {
+      // M-8 (code review, Sprint 70): clear the client on EVERY path, not only
+      // the clean one.
+      //
+      // These assignments used to sit inside the `try`, after `logout()`. A
+      // logout on a TORN-DOWN socket throws -- which is precisely the F220
+      // scenario -- so the catch swallowed it and left `_imapClient` pointing
+      // at a dead client. The F212 batch guards test `_imapClient == null`, so
+      // a dead-socket adapter sailed past them and failed deeper with whatever
+      // the underlying client threw.
+      //
+      // That bounded the F212 fix to "never connected" when the failure mode
+      // users actually hit is "connection died". Clearing here makes the guard
+      // cover both.
+      _imapClient = null;
+      _currentMailbox = null;
+      _operationCount = 0;
     }
   }
 

@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:logger/logger.dart';
@@ -8,6 +10,7 @@ import '../../core/providers/email_scan_provider.dart';
 import '../../core/providers/rule_set_provider.dart';
 import '../../core/services/email_scanner.dart';
 import '../../core/storage/database_helper.dart'; // F175 (Sprint 62)
+import '../../core/services/scan_coordinator.dart'; // F221 (Sprint 70)
 import '../../core/storage/scan_result_store.dart'; // F175 (Sprint 62)
 import '../../core/storage/settings_store.dart'; // [NEW] ISSUE #138: Load scan mode from settings
 import '../../main.dart' show routeObserver;
@@ -44,13 +47,20 @@ class ScanProgressScreen extends StatefulWidget {
   State<ScanProgressScreen> createState() => _ScanProgressScreenState();
 }
 
-class _ScanProgressScreenState extends State<ScanProgressScreen> with RouteAware {
+class _ScanProgressScreenState extends State<ScanProgressScreen>
+    with RouteAware, WidgetsBindingObserver {
   List<String> _configuredFolders = ['INBOX'];
   ScanMode _configuredMode = ScanMode.readOnly;
 
   @override
   void initState() {
     super.initState();
+
+    // F220 (Sprint 70): observe the app lifecycle so a scan interrupted by
+    // backgrounding is FAILED rather than left hanging. Mirrors the existing
+    // observer in account_selection_screen.dart rather than inventing a
+    // second pattern.
+    WidgetsBinding.instance.addObserver(this);
 
     final scanProvider = Provider.of<EmailScanProvider>(context, listen: false);
 
@@ -80,9 +90,24 @@ class _ScanProgressScreenState extends State<ScanProgressScreen> with RouteAware
 
   @override
   void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
     routeObserver.unsubscribe(this);
     super.dispose();
   }
+
+  // F220 / code review H-4 (Sprint 70): the paused-handler that used to live
+  // here MOVED to `_AppInitializerState` in main.dart.
+  //
+  // It was unreachable on the path testers actually use: "Scan Again" on the
+  // results screen calls startRealScan(useReplacement: true), which
+  // pushReplacement-es and disposes this route, so this screen is not in the
+  // stack at all and its observer never fires. At the app root the handler
+  // covers every scan-start path. Releasing the lease by OWNER needs no widget
+  // context, which is what made the move possible.
+  //
+  // This screen keeps its WidgetsBindingObserver registration only because
+  // RouteAware/dispose symmetry is simpler to read than a partial removal; it
+  // no longer acts on `paused`.
 
   /// Called when Results is popped and this screen becomes visible again.
   /// Resets scan state so the screen returns to its "Ready to Scan" view
@@ -794,7 +819,85 @@ Future<void> startRealScan({
     scanLogger.i('[SCAN_SCREEN] Starting scan: folders=$foldersToScan, daysBack=$daysBack');
 
     // Start scan in background (will call startScan again with real count)
-    await scanner.scanInbox(daysBack: daysBack, folderNames: foldersToScan);
+    //
+    // F221 / F220 R-3 (Sprint 70): manual scans now have a HARD TIMEOUT, the
+    // same 30 minutes background scans use.
+    //
+    // **This REVERSES a prior development decision** (Class-2, decided by
+    // Harold 2026-09-17). `background_scan_core.dart` justified giving manual
+    // scans no timeout as *"a user is watching and can cancel"*. Harold's
+    // correction: that premise expires the moment the user navigates away --
+    // *"Once a user switches screens they can no longer cancel. In addition
+    // some timeout is still valid."* F220's lifecycle fix covers only the
+    // backgrounded case, not a user who simply moves to another screen.
+    //
+    // **Why the timeout lives HERE and not in the State class.**
+    // `startRealScan` is a TOP-LEVEL function, so this Future is not owned by
+    // the screen and keeps running after the user navigates away -- which is
+    // exactly the requirement: *"If the user switches from the Manual scan to
+    // other screens, the 30 minute time should continue and cancel."* Putting
+    // it in `_ScanProgressScreenState` would tie it to the widget lifetime and
+    // silently fail the case it exists for.
+    //
+    // 30 minutes matches background deliberately. Harold: *"The 30 minute
+    // timeout now for background jobs is likely too long since no known scans
+    // take that long, but lets set both at 30 minutes for now."* One constant,
+    // both paths, tightened together later.
+    //
+    // As in the background path, Dart's timeout does not cancel the underlying
+    // work, so the lease is force-released by owner -- otherwise the hung scan
+    // holds it and every queued scan waits the full limit, which is the wedge
+    // F220 just fixed.
+    //
+    // **H-5 (code review, Sprint 70): a timeout has TWO possible causes and
+    // they must not be treated alike.** `scanInbox` calls `acquire()` with no
+    // `waitLimit`, so it defaults to the same 30 minutes. A scan that simply
+    // QUEUED behind another scan therefore throws TimeoutException from inside
+    // `acquire`, looking identical to a scan that hung mid-fetch.
+    //
+    // Force-releasing in the queued case is actively harmful. Owner matching
+    // checks only scanType and accountId, NOT lease identity, so two manual
+    // scans on the SAME account (the user taps Scan Again while the first is
+    // still running) would have the second one's timeout evict the first one's
+    // LIVE lease. The background path's equivalent reasoning holds only because
+    // the scheduler serialises background scans per account; a user can tap
+    // Scan Again whenever they like.
+    //
+    // So: only force-release when this scan actually reached the point of
+    // holding the lease. `ScanCoordinator.active` is captured before the call
+    // and compared after -- if the active holder is the SAME object we were
+    // queued behind, we never held it and must not release it.
+    final holderBefore = ScanCoordinator.instance.active;
+    try {
+      await scanner
+          .scanInbox(daysBack: daysBack, folderNames: foldersToScan)
+          .timeout(ScanCoordinator.scanTimeout);
+    } on TimeoutException {
+      final holderNow = ScanCoordinator.instance.active;
+      final neverHeldTheLease =
+          holderBefore != null && identical(holderBefore, holderNow);
+      final minutes = ScanCoordinator.scanTimeout.inMinutes;
+      scanLogger.e('[SCAN_SCREEN] manual scan TIMED OUT after $minutes '
+          'minutes -- marking failed (F221)');
+      if (!neverHeldTheLease) {
+        ScanCoordinator.instance.releaseActiveByOwner(
+          scanType: 'manual',
+          accountId: accountId,
+        );
+      }
+      // H-5: the message must match the actual cause. "The mail server may
+      // have stopped responding" is wrong when the server was never contacted.
+      await scanProvider.errorScan(
+        neverHeldTheLease
+            ? 'Scan did not start within $minutes minutes because another '
+                'scan was still running. Start the scan again once it '
+                'finishes.'
+            : 'Scan stopped after $minutes minutes without finishing. The '
+                'mail server may have stopped responding. Start the scan '
+                'again.',
+      );
+      rethrow;
+    }
     scanLogger.i('[SCAN_SCREEN] scanInbox() completed successfully');
   } catch (e, st) {
     logger.e('[SCAN_SCREEN] SCAN EXCEPTION: $e\n$st');

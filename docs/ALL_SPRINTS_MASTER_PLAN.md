@@ -4,7 +4,7 @@
 
 **Audience**: Claude Code models planning sprints; User prioritizing future work
 
-**Last Updated**: 2026-09-10 (**Sprint 68 COMPLETE** -- PR #403 -> develop, #404 -> main. 5/5 tasks: F199 publisher rename finished, F198 question-format rule (hook deliberately NOT built), F191 Yahoo + iCloud shipped, F200 web-property deep dive, F197 dark-mode contrast gate. Manual Validation 4/4 cells PASS across 2 providers x 2 platforms. Retrospective complete, all 5 improvements applied. BOTH PR reviews ran (Copilot 4 findings, code-review agent 4) -- all 8 addressed in-sprint, none deferred. Suite 2,074 / 15 skipped / 0 failed; policy gates 109; hooks 53/53; analyzer clean. Dev version 0.15.0+3. NEW backlog: F201, F202 (targeted Sprint 69), F203. Earlier history in prior revisions of this line (git).)
+**Last Updated**: 2026-09-14 (**Sprint 69 COMPLETE** -- PR #410 -> develop, #411 -> main. 5/5 tasks: F211 Google Sign-In dead end + console diagnosis, F210 dark-mode contrast (9 instances, not the 1 filed), F208 YAML import restored on Android, F209 Android nav-bar overlap (21 of 23 screens were unwrapped), F203 skipped safe senders disclosed. Manual Validation COMPLETE on Windows; F208/F209 validation DEFERRED to the next Play release and F210 has 2 cells needing a real sign-in failure. BOTH PR reviews ran: code-review agent 7 findings first pass + 1 CRITICAL second pass (two screens genuinely unwrapped while my gate reported green), Copilot 1 finding (a corrupted copy-paste path) which a sweep turned into 5 across 3 files, including the MSIX path pasted into Partner Center every release. All addressed, none deferred. Suite 2,119 / 15 skipped / 0 failed; policy gates 114; analyzer clean. Dev version 0.15.1+4. Retrospective: 12x Very Good; IMP-4 REJECTED by Harold and replaced with two waste-elimination rules after sorting 13 rework events by cause. NEW backlog: F212, F213, F214, F215, F216, F217 (background scans deferred for HOURS on Android -- Priority 6, the strongest Sprint 70 candidate). #405 F211 left OPEN deliberately: AC-1 needs the console change plus a never-authorised Google account. Earlier history in prior revisions of this line (git).)
 
 ## How to Maintain This Document
 
@@ -658,6 +658,635 @@ All incomplete items in relative priority order. Priority in increments of 10; i
 - Source: Harold, 2026-09-10 -- filed after the S24+ Scan History totals, reframed by him the
   same day from "fix Android" to "a platform capability".
 
+**F218 OUTCOME (Sprint 70, 2026-09-17): SDK UPGRADED 3.38.5 -> 3.47.4. The upgrade did NOT fix the `integration_test` defect, and the workaround is RESTORED -- deliberately, per the card's own DoD.**
+
+This is the outcome R-5 named as possible and the DoD pre-authorised: *"If the upgrade does NOT
+fix the integration_test defect, say so and RESTORE the workaround rather than shipping a broken
+Play build. That is a legitimate outcome, not a failure."*
+
+**What was done:**
+- Upgraded `3.38.5` -> `3.47.4` (9 months, 4,163 commits). `flutter doctor`: no issues found.
+- Removed `releaseImplementation(project(":integration_test"))` and built the AAB. **It failed with
+  the IDENTICAL error**: `GeneratedPluginRegistrant.java:64: error: package
+  dev.flutter.plugins.integration_test does not exist`. Nine months of SDK releases did not change
+  this behaviour.
+- Restored the workaround. AAB builds successfully on the new SDK with it in place.
+
+**So the workaround stays, and the reason is now EVIDENCE rather than caution.** Before today it
+was "the upgrade might fix this"; now it is "the current stable does not". A future attempt should
+not repeat the upgrade hoping for a different result -- it needs a different approach entirely
+(the dev-dependency plugin registration itself, or an upstream issue).
+
+**THREE FINDINGS from the upgrade, all worth keeping:**
+
+1. **The Windows native-assets patch is now OBSOLETE -- upstream fixed it.** Proven, not assumed:
+   `build-windows.ps1` completed successfully on 3.47.4 with the SDK **UNPATCHED**, and
+   `build/native_assets/windows/sqlite3.x64.windows.dll` was installed cleanly with no
+   `PathExistsException`. Three checks agree -- `git status` in the SDK shows no modification, the
+   exe is freshly dated, and the exact DLL the patch existed for is present.
+   **This is the sprint's one unambiguous win from the upgrade**: a nine-month-old local SDK
+   modification, which had to be re-applied by hand after every upgrade and which
+   `TROUBLESHOOTING.md` warned about, is simply gone. That page now says DO NOT RE-APPLY, with the
+   evidence, and keeps the diagnosis as history.
+
+2. **Flutter silently rewrote `analysis_options.yaml`**, adding exclusions for `build/`,
+   `android/`, `ios/`, `windows/`. Checked rather than accepted: ZERO Dart files exist in any
+   excluded directory, and `version_consistency_test` greps rather than analyzes, so nothing is
+   weakened. Recorded because a silent tooling edit to an analysis config deserves a look.
+
+3. **A new lint found four REAL latent defects**, not style issues. `unawaited_return_in_try_block`
+   flags a `Future` returned without `await` inside a `try` -- meaning **the `catch` never fires
+   for that future's errors**:
+   - `generic_imap_adapter.dart:533` (`searchByMessageId` -> `_fetchMessageDetails`)
+   - `gmail_api_adapter.dart:471` and `:489` (`_fetchMessagesIndividually` fallbacks)
+   - `email_scanner.dart:1344`
+   Every one is in an error-handling path in the IMAP or Gmail fetch code -- precisely where a
+   swallowed exception is most expensive. **Filed as F223** rather than fixed inside F218, because
+   they are unrelated to the toolchain and deserve their own verification.
+
+**Dependency re-resolution (R-4), reviewed not assumed**: 6 packages moved, all patch/minor, none
+a direct dependency. The Dart SDK floor moved `3.10.0` -> `3.11.0-0`.
+
+**Kotlin warning surfaced by the new SDK**: *"Flutter support for your project's Kotlin version
+(2.2.20) will soon be dropped. Please upgrade to at least 2.3.20 soon."* Not actioned this sprint;
+recorded here so it is not a surprise at the next upgrade.
+
+**F218. Upgrade the Flutter SDK (9 months stale), re-apply the native-assets patch, re-resolve 35 dependencies, and REMOVE the one-time Gradle workaround (~4-8h) Priority 8 (NEW, 2026-09-14 -- Harold, during the 0.15.1 Play release)**
+- Phase: Developer Workflow / Tooling
+- Platform: All -- the SDK is shared, and both platforms need re-verification
+- **Harold, 2026-09-14**, after approving a one-time workaround to unblock the release:
+  *"Backlog for next sprint the update of SDK, re-applying patch if needed and re-resolving 35
+  dependencies"*.
+- **WHY THIS EXISTS**: `flutter build appbundle --release` fails on Flutter 3.38.5 with
+  `GeneratedPluginRegistrant.java:64: error: package dev.flutter.plugins.integration_test does
+  not exist`. The generator writes an `integration_test` registration into the registrant for
+  EVERY variant, while the release variant's classpath does not carry it.
+- **Proven by asking Gradle rather than inferring** (the diagnosis is recorded so it is not
+  re-derived):
+  - `gradlew projects` lists `:integration_test` -- it IS an included project.
+  - `:app:dependencies --configuration prodDebugCompileClasspath` -> `project :integration_test`
+    PRESENT.
+  - `:app:dependencies --configuration prodReleaseCompileClasspath` -> ABSENT.
+  - Nothing in this project's Gradle files filters dev-dependency plugins, so the asymmetry is
+    SDK behaviour.
+- **THE ONE-TIME WORKAROUND NOW IN THE TREE, WHICH THIS CARD MUST REMOVE**:
+  `android/app/build.gradle.kts` adds `releaseImplementation(project(":integration_test"))` --
+  ONE line, buildType-scoped so it covers both flavors. (First attempt used
+  `prodReleaseImplementation`/`devReleaseImplementation`; Gradle rejects those with
+  "Configuration with name ... not found" -- flavor+buildType implementation configurations are
+  not created by default. Recorded so the next person does not repeat it.) **Cost, stated plainly: a test-only library is linked into the
+  shipped AAB.** That is why it is one-time. Delete both lines and their comment block once the
+  SDK upgrade makes them unnecessary, and verify the release build still succeeds WITHOUT them --
+  removing them is the test that the upgrade actually fixed the underlying defect.
+- **WHAT THE UPGRADE INVOLVES, and none of it is optional:**
+  1. **The SDK is 4,163 commits / 9 months behind stable.** Current `3.38.5` (2025-12-11);
+     `origin/stable` was at 2026-09-10 when checked.
+  2. **`flutter upgrade` REFUSES to run**, because the SDK checkout carries a local modification.
+     It is not accidental: `D:\dev\flutter\packages\flutter_tools\lib\src\isolated\native_assets\native_assets.dart`
+     has a documented 5-line patch (`docs/TROUBLESHOOTING.md`, "install_code_assets runs twice")
+     that skips a duplicate `sqlite3.x64.windows.dll` copy which otherwise throws
+     `PathExistsException` and **fails every Windows build**. The doc already warns: *"This patch
+     will be lost when Flutter is upgraded. Re-apply after any flutter upgrade."*
+  3. **Re-apply the patch -- IF it is still needed.** Check first whether upstream fixed the
+     double-run; if so, drop the patch rather than carrying a redundant local modification. If the
+     surrounding code moved, the patch may not apply cleanly and needs re-deriving from the
+     symptom, not pasted.
+  4. **35 caret-ranged dependencies will re-resolve.** Back up `pubspec.lock` first. Expect
+     churn, and read the diff rather than assuming it is benign.
+  5. **Re-verify BOTH platforms.** The Windows MSIX in Submission 27 was built on the OLD SDK, so
+     a Windows regression would not surface from the Play side alone.
+- **A workaround that did NOT work, recorded to save the next attempt:** the Flutter issue thread
+  (#169336) recommends `flutter pub get` followed by `flutter build --config-only`.
+  **`--config-only` does not exist for `appbundle` in 3.38.5** -- the flag is rejected outright.
+  That issue is also `--no-pub`-specific, and `build-with-secrets.ps1` does not pass `--no-pub`,
+  so it is a related symptom rather than the same defect. No maintainer statement names a fix
+  version, so **the upgrade is not GUARANTEED to fix this** -- confirm by removing the workaround,
+  not by reading release notes.
+- **Do this EARLY in a sprint, never on a release day.** The decision to defer it was made
+  precisely because upgrading a 9-month-old SDK, losing a patch that keeps Windows building, and
+  re-resolving 35 dependencies -- hours after submitting a Store package built on the old SDK --
+  is the shape of change that produced F119.
+- **Rollback point recorded 2026-09-14**: repo at `c1473a0`, Flutter SDK at `f6ff1529fd6`,
+  `pubspec.lock` backed up before the attempt.
+- Depends on: nothing. Blocks nothing, but the workaround it removes ships a test library to
+  users until it is done.
+- Source: Harold, 2026-09-14, during the 0.15.1 Play release. He approved the one-time workaround
+  and asked for the real fix to be scheduled rather than improvised.
+
+**F219. Google Sign-In returns `null_intent` -- the OAuth callback cannot get back into the app (~2-4h) Priority 4 (NEW, 2026-09-16 -- Harold, on the S24+, Play-installed 0.15.1)**
+- Phase: Android / Google Play Store Readiness
+- Platform: **Android only** (Windows uses a loopback redirect and is unaffected)
+- **THIS IS THE SUCCESSOR TO F211, NOT A REPEAT OF IT.** The error CHANGED, which is the whole
+  point: F211 produced `Error 400: invalid_request` -- Google REFUSING the client. After the
+  three console fields were corrected, the same test now produces
+  `PlatformException(null_intent, Failed to authorize: Null intent received, , null)`.
+  **Google is no longer rejecting anything.** The consent flow gets far enough to come back, and
+  the RESPONSE fails to reach the app. Different layer, different defect.
+- **Evidence**: `validation-screenshots/sprint-70/Screenshot_20260916_100743.png` and
+  `_100752.png`, 10:07 on 2026-09-16. Harold signed up as a test user, accepted all four consent
+  screens, and landed back on the Gmail Sign-In page carrying this error. Reaching the consent
+  screens at all is itself proof the F211 console repairs worked.
+- **The error does NOT come from this project's code.** `grep -rn "null_intent" lib/` returns
+  nothing; it is raised by the `flutter_appauth` plugin's Android side when `onActivityResult`
+  receives a null data intent -- the authorization response could not be delivered back.
+- **LEADING SUSPECT, with the manifest line to match**: `AndroidManifest.xml:32` sets
+  `android:taskAffinity=""` on `MainActivity`. The flutter_appauth issue tracker names exactly
+  this: *"If the authorization flow does not return to your Flutter app even though the intent
+  filter is correctly set and RedirectUriReceiverActivity is invoked, the issue might be due to
+  the `android:taskAffinity=""` line in your AndroidManifest.xml."* An empty task affinity puts
+  the redirect receiver in a different task from the activity waiting for the result, so the
+  response lands somewhere the plugin is not listening.
+  See https://github.com/MaikuB/flutter_appauth/issues/493 and issue #252.
+- **Reported as WORSE on Samsung devices specifically** (flutter_appauth issue #128), and the
+  device here is an S24+. Worth knowing before concluding a fix works on one handset.
+- **INVESTIGATED 2026-09-16, and the premise of my own warning was WRONG.** I wrote "it is not a
+  Flutter default, so someone added it deliberately." Both halves are false, and checking took
+  two commands:
+  - `git log -S taskAffinity` returns exactly ONE commit: `2976d0e`, *"feat: Initialize Android
+    project structure and configurations"*, **2025-12-04** -- the initial Android scaffolding,
+    nine months before this app had OAuth at all. `launchMode="singleTop"` came from the same
+    commit. Neither was a decision about anything.
+  - `flutter create` on a **stock template** (Flutter 3.38.5, the version in use) emits
+    **`android:launchMode="singleTop"` and `android:taskAffinity=""`** verbatim. They ARE the
+    Flutter default.
+  So there is no original reason to preserve. Nobody chose this; it is template scaffolding that
+  happens to conflict with `flutter_appauth`'s redirect delivery.
+- **What that changes**: removing or overriding `taskAffinity` does not undo a deliberate design
+  decision, which lowers the risk considerably. It does NOT make the change free -- task affinity
+  governs which task an activity launches into, so it affects recents-screen grouping and
+  back-stack behaviour app-wide, not just the OAuth flow. Verify the app still behaves correctly
+  on: launching from the launcher, returning from recents, and the deep-link paths
+  (`app_links` is a dependency).
+- **The remaining open question is which fix, not whether to touch it.** The flutter_appauth
+  threads discuss removing the empty affinity versus setting an explicit one; both appear, and
+  neither is stated as canonical. Probe on the S24+ rather than reasoning from the issue tracker,
+  because the reports single out Samsung.
+- **Also verify `launchMode="singleTop"` (line 31) is right for this flow.** AppAuth's docs
+  discuss launch mode interactions with the redirect receiver; `singleTop` plus an empty
+  affinity is the combination the issue threads describe.
+- **Test conditions that must hold, or the result means nothing** (both were satisfied in
+  Harold's 10:07 test): the account must be a LISTED TEST USER (publishing status is Testing, so
+  unlisted accounts cannot sign in at all), and the build must be installed FROM PLAY (the
+  registered SHA-1 is the Play App Signing key).
+- **Still unproven and still worth checking**: the Google Cloud Console **Data Access** page
+  lists NO scopes at all -- neither `gmail.modify` nor `userinfo.email` -- while the app requests
+  both in code. That anomaly predates this card and has not been shown to cause anything. It is
+  a second candidate, not a finding.
+- **Why Priority 4**: Google Sign-In is the primary path a new tester tries first, and the
+  app-password workaround -- while it works -- is not what the in-app Help promises. This is the
+  remaining half of the original tester blocker.
+- Depends on: nothing. Reproducible on the S24+ today.
+- Source: Harold, 2026-09-16, testing the F211 console fix on the Play-installed 0.15.1 build.
+
+**F220. Backgrounding the app during a LIVE SCAN wedges it -- no further live scan until restart (~3-6h) Priority 4 (NEW, 2026-09-17 -- Sean Jarvis, tester)**
+- Phase: Core App Quality
+- Platform: **Android** reported; Windows NOT verified -- the coordinator is shared, so check both
+- **Sean Jarvis, verbatim**: *"If doing a live scan and putting app in background causes android to
+  close network stack as intended but livescan does not stop errors into a weird state where you
+  cannot livescan until app is restarted."*
+- **His diagnosis is correct and better than the report suggests.** Android tearing down sockets
+  for a backgrounded app is expected OS behaviour. The defect is that the app does not NOTICE:
+  the scan neither completes nor fails, so it never releases its `ScanCoordinator` lease, and
+  every later live scan queues behind a scan that will never finish. Restarting the app is the
+  only escape because it rebuilds the process-global coordinator.
+- **Confirmed in code, three findings that compound:**
+  1. **Nothing observes the lifecycle during a scan.** `scan_progress_screen.dart` and
+     `email_scanner.dart` contain no `AppLifecycleState` / `didChangeAppLifecycleState` handler
+     at all, so backgrounding is invisible to the scan.
+  2. **A manual scan has NO timeout.** `background_scan_core.dart:140` says so deliberately:
+     *"Manual scans deliberately have no timeout wrap: a user is watching and can cancel; startup
+     reconciliation (reconcileStaleInProgressScans) is their backstop."* That reasoning assumes a
+     user who is WATCHING. A backgrounded app has no watcher, and the named backstop only runs at
+     STARTUP -- which is exactly why a restart clears it and nothing else does.
+  3. **The lease is released in a `finally`** that cannot run while the scan is wedged
+     (`email_scanner.dart:971`), so the coordinator stays occupied.
+- **Why Priority 4**: backgrounding an app mid-task is ordinary user behaviour, not an edge case.
+  A tester who does it loses live scanning for the rest of the session with no error and no
+  explanation -- the app simply stops working and does not say why.
+- **Candidate fixes, to evaluate rather than assume**: (a) observe `AppLifecycleState.paused`
+  during an active scan and fail it explicitly, releasing the lease; (b) give manual scans a
+  timeout after all, since the "user is watching" premise is false once backgrounded; (c) run
+  `reconcileStaleInProgressScans` on RESUME as well as startup. **(a) is the root-cause fix**; (c)
+  is a cheap backstop worth having regardless.
+- **Related but DISTINCT from F207** (manual scan refused while a background scan is in progress).
+  F207 is about a legitimate holder blocking; this is about a DEAD holder never letting go. A fix
+  for this may resolve F207's symptom, which is worth checking before scoping both.
+- Depends on: nothing. Reproducible on the S24+ today.
+- Source: Sean Jarvis via Harold, 2026-09-17. The second defect found by someone other than Harold.
+
+**F221. Starting a live scan again leaves the previous one stuck "in progress" forever (~2-4h) Priority 6 (NEW, 2026-09-17 -- Sean Jarvis, tester)**
+- Phase: Core App Quality
+- Platform: All (the coordinator and the scan-result store are both shared)
+- **Sean Jarvis, verbatim**: *"Starting a livescan multiple times doesn't mark the previous scan as
+  cancelled; it stays as in progress."*
+- **Confirmed in code.** `email_scanner.dart:149-172`: when a scan is already active, a new one
+  does NOT cancel it -- it prints *"Waiting for the active ... scan to finish"* and **queues FIFO**
+  behind it. That is deliberate (F175, Sprint 62, built after four stacked AOL scans hit the
+  per-account session cap) and it is the right behaviour for CONCURRENCY. What is wrong is the
+  RECORD: the superseded scan's row stays `in_progress` indefinitely, so Scan History accumulates
+  rows that never resolve.
+- **Two defects wearing one symptom, and they should be separated when scoping:**
+  1. **The stuck ROW** -- a scan the user abandoned still reads `in_progress`. Cosmetic-ish, but
+     it makes Scan History untrustworthy, and `reconcileStaleInProgressScans` only runs at
+     startup.
+  2. **The absent user SIGNAL** -- tapping scan again while one is running gives a queue with no
+     visible explanation. The user reasonably concludes the button did nothing.
+- **Do NOT "fix" this by making a new scan CANCEL the running one.** That would undo F175 and
+  re-open the Sprint 61 failure it was built for: four concurrent scans, each opening its own IMAP
+  session, all stalled behind AOL's per-account session cap. The queue is correct; the bookkeeping
+  and the messaging are not.
+- **Likely interacts with F220** -- if a wedged scan never releases its lease, every subsequent
+  scan queues behind it forever, which is how a user would SEE both defects at once. Investigate
+  them together even if they are fixed separately.
+- Depends on: overlaps F220 and F207.
+- Source: Sean Jarvis via Harold, 2026-09-17.
+
+**F227 FIXED AND VERIFIED ON DEVICE (Sprint 70, 2026-09-19). Harold approved the in-sprint fix: "1 fix now".**
+
+**The fix**: removed the duplicate OAuth redirect intent filter from `MainActivity`, leaving
+`net.openid.appauth.RedirectUriReceiverActivity` -- which `flutter_appauth` declares itself -- as
+the single owner of the scheme.
+
+**Verified on an Android 14 emulator, before and after, by asking the OS rather than reasoning:**
+
+- `pm query-activities` for the redirect scheme: **2 activities BEFORE, 1 AFTER**. The survivor is
+  AppAuth's receiver, which is the library's intended design.
+- Firing the real redirect intent: **landed on `com.android.internal.app.ResolverActivity` (the
+  system chooser) BEFORE; lands in `Task A=10196:com.myemailspamfilter` (the app's own task)
+  AFTER.** No chooser. This is the behaviour `null_intent` was the absence of.
+
+**Checked before removing** (the filter carried no other scheme or host, and `app_links` never
+constructs an `AppLinks` instance anywhere in `lib/`, so no deep-link path depended on
+`MainActivity` receiving it).
+
+**Regression gate**: `test/policy/f219_task_affinity_test.dart` now asserts the INVERSE of what it
+originally did. It previously required `MainActivity` to carry the filter, as a paired check so the
+F219 `taskAffinity` fix could not guard a filter that had moved away. Emulator probing showed that
+pairing was itself the bug. The gate now fails if the filter returns, and a second test asserts the
+`appAuthRedirectScheme` placeholder still exists in `build.gradle.kts` -- so removing the duplicate
+cannot silently unregister the scheme altogether. Mutation-verified: re-adding the filter turns the
+gate red.
+
+**F219 remains correct and was independently verified**: `taskAffinity=10195:com.myemailspamfilter`
+where it was previously the empty string. Two separate defects on one path; both fixes were needed.
+
+**Still requires a Play-signed build**: F219 AC-1 (a listed test user completing sign-in end to
+end). The emulator cannot test it because the Android OAuth client is bound to the Play App Signing
+SHA-1. What the emulator HAS now proven is that the redirect reaches the app, which was the failing
+step.
+
+**F227. TWO activities register the OAuth redirect scheme, so Android shows a chooser instead of delivering the callback (~1-3h) Priority 2 (NEW, 2026-09-19 -- found by emulator probe during F219 validation)**
+- Phase: Core App Quality
+- Platform: Android (declared ADR-0042 exception -- Windows uses a loopback redirect)
+- **Very likely the ACTUAL `null_intent` cause, more directly than F219's `taskAffinity`.** Found by
+  firing the real redirect intent on an Android 14 emulator and asking the OS who resolves it.
+- **Measured, not inferred.** `pm query-activities` for the redirect scheme returns TWO activities
+  IN THE SAME APP:
+  - `com.myemailspamfilter.MainActivity` -- from our own `AndroidManifest.xml` intent filter
+  - `net.openid.appauth.RedirectUriReceiverActivity` -- declared by `flutter_appauth` ITSELF
+  `dumpsys package` confirms both carry an identical filter (VIEW + DEFAULT + BROWSABLE + the same
+  scheme). Android cannot choose between them, so the redirect lands on
+  `com.android.internal.app.ResolverActivity` -- a disambiguation dialog -- instead of reaching
+  AppAuth's receiver.
+- **Why this produces `null_intent`.** `flutter_appauth` waits for its OWN receiver to deliver the
+  authorization response. If the user picks `MainActivity` at the chooser (or the chooser is
+  dismissed), AppAuth's receiver never runs, so the pending intent it is waiting on resolves to
+  nothing -- which is exactly what `null_intent` reports.
+- **The duplicate is ours.** `flutter_appauth-12.0.2/android/src/main/AndroidManifest.xml` already
+  declares `RedirectUriReceiverActivity`, and the `appAuthRedirectScheme` manifest placeholder is
+  designed to wire the scheme to THAT activity. Our `MainActivity` filter (added when the app also
+  used a custom-scheme flow) now duplicates it.
+- **Proposed fix**: REMOVE the redirect intent filter from `MainActivity` and let AppAuth's own
+  receiver own the scheme, as the library intends. **Verify before assuming**: confirm nothing else
+  depends on `MainActivity` receiving that scheme (check `app_links` deep-link handling, which is a
+  separate dependency), and re-run the emulator probe -- `pm query-activities` must return exactly
+  ONE activity afterwards.
+- **Relationship to F219**: F219's `taskAffinity` removal is still correct and independently
+  verified on the emulator (`taskAffinity=com.myemailspamfilter`, launcher start, return from
+  recents, and clean launch all pass). An empty affinity would break the redirect even after F227
+  is fixed. The two are separate defects on the same path; F219 removed one, this removes the other.
+- Depends on: nothing. Testable on the emulator without a Play-signed build.
+- Source: emulator probe 2026-09-19 (`pixel34_updated`, Android 14, emulator 36.2.12.0) during
+  Sprint 70 F219 device validation.
+
+**F226. WinWright scripts fail intermittently when run back-to-back in one sweep (~2-4h) Priority 14 (NEW, 2026-09-18 -- found during the Sprint 70 5.1.5 sweep)**
+- Phase: Developer Tooling
+- Platform: Windows Desktop (WinWright is Windows-only)
+- **Symptom**: in a full sweep one of the two runnable scripts fails, and WHICH ONE SWAPS between
+  runs. Sprint 70 run 1: `test_f124_rule_labels` FAIL, `test_mt2c_no_rule_sweep` PASS. Run 2 on the
+  same build: exactly reversed. Run individually, **both pass 29/29 with no DB drift**.
+- **Not a sprint regression**, and that is the point of filing it: the sweep is the gate that is
+  supposed to tell us whether sprint UI changes broke a screen. A gate that is red for unrelated
+  reasons cannot answer that question, and it trains the reader to discount failures -- the same
+  bypass-training problem as [[F225]].
+- **Likely cause** (hypothesis, NOT verified): residual app state between scripts in one sweep. The
+  runner drives a single long-lived app instance; the first script leaves a screen, filter, or
+  dialog in a state the second does not expect. Each script is required to restore the state it
+  modifies (Sprint 37 retro policy) -- the swap pattern suggests one of them does not fully do so,
+  or that restoration races the next script's first selector.
+- **Investigation direction**: run the pair in both orders with the runner's per-script logs kept,
+  and diff the accessibility tree at each script's first step against the tree when that script
+  runs alone. The `ww_get_state_hash` / `ww_diff_state` tools exist for exactly this.
+- **Do NOT fix by adding sleeps.** That is the shape of the f56/f37 dialog-settle problem that was
+  already quarantined out of the sweep; another timing patch grows the same debt.
+- Source: Sprint 70 Phase 5.1.5 sweep, 2026-09-18. Recorded in `SPRINT_70_PLAN.md` Phase 5
+  completion notes.
+
+**F225. `verify-closeout-complete` hook fails its OWN allow-case (~1-2h) Priority 14 (NEW, 2026-09-18 -- found while fixing the auto-advance gate)**
+- Phase: Developer Tooling
+- Platform: N/A (repo tooling)
+- **PRE-EXISTING, not caused by the Sprint 70 hook work.** Verified by restoring the original
+  `sprint-auto-advance.ps1` and re-running: the same case fails identically, so the two are
+  unrelated.
+- `.claude/hooks/run-test-cases.ps1` reports **52 passed, 1 failed**. The failure is
+  `closeout/allow-6-prekickoff-no-pr-owed` (expected exit 0, got 2), and the hook that rejects it
+  is `verify-closeout-complete.ps1`, not the auto-advance hook.
+- The case is a legitimate pre-kickoff message: *"Sprint 60 is closed out and 0.10.0.0 is live on
+  the Store. Sprint 61 is at pre-kickoff awaiting your scope decision."* The hook reads that as a
+  close-out CLAIM for Sprint 61 and demands Sprint 61 artifacts that correctly do not exist yet.
+- **Why this matters more than one red test.** A gate that blocks correct work trains bypass --
+  the exact lesson from Sprint 67 IMP-2, where the F193 gate broke six of this hook's own
+  allow-cases. A permanently-red suite also destroys its value as a regression signal: the next
+  person to edit a hook cannot tell their change from the standing failure.
+- Fix direction: the close-out claim detector must distinguish "sprint N is closed out" (a claim
+  about a FINISHED sprint) from "sprint N+1 is at pre-kickoff" (a statement about the NEXT one).
+  Scope the artifact check to the sprint actually named as complete.
+- Source: found 2026-09-18 running the hook suite after editing `sprint-auto-advance.ps1`, per the
+  CLAUDE.md rule that a hook edit is followed by that hook's own suite.
+
+**F224. Let the user CANCEL a running scan from where they actually are (~4-8h) Priority 6 (NEW, 2026-09-17 -- Harold, alongside the F221 timeout reversal)**
+- Phase: Core App Quality
+- Platform: All (shared UI and coordinator; ADR-0042 -- no platform exception expected)
+- **Why this exists.** Sprint 70 gave manual scans a 30-minute timeout because the old
+  justification for having none -- *"a user is watching and can cancel"* -- stops being true the
+  moment the user leaves the scan screen. The timeout makes a hung scan survivable. It does NOT
+  give the user back the control the old comment assumed they had: 30 minutes is a long time to
+  wait for something you already know you want to stop.
+- **Two cancel affordances, both requested verbatim by Harold (2026-09-17):**
+  1. **From View Scan Results**: *"there should be a new way from the View Scan Results page to
+     cancel (click on the scan 'bar' and pop-up to cancel."* Tapping the in-progress scan bar
+     opens a popup offering cancel. This is the screen a user lands on after starting a scan, so
+     it is where they will look.
+  2. **From the Manual Scan popup**: *"Also add to the Manual Scan pop-up that a background scan
+     is in process an option to cancel the background scan, so they can run an manual scan
+     instead."* The popup at `scan_progress_screen.dart` (startRealScan, the getActiveBackgroundScan
+     branch) already tells the user a background scan is running and offers "Wait and start". Add
+     a third option: cancel the background scan and run mine now.
+- **The hard part is cancellation itself, not the buttons.** `Future.timeout` does NOT cancel the
+  underlying work -- Sprint 62 recorded this explicitly, and both timeout paths work around it by
+  force-releasing the coordinator lease while the zombie scan keeps running. A user-facing Cancel
+  that only releases the lease would let a second scan start while the first is still holding an
+  IMAP session, which is the Sprint 61 per-account session-cap failure. **Design the cooperative
+  cancellation first** (a cancellation token the fetch/evaluate loop checks between batches, which
+  `email_scanner.dart` already has natural boundaries for at m=20), then add the two UI entries.
+- **Cross-process caveat**: on Windows the background worker scans in a SEPARATE process. Cancel
+  from the app cannot reach into it directly; needs a database-backed cancel flag the worker polls,
+  or the scope must be explicitly limited to in-process scans with the limit stated in the UI.
+- Depends on: F220 and F221 (both Sprint 70) -- the lease lifetime and the timeout are the
+  foundation this sits on.
+- Source: Harold, 2026-09-17, in the same message that reversed the manual-scan no-timeout
+  decision.
+
+**F222. Scan results are not ordered by received date (~1-3h) Priority 22 (NEW, 2026-09-17 -- Sean Jarvis, tester)**
+- Phase: Core App Quality
+- Platform: All (shared results screen)
+- **Sean Jarvis, verbatim**: *"Not really a bug but emails should be ordered by incoming date to
+  match the inbox if possible. Quite confusing."*
+- **He is right, and he is right to call it confusing rather than broken.** The results list has
+  NO sort by `receivedDate` anywhere in `results_display_screen.dart` -- rows appear in whatever
+  order the scan produced them, which is per-folder fetch order, not chronological. Every mail
+  client the user has ever used sorts newest-first, so the list looks shuffled.
+- **HAROLD SPECIFIED THE ORDERING, 2026-09-17.** This is no longer "sort by date" -- it is a
+  domain-clustered chronological sort, and the distinction matters because a naive date sort
+  would NOT satisfy it.
+
+  **1. The email-provider section stays pinned at the top, unchanged.** That partition already
+  exists (`ProviderSenderGrouping.partitionProviderFirst`, Sprint 46 retro IMP-1, exposed as
+  `_providerGroupCount`). The new ordering applies WITHIN each of the two groups, not across
+  them.
+
+  **2. Everything else is ordered newest-first, but clustered by base domain**:
+    - take the NEWEST remaining email;
+    - emit it, then immediately emit EVERY other remaining email sharing its base domain,
+      newest-first within the cluster;
+    - return to the newest of what remains and repeat.
+
+  So a domain's POSITION is set by its newest member, and all of its mail is contiguous.
+
+  **Worked example** -- `a@spam.com` 10:00, `b@good.com` 09:00, `c@spam.com` 08:00,
+  `d@other.com` 07:00 produces:
+
+  ```
+  a@spam.com   10:00   newest overall
+  c@spam.com   08:00   same base domain, pulled up out of date order
+  b@good.com   09:00   newest of what remains
+  d@other.com  07:00
+  ```
+
+  `c` precedes `b` despite being an hour older. **That is the intent, not a side effect**: the
+  user meets each domain once and decides about it once, instead of encountering the same
+  spammer three times while scrolling.
+
+  **Base domain means the registrable domain** -- `*.baddomain.tld` clusters together, so
+  `news.baddomain.com` and `mail.baddomain.com` are ONE cluster. Do not write a second extractor:
+  `manual_rule_duplicate_checker.dart:171` already has `_baseDomainFor`, and two different
+  notions of "same domain" in one app is a defect waiting to happen. If it needs promoting to a
+  shared helper, promote it rather than copying it.
+
+- **Still to decide during implementation:**
+  - **Which date? SETTLED (Harold, 2026-09-17): `receivedDate`, and a null needs no special
+    handling.** His reasoning: *"If it is there use it, if it is not the sort by null does
+    nothing, but leaves them clumped by base domain and that works as the next best
+    alternative."* So do NOT build a fallback-date path or a null-guard branch -- a null simply
+    contributes no ordering, and the domain clustering still groups those rows usefully. Degrading
+    to the clustering alone IS the designed behaviour, not an accident to defend against.
+  - **Direction SETTLED: newest first.**
+  - **Ties: NO tiebreak needed (Harold, 2026-09-17).** His reasoning: *"No Rules processed once at
+    99.99% rate. So it is very unlikely to appear in a second order a second time because there
+    will be no second time."* A user addresses a No-rule item once and it leaves the list, so the
+    re-render stability a tiebreak buys is worth nothing here. Do not add one for theoretical
+    tidiness.
+  - **Does it interact with the "No rule" review flow?** That flow advances through items in
+    order; changing the order changes the sequence a user is walked through. Check
+    `no_rule_review_screen.dart` before assuming the change is local.
+  - **Multi-folder scans interleave.** Sorting globally by date mixes folders together, which is
+    what the inbox does but may not be what the user expects from a "Folders: Bulk, Inbox" scan.
+    Worth a deliberate choice rather than a side effect.
+- **Lowest priority of the three** because nothing is broken -- but it is the one every user meets
+  on every scan, so its cost is spread wider than a defect that only fires in one flow.
+- Depends on: nothing.
+- Source: Sean Jarvis via Harold, 2026-09-17.
+
+**F223. Four `Future`s returned without `await` inside `try` -- the catch never fires (~30m) Priority 2 -- FIXED IN SPRINT 70 (2026-09-17, forced by the Windows build gate)**
+- Phase: Core App Quality
+- Platform: All (shared adapter and scanner code)
+- **Not a style issue.** `unawaited_return_in_try_block`, a lint new in Flutter 3.47.4, flags a
+  `Future` RETURNED from inside a `try` without `await`. The try block exits before the future
+  completes, so **the surrounding `catch` never sees its errors** -- they surface as an unhandled
+  async error somewhere else, or vanish.
+- **All four are in error-handling paths in the mail-fetch code**, which is where a swallowed
+  exception costs the most:
+  - `generic_imap_adapter.dart:533` -- `searchByMessageId` returns `_fetchMessageDetails(...)`
+    inside a `try` whose `catch` logs `[IMAP] searchByMessageId ERROR`. A fetch failure bypasses
+    that log entirely.
+  - `gmail_api_adapter.dart:471` and `:489` -- the `_fetchMessagesIndividually` fallbacks, which
+    exist BECAUSE something already failed. A failure in the fallback is unlogged.
+  - `email_scanner.dart:1344`
+- **Fix is small per site** (`return await ...`), but **verify rather than assume**: adding
+  `await` changes WHERE the error surfaces, so a caller that currently handles the async error
+  may now see it caught upstream instead. Check each call site before changing it.
+- **Worth a gate**: the lint is now in the analyzer, so keeping `flutter analyze` at zero
+  warnings enforces this permanently -- no custom gate needed, provided the warnings are not
+  suppressed.
+- **FIXED 2026-09-17 IN SPRINT 70, and the reason it could not wait is worth recording.** The card
+  originally said *"do NOT fix these inside F218 -- they are unrelated to the toolchain."* That
+  was wrong about the consequence, though right about the cause. `build-windows.ps1:189` halts the
+  build on ANY non-zero `flutter analyze` exit -- deliberately, *"to avoid shipping a stale
+  binary."* So four new analyzer warnings **blocked every Windows build**. Deferring them would
+  have left the platform unbuildable for the rest of the sprint.
+- **The fix is `return await` at each site**, with a comment naming what the catch was failing to
+  cover:
+  - `generic_imap_adapter.dart` -- the catch degrades dedup to a no-op so it "must never break the
+    scan"; without the await a fetch failure bypassed exactly that safety net.
+  - `gmail_api_adapter.dart` x2 -- both `_fetchMessagesIndividually` fallbacks, which run BECAUSE
+    batchGet already failed. A silent failure there left no record of either failure.
+  - `email_scanner.dart` -- the catch runs `platform.disconnect()`; a bare return leaked the
+    connection on failure.
+- **Verified**: `flutter analyze` clean, full suite green. Behaviour changes only in the failure
+  case, which is the entire point.
+- Depends on: surfaced by F218's upgrade; fixed in the same sprint out of necessity.
+- Source: found 2026-09-17 by Flutter 3.47.4's analyzer during the F218 upgrade.
+
+**F217 R-1 MEASURED ON EMULATOR (2026-09-19) -- and it CORRECTS my own earlier claim.**
+
+Android 14 emulator (`pixel34_updated`, `google_apis_playstore`, emulator 36.2.12.0 from
+`ANDROID_HOME`), prod-debug APK installed.
+
+**CORRECTION.** The Sprint 70 diagnosis stated: *"`AndroidManifest.xml` declares NO battery-related
+permission at all: no `REQUEST_IGNORE_BATTERY_OPTIMIZATIONS`, no `FOREGROUND_SERVICE`, no
+`WAKE_LOCK`."* That was derived by grepping the SOURCE manifest. The MERGED manifest -- what the OS
+actually sees -- tells a different story:
+
+```
+ACCESS_NETWORK_STATE, FOREGROUND_SERVICE, FOREGROUND_SERVICE_SHORT_SERVICE,
+INTERNET, POST_NOTIFICATIONS, RECEIVE_BOOT_COMPLETED, VIBRATE, WAKE_LOCK
+```
+
+`FOREGROUND_SERVICE` and `WAKE_LOCK` ARE present, injected transitively by
+`workmanager_android-0.10.6`, and `dumpsys package` confirms both `granted=true`. I reasoned from
+a file next to the answer instead of reading the answer -- the same sequence error CLAUDE.md
+records for the F211 console claim.
+
+**What survives the correction, and it is the part that matters.**
+`REQUEST_IGNORE_BATTERY_OPTIMIZATIONS` is genuinely ABSENT (grep count 0 in the merged manifest),
+and `dumpsys deviceidle whitelist` does NOT list the app. So the conclusion holds -- **the app has
+never been exempt from Doze** -- but the reason is narrower than stated: it is missing the ONE
+permission that governs Doze exemption, not "all battery permissions". `WAKE_LOCK` keeps the CPU
+awake during work the OS has already allowed; it does not stop the OS deferring that work.
+
+**Standby bucket: 10 (ACTIVE)** immediately after install. Expected -- a freshly installed and
+recently interacted-with app is ACTIVE. It is NOT evidence against the Doze hypothesis; the
+meaningful reading is after the device has idled, which needs the S24+ over hours, not a fresh
+emulator. Recorded so the number is not later misread as a falsification.
+
+**Net effect on the decision: none.** Option 1 remains correct, and is now supported by a direct
+observation (`deviceidle whitelist` does not contain the app) rather than by an absence inferred
+from source.
+
+**F217 DECISION (Harold, 2026-09-19): OPTION 1 -- request a battery-optimisation exemption. AND the Samsung hypothesis is FALSIFIED.**
+
+**R-2 CHECKED AND RULED OUT.** Harold inspected the S24+: *"Settings > Battery > Background usage
+limits > Put unused apps to sleep is off, MyEmailSpamFilter is in none of these lists: Never
+autosleeping apps, sleeping apps, deep sleeping apps."*
+
+This matters more than it looks. Samsung's aggressive battery management was the CHEAP explanation
+and the one that would have made option 1 useless (Samsung's restrictions operate independently of
+the stock exemption). It is now eliminated by direct observation of the device, not by reasoning.
+**Stock Android Doze / App Standby is the remaining cause, and R-4 stands as the explanation: the
+app has never requested any exemption, so the OS is free to defer its work indefinitely.**
+
+**Corroborating**: battery usage reads **0.1%**. An app genuinely scanning every 15 minutes across
+a day does not sit at 0.1%. That figure is consistent with the scans largely not running, and it is
+evidence for the same conclusion rather than a separate finding.
+
+**Decision**: implement option 1 -- `REQUEST_IGNORE_BATTERY_OPTIMIZATIONS` plus a contextual runtime
+prompt. Harold answered `1`.
+
+**Implementation constraints carried into the implementing sprint:**
+- The permission is scrutinised at Play review and needs a listing justification. A spam filter
+  that scans on a schedule is a defensible case, but the justification text is part of the work,
+  not an afterthought.
+- The prompt must be CONTEXTUAL -- requested at the moment the user enables background scanning,
+  mirroring the F161 POST_NOTIFICATIONS pattern already in `settings_screen.dart`, not fired at
+  startup.
+- The user can still decline. The app must behave honestly when they do: option 3's messaging
+  (scans run when the device allows) becomes the fallback path, not a discarded alternative.
+- ADR-0042: Android-only, declared. Windows Task Scheduler is exact and unaffected (AC-4).
+
+**F217 DIAGNOSIS (Sprint 70, 2026-09-18) -- CODE SIDE COMPLETE, OS-SIDE MEASUREMENT STILL OWED. The fix is a CLASS-1 DECISION and is NOT chosen.**
+
+**What was verified in code (no device needed):**
+
+- **R-3 CONFIRMED: the scheduling code is correct. Do not rewrite it.** `registerPeriodicTask` at
+  `background_scan_scheduler.dart:238` passes a per-account unique name, a 15-minute period,
+  `NetworkType.connected`, `ExistingPeriodicWorkPolicy.update` (idempotent re-registration), and
+  exponential backoff with a 10-minute floor. Every one of these is right. Nothing here explains
+  the deferral.
+- **R-4 CONFIRMED and it is the strongest evidence.** `AndroidManifest.xml` declares NO
+  battery-related permission at all: no `REQUEST_IGNORE_BATTERY_OPTIMIZATIONS`, no
+  `FOREGROUND_SERVICE`, no `WAKE_LOCK`, no exact-alarm permission. **The app has never asked the
+  OS for any exemption**, so Doze and App Standby are free to defer its work indefinitely. This is
+  not a bug in the app's code; it is the documented default for an app that asks for nothing.
+- **R-6 ANSWERED: "no notifications" is a SYMPTOM, not a second defect.**
+  `_notifyScanComplete` is called from inside `android_background_scan_worker.dart` only AFTER a
+  scan completes. If the OS never runs the worker there is nothing to notify. One cause, two
+  reported symptoms. (The notification path itself is sound and deliberately best-effort, so a
+  denied POST_NOTIFICATIONS cannot fail a scan.)
+- **R-5 DONE (AC-2): the ADR-0042 declaration was REWRITTEN** at
+  `background_scan_scheduler.dart:188`. It claimed inexact timing was an "accepted difference"
+  because "the scan is periodic hygiene, not a deadline" -- wording written expecting drift of
+  MINUTES. The field shows 2h42m. That is not a smaller version of the same claim: "fires
+  approximately" describes jitter around a schedule, whereas Doze DEFERS work while the device is
+  idle and releases it in a batch at a maintenance window. On a phone locked overnight the scan
+  may not run for hours, which no user would call "every 15 minutes".
+
+**STILL OWED -- needs the S24+ (AC-1, R-1, R-2).** These were NOT performed; no Android device was
+attached during implementation. Do not record F217 as diagnosed until they are:
+
+1. `adb shell am get-standby-bucket com.myemailspamfilter` after the phone has sat idle. Expect
+   RARE or RESTRICTED if Doze is the cause; ACTIVE or WORKING_SET would falsify the hypothesis.
+2. `adb shell dumpsys jobscheduler | findstr myemailspamfilter` to see what the OS thinks it has
+   scheduled and when it last ran.
+3. **Samsung Settings > Battery > Background usage limits** (R-2). Check whether the app is in
+   "Sleeping apps" or "Deep sleeping apps". **This alone may explain the entire report and costs
+   nothing to check.** Samsung's own aggressive battery management is separate from stock Android
+   Doze and is a well-known cause of exactly this symptom.
+
+**THE FIX IS A CLASS-1 DECISION -- HAROLD'S TO MAKE, NOT CLAUDE'S.** Three options, with the
+trade each one actually carries:
+
+1. **Ask the user for a battery-optimisation exemption**
+   (`REQUEST_IGNORE_BATTERY_OPTIMIZATIONS` + a runtime prompt). Keeps the current architecture;
+   the user sees one system dialog. **Play scrutinises this permission at review** and requires a
+   justification in the listing; Google's policy expects it only where core functionality
+   genuinely requires it. A spam filter that scans on a schedule is a defensible case, but it IS
+   a review surface, and users can still decline.
+2. **Foreground service with a permanent notification.** The most reliable option: a foreground
+   service is largely exempt from Doze. The cost is a permanent, non-dismissable notification and
+   `FOREGROUND_SERVICE` + `FOREGROUND_SERVICE_DATA_SYNC` permissions, plus a Play declaration for
+   the foreground-service type. It changes what the app looks like to a user every day.
+3. **Accept it and change what the app PROMISES.** No permission, no review surface, no
+   notification. Instead the UI stops implying "every 15 minutes" and says scans run periodically
+   when the device allows, and the app scans on resume (which F220 already wired for stale-row
+   reconciliation). Cheapest and least invasive; it makes the product honest rather than making it
+   punctual.
+
+**Recommendation: settle the measurement first (step 3 above, the Samsung setting, costs one
+minute), because if Samsung's battery limits are the cause then option 1 may not even help** --
+Samsung's restrictions operate independently of the stock battery-optimisation exemption. Choosing
+a remedy before that check risks shipping a Play-scrutinised permission that does not fix the
+reported behaviour.
+
 **F217. Android background scans do not run while the app is backgrounded or the phone is locked -- and no notification arrives (~4-8h investigation + fix) Priority 6 (NEW, 2026-09-13 -- Harold, Sprint 69 retrospective Category 14)**
 - Phase: Android / Google Play Store Readiness
 - Platform: **Android only** (Windows uses Task Scheduler, ADR-0039, and is unaffected)
@@ -992,153 +1621,6 @@ All incomplete items in relative priority order. Priority in increments of 10; i
   developers.googleblog.com "Improving user safety in OAuth flows through new OAuth Custom URI
   scheme restrictions"; developers.google.com/identity/protocols/oauth2/native-app.
 
-**F211. TESTER BLOCKER -- Google Sign-In fails for every tester: "Custom URI scheme is not enabled for your Android client" (~30m, console-side) Priority 2 (NEW, 2026-09-10 -- FIRST REAL TESTER FEEDBACK)**
-- Phase: Android / Google Play Store Readiness
-- Platform: Android (closed test)
-- **THIS IS THE FIRST FEEDBACK FROM A REAL TESTER**, Jamey Livingston, relayed by Harold
-  2026-09-10. It is a blocker, not a polish item, and it almost certainly affects EVERY tester --
-  not just him.
-- **What the tester saw**: adding a Google account without an app password produces
-  `Access blocked: spamfilter-multi's request is invalid` / `Error 400: invalid_request`.
-  Tapping "error details" gives the actual cause, verbatim from Google:
-  > **Custom URI scheme is not enabled for your Android client.**
-  > Request details: `flowName=GeneralOAuthFlow`
-- **Confirmed against the app**: `AndroidManifest.xml:62` registers
-  `<data android:scheme="${appAuthRedirectScheme}"/>`, the reversed Android client ID, used by
-  `flutter_appauth`. So the app IS using a custom URI scheme -- exactly what Google says is
-  disabled for this OAuth client.
-- **The fix is in the GOOGLE CLOUD CONSOLE, not the app.** No code change, no release, no new
-  submission. Google disabled custom URI schemes by default for newly-created Android OAuth
-  clients; the setting must be enabled explicitly on that client. **Verify the current wording
-  and location in the console before changing anything** -- Google has moved this setting more
-  than once, and the exact control name should be read rather than recalled.
-- **Why it is Priority 2 -- above everything else on the slate:**
-  - It blocks the PRIMARY sign-in path. Gmail is the most common provider a tester will try.
-  - **8 testers are recruited and 4 more are needed for the 14-day clock.** A tester who cannot
-    sign in may opt OUT -- and an opt-out resets that person's clock to zero, which is the one
-    kind of damage that cannot be recovered by working faster later.
-  - It costs the project credibility at exactly the wrong moment: this is the first thing a new
-    tester does.
-- **The app-password path still works**, which is why Harold's own accounts were unaffected and
-  why this went unnoticed through all of Sprint 68's validation. Harold's reply to the tester --
-  *"App passwords is the way it works best"* -- is a correct WORKAROUND, but it should not be the
-  answer: the in-app Help already presents Google Sign-In as an available option
-  (`help_platform_claims_test` asserts the wording), so the app promises something the console
-  currently forbids.
-- **Also visible in the tester's screenshot**: the account-setup screen offers "Google Sign-In
-  (OAuth 2.0)" and "Manual Token Entry" and then shows a red "Sign-In Error" panel. Worth
-  checking whether that error text is actionable, or whether it simply relays Google's opaque
-  400 -- a tester hitting a dead end should be told to use an app password instead.
-- **After fixing, RE-TEST AS A TESTER**, not as Harold: a fresh Google account that has never
-  authorised this app. Harold's accounts may carry prior consent that masks the failure.
-- Depends on: Google Cloud Console access. No repo change expected; if one IS needed, that
-  changes the priority because it would require a new Play submission.
-- Source: Jamey Livingston via Harold, 2026-09-10. The first defect this project has learned
-  about from someone other than Harold.
-
-**F210. Dark-mode contrast, THIRD variant: a hardcoded surface with text that is theme-derived by OMISSION -- and the F197 gate cannot see it (~1-2h) Priority 6 (NEW, 2026-09-10 -- Harold, on the S24+)**
-- Phase: Core App Quality
-- Platform: All (shared Flutter UI) -- observed on Android dark mode
-- **Harold, 2026-09-10**: *"one where the background and font color are almost the same like the
-  2 or 3 we fixed earlier"*. He is right, and it is the same defect class as F195 and F197.
-- **Where**: the "Export Successful" dialog, `results_display_screen.dart:413-423`. The exported
-  file path renders near-white on near-white and is barely legible -- **the one piece of text the
-  dialog exists to convey**, sitting directly above the instruction "Select the path above to
-  copy it."
-- **The code**:
-  ```dart
-  Container(
-    decoration: BoxDecoration(color: Colors.grey[200]),   // hardcoded near-white surface
-    child: SelectableText(
-      filePath,
-      style: const TextStyle(fontSize: 12, fontFamily: 'monospace'),  // NO COLOUR
-    ),
-  )
-  ```
-- **WHY THE F197 GATE MISSES IT, and this is the important part.** F197 detects a hardcoded
-  surface wrapping text whose colour comes from `Theme.of(context).textTheme`. Here the text is
-  theme-derived **BY OMISSION** -- `TextStyle` specifies no colour at all, so Flutter inherits
-  the theme default, which is near-white in dark mode. **There is no `textTheme` token for the
-  gate to match.** Same defect, invisible to the detector.
-  This is a genuine gap in a gate shipped one day earlier, and it is the third distinct variant
-  of one pattern:
-  1. **F195**: hardcoded surface + explicit `Theme.of(context).textTheme` text. Gated.
-  2. **F197**: same, generalised into the detector. Gated.
-  3. **F210 (this)**: hardcoded surface + text with NO colour specified. **NOT gated.**
-- **The fix to the CODE is small**; the fix to the GATE is the valuable half. Extend the F197
-  detector so a hardcoded surface whose enclosed `Text`/`SelectableText` specifies no colour is
-  treated the same as one referencing `textTheme` -- because Flutter resolves both from the
-  theme. Mutation-verify against this exact dialog.
-- **Also worth checking in the same pass**: `Colors.grey[600]` on the line below ("Select the
-  path above to copy it") is hardcoded text on the DIALOG's theme surface -- the inverse pairing.
-  Measure it in dark mode rather than assuming it passes.
-- **Dialogs were never audited.** F197's sweep covered cards and containers in screens. This is a
-  `showDialog` body, and the audit that found "exactly two instances" did not look here. Re-run
-  the corrected detector across dialogs specifically.
-- Depends on: nothing. Overlaps F197's gate, which it extends rather than replaces.
-- Source: Harold, 2026-09-10, from an Android dark-mode screenshot.
-
-**F208. YAML Import is BROKEN on Android -- FilePicker rejects the .yaml filter (~1-2h) Priority 8 (NEW, 2026-09-10 -- Harold, on the S24+)**
-- Phase: Core App Quality
-- Platform: **Android only** -- Windows is unaffected
-- **Reproduced on the closed-test build, screenshot 2026-09-10**: tapping Import Rules (or Import
-  Safe Senders) fails immediately with
-  `Import failed: PlatformException(FilePicker, Unsupported filter. Make sure that you are only
-  using the extension without the dot, (ie., jpg instead of .jpg). This could also have happened
-  because you are using an unsupported file...`
-- **The plugin's suggested cause is a RED HERRING.** `yaml_import_export_screen.dart:255` (and
-  300, 334, 395) already passes `allowedExtensions: ['yaml', 'yml']` -- dotless, exactly as the
-  message demands. The advice in the error does not apply.
-- **The real cause**: on Android, `FileType.custom` is resolved through **MIME types**, not file
-  extensions. `.yaml` and `.yml` have no registered MIME mapping on Android, so the picker
-  rejects the filter outright before any file is chosen. Windows filters by extension directly,
-  which is exactly why this breaks on one platform and not the other -- an ADR-0042 platform
-  difference hiding inside a shared call.
-- **Severity is higher than it looks**: YAML import/export is the app's ONLY backup-and-restore
-  path and its only way to move rules between devices. On Android it is currently impossible to
-  restore rules at all. The rules DB is the user's accumulated work.
-- **Four call sites**, so fix once in a shared helper rather than four times.
-- **Candidate fixes, to evaluate rather than assume**: (a) `FileType.any` plus post-selection
-  extension validation -- simplest, and the validation is needed anyway since a MIME filter
-  cannot be trusted; (b) register a custom MIME type; (c) a platform fork using
-  `FileType.custom` on desktop and `FileType.any` on Android, declared per ADR-0042.
-  **(a) is likely correct** and removes the platform difference rather than encoding it.
-- **Test it with a REAL exported file**, not a hand-made one -- the export half works, so
-  export-then-import is the natural round trip and the only proof the fix actually restores data.
-- Depends on: nothing. Independent of F206, though both touch file access on Android.
-- Source: Harold, 2026-09-10, exercising Import/Export on the S24+.
-
-**F209. Android navigation bar overlaps the bottom of most screens (~2-4h) Priority 16 (NEW, 2026-09-10 -- Harold)**
-- Phase: Core App Quality
-- Platform: **Android** (and iOS later -- the same class applies to the home indicator)
-- **Harold, 2026-09-10**: *"didn't you find that almost all the pages had the bottom bit covered
-  by the android 3 buttons - should we fix that?"* **Yes, and I should have raised it.** I saw it
-  across the screenshots today -- Settings, Scan History, Import/Export -- and treated it as a
-  screenshot artifact rather than reporting it. It is a real layout defect.
-- **Clearest example, from the same session**: the Import failure message on the Import/Export
-  screen is CUT OFF MID-SENTENCE by the navigation bar. A user hitting that error cannot read
-  what it says -- the diagnostic text is physically behind the system buttons.
-- **Cause**: content is not inset for the system navigation area. Flutter needs either
-  `SafeArea` or explicit `MediaQuery.viewPadding.bottom` handling; a `Scaffold` body does not
-  inset for the nav bar on its own, and Android 15+ enforces edge-to-edge by default, which
-  makes this WORSE rather than better on newer devices.
-- **Not cosmetic**: it hides error text (proven above), and on scrollable screens it can hide the
-  final list row or a bottom action button -- exactly the elements a user needs.
-- **Scope**: fix in the shared scaffold/layout rather than per screen. Harold's phrasing --
-  "almost all the pages" -- points at a single shared container, which is also what ADR-0042
-  prefers ("fork at the narrowest possible point", and here there may be no fork at all).
-  **Inventory first**: confirm whether one shared widget covers every affected screen before
-  editing any of them individually.
-- **Gate it**: a widget test asserting bottom content clears `viewPadding.bottom` would stop the
-  next screen from reintroducing it. Without that, this returns the first time someone adds a
-  screen.
-- **Windows is unaffected** -- no system nav bar -- so this is Android-shaped work that should
-  not change desktop layout. Prove the no-regression side, per ADR-0042's "cover BOTH branches".
-- Depends on: nothing.
-- Source: Harold, 2026-09-10. Observed by Claude across many screenshots and NOT raised -- a miss
-  worth recording as its own lesson: noticing a defect and not reporting it is indistinguishable
-  from not noticing it.
-
 **F207. A manual scan is refused while a background scan is "in progress" -- and the block appears to outlive the scan (~1-2h) Priority 20 (NEW, 2026-09-10 -- Harold, on the S24+)**
 - Phase: Core App Quality
 - Platform: Android (closed test); check Windows for the same lock
@@ -1299,65 +1781,6 @@ All incomplete items in relative priority order. Priority in increments of 10; i
 - Depends on: nothing. All three checks read the built AAB, which the release process already
   produces.
 - Source: Harold, 2026-09-10 -- *"target is not perfection, but as good as reasonably possible."*
-
-**F203. "Found N, evaluated 0" is unexplainable to the user -- surface the safe-sender-already-in-target skip (~1-2h) Priority 22 (NEW, Sprint 68 MV -- Harold)**
-- Phase: Core App Quality
-- Platform: All (shared scanner + results UI)
-- **Harold, 2026-09-09, looking at a real scan**: *"Found 2, but 'no rules' 0?"* The Scan
-  History row read `Found: 2 | Processed: 0 | No Rule: 0 | Errors: 0`, and the Results screen
-  said **"No emails were found in the selected folders for the specified time period."** Those
-  two statements contradict each other on screen.
-- **NOT A BUG in the scan. The behavior is correct** -- diagnosed from
-  `dev_live_scan_v0.14.2.log` and the source, not guessed:
-  - `Step 4: Folder "INBOX" returned 2 messages` -- the fetch worked.
-  - `Step 6a COMPLETE: evaluated=0` -- neither reached the evaluated list.
-  - Cause: `email_scanner.dart:330`, the ONLY `continue` that bypasses
-    `evaluatedEmails.add`. Both messages matched a SAFE SENDER and were already sitting in
-    INBOX, which is this account's Safe Sender target folder, so
-    `shouldSkipSafeSenderAlreadyInTarget` skipped them "entirely -- do not count, do not
-    display, do not process. It is already where it belongs."
-  - With 623 safe senders loaded, a test message and an Apple welcome mail matching is
-    unremarkable.
-- **The defect is that the user cannot possibly know this.** Every counter is individually
-  truthful (Found = fetched; Processed/No Rule = needed action) but the combination reads as a
-  malfunction, and the empty-state text actively asserts something false -- emails WERE found.
-  The skip is logged at debug level only. Harold had to ask, and answering it required reading
-  the scan log and the scanner source.
-- **Scope**: (a) count the skips and surface them, e.g. a `Safe (already filed): N` chip
-  alongside the existing counters; (b) fix the empty-state text so it distinguishes "no emails
-  fetched" from "nothing required action"; (c) consider whether Scan History should carry the
-  same number, since that row is where the contradiction is starkest.
-- **CORRECTION to a side finding first recorded here (2026-09-09)**: I read
-  `Step 2.5: deletedRuleFolder=Deleted Messages` in the scan log as the SCAN resolving the real
-  folder at runtime, and concluded the settings screen's `Trash (default)` was a harmless
-  display-layer default. **Harold had already changed the setting to `Deleted Messages` before
-  running the scan.** So that log line reflects his SAVED VALUE, not runtime resolution.
-  **There is no evidence the scan resolves the folder itself**, and the hardcoded
-  `?? 'Trash'` at `email_scanner.dart:670` remains unproven-benign rather than
-  proven-harmless. F202's blast radius is NOT narrowed. Same error class as the folder-picker
-  screenshots: reading a post-change state as a pre-change one.
-- **PLATFORM SCOPE: this is a SHARED defect. There is no platform difference.** Recorded
-  because I claimed one twice and was wrong both times, and Harold caught it: *"Not sure this
-  was true or just the timing of results pasted were out of order."* It was the timing.
-  The Android screenshot reading "No Results Yet" was the **pre-scan** screen (11:25, before
-  the run); Windows' "No emails were found" was a **post-scan** screen. Comparing them was not
-  like-for-like.
-  Traced to the source rather than to more screenshots: **both strings live in
-  `lib/ui/widgets/empty_state.dart`** -- `NoResultsEmptyState` ("No Results Yet") and
-  `ScanCompleteNoEmailsEmptyState` ("No emails were found...") -- and
-  `results_display_screen.dart:791-797` picks between them with ONE shared conditional:
-  never-scanned gets the former, scanned-and-found-nothing gets the latter. Shared widget,
-  shared chain, identical on both platforms. **Android would show exactly the same text in
-  exactly the same state.**
-  So the whole card is a SHARED fix: both the misleading post-scan message and the missing
-  `Safe (already filed): N` disclosure. **Do NOT scope any part of this as Windows-only** --
-  that would ship a half fix and leave Android to surface the same confusion.
-- **Watch item**: do NOT "fix" this by counting skipped emails as Processed. They deliberately
-  are not processed, and the Sprint 58 F151d Demo Mode exception in
-  `shouldSkipSafeSenderAlreadyInTarget` shows this path already has subtle cases. The fix is
-  DISCLOSURE, not recounting.
-- Depends on: nothing. Independent of F202, though both surfaced in the same iCloud session.
-- Source: Harold, 2026-09-09, Sprint 68 Manual Validation (F191 iCloud/Windows cell).
 
 **F192. Custom IMAP Server support -- build the host-entry UI (~4-6h) Priority 32 (PLANNED FOR SPRINT 69 -- Harold, 2026-09-09, Sprint 68 scope selection; split from F191, genuinely unbuilt)**
 - Phase: Core App Quality

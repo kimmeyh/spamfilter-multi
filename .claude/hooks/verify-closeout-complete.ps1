@@ -135,7 +135,19 @@ if (-not (Test-Path -LiteralPath $statusPath)) {
         if ($statusSprint -ne $sprintNum) {
             $violations += ".claude/sprint_status.json current_sprint.number is $statusSprint but the branch is Sprint $sprintNum -- the file is stale. It is the state-restore file after context compaction, so a stale copy actively misleads the next session."
         }
-        if ($status._last_updated) {
+        # PR #418 review: SKIP the staleness check for TEST FIXTURES. The
+        # fixture under .claude/hooks/test-cases/fixtures/ hardcodes a date, so
+        # it ages past 30 days on the calendar alone and fails a case that
+        # tests something else entirely -- it had already been red for days and
+        # was filed as F225 with the WRONG root cause guessed.
+        #
+        # A permanently-red suite is not a minor annoyance: CLAUDE.md requires
+        # running this suite after any hook edit, and a suite that is red for an
+        # unrelated reason is exactly what trains a reader to wave past a real
+        # failure. Asserting freshness of a checked-in fixture is meaningless;
+        # only a LIVE status file can be stale.
+        $isFixture = $cwd -match '(?i)[\/]test-cases[\/]fixtures[\/]'
+        if ($status._last_updated -and -not $isFixture) {
             try {
                 $age = (Get-Date) - [datetime]$status._last_updated
                 if ($age.TotalDays -gt 30) {
