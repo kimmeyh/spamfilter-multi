@@ -1,6 +1,6 @@
 {
   "_description": "Sprint status file that persists across context compaction. Update after each phase/sub-phase completion.",
-  "_last_updated": "2026-09-19T19:37:58Z",
+  "_last_updated": "2026-09-20T00:00:00Z",
   "_usage": "Read this file after context compaction to restore sprint approval state and progress.",
   "_staleness_note": "This file had drifted 15 sprints (last updated at Sprint 35, 2026-04-19) before being refreshed at Sprint 50 close-out. It is a Phase 7.7 checklist item -- update it at every sprint close-out, not opportunistically.",
   "current_sprint": {
@@ -27,15 +27,16 @@
   },
   "_github_issues_note": "Sprint 66 cards created at Phase 3.3.1 (2026-09-07): #387 GP-19, #388 GP-4. Close by hand at Post-Merge Cleanup.",
   "test_metrics": {
-    "suite": "2,155 passed / 15 skipped / 0 failed",
-    "policy_suite": "hook suite 74 passed / 0 failed (first fully green run; F225 fixed)",
+    "suite": "2,154 passed / 15 skipped / 1 FAILED",
+    "known_failure": "dev_version_ahead_test \"the dev version is AHEAD of every version recorded as live on a store\": dev 0.15.2+5 is NOT ahead of Play-live 0.15.2. THE GATE IS CORRECT -- a tester cannot distinguish this dev build from what shipped, which is exactly what F190 prevents. The remedy is a version bump, which F190 assigns to Phase 3.7.0b (sprint-plan approval). Sprint 71 has no approved plan, so the number is Harold's call. Left red deliberately rather than silenced.",
+    "policy_suite": "hook suite 75 passed / 0 failed (was 74; +1 regression case, see below)",
     "analyzer": "clean",
-    "as_of": "2026-09-19, Sprint 70 close-out"
+    "as_of": "2026-09-20"
   },
   "store_release": {
-    "windows": "0.15.1.0 SUBMITTED -- Partner Center Submission 27, \"Update in certification\" / Pre-processing as of 2026-09-14. Uploaded by Harold. Built from the prod worktree on main at 11fbbb0 (PR #411), pulled from 44 commits behind. Step 4 --release-self-test RESULT: PASS 6/6 incl. NATIVE_APP_ENV=prod. Manifest verified: PublisherDisplayName \"Kimmey Consulting - Ohio\" (the field that got Submission 26 REJECTED), identity + GUID untouched, version 0.15.1.0. SUPERSEDES the rejected Submission 26 rather than retrying it. LIVE on Store remains 0.14.2.0 (Submission 25) until 27 certifies. Check C (no [DEV] in title/About after install) still pending Harold.",
-    "play": "0.15.1 versionCode 4 BUILT AND VERIFIED 2026-09-14, AWAITING HAROLD UPLOAD. AAB 53.3 MB at D:\\Data\\Harold\\github\\spamfilter-multi\\mobile-app\\build\\app\\outputs\\bundle\\prodRelease\\app-prod-release.aab. Step 4 manifest verification: versionName 0.15.1, NO .dev suffix, OAuth redirect scheme PRESENT (client 577022808534-0ejd..., the DEV-worktree client -- Harold confirmed that is correct and is what 0.15.0 shipped with), package com.myemailspamfilter. Signed with the upload keystore, Dart obfuscation on, symbols at ~/.myemailspamfilter/symbols/0.15.1+4-prod. REQUIRED A ONE-TIME GRADLE WORKAROUND (F218): releaseImplementation(project(\":integration_test\")) because Flutter 3.38.5 writes a dev-dependency plugin into the release registrant while excluding it from the release classpath. LIVE on Play remains 0.15.0 versionCode 3 (closed testing). This release is what unblocks F208 + F209 on-device validation.",
-    "note": "Play production access is a TESTER-COUNT gate, not a version gate. Recruiting the remaining 4 testers is the critical path. F208/F209 validation is DEFERRED until 0.15.1 is live on Play, per Harold 2026-09-11."
+    "windows": "0.15.2.0 SUBMITTED by Harold as Partner Center Submission 28, \"In certification\", last modified 2026-09-20 (read from the Partner Center overview page, not inferred). Submission 27 (0.15.1) is the previous Store presence. MSIX built from the prod worktree at a3f2031 after Step 3.0 found it 33 COMMITS BEHIND -- the fourth consecutive sprint that check has caught a stale worktree, and the failure is silent: everything builds and the new version number wraps old code. Release self-test 6/6 PASS (APP_ENV=prod, NATIVE_APP_ENV=prod, both suffixes empty, no [DEV] marker, version matches). Publisher reads \"Kimmey Consulting - Ohio\", so the Submission 26 rejection cause is absent. NOT yet verified by installing from the Store.",
+    "play": "0.15.2 versionCode 5 PUBLISHED to Closed testing 2026-09-20 (Harold uploaded and rolled out; console-reported). STEP 6 VERIFICATION STILL OWED -- published in the console is not the same as installable. Outstanding: (a) Closed testing track shows 0.15.2 as latest, (b) the opt-in link https://play.google.com/apps/testing/com.myemailspamfilter resolves, (c) THE DECISIVE ONE -- install on the Galaxy S24+ and read the version in Settings. Until (c), treat this as console-reported, not device-verified. Pre-upload verification WAS done and is recorded in STORE_VERSION_STATUS.md: versionCode 5 / versionName 0.15.2 read from the bundle protobuf manifest, UPLOAD-key signed (Play re-signs on ingest), package com.myemailspamfilter with no .dev suffix, and ZERO integration_test entries in the release bundle (the F218 point). AAB: D:\\Data\\Harold\\github\\spamfilter-multi\\mobile-app\\build\\app\\outputs\\bundle\\prodRelease\\app-prod-release.aab (70,141,742 bytes).",
+    "note": "Play production access is a TESTER-COUNT gate, not a version gate: 12 testers x 14 CONTINUOUS days. Recruiting the remaining testers is the critical path, and shipping an update does NOT reset anyone's clock (only opting out does). The 0.15.2 publication is what unblocks the Sprint 71 carry-ins F219 AC-1 and the F227 re-verification -- but only once the build is actually INSTALLED on hardware, because both need a Play-signed build (the Android OAuth client is bound to the Play App Signing SHA-1)."
   },
   "environment_notes": [
     "RESOLVED 2026-07-29 (verified 07-30): the Store fault was an Acronis file-system filter blocking AppXSvc cleanup, fixed by an Acronis Protection exclusion. 23h uptime with ZERO Id-493 events vs a 176-file/6-min baseline; Store client self-updated 22606.1401.6.0 -> .10.0 (requires a working deployment pipeline). Filter drivers remain loaded -- backup protection was NOT disabled. See ALL_SPRINTS_MASTER_PLAN ENV-1 for the picker gotcha if it recurs.",
@@ -44,12 +45,12 @@
   ],
   "blocking_issues": [],
   "next_actions": [
-    "Phase 8.2 -- backlog refinement pass 1 (completeness sweep). Does NOT select scope.",
-    "Microsoft Store release process for 0.15.2 (docs/STORE_RELEASE_PROCESS.md). Requires the main merge, which is DONE.",
-    "Google Play release process for 0.15.2.",
-    "Phase 8.4 -- backlog refinement pass 2, scope selection with Harold.",
-    "CARRY-IN: F219 AC-1 end-to-end sign-in with a listed test user -- needs the Play build from the release above.",
-    "CARRY-IN: F217 implementation under Harold decided option 1 (battery-optimisation exemption + contextual prompt)."
+    "BLOCKING-ISH, Harold: install 0.15.2 from Play on the Galaxy S24+ and confirm the version in Settings. This is Step 6 of GOOGLE_PLAY_RELEASE_PROCESS.md and it gates both carry-ins below.",
+    "Harold, at Phase 3.7.0b: decide the version bump. dev_version_ahead_test is RED because dev 0.15.2+5 equals Play-live 0.15.2. MINOR if the approved Sprint 71 plan contains a feat, else PATCH; bump BOTH version: and msix_config.msix_version, and the +N build number.",
+    "Phase 8.4 -- backlog refinement pass 2, scope selection with Harold (F224, F226, F222, F217 implementation, F219 AC-1).",
+    "CARRY-IN: F219 AC-1 end-to-end Google Sign-In with a listed test user. Needs the Play build INSTALLED, not merely published.",
+    "CARRY-IN: F227 re-verification of the full OAuth round trip on the Play build.",
+    "CARRY-IN: F217 implementation under Harold decided option 1 (battery-optimisation exemption, CONTEXTUAL prompt mirroring the F161 POST_NOTIFICATIONS pattern, honest behaviour on decline)."
   ],
   "next_sprint_targeted": [
     "F224",
