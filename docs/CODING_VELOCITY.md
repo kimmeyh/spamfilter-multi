@@ -186,6 +186,45 @@ Every Item that is implemented gets ONE row here the moment it is picked up -- s
 | F125: one-shot release self-test probe | 54 | DONE | 60-120 (Harold's own ~1-2h est) | 60-120 | ~45 | ~45 | SVC-EDIT extension of the existing `--print-env` mechanism -- new `--release-self-test --expected-version=X.Y.Z` flag, 6 checks with PASS/FAIL-per-line + exit code. Under estimate: additive to well-understood existing infrastructure (`AppEnvironment`, `AppVersion`), not new design. Source-text policy test added (matches the established `--print-env` gate pattern in `msix_config_test.dart` -- `main()` calls `exit()` and needs a real platform channel, so it is not unit-testable directly). Real behavioral verification against the actual dev build per the task DoD: correctly FAILed every prod-only check (expected, dev build) while correctly discriminating the version-match sub-check both ways (match at 0.5.10, deliberate mismatch at 0.5.99). Suite 1849 -> 1850. |
 | F141: Android/Google Play re-expansion deep dive | 54 | DONE | `[no-history]`, TIME-BOXED (90-150m est) | 90-150 | ~140 (2 parallel research agents ~232s+308s wall + ~60m direct investigation/synthesis) | ~75 (parallel agent wall-clock overlap) | DOCS/analysis-only, no app code changed. Two parallel general-purpose agents (GP-*/F94/F95 re-verification sweep; per-screen UI-adaptation assessment) plus direct investigation of the navigation architecture (found independently, then confirmed by the UI agent) and backend background-scan wiring. Found 2 previously-undocumented architecture findings (Android bottom-nav placeholder tabs, zero Android entry point for the desktop-default No-Rule screen) neither agent was specifically tasked to look for -- both surfaced from following the evidence. Harold provided on-the-spot governing direction (Windows-architecture-takes-precedence) mid-task, which reshaped Section 3/4's framing from "reuse existing Android code" to "remove and replace with Windows' pattern" -- a real-time steering correction, not a redo. Time-box held; all 4 plan requirements (R-1 through R-4) addressed with cited evidence. |
 
+## Can the missing sprints (48-69) be reconstructed from git? -- TESTED 2026-09-19, answer: NO
+
+Harold asked whether commit history could backfill the gap, noting this has worked before. It was
+worth testing rather than assuming, and I had dismissed it too quickly the first time. The test:
+
+- **Commit coverage is excellent.** 1,663 commits parsed; all 22 sprints from 48 to 69 carry
+  explicitly tagged `Sprint N` commits, and 141 feature ids appear in more than one commit.
+- **Sprint-level spans are useless.** Sprint 48 spans 46 hours between first and last commit,
+  Sprint 52 spans 81 -- those are calendar windows containing overnight gaps, not work.
+- **Feature-level active time is the honest unit**: sum the gaps between a feature's commits,
+  counting only gaps under 90 minutes as contiguous work. That yields 70 features with a
+  measurable figure.
+
+**Then calibrate it against Sprint 70, where the real actuals were recorded this session.** That is
+the step that settles it:
+
+| Feature | git-derived | recorded | ratio |
+|---|---|---|---|
+| F219 | 65 | 90 | 0.72 |
+| F227 | 42 | 75 | 0.56 |
+| F212, F218, F220, F221, F217, F223 | not measurable | -- | -- |
+
+**Two findings, and the second is fatal:**
+
+1. Where it CAN measure, commit-gap timing understates by roughly 1.6x. It cannot see work before
+   the first commit or after the last, which is where design, reading and verification live.
+2. **It could only measure 2 of 8 features at all.** The working pattern here is one commit per
+   completed feature, so there are no intermediate gaps to sum. A method that is blind to 75% of
+   items and low by 1.6x on the rest cannot produce an estimate table.
+
+**Decision: rows 48-69 stay absent, and the reason is now recorded rather than asserted.**
+Backfilling with numbers known to be biased low, on a quarter of the items, would corrupt the
+medians that Rule 5 computes and make future estimates worse while looking more complete. The
+tracker's value is that its numbers are real.
+
+**What WOULD make this reconstructable in future**: commit at task START as well as completion, or
+record the actual at completion as Rule 3 already requires. The rule is right; the gap was that it
+was not followed from Sprint 48 to 69.
+
 ## Accuracy Trend (estimates must improve sprint-over-sprint)
 
 One row per sprint. `Median Error-ratio` = median(Act-Effort / Est-Effort); 1.0 = perfect, <1 = over-estimated, >1 = under-estimated. `MAPE` = mean absolute percentage error. Goal: error-ratio -> 1.0 and MAPE shrinks each sprint.
