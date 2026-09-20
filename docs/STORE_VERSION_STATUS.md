@@ -23,8 +23,8 @@ Partner Center before saying anything about the Store version.
 | | Version | Last verified | Notes |
 |---|---|---|---|
 | **Live/certified on Store** (cache) | 0.14.2.0 | 2026-09-09 (Partner Center: "Congrats! Your product is now updated"; Store presence = **Submission 25**) | **Submission 25 -- 0.14.2**, built from the prod worktree on `main` at `9e0e515` (PR #397). Carries the Sprint 67 UI fixes plus the F199 listing-field edits. **Submission 26 (0.15.0) was REJECTED at package validation** -- `publisher_display_name` read "Kimmey Consulting LLC" while the account says "Kimmey Consulting - Ohio". Reverted in six places and gated by `msix_config_test`. **0.15.1.0 SUBMITTED 2026-09-14 as Submission 27** -- in certification (Pre-processing). Self-test 6/6 PASS, manifest publisher confirmed correct. Supersedes the rejected 26 rather than retrying it. NOT yet verified by installing from the Store. |
-| **Live on Google Play** (cache) | 0.15.0 (versionCode 3) | 2026-09-10 (Play Console: published to Closed testing - Alpha; pre-review checks passed, review approved same day) | **Closed testing only -- NOT production.** VERIFIED ON PHYSICAL HARDWARE: Harold updated a Galaxy S24+ and it was an UPGRADE, not a fresh install (0.14.1 -> 0.14.2 -> 0.15.0), which exercises the real tester path and confirms package identity and signing key held across two bumps. F191 confirmed on device -- Yahoo and iCloud selectable in Add Account. **Corrected 2026-09-14**: this row was cached at 0.14.2 / versionCode 2 for four days after 0.15.0 went live, while calling itself a cache of the live state. Production access is still gated on 12 testers x 14 CONTINUOUS days -- a TESTER-COUNT gate, not a version gate. 8 on the list, FOUR SHORT. |
-| **Dev worktree** (authoritative -- mirrors `pubspec.yaml`) | 0.15.1+4 | 2026-09-11 | Bumped at Sprint 69 PLAN APPROVAL (Phase 3.7.0b) per **F190**, so a tester can always tell a dev build from production. **PATCH is correct**: Sprint 69 shipped five fixes and no `feat` -- the one `feat` in `[Unreleased]` belongs to Sprint 68 and already shipped as 0.15.0. Build number +3 -> +4 because Play permanently consumes a versionCode once uploaded, and 3 went with the live 0.15.0. Two gates cover this row: `version_consistency_test` (every literal in lib/, windows/runner/ and scripts/ matches pubspec) and `dev_version_ahead_test` (dev strictly ahead of every Live row IN THIS FILE, and `version:` agrees with `msix_version`). That second gate is why a stale row here is a test defect rather than a documentation one. |
+| **Live on Google Play** (cache) | 0.15.2 (versionCode 5) | 2026-09-20 (Harold: published to Closed testing. CONSOLE-REPORTED -- not yet confirmed by installing on hardware; see the 0.15.2 section below for the Step 6 checks still owed) | **Closed testing only -- NOT production.** **0.15.2 is CONSOLE-REPORTED published (2026-09-20) and NOT yet device-verified** -- the Step 6 install check is still owed, and it is the check that unblocks F219 AC-1 and the F227 re-verification. Hardware history, which applies to 0.15.0 and NOT to this version: Harold updated a Galaxy S24+ and it was an UPGRADE, not a fresh install (0.14.1 -> 0.14.2 -> 0.15.0), which exercises the real tester path and confirms package identity and signing key held across two bumps. F191 confirmed on device -- Yahoo and iCloud selectable in Add Account. **Corrected 2026-09-14**: this row was cached at 0.14.2 / versionCode 2 for four days after 0.15.0 went live, while calling itself a cache of the live state. Production access is still gated on 12 testers x 14 CONTINUOUS days -- a TESTER-COUNT gate, not a version gate. 8 on the list, FOUR SHORT. |
+| **Dev worktree** (authoritative -- mirrors `pubspec.yaml`) | 0.15.2+5 | 2026-09-20 | Bumped at Sprint 69 PLAN APPROVAL (Phase 3.7.0b) per **F190**, so a tester can always tell a dev build from production. **PATCH is correct**: Sprint 69 shipped five fixes and no `feat` -- the one `feat` in `[Unreleased]` belongs to Sprint 68 and already shipped as 0.15.0. Build number +3 -> +4 because Play permanently consumes a versionCode once uploaded, and 3 went with the live 0.15.0. Two gates cover this row: `version_consistency_test` (every literal in lib/, windows/runner/ and scripts/ matches pubspec) and `dev_version_ahead_test` (dev strictly ahead of every Live row IN THIS FILE, and `version:` agrees with `msix_version`). That second gate is why a stale row here is a test defect rather than a documentation one. |
 
 ## msix_version convention (which worktree's value ships)
 
@@ -39,9 +39,16 @@ Release self-test 6/6 PASS (APP_ENV=prod, NATIVE_APP_ENV=prod, both suffixes emp
 marker, version matches 0.15.2). Publisher reads "Kimmey Consulting - Ohio", so the Submission 26
 rejection cause is absent.
 
-**Google Play: AAB BUILT, NOT YET UPLOADED.**
+**Google Play: PUBLISHED 2026-09-20** (Harold, closed testing). Uploaded and rolled out by
+Harold; reported published on 2026-09-20. **Step 6 verification is still owed** -- published in
+the console is not the same as installable. What remains: the Closed testing track showing 0.15.2
+as latest, the opt-in link resolving, and the decisive check of installing on the S24+ and reading
+the version in Settings. Until that install happens, treat this row as CONSOLE-REPORTED, not
+device-verified.
 
-- Path: `D:\Data\Harold\github\spamfilter-multi\mobile-appuildpp\outputsundle\prodReleasepp-prod-release.aab`
+Build provenance, verified before upload:
+
+- Path: `D:\Data\Harold\github\spamfilter-multi\mobile-app\build\app\outputs\bundle\prodRelease\app-prod-release.aab`
 - 66.9 MB, valid bundle (548 entries, base module present)
 - **versionCode 5, versionName 0.15.2** -- read from the bundle's own protobuf manifest, not
   inferred from pubspec. Live Play is versionCode 3, so 5 is correctly ahead. Play permanently

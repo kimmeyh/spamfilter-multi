@@ -281,7 +281,7 @@ if ($branch -match '_Sprint_(\d+)') {
                 # field still cannot trigger either.
                 $windowClosed =
                     ($statusText -match '(?i)^\s*(sprint\s+\d+\s+)?(manual validation|manual-validation|phase 5\.3|phase 5\.[4-9]|phase 6|phase 7|phase 8|retrospective|code review|awaiting harold|validation feedback|release cycle|pre-kickoff|store release|completeness sweep|scope selection|awaiting scope)') -or
-                    ($statusText -match '(?i)^\s*(sprint\s+\d+\s+)?(close-?out|complete[d]?|not planned)') -or
+                    ($statusText -match '(?i)^\s*(sprint\s+\d+\s+)?(close-?out|complete[d]?\b|not planned)') -or
                     ($statusText -match '(?i)^[^.]{0,60}\(phase\s+(5\.[3-9]|[678])[\d.]*\s*\)')
                 if ($windowClosed) {
 
