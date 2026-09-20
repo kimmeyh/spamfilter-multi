@@ -28,6 +28,33 @@ Partner Center before saying anything about the Store version.
 
 ## msix_version convention (which worktree's value ships)
 
+## 0.15.2 release -- BUILD STATUS (2026-09-19/20)
+
+**Microsoft Store: SUBMITTED by Harold as Submission 28**, "In certification", last modified
+2026-09-20 (confirmed from the Partner Center overview page, not inferred). Submission 27 (0.15.1)
+is now the live Store presence. MSIX built from the prod worktree at `a3f2031` after Step 3.0
+found it **33 commits behind** -- the fourth consecutive sprint that check has caught a stale
+worktree, and the failure is silent: everything builds and the new version number wraps old code.
+Release self-test 6/6 PASS (APP_ENV=prod, NATIVE_APP_ENV=prod, both suffixes empty, no [DEV]
+marker, version matches 0.15.2). Publisher reads "Kimmey Consulting - Ohio", so the Submission 26
+rejection cause is absent.
+
+**Google Play: AAB BUILT, NOT YET UPLOADED.**
+
+- Path: `D:\Data\Harold\github\spamfilter-multi\mobile-appuildpp\outputsundle\prodReleasepp-prod-release.aab`
+- 66.9 MB, valid bundle (548 entries, base module present)
+- **versionCode 5, versionName 0.15.2** -- read from the bundle's own protobuf manifest, not
+  inferred from pubspec. Live Play is versionCode 3, so 5 is correctly ahead. Play permanently
+  consumes a versionCode once uploaded, which is why this must be verified before upload rather
+  than after a rejection.
+- Signed with the **UPLOAD** key (`META-INF/UPLOAD.RSA`). Correct: Play re-signs with the app
+  signing key on ingest. Do not confuse the two fingerprints -- that mistake was nearly made in
+  Sprint 69 and was caught only because Harold sent the Console page showing both.
+- Package `com.myemailspamfilter` (prod flavor, NOT the `.dev` suffix).
+- **`integration_test` entries in the release bundle: 0.** Worth stating, because the F218
+  workaround re-adds that dependency to the release classpath and the whole point of the card was
+  that it was shipping a test-only library to testers. It is not in this bundle.
+
 **Store MSIX builds ALWAYS come from the PROD worktree** (`D:\Data\Harold\github\spamfilter-multi-prod\`), whose `msix_config.msix_version` is bumped **locally and uncommitted** at each release (F139-template Step 1) and verified by the release checks (build-log dart-defines + `--release-self-test --expected-version`). The DEV worktree's committed `msix_version` is therefore **never a Store build input** -- which is how it sat harmlessly stale at `0.6.0.0` from the 0.6.0 release until Sprint 59 refreshed it to `0.8.1.0` (matching the dev app version, per `STORE_RELEASE_PROCESS.md` Step 1 row 2). Concretely: Submission 14 shipped `0.7.0.0` and Submission 15 shipped `0.8.0.0`, both from prod-worktree-local values, regardless of the dev worktree's committed number. Neither `check-version-consistency.ps1` nor the version gate watches `msix_version` today -- tracked as backlog (metadata-under-gates item, Sprint 59 cowork review).
 
 ## Update this file every time
