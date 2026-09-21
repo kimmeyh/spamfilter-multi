@@ -451,6 +451,44 @@ end). The emulator cannot test it because the Android OAuth client is bound to t
 SHA-1. What the emulator HAS now proven is that the redirect reaches the app, which was the failing
 step.
 
+**F229. Make the build identifiable on phone-width screens and in exports (~3-5h) Priority 12 (NEW, 2026-09-21 -- Harold, during the 0.15.2 Play verification)**
+- Phase: UX / Supportability
+- Platform: All -- the divergence is by WIDTH, not by OS, so it hits Android phones and a narrow
+  Windows window alike.
+- **This is NOT a missing feature. It is a deliberate F172 (Sprint 61) trade-off whose assumption
+  has now failed.** `AppBarVersionLabel` in `lib/ui/widgets/standard_app_bar_actions.dart` renders
+  the version on every screen using `StandardAppBarActions`, then **returns `SizedBox.shrink()`
+  below 600px width** because the action row overflowed the AppBar by ~81px at 411px (caught by the
+  F169 tests). That reasoning is sound and the fix must not simply revert it -- overflowing clips
+  real action buttons.
+- **The failed assumption, quoted from the code**: *"Windows at its 1024x640 epx minimum is
+  comfortably above this, so the label is always present where screenshots are actually taken."*
+  Screenshots are now routinely taken on a 411px phone. On 2026-09-20 a full testing session
+  produced 26 screenshots and **not one showed a version**, so confirming which build was running
+  needed a phone reconnect and a purpose-taken Settings screenshot. Step 6 of
+  `GOOGLE_PLAY_RELEASE_PROCESS.md` requires confirming the installed version, and the app made its
+  own release process harder to complete.
+- **Screens verified WITHOUT a version at phone width (Android, 0.15.2)**: Scan History, Scan
+  Results (filtered and completed views), the live-scan "Scan Started" screen, the No-rule action
+  sheet. Present on Settings > General, which has its own label independent of the AppBar
+  (`settings_screen.dart:613`).
+- **Design direction -- do NOT just lower the 600px threshold.** Options worth weighing:
+  (a) move the label out of the crowded action row into the AppBar title/subtitle line;
+  (b) show a short form (`0.15.2` without the `Version ` prefix) below the breakpoint;
+  (c) overflow menu entry. Whatever is chosen must keep the `[DEV]` suffix visible -- that marker
+  is what would have caught the 0.5.5/0.5.6 Store dev-leak -- and must re-run the F169/F172 width
+  tests at 411px, which are the tests that caught the original overflow.
+- **Also stamp the build into EXPORTS.** `scan_results_2026-09-21T01-15-34.csv` pulled from the
+  device is a bare header row with no version anywhere, so an exported CSV cannot be attributed to
+  the build that produced it. A tester's export is evidence; evidence that cannot name its build is
+  weak. Add app version + build number as a header comment or column. **Inspect the YAML export
+  path too** -- same argument, NOT yet checked.
+- **Watch the gates**: `stale_footer_test` flags hardcoded version literals in `lib/ui/`, and
+  `version_consistency_test` asserts every literal matches `pubspec.yaml`. Use the existing
+  `AppVersion.get()` runtime lookup; do NOT introduce a literal.
+- Source: Harold, 2026-09-21, during Play 0.15.2 Step 6 verification. [[F228]] was found in the same
+  session.
+
 **F228. The "could not be applied" footer contradicts the mailbox after a batch-level exception (~2-4h) Priority 12 (NEW, 2026-09-21 -- found on the 0.15.2 PLAY BUILD, Galaxy S24+)**
 - Phase: Bug Fix
 - Platform: All (the code is shared; observed on Android)

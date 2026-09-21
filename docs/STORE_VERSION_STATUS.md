@@ -23,7 +23,7 @@ Partner Center before saying anything about the Store version.
 | | Version | Last verified | Notes |
 |---|---|---|---|
 | **Live/certified on Store** (cache) | 0.14.2.0 | 2026-09-09 (Partner Center: "Congrats! Your product is now updated"; Store presence = **Submission 25**) | **Submission 25 -- 0.14.2**, built from the prod worktree on `main` at `9e0e515` (PR #397). Carries the Sprint 67 UI fixes plus the F199 listing-field edits. **Submission 26 (0.15.0) was REJECTED at package validation** -- `publisher_display_name` read "Kimmey Consulting LLC" while the account says "Kimmey Consulting - Ohio". Reverted in six places and gated by `msix_config_test`. **0.15.1.0 SUBMITTED 2026-09-14 as Submission 27** -- in certification (Pre-processing). Self-test 6/6 PASS, manifest publisher confirmed correct. Supersedes the rejected 26 rather than retrying it. NOT yet verified by installing from the Store. |
-| **Live on Google Play** (cache) | 0.15.2 (versionCode 5) | 2026-09-20 (Harold: published to Closed testing. CONSOLE-REPORTED -- not yet confirmed by installing on hardware; see the 0.15.2 section below for the Step 6 checks still owed) | **Closed testing only -- NOT production.** **0.15.2 is CONSOLE-REPORTED published (2026-09-20) and NOT yet device-verified** -- the Step 6 install check is still owed, and it is the check that unblocks F219 AC-1 and the F227 re-verification. Hardware history, which applies to 0.15.0 and NOT to this version: Harold updated a Galaxy S24+ and it was an UPGRADE, not a fresh install (0.14.1 -> 0.14.2 -> 0.15.0), which exercises the real tester path and confirms package identity and signing key held across two bumps. F191 confirmed on device -- Yahoo and iCloud selectable in Add Account. **Corrected 2026-09-14**: this row was cached at 0.14.2 / versionCode 2 for four days after 0.15.0 went live, while calling itself a cache of the live state. Production access is still gated on 12 testers x 14 CONTINUOUS days -- a TESTER-COUNT gate, not a version gate. 8 on the list, FOUR SHORT. |
+| **Live on Google Play** (cache) | 0.15.2 (versionCode 5) | 2026-09-21 (**DEVICE-VERIFIED**: Galaxy S24+ Settings > General reads "Version 0.15.2") | **Closed testing only -- NOT production.** **0.15.2 DEVICE-VERIFIED 2026-09-21** (S24+ Settings reads "Version 0.15.2"). This unblocks F219 AC-1 and the F227 re-verification, which still need an actual sign-in run. Hardware history, which applies to 0.15.0 and NOT to this version: Harold updated a Galaxy S24+ and it was an UPGRADE, not a fresh install (0.14.1 -> 0.14.2 -> 0.15.0), which exercises the real tester path and confirms package identity and signing key held across two bumps. F191 confirmed on device -- Yahoo and iCloud selectable in Add Account. **Corrected 2026-09-14**: this row was cached at 0.14.2 / versionCode 2 for four days after 0.15.0 went live, while calling itself a cache of the live state. Production access is still gated on 12 testers x 14 CONTINUOUS days -- a TESTER-COUNT gate, not a version gate. 8 on the list, FOUR SHORT. |
 | **Dev worktree** (authoritative -- mirrors `pubspec.yaml`) | 0.15.2+5 | 2026-09-20 | Bumped at Sprint 69 PLAN APPROVAL (Phase 3.7.0b) per **F190**, so a tester can always tell a dev build from production. **PATCH is correct**: Sprint 69 shipped five fixes and no `feat` -- the one `feat` in `[Unreleased]` belongs to Sprint 68 and already shipped as 0.15.0. Build number +3 -> +4 because Play permanently consumes a versionCode once uploaded, and 3 went with the live 0.15.0. Two gates cover this row: `version_consistency_test` (every literal in lib/, windows/runner/ and scripts/ matches pubspec) and `dev_version_ahead_test` (dev strictly ahead of every Live row IN THIS FILE, and `version:` agrees with `msix_version`). That second gate is why a stale row here is a test defect rather than a documentation one. |
 
 ## msix_version convention (which worktree's value ships)
@@ -39,12 +39,22 @@ Release self-test 6/6 PASS (APP_ENV=prod, NATIVE_APP_ENV=prod, both suffixes emp
 marker, version matches 0.15.2). Publisher reads "Kimmey Consulting - Ohio", so the Submission 26
 rejection cause is absent.
 
-**Google Play: PUBLISHED 2026-09-20** (Harold, closed testing). Uploaded and rolled out by
-Harold; reported published on 2026-09-20. **Step 6 verification is still owed** -- published in
-the console is not the same as installable. What remains: the Closed testing track showing 0.15.2
-as latest, the opt-in link resolving, and the decisive check of installing on the S24+ and reading
-the version in Settings. Until that install happens, treat this row as CONSOLE-REPORTED, not
-device-verified.
+**Google Play: PUBLISHED 2026-09-20, DEVICE-VERIFIED 2026-09-21.** **Step 6 COMPLETE** -- the
+Galaxy S24+ Settings > General reads "Version 0.15.2", and a real testing session on that build
+confirmed F212, F220 and F221 all behaving correctly. One new defect found: F228 (the
+"could not be applied" footer contradicts the mailbox after a batch-level exception).
+
+Observed on the 0.15.2 build during a real testing session, 2026-09-20 22:21-22:26:
+
+- **F212 works**: "No rule" went 12 -> 10 -> 0, the emails were deleted, and the new block rules
+  were named on each row. This was the sprint's headline fix and it holds on a Play-signed build.
+- **F220 / F221 work**: a live manual scan progressed normally ("Scanning... 0 of 115"), with no
+  wedge and no stuck in-progress rows. Background scans completed and posted notifications.
+- **Per-scan Errors: 0.** The Scan History screen shows a cumulative **"Errors: 111"**, which is a
+  LIFETIME counter and not a current fault. Recorded because it reads alarming at a glance; do not
+  re-diagnose it as a defect.
+- **Version confirmation needed a purpose-taken screenshot**, because none of the 26 screenshots
+  from the session showed a version at phone width. That is now filed as F229.
 
 Build provenance, verified before upload:
 
