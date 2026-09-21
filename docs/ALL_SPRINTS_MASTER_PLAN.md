@@ -451,6 +451,45 @@ end). The emulator cannot test it because the Android OAuth client is bound to t
 SHA-1. What the emulator HAS now proven is that the redirect reaches the app, which was the failing
 step.
 
+**F228. The "could not be applied" footer contradicts the mailbox after a batch-level exception (~2-4h) Priority 12 (NEW, 2026-09-21 -- found on the 0.15.2 PLAY BUILD, Galaxy S24+)**
+- Phase: Bug Fix
+- Platform: All (the code is shared; observed on Android)
+- **Symptom**: the progress footer read `12 of 12 "No rule" emails addressed -- 12 could not be
+  applied to your mailbox. Check your connection and try again.` while, in the SAME session, the
+  results list showed all 12 emails deleted with their new rules named
+  (`Block_EntireDomain_troll8.com` etc.) and the per-action toast said
+  `Created rule to block entire domain "*.troll8.com" -- 1 removed, 0 "No rule" remaining`.
+  Three surfaces, two verdicts.
+- **Mechanism, read from source (not inferred from the screenshot)**:
+  `results_display_screen.dart:3328-3338` -- the outermost `catch` in the re-processing block
+  fails the WHOLE batch: `failCount = toDelete.length + toMoveSafe.length` and every attempted id
+  is passed to `_recordBatchFailures`. But the per-email rule creation had ALREADY succeeded and
+  already performed its own IMAP delete, which is why the mailbox and the toast agree with each
+  other and only the footer disagrees.
+- **The two counters are deliberately independent**, which is why they can diverge: the footer's
+  `failed` comes from `_reProcessFailedKeys` (IMAP outcome, line 3036) while `addressed`/`remaining`
+  come from `stats` (rule EVALUATION alone). F212 R-4 made them independent ON PURPOSE so a failed
+  IMAP action could never read as "addressed" -- see the comment at 3031-3035. **Do not fix this by
+  re-coupling them**; that reintroduces the exact defect F212 R-4 closed.
+- **Therefore the likely defect is the blast radius of the catch, not the counter.** An exception
+  raised after N emails have already been actioned marks all N as failed. Candidates: narrow the
+  catch to the operations that actually remain unattempted, or track per-email completion so the
+  handler only fails what it truly did not do.
+- **UNVERIFIED and needed first**: WHICH exception fired. The handler logs
+  `[F38] Re-processing failed: $e` -- get that line before designing the fix. It may be benign
+  (e.g. a disconnect during `finally`) rather than an action failure, which would change the remedy
+  entirely.
+- **Why it matters beyond cosmetics**: `isComplete` is `remaining == 0 && initial > 0 && failed == 0`,
+  so a stale failed-set means the green "All N addressed." state can never be reached, and the user
+  is told to retry work that already succeeded. Retrying is not harmless -- it re-attempts IMAP
+  actions on mail that is already gone.
+- **Does NOT reproduce the F212 defect it resembles.** F212's complaint (re-processing failing 100%
+  and lying about success) is FIXED on this build and was observed working: `No rule: 12` decremented
+  to `10` and then to `0`, the emails were deleted, and the rules were applied. This is a narrower,
+  newer reporting bug in the failure path.
+- Source: 0.15.2 Play closed-testing build on the Galaxy S24+, 2026-09-20 22:21-22:26. Screenshots
+  pulled over MTP; see `Screenshot_20260920_2225*.png`.
+
 **F226. WinWright scripts fail intermittently when run back-to-back in one sweep (~2-4h) Priority 14 (NEW, 2026-09-18 -- found during the Sprint 70 5.1.5 sweep)**
 - Phase: Developer Tooling
 - Platform: Windows Desktop (WinWright is Windows-only)
