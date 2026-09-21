@@ -451,6 +451,55 @@ end). The emulator cannot test it because the Android OAuth client is bound to t
 SHA-1. What the emulator HAS now proven is that the redirect reaches the app, which was the failing
 step.
 
+**F230. No-rule action sheet at phone width: text too small, and Skip overlays the sender (~3-4h) Priority 10 (NEW, 2026-09-21 -- Harold, on the 0.15.2 Play build)**
+- Phase: UX
+- Platform: **All, by Harold's explicit decision.** He has never seen either problem on Windows, but
+  chose to raise the sizes on BOTH platforms rather than branch: *"It would be OK if it was bigger
+  on Windows in order to match Android and not cause an unnecessary exception."* So this stays a
+  single shared change with **no ADR-0042 platform exception to declare** -- which is the cheaper
+  outcome, because an exception is a permanent maintenance burden and a font size is not worth one.
+- **Two distinct complaints, one screen** (`results_display_screen.dart`, the No-rule action sheet,
+  shown only under `_filter == EmailActionType.none`):
+
+  **(a) Text too small.** Verified in source, not guessed:
+    - subtitle `folder - subject - rule`: `fontSize: 12, color: Colors.grey[600]` (line ~1924)
+    - date/time + domain row: `fontSize: 11, color: Colors.grey.shade600` (line ~1941, ~1953)
+    - sender, for contrast: `fontSize: 14, bold`
+  Harold's direction: raise them, and accept the same increase on Windows.
+
+  **(b) Skip overlays/truncates the sender.** The sender sits in an `Expanded` with
+  `TextOverflow.ellipsis` in the SAME `Row` as the Skip button (line ~1876-1913), so Skip directly
+  consumes sender width. At 411px this renders `kimmeyharold@help.ramirezo...`; on Windows at
+  ~993px the same code shows the full address with room to spare. **It is a WIDTH problem, not a
+  font problem** -- worth stating because the two complaints arrived together and have different
+  causes.
+  Harold's proposal, and it is a good one: move Skip from the TOP right to the BOTTOM right of the
+  same section -- aligned with the date/time + domain row, where the screenshot shows clear empty
+  space.
+
+- **Design constraint on the Skip move.** The date/time + domain row is a plain `Row` whose domain
+  `Text` has NO `Expanded`. Dropping Skip into it unbounded moves the overflow rather than fixing
+  it: a long domain plus Skip would overflow THAT row instead of ellipsizing. Bound the domain text
+  and re-test at 411px. This is the same failure shape as the F172 AppBar overflow (~81px at 411px),
+  which is the precedent for taking it seriously.
+- **Keep Skip's behaviour identical.** It reuses `_quickActionThenAdvance` with a no-op action and a
+  covers-nothing predicate specifically so "next unaddressed item" means exactly what it means for
+  every other button on the sheet (F136, Sprint 52). Move the widget; do NOT reimplement it.
+- **GATE WARNING, non-obvious**: `test/policy/text_contrast_test.dart` enforces WCAG contrast with
+  thresholds that DEPEND ON FONT SIZE -- larger text is held to a lower ratio. Raising a size can
+  push text out of the large-text exemption into the stricter requirement, so **a font bump can turn
+  a CONTRAST gate red even though no colour changed**. `grey.shade600` on a light surface is already
+  near the boundary. Run that gate as part of the change, and fix by darkening the grey rather than
+  by reverting the size.
+- **Also re-run**: `results_display_popup_width_test.dart` (F151e caps the popup width),
+  `minimum_window_size_sweep_test.dart`, and the 411px width tests.
+- **Open question for implementation**: whether to keep hardcoded sizes or move to theme text styles
+  (`bodySmall`/`bodyMedium`), which would additionally honour the OS font-size accessibility setting.
+  Harold has not been asked to choose; raise it at planning.
+- Source: Harold, 2026-09-21, screenshots `Screenshot_20260921_133314.png` and `_133320.png`
+  (Android 0.15.2) against a Windows capture of the same sheet. Found in the same session as
+  [[F228]] and [[F229]].
+
 **F229. Make the build identifiable on phone-width screens and in exports (~3-5h) Priority 12 (NEW, 2026-09-21 -- Harold, during the 0.15.2 Play verification)**
 - Phase: UX / Supportability
 - Platform: All -- the divergence is by WIDTH, not by OS, so it hits Android phones and a narrow
