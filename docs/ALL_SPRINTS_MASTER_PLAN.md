@@ -451,6 +451,42 @@ end). The emulator cannot test it because the Android OAuth client is bound to t
 SHA-1. What the emulator HAS now proven is that the redirect reaches the app, which was the failing
 step.
 
+**F231. Per-action results vanish after 3 seconds and are recorded nowhere (~2-4h) Priority 10 (NEW, 2026-09-21 -- Harold: "it went past faster than I could see it")**
+- Phase: UX / Supportability
+- Platform: All (shared code)
+- **Symptom, in Harold's words while working items in Review No Rule Items on the 0.15.2 Store
+  build**: *"I did a few and it went past faster than I could see it."* He then had to navigate to
+  View Scan History to find out what had happened.
+- **Verified in source**: every result SnackBar on `results_display_screen.dart` uses
+  `duration: const Duration(seconds: 3)` -- lines ~3369, ~3433, ~3476, ~3510, ~3552. Three seconds
+  for a message like `Created rule to block entire domain "*.troll8.com" -- 1 removed, 0 "No rule"
+  remaining`, which is a sentence the user is expected to READ and ACT on, not an acknowledgement.
+- **The compounding problem, and the reason this is filed as supportability rather than polish: the
+  toast is the ONLY place that per-action outcome exists.** It is not written to any log
+  ([[F228]] established that this screen's `Logger()` is console-only with no file sink), it is not
+  in the scan-results CSV, and the footer shows only aggregate counts. So a missed toast means the
+  information is **permanently gone** -- for the user AND for anyone diagnosing a report later.
+  Working quickly, which is the normal way to process a No-rule queue, guarantees missing them.
+- **Design directions, in rough order of value**:
+  (a) **Persist the outcomes.** A per-action record -- in the scan history detail, or a session
+      activity list on the screen -- is the fix that survives a missed toast. This is the one that
+      also helps future defect reports.
+  (b) Lengthen the duration and/or make it dismiss-on-tap rather than timeout-only. Cheapest, and
+      partial: it helps a user watching, not a user working fast.
+  (c) Coalesce rapid actions into one summary toast instead of N transient ones, so a burst of
+      quick actions produces something readable.
+- **Do NOT just raise 3s to 8s and call it done.** That leaves the permanent-loss problem
+  untouched, and a long-lived SnackBar on this screen will cover the bottom of the list and the
+  `Back to Scan History` control -- the popup already occupies much of the surface. Whatever is
+  chosen must be checked against the 411px layout, where the space is tightest ([[F230]] is the
+  same screen).
+- **Related but distinct from [[F230]]**: that card is about text size and Skip placement on the
+  action sheet. This one is about the lifetime and durability of the result message. They will
+  likely be worked together since they touch the same widget tree.
+- Source: Harold, 2026-09-21, working the Windows 0.15.2 Store build. Screenshots show the footer
+  progressing correctly (`3 of 6` then `5 of 6`), which is what makes the missing per-action detail
+  the remaining gap.
+
 **F230. No-rule action sheet at phone width: text too small, and Skip overlays the sender (~3-4h) Priority 10 (NEW, 2026-09-21 -- Harold, on the 0.15.2 Play build)**
 - Phase: UX
 - Platform: **All, by Harold's explicit decision.** He has never seen either problem on Windows, but
@@ -583,6 +619,17 @@ step.
   so a stale failed-set means the green "All N addressed." state can never be reached, and the user
   is told to retry work that already succeeded. Retrying is not harmless -- it re-attempts IMAP
   actions on mail that is already gone.
+- **THE HAPPY PATH IS CONFIRMED CORRECT ON WINDOWS (Harold, 2026-09-21, 0.15.2 Store build).**
+  Working items through Review No Rule Items, the footer read `3 of 6 "No rule" emails addressed --
+  3 remaining` and then `5 of 6 ... -- 1 remaining`, the toast agreed (`Added
+  "noreply@thequantuminsider.com" to Safe Senders -- 1 "No rule" remaining`), and the list shrank in
+  step. **No "could not be applied" appeared.** So the counters are NOT generally broken: they
+  agree whenever no exception fires.
+  **This narrows the card significantly** -- the defect lives ONLY in the
+  `catch` path at `results_display_screen.dart:3328`, and reproducing it requires MAKING that catch
+  fire (e.g. kill the network or invalidate credentials mid-batch), not merely using the feature.
+  A reproduction recipe is therefore the first implementation task, and it is cheap: Windows is a
+  valid host for it, since the counter logic is shared.
 - **Does NOT reproduce the F212 defect it resembles.** F212's complaint (re-processing failing 100%
   and lying about success) is FIXED on this build and was observed working: `No rule: 12` decremented
   to `10` and then to `0`, the emails were deleted, and the rules were applied. This is a narrower,
