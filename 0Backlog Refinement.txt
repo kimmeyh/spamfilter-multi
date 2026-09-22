@@ -1,12 +1,81 @@
 ***BELOW IS NOT FOR CLAUDE CODE, GITHUB COPILOT, CHATGPT OR COPILOT PULL REQUEST (PR) REVIEW USE***
 Sprint plan approval:
-Sprint plan approved as recommended, proceed with execution. 
+Sprint plan approved as amended (with any comments I provided), proceed with execution. 
 All Sprint tasks and sub-tasks are approved.  
 Do not stop between tasks as they are all approved, please continue to complete all tasks and without addition approvals until Manual Validation, providing your recommendation for Manual Validation steps.
 Do not stop to ask questions unless meeting the criteria in \docs\SPRINT_STOPPING_CRITERIA.md
 If questions must be asked, ask as late as possible - do everything that can be done (all tasks and parts of takss, without the answer to the question(s), then ask the question(s)
 ---------------------------------------------------------------------------------------------------------
 Sprint 7n Scope should include the below items. Please complete sprint planning (/docs/sprint_planning.md) for the below items and present for approval.  Note that everything needs to take into account both the Windows App and the Android app and ADR stating that everything should be functionally and UI the same unless it cannot be - and where it cannot be it should be implemented as a platform exception for what is needed -- this applies to all backend code, frontend code, data, architecture, development, security, testing, deployment.
+
+---------------------------------------------------------------------------------------------------------
+Sprint 72 Scope should include the below items. Please complete sprint planning (/docs/sprint_planning.md) for the below items and present for approval.  Note that everything needs to take into account both the Windows App and the Android app and ADR stating that everything should be functionally and UI the same unless it cannot be - and where it cannot be it should be implemented as a platform exception for what is needed -- this applies to all backend code, frontend code, data, architecture, development, security, testing, deployment.
+F233, F232, F228, F230, F231
+F217, F219 AC-1
+
+  A — "Fix the screen" (~15-22h): F233, F232, F228, F230, F231. One file, one root cause, six of your reports closed, and it lands the diagnostic tooling
+  that makes future reports answerable.
+
+  B — "Testers first" (~12-20h): F233, F232, F217, F219 AC-1. Prioritises the closed-test path and the 12-tester gate over polish.
+
+
+Phase 8 Step 5: Backlog Refinement Pass 2 — Scope Selection
+
+  Steps 1-4 are complete: PRs merged, 0.15.2 live on both stores. Step 5 is scope selection, and it is yours to make.
+
+  One thing to decide first, because it affects sequencing.
+
+  Uncommitted work: 20 commits on this branch, not in develop
+
+  All of today's documentation — the Gate 1c hook repair plus six backlog cards. feature/20260919_Sprint_71 has never been PR'd.
+
+  1. PR it to develop now, then select scope
+  2. Select scope first, keep accumulating on this branch, PR later
+  3. Something else
+
+  My recommendation is 1 — the hook fix is a real defect repair that should not sit unmerged, and the branch is documentation-only so the PR is low risk.
+
+  Candidates at a glance
+
+  - F232. Rules created from a HISTORICAL scan view never act on the mailbox, silently (~4-6h) Priority 2
+  - F233. A pullable diagnostic log for Android, plus fix the header-only CSV export (~3-5h) Priority 4
+  - F228. A green success toast reports rule creation while the IMAP action has already failed (~3-5h) Priority 6
+  - F217. Android background scans do not run while backgrounded or locked (~4-8h) Priority 6
+  - F224. Let the user CANCEL a running scan from where they actually are (~4-8h) Priority 6
+  - F202. Per-provider folder defaults (~6-10h, fully analyzed + planned + tested) Priority 10
+  - F230. No-rule action sheet at phone width: text too small, and Skip overlays the sender (~3-4h) Priority 10
+  - F231. Per-action results vanish after 3 seconds and are recorded nowhere (~2-4h) Priority 10
+  - F229. Make the build identifiable on phone-width screens and in exports (~3-5h) Priority 12
+  - F206. Diagnostic export as a PLATFORM CAPABILITY (~5-8h) Priority 14
+  - F225. verify-closeout-complete hook fails its OWN allow-case (~1-2h) Priority 14
+  - F226. WinWright scripts fail intermittently when run back-to-back in one sweep (~2-4h) Priority 14
+  - F205. Closed-test error rate: 53 errors in 3,833 scanned (~1-2h investigation) Priority 18
+  - F207. A manual scan is refused while a background scan is "in progress" (~1-2h) Priority 20
+  - F222. Scan results are not ordered by received date (~1-3h) Priority 22
+
+  Plus F219 AC-1 (end-to-end Google Sign-In) and F227 re-verification, both carry-ins now unblocked by the Play build, and both needing your hands.
+
+  Lower-priority items (F204, F213, F214, F215, F216, F192) and 22 HOLD items are in the master plan; I have left them out of the slate since nothing
+  changed for them.
+
+  Observations for scope
+
+  Today's six cards cluster into one screen and one root cause. F232, F233's export half, and F228 all stem from the same session-state versus
+  historical-state split in results_display_screen.dart. F230 and F231 touch the same widget tree. A sprint scoped around that file would fix six
+  reported symptoms with substantial shared context.
+
+  F233 is a prerequisite, not a peer. F232's remaining mechanism and F228's exception both need the log. Scheduling them without F233 means starting
+  blind.
+
+  One dependency worth naming: F230 (move Skip) and F231 (the detail card covering the toast) both change the same geometry. Doing them separately means
+  solving that layout twice.
+
+  Two candidate compositions
+
+
+  I lean A, because five of the six cards came from your testing in one session, and the sixth is the tooling that made them diagnosable.
+
+
 
 ---------------------------------------------------------------------------------------------------------
 Sprint 71 Scope should include the below items. Please complete sprint planning (/docs/sprint_planning.md) for the below items and present for approval.  Note that everything needs to take into account both the Windows App and the Android app and ADR stating that everything should be functionally and UI the same unless it cannot be - and where it cannot be it should be implemented as a platform exception for what is needed -- this applies to all backend code, frontend code, data, architecture, development, security, testing, deployment.

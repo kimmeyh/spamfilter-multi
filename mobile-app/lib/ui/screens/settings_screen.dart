@@ -17,6 +17,7 @@ import '../../core/services/background_scan_windows_worker.dart';
 import '../../core/services/background_scan_scheduler.dart';
 import '../../core/storage/database_helper.dart';
 import '../../core/storage/settings_store.dart';
+import '../../core/services/diagnostic_logger.dart';
 import '../../core/storage/background_scan_log_store.dart';
 import '../../core/services/background_deferral_ingest.dart' show kDeferredStatus;
 import '../../core/storage/unmatched_email_store.dart'
@@ -128,7 +129,20 @@ class _SettingsScreenState extends State<SettingsScreen> with SingleTickerProvid
   int _unmatchedRetentionDays = SettingsStore.defaultUnmatchedRetentionDays;
   // SEC-8 (Sprint 33): certificate pinning for Google OAuth
   bool _certificatePinningEnabled =
+
+  /// F233 (Sprint 72): diagnostic log state.
+  ///
+  /// **Manual validation caught that this UI was missing entirely.** The
+  /// logger, the settings keys, the rotation and the delete function all
+  /// shipped -- with no way to turn any of it on, so the log could never write.
+  /// The unit tests passed because they set the flag through the test seam
+  /// rather than through the UI: a symbol existing is not the same as a feature
+  /// working, which is exactly what the repo's source-gate rule warns about.
       SettingsStore.defaultCertificatePinningEnabled;
+
+  bool _diagnosticLogEnabled = SettingsStore.defaultDiagnosticLogEnabled;
+  bool _diagnosticLogKeepAll = SettingsStore.defaultDiagnosticLogKeepAll;
+  int _diagnosticLogBytes = 0;
   // SEC-11 (Sprint 33): encrypted database feature flag (infrastructure only)
   bool _encryptDatabase = SettingsStore.defaultEncryptDatabase;
 
@@ -415,6 +429,9 @@ class _SettingsScreenState extends State<SettingsScreen> with SingleTickerProvid
       _unmatchedRetentionDays = await _settingsStore.getUnmatchedRetentionDays();
       _certificatePinningEnabled =
           await _settingsStore.getCertificatePinningEnabled();
+      _diagnosticLogEnabled = await _settingsStore.getDiagnosticLogEnabled();
+      _diagnosticLogKeepAll = await _settingsStore.getDiagnosticLogKeepAll();
+      _diagnosticLogBytes = await DiagnosticLogger.totalBytes();
       _encryptDatabase = await _settingsStore.getEncryptDatabase();
 
       // Everything below is ACCOUNT-SCOPED. With no account resolved yet, stop
@@ -756,6 +773,91 @@ class _SettingsScreenState extends State<SettingsScreen> with SingleTickerProvid
         ),
         const SizedBox(height: 12),
         _buildUnmatchedRetentionSelector(),
+        const SizedBox(height: 12),
+        // F233 (Sprint 72): the diagnostic log controls.
+        SwitchListTile(
+          key: const Key('diagnostic_log_toggle'),
+          contentPadding: EdgeInsets.zero,
+          title: const Text('Write a diagnostic log'),
+          subtitle: const Text(
+            'Records why an action on your mailbox failed, so a problem can be '
+            'investigated after the fact. Off by default. No message content '
+            'or passwords are recorded, and email addresses are shortened.',
+          ),
+          value: _diagnosticLogEnabled,
+          onChanged: (value) async {
+            await _settingsStore.setDiagnosticLogEnabled(value);
+            // The logger caches this; without the reset it would keep using
+            // the old value for the rest of the session.
+            DiagnosticLogger.debugSetEnabled(null);
+            final bytes = await DiagnosticLogger.totalBytes();
+            if (mounted) {
+              setState(() {
+                _diagnosticLogEnabled = value;
+                _diagnosticLogBytes = bytes;
+              });
+            }
+          },
+        ),
+        if (_diagnosticLogEnabled) ...[
+          SwitchListTile(
+            key: const Key('diagnostic_log_keep_all'),
+            contentPadding: EdgeInsets.zero,
+            title: const Text('Keep every log file'),
+            subtitle: const Text(
+              'Keeps one file per day instead of a single rolling file. Uses '
+              'more space; delete them below when you no longer need them.',
+            ),
+            value: _diagnosticLogKeepAll,
+            onChanged: (value) async {
+              await _settingsStore.setDiagnosticLogKeepAll(value);
+              if (mounted) {
+                setState(() => _diagnosticLogKeepAll = value);
+              }
+            },
+          ),
+          // Harold made deletability a CONDITION of offering retention:
+          // "if the user can easily get to them to delete the files". Showing
+          // the size next to the action is the honest half -- the user can see
+          // what they are carrying before deciding.
+          Padding(
+            padding: const EdgeInsets.only(top: 4, bottom: 4),
+            child: Row(
+              children: [
+                Expanded(
+                  child: Text(
+                    _diagnosticLogBytes == 0
+                        ? 'No diagnostic logs stored.'
+                        : 'Diagnostic logs: '
+                            '${(_diagnosticLogBytes / 1024).toStringAsFixed(1)} KB',
+                    style: Theme.of(context).textTheme.bodySmall,
+                  ),
+                ),
+                TextButton.icon(
+                  key: const Key('diagnostic_log_delete'),
+                  icon: const Icon(Icons.delete_outline, size: 18),
+                  label: const Text('Delete logs'),
+                  onPressed: _diagnosticLogBytes == 0
+                      ? null
+                      : () async {
+                          final removed = await DiagnosticLogger.deleteAll();
+                          final bytes = await DiagnosticLogger.totalBytes();
+                          if (!mounted) return;
+                          setState(() => _diagnosticLogBytes = bytes);
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            SnackBar(
+                              content: Text(removed == 1
+                                  ? 'Deleted 1 diagnostic log file.'
+                                  : 'Deleted $removed diagnostic log files.'),
+                              behavior: SnackBarBehavior.floating,
+                            ),
+                          );
+                        },
+                ),
+              ],
+            ),
+          ),
+        ],
         const SizedBox(height: 12),
         SwitchListTile(
           contentPadding: EdgeInsets.zero,

@@ -542,6 +542,40 @@ step.
 - Source: Harold's offer, 2026-09-21. Device facts measured the same day over MTP. Related:
   [[F232]], [[F228]], [[F229]], [[F231]].
 
+**F234. Read-only as a PREVIEW mode -- record what WOULD have been deleted (~4-6h) Priority 8 (NEW, 2026-09-22 -- Harold, during Sprint 72 manual validation)**
+- Phase: UX / Core
+- Platform: All (shared logic; especially valuable on Windows, which is configured read-only)
+- **Harold's idea, verbatim**: *"I am thinking that if Manual > Scan mode is readonly then add the
+  rule, but don't delete the email, but add it to 'would have been deleted'."*
+- **Today** a read-only account says the rule was saved and the mailbox was not changed (F228/F232,
+  Sprint 72). That is honest but it throws away the interesting half: WHICH emails the new rule
+  matched. The user has to enable live actions to find out, which is exactly the wrong order --
+  they would be finding out by deleting.
+- **The proposal turns read-only into a safe preview.** A user could add a broad rule, see it would
+  have matched 340 emails across three folders, and decide that is too broad BEFORE anything is
+  deleted. Read-only stops being a restriction and becomes a rehearsal.
+- **This is genuinely new capability, not a fix.** Filed rather than folded into Sprint 72 mid
+  validation.
+- **Design notes**:
+  - The data already exists at the decision point: `_reProcessAffectedEmails` builds `toDelete` and
+    `toMoveSafe` BEFORE the mode check. Today the read-only path returns before using them. A
+    preview would record those lists instead of discarding them.
+  - Surface it where the user already looks: the session activity list added by F231 is the natural
+    home, or a "would have been actioned" count on the results footer.
+  - **Must never be mistakable for a real action.** Wording and colour have to make "would have"
+    unambiguous -- the whole point of Sprint 72's F228 was that a message implying a mailbox change
+    that did not happen is a defect.
+  - Consider persisting it, so a preview survives leaving the screen ([[F231]] made exactly this
+    argument about transient outcomes).
+- **Scope question for Harold at planning**: preview for BLOCK rules only, or safe-sender moves too?
+  A safe-sender preview is the same mechanism but a different message.
+- **Confirmed decided in Sprint 72 and NOT part of this card**: the MANUAL mode alone governs a
+  foreground action from the results screen (`isBackground: false`). Background mode answers a
+  different question -- what may run unattended -- and letting it govern a click would be one
+  setting answering a question it was not asked. Harold validated this on Windows 2026-09-22.
+- Source: Harold, 2026-09-22, Sprint 72 manual validation step A. Related: [[F232]], [[F228]],
+  [[F231]].
+
 **F232. Rules created from a HISTORICAL scan view never act on the mailbox, silently (~4-6h) Priority 2 (NEW, 2026-09-21 -- Harold; CONFIRMED IN SOURCE, and the code already documents the cause)**
 - Phase: Bug Fix
 - Platform: All (shared code)

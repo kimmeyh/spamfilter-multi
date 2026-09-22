@@ -49,5 +49,6 @@
     "python.terminal.activateEnvironment": true,
     // Testing configuration
     "python.testing.pytestEnabled": true,
-    "python.testing.cwd": "${workspaceFolder}"
+    "python.testing.cwd": "${workspaceFolder}",
+    "cmake.sourceDirectory": "D:/Data/Harold/github/spamfilter-multi/mobile-app/windows"
 }
