@@ -494,21 +494,44 @@ step.
   3. **A Settings toggle, default OFF**, next to the existing CSV-export setting: "Write diagnostic
      log". Harold keeps it ON. Must be honest about cost (file growth) and must never log message
      bodies or credentials -- **use `Redact.email(...)`, which `LiveScanLogger` already does**.
-  4. **Log rotation or a size cap.** A permanently-on log on a phone needs one; `LiveScanLogger`
+  4. **"Keep all log files" flag -- Harold's request, 2026-09-21**: *"We could add a flag to allow
+     saving all log files (if the user can easily get to them to delete the files)."* Two halves,
+     and **the parenthetical is a hard requirement, not an aside**: retention is only safe if the
+     user can find and clear the files.
+     - **Retention flag** (default OFF, Harold ON): keep per-run log files instead of appending to
+       one, named `diag_v<version>_<iso-date>.log` so a run is identifiable.
+     - **Make them reachable and deletable.** The existing `CSV Export Directory` setting already
+       proves the pattern works -- it writes to a user-chosen folder (Harold's is Documents) and I
+       pulled those files over MTP without trouble, whereas app-private storage is only reachable
+       because this particular Samsung exposes it. **So default the diagnostic log to the SAME
+       user-chosen directory** rather than app-private storage: it is OEM-independent, visible in
+       the phone's own Files app, and deletable without the app.
+     - **Give Settings a "Delete diagnostic logs" action** with a total size shown next to it, so
+       the user is never forced to go hunting in a file manager. Deleting from inside the app is
+       the honest answer to "if the user can easily get to them".
+  5. **Log rotation or a size cap.** A permanently-on log on a phone needs one; `LiveScanLogger`
      appends without bound today.
-  5. **Add the app version and build number to the log header and to the CSV** -- see [[F229]],
+  6. **Add the app version and build number to the log header and to the CSV** -- see [[F229]],
      which filed exactly this for exports. A diagnostic file that cannot name its build is weak
      evidence.
 
-- **SEPARATE DEFECT FOUND WHILE INVESTIGATING THIS -- the CSV export writes header-only files.**
-  Of five exports pulled off the phone, **three are exactly 108 bytes: the header row and ZERO data
-  rows** (`...2026-09-08T22-46-20`, `...2026-09-11T23-47-21`, `...2026-09-21T01-15-34`). Two have
-  real rows (5 and 3). `exportResultsToCSV()`
-  (`email_scan_provider.dart:914`) iterates `_results`, so an empty file means `_results` was empty
-  at export time -- plausibly exporting from a HISTORICAL view, where the rows live in
-  `_historicalResults` instead. **That is the same session-state-versus-historical-state split that
-  causes F232**, which makes it a useful second probe of the same root area. The export reports
-  success regardless, so the user gets a file they believe holds their scan.
+- **SEPARATE DEFECT, NOW CONFIRMED WITH ITS CAUSE -- exporting from a HISTORICAL view always
+  writes a header-only CSV.** Of five exports pulled off the phone, **three are exactly 108 bytes:
+  the header row and ZERO data rows** (`...2026-09-08T22-46-20`, `...2026-09-11T23-47-21`,
+  `...2026-09-21T01-15-34`); two have real rows (5 and 3).
+  **Harold, 2026-09-21: "The export may only be working if requested."** Correct, and that was the
+  key to it -- the export is MANUAL ONLY, fired by the download `IconButton` at
+  `results_display_screen.dart:728-732`, and it calls
+  `scanProvider.exportResultsToCSV()` (`:363`), which iterates the PROVIDER's `_results`
+  (`email_scan_provider.dart:914`).
+  **`_exportResults` never consults `_historicalResults`** -- while every DISPLAY path does
+  (`:595`, `:598`, `:2566`, each choosing `_historicalResults` when `widget.historicalScanId !=
+  null`). So tapping Export while viewing a historical scan reads an empty provider and writes a
+  header with no rows, and reports success. **Not a hypothesis: the export path is simply missing
+  the historical branch that the rest of the screen has.**
+  **Same root split as [[F232]]** -- session state versus historical state -- which is why the two
+  should be fixed together. Fix shape: pass the same `allResults` selection the display uses, or
+  give the provider an explicit rows argument rather than reading its own field.
 - **This defect is what makes the CSV route insufficient on its own**: Harold offered to send CSVs,
   but the CSV silently omits everything on the very screen the open defects live on. Fix the export
   AND add the log.
