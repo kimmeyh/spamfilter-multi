@@ -27,6 +27,7 @@ Format: `- **type**: Description (Issue #N)` where type is feat|fix|chore|docs
 ## [Unreleased]
 
 ### 2026-09-22 (Sprint 72)
+- **fix**: the app no longer reports success when your mail server refused the change. Adding a rule used to show a green confirmation even when none of the affected mail could be filed; it now says how many could not be applied, and stays on screen longer so you can read it. (Issue #423)
 - **fix**: adding a rule while reviewing a saved scan now acts on your mailbox. Before, it looked like it worked -- the rule was saved and the emails disappeared from the list -- while nothing happened on the mail server, and the next scan deleted them instead. If the account is set to read-only the app now says so rather than doing nothing quietly. (Issue #422)
 - **fix**: exporting scan results while viewing a saved scan now writes the results. It previously wrote a file containing only the column headings and reported success, so an export taken from Scan History looked fine and was empty. (Issue #421)
 - **feat**: an optional diagnostic log can be turned on in Settings to record why an action on your mailbox failed, and deleted from the same screen with its size shown. It is off by default and records no message content. (Issue #421)

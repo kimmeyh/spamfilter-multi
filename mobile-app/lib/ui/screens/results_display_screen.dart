@@ -79,6 +79,55 @@ enum SpecialFilter {
   error, // Only emails with errors
 }
 
+/// F228 (Sprint 72): what a re-process attempt actually did.
+///
+/// **Why this type exists.** The per-action toast was hardcoded
+/// `backgroundColor: Colors.green` and fired AFTER `_reProcessAffectedEmails()`
+/// -- so the IMAP failure had already happened and the count was already known,
+/// and the code did not use it. Harold reproduced it on demand in airplane
+/// mode: a GREEN toast per item ("...rule to block entire domain ... -- 9 No
+/// rule remaining") while the batch summary for the SAME actions was ORANGE
+/// ("Re-processed 0 of 6 (6 failed)"). Three surfaces, two verdicts.
+///
+/// Returning the counts is what lets the caller tell the truth. The method
+/// used to return void and report only through its own snackbar.
+class ReProcessOutcome {
+  const ReProcessOutcome({
+    required this.attempted,
+    required this.succeeded,
+    required this.failed,
+    this.skippedReadOnly = false,
+  });
+
+  /// Nothing needed doing -- not a failure, and not a success worth claiming.
+  const ReProcessOutcome.nothingToDo()
+      : attempted = 0,
+        succeeded = 0,
+        failed = 0,
+        skippedReadOnly = false;
+
+  /// The account is configured read-only; the mailbox was deliberately not
+  /// touched. Distinct from a failure, and the user is told.
+  const ReProcessOutcome.readOnly()
+      : attempted = 0,
+        succeeded = 0,
+        failed = 0,
+        skippedReadOnly = true;
+
+  final int attempted;
+  final int succeeded;
+  final int failed;
+  final bool skippedReadOnly;
+
+  /// True only when work was attempted and none of it failed.
+  ///
+  /// Deliberately NOT true for "nothing to do": a toast that says the mailbox
+  /// was changed when no action ran is the same class of lie this card closes.
+  bool get allSucceeded => attempted > 0 && failed == 0;
+
+  bool get anyFailed => failed > 0;
+}
+
 class _ResultsDisplayScreenState extends State<ResultsDisplayScreen> {
   // Filter state: null means show all, otherwise filter by this action type or special filter
   EmailActionType? _filter;
@@ -3124,6 +3173,68 @@ class _ResultsDisplayScreenState extends State<ResultsDisplayScreen> {
   /// Runs in the background without blocking the UI. Shows a non-blocking
   /// banner during processing and updates the results list in real-time.
   /// Emails already re-processed (tracked in [_reProcessedEmailKeys]) are skipped.
+  /// F228 (Sprint 72): show the result of a rule/safe-sender action HONESTLY.
+  ///
+  /// **The defect this replaces.** Both call sites hardcoded their colour
+  /// (`Colors.green` for a safe sender, `Colors.blue` for a block rule) and ran
+  /// AFTER `await _reProcessAffectedEmails()`, so the IMAP outcome was already
+  /// known and simply not consulted. Harold reproduced it on demand with
+  /// airplane mode on: a success-coloured toast per item while the batch
+  /// summary for the same actions was orange, `Re-processed 0 of 6 (6 failed)`.
+  ///
+  /// **What stays true and must not be "fixed"**: the rule itself IS created
+  /// offline, and that is correct -- rules are local state and the user's
+  /// intent is worth recording without a connection. `stats.remaining`
+  /// legitimately drops because the rule now matches. The bug was the CLAIM
+  /// about the mailbox, so only the claim changes here.
+  ///
+  /// [successColor] preserves each site's existing success colour, so a
+  /// working action looks exactly as it did before.
+  ///
+  /// The batch summary inside `_reProcessAffectedEmails` already did this
+  /// correctly (`failCount == 0 ? green : orange`) and is deliberately left
+  /// alone -- it is the model this follows, not something to unify away.
+  void _showActionOutcome({
+    required String baseMessage,
+    required String progressSuffix,
+    required ReProcessOutcome outcome,
+    required Color successColor,
+  }) {
+    if (!mounted) return;
+
+    final String message;
+    final Color background;
+
+    if (outcome.skippedReadOnly) {
+      message = '$baseMessage -- saved. This account is read-only, so your '
+          'mailbox was not changed.';
+      background = Colors.blueGrey;
+    } else if (outcome.anyFailed) {
+      // Name the number. "Something went wrong" is what sent Harold to Scan
+      // History to work out what had actually happened.
+      message = '$baseMessage -- saved, but ${outcome.failed} of '
+          '${outcome.attempted} could not be applied to your mailbox.';
+      background = Colors.orange;
+    } else {
+      message = '$baseMessage$progressSuffix';
+      background = successColor;
+    }
+
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(message),
+        backgroundColor: background,
+        // F231 (Sprint 72): a failure needs longer than a success. Harold
+        // measured ~1s of readable time on the old 3s value, because the
+        // duration includes animation and each new action REPLACES the
+        // current SnackBar rather than queueing.
+        duration: Duration(seconds: outcome.anyFailed ? 8 : 5),
+        behavior: SnackBarBehavior.floating,
+        margin: const EdgeInsets.only(bottom: 80, left: 16, right: 16),
+      ),
+    );
+  }
+
   /// F232 (Sprint 72): the scan mode that should govern a USER-INITIATED
   /// action from this screen.
   ///
@@ -3163,7 +3274,7 @@ class _ResultsDisplayScreenState extends State<ResultsDisplayScreen> {
     }
   }
 
-  Future<void> _reProcessAffectedEmails() async {
+  Future<ReProcessOutcome> _reProcessAffectedEmails() async {
     final scanProvider = Provider.of<EmailScanProvider>(context, listen: false);
     final logger = Logger();
 
@@ -3219,7 +3330,7 @@ class _ResultsDisplayScreenState extends State<ResultsDisplayScreen> {
           ),
         );
       }
-      return;
+      return const ReProcessOutcome.readOnly();
     }
     final scanMode = effectiveMode;
 
@@ -3265,7 +3376,7 @@ class _ResultsDisplayScreenState extends State<ResultsDisplayScreen> {
 
     if (toDelete.isEmpty && toMoveSafe.isEmpty) {
       logger.i('[F38] No emails need IMAP re-processing');
-      return;
+      return const ReProcessOutcome.nothingToDo();
     }
 
     // Immediately hide affected emails from the list (instant visual feedback)
@@ -3497,6 +3608,16 @@ class _ResultsDisplayScreenState extends State<ResultsDisplayScreen> {
         ),
       );
     }
+
+    // F228 (Sprint 72): hand the outcome back so the CALLER can tell the truth.
+    // This method used to return void and report only through the snackbar
+    // above, which is why the per-action toast could be hardcoded green while
+    // this same run knew it had failed.
+    return ReProcessOutcome(
+      attempted: total,
+      succeeded: successCount,
+      failed: failCount,
+    );
   }
 
   /// Add sender to safe senders list
@@ -3583,7 +3704,7 @@ class _ResultsDisplayScreenState extends State<ResultsDisplayScreen> {
     await _updateOldestNoRuleCursorsFromResults();
 
     // F38: Execute IMAP actions for affected emails
-    await _reProcessAffectedEmails();
+    final reProcessOutcome = await _reProcessAffectedEmails();
 
     if (mounted) {
       setState(() {}); // Refresh list to show updated rule assignment
@@ -3594,14 +3715,11 @@ class _ResultsDisplayScreenState extends State<ResultsDisplayScreen> {
       final progressSuffix = removedNow > 0
           ? ' -- $removedNow removed, $remaining "No rule" remaining'
           : (remaining > 0 ? ' -- $remaining "No rule" remaining' : '');
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text('${result.displayMessage}$progressSuffix'),
-          backgroundColor: Colors.green,
-          duration: const Duration(seconds: 3),
-          behavior: SnackBarBehavior.floating,
-          margin: const EdgeInsets.only(bottom: 80, left: 16, right: 16),
-        ),
+      _showActionOutcome(
+        baseMessage: result.displayMessage,
+        progressSuffix: progressSuffix,
+        outcome: reProcessOutcome,
+        successColor: Colors.green,
       );
     }
   }
@@ -3659,7 +3777,7 @@ class _ResultsDisplayScreenState extends State<ResultsDisplayScreen> {
     await _updateOldestNoRuleCursorsFromResults();
 
     // F38: Execute IMAP actions for affected emails
-    await _reProcessAffectedEmails();
+    final reProcessOutcome = await _reProcessAffectedEmails();
 
     if (mounted) {
       setState(() {}); // Refresh list to show updated rule assignment
@@ -3670,14 +3788,11 @@ class _ResultsDisplayScreenState extends State<ResultsDisplayScreen> {
       final progressSuffix = removedNow > 0
           ? ' -- $removedNow removed, $remaining "No rule" remaining'
           : (remaining > 0 ? ' -- $remaining "No rule" remaining' : '');
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text('${result.displayMessage}$progressSuffix'),
-          backgroundColor: Colors.blue,
-          duration: const Duration(seconds: 3),
-          behavior: SnackBarBehavior.floating,
-          margin: const EdgeInsets.only(bottom: 80, left: 16, right: 16),
-        ),
+      _showActionOutcome(
+        baseMessage: result.displayMessage,
+        progressSuffix: progressSuffix,
+        outcome: reProcessOutcome,
+        successColor: Colors.blue,
       );
     }
   }
