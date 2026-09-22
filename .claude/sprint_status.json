@@ -1,12 +1,12 @@
 {
   "_description": "Sprint status file that persists across context compaction. Update after each phase/sub-phase completion.",
-  "_last_updated": "2026-09-22T04:35:00Z",
+  "_last_updated": "2026-09-22T14:05:00Z",
   "_usage": "Read this file after context compaction to restore sprint approval state and progress.",
   "_staleness_note": "This file had drifted 15 sprints (last updated at Sprint 35, 2026-04-19) before being refreshed at Sprint 50 close-out. It is a Phase 7.7 checklist item -- update it at every sprint close-out, not opportunistically.",
   "current_sprint": {
     "number": 72,
     "branch": "feature/20260919_Sprint_71",
-    "status": "Sprint 72 Phase 4 EXECUTION. Plan APPROVED by Harold 2026-09-22 with amendments (PATCH bump, theme text styles, full scope). Blanket execution approval granted through Manual Validation; do not stop between tasks. Task 0 commits approved and fold into the Sprint 72 PR.",
+    "status": "Sprint 72 Phase 5.3 MANUAL VALIDATION -- awaiting Harold. Execution complete: Tasks 0, 0b, 1, 2(A), 3, 4, 6(messaging), 7(export) delivered. Phase 5.1.1 review found 2 CRITICAL + 3 IMPORTANT, ALL FIXED. Three items need Harold: the F217 mechanism decision, the F229 screen half (attempted and reverted on measurement), and F232 mechanism B (undiagnosed, now instrumented).",
     "plan_approved": true,
     "blanket_execution_approved": true,
     "pr_number": 420,
@@ -27,11 +27,11 @@
   },
   "_github_issues_note": "Sprint 66 cards created at Phase 3.3.1 (2026-09-07): #387 GP-19, #388 GP-4. Close by hand at Post-Merge Cleanup.",
   "test_metrics": {
-    "suite": "2,154 passed / 15 skipped / 1 FAILED",
-    "known_failure": "dev_version_ahead_test \"the dev version is AHEAD of every version recorded as live on a store\": dev 0.15.2+5 is NOT ahead of Play-live 0.15.2. THE GATE IS CORRECT -- a tester cannot distinguish this dev build from what shipped, which is exactly what F190 prevents. The remedy is a version bump, which F190 assigns to Phase 3.7.0b (sprint-plan approval). Sprint 71 has no approved plan, so the number is Harold's call. Left red deliberately rather than silenced.",
-    "policy_suite": "hook suite 75 passed / 0 failed (was 74; +1 regression case, see below)",
+    "suite": "2,220 passed / 15 skipped / 0 failed",
+    "policy_suite": "hook suite 75 passed / 0 failed",
+    "winwright": "2/2 scripts, 29/29 steps, no DB drift -- run twice, before and after review fixes",
     "analyzer": "clean",
-    "as_of": "2026-09-20"
+    "as_of": "2026-09-22, Sprint 72 pre-Manual-Validation"
   },
   "store_release": {
     "windows": "0.15.2.0 CERTIFIED AND LIVE 2026-09-21 as Partner Center Submission 28 (\"Congrats! Your product is now updated\"; Store presence = Submission 28, last modified 09/21/2026). INSTALLED-BUILD VERIFIED: the running Windows app title bar reads \"Version 0.15.2\" (Harold screenshot). Built from the prod worktree at a3f2031 after Step 3.0 found it 33 commits behind -- the fourth consecutive sprint that check caught a stale worktree. Self-test 6/6 PASS. CERTIFICATION TOOK ~2 DAYS, THE SLOWEST ON RECORD against a measured 20-30 min band (Submissions 17/18/19); still inside Microsoft's stated 3 business days. No cause was ever visible: Partner Center exposes stage, not reason. Add a row to docs/STORE_SUBMISSION_TIMING.md -- this is the first genuinely slow submission that table has.",
