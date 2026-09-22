@@ -129,6 +129,7 @@ class _SettingsScreenState extends State<SettingsScreen> with SingleTickerProvid
   int _unmatchedRetentionDays = SettingsStore.defaultUnmatchedRetentionDays;
   // SEC-8 (Sprint 33): certificate pinning for Google OAuth
   bool _certificatePinningEnabled =
+      SettingsStore.defaultCertificatePinningEnabled;
 
   /// F233 (Sprint 72): diagnostic log state.
   ///
@@ -138,7 +139,6 @@ class _SettingsScreenState extends State<SettingsScreen> with SingleTickerProvid
   /// The unit tests passed because they set the flag through the test seam
   /// rather than through the UI: a symbol existing is not the same as a feature
   /// working, which is exactly what the repo's source-gate rule warns about.
-      SettingsStore.defaultCertificatePinningEnabled;
 
   bool _diagnosticLogEnabled = SettingsStore.defaultDiagnosticLogEnabled;
   bool _diagnosticLogKeepAll = SettingsStore.defaultDiagnosticLogKeepAll;
