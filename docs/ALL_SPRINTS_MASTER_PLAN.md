@@ -451,6 +451,70 @@ end). The emulator cannot test it because the Android OAuth client is bound to t
 SHA-1. What the emulator HAS now proven is that the redirect reaches the app, which was the failing
 step.
 
+**F232. Rules created from a HISTORICAL scan view never act on the mailbox, silently (~4-6h) Priority 2 (NEW, 2026-09-21 -- Harold; CONFIRMED IN SOURCE, and the code already documents the cause)**
+- Phase: Bug Fix
+- Platform: All (shared code)
+- **HIGHEST priority of the Sprint 71 candidates.** The user is shown every signal of success --
+  rule created, rows disappear, counts drop, green toast -- while **nothing happens on the mail
+  server**. It is a silent no-op that looks exactly like a completed action.
+
+- **Harold's report, 2026-09-21**: *"if I block an entire domain via View Search Results > select a
+  tile > pick an item and block entire domain - it appears that none of the emails get deleted
+  during the session because when I then do a live scan, it will delete the same number of emails
+  as would have been in the View Search Results session (all time, no exceptions)."* The predicted
+  count matching on the next live scan is the tell: the work was deferred, not done.
+
+- **ROOT CAUSE, and the code already says it.** `_reProcessAffectedEmails()`
+  (`results_display_screen.dart:3114-3118`) opens with:
+  `if (scanMode == ScanMode.readOnly) { logger.i('[F38] Skipping re-process: scan mode is readOnly'); return; }`
+  And `EmailScanProvider._scanMode` **defaults to `ScanMode.readOnly`** (`:165`) and is only ever
+  set by `initializeScanMode(...)`, whose call sites are ALL scan-STARTING paths:
+  `background_scan_core.dart:125`, `account_setup_screen.dart:318` and `:1090`,
+  `scan_progress_screen.dart:722`. **No path sets it when a HISTORICAL scan is opened from Scan
+  History.** So in a session where the user has not started a scan, the mode is still the
+  read-only default and every IMAP action from this screen is skipped.
+  The Sprint 38 Round 9 comment at `:304` states the premise outright: *"returns early when
+  scanProvider.scanMode == readOnly, which is the default state on app launch when no scan has been
+  initiated in the current session."*
+
+- **Sprint 38 patched the SYMPTOM and left the defect.** That comment introduces an unconditional
+  row-hiding loop so the list *looks* correct, reasoning that the hiding "is safe regardless of
+  scanMode (no IMAP side effects)". True of the hiding -- and it made the skipped DELETION
+  invisible. **This is the lesson to carry: a fix that makes the UI consistent with an action that
+  did not happen is worse than the original inconsistency, because it removes the only clue.**
+
+- **This SUPERSEDES part of [[F228]].** F228 found the per-action toast hardcoded to
+  `Colors.green` and concluded it misreports an IMAP failure. On THIS path there was never an IMAP
+  attempt to report on -- so the toast is not merely mis-coloured, it is describing work that was
+  never scheduled. Fix F232 first; some of F228's observed behaviour may be this. **They are still
+  distinct**: F228's offline reproduction had a real attempt that really failed (`Re-processed 0 of
+  6 (6 failed)` proves the batch ran), so both defects exist.
+
+- **Design decision needed -- this is Harold's call, not an implementation detail.** When a user
+  opens a historical scan and creates a rule, what SHOULD happen?
+  1. **Act now**: resolve the effective scan mode from saved settings rather than session state, and
+     perform the IMAP action. Matches what the UI already claims. Risk: the user may not expect a
+     historical view to touch live mail.
+  2. **Say so**: keep the no-op but tell the truth -- "Rule saved. N emails will be actioned on the
+     next scan." Safe, honest, and no new deletion path.
+  3. **Offer**: prompt once per session.
+  **Recommendation: 2 for correctness now, then 1 behind a confirmation.** Option 2 alone removes
+  the lie, which is the actual harm, and needs no new IMAP behaviour.
+
+- **Whichever is chosen, the silent `return` must go.** A skipped action that logs only to a
+  console sink nobody can read (see [[F228]] on the missing file logger) is how this survived from
+  Sprint 38 to now.
+- **Note the scan-mode config while testing**: per `project_scan_mode_by_environment`, Windows
+  DEV and Prod are read-only with background OFF, and the Android closed test is the ONLY build
+  that acts on mail. So on Windows this early return is CORRECT and expected -- **reproduce on the
+  S24+**, or the read-only default will mask the difference between "skipped because historical"
+  and "skipped because configured read-only".
+- **Regression test direction**: open a historical scan with no scan started in the session, create
+  a matching rule, and assert the IMAP action was attempted (or that the user was told it was not).
+  A test asserting only that rows hid would pass today and is exactly the gap Sprint 38 left.
+- Source: Harold, 2026-09-21, S24+ 0.15.2. He has a captured progression from earlier the same day
+  or the day before. Related: [[F228]], [[F231]].
+
 **F231. Per-action results vanish after 3 seconds and are recorded nowhere (~2-4h) Priority 10 (NEW, 2026-09-21 -- Harold: "it went past faster than I could see it")**
 - Phase: UX / Supportability
 - Platform: All (shared code)
