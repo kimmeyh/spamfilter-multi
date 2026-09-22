@@ -1,30 +1,31 @@
 {
   "_description": "Sprint status file that persists across context compaction. Update after each phase/sub-phase completion.",
-  "_last_updated": "2026-09-22T18:40:00Z",
+  "_last_updated": "2026-09-22T20:00:00Z",
   "_usage": "Read this file after context compaction to restore sprint approval state and progress.",
   "_staleness_note": "This file had drifted 15 sprints (last updated at Sprint 35, 2026-04-19) before being refreshed at Sprint 50 close-out. It is a Phase 7.7 checklist item -- update it at every sprint close-out, not opportunistically.",
   "current_sprint": {
-    "number": 71,
-    "branch": "feature/20260919_Sprint_71",
-    "status": "Sprint 72 Phase 7.7 CLOSE-OUT COMPLETE. Triad present (PLAN, RETROSPECTIVE, SUMMARY). Master plan rolled. CHANGELOG updated. PR #420 READY, mergeable CLEAN, CI all green (Analyze+Test, Android, Windows). Both reviews complete: Copilot (Findings: None, but it could NOT see results_display_screen.dart) and Claude full-PR (1 CRITICAL + 5 lesser, all fixed). Suite 2,233 / 15 skipped / 0 failed. AWAITING HAROLD MERGE.",
-    "plan_approved": true,
-    "blanket_execution_approved": true,
-    "pr_number": 420,
-    "pr_url": "https://github.com/kimmeyh/spamfilter-multi/pull/420",
-    "version": "0.15.3+6",
-    "_number_note": "Set to 71 to match the BRANCH, not the sprint. Sprint 72 ran entirely on feature/20260919_Sprint_71 because Harold approved folding its commits into that PR (#420). The auto-advance hook derives the sprint number from the branch name and only consults current_sprint.status when the two agree, so a mismatch makes the status field invisible and the hook blocks legitimate post-Manual-Validation turns. The WORK is Sprint 72; this field tracks the branch. Reset it when a branch whose name matches the sprint is created."
+    "number": 73,
+    "branch": "feature/20260922_Sprint_73",
+    "status": "Sprint 73 PRE-KICKOFF. Branch created from the Sprint 72 branch on merge. Sprint 72 close-out COMPLETE and Post-Merge Cleanup COMPLETE (4 issues closed, 4 correctly left open with reasons recorded). Phase 8.2 refinement pass 1 COMPLETE -- it found and fixed two gaps: four shipped cards still active in the backlog, and no Sprint 73 stub. PHASE 8.3 STORE RELEASE IS N/A THIS CYCLE by Harold direction (2026-09-22, no store push). NEXT: Phase 8.4 refinement pass 2, scope selection.",
+    "plan_approved": false,
+    "blanket_execution_approved": false,
+    "pr_number": null,
+    "pr_url": null,
+    "version": "0.15.3+6"
   },
   "previous_sprint": {
-    "number": 70,
-    "branch": "feature/20260914_Sprint_70",
-    "pr": "#418 -> develop (merged 2026-09-19), #419 develop -> main (merged 2026-09-19)",
-    "deliverables": "6/6 planned: F218 SDK 3.38.5->3.47.4 (workaround RESTORED deliberately -- the upgrade did NOT fix the integration_test defect), F220 backgrounding wedge, F221 stuck rows + manual-scan timeout (Class-2 reversal), F212 adapter contract divergence, F219 taskAffinity, F217 DIAGNOSIS ONLY. Plus UNPLANNED: F223, F227 (second OAuth defect found by emulator probe), F225 (hook fixture aged out), and a Stop hook that had silently stopped working.",
-    "reviews": "Copilot 1 HIGH + Claude full-PR 2 CRITICAL / 4 IMPORTANT, all addressed, none deferred. Both CRITICALs were gates reporting protection they did not provide.",
-    "retrospective": "Harold 12x Very Good; Claude rated 5 categories lower deliberately. IMP-1..IMP-5 all applied."
+    "number": 72,
+    "branch": "feature/20260919_Sprint_71",
+    "pr": "#420 -> develop (merged 2026-09-22), #429 develop -> main (merged 2026-09-22)",
+    "deliverables": "F233 diagnostic log + header-only CSV export fix, F232 mechanism A (B still undiagnosed, now INSTRUMENTED), F228 honest action toast, F230+F231 action-sheet layout and durable outcomes, F217 honest Doze caveat ONLY (mechanism deliberately not built), F229 export half (screen half attempted and REVERTED on measurement). Plus Task 0: 22 unmerged doc commits including a Gate 1c hook repair.",
+    "reviews": "Phase 5.1.1: 2 CRITICAL + 3 IMPORTANT. Phase 7 full-PR: 1 CRITICAL + 5 lesser. ALL FIXED, none deferred. TWO of the three CRITICALs were defects this sprint INTRODUCED -- the F232 fix created an unintended deletion path from screen load, and the diagnostic logger silently destroyed concurrent records. Copilot reported Findings: None but could NOT see results_display_screen.dart, the largest and riskiest file.",
+    "retrospective": "Harold 12x Very Good, none for categories 13/14. IMP-1..IMP-5 approved and applied, with IMP-3 extended: scratchpad sweep + promotion of repeatedly-written helpers.",
+    "metrics": "Suite 2,155 -> 2,233; analyzer clean; hooks 75/0; WinWright 2/2 twice; CI all green."
   },
   "github_issues": {
-    "sprint_72": "#421 F233, #422 F232, #423 F228, #424 F230, #425 F231, #426 F217, #427 F229 -- created 2026-09-22 at Phase 3.3.1",
-    "note": "Closes #N does NOT auto-fire here: PRs merge feature -> develop, and GitHub auto-closes only on merge to the DEFAULT branch. Close by hand at Post-Merge Cleanup."
+    "sprint_72_closed": "#421 F233, #423 F228, #424 F230, #425 F231 -- closed 2026-09-22 with delivery notes",
+    "still_open": "#422 F232 (mechanism B), #426 F217 (mechanism), #427 F229 (screen half), #428 F235 (Sprint 73 target)",
+    "note": "Closes #N does NOT auto-fire here: PRs merge feature -> develop, and GitHub auto-closes only on merge to the DEFAULT branch."
   },
   "_github_issues_note": "Sprint 66 cards created at Phase 3.3.1 (2026-09-07): #387 GP-19, #388 GP-4. Close by hand at Post-Merge Cleanup.",
   "test_metrics": {
@@ -36,9 +37,10 @@
     "as_of": "2026-09-22, Sprint 72 close-out"
   },
   "store_release": {
-    "windows": "0.15.2.0 CERTIFIED AND LIVE 2026-09-21 as Partner Center Submission 28 (\"Congrats! Your product is now updated\"; Store presence = Submission 28, last modified 09/21/2026). INSTALLED-BUILD VERIFIED: the running Windows app title bar reads \"Version 0.15.2\" (Harold screenshot). Built from the prod worktree at a3f2031 after Step 3.0 found it 33 commits behind -- the fourth consecutive sprint that check caught a stale worktree. Self-test 6/6 PASS. CERTIFICATION TOOK ~2 DAYS, THE SLOWEST ON RECORD against a measured 20-30 min band (Submissions 17/18/19); still inside Microsoft's stated 3 business days. No cause was ever visible: Partner Center exposes stage, not reason. Add a row to docs/STORE_SUBMISSION_TIMING.md -- this is the first genuinely slow submission that table has.",
-    "play": "0.15.2 versionCode 5 PUBLISHED to Closed testing 2026-09-20 and DEVICE-VERIFIED 2026-09-21. STEP 6 COMPLETE: the Galaxy S24+ Settings > General reads \"Version 0.15.2\" (screenshot, not inferred). Behaviour verified on that build from a real testing session: F212 re-processing works (No rule 12 -> 10 -> 0, emails deleted, rules applied), F220/F221 scanning is healthy (live manual scan progressed normally, no wedge, no stuck in-progress rows), background scans complete and notify, per-scan Errors: 0. NOTE the Scan History screen shows a CUMULATIVE \"Errors: 111\" which is a lifetime counter, NOT a current fault -- do not re-diagnose it. One new defect found on this build: F228 (the \"could not be applied\" footer contradicts the mailbox after a batch-level exception). Pre-upload bundle checks recorded in STORE_VERSION_STATUS.md.",
-    "note": "Play production access is a TESTER-COUNT gate, not a version gate: 12 testers x 14 CONTINUOUS days. Recruiting the remaining testers is the critical path, and shipping an update does NOT reset anyone's clock (only opting out does). The 0.15.2 publication is what unblocks the Sprint 71 carry-ins F219 AC-1 and the F227 re-verification -- but only once the build is actually INSTALLED on hardware, because both need a Play-signed build (the Android OAuth client is bound to the Play App Signing SHA-1)."
+    "status_0_15_3": "NOT SUBMITTED TO EITHER STORE. Harold, 2026-09-22: \"not pushing to either store this time\". Phase 8.3 explicitly N/A for this cycle.",
+    "live_windows": "0.15.2.0 -- Submission 28, certified 2026-09-21, installed-build verified.",
+    "live_play": "0.15.2 versionCode 5 -- closed testing, device-verified 2026-09-21 on the S24+.",
+    "consequence": "F219 AC-1 and F227 remain blocked: they need a Play-INSTALLED build, and 0.15.3 is not going out. They wait for the next release that ships."
   },
   "environment_notes": [
     "RESOLVED 2026-07-29 (verified 07-30): the Store fault was an Acronis file-system filter blocking AppXSvc cleanup, fixed by an Acronis Protection exclusion. 23h uptime with ZERO Id-493 events vs a 176-file/6-min baseline; Store client self-updated 22606.1401.6.0 -> .10.0 (requires a working deployment pipeline). Filter drivers remain loaded -- backup protection was NOT disabled. See ALL_SPRINTS_MASTER_PLAN ENV-1 for the picker gotcha if it recurs.",
@@ -47,20 +49,14 @@
   ],
   "blocking_issues": [],
   "next_actions": [
-    "BLOCKING-ISH, Harold: install 0.15.2 from Play on the Galaxy S24+ and confirm the version in Settings. This is Step 6 of GOOGLE_PLAY_RELEASE_PROCESS.md and it gates both carry-ins below.",
-    "Harold, at Phase 3.7.0b: decide the version bump. dev_version_ahead_test is RED because dev 0.15.2+5 equals Play-live 0.15.2. MINOR if the approved Sprint 71 plan contains a feat, else PATCH; bump BOTH version: and msix_config.msix_version, and the +N build number.",
-    "Phase 8.4 -- backlog refinement pass 2, scope selection with Harold (F224, F226, F222, F217 implementation, F219 AC-1).",
-    "CARRY-IN: F219 AC-1 end-to-end Google Sign-In with a listed test user. Needs the Play build INSTALLED, not merely published.",
-    "CARRY-IN: F227 re-verification of the full OAuth round trip on the Play build.",
-    "CARRY-IN: F217 implementation under Harold decided option 1 (battery-optimisation exemption, CONTEXTUAL prompt mirroring the F161 POST_NOTIFICATIONS pattern, honest behaviour on decline)."
+    "Phase 8.4 -- backlog refinement pass 2, scope selection with Harold.",
+    "F235 is already TARGETED for Sprint 73 by Harold; the rest of the slate is open.",
+    "Phase 3 planning once scope is selected."
   ],
   "next_sprint_targeted": [
-    "F235 -- Android Doze: setExactAndAllowWhileIdle scheduling (Harold targeted this for Sprint 73 on 2026-09-22)",
-    "F234 -- read-only as a preview mode (\"would have been deleted\")",
-    "F232 mechanism B -- the live batch failing 9 of 9 on a healthy connection, now instrumented",
-    "F229 screen half -- only if screenshot provenance stays a real problem; the export stamp may be enough",
-    "F219 AC-1 + F227 -- end-to-end Google Sign-In on the Play build, needs Harold",
-    "F226 -- WinWright sweep flakiness (passed 2/2 twice in Sprint 72, so gather more data before acting)",
-    "F224, F222 -- carried"
+    "F235 -- Android Doze via setExactAndAllowWhileIdle (Harold targeted 2026-09-22, issue #428)",
+    "F234 -- read-only as a preview mode",
+    "F232 mechanism B -- now instrumented",
+    "F226, F224, F222 -- carried"
   ]
 }
