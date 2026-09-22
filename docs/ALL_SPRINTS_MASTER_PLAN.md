@@ -554,7 +554,7 @@ step.
 - Source: Harold, 2026-09-22, Sprint 72 manual validation step A. Related: [[F232]], [[F228]],
   [[F231]].
 
-**F232. Rules created from a HISTORICAL scan view never act on the mailbox, silently (~4-6h) Priority 2 (NEW, 2026-09-21 -- Harold; CONFIRMED IN SOURCE, and the code already documents the cause)**
+**F232. Mechanism B -- a live re-process batch fails 9 of 9 on a healthy connection (~3-6h) Priority 6 (RE-SCOPED 2026-09-22: mechanism A SHIPPED in Sprint 72)**
 - Phase: Bug Fix
 - Platform: All (shared code)
 - **HIGHEST priority of the Sprint 71 candidates.** The user is shown every signal of success --
@@ -803,29 +803,6 @@ step.
 - Source: Sprint 70 Phase 5.1.5 sweep, 2026-09-18. Recorded in `SPRINT_70_PLAN.md` Phase 5
   completion notes.
 
-**F225 FIXED IN SPRINT 70 (2026-09-19) -- and the root cause was NOT the one guessed when filing it.** The PR review traced it: the fixture at `.claude/hooks/test-cases/fixtures/prekickoff-sprint/` hardcodes `_last_updated`, so it aged past `verify-closeout-complete.ps1`'s 30-day staleness check on the calendar alone. A time bomb, not the pre-kickoff detector. Fixtures are now exempt from that check -- asserting freshness of a checked-in fixture is meaningless. Hook suite went 66/1 -> 74/0. Kept here only as the record; REMOVE at the next refinement.
-
-**F225. `verify-closeout-complete` hook fails its OWN allow-case (~1-2h) Priority 14 (NEW, 2026-09-18 -- found while fixing the auto-advance gate)**
-- Phase: Developer Tooling
-- Platform: N/A (repo tooling)
-- **PRE-EXISTING, not caused by the Sprint 70 hook work.** Verified by restoring the original
-  `sprint-auto-advance.ps1` and re-running: the same case fails identically, so the two are
-  unrelated.
-- `.claude/hooks/run-test-cases.ps1` reports **52 passed, 1 failed**. The failure is
-  `closeout/allow-6-prekickoff-no-pr-owed` (expected exit 0, got 2), and the hook that rejects it
-  is `verify-closeout-complete.ps1`, not the auto-advance hook.
-- The case is a legitimate pre-kickoff message: *"Sprint 60 is closed out and 0.10.0.0 is live on
-  the Store. Sprint 61 is at pre-kickoff awaiting your scope decision."* The hook reads that as a
-  close-out CLAIM for Sprint 61 and demands Sprint 61 artifacts that correctly do not exist yet.
-- **Why this matters more than one red test.** A gate that blocks correct work trains bypass --
-  the exact lesson from Sprint 67 IMP-2, where the F193 gate broke six of this hook's own
-  allow-cases. A permanently-red suite also destroys its value as a regression signal: the next
-  person to edit a hook cannot tell their change from the standing failure.
-- Fix direction: the close-out claim detector must distinguish "sprint N is closed out" (a claim
-  about a FINISHED sprint) from "sprint N+1 is at pre-kickoff" (a statement about the NEXT one).
-  Scope the artifact check to the sprint actually named as complete.
-- Source: found 2026-09-18 running the hook suite after editing `sprint-auto-advance.ps1`, per the
-  CLAUDE.md rule that a hook edit is followed by that hook's own suite.
 
 **F224. Let the user CANCEL a running scan from where they actually are (~4-8h) Priority 6 (NEW, 2026-09-17 -- Harold, alongside the F221 timeout reversal)**
 - Phase: Core App Quality
@@ -1013,74 +990,8 @@ scanning is ON, tested to not over-promise). It is correct under every outcome, 
 outcome without spending Play-review risk during the closed test, and if the alarm still proves too
 deferred, option 1 then has evidence behind its justification rather than an assertion.
 
-**F217. Android background scans do not run while the app is backgrounded or the phone is locked -- and no notification arrives (~4-8h investigation + fix) Priority 6 (NEW, 2026-09-13 -- Harold, Sprint 69 retrospective Category 14)**
-- Phase: Android / Google Play Store Readiness
-- Platform: **Android only** (Windows uses Task Scheduler, ADR-0039, and is unaffected)
-- **Harold, 2026-09-13, verbatim**: *"Noted several times today and yesterday on the Android app
-  that background tasks did not run when I was not actively looking at the app (meaning that when
-  the app was in the background and not the focus or the phone was 'locked' the background tasks
-  did not run), and no notifications. As soon as I switched to the app, went to the Scan History
-  and did a refresh, both the aol and gmail background tasks would be running and incomplete). I
-  would refresh until both completed and then would immediately get the notification. It does not
-  appear to be running every 15 minutes in the background, regardless of screen focus or phone
-  locked."*
-- **CORROBORATED by the Scan History screenshot**
-  (`validation-screenshots/sprint-69/Screenshot_20260913_202951.png`, captured 8:29 PM):
-  - `kimmeyharold@aol.com` Background **5:15 PM**, then Background **7:57 PM**.
-    **That is 2 hours 42 minutes apart, not 15 minutes.**
-  - `kimmeyh@gmail.com` Background **5:15 PM** -- both accounts fired at the same minute, which is
-    the signature of Android BATCHING deferred work and releasing it together rather than of two
-    independent 15-minute timers.
-  - Settings confirm the schedule is active: background scanning ON, and `Errors: 0` on the runs
-    that did execute, so this is not a crash loop.
-- **THE SCHEDULING CODE IS CORRECT -- do not start by rewriting it.**
-  `background_scan_scheduler.dart:238` registers a genuine `registerPeriodicTask` with
-  `Duration(minutes: 15)`, `NetworkType.connected`, `ExistingPeriodicWorkPolicy.update` and
-  exponential backoff. Per-account unique names. Nothing there explains a 2h42m gap.
-- **The class doc at `:188` already predicted this and called it acceptable**: *"Android batches
-  periodic work for battery (Doze, App Standby); a '15 minutes' task fires approximately, not on
-  the minute... Accepted difference -- the scan is periodic hygiene, not a deadline."*
-  **That judgement now looks wrong in practice, and this card exists to revisit it.** "Approximate"
-  was written expecting minutes of drift. Harold is seeing HOURS, plus a pattern where the work
-  appears to start only when the app is foregrounded.
-- **LEADING HYPOTHESIS -- Doze and App Standby buckets, not a bug in our code.** Android places an
-  app the user has not opened recently into a restricted standby bucket, and in Doze the OS
-  defers WorkManager jobs to periodic maintenance windows that can be hours apart. Opening the app
-  promotes the bucket and flushes the deferred work, which is EXACTLY the behaviour Harold
-  describes: refresh, and suddenly both scans are running and incomplete.
-  **Evidence for this rather than a code fault**: `AndroidManifest.xml` declares NO battery-related
-  permission -- no `REQUEST_IGNORE_BATTERY_OPTIMIZATIONS`, no `FOREGROUND_SERVICE`, no
-  `WAKE_LOCK`. The app has never asked the OS for any exemption, so it is subject to every default
-  restriction. Samsung is additionally more aggressive than stock Android here, and the device is
-  an S24+.
-- **Why the notifications follow the same pattern**: the notification is posted by the scan when it
-  completes. If the scan never runs, there is nothing to notify. So "no notifications" is very
-  likely a SYMPTOM of the deferral rather than a second defect -- but confirm that rather than
-  assuming it, because a broken notification path would look identical from the outside.
-- **Why this is Priority 6, above most of the open slate**: background scanning is the app's core
-  value proposition on Android and the ONLY build where it acts on mail. A tester who installs the
-  app, locks the phone, and finds nothing happened for three hours concludes the product does not
-  work. It also silently undermines every closed-test observation made so far, because scans were
-  probably running on app-open rather than on schedule.
-- **Investigation order, and the first step is NOT a code change**:
-  1. `adb shell dumpsys deferredjobs` / `dumpsys jobscheduler` and
-     `adb shell am get-standby-bucket com.myemailspamfilter` while the phone sits idle -- establish
-     what the OS thinks it is doing before touching anything.
-  2. Check whether Samsung's own battery settings have the app in "Optimised" or "Restricted"
-     (Settings > Battery > Background usage limits). This alone can explain the whole report.
-  3. Only then consider code: requesting a battery-optimisation exemption, or a foreground service
-     with a persistent notification for the scan window.
-- **Class-1 decision, to SURFACE rather than implement**: making scans reliable in Doze means
-  either asking the user for a battery-optimisation exemption (a permission prompt Google Play
-  scrutinises, and which needs a policy justification on the listing) or running a foreground
-  service with a permanent notification. Both change the app's relationship with the OS and with
-  the Play listing. Neither should be chosen without Harold.
-- **ADR-0042**: this is Android-shaped by necessity. Windows Task Scheduler fires exactly and has
-  no Doze equivalent, so the fix -- whatever it is -- will be a declared platform exception, and
-  the existing declaration at `background_scan_scheduler.dart:188` should be REWRITTEN once the
-  real behaviour is known, because it currently records an expectation that the field contradicts.
-- Depends on: nothing. Diagnosable on the S24+ today.
-- Source: Harold, 2026-09-13, Sprint 69 retrospective Category 14, with Scan History evidence.
+**F217 SPLIT IN SPRINT 72 (2026-09-22).** The honest timing caveat SHIPPED (Settings > Background now states that Android may delay scans while idle). **The MECHANISM is now [[F235]]**, targeted for Sprint 73 -- it is not a separate candidate and must not be selected alongside F235. Issue #426 stays open until F235 lands.
+
 
 **F216. Supporting text is smaller than the text it should match -- Rule Tester, Safe Sender quick-add, AND the email action popup (~2-4h) Priority 32 (NEW, 2026-09-11, EXPANDED 2026-09-12 -- Harold)**
 - Phase: Core App Quality
