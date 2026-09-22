@@ -85,15 +85,33 @@ $allHelpers = @(
     Get-ChildItem -LiteralPath $resolvedRoot -Recurse -File -ErrorAction SilentlyContinue |
         Where-Object { $_.Extension -in @('.py', '.ps1') }
 )
+# Group by name AND project. The first version grouped by NAME ALONE and
+# reported four "repeated" helpers -- three of which lived in DIFFERENT
+# REPOSITORIES doing unrelated work (an ADR paragraph edit here, a hook
+# registration there). A recurring NAME is not recurring WORK, and a detector
+# that conflates them sends you to promote disposable files.
+#
+# The scratchpad layout is <root>/<project-key>/<session-guid>/scratchpad/...,
+# so the project key is the first path segment under the root.
 $repeated = $allHelpers |
-    Group-Object -Property Name |
+    ForEach-Object {
+        $rel = $_.FullName.Substring($resolvedRoot.Length + 1)
+        $project = ($rel -split '[\\/]')[0]
+        [pscustomobject]@{
+            Name    = $_.Name
+            Project = $project
+            Key     = "$project/$($_.Name)"
+            Path    = $_.FullName
+        }
+    } |
+    Group-Object -Property Key |
     Where-Object { $_.Count -gt 1 } |
     Sort-Object -Property Count -Descending
 
 if ($repeated) {
-    Write-Output 'PROMOTION CANDIDATES -- written more than once, so not temporary:'
+    Write-Output 'PROMOTION CANDIDATES -- same name, SAME project, written more than once:'
     foreach ($g in $repeated) {
-        Write-Output ("  {0,-38} written {1} times" -f $g.Name, $g.Count)
+        Write-Output ("  {0,-48} written {1} times" -f $g.Name, $g.Count)
     }
     Write-Output ''
     Write-Output '  Move these to scripts/ with a real name and a .SYNOPSIS header,'
