@@ -457,6 +457,20 @@ step.
 - **Symptom, in Harold's words while working items in Review No Rule Items on the 0.15.2 Store
   build**: *"I did a few and it went past faster than I could see it."* He then had to navigate to
   View Scan History to find out what had happened.
+- **MEASURED, 2026-09-21: about ONE SECOND of readable time each, not three.** Harold timed them.
+  The `Duration(seconds: 3)` is the total lifetime INCLUDING the enter and exit animations, and
+  each new action REPLACES the current SnackBar rather than queueing -- so in a burst every toast
+  but the last is cut short. The effective read window is roughly a third of the nominal duration.
+  **This is why (b) "just lengthen the duration" is the weakest option**: at 3 actions in 4 seconds
+  the user still only ever sees the last one, however long its timeout.
+- **SECOND DEFECT, found by Harold the same day and arguably worse than the timing: THE ITEM DETAIL
+  CARD COVERS THE TOAST.** *"if you start at the top of the list, then the item detail card overlaps
+  the footer status for success and failure, so you don't see any of them."* Working top-down --
+  the natural order -- the expanded detail card sits over the message area, so the user sees
+  NEITHER the success nor the failure text. Not shortened: absent. The SnackBar uses
+  `SnackBarBehavior.floating` with `margin: EdgeInsets.only(bottom: 80, ...)`, which is a fixed
+  offset that does not account for the open detail card. **Check this against [[F230]]** -- the same
+  screen, and a Skip-button move changes that geometry.
 - **Verified in source**: every result SnackBar on `results_display_screen.dart` uses
   `duration: const Duration(seconds: 3)` -- lines ~3369, ~3433, ~3476, ~3510, ~3552. Three seconds
   for a message like `Created rule to block entire domain "*.troll8.com" -- 1 removed, 0 "No rule"
@@ -574,68 +588,65 @@ step.
 - Source: Harold, 2026-09-21, during Play 0.15.2 Step 6 verification. [[F228]] was found in the same
   session.
 
-**F228. The "could not be applied" footer contradicts the mailbox after a batch-level exception (~2-4h) Priority 12 (NEW, 2026-09-21 -- found on the 0.15.2 PLAY BUILD, Galaxy S24+)**
+**F228. A green success toast reports rule creation while the IMAP action has already failed (~3-5h) Priority 6 (REPRODUCED DELIBERATELY 2026-09-21 on the S24+ with the network off)**
 - Phase: Bug Fix
-- Platform: All (the code is shared; observed on Android)
-- **Symptom**: the progress footer read `12 of 12 "No rule" emails addressed -- 12 could not be
-  applied to your mailbox. Check your connection and try again.` while, in the SAME session, the
-  results list showed all 12 emails deleted with their new rules named
-  (`Block_EntireDomain_troll8.com` etc.) and the per-action toast said
-  `Created rule to block entire domain "*.troll8.com" -- 1 removed, 0 "No rule" remaining`.
-  Three surfaces, two verdicts.
-- **Mechanism, read from source (not inferred from the screenshot)**:
-  `results_display_screen.dart:3328-3338` -- the outermost `catch` in the re-processing block
-  fails the WHOLE batch: `failCount = toDelete.length + toMoveSafe.length` and every attempted id
-  is passed to `_recordBatchFailures`. But the per-email rule creation had ALREADY succeeded and
-  already performed its own IMAP delete, which is why the mailbox and the toast agree with each
-  other and only the footer disagrees.
-- **The two counters are deliberately independent**, which is why they can diverge: the footer's
-  `failed` comes from `_reProcessFailedKeys` (IMAP outcome, line 3036) while `addressed`/`remaining`
-  come from `stats` (rule EVALUATION alone). F212 R-4 made them independent ON PURPOSE so a failed
-  IMAP action could never read as "addressed" -- see the comment at 3031-3035. **Do not fix this by
-  re-coupling them**; that reintroduces the exact defect F212 R-4 closed.
-- **Therefore the likely defect is the blast radius of the catch, not the counter.** An exception
-  raised after N emails have already been actioned marks all N as failed. Candidates: narrow the
-  catch to the operations that actually remain unattempted, or track per-email completion so the
-  handler only fails what it truly did not do.
-- **UNVERIFIED and needed first**: WHICH exception fired. The handler logs
-  `[F38] Re-processing failed: $e` -- get that line before designing the fix.
-- **BLOCKER on getting it, established 2026-09-21: that line is NOT RECOVERABLE from any
-  installed build.** `results_display_screen.dart` uses a bare `Logger()` from the `logger`
-  package, which writes to the DEBUG CONSOLE only -- no `FileOutput` is configured. Confirmed
-  empirically as well as by reading: `grep -rl "F38"` over every Windows log in
-  `%APPDATA%\MyEmailSpamFilter\MyEmailSpamFilter\logs\` returns NOTHING, across every version
-  back to 0.5.8. The `live_scan_v*.log` files are written by `LiveScanLogger`, a separate
-  mechanism that never sees these events.
-  **Consequences**: (a) asking Harold to reproduce it on the Store build cannot yield the
-  exception; (b) the first implementation step is to route this handler's error through a
-  file-backed logger, or reproduce under `flutter run` and read the console. Do not open this card
-  expecting the diagnostic to be waiting.
-  **Worth a broader look**: any `logger.e(...)` in a failure path that a user might hit is
-  similarly invisible in production. That is a supportability gap beyond this card. It may be benign
-  (e.g. a disconnect during `finally`) rather than an action failure, which would change the remedy
-  entirely.
-- **Why it matters beyond cosmetics**: `isComplete` is `remaining == 0 && initial > 0 && failed == 0`,
-  so a stale failed-set means the green "All N addressed." state can never be reached, and the user
-  is told to retry work that already succeeded. Retrying is not harmless -- it re-attempts IMAP
-  actions on mail that is already gone.
-- **THE HAPPY PATH IS CONFIRMED CORRECT ON WINDOWS (Harold, 2026-09-21, 0.15.2 Store build).**
-  Working items through Review No Rule Items, the footer read `3 of 6 "No rule" emails addressed --
-  3 remaining` and then `5 of 6 ... -- 1 remaining`, the toast agreed (`Added
-  "noreply@thequantuminsider.com" to Safe Senders -- 1 "No rule" remaining`), and the list shrank in
-  step. **No "could not be applied" appeared.** So the counters are NOT generally broken: they
-  agree whenever no exception fires.
-  **This narrows the card significantly** -- the defect lives ONLY in the
-  `catch` path at `results_display_screen.dart:3328`, and reproducing it requires MAKING that catch
-  fire (e.g. kill the network or invalidate credentials mid-batch), not merely using the feature.
-  A reproduction recipe is therefore the first implementation task, and it is cheap: Windows is a
-  valid host for it, since the counter logic is shared.
-- **Does NOT reproduce the F212 defect it resembles.** F212's complaint (re-processing failing 100%
-  and lying about success) is FIXED on this build and was observed working: `No rule: 12` decremented
-  to `10` and then to `0`, the emails were deleted, and the rules were applied. This is a narrower,
-  newer reporting bug in the failure path.
-- Source: 0.15.2 Play closed-testing build on the Galaxy S24+, 2026-09-20 22:21-22:26. Screenshots
-  pulled over MTP; see `Screenshot_20260920_2225*.png`.
+- Platform: All (shared code). Reproduced on Android 0.15.2; the code path is not platform-specific.
+- **Priority raised from 12 to 6**: this is no longer an intermittent oddity. It reproduces ON
+  DEMAND, the mechanism is read from source, and it tells the user an action succeeded when it did
+  not -- which invites them to move on from mail that was never filed.
+
+- **THE DEFECT, exactly.** `results_display_screen.dart:3472-3480` shows the per-action toast with
+  **`backgroundColor: Colors.green` HARDCODED**. That toast reports the RULE CREATION, which
+  genuinely succeeded (it is a local database + YAML write). But it fires at line 3472, AFTER
+  `await _reProcessAffectedEmails()` on line 3461 -- so by the time it renders, the IMAP action has
+  already failed and the failure count is known. The code has the information and does not use it.
+  Compare `:3363`, the batch summary, which gets this RIGHT: it picks its colour from `failCount`
+  (`failCount == 0 ? Colors.green : Colors.orange`) and reports `Re-processed $successCount of
+  $total ($failCount failed)`.
+
+- **REPRODUCTION, confirmed (Harold, 2026-09-21, S24+ 0.15.2, airplane mode ON)**:
+  1. View Scan Results, filter to No-rule items.
+  2. Airplane mode ON.
+  3. Create a block rule on several items.
+  **Observed**: each item produced a GREEN toast -- `...rule to block entire domain
+  "*.<domain>" -- 9 "No rule" remaining` -- while the batch summary for the same actions was ORANGE:
+  **`Re-processed 0 of 6 (6 failed)`**. Same actions, opposite verdicts, seconds apart. Screenshots
+  `Screenshot_20260921_221354.png` (green, airplane icon visible in the status bar) and
+  `Screenshot_20260921_221508.png` (orange).
+
+- **What is CORRECT and must not be "fixed"**:
+  - The batch summary is honest. Do not touch `:3363`.
+  - The offline failure itself is handled properly -- 6 attempted, 6 failed, reported as such.
+  - **The rule DOES get created offline, and that is right**: rules are local state, and the user's
+    intent is recorded even with no connection. The bug is the CLAIM about the mailbox, not the
+    local write.
+  - `stats.remaining` legitimately drops, because the rule now matches. The "9 No rule remaining"
+    count is not wrong; the GREEN and the implication of completion are.
+
+- **Likely fix**: have `_reProcessAffectedEmails()` return its success/fail counts to the caller (it
+  currently returns void and reports only via its own snackbar), then colour this toast and word its
+  suffix from them -- green only when nothing failed, otherwise amber with the failure named. This
+  ALSO fixes the original complaint that opened this card (the footer reading `12 of 12 addressed --
+  12 could not be applied` while the mailbox showed the work done), because both surfaces would
+  then derive from one outcome.
+- **Do NOT re-couple the footer counters.** `addressed`/`remaining` come from rule EVALUATION and
+  `failed` from IMAP outcome, and F212 R-4 separated them deliberately so a failed action could
+  never read as "addressed" (see the comment at `:3031`). The fix is to make the TOAST honest, not
+  to make evaluation depend on IMAP.
+- **The happy path is confirmed correct** (Harold, Windows 0.15.2, same day): footer went `3 of 6
+  addressed -- 3 remaining` then `5 of 6 -- 1 remaining`, toast agreed, list shrank in step, no
+  false failure text. So the counters agree whenever no exception fires -- this defect is confined
+  to the failure path.
+- **Blocker on the exception TEXT remains**: `[F38] Re-processing failed: $e` goes to a bare
+  `Logger()` with no file sink, so it is unavailable from any installed build. Confirmed by reading
+  the logger construction and by grepping every Windows log back to 0.5.8 for "F38" (zero hits).
+  Route it through a file-backed logger or reproduce under `flutter run`. **Broader gap**: any
+  `logger.e(...)` in a user-reachable failure path is invisible in production.
+- **Test direction**: the offline recipe above is a real regression test. Also cover the RETRY --
+  a key that failed then succeeds must stop being counted as failed (the Sprint 70 Copilot fix,
+  `_reProcessFailedKeys.removeAll`), which has never been exercised against real IMAP.
+- Source: filed 2026-09-20 from the Play build; mechanism identified and reproduced on demand
+  2026-09-21. Related: [[F231]] (these toasts vanish in 3s and are recorded nowhere), [[F230]].
 
 **F226. WinWright scripts fail intermittently when run back-to-back in one sweep (~2-4h) Priority 14 (NEW, 2026-09-18 -- found during the Sprint 70 5.1.5 sweep)**
 - Phase: Developer Tooling
