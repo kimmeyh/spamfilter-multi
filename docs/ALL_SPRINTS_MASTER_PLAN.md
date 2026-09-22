@@ -563,7 +563,20 @@ step.
   catch to the operations that actually remain unattempted, or track per-email completion so the
   handler only fails what it truly did not do.
 - **UNVERIFIED and needed first**: WHICH exception fired. The handler logs
-  `[F38] Re-processing failed: $e` -- get that line before designing the fix. It may be benign
+  `[F38] Re-processing failed: $e` -- get that line before designing the fix.
+- **BLOCKER on getting it, established 2026-09-21: that line is NOT RECOVERABLE from any
+  installed build.** `results_display_screen.dart` uses a bare `Logger()` from the `logger`
+  package, which writes to the DEBUG CONSOLE only -- no `FileOutput` is configured. Confirmed
+  empirically as well as by reading: `grep -rl "F38"` over every Windows log in
+  `%APPDATA%\MyEmailSpamFilter\MyEmailSpamFilter\logs\` returns NOTHING, across every version
+  back to 0.5.8. The `live_scan_v*.log` files are written by `LiveScanLogger`, a separate
+  mechanism that never sees these events.
+  **Consequences**: (a) asking Harold to reproduce it on the Store build cannot yield the
+  exception; (b) the first implementation step is to route this handler's error through a
+  file-backed logger, or reproduce under `flutter run` and read the console. Do not open this card
+  expecting the diagnostic to be waiting.
+  **Worth a broader look**: any `logger.e(...)` in a failure path that a user might hit is
+  similarly invisible in production. That is a supportability gap beyond this card. It may be benign
   (e.g. a disconnect during `finally`) rather than an action failure, which would change the remedy
   entirely.
 - **Why it matters beyond cosmetics**: `isComplete` is `remaining == 0 && initial > 0 && failed == 0`,

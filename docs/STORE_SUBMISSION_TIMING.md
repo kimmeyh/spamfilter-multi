@@ -18,6 +18,7 @@ configured; the dashboard requires an interactive authenticated session).
 
 | Submission | Version | Submitted (recorded) | Certified/live (recorded) | Elapsed (upper bound) |
 |---|---|---|---|---|
+| 28 | 0.15.2.0 | 2026-09-19/20 (submitted by Harold BEFORE the Android 0.15.2 upload, which he confirmed; exact upload time NOT observed -- Partner Center showed "Last modified 09/20") | 2026-09-21, observed by Harold ("Congrats! Your product is now updated"; Store presence = Submission 28, last modified 09/21) **plus an INSTALLED-BUILD CHECK** -- the running Windows app title bar reads Version 0.15.2 | **~1-2 days. THE SLOWEST ON RECORD, and the first row here that is slow for a real reason rather than for lack of looking.** Harold checked repeatedly across two days and it sat at the Certification step. Both endpoints are bounded by direct observation, so unlike rows 20/21/22 this is NOT an observation-cadence artifact. Still inside Microsoft's stated "a few hours to 3 business days". **No cause was ever visible**: Partner Center exposes STAGE, never reason -- there is no queue position, ETA, or blocking item, and a reason surfaces only on failure. Possible contributors, ALL UNVERIFIED: a weekend submission, the prior Submission 26 rejection on this product, or the large content jump from live 0.14.2. Do not present any of them as the cause. |
 | 22 | 0.14.0.0 (listing-only; NO new package) | 2026-09-07 ~12:02am ET (Pre-processing observed in Harold's screenshot) | 2026-09-07, observed ~10:40am ET ("Congrats! Your product is now updated"; Store presence = Submission 22) | **NOT MEASURED -- under ~10.6 hours, which is only an upper bound.** The certification completed somewhere between the two observations and neither endpoint is the actual event. Do NOT read this as a slow certification: metadata-only submissions have no package to scan, so they are expected to be FASTER than the 20-30 min package band, not slower. To measure one properly, watch it rather than checking back the next morning. |
 | 21 | 0.14.0.0 | 2026-09-04, between ~9:22am ET (MSIX built + verified, handed to Harold) and 2026-09-05 12:01am ET (Harold's "submitted for certification"). Exact upload time NOT observed -- do not infer one. | 2026-09-05, observed ~10:32pm ET (Harold's Partner Center screenshot: "Congrats! Your product is now updated", Store presence = Submission 21, last modified 09/05/2026) **plus an INSTALLED-BUILD CHECK** -- the running Store app shows Version 0.14.0 with no [DEV] marker. | Not measurable: both endpoints are ranges. Elapsed is somewhere under ~22h, far wider than the prior 20-30 min measured band -- treat as unmeasured, not as a slow certification. |
 | 20 | 0.13.0.0 | 2026-08-27 ~7:0x am ET (Harold's upload; screenshot at Pre-processing, Submission checkpoint complete) | 2026-08-27, observed ~10:55pm ET (Harold's Partner Center screenshot: "Congrats! Your product is now updated"; certainly certified earlier -- no polling ran between morning and evening) | < 16h upper bound (single evening observation; not a cadence measurement -- prior 3 measured submissions were 20-30 min) |
@@ -60,8 +61,23 @@ configured; the dashboard requires an interactive authenticated session).
   Our observed times have consistently beaten that, but a single slow submission
   would not be anomalous -- do not promise a release date on the strength of the
   ~51-minute best case.
-- **Planning rule of thumb**: a submission uploaded in the evening has usually been
-  live by the next morning. Anything tighter than that is luck, not schedule.
+- **Planning rule of thumb, REVISED 2026-09-21 by Submission 28**: a submission is
+  USUALLY live within the hour and has usually been live by the next morning -- but
+  **plan for up to 3 business days, because that has now actually happened.**
+  Submission 28 took ~1-2 days with both endpoints directly observed, so it is not
+  an artifact of when anyone looked. The 20-30 minute band is the common case, not a
+  guarantee.
+- **When a submission IS slow, there is nothing to diagnose.** Partner Center shows
+  the STAGE (Submission / Pre-processing / Certification / Publishing) and never a
+  reason: no queue position, no ETA, no blocking item. A reason appears only if
+  certification FAILS, as an email to the contact account plus a report. So the only
+  correct answers to "why is it slow" are *wait* or *contact support* -- do not
+  speculate, and specifically do not offer a cause without evidence, which is the
+  external-claim failure mode CLAUDE.md warns about.
+- **Do NOT click "Cancel certification" to hurry a slow submission.** It forfeits
+  queue position, and the Store will not accept the same version twice -- so
+  resubmitting likely needs a version bump and a rebuild. A slow certification turns
+  into a re-release for no benefit.
 
 ## Keeping this current
 
