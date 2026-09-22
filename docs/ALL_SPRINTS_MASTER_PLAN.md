@@ -535,6 +535,72 @@ step.
      Harold should be told plainly in the Phase 5 validation steps that opening an old scan and
      adding a rule will now act on real mail.
 
+- **HAROLD'S CONTROLLED COMPARISON -- the single most useful diagnostic fact on this card
+  (2026-09-21).** *"the background scan that starts with the new rules from prior View Results
+  Summary rule additions, correctly deletes all the email. So we know emails can be deleted and we
+  know the mechanism that works to do that. Something is different in how the View Results Summary
+  re-processing emails after rules are selected by the user that results in the emails not being
+  deleted."*
+  **This is a natural A/B with everything held constant**: same account, same credentials, same
+  network, same rules, minutes apart. One path deletes, the other does not. So every
+  environment-level explanation is ELIMINATED -- not deprioritised, eliminated. The cause is a
+  difference between the two code paths.
+
+- **What the two paths share (so NOT the cause)**: both call
+  `PlatformRegistry.getPlatform(platformId)`, `SecureCredentialsStore.getCredentials(accountId)`,
+  `platform.loadCredentials(credentials)`, `setDeletedRuleFolder(...)` from the same per-account
+  setting, and both acquire a `ScanCoordinator` lease. Verified side by side:
+  `email_scanner.dart:170-205` against `results_display_screen.dart:3216-3248`.
+- **`PlatformRegistry.getPlatform` returns a FRESH instance** (`platform_registry.dart:59-62`,
+  `factory?.call()`), so a shared-adapter/shared-client theory is DEAD -- the background scan's
+  `disconnect()` cannot null the re-process path's client. Checked and eliminated.
+
+- **The differences that remain, in priority order for investigation**:
+  1. **The scanner ACTS ON FRESHLY FETCHED messages; the re-process path acts on `EmailMessage`
+     objects rehydrated from the historical DATABASE and never re-fetched.** An IMAP move/delete
+     needs a valid identifier in the CURRENTLY SELECTED mailbox. If `EmailMessage.id` is a UID from
+     an earlier session -- or the adapter's `_currentMailbox` is not the folder that UID belongs to,
+     or the UID has since been invalidated (UIDVALIDITY change, message already moved by the
+     background scan) -- the per-message action fails while the connection is perfectly healthy.
+     **This fits the evidence better than anything else**: 9 of 9 failing uniformly is what a
+     systematically invalid identifier looks like, whereas a network fault would be flakier.
+     **And it explains why the later background scan succeeds**: it re-fetches, so its identifiers
+     are current by construction.
+  2. **Folder selection.** The scanner selects each folder as it walks them. The re-process path
+     calls `takeActionBatch` with a batch that may span `Inbox`, `Bulk` and `Bulk Mail` (Harold's
+     configured folders) with no evident per-folder select. A UID is only meaningful within one
+     mailbox.
+  3. `_imapClient == null` at batch time -> `BatchActionResult.allFailed` with "Not connected. Call
+     loadCredentials() first." (`generic_imap_adapter.dart:1140-1147`). Still possible, but the
+     path does call `loadCredentials` and nothing else nulls the client
+     (`_imapClient = null` appears at exactly ONE site, `:1394`, inside `disconnect()`'s `finally`).
+- **THE UID CHAIN, traced 2026-09-21 -- this is where to start.** `takeActionBatch(delete)` routes
+  to `moveToFolderBatch` (`:1151-1153`), which groups by folder (so hypothesis 2 is HANDLED by the
+  adapter -- it does iterate per source folder) and then calls `_parseUids`:
+  `int.tryParse(message.id)`, logging `[IMAP] Invalid message UID: <id>` and DROPPING any id that is
+  not a bare integer (`:1198-1209`). If a folder's UID list comes back empty the folder is **skipped
+  with a warning and no exception** (`:992-996`) -- which yields "0 succeeded / N failed" with a
+  perfectly healthy connection, exactly the observed shape.
+  **So the question to answer first is one line of data, not a hypothesis**: what is
+  `EmailMessage.id` for a row rehydrated from the historical scan store, and does `int.tryParse`
+  accept it? If historical rows carry a composite/prefixed id, or an empty id, every re-process
+  delete fails uniformly while the background scan -- which uses ids from a LIVE fetch -- succeeds.
+  That would explain Harold's A/B exactly.
+  **NOT yet confirmed**: I did not finish tracing what the store writes into that column, and it is
+  implementation work rather than triage. Do it first and the card may collapse to a one-line fix.
+  The move is also VERIFIED post-hoc (UIDs that did not leave the source folder are counted as
+  genuine failures, `:1006-1013`), so the failure count is trustworthy -- the app is reporting a
+  real non-deletion, not a bookkeeping artifact.
+- **FIRST TASK is now narrow and cheap**: log or inspect, for one failing batch, (a) the exception
+  text from the inner `catch` at `:3266` (`[F38] Delete batch failed: $e`) versus the
+  `allFailed` reason, which distinguishes "not connected" from a per-message rejection, and (b) the
+  `EmailMessage.id` values being passed and the mailbox selected when they are used. Those two
+  facts decide between hypotheses 1/2 and 3.
+- **Note the two failure SHAPES are already distinguishable in code** -- an `allFailed` return
+  (guard tripped) versus a thrown exception caught at `:3266` -- so whoever adds the file logger
+  should make sure both are recorded distinctly. That is the difference between "never connected"
+  and "connected but the server refused these messages".
+
 - **MECHANISM B -- a live batch failing 9 of 9 with a working connection. UNDIAGNOSED.** This is
   what the screenshot actually shows and what most likely matches Harold's report, since his
   description ("none get deleted during the session") is consistent with either. Getting the
