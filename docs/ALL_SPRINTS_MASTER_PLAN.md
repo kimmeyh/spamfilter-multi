@@ -1140,6 +1140,61 @@ prompt. Harold answered `1`.
   (scans run when the device allows) becomes the fallback path, not a discarded alternative.
 - ADR-0042: Android-only, declared. Windows Task Scheduler is exact and unaffected (AC-4).
 
+**F217 -- THE "IS THIS THE ONLY WAY" SEARCH WAS RUN (2026-09-22). IT IS NOT, AND THE PREMISE OF THE 2026-09-19 DECISION HAS CHANGED. HAROLD'S CALL NEEDED.**
+
+Harold asked for this check explicitly: *"if they could run every 15 minutes at 0.1% battery usage
+per day (as they have so far), and asking for battery usage is the only way to implement this
+(search to ensure this is the only way), then I think asking for battery usage is appropriate."*
+
+**Our own code is NOT the cause -- eliminated first.** `background_scan_scheduler.dart:258` uses
+`Workmanager().registerPeriodicTask` with constraints of `networkType: connected` ONLY. No battery
+constraint, no idle constraint, no foreground service anywhere. So the cheap explanation is gone.
+
+**The diagnosis is CONFIRMED by Android's own documentation**
+(developer.android.com/training/monitoring-device-state/doze-standby): Doze *"doesn't let
+JobScheduler run... WorkManager uses JobScheduler internally, so WorkManager tasks don't run."*
+Deferred to maintenance windows. Harold's experience matches the documented behavior exactly.
+
+**But the exemption is NOT the only route.** Documented alternatives:
+- **FCM high-priority messages** -- the page's primary recommendation; they wake the app in Doze.
+- **`setExactAndAllowWhileIdle()`** -- fires in Doze, **capped at once per 9 minutes per app**,
+  which is COMPATIBLE with a 15-minute interval. **This option was not in the plan.**
+- **Foreground service** -- documented, but the page explicitly warns *"Don't start a foreground
+  service just to prevent the system from determining that your app is idle."*
+
+**AND THERE IS A PLAY POLICY CONSTRAINT the plan did not account for**:
+> *"Google Play policies prohibit apps from requesting direct exemption from Power Management
+> features -- Doze and App Standby -- in Android 6.0 and above unless the core function of the app
+> is adversely affected."*
+
+Acceptable categories: safety apps, **task automation apps**, peripheral companion apps. And:
+*"your app doesn't meet these exceptions unless Doze or App Standby breaks the core function of
+the app or there is a technical reason why your app can't use FCM high priority messages."*
+
+**Where this app actually stands.** A scheduled spam filter is arguably a **task automation app**,
+which is a genuine argument rather than a stretch. And the FCM test is one we can meet honestly:
+FCM requires a BACKEND to send messages, and this app has none by design -- it is a local IMAP
+client, and adding a server would change its privacy posture entirely. **That IS a technical
+reason.** The risk is that this must be won at review while the app is mid-closed-test with
+production access gated on the 12-tester/14-day clock.
+
+**DELIVERED IN SPRINT 72 regardless of the decision**: an honest Android timing caveat in
+Settings > Background (`_buildAndroidDozeStatusLine`, Android-gated, shown only when background
+scanning is ON, tested to not over-promise). It is correct under every outcome, so it did not wait.
+
+**OPTIONS FOR HAROLD**:
+1. **Exemption + honest fallback** (the plan as written) -- justification written around task
+   automation + no backend. Risk: a Play policy query during the closed test.
+2. **`setExactAndAllowWhileIdle()` instead** -- fires in Doze, no special permission, NO Play policy
+   exposure; the 9-minute floor does not constrain a 15-minute schedule. Less of a guarantee than an
+   exemption, and a real change to the scheduler.
+3. **Both** -- alarm as default, exemption offered only if a user reports missed scans.
+4. **Neither yet** -- keep the honest messaging alone and defer the mechanism.
+
+**Recommendation: 2 first, then 1 if measurement shows it insufficient.** It gets the functional
+outcome without spending Play-review risk during the closed test, and if the alarm still proves too
+deferred, option 1 then has evidence behind its justification rather than an assertion.
+
 **F217. Android background scans do not run while the app is backgrounded or the phone is locked -- and no notification arrives (~4-8h investigation + fix) Priority 6 (NEW, 2026-09-13 -- Harold, Sprint 69 retrospective Category 14)**
 - Phase: Android / Google Play Store Readiness
 - Platform: **Android only** (Windows uses Task Scheduler, ADR-0039, and is unaffected)

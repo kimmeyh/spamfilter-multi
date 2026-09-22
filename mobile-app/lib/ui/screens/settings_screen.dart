@@ -1306,6 +1306,54 @@ class _SettingsScreenState extends State<SettingsScreen> with SingleTickerProvid
   /// F109a (Sprint 44): a non-blocking info line explaining that background
   /// scans pause while the foreground app is open (correct F98 behavior), with
   /// the last deferral time when one has been recorded.
+  /// F217 (Sprint 72): tell Android users the truth about background timing.
+  ///
+  /// **Why this exists, and why it ships regardless of which remedy is chosen.**
+  /// Harold: *"from experience, it is very frustrating to a user that Android
+  /// background jobs only run when the app is open and in view. This completely
+  /// renders 'background' jobs as useless."* That frustration is made worse by
+  /// an app that implies the schedule is reliable when the OS does not
+  /// guarantee it.
+  ///
+  /// **The mechanism is documented, not guessed.** Android's own guidance
+  /// (developer.android.com/training/monitoring-device-state/doze-standby)
+  /// states that Doze *"doesn't let JobScheduler run"* and that WorkManager
+  /// uses JobScheduler internally, so periodic work is deferred to maintenance
+  /// windows. This app schedules via `Workmanager().registerPeriodicTask` with
+  /// only a `networkType: connected` constraint -- nothing in our own
+  /// configuration defers the work, which is what makes the OS the cause.
+  ///
+  /// **Deliberately does NOT promise a fix.** Whether the app should request a
+  /// battery-optimization exemption is an open decision with a Play-policy
+  /// dimension; this line is honest under every outcome of that decision, which
+  /// is why it lands first.
+  ///
+  /// ADR-0042: Android-only by nature -- Windows has no Doze equivalent, and
+  /// its own deferral behavior is already explained by
+  /// [_buildBackgroundDeferralStatusLine]. The two lines are siblings, each
+  /// describing the platform the user is actually on.
+  Widget _buildAndroidDozeStatusLine() {
+    return Padding(
+      key: const Key('android_doze_status_line'),
+      padding: const EdgeInsets.fromLTRB(16, 4, 16, 8),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Icon(Icons.info_outline, size: 16, color: Colors.blueGrey.shade400),
+          const SizedBox(width: 8),
+          Expanded(
+            child: Text(
+              'Android may delay background scans while the phone is idle or '
+              'the screen is off, so a scan can run later than the interval '
+              'you choose. Opening the app runs any work that was waiting.',
+              style: Theme.of(context).textTheme.bodySmall,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
   Widget _buildBackgroundDeferralStatusLine() {
     final when = _lastBackgroundDeferral;
     // Use intl for a stable, locale-appropriate date/time (PR #266 Copilot
@@ -1371,6 +1419,9 @@ class _SettingsScreenState extends State<SettingsScreen> with SingleTickerProvid
         // enabled account that shows no recent scans is not read as "broken".
         if (Platform.isWindows && _backgroundScanEnabled)
           _buildBackgroundDeferralStatusLine(),
+        // F217 (Sprint 72): the Android sibling of the line above.
+        if (Platform.isAndroid && _backgroundScanEnabled)
+          _buildAndroidDozeStatusLine(),
         const Divider(),
         // [UPDATED] FB-4: Test section moved before Frequency
         _buildSectionHeader('Test'),

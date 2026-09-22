@@ -27,6 +27,7 @@ Format: `- **type**: Description (Issue #N)` where type is feat|fix|chore|docs
 ## [Unreleased]
 
 ### 2026-09-22 (Sprint 72)
+- **feat**: Android Settings now explains that the phone may delay background scans while it is idle or the screen is off, and that opening the app runs any work that was waiting. (Issue #426)
 - **fix**: the sender address is no longer cut short in the email action panel. The Skip button shared the line with it and now sits at the bottom right, where there is room. (Issue #424)
 - **fix**: text in the email action panel is larger and now follows your device text-size setting. (Issue #424)
 - **feat**: a new control on the scan results screen shows everything you did in this session, so a message you missed is not lost. Action messages also stay on screen longer, and longer still when something failed. (Issue #425)
