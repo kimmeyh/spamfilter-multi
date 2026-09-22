@@ -1,12 +1,12 @@
 {
   "_description": "Sprint status file that persists across context compaction. Update after each phase/sub-phase completion.",
-  "_last_updated": "2026-09-22T16:10:00Z",
+  "_last_updated": "2026-09-22T18:40:00Z",
   "_usage": "Read this file after context compaction to restore sprint approval state and progress.",
   "_staleness_note": "This file had drifted 15 sprints (last updated at Sprint 35, 2026-04-19) before being refreshed at Sprint 50 close-out. It is a Phase 7.7 checklist item -- update it at every sprint close-out, not opportunistically.",
   "current_sprint": {
     "number": 71,
     "branch": "feature/20260919_Sprint_71",
-    "status": "Sprint 72 Phase 7.7 CLOSE-OUT. Manual Validation COMPLETE (Harold, 2026-09-22: A/B/C pass, D failed-fixed-repassed, E N/A on Windows). Retrospective COMPLETE -- 14 categories x 4 roles, Harold 12x Very Good. IMP-1..IMP-5 approved and applied. PR #420 marked READY and BOTH reviews requested: Copilot (attached, verified via GraphQL + timeline) and Claude full-PR. Awaiting review comments to address before Harold merges.",
+    "status": "Sprint 72 Phase 7.7 CLOSE-OUT COMPLETE. Triad present (PLAN, RETROSPECTIVE, SUMMARY). Master plan rolled. CHANGELOG updated. PR #420 READY, mergeable CLEAN, CI all green (Analyze+Test, Android, Windows). Both reviews complete: Copilot (Findings: None, but it could NOT see results_display_screen.dart) and Claude full-PR (1 CRITICAL + 5 lesser, all fixed). Suite 2,233 / 15 skipped / 0 failed. AWAITING HAROLD MERGE.",
     "plan_approved": true,
     "blanket_execution_approved": true,
     "pr_number": 420,
@@ -28,11 +28,12 @@
   },
   "_github_issues_note": "Sprint 66 cards created at Phase 3.3.1 (2026-09-07): #387 GP-19, #388 GP-4. Close by hand at Post-Merge Cleanup.",
   "test_metrics": {
-    "suite": "2,220 passed / 15 skipped / 0 failed",
+    "suite": "2,233 passed / 15 skipped / 0 failed",
     "policy_suite": "hook suite 75 passed / 0 failed",
-    "winwright": "2/2 scripts, 29/29 steps, no DB drift -- run twice, before and after review fixes",
+    "winwright": "2/2 scripts, 29/29 steps, no DB drift -- run twice",
+    "ci": "Analyze and Test, Android Build Verification, Windows Build Verification -- all pass",
     "analyzer": "clean",
-    "as_of": "2026-09-22, Sprint 72 pre-Manual-Validation"
+    "as_of": "2026-09-22, Sprint 72 close-out"
   },
   "store_release": {
     "windows": "0.15.2.0 CERTIFIED AND LIVE 2026-09-21 as Partner Center Submission 28 (\"Congrats! Your product is now updated\"; Store presence = Submission 28, last modified 09/21/2026). INSTALLED-BUILD VERIFIED: the running Windows app title bar reads \"Version 0.15.2\" (Harold screenshot). Built from the prod worktree at a3f2031 after Step 3.0 found it 33 commits behind -- the fourth consecutive sprint that check caught a stale worktree. Self-test 6/6 PASS. CERTIFICATION TOOK ~2 DAYS, THE SLOWEST ON RECORD against a measured 20-30 min band (Submissions 17/18/19); still inside Microsoft's stated 3 business days. No cause was ever visible: Partner Center exposes stage, not reason. Add a row to docs/STORE_SUBMISSION_TIMING.md -- this is the first genuinely slow submission that table has.",
