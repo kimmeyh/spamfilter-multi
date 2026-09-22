@@ -77,27 +77,44 @@ void main() {
 
     test('the effective mode is resolved before deciding', () {
       expect(source.contains('_resolveEffectiveScanMode'), isTrue);
-      expect(source.contains('getAccountManualScanMode'), isTrue,
-          reason: 'per-ACCOUNT resolution: this screen can show All Accounts, '
-              'so one session value would be wrong');
+      // C-2b (Phase 5.1.1 review): the hand-rolled resolver was replaced by
+      // SettingsStore.getEffectiveScanMode, which calls
+      // getAccountManualScanMode internally AND adds the generic per-account
+      // tier the copy had skipped. Asserting the delegation is stronger than
+      // asserting one of the calls it makes.
+      expect(
+          source.contains(
+              'getEffectiveScanMode(widget.accountId, isBackground: false)'),
+          isTrue,
+          reason: 'per-ACCOUNT resolution through the canonical resolver');
     });
 
     test('the MANUAL mode governs a user-initiated action', () {
-      expect(source.contains('getManualScanMode()'), isTrue,
+      // Expressed through the canonical resolver's flag since C-2b.
+      expect(source.contains('isBackground: false'), isTrue,
           reason: 'not the background mode -- letting a background policy '
               'govern a foreground action the user just took would be a '
               'different setting answering a question it was not asked');
-      expect(source.contains('getBackgroundScanMode()'), isFalse,
+      expect(source.contains('isBackground: true'), isFalse,
           reason: 'the background mode has no business on this path');
     });
 
     test('a read-only account is TOLD, not silently skipped', () {
+      // I-2 (Phase 5.1.1 review): the message moved OUT of this method. It used
+      // to show its own SnackBar and ALSO return an outcome the caller
+      // rendered, so the user saw a flash then a different sentence -- a new
+      // SnackBar replaces the current rather than queueing. The caller now owns
+      // the message, composed from ReProcessOutcome.readOnly().
+      expect(source.contains('ReProcessOutcome.readOnly()'), isTrue,
+          reason: 'the outcome must still distinguish read-only from failure');
+      // Matched on an unbroken fragment: the production string wraps across
+      // two source lines, so a whole-sentence match fails for a formatting
+      // reason rather than a behavioural one.
       expect(
-          source.contains(
-              'This account is set to read-only, so your mailbox '),
+          source.contains('This account is read-only, so your '),
           isTrue,
           reason: 'the honest half of the fix: Windows DEV/Prod stay read-only '
-              'by configuration and must now SAY so rather than fall silent');
+              'by configuration and must SAY so rather than fall silent');
       expect(source.contains('DiagnosticLogger.kindSkipped'), isTrue,
           reason: 'and it must reach the log as well as the screen');
     });

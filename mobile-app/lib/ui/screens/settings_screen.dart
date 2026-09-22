@@ -1303,9 +1303,6 @@ class _SettingsScreenState extends State<SettingsScreen> with SingleTickerProvid
     }
   }
 
-  /// F109a (Sprint 44): a non-blocking info line explaining that background
-  /// scans pause while the foreground app is open (correct F98 behavior), with
-  /// the last deferral time when one has been recorded.
   /// F217 (Sprint 72): tell Android users the truth about background timing.
   ///
   /// **Why this exists, and why it ships regardless of which remedy is chosen.**
@@ -1354,6 +1351,13 @@ class _SettingsScreenState extends State<SettingsScreen> with SingleTickerProvid
     );
   }
 
+  /// F109a (Sprint 44): a non-blocking info line explaining that background
+  /// scans pause while the foreground app is open (correct F98 behavior), with
+  /// the last deferral time when one has been recorded.
+  ///
+  /// (I-4, Phase 5.1.1 review: the F217 block was inserted between this comment
+  /// and its function, so this sibling lost its documentation and the Android
+  /// line gained a leading sentence describing Windows. Restored here.)
   Widget _buildBackgroundDeferralStatusLine() {
     final when = _lastBackgroundDeferral;
     // Use intl for a stable, locale-appropriate date/time (PR #266 Copilot

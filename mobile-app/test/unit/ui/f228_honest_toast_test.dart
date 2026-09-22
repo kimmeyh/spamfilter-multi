@@ -111,7 +111,11 @@ void main() {
     });
 
     test('the re-process method returns its counts', () {
-      expect(source.contains('Future<ReProcessOutcome> _reProcessAffectedEmails()'),
+      // Matches the RETURN TYPE rather than the full signature: C-1 of the
+      // Phase 5.1.1 review added a `userInitiated` parameter, and an
+      // exact-signature assertion broke on a change that did not touch the
+      // property being tested. Assert the behavior, not the spelling.
+      expect(source.contains('Future<ReProcessOutcome> _reProcessAffectedEmails('),
           isTrue,
           reason: 'it returned void before, which is why the caller could not '
               'tell the truth');

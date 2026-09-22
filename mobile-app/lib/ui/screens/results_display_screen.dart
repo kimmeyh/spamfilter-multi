@@ -185,6 +185,15 @@ class _ResultsDisplayScreenState extends State<ResultsDisplayScreen> {
   bool _historicalLoaded = false;
   List<EmailActionResult> _historicalResults = [];
 
+  /// I-3 (Phase 5.1.1 review, Sprint 72): when the loaded scan actually ran.
+  ///
+  /// The CSV export stamps a "Scan Date" into every row. Without this it used
+  /// the provider's LIVE `_scanStartTime`, so exporting a saved scan wrote
+  /// either 'Unknown' or today's timestamp onto rows from days ago. Prefers the
+  /// completion time and falls back to the start time for a scan that never
+  /// recorded one.
+  DateTime? _historicalScanCompletedAt;
+
   // F21: Track re-evaluated results for emails modified during this session.
   // Key is email.from + email.subject (unique enough for a single scan session).
   // When a user adds a rule inline, the email is re-evaluated against current
@@ -254,6 +263,12 @@ class _ResultsDisplayScreenState extends State<ResultsDisplayScreen> {
         lastScan =
             await scanResultStore.getLatestCompletedScan(widget.accountId);
       }
+
+      // I-3: remember WHEN this scan ran, for the CSV export's Scan Date.
+      final scanMillis = lastScan?.completedAt ?? lastScan?.startedAt;
+      _historicalScanCompletedAt = scanMillis != null
+          ? DateTime.fromMillisecondsSinceEpoch(scanMillis)
+          : null;
 
       List<EmailActionResult> historicalResults = [];
       if (lastScan != null && lastScan.id != null) {
@@ -373,11 +388,17 @@ class _ResultsDisplayScreenState extends State<ResultsDisplayScreen> {
           await ruleProvider.loadSafeSenders();
           await _reEvaluateNoRuleEmails();
           await _updateOldestNoRuleCursorsFromResults();
-          await _reProcessAffectedEmails();
-          // Sprint 38 Round 9 fix (2026-05-17): _reProcessAffectedEmails
-          // returns early when scanProvider.scanMode == readOnly, which is
-          // the default state on app launch when no scan has been
-          // initiated in the current session. That leaves _hiddenEmailKeys
+          // C-1 (Phase 5.1.1 review, Sprint 72): NEVER act on the mailbox
+          // from screen load. See the parameter's own documentation --
+          // before F232 this was safe by accident, and F232 removed the
+          // accident.
+          await _reProcessAffectedEmails(userInitiated: false);
+          // Sprint 38 Round 9 fix (2026-05-17), REWRITTEN Sprint 72: this
+          // call does not act on the mailbox -- it never should have, and
+          // since C-1 it cannot. (The original text explained that
+          // `scanMode == readOnly` made it inert here by default; that
+          // reasoning is gone, replaced by the explicit flag above.) The
+          // visual pass below is still needed: it leaves _hiddenEmailKeys
           // empty even though _evaluationOverrides now contains
           // newly-matched cross-screen rule entries -- the user sees the
           // chip count and footer update (those read from overrides) but
@@ -447,6 +468,12 @@ class _ResultsDisplayScreenState extends State<ResultsDisplayScreen> {
       final csvContent = scanProvider.exportResultsToCSV(
         rows: _currentResults(),
         appVersion: appVersion,
+        // I-3: a historical view must stamp the SCAN's date, not the live
+        // session's. Null on a live view, where the provider's own
+        // _scanStartTime is the right answer.
+        scanDate: widget.historicalScanId != null
+            ? _historicalScanCompletedAt
+            : null,
       );
 
       // Get configured export directory from Settings, or use default
@@ -3381,35 +3408,47 @@ class _ResultsDisplayScreenState extends State<ResultsDisplayScreen> {
   /// F232 (Sprint 72): the scan mode that should govern a USER-INITIATED
   /// action from this screen.
   ///
-  /// Resolution order, and each step is deliberate:
-  ///   1. **The session mode, when a scan actually ran this session.** If the
-  ///      user started a scan, that mode is their expressed intent for right
-  ///      now and it wins.
-  ///   2. **The account's saved MANUAL mode.** This is the fix: opening a saved
-  ///      scan from Scan History sets no session mode, so before this the
-  ///      provider default (`readOnly`) silently suppressed every action.
-  ///      The MANUAL mode is correct here rather than the background mode --
-  ///      this is a foreground action the user just took, and letting a
-  ///      background policy govern it would be a different setting answering a
-  ///      question it was not asked.
-  ///   3. **The app-wide default**, when the account has no override
-  ///      (`getAccountManualScanMode` returns null to mean exactly that).
+  /// **Delegates to `SettingsStore.getEffectiveScanMode`, which is the
+  /// canonical resolver.** Its order is:
+  ///   1. the account's manual-mode override,
+  ///   2. the account's GENERIC scan-mode override,
+  ///   3. the app-wide manual default.
   ///
-  /// Returns `ScanMode.readOnly` on any failure. That is the safe direction:
-  /// a resolution error must never turn into an unintended deletion.
+  /// **C-2/C-2b (Phase 5.1.1 review, Sprint 72) -- this method used to
+  /// reimplement that resolution, and got it wrong twice.**
+  ///
+  /// First, it consulted `scanProvider.scanMode` before the settings, on the
+  /// reasoning that "a live scan in this session means the user chose a mode
+  /// explicitly". The premise is sound and the implementation was not:
+  /// `EmailScanProvider` is a single app-wide singleton holding ONE
+  /// `_scanMode` with no account identity. Scan account A as
+  /// `safeSendersAndRules`, then open results for account B configured
+  /// `readOnly`, and that step returned A's mode for B -- bypassing B's
+  /// deliberate read-only configuration, which is the one thing this card
+  /// promised not to do.
+  ///
+  /// Second, it implemented tiers 1 and 3 and SKIPPED tier 2. An account
+  /// configured only through the generic `setAccountScanMode` path resolved to
+  /// the app-wide default instead of its own override -- so a mailbox the user
+  /// configured not to touch could be acted on. Same harm, different trigger.
+  ///
+  /// The lesson is the repo's own: do not design a new member of a shared
+  /// abstraction without reading the existing one. `getEffectiveScanMode` was
+  /// already there, already correct, and already documented.
+  ///
+  /// MANUAL rather than background mode (`isBackground: false`) is deliberate:
+  /// this is a foreground action the user just took, and letting a background
+  /// policy govern it would be a different setting answering a question it was
+  /// not asked.
+  ///
+  /// Returns `ScanMode.readOnly` on any failure. That is the safe direction: a
+  /// resolution error must never become an unintended deletion.
   Future<ScanMode> _resolveEffectiveScanMode(
     EmailScanProvider scanProvider,
   ) async {
-    // A live scan in this session means the user chose a mode explicitly.
-    if (scanProvider.scanMode != ScanMode.readOnly) {
-      return scanProvider.scanMode;
-    }
     try {
-      final settings = SettingsStore();
-      final accountMode =
-          await settings.getAccountManualScanMode(widget.accountId);
-      if (accountMode != null) return accountMode;
-      return await settings.getManualScanMode();
+      return await SettingsStore()
+          .getEffectiveScanMode(widget.accountId, isBackground: false);
     } catch (e) {
       Logger().w('[F38] scan-mode resolution failed, defaulting to '
           'read-only: $e');
@@ -3417,7 +3456,28 @@ class _ResultsDisplayScreenState extends State<ResultsDisplayScreen> {
     }
   }
 
-  Future<ReProcessOutcome> _reProcessAffectedEmails() async {
+
+  /// [userInitiated] MUST be false on any path the user did not ask for.
+  ///
+  /// **C-1 (Phase 5.1.1 review, Sprint 72) -- this parameter exists because the
+  /// F232 fix was applied one level too deep and switched on a path that has no
+  /// user intent behind it.**
+  ///
+  /// `_loadLastCompletedScan` calls this during SCREEN LOAD when a saved scan is
+  /// opened from Scan History. Before F232 that was harmless: the old
+  /// `scanMode == readOnly` guard ALWAYS tripped there, because opening history
+  /// sets no session mode and the provider field holds its read-only default.
+  /// Resolving the mode from saved settings removed that accident -- so on an
+  /// account configured `rulesOnly` or `safeSendersAndRules`, merely VIEWING a
+  /// saved scan would have deleted mail. The user tapped a history row, not an
+  /// action button, and the outcome is discarded on that path so it would have
+  /// been the least visible thing on the screen.
+  ///
+  /// F232 is about a rule the user just CREATED being applied. It was never
+  /// about acting on screen load, and this parameter keeps the two apart.
+  Future<ReProcessOutcome> _reProcessAffectedEmails({
+    bool userInitiated = true,
+  }) async {
     final scanProvider = Provider.of<EmailScanProvider>(context, listen: false);
     final logger = Logger();
 
@@ -3439,40 +3499,44 @@ class _ResultsDisplayScreenState extends State<ResultsDisplayScreen> {
     // states that premise outright and worked around the VISUAL symptom by
     // hiding rows, which made the skipped deletion invisible.
     //
-    // **Per-account, not one value.** `getAccountManualScanMode` returns
-    // `ScanMode?` (null = app-wide default), and this screen can be showing
-    // All Accounts, so a single resolved mode would be wrong. The batch is
-    // PARTITIONED below: act where the account permits it, skip the rest, and
-    // report BOTH. A silent partial action is the same defect class.
+    // **One account, one mode.** `ResultsDisplayScreen` takes a single required
+    // `accountId`, loads one credential set and talks to one platform, so it is
+    // structurally single-account and a single resolved mode is correct.
+    // (An earlier version of this comment claimed the batch was PARTITIONED
+    // per account for an All-Accounts view. Neither half was true -- I-1 of the
+    // Phase 5.1.1 review -- and a comment asserting a safety property nothing
+    // implements is worse than no comment, because the next reader inherits the
+    // confidence and stops checking the deletion path.)
     //
     // **A configured read-only account is still honoured.** This replaces
     // "skip because no scan ran this session" with "act per the account's
     // configured intent" -- it does not override a deliberate read-only
     // choice. Windows DEV/Prod are configured read-only, so they still skip;
     // what changes is that they now SAY so.
-    final effectiveMode = await _resolveEffectiveScanMode(scanProvider);
+    // C-1: a non-user-initiated call never touches the mailbox. Resolving to
+    // read-only here (rather than returning early) keeps the single exit path
+    // and the same reporting shape for every caller.
+    final effectiveMode = userInitiated
+        ? await _resolveEffectiveScanMode(scanProvider)
+        : ScanMode.readOnly;
     if (effectiveMode == ScanMode.readOnly) {
       logger.i('[F38] Skipping re-process: account is configured read-only');
       unawaited(DiagnosticLogger.log(
         kind: DiagnosticLogger.kindSkipped,
         context: 'F38/re-process',
-        detail: 'account ${Redact.email(widget.accountEmail)} is configured '
-            'read-only; no mailbox action attempted',
+        detail: userInitiated
+            ? 'account ${Redact.email(widget.accountEmail)} is configured '
+                'read-only; no mailbox action attempted'
+            : 'screen-load re-evaluation; mailbox actions are never taken '
+                'without user intent (C-1)',
       ));
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: const Text(
-              'Rule saved. This account is set to read-only, so your mailbox '
-              'was not changed.',
-            ),
-            backgroundColor: Colors.blueGrey,
-            duration: const Duration(seconds: 6),
-            behavior: SnackBarBehavior.floating,
-            margin: const EdgeInsets.only(bottom: 80, left: 16, right: 16),
-          ),
-        );
-      }
+      // I-2 (Phase 5.1.1 review): NO SnackBar here. This method used to show
+      // its own read-only message AND return the outcome, so the caller's
+      // `_showActionOutcome` composed a second, differently-worded one -- and
+      // because a new SnackBar REPLACES the current rather than queueing (the
+      // same mechanism F231 documents), the user saw a flash then a different
+      // sentence. The caller owns the message; this method reports the outcome.
+      // It also means the load path stays silent, which C-1 requires.
       return const ReProcessOutcome.readOnly();
     }
     final scanMode = effectiveMode;

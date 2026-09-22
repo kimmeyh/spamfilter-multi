@@ -925,6 +925,7 @@ class EmailScanProvider extends ChangeNotifier {
   String exportResultsToCSV({
     List<EmailActionResult>? rows,
     String? appVersion,
+    DateTime? scanDate,
   }) {
     final buffer = StringBuffer();
     final source = rows ?? _results;
@@ -940,9 +941,19 @@ class EmailScanProvider extends ChangeNotifier {
     buffer.writeln(
         '"Scan Date","Received Date","From","Folder","Subject","Rule","Match Condition","Action","Status","Email ID"');
 
-    // Format scan date (when this scan was performed)
-    final scanDate = _scanStartTime != null
-        ? _scanStartTime!.toIso8601String()
+    // Format scan date (when this scan was performed).
+    //
+    // I-3 (Phase 5.1.1 review, Sprint 72): [scanDate] must be passed for a
+    // HISTORICAL export. `_scanStartTime` is the LIVE session's field, set only
+    // in `startScan()` -- so exporting a saved scan wrote either 'Unknown' (no
+    // scan ran this session) or, worse, TODAY'S timestamp onto rows from a scan
+    // that ran days ago. That is the same live-vs-historical split this card set
+    // out to close, left half-closed. It matters because the card's purpose is
+    // producing evidence a tester hands back, and a CSV that misdates every row
+    // is weak evidence in exactly the way an unversioned one is.
+    final effectiveScanDate = scanDate ?? _scanStartTime;
+    final scanDateText = effectiveScanDate != null
+        ? effectiveScanDate.toIso8601String()
         : 'Unknown';
 
     // CSV Rows
@@ -965,7 +976,7 @@ class EmailScanProvider extends ChangeNotifier {
       final emailId = _escapeCsv(result.email.id);
 
       buffer.writeln(
-          '"$scanDate","$receivedDate","$from","$folder","$subject","$rule","$matchCondition","$action","$status","$emailId"');
+          '"$scanDateText","$receivedDate","$from","$folder","$subject","$rule","$matchCondition","$action","$status","$emailId"');
     }
 
     return buffer.toString();

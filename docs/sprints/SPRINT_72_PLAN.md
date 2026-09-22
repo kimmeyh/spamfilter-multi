@@ -19,6 +19,59 @@ scope). Execution complete; Phase 5.3 Manual Validation is next.
 
 **Suite 2,155 -> 2,207. Analyzer clean. 52 new tests.**
 
+## Phase 5 evidence
+
+- **5.1.1 automated code review**: 2026-09-22, `pr-review-toolkit:code-reviewer` over
+  `git diff origin/develop...HEAD -- '*.dart'` (6 production files; the review found a 6th I had
+  not listed). **5 findings: 2 CRITICAL, 3 IMPORTANT. ALL FIXED, none deferred.**
+  - **C-1 (CRITICAL) -- the F232 fix created an unintended deletion path.** It was applied inside
+    `_reProcessAffectedEmails`, which all THREE callers share. The third runs during SCREEN LOAD
+    when a saved scan is opened from Scan History. Before F232 that was inert BY ACCIDENT -- the
+    old `scanMode == readOnly` guard always tripped there. Removing the accident meant merely
+    VIEWING a saved scan could delete mail on a live-configured account, with no user intent and
+    the outcome discarded. **Verified in source before accepting the finding.** Fixed with an
+    explicit `userInitiated` parameter defaulting to `true`, so the dangerous path must opt out.
+  - **C-2/C-2b (CRITICAL) -- the resolver leaked across accounts and skipped a tier.**
+    `EmailScanProvider` is an app-wide singleton with ONE `_scanMode` and no account identity, so
+    scanning account A then opening results for read-only account B returned A's mode for B. And
+    the hand-rolled resolver implemented 2 of the canonical 3 tiers, skipping the generic
+    per-account override. Fixed by delegating to `SettingsStore.getEffectiveScanMode`, which
+    already existed -- the repo's own "do not design a new member of a shared abstraction without
+    reading the existing one" rule, which I had broken.
+  - **I-1** -- a doc comment claimed the batch was PARTITIONED per account for an All-Accounts
+    view. Neither half was true; the screen is structurally single-account. Deleted and replaced
+    with what is actually true. This is the Sprint 70 CRITICAL pattern (a comment asserting a
+    safety property nothing implements).
+  - **I-2** -- the read-only path fired two SnackBars for one action, and a new SnackBar REPLACES
+    the current rather than queueing, so the user saw a flash then a different sentence. The
+    caller now owns the message.
+  - **I-3** -- a historical CSV export stamped `Unknown` or TODAY'S timestamp onto rows from a
+    scan that ran days ago. The same live-vs-historical split the card set out to close, left
+    half-closed. Fixed with a `scanDate` parameter and a captured `_historicalScanCompletedAt`.
+  - **I-4** -- the F217 comment block orphaned the F109a doc comment from its function. Restored.
+  - **Coverage gap the review named, now closed**: `f232_review_findings_test.dart`, 13 tests.
+    The original F232 tests asserted the resolution tiers and nothing about the load path or
+    cross-account leakage -- green, and testing the half that worked, which is the Sprint 70 F220
+    shape exactly. C-1's guard is mutation-verified.
+- **5.1.2 F-PRECHECK**: 2026-09-22, all six classes RUN against the sprint diff, not read.
+  1. Mirror/parallel sites: CLEAN -- no PS1 twin or background sibling for the changed paths; the
+     new platform assertions read source text so they cannot pass locally and fail on ubuntu CI.
+  2. Helper wired into the production path: CLEAN -- `DiagnosticLogger` called from 5 runtime
+     sites, `_resolveEffectiveScanMode` from the re-process path. Neither is display-only.
+  3. Doc-comment-vs-code drift: CLEAN on defaults; **the 5.1.1 review found three comment defects
+     (I-1, I-4, and the stale Sprint 38 comment), all fixed** -- worth recording that the
+     mechanical check passed and the reading review caught what it could not.
+  4. Fragile input parsing: CLEAN -- two splits, both on ISO-8601 timestamps we generate.
+  5. API scope matches caller intent: CLEAN after C-2b -- resolution is per-account through the
+     canonical resolver.
+  6. Silent failure: 8 catches in the new logger, none converting an error into a destructive or
+     misleading outcome. THREE WERE BARE and are now justified in writing.
+- **5.1.5 WinWright sweep**: 2026-09-22, run TWICE against fresh release builds -- once before the
+  review fixes and once after. Both **2/2 scripts, 29/29 steps, NO DB drift**. Passed first time on
+  both runs, which is worth noting against F226 (which records this sweep as intermittently
+  failing with the failing script swapping between runs). One green pair does not disprove F226,
+  but the sweep did answer the question it exists to answer.
+
 ## Three items need Harold, and all three are recorded with evidence
 
 1. **F217 mechanism** -- the "is it the only way" search he asked for found that it is NOT, plus a
