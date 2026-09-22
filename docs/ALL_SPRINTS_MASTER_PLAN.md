@@ -823,6 +823,47 @@ step.
   (Android 0.15.2) against a Windows capture of the same sheet. Found in the same session as
   [[F228]] and [[F229]].
 
+**F229 PARTIALLY DELIVERED IN SPRINT 72 (2026-09-22). The EXPORT half is done; the SCREEN half is BLOCKED BY MEASUREMENT.**
+
+Harold asked at approval: *"if room, is there a place to add version that is visible on all
+platforms, all screens, near the top?"* He prefixed it with "if room", and there is not --
+measured, not assumed.
+
+**What was tried**: keep the label but shorten it below the 600px breakpoint (`0.15.3` at 6
+characters instead of `Version 0.15.3` at ~13), narrower max width 140 -> 76, padding 12 -> 6. The
+reasoning was sound -- the WORDS cost the space, not the number.
+
+**What happened**: `A RenderFlex overflowed by 18 pixels on the right`, and FOUR tests went red
+across `no_rule_review_account_dropdown_test.dart` (AC-1/2/3) and
+`results_display_popup_width_test.dart` (the F178 safe-area case). All at phone width. Same
+failure mode as F172 (~81px then, 18px now): **the short form narrowed the gap and did not close
+it.** Reverted; suite back to green.
+
+**The measurement is the answer**: the AppBar action row cannot hold a version label at phone
+width in ANY form. It is already at its limit with the existing icons, and the row is SHARED --
+`AppBarVersionLabel` is one entry in `StandardAppBarActions` -- so the constraint applies to every
+screen using it.
+
+**Options remaining, for Harold** (the version IS already visible at phone width on
+Settings > General, so this is about reach, not absence):
+1. **Accept the current state.** The export now carries the version, so a tester's file is
+   self-identifying even when a screenshot is not. **This closes the original problem** -- F229 was
+   filed because a 26-screenshot session could not identify its build.
+2. **Move the label into the AppBar TITLE line** as a subtitle. Real space exists there, but
+   `StandardAppBarActions` does not own the title, so every screen's AppBar construction changes,
+   and the title line has its own pressure ("Results - kimmeyharold@aol.com -").
+3. **Overflow menu entry.** Never overflows, but two taps away -- which does not serve the
+   screenshot-provenance purpose.
+4. Drop icons at phone width. Trades a working control for a label; not recommended.
+
+**Recommendation: 1 now, 2 only if screenshot provenance stays a real problem.**
+
+**DELIVERED**: `exportResultsToCSV` takes `appVersion` and writes a leading provenance row; the
+caller passes `AppVersion.get()`. A tester's CSV can now name the build that produced it.
+**CHECKED AND NOT DONE**: the YAML export (`yaml_import_export_screen.dart`) carries no version
+either -- but it is a rules/safe-sender BACKUP file rather than diagnostic evidence, a different
+purpose, so it is left for Harold to prioritise rather than folded in silently.
+
 **F229. Make the build identifiable on phone-width screens and in exports (~3-5h) Priority 12 (NEW, 2026-09-21 -- Harold, during the 0.15.2 Play verification)**
 - Phase: UX / Supportability
 - Platform: All -- the divergence is by WIDTH, not by OS, so it hits Android phones and a narrow
