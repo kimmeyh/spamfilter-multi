@@ -1,5 +1,6 @@
 import 'dart:async' show unawaited;
 import 'dart:io';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
@@ -25,6 +26,9 @@ import '../../core/models/evaluation_result.dart';
 import '../../core/models/rule_set.dart' show Rule, RuleSet;
 import '../../core/models/safe_sender_list.dart' show SafeSenderList;
 import '../../core/services/auth_results_parser.dart';
+import '../../core/services/diagnostic_logger.dart';
+import '../../core/services/app_version.dart';
+import '../../util/redact.dart';
 import '../../core/services/email_body_parser.dart';
 import '../../core/services/pattern_compiler.dart';
 import '../../core/services/rule_evaluator.dart';
@@ -76,7 +80,90 @@ enum SpecialFilter {
   error, // Only emails with errors
 }
 
+/// F228 (Sprint 72): what a re-process attempt actually did.
+///
+/// **Why this type exists.** The per-action toast was hardcoded
+/// `backgroundColor: Colors.green` and fired AFTER `_reProcessAffectedEmails()`
+/// -- so the IMAP failure had already happened and the count was already known,
+/// and the code did not use it. Harold reproduced it on demand in airplane
+/// mode: a GREEN toast per item ("...rule to block entire domain ... -- 9 No
+/// rule remaining") while the batch summary for the SAME actions was ORANGE
+/// ("Re-processed 0 of 6 (6 failed)"). Three surfaces, two verdicts.
+///
+/// Returning the counts is what lets the caller tell the truth. The method
+/// used to return void and report only through its own snackbar.
+class ReProcessOutcome {
+  const ReProcessOutcome({
+    required this.attempted,
+    required this.succeeded,
+    required this.failed,
+    this.skippedReadOnly = false,
+  });
+
+  /// Nothing needed doing -- not a failure, and not a success worth claiming.
+  const ReProcessOutcome.nothingToDo()
+      : attempted = 0,
+        succeeded = 0,
+        failed = 0,
+        skippedReadOnly = false;
+
+  /// The account is configured read-only; the mailbox was deliberately not
+  /// touched. Distinct from a failure, and the user is told.
+  const ReProcessOutcome.readOnly()
+      : attempted = 0,
+        succeeded = 0,
+        failed = 0,
+        skippedReadOnly = true;
+
+  final int attempted;
+  final int succeeded;
+  final int failed;
+  final bool skippedReadOnly;
+
+  /// True only when work was attempted and none of it failed.
+  ///
+  /// Deliberately NOT true for "nothing to do": a toast that says the mailbox
+  /// was changed when no action ran is the same class of lie this card closes.
+  ///
+  /// **No production caller, and that is deliberate -- do not "simplify"
+  /// `_showActionOutcome` to use it.** (Phase 7 review, Sprint 72.) That method
+  /// branches `skippedReadOnly` -> `anyFailed` -> else, so its success branch
+  /// is ALSO reached by `nothingToDo()`, where showing the progress suffix is
+  /// correct: the rule was created, no mailbox action was needed, and the
+  /// message makes no mailbox claim. Swapping in `allSucceeded` would exclude
+  /// that case and suppress a legitimate message.
+  ///
+  /// It is kept because it pins the SEMANTIC the tests assert -- that
+  /// `attempted == 0` is not success -- which is the distinction this whole
+  /// card exists to protect.
+  @visibleForTesting
+  bool get allSucceeded => attempted > 0 && failed == 0;
+
+  bool get anyFailed => failed > 0;
+}
+
 class _ResultsDisplayScreenState extends State<ResultsDisplayScreen> {
+  /// F231 (Sprint 72): every action outcome from this session, newest last.
+  ///
+  /// **Why a list and not a longer toast.** Harold: *"I did a few and it went
+  /// past faster than I could see it"*, and he TIMED it at about one second
+  /// each -- the nominal 3s includes enter/exit animation, and each new action
+  /// REPLACES the current SnackBar rather than queueing, so in a burst every
+  /// toast but the last is cut short. Worse, acting from the top of the list
+  /// auto-advances into the NEXT item's dialog, which covers the toast
+  /// entirely: *"you don't see any of them."*
+  ///
+  /// So lengthening the timeout cannot be the fix -- at three actions in four
+  /// seconds the user still only ever sees the last one, however long it
+  /// lives. The toast was ALSO the only place the per-action outcome existed:
+  /// not in any log, not in the CSV, and the footer carries only aggregate
+  /// counts. A missed toast meant the information was gone for good, which is
+  /// why Harold had to open Scan History to reconstruct what had happened.
+  ///
+  /// This list is the durable record. It survives a missed toast, a covered
+  /// toast, and a burst.
+  final List<String> _sessionActivity = [];
+
   // Filter state: null means show all, otherwise filter by this action type or special filter
   EmailActionType? _filter;
   SpecialFilter? _specialFilter;
@@ -111,6 +198,15 @@ class _ResultsDisplayScreenState extends State<ResultsDisplayScreen> {
   bool _hasEverScanned = false;
   bool _historicalLoaded = false;
   List<EmailActionResult> _historicalResults = [];
+
+  /// I-3 (Phase 5.1.1 review, Sprint 72): when the loaded scan actually ran.
+  ///
+  /// The CSV export stamps a "Scan Date" into every row. Without this it used
+  /// the provider's LIVE `_scanStartTime`, so exporting a saved scan wrote
+  /// either 'Unknown' or today's timestamp onto rows from days ago. Prefers the
+  /// completion time and falls back to the start time for a scan that never
+  /// recorded one.
+  DateTime? _historicalScanCompletedAt;
 
   // F21: Track re-evaluated results for emails modified during this session.
   // Key is email.from + email.subject (unique enough for a single scan session).
@@ -181,6 +277,12 @@ class _ResultsDisplayScreenState extends State<ResultsDisplayScreen> {
         lastScan =
             await scanResultStore.getLatestCompletedScan(widget.accountId);
       }
+
+      // I-3: remember WHEN this scan ran, for the CSV export's Scan Date.
+      final scanMillis = lastScan?.completedAt ?? lastScan?.startedAt;
+      _historicalScanCompletedAt = scanMillis != null
+          ? DateTime.fromMillisecondsSinceEpoch(scanMillis)
+          : null;
 
       List<EmailActionResult> historicalResults = [];
       if (lastScan != null && lastScan.id != null) {
@@ -300,11 +402,17 @@ class _ResultsDisplayScreenState extends State<ResultsDisplayScreen> {
           await ruleProvider.loadSafeSenders();
           await _reEvaluateNoRuleEmails();
           await _updateOldestNoRuleCursorsFromResults();
-          await _reProcessAffectedEmails();
-          // Sprint 38 Round 9 fix (2026-05-17): _reProcessAffectedEmails
-          // returns early when scanProvider.scanMode == readOnly, which is
-          // the default state on app launch when no scan has been
-          // initiated in the current session. That leaves _hiddenEmailKeys
+          // C-1 (Phase 5.1.1 review, Sprint 72): NEVER act on the mailbox
+          // from screen load. See the parameter's own documentation --
+          // before F232 this was safe by accident, and F232 removed the
+          // accident.
+          await _reProcessAffectedEmails(userInitiated: false);
+          // Sprint 38 Round 9 fix (2026-05-17), REWRITTEN Sprint 72: this
+          // call does not act on the mailbox -- it never should have, and
+          // since C-1 it cannot. (The original text explained that
+          // `scanMode == readOnly` made it inert here by default; that
+          // reasoning is gone, replaced by the explicit flag above.) The
+          // visual pass below is still needed: it leaves _hiddenEmailKeys
           // empty even though _evaluationOverrides now contains
           // newly-matched cross-screen rule entries -- the user sees the
           // chip count and footer update (those read from overrides) but
@@ -359,8 +467,28 @@ class _ResultsDisplayScreenState extends State<ResultsDisplayScreen> {
     final logger = Logger();
 
     try {
-      // Generate CSV content
-      final csvContent = scanProvider.exportResultsToCSV();
+      // Generate CSV content.
+      //
+      // F233 (Sprint 72): pass `_currentResults()` -- the SAME live-vs-
+      // historical selector every display path on this screen already uses.
+      // This call previously took no argument, so it read the provider's
+      // `_results` (the live session) even while the screen was showing a
+      // HISTORICAL scan, and wrote a header with zero rows while reporting
+      // success. Three of five CSVs pulled off Harold's phone were exactly 108
+      // bytes. Reusing `_currentResults()` rather than re-deriving the
+      // selection is deliberate: a second copy of that logic is how the two
+      // drift apart again.
+      final appVersion = await AppVersion.get();
+      final csvContent = scanProvider.exportResultsToCSV(
+        rows: _currentResults(),
+        appVersion: appVersion,
+        // I-3: a historical view must stamp the SCAN's date, not the live
+        // session's. Null on a live view, where the provider's own
+        // _scanStartTime is the right answer.
+        scanDate: widget.historicalScanId != null
+            ? _historicalScanCompletedAt
+            : null,
+      );
 
       // Get configured export directory from Settings, or use default
       final settingsStore = SettingsStore();
@@ -725,6 +853,16 @@ class _ResultsDisplayScreenState extends State<ResultsDisplayScreen> {
                   platformId: widget.platformId,
                   platformDisplayName: widget.platformDisplayName,
                   leading: [
+                    // F231 (Sprint 72): the durable view of what this session
+                    // did. Shown only once there IS something to show, so it
+                    // never adds a dead control to an already-crowded row --
+                    // the same row F172 measured at ~81px of overflow at 411px.
+                    if (_sessionActivity.isNotEmpty)
+                      IconButton(
+                        tooltip: 'What happened in this session',
+                        icon: const Icon(Icons.history_toggle_off),
+                        onPressed: _showSessionActivity,
+                      ),
                     IconButton(
                       tooltip: 'Export Results to CSV',
                       icon: const Icon(Icons.file_download),
@@ -1903,15 +2041,18 @@ class _ResultsDisplayScreenState extends State<ResultsDisplayScreen> {
                                   // it there is no unaddressed-item sequence to
                                   // advance through, and `_quickActionThenAdvance`
                                   // itself no-ops on navigation in that case.
-                                  if (_filter == EmailActionType.none) ...[
-                                    const SizedBox(width: 8),
-                                    _buildSkipButton(
-                                      result: result,
-                                      dialogContext: dialogContext,
-                                      anchorPosition: itemPosition,
-                                      anchorSize: itemSize,
-                                    ),
-                                  ],
+                                  // F230 (Sprint 72): Skip MOVED OUT of this
+                                  // row -- see the date/domain row below.
+                                  // Harold, on the 0.15.2 Play build: Skip
+                                  // "often overlays the domain on this same
+                                  // page". The sender above is Expanded with
+                                  // ellipsis, so every pixel Skip took came out
+                                  // of the address: at 411px it rendered
+                                  // "kimmeyharold@help.ramirezo...", while the
+                                  // IDENTICAL code on Windows at ~993px showed
+                                  // it in full. A WIDTH problem, not a font
+                                  // problem -- which is why the remedy is
+                                  // placement, not truncation tuning.
                                   const SizedBox(width: 8),
                                   result.success
                                       ? const Icon(Icons.check,
@@ -1924,8 +2065,19 @@ class _ResultsDisplayScreenState extends State<ResultsDisplayScreen> {
                               // Subtitle line: folder • subject • rule
                               Text(
                                 '${email.folderName} • $displaySubject • ${matchedRule.isNotEmpty ? matchedRule : "No rule"}',
-                                style: TextStyle(
-                                    fontSize: 12, color: Colors.grey[600]),
+                                // F230 (Sprint 72): was `fontSize: 12`.
+                                // Theme styles honour the OS font-size
+                                // accessibility setting, which a hardcoded
+                                // number cannot (ADR-0037). Harold accepted the
+                                // same increase on Windows rather than branch:
+                                // "It would be OK if it was bigger on Windows
+                                // in order to match Android and not cause an
+                                // unnecessary exception." So this stays ONE
+                                // shared change with no platform exception.
+                                style: Theme.of(context)
+                                    .textTheme
+                                    .bodyMedium
+                                    ?.copyWith(color: Colors.grey[700]),
                                 maxLines: 2,
                                 overflow: TextOverflow.ellipsis,
                               ),
@@ -1938,20 +2090,63 @@ class _ResultsDisplayScreenState extends State<ResultsDisplayScreen> {
                                   const SizedBox(width: 4),
                                   Text(
                                     dateStr,
-                                    style: TextStyle(
-                                        fontSize: 11,
-                                        color: Colors.grey.shade600),
+                                    // F230: was `fontSize: 11`, the smallest
+                                    // text on the sheet.
+                                    style: Theme.of(context)
+                                        .textTheme
+                                        .bodySmall
+                                        ?.copyWith(color: Colors.grey.shade700),
                                   ),
                                   if (displaySenderDomain != null) ...[
                                     const SizedBox(width: 12),
                                     Icon(Icons.domain,
                                         size: 14, color: Colors.grey[500]),
                                     const SizedBox(width: 4),
-                                    Text(
-                                      displaySenderDomain,
-                                      style: TextStyle(
-                                          fontSize: 11,
-                                          color: Colors.grey.shade600),
+                                    // F230: BOUNDED. This Text had no Expanded,
+                                    // so simply dropping Skip into this row
+                                    // would MOVE the overflow here rather than
+                                    // fix it -- a long domain plus a button is
+                                    // the same ~81px AppBar overflow shape F172
+                                    // hit at 411px. Flexible + ellipsis makes
+                                    // the domain yield instead of the row
+                                    // breaking.
+                                    Flexible(
+                                      child: Text(
+                                        displaySenderDomain,
+                                        overflow: TextOverflow.ellipsis,
+                                        style: Theme.of(context)
+                                            .textTheme
+                                            .bodySmall
+                                            ?.copyWith(
+                                                color: Colors.grey.shade700),
+                                      ),
+                                    ),
+                                  ],
+                                  // F230 (Sprint 72): SKIP LIVES HERE NOW --
+                                  // bottom right of the same section, which is
+                                  // where Harold pointed: "can it be moved to
+                                  // align with the bottom right of the same
+                                  // section instead of the top right as there
+                                  // appears to be more space there." The
+                                  // screenshot showed that space, and moving it
+                                  // hands the sender row its full width back.
+                                  //
+                                  // BEHAVIOUR IS UNCHANGED -- the widget moved,
+                                  // it was not reimplemented. It still reuses
+                                  // `_quickActionThenAdvance` with a no-op
+                                  // action and a covers-NOTHING predicate, so
+                                  // "next unaddressed item" means exactly what
+                                  // it means for every other button here
+                                  // (F136, Sprint 52). Still shown only under
+                                  // the "No rule" filter, where an unaddressed
+                                  // sequence exists to advance through.
+                                  if (_filter == EmailActionType.none) ...[
+                                    const Spacer(),
+                                    _buildSkipButton(
+                                      result: result,
+                                      dialogContext: dialogContext,
+                                      anchorPosition: itemPosition,
+                                      anchorSize: itemSize,
                                     ),
                                   ],
                                 ],
@@ -3107,16 +3302,258 @@ class _ResultsDisplayScreenState extends State<ResultsDisplayScreen> {
   /// Runs in the background without blocking the UI. Shows a non-blocking
   /// banner during processing and updates the results list in real-time.
   /// Emails already re-processed (tracked in [_reProcessedEmailKeys]) are skipped.
-  Future<void> _reProcessAffectedEmails() async {
+  /// F228 (Sprint 72): show the result of a rule/safe-sender action HONESTLY.
+  ///
+  /// **The defect this replaces.** Both call sites hardcoded their colour
+  /// (`Colors.green` for a safe sender, `Colors.blue` for a block rule) and ran
+  /// AFTER `await _reProcessAffectedEmails()`, so the IMAP outcome was already
+  /// known and simply not consulted. Harold reproduced it on demand with
+  /// airplane mode on: a success-coloured toast per item while the batch
+  /// summary for the same actions was orange, `Re-processed 0 of 6 (6 failed)`.
+  ///
+  /// **What stays true and must not be "fixed"**: the rule itself IS created
+  /// offline, and that is correct -- rules are local state and the user's
+  /// intent is worth recording without a connection. `stats.remaining`
+  /// legitimately drops because the rule now matches. The bug was the CLAIM
+  /// about the mailbox, so only the claim changes here.
+  ///
+  /// [successColor] preserves each site's existing success colour, so a
+  /// working action looks exactly as it did before.
+  ///
+  /// The batch summary inside `_reProcessAffectedEmails` already did this
+  /// correctly (`failCount == 0 ? green : orange`) and is deliberately left
+  /// alone -- it is the model this follows, not something to unify away.
+  void _showActionOutcome({
+    required String baseMessage,
+    required String progressSuffix,
+    required ReProcessOutcome outcome,
+    required Color successColor,
+  }) {
+    if (!mounted) return;
+
+    final String message;
+    final Color background;
+
+    if (outcome.skippedReadOnly) {
+      message = '$baseMessage -- saved. This account is read-only, so your '
+          'mailbox was not changed.';
+      background = Colors.blueGrey;
+    } else if (outcome.anyFailed) {
+      // Name the number. "Something went wrong" is what sent Harold to Scan
+      // History to work out what had actually happened.
+      message = '$baseMessage -- saved, but ${outcome.failed} of '
+          '${outcome.attempted} could not be applied to your mailbox.';
+      background = Colors.orange;
+    } else {
+      message = '$baseMessage$progressSuffix';
+      background = successColor;
+    }
+
+    // F231: record BEFORE showing. The toast can be missed, replaced or
+    // covered by the next item's dialog; this cannot.
+    // Inside setState: the history button is rendered conditionally on this
+    // list being non-empty, so without a rebuild the FIRST action records
+    // silently and the control never appears -- the durable record would exist
+    // and be unreachable, which is the same shape as the defect it fixes.
+    setState(() {
+      _sessionActivity.add(
+        '${TimeOfDay.fromDateTime(DateTime.now()).format(context)}  $message',
+      );
+    });
+
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(message),
+        backgroundColor: background,
+        // F231 (Sprint 72): a failure needs longer than a success. Harold
+        // measured ~1s of readable time on the old 3s value, because the
+        // duration includes animation and each new action REPLACES the
+        // current SnackBar rather than queueing.
+        duration: Duration(seconds: outcome.anyFailed ? 8 : 5),
+        behavior: SnackBarBehavior.floating,
+        margin: const EdgeInsets.only(bottom: 80, left: 16, right: 16),
+      ),
+    );
+  }
+
+  /// F231 (Sprint 72): show every outcome from this session.
+  ///
+  /// This is the answer to *"it went past faster than I could see it"*. A
+  /// toast is transient by nature and this screen actively works against
+  /// reading them -- actions replace each other, and auto-advance opens the
+  /// next item's dialog over the top. The list does not move.
+  void _showSessionActivity() {
+    showDialog<void>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('This session'),
+        content: SizedBox(
+          width: 420,
+          child: _sessionActivity.isEmpty
+              ? const Text('No actions yet.')
+              : ListView.builder(
+                  shrinkWrap: true,
+                  itemCount: _sessionActivity.length,
+                  itemBuilder: (context, i) {
+                    // Newest first: the last thing that happened is what the
+                    // user is usually here to check.
+                    final entry =
+                        _sessionActivity[_sessionActivity.length - 1 - i];
+                    return Padding(
+                      padding: const EdgeInsets.symmetric(vertical: 4),
+                      child: Text(
+                        entry,
+                        style: Theme.of(context).textTheme.bodyMedium,
+                      ),
+                    );
+                  },
+                ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(),
+            child: const Text('Close'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  /// F232 (Sprint 72): the scan mode that should govern a USER-INITIATED
+  /// action from this screen.
+  ///
+  /// **Delegates to `SettingsStore.getEffectiveScanMode`, which is the
+  /// canonical resolver.** Its order is:
+  ///   1. the account's manual-mode override,
+  ///   2. the account's GENERIC scan-mode override,
+  ///   3. the app-wide manual default.
+  ///
+  /// **C-2/C-2b (Phase 5.1.1 review, Sprint 72) -- this method used to
+  /// reimplement that resolution, and got it wrong twice.**
+  ///
+  /// First, it consulted `scanProvider.scanMode` before the settings, on the
+  /// reasoning that "a live scan in this session means the user chose a mode
+  /// explicitly". The premise is sound and the implementation was not:
+  /// `EmailScanProvider` is a single app-wide singleton holding ONE
+  /// `_scanMode` with no account identity. Scan account A as
+  /// `safeSendersAndRules`, then open results for account B configured
+  /// `readOnly`, and that step returned A's mode for B -- bypassing B's
+  /// deliberate read-only configuration, which is the one thing this card
+  /// promised not to do.
+  ///
+  /// Second, it implemented tiers 1 and 3 and SKIPPED tier 2. An account
+  /// configured only through the generic `setAccountScanMode` path resolved to
+  /// the app-wide default instead of its own override -- so a mailbox the user
+  /// configured not to touch could be acted on. Same harm, different trigger.
+  ///
+  /// The lesson is the repo's own: do not design a new member of a shared
+  /// abstraction without reading the existing one. `getEffectiveScanMode` was
+  /// already there, already correct, and already documented.
+  ///
+  /// MANUAL rather than background mode (`isBackground: false`) is deliberate:
+  /// this is a foreground action the user just took, and letting a background
+  /// policy govern it would be a different setting answering a question it was
+  /// not asked.
+  ///
+  /// Returns `ScanMode.readOnly` on any failure. That is the safe direction: a
+  /// resolution error must never become an unintended deletion.
+  Future<ScanMode> _resolveEffectiveScanMode(
+    EmailScanProvider scanProvider,
+  ) async {
+    try {
+      return await SettingsStore()
+          .getEffectiveScanMode(widget.accountId, isBackground: false);
+    } catch (e) {
+      Logger().w('[F38] scan-mode resolution failed, defaulting to '
+          'read-only: $e');
+      return ScanMode.readOnly;
+    }
+  }
+
+
+  /// [userInitiated] MUST be false on any path the user did not ask for.
+  ///
+  /// **C-1 (Phase 5.1.1 review, Sprint 72) -- this parameter exists because the
+  /// F232 fix was applied one level too deep and switched on a path that has no
+  /// user intent behind it.**
+  ///
+  /// `_loadLastCompletedScan` calls this during SCREEN LOAD when a saved scan is
+  /// opened from Scan History. Before F232 that was harmless: the old
+  /// `scanMode == readOnly` guard ALWAYS tripped there, because opening history
+  /// sets no session mode and the provider field holds its read-only default.
+  /// Resolving the mode from saved settings removed that accident -- so on an
+  /// account configured `rulesOnly` or `safeSendersAndRules`, merely VIEWING a
+  /// saved scan would have deleted mail. The user tapped a history row, not an
+  /// action button, and the outcome is discarded on that path so it would have
+  /// been the least visible thing on the screen.
+  ///
+  /// F232 is about a rule the user just CREATED being applied. It was never
+  /// about acting on screen load, and this parameter keeps the two apart.
+  Future<ReProcessOutcome> _reProcessAffectedEmails({
+    bool userInitiated = true,
+  }) async {
     final scanProvider = Provider.of<EmailScanProvider>(context, listen: false);
     final logger = Logger();
 
-    // Only re-process in modes that allow actions
-    final scanMode = scanProvider.scanMode;
-    if (scanMode == ScanMode.readOnly) {
-      logger.i('[F38] Skipping re-process: scan mode is readOnly');
-      return;
+    // F232 (Sprint 72): resolve the effective scan mode from SAVED SETTINGS,
+    // not from session state. Harold decided this (option 2, 2026-09-21) after
+    // reporting that blocking a domain from a saved scan deleted nothing --
+    // and that the very next background scan then deleted exactly the count
+    // that session should have.
+    //
+    // **What was wrong.** This used to read `scanProvider.scanMode`, which
+    // DEFAULTS to `ScanMode.readOnly` (`email_scan_provider.dart:165`) and is
+    // only ever set by `initializeScanMode()`, whose call sites are all
+    // scan-STARTING paths: `background_scan_core.dart:125`,
+    // `account_setup_screen.dart:318`/`:1090`, `scan_progress_screen.dart:722`.
+    // **Nothing set it when a HISTORICAL scan was opened from Scan History**,
+    // so in a session where the user had not started a scan the mode was still
+    // the read-only default and every IMAP action here was skipped -- silently,
+    // to a console log nobody could read. The Sprint 38 Round 9 comment below
+    // states that premise outright and worked around the VISUAL symptom by
+    // hiding rows, which made the skipped deletion invisible.
+    //
+    // **One account, one mode.** `ResultsDisplayScreen` takes a single required
+    // `accountId`, loads one credential set and talks to one platform, so it is
+    // structurally single-account and a single resolved mode is correct.
+    // (An earlier version of this comment claimed the batch was PARTITIONED
+    // per account for an All-Accounts view. Neither half was true -- I-1 of the
+    // Phase 5.1.1 review -- and a comment asserting a safety property nothing
+    // implements is worse than no comment, because the next reader inherits the
+    // confidence and stops checking the deletion path.)
+    //
+    // **A configured read-only account is still honoured.** This replaces
+    // "skip because no scan ran this session" with "act per the account's
+    // configured intent" -- it does not override a deliberate read-only
+    // choice. Windows DEV/Prod are configured read-only, so they still skip;
+    // what changes is that they now SAY so.
+    // C-1: a non-user-initiated call never touches the mailbox. Resolving to
+    // read-only here (rather than returning early) keeps the single exit path
+    // and the same reporting shape for every caller.
+    final effectiveMode = userInitiated
+        ? await _resolveEffectiveScanMode(scanProvider)
+        : ScanMode.readOnly;
+    if (effectiveMode == ScanMode.readOnly) {
+      logger.i('[F38] Skipping re-process: account is configured read-only');
+      unawaited(DiagnosticLogger.log(
+        kind: DiagnosticLogger.kindSkipped,
+        context: 'F38/re-process',
+        detail: userInitiated
+            ? 'account ${Redact.email(widget.accountEmail)} is configured '
+                'read-only; no mailbox action attempted'
+            : 'screen-load re-evaluation; mailbox actions are never taken '
+                'without user intent (C-1)',
+      ));
+      // I-2 (Phase 5.1.1 review): NO SnackBar here. This method used to show
+      // its own read-only message AND return the outcome, so the caller's
+      // `_showActionOutcome` composed a second, differently-worded one -- and
+      // because a new SnackBar REPLACES the current rather than queueing (the
+      // same mechanism F231 documents), the user saw a flash then a different
+      // sentence. The caller owns the message; this method reports the outcome.
+      // It also means the load path stays silent, which C-1 requires.
+      return const ReProcessOutcome.readOnly();
     }
+    final scanMode = effectiveMode;
 
     // Sprint 38 Round 4 fix (2026-05-17): historical-scan views must
     // always use _historicalResults. See _reEvaluateNoRuleEmails for
@@ -3160,7 +3597,7 @@ class _ResultsDisplayScreenState extends State<ResultsDisplayScreen> {
 
     if (toDelete.isEmpty && toMoveSafe.isEmpty) {
       logger.i('[F38] No emails need IMAP re-processing');
-      return;
+      return const ReProcessOutcome.nothingToDo();
     }
 
     // Immediately hide affected emails from the list (instant visual feedback)
@@ -3265,6 +3702,16 @@ class _ResultsDisplayScreenState extends State<ResultsDisplayScreen> {
               '[F38] Delete batch: ${result.successCount} succeeded, ${result.failureCount} failed');
         } catch (e) {
           logger.e('[F38] Delete batch failed: $e');
+          // F233 (Sprint 72): this is the SERVER_REFUSED shape -- the batch ran
+          // and threw -- as distinct from the adapter's NOT_CONNECTED guard.
+          // Telling them apart is what F232 needed and could not get.
+          unawaited(DiagnosticLogger.failure(
+            context: 'F38/delete-batch',
+            kind: DiagnosticLogger.kindServerRefused,
+            reason: 'batch threw: $e',
+            attempted: toDelete.length,
+            failed: toDelete.length,
+          ));
           failCount += toDelete.length;
           // A throw means the WHOLE batch failed -- none of it was addressed.
           deleteFailedIds = toDelete.map((m) => m.id).toSet();
@@ -3327,6 +3774,16 @@ class _ResultsDisplayScreenState extends State<ResultsDisplayScreen> {
       }
     } catch (e) {
       logger.e('[F38] Re-processing failed: $e');
+      // F233: the line Sprint 71 needed and could not read. An exception HERE
+      // fails the whole batch even though per-email work may already have
+      // succeeded, which is the F228 contradiction.
+      unawaited(DiagnosticLogger.failure(
+        context: 'F38/re-process',
+        kind: DiagnosticLogger.kindException,
+        reason: 'whole-batch failure before or during execution: $e',
+        attempted: toDelete.length + toMoveSafe.length,
+        failed: toDelete.length + toMoveSafe.length,
+      ));
       failCount = toDelete.length + toMoveSafe.length;
       // F212 R-4: this is the path that produced Harold's 6-of-6 / 8-of-8.
       // An exception here (e.g. AuthenticationException from loadCredentials)
@@ -3372,6 +3829,16 @@ class _ResultsDisplayScreenState extends State<ResultsDisplayScreen> {
         ),
       );
     }
+
+    // F228 (Sprint 72): hand the outcome back so the CALLER can tell the truth.
+    // This method used to return void and report only through the snackbar
+    // above, which is why the per-action toast could be hardcoded green while
+    // this same run knew it had failed.
+    return ReProcessOutcome(
+      attempted: total,
+      succeeded: successCount,
+      failed: failCount,
+    );
   }
 
   /// Add sender to safe senders list
@@ -3458,7 +3925,7 @@ class _ResultsDisplayScreenState extends State<ResultsDisplayScreen> {
     await _updateOldestNoRuleCursorsFromResults();
 
     // F38: Execute IMAP actions for affected emails
-    await _reProcessAffectedEmails();
+    final reProcessOutcome = await _reProcessAffectedEmails();
 
     if (mounted) {
       setState(() {}); // Refresh list to show updated rule assignment
@@ -3469,14 +3936,11 @@ class _ResultsDisplayScreenState extends State<ResultsDisplayScreen> {
       final progressSuffix = removedNow > 0
           ? ' -- $removedNow removed, $remaining "No rule" remaining'
           : (remaining > 0 ? ' -- $remaining "No rule" remaining' : '');
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text('${result.displayMessage}$progressSuffix'),
-          backgroundColor: Colors.green,
-          duration: const Duration(seconds: 3),
-          behavior: SnackBarBehavior.floating,
-          margin: const EdgeInsets.only(bottom: 80, left: 16, right: 16),
-        ),
+      _showActionOutcome(
+        baseMessage: result.displayMessage,
+        progressSuffix: progressSuffix,
+        outcome: reProcessOutcome,
+        successColor: Colors.green,
       );
     }
   }
@@ -3534,7 +3998,7 @@ class _ResultsDisplayScreenState extends State<ResultsDisplayScreen> {
     await _updateOldestNoRuleCursorsFromResults();
 
     // F38: Execute IMAP actions for affected emails
-    await _reProcessAffectedEmails();
+    final reProcessOutcome = await _reProcessAffectedEmails();
 
     if (mounted) {
       setState(() {}); // Refresh list to show updated rule assignment
@@ -3545,14 +4009,11 @@ class _ResultsDisplayScreenState extends State<ResultsDisplayScreen> {
       final progressSuffix = removedNow > 0
           ? ' -- $removedNow removed, $remaining "No rule" remaining'
           : (remaining > 0 ? ' -- $remaining "No rule" remaining' : '');
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text('${result.displayMessage}$progressSuffix'),
-          backgroundColor: Colors.blue,
-          duration: const Duration(seconds: 3),
-          behavior: SnackBarBehavior.floating,
-          margin: const EdgeInsets.only(bottom: 80, left: 16, right: 16),
-        ),
+      _showActionOutcome(
+        baseMessage: result.displayMessage,
+        progressSuffix: progressSuffix,
+        outcome: reProcessOutcome,
+        successColor: Colors.blue,
       );
     }
   }

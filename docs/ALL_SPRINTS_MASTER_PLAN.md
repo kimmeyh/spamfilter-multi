@@ -4,7 +4,7 @@
 
 **Audience**: Claude Code models planning sprints; User prioritizing future work
 
-**Last Updated**: 2026-09-14 (**Sprint 69 COMPLETE** -- PR #410 -> develop, #411 -> main. 5/5 tasks: F211 Google Sign-In dead end + console diagnosis, F210 dark-mode contrast (9 instances, not the 1 filed), F208 YAML import restored on Android, F209 Android nav-bar overlap (21 of 23 screens were unwrapped), F203 skipped safe senders disclosed. Manual Validation COMPLETE on Windows; F208/F209 validation DEFERRED to the next Play release and F210 has 2 cells needing a real sign-in failure. BOTH PR reviews ran: code-review agent 7 findings first pass + 1 CRITICAL second pass (two screens genuinely unwrapped while my gate reported green), Copilot 1 finding (a corrupted copy-paste path) which a sweep turned into 5 across 3 files, including the MSIX path pasted into Partner Center every release. All addressed, none deferred. Suite 2,119 / 15 skipped / 0 failed; policy gates 114; analyzer clean. Dev version 0.15.1+4. Retrospective: 12x Very Good; IMP-4 REJECTED by Harold and replaced with two waste-elimination rules after sorting 13 rework events by cause. NEW backlog: F212, F213, F214, F215, F216, F217 (background scans deferred for HOURS on Android -- Priority 6, the strongest Sprint 70 candidate). #405 F211 left OPEN deliberately: AC-1 needs the console change plus a never-authorised Google account. Earlier history in prior revisions of this line (git).)
+**Last Updated**: 2026-09-22 (**Sprint 72 COMPLETE** -- PR #420 -> develop. Ran on the Sprint 71 branch; Sprint 71 was never separately executed and its stub is marked SUPERSEDED. Delivered: F233 diagnostic log + the header-only CSV export fix, F232 mechanism A (historical-view rules now act on the mailbox; MECHANISM B REMAINS UNDIAGNOSED and is now instrumented), F228 honest action toast, F230+F231 action-sheet layout and durable outcomes, F217 honest Doze caveat (MECHANISM DELIBERATELY NOT BUILT -- the "is this the only way" search Harold required found it is not, and that the exemption carries a Play policy cost), F229 export half (the screen half was attempted and REVERTED after it overflowed by 18px at phone width). Suite 2,155 -> 2,233; analyzer clean; hooks 75/0; WinWright 2/2 twice; CI all green. **THREE CRITICAL findings across two reviews, all fixed, none deferred** -- and two of them were defects introduced BY this sprint: the F232 fix created an unintended deletion path from screen load (a method three callers share, the third safe only by accident), and the diagnostic logger silently destroyed concurrent records, which is the exact failure it existed to prevent. Manual validation found F233 shipped with NO UI at all -- ten tests passed via the test seam. Retrospective: Harold 12x Very Good; IMP-1..IMP-5 approved and applied. NEW backlog: F234 (read-only as a preview mode) and F235 (Android Doze via setExactAndAllowWhileIdle, TARGETED FOR SPRINT 73). Earlier history in prior revisions of this line (git).)
 
 ## How to Maintain This Document
 
@@ -133,265 +133,50 @@ Historical sprint information lives in individual documents in `docs/sprints/` a
 | 64 | docs/sprints/SPRINT_64_SUMMARY.md | [OK] Complete | Aug 27 - Sep 4, 2026 (PR #378; full Android release chain SEC-9/GP-2/GP-9/GP-8/GP-3/SEC-4 Play-submittable, Play account + legal docs live, F186 Body Phrase rules, F187 1,947 URL-shape rules purged, F188) |
 | 65 | docs/sprints/SPRINT_65_SUMMARY.md | [OK] Complete | Sep 4-7, 2026 (PR #385; Google Play closed-test readiness -- Data safety, App content + reviewer access via Demo Mode, icons, listing copy/assets, tester roster. Zero product-code diff. Store Submission 22 listing-only corrections shipped mid-sprint) |
 
+| 66 | docs/sprints/SPRINT_66_SUMMARY.md | [OK] Complete | Sep 7-8, 2026 (PR #391; Play closed-test submission and the first real tester round) |
+| 67 | docs/sprints/SPRINT_67_SUMMARY.md | [OK] Complete | Sep 8-9, 2026 (PR #397; F193 Phase 5 evidence gate, emulator toolchain corrected -- two Android SDK installs, the hardcoded path selected the 2019 one) |
+| 68 | docs/sprints/SPRINT_68_SUMMARY.md | [OK] Complete | Sep 9-10, 2026 (PR #403 -> develop, #404 -> main; Yahoo + iCloud shipped (two integers), privacy-page correction, F198 shipped NO hook deliberately. Defining pattern: four screenshots read wrong, three caught by Harold) |
+| 69 | docs/sprints/SPRINT_69_SUMMARY.md | [OK] Complete | Sep 11-14, 2026 (PR #410 -> develop, #411 -> main; Android tester experience -- sign-in dead end, dark-mode contrast (9 instances not 1), YAML import, nav-bar overlap on 21 of 23 screens) |
+| 70 | docs/sprints/SPRINT_70_SUMMARY.md | [OK] Complete | Sep 17-19, 2026 (PR #418 -> develop, #419 -> main; scan lifecycle + sign-in + toolchain. 6/6 planned plus 4 unplanned fixes. Both CRITICAL review findings were gates reporting protection they did not provide; three defects were introduced by earlier fixes in the same sprint) |
+
 **Key Achievements**: See CHANGELOG.md for detailed feature history.
 
 ---
 
 ## Last Completed Sprint
 
-**Sprint 68** (2026-09-09 -- 2026-09-10; PR #403 -> develop, PR #404 develop -> main)
-- **Type**: ship two providers that were already built, and convert three recurring failure classes into things that cannot recur. Scope F199, F198, F191, F200, F197.
-- **F191**: Yahoo and iCloud were FINISHED and unreachable -- both adapters carry real hosts, port 993, TLS, structurally identical to `aol()`. The gap was a `phase` integer. Worse for iCloud: the selection screen keeps `p.phase <= 2`, so phase-3 iCloud was **not rendered at all**. This is also the defect behind the Sprint 66 Play listing claiming both providers -- the copy was traced to the REGISTRY (which lists them) rather than the SCREEN (which hid them). Code change: two integers. The work was proving they function and writing app-password instructions that do not fail.
-- **F200**: `myemailspamfilter.com` told the public email content "is never persisted to disk" -- FALSE, and **the repo already knew**: Sprint 63 corrected `PRIVACY_POLICY.md` to disclose the 100-char preview, the correction never reached the landing page, and the honest disclosure sat one click from the false claim for ~6 months on the page the Play listing cites. Inventory also found TWO live privacy policies (landing page linked the stale March one; Play cited the August one), `docs/website/` as a byte-identical copy of the whole site, and an About section claiming Outlook.com + ProtonMail support that does not exist.
-- **F197**: the card said "28 sites to fix"; that was a grep of `Colors.*.shadeNN`, not the defect. The real pattern (hardcoded surface + theme-derived text) finds exactly TWO instances, both already fixed in Sprint 67 -- so the value was entirely the gate that stops the third.
-- **F198 shipped NO HOOK, deliberately.** R-1 found the four rule violations are not one failure mode (three tool-reflex, one PROSE, and the guidance addressed only the tool), and that a hook could not live where they happen -- `sprint-auto-advance.ps1` Gate 1c exits at Manual Validation BY DESIGN, and all four occurred outside the window. The real gap, found by grep: the rule was **not in `CLAUDE.md` at all**. Decision and counter-argument recorded in `docs/F198_QUESTION_FORMAT_ANALYSIS.md`.
-- **THE SPRINT'S DEFINING PATTERN: four screenshots read wrong, three caught by Harold.** Each time an artifact supported two readings and Claude chose the more interesting one: (1) Harold's folder ticks read as the app's pre-selection -- the code showed `initialSelectedFolders` silently outranks the pre-select, so the app RECOMMENDED without SELECTING; (2) a Play Console record of CURRENT state rewritten as a target; (3) a saved setting read as runtime resolution, which wrongly narrowed F202's blast radius; (4) a PRE-scan Android screen compared against a POST-scan Windows screen, inventing a platform difference that does not exist. **A screenshot cannot distinguish "the app did this" from "Harold did this" -- the source can.** Became retro IMP-1.
-- **BOTH PR reviews found real defects in Claude's OWN new gates.** The F197 gate had the exact defect its doc comment warns about: `isHardcodedSurface` checked for `TextStyle` on the same line, but `dart format` splits it -- **63 lines matched as "surfaces" and 31 were text colours**. Green only by luck. And Copilot's `plan_approved: false` catch had a second half: setting it true IMMEDIATELY BLOCKED the next commit, because the re-enabled hook found `pr_number` null despite PR #403 existing. Card/PR enforcement had been silently disabled for the whole sprint, and the flag was hiding it.
-- **MV**: F191 four cells (Yahoo/iCloud x Windows/Android) ALL PASS. Yahoo returned the same 41 messages with the same outcome on both platforms -- parity OBSERVED, not assumed. iCloud thin by volume (new mailbox), recorded with that limit stated. Two findings filed rather than fixed in-sprint: **F202** (a new iCloud mailbox has ONE folder, and the app defaulted Deleted Rule Folder to `Trash` -- iCloud calls it `Deleted Messages` and will never have `Trash`) and **F203** (`Found: 2, Processed: 0` is correct behaviour the user cannot see).
-- **Verification**: suite 2,074 / 15 skipped / 0 failed (was 2,060); policy gates 99 -> 109; hooks 53/53; analyzer clean. Effort ~245m against a 400-755m estimate.
-- **Retro**: 12 categories "Very Good", Cats 13/14 "none". All 5 improvements approved and applied -- IMP-1 screenshot rule, IMP-2 version gate now reads BOTH store rows (the old one compared against the CHANGELOG heading, which lags the stores, so a version live on both passed while byte-identical to production), IMP-3 in-app-vs-doc gate (found a real gap on its first run -- no AOL section in the doc), IMP-4 single-session model deviation, IMP-5 `git commit -F` for backticked messages.
-
-### Sprint 67 (previous)
-
-**Sprint 67** (2026-09-08 -- 2026-09-09; PR #396 -> develop)
-- **Type**: fix what the closed test will hit, and close the two process gaps Sprint 66 exposed. Scope F194, F195, F193, F196.
-- **F194**: the background scan was NEVER broken. `scan_history_screen.dart` chose its status icon with a TWO-branch ternary over FOUR statuses, so an `interrupted` row -- one F175 reconciliation had ALREADY detected and marked -- drew the same orange clock as a live scan. The duration text beside it was already correct (a PR #355 Copilot review added it); the icon was never updated to match, so text and icon contradicted each other on one row. Now a grey `Icons.cancel`, reading **"Not finished"** (Harold's wording at MV).
-- **F195**: the account header measured **1.14:1 in dark mode** against a 4.5:1 requirement -- a hardcoded `blue.shade50` surface with theme-derived text. 18.39:1 in light mode, so anyone testing in light saw nothing wrong. Now `secondaryContainer`/`onSecondaryContainer`.
-- **F193**: Phase 5 evidence is now gated AT the Manual-Validation boundary, inside `sprint-auto-advance.ps1` Gate 1c which already watched that transition. **Its first genuine use came the same sprint** -- it allowed MV because all three artifacts were recorded, and would have blocked on any `PENDING`.
-- **F196 + ADR-0043**: release notes derived per store from one CHANGELOG (platform tags, no tag = all platforms); ADR-0043 records the versioning decision that existed only in conversation -- one version across all platforms, advanced in lockstep, permitted to advance without being submitted everywhere.
-- **THE SPRINT'S DEFINING PATTERN: three of Claude's own artifacts looked like proof and were not.** The F194 test pinned the store contract rather than the call; the F195 test measured Flutter's stock themes rather than the app's seeded ones; the F193 gate was satisfied by any prose mentioning a marker name -- defeated within minutes by Claude's own F-PRECHECK writing. **Not one was found by reading.** Each was caught by something trying to break it: a mutation that refused to fail, a review, or the hook's own suite. TWO F194 fixes were written and WITHDRAWN entirely as redundant (`scanInbox` already errors the row and releases the lease); production code ended byte-identical.
-- **The 5.1.1 review, run BEFORE MV as F193 requires, justified itself immediately**: it found that the new F193 gate FIRED DURING PHASE 4 and broke **6 of that hook's own test cases**, because Gate 1c matched "Manual Validation" as a substring of prose in the status line. Also: the block message went to stdout while every other blocking path uses stderr (and the runner discards stdout); the gate had zero test coverage, which is how both shipped.
-- **A claim was measured and found wrong**: "the contrast pattern appears 28 times, concentrated in `account_setup_screen.dart`" -- it is TWO, and that file cannot contain the pattern at all (no `textTheme` usage). 29 was the count of hardcoded `shadeNN` occurrences, most of which are CORRECT. **Harold's counter-example is what fixed the diagnosis**: Default Folders is fully hardcoded and measures 7.56:1, which established that the defect is MIXING, not hardcoding. F197 rewritten from a 28-site sweep into a gate.
-- **The emulator was never broken either.** Reported as an unfixable SDK fault after ONE failed launch; Harold refused it ("it MUST work" -- the only pre-Store Android test path). Two SDK installs exist and Claude hardcoded the 2019 one (emulator 29 vs the 36.2.12.0 that `ANDROID_HOME` points at); emulator 29 predates the Android 34 kernel format, producing an error that reads like a corrupt image. Fix was one command.
-- **Verification**: suite 2,060/15/0; policy 99; **hook suite 53/53** (was 45/6 when the review found the regression); analyzer clean; WinWright 2/2 at sweep-head `52fbc7d`.
-- **Retro**: 11 categories "Very Good", Cats 13/14 "none". Category 1 was a documentation request -- the Copilot reviewer-visibility finding, verified empirically (`gh pr view --json reviewRequests` returns `[]` even after a SUCCESSFUL request; the timeline is the only reliable check). **IMP-1/2/3 applied now**, IMP-4 backlogged as **F198** tentatively for Sprint 68.
-
-### Sprint 66
-
-**Sprint 66** (2026-09-07 -- 2026-09-08; PR #389 -> develop, Ready-for-Review at close-out)
-- **Type**: Google Play console entry. Scope GP-4 + GP-19; F173/F189 deferred at Harold's direction; F190 taken mid-sprint on his request.
-- **OUTCOME: the closed test is LIVE.** Submission 1 (14 changes) submitted 2026-09-08 1:50 PM, **PUBLISHED 2:00 PM** -- ten minutes against an expectation of days. App created (`com.myemailspamfilter`, Play App Signing), all 8 App content declarations, content rating issued (All ages / Everyone / PEGI 3 / USK 0 / 3+, **no descriptors**), target audience 18+, store listing with copy and six graphics, and a closed-test release from a fresh 0.14.1 prod AAB (53.3MB built, **12.4MB delivered** after Play's per-device split).
-- **GP-4**: scopes narrowed to `gmail.modify` + `userinfo.email`; `gmail.send` and the redundant `gmail.readonly` removed (a send scope on a spam filter invites a reviewer question that should never arise). Data-residency determination recorded with every outbound connection enumerated. Two gates: scope parity across Windows/Android (two independent literals with nothing else holding them equal), and a build-failing check if any analytics/crash/ad SDK ever enters `pubspec.yaml`.
-- **F190**: the version bump moved from Store-release Step 1 (the END) to sprint-plan approval (the BEGINNING), so a tester can always distinguish a dev build from production. The gate caught the real condition on its first run.
-- **THE DEFECT THAT MATTERED**: the listing copy advertised **five email providers; the app offers two.** Written in Sprint 65 by tracing the claim to `platform_registry.dart` (which returns every provider regardless of phase) instead of `platform_selection_screen.dart` (which filters `phase <= 2` and DISABLES phase 2 as "Coming Soon"). **Caught at submission by Harold's own screenshot** of that screen -- destined for the same listing, plainly showing Yahoo "Coming Soon". No gate caught it. Harold chose to correct the copy (option 1) rather than open the phase gate.
-- **The gate written to prevent recurrence FAILED ITS FIRST MUTATION TEST** -- and that is the durable lesson. v1 asserted `contains(displayName)` and passed while catching nothing, because the registry says "Yahoo Mail" and the copy said "Yahoo": anchoring on the longer string can never see the shorter one. Trusting the green run would have shipped a gate that only LOOKED like protection.
-- **Also corrected**: a stale 9:16 aspect-ratio bound in ASSET_SPEC that contradicted its own worked example (1080x2340 uploaded fine); a roster privacy gate that scanned to END OF FILE rather than the roster section, firing on the app's own public contact address -- narrowed the range rather than loosening the pattern; and the Data safety record, where the per-category table's "Collected: Yes" and the submitted "No" are BOTH right because Play defines collected as **transmitted off the device** and the table describes on-device storage.
-- **Discoveries recorded** so the next submission does not re-derive them: the privacy-policy field lives INSIDE the Data safety flow (not Store settings, not Properties -- two wrong guesses); `flutter build appbundle` invoked directly fails the SEC-9 gate (use `build-with-secrets.ps1 -Output aab`); the join link does not exist until the track is published; release notes need `<en-US>` tags and cap at 500 chars.
-- **Verification**: suite 2,051 passed / 15 skipped / 0 failed (measured at close-out); policy suite 96 passing; analyze clean; WinWright 2/2 at sweep-head `511dd2c`. Five new policy gates.
-- **Retro**: Harold rated all 12 rated categories "Very Good"; Cats 13/14 "none". **All 4 proposals "apply all now"** -- two new CLAUDE.md rules (read a script's interface before hand-writing its command; verify external-policy claims in the same turn or label them unverified, a class with NO GATE), a trace-to-the-screen rule at the top of LISTING_COPY.md, and verified console-location records.
-- **Carried to Sprint 67**: tester recruitment and opt-in tracking, then the production-access application. Harold's call: the sprint delivered everything within its control, and the 14-day clock is an external dependency, not a reason to hold a sprint open.
-
-### Sprint 65 (previous)
-
-**Sprint 65** (2026-09-04 -- 2026-09-07; PR #385 -> develop, Ready-for-Review at close-out)
-- **Type**: Google Play closed-test readiness -- everything Play requires BEFORE the 14-day clock can start. All 5 tasks complete; Manual Validation 4/4 PASS; retrospective + all 5 improvement decisions executed 2026-09-06.
-- **THE SPRINT'S DEFINING MOMENT was Harold's refinement question**: "does the list include known timing dependencies that should drive the order?" It did not -- my slate was ordered by BUILD dependency while the CALENDAR was governed by the 12-tester/14-continuous-day closed test. My first correction was ALSO wrong (start the clock, do listing work during the wait); verified research overturned it, because closed testing sits behind the SAME complete-app-setup wall as production and only INTERNAL testing skips setup, earning zero credit toward the 12/14. That research also surfaced **GP-18 (App access)** -- a Play requirement nothing in the project tracked, which would otherwise have been found as a blocker mid-rollout.
-- **GP-10**: Data safety declarations recorded WITH code evidence per answer. Verified: no analytics/crash/ad SDK anywhere, nothing shared, stored content limited to sender/subject/folder plus a 100-char preview enforced at the WRITE boundary. Zero contradictions with the published privacy policy.
-- **GP-18**: every App content item answered, and reviewer access resolved as **Demo Mode rather than a test account** -- the agent verified rather than accepted the premise and found `EmailScanner` special-cases `platformId=='demo'` to use its own rule set, so it works on a fresh install with no seeded rules. No live credential ever exists.
-- **GP-7**: **audit-first paid off again** (second sprint running, after S64's GP-8) -- adaptive config and all five densities were ALREADY correct, nothing regenerated; only the 512x512 listing icon was produced (no-alpha verified).
-- **GP-6**: listing copy (78/80 and 2694/4000, both MEASURED), asset spec, and a cross-store comparison that found **two stale claims in the LIVE Windows listing**. **GP-17**: roster distinguishing CONFIRMED opt-in from invitation, with the application date computed from the LAST opt-in.
-- **Findings worth remembering**: a FALSE Play declaration ("news app: Yes") reached committed history via the sprint's SECOND commit race -- both races were diff-reviewed and neither review caught them, because a one-word change inside a 150-line document is what diff review misses. Harold asked whether a semaphore could prevent it; the answer was a **mutation-lock gate** (asymmetric parties, so enforcement belongs on the COMMIT, not the mutation), which a security review then found three holes in, plus a 4th timezone bug found while fixing those. Also: a gate that asserted a document's own claim of diligence, a gate defeated by a substring ("Try Demo Mode" inside "Try Demo Mode instead"), and a fixed 5s test wait for a ~5.9s scan (Copilot).
-- **Verification**: suite **2,039 passed / 15 skipped / 0 failed** (+28); analyze clean; WinWright 2/2, no DB drift; **zero product-code diff**. MV step 3 matched prediction EXACTLY (59 processed, 26 deleted, 21 safe, 12 no-rule, 0 errors) -- the widget test's numbers, confirmed on a device.
-- **Retro**: Harold rated all 12 rated categories "Very Good"; Cats 13/14 "none". **All 5 proposals "all now as amended"**, with Harold's amendment on IMP-1 requiring a DETERMINISTIC mechanism, not just a backfill -- so `verify-closeout-complete.ps1` now fails a close-out claim when CODING_VELOCITY.md has no row for the sprint (the rule existed in prose only, which is exactly why it was missed silently).
-- **Store release outcome (mid-sprint, 2026-09-07)**: **Submission 22, listing-only (NO new package), CERTIFIED AND LIVE.** Three metadata corrections found by the GP-6 comparison and the Properties review: the privacy paragraph rewritten so the local-only promise LEADS and the 100-char preview is stated as saved ON THE DEVICE; the canonical privacy policy URL; and the **OneDrive automatic-backup declaration UNCHECKED** so the description needs no asterisk. 0.14.0.0 stayed live throughout.
-- **Docs**: SPRINT_65_PLAN.md / SPRINT_65_RETROSPECTIVE.md / SPRINT_65_SUMMARY.md / GOOGLE_PLAY_ACCOUNT_SETUP.md (3 new sections) / store-assets/android/ / STORE_LISTING_ASSETS.md / TESTING_STRATEGY.md (mutation-lock contract) / SPRINT_PLANNING.md (audit-first check) / CLAUDE.md (mutation-lock rule).
-
-_(Prior: **Sprint 64** below.)_
-
-**Sprint 64** (2026-08-27 -- 2026-09-04; PR #378 -> develop, Ready-for-Review at close-out)
-- **Type**: Google Play submittability (the entire Android release chain) + the body-rules follow-through trio. All 11 tasks complete -- Harold's option 1 at Phase 8.4 kept Group B intact in ONE sprint because six of the items converge on a single signed artifact. Manual Validation 2026-09-02/03; retrospective + all 6 improvement decisions executed 2026-09-03.
-- **Release chain (headline)**: **SEC-9** build-time Gmail client-id injection from the single `secrets.*.json` source (release build FAILS LOUDLY if missing; debug/CI warn + placeholder per F127). **GP-2** executes the already-Accepted ADR-0027 Option B (no key.properties) -- upload keystore created, **SHA-256 fingerprint PROVEN identical across keystore, AAB and APK** (the claim Play App Signing enrollment needs); injection switched from `-P` to ENVIRONMENT VARIABLES after flutter's `.bat` shim let cmd metacharacters in a real password eat the argument list on first live use. **GP-9** R8 + resource shrink + Dart obfuscation, symbols outside the repo, -12.8% APK. **SEC-4** cleartext disabled app-wide. **GP-3** manifest reduced to exactly 9 justified permissions (NFC + biometric pair were dormant msal_auth transitives). **GP-8 VERIFY PASS**: already targets API 36 ahead of Google Play's Aug 31 2026 rule, and every 64-bit library passes 16KB alignment. All four layers documented in ARCHITECTURE.md as declared ADR-0042 platform exceptions.
-- **GP-16 + GP-5**: Play developer account ("Kimmey Consulting, Ohio", personal route, ID 6597324007880348667) created AND all three verifications cleared the same evening; Privacy Policy + Terms **PUBLISHED** at `myemailspamfilter.com/legal` (GitHub Pages already served `main:/docs` on Harold's custom domain -- discovered during the walkthrough).
-- **F186**: fifth manual rule type (Body Phrase), the first non-domain one -- and the sprint's case study in what green tests do not prove. It shipped with 36 widget + 4 unit tests green, then produced **FOUR defects**, every one in a cross-cutting contract no test asserted: `source_domain` is the UI DISPLAY value (NULL leaked the internal name); the duplicate checker compared `condition_header` for EVERY category (always NULL on body rules, so body duplicates were never detected on any platform); the edit screen had no INBOUND `'keyword'` mapping (a body rule reopened AS A DOMAIN RULE and a plain Save rewrote its type); and the edit save path derived the condition bucket from the ORIGINAL rule while the sub-type followed the selection (switching any rule to Body Phrase wrote the phrase into the SENDER condition -- looked right in the list, could never match). Two found by Harold on the first real Android create, two by the Phase 5.1.1 review.
-- **F187**: 647 obsolete URL-shape body rules removed from dev, **1,300 from prod** (368 distinct link-domains x legacy-import duplicates), each behind a Harold-approved per-DB dry run with timestamped backups and untruncated verification. The prod numbers not matching the presented dev numbers is exactly why work STOPPED for re-approval.
-- **F188**: unparseable conditions warn per column, are marked in Manage Rules, and are counted by an integrity sweep AT LOAD (Copilot caught that the sweep had been defined but never invoked outside tests, so the documented behavior never happened for a real user).
-- **Android chain validation: 6 of 6 PASS** on the signed R8-minified 0.13.0 release APK. Strongest result: WorkManager resolved `dev.fluttercommunity.workmanager.BackgroundWorker` BY FULL NAME on the minified build with the job registered in `dumpsys jobscheduler` -- the one R8 keep rule PROVEN, not inferred.
-- **Review rounds**: Phase 5.1.1 ran three parallel passes (release chain, rule authoring, dedicated silent-failure hunt) -- **8 findings, 2 critical, all verified against source before fixing, all fixed with tests**. F-PRECHECK class 1 independently caught the edit screen as the un-swept parallel site. **Mutation verification reversed a conclusion twice**: a background agent's F188 mutation claim did not survive re-running it, and the edit-screen category fix stayed GREEN under mutation -- proof the fix had no test, which prompted the round-trip test that now reds it. Copilot: 1 real finding, fixed and replied.
-- **Verification**: suite **2,011 passed / 15 skipped / 0 failed** (+56); analyze clean; WinWright sweep 2/2 at `sweep-head 80180b3`, DB drift none.
-- **Retro**: Harold rated all 12 rated categories "Very Good"; Cats 13/14 "none". **All 6 proposals "apply now", all applied same-session** (AVD stale-snapshot fix, display-value gate, upload-keystore backup procedure in ADR-0027, two memory hardenings, and a new Phase 5.1.6 runtime launch gate -- scoped by Harold to ONCE per sprint before Manual Validation under the efficiency guideline).
-- **Notable**: SEC-4 shipped a `network_security_config.xml` that passed AAPT and its own policy gate and CRASHED the app at startup -- Android's runtime parser rejects a `domain-config` root. Nothing in the suite could catch it; that is the defect that produced the new launch gate. Separately, the AVD's stale quickboot snapshot silently reverted the installed build three times and Harold tested the WRONG build once.
-- **Store release outcome (Phase 8.3, 2026-09-05)**: Sprint 64's merged scope shipped as **0.14.0.0 (Submission 21), CERTIFIED AND LIVE** -- confirmed by direct Partner Center observation ~10:32pm ET ("Congrats! Your product is now updated", Store presence = Submission 21) **plus an installed-build check** (running Store app reads Version 0.14.0, no [DEV] marker). Eighth MINOR release (feat: F186 Body Phrase rule type). Certification elapsed NOT measurable this cycle -- both the upload and the observation are ranges, so treat it as unmeasured rather than slow. Verification pre-upload: Check A dart-defines PASS, `--release-self-test --expected-version=0.14.0` 6/6 PASS (incl. both APP_ENV and NATIVE_APP_ENV), manifest 0.14.0.0, 17.1 MB.
-- **Docs**: SPRINT_64_PLAN.md / SPRINT_64_RETROSPECTIVE.md / SPRINT_64_SUMMARY.md / ARCHITECTURE.md (release chain + Body Phrase contracts) / ADR-0027 (IMPLEMENTED + keystore backup and recovery) / GOOGLE_PLAY_ACCOUNT_SETUP.md / published legal docs.
-
-_(Prior: **Sprint 63** below.)_
-
-**Sprint 63** (2026-08-24 -- 2026-08-27; PR #366 -> develop, Ready-for-Review at close-out)
-- **Type**: Scanner architecture (F180 deferred body fetch) + Android/Google Play track opening (activated off HOLD at this cycle's refinement). All 9 tasks + F185 pulled in-sprint complete; Manual Validation complete 2026-08-26 with all 7 verdicts recorded; retrospective + all 8 improvement decisions executed 2026-08-27.
-- **F180 (headline)**: header-first evaluation -- `evaluateWithoutBody` tri-state oracle + per-message on-demand full-body fetch on both adapters (IMAP `BODY.PEEK[HEADER]` chunks, Gmail `format=metadata` batches); full-body matching always (truncation rejected at planning by Harold). **Live: 36s / 456MB / 0 fetches vs the 6m17s / ~1.0GB Sprint 62 anchor (~10x); with a body rule, exactly the 40 undecidable messages fetched (1m16s / 529MB), each deferral logged.** Headers-only confirmed by a 4-line independent audit. Failed fetch degrades loudly to header-only (recorded decision).
-- **F185** (pulled in-sprint): Gmail bodies were evaluated as RAW base64url -- body rules could essentially never match on the Gmail path; decoded at all conversion sites, mutation-verified.
-- **F181**: unenforced 50-email testLimit mode removed; renamed "Process Rules Only"; 3 deliberate keeps annotated. **F184**: in-VM E2E for the three Sprint 62 UI surfaces. **F182**: synthetic `.invalid` sweep seeding ends the mt2c baseline rot (post-Copilot: gated on mt2c selection). **F164 CLOSED**: the Android speed gap WAS body fetching (same debug emulator, F180 removed it).
-- **Android/GP**: **F94** dev/prod flavors (side-by-side, [DEV] label, -Env script wiring; dev-flavor Gmail sign-in WORKS via appauth despite the stub -- console prereqs optional); **GP-12** Firebase Analytics removed per ADR-0030/0033 (prod sign-in verified); **GP-16** personal-route setup guide (walkthrough = Sprint 64 first task); **GP-5** privacy/terms drafted + text approved (publication at the Sprint 64 walkthrough).
-- **Review rounds**: in-sprint review 1C/2H/3M all fixed (C-1 = self-inflicted control-byte corruption of the build script, byte-verified repair + unmasked re-proof); round 2 mutation-tested its own conclusion and found the exc.body deferral clause UNGUARDED (deletable with a green suite) -- closed with 3 isolated guard tests, mutation now red on exactly one. Copilot 3 comments: 2 fixed, 1 F110 policy keep, all resolved.
-- **New backlog registered**: F186 (body-rule authoring, P22), F187 (remove 647 URL-shape body rules, P24), F188 (silent rule neutralization, P26).
-- **Verification**: suite **1,955 passed / 15 skipped / 0 failed**; analyze clean; hooks 51/51; Windows build verified; Phase 5 evidence gate held on its first sprint (evidence recorded BEFORE MV).
-- **Retro**: Harold -- Testing "Needs improvement as noted by dev team during sprint", Process "Good - see issues noted by dev team", all else Good/Very Good; Cats 13/14 "none". **All 7 proposals "all now" + an 8th added by Harold (timestamp footer); all 8 applied same-session** (isolated-branch guard rule, scratch-probe convention + gitignored test/scratch/, no compound questions, announce background launches, python escape hard rule, build-input-edit ban, Sprint 64 stub carry-ins, timestamp footer memory).
-- **Store release outcome (Phase 8.3, 2026-08-27)**: Sprint 63's merged scope shipped as **0.13.0.0 (Submission 20), CERTIFIED AND LIVE** -- uploaded ~7:0x am ET, confirmed live by direct Partner Center observation ~10:55pm ET same day (single evening check; true certification time unmeasured, prior band 20-30 min). Seventh MINOR release. Verification pre-upload: Check A dart-defines PASS, `--release-self-test` 6/6 PASS, manifest 0.13.0.0, 17.9 MB.
-- **Docs**: SPRINT_63_PLAN.md / SPRINT_63_RETROSPECTIVE.md / SPRINT_63_SUMMARY.md / SPRINT_64_PLAN.md stub / GOOGLE_PLAY_ACCOUNT_SETUP.md / legal drafts.
-
-_(Prior: **Sprint 62** below.)_
-
-**Sprint 62** (2026-08-21 -- 2026-08-23; PR #355 -> develop, Ready-for-Review at close-out)
-- **Type**: Scan robustness (the Sprint 61 MV forensics quintet) + test hygiene. All 6 tasks + F161 AC-4 carry-over complete; Manual Validation complete 2026-08-22 with every item disposed; retrospective + all 7 improvement decisions executed 2026-08-23.
-- **F177**: memory-bounded chunked fetch (fetchBatchSize=20, universal; per-batch evaluation + body-truncated retention). **Survival PASS on the previously-fatal case**: daysBack=0 AOL scan, 181 emails, 6m17s, NO LOW_MEMORY kill (peak ~1.0GB vs 817MB-1.4GB WITH death; in-flight ~1.6MB/message vs ~6MB). Residual peak registered as F180.
-- **F175**: ScanCoordinator FIFO serialization (one chokepoint in scanInbox; declared ADR-0042 Windows cross-process exception), DB-backed cross-process detection with wait notice + rolling-average estimate, 30-min background timeout, startup reconciliation ('interrupted'; 29 orphans cleared on-device), scheduler cancel-both + exponential backoff. **R-7 settings-interplay recommendation DECLINED by Harold (Class-1): fully-independent Manual/Background tabs are the deliberate design -- do not re-raise.**
-- **F174**: unlistable/empty fetch sequences are explicit non-events; real per-folder failures surface in errorCount.
-- **F178**: two rounds -- round 1 inert on-device (consumed MediaQuery padding; flat harness lied green), round 2 per Harold's direction bottom-anchors the popup on compact widths from root-view insets. PASS both rows.
-- **F176** account email labels on scan screens (shared widget, both platforms); **F163** 11 skipped-test remediations live, skips 26 -> 15 (all deliberate keeps).
-- **Post-MV Phase 5 evidence pass**: automated code review (2C/3H/4M -- C-2 REAL: hung background scan never released the lease; fixed owner-matched + mutation-verified; C-1 honestly downgraded to unreachable-but-guarded), F-PRECHECK clean (on PR), WinWright sweep repaired from the Sprint 61 F169 rot (chips -> dropdown) and green 3/3 -> 2/2 after f129 retirement.
-- **CI**: draft PRs no longer run CI (fires at Ready-for-Review); Linux-only scheduler test root-caused (Workmanager singleton replaces injected fakes) and fixed.
-- **New backlog registered**: F179 (HOLD, GenAI-gated), F180 (P10), F181 (P18), F182 (P30), F183 (HOLD external).
-- **Verification**: suite **1,931+ passed / 15 skipped / 0 failed**; analyze clean; hook suite 51/51; sweep green with sweep-head recorded.
-- **Retro**: Harold -- Testing "Needs improvement as noted by dev team during sprint", Process "Good - see issues noted by dev team", all else Good/Very Good; Cats 13/14 "none". **All 7 improvement proposals decided as recommended: 5 applied same-session (Phase 5 evidence gate, sweep-at-HEAD rule, serialized builds, inset-test rule, f129 retirement), 2 to backlog (F182, F183).**
-- **Store release outcome (Phase 8.3, 2026-08-24)**: Sprint 62's merged scope shipped as **0.12.0.0 (Submission 19), CERTIFIED AND LIVE ~9:12am ET** -- uploaded ~8:5x, ~20-25 minutes submit-to-live (third consecutive 20-30 min measurement). Sixth MINOR release. Verification: Check A dart-defines PASS, `--release-self-test` 6/6 PASS, manifest 0.12.0.0, 17.9 MB.
-- **Docs**: SPRINT_62_PLAN.md / SPRINT_62_RETROSPECTIVE.md / SPRINT_62_SUMMARY.md.
-
-_(Prior: **Sprint 61** below.)_
-
-**Sprint 61** (2026-08-16 -- 2026-08-21; PR #347 -> develop)
-- **Type**: Process encoding + cross-platform parity + the Android scheduler. 9/9 tasks complete; Manual Validation complete 2026-08-20; retrospective + all 4 approved improvements applied 2026-08-21.
-- **F170**: the post-merge Release Cycle encoded as **Phase 8** across SPRINT_EXECUTION_WORKFLOW.md (authoritative), SPRINT_CHECKLIST.md 8.1-8.5, BACKLOG_REFINEMENT.md (two-pass model; mandatory-vs-on-demand contradiction fixed), CLAUDE.md, and both hooks (verify-closeout pr_number precondition; auto-advance Gate 1c release-cycle markers). Ran first as assigned.
-- **F162/ADR-0042**: cross-platform parity ADR ACCEPTED with Harold's platform-factories addition; audit found no systemic divergence.
-- **F161**: Android background-scan scheduling as the canonical ADR-0042 factory (shared `BackgroundScanCore` pipeline, per-platform scheduler adapters, WorkManager dispatcher, completion notifications, contextual POST_NOTIFICATIONS). **Validated for CORRECTNESS on-device: the manual-vs-background count-parity experiment PASSED with per-email-identical outcomes.** Google Play SHIPMENT PREREQUISITE met. MV round 1 caught the call-site escape (both settings call sites still Windows-gated) -- fixed and now pinned by the IMP-2 policy gate.
-- **Also delivered**: F169 account-filter dropdown (+ pre-existing selection-bar overflow fix), F172 AppBar version label (suppressed below 600px by design), F168 Inbox-omitted-scope warning, F171 1024x640 sweep (PASS incl. Harold's live judgment checks), F167 capability-not-mechanism Help wording with policy gate, Task 0 line-ending normalization.
-- **MV forensics registered 5 items with root causes**: F174 (silent empty-folder fetch), F175 (scan concurrency + orphan reconciliation + retry bounding), F176 (account email on scan screens), F177 (memory-bounded chunked fetch m=20 -- the proven LOW_MEMORY root cause of the scan-death cascade), F178 (Android popup clips Block Subject).
-- **Store**: 0.10.0.0 (Submission 17) uploaded 2026-08-16 21:51 and CERTIFIED 22:17 -- ~26 minutes, the first real submit-to-live measurement (10-minute Playwright polling; the old ~51-minute figure was observation-cadence bias). Recorded in docs/STORE_SUBMISSION_TIMING.md.
-- **Store release outcome (Phase 8.3, 2026-08-22)**: Sprint 61's merged scope shipped as **0.11.0.0 (Submission 18), CERTIFIED AND LIVE ~10:41** -- uploaded ~10:10, ~25-30 minutes submit-to-live measured at a 5-minute polling cadence, confirming the ~26-minute figure. Fifth MINOR release. Verification: Check A dart-defines PASS, `--release-self-test` 6/6 PASS, manifest 0.11.0.0, 17.9 MB.
-- **Verification**: suite **1,893 passed / 26 skipped / 0 failed**; analyze clean; hook suite 49/49; every new gate mutation-verified.
-- **Retro**: Harold -- Testing Approach "Needs improvement" (the call-site escape), Process "Good" (3 turn-ending failures, all same-day resolved), everything else Good/Very Good. **All 4 improvements approved and applied same-session** (IMP-1 dangling-commitment hook gate, IMP-2 factory call-site policy gate + ADR rule, IMP-3 claimed-change verification memory, IMP-4 operational memories).
-- **Docs**: SPRINT_61_PLAN.md / SPRINT_61_RETROSPECTIVE.md / SPRINT_61_SUMMARY.md.
-
-_(Prior: **Sprint 60** below.)_
-
-**Sprint 60** (2026-08-15 -- 2026-08-16; PR #335 -> develop)
-- **Type**: Android quality gate + tooling truth. All 7 planned tasks (F160 skipped-tests audit, F156 Android walk-through, F157 gradle/minSdk adoption, F158 Android CI job, F159 metadata gates, F143 touch selection, F144 background-scan dead-code removal) plus F166 Scan Results header redesign executed mid-sprint.
-- **2 CRITICAL Android bugs found+fixed** via the walk-through/MV: value-returning PRAGMAs rejected by execSQL (every scan failed) and the accounts-FK gap (zero scan persistence -- masked for months because only Windows-only code created the accounts row).
-- **4 MV rounds**, approved by Harold 2026-08-16. NEW backlog registered: F161-F165, F167. Retro: Cat 1 Good (python-on-Windows tooling -> IMP-1 memory applied), Cats 2-12 Very Good.
-- **Store**: 0.9.0.0 (Submission 16) LIVE 2026-08-16; the sprint's merged scope shipped in 0.10.0.0 (Submission 17) LIVE 2026-08-16 22:17.
-- **Verification**: suite 1,859 passed / 26 skipped / 0 failed at close.
-- **Docs**: SPRINT_60_PLAN.md / SPRINT_60_RETROSPECTIVE.md / SPRINT_60_SUMMARY.md (summary created at Sprint 61 Phase 3.2.1 per the triad rule).
-
-_(Prior: **Sprint 59** below.)_
-
-**Sprint 59** (2026-08-15, single day; PR #326 -> develop)
-- **Type**: Android unblock + tooling truth + UX polish. 4/4 tasks complete plus unplanned WinWright sweep restoration; Manual Validation clean.
-- **F150**: Android debug builds restored end to end -- Firebase registration of `com.myemailspamfilter` (Harold, screenshot-guided; autofill mis-registration caught pre-download), fresh `google-services.json`, plus the unmasked `flutter_local_notifications` 16->17 bump (v16 does not compile against SDK 34). APK installs + launches on the emulator; F142's deferred visual check passed; SHA-1 registered same-day (Google Sign-In unblocked for the Android track).
-- **F153**: F140's "zero UIA patterns" conclusion REFUTED -- missing flag + newly-discovered lazy semantics init (one `ww_get_snapshot` primes the tree). Verified: InvokePattern, direction scrolling, off-screen tree reads, direct version-text read (closes F139's known gap). Verified broken: into_view (false success). WINWRIGHT_SELECTORS.md rewritten; mandatory 2-step pre-flight added to SPRINT_PLANNING.md.
-- **F155**: 'Review No Rule Items' rename, 31 occurrences forward-only, gates enforce the new name.
-- **F154**: dedicated Help section for the default screen (HelpSection 22 -> 23, ADR-0038 pipeline), replacing the resultsDisplay stand-in carried since F133-S52; content Harold-approved at MV.
-- **Unplanned**: WinWright sweep restored to green after discovering it had not run green since 2026-07-28 (all 3 active scripts stale since F135); runner launch-wait hardened; retired-strings policy gate added (cowork review suggestion).
-- **Also this sprint**: **0.8.0.0 (Submission 15) CERTIFIED AND LIVE** same day as upload; Step 7 close-out complete; dev bumped to 0.8.1+1.
-- **Verification**: suite **1,893 passed** / 29 skipped / 0 failed (from 1,891); deep-link integration 32/32; sweep 3/3 mid-sprint + guard-verified re-run at close (mt2c data-precondition note recorded); analyze clean; every gate mutation-verified.
-- **Retro**: ALL 14 categories "Very Good" (Harold); 5 of 6 improvements applied same-session (grep-truncation memory, unfiltered-logs memory, DEV-scoped attach, DB-guard BOM fix + loud-fail, sweep artifact rule); IMP-6 skipped (upgrade freedom) -> F157 registered instead; F156 registered from MV.
-- **Docs**: SPRINT_59_PLAN.md / SPRINT_59_RETROSPECTIVE.md / SPRINT_59_SUMMARY.md.
-
-_(Prior: **Sprint 58** below.)_
-
-**Sprint 58** (2026-08-14 -- 2026-08-15; PR #317 -> develop)
-- **Type**: Windows first-run/onboarding UX (F151, from Harold's user-centric MVP test script + First-Run Evaluation Summary Page), expanded by two Manual Validation rounds. 9 tasks (F151a-i) + 9 MV follow-up items, all complete.
-- **Delivered**: welcome/orientation + Demo Mode surfacing on the empty-accounts screen (F151a); Help "First time? Start here" walkthrough callout (F151b, closes F75's deferred piece); Scan Results chip tooltips + dead "Moved" chip removal (F151c); **F151d real bug fix** -- Demo Scan never showed a Safe result (a correct real-scan "already in target folder" skip silently ate all 21 demo safe-sender emails; fix scoped to Demo Mode, scope change Harold-approved mid-task); email-detail popup right-extending layout (F151e, revised per MV); humanized error messages via new `ErrorMessages.humanize()` (F151f); Windows environment-compatibility check clean (F151g); AppBar icon order audited to canonical spec + full-order policy gate (F151h); Help rendered as formatted Markdown via `flutter_markdown_plus` (F151i). MV follow-ups: search auto-focus/back-arrow-close/Escape-close, walkthrough Step 7 rewrite, Help-from-Select-Account lazy account resolution.
-- **Major tooling discovery (F151g)**: the `SPI_SETSCREENREADER` OS flag was the missing prerequisite for WinWright to see/click Flutter content -- F140's Sprint 54 "zero UIA patterns" finding was likely measuring this missing flag, not a platform ceiling. F153 upgraded to Priority 10 for a clean re-test; flag left enabled.
-- **Also this sprint**: Store release **0.7.0.0 (Submission 14) CERTIFIED AND LIVE** 2026-08-15, first MINOR release under the semver policy; Backlog Refinement included a live first-run walkthrough of the real prod exe with a genuinely empty data state (3 persistence layers backup-verified and fully restored).
-- **Store release outcome**: Sprint 58's own work shipped as **0.8.0.0 (Submission 15), CERTIFIED AND LIVE 2026-08-15** -- uploaded, certified, and confirmed installed (Harold: Partner Center "currently available" + Store client "Installed version 0.8.0.0" + installed-app Settings "Version 0.8.0", no `[DEV]`) all the same day. Second MINOR release under the semver policy. Dev bumped to 0.8.1+1.
-- **Verification**: suite **1,891 passed** / 29 skipped / 0 failed (from 1,864); analyze clean throughout; every change mutation-verified.
-- **Retro**: Category 1 "Good" (3 tooling-friction items root-caused), all other 13 categories "Very Good"; **2 improvements, both applied** (shell-homogeneous-pipelines memory; Dart-LSP-noise-signature memory).
-- **Docs**: SPRINT_58_PLAN.md / SPRINT_58_RETROSPECTIVE.md / SPRINT_58_SUMMARY.md.
-
-_(Prior: **Sprint 57** below.)_
-
-**Sprint 57** (2026-08-13 -- 2026-08-14; PR #314 -> develop)
-- **Type**: Android navigation model + a live-production bug fix, expanded mid-sprint. 2/2 tasks complete, plus 2 same-sprint testing-feedback follow-ups.
-- **F142**: Android navigation now shares desktop's `NoRuleReviewScreen`-as-default pattern instead of a bottom-nav shell with 2 dead-end placeholder tabs ("Rules"/"Settings"). `MainNavigationScreen`'s `Platform.isAndroid` branch removed entirely; both platforms render the same default-screen decision. The "Review No Rule Items" AppBar icon stays Windows-gated pending F143's touch-selection redesign (explicit decision, not silent default). New source-text policy gate confirms the removed scaffolding does not silently reappear.
-- **F149**: safe-sender messages on AOL were oscillating between Inbox and Bulk/Spam -- AOL's own server-side rule independently demotes non-Outlook-safe-sender Inbox messages, and the app's safe-sender logic had no check for an existing duplicate in the target folder before re-promoting. Added a pre-move target-folder check (`filterAlreadyInTargetFolder`) reusing the existing `searchByMessageId` capability, alongside the existing F91 (Sprint 39) post-move dedup as a second layer. Root-caused via git history as an always-existing F91 design gap, not a regression.
-- **Blocked**: F142's Android-emulator manual validation could not run -- pre-existing F94 issue (`google-services.json`/`applicationId` mismatch) fails EVERY Android build outright, unrelated to F142. Fallback verification (shared-code-path argument + Windows build/launch proof) used instead. Split out as **F150**, targeted for Sprint 58.
-- **Testing-feedback follow-ups (same sprint)**: "Scan Again" on the Results screen now triggers Live Scan directly instead of returning to Manual Scan (required a second tap before). A live-production investigation into a "disappeared" no-rule email during manual validation was root-caused to the PRODUCTION background-scan job (running its own independent 15-minute schedule against the same real mailbox) correctly deleting a message that matched an existing rule -- not an app defect, confirmed via production background-scan logs after a controlled reproduction test.
-- **Verification**: suite **1,864 passed** / 29 skipped / 0 failed; analyze clean throughout.
-- **Retro**: all 14 categories rated Very Good; **1 improvement, applied** (Tooling-Capability Pre-Flight extended to cover manual-validation build/environment dependencies, `docs/SPRINT_PLANNING.md`).
-- **Docs**: SPRINT_57_PLAN.md / SPRINT_57_RETROSPECTIVE.md.
-
-_(Prior: **Sprint 56** below.)_
-
-**Sprint 56** (2026-08-12 -- 2026-08-13; PR #310 -> develop)
-- **Type**: Single-item production bug-fix sprint, full sprint rigor (card, plan, testing) per Harold's explicit instruction. 1/1 task complete.
-- **F148**: background-scan scheduled tasks broke on every Microsoft Store version update because task registration used `Platform.resolvedExecutable`, a VERSIONED install path Windows deletes on every update. Found in production 2026-08-12 (Harold) after a 0.6.0.0 -> 0.6.1.0 update silently stopped both accounts' background scans. Immediate fix: both tasks manually repointed via PowerShell same-day. Durable fix (Harold-steered toward a version-independent design instead of heal-after-the-fact): registered tasks against a stable MSIX App Execution Alias, which Windows keeps pointed at whichever version is currently installed; existing installs on a stale versioned-path registration self-heal via the existing repair reconciliation, re-enabled for MSIX installs.
-- **Validation**: real simulated Store update -- built+installed a test MSIX at version N, confirmed alias-registered launch, then built+installed version N+1 over it and confirmed the SAME unchanged task launched N+1 automatically with log-file proof, no code intervention. Full detail in `docs/sprints/SPRINT_56_PLAN.md` completion notes.
-- **Verification**: suite **1,857 passed** / 29 skipped / 0 failed; analyze clean throughout.
-- **Retro**: all 14 categories rated Very Good; **1 improvement, applied** (pre-flight check before using `APP_ENV=prod` in non-release test builds, added to `CLAUDE.md`).
-- **Docs**: SPRINT_56_PLAN.md / SPRINT_56_RETROSPECTIVE.md.
-
-_(Prior: **Sprint 55** below.)_
-
-**Sprint 55** (2026-08-09 -- 2026-08-10; PR #304 -> develop)
-- **Type**: Bug fixes surfaced from the 0.6.0.0 release smoke test + a mid-sprint Store release pivot. 3/3 planned tasks complete, plus 2 same-sprint Manual Validation follow-ups.
-- **Store release** (pivot from Backlog Refinement, Harold): 0.6.0.0 certified and LIVE on the Microsoft Store (Submission 11, 2026-08-10) -- first release under the semver policy enforced starting Sprint 54. Check C smoke test on the live Store build (Gmail sign-in, About screen, title bar) confirmed clean.
-- **Delivered**: **F147** -- "Scan all emails" was silently overridden by the no-rule backlog cursor (IMAP) and historyId cursor (Gmail OAuth), for both Manual and Background scan; fixed by bypassing the cursor whenever `daysBack<=0`, 7 new mutation-verified tests. **F146** -- generalized the "AOL copy-not-move" error message (confirmed firing on Gmail-IMAP too) across 6 files. **F145** -- WinWright Tooling-Capability spike was genuinely tried live per Harold's instruction and found to produce a FALSE FAILURE for scroll-target verification (worse than a blind spot), documented as a durable rule in `WINWRIGHT_SELECTORS.md`; re-scoped to `integration_test`, which then surfaced and fixed a real `HelpScreen` scroll-timing bug (async section content not settled before the deep-link scroll computed its target, landing later sections up to ~4000px short). 27 new tests.
-- **Manual Validation follow-ups** (same sprint, not deferred): Settings screen's Help icon always deep-linked to the General tab's section regardless of which tab was visible -- root cause was a missing `setState()` on tab change; fixed with a dedicated listener, 4 new regression tests. Help > First-Use Walkthrough rewritten per Harold's feedback (8 steps, up from 6) -- corrected one button-label reference against actual app code ("Block Exact Domain", not "Block Domain") before committing.
-- **Process gap found and fixed**: GitHub issue cards for F145/F146/F147 were only created retroactively when `require-sprint-cards.ps1` blocked the first commit -- all 3 tasks were already fully implemented by then. Second recurrence of the Sprint 52 retro IMP-2/IMP-6 failure class. New Phase 3.7.0 step added to `SPRINT_EXECUTION_WORKFLOW.md`: cards are created in the SAME turn as plan-approval acknowledgment, before any task file is touched.
-- **Verification**: suite **1,857 passed** / 29 skipped / 0 failed; analyze clean throughout.
-- **Retro**: all 14 categories rated Very Good; **1 improvement, applied** (Phase 3.7.0 card-creation-ordering fix above).
-- **Docs**: SPRINT_55_PLAN.md / SPRINT_55_RETROSPECTIVE.md.
-
-_(Prior: **Sprint 54** below.)_
-
-**Sprint 54** (2026-08-03 -- 2026-08-10; PR #298 -> develop, PR #303 -> main)
-- **Type**: Core App Quality cleanup + Android/Google Play deep dive. 4/4 tasks complete.
-- **Delivered**: **F137** -- removed confirmed-dead `process_results_screen.dart` + its test. **F140** -- WinWright/UIA capability spike gave a definitive NEGATIVE result (Flutter's Windows UIA bridge exposes zero control patterns to WinWright, for any element type, and no scrollable-region control type exists -- a platform-embedding limitation, not a usage gap); took the documented R-3 fallback, duplicating the version display near the top of Settings > General and Help. **F125** -- one-shot `--release-self-test --expected-version=X.Y.Z` probe collapsing the manual multi-line `--print-env` release check into a single PASS/FAIL command; verified against the real dev build. **F141** -- Android/Google Play re-expansion deep dive (analysis only, no app code): re-verified every GP-*/F94/F95 HOLD item against current repo state (several stale -- GP-12 already decided by an unexecuted ADR, GP-8 likely already satisfied by the current toolchain); per-screen UI-adaptation assessment across all 23 screens.
-- **Two undocumented architecture findings from F141**: the Android bottom-nav shell has 2 non-functional placeholder tabs, and the desktop app's default screen (`NoRuleReviewScreen`, F135) has zero Android entry point. **Harold's governing direction** (2026-08-03/07): Windows' current architecture and tooling takes precedence -- the app was built Android-first for early MVP speed, then switched to the Windows Store App style once that became priority, so old Android-first UI/backend should be REMOVED and replaced with Windows' pattern, adapting only for genuine platform constraints. New backlog **F142/F143/F144** (all HOLD, for a future dedicated Android sprint) capture the concrete remove-and-replace scope.
-- **Versioning-policy decision**: Harold asked directly whether the project follows semver best practices -- investigation confirmed `CHANGELOG_POLICY.md` had documented standard semver (MINOR for `feat`, PATCH for `fix`) since early on, but every release from `0.5.1` through `0.5.10` bumped only PATCH regardless of content (several shipped substantial `feat` work). Decided to start enforcing the documented policy from the NEXT release forward; no renumbering of past releases.
-- **Verification**: suite **1,850 passed** / 29 skipped / 0 failed (from 1,859 at Sprint 53 close -- net change explained entirely by F137's deletion outweighing 3 new tests added); analyze clean throughout; CI green (Analyze+Test, Windows Build Verification).
-- **GitHub Copilot review** (requested by Harold post-retrospective): 3 real findings (CHANGELOG.md Sprint-53-entries-vs-`[0.5.9]`-heading placement, a bash `grep -r` in a PowerShell-first repo's sprint plan, a `<StoreID>` placeholder where the concrete ID was already available) all fixed; 2 findings already resolved by earlier commits in the same PR; 1 not applicable (expected carry-forward content, not scope creep). Added a standing note to `.github/copilot-instructions.md` so the CHANGELOG placement pattern is not re-flagged on future PRs.
-- **Retro**: all 14 categories rated Very Good; **2 improvements, both applied**. `TROUBLESHOOTING.md` gained an entry for the concurrent-`flutter`-process build-lock collision hit during F137. **F145** (WinWright/integration_test coverage for Help-icon deep-links from every screen) registered as a new backlog item from Harold's Category 14 feedback.
-- **Docs**: SPRINT_54_PLAN.md / SPRINT_54_F141_ANDROID_DEEP_DIVE.md / SPRINT_54_RETROSPECTIVE.md.
-
-_(Prior: **Sprint 53** below.)_
-
-**Sprint 53** (2026-08-03; PR #295 -> develop, PR #296 -> main)
-- **Type**: Single-task Store release sprint. 1/1 task complete.
-- **Delivered**: **F-STORE-53** -- scope corrected mid-sprint from "full release pipeline" to "smoke test only" after Harold flagged scope creep ("this task is meant to be a smoke test, correct?"); release-candidate MSIX built locally (no merge required) and smoke-tested clean (Gmail sign-in, About screen, title bar, no `[DEV]` artifacts). Once the smoke test passed, the real Store MSIX 0.5.9.0 was built from `main`, verified, uploaded to Partner Center, and **CERTIFIED + LIVE 2026-08-03** as Submission 10. **F138** closed (icons not needed in the 5 rule-editing screens' context, Harold decision). Dev bumped 0.5.9 -> 0.5.10 (pubspec.yaml, one file, gate-verified).
-- **Backlog additions found live during the smoke test**: **F139** (HOLD template) -- the Store-submission MSIX config produces an unsigned package that cannot install locally; self-signing via `store: false, install_certificate: true` installs a release candidate side-by-side with the live Store build without disturbing it. **F140** -- the app version display on Settings > General and Help sits at the end of a long scrollable tab and could not be reached by WinWright/UIA automation (`ww_scroll`/direct-click both failed with `element_offscreen`); backlogged to investigate a fix or relocate the display nearer the top of the page.
-- **Verification**: pre-build suite 1,859 passed / 29 skipped / 0 failed, analyze clean (re-confirmed on the release-candidate build); Store-build manifest 0.5.9.0, 16.80 MB, correct prod dart-defines; Harold-confirmed Gmail sign-in + About screen + title bar clean on the smoke-test build.
-- **Retro**: **SKIPPED by explicit Product Owner decision** (Harold, 2026-08-03: "PO approves skipping sprint 53 retrospective") -- a deliberate exception to the Phase 7 completeness rule for this single-task release sprint, not an oversight.
-- **Docs**: SPRINT_53_PLAN.md.
-
-_(Prior: **Sprint 52** below.)_
-
-**Sprint 52** (2026-07-30 -- 2026-08-02; PR #292 -> develop)
-- **Type**: Accessibility audit + full remediation, AppBar consistency, account-selection UX. 7/7 tasks complete (5 planned + 2 added mid-sprint), plus 3 manual-validation fixes.
-- **Delivered**: **F133-S52** -- accessibility audit of all 27 screens; headline finding **only 5 of 27 used `Semantics` at all**, so most of the app was unaddressable by name to a screen reader or to automation. **F133-REMEDIATE** -- all 9 remediation items executed (Harold expanded this mid-sprint from planned-only), including 113 grey text sites migrated to meet WCAG 2.1 AA and two new build-failing gates. **F134/F134-ALL** -- `StandardAppBarActions` became the single definition of icon order across 12 screens that had each hand-rolled it in differing orders. **F135** -- session-scoped account selection, Settings resolves its account lazily per tab, No-Rule becomes the desktop default. **F136** -- Skip button. **F131** -- root-caused.
-- **F131: the card's premise was wrong.** No app defect and no accessibility defect existed -- the Add-Block-Rule radios always worked. A Sprint 41 comment recommended clicking the parent `Group` instead of the `RadioButton`; Sprint 51 followed it, saw nothing happen, and generalised that into "the radios do not select", writing it into five documents as verified fact. Wrong findings were **struck through, not deleted**: a wrong fix recorded as verified is worse than no note at all, and the lesson only survives if the wrong note survives with it.
-- **Dead code removed**: 3 unreachable screens (911 lines). Decisive evidence for the last one -- the Windows background-scan path is headless (`main.dart` runs the worker and exits without ever calling `runApp`), so a "progress UI during a background scan" cannot render on any path.
-- **Manual Validation found a real defect (MV-1)**: the Accounts icon reached nothing on **every** screen -- an intersection defect where F134 and F135 were each correct alone, but `popUntil(isFirst)` could not reach Account Selection once F135 made No-Rule the desktop default. Also added a Manual Scan icon (previously reachable only via the Accounts screen) and gave 4 silent Refresh buttons real feedback.
-- **Verification**: suite **1,829 passed** / 29 skipped / 0 failed; analyze clean; Windows build green; hook harness **45/45** (from 34); Manual Validation complete.
-- **Retro**: all 14 categories rated Very Good; **6 improvements, all applied**. IMP-1 behavior-level AppBar gate (source-text gates verify shape, not behavior -- the order gate was structurally blind to MV-1). IMP-2 + **IMP-6** Phase 3.3.1 gate: task commits now blocked when issue cards **or** the draft PR are missing. IMP-4 was **corrected by Harold** from "no bare `git add -A`" to "don't stage BLIND", because banning the flag would have made the `0*` working files harder to catch.
-- **Two process misses, both Harold-flagged and both now gated**: the sprint's GitHub issue cards were backfilled at end of Phase 4, and the draft PR was not created until Phase 7. Same root cause -- a branch that already existed from the Sprint 51 Phase 6.6 carry-forward, so Phase 3.3.1 was never walked. Fixing the card half without asking what else that step produced is why the PR miss survived a further day.
-- **Docs**: SPRINT_52_PLAN.md / SPRINT_52_F133_FINDINGS.md / SPRINT_52_RETROSPECTIVE.md / SPRINT_52_SUMMARY.md / ACCESSIBILITY_STANDARDS.md (new).
-
-_(Prior: **Sprint 51** below.)_
-
-**Sprint 51** (2026-07-27 -- 2026-07-30; PR #285 -> develop)
-- **Type**: Process-docs consistency audit + Sprint 50 carry-in closure. 3/3 planned tasks complete.
-- **Delivered**: **F130-S51** -- first run of the F130 template: **28 contradictions found, 28 corrected, 0 outstanding** across all 3 tiers, plus 3 hook false-positive fixes and the hook test harness generalized to cover all hooks (it had been hard-wired to one, which is why two false positives shipped unnoticed). **F128-residual** -- `removeRule`/`updateRule`/`removeSafeSender` no longer no-op silently on an unloaded cache. **F129** -- 3 WinWright scripts green with zero DB drift.
-- **Highest-consequence finding**: `CLAUDE.md` (+ `AGENTS.md` + master plan) named the msix credential key as `build_windows_args` -- the F119 typo that shipped a credential-less 0.5.4 to the Store, and the exact string a build-failing gate asserts must never appear. The AGENTS.md/master-plan copies were caught ONLY by the DoD re-grep.
-- **A defect shipped and caught in-sprint**: the account-picker accessibility fix went in broken (named but unclickable -- two stacked same-named nodes, outer one with no handler). Lesson recorded: a tree dump proves a name exists; only an interaction proves the node still works.
-- **Verification**: suite 1,814 passed / 29 skipped / 0 failed; analyze clean; hook suite 33/33; WinWright 3/3 no drift; policy gates green; Harold validated all 5 Manual Validation items ("Working as expected. Can be closed.").
-- **Retro**: all 7 improvements approved APPLY NOW. **IMP-7 shipped in-sprint** (auto-advance hook gained the enforcement-window upper bound -- the missing bound was the root cause of every false positive it had produced). IMP-2/IMP-3 foundations shipped; **IMP-1/2/3/4 remainder carded for Sprint 52 detail planning** (F133/F133-S52, F134, F135, F136), with **F132 retired into F133**.
-- **Release**: **`0.5.8` CERTIFIED and LIVE 2026-07-29** (Submission 9). Found mid-sprint that it had been sitting In draft since the 07-27 build while the status file claimed "in certification" -- BUILT + VALIDATED is not SUBMITTED. Post-cert close-out done: CHANGELOG `[0.5.8]` heading + links, dev bumped 0.5.8 -> 0.5.9 (one file, gate-verified), Store status LIVE.
-- **F119 FAMILY CLOSED (Harold verified the Store-installed build 2026-07-30: no `[DEV]` in the title)**. Three distinct root causes produced one identical user-visible symptom across three sprints: **F119** (Sprint 47) the msix key typo `build_windows_args`, silently ignored so no dart-defines reached the inner build; **F119-b** (Sprint 48) a SPACE in a `secrets.prod.json` key, silently dropping `APP_ENV=prod`; **F119-c** (Sprint 49) the native `SPAMFILTER_APP_ENV` env var never set by the msix path, so CMake defaulted to dev. `0.5.8` is the first Store release verified clean by direct observation of the installed build rather than by build-log inference. Sprint 51 also removed the last live trap in this family: `CLAUDE.md`/`AGENTS.md`/master-plan still NAMED the typo'd key, contradicting the build-failing `msix_config_test.dart` gate.
-- **Environment**: ENV-1 resolved -- an Acronis filter driver blocking `AppXSvc` cleanup had wedged the Microsoft Store client; fixed by an Acronis exclusion (23h with zero Id-493 events; drivers still loaded, backup protection intact).
-- **Docs**: SPRINT_51_PLAN.md / SPRINT_51_F130_FINDINGS.md / SPRINT_51_RETROSPECTIVE.md / SPRINT_51_SUMMARY.md.
-
-_(Prior: **Sprint 50** below.)_
-
-
-**Sprint 50** (2026-07-25 -- 2026-07-27; merged PR #278 -> develop, PR #284 -> main)
-- **Type**: Core App Quality polish + live prod-data repair + manual-validation-driven UX fixes. 5/5 planned + 5 mid-sprint + 1 escalated.
-- **Delivered**: F126 (4 legacy TLD rows removed from prod: 5,887 -> 5,883), F122 (load-error stackTrace + friendly SnackBar), F123 (350 prod / 341 dev safe-sender `pattern_type` rows repaired -- root cause was DATA, not display precedence, so the planned Class-2 never triggered), F124 ("Uncategorized (legacy)" fallback + latent filter-key fix), F127-residual (CI green with corrected `secrets.ci.json` keys). From manual validation: MT-1 (fixed 3-column quick-action grid), MT-2/MT-2b/MT-2c (idempotent quick actions + covered-item sweep on every load), MT-3 (Review "No Rule" entry points on Manual Scan + Results). Escalated from backlog on Copilot's finding: **F128** (provider silent no-op on unloaded cache).
-- **Verification**: suite 1,806 passed / 29 skipped / 0 failed; analyze clean; CI green both jobs; Harold validated every item ("All working as expected and can be closed"). Both live-data tasks rehearsed on copies with rollback backups retained.
-- **Copilot**: 9 findings across 4 rounds, ALL fixed in-sprint and resolved -- notably the idempotent fast-paths skipping conflict resolution, and per-evaluation logging on bulk sweeps (opt-in `silent` mode).
-- **Retro**: 5 improvements applied "now" (terminology rename, retro Step-5 completeness gate, CI-platform parallel-site rule, fix-boundary rule, recorded-justification-on-model-deviation); 2 backlogged (F128 residual, F129).
-- **Release**: `0.5.8` MSIX built from merged main (16.8 MB, manifest 0.5.8.0), FULL both-sides proof passed, **SUBMITTED to Partner Center 2026-07-27** (in certification).
-- **Docs**: SPRINT_50_PLAN.md / SPRINT_50_RETROSPECTIVE.md / SPRINT_50_SUMMARY.md.
-
-_(Prior: **Sprint 49** F119-c + prod-DB restoration, PR #276; **Sprint 48** F119-b hotfix, PR #274; **Sprint 47** F112-F119 + 8 IMPs, PR #272 -- see per-sprint docs.)_
+**Sprint 70** (2026-09-17 -- 2026-09-19; PR #418 -> develop, PR #419 develop -> main)
+- **Type**: make the app work when a tester uses it normally. Five of six planned items were
+  defects two external testers hit on the shipped build; the sixth removed a workaround shipping a
+  test-only library to those same testers. Scope F218, F220, F221, F212, F219, F217.
+- **F212 -- the root cause was NOT the card's hypothesis, and the undiagnosed half was worse.** The
+  card blamed a `ScanCoordinator` bypass. The real cause: the two adapters answered the SAME
+  condition oppositely. Called before a connection exists, Gmail returned `allFailed` (the 100%
+  failure that got reported) and IMAP returned `allSuccess` -- reporting success for work it never
+  did, so AOL users saw a green "Re-processed 9 emails" while nothing moved. Nobody filed that
+  because it looks like success. FOUR batch methods carried the defect, not the two named.
+- **F219 + F227 -- two separate defects on one path, the second found only by probing.** Removing
+  `taskAffinity=""` was correct and verified. But firing the real redirect on an emulator landed on
+  the system chooser: `pm query-activities` showed TWO activities claiming the scheme -- ours and
+  `flutter_appauth`'s own receiver. That duplicate is the likelier `null_intent` cause. Fixed and
+  re-verified (2 activities -> 1; redirect lands in the app's own task).
+- **THE SPRINT'S DEFINING PATTERN: gates that reported protection they did not provide.** The SEC-9
+  manifest gate searched for a string F227 had removed from the code, leaving only mentions inside
+  COMMENTS -- a security gate passing on English prose, proven by editing comment text and watching
+  it go red. The F220 lifecycle test asserted against its own copy of the handler, so deleting the
+  real production fix left all six tests GREEN. Both found by mutation, neither by reading.
+- **Three defects were introduced by earlier fixes in the same sprint.** The H-2 fix created
+  Copilot's HIGH (a set written too eagerly, corrected into one written too permanently); anchoring
+  Gate 1c fixed one false positive and created its opposite; adding the timestamp footer silently
+  disabled every end-anchored pattern in the Stop hook. Each was correct alone and wrong in context.
+- **Mutation testing did not save us, and it was being used correctly.** F220's test was
+  mutation-verified and still blind -- it asserted the provider reached an error state and never
+  that the coordinator was freed. Mutation proves a test detects changes to code it ALREADY covers.
+  That gap became retro IMP-1.
+- **Harold's two decisions both overruled or redirected a recommendation, correctly.** The Class-2
+  timeout reversal identified a case the recommendation did not cover ("once a user switches
+  screens they can no longer cancel"). His Samsung battery check falsified the leading F217
+  hypothesis in one minute and changed which remedy was viable.
 
 ## Next Sprint Candidates
 
@@ -658,275 +443,6 @@ All incomplete items in relative priority order. Priority in increments of 10; i
 - Source: Harold, 2026-09-10 -- filed after the S24+ Scan History totals, reframed by him the
   same day from "fix Android" to "a platform capability".
 
-**F218 OUTCOME (Sprint 70, 2026-09-17): SDK UPGRADED 3.38.5 -> 3.47.4. The upgrade did NOT fix the `integration_test` defect, and the workaround is RESTORED -- deliberately, per the card's own DoD.**
-
-This is the outcome R-5 named as possible and the DoD pre-authorised: *"If the upgrade does NOT
-fix the integration_test defect, say so and RESTORE the workaround rather than shipping a broken
-Play build. That is a legitimate outcome, not a failure."*
-
-**What was done:**
-- Upgraded `3.38.5` -> `3.47.4` (9 months, 4,163 commits). `flutter doctor`: no issues found.
-- Removed `releaseImplementation(project(":integration_test"))` and built the AAB. **It failed with
-  the IDENTICAL error**: `GeneratedPluginRegistrant.java:64: error: package
-  dev.flutter.plugins.integration_test does not exist`. Nine months of SDK releases did not change
-  this behaviour.
-- Restored the workaround. AAB builds successfully on the new SDK with it in place.
-
-**So the workaround stays, and the reason is now EVIDENCE rather than caution.** Before today it
-was "the upgrade might fix this"; now it is "the current stable does not". A future attempt should
-not repeat the upgrade hoping for a different result -- it needs a different approach entirely
-(the dev-dependency plugin registration itself, or an upstream issue).
-
-**THREE FINDINGS from the upgrade, all worth keeping:**
-
-1. **The Windows native-assets patch is now OBSOLETE -- upstream fixed it.** Proven, not assumed:
-   `build-windows.ps1` completed successfully on 3.47.4 with the SDK **UNPATCHED**, and
-   `build/native_assets/windows/sqlite3.x64.windows.dll` was installed cleanly with no
-   `PathExistsException`. Three checks agree -- `git status` in the SDK shows no modification, the
-   exe is freshly dated, and the exact DLL the patch existed for is present.
-   **This is the sprint's one unambiguous win from the upgrade**: a nine-month-old local SDK
-   modification, which had to be re-applied by hand after every upgrade and which
-   `TROUBLESHOOTING.md` warned about, is simply gone. That page now says DO NOT RE-APPLY, with the
-   evidence, and keeps the diagnosis as history.
-
-2. **Flutter silently rewrote `analysis_options.yaml`**, adding exclusions for `build/`,
-   `android/`, `ios/`, `windows/`. Checked rather than accepted: ZERO Dart files exist in any
-   excluded directory, and `version_consistency_test` greps rather than analyzes, so nothing is
-   weakened. Recorded because a silent tooling edit to an analysis config deserves a look.
-
-3. **A new lint found four REAL latent defects**, not style issues. `unawaited_return_in_try_block`
-   flags a `Future` returned without `await` inside a `try` -- meaning **the `catch` never fires
-   for that future's errors**:
-   - `generic_imap_adapter.dart:533` (`searchByMessageId` -> `_fetchMessageDetails`)
-   - `gmail_api_adapter.dart:471` and `:489` (`_fetchMessagesIndividually` fallbacks)
-   - `email_scanner.dart:1344`
-   Every one is in an error-handling path in the IMAP or Gmail fetch code -- precisely where a
-   swallowed exception is most expensive. **Filed as F223** rather than fixed inside F218, because
-   they are unrelated to the toolchain and deserve their own verification.
-
-**Dependency re-resolution (R-4), reviewed not assumed**: 6 packages moved, all patch/minor, none
-a direct dependency. The Dart SDK floor moved `3.10.0` -> `3.11.0-0`.
-
-**Kotlin warning surfaced by the new SDK**: *"Flutter support for your project's Kotlin version
-(2.2.20) will soon be dropped. Please upgrade to at least 2.3.20 soon."* Not actioned this sprint;
-recorded here so it is not a surprise at the next upgrade.
-
-**F218. Upgrade the Flutter SDK (9 months stale), re-apply the native-assets patch, re-resolve 35 dependencies, and REMOVE the one-time Gradle workaround (~4-8h) Priority 8 (NEW, 2026-09-14 -- Harold, during the 0.15.1 Play release)**
-- Phase: Developer Workflow / Tooling
-- Platform: All -- the SDK is shared, and both platforms need re-verification
-- **Harold, 2026-09-14**, after approving a one-time workaround to unblock the release:
-  *"Backlog for next sprint the update of SDK, re-applying patch if needed and re-resolving 35
-  dependencies"*.
-- **WHY THIS EXISTS**: `flutter build appbundle --release` fails on Flutter 3.38.5 with
-  `GeneratedPluginRegistrant.java:64: error: package dev.flutter.plugins.integration_test does
-  not exist`. The generator writes an `integration_test` registration into the registrant for
-  EVERY variant, while the release variant's classpath does not carry it.
-- **Proven by asking Gradle rather than inferring** (the diagnosis is recorded so it is not
-  re-derived):
-  - `gradlew projects` lists `:integration_test` -- it IS an included project.
-  - `:app:dependencies --configuration prodDebugCompileClasspath` -> `project :integration_test`
-    PRESENT.
-  - `:app:dependencies --configuration prodReleaseCompileClasspath` -> ABSENT.
-  - Nothing in this project's Gradle files filters dev-dependency plugins, so the asymmetry is
-    SDK behaviour.
-- **THE ONE-TIME WORKAROUND NOW IN THE TREE, WHICH THIS CARD MUST REMOVE**:
-  `android/app/build.gradle.kts` adds `releaseImplementation(project(":integration_test"))` --
-  ONE line, buildType-scoped so it covers both flavors. (First attempt used
-  `prodReleaseImplementation`/`devReleaseImplementation`; Gradle rejects those with
-  "Configuration with name ... not found" -- flavor+buildType implementation configurations are
-  not created by default. Recorded so the next person does not repeat it.) **Cost, stated plainly: a test-only library is linked into the
-  shipped AAB.** That is why it is one-time. Delete both lines and their comment block once the
-  SDK upgrade makes them unnecessary, and verify the release build still succeeds WITHOUT them --
-  removing them is the test that the upgrade actually fixed the underlying defect.
-- **WHAT THE UPGRADE INVOLVES, and none of it is optional:**
-  1. **The SDK is 4,163 commits / 9 months behind stable.** Current `3.38.5` (2025-12-11);
-     `origin/stable` was at 2026-09-10 when checked.
-  2. **`flutter upgrade` REFUSES to run**, because the SDK checkout carries a local modification.
-     It is not accidental: `D:\dev\flutter\packages\flutter_tools\lib\src\isolated\native_assets\native_assets.dart`
-     has a documented 5-line patch (`docs/TROUBLESHOOTING.md`, "install_code_assets runs twice")
-     that skips a duplicate `sqlite3.x64.windows.dll` copy which otherwise throws
-     `PathExistsException` and **fails every Windows build**. The doc already warns: *"This patch
-     will be lost when Flutter is upgraded. Re-apply after any flutter upgrade."*
-  3. **Re-apply the patch -- IF it is still needed.** Check first whether upstream fixed the
-     double-run; if so, drop the patch rather than carrying a redundant local modification. If the
-     surrounding code moved, the patch may not apply cleanly and needs re-deriving from the
-     symptom, not pasted.
-  4. **35 caret-ranged dependencies will re-resolve.** Back up `pubspec.lock` first. Expect
-     churn, and read the diff rather than assuming it is benign.
-  5. **Re-verify BOTH platforms.** The Windows MSIX in Submission 27 was built on the OLD SDK, so
-     a Windows regression would not surface from the Play side alone.
-- **A workaround that did NOT work, recorded to save the next attempt:** the Flutter issue thread
-  (#169336) recommends `flutter pub get` followed by `flutter build --config-only`.
-  **`--config-only` does not exist for `appbundle` in 3.38.5** -- the flag is rejected outright.
-  That issue is also `--no-pub`-specific, and `build-with-secrets.ps1` does not pass `--no-pub`,
-  so it is a related symptom rather than the same defect. No maintainer statement names a fix
-  version, so **the upgrade is not GUARANTEED to fix this** -- confirm by removing the workaround,
-  not by reading release notes.
-- **Do this EARLY in a sprint, never on a release day.** The decision to defer it was made
-  precisely because upgrading a 9-month-old SDK, losing a patch that keeps Windows building, and
-  re-resolving 35 dependencies -- hours after submitting a Store package built on the old SDK --
-  is the shape of change that produced F119.
-- **Rollback point recorded 2026-09-14**: repo at `c1473a0`, Flutter SDK at `f6ff1529fd6`,
-  `pubspec.lock` backed up before the attempt.
-- Depends on: nothing. Blocks nothing, but the workaround it removes ships a test library to
-  users until it is done.
-- Source: Harold, 2026-09-14, during the 0.15.1 Play release. He approved the one-time workaround
-  and asked for the real fix to be scheduled rather than improvised.
-
-**F219. Google Sign-In returns `null_intent` -- the OAuth callback cannot get back into the app (~2-4h) Priority 4 (NEW, 2026-09-16 -- Harold, on the S24+, Play-installed 0.15.1)**
-- Phase: Android / Google Play Store Readiness
-- Platform: **Android only** (Windows uses a loopback redirect and is unaffected)
-- **THIS IS THE SUCCESSOR TO F211, NOT A REPEAT OF IT.** The error CHANGED, which is the whole
-  point: F211 produced `Error 400: invalid_request` -- Google REFUSING the client. After the
-  three console fields were corrected, the same test now produces
-  `PlatformException(null_intent, Failed to authorize: Null intent received, , null)`.
-  **Google is no longer rejecting anything.** The consent flow gets far enough to come back, and
-  the RESPONSE fails to reach the app. Different layer, different defect.
-- **Evidence**: `validation-screenshots/sprint-70/Screenshot_20260916_100743.png` and
-  `_100752.png`, 10:07 on 2026-09-16. Harold signed up as a test user, accepted all four consent
-  screens, and landed back on the Gmail Sign-In page carrying this error. Reaching the consent
-  screens at all is itself proof the F211 console repairs worked.
-- **The error does NOT come from this project's code.** `grep -rn "null_intent" lib/` returns
-  nothing; it is raised by the `flutter_appauth` plugin's Android side when `onActivityResult`
-  receives a null data intent -- the authorization response could not be delivered back.
-- **LEADING SUSPECT, with the manifest line to match**: `AndroidManifest.xml:32` sets
-  `android:taskAffinity=""` on `MainActivity`. The flutter_appauth issue tracker names exactly
-  this: *"If the authorization flow does not return to your Flutter app even though the intent
-  filter is correctly set and RedirectUriReceiverActivity is invoked, the issue might be due to
-  the `android:taskAffinity=""` line in your AndroidManifest.xml."* An empty task affinity puts
-  the redirect receiver in a different task from the activity waiting for the result, so the
-  response lands somewhere the plugin is not listening.
-  See https://github.com/MaikuB/flutter_appauth/issues/493 and issue #252.
-- **Reported as WORSE on Samsung devices specifically** (flutter_appauth issue #128), and the
-  device here is an S24+. Worth knowing before concluding a fix works on one handset.
-- **INVESTIGATED 2026-09-16, and the premise of my own warning was WRONG.** I wrote "it is not a
-  Flutter default, so someone added it deliberately." Both halves are false, and checking took
-  two commands:
-  - `git log -S taskAffinity` returns exactly ONE commit: `2976d0e`, *"feat: Initialize Android
-    project structure and configurations"*, **2025-12-04** -- the initial Android scaffolding,
-    nine months before this app had OAuth at all. `launchMode="singleTop"` came from the same
-    commit. Neither was a decision about anything.
-  - `flutter create` on a **stock template** (Flutter 3.38.5, the version in use) emits
-    **`android:launchMode="singleTop"` and `android:taskAffinity=""`** verbatim. They ARE the
-    Flutter default.
-  So there is no original reason to preserve. Nobody chose this; it is template scaffolding that
-  happens to conflict with `flutter_appauth`'s redirect delivery.
-- **What that changes**: removing or overriding `taskAffinity` does not undo a deliberate design
-  decision, which lowers the risk considerably. It does NOT make the change free -- task affinity
-  governs which task an activity launches into, so it affects recents-screen grouping and
-  back-stack behaviour app-wide, not just the OAuth flow. Verify the app still behaves correctly
-  on: launching from the launcher, returning from recents, and the deep-link paths
-  (`app_links` is a dependency).
-- **The remaining open question is which fix, not whether to touch it.** The flutter_appauth
-  threads discuss removing the empty affinity versus setting an explicit one; both appear, and
-  neither is stated as canonical. Probe on the S24+ rather than reasoning from the issue tracker,
-  because the reports single out Samsung.
-- **Also verify `launchMode="singleTop"` (line 31) is right for this flow.** AppAuth's docs
-  discuss launch mode interactions with the redirect receiver; `singleTop` plus an empty
-  affinity is the combination the issue threads describe.
-- **Test conditions that must hold, or the result means nothing** (both were satisfied in
-  Harold's 10:07 test): the account must be a LISTED TEST USER (publishing status is Testing, so
-  unlisted accounts cannot sign in at all), and the build must be installed FROM PLAY (the
-  registered SHA-1 is the Play App Signing key).
-- **Still unproven and still worth checking**: the Google Cloud Console **Data Access** page
-  lists NO scopes at all -- neither `gmail.modify` nor `userinfo.email` -- while the app requests
-  both in code. That anomaly predates this card and has not been shown to cause anything. It is
-  a second candidate, not a finding.
-- **Why Priority 4**: Google Sign-In is the primary path a new tester tries first, and the
-  app-password workaround -- while it works -- is not what the in-app Help promises. This is the
-  remaining half of the original tester blocker.
-- Depends on: nothing. Reproducible on the S24+ today.
-- Source: Harold, 2026-09-16, testing the F211 console fix on the Play-installed 0.15.1 build.
-
-**F220. Backgrounding the app during a LIVE SCAN wedges it -- no further live scan until restart (~3-6h) Priority 4 (NEW, 2026-09-17 -- Sean Jarvis, tester)**
-- Phase: Core App Quality
-- Platform: **Android** reported; Windows NOT verified -- the coordinator is shared, so check both
-- **Sean Jarvis, verbatim**: *"If doing a live scan and putting app in background causes android to
-  close network stack as intended but livescan does not stop errors into a weird state where you
-  cannot livescan until app is restarted."*
-- **His diagnosis is correct and better than the report suggests.** Android tearing down sockets
-  for a backgrounded app is expected OS behaviour. The defect is that the app does not NOTICE:
-  the scan neither completes nor fails, so it never releases its `ScanCoordinator` lease, and
-  every later live scan queues behind a scan that will never finish. Restarting the app is the
-  only escape because it rebuilds the process-global coordinator.
-- **Confirmed in code, three findings that compound:**
-  1. **Nothing observes the lifecycle during a scan.** `scan_progress_screen.dart` and
-     `email_scanner.dart` contain no `AppLifecycleState` / `didChangeAppLifecycleState` handler
-     at all, so backgrounding is invisible to the scan.
-  2. **A manual scan has NO timeout.** `background_scan_core.dart:140` says so deliberately:
-     *"Manual scans deliberately have no timeout wrap: a user is watching and can cancel; startup
-     reconciliation (reconcileStaleInProgressScans) is their backstop."* That reasoning assumes a
-     user who is WATCHING. A backgrounded app has no watcher, and the named backstop only runs at
-     STARTUP -- which is exactly why a restart clears it and nothing else does.
-  3. **The lease is released in a `finally`** that cannot run while the scan is wedged
-     (`email_scanner.dart:971`), so the coordinator stays occupied.
-- **Why Priority 4**: backgrounding an app mid-task is ordinary user behaviour, not an edge case.
-  A tester who does it loses live scanning for the rest of the session with no error and no
-  explanation -- the app simply stops working and does not say why.
-- **Candidate fixes, to evaluate rather than assume**: (a) observe `AppLifecycleState.paused`
-  during an active scan and fail it explicitly, releasing the lease; (b) give manual scans a
-  timeout after all, since the "user is watching" premise is false once backgrounded; (c) run
-  `reconcileStaleInProgressScans` on RESUME as well as startup. **(a) is the root-cause fix**; (c)
-  is a cheap backstop worth having regardless.
-- **Related but DISTINCT from F207** (manual scan refused while a background scan is in progress).
-  F207 is about a legitimate holder blocking; this is about a DEAD holder never letting go. A fix
-  for this may resolve F207's symptom, which is worth checking before scoping both.
-- Depends on: nothing. Reproducible on the S24+ today.
-- Source: Sean Jarvis via Harold, 2026-09-17. The second defect found by someone other than Harold.
-
-**F221. Starting a live scan again leaves the previous one stuck "in progress" forever (~2-4h) Priority 6 (NEW, 2026-09-17 -- Sean Jarvis, tester)**
-- Phase: Core App Quality
-- Platform: All (the coordinator and the scan-result store are both shared)
-- **Sean Jarvis, verbatim**: *"Starting a livescan multiple times doesn't mark the previous scan as
-  cancelled; it stays as in progress."*
-- **Confirmed in code.** `email_scanner.dart:149-172`: when a scan is already active, a new one
-  does NOT cancel it -- it prints *"Waiting for the active ... scan to finish"* and **queues FIFO**
-  behind it. That is deliberate (F175, Sprint 62, built after four stacked AOL scans hit the
-  per-account session cap) and it is the right behaviour for CONCURRENCY. What is wrong is the
-  RECORD: the superseded scan's row stays `in_progress` indefinitely, so Scan History accumulates
-  rows that never resolve.
-- **Two defects wearing one symptom, and they should be separated when scoping:**
-  1. **The stuck ROW** -- a scan the user abandoned still reads `in_progress`. Cosmetic-ish, but
-     it makes Scan History untrustworthy, and `reconcileStaleInProgressScans` only runs at
-     startup.
-  2. **The absent user SIGNAL** -- tapping scan again while one is running gives a queue with no
-     visible explanation. The user reasonably concludes the button did nothing.
-- **Do NOT "fix" this by making a new scan CANCEL the running one.** That would undo F175 and
-  re-open the Sprint 61 failure it was built for: four concurrent scans, each opening its own IMAP
-  session, all stalled behind AOL's per-account session cap. The queue is correct; the bookkeeping
-  and the messaging are not.
-- **Likely interacts with F220** -- if a wedged scan never releases its lease, every subsequent
-  scan queues behind it forever, which is how a user would SEE both defects at once. Investigate
-  them together even if they are fixed separately.
-- Depends on: overlaps F220 and F207.
-- Source: Sean Jarvis via Harold, 2026-09-17.
-
-**F227 FIXED AND VERIFIED ON DEVICE (Sprint 70, 2026-09-19). Harold approved the in-sprint fix: "1 fix now".**
-
-**The fix**: removed the duplicate OAuth redirect intent filter from `MainActivity`, leaving
-`net.openid.appauth.RedirectUriReceiverActivity` -- which `flutter_appauth` declares itself -- as
-the single owner of the scheme.
-
-**Verified on an Android 14 emulator, before and after, by asking the OS rather than reasoning:**
-
-- `pm query-activities` for the redirect scheme: **2 activities BEFORE, 1 AFTER**. The survivor is
-  AppAuth's receiver, which is the library's intended design.
-- Firing the real redirect intent: **landed on `com.android.internal.app.ResolverActivity` (the
-  system chooser) BEFORE; lands in `Task A=10196:com.myemailspamfilter` (the app's own task)
-  AFTER.** No chooser. This is the behaviour `null_intent` was the absence of.
-
-**Checked before removing** (the filter carried no other scheme or host, and `app_links` never
-constructs an `AppLinks` instance anywhere in `lib/`, so no deep-link path depended on
-`MainActivity` receiving it).
-
-**Regression gate**: `test/policy/f219_task_affinity_test.dart` now asserts the INVERSE of what it
-originally did. It previously required `MainActivity` to carry the filter, as a paired check so the
-F219 `taskAffinity` fix could not guard a filter that had moved away. Emulator probing showed that
-pairing was itself the bug. The gate now fails if the filter returns, and a second test asserts the
-`appAuthRedirectScheme` placeholder still exists in `build.gradle.kts` -- so removing the duplicate
-cannot silently unregister the scheme altogether. Mutation-verified: re-adding the filter turns the
-gate red.
-
 **F219 remains correct and was independently verified**: `taskAffinity=10195:com.myemailspamfilter`
 where it was previously the empty string. Two separate defects on one path; both fixes were needed.
 
@@ -935,39 +451,616 @@ end). The emulator cannot test it because the Android OAuth client is bound to t
 SHA-1. What the emulator HAS now proven is that the redirect reaches the app, which was the failing
 step.
 
-**F227. TWO activities register the OAuth redirect scheme, so Android shows a chooser instead of delivering the callback (~1-3h) Priority 2 (NEW, 2026-09-19 -- found by emulator probe during F219 validation)**
-- Phase: Core App Quality
-- Platform: Android (declared ADR-0042 exception -- Windows uses a loopback redirect)
-- **Very likely the ACTUAL `null_intent` cause, more directly than F219's `taskAffinity`.** Found by
-  firing the real redirect intent on an Android 14 emulator and asking the OS who resolves it.
-- **Measured, not inferred.** `pm query-activities` for the redirect scheme returns TWO activities
-  IN THE SAME APP:
-  - `com.myemailspamfilter.MainActivity` -- from our own `AndroidManifest.xml` intent filter
-  - `net.openid.appauth.RedirectUriReceiverActivity` -- declared by `flutter_appauth` ITSELF
-  `dumpsys package` confirms both carry an identical filter (VIEW + DEFAULT + BROWSABLE + the same
-  scheme). Android cannot choose between them, so the redirect lands on
-  `com.android.internal.app.ResolverActivity` -- a disambiguation dialog -- instead of reaching
-  AppAuth's receiver.
-- **Why this produces `null_intent`.** `flutter_appauth` waits for its OWN receiver to deliver the
-  authorization response. If the user picks `MainActivity` at the chooser (or the chooser is
-  dismissed), AppAuth's receiver never runs, so the pending intent it is waiting on resolves to
-  nothing -- which is exactly what `null_intent` reports.
-- **The duplicate is ours.** `flutter_appauth-12.0.2/android/src/main/AndroidManifest.xml` already
-  declares `RedirectUriReceiverActivity`, and the `appAuthRedirectScheme` manifest placeholder is
-  designed to wire the scheme to THAT activity. Our `MainActivity` filter (added when the app also
-  used a custom-scheme flow) now duplicates it.
-- **Proposed fix**: REMOVE the redirect intent filter from `MainActivity` and let AppAuth's own
-  receiver own the scheme, as the library intends. **Verify before assuming**: confirm nothing else
-  depends on `MainActivity` receiving that scheme (check `app_links` deep-link handling, which is a
-  separate dependency), and re-run the emulator probe -- `pm query-activities` must return exactly
-  ONE activity afterwards.
-- **Relationship to F219**: F219's `taskAffinity` removal is still correct and independently
-  verified on the emulator (`taskAffinity=com.myemailspamfilter`, launcher start, return from
-  recents, and clean launch all pass). An empty affinity would break the redirect even after F227
-  is fixed. The two are separate defects on the same path; F219 removed one, this removes the other.
-- Depends on: nothing. Testable on the emulator without a Play-signed build.
-- Source: emulator probe 2026-09-19 (`pixel34_updated`, Android 14, emulator 36.2.12.0) during
-  Sprint 70 F219 device validation.
+**F233. A pullable diagnostic log for Android, plus fix the header-only CSV export (~3-5h) Priority 4 (NEW, 2026-09-21 -- Harold offered to keep a debug log on permanently)**
+- Phase: Developer Tooling / Supportability
+- Platform: All (the log is shared); the RETRIEVAL problem is Android-specific.
+- **Harold's offer, 2026-09-21**: *"If needed, propose a log to capture needed details from the
+  Android phone or enhance the .csv download so it captures what is needed... I can keep the log on
+  for debugging purposes and anytime you capture images from the phone you can copy the log file or
+  .csv file."* This card is the answer to that offer.
+
+- **WHY IT IS NEEDED**: [[F232]] and [[F228]] both stall on the same wall. The decisive facts live
+  in `logger.e(...)` / `logger.i(...)` calls on a bare `Logger()` with **no file sink**, so they go
+  to a debug console that does not exist on an installed build. Two defects that reproduce on demand
+  cannot be diagnosed. Harold cannot hand over what the app never writes down.
+
+- **WHAT ALREADY EXISTS -- build on it, do not start over.**
+  - `LiveScanLogger` (`core/services/live_scan_logger.dart`) already writes a real file, is
+    cross-platform, MSIX-safe, resolves its directory via `path_provider`, and formats lines as
+    `[<iso>] [LIVE] <message>`. It also has an opt-in CSV/XLSX export gated by the
+    `live_scan_debug_csv` setting.
+  - **MEASURED ON THE DEVICE (2026-09-21, MTP)**: `Android/data/com.myemailspamfilter/` contains
+    ONLY `files/` with two old CSVs. **There is no `logs/` directory**, so `LiveScanLogger` has
+    never written on this phone -- the setting is off and the runtime log does not exist to enable.
+  - **GOOD NEWS on retrieval, and it decides the design**: `Android/data/com.myemailspamfilter/`
+    **IS readable over MTP** on this Samsung device -- I enumerated it and pulled files from it. So
+    an app-private log IS retrievable and does NOT require the user-visible Documents folder.
+    **Verify this again on the Fold8 Ultra** before relying on it; scoped-storage behaviour varies
+    by OEM and Android version.
+
+- **PROPOSAL, in the order it should be built.**
+  1. **Give the existing logger a file sink and route the failure paths into it.** Add a
+     `logger.e`-equivalent that appends through `LiveScanLogger.log` (or a sibling
+     `DiagnosticLogger` with a `diag_v<version>.log` name), then convert the call sites that matter:
+     `[F38] Re-processing failed: $e` (`results_display_screen.dart:3329`), `[F38] Delete batch
+     failed: $e` (`:3266`), the `BatchActionResult.allFailed` reason from
+     `generic_imap_adapter.dart:1140-1147`, `[IMAP] Invalid message UID` (`:1205`), and the
+     `no valid UIDs parsed ... skipping` warning (`:993`). **Those five lines would have answered
+     both open cards.**
+  2. **Record the two failure SHAPES distinctly** -- an `allFailed` guard trip ("never connected")
+     versus a thrown exception ("connected, server refused"). Today both surface as
+     "0 of N (N failed)" and are indistinguishable from the UI, which is why F232 has two competing
+     mechanisms.
+  3. **A Settings toggle, default OFF**, next to the existing CSV-export setting: "Write diagnostic
+     log". Harold keeps it ON. Must be honest about cost (file growth) and must never log message
+     bodies or credentials -- **use `Redact.email(...)`, which `LiveScanLogger` already does**.
+  4. **"Keep all log files" flag -- Harold's request, 2026-09-21**: *"We could add a flag to allow
+     saving all log files (if the user can easily get to them to delete the files)."* Two halves,
+     and **the parenthetical is a hard requirement, not an aside**: retention is only safe if the
+     user can find and clear the files.
+     - **Retention flag** (default OFF, Harold ON): keep per-run log files instead of appending to
+       one, named `diag_v<version>_<iso-date>.log` so a run is identifiable.
+     - **Make them reachable and deletable.** The existing `CSV Export Directory` setting already
+       proves the pattern works -- it writes to a user-chosen folder (Harold's is Documents) and I
+       pulled those files over MTP without trouble, whereas app-private storage is only reachable
+       because this particular Samsung exposes it. **So default the diagnostic log to the SAME
+       user-chosen directory** rather than app-private storage: it is OEM-independent, visible in
+       the phone's own Files app, and deletable without the app.
+     - **Give Settings a "Delete diagnostic logs" action** with a total size shown next to it, so
+       the user is never forced to go hunting in a file manager. Deleting from inside the app is
+       the honest answer to "if the user can easily get to them".
+  5. **Log rotation or a size cap.** A permanently-on log on a phone needs one; `LiveScanLogger`
+     appends without bound today.
+  6. **Add the app version and build number to the log header and to the CSV** -- see [[F229]],
+     which filed exactly this for exports. A diagnostic file that cannot name its build is weak
+     evidence.
+
+- **SEPARATE DEFECT, NOW CONFIRMED WITH ITS CAUSE -- exporting from a HISTORICAL view always
+  writes a header-only CSV.** Of five exports pulled off the phone, **three are exactly 108 bytes:
+  the header row and ZERO data rows** (`...2026-09-08T22-46-20`, `...2026-09-11T23-47-21`,
+  `...2026-09-21T01-15-34`); two have real rows (5 and 3).
+  **Harold, 2026-09-21: "The export may only be working if requested."** Correct, and that was the
+  key to it -- the export is MANUAL ONLY, fired by the download `IconButton` at
+  `results_display_screen.dart:728-732`, and it calls
+  `scanProvider.exportResultsToCSV()` (`:363`), which iterates the PROVIDER's `_results`
+  (`email_scan_provider.dart:914`).
+  **`_exportResults` never consults `_historicalResults`** -- while every DISPLAY path does
+  (`:595`, `:598`, `:2566`, each choosing `_historicalResults` when `widget.historicalScanId !=
+  null`). So tapping Export while viewing a historical scan reads an empty provider and writes a
+  header with no rows, and reports success. **Not a hypothesis: the export path is simply missing
+  the historical branch that the rest of the screen has.**
+  **Same root split as [[F232]]** -- session state versus historical state -- which is why the two
+  should be fixed together. Fix shape: pass the same `allResults` selection the display uses, or
+  give the provider an explicit rows argument rather than reading its own field.
+- **This defect is what makes the CSV route insufficient on its own**: Harold offered to send CSVs,
+  but the CSV silently omits everything on the very screen the open defects live on. Fix the export
+  AND add the log.
+- **What the CSV already gets right, and it did real work today**: it carries an `Email ID` column,
+  and reading it **falsified** F232's leading hypothesis in one command -- every id is a clean
+  integer. Keep that column. A columnar export of REAL values beats any amount of source reasoning,
+  which is the general lesson worth carrying.
+- Source: Harold's offer, 2026-09-21. Device facts measured the same day over MTP. Related:
+  [[F232]], [[F228]], [[F229]], [[F231]].
+
+**F235. Make Android background scans actually fire in Doze (~4-8h) Priority 4 -- TARGETED FOR SPRINT 73 (NEW, 2026-09-22 -- Harold, after the Sprint 72 "is it the only way" search)**
+- Phase: Core / Android
+- Platform: **DECLARED ADR-0042 EXCEPTION -- Android only.** The OS behavior that differs is named:
+  Android's Doze and App Standby defer background work, and Windows has no equivalent arbiter
+  (its background scanning is a scheduled task). The exception covers the SCHEDULING MECHANISM
+  only; the scan logic itself stays shared.
+- **This is the MECHANISM half of [[F217]].** Sprint 72 shipped the honest messaging -- Settings
+  now tells the user the phone may delay scans -- and deliberately stopped there, because the
+  search Harold asked for changed the premise of his 2026-09-19 decision.
+
+- **Harold's instruction, 2026-09-22**: *"Need to add to backlog and target for next sprint to
+  implement the use of Doze on Android."*
+
+- **WHY THE MECHANISM CHANGED, and it is the whole reason this is a separate card.** Harold's
+  original instruction was conditional: *"if ... asking for battery usage is the only way to
+  implement this (search to ensure this is the only way), then I think asking for battery usage is
+  appropriate."* The search was run against primary sources and the condition FAILED:
+  - **Our own code is not the cause.** `background_scan_scheduler.dart:258` registers periodic work
+    with `networkType: connected` ONLY -- no battery constraint, no idle constraint, no foreground
+    service. Checked and eliminated before looking outward.
+  - **The diagnosis is confirmed** by Android's own documentation: Doze *"doesn't let JobScheduler
+    run... WorkManager uses JobScheduler internally, so WorkManager tasks don't run."* Harold's
+    experience -- *"background jobs only run when the app is open and in view"* -- matches exactly.
+  - **The exemption is NOT the only route.** `setExactAndAllowWhileIdle()` fires in Doze with NO
+    special permission, capped at once per 9 minutes per app -- which is COMPATIBLE with the app's
+    15-minute floor.
+  - **And the exemption carries a Play policy cost**: Google *"prohibit[s] apps from requesting
+    direct exemption from Power Management features... unless the core function of the app is
+    adversely affected"*, with acceptable categories limited to safety, task automation and
+    peripheral companion apps.
+
+- **RECOMMENDED APPROACH (and why it is not the exemption)**: implement
+  `setExactAndAllowWhileIdle()` as the Android scheduling path. It gets the functional outcome
+  Harold wants -- scans that fire while the phone is idle -- WITHOUT spending Play-review risk
+  during a closed test whose production access is gated on the 12-tester/14-day clock. The 9-minute
+  floor does not constrain a 15-minute schedule. If measurement then shows the alarm is still
+  deferred too aggressively, the exemption becomes option 2 WITH evidence behind its justification
+  rather than an assertion.
+
+- **Audit-first (MANDATORY, run 2026-09-22)**: **Is any of this already present? NO.** Grep for
+  `setExactAndAllowWhileIdle` and `AlarmManager` across the Android manifest and the scheduler
+  returns nothing. Genuine build work. **Note the Sprint 70 correction**: check the MERGED manifest,
+  not just the source -- `FOREGROUND_SERVICE` and `WAKE_LOCK` arrive via workmanager and are
+  invisible in the source manifest.
+
+- **Requirements**:
+  - R-1: Android scheduling uses an exact-while-idle alarm; Windows is untouched.
+  - R-2: **`SCHEDULE_EXACT_ALARM` / `USE_EXACT_ALARM` permission review.** Android 12+ restricts
+    exact alarms, and `USE_EXACT_ALARM` has its OWN Play policy justification requirement. **Verify
+    which permission this actually needs before building** -- if it turns out to need
+    `USE_EXACT_ALARM` with a comparable review burden, the advantage over the exemption shrinks and
+    this decision should go back to Harold.
+  - R-3: The 9-minute floor must be enforced or documented; a future frequency below it would be
+    silently clamped by the OS.
+  - R-4: Rescheduling after device reboot (`BOOT_COMPLETED`) -- an alarm does not survive a restart
+    the way WorkManager's persisted work does. **This is a real regression risk versus today.**
+  - R-5: Keep the F217 honest-timing caveat. Even an exact alarm can be delayed; the message should
+    soften, not disappear.
+  - R-6: The existing `Constraints(networkType: connected)` behavior must be preserved -- an alarm
+    has no network constraint, so the scan itself must check connectivity and defer gracefully.
+
+- **Acceptance**: the only evidence that matters is Harold's device over real intervals -- a scan
+  firing while the phone is locked and the app is closed, confirmed from Scan History timestamps.
+  No unit test can prove this, which R-4 makes especially important to validate after a reboot.
+- Source: Harold, 2026-09-22. Full research and the four options are recorded under [[F217]].
+
+**F234. Read-only as a PREVIEW mode -- record what WOULD have been deleted (~4-6h) Priority 8 (NEW, 2026-09-22 -- Harold, during Sprint 72 manual validation)**
+- Phase: UX / Core
+- Platform: All (shared logic; especially valuable on Windows, which is configured read-only)
+- **Harold's idea, verbatim**: *"I am thinking that if Manual > Scan mode is readonly then add the
+  rule, but don't delete the email, but add it to 'would have been deleted'."*
+- **Today** a read-only account says the rule was saved and the mailbox was not changed (F228/F232,
+  Sprint 72). That is honest but it throws away the interesting half: WHICH emails the new rule
+  matched. The user has to enable live actions to find out, which is exactly the wrong order --
+  they would be finding out by deleting.
+- **The proposal turns read-only into a safe preview.** A user could add a broad rule, see it would
+  have matched 340 emails across three folders, and decide that is too broad BEFORE anything is
+  deleted. Read-only stops being a restriction and becomes a rehearsal.
+- **This is genuinely new capability, not a fix.** Filed rather than folded into Sprint 72 mid
+  validation.
+- **Design notes**:
+  - The data already exists at the decision point: `_reProcessAffectedEmails` builds `toDelete` and
+    `toMoveSafe` BEFORE the mode check. Today the read-only path returns before using them. A
+    preview would record those lists instead of discarding them.
+  - Surface it where the user already looks: the session activity list added by F231 is the natural
+    home, or a "would have been actioned" count on the results footer.
+  - **Must never be mistakable for a real action.** Wording and colour have to make "would have"
+    unambiguous -- the whole point of Sprint 72's F228 was that a message implying a mailbox change
+    that did not happen is a defect.
+  - Consider persisting it, so a preview survives leaving the screen ([[F231]] made exactly this
+    argument about transient outcomes).
+- **Scope question for Harold at planning**: preview for BLOCK rules only, or safe-sender moves too?
+  A safe-sender preview is the same mechanism but a different message.
+- **Confirmed decided in Sprint 72 and NOT part of this card**: the MANUAL mode alone governs a
+  foreground action from the results screen (`isBackground: false`). Background mode answers a
+  different question -- what may run unattended -- and letting it govern a click would be one
+  setting answering a question it was not asked. Harold validated this on Windows 2026-09-22.
+- Source: Harold, 2026-09-22, Sprint 72 manual validation step A. Related: [[F232]], [[F228]],
+  [[F231]].
+
+**F232. Rules created from a HISTORICAL scan view never act on the mailbox, silently (~4-6h) Priority 2 (NEW, 2026-09-21 -- Harold; CONFIRMED IN SOURCE, and the code already documents the cause)**
+- Phase: Bug Fix
+- Platform: All (shared code)
+- **HIGHEST priority of the Sprint 71 candidates.** The user is shown every signal of success --
+  rule created, rows disappear, counts drop, green toast -- while **nothing happens on the mail
+  server**. It is a silent no-op that looks exactly like a completed action.
+
+- **Harold's report, 2026-09-21**: *"if I block an entire domain via View Search Results > select a
+  tile > pick an item and block entire domain - it appears that none of the emails get deleted
+  during the session because when I then do a live scan, it will delete the same number of emails
+  as would have been in the View Search Results session (all time, no exceptions)."* The predicted
+  count matching on the next live scan is the tell: the work was deferred, not done.
+
+- **CORRECTION, 2026-09-21 (same day, from Harold's saved progression): the readOnly early return
+  is NOT what produced the observed failures, and possibly not what produced Harold's report
+  either.** `Screenshot_20260920_222506.png` shows **`Re-processed 0 of 9 (9 failed)`** at 22:25 on
+  2026-09-20 **with full signal and no airplane mode**. A batch summary only renders when the batch
+  actually RAN -- the `readOnly` path returns BEFORE any of that, producing no summary at all. So
+  something failed 9 live IMAP actions on a healthy network.
+  **Candidates, none yet confirmed** (all inside the `try` at `:3216-3238`): `ScanCoordinator
+  .acquire()` blocking behind a background scan and timing out; `SecureCredentialsStore
+  .getCredentials()` returning null; `platform.loadCredentials`/connect throwing. **Timing note,
+  suggestive but NOT evidence**: Scan History shows background scans at 22:20 and this failure at
+  22:25, which is a plausible lease-contention window -- and confirming it needs the exception text,
+  which is exactly the console-only logging blocker.
+  **What this means for the card**: the two mechanisms below are both REAL and both must be fixed,
+  but they are different bugs and the evidence for each is different. Do not assume fixing the
+  scan-mode resolution fixes Harold's count-matching report.
+
+- **MECHANISM A -- the silent readOnly skip (confirmed in source, not yet tied to a screenshot).** `_reProcessAffectedEmails()`
+  (`results_display_screen.dart:3114-3118`) opens with:
+  `if (scanMode == ScanMode.readOnly) { logger.i('[F38] Skipping re-process: scan mode is readOnly'); return; }`
+  And `EmailScanProvider._scanMode` **defaults to `ScanMode.readOnly`** (`:165`) and is only ever
+  set by `initializeScanMode(...)`, whose call sites are ALL scan-STARTING paths:
+  `background_scan_core.dart:125`, `account_setup_screen.dart:318` and `:1090`,
+  `scan_progress_screen.dart:722`. **No path sets it when a HISTORICAL scan is opened from Scan
+  History.** So in a session where the user has not started a scan, the mode is still the
+  read-only default and every IMAP action from this screen is skipped.
+  The Sprint 38 Round 9 comment at `:304` states the premise outright: *"returns early when
+  scanProvider.scanMode == readOnly, which is the default state on app launch when no scan has been
+  initiated in the current session."*
+
+- **MECHANISM A, continued -- Sprint 38 patched the SYMPTOM and left the defect.** That comment introduces an unconditional
+  row-hiding loop so the list *looks* correct, reasoning that the hiding "is safe regardless of
+  scanMode (no IMAP side effects)". True of the hiding -- and it made the skipped DELETION
+  invisible. **This is the lesson to carry: a fix that makes the UI consistent with an action that
+  did not happen is worse than the original inconsistency, because it removes the only clue.**
+
+- **This SUPERSEDES part of [[F228]].** F228 found the per-action toast hardcoded to
+  `Colors.green` and concluded it misreports an IMAP failure. On THIS path there was never an IMAP
+  attempt to report on -- so the toast is not merely mis-coloured, it is describing work that was
+  never scheduled. Fix F232 first; some of F228's observed behaviour may be this. **They are still
+  distinct**: F228's offline reproduction had a real attempt that really failed (`Re-processed 0 of
+  6 (6 failed)` proves the batch ran), so both defects exist.
+
+- **DECIDED by Harold, 2026-09-21: OPTION 2 -- ACT NOW.** Resolve the effective scan mode from
+  SAVED SETTINGS rather than session state, and perform the IMAP action. Rationale: the UI already
+  claims the work is done, and making the claim true is better than making the message weaker. The
+  options he chose between were (1) say so / defer honestly, (2) act now, (3) prompt per session.
+  **This is a Class-2 development decision** (it changes the meaning of `scanMode` at this call
+  site) and is now authorised.
+
+- **What option 2 actually requires -- read before estimating; it is NOT a one-line change.**
+  1. **The scan mode is PER-ACCOUNT, not global.** `SettingsStore.getAccountManualScanMode(accountId)`
+     returns `ScanMode?`, null meaning "use the app-wide default" (`settings_store.dart:524`). The
+     Scan Results screen can be showing **All Accounts**, so a single resolved mode is WRONG here:
+     the mode must be resolved **per email** from `result.email`'s account, and a batch may
+     legitimately contain a mix of act and read-only accounts.
+  2. Therefore `_reProcessAffectedEmails()` cannot keep a single early return. It must partition the
+     batch: act on emails whose account permits it, skip the rest, and report BOTH ("3 filed, 2
+     skipped -- those accounts are read-only"). A silent partial action is the same class of defect
+     this card exists to fix.
+  3. **Use the MANUAL mode, not the background mode**, for a user-initiated action from a results
+     screen. `keyBackgroundScanMode` is a separate setting and applying it here would let a
+     background policy govern a foreground action the user just took.
+  4. **Honour read-only genuinely.** If an account is configured read-only, option 2 must still NOT
+     act on it -- it must say so. Option 2 replaces "skip because no scan ran this session" with
+     "act per the account's configured intent"; it does not override a deliberate read-only choice.
+     Windows DEV/Prod are configured read-only, so on Windows the correct post-fix behaviour is
+     still to skip -- and now to SAY so rather than fall silent.
+  5. **Safety**: this creates a live-deletion path from a screen that previously never deleted.
+     Harold should be told plainly in the Phase 5 validation steps that opening an old scan and
+     adding a rule will now act on real mail.
+
+- **HAROLD'S CONTROLLED COMPARISON -- the single most useful diagnostic fact on this card
+  (2026-09-21).** *"the background scan that starts with the new rules from prior View Results
+  Summary rule additions, correctly deletes all the email. So we know emails can be deleted and we
+  know the mechanism that works to do that. Something is different in how the View Results Summary
+  re-processing emails after rules are selected by the user that results in the emails not being
+  deleted."*
+  **This is a natural A/B with everything held constant**: same account, same credentials, same
+  network, same rules, minutes apart. One path deletes, the other does not. So every
+  environment-level explanation is ELIMINATED -- not deprioritised, eliminated. The cause is a
+  difference between the two code paths.
+
+- **What the two paths share (so NOT the cause)**: both call
+  `PlatformRegistry.getPlatform(platformId)`, `SecureCredentialsStore.getCredentials(accountId)`,
+  `platform.loadCredentials(credentials)`, `setDeletedRuleFolder(...)` from the same per-account
+  setting, and both acquire a `ScanCoordinator` lease. Verified side by side:
+  `email_scanner.dart:170-205` against `results_display_screen.dart:3216-3248`.
+- **`PlatformRegistry.getPlatform` returns a FRESH instance** (`platform_registry.dart:59-62`,
+  `factory?.call()`), so a shared-adapter/shared-client theory is DEAD -- the background scan's
+  `disconnect()` cannot null the re-process path's client. Checked and eliminated.
+
+- **The differences that remain, in priority order for investigation**:
+  1. **The scanner ACTS ON FRESHLY FETCHED messages; the re-process path acts on `EmailMessage`
+     objects rehydrated from the historical DATABASE and never re-fetched.** An IMAP move/delete
+     needs a valid identifier in the CURRENTLY SELECTED mailbox. If `EmailMessage.id` is a UID from
+     an earlier session -- or the adapter's `_currentMailbox` is not the folder that UID belongs to,
+     or the UID has since been invalidated (UIDVALIDITY change, message already moved by the
+     background scan) -- the per-message action fails while the connection is perfectly healthy.
+     **This fits the evidence better than anything else**: 9 of 9 failing uniformly is what a
+     systematically invalid identifier looks like, whereas a network fault would be flakier.
+     **And it explains why the later background scan succeeds**: it re-fetches, so its identifiers
+     are current by construction.
+  2. **Folder selection.** The scanner selects each folder as it walks them. The re-process path
+     calls `takeActionBatch` with a batch that may span `Inbox`, `Bulk` and `Bulk Mail` (Harold's
+     configured folders) with no evident per-folder select. A UID is only meaningful within one
+     mailbox.
+  3. `_imapClient == null` at batch time -> `BatchActionResult.allFailed` with "Not connected. Call
+     loadCredentials() first." (`generic_imap_adapter.dart:1140-1147`). Still possible, but the
+     path does call `loadCredentials` and nothing else nulls the client
+     (`_imapClient = null` appears at exactly ONE site, `:1394`, inside `disconnect()`'s `finally`).
+- **THE UID HYPOTHESIS IS FALSIFIED (2026-09-21, from the phone's own CSV exports). DO NOT
+  re-derive it.** I proposed that historical rows carry a malformed `EmailMessage.id`, so
+  `_parseUids`' `int.tryParse` would drop them and fail a whole folder silently. **Checked against
+  real data and it is WRONG.** Two CSV exports pulled off the S24+ over MTP
+  (`scan_results_2026-09-09T07-30-02.csv`, 5 rows; `scan_results_2026-09-10T20-32-31.csv`, 3 rows)
+  carry an `Email ID` column, and **every value is a clean integer** (231203, 231201, 231200,
+  231199, 201936 ...) that `int.tryParse` accepts. So ids are well formed, `_parseUids` would not
+  drop them, and the "invalid UID" path is not the cause.
+  **What remains of that line of reasoning**: the ids are valid but may be STALE or belong to a
+  different mailbox than the one selected -- a UID is only meaningful within one folder and can be
+  invalidated (UIDVALIDITY change, or the message already moved by the background scan that ran
+  minutes earlier). That is still plausible and is NOT the same claim as "the id is malformed".
+  Note the exports show `Folder` values of both `Inbox` and `Bulk` in one scan, so cross-folder
+  batches are real.
+- **THE UID CHAIN, traced 2026-09-21 (mechanism still worth knowing, cause now excluded).** `takeActionBatch(delete)` routes
+  to `moveToFolderBatch` (`:1151-1153`), which groups by folder (so hypothesis 2 is HANDLED by the
+  adapter -- it does iterate per source folder) and then calls `_parseUids`:
+  `int.tryParse(message.id)`, logging `[IMAP] Invalid message UID: <id>` and DROPPING any id that is
+  not a bare integer (`:1198-1209`). If a folder's UID list comes back empty the folder is **skipped
+  with a warning and no exception** (`:992-996`) -- which yields "0 succeeded / N failed" with a
+  perfectly healthy connection, exactly the observed shape.
+  **So the question to answer first is one line of data, not a hypothesis**: what is
+  `EmailMessage.id` for a row rehydrated from the historical scan store, and does `int.tryParse`
+  accept it? If historical rows carry a composite/prefixed id, or an empty id, every re-process
+  delete fails uniformly while the background scan -- which uses ids from a LIVE fetch -- succeeds.
+  That would explain Harold's A/B exactly.
+  **NOT yet confirmed**: I did not finish tracing what the store writes into that column, and it is
+  implementation work rather than triage. Do it first and the card may collapse to a one-line fix.
+  The move is also VERIFIED post-hoc (UIDs that did not leave the source folder are counted as
+  genuine failures, `:1006-1013`), so the failure count is trustworthy -- the app is reporting a
+  real non-deletion, not a bookkeeping artifact.
+- **FIRST TASK is now narrow and cheap**: log or inspect, for one failing batch, (a) the exception
+  text from the inner `catch` at `:3266` (`[F38] Delete batch failed: $e`) versus the
+  `allFailed` reason, which distinguishes "not connected" from a per-message rejection, and (b) the
+  `EmailMessage.id` values being passed and the mailbox selected when they are used. Those two
+  facts decide between hypotheses 1/2 and 3.
+- **Note the two failure SHAPES are already distinguishable in code** -- an `allFailed` return
+  (guard tripped) versus a thrown exception caught at `:3266` -- so whoever adds the file logger
+  should make sure both are recorded distinctly. That is the difference between "never connected"
+  and "connected but the server refused these messages".
+
+- **MECHANISM B -- a live batch failing 9 of 9 with a working connection. UNDIAGNOSED.** This is
+  what the screenshot actually shows and what most likely matches Harold's report, since his
+  description ("none get deleted during the session") is consistent with either. Getting the
+  exception is the first task; see the logging blocker in [[F228]].
+- **The silent `return` must go regardless.** A skipped action that logs only to a
+  console sink nobody can read (see [[F228]] on the missing file logger) is how this survived from
+  Sprint 38 to now.
+- **Note the scan-mode config while testing**: per `project_scan_mode_by_environment`, Windows
+  DEV and Prod are read-only with background OFF, and the Android closed test is the ONLY build
+  that acts on mail. So on Windows this early return is CORRECT and expected -- **reproduce on the
+  S24+**, or the read-only default will mask the difference between "skipped because historical"
+  and "skipped because configured read-only".
+- **Regression test direction**: open a historical scan with no scan started in the session, create
+  a matching rule, and assert the IMAP action was attempted (or that the user was told it was not).
+  A test asserting only that rows hid would pass today and is exactly the gap Sprint 38 left.
+- Source: Harold, 2026-09-21, S24+ 0.15.2. He has a captured progression from earlier the same day
+  or the day before. Related: [[F228]], [[F231]].
+
+**F231. Per-action results vanish after 3 seconds and are recorded nowhere (~2-4h) Priority 10 (NEW, 2026-09-21 -- Harold: "it went past faster than I could see it")**
+- Phase: UX / Supportability
+- Platform: All (shared code)
+- **Symptom, in Harold's words while working items in Review No Rule Items on the 0.15.2 Store
+  build**: *"I did a few and it went past faster than I could see it."* He then had to navigate to
+  View Scan History to find out what had happened.
+- **MEASURED, 2026-09-21: about ONE SECOND of readable time each, not three.** Harold timed them.
+  The `Duration(seconds: 3)` is the total lifetime INCLUDING the enter and exit animations, and
+  each new action REPLACES the current SnackBar rather than queueing -- so in a burst every toast
+  but the last is cut short. The effective read window is roughly a third of the nominal duration.
+  **This is why (b) "just lengthen the duration" is the weakest option**: at 3 actions in 4 seconds
+  the user still only ever sees the last one, however long its timeout.
+- **SECOND DEFECT, found by Harold the same day and arguably worse than the timing: THE ITEM DETAIL
+  CARD COVERS THE TOAST.** *"if you start at the top of the list, then the item detail card overlaps
+  the footer status for success and failure, so you don't see any of them."* Working top-down --
+  the natural order -- the expanded detail card sits over the message area, so the user sees
+  NEITHER the success nor the failure text. Not shortened: absent. The SnackBar uses
+  `SnackBarBehavior.floating` with `margin: EdgeInsets.only(bottom: 80, ...)`, which is a fixed
+  offset that does not account for the open detail card. **Check this against [[F230]]** -- the same
+  screen, and a Skip-button move changes that geometry.
+- **Verified in source**: every result SnackBar on `results_display_screen.dart` uses
+  `duration: const Duration(seconds: 3)` -- lines ~3369, ~3433, ~3476, ~3510, ~3552. Three seconds
+  for a message like `Created rule to block entire domain "*.troll8.com" -- 1 removed, 0 "No rule"
+  remaining`, which is a sentence the user is expected to READ and ACT on, not an acknowledgement.
+- **The compounding problem, and the reason this is filed as supportability rather than polish: the
+  toast is the ONLY place that per-action outcome exists.** It is not written to any log
+  ([[F228]] established that this screen's `Logger()` is console-only with no file sink), it is not
+  in the scan-results CSV, and the footer shows only aggregate counts. So a missed toast means the
+  information is **permanently gone** -- for the user AND for anyone diagnosing a report later.
+  Working quickly, which is the normal way to process a No-rule queue, guarantees missing them.
+- **Design directions, in rough order of value**:
+  (a) **Persist the outcomes.** A per-action record -- in the scan history detail, or a session
+      activity list on the screen -- is the fix that survives a missed toast. This is the one that
+      also helps future defect reports.
+  (b) Lengthen the duration and/or make it dismiss-on-tap rather than timeout-only. Cheapest, and
+      partial: it helps a user watching, not a user working fast.
+  (c) Coalesce rapid actions into one summary toast instead of N transient ones, so a burst of
+      quick actions produces something readable.
+- **Do NOT just raise 3s to 8s and call it done.** That leaves the permanent-loss problem
+  untouched, and a long-lived SnackBar on this screen will cover the bottom of the list and the
+  `Back to Scan History` control -- the popup already occupies much of the surface. Whatever is
+  chosen must be checked against the 411px layout, where the space is tightest ([[F230]] is the
+  same screen).
+- **Related but distinct from [[F230]]**: that card is about text size and Skip placement on the
+  action sheet. This one is about the lifetime and durability of the result message. They will
+  likely be worked together since they touch the same widget tree.
+- Source: Harold, 2026-09-21, working the Windows 0.15.2 Store build. Screenshots show the footer
+  progressing correctly (`3 of 6` then `5 of 6`), which is what makes the missing per-action detail
+  the remaining gap.
+
+**F230. No-rule action sheet at phone width: text too small, and Skip overlays the sender (~3-4h) Priority 10 (NEW, 2026-09-21 -- Harold, on the 0.15.2 Play build)**
+- Phase: UX
+- Platform: **All, by Harold's explicit decision.** He has never seen either problem on Windows, but
+  chose to raise the sizes on BOTH platforms rather than branch: *"It would be OK if it was bigger
+  on Windows in order to match Android and not cause an unnecessary exception."* So this stays a
+  single shared change with **no ADR-0042 platform exception to declare** -- which is the cheaper
+  outcome, because an exception is a permanent maintenance burden and a font size is not worth one.
+- **Two distinct complaints, one screen** (`results_display_screen.dart`, the No-rule action sheet,
+  shown only under `_filter == EmailActionType.none`):
+
+  **(a) Text too small.** Verified in source, not guessed:
+    - subtitle `folder - subject - rule`: `fontSize: 12, color: Colors.grey[600]` (line ~1924)
+    - date/time + domain row: `fontSize: 11, color: Colors.grey.shade600` (line ~1941, ~1953)
+    - sender, for contrast: `fontSize: 14, bold`
+  Harold's direction: raise them, and accept the same increase on Windows.
+
+  **(b) Skip overlays/truncates the sender.** The sender sits in an `Expanded` with
+  `TextOverflow.ellipsis` in the SAME `Row` as the Skip button (line ~1876-1913), so Skip directly
+  consumes sender width. At 411px this renders `kimmeyharold@help.ramirezo...`; on Windows at
+  ~993px the same code shows the full address with room to spare. **It is a WIDTH problem, not a
+  font problem** -- worth stating because the two complaints arrived together and have different
+  causes.
+  Harold's proposal, and it is a good one: move Skip from the TOP right to the BOTTOM right of the
+  same section -- aligned with the date/time + domain row, where the screenshot shows clear empty
+  space.
+
+- **Design constraint on the Skip move.** The date/time + domain row is a plain `Row` whose domain
+  `Text` has NO `Expanded`. Dropping Skip into it unbounded moves the overflow rather than fixing
+  it: a long domain plus Skip would overflow THAT row instead of ellipsizing. Bound the domain text
+  and re-test at 411px. This is the same failure shape as the F172 AppBar overflow (~81px at 411px),
+  which is the precedent for taking it seriously.
+- **Keep Skip's behaviour identical.** It reuses `_quickActionThenAdvance` with a no-op action and a
+  covers-nothing predicate specifically so "next unaddressed item" means exactly what it means for
+  every other button on the sheet (F136, Sprint 52). Move the widget; do NOT reimplement it.
+- **GATE WARNING, non-obvious**: `test/policy/text_contrast_test.dart` enforces WCAG contrast with
+  thresholds that DEPEND ON FONT SIZE -- larger text is held to a lower ratio. Raising a size can
+  push text out of the large-text exemption into the stricter requirement, so **a font bump can turn
+  a CONTRAST gate red even though no colour changed**. `grey.shade600` on a light surface is already
+  near the boundary. Run that gate as part of the change, and fix by darkening the grey rather than
+  by reverting the size.
+- **Also re-run**: `results_display_popup_width_test.dart` (F151e caps the popup width),
+  `minimum_window_size_sweep_test.dart`, and the 411px width tests.
+- **Open question for implementation**: whether to keep hardcoded sizes or move to theme text styles
+  (`bodySmall`/`bodyMedium`), which would additionally honour the OS font-size accessibility setting.
+  Harold has not been asked to choose; raise it at planning.
+- Source: Harold, 2026-09-21, screenshots `Screenshot_20260921_133314.png` and `_133320.png`
+  (Android 0.15.2) against a Windows capture of the same sheet. Found in the same session as
+  [[F228]] and [[F229]].
+
+**F229 PARTIALLY DELIVERED IN SPRINT 72 (2026-09-22). The EXPORT half is done; the SCREEN half is BLOCKED BY MEASUREMENT.**
+
+Harold asked at approval: *"if room, is there a place to add version that is visible on all
+platforms, all screens, near the top?"* He prefixed it with "if room", and there is not --
+measured, not assumed.
+
+**What was tried**: keep the label but shorten it below the 600px breakpoint (`0.15.3` at 6
+characters instead of `Version 0.15.3` at ~13), narrower max width 140 -> 76, padding 12 -> 6. The
+reasoning was sound -- the WORDS cost the space, not the number.
+
+**What happened**: `A RenderFlex overflowed by 18 pixels on the right`, and FOUR tests went red
+across `no_rule_review_account_dropdown_test.dart` (AC-1/2/3) and
+`results_display_popup_width_test.dart` (the F178 safe-area case). All at phone width. Same
+failure mode as F172 (~81px then, 18px now): **the short form narrowed the gap and did not close
+it.** Reverted; suite back to green.
+
+**The measurement is the answer**: the AppBar action row cannot hold a version label at phone
+width in ANY form. It is already at its limit with the existing icons, and the row is SHARED --
+`AppBarVersionLabel` is one entry in `StandardAppBarActions` -- so the constraint applies to every
+screen using it.
+
+**Options remaining, for Harold** (the version IS already visible at phone width on
+Settings > General, so this is about reach, not absence):
+1. **Accept the current state.** The export now carries the version, so a tester's file is
+   self-identifying even when a screenshot is not. **This closes the original problem** -- F229 was
+   filed because a 26-screenshot session could not identify its build.
+2. **Move the label into the AppBar TITLE line** as a subtitle. Real space exists there, but
+   `StandardAppBarActions` does not own the title, so every screen's AppBar construction changes,
+   and the title line has its own pressure ("Results - kimmeyharold@aol.com -").
+3. **Overflow menu entry.** Never overflows, but two taps away -- which does not serve the
+   screenshot-provenance purpose.
+4. Drop icons at phone width. Trades a working control for a label; not recommended.
+
+**Recommendation: 1 now, 2 only if screenshot provenance stays a real problem.**
+
+**DELIVERED**: `exportResultsToCSV` takes `appVersion` and writes a leading provenance row; the
+caller passes `AppVersion.get()`. A tester's CSV can now name the build that produced it.
+**CHECKED AND NOT DONE**: the YAML export (`yaml_import_export_screen.dart`) carries no version
+either -- but it is a rules/safe-sender BACKUP file rather than diagnostic evidence, a different
+purpose, so it is left for Harold to prioritise rather than folded in silently.
+
+**F229. Make the build identifiable on phone-width screens and in exports (~3-5h) Priority 12 (NEW, 2026-09-21 -- Harold, during the 0.15.2 Play verification)**
+- Phase: UX / Supportability
+- Platform: All -- the divergence is by WIDTH, not by OS, so it hits Android phones and a narrow
+  Windows window alike.
+- **This is NOT a missing feature. It is a deliberate F172 (Sprint 61) trade-off whose assumption
+  has now failed.** `AppBarVersionLabel` in `lib/ui/widgets/standard_app_bar_actions.dart` renders
+  the version on every screen using `StandardAppBarActions`, then **returns `SizedBox.shrink()`
+  below 600px width** because the action row overflowed the AppBar by ~81px at 411px (caught by the
+  F169 tests). That reasoning is sound and the fix must not simply revert it -- overflowing clips
+  real action buttons.
+- **The failed assumption, quoted from the code**: *"Windows at its 1024x640 epx minimum is
+  comfortably above this, so the label is always present where screenshots are actually taken."*
+  Screenshots are now routinely taken on a 411px phone. On 2026-09-20 a full testing session
+  produced 26 screenshots and **not one showed a version**, so confirming which build was running
+  needed a phone reconnect and a purpose-taken Settings screenshot. Step 6 of
+  `GOOGLE_PLAY_RELEASE_PROCESS.md` requires confirming the installed version, and the app made its
+  own release process harder to complete.
+- **Screens verified WITHOUT a version at phone width (Android, 0.15.2)**: Scan History, Scan
+  Results (filtered and completed views), the live-scan "Scan Started" screen, the No-rule action
+  sheet. Present on Settings > General, which has its own label independent of the AppBar
+  (`settings_screen.dart:613`).
+- **Design direction -- do NOT just lower the 600px threshold.** Options worth weighing:
+  (a) move the label out of the crowded action row into the AppBar title/subtitle line;
+  (b) show a short form (`0.15.2` without the `Version ` prefix) below the breakpoint;
+  (c) overflow menu entry. Whatever is chosen must keep the `[DEV]` suffix visible -- that marker
+  is what would have caught the 0.5.5/0.5.6 Store dev-leak -- and must re-run the F169/F172 width
+  tests at 411px, which are the tests that caught the original overflow.
+- **Also stamp the build into EXPORTS.** `scan_results_2026-09-21T01-15-34.csv` pulled from the
+  device is a bare header row with no version anywhere, so an exported CSV cannot be attributed to
+  the build that produced it. A tester's export is evidence; evidence that cannot name its build is
+  weak. Add app version + build number as a header comment or column. **Inspect the YAML export
+  path too** -- same argument, NOT yet checked.
+- **Watch the gates**: `stale_footer_test` flags hardcoded version literals in `lib/ui/`, and
+  `version_consistency_test` asserts every literal matches `pubspec.yaml`. Use the existing
+  `AppVersion.get()` runtime lookup; do NOT introduce a literal.
+- Source: Harold, 2026-09-21, during Play 0.15.2 Step 6 verification. [[F228]] was found in the same
+  session.
+
+**F228. A green success toast reports rule creation while the IMAP action has already failed (~3-5h) Priority 6 (REPRODUCED DELIBERATELY 2026-09-21 on the S24+ with the network off)**
+- Phase: Bug Fix
+- Platform: All (shared code). Reproduced on Android 0.15.2; the code path is not platform-specific.
+- **Priority raised from 12 to 6**: this is no longer an intermittent oddity. It reproduces ON
+  DEMAND, the mechanism is read from source, and it tells the user an action succeeded when it did
+  not -- which invites them to move on from mail that was never filed.
+
+- **THE DEFECT, exactly.** `results_display_screen.dart:3472-3480` shows the per-action toast with
+  **`backgroundColor: Colors.green` HARDCODED**. That toast reports the RULE CREATION, which
+  genuinely succeeded (it is a local database + YAML write). But it fires at line 3472, AFTER
+  `await _reProcessAffectedEmails()` on line 3461 -- so by the time it renders, the IMAP action has
+  already failed and the failure count is known. The code has the information and does not use it.
+  Compare `:3363`, the batch summary, which gets this RIGHT: it picks its colour from `failCount`
+  (`failCount == 0 ? Colors.green : Colors.orange`) and reports `Re-processed $successCount of
+  $total ($failCount failed)`.
+
+- **REPRODUCTION, confirmed (Harold, 2026-09-21, S24+ 0.15.2, airplane mode ON)**:
+  1. View Scan Results, filter to No-rule items.
+  2. Airplane mode ON.
+  3. Create a block rule on several items.
+  **Observed**: each item produced a GREEN toast -- `...rule to block entire domain
+  "*.<domain>" -- 9 "No rule" remaining` -- while the batch summary for the same actions was ORANGE:
+  **`Re-processed 0 of 6 (6 failed)`**. Same actions, opposite verdicts, seconds apart. Screenshots
+  `Screenshot_20260921_221354.png` (green, airplane icon visible in the status bar) and
+  `Screenshot_20260921_221508.png` (orange).
+
+- **What is CORRECT and must not be "fixed"**:
+  - The batch summary is honest. Do not touch `:3363`.
+  - The offline failure itself is handled properly -- 6 attempted, 6 failed, reported as such.
+  - **The rule DOES get created offline, and that is right**: rules are local state, and the user's
+    intent is recorded even with no connection. The bug is the CLAIM about the mailbox, not the
+    local write.
+  - `stats.remaining` legitimately drops, because the rule now matches. The "9 No rule remaining"
+    count is not wrong; the GREEN and the implication of completion are.
+
+- **Likely fix**: have `_reProcessAffectedEmails()` return its success/fail counts to the caller (it
+  currently returns void and reports only via its own snackbar), then colour this toast and word its
+  suffix from them -- green only when nothing failed, otherwise amber with the failure named. This
+  ALSO fixes the original complaint that opened this card (the footer reading `12 of 12 addressed --
+  12 could not be applied` while the mailbox showed the work done), because both surfaces would
+  then derive from one outcome.
+- **Do NOT re-couple the footer counters.** `addressed`/`remaining` come from rule EVALUATION and
+  `failed` from IMAP outcome, and F212 R-4 separated them deliberately so a failed action could
+  never read as "addressed" (see the comment at `:3031`). The fix is to make the TOAST honest, not
+  to make evaluation depend on IMAP.
+- **The happy path is confirmed correct** (Harold, Windows 0.15.2, same day): footer went `3 of 6
+  addressed -- 3 remaining` then `5 of 6 -- 1 remaining`, toast agreed, list shrank in step, no
+  false failure text. So the counters agree whenever no exception fires -- this defect is confined
+  to the failure path.
+- **Blocker on the exception TEXT remains**: `[F38] Re-processing failed: $e` goes to a bare
+  `Logger()` with no file sink, so it is unavailable from any installed build. Confirmed by reading
+  the logger construction and by grepping every Windows log back to 0.5.8 for "F38" (zero hits).
+  Route it through a file-backed logger or reproduce under `flutter run`. **Broader gap**: any
+  `logger.e(...)` in a user-reachable failure path is invisible in production.
+- **Test direction**: the offline recipe above is a real regression test. Also cover the RETRY --
+  a key that failed then succeeds must stop being counted as failed (the Sprint 70 Copilot fix,
+  `_reProcessFailedKeys.removeAll`), which has never been exercised against real IMAP.
+- Source: filed 2026-09-20 from the Play build; mechanism identified and reproduced on demand
+  2026-09-21. Related: [[F231]] (these toasts vanish in 3s and are recorded nowhere), [[F230]].
 
 **F226. WinWright scripts fail intermittently when run back-to-back in one sweep (~2-4h) Priority 14 (NEW, 2026-09-18 -- found during the Sprint 70 5.1.5 sweep)**
 - Phase: Developer Tooling
@@ -991,6 +1084,8 @@ step.
   already quarantined out of the sweep; another timing patch grows the same debt.
 - Source: Sprint 70 Phase 5.1.5 sweep, 2026-09-18. Recorded in `SPRINT_70_PLAN.md` Phase 5
   completion notes.
+
+**F225 FIXED IN SPRINT 70 (2026-09-19) -- and the root cause was NOT the one guessed when filing it.** The PR review traced it: the fixture at `.claude/hooks/test-cases/fixtures/prekickoff-sprint/` hardcodes `_last_updated`, so it aged past `verify-closeout-complete.ps1`'s 30-day staleness check on the calendar alone. A time bomb, not the pre-kickoff detector. Fixtures are now exempt from that check -- asserting freshness of a checked-in fixture is meaningless. Hook suite went 66/1 -> 74/0. Kept here only as the record; REMOVE at the next refinement.
 
 **F225. `verify-closeout-complete` hook fails its OWN allow-case (~1-2h) Priority 14 (NEW, 2026-09-18 -- found while fixing the auto-advance gate)**
 - Phase: Developer Tooling
@@ -1117,84 +1212,6 @@ step.
 - Depends on: nothing.
 - Source: Sean Jarvis via Harold, 2026-09-17.
 
-**F223. Four `Future`s returned without `await` inside `try` -- the catch never fires (~30m) Priority 2 -- FIXED IN SPRINT 70 (2026-09-17, forced by the Windows build gate)**
-- Phase: Core App Quality
-- Platform: All (shared adapter and scanner code)
-- **Not a style issue.** `unawaited_return_in_try_block`, a lint new in Flutter 3.47.4, flags a
-  `Future` RETURNED from inside a `try` without `await`. The try block exits before the future
-  completes, so **the surrounding `catch` never sees its errors** -- they surface as an unhandled
-  async error somewhere else, or vanish.
-- **All four are in error-handling paths in the mail-fetch code**, which is where a swallowed
-  exception costs the most:
-  - `generic_imap_adapter.dart:533` -- `searchByMessageId` returns `_fetchMessageDetails(...)`
-    inside a `try` whose `catch` logs `[IMAP] searchByMessageId ERROR`. A fetch failure bypasses
-    that log entirely.
-  - `gmail_api_adapter.dart:471` and `:489` -- the `_fetchMessagesIndividually` fallbacks, which
-    exist BECAUSE something already failed. A failure in the fallback is unlogged.
-  - `email_scanner.dart:1344`
-- **Fix is small per site** (`return await ...`), but **verify rather than assume**: adding
-  `await` changes WHERE the error surfaces, so a caller that currently handles the async error
-  may now see it caught upstream instead. Check each call site before changing it.
-- **Worth a gate**: the lint is now in the analyzer, so keeping `flutter analyze` at zero
-  warnings enforces this permanently -- no custom gate needed, provided the warnings are not
-  suppressed.
-- **FIXED 2026-09-17 IN SPRINT 70, and the reason it could not wait is worth recording.** The card
-  originally said *"do NOT fix these inside F218 -- they are unrelated to the toolchain."* That
-  was wrong about the consequence, though right about the cause. `build-windows.ps1:189` halts the
-  build on ANY non-zero `flutter analyze` exit -- deliberately, *"to avoid shipping a stale
-  binary."* So four new analyzer warnings **blocked every Windows build**. Deferring them would
-  have left the platform unbuildable for the rest of the sprint.
-- **The fix is `return await` at each site**, with a comment naming what the catch was failing to
-  cover:
-  - `generic_imap_adapter.dart` -- the catch degrades dedup to a no-op so it "must never break the
-    scan"; without the await a fetch failure bypassed exactly that safety net.
-  - `gmail_api_adapter.dart` x2 -- both `_fetchMessagesIndividually` fallbacks, which run BECAUSE
-    batchGet already failed. A silent failure there left no record of either failure.
-  - `email_scanner.dart` -- the catch runs `platform.disconnect()`; a bare return leaked the
-    connection on failure.
-- **Verified**: `flutter analyze` clean, full suite green. Behaviour changes only in the failure
-  case, which is the entire point.
-- Depends on: surfaced by F218's upgrade; fixed in the same sprint out of necessity.
-- Source: found 2026-09-17 by Flutter 3.47.4's analyzer during the F218 upgrade.
-
-**F217 R-1 MEASURED ON EMULATOR (2026-09-19) -- and it CORRECTS my own earlier claim.**
-
-Android 14 emulator (`pixel34_updated`, `google_apis_playstore`, emulator 36.2.12.0 from
-`ANDROID_HOME`), prod-debug APK installed.
-
-**CORRECTION.** The Sprint 70 diagnosis stated: *"`AndroidManifest.xml` declares NO battery-related
-permission at all: no `REQUEST_IGNORE_BATTERY_OPTIMIZATIONS`, no `FOREGROUND_SERVICE`, no
-`WAKE_LOCK`."* That was derived by grepping the SOURCE manifest. The MERGED manifest -- what the OS
-actually sees -- tells a different story:
-
-```
-ACCESS_NETWORK_STATE, FOREGROUND_SERVICE, FOREGROUND_SERVICE_SHORT_SERVICE,
-INTERNET, POST_NOTIFICATIONS, RECEIVE_BOOT_COMPLETED, VIBRATE, WAKE_LOCK
-```
-
-`FOREGROUND_SERVICE` and `WAKE_LOCK` ARE present, injected transitively by
-`workmanager_android-0.10.6`, and `dumpsys package` confirms both `granted=true`. I reasoned from
-a file next to the answer instead of reading the answer -- the same sequence error CLAUDE.md
-records for the F211 console claim.
-
-**What survives the correction, and it is the part that matters.**
-`REQUEST_IGNORE_BATTERY_OPTIMIZATIONS` is genuinely ABSENT (grep count 0 in the merged manifest),
-and `dumpsys deviceidle whitelist` does NOT list the app. So the conclusion holds -- **the app has
-never been exempt from Doze** -- but the reason is narrower than stated: it is missing the ONE
-permission that governs Doze exemption, not "all battery permissions". `WAKE_LOCK` keeps the CPU
-awake during work the OS has already allowed; it does not stop the OS deferring that work.
-
-**Standby bucket: 10 (ACTIVE)** immediately after install. Expected -- a freshly installed and
-recently interacted-with app is ACTIVE. It is NOT evidence against the Doze hypothesis; the
-meaningful reading is after the device has idled, which needs the S24+ over hours, not a fresh
-emulator. Recorded so the number is not later misread as a falsification.
-
-**Net effect on the decision: none.** Option 1 remains correct, and is now supported by a direct
-observation (`deviceidle whitelist` does not contain the app) rather than by an absence inferred
-from source.
-
-**F217 DECISION (Harold, 2026-09-19): OPTION 1 -- request a battery-optimisation exemption. AND the Samsung hypothesis is FALSIFIED.**
-
 **R-2 CHECKED AND RULED OUT.** Harold inspected the S24+: *"Settings > Battery > Background usage
 limits > Put unused apps to sleep is off, MyEmailSpamFilter is in none of these lists: Never
 autosleeping apps, sleeping apps, deep sleeping apps."*
@@ -1223,69 +1240,60 @@ prompt. Harold answered `1`.
   (scans run when the device allows) becomes the fallback path, not a discarded alternative.
 - ADR-0042: Android-only, declared. Windows Task Scheduler is exact and unaffected (AC-4).
 
-**F217 DIAGNOSIS (Sprint 70, 2026-09-18) -- CODE SIDE COMPLETE, OS-SIDE MEASUREMENT STILL OWED. The fix is a CLASS-1 DECISION and is NOT chosen.**
+**F217 -- THE "IS THIS THE ONLY WAY" SEARCH WAS RUN (2026-09-22). IT IS NOT, AND THE PREMISE OF THE 2026-09-19 DECISION HAS CHANGED. HAROLD'S CALL NEEDED.**
 
-**What was verified in code (no device needed):**
+Harold asked for this check explicitly: *"if they could run every 15 minutes at 0.1% battery usage
+per day (as they have so far), and asking for battery usage is the only way to implement this
+(search to ensure this is the only way), then I think asking for battery usage is appropriate."*
 
-- **R-3 CONFIRMED: the scheduling code is correct. Do not rewrite it.** `registerPeriodicTask` at
-  `background_scan_scheduler.dart:238` passes a per-account unique name, a 15-minute period,
-  `NetworkType.connected`, `ExistingPeriodicWorkPolicy.update` (idempotent re-registration), and
-  exponential backoff with a 10-minute floor. Every one of these is right. Nothing here explains
-  the deferral.
-- **R-4 CONFIRMED and it is the strongest evidence.** `AndroidManifest.xml` declares NO
-  battery-related permission at all: no `REQUEST_IGNORE_BATTERY_OPTIMIZATIONS`, no
-  `FOREGROUND_SERVICE`, no `WAKE_LOCK`, no exact-alarm permission. **The app has never asked the
-  OS for any exemption**, so Doze and App Standby are free to defer its work indefinitely. This is
-  not a bug in the app's code; it is the documented default for an app that asks for nothing.
-- **R-6 ANSWERED: "no notifications" is a SYMPTOM, not a second defect.**
-  `_notifyScanComplete` is called from inside `android_background_scan_worker.dart` only AFTER a
-  scan completes. If the OS never runs the worker there is nothing to notify. One cause, two
-  reported symptoms. (The notification path itself is sound and deliberately best-effort, so a
-  denied POST_NOTIFICATIONS cannot fail a scan.)
-- **R-5 DONE (AC-2): the ADR-0042 declaration was REWRITTEN** at
-  `background_scan_scheduler.dart:188`. It claimed inexact timing was an "accepted difference"
-  because "the scan is periodic hygiene, not a deadline" -- wording written expecting drift of
-  MINUTES. The field shows 2h42m. That is not a smaller version of the same claim: "fires
-  approximately" describes jitter around a schedule, whereas Doze DEFERS work while the device is
-  idle and releases it in a batch at a maintenance window. On a phone locked overnight the scan
-  may not run for hours, which no user would call "every 15 minutes".
+**Our own code is NOT the cause -- eliminated first.** `background_scan_scheduler.dart:258` uses
+`Workmanager().registerPeriodicTask` with constraints of `networkType: connected` ONLY. No battery
+constraint, no idle constraint, no foreground service anywhere. So the cheap explanation is gone.
 
-**STILL OWED -- needs the S24+ (AC-1, R-1, R-2).** These were NOT performed; no Android device was
-attached during implementation. Do not record F217 as diagnosed until they are:
+**The diagnosis is CONFIRMED by Android's own documentation**
+(developer.android.com/training/monitoring-device-state/doze-standby): Doze *"doesn't let
+JobScheduler run... WorkManager uses JobScheduler internally, so WorkManager tasks don't run."*
+Deferred to maintenance windows. Harold's experience matches the documented behavior exactly.
 
-1. `adb shell am get-standby-bucket com.myemailspamfilter` after the phone has sat idle. Expect
-   RARE or RESTRICTED if Doze is the cause; ACTIVE or WORKING_SET would falsify the hypothesis.
-2. `adb shell dumpsys jobscheduler | findstr myemailspamfilter` to see what the OS thinks it has
-   scheduled and when it last ran.
-3. **Samsung Settings > Battery > Background usage limits** (R-2). Check whether the app is in
-   "Sleeping apps" or "Deep sleeping apps". **This alone may explain the entire report and costs
-   nothing to check.** Samsung's own aggressive battery management is separate from stock Android
-   Doze and is a well-known cause of exactly this symptom.
+**But the exemption is NOT the only route.** Documented alternatives:
+- **FCM high-priority messages** -- the page's primary recommendation; they wake the app in Doze.
+- **`setExactAndAllowWhileIdle()`** -- fires in Doze, **capped at once per 9 minutes per app**,
+  which is COMPATIBLE with a 15-minute interval. **This option was not in the plan.**
+- **Foreground service** -- documented, but the page explicitly warns *"Don't start a foreground
+  service just to prevent the system from determining that your app is idle."*
 
-**THE FIX IS A CLASS-1 DECISION -- HAROLD'S TO MAKE, NOT CLAUDE'S.** Three options, with the
-trade each one actually carries:
+**AND THERE IS A PLAY POLICY CONSTRAINT the plan did not account for**:
+> *"Google Play policies prohibit apps from requesting direct exemption from Power Management
+> features -- Doze and App Standby -- in Android 6.0 and above unless the core function of the app
+> is adversely affected."*
 
-1. **Ask the user for a battery-optimisation exemption**
-   (`REQUEST_IGNORE_BATTERY_OPTIMIZATIONS` + a runtime prompt). Keeps the current architecture;
-   the user sees one system dialog. **Play scrutinises this permission at review** and requires a
-   justification in the listing; Google's policy expects it only where core functionality
-   genuinely requires it. A spam filter that scans on a schedule is a defensible case, but it IS
-   a review surface, and users can still decline.
-2. **Foreground service with a permanent notification.** The most reliable option: a foreground
-   service is largely exempt from Doze. The cost is a permanent, non-dismissable notification and
-   `FOREGROUND_SERVICE` + `FOREGROUND_SERVICE_DATA_SYNC` permissions, plus a Play declaration for
-   the foreground-service type. It changes what the app looks like to a user every day.
-3. **Accept it and change what the app PROMISES.** No permission, no review surface, no
-   notification. Instead the UI stops implying "every 15 minutes" and says scans run periodically
-   when the device allows, and the app scans on resume (which F220 already wired for stale-row
-   reconciliation). Cheapest and least invasive; it makes the product honest rather than making it
-   punctual.
+Acceptable categories: safety apps, **task automation apps**, peripheral companion apps. And:
+*"your app doesn't meet these exceptions unless Doze or App Standby breaks the core function of
+the app or there is a technical reason why your app can't use FCM high priority messages."*
 
-**Recommendation: settle the measurement first (step 3 above, the Samsung setting, costs one
-minute), because if Samsung's battery limits are the cause then option 1 may not even help** --
-Samsung's restrictions operate independently of the stock battery-optimisation exemption. Choosing
-a remedy before that check risks shipping a Play-scrutinised permission that does not fix the
-reported behaviour.
+**Where this app actually stands.** A scheduled spam filter is arguably a **task automation app**,
+which is a genuine argument rather than a stretch. And the FCM test is one we can meet honestly:
+FCM requires a BACKEND to send messages, and this app has none by design -- it is a local IMAP
+client, and adding a server would change its privacy posture entirely. **That IS a technical
+reason.** The risk is that this must be won at review while the app is mid-closed-test with
+production access gated on the 12-tester/14-day clock.
+
+**DELIVERED IN SPRINT 72 regardless of the decision**: an honest Android timing caveat in
+Settings > Background (`_buildAndroidDozeStatusLine`, Android-gated, shown only when background
+scanning is ON, tested to not over-promise). It is correct under every outcome, so it did not wait.
+
+**OPTIONS FOR HAROLD**:
+1. **Exemption + honest fallback** (the plan as written) -- justification written around task
+   automation + no backend. Risk: a Play policy query during the closed test.
+2. **`setExactAndAllowWhileIdle()` instead** -- fires in Doze, no special permission, NO Play policy
+   exposure; the 9-minute floor does not constrain a 15-minute schedule. Less of a guarantee than an
+   exemption, and a real change to the scheduler.
+3. **Both** -- alarm as default, exemption offered only if a user reports missed scans.
+4. **Neither yet** -- keep the honest messaging alone and defer the mechanism.
+
+**Recommendation: 2 first, then 1 if measurement shows it insufficient.** It gets the functional
+outcome without spending Play-review risk during the closed test, and if the alarm still proves too
+deferred, option 1 then has evidence behind its justification rather than an assertion.
 
 **F217. Android background scans do not run while the app is backgrounded or the phone is locked -- and no notification arrives (~4-8h investigation + fix) Priority 6 (NEW, 2026-09-13 -- Harold, Sprint 69 retrospective Category 14)**
 - Phase: Android / Google Play Store Readiness
@@ -1355,71 +1363,6 @@ reported behaviour.
   real behaviour is known, because it currently records an expectation that the field contradicts.
 - Depends on: nothing. Diagnosable on the S24+ today.
 - Source: Harold, 2026-09-13, Sprint 69 retrospective Category 14, with Scan History evidence.
-
-**F212. Re-processing after adding rules FAILS 100% on the closed-test build -- "Re-processed 0 of 8 (8 failed)" (~2-4h) Priority 4 (NEW, 2026-09-11 -- Harold, on the S24+)**
-- Phase: Core App Quality
-- Platform: Android (closed test) observed; Windows unverified -- CHECK BOTH
-- **Observed 2026-09-11 on the S24+**, adding rules to "No rule" emails from a background-scan
-  result set (AOL, folders Bulk/Bulk Mail/Inbox, scan completed 17:20). Two screenshots minutes
-  apart show the failure count CLIMBING with each rule added: **"Re-processed 0 of 6 (6 failed)"**
-  then **"Re-processed 0 of 8 (8 failed)"**. Not one succeeded.
-- **The RULES saved.** A blue confirmation banner reads `rule to block entire domain
-  "*.heypocket.com"`. What failed is the RE-PROCESSING -- the follow-up pass that applies a
-  newly-added rule to the emails already on screen, deleting or moving them.
-- **Two contradictory messages on the SAME screen**, which is its own defect: a green
-  **"All 9 'No rule' emails addressed."** above an orange **"0 of 8 (8 failed)"**. The green
-  banner counts rules CREATED; the orange counts actions EXECUTED. A user cannot tell that
-  nothing actually happened to their mailbox.
-- **Where it is**: `results_display_screen.dart` `_reProcess...`, message at line 3164. The
-  outer `catch` at line 3142 sets `failCount = toDelete.length + toMoveSafe.length` -- a
-  WHOLE-BATCH failure. 6-of-6 and 8-of-8 match that shape exactly, so this is almost certainly
-  ONE exception thrown before or during the batch, not N independent failures.
-- **LEADING HYPOTHESIS -- the re-process path BYPASSES ScanCoordinator (Harold, 2026-09-11).**
-  Harold asked whether concurrent background jobs could have caused this and whether scans
-  should be scheduled so they do not overlap. The second half is already true and the first
-  half is very likely the cause, but by a different mechanism than "the scheduler let two
-  background scans overlap" -- it did not.
-  - `ScanCoordinator` (F175, Sprint 62) is a process-wide FIFO lease built from Harold's own
-    2026-08-19 requirement: background scans must not run concurrently with each other, nor
-    with manual scans. On Android every scan shares one process, so the coordinator IS the
-    whole guarantee. It was written after the Sprint 61 incident where four stacked AOL scans
-    each opened their own IMAP session, hit AOL's per-account session cap, and sat at 0 emails
-    for 20+ minutes -- **the same symptom shape seen here**.
-  - **The only acquisition site is `EmailScanner.scanInbox` (`email_scanner.dart:170`).** The
-    re-process path at `results_display_screen.dart:3064` builds its own `SpamFilterPlatform`,
-    loads credentials and connects DIRECTLY -- no lease, no queue, no detection. So while a
-    background scan holds the lease and an open IMAP session, tapping "add rule" opens a
-    SECOND session to the same account, outside the mechanism designed to prevent exactly that.
-  - **Fits the evidence better than anything else**: whole-batch failure (one throw at connect
-    time, not N per-message failures); the rules saved fine because that is local DB with no
-    IMAP; failures CLIMBED as more rules were added, each attempt reopening a colliding
-    session; and the AOL scan acted on had completed at 17:20 while the closed-test build
-    re-scans every 15 minutes, so a background scan starting underneath is near-certain.
-  - **One correction to the framing**: Gmail and AOL scanning at the same time is NOT the
-    fault. Different accounts, different servers, and the coordinator serializes them anyway.
-    The collision is SAME-ACCOUNT -- the background scan and the re-processing both hitting
-    the AOL session cap.
-  - **Likely fix shape**: route re-processing through `ScanCoordinator.acquire` so it queues
-    behind an active scan, plus the manual-scan-style detection notice. Confirm against the
-    exception first.
-- **Remaining candidates, if the above is disproven**: (b) the result set came from a
-  BACKGROUND scan, so the messages may be stale -- UIDs expired, already moved by a later
-  background run; (c) IMAP folder/UIDVALIDITY mismatch on a re-connect.
-- **Diagnosis is cheap and available today**: the app writes `scan_results_*.csv` to Documents on
-  manual export, and `logger.e('[F38] Re-processing failed: $e')` at line 3142 carries the actual
-  exception. Get that line before designing a fix.
-- **Why it ranks at 4** -- above every other Android finding except the sign-in blocker: this is
-  the app's PRIMARY WORKFLOW. Reviewing "No rule" mail and adding rules is what the product is
-  for, and on the build 8 testers are using, it silently does nothing to the mailbox while
-  telling them it worked. A tester would conclude the app does not filter their mail.
-- **Fix the message regardless of the cause.** Even once the failure is fixed, the green
-  "addressed" banner must not appear alongside a failed batch -- see F203, which is the same
-  class of counter dishonesty and should probably be done in the same pass.
-- Depends on: nothing. Diagnosable from the device log/CSV today.
-- **Sprint 69 disposition**: proposed at planning, DECLINED by Harold 2026-09-11 ("next
-  sprint"). Targeted at Sprint 70 at Priority 4.
-- Source: Harold, 2026-09-11, adding rules on the S24+. Root-cause hypothesis contributed by
-  Harold the same day and code-confirmed as a real coordinator bypass.
 
 **F216. Supporting text is smaller than the text it should match -- Rule Tester, Safe Sender quick-add, AND the email action popup (~2-4h) Priority 32 (NEW, 2026-09-11, EXPANDED 2026-09-12 -- Harold)**
 - Phase: Core App Quality

@@ -4,8 +4,50 @@ can you write a effective but compact /compact string I can use to compact where
 
 Manual Validation complete
 ---------------------------------------------------------------------------------------------------------
-Sprint 6n Manual Validation Feedback 
+Sprint 7n Manual Validation Feedback 
 
+---------------------------------------------------------------------------------------------------------
+Sprint 71 Manual Validation Feedback 
+
+A. F232 - windows app [Image #199] [Image #200] nothing deleted. Added block rule. Hmmmm should it be deleting emails if Settings > Manual > Scan
+  mode is readonly? or if Settings > Background > Scan mode is readonly OR if either OR only if both?  I am thinking that if Manual > Scan mode is
+  readonly then add the rule, but don't delete the email, but add it to "would have been deleted". What do you think? | B228 - Windows - turned on
+  airplaine mode - said it added the block rule but it would not be deleted because manual scan is set to readonly. I think that answers F232 question.
+  | F230/F231 - Windows - yes | F233 - where [Image #201]
+
+  A. F232 — the CRITICAL check, do this first
+
+  1. Close and reopen the app (so no scan has run this session)
+  2. View Scan History → open a saved scan
+  3. Check your mailbox. Nothing should have been deleted just by opening it.
+  4. Now add a block rule from that view
+  5. Check the mailbox again — this should have acted
+
+  Step 3 is the regression guard. Step 5 is the original bug.
+
+  B. F228 — the honest toast
+
+  1. Turn airplane mode / network off
+  2. Create a block rule from Scan Results
+  3. Expected: an orange toast naming the number — not green
+
+  C. F230/F231 — the action sheet
+
+  1. Open the No-rule action sheet
+  2. Sender address shows in full (was kimmeyharold@help.ramirezo...)
+  3. Skip is bottom-right, not beside the sender
+  4. Text is larger; check it on Windows too — you accepted the increase there
+  5. Action a few items fast, then tap the new history icon — all outcomes listed
+
+  D. F233 — the diagnostic log
+
+  1. Settings → enable the diagnostic log
+  2. Reproduce B
+  3. Confirm the file appears in your CSV export directory, and Settings shows its size with a delete action
+
+  E. F217 — Android only
+
+  Settings → Background → confirm the new timing caveat appears.
 ---------------------------------------------------------------------------------------------------------
 Sprint 69 Manual Validation Feedback 
 

@@ -3,7 +3,7 @@ claude --continue # generally the best option
 claude --continue --model claude-fable-5 # to request the Fable 5 model when continuing
 
 Sprint plan approval:
-Sprint plan approved as recommended, proceed with execution. 
+Sprint plan approved as amended (with any comments I provided), proceed with execution. 
 All Sprint tasks and sub-tasks are approved.  
 Do not stop between tasks as they are all approved, please continue to complete all tasks and without addition approvals until Manual Validation, providing your recommendation for Manual Validation steps.
 Do not stop to ask questions unless meeting the criteria in \docs\SPRINT_STOPPING_CRITERIA.md
@@ -41,6 +41,8 @@ to upgrade, may need to uninstall, then re-install
 
 winget install --id "9N5QK9G904C0" --source msstore --accept-package-agreements --accept-source-agreements
 Get-AppxPackage -Name "*MyEmailSpamFilter*" | Select-Object Name, Version, PackageFullName # currently installed version
+Here is a link in the Microsoft Store: ms-windows-store://pdp/?productid=9N5QK9G904C0 
+Or Microsoft Store (web): https://apps.microsoft.com/detail/9n5qk9g904c0
 
 
 Next:----------------------------------------

@@ -911,20 +911,53 @@ class EmailScanProvider extends ChangeNotifier {
   /// - Email ID (unique identifier for tracking)
   ///
   /// Returns CSV string that can be saved to file or displayed in UI
-  String exportResultsToCSV() {
+  /// [rows] overrides the provider's own `_results`. **This parameter is the
+  /// F233 fix.** `_exportResults` on the results screen called this with no
+  /// argument, so it always read `_results` -- the LIVE session rows -- while
+  /// every DISPLAY path on that screen selects `_historicalResults` when
+  /// viewing a stored scan. Exporting from a historical view therefore wrote a
+  /// header and nothing else, and reported success. Three of five CSVs pulled
+  /// off Harold's phone on 2026-09-21 were exactly 108 bytes: the header alone.
+  ///
+  /// [appVersion] stamps the build into the file (F229). An export that cannot
+  /// name the build that produced it is weak evidence, and this export is
+  /// exactly what a tester sends back.
+  String exportResultsToCSV({
+    List<EmailActionResult>? rows,
+    String? appVersion,
+    DateTime? scanDate,
+  }) {
     final buffer = StringBuffer();
+    final source = rows ?? _results;
+
+    // F229 (Sprint 72): build provenance as a leading comment row -- a comment
+    // rather than a column so every data row stays uniform.
+    if (appVersion != null && appVersion.isNotEmpty) {
+      buffer.writeln('"# MyEmailSpamFilter","' + appVersion + '","exported",'
+          '"' + DateTime.now().toIso8601String() + '"');
+    }
 
     // CSV Header - Enhanced with new columns
     buffer.writeln(
         '"Scan Date","Received Date","From","Folder","Subject","Rule","Match Condition","Action","Status","Email ID"');
 
-    // Format scan date (when this scan was performed)
-    final scanDate = _scanStartTime != null
-        ? _scanStartTime!.toIso8601String()
+    // Format scan date (when this scan was performed).
+    //
+    // I-3 (Phase 5.1.1 review, Sprint 72): [scanDate] must be passed for a
+    // HISTORICAL export. `_scanStartTime` is the LIVE session's field, set only
+    // in `startScan()` -- so exporting a saved scan wrote either 'Unknown' (no
+    // scan ran this session) or, worse, TODAY'S timestamp onto rows from a scan
+    // that ran days ago. That is the same live-vs-historical split this card set
+    // out to close, left half-closed. It matters because the card's purpose is
+    // producing evidence a tester hands back, and a CSV that misdates every row
+    // is weak evidence in exactly the way an unversioned one is.
+    final effectiveScanDate = scanDate ?? _scanStartTime;
+    final scanDateText = effectiveScanDate != null
+        ? effectiveScanDate.toIso8601String()
         : 'Unknown';
 
     // CSV Rows
-    for (final result in _results) {
+    for (final result in source) {
       final receivedDate = result.email.receivedDate.toIso8601String();
       final from = _escapeCsv(result.email.from);
       final folder = _escapeCsv(result.email.folderName);
@@ -943,7 +976,7 @@ class EmailScanProvider extends ChangeNotifier {
       final emailId = _escapeCsv(result.email.id);
 
       buffer.writeln(
-          '"$scanDate","$receivedDate","$from","$folder","$subject","$rule","$matchCondition","$action","$status","$emailId"');
+          '"$scanDateText","$receivedDate","$from","$folder","$subject","$rule","$matchCondition","$action","$status","$emailId"');
     }
 
     return buffer.toString();
