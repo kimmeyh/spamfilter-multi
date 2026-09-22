@@ -464,7 +464,23 @@ step.
   as would have been in the View Search Results session (all time, no exceptions)."* The predicted
   count matching on the next live scan is the tell: the work was deferred, not done.
 
-- **ROOT CAUSE, and the code already says it.** `_reProcessAffectedEmails()`
+- **CORRECTION, 2026-09-21 (same day, from Harold's saved progression): the readOnly early return
+  is NOT what produced the observed failures, and possibly not what produced Harold's report
+  either.** `Screenshot_20260920_222506.png` shows **`Re-processed 0 of 9 (9 failed)`** at 22:25 on
+  2026-09-20 **with full signal and no airplane mode**. A batch summary only renders when the batch
+  actually RAN -- the `readOnly` path returns BEFORE any of that, producing no summary at all. So
+  something failed 9 live IMAP actions on a healthy network.
+  **Candidates, none yet confirmed** (all inside the `try` at `:3216-3238`): `ScanCoordinator
+  .acquire()` blocking behind a background scan and timing out; `SecureCredentialsStore
+  .getCredentials()` returning null; `platform.loadCredentials`/connect throwing. **Timing note,
+  suggestive but NOT evidence**: Scan History shows background scans at 22:20 and this failure at
+  22:25, which is a plausible lease-contention window -- and confirming it needs the exception text,
+  which is exactly the console-only logging blocker.
+  **What this means for the card**: the two mechanisms below are both REAL and both must be fixed,
+  but they are different bugs and the evidence for each is different. Do not assume fixing the
+  scan-mode resolution fixes Harold's count-matching report.
+
+- **MECHANISM A -- the silent readOnly skip (confirmed in source, not yet tied to a screenshot).** `_reProcessAffectedEmails()`
   (`results_display_screen.dart:3114-3118`) opens with:
   `if (scanMode == ScanMode.readOnly) { logger.i('[F38] Skipping re-process: scan mode is readOnly'); return; }`
   And `EmailScanProvider._scanMode` **defaults to `ScanMode.readOnly`** (`:165`) and is only ever
@@ -477,7 +493,7 @@ step.
   scanProvider.scanMode == readOnly, which is the default state on app launch when no scan has been
   initiated in the current session."*
 
-- **Sprint 38 patched the SYMPTOM and left the defect.** That comment introduces an unconditional
+- **MECHANISM A, continued -- Sprint 38 patched the SYMPTOM and left the defect.** That comment introduces an unconditional
   row-hiding loop so the list *looks* correct, reasoning that the hiding "is safe regardless of
   scanMode (no IMAP side effects)". True of the hiding -- and it made the skipped DELETION
   invisible. **This is the lesson to carry: a fix that makes the UI consistent with an action that
@@ -490,18 +506,40 @@ step.
   distinct**: F228's offline reproduction had a real attempt that really failed (`Re-processed 0 of
   6 (6 failed)` proves the batch ran), so both defects exist.
 
-- **Design decision needed -- this is Harold's call, not an implementation detail.** When a user
-  opens a historical scan and creates a rule, what SHOULD happen?
-  1. **Act now**: resolve the effective scan mode from saved settings rather than session state, and
-     perform the IMAP action. Matches what the UI already claims. Risk: the user may not expect a
-     historical view to touch live mail.
-  2. **Say so**: keep the no-op but tell the truth -- "Rule saved. N emails will be actioned on the
-     next scan." Safe, honest, and no new deletion path.
-  3. **Offer**: prompt once per session.
-  **Recommendation: 2 for correctness now, then 1 behind a confirmation.** Option 2 alone removes
-  the lie, which is the actual harm, and needs no new IMAP behaviour.
+- **DECIDED by Harold, 2026-09-21: OPTION 2 -- ACT NOW.** Resolve the effective scan mode from
+  SAVED SETTINGS rather than session state, and perform the IMAP action. Rationale: the UI already
+  claims the work is done, and making the claim true is better than making the message weaker. The
+  options he chose between were (1) say so / defer honestly, (2) act now, (3) prompt per session.
+  **This is a Class-2 development decision** (it changes the meaning of `scanMode` at this call
+  site) and is now authorised.
 
-- **Whichever is chosen, the silent `return` must go.** A skipped action that logs only to a
+- **What option 2 actually requires -- read before estimating; it is NOT a one-line change.**
+  1. **The scan mode is PER-ACCOUNT, not global.** `SettingsStore.getAccountManualScanMode(accountId)`
+     returns `ScanMode?`, null meaning "use the app-wide default" (`settings_store.dart:524`). The
+     Scan Results screen can be showing **All Accounts**, so a single resolved mode is WRONG here:
+     the mode must be resolved **per email** from `result.email`'s account, and a batch may
+     legitimately contain a mix of act and read-only accounts.
+  2. Therefore `_reProcessAffectedEmails()` cannot keep a single early return. It must partition the
+     batch: act on emails whose account permits it, skip the rest, and report BOTH ("3 filed, 2
+     skipped -- those accounts are read-only"). A silent partial action is the same class of defect
+     this card exists to fix.
+  3. **Use the MANUAL mode, not the background mode**, for a user-initiated action from a results
+     screen. `keyBackgroundScanMode` is a separate setting and applying it here would let a
+     background policy govern a foreground action the user just took.
+  4. **Honour read-only genuinely.** If an account is configured read-only, option 2 must still NOT
+     act on it -- it must say so. Option 2 replaces "skip because no scan ran this session" with
+     "act per the account's configured intent"; it does not override a deliberate read-only choice.
+     Windows DEV/Prod are configured read-only, so on Windows the correct post-fix behaviour is
+     still to skip -- and now to SAY so rather than fall silent.
+  5. **Safety**: this creates a live-deletion path from a screen that previously never deleted.
+     Harold should be told plainly in the Phase 5 validation steps that opening an old scan and
+     adding a rule will now act on real mail.
+
+- **MECHANISM B -- a live batch failing 9 of 9 with a working connection. UNDIAGNOSED.** This is
+  what the screenshot actually shows and what most likely matches Harold's report, since his
+  description ("none get deleted during the session") is consistent with either. Getting the
+  exception is the first task; see the logging blocker in [[F228]].
+- **The silent `return` must go regardless.** A skipped action that logs only to a
   console sink nobody can read (see [[F228]] on the missing file logger) is how this survived from
   Sprint 38 to now.
 - **Note the scan-mode config while testing**: per `project_scan_mode_by_environment`, Windows
