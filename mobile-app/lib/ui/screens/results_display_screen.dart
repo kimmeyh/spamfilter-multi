@@ -129,6 +129,27 @@ class ReProcessOutcome {
 }
 
 class _ResultsDisplayScreenState extends State<ResultsDisplayScreen> {
+  /// F231 (Sprint 72): every action outcome from this session, newest last.
+  ///
+  /// **Why a list and not a longer toast.** Harold: *"I did a few and it went
+  /// past faster than I could see it"*, and he TIMED it at about one second
+  /// each -- the nominal 3s includes enter/exit animation, and each new action
+  /// REPLACES the current SnackBar rather than queueing, so in a burst every
+  /// toast but the last is cut short. Worse, acting from the top of the list
+  /// auto-advances into the NEXT item's dialog, which covers the toast
+  /// entirely: *"you don't see any of them."*
+  ///
+  /// So lengthening the timeout cannot be the fix -- at three actions in four
+  /// seconds the user still only ever sees the last one, however long it
+  /// lives. The toast was ALSO the only place the per-action outcome existed:
+  /// not in any log, not in the CSV, and the footer carries only aggregate
+  /// counts. A missed toast meant the information was gone for good, which is
+  /// why Harold had to open Scan History to reconstruct what had happened.
+  ///
+  /// This list is the durable record. It survives a missed toast, a covered
+  /// toast, and a burst.
+  final List<String> _sessionActivity = [];
+
   // Filter state: null means show all, otherwise filter by this action type or special filter
   EmailActionType? _filter;
   SpecialFilter? _specialFilter;
@@ -791,6 +812,16 @@ class _ResultsDisplayScreenState extends State<ResultsDisplayScreen> {
                   platformId: widget.platformId,
                   platformDisplayName: widget.platformDisplayName,
                   leading: [
+                    // F231 (Sprint 72): the durable view of what this session
+                    // did. Shown only once there IS something to show, so it
+                    // never adds a dead control to an already-crowded row --
+                    // the same row F172 measured at ~81px of overflow at 411px.
+                    if (_sessionActivity.isNotEmpty)
+                      IconButton(
+                        tooltip: 'What happened in this session',
+                        icon: const Icon(Icons.history_toggle_off),
+                        onPressed: _showSessionActivity,
+                      ),
                     IconButton(
                       tooltip: 'Export Results to CSV',
                       icon: const Icon(Icons.file_download),
@@ -1969,15 +2000,18 @@ class _ResultsDisplayScreenState extends State<ResultsDisplayScreen> {
                                   // it there is no unaddressed-item sequence to
                                   // advance through, and `_quickActionThenAdvance`
                                   // itself no-ops on navigation in that case.
-                                  if (_filter == EmailActionType.none) ...[
-                                    const SizedBox(width: 8),
-                                    _buildSkipButton(
-                                      result: result,
-                                      dialogContext: dialogContext,
-                                      anchorPosition: itemPosition,
-                                      anchorSize: itemSize,
-                                    ),
-                                  ],
+                                  // F230 (Sprint 72): Skip MOVED OUT of this
+                                  // row -- see the date/domain row below.
+                                  // Harold, on the 0.15.2 Play build: Skip
+                                  // "often overlays the domain on this same
+                                  // page". The sender above is Expanded with
+                                  // ellipsis, so every pixel Skip took came out
+                                  // of the address: at 411px it rendered
+                                  // "kimmeyharold@help.ramirezo...", while the
+                                  // IDENTICAL code on Windows at ~993px showed
+                                  // it in full. A WIDTH problem, not a font
+                                  // problem -- which is why the remedy is
+                                  // placement, not truncation tuning.
                                   const SizedBox(width: 8),
                                   result.success
                                       ? const Icon(Icons.check,
@@ -1990,8 +2024,19 @@ class _ResultsDisplayScreenState extends State<ResultsDisplayScreen> {
                               // Subtitle line: folder • subject • rule
                               Text(
                                 '${email.folderName} • $displaySubject • ${matchedRule.isNotEmpty ? matchedRule : "No rule"}',
-                                style: TextStyle(
-                                    fontSize: 12, color: Colors.grey[600]),
+                                // F230 (Sprint 72): was `fontSize: 12`.
+                                // Theme styles honour the OS font-size
+                                // accessibility setting, which a hardcoded
+                                // number cannot (ADR-0037). Harold accepted the
+                                // same increase on Windows rather than branch:
+                                // "It would be OK if it was bigger on Windows
+                                // in order to match Android and not cause an
+                                // unnecessary exception." So this stays ONE
+                                // shared change with no platform exception.
+                                style: Theme.of(context)
+                                    .textTheme
+                                    .bodyMedium
+                                    ?.copyWith(color: Colors.grey[700]),
                                 maxLines: 2,
                                 overflow: TextOverflow.ellipsis,
                               ),
@@ -2004,20 +2049,63 @@ class _ResultsDisplayScreenState extends State<ResultsDisplayScreen> {
                                   const SizedBox(width: 4),
                                   Text(
                                     dateStr,
-                                    style: TextStyle(
-                                        fontSize: 11,
-                                        color: Colors.grey.shade600),
+                                    // F230: was `fontSize: 11`, the smallest
+                                    // text on the sheet.
+                                    style: Theme.of(context)
+                                        .textTheme
+                                        .bodySmall
+                                        ?.copyWith(color: Colors.grey.shade700),
                                   ),
                                   if (displaySenderDomain != null) ...[
                                     const SizedBox(width: 12),
                                     Icon(Icons.domain,
                                         size: 14, color: Colors.grey[500]),
                                     const SizedBox(width: 4),
-                                    Text(
-                                      displaySenderDomain,
-                                      style: TextStyle(
-                                          fontSize: 11,
-                                          color: Colors.grey.shade600),
+                                    // F230: BOUNDED. This Text had no Expanded,
+                                    // so simply dropping Skip into this row
+                                    // would MOVE the overflow here rather than
+                                    // fix it -- a long domain plus a button is
+                                    // the same ~81px AppBar overflow shape F172
+                                    // hit at 411px. Flexible + ellipsis makes
+                                    // the domain yield instead of the row
+                                    // breaking.
+                                    Flexible(
+                                      child: Text(
+                                        displaySenderDomain,
+                                        overflow: TextOverflow.ellipsis,
+                                        style: Theme.of(context)
+                                            .textTheme
+                                            .bodySmall
+                                            ?.copyWith(
+                                                color: Colors.grey.shade700),
+                                      ),
+                                    ),
+                                  ],
+                                  // F230 (Sprint 72): SKIP LIVES HERE NOW --
+                                  // bottom right of the same section, which is
+                                  // where Harold pointed: "can it be moved to
+                                  // align with the bottom right of the same
+                                  // section instead of the top right as there
+                                  // appears to be more space there." The
+                                  // screenshot showed that space, and moving it
+                                  // hands the sender row its full width back.
+                                  //
+                                  // BEHAVIOUR IS UNCHANGED -- the widget moved,
+                                  // it was not reimplemented. It still reuses
+                                  // `_quickActionThenAdvance` with a no-op
+                                  // action and a covers-NOTHING predicate, so
+                                  // "next unaddressed item" means exactly what
+                                  // it means for every other button here
+                                  // (F136, Sprint 52). Still shown only under
+                                  // the "No rule" filter, where an unaddressed
+                                  // sequence exists to advance through.
+                                  if (_filter == EmailActionType.none) ...[
+                                    const Spacer(),
+                                    _buildSkipButton(
+                                      result: result,
+                                      dialogContext: dialogContext,
+                                      anchorPosition: itemPosition,
+                                      anchorSize: itemSize,
                                     ),
                                   ],
                                 ],
@@ -3220,6 +3308,18 @@ class _ResultsDisplayScreenState extends State<ResultsDisplayScreen> {
       background = successColor;
     }
 
+    // F231: record BEFORE showing. The toast can be missed, replaced or
+    // covered by the next item's dialog; this cannot.
+    // Inside setState: the history button is rendered conditionally on this
+    // list being non-empty, so without a rebuild the FIRST action records
+    // silently and the control never appears -- the durable record would exist
+    // and be unreachable, which is the same shape as the defect it fixes.
+    setState(() {
+      _sessionActivity.add(
+        '${TimeOfDay.fromDateTime(DateTime.now()).format(context)}  $message',
+      );
+    });
+
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
         content: Text(message),
@@ -3231,6 +3331,49 @@ class _ResultsDisplayScreenState extends State<ResultsDisplayScreen> {
         duration: Duration(seconds: outcome.anyFailed ? 8 : 5),
         behavior: SnackBarBehavior.floating,
         margin: const EdgeInsets.only(bottom: 80, left: 16, right: 16),
+      ),
+    );
+  }
+
+  /// F231 (Sprint 72): show every outcome from this session.
+  ///
+  /// This is the answer to *"it went past faster than I could see it"*. A
+  /// toast is transient by nature and this screen actively works against
+  /// reading them -- actions replace each other, and auto-advance opens the
+  /// next item's dialog over the top. The list does not move.
+  void _showSessionActivity() {
+    showDialog<void>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('This session'),
+        content: SizedBox(
+          width: 420,
+          child: _sessionActivity.isEmpty
+              ? const Text('No actions yet.')
+              : ListView.builder(
+                  shrinkWrap: true,
+                  itemCount: _sessionActivity.length,
+                  itemBuilder: (context, i) {
+                    // Newest first: the last thing that happened is what the
+                    // user is usually here to check.
+                    final entry =
+                        _sessionActivity[_sessionActivity.length - 1 - i];
+                    return Padding(
+                      padding: const EdgeInsets.symmetric(vertical: 4),
+                      child: Text(
+                        entry,
+                        style: Theme.of(context).textTheme.bodyMedium,
+                      ),
+                    );
+                  },
+                ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(),
+            child: const Text('Close'),
+          ),
+        ],
       ),
     );
   }
