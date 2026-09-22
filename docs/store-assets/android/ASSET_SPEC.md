@@ -34,11 +34,11 @@ review -- but they must NOT be uploaded to Play. R-3 is explicit. Three reasons:
 | Filename | `docs/store-assets/android/feature_graphic_1024x500.png` |
 | Dimensions | Exactly 1024 x 500 pixels |
 | Format | PNG, 24-bit (no alpha channel) |
-| Content | The app icon on the left third against a solid or subtle-gradient background using the launcher background colour `#4196F3`, with the app name "MyEmailSpamFilter" and a short tagline to its right. No screenshot content, no small text -- Play renders this small in listings. |
+| Content | The app icon on the left third against a solid or subtle-gradient background using the launcher background color `#4196F3`, with the app name "MyEmailSpamFilter" and a short tagline to its right. No screenshot content, no small text -- Play renders this small in listings. |
 | Text to use | "MyEmailSpamFilter" plus "Spam filtering you control" |
 
 **No alpha**: Play rejects an alpha channel on the feature graphic the same way it does on
-the listing icon. The gate checks the PNG colour type for this reason.
+the listing icon. The gate checks the PNG color type for this reason.
 
 ---
 

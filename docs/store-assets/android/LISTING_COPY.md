@@ -59,7 +59,7 @@ Root cause of the bad claim: this document traced the provider list to
 regardless of phase. It never checked the SCREEN. `platform_selection_screen.dart:26`
 filters to `phase <= 2`, renders `phase == 1` under "Available Now" and `phase == 2`
 under "Coming Soon", and disables the latter outright (`enabled: !isPhase2`). So the
-registry is a catalogue of intent; the screen is the shipped truth. What a user can
+registry is a catalog of intent; the screen is the shipped truth. What a user can
 actually connect today is Gmail (phase 1) and AOL (phase 1) -- nothing else. Yahoo
 (phase 2) is visible but not selectable; iCloud (phase 3) and Custom IMAP (phase 4) are
 filtered out of the UI entirely and never appear.
@@ -143,7 +143,7 @@ Every paragraph is traced:
   `aol` are phase 1, so only those two are claimed. `yahoo` (phase 2) renders as
   "Coming Soon" and is not selectable; `icloud` (phase 3) and `imap` (phase 4) never
   reach the UI at all. The earlier version of this bullet cited
-  `getSupportedPlatforms()`, which returns the whole catalogue irrespective of phase --
+  `getSupportedPlatforms()`, which returns the whole catalog irrespective of phase --
   that is what produced the false multi-provider claim corrected above.
 - "Customizable Rules" phrase-rule claim: F186 (Sprint 64, Issue #369), the Body Phrase
   rule type in Manage Rules, confirmed shipped and Android-validated
