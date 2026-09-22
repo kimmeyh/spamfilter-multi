@@ -284,7 +284,7 @@ task. That will be surfaced as a Class-2 decision if the evidence points there.
     is; the honest fix (extract a shared function) is recorded rather than rushed.
   - **MEDIUM 6 (fixed below)**: the F196 leak regex missed `F1234` (capped at 3
     digits) and lowercase `issue #392`.
-  - **Verified clean by the reviewer**: the Sprint 66 ``-in-a-non-raw-string class
+  - **Verified clean by the reviewer**: the Sprint 66 `\b`-in-a-non-raw-string class
     does not recur (all 194 `RegExp(` sites use raw strings); F194 is complete for
     the display path; F195's `copyWith(color:)` does win over enclosing styles.
 - **5.1.2 F-PRECHECK six classes** (2026-09-09, against `cd8ff34..HEAD`):
@@ -298,7 +298,7 @@ task. That will be surfaced as a Class-2 decision if the evidence points there.
   3. *Doc-vs-code drift*: CLEAN. The plan's own PENDING markers were the only mismatch,
      and this entry is what resolves one of them.
   4. *Fragile parsing*: FOUR new regexes, all reviewed. The one carrying real risk is the
-     hook's `N/?A` -- word-boundary behaviour around a slash is worth an adversarial
+     hook's `\bN/?A\b` -- word-boundary behaviour around a slash is worth an adversarial
      read, so it was named specifically in the 5.1.1 brief rather than assumed correct.
   5. *API scope*: CLEAN. Production changes are confined to two UI files
      (`scan_history_screen.dart`, `settings_screen.dart`), 47 insertions. No new external

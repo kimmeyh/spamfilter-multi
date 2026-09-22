@@ -398,6 +398,12 @@ Bold = mandatory. _Italic_ = optional (include only when the trigger applies). T
 **Affected components / files**:   <!-- MANDATORY -->
 - `path/to/file.dart:LINE` -- <what changes>
 
+**Existing abstraction checked**: `<name>` / none found   <!-- MANDATORY when ADDING a member to a shared abstraction (a resolver, a helper family, a gate). IMP-5, Sprint 72: the "read the existing one first" rule already existed; this line is what forces the grep. Sprint 72 hand-rolled a scan-mode resolver while SettingsStore.getEffectiveScanMode existed and was documented -- the copy implemented 2 of its 3 tiers and could act on a mailbox the user had configured not to touch. -->
+
+**Callers of any guard being changed**: <list, and what the change does to each>   <!-- MANDATORY when a card changes a guard, early return, or mode check. IMP-1, Sprint 72: F232's fix went inside a method THREE callers share; the third ran on screen load with no user intent and was safe only BY ACCIDENT, so removing the accident created a deletion path from viewing history. A caller that was safe by accident is the dangerous one, because nothing marks it. -->
+
+**User-reachable control**: <the control and the screen it lives on> / N/A   <!-- MANDATORY when the card adds user-facing capability. IMP-2, Sprint 72: F233 shipped a logger, settings keys, rotation and a delete function with NO TOGGLE -- ten tests passed via the test seam and no user could enable it. "The logger writes when enabled" is not an acceptance criterion; "Settings > General shows a toggle that enables it" is. -->
+
 **Dependencies / blockers**:   <!-- MANDATORY IF ANY; else "None" -->
 - <Task X must land first> / <external Harold action> / None
 

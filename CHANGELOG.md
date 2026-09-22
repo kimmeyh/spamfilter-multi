@@ -26,7 +26,26 @@ Format: `- **type**: Description (Issue #N)` where type is feat|fix|chore|docs
 
 ## [Unreleased]
 
+### 2026-09-22 (Sprint 72)
+- **feat**: Android Settings now explains that the phone may delay background scans while it is idle or the screen is off, and that opening the app runs any work that was waiting. (Issue #426)
+- **fix**: the sender address is no longer cut short in the email action panel. The Skip button shared the line with it and now sits at the bottom right, where there is room. (Issue #424)
+- **fix**: text in the email action panel is larger and now follows your device text-size setting. (Issue #424)
+- **feat**: a new control on the scan results screen shows everything you did in this session, so a message you missed is not lost. Action messages also stay on screen longer, and longer still when something failed. (Issue #425)
+- **fix**: the app no longer reports success when your mail server refused the change. Adding a rule used to show a green confirmation even when none of the affected mail could be filed; it now says how many could not be applied, and stays on screen longer so you can read it. (Issue #423)
+- **fix**: adding a rule while reviewing a saved scan now acts on your mailbox. Before, it looked like it worked -- the rule was saved and the emails disappeared from the list -- while nothing happened on the mail server, and the next scan deleted them instead. If the account is set to read-only the app now says so rather than doing nothing quietly. (Issue #422)
+- **fix**: exporting scan results while viewing a saved scan now writes the results. It previously wrote a file containing only the column headings and reported success, so an export taken from Scan History looked fine and was empty. (Issue #421)
+- **feat**: an optional diagnostic log can be turned on in Settings to record why an action on your mailbox failed, and deleted from the same screen with its size shown. It is off by default and records no message content. (Issue #421)
+- **chore**: exported CSV files now carry the app version that produced them. (Issue #427)
+
 ### 2026-09-17 (Sprint 70)
+- **fix**: starting a scan and then switching to another app no longer stops scanning from working until you restart the app. Android closes network connections for an app that is not on screen, and the scan was never told, so it neither finished nor failed and every later scan waited behind it forever. A scan interrupted this way now stops with an explanation and the next scan starts normally. (Issue #413)
+- **fix**: a manual scan that never finishes now stops after 30 minutes instead of running forever, and the limit keeps counting while you are on other screens. Previously it had no limit at all, on the assumption that someone was watching and could cancel -- which stops being true the moment you navigate away. (Issue #414)
+- **fix**: scans that were interrupted no longer sit in Scan History as permanently "in progress". Rows left behind by a scan that was killed are now resolved when the app returns to the foreground, not only when it is restarted. (Issue #414)
+- **fix**: adding a rule and re-processing your "No rule" mail now reports what actually happened. On Gmail it failed every time with no useful cause; on AOL and other IMAP accounts it was worse -- it reported success in green while touching no mail at all, because the two account types disagreed about what a missing connection meant. Re-processing also now waits for any scan already running on the same account instead of opening a second connection. (Issue #415)
+- **fix**: the "All N 'No rule' emails addressed" message no longer appears when the actions failed. It counted rules you had added rather than changes the mail server accepted, so a batch that failed completely still showed the green success banner. Failures are now named, with the count, and a failed email can be retried instead of being treated as already done. (Issue #415)
+- **fix**: Google Sign-In on Android failed with an internal error before reaching your account. Two separate faults on the same path: the app declared no home for itself, so the browser had nowhere to return to, and it claimed the sign-in return address twice, so Android asked which copy to use instead of continuing. (Issue #416, F227)
+- **docs**: recorded why scheduled background scans on Android run hours late rather than every 15 minutes. The app has never asked Android for permission to run on a schedule, so the system is free to defer it. The remedy is a product decision and is not included here. (Issue #417)
+
 - **fix**: four places where an error during mail fetching could go unreported. Each returned a result from inside an error-handling block without waiting for it, so the handler that was supposed to catch a failure never ran -- including two fallback paths that only run because something has already gone wrong, and one that leaves a mailbox connection open. (Issue #412)
 - **chore** [internal]: upgraded the Flutter toolchain from 3.38.5 to 3.47.4, nine months of releases. A local modification to the toolchain that had been required for every Windows build since December is no longer needed -- the upstream defect it worked around has been fixed. (Issue #412)
 

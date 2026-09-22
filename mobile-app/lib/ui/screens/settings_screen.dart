@@ -17,6 +17,7 @@ import '../../core/services/background_scan_windows_worker.dart';
 import '../../core/services/background_scan_scheduler.dart';
 import '../../core/storage/database_helper.dart';
 import '../../core/storage/settings_store.dart';
+import '../../core/services/diagnostic_logger.dart';
 import '../../core/storage/background_scan_log_store.dart';
 import '../../core/services/background_deferral_ingest.dart' show kDeferredStatus;
 import '../../core/storage/unmatched_email_store.dart'
@@ -129,6 +130,19 @@ class _SettingsScreenState extends State<SettingsScreen> with SingleTickerProvid
   // SEC-8 (Sprint 33): certificate pinning for Google OAuth
   bool _certificatePinningEnabled =
       SettingsStore.defaultCertificatePinningEnabled;
+
+  /// F233 (Sprint 72): diagnostic log state.
+  ///
+  /// **Manual validation caught that this UI was missing entirely.** The
+  /// logger, the settings keys, the rotation and the delete function all
+  /// shipped -- with no way to turn any of it on, so the log could never write.
+  /// The unit tests passed because they set the flag through the test seam
+  /// rather than through the UI: a symbol existing is not the same as a feature
+  /// working, which is exactly what the repo's source-gate rule warns about.
+
+  bool _diagnosticLogEnabled = SettingsStore.defaultDiagnosticLogEnabled;
+  bool _diagnosticLogKeepAll = SettingsStore.defaultDiagnosticLogKeepAll;
+  int _diagnosticLogBytes = 0;
   // SEC-11 (Sprint 33): encrypted database feature flag (infrastructure only)
   bool _encryptDatabase = SettingsStore.defaultEncryptDatabase;
 
@@ -415,6 +429,9 @@ class _SettingsScreenState extends State<SettingsScreen> with SingleTickerProvid
       _unmatchedRetentionDays = await _settingsStore.getUnmatchedRetentionDays();
       _certificatePinningEnabled =
           await _settingsStore.getCertificatePinningEnabled();
+      _diagnosticLogEnabled = await _settingsStore.getDiagnosticLogEnabled();
+      _diagnosticLogKeepAll = await _settingsStore.getDiagnosticLogKeepAll();
+      _diagnosticLogBytes = await DiagnosticLogger.totalBytes();
       _encryptDatabase = await _settingsStore.getEncryptDatabase();
 
       // Everything below is ACCOUNT-SCOPED. With no account resolved yet, stop
@@ -756,6 +773,115 @@ class _SettingsScreenState extends State<SettingsScreen> with SingleTickerProvid
         ),
         const SizedBox(height: 12),
         _buildUnmatchedRetentionSelector(),
+        const SizedBox(height: 12),
+        // F233 (Sprint 72): the diagnostic log controls.
+        SwitchListTile(
+          key: const Key('diagnostic_log_toggle'),
+          contentPadding: EdgeInsets.zero,
+          title: const Text('Write a diagnostic log'),
+          subtitle: const Text(
+            'Records why an action on your mailbox failed, so a problem can be '
+            'investigated after the fact. Off by default. No message content '
+            'or passwords are recorded, and email addresses are shortened.',
+          ),
+          value: _diagnosticLogEnabled,
+          onChanged: (value) async {
+            await _settingsStore.setDiagnosticLogEnabled(value);
+            // The logger caches this; without the reset it would keep using
+            // the old value for the rest of the session. Uses the real
+            // `invalidateCache` rather than the `debug*` test seam -- Phase 7
+            // review: `debug*` is this repo's convention for test-only, so
+            // production calling it invites a future reader to guard it away.
+            DiagnosticLogger.invalidateCache();
+            final bytes = await DiagnosticLogger.totalBytes();
+            if (mounted) {
+              setState(() {
+                _diagnosticLogEnabled = value;
+                _diagnosticLogBytes = bytes;
+              });
+            }
+          },
+        ),
+        if (_diagnosticLogEnabled) ...[
+          SwitchListTile(
+            key: const Key('diagnostic_log_keep_all'),
+            contentPadding: EdgeInsets.zero,
+            title: const Text('Keep every log file'),
+            subtitle: const Text(
+              'Keeps one file per day instead of a single rolling file. Uses '
+              'more space; delete them below when you no longer need them.',
+            ),
+            value: _diagnosticLogKeepAll,
+            onChanged: (value) async {
+              await _settingsStore.setDiagnosticLogKeepAll(value);
+              if (mounted) {
+                setState(() => _diagnosticLogKeepAll = value);
+              }
+            },
+          ),
+          // Harold made deletability a CONDITION of offering retention:
+          // "if the user can easily get to them to delete the files". Showing
+          // the size next to the action is the honest half -- the user can see
+          // what they are carrying before deciding.
+          //
+          // **FutureBuilder rather than a cached field** (Phase 7 review,
+          // Sprint 72). The first version loaded the size once in
+          // `_loadSettings` and refreshed it only on the toggle and after a
+          // delete. So: open Settings, enable logging, let a background scan
+          // fail, come back to the still-mounted tab -- the size reads its
+          // pre-failure value, and if that was 0 the **Delete button stays
+          // DISABLED**. The user cannot delete logs that demonstrably exist.
+          // That is a non-functional control, not cosmetic staleness, which is
+          // what lifts it above a nitpick. A FutureBuilder re-reads on every
+          // rebuild and cannot drift however the user reaches this row.
+          FutureBuilder<int>(
+            key: const Key('diagnostic_log_size'),
+            future: DiagnosticLogger.totalBytes(),
+            initialData: _diagnosticLogBytes,
+            builder: (context, snapshot) {
+              final bytes = snapshot.data ?? 0;
+              return Padding(
+                padding: const EdgeInsets.only(top: 4, bottom: 4),
+                child: Row(
+                  children: [
+                    Expanded(
+                      child: Text(
+                        bytes == 0
+                            ? 'No diagnostic logs stored.'
+                            : 'Diagnostic logs: '
+                                '${(bytes / 1024).toStringAsFixed(1)} KB',
+                        style: Theme.of(context).textTheme.bodySmall,
+                      ),
+                    ),
+                    TextButton.icon(
+                      key: const Key('diagnostic_log_delete'),
+                      icon: const Icon(Icons.delete_outline, size: 18),
+                      label: const Text('Delete logs'),
+                      onPressed: bytes == 0
+                          ? null
+                          : () async {
+                              final removed =
+                                  await DiagnosticLogger.deleteAll();
+                              final now = await DiagnosticLogger.totalBytes();
+                              if (!mounted) return;
+                              setState(() => _diagnosticLogBytes = now);
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                SnackBar(
+                                  content: Text(removed == 1
+                                      ? 'Deleted 1 diagnostic log file.'
+                                      : 'Deleted $removed diagnostic log '
+                                          'files.'),
+                                  behavior: SnackBarBehavior.floating,
+                                ),
+                              );
+                            },
+                    ),
+                  ],
+                ),
+              );
+            },
+          ),
+        ],
         const SizedBox(height: 12),
         SwitchListTile(
           contentPadding: EdgeInsets.zero,
@@ -1303,9 +1429,61 @@ class _SettingsScreenState extends State<SettingsScreen> with SingleTickerProvid
     }
   }
 
+  /// F217 (Sprint 72): tell Android users the truth about background timing.
+  ///
+  /// **Why this exists, and why it ships regardless of which remedy is chosen.**
+  /// Harold: *"from experience, it is very frustrating to a user that Android
+  /// background jobs only run when the app is open and in view. This completely
+  /// renders 'background' jobs as useless."* That frustration is made worse by
+  /// an app that implies the schedule is reliable when the OS does not
+  /// guarantee it.
+  ///
+  /// **The mechanism is documented, not guessed.** Android's own guidance
+  /// (developer.android.com/training/monitoring-device-state/doze-standby)
+  /// states that Doze *"doesn't let JobScheduler run"* and that WorkManager
+  /// uses JobScheduler internally, so periodic work is deferred to maintenance
+  /// windows. This app schedules via `Workmanager().registerPeriodicTask` with
+  /// only a `networkType: connected` constraint -- nothing in our own
+  /// configuration defers the work, which is what makes the OS the cause.
+  ///
+  /// **Deliberately does NOT promise a fix.** Whether the app should request a
+  /// battery-optimization exemption is an open decision with a Play-policy
+  /// dimension; this line is honest under every outcome of that decision, which
+  /// is why it lands first.
+  ///
+  /// ADR-0042: Android-only by nature -- Windows has no Doze equivalent, and
+  /// its own deferral behavior is already explained by
+  /// [_buildBackgroundDeferralStatusLine]. The two lines are siblings, each
+  /// describing the platform the user is actually on.
+  Widget _buildAndroidDozeStatusLine() {
+    return Padding(
+      key: const Key('android_doze_status_line'),
+      padding: const EdgeInsets.fromLTRB(16, 4, 16, 8),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Icon(Icons.info_outline, size: 16, color: Colors.blueGrey.shade400),
+          const SizedBox(width: 8),
+          Expanded(
+            child: Text(
+              'Android may delay background scans while the phone is idle or '
+              'the screen is off, so a scan can run later than the interval '
+              'you choose. Opening the app runs any work that was waiting.',
+              style: Theme.of(context).textTheme.bodySmall,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
   /// F109a (Sprint 44): a non-blocking info line explaining that background
   /// scans pause while the foreground app is open (correct F98 behavior), with
   /// the last deferral time when one has been recorded.
+  ///
+  /// (I-4, Phase 5.1.1 review: the F217 block was inserted between this comment
+  /// and its function, so this sibling lost its documentation and the Android
+  /// line gained a leading sentence describing Windows. Restored here.)
   Widget _buildBackgroundDeferralStatusLine() {
     final when = _lastBackgroundDeferral;
     // Use intl for a stable, locale-appropriate date/time (PR #266 Copilot
@@ -1371,6 +1549,9 @@ class _SettingsScreenState extends State<SettingsScreen> with SingleTickerProvid
         // enabled account that shows no recent scans is not read as "broken".
         if (Platform.isWindows && _backgroundScanEnabled)
           _buildBackgroundDeferralStatusLine(),
+        // F217 (Sprint 72): the Android sibling of the line above.
+        if (Platform.isAndroid && _backgroundScanEnabled)
+          _buildAndroidDozeStatusLine(),
         const Divider(),
         // [UPDATED] FB-4: Test section moved before Frequency
         _buildSectionHeader('Test'),

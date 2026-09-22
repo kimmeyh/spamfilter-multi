@@ -39,8 +39,24 @@ param(
 $ErrorActionPreference = 'Stop'
 
 function Get-RepoRoot {
+    # 1. The harness sets this. Most reliable, so it wins.
     if ($env:CLAUDE_PROJECT_DIR) { return $env:CLAUDE_PROJECT_DIR }
-    # Walk up from this script: .claude/hooks -> .claude -> repo root
+
+    # 2. Walk UP FROM THE CURRENT DIRECTORY looking for .claude/sprint_status.json.
+    #    Required for the SHARED copy at ~/.claude/scripts/, which is not inside
+    #    any repo: walking up from the script's own location finds the user's
+    #    home, not the project. Without this the shared copy always reported
+    #    "phase unknown" when the env var was absent.
+    $dir = (Get-Location).Path
+    while ($dir) {
+        if (Test-Path -LiteralPath (Join-Path $dir '.claude/sprint_status.json')) { return $dir }
+        $parent = Split-Path -Parent $dir
+        if ($parent -eq $dir) { break }
+        $dir = $parent
+    }
+
+    # 3. Fall back to walking up from the script (.claude/hooks -> repo root),
+    #    which is correct for a copy that DOES live in the repo.
     return (Split-Path -Parent (Split-Path -Parent $PSScriptRoot))
 }
 
