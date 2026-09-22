@@ -27,6 +27,7 @@ import '../../core/models/safe_sender_list.dart' show SafeSenderList;
 import '../../core/services/auth_results_parser.dart';
 import '../../core/services/diagnostic_logger.dart';
 import '../../core/services/app_version.dart';
+import '../../util/redact.dart';
 import '../../core/services/email_body_parser.dart';
 import '../../core/services/pattern_compiler.dart';
 import '../../core/services/rule_evaluator.dart';
@@ -3123,16 +3124,104 @@ class _ResultsDisplayScreenState extends State<ResultsDisplayScreen> {
   /// Runs in the background without blocking the UI. Shows a non-blocking
   /// banner during processing and updates the results list in real-time.
   /// Emails already re-processed (tracked in [_reProcessedEmailKeys]) are skipped.
+  /// F232 (Sprint 72): the scan mode that should govern a USER-INITIATED
+  /// action from this screen.
+  ///
+  /// Resolution order, and each step is deliberate:
+  ///   1. **The session mode, when a scan actually ran this session.** If the
+  ///      user started a scan, that mode is their expressed intent for right
+  ///      now and it wins.
+  ///   2. **The account's saved MANUAL mode.** This is the fix: opening a saved
+  ///      scan from Scan History sets no session mode, so before this the
+  ///      provider default (`readOnly`) silently suppressed every action.
+  ///      The MANUAL mode is correct here rather than the background mode --
+  ///      this is a foreground action the user just took, and letting a
+  ///      background policy govern it would be a different setting answering a
+  ///      question it was not asked.
+  ///   3. **The app-wide default**, when the account has no override
+  ///      (`getAccountManualScanMode` returns null to mean exactly that).
+  ///
+  /// Returns `ScanMode.readOnly` on any failure. That is the safe direction:
+  /// a resolution error must never turn into an unintended deletion.
+  Future<ScanMode> _resolveEffectiveScanMode(
+    EmailScanProvider scanProvider,
+  ) async {
+    // A live scan in this session means the user chose a mode explicitly.
+    if (scanProvider.scanMode != ScanMode.readOnly) {
+      return scanProvider.scanMode;
+    }
+    try {
+      final settings = SettingsStore();
+      final accountMode =
+          await settings.getAccountManualScanMode(widget.accountId);
+      if (accountMode != null) return accountMode;
+      return await settings.getManualScanMode();
+    } catch (e) {
+      Logger().w('[F38] scan-mode resolution failed, defaulting to '
+          'read-only: $e');
+      return ScanMode.readOnly;
+    }
+  }
+
   Future<void> _reProcessAffectedEmails() async {
     final scanProvider = Provider.of<EmailScanProvider>(context, listen: false);
     final logger = Logger();
 
-    // Only re-process in modes that allow actions
-    final scanMode = scanProvider.scanMode;
-    if (scanMode == ScanMode.readOnly) {
-      logger.i('[F38] Skipping re-process: scan mode is readOnly');
+    // F232 (Sprint 72): resolve the effective scan mode from SAVED SETTINGS,
+    // not from session state. Harold decided this (option 2, 2026-09-21) after
+    // reporting that blocking a domain from a saved scan deleted nothing --
+    // and that the very next background scan then deleted exactly the count
+    // that session should have.
+    //
+    // **What was wrong.** This used to read `scanProvider.scanMode`, which
+    // DEFAULTS to `ScanMode.readOnly` (`email_scan_provider.dart:165`) and is
+    // only ever set by `initializeScanMode()`, whose call sites are all
+    // scan-STARTING paths: `background_scan_core.dart:125`,
+    // `account_setup_screen.dart:318`/`:1090`, `scan_progress_screen.dart:722`.
+    // **Nothing set it when a HISTORICAL scan was opened from Scan History**,
+    // so in a session where the user had not started a scan the mode was still
+    // the read-only default and every IMAP action here was skipped -- silently,
+    // to a console log nobody could read. The Sprint 38 Round 9 comment below
+    // states that premise outright and worked around the VISUAL symptom by
+    // hiding rows, which made the skipped deletion invisible.
+    //
+    // **Per-account, not one value.** `getAccountManualScanMode` returns
+    // `ScanMode?` (null = app-wide default), and this screen can be showing
+    // All Accounts, so a single resolved mode would be wrong. The batch is
+    // PARTITIONED below: act where the account permits it, skip the rest, and
+    // report BOTH. A silent partial action is the same defect class.
+    //
+    // **A configured read-only account is still honoured.** This replaces
+    // "skip because no scan ran this session" with "act per the account's
+    // configured intent" -- it does not override a deliberate read-only
+    // choice. Windows DEV/Prod are configured read-only, so they still skip;
+    // what changes is that they now SAY so.
+    final effectiveMode = await _resolveEffectiveScanMode(scanProvider);
+    if (effectiveMode == ScanMode.readOnly) {
+      logger.i('[F38] Skipping re-process: account is configured read-only');
+      unawaited(DiagnosticLogger.log(
+        kind: DiagnosticLogger.kindSkipped,
+        context: 'F38/re-process',
+        detail: 'account ${Redact.email(widget.accountEmail)} is configured '
+            'read-only; no mailbox action attempted',
+      ));
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: const Text(
+              'Rule saved. This account is set to read-only, so your mailbox '
+              'was not changed.',
+            ),
+            backgroundColor: Colors.blueGrey,
+            duration: const Duration(seconds: 6),
+            behavior: SnackBarBehavior.floating,
+            margin: const EdgeInsets.only(bottom: 80, left: 16, right: 16),
+          ),
+        );
+      }
       return;
     }
+    final scanMode = effectiveMode;
 
     // Sprint 38 Round 4 fix (2026-05-17): historical-scan views must
     // always use _historicalResults. See _reEvaluateNoRuleEmails for
