@@ -451,6 +451,74 @@ end). The emulator cannot test it because the Android OAuth client is bound to t
 SHA-1. What the emulator HAS now proven is that the redirect reaches the app, which was the failing
 step.
 
+**F233. A pullable diagnostic log for Android, plus fix the header-only CSV export (~3-5h) Priority 4 (NEW, 2026-09-21 -- Harold offered to keep a debug log on permanently)**
+- Phase: Developer Tooling / Supportability
+- Platform: All (the log is shared); the RETRIEVAL problem is Android-specific.
+- **Harold's offer, 2026-09-21**: *"If needed, propose a log to capture needed details from the
+  Android phone or enhance the .csv download so it captures what is needed... I can keep the log on
+  for debugging purposes and anytime you capture images from the phone you can copy the log file or
+  .csv file."* This card is the answer to that offer.
+
+- **WHY IT IS NEEDED**: [[F232]] and [[F228]] both stall on the same wall. The decisive facts live
+  in `logger.e(...)` / `logger.i(...)` calls on a bare `Logger()` with **no file sink**, so they go
+  to a debug console that does not exist on an installed build. Two defects that reproduce on demand
+  cannot be diagnosed. Harold cannot hand over what the app never writes down.
+
+- **WHAT ALREADY EXISTS -- build on it, do not start over.**
+  - `LiveScanLogger` (`core/services/live_scan_logger.dart`) already writes a real file, is
+    cross-platform, MSIX-safe, resolves its directory via `path_provider`, and formats lines as
+    `[<iso>] [LIVE] <message>`. It also has an opt-in CSV/XLSX export gated by the
+    `live_scan_debug_csv` setting.
+  - **MEASURED ON THE DEVICE (2026-09-21, MTP)**: `Android/data/com.myemailspamfilter/` contains
+    ONLY `files/` with two old CSVs. **There is no `logs/` directory**, so `LiveScanLogger` has
+    never written on this phone -- the setting is off and the runtime log does not exist to enable.
+  - **GOOD NEWS on retrieval, and it decides the design**: `Android/data/com.myemailspamfilter/`
+    **IS readable over MTP** on this Samsung device -- I enumerated it and pulled files from it. So
+    an app-private log IS retrievable and does NOT require the user-visible Documents folder.
+    **Verify this again on the Fold8 Ultra** before relying on it; scoped-storage behaviour varies
+    by OEM and Android version.
+
+- **PROPOSAL, in the order it should be built.**
+  1. **Give the existing logger a file sink and route the failure paths into it.** Add a
+     `logger.e`-equivalent that appends through `LiveScanLogger.log` (or a sibling
+     `DiagnosticLogger` with a `diag_v<version>.log` name), then convert the call sites that matter:
+     `[F38] Re-processing failed: $e` (`results_display_screen.dart:3329`), `[F38] Delete batch
+     failed: $e` (`:3266`), the `BatchActionResult.allFailed` reason from
+     `generic_imap_adapter.dart:1140-1147`, `[IMAP] Invalid message UID` (`:1205`), and the
+     `no valid UIDs parsed ... skipping` warning (`:993`). **Those five lines would have answered
+     both open cards.**
+  2. **Record the two failure SHAPES distinctly** -- an `allFailed` guard trip ("never connected")
+     versus a thrown exception ("connected, server refused"). Today both surface as
+     "0 of N (N failed)" and are indistinguishable from the UI, which is why F232 has two competing
+     mechanisms.
+  3. **A Settings toggle, default OFF**, next to the existing CSV-export setting: "Write diagnostic
+     log". Harold keeps it ON. Must be honest about cost (file growth) and must never log message
+     bodies or credentials -- **use `Redact.email(...)`, which `LiveScanLogger` already does**.
+  4. **Log rotation or a size cap.** A permanently-on log on a phone needs one; `LiveScanLogger`
+     appends without bound today.
+  5. **Add the app version and build number to the log header and to the CSV** -- see [[F229]],
+     which filed exactly this for exports. A diagnostic file that cannot name its build is weak
+     evidence.
+
+- **SEPARATE DEFECT FOUND WHILE INVESTIGATING THIS -- the CSV export writes header-only files.**
+  Of five exports pulled off the phone, **three are exactly 108 bytes: the header row and ZERO data
+  rows** (`...2026-09-08T22-46-20`, `...2026-09-11T23-47-21`, `...2026-09-21T01-15-34`). Two have
+  real rows (5 and 3). `exportResultsToCSV()`
+  (`email_scan_provider.dart:914`) iterates `_results`, so an empty file means `_results` was empty
+  at export time -- plausibly exporting from a HISTORICAL view, where the rows live in
+  `_historicalResults` instead. **That is the same session-state-versus-historical-state split that
+  causes F232**, which makes it a useful second probe of the same root area. The export reports
+  success regardless, so the user gets a file they believe holds their scan.
+- **This defect is what makes the CSV route insufficient on its own**: Harold offered to send CSVs,
+  but the CSV silently omits everything on the very screen the open defects live on. Fix the export
+  AND add the log.
+- **What the CSV already gets right, and it did real work today**: it carries an `Email ID` column,
+  and reading it **falsified** F232's leading hypothesis in one command -- every id is a clean
+  integer. Keep that column. A columnar export of REAL values beats any amount of source reasoning,
+  which is the general lesson worth carrying.
+- Source: Harold's offer, 2026-09-21. Device facts measured the same day over MTP. Related:
+  [[F232]], [[F228]], [[F229]], [[F231]].
+
 **F232. Rules created from a HISTORICAL scan view never act on the mailbox, silently (~4-6h) Priority 2 (NEW, 2026-09-21 -- Harold; CONFIRMED IN SOURCE, and the code already documents the cause)**
 - Phase: Bug Fix
 - Platform: All (shared code)
@@ -574,7 +642,21 @@ step.
      loadCredentials() first." (`generic_imap_adapter.dart:1140-1147`). Still possible, but the
      path does call `loadCredentials` and nothing else nulls the client
      (`_imapClient = null` appears at exactly ONE site, `:1394`, inside `disconnect()`'s `finally`).
-- **THE UID CHAIN, traced 2026-09-21 -- this is where to start.** `takeActionBatch(delete)` routes
+- **THE UID HYPOTHESIS IS FALSIFIED (2026-09-21, from the phone's own CSV exports). DO NOT
+  re-derive it.** I proposed that historical rows carry a malformed `EmailMessage.id`, so
+  `_parseUids`' `int.tryParse` would drop them and fail a whole folder silently. **Checked against
+  real data and it is WRONG.** Two CSV exports pulled off the S24+ over MTP
+  (`scan_results_2026-09-09T07-30-02.csv`, 5 rows; `scan_results_2026-09-10T20-32-31.csv`, 3 rows)
+  carry an `Email ID` column, and **every value is a clean integer** (231203, 231201, 231200,
+  231199, 201936 ...) that `int.tryParse` accepts. So ids are well formed, `_parseUids` would not
+  drop them, and the "invalid UID" path is not the cause.
+  **What remains of that line of reasoning**: the ids are valid but may be STALE or belong to a
+  different mailbox than the one selected -- a UID is only meaningful within one folder and can be
+  invalidated (UIDVALIDITY change, or the message already moved by the background scan that ran
+  minutes earlier). That is still plausible and is NOT the same claim as "the id is malformed".
+  Note the exports show `Folder` values of both `Inbox` and `Bulk` in one scan, so cross-folder
+  batches are real.
+- **THE UID CHAIN, traced 2026-09-21 (mechanism still worth knowing, cause now excluded).** `takeActionBatch(delete)` routes
   to `moveToFolderBatch` (`:1151-1153`), which groups by folder (so hypothesis 2 is HANDLED by the
   adapter -- it does iterate per source folder) and then calls `_parseUids`:
   `int.tryParse(message.id)`, logging `[IMAP] Invalid message UID: <id>` and DROPPING any id that is
