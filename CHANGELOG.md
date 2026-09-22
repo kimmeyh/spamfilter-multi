@@ -26,6 +26,11 @@ Format: `- **type**: Description (Issue #N)` where type is feat|fix|chore|docs
 
 ## [Unreleased]
 
+### 2026-09-22 (Sprint 72)
+- **fix**: exporting scan results while viewing a saved scan now writes the results. It previously wrote a file containing only the column headings and reported success, so an export taken from Scan History looked fine and was empty. (Issue #421)
+- **feat**: an optional diagnostic log can be turned on in Settings to record why an action on your mailbox failed, and deleted from the same screen with its size shown. It is off by default and records no message content. (Issue #421)
+- **chore**: exported CSV files now carry the app version that produced them. (Issue #427)
+
 ### 2026-09-17 (Sprint 70)
 - **fix**: starting a scan and then switching to another app no longer stops scanning from working until you restart the app. Android closes network connections for an app that is not on screen, and the scan was never told, so it neither finished nor failed and every later scan waited behind it forever. A scan interrupted this way now stops with an explanation and the next scan starts normally. (Issue #413)
 - **fix**: a manual scan that never finishes now stops after 30 minutes instead of running forever, and the limit keeps counting while you are on other screens. Previously it had no limit at all, on the assumption that someone was watching and could cancel -- which stops being true the moment you navigate away. (Issue #414)

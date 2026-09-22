@@ -911,8 +911,30 @@ class EmailScanProvider extends ChangeNotifier {
   /// - Email ID (unique identifier for tracking)
   ///
   /// Returns CSV string that can be saved to file or displayed in UI
-  String exportResultsToCSV() {
+  /// [rows] overrides the provider's own `_results`. **This parameter is the
+  /// F233 fix.** `_exportResults` on the results screen called this with no
+  /// argument, so it always read `_results` -- the LIVE session rows -- while
+  /// every DISPLAY path on that screen selects `_historicalResults` when
+  /// viewing a stored scan. Exporting from a historical view therefore wrote a
+  /// header and nothing else, and reported success. Three of five CSVs pulled
+  /// off Harold's phone on 2026-09-21 were exactly 108 bytes: the header alone.
+  ///
+  /// [appVersion] stamps the build into the file (F229). An export that cannot
+  /// name the build that produced it is weak evidence, and this export is
+  /// exactly what a tester sends back.
+  String exportResultsToCSV({
+    List<EmailActionResult>? rows,
+    String? appVersion,
+  }) {
     final buffer = StringBuffer();
+    final source = rows ?? _results;
+
+    // F229 (Sprint 72): build provenance as a leading comment row -- a comment
+    // rather than a column so every data row stays uniform.
+    if (appVersion != null && appVersion.isNotEmpty) {
+      buffer.writeln('"# MyEmailSpamFilter","' + appVersion + '","exported",'
+          '"' + DateTime.now().toIso8601String() + '"');
+    }
 
     // CSV Header - Enhanced with new columns
     buffer.writeln(
@@ -924,7 +946,7 @@ class EmailScanProvider extends ChangeNotifier {
         : 'Unknown';
 
     // CSV Rows
-    for (final result in _results) {
+    for (final result in source) {
       final receivedDate = result.email.receivedDate.toIso8601String();
       final from = _escapeCsv(result.email.from);
       final folder = _escapeCsv(result.email.folderName);

@@ -57,6 +57,16 @@ class SettingsStore {
   static const String keyCertificatePinningEnabled = 'certificate_pinning_enabled';
   static const String keyEncryptDatabase = 'encrypt_database';
 
+  /// F233 (Sprint 72): write a diagnostic log capturing FAILURE paths that
+  /// today reach only a debug console. Default OFF.
+  static const String keyDiagnosticLogEnabled = 'diagnostic_log_enabled';
+
+  /// F233 (Sprint 72): keep every run's diagnostic log instead of appending to
+  /// one rolling file. Harold, 2026-09-21: "a flag to allow saving all log
+  /// files (if the user can easily get to them to delete the files)" -- the
+  /// parenthetical is why a delete action ships alongside this.
+  static const String keyDiagnosticLogKeepAll = 'diagnostic_log_keep_all';
+
   // ============================================================
   // Default Values
   // ============================================================
@@ -125,6 +135,13 @@ class SettingsStore {
   /// always on regardless of this setting -- it captures scan-lifecycle events
   /// only and is small enough that surprise disk usage is not a concern.
   static const bool defaultLiveScanDebugCsv = true; // F113 (Sprint 47): ON for new users
+
+  /// F233: OFF by default. A diagnostic log is a debugging aid, not something
+  /// every user should silently accumulate on disk.
+  static const bool defaultDiagnosticLogEnabled = false;
+
+  /// F233: OFF by default -- one rolling file unless the user opts in.
+  static const bool defaultDiagnosticLogKeepAll = false;
   static const int defaultManualScanDaysBack = 0; // 0 = all emails
   static const int defaultBackgroundScanDaysBack = 0; // 0 = all emails
   static const int defaultScanHistoryRetentionDays = 90; // F114 (Sprint 47): 7 -> 90 (new-user default)
@@ -253,6 +270,38 @@ class SettingsStore {
   /// live scans.
   Future<void> setLiveScanDebugCsv(bool enabled) async {
     await _setAppSetting(keyLiveScanDebugCsv, enabled.toString(), 'bool');
+  }
+
+  // ============================================================
+  // F233 (Sprint 72): Diagnostic Logging
+  // ============================================================
+
+  /// Whether the diagnostic log is being written.
+  ///
+  /// **Why this exists**: the failure paths that matter -- `[F38] Re-processing
+  /// failed`, `[F38] Delete batch failed`, the adapter's `allFailed` reason --
+  /// used a bare `Logger()` with no file sink, so on an installed build they
+  /// went nowhere. Two defects that reproduce on demand (F228, F232) could not
+  /// be diagnosed because the app never wrote down what happened.
+  Future<bool> getDiagnosticLogEnabled() async {
+    final value = await _getAppSetting(keyDiagnosticLogEnabled);
+    if (value == null) return defaultDiagnosticLogEnabled;
+    return value == 'true';
+  }
+
+  Future<void> setDiagnosticLogEnabled(bool enabled) async {
+    await _setAppSetting(keyDiagnosticLogEnabled, enabled.toString(), 'bool');
+  }
+
+  /// Whether to keep every run's log rather than appending to one file.
+  Future<bool> getDiagnosticLogKeepAll() async {
+    final value = await _getAppSetting(keyDiagnosticLogKeepAll);
+    if (value == null) return defaultDiagnosticLogKeepAll;
+    return value == 'true';
+  }
+
+  Future<void> setDiagnosticLogKeepAll(bool enabled) async {
+    await _setAppSetting(keyDiagnosticLogKeepAll, enabled.toString(), 'bool');
   }
 
   // ============================================================

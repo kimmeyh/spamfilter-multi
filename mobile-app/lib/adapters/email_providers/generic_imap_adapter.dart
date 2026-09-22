@@ -15,6 +15,7 @@
 library;
 
 import 'dart:async';
+import '../../core/services/diagnostic_logger.dart';
 import 'dart:io';
 
 import 'package:enough_mail/enough_mail.dart';
@@ -992,6 +993,17 @@ class GenericIMAPAdapter with BatchOperationsMixin implements SpamFilterPlatform
       final uids = _parseUids(entry.value);
       if (uids.isEmpty) {
         _logger.w('[IMAP] moveToFolderBatch: no valid UIDs parsed for "${entry.key}", skipping');
+        // F233: this `continue` produces "0 succeeded / N failed" with a
+        // perfectly healthy connection -- the exact shape observed in F232 --
+        // and left no trace. It does now.
+        unawaited(DiagnosticLogger.failure(
+          context: 'IMAP/moveToFolderBatch',
+          kind: DiagnosticLogger.kindSkipped,
+          reason: 'no valid UIDs parsed for folder "${entry.key}"; folder '
+              'skipped without an exception',
+          attempted: entry.value.length,
+          failed: entry.value.length,
+        ));
         continue;
       }
 
@@ -1140,6 +1152,18 @@ class GenericIMAPAdapter with BatchOperationsMixin implements SpamFilterPlatform
     if (_imapClient == null) {
       _logger.e('[IMAP] takeActionBatch FAILED: not connected '
           '(${messages.length} message(s) not actioned)');
+      // F233 (Sprint 72): to a FILE, not just the console. This exact line is
+      // one of the two shapes F232 could not tell apart -- "never connected"
+      // versus "connected, server refused" -- because neither was written
+      // anywhere an installed build could produce.
+      unawaited(DiagnosticLogger.failure(
+        context: 'IMAP/takeActionBatch',
+        kind: DiagnosticLogger.kindNotConnected,
+        reason: 'adapter has no live client; loadCredentials() not called or '
+            'the connection was torn down',
+        attempted: messages.length,
+        failed: messages.length,
+      ));
       return BatchActionResult.allFailed(
         messages.map((m) => m.id).toList(),
         'Not connected. Call loadCredentials() first.',
@@ -1203,6 +1227,16 @@ class GenericIMAPAdapter with BatchOperationsMixin implements SpamFilterPlatform
         uids.add(uid);
       } else {
         _logger.w('[IMAP] Invalid message UID: ${message.id}');
+        // F233: a dropped UID silently shrinks the batch. Sprint 71 spent real
+        // time on the hypothesis that this was firing; it was not (every id in
+        // the device CSVs parsed), but the next reader should be able to CHECK
+        // rather than theorise.
+        unawaited(DiagnosticLogger.log(
+          kind: DiagnosticLogger.kindSkipped,
+          context: 'IMAP/_parseUids',
+          detail: 'id is not an integer UID, message dropped from batch: '
+              '"${message.id}"',
+        ));
       }
     }
     return uids;

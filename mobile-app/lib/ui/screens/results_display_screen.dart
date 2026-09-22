@@ -25,6 +25,8 @@ import '../../core/models/evaluation_result.dart';
 import '../../core/models/rule_set.dart' show Rule, RuleSet;
 import '../../core/models/safe_sender_list.dart' show SafeSenderList;
 import '../../core/services/auth_results_parser.dart';
+import '../../core/services/diagnostic_logger.dart';
+import '../../core/services/app_version.dart';
 import '../../core/services/email_body_parser.dart';
 import '../../core/services/pattern_compiler.dart';
 import '../../core/services/rule_evaluator.dart';
@@ -359,8 +361,22 @@ class _ResultsDisplayScreenState extends State<ResultsDisplayScreen> {
     final logger = Logger();
 
     try {
-      // Generate CSV content
-      final csvContent = scanProvider.exportResultsToCSV();
+      // Generate CSV content.
+      //
+      // F233 (Sprint 72): pass `_currentResults()` -- the SAME live-vs-
+      // historical selector every display path on this screen already uses.
+      // This call previously took no argument, so it read the provider's
+      // `_results` (the live session) even while the screen was showing a
+      // HISTORICAL scan, and wrote a header with zero rows while reporting
+      // success. Three of five CSVs pulled off Harold's phone were exactly 108
+      // bytes. Reusing `_currentResults()` rather than re-deriving the
+      // selection is deliberate: a second copy of that logic is how the two
+      // drift apart again.
+      final appVersion = await AppVersion.get();
+      final csvContent = scanProvider.exportResultsToCSV(
+        rows: _currentResults(),
+        appVersion: appVersion,
+      );
 
       // Get configured export directory from Settings, or use default
       final settingsStore = SettingsStore();
@@ -3265,6 +3281,16 @@ class _ResultsDisplayScreenState extends State<ResultsDisplayScreen> {
               '[F38] Delete batch: ${result.successCount} succeeded, ${result.failureCount} failed');
         } catch (e) {
           logger.e('[F38] Delete batch failed: $e');
+          // F233 (Sprint 72): this is the SERVER_REFUSED shape -- the batch ran
+          // and threw -- as distinct from the adapter's NOT_CONNECTED guard.
+          // Telling them apart is what F232 needed and could not get.
+          unawaited(DiagnosticLogger.failure(
+            context: 'F38/delete-batch',
+            kind: DiagnosticLogger.kindServerRefused,
+            reason: 'batch threw: $e',
+            attempted: toDelete.length,
+            failed: toDelete.length,
+          ));
           failCount += toDelete.length;
           // A throw means the WHOLE batch failed -- none of it was addressed.
           deleteFailedIds = toDelete.map((m) => m.id).toSet();
@@ -3327,6 +3353,16 @@ class _ResultsDisplayScreenState extends State<ResultsDisplayScreen> {
       }
     } catch (e) {
       logger.e('[F38] Re-processing failed: $e');
+      // F233: the line Sprint 71 needed and could not read. An exception HERE
+      // fails the whole batch even though per-email work may already have
+      // succeeded, which is the F228 contradiction.
+      unawaited(DiagnosticLogger.failure(
+        context: 'F38/re-process',
+        kind: DiagnosticLogger.kindException,
+        reason: 'whole-batch failure before or during execution: $e',
+        attempted: toDelete.length + toMoveSafe.length,
+        failed: toDelete.length + toMoveSafe.length,
+      ));
       failCount = toDelete.length + toMoveSafe.length;
       // F212 R-4: this is the path that produced Harold's 6-of-6 / 8-of-8.
       // An exception here (e.g. AuthenticationException from loadCredentials)
