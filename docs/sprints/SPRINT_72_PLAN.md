@@ -19,6 +19,48 @@ scope). Execution complete; Phase 5.3 Manual Validation is next.
 
 **Suite 2,155 -> 2,207. Analyzer clean. 52 new tests.**
 
+## Phase 5.3 Manual Validation -- Windows, 2026-09-22 (Harold)
+
+| Step | Item | Result |
+|---|---|---|
+| A | F232 -- open a saved scan, nothing deleted; then add a rule | **PASS** |
+| B | F228 -- airplane mode, honest message | **PASS** |
+| C | F230/F231 -- sender in full, Skip relocated, larger text, session history | **PASS** |
+| D | F233 -- diagnostic log controls in Settings | **FAILED, FIXED, RE-VALIDATED PASS** |
+| E | F217 -- Android Doze caveat | **N/A on Windows** |
+
+**D was a real miss and is the finding of this validation.** Harold opened Settings and asked
+"where" -- there was NO UI AT ALL. The logger, both settings keys, rotation and the delete function
+had all shipped; without a toggle the log could never be enabled, so it could never write a line.
+The feature was complete and inert.
+
+**Why the tests passed**: they set the flag through `DiagnosticLogger.debugSetEnabled` -- the test
+seam -- and asserted the logger behaved. All 10 green. Not one went through the path a user has.
+That is the repo's source-gate rule almost verbatim, and the file even carried a "what these tests
+do NOT catch" note that failed to name the omission it was describing.
+
+Fixed and re-validated: Harold's screenshot shows the toggle, the retention flag, the size line and
+a Delete logs button correctly disabled at zero logs. 9 new tests, keyed for a future widget test.
+
+**Two splicing defects found while fixing D, both worth recording**: inserting the state fields and
+the load calls split two multi-line assignments. One was a syntax error the analyzer caught. **The
+other was still VALID DART** -- certificate pinning would have silently loaded the wrong value --
+and was found only by reading the committed file rather than trusting a green analyze.
+
+## Decisions Harold made during validation
+
+- **F232 scan-mode scope, CONFIRMED**: the MANUAL mode alone governs a foreground action from the
+  results screen. He reasoned it out from step B's behavior and it matches what shipped
+  (`isBackground: false`). Background mode answers a different question -- what may run unattended
+  -- and letting it govern a click would be one setting answering a question it was not asked.
+- **F234 filed** from his idea: when an account is read-only, record what WOULD have been deleted
+  rather than only refusing. That turns read-only into a preview mode, so a broad rule's blast
+  radius can be vetted before anything is deleted. New capability, so filed rather than folded in
+  mid-validation.
+- **F235 filed and TARGETED FOR SPRINT 73**: implement `setExactAndAllowWhileIdle()` for Android
+  Doze. This is the mechanism half of F217, which Sprint 72 deliberately left undone after the
+  search he asked for found the exemption is not the only route and carries a Play policy cost.
+
 ## Phase 5 evidence
 
 - **5.1.1 automated code review**: 2026-09-22, `pr-review-toolkit:code-reviewer` over

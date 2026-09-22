@@ -542,6 +542,72 @@ step.
 - Source: Harold's offer, 2026-09-21. Device facts measured the same day over MTP. Related:
   [[F232]], [[F228]], [[F229]], [[F231]].
 
+**F235. Make Android background scans actually fire in Doze (~4-8h) Priority 4 -- TARGETED FOR SPRINT 73 (NEW, 2026-09-22 -- Harold, after the Sprint 72 "is it the only way" search)**
+- Phase: Core / Android
+- Platform: **DECLARED ADR-0042 EXCEPTION -- Android only.** The OS behavior that differs is named:
+  Android's Doze and App Standby defer background work, and Windows has no equivalent arbiter
+  (its background scanning is a scheduled task). The exception covers the SCHEDULING MECHANISM
+  only; the scan logic itself stays shared.
+- **This is the MECHANISM half of [[F217]].** Sprint 72 shipped the honest messaging -- Settings
+  now tells the user the phone may delay scans -- and deliberately stopped there, because the
+  search Harold asked for changed the premise of his 2026-09-19 decision.
+
+- **Harold's instruction, 2026-09-22**: *"Need to add to backlog and target for next sprint to
+  implement the use of Doze on Android."*
+
+- **WHY THE MECHANISM CHANGED, and it is the whole reason this is a separate card.** Harold's
+  original instruction was conditional: *"if ... asking for battery usage is the only way to
+  implement this (search to ensure this is the only way), then I think asking for battery usage is
+  appropriate."* The search was run against primary sources and the condition FAILED:
+  - **Our own code is not the cause.** `background_scan_scheduler.dart:258` registers periodic work
+    with `networkType: connected` ONLY -- no battery constraint, no idle constraint, no foreground
+    service. Checked and eliminated before looking outward.
+  - **The diagnosis is confirmed** by Android's own documentation: Doze *"doesn't let JobScheduler
+    run... WorkManager uses JobScheduler internally, so WorkManager tasks don't run."* Harold's
+    experience -- *"background jobs only run when the app is open and in view"* -- matches exactly.
+  - **The exemption is NOT the only route.** `setExactAndAllowWhileIdle()` fires in Doze with NO
+    special permission, capped at once per 9 minutes per app -- which is COMPATIBLE with the app's
+    15-minute floor.
+  - **And the exemption carries a Play policy cost**: Google *"prohibit[s] apps from requesting
+    direct exemption from Power Management features... unless the core function of the app is
+    adversely affected"*, with acceptable categories limited to safety, task automation and
+    peripheral companion apps.
+
+- **RECOMMENDED APPROACH (and why it is not the exemption)**: implement
+  `setExactAndAllowWhileIdle()` as the Android scheduling path. It gets the functional outcome
+  Harold wants -- scans that fire while the phone is idle -- WITHOUT spending Play-review risk
+  during a closed test whose production access is gated on the 12-tester/14-day clock. The 9-minute
+  floor does not constrain a 15-minute schedule. If measurement then shows the alarm is still
+  deferred too aggressively, the exemption becomes option 2 WITH evidence behind its justification
+  rather than an assertion.
+
+- **Audit-first (MANDATORY, run 2026-09-22)**: **Is any of this already present? NO.** Grep for
+  `setExactAndAllowWhileIdle` and `AlarmManager` across the Android manifest and the scheduler
+  returns nothing. Genuine build work. **Note the Sprint 70 correction**: check the MERGED manifest,
+  not just the source -- `FOREGROUND_SERVICE` and `WAKE_LOCK` arrive via workmanager and are
+  invisible in the source manifest.
+
+- **Requirements**:
+  - R-1: Android scheduling uses an exact-while-idle alarm; Windows is untouched.
+  - R-2: **`SCHEDULE_EXACT_ALARM` / `USE_EXACT_ALARM` permission review.** Android 12+ restricts
+    exact alarms, and `USE_EXACT_ALARM` has its OWN Play policy justification requirement. **Verify
+    which permission this actually needs before building** -- if it turns out to need
+    `USE_EXACT_ALARM` with a comparable review burden, the advantage over the exemption shrinks and
+    this decision should go back to Harold.
+  - R-3: The 9-minute floor must be enforced or documented; a future frequency below it would be
+    silently clamped by the OS.
+  - R-4: Rescheduling after device reboot (`BOOT_COMPLETED`) -- an alarm does not survive a restart
+    the way WorkManager's persisted work does. **This is a real regression risk versus today.**
+  - R-5: Keep the F217 honest-timing caveat. Even an exact alarm can be delayed; the message should
+    soften, not disappear.
+  - R-6: The existing `Constraints(networkType: connected)` behavior must be preserved -- an alarm
+    has no network constraint, so the scan itself must check connectivity and defer gracefully.
+
+- **Acceptance**: the only evidence that matters is Harold's device over real intervals -- a scan
+  firing while the phone is locked and the app is closed, confirmed from Scan History timestamps.
+  No unit test can prove this, which R-4 makes especially important to validate after a reboot.
+- Source: Harold, 2026-09-22. Full research and the four options are recorded under [[F217]].
+
 **F234. Read-only as a PREVIEW mode -- record what WOULD have been deleted (~4-6h) Priority 8 (NEW, 2026-09-22 -- Harold, during Sprint 72 manual validation)**
 - Phase: UX / Core
 - Platform: All (shared logic; especially valuable on Windows, which is configured read-only)

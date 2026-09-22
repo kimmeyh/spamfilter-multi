@@ -53,10 +53,12 @@
     "CARRY-IN: F217 implementation under Harold decided option 1 (battery-optimisation exemption, CONTEXTUAL prompt mirroring the F161 POST_NOTIFICATIONS pattern, honest behaviour on decline)."
   ],
   "next_sprint_targeted": [
-    "F224",
-    "F226",
-    "F217 implementation",
-    "F219 AC-1 validation",
-    "F222"
+    "F235 -- Android Doze: setExactAndAllowWhileIdle scheduling (Harold targeted this for Sprint 73 on 2026-09-22)",
+    "F234 -- read-only as a preview mode (\"would have been deleted\")",
+    "F232 mechanism B -- the live batch failing 9 of 9 on a healthy connection, now instrumented",
+    "F229 screen half -- only if screenshot provenance stays a real problem; the export stamp may be enough",
+    "F219 AC-1 + F227 -- end-to-end Google Sign-In on the Play build, needs Harold",
+    "F226 -- WinWright sweep flakiness (passed 2/2 twice in Sprint 72, so gather more data before acting)",
+    "F224, F222 -- carried"
   ]
 }
