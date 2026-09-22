@@ -160,6 +160,8 @@ class DiagnosticLogger {
     try {
       keepAll = await SettingsStore().getDiagnosticLogKeepAll();
     } catch (_) {
+      // Fall back to the rolling single file. A settings failure must not
+      // change WHETHER we log, only HOW MANY files we keep.
       keepAll = false;
     }
 
@@ -219,6 +221,9 @@ class DiagnosticLogger {
       }
       return total;
     } catch (_) {
+      // Reporting 0 bytes is honest when the directory cannot be read: the
+      // number is shown next to a delete action, and claiming a size we could
+      // not measure would be worse than claiming none.
       return 0;
     }
   }
@@ -245,6 +250,9 @@ class DiagnosticLogger {
       }
       return removed;
     } catch (_) {
+      // Report 0 removed rather than claiming a deletion that did not happen.
+      // The user can retry; a false "cleared" would leave them believing the
+      // files are gone.
       return 0;
     }
   }

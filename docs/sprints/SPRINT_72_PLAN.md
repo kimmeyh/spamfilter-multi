@@ -1,6 +1,33 @@
-# Sprint 72 Plan -- AWAITING APPROVAL (Phase 3.7)
+# Sprint 72 Plan -- APPROVED, EXECUTION COMPLETE (awaiting Manual Validation)
 
-**Status**: PROPOSED. Not approved. No task execution until Harold approves at Phase 3.7.
+**Status**: APPROVED by Harold 2026-09-22 with amendments (PATCH bump, theme text styles, full
+scope). Execution complete; Phase 5.3 Manual Validation is next.
+
+## Completion at a glance
+
+| Task | Item | Status | Tests |
+|---|---|---|---|
+| 0 | Merge doc commits | DONE -- folded into PR #420 | hook suite 75/75 |
+| 0b | Version bump 0.15.3+6 | DONE | both version gates green |
+| 1 | F233 diagnostic log + CSV export | DONE | 16 new, mutation-verified |
+| 2 | F232 historical-view rules | **MECHANISM A DONE; B instrumented, not fixed** | 7 new, mutation-verified |
+| 3 | F228 honest toast | DONE | 10 new, mutation-verified |
+| 4 | F230 + F231 layout and durability | DONE | 12 new, mutation-verified |
+| 5 | F219 AC-1 + F227 verify | **NEEDS HAROLD** -- manual, Play build | n/a |
+| 6 | F217 background scans | **HONEST MESSAGING DONE; mechanism needs a decision** | 7 new |
+| 7 | F229 version visibility | **EXPORT DONE; screen half blocked by measurement** | covered by Task 1 |
+
+**Suite 2,155 -> 2,207. Analyzer clean. 52 new tests.**
+
+## Three items need Harold, and all three are recorded with evidence
+
+1. **F217 mechanism** -- the "is it the only way" search he asked for found that it is NOT, plus a
+   Play policy constraint. Four options with a recommendation are in the master plan.
+2. **F229 screen half** -- attempted and REVERTED: a short-form label still overflowed by 18px at
+   phone width, failing four tests. The AppBar action row cannot hold it. Options recorded.
+3. **F232 mechanism B** -- a live batch failing 9 of 9 on a healthy connection, still undiagnosed.
+   Now instrumented by the Task 1 logger rather than guessed at; needs a live reproduction.
+
 **Branch**: `feature/20260922_Sprint_72` (to be created from `develop` AFTER Task 0's PR merges)
 **Version**: bumps at Phase 3.7.0b once scope is approved -- see Task 0b.
 
