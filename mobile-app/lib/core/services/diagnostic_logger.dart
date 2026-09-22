@@ -1,5 +1,7 @@
 import 'dart:io';
 
+import 'package:flutter/foundation.dart';
+
 import 'package:path/path.dart' as path;
 import 'package:path_provider/path_provider.dart';
 
@@ -57,10 +59,56 @@ class DiagnosticLogger {
   static String? _cachedDir;
   static bool? _cachedEnabled;
 
+  /// Serializes every write. **This is not defensive; it is load-bearing.**
+  ///
+  /// `File.writeAsString(mode: append)` is NOT a single atomic append -- it
+  /// opens, writes and closes, and concurrent callers clobber one another.
+  /// Measured on this machine (Phase 7 review, Sprint 72): ten concurrent
+  /// appends produced THREE lines; two concurrent appends lost one entirely.
+  ///
+  /// That is reachable in production and is the worst possible failure for this
+  /// class. Every call site uses `unawaited(...)`, so the futures are
+  /// explicitly left to overlap -- and `generic_imap_adapter._parseUids` fires
+  /// one per dropped message inside a `for` loop, so a batch with twenty bad
+  /// ids launches twenty overlapping appends in a single synchronous pass.
+  ///
+  /// **The irony is the point**: this class exists because F232 could not be
+  /// diagnosed, and without this chain it would silently drop the very failure
+  /// records it was built to preserve -- sending the next investigation down
+  /// the same blind alley.
+  ///
+  /// A single-slot future chain is enough: each write waits for the previous
+  /// one. No package, no lock file.
+  static Future<void> _writeTail = Future<void>.value();
+
+  /// Drop both caches so the next call re-reads settings.
+  ///
+  /// **Call this whenever a setting this class depends on changes.** That means
+  /// the diagnostic-log toggle AND the CSV export directory, because
+  /// [resolveLogDir] prefers the user-chosen export directory.
+  ///
+  /// Phase 7 review, Sprint 72, two findings that share this one fix:
+  ///   - the Settings toggle called `debugSetEnabled(null)` to clear the
+  ///     enabled cache. It worked, but `debug*` is this repo's convention for a
+  ///     test-only seam (`gmail_api_adapter.dart:56`: *"production code never
+  ///     calls this"*), so a future reader who trusts that convention would
+  ///     guard or delete it and silently break the toggle;
+  ///   - `_cachedDir` was never invalidated at all. Changing the CSV export
+  ///     directory left diagnostics writing to the OLD location for the rest of
+  ///     the session -- and `totalBytes`/`deleteAll` then reported and cleared
+  ///     the stale directory, so "Delete logs" would claim success while the
+  ///     files the user was looking at stayed put.
+  static void invalidateCache() {
+    _cachedEnabled = null;
+    _cachedDir = null;
+  }
+
   /// Test seam: force the enabled state without touching the database.
+  @visibleForTesting
   static void debugSetEnabled(bool? enabled) => _cachedEnabled = enabled;
 
   /// Test seam: force the directory, bypassing `path_provider`.
+  @visibleForTesting
   static void debugSetDir(String? dir) => _cachedDir = dir;
 
   /// Resolve the directory the log is written to.
@@ -125,13 +173,25 @@ class DiagnosticLogger {
     try {
       if (!await _enabled()) return;
 
-      final file = await _currentFile();
-      await file.parent.create(recursive: true);
-      await _rotateIfNeeded(file);
-
+      // Timestamp BEFORE queueing, so the recorded time is when the event
+      // happened rather than when its turn in the queue came up.
       final line = '[${DateTime.now().toIso8601String()}] '
           '[$kind] [$context] $detail\n';
-      await file.writeAsString(line, mode: FileMode.append);
+
+      // Chain onto the tail. `.then` after a `catchError` so one failed write
+      // cannot poison every later one -- a broken chain would silently stop
+      // all logging, which is the same class of defect as the clobbering.
+      final queued = _writeTail.then((_) async {
+        final file = await _currentFile();
+        await file.parent.create(recursive: true);
+        await _rotateIfNeeded(file);
+        await file.writeAsString(line, mode: FileMode.append);
+      }).catchError((Object _) {
+        // Swallow so the chain survives; the caller already treats logging as
+        // best-effort.
+      });
+      _writeTail = queued;
+      await queued;
     } catch (_) {
       // Intentionally silent.
     }
@@ -193,9 +253,29 @@ class DiagnosticLogger {
     final dir = Directory(path.dirname(file.path));
     final rolls = <File>[];
     await for (final entity in dir.list()) {
-      if (entity is File && entity.path.endsWith('.bak')) rolls.add(entity);
+      // Filter with the same predicate totalBytes/deleteAll use. The old
+      // check took EVERY .bak in the directory; nothing else writes one today,
+      // so this was latent rather than live -- but the inconsistency is the
+      // kind that becomes real the moment something else does.
+      if (entity is File && _isDiagnosticFile(entity.path)) rolls.add(entity);
     }
-    rolls.sort((a, b) => b.path.compareTo(a.path));
+    // Sort by the TRAILING TIMESTAMP, not the whole path.
+    //
+    // Phase 7 review, Sprint 72: the old `b.path.compareTo(a.path)` compared
+    // whole filenames, which begin with the base name. In `keepAll` mode that
+    // base name embeds the DAY, so several base names share the directory and
+    // the day segment dominates -- which deleted the NEWEST roll while keeping
+    // one six hours older. Confined to the mode a user opts into specifically
+    // to retain MORE data, which makes it worse rather than obscure.
+    //
+    // The stamp is ISO-8601 with ':' replaced by '-', so it IS lexicographic
+    // once isolated.
+    String stampOf(File f) {
+      final m = RegExp(r'\.([0-9T:-]+)\.bak$').firstMatch(f.path);
+      return m != null ? m.group(1)! : '';
+    }
+
+    rolls.sort((a, b) => stampOf(b).compareTo(stampOf(a)));
     for (var i = rotatedFilesKept; i < rolls.length; i++) {
       try {
         await rolls[i].delete();

@@ -1,5 +1,6 @@
 import 'dart:async' show unawaited;
 import 'dart:io';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
@@ -123,6 +124,19 @@ class ReProcessOutcome {
   ///
   /// Deliberately NOT true for "nothing to do": a toast that says the mailbox
   /// was changed when no action ran is the same class of lie this card closes.
+  ///
+  /// **No production caller, and that is deliberate -- do not "simplify"
+  /// `_showActionOutcome` to use it.** (Phase 7 review, Sprint 72.) That method
+  /// branches `skippedReadOnly` -> `anyFailed` -> else, so its success branch
+  /// is ALSO reached by `nothingToDo()`, where showing the progress suffix is
+  /// correct: the rule was created, no mailbox action was needed, and the
+  /// message makes no mailbox claim. Swapping in `allSucceeded` would exclude
+  /// that case and suppress a legitimate message.
+  ///
+  /// It is kept because it pins the SEMANTIC the tests assert -- that
+  /// `attempted == 0` is not success -- which is the distinction this whole
+  /// card exists to protect.
+  @visibleForTesting
   bool get allSucceeded => attempted > 0 && failed == 0;
 
   bool get anyFailed => failed > 0;

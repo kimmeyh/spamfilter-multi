@@ -48,10 +48,17 @@ void main() {
     });
 
     test('the logger cache is reset when the toggle changes', () {
-      expect(source.contains('DiagnosticLogger.debugSetEnabled(null)'), isTrue,
-          reason: 'the logger caches the enabled flag; without a reset it '
-              'would keep using the old value for the rest of the session -- '
-              'the user turns it on and nothing is written');
+      // Phase 7 review: this used to assert `debugSetEnabled(null)`. It worked,
+      // but `debug*` is this repo's convention for a TEST-ONLY seam
+      // (gmail_api_adapter.dart:56 -- "production code never calls this"), so a
+      // future reader trusting that convention would guard it away and silently
+      // break the toggle. `invalidateCache()` is the production API, and it
+      // also clears the DIRECTORY cache, which was never invalidated at all.
+      expect(source.contains('DiagnosticLogger.invalidateCache()'), isTrue,
+          reason: 'the logger caches the enabled flag AND the directory; '
+              'without a reset the user turns it on and nothing is written');
+      expect(source.contains('DiagnosticLogger.debugSetEnabled('), isFalse,
+          reason: 'production must not call a debug seam');
     });
 
     test('the retention flag is offered', () {
@@ -76,10 +83,21 @@ void main() {
     });
 
     test('the delete button is disabled when there is nothing to delete', () {
-      expect(source.contains('_diagnosticLogBytes == 0\n                      ? null'),
-          isTrue,
+      // Now reads the FutureBuilder's snapshot rather than a cached field --
+      // Phase 7 review found the cached value went stale, so a user with real
+      // logs could face a DISABLED delete button. Asserting the guard exists
+      // rather than its exact spelling.
+      expect(source.contains('onPressed: bytes == 0'), isTrue,
           reason: 'an enabled button that does nothing teaches the user to '
               'distrust the control');
+    });
+
+    test('the size is read live, not from a cached field', () {
+      expect(source.contains("Key('diagnostic_log_size')"), isTrue);
+      expect(source.contains('FutureBuilder<int>'), isTrue,
+          reason: 'the cached value went stale after a background failure '
+              'wrote logs, leaving Delete disabled with logs present -- a '
+              'non-functional control, not cosmetic staleness');
     });
 
     test('retention and delete are hidden until logging is ON', () {

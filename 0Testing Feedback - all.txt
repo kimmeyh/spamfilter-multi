@@ -7,7 +7,7 @@ Manual Validation complete
 Sprint 7n Manual Validation Feedback 
 
 ---------------------------------------------------------------------------------------------------------
-Sprint 72 Manual Validation Feedback 
+Sprint 71 Manual Validation Feedback 
 
 A. F232 - windows app [Image #199] [Image #200] nothing deleted. Added block rule. Hmmmm should it be deleting emails if Settings > Manual > Scan
   mode is readonly? or if Settings > Background > Scan mode is readonly OR if either OR only if both?  I am thinking that if Manual > Scan mode is

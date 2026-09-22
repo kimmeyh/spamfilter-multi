@@ -788,8 +788,11 @@ class _SettingsScreenState extends State<SettingsScreen> with SingleTickerProvid
           onChanged: (value) async {
             await _settingsStore.setDiagnosticLogEnabled(value);
             // The logger caches this; without the reset it would keep using
-            // the old value for the rest of the session.
-            DiagnosticLogger.debugSetEnabled(null);
+            // the old value for the rest of the session. Uses the real
+            // `invalidateCache` rather than the `debug*` test seam -- Phase 7
+            // review: `debug*` is this repo's convention for test-only, so
+            // production calling it invites a future reader to guard it away.
+            DiagnosticLogger.invalidateCache();
             final bytes = await DiagnosticLogger.totalBytes();
             if (mounted) {
               setState(() {
@@ -820,42 +823,63 @@ class _SettingsScreenState extends State<SettingsScreen> with SingleTickerProvid
           // "if the user can easily get to them to delete the files". Showing
           // the size next to the action is the honest half -- the user can see
           // what they are carrying before deciding.
-          Padding(
-            padding: const EdgeInsets.only(top: 4, bottom: 4),
-            child: Row(
-              children: [
-                Expanded(
-                  child: Text(
-                    _diagnosticLogBytes == 0
-                        ? 'No diagnostic logs stored.'
-                        : 'Diagnostic logs: '
-                            '${(_diagnosticLogBytes / 1024).toStringAsFixed(1)} KB',
-                    style: Theme.of(context).textTheme.bodySmall,
-                  ),
+          //
+          // **FutureBuilder rather than a cached field** (Phase 7 review,
+          // Sprint 72). The first version loaded the size once in
+          // `_loadSettings` and refreshed it only on the toggle and after a
+          // delete. So: open Settings, enable logging, let a background scan
+          // fail, come back to the still-mounted tab -- the size reads its
+          // pre-failure value, and if that was 0 the **Delete button stays
+          // DISABLED**. The user cannot delete logs that demonstrably exist.
+          // That is a non-functional control, not cosmetic staleness, which is
+          // what lifts it above a nitpick. A FutureBuilder re-reads on every
+          // rebuild and cannot drift however the user reaches this row.
+          FutureBuilder<int>(
+            key: const Key('diagnostic_log_size'),
+            future: DiagnosticLogger.totalBytes(),
+            initialData: _diagnosticLogBytes,
+            builder: (context, snapshot) {
+              final bytes = snapshot.data ?? 0;
+              return Padding(
+                padding: const EdgeInsets.only(top: 4, bottom: 4),
+                child: Row(
+                  children: [
+                    Expanded(
+                      child: Text(
+                        bytes == 0
+                            ? 'No diagnostic logs stored.'
+                            : 'Diagnostic logs: '
+                                '${(bytes / 1024).toStringAsFixed(1)} KB',
+                        style: Theme.of(context).textTheme.bodySmall,
+                      ),
+                    ),
+                    TextButton.icon(
+                      key: const Key('diagnostic_log_delete'),
+                      icon: const Icon(Icons.delete_outline, size: 18),
+                      label: const Text('Delete logs'),
+                      onPressed: bytes == 0
+                          ? null
+                          : () async {
+                              final removed =
+                                  await DiagnosticLogger.deleteAll();
+                              final now = await DiagnosticLogger.totalBytes();
+                              if (!mounted) return;
+                              setState(() => _diagnosticLogBytes = now);
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                SnackBar(
+                                  content: Text(removed == 1
+                                      ? 'Deleted 1 diagnostic log file.'
+                                      : 'Deleted $removed diagnostic log '
+                                          'files.'),
+                                  behavior: SnackBarBehavior.floating,
+                                ),
+                              );
+                            },
+                    ),
+                  ],
                 ),
-                TextButton.icon(
-                  key: const Key('diagnostic_log_delete'),
-                  icon: const Icon(Icons.delete_outline, size: 18),
-                  label: const Text('Delete logs'),
-                  onPressed: _diagnosticLogBytes == 0
-                      ? null
-                      : () async {
-                          final removed = await DiagnosticLogger.deleteAll();
-                          final bytes = await DiagnosticLogger.totalBytes();
-                          if (!mounted) return;
-                          setState(() => _diagnosticLogBytes = bytes);
-                          ScaffoldMessenger.of(context).showSnackBar(
-                            SnackBar(
-                              content: Text(removed == 1
-                                  ? 'Deleted 1 diagnostic log file.'
-                                  : 'Deleted $removed diagnostic log files.'),
-                              behavior: SnackBarBehavior.floating,
-                            ),
-                          );
-                        },
-                ),
-              ],
-            ),
+              );
+            },
           ),
         ],
         const SizedBox(height: 12),

@@ -1,7 +1,39 @@
-# Sprint 71 Plan -- STUB (not yet planned, not yet approved)
+# Sprint 71 Plan -- SUPERSEDED BY SPRINT 72
 
-**Status**: PRE-KICKOFF. Scope is NOT selected. This stub exists to carry forward the items
-Sprint 70 identified, so they are not lost between sprints.
+**Status**: SUPERSEDED. Sprint 71 was never separately planned or executed. The work its stub
+carried forward was folded into **Sprint 72**, which ran entirely on THIS branch
+(`feature/20260919_Sprint_71`) because Harold approved putting its commits into this branch's PR
+(#420). The branch name is the only trace of Sprint 71.
+
+**The live record is `SPRINT_72_PLAN.md`** -- plan, task cards, completion status and Phase 5
+evidence all live there.
+
+## Phase 5 evidence (recorded here because gates key off the BRANCH name)
+
+The auto-advance hook derives the sprint number from the branch, so it looks for
+`SPRINT_71_PLAN.md` while the actual evidence is in `SPRINT_72_PLAN.md`. Rather than let a gate
+read a file that does not describe the work, the three markers are restated here. **The detail
+behind each is in `SPRINT_72_PLAN.md` under "Phase 5 evidence"**; these lines are the index, not a
+second copy of the truth.
+
+- **5.1.1 automated code review**: 2026-09-22, `pr-review-toolkit:code-reviewer` over the sprint
+  diff. 5 findings -- 2 CRITICAL (an unintended deletion path from screen load; a scan-mode
+  resolver that leaked across accounts and skipped a tier) and 3 IMPORTANT. ALL FIXED, none
+  deferred. A second full-PR review was requested on PR #420 at Phase 7.7.
+- **5.1.2 F-PRECHECK**: 2026-09-22, all six classes RUN against the diff rather than read. Clean on
+  1, 2, 4 and 5; class 3 clean mechanically with three comment defects caught by the 5.1.1 review;
+  class 6 found three bare catches in the new logger, now justified in writing.
+- **5.1.5 WinWright sweep**: 2026-09-22, run TWICE against fresh release builds -- before and after
+  the review fixes. Both 2/2 scripts, 29/29 steps, no DB drift.
+
+---
+
+**Original stub content below, kept for the record.**
+
+---
+
+**Status (original)**: PRE-KICKOFF. Scope was NOT selected. This stub existed to carry forward the
+items Sprint 70 identified, so they were not lost between sprints.
 
 **Branch**: `feature/20260919_Sprint_71` (created from the Sprint 70 branch to carry `a7a8297`,
 committed after PR #418 merged)

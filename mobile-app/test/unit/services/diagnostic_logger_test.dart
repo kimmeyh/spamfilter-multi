@@ -166,6 +166,95 @@ void main() {
     });
   });
 
+  group('F233: CONCURRENT writes must not destroy each other', () {
+    // Phase 7 review CRITICAL, Sprint 72. `File.writeAsString(mode:
+    // append)` is NOT an atomic append -- it opens, writes and closes, so
+    // concurrent callers clobber one another. MEASURED before the fix, on
+    // this machine: ten concurrent appends produced THREE lines, and two
+    // produced one.
+    //
+    // Reachable in production. EVERY call site uses `unawaited(...)`, so the
+    // futures are explicitly left to overlap, and
+    // `generic_imap_adapter._parseUids` fires one per dropped message inside
+    // a `for` loop -- twenty bad ids means twenty overlapping appends in one
+    // synchronous pass.
+    //
+    // The existing tests missed this because each awaits a SINGLE call.
+    // Their own IMP-1 sentence named MTP retrieval and call-site firing as
+    // the gaps; it did not name concurrency, which is the gap that mattered.
+
+    test('THE BUG: two simultaneous failures both survive', () async {
+      // The delete-batch / move-batch pair from _reProcessAffectedEmails --
+      // the exact shape that lost a record before the fix.
+      await Future.wait([
+        DiagnosticLogger.failure(
+          context: 'F38/delete-batch',
+          kind: DiagnosticLogger.kindServerRefused,
+          reason: 'DELETE-MARKER',
+        ),
+        DiagnosticLogger.failure(
+          context: 'F38/move-batch',
+          kind: DiagnosticLogger.kindServerRefused,
+          reason: 'MOVE-MARKER',
+        ),
+      ]);
+
+      final text = await readAll();
+      expect(text, contains('DELETE-MARKER'),
+          reason: 'THE ASSERTION THAT WAS MISSING -- this record was reduced '
+              'to a single character before the fix');
+      expect(text, contains('MOVE-MARKER'));
+    });
+
+    test('a burst of twenty keeps every record', () async {
+      await Future.wait(List.generate(
+        20,
+        (i) => DiagnosticLogger.log(
+          kind: DiagnosticLogger.kindSkipped,
+          context: 'IMAP/_parseUids',
+          detail: 'BURST-$i',
+        ),
+      ));
+
+      final text = await readAll();
+      final count =
+          text.split('\n').where((l) => l.contains('BURST-')).length;
+      expect(count, 20,
+          reason: 'ten concurrent appends produced three lines before the '
+              'fix');
+      for (var i = 0; i < 20; i++) {
+        expect(text, contains('BURST-$i'),
+            reason: 'record $i was lost');
+      }
+    });
+
+    test('every line stays intact -- no torn records', () async {
+      // Losing a line is one failure mode; a HALF-WRITTEN line is worse,
+      // because it reads as real data.
+      await Future.wait(List.generate(
+        15,
+        (i) => DiagnosticLogger.failure(
+          context: 'ctx-$i',
+          kind: DiagnosticLogger.kindException,
+          reason: 'x' * 400,
+          attempted: i,
+          failed: i,
+        ),
+      ));
+
+      final text = await readAll();
+      final lines =
+          text.split('\n').where((l) => l.trim().isNotEmpty).toList();
+      expect(lines, hasLength(15));
+      for (final line in lines) {
+        expect(line.startsWith('['), isTrue,
+            reason: 'a line not starting with a timestamp is a torn record');
+        expect(line, contains('attempted='),
+            reason: 'every record must carry its full payload');
+      }
+    });
+  });
+
   group('F233: rotation bounds a permanently-enabled log', () {
     test('a file past the ceiling is rolled over', () async {
       // Harold runs with this enabled permanently, so an unbounded append is a
