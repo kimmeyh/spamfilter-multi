@@ -397,6 +397,25 @@ class EmailScanner {
           var folderCount = 0;
           Future<void> batchSink(List<EmailMessage> batch) async {
             if (batch.isEmpty) return;
+            // F224 (Sprint 73): THE cooperative cancellation check point.
+            //
+            // This one place covers every platform. The IMAP path streams
+            // batches in here via `onBatch`; the list-returning paths (Gmail,
+            // demo, mock) are fed through the same sink in m=20 slices just
+            // below. So no cancellation token needs threading through the
+            // adapters -- one check at the funnel is complete coverage, and
+            // worst-case cancel latency is one batch.
+            //
+            // THROWING is the design, not a detail: scanInbox's `finally`
+            // already releases the coordinator lease and disconnects the IMAP
+            // session on every path including this one. Signalling any other
+            // way would need a second teardown path and risks the Sprint 61
+            // leak (lease freed while the socket is still open).
+            if (ScanCoordinator.instance.isCancelRequested) {
+              AppLogger.scan('F224: cancellation observed at a batch boundary '
+                  '-- stopping the scan');
+              throw const ScanCancelledException();
+            }
             folderCount += batch.length;
             scanProvider.incrementFoundEmails(batch.length);
             scanProvider.updateProgress(
@@ -473,6 +492,19 @@ class EmailScanner {
               message: 'No emails found in "$folderName", continuing...',
             );
           }
+        } on ScanCancelledException {
+          // F224 (Sprint 73): a cancel must NOT be absorbed here.
+          //
+          // This per-folder catch exists so one bad folder does not kill the
+          // whole scan -- it logs, records an error, and CONTINUES to the next
+          // folder. That is right for a fetch failure and catastrophic for a
+          // cancellation: a `catch (e)` here would swallow the user's cancel,
+          // count it as a folder error, and carry on scanning the remaining
+          // folders. The button would appear to do nothing.
+          //
+          // Rethrow so it reaches scanInbox's outer handler, where the
+          // `finally` releases the lease and disconnects the session.
+          rethrow;
         } catch (e, st) {
           AppLogger.error('Step 4: EXCEPTION fetching folder "$folderName"', error: e, stackTrace: st);
           if (isLiveScan) {
@@ -944,6 +976,26 @@ class EmailScanner {
           settingsStore: _settingsStore,
         );
       }
+    } on ScanCancelledException {
+      // F224 (Sprint 73): the user asked for this, so it is NOT a failure.
+      //
+      // Routing it through errorScan below would prefix it "Scan failed: " and
+      // file the row under `error` next to genuine mail-server problems. The
+      // scan is instead recorded as interrupted with its PARTIAL COUNTS INTACT
+      // (AC-4) -- a scan cancelled after 200 emails really did check 200, and
+      // saying otherwise in either direction is a lie.
+      //
+      // Deliberately does NOT rethrow: a cancel is a normal outcome, and the
+      // callers' `.timeout()` wrappers and error surfaces have nothing to add.
+      // The `finally` below still runs -- releasing the lease and closing the
+      // IMAP session -- because that is what `finally` does. That is the whole
+      // reason cancellation is expressed as a throw.
+      AppLogger.scan('SCAN CANCELLED by the user');
+      if (isLiveScan) {
+        await LiveScanLogger.log(
+            'SCAN CANCELLED accountId=${Redact.accountId(accountId)}');
+      }
+      await scanProvider.cancelScan();
     } catch (e, st) {
       // Handle scan error
       AppLogger.error('SCAN FAILED with exception', error: e, stackTrace: st);

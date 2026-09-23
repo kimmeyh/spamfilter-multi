@@ -35,6 +35,26 @@ import 'dart:collection';
 import 'package:flutter/foundation.dart' show visibleForTesting;
 import 'package:logger/logger.dart';
 
+/// F224 (Sprint 73): thrown out of a scan the user cancelled.
+///
+/// **Why an exception and not a flag the scanner returns.** `scanInbox`'s
+/// `finally` already releases the coordinator lease AND disconnects the IMAP
+/// session on every path, including a throw. Cancelling by THROWING therefore
+/// reuses the one teardown that is known to be correct, instead of adding a
+/// second path that would have to get it right again.
+///
+/// The alternative -- releasing the lease out-of-band while the scan's own
+/// stack still holds a live socket -- is exactly the Sprint 61 failure this
+/// coordinator exists to prevent: the next scan acquires immediately and opens
+/// a second session against a per-account cap. **Cancellation must never take
+/// that route.**
+class ScanCancelledException implements Exception {
+  const ScanCancelledException();
+
+  @override
+  String toString() => 'Scan cancelled by the user';
+}
+
 /// What is currently scanning, for detection and diagnostics.
 class ActiveScanInfo {
   ActiveScanInfo({
@@ -46,6 +66,10 @@ class ActiveScanInfo {
   final String scanType;
   final String accountId;
   final DateTime startedAt;
+
+  /// F224: set by [ScanCoordinator.requestCancel]. The scan itself polls this
+  /// and throws; nothing here tears anything down.
+  bool cancelRequested = false;
 }
 
 /// A granted right to scan. Pass back to [ScanCoordinator.release] exactly
@@ -146,6 +170,36 @@ class ScanCoordinator {
       rethrow;
     }
   }
+
+  /// F224 (Sprint 73): ask the ACTIVE scan to stop at its next check point.
+  ///
+  /// **This does not release the lease and must not.** It only sets a flag.
+  /// The running scan observes it, throws [ScanCancelledException], and its
+  /// own `finally` releases the lease and disconnects the session -- the same
+  /// teardown every other exit path uses. Force-releasing here would free the
+  /// lease while the scan still held its socket, which is the session leak
+  /// F224's acceptance criteria forbid.
+  ///
+  /// Scoped to [accountId] so cancelling one account's scan can never stop
+  /// another's (the card's account-scoping NFR). Returns true when a matching
+  /// active scan was asked to stop.
+  bool requestCancel({required String accountId}) {
+    final holder = _active;
+    if (holder == null) return false;
+    if (holder.accountId != accountId) {
+      _logger.w('ScanCoordinator: cancel ignored -- the active scan belongs '
+          'to a different account');
+      return false;
+    }
+    holder.cancelRequested = true;
+    _logger.i('ScanCoordinator: cancel requested for the active '
+        '${holder.scanType} scan');
+    return true;
+  }
+
+  /// True when the active scan has been asked to stop. Read by the scanner at
+  /// its check point; false when nothing is active.
+  bool get isCancelRequested => _active?.cancelRequested ?? false;
 
   /// Release [lease] and hand the lease to the next FIFO waiter, if any.
   /// Idempotent: releasing twice (or releasing a stale lease after the

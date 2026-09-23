@@ -516,6 +516,22 @@ cause as F232 mechanism B. Recorded as the overlap the card asked about, resolve
 **Revised estimate**: unchanged at 150-300m. R-1 removed the architecture risk rather than the
 work; the UI control and its tests are the remaining cost.
 
+**R-3 CORRECTED after checking both named surfaces.** The card named "the scan results screen and
+the Manual Scan popup". Opening them changed the answer twice:
+
+- The **"Manual Scan popup"** is an AppBar icon whose action (`StandardAppBarActions
+  .openManualScan`) NAVIGATES to `ScanProgressScreen`. It needs no control of its own -- the user
+  who taps it lands on the screen where Cancel lives.
+- The **results screen** DOES need one, for a reason the card did not name: "Scan Again" calls
+  `startRealScan(useReplacement: true)`, so the scan runs with the user still on the results
+  screen and `ScanProgressScreen` is never shown on that path. It is also the way testers actually
+  restart scans -- the same navigation quirk F220 had to account for in Sprint 70. **A control on
+  the scan screen alone would have missed the commonest route to a long scan.**
+
+On the results screen the SAME button swaps to Cancel while scanning, rather than adding a second:
+"Scan Again" is disabled during a scan anyway, so a separate control would be a permanently-dead
+widget in that row.
+
 ---
 
 ## Task 5 -- F229: a version visible on the first page of EVERY screen (Priority 12)
@@ -737,19 +753,29 @@ produces must state parity then.
 | 0 | Version bump 0.16.0+7 | **DONE** -- both version gates + release-notes gate green |
 | 1 | F235 Doze scheduling | **DONE** -- 13 tests, mutation-verified, Android APK builds |
 | 2 | F232 mechanism B | pending -- needs Harold's reproduction with logging ON |
-| 3 | F234 read-only preview | pending |
-| 4 | F224 + F207 cancel | pending |
+| 3 | F234 read-only preview | **DONE** -- 17 tests; a mutation SURVIVED the first test file and was closed |
+| 4 | F224 + F207 cancel | **DONE** -- 20 tests, 2 mutations; R-1 cleared Class-1, R-2 falsified the card's 3 causes |
 | 5 | F229 version everywhere | pending |
 | 6 | F226 sweep interference | **DONE** -- warning + one visible retry |
 | 7 | F205 classify the errors | pending -- needs Harold's device run |
 
-**Suite 2,233 -> 2,247. Analyzer clean.**
+**Suite 2,233 -> 2,283. Analyzer clean.**
 
 **F235 cost more than the 90-180m estimate**, and the reason is worth recording for the next
 native card: the app had NO MethodChannel at all, so the work included building the first native
 bridge (MainActivity was a bare 5-line class), a Kotlin alarm scheduler, two BroadcastReceivers, a
 manifest change and a gradle dependency. The estimate was derived from step-types that assumed an
 existing bridge. **Actuals go in CODING_VELOCITY.md at completion.**
+
+**Task 4 came in UNDER the 150-300m estimate, and the reason is the opposite of Task 1's.** The
+card time-boxed an unsolved design problem; the design turned out to be already paid for. Reading
+`scanInbox`'s `finally` -- which releases the lease AND disconnects on every path, including a
+throw -- collapsed "thread a cancellation token through the scanner" into "throw at one funnel".
+**The estimate priced a token-threading exercise that the existing teardown made unnecessary.**
+
+The cost that DID land was not in the card at all: the per-folder `catch (e, st)` would have
+swallowed the cancellation and continued scanning the remaining folders. Found by asking what the
+change does to its NEIGHBOURS, not by a test -- every test written at that moment passed.
 
 ## Sprint summary
 

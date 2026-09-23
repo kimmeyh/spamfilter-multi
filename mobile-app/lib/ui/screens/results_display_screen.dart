@@ -1052,7 +1052,32 @@ class _ResultsDisplayScreenState extends State<ResultsDisplayScreen> {
                         ),
                         const SizedBox(width: 12),
                         Expanded(
-                          child: ElevatedButton.icon(
+                          // F224 (Sprint 73): the SAME button becomes Cancel
+                          // while the scan it started is running.
+                          //
+                          // "Scan Again" uses useReplacement: true, so the scan
+                          // runs with the user still on THIS screen -- the
+                          // ScanProgressScreen where the Cancel control lives is
+                          // never shown on this path, and it is the way testers
+                          // actually restart scans (the same navigation quirk
+                          // F220 had to account for). Without this, the most
+                          // common route to a long scan has no way out.
+                          //
+                          // One button rather than two: while scanning, "Scan
+                          // Again" is disabled anyway, so a second control would
+                          // add a permanently-dead widget to the row.
+                          child: scanProvider.status == ScanStatus.scanning
+                              ? ElevatedButton.icon(
+                                  onPressed: () => _cancelRunningScan(
+                                      context, scanProvider),
+                                  icon: const Icon(Icons.stop_circle_outlined),
+                                  label: const Text('Cancel Scan'),
+                                  style: ElevatedButton.styleFrom(
+                                    backgroundColor: Colors.orange.shade800,
+                                    foregroundColor: Colors.white,
+                                  ),
+                                )
+                              : ElevatedButton.icon(
                             onPressed: () {
                               // Testing feedback (Sprint 57): "Scan Again"
                               // used to return to the "Ready to Scan" screen,
@@ -3531,6 +3556,30 @@ class _ResultsDisplayScreenState extends State<ResultsDisplayScreen> {
   ///
   /// F232 is about a rule the user just CREATED being applied. It was never
   /// about acting on screen load, and this parameter keeps the two apart.
+  /// F224 (Sprint 73): stop the scan started by "Scan Again" from this screen.
+  ///
+  /// Same contract as the scan screen's control, and deliberately the same
+  /// shape: raise the coordinator's flag and return. The running scan observes
+  /// it at its next batch boundary, throws, and its own `finally` releases the
+  /// lease and closes the IMAP session. Nothing is torn down from here -- doing
+  /// so would free the lease while the socket is still open, which is the
+  /// session leak this design exists to avoid.
+  void _cancelRunningScan(
+      BuildContext context, EmailScanProvider scanProvider) {
+    final requested =
+        ScanCoordinator.instance.requestCancel(accountId: widget.accountId);
+    final messenger = ScaffoldMessenger.of(context);
+    messenger.hideCurrentSnackBar();
+    messenger.showSnackBar(
+      SnackBar(
+        content: Text(requested
+            ? 'Stopping the scan. It will finish the emails it already '
+                'fetched, then stop.'
+            : 'That scan has already finished.'),
+      ),
+    );
+  }
+
   Future<ReProcessOutcome> _reProcessAffectedEmails({
     bool userInitiated = true,
   }) async {

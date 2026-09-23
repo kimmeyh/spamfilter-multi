@@ -434,6 +434,44 @@ class ScanResultStore {
     }
   }
 
+  /// F224 (Sprint 73): mark a scan the user CANCELLED.
+  ///
+  /// Reuses the existing `interrupted` status rather than inventing a new one.
+  /// That is deliberate and it is not laziness: `interrupted` already means
+  /// "started, never finished, not a failure of the mail server", which is
+  /// exactly a cancel. Adding a `cancelled` status would change the meaning of
+  /// a STORED value with existing readers (Scan History, the reconciler) --
+  /// a Class-1 architecture decision for no user-visible gain.
+  ///
+  /// The counts already written by the scan are LEFT ALONE, which is what
+  /// makes the record honest (AC-4): a scan cancelled after 200 emails really
+  /// did process 200, and must not be reported as a completed scan of 200 nor
+  /// as a failure that did nothing.
+  Future<bool> markScanCancelled(int scanResultId) async {
+    try {
+      final db = await _databaseHelper.database;
+
+      final result = await db.update(
+        'scan_results',
+        {
+          'status': 'interrupted',
+          'error_message': 'Cancelled by the user before it finished',
+        },
+        where: 'id = ?',
+        whereArgs: [scanResultId],
+      );
+
+      final success = result > 0;
+      if (success) {
+        _logger.d('Marked scan $scanResultId as cancelled');
+      }
+      return success;
+    } catch (e) {
+      _logger.e('Failed to mark scan as cancelled: $e');
+      rethrow;
+    }
+  }
+
   /// F175 (Sprint 62): reconcile STALE `in_progress` rows -- scans whose
   /// process died without marking their row (LOW_MEMORY kill, force-stop,
   /// crash). Any `in_progress` row whose `started_at` is older than
