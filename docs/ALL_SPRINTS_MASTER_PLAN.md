@@ -186,7 +186,7 @@ All incomplete items in relative priority order. Priority in increments of 10; i
 
 ### Core App Quality
 
-**F202. Per-provider folder defaults -- overall default plus provider overrides for all four folder settings (~6-10h, fully analyzed + planned + tested) Priority 10 (NEW, Sprint 68 MV -- Harold; TARGET SPRINT 69)**
+**F202. Per-provider folder defaults -- overall default plus provider overrides for all four folder settings (~150-240m) Priority 10 (NEW, Sprint 68 MV -- Harold; TARGET SPRINT 69)**
 - Phase: Core App Quality
 - Platform: All (shared provider/adapter layer; ADR-0042 parity, no exception anticipated)
 - **Harold's requirement, 2026-09-09, verbatim intent**: "for all email providers we will need to
@@ -311,7 +311,7 @@ All incomplete items in relative priority order. Priority in increments of 10; i
 - Source: Harold, 2026-09-09, Sprint 68 Manual Validation. Explicitly deferred OUT of Sprint 68
   as a scope change surfaced at a natural break (Decision-Class Taxonomy, class 3).
 
-**F206. Diagnostic export as a PLATFORM CAPABILITY -- reset the counters, and get scan data off the device on every platform (~5-8h) Priority 14 (NEW, 2026-09-10 -- Harold; REFRAMED same day)**
+**F206. Diagnostic export as a PLATFORM CAPABILITY -- reset the counters, and get scan data off the device on every platform (~120-210m) Priority 14 (NEW, 2026-09-10 -- Harold; REFRAMED same day)**
 - Phase: Core App Quality
 - Platform: All -- **and the storage mechanism is a declared ADR-0042 platform exception**
 - **REFRAMED BY HAROLD, 2026-09-10**: *"Needs to be expanded as a platform feature, true for
@@ -454,7 +454,7 @@ step.
 **F233 DONE Sprint 72 (2026-09-22, PR #420, issue #421)** -- Diagnostic log shipped with its Settings UI -- toggle, retention flag, size and delete -- plus the header-only CSV export fix. Two defects caught in review: the UI was missing on first pass, and concurrent writes destroyed each other records (two simultaneous failures produced ONE line). Both fixed and mutation-verified.
 
 
-**F235. Make Android background scans actually fire in Doze (~4-8h) Priority 4 -- TARGETED FOR SPRINT 73 (NEW, 2026-09-22 -- Harold, after the Sprint 72 "is it the only way" search)**
+**F235. Make Android background scans actually fire in Doze (~90-180m) Priority 4 -- TARGETED FOR SPRINT 73 (NEW, 2026-09-22 -- Harold, after the Sprint 72 "is it the only way" search)**
 - Phase: Core / Android
 - Platform: **DECLARED ADR-0042 EXCEPTION -- Android only.** The OS behavior that differs is named:
   Android's Doze and App Standby defer background work, and Windows has no equivalent arbiter
@@ -520,7 +520,7 @@ step.
   No unit test can prove this, which R-4 makes especially important to validate after a reboot.
 - Source: Harold, 2026-09-22. Full research and the four options are recorded under [[F217]].
 
-**F234. Read-only as a PREVIEW mode -- record what WOULD have been deleted (~4-6h) Priority 8 (NEW, 2026-09-22 -- Harold, during Sprint 72 manual validation)**
+**F234. Read-only as a PREVIEW mode -- record what WOULD have been deleted (~90-150m) Priority 8 (NEW, 2026-09-22 -- Harold, during Sprint 72 manual validation)**
 - Phase: UX / Core
 - Platform: All (shared logic; especially valuable on Windows, which is configured read-only)
 - **Harold's idea, verbatim**: *"I am thinking that if Manual > Scan mode is readonly then add the
@@ -554,7 +554,7 @@ step.
 - Source: Harold, 2026-09-22, Sprint 72 manual validation step A. Related: [[F232]], [[F228]],
   [[F231]].
 
-**F232. Mechanism B -- a live re-process batch fails 9 of 9 on a healthy connection (~3-6h) Priority 6 (RE-SCOPED 2026-09-22: mechanism A SHIPPED in Sprint 72)**
+**F232. Mechanism B -- a live re-process batch fails 9 of 9 on a healthy connection (~60-120m) Priority 6 (RE-SCOPED 2026-09-22: mechanism A SHIPPED in Sprint 72)**
 - Phase: Bug Fix
 - Platform: All (shared code)
 - **HIGHEST priority of the Sprint 71 candidates.** The user is shown every signal of success --
@@ -739,7 +739,7 @@ step.
 **F231 DONE Sprint 72 (2026-09-22, PR #420, issue #425)** -- Outcomes are now recorded to a session activity list with a history control, so a missed or covered toast no longer loses the result. Investigation corrected the planned fix: the dialog is popped before the action runs, so the occlusion was auto-advance opening the NEXT dialog -- a margin change would have fixed nothing.
 
 
-**F229. Make the build identifiable on phone-width screens and in exports (~3-5h) Priority 12 (NEW, 2026-09-21 -- Harold, during the 0.15.2 Play verification)**
+**F229. Make the build identifiable on phone-width screens and in exports (~60-120m) Priority 12 (NEW, 2026-09-21 -- Harold, during the 0.15.2 Play verification)**
 - Phase: UX / Supportability
 - Platform: All -- the divergence is by WIDTH, not by OS, so it hits Android phones and a narrow
   Windows window alike.
@@ -780,7 +780,7 @@ step.
 **F228 DONE Sprint 72 (2026-09-22, PR #420, issue #423)** -- The per-action toast now derives its colour and wording from a returned ReProcessOutcome instead of a hardcoded success colour. The correct batch summary was deliberately left alone as the model for the fix.
 
 
-**F226. WinWright scripts fail intermittently when run back-to-back in one sweep (~2-4h) Priority 14 (NEW, 2026-09-18 -- found during the Sprint 70 5.1.5 sweep)**
+**F226. WinWright scripts fail intermittently when run back-to-back in one sweep (~60-120m) Priority 14 (NEW, 2026-09-18 -- found during the Sprint 70 5.1.5 sweep)**
 - Phase: Developer Tooling
 - Platform: Windows Desktop (WinWright is Windows-only)
 - **Symptom**: in a full sweep one of the two runnable scripts fails, and WHICH ONE SWAPS between
@@ -804,7 +804,7 @@ step.
   completion notes.
 
 
-**F224. Let the user CANCEL a running scan from where they actually are (~4-8h) Priority 6 (NEW, 2026-09-17 -- Harold, alongside the F221 timeout reversal)**
+**F224. Let the user CANCEL a running scan from where they actually are (~120-240m) Priority 6 (NEW, 2026-09-17 -- Harold, alongside the F221 timeout reversal)**
 - Phase: Core App Quality
 - Platform: All (shared UI and coordinator; ADR-0042 -- no platform exception expected)
 - **Why this exists.** Sprint 70 gave manual scans a 30-minute timeout because the old
@@ -837,7 +837,7 @@ step.
 - Source: Harold, 2026-09-17, in the same message that reversed the manual-scan no-timeout
   decision.
 
-**F222. Scan results are not ordered by received date (~1-3h) Priority 22 (NEW, 2026-09-17 -- Sean Jarvis, tester)**
+**F222. Scan results are not ordered by received date (~45-90m) Priority 22 (NEW, 2026-09-17 -- Sean Jarvis, tester)**
 - Phase: Core App Quality
 - Platform: All (shared results screen)
 - **Sean Jarvis, verbatim**: *"Not really a bug but emails should be ordered by incoming date to
@@ -993,7 +993,7 @@ deferred, option 1 then has evidence behind its justification rather than an ass
 **F217 SPLIT IN SPRINT 72 (2026-09-22).** The honest timing caveat SHIPPED (Settings > Background now states that Android may delay scans while idle). **The MECHANISM is now [[F235]]**, targeted for Sprint 73 -- it is not a separate candidate and must not be selected alongside F235. Issue #426 stays open until F235 lands.
 
 
-**F216. Supporting text is smaller than the text it should match -- Rule Tester, Safe Sender quick-add, AND the email action popup (~2-4h) Priority 32 (NEW, 2026-09-11, EXPANDED 2026-09-12 -- Harold)**
+**F216. Supporting text is smaller than the text it should match -- Rule Tester, Safe Sender quick-add, AND the email action popup (~45-90m) Priority 32 (NEW, 2026-09-11, EXPANDED 2026-09-12 -- Harold)**
 - Phase: Core App Quality
 - Platform: All (shared Flutter UI) -- observed on Windows dark mode
 - **Harold, 2026-09-11**, during Sprint 69 Manual Validation: *"Examples:...", "Enter a phrase...",
@@ -1073,7 +1073,7 @@ deferred, option 1 then has evidence behind its justification rather than an ass
 - Source: Harold, 2026-09-11, Sprint 69 Manual Validation, Windows dark mode. Two screenshots
   (Rule Tester with a Body Phrase rule, Safe Sender quick-add with an Exact Email rule).
 
-**F215. Wire the validation-screenshot folder into every process that handles Android screenshots (~1-2h) Priority 30 (NEW, 2026-09-11 -- Harold)**
+**F215. Wire the validation-screenshot folder into every process that handles Android screenshots (~30-60m) Priority 30 (NEW, 2026-09-11 -- Harold)**
 - Phase: Developer Workflow / Tooling
 - Platform: N/A (process and docs)
 - **Harold, 2026-09-11**: *"I would like to keep a history of them in the directory, but not in
@@ -1131,7 +1131,7 @@ deferred, option 1 then has evidence behind its justification rather than an ass
 - Source: Harold, 2026-09-11, after asking where validation screenshots were being stored and
   learning the answer was "nowhere durable" (corrected above: cached per session, not archived).
 
-**F214. Scan Range slider does not align with the controls above it -- left/right margins read as too wide (~1-2h) Priority 34 (NEW, 2026-09-11 -- reported by a TESTER)**
+**F214. Scan Range slider does not align with the controls above it -- left/right margins read as too wide (~20-45m) Priority 34 (NEW, 2026-09-11 -- reported by a TESTER)**
 - Phase: Core App Quality
 - Platform: All (shared Flutter UI) -- reported on Android
 - **Tester, via Harold 2026-09-11**: *"i think the l-r margins look wide between the slider and the
@@ -1166,7 +1166,7 @@ deferred, option 1 then has evidence behind its justification rather than an ass
 - Source: a closed tester via Harold, 2026-09-11. Filed at Harold's instruction during Sprint 69
   execution; deliberately NOT pulled into Sprint 69 scope.
 
-**F213. Migrate Android Gmail OAuth off Custom URI schemes to Google Identity Services (~4-8h) Priority 40 (NEW, 2026-09-11 -- found while fixing F211)**
+**F213. Migrate Android Gmail OAuth off Custom URI schemes to Google Identity Services (~180-300m) Priority 40 (NEW, 2026-09-11 -- found while fixing F211)**
 - Phase: Android / Google Play Store Readiness
 - Platform: Android only (Windows uses a loopback redirect and is unaffected)
 - **Not urgent. Filed so it is not rediscovered under pressure**, which is exactly how F211
@@ -1193,7 +1193,7 @@ deferred, option 1 then has evidence behind its justification rather than an ass
   developers.googleblog.com "Improving user safety in OAuth flows through new OAuth Custom URI
   scheme restrictions"; developers.google.com/identity/protocols/oauth2/native-app.
 
-**F207. A manual scan is refused while a background scan is "in progress" -- and the block appears to outlive the scan (~1-2h) Priority 20 (NEW, 2026-09-10 -- Harold, on the S24+)**
+**F207. A manual scan is refused while a background scan is "in progress" -- and the block appears to outlive the scan (~30-60m) Priority 20 (NEW, 2026-09-10 -- Harold, on the S24+)**
 - Phase: Core App Quality
 - Platform: Android (closed test); check Windows for the same lock
 - **Harold, 2026-09-10**: Gmail *"won't currently run a manual scan saying that a background
@@ -1224,7 +1224,7 @@ deferred, option 1 then has evidence behind its justification rather than an ass
 - Depends on: nothing. Overlaps F205 only in that both are closed-test observations.
 - Source: Harold, 2026-09-10, while gathering Android screenshots.
 
-**F205. Closed-test error rate: 53 errors in 3,833 scanned on the S24+ -- find out what they ARE (~1-2h investigation) Priority 18 (NEW, 2026-09-10 -- observed on the closed-test device)**
+**F205. Closed-test error rate: 53 errors in 3,833 scanned on the S24+ -- find out what they ARE (~30-60m) Priority 18 (NEW, 2026-09-10 -- observed on the closed-test device)**
 - Phase: Core App Quality
 - Platform: Android (closed test); check Windows for the same class
 - **NARROWED 2026-09-10 by Harold's per-account sweep, and this is the useful half**: he
@@ -1283,7 +1283,7 @@ deferred, option 1 then has evidence behind its justification rather than an ass
 - Depends on: access to the device log. No code change is implied until the cause is known.
 - Source: observed by Claude in Harold's 2026-09-10 S24+ screenshots.
 
-**F204. Gate the three Play requirements that are documented but not asserted (~2-3h) Priority 24 (NEW, 2026-09-10 -- Harold, from the pre-review-checks research)**
+**F204. Gate the three Play requirements that are documented but not asserted (~60-90m) Priority 24 (NEW, 2026-09-10 -- Harold, from the pre-review-checks research)**
 - Phase: Android / Google Play Store Readiness
 - Platform: Android
 - **Origin**: Harold asked whether Play's "quick checks" could be replicated locally so a
@@ -1354,7 +1354,7 @@ deferred, option 1 then has evidence behind its justification rather than an ass
   produces.
 - Source: Harold, 2026-09-10 -- *"target is not perfection, but as good as reasonably possible."*
 
-**F192. Custom IMAP Server support -- build the host-entry UI (~4-6h) Priority 32 (PLANNED FOR SPRINT 69 -- Harold, 2026-09-09, Sprint 68 scope selection; split from F191, genuinely unbuilt)**
+**F192. Custom IMAP Server support -- build the host-entry UI (~120-180m) Priority 32 (PLANNED FOR SPRINT 69 -- Harold, 2026-09-09, Sprint 68 scope selection; split from F191, genuinely unbuilt)**
 - Phase: Core App Quality
 - Platform: All
 - **Deliberately SEPARATE from F191, because it is not the same kind of work.** Yahoo and iCloud need a gate opened; Custom IMAP needs a feature built. `GenericIMAPAdapter.custom()` defaults `imapHost: ''` -- it expects the host, port and TLS flag to be supplied by a caller, and no caller supplies them: `grep -rn "imapHost" lib/ui/` returns ZERO matches. There is no screen anywhere that collects a server address, so flipping `imap` to phase 1 would ship a provider that cannot connect to anything.

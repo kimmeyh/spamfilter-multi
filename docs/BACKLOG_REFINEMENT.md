@@ -466,6 +466,19 @@ the summary view is scanning the full slate without cross-referencing. Example o
 - F165. Cross-device rules-DB sharing + hosted tier exploration (~half-day) Priority 30
 ```
 
+**EFFORT IS IN MINUTES, ALWAYS** (Harold, 2026-09-22, correcting a presented slate that used
+hours). `CODING_VELOCITY.md` Rule 1 says so explicitly -- *"Estimate in MINUTES, not hours. No
+1-hour floor."* -- and Rule 2 says to derive the number from the **Estimate Table by step-type**,
+not by converting an hour figure.
+
+**The drift was systemic, not a one-off**: at the Sprint 73 refinement, 41 active cards carried
+hour estimates against 2 in minutes. And Sprint 72's own Actuals Log shows why it matters -- EVERY
+hour-anchored estimate ran high, most by 2-3x (F217 estimated 240-480 and took ~70; F232 mechanism
+A estimated 240-360 and took ~90). An hour figure is not a minute figure divided by 60; it is a
+different and worse estimate, because hours invite rounding up to the nearest half-day.
+
+**When converting an existing card, re-derive from the step-types.** Do not multiply.
+
 **Item format**:
 ```markdown
 **<ID>. <Title> (~<effort>) Priority <N>**
