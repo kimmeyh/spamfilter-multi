@@ -852,7 +852,7 @@ produces must state parity then.
 | 6 | F226 sweep interference | **DONE** -- warning + one visible retry |
 | 7 | F205 classify the errors | pending -- needs Harold's device run |
 
-**Suite 2,233 -> 2,283. Analyzer clean.**
+**Suite 2,233 -> 2,305. Analyzer clean.** (2,283 after Task 4; +12 from the Phase 5.1 review fixes, +10 from F229.)
 
 **F235 cost more than the 90-180m estimate**, and the reason is worth recording for the next
 native card: the app had NO MethodChannel at all, so the work included building the first native
