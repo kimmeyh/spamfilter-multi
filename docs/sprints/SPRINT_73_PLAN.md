@@ -631,6 +631,54 @@ SIZE. A 10pt version string may fall below the large-text exemption and require 
 **Decision-class interrupts**: Class-2 -- R-2's chosen approach, especially option 1 (removing a
 control), needs Harold at approval or immediately after the deep dive.
 
+### THE DEEP DIVE (done) -- MEASURED, and it falsifies the card's own premise
+
+Rendered the real action row at 411px in a scratch probe and read the numbers, rather than
+reasoning from the Sprint 72 failure. **All figures below are measured, not estimated.**
+
+**The budget at 411px** (screen 411 - back button ~56 - minimum title ~72 = **283px** for actions):
+
+- Six icons as they stand: **288px used -> -5px free.** The row is ALREADY 5px over before a single
+  character of version text is added. This is why Sprint 72's short-form attempt overflowed by 18px,
+  and it confirms R-3 with a number rather than a memory.
+- Removing "Select Account": **240px used -> +43px free.**
+
+**The label widths** (measured with `TextPainter`):
+
+- `Version 9.9.9` at 14pt: **182px**
+- `V9.9.9` at 14pt: **84px**
+- `V9.9.9` at 10pt: **60px**
+- `V9.9.9 [DEV]` at 10pt: **120px**
+
+**THE FINDING: option 1 does not work either, and it was the card's strongest candidate.** Removing
+Select Account buys 43px. The shortest form that satisfies R-1 needs 60px, and R-4 requires the
+`[DEV]` suffix to survive, which needs **120px** -- nearly three times what removing an icon buys.
+
+**So the AppBar cannot hold this on a phone, by any of options 1-3.** Shrinking the font is 17px
+short even after deleting a control; wrapping the line inside a fixed-height AppBar does not
+create horizontal room; and the under-AppBar strip is blocked on two screens by an existing
+`TabBar`. **Arithmetic, not preference** -- and it means the trade Harold offered (give up an icon
+to buy space) does not actually purchase enough, so it should not be spent.
+
+**RECOMMENDATION: option 4, a body overlay**, and it is now the only option the measurements
+permit, not merely the cheapest:
+
+- It has no width competition at all, so `[DEV]` survives at phone width (R-4) and the font need
+  not be shrunk to 10pt -- which also sidesteps the `text_contrast_test` WCAG risk the card's own
+  Risk section flagged, because the font size band does not change.
+- **No control is removed**, so AC-4 does not arise and "Select Account" stays where it is.
+- 15 screens use `StandardAppBarActions.build` (16 call sites). The overlay attaches once via the
+  shared `Scaffold` body wrapper rather than editing 15 screens, keeping the change uniform.
+- Above 600px the existing AppBar label is UNCHANGED, so Windows screenshots keep the label exactly
+  where reviewers already look for it. The overlay is the phone-width path only.
+
+**Cost of the recommendation vs the card's estimate**: unchanged at 60-120m. The deep dive itself
+took under the 30-45m allowed.
+
+**BLOCKED ON HAROLD (Class-2, as the card declares).** The card makes R-2's approach his decision
+and option 1 was his own suggestion, so the measurement that rules it out is exactly the thing he
+should see before implementation starts. **Not implemented.**
+
 ---
 
 ## Task 6 -- F226: WinWright sweep flakiness (Priority 14)
@@ -755,7 +803,7 @@ produces must state parity then.
 | 2 | F232 mechanism B | pending -- needs Harold's reproduction with logging ON |
 | 3 | F234 read-only preview | **DONE** -- 17 tests; a mutation SURVIVED the first test file and was closed |
 | 4 | F224 + F207 cancel | **DONE** -- 20 tests, 2 mutations; R-1 cleared Class-1, R-2 falsified the card's 3 causes |
-| 5 | F229 version everywhere | pending |
+| 5 | F229 version everywhere | **DEEP DIVE DONE, implementation BLOCKED** -- measured; options 1-3 do not fit; recommend option 4; Class-2 decision for Harold |
 | 6 | F226 sweep interference | **DONE** -- warning + one visible retry |
 | 7 | F205 classify the errors | pending -- needs Harold's device run |
 
