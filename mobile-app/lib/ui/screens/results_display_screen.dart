@@ -46,6 +46,7 @@ import '../../adapters/email_providers/spam_filter_platform.dart'
     show SpamFilterPlatform, FilterAction;
 import '../../adapters/storage/secure_credentials_store.dart';
 import '../widgets/empty_state.dart';
+import '../widgets/screen_version_line.dart'; // F229 (Sprint 73)
 import '../widgets/system_inset_wrapper.dart'; // F209 (Sprint 69)
 
 /// Displays summary of scan results bound to EmailScanProvider.
@@ -956,7 +957,12 @@ class _ResultsDisplayScreenState extends State<ResultsDisplayScreen> {
                 ),
             ],
           ),
-          body: SelectionArea(
+          body: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        mainAxisSize: MainAxisSize.max,
+        children: [
+          const ScreenVersionLine(),
+          Expanded(child: SelectionArea(
             child: Padding(
               padding: const EdgeInsets.all(16.0),
               child: Builder(builder: (context) {
@@ -1153,7 +1159,9 @@ class _ResultsDisplayScreenState extends State<ResultsDisplayScreen> {
               );
               }),
             ),
-          ), // Close SelectionArea
+          )),
+        ],
+      ), // Close SelectionArea
         ),
       ),
     );

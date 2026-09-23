@@ -32,6 +32,7 @@ Format: `- **type**: Description (Issue #N)` where type is feat|fix|chore|docs
 - **feat**: on a read-only account, adding a rule from Scan Results now shows what it WOULD have done -- how many emails would have been filed or moved -- so you can see a rule's reach before anything is removed. Your mailbox is not changed. (Issue #430)
 - **feat**: a scan that is taking too long can now be stopped. A Cancel Scan button appears while a scan is running. The scan stops at the next group of emails, and what it had already checked is kept and shown as stopped rather than failed. (Issue #434)
 - **fix**: starting a manual scan no longer warns about a background scan that has already finished. A background scan that ended unexpectedly could leave that warning, with a wait estimate, for up to 30 minutes. (Issue #434)
+- **feat**: the app version now appears on every screen on a phone, at the top of the page. Before, it only showed on wider windows, so a screenshot taken on a phone did not say which version produced it. (Issue #431)
 
 ### 2026-09-22 (Sprint 72)
 - **feat**: Android Settings now explains that the phone may delay background scans while it is idle or the screen is off, and that opening the app runs any work that was waiting. (Issue #426)

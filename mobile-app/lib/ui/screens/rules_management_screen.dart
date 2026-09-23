@@ -28,6 +28,7 @@ import 'manual_rule_create_screen.dart';
 import 'rule_edit_screen.dart';
 import 'rule_test_screen.dart';
 import '../widgets/standard_app_bar_actions.dart';
+import '../widgets/screen_version_line.dart'; // F229 (Sprint 73)
 import '../widgets/system_inset_wrapper.dart'; // F209 (Sprint 69)
 
 /// Screen for managing spam filtering rules
@@ -640,7 +641,12 @@ class _RulesManagementScreenState extends State<RulesManagementScreen>
         // disjoint), Ctrl+A copies just the SELECTED rows. With no row
         // selection it falls back to copying the whole filtered list (the
         // original Sub-task A behavior).
-        body: CopyAllShortcut(
+        body: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        mainAxisSize: MainAxisSize.max,
+        children: [
+          const ScreenVersionLine(),
+          Expanded(child: CopyAllShortcut(
           itemLabel: 'rules',
           textBuilder: () {
             if (_filteredRules.isEmpty) return '';
@@ -918,7 +924,9 @@ class _RulesManagementScreenState extends State<RulesManagementScreen>
             ),
           ],
         ),
-        ),
+        )),
+        ],
+      ),
       ),
     );
   }

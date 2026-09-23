@@ -12,6 +12,7 @@ import 'gmail_manual_token_screen.dart';
 import '../../util/redact.dart';
 import 'folder_selection_screen.dart';
 import 'scan_progress_screen.dart';
+import '../widgets/screen_version_line.dart'; // F229 (Sprint 73)
 import '../widgets/system_inset_wrapper.dart'; // F209 (Sprint 69)
 
 /// Gmail OAuth authentication screen
@@ -493,7 +494,12 @@ class _GmailOAuthScreenState extends State<GmailOAuthScreen> {
           title: const Text('Gmail Sign-In'),
           elevation: 0,
         ),
-        body: SelectionArea(
+        body: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        mainAxisSize: MainAxisSize.max,
+        children: [
+          const ScreenVersionLine(),
+          Expanded(child: SelectionArea(
           child: SingleChildScrollView(
             child: Padding(
               padding: const EdgeInsets.all(24.0),
@@ -651,7 +657,9 @@ class _GmailOAuthScreenState extends State<GmailOAuthScreen> {
             ),
             ),
           ),
-        ),
+        )),
+        ],
+      ),
       ),
     );
   }

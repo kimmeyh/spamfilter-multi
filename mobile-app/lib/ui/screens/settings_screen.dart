@@ -35,6 +35,7 @@ import 'scan_history_screen.dart';
 import 'rules_management_screen.dart';
 import 'safe_senders_management_screen.dart';
 import 'yaml_import_export_screen.dart';
+import '../widgets/screen_version_line.dart'; // F229 (Sprint 73)
 import '../widgets/system_inset_wrapper.dart'; // F209 (Sprint 69)
 
 /// Settings screen for app-wide configuration
@@ -601,7 +602,12 @@ class _SettingsScreenState extends State<SettingsScreen> with SingleTickerProvid
             ],
           ),
         ),
-        body: _isLoading
+        body: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        mainAxisSize: MainAxisSize.max,
+        children: [
+          const ScreenVersionLine(),
+          Expanded(child: _isLoading
             ? const Center(child: CircularProgressIndicator())
             : TabBarView(
                 controller: _tabController,
@@ -611,7 +617,9 @@ class _SettingsScreenState extends State<SettingsScreen> with SingleTickerProvid
                   _buildManualScanTab(),
                   _buildBackgroundScanTab(),
                 ],
-              ),
+              )),
+        ],
+      ),
       ),
     );
   }

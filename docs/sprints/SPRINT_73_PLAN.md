@@ -675,9 +675,54 @@ permit, not merely the cheapest:
 **Cost of the recommendation vs the card's estimate**: unchanged at 60-120m. The deep dive itself
 took under the 30-45m allowed.
 
-**BLOCKED ON HAROLD (Class-2, as the card declares).** The card makes R-2's approach his decision
-and option 1 was his own suggestion, so the measurement that rules it out is exactly the thing he
-should see before implementation starts. **Not implemented.**
+**APPROVED BY HAROLD 2026-09-23: option 4.** Implemented.
+
+### Implementation -- and TWO of my own claims about it were wrong
+
+**"One attachment point in the shared `Scaffold` wrapper" was false, twice.** There IS no shared
+wrapper -- 23 screens build their own `Scaffold` -- and `MaterialApp.builder`, the one real global
+seam, is the approach **F209 explicitly rejected in Sprint 69** after it broke three things,
+including re-breaking the F178 action popup. I asserted a cheap wiring cost without opening the
+code, which is the same shape as the errors this sprint has already corrected twice.
+
+**So the design follows the sibling instead of inventing one.** `SystemInsetWrapper` (F209) solved
+exactly this problem -- a per-screen concern that looks like it wants a global wrapper -- and its
+doc comment explains at length why per-screen is load-bearing. `ScreenVersionLine` mirrors it: a
+widget applied per screen, a structural wiring gate, and a paired behaviour test. The `exempt` map
+and its "every entry needs a reason" rule are carried across verbatim, with
+`main_navigation_screen.dart` exempt for the same reason F209 exempts it.
+
+**Measured, not assumed**: a scratch probe put the body line at **16 logical pixels** of height and
+full width with no overflow at 411px -- against the 120px of horizontal room the same string could
+never win in the AppBar. Probe written to the gitignored `test/scratch/` and deleted same session.
+
+**The wiring script had a real defect, caught by testing it on ONE file first.** v1 computed
+offsets against a comment-STRIPPED copy and applied them to the ORIGINAL source, so every offset
+was shifted by the removed comments and the insertion landed inside a doc comment and
+mid-identifier. v2 blanks comments to SPACES, preserving length. **A bulk mutation across 22 files
+whose output I had not inspected would have been committed broken** -- the one-file dry run is what
+made it a five-minute fix instead of a review finding. A second defect surfaced the same way: the
+import regex was CRLF-blind (`;\n` never matches when `.*` stops before `\r`), and its assert
+stopped the run rather than writing a broken file.
+
+**Tests: 10, all three mutations caught.**
+- Inverting the 600px threshold (line on desktop, hidden on phone) -> 6 red, including both
+  "THE FEATURE" assertions.
+- Hardcoding the version literal instead of the runtime value (R-5) -> 2 red.
+- Silently unwiring ONE screen -> the gate names `scan_history_screen.dart` by filename.
+
+**AC-4 does not arise**: no control was removed, so "Select Account" stays exactly where it is.
+
+**What the tests do NOT catch** (IMP-1): they prove the line renders, carries the runtime version,
+shows the dev suffix, stays on one line and does not overflow at 411px or 200px. They CANNOT prove
+it is legible at 11pt on real hardware, nor that its position above the body reads as belonging to
+the screen rather than to the content. **That is Harold's judgement on the S24+**, and it is the
+only thing that settles it -- which is why it is on the Manual Validation list.
+
+**Platform parity (ADR-0042): SAME on both, no exception, verified per IMP-5.** No OS behaviour is
+involved. The only variable is WINDOW WIDTH, which both platforms span: a narrow Windows window
+enters the same regime as a phone and gets the same line. Windows at its 1024x640 epx minimum stays
+above 600 and keeps today's AppBar label unchanged, so desktop screenshots do not move.
 
 ---
 
@@ -803,7 +848,7 @@ produces must state parity then.
 | 2 | F232 mechanism B | pending -- needs Harold's reproduction with logging ON |
 | 3 | F234 read-only preview | **DONE + VALIDATED** (preview reported 1, not 0) -- 17 tests; a mutation SURVIVED the first test file and was closed |
 | 4 | F224 + F207 cancel | **DONE + VALIDATED** (both surfaces; cancel then rescan, 0 errors) -- 20 tests, 2 mutations; R-1 cleared Class-1, R-2 falsified the card's 3 causes |
-| 5 | F229 version everywhere | **DEEP DIVE DONE, implementation BLOCKED** -- measured; options 1-3 do not fit; recommend option 4; Class-2 decision for Harold |
+| 5 | F229 version everywhere | **DONE** -- Harold approved option 4; 22 screens wired, 10 tests, 3 mutations caught |
 | 6 | F226 sweep interference | **DONE** -- warning + one visible retry |
 | 7 | F205 classify the errors | pending -- needs Harold's device run |
 

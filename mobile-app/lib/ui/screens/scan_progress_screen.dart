@@ -22,6 +22,7 @@ import '../widgets/standard_app_bar_actions.dart';
 import 'results_display_screen.dart';
 import 'scan_history_screen.dart';
 import 'help_screen.dart';
+import '../widgets/screen_version_line.dart'; // F229 (Sprint 73)
 import '../widgets/system_inset_wrapper.dart'; // F209 (Sprint 69)
 
 /// Displays live scan progress bound to EmailScanProvider.
@@ -262,7 +263,12 @@ class _ScanProgressScreenState extends State<ScanProgressScreen>
               includeManualScan: false,
             ),
           ),
-          body: Padding(
+          body: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        mainAxisSize: MainAxisSize.max,
+        children: [
+          const ScreenVersionLine(),
+          Expanded(child: Padding(
             padding: const EdgeInsets.all(16.0),
             child: SelectionArea(
               child: Column(
@@ -278,7 +284,9 @@ class _ScanProgressScreenState extends State<ScanProgressScreen>
               ],
             ),
             ),
-          ),
+          )),
+        ],
+      ),
         ),
       ),
     );

@@ -19,6 +19,7 @@ import '../../core/storage/safe_sender_database_store.dart';
 import '../../core/storage/unmatched_email_store.dart';
 import 'rule_quick_add_screen.dart';
 import 'safe_sender_quick_add_screen.dart';
+import '../widgets/screen_version_line.dart'; // F229 (Sprint 73)
 import '../widgets/system_inset_wrapper.dart'; // F209 (Sprint 69)
 
 /// [NEW] SPRINT 4: Detailed view for reviewing individual unmatched emails
@@ -642,6 +643,11 @@ class _EmailDetailViewState extends State<EmailDetailView>
           ),
         ),
         body: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        mainAxisSize: MainAxisSize.max,
+        children: [
+          const ScreenVersionLine(),
+          Expanded(child: Column(
           children: [
             Expanded(
               child: TabBarView(
@@ -655,7 +661,9 @@ class _EmailDetailViewState extends State<EmailDetailView>
             ),
             _buildActionButtons(),
           ],
-        ),
+        )),
+        ],
+      ),
       ),
     );
   }
