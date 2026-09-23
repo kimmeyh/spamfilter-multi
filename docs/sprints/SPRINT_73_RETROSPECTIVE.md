@@ -179,3 +179,21 @@ mode being corrected. CLAUDE.md grew 787 -> 791 lines: three extensions, one new
   backstop and the runner is the prevention.
 
 **Verification**: 75/75 hook tests pass. Analyzer clean. Full suite re-run after the changes.
+
+## Sprint 74 carry-ins (Harold, 2026-09-23: "1. and 2. add to sprint 74 Manual Validation")
+
+Three items could not be settled in Sprint 73 because the only evidence that settles them is a run
+on the S24+. **The code SHIPPED in all three cases** -- what is carried is the VALIDATION, and the
+issues say so explicitly so Sprint 74 does not re-plan an implementation that already exists.
+
+- **MV74-1 (#428)** F235 Doze: scans firing while idle, and surviving a reboot. The reboot case
+  matters most -- without `BootReceiver` this is a REGRESSION against WorkManager's persisted work.
+- **MV74-2 (#434)** F207's isolate question: the sharpest open item, and a CORRECTNESS dependency
+  rather than a stale comment. If the WorkManager scan runs in its own isolate, the coordinator
+  reads idle while a scan is live and the fix hides a warning for a LIVE scan.
+- **MV74-3 (#422, #433)** F232 mechanism B and F205: both blocked on the same missing thing, and
+  the route is already built -- F233's in-app export writes to a directory confirmed reachable over
+  MTP, so no adb is needed. **Do not plan a fix until the log exists.**
+
+Recorded in `ALL_SPRINTS_MASTER_PLAN.md` "Next Sprint Candidates" (the single prioritized list, not
+a duplicate tracker) and as a comment on each of the four issues.

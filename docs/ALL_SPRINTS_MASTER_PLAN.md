@@ -184,6 +184,67 @@ Historical sprint information lives in individual documents in `docs/sprints/` a
 
 All incomplete items in relative priority order. Priority in increments of 10; items that can sprint together in increments of 2. HOLD items grouped at bottom. See [Feature and Bug Details](#feature-and-bug-details) for deep-dive specs. See [BACKLOG_REFINEMENT.md](BACKLOG_REFINEMENT.md) for presentation format rules.
 
+### Sprint 74 Manual Validation carry-ins (device-blocked from Sprint 73)
+
+**Harold, 2026-09-23**: *"1. and 2. add to sprint 74 Manual Validation"*. These three are NOT new
+work -- the code shipped in Sprint 73 and is committed. What is missing is the only evidence that
+can settle them, which is a run on the S24+. They are listed here so Sprint 74 plans the
+VALIDATION, not a re-implementation.
+
+**MV74-1. F235 Doze scheduling -- validate on the S24+ (Issue #428) Priority 2 (CARRY-IN, Sprint 73 MV step 6)**
+- Phase: Core App Quality
+- Platform: **Android only** (declared ADR-0042 exception -- Doze has no Windows equivalent)
+- **What shipped**: `setAndAllowWhileIdle()` via a new MethodChannel, a Kotlin alarm scheduler, an
+  alarm receiver that RE-ARMS BEFORE scanning, and a `BOOT_COMPLETED` receiver. 13 tests,
+  mutation-verified, Android APK builds.
+- **What to validate**: (a) background scans fire while the phone is idle / screen off; (b) the
+  schedule survives a reboot. Both need real elapsed time -- the delivery window is ~1 hour, so
+  this is an over-hours observation, not a five-minute check.
+- **What NO test can supply** (IMP-1): no unit test can prove an alarm fired on a real dozing
+  phone, nor that a reboot restored the schedule. Without `BootReceiver` working this is a
+  REGRESSION against WorkManager, whose work is persisted -- so the reboot case is the one that
+  matters most.
+- Depends on: the 0.16.0 build reaching the S24+.
+
+**MV74-2. F207 -- settle the WorkManager ISOLATE question (Issue #434) Priority 2 (CARRY-IN, Sprint 73 Phase 5.1.1 review)**
+- Phase: Core App Quality
+- Platform: **Android only** (the Windows branch is unaffected and correctly justified)
+- **This is the sharpest open item in the sprint, and it is a CORRECTNESS dependency rather than a
+  stale comment.** F207 suppresses the stale-background-scan warning when the in-process
+  `ScanCoordinator` is idle, on the reasoning that Android runs every scan in one process. The
+  Phase 5.1.1 review argues the WorkManager scan runs in its own ISOLATE
+  (`android_background_scan_worker.dart` is `@pragma('vm:entry-point')` and its own doc says it
+  sets up its own binding). **Dart isolates do not share memory**, so the UI isolate's coordinator
+  would read idle while a background scan is genuinely live -- and the fix would then hide a
+  warning for a LIVE scan, which is the Sprint 61 concurrent-session failure the notice exists to
+  prevent.
+- **I could not settle this from source and said so rather than recording a determination I cannot
+  support.** What IS certain: the comments in `scan_coordinator.dart:26` and
+  `scan_progress_screen.dart` both say "on Android every scan shares one process, so this
+  coordinator IS the whole guarantee". "One process" is true; "one isolate" is not, and the
+  guarantee is per-isolate. That claim predates F207, but F207 now BUILDS ON IT.
+- **How to settle it, either way**: start an Android background scan, then open Manual Scan and see
+  whether the notice appears. Or log `Isolate.current.debugName` in both places.
+- **If confirmed**: the fix must become a freshness check on the row rather than a coordinator
+  check -- which needs a heartbeat column (`scan_results` has none; `started_at` is the only
+  liveness signal), so it is a larger change than F207 assumed. **Correct the two mechanism
+  comments either way.**
+
+**MV74-3. F232 mechanism B + F205 -- device run with diagnostic logging (Issues #422, #433) Priority 4 (CARRY-IN, Sprint 73 Tasks 2 and 7)**
+- Phase: Core App Quality
+- Platform: Android (the reproduction is device-side; any fix follows ADR-0042)
+- **Both were blocked on the same missing thing in Sprint 73: data from the phone.** F232
+  mechanism A was fixed in Sprint 72 and mechanism B remains undiagnosed and INSTRUMENTED rather
+  than guessed at. F205 needs the 53 errors in 3,833 scanned classified before anything can be
+  fixed.
+- **The route is already built and needs no adb.** F233 (Sprint 72) added the diagnostic log and
+  its in-app export, which writes to `Android/data/com.myemailspamfilter/files/` -- confirmed
+  reachable over MTP on 2026-09-23. So: enable diagnostic logging in Settings, reproduce, export
+  from within the app, and the file can be pulled without USB debugging (permanently blocked by
+  company policy on both the S24+ and the Fold8 Ultra).
+- **Do NOT plan a fix for either until the log exists.** Sprint 73 deliberately did not guess at
+  mechanism B, and that decision should hold.
+
 ### Core App Quality
 
 **F202. Per-provider folder defaults -- overall default plus provider overrides for all four folder settings (~150-240m) Priority 10 (NEW, Sprint 68 MV -- Harold; TARGET SPRINT 69)**
