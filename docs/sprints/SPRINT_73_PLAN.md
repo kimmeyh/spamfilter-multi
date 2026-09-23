@@ -1,8 +1,10 @@
-# Sprint 73 Plan -- AWAITING APPROVAL (Phase 3.7)
+# Sprint 73 Plan -- APPROVED, IN EXECUTION
 
-**Status**: PROPOSED. Not approved. No task execution until Harold approves at Phase 3.7.
-**Branch**: `feature/20260922_Sprint_73` (created from the Sprint 72 branch on merge)
-**Version**: 0.15.3+6 -> bumps at Phase 3.7.0b once scope is approved
+**Status**: **APPROVED 2026-09-23, Phase 4 EXECUTION.** Harold's amendments: MINOR bump 0.16.0,
+F234 previews BOTH block rules and safe-sender moves, F229 MAY remove the Select Account icon at
+phone width.
+**Branch**: `feature/20260922_Sprint_73` | **PR**: #435 (draft)
+**Version**: 0.15.3+6 -> **0.16.0+7** (done, Task 0)
 
 **Scope requested by Harold, 2026-09-23**: F235, F232, F234, F229, F226, F205, F224 + F207.
 
@@ -88,12 +90,54 @@ entire point for closed-test users.
 nothing. Genuine build work. **Check the MERGED manifest, not the source** -- Sprint 70 recorded
 that `FOREGROUND_SERVICE` and `WAKE_LOCK` arrive via workmanager and are invisible in the source.
 
+**R-1 DETERMINATION -- COMPLETE, 2026-09-23. Source: Android's own alarm documentation
+(developer.android.com/develop/background-work/services/alarms/schedule).**
+
+**The answer changes the approach, and for the better: NO PERMISSION IS NEEDED AT ALL.**
+
+| Method | Permission | Fires in Doze? | Timing |
+|---|---|---|---|
+| `setExactAndAllowWhileIdle()` | **SCHEDULE_EXACT_ALARM or USE_EXACT_ALARM** | Yes | Precise |
+| `setAndAllowWhileIdle()` | **NONE** | **Yes** | Within ~1 hour |
+| `set()` / `setInexactRepeating()` | None | **No -- respects Doze** | ~1 hour |
+
+`setAndAllowWhileIdle()` **escapes Doze with no permission and no Play policy exposure whatsoever**.
+Both exact variants carry a Play policy burden -- `SCHEDULE_EXACT_ALARM` is user-revocable and
+subject to Play's exact-alarm policy, and `USE_EXACT_ALARM` is restricted to a narrow acceptable-use
+list (alarm clocks, calendars). The documentation's own recommendation: *"Use
+`setAndAllowWhileIdle()` for most use cases unless your app's core functionality requires precise
+timing."*
+
+**A spam filter does not require precise timing**, which is exactly the argument that would have
+made the exemption route hard to defend at review. The same reasoning that weakens the permission
+case strengthens the no-permission case.
+
+**DECISION: use `setAndAllowWhileIdle()`. No permission, no policy risk, no Class-1 escalation.**
+
+**The cost, stated plainly rather than buried**: a ~1 hour delivery window. Against the app's
+frequency options that means:
+
+- `every15min` (15) -- a 1-hour window is FOUR TIMES the interval. The schedule becomes
+  approximate at best.
+- `every30min` (30) -- still 2x the interval.
+- `every1hour` (60) -- the window matches the interval; reasonable.
+- `daily` (1440) -- the window is negligible.
+
+**This is honest, not a defect.** Today at 15 minutes the scans often do not run AT ALL while the
+phone is idle -- Harold's complaint was *"background jobs only run when the app is open and in view.
+This completely renders background jobs as useless."* A scan that fires within an hour is strictly
+better than one that does not fire. **R-6's honest caveat therefore stays and gets MORE accurate**
+rather than softer: it should say the phone may delay scans by up to about an hour while idle.
+
+**Deferred to Harold at Manual Validation, NOT blocking**: whether `every15min` should remain
+offered on Android given the OS window, or whether the label should say "about every 15 minutes
+when the phone is in use". No code depends on that answer -- the alarm works either way -- so the
+work proceeds and the question is asked at the natural break.
+
 **Requirements**:
-- R-1: **R-2 BELOW IS A GO/NO-GO GATE AND RUNS FIRST.** Determine whether this needs
-  `SCHEDULE_EXACT_ALARM` or `USE_EXACT_ALARM`. `USE_EXACT_ALARM` carries its OWN Play justification
-  burden -- if that is what is required, the advantage over the battery exemption shrinks and
-  **the decision returns to Harold before any code is written** (Class-1).
-- R-2: Android scheduling uses an exact-while-idle alarm. Windows is untouched.
+- R-1: **COMPLETE -- see the determination above. `setAndAllowWhileIdle()`, no permission.**
+- R-2: Android scheduling uses `setAndAllowWhileIdle()` (NOT the exact variant -- see R-1).
+  Windows is untouched.
 - R-3: **Reboot persistence.** An alarm does NOT survive a restart the way WorkManager persisted
   work does. A `BOOT_COMPLETED` receiver must reschedule, or this is a REGRESSION versus today.
 - R-4: The 9-minute OS floor must be enforced or documented; the app's floor is 15 minutes, so it
