@@ -949,11 +949,38 @@ change does to its NEIGHBOURS, not by a test -- every test written at that momen
 
 1. The chip reading **"Deleted (not processed): 7"** with red trash icons is the pre-existing
    read-only label at `results_display_screen.dart:1394` (`isSafeSendersOnly || isReadOnly`). It
-   means *matched a delete rule, was not deleted* -- consistent with F234's preview wording, not in
-   tension with it.
+   means *matched a delete rule, was not deleted* -- consistent with F234's preview wording.
+
+   **WHERE THE 7 CAME FROM (Harold's correction, and it matters):** *"Background scan is read-only
+   so the other 6 are from prior block rules."* My first write-up called them "delete-rule
+   matches" without saying WHEN they matched, which left the impression this session produced
+   them. It did not. **Six matched PRE-EXISTING block rules** -- visible in the row labels
+   themselves (`Block_EntireDomain_ddblbskaf.us`, `Block_EntireDomain_ktufmyhny.us`, `._.info`,
+   `._.ca`, `Block_onlinetvsettlement@...`) -- and only the seventh came from the
+   `*.njsaqvrup.us` rule created in step 1.
+
+   **Nothing deleted them, on any path.** Windows DEV is read-only on every account AND background
+   scanning is OFF there ([[project_scan_mode_by_environment]]), so there is no route on this
+   machine that could have executed those matches. Both scans were manual and read-only.
+
+   **The Scan History arithmetic confirms it exactly**, and is stronger evidence for F234 than
+   what I originally cited:
+   - 09:03 (before the rule): Found 38, Processed 8, **Deleted 6**, **No Rule 2**
+   - 09:08 (after the rule):  Found 38, Processed 8, **Deleted 7**, **No Rule 1**
+   - Delta: Deleted **+1**, No Rule **-1** -- one email moved from "no rule" to "matches a delete
+     rule", which is the SAME +1 the preview reported as *"1 would have been filed"*. The counters
+     and the preview agree, and the six were a constant on both sides.
+
 2. `Deleted (not processed): 7` alongside `0 of 1 "No rule" emails addressed` looks contradictory
-   and is not: the chip counts DELETE-RULE MATCHES while the banner counts only NO-RULE items
-   needing triage (`_computeNoRuleStats`). Different populations, so both are true at once.
+   and is not: the chip counts DELETE-RULE MATCHES (7, of which 6 predate this session) while the
+   banner counts only NO-RULE items still needing triage (1). Different populations
+   (`_computeNoRuleStats`), so both are true at once.
+
+**Lesson for reading scan evidence**: a count is not a claim about WHEN it arose. Writing
+"7 delete-rule matches" without a baseline let a pre-existing total read as this session's
+output. The 09:03 row was already in the same screenshot set and settles it in one subtraction --
+the baseline was available and I did not take it. Compare against the prior scan row BEFORE
+attributing any count to the change under test.
 
 ## Carry-forward from the Phase 5.1 reviews (NOT dropped, NOT silently deferred)
 
