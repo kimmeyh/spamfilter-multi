@@ -719,6 +719,20 @@ it is legible at 11pt on real hardware, nor that its position above the body rea
 the screen rather than to the content. **That is Harold's judgement on the S24+**, and it is the
 only thing that settles it -- which is why it is on the Manual Validation list.
 
+**VERIFIED ON THE RUNNING APP, not only in tests** (2026-09-23, dev build 0.16.0, WinWright
+attached to the live process). The widget tests pass at a simulated width; this drives the real
+window, because this sprint has two cases of a green suite over an inert feature:
+
+- **At 500px wide**: `type=Text[name^='V0.16.0']` resolves **1** element -- `V0.16.0 [DEV]`,
+  `isVisible: true`, bounds `y=189, height=15`. Directly under the AppBar, and 15px measured
+  against the 16px the scratch probe predicted.
+- **At 1300px wide**: the same selector resolves **0**, and `type=Text[name^='Version 0.16.0']`
+  resolves **1** at `x=1186, y=111` -- the AppBar label.
+
+So the handover is confirmed live in BOTH directions: exactly one surface renders at any width,
+never both and never neither. The complementarity test asserts the two thresholds agree in source;
+this proves the behaviour they produce.
+
 **Platform parity (ADR-0042): SAME on both, no exception, verified per IMP-5.** No OS behaviour is
 involved. The only variable is WINDOW WIDTH, which both platforms span: a narrow Windows window
 enters the same regime as a phone and gets the same line. Windows at its 1024x640 epx minimum stays
