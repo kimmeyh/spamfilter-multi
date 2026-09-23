@@ -25,6 +25,7 @@ import 'dart:io';
 
 import 'package:flutter_test/flutter_test.dart';
 import 'package:my_email_spam_filter/ui/screens/results_display_screen.dart';
+import 'package:my_email_spam_filter/core/providers/email_scan_provider.dart';
 
 void main() {
   group('F234: the outcome carries a preview', () {
@@ -83,6 +84,116 @@ void main() {
       expect(outcome.wouldHaveMoved, 4,
           reason: 'safe-sender moves are previewed too; the value of a preview '
               'is seeing the FULL effect');
+    });
+  });
+
+  group('F234: THE BEHAVIORAL TEST -- the one that was missing', () {
+    // Both Phase 5.1 reviews independently proved the shipped feature was
+    // INERT while all nine tests below passed: the preview forced
+    // `ScanMode.readOnly` into gates that test for rulesOnly / safeSendersOnly
+    // / safeSendersAndRules, so both lists stayed empty, the isEmpty guard
+    // returned nothingToDo() first, and the preview block was unreachable.
+    //
+    // Every test in this file was a source-text or value-object assertion, so
+    // none could see it. This group drives the real decision instead.
+
+    test('THE DEFECT: a delete under the preview mode IS collected', () {
+      expect(
+        classifyForReProcess(
+          newAction: EmailActionType.delete,
+          scanMode: ScanMode.safeSendersAndRules,
+        ),
+        ReProcessBucket.delete,
+        reason: 'THE ASSERTION THAT WAS MISSING -- with ScanMode.readOnly here '
+            'this returned none, both lists stayed empty, and the preview '
+            'could never report anything but zero',
+      );
+    });
+
+    test('a safe-sender move under the preview mode IS collected', () {
+      expect(
+        classifyForReProcess(
+          newAction: EmailActionType.safeSender,
+          scanMode: ScanMode.safeSendersAndRules,
+        ),
+        ReProcessBucket.moveSafe,
+      );
+    });
+
+    test('PROOF OF THE BUG: ScanMode.readOnly collects NOTHING', () {
+      // Pins the exact mechanism, so passing readOnly into the collection
+      // path again is red immediately rather than silently inert.
+      for (final action in [
+        EmailActionType.delete,
+        EmailActionType.safeSender,
+      ]) {
+        expect(
+          classifyForReProcess(
+              newAction: action, scanMode: ScanMode.readOnly),
+          ReProcessBucket.none,
+          reason: 'readOnly matches none of the execute gates -- this is why '
+              'the first version of F234 did nothing at all',
+        );
+      }
+    });
+
+    test('the narrower modes still gate correctly', () {
+      // The fix must not turn the gates into a rubber stamp.
+      expect(
+        classifyForReProcess(
+            newAction: EmailActionType.safeSender,
+            scanMode: ScanMode.rulesOnly),
+        ReProcessBucket.none,
+        reason: 'rulesOnly must not move safe senders',
+      );
+      expect(
+        classifyForReProcess(
+            newAction: EmailActionType.delete,
+            scanMode: ScanMode.safeSendersOnly),
+        ReProcessBucket.none,
+        reason: 'safeSendersOnly must not delete',
+      );
+    });
+
+    test('THE WIRING: the preview path passes an ACTING mode, not readOnly',
+        () {
+      // The abstraction above is correct and was still not enough. Restoring
+      // the original defect -- `isReadOnly ? ScanMode.readOnly : effectiveMode`
+      // -- left every test in this group GREEN, because they assert the pure
+      // function while the bug lives at its CALL SITE. That is the
+      // "correct abstraction, wrong wiring" gap, and it is the same shape as
+      // the source-text gap it replaced.
+      //
+      // So this asserts the wiring itself, and it is deliberately the ONE
+      // source assertion in this group: the call site is a single expression
+      // with no seam to inject, and adding one would be more machinery than
+      // the fact is worth.
+      final source =
+          File('lib/ui/screens/results_display_screen.dart').readAsStringSync();
+      expect(
+        source.contains(
+            'isReadOnly ? ScanMode.safeSendersAndRules : effectiveMode'),
+        isTrue,
+        reason: 'passing ScanMode.readOnly here makes classifyForReProcess '
+            'return none for every email, so both lists stay empty and the '
+            'preview reports zero forever -- the exact defect two reviews '
+            'found in the shipped code',
+      );
+      expect(
+        source.contains('isReadOnly ? ScanMode.readOnly'),
+        isFalse,
+        reason: 'the defect, stated so its return is red rather than silent',
+      );
+    });
+
+    test('an action with no bucket is never collected', () {
+      // The unhappy input: an evaluation that resolved to no action at all.
+      expect(
+        classifyForReProcess(
+            newAction: EmailActionType.none,
+            scanMode: ScanMode.safeSendersAndRules),
+        ReProcessBucket.none,
+      );
     });
   });
 

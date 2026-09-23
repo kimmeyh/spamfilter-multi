@@ -414,8 +414,8 @@ class EmailScanner {
             if (ScanCoordinator.instance.isCancelRequested) {
               AppLogger.scan('F224: cancellation observed at a batch boundary '
                   '-- stopping the scan');
-              throw const ScanCancelledException();
             }
+            ScanCoordinator.instance.throwIfCancelled();
             folderCount += batch.length;
             scanProvider.incrementFoundEmails(batch.length);
             scanProvider.updateProgress(

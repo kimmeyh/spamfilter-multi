@@ -125,6 +125,46 @@ void main() {
     });
   });
 
+  group('F224: THE CHECK POINT ITSELF -- Phase 5.1.2 review CRITICAL-2', () {
+    // The review dead-coded the guard (`if (false && ...)`), disabling
+    // cancellation entirely, and ALL FOURTEEN F224 tests stayed green: they
+    // asserted the source TEXT existed, not that the branch was taken. These
+    // drive the guard directly, which needs no platform, credentials or DB.
+
+    test('THE FEATURE: it throws once a cancel is pending', () async {
+      final c = ScanCoordinator.instance;
+      await c.acquire(scanType: 'manual', accountId: 'a@x.com');
+      c.requestCancel(accountId: 'a@x.com');
+
+      expect(() => c.throwIfCancelled(),
+          throwsA(isA<ScanCancelledException>()));
+    });
+
+    test('THE NEGATIVE CASE: a running scan is NOT stopped', () async {
+      // Without this, a guard that always threw would pass the test above --
+      // and no scan would ever complete.
+      final c = ScanCoordinator.instance;
+      await c.acquire(scanType: 'manual', accountId: 'a@x.com');
+
+      expect(c.throwIfCancelled, returnsNormally);
+    });
+
+    test('an idle coordinator does not throw', () {
+      // The unhappy input: called when nothing is active.
+      expect(ScanCoordinator.instance.throwIfCancelled, returnsNormally);
+    });
+
+    test('it stops throwing once the lease is released', () async {
+      final c = ScanCoordinator.instance;
+      final lease = await c.acquire(scanType: 'manual', accountId: 'a@x.com');
+      c.requestCancel(accountId: 'a@x.com');
+      c.release(lease);
+
+      expect(c.throwIfCancelled, returnsNormally,
+          reason: 'a released lease must not keep stopping the NEXT scan');
+    });
+  });
+
   group('F224: the exception', () {
     test('it is an Exception and says what happened', () {
       const e = ScanCancelledException();

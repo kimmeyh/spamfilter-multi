@@ -199,7 +199,32 @@ class ScanCoordinator {
 
   /// True when the active scan has been asked to stop. Read by the scanner at
   /// its check point; false when nothing is active.
+  ///
+  /// NOT account-scoped, unlike [requestCancel] (Phase 5.1.2 review). With a
+  /// single lease that is equivalent -- the only holder is the one that could
+  /// be cancelled -- but if the coordinator ever grants more than one lease,
+  /// this getter must gain the same scoping or it becomes a cross-account
+  /// stop.
   bool get isCancelRequested => _active?.cancelRequested ?? false;
+
+  /// F224 (Sprint 73), Phase 5.1.2 review: the scan's cooperative check point,
+  /// as a callable seam.
+  ///
+  /// **Why this is not inlined.** It was, and the review proved the inline form
+  /// untestable in practice: changing it to `if (false && ...)` -- disabling
+  /// cancellation entirely -- left all fourteen F224 tests green, because they
+  /// asserted that the TEXT existed in the source, not that the branch was
+  /// taken. Driving the real `scanInbox` needs a platform, credentials and a
+  /// database; driving this needs neither, so the single most load-bearing
+  /// line in the feature becomes directly assertable.
+  ///
+  /// Throws [ScanCancelledException] when a stop has been requested. The
+  /// caller's `finally` does the rest -- see the exception's own doc.
+  void throwIfCancelled() {
+    if (isCancelRequested) {
+      throw const ScanCancelledException();
+    }
+  }
 
   /// Release [lease] and hand the lease to the next FIFO waiter, if any.
   /// Idempotent: releasing twice (or releasing a stale lease after the

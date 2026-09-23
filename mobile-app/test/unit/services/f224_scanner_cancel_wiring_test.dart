@@ -26,10 +26,15 @@ void main() {
   });
 
   group('F224: the cooperative check point', () {
-    test('THE CHECK: batchSink throws when a cancel is pending', () {
-      expect(scanner.contains('ScanCoordinator.instance.isCancelRequested'),
-          isTrue);
-      expect(scanner.contains('throw const ScanCancelledException()'), isTrue);
+    test('THE CHECK: batchSink asks the coordinator to stop it', () {
+      // The throw moved INTO ScanCoordinator.throwIfCancelled (Phase 5.1.2
+      // review CRITICAL-2) so the guard could be driven by a real test rather
+      // than only grepped -- `if (false && ...)` previously passed all 14
+      // tests. The behavioural coverage now lives in f224_scan_cancel_test;
+      // this pins that the scanner still CALLS it.
+      expect(scanner.contains('ScanCoordinator.instance.throwIfCancelled()'),
+          isTrue,
+          reason: 'without this call the flag is raised and never read');
     });
 
     test('it sits INSIDE batchSink, which every platform path feeds', () {
@@ -38,7 +43,7 @@ void main() {
       // anywhere else would cover one platform and silently miss the others.
       final sinkIdx = scanner.indexOf('Future<void> batchSink(');
       final checkIdx =
-          scanner.indexOf('ScanCoordinator.instance.isCancelRequested');
+          scanner.indexOf('ScanCoordinator.instance.throwIfCancelled()');
       final evalIdx = scanner.indexOf('await evaluateBatch(batch);');
 
       expect(sinkIdx, greaterThan(-1));
@@ -53,9 +58,49 @@ void main() {
       // Otherwise a cancelled batch would be counted as scanned, and the
       // partial count recorded at AC-4 would overstate what really happened.
       final checkIdx =
-          scanner.indexOf('ScanCoordinator.instance.isCancelRequested');
+          scanner.indexOf('ScanCoordinator.instance.throwIfCancelled()');
       final countIdx = scanner.indexOf('folderCount += batch.length;');
       expect(checkIdx, lessThan(countIdx));
+    });
+  });
+
+  group('F224: the SECOND swallow -- Phase 5.1.1 review C-1', () {
+    late String adapter;
+
+    setUpAll(() {
+      adapter = File('lib/adapters/email_providers/generic_imap_adapter.dart')
+          .readAsStringSync();
+    });
+
+    test('THE DEFECT: the IMAP adapter rethrows the cancellation', () {
+      // Fixing the scanner's per-folder catch was not enough, and the review
+      // proved it on the LIVE path. `_fetchMessageDetails` awaits `onBatch`
+      // (the scanner's batchSink) from inside the ADAPTER's own per-folder
+      // try, so the throw unwound to the adapter's `catch (e, st)` and stopped
+      // there. The scanner's typed handler was unreachable on the IMAP path.
+      //
+      // Worse than "cancel does nothing": the flag stays set, so every
+      // remaining folder threw and was swallowed too, each returning zero
+      // messages -- the scan then "completed" reporting a near-empty mailbox.
+      final onCancel = adapter.indexOf('} on ScanCancelledException {');
+      expect(onCancel, greaterThan(-1),
+          reason: 'without this, cancelling does nothing on every real IMAP '
+              'account -- the only path that matters in production');
+
+      final genericCatch = adapter.indexOf('} catch (e, st) {', onCancel);
+      expect(genericCatch, greaterThan(onCancel),
+          reason: 'Dart matches catch clauses in order, so the typed handler '
+              'must precede the generic one');
+    });
+
+    test('THE LESSON: both layers of the swallow are fixed', () {
+      // Named as its own assertion because fixing one instance of a defect
+      // class is what let this ship: the scanner and the adapter had the SAME
+      // continue-on-folder-error shape, and only the upper one was fixed.
+      final scannerFixed = scanner.contains('} on ScanCancelledException {');
+      final adapterFixed = adapter.contains('} on ScanCancelledException {');
+      expect([scannerFixed, adapterFixed], [true, true],
+          reason: 'a cancel must survive BOTH per-folder catches');
     });
   });
 

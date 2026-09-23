@@ -92,6 +92,45 @@ enum SpecialFilter {
 ///
 /// Returning the counts is what lets the caller tell the truth. The method
 /// used to return void and report only through its own snackbar.
+/// F234 (Sprint 73), review C-2: which list an email belongs in.
+enum ReProcessBucket { delete, moveSafe, none }
+
+/// The per-email re-processing decision, as a PURE function.
+///
+/// **Why this is extracted.** It was inline, and the version that shipped was
+/// inert: the read-only preview passed `ScanMode.readOnly` into gates that test
+/// for `rulesOnly`/`safeSendersOnly`/`safeSendersAndRules`. `readOnly` matches
+/// none of them, so both lists stayed empty and the preview could never report
+/// anything but zero. Nine tests passed, because they asserted the SHAPE of the
+/// code (its text and statement order) rather than its RESULT.
+///
+/// Pulling the decision out costs nothing at runtime and makes the defect
+/// directly assertable with no platform, credentials or database -- which is
+/// the whole difference between a test that would have caught it and the ones
+/// that did not.
+///
+/// Callers that must not touch the mailbox pass the mode they WOULD have acted
+/// under and suppress execution separately; this function answers "what would
+/// happen", never "may I".
+@visibleForTesting
+ReProcessBucket classifyForReProcess({
+  required EmailActionType newAction,
+  required ScanMode scanMode,
+}) {
+  final canExecuteRules = scanMode == ScanMode.rulesOnly ||
+      scanMode == ScanMode.safeSendersAndRules;
+  final canExecuteSafeSenders = scanMode == ScanMode.safeSendersOnly ||
+      scanMode == ScanMode.safeSendersAndRules;
+
+  if (newAction == EmailActionType.delete && canExecuteRules) {
+    return ReProcessBucket.delete;
+  }
+  if (newAction == EmailActionType.safeSender && canExecuteSafeSenders) {
+    return ReProcessBucket.moveSafe;
+  }
+  return ReProcessBucket.none;
+}
+
 class ReProcessOutcome {
   const ReProcessOutcome({
     required this.attempted,
@@ -3659,7 +3698,30 @@ class _ResultsDisplayScreenState extends State<ResultsDisplayScreen> {
       // evaluation overrides.
       isReadOnly = true;
     }
-    final scanMode = isReadOnly ? ScanMode.readOnly : effectiveMode;
+    // F234 (Sprint 73), Phase 5.1.1/5.1.2 review C-2: the collection loop must
+    // run under the mode that WOULD have acted, not under `readOnly`.
+    //
+    // THE DEFECT THIS FIXES, and it made the whole feature inert: the first cut
+    // forced `scanMode = ScanMode.readOnly` here, and the loop below gates every
+    // append on `scanMode == rulesOnly || == safeSendersAndRules` (and the
+    // safe-sender equivalent). `readOnly` matches NEITHER, so both lists stayed
+    // empty on exactly the path the preview exists to serve, the
+    // `toDelete.isEmpty && toMoveSafe.isEmpty` guard returned `nothingToDo()`
+    // first, and the preview block below was unreachable. The user saw "nothing
+    // needed doing" and never a preview.
+    //
+    // `effectiveMode` is itself `readOnly` for such an account, so the intended
+    // mode cannot be recovered from it. A preview answers "what would this rule
+    // have done", so it is computed against `safeSendersAndRules` -- the
+    // broadest mode, which is the honest answer to that question and the only
+    // one that previews BOTH kinds as Harold chose at approval.
+    //
+    // This is the design the comment above already described ("nothing below
+    // this point touches the mailbox until the execution block, which is
+    // guarded by `isReadOnly`"). The comment was right and the code did not
+    // implement it -- CLAUDE.md IMP-2 in its own right.
+    final scanMode =
+        isReadOnly ? ScanMode.safeSendersAndRules : effectiveMode;
 
     // Sprint 38 Round 4 fix (2026-05-17): historical-scan views must
     // always use _historicalResults. See _reEvaluateNoRuleEmails for
@@ -3687,36 +3749,43 @@ class _ResultsDisplayScreenState extends State<ResultsDisplayScreen> {
       // Only act if the action changed
       if (newAction == originalAction) continue;
 
-      // Determine which IMAP action to execute based on new evaluation and scan mode
-      final canExecuteRules = scanMode == ScanMode.rulesOnly ||
-          scanMode == ScanMode.safeSendersAndRules;
-      final canExecuteSafeSenders = scanMode == ScanMode.safeSendersOnly ||
-          scanMode == ScanMode.safeSendersAndRules;
-
-      if (newAction == EmailActionType.delete && canExecuteRules) {
-        toDelete.add(result.email);
-      } else if (newAction == EmailActionType.safeSender &&
-          canExecuteSafeSenders) {
-        toMoveSafe.add(result.email);
+      // Determine which IMAP action to execute based on new evaluation and
+      // scan mode. Extracted to a pure function (review C-2) so the decision
+      // can be tested WITHOUT a platform, credentials or a database -- the
+      // absence of exactly that test is why the broken version shipped with a
+      // green suite.
+      switch (classifyForReProcess(
+          newAction: newAction, scanMode: scanMode)) {
+        case ReProcessBucket.delete:
+          toDelete.add(result.email);
+        case ReProcessBucket.moveSafe:
+          toMoveSafe.add(result.email);
+        case ReProcessBucket.none:
+          break;
       }
-    }
-
-    if (toDelete.isEmpty && toMoveSafe.isEmpty) {
-      logger.i('[F38] No emails need IMAP re-processing');
-      return const ReProcessOutcome.nothingToDo();
     }
 
     // F234 (Sprint 73): the read-only PREVIEW.
     //
     // The lists now hold exactly what WOULD have been actioned, so report the
-    // counts and stop before touching the mailbox. The user sees a rule's
-    // blast radius without anything being removed -- which is the whole point
-    // of the card, and is most valuable on Windows, configured read-only, where
-    // a rule's effect was previously invisible.
+    // counts and stop before touching the mailbox. The user sees a rule's blast
+    // radius without anything being removed -- the whole point of the card, and
+    // most valuable on Windows, configured read-only, where a rule's effect was
+    // previously invisible.
     //
-    // NOT hidden from the list here, deliberately: hiding rows would imply the
-    // mail had been dealt with, which is the F228 defect in a different
-    // costume. A preview must leave the screen looking untouched.
+    // Rows are NOT hidden here, deliberately: hiding them would imply the mail
+    // had been dealt with, which is the F228 defect in a different costume. A
+    // preview must leave the screen looking untouched.
+    //
+    // Review C-2: this is returned BEFORE the isEmpty guard below.
+    //
+    // Order matters and it is the second half of the same defect: with the
+    // guard first, a read-only run that genuinely had nothing to preview and
+    // one that had plenty were indistinguishable, because the empty lists sent
+    // both down the `nothingToDo()` path. The preview now decides first, and
+    // `hasPreview` is false when both counts are zero -- so a read-only run
+    // with nothing to show still reports "nothing to do" through the message,
+    // without a misleading "0 would have been filed".
     if (isReadOnly) {
       logger.i('[F38] read-only preview: would delete ${toDelete.length}, '
           'would move ${toMoveSafe.length}');
@@ -3724,6 +3793,11 @@ class _ResultsDisplayScreenState extends State<ResultsDisplayScreen> {
         wouldHaveDeleted: toDelete.length,
         wouldHaveMoved: toMoveSafe.length,
       );
+    }
+
+    if (toDelete.isEmpty && toMoveSafe.isEmpty) {
+      logger.i('[F38] No emails need IMAP re-processing');
+      return const ReProcessOutcome.nothingToDo();
     }
 
     // Immediately hide affected emails from the list (instant visual feedback)

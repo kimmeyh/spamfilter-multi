@@ -825,6 +825,36 @@ The cost that DID land was not in the card at all: the per-folder `catch (e, st)
 swallowed the cancellation and continued scanning the remaining folders. Found by asking what the
 change does to its NEIGHBOURS, not by a test -- every test written at that moment passed.
 
+## Phase 5 evidence (F193 gate)
+
+- **5.1.2 F-PRECHECK** (2026-09-23, run against `git diff d75c7da..HEAD`, all six ACTIONS
+  executed, not read):
+  1. **Mirror/parallel-site sync: CLEAN.** The twin pair this sprint created is the two cancel
+     controls. Verified identical call and identical wording on both
+     (`scan_progress_screen.dart:479/485/487`, `results_display_screen.dart:3570/3576/3578`).
+     **CI hazard checked specifically**: `shouldWarnAboutBackgroundScan` branches on
+     `Platform.isAndroid`, which is false on BOTH the Windows host and CI's `ubuntu-latest`, so a
+     test relying on the ambient platform would never exercise the suppression. All 11 assertions
+     inject `isAndroid` explicitly, so the suite is platform-independent.
+  2. **Helper wired to PRODUCTION: CLEAN.** All six new helpers have runtime call sites, and the
+     chain is complete end to end: `requestCancel` (both screens) -> `isCancelRequested`
+     (`email_scanner.dart:414`) -> `cancelScan` (`email_scanner.dart:998`) -> `markScanCancelled`
+     (`email_scan_provider.dart:633`). No declaration-only helper.
+  3. **Doc-comment-vs-code drift: CLEAN, and the MECHANISM claims were verified per IMP-2.** No
+     existing default changed value. The load-bearing comment asserts that a throw from `batchSink`
+     reaches `scanInbox`'s `finally`; traced through three hops rather than assumed --
+     `generic_imap_adapter.dart:1606` does `await onBatch(...)`, `email_scanner.dart:1539` returns
+     that Future from the arrow, `batchSink` (398) sits inside the outer `try` (118) whose
+     `finally` follows. Fully awaited, so the exception propagates rather than becoming an
+     unhandled async error.
+  4. **Fragile input parsing: N/A -- the diff adds no `split`/`indexOf`/`substring` on user- or
+     id-shaped input.** (`indexOf` appears only in tests, scanning source text, not parsing input.)
+  5. **API scope matches caller intent: N/A -- the diff adds no external or API calls.**
+  6. **Silent failure: CLEAN.** Two new `catch (e)` blocks, both read: `scan_result_store.dart:469`
+     logs at `Logger.e()` and rethrows; `email_scan_provider.dart:634` logs at `Logger.e()` and
+     deliberately continues, because a failure to RECORD a cancel must not mask the cancel itself.
+     Neither swallows, and neither converts an error into a destructive classification.
+
 ## Sprint summary
 
 | Task | Item | Model | Est (min) | Depends on |
