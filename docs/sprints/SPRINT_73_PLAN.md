@@ -801,8 +801,8 @@ produces must state parity then.
 | 0 | Version bump 0.16.0+7 | **DONE** -- both version gates + release-notes gate green |
 | 1 | F235 Doze scheduling | **DONE** -- 13 tests, mutation-verified, Android APK builds |
 | 2 | F232 mechanism B | pending -- needs Harold's reproduction with logging ON |
-| 3 | F234 read-only preview | **DONE** -- 17 tests; a mutation SURVIVED the first test file and was closed |
-| 4 | F224 + F207 cancel | **DONE** -- 20 tests, 2 mutations; R-1 cleared Class-1, R-2 falsified the card's 3 causes |
+| 3 | F234 read-only preview | **DONE + VALIDATED** (preview reported 1, not 0) -- 17 tests; a mutation SURVIVED the first test file and was closed |
+| 4 | F224 + F207 cancel | **DONE + VALIDATED** (both surfaces; cancel then rescan, 0 errors) -- 20 tests, 2 mutations; R-1 cleared Class-1, R-2 falsified the card's 3 causes |
 | 5 | F229 version everywhere | **DEEP DIVE DONE, implementation BLOCKED** -- measured; options 1-3 do not fit; recommend option 4; Class-2 decision for Harold |
 | 6 | F226 sweep interference | **DONE** -- warning + one visible retry |
 | 7 | F205 classify the errors | pending -- needs Harold's device run |
@@ -923,6 +923,37 @@ change does to its NEIGHBOURS, not by a test -- every test written at that momen
      logs at `Logger.e()` and rethrows; `email_scan_provider.dart:634` logs at `Logger.e()` and
      deliberately continues, because a failure to RECORD a cancel must not mask the cancel itself.
      Neither swallows, and neither converts an error into a destructive classification.
+
+## Phase 5.3 Manual Validation -- Harold, 2026-09-23 (Windows, 0.16.0 dev)
+
+**Steps 1-5 PASS. Step 6 (F235 Doze) waits on the S24+ download.**
+
+- **Step 1, F234 read-only preview: PASS, and it is the direct proof the C-2 fix landed.** Blocking
+  `*.njsaqvrup.us` produced *"Created rule to block entire domain '*.njsaqvrup.us' -- saved.
+  Preview only: 1 would have been filed. This account is read-only, so your mailbox was NOT
+  changed."* **The count is 1, not 0** -- before the fix this path returned `nothingToDo()` and the
+  message could never appear at all. The row stayed visible and the triage banner moved
+  `0 of 2` -> `1 of 2`, so the rule registered without the mail being touched.
+- **Steps 2 and 3, F224 cancel on BOTH surfaces: PASS.** The results screen showed the orange
+  **Cancel Scan** in place of Scan Again during the scan -- the path that had no cancel at all
+  before this sprint -- and the scan screen's control worked likewise.
+- **Step 4, AC-4 honest partial reporting + AC-2 no session leak: PASS.** The cancelled run
+  reported *"Scan cancelled. 1 of 34 emails had been checked"* with `30 already filed` intact --
+  cancelled, NOT failed, partial counts kept. Scan History records it as `Not finished` rather than
+  an error. The immediately following scan (09:08) completed in 3s, Found 38, **Errors 0**, so the
+  lease was released and no second session was left open.
+- **Step 5, F207: PASS** -- no stale background-scan warning on the manual scan that followed.
+- **Step 6, F235: PENDING** -- needs the build on the S24+ and several hours of real Doze.
+
+**Two things in Harold's FYI screenshot checked against the code, both CORRECT, neither a defect:**
+
+1. The chip reading **"Deleted (not processed): 7"** with red trash icons is the pre-existing
+   read-only label at `results_display_screen.dart:1394` (`isSafeSendersOnly || isReadOnly`). It
+   means *matched a delete rule, was not deleted* -- consistent with F234's preview wording, not in
+   tension with it.
+2. `Deleted (not processed): 7` alongside `0 of 1 "No rule" emails addressed` looks contradictory
+   and is not: the chip counts DELETE-RULE MATCHES while the banner counts only NO-RULE items
+   needing triage (`_computeNoRuleStats`). Different populations, so both are true at once.
 
 ## Carry-forward from the Phase 5.1 reviews (NOT dropped, NOT silently deferred)
 
