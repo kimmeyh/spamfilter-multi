@@ -98,6 +98,8 @@ class ReProcessOutcome {
     required this.succeeded,
     required this.failed,
     this.skippedReadOnly = false,
+    this.wouldHaveDeleted = 0,
+    this.wouldHaveMoved = 0,
   });
 
   /// Nothing needed doing -- not a failure, and not a success worth claiming.
@@ -105,12 +107,26 @@ class ReProcessOutcome {
       : attempted = 0,
         succeeded = 0,
         failed = 0,
-        skippedReadOnly = false;
+        skippedReadOnly = false,
+        wouldHaveDeleted = 0,
+        wouldHaveMoved = 0;
 
   /// The account is configured read-only; the mailbox was deliberately not
   /// touched. Distinct from a failure, and the user is told.
-  const ReProcessOutcome.readOnly()
-      : attempted = 0,
+  ///
+  /// F234 (Sprint 73): [wouldHaveDeleted] and [wouldHaveMoved] carry what the
+  /// rule WOULD have done. Harold, during Sprint 72 validation: *"if Manual >
+  /// Scan mode is readonly then add the rule, but don't delete the email, but
+  /// add it to 'would have been deleted'."*
+  ///
+  /// This turns read-only from a refusal into a REHEARSAL -- a broad rule's
+  /// blast radius can be seen before anything is removed. Most valuable on
+  /// Windows, which is configured read-only, so it is the platform that could
+  /// never see a rule's effect at all.
+  const ReProcessOutcome.readOnly({
+    this.wouldHaveDeleted = 0,
+    this.wouldHaveMoved = 0,
+  })  : attempted = 0,
         succeeded = 0,
         failed = 0,
         skippedReadOnly = true;
@@ -119,6 +135,16 @@ class ReProcessOutcome {
   final int succeeded;
   final int failed;
   final bool skippedReadOnly;
+
+  /// F234: what a read-only run WOULD have deleted / moved. Zero on every
+  /// other path -- these describe an action that did NOT happen, and nothing
+  /// may read them as one that did.
+  final int wouldHaveDeleted;
+  final int wouldHaveMoved;
+
+  /// True when a read-only run had something it would have acted on.
+  bool get hasPreview =>
+      skippedReadOnly && (wouldHaveDeleted + wouldHaveMoved) > 0;
 
   /// True only when work was attempted and none of it failed.
   ///
@@ -3335,8 +3361,24 @@ class _ResultsDisplayScreenState extends State<ResultsDisplayScreen> {
     final Color background;
 
     if (outcome.skippedReadOnly) {
-      message = '$baseMessage -- saved. This account is read-only, so your '
-          'mailbox was not changed.';
+      // F234: when there is something to preview, SAY WHAT IT WOULD HAVE DONE.
+      // "would have" is stated twice and the mailbox is named as unchanged --
+      // the wording carries the whole risk of this card, because a preview
+      // misread as a completed action is the F228 defect wearing a new hat.
+      if (outcome.hasPreview) {
+        final parts = <String>[];
+        if (outcome.wouldHaveDeleted > 0) {
+          parts.add('${outcome.wouldHaveDeleted} would have been filed');
+        }
+        if (outcome.wouldHaveMoved > 0) {
+          parts.add('${outcome.wouldHaveMoved} would have been moved');
+        }
+        message = '$baseMessage -- saved. Preview only: ${parts.join(', ')}. '
+            'This account is read-only, so your mailbox was NOT changed.';
+      } else {
+        message = '$baseMessage -- saved. This account is read-only, so your '
+            'mailbox was not changed.';
+      }
       background = Colors.blueGrey;
     } else if (outcome.anyFailed) {
       // Name the number. "Something went wrong" is what sent Harold to Scan
@@ -3533,6 +3575,9 @@ class _ResultsDisplayScreenState extends State<ResultsDisplayScreen> {
     final effectiveMode = userInitiated
         ? await _resolveEffectiveScanMode(scanProvider)
         : ScanMode.readOnly;
+    // F234: set when the account may not act, so the collection loop still
+    // runs and the preview can be built from what it finds.
+    var isReadOnly = false;
     if (effectiveMode == ScanMode.readOnly) {
       logger.i('[F38] Skipping re-process: account is configured read-only');
       unawaited(DiagnosticLogger.log(
@@ -3551,9 +3596,21 @@ class _ResultsDisplayScreenState extends State<ResultsDisplayScreen> {
       // same mechanism F231 documents), the user saw a flash then a different
       // sentence. The caller owns the message; this method reports the outcome.
       // It also means the load path stays silent, which C-1 requires.
-      return const ReProcessOutcome.readOnly();
+      // F234 (Sprint 73): DO NOT return yet.
+      //
+      // The card's audit said the would-have data "already exists" because
+      // `toDelete`/`toMoveSafe` are built before the mode check. That was half
+      // right: they are built LATER IN THIS METHOD, but this early return fired
+      // BEFORE the collection loop, so on the read-only path they were never
+      // populated at all. Building the preview means letting the collection run
+      // and returning after it.
+      //
+      // Nothing below this point touches the mailbox until the execution block,
+      // which is guarded by `isReadOnly`. The collection loop only reads
+      // evaluation overrides.
+      isReadOnly = true;
     }
-    final scanMode = effectiveMode;
+    final scanMode = isReadOnly ? ScanMode.readOnly : effectiveMode;
 
     // Sprint 38 Round 4 fix (2026-05-17): historical-scan views must
     // always use _historicalResults. See _reEvaluateNoRuleEmails for
@@ -3598,6 +3655,26 @@ class _ResultsDisplayScreenState extends State<ResultsDisplayScreen> {
     if (toDelete.isEmpty && toMoveSafe.isEmpty) {
       logger.i('[F38] No emails need IMAP re-processing');
       return const ReProcessOutcome.nothingToDo();
+    }
+
+    // F234 (Sprint 73): the read-only PREVIEW.
+    //
+    // The lists now hold exactly what WOULD have been actioned, so report the
+    // counts and stop before touching the mailbox. The user sees a rule's
+    // blast radius without anything being removed -- which is the whole point
+    // of the card, and is most valuable on Windows, configured read-only, where
+    // a rule's effect was previously invisible.
+    //
+    // NOT hidden from the list here, deliberately: hiding rows would imply the
+    // mail had been dealt with, which is the F228 defect in a different
+    // costume. A preview must leave the screen looking untouched.
+    if (isReadOnly) {
+      logger.i('[F38] read-only preview: would delete ${toDelete.length}, '
+          'would move ${toMoveSafe.length}');
+      return ReProcessOutcome.readOnly(
+        wouldHaveDeleted: toDelete.length,
+        wouldHaveMoved: toMoveSafe.length,
+      );
     }
 
     // Immediately hide affected emails from the list (instant visual feedback)

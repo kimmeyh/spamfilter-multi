@@ -441,6 +441,81 @@ be removed without touching the coordinator.
 **Decision-class interrupts**: Class-1 if R-1 concludes cooperative cancellation needs an
 architecture change (e.g. a cancellation token threaded through the scanner).
 
+### R-1 / R-2 DETERMINATION (done first, as the card required)
+
+**R-1: cooperative cancellation is SAFE within the estimate. No Class-1 escalation.**
+
+The card reserved a Class-1 interrupt for "a cancellation token threaded through the scanner".
+That is not needed, because the teardown the card demands already exists and runs on every path.
+
+`EmailScanner.scanInbox`'s `finally` (`email_scanner.dart:973-994`) ALREADY does exactly the two
+things R-4 makes the acceptance bar:
+
+- `ScanCoordinator.instance.release(scanLease)` -- the lease, on every path;
+- `await platform.disconnect()` -- the IMAP session, on every path, inside its own try/catch.
+
+It is a `finally`, so a THROWN exception runs it just as a normal return does. That changes the
+design problem completely: cancellation does not need a new teardown path, and must not add one.
+It needs a way to make the scan **stop and throw**, and the existing `finally` does the rest.
+
+So the Sprint 61 failure mode the card was protecting against -- "a cancel that only released the
+coordinator lease would let a second scan open an IMAP session while the first still holds one" --
+cannot occur by construction, PROVIDED cancellation is expressed as a throw out of `scanInbox`
+rather than as an out-of-band lease release. **That constraint is the whole design.**
+
+**The check point: `batchSink`** (`email_scanner.dart:398`). It is a single funnel -- the IMAP
+streaming path feeds it via `onBatch`, and the list-returning paths (Gmail, demo, mock) are fed
+through the same sink in m=20 slices at `:431-439`. One check there covers every platform path,
+which is why no token needs threading. Worst-case cancel latency is one m=20 batch.
+
+**What cancellation does to each of the enumerated call sites** (the card asked for this):
+
+- `email_scanner.dart:170` (acquire) / `:977` (release) -- the owner. Cancel throws; the `finally`
+  releases and disconnects. No change to either call.
+- `results_display_screen.dart:3732/3886` -- the re-process path. It is NOT a scan and has no
+  fetch loop, so it is out of scope for cancel; its lease is short-lived and already released in a
+  `finally`.
+- `background_scan_core.dart:169`, `main.dart:522`, `scan_progress_screen.dart:883` -- all three
+  are `releaseActiveByOwner` FORCE-release paths for scans that are already dead or unreachable.
+  Cancel must NOT reuse this path: force-release frees the lease while the scan's own stack may
+  still hold a socket, which is precisely the leak R-4 forbids. Recorded as the design's one hard
+  "do not".
+- **A scan cancelled while another WAITS behind it** (the case the card singled out): the waiter is
+  unaffected. The cancelled scan's `finally` calls `release`, which runs `_handOffOrIdle` and hands
+  the lease to the next FIFO waiter exactly as a normal completion does.
+
+**R-2: F207 is a THIRD cause -- not the two the card proposed, and NOT the same root as F232-B.**
+
+The card offered "a lease never released, a wait that outlives its scan, or a UI state not
+cleared". The evidence says none of those. The manual-scan block reads
+`ScanResultStore.getActiveBackgroundScan()` (`scan_progress_screen.dart:676`), which queries the
+DATABASE, not the coordinator:
+
+    status = 'in_progress' AND scan_type = 'background' AND started_at >= now - 30min
+
+So the block is driven by a **database row**, and is therefore completely independent of the
+in-process lease. A background scan that dies WITHOUT writing a terminal status -- process kill,
+force-stop, crash -- leaves that row `in_progress`, and the query keeps matching it for the full
+30-minute `scanTimeout` freshness window. For up to 30 minutes the user is warned about, and told
+to wait for, a scan that is already dead.
+
+**Precision, because it changes the fix**: this is NOT a hard refusal. The dialog offers "Wait and
+start" and the user can proceed (`scan_progress_screen.dart:685-702`). So F207's user-visible
+damage is a FALSE WAIT ESTIMATE and a misleading prompt, not a lockout -- and a user who proceeds
+then queues on a lease nobody holds, so the scan actually starts. The card's title ("the stale
+in-progress block") overstates it. Verified by reading the dialog, not inferred from the query.
+
+`reconcileStaleInProgressScans` fixes exactly this, but its age guard is ALSO `scanTimeout`, so it
+cannot clear a row until the row has already stopped being returned by the query. **The reconciler
+and the blocker use the same 30-minute constant, so the reconciler can never shorten the block.**
+That is the defect, and it is a one-line class of fix rather than a lifecycle change.
+
+This also means **R-5 does not apply**: F207 is not lease contention, so it is not the same root
+cause as F232 mechanism B. Recorded as the overlap the card asked about, resolved NEGATIVE.
+
+**Revised estimate**: unchanged at 150-300m. R-1 removed the architecture risk rather than the
+work; the UI control and its tests are the remaining cost.
+
 ---
 
 ## Task 5 -- F229: a version visible on the first page of EVERY screen (Priority 12)
@@ -654,6 +729,27 @@ mail (a CONFIGURATION difference). The classification applies to shared code, so
 produces must state parity then.
 
 ---
+
+## Progress (live)
+
+| Task | Item | Status |
+|---|---|---|
+| 0 | Version bump 0.16.0+7 | **DONE** -- both version gates + release-notes gate green |
+| 1 | F235 Doze scheduling | **DONE** -- 13 tests, mutation-verified, Android APK builds |
+| 2 | F232 mechanism B | pending -- needs Harold's reproduction with logging ON |
+| 3 | F234 read-only preview | pending |
+| 4 | F224 + F207 cancel | pending |
+| 5 | F229 version everywhere | pending |
+| 6 | F226 sweep interference | **DONE** -- warning + one visible retry |
+| 7 | F205 classify the errors | pending -- needs Harold's device run |
+
+**Suite 2,233 -> 2,247. Analyzer clean.**
+
+**F235 cost more than the 90-180m estimate**, and the reason is worth recording for the next
+native card: the app had NO MethodChannel at all, so the work included building the first native
+bridge (MainActivity was a bare 5-line class), a Kotlin alarm scheduler, two BroadcastReceivers, a
+manifest change and a gradle dependency. The estimate was derived from step-types that assumed an
+existing bridge. **Actuals go in CODING_VELOCITY.md at completion.**
 
 ## Sprint summary
 
