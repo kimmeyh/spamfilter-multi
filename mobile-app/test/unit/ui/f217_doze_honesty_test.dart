@@ -76,10 +76,21 @@ void main() {
     test('it explains what the user can DO', () {
       final idx = source.indexOf('_buildAndroidDozeStatusLine');
       final body = source.substring(idx, idx + 2600);
-      expect(body.contains('Opening the app runs any work that was waiting'),
-          isTrue,
+      // Matched on an unbroken fragment: F235 reworded this string to name the
+      // ~1 hour window, which re-wrapped it across source lines. The remedy is
+      // still stated; only the line breaks moved.
+      expect(body.contains('Opening the app runs any'), isTrue,
           reason: 'a caveat with no remedy is just bad news; the '
               'frustration was the uselessness, not the delay');
+    });
+
+    test('F235: the caveat now names the ~1 hour window', () {
+      // The window is a real consequence of setAndAllowWhileIdle, and the
+      // caveat must state it rather than stay vaguely honest.
+      final idx = source.indexOf('_buildAndroidDozeStatusLine');
+      final body = source.substring(idx, idx + 2600);
+      expect(body.contains('up to about an hour'), isTrue,
+          reason: 'F235 R-6: the caveat gets MORE accurate, not softer');
     });
 
     test('the Windows sibling is untouched', () {

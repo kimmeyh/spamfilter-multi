@@ -26,6 +26,10 @@ Format: `- **type**: Description (Issue #N)` where type is feat|fix|chore|docs
 
 ## [Unreleased]
 
+### 2026-09-23 (Sprint 73)
+- **feat**: background scans on Android now run while your phone is idle or the screen is off. Before, they often only ran while the app was open. Android may still delay them by up to about an hour, and Settings says so. (Issue #428)
+- **fix**: background scans are restored after your phone restarts. (Issue #428)
+
 ### 2026-09-22 (Sprint 72)
 - **feat**: Android Settings now explains that the phone may delay background scans while it is idle or the screen is off, and that opening the app runs any work that was waiting. (Issue #426)
 - **fix**: the sender address is no longer cut short in the email action panel. The Skip button shared the line with it and now sits at the bottom right, where there is room. (Issue #424)

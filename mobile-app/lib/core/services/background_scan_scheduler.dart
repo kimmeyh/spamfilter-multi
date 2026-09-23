@@ -31,6 +31,7 @@ import 'package:workmanager/workmanager.dart';
 import '../utils/account_id_sanitizer.dart';
 import 'android_background_scan_worker.dart' show kAndroidScanTaskName, kAndroidScanTestTaskName;
 import 'app_environment.dart';
+import 'android_doze_alarm.dart';
 import 'scan_frequency.dart';
 import 'windows_task_scheduler_service.dart';
 
@@ -218,7 +219,7 @@ class AndroidSchedulerAdapter implements BackgroundScanScheduler {
   bool get isSupported => true;
 
   @override
-  String get mechanismLabel => 'Android WorkManager';
+  String get mechanismLabel => 'Android alarm (Doze-tolerant) + WorkManager';
 
   /// Unique WorkManager name for [accountId] -- mirrors the Windows
   /// `SpamFilterBackgroundScan_<sanitizedAccountId><envSuffix>` convention
@@ -254,6 +255,30 @@ class AndroidSchedulerAdapter implements BackgroundScanScheduler {
       // below 15 minutes must clamp rather than let WorkManager reject or
       // silently reinterpret the request.
       final minutes = frequency.minutes < 15 ? 15 : frequency.minutes;
+
+      // F235 (Sprint 73): arm a Doze-tolerant alarm FIRST.
+      //
+      // WorkManager runs on JobScheduler, which Doze suspends -- so the
+      // periodic task below frequently does not fire at all while the phone is
+      // idle. That was the entire complaint. `setAndAllowWhileIdle` escapes
+      // Doze with no permission and no Play policy exposure (see
+      // `AndroidDozeAlarm` for the full determination).
+      //
+      // **BOTH are registered, deliberately.** The alarm is the mechanism that
+      // actually fires in Doze; WorkManager stays as the safety net, because
+      // its work is PERSISTED and an alarm is not. If the native side is
+      // missing or the alarm is lost, behaviour degrades to exactly today
+      // rather than to nothing. Scheduling twice is safe: the worker is
+      // idempotent per account and the ScanCoordinator lease serialises any
+      // overlap.
+      final alarmArmed = await AndroidDozeAlarm.schedule(
+        accountId: accountId,
+        intervalMinutes: minutes,
+      );
+      if (!alarmArmed) {
+        Logger().w('F235: Doze alarm not armed for this account; falling back '
+            'to WorkManager alone (scans may not fire while idle)');
+      }
 
       await Workmanager().registerPeriodicTask(
         uniqueNameFor(accountId),
@@ -293,6 +318,10 @@ class AndroidSchedulerAdapter implements BackgroundScanScheduler {
       // pending is a no-op, per the interface's idempotent-cancel rule.
       await Workmanager()
           .cancelByUniqueName('${uniqueNameFor(accountId)}_test');
+      // F235: and the Doze alarm. Leaving it armed would keep waking the
+      // device for an account the user has switched OFF -- the exact
+      // battery complaint this feature must not create.
+      await AndroidDozeAlarm.cancel(accountId);
       return true;
     } catch (e) {
       Logger().e('WorkManager cancel failed: $e');

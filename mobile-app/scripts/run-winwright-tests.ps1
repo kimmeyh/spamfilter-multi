@@ -274,6 +274,31 @@ if (@($tests).Count -eq 0) {
 }
 
 Write-Host ""
+# F226 (Sprint 73): warn BEFORE driving the app.
+#
+# Harold diagnosed the intermittent failures, and it is not residual app state
+# between scripts -- the hypothesis the card was filed on:
+#
+#   "it uses the Product Owner screen and sometimes there is activity going
+#    while testing is going on and they conflict... usually I am not aware it
+#    is about to start and mess up the first run."
+#
+# So the sweep competes with a human using the same app. A warning plus a few
+# seconds to react costs nothing and removes the commonest cause of a red run.
+# A red sweep should mean a real regression; one that is red because someone
+# clicked something trains everyone to discount it.
+Write-Host ""
+Write-Host "==========================================================" -ForegroundColor Yellow
+Write-Host " WINWRIGHT SWEEP STARTING -- it will DRIVE the dev app." -ForegroundColor Yellow
+Write-Host " Do not click in MyEmailSpamFilter until it finishes." -ForegroundColor Yellow
+Write-Host " Ctrl+C now if you are mid-task." -ForegroundColor Yellow
+Write-Host "==========================================================" -ForegroundColor Yellow
+for ($i = 5; $i -gt 0; $i--) {
+    Write-Host "  starting in $i..." -ForegroundColor DarkYellow
+    Start-Sleep -Seconds 1
+}
+Write-Host ""
+
 Write-Host "Running $($tests.Count) WinWright test(s)..." -ForegroundColor Green
 Write-Host ""
 
@@ -326,9 +351,33 @@ foreach ($test in $tests) {
         $passed++
         $results += [PSCustomObject]@{Name=$test.Name; Status="PASS"; Duration=$duration}
     } else {
-        Write-Host "[FAIL] $($test.Name) (exit code: $exitCode)" -ForegroundColor Red
-        $failed++
-        $results += [PSCustomObject]@{Name=$test.Name; Status="FAIL"; Duration=$duration}
+        # F226: ONE retry, and it is ANNOUNCED.
+        #
+        # Harold's own workflow is "just run it again", and the commonest cause
+        # is interference rather than a broken script. A silent retry would be
+        # wrong: a genuinely broken script would then look merely flaky, which
+        # is how a gate stops being believed. So the retry is printed, and a
+        # script that fails BOTH attempts is still reported as a failure.
+        Write-Host "[RETRY] $($test.Name) failed (exit $exitCode) -- retrying ONCE." -ForegroundColor Yellow
+        Write-Host "        Most often this is interference: something else was" -ForegroundColor DarkYellow
+        Write-Host "        driving the app. Leave it alone for this run." -ForegroundColor DarkYellow
+
+        if (Ensure-FreshAppAtHome) {
+            $retryStart = Get-Date
+            & $winwrightExe run $test.FullName
+            $exitCode = $LASTEXITCODE
+            $duration = (Get-Date) - $retryStart
+        }
+
+        if ($exitCode -eq 0) {
+            Write-Host "[PASS] $($test.Name) ($([int]$duration.TotalSeconds)s, ON RETRY)" -ForegroundColor Green
+            $passed++
+            $results += [PSCustomObject]@{Name=$test.Name; Status="PASS (retry)"; Duration=$duration}
+        } else {
+            Write-Host "[FAIL] $($test.Name) (exit code: $exitCode, FAILED TWICE)" -ForegroundColor Red
+            $failed++
+            $results += [PSCustomObject]@{Name=$test.Name; Status="FAIL"; Duration=$duration}
+        }
     }
 
     Write-Host ""
