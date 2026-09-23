@@ -207,6 +207,61 @@ if (-not $DryRun) {
         Start-Sleep -Seconds 2
     }
 
+    # Sprint 73 retro IMP-6: REFUSE TO RUN ON A LOCKED WORKSTATION.
+    #
+    # This check exists because the alternative is worse than a failure: on a
+    # locked session every ww_click fails with "SetCursorPos failed (Win32
+    # error 0)" while ww_invoke and every tree read keep working, so the sweep
+    # reports script FAILURES that read exactly like UI regressions. Sprint 73
+    # lost a cycle to that -- the failure was diagnosed twice, wrongly, before
+    # Harold asked whether the laptop was locked.
+    #
+    # Microsoft's SetCursorPos reference: "The input desktop must be the
+    # current desktop when you call SetCursorPos." Locking switches the input
+    # desktop from Default to the Winlogon secure desktop, so a process on
+    # Default is refused. GetLastError returns 0 because it is a desktop-access
+    # refusal rather than a Win32 error code -- hence the nonsensical
+    # "error 0".
+    #
+    # Detect it the way the docs say to: OpenInputDesktop succeeds only for the
+    # CURRENT input desktop, so on a locked session it fails outright.
+    #
+    # A retry is the WRONG fix and is deliberately not what this does -- it
+    # would only fail slower. Stop with an instruction the reader can act on.
+    Write-Host "[Setup] Checking the workstation is unlocked..." -ForegroundColor Cyan
+    if (-not ("WinWrightDesk" -as [type])) {
+        Add-Type -TypeDefinition @'
+using System;
+using System.Runtime.InteropServices;
+public class WinWrightDesk {
+  [DllImport("user32.dll", SetLastError=true)]
+  public static extern IntPtr OpenInputDesktop(uint flags, bool inherit, uint access);
+  [DllImport("user32.dll", SetLastError=true)]
+  public static extern bool CloseDesktop(IntPtr h);
+}
+'@
+    }
+    $desk = [WinWrightDesk]::OpenInputDesktop(0, $false, 0x0100)  # DESKTOP_SWITCHDESKTOP
+    if ($desk -eq [IntPtr]::Zero) {
+        Write-Host ""
+        Write-Error @"
+THE WORKSTATION IS LOCKED -- unlock it and run this again.
+
+Not a test failure and not flakiness. WinWright's ww_click synthesizes cursor
+input, which Windows refuses off the input desktop; locking switches that to
+the Winlogon secure desktop. These scripts MUST use ww_click for Text nodes,
+CheckBoxes and the F169 dropdown face, because none of those support
+InvokePattern -- so a locked session blocks exactly the primitive they cannot
+avoid, while ww_invoke and tree reads keep working and make it look selective.
+
+Stopping here deliberately: running anyway produces script failures that read
+as UI regressions. (Sprint 73 retro IMP-6.)
+"@
+        exit 1
+    }
+    [void][WinWrightDesk]::CloseDesktop($desk)
+    Write-Host "[Setup] Workstation is unlocked -- input desktop available." -ForegroundColor Green
+
     # Verify winwright doctor
     Write-Host "[Setup] Running winwright doctor..." -ForegroundColor Cyan
     & $winwrightExe doctor

@@ -12,6 +12,14 @@
 /// scan actually stops, that the IMAP session closed, or how long the stop
 /// takes -- worst case is one m=20 batch, which only a device run measures.
 /// See f224_scan_cancel_test.dart for the lease behaviour.
+/// SOURCE-TEXT VERIFIED: these pin WHERE the cancellation check sits and which
+/// catch clauses it may pass through. Driving the real scanInbox needs a live
+/// platform, credentials and a database. **The behaviour is covered elsewhere**
+/// -- f224_scan_cancel_test.dart drives ScanCoordinator.throwIfCancelled for
+/// real, which is what caught the review's dead-coding mutation. What neither
+/// can settle is that a real IMAP socket closed on the server; only Harold
+/// cancelling a live scan on the S24+ and immediately starting another shows
+/// that, which is why the DoD requires it.
 library;
 
 import 'dart:io';

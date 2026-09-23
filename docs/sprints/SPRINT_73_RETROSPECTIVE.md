@@ -106,3 +106,76 @@
 - **Scrum Master**: Very Good
 - **Lead Developer**: Very Good
 - **Claude Code Development Team**: Four: **(a)** settle the WorkManager isolate question on-device and correct the two mechanism comments either way -- this is a correctness dependency, not a stale comment; **(b)** decide and document the phase-6b cancellation boundary, currently the longest and ONLY destructive phase with no cancel check; **(c)** unit-test `cancelScan()` for AC-4 and `markScanCancelled()` for its status string and where-clause, both currently at zero coverage; **(d)** make the WinWright runner DETECT a locked workstation in preflight (`OpenInputDesktop` vs current desktop) and abort with a clear message instead of reporting script failures that read as UI regressions.
+
+
+---
+
+## Improvement Recommendations -- ALL SIX APPROVED AND APPLIED (Phase 7.5/7.6)
+
+**Harold's steering, 2026-09-23**: *"For all IMP-* -- ensure that the solution is trying to prevent
+the problem first, then implement additional controls if absolutely necessary. all now"*
+
+**That reframing exposed a weakness in what I first proposed.** Four of my six suggestions were
+"add a rule to CLAUDE.md" -- which is detection after the mistake, not prevention. And the evidence
+against that approach was already in hand: **CLAUDE.md is ~790 lines, and BOTH of this sprint's
+CRITICALs happened DESPITE rules that already covered the ground.** Sprint 70's IMP-1 requires
+every bug-fix test to carry a "what would this test NOT catch?" line, and
+`feedback_source_gates_verify_shape` says a source gate must be paired with a behaviour test.
+**F234 and F224 both carried that paragraph. Both were still inert.** A rule that was followed and
+did not help is not made effective by restating it.
+
+So the revised implementations, in Harold's order of preference:
+
+### PREVENTION -- mechanical, fails the build or the run
+
+**IMP-1: `test/policy/behavioral_coverage_test.dart`** -- a policy gate, not a rule.
+
+Measures one mechanical property per test file: the ratio of assertions made against source
+*strings* to all assertions. Over 0.70, the file must carry a `SOURCE-TEXT VERIFIED:` declaration
+naming what WOULD settle the behaviour.
+
+- **Threshold grounded in a survey of the real corpus, not guessed**: of 21 files that read `.dart`
+  source, seven sit at 0.73+ (near-total source verification) and cluster in the last two sprints'
+  feature tests -- exactly where both CRITICALs lived. Files that pair source checks with real
+  behavioural tests land well below: `f234_readonly_preview` is at 0.46 *after* its behavioural
+  tests were added, and was far higher before. The threshold separates the two populations as they
+  actually exist.
+- **It does not forbid source-text assertions** -- proving a rethrow precedes a generic catch needs
+  a live IMAP connection. It forbids doing so SILENTLY.
+- **Caught all seven existing offenders on first run**, including
+  `f233_settings_ui_test.dart` at 100% -- which is the Sprint 72 F233 defect that shipped with no
+  UI at all. Strong confirmation the measure tracks the real problem.
+- **Two mutations verified**: a rubber-stamp declaration (`SOURCE-TEXT VERIFIED: yes`) is rejected
+  by name, and a NEW source-only test file is caught at the moment it would be written. That second
+  one is the prevention property -- it fires on the next F234, not after it.
+- All seven files were **fixed with declarations written for their individual situations**, not
+  blanket-stamped. Following the project's own precedent (`ui_string_assertion_shadow_test.dart`,
+  Sprint 65 IMP-3), which exists because a gate passed while proving less than it appeared to.
+
+**IMP-6: `run-winwright-tests.ps1` refuses to start on a locked workstation.**
+
+Calls `OpenInputDesktop` in preflight, beside the existing `winwright doctor` check, and aborts
+with an actionable message. **A retry is deliberately NOT the fix** -- it only fails slower.
+Verified it does not false-positive on an unlocked session (`-DryRun` clean, handle returned).
+**The locked branch is unverified by direct test**, because proving it needs the workstation
+locked; the API contract is documented and the unlocked branch is confirmed.
+
+### ADDITIONAL CONTROL -- rules, but as EXTENSIONS to rules that already exist
+
+Applied to the existing entries rather than added as new ones, because accumulation is the failure
+mode being corrected. CLAUDE.md grew 787 -> 791 lines: three extensions, one new entry.
+
+- **IMP-2** extends *"Don't fix ONE symptom of a skipped process step"* from PROCESS steps to CODE
+  patterns -- the F224 adapter swallow was structurally identical to the one I had just fixed, one
+  layer below, on the only path real accounts use.
+- **IMP-3** extends the Sprint 70 mutation rule: **re-run the mutation after the FIX, not only
+  after writing the test.** The F234 mutation SURVIVED my corrected, fully-tested pure function,
+  because the bug was at its call site. "Correct abstraction, wrong wiring" had no name before.
+- **IMP-5** extends the screenshot rule: **a COUNT is not a claim about WHEN it arose.** Take the
+  baseline first -- the 09:03 row was in the same screenshot set and settles the "7 deleted"
+  question by subtraction.
+- **IMP-4** is the one genuinely new entry, because nothing covered it: **"transient", "flaky" and
+  "intermittent" are not causes.** It is paired with IMP-6's mechanical check, so the rule is the
+  backstop and the runner is the prevention.
+
+**Verification**: 75/75 hook tests pass. Analyzer clean. Full suite re-run after the changes.

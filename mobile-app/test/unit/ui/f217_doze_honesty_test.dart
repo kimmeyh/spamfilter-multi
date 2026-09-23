@@ -23,6 +23,10 @@
 /// background scans actually run more reliably -- that needs Harold's device
 /// over real intervals, and it is the only evidence that matters for the
 /// card's value.
+/// SOURCE-TEXT VERIFIED: these assert the CAVEAT TEXT exists and says what it
+/// should. They cannot prove the caveat is true of the running OS, nor that a
+/// user reads it before enabling background scans. What settles it is the S24+
+/// over real Doze windows -- which is what F235 then measured at ~1 hour.
 library;
 
 import 'dart:io';
