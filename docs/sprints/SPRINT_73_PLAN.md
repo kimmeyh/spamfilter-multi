@@ -866,18 +866,35 @@ change does to its NEIGHBOURS, not by a test -- every test written at that momen
   covers them). Scripts: `test_f124_rule_labels.json` (17s), `test_mt2c_no_rule_sweep.json` (17s,
   all three cases MT2C-1/2/3 green).
 
-  **Corrected from an earlier BLOCKED record, and the correction is the finding.** Four earlier
-  attempts across two runs failed identically at `SetCursorPos failed (Win32 error 0)` on the first
-  `ww_click`, while the preceding `ww_window_state`/`ww_invoke` steps passed. I recorded that as an
-  environmental block, citing ADR-0040's cursor-injection fragility class and the scripts' own
-  headers requiring `ww_click` for Text nodes and the F169 dropdown face. **The diagnosis of WHAT
-  was failing was right; the conclusion that it could not be recovered was wrong.** A later retry
-  on the same machine, same build, same scripts passed every one of those clicks.
-  **Lesson: a repeatable failure is not necessarily a permanent one.** Four identical failures felt
-  like proof of a stable condition and were really one transient session state sampled four times.
-  ADR-0040 supported "this is the fragile class" and I stretched it to "therefore it cannot run" --
-  a real citation carrying more weight than it supports. The cheap check (retry later) was never
-  run before writing the conclusion down.
+  **ROOT CAUSE IDENTIFIED (Harold, 2026-09-23): the workstation was LOCKED.** He asked "do the
+  WinWright failures occur when the laptop is locked?" and the answer is yes, by documented design.
+
+  Microsoft's `SetCursorPos` reference states two requirements: *"The input desktop must be the
+  current desktop when you call SetCursorPos"* and *"The calling process must have
+  WINSTA_WRITEATTRIBUTES access to the window station."* When Windows locks, the input desktop
+  switches from `Default` to the `Winlogon` secure desktop, so a process on `Default` is no longer
+  on the input desktop and the call is refused. `GetLastError` returns 0 because this is a
+  desktop-access refusal, not a Win32 error code being set -- which is precisely the otherwise
+  nonsensical `SetCursorPos failed (Win32 error 0)` signature.
+
+  **The step-level evidence confirms it and was in my own logs.** In both scripts the steps BEFORE
+  the first `ww_click` passed: `ww_window_state`, and in f124 `ww_invoke` on the Settings button.
+  `ww_invoke` drives UIA's `InvokePattern` -- a programmatic message needing no input desktop --
+  while `ww_click` SYNTHESIZES cursor input, which does. A locked session predicts exactly that
+  split: UIA tree readable, programmatic activation fine, synthesized mouse input refused. I had
+  written down that split as a symptom and not asked what would produce it.
+
+  **What I got wrong, and it is worse than the earlier "transient" correction.** I first called it
+  environmentally blocked, citing ADR-0040's cursor-injection fragility class. When the retry
+  passed I corrected that to "transient session state" -- still wrong, just wrong in a vaguer way.
+  "Transient" is what you write when you have stopped looking: it names the observation (it varies)
+  and supplies no cause, so it cannot be predicted or prevented. The real cause is deterministic
+  and documented, and one fetch of the vendor's own page settles it. **A correction that replaces a
+  wrong cause with no cause is not a diagnosis.**
+
+  **Operational consequence, which is the useful part**: the sweep requires an UNLOCKED, active
+  session. It is not flaky and needs no retry tuning -- it needs the screen unlocked. Do not run it
+  before stepping away, and do not read a locked-session failure as a UI regression.
 
 - **5.1.2 F-PRECHECK**: 2026-09-23, all six ACTIONS executed against `git diff d75c7da..HEAD`
   (not read) -- 4 CLEAN, 2 N/A, detail below:
@@ -942,12 +959,14 @@ review transcript. Each needs a backlog card at refinement.
 6. **MEDIUM**: several `indexOf` ordering assertions anchor on FIRST occurrence where the symbol
    appears more than once, so they verify the per-folder pair and say nothing about the outer one.
    `contains('rethrow;')` is satisfied by two pre-existing rethrows. Use `allMatches`/`lastIndexOf`.
-7. **WinWright cursor injection is INTERMITTENT** -- see 5.1.5 above. RESOLVED for this sprint (a
-   later retry passed 2/2), so nothing is outstanding, but four consecutive identical
-   `SetCursorPos` failures followed by a clean run means the sweep can spuriously fail.
-   **Actionable**: the runner's F226 retry already retries ONCE; consider making a `SetCursorPos`
-   error specifically retry with a longer backoff, since it is now known to be transient rather
-   than a script fault.
+7. **WinWright requires an UNLOCKED session** -- root cause found (see 5.1.5 above), NOT flaky.
+   `SetCursorPos` requires the caller to be on the current INPUT desktop; locking switches that to
+   `Winlogon`, so every `ww_click` is refused while `ww_invoke` and tree reads keep working.
+   **Actionable, and a retry is the WRONG fix** -- retrying a locked session just fails slower.
+   The runner should DETECT the condition and say so: compare `OpenInputDesktop` against the
+   current desktop in the preflight (it already runs `winwright doctor`) and abort with "the
+   workstation is locked -- unlock and re-run" instead of reporting two script failures that look
+   like UI regressions. Worth a backlog card.
 
 ## Sprint summary
 

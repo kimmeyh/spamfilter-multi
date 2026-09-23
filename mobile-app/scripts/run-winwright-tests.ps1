@@ -4,6 +4,32 @@
 # Prerequisites:
 # - Windows desktop dev build running (build-windows.ps1)
 # - civyk-winwright installed at C:\Tools\WinWright\
+# - *** THE WORKSTATION MUST BE UNLOCKED AND THE SESSION ACTIVE ***
+#
+# KNOWN FAILURE -- "SetCursorPos failed (Win32 error 0)" MEANS THE SCREEN IS LOCKED.
+# (Sprint 73. Root cause found by Harold after I twice misdiagnosed it: first as an
+# unrecoverable environmental block, then as "transient session state" -- a vaguer
+# wrong answer that named the observation and supplied no cause.)
+#
+#   Symptom: EVERY ww_click step fails with that exact message, while ww_window_state,
+#   ww_invoke and all tree reads keep working. It looks like a UI regression confined to
+#   the clicking surfaces and is nothing of the kind.
+#
+#   Why: Microsoft's SetCursorPos reference requires that "the input desktop must be the
+#   current desktop when you call SetCursorPos". Locking Windows switches the input
+#   desktop from Default to the Winlogon secure desktop, so a process on Default is no
+#   longer on the input desktop and the call is refused. GetLastError returns 0 because
+#   this is a desktop-access refusal rather than a Win32 error code being set -- which is
+#   why the message reads as the otherwise nonsensical "error 0".
+#
+#   The ww_invoke / ww_click split is the tell: ww_invoke drives UIA InvokePattern, a
+#   programmatic message needing no input desktop; ww_click SYNTHESIZES cursor input,
+#   which does. These scripts MUST use ww_click for Text nodes, CheckBoxes and the F169
+#   dropdown face because none of those support InvokePattern -- so a locked session
+#   blocks precisely the primitive they cannot avoid.
+#
+#   FIX: unlock the workstation and re-run. Do NOT retry harder and do NOT record it as
+#   flakiness -- retrying a locked session only fails slower.
 #
 # Usage:
 #   .\run-winwright-tests.ps1                          # Run all tests with DB snapshot guard
