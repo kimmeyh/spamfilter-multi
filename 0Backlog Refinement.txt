@@ -10,35 +10,35 @@ Sprint 7n Scope should include the below items. Please complete sprint planning 
 
 ---------------------------------------------------------------------------------------------------------
 Sprint 73 Scope should include the below items. Please complete sprint planning (/docs/sprint_planning.md) for the below items and present for approval.  Note that everything needs to take into account both the Windows App and the Android app and ADR stating that everything should be functionally and UI the same unless it cannot be - and where it cannot be it should be implemented as a platform exception for what is needed -- this applies to all backend code, frontend code, data, architecture, development, security, testing, deployment.
+F235 + F232 + F234
+  F229. Make the build identifiable on phone-width screens and in exports (~3-5h) Priority 12
+Note: need to do a deep dive because we need to find a place somewhere on the first page of every screen (V<n>.<n>.<n>). Be creative on this one - Font can be small (10pt equivalent) - wrap the line, suggest removal of an item from View Results History...).
+  - F226. WinWright scripts fail intermittently when run back-to-back in one sweep (~60-120m) Priority 14
+Noting this is because it uses the Product Owner screen and sometimes there is activity going while testing is going on and they conflict. Only need to run once unless it stops for some reason, then just run it again - usually I am not aware it is about to start and mess up the first run.
+  - F205. Closed-test error rate: 53 errors in 3,833 scanned on the S24+ (~30-60m) Priority 18
+  - F224. Let the user CANCEL a running scan from where they actually are (~120-240m) Priority 6
+above seems very related to   - F207. A manual scan is refused while a background scan is "in progress" (~30-60m) Priority 20
 
   My recommendation
 
   Sprint 73 = F235 + F232 + F234 (~11-20h). One theme: finish what Sprint 72 started and could not.
 
-  - F235 you already targeted, and it is the item with a real user complaint behind it — background scans that do not run make the feature useless.
-  - F232 mechanism B is the only remaining half of a data-loss defect, and Sprint 72 built the diagnostic log specifically to make it diagnosable. The
-    tooling is in place; leaving it unused wastes that investment.
-  - F234 is cheap alongside F232 because both live in the same re-process path, and it turns read-only into a rehearsal rather than a refusal.
-
-  Add F226 (~2-4h) if you want slack — the WinWright sweep passed 2/2 twice in Sprint 72, so it may already be quiet.
-
-  What I would not pick this sprint: F229's screen half (measurement says the row cannot hold it; the export stamp already closed the real problem) and
-  anything needing a Play build, since 0.15.3 is not shipping.
-
-  ---
-
   Candidates at a glance
 
-  - F235. Make Android background scans actually fire in Doze (~4-8h) Priority 4
-  - F224. Let the user CANCEL a running scan from where they actually are (~4-8h) Priority 6
-  - F232. Mechanism B -- a live re-process batch fails 9 of 9 on a healthy connection (~3-6h) Priority 6
-  - F234. Read-only as a PREVIEW mode -- record what WOULD have been deleted (~4-6h) Priority 8
-  - F202. Per-provider folder defaults (~6-10h, fully analyzed + planned + tested) Priority 10
-  - F229. Make the build identifiable on phone-width screens and in exports (~3-5h) Priority 12
-  - F206. Diagnostic export as a PLATFORM CAPABILITY (~5-8h) Priority 14
-  - F226. WinWright scripts fail intermittently when run back-to-back in one sweep (~2-4h) Priority 14
-  - F205. Closed-test error rate: 53 errors in 3,833 scanned on the S24+ (~1-2h investigation) Priority 18
-  - F207. A manual scan is refused while a background scan is "in progress" (~1-2h) Priority 20
+  - F235. Make Android background scans actually fire in Doze (~90-180m) Priority 4
+  - F224. Let the user CANCEL a running scan from where they actually are (~120-240m) Priority 6
+  - F232. Mechanism B -- a live re-process batch fails 9 of 9 on a healthy connection (~60-120m) Priority 6
+  - F234. Read-only as a PREVIEW mode -- record what WOULD have been deleted (~90-150m) Priority 8
+  - F202. Per-provider folder defaults (~150-240m) Priority 10
+  - F229. Make the build identifiable on phone-width screens and in exports (~60-120m) Priority 12
+  - F206. Diagnostic export as a PLATFORM CAPABILITY (~120-210m) Priority 14
+  - F226. WinWright scripts fail intermittently when run back-to-back in one sweep (~60-120m) Priority 14
+  - F205. Closed-test error rate: 53 errors in 3,833 scanned on the S24+ (~30-60m) Priority 18
+  - F207. A manual scan is refused while a background scan is "in progress" (~30-60m) Priority 20
+
+  Room for more. Adding F226 (~60-120m) and F205 (~30-60m) brings it to ~330-630m and still fits. F205 is worth pairing with F232 — both are
+  investigations, and F233's diagnostic log makes both cheaper than when they were filed.
+
 
   ---
 

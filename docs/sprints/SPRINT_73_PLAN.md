@@ -860,20 +860,24 @@ change does to its NEIGHBOURS, not by a test -- every test written at that momen
     cancellation boundary, all recorded below as carry-forward rather than silently dropped.
   - Suite 2,283 -> 2,295. Analyzer clean.
 
-- **5.1.5 WinWright sweep** (2026-09-23, sweep-head: `0e4267a`): **BLOCKED, environmental -- not a
-  regression, and not this sprint's F226 change.** 2 scripts in the default sweep (3 dialog-settle
-  scripts excluded by design, already documented in the runner), each run TWICE by the F226 retry:
-  4 attempts, 4 identical failures. **Every failure is `SetCursorPos failed (Win32 error 0)` on
-  the first `ww_click`.** The step BEFORE it passes in both scripts -- `ww_window_state` and, in
-  f124, `ww_invoke` on the Settings button -- so the UIA tree is readable and dispatch works; only
-  synthesized MOUSE input fails. `ADR-0040` already names cursor/`SetCursorPos` injection as a
-  known out-of-process fragility class, and both scripts' own headers record that `Text` nodes and
-  the F169 dropdown face CANNOT use `ww_invoke` and must use `ww_click` -- so the one primitive
-  these scripts require is the one the environment is refusing. DB snapshot showed **no drift**
-  before or after, so nothing was left modified. **Sprint UI changes are therefore NOT sweep-proven
-  on the real window**; they are covered by 365 green widget/UI tests, and the F234/F224 controls
-  are on Harold's Manual Validation list below. Carry-forward filed for the cursor-injection
-  blocker.
+- **5.1.5 WinWright sweep**: 2026-09-23, sweep-head `e7f3ab9` (last `mobile-app/lib/ui` commit
+  `0e4267a`, which the swept build contains) -- **2 of 2 scripts PASSED, no DB drift.** The 3
+  dialog-settle scripts stay excluded by design (documented in the runner; F99 `integration_test`
+  covers them). Scripts: `test_f124_rule_labels.json` (17s), `test_mt2c_no_rule_sweep.json` (17s,
+  all three cases MT2C-1/2/3 green).
+
+  **Corrected from an earlier BLOCKED record, and the correction is the finding.** Four earlier
+  attempts across two runs failed identically at `SetCursorPos failed (Win32 error 0)` on the first
+  `ww_click`, while the preceding `ww_window_state`/`ww_invoke` steps passed. I recorded that as an
+  environmental block, citing ADR-0040's cursor-injection fragility class and the scripts' own
+  headers requiring `ww_click` for Text nodes and the F169 dropdown face. **The diagnosis of WHAT
+  was failing was right; the conclusion that it could not be recovered was wrong.** A later retry
+  on the same machine, same build, same scripts passed every one of those clicks.
+  **Lesson: a repeatable failure is not necessarily a permanent one.** Four identical failures felt
+  like proof of a stable condition and were really one transient session state sampled four times.
+  ADR-0040 supported "this is the fragile class" and I stretched it to "therefore it cannot run" --
+  a real citation carrying more weight than it supports. The cheap check (retry later) was never
+  run before writing the conclusion down.
 
 - **5.1.2 F-PRECHECK**: 2026-09-23, all six ACTIONS executed against `git diff d75c7da..HEAD`
   (not read) -- 4 CLEAN, 2 N/A, detail below:
@@ -938,8 +942,12 @@ review transcript. Each needs a backlog card at refinement.
 6. **MEDIUM**: several `indexOf` ordering assertions anchor on FIRST occurrence where the symbol
    appears more than once, so they verify the per-folder pair and say nothing about the outer one.
    `contains('rethrow;')` is satisfied by two pre-existing rethrows. Use `allMatches`/`lastIndexOf`.
-7. **WinWright cursor injection blocked** -- see 5.1.5 above. The sweep cannot run on this machine
-   in its current state; `ww_click` is required by these scripts and is the primitive failing.
+7. **WinWright cursor injection is INTERMITTENT** -- see 5.1.5 above. RESOLVED for this sprint (a
+   later retry passed 2/2), so nothing is outstanding, but four consecutive identical
+   `SetCursorPos` failures followed by a clean run means the sweep can spuriously fail.
+   **Actionable**: the runner's F226 retry already retries ONCE; consider making a `SetCursorPos`
+   error specifically retry with a longer backoff, since it is now known to be transient rather
+   than a script fault.
 
 ## Sprint summary
 
