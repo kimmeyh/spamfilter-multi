@@ -827,8 +827,56 @@ change does to its NEIGHBOURS, not by a test -- every test written at that momen
 
 ## Phase 5 evidence (F193 gate)
 
-- **5.1.2 F-PRECHECK** (2026-09-23, run against `git diff d75c7da..HEAD`, all six ACTIONS
-  executed, not read):
+- **5.1.1 automated code review** (2026-09-23): TWO independent reviews run against
+  `d75c7da..HEAD` -- a code review and a test-coverage analysis. **Both found the same two
+  CRITICAL defects, and both defects were shipped features that did nothing while their full test
+  suites were green.**
+  - **C-1 (F224)**: a SECOND per-folder swallow in `generic_imap_adapter.dart:311`, one layer
+    BELOW the scanner swallow I had already fixed. `_fetchMessageDetails` awaits `onBatch` (the
+    scanner's `batchSink`) from inside the adapter's own try, so the cancellation never reached
+    my handler. Cancel did nothing on every real IMAP account; Gmail and demo were fine. Worse,
+    the flag stays set, so every remaining folder threw and was swallowed too, each returning zero
+    messages -- the scan "completed" reporting a near-empty mailbox. FIXED with a typed rethrow.
+  - **C-2 (F234)**: the preview forced `ScanMode.readOnly` into gates that test for
+    `rulesOnly`/`safeSendersOnly`/`safeSendersAndRules`. It matches none, so both lists stayed
+    empty, the `isEmpty` guard returned `nothingToDo()` first, and the preview block was
+    unreachable. **The feature was inert from its first commit.** FIXED by collecting under the
+    acting mode and returning the preview above that guard.
+  - **Shared root cause, and it is this sprint's own IMP-1**: both were verified by SOURCE-TEXT
+    assertions rather than behaviour. F234 is the SECOND occurrence on the same card in the same
+    sprint -- the first was closed with a test named "THE MUTATION GAP" that greps for
+    `wouldHaveDeleted: toDelete.length`; that text was still present while the bug moved 30 lines
+    upstream. A source gate proves a symbol EXISTS, never that a branch is TAKEN.
+  - **Structural fixes**: `classifyForReProcess` and `ScanCoordinator.throwIfCancelled()`
+    extracted as pure/callable seams so both decisions are assertable with no platform, DB or
+    credentials. The review's own dead-coding mutation (`if (false && ...)`, which passed all 14
+    F224 tests) now turns the suite red.
+  - **And the first fix was not enough**: after extracting and testing `classifyForReProcess`, the
+    C-2 mutation SURVIVED -- the function was correct, the CALL SITE was untested. Wiring
+    assertion added; mutation now caught. Found only by re-mutating rather than trusting the
+    extraction.
+  - Also accepted: I-2 (cancel scoped by accountId can target a `reprocess` lease -- inert, no
+    wrong deletion, noted in the coordinator), I-3 (`mounted` guards), and the phase-6b
+    cancellation boundary, all recorded below as carry-forward rather than silently dropped.
+  - Suite 2,283 -> 2,295. Analyzer clean.
+
+- **5.1.5 WinWright sweep** (2026-09-23, sweep-head: `0e4267a`): **BLOCKED, environmental -- not a
+  regression, and not this sprint's F226 change.** 2 scripts in the default sweep (3 dialog-settle
+  scripts excluded by design, already documented in the runner), each run TWICE by the F226 retry:
+  4 attempts, 4 identical failures. **Every failure is `SetCursorPos failed (Win32 error 0)` on
+  the first `ww_click`.** The step BEFORE it passes in both scripts -- `ww_window_state` and, in
+  f124, `ww_invoke` on the Settings button -- so the UIA tree is readable and dispatch works; only
+  synthesized MOUSE input fails. `ADR-0040` already names cursor/`SetCursorPos` injection as a
+  known out-of-process fragility class, and both scripts' own headers record that `Text` nodes and
+  the F169 dropdown face CANNOT use `ww_invoke` and must use `ww_click` -- so the one primitive
+  these scripts require is the one the environment is refusing. DB snapshot showed **no drift**
+  before or after, so nothing was left modified. **Sprint UI changes are therefore NOT sweep-proven
+  on the real window**; they are covered by 365 green widget/UI tests, and the F234/F224 controls
+  are on Harold's Manual Validation list below. Carry-forward filed for the cursor-injection
+  blocker.
+
+- **5.1.2 F-PRECHECK**: 2026-09-23, all six ACTIONS executed against `git diff d75c7da..HEAD`
+  (not read) -- 4 CLEAN, 2 N/A, detail below:
   1. **Mirror/parallel-site sync: CLEAN.** The twin pair this sprint created is the two cancel
      controls. Verified identical call and identical wording on both
      (`scan_progress_screen.dart:479/485/487`, `results_display_screen.dart:3570/3576/3578`).
@@ -854,6 +902,44 @@ change does to its NEIGHBOURS, not by a test -- every test written at that momen
      logs at `Logger.e()` and rethrows; `email_scan_provider.dart:634` logs at `Logger.e()` and
      deliberately continues, because a failure to RECORD a cancel must not mask the cancel itself.
      Neither swallows, and neither converts an error into a destructive classification.
+
+## Carry-forward from the Phase 5.1 reviews (NOT dropped, NOT silently deferred)
+
+Accepted as real, deliberately not fixed in this sprint, and recorded here rather than left in a
+review transcript. Each needs a backlog card at refinement.
+
+1. **F207 may rest on a FALSE mechanism claim -- verify on device before trusting it.** The
+   5.1.1 review argues the Android WorkManager background scan runs in a separate ISOLATE
+   (`android_background_scan_worker.dart` is `@pragma('vm:entry-point')` and its own doc says it
+   sets up its own binding). Dart isolates do not share memory, so the UI isolate's
+   `ScanCoordinator` would be idle while a background scan genuinely runs -- which would make my
+   suppression hide a warning for a LIVE scan, the Sprint 61 failure the notice exists to prevent.
+   **I could not settle this from source**, and the reviewer flagged it unverified in one
+   direction too. What IS certain: the comments in `scan_coordinator.dart:26` and
+   `scan_progress_screen.dart` both say "on Android every scan shares one process, so this
+   coordinator IS the whole guarantee" -- "one process" is true, "one isolate" is not, and the
+   guarantee is per-isolate. That claim predates F207 but F207 now BUILDS ON IT.
+   **Settles it**: start an Android background scan, then open Manual Scan and see whether the
+   notice appears; or log `Isolate.current.debugName` in both places. **Until then the Android
+   suppression is unproven.** The Windows branch is unaffected and correctly justified.
+2. **Phase 6b action execution has NO cancellation check.** Once collection finishes, a cancel is
+   ignored through the entire delete/move/markAsRead run -- the longest and the ONLY destructive
+   phase. A user cancelling because "it is deleting too much" watches it finish deleting. This
+   follows from the single-funnel design, but neither the design comment nor any test says so.
+   Needs either a documented decision or a check between 6b sub-steps.
+3. **`cancelScan()` and `markScanCancelled()` have no unit tests.** AC-4 ("partial counts stay
+   intact") is stated in three doc comments and asserted nowhere. Both are plain unit-testable.
+4. **I-2**: `requestCancel` scopes by `accountId` only, so it can flag a `reprocess` lease on the
+   same account. Inert today -- the re-process path never reads the flag, and `_handOffOrIdle`
+   builds a fresh `ActiveScanInfo` so it cannot leak to a waiter -- but the user would be told
+   "Stopping the scan" when nothing stops. Scope by `scanType` too.
+5. **I-3**: the two cancel handlers use `context` with no `mounted` guard. Safe today
+   (synchronous, inside `onPressed`), a real defect the moment either gains an `await`.
+6. **MEDIUM**: several `indexOf` ordering assertions anchor on FIRST occurrence where the symbol
+   appears more than once, so they verify the per-folder pair and say nothing about the outer one.
+   `contains('rethrow;')` is satisfied by two pre-existing rethrows. Use `allMatches`/`lastIndexOf`.
+7. **WinWright cursor injection blocked** -- see 5.1.5 above. The sweep cannot run on this machine
+   in its current state; `ww_click` is required by these scripts and is the primitive failing.
 
 ## Sprint summary
 
