@@ -1,17 +1,17 @@
 {
   "_description": "Sprint status file that persists across context compaction. Update after each phase/sub-phase completion.",
-  "_last_updated": "2026-09-22T20:00:00Z",
+  "_last_updated": "2026-09-23T14:00:00Z",
   "_usage": "Read this file after context compaction to restore sprint approval state and progress.",
   "_staleness_note": "This file had drifted 15 sprints (last updated at Sprint 35, 2026-04-19) before being refreshed at Sprint 50 close-out. It is a Phase 7.7 checklist item -- update it at every sprint close-out, not opportunistically.",
   "current_sprint": {
     "number": 73,
     "branch": "feature/20260922_Sprint_73",
-    "status": "Sprint 73 PRE-KICKOFF. Branch created from the Sprint 72 branch on merge. Sprint 72 close-out COMPLETE and Post-Merge Cleanup COMPLETE (4 issues closed, 4 correctly left open with reasons recorded). Phase 8.2 refinement pass 1 COMPLETE -- it found and fixed two gaps: four shipped cards still active in the backlog, and no Sprint 73 stub. PHASE 8.3 STORE RELEASE IS N/A THIS CYCLE by Harold direction (2026-09-22, no store push). NEXT: Phase 8.4 refinement pass 2, scope selection.",
-    "plan_approved": false,
-    "blanket_execution_approved": false,
-    "pr_number": null,
-    "pr_url": null,
-    "version": "0.15.3+6"
+    "status": "Sprint 73 Phase 4 EXECUTION. Plan APPROVED by Harold 2026-09-23 with amendments: MINOR bump 0.16.0+7, F234 previews BOTH block rules and safe-sender moves, F229 MAY remove the Select Account icon at phone width. Blanket execution approval through Manual Validation; do not stop between tasks.",
+    "plan_approved": true,
+    "blanket_execution_approved": true,
+    "pr_number": 435,
+    "pr_url": "https://github.com/kimmeyh/spamfilter-multi/pull/435",
+    "version": "0.16.0+7"
   },
   "previous_sprint": {
     "number": 72,
@@ -23,8 +23,7 @@
     "metrics": "Suite 2,155 -> 2,233; analyzer clean; hooks 75/0; WinWright 2/2 twice; CI all green."
   },
   "github_issues": {
-    "sprint_72_closed": "#421 F233, #423 F228, #424 F230, #425 F231 -- closed 2026-09-22 with delivery notes",
-    "still_open": "#422 F232 (mechanism B), #426 F217 (mechanism), #427 F229 (screen half), #428 F235 (Sprint 73 target)",
+    "sprint_73": "#428 F235, #422 F232-B, #430 F234, #434 F224+F207, #431 F229, #432 F226, #433 F205 -- Phase 3.3.1, 2026-09-23",
     "note": "Closes #N does NOT auto-fire here: PRs merge feature -> develop, and GitHub auto-closes only on merge to the DEFAULT branch."
   },
   "_github_issues_note": "Sprint 66 cards created at Phase 3.3.1 (2026-09-07): #387 GP-19, #388 GP-4. Close by hand at Post-Merge Cleanup.",
