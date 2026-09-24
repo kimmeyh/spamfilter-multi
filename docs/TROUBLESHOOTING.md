@@ -687,3 +687,46 @@ flutter test
 1. Check [CHANGELOG.md](../CHANGELOG.md) for recent fixes
 2. Search [GitHub Issues](https://github.com/kimmeyh/spamfilter-multi/issues)
 3. Review [CLAUDE.md](../CLAUDE.md) for architecture details
+
+## Android build: "Daemon compilation failed: null" / "Could not close incremental caches"
+
+**Symptom**: `build-with-secrets.ps1` fails during `assembleProdDebug` with
+`e: Daemon compilation failed: null` and, further down the stack,
+`java.lang.Exception: Could not close incremental caches in <path>`. **No error
+names any file in `android/app/src/main/kotlin/`** -- which is the tell that
+your Kotlin is fine and the toolchain is not.
+
+**Diagnose by READING THE PATH in the "Could not close incremental caches"
+line.** It names which cache is corrupt, and there are two very different
+answers:
+
+1. `mobile-app/build/<plugin>/kotlin/...` -- a PROJECT cache. `flutter clean`
+   or deleting `mobile-app/build/` fixes it.
+2. `D:\dev\flutter\packages\flutter_tools\gradle\build\kotlin\...` --
+   **a cache inside the FLUTTER SDK ITSELF.** `flutter clean` does NOT touch
+   this, which is why the obvious remedy appears to do nothing and the failure
+   looks permanent. Delete that directory; it is a regenerable build output,
+   not SDK source.
+
+**Fix, in order:**
+
+```powershell
+cd mobile-app\android
+.\gradlew.bat --stop                 # ALWAYS stop daemons this way
+cd ..
+flutter clean                       # clears the PROJECT caches
+Remove-Item "$env:FLUTTER_ROOT\packages\flutter_tools\gradle\build" -Recurse -Force
+```
+
+**Do NOT kill java processes to clear daemons** (Sprint 73, learned the hard
+way). `Stop-Process` on `java` while Gradle is mid-run leaves its daemon
+registry inconsistent, and the NEXT build then fails in ~55 seconds -- far too
+fast for a real compile after a clean, which is itself a useful tell that the
+failure is registry state rather than code. `gradlew --stop` shuts them down
+cleanly and reports how many it stopped.
+
+**Sprint 73 cost**: six build attempts. Three were project caches, one was
+self-inflicted by killing java, and the real blocker was the SDK-side cache
+that `flutter clean` cannot reach. **The lesson is to read the PATH in the error
+rather than re-running the same remedy** -- the message named the SDK directory
+from the first failure onward.
