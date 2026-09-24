@@ -16,6 +16,10 @@
 // (confirmed via a repo-wide grep during F142 planning -- no other file
 // referenced _PlaceholderScreen or the bottom NavigationBar).
 
+/// SOURCE-TEXT VERIFIED: this proves the navigation widget is ABSENT from the
+/// source. It cannot prove the screens are reachable without it -- a removal
+/// that also strands a route would pass. What settles it is navigating the app
+/// on a device and reaching every screen the removed control used to serve.
 import 'dart:io';
 
 import 'package:flutter_test/flutter_test.dart';

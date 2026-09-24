@@ -19,6 +19,7 @@ import 'scan_history_screen.dart';
 import 'scan_progress_screen.dart';
 import 'help_screen.dart';
 import 'settings_screen.dart';
+import '../widgets/screen_version_line.dart'; // F229 (Sprint 73)
 import '../widgets/system_inset_wrapper.dart'; // F209 (Sprint 69)
 
 /// Display data for an account in the account selection list.
@@ -715,13 +716,20 @@ class _AccountSelectionScreenState extends State<AccountSelectionScreen> with Wi
             title: const Text('Select Account'),
             actions: _buildAppBarActions(),
           ),
-          body: Padding(
+          body: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        mainAxisSize: MainAxisSize.max,
+        children: [
+          const ScreenVersionLine(),
+          Expanded(child: Padding(
             padding: const EdgeInsets.all(16.0),
             child: ListView.builder(
               itemCount: 3, // Show 3 skeleton cards
               itemBuilder: (context, index) => const AccountCardSkeleton(),
             ),
-          ),
+          )),
+        ],
+      ),
         ),
       );
     }
@@ -731,7 +739,12 @@ class _AccountSelectionScreenState extends State<AccountSelectionScreen> with Wi
       return SystemInsetWrapper(
         child: Scaffold(
           appBar: AppBarWithExit(title: const Text('Error')),
-          body: GenericErrorDisplay(
+          body: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          mainAxisSize: MainAxisSize.max,
+          children: [
+            const ScreenVersionLine(),
+            Expanded(child: GenericErrorDisplay(
             errorMessage: _error!,
             onRetry: () {
               setState(() {
@@ -740,7 +753,9 @@ class _AccountSelectionScreenState extends State<AccountSelectionScreen> with Wi
               });
               _loadSavedAccounts();
             },
-          ),
+          )),
+          ],
+        ),
         ),
       );
     }
@@ -754,10 +769,17 @@ class _AccountSelectionScreenState extends State<AccountSelectionScreen> with Wi
             elevation: 2,
             actions: _buildAppBarActions(),
           ),
-          body: NoAccountsEmptyState(
+          body: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          mainAxisSize: MainAxisSize.max,
+          children: [
+            const ScreenVersionLine(),
+            Expanded(child: NoAccountsEmptyState(
             onAddAccount: _addNewAccount,
             onTryDemoMode: _startDemoMode,
-          ),
+          )),
+          ],
+        ),
         ),
       );
     }
@@ -770,7 +792,12 @@ class _AccountSelectionScreenState extends State<AccountSelectionScreen> with Wi
           elevation: 2,
           actions: _buildAppBarActions(),
         ),
-        body: SelectionArea(
+        body: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          mainAxisSize: MainAxisSize.max,
+          children: [
+            const ScreenVersionLine(),
+            Expanded(child: SelectionArea(
           child: Column(
             children: [
               // Header section
@@ -967,6 +994,8 @@ class _AccountSelectionScreenState extends State<AccountSelectionScreen> with Wi
             ),
             ],
           ),
+        )),
+          ],
         ),
         floatingActionButton: FloatingActionButton.extended(
           onPressed: _addNewAccount,

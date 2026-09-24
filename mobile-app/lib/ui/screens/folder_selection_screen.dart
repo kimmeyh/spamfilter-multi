@@ -25,6 +25,7 @@ import '../../adapters/storage/secure_credentials_store.dart';
 import '../../adapters/auth/google_auth_service.dart';
 import 'help_screen.dart';
 import '../widgets/standard_app_bar_actions.dart';
+import '../widgets/screen_version_line.dart'; // F229 (Sprint 73)
 import '../widgets/system_inset_wrapper.dart'; // F209 (Sprint 69)
 
 /// Groups folders into a two-level tree structure for multi-select display.
@@ -581,7 +582,12 @@ class _FolderSelectionScreenState extends State<FolderSelectionScreen> {
             includeAccounts: false,
           ),
         ),
-        body: SelectionArea(child: Column(
+        body: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        mainAxisSize: MainAxisSize.max,
+        children: [
+          const ScreenVersionLine(),
+          Expanded(child: SelectionArea(child: Column(
           children: [
             // Account info
             Container(
@@ -788,7 +794,9 @@ class _FolderSelectionScreenState extends State<FolderSelectionScreen> {
                 ),
               ),
           ],
-        )),
+        ))),
+        ],
+      ),
       ),
     );
   }

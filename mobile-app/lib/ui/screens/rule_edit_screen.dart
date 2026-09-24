@@ -29,6 +29,7 @@ import '../../core/storage/rule_database_store.dart';
 import '../../core/utils/manual_rule_pattern_generator.dart';
 import '../utils/accessibility_helper.dart';
 import 'manual_rule_create_screen.dart' show ManualRuleType;
+import '../widgets/screen_version_line.dart'; // F229 (Sprint 73)
 import '../widgets/system_inset_wrapper.dart'; // F209 (Sprint 69)
 
 /// Screen for editing an existing block rule.
@@ -528,7 +529,12 @@ class _RuleEditScreenState extends State<RuleEditScreen> {
             onPressed: () => Navigator.of(context).pop(),
           ),
         ),
-        body: SelectionArea(
+        body: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        mainAxisSize: MainAxisSize.max,
+        children: [
+          const ScreenVersionLine(),
+          Expanded(child: SelectionArea(
           child: Form(
             key: _formKey,
             child: ListView(
@@ -577,7 +583,9 @@ class _RuleEditScreenState extends State<RuleEditScreen> {
               ],
             ),
           ),
-        ),
+        )),
+        ],
+      ),
       ),
     );
   }

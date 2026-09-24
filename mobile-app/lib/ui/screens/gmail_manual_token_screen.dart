@@ -9,6 +9,7 @@ import 'package:my_email_spam_filter/adapters/storage/secure_credentials_store.d
 import 'package:my_email_spam_filter/adapters/email_providers/email_provider.dart';
 import 'package:my_email_spam_filter/ui/screens/folder_selection_screen.dart';
 import 'package:my_email_spam_filter/util/redact.dart';
+import '../widgets/screen_version_line.dart'; // F229 (Sprint 73)
 import '../widgets/system_inset_wrapper.dart'; // F209 (Sprint 69)
 
 /// Manual token entry for Gmail OAuth (fallback option)
@@ -121,7 +122,12 @@ class _GmailManualTokenScreenState extends State<GmailManualTokenScreen> {
             onPressed: () => Navigator.pop(context),
           ),
         ),
-        body: SingleChildScrollView(
+        body: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        mainAxisSize: MainAxisSize.max,
+        children: [
+          const ScreenVersionLine(),
+          Expanded(child: SingleChildScrollView(
           padding: const EdgeInsets.all(16.0),
           child: Form(
             key: _formKey,
@@ -142,7 +148,9 @@ class _GmailManualTokenScreenState extends State<GmailManualTokenScreen> {
               ],
             ),
           ),
-        ),
+        )),
+        ],
+      ),
       ),
     );
   }

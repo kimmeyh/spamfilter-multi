@@ -25,6 +25,11 @@
 /// cannot prove the result is COMFORTABLE to read on real hardware, and they do
 /// not render the sheet at a given width. Harold's judgement at manual
 /// validation on both a phone and Windows is the real acceptance.
+/// SOURCE-TEXT VERIFIED: these pin the action sheet's structure and strings.
+/// They cannot prove the sheet LAYS OUT correctly on a real phone -- the very
+/// defect F230 fixed was a sender address clipped by the Skip button, which is
+/// a layout fact no source assertion can see. What settles it is Harold on the
+/// S24+ at real width, which is how the original was found.
 library;
 
 import 'dart:io';

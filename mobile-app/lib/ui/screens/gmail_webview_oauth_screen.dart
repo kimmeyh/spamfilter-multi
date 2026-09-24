@@ -9,6 +9,7 @@ import 'package:my_email_spam_filter/adapters/storage/secure_credentials_store.d
 import 'package:my_email_spam_filter/adapters/email_providers/email_provider.dart';
 import 'package:my_email_spam_filter/ui/screens/folder_selection_screen.dart';
 import 'package:my_email_spam_filter/util/redact.dart';
+import '../widgets/screen_version_line.dart'; // F229 (Sprint 73)
 import '../widgets/system_inset_wrapper.dart'; // F209 (Sprint 69)
 
 /// WebView-based Gmail OAuth for Windows (backup approach)
@@ -163,7 +164,12 @@ class _GmailWebViewOAuthScreenState extends State<GmailWebViewOAuthScreen> {
             onPressed: () => Navigator.pop(context),
           ),
         ),
-        body: Stack(
+        body: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        mainAxisSize: MainAxisSize.max,
+        children: [
+          const ScreenVersionLine(),
+          Expanded(child: Stack(
           children: [
             if (_errorMessage == null)
               WebViewWidget(controller: _controller)
@@ -218,7 +224,9 @@ class _GmailWebViewOAuthScreenState extends State<GmailWebViewOAuthScreen> {
                 ),
               ),
           ],
-        ),
+        )),
+        ],
+      ),
       ),
     );
   }

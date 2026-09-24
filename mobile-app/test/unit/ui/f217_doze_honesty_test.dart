@@ -23,6 +23,10 @@
 /// background scans actually run more reliably -- that needs Harold's device
 /// over real intervals, and it is the only evidence that matters for the
 /// card's value.
+/// SOURCE-TEXT VERIFIED: these assert the CAVEAT TEXT exists and says what it
+/// should. They cannot prove the caveat is true of the running OS, nor that a
+/// user reads it before enabling background scans. What settles it is the S24+
+/// over real Doze windows -- which is what F235 then measured at ~1 hour.
 library;
 
 import 'dart:io';
@@ -76,10 +80,21 @@ void main() {
     test('it explains what the user can DO', () {
       final idx = source.indexOf('_buildAndroidDozeStatusLine');
       final body = source.substring(idx, idx + 2600);
-      expect(body.contains('Opening the app runs any work that was waiting'),
-          isTrue,
+      // Matched on an unbroken fragment: F235 reworded this string to name the
+      // ~1 hour window, which re-wrapped it across source lines. The remedy is
+      // still stated; only the line breaks moved.
+      expect(body.contains('Opening the app runs any'), isTrue,
           reason: 'a caveat with no remedy is just bad news; the '
               'frustration was the uselessness, not the delay');
+    });
+
+    test('F235: the caveat now names the ~1 hour window', () {
+      // The window is a real consequence of setAndAllowWhileIdle, and the
+      // caveat must state it rather than stay vaguely honest.
+      final idx = source.indexOf('_buildAndroidDozeStatusLine');
+      final body = source.substring(idx, idx + 2600);
+      expect(body.contains('up to about an hour'), isTrue,
+          reason: 'F235 R-6: the caveat gets MORE accurate, not softer');
     });
 
     test('the Windows sibling is untouched', () {

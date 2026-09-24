@@ -15,6 +15,7 @@ import '../widgets/standard_app_bar_actions.dart';
 import 'help_screen.dart';
 import 'no_rule_review_screen.dart';
 import 'results_display_screen.dart';
+import '../widgets/screen_version_line.dart'; // F229 (Sprint 73)
 import '../widgets/system_inset_wrapper.dart'; // F209 (Sprint 69)
 
 /// Unified scan history screen showing both manual and background scans
@@ -268,9 +269,16 @@ class _ScanHistoryScreenState extends State<ScanHistoryScreen> {
             ],
           ),
         ),
-        body: _isLoading
+        body: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        mainAxisSize: MainAxisSize.max,
+        children: [
+          const ScreenVersionLine(),
+          Expanded(child: _isLoading
             ? const Center(child: CircularProgressIndicator())
-            : SelectionArea(child: _buildBody()),
+            : SelectionArea(child: _buildBody())),
+        ],
+      ),
       ),
     );
   }

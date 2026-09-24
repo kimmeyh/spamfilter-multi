@@ -211,6 +211,7 @@ namespace).
 | **ScanCoordinator** (`scan_coordinator.dart`, F175 Sprint 62) | In-process scan mutual exclusion: EVERY scan type acquires a FIFO lease inside `EmailScanner.scanInbox` (released in its `finally`), so manual/background/test/demo scans never run concurrently within a process; carries the 30-minute `scanTimeout` used by the background-scan timeout wrap and startup stale-`in_progress` reconciliation; on background-scan timeout the hung scan's lease is force-released (owner-matched, `releaseActiveByOwner`) so queued scans proceed instead of waiting out their own limit. **Declared ADR-0042 exception**: Windows background scans run in a separate Task Scheduler process the in-process lock cannot see -- cross-process exclusion there stays with F109 foreground-deferral; cross-process DETECTION (the manual-scan wait notice with average-duration estimate) is database-backed and platform-uniform |
 | **BackgroundScanCore** (`background_scan_core.dart`, F161 Sprint 61) | The per-account scan orchestration BOTH platforms run (settings resolution with `isBackground: true`, headless EmailScanProvider, shared EmailScanner, persistence) -- extracted verbatim from the Windows worker so background scans are the identical pipeline everywhere |
 | **BackgroundScanScheduler** (`background_scan_scheduler.dart`, F161 Sprint 61, ADR-0042 platform factory) | Shared scheduling contract (isSupported/isScheduled/schedule/cancel) with `WindowsSchedulerAdapter` (Task Scheduler), `AndroidSchedulerAdapter` (WorkManager per-account unique work, 15-min floor, network-required, UPDATE policy), and `UnsupportedPlatformScheduler` (explicit named no-op); resolved by `BackgroundScanSchedulerFactory` with a test override seam |
+| **AndroidDozeAlarm** (`android_doze_alarm.dart` + Kotlin `DozeAlarmScheduler` / `DozeScanTrigger` / `BootReceiver`, F235 Sprint 73) | Wakes the device in Doze, which WorkManager (JobScheduler) cannot: one inexact `setAndAllowWhileIdle` alarm per account over the `com.myemailspamfilter/doze_alarm` MethodChannel -- deliberately NOT an exact alarm, so no `SCHEDULE_EXACT_ALARM` / `USE_EXACT_ALARM` permission and no Play policy exposure; cost is a delivery window of about an hour. On firing, the alarm re-arms itself (alarms do not repeat) and enqueues a one-off WorkManager task built with the plugin's own `buildTaskInputData`, so the scan still runs in the existing worker with its ScanCoordinator lease, F177 memory handling and F175 backoff. `BootReceiver` (`RECEIVE_BOOT_COMPLETED`) restores the alarms after a reboot. The periodic WorkManager task stays registered as a safety net |
 | **AndroidBackgroundScanWorker** (`android_background_scan_worker.dart`, F161 Sprint 61) | WorkManager dispatcher (`@pragma('vm:entry-point')`) + worker mirroring the Windows preamble; completion notification via flutter_local_notifications |
 | **BackgroundScanWindowsWorker** | Headless worker for Windows Task Scheduler scans (delegates the per-account scan to BackgroundScanCore since F161) |
 | **ScanFrequency** (`scan_frequency.dart`, F144 Sprint 60) | Shared frequency enum for scheduling UI + both schedulers (extracted when the unwired Android WorkManager code -- BackgroundScanManager/Service/Worker/NotificationService -- was removed; the working Android scheduler landed as F161, Sprint 61) |
@@ -543,6 +544,15 @@ BackgroundScanWindowsWorker.executeBackgroundScan(accountId: <id>)
 `callbackDispatcher` routes it to a single-account scan. First-run `initialDelay`
 is randomized (1..N min) for the same anti-collision reason.
 
+**Android in Doze** (F235, Sprint 73; amends ADR-0039): WorkManager runs on
+JobScheduler, which Doze suspends, so the periodic task alone often did not fire
+while the phone was idle. Each account ALSO gets an inexact
+`AlarmManager.setAndAllowWhileIdle` alarm. The alarm only WAKES the device: on
+firing it re-arms itself and enqueues a one-off WorkManager task for that account,
+so the scan itself still runs in the same worker as above. `BootReceiver` re-arms
+all alarms after a reboot, because alarms (unlike WorkManager work) are not
+persisted. The periodic WorkManager task remains registered as a safety net.
+
 ### Rule Evaluation Flow (ADR-0005)
 
 ```
@@ -713,6 +723,7 @@ mobile-app/
 - Emulator must use "Google APIs" image (NOT AOSP) for Google Sign-In
 - Multi-account support via unique accountId (`{platformId}-{email}`)
 - Background scanning via WorkManager -- per-account unique tasks (ADR-0039 / F98, Sprint 42)
+- Doze delivery via per-account inexact `setAndAllowWhileIdle` alarms that enqueue the WorkManager scan; re-armed on boot (F235, Sprint 73)
 
 #### Android release-build chain (Sprint 64: SEC-9, GP-2/ADR-0027, GP-9, SEC-4)
 

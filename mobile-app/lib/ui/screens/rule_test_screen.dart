@@ -9,6 +9,7 @@ import '../../core/storage/scan_result_store.dart';
 import '../../core/storage/unmatched_email_store.dart';
 import '../../core/utils/pattern_normalization.dart';
 import '../widgets/standard_app_bar_actions.dart';
+import '../widgets/screen_version_line.dart'; // F229 (Sprint 73)
 import '../widgets/system_inset_wrapper.dart'; // F209 (Sprint 69)
 
 /// Screen for testing rule patterns against sample emails.
@@ -268,7 +269,12 @@ class _RuleTestScreenState extends State<RuleTestScreen> {
             includeSettings: false,
           ),
         ),
-        body: SelectionArea(child: Column(
+        body: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        mainAxisSize: MainAxisSize.max,
+        children: [
+          const ScreenVersionLine(),
+          Expanded(child: SelectionArea(child: Column(
           children: [
             // Pattern input area
             _buildPatternInput(),
@@ -280,7 +286,9 @@ class _RuleTestScreenState extends State<RuleTestScreen> {
                   : _buildResults(),
             ),
           ],
-        )),
+        ))),
+        ],
+      ),
       ),
     );
   }

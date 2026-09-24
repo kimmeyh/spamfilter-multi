@@ -14,6 +14,7 @@ import '../widgets/email_auth_badge.dart';
 import 'help_screen.dart';
 import 'rule_test_screen.dart';
 import '../widgets/standard_app_bar_actions.dart';
+import '../widgets/screen_version_line.dart'; // F229 (Sprint 73)
 import '../widgets/system_inset_wrapper.dart'; // F209 (Sprint 69)
 
 enum RuleActionType { delete, move }
@@ -472,7 +473,12 @@ class _RuleQuickAddScreenState extends State<RuleQuickAddScreen> {
             ],
           ),
         ),
-        body: Form(
+        body: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        mainAxisSize: MainAxisSize.max,
+        children: [
+          const ScreenVersionLine(),
+          Expanded(child: Form(
           key: _formKey,
           child: SelectionArea(
             child: SingleChildScrollView(
@@ -497,7 +503,9 @@ class _RuleQuickAddScreenState extends State<RuleQuickAddScreen> {
             ),
           ),
           ),
-        ),
+        )),
+        ],
+      ),
       ),
     );
   }

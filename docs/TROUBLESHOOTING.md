@@ -687,3 +687,67 @@ flutter test
 1. Check [CHANGELOG.md](../CHANGELOG.md) for recent fixes
 2. Search [GitHub Issues](https://github.com/kimmeyh/spamfilter-multi/issues)
 3. Review [CLAUDE.md](../CLAUDE.md) for architecture details
+
+## Android build: "Daemon compilation failed: null" / "Could not close incremental caches"
+
+**BLUF: these lines are NOT a build failure. Read the LAST line of the build
+output, and nothing else, to decide pass or fail.** A good build prints
+`[INFO] Build successful!` from `build-with-secrets.ps1` and `Built
+build\app\outputs\flutter-apk\app-prod-debug.apk` from Flutter, with dozens of
+these stack traces above it.
+
+**What you see**: `e: Daemon compilation failed: null`, then a long trace
+ending in `Could not close incremental caches in
+mobile-app\build\<plugin>\kotlin\...: class-fq-name-to-source.tab,
+source-to-classes.tab, internal-name-to-source.tab`. It repeats for every
+third-party plugin written in Kotlin (`battery_plus`, `msal_auth`,
+`google_sign_in_android`, `package_info_plus`, `workmanager_android`,
+`webview_flutter_android`), and never for the app module.
+
+**Root cause (proven from the Kotlin daemon log, Sprint 73)**: the suppressed
+exception under each trace is
+
+```
+java.lang.IllegalArgumentException: this and base files have different roots:
+  C:\Users\kimme\AppData\Local\Pub\Cache\hosted\pub.dev\battery_plus-5.0.3\...\BatteryPlusPlugin.kt
+  and D:\Data\Harold\github\spamfilter-multi\mobile-app\android.
+    at kotlin.io.FilesKt__UtilsKt.relativeTo(Utils.kt:128)
+    at org.jetbrains.kotlin.incremental.storage.RelocatableFileToPathConverter.toPath(...)
+```
+
+Kotlin's incremental caches store each source path RELATIVE to the project
+directory. Plugin sources live in the pub cache on `C:`; the project lives on
+`D:`. A path on one drive has no relative form from the other, so the three
+maps that store SOURCE PATHS fail to save -- exactly the three the error names.
+The app's own sources are on `D:`, which is why the app module never shows it.
+The Kotlin Gradle plugin then abandons the daemon and compiles the plugin
+another way, and the build continues. It is deterministic and harmless, and it
+has been present since the pub cache and the repo were first on different
+drives. The daemon's own log, with the full suppressed trace, is at
+`%TEMP%\kotlin-daemon.<date>.log`.
+
+**What actually broke the Sprint 73 builds -- all self-inflicted.** Five of six
+"failures" were builds interrupted by the person diagnosing them, after reading
+the lines above as fatal while the build was still running:
+
+- `build-with-secrets.ps1` runs `gradlew --stop` at startup (line 325). **Starting
+  a second build while one is running stops the first one's daemon**; the first
+  then dies with `Gradle build daemon has been stopped: stop command received`.
+- `Stop-Process` on `java` mid-build ends the build with exit code 1 and NO
+  Gradle error message at all -- the tell for a killed build.
+- The build after a kill can fail in about 55 seconds with `Could not delete
+  ...\caches-jvm`, because the killed daemon left files locked.
+- The one build left alone (the sixth) succeeded and compiled the app's Kotlin.
+
+**Rules:**
+1. Judge a build by its final lines only. `e:` lines above them mean nothing
+   when the build ends with `Build successful`.
+2. Never start a second build, run `flutter clean`, delete `build\`, or stop
+   Gradle while a build is running. Wait for it to end.
+3. To stop daemons between builds: `cd mobile-app\android; .\gradlew.bat --stop`.
+   Never `Stop-Process -Name java`.
+4. No AV change is needed. Norton was suspected and was NOT the cause.
+
+**Optional, not applied: removing the noise.** Either move the pub cache to `D:`
+(set `PUB_CACHE`, then `flutter pub get`) or add `kotlin.incremental=false` to
+`mobile-app/android/gradle.properties`. Neither is needed for a working build.

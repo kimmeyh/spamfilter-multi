@@ -209,6 +209,20 @@ dependencies {
     // Core library desugaring for Java 8+ compatibility (required by flutter_local_notifications)
     coreLibraryDesugaring("com.android.tools:desugar_jdk_libs:2.0.4")
 
+    // F235 (Sprint 73): androidx.work on the APP module's classpath.
+    //
+    // The workmanager PLUGIN already depends on this, but a plugin's
+    // implementation dependencies are not visible to the app module -- so
+    // DozeScanTrigger, which enqueues a one-off through WorkManager, failed to
+    // compile with "Unresolved reference 'WorkManager'". Caught by the build,
+    // not by flutter analyze, because Dart analysis cannot see Kotlin.
+    //
+    // Version PINNED to match workmanager_android 0.10.6's own
+    // (`work_version = "2.11.2"`). A different version here would risk two
+    // copies of WorkManager on the classpath, and the symptom of that is
+    // scheduled work silently not running -- the exact defect this card fixes.
+    implementation("androidx.work:work-runtime:2.11.2")
+
     // ---------------------------------------------------------------------
     // WORKAROUND -- NOW INDEFINITE. Originally approved by Harold 2026-09-14
     // as ONE-TIME for the 0.15.1 Play release, to be removed "when the Flutter

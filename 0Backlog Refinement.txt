@@ -9,7 +9,117 @@ If questions must be asked, ask as late as possible - do everything that can be 
 Sprint 7n Scope should include the below items. Please complete sprint planning (/docs/sprint_planning.md) for the below items and present for approval.  Note that everything needs to take into account both the Windows App and the Android app and ADR stating that everything should be functionally and UI the same unless it cannot be - and where it cannot be it should be implemented as a platform exception for what is needed -- this applies to all backend code, frontend code, data, architecture, development, security, testing, deployment.
 
 ---------------------------------------------------------------------------------------------------------
-Sprint 71 Scope should include the below items. Please complete sprint planning (/docs/sprint_planning.md) for the below items and present for approval.  Note that everything needs to take into account both the Windows App and the Android app and ADR stating that everything should be functionally and UI the same unless it cannot be - and where it cannot be it should be implemented as a platform exception for what is needed -- this applies to all backend code, frontend code, data, architecture, development, security, testing, deployment.
+Sprint 73 Scope should include the below items. Please complete sprint planning (/docs/sprint_planning.md) for the below items and present for approval.  Note that everything needs to take into account both the Windows App and the Android app and ADR stating that everything should be functionally and UI the same unless it cannot be - and where it cannot be it should be implemented as a platform exception for what is needed -- this applies to all backend code, frontend code, data, architecture, development, security, testing, deployment.
+F235 + F232 + F234
+  F229. Make the build identifiable on phone-width screens and in exports (~3-5h) Priority 12
+Note: need to do a deep dive because we need to find a place somewhere on the first page of every screen (V<n>.<n>.<n>). Be creative on this one - Font can be small (10pt equivalent) - wrap the line, suggest removal of an item from View Results History...).
+  - F226. WinWright scripts fail intermittently when run back-to-back in one sweep (~60-120m) Priority 14
+Noting this is because it uses the Product Owner screen and sometimes there is activity going while testing is going on and they conflict. Only need to run once unless it stops for some reason, then just run it again - usually I am not aware it is about to start and mess up the first run.
+  - F205. Closed-test error rate: 53 errors in 3,833 scanned on the S24+ (~30-60m) Priority 18
+  - F224. Let the user CANCEL a running scan from where they actually are (~120-240m) Priority 6
+above seems very related to   - F207. A manual scan is refused while a background scan is "in progress" (~30-60m) Priority 20
+
+  My recommendation
+
+  Sprint 73 = F235 + F232 + F234 (~11-20h). One theme: finish what Sprint 72 started and could not.
+
+  Candidates at a glance
+
+  - F235. Make Android background scans actually fire in Doze (~90-180m) Priority 4
+  - F224. Let the user CANCEL a running scan from where they actually are (~120-240m) Priority 6
+  - F232. Mechanism B -- a live re-process batch fails 9 of 9 on a healthy connection (~60-120m) Priority 6
+  - F234. Read-only as a PREVIEW mode -- record what WOULD have been deleted (~90-150m) Priority 8
+  - F202. Per-provider folder defaults (~150-240m) Priority 10
+  - F229. Make the build identifiable on phone-width screens and in exports (~60-120m) Priority 12
+  - F206. Diagnostic export as a PLATFORM CAPABILITY (~120-210m) Priority 14
+  - F226. WinWright scripts fail intermittently when run back-to-back in one sweep (~60-120m) Priority 14
+  - F205. Closed-test error rate: 53 errors in 3,833 scanned on the S24+ (~30-60m) Priority 18
+  - F207. A manual scan is refused while a background scan is "in progress" (~30-60m) Priority 20
+
+  Room for more. Adding F226 (~60-120m) and F205 (~30-60m) brings it to ~330-630m and still fits. F205 is worth pairing with F232 — both are
+  investigations, and F233's diagnostic log makes both cheaper than when they were filed.
+
+
+  ---
+
+  Core App
+
+  F235. Make Android background scans actually fire in Doze (~4-8h) Priority 4
+  - Phase: Core / Android
+  - Platform: Declared ADR-0042 exception -- Android only. Windows has no Doze equivalent.
+  - The mechanism half of F217. Sprint 72 shipped only the honest caveat, because the search you required found the battery exemption is not the only
+    route.
+  - setExactAndAllowWhileIdle() fires in Doze with no special permission, capped at once per 9 minutes -- compatible with the 15-minute interval.
+  - Two risks already in the card: USE_EXACT_ALARM has its own Play justification burden (verify which permission is needed before building), and an
+    alarm does not survive reboot the way WorkManager persisted work does.
+  - Depends on: nothing. Issue #428.
+
+  F224. Let the user CANCEL a running scan from where they actually are (~4-8h) Priority 6
+  - Phase: Core App
+  - Platform: All
+  - The buttons are the easy half. Future.timeout does not cancel underlying work, so a cancel that only released the coordinator lease would let a
+    second scan open an IMAP session while the first still holds one -- the Sprint 61 per-account session-cap failure.
+  - Cooperative cancellation must be designed first.
+  - Depends on: nothing.
+
+  F232. Mechanism B -- a live re-process batch fails 9 of 9 on a healthy connection (~3-6h) Priority 6
+  - Phase: Bug Fix
+  - Platform: All
+  - Re-scoped today: mechanism A shipped in Sprint 72, so the data-loss half is closed.
+  - Now instrumented rather than guessed at -- the F233 logger distinguishes NOT_CONNECTED / SERVER_REFUSED / SKIPPED, which is exactly what could not be
+    told apart.
+  - Already eliminated with evidence: shared-adapter interference, malformed UIDs (falsified from device CSVs), cross-folder batching.
+  - Depends on: a live failing batch to reproduce. Issue #422.
+
+  F234. Read-only as a PREVIEW mode -- record what WOULD have been deleted (~4-6h) Priority 8
+  - Phase: UX / Core
+  - Platform: All (especially valuable on Windows, which is configured read-only)
+  - Your idea during validation. Turns read-only from a restriction into a rehearsal: see that a rule would have matched 340 emails before anything is
+    deleted.
+  - The data already exists -- toDelete is built before the mode check and currently discarded.
+  - Must never read as a real action; that is the F228 lesson.
+  - Open question: block rules only, or safe-sender moves too?
+
+  F202. Per-provider folder defaults (~6-10h, fully analyzed + planned + tested) Priority 10
+  - Phase: Core App
+  - Platform: All
+  - Overall default plus provider overrides for all four folder settings. Already analyzed and planned.
+
+  F229. Make the build identifiable on phone-width screens and in exports (~3-5h) Priority 12
+  - Phase: UX / Supportability
+  - Platform: All
+  - Export half shipped in Sprint 72. The screen half is blocked by measurement: a short-form label still overflowed 18px and turned four tests red.
+  - The version is already visible at phone width on Settings > General, so this is reach, not absence.
+  - Depends on: a decision to move the label into the AppBar title line, which touches every screen. Issue #427.
+
+  F206. Diagnostic export as a PLATFORM CAPABILITY (~5-8h) Priority 14
+  - Phase: Supportability
+  - Platform: All
+  - Reset the counters and get scan data off the device on every platform.
+  - Overlaps F233's logger, which shipped. Re-scope before selecting.
+
+  Developer Tooling
+
+  F226. WinWright scripts fail intermittently when run back-to-back (~2-4h) Priority 14
+  - Phase: Developer Tooling
+  - Platform: Windows Desktop
+  - In a full sweep one of two scripts fails and which one swaps between runs. Individually both pass 29/29.
+  - New data: Sprint 72 ran the sweep twice, both 2/2 and 29/29 with no DB drift. One green pair does not disprove it, but it may be quieter than filed.
+  - Do NOT fix by adding sleeps -- that is the f56/f37 debt already quarantined.
+
+  Investigation
+
+  F205. Closed-test error rate: 53 errors in 3,833 scanned on the S24+ (~1-2h) Priority 18
+  - Phase: Investigation
+  - Platform: Android
+  - Find out what the errors actually are. F233's diagnostic log makes this materially cheaper than when it was filed.
+
+  F207. A manual scan is refused while a background scan is "in progress" (~1-2h) Priority 20
+  - Phase: Bug Fix
+  - Platform: All
+  - The block appears to outlive the scan.
+---------------------------------------------------------------------------------------------------------
+Sprint 72 Scope should include the below items. Please complete sprint planning (/docs/sprint_planning.md) for the below items and present for approval.  Note that everything needs to take into account both the Windows App and the Android app and ADR stating that everything should be functionally and UI the same unless it cannot be - and where it cannot be it should be implemented as a platform exception for what is needed -- this applies to all backend code, frontend code, data, architecture, development, security, testing, deployment.
 F233, F232, F228, F230, F231
 F217, F219 AC-1
 

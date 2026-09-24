@@ -180,6 +180,23 @@ class EmailScanProvider extends ChangeNotifier {
 
   // Getters
   ScanStatus get status => _status;
+
+  /// F224 / PR #435 review I-4: was the terminal state a USER CANCEL?
+  ///
+  /// [ScanStatus] deliberately gains no `cancelled` value -- that enum is
+  /// persisted and read by Scan History and the reconciler, so adding to it
+  /// changes the meaning of a STORED value, which is a Class-1 architecture
+  /// decision. This is a transient UI flag instead, cleared by [reset] and by
+  /// the next [startScan].
+  ///
+  /// **Why it is needed at all**: `cancelScan` sets `ScanStatus.error`, and the
+  /// scan screen's header maps `error` to "Scan failed" -- so the user tapped
+  /// Cancel and the app told them their own deliberate action had failed. That
+  /// contradicted `cancelScan`'s own doc comment, which states the whole point
+  /// is not to say that. The database row was always correct (`interrupted`);
+  /// only the live header was wrong.
+  bool get wasCancelled => _wasCancelled;
+  bool _wasCancelled = false;
   int get processedCount => _processedCount;
   int get totalEmails => _totalEmails;
   EmailMessage? get currentEmail => _currentEmail;
@@ -286,6 +303,7 @@ class EmailScanProvider extends ChangeNotifier {
     bool persist = true,  // [FIX] SPRINT 17: Allow UI-only startScan without creating db record
     String? platformId,  // PR #335 review: explicit platform for the ensured accounts row (no accountId parsing)
   }) async {
+    _wasCancelled = false;
     _status = ScanStatus.scanning;
     _processedCount = 0;
     _totalEmails = totalEmails;
@@ -589,6 +607,8 @@ class EmailScanProvider extends ChangeNotifier {
   /// [NEW] SPRINT 4: Mark scan as failed with error and persist error state
   Future<void> errorScan(String errorMessage) async {
     _status = ScanStatus.error;
+    // A real failure must never inherit a previous cancel's flag.
+    _wasCancelled = false;
     _statusMessage = 'Scan failed: $errorMessage';
     _currentEmail = null;
     _logger.e('Scan error: $errorMessage');
@@ -606,9 +626,45 @@ class EmailScanProvider extends ChangeNotifier {
     notifyListeners();
   }
 
+  /// F224 (Sprint 73): the scan was CANCELLED by the user.
+  ///
+  /// Distinct from [errorScan] on purpose. `errorScan` hardcodes a
+  /// "Scan failed: " prefix, so routing a cancel through it would tell the
+  /// user their own deliberate action was a failure -- and would file the scan
+  /// under `error` alongside genuine mail-server problems, making Scan History
+  /// misleading.
+  ///
+  /// [ScanStatus] gains no new value: `error` is the terminal state the UI
+  /// already handles, and the honest detail lives in the message and in the
+  /// row's `interrupted` status. Adding an enum value would be a Class-1
+  /// change to a stored value's meaning.
+  ///
+  /// Partial counts are deliberately NOT reset (AC-4) -- work that really
+  /// happened stays recorded.
+  Future<void> cancelScan() async {
+    _status = ScanStatus.error;
+    _wasCancelled = true;
+    _statusMessage = 'Scan cancelled. '
+        '$_processedCount of $_totalEmails emails had been checked.';
+    _currentEmail = null;
+    _logger.i('Scan cancelled by the user after $_processedCount emails');
+
+    if (_scanResultStore != null && _currentScanResultId != null) {
+      try {
+        await _scanResultStore!.markScanCancelled(_currentScanResultId!);
+      } catch (e) {
+        // A failure to record the cancel must not mask the cancel itself.
+        _logger.e('Failed to mark scan cancelled: $e');
+      }
+    }
+
+    notifyListeners();
+  }
+
   /// Reset scan state to idle
   void reset() {
     _status = ScanStatus.idle;
+    _wasCancelled = false;
     _processedCount = 0;
     _totalEmails = 0;
     _currentEmail = null;

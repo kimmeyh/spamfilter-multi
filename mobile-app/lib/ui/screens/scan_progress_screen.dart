@@ -21,6 +21,7 @@ import '../widgets/standard_app_bar_actions.dart';
 import 'results_display_screen.dart';
 import 'scan_history_screen.dart';
 import 'help_screen.dart';
+import '../widgets/screen_version_line.dart'; // F229 (Sprint 73)
 import '../widgets/system_inset_wrapper.dart'; // F209 (Sprint 69)
 
 /// Displays live scan progress bound to EmailScanProvider.
@@ -261,7 +262,12 @@ class _ScanProgressScreenState extends State<ScanProgressScreen>
               includeManualScan: false,
             ),
           ),
-          body: Padding(
+          body: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        mainAxisSize: MainAxisSize.max,
+        children: [
+          const ScreenVersionLine(),
+          Expanded(child: Padding(
             padding: const EdgeInsets.all(16.0),
             child: SelectionArea(
               child: Column(
@@ -277,7 +283,9 @@ class _ScanProgressScreenState extends State<ScanProgressScreen>
               ],
             ),
             ),
-          ),
+          )),
+        ],
+      ),
         ),
       ),
     );
@@ -292,7 +300,9 @@ class _ScanProgressScreenState extends State<ScanProgressScreen>
       ScanStatus.scanning => 'Scanning in progress',
       ScanStatus.paused => 'Paused',
       ScanStatus.completed => 'Scan complete - $modeName',
-      ScanStatus.error => 'Scan failed',
+      // PR #435 review I-4: a cancel is not a failure.
+      ScanStatus.error =>
+        scanProvider.wasCancelled ? 'Scan cancelled' : 'Scan failed',
     };
 
     // [NEW] ISSUE #125: Show demo mode indicator if using demo platform
@@ -426,6 +436,22 @@ class _ScanProgressScreenState extends State<ScanProgressScreen>
               ? () => _startDemoScan(scanProvider)
               : null,
         ),
+        // F224 (Sprint 73): the way out of a scan that is taking too long.
+        //
+        // Shown ONLY while scanning, in the same column as the other actions,
+        // so the control is where the user already is (R-3). It sets a flag on
+        // the coordinator and returns immediately -- the scan stops at its next
+        // batch boundary (m=20), and its own `finally` releases the lease and
+        // closes the IMAP session. Nothing is torn down from here, which is
+        // what keeps a cancel from leaking a session.
+        if (scanProvider.status == ScanStatus.scanning) ...[
+          const SizedBox(height: 12),
+          ElevatedButton.icon(
+            icon: const Icon(Icons.stop_circle_outlined),
+            label: const Text('Cancel Scan'),
+            onPressed: () => _cancelScan(context, scanProvider),
+          ),
+        ],
         const SizedBox(height: 12),
         OutlinedButton.icon(
           icon: const Icon(Icons.history),
@@ -444,6 +470,37 @@ class _ScanProgressScreenState extends State<ScanProgressScreen>
           },
         ),
       ],
+    );
+  }
+
+  /// F224 (Sprint 73): ask the running scan to stop.
+  ///
+  /// Deliberately does NOT await the scan ending, and deliberately does not
+  /// touch the lease. It raises the flag and tells the user the stop is
+  /// pending; the scan observes the flag at its next batch boundary, throws,
+  /// and unwinds through the teardown every other exit path uses.
+  ///
+  /// If the coordinator reports no matching active scan, the scan already
+  /// finished between the button being drawn and tapped -- say so plainly
+  /// rather than leaving the tap looking ignored.
+  void _cancelScan(BuildContext context, EmailScanProvider scanProvider) {
+    final requested =
+        ScanCoordinator.instance.requestCancel(accountId: widget.accountId);
+    final messenger = ScaffoldMessenger.of(context);
+    messenger.hideCurrentSnackBar();
+    messenger.showSnackBar(
+      SnackBar(
+        content: Text(requested
+            // PR #435 review I-3: the earlier wording promised the scan
+            // would "finish the emails it already fetched", which it does not
+            // -- throwIfCancelled unwinds past BOTH the evaluation phase and
+            // the batch-execution phase, so no fetched email is ever acted on.
+            // The counts already recorded are kept, which is what AC-4 asks
+            // for, but nothing further is filed or moved.
+            ? 'Stopping the scan. Emails already checked are kept; nothing '
+                'further will be filed or moved.'
+            : 'That scan has already finished.'),
+      ),
     );
   }
 
@@ -643,6 +700,69 @@ String _formatMinutes(Duration d) {
   return minutes == 1 ? '1 minute' : '$minutes minutes';
 }
 
+/// F207 (Sprint 73): is a background scan row worth WARNING the user about?
+///
+/// **The defect this fixes.** The manual-scan notice is driven by a DATABASE
+/// row -- `getActiveBackgroundScan()` matches `status = 'in_progress'` whose
+/// `started_at` is within [ScanCoordinator.scanTimeout] (30 minutes). A
+/// background scan that dies WITHOUT writing a terminal status (process kill,
+/// force-stop, crash) leaves that row `in_progress`, so for up to 30 minutes
+/// the user is warned about, and given a wait estimate for, a scan that is
+/// already dead.
+///
+/// `reconcileStaleInProgressScans` exists to clean those rows, but its age
+/// guard is the SAME `scanTimeout` constant -- so it cannot clear a row until
+/// the row has already stopped matching the query. **The blocker and its
+/// reconciler share one constant, which is why the reconciler could never
+/// shorten the block.** (Verified by reading both call sites: neither passes a
+/// custom window, so both use the default.)
+///
+/// **THE FIX THAT WAS TRIED AND IS NOW REVERTED -- read this before trying it
+/// again.** Sprint 73 suppressed the warning whenever the in-process
+/// [ScanCoordinator] held no lease, on the reasoning that "Android runs every
+/// scan in one process, so the coordinator is authoritative". **That conflates
+/// the OS PROCESS with the Dart ISOLATE, and it is false.**
+///
+/// `androidBackgroundScanDispatcher` is a `@pragma('vm:entry-point')`
+/// WorkManager entry that calls `WidgetsFlutterBinding.ensureInitialized()` and
+/// `DartPluginRegistrant.ensureInitialized()` -- which is what a SEPARATE
+/// ISOLATE entry point looks like; nothing re-initialises a binding it already
+/// has. [ScanCoordinator] is a plain per-isolate in-memory singleton, and Dart
+/// isolates do not share memory. So `ScanCoordinator.instance.active` read HERE,
+/// in the UI isolate, is null even while a background scan genuinely holds its
+/// lease in the worker isolate.
+///
+/// **The consequence was the exact opposite of the intent**: on Android
+/// `coordinatorIsIdle` is essentially always true, so a genuinely LIVE
+/// background scan had its warning suppressed, letting the user start a
+/// concurrent manual scan -- re-opening the Sprint 61 concurrent-session
+/// failure this notice exists to prevent. Found by the PR #435 reviews (Copilot
+/// HIGH, and independently by the Claude review); the unit tests could not
+/// catch it because they inject `coordinatorIsIdle` as a boolean rather than
+/// exercising the real cross-isolate value.
+///
+/// **So the function is back to trusting the row**, which is the conservative
+/// direction: a warning shown for a dead scan is a nuisance the user can click
+/// past, and a warning suppressed for a live scan is data loss waiting to
+/// happen. The original F207 complaint -- a stale row warning for up to 30
+/// minutes -- is real but is NOT worth reintroducing that risk to fix.
+///
+/// **The real fix needs a cross-isolate liveness signal**, which means a
+/// heartbeat or `updated_at` column on `scan_results` (it has none today;
+/// `started_at` is the only signal, so this is a schema migration). Tracked as
+/// MV74-2 (issue #434). Do not re-attempt the coordinator shortcut.
+///
+/// Returns true when the warning should be shown.
+@visibleForTesting
+bool shouldWarnAboutBackgroundScan({
+  required bool hasActiveRow,
+}) {
+  // A fresh in_progress row is the only liveness evidence available in THIS
+  // isolate. Trust it on every platform until a cross-isolate signal exists.
+  return hasActiveRow;
+}
+
+
 Future<void> startRealScan({
   required BuildContext context,
   required EmailScanProvider scanProvider,
@@ -674,7 +794,18 @@ Future<void> startRealScan({
     // notice (cross-process case).
     final scanResultStore = ScanResultStore(DatabaseHelper());
     final activeBg = await scanResultStore.getActiveBackgroundScan();
-    if (activeBg != null) {
+    // F207 (Sprint 73): a row is not a running scan. See
+    // shouldWarnAboutBackgroundScan for why the coordinator settles this on
+    // Android and deliberately cannot on Windows.
+    final warnAboutBackground = shouldWarnAboutBackgroundScan(
+      hasActiveRow: activeBg != null,
+    );
+    if (activeBg != null && !warnAboutBackground) {
+      logger.i('F207: ignoring a stale in_progress background row for '
+          '${activeBg.accountId} -- the scan coordinator is idle, so no scan '
+          'is running in this process');
+    }
+    if (activeBg != null && warnAboutBackground) {
       final average =
           await scanResultStore.getAverageScanDuration(activeBg.accountId);
       final estimate = formatBackgroundWaitEstimate(

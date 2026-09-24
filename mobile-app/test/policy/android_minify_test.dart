@@ -1,3 +1,7 @@
+/// SOURCE-TEXT VERIFIED: this proves the R8 and obfuscation FLAGS are set. It
+/// cannot prove the minified app still runs -- the failure mode is a reflective
+/// call stripped at build time, which only appears at runtime. What settles it
+/// is launching the release build on a device and exercising the scan path.
 import 'dart:io';
 
 import 'package:flutter_test/flutter_test.dart';

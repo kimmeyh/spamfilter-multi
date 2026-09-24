@@ -1,3 +1,8 @@
+/// SOURCE-TEXT VERIFIED: this proves the roster DOCUMENT is well formed and
+/// internally consistent. It cannot prove the testers listed are actually
+/// enrolled in the Play closed test -- only the Play Console shows that, and
+/// CLAUDE.md is explicit that an external system's state must be read, never
+/// inferred from the repo.
 import 'dart:io';
 
 import 'package:flutter_test/flutter_test.dart';
