@@ -3,7 +3,7 @@
 **Dates**: 2026-09-22 to 2026-09-23
 **Branch**: `feature/20260922_Sprint_73` | **PR**: #435 -> develop
 **Version**: 0.15.3+6 -> 0.16.0+7
-**Suite**: 2,233 -> 2,305 | Analyzer clean | WinWright 2/2
+**Suite**: 2,233 -> 2,314 (after the Phase 7.7 review fixes) | Analyzer clean | WinWright 2/2
 
 ---
 
@@ -121,3 +121,18 @@ the WorkManager scan runs in its own isolate, the coordinator reads idle while a
 live and the fix would hide a real warning. I could not settle it from source and said so rather
 than recording a determination I cannot support. The Windows branch is unaffected and correctly
 justified.
+
+---
+
+## Phase 7.7 updates (2026-09-23 / 2026-09-24)
+
+- **The F207 question above was settled in code.** The PR #435 reviews found the Android
+  suppression hid warnings for LIVE scans, so it was REMOVED. The proper fix, a cross-isolate
+  heartbeat, is Sprint 74 carry-in MV74-2.
+- **The Android build was never blocked.** An earlier note here and in TROUBLESHOOTING.md said six
+  builds failed and the Kotlin was not compile-verified. Both were wrong: the sixth build succeeded
+  and compiled every app Kotlin class from HEAD, and the other five were interrupted by the
+  diagnosing session itself. The "Daemon compilation failed" traces are non-fatal noise from plugin
+  sources on `C:` and the project on `D:`. Norton was not involved.
+- **Release notes re-derived** from the finished CHANGELOG. Both stores are live at 0.15.2, so the
+  0.16.0 notes cover Sprint 72 and Sprint 73.

@@ -324,3 +324,15 @@ The design must hold across {Windows Store (MSIX), Android, iOS} x {dev, prod}:
   239-248), orphaned `background_scan_schedule` table (lines 252-262), `background_scan_log`
   (lines 290-303).
 - `mobile-app/assets/content/help/background_scanning.md` -- user-facing help text.
+
+## Amendment -- Sprint 73 (F235): Doze delivery
+
+The per-account WorkManager task in this ADR is unchanged and remains the scan
+engine. WorkManager cannot wake a device in Doze, so each account now also has an
+inexact `AlarmManager.setAndAllowWhileIdle` alarm whose only job is to wake the
+device and enqueue a one-off WorkManager task for that account. The inexact
+variant was chosen over `setExactAndAllowWhileIdle` because it needs no exact-alarm
+permission and carries no Google Play policy burden; the cost is a delivery window
+of about an hour. Alarms are re-armed after each firing and restored after a
+reboot by `BootReceiver`. See `DozeAlarmScheduler.kt` and ARCHITECTURE.md
+"Android in Doze".

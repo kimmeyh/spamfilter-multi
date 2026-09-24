@@ -1,19 +1,19 @@
 {
   "_description": "Sprint status file that persists across context compaction. Update after each phase/sub-phase completion.",
-  "_last_updated": "2026-09-24T03:45:00Z",
+  "_last_updated": "2026-09-24T04:10:00Z",
   "_usage": "Read this file after context compaction to restore sprint approval state and progress.",
   "_staleness_note": "This file had drifted 15 sprints (last updated at Sprint 35, 2026-04-19) before being refreshed at Sprint 50 close-out. It is a Phase 7.7 checklist item -- update it at every sprint close-out, not opportunistically.",
   "current_sprint": {
     "number": 73,
     "branch": "feature/20260922_Sprint_73",
-    "status": "Sprint 73 Phase 7.7 Apply Approved Improvements -- retrospective COMPLETE; both open decisions RESOLVED 2026-09-24 (Android build works; Opus 5.5 works after restart). Remaining: end-of-7.7 'gh pr ready'. Claude NEVER merges.",
+    "status": "Sprint 73 Phase 7.7 Apply Approved Improvements -- COMPLETE 2026-09-24; PR #435 marked Ready for Review. Next: 7.7.5 final gate + PO/SM notification. Claude NEVER merges.",
     "plan_approved": true,
     "blanket_execution_approved": true,
     "pr_number": 435,
     "pr_url": "https://github.com/kimmeyh/spamfilter-multi/pull/435",
     "version": "0.16.0+7",
     "head_commit": "48752e5",
-    "suite": "2,314 passing, analyzer clean, working tree clean",
+    "suite": "2,314 passed / 15 skipped / 0 failed, analyzer clean (2026-09-24 re-run)",
     "resume_state": {
       "_read_this_first": "Everything is committed and pushed. Nothing is half-finished in the working tree. Two decisions are owed by Harold; both are restated in full below so they do not have to be hunted for in scrollback.",
       "completed": [
@@ -47,7 +47,7 @@
         "MV74-2 (#434) F207 isolate question: RESOLVED IN CODE this sprint (the suppression was REMOVED because it hid warnings for LIVE scans). The proper fix needs a cross-isolate heartbeat column -- still Sprint 74.",
         "MV74-3 (#422,#433) F232 mechanism B + F205: need a device run with diagnostic logging ON, then the in-app export. Route needs NO adb -- F233's export writes to Android/data/com.myemailspamfilter/files/, confirmed reachable over MTP 2026-09-23."
       ],
-      "next_action_when_resumed": "No decisions owed. Finish Phase 7.7 by walking docs/SPRINT_CHECKLIST.md line by line, then 'gh pr ready 435' at the very end. Claude NEVER merges."
+      "next_action_when_resumed": "Phase 7.7.5: confirm PR #435 is Ready for Review and CI is green, then notify Harold it is ready for FINAL APPROVAL. Claude NEVER merges. After merge: Phase 6.6 next branch FROM the Sprint 73 branch, then Phase 8."
     }
   },
   "previous_sprint": {
@@ -65,18 +65,19 @@
   },
   "_github_issues_note": "Sprint 66 cards created at Phase 3.3.1 (2026-09-07): #387 GP-19, #388 GP-4. Close by hand at Post-Merge Cleanup.",
   "test_metrics": {
-    "suite": "2,233 passed / 15 skipped / 0 failed",
-    "policy_suite": "hook suite 75 passed / 0 failed",
-    "winwright": "2/2 scripts, 29/29 steps, no DB drift -- run twice",
-    "ci": "Analyze and Test, Android Build Verification, Windows Build Verification -- all pass",
+    "suite": "2,314 passed / 15 skipped / 0 failed",
+    "policy_suite": "flutter test test/policy 123/123; hook suite 75 passed / 0 failed",
+    "winwright": "2/2 scripts (Sprint 73 sweep)",
     "analyzer": "clean",
-    "as_of": "2026-09-22, Sprint 72 close-out"
+    "android_build": "local debug APK builds (Sprint 73 build 6); cross-drive Kotlin traces are non-fatal",
+    "as_of": "2026-09-24, Sprint 73 Phase 7.7"
   },
   "store_release": {
     "status_0_15_3": "NOT SUBMITTED TO EITHER STORE. Harold, 2026-09-22: \"not pushing to either store this time\". Phase 8.3 explicitly N/A for this cycle.",
     "live_windows": "0.15.2.0 -- Submission 28, certified 2026-09-21, installed-build verified.",
     "live_play": "0.15.2 versionCode 5 -- closed testing, device-verified 2026-09-21 on the S24+.",
-    "consequence": "F219 AC-1 and F227 remain blocked: they need a Play-INSTALLED build, and 0.15.3 is not going out. They wait for the next release that ships."
+    "consequence": "F219 AC-1 and F227 remain blocked: they need a Play-INSTALLED build, and 0.15.3 is not going out. They wait for the next release that ships.",
+    "status_0_16_0": "NOT SUBMITTED. Release notes re-derived 2026-09-24 (cover Sprint 72 + 73, since both stores are live at 0.15.2). Submission is Harold's Phase 8.3 decision."
   },
   "environment_notes": [
     "RESOLVED 2026-07-29 (verified 07-30): the Store fault was an Acronis file-system filter blocking AppXSvc cleanup, fixed by an Acronis Protection exclusion. 23h uptime with ZERO Id-493 events vs a 176-file/6-min baseline; Store client self-updated 22606.1401.6.0 -> .10.0 (requires a working deployment pipeline). Filter drivers remain loaded -- backup protection was NOT disabled. See ALL_SPRINTS_MASTER_PLAN ENV-1 for the picker gotcha if it recurs.",
@@ -85,14 +86,14 @@
   ],
   "blocking_issues": [],
   "next_actions": [
-    "Phase 8.4 -- backlog refinement pass 2, scope selection with Harold.",
-    "F235 is already TARGETED for Sprint 73 by Harold; the rest of the slate is open.",
-    "Phase 3 planning once scope is selected."
+    "Phase 7.7.5 -- final gate + notify Harold PR #435 is ready for final approval.",
+    "On merge: Phase 6.6 -- branch Sprint 74 FROM feature/20260922_Sprint_73.",
+    "Phase 8 -- Harold merges develop -> main in parallel with refinement pass 1; 8.3 store release is his call.",
+    "Sprint 74 carry-ins: MV74-1 (#428 Doze on the S24+, incl. reboot), MV74-2 (#434 cross-isolate heartbeat), MV74-3 (#422, #433 device run with diagnostic logging)."
   ],
   "next_sprint_targeted": [
-    "F235 -- Android Doze via setExactAndAllowWhileIdle (Harold targeted 2026-09-22, issue #428)",
-    "F234 -- read-only as a preview mode",
-    "F232 mechanism B -- now instrumented",
-    "F226, F224, F222 -- carried"
+    "MV74-1 -- F235 Doze validation on the S24+ (setAndAllowWhileIdle, inexact; reboot survival) (#428)",
+    "MV74-2 -- F207 cross-isolate heartbeat (#434)",
+    "MV74-3 -- F232 mechanism B + F205 device run with diagnostic logging (#422, #433)"
   ]
 }

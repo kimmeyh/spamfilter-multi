@@ -138,6 +138,9 @@ Historical sprint information lives in individual documents in `docs/sprints/` a
 | 68 | docs/sprints/SPRINT_68_SUMMARY.md | [OK] Complete | Sep 9-10, 2026 (PR #403 -> develop, #404 -> main; Yahoo + iCloud shipped (two integers), privacy-page correction, F198 shipped NO hook deliberately. Defining pattern: four screenshots read wrong, three caught by Harold) |
 | 69 | docs/sprints/SPRINT_69_SUMMARY.md | [OK] Complete | Sep 11-14, 2026 (PR #410 -> develop, #411 -> main; Android tester experience -- sign-in dead end, dark-mode contrast (9 instances not 1), YAML import, nav-bar overlap on 21 of 23 screens) |
 | 70 | docs/sprints/SPRINT_70_SUMMARY.md | [OK] Complete | Sep 17-19, 2026 (PR #418 -> develop, #419 -> main; scan lifecycle + sign-in + toolchain. 6/6 planned plus 4 unplanned fixes. Both CRITICAL review findings were gates reporting protection they did not provide; three defects were introduced by earlier fixes in the same sprint) |
+| 71 | docs/sprints/SPRINT_71_PLAN.md | [SUPERSEDED] | Never executed separately -- its stub's carry-ins were folded into Sprint 72, which ran on the Sprint 71 branch |
+| 72 | docs/sprints/SPRINT_72_SUMMARY.md | [OK] Complete | Sep 22, 2026 (PR #420 -> develop, #429 -> main; 0.15.3, NOT submitted to either store. F233 diagnostic log + empty-export fix, F232 mechanism A, F228 honest action toast, F230/F231 action sheet, F217 Doze caveat. Two of three CRITICAL review findings were defects the sprint introduced) |
+| 73 | docs/sprints/SPRINT_73_SUMMARY.md | [OK] Complete | Sep 22-23, 2026 (PR #435 -> develop; 0.16.0. F235 Doze scheduling, F234 read-only preview, F224+F207 cancel scan, F229 version on every screen, F226. Two CRITICAL defects were inert features with green suites -- verification by source text, not behavior) |
 
 **Key Achievements**: See CHANGELOG.md for detailed feature history.
 
@@ -145,38 +148,30 @@ Historical sprint information lives in individual documents in `docs/sprints/` a
 
 ## Last Completed Sprint
 
-**Sprint 70** (2026-09-17 -- 2026-09-19; PR #418 -> develop, PR #419 develop -> main)
-- **Type**: make the app work when a tester uses it normally. Five of six planned items were
-  defects two external testers hit on the shipped build; the sixth removed a workaround shipping a
-  test-only library to those same testers. Scope F218, F220, F221, F212, F219, F217.
-- **F212 -- the root cause was NOT the card's hypothesis, and the undiagnosed half was worse.** The
-  card blamed a `ScanCoordinator` bypass. The real cause: the two adapters answered the SAME
-  condition oppositely. Called before a connection exists, Gmail returned `allFailed` (the 100%
-  failure that got reported) and IMAP returned `allSuccess` -- reporting success for work it never
-  did, so AOL users saw a green "Re-processed 9 emails" while nothing moved. Nobody filed that
-  because it looks like success. FOUR batch methods carried the defect, not the two named.
-- **F219 + F227 -- two separate defects on one path, the second found only by probing.** Removing
-  `taskAffinity=""` was correct and verified. But firing the real redirect on an emulator landed on
-  the system chooser: `pm query-activities` showed TWO activities claiming the scheme -- ours and
-  `flutter_appauth`'s own receiver. That duplicate is the likelier `null_intent` cause. Fixed and
-  re-verified (2 activities -> 1; redirect lands in the app's own task).
-- **THE SPRINT'S DEFINING PATTERN: gates that reported protection they did not provide.** The SEC-9
-  manifest gate searched for a string F227 had removed from the code, leaving only mentions inside
-  COMMENTS -- a security gate passing on English prose, proven by editing comment text and watching
-  it go red. The F220 lifecycle test asserted against its own copy of the handler, so deleting the
-  real production fix left all six tests GREEN. Both found by mutation, neither by reading.
-- **Three defects were introduced by earlier fixes in the same sprint.** The H-2 fix created
-  Copilot's HIGH (a set written too eagerly, corrected into one written too permanently); anchoring
-  Gate 1c fixed one false positive and created its opposite; adding the timestamp footer silently
-  disabled every end-anchored pattern in the Stop hook. Each was correct alone and wrong in context.
-- **Mutation testing did not save us, and it was being used correctly.** F220's test was
-  mutation-verified and still blind -- it asserted the provider reached an error state and never
-  that the coordinator was freed. Mutation proves a test detects changes to code it ALREADY covers.
-  That gap became retro IMP-1.
-- **Harold's two decisions both overruled or redirected a recommendation, correctly.** The Class-2
-  timeout reversal identified a case the recommendation did not cover ("once a user switches
-  screens they can no longer cancel"). His Samsung battery check falsified the leading F217
-  hypothesis in one minute and changed which remedy was viable.
+**Sprint 73** (2026-09-22 -- 2026-09-23; PR #435 -> develop; version 0.16.0+7, not yet submitted)
+- **Type**: act on Harold's Sprint 72 device testing. Scope F235, F234, F224 + F207, F229, F226;
+  F232 mechanism B and F205 parked for a device run with diagnostic logging (MV74-3).
+- **F235 -- background scans now fire in Doze.** An inexact `setAndAllowWhileIdle` alarm per
+  account wakes the device and enqueues the existing WorkManager scan; `BootReceiver` restores the
+  alarms after a reboot. The inexact variant needs no exact-alarm permission and carries no Play
+  policy burden; the cost is a delivery window of about an hour. Real-hardware validation is
+  MV74-1 on the S24+. See ARCHITECTURE.md "Android in Doze" and the ADR-0039 amendment.
+- **F234 -- read-only became a rehearsal instead of a refusal**: adding a rule on a read-only
+  account reports what it WOULD have filed, mailbox untouched.
+- **F224 + F207 -- a running scan can be cancelled** from both surfaces, and a dead background scan
+  no longer leaves a stale warning. The F207 Android suppression was REMOVED in the Phase 7.7
+  review because it hid warnings for live scans; the proper fix (a cross-isolate heartbeat) is
+  MV74-2.
+- **THE SPRINT'S DEFINING EVENT: two CRITICAL defects, both inert features with green suites.**
+  F234's preview could never report anything but zero, and F224's cancel did nothing on every real
+  IMAP account because an identical exception swallow sat one layer below the one fixed. One cause:
+  verification by SOURCE TEXT rather than behavior. Re-mutating after the fix then showed the call
+  site was still untested -- "correct abstraction, wrong wiring".
+- **The Android build was never blocked.** The "Daemon compilation failed" traces are non-fatal
+  noise from plugin sources on `C:` and the project on `D:`; five build "failures" were builds the
+  diagnosing session interrupted itself. Recorded in TROUBLESHOOTING.md.
+- **Results**: suite 2,233 -> 2,314, analyzer clean, WinWright 2/2, hook suite 75/75. Six retro
+  improvements applied prevention-first; PR reviews 3 CRITICAL + 6 IMPORTANT, all fixed.
 
 ## Next Sprint Candidates
 
