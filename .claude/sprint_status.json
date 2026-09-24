@@ -1,12 +1,12 @@
 {
   "_description": "Sprint status file that persists across context compaction. Update after each phase/sub-phase completion.",
-  "_last_updated": "2026-09-24T04:20:00Z",
+  "_last_updated": "2026-09-24T12:40:00Z",
   "_usage": "Read this file after context compaction to restore sprint approval state and progress.",
   "_staleness_note": "This file had drifted 15 sprints (last updated at Sprint 35, 2026-04-19) before being refreshed at Sprint 50 close-out. It is a Phase 7.7 checklist item -- update it at every sprint close-out, not opportunistically.",
   "current_sprint": {
     "number": 74,
     "branch": "feature/20260924_Sprint_74",
-    "status": "Sprint 74 Phase 8.3 Store Release -- MSIX and AAB 0.16.0 built and verified 2026-09-24, awaiting Harold's uploads; refinement slate presented for 8.4 scope selection.",
+    "status": "Sprint 74 Phase 3.3 Sprint Plan Drafted -- SPRINT_74_PLAN.md + cards #437-#439 + draft PR; awaiting Harold's Phase 3.7 approval and 7 open questions. NOT approved.",
     "plan_approved": false,
     "blanket_execution_approved": false,
     "pr_number": null,
@@ -23,7 +23,8 @@
   },
   "github_issues": {
     "sprint_73": "#428 (open, MV74-1), #422 (open, MV74-3), #430 closed, #434 (open, MV74-2), #431 closed, #432 closed, #433 (open, MV74-3). Also closed in pass 1: #426 (superseded by #428), #427 (leftover captured as F236).",
-    "note": "Closes #N does NOT auto-fire here."
+    "note": "Closes #N does NOT auto-fire here.",
+    "sprint_74": "#428 MV74-1, #434 MV74-2, #422 F232 (+MV74-3), #433 F205 (+MV74-3), #437 F222, #438 F202, #439 F206 -- Phase 3.4, 2026-09-24"
   },
   "_github_issues_note": "Sprint 66 cards created at Phase 3.3.1 (2026-09-07): #387 GP-19, #388 GP-4. Close by hand at Post-Merge Cleanup.",
   "test_metrics": {
@@ -39,7 +40,7 @@
     "live_windows": "0.15.2.0 -- Submission 28, certified 2026-09-21, installed-build verified.",
     "live_play": "0.15.2 versionCode 5 -- closed testing, device-verified 2026-09-21 on the S24+.",
     "consequence": "F219 AC-1 and F227 remain blocked: they need a Play-INSTALLED build, and 0.15.3 is not going out. They wait for the next release that ships.",
-    "status_0_16_0": "BUILT + VERIFIED, NOT SUBMITTED (2026-09-24). WINDOWS: MSIX from prod worktree at bf005f3 (= origin/main, contains 970355f); release-self-test 6/6 PASS; manifest 0.16.0.0; 17.5 MB; both Windows OAuth values compiled into app.so; path D:\\Data\\Harold\\github\\spamfilter-multi-prod\\mobile-app\\build\\windows\\x64\\runner\\Release\\my_email_spam_filter.msix. PLAY: AAB from dev worktree (app code identical to origin/main); versionCode 7, versionName 0.16.0, package com.myemailspamfilter, no .dev, OAuth scheme present, 67.0 MB; path D:\\Data\\Harold\\github\\spamfilter-multi\\mobile-app\\build\\app\\outputs\\bundle\\prodRelease\\app-prod-release.aab. Release notes: docs/store-assets/RELEASE_NOTES_0.16.0_{windows,play}.md. Harold uploads both; record Step 7 only from what the consoles show."
+    "status_0_16_0": "SUBMITTED / ROLLOUT IN PROCESS on BOTH stores (Harold, 2026-09-24, reported between 12:17am and 8:39am ET). NOT yet observed live on either. Built + verified 2026-09-24: MSIX 0.16.0.0 (prod worktree bf005f3, self-test 6/6 PASS, 17.5 MB) and AAB versionCode 7 / 0.16.0 (67.0 MB). Step 7 records (STORE_VERSION_STATUS.md live rows) wait for a direct console observation."
   },
   "environment_notes": [
     "RESOLVED 2026-07-29 (verified 07-30): the Store fault was an Acronis file-system filter blocking AppXSvc cleanup, fixed by an Acronis Protection exclusion. 23h uptime with ZERO Id-493 events vs a 176-file/6-min baseline; Store client self-updated 22606.1401.6.0 -> .10.0 (requires a working deployment pipeline). Filter drivers remain loaded -- backup protection was NOT disabled. See ALL_SPRINTS_MASTER_PLAN ENV-1 for the picker gotcha if it recurs.",
