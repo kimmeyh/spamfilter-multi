@@ -1,12 +1,12 @@
 {
   "_description": "Sprint status file that persists across context compaction. Update after each phase/sub-phase completion.",
-  "_last_updated": "2026-09-24T04:40:00Z",
+  "_last_updated": "2026-09-24T04:20:00Z",
   "_usage": "Read this file after context compaction to restore sprint approval state and progress.",
   "_staleness_note": "This file had drifted 15 sprints (last updated at Sprint 35, 2026-04-19) before being refreshed at Sprint 50 close-out. It is a Phase 7.7 checklist item -- update it at every sprint close-out, not opportunistically.",
   "current_sprint": {
     "number": 74,
     "branch": "feature/20260924_Sprint_74",
-    "status": "Sprint 74 Phase 8.2 Backlog Refinement Pass 1 -- completeness sweep for Sprint 73 DONE 2026-09-24; next 8.3 Store release (Microsoft Store, then Google Play prep), then 8.4 scope selection.",
+    "status": "Sprint 74 Phase 8.3 Store Release -- MSIX and AAB 0.16.0 built and verified 2026-09-24, awaiting Harold's uploads; refinement slate presented for 8.4 scope selection.",
     "plan_approved": false,
     "blanket_execution_approved": false,
     "pr_number": null,
@@ -39,7 +39,7 @@
     "live_windows": "0.15.2.0 -- Submission 28, certified 2026-09-21, installed-build verified.",
     "live_play": "0.15.2 versionCode 5 -- closed testing, device-verified 2026-09-21 on the S24+.",
     "consequence": "F219 AC-1 and F227 remain blocked: they need a Play-INSTALLED build, and 0.15.3 is not going out. They wait for the next release that ships.",
-    "status_0_16_0": "NOT SUBMITTED. Release notes re-derived 2026-09-24 (cover Sprint 72 + 73, since both stores are live at 0.15.2). Submission is Harold's Phase 8.3 decision."
+    "status_0_16_0": "BUILT + VERIFIED, NOT SUBMITTED (2026-09-24). WINDOWS: MSIX from prod worktree at bf005f3 (= origin/main, contains 970355f); release-self-test 6/6 PASS; manifest 0.16.0.0; 17.5 MB; both Windows OAuth values compiled into app.so; path D:\\Data\\Harold\\github\\spamfilter-multi-prod\\mobile-app\\build\\windows\\x64\\runner\\Release\\my_email_spam_filter.msix. PLAY: AAB from dev worktree (app code identical to origin/main); versionCode 7, versionName 0.16.0, package com.myemailspamfilter, no .dev, OAuth scheme present, 67.0 MB; path D:\\Data\\Harold\\github\\spamfilter-multi\\mobile-app\\build\\app\\outputs\\bundle\\prodRelease\\app-prod-release.aab. Release notes: docs/store-assets/RELEASE_NOTES_0.16.0_{windows,play}.md. Harold uploads both; record Step 7 only from what the consoles show."
   },
   "environment_notes": [
     "RESOLVED 2026-07-29 (verified 07-30): the Store fault was an Acronis file-system filter blocking AppXSvc cleanup, fixed by an Acronis Protection exclusion. 23h uptime with ZERO Id-493 events vs a 176-file/6-min baseline; Store client self-updated 22606.1401.6.0 -> .10.0 (requires a working deployment pipeline). Filter drivers remain loaded -- backup protection was NOT disabled. See ALL_SPRINTS_MASTER_PLAN ENV-1 for the picker gotcha if it recurs.",
