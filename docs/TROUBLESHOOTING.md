@@ -690,69 +690,64 @@ flutter test
 
 ## Android build: "Daemon compilation failed: null" / "Could not close incremental caches"
 
-**Symptom**: `build-with-secrets.ps1` fails during `assembleProdDebug` with
-`e: Daemon compilation failed: null` and, further down the stack,
-`java.lang.Exception: Could not close incremental caches in <path>`. **No error
-names any file in `android/app/src/main/kotlin/`** -- which is the tell that
-your Kotlin is fine and the toolchain is not.
+**BLUF: these lines are NOT a build failure. Read the LAST line of the build
+output, and nothing else, to decide pass or fail.** A good build prints
+`[INFO] Build successful!` from `build-with-secrets.ps1` and `Built
+build\app\outputs\flutter-apk\app-prod-debug.apk` from Flutter, with dozens of
+these stack traces above it.
 
-**Diagnose by READING THE PATH in the "Could not close incremental caches"
-line.** It names which cache is corrupt, and there are two very different
-answers:
+**What you see**: `e: Daemon compilation failed: null`, then a long trace
+ending in `Could not close incremental caches in
+mobile-app\build\<plugin>\kotlin\...: class-fq-name-to-source.tab,
+source-to-classes.tab, internal-name-to-source.tab`. It repeats for every
+third-party plugin written in Kotlin (`battery_plus`, `msal_auth`,
+`google_sign_in_android`, `package_info_plus`, `workmanager_android`,
+`webview_flutter_android`), and never for the app module.
 
-1. `mobile-app/build/<plugin>/kotlin/...` -- a PROJECT cache. `flutter clean`
-   or deleting `mobile-app/build/` fixes it.
-2. `D:\dev\flutter\packages\flutter_tools\gradle\build\kotlin\...` --
-   **a cache inside the FLUTTER SDK ITSELF.** `flutter clean` does NOT touch
-   this, which is why the obvious remedy appears to do nothing and the failure
-   looks permanent. Delete that directory; it is a regenerable build output,
-   not SDK source.
+**Root cause (proven from the Kotlin daemon log, Sprint 73)**: the suppressed
+exception under each trace is
 
-**Fix, in order:**
-
-```powershell
-cd mobile-app\android
-.\gradlew.bat --stop                 # ALWAYS stop daemons this way
-cd ..
-flutter clean                       # clears the PROJECT caches
-Remove-Item "$env:FLUTTER_ROOT\packages\flutter_tools\gradle\build" -Recurse -Force
+```
+java.lang.IllegalArgumentException: this and base files have different roots:
+  C:\Users\kimme\AppData\Local\Pub\Cache\hosted\pub.dev\battery_plus-5.0.3\...\BatteryPlusPlugin.kt
+  and D:\Data\Harold\github\spamfilter-multi\mobile-app\android.
+    at kotlin.io.FilesKt__UtilsKt.relativeTo(Utils.kt:128)
+    at org.jetbrains.kotlin.incremental.storage.RelocatableFileToPathConverter.toPath(...)
 ```
 
-**Do NOT kill java processes to clear daemons** (Sprint 73, learned the hard
-way). `Stop-Process` on `java` while Gradle is mid-run leaves its daemon
-registry inconsistent, and the NEXT build then fails in ~55 seconds -- far too
-fast for a real compile after a clean, which is itself a useful tell that the
-failure is registry state rather than code. `gradlew --stop` shuts them down
-cleanly and reports how many it stopped.
+Kotlin's incremental caches store each source path RELATIVE to the project
+directory. Plugin sources live in the pub cache on `C:`; the project lives on
+`D:`. A path on one drive has no relative form from the other, so the three
+maps that store SOURCE PATHS fail to save -- exactly the three the error names.
+The app's own sources are on `D:`, which is why the app module never shows it.
+The Kotlin Gradle plugin then abandons the daemon and compiles the plugin
+another way, and the build continues. It is deterministic and harmless, and it
+has been present since the pub cache and the repo were first on different
+drives. The daemon's own log, with the full suppressed trace, is at
+`%TEMP%\kotlin-daemon.<date>.log`.
 
-**Sprint 73: SIX attempts, and NONE of the above fixed it.** Recorded honestly
-because the wrong lesson is worse than none: I proposed three causes in turn
-(project caches, a daemon registry I corrupted myself by killing java, then the
-SDK-side cache) and each was falsified by the next failure. Clearing caches at
-every level, including a full `flutter clean` that removed `build/` entirely,
-did not help -- the caches regenerate and immediately fail to close again.
+**What actually broke the Sprint 73 builds -- all self-inflicted.** Five of six
+"failures" were builds interrupted by the person diagnosing them, after reading
+the lines above as fatal while the build was still running:
 
-**The fact that settles what this is NOT**: across all six attempts the build
-never once reached `:app:compileProdDebugKotlin`. It dies compiling THIRD-PARTY
-PLUGINS -- `battery_plus`, `msal_auth`, `google_sign_in_android` -- and no error
-ever names a file under `android/app/src/main/kotlin/`. So these failures say
-nothing at all about the app's own Kotlin; it has not been compiled.
+- `build-with-secrets.ps1` runs `gradlew --stop` at startup (line 325). **Starting
+  a second build while one is running stops the first one's daemon**; the first
+  then dies with `Gradle build daemon has been stopped: stop command received`.
+- `Stop-Process` on `java` mid-build ends the build with exit code 1 and NO
+  Gradle error message at all -- the tell for a killed build.
+- The build after a kill can fail in about 55 seconds with `Could not delete
+  ...\caches-jvm`, because the killed daemon left files locked.
+- The one build left alone (the sixth) succeeded and compiled the app's Kotlin.
 
-**Most likely cause, NOT yet confirmed: Norton 360 realtime scanning.** It is
-active on this machine (`Get-CimInstance ... AntiVirusProduct` lists it, and
-Defender realtime is on as well), and CLAUDE.md already documents Norton
-interfering with this project's development by intercepting IMAP TLS. An AV
-holding `.tab` files open as the Kotlin compiler writes and closes them produces
-exactly this signature: caches that regenerate but cannot close, across EVERY
-plugin, never the app module.
+**Rules:**
+1. Judge a build by its final lines only. `e:` lines above them mean nothing
+   when the build ends with `Build successful`.
+2. Never start a second build, run `flutter clean`, delete `build\`, or stop
+   Gradle while a build is running. Wait for it to end.
+3. To stop daemons between builds: `cd mobile-app\android; .\gradlew.bat --stop`.
+   Never `Stop-Process -Name java`.
+4. No AV change is needed. Norton was suspected and was NOT the cause.
 
-**To confirm and fix (needs Harold -- requires AV changes):**
-1. Add an exclusion in Norton 360 for `D:\Data\Harold\github\spamfilter-multi`
-   and the Flutter SDK root, or temporarily disable realtime scanning.
-2. `cd mobile-app\android; .\gradlew.bat --stop`
-3. Re-run `build-with-secrets.ps1 -BuildType debug`.
-
-If it still fails with the plugin caches untouched by AV, the next candidate is
-the Kotlin version warning the build prints (project is on 2.2.20; Flutter warns
-support drops below 2.3.20) -- but treat that as a HYPOTHESIS, not a diagnosis,
-until something tests it.
+**Optional, not applied: removing the noise.** Either move the pub cache to `D:`
+(set `PUB_CACHE`, then `flutter pub get`) or add `kotlin.incremental=false` to
+`mobile-app/android/gradle.properties`. Neither is needed for a working build.

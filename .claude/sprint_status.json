@@ -1,12 +1,12 @@
 {
   "_description": "Sprint status file that persists across context compaction. Update after each phase/sub-phase completion.",
-  "_last_updated": "2026-09-24T03:19:09Z",
+  "_last_updated": "2026-09-24T03:45:00Z",
   "_usage": "Read this file after context compaction to restore sprint approval state and progress.",
   "_staleness_note": "This file had drifted 15 sprints (last updated at Sprint 35, 2026-04-19) before being refreshed at Sprint 50 close-out. It is a Phase 7.7 checklist item -- update it at every sprint close-out, not opportunistically.",
   "current_sprint": {
     "number": 73,
     "branch": "feature/20260922_Sprint_73",
-    "status": "Sprint 73 Phase 7.7 -- retrospective COMPLETE, awaiting TWO Harold decisions before the PR can be marked ready. Do NOT mark PR ready and NEVER merge. See resume_state below for the full picture.",
+    "status": "Sprint 73 Phase 7.7 -- retrospective COMPLETE; both open decisions RESOLVED 2026-09-24 (Android build works; Opus 5.5 works after restart). Remaining: end-of-7.7 'gh pr ready'. Claude NEVER merges.",
     "plan_approved": true,
     "blanket_execution_approved": true,
     "pr_number": 435,
@@ -26,22 +26,12 @@
         "Docs triad complete: SPRINT_73_PLAN.md, SPRINT_73_RETROSPECTIVE.md, SPRINT_73_SUMMARY.md."
       ],
       "DECISION_1_android_build": {
-        "what": "The Android build is BLOCKED and the sprint's Kotlin is NOT compile-verified. Six attempts; NONE ever reached :app:compileProdDebugKotlin. Every failure was in THIRD-PARTY plugin Kotlin caches (battery_plus, msal_auth, google_sign_in_android). No error ever named a file under android/app/src/main/kotlin/.",
-        "so_what": "C-3, I-5, I-6 and I-7 are analyzer-clean and test-pinned but NOT compile-verified. Do not claim otherwise.",
-        "hypothesis_UNCONFIRMED": "Norton 360 realtime scanning holding .tab files open as the Kotlin compiler closes them. Matches the signature (every plugin, never the app module) and CLAUDE.md already documents Norton breaking this project's IMAP TLS. NOT proven.",
-        "already_tried_and_failed": [
-          "cleared mobile-app/build plugin caches",
-          "full flutter clean (build/ removed entirely)",
-          "deleted the Flutter SDK's own gradle build cache",
-          "gradlew --stop (clean daemon shutdown)",
-          "NOTE: I made it worse once by killing java mid-build, which corrupted the daemon registry. Use gradlew --stop, never Stop-Process on java."
-        ],
-        "options_for_harold": [
-          "1. Add a Norton exclusion for D:\\Data\\Harold\\github\\spamfilter-multi and the Flutter SDK root, then Claude re-runs the build (RECOMMENDED)",
-          "2. Temporarily disable Norton realtime scanning, Claude re-runs, Harold re-enables",
-          "3. Skip the Android build this sprint -- F235 goes to the S24+ for MV74-1 anyway, where a broken build surfaces immediately",
-          "4. Something else Harold wants to try first"
-        ]
+        "status": "RESOLVED 2026-09-24 -- NO DECISION NEEDED. The earlier 'BLOCKED / not compile-verified' record was WRONG. Harold chose option 2 (disable Norton) and asked for the real cause first; the evidence made the Norton step unnecessary.",
+        "finding": "Build 6 of 6 SUCCEEDED (log ends '[INFO] Build successful!'). All six app classes (DozeAlarmScheduler, BootReceiver, DozeAlarmReceiver, DozeScanTrigger, MainActivity) compiled at 20:19:53 local from HEAD Kotlin (last Kotlin commit beab905, 20:14:12). C-3, I-5, I-6, I-7 ARE compile-verified.",
+        "real_cause_of_the_noise": "Kotlin daemon log: IllegalArgumentException 'this and base files have different roots' in RelocatableFileToPathConverter.toPath -- plugin sources in the C: pub cache cannot be made relative to the D: project dir. Deterministic, NON-FATAL (Kotlin falls back to a non-daemon compile), present since the drives first differed.",
+        "real_cause_of_the_failures": "Builds 1-5 were interrupted by the diagnosing session itself: build-with-secrets.ps1:325 runs 'gradlew --stop' at startup, so starting build 2 during build 1 stopped build 1; Stop-Process java killed builds 2 and 3; build 4 hit files locked by those kills; a manual 'gradlew --stop' killed build 5.",
+        "norton": "NOT the cause. No AV change needed.",
+        "recorded_in": "docs/TROUBLESHOOTING.md section 'Android build: Daemon compilation failed / Could not close incremental caches' (rewritten 2026-09-24)."
       },
       "DECISION_2_opus_55": {
         "what": "/model shows 'Opus 5.5 (disabled) - Update to 2.1.280+' while Harold is ON 2.1.281 (the latest published version).",
@@ -49,14 +39,15 @@
         "ruled_out_by_checking": "one binary only (2.1.281), no availableModels allowlist, no managed-settings file, and Fable 5.1 IS offered in the same cache.",
         "correction_made": "I first blamed a stale cache. TIMESTAMPS FALSIFIED IT: binary 15:50, cache written 18:49 -- three hours LATER. 2.1.281 itself wrote the disabled entry.",
         "action_taken": "Cleared additionalModelOptionsCache / additionalModelOptionsAnsweredAt / modelAccessCache / orgModelDefaultCache / additionalModelCostsCache from ~/.claude.json. Backup saved as ~/.claude.json.bak-opus55-<timestamp>. REQUIRES A RESTART to take effect.",
-        "next_if_still_disabled": "The gate is server-side, not client-side. Comment on issue #96130 -- Harold's case (already on 2.1.281) differs from every report there. Also: autoUpdates is False, so run 'claude config set -g autoUpdates true' regardless."
+        "next_if_still_disabled": "The gate is server-side, not client-side. Comment on issue #96130 -- Harold's case (already on 2.1.281) differs from every report there. Also: autoUpdates is False, so run 'claude config set -g autoUpdates true' regardless.",
+        "status": "RESOLVED 2026-09-24: after the restart the session runs on claude-opus-5-5. No issue comment needed. Still open (Harold's call): 'claude config set -g autoUpdates true'."
       },
       "still_blocked_on_device": [
         "MV74-1 (#428) F235 Doze on the S24+: scans firing while idle, AND surviving a reboot. The reboot case matters most -- without BootReceiver working this is a REGRESSION against WorkManager.",
         "MV74-2 (#434) F207 isolate question: RESOLVED IN CODE this sprint (the suppression was REMOVED because it hid warnings for LIVE scans). The proper fix needs a cross-isolate heartbeat column -- still Sprint 74.",
         "MV74-3 (#422,#433) F232 mechanism B + F205: need a device run with diagnostic logging ON, then the in-app export. Route needs NO adb -- F233's export writes to Android/data/com.myemailspamfilter/files/, confirmed reachable over MTP 2026-09-23."
       ],
-      "next_action_when_resumed": "Do NOT start new work. Ask Harold for DECISION_1 (Android build) using a PLAIN NUMBERED LIST, and report the Opus 5.5 restart result if he has one. The PR is correctly DRAFT; 'gh pr ready' happens only at the very end of 7.7 and Claude NEVER merges."
+      "next_action_when_resumed": "No decisions owed. Finish Phase 7.7 by walking docs/SPRINT_CHECKLIST.md line by line, then 'gh pr ready 435' at the very end. Claude NEVER merges."
     }
   },
   "previous_sprint": {

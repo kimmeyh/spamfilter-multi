@@ -1,6 +1,9 @@
 ***BELOW IS NOT FOR CLAUDE CODE, GITHUB COPILOT, CHATGPT OR COPILOT PULL REQUEST (PR) REVIEW USE***
 claude --continue # generally the best option
 claude --continue --model claude-fable-5 # to request the Fable 5 model when continuing
+can you memory current status of the sprint so I can exit, then re-enter and tell you to continue and you will find the memory status. Then 
+	claude
+	continue
 
 Sprint plan approval:
 Sprint plan approved as amended (with any comments I provided), proceed with execution. 
