@@ -919,8 +919,17 @@ change does to its NEIGHBOURS, not by a test -- every test written at that momen
     cancellation boundary, all recorded below as carry-forward rather than silently dropped.
   - Suite 2,283 -> 2,295. Analyzer clean.
 
-- **5.1.5 WinWright sweep**: 2026-09-23, sweep-head `e7f3ab9` (last `mobile-app/lib/ui` commit
-  `0e4267a`, which the swept build contains) -- **2 of 2 scripts PASSED, no DB drift.** The 3
+- **5.1.5 WinWright sweep**: 2026-09-24 RE-RUN, sweep-head `4ff13dd` (last `mobile-app/lib/ui`
+  commit `beab905`, which the swept build contains -- dev exe rebuilt 23:54 from `4ff13dd`) --
+  **2 of 2 scripts PASSED, 29/29 steps, no DB drift.** Re-run because the Phase 7.7 checklist walk
+  found two `lib/ui` commits NEWER than the first sweep's head: `f1dcbde` (F229, 22 screens) and
+  `beab905` (PR #435 review fixes, incl. `scan_progress_screen.dart`). Scripts:
+  `test_f124_rule_labels.json` (10s), `test_mt2c_no_rule_sweep.json` (15s).
+
+  sweep-head: `4ff13dd`
+
+  First sweep, kept as history: 2026-09-23 at `e7f3ab9` (last `lib/ui` commit then `0e4267a`) --
+  **2 of 2 scripts PASSED, no DB drift.** The 3
   dialog-settle scripts stay excluded by design (documented in the runner; F99 `integration_test`
   covers them). Scripts: `test_f124_rule_labels.json` (17s), `test_mt2c_no_rule_sweep.json` (17s,
   all three cases MT2C-1/2/3 green).
