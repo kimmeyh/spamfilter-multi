@@ -125,6 +125,14 @@ if (-not $sprintNum -or -not $phaseText) {
                     }
                     $phaseText = "$num $name"
                 }
+                elseif (($m2 = [regex]::Match([string]$cs.status,
+                        '(?i)^\s*(?:sprint\s+\d+\s+)?phase\s+(\d+\.\d+)')).Success) {
+                    # A phase NUMBER with no NAME after it ("Phase 7.7 -- ...").
+                    # This used to drop the phase SILENTLY, so the footer read
+                    # "Sprint 73" and looked complete (2026-09-24). Emit the
+                    # number and say what is wrong, so the gap is visible.
+                    $phaseText = "$($m2.Groups[1].Value) [name missing -- start sprint_status.json status with 'Phase n.n <Name>']"
+                }
             }
         } catch {
             # A malformed status file must not stop the footer being emitted --
