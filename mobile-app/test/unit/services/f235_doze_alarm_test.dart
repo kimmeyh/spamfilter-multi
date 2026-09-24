@@ -181,6 +181,46 @@ void main() {
     });
   });
 
+  group('F235: alarm identity is per account -- PR #435 review I-7', () {
+    test('THE DEFECT: the intent carries a distinct data Uri', () {
+      // PendingIntent matching uses Intent.filterEquals, which compares
+      // action, data, type, component and categories -- and IGNORES EXTRAS.
+      // Without a distinct `data`, two accounts produced intents filterEquals
+      // considered identical, leaving `accountId.hashCode()` as the only
+      // discriminator. That hash is STABLE but not UNIQUE: on a 32-bit
+      // collision FLAG_UPDATE_CURRENT makes one account overwrite the other's
+      // alarm, so one silently stops scanning and cancelling it cancels the
+      // wrong one.
+      final kotlin = File(
+              'android/app/src/main/kotlin/com/myemailspamfilter/DozeAlarmScheduler.kt')
+          .readAsStringSync();
+
+      expect(kotlin.contains('data = Uri.parse("f235://scan/'), isTrue,
+          reason: 'the data Uri is what makes each alarm distinct; the extra '
+              'cannot, because filterEquals ignores extras');
+      expect(kotlin.contains('Uri.encode(accountId)'), isTrue,
+          reason: 'an account id can contain characters that are not Uri-safe');
+    });
+
+    test('THE PAIRING: schedule and cancel build the intent the SAME way', () {
+      // The risk in changing intent identity: if cancel built its intent
+      // differently it would no longer match what schedule armed, and every
+      // cancel would silently no-op -- leaving alarms waking the device for
+      // accounts the user switched off. Both must go through one builder.
+      final kotlin = File(
+              'android/app/src/main/kotlin/com/myemailspamfilter/DozeAlarmScheduler.kt')
+          .readAsStringSync();
+
+      final calls =
+          RegExp(r'intentFor\(context, accountId\)').allMatches(kotlin).length;
+      expect(calls, greaterThanOrEqualTo(2),
+          reason: 'schedule() and cancel() must BOTH use intentFor, or a '
+              'cancel cannot find the alarm its schedule armed');
+      expect(kotlin.contains('am.cancel(intentFor(context, accountId))'), isTrue,
+          reason: 'cancel must not hand-roll its own intent');
+    });
+  });
+
   group('F235: the Kotlin task name matches Dart -- PR #435 review C-3', () {
     test('THE DEFECT: DozeScanTrigger.TASK_NAME equals kAndroidScanTaskName',
         () {
