@@ -9,8 +9,8 @@
     "status": "Sprint 74 Phase 3.3 Sprint Plan Drafted -- SPRINT_74_PLAN.md + cards #437-#439 + draft PR; awaiting Harold's Phase 3.7 approval and 7 open questions. NOT approved.",
     "plan_approved": false,
     "blanket_execution_approved": false,
-    "pr_number": null,
-    "pr_url": null,
+    "pr_number": 440,
+    "pr_url": "https://github.com/kimmeyh/spamfilter-multi/pull/440",
     "version": "0.16.0+7 (Sprint 74 bump happens at its Phase 3.7.0b)"
   },
   "previous_sprint": {

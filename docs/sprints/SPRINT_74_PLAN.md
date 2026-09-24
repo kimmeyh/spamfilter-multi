@@ -1,7 +1,7 @@
 # Sprint 74 Plan -- PROPOSED, awaiting Phase 3.7 approval
 
 **Status**: **DRAFT -- NOT APPROVED.** No task execution begins until Harold approves (Phase 3.7).
-**Branch**: `feature/20260924_Sprint_74` | **PR**: draft (Phase 3.3.1)
+**Branch**: `feature/20260924_Sprint_74` | **PR**: #440 (draft, Phase 3.3.1)
 **Issues**: #428 (MV74-1), #434 (MV74-2), #422 (F232, MV74-3), #433 (F205, MV74-3), #437 (F222), #438 (F202), #439 (F206)
 **Version**: 0.16.0+7 -> bump at approval (Task 0, Phase 3.7.0b)
 
