@@ -197,3 +197,77 @@ issues say so explicitly so Sprint 74 does not re-plan an implementation that al
 
 Recorded in `ALL_SPRINTS_MASTER_PLAN.md` "Next Sprint Candidates" (the single prioritized list, not
 a duplicate tracker) and as a comment on each of the four issues.
+
+
+---
+
+## Phase 7.7 PR reviews (#435) -- 3 CRITICAL + 6 IMPORTANT, all addressed
+
+Copilot and the Claude review ran in parallel. **They agreed on two findings**;
+per Harold's rule Copilot's version took preference on both. Every finding was
+VERIFIED in source before being acted on.
+
+### The finding that matters most: F207 was wrong, and wrong in the dangerous direction
+
+Copilot HIGH, found independently by the Claude review. The suppression rested on
+"Android runs every scan in one process, so the coordinator is authoritative" --
+which **conflates the OS PROCESS with the Dart ISOLATE**.
+`androidBackgroundScanDispatcher` is a `@pragma('vm:entry-point')` entry calling
+`WidgetsFlutterBinding.ensureInitialized()`; nothing re-initialises a binding it
+already has. `ScanCoordinator` is a per-isolate singleton, so it read idle
+essentially always and the warning was suppressed for LIVE scans -- re-opening
+the Sprint 61 concurrent-session failure the notice exists to prevent.
+
+**The process lesson is about my threshold, not the bug.** I had recorded this as
+"unverified, needs a device run" and carried it to Sprint 74. The evidence was two
+greps away and conclusive from source alone. **I treated "I cannot fully confirm"
+as grounds to defer, when it was grounds to look harder.** Carrying an item
+forward is the right move when evidence is genuinely unreachable; it is an
+avoidance when the evidence is in the repo.
+
+Fixed by REMOVING the suppression -- the conservative direction, since a warning
+shown for a dead scan is a nuisance and one suppressed for a live scan risks
+concurrent sessions. The real fix needs a cross-isolate heartbeat column and
+stays as MV74-2 (#434).
+
+Its six tests pinned the WRONG behaviour with an exhaustive truth table, all
+green, because they injected `coordinatorIsIdle` as a BOOLEAN. **A test that
+injects the value whose DERIVATION is the bug cannot see the bug.**
+
+### C-1/C-2: F229 was missing from the landing screen, and its gate could not see it
+
+`account_selection_screen` has FOUR Scaffold branches; only the loading SKELETON
+had the line. The steady state on nearly every launch had none, so F229 failed on
+its most-screenshotted screen while its own gate reported success. The gate tested
+PRESENCE per FILE; it now COUNTS, and mutation-verified reports
+"3 line(s) for 4 Scaffold(s)".
+
+**Structural lesson, bigger than this gate**: every wiring gate in this repo counts
+FILES while the bug lives in BRANCHES.
+
+### C-3: a Kotlin constant that matched nothing, surviving on an accident
+
+`TASK_NAME` did not match `kAndroidScanTaskName`, under a KDoc asserting it must.
+It worked only because the dispatcher routes on `inputData` -- safe BY ACCIDENT,
+so the obvious `switch (taskName)` cleanup would have silently killed every
+Doze-woken scan. Pinned by an EQUALITY assertion, since a presence check would
+have passed throughout.
+
+### Six IMPORTANT, all fixed
+
+I-2 (the behavioral_coverage gate -- **my own IMP-1 prevention** -- was blind to
+`expect(x, contains(...))`, so it passed because it could not SEE; widened, and it
+immediately found five more source-heavy files), I-3 (both cancel controls
+promised a drain that does not happen), I-4 (a deliberate cancel rendered as
+"Scan failed"), I-5 (a discarded cancel result left accounts re-arming at every
+reboot), I-6 (`rescheduleAll` announced successes it never verified -- **the very
+log that is primary evidence for F235 surviving a reboot**), I-7 (PendingIntent
+identity relied on `hashCode()` uniqueness; `filterEquals` ignores extras).
+
+### What the reviews say about the sprint's own improvements
+
+**IMP-1's gate had the defect class it was built to prevent.** That is not an
+argument against the gate -- it caught seven real files on its first run and five
+more once widened -- but it is the sharpest possible illustration of why
+prevention must itself be verified against the failure path. A gate is code, and
+code written to catch a class is not exempt from it.

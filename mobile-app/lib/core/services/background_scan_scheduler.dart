@@ -321,7 +321,28 @@ class AndroidSchedulerAdapter implements BackgroundScanScheduler {
       // F235: and the Doze alarm. Leaving it armed would keep waking the
       // device for an account the user has switched OFF -- the exact
       // battery complaint this feature must not create.
-      await AndroidDozeAlarm.cancel(accountId);
+      // PR #435 review I-5: CHECK the result, as schedule() above does.
+      //
+      // `AndroidDozeAlarm.cancel` returns false on any platform error, and
+      // this discarded it and returned true regardless. The consequence is
+      // not cosmetic: a failed cancel leaves the account in the native
+      // KEY_ACCOUNTS set, and `BootReceiver` -> `rescheduleAll` then re-arms
+      // it at EVERY reboot -- waking the device for an account the user
+      // switched off, which is the exact battery complaint the comment three
+      // lines above says this must not create.
+      //
+      // Logging is the honest floor here rather than returning false: the
+      // WorkManager cancel above has already succeeded, so the account IS
+      // stopped from Dart's side, and reporting total failure would be its own
+      // lie. A reconcile-on-start that compares native prefs against Dart
+      // settings is the real fix -- nothing does that today -- and is filed as
+      // backlog rather than improvised here.
+      final alarmCancelled = await AndroidDozeAlarm.cancel(accountId);
+      if (!alarmCancelled) {
+        Logger().w('F235: Doze alarm NOT cancelled for this account; it may '
+            're-arm at the next reboot via rescheduleAll. WorkManager was '
+            'cancelled, so no scan runs while the app is alive.');
+      }
       return true;
     } catch (e) {
       Logger().e('WorkManager cancel failed: $e');

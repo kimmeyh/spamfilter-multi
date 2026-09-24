@@ -604,7 +604,12 @@ class _AccountSetupScreenState extends State<AccountSetupScreen> {
             includeSettings: false,
           ),
         ),
-        body: SelectionArea(
+        body: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          mainAxisSize: MainAxisSize.max,
+          children: [
+            const ScreenVersionLine(),
+            Expanded(child: SelectionArea(
           child: SingleChildScrollView(
             padding: const EdgeInsets.all(16.0),
             child: Column(
@@ -772,6 +777,8 @@ class _AccountSetupScreenState extends State<AccountSetupScreen> {
               ],
             ),
           ),
+        )),
+          ],
         ),
       ),
     );

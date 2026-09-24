@@ -3620,8 +3620,14 @@ class _ResultsDisplayScreenState extends State<ResultsDisplayScreen> {
     messenger.showSnackBar(
       SnackBar(
         content: Text(requested
-            ? 'Stopping the scan. It will finish the emails it already '
-                'fetched, then stop.'
+            // PR #435 review I-3: the earlier wording promised the scan
+            // would "finish the emails it already fetched", which it does not
+            // -- throwIfCancelled unwinds past BOTH the evaluation phase and
+            // the batch-execution phase, so no fetched email is ever acted on.
+            // The counts already recorded are kept, which is what AC-4 asks
+            // for, but nothing further is filed or moved.
+            ? 'Stopping the scan. Emails already checked are kept; nothing '
+                'further will be filed or moved.'
             : 'That scan has already finished.'),
       ),
     );

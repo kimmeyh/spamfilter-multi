@@ -6,6 +6,7 @@ import android.content.BroadcastReceiver
 import android.content.Context
 import android.content.Intent
 import android.content.SharedPreferences
+import android.net.Uri
 import android.os.Build
 import android.util.Log
 
@@ -57,6 +58,22 @@ object DozeAlarmScheduler {
     private fun intentFor(context: Context, accountId: String): PendingIntent {
         val intent = Intent(context, DozeAlarmReceiver::class.java).apply {
             action = ACTION_SCAN
+            // PR #435 review I-7: the DATA URI is what makes this intent
+            // distinct per account, NOT the extra.
+            //
+            // PendingIntent matching uses Intent.filterEquals, which compares
+            // action, data, type, component and categories -- and IGNORES
+            // EXTRAS. Without this line two accounts produce intents that
+            // filterEquals considers identical, differing only by the
+            // accountId extra. The request code alone was carrying that
+            // burden, and `accountId.hashCode()` is STABLE (Java's String
+            // hash is specified) but not UNIQUE: on a 32-bit collision
+            // FLAG_UPDATE_CURRENT makes account B overwrite A's alarm, so A
+            // silently stops scanning and cancel(A) cancels B.
+            //
+            // The scheme is arbitrary and never resolved -- it exists only to
+            // give filterEquals something to distinguish.
+            data = Uri.parse("f235://scan/" + Uri.encode(accountId))
             putExtra(EXTRA_ACCOUNT_ID, accountId)
         }
         // FLAG_IMMUTABLE is mandatory from API 31 and harmless before it.
@@ -128,13 +145,30 @@ object DozeAlarmScheduler {
     fun rescheduleAll(context: Context) {
         val p = prefs(context)
         val accounts = p.getStringSet(KEY_ACCOUNTS, emptySet()) ?: return
+        // PR #435 review I-6: COUNT the successes; do not announce them.
+        //
+        // `schedule(...)` returns Boolean and this discarded it, then logged
+        // "rescheduled N account(s)" unconditionally. After a boot where every
+        // single re-arm failed, logcat would read "rescheduled 3 account(s)"
+        // while zero alarms existed -- and this log is the primary evidence
+        // for whether F235 survives a reboot, which is the one thing manual
+        // validation is meant to establish. CLAUDE.md IMP-3: an unconditional
+        // success message is a lie waiting to happen.
+        var armed = 0
+        var attempted = 0
         for (accountId in accounts) {
             val interval = p.getInt(KEY_INTERVAL_PREFIX + accountId, 0)
             if (interval > 0) {
-                schedule(context, accountId, interval)
+                attempted++
+                if (schedule(context, accountId, interval)) armed++
             }
         }
-        Log.i(TAG, "rescheduled ${accounts.size} account(s)")
+        if (armed == attempted) {
+            Log.i(TAG, "rescheduled $armed of $attempted account(s)")
+        } else {
+            Log.w(TAG, "rescheduled only $armed of $attempted account(s) -- "
+                + "the rest will not scan while idle")
+        }
     }
 }
 
@@ -156,7 +190,15 @@ class DozeAlarmReceiver : BroadcastReceiver() {
             val prefs = context.getSharedPreferences("f235_doze_alarms", Context.MODE_PRIVATE)
             val interval = prefs.getInt("interval_$accountId", 0)
             if (interval > 0) {
-                DozeAlarmScheduler.schedule(context, accountId, interval)
+                // PR #435 review I-6: the return was discarded here too, and
+                // this one matters MORE than rescheduleAll's. An alarm does
+                // not repeat -- this re-arm IS the chain. A silent failure
+                // here stops the account scanning while idle, permanently,
+                // until something else reschedules it.
+                if (!DozeAlarmScheduler.schedule(context, accountId, interval)) {
+                    Log.w("DozeAlarmReceiver", "re-arm FAILED -- this account "
+                        + "will not wake again until the app reschedules it")
+                }
             }
         }
 

@@ -181,6 +181,46 @@ void main() {
     });
   });
 
+  group('F235: the Kotlin task name matches Dart -- PR #435 review C-3', () {
+    test('THE DEFECT: DozeScanTrigger.TASK_NAME equals kAndroidScanTaskName',
+        () {
+      // This shipped WRONG. The Kotlin literal read
+      // "com.myemailspamfilter.backgroundScan" -- a string appearing nowhere
+      // else in the repo -- while Dart's constant is
+      // "spamfilter_background_scan", under a KDoc asserting they must match.
+      //
+      // It did not break the scan, and that is exactly what made it dangerous:
+      // the dispatcher routes on inputData, not taskName, and taskName is read
+      // only to decide `isTest`, where the wrong value happened to be falsy.
+      // Safe BY ACCIDENT with nothing marking the dependency, so the obvious
+      // refactor to `switch (taskName)` would have silently killed every
+      // Doze-woken scan.
+      //
+      // Asserting the two literals are EQUAL, rather than that either exists,
+      // is the point: a presence check would have passed the whole time.
+      final kotlin = File(
+              'android/app/src/main/kotlin/com/myemailspamfilter/DozeScanTrigger.kt')
+          .readAsStringSync();
+      final dart = File('lib/core/services/android_background_scan_worker.dart')
+          .readAsStringSync();
+
+      final kMatch = RegExp(r'TASK_NAME\s*=\s*"([^"]+)"').firstMatch(kotlin);
+      final dMatch = RegExp(r"kAndroidScanTaskName\s*=\s*'([^']+)'")
+          .firstMatch(dart);
+
+      expect(kMatch, isNotNull,
+          reason: 'could not find TASK_NAME in DozeScanTrigger.kt');
+      expect(dMatch, isNotNull,
+          reason: 'could not find kAndroidScanTaskName in the Dart worker');
+      expect(kMatch!.group(1), dMatch!.group(1),
+          reason: 'the Kotlin alarm path hands this string to WorkManager as '
+              'the Dart task name. If it drifts from the Dart constant the '
+              'mismatch is SILENT today, because the dispatcher routes on '
+              'inputData -- until someone routes on taskName, and then every '
+              'Doze-woken scan stops.');
+    });
+  });
+
   group('F235: the native side uses the inexact call', () {
     test('setAndAllowWhileIdle, not setExactAndAllowWhileIdle', () {
       final kotlin = File(

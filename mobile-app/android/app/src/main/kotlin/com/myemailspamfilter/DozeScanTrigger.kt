@@ -37,8 +37,29 @@ import java.util.concurrent.TimeUnit
 object DozeScanTrigger {
     private const val TAG = "DozeScanTrigger"
 
-    /** Must match `kAndroidScanTaskName` on the Dart side. */
-    private const val TASK_NAME = "com.myemailspamfilter.backgroundScan"
+    /**
+     * Must match `kAndroidScanTaskName` in
+     * `lib/core/services/android_background_scan_worker.dart`.
+     *
+     * **This was WRONG and shipped wrong** (PR #435 review C-3): it read
+     * "com.myemailspamfilter.backgroundScan", a string that appears nowhere
+     * else in the repo, while the Dart constant is "spamfilter_background_scan".
+     * The KDoc asserted parity that did not hold -- the exact defect class
+     * CLAUDE.md IMP-2 names, in code written the same sprint the rule was
+     * being applied elsewhere.
+     *
+     * **It did not break the scan, and that is what makes it dangerous.** The
+     * dispatcher routes on `inputData`, not on `taskName`; `taskName` is read
+     * only to decide `isTest`, and the wrong value happened to be falsy for
+     * that comparison. Safe BY ACCIDENT, with nothing marking the dependency --
+     * CLAUDE.md Sprint 72 IMP-1. Refactoring the dispatcher to
+     * `switch (taskName)`, which is the obvious cleanup, would have silently
+     * killed every Doze-woken scan.
+     *
+     * Pinned by a source-parity assertion in `f235_doze_alarm_test.dart` so
+     * the two literals cannot drift apart again.
+     */
+    private const val TASK_NAME = "spamfilter_background_scan"
 
     fun enqueue(context: Context, accountId: String?) {
         if (accountId == null) {

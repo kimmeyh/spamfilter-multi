@@ -20,6 +20,11 @@
 // concealment. secrets.*.json files are gitignored and deliberately NOT
 // scanned; the template file uses a placeholder value, never the real id.
 
+/// SOURCE-TEXT VERIFIED: this proves the client-id injection is WIRED in
+/// gradle and the manifest; it cannot prove Google Sign-In succeeds. What
+/// settles that is a real sign-in on a device against the registered package --
+/// which is exactly how F119 was found after a credential-less build shipped to
+/// the Microsoft Store.
 import 'dart:io';
 
 import 'package:flutter_test/flutter_test.dart';

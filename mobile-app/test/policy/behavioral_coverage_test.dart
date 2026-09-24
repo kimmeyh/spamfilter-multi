@@ -53,12 +53,35 @@ void main() {
   final testDir = Directory('test');
 
   /// Assertions made against a SOURCE STRING rather than a running object.
+  ///
+  /// **Two forms, and missing the second made this gate nearly blind** (PR #435
+  /// review I-2). The first version matched only `<var>.contains(`, so
+  /// `expect(source, contains('x'))` -- the IDIOMATIC Dart matcher form --
+  /// scored zero. `msix_config_test.dart` is a pure source-text policy gate and
+  /// scored 0.00; `f235_doze_alarm_test.dart` scored 0.14 while 8 of its 13
+  /// tests are source-only.
+  ///
+  /// So the gate passed substantially because it could not SEE, not because
+  /// files complied -- which is exactly the Sprint 69 F210 "green because
+  /// nothing matched" mode, in the gate written to prevent that class. A gate
+  /// blind in its commonest case is worse than no gate, because it reports
+  /// safety.
   final sourceAssertion = RegExp(
-    r'\b(source|scanner|adapter|code|contents?|src|appBar|line)\s*\.'
-    r'(contains|indexOf|lastIndexOf|allMatches)\s*\(',
+    // form 1: source.contains(...) / .indexOf(...) / ...
+    r'\b(source|scanner|adapter|code|contents?|src|appBar|line|kotlin|dart|'
+    r'text|body|manifest|yaml|file)\s*\.'
+    r'(contains|indexOf|lastIndexOf|allMatches|startsWith|endsWith)\s*\('
+    // form 2: expect(<anything>, contains(...)) -- the matcher form
+    r'|\bexpect\s*\(\s*[^,()]+\s*,\s*(contains|startsWith|endsWith|matches)\s*\(',
   );
   final anyExpect = RegExp(r'\bexpect\s*\(');
-  final readsDartSource = RegExp(r"""File\(['"][^'"]*\.dart['"]\)""");
+
+  /// Does this file read production SOURCE at all?
+  ///
+  /// Keyed on the READ rather than on a literal `.dart` path, because
+  /// `File(p.join('lib', 'foo.dart'))` and `File(yamlPath)` both dropped the
+  /// file out of scope entirely under the old pattern -- a one-line bypass.
+  final readsDartSource = RegExp(r'readAsStringSync\s*\(|readAsString\s*\(');
 
   /// The declaration a source-heavy file must carry.
   ///

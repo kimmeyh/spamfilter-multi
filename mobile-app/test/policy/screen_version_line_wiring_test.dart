@@ -68,20 +68,42 @@ void main() {
       if (!RegExp(r'(?<![A-Za-z])body\s*:').hasMatch(code)) continue;
       if (exempt.containsKey(name)) continue;
 
-      // CONSTRUCTED, not merely mentioned. `contains('ScreenVersionLine')`
-      // would be satisfied by a comment, which is the exact defect the F209
-      // gate shipped with.
-      if (!RegExp(r'ScreenVersionLine\(').hasMatch(code)) {
-        missing.add(name);
+      // COUNT, do not test presence -- PR #435 review C-2.
+      //
+      // **This gate shipped testing presence and it hid a real defect.** The
+      // check was `hasMatch(code)`: one wired branch satisfied the whole file.
+      // `account_selection_screen.dart` has FOUR Scaffolds -- loading, error,
+      // empty, and the steady state shown on nearly every launch -- and only
+      // the loading SKELETON was wired. The gate was green while three
+      // reachable branches, including the app's primary landing screen,
+      // shipped with no version line at all. That is F229 failing on its
+      // most-screenshotted screen, with its own gate reporting success.
+      //
+      // The structural lesson, which applies to every gate of this shape in
+      // the repo: **these gates count FILES while the bug lives in BRANCHES.**
+      // A boolean per file is permanently satisfiable by wiring any one
+      // branch, including a dead one.
+      //
+      // Counting is not a perfect proof of placement -- a file could wire the
+      // same branch twice -- but it converts "at least one" into "at least as
+      // many as there are Scaffolds", which is what actually failed here.
+      final scaffolds =
+          RegExp(r'(?<![A-Za-z])Scaffold\(').allMatches(code).length;
+      final lines = RegExp(r'ScreenVersionLine\(').allMatches(code).length;
+      if (lines < scaffolds) {
+        missing.add('$name ($lines line(s) for $scaffolds Scaffold(s))');
       }
     }
 
     expect(
       missing,
       isEmpty,
-      reason: 'These screens build a Scaffold body that does NOT render '
-          'ScreenVersionLine, so at phone width they show no version at all '
-          'and a screenshot of them cannot identify its build.\n\n'
+      reason: 'These screens have MORE Scaffold branches than version '
+          'lines, so at least one reachable branch shows no version at phone '
+          'width and a screenshot of it cannot identify its build.\n\n'
+          'A build() with several early returns needs the line in EVERY '
+          'branch -- account_selection_screen had four and wired only the '
+          'loading skeleton, which shows for a fraction of a second.\n\n'
           'Fix: make the body a Column whose first child is '
           '`const ScreenVersionLine()`.\n'
           'If a screen genuinely should not show it, add it to `exempt` WITH '

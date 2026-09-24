@@ -1,5 +1,4 @@
 import 'dart:async';
-import 'dart:io' show Platform;
 
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
@@ -301,7 +300,9 @@ class _ScanProgressScreenState extends State<ScanProgressScreen>
       ScanStatus.scanning => 'Scanning in progress',
       ScanStatus.paused => 'Paused',
       ScanStatus.completed => 'Scan complete - $modeName',
-      ScanStatus.error => 'Scan failed',
+      // PR #435 review I-4: a cancel is not a failure.
+      ScanStatus.error =>
+        scanProvider.wasCancelled ? 'Scan cancelled' : 'Scan failed',
     };
 
     // [NEW] ISSUE #125: Show demo mode indicator if using demo platform
@@ -490,8 +491,14 @@ class _ScanProgressScreenState extends State<ScanProgressScreen>
     messenger.showSnackBar(
       SnackBar(
         content: Text(requested
-            ? 'Stopping the scan. It will finish the emails it already '
-                'fetched, then stop.'
+            // PR #435 review I-3: the earlier wording promised the scan
+            // would "finish the emails it already fetched", which it does not
+            // -- throwIfCancelled unwinds past BOTH the evaluation phase and
+            // the batch-execution phase, so no fetched email is ever acted on.
+            // The counts already recorded are kept, which is what AC-4 asks
+            // for, but nothing further is filed or moved.
+            ? 'Stopping the scan. Emails already checked are kept; nothing '
+                'further will be filed or moved.'
             : 'That scan has already finished.'),
       ),
     );
@@ -710,38 +717,51 @@ String _formatMinutes(Duration d) {
 /// shorten the block.** (Verified by reading both call sites: neither passes a
 /// custom window, so both use the default.)
 ///
-/// **The fix, and why it is not a new timeout.** On Android every scan shares
-/// one process, so [ScanCoordinator] is authoritative: if it holds no lease,
-/// no scan is running in this app, and a lingering `in_progress` row is a
-/// corpse. Checking the coordinator costs nothing and needs no schema change
-/// (there is no heartbeat column on `scan_results` -- `started_at` is the only
-/// liveness signal, so a freshness-based fix would need a migration).
+/// **THE FIX THAT WAS TRIED AND IS NOW REVERTED -- read this before trying it
+/// again.** Sprint 73 suppressed the warning whenever the in-process
+/// [ScanCoordinator] held no lease, on the reasoning that "Android runs every
+/// scan in one process, so the coordinator is authoritative". **That conflates
+/// the OS PROCESS with the Dart ISOLATE, and it is false.**
 ///
-/// **Declared ADR-0042 platform exception, and it is the whole subtlety.** On
-/// Windows background scans run in a SEPARATE process (Task Scheduler,
-/// ADR-0039) which this coordinator cannot see, so an empty coordinator there
-/// proves NOTHING and the row must still be trusted. The OS behaviour being
-/// relied on is process topology, not sockets: one process on Android, two on
-/// Windows. Suppressing the warning on Windows would re-open the Sprint 61
-/// concurrent-session failure this notice exists to prevent.
+/// `androidBackgroundScanDispatcher` is a `@pragma('vm:entry-point')`
+/// WorkManager entry that calls `WidgetsFlutterBinding.ensureInitialized()` and
+/// `DartPluginRegistrant.ensureInitialized()` -- which is what a SEPARATE
+/// ISOLATE entry point looks like; nothing re-initialises a binding it already
+/// has. [ScanCoordinator] is a plain per-isolate in-memory singleton, and Dart
+/// isolates do not share memory. So `ScanCoordinator.instance.active` read HERE,
+/// in the UI isolate, is null even while a background scan genuinely holds its
+/// lease in the worker isolate.
+///
+/// **The consequence was the exact opposite of the intent**: on Android
+/// `coordinatorIsIdle` is essentially always true, so a genuinely LIVE
+/// background scan had its warning suppressed, letting the user start a
+/// concurrent manual scan -- re-opening the Sprint 61 concurrent-session
+/// failure this notice exists to prevent. Found by the PR #435 reviews (Copilot
+/// HIGH, and independently by the Claude review); the unit tests could not
+/// catch it because they inject `coordinatorIsIdle` as a boolean rather than
+/// exercising the real cross-isolate value.
+///
+/// **So the function is back to trusting the row**, which is the conservative
+/// direction: a warning shown for a dead scan is a nuisance the user can click
+/// past, and a warning suppressed for a live scan is data loss waiting to
+/// happen. The original F207 complaint -- a stale row warning for up to 30
+/// minutes -- is real but is NOT worth reintroducing that risk to fix.
+///
+/// **The real fix needs a cross-isolate liveness signal**, which means a
+/// heartbeat or `updated_at` column on `scan_results` (it has none today;
+/// `started_at` is the only signal, so this is a schema migration). Tracked as
+/// MV74-2 (issue #434). Do not re-attempt the coordinator shortcut.
 ///
 /// Returns true when the warning should be shown.
 @visibleForTesting
 bool shouldWarnAboutBackgroundScan({
   required bool hasActiveRow,
-  required bool coordinatorIsIdle,
-  required bool isAndroid,
 }) {
-  if (!hasActiveRow) return false;
-  // Android only: the coordinator sees every scan in the process, so idle
-  // means the row is stale. Windows cannot conclude this -- see above.
-  if (isAndroid && coordinatorIsIdle) return false;
-  return true;
+  // A fresh in_progress row is the only liveness evidence available in THIS
+  // isolate. Trust it on every platform until a cross-isolate signal exists.
+  return hasActiveRow;
 }
 
-/// Test seam for [shouldWarnAboutBackgroundScan]'s platform branch.
-@visibleForTesting
-bool? debugIsAndroidForScanWarning;
 
 Future<void> startRealScan({
   required BuildContext context,
@@ -779,8 +799,6 @@ Future<void> startRealScan({
     // Android and deliberately cannot on Windows.
     final warnAboutBackground = shouldWarnAboutBackgroundScan(
       hasActiveRow: activeBg != null,
-      coordinatorIsIdle: ScanCoordinator.instance.active == null,
-      isAndroid: debugIsAndroidForScanWarning ?? Platform.isAndroid,
     );
     if (activeBg != null && !warnAboutBackground) {
       logger.i('F207: ignoring a stale in_progress background row for '
