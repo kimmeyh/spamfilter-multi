@@ -725,8 +725,34 @@ fast for a real compile after a clean, which is itself a useful tell that the
 failure is registry state rather than code. `gradlew --stop` shuts them down
 cleanly and reports how many it stopped.
 
-**Sprint 73 cost**: six build attempts. Three were project caches, one was
-self-inflicted by killing java, and the real blocker was the SDK-side cache
-that `flutter clean` cannot reach. **The lesson is to read the PATH in the error
-rather than re-running the same remedy** -- the message named the SDK directory
-from the first failure onward.
+**Sprint 73: SIX attempts, and NONE of the above fixed it.** Recorded honestly
+because the wrong lesson is worse than none: I proposed three causes in turn
+(project caches, a daemon registry I corrupted myself by killing java, then the
+SDK-side cache) and each was falsified by the next failure. Clearing caches at
+every level, including a full `flutter clean` that removed `build/` entirely,
+did not help -- the caches regenerate and immediately fail to close again.
+
+**The fact that settles what this is NOT**: across all six attempts the build
+never once reached `:app:compileProdDebugKotlin`. It dies compiling THIRD-PARTY
+PLUGINS -- `battery_plus`, `msal_auth`, `google_sign_in_android` -- and no error
+ever names a file under `android/app/src/main/kotlin/`. So these failures say
+nothing at all about the app's own Kotlin; it has not been compiled.
+
+**Most likely cause, NOT yet confirmed: Norton 360 realtime scanning.** It is
+active on this machine (`Get-CimInstance ... AntiVirusProduct` lists it, and
+Defender realtime is on as well), and CLAUDE.md already documents Norton
+interfering with this project's development by intercepting IMAP TLS. An AV
+holding `.tab` files open as the Kotlin compiler writes and closes them produces
+exactly this signature: caches that regenerate but cannot close, across EVERY
+plugin, never the app module.
+
+**To confirm and fix (needs Harold -- requires AV changes):**
+1. Add an exclusion in Norton 360 for `D:\Data\Harold\github\spamfilter-multi`
+   and the Flutter SDK root, or temporarily disable realtime scanning.
+2. `cd mobile-app\android; .\gradlew.bat --stop`
+3. Re-run `build-with-secrets.ps1 -BuildType debug`.
+
+If it still fails with the plugin caches untouched by AV, the next candidate is
+the Kotlin version warning the build prints (project is on 2.2.20; Flutter warns
+support drops below 2.3.20) -- but treat that as a HYPOTHESIS, not a diagnosis,
+until something tests it.
