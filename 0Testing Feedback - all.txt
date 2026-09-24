@@ -7,7 +7,27 @@ Manual Validation complete
 Sprint 7n Manual Validation Feedback 
 
 ---------------------------------------------------------------------------------------------------------
-Sprint 71 Manual Validation Feedback 
+Sprint 73 Manual Validation Feedback 
+  1. F234 preview (Windows is read-only, so this is the platform it serves). Scan Results → select a tile → block an entire domain. Expect: "Preview
+     only: N would have been filed... your mailbox was NOT changed." The rows should stay visible. Judge whether it reads as a preview, not a completed
+     action — that is the one thing no test can settle.
+- sent screenshots
+  2. F224 cancel, scan screen. Start a Live Scan, tap Cancel Scan mid-scan. Expect "Stopping the scan..." then a stop at the next batch, reported as
+     stopped, not failed, with partial counts kept.
+  3. F224 cancel, results screen. From Scan Results tap Scan Again, then the same button (now Cancel Scan). This path had no cancel at all before.
+  4. Cancel then immediately rescan — should start with no session error. On the S24+ this is the one that matters; a unit test cannot prove the IMAP
+     socket closed.
+  5. F207. After a background scan ends, start a manual scan — no stale "background scan in progress" warning.
+  6. F235 (S24+, over hours). Background scans firing while idle, and surviving a reboot.
+
+  One caveat I could not settle from source: F207's Android suppression assumes the WorkManager scan shares the UI isolate. If it runs in its own
+  isolate, the coordinator would read idle while a scan is live, and my fix would hide a real warning. Step 5 on the phone is what settles it; I recorded
+  it as unverified rather than claiming otherwise.
+
+  D:\Data\Harold\github\spamfilter-multi\mobile-app\dist\dev\MyEmailSpamFilter-Dev.exe (PID 72864, built 2:21 AM with the fixes)
+
+---------------------------------------------------------------------------------------------------------
+Sprint 72 Manual Validation Feedback 
 
 A. F232 - windows app [Image #199] [Image #200] nothing deleted. Added block rule. Hmmmm should it be deleting emails if Settings > Manual > Scan
   mode is readonly? or if Settings > Background > Scan mode is readonly OR if either OR only if both?  I am thinking that if Manual > Scan mode is

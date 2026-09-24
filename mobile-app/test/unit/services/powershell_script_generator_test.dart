@@ -1,3 +1,8 @@
+/// SOURCE-TEXT VERIFIED: this proves the GENERATED PowerShell has the expected
+/// shape. It cannot prove the script runs, because nothing here executes
+/// PowerShell -- a syntactically plausible script with a wrong cmdlet name would
+/// pass every assertion. What settles it is running the generated script on
+/// Windows, which is what the scheduled-task path does in manual validation.
 import 'dart:io';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:path/path.dart' as path;

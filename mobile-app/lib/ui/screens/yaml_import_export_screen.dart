@@ -29,6 +29,7 @@ import '../../core/storage/rule_database_store.dart';
 import '../widgets/app_bar_with_exit.dart';
 import 'help_screen.dart';
 import '../widgets/standard_app_bar_actions.dart';
+import '../widgets/screen_version_line.dart'; // F229 (Sprint 73)
 import '../widgets/system_inset_wrapper.dart'; // F209 (Sprint 69)
 
 /// Screen for importing and exporting YAML rule files
@@ -116,7 +117,12 @@ class _YamlImportExportScreenState extends State<YamlImportExportScreen> {
             includeSettings: false,
           ),
         ),
-        body: SelectionArea(
+        body: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        mainAxisSize: MainAxisSize.max,
+        children: [
+          const ScreenVersionLine(),
+          Expanded(child: SelectionArea(
           child: ListView(
           padding: const EdgeInsets.all(16),
           children: [
@@ -242,7 +248,9 @@ class _YamlImportExportScreenState extends State<YamlImportExportScreen> {
             ],
           ],
         ),
-        ),
+        )),
+        ],
+      ),
       ),
     );
   }

@@ -25,6 +25,7 @@ import '../widgets/app_bar_with_exit.dart';
 import 'help_screen.dart';
 import 'manual_rule_create_screen.dart';
 import '../widgets/standard_app_bar_actions.dart';
+import '../widgets/screen_version_line.dart'; // F229 (Sprint 73)
 import '../widgets/system_inset_wrapper.dart'; // F209 (Sprint 69)
 
 /// Categories for filtering safe sender patterns by structure
@@ -424,7 +425,12 @@ class _SafeSendersManagementScreenState
         // selection exists (Shift+Click extend / Ctrl+Click disjoint),
         // Ctrl+A copies only the SELECTED rows; otherwise it copies the
         // whole filtered list (original Sub-task A behavior).
-        body: CopyAllShortcut(
+        body: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        mainAxisSize: MainAxisSize.max,
+        children: [
+          const ScreenVersionLine(),
+          Expanded(child: CopyAllShortcut(
           itemLabel: 'safe senders',
           textBuilder: () {
             if (_filteredSenders.isEmpty) return '';
@@ -597,7 +603,9 @@ class _SafeSendersManagementScreenState
           ],
         ),
         ),
-        ),
+        )),
+        ],
+      ),
       ),
     );
   }

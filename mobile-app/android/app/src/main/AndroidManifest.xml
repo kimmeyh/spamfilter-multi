@@ -5,6 +5,17 @@
          Settings when the user enables background scanning; this declaration
          is the manifest half). -->
     <uses-permission android:name="android.permission.POST_NOTIFICATIONS"/>
+    <!-- F235 (Sprint 73): restore Doze alarms after a reboot. An AlarmManager
+         alarm does NOT survive a restart the way WorkManager persisted work
+         does, so without this receiver background scanning would silently stop
+         after every reboot. That would be a regression against the behaviour
+         this card replaces.
+
+         Deliberately NOT declared: SCHEDULE_EXACT_ALARM / USE_EXACT_ALARM.
+         setAndAllowWhileIdle fires in Doze without either, and both exact
+         variants carry a Google Play justification burden. See the R-1
+         determination in SPRINT_73_PLAN.md. -->
+    <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED"/>
     <!-- GP-3 (Sprint 64, Issue #376): these three permissions are injected by
          TRANSITIVE libraries of msal_auth (androidx.biometric brings the
          biometric pair; com.yubico.yubikit brings NFC), and the MSAL/Outlook
@@ -126,6 +137,30 @@
         <meta-data
             android:name="flutterEmbedding"
             android:value="2" />
+
+        <!-- F235 (Sprint 73): the Doze-tolerant scan alarm.
+
+             android:exported="false" on both: nothing outside the app has any
+             business triggering a mail scan, and an exported receiver is an
+             attack surface for exactly that. The boot receiver still works
+             because BOOT_COMPLETED is delivered by the system. -->
+        <receiver
+            android:name=".DozeAlarmReceiver"
+            android:exported="false">
+            <intent-filter>
+                <action android:name="com.myemailspamfilter.ACTION_DOZE_SCAN"/>
+            </intent-filter>
+        </receiver>
+
+        <receiver
+            android:name=".BootReceiver"
+            android:exported="false">
+            <intent-filter>
+                <action android:name="android.intent.action.BOOT_COMPLETED"/>
+                <action android:name="android.intent.action.QUICKBOOT_POWERON"/>
+            </intent-filter>
+        </receiver>
+
     </application>
     <!-- Required to query activities that can process text, see:
          https://developer.android.com/training/package-visibility and

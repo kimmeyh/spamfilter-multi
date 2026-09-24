@@ -9,6 +9,7 @@ import '../../core/utils/pattern_normalization.dart';
 import '../../core/utils/pattern_generation.dart';
 import '../widgets/auth_warning_dialog.dart';
 import '../widgets/email_auth_badge.dart';
+import '../widgets/screen_version_line.dart'; // F229 (Sprint 73)
 import '../widgets/system_inset_wrapper.dart'; // F209 (Sprint 69)
 
 /// Pattern type enumeration
@@ -360,7 +361,12 @@ class _SafeSenderQuickAddScreenState extends State<SafeSenderQuickAddScreen> {
           title: Text('Add Safe Sender - $_normalizedEmail'),
           elevation: 0,
         ),
-        body: Form(
+        body: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        mainAxisSize: MainAxisSize.max,
+        children: [
+          const ScreenVersionLine(),
+          Expanded(child: Form(
           key: _formKey,
           child: SingleChildScrollView(
             padding: const EdgeInsets.all(16),
@@ -403,7 +409,9 @@ class _SafeSenderQuickAddScreenState extends State<SafeSenderQuickAddScreen> {
               ],
             ),
           ),
-        ),
+        )),
+        ],
+      ),
       ),
     );
   }

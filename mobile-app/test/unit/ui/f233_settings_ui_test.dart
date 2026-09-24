@@ -18,6 +18,13 @@
 /// several providers -- so they cannot prove the controls RENDER. The keys are
 /// here so a future widget test can find them, and manual validation is what
 /// confirms they appear.
+/// SOURCE-TEXT VERIFIED: these assert the Settings toggle EXISTS in source.
+/// **This file is the reason the gate that flags it was written.** F233's
+/// original ten tests all set the flag through the DiagnosticLogger test seam
+/// and passed while the feature shipped with NO TOGGLE AT ALL -- it could never
+/// be enabled, so it could never write a line. Harold opened Settings and asked
+/// "where". What settles it is opening the screen: a widget test that pumps
+/// Settings and taps the control, or Harold on the device.
 library;
 
 import 'dart:io';

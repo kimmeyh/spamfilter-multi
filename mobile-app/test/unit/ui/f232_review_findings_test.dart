@@ -21,6 +21,11 @@
 /// prove no deletion occurs at runtime -- that needs the manual validation step
 /// of opening a saved scan on a live account and confirming the mailbox is
 /// untouched. These pin the shape; the device proves the behavior.
+/// SOURCE-TEXT VERIFIED: these pin the review findings' fixes as source shapes.
+/// They cannot prove a rule created from a historical scan view actually acts
+/// on the mailbox. What settles that is a live account run -- mechanism B is
+/// still undiagnosed for exactly this reason and is instrumented rather than
+/// asserted.
 library;
 
 import 'dart:io';

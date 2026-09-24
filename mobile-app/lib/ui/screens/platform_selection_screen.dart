@@ -6,6 +6,7 @@ import 'account_setup_screen.dart';
 import 'help_screen.dart';
 import 'scan_progress_screen.dart';
 import '../widgets/standard_app_bar_actions.dart';
+import '../widgets/screen_version_line.dart'; // F229 (Sprint 73)
 import '../widgets/system_inset_wrapper.dart'; // F209 (Sprint 69)
 
 /// Platform selection screen - first step in account setup
@@ -97,7 +98,12 @@ class _PlatformSelectionScreenState extends State<PlatformSelectionScreen> {
             includeSettings: false,
           ),
         ),
-        body: SelectionArea(
+        body: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        mainAxisSize: MainAxisSize.max,
+        children: [
+          const ScreenVersionLine(),
+          Expanded(child: SelectionArea(
           child: SingleChildScrollView(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -167,7 +173,9 @@ class _PlatformSelectionScreenState extends State<PlatformSelectionScreen> {
               ],
             ),
           ),
-        ),
+        )),
+        ],
+      ),
       ),
     );
   }

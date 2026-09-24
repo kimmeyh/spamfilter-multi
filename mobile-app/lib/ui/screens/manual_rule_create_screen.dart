@@ -32,6 +32,7 @@ import '../../core/utils/manual_rule_pattern_generator.dart';
 import '../testing/widget_keys.dart';
 import '../utils/accessibility_helper.dart';
 import 'help_screen.dart';
+import '../widgets/screen_version_line.dart'; // F229 (Sprint 73)
 import '../widgets/system_inset_wrapper.dart'; // F209 (Sprint 69)
 
 /// Whether we are creating a block rule or a safe sender
@@ -667,7 +668,12 @@ class _ManualRuleCreateScreenState extends State<ManualRuleCreateScreen> {
             onPressed: () => Navigator.of(context).pop(),
           ),
         ),
-        body: SelectionArea(
+        body: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        mainAxisSize: MainAxisSize.max,
+        children: [
+          const ScreenVersionLine(),
+          Expanded(child: SelectionArea(
           child: Form(
             key: _formKey,
             child: ListView(
@@ -846,7 +852,9 @@ class _ManualRuleCreateScreenState extends State<ManualRuleCreateScreen> {
               ],
             ),
           ),
-        ),
+        )),
+        ],
+      ),
       ),
     );
   }

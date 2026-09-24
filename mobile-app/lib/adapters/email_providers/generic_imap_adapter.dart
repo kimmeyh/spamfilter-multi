@@ -16,6 +16,7 @@ library;
 
 import 'dart:async';
 import '../../core/services/diagnostic_logger.dart';
+import '../../core/services/scan_coordinator.dart';
 import 'dart:io';
 
 import 'package:enough_mail/enough_mail.dart';
@@ -308,6 +309,26 @@ class GenericIMAPAdapter with BatchOperationsMixin implements SpamFilterPlatform
 
         _logger.i('[IMAP] fetchMessages: Fetched ${fetchedMessages.length} message details from "$folderName"');
         messages.addAll(fetchedMessages);
+      } on ScanCancelledException {
+        // F224 (Sprint 73), Phase 5.1.1 review C-1: a cancel must NOT be
+        // swallowed here.
+        //
+        // This is the SECOND per-folder catch on the cancellation path, and it
+        // sits BELOW the scanner's. The scanner's own per-folder handler was
+        // fixed first and never saw the exception: `_fetchMessageDetails`
+        // awaits `onBatch` -- the scanner's `batchSink` -- from inside THIS
+        // try, so the throw unwound to here and stopped.
+        //
+        // The damage was worse than "cancel does nothing": the flag stays set,
+        // so every REMAINING folder throws at its first batch and is swallowed
+        // too, each returning zero messages. The scan then "completes"
+        // normally and reports a near-empty mailbox.
+        //
+        // Recorded because it generalises: fixing ONE instance of a swallow
+        // does not fix the class. Both layers had the same
+        // continue-on-folder-error shape and only the lower one was on the
+        // path that matters.
+        rethrow;
       } catch (e, st) {
         _logger.e('[IMAP] fetchMessages: ERROR fetching from "$folderName": $e\n$st');
         // Continue with other folders even if one fails

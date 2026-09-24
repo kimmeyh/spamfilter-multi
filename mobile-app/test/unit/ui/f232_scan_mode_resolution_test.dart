@@ -26,6 +26,11 @@
 /// do not prove the IMAP server accepted the action, and they cannot reach
 /// mechanism B (a live batch failing 9 of 9 on a healthy connection), which is
 /// still undiagnosed and now instrumented rather than fixed.
+/// SOURCE-TEXT VERIFIED: these prove the production code RESOLVES scan mode
+/// from settings rather than session state, by reading the source. They cannot
+/// prove the resolved mode is the one a live scan then uses. What settles it is
+/// a device run on an account whose per-account override differs from the
+/// app-wide default -- the exact gap that produced Sprint 72's C-2b defect.
 library;
 
 import 'dart:io';
@@ -105,13 +110,21 @@ void main() {
       // rendered, so the user saw a flash then a different sentence -- a new
       // SnackBar replaces the current rather than queueing. The caller now owns
       // the message, composed from ReProcessOutcome.readOnly().
-      expect(source.contains('ReProcessOutcome.readOnly()'), isTrue,
+      // F234 (Sprint 73) gave this constructor named arguments carrying the
+      // preview counts, so the bare `readOnly()` form no longer appears. The
+      // INVARIANT this test exists to protect is unchanged -- read-only is
+      // still its own outcome, distinct from a failure -- so match the
+      // constructor rather than one call's argument list.
+      expect(source.contains('ReProcessOutcome.readOnly('), isTrue,
           reason: 'the outcome must still distinguish read-only from failure');
       // Matched on an unbroken fragment: the production string wraps across
       // two source lines, so a whole-sentence match fails for a formatting
       // reason rather than a behavioural one.
+      // F234 (Sprint 73) split this into two branches -- with and without a
+      // preview -- so the assertion matches the invariant fragment both
+      // branches share rather than one branch's exact wording.
       expect(
-          source.contains('This account is read-only, so your '),
+          source.contains('This account is read-only'),
           isTrue,
           reason: 'the honest half of the fix: Windows DEV/Prod stay read-only '
               'by configuration and must SAY so rather than fall silent');

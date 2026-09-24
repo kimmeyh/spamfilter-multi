@@ -16,6 +16,10 @@
 /// deliberately narrow: only the call sites of factory-routed methods are
 /// checked. `Platform.isWindows` elsewhere in the file is legitimate (e.g. the
 /// Windows-only deferral status line is a real platform difference, declared).
+/// SOURCE-TEXT VERIFIED: this gate proves the platform guard is absent from
+/// the call sites; it cannot prove scheduling actually runs. What settles that
+/// is the adapter's own behavioural tests plus an Android device run where the
+/// enable toggle schedules real work -- which is how F161's escape was found.
 library;
 
 import 'dart:io';

@@ -36,7 +36,7 @@ Sprint 7n Review/Retrospective - Combined Product Owner, Scrum Master and Lead D
 
 Please complete your sprint retrospective feedback (same sections)
 Combined feedback (yours and mine) and Summarize
-Make suggestions for improvements to be implemented.
+Make suggestions for improvements to be implemented. Ensure that all improvement suggestions first attempt to prevent the problem from happening first, then implement additional controls if absolutely necessary. Look for ways of extending current method of preventions “connected” to the current improvement when it makes more sense than creating a new method.
 Display suggestions for improvement for review and approval.
 ------------------------------------
 Manual Validation complete

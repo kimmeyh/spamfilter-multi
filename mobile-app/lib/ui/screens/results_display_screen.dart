@@ -46,6 +46,7 @@ import '../../adapters/email_providers/spam_filter_platform.dart'
     show SpamFilterPlatform, FilterAction;
 import '../../adapters/storage/secure_credentials_store.dart';
 import '../widgets/empty_state.dart';
+import '../widgets/screen_version_line.dart'; // F229 (Sprint 73)
 import '../widgets/system_inset_wrapper.dart'; // F209 (Sprint 69)
 
 /// Displays summary of scan results bound to EmailScanProvider.
@@ -92,12 +93,53 @@ enum SpecialFilter {
 ///
 /// Returning the counts is what lets the caller tell the truth. The method
 /// used to return void and report only through its own snackbar.
+/// F234 (Sprint 73), review C-2: which list an email belongs in.
+enum ReProcessBucket { delete, moveSafe, none }
+
+/// The per-email re-processing decision, as a PURE function.
+///
+/// **Why this is extracted.** It was inline, and the version that shipped was
+/// inert: the read-only preview passed `ScanMode.readOnly` into gates that test
+/// for `rulesOnly`/`safeSendersOnly`/`safeSendersAndRules`. `readOnly` matches
+/// none of them, so both lists stayed empty and the preview could never report
+/// anything but zero. Nine tests passed, because they asserted the SHAPE of the
+/// code (its text and statement order) rather than its RESULT.
+///
+/// Pulling the decision out costs nothing at runtime and makes the defect
+/// directly assertable with no platform, credentials or database -- which is
+/// the whole difference between a test that would have caught it and the ones
+/// that did not.
+///
+/// Callers that must not touch the mailbox pass the mode they WOULD have acted
+/// under and suppress execution separately; this function answers "what would
+/// happen", never "may I".
+@visibleForTesting
+ReProcessBucket classifyForReProcess({
+  required EmailActionType newAction,
+  required ScanMode scanMode,
+}) {
+  final canExecuteRules = scanMode == ScanMode.rulesOnly ||
+      scanMode == ScanMode.safeSendersAndRules;
+  final canExecuteSafeSenders = scanMode == ScanMode.safeSendersOnly ||
+      scanMode == ScanMode.safeSendersAndRules;
+
+  if (newAction == EmailActionType.delete && canExecuteRules) {
+    return ReProcessBucket.delete;
+  }
+  if (newAction == EmailActionType.safeSender && canExecuteSafeSenders) {
+    return ReProcessBucket.moveSafe;
+  }
+  return ReProcessBucket.none;
+}
+
 class ReProcessOutcome {
   const ReProcessOutcome({
     required this.attempted,
     required this.succeeded,
     required this.failed,
     this.skippedReadOnly = false,
+    this.wouldHaveDeleted = 0,
+    this.wouldHaveMoved = 0,
   });
 
   /// Nothing needed doing -- not a failure, and not a success worth claiming.
@@ -105,12 +147,26 @@ class ReProcessOutcome {
       : attempted = 0,
         succeeded = 0,
         failed = 0,
-        skippedReadOnly = false;
+        skippedReadOnly = false,
+        wouldHaveDeleted = 0,
+        wouldHaveMoved = 0;
 
   /// The account is configured read-only; the mailbox was deliberately not
   /// touched. Distinct from a failure, and the user is told.
-  const ReProcessOutcome.readOnly()
-      : attempted = 0,
+  ///
+  /// F234 (Sprint 73): [wouldHaveDeleted] and [wouldHaveMoved] carry what the
+  /// rule WOULD have done. Harold, during Sprint 72 validation: *"if Manual >
+  /// Scan mode is readonly then add the rule, but don't delete the email, but
+  /// add it to 'would have been deleted'."*
+  ///
+  /// This turns read-only from a refusal into a REHEARSAL -- a broad rule's
+  /// blast radius can be seen before anything is removed. Most valuable on
+  /// Windows, which is configured read-only, so it is the platform that could
+  /// never see a rule's effect at all.
+  const ReProcessOutcome.readOnly({
+    this.wouldHaveDeleted = 0,
+    this.wouldHaveMoved = 0,
+  })  : attempted = 0,
         succeeded = 0,
         failed = 0,
         skippedReadOnly = true;
@@ -119,6 +175,16 @@ class ReProcessOutcome {
   final int succeeded;
   final int failed;
   final bool skippedReadOnly;
+
+  /// F234: what a read-only run WOULD have deleted / moved. Zero on every
+  /// other path -- these describe an action that did NOT happen, and nothing
+  /// may read them as one that did.
+  final int wouldHaveDeleted;
+  final int wouldHaveMoved;
+
+  /// True when a read-only run had something it would have acted on.
+  bool get hasPreview =>
+      skippedReadOnly && (wouldHaveDeleted + wouldHaveMoved) > 0;
 
   /// True only when work was attempted and none of it failed.
   ///
@@ -891,7 +957,12 @@ class _ResultsDisplayScreenState extends State<ResultsDisplayScreen> {
                 ),
             ],
           ),
-          body: SelectionArea(
+          body: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        mainAxisSize: MainAxisSize.max,
+        children: [
+          const ScreenVersionLine(),
+          Expanded(child: SelectionArea(
             child: Padding(
               padding: const EdgeInsets.all(16.0),
               child: Builder(builder: (context) {
@@ -1026,7 +1097,32 @@ class _ResultsDisplayScreenState extends State<ResultsDisplayScreen> {
                         ),
                         const SizedBox(width: 12),
                         Expanded(
-                          child: ElevatedButton.icon(
+                          // F224 (Sprint 73): the SAME button becomes Cancel
+                          // while the scan it started is running.
+                          //
+                          // "Scan Again" uses useReplacement: true, so the scan
+                          // runs with the user still on THIS screen -- the
+                          // ScanProgressScreen where the Cancel control lives is
+                          // never shown on this path, and it is the way testers
+                          // actually restart scans (the same navigation quirk
+                          // F220 had to account for). Without this, the most
+                          // common route to a long scan has no way out.
+                          //
+                          // One button rather than two: while scanning, "Scan
+                          // Again" is disabled anyway, so a second control would
+                          // add a permanently-dead widget to the row.
+                          child: scanProvider.status == ScanStatus.scanning
+                              ? ElevatedButton.icon(
+                                  onPressed: () => _cancelRunningScan(
+                                      context, scanProvider),
+                                  icon: const Icon(Icons.stop_circle_outlined),
+                                  label: const Text('Cancel Scan'),
+                                  style: ElevatedButton.styleFrom(
+                                    backgroundColor: Colors.orange.shade800,
+                                    foregroundColor: Colors.white,
+                                  ),
+                                )
+                              : ElevatedButton.icon(
                             onPressed: () {
                               // Testing feedback (Sprint 57): "Scan Again"
                               // used to return to the "Ready to Scan" screen,
@@ -1063,7 +1159,9 @@ class _ResultsDisplayScreenState extends State<ResultsDisplayScreen> {
               );
               }),
             ),
-          ), // Close SelectionArea
+          )),
+        ],
+      ), // Close SelectionArea
         ),
       ),
     );
@@ -3335,8 +3433,24 @@ class _ResultsDisplayScreenState extends State<ResultsDisplayScreen> {
     final Color background;
 
     if (outcome.skippedReadOnly) {
-      message = '$baseMessage -- saved. This account is read-only, so your '
-          'mailbox was not changed.';
+      // F234: when there is something to preview, SAY WHAT IT WOULD HAVE DONE.
+      // "would have" is stated twice and the mailbox is named as unchanged --
+      // the wording carries the whole risk of this card, because a preview
+      // misread as a completed action is the F228 defect wearing a new hat.
+      if (outcome.hasPreview) {
+        final parts = <String>[];
+        if (outcome.wouldHaveDeleted > 0) {
+          parts.add('${outcome.wouldHaveDeleted} would have been filed');
+        }
+        if (outcome.wouldHaveMoved > 0) {
+          parts.add('${outcome.wouldHaveMoved} would have been moved');
+        }
+        message = '$baseMessage -- saved. Preview only: ${parts.join(', ')}. '
+            'This account is read-only, so your mailbox was NOT changed.';
+      } else {
+        message = '$baseMessage -- saved. This account is read-only, so your '
+            'mailbox was not changed.';
+      }
       background = Colors.blueGrey;
     } else if (outcome.anyFailed) {
       // Name the number. "Something went wrong" is what sent Harold to Scan
@@ -3489,6 +3603,36 @@ class _ResultsDisplayScreenState extends State<ResultsDisplayScreen> {
   ///
   /// F232 is about a rule the user just CREATED being applied. It was never
   /// about acting on screen load, and this parameter keeps the two apart.
+  /// F224 (Sprint 73): stop the scan started by "Scan Again" from this screen.
+  ///
+  /// Same contract as the scan screen's control, and deliberately the same
+  /// shape: raise the coordinator's flag and return. The running scan observes
+  /// it at its next batch boundary, throws, and its own `finally` releases the
+  /// lease and closes the IMAP session. Nothing is torn down from here -- doing
+  /// so would free the lease while the socket is still open, which is the
+  /// session leak this design exists to avoid.
+  void _cancelRunningScan(
+      BuildContext context, EmailScanProvider scanProvider) {
+    final requested =
+        ScanCoordinator.instance.requestCancel(accountId: widget.accountId);
+    final messenger = ScaffoldMessenger.of(context);
+    messenger.hideCurrentSnackBar();
+    messenger.showSnackBar(
+      SnackBar(
+        content: Text(requested
+            // PR #435 review I-3: the earlier wording promised the scan
+            // would "finish the emails it already fetched", which it does not
+            // -- throwIfCancelled unwinds past BOTH the evaluation phase and
+            // the batch-execution phase, so no fetched email is ever acted on.
+            // The counts already recorded are kept, which is what AC-4 asks
+            // for, but nothing further is filed or moved.
+            ? 'Stopping the scan. Emails already checked are kept; nothing '
+                'further will be filed or moved.'
+            : 'That scan has already finished.'),
+      ),
+    );
+  }
+
   Future<ReProcessOutcome> _reProcessAffectedEmails({
     bool userInitiated = true,
   }) async {
@@ -3533,6 +3677,9 @@ class _ResultsDisplayScreenState extends State<ResultsDisplayScreen> {
     final effectiveMode = userInitiated
         ? await _resolveEffectiveScanMode(scanProvider)
         : ScanMode.readOnly;
+    // F234: set when the account may not act, so the collection loop still
+    // runs and the preview can be built from what it finds.
+    var isReadOnly = false;
     if (effectiveMode == ScanMode.readOnly) {
       logger.i('[F38] Skipping re-process: account is configured read-only');
       unawaited(DiagnosticLogger.log(
@@ -3551,9 +3698,44 @@ class _ResultsDisplayScreenState extends State<ResultsDisplayScreen> {
       // same mechanism F231 documents), the user saw a flash then a different
       // sentence. The caller owns the message; this method reports the outcome.
       // It also means the load path stays silent, which C-1 requires.
-      return const ReProcessOutcome.readOnly();
+      // F234 (Sprint 73): DO NOT return yet.
+      //
+      // The card's audit said the would-have data "already exists" because
+      // `toDelete`/`toMoveSafe` are built before the mode check. That was half
+      // right: they are built LATER IN THIS METHOD, but this early return fired
+      // BEFORE the collection loop, so on the read-only path they were never
+      // populated at all. Building the preview means letting the collection run
+      // and returning after it.
+      //
+      // Nothing below this point touches the mailbox until the execution block,
+      // which is guarded by `isReadOnly`. The collection loop only reads
+      // evaluation overrides.
+      isReadOnly = true;
     }
-    final scanMode = effectiveMode;
+    // F234 (Sprint 73), Phase 5.1.1/5.1.2 review C-2: the collection loop must
+    // run under the mode that WOULD have acted, not under `readOnly`.
+    //
+    // THE DEFECT THIS FIXES, and it made the whole feature inert: the first cut
+    // forced `scanMode = ScanMode.readOnly` here, and the loop below gates every
+    // append on `scanMode == rulesOnly || == safeSendersAndRules` (and the
+    // safe-sender equivalent). `readOnly` matches NEITHER, so both lists stayed
+    // empty on exactly the path the preview exists to serve, the
+    // `toDelete.isEmpty && toMoveSafe.isEmpty` guard returned `nothingToDo()`
+    // first, and the preview block below was unreachable. The user saw "nothing
+    // needed doing" and never a preview.
+    //
+    // `effectiveMode` is itself `readOnly` for such an account, so the intended
+    // mode cannot be recovered from it. A preview answers "what would this rule
+    // have done", so it is computed against `safeSendersAndRules` -- the
+    // broadest mode, which is the honest answer to that question and the only
+    // one that previews BOTH kinds as Harold chose at approval.
+    //
+    // This is the design the comment above already described ("nothing below
+    // this point touches the mailbox until the execution block, which is
+    // guarded by `isReadOnly`"). The comment was right and the code did not
+    // implement it -- CLAUDE.md IMP-2 in its own right.
+    final scanMode =
+        isReadOnly ? ScanMode.safeSendersAndRules : effectiveMode;
 
     // Sprint 38 Round 4 fix (2026-05-17): historical-scan views must
     // always use _historicalResults. See _reEvaluateNoRuleEmails for
@@ -3581,18 +3763,50 @@ class _ResultsDisplayScreenState extends State<ResultsDisplayScreen> {
       // Only act if the action changed
       if (newAction == originalAction) continue;
 
-      // Determine which IMAP action to execute based on new evaluation and scan mode
-      final canExecuteRules = scanMode == ScanMode.rulesOnly ||
-          scanMode == ScanMode.safeSendersAndRules;
-      final canExecuteSafeSenders = scanMode == ScanMode.safeSendersOnly ||
-          scanMode == ScanMode.safeSendersAndRules;
-
-      if (newAction == EmailActionType.delete && canExecuteRules) {
-        toDelete.add(result.email);
-      } else if (newAction == EmailActionType.safeSender &&
-          canExecuteSafeSenders) {
-        toMoveSafe.add(result.email);
+      // Determine which IMAP action to execute based on new evaluation and
+      // scan mode. Extracted to a pure function (review C-2) so the decision
+      // can be tested WITHOUT a platform, credentials or a database -- the
+      // absence of exactly that test is why the broken version shipped with a
+      // green suite.
+      switch (classifyForReProcess(
+          newAction: newAction, scanMode: scanMode)) {
+        case ReProcessBucket.delete:
+          toDelete.add(result.email);
+        case ReProcessBucket.moveSafe:
+          toMoveSafe.add(result.email);
+        case ReProcessBucket.none:
+          break;
       }
+    }
+
+    // F234 (Sprint 73): the read-only PREVIEW.
+    //
+    // The lists now hold exactly what WOULD have been actioned, so report the
+    // counts and stop before touching the mailbox. The user sees a rule's blast
+    // radius without anything being removed -- the whole point of the card, and
+    // most valuable on Windows, configured read-only, where a rule's effect was
+    // previously invisible.
+    //
+    // Rows are NOT hidden here, deliberately: hiding them would imply the mail
+    // had been dealt with, which is the F228 defect in a different costume. A
+    // preview must leave the screen looking untouched.
+    //
+    // Review C-2: this is returned BEFORE the isEmpty guard below.
+    //
+    // Order matters and it is the second half of the same defect: with the
+    // guard first, a read-only run that genuinely had nothing to preview and
+    // one that had plenty were indistinguishable, because the empty lists sent
+    // both down the `nothingToDo()` path. The preview now decides first, and
+    // `hasPreview` is false when both counts are zero -- so a read-only run
+    // with nothing to show still reports "nothing to do" through the message,
+    // without a misleading "0 would have been filed".
+    if (isReadOnly) {
+      logger.i('[F38] read-only preview: would delete ${toDelete.length}, '
+          'would move ${toMoveSafe.length}');
+      return ReProcessOutcome.readOnly(
+        wouldHaveDeleted: toDelete.length,
+        wouldHaveMoved: toMoveSafe.length,
+      );
     }
 
     if (toDelete.isEmpty && toMoveSafe.isEmpty) {
