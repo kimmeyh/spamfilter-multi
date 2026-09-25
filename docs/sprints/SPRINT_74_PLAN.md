@@ -1,9 +1,9 @@
-# Sprint 74 Plan -- PROPOSED, awaiting Phase 3.7 approval
+# Sprint 74 Plan -- APPROVED, IN EXECUTION
 
-**Status**: **DRAFT -- NOT APPROVED.** No task execution begins until Harold approves (Phase 3.7).
+**Status**: **APPROVED 2026-09-25, Phase 4 EXECUTION.** Amendments recorded under "Phase 3.7 approval".
 **Branch**: `feature/20260924_Sprint_74` | **PR**: #440 (draft, Phase 3.3.1)
 **Issues**: #428 (MV74-1), #434 (MV74-2), #422 (F232, MV74-3), #433 (F205, MV74-3), #437 (F222), #438 (F202), #439 (F206)
-**Version**: 0.16.0+7 -> bump at approval (Task 0, Phase 3.7.0b)
+**Version**: 0.16.0+7 -> **0.17.0+8** (Task 0)
 
 **Scope selected by Harold, 2026-09-24 (Phase 8.4)**: MV74-1, MV74-2, MV74-3, F202, F222, F232,
 F206, F205.
@@ -651,4 +651,31 @@ and Tasks 7 and 8 wait on that.
 
 ## Phase 3.7 approval
 
-**NOT APPROVED YET.** No task execution begins until Harold approves.
+**APPROVED 2026-09-25 by Harold, as amended.** Verbatim: *"Sprint plan approved as amended (with any
+comments I provided), proceed with execution. All Sprint tasks and sub-tasks are approved. Do not
+stop between tasks as they are all approved, please continue to complete all tasks and without
+addition approvals until Manual Validation, providing your recommendation for Manual Validation
+steps. Do not stop to ask questions unless meeting the criteria in SPRINT_STOPPING_CRITERIA.md. If
+questions must be asked, ask as late as possible."*
+
+**Amendments (Harold's answers, 2026-09-25)**:
+- **Models**: every Fable/Opus task runs on **Opus 5.5** this sprint.
+- **Q1 -- MINOR `0.17.0+8`.**
+- **Q2 -- answered as the EXPORT destination**: *"Android - Documents / Windows -
+  %USERPROFILE%\Downloads"*. Applied to Task 4: the default export folder is the public
+  `Documents` directory on Android and `%USERPROFILE%\Downloads` on Windows. This REPLACES the
+  share-sheet design -- files are written directly, so no `share_plus` dependency. (Android
+  Documents writes are proven on this device: the F205 card records a CSV written to
+  `/storage/emulated/0/Documents` and pulled over MTP on 2026-09-10.)
+  **The F202 question Q2 actually asked -- per-provider defaults user-editable in Settings or
+  code-only -- is UNANSWERED.** Per Harold's instruction to ask as late as possible, Task 3 builds
+  everything that does not depend on it (provider map, resolvers, missing-vs-failed) and the
+  question is asked at Manual Validation.
+- **Q3 -- YES, add real cross-isolate exclusion**, and *"update/append current ADR"* rather than a new
+  one: appended to ADR-0039 (per-account background scanning), which no other ADR supersedes for
+  this. Task 1 R-5 is IN scope.
+- **Q4 -- values**: Yahoo Deleted Rule `Trash`, Safe Sender `Inbox`; iCloud Safe Sender `INBOX`,
+  Deleted Rule `Deleted Messages`. iCloud Junk remains unknown -> overall default.
+- **Q5 -- NO**: the new ordering applies to Scan Results only; Review No Rule Items is unchanged.
+- **Q6 -- BUILD the redacted export mode now** (Task 4 Part C in scope).
+- **Q7 -- all 9 tasks** ("All Sprint tasks and sub-tasks are approved").
