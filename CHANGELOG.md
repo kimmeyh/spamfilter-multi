@@ -26,6 +26,24 @@ Format: `- **type**: Description (Issue #N)` where type is feat|fix|chore|docs
 
 ## [Unreleased]
 
+### 2026-09-25 (Sprint 74)
+- **fix**: a background scan now also waits while you re-process mail from Scan Results, and it can no longer slip in during the few seconds a manual scan spends connecting. A scan that fails before it connects is now shown in Scan History as failed instead of leaving no record. (Issue #434)
+- **change**: the per-scan export files are now off by default, for manual and background scans. Turn them on in Settings if you want them; they are saved to your Downloads (Windows) or Documents (Android) folder. (Issue #439)
+- **fix**: exports now fall back to the app's own folder if the default folder cannot be written (older Android versions), development and production builds keep separate diagnostic logs, and a redacted export never shares a file with unredacted rows. Hiding sender details now also covers email addresses inside rule names and patterns. (Issue #439)
+- **feat**: new accounts start with the right folders for their email provider, including its spam folder, for all four folder settings (manual scan folders, background scan folders, Safe Senders folder, Deleted Rule folder). Yahoo now scans Inbox and Bulk; an iCloud account's deleted folder is Deleted Messages instead of a Trash folder that does not exist there. Accounts you have already set up keep your saved folders. (Issue #438)
+- **fix**: a scan no longer reports an error for a folder that simply does not exist on your account. A folder that exists but cannot be read is still reported. (Issue #438)
+- **fix**: a Gmail account added with Google sign-in now defaults to scanning Gmail's Spam label. The default used a folder name that only works over IMAP. (Issue #438)
+- **feat**: exported files now go to a folder you can find: your Documents folder on Android and your Downloads folder on Windows, unless you choose a different folder in Settings. This covers scan results, rule and safe-sender lists, the per-scan export and the diagnostic log (which uses a `diagnostics` subfolder; per-scan exports use `scan_exports`). Before, Android wrote these where you could not reach them. (Issue #439)
+- **feat**: the "export CSV after each background scan" setting now works on Android. It only worked on Windows before. (Issue #439)
+- **feat**: Scan History has a Clear history button. It deletes the finished scans your filters show, after you confirm; a scan still running is kept. (Issue #439)
+- **feat**: a new Settings option, Hide sender details in exports, keeps only the sender's domain and leaves out the subject and message ID, for a file you want to share. (Issue #439)
+- **fix**: after you change the export folder, the diagnostic log now writes to the new folder straight away. It kept using the old folder until the app restarted. (Issue #439)
+- **fix**: Settings now names the real default export folder. It said "Downloads folder (default)" on every platform, which was not true on either. (Issue #439)
+- **feat**: scan results are now listed newest first, with each sender domain's other emails grouped right after its newest one, so the list reads like your inbox. Emails from a subdomain (news.example.com) group with the main domain (example.com). (Issue #437)
+- **fix**: Gmail emails now show the date they arrived. Every Gmail email used to show the time of the scan instead, because the date format Gmail sends was not being read. This also corrects the Received Date column in exported results. (Issue #437)
+- **fix**: a background scan no longer runs on an account while you are scanning it yourself. On both Windows and Android, the background scan now waits its turn for that account instead of opening a second connection to your mail server. (Issue #434)
+- **fix**: the "background scan in progress" notice now clears within minutes when a background scan has stopped, instead of lingering for up to 30 minutes. (Issue #434)
+
 ### 2026-09-23 (Sprint 73)
 - **feat**: background scans on Android now run while your phone is idle or the screen is off. Before, they often only ran while the app was open. Android may still delay them by up to about an hour, and Settings says so. (Issue #428)
 - **fix**: background scans are restored after your phone restarts. (Issue #428)

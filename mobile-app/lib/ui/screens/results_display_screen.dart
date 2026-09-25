@@ -5,7 +5,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 import 'package:logger/logger.dart';
-import 'package:path_provider/path_provider.dart';
 import '../widgets/account_email_label.dart'; // F176 (Sprint 62)
 import '../widgets/app_bar_with_exit.dart';
 import '../widgets/standard_app_bar_actions.dart';
@@ -39,6 +38,7 @@ import '../../core/storage/scan_result_store.dart';
 import '../../core/storage/settings_store.dart';
 import '../../core/utils/pattern_normalization.dart';
 import '../../core/utils/provider_sender_grouping.dart';
+import '../../core/utils/result_ordering.dart';
 import '../../core/data/common_email_providers.dart';
 import '../widgets/provider_group_markers.dart';
 import '../../adapters/email_providers/platform_registry.dart';
@@ -48,8 +48,31 @@ import '../../adapters/storage/secure_credentials_store.dart';
 import '../widgets/empty_state.dart';
 import '../widgets/screen_version_line.dart'; // F229 (Sprint 73)
 import '../widgets/system_inset_wrapper.dart'; // F209 (Sprint 69)
+import '../../core/services/export_directories.dart';
 
 /// Displays summary of scan results bound to EmailScanProvider.
+/// F222 (Sprint 74): the display order, extracted so the WIRING is testable
+/// (a test of `orderNewestFirstClusteredByDomain` alone would pass with the
+/// call site still sorting the old way -- the Sprint 73 "correct abstraction,
+/// wrong wiring" defect class).
+@visibleForTesting
+List<EmailActionResult> orderResultsForDisplay(
+    List<EmailActionResult> results) {
+  final parser = EmailBodyParser();
+  return orderNewestFirstClusteredByDomain<EmailActionResult>(
+    results,
+    receivedAt: (r) => r.email.receivedDate,
+    // Base (registrable) domain, so news.example.com clusters with
+    // example.com. NOT ManualRuleDuplicateChecker._baseDomainFor, which keeps
+    // subdomains.
+    baseDomainOf: (r) =>
+        PatternNormalization.extractRootDomain(
+            parser.extractDomainFromEmail(r.email.from)) ??
+        '',
+    tieBreak: (r) => '${r.email.from}\u0000${r.email.subject}',
+  );
+}
+
 class ResultsDisplayScreen extends StatefulWidget {
   final String platformId;
   final String platformDisplayName;
@@ -545,9 +568,11 @@ class _ResultsDisplayScreenState extends State<ResultsDisplayScreen> {
       // selection is deliberate: a second copy of that logic is how the two
       // drift apart again.
       final appVersion = await AppVersion.get();
+      final redact = await SettingsStore().getExportRedacted();
       final csvContent = scanProvider.exportResultsToCSV(
         rows: _currentResults(),
         appVersion: appVersion,
+        redact: redact,
         // I-3: a historical view must stamp the SCAN's date, not the live
         // session's. Null on a live view, where the provider's own
         // _scanStartTime is the right answer.
@@ -556,29 +581,9 @@ class _ResultsDisplayScreenState extends State<ResultsDisplayScreen> {
             : null,
       );
 
-      // Get configured export directory from Settings, or use default
-      final settingsStore = SettingsStore();
-      final configuredDir = await settingsStore.getCsvExportDirectory();
-
-      String exportPath;
-      if (configuredDir != null && configuredDir.isNotEmpty) {
-        // Use configured directory
-        final dir = Directory(configuredDir);
-        if (!await dir.exists()) {
-          await dir.create(recursive: true);
-        }
-        exportPath = configuredDir;
-      } else {
-        // Use default directory (downloads on mobile, documents on desktop)
-        final directory = Platform.isAndroid || Platform.isIOS
-            ? await getExternalStorageDirectory()
-            : await getApplicationDocumentsDirectory();
-
-        if (directory == null) {
-          throw Exception('Could not access storage directory');
-        }
-        exportPath = directory.path;
-      }
+      // F206 (Sprint 74): ONE resolver for every export (configured folder,
+      // else the platform default) -- this block used to be a local copy.
+      final exportPath = await ExportDirectories.resolve();
 
       // Create filename with timestamp
       final timestamp =
@@ -725,28 +730,18 @@ class _ResultsDisplayScreenState extends State<ResultsDisplayScreen> {
       }).toList();
     }
 
-    // Item 5: Sort by folder → domain.tld → email
-    results.sort((a, b) {
-      // First sort by folder
-      final folderCompare = a.email.folderName.compareTo(b.email.folderName);
-      if (folderCompare != 0) return folderCompare;
-
-      // Then sort by domain
-      final bodyParser = EmailBodyParser();
-      final domainA = bodyParser.extractDomainFromEmail(a.email.from) ?? '';
-      final domainB = bodyParser.extractDomainFromEmail(b.email.from) ?? '';
-      final domainCompare = domainA.compareTo(domainB);
-      if (domainCompare != 0) return domainCompare;
-
-      // Finally sort by email
-      final emailA = bodyParser.extractEmailAddress(a.email.from);
-      final emailB = bodyParser.extractEmailAddress(b.email.from);
-      return emailA.compareTo(emailB);
-    });
+    // F222 (Sprint 74, Harold's specification): newest-first, clustered by
+    // BASE domain -- the newest email, then every other email from its base
+    // domain newest-first, then the next newest remaining. Replaces the
+    // Item 5 folder -> domain -> address sort, which read as shuffled next to
+    // any inbox. Returns a NEW list, so the provider's own list is never
+    // reordered in place (the old in-place sort was safe only when a filter
+    // above had already copied it).
+    results = orderResultsForDisplay(results);
 
     // Sprint 46 retro IMP-1 (Harold): email-provider senders group at the
-    // TOP (stable partition -- the folder/domain/email sort above is kept
-    // within both groups). Applies under every filter; the heading / end
+    // TOP (stable partition -- the F222 order above is kept within both
+    // groups). Applies under every filter; the heading / end
     // indicator are rendered by the list builder only when the group is
     // non-empty. Boundary index is exposed via _providerGroupCount.
     final partitioned = ProviderSenderGrouping.partitionProviderFirst(
@@ -3864,12 +3859,18 @@ class _ResultsDisplayScreenState extends State<ResultsDisplayScreen> {
     // "waiting" signal the scanner shows; the re-processing banner already
     // renders while this runs, so the wait is visible rather than silent.
     ScanLease? lease;
+    InteractiveScanClaim? claim;
 
     try {
       lease = await ScanCoordinator.instance.acquire(
         scanType: 'reprocess',
         accountId: widget.accountId,
       );
+      // Harold Q1 (Sprint 74): a live claim row BEFORE connecting, so a
+      // background scan (another isolate or process) sees this account is
+      // busy and yields instead of opening a second session.
+      claim = await ScanResultStore(DatabaseHelper())
+          .claimInteractive(widget.accountId);
 
       // Create platform connection
       platform = PlatformRegistry.getPlatform(widget.platformId);
@@ -3892,8 +3893,10 @@ class _ResultsDisplayScreenState extends State<ResultsDisplayScreen> {
 
       // Execute delete actions
       if (toDelete.isNotEmpty) {
+        // F202 (Sprint 74): account -> provider default, same resolver as
+        // the scanner. LIVE-DELETION PATH: this decides where real mail goes.
         final deletedRuleFolder =
-            await settingsStore.getAccountDeletedRuleFolder(widget.accountId);
+            await settingsStore.getEffectiveDeletedRuleFolder(widget.accountId);
         if (deletedRuleFolder != null) {
           platform.setDeletedRuleFolder(deletedRuleFolder);
         }
@@ -3953,9 +3956,9 @@ class _ResultsDisplayScreenState extends State<ResultsDisplayScreen> {
 
       // Execute safe sender move actions
       if (toMoveSafe.isNotEmpty) {
-        final safeSenderFolder =
-            await settingsStore.getAccountSafeSenderFolder(widget.accountId);
-        final targetFolder = safeSenderFolder ?? 'INBOX';
+        // F202 (Sprint 74): account -> provider -> overall, as in the scanner.
+        final targetFolder =
+            await settingsStore.getEffectiveSafeSenderFolder(widget.accountId);
 
         var moveFailedIds = <String>{};
         try {
@@ -4022,6 +4025,8 @@ class _ResultsDisplayScreenState extends State<ResultsDisplayScreen> {
       if (lease != null) {
         ScanCoordinator.instance.release(lease);
       }
+      // The claim ends on every path, like the lease.
+      await claim?.end();
     }
 
     // Hide banner and show result snackbar

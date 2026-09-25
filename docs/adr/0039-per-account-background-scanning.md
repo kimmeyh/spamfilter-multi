@@ -336,3 +336,43 @@ permission and carries no Google Play policy burden; the cost is a delivery wind
 of about an hour. Alarms are re-armed after each firing and restored after a
 reboot by `BootReceiver`. See `DozeAlarmScheduler.kt` and ARCHITECTURE.md
 "Android in Doze".
+
+## Amendment -- Sprint 74 (MV74-2, Harold Q3): cross-isolate exclusion
+
+**What was assumed, and was false.** The F175 `ScanCoordinator` lease was
+documented as "the whole guarantee on Android, where every scan shares one
+process". One process is true; one Dart ISOLATE is not. `workmanager_android`
+creates a new `FlutterEngine` for every background worker, so each background
+scan runs in its own isolate with its own copy of the singleton. On Windows the
+background scan is a separate process. On BOTH platforms, then, nothing stopped a
+background scan and a manual scan from opening two IMAP sessions on one account --
+the Sprint 61 per-account session-cap failure.
+
+**Decision (Harold, 2026-09-25, answer to planning question 3: "update/append
+current ADR").** Exclusion moves to the one thing both sides can read, the
+shared `scan_results` row:
+
+- The scanning isolate refreshes `scan_results.last_heartbeat_at` every 30
+  seconds (DB v9).
+- Before opening any connection, `BackgroundScanCore.scanAccount` checks for a
+  live INTERACTIVE row (manual, demo) on the same account --
+  `in_progress` with a heartbeat inside 5 minutes -- and SKIPS the account if
+  one exists. The background side yields because the user is the one waiting.
+- The manual-scan notice counts a background row only with a fresh heartbeat,
+  so a dead scan stops blocking within minutes rather than 30.
+- Same code on both platforms (ADR-0042, no exception).
+
+**Two gaps found by the Sprint 74 PR review, CLOSED on Harold's Class-2
+decision (2026-09-25, "ensure a scan that fails before connecting updates that
+the scan is no longer running").** (1) A manual scan wrote its row only after
+connecting -- a window of seconds; its row is now written right after the
+lease and BEFORE connecting, and a pre-connect failure closes it as `error`
+(`interrupted` on cancel). (2) Re-processing from Scan Results wrote no row;
+it now holds a heartbeating `reprocess` claim row for its whole run, deleted
+when it ends and never listed in Scan History.
+
+**Remaining accepted limit.** The check is still check-then-act with no lock:
+a background scan whose check runs in the same instant a manual scan writes
+its row can overlap. The window is now milliseconds, not the connect time. A query failure fails OPEN (the
+background scan runs), so a database error cannot stop background scanning
+permanently.

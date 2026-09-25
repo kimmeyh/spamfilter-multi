@@ -1,67 +1,31 @@
 {
   "_description": "Sprint status file that persists across context compaction. Update after each phase/sub-phase completion.",
-  "_last_updated": "2026-09-24T04:10:00Z",
+  "_last_updated": "2026-09-25T15:20:00Z",
   "_usage": "Read this file after context compaction to restore sprint approval state and progress.",
   "_staleness_note": "This file had drifted 15 sprints (last updated at Sprint 35, 2026-04-19) before being refreshed at Sprint 50 close-out. It is a Phase 7.7 checklist item -- update it at every sprint close-out, not opportunistically.",
   "current_sprint": {
-    "number": 73,
-    "branch": "feature/20260922_Sprint_73",
-    "status": "Sprint 73 Phase 7.7 Apply Approved Improvements -- COMPLETE 2026-09-24; PR #435 marked Ready for Review. Next: 7.7.5 final gate + PO/SM notification. Claude NEVER merges.",
+    "number": 74,
+    "branch": "feature/20260924_Sprint_74",
+    "status": "Sprint 74 Phase 5.3 Manual Validation -- Harold's MV answers applied (a3e0420): exclusion gaps closed (Q1), exports OFF by default (Q2), F202 code-only (Q3). Sweep 2/2 at a3e0420. AAB 0.17.0+8 rebuilt 11:17 for Harold's normal Play upload. Awaiting Harold's Windows + device validation.",
     "plan_approved": true,
     "blanket_execution_approved": true,
-    "pr_number": 435,
-    "pr_url": "https://github.com/kimmeyh/spamfilter-multi/pull/435",
-    "version": "0.16.0+7",
-    "head_commit": "48752e5",
-    "suite": "2,314 passed / 15 skipped / 0 failed, analyzer clean (2026-09-24 re-run)",
-    "resume_state": {
-      "_read_this_first": "Everything is committed and pushed. Nothing is half-finished in the working tree. Two decisions are owed by Harold; both are restated in full below so they do not have to be hunted for in scrollback.",
-      "completed": [
-        "Tasks 0,1,3,4,5,6 delivered. Task 5 (F229) implemented after Harold approved option 4 (version line in the screen BODY, 22 screens wired).",
-        "Manual Validation steps 1-5 PASS on Windows 0.16.0. Step 6 (F235 Doze) needs the S24+.",
-        "Retrospective: all 14 categories x 4 roles. Harold gave Very Good on all 14; Claude disagreed on categories 2, 3 and 10 and said why.",
-        "All 6 retro improvements applied PREVENTION-FIRST per Harold's steering: 2 mechanical (behavioral_coverage gate; WinWright locked-workstation guard), 3 as EXTENSIONS to existing CLAUDE.md rules, 1 new rule. CLAUDE.md 787 -> 791 lines.",
-        "PR #435 reviews: Copilot + Claude ran in parallel. 3 CRITICAL + 6 IMPORTANT, ALL fixed. Both Copilot threads answered and verified resolved via GraphQL.",
-        "Sprint 74 carry-ins (MV74-1/2/3) recorded in ALL_SPRINTS_MASTER_PLAN 'Next Sprint Candidates' AND as comments on issues #428 #434 #422 #433.",
-        "Docs triad complete: SPRINT_73_PLAN.md, SPRINT_73_RETROSPECTIVE.md, SPRINT_73_SUMMARY.md."
-      ],
-      "DECISION_1_android_build": {
-        "status": "RESOLVED 2026-09-24 -- NO DECISION NEEDED. The earlier 'BLOCKED / not compile-verified' record was WRONG. Harold chose option 2 (disable Norton) and asked for the real cause first; the evidence made the Norton step unnecessary.",
-        "finding": "Build 6 of 6 SUCCEEDED (log ends '[INFO] Build successful!'). All six app classes (DozeAlarmScheduler, BootReceiver, DozeAlarmReceiver, DozeScanTrigger, MainActivity) compiled at 20:19:53 local from HEAD Kotlin (last Kotlin commit beab905, 20:14:12). C-3, I-5, I-6, I-7 ARE compile-verified.",
-        "real_cause_of_the_noise": "Kotlin daemon log: IllegalArgumentException 'this and base files have different roots' in RelocatableFileToPathConverter.toPath -- plugin sources in the C: pub cache cannot be made relative to the D: project dir. Deterministic, NON-FATAL (Kotlin falls back to a non-daemon compile), present since the drives first differed.",
-        "real_cause_of_the_failures": "Builds 1-5 were interrupted by the diagnosing session itself: build-with-secrets.ps1:325 runs 'gradlew --stop' at startup, so starting build 2 during build 1 stopped build 1; Stop-Process java killed builds 2 and 3; build 4 hit files locked by those kills; a manual 'gradlew --stop' killed build 5.",
-        "norton": "NOT the cause. No AV change needed.",
-        "recorded_in": "docs/TROUBLESHOOTING.md section 'Android build: Daemon compilation failed / Could not close incremental caches' (rewritten 2026-09-24)."
-      },
-      "DECISION_2_opus_55": {
-        "what": "/model shows 'Opus 5.5 (disabled) - Update to 2.1.280+' while Harold is ON 2.1.281 (the latest published version).",
-        "investigated": "Confirmed a real widely-reported issue (anthropics/claude-code#96130, still open, no Anthropic response). BUT most reports are users on 2.1.267 where upgrading IS the fix -- Harold's case is different and that is new information for that issue.",
-        "ruled_out_by_checking": "one binary only (2.1.281), no availableModels allowlist, no managed-settings file, and Fable 5.1 IS offered in the same cache.",
-        "correction_made": "I first blamed a stale cache. TIMESTAMPS FALSIFIED IT: binary 15:50, cache written 18:49 -- three hours LATER. 2.1.281 itself wrote the disabled entry.",
-        "action_taken": "Cleared additionalModelOptionsCache / additionalModelOptionsAnsweredAt / modelAccessCache / orgModelDefaultCache / additionalModelCostsCache from ~/.claude.json. Backup saved as ~/.claude.json.bak-opus55-<timestamp>. REQUIRES A RESTART to take effect.",
-        "next_if_still_disabled": "The gate is server-side, not client-side. Comment on issue #96130 -- Harold's case (already on 2.1.281) differs from every report there. Also: autoUpdates is False, so run 'claude config set -g autoUpdates true' regardless.",
-        "status": "RESOLVED 2026-09-24: after the restart the session runs on claude-opus-5-5. No issue comment needed. Still open (Harold's call): 'claude config set -g autoUpdates true'."
-      },
-      "still_blocked_on_device": [
-        "MV74-1 (#428) F235 Doze on the S24+: scans firing while idle, AND surviving a reboot. The reboot case matters most -- without BootReceiver working this is a REGRESSION against WorkManager.",
-        "MV74-2 (#434) F207 isolate question: RESOLVED IN CODE this sprint (the suppression was REMOVED because it hid warnings for LIVE scans). The proper fix needs a cross-isolate heartbeat column -- still Sprint 74.",
-        "MV74-3 (#422,#433) F232 mechanism B + F205: need a device run with diagnostic logging ON, then the in-app export. Route needs NO adb -- F233's export writes to Android/data/com.myemailspamfilter/files/, confirmed reachable over MTP 2026-09-23."
-      ],
-      "next_action_when_resumed": "Phase 7.7.5: confirm PR #435 is Ready for Review and CI is green, then notify Harold it is ready for FINAL APPROVAL. Claude NEVER merges. After merge: Phase 6.6 next branch FROM the Sprint 73 branch, then Phase 8."
-    }
+    "pr_number": 440,
+    "pr_url": "https://github.com/kimmeyh/spamfilter-multi/pull/440",
+    "version": "0.17.0+8",
+    "suite": "2,372 passed / 15 skipped / 0 failed at --concurrency=2 (a3e0420); analyzer clean"
   },
   "previous_sprint": {
-    "number": 72,
-    "branch": "feature/20260919_Sprint_71",
-    "pr": "#420 -> develop (merged 2026-09-22), #429 develop -> main (merged 2026-09-22)",
-    "deliverables": "F233 diagnostic log + header-only CSV export fix, F232 mechanism A (B still undiagnosed, now INSTRUMENTED), F228 honest action toast, F230+F231 action-sheet layout and durable outcomes, F217 honest Doze caveat ONLY (mechanism deliberately not built), F229 export half (screen half attempted and REVERTED on measurement). Plus Task 0: 22 unmerged doc commits including a Gate 1c hook repair.",
-    "reviews": "Phase 5.1.1: 2 CRITICAL + 3 IMPORTANT. Phase 7 full-PR: 1 CRITICAL + 5 lesser. ALL FIXED, none deferred. TWO of the three CRITICALs were defects this sprint INTRODUCED -- the F232 fix created an unintended deletion path from screen load, and the diagnostic logger silently destroyed concurrent records. Copilot reported Findings: None but could NOT see results_display_screen.dart, the largest and riskiest file.",
-    "retrospective": "Harold 12x Very Good, none for categories 13/14. IMP-1..IMP-5 approved and applied, with IMP-3 extended: scratchpad sweep + promotion of repeatedly-written helpers.",
-    "metrics": "Suite 2,155 -> 2,233; analyzer clean; hooks 75/0; WinWright 2/2 twice; CI all green."
+    "number": 73,
+    "branch": "feature/20260922_Sprint_73",
+    "pr": "#435 -> develop (merged 2026-09-24T04:02Z, 970355f), #436 develop -> main (merged 2026-09-24T04:04Z)",
+    "deliverables": "F235 Doze scheduling (device validation = MV74-1), F234 read-only preview, F224+F207 cancel scan (F207 isolate question = MV74-2), F229 version on every screen, F226 WinWright guard. F232-B + F205 parked for MV74-3.",
+    "reviews": "PR #435: 3 CRITICAL + 6 IMPORTANT, all fixed; Copilot 2/2 resolved. CI green on 4c64a30 incl. Android Build Verification.",
+    "metrics": "Suite 2,233 -> 2,314; analyzer clean; hooks 75/75; policy 123/123; WinWright 2/2 (29/29) at 4ff13dd."
   },
   "github_issues": {
-    "sprint_73": "#428 F235, #422 F232-B, #430 F234, #434 F224+F207, #431 F229, #432 F226, #433 F205 -- Phase 3.3.1, 2026-09-23",
-    "note": "Closes #N does NOT auto-fire here: PRs merge feature -> develop, and GitHub auto-closes only on merge to the DEFAULT branch."
+    "sprint_73": "#428 (open, MV74-1), #422 (open, MV74-3), #430 closed, #434 (open, MV74-2), #431 closed, #432 closed, #433 (open, MV74-3). Also closed in pass 1: #426 (superseded by #428), #427 (leftover captured as F236).",
+    "note": "Closes #N does NOT auto-fire here.",
+    "sprint_74": "#428 MV74-1, #434 MV74-2, #422 F232 (+MV74-3), #433 F205 (+MV74-3), #437 F222, #438 F202, #439 F206 -- Phase 3.4, 2026-09-24"
   },
   "_github_issues_note": "Sprint 66 cards created at Phase 3.3.1 (2026-09-07): #387 GP-19, #388 GP-4. Close by hand at Post-Merge Cleanup.",
   "test_metrics": {
@@ -77,7 +41,7 @@
     "live_windows": "0.15.2.0 -- Submission 28, certified 2026-09-21, installed-build verified.",
     "live_play": "0.15.2 versionCode 5 -- closed testing, device-verified 2026-09-21 on the S24+.",
     "consequence": "F219 AC-1 and F227 remain blocked: they need a Play-INSTALLED build, and 0.15.3 is not going out. They wait for the next release that ships.",
-    "status_0_16_0": "NOT SUBMITTED. Release notes re-derived 2026-09-24 (cover Sprint 72 + 73, since both stores are live at 0.15.2). Submission is Harold's Phase 8.3 decision."
+    "status_0_16_0": "SUBMITTED / ROLLOUT IN PROCESS on BOTH stores (Harold, 2026-09-24, reported between 12:17am and 8:39am ET). NOT yet observed live on either. Built + verified 2026-09-24: MSIX 0.16.0.0 (prod worktree bf005f3, self-test 6/6 PASS, 17.5 MB) and AAB versionCode 7 / 0.16.0 (67.0 MB). Step 7 records (STORE_VERSION_STATUS.md live rows) wait for a direct console observation."
   },
   "environment_notes": [
     "RESOLVED 2026-07-29 (verified 07-30): the Store fault was an Acronis file-system filter blocking AppXSvc cleanup, fixed by an Acronis Protection exclusion. 23h uptime with ZERO Id-493 events vs a 176-file/6-min baseline; Store client self-updated 22606.1401.6.0 -> .10.0 (requires a working deployment pipeline). Filter drivers remain loaded -- backup protection was NOT disabled. See ALL_SPRINTS_MASTER_PLAN ENV-1 for the picker gotcha if it recurs.",
@@ -86,10 +50,10 @@
   ],
   "blocking_issues": [],
   "next_actions": [
-    "Phase 7.7.5 -- final gate + notify Harold PR #435 is ready for final approval.",
-    "On merge: Phase 6.6 -- branch Sprint 74 FROM feature/20260922_Sprint_73.",
-    "Phase 8 -- Harold merges develop -> main in parallel with refinement pass 1; 8.3 store release is his call.",
-    "Sprint 74 carry-ins: MV74-1 (#428 Doze on the S24+, incl. reboot), MV74-2 (#434 cross-isolate heartbeat), MV74-3 (#422, #433 device run with diagnostic logging)."
+    "Phase 8.3 -- Microsoft Store 0.16.0: STORE_RELEASE_PROCESS.md in full (Step 3.0 pull prod worktree to main first).",
+    "Google Play 0.16.0: GOOGLE_PLAY_RELEASE_PROCESS.md -- build + prep the AAB; Harold uploads.",
+    "Phase 8.4 -- scope selection from the refinement slate (next 10 presented 2026-09-24).",
+    "Sprint 74 carry-ins: MV74-1 (#428), MV74-2 (#434), MV74-3 (#422, #433)."
   ],
   "next_sprint_targeted": [
     "MV74-1 -- F235 Doze validation on the S24+ (setAndAllowWhileIdle, inexact; reboot survival) (#428)",

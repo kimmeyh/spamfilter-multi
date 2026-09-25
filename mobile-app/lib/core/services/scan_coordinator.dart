@@ -1,4 +1,4 @@
-/// F175 (Sprint 62): in-process scan mutual exclusion + active-scan registry.
+/// F175 (Sprint 62): per-ISOLATE scan mutual exclusion + active-scan registry.
 ///
 /// Harold's requirement (2026-08-19, verbatim intent): background scans must
 /// not run concurrently with each other, background must not run concurrently
@@ -14,19 +14,30 @@
 ///
 /// ONE acquisition chokepoint: `EmailScanner.scanInbox` acquires a lease
 /// before connecting and releases it in its `finally`, so EVERY scan type
-/// (manual, background, test, demo) is serialized within a process. Waiters
+/// (manual, background, test, demo) is serialized within ONE Dart ISOLATE.
+/// The instance is a static singleton, and statics are per-isolate. Waiters
 /// queue FIFO; a crashed scan releases its lease via the same `finally`
 /// (T-1 pins release-on-failure).
 ///
-/// **Declared platform exception (ADR-0042)**: on Windows, background scans
-/// run in a SEPARATE headless process (Task Scheduler, ADR-0039), which an
-/// in-process lock cannot see. Cross-process exclusion there is already
-/// provided by the existing F109 foreground-deferral + per-account task
-/// serialization -- duplicating that OS-level mechanism here would be a
-/// second source of truth. On Android every scan shares one process, so this
-/// coordinator IS the whole guarantee. Cross-process DETECTION (the manual-
-/// scan notice) is platform-uniform via the shared database instead -- see
-/// [ScanResultStore.getActiveBackgroundScan].
+/// **This lease does NOT see background scans on EITHER platform** (MV74-2,
+/// Sprint 74 -- corrected; this comment used to claim "on Android every scan
+/// shares one process, so this coordinator IS the whole guarantee"). One
+/// process is true on Android; one ISOLATE is not. `workmanager_android`
+/// 0.10.6 creates a new `FlutterEngine` for every background worker
+/// (`BackgroundWorker.kt:101`) and runs the Dart callback in it (`:147`), so
+/// the background scan has its own isolate and its own copy of this
+/// singleton. On Windows the background scan is a separate PROCESS (Task
+/// Scheduler, ADR-0039). Same outcome on both: this lease serializes scans
+/// inside the UI isolate only.
+///
+/// Cross-isolate/process DETECTION and EXCLUSION therefore go through the
+/// shared database, identically on both platforms (ADR-0042, no exception):
+/// the scanning isolate writes a heartbeat to its `scan_results` row every
+/// [heartbeatInterval] ([ScanResultStore.recordHeartbeat]); the manual-scan
+/// notice asks [ScanResultStore.getActiveBackgroundScan]; and a background
+/// scan yields to a live interactive one via
+/// [ScanResultStore.getActiveInteractiveScanForAccount] (ADR-0039,
+/// Sprint 74 amendment).
 library;
 
 import 'dart:async';
@@ -101,13 +112,25 @@ class ScanCoordinator {
   /// ScanResultStore.reconcileStaleInProgressScans, which both use it.
   static const Duration scanTimeout = Duration(minutes: 30);
 
+  /// MV74-2 (Sprint 74): how often a scanning isolate refreshes its
+  /// `scan_results.last_heartbeat_at`. A periodic timer, not per-email
+  /// progress -- one slow IMAP folder fetch can run for minutes with no
+  /// progress callback, and must not read as dead.
+  static const Duration heartbeatInterval = Duration(seconds: 30);
+
+  /// MV74-2 (Sprint 74): a scan whose heartbeat is older than this is treated
+  /// as NOT live by the cross-isolate checks. Ten missed heartbeats, so a
+  /// busy event loop is not mistaken for a dead scan; far shorter than
+  /// [scanTimeout], so a dead scan stops blocking within minutes, not 30.
+  static const Duration heartbeatFreshness = Duration(minutes: 5);
+
   final Logger _logger = Logger();
 
   ActiveScanInfo? _active;
   final Queue<_Waiter> _waiters = Queue();
 
-  /// The currently-scanning holder, or null when idle. In-process view only
-  /// (see the class doc for the Windows cross-process exception).
+  /// The currently-scanning holder, or null when idle. THIS ISOLATE only --
+  /// a background scan on either platform is invisible here (class doc).
   ActiveScanInfo? get active => _active;
 
   /// Acquire the process-wide scan lease. Completes immediately when idle;

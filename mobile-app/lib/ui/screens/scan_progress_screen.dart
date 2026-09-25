@@ -747,18 +747,21 @@ String _formatMinutes(Duration d) {
 /// happen. The original F207 complaint -- a stale row warning for up to 30
 /// minutes -- is real but is NOT worth reintroducing that risk to fix.
 ///
-/// **The real fix needs a cross-isolate liveness signal**, which means a
-/// heartbeat or `updated_at` column on `scan_results` (it has none today;
-/// `started_at` is the only signal, so this is a schema migration). Tracked as
-/// MV74-2 (issue #434). Do not re-attempt the coordinator shortcut.
+/// **The real fix -- MV74-2, Sprint 74 -- is a cross-isolate liveness
+/// signal**: `scan_results.last_heartbeat_at` (DB v9), refreshed by the
+/// scanning isolate every [ScanCoordinator.heartbeatInterval]. The QUERY now
+/// requires a fresh heartbeat, so a dead scan stops matching within
+/// [ScanCoordinator.heartbeatFreshness] (minutes, not 30), and a row that
+/// does match IS evidence of a live scan. That is why this function can keep
+/// trusting the row. Do not re-attempt the coordinator shortcut.
 ///
 /// Returns true when the warning should be shown.
 @visibleForTesting
 bool shouldWarnAboutBackgroundScan({
   required bool hasActiveRow,
 }) {
-  // A fresh in_progress row is the only liveness evidence available in THIS
-  // isolate. Trust it on every platform until a cross-isolate signal exists.
+  // The row query already requires a fresh heartbeat (MV74-2), so a
+  // matching row IS a live scan on every platform.
   return hasActiveRow;
 }
 
@@ -785,26 +788,18 @@ Future<void> startRealScan({
     // F175 (Sprint 62, Harold's verbatim intent): a manual live scan DETECTS
     // an active background scan and notifies the user to wait, with an
     // average completion time where reasonably computable. Detection is
-    // database-backed so it sees background scans in OTHER processes too
-    // (the Windows Task Scheduler worker shares this database). If the user
-    // chooses "Wait and start", the scan proceeds into scanInbox, whose
-    // ScanCoordinator lease queues it behind the active in-process scan --
-    // no second IMAP session opens until the background scan finishes
-    // (in-process case) or the user has explicitly proceeded past the
-    // notice (cross-process case).
+    // database-backed because the background scan is invisible to this
+    // isolate's ScanCoordinator on BOTH platforms -- a separate isolate on
+    // Android (WorkManager), a separate process on Windows (MV74-2). The
+    // query requires a fresh heartbeat, so only a LIVE scan matches.
+    // If the user proceeds, the background side yields: a background scan
+    // skips an account with a live interactive scan (ADR-0039 amendment,
+    // Sprint 74), so no second IMAP session opens on that account.
     final scanResultStore = ScanResultStore(DatabaseHelper());
     final activeBg = await scanResultStore.getActiveBackgroundScan();
-    // F207 (Sprint 73): a row is not a running scan. See
-    // shouldWarnAboutBackgroundScan for why the coordinator settles this on
-    // Android and deliberately cannot on Windows.
     final warnAboutBackground = shouldWarnAboutBackgroundScan(
       hasActiveRow: activeBg != null,
     );
-    if (activeBg != null && !warnAboutBackground) {
-      logger.i('F207: ignoring a stale in_progress background row for '
-          '${activeBg.accountId} -- the scan coordinator is idle, so no scan '
-          'is running in this process');
-    }
     if (activeBg != null && warnAboutBackground) {
       final average =
           await scanResultStore.getAverageScanDuration(activeBg.accountId);

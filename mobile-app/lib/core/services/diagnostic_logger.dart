@@ -8,6 +8,7 @@ import 'package:path_provider/path_provider.dart';
 import '../storage/settings_store.dart';
 import 'app_environment.dart';
 import 'app_version.dart';
+import 'export_directories.dart';
 
 /// F233 (Sprint 72): a diagnostic log the user can actually hand over.
 ///
@@ -113,34 +114,41 @@ class DiagnosticLogger {
 
   /// Resolve the directory the log is written to.
   ///
-  /// **Order matters and encodes the platform difference.** The user-chosen CSV
-  /// export directory wins when set, because that is the location the user can
-  /// already reach from their file manager -- on Android that is what makes the
-  /// files deletable without the app, which Harold made a condition of keeping
-  /// them. Falling back to app support storage keeps Windows (and a phone with
-  /// no configured directory) working.
+  /// The export folder's `diagnostics` subfolder (F206, Sprint 74): the
+  /// user-chosen folder when set, else the platform default (Android
+  /// Documents, Windows Downloads) -- a location the user can reach from a
+  /// file manager, which on Android is what makes the files deletable without
+  /// the app, a condition Harold set for keeping them. Before F206 the
+  /// no-folder case fell back to app-private storage, unreachable on Android.
+  /// App support remains only as the last resort if no export folder resolves,
+  /// so logging never stops.
   static Future<String> resolveLogDir() async {
+    // F206 R-7: drop the cached folder whenever the export folder changes
+    // (registered once; the store ignores a duplicate).
+    SettingsStore.addExportDirectoryListener(invalidateCache);
     if (_cachedDir != null) return _cachedDir!;
 
-    String? configured;
+    // F206 (Sprint 74): the export folder's `diagnostics` subfolder -- the
+    // user's chosen folder if set, else the platform default (Android
+    // Documents, Windows Downloads). It used to fall back to app-private
+    // storage, which on Android meant the log could not be retrieved at all
+    // unless a folder had been configured first. A resolution failure still
+    // falls back to app support, so logging never stops.
     try {
-      configured = await SettingsStore().getCsvExportDirectory();
+      // Environment-suffixed (review I-1, ADR-0035): DEV and PROD resolve
+      // the SAME export folder, and "Delete logs" / rotation in one must
+      // never touch the other's files.
+      _cachedDir = await ExportDirectories.resolve(
+          subfolder: 'diagnostics${AppEnvironment.dataDirSuffix}');
+      return _cachedDir!;
     } catch (_) {
-      // A settings read must never be the reason logging fails.
-      configured = null;
-    }
-
-    if (configured != null && configured.isNotEmpty) {
-      _cachedDir = path.join(configured, 'diagnostics');
+      final appSupport = await getApplicationSupportDirectory();
+      _cachedDir = path.join(
+        '${appSupport.path}${AppEnvironment.dataDirSuffix}',
+        'logs',
+      );
       return _cachedDir!;
     }
-
-    final appSupport = await getApplicationSupportDirectory();
-    _cachedDir = path.join(
-      '${appSupport.path}${AppEnvironment.dataDirSuffix}',
-      'logs',
-    );
-    return _cachedDir!;
   }
 
   static Future<bool> _enabled() async {

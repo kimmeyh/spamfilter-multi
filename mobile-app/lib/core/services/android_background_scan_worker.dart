@@ -28,6 +28,7 @@ import '../providers/rule_set_provider.dart';
 import '../storage/database_helper.dart';
 import '../storage/settings_store.dart';
 import 'background_scan_core.dart';
+import 'scan_sheet_export.dart';
 
 /// Prefix for the per-account WorkManager task name, mirroring the Windows
 /// `SpamFilterBackgroundScan_<sanitizedAccountId><envSuffix>` convention so
@@ -136,7 +137,18 @@ class AndroidBackgroundScanWorker {
             ruleSetProvider: ruleSetProvider,
             settingsStore: settingsStore,
           );
-          await _notifyScanComplete(accountId: id, outcome: outcome);
+          // MV74-2 + F206: skip -> nothing; scan -> export, then notify.
+          // Branches tested through BackgroundScanCore.completeAccount.
+          await BackgroundScanCore.completeAccount(
+            outcome,
+            export: () => BackgroundScanExport.exportIfEnabled(
+              scanProvider: outcome.scanProvider,
+              accountId: id,
+              settingsStore: settingsStore,
+              log: (m) async => _logger.i(m),
+            ),
+            notify: () => _notifyScanComplete(accountId: id, outcome: outcome),
+          );
         } catch (e) {
           _logger.e('Background scan failed for ${Redact.accountId(id)}',
               error: e);

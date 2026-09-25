@@ -18,7 +18,7 @@ This directory contains Architectural Decision Records for the spamfilter-multi 
 | [0010](0010-normalized-database-schema.md) | Normalized Database Schema (9 Tables) | Accepted | ~2026-01 |
 | [0011](0011-desktop-oauth-loopback-redirect-pkce.md) | Desktop OAuth via Loopback Redirect with PKCE | Accepted | ~2025-10 |
 | [0012](0012-apppaths-platform-storage-abstraction.md) | AppPaths Platform Storage Abstraction | Accepted | ~2025-10 |
-| [0013](0013-per-account-settings-with-inheritance.md) | Per-Account Settings with Inheritance | Accepted | ~2026-01 |
+| [0013](0013-per-account-settings-with-inheritance.md) | Per-Account Settings with Inheritance | Accepted | 2026-09-25 (amended F202) |
 | [0014](0014-windows-background-scanning-task-scheduler.md) | Windows Background Scanning via Task Scheduler | Accepted | ~2026-02 |
 | [0015](0015-gitflow-branching-strategy.md) | GitFlow Branching Strategy | Accepted | ~2026-01 |
 | [0016](0016-sprint-model-tiering-haiku-sonnet-opus.md) | Sprint Model Tiering (Haiku/Sonnet/Opus) | Accepted | ~2026-01 |
@@ -44,7 +44,7 @@ This directory contains Architectural Decision Records for the spamfilter-multi 
 | [0036](0036-msix-signing-strategy.md) | MSIX Signing Strategy for Windows Store Submission | Accepted | 2026-03-19 |
 | [0037](0037-ui-accessibility-standards.md) | UI/Accessibility Standards and Cross-Platform Compatibility | Accepted | 2026-06-26 |
 | [0038](0038-content-management-for-long-strings.md) | Content Management for Long User-Facing Strings | Accepted | 2026-05-18 |
-| [0039](0039-per-account-background-scanning.md) | Per-Account Background Scanning | Accepted (amended F235) | 2026-09-23 |
+| [0039](0039-per-account-background-scanning.md) | Per-Account Background Scanning | Accepted (amended F235, MV74-2) | 2026-09-25 |
 | [0040](0040-two-e2e-test-harnesses.md) | Two E2E Test Harnesses (WinWright + Flutter integration_test) | Accepted | 2026-06-21 |
 | [0041](0041-environment-propagation-single-source.md) | Environment Propagation: APP_ENV Dart-Define Single Source of Truth | Accepted | 2026-07-22 |
 | [0042](0042-cross-platform-parity-and-platform-exceptions.md) | Cross-Platform Parity: Same Everywhere, with Explicit Minimal Platform Exceptions (incl. platform factories) | Accepted | 2026-08-18 |

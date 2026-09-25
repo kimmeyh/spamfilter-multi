@@ -130,3 +130,21 @@ confirm_dialogs_enabled: true
 - `mobile-app/lib/core/storage/database_helper.dart` - app_settings and account_settings table schemas
 - ADR-0010 (Normalized Database Schema) - Table design and composite primary key
 - ADR-0006 (Four Progressive Scan Modes) - ScanMode enum stored as per-account setting
+
+## Amendment -- Sprint 74 (F202): a provider tier for folder settings
+
+Harold's requirement: *"for all email providers we will need to provide an
+overall default and a way to have email provider default overrides for Safe
+Senders Folder, Deleted Rule Folder, Manual Scan Selected Folders and
+Background Scan Selected Folders"* -- because *"the development team cannot
+choose or override for the providers what they deem as the defaults."*
+
+For those four settings the chain is now account -> PROVIDER -> overall. The
+provider values are Harold-confirmed per platform id and live in
+`SettingsStore.providerFolderDefaults`. Before this change the overall
+(app_settings) tier was unreachable for any real account; it is now the
+fallback when a provider has no confirmed value. Existing accounts keep their
+saved selections -- no migration (Harold's decision, 2026-09-09).
+
+Open at the time of writing: whether provider defaults become user-editable in
+Settings (asked at Sprint 74 Manual Validation).

@@ -91,11 +91,12 @@ existed only on the Windows path and Android silently persisted nothing for mont
 
 ### Deliberate non-parity, recorded
 
-Two divergences are accepted and are NOT defects:
+These divergences are accepted and are NOT defects:
 
 - **Background scan scheduling**: Windows uses per-account Task Scheduler tasks (ADR-0039). Android has no equivalent today; F161 implements the WorkManager mirror. **This is a temporary DEVELOPMENT-time gap, not a shipped platform difference** -- Harold, 2026-08-18: "we have not delivered to customers an Android package yet. The scheduler will need to be in place (key requirement) before shipment." So Android ships WITH background scanning or it does not ship; no customer will ever meet an Android build that lacks it.
   - **Consequence for user-facing content**: do NOT write "not available on Android yet" caveats for this gap. They would document a limitation no customer encounters and would become stale text the moment F161 lands. Help describes the CAPABILITY ("the operating-system scheduler"), not per-platform mechanisms -- pinned by `test/policy/help_platform_claims_test.dart`.
   - **Consequence for release gating**: F161 is a SHIPMENT PREREQUISITE for the Google Play track (F94, GP-*), not an optional enhancement.
+- **Default export folder** (F206, Sprint 74 -- Harold, 2026-09-25: "Android - Documents / Windows - %USERPROFILE%\Downloads"): the platforms' user-visible folders differ, so the DEFAULT differs; what is exported, its format, redaction and every control are identical, and a folder the user chooses overrides the default on both. Implemented as ONE conditional in `ExportDirectories.platformDefault()` -- deliberately not a factory, per the two-value-difference rule above.
 - **Store/release path**: the Microsoft Store release (Phase 8.3 of the Release Cycle) covers the Windows app. The Google Play track is a separate future path (F94, GP-*).
 
 ## Consequences

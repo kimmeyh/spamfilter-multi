@@ -7,6 +7,38 @@ Manual Validation complete
 Sprint 7n Manual Validation Feedback 
 
 ---------------------------------------------------------------------------------------------------------
+Sprint 74 Manual Validation Feedback 
+
+  Windows steps (0.17.0 dev, already running)
+
+  1. Result order: open Scan History, then any saved scan. Check that the newest email is at the top, and that each sender domain's other emails follow
+     its newest one (news.example.com groups with example.com). The email-provider section stays pinned at the top.
+  2. Gmail dates: in a Gmail scan, check that the received dates differ from each other and are not all the scan time.
+  3. Export folder: go to Settings > General. The CSV Export Directory should read "Downloads folder (default)". Export results from a scan, and check
+     the file is in %USERPROFILE%\Downloads.
+  4. Redaction: turn on "Hide sender details in exports" and export again. The sender should show as x***@domain, and the subject and message ID should
+     read [redacted]. The file name ends in _redacted.
+  5. Clear history: in Scan History, filter to one account, then tap the new Clear history button (the sweep icon). Check the dialog's count, then choose
+     Cancel. Only confirm if you are willing to lose that account's dev history.
+  6. Folder defaults: in Settings > Account, the Safe Sender and Deleted Rule rows show the real resolved default wherever you have no saved value. Also
+     check whether your Gmail account's saved Deleted Rule folder is [Gmail]/Trash. If that account signs in with Google (not IMAP), deletes may already
+     be failing today. I have not verified this; it is pre-existing and not caused by this sprint.
+
+  S24+ steps (after Q4)
+
+  7. MV74-1, background scans while the phone is idle (0.16.0 is enough): leave background scanning on for several hours with the screen off. Check that
+     Background rows appear in Scan History. Then restart the phone and check that scans resume without opening the app.
+  8. Export folder on Android (0.17.0): export results and check the file lands in Documents. Turn on "Settings > Background: export CSV" and check that
+     Documents/scan_exports fills.
+  9. MV74-3, diagnostic log run:
+     a. Turn on the diagnostic log in Settings.
+     b. Open a saved scan and add a block rule, which reproduces F232.
+     c. Run a Gmail manual scan.
+     d. Copy Documents/diagnostics/ to the PC over USB file transfer (MTP).
+        I then diagnose F232 and classify F205's errors from that log (Tasks 7-8).
+  10. Scan exclusion, Android: start a manual scan while a background scan is due. The background scan should skip that account rather than open a second
+      connection.
+---------------------------------------------------------------------------------------------------------
 Sprint 73 Manual Validation Feedback 
   1. F234 preview (Windows is read-only, so this is the platform it serves). Scan Results → select a tile → block an entire domain. Expect: "Preview
      only: N would have been filed... your mailbox was NOT changed." The rows should stay visible. Judge whether it reads as a preview, not a completed
