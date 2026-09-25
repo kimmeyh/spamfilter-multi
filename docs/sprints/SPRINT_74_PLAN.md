@@ -600,7 +600,11 @@ count reaches 12.
   4. Fragile parsing -- CLEAN: `publicDocumentsFrom` returns null on an unexpected shape (caller falls back); `inferPlatformId` checks `gmail-imap-` before `gmail-`; `int.tryParse` for internalDate.
   5. API scope -- CLEAN: `listFolders` is account-wide and only answers "does this folder exist on THIS account"; clear-history and the exclusion query are account-scoped; `getActiveBackgroundScan` stays any-account by design (F175 notice).
   6. Silent failure -- FOUND 5, FIXED: five new `catch (_)` fallbacks now log at warning (ExportDirectories x2, Gmail date, folder listing, platform-id read). None was destructive; each falls back conservatively.
-- **5.1.5 WinWright sweep**: see the record below the build.
+- **5.1.5 WinWright sweep**: 2026-09-25 at `92411c5` (dev exe rebuilt 09:45 from that commit; it contains every `lib/ui` change of the sprint) -- **2 of 2 scripts PASSED, 29/29 steps each, no DB drift**, workstation-unlocked check passed. Scripts: `test_f124_rule_labels.json` (17s), `test_mt2c_no_rule_sweep.json` (21s). New UI with NO script yet -> Sprint 75 carry-in (5.1.5 step 5): Scan History Clear history, Settings "Hide sender details in exports", the Account tab's resolved-default folder rows.
+
+  sweep-head: `92411c5`
+
+- **5.1.6 Runtime Launch Gate**: N/A -- no Android config touched (the only `android/` change is a comment in `DozeScanTrigger.kt`; no manifest, res/xml, gradle or R8 change).
 
 ## Phase 3.6.1 Architecture Impact Check
 

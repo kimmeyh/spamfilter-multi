@@ -1,17 +1,18 @@
 {
   "_description": "Sprint status file that persists across context compaction. Update after each phase/sub-phase completion.",
-  "_last_updated": "2026-09-25T12:00:00Z",
+  "_last_updated": "2026-09-25T14:00:00Z",
   "_usage": "Read this file after context compaction to restore sprint approval state and progress.",
   "_staleness_note": "This file had drifted 15 sprints (last updated at Sprint 35, 2026-04-19) before being refreshed at Sprint 50 close-out. It is a Phase 7.7 checklist item -- update it at every sprint close-out, not opportunistically.",
   "current_sprint": {
     "number": 74,
     "branch": "feature/20260924_Sprint_74",
-    "status": "Sprint 74 Phase 4 Execution -- plan APPROVED 2026-09-25 as amended (Opus 5.5 for top-tier tasks; MINOR 0.17.0+8; export default Android Documents / Windows Downloads; cross-isolate exclusion appended to ADR-0039; Q5 scan results only; redacted export in scope). F202 editable-defaults question deferred to Manual Validation.",
+    "status": "Sprint 74 Phase 5.3 Manual Validation -- Tasks 0-4 DONE (dfa4881..92411c5); 5.1.1 two reviews (9 fixed, 2 surfaced as questions), 5.1.2 run, 5.1.5 sweep 2/2 at 92411c5, 5.1.6 N/A. Device tasks 5-8 (MV74-1, MV74-3, F232, F205) run on the S24+. Questions pending: exclusion Class-2 ordering, export default ON/OFF, F202 editable defaults, how 0.17.0 reaches the S24+. AAB 0.17.0+8 built + verified.",
     "plan_approved": true,
     "blanket_execution_approved": true,
     "pr_number": 440,
     "pr_url": "https://github.com/kimmeyh/spamfilter-multi/pull/440",
-    "version": "0.17.0+8"
+    "version": "0.17.0+8",
+    "suite": "2,367 passed / 15 skipped / 0 failed at --concurrency=2 (92411c5); analyzer clean"
   },
   "previous_sprint": {
     "number": 73,
