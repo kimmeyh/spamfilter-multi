@@ -26,6 +26,10 @@ Format: `- **type**: Description (Issue #N)` where type is feat|fix|chore|docs
 
 ## [Unreleased]
 
+### 2026-09-25 (Sprint 74)
+- **fix**: a background scan no longer runs on an account while you are scanning it yourself. On both Windows and Android, the background scan now waits its turn for that account instead of opening a second connection to your mail server. (Issue #434)
+- **fix**: the "background scan in progress" notice now clears within minutes when a background scan has stopped, instead of lingering for up to 30 minutes. (Issue #434)
+
 ### 2026-09-23 (Sprint 73)
 - **feat**: background scans on Android now run while your phone is idle or the screen is off. Before, they often only ran while the app was open. Android may still delay them by up to about an hour, and Settings says so. (Issue #428)
 - **fix**: background scans are restored after your phone restarts. (Issue #428)

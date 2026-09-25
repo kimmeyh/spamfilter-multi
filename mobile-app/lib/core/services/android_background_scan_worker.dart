@@ -136,7 +136,11 @@ class AndroidBackgroundScanWorker {
             ruleSetProvider: ruleSetProvider,
             settingsStore: settingsStore,
           );
-          await _notifyScanComplete(accountId: id, outcome: outcome);
+          // MV74-2: a deliberate skip (a live interactive scan on this
+          // account) is a success with nothing to report -- no notification.
+          if (!outcome.skipped) {
+            await _notifyScanComplete(accountId: id, outcome: outcome);
+          }
         } catch (e) {
           _logger.e('Background scan failed for ${Redact.accountId(id)}',
               error: e);

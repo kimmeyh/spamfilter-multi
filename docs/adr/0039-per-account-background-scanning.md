@@ -336,3 +336,34 @@ permission and carries no Google Play policy burden; the cost is a delivery wind
 of about an hour. Alarms are re-armed after each firing and restored after a
 reboot by `BootReceiver`. See `DozeAlarmScheduler.kt` and ARCHITECTURE.md
 "Android in Doze".
+
+## Amendment -- Sprint 74 (MV74-2, Harold Q3): cross-isolate exclusion
+
+**What was assumed, and was false.** The F175 `ScanCoordinator` lease was
+documented as "the whole guarantee on Android, where every scan shares one
+process". One process is true; one Dart ISOLATE is not. `workmanager_android`
+creates a new `FlutterEngine` for every background worker, so each background
+scan runs in its own isolate with its own copy of the singleton. On Windows the
+background scan is a separate process. On BOTH platforms, then, nothing stopped a
+background scan and a manual scan from opening two IMAP sessions on one account --
+the Sprint 61 per-account session-cap failure.
+
+**Decision (Harold, 2026-09-25, answer to planning question 3: "update/append
+current ADR").** Exclusion moves to the one thing both sides can read, the
+shared `scan_results` row:
+
+- The scanning isolate refreshes `scan_results.last_heartbeat_at` every 30
+  seconds (DB v9).
+- Before opening any connection, `BackgroundScanCore.scanAccount` checks for a
+  live INTERACTIVE row (manual, reprocess, demo) on the same account --
+  `in_progress` with a heartbeat inside 5 minutes -- and SKIPS the account if
+  one exists. The background side yields because the user is the one waiting.
+- The manual-scan notice counts a background row only with a fresh heartbeat,
+  so a dead scan stops blocking within minutes rather than 30.
+- Same code on both platforms (ADR-0042, no exception).
+
+**Accepted limits.** A background scan that starts in the same instant as a
+manual scan can still overlap (check-then-act, no lock); the window is the few
+milliseconds before the manual row is written. A query failure fails OPEN (the
+background scan runs), so a database error cannot stop background scanning
+permanently.

@@ -4,6 +4,8 @@
 /// for display in UI screens.
 library;
 
+import 'dart:async';
+
 import 'package:flutter/foundation.dart';
 import 'package:logger/logger.dart';
 
@@ -14,6 +16,7 @@ import '../../core/storage/database_helper.dart';
 import '../../core/storage/scan_result_store.dart';
 import '../../core/storage/settings_store.dart';
 import '../../core/storage/unmatched_email_store.dart';
+import '../services/scan_coordinator.dart';
 import '../../core/utils/pattern_normalization.dart';
 import '../../util/redact.dart';
 
@@ -101,6 +104,7 @@ class EmailScanProvider extends ChangeNotifier {
   ScanResultStore? _scanResultStore;
   UnmatchedEmailStore? _unmatchedEmailStore;
   int? _currentScanResultId;  // Track current scan result for persistence
+  Timer? _heartbeatTimer;  // MV74-2 (Sprint 74): liveness for OTHER isolates
   DatabaseHelper? _databaseHelper;  // For email_actions persistence
 
   // [NEW] MULTI-ACCOUNT SUPPORT: Provider-specific junk folder configuration
@@ -292,6 +296,36 @@ class EmailScanProvider extends ChangeNotifier {
     _logger.d('Set current account ID: ${Redact.accountId(accountId)}');
   }
 
+  /// MV74-2 (Sprint 74): refresh this scan's `scan_results` heartbeat every
+  /// [ScanCoordinator.heartbeatInterval] until the scan ends. The UI's
+  /// ScanCoordinator cannot see a scan in another isolate (Android WorkManager)
+  /// or process (Windows Task Scheduler), so the DATABASE row is the only
+  /// cross-boundary liveness signal. A failed write is logged, never thrown --
+  /// a missed beat must not fail the scan it describes.
+  void _startHeartbeat() {
+    _stopHeartbeat();
+    final id = _currentScanResultId;
+    final store = _scanResultStore;
+    if (id == null || store == null) return;
+    _heartbeatTimer =
+        Timer.periodic(ScanCoordinator.heartbeatInterval, (_) async {
+      try {
+        await store.recordHeartbeat(id);
+      } catch (e) {
+        _logger.w('Scan heartbeat write failed for id=$id: $e');
+      }
+    });
+  }
+
+  void _stopHeartbeat() {
+    _heartbeatTimer?.cancel();
+    _heartbeatTimer = null;
+  }
+
+  /// Test seam: whether a heartbeat timer is running.
+  @visibleForTesting
+  bool get debugHeartbeatActive => _heartbeatTimer?.isActive ?? false;
+
   /// Start a new scan session
   ///
   /// Initialize with total email count for progress tracking
@@ -350,6 +384,7 @@ class EmailScanProvider extends ChangeNotifier {
 
         _currentScanResultId = await _scanResultStore!.addScanResult(scanResult);
         _logger.i('Created scan result record: id=$_currentScanResultId, type=$scanType');
+        _startHeartbeat();
       } catch (e) {
         _logger.e('Failed to create scan result: $e');
         // Continue without persistence
@@ -435,6 +470,7 @@ class EmailScanProvider extends ChangeNotifier {
   /// regardless of throttling state (provides complete final counts)
   /// [NEW] SPRINT 4: Complete scan and persist final results
   Future<void> completeScan() async {
+    _stopHeartbeat();
     _status = ScanStatus.completed;
     _scanEndTime = DateTime.now();  // PR #335 review: freeze the duration
     _currentEmail = null;
@@ -606,6 +642,7 @@ class EmailScanProvider extends ChangeNotifier {
 
   /// [NEW] SPRINT 4: Mark scan as failed with error and persist error state
   Future<void> errorScan(String errorMessage) async {
+    _stopHeartbeat();
     _status = ScanStatus.error;
     // A real failure must never inherit a previous cancel's flag.
     _wasCancelled = false;
@@ -642,6 +679,7 @@ class EmailScanProvider extends ChangeNotifier {
   /// Partial counts are deliberately NOT reset (AC-4) -- work that really
   /// happened stays recorded.
   Future<void> cancelScan() async {
+    _stopHeartbeat();
     _status = ScanStatus.error;
     _wasCancelled = true;
     _statusMessage = 'Scan cancelled. '
@@ -661,8 +699,17 @@ class EmailScanProvider extends ChangeNotifier {
     notifyListeners();
   }
 
+  @override
+  void dispose() {
+    // MV74-2: a provider disposed mid-scan must not leave a timer writing
+    // heartbeats for a scan nobody is running.
+    _stopHeartbeat();
+    super.dispose();
+  }
+
   /// Reset scan state to idle
   void reset() {
+    _stopHeartbeat();
     _status = ScanStatus.idle;
     _wasCancelled = false;
     _processedCount = 0;

@@ -23,6 +23,8 @@ import '../../adapters/storage/secure_credentials_store.dart';
 import '../../util/redact.dart';
 import '../providers/email_scan_provider.dart';
 import '../providers/rule_set_provider.dart';
+import '../storage/database_helper.dart';
+import '../storage/scan_result_store.dart';
 import '../storage/settings_store.dart';
 import 'email_scanner.dart';
 import 'scan_coordinator.dart';
@@ -43,6 +45,13 @@ class AccountScanOutcome {
   /// reads auth failures and the Excel exporter off it after the scan.
   final EmailScanProvider scanProvider;
 
+  /// MV74-2 (Sprint 74): non-null when the account was deliberately NOT
+  /// scanned because an interactive scan was live on it (ADR-0039 amendment).
+  /// All counts are zero. Not a failure: the run did what it should.
+  final String? skippedReason;
+
+  bool get skipped => skippedReason != null;
+
   const AccountScanOutcome({
     required this.emailsProcessed,
     required this.deletedCount,
@@ -51,7 +60,19 @@ class AccountScanOutcome {
     required this.unmatchedCount,
     required this.errorCount,
     required this.scanProvider,
+    this.skippedReason,
   });
+
+  /// A deliberate skip -- see [skippedReason].
+  AccountScanOutcome.skipped(String reason, EmailScanProvider provider)
+      : emailsProcessed = 0,
+        deletedCount = 0,
+        movedCount = 0,
+        safeCount = 0,
+        unmatchedCount = 0,
+        errorCount = 0,
+        scanProvider = provider,
+        skippedReason = reason;
 }
 
 class BackgroundScanCore {
@@ -97,9 +118,27 @@ class BackgroundScanCore {
     required String platformId,
     required RuleSetProvider ruleSetProvider,
     required SettingsStore settingsStore,
+    ScanResultStore? scanResultStore,
   }) async {
     _logger.i(
         'Scanning account: ${Redact.accountId(accountId)} (platform: $platformId)');
+
+    // MV74-2 (Sprint 74, Harold Q3 -- ADR-0039 amendment): YIELD to a live
+    // interactive scan on this account. The UI's ScanCoordinator cannot see
+    // this scan -- it runs in a separate isolate (Android WorkManager) or
+    // process (Windows Task Scheduler) -- so without this check a manual scan
+    // and a background scan could hold two IMAP sessions on one account, the
+    // Sprint 61 session-cap failure. The shared database row's heartbeat is
+    // the only signal both sides can read. Checked BEFORE any connection.
+    final store = scanResultStore ?? ScanResultStore(DatabaseHelper());
+    final live = await store.getActiveInteractiveScanForAccount(accountId);
+    if (live != null) {
+      final reason = 'a ${live.scanType} scan is in progress on this account '
+          '(scan id ${live.id})';
+      _logger.i('Background scan SKIPPED for ${Redact.accountId(accountId)}: '
+          '$reason');
+      return AccountScanOutcome.skipped(reason, EmailScanProvider());
+    }
 
     // Get effective background scan settings for this account
     final scanMode = await settingsStore.getEffectiveScanMode(

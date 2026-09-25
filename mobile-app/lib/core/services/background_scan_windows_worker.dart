@@ -281,6 +281,16 @@ class BackgroundScanWindowsWorker {
               unmatchedCount: result.unmatchedCount,
             );
             await logStore.updateLog(successLog);
+            if (result.skippedReason != null) {
+              // MV74-2: deliberately not scanned -- say so, rather than a
+              // SUCCESS line with zero counts that reads like an empty mailbox.
+              await _bgLog('Account ${Redact.accountId(accountId)} scan SKIPPED: '
+                  '${result.skippedReason}');
+              // A deliberate skip is a SUCCESS for the worker's exit status;
+              // a run that only skipped must not report failure.
+              successCount++;
+              continue;
+            }
             await _bgLog('Account ${Redact.accountId(accountId)} scan SUCCESS: Processed: ${result.emailsProcessed}, Deleted: ${result.deletedCount}, Moved: ${result.movedCount}, Safe: ${result.safeCount}, No Rule: ${result.unmatchedCount}, Errors: ${result.errorCount}');
 
             // F110 (Sprint 43): one phishing line per email that HARD-FAILED at
@@ -552,6 +562,7 @@ class BackgroundScanWindowsWorker {
       unmatchedCount: outcome.unmatchedCount,
       errorCount: outcome.errorCount,
       scanProvider: outcome.scanProvider,
+      skippedReason: outcome.skippedReason,
     );
   }
 }
@@ -565,6 +576,7 @@ class _ScanResult {
   final int unmatchedCount;
   final int errorCount;
   final EmailScanProvider scanProvider;
+  final String? skippedReason; // MV74-2: see AccountScanOutcome.skippedReason
 
   const _ScanResult({
     required this.emailsProcessed,
@@ -574,5 +586,6 @@ class _ScanResult {
     required this.unmatchedCount,
     required this.errorCount,
     required this.scanProvider,
+    this.skippedReason,
   });
 }

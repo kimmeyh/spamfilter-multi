@@ -519,26 +519,52 @@ class ScanResultStore {
     }
   }
 
+  /// MV74-2 (Sprint 74): refresh the liveness heartbeat of an in-progress
+  /// scan. Written by the scanning isolate every
+  /// [ScanCoordinator.heartbeatInterval]; read by the cross-isolate checks
+  /// below. A single-row UPDATE (WAL + busy_timeout make it safe against a
+  /// concurrent writer in another isolate or process). Guarded on
+  /// `in_progress` so a late tick can never touch a finished row.
+  Future<void> recordHeartbeat(int scanResultId) async {
+    final db = await _databaseHelper.database;
+    await db.update(
+      'scan_results',
+      {'last_heartbeat_at': DateTime.now().millisecondsSinceEpoch},
+      where: 'id = ? AND status = ?',
+      whereArgs: [scanResultId, 'in_progress'],
+    );
+  }
+
   /// F175 (Sprint 62): the ACTIVE background scan, if any -- an
   /// `in_progress` row with scan_type `background` whose `started_at` is
   /// within [freshWithin]. Database-backed so it sees background scans in
-  /// OTHER processes too (the Windows Task Scheduler worker shares this
-  /// database), which an in-process registry cannot -- this is what makes
-  /// the manual-scan wait notice platform-uniform.
+  /// OTHER isolates and processes -- the Android WorkManager isolate and the
+  /// Windows Task Scheduler process -- which the in-isolate
+  /// [ScanCoordinator] cannot. This is what makes the manual-scan wait notice
+  /// platform-uniform.
+  ///
+  /// MV74-2 (Sprint 74): ALSO requires a live heartbeat --
+  /// `COALESCE(last_heartbeat_at, started_at)` within [heartbeatWithin]. A
+  /// scan that died without marking its row stops blocking within minutes
+  /// instead of holding a false notice for the full 30. `started_at` covers
+  /// a brand-new row (before its first tick) and pre-v9 rows.
   Future<ScanResult?> getActiveBackgroundScan({
     // Sprint 62 code review (M-3): same single-source rule as above -- a
     // row older than the scan timeout is stale by definition, never active.
     Duration freshWithin = ScanCoordinator.scanTimeout,
+    Duration heartbeatWithin = ScanCoordinator.heartbeatFreshness,
   }) async {
     try {
       final db = await _databaseHelper.database;
-      final cutoff =
-          DateTime.now().subtract(freshWithin).millisecondsSinceEpoch;
+      final now = DateTime.now();
+      final cutoff = now.subtract(freshWithin).millisecondsSinceEpoch;
+      final beatCutoff = now.subtract(heartbeatWithin).millisecondsSinceEpoch;
 
       final maps = await db.query(
         'scan_results',
-        where: 'status = ? AND scan_type = ? AND started_at >= ?',
-        whereArgs: ['in_progress', 'background', cutoff],
+        where: 'status = ? AND scan_type = ? AND started_at >= ? '
+            'AND COALESCE(last_heartbeat_at, started_at) >= ?',
+        whereArgs: ['in_progress', 'background', cutoff, beatCutoff],
         orderBy: 'started_at DESC',
         limit: 1,
       );
@@ -547,6 +573,41 @@ class ScanResultStore {
       return ScanResult.fromMap(maps.first);
     } catch (e) {
       _logger.e('Failed to query active background scan: $e');
+      return null;
+    }
+  }
+
+  /// MV74-2 (Sprint 74, Harold Q3 -- ADR-0039 amendment): the LIVE
+  /// interactive scan on [accountId], if any -- any `in_progress` row whose
+  /// scan_type is NOT `background` (manual, reprocess, demo) with a fresh
+  /// heartbeat. A background scan calls this before opening an IMAP session
+  /// and SKIPS the account when it returns non-null, so two sessions never
+  /// open on one account from different isolates or processes (the Sprint 61
+  /// per-account session-cap failure). Same freshness rule as
+  /// [getActiveBackgroundScan]; a query failure returns null (fail OPEN:
+  /// better a possible overlap than a background scan that never runs).
+  Future<ScanResult?> getActiveInteractiveScanForAccount(
+    String accountId, {
+    Duration freshWithin = ScanCoordinator.scanTimeout,
+    Duration heartbeatWithin = ScanCoordinator.heartbeatFreshness,
+  }) async {
+    try {
+      final db = await _databaseHelper.database;
+      final now = DateTime.now();
+      final cutoff = now.subtract(freshWithin).millisecondsSinceEpoch;
+      final beatCutoff = now.subtract(heartbeatWithin).millisecondsSinceEpoch;
+      final maps = await db.query(
+        'scan_results',
+        where: 'status = ? AND account_id = ? AND scan_type != ? '
+            'AND started_at >= ? AND COALESCE(last_heartbeat_at, started_at) >= ?',
+        whereArgs: ['in_progress', accountId, 'background', cutoff, beatCutoff],
+        orderBy: 'started_at DESC',
+        limit: 1,
+      );
+      if (maps.isEmpty) return null;
+      return ScanResult.fromMap(maps.first);
+    } catch (e) {
+      _logger.e('Failed to query active interactive scan: $e');
       return null;
     }
   }
