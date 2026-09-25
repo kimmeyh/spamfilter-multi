@@ -3859,12 +3859,18 @@ class _ResultsDisplayScreenState extends State<ResultsDisplayScreen> {
     // "waiting" signal the scanner shows; the re-processing banner already
     // renders while this runs, so the wait is visible rather than silent.
     ScanLease? lease;
+    InteractiveScanClaim? claim;
 
     try {
       lease = await ScanCoordinator.instance.acquire(
         scanType: 'reprocess',
         accountId: widget.accountId,
       );
+      // Harold Q1 (Sprint 74): a live claim row BEFORE connecting, so a
+      // background scan (another isolate or process) sees this account is
+      // busy and yields instead of opening a second session.
+      claim = await ScanResultStore(DatabaseHelper())
+          .claimInteractive(widget.accountId);
 
       // Create platform connection
       platform = PlatformRegistry.getPlatform(widget.platformId);
@@ -4019,6 +4025,8 @@ class _ResultsDisplayScreenState extends State<ResultsDisplayScreen> {
       if (lease != null) {
         ScanCoordinator.instance.release(lease);
       }
+      // The claim ends on every path, like the lease.
+      await claim?.end();
     }
 
     // Hide banner and show result snackbar

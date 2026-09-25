@@ -10,9 +10,14 @@ Sprint 7n Scope should include the below items. Please complete sprint planning 
 
 ---------------------------------------------------------------------------------------------------------
 Sprint 74 Scope should include the below items. Please complete sprint planning (/docs/sprint_planning.md) for the below items and present for approval.  Note that everything needs to take into account both the Windows App and the Android app and ADR stating that everything should be functionally and UI the same unless it cannot be - and where it cannot be it should be implemented as a platform exception for what is needed -- this applies to all backend code, frontend code, data, architecture, development, security, testing, deployment.
-
-
-
+  - MV74-1. F235 Doze scheduling -- validate on the S24+ (~20-40m, plus hours of elapsed device time) Priority 2
+  - MV74-2. F207 -- settle the WorkManager ISOLATE question (~30-60m; add ~120-180m if confirmed) Priority 2
+  - MV74-3. F232 mechanism B + F205 -- device run with diagnostic logging (~30-60m) Priority 4
+  - F202. Per-provider folder defaults -- overall default plus provider overrides for all four folder settings (~150-240m) Priority 10
+  - F222. Scan results are not ordered by received date (~45-90m) Priority 22
+  - F232. Mechanism B -- a live re-process batch fails 9 of 9 on a healthy connection (~60-120m) Priority 6
+  - F206. Diagnostic export as a PLATFORM CAPABILITY (~120-210m) Priority 14
+  - F205. Closed-test error rate: 53 errors in 3,833 scanned on the S24+ -- find out what they ARE (~30-60m) Priority 18
 
   Recommendation
 
@@ -37,6 +42,7 @@ Sprint 74 Scope should include the below items. Please complete sprint planning 
   - F205. Closed-test error rate: 53 errors in 3,833 scanned on the S24+ -- find out what they ARE (~30-60m) Priority 18
   - F222. Scan results are not ordered by received date (~45-90m) Priority 22
   - F204. Gate the three Play requirements that are documented but not asserted (~60-90m) Priority 24
+
   - HOLD items follow, one line each. Most HOLD cards still carry hour estimates. The format requires minutes, re-derived from step types, so each card
     needs converting when it leaves HOLD:
   - F165. Cross-device rules-DB sharing -- user cloud storage exploration + hosted-tier option (~half-day exploration) Priority HOLD

@@ -82,9 +82,11 @@ class SettingsStore {
   /// F202: overall default Safe Senders folder when no account or provider value.
   static const String defaultSafeSenderFolder = 'INBOX';
   static const String? defaultCsvExportDirectory = null; // null = platform default (ExportDirectories: Android Documents, Windows Downloads)
-  // F113 (Sprint 47): debug-CSV defaults ON for new users (Harold: new users
-  // are the most likely to need diagnostics; the files are tiny).
-  static const bool defaultBackgroundScanDebugCsv = true;
+  // Harold Q2 (Sprint 74) REVERSES F113 (Sprint 47): per-scan exports are
+  // OFF by default. F113 turned them on while they were written to hidden
+  // app storage; F206 moved them to Downloads/Documents, so a default of ON
+  // would drop new files there after every scan with no warning.
+  static const bool defaultBackgroundScanDebugCsv = false;
 
   // F113 (Sprint 47): provider-keyed default scan folders. When an account
   // has no per-account folder selection, the effective default depends on the
@@ -205,15 +207,15 @@ class SettingsStore {
     final scan = platform == null ? null : providerFolderDefaults[platform]?.scanFolders;
     return List.from(scan ?? defaultManualScanFolders);
   }
-  /// F90 (Sprint 39): live-scan debug CSV export. F113 (Sprint 47) changed
-  /// the default to `true` for both dev and prod -- new users are the most
-  /// likely to need diagnostics and the CSV files are tiny (matches
-  /// `defaultBackgroundScanDebugCsv`, also `true`). The Settings > Manual Scan
+  /// F90 (Sprint 39): live-scan debug CSV export. OFF by default (Harold Q2,
+  /// Sprint 74, reversing F113's ON): exports now land in the user's
+  /// Downloads/Documents, so they must be asked for (matches
+  /// `defaultBackgroundScanDebugCsv`, also `false`). The Settings > Manual Scan
   /// tab Debug section exposes a toggle so a user can opt OUT without a code
   /// change. The runtime log file (`{logs}/{prefix}live_scan_v<version>.log`) is
   /// always on regardless of this setting -- it captures scan-lifecycle events
   /// only and is small enough that surprise disk usage is not a concern.
-  static const bool defaultLiveScanDebugCsv = true; // F113 (Sprint 47): ON for new users
+  static const bool defaultLiveScanDebugCsv = false; // Harold Q2 (Sprint 74): OFF (was F113 ON)
 
   /// F233: OFF by default. A diagnostic log is a debugging aid, not something
   /// every user should silently accumulate on disk.

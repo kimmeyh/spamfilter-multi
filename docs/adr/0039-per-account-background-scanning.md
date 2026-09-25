@@ -362,12 +362,17 @@ shared `scan_results` row:
   so a dead scan stops blocking within minutes rather than 30.
 - Same code on both platforms (ADR-0042, no exception).
 
-**Accepted limits, and two gaps found by the Sprint 74 PR review.** The check
-is check-then-act, with no lock. Worse than the instant-overlap case first
-assumed: a manual scan writes its row only AFTER it has connected, so the
-window is the connect time (seconds), not milliseconds; and re-processing from
-Scan Results writes no `scan_results` row at all, so it is not covered. Closing
-both means creating the row before connecting and giving re-processing a row --
-an ordering change surfaced to Harold as a Class-2 decision. A query failure fails OPEN (the
+**Two gaps found by the Sprint 74 PR review, CLOSED on Harold's Class-2
+decision (2026-09-25, "ensure a scan that fails before connecting updates that
+the scan is no longer running").** (1) A manual scan wrote its row only after
+connecting -- a window of seconds; its row is now written right after the
+lease and BEFORE connecting, and a pre-connect failure closes it as `error`
+(`interrupted` on cancel). (2) Re-processing from Scan Results wrote no row;
+it now holds a heartbeating `reprocess` claim row for its whole run, deleted
+when it ends and never listed in Scan History.
+
+**Remaining accepted limit.** The check is still check-then-act with no lock:
+a background scan whose check runs in the same instant a manual scan writes
+its row can overlap. The window is now milliseconds, not the connect time. A query failure fails OPEN (the
 background scan runs), so a database error cannot stop background scanning
 permanently.

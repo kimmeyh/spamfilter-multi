@@ -606,6 +606,14 @@ count reaches 12.
 
 - **5.1.6 Runtime Launch Gate**: N/A -- no Android config touched (the only `android/` change is a comment in `DozeScanTrigger.kt`; no manifest, res/xml, gradle or R8 change).
 
+## Manual Validation decisions -- Harold, 2026-09-25
+
+- **Q1 -- close both exclusion gaps** (Class-2, approved): *"ensure a scan that fails before connecting updates that the scan is no longer running."* DONE: the scan row is written right after the lease and before connecting; a pre-connect failure closes it `error` (proven by test); re-processing holds a heartbeating `reprocess` claim row. 4 mutations KILLED.
+- **Q2 -- per-scan exports OFF by default** (reverses F113's ON). DONE.
+- **Q3 -- F202 provider defaults stay code-only.** No Settings editor.
+- **Q4 -- "the normal way"**: read as Harold uploading 0.17.0 through Google Play closed testing. The AAB is rebuilt after Q1/Q2.
+- **Device note**: the S24+ is being replaced by a Galaxy Z Fold8 Ultra; device steps apply to either (same USB-debugging policy, MTP for files).
+
 ## Phase 3.6.1 Architecture Impact Check
 
 - **ARCHITECTURE.md** -- updates REQUIRED (included in each card's DoD, done before Manual Validation

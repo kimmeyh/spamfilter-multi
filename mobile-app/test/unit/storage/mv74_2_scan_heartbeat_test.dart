@@ -278,6 +278,53 @@ void main() {
     });
   });
 
+  group('Harold Q1 -- re-processing holds a live claim', () {
+    test('the claim is seen by the background exclusion, and gone when it '
+        'ends', () async {
+      final claim = await store.claimInteractive('acct-a',
+          heartbeatInterval: const Duration(milliseconds: 30));
+      expect(claim, isNotNull);
+      final live = await store.getActiveInteractiveScanForAccount('acct-a');
+      expect(live?.scanType, 'reprocess');
+      await claim!.end();
+      expect(await store.getActiveInteractiveScanForAccount('acct-a'), isNull);
+    });
+
+    test('a claim row never appears in Scan History, even one left behind',
+        () async {
+      await insertRow(
+          accountId: 'acct-a', scanType: 'reprocess', status: 'interrupted',
+          startedAt: ago(const Duration(hours: 2)));
+      await insertRow(
+          accountId: 'acct-a', scanType: 'manual', status: 'completed',
+          startedAt: ago(const Duration(hours: 1)));
+      final history = await store.getAllScanHistory();
+      expect(history.map((s) => s.scanType), ['manual']);
+    });
+
+    // SOURCE-TEXT wiring gate: the store behavior is proven above; this pins
+    // that the Scan Results re-process path actually TAKES the claim and
+    // ENDS it in its finally. (What it does not catch: the claim being taken
+    // AFTER the connect -- the order is asserted by position below.)
+    test('the re-process path takes the claim before connecting and ends it',
+        () {
+      final src = File('lib/ui/screens/results_display_screen.dart')
+          .readAsStringSync();
+      final claimAt = src.indexOf('.claimInteractive(widget.accountId)');
+      final connectAt = src.indexOf(
+          'await platform.loadCredentials(credentials);', claimAt);
+      expect(claimAt, greaterThan(0));
+      expect(connectAt, greaterThan(claimAt),
+          reason: 'the claim must exist before the session opens');
+      expect(src.contains('await claim?.end();'), isTrue);
+    });
+
+    test('a claim that cannot be written returns null instead of blocking the '
+        're-process (no account row -> FK failure)', () async {
+      expect(await store.claimInteractive('no-such-account'), isNull);
+    });
+  });
+
   group('review I-1 -- what a worker does after an account scan', () {
     test('a SKIP exports nothing and notifies nothing', () async {
       final calls = <String>[];

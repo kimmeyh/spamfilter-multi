@@ -172,6 +172,29 @@ class EmailScanner {
         accountId: accountId,
       );
 
+      // 3. [UPDATED] ISSUE #128: Start scan with 0 emails, will increment as found.
+      //
+      // Harold Q1 (Sprint 74, MV74-2): this runs BEFORE connecting (it used to
+      // run after Step 2). The `scan_results` row it writes is the only
+      // cross-isolate/process signal that this account is being scanned: a
+      // background scan checks for it before opening its own session. Written
+      // after connecting, it left a window of seconds in which both scans
+      // held a session on one account -- the Sprint 61 session-cap failure.
+      // It still runs AFTER the lease, so a scan waiting in the queue holds no
+      // row (F221). A failure before connecting now reaches the outer catch
+      // with a row to close: errorScan marks it `error`, cancelScan
+      // `interrupted`, so it never reads as still running (Harold's
+      // condition).
+      AppLogger.scan('Step 3: Calling scanProvider.startScan(totalEmails: 0, scanType: $scanType)');
+      AppLogger.scan('Step 3: scanProvider.status BEFORE startScan: ${scanProvider.status}');
+      await scanProvider.startScan(
+        totalEmails: 0,
+        scanType: scanType,
+        foldersScanned: folderNames,
+        platformId: platformId,
+      );
+      AppLogger.scan('Step 3: scanProvider.status AFTER startScan: ${scanProvider.status}');
+
       // 1. Get platform adapter
       platform = PlatformRegistry.getPlatform(platformId);
       if (platform == null) {
@@ -208,16 +231,6 @@ class EmailScanner {
         await LiveScanLogger.log('Step 2.5: deletedRuleFolder=${deletedRuleFolder ?? "(default Trash)"}');
       }
 
-      // 3. [UPDATED] ISSUE #128: Start scan with 0 emails, will increment as found
-      AppLogger.scan('Step 3: Calling scanProvider.startScan(totalEmails: 0, scanType: $scanType)');
-      AppLogger.scan('Step 3: scanProvider.status BEFORE startScan: ${scanProvider.status}');
-      await scanProvider.startScan(
-        totalEmails: 0,
-        scanType: scanType,
-        foldersScanned: folderNames,
-        platformId: platformId,
-      );
-      AppLogger.scan('Step 3: scanProvider.status AFTER startScan: ${scanProvider.status}');
 
       // F177 (Sprint 62): the evaluator is constructed BEFORE the fetch loop
       // because evaluation now happens PER FETCH BATCH (m=20, universal)

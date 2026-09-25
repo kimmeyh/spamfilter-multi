@@ -298,6 +298,34 @@ void main() {
             'behavior, now visible');
   });
 
+  test('Harold Q1: a scan that fails BEFORE connecting leaves its row CLOSED '
+      '(error), never in_progress -- proving the row now exists before the '
+      'connect', () async {
+    await db.insertAccount({
+      'account_id': 'nope@example.com',
+      'platform_id': 'aol',
+      'email': 'nope@example.com',
+      'display_name': 'Test',
+      'date_added': DateTime.now().millisecondsSinceEpoch,
+    });
+    final scanner = EmailScanner(
+      platformId: 'no-such-platform', // fails at Step 1, before any connect
+      accountId: 'nope@example.com',
+      ruleSetProvider: RuleSetProvider(),
+      scanProvider: EmailScanProvider()..initializeScanMode(mode: ScanMode.readOnly),
+    );
+    await expectLater(scanner.scanInbox(daysBack: 0), throwsA(anything));
+    final rows = await (await db.database).query('scan_results',
+        where: 'account_id = ?', whereArgs: ['nope@example.com']);
+    expect(rows, hasLength(1),
+        reason: 'before Q1 the row was written only AFTER connecting, so a '
+            'pre-connect failure left no row -- and no signal for the '
+            'background exclusion during the connect');
+    expect(rows.single['status'], 'error',
+        reason: 'Harold: a scan that fails before connecting must show it is '
+            'no longer running');
+  });
+
   Future<String?> deletedFolderHandedToAdapter(String storedPlatform) async {
     _RecordingFolderMockProvider.deletedRuleFolders.clear();
     await db.insertAccount({

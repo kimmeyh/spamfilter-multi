@@ -9,6 +9,8 @@ library;
 /// - Retrieving scan results by account or date
 /// - Deleting scan results (with cascade to unmatched emails)
 
+import 'dart:async';
+
 import 'package:logger/logger.dart';
 
 import '../../util/redact.dart';
@@ -577,13 +579,45 @@ class ScanResultStore {
     }
   }
 
+  /// Harold Q1 (Sprint 74): hold a live `in_progress` row for interactive work
+  /// that is NOT a scan -- re-processing mail from Scan Results -- so a
+  /// background scan sees it and yields (it used to write no row, so the
+  /// exclusion did not cover it). The row is a CLAIM, not history: [end]
+  /// deletes it, and [getAllScanHistory] never lists `reprocess` rows, so a
+  /// row left by a killed app (the reconciler marks it `interrupted`) does
+  /// not appear in Scan History either. Returns null -- and the caller
+  /// carries on -- if the row cannot be written (for example the account
+  /// row is missing): better an uncovered re-process than a blocked one.
+  Future<InteractiveScanClaim?> claimInteractive(
+    String accountId, {
+    String scanType = 'reprocess',
+    Duration? heartbeatInterval,
+  }) async {
+    try {
+      final id = await addScanResult(ScanResult(
+        accountId: accountId,
+        scanType: scanType,
+        scanMode: 'n/a',
+        startedAt: DateTime.now().millisecondsSinceEpoch,
+        totalEmails: 0,
+        status: 'in_progress',
+      ));
+      return InteractiveScanClaim._(this, id,
+          heartbeatInterval ?? ScanCoordinator.heartbeatInterval);
+    } catch (e) {
+      _logger.w('Could not write the $scanType claim row for '
+          '${Redact.accountId(accountId)}; background exclusion will not '
+          'cover it: $e');
+      return null;
+    }
+  }
+
   /// MV74-2 (Sprint 74, Harold Q3 -- ADR-0039 amendment): the LIVE
   /// interactive scan on [accountId], if any -- any `in_progress` row whose
-  /// scan_type is NOT `background` with a fresh heartbeat. **Known gaps (PR
-  /// review, Sprint 74; a Class-2 fix awaits Harold):** (1) a manual scan
-  /// writes its row only AFTER it connects, so a background check landing in
-  /// those seconds sees nothing; (2) re-processing from Scan Results writes no
-  /// `scan_results` row at all, so it is not covered. A background scan calls this before opening an IMAP session
+  /// scan_type is NOT `background` with a fresh heartbeat. Covers manual and
+  /// demo scans -- whose row is written BEFORE they connect (Harold Q1,
+  /// Sprint 74; it used to be written after) -- and re-processing, through
+  /// its [claimInteractive] row. A background scan calls this before opening an IMAP session
   /// and SKIPS the account when it returns non-null, so two sessions never
   /// open on one account from different isolates or processes (the Sprint 61
   /// per-account session-cap failure). Same freshness rule as
@@ -778,9 +812,13 @@ class ScanResultStore {
       String? where;
       List<dynamic>? whereArgs;
 
+      // Harold Q1 (Sprint 74): re-processing claim rows are not scans.
       if (scanType != null) {
-        where = 'scan_type = ?';
-        whereArgs = [scanType];
+        where = 'scan_type = ? AND scan_type != ?';
+        whereArgs = [scanType, 'reprocess'];
+      } else {
+        where = 'scan_type != ?';
+        whereArgs = ['reprocess'];
       }
 
       final maps = await db.query(
@@ -852,6 +890,36 @@ class ScanResultStore {
     } catch (e) {
       _logger.e('Failed to get incomplete scans count: $e');
       rethrow;
+    }
+  }
+}
+
+/// Harold Q1 (Sprint 74): a live claim on an account for interactive work that
+/// is not a scan (re-processing). Heartbeats like a scan, so the background
+/// exclusion and its freshness rule treat it the same way.
+class InteractiveScanClaim {
+  final ScanResultStore _store;
+  final int id;
+  Timer? _timer;
+
+  InteractiveScanClaim._(this._store, this.id, Duration interval) {
+    _timer = Timer.periodic(interval, (_) async {
+      try {
+        await _store.recordHeartbeat(id);
+      } catch (_) {
+        // A missed beat must not fail the work it describes.
+      }
+    });
+  }
+
+  /// Stop the heartbeat and remove the claim row. Safe to call twice.
+  Future<void> end() async {
+    _timer?.cancel();
+    _timer = null;
+    try {
+      await _store.deleteScanResult(id);
+    } catch (_) {
+      // The reconciler marks a leftover row interrupted after the timeout.
     }
   }
 }
