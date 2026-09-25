@@ -149,6 +149,67 @@ void main() {
       );
     }
 
+    // F222 (Sprint 74): the RENDERED order is newest-first, clustered by base
+    // domain. This is the wiring test for orderResultsForDisplay -- the unit
+    // tests prove the function; this proves _getFilteredResults uses it.
+    // Under the old folder -> domain -> address sort, mid@alpha.com rendered
+    // ABOVE new@beta.com; under F222 it renders below.
+    testWidgets('F222: rows render newest-first, clustered by base domain',
+        (tester) async {
+      tester.view.physicalSize = const Size(1200, 2400);
+      tester.view.devicePixelRatio = 1.0;
+      addTearDown(tester.view.resetPhysicalSize);
+      addTearDown(tester.view.resetDevicePixelRatio);
+
+      await tester.runAsync(() async {
+        final base = DateTime.now();
+        int minsAgo(int m) =>
+            base.subtract(Duration(minutes: m)).millisecondsSinceEpoch;
+        Map<String, Object?> row(String id, String from, int receivedAt) => {
+              'scan_result_id': scanId,
+              'email_id': id,
+              'email_from': from,
+              'email_subject': 'Subject $id',
+              'email_received_date': receivedAt,
+              'email_folder': 'INBOX',
+              'action_type': 'none',
+              'matched_rule_name': null,
+              'matched_pattern': null,
+              'is_safe_sender': 0,
+              'success': 1,
+            };
+        // Inserted OLDEST-first on purpose: query order then differs from the
+        // expected display order, so deleting the ordering call fails this
+        // test instead of passing by coincidence (mutation-verified).
+        // older@beta.com is what makes CLUSTERING observable: plain
+        // newest-first would put mid@alpha.com (10 min) above it (30 min);
+        // clustering keeps it with new@beta.com. Without it this test cannot
+        // tell the two orders apart (mutation "call site removed" SURVIVED
+        // before it was added -- historical rows already load newest-first).
+        await testHelper.dbHelper.insertEmailActionBatch([
+          row('2003', 'old@news.alpha.com', minsAgo(60)),
+          row('2004', 'older@beta.com', minsAgo(30)),
+          row('2002', 'mid@alpha.com', minsAgo(10)),
+          row('2001', 'new@beta.com', minsAgo(1)),
+        ]);
+        final ruleProvider = await buildRuleProvider();
+        await mountAndLoadDbWidget(
+            tester,
+            wrapScreen(ruleProvider, EmailScanProvider(),
+                instanceKey: const ValueKey('f222')));
+      });
+
+      double y(String text) => tester.getTopLeft(find.text(text)).dy;
+      // The two setUp rows are the newest (received "now").
+      expect(y('friend@trusted.com'), lessThan(y('new@beta.com')));
+      expect(y('new@beta.com'), lessThan(y('older@beta.com')));
+      expect(y('older@beta.com'), lessThan(y('mid@alpha.com')),
+          reason: 'the whole beta cluster (newest 1 min ago) precedes alpha, '
+              'even though mid@alpha.com (10 min) is newer than older@beta.com');
+      expect(y('mid@alpha.com'), lessThan(y('old@news.alpha.com')),
+          reason: 'news.alpha.com clusters with alpha.com, newest-first');
+    });
+
     testWidgets(
         'matched row hidden, footer "1 of 2 addressed -- 1 remaining", '
         'and "No rule" chip == 1 on FIRST paint after out-of-band rule add',
@@ -286,10 +347,11 @@ void main() {
       addTearDown(tester.view.resetDevicePixelRatio);
 
       await tester.runAsync(() async {
-        // Third seeded email, SAME domain as bad@spam.com, sitting between it
-        // and friend@trusted.com in the sorted list (folder -> domain ->
-        // email: spam.com sorts after trusted.com? No -- 's' > 't' is false:
-        // 'spam.com' < 'trusted.com', so both spam.com rows come first).
+        // Third seeded email, SAME domain as bad@spam.com. Since F222
+        // (Sprint 74) the list is newest-first clustered by base domain, so
+        // the two spam.com rows are adjacent whatever their exact times --
+        // advancing from bad@spam.com must skip worse@spam.com (covered by
+        // the new rule) and land on friend@trusted.com.
         await testHelper.dbHelper.insertEmailActionBatch([
           {
             'scan_result_id': scanId,

@@ -27,6 +27,8 @@ Format: `- **type**: Description (Issue #N)` where type is feat|fix|chore|docs
 ## [Unreleased]
 
 ### 2026-09-25 (Sprint 74)
+- **feat**: scan results are now listed newest first, with each sender domain's other emails grouped right after its newest one, so the list reads like your inbox. Emails from a subdomain (news.example.com) group with the main domain (example.com). (Issue #437)
+- **fix**: Gmail emails now show the date they arrived. Every Gmail email used to show the time of the scan instead, because the date format Gmail sends was not being read. This also corrects the Received Date column in exported results. (Issue #437)
 - **fix**: a background scan no longer runs on an account while you are scanning it yourself. On both Windows and Android, the background scan now waits its turn for that account instead of opening a second connection to your mail server. (Issue #434)
 - **fix**: the "background scan in progress" notice now clears within minutes when a background scan has stopped, instead of lingering for up to 30 minutes. (Issue #434)
 
