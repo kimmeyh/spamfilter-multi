@@ -296,8 +296,9 @@ class EmailScanProvider extends ChangeNotifier {
     final id = _currentScanResultId;
     final store = _scanResultStore;
     if (id == null || store == null) return;
-    _heartbeatTimer =
-        Timer.periodic(ScanCoordinator.heartbeatInterval, (_) async {
+    _heartbeatTimer = Timer.periodic(
+        debugHeartbeatIntervalOverride ?? ScanCoordinator.heartbeatInterval,
+        (_) async {
       try {
         await store.recordHeartbeat(id);
       } catch (e) {
@@ -310,6 +311,11 @@ class EmailScanProvider extends ChangeNotifier {
     _heartbeatTimer?.cancel();
     _heartbeatTimer = null;
   }
+
+  /// Test seam: a short interval so a test can observe a REAL heartbeat
+  /// write (review C-2) instead of only the timer's start/stop.
+  @visibleForTesting
+  static Duration? debugHeartbeatIntervalOverride;
 
   /// Test seam: whether a heartbeat timer is running.
   @visibleForTesting
@@ -1043,11 +1049,13 @@ class EmailScanProvider extends ChangeNotifier {
       // Clean subject for CSV (remove tabs, extra spaces, repeated punctuation)
       final cleanedSubject = PatternNormalization.cleanSubjectForDisplay(result.email.subject);
       final subject = _escapeCsv(redact ? _redacted : cleanedSubject);
-      final rule = _escapeCsv(result.evaluationResult?.matchedRule ?? 'No rule');
+      final ruleText = result.evaluationResult?.matchedRule ?? 'No rule';
+      final rule = _escapeCsv(redact ? _redactAddressesIn(ruleText) : ruleText);
 
       // Extract matched pattern from evaluation result (if available)
+      final patternText = result.evaluationResult?.matchedPattern ?? 'N/A';
       final matchCondition = _escapeCsv(
-        result.evaluationResult?.matchedPattern ?? 'N/A',
+        redact ? _redactAddressesIn(patternText) : patternText,
       );
 
       final action = _getActionName(result.action);
@@ -1062,6 +1070,14 @@ class EmailScanProvider extends ChangeNotifier {
   }
 
   static const String _redacted = '[redacted]';
+
+  /// F206 Part C (review I-3): mask every email-address-shaped run inside
+  /// free text -- a rule name or an exact-sender pattern such as
+  /// `^john\.smith@example\.com$` would otherwise print the address the
+  /// "domain only" setting promises to hide. Domain kept, as for the sender.
+  static String _redactAddressesIn(String text) => text.replaceAllMapped(
+      RegExp(r'[^\s<>"(),;|]+@[^\s<>"(),;|]+'),
+      (m) => Redact.email(m.group(0)));
 
   /// F206 Part C: the sender with its local part masked and the domain kept --
   /// the domain is what diagnosis needs, the person is not.
@@ -1138,13 +1154,15 @@ class EmailScanProvider extends ChangeNotifier {
       final status = result.success ? 'Success' : 'Failed';
       final folder = result.email.folderName;
       final action = _getActionName(result.action);
-      final rule = result.evaluationResult?.matchedRule ?? 'No rule';
+      final ruleText = result.evaluationResult?.matchedRule ?? 'No rule';
+      final rule = redact ? _redactAddressesIn(ruleText) : ruleText;
       final from =
           redact ? _redactSender(result.email.from) : result.email.from;
       final subject = redact
           ? _redacted
           : PatternNormalization.cleanSubjectForDisplay(result.email.subject);
-      final matchCondition = result.evaluationResult?.matchedPattern ?? 'N/A';
+      final patternText = result.evaluationResult?.matchedPattern ?? 'N/A';
+      final matchCondition = redact ? _redactAddressesIn(patternText) : patternText;
       final emailId = redact ? _redacted : result.email.id;
       // F110 (Sprint 43): "Phishing SPF/DKIM/DMARC" -- the comma-separated list
       // of authentication checks this email HARD-FAILED (e.g. "SPF,DMARC").

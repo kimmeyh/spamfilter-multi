@@ -1121,8 +1121,12 @@ class GmailApiAdapter with BatchOperationsMixin implements SpamFilterPlatform {
     try {
       final fromHeader = DateCodec.decodeDate(dateHeader);
       if (fromHeader != null) return fromHeader;
-    } catch (_) {
-      // Malformed header: fall through to the scan time.
+    } catch (e) {
+      // Malformed header: fall through to the scan time -- LOGGED, because a
+      // silent scan-time fallback is exactly how F222's Gmail date defect
+      // went unnoticed.
+      AppLogger.warning('Gmail received date unreadable (internalDate='
+          '$internalDate); using the scan time: $e');
     }
     return (now ?? DateTime.now)();
   }

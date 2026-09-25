@@ -137,18 +137,18 @@ class AndroidBackgroundScanWorker {
             ruleSetProvider: ruleSetProvider,
             settingsStore: settingsStore,
           );
-          // MV74-2: a deliberate skip (a live interactive scan on this
-          // account) is a success with nothing to report -- no notification.
-          if (!outcome.skipped) {
-            // F206 (Sprint 74): the same export the Windows worker runs.
-            await BackgroundScanExport.exportIfEnabled(
+          // MV74-2 + F206: skip -> nothing; scan -> export, then notify.
+          // Branches tested through BackgroundScanCore.completeAccount.
+          await BackgroundScanCore.completeAccount(
+            outcome,
+            export: () => BackgroundScanExport.exportIfEnabled(
               scanProvider: outcome.scanProvider,
               accountId: id,
               settingsStore: settingsStore,
               log: (m) async => _logger.i(m),
-            );
-            await _notifyScanComplete(accountId: id, outcome: outcome);
-          }
+            ),
+            notify: () => _notifyScanComplete(accountId: id, outcome: outcome),
+          );
         } catch (e) {
           _logger.e('Background scan failed for ${Redact.accountId(id)}',
               error: e);

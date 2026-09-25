@@ -78,6 +78,23 @@ class AccountScanOutcome {
 class BackgroundScanCore {
   BackgroundScanCore._();
 
+  /// What a worker does AFTER an account scan (review I-1, Sprint 74) -- a
+  /// seam so both branches are testable rather than guarded by source text:
+  ///   - a deliberate SKIP (a live interactive scan on the account) exports
+  ///     nothing and notifies nothing -- otherwise the user would get a
+  ///     "0 processed" notification every cycle while scanning by hand;
+  ///   - a real scan runs the export (F206: this call is what makes Android's
+  ///     background export exist at all) and then the notification.
+  static Future<void> completeAccount(
+    AccountScanOutcome outcome, {
+    required Future<void> Function() export,
+    required Future<void> Function() notify,
+  }) async {
+    if (outcome.skipped) return;
+    await export();
+    await notify();
+  }
+
   static final Logger _logger = Logger();
 
   /// Resolve an account's platform id from the credential store, falling back

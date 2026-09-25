@@ -27,6 +27,7 @@ Format: `- **type**: Description (Issue #N)` where type is feat|fix|chore|docs
 ## [Unreleased]
 
 ### 2026-09-25 (Sprint 74)
+- **fix**: exports now fall back to the app's own folder if the default folder cannot be written (older Android versions), development and production builds keep separate diagnostic logs, and a redacted export never shares a file with unredacted rows. Hiding sender details now also covers email addresses inside rule names and patterns. (Issue #439)
 - **feat**: new accounts start with the right folders for their email provider, including its spam folder, for all four folder settings (manual scan folders, background scan folders, Safe Senders folder, Deleted Rule folder). Yahoo now scans Inbox and Bulk; an iCloud account's deleted folder is Deleted Messages instead of a Trash folder that does not exist there. Accounts you have already set up keep your saved folders. (Issue #438)
 - **fix**: a scan no longer reports an error for a folder that simply does not exist on your account. A folder that exists but cannot be read is still reported. (Issue #438)
 - **fix**: a Gmail account added with Google sign-in now defaults to scanning Gmail's Spam label. The default used a folder name that only works over IMAP. (Issue #438)

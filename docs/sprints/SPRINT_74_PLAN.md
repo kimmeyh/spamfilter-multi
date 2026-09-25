@@ -575,6 +575,33 @@ count reaches 12.
 
 ---
 
+## Progress (live)
+
+- Task 0 -- DONE `dfa4881` (0.17.0+8). Missed the F196 release notes the bump made due; added in `3a3690e`.
+- Task 1 MV74-2 -- DONE `3a3690e` (heartbeat v9, honest warning, cross-isolate exclusion). Review round: C-2 write test.
+- Task 2 F222 -- DONE `5bea2a2` (ordering + Gmail internalDate).
+- Task 4 F206 -- DONE `f9ee85c` (ExportDirectories, shared per-scan export, clear history, redaction). ADR-0042 correction: one conditional, not a factory.
+- Task 3 F202 -- DONE `f95a346` (code-only; the editable-defaults question is asked at Manual Validation).
+- Tasks 5-8 -- device work on the S24+: Manual Validation.
+
+## Phase 5 evidence (F193 gate)
+
+- **5.1.1 automated code review**: 2026-09-25, TWO independent reviews of `4c64a30..HEAD` (pr-review-toolkit code-reviewer + pr-test-analyzer). Code review: 0 CRITICAL, 4 IMPORTANT, 4 MINOR. Test review: 2 CRITICAL, 6 IMPORTANT. Dispositions:
+  - FIXED: DEV/PROD shared one diagnostics folder and each could delete the other's logs (env-suffixed `diagnostics_Dev`); mid-day redaction mixed rows in one daily file (`_redacted` file name); exact-sender RULE PATTERNS leaked addresses through "domain only" redaction (addresses masked in Rule/Match Condition); Android 7-10 cannot write public Documents without a permission (probe + fallback to the app's own folder); a stored `platform_id='unknown'` bypassed the heuristic; the Clear history count could undercount (store-side count); no test proved the heartbeat WRITES (injectable interval + real-write test + interval/freshness invariant); worker post-scan branch untested (`BackgroundScanCore.completeAccount` seam + both branches + wiring gate); Gmail API vs gmail-imap untested at the scanner/adapter boundary (3 recording-fake scanner tests); the doc comment claiming the exclusion covers re-processing was FALSE (corrected in code, ARCHITECTURE.md and ADR-0039).
+  - SURFACED, Class-2, not implemented: a manual scan writes its `scan_results` row only AFTER connecting, and re-processing writes no row -- so the exclusion has a window of seconds per scan start and does not cover re-processing. Closing both is an ordering change (a pre-connect failure would then leave an `error` row in Scan History). Asked at Manual Validation.
+  - SURFACED, product: exports default ON (F113), so every scan now writes files into Downloads/Documents. Asked at Manual Validation.
+  - NOTED, not changed: a Windows skip is logged as an empty success row (M-2); same-day append to a daily file left by an earlier Android install can fail (I-4 remainder).
+  - NOT COVERED by tests (named, not dropped): the Clear history button/dialog and the redaction toggle wiring -- Manual Validation steps.
+  - Mutations for the round: 6 KILLED (heartbeat write, env suffix, redacted file, pattern redaction, probe fallback, unknown platform).
+- **5.1.2 F-PRECHECK**: 2026-09-25, all six ACTIONS run against `git diff 4c64a30..HEAD` -- 2 FOUND AND FIXED, 4 CLEAN:
+  1. Mirror-site sync -- CLEAN: manual + background scan paths share `scanInbox` (resolvers applied there) and the re-process path was updated the same way; live + background exports share `ScanSheetExport`; Android + Windows workers both call `BackgroundScanExport`; the CI-Linux vs local-Windows pair: the one platform-gated assertion (export label) is platform-aware.
+  2. Helper wired into production -- CLEAN: all 11 new helpers have a runtime call site (grep recorded in the session).
+  3. Doc-comment drift -- FOUND 4, FIXED: `DiagnosticLogger.resolveLogDir` doc (old app-support fallback), `LiveScanLogger` header + method doc (pointed at the removed Windows function and `{logs}`), `defaultCsvExportDirectory` comment.
+  4. Fragile parsing -- CLEAN: `publicDocumentsFrom` returns null on an unexpected shape (caller falls back); `inferPlatformId` checks `gmail-imap-` before `gmail-`; `int.tryParse` for internalDate.
+  5. API scope -- CLEAN: `listFolders` is account-wide and only answers "does this folder exist on THIS account"; clear-history and the exclusion query are account-scoped; `getActiveBackgroundScan` stays any-account by design (F175 notice).
+  6. Silent failure -- FOUND 5, FIXED: five new `catch (_)` fallbacks now log at warning (ExportDirectories x2, Gmail date, folder listing, platform-id read). None was destructive; each falls back conservatively.
+- **5.1.5 WinWright sweep**: see the record below the build.
+
 ## Phase 3.6.1 Architecture Impact Check
 
 - **ARCHITECTURE.md** -- updates REQUIRED (included in each card's DoD, done before Manual Validation

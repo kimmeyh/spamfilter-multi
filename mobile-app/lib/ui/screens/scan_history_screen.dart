@@ -222,9 +222,14 @@ class _ScanHistoryScreenState extends State<ScanHistoryScreen> {
   /// rows, so they reset with them. A scan still in progress is kept (its row
   /// is the live-scan signal) and the dialog says so.
   Future<void> _confirmClearHistory() async {
-    final finished =
-        _filteredScans.where((s) => s.status != 'in_progress').length;
-    final running = _filteredScans.length - finished;
+    // Review M-3: count in the STORE -- the list here is capped at 500 rows.
+    final finished = await _scanResultStore.countFinishedScanResults(
+      accountId: _accountFilter == 'all' ? null : _accountFilter,
+      scanType: _typeFilter == 'all' ? null : _typeFilter,
+    );
+    if (!mounted) return;
+    final running =
+        _filteredScans.where((s) => s.status == 'in_progress').length;
     final scope = _accountFilter == 'all' ? 'all accounts' : _accountFilter;
     final type = _typeFilter == 'all' ? 'all scan types' : '$_typeFilter scans';
     if (finished == 0) {

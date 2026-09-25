@@ -81,7 +81,7 @@ class SettingsStore {
   static const List<String> defaultBackgroundScanFolders = ['INBOX'];
   /// F202: overall default Safe Senders folder when no account or provider value.
   static const String defaultSafeSenderFolder = 'INBOX';
-  static const String? defaultCsvExportDirectory = null; // null means use Downloads folder
+  static const String? defaultCsvExportDirectory = null; // null = platform default (ExportDirectories: Android Documents, Windows Downloads)
   // F113 (Sprint 47): debug-CSV defaults ON for new users (Harold: new users
   // are the most likely to need diagnostics; the files are tiny).
   static const bool defaultBackgroundScanDebugCsv = true;
@@ -182,10 +182,18 @@ class SettingsStore {
           whereArgs: [accountId],
           limit: 1);
       if (rows.isNotEmpty) platformId = rows.first['platform_id'] as String?;
-    } catch (_) {
-      platformId = null; // fall back to the heuristic
+    } catch (e) {
+      // Not destructive: the heuristic below still resolves most accounts.
+      _logger.w('F202: could not read platform_id for folder defaults; '
+          'using the accountId heuristic: $e');
+      platformId = null;
     }
-    platformId ??= inferPlatformId(accountId);
+    // Review M-1: _ensureAccountRow stores 'unknown' when no platform was
+    // passed; treat that (and empty) as absent, or an AOL account loses its
+    // provider defaults.
+    if (platformId == null || platformId.isEmpty || platformId == 'unknown') {
+      platformId = inferPlatformId(accountId);
+    }
     return platformId == null ? null : providerFolderDefaults[platformId];
   }
 

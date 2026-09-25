@@ -355,15 +355,19 @@ shared `scan_results` row:
 - The scanning isolate refreshes `scan_results.last_heartbeat_at` every 30
   seconds (DB v9).
 - Before opening any connection, `BackgroundScanCore.scanAccount` checks for a
-  live INTERACTIVE row (manual, reprocess, demo) on the same account --
+  live INTERACTIVE row (manual, demo) on the same account --
   `in_progress` with a heartbeat inside 5 minutes -- and SKIPS the account if
   one exists. The background side yields because the user is the one waiting.
 - The manual-scan notice counts a background row only with a fresh heartbeat,
   so a dead scan stops blocking within minutes rather than 30.
 - Same code on both platforms (ADR-0042, no exception).
 
-**Accepted limits.** A background scan that starts in the same instant as a
-manual scan can still overlap (check-then-act, no lock); the window is the few
-milliseconds before the manual row is written. A query failure fails OPEN (the
+**Accepted limits, and two gaps found by the Sprint 74 PR review.** The check
+is check-then-act, with no lock. Worse than the instant-overlap case first
+assumed: a manual scan writes its row only AFTER it has connected, so the
+window is the connect time (seconds), not milliseconds; and re-processing from
+Scan Results writes no `scan_results` row at all, so it is not covered. Closing
+both means creating the row before connecting and giving re-processing a row --
+an ordering change surfaced to Harold as a Class-2 decision. A query failure fails OPEN (the
 background scan runs), so a database error cannot stop background scanning
 permanently.

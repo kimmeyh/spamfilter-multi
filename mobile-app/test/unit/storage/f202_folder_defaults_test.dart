@@ -105,6 +105,16 @@ void main() {
     });
   });
 
+  group('review M-1 -- a stored "unknown" platform falls back to the heuristic',
+      () {
+    test('an AOL address stored as unknown still gets AOL defaults', () async {
+      await testHelper.createTestAccount('u@aol.com',
+          email: 'u@aol.com', platformId: 'unknown');
+      expect(await store.getEffectiveFolders('u@aol.com'),
+          ['Inbox', 'Bulk', 'Bulk Mail']);
+    });
+  });
+
   group('R-5 -- the stored platform id beats the accountId heuristic', () {
     test('a bare Gmail address added over IMAP resolves as gmail-imap',
         () async {

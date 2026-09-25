@@ -469,9 +469,13 @@ class _SettingsScreenState extends State<SettingsScreen> with SingleTickerProvid
       // F113 (Sprint 47): when the account has no folder selection, default to
       // the provider-specific folder set (AOL: Inbox/Bulk/Bulk Mail; Gmail:
       // INBOX/[Gmail]/Spam/Unwanted) instead of the generic global default.
+      // F202 (Sprint 74, review I-4): show EXACTLY what the scan will use --
+      // the same resolver, so the stored platform id (gmail vs gmail-imap)
+      // and the overall tier apply here too. The sync accountId heuristic
+      // could show one Gmail folder list while the scan used the other.
       final accountManualFolders = await _settingsStore.getAccountManualScanFolders(accountId);
       _manualScanFolders = accountManualFolders ??
-          SettingsStore.providerDefaultFolders(accountId);
+          await _settingsStore.getEffectiveFolders(accountId);
 
       _confirmDialogsEnabled = await _settingsStore.getConfirmDialogsEnabled();
       // F98 (ADR-0039): the Background tab is account-scoped -- load the
@@ -487,7 +491,7 @@ class _SettingsScreenState extends State<SettingsScreen> with SingleTickerProvid
       // F113 (Sprint 47): provider-specific folder default for background too.
       final accountBgFolders = await _settingsStore.getAccountBackgroundScanFolders(accountId);
       _backgroundScanFolders = accountBgFolders ??
-          SettingsStore.providerDefaultFolders(accountId);
+          await _settingsStore.getEffectiveFolders(accountId, isBackground: true);
 
       _backgroundScanDebugCsv = await _settingsStore.getBackgroundScanDebugCsv();
       _liveScanDebugCsv = await _settingsStore.getLiveScanDebugCsv();

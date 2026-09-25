@@ -76,6 +76,22 @@ void main() {
     // is now the ONE place that decision is made. This pins that no screen
     // re-inlines it. SOURCE-TEXT VERIFIED: it proves the local copy is gone,
     // not that the default folder is writable on a device (Manual Validation).
+    // Review I-1 (Sprint 74): the BRANCH logic is tested through
+    // BackgroundScanCore.completeAccount; this pins the WIRING -- each worker
+    // really hands the shared export in. The Android call is the F206 fix:
+    // before it, the background export existed only in the Windows worker.
+    test('both background workers run the shared BackgroundScanExport', () {
+      String code(String f) => File(f)
+          .readAsLinesSync()
+          .where((l) => !l.trimLeft().startsWith('//'))
+          .join('\n');
+      final android = code('lib/core/services/android_background_scan_worker.dart');
+      final windows = code('lib/core/services/background_scan_windows_worker.dart');
+      expect(android.contains('BackgroundScanCore.completeAccount('), isTrue);
+      expect(android.contains('BackgroundScanExport.exportIfEnabled('), isTrue);
+      expect(windows.contains('BackgroundScanExport.exportIfEnabled('), isTrue);
+    });
+
     test('export screens resolve their folder through ExportDirectories, '
         'with no local platform-default logic', () {
       const screens = [

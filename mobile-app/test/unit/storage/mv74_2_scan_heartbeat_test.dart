@@ -239,6 +239,33 @@ void main() {
       expect(q.debugHeartbeatActive, isFalse);
     });
 
+    test('review C-2: the timer really WRITES -- the row\'s heartbeat is set '
+        'and moves forward', () async {
+      EmailScanProvider.debugHeartbeatIntervalOverride =
+          const Duration(milliseconds: 40);
+      addTearDown(() => EmailScanProvider.debugHeartbeatIntervalOverride = null);
+      final p = await startPersisted();
+      final db = await testHelper.dbHelper.database;
+      Future<int?> beat() async => (await db.query('scan_results',
+              where: 'account_id = ? AND status = ?',
+              whereArgs: ['acct-a', 'in_progress']))
+          .single['last_heartbeat_at'] as int?;
+      await Future<void>.delayed(const Duration(milliseconds: 150));
+      final first = await beat();
+      expect(first, isNotNull, reason: 'no write reached the row');
+      await Future<void>.delayed(const Duration(milliseconds: 150));
+      expect(await beat(), greaterThanOrEqualTo(first!));
+      await p.completeScan();
+    });
+
+    test('the heartbeat interval stays well inside the freshness window', () {
+      expect(ScanCoordinator.heartbeatInterval * 3,
+          lessThan(ScanCoordinator.heartbeatFreshness),
+          reason: 'a live scan must beat several times per freshness window, '
+              'or it reads as dead and loses both the notice and the '
+              'exclusion');
+    });
+
     test('a UI-only scan (persist: false) runs no heartbeat', () async {
       final provider = EmailScanProvider();
       provider.initializePersistence(
@@ -248,6 +275,32 @@ void main() {
       provider.setCurrentAccountId('acct-a');
       await provider.startScan(totalEmails: 5, persist: false);
       expect(provider.debugHeartbeatActive, isFalse);
+    });
+  });
+
+  group('review I-1 -- what a worker does after an account scan', () {
+    test('a SKIP exports nothing and notifies nothing', () async {
+      final calls = <String>[];
+      await BackgroundScanCore.completeAccount(
+        AccountScanOutcome.skipped('a manual scan is in progress',
+            EmailScanProvider()),
+        export: () async => calls.add('export'),
+        notify: () async => calls.add('notify'),
+      );
+      expect(calls, isEmpty);
+    });
+
+    test('a real scan EXPORTS (the F206 Android fix) and then notifies',
+        () async {
+      final calls = <String>[];
+      await BackgroundScanCore.completeAccount(
+        AccountScanOutcome(
+          emailsProcessed: 3, deletedCount: 0, movedCount: 0, safeCount: 0,
+          unmatchedCount: 3, errorCount: 0, scanProvider: EmailScanProvider()),
+        export: () async => calls.add('export'),
+        notify: () async => calls.add('notify'),
+      );
+      expect(calls, ['export', 'notify']);
     });
   });
 

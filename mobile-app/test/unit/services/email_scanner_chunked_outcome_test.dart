@@ -100,6 +100,19 @@ class _UnlistableFolderMockProvider extends _FailingFolderMockProvider {
       throw Exception('simulated listing failure');
 }
 
+/// F202 (review, item d): records the Deleted Rule folder the SCANNER hands
+/// the adapter, so the Gmail API vs gmail-imap split is proven at the
+/// scanner/adapter boundary, not only inside SettingsStore.
+class _RecordingFolderMockProvider extends MockEmailProvider {
+  static final List<String?> deletedRuleFolders = [];
+
+  @override
+  void setDeletedRuleFolder(String? folderName) {
+    deletedRuleFolders.add(folderName);
+    super.setDeletedRuleFolder(folderName);
+  }
+}
+
 /// Demo-compatible provider serving messages with bodies far LARGER than
 /// the retention cap -- the demo mock set's own bodies are all under 100
 /// chars (probed at authoring: max 92), so it can never exercise the
@@ -283,6 +296,43 @@ void main() {
     expect(scanProvider.status, isNot(ScanStatus.error),
         reason: 'a per-folder failure degrades, not aborts -- unchanged '
             'behavior, now visible');
+  });
+
+  Future<String?> deletedFolderHandedToAdapter(String storedPlatform) async {
+    _RecordingFolderMockProvider.deletedRuleFolders.clear();
+    await db.insertAccount({
+      'account_id': 'demo@example.com',
+      'platform_id': storedPlatform,
+      'email': 'demo@example.com',
+      'display_name': 'Test',
+      'date_added': DateTime.now().millisecondsSinceEpoch,
+    });
+    final previous = PlatformRegistry.overrideFactoryForTest(
+        'demo', () => _RecordingFolderMockProvider());
+    addTearDown(() => PlatformRegistry.overrideFactoryForTest('demo', previous));
+    await EmailScanner(
+      platformId: 'demo',
+      accountId: 'demo@example.com',
+      ruleSetProvider: RuleSetProvider(),
+      scanProvider: EmailScanProvider()..initializeScanMode(mode: ScanMode.readOnly),
+    ).scanInbox(daysBack: 0, folderNames: ['INBOX']);
+    return _RecordingFolderMockProvider.deletedRuleFolders.first;
+  }
+
+  test('F202 boundary: a Gmail API account hands the adapter NULL, so the '
+      'adapter uses its built-in trash (an IMAP name there fails every delete)',
+      () async {
+    expect(await deletedFolderHandedToAdapter('gmail'), isNull);
+  });
+
+  test('F202 boundary: a gmail-imap account hands the adapter [Gmail]/Trash',
+      () async {
+    expect(await deletedFolderHandedToAdapter('gmail-imap'), '[Gmail]/Trash');
+  });
+
+  test('F202 boundary: an iCloud account hands the adapter "Deleted Messages"',
+      () async {
+    expect(await deletedFolderHandedToAdapter('icloud'), 'Deleted Messages');
   });
 
   Future<EmailScanProvider> scanWith(MockEmailProvider Function() make) async {

@@ -22,6 +22,7 @@ library;
 import 'dart:io';
 
 import 'package:flutter/foundation.dart' show visibleForTesting;
+import 'package:logger/logger.dart';
 import 'package:path/path.dart' as path;
 import 'package:path_provider/path_provider.dart';
 
@@ -29,6 +30,8 @@ import '../storage/settings_store.dart';
 
 class ExportDirectories {
   ExportDirectories._();
+
+  static final Logger _logger = Logger();
 
   static String? _defaultOverride;
 
@@ -63,8 +66,9 @@ class ExportDirectories {
       try {
         final downloads = await getDownloadsDirectory();
         if (downloads != null) return downloads.path;
-      } catch (_) {
-        // Fall through to the literal path.
+      } catch (e) {
+        _logger.w('Downloads known folder unavailable; using '
+            '%USERPROFILE%\\Downloads: $e');
       }
       final profile = Platform.environment['USERPROFILE'];
       return (profile == null || profile.isEmpty)
@@ -104,19 +108,72 @@ class ExportDirectories {
     String? base;
     try {
       base = await (settingsStore ?? SettingsStore()).getCsvExportDirectory();
-    } catch (_) {
-      // A settings read must never be the reason an export fails.
+    } catch (e) {
+      // A settings read must never be the reason an export fails -- but a
+      // silently ignored user folder is worth a line in the log.
+      _logger.w('Could not read the export folder setting; using the '
+          'platform default: $e');
       base = null;
     }
-    if (base == null || base.isEmpty) {
+    final usedDefault = base == null || base.isEmpty;
+    if (usedDefault) {
       base = await platformDefault();
     }
     if (base == null || base.isEmpty) {
       throw const FileSystemException('No export folder is available');
     }
     final dir = subfolder == null ? base : path.join(base, subfolder);
+    if (usedDefault && !await _writable(dir)) {
+      // Review I-4: the public default can be unwritable -- Android 7-10
+      // (API 24-29) need a storage permission this app does not request, and
+      // Android 11+ can refuse a folder left by an earlier install. Fall back
+      // to the app's OWN folder, which is always writable (and on Android
+      // still reachable over MTP), rather than failing every export.
+      final fallbackBase = await _appOwnFolder();
+      _logger.w('Default export folder "$dir" is not writable; using '
+          '"$fallbackBase" instead');
+      final fb = subfolder == null ? fallbackBase : path.join(fallbackBase, subfolder);
+      await Directory(fb).create(recursive: true);
+      return fb;
+    }
     final d = Directory(dir);
     if (!await d.exists()) await d.create(recursive: true);
     return dir;
+  }
+
+  /// Test seam: force the writability probe's answer.
+  @visibleForTesting
+  static bool? debugWritableOverride;
+
+  /// Test seam: the fallback folder used when the default is unwritable.
+  @visibleForTesting
+  static String? debugAppOwnFolderOverride;
+
+  /// Creates [dir] and writes/deletes a probe file. False on any failure.
+  static Future<bool> _writable(String dir) async {
+    final forced = debugWritableOverride;
+    if (forced != null) return forced;
+    try {
+      await Directory(dir).create(recursive: true);
+      final probe = File(path.join(dir, '.write_probe'));
+      await probe.writeAsString('ok');
+      await probe.delete();
+      return true;
+    } catch (e) {
+      _logger.w('Export folder probe failed for "$dir": $e');
+      return false;
+    }
+  }
+
+  /// The app's own, always-writable folder: app external storage on Android,
+  /// app documents elsewhere.
+  static Future<String> _appOwnFolder() async {
+    final forced = debugAppOwnFolderOverride;
+    if (forced != null) return forced;
+    if (Platform.isAndroid) {
+      final ext = await getExternalStorageDirectory();
+      if (ext != null) return ext.path;
+    }
+    return (await getApplicationDocumentsDirectory()).path;
   }
 }

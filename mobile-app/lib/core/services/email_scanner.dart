@@ -1080,7 +1080,9 @@ class EmailScanner {
   ) async {
     try {
       if (cache.isEmpty) cache.add(await platform.listFolders());
-    } catch (_) {
+    } catch (e) {
+      AppLogger.warning('F202: could not list folders to classify a failed '
+          'fetch of "$folderName"; counting it as an error: $e');
       return false;
     }
     final wanted = folderName.toLowerCase();

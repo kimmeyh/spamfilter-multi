@@ -60,10 +60,16 @@ class ScanSheetExport {
     required String sheetName,
     required String headerColor,
     required List<List<String>> newRows,
+    bool redacted = false,
   }) async {
     final dateStr = DateTime.now().toIso8601String().split('T')[0];
     final devSuffix = AppEnvironment.isDev ? '_dev' : '';
-    final base = '${filePrefix}_${accountToken}_$dateStr$devSuffix';
+    // Review I-2a: the daily file ACCUMULATES rows and the workbook is rebuilt
+    // from all of them, so switching redaction on mid-day would otherwise
+    // produce a "redacted" file still holding the morning's unredacted rows.
+    final redactSuffix = redacted ? '_redacted' : '';
+    final base =
+        '${filePrefix}_${accountToken}_$dateStr$devSuffix$redactSuffix';
     final xlsxPath = path.join(dir, '$base.xlsx');
     final dataFile = File(path.join(dir, '$base.data.csv'));
 
@@ -142,6 +148,7 @@ class BackgroundScanExport {
         sheetName: 'Background Scan',
         headerColor: '#D9E2F3',
         newRows: scanProvider.getExcelRows(redact: redact),
+        redacted: redact,
       );
       await log('Background scan export written (${result.addedRows} new '
           'rows, ${result.totalRows} total${redact ? ', redacted' : ''})');

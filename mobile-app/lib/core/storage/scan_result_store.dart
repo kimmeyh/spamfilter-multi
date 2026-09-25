@@ -579,8 +579,11 @@ class ScanResultStore {
 
   /// MV74-2 (Sprint 74, Harold Q3 -- ADR-0039 amendment): the LIVE
   /// interactive scan on [accountId], if any -- any `in_progress` row whose
-  /// scan_type is NOT `background` (manual, reprocess, demo) with a fresh
-  /// heartbeat. A background scan calls this before opening an IMAP session
+  /// scan_type is NOT `background` with a fresh heartbeat. **Known gaps (PR
+  /// review, Sprint 74; a Class-2 fix awaits Harold):** (1) a manual scan
+  /// writes its row only AFTER it connects, so a background check landing in
+  /// those seconds sees nothing; (2) re-processing from Scan Results writes no
+  /// `scan_results` row at all, so it is not covered. A background scan calls this before opening an IMAP session
   /// and SKIPS the account when it returns non-null, so two sessions never
   /// open on one account from different isolates or processes (the Sprint 61
   /// per-account session-cap failure). Same freshness rule as
@@ -682,6 +685,26 @@ class ScanResultStore {
   /// both read (MV74-2); deleting it mid-scan would let a background scan open
   /// a second session on the account. Children cascade (email_actions,
   /// unmatched_emails). Returns the number of scans deleted.
+  /// Review M-3: the number [deleteFinishedScanResults] would delete, so the
+  /// confirmation dialog states the real count (the history list it used to
+  /// count from is capped at 500 rows; the delete is not).
+  Future<int> countFinishedScanResults({String? accountId, String? scanType}) async {
+    final db = await _databaseHelper.database;
+    final where = <String>['status != ?'];
+    final args = <Object>['in_progress'];
+    if (accountId != null) {
+      where.add('account_id = ?');
+      args.add(accountId);
+    }
+    if (scanType != null) {
+      where.add('scan_type = ?');
+      args.add(scanType);
+    }
+    final rows = await db.rawQuery(
+        'SELECT COUNT(*) AS c FROM scan_results WHERE ${where.join(' AND ')}', args);
+    return (rows.first['c'] as int?) ?? 0;
+  }
+
   Future<int> deleteFinishedScanResults({
     String? accountId,
     String? scanType,

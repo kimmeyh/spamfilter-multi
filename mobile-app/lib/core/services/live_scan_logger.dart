@@ -11,10 +11,10 @@ import 'scan_sheet_export.dart';
 import '../../util/redact.dart';
 
 /// F90 (Sprint 39, 2026-05-23): live-scan logging parity with background-scan
-/// logs. Mirrors `BackgroundScanWindowsWorker._bgLog` and
-/// `_exportDebugCsvIfEnabled` so live scans produce the same dual-log
-/// artifacts (runtime log file + per-account per-day CSV/XLSX) that
-/// background scans already produce.
+/// logs. Mirrors `BackgroundScanWindowsWorker._bgLog`, and shares the
+/// per-scan CSV/XLSX export with background scans through `ScanSheetExport`
+/// (F206, Sprint 74), so live scans produce the same dual-log artifacts
+/// (runtime log file + per-account per-day CSV/XLSX).
 ///
 /// Sourced from 2026-05-23 debug session where a safe-sender re-injection
 /// pattern (F91) had to be reverse-engineered from the `email_actions`
@@ -22,8 +22,13 @@ import '../../util/redact.dart';
 ///
 /// File layout (mirrors background-scan with `live_scan_` prefix):
 ///   - Runtime log:    `{logs}/{prefix}live_scan_v<version>.log`
-///   - Per-account CSV: `{logs}/live_scan_{safe_email}_{date}{_dev}.data.csv`
-///   - Per-account XLSX: `{logs}/live_scan_{safe_email}_{date}{_dev}.xlsx`
+///   - Per-account CSV: `{export}/scan_exports/live_scan_{safe_email}_{date}{_dev}.data.csv`
+///   - Per-account XLSX: `{export}/scan_exports/live_scan_{safe_email}_{date}{_dev}.xlsx`
+///
+/// `{export}` is the Settings > General folder, else the platform default
+/// (Android Documents, Windows Downloads) -- see `ExportDirectories`. The
+/// exports moved out of `{logs}` in F206: on Android that folder is
+/// app-private and the user could not retrieve them.
 ///
 /// `{prefix}` is `dev_` in dev builds and empty in prod (per
 /// `AppEnvironment.logPrefix`). `{_dev}` is `_dev` in dev and empty in
@@ -74,8 +79,8 @@ class LiveScanLogger {
   /// Export the live scan's per-message rows to a per-account per-day
   /// CSV (always) and XLSX (regenerated from the CSV on every call).
   /// Gated by the `live_scan_debug_csv` app setting (default false) so
-  /// users who do not want the artifacts can opt out. Mirrors
-  /// `BackgroundScanWindowsWorker._exportDebugCsvIfEnabled`.
+  /// users who do not want the artifacts can opt out. Shares its body with
+  /// the background-scan export (`ScanSheetExport`, F206).
   ///
   /// Returns the number of rows appended this call (0 if disabled,
   /// excluded by an error, or `scanProvider.getExcelRows()` was empty
@@ -105,6 +110,7 @@ class LiveScanLogger {
         sheetName: 'Live Scan',
         headerColor: '#E2F3D9',
         newRows: scanProvider.getExcelRows(redact: redact),
+        redacted: redact,
       );
       await log(
         'Debug CSV exported for ${Redact.accountId(accountId)} '

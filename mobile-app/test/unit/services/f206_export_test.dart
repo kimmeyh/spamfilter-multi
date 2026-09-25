@@ -21,7 +21,9 @@ import 'package:path/path.dart' as p;
 import 'package:my_email_spam_filter/core/models/email_message.dart';
 import 'package:my_email_spam_filter/core/models/evaluation_result.dart';
 import 'package:my_email_spam_filter/core/providers/email_scan_provider.dart';
+import 'package:my_email_spam_filter/core/services/app_environment.dart';
 import 'package:my_email_spam_filter/core/services/diagnostic_logger.dart';
+import 'package:my_email_spam_filter/core/services/scan_sheet_export.dart';
 import 'package:my_email_spam_filter/core/services/export_directories.dart';
 import 'package:my_email_spam_filter/core/storage/scan_result_store.dart';
 import 'package:my_email_spam_filter/core/storage/settings_store.dart';
@@ -86,6 +88,20 @@ void main() {
       expect(await Directory(dir).exists(), isTrue);
     });
 
+    test('review I-4: an UNWRITABLE default falls back to the app\'s own '
+        'folder instead of failing every export', () async {
+      ExportDirectories.debugWritableOverride = false;
+      ExportDirectories.debugAppOwnFolderOverride = p.join(tmp.path, 'own');
+      addTearDown(() {
+        ExportDirectories.debugWritableOverride = null;
+        ExportDirectories.debugAppOwnFolderOverride = null;
+      });
+      final dir = await ExportDirectories.resolve(
+          subfolder: 'scan_exports',
+          settingsStore: SettingsStore(testHelper.dbHelper));
+      expect(dir, p.join(tmp.path, 'own', 'scan_exports'));
+    });
+
     test('a folder the user chose wins over the default', () async {
       final store = SettingsStore(testHelper.dbHelper);
       final chosen = p.join(tmp.path, 'chosen');
@@ -100,11 +116,18 @@ void main() {
       final store = SettingsStore(testHelper.dbHelper);
       final a = p.join(tmp.path, 'a');
       final b = p.join(tmp.path, 'b');
+      final sub = 'diagnostics${AppEnvironment.dataDirSuffix}';
       await store.setCsvExportDirectory(a);
-      expect(await DiagnosticLogger.resolveLogDir(), p.join(a, 'diagnostics'));
+      expect(await DiagnosticLogger.resolveLogDir(), p.join(a, sub));
       await store.setCsvExportDirectory(b);
-      expect(await DiagnosticLogger.resolveLogDir(), p.join(b, 'diagnostics'),
+      expect(await DiagnosticLogger.resolveLogDir(), p.join(b, sub),
           reason: 'the store setter must invalidate the logger cache');
+    });
+
+    test('review I-1: the diagnostics folder is environment-suffixed, so DEV '
+        'and PROD never share (and delete) each other\'s logs', () async {
+      final dir = await DiagnosticLogger.resolveLogDir();
+      expect(p.basename(dir), 'diagnostics${AppEnvironment.dataDirSuffix}');
     });
   });
 
@@ -140,12 +163,31 @@ void main() {
       final aBg = await row('a', 'background', 'interrupted');
       final aLive = await row('a', 'manual', 'in_progress');
       final bDone = await row('b', 'manual', 'completed');
+      expect(await store.countFinishedScanResults(accountId: 'a'), 2,
+          reason: 'review M-3: the dialog count comes from the store');
       final deleted = await store.deleteFinishedScanResults(accountId: 'a');
       expect(deleted, 2);
       final left = await remainingIds();
       expect(left, containsAll([aLive, bDone]));
       expect(left, isNot(contains(aDone)));
       expect(left, isNot(contains(aBg)));
+    });
+
+    test('child rows cascade with a cleared scan', () async {
+      final scan = await row('a', 'manual', 'completed');
+      await testHelper.dbHelper.insertEmailActionBatch([
+        {
+          'scan_result_id': scan, 'email_id': 'e1', 'email_from': 'x@y.com',
+          'email_subject': 's', 'email_received_date': 1,
+          'email_folder': 'INBOX', 'action_type': 'none',
+          'matched_rule_name': null, 'matched_pattern': null,
+          'is_safe_sender': 0, 'success': 1,
+        },
+      ]);
+      await store.deleteFinishedScanResults(accountId: 'a');
+      final db = await testHelper.dbHelper.database;
+      expect(await db.query('email_actions', where: 'scan_result_id = ?',
+          whereArgs: [scan]), isEmpty);
     });
 
     test('scoped to a scan type', () async {
@@ -194,6 +236,51 @@ void main() {
       expect(row, contains('w***@spammy.com'));
       expect(row.join('|'), isNot(contains('Your prize')));
       expect(row.join('|'), isNot(contains('231203')));
+    });
+
+    test('review I-3: an exact-sender RULE PATTERN does not leak the address',
+        () {
+      final provider = EmailScanProvider()
+        ..initializeScanMode(mode: ScanMode.readOnly);
+      provider.recordResult(EmailActionResult(
+        email: EmailMessage(
+          id: '1', from: 'john.smith@example.com', subject: 's', body: '',
+          headers: const {}, receivedDate: DateTime(2026, 9, 25),
+          folderName: 'INBOX'),
+        evaluationResult: EvaluationResult(
+          shouldDelete: false, shouldMove: false,
+          matchedRule: 'Safe: john.smith@example.com',
+          matchedPattern: r'^john\.smith@example\.com$'),
+        action: EmailActionType.safeSender,
+        success: true,
+      ));
+      final csv = provider.exportResultsToCSV(redact: true);
+      final row = provider.getExcelRows(redact: true).single.join('|');
+      for (final out in [csv, row]) {
+        expect(out, isNot(contains('john.smith')));
+        expect(out, isNot(contains(r'john\.smith')));
+        expect(out, contains('example'));
+      }
+    });
+
+    test('review I-2: the background export FILE is redacted, and redacted '
+        'rows never share a daily file with unredacted ones', () async {
+      final dir = p.join(tmp.path, 'sheets');
+      await Directory(dir).create(recursive: true);
+      final provider = providerWith('winner@spammy.com');
+      final plain = await ScanSheetExport.appendAndWrite(
+          dir: dir, filePrefix: 'background_scan', accountToken: 'acct',
+          sheetName: 'S', headerColor: '#FFFFFF',
+          newRows: provider.getExcelRows());
+      final red = await ScanSheetExport.appendAndWrite(
+          dir: dir, filePrefix: 'background_scan', accountToken: 'acct',
+          sheetName: 'S', headerColor: '#FFFFFF',
+          newRows: provider.getExcelRows(redact: true), redacted: true);
+      expect(red.xlsxPath, isNot(plain.xlsxPath));
+      final redCsv = File(red.xlsxPath.replaceAll('.xlsx', '.data.csv'))
+          .readAsStringSync();
+      expect(redCsv, isNot(contains('winner@')));
+      expect(redCsv, isNot(contains('Your prize')));
     });
 
     test('off by default -- an unredacted export is unchanged', () {
