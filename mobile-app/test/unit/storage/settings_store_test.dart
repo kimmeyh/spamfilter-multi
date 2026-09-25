@@ -182,15 +182,15 @@ void main() {
       expect(effective, ScanMode.safeSendersAndRules);
     });
 
-    test('getEffectiveFolders uses provider default when no account override '
-        '(F113)', () async {
-      // F113 (Sprint 47): with an accountId and no per-account override, the
-      // effective folders are the provider-specific default, NOT the global
-      // setting. accountId 'test-account-123' has an unknown provider prefix
-      // ('test'), so it falls back to the generic INBOX default.
+    test('getEffectiveFolders: unknown provider -> the OVERALL default '
+        '(F202)', () async {
+      // F202 (Sprint 74): 'test-account-123' has no provider defaults, so it
+      // falls through to the OVERALL (app-wide) folders. Before F202 this
+      // tier was unreachable for any real account and the answer was a
+      // hardcoded INBOX -- the change is the point of the card.
       await settingsStore.setManualScanFolders(['Global1', 'Global2']);
       final effective = await settingsStore.getEffectiveFolders(accountId);
-      expect(effective, ['INBOX']);
+      expect(effective, ['Global1', 'Global2']);
     });
 
     test('getEffectiveFolders uses account override when set', () async {
@@ -377,16 +377,35 @@ void main() {
       );
     });
 
-    test('Gmail accountId -> INBOX/[Gmail]/Spam/Unwanted', () {
+    // F202 (Sprint 74): Gmail defaults are keyed by ADAPTER. A `gmail-` id is
+    // the Gmail API adapter, which scans LABELS -- `[Gmail]/Spam` there became
+    // `label:[Gmail]/Spam`, an IMAP name the API does not know. The IMAP names
+    // Harold confirmed stay on `gmail-imap`.
+    test('Gmail API accountId -> INBOX/SPAM/Unwanted (labels)', () {
       expect(
         SettingsStore.providerDefaultFolders('gmail-kimmeyh@gmail.com'),
+        ['INBOX', 'SPAM', 'Unwanted'],
+      );
+    });
+
+    test('Gmail over IMAP accountId -> INBOX/[Gmail]/Spam/Unwanted', () {
+      expect(
+        SettingsStore.providerDefaultFolders('gmail-imap-kimmeyh@gmail.com'),
         ['INBOX', '[Gmail]/Spam', 'Unwanted'],
       );
     });
 
-    test('unknown provider -> generic INBOX default', () {
+    test('Yahoo -> Inbox/Bulk (Harold-confirmed, F202; was unknown -> INBOX)',
+        () {
       expect(
         SettingsStore.providerDefaultFolders('yahoo-someone@yahoo.com'),
+        ['Inbox', 'Bulk'],
+      );
+    });
+
+    test('genuinely unknown provider -> generic INBOX default', () {
+      expect(
+        SettingsStore.providerDefaultFolders('custom-someone@example.org'),
         ['INBOX'],
       );
     });
@@ -397,14 +416,14 @@ void main() {
     test('dash in local-part still resolves by domain (Gmail)', () {
       expect(
         SettingsStore.providerDefaultFolders('gmail-john-doe@gmail.com'),
-        ['INBOX', '[Gmail]/Spam', 'Unwanted'],
+        ['INBOX', 'SPAM', 'Unwanted'],
       );
     });
 
     test('bare email accountId (no platform prefix) resolves by domain', () {
       expect(
         SettingsStore.providerDefaultFolders('john-doe@gmail.com'),
-        ['INBOX', '[Gmail]/Spam', 'Unwanted'],
+        ['INBOX', 'SPAM', 'Unwanted'],
       );
       expect(
         SettingsStore.providerDefaultFolders('jane-smith@aol.com'),
@@ -415,7 +434,7 @@ void main() {
     test('provider detection is case-insensitive', () {
       expect(
         SettingsStore.providerDefaultFolders('GMAIL-A@Gmail.COM'),
-        ['INBOX', '[Gmail]/Spam', 'Unwanted'],
+        ['INBOX', 'SPAM', 'Unwanted'],
       );
     });
 

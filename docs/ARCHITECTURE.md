@@ -379,6 +379,10 @@ SQLite database schema. See [ADR-0010](adr/0010-normalized-database-schema.md) f
 
 **Settings Inheritance** (ADR-0013): Three-tier fallback: account_settings -> app_settings -> hardcoded defaults.
 
+**Folder settings add a PROVIDER tier** (F202, Sprint 74; ADR-0013 amendment): the four folder settings -- Manual Scan folders, Background Scan folders, Safe Senders folder, Deleted Rule folder -- resolve account override -> provider default -> overall default, via `SettingsStore.getEffectiveFolders`, `getEffectiveSafeSenderFolder` and `getEffectiveDeletedRuleFolder`. Provider defaults live in `SettingsStore.providerFolderDefaults`, keyed by the account's stored PLATFORM id (not the brand), because `gmail` (API, labels: `SPAM`; Deleted Rule left to the adapter's trash) and `gmail-imap` (IMAP names: `[Gmail]/Spam`, `[Gmail]/Trash`) speak different folder vocabularies. Every value is Harold-confirmed; an unconfirmed value is absent and falls through. A null Deleted Rule result means "the adapter's own default". The scan and re-process call sites are pinned to the resolvers by `test/policy/f202_folder_resolver_gate_test.dart`.
+
+**Missing folder vs failed folder** (F202 R-6, refining F174): when a folder fetch throws, the scanner lists the account's folders once; a folder ABSENT from that list is skipped and logged as not-an-error (a provider default can name a folder some accounts lack), while a folder that exists and failed still increments `errorCount` (F174). If the listing itself fails, the error is counted.
+
 #### Store Classes
 
 | Store | Purpose |

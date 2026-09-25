@@ -199,8 +199,10 @@ class EmailScanner {
         }
       }
 
-      // 2.5. Configure deleted rule folder from account settings
-      final deletedRuleFolder = await _settingsStore.getAccountDeletedRuleFolder(accountId);
+      // 2.5. Configure deleted rule folder. F202 (Sprint 74): account ->
+      // provider default; null still means "the adapter's own default".
+      final deletedRuleFolder =
+          await _settingsStore.getEffectiveDeletedRuleFolder(accountId);
       platform.setDeletedRuleFolder(deletedRuleFolder);
       if (isLiveScan) {
         await LiveScanLogger.log('Step 2.5: deletedRuleFolder=${deletedRuleFolder ?? "(default Trash)"}');
@@ -262,10 +264,12 @@ class EmailScanner {
       );
 
       final evaluatedEmails = <_EvaluatedEmail>[];
-      final safeSenderFolder = await _settingsStore.getAccountSafeSenderFolder(accountId);
+      // F202 (Sprint 74): account -> provider -> overall ('INBOX').
+      final safeSenderFolder =
+          await _settingsStore.getEffectiveSafeSenderFolder(accountId);
       // Normalize INBOX to uppercase for RFC 3501 compliance (INBOX is case-insensitive
       // per spec, but some IMAP servers may not handle mixed-case correctly)
-      final rawTarget = safeSenderFolder ?? 'INBOX';
+      final rawTarget = safeSenderFolder;
       final safeSenderTarget = rawTarget.toLowerCase() == 'inbox' ? 'INBOX' : rawTarget;
       AppLogger.scan('Safe sender target folder: "$safeSenderTarget" (raw: "$rawTarget")');
 
@@ -371,6 +375,9 @@ class EmailScanner {
       // (F177: fetched in m=20 batches, evaluated per batch -- see above)
       var totalFetched = 0;
       AppLogger.scan('Step 4: Starting folder-by-folder fetch. Total folders: ${folderNames.length}');
+      // F202 R-6: the account's folder list, fetched at most once per scan and
+      // only if a folder fetch fails.
+      final folderListCache = <List<FolderInfo>>[];
       for (final folderName in folderNames) {
         AppLogger.scan('Step 4: Fetching folder "$folderName" (daysBack=$daysBack)...');
         // [NEW] ISSUE #128: Report folder being fetched
@@ -506,6 +513,23 @@ class EmailScanner {
           // `finally` releases the lease and disconnects the session.
           rethrow;
         } catch (e, st) {
+          // F202 R-6 (Sprint 74, Harold's decision 3): a folder that simply
+          // does NOT EXIST on this account is not an error -- a provider
+          // default can name a folder some accounts lack (AOL "Bulk Mail", an
+          // iCloud junk folder not yet created). Decided HERE, only after a
+          // fetch has failed, so a successful fetch never pays for a folder
+          // listing, and a Gmail API label (which returns zero results
+          // rather than throwing) is never second-guessed. A folder that DOES
+          // exist and failed stays an F174 error below.
+          if (await _folderIsMissing(platform, folderName, folderListCache)) {
+            AppLogger.scan('Step 4: folder "$folderName" does not exist on '
+                'this account -- skipped, not an error (F202)');
+            if (isLiveScan) {
+              await LiveScanLogger.log('Step 4: folder "$folderName" does not '
+                  'exist -- skipped (F202)');
+            }
+            continue;
+          }
           AppLogger.error('Step 4: EXCEPTION fetching folder "$folderName"', error: e, stackTrace: st);
           if (isLiveScan) {
             await LiveScanLogger.log('Step 4: EXCEPTION fetching folder "$folderName": $e');
@@ -1045,6 +1069,25 @@ class EmailScanner {
       }
     }
   }
+  /// F202 R-6: true only when [folderName] is confidently ABSENT from the
+  /// account's folder list (matched case-insensitively on id or display
+  /// name). A listing failure answers false, so the fetch error is still
+  /// counted -- the conservative direction (F174 must not be undone).
+  static Future<bool> _folderIsMissing(
+    SpamFilterPlatform platform,
+    String folderName,
+    List<List<FolderInfo>> cache,
+  ) async {
+    try {
+      if (cache.isEmpty) cache.add(await platform.listFolders());
+    } catch (_) {
+      return false;
+    }
+    final wanted = folderName.toLowerCase();
+    return !cache.first.any((f) =>
+        f.id.toLowerCase() == wanted || f.displayName.toLowerCase() == wanted);
+  }
+
 
   /// F91 (Sprint 39): post-safe-sender-move source-folder dedup (AOL
   /// copy-not-move reconciliation).
@@ -1374,8 +1417,9 @@ class EmailScanner {
 
       await platform.loadCredentials(credentials);
 
-      // Configure deleted rule folder from account settings
-      final deletedRuleFolder = await _settingsStore.getAccountDeletedRuleFolder(accountId);
+      // Configure deleted rule folder (F202: account -> provider default)
+      final deletedRuleFolder =
+          await _settingsStore.getEffectiveDeletedRuleFolder(accountId);
       platform.setDeletedRuleFolder(deletedRuleFolder);
 
       // List all folders

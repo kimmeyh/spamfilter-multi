@@ -49,6 +49,17 @@ class _TestAppPaths extends AppPaths {
 class _FailingFolderMockProvider extends MockEmailProvider {
   static const String badFolder = 'BAD';
 
+  /// F202 R-6 (Sprint 74): 'BAD' EXISTS on this account and fails to fetch --
+  /// the case F174 protects. (A folder absent from the listing is now skipped
+  /// as missing, not counted; see _MissingFolderMockProvider.)
+  @override
+  Future<List<FolderInfo>> listFolders() async => [
+        ...await super.listFolders(),
+        const FolderInfo(
+            id: badFolder, displayName: badFolder,
+            canonicalName: CanonicalFolder.custom),
+      ];
+
   @override
   Future<List<EmailMessage>> fetchMessages({
     required int daysBack,
@@ -69,6 +80,24 @@ class _FailingFolderMockProvider extends MockEmailProvider {
       ),
     ];
   }
+}
+
+/// F202 R-6 (Sprint 74): a configured folder that does NOT EXIST on the
+/// account -- the fetch throws, and the listing does not contain it.
+class _MissingFolderMockProvider extends _FailingFolderMockProvider {
+  @override
+  Future<List<FolderInfo>> listFolders() async =>
+      (await super.listFolders())
+          .where((f) => f.id != _FailingFolderMockProvider.badFolder)
+          .toList();
+}
+
+/// F202 R-6: the fetch throws AND the folder listing itself fails -- the
+/// scanner cannot tell missing from failed, so it must count the error.
+class _UnlistableFolderMockProvider extends _FailingFolderMockProvider {
+  @override
+  Future<List<FolderInfo>> listFolders() async =>
+      throw Exception('simulated listing failure');
 }
 
 /// Demo-compatible provider serving messages with bodies far LARGER than
@@ -254,5 +283,39 @@ void main() {
     expect(scanProvider.status, isNot(ScanStatus.error),
         reason: 'a per-folder failure degrades, not aborts -- unchanged '
             'behavior, now visible');
+  });
+
+  Future<EmailScanProvider> scanWith(MockEmailProvider Function() make) async {
+    final previous = PlatformRegistry.overrideFactoryForTest('demo', make);
+    addTearDown(() => PlatformRegistry.overrideFactoryForTest('demo', previous));
+    final scanProvider = EmailScanProvider()
+      ..initializeScanMode(mode: ScanMode.readOnly);
+    await EmailScanner(
+      platformId: 'demo',
+      accountId: 'demo@example.com',
+      ruleSetProvider: RuleSetProvider(),
+      scanProvider: scanProvider,
+    ).scanInbox(
+      daysBack: 0,
+      folderNames: ['INBOX', _FailingFolderMockProvider.badFolder, 'Second'],
+    );
+    return scanProvider;
+  }
+
+  test(
+      'F202 R-6 (Harold decision 3): a configured folder that does NOT EXIST '
+      'is skipped, NOT counted as an error', () async {
+    final scanProvider = await scanWith(() => _MissingFolderMockProvider());
+    expect(scanProvider.errorCount, 0,
+        reason: 'a provider default can name a folder some accounts lack; '
+            'that must not produce a phantom error on every scan');
+    expect(scanProvider.totalEmails, 2);
+  });
+
+  test(
+      'F202 R-6: when the folder listing itself fails, the fetch error is '
+      'still counted (F174 is not undone)', () async {
+    final scanProvider = await scanWith(() => _UnlistableFolderMockProvider());
+    expect(scanProvider.errorCount, 1);
   });
 }

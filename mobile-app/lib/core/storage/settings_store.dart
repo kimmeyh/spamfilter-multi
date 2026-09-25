@@ -79,6 +79,8 @@ class SettingsStore {
   static const int defaultBackgroundScanFrequency = 15; // minutes
   static const ScanMode defaultBackgroundScanMode = ScanMode.readOnly;
   static const List<String> defaultBackgroundScanFolders = ['INBOX'];
+  /// F202: overall default Safe Senders folder when no account or provider value.
+  static const String defaultSafeSenderFolder = 'INBOX';
   static const String? defaultCsvExportDirectory = null; // null means use Downloads folder
   // F113 (Sprint 47): debug-CSV defaults ON for new users (Harold: new users
   // are the most likely to need diagnostics; the files are tiny).
@@ -101,32 +103,99 @@ class SettingsStore {
     'Unwanted',
   ];
 
-  /// Returns the provider-specific default scan folders for [accountId].
-  /// Falls back to `['INBOX']` for unknown providers. Used as the effective
-  /// default when an account has no per-account folder selection (F113).
+  /// F202 (Sprint 74): per-PROVIDER folder defaults for all four folder
+  /// settings, keyed by the platform id the account was added with (the
+  /// PlatformRegistry key). Harold's rule: *"the development team cannot
+  /// choose or override for the providers what they deem as the defaults"* --
+  /// so every value here is one HE confirmed from a live account, and an
+  /// unknown value is simply absent and falls through to the overall default.
   ///
-  /// AccountId format VARIES (`{platform}-{email}` e.g. `gmail-a@gmail.com`,
-  /// or a bare email `a@gmail.com`), so provider detection matches the whole
-  /// id case-insensitively rather than splitting on the first `-`. Splitting
-  /// on `-` mis-parsed local-parts that contain a dash (Copilot review:
-  /// `john-doe@gmail.com` -> prefix `john` -> wrong fallback to INBOX). The
-  /// email domain (`@gmail.com` / `@aol.com`) is the reliable signal and is
-  /// present in every id form, so we key off that plus the platform token.
-  static List<String> providerDefaultFolders(String accountId) {
+  /// **Keyed by platform, not provider brand, on purpose.** Gmail has two
+  /// adapters with different folder VOCABULARIES: `gmail-imap` speaks IMAP
+  /// folder names (`[Gmail]/Spam`, `[Gmail]/Trash`, as Harold confirmed), while
+  /// the `gmail` API adapter speaks LABELS -- it maps `spam` to `in:spam` and
+  /// passes any other name to `label:<name>`, and it treats a Deleted Rule
+  /// folder other than null/`TRASH` as a label ID for `messages.modify`. An
+  /// IMAP name there would move nothing, or fail every delete. So the API
+  /// entry uses `SPAM` and leaves Deleted Rule unset (the adapter's built-in
+  /// trash).
+  static const Map<String, ProviderFolderDefaults> providerFolderDefaults = {
+    'aol': ProviderFolderDefaults(
+      scanFolders: defaultAolScanFolders,
+      safeSenderFolder: 'Inbox',
+      deletedRuleFolder: 'Trash',
+    ),
+    'gmail-imap': ProviderFolderDefaults(
+      scanFolders: defaultGmailScanFolders,
+      safeSenderFolder: 'INBOX',
+      deletedRuleFolder: '[Gmail]/Trash',
+    ),
+    'gmail': ProviderFolderDefaults(
+      scanFolders: ['INBOX', 'SPAM', 'Unwanted'],
+      safeSenderFolder: 'INBOX',
+      // deletedRuleFolder deliberately unset: see the class comment.
+    ),
+    'yahoo': ProviderFolderDefaults(
+      scanFolders: ['Inbox', 'Bulk'],
+      safeSenderFolder: 'Inbox',
+      deletedRuleFolder: 'Trash',
+    ),
+    'icloud': ProviderFolderDefaults(
+      // Junk folder name not yet confirmed (iCloud creates it on first use):
+      // scan folders fall through to the overall default.
+      safeSenderFolder: 'INBOX',
+      deletedRuleFolder: 'Deleted Messages',
+    ),
+  };
+
+  /// Best-effort platform id from an accountId, for callers with no database
+  /// (the Settings display). AccountId format VARIES (`{platform}-{email}`,
+  /// or a bare email), so the platform token is checked first and the email
+  /// domain second. Splitting on the first `-` mis-parses a dashed local part
+  /// (Copilot review, Sprint 47). A bare Gmail address is taken as the API
+  /// adapter -- the default sign-in -- which is also the conservative choice
+  /// (its Deleted Rule default is the adapter's own trash).
+  static String? inferPlatformId(String accountId) {
     final id = accountId.toLowerCase();
-    // Gmail: `gmail-` platform prefix OR a gmail/googlemail address.
-    if (id.startsWith('gmail-') ||
-        id.contains('@gmail.') ||
-        id.contains('@googlemail.')) {
-      return List.from(defaultGmailScanFolders);
+    if (id.startsWith('gmail-imap-')) return 'gmail-imap';
+    for (final platform in const ['gmail', 'aol', 'yahoo', 'icloud', 'imap', 'demo']) {
+      if (id.startsWith('$platform-')) return platform;
     }
-    // AOL: `aol-`/`imap-...aol` platform prefix OR an aol/verizon address.
-    if (id.startsWith('aol-') ||
-        id.contains('@aol.') ||
-        id.contains('@verizon.')) {
-      return List.from(defaultAolScanFolders);
+    if (id.contains('@gmail.') || id.contains('@googlemail.')) return 'gmail';
+    if (id.contains('@aol.') || id.contains('@verizon.')) return 'aol';
+    if (id.contains('@yahoo.') || id.contains('@ymail.')) return 'yahoo';
+    if (id.contains('@icloud.') || id.contains('@me.com') || id.contains('@mac.com')) {
+      return 'icloud';
     }
-    return List.from(defaultManualScanFolders); // generic INBOX
+    return null;
+  }
+
+  /// The provider defaults for [accountId], preferring the platform id stored
+  /// when the account was added (R-5) over the string heuristic.
+  Future<ProviderFolderDefaults?> _providerDefaultsFor(String accountId) async {
+    String? platformId;
+    try {
+      final db = await _dbHelper.database;
+      final rows = await db.query('accounts',
+          columns: ['platform_id'],
+          where: 'account_id = ?',
+          whereArgs: [accountId],
+          limit: 1);
+      if (rows.isNotEmpty) platformId = rows.first['platform_id'] as String?;
+    } catch (_) {
+      platformId = null; // fall back to the heuristic
+    }
+    platformId ??= inferPlatformId(accountId);
+    return platformId == null ? null : providerFolderDefaults[platformId];
+  }
+
+  /// Sync display helper (Settings): the provider's default SCAN folders for
+  /// [accountId], else the overall default. Uses [inferPlatformId] because the
+  /// display has no database handle; scanning uses [getEffectiveFolders].
+  static List<String> providerDefaultFolders(String accountId) {
+    final platform = inferPlatformId(accountId);
+    final scan = platform == null ? null : providerFolderDefaults[platform]?.scanFolders;
+    return List.from(scan ?? defaultManualScanFolders);
   }
   /// F90 (Sprint 39): live-scan debug CSV export. F113 (Sprint 47) changed
   /// the default to `true` for both dev and prod -- new users are the most
@@ -587,6 +656,29 @@ class SettingsStore {
     return value;
   }
 
+  /// F202 (Sprint 74): the Safe Senders folder for [accountId], resolved
+  /// account -> provider -> overall (`INBOX`). Replaces the hardcoded
+  /// `?? 'INBOX'` fallbacks at the scan and re-process call sites.
+  Future<String> getEffectiveSafeSenderFolder(String accountId) async {
+    final account = await getAccountSafeSenderFolder(accountId);
+    if (account != null && account.isNotEmpty) return account;
+    final provider = await _providerDefaultsFor(accountId);
+    return provider?.safeSenderFolder ?? defaultSafeSenderFolder;
+  }
+
+  /// F202 (Sprint 74): the Deleted Rule folder for [accountId], resolved
+  /// account -> provider. **Null means "the adapter's own default"** (IMAP
+  /// `Trash`; the Gmail API's built-in trash) -- the overall default lives in
+  /// the adapters, because the right answer is vocabulary-specific (a folder
+  /// name vs a Gmail label id). iCloud now resolves to `Deleted Messages`
+  /// instead of a `Trash` folder that does not exist there.
+  Future<String?> getEffectiveDeletedRuleFolder(String accountId) async {
+    final account = await getAccountDeletedRuleFolder(accountId);
+    if (account != null && account.isNotEmpty) return account;
+    final provider = await _providerDefaultsFor(accountId);
+    return provider?.deletedRuleFolder;
+  }
+
   /// Set account-specific safe sender folder
   /// Pass null to clear the setting (will use INBOX default)
   Future<void> setAccountSafeSenderFolder(String accountId, String? folder) async {
@@ -785,12 +877,15 @@ class SettingsStore {
     return isBackground ? await getBackgroundScanMode() : await getManualScanMode();
   }
 
-  /// Get effective folders for an account (resolves override or uses global)
+  /// Get effective folders for an account.
   ///
-  /// Resolution order:
+  /// Resolution order (F202, Sprint 74 -- the same three tiers for all four
+  /// folder settings):
   /// 1. Account-specific background/manual scan folders override
   /// 2. Account-specific generic folders override
-  /// 3. App-wide background/manual scan folders default
+  /// 3. The PROVIDER default ([providerFolderDefaults]), if it defines one
+  /// 4. The OVERALL default: the app-wide background/manual scan folders.
+  ///    Before F202 this tier was unreachable for any real account.
   Future<List<String>> getEffectiveFolders(String? accountId, {bool isBackground = false}) async {
     if (accountId != null) {
       // Check background/manual-specific override first
@@ -804,11 +899,12 @@ class SettingsStore {
       // Fall back to generic account override
       final override = await getAccountFolders(accountId);
       if (override != null) return override;
-      // F113 (Sprint 47): no per-account selection -> provider-specific
-      // default (AOL/Gmail well-known folders) rather than the generic global
-      // INBOX-only default. This makes the folder default functional at
-      // SCAN time, not just in the settings display.
-      return providerDefaultFolders(accountId);
+      // F113 (Sprint 47) + F202 (Sprint 74): no per-account selection ->
+      // the provider default, keyed by the account's stored platform id.
+      final provider = await _providerDefaultsFor(accountId);
+      final scan = provider?.scanFolders;
+      if (scan != null) return List.from(scan);
+      // F202: then the OVERALL default (was unreachable for real accounts).
     }
     return isBackground ? await getBackgroundScanFolders() : await getManualScanFolders();
   }
@@ -957,4 +1053,19 @@ class SettingsStore {
     }
     return [];
   }
+}
+
+/// F202 (Sprint 74): one provider's folder defaults. A null field means
+/// "not confirmed for this provider" -- the resolver falls through to the
+/// overall default rather than guessing (Harold, 2026-09-09).
+class ProviderFolderDefaults {
+  final List<String>? scanFolders;
+  final String? safeSenderFolder;
+  final String? deletedRuleFolder;
+
+  const ProviderFolderDefaults({
+    this.scanFolders,
+    this.safeSenderFolder,
+    this.deletedRuleFolder,
+  });
 }

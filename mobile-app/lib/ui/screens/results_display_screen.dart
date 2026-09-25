@@ -3887,8 +3887,10 @@ class _ResultsDisplayScreenState extends State<ResultsDisplayScreen> {
 
       // Execute delete actions
       if (toDelete.isNotEmpty) {
+        // F202 (Sprint 74): account -> provider default, same resolver as
+        // the scanner. LIVE-DELETION PATH: this decides where real mail goes.
         final deletedRuleFolder =
-            await settingsStore.getAccountDeletedRuleFolder(widget.accountId);
+            await settingsStore.getEffectiveDeletedRuleFolder(widget.accountId);
         if (deletedRuleFolder != null) {
           platform.setDeletedRuleFolder(deletedRuleFolder);
         }
@@ -3948,9 +3950,9 @@ class _ResultsDisplayScreenState extends State<ResultsDisplayScreen> {
 
       // Execute safe sender move actions
       if (toMoveSafe.isNotEmpty) {
-        final safeSenderFolder =
-            await settingsStore.getAccountSafeSenderFolder(widget.accountId);
-        final targetFolder = safeSenderFolder ?? 'INBOX';
+        // F202 (Sprint 74): account -> provider -> overall, as in the scanner.
+        final targetFolder =
+            await settingsStore.getEffectiveSafeSenderFolder(widget.accountId);
 
         var moveFailedIds = <String>{};
         try {

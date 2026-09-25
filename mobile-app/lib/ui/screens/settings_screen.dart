@@ -123,6 +123,8 @@ class _SettingsScreenState extends State<SettingsScreen> with SingleTickerProvid
   // F43: Track current folder selections for display
   String? _safeSenderFolder;
   String? _deletedRuleFolder;
+  String? _safeSenderFolderDefault; // F202 (Sprint 74)
+  String? _deletedRuleFolderDefault; // F202 (Sprint 74)
   int _manualDaysBack = SettingsStore.defaultManualScanDaysBack;
   int _backgroundDaysBack = SettingsStore.defaultBackgroundScanDaysBack;
   int _scanHistoryRetentionDays = SettingsStore.defaultScanHistoryRetentionDays;
@@ -515,6 +517,14 @@ class _SettingsScreenState extends State<SettingsScreen> with SingleTickerProvid
       // F43: Load current folder selections for display
       _safeSenderFolder = await _settingsStore.getAccountSafeSenderFolder(accountId);
       _deletedRuleFolder = await _settingsStore.getAccountDeletedRuleFolder(accountId);
+      // F202 (Sprint 74): the RESOLVED defaults (provider, then overall), shown
+      // when the account has no override -- the rows used to say "INBOX
+      // (default)" / "Trash (default)" for every provider, which is wrong for
+      // iCloud (its deleted folder is "Deleted Messages").
+      _safeSenderFolderDefault =
+          await _settingsStore.getEffectiveSafeSenderFolder(accountId);
+      _deletedRuleFolderDefault =
+          await _settingsStore.getEffectiveDeletedRuleFolder(accountId);
 
       // [NEW] ISSUE #153: Load days-back settings (per-account with app-wide fallback)
       final accountManualDays = await _settingsStore.getAccountManualDaysBack(accountId);
@@ -1206,7 +1216,8 @@ class _SettingsScreenState extends State<SettingsScreen> with SingleTickerProvid
               leading: const Icon(Icons.folder_special_outlined),
               title: const Text('Safe Sender Folder'),
               subtitle: Text(
-                _safeSenderFolder ?? 'INBOX (default)',
+                _safeSenderFolder ??
+                    '${_safeSenderFolderDefault ?? SettingsStore.defaultSafeSenderFolder} (default)',
                 style: TextStyle(color: Colors.green.shade700),
               ),
               trailing: const Icon(Icons.chevron_right),
@@ -1219,7 +1230,7 @@ class _SettingsScreenState extends State<SettingsScreen> with SingleTickerProvid
               leading: const Icon(Icons.folder_delete_outlined),
               title: const Text('Deleted Rule Folder'),
               subtitle: Text(
-                _deletedRuleFolder ?? 'Trash (default)',
+                _deletedRuleFolder ?? '${_deletedRuleFolderDefault ?? 'Trash'} (default)',
                 style: TextStyle(color: Colors.red.shade700),
               ),
               trailing: const Icon(Icons.chevron_right),

@@ -107,17 +107,6 @@ class EmailScanProvider extends ChangeNotifier {
   Timer? _heartbeatTimer;  // MV74-2 (Sprint 74): liveness for OTHER isolates
   DatabaseHelper? _databaseHelper;  // For email_actions persistence
 
-  // [NEW] MULTI-ACCOUNT SUPPORT: Provider-specific junk folder configuration
-  static const Map<String, List<String>> JUNK_FOLDERS_BY_PROVIDER = {
-    'aol': ['Bulk Mail', 'Spam'],           // AOL Mail junk folders
-    'gmail': ['Spam', 'Trash'],              // Gmail junk folders
-    'outlook': ['Junk Email', 'Spam'],       // Outlook.com junk folders
-    'yahoo': ['Bulk', 'Spam'],               // Yahoo Mail junk folders
-    'icloud': ['Junk', 'Trash'],             // iCloud Mail junk folders
-    // 'protonmail': handled via ProtonMail Bridge
-    // Custom IMAP servers default to 'Spam' and 'Junk'
-  };
-
   // Scan state
   ScanStatus _status = ScanStatus.idle;
   int _processedCount = 0;
@@ -746,26 +735,6 @@ class EmailScanProvider extends ChangeNotifier {
       'errors': _errorCount,
       'progress': progress,
     };
-  }
-
-  /// [NEW] MULTI-FOLDER SUPPORT: Get junk folder names for provider
-  /// 
-  /// Returns list of junk folder names for the given email provider.
-  /// Supports multiple folders per provider (e.g., AOL has both "Bulk Mail" and "Spam").
-  /// 
-  /// Example:
-  /// ```dart
-  /// final junkFolders = provider.getJunkFoldersForProvider('aol');
-  /// // Returns: ['Bulk Mail', 'Spam']
-  /// 
-  /// // Scan both Inbox and all Junk folders
-  /// await scanFolder(accountId, 'aol', 'Inbox');
-  /// for (var folder in junkFolders) {
-  ///   await scanFolder(accountId, 'aol', folder);
-  /// }
-  /// ```
-  List<String> getJunkFoldersForProvider(String platformId) {
-    return JUNK_FOLDERS_BY_PROVIDER[platformId] ?? ['Spam', 'Junk'];
   }
 
   /// [NEW] MULTI-FOLDER SUPPORT: Set current folder being scanned

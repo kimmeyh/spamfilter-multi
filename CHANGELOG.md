@@ -27,6 +27,9 @@ Format: `- **type**: Description (Issue #N)` where type is feat|fix|chore|docs
 ## [Unreleased]
 
 ### 2026-09-25 (Sprint 74)
+- **feat**: new accounts start with the right folders for their email provider, including its spam folder, for all four folder settings (manual scan folders, background scan folders, Safe Senders folder, Deleted Rule folder). Yahoo now scans Inbox and Bulk; an iCloud account's deleted folder is Deleted Messages instead of a Trash folder that does not exist there. Accounts you have already set up keep your saved folders. (Issue #438)
+- **fix**: a scan no longer reports an error for a folder that simply does not exist on your account. A folder that exists but cannot be read is still reported. (Issue #438)
+- **fix**: a Gmail account added with Google sign-in now defaults to scanning Gmail's Spam label. The default used a folder name that only works over IMAP. (Issue #438)
 - **feat**: exported files now go to a folder you can find: your Documents folder on Android and your Downloads folder on Windows, unless you choose a different folder in Settings. This covers scan results, rule and safe-sender lists, the per-scan export and the diagnostic log (which uses a `diagnostics` subfolder; per-scan exports use `scan_exports`). Before, Android wrote these where you could not reach them. (Issue #439)
 - **feat**: the "export CSV after each background scan" setting now works on Android. It only worked on Windows before. (Issue #439)
 - **feat**: Scan History has a Clear history button. It deletes the finished scans your filters show, after you confirm; a scan still running is kept. (Issue #439)
