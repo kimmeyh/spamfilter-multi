@@ -15,13 +15,11 @@ library;
 import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:logger/logger.dart';
-import 'package:path_provider/path_provider.dart';
 import '../../core/models/rule_set.dart';
 import '../../core/storage/database_helper.dart';
 import '../widgets/copy_all_shortcut.dart';
 import '../widgets/list_selection_controller.dart';
 import '../../core/storage/rule_database_store.dart';
-import '../../core/storage/settings_store.dart';
 import '../widgets/app_bar_with_exit.dart';
 import 'help_screen.dart';
 import 'manual_rule_create_screen.dart';
@@ -30,6 +28,7 @@ import 'rule_test_screen.dart';
 import '../widgets/standard_app_bar_actions.dart';
 import '../widgets/screen_version_line.dart'; // F229 (Sprint 73)
 import '../widgets/system_inset_wrapper.dart'; // F209 (Sprint 69)
+import '../../core/services/export_directories.dart';
 
 /// Screen for managing spam filtering rules
 class RulesManagementScreen extends StatefulWidget {
@@ -1097,25 +1096,9 @@ class _RulesManagementScreenState extends State<RulesManagementScreen>
   Future<void> _exportFilteredRules() async {
     if (_filteredRules.isEmpty) return;
     try {
-      final settingsStore = SettingsStore();
-      final configuredDir = await settingsStore.getCsvExportDirectory();
-
-      String exportPath;
-      if (configuredDir != null && configuredDir.isNotEmpty) {
-        final dir = Directory(configuredDir);
-        if (!await dir.exists()) {
-          await dir.create(recursive: true);
-        }
-        exportPath = configuredDir;
-      } else {
-        final directory = Platform.isAndroid || Platform.isIOS
-            ? await getExternalStorageDirectory()
-            : await getApplicationDocumentsDirectory();
-        if (directory == null) {
-          throw Exception('Could not access storage directory');
-        }
-        exportPath = directory.path;
-      }
+      // F206 (Sprint 74): ONE resolver for every export (configured folder,
+      // else the platform default) -- this block used to be a local copy.
+      final exportPath = await ExportDirectories.resolve();
 
       String normalizedPath = exportPath;
       while (normalizedPath.endsWith('/') || normalizedPath.endsWith('\\')) {

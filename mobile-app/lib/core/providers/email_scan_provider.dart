@@ -1025,10 +1025,16 @@ class EmailScanProvider extends ChangeNotifier {
   /// [appVersion] stamps the build into the file (F229). An export that cannot
   /// name the build that produced it is weak evidence, and this export is
   /// exactly what a tester sends back.
+  ///
+  /// [redact] (F206 Part C, Sprint 74): mask the sender (domain kept, via
+  /// [Redact.email]), the subject and the message id, for a file shared
+  /// outside the team. Rule names and patterns are the user's own rules and
+  /// stay.
   String exportResultsToCSV({
     List<EmailActionResult>? rows,
     String? appVersion,
     DateTime? scanDate,
+    bool redact = false,
   }) {
     final buffer = StringBuffer();
     final source = rows ?? _results;
@@ -1062,11 +1068,12 @@ class EmailScanProvider extends ChangeNotifier {
     // CSV Rows
     for (final result in source) {
       final receivedDate = result.email.receivedDate.toIso8601String();
-      final from = _escapeCsv(result.email.from);
+      final from = _escapeCsv(
+          redact ? _redactSender(result.email.from) : result.email.from);
       final folder = _escapeCsv(result.email.folderName);
       // Clean subject for CSV (remove tabs, extra spaces, repeated punctuation)
       final cleanedSubject = PatternNormalization.cleanSubjectForDisplay(result.email.subject);
-      final subject = _escapeCsv(cleanedSubject);
+      final subject = _escapeCsv(redact ? _redacted : cleanedSubject);
       final rule = _escapeCsv(result.evaluationResult?.matchedRule ?? 'No rule');
 
       // Extract matched pattern from evaluation result (if available)
@@ -1076,13 +1083,22 @@ class EmailScanProvider extends ChangeNotifier {
 
       final action = _getActionName(result.action);
       final status = result.success ? 'Success' : 'Failed';
-      final emailId = _escapeCsv(result.email.id);
+      final emailId = _escapeCsv(redact ? _redacted : result.email.id);
 
       buffer.writeln(
           '"$scanDateText","$receivedDate","$from","$folder","$subject","$rule","$matchCondition","$action","$status","$emailId"');
     }
 
     return buffer.toString();
+  }
+
+  static const String _redacted = '[redacted]';
+
+  /// F206 Part C: the sender with its local part masked and the domain kept --
+  /// the domain is what diagnosis needs, the person is not.
+  static String _redactSender(String from) {
+    final match = RegExp(r'[^\s<>"]+@[^\s<>"]+').firstMatch(from);
+    return match == null ? _redacted : Redact.email(match.group(0));
   }
 
   /// Helper to escape CSV values (handle quotes and commas)
@@ -1138,7 +1154,8 @@ class EmailScanProvider extends ChangeNotifier {
     return failures;
   }
 
-  List<List<String>> getExcelRows() {
+  /// [redact]: see [exportResultsToCSV].
+  List<List<String>> getExcelRows({bool redact = false}) {
     if (_results.isEmpty) return [];
 
     final scanDate = _scanStartTime != null
@@ -1153,10 +1170,13 @@ class EmailScanProvider extends ChangeNotifier {
       final folder = result.email.folderName;
       final action = _getActionName(result.action);
       final rule = result.evaluationResult?.matchedRule ?? 'No rule';
-      final from = result.email.from;
-      final subject = PatternNormalization.cleanSubjectForDisplay(result.email.subject);
+      final from =
+          redact ? _redactSender(result.email.from) : result.email.from;
+      final subject = redact
+          ? _redacted
+          : PatternNormalization.cleanSubjectForDisplay(result.email.subject);
       final matchCondition = result.evaluationResult?.matchedPattern ?? 'N/A';
-      final emailId = result.email.id;
+      final emailId = redact ? _redacted : result.email.id;
       // F110 (Sprint 43): "Phishing SPF/DKIM/DMARC" -- the comma-separated list
       // of authentication checks this email HARD-FAILED (e.g. "SPF,DMARC").
       // Blank when nothing failed. Every scanned email keeps its row; this

@@ -27,6 +27,12 @@ Format: `- **type**: Description (Issue #N)` where type is feat|fix|chore|docs
 ## [Unreleased]
 
 ### 2026-09-25 (Sprint 74)
+- **feat**: exported files now go to a folder you can find: your Documents folder on Android and your Downloads folder on Windows, unless you choose a different folder in Settings. This covers scan results, rule and safe-sender lists, the per-scan export and the diagnostic log (which uses a `diagnostics` subfolder; per-scan exports use `scan_exports`). Before, Android wrote these where you could not reach them. (Issue #439)
+- **feat**: the "export CSV after each background scan" setting now works on Android. It only worked on Windows before. (Issue #439)
+- **feat**: Scan History has a Clear history button. It deletes the finished scans your filters show, after you confirm; a scan still running is kept. (Issue #439)
+- **feat**: a new Settings option, Hide sender details in exports, keeps only the sender's domain and leaves out the subject and message ID, for a file you want to share. (Issue #439)
+- **fix**: after you change the export folder, the diagnostic log now writes to the new folder straight away. It kept using the old folder until the app restarted. (Issue #439)
+- **fix**: Settings now names the real default export folder. It said "Downloads folder (default)" on every platform, which was not true on either. (Issue #439)
 - **feat**: scan results are now listed newest first, with each sender domain's other emails grouped right after its newest one, so the list reads like your inbox. Emails from a subdomain (news.example.com) group with the main domain (example.com). (Issue #437)
 - **fix**: Gmail emails now show the date they arrived. Every Gmail email used to show the time of the scan instead, because the date format Gmail sends was not being read. This also corrects the Received Date column in exported results. (Issue #437)
 - **fix**: a background scan no longer runs on an account while you are scanning it yourself. On both Windows and Android, the background scan now waits its turn for that account instead of opening a second connection to your mail server. (Issue #434)

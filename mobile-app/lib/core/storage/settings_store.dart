@@ -49,6 +49,8 @@ class SettingsStore {
   static const String keyCsvExportDirectory = 'csv_export_directory';
   static const String keyBackgroundScanDebugCsv = 'background_scan_debug_csv';
   static const String keyLiveScanDebugCsv = 'live_scan_debug_csv';
+  /// F206 (Sprint 74): mask sender, subject and message id in every export.
+  static const String keyExportRedacted = 'export_redacted';
   static const String keyManualScanDaysBack = 'manual_scan_days_back';
   static const String keyBackgroundScanDaysBack = 'background_scan_days_back';
   static const String keyScanHistoryRetentionDays = 'scan_history_retention_days';
@@ -272,6 +274,18 @@ class SettingsStore {
     await _setAppSetting(keyLiveScanDebugCsv, enabled.toString(), 'bool');
   }
 
+  /// F206 (Sprint 74, Part C): whether exports REDACT sender, subject and
+  /// message id -- for a file shared outside the team. Off by default: the
+  /// export's main reader today is the developer diagnosing a scan.
+  Future<bool> getExportRedacted() async {
+    final value = await _getAppSetting(keyExportRedacted);
+    return value == 'true';
+  }
+
+  Future<void> setExportRedacted(bool enabled) async {
+    await _setAppSetting(keyExportRedacted, enabled.toString(), 'bool');
+  }
+
   // ============================================================
   // F233 (Sprint 72): Diagnostic Logging
   // ============================================================
@@ -419,19 +433,38 @@ class SettingsStore {
   // Export Settings
   // ============================================================
 
-  /// Get the default directory for CSV exports
-  /// Returns null if not set (use system Downloads folder)
+  /// Get the user-chosen export directory.
+  /// Returns null if not set -- the platform default applies (F206: Android
+  /// Documents, Windows Downloads; see ExportDirectories).
   Future<String?> getCsvExportDirectory() async {
     return await _getAppSetting(keyCsvExportDirectory);
   }
 
-  /// Set the default directory for CSV exports
-  /// Pass null to clear (will use Downloads folder)
+  /// F206 R-7 (Sprint 74): callbacks run whenever the export directory
+  /// changes. `DiagnosticLogger` caches the folder it resolved from this
+  /// setting, and nothing told it the setting had changed -- so after the
+  /// user picked a new folder, logs kept going to the OLD one for the rest
+  /// of the session, and "Delete logs" cleared the old one. Notifying from
+  /// the SETTER covers every caller, present and future; invalidating at a
+  /// UI call site would cover only the calls someone remembered.
+  static final List<void Function()> _exportDirectoryListeners = [];
+
+  static void addExportDirectoryListener(void Function() listener) {
+    if (!_exportDirectoryListeners.contains(listener)) {
+      _exportDirectoryListeners.add(listener);
+    }
+  }
+
+  /// Set the export directory. Pass null to clear (the platform default
+  /// applies).
   Future<void> setCsvExportDirectory(String? directory) async {
     if (directory == null) {
       await _deleteAppSetting(keyCsvExportDirectory);
     } else {
       await _setAppSetting(keyCsvExportDirectory, directory, 'string');
+    }
+    for (final listener in List.of(_exportDirectoryListeners)) {
+      listener();
     }
   }
 

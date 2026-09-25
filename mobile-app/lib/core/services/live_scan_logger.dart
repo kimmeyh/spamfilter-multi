@@ -1,12 +1,13 @@
 import 'dart:io';
 import 'package:path/path.dart' as path;
 import 'package:path_provider/path_provider.dart';
-import 'package:syncfusion_flutter_xlsio/xlsio.dart' as xlsio;
 
 import '../providers/email_scan_provider.dart';
 import '../storage/settings_store.dart';
 import 'app_environment.dart';
 import 'app_version.dart';
+import 'export_directories.dart';
+import 'scan_sheet_export.dart';
 import '../../util/redact.dart';
 
 /// F90 (Sprint 39, 2026-05-23): live-scan logging parity with background-scan
@@ -88,95 +89,28 @@ class LiveScanLogger {
       final enabled = await settingsStore.getLiveScanDebugCsv();
       if (!enabled) return 0;
 
-      final exportDir = await getLogDir();
-      final dir = Directory(exportDir);
-      if (!await dir.exists()) {
-        await dir.create(recursive: true);
-      }
-
+      // F206 (Sprint 74): to the EXPORT folder (Settings > General, else the
+      // platform default), not app-private logs -- on Android the user could
+      // not reach the file at all. The runtime log stays in getLogDir().
+      final exportDir = await ExportDirectories.resolve(
+          subfolder: 'scan_exports', settingsStore: settingsStore);
+      final redact = await settingsStore.getExportRedacted();
       final safeAccountId = accountId
           .replaceAll('@', '_at_')
           .replaceAll('.', '_');
-      final dateStr = DateTime.now().toIso8601String().split('T')[0];
-      final devSuffix = AppEnvironment.isDev ? '_dev' : '';
-      final xlsxFilename = 'live_scan_${safeAccountId}_$dateStr$devSuffix.xlsx';
-      final dataFilename = 'live_scan_${safeAccountId}_$dateStr$devSuffix.data.csv';
-      final xlsxPath = path.join(exportDir, xlsxFilename);
-      final dataPath = path.join(exportDir, dataFilename);
-
-      final newRows = scanProvider.getExcelRows();
-
-      final dataFile = File(dataPath);
-      final buffer = StringBuffer();
-
-      if (newRows.isEmpty) {
-        final scanDate = DateTime.now().toIso8601String();
-        // 11 columns incl. the Sprint 43 Auth column (see headers below).
-        buffer.writeln('$scanDate\t$scanDate\t\t\t\t\t<no records to process>\t\t\t\t');
-      } else {
-        for (final row in newRows) {
-          buffer.writeln(row.join('\t'));
-        }
-      }
-
-      await dataFile.writeAsString(
-        buffer.toString(),
-        mode: FileMode.append,
+      final result = await ScanSheetExport.appendAndWrite(
+        dir: exportDir,
+        filePrefix: 'live_scan',
+        accountToken: safeAccountId,
+        sheetName: 'Live Scan',
+        headerColor: '#E2F3D9',
+        newRows: scanProvider.getExcelRows(redact: redact),
       );
-
-      final allDataLines = (await dataFile.readAsString())
-          .split('\n')
-          .where((line) => line.trim().isNotEmpty)
-          .toList();
-
-      const headers = [
-        'Scan Date and Time',
-        'Received Date and Time',
-        'Status',
-        'Folder',
-        'Action',
-        'Rule',
-        'From',
-        'Subject',
-        'Match Condition',
-        'Email ID',
-        // F110 (Sprint 43): comma-separated list of the SPF/DKIM/DMARC checks
-        // this email HARD-FAILED (e.g. "SPF,DMARC"); blank when none failed.
-        'Phishing SPF/DKIM/DMARC',
-      ];
-
-      final workbook = xlsio.Workbook();
-      final sheet = workbook.worksheets[0];
-      sheet.name = 'Live Scan';
-
-      for (var col = 0; col < headers.length; col++) {
-        final cell = sheet.getRangeByIndex(1, col + 1);
-        cell.setText(headers[col]);
-        cell.cellStyle.bold = true;
-        cell.cellStyle.backColor = '#E2F3D9';
-      }
-
-      for (var row = 0; row < allDataLines.length; row++) {
-        final cells = allDataLines[row].split('\t');
-        for (var col = 0; col < cells.length && col < headers.length; col++) {
-          sheet.getRangeByIndex(row + 2, col + 1).setText(cells[col]);
-        }
-      }
-
-      for (var col = 1; col <= headers.length; col++) {
-        sheet.autoFitColumn(col);
-      }
-
-      final bytes = workbook.saveAsStream();
-      await File(xlsxPath).writeAsBytes(bytes);
-      workbook.dispose();
-
-      final addedRows = newRows.isEmpty ? 1 : newRows.length;
       await log(
         'Debug CSV exported for ${Redact.accountId(accountId)} '
-        '($addedRows new rows, ${allDataLines.length} total)',
+        '(${result.addedRows} new rows, ${result.totalRows} total)',
       );
-      return addedRows;
+      return result.addedRows;
     } catch (e) {
       await log('Debug CSV export failed: $e');
       return 0;

@@ -5,7 +5,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 import 'package:logger/logger.dart';
-import 'package:path_provider/path_provider.dart';
 import '../widgets/account_email_label.dart'; // F176 (Sprint 62)
 import '../widgets/app_bar_with_exit.dart';
 import '../widgets/standard_app_bar_actions.dart';
@@ -49,6 +48,7 @@ import '../../adapters/storage/secure_credentials_store.dart';
 import '../widgets/empty_state.dart';
 import '../widgets/screen_version_line.dart'; // F229 (Sprint 73)
 import '../widgets/system_inset_wrapper.dart'; // F209 (Sprint 69)
+import '../../core/services/export_directories.dart';
 
 /// Displays summary of scan results bound to EmailScanProvider.
 /// F222 (Sprint 74): the display order, extracted so the WIRING is testable
@@ -568,9 +568,11 @@ class _ResultsDisplayScreenState extends State<ResultsDisplayScreen> {
       // selection is deliberate: a second copy of that logic is how the two
       // drift apart again.
       final appVersion = await AppVersion.get();
+      final redact = await SettingsStore().getExportRedacted();
       final csvContent = scanProvider.exportResultsToCSV(
         rows: _currentResults(),
         appVersion: appVersion,
+        redact: redact,
         // I-3: a historical view must stamp the SCAN's date, not the live
         // session's. Null on a live view, where the provider's own
         // _scanStartTime is the right answer.
@@ -579,29 +581,9 @@ class _ResultsDisplayScreenState extends State<ResultsDisplayScreen> {
             : null,
       );
 
-      // Get configured export directory from Settings, or use default
-      final settingsStore = SettingsStore();
-      final configuredDir = await settingsStore.getCsvExportDirectory();
-
-      String exportPath;
-      if (configuredDir != null && configuredDir.isNotEmpty) {
-        // Use configured directory
-        final dir = Directory(configuredDir);
-        if (!await dir.exists()) {
-          await dir.create(recursive: true);
-        }
-        exportPath = configuredDir;
-      } else {
-        // Use default directory (downloads on mobile, documents on desktop)
-        final directory = Platform.isAndroid || Platform.isIOS
-            ? await getExternalStorageDirectory()
-            : await getApplicationDocumentsDirectory();
-
-        if (directory == null) {
-          throw Exception('Could not access storage directory');
-        }
-        exportPath = directory.path;
-      }
+      // F206 (Sprint 74): ONE resolver for every export (configured folder,
+      // else the platform default) -- this block used to be a local copy.
+      final exportPath = await ExportDirectories.resolve();
 
       // Create filename with timestamp
       final timestamp =

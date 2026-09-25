@@ -217,6 +217,61 @@ class _ScanHistoryScreenState extends State<ScanHistoryScreen> {
     return ok;
   }
 
+  /// F206 Part A (Sprint 74): delete the FINISHED scans the current filters
+  /// show, after confirmation. The Scan History totals are computed from these
+  /// rows, so they reset with them. A scan still in progress is kept (its row
+  /// is the live-scan signal) and the dialog says so.
+  Future<void> _confirmClearHistory() async {
+    final finished =
+        _filteredScans.where((s) => s.status != 'in_progress').length;
+    final running = _filteredScans.length - finished;
+    final scope = _accountFilter == 'all' ? 'all accounts' : _accountFilter;
+    final type = _typeFilter == 'all' ? 'all scan types' : '$_typeFilter scans';
+    if (finished == 0) {
+      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
+          content: Text('There is no finished scan history to clear.')));
+      return;
+    }
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('Clear scan history?'),
+        content: Text(
+          'This deletes $finished finished '
+          '${finished == 1 ? 'scan' : 'scans'} ($scope, $type), including '
+          'their email results. It cannot be undone.'
+          '${running > 0 ? ' $running scan${running == 1 ? '' : 's'} still '
+              'in progress will be kept.' : ''}',
+        ),
+        actions: [
+          TextButton(
+              onPressed: () => Navigator.of(ctx).pop(false),
+              child: const Text('Cancel')),
+          FilledButton(
+              onPressed: () => Navigator.of(ctx).pop(true),
+              child: const Text('Clear history')),
+        ],
+      ),
+    );
+    if (confirmed != true || !mounted) return;
+    try {
+      final deleted = await _scanResultStore.deleteFinishedScanResults(
+        accountId: _accountFilter == 'all' ? null : _accountFilter,
+        scanType: _typeFilter == 'all' ? null : _typeFilter,
+      );
+      await _loadHistory();
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+          content: Text('Cleared $deleted '
+              '${deleted == 1 ? 'scan' : 'scans'} from history.')));
+    } catch (e) {
+      _logger.e('Clear scan history failed', error: e);
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+          content: Text('Could not clear scan history: $e')));
+    }
+  }
+
   void _applyFilter() {
     var scans = List<ScanResult>.from(_allScans);
 
@@ -258,6 +313,12 @@ class _ScanHistoryScreenState extends State<ScanHistoryScreen> {
             platformDisplayName: widget.platformDisplayName,
             includeScanHistory: false,
             leading: [
+              // F206 Part A (Sprint 74): clear the scans the filters show.
+              IconButton(
+                icon: const Icon(Icons.delete_sweep_outlined),
+                tooltip: 'Clear scan history',
+                onPressed: _confirmClearHistory,
+              ),
               IconButton(
                 icon: const Icon(Icons.refresh),
                 // Same wording problem as the No-Rule screen: "Refresh" reads as

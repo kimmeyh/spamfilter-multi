@@ -17,6 +17,7 @@ import '../../core/services/background_scan_windows_worker.dart';
 import '../../core/services/background_scan_scheduler.dart';
 import '../../core/storage/database_helper.dart';
 import '../../core/storage/settings_store.dart';
+import '../../core/services/export_directories.dart';
 import '../../core/services/diagnostic_logger.dart';
 import '../../core/storage/background_scan_log_store.dart';
 import '../../core/services/background_deferral_ingest.dart' show kDeferredStatus;
@@ -118,6 +119,7 @@ class _SettingsScreenState extends State<SettingsScreen> with SingleTickerProvid
   // F90 (Sprint 39): live-scan debug CSV opt-in (Manual Scan tab Debug section)
   bool _liveScanDebugCsv = SettingsStore.defaultLiveScanDebugCsv;
   String? _csvExportDirectory;
+  bool _exportRedacted = false; // F206 Part C (Sprint 74)
   // F43: Track current folder selections for display
   String? _safeSenderFolder;
   String? _deletedRuleFolder;
@@ -423,6 +425,7 @@ class _SettingsScreenState extends State<SettingsScreen> with SingleTickerProvid
       // account at all.
       _confirmDialogsEnabled = await _settingsStore.getConfirmDialogsEnabled();
       _csvExportDirectory = await _settingsStore.getCsvExportDirectory();
+      _exportRedacted = await _settingsStore.getExportRedacted();
       _scanHistoryRetentionDays =
           await _settingsStore.getScanHistoryRetentionDays();
       _retentionDaysController.text = _scanHistoryRetentionDays.toString();
@@ -700,6 +703,20 @@ class _SettingsScreenState extends State<SettingsScreen> with SingleTickerProvid
         // Positioned just above Import / Export YAML to group all
         // import/export-related controls together.
         _buildCsvExportDirectorySelector(),
+        // F206 Part C (Sprint 74): redacted exports, for a file shared outside
+        // the team. Applies to every export (results CSV, per-scan exports).
+        SwitchListTile(
+          key: const Key('export_redacted_toggle'),
+          title: const Text('Hide sender details in exports'),
+          subtitle: const Text(
+              'Exported files show the sender\'s domain only, and leave out '
+              'the subject and message ID.'),
+          value: _exportRedacted,
+          onChanged: (value) async {
+            setState(() => _exportRedacted = value);
+            await _settingsStore.setExportRedacted(value);
+          },
+        ),
         const SizedBox(height: 8),
 
         OutlinedButton.icon(
@@ -1299,7 +1316,10 @@ class _SettingsScreenState extends State<SettingsScreen> with SingleTickerProvid
   }
 
   Widget _buildCsvExportDirectorySelector() {
-    final displayPath = _csvExportDirectory ?? 'Downloads folder (default)';
+    // F206 (Sprint 74): the real per-platform default -- this label used to say
+    // "Downloads folder (default)" on every platform, which was true on none.
+    final displayPath =
+        _csvExportDirectory ?? ExportDirectories.defaultLabel;
 
     return Card(
       child: ListTile(

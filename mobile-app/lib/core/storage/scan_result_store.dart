@@ -673,6 +673,38 @@ class ScanResultStore {
     }
   }
 
+  /// F206 Part A (Sprint 74): delete FINISHED scans -- the Scan History
+  /// "Clear history" action. Scoped to [accountId] / [scanType] when given
+  /// (null = all), so it clears exactly what the user's filters show.
+  ///
+  /// **Never deletes an `in_progress` row.** That row carries a live scan's
+  /// heartbeat, which the manual-scan notice and the background-scan exclusion
+  /// both read (MV74-2); deleting it mid-scan would let a background scan open
+  /// a second session on the account. Children cascade (email_actions,
+  /// unmatched_emails). Returns the number of scans deleted.
+  Future<int> deleteFinishedScanResults({
+    String? accountId,
+    String? scanType,
+  }) async {
+    final db = await _databaseHelper.database;
+    final where = <String>['status != ?'];
+    final args = <Object>['in_progress'];
+    if (accountId != null) {
+      where.add('account_id = ?');
+      args.add(accountId);
+    }
+    if (scanType != null) {
+      where.add('scan_type = ?');
+      args.add(scanType);
+    }
+    final count = await db.delete('scan_results',
+        where: where.join(' AND '), whereArgs: args);
+    _logger.i('F206: cleared $count finished scan(s)'
+        '${accountId != null ? ' for ${Redact.accountId(accountId)}' : ''}'
+        '${scanType != null ? ' of type $scanType' : ''}');
+    return count;
+  }
+
   /// Delete all scans for a specific account (CASCADE)
   ///
   /// Returns number of scans deleted, throws exception on error
