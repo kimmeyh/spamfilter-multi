@@ -7,6 +7,7 @@ import 'package:provider/provider.dart';
 
 import '../../core/providers/selected_account_provider.dart';
 import '../../adapters/storage/secure_credentials_store.dart';
+import '../../core/services/background_scan_core.dart';
 import '../../core/storage/database_helper.dart';
 import '../../core/storage/scan_result_store.dart';
 import '../../core/storage/settings_store.dart';
@@ -850,13 +851,36 @@ class _ScanHistoryScreenState extends State<ScanHistoryScreen> {
     }
   }
 
-  void _navigateToResults(ScanResult scan) {
-    // Extract platform and email from accountId format: "{platform}-{email}"
-    final dashIndex = scan.accountId.indexOf('-');
-    final platformId = dashIndex > 0
-        ? scan.accountId.substring(0, dashIndex)
-        : '';
+  /// F232 (Sprint 74): the platform comes from what was STORED when the
+  /// account was added -- the credential store, then the accounts table --
+  /// never from the accountId text alone. This used to split on the first
+  /// dash, which gave '' for every account whose id is a bare email (the
+  /// current form), so every rule or safe sender added from a saved scan
+  /// failed with "Platform  not supported" (Fold8 diagnostic log, 0.16.0).
+  Future<String?> _resolvePlatformId(String accountId) async {
+    final fromCredentials = await BackgroundScanCore.resolvePlatformId(
+        SecureCredentialsStore(), accountId);
+    if (fromCredentials != null) return fromCredentials;
+    final row = await _dbHelper.getAccount(accountId);
+    final fromAccounts = row?['platform_id'] as String?;
+    return (fromAccounts != null && fromAccounts.isNotEmpty)
+        ? fromAccounts
+        : null;
+  }
+
+  Future<void> _navigateToResults(ScanResult scan) async {
     final email = _accountEmails[scan.accountId] ?? scan.accountId;
+    final platformId = await _resolvePlatformId(scan.accountId);
+    if (!mounted) return;
+    if (platformId == null) {
+      // Say which account, instead of opening a screen whose every action
+      // would fail with an empty platform.
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+        content: Text('Could not determine the email provider for $email. '
+            'Remove and re-add the account to fix this.'),
+      ));
+      return;
+    }
 
     Navigator.of(context).push(
       MaterialPageRoute(

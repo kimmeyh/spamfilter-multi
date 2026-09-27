@@ -5,7 +5,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 import 'package:logger/logger.dart';
-import '../widgets/account_email_label.dart'; // F176 (Sprint 62)
 import '../widgets/app_bar_with_exit.dart';
 import '../widgets/standard_app_bar_actions.dart';
 import '../widgets/auth_warning_dialog.dart';
@@ -1290,10 +1289,9 @@ class _ResultsDisplayScreenState extends State<ResultsDisplayScreen> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // F176 (Sprint 62): which account these results belong to -- the
-            // AppBar title carries it too, but truncates at phone width.
-            AccountEmailLabel(email: widget.accountEmail),
-            const SizedBox(height: 2),
+            // Sprint 74 MV (Harold): the account email appears ONCE on this
+            // screen, in the "Results - <email>" title. F176 (Sprint 62) had
+            // added a second copy here; the Manual Scan screen keeps its own.
             Text(
               _buildSummaryTitle(
                   hasLiveResults, showingHistorical, scanProvider, allResults),

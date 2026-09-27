@@ -26,6 +26,10 @@ Format: `- **type**: Description (Issue #N)` where type is feat|fix|chore|docs
 
 ## [Unreleased]
 
+### 2026-09-27 (Sprint 74)
+- **fix**: adding a rule or safe sender while reviewing a saved scan from Scan History works again. The app lost track of the account's email provider, so every action failed with "N of N could not be applied". (Issue #422)
+- **change**: the Scan Results screen shows the account's email address once, in the title. (Issue #422)
+
 ### 2026-09-25 (Sprint 74)
 - **fix**: a background scan now also waits while you re-process mail from Scan Results, and it can no longer slip in during the few seconds a manual scan spends connecting. A scan that fails before it connects is now shown in Scan History as failed instead of leaving no record. (Issue #434)
 - **change**: the per-scan export files are now off by default, for manual and background scans. Turn them on in Settings if you want them; they are saved to your Downloads (Windows) or Documents (Android) folder. (Issue #439)
