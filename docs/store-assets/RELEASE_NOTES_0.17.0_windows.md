@@ -10,8 +10,11 @@ that has not finished. **RE-DERIVE at Phase 7.7 from the finished CHANGELOG.**
 
 ---
 
-Scan results are now listed newest first, with each sender's other emails grouped right after it,
-so the list reads like your inbox.
+Each email on the Scan Results screen now shows the date it arrived, and a Sort button switches the
+list to newest first.
+
+Only one scan runs on an account at a time, and a scan that stops responding no longer shows
+"In progress" for hours.
 
 New accounts start with sensible folders for their email provider, including the provider's spam
 folder, instead of scanning the inbox alone.

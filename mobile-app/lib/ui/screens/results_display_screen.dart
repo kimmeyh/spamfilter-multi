@@ -50,27 +50,47 @@ import '../widgets/system_inset_wrapper.dart'; // F209 (Sprint 69)
 import '../../core/services/export_directories.dart';
 
 /// Displays summary of scan results bound to EmailScanProvider.
-/// F222 (Sprint 74): the display order, extracted so the WIRING is testable
-/// (a test of `orderNewestFirstClusteredByDomain` alone would pass with the
-/// call site still sorting the old way -- the Sprint 73 "correct abstraction,
-/// wrong wiring" defect class).
+/// F222 (Sprint 74, reworked at Manual Validation): the display order,
+/// extracted so the WIRING is testable (a test of the pure orders alone would
+/// pass with the call site still sorting some other way -- the Sprint 73
+/// "correct abstraction, wrong wiring" defect class).
+///
+/// [order] defaults to [ResultSortOrder.folderDomainAddress], the
+/// pre-Sprint-74 order Harold asked to keep as the default. The folder,
+/// domain and address keys are the ones the old in-place sort used
+/// (`EmailBodyParser`), so the default is unchanged, not re-derived.
 @visibleForTesting
 List<EmailActionResult> orderResultsForDisplay(
-    List<EmailActionResult> results) {
+  List<EmailActionResult> results, {
+  ResultSortOrder order = ResultSortOrder.folderDomainAddress,
+}) {
   final parser = EmailBodyParser();
-  return orderNewestFirstClusteredByDomain<EmailActionResult>(
-    results,
-    receivedAt: (r) => r.email.receivedDate,
-    // Base (registrable) domain, so news.example.com clusters with
-    // example.com. NOT ManualRuleDuplicateChecker._baseDomainFor, which keeps
-    // subdomains.
-    baseDomainOf: (r) =>
-        PatternNormalization.extractRootDomain(
-            parser.extractDomainFromEmail(r.email.from)) ??
-        '',
-    tieBreak: (r) => '${r.email.from}\u0000${r.email.subject}',
-  );
+  String tieBreak(EmailActionResult r) =>
+      '${r.email.from}\u0000${r.email.subject}';
+  switch (order) {
+    case ResultSortOrder.folderDomainAddress:
+      return orderByFolderDomainAddress<EmailActionResult>(
+        results,
+        folderOf: (r) => r.email.folderName,
+        domainOf: (r) => parser.extractDomainFromEmail(r.email.from) ?? '',
+        addressOf: (r) => parser.extractEmailAddress(r.email.from),
+        tieBreak: tieBreak,
+      );
+    case ResultSortOrder.newestFirst:
+      return orderNewestFirst<EmailActionResult>(
+        results,
+        receivedAt: (r) => r.email.receivedDate,
+        tieBreak: tieBreak,
+      );
+  }
 }
+
+/// F222 (Sprint 74 MV, Harold): the received date shown on each Scan Results
+/// row -- the SAME text the assign-a-rule pop-up shows, from ONE function so
+/// the two cannot drift. Local time, to the minute ("2026-09-26 22:05").
+@visibleForTesting
+String formatReceivedDateForDisplay(DateTime receivedDate) =>
+    receivedDate.toLocal().toString().substring(0, 16);
 
 class ResultsDisplayScreen extends StatefulWidget {
   final String platformId;
@@ -162,7 +182,7 @@ class ReProcessOutcome {
     this.skippedReadOnly = false,
     this.wouldHaveDeleted = 0,
     this.wouldHaveMoved = 0,
-  });
+  }) : busy = null;
 
   /// Nothing needed doing -- not a failure, and not a success worth claiming.
   const ReProcessOutcome.nothingToDo()
@@ -171,7 +191,8 @@ class ReProcessOutcome {
         failed = 0,
         skippedReadOnly = false,
         wouldHaveDeleted = 0,
-        wouldHaveMoved = 0;
+        wouldHaveMoved = 0,
+        busy = null;
 
   /// The account is configured read-only; the mailbox was deliberately not
   /// touched. Distinct from a failure, and the user is told.
@@ -191,7 +212,8 @@ class ReProcessOutcome {
   })  : attempted = 0,
         succeeded = 0,
         failed = 0,
-        skippedReadOnly = true;
+        skippedReadOnly = true,
+        busy = null;
 
   final int attempted;
   final int succeeded;
@@ -203,6 +225,19 @@ class ReProcessOutcome {
   /// may read them as one that did.
   final int wouldHaveDeleted;
   final int wouldHaveMoved;
+
+  /// Harold Q4 (Sprint 74 MV): another scan held the account, so the mailbox
+  /// was NOT touched. The rule or safe sender itself is already saved.
+  const ReProcessOutcome.busy(ScanAccountBusyException this.busy)
+      : attempted = 0,
+        succeeded = 0,
+        failed = 0,
+        skippedReadOnly = false,
+        wouldHaveDeleted = 0,
+        wouldHaveMoved = 0;
+
+  /// Non-null only for [ReProcessOutcome.busy].
+  final ScanAccountBusyException? busy;
 
   /// True when a read-only run had something it would have acted on.
   bool get hasPreview =>
@@ -277,6 +312,11 @@ class _ResultsDisplayScreenState extends State<ResultsDisplayScreen> {
 
   // Folder filter state (Item 6: folder dropdown)
   Set<String> _selectedFolders = {};
+
+  /// F222 (Sprint 74 MV): the Scan Results order, switched by the Sort chip.
+  /// Screen state only -- every visit starts on the default, which is what
+  /// Harold asked to keep.
+  ResultSortOrder _sortOrder = ResultSortOrder.folderDomainAddress;
 
   // Issue 3: Cache folders for performance
   List<String>? _cachedFolders;
@@ -729,14 +769,12 @@ class _ResultsDisplayScreenState extends State<ResultsDisplayScreen> {
       }).toList();
     }
 
-    // F222 (Sprint 74, Harold's specification): newest-first, clustered by
-    // BASE domain -- the newest email, then every other email from its base
-    // domain newest-first, then the next newest remaining. Replaces the
-    // Item 5 folder -> domain -> address sort, which read as shuffled next to
-    // any inbox. Returns a NEW list, so the provider's own list is never
-    // reordered in place (the old in-place sort was safe only when a filter
-    // above had already copied it).
-    results = orderResultsForDisplay(results);
+    // F222 (Sprint 74, reworked at MV): the user's chosen order -- default
+    // folder -> domain -> address, or newest first -- from the Sort chip.
+    // Returns a NEW list, so the provider's own list is never reordered in
+    // place (the old in-place sort was safe only when a filter above had
+    // already copied it).
+    results = orderResultsForDisplay(results, order: _sortOrder);
 
     // Sprint 46 retro IMP-1 (Harold): email-provider senders group at the
     // TOP (stable partition -- the F222 order above is kept within both
@@ -1449,6 +1487,7 @@ class _ResultsDisplayScreenState extends State<ResultsDisplayScreen> {
                       ),
                     ),
                   _buildFolderFilterChip(allResults),
+                  _buildSortChip(),
                 ],
               );
             }),
@@ -1698,6 +1737,57 @@ class _ResultsDisplayScreenState extends State<ResultsDisplayScreen> {
     );
   }
 
+  /// F222 (Sprint 74 MV, Harold): switches the list between the default
+  /// order (folder, domain, address) and newest first. Built like the
+  /// Folders chip beside it; one tap toggles. The "from email providers"
+  /// group stays at the top in both orders.
+  Widget _buildSortChip() {
+    final isNewest = _sortOrder == ResultSortOrder.newestFirst;
+    final label = isNewest ? 'Sort: Newest first' : 'Sort: Folder';
+    return Semantics(
+      container: true,
+      button: true,
+      excludeSemantics: true,
+      label: label,
+      hint: isNewest
+          ? 'Switch to folder, domain and address order'
+          : 'Switch to newest first',
+      onTap: _toggleSortOrder,
+      child: Tooltip(
+        message: isNewest
+            ? 'Newest first. Tap for folder, domain, address.'
+            : 'Folder, then domain, then address. Tap for newest first.',
+        child: GestureDetector(
+          onTap: _toggleSortOrder,
+          child: Chip(
+            key: const Key('results_sort_chip'),
+            label: Text(label),
+            avatar: const Icon(Icons.sort, size: 18),
+            backgroundColor: isNewest
+                ? Colors.indigo.withValues(alpha: 0.7)
+                : Colors.indigo,
+            labelStyle: TextStyle(
+              color: Colors.white,
+              fontWeight: isNewest ? FontWeight.w900 : FontWeight.bold,
+            ),
+            side: isNewest
+                ? const BorderSide(color: Colors.black, width: 2)
+                : BorderSide.none,
+            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+          ),
+        ),
+      ),
+    );
+  }
+
+  void _toggleSortOrder() {
+    setState(() {
+      _sortOrder = _sortOrder == ResultSortOrder.newestFirst
+          ? ResultSortOrder.folderDomainAddress
+          : ResultSortOrder.newestFirst;
+    });
+  }
+
   Widget _buildFolderFilterChip(List<EmailActionResult> allResults) {
     // Issue 3: Use cached folders for performance
     final folders = _cachedFolders ?? [];
@@ -1825,7 +1915,10 @@ class _ResultsDisplayScreenState extends State<ResultsDisplayScreen> {
     final effectiveEval = _getEffectiveEvaluation(result);
     final matchedRule = effectiveEval?.matchedRule ?? '';
     final rule = matchedRule.isNotEmpty ? matchedRule : 'No rule';
-    final subtitle = '$folder • $subject • $rule';
+    // F222 (Sprint 74 MV, Harold): the received date, before the subject so a
+    // long subject cannot push it off the line.
+    final date = formatReceivedDateForDisplay(result.email.receivedDate);
+    final subtitle = '$folder • $date • $subject • $rule';
     final trailing = result.success
         ? const Icon(Icons.check, color: Colors.green)
         : const Icon(Icons.error, color: Colors.red);
@@ -1890,7 +1983,7 @@ class _ResultsDisplayScreenState extends State<ResultsDisplayScreen> {
         cleanedSubject.isNotEmpty ? cleanedSubject : '(No subject)';
 
     // Format date/time
-    final dateStr = email.receivedDate.toString().substring(0, 16);
+    final dateStr = formatReceivedDateForDisplay(email.receivedDate);
 
     // Sprint 46 (Harold speed follow-up): predicates predicting which OTHER
     // "No rule" items the quick action about to be taken will ALSO address,
@@ -3425,7 +3518,18 @@ class _ResultsDisplayScreenState extends State<ResultsDisplayScreen> {
     final String message;
     final Color background;
 
-    if (outcome.skippedReadOnly) {
+    if (outcome.busy != null) {
+      final holder = outcome.busy!.blockingScan;
+      message = holder == null
+          ? '$baseMessage -- saved. The app could not check whether another '
+              'scan is running on this account, so your mailbox was not '
+              'changed. The next scan applies it.'
+          : '$baseMessage -- saved. A '
+              '${ScanAccountBusyException.describeScanType(holder.scanType)} '
+              'is running on this account, so your mailbox was not changed '
+              'yet. The next scan applies it.';
+      background = Colors.blueGrey;
+    } else if (outcome.skippedReadOnly) {
       // F234: when there is something to preview, SAY WHAT IT WOULD HAVE DONE.
       // "would have" is stated twice and the mailbox is named as unchanged --
       // the wording carries the whole risk of this card, because a preview
@@ -3858,6 +3962,7 @@ class _ResultsDisplayScreenState extends State<ResultsDisplayScreen> {
     // renders while this runs, so the wait is visible rather than silent.
     ScanLease? lease;
     InteractiveScanClaim? claim;
+    ScanAccountBusyException? busy;
 
     try {
       lease = await ScanCoordinator.instance.acquire(
@@ -3867,6 +3972,8 @@ class _ResultsDisplayScreenState extends State<ResultsDisplayScreen> {
       // Harold Q1 (Sprint 74): a live claim row BEFORE connecting, so a
       // background scan (another isolate or process) sees this account is
       // busy and yields instead of opening a second session.
+      // Harold Q4 (Sprint 74 MV): taken through the per-account scan lock;
+      // if another scan holds the account, this throws and NOTHING connects.
       claim = await ScanResultStore(DatabaseHelper())
           .claimInteractive(widget.accountId);
 
@@ -3987,6 +4094,11 @@ class _ResultsDisplayScreenState extends State<ResultsDisplayScreen> {
           });
         }
       }
+    } on ScanAccountBusyException catch (e) {
+      // Harold Q4 (Sprint 74 MV): refused before connecting. The rule or safe
+      // sender is already saved; only the mailbox action waits for a scan.
+      logger.i('[F38] Re-processing NOT started: $e');
+      busy = e;
     } catch (e) {
       logger.e('[F38] Re-processing failed: $e');
       // F233: the line Sprint 71 needed and could not read. An exception HERE
@@ -4025,6 +4137,11 @@ class _ResultsDisplayScreenState extends State<ResultsDisplayScreen> {
       }
       // The claim ends on every path, like the lease.
       await claim?.end();
+    }
+
+    if (busy != null) {
+      if (mounted) setState(() => _isReProcessing = false);
+      return ReProcessOutcome.busy(busy);
     }
 
     // Hide banner and show result snackbar

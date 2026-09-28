@@ -147,8 +147,14 @@ class BackgroundScanCore {
     // and a background scan could hold two IMAP sessions on one account, the
     // Sprint 61 session-cap failure. The shared database row's heartbeat is
     // the only signal both sides can read. Checked BEFORE any connection.
+    //
+    // Harold Q4 (Sprint 74 MV): widened to a live scan of ANY type, including
+    // another BACKGROUND scan -- the periodic task, the F235 Doze one-off and
+    // Test Background Scan are separate WorkManager chains, and four ran on
+    // one account inside a minute on the Fold8. This is only the cheap early
+    // skip; the atomic claim in EmailScanProvider.startScan decides.
     final store = scanResultStore ?? ScanResultStore(DatabaseHelper());
-    final live = await store.getActiveInteractiveScanForAccount(accountId);
+    final live = await store.getActiveScanForAccount(accountId);
     if (live != null) {
       final reason = 'a ${live.scanType} scan is in progress on this account '
           '(scan id ${live.id})';
@@ -211,6 +217,13 @@ class BackgroundScanCore {
             scanType: 'background',
           )
           .timeout(ScanCoordinator.scanTimeout);
+    } on ScanAccountBusyException catch (e) {
+      // Harold Q4 (Sprint 74 MV): the claim was refused -- another scan took
+      // the account between the early check above and the claim. A skip,
+      // exactly like the early check: not an error, no row written.
+      _logger.i('Background scan SKIPPED for ${Redact.accountId(accountId)} '
+          'at the scan lock: $e');
+      return AccountScanOutcome.skipped(e.userMessage, scanProvider);
     } on TimeoutException {
       final minutes = ScanCoordinator.scanTimeout.inMinutes;
       _logger.e('Background scan TIMED OUT after $minutes minutes for '

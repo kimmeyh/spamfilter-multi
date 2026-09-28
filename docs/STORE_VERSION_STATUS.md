@@ -26,6 +26,13 @@ Partner Center before saying anything about the Store version.
 | **Live on Google Play** (cache) | 0.15.2 (versionCode 5) | 2026-09-21 (**DEVICE-VERIFIED**: Galaxy S24+ Settings > General reads "Version 0.15.2") | **Closed testing only -- NOT production.** **0.15.2 DEVICE-VERIFIED 2026-09-21** (S24+ Settings reads "Version 0.15.2"). This unblocks F219 AC-1 and the F227 re-verification, which still need an actual sign-in run. Hardware history, which applies to 0.15.0 and NOT to this version: Harold updated a Galaxy S24+ and it was an UPGRADE, not a fresh install (0.14.1 -> 0.14.2 -> 0.15.0), which exercises the real tester path and confirms package identity and signing key held across two bumps. F191 confirmed on device -- Yahoo and iCloud selectable in Add Account. **Corrected 2026-09-14**: this row was cached at 0.14.2 / versionCode 2 for four days after 0.15.0 went live, while calling itself a cache of the live state. Production access is still gated on 12 testers x 14 CONTINUOUS days -- a TESTER-COUNT gate, not a version gate. 8 on the list, FOUR SHORT. |
 | **Dev worktree** (authoritative -- mirrors `pubspec.yaml`) | 0.17.0+8 | 2026-09-25 | Bumped at Sprint 74 PLAN APPROVAL (Phase 3.7.0b) per **F190**, so a tester can always tell a dev build from production. **MINOR is correct** (Harold, Q1, 2026-09-25): Sprint 74 adds per-provider folder defaults (F202) and export as a platform capability with clear history and a redacted mode (F206). Build number +7 -> +8 because Play consumed versionCode 7 with 0.16.0 (submitted 2026-09-24). Gates: `version_consistency_test` and `dev_version_ahead_test`. |
 
+## 0.17.0 -- RELEASE HOLD (Harold, 2026-09-27)
+
+**0.17.0 is NOT submitted to either store until F238 (Issue #441, Sprint 75) ships** -- the
+"stop the background scan and start mine" action. Harold: *"0.17.0 cannot ship without a fix"*,
+*"it is the largest bug that we have."* **No AAB is built until BOTH the Sprint 74 and Sprint 75
+PRs are merged.** The 0.17.0+8 AAB built on 2026-09-25 is superseded and must not be uploaded.
+
 ## msix_version convention (which worktree's value ships)
 
 ## 0.15.2 release -- COMPLETE ON BOTH STORES (2026-09-21)

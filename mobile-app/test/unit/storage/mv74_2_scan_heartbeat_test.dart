@@ -230,13 +230,18 @@ void main() {
       expect(p.debugHeartbeatActive, isFalse);
     });
 
-    test('stops on reset and on dispose', () async {
+    // Harold Q4 (Sprint 74 MV): reset() is UI state. The Manual Scan screen
+    // calls it from didPopNext -- every time the user backs out of Results,
+    // including while the scan is still running -- so it must NOT stop the
+    // heartbeat, or the scan lock would reap a live scan after five minutes.
+    test('keeps beating through reset (the scan is still running), stops on '
+        'dispose', () async {
       final p = await startPersisted();
       p.reset();
+      expect(p.debugHeartbeatActive, isTrue,
+          reason: 'reset() while the scan runs must not make it look dead');
+      p.dispose();
       expect(p.debugHeartbeatActive, isFalse);
-      final q = await startPersisted();
-      q.dispose();
-      expect(q.debugHeartbeatActive, isFalse);
     });
 
     test('review C-2: the timer really WRITES -- the row\'s heartbeat is set '
@@ -283,11 +288,10 @@ void main() {
         'ends', () async {
       final claim = await store.claimInteractive('acct-a',
           heartbeatInterval: const Duration(milliseconds: 30));
-      expect(claim, isNotNull);
-      final live = await store.getActiveInteractiveScanForAccount('acct-a');
+      final live = await store.getActiveScanForAccount('acct-a');
       expect(live?.scanType, 'reprocess');
-      await claim!.end();
-      expect(await store.getActiveInteractiveScanForAccount('acct-a'), isNull);
+      await claim.end();
+      expect(await store.getActiveScanForAccount('acct-a'), isNull);
     });
 
     test('a claim row never appears in Scan History, even one left behind',
@@ -319,9 +323,146 @@ void main() {
       expect(src.contains('await claim?.end();'), isTrue);
     });
 
-    test('a claim that cannot be written returns null instead of blocking the '
-        're-process (no account row -> FK failure)', () async {
-      expect(await store.claimInteractive('no-such-account'), isNull);
+    // Harold Q4 (Sprint 74 MV): fail CLOSED. This used to return null and let
+    // the re-process run with no claim at all.
+    test('a claim that cannot be written REFUSES the re-process (no account '
+        'row -> FK failure)', () async {
+      await expectLater(store.claimInteractive('no-such-account'),
+          throwsA(isA<ScanAccountBusyException>()
+              .having((e) => e.blockingScan, 'blockingScan', isNull)));
+    });
+
+    test('a claim is refused while another scan holds the account', () async {
+      await insertRow(
+          accountId: 'acct-a', scanType: 'background',
+          startedAt: ago(const Duration(seconds: 10)));
+      await expectLater(store.claimInteractive('acct-a'),
+          throwsA(isA<ScanAccountBusyException>().having(
+              (e) => e.blockingScan?.scanType, 'holder', 'background')));
+    });
+  });
+
+  group('Harold Q4 -- the per-account scan semaphore (claimAccountScan)', () {
+    ScanResult row(String accountId, String scanType) => ScanResult(
+          accountId: accountId,
+          scanType: scanType,
+          scanMode: 'readOnly',
+          startedAt: DateTime.now().millisecondsSinceEpoch,
+          totalEmails: 0,
+          status: 'in_progress',
+        );
+
+    Future<List<Map<String, Object?>>> rowsFor(String accountId) async {
+      final db = await testHelper.dbHelper.database;
+      return db.query('scan_results',
+          where: 'account_id = ?', whereArgs: [accountId], orderBy: 'id');
+    }
+
+    // What this does NOT catch: contention between two real CONNECTIONS
+    // (two isolates or processes). One connection here; sqflite serializes
+    // its transaction bodies, which is exactly what makes a check done
+    // OUTSIDE the transaction fail this test -- but cross-connection locking
+    // is SQLite's BEGIN IMMEDIATE, proven only on the device.
+    test('two claims racing on ONE account: exactly one is granted', () async {
+      final results = await Future.wait([
+        store.claimAccountScan(row('acct-a', 'background')),
+        store.claimAccountScan(row('acct-a', 'background')),
+      ]);
+      expect(results.where((r) => r.granted), hasLength(1));
+      expect(results.where((r) => !r.granted).single.blockedBy?.scanType,
+          'background');
+      expect(await rowsFor('acct-a'), hasLength(1),
+          reason: 'the refused claim must write no row');
+    });
+
+    test('a claim on a DIFFERENT account is granted', () async {
+      final a = await store.claimAccountScan(row('acct-a', 'manual'));
+      final b = await store.claimAccountScan(row('acct-b', 'background'));
+      expect(a.granted, isTrue);
+      expect(b.granted, isTrue);
+    });
+
+    test('any scan type blocks any other (manual held -> background refused, '
+        'background held -> manual refused)', () async {
+      final a = await store.claimAccountScan(row('acct-a', 'manual'));
+      expect(a.granted, isTrue);
+      final refused = await store.claimAccountScan(row('acct-a', 'background'));
+      expect(refused.granted, isFalse);
+      expect(refused.blockedBy?.scanType, 'manual');
+
+      final b = await store.claimAccountScan(row('acct-b', 'background'));
+      expect(b.granted, isTrue);
+      final refused2 = await store.claimAccountScan(row('acct-b', 'manual'));
+      expect(refused2.blockedBy?.scanType, 'background');
+    });
+
+    test('scans cannot run forever: a holder whose heartbeat is stale is '
+        'closed as interrupted, and the new claim wins', () async {
+      final dead = await insertRow(
+          accountId: 'acct-a', scanType: 'background',
+          startedAt: ago(const Duration(minutes: 8)),
+          heartbeatAt: ago(const Duration(minutes: 6)));
+      final claim = await store.claimAccountScan(row('acct-a', 'manual'));
+      expect(claim.granted, isTrue);
+      final rows = await rowsFor('acct-a');
+      expect(rows.firstWhere((r) => r['id'] == dead)['status'], 'interrupted');
+    });
+
+    test('scans cannot run forever: a holder older than the scan timeout is '
+        'closed even if it still heartbeats', () async {
+      final old = await insertRow(
+          accountId: 'acct-a', scanType: 'background',
+          startedAt: ago(const Duration(minutes: 31)),
+          heartbeatAt: ago(const Duration(seconds: 5)));
+      final claim = await store.claimAccountScan(row('acct-a', 'manual'));
+      expect(claim.granted, isTrue);
+      final rows = await rowsFor('acct-a');
+      expect(rows.firstWhere((r) => r['id'] == old)['status'], 'interrupted');
+    });
+
+    test('a LIVE holder is never reaped', () async {
+      final live = await insertRow(
+          accountId: 'acct-a', scanType: 'background',
+          startedAt: ago(const Duration(minutes: 3)),
+          heartbeatAt: ago(const Duration(seconds: 20)));
+      final claim = await store.claimAccountScan(row('acct-a', 'manual'));
+      expect(claim.granted, isFalse);
+      final rows = await rowsFor('acct-a');
+      expect(rows.single['id'], live);
+      expect(rows.single['status'], 'in_progress');
+    });
+
+    test('a refused startScan throws, writes no row, and does NOT let a later '
+        'errorScan close the PREVIOUS scan row', () async {
+      final provider = EmailScanProvider();
+      provider.initializePersistence(
+        scanResultStore: store,
+        unmatchedEmailStore: UnmatchedEmailStore(testHelper.dbHelper),
+        databaseHelper: testHelper.dbHelper,
+      );
+      provider.setCurrentAccountId('acct-a');
+      await provider.startScan(totalEmails: 1, platformId: 'test-platform');
+      await provider.completeScan();
+      final firstId = (await rowsFor('acct-a')).single['id'];
+
+      await insertRow(
+          accountId: 'acct-a', scanType: 'background',
+          startedAt: ago(const Duration(seconds: 5)));
+      await expectLater(
+          provider.startScan(totalEmails: 0, platformId: 'test-platform'),
+          throwsA(isA<ScanAccountBusyException>()));
+      expect(await rowsFor('acct-a'), hasLength(2),
+          reason: 'first scan + the background holder; nothing for the '
+              'refused scan');
+      expect(provider.statusMessage, contains('background scan'));
+      expect(provider.statusMessage, isNot(contains('Scan failed')));
+
+      await provider.errorScan('late error');
+      final first =
+          (await rowsFor('acct-a')).firstWhere((r) => r['id'] == firstId);
+      expect(first['status'], 'completed',
+          reason: 'a stale _currentScanResultId would re-open the finished '
+              'row as an error');
     });
   });
 
@@ -351,24 +492,27 @@ void main() {
     });
   });
 
-  group('T-4 -- background scans yield to a live interactive scan '
-      '(ADR-0039 amendment)', () {
-    test('finds a live manual or reprocess scan on the same account only',
-        () async {
+  group('T-4 -- a background scan yields to ANY live scan on its account '
+      '(ADR-0039 amendment; Harold Q4 widened it to every scan type)', () {
+    test('finds a live reprocess scan on the same account only', () async {
       await insertRow(
           accountId: 'acct-a', scanType: 'reprocess',
           startedAt: ago(const Duration(seconds: 20)));
-      expect(await store.getActiveInteractiveScanForAccount('acct-a'),
-          isNotNull);
-      expect(await store.getActiveInteractiveScanForAccount('acct-b'), isNull,
+      expect(await store.getActiveScanForAccount('acct-a'), isNotNull);
+      expect(await store.getActiveScanForAccount('acct-b'), isNull,
           reason: 'another account must not block this one');
     });
 
-    test('ignores background rows, finished rows and stale heartbeats',
-        () async {
+    test('finds a live BACKGROUND scan too (Harold Q4: four background scans '
+        'ran on one account at once on the Fold8)', () async {
       await insertRow(
           accountId: 'acct-a', scanType: 'background',
           startedAt: ago(const Duration(seconds: 20)));
+      expect((await store.getActiveScanForAccount('acct-a'))?.scanType,
+          'background');
+    });
+
+    test('ignores finished rows and stale heartbeats', () async {
       await insertRow(
           accountId: 'acct-a', scanType: 'manual', status: 'completed',
           startedAt: ago(const Duration(seconds: 20)));
@@ -376,7 +520,23 @@ void main() {
           accountId: 'acct-a', scanType: 'manual',
           startedAt: ago(const Duration(minutes: 12)),
           heartbeatAt: ago(const Duration(minutes: 9)));
-      expect(await store.getActiveInteractiveScanForAccount('acct-a'), isNull);
+      expect(await store.getActiveScanForAccount('acct-a'), isNull);
+    });
+
+    test('BackgroundScanCore.scanAccount SKIPS the account while ANOTHER '
+        'background scan is live on it', () async {
+      await insertRow(
+          accountId: 'acct-a', scanType: 'background',
+          startedAt: ago(const Duration(seconds: 10)));
+      final outcome = await BackgroundScanCore.scanAccount(
+        accountId: 'acct-a',
+        platformId: 'test-platform',
+        ruleSetProvider: RuleSetProvider(),
+        settingsStore: SettingsStore(testHelper.dbHelper),
+        scanResultStore: store,
+      );
+      expect(outcome.skipped, isTrue);
+      expect(outcome.skippedReason, contains('background'));
     });
 
     test('BackgroundScanCore.scanAccount SKIPS the account -- before any '

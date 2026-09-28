@@ -33,11 +33,10 @@
 /// Cross-isolate/process DETECTION and EXCLUSION therefore go through the
 /// shared database, identically on both platforms (ADR-0042, no exception):
 /// the scanning isolate writes a heartbeat to its `scan_results` row every
-/// [heartbeatInterval] ([ScanResultStore.recordHeartbeat]); the manual-scan
-/// notice asks [ScanResultStore.getActiveBackgroundScan]; and a background
-/// scan yields to a live interactive one via
-/// [ScanResultStore.getActiveInteractiveScanForAccount] (ADR-0039,
-/// Sprint 74 amendment).
+/// [heartbeatInterval] ([ScanResultStore.recordHeartbeat]), and EVERY scan
+/// takes the per-account semaphore [ScanResultStore.claimAccountScan] --
+/// one scan per account at a time, of any type, dead holders reaped
+/// (ADR-0039, Sprint 74 Manual Validation amendment, Harold Q4).
 library;
 
 import 'dart:async';

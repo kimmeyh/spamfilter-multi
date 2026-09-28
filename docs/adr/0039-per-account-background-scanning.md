@@ -371,8 +371,56 @@ lease and BEFORE connecting, and a pre-connect failure closes it as `error`
 it now holds a heartbeating `reprocess` claim row for its whole run, deleted
 when it ends and never listed in Scan History.
 
-**Remaining accepted limit.** The check is still check-then-act with no lock:
-a background scan whose check runs in the same instant a manual scan writes
-its row can overlap. The window is now milliseconds, not the connect time. A query failure fails OPEN (the
-background scan runs), so a database error cannot stop background scanning
-permanently.
+**Remaining accepted limit (SUPERSEDED the same sprint -- see the next
+amendment).** The check was still check-then-act with no lock, and a query
+failure failed OPEN.
+
+## Amendment -- Sprint 74 Manual Validation (Harold Q4, 2026-09-27): one scan per account, of any type -- a real lock
+
+**Why.** On the Fold8 (0.16.0) four BACKGROUND scans started on one AOL
+account inside one minute, and In-progress rows stayed for hours. The
+exclusion above only made background scans yield to INTERACTIVE ones; per
+account there are three independent WorkManager chains (the periodic task,
+the F235 Doze one-off, Test Background Scan -- Harold confirmed he pressed
+nothing), and nothing stopped one from starting beside another. Harold: *"Can
+only run one at a time. For any type of scan, If one is already running,
+don't start a new one. It is a semiphore type problem and scans cannot run
+forever."*
+
+**Decision.** A per-account semaphore in the shared database:
+`ScanResultStore.claimAccountScan`. In ONE transaction -- sqflite opens it with
+`BEGIN IMMEDIATE`, which takes SQLite's write lock, so the UI isolate, the
+Android worker isolates and the Windows worker process serialize against each
+other (`busy_timeout` 30 s, WAL, `DatabaseHelper.onConfigure`) -- it:
+1. reaps this account's dead holders (`in_progress` with a heartbeat older than
+   `heartbeatFreshness` (5 min) or started more than `scanTimeout` (30 min)
+   ago) to `interrupted` -- this is what "scans cannot run forever" means
+   without an app restart;
+2. refuses if any `in_progress` row remains for the account, of ANY type;
+3. otherwise inserts the new scan's row.
+Every scan takes it: manual, demo and background through
+`EmailScanProvider.startScan`, re-processing through `claimInteractive`.
+
+**Refusal is not failure.** A refused scan writes no row and throws
+`ScanAccountBusyException`; each caller maps it: background -> a skip (like
+the early check), manual -> "A scan is already running" (OK only), re-process
+-> "saved ... your mailbox was not changed yet. The next scan applies it."
+
+**Fail CLOSED.** A database error while claiming refuses the scan. This
+replaces the Sprint 17/60 "continue without persistence" behavior for the
+claim step only (a semaphore that admits work when it cannot check is not a
+semaphore). Harold can flip this.
+
+**Per account, not global.** The harm is the provider's per-account session
+cap, and Doze delivers every account's alarm in one batch, so a global lock
+would starve all but one account every interval.
+
+**Heartbeat ownership corrected.** `EmailScanProvider.reset()` no longer stops
+the heartbeat: the Manual Scan screen calls it from `didPopNext` -- every time
+the user backs out of Results, including mid-scan -- so it made a running scan
+look dead, and the lock would then have reaped it and let a second scan in.
+
+**What is still not proven by tests**: contention between two real SQLite
+connections (two isolates or processes) -- the unit tests run on one
+connection. That is Manual Validation on the device. The "Stop the background
+scan and start mine" action is F238 (Sprint 75, release blocker for 0.17.0).

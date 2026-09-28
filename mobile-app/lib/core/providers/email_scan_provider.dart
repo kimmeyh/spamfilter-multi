@@ -353,8 +353,14 @@ class EmailScanProvider extends ChangeNotifier {
     _emailsSinceLastNotification = 0;
     _lastProgressNotification = null;
 
+    // Harold Q4 (Sprint 74 MV): a refused claim must never leave the PREVIOUS
+    // scan's id here, or errorScan/cancelScan on this refused scan would
+    // close that earlier, finished row.
+    if (persist) _currentScanResultId = null;
+
     // [NEW] SPRINT 4: Create scan result record if persistence is enabled
     if (persist && _scanResultStore != null && _currentAccountId != null) {
+      ScanClaimResult? claim;
       try {
         // F156/Sprint 60 (Android walk-through root cause): scan_results has
         // an FK to accounts(account_id), but until now the ONLY code that
@@ -377,13 +383,28 @@ class EmailScanProvider extends ChangeNotifier {
           status: 'in_progress',
         );
 
-        _currentScanResultId = await _scanResultStore!.addScanResult(scanResult);
-        _logger.i('Created scan result record: id=$_currentScanResultId, type=$scanType');
-        _startHeartbeat();
+        // Harold Q4 (Sprint 74 MV): the per-account scan SEMAPHORE -- the
+        // row is inserted only if no other scan of any type holds the
+        // account (ScanResultStore.claimAccountScan).
+        claim = await _scanResultStore!.claimAccountScan(scanResult);
       } catch (e) {
-        _logger.e('Failed to create scan result: $e');
-        // Continue without persistence
+        // Fail CLOSED (Harold Q4): this used to "continue without
+        // persistence", which for the lock means scanning unprotected.
+        _logger.e('Failed to take the scan lock: $e');
+        final refused = ScanAccountBusyException.unverifiable(e);
+        markScanRefused(refused.userMessage);
+        throw refused;
       }
+      if (!claim.granted) {
+        _logger.i('Scan NOT started: ${claim.blockedBy!.scanType} scan '
+            '${claim.blockedBy!.id} holds this account');
+        final refused = ScanAccountBusyException(claim.blockedBy!);
+        markScanRefused(refused.userMessage);
+        throw refused;
+      }
+      _currentScanResultId = claim.id;
+      _logger.i('Created scan result record: id=$_currentScanResultId, type=$scanType');
+      _startHeartbeat();
     }
 
     _logger.i('Started scan of $totalEmails emails');
@@ -635,6 +656,19 @@ class EmailScanProvider extends ChangeNotifier {
         '(scan persistence FK)');
   }
 
+  /// Harold Q4 (Sprint 74 MV): the scan was REFUSED before it started,
+  /// because another scan holds the account. Not a failure and not a cancel:
+  /// no row was written, so there is nothing to close. The status shows
+  /// [message] as-is -- no "Scan failed: " prefix, because nothing failed.
+  void markScanRefused(String message) {
+    _stopHeartbeat();
+    _status = ScanStatus.error;
+    _wasCancelled = false;
+    _statusMessage = message;
+    _currentEmail = null;
+    notifyListeners();
+  }
+
   /// [NEW] SPRINT 4: Mark scan as failed with error and persist error state
   Future<void> errorScan(String errorMessage) async {
     _stopHeartbeat();
@@ -704,7 +738,13 @@ class EmailScanProvider extends ChangeNotifier {
 
   /// Reset scan state to idle
   void reset() {
-    _stopHeartbeat();
+    // Harold Q4 (Sprint 74 MV): reset() does NOT stop the heartbeat. It is
+    // UI state -- scan_progress_screen calls it from didPopNext, i.e. every
+    // time the user backs out of Results, INCLUDING while the scan is still
+    // running. The heartbeat belongs to the scan ROW, which only
+    // completeScan / errorScan / cancelScan close. Stopping it here made a
+    // running scan look dead after heartbeatFreshness, and the scan lock
+    // would then close its row and let a second scan onto the account.
     _status = ScanStatus.idle;
     _wasCancelled = false;
     _processedCount = 0;

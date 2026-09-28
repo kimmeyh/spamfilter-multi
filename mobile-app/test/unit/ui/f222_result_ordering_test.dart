@@ -1,7 +1,10 @@
-/// F222 (Sprint 74): scan results read like an inbox -- newest first,
-/// clustered by BASE domain -- and Gmail messages carry their REAL received
-/// date (they carried the scan time before, which made any date ordering
-/// meaningless for Gmail).
+/// F222 (Sprint 74, reworked at Manual Validation 2026-09-27): the Scan
+/// Results list has TWO orders -- the default folder -> domain -> address
+/// (the pre-Sprint-74 order Harold asked to keep) and newest first, switched
+/// by a chip -- and Gmail messages carry their REAL received date (they
+/// carried the scan time before, which made any date ordering meaningless for
+/// Gmail). The first version, newest first clustered by base domain, was not
+/// what Harold asked for and is gone.
 ///
 /// **What these tests do NOT catch**: an IMAP received-date defect -- IMAP
 /// dates come from enough_mail's `decodeDate()` on a different path, which
@@ -18,7 +21,8 @@ import 'package:my_email_spam_filter/core/providers/email_scan_provider.dart';
 import 'package:my_email_spam_filter/core/utils/result_ordering.dart';
 import 'package:my_email_spam_filter/ui/screens/results_display_screen.dart';
 
-EmailActionResult _r(String from, DateTime at, {String subject = 's'}) =>
+EmailActionResult _r(String from, DateTime at,
+        {String subject = 's', String folder = 'INBOX'}) =>
     EmailActionResult(
       email: EmailMessage(
         id: '$from-${at.millisecondsSinceEpoch}',
@@ -27,7 +31,7 @@ EmailActionResult _r(String from, DateTime at, {String subject = 's'}) =>
         body: '',
         headers: const {},
         receivedDate: at,
-        folderName: 'INBOX',
+        folderName: folder,
       ),
       action: EmailActionType.none,
       success: true,
@@ -84,66 +88,99 @@ void main() {
     });
   });
 
-  group('T-2 -- orderNewestFirstClusteredByDomain (Harold\'s specification)',
-      () {
-    List<String> order(List<(String, DateTime)> items) =>
-        orderNewestFirstClusteredByDomain<(String, DateTime)>(
-          items,
-          receivedAt: (i) => i.$2,
-          baseDomainOf: (i) => i.$1.split('@').last.split('.').reversed
-              .take(2)
-              .toList()
-              .reversed
-              .join('.'),
-        ).map((i) => i.$1).toList();
-
-    test('newest email, then its whole domain newest-first, then the next '
-        'newest remaining', () {
-      final result = order([
-        ('a1@alpha.com', at(50)),
-        ('b1@beta.com', at(5)), // newest overall -> beta cluster first
-        ('a2@alpha.com', at(10)), // newest remaining after beta -> alpha
-        ('b2@beta.com', at(40)),
-        ('c1@gamma.com', at(20)),
-      ]);
-      expect(result, [
-        'b1@beta.com', 'b2@beta.com', // beta: newest first
-        'a2@alpha.com', 'a1@alpha.com', // alpha (newest remaining = a2 @10)
-        'c1@gamma.com', // gamma (@20) comes after alpha's newest (@10)
-      ]);
+  group('T-2 -- the two orders (pure functions)', () {
+    test('orderByFolderDomainAddress: folder, then domain, then address, all '
+        'A to Z -- dates play no part', () {
+      final result = orderByFolderDomainAddress<(String, String)>(
+        [
+          ('INBOX', 'b@beta.com'),
+          ('INBOX', 'a@beta.com'),
+          ('Bulk', 'z@zeta.com'),
+          ('INBOX', 'x@alpha.com'),
+        ],
+        folderOf: (i) => i.$1,
+        domainOf: (i) => i.$2.split('@').last,
+        addressOf: (i) => i.$2,
+      ).map((i) => i.$2).toList();
+      expect(result,
+          ['z@zeta.com', 'x@alpha.com', 'a@beta.com', 'b@beta.com']);
     });
 
-    test('returns a NEW list and never reorders the input', () {
-      final input = [('x@old.com', at(30)), ('y@new.com', at(1))];
+    test('orderNewestFirst: received date, newest first', () {
+      final result = orderNewestFirst<(String, DateTime)>(
+        [('old', at(30)), ('newest', at(1)), ('mid', at(10))],
+        receivedAt: (i) => i.$2,
+      ).map((i) => i.$1).toList();
+      expect(result, ['newest', 'mid', 'old']);
+    });
+
+    test('both return a NEW list and never reorder the input', () {
+      final input = [('INBOX', 'y@b.com'), ('Bulk', 'x@a.com')];
       final copy = List.of(input);
-      orderNewestFirstClusteredByDomain<(String, DateTime)>(input,
-          receivedAt: (i) => i.$2, baseDomainOf: (i) => i.$1);
+      orderByFolderDomainAddress<(String, String)>(input,
+          folderOf: (i) => i.$1, domainOf: (i) => i.$2, addressOf: (i) => i.$2);
+      orderNewestFirst<(String, String)>(input,
+          receivedAt: (i) => DateTime(2026));
       expect(input, copy);
     });
   });
 
   group('T-3 -- orderResultsForDisplay: the call site\'s real inputs', () {
-    test('subdomains cluster with their base domain; co.uk domains do not '
-        'merge', () {
-      final result = orderResultsForDisplay([
-        _r('promo@example.co.uk', at(1)),
-        _r('deal@news.example.com', at(3)),
-        _r('other@other.co.uk', at(4)),
-        _r('info@example.com', at(9)),
-      ]).map((r) => r.email.from).toList();
-      expect(result, [
-        'promo@example.co.uk',
-        'deal@news.example.com', 'info@example.com', // one base domain
-        'other@other.co.uk',
-      ]);
+    final mixed = [
+      _r('b@beta.com', at(1)),
+      _r('z@zeta.com', at(20), folder: 'Bulk'),
+      _r('a@alpha.com', at(5)),
+      _r('a@beta.com', at(40)),
+    ];
+
+    test('DEFAULT is folder -> domain -> address (the pre-Sprint-74 order '
+        'Harold asked to keep)', () {
+      expect(orderResultsForDisplay(mixed).map((r) => r.email.from).toList(),
+          ['z@zeta.com', 'a@alpha.com', 'a@beta.com', 'b@beta.com']);
     });
 
-    test('equal dates order deterministically', () {
-      final a = orderResultsForDisplay(
-              [_r('b@x.com', at(1)), _r('a@x.com', at(1))])
-          .map((r) => r.email.from)
-          .toList();
-      expect(a, ['a@x.com', 'b@x.com']);
+    test('newestFirst is purely by date', () {
+      expect(
+          orderResultsForDisplay(mixed, order: ResultSortOrder.newestFirst)
+              .map((r) => r.email.from)
+              .toList(),
+          ['b@beta.com', 'a@alpha.com', 'z@zeta.com', 'a@beta.com']);
+    });
+
+    test('the domain key is the FULL sender domain, as before the sprint '
+        '(news.example.com is not merged into example.com)', () {
+      final result = orderResultsForDisplay([
+        _r('info@news.example.com', at(1)),
+        _r('deal@example.com', at(2)),
+        _r('x@middle.com', at(3)),
+      ]).map((r) => r.email.from).toList();
+      expect(result,
+          ['deal@example.com', 'x@middle.com', 'info@news.example.com']);
+    });
+
+    test('equal keys order deterministically in both orders', () {
+      for (final order in ResultSortOrder.values) {
+        final a = orderResultsForDisplay([
+          _r('same@x.com', at(1), subject: 'b'),
+          _r('same@x.com', at(1), subject: 'a'),
+        ], order: order)
+            .map((r) => r.email.subject)
+            .toList();
+        expect(a, ['a', 'b'], reason: '$order');
+      }
+    });
+  });
+
+  group('T-4 -- the received date on each row', () {
+    test('local time, to the minute -- the pop-up and the row share this', () {
+      expect(formatReceivedDateForDisplay(DateTime(2026, 9, 26, 22, 5, 31)),
+          '2026-09-26 22:05');
+    });
+
+    test('a UTC date is shown in LOCAL time', () {
+      final utc = DateTime.utc(2026, 9, 26, 12, 0);
+      expect(formatReceivedDateForDisplay(utc),
+          utc.toLocal().toString().substring(0, 16));
     });
   });
 }

@@ -12,6 +12,7 @@
 /// - Confirmation dialog before destructive import operations
 library;
 
+import 'dart:convert';
 import 'dart:io';
 
 import 'package:flutter/foundation.dart' show visibleForTesting;
@@ -31,6 +32,49 @@ import 'help_screen.dart';
 import '../widgets/standard_app_bar_actions.dart';
 import '../widgets/screen_version_line.dart'; // F229 (Sprint 73)
 import '../widgets/system_inset_wrapper.dart'; // F209 (Sprint 69)
+
+/// Sprint 74 MV (Harold Q5): save an exported YAML file.
+///
+/// **ADR-0042 platform exception, declared.** The file_picker plugin (8.3.7,
+/// `file_picker_io.dart` `saveFile`) has two contracts. On Android and iOS it
+/// REQUIRES the file's bytes and writes the file itself through the system
+/// save dialog -- without them it throws "Bytes are required on Android & iOS
+/// when saving a file", which is what every Android YAML export did (Fold8,
+/// 0.16.0). On desktop it returns a path and writes nothing, so the app
+/// writes the file (with its timestamped backup). One conditional, because
+/// the plugin contract differs; the exported TEXT is identical on every
+/// platform ([YamlService.renderRules] / [YamlService.renderSafeSenders]).
+///
+/// Returns what the dialog returned (null = cancelled).
+@visibleForTesting
+Future<String?> saveYamlExport({
+  required FilePicker picker,
+  required bool isMobile,
+  required String dialogTitle,
+  required String fileName,
+  required String yaml,
+  required Future<void> Function(String path) writeDesktopFile,
+}) async {
+  if (isMobile) {
+    // The plugin writes these bytes; the app must NOT write afterwards (the
+    // returned value is not guaranteed to be a writable filesystem path).
+    return picker.saveFile(
+      dialogTitle: dialogTitle,
+      fileName: fileName,
+      type: FileType.custom,
+      allowedExtensions: ['yaml', 'yml'],
+      bytes: utf8.encode(yaml),
+    );
+  }
+  final path = await picker.saveFile(
+    dialogTitle: dialogTitle,
+    fileName: fileName,
+    type: FileType.custom,
+    allowedExtensions: ['yaml', 'yml'],
+  );
+  if (path != null) await writeDesktopFile(path);
+  return path;
+}
 
 /// Screen for importing and exporting YAML rule files
 class YamlImportExportScreen extends StatefulWidget {
@@ -291,22 +335,25 @@ class _YamlImportExportScreenState extends State<YamlImportExportScreen> {
       // F208: saveFile is deliberately LEFT as FileType.custom. The Android
       // MIME failure is in the OPEN path, where the picker must resolve a
       // filter against existing files; a save dialog takes a typed name and
-      // has nothing to match. Export was verified working on the S24+ while
-      // import was broken, which is the evidence for that split.
-      final outputPath = await FilePicker.platform.saveFile(
+      // has nothing to match.
+      //
+      // Sprint 74 MV correction: the F208 note also said export was
+      // "verified working on the S24+". It could not have been -- the plugin
+      // was 8.3.7 then as now, and 8.3.7 throws on Android when no bytes are
+      // passed. Fixed in [saveYamlExport].
+      final outputPath = await saveYamlExport(
+        picker: FilePicker.platform,
+        isMobile: Platform.isAndroid || Platform.isIOS,
         dialogTitle: 'Export Rules YAML',
         fileName: 'rules.yaml',
-        type: FileType.custom,
-        allowedExtensions: ['yaml', 'yml'],
+        yaml: _yamlService.renderRules(ruleSet),
+        writeDesktopFile: (path) => _yamlService.exportRules(ruleSet, path),
       );
 
       if (outputPath == null) {
         _showStatus('Export cancelled');
         return;
       }
-
-      // Export to selected file
-      await _yamlService.exportRules(ruleSet, outputPath);
 
       _logger.i('Exported ${ruleSet.rules.length} rules to $outputPath');
       _showStatus('Exported ${ruleSet.rules.length} rules to ${_shortenPath(outputPath)}');
@@ -337,21 +384,22 @@ class _YamlImportExportScreenState extends State<YamlImportExportScreen> {
         return;
       }
 
-      // Let user pick save location
-      final outputPath = await FilePicker.platform.saveFile(
+      // Let user pick save location (see [saveYamlExport] for the platform
+      // difference).
+      final outputPath = await saveYamlExport(
+        picker: FilePicker.platform,
+        isMobile: Platform.isAndroid || Platform.isIOS,
         dialogTitle: 'Export Safe Senders YAML',
         fileName: 'rules_safe_senders.yaml',
-        type: FileType.custom,
-        allowedExtensions: ['yaml', 'yml'],
+        yaml: _yamlService.renderSafeSenders(safeSenders),
+        writeDesktopFile: (path) =>
+            _yamlService.exportSafeSenders(safeSenders, path),
       );
 
       if (outputPath == null) {
         _showStatus('Export cancelled');
         return;
       }
-
-      // Export to selected file
-      await _yamlService.exportSafeSenders(safeSenders, outputPath);
 
       _logger.i('Exported ${safeSenders.safeSenders.length} safe senders to $outputPath');
       _showStatus(

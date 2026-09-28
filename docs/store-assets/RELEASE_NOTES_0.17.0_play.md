@@ -14,7 +14,9 @@ included. The 500-character limit applies to the text BETWEEN the tags.
 ---
 
 <en-US>
-Scan results are listed newest first, grouped by sender, like your inbox.
+Scan results show when each email arrived; a Sort button lists newest first.
+
+Only one scan runs on an account at a time. Exporting rules to a file works.
 
 New accounts start with the right folders for their provider, including spam.
 

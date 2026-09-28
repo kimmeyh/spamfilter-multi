@@ -29,6 +29,8 @@ Format: `- **type**: Description (Issue #N)` where type is feat|fix|chore|docs
 ### 2026-09-27 (Sprint 74)
 - **fix**: adding a rule or safe sender while reviewing a saved scan from Scan History works again. The app lost track of the account's email provider, so every action failed with "N of N could not be applied". (Issue #422)
 - **change**: the Scan Results screen shows the account's email address once, in the title. (Issue #422)
+- **fix**: only one scan runs on an account at a time, whatever started it (a manual scan, a background scan, or applying a new rule). Several background scans could start on the same account at once, and scans that had stopped could show "In progress" for hours; a scan that stops responding is now closed so the next one can start. If a scan is already running, the app says so instead of starting a second one. (Issue #434)
+- **fix**: exporting rules or safe senders to a YAML file works on Android. It failed every time with "Bytes are required on Android & iOS when saving a file". (Issue #439)
 
 ### 2026-09-25 (Sprint 74)
 - **fix**: a background scan now also waits while you re-process mail from Scan Results, and it can no longer slip in during the few seconds a manual scan spends connecting. A scan that fails before it connects is now shown in Scan History as failed instead of leaving no record. (Issue #434)
@@ -43,7 +45,7 @@ Format: `- **type**: Description (Issue #N)` where type is feat|fix|chore|docs
 - **feat**: a new Settings option, Hide sender details in exports, keeps only the sender's domain and leaves out the subject and message ID, for a file you want to share. (Issue #439)
 - **fix**: after you change the export folder, the diagnostic log now writes to the new folder straight away. It kept using the old folder until the app restarted. (Issue #439)
 - **fix**: Settings now names the real default export folder. It said "Downloads folder (default)" on every platform, which was not true on either. (Issue #439)
-- **feat**: scan results are now listed newest first, with each sender domain's other emails grouped right after its newest one, so the list reads like your inbox. Emails from a subdomain (news.example.com) group with the main domain (example.com). (Issue #437)
+- **feat**: each email on the Scan Results screen now shows the date it arrived, and a new Sort button switches the list between the usual order (folder, then sender domain, then sender address) and newest first. Emails from email providers stay grouped at the top in both orders. (Issue #437)
 - **fix**: Gmail emails now show the date they arrived. Every Gmail email used to show the time of the scan instead, because the date format Gmail sends was not being read. This also corrects the Received Date column in exported results. (Issue #437)
 - **fix**: a background scan no longer runs on an account while you are scanning it yourself. On both Windows and Android, the background scan now waits its turn for that account instead of opening a second connection to your mail server. (Issue #434)
 - **fix**: the "background scan in progress" notice now clears within minutes when a background scan has stopped, instead of lingering for up to 30 minutes. (Issue #434)

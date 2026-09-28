@@ -149,48 +149,53 @@ void main() {
       );
     }
 
-    // F222 (Sprint 74): the RENDERED order is newest-first, clustered by base
-    // domain. This is the wiring test for orderResultsForDisplay -- the unit
-    // tests prove the function; this proves _getFilteredResults uses it.
-    // Under the old folder -> domain -> address sort, mid@alpha.com rendered
-    // ABOVE new@beta.com; under F222 it renders below.
-    testWidgets('F222: rows render newest-first, clustered by base domain',
+    // F222 (Sprint 74, reworked at Manual Validation): the RENDERED order.
+    // Default = folder -> domain -> address (the pre-Sprint-74 order, which
+    // Harold asked to keep); the Sort chip switches to newest first. This is
+    // the WIRING test for orderResultsForDisplay and the chip -- the unit
+    // tests prove the orders themselves.
+    //
+    // What this does NOT catch: the "from email providers" partition (no
+    // seeded sender is a provider domain), or a date shown in the wrong time
+    // zone (the helper and the pop-up share one function; both would be
+    // wrong together).
+    testWidgets(
+        'F222: default order is folder, domain, address; the Sort chip '
+        'switches to newest first; each row shows its received date',
         (tester) async {
       tester.view.physicalSize = const Size(1200, 2400);
       tester.view.devicePixelRatio = 1.0;
       addTearDown(tester.view.resetPhysicalSize);
       addTearDown(tester.view.resetDevicePixelRatio);
 
+      final base = DateTime.now();
+      DateTime at(int minsAgo) => base.subtract(Duration(minutes: minsAgo));
+
       await tester.runAsync(() async {
-        final base = DateTime.now();
-        int minsAgo(int m) =>
-            base.subtract(Duration(minutes: m)).millisecondsSinceEpoch;
-        Map<String, Object?> row(String id, String from, int receivedAt) => {
+        Map<String, Object?> row(
+                String id, String from, int minsAgo, String folder) =>
+            {
               'scan_result_id': scanId,
               'email_id': id,
               'email_from': from,
               'email_subject': 'Subject $id',
-              'email_received_date': receivedAt,
-              'email_folder': 'INBOX',
+              'email_received_date': at(minsAgo).millisecondsSinceEpoch,
+              'email_folder': folder,
               'action_type': 'none',
               'matched_rule_name': null,
               'matched_pattern': null,
               'is_safe_sender': 0,
               'success': 1,
             };
-        // Inserted OLDEST-first on purpose: query order then differs from the
-        // expected display order, so deleting the ordering call fails this
-        // test instead of passing by coincidence (mutation-verified).
-        // older@beta.com is what makes CLUSTERING observable: plain
-        // newest-first would put mid@alpha.com (10 min) above it (30 min);
-        // clustering keeps it with new@beta.com. Without it this test cannot
-        // tell the two orders apart (mutation "call site removed" SURVIVED
-        // before it was added -- historical rows already load newest-first).
+        // Inserted in an order that matches NEITHER expected order, so
+        // deleting either ordering fails this test instead of passing by
+        // coincidence.
         await testHelper.dbHelper.insertEmailActionBatch([
-          row('2003', 'old@news.alpha.com', minsAgo(60)),
-          row('2004', 'older@beta.com', minsAgo(30)),
-          row('2002', 'mid@alpha.com', minsAgo(10)),
-          row('2001', 'new@beta.com', minsAgo(1)),
+          row('2003', 'old@news.alpha.com', 60, 'INBOX'),
+          row('2004', 'older@beta.com', 30, 'INBOX'),
+          row('2005', 'z@zeta.com', 20, 'Bulk'),
+          row('2002', 'mid@alpha.com', 10, 'INBOX'),
+          row('2001', 'new@beta.com', 1, 'INBOX'),
         ]);
         final ruleProvider = await buildRuleProvider();
         await mountAndLoadDbWidget(
@@ -200,14 +205,53 @@ void main() {
       });
 
       double y(String text) => tester.getTopLeft(find.text(text)).dy;
-      // The two setUp rows are the newest (received "now").
+      void expectInOrder(List<String> senders, String why) {
+        for (var i = 0; i + 1 < senders.length; i++) {
+          expect(y(senders[i]), lessThan(y(senders[i + 1])),
+              reason: '$why: ${senders[i]} must be above ${senders[i + 1]}');
+        }
+      }
+
+      // DEFAULT: folder (Bulk < INBOX), then domain A-Z (alpha.com <
+      // beta.com < news.alpha.com < spam.com < trusted.com), then address
+      // (new@ < older@).
+      expect(find.text('Sort: Folder'), findsOneWidget);
+      expectInOrder([
+        'z@zeta.com',
+        'mid@alpha.com',
+        'new@beta.com',
+        'older@beta.com',
+        'old@news.alpha.com',
+        'bad@spam.com',
+        'friend@trusted.com',
+      ], 'default order');
+
+      // Every row carries its received date, in the pop-up's format.
+      expect(
+          find.textContaining(
+              '• ${formatReceivedDateForDisplay(at(1))} • Subject 2001'),
+          findsOneWidget,
+          reason: 'the row subtitle shows the received date before the '
+              'subject (Harold, Sprint 74 MV)');
+
+      // The chip switches to NEWEST FIRST.
+      await tester.tap(find.byKey(const Key('results_sort_chip')));
+      await tester.pump();
+      expect(find.text('Sort: Newest first'), findsOneWidget);
+      expectInOrder([
+        'new@beta.com', // 1 min
+        'mid@alpha.com', // 10 min
+        'z@zeta.com', // 20 min
+        'older@beta.com', // 30 min
+        'old@news.alpha.com', // 60 min
+      ], 'newest first');
+      // The two setUp rows were received "now" -- newest of all.
       expect(y('friend@trusted.com'), lessThan(y('new@beta.com')));
-      expect(y('new@beta.com'), lessThan(y('older@beta.com')));
-      expect(y('older@beta.com'), lessThan(y('mid@alpha.com')),
-          reason: 'the whole beta cluster (newest 1 min ago) precedes alpha, '
-              'even though mid@alpha.com (10 min) is newer than older@beta.com');
-      expect(y('mid@alpha.com'), lessThan(y('old@news.alpha.com')),
-          reason: 'news.alpha.com clusters with alpha.com, newest-first');
+
+      // And back to the default.
+      await tester.tap(find.byKey(const Key('results_sort_chip')));
+      await tester.pump();
+      expect(y('z@zeta.com'), lessThan(y('mid@alpha.com')));
     });
 
     testWidgets(
@@ -347,11 +391,11 @@ void main() {
       addTearDown(tester.view.resetDevicePixelRatio);
 
       await tester.runAsync(() async {
-        // Third seeded email, SAME domain as bad@spam.com. Since F222
-        // (Sprint 74) the list is newest-first clustered by base domain, so
-        // the two spam.com rows are adjacent whatever their exact times --
-        // advancing from bad@spam.com must skip worse@spam.com (covered by
-        // the new rule) and land on friend@trusted.com.
+        // Third seeded email, SAME domain as bad@spam.com. The default order
+        // (folder -> domain -> address, F222 as reworked at Sprint 74 MV) keeps
+        // the two spam.com rows adjacent -- advancing from bad@spam.com must
+        // skip worse@spam.com (covered by the new rule) and land on
+        // friend@trusted.com.
         await testHelper.dbHelper.insertEmailActionBatch([
           {
             'scan_result_id': scanId,

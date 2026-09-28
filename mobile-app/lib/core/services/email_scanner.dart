@@ -1013,6 +1013,18 @@ class EmailScanner {
           settingsStore: _settingsStore,
         );
       }
+    } on ScanAccountBusyException catch (e) {
+      // Harold Q4 (Sprint 74 MV): REFUSED, not failed -- another scan holds
+      // this account. startScan already set the status message and wrote no
+      // row, so errorScan (which prefixes "Scan failed: ") must not run.
+      // Rethrown so each caller maps it to its own outcome: a background
+      // scan records a skip, a manual scan shows the message.
+      AppLogger.scan('SCAN REFUSED: $e');
+      if (isLiveScan) {
+        await LiveScanLogger.log(
+            'SCAN REFUSED accountId=${Redact.accountId(accountId)} $e');
+      }
+      rethrow;
     } on ScanCancelledException {
       // F224 (Sprint 73): the user asked for this, so it is NOT a failure.
       //

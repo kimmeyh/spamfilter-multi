@@ -579,7 +579,7 @@ count reaches 12.
 
 - Task 0 -- DONE `dfa4881` (0.17.0+8). Missed the F196 release notes the bump made due; added in `3a3690e`.
 - Task 1 MV74-2 -- DONE `3a3690e` (heartbeat v9, honest warning, cross-isolate exclusion). Review round: C-2 write test.
-- Task 2 F222 -- DONE `5bea2a2` (ordering + Gmail internalDate).
+- Task 2 F222 -- DONE `5bea2a2` (ordering + Gmail internalDate). **REOPENED at MV (2026-09-27) and reworked**: the clustered newest-first order was not what Harold asked for. Default restored to folder -> domain -> address; a Sort chip (Scan Results summary card, "Sort: Folder" / "Sort: Newest first", screen state, resets on each visit) switches to newest first; each row shows its received date (shared with the pop-up). Provider grouping unchanged in both.
 - Task 4 F206 -- DONE `f9ee85c` (ExportDirectories, shared per-scan export, clear history, redaction). ADR-0042 correction: one conditional, not a factory.
 - Task 3 F202 -- DONE `f95a346` (code-only; the editable-defaults question is asked at Manual Validation).
 - Tasks 5-8 -- device work on the S24+: Manual Validation.
@@ -626,8 +626,27 @@ Evidence: 25 app screenshots pulled from the Fold8 over MTP; one diagnostic log,
 - **FOUND, OPEN: YAML export fails on Android** -- "Bytes are required on Android & iOS when saving a file" (`yaml_import_export_screen.dart`, `FilePicker.saveFile` without `bytes`). Present in 0.17.0.
 - **FOUND, OPEN: Gmail "Error: Missing credentials"** after an OAuth add and one scan. Source facts only: the message shows when `getCredentials` returns null; for an OAuth account that means the Gmail token bundle is gone. `GoogleAuthService` deletes the token bundle on SEVEN refresh-failure paths (native sign-in returns no user or no authorization, HTTP refresh failure, any exception). Which one fired is NOT established.
 - **Exclusion UX (step 10)**: Harold expected a pop-up offering to cancel the background scan in favor of the manual one. The shipped dialog offers only wait/proceed; on 0.16.0 it could not appear because the stuck rows were hours old (outside the freshness rule). New capability -- decision pending.
-- **F222**: Harold's intended design differs from what shipped -- decision pending (see the questions in the session).
-- **Android export default**: Harold now asks for Downloads (Documents was his 09/25 answer) -- decision pending.
+- **F222**: Harold's intended design differed from what shipped -- DECIDED and reworked (below).
+- **Android export default**: Harold confirmed Downloads CANNOT be used on Android -- Documents stays (no change).
+
+### Round 2 decisions -- Harold, 2026-09-27
+
+- **Test Background Scan at 12:56 / 18:31**: *"no"*. So the four-at-once burst came from the automatic triggers.
+- **Q1 Cancel-background pop-up -> F238 (Issue #441), Sprint 75, model Fable 5.1, full card. RELEASE BLOCKER**: *"0.17.0 cannot ship without a fix"*; *"it is the largest bug that we have."*
+- **Q2 F222**: default stays folder -> domain -> address; a UI control switches to date descending; both keep the "from email providers / not from email providers" grouping; the received date (the pop-up's format) on each row. DONE.
+- **Q3 Android export folder**: keep Documents (Downloads cannot be used on Android). No change.
+- **Q4 One scan per account, any type** -- *"If one is already running, don't start a new one. It is a semiphore type problem and scans cannot run forever."* DONE: `ScanResultStore.claimAccountScan` (per account, `BEGIN IMMEDIATE`, reaps dead holders, fail closed); the manual dialog is OK-only ("Wait and start" removed -- nothing waited); re-process refused with "saved, mailbox not changed yet"; `reset()` no longer stops the heartbeat. 7 mutations KILLED. Per ACCOUNT, not global (assumption stated to Harold). ADR-0039 amendment.
+- **Q5 YAML export on Android**: DONE (`saveYamlExport`; bytes to the plugin on mobile). ADR-0042 exception recorded. The F208 comment claiming Android export was verified was false (plugin 8.3.7 then as now).
+- **Q6** -- same as Q1 (next sprint, release blocker).
+- **Q7 Gmail Missing credentials**: investigated; fix scope awaits Harold. Source facts (not device-verified -- no log captured the failure):
+  - Android Gmail sign-in saves NO refresh token (`google_auth_service.dart:433`, "Native SDK manages refresh internally"). The access token expires after about an hour.
+  - On the next use, `initialize()` -> `_attemptSilentSignIn` returns unauthenticated (expired, cannot refresh) -> on Android it calls `_refreshViaNativeSignIn` directly (`:213-219`) -> `attemptLightweightAuthentication()`.
+  - That function DELETES the Gmail tokens if it gets no user (`:288-290`) or no authorization (`:299-300`). With no tokens and no password, `getCredentials` returns null and the account list shows "Error: Missing credentials", offering only Delete.
+  - In a WorkManager worker there is no Activity: google_sign_in_android 7.2.7 fails `getCredential` with `NO_ACTIVITY` (`GoogleSignInPlugin.java:229-235`) and THROWS (`uiUnavailable`). That path rethrows and does NOT delete, so the background worker is probably not the deleter -- but it also means a Gmail background scan can never renew its token.
+  - Minor: `getValidAccessToken` falls back to `accounts.first` when no current account is set -- with AOL and Gmail both saved, that can be the wrong account.
+  - "Something went wrong. Please try again." (22:08) is the generic `ErrorMessages.humanize` fallback -- no single owner.
+- **Q8** -- Harold's reorder of the 0.16.0 Windows notes committed (`1b86093`).
+- **No AAB until both the Sprint 74 and Sprint 75 PRs are merged.** Consequence (restated to Harold for confirmation): every 0.17.0 PHONE check -- MV74-1 Doze + reboot, Task 7 AC-2 live deletion, Task 8 error classification, the scan lock under real Doze batching -- moves to Sprint 75 Manual Validation. Windows validates what it can in this sprint.
 
 ## Phase 3.6.1 Architecture Impact Check
 
