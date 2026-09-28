@@ -30,6 +30,8 @@ Format: `- **type**: Description (Issue #N)` where type is feat|fix|chore|docs
 - **fix**: adding a rule or safe sender while reviewing a saved scan from Scan History works again. The app lost track of the account's email provider, so every action failed with "N of N could not be applied". (Issue #422)
 - **change**: the Scan Results screen shows the account's email address once, in the title. (Issue #422)
 - **fix**: only one scan runs on an account at a time, whatever started it (a manual scan, a background scan, or applying a new rule). Several background scans could start on the same account at once, and scans that had stopped could show "In progress" for hours; a scan that stops responding is now closed so the next one can start. If a scan is already running, the app says so instead of starting a second one. (Issue #434)
+- **fix**: a Gmail account no longer turns into "Error: Missing credentials" when renewing its sign-in fails. The app used to delete the saved sign-in whenever a renewal failed, even for a passing problem, which left Delete as the only option. (Issue #442)
+- **change**: each row on the Scan Results screen shows the date only; the assign-a-rule pop-up still shows the date and time. (Issue #437)
 - **fix**: exporting rules or safe senders to a YAML file works on Android. It failed every time with "Bytes are required on Android & iOS when saving a file". (Issue #439)
 
 ### 2026-09-25 (Sprint 74)

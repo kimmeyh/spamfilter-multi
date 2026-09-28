@@ -85,12 +85,20 @@ List<EmailActionResult> orderResultsForDisplay(
   }
 }
 
-/// F222 (Sprint 74 MV, Harold): the received date shown on each Scan Results
-/// row -- the SAME text the assign-a-rule pop-up shows, from ONE function so
-/// the two cannot drift. Local time, to the minute ("2026-09-26 22:05").
+/// F222 (Sprint 74 MV, Harold): the received date and time on the
+/// assign-a-rule pop-up. Local time, to the minute ("2026-09-26 22:05").
 @visibleForTesting
 String formatReceivedDateForDisplay(DateTime receivedDate) =>
     receivedDate.toLocal().toString().substring(0, 16);
+
+/// F222 (Sprint 74 MV round 2, Harold): the Scan Results ROW shows the date
+/// only -- *"do not need time displayed on the results screen, only date is
+/// needed (Ok to keep time on the assign rule pop-up)"*. Derived from
+/// [formatReceivedDateForDisplay], so the row's date is always the pop-up's
+/// date ("2026-09-26").
+@visibleForTesting
+String formatReceivedDayForRow(DateTime receivedDate) =>
+    formatReceivedDateForDisplay(receivedDate).substring(0, 10);
 
 class ResultsDisplayScreen extends StatefulWidget {
   final String platformId;
@@ -1942,7 +1950,7 @@ class _ResultsDisplayScreenState extends State<ResultsDisplayScreen> {
     final rule = matchedRule.isNotEmpty ? matchedRule : 'No rule';
     // F222 (Sprint 74 MV, Harold): the received date, before the subject so a
     // long subject cannot push it off the line.
-    final date = formatReceivedDateForDisplay(result.email.receivedDate);
+    final date = formatReceivedDayForRow(result.email.receivedDate);
     final subtitle = '$folder • $date • $subject • $rule';
     final trailing = result.success
         ? const Icon(Icons.check, color: Colors.green)
@@ -3120,6 +3128,13 @@ class _ResultsDisplayScreenState extends State<ResultsDisplayScreen> {
     unawaited(action().catchError((Object e, StackTrace s) {
       Logger().e('Background quick-action pipeline failed',
           error: e, stackTrace: s);
+      // Sprint 74 MV: this failure was console-only, so a tapped action that
+      // died here left no trace a tester could read. Error class only.
+      unawaited(DiagnosticLogger.failure(
+        context: 'quick-action',
+        kind: DiagnosticLogger.kindException,
+        reason: 'pipeline failed after the tap: ${e.runtimeType}',
+      ));
     }));
 
     // Step 3: show the next item's popup right away.
@@ -4317,11 +4332,32 @@ class _ResultsDisplayScreenState extends State<ResultsDisplayScreen> {
     final senderEmailForConflictCheck = type != 'subject' && email != null
         ? EmailBodyParser().extractEmailAddress(email.from).toLowerCase().trim()
         : null;
+    // Sprint 74 MV (Harold): a subject rule tapped from a saved scan never
+    // reached the database, and nothing recorded whether the tap arrived.
+    // These lines make the next occurrence settle it. Type and error CLASS
+    // only -- the diagnostic log records no message content, and the value
+    // is a subject, address or domain.
+    unawaited(DiagnosticLogger.failure(
+      context: 'rule-create',
+      kind: DiagnosticLogger.kindInfo,
+      reason: 'block rule requested (type: $type)',
+    ));
     final result = await service.createBlockRule(
       type: type,
       value: value,
       senderEmailForConflictCheck: senderEmailForConflictCheck,
     );
+    unawaited(DiagnosticLogger.failure(
+      context: 'rule-create',
+      kind: result.success
+          ? DiagnosticLogger.kindInfo
+          : DiagnosticLogger.kindException,
+      reason: result.success
+          ? 'block rule saved (type: $type'
+              '${result.alreadyExisted ? ', already existed' : ''})'
+          : 'block rule NOT saved (type: $type, '
+              'error: ${result.error?.runtimeType ?? 'rejected'})',
+    ));
 
     if (!result.success) {
       logger.e('[FAIL] Failed to create block rule: ${result.error}');

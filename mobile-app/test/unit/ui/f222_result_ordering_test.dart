@@ -172,9 +172,16 @@ void main() {
   });
 
   group('T-4 -- the received date on each row', () {
-    test('local time, to the minute -- the pop-up and the row share this', () {
+    test('the pop-up shows local date and time, to the minute', () {
       expect(formatReceivedDateForDisplay(DateTime(2026, 9, 26, 22, 5, 31)),
           '2026-09-26 22:05');
+    });
+
+    test('the ROW shows the date only (Harold, MV round 2), and it is the '
+        'pop-up\'s date', () {
+      final d = DateTime(2026, 9, 26, 22, 5, 31);
+      expect(formatReceivedDayForRow(d), '2026-09-26');
+      expect(formatReceivedDateForDisplay(d), startsWith(formatReceivedDayForRow(d)));
     });
 
     test('a UTC date is shown in LOCAL time', () {

@@ -226,13 +226,18 @@ void main() {
         'friend@trusted.com',
       ], 'default order');
 
-      // Every row carries its received date, in the pop-up's format.
+      // Every row carries its received DATE -- no time (Harold, MV round 2:
+      // "only date is needed (Ok to keep time on the assign rule pop-up)").
       expect(
           find.textContaining(
-              '• ${formatReceivedDateForDisplay(at(1))} • Subject 2001'),
+              '• ${formatReceivedDayForRow(at(1))} • Subject 2001'),
           findsOneWidget,
           reason: 'the row subtitle shows the received date before the '
               'subject (Harold, Sprint 74 MV)');
+      expect(
+          find.textContaining(formatReceivedDateForDisplay(at(1))),
+          findsNothing,
+          reason: 'the row must not show the time');
 
       // The chip switches to NEWEST FIRST.
       await tester.tap(find.byKey(const Key('results_sort_chip')));

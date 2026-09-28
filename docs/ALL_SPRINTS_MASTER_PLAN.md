@@ -189,6 +189,10 @@ All incomplete items in relative priority order. Priority in increments of 10; i
 - Builds on the Sprint 74 per-account scan lock (`ScanResultStore.claimAccountScan`): the "A scan is already running" dialog gains "Stop the background scan and start mine", which writes a cancel request onto the background scan's row (DB v10); the worker honors it on its heartbeat tick through the F224 cancellation token.
 - **Release gate**: 0.17.0 is not submitted to either store until F238 ships. No AAB is built until BOTH the Sprint 74 and Sprint 75 PRs are merged (Harold, 2026-09-27) -- so every 0.17.0 phone check moves to Sprint 75 Manual Validation.
 
+**F239. Gmail on Android -- renew the token without the app open, and a "Sign In Again" path (Issue #442) Priority 12 -- backlog**
+- Harold, 2026-09-28 (Q1 option 1): Sprint 74 stopped DELETING the tokens on a failed renewal (no more "Missing credentials"); this card is the other half.
+- Android stores no refresh token and a WorkManager worker has no Activity, so a Gmail background scan cannot renew its token after about an hour. The "Sign In Again" widget in `error_display.dart` exists but no screen uses it. Full card: Issue #442 (Class-1: auth mechanism, may need a Google Cloud console change).
+
 ### Sprint 74 Manual Validation carry-ins (device-blocked from Sprint 73)
 
 **Harold, 2026-09-23**: *"1. and 2. add to sprint 74 Manual Validation"*. These three are NOT new
