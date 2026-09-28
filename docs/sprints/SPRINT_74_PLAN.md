@@ -632,7 +632,8 @@ Evidence: 25 app screenshots pulled from the Fold8 over MTP; one diagnostic log,
 
 ### Round 2 decisions -- Harold, 2026-09-27
 
-- **Test Background Scan at 12:56 / 18:31**: *"no"*. So the four-at-once burst came from the automatic triggers.
+- **Test Background Scan at 12:56 / 18:31**: *"no"*. **Cause of the four-at-once burst NOT established.** Checked: each account has exactly ONE Doze alarm (`DozeAlarmScheduler.kt:56` request code = `accountId.hashCode()`, `FLAG_UPDATE_CURRENT`, shared by `schedule` and `rescheduleAll`), so duplicate alarms are unlikely. Remaining candidates, unverified: the periodic chain and the Doze one-off firing together, and the Doze one-off's `ExistingWorkPolicy.REPLACE` stopping a still-running worker whose Dart isolate may not stop. The per-account lock now prevents the HARM whichever chain fires; the Sprint 75 device run (skip reasons are logged) will show which one it is.
+- **Noted, not changed**: `ScanResultStore.getActiveBackgroundScan` has no production caller now (the manual dialog uses `getActiveScanForAccount`); it is kept with its tests. `shouldWarnAboutBackgroundScan` keeps its name although it now gates an any-type check.
 - **Q1 Cancel-background pop-up -> F238 (Issue #441), Sprint 75, model Fable 5.1, full card. RELEASE BLOCKER**: *"0.17.0 cannot ship without a fix"*; *"it is the largest bug that we have."*
 - **Q2 F222**: default stays folder -> domain -> address; a UI control switches to date descending; both keep the "from email providers / not from email providers" grouping; the received date (the pop-up's format) on each row. DONE.
 - **Q3 Android export folder**: keep Documents (Downloads cannot be used on Android). No change.
