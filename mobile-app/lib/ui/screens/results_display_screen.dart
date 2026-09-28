@@ -1600,6 +1600,31 @@ class _ResultsDisplayScreenState extends State<ResultsDisplayScreen> {
       );
     }
 
+    if (hasError && scanProvider.wasRefused) {
+      // Harold Q4 (Sprint 74 MV): another scan holds this account, so this one
+      // did not start. Information, not a failure -- neutral colors, and the
+      // whole sentence wraps instead of being cut off.
+      return Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(Icons.info_outline,
+              size: 16, color: Theme.of(context).colorScheme.secondary),
+          const SizedBox(width: 6),
+          Flexible(
+            child: Text(
+              scanProvider.statusMessage ?? 'Another scan is running',
+              style: TextStyle(
+                fontSize: 13,
+                fontWeight: FontWeight.w500,
+                color: Theme.of(context).colorScheme.onSurface,
+              ),
+            ),
+          ),
+        ],
+      );
+    }
+
     if (hasError) {
       return Row(
         mainAxisSize: MainAxisSize.min,

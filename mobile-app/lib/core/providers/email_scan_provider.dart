@@ -190,6 +190,13 @@ class EmailScanProvider extends ChangeNotifier {
   /// only the live header was wrong.
   bool get wasCancelled => _wasCancelled;
   bool _wasCancelled = false;
+
+  /// Harold Q4 (Sprint 74 MV): true when the last scan was REFUSED at the
+  /// per-account scan lock (another scan held the account). The status is
+  /// `error` so every existing "not running" check holds, but the Results
+  /// screen shows it as information, not a failure.
+  bool get wasRefused => _wasRefused;
+  bool _wasRefused = false;
   int get processedCount => _processedCount;
   int get totalEmails => _totalEmails;
   EmailMessage? get currentEmail => _currentEmail;
@@ -333,6 +340,7 @@ class EmailScanProvider extends ChangeNotifier {
     String? platformId,  // PR #335 review: explicit platform for the ensured accounts row (no accountId parsing)
   }) async {
     _wasCancelled = false;
+    _wasRefused = false;
     _status = ScanStatus.scanning;
     _processedCount = 0;
     _totalEmails = totalEmails;
@@ -664,6 +672,7 @@ class EmailScanProvider extends ChangeNotifier {
     _stopHeartbeat();
     _status = ScanStatus.error;
     _wasCancelled = false;
+    _wasRefused = true;
     _statusMessage = message;
     _currentEmail = null;
     notifyListeners();
@@ -675,6 +684,7 @@ class EmailScanProvider extends ChangeNotifier {
     _status = ScanStatus.error;
     // A real failure must never inherit a previous cancel's flag.
     _wasCancelled = false;
+    _wasRefused = false;
     _statusMessage = 'Scan failed: $errorMessage';
     _currentEmail = null;
     _logger.e('Scan error: $errorMessage');
@@ -711,6 +721,7 @@ class EmailScanProvider extends ChangeNotifier {
     _stopHeartbeat();
     _status = ScanStatus.error;
     _wasCancelled = true;
+    _wasRefused = false;
     _statusMessage = 'Scan cancelled. '
         '$_processedCount of $_totalEmails emails had been checked.';
     _currentEmail = null;
@@ -747,6 +758,7 @@ class EmailScanProvider extends ChangeNotifier {
     // would then close its row and let a second scan onto the account.
     _status = ScanStatus.idle;
     _wasCancelled = false;
+    _wasRefused = false;
     _processedCount = 0;
     _totalEmails = 0;
     _currentEmail = null;

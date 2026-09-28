@@ -1029,8 +1029,11 @@ class ScanAccountBusyException implements Exception {
   String get userMessage {
     final holder = blockingScan;
     if (holder == null) {
-      return 'Could not check whether another scan is running on this '
-          'account, so this one did not start. Try again.';
+      // Covers both "could not check the lock" and "could not record the
+      // scan" (the account row is ensured in the same step) -- say only
+      // what is certain.
+      return 'The app could not record this scan in its database, so it did '
+          'not start. Try again.';
     }
     return 'A ${describeScanType(holder.scanType)} is already running on '
         'this account. Only one scan can run on an account at a time; try '

@@ -40,7 +40,7 @@ void main() {
       // than only grepped -- `if (false && ...)` previously passed all 14
       // tests. The behavioural coverage now lives in f224_scan_cancel_test;
       // this pins that the scanner still CALLS it.
-      expect(scanner.contains('ScanCoordinator.instance.throwIfCancelled()'),
+      expect(scanner.contains('ScanCoordinator.instance.throwIfCancelled(scanLease)'),
           isTrue,
           reason: 'without this call the flag is raised and never read');
     });
@@ -51,7 +51,7 @@ void main() {
       // anywhere else would cover one platform and silently miss the others.
       final sinkIdx = scanner.indexOf('Future<void> batchSink(');
       final checkIdx =
-          scanner.indexOf('ScanCoordinator.instance.throwIfCancelled()');
+          scanner.indexOf('ScanCoordinator.instance.throwIfCancelled(scanLease)');
       final evalIdx = scanner.indexOf('await evaluateBatch(batch);');
 
       expect(sinkIdx, greaterThan(-1));
@@ -66,7 +66,7 @@ void main() {
       // Otherwise a cancelled batch would be counted as scanned, and the
       // partial count recorded at AC-4 would overstate what really happened.
       final checkIdx =
-          scanner.indexOf('ScanCoordinator.instance.throwIfCancelled()');
+          scanner.indexOf('ScanCoordinator.instance.throwIfCancelled(scanLease)');
       final countIdx = scanner.indexOf('folderCount += batch.length;');
       expect(checkIdx, lessThan(countIdx));
     });

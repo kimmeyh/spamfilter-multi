@@ -17,6 +17,7 @@ library;
 
 import 'dart:async';
 
+import 'package:flutter/foundation.dart' show visibleForTesting;
 import 'package:logger/logger.dart';
 
 import '../../adapters/storage/secure_credentials_store.dart';
@@ -105,6 +106,14 @@ class BackgroundScanCore {
   /// dash inside a plain email ("my-name@gmail.com") must never be read as a
   /// platform prefix. Returns null when no platform can be determined -- the
   /// caller skips the account rather than guessing.
+  /// Sprint 74 MV review (finding 2): is a scan-lock refusal a SKIP? Only
+  /// when another scan actually holds the account. A lock that could not be
+  /// checked (a database error) is a failure, and is rethrown so the workers
+  /// count it as one -- and the Windows "database is locked" retry sees it.
+  @visibleForTesting
+  static bool isSkipRefusal(ScanAccountBusyException e) =>
+      e.blockingScan != null;
+
   static Future<String?> resolvePlatformId(
     SecureCredentialsStore credStore,
     String accountId,
@@ -221,6 +230,14 @@ class BackgroundScanCore {
       // Harold Q4 (Sprint 74 MV): the claim was refused -- another scan took
       // the account between the early check above and the claim. A skip,
       // exactly like the early check: not an error, no row written.
+      //
+      // ONLY when another scan actually holds the account (review finding
+      // 2). A lock that could not be CHECKED is a database failure and must
+      // read as one: mapped to a skip, the workers counted it as success,
+      // so a persistent database error would have stopped background
+      // scanning while every run reported success -- and the Windows
+      // worker's "database is locked" retry never saw the error.
+      if (!isSkipRefusal(e)) rethrow;
       _logger.i('Background scan SKIPPED for ${Redact.accountId(accountId)} '
           'at the scan lock: $e');
       return AccountScanOutcome.skipped(e.userMessage, scanProvider);

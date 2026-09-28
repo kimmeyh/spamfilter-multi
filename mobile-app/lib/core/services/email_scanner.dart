@@ -431,11 +431,13 @@ class EmailScanner {
             // session on every path including this one. Signalling any other
             // way would need a second teardown path and risks the Sprint 61
             // leak (lease freed while the socket is still open).
-            if (ScanCoordinator.instance.isCancelRequested) {
+            if (scanLease!.info.cancelRequested) {
               AppLogger.scan('F224: cancellation observed at a batch boundary '
                   '-- stopping the scan');
             }
-            ScanCoordinator.instance.throwIfCancelled();
+            // Sprint 74 MV review: checks THIS scan's lease, so a scan whose
+            // lease was force-released (timeout) also stops here.
+            ScanCoordinator.instance.throwIfCancelled(scanLease);
             folderCount += batch.length;
             scanProvider.incrementFoundEmails(batch.length);
             scanProvider.updateProgress(
@@ -963,6 +965,14 @@ class EmailScanner {
 
       // 7. Complete scan ([NEW] SPRINT 4: Now async to persist final state)
       AppLogger.scan('Step 7: Completing scan. Final counts: found=${scanProvider.totalEmails}, processed=${scanProvider.processedCount}, deleted=${scanProvider.deletedCount}, moved=${scanProvider.movedCount}, safe=${scanProvider.safeSendersCount}, noRule=${scanProvider.noRuleCount}, errors=${scanProvider.errorCount}');
+      if (scanLease.info.revoked) {
+        // Sprint 74 MV review: this scan's lease was force-released (timed
+        // out) and the provider may now belong to the next scan -- its row
+        // was already closed by the timeout path. Leave both alone.
+        AppLogger.scan('Scan finished AFTER its lease was revoked -- not '
+            'touching the scan provider');
+        return;
+      }
       await scanProvider.completeScan();
 
       // Sprint 38 Round 1 (F86 revised, post-retro 2026-05-16): reload
@@ -1044,7 +1054,12 @@ class EmailScanner {
         await LiveScanLogger.log(
             'SCAN CANCELLED accountId=${Redact.accountId(accountId)}');
       }
-      await scanProvider.cancelScan();
+      // Sprint 74 MV review: a REVOKED scan (lease force-released on
+      // timeout) stops through this same path -- but its row is already
+      // closed and the provider may belong to the next scan.
+      if (scanLease?.info.revoked != true) {
+        await scanProvider.cancelScan();
+      }
     } catch (e, st) {
       // Handle scan error
       AppLogger.error('SCAN FAILED with exception', error: e, stackTrace: st);
@@ -1069,7 +1084,9 @@ class EmailScanner {
       final msg = e.runtimeType.toString() == '_Exception'
           ? e.toString().replaceFirst('Exception: ', '')
           : ErrorMessages.humanize(e);
-      await scanProvider.errorScan(msg);
+      if (scanLease?.info.revoked != true) {
+        await scanProvider.errorScan(msg);
+      }
       rethrow;
     } finally {
       // F175 (Sprint 62): release the scan lease on EVERY path -- a crashed

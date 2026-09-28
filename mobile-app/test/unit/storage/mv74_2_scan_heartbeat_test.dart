@@ -456,8 +456,12 @@ void main() {
               'refused scan');
       expect(provider.statusMessage, contains('background scan'));
       expect(provider.statusMessage, isNot(contains('Scan failed')));
+      expect(provider.wasRefused, isTrue,
+          reason: 'the Results screen shows a refusal as information');
 
       await provider.errorScan('late error');
+      expect(provider.wasRefused, isFalse,
+          reason: 'a real error after a refusal is shown as an error');
       final first =
           (await rowsFor('acct-a')).firstWhere((r) => r['id'] == firstId);
       expect(first['status'], 'completed',

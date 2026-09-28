@@ -80,6 +80,14 @@ class ActiveScanInfo {
   /// F224: set by [ScanCoordinator.requestCancel]. The scan itself polls this
   /// and throws; nothing here tears anything down.
   bool cancelRequested = false;
+
+  /// Sprint 74 MV review (Harold Q4, "scans cannot run forever"): set when the
+  /// lease was FORCE-released out from under this scan (a timeout, or the
+  /// F220 backgrounding handler). The scan is told to stop
+  /// ([cancelRequested]) and, being revoked, must not touch the shared scan
+  /// provider on its way out -- the provider may already belong to the next
+  /// scan.
+  bool revoked = false;
 }
 
 /// A granted right to scan. Pass back to [ScanCoordinator.release] exactly
@@ -242,8 +250,17 @@ class ScanCoordinator {
   ///
   /// Throws [ScanCancelledException] when a stop has been requested. The
   /// caller's `finally` does the rest -- see the exception's own doc.
-  void throwIfCancelled() {
-    if (isCancelRequested) {
+  ///
+  /// Sprint 74 MV review: pass the scan's own [lease]. A force-released
+  /// (timed-out) scan is no longer [_active], so the unscoped check read the
+  /// NEXT scan's flag and the timed-out scan could never stop -- it kept its
+  /// mail-server session while its row was closed and the account lock went
+  /// to another scan.
+  void throwIfCancelled([ScanLease? lease]) {
+    final requested = lease != null
+        ? lease.info.cancelRequested
+        : isCancelRequested;
+    if (requested) {
       throw const ScanCancelledException();
     }
   }
@@ -290,6 +307,12 @@ class ScanCoordinator {
     }
     _logger.w('ScanCoordinator: force-releasing the ${holder.scanType} '
         'lease -- its scan timed out without completing');
+    // Sprint 74 MV review: tell the released scan to stop at its next check
+    // point, and mark it revoked so it leaves the shared provider alone.
+    // Before this it ran on -- session open, row closed -- which let the
+    // per-account lock admit a second scan beside it.
+    holder.cancelRequested = true;
+    holder.revoked = true;
     _handOffOrIdle();
   }
 
