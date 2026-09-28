@@ -16,6 +16,7 @@
 library;
 
 import 'dart:async';
+import 'dart:math';
 
 import 'package:flutter/foundation.dart' show visibleForTesting;
 import 'package:logger/logger.dart';
@@ -139,7 +140,82 @@ class BackgroundScanCore {
   /// provider's persistence with the database helper), so both platforms
   /// persist scan_results, email_actions, and unmatched_emails identically --
   /// the invariant Sprint 60's accounts-FK bug taught us to guard.
+  ///
+  /// Harold, Sprint 74 MV round 4 (2026-09-28): *"if either of the N account
+  /// scans finds the DB busy it waits random number of minutes between 2 and
+  /// 6 minutes then starts (won't worry about conflict if they still
+  /// conflict)"*. "Busy" is either case below, on the FIRST attempt:
+  ///   - another scan holds this account (the early check or the scan lock
+  ///     refused it -- both return a skip), or
+  ///   - SQLite reported "database is locked" anywhere in the attempt.
+  /// The scan then waits [busyRetryDelay] (random, 2:00 to 6:00) and runs
+  /// ONCE more, through the same lock -- "starts" never means bypassing the
+  /// lock, which would reopen two sessions on one account. If that attempt is
+  /// busy too, its outcome stands (a skip, or the lock error rethrown).
+  /// The random delay also spreads out the Doze batch, which delivers every
+  /// account's alarm at the same moment.
+  ///
+  /// Replaces the Windows-only F98/F101 loop (15 attempts, 1 minute apart);
+  /// one shared rule for both platforms (ADR-0042).
+  ///
+  /// Android caveat: a WorkManager worker has about 10 minutes without a
+  /// foreground service, so a 6-minute wait leaves about 4 for the scan.
   static Future<AccountScanOutcome> scanAccount({
+    required String accountId,
+    required String platformId,
+    required RuleSetProvider ruleSetProvider,
+    required SettingsStore settingsStore,
+    ScanResultStore? scanResultStore,
+  }) async {
+    Future<AccountScanOutcome> attempt() => _scanAccountOnce(
+          accountId: accountId,
+          platformId: platformId,
+          ruleSetProvider: ruleSetProvider,
+          settingsStore: settingsStore,
+          scanResultStore: scanResultStore,
+        );
+
+    String busyBecause;
+    try {
+      final first = await attempt();
+      if (!first.skipped) return first;
+      busyBecause = first.skippedReason!;
+    } catch (e) {
+      if (!isDatabaseLocked(e)) rethrow;
+      busyBecause = 'database is locked';
+    }
+    final wait = busyRetryDelay();
+    _logger.i('Background scan of ${Redact.accountId(accountId)} found it '
+        'busy ($busyBecause); waiting ${wait.inSeconds}s, then one more '
+        'attempt');
+    await busyWait(wait);
+    return attempt();
+  }
+
+  /// The wait before the one retry: random, 2:00 to 6:00 (Harold). A seam so
+  /// tests need not wait minutes.
+  @visibleForTesting
+  static Duration Function() busyRetryDelay = randomBusyRetryDelay;
+
+  /// How the wait is taken. A seam for tests.
+  @visibleForTesting
+  static Future<void> Function(Duration) busyWait =
+      (d) => Future<void>.delayed(d);
+
+  static final Random _random = Random();
+
+  /// A uniformly random delay from 2:00 to 6:00 inclusive, to the second.
+  static Duration randomBusyRetryDelay() =>
+      Duration(seconds: 120 + _random.nextInt(241));
+
+  /// True if [error] is (or wraps) a SQLite "database is locked" error.
+  /// Moved here from the Windows worker (F98) so both platforms share it.
+  static bool isDatabaseLocked(Object error) {
+    final s = error.toString().toLowerCase();
+    return s.contains('database is locked') || s.contains('(code 5)');
+  }
+
+  static Future<AccountScanOutcome> _scanAccountOnce({
     required String accountId,
     required String platformId,
     required RuleSetProvider ruleSetProvider,

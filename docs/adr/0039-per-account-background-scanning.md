@@ -420,6 +420,19 @@ the heartbeat: the Manual Scan screen calls it from `didPopNext` -- every time
 the user backs out of Results, including mid-scan -- so it made a running scan
 look dead, and the lock would then have reaped it and let a second scan in.
 
+**Scope confirmed, and a busy retry added (Harold, 2026-09-28).** The lock
+stays PER ACCOUNT. Harold: *"if either of the N account scans finds the DB
+busy it waits random number of minutes between 2 and 6 minutes then starts
+(won't worry about conflict if they still conflict)"*. So a background scan
+whose first attempt finds its account held (early check or claim refused), or
+hits SQLite "database is locked", waits a random 2:00-6:00
+(`BackgroundScanCore.randomBusyRetryDelay`) and makes exactly ONE more attempt
+through the same lock; if that is busy too, its outcome stands. The random
+wait also spreads the Doze batch. This REPLACES the Windows-only F98/F101
+retry (15 attempts, 1 minute apart) with one rule on both platforms
+(ADR-0042). Android caveat: a WorkManager worker has about 10 minutes without
+a foreground service, so a 6-minute wait leaves about 4 for the scan.
+
 **What is still not proven by tests**: contention between two real SQLite
 connections (two isolates or processes) -- the unit tests run on one
 connection. That is Manual Validation on the device. The "Stop the background

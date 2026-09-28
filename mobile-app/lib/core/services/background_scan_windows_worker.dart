@@ -66,52 +66,6 @@ class BackgroundScanWindowsWorker {
     } catch (_) {}
   }
 
-  /// Maximum attempts when the DB is locked by a concurrent process.
-  ///
-  /// F101 (Sprint 43, Harold direction 2026-06-23): capped at 15 (was 20) so a
-  /// genuinely stuck lock fails in ~15 min instead of ~20. With
-  /// [_dbLockRetryDelay] = 1 min BETWEEN attempts (no trailing delay after the
-  /// final attempt), 15 attempts means at most 14 one-minute waits + the scan
-  /// work itself -- a worst case of ~15 min before the lock error is rethrown
-  /// and the failure recorded.
-  static const int _dbLockMaxAttempts = 15;
-
-  /// Delay between DB-lock retries.
-  static const Duration _dbLockRetryDelay = Duration(minutes: 1);
-
-  /// Returns true if [error] is (or wraps) a SQLite "database is locked" error.
-  static bool _isDatabaseLocked(Object error) {
-    final s = error.toString().toLowerCase();
-    return s.contains('database is locked') || s.contains('(code 5)');
-  }
-
-  /// Runs [action], retrying on a SQLite "database is locked" error (caused by a
-  /// concurrent per-account background-scan process). Waits
-  /// [_dbLockRetryDelay] between attempts, up to [_dbLockMaxAttempts] times
-  /// (F98, Sprint 42). Non-lock errors are rethrown immediately. After the final
-  /// attempt the lock error is rethrown so the caller records the failure.
-  static Future<T> _withDbLockRetry<T>({
-    required String accountId,
-    required Future<T> Function() action,
-  }) async {
-    for (var attempt = 1; attempt <= _dbLockMaxAttempts; attempt++) {
-      try {
-        return await action();
-      } catch (e) {
-        if (!_isDatabaseLocked(e) || attempt == _dbLockMaxAttempts) {
-          rethrow;
-        }
-        await _bgLog(
-            'DB locked scanning ${Redact.accountId(accountId)} (attempt '
-            '$attempt/$_dbLockMaxAttempts); waiting '
-            '${_dbLockRetryDelay.inMinutes}m before retry');
-        await Future<void>.delayed(_dbLockRetryDelay);
-      }
-    }
-    // Unreachable: the loop either returns or rethrows.
-    throw StateError('DB lock retry loop exited unexpectedly');
-  }
-
   /// Execute background scan for accounts.
   ///
   /// When [isTest] is false (default): Only scans accounts with background
@@ -254,18 +208,17 @@ class BackgroundScanWindowsWorker {
           // Execute scan for this account
           await _bgLog('Executing scan for ${Redact.accountId(accountId)} (platform: $platformId)');
           try {
-            // F98 (Sprint 42): concurrent per-account processes can hit
-            // "database is locked" (code 5). Retry the whole scan on a lock,
-            // waiting 1 minute between attempts, up to 20 times.
-            final result = await _withDbLockRetry(
+            // F98 (Sprint 42) retried a "database is locked" scan up to 15
+            // times, 1 minute apart. Replaced (Harold, Sprint 74 MV round 4)
+            // by the shared rule in BackgroundScanCore.scanAccount: a busy
+            // account or database waits a random 2-6 minutes, then one more
+            // attempt -- identical on Android.
+            final result = await _scanAccount(
               accountId: accountId,
-              action: () => _scanAccount(
-                accountId: accountId,
-                platformId: platformId!,
-                dbHelper: dbHelper,
-                ruleSetProvider: ruleSetProvider,
-                settingsStore: settingsStore,
-              ),
+              platformId: platformId,
+              dbHelper: dbHelper,
+              ruleSetProvider: ruleSetProvider,
+              settingsStore: settingsStore,
             );
 
             // Update log with success

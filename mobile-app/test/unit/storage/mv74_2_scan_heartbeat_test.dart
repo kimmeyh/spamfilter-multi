@@ -38,15 +38,29 @@ void main() {
     DatabaseTestHelper.initializeFfi();
   });
 
+  // Harold, MV round 4: a busy background scan waits 2-6 minutes and tries
+  // once more. Tests record the wait instead of taking it.
+  final waits = <Duration>[];
+  Future<void> Function()? onWait;
+
   setUp(() async {
     testHelper = DatabaseTestHelper();
     await testHelper.setUp();
     store = ScanResultStore(testHelper.dbHelper);
     await testHelper.createTestAccount('acct-a');
     await testHelper.createTestAccount('acct-b');
+    waits.clear();
+    onWait = null;
+    BackgroundScanCore.busyWait = (d) async {
+      waits.add(d);
+      await onWait?.call();
+    };
   });
 
   tearDown(() async {
+    BackgroundScanCore.busyWait = (d) => Future<void>.delayed(d);
+    BackgroundScanCore.busyRetryDelay =
+        BackgroundScanCore.randomBusyRetryDelay;
     await testHelper.tearDown();
   });
 
@@ -558,6 +572,80 @@ void main() {
       expect(outcome.skipped, isTrue);
       expect(outcome.skippedReason, contains('manual'));
       expect(outcome.emailsProcessed, 0);
+    });
+  });
+
+  // Harold, Sprint 74 MV round 4 (2026-09-28): "if either of the N account
+  // scans finds the DB busy it waits random number of minutes between 2 and
+  // 6 minutes then starts (won't worry about conflict if they still
+  // conflict)".
+  //
+  // What these do NOT catch: a "database is locked" error on the first
+  // attempt (no seam to inject one into a real scan -- the classifier is
+  // tested directly below), and Android stopping a worker that waited 6
+  // minutes and then scanned for more than about 4 (device only).
+  group('Harold MV round 4 -- a busy background scan waits 2-6 min, then '
+      'ONE more attempt', () {
+    Future<AccountScanOutcome> scan() => BackgroundScanCore.scanAccount(
+          accountId: 'acct-a',
+          platformId: 'test-platform',
+          ruleSetProvider: RuleSetProvider(),
+          settingsStore: SettingsStore(testHelper.dbHelper),
+          scanResultStore: store,
+        );
+
+    test('still busy after the wait: exactly ONE wait, then the skip stands',
+        () async {
+      await insertRow(
+          accountId: 'acct-a', scanType: 'background',
+          startedAt: ago(const Duration(seconds: 10)));
+      final outcome = await scan();
+      expect(waits, hasLength(1),
+          reason: 'one wait, one retry -- "won\'t worry about conflict if '
+              'they still conflict"');
+      expect(outcome.skipped, isTrue);
+    });
+
+    test('free after the wait: the retry really RUNS (it gets past the lock)',
+        () async {
+      final holder = await insertRow(
+          accountId: 'acct-a', scanType: 'manual',
+          startedAt: ago(const Duration(seconds: 10)));
+      onWait = () async {
+        final db = await testHelper.dbHelper.database;
+        await db.update('scan_results', {'status': 'completed'},
+            where: 'id = ?', whereArgs: [holder]);
+      };
+      // 'test-platform' is not a real platform, so a retry that got past
+      // the lock fails at the platform lookup -- proof it ran.
+      await expectLater(
+          scan(), throwsA(predicate((e) => '$e'.contains('not supported'))));
+      expect(waits, hasLength(1));
+    });
+
+    test('a free account scans at once -- no wait', () async {
+      await expectLater(scan(), throwsA(anything));
+      expect(waits, isEmpty);
+    });
+
+    test('the delay is random, from 2:00 to 6:00 inclusive', () {
+      final samples = List.generate(
+          2000, (_) => BackgroundScanCore.randomBusyRetryDelay().inSeconds);
+      expect(samples.every((s) => s >= 120 && s <= 360), isTrue);
+      expect(samples.toSet().length, greaterThan(100),
+          reason: 'random, not a fixed delay');
+    });
+
+    test('"database is locked" is recognized, other errors are not', () {
+      expect(BackgroundScanCore.isDatabaseLocked(
+              Exception('DatabaseException(database is locked (code 5))')),
+          isTrue);
+      expect(BackgroundScanCore.isDatabaseLocked(
+              ScanAccountBusyException.unverifiable(
+                  Exception('database is locked'))),
+          isTrue);
+      expect(BackgroundScanCore.isDatabaseLocked(Exception('no such table')),
+          isFalse);
     });
   });
 }
