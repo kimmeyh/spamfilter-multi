@@ -1,12 +1,12 @@
 {
   "_description": "Sprint status file that persists across context compaction. Update after each phase/sub-phase completion.",
-  "_last_updated": "2026-09-28T03:13:30Z",
+  "_last_updated": "2026-09-30T03:09:23Z",
   "_usage": "Read this file after context compaction to restore sprint approval state and progress.",
   "_staleness_note": "This file had drifted 15 sprints (last updated at Sprint 35, 2026-04-19) before being refreshed at Sprint 50 close-out. It is a Phase 7.7 checklist item -- update it at every sprint close-out, not opportunistically.",
   "current_sprint": {
     "number": 74,
     "branch": "feature/20260924_Sprint_74",
-    "status": "Sprint 74 Phase 5.3 Manual Validation -- round 2 (Harold 2026-09-27): F232 fixed (fe4d158); per-account scan lock (Q4), F222 rework (default folder/domain/address + Sort chip + row date), Android YAML export (Q5) built; Gmail Missing-credentials investigated (Q7). F238 (#441) filed for Sprint 75 -- RELEASE BLOCKER for 0.17.0. NO AAB until the Sprint 74 AND Sprint 75 PRs are merged (Harold). Android Documents default kept (Q3).",
+    "status": "Sprint 74 Phase 7 Retrospective -- Manual Validation COMPLETE (Harold 2026-09-29); retro feedback received (all Very Good); improvement proposals awaiting approval. 0.17.0 held for F238 (#441); no AAB until Sprint 74 and 75 PRs merge.",
     "plan_approved": true,
     "blanket_execution_approved": true,
     "pr_number": 440,
@@ -50,11 +50,9 @@
   ],
   "blocking_issues": [],
   "next_actions": [
-    "Harold: Windows Manual Validation of the round-2 build (scan lock dialog, Sort chip + dates, single address line, Scan History rule adds).",
-    "Harold: answer the open round-2 questions (Gmail fix scope; sort persistence).",
-    "Sprint 74 Phase 7 retrospective after Manual Validation closes.",
-    "Sprint 75: F238 (#441, Fable 5.1) -- release blocker for 0.17.0.",
-    "Device checks for 0.17.0 (MV74-1 Doze/reboot, Task 7 AC-2 live deletion, Task 8 error classification, the scan lock under real Doze batching) move to Sprint 75 Manual Validation: no AAB until both PRs merge."
+    "Harold: approve/reject retrospective improvements IMP-1..IMP-5.",
+    "Apply approved improvements; Phase 7.7 close-out (SPRINT_74_SUMMARY.md, master plan, CHANGELOG, sprint_status); mark PR #440 ready at end of 7.7.",
+    "Sprint 75: F238 (#441, Fable 5.1) + device checklist."
   ],
   "next_sprint_targeted": [
     "MV74-1 -- F235 Doze validation on the S24+ (setAndAllowWhileIdle, inexact; reboot survival) (#428)",
