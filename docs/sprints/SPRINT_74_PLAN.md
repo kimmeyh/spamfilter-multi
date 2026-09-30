@@ -660,6 +660,12 @@ Evidence: 25 app screenshots pulled from the Fold8 over MTP; one diagnostic log,
 
 - **Q3 -> option 1 (per account), plus**: *"if either of the N account scans finds the DB busy it waits random number of minutes between 2 and 6 minutes then starts (won't worry about conflict if they still conflict)"*. Read as: background scans only; "busy" = the account is held (early check or claim refused) or SQLite "database is locked"; wait a random 2:00-6:00, then ONE more attempt through the same lock (never bypassing it); if still busy, that outcome stands. DONE in `BackgroundScanCore.scanAccount` for both platforms; the Windows-only F98/F101 retry (15 x 1 minute) is REMOVED, so the rule is identical on Android (ADR-0042). 5 tests; M52-M54 KILLED. Not covered: a "database is locked" on the first attempt of a real scan (classifier tested directly), and Android's ~10-minute worker limit after a 6-minute wait (device only).
 
+### Round 5 -- Harold's Windows checks, 2026-09-29
+
+- **(a) Row date only -- PASS.** Rows read `Bulk • 2026-09-26 • subject • rule`; the pop-up shows `2026-09-26 12:37` (images 9-10).
+- **(b) Subject rule "Your next backup may fail. Fix it now" -- PASS.** The row left the No-rule list ("1 of 38 addressed -- 37 remaining") and the rule is listed in Manage Rules > Subject (32). The new diagnostic lines confirm it: `22:47:43.150 [INFO] [rule-create] block rule requested (type: subject)` then `22:47:43.209 ... saved (type: subject)`. Why the first attempt never saved remains NOT established; the logging now leaves evidence if it recurs.
+- **Observed, not changed**: Manage Rules labels subject rules "Subject - Exact Domain" (image 11). `RuleQuickActionService` stores `pattern_sub_type = 'exact_domain'` for subject rules (pre-existing). Asked Harold whether to fix now or backlog.
+
 - **No AAB until both the Sprint 74 and Sprint 75 PRs are merged.** Consequence (restated to Harold for confirmation): every 0.17.0 PHONE check -- MV74-1 Doze + reboot, Task 7 AC-2 live deletion, Task 8 error classification, the scan lock under real Doze batching -- moves to Sprint 75 Manual Validation. Windows validates what it can in this sprint.
 
 ## Phase 3.6.1 Architecture Impact Check
