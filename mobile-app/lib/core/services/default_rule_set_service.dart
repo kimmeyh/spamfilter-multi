@@ -513,7 +513,9 @@ class DefaultRuleSetService {
               order = classification.order;
             } else if (fieldType == 'subject') {
               category = 'subject';
-              subType = 'exact_domain';
+              // Sprint 74 MV: 'keyword', not 'exact_domain'
+              // (see RuleQuickActionService).
+              subType = 'keyword';
               order = 60;
             } else {
               // body

@@ -186,7 +186,7 @@ All incomplete items in relative priority order. Priority in increments of 10; i
 **F238. Offer to stop a running background scan in favor of a manual scan (Issue #441) Priority 1 -- RELEASE BLOCKER for 0.17.0**
 - Harold: *"0.17.0 cannot ship without a fix - add to backlog, full sprint planning for it, full sprint card, assign it to Fable 5.1"*; *"it is the largest bug that we have."*
 - **Model: Fable 5.1** (Harold named it). Full card: Issue #441 (augmented template -- Value, R-1..R-6, AC-1..AC-4, T-1..T-4, DoD, risk, Class-1 interrupt).
-- Builds on the Sprint 74 per-account scan lock (`ScanResultStore.claimAccountScan`): the "A scan is already running" dialog gains "Stop the background scan and start mine", which writes a cancel request onto the background scan's row (DB v10); the worker honors it on its heartbeat tick through the F224 cancellation token.
+- Builds on the Sprint 74 per-account scan lock (`ScanResultStore.claimAccountScan`): the "A scan is already running" dialog gains "Stop the background scan and start mine", which writes a cancel request onto the background scan's row (DB v11; v10 was used by the Sprint 74 subject-rule reclassification); the worker honors it on its heartbeat tick through the F224 cancellation token.
 - **Release gate**: 0.17.0 is not submitted to either store until F238 ships. No AAB is built until BOTH the Sprint 74 and Sprint 75 PRs are merged (Harold, 2026-09-27) -- so every 0.17.0 phone check moves to Sprint 75 Manual Validation.
 
 **F239. Gmail on Android -- renew the token without the app open, and a "Sign In Again" path (Issue #442) Priority 12 -- backlog**

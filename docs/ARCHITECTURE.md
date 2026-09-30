@@ -374,6 +374,7 @@ SQLite database schema. See [ADR-0010](adr/0010-normalized-database-schema.md) f
 - v7: removes two more malformed bundled TLD block rules (.sho, .sweeps) from existing installs; data-only (BUG-S37-2, Sprint 42)
 - v8: `auth_classification` on `email_actions` + `unmatched_emails` -- SPF/DKIM/DMARC snapshot at scan time (F96, Sprint 43)
 - v9: `scan_results.last_heartbeat_at` -- cross-isolate/process scan liveness heartbeat (MV74-2, Sprint 74)
+- v10: data only -- subject rules reclassified `pattern_sub_type` `exact_domain` -> `keyword` (Sprint 74 MV; all three creators now write `keyword`)
 
 **Indexes**: 10+ targeted indexes for fast lookups (by platform, account, completion time, scan ID, folder, no-rule matches).
 

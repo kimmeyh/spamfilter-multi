@@ -148,7 +148,8 @@ void main() {
           where: 'account_id = ?', whereArgs: ['legacy']);
       expect(rows, hasLength(1), reason: 'existing rows must survive v9');
       expect(rows.single['last_heartbeat_at'], isNull);
-      expect(await upgraded.getVersion(), 9);
+      // v10 (Sprint 74 MV) follows v9; the v9 column is what is tested.
+      expect(await upgraded.getVersion(), greaterThanOrEqualTo(9));
     });
   });
 

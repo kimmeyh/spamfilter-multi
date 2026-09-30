@@ -143,4 +143,51 @@ void main() {
     // (it should show its category instead)
     expect(find.text('Header / From'), findsOneWidget); // Category label for healthy rule
   });
+
+  // Sprint 74 MV (Harold, 2026-09-29): subject rules read "Subject - Exact
+  // Domain" and inflated the Header / From "Exact Domain" chip (46 shown, 14
+  // real). What this does NOT catch: a new sub-type value with no label (it
+  // would render raw, as 'keyword' would have).
+  testWidgets(
+      'a subject rule reads "Subject - Keyword", and the Header / From chips '
+      'count header rules only', (tester) async {
+    tester.view.physicalSize = const Size(1200, 2400);
+    tester.view.devicePixelRatio = 1.0;
+    addTearDown(tester.view.resetPhysicalSize);
+    addTearDown(tester.view.resetDevicePixelRatio);
+
+    await tester.runAsync(() async {
+      final db = await testHelper.dbHelper.database;
+      Future<void> add(String name, String cat, String sub, String col) =>
+          db.insert('rules', {
+            'name': name,
+            'enabled': 1,
+            'is_local': 1,
+            'execution_order': 30,
+            'condition_type': 'OR',
+            col: '["x"]',
+            'action_delete': 1,
+            'date_added': DateTime.now().millisecondsSinceEpoch,
+            'created_by': 'test',
+            'pattern_category': cat,
+            'pattern_sub_type': sub,
+            'source_domain': name,
+          });
+      await add('Backup subject', 'subject', 'keyword', 'condition_subject');
+      await add('example.com', 'header_from', 'exact_domain',
+          'condition_header');
+      // A legacy body row still carrying a header sub-type value.
+      await add('body legacy', 'body', 'exact_domain', 'condition_body');
+      await mountAndLoadDbWidget(
+          tester, const MaterialApp(home: RulesManagementScreen()));
+    });
+
+    expect(find.text('Subject - Keyword'), findsOneWidget);
+    expect(find.text('Subject - Exact Domain'), findsNothing);
+    expect(find.text('Exact Domain (1)'), findsOneWidget,
+        reason: 'the Header / From chip counts the one header rule, not the '
+            'body row sharing the value');
+    expect(find.text('Keyword (1)'), findsNothing,
+        reason: 'keyword is not a Header / From sub-type chip');
+  });
 }

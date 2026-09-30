@@ -55,7 +55,7 @@ abstract class RuleDatabaseProvider {
 ///     OTHER isolates/processes can tell a live scan from a dead one --
 ///     the UI's ScanCoordinator cannot see a background scan on either
 ///     platform. Existing rows stay NULL and fall back to started_at.
-const int databaseVersion = 9;
+const int databaseVersion = 10;
 
 /// SQLite database helper - singleton pattern
 class DatabaseHelper implements RuleDatabaseProvider {
@@ -614,6 +614,29 @@ class DatabaseHelper implements RuleDatabaseProvider {
             'ALTER TABLE scan_results ADD COLUMN last_heartbeat_at INTEGER;');
       }
       _logger.i('v9 migration complete');
+    }
+
+    if (oldVersion < 10) {
+      // v10: Sprint 74 Manual Validation (Harold) -- subject rules were stored
+      // with pattern_sub_type 'exact_domain' by all three creators, so Manage
+      // Rules labeled them "Subject - Exact Domain" and counted them under the
+      // Header / From "Exact Domain" chip. A subject pattern is a phrase:
+      // 'keyword', like body phrase rules. Data only; matching is unchanged
+      // (patterns live in condition_subject either way).
+      // Guarded like the earlier migrations: only when the rules table and
+      // its classification columns exist (partial test schemas lack them).
+      final ruleCols = (await db.rawQuery('PRAGMA table_info(rules)'))
+          .map((r) => r['name'] as String)
+          .toSet();
+      if (ruleCols.contains('pattern_category') &&
+          ruleCols.contains('pattern_sub_type')) {
+        final n = await db.rawUpdate(
+            "UPDATE rules SET pattern_sub_type = 'keyword' "
+            "WHERE pattern_category = 'subject' "
+            "AND pattern_sub_type = 'exact_domain'");
+        _logger.i('v10 migration complete: $n subject rule(s) reclassified '
+            'exact_domain -> keyword');
+      }
     }
   }
 

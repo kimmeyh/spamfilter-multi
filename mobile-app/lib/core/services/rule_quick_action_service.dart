@@ -343,7 +343,11 @@ class RuleQuickActionService {
           break;
         case 'subject':
           patternCategory = 'subject';
-          patternSubType = 'exact_domain';
+          // Sprint 74 MV (Harold): a subject pattern is a phrase, not a domain --
+          // 'keyword', like body phrases. It was 'exact_domain', so Manage Rules
+          // labeled every subject rule "Subject - Exact Domain" and counted it
+          // under the Header / From "Exact Domain" chip. DB v10 fixes old rows.
+          patternSubType = 'keyword';
           sourceDomain = trimmed;
           executionOrder = 60;
           break;
