@@ -6,7 +6,7 @@
   "current_sprint": {
     "number": 74,
     "branch": "feature/20260924_Sprint_74",
-    "status": "Sprint 74 Phase 7 Retrospective -- Manual Validation COMPLETE (Harold 2026-09-29); retro feedback received (all Very Good); improvement proposals awaiting approval. 0.17.0 held for F238 (#441); no AAB until Sprint 74 and 75 PRs merge.",
+    "status": "Sprint 74 Phase 7.5 Improvement Proposals -- Manual Validation COMPLETE (Harold 2026-09-29); retro feedback received (all Very Good); improvement proposals awaiting approval. 0.17.0 held for F238 (#441); no AAB until Sprint 74 and 75 PRs merge.",
     "plan_approved": true,
     "blanket_execution_approved": true,
     "pr_number": 440,
