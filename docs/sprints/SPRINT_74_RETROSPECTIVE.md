@@ -137,3 +137,13 @@ Completeness walk of Harold's feedback (categories 1-14 and questions): every li
 7. **IMP-7 -- Refresh the PR description after every Manual Validation round commit.** Source: Cat 6. Type: process. Root cause: PR #440's body described superseded behavior across two MV rounds. Prevention: add the step to `SPRINT_CHECKLIST.md` Phase 5.3 ("after each MV-round commit: update the PR body"). Effort: S (5 min). Recommendation: apply now.
 
 Category 13 carry-ins (Sprint 75 plan) and Category 14 backlog items are listed in those categories above and are applied in Phase 7.7 regardless of these decisions.
+
+## Improvement Decisions (Harold, 2026-09-29: "now - imp-1, 2, 3, 4, 6")
+
+- **IMP-1 -- APPLY NOW -- DONE.** `SPRINT_PLANNING.md` augmented card template: mandatory "Observable behavior -- before / after" line.
+- **IMP-2 -- APPLY NOW -- DONE.** CLAUDE.md IMP-2 (Sprint 70) extended to user-visible text that promises a behavior.
+- **IMP-3 -- APPLY NOW -- DONE.** `winwright-db-snapshot.ps1` copies the dev DB with `sqlite3 .backup` (reads through the WAL) instead of `Copy-Item`; self-test Step 8 holds a committed row in the WAL and requires it in the snapshot. Verified: self-test all steps PASS; the old file copy mutated back in (M63) fails Step 8 -- KILLED; a live `-DryRun` snapshot read the running dev DB (3,241 rules).
+- **IMP-4 -- APPLY NOW -- DONE.** `scripts/mutation-test.ps1` (UTF-8 specs, target-file line endings, `test` or `command` checks, lock + verified restore). Verified on its first run: M59 (hook disabled), M60 (non-ASCII anchor -- the defect-1 case) and M61 (LF anchor on a CRLF file -- the defect-2 case) all KILLED; a comment-only mutation (M62) reported SURVIVED with exit 1. Listed in CLAUDE.md IMP-3.
+- **IMP-6 -- APPLY NOW -- DONE.** `.claude/hooks/block-heredoc-python-backslash.ps1`, registered on the PreToolUse Bash/PowerShell entry; 8 test cases in `test-cases/heredoc-guard/` (5 allow, 3 block); hook suite 83/83; M59 shows the suite catches the hook being disabled. Recorded in CLAUDE.md IMP-3.
+- **IMP-5 -- NO DECISION GIVEN** (not in Harold's list). Asked again at close-out.
+- **IMP-7 -- NO DECISION GIVEN** (not in Harold's list). Asked again at close-out.
