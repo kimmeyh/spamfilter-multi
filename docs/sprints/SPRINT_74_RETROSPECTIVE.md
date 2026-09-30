@@ -147,3 +147,17 @@ Category 13 carry-ins (Sprint 75 plan) and Category 14 backlog items are listed 
 - **IMP-6 -- APPLY NOW -- DONE.** `.claude/hooks/block-heredoc-python-backslash.ps1`, registered on the PreToolUse Bash/PowerShell entry; 8 test cases in `test-cases/heredoc-guard/` (5 allow, 3 block); hook suite 83/83; M59 shows the suite catches the hook being disabled. Recorded in CLAUDE.md IMP-3.
 - **IMP-5 -- NO DECISION GIVEN** (not in Harold's list). Asked again at close-out.
 - **IMP-7 -- NO DECISION GIVEN** (not in Harold's list). Asked again at close-out.
+
+## PR #440 Reviews (Phase 7.7.5, 2026-09-29)
+
+- **Copilot** (copilot-pull-request-reviewer[bot]): overview only -- "Findings: None", no inline comments; flagged the size (migrations, cross-isolate locking, live-deletion paths) for human review. Nothing to resolve.
+- **Claude code review** (pr-review-toolkit:code-reviewer): 1 IMPORTANT, 3 MINOR -- all FIXED:
+  - IMPORTANT: an unchanged Save in the rule editor rewrote a subject/keyword rule as a BODY rule (a regression from the same-day subject-rule label fix). Subject rules now always open in direct-regex mode, which keeps the category. Widget test; M64 KILLED.
+  - Re-process now ends its claim BEFORE releasing the lease (a queued manual scan could otherwise be refused by a finished rule update). No seam for a test -- recorded.
+  - A redacted export's FILE NAME no longer contains the account address (`acct_` + 10 hex of SHA-256). Test; M66 KILLED.
+  - `scripts/mutation-test.ps1` runs the check under a local 'Continue' and pops the location in `finally`, so a failing check writing stderr cannot abort the run.
+- **Claude test review** (pr-review-toolkit:pr-test-analyzer): 4 IMPORTANT, 5 MINOR:
+  - FIXED: the claim heartbeat now proven to WRITE (M67 KILLED); the toast decision extracted to `describeActionOutcome` and a busy outcome pinned as never-success (M68 KILLED); Windows skip-before-export order gated; the heredoc hook now catches path-prefixed interpreters and piped heredocs (2 violation cases + 1 allow case; hook suite 86/86); the chip filter (not just the count) tested (M70 KILLED); the stale T-1 header corrected (the method is F241).
+  - SPRINT 75 CARRY-IN (with the WinWright scripts for the same controls): MINOR 5, 7, 8, 9 -- widget tests for the refusal status row, the OK-only dialog and refusal snackbar, the redaction toggle, and Clear history.
+- The new heredoc hook blocked one of MY OWN commands during this round (Python with `\n` piped through a heredoc) -- the control working as intended on the author who asked for it.
+- Suite after the round: 2,424 passed / 15 skipped / 0 failed; analyzer clean.

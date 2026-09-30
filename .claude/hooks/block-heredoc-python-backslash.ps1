@@ -50,12 +50,17 @@ if ($payload.tool_input -and $payload.tool_input.command) {
 if ([string]::IsNullOrWhiteSpace($cmd)) { exit 0 }
 if ($cmd -match 'allow_heredoc_backslash') { exit 0 }
 
-# A Python interpreter fed by a heredoc on the same line:
-#   python - <<'EOF'   python3 <<EOF   py -3 - << "END"
-$opener = [regex]::new(
-    '(?m)(?:^|[\s;&|(])(?:python3?|py)(?:\.exe)?\b[^\n]*?<<-?\s*([''"]?)([A-Za-z_][A-Za-z0-9_]*)\1')
+# Every heredoc opener; the body is checked when the SAME LINE runs a Python
+# interpreter -- before the << (`python - <<EOF`) or after it
+# (`cat <<EOF | python -`), bare or path-prefixed (`/usr/bin/python3`,
+# `C:\...\python.exe`). PR #440 review: the first version required whitespace
+# or ;&|( before the interpreter and the interpreter before <<, so both of
+# those shapes passed with a backslash in the body.
+$opener = [regex]::new('(?m)^[^\n]*?<<-?\s*([''"]?)([A-Za-z_][A-Za-z0-9_]*)\1[^\n]*$')
+$pythonToken = [regex]::new('(?:^|[\s;&|(/\\])(?:python3?|py)(?:\.exe)?(?=\s|$|[;&|)])')
 
 foreach ($m in $opener.Matches($cmd)) {
+    if (-not $pythonToken.IsMatch($m.Value)) { continue }
     $delim = $m.Groups[2].Value
     $rest = $cmd.Substring($m.Index + $m.Length)
     $close = [regex]::Match($rest, "(?m)^\s*$([regex]::Escape($delim))\s*$")

@@ -92,6 +92,25 @@ void main() {
       expect(windows.contains('BackgroundScanExport.exportIfEnabled('), isTrue);
     });
 
+    // PR #440 test review: Android runs the skip branch through the tested
+    // BackgroundScanCore.completeAccount; Windows repeats it inline. Pin the
+    // Windows ORDER: a skipped account `continue`s before the export, or every
+    // skipped cycle would add a "<no records>" row to the export file.
+    // What this does NOT catch: behavior (source position only; the Windows
+    // worker has no seam short of a real Task Scheduler run).
+    test('the Windows worker skips BEFORE exporting', () {
+      final src = File('lib/core/services/background_scan_windows_worker.dart')
+          .readAsStringSync();
+      final skipAt = src.indexOf('if (result.skippedReason != null) {');
+      expect(skipAt, greaterThan(-1));
+      final continueAt = src.indexOf('continue;', skipAt);
+      final exportAt =
+          src.indexOf('BackgroundScanExport.exportIfEnabled(', skipAt);
+      expect(continueAt, greaterThan(skipAt));
+      expect(exportAt, greaterThan(continueAt),
+          reason: 'the skip must leave the loop before the export runs');
+    });
+
     test('export screens resolve their folder through ExportDirectories, '
         'with no local platform-default logic', () {
       const screens = [

@@ -21,6 +21,11 @@ carry-ins. Planning (Phase 3) replaces this file.
   6. Android YAML export saves through the system dialog.
 - **WinWright scripts for new UI with none yet**: Sort chip, "A scan is already running" dialog,
   Scan History Clear history, "Hide sender details in exports", resolved-default folder rows.
+- **Widget tests for the same controls** (PR #440 test review, MINOR 5/7/8/9 -- grouped here with
+  the WinWright scripts because they cover the same UI): (5) the Results "another scan is running"
+  row uses the info style, never the error style (`wasRefused` branch before `hasError`); (7) the
+  Manual Scan OK-only dialog and the refusal snackbar; (8) tapping "Hide sender details in exports"
+  persists `getExportRedacted()`; (9) Clear history's zero-finished snackbar and scope text.
 
 ## Backlog candidates (for scope selection)
 

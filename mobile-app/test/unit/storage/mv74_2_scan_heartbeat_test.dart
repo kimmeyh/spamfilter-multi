@@ -5,10 +5,13 @@
 /// FlutterEngine per worker), Windows in a separate process. So liveness and
 /// exclusion go through the shared `scan_results` row:
 ///   - the scanning isolate refreshes `last_heartbeat_at` (DB v9);
-///   - the manual-scan notice counts a background row only if its heartbeat is
-///     fresh;
-///   - a background scan SKIPS an account with a live interactive scan
-///     (ADR-0039 amendment, Harold Q3).
+///   - a row counts as live only if its heartbeat is fresh (group T-1 tests
+///     this through `getActiveBackgroundScan`, which since Sprint 74 MV has NO
+///     production caller -- the manual-scan dialog uses the per-account
+///     `getActiveScanForAccount`, tested in T-4; F241 removes or wires the
+///     method);
+///   - one scan per account of ANY type (`claimAccountScan`, Harold Q4), and
+///     a background scan SKIPS an account with a live scan (ADR-0039).
 ///
 /// **What these tests do NOT catch**: that a heartbeat actually fires on a
 /// real device across an isolate boundary under Doze -- the timer is proven to
@@ -307,6 +310,30 @@ void main() {
       expect(live?.scanType, 'reprocess');
       await claim.end();
       expect(await store.getActiveScanForAccount('acct-a'), isNull);
+    });
+
+    // PR #440 test review: the test above ends the claim at once, so the
+    // claim's own heartbeat timer never had to WRITE. Without writes, a
+    // re-process longer than heartbeatFreshness (5 min) is reaped by the lock
+    // and a background scan gets in beside it.
+    test('the claim heartbeat WRITES last_heartbeat_at while it is held',
+        () async {
+      final claim = await store.claimInteractive('acct-a',
+          heartbeatInterval: const Duration(milliseconds: 20));
+      final db = await testHelper.dbHelper.database;
+      Future<Object?> beat() async => (await db.query('scan_results',
+              columns: ['last_heartbeat_at'],
+              where: 'id = ?', whereArgs: [claim.id]))
+          .single['last_heartbeat_at'];
+      expect(await beat(), isNull, reason: 'no tick yet');
+      await Future<void>.delayed(const Duration(milliseconds: 120));
+      expect(await beat(), isNotNull,
+          reason: 'the claim timer must refresh its own row');
+      await claim.end();
+      expect(
+          await db.query('scan_results',
+              where: 'id = ?', whereArgs: [claim.id]),
+          isEmpty);
     });
 
     test('a claim row never appears in Scan History, even one left behind',

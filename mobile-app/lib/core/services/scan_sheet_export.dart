@@ -11,7 +11,11 @@
 /// accumulator (tab-separated) plus a regenerated `.xlsx` of every row so far.
 library;
 
+import 'dart:convert';
 import 'dart:io';
+
+import 'package:crypto/crypto.dart';
+import 'package:flutter/foundation.dart' show visibleForTesting;
 
 import 'package:path/path.dart' as path;
 import 'package:syncfusion_flutter_xlsio/xlsio.dart' as xlsio;
@@ -53,6 +57,14 @@ class ScanSheetExport {
   /// Append [newRows] to today's accumulator in [dir] and rewrite the workbook.
   /// An empty scan still writes one placeholder row, so the file shows the
   /// scan ran.
+  /// PR #440 review: the file-name token for a REDACTED export -- "acct_"
+  /// plus the first 10 hex digits of the SHA-256 of [accountToken]. Stable
+  /// (the same account appends to the same daily file), distinct per account,
+  /// and it does not reveal the address.
+  @visibleForTesting
+  static String redactedAccountToken(String accountToken) =>
+      'acct_${sha256.convert(utf8.encode(accountToken)).toString().substring(0, 10)}';
+
   static Future<ScanSheetExportResult> appendAndWrite({
     required String dir,
     required String filePrefix,
@@ -68,8 +80,11 @@ class ScanSheetExport {
     // from all of them, so switching redaction on mid-day would otherwise
     // produce a "redacted" file still holding the morning's unredacted rows.
     final redactSuffix = redacted ? '_redacted' : '';
-    final base =
-        '${filePrefix}_${accountToken}_$dateStr$devSuffix$redactSuffix';
+    // PR #440 review: a redacted file exists to be shared, so its NAME must
+    // not carry the mailbox address either (the token is the sanitized
+    // account id, e.g. "kimmeyharold_at_aol_com").
+    final token = redacted ? redactedAccountToken(accountToken) : accountToken;
+    final base = '${filePrefix}_${token}_$dateStr$devSuffix$redactSuffix';
     final xlsxPath = path.join(dir, '$base.xlsx');
     final dataFile = File(path.join(dir, '$base.data.csv'));
 

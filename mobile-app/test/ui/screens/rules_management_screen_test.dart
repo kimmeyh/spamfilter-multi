@@ -189,5 +189,15 @@ void main() {
             'body row sharing the value');
     expect(find.text('Keyword (1)'), findsNothing,
         reason: 'keyword is not a Header / From sub-type chip');
+
+    // PR #440 test review: the FILTER, not just the count. Tapping the chip
+    // shows the header rule and hides the body row sharing the sub-type.
+    expect(find.text('body legacy'), findsOneWidget);
+    await tester.tap(find.text('Exact Domain (1)'));
+    await tester.pump();
+    expect(find.text('example.com'), findsOneWidget);
+    expect(find.text('body legacy'), findsNothing,
+        reason: 'a body rule must not appear under a Header / From chip');
+    expect(find.text('Backup subject'), findsNothing);
   });
 }

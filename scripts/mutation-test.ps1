@@ -75,20 +75,29 @@ foreach ($s in $specs) {
     }
 
     New-MutationLock -File $s.file -Reason "mutation: $($s.name)" -Agent 'mutation-test.ps1' | Out-Null
+    $pushed = $false
     try {
         [IO.File]::WriteAllText($path, $text.Replace($find, $replace), $utf8NoBom)
-        if ($s.test) {
-            Push-Location (Join-Path $repo 'mobile-app')
-            & flutter test $s.test *> $null
-            $code = $LASTEXITCODE
-            Pop-Location
-        } elseif ($s.command) {
-            Push-Location $repo
-            & cmd.exe /c $s.command *> $null
-            $code = $LASTEXITCODE
-            Pop-Location
-        } else {
+        if (-not $s.test -and -not $s.command) {
             throw "spec '$($s.name)' has neither 'test' nor 'command'"
+        }
+        # PR #440 review: under 'Stop', Windows PowerShell 5.1 turns a child
+        # process's stderr into a terminating error -- a FAILING check (the
+        # KILLED case) could abort the run. Run the child under 'Continue'
+        # and judge only its exit code.
+        $savedPref = $ErrorActionPreference
+        $ErrorActionPreference = 'Continue'
+        try {
+            if ($s.test) {
+                Push-Location (Join-Path $repo 'mobile-app'); $pushed = $true
+                & flutter test $s.test *> $null
+            } else {
+                Push-Location $repo; $pushed = $true
+                & cmd.exe /c $s.command *> $null
+            }
+            $code = $LASTEXITCODE
+        } finally {
+            $ErrorActionPreference = $savedPref
         }
         if ($code -ne 0) {
             $results += "$($s.name): KILLED"
@@ -96,6 +105,7 @@ foreach ($s in $specs) {
             $results += "$($s.name): SURVIVED"; $allKilled = $false
         }
     } finally {
+        if ($pushed) { Pop-Location }
         [IO.File]::WriteAllBytes($path, $orig)
         $back = [IO.File]::ReadAllBytes($path)
         if ([Convert]::ToBase64String($back) -ne [Convert]::ToBase64String($orig)) {

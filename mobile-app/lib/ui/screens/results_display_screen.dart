@@ -273,6 +273,65 @@ class ReProcessOutcome {
   bool get anyFailed => failed > 0;
 }
 
+/// PR #440 test review: the action toast's wording and color, pulled out of
+/// `_showActionOutcome` so the BRANCH ORDER is testable -- a busy or read-only
+/// outcome has attempted = 0 and failed = 0, so if its branch moved below the
+/// failure check it would fall into the success branch and report a change
+/// that did not happen (the F228 defect).
+@visibleForTesting
+({String message, Color background}) describeActionOutcome({
+  required String baseMessage,
+  required String progressSuffix,
+  required ReProcessOutcome outcome,
+  required Color successColor,
+}) {
+  final String message;
+  final Color background;
+
+  if (outcome.busy != null) {
+    final holder = outcome.busy!.blockingScan;
+    message = holder == null
+        ? '$baseMessage -- saved. The app could not check whether another '
+            'scan is running on this account, so your mailbox was not '
+            'changed. The next scan applies it.'
+        : '$baseMessage -- saved. A '
+            '${ScanAccountBusyException.describeScanType(holder.scanType)} '
+            'is running on this account, so your mailbox was not changed '
+            'yet. The next scan applies it.';
+    background = Colors.blueGrey;
+  } else if (outcome.skippedReadOnly) {
+    // F234: when there is something to preview, SAY WHAT IT WOULD HAVE DONE.
+    // "would have" is stated twice and the mailbox is named as unchanged --
+    // the wording carries the whole risk of this card, because a preview
+    // misread as a completed action is the F228 defect wearing a new hat.
+    if (outcome.hasPreview) {
+      final parts = <String>[];
+      if (outcome.wouldHaveDeleted > 0) {
+        parts.add('${outcome.wouldHaveDeleted} would have been filed');
+      }
+      if (outcome.wouldHaveMoved > 0) {
+        parts.add('${outcome.wouldHaveMoved} would have been moved');
+      }
+      message = '$baseMessage -- saved. Preview only: ${parts.join(', ')}. '
+          'This account is read-only, so your mailbox was NOT changed.';
+    } else {
+      message = '$baseMessage -- saved. This account is read-only, so your '
+          'mailbox was not changed.';
+    }
+    background = Colors.blueGrey;
+  } else if (outcome.anyFailed) {
+    // Name the number. "Something went wrong" is what sent Harold to Scan
+    // History to work out what had actually happened.
+    message = '$baseMessage -- saved, but ${outcome.failed} of '
+        '${outcome.attempted} could not be applied to your mailbox.';
+    background = Colors.orange;
+  } else {
+    message = '$baseMessage$progressSuffix';
+    background = successColor;
+  }
+  return (message: message, background: background);
+}
+
 class _ResultsDisplayScreenState extends State<ResultsDisplayScreen> {
   /// F231 (Sprint 72): every action outcome from this session, newest last.
   ///
@@ -3555,50 +3614,14 @@ class _ResultsDisplayScreenState extends State<ResultsDisplayScreen> {
   }) {
     if (!mounted) return;
 
-    final String message;
-    final Color background;
-
-    if (outcome.busy != null) {
-      final holder = outcome.busy!.blockingScan;
-      message = holder == null
-          ? '$baseMessage -- saved. The app could not check whether another '
-              'scan is running on this account, so your mailbox was not '
-              'changed. The next scan applies it.'
-          : '$baseMessage -- saved. A '
-              '${ScanAccountBusyException.describeScanType(holder.scanType)} '
-              'is running on this account, so your mailbox was not changed '
-              'yet. The next scan applies it.';
-      background = Colors.blueGrey;
-    } else if (outcome.skippedReadOnly) {
-      // F234: when there is something to preview, SAY WHAT IT WOULD HAVE DONE.
-      // "would have" is stated twice and the mailbox is named as unchanged --
-      // the wording carries the whole risk of this card, because a preview
-      // misread as a completed action is the F228 defect wearing a new hat.
-      if (outcome.hasPreview) {
-        final parts = <String>[];
-        if (outcome.wouldHaveDeleted > 0) {
-          parts.add('${outcome.wouldHaveDeleted} would have been filed');
-        }
-        if (outcome.wouldHaveMoved > 0) {
-          parts.add('${outcome.wouldHaveMoved} would have been moved');
-        }
-        message = '$baseMessage -- saved. Preview only: ${parts.join(', ')}. '
-            'This account is read-only, so your mailbox was NOT changed.';
-      } else {
-        message = '$baseMessage -- saved. This account is read-only, so your '
-            'mailbox was not changed.';
-      }
-      background = Colors.blueGrey;
-    } else if (outcome.anyFailed) {
-      // Name the number. "Something went wrong" is what sent Harold to Scan
-      // History to work out what had actually happened.
-      message = '$baseMessage -- saved, but ${outcome.failed} of '
-          '${outcome.attempted} could not be applied to your mailbox.';
-      background = Colors.orange;
-    } else {
-      message = '$baseMessage$progressSuffix';
-      background = successColor;
-    }
+    final described = describeActionOutcome(
+      baseMessage: baseMessage,
+      progressSuffix: progressSuffix,
+      outcome: outcome,
+      successColor: successColor,
+    );
+    final message = described.message;
+    final background = described.background;
 
     // F231: record BEFORE showing. The toast can be missed, replaced or
     // covered by the next item's dialog; this cannot.
@@ -4172,11 +4195,15 @@ class _ResultsDisplayScreenState extends State<ResultsDisplayScreen> {
       // F212 R-3: release on EVERY path, including the throw. A lease leaked
       // here would wedge every later scan behind work that already finished --
       // the same process-global wedge F220 fixed for the scan screen.
+      // The claim ends on every path, like the lease -- and BEFORE the lease
+      // is released (PR #440 review): release() hands the lease straight to
+      // a queued manual scan, which would otherwise reach the account lock
+      // while this claim row still exists and be refused ("a rule update is
+      // already running").
+      await claim?.end();
       if (lease != null) {
         ScanCoordinator.instance.release(lease);
       }
-      // The claim ends on every path, like the lease.
-      await claim?.end();
     }
 
     if (busy != null) {

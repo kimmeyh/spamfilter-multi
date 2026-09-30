@@ -283,6 +283,28 @@ void main() {
       expect(redCsv, isNot(contains('Your prize')));
     });
 
+    // PR #440 review: the redacted file is the one meant for sharing, so its
+    // NAME must not reveal the mailbox either.
+    test('a redacted export file name does not contain the account id',
+        () async {
+      final dir = p.join(tmp.path, 'sheets_name');
+      await Directory(dir).create(recursive: true);
+      const token = 'kimmeyharold_at_aol_com';
+      final red = await ScanSheetExport.appendAndWrite(
+          dir: dir, filePrefix: 'background_scan', accountToken: token,
+          sheetName: 'S', headerColor: '#FFFFFF',
+          newRows: providerWith('winner@spammy.com').getExcelRows(redact: true),
+          redacted: true);
+      final name = p.basename(red.xlsxPath);
+      expect(name, isNot(contains('kimmeyharold')));
+      expect(name, contains(ScanSheetExport.redactedAccountToken(token)));
+      expect(ScanSheetExport.redactedAccountToken(token),
+          ScanSheetExport.redactedAccountToken(token),
+          reason: 'stable, so the same account appends to one daily file');
+      expect(ScanSheetExport.redactedAccountToken('other_at_aol_com'),
+          isNot(ScanSheetExport.redactedAccountToken(token)));
+    });
+
     test('off by default -- an unredacted export is unchanged', () {
       final csv = providerWith('winner@spammy.com').exportResultsToCSV();
       expect(csv, contains('winner@spammy.com'));
