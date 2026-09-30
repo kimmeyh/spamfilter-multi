@@ -1,28 +1,38 @@
 # Release notes -- 0.17.0 -- Microsoft Store
 
-**PROVISIONAL.** Written at the version bump (plan approval, 2026-09-25), so it describes a sprint
-that has not finished. **RE-DERIVE at Phase 7.7 from the finished CHANGELOG.**
+**Re-derived at Sprint 74 Phase 7.7 (2026-09-29) from the finished CHANGELOG** (STORE_RELEASE_PROCESS.md
+Step 1b). No entry carries a platform tag, so every Sprint 74 entry applies to both stores.
 
-**Range**: everything after the last version this store received. 0.16.0 was submitted
-2026-09-24; if it is live by release time, this covers the Sprint 74 entries only.
+**Range**: everything after the last version this store received (0.16.0, submitted 2026-09-24).
 
-**Not yet submitted.**
+**Not yet submitted -- RELEASE HOLD.** Harold, 2026-09-27: 0.17.0 does not ship until the "stop the
+background scan and start mine" action lands (Sprint 75). If Sprint 75 bumps the version before
+release, these notes carry forward into that version's notes.
+
+**Excluded from this file** (engineering or Android-only detail, not a Windows user change): the
+Android export-folder fallback, the Android YAML export fix, the Android background export setting,
+separate development/production diagnostic logs.
 
 ---
 
-Each email on the Scan Results screen now shows the date it arrived, and a Sort button switches the
-list to newest first.
+Scan results are easier to work through. Each email shows the date it arrived, and a new Sort
+button switches between the usual order (folder, then sender domain, then sender address) and
+newest first.
 
-Only one scan runs on an account at a time, and a scan that stops responding no longer shows
-"In progress" for hours.
+Adding a rule or safe sender while reviewing a saved scan works again. It used to fail for every
+email.
 
-New accounts start with sensible folders for their email provider, including the provider's spam
-folder, instead of scanning the inbox alone.
+Only one scan runs on an account at a time, whether you started it or it runs in the background.
+A scan that stops responding is closed so the next one can start, instead of showing
+"In progress" for hours. If a scan is already running, the app tells you.
 
-A background scan no longer runs on an account while you are scanning it yourself.
+New accounts start with the right folders for their email provider, including its spam folder.
+A folder that does not exist on your account is skipped instead of reported as an error.
 
-The "background scan in progress" notice now clears within minutes when a background scan has
-stopped.
+A Gmail account keeps its sign-in when a renewal fails, instead of showing "Missing credentials".
+Gmail emails also show the date they arrived, not the time of the scan.
 
-Exports go to your Downloads folder by default, can leave out sender and subject details, and scan
-history can be cleared.
+Exports go to your Downloads folder unless you choose another, are off by default after each scan,
+can hide sender details, and Scan History can be cleared.
+
+Manage Rules labels subject rules correctly.

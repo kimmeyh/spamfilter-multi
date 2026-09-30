@@ -4,7 +4,7 @@
 
 **Audience**: Claude Code models planning sprints; User prioritizing future work
 
-**Last Updated**: 2026-09-27 (Sprint 74 Manual Validation: **F238 (Issue #441) added as the Sprint 75 release blocker for 0.17.0**, model Fable 5.1; no AAB until the Sprint 74 and 75 PRs both merge.) Previous: 2026-09-22 (**Sprint 72 COMPLETE** -- PR #420 -> develop. Ran on the Sprint 71 branch; Sprint 71 was never separately executed and its stub is marked SUPERSEDED. Delivered: F233 diagnostic log + the header-only CSV export fix, F232 mechanism A (historical-view rules now act on the mailbox; MECHANISM B REMAINS UNDIAGNOSED and is now instrumented), F228 honest action toast, F230+F231 action-sheet layout and durable outcomes, F217 honest Doze caveat (MECHANISM DELIBERATELY NOT BUILT -- the "is this the only way" search Harold required found it is not, and that the exemption carries a Play policy cost), F229 export half (the screen half was attempted and REVERTED after it overflowed by 18px at phone width). Suite 2,155 -> 2,233; analyzer clean; hooks 75/0; WinWright 2/2 twice; CI all green. **THREE CRITICAL findings across two reviews, all fixed, none deferred** -- and two of them were defects introduced BY this sprint: the F232 fix created an unintended deletion path from screen load (a method three callers share, the third safe only by accident), and the diagnostic logger silently destroyed concurrent records, which is the exact failure it existed to prevent. Manual validation found F233 shipped with NO UI at all -- ten tests passed via the test seam. Retrospective: Harold 12x Very Good; IMP-1..IMP-5 approved and applied. NEW backlog: F234 (read-only as a preview mode) and F235 (Android Doze via setExactAndAllowWhileIdle, TARGETED FOR SPRINT 73). Earlier history in prior revisions of this line (git).)
+**Last Updated**: 2026-09-29 (**Sprint 74 COMPLETE** -- PR #440; retro IMP-1/2/3/4/6 applied; F240/F241 added from Category 14; 0.17.0 held for F238.) Earlier 2026-09-27 (Sprint 74 Manual Validation: **F238 (Issue #441) added as the Sprint 75 release blocker for 0.17.0**, model Fable 5.1; no AAB until the Sprint 74 and 75 PRs both merge.) Previous: 2026-09-22 (**Sprint 72 COMPLETE** -- PR #420 -> develop. Ran on the Sprint 71 branch; Sprint 71 was never separately executed and its stub is marked SUPERSEDED. Delivered: F233 diagnostic log + the header-only CSV export fix, F232 mechanism A (historical-view rules now act on the mailbox; MECHANISM B REMAINS UNDIAGNOSED and is now instrumented), F228 honest action toast, F230+F231 action-sheet layout and durable outcomes, F217 honest Doze caveat (MECHANISM DELIBERATELY NOT BUILT -- the "is this the only way" search Harold required found it is not, and that the exemption carries a Play policy cost), F229 export half (the screen half was attempted and REVERTED after it overflowed by 18px at phone width). Suite 2,155 -> 2,233; analyzer clean; hooks 75/0; WinWright 2/2 twice; CI all green. **THREE CRITICAL findings across two reviews, all fixed, none deferred** -- and two of them were defects introduced BY this sprint: the F232 fix created an unintended deletion path from screen load (a method three callers share, the third safe only by accident), and the diagnostic logger silently destroyed concurrent records, which is the exact failure it existed to prevent. Manual validation found F233 shipped with NO UI at all -- ten tests passed via the test seam. Retrospective: Harold 12x Very Good; IMP-1..IMP-5 approved and applied. NEW backlog: F234 (read-only as a preview mode) and F235 (Android Doze via setExactAndAllowWhileIdle, TARGETED FOR SPRINT 73). Earlier history in prior revisions of this line (git).)
 
 ## How to Maintain This Document
 
@@ -141,6 +141,7 @@ Historical sprint information lives in individual documents in `docs/sprints/` a
 | 71 | docs/sprints/SPRINT_71_PLAN.md | [SUPERSEDED] | Never executed separately -- its stub's carry-ins were folded into Sprint 72, which ran on the Sprint 71 branch |
 | 72 | docs/sprints/SPRINT_72_SUMMARY.md | [OK] Complete | Sep 22, 2026 (PR #420 -> develop, #429 -> main; 0.15.3, NOT submitted to either store. F233 diagnostic log + empty-export fix, F232 mechanism A, F228 honest action toast, F230/F231 action sheet, F217 Doze caveat. Two of three CRITICAL review findings were defects the sprint introduced) |
 | 73 | docs/sprints/SPRINT_73_SUMMARY.md | [OK] Complete | Sep 22-23, 2026 (PR #435 -> develop; 0.16.0. F235 Doze scheduling, F234 read-only preview, F224+F207 cancel scan, F229 version on every screen, F226. Two CRITICAL defects were inert features with green suites -- verification by source text, not behavior) |
+| 74 | docs/sprints/SPRINT_74_SUMMARY.md | [OK] Complete | Sep 24-29, 2026 (PR #440 -> develop; 0.17.0, HELD for F238. Per-account scan lock (any type, fail closed, dead holders reaped, 2-6 min busy retry), F232 mechanism B fixed, F222 Sort chip + row dates, F202 provider folder defaults, F206 exports + clear history + redaction, Gmail keeps sign-in, subject rules = Keyword (DB v10). Device checks moved to Sprint 75) |
 
 **Key Achievements**: See CHANGELOG.md for detailed feature history.
 
@@ -148,34 +149,18 @@ Historical sprint information lives in individual documents in `docs/sprints/` a
 
 ## Last Completed Sprint
 
-**Sprint 73** (2026-09-22 -- 2026-09-23; PR #435 -> develop; version 0.16.0+7, not yet submitted)
-- **Type**: act on Harold's Sprint 72 device testing. Scope F235, F234, F224 + F207, F229, F226;
-  F232 mechanism B and F205 parked for a device run with diagnostic logging (MV74-3).
-- **F235 -- background scans now fire in Doze.** An inexact `setAndAllowWhileIdle` alarm per
-  account wakes the device and enqueues the existing WorkManager scan; `BootReceiver` restores the
-  alarms after a reboot. The inexact variant needs no exact-alarm permission and carries no Play
-  policy burden; the cost is a delivery window of about an hour. Real-hardware validation is
-  MV74-1 on the S24+. See ARCHITECTURE.md "Android in Doze" and the ADR-0039 amendment.
-- **F234 -- read-only became a rehearsal instead of a refusal**: adding a rule on a read-only
-  account reports what it WOULD have filed, mailbox untouched.
-- **F224 + F207 -- a running scan can be cancelled** from both surfaces, and a dead background scan
-  no longer leaves a stale warning. The F207 Android suppression was REMOVED in the Phase 7.7
-  review because it hid warnings for live scans; the proper fix (a cross-isolate heartbeat) is
-  MV74-2.
-- **THE SPRINT'S DEFINING EVENT: two CRITICAL defects, both inert features with green suites.**
-  F234's preview could never report anything but zero, and F224's cancel did nothing on every real
-  IMAP account because an identical exception swallow sat one layer below the one fixed. One cause:
-  verification by SOURCE TEXT rather than behavior. Re-mutating after the fix then showed the call
-  site was still untested -- "correct abstraction, wrong wiring".
-- **The Android build was never blocked.** The "Daemon compilation failed" traces are non-fatal
-  noise from plugin sources on `C:` and the project on `D:`; five build "failures" were builds the
-  diagnosing session interrupted itself. Recorded in TROUBLESHOOTING.md.
-- **Results**: suite 2,233 -> 2,314, analyzer clean, WinWright 2/2, hook suite 75/75. Six retro
-  improvements applied prevention-first; PR reviews 3 CRITICAL + 6 IMPORTANT, all fixed.
+**Sprint 74** (2026-09-24 -- 2026-09-29; PR #440 -> develop; version 0.17.0+8, **RELEASE HOLD** until F238 ships)
+- **Type**: device carry-ins (MV74-1/2/3) plus F202, F222, F206, F232, F205; Manual Validation ran five rounds and added most of the sprint's work.
+- **One scan per account at a time, of ANY type** (the Fold8 showed four background scans on one account in a minute): `ScanResultStore.claimAccountScan` -- one `BEGIN IMMEDIATE` transaction that reaps dead holders (heartbeat > 5 min or age > 30 min), refuses if any scan holds the account, else inserts. Fail closed. A timed-out scan now actually stops (revoked lease). A busy background scan waits a random 2-6 minutes and tries once more (replaces the Windows 15 x 1-minute retry). Per ACCOUNT, not global (Harold confirmed after the evidence).
+- **F232 mechanism B -- FIXED from the Fold8 log**: Scan History split the accountId on a dash and got an empty platform ("Platform  not supported"); every rule added from a saved scan failed.
+- **F222 -- reworked at MV**: default folder -> domain -> address kept; a Sort chip switches to newest first; each row shows its received date; Gmail dates fixed. The first version followed the card text, not the intent -- the Sprint 74 retro IMP-1 cause.
+- **F202** per-provider folder defaults; **F206** exports reachable on both platforms, off by default, redaction, Clear history, Android YAML export fixed; **Gmail** keeps its sign-in on a failed renewal; **subject rules** reclassified to `keyword` (DB v10).
+- **Moved to Sprint 75 Manual Validation** (no AAB until both PRs merge): MV74-1 Doze + reboot, live deletion from a saved scan, F205 error classification, the lock under real Doze batching, Android YAML export.
+- **Results**: suite 2,314 -> 2,417, analyzer clean, WinWright 2/2, hook suite 75 -> 83; ~38 mutations, all KILLED. Retro: Harold all Very Good; IMP-1/2/3/4/6 applied (card before/after line, UI-text verification, WinWright snapshot via `.backup`, `scripts/mutation-test.ps1`, heredoc-backslash hook).
 
 ## Next Sprint Candidates
 
-**Sprint 74 scope (Phase 8.4 pass 2, selected by Harold 2026-09-24)**: MV74-1 (#428), MV74-2 (#434), MV74-3 (#422, #433), F202 (#438), F222 (#437), F232 (#422), F206 (#439), F205 (#433). Plan: `docs/sprints/SPRINT_74_PLAN.md`.
+**Sprint 74 scope -- COMPLETE 2026-09-29 (PR #440)** (Phase 8.4 pass 2, selected by Harold 2026-09-24): MV74-1 (#428), MV74-2 (#434), MV74-3 (#422, #433), F202 (#438), F222 (#437), F232 (#422), F206 (#439), F205 (#433). Plan: `docs/sprints/SPRINT_74_PLAN.md`.
 
 **Last Reviewed**: September 24, 2026 (Sprint 73 cycle, Phase 8.2 pass-1 COMPLETENESS SWEEP -- no scope selected: 6 Sprint 73 DONE cards cleared (F235 -> MV74-1, F234, F229, F226, F224, F207 -> MV74-2); new F236 (YAML export version, from #427) and F237 (Android build-log noise); issues #426 #430 #431 #432 closed; master plan rolled to Sprint 73.)
 
@@ -192,6 +177,12 @@ All incomplete items in relative priority order. Priority in increments of 10; i
 **F239. Gmail on Android -- renew the token without the app open, and a "Sign In Again" path (Issue #442) Priority 12 -- backlog**
 - Harold, 2026-09-28 (Q1 option 1): Sprint 74 stopped DELETING the tokens on a failed renewal (no more "Missing credentials"); this card is the other half.
 - Android stores no refresh token and a WorkManager worker has no Activity, so a Gmail background scan cannot renew its token after about an hour. The "Sign In Again" widget in `error_display.dart` exists but no screen uses it. Full card: Issue #442 (Class-1: auth mechanism, may need a Google Cloud console change).
+
+**F240. Body-rule sub-type consistency Priority 40 -- backlog (Sprint 74 retro Category 14a)**
+- Quick-add and the default rule-set split store body rules as `entire_domain`; manual and imported body rules use `keyword`. Same shape as the subject-rule label fix (DB v10). Decide per body pattern kind (URL/domain vs phrase), then align the creators and reclassify stored rows.
+
+**F241. Remove or wire `ScanResultStore.getActiveBackgroundScan` Priority 60 -- backlog (Sprint 74 retro Category 14b)**
+- No production caller since the manual-scan dialog moved to the per-account `getActiveScanForAccount`; kept with its tests. Delete with its tests, or use it if F238 needs an any-account background check.
 
 ### Sprint 74 Manual Validation carry-ins (device-blocked from Sprint 73)
 
