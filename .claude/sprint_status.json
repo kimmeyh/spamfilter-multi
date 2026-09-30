@@ -1,18 +1,18 @@
 {
   "_description": "Sprint status file that persists across context compaction. Update after each phase/sub-phase completion.",
-  "_last_updated": "2026-09-30T03:32:23Z",
+  "_last_updated": "2026-09-30T04:09:15Z",
   "_usage": "Read this file after context compaction to restore sprint approval state and progress.",
   "_staleness_note": "This file had drifted 15 sprints (last updated at Sprint 35, 2026-04-19) before being refreshed at Sprint 50 close-out. It is a Phase 7.7 checklist item -- update it at every sprint close-out, not opportunistically.",
   "current_sprint": {
     "number": 74,
     "branch": "feature/20260924_Sprint_74",
-    "status": "Sprint 74 Phase 7.7 PR Reviews -- Manual Validation COMPLETE; retrospective complete (Harold all Very Good); IMP-1/2/3/4/6 applied (036f97e); Phase 7.7 docs done; PR #440 set Ready for Review; Claude + Copilot PR reviews in progress. 0.17.0 HELD for F238 (#441); no AAB until Sprint 74 and 75 PRs merge.",
+    "status": "Sprint 74 Phase 7.7 Ready for Final Approval -- reviews addressed (Copilot: no findings; Claude code 1 IMPORTANT + 3 MINOR fixed; Claude tests 4 IMPORTANT fixed, 4 MINOR -> Sprint 75); CI green on a3a262a; PR #440 ready, mergeable. 0.17.0 HELD for F238; no AAB until Sprint 74 and 75 PRs merge.",
     "plan_approved": true,
     "blanket_execution_approved": true,
     "pr_number": 440,
     "pr_url": "https://github.com/kimmeyh/spamfilter-multi/pull/440",
     "version": "0.17.0+8",
-    "suite": "2,417 passed / 15 skipped / 0 failed at --concurrency=2 (46fd173); analyzer clean"
+    "suite": "2,424 passed / 15 skipped / 0 failed (6633ffd); analyzer clean; CI green on a3a262a"
   },
   "previous_sprint": {
     "number": 73,
@@ -29,12 +29,12 @@
   },
   "_github_issues_note": "Sprint 66 cards created at Phase 3.3.1 (2026-09-07): #387 GP-19, #388 GP-4. Close by hand at Post-Merge Cleanup.",
   "test_metrics": {
-    "suite": "2,417 passed / 15 skipped / 0 failed",
-    "policy_suite": "release_notes_test 3/3; hook suite 83 passed / 0 failed",
-    "winwright": "2/2 scripts at 46fd173 (drift report = v10 migration; snapshot now uses .backup)",
+    "suite": "2,424 passed / 15 skipped / 0 failed",
+    "policy_suite": "release_notes_test 3/3; hook suite 86 passed / 0 failed",
+    "winwright": "2/2 at 6633ffd, no DB drift (.backup snapshot)",
     "analyzer": "clean",
     "mutations": "M26-M63 run in Sprint 74; all targeted mutations KILLED (M62 SURVIVED by design as the tool's own check)",
-    "as_of": "2026-09-29, Sprint 74 Phase 7.7"
+    "as_of": "2026-09-30, Sprint 74 Phase 7.7"
   },
   "store_release": {
     "status_0_15_3": "NOT SUBMITTED TO EITHER STORE. Harold, 2026-09-22: \"not pushing to either store this time\". Phase 8.3 explicitly N/A for this cycle.",
@@ -51,10 +51,9 @@
   ],
   "blocking_issues": [],
   "next_actions": [
-    "Address the Claude (pr-review-toolkit) and Copilot review comments on PR #440; reply + resolve each thread.",
-    "Phase 7.7.5: tell Harold the PR is ready for final approval.",
+    "Harold: review and merge PR #440 (develop).",
     "Harold: IMP-5 and IMP-7 decisions (none given).",
-    "After merge: 6.6 open feature/<date>_Sprint_75 from the Sprint 74 branch; close resolved issues by hand; Phase 8."
+    "After merge: 6.6 open feature/<date>_Sprint_75 from the Sprint 74 branch; close #434 #437 #438 #439 #422 by hand; Phase 8 (no store release -- 0.17.0 held)."
   ],
   "next_sprint_targeted": {
     "number": 75,
