@@ -145,8 +145,8 @@ Category 13 carry-ins (Sprint 75 plan) and Category 14 backlog items are listed 
 - **IMP-3 -- APPLY NOW -- DONE.** `winwright-db-snapshot.ps1` copies the dev DB with `sqlite3 .backup` (reads through the WAL) instead of `Copy-Item`; self-test Step 8 holds a committed row in the WAL and requires it in the snapshot. Verified: self-test all steps PASS; the old file copy mutated back in (M63) fails Step 8 -- KILLED; a live `-DryRun` snapshot read the running dev DB (3,241 rules).
 - **IMP-4 -- APPLY NOW -- DONE.** `scripts/mutation-test.ps1` (UTF-8 specs, target-file line endings, `test` or `command` checks, lock + verified restore). Verified on its first run: M59 (hook disabled), M60 (non-ASCII anchor -- the defect-1 case) and M61 (LF anchor on a CRLF file -- the defect-2 case) all KILLED; a comment-only mutation (M62) reported SURVIVED with exit 1. Listed in CLAUDE.md IMP-3.
 - **IMP-6 -- APPLY NOW -- DONE.** `.claude/hooks/block-heredoc-python-backslash.ps1`, registered on the PreToolUse Bash/PowerShell entry; 8 test cases in `test-cases/heredoc-guard/` (5 allow, 3 block); hook suite 83/83; M59 shows the suite catches the hook being disabled. Recorded in CLAUDE.md IMP-3.
-- **IMP-5 -- NO DECISION GIVEN** (not in Harold's list). Asked again at close-out.
-- **IMP-7 -- NO DECISION GIVEN** (not in Harold's list). Asked again at close-out.
+- **IMP-5 -- ADD TO BACKLOG** (Harold, 2026-10-02). Filed as F242 in ALL_SPRINTS_MASTER_PLAN.md.
+- **IMP-7 -- SKIP** (Harold, 2026-10-02: "imp-7 no"). Reviewed and declined; no change.
 
 ## PR #440 Reviews (Phase 7.7.5, 2026-09-29)
 

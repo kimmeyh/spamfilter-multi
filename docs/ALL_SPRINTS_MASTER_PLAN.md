@@ -181,6 +181,9 @@ All incomplete items in relative priority order. Priority in increments of 10; i
 **F240. Body-rule sub-type consistency Priority 40 -- backlog (Sprint 74 retro Category 14a)**
 - Quick-add and the default rule-set split store body rules as `entire_domain`; manual and imported body rules use `keyword`. Same shape as the subject-rule label fix (DB v10). Decide per body pattern kind (URL/domain vs phrase), then align the creators and reclassify stored rows.
 
+**F242. Span-replacing edit scripts assert what the span contains Priority 50 -- backlog (Sprint 74 retro IMP-5, Harold 2026-10-02: "add to backlog")**
+- A script that replaces the text between two anchors must assert the span's content (for example exactly one `testWidgets(`) and compare the test count before and after. Sprint 74: an end anchor matched one test too far and deleted a neighboring widget test; only an unused-import warning revealed it. Prevention: extend CLAUDE.md IMP-3 ("every mutation script asserts its anchor matched"); consider a span-replace mode in `scripts/mutation-test.ps1` or a shared edit helper.
+
 **F241. Remove or wire `ScanResultStore.getActiveBackgroundScan` Priority 60 -- backlog (Sprint 74 retro Category 14b)**
 - No production caller since the manual-scan dialog moved to the per-account `getActiveScanForAccount`; kept with its tests. Delete with its tests, or use it if F238 needs an any-account background check.
 
