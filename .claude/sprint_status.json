@@ -1,16 +1,16 @@
 {
   "_description": "Sprint status file that persists across context compaction. Update after each phase/sub-phase completion.",
-  "_last_updated": "2026-10-03T02:57:07Z",
+  "_last_updated": "2026-10-03T03:07:48Z",
   "_usage": "Read this file after context compaction to restore sprint approval state and progress.",
   "_staleness_note": "This file had drifted 15 sprints (last updated at Sprint 35, 2026-04-19) before being refreshed at Sprint 50 close-out. It is a Phase 7.7 checklist item -- update it at every sprint close-out, not opportunistically.",
   "current_sprint": {
     "number": 75,
     "branch": "feature/20261002_Sprint_75",
-    "status": "Sprint 75 Phase 8.2 Backlog Refinement -- pass 1 complete (2026-10-02); store release N/A (0.17.0 held for F238); awaiting Harold's scope selection (pass 2).",
+    "status": "Sprint 75 Phase 3.7 Plan Approval -- plan PROPOSED (docs/sprints/SPRINT_75_PLAN.md), draft PR open; scope F238, F216, F214, F236, F239, F215; version stays 0.17.0+8 (EXCEPTION, Harold 2026-10-02); awaiting approval + 4 open questions.",
     "plan_approved": false,
     "blanket_execution_approved": false,
     "pr_number": null,
-    "version": "0.17.0+8 (bump at Sprint 75 plan approval)"
+    "version": "0.17.0+8 (NO bump this sprint -- exception, Harold 2026-10-02)"
   },
   "previous_sprint": {
     "number": 74,
@@ -24,7 +24,8 @@
   "github_issues": {
     "sprint_73": "#428 (open, MV74-1), #422 (open, MV74-3), #430 closed, #434 (open, MV74-2), #431 closed, #432 closed, #433 (open, MV74-3). Also closed in pass 1: #426 (superseded by #428), #427 (leftover captured as F236).",
     "note": "Closes #N does NOT auto-fire here.",
-    "sprint_74": "Closed by hand 2026-10-02: #422 #434 #437 #438 #439. Open, carried: #428 (MV74-1 phone), #433 (F205 phone), #441 (F238), #442 (F239)."
+    "sprint_74": "Closed by hand 2026-10-02: #422 #434 #437 #438 #439. Open, carried: #428 (MV74-1 phone), #433 (F205 phone), #441 (F238), #442 (F239).",
+    "sprint_75": "#441 F238, #442 F239, #444 F216, #445 F214, #446 F236, #447 F215"
   },
   "_github_issues_note": "Sprint 66 cards created at Phase 3.3.1 (2026-09-07): #387 GP-19, #388 GP-4. Close by hand at Post-Merge Cleanup.",
   "test_metrics": {
@@ -41,7 +42,7 @@
     "live_play": "0.15.2 versionCode 5 -- closed testing, device-verified 2026-09-21 on the S24+.",
     "consequence": "F219 AC-1 and F227 remain blocked: they need a Play-INSTALLED build, and 0.15.3 is not going out. They wait for the next release that ships.",
     "status_0_16_0": "SUBMITTED / ROLLOUT IN PROCESS on BOTH stores (Harold, 2026-09-24, reported between 12:17am and 8:39am ET). NOT yet observed live on either. Built + verified 2026-09-24: MSIX 0.16.0.0 (prod worktree bf005f3, self-test 6/6 PASS, 17.5 MB) and AAB versionCode 7 / 0.16.0 (67.0 MB). Step 7 records (STORE_VERSION_STATUS.md live rows) wait for a direct console observation.",
-    "status_0_17_0": "RELEASE HOLD on both stores until F238 (#441) ships (Harold, 2026-09-27). Phase 8.3 N/A for the Sprint 74 cycle: no MSIX, no AAB until the Sprint 74 and 75 PRs are merged. Re-confirmed 2026-10-02 (Harold, option 1): keep the hold; release after Sprint 75 with F238, as Sprint 75's version (0.18.0)."
+    "status_0_17_0": "RELEASE HOLD on both stores until F238 (#441) ships (Harold, 2026-09-27). Phase 8.3 N/A for the Sprint 74 cycle: no MSIX, no AAB until the Sprint 74 and 75 PRs are merged. Re-confirmed 2026-10-02 (Harold, option 1): keep the hold; release after Sprint 75 with F238, as Sprint 75's version (0.18.0). VERSION EXCEPTION 2026-10-02: Sprint 75 keeps 0.17.0 (no bump), so the release carrying F238 is 0.17.0."
   },
   "environment_notes": [
     "RESOLVED 2026-07-29 (verified 07-30): the Store fault was an Acronis file-system filter blocking AppXSvc cleanup, fixed by an Acronis Protection exclusion. 23h uptime with ZERO Id-493 events vs a 176-file/6-min baseline; Store client self-updated 22606.1401.6.0 -> .10.0 (requires a working deployment pipeline). Filter drivers remain loaded -- backup protection was NOT disabled. See ALL_SPRINTS_MASTER_PLAN ENV-1 for the picker gotcha if it recurs.",
@@ -50,8 +51,8 @@
   ],
   "blocking_issues": [],
   "next_actions": [
-    "Harold: select Sprint 75 scope from the pass-2 slate (F238 already committed).",
-    "Phase 3 planning for Sprint 75 (version bump at approval, cards, draft PR)."
+    "Harold: approve the Sprint 75 plan and answer Open questions 1-4.",
+    "On approval: 3.7.1 PR update (keep draft), then execute Task 0 onward."
   ],
   "next_sprint_targeted": {
     "number": 75,

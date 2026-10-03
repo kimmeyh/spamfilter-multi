@@ -1,39 +1,542 @@
-# Sprint 75 Plan -- STUB (scope not yet selected)
+# Sprint 75 Plan -- PROPOSED, awaiting Phase 3.7 approval
 
-**Status**: **STUB -- NOT PLANNED, NOT APPROVED.** Created at Sprint 74 Phase 7.7 to hold the
-carry-ins. Planning (Phase 3) replaces this file.
+**Status**: **DRAFT -- NOT APPROVED.** No task execution begins until Harold approves (Phase 3.7).
+**Branch**: `feature/20261002_Sprint_75` | **PR**: draft (Phase 3.3.1)
+**Issues**: #441 (F238), #442 (F239), #444 (F216), #445 (F214), #446 (F236), #447 (F215)
+**Version**: **0.17.0+8 -- NO BUMP this sprint (EXCEPTION, Harold 2026-10-02)**: *"no store release
+was done after the last sprint, so keep 0.17.0 for this sprint (note as an exception)"*. F190
+normally bumps MINOR at plan approval; it is skipped because 0.17.0 never reached a store, so the
+release that carries F238 ships as 0.17.0 and its notes (`RELEASE_NOTES_0.17.0_*.md`) are
+re-derived at Phase 7.7 to add this sprint's entries.
 
-## Committed by Harold at Sprint 74 Manual Validation
+**Scope selected by Harold, 2026-10-02 (Phase 8.4)**: F238, F216, F214, F236, F239, F215.
 
-- **F238 (Issue #441) -- "Stop the background scan and start mine"**. RELEASE BLOCKER for 0.17.0.
-  Model: **Fable 5.1** (Harold). Full card on the issue (R-1..R-6, AC-1..AC-4, T-1..T-4, DB v11,
-  Class-1 interrupt to confirm at approval).
+**Release note**: 0.17.0 is on hold on BOTH stores until F238 ships (Harold, 2026-09-27; re-confirmed
+2026-10-02). No AAB until the Sprint 74 and Sprint 75 PRs are both merged.
 
-## Carry-ins from the Sprint 74 retrospective (Category 13)
+**Model note**: planned on Opus 5.5. F238 is assigned **Fable 5.1** by Harold and will be executed by a
+Fable 5.1 sub-agent (Agent tool, `model: fable`), not by the session model.
 
-- **Manual Validation device checklist** (0.17.0-or-later phone build, Fold8), moved from Sprint 74
-  because no AAB is built until both PRs merge:
-  1. MV74-1 -- background scans fire in Doze; the schedule survives a reboot (over hours).
-  2. Task 7 AC-2 -- a block rule added from a saved scan moves the mail; the toast reports N of N.
-  3. F205 -- classify every scan error on the current build (or record zero).
+**Execution note (SPRINT_PLANNING.md Sprint 68 IMP-4, option (b))**: the cheap independent tasks
+(F214, F236, F215) are front-loaded as a delegable block on their assigned tier BEFORE Manual
+Validation; F216 runs on Sonnet; F239 runs on the session model (Opus 5.5). Same-file work is
+serialized (F216 and F238 both avoid each other's files; see Affected components).
+
+---
+
+## ADR-0042 applies to EVERY task in this sprint
+
+Harold, restated 2026-10-02: *"everything needs to take into account both the Windows App and the
+Android app and ADR stating that everything should be functionally and UI the same unless it cannot
+be - and where it cannot be it should be implemented as a platform exception for what is needed --
+this applies to all backend code, frontend code, data, architecture, development, security,
+testing, deployment."*
+
+Per task: F238, F216, F214, F236 are shared code and UI with NO platform exception expected. F239 is
+the one task with a genuine platform difference (Android sign-in has no refresh token and no
+Activity in a background worker; Windows renews over HTTP) -- its Android-only renewal is a DECLARED
+exception; the "Sign In Again" path is identical on both. F215 is process/docs (N/A).
+
+---
+
+## Phase 3.2.2.1 findings (audit-first, Sprint 65 IMP-2) -- what is ALREADY true
+
+- **F216 -- PARTLY DONE.** Sprint 72's F230 already raised the action pop-up's
+  folder/subject/rule line to `bodyMedium` (14sp) -- Harold's 2026-09-12 decision "2. a". Still
+  open: the pop-up's date and domain row is `bodySmall` (12sp; Harold asked for 14sp,
+  `results_display_screen.dart` ~:2363 and ~:2385); the supporting text on
+  `manual_rule_create_screen.dart` (:628 confirm dialog, :815 `Type:`/`Phrase:` lines, the
+  `Examples:` hint and the field's floating label) and `rule_edit_screen.dart` (:956, :965).
+- **F214 -- NOT DONE.** `settings_screen.dart:2409-2423` still flanks the Scan Range slider with
+  `Text('1')` / `Text('90')` inside a Row; no other slider exists in `lib/ui` (one grep).
+- **F236 -- NOT DONE.** `YamlService.renderRules` / `renderSafeSenders` (`yaml_service.dart:80,85`,
+  added Sprint 74) emit no version; `AppVersion.get()` exists (`app_version.dart:27`).
+- **F215 -- PARTLY DONE.** `validation-screenshots/` with `sprint-69/`, `sprint-70/` and its README
+  exist; the MTP pull script exists only in Claude memory
+  (`memory/pull_phone_screenshots.ps1`, `-Dest` free-form). The five process references the card
+  lists are not written.
+- **F238 -- NOT DONE.** No cancel-request channel exists (`cancel_requested` greps to nothing).
+  DB is v10 (`database_helper.dart:58`), so the new column is **v11**.
+- **F239 -- NOT DONE.** `error_display.dart:118/215` has a "Sign In Again" action no screen uses;
+  Android renewal goes through `attemptLightweightAuthentication` (fails with `NO_ACTIVITY` in a
+  worker). Mechanism evidence below (Task 5 R-1).
+
+---
+
+## Task 0 -- Version: NO bump (exception) (Phase 3.7.0b)
+
+**Value**: This keeps the version honest: 0.17.0 never shipped, so the release carrying F238 is
+still 0.17.0.
+
+**Requirements**:
+- R-1: Do NOT run the F190 bump; record the exception in this plan, `sprint_status.json` and
+  `STORE_VERSION_STATUS.md`.
+- R-2: At Phase 7.7 re-derive `RELEASE_NOTES_0.17.0_windows.md` / `_play.md` to include Sprint 75
+  user-facing entries (the CHANGELOG range is Sprint 74 + Sprint 75).
+
+**Affected components / files**: `docs/STORE_VERSION_STATUS.md`, `.claude/sprint_status.json`.
+**Acceptance criteria**: AC-1: `pubspec.yaml` still reads `0.17.0+8`; `version_consistency_test`
+passes unchanged.
+**Tests to write**: none (existing `version_consistency_test` covers it).
+**Definition of Done**: None -- default DoD only.
+**Model**: Haiku -- *why not cheaper*: n/a. **Step-types**: DOCS. **Est-Effort**: 5-10m.
+
+---
+
+## Task 1 -- F238: Offer to stop a running background scan in favor of a manual scan (Priority 1, Issue #441)
+
+**Value**: This lets a user who taps Start Scan get the scan they asked for, instead of a dead end
+behind a background scan they cannot see or stop.
+
+**Requirements**:
+- R-1: When a manual scan is refused because a BACKGROUND scan holds the account, the "A scan is
+  already running" dialog offers a third action, **"Stop the background scan and start mine"**.
+- R-2: Cross-isolate / cross-process cancel request through the database: a new nullable column
+  `scan_results.cancel_requested_at` (DB **v11**, guarded additive migration). The UI writes it on
+  the holder row (`WHERE id = ? AND status = 'in_progress'`).
+- R-3: The scanning isolate checks its own row on its EXISTING heartbeat tick
+  (`EmailScanProvider._startHeartbeat`, 30 s) and, when set, requests cancel through the EXISTING
+  F224 path in its own isolate (`ScanCoordinator.requestCancel`), so the scan stops at its next
+  batch boundary, records `interrupted` with its partial counts, releases its lease and closes its
+  IMAP session.
+- R-4: The stopped row's reason reads that the user stopped it for a manual scan -- never an error.
+- R-5: The manual side shows "Stopping the background scan..." and waits, BOUNDED (90 s), for the
+  holder row to close (or its heartbeat to go stale, which the claim reaps), then starts the manual
+  scan through the normal path (the claim decides). If the bound expires, the user is told and
+  nothing starts; nothing is left `in_progress` forever.
+- R-6: Only a BACKGROUND holder can be stopped. A manual scan or rule update holding the account
+  keeps the OK-only dialog.
+- R-7: Parity -- the same dialog and the same row-based cancel on Android (worker isolate) and
+  Windows (worker process). No platform exception.
+
+**Affected components / files**:
+- `lib/core/storage/database_helper.dart` -- v11 column + migration.
+- `lib/core/storage/scan_result_store.dart` -- `requestCancel(scanId)`, `isCancelRequested(scanId)`.
+- `lib/core/providers/email_scan_provider.dart:301` -- heartbeat tick reads the request;
+  `cancelScan` takes a reason.
+- `lib/ui/screens/scan_progress_screen.dart:769-850` -- third action, waiting state, bounded wait.
+- `lib/core/services/email_scanner.dart` -- no change expected (F224 path already honors cancel at
+  the batch boundary with the scan's own lease).
+
+**Existing abstraction checked**: F224 `ScanCoordinator.requestCancel` / `throwIfCancelled(lease)`
+and the MV74-2 heartbeat timer -- REUSED; no second cancel path and no second timer.
+
+**Callers of any guard being changed**: `claimAccountScan` is NOT changed (the manual scan claims
+after the holder closes). `cancelScan` gains an optional reason: callers are the scanner's
+`ScanCancelledException` catch (user Cancel button -- unchanged text) and the new
+stop-for-manual path (new text).
+
+**User-reachable control**: Manual Scan screen > Start Live Scan > "A scan is already running" >
+"Stop the background scan and start mine".
+
+**Observable behavior -- before / after**: BEFORE: a background scan is running on the account; you
+tap Start Live Scan and see "A scan is already running ... Start this scan again when it finishes"
+with OK only; nothing starts. AFTER: the same dialog also offers "Stop the background scan and
+start mine"; tapping it shows "Stopping the background scan..." for up to about a minute and a half,
+then your manual scan starts; Scan History shows the background scan as "Not finished" with the
+reason "Stopped so your manual scan could start". If the background scan does not stop in time,
+you are told and nothing starts. When a MANUAL scan or a rule update holds the account, you still
+see OK only.
+
+**Dependencies / blockers**: None (Sprint 74 lock merged).
+
+**Non-functional requirements**:
+- Account-scoping: the request targets the holder row by id; never another account's scan.
+- Persistence: DB v10 -> v11, guarded; back up the dev DB before the first migration run.
+- Accessibility: the new action has a semantics label (WinWright-addressable).
+- Platform: identical; cross-isolate on Android, cross-process on Windows.
+
+**Acceptance criteria**:
+- AC-1: Given a live background row on account A, When the stop action runs, Then the request is
+  written, the scanning provider's next tick requests cancel, and the row ends `interrupted` with the
+  stop-for-manual reason.
+- AC-2: Given the holder closes, Then the waiting manual start proceeds and the claim is granted;
+  at no point do two `in_progress` rows exist for A.
+- AC-3: Given the holder does not close within the bound, Then the user sees the not-stopped message,
+  no manual row is written, and the holder is reaped by the claim once its heartbeat is stale.
+- AC-4: Given a MANUAL holder or a `reprocess` holder, Then the dialog offers OK only.
+- AC-5: The v11 migration adds the column to a v10 database and keeps existing rows.
+
+**Tests to write**:
+- T-1 (AC-1) -- TEST-UNIT `test/unit/storage/`: request written; a provider heartbeat tick (short
+  interval) honors it and the row ends `interrupted` with the reason.
+- T-2 (AC-2, AC-3) -- TEST-UNIT: the bounded wait returns "closed" when the holder closes and
+  "timed out" when it does not; no second live row.
+- T-3 (AC-4) -- TEST-WIDGET: dialog actions for background vs manual vs reprocess holders.
+- T-4 (AC-5) -- TEST-UNIT: real `DatabaseHelper` upgrade v10 -> v11.
+- What these do NOT catch: real cross-isolate timing on a dozing phone and a long single IMAP fetch
+  delaying the batch boundary -- Manual Validation (Windows now; phone per Open question 3).
+
+**Definition of Done**: default DoD PLUS: Windows Manual Validation with a background scan really
+running (Settings > Test Background Scan, then Start Live Scan on the same account); ADR-0039
+amendment (the cancel channel); ARCHITECTURE.md (schema v11, the dialog flow).
+
+**Model**: **Fable 5.1** (Harold named it) -- *why not cheaper*: cross-isolate/cross-process control
+through the database on the live-deletion path, with a migration.
+**Step-types**: DATA, SVC-EDIT, UI-MOVE, TEST-UNIT, TEST-WIDGET, DOCS
+**Est-Effort**: 180-300m (Sprint 74 lock actuals: claim + mapping ~110m; dialog + wait state on top).
+
+**Risk & rollback**: a request written but not honored leaves the user waiting -- bounded wait +
+claim reaping. Rollback: the dialog reverts to OK-only; the column is additive and unused.
+
+**Decision-class interrupts**: **Class-1** -- a new cross-isolate control channel through the database
+and DB v11. Asked at approval (Open question 1).
+
+---
+
+## Task 2 -- F216: Supporting text matches the text it supports (Priority 32)
+
+**Value**: This makes the text a user reads while creating a rule, or confirming which email they
+are about to block, as legible as the text next to it.
+
+**Requirements**:
+- R-1 (audit first -- done above): only the parts not already fixed by F230 are in scope.
+- R-2: Action pop-up: the date and domain row goes from `bodySmall` (12sp) to `bodyMedium` (14sp),
+  matching its folder/subject/rule line (Harold, 2026-09-12, "2. a"). The sender line is NOT changed.
+- R-3: Manual rule screen (block rules AND safe senders, one screen) and the rule editor: the
+  supporting text for the field being filled in -- the `Examples:` hint, the generated `Type:` and
+  `Phrase:/Source:` lines, and the same pair in the confirm dialog -- goes to `bodyMedium`. Genuinely
+  ambient labels elsewhere stay `bodySmall` (the theme's hierarchy is kept).
+- R-4: Check `no_rule_review_screen.dart` and `scan_history_screen.dart` metadata lines; change them
+  only if they show the same mismatch on the same kind of line, and record what was found either way.
+- R-5: Verify in BOTH themes (light and dark).
+
+**Affected components / files**: `lib/ui/screens/results_display_screen.dart` (~:2363, ~:2385),
+`lib/ui/screens/manual_rule_create_screen.dart` (:628, :815, the Examples hint and field label),
+`lib/ui/screens/rule_edit_screen.dart` (:956, :965).
+
+**User-reachable control**: N/A (existing screens).
+
+**Observable behavior -- before / after**: BEFORE: in the email pop-up the date and domain are
+smaller than the folder/subject line above them; on Add Rule / Add Safe Sender and Edit Rule the
+"Examples: ...", "Type: ..." and "Phrase: ..." text is smaller than "Block emails whose body..."
+beside it. AFTER: those lines are the same size as the text they sit next to, in both light and dark
+mode. Sender names, titles and other secondary labels are unchanged.
+
+**Dependencies / blockers**: None. Do not run concurrently with Task 1 on the same files (no overlap).
+
+**Non-functional requirements**: Accessibility -- size change keeps the F210 contrast pairing (colors
+unchanged); text scaling still follows the system setting.
+
+**Acceptance criteria**:
+- AC-1: The pop-up's date/domain row and its folder/subject line use the same text style.
+- AC-2: On the manual rule screen and the rule editor, the Examples / Type / Phrase lines use the
+  same style as the option subtitles beside them.
+- AC-3: R-4 findings recorded in the card (changed or not, with the reason).
+
+**Tests to write**:
+- T-1 (AC-1) -- TEST-WIDGET: open the pop-up; the date text and the subject line resolve to the same
+  font size.
+- T-2 (AC-2) -- TEST-WIDGET: manual rule screen and rule editor; the Type/Phrase lines resolve to the
+  subtitle size.
+- What these do NOT catch: how it looks at phone width -- Manual Validation (screenshots, both themes).
+
+**Definition of Done**: default DoD PLUS: Windows Manual Validation in light and dark mode.
+**Model**: Sonnet -- *why not cheaper*: the survey (supporting vs ambient text) is a judgment call;
+the edits themselves are mechanical.
+**Step-types**: UI-MOVE, TEST-WIDGET
+**Est-Effort**: 40-75m (F230-style style edits; the pop-up half is two lines).
+
+---
+
+## Task 3 -- F214: Scan Range slider lines up with the controls above it (Priority 34)
+
+**Value**: This removes the one control on the Scan Range card that does not line up with its
+neighbours, which a tester noticed.
+
+**Requirements**:
+- R-1 (audit first -- done above): the slider at `settings_screen.dart:2409-2423` is flanked by
+  `Text('1')` / `Text('90')`; it is the only slider in `lib/ui`.
+- R-2: Remove the flanking "1" / "90" labels; the slider's own value label (shown while dragging) and
+  the existing "N days" text carry the value. (Candidate (a) on the card -- fewest moving parts.)
+- R-3: The slider's track starts at the same left edge as the "Scan all emails" checkbox above it,
+  on both the Manual and Background tabs (both use the same widget).
+
+**Affected components / files**: `lib/ui/screens/settings_screen.dart:2405-2425`.
+
+**User-reachable control**: N/A (existing control).
+
+**Observable behavior -- before / after**: BEFORE: the Scan Range slider sits between a "1" and a
+"90", so its track starts noticeably further in from the card edge than the checkbox above it.
+AFTER: no "1" / "90" beside the slider; the track lines up with the controls above it; dragging still
+shows the number of days, and the days text under the slider still updates.
+
+**Dependencies / blockers**: None.
+
+**Acceptance criteria**:
+- AC-1: No `Text('1')` / `Text('90')` flanks the slider; the slider still sets 1-90 days.
+- AC-2: The slider's left edge equals the checkbox row's left edge (measured in a widget test).
+
+**Tests to write**:
+- T-1 (AC-1, AC-2) -- TEST-WIDGET in `test/ui/screens/`: the slider's left edge matches the checkbox
+  tile's left edge within 1 px; dragging changes the stored days.
+- What this does NOT catch: the tester's phone width -- Manual Validation screenshot.
+
+**Definition of Done**: None -- default DoD only (plus a Windows screenshot at Manual Validation).
+**Model**: Haiku -- *why not cheaper*: n/a (cheapest tier).
+**Step-types**: UI-MOVE, TEST-WIDGET
+**Est-Effort**: 20-40m.
+
+---
+
+## Task 4 -- F236: Stamp the app version into the YAML rules export (Priority 36)
+
+**Value**: This tells anyone reading an exported rules file which app version wrote it.
+
+**Requirements**:
+- R-1: `YamlService.renderRules` and `renderSafeSenders` start with a YAML comment carrying
+  `AppVersion.get()` and the export date. No version literal anywhere (`version_consistency_test`,
+  `stale_footer_test`).
+- R-2: The import path ignores the comment; the export invariants (lowercase, trimmed, sorted,
+  single quotes) are unchanged.
+
+**Affected components / files**: `lib/core/services/yaml_service.dart:80-85` (the two renders become
+async or take the version as a parameter; callers in `yaml_import_export_screen.dart`).
+
+**User-reachable control**: N/A (existing export).
+
+**Observable behavior -- before / after**: BEFORE: an exported `rules.yaml` / `rules_safe_senders.yaml`
+starts directly with the rules. AFTER: its first line is a comment such as
+`# Exported by MyEmailSpamFilter 0.17.0 on 2026-10-05`; importing the file works exactly as before.
+
+**Dependencies / blockers**: None.
+
+**Acceptance criteria**:
+- AC-1: Both exports begin with the version comment; the version equals `AppVersion.get()`.
+- AC-2: Re-importing an exported file yields the same rules (round trip).
+
+**Tests to write**:
+- T-1 (AC-1, AC-2) -- TEST-UNIT `test/unit/services/`: render -> first line is the comment with the
+  current version; render -> parse -> equal rule set.
+- What this does NOT catch: a third-party YAML reader that mishandles a leading comment (standard YAML
+  allows it).
+
+**Definition of Done**: None -- default DoD only.
+**Model**: Haiku -- *why not cheaper*: n/a.
+**Step-types**: SVC-EDIT, TEST-UNIT
+**Est-Effort**: 20-40m.
+
+---
+
+## Task 5 -- F239: Gmail on Android renews its sign-in without the app open, plus "Sign In Again" (Priority 12, Issue #442)
+
+**Value**: This lets a Gmail account keep scanning in the background past the first hour, and lets a
+user whose Gmail session expired sign in again without deleting the account.
+
+**Requirements**:
+- R-1 **(capability spike FIRST -- Tooling-Capability Pre-Flight rule)**: prove on the Android
+  emulator, from a background (non-Activity) context, that the platform interface's
+  `clientAuthorizationTokensForScopes` with the stored account EMAIL and `promptIfUnauthorized: false`
+  returns an access token for already-granted Gmail scopes. Evidence gathered at planning:
+  - Google, *Authorization* (developer.android.com/identity/authorization, updated 2025-10-27):
+    *"If the access was previously granted"* the request returns the token with no UI
+    (`hasResolution()` false), and *"call the same method to obtain an access token ... without any
+    user interaction"*. The page does NOT say whether a background context works -- hence the spike.
+  - google_sign_in_android 7.2.7 builds the `AuthorizationClient` from the APPLICATION context and
+    needs an Activity only to SHOW a prompt; the step that fails in a worker today is
+    `attemptLightweightAuthentication` (Credential Manager, `NO_ACTIVITY`), which this path skips.
+  - google_sign_in 7.2.0's instance-level `authorizationClient` passes NO account hint; the platform
+    interface accepts `email`, which is why the spike uses it.
+- R-2 (if the spike passes; Class-1 approved conditionally at Open question 2): on Android, renewal
+  calls that path with the stored email instead of lightweight sign-in, in the app AND the worker.
+  A declared ADR-0042 exception (Windows already renews over HTTP).
+- R-3: If renewal still fails, the background scan for that account is recorded as SKIPPED with the
+  reason "Gmail needs you to sign in again" -- not an error, not a success -- and tokens are kept
+  (Sprint 74 rule).
+- R-4: Wire the existing "Sign In Again" action (`error_display.dart`) where an expired Gmail session
+  is reported: the account list row and the scan error. It re-runs the interactive sign-in for the
+  SAME account and saves the tokens under the same account id -- the account is never deleted.
+  Identical on Windows and Android.
+- R-5: `getValidAccessToken` never falls back to another account's id.
+- R-6: If the spike FAILS: stop, record what it showed, and surface the alternatives (server auth
+  code + a token-exchange service; or "Sign In Again" only) before building R-2. R-4 and R-5 do not
+  depend on the spike and proceed either way.
+
+**Affected components / files**: `lib/adapters/auth/google_auth_service.dart` (:188, :286, :392);
+`lib/adapters/email_providers/gmail_api_adapter.dart`; `lib/ui/screens/account_selection_screen.dart`
+(the error row ~:879); `lib/ui/widgets/error_display.dart`; `lib/core/services/background_scan_core.dart`
+(skip reason); `pubspec.yaml` (direct dependency on `google_sign_in_platform_interface`, already
+present transitively).
+
+**Existing abstraction checked**: `GoogleAuthService` renewal paths and `AuthErrorDisplay`
+("Sign In Again", unused) -- REUSED.
+
+**Callers of any guard being changed**: `getValidAccessToken` (R-5) -- callers: `GmailApiAdapter`
+token validation, `gmail_client.dart`, `folder_selection_screen.dart`; each passes or has a current
+account set -- the card records each at implementation.
+
+**User-reachable control**: Account list (Select Account) > a Gmail row whose session expired >
+"Sign In Again"; and the scan error banner for that account.
+
+**Observable behavior -- before / after**: BEFORE: on Android, about an hour after signing in, Gmail
+background scans stop working; a Gmail account whose sign-in expired shows an error you can only
+fix by deleting the account and adding it again. AFTER: Gmail background scans keep working past the
+hour (if the spike passes); if Gmail ever does need you, the account row and the scan error show
+"Sign In Again", which signs you in again and keeps the account, its settings and its history.
+
+**Dependencies / blockers**: the emulator spike needs a Google account signed in on the emulator and
+a debug build that completes (pre-flight at task start). Device confirmation follows Open question 3.
+
+**Non-functional requirements**: Security -- tokens stay in secure storage; nothing new is logged
+(Redact). Account-scoping -- the email hint is the account's own stored email.
+
+**Acceptance criteria**:
+- AC-1: The spike result is recorded with its evidence (pass or fail).
+- AC-2 (if pass): with an expired stored token, the Android renewal returns a token without an
+  Activity; tokens are saved under the same account id.
+- AC-3: A failed renewal in a background scan is recorded as SKIPPED with the reason.
+- AC-4: Given an expired Gmail session, When the user taps "Sign In Again" and completes sign-in, Then
+  the account keeps its id, settings and history, and the next scan succeeds.
+- AC-5: `getValidAccessToken` with no current account returns null rather than another account's token.
+
+**Tests to write**:
+- T-1 (AC-2) -- TEST-UNIT: renewal routes through a fake platform interface with the stored email and
+  no prompt; tokens saved under the same id.
+- T-2 (AC-3) -- TEST-UNIT: background core maps a renewal failure to a skip with the reason.
+- T-3 (AC-4) -- TEST-WIDGET: the account row shows "Sign In Again" for an expired Gmail session and
+  calls sign-in for that account.
+- T-4 (AC-5) -- TEST-UNIT.
+- What these do NOT catch: real Google behavior on a device in Doze -- Manual Validation.
+
+**Definition of Done**: default DoD PLUS: ADR (Class-1 auth mechanism -- amend the OAuth ADR or a new
+one), ARCHITECTURE.md (renewal path), ADR-0042 exception recorded.
+**Model**: Fable/Opus (session: Opus 5.5) -- *why not cheaper*: an auth-mechanism spike with a
+Class-1 outcome.
+**Step-types**: SPIKE, SVC-EDIT, UI-MOVE, TEST-UNIT, TEST-WIDGET, DOCS
+**Est-Effort**: 240-480m (spike 30-60m; renewal 60-120m; Sign In Again 90-180m; docs 30-60m).
+
+**Risk & rollback**: the spike may fail or the emulator sign-in may not work -- R-6 bounds it; R-4/R-5
+still ship. Rollback: renewal reverts to the current path; "Sign In Again" is additive.
+
+**Decision-class interrupts**: **Class-1** (auth mechanism) -- conditional approval asked at Open
+question 2; a failed spike is surfaced, not worked around.
+
+---
+
+## Task 6 -- F215: Wire the validation-screenshot folder into every Android screenshot process (Priority 30)
+
+**Value**: This keeps Manual Validation evidence after the chat ends, under names that say what it
+shows.
+
+**Requirements** (the card's five places, plus the script):
+- R-1: Promote `memory/pull_phone_screenshots.ps1` to `scripts/pull-phone-screenshots.ps1` (written
+  and reused across sprints -- the IMP-4 promotion rule) with `-Sprint N` defaulting `-Dest` to
+  `validation-screenshots/sprint-NN/`, and a `.SYNOPSIS`.
+- R-2: `SPRINT_EXECUTION_WORKFLOW.md` Phase 5.3: save phone screenshots to
+  `validation-screenshots/sprint-NN/` with descriptive names before discussing them.
+- R-3: Backlog-card authoring (`BACKLOG_REFINEMENT.md` Step 5): cite the relative path of any image a
+  card is written from.
+- R-4: `SPRINT_RETROSPECTIVE.md`: validation evidence points at the folder.
+- R-5: `TESTING_STRATEGY.md`: name the folder as the home for manual-validation evidence.
+- R-6: Record the retention decision (keep indefinitely; no pruning) in the folder README, and note
+  the per-session image cache (`~/.claude/image-cache/`) as usable WITHIN a session only.
+
+**Affected components / files**: `scripts/pull-phone-screenshots.ps1` (new), the four docs above,
+`validation-screenshots/README.md`, the memory pointer.
+
+**User-reachable control**: N/A (process).
+**Observable behavior -- before / after**: N/A (no app change).
+**Dependencies / blockers**: None.
+
+**Acceptance criteria**:
+- AC-1: `scripts/pull-phone-screenshots.ps1 -Sprint 75 -ListOnly` (or equivalent) runs and names the
+  destination `validation-screenshots/sprint-75/`.
+- AC-2: The four docs each reference the folder (grep).
+
+**Tests to write**: T-1 (AC-2) -- a grep check recorded in the card; no app tests.
+**Definition of Done**: None -- default DoD only (no CHANGELOG entry: not user-facing).
+**Model**: Haiku -- *why not cheaper*: n/a.
+**Step-types**: DOCS, SCRIPT
+**Est-Effort**: 30-60m.
+
+---
+
+## Carry-ins from the Sprint 74 retrospective (Category 13) -- NOT in the selected scope; Open question 4
+
+- **Phone validation checklist** (0.17.0 phone build; timing per Open question 3):
+  1. MV74-1 -- background scans fire in Doze; the schedule survives a reboot (#428).
+  2. A block rule added from a saved scan moves the mail; the toast reports N of N (F232 AC-2).
+  3. F205 -- classify every scan error on the current build, or record zero (#433).
   4. The per-account lock under a real Doze batch -- never two `in_progress` rows for one account.
   5. The 2-6 minute busy wait against Android's ~10-minute worker limit.
   6. Android YAML export saves through the system dialog.
-- **WinWright scripts for new UI with none yet**: Sort chip, "A scan is already running" dialog,
-  Scan History Clear history, "Hide sender details in exports", resolved-default folder rows.
-- **Widget tests for the same controls** (PR #440 test review, MINOR 5/7/8/9 -- grouped here with
-  the WinWright scripts because they cover the same UI): (5) the Results "another scan is running"
-  row uses the info style, never the error style (`wasRefused` branch before `hasError`); (7) the
-  Manual Scan OK-only dialog and the refusal snackbar; (8) tapping "Hide sender details in exports"
-  persists `getExportRedacted()`; (9) Clear history's zero-finished snackbar and scope text.
+  7. (Sprint 75) F238 stop-for-manual and F239 renewal / Sign In Again on the phone.
+- **WinWright scripts** for new UI with none yet (~60-90m): Sort chip, "A scan is already running"
+  dialog (and F238's new action), Scan History Clear history, "Hide sender details in exports",
+  resolved-default folder rows.
+- **Widget tests** for the same controls (PR #440 test review MINOR 5/7/8/9, ~45-75m): the Results
+  "another scan is running" row uses the info style; the Manual Scan OK-only dialog and refusal
+  snackbar; the redaction toggle persists; Clear history's zero-finished snackbar and scope text.
 
-## Backlog candidates (for scope selection)
+## Progress (live)
 
-- F239 (#442) Gmail headless renewal + "Sign In Again"; F240 body-rule sub-types; F241 unused query.
+- (filled during execution)
 
-## Process notes
+## Phase 3.6.1 Architecture Impact Check
 
-- New card template line (Sprint 74 retro IMP-1): "Observable behavior -- before / after" is
-  mandatory for any card that changes what a user sees.
-- No AAB until the Sprint 74 and Sprint 75 PRs are both merged (Harold, 2026-09-27).
-- **Re-confirmed by Harold, 2026-10-02 (option 1): keep the hold.** The next store release ships AFTER Sprint 75, with F238 included, under Sprint 75's version (0.18.0 after the plan-approval bump). The 0.17.0 notes carry forward into it. Weighed against: 0.16.0 (live) still has colliding scans, failing rule adds from saved scans, Gmail "Missing credentials" and the Android YAML export failure; 0.17.0 fixes those but has the F238 dead end on BOTH platforms.
+- **ARCHITECTURE.md** -- updates REQUIRED (each card's DoD, before Manual Validation):
+  - `scan_results` schema: `cancel_requested_at`, DB **v11** (Task 1).
+  - The scan-lock paragraph: the stop-for-manual flow (Task 1).
+  - Gmail token renewal on Android (Task 5, if the spike passes) and the "Sign In Again" path.
+- **ADRs**:
+  - ADR-0039: amendment for the cross-isolate cancel request (Task 1).
+  - OAuth ADR amendment (or new ADR) for the Android renewal mechanism (Task 5, Class-1).
+  - ADR-0042: Task 5's Android-only renewal recorded as a declared exception.
+- **ARSD.md**: no requirement changes identified.
+- **Schema**: one additive migration (v10 -> v11).
+
+## Dependency watch (Phase 2 pre-kickoff, 2026-10-02)
+
+`dart pub outdated`: unchanged from Sprint 74 -- one DISCONTINUED package, `js` 0.6.7, web-only via
+`connectivity_plus` 5.0.2; no effect on Windows or Android. Task 5 adds
+`google_sign_in_platform_interface` as a DIRECT dependency (already resolved transitively; no version
+change).
+
+---
+
+## Sprint summary
+
+| Task | Item | Model | Est (min) | Depends on |
+|---|---|---|---|---|
+| 0 | Version: no bump (exception) | Haiku | 5-10 | approval |
+| 1 | F238 stop background for manual | Fable 5.1 (sub-agent) | 180-300 | Q1 |
+| 2 | F216 supporting text size | Sonnet | 40-75 | -- |
+| 3 | F214 slider alignment | Haiku | 20-40 | -- |
+| 4 | F236 version in YAML export | Haiku | 20-40 | -- |
+| 5 | F239 Gmail renewal + Sign In Again | Fable/Opus (Opus 5.5) | 240-480 | Q2; emulator pre-flight |
+| 6 | F215 screenshot folder wiring | Haiku | 30-60 | -- |
+
+**Total estimated**: **535-1,005 minutes (~9-17 hours)**.
+
+**Model mix**: Haiku 4, Sonnet 1, Fable 5.1 1, Opus 1.
+
+**Suggested order**: 0 -> {3, 4, 6 as one delegated Haiku block} -> 1 (Fable sub-agent) in parallel
+with 2 (no shared files) -> 5 (spike first). Task 1 first among the large items because it is the
+release blocker.
+
+**Calibration note**: Sprint 74 planned tasks landed at or under estimate; the unplanned Manual
+Validation work was most of the effort. These estimates do not include MV rework.
+
+---
+
+## Open questions for Harold at approval
+
+1. **F238 (Class-1)**: approve the cross-isolate cancel request through the database -- a new
+   `cancel_requested_at` column (DB v11) that the background scan checks on its 30-second heartbeat?
+   - 1. Yes, as specified
+   - 2. No -- discuss another mechanism first
+2. **F239 (Class-1, conditional)**: if the emulator spike proves Android can renew a Gmail token
+   from the background by account email with no prompt, may I build it without a further stop?
+   - 1. Yes -- build it if the spike passes; stop and surface if it fails
+   - 2. No -- stop after the spike either way and show me the result
+3. **Phone checks timing** (carried from 10/02): the Sprint 74 phone checks plus Sprint 75's F238/F239
+   need a phone build, and there is no AAB until this PR merges.
+   - 1. After the Sprint 75 merge, before the 0.17.0 store submission (recommended)
+   - 2. During Sprint 75 Manual Validation, with a closed-test AAB built as an exception
+4. **Sprint 74 carry-ins** (WinWright scripts + widget tests for the new controls, ~105-165m):
+   - 1. Add them to Sprint 75 (they cover F238's new dialog action too)
+   - 2. Leave them in the backlog
+
+## Phase 3.7 approval
+
+(pending)
