@@ -112,6 +112,8 @@ void main() {
     expect(await subTypeOf('hdr'), 'exact_domain',
         reason: 'header exact-domain rules really are exact-domain');
     expect(await subTypeOf('body'), 'keyword');
-    expect(await upgraded.getVersion(), 10);
+    // v11 (F238, Sprint 75) follows v10; the v10 data change is what is
+    // tested here, so the version only has to have passed 10.
+    expect(await upgraded.getVersion(), greaterThanOrEqualTo(10));
   });
 }

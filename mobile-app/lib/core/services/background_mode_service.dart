@@ -62,6 +62,16 @@ class BackgroundModeService {
   /// Check if app is running in background mode
   static bool get isBackgroundMode => _isBackgroundMode;
 
+  /// F239 (Sprint 75): mark THIS isolate as a background worker. The Android
+  /// WorkManager worker runs in its own isolate with no command-line args, so
+  /// [initialize] never sees `--background-scan` there; the worker entry point
+  /// calls this instead. Statics are per-isolate, so this never affects the
+  /// app's UI isolate. Used to keep background scans from starting an
+  /// interactive sign-in (a browser or account picker nobody is watching).
+  static void markBackgroundIsolate() {
+    _isBackgroundMode = true;
+  }
+
   /// Check if app is running in foreground mode
   static bool get isForegroundMode => !_isBackgroundMode;
 

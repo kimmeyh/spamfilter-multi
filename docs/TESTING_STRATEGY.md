@@ -267,7 +267,7 @@ void main() {
 
 **Purpose**: Test complete user workflows on real devices/emulators
 
-**Location**: Manual validation
+**Location**: Manual validation. Evidence (screenshots, test results) is saved to `validation-screenshots/sprint-NN/` and referenced in the sprint retrospective for permanent retention.
 
 **Coverage**: All critical user paths
 

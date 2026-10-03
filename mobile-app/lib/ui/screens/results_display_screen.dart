@@ -1349,6 +1349,13 @@ class _ResultsDisplayScreenState extends State<ResultsDisplayScreen> {
         (scanProvider.results.isNotEmpty ||
             scanProvider.status == ScanStatus.scanning);
     final showingHistorical = !hasLiveResults && _lastCompletedScan != null;
+    // Sprint 75 (Harold Q3 at Manual Validation): a REFUSED scan clears the
+    // results before its claim is refused, so hasLiveResults alone made the
+    // "another scan is running" row unreachable on exactly the path that
+    // produces it. Used by BOTH the status row and the block that holds it.
+    final showLiveRefusal = !isViewingHistory &&
+        scanProvider.status == ScanStatus.error &&
+        scanProvider.wasRefused;
 
     // [UPDATED] FB-2a: Use historical scan's mode when showing historical results,
     // not the live provider's mode (which defaults to readonly when idle)
@@ -1404,7 +1411,8 @@ class _ResultsDisplayScreenState extends State<ResultsDisplayScreen> {
             ),
             if (scanTypeLabel != null ||
                 scanTimeLabel != null ||
-                hasLiveResults) ...[
+                hasLiveResults ||
+                showLiveRefusal) ...[
               const SizedBox(height: 4),
               // F166 (Sprint 60 MV, Harold): the scan status indicator
               // ("Scan complete <duration>" / progress) renders INLINE on
@@ -1430,7 +1438,11 @@ class _ResultsDisplayScreenState extends State<ResultsDisplayScreen> {
                         color: Colors.grey[600],
                       ),
                     ),
-                  if (hasLiveResults)
+                  // Sprint 75 (Harold Q3 at Manual Validation): a REFUSED scan
+                  // clears the results before its claim is refused, so
+                  // hasLiveResults alone made the "another scan is running"
+                  // row unreachable on exactly the path that produces it.
+                  if (hasLiveResults || showLiveRefusal)
                     _buildScanStatusIndicator(scanProvider),
                 ],
               ),
@@ -2366,11 +2378,17 @@ class _ResultsDisplayScreenState extends State<ResultsDisplayScreen> {
                                   const SizedBox(width: 4),
                                   Text(
                                     dateStr,
-                                    // F230: was `fontSize: 11`, the smallest
-                                    // text on the sheet.
+                                    // F216 (Sprint 75): was `bodySmall`
+                                    // (12sp, originally `fontSize: 11`
+                                    // under F230). Harold, 2026-09-12,
+                                    // answer "2. a": the date/domain row
+                                    // must match the folder/subject/rule
+                                    // line above it, which F230 already
+                                    // promoted to bodyMedium. The sender
+                                    // line is unchanged.
                                     style: Theme.of(context)
                                         .textTheme
-                                        .bodySmall
+                                        .bodyMedium
                                         ?.copyWith(color: Colors.grey.shade700),
                                   ),
                                   if (displaySenderDomain != null) ...[
@@ -2390,9 +2408,12 @@ class _ResultsDisplayScreenState extends State<ResultsDisplayScreen> {
                                       child: Text(
                                         displaySenderDomain,
                                         overflow: TextOverflow.ellipsis,
+                                        // F216 (Sprint 75): was `bodySmall`
+                                        // -- see the date Text above for
+                                        // the same reasoning.
                                         style: Theme.of(context)
                                             .textTheme
-                                            .bodySmall
+                                            .bodyMedium
                                             ?.copyWith(
                                                 color: Colors.grey.shade700),
                                       ),

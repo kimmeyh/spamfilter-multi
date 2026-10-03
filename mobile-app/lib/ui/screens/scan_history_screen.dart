@@ -1,5 +1,3 @@
-import 'dart:io';
-
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:logger/logger.dart';
@@ -353,9 +351,6 @@ class _ScanHistoryScreenState extends State<ScanHistoryScreen> {
   Widget _buildBody() {
     return Column(
       children: [
-        // F109b (Sprint 44): explain why recent BACKGROUND scans may be absent
-        // while the app is open -- they defer until the app is closed (F98).
-        _buildBackgroundDeferralHint(),
         // Account filter chips (show when multiple configured accounts)
         if (_distinctAccounts.length > 1) _buildAccountFilter(),
         // Type filter chips
@@ -538,49 +533,6 @@ class _ScanHistoryScreenState extends State<ScanHistoryScreen> {
         ),
         chip,
       ],
-    );
-  }
-
-  /// F109b (Sprint 44): a dismissable-feeling info hint (Windows only)
-  /// clarifying that background scans pause while the app is open, so the
-  /// absence of recent background entries is expected, not a failure.
-  Widget _buildBackgroundDeferralHint() {
-    if (!Platform.isWindows) return const SizedBox.shrink();
-    return Container(
-      key: const Key('scan_history_deferral_hint'),
-      width: double.infinity,
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-      // F195/F197 (Sprint 67): theme colours, not a hardcoded surface.
-      //
-      // This was `Colors.blueGrey.shade50` -- a fixed near-white -- with text
-      // from `textTheme.bodySmall`, which the theme lightens in dark mode. That
-      // is the SAME mixing defect measured at 1.14:1 on the Settings account
-      // header: light text landing on a pale surface.
-      //
-      // A repo-wide audit for the pattern (hardcoded shadeNN surface WITH
-      // theme-derived text nearby) found exactly ONE other instance, and this
-      // is it. Fixed here rather than deferred, because it is two lines and it
-      // sits on a screen this sprint already touches.
-      color: Theme.of(context).colorScheme.surfaceContainerHighest,
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Icon(Icons.info_outline,
-              size: 16,
-              color: Theme.of(context).colorScheme.onSurfaceVariant),
-          const SizedBox(width: 8),
-          Expanded(
-            child: Text(
-              'Background scans pause while this app is open; they resume on the '
-              'next interval after you close it. Deferred runs appear here as '
-              '"deferred".',
-              style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                    color: Theme.of(context).colorScheme.onSurfaceVariant,
-                  ),
-            ),
-          ),
-        ],
-      ),
     );
   }
 
@@ -802,6 +754,19 @@ class _ScanHistoryScreenState extends State<ScanHistoryScreen> {
                 Text(
                   scan.errorMessage!,
                   style: TextStyle(fontSize: 12, color: Colors.red.shade700),
+                  maxLines: 2,
+                  overflow: TextOverflow.ellipsis,
+                ),
+              ],
+              // F238 (Sprint 75): WHY a "Not finished" scan stopped -- "Stopped
+              // so your manual scan could start", the user's own Cancel, or
+              // the reaper -- in the details color, not red: it is not an
+              // error (R-4). The same `error_message` column carries it.
+              if (isInterrupted && scan.errorMessage != null) ...[
+                const SizedBox(height: 4),
+                Text(
+                  scan.errorMessage!,
+                  style: TextStyle(fontSize: 12, color: Colors.grey.shade700),
                   maxLines: 2,
                   overflow: TextOverflow.ellipsis,
                 ),

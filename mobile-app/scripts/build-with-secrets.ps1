@@ -526,6 +526,19 @@ try {
         Write-Host "[APK Install] Starting emulator detection and installation..." -ForegroundColor Cyan
 
         # Step 1: Robust ADB daemon and emulator startup
+        #
+        # Sprint 75: adb writes "daemon not running; starting now" to STDERR on
+        # every cold start -- and this block kills the daemon first, so EVERY
+        # run is a cold start. Under the script-wide 'Stop' (line 86) a native
+        # command's stderr captured with 2>&1 becomes a TERMINATING error in
+        # Windows PowerShell 5.1, so the first `adb devices` below threw, the
+        # outer catch printed "[FATAL ERROR] * daemon not running", and an APK
+        # that had built successfully was never installed (twice on
+        # 2026-10-03). The Sprint 66 fix reordered the success/failure checks
+        # but never reached them. Native adb output is judged by its TEXT
+        # here, so this section runs under 'Continue'; restored at Step 2.
+        $savedErrorAction = $ErrorActionPreference
+        $ErrorActionPreference = 'Continue'
         $adbStarted = $false
         $adbTries = 0
         $maxAdbTries = 5
@@ -578,6 +591,7 @@ try {
                 exit 1
             }
         }
+        $ErrorActionPreference = $savedErrorAction
 
         # Step 2: Ensure emulator is running
         $emulatorDevice = $null
@@ -700,9 +714,16 @@ try {
         # is under 2x the APK size + 200MB, trim system caches first.
         $apkSizeMB = [math]::Ceiling((Get-Item $apkPath).Length / 1MB)
         $neededMB = (2 * $apkSizeMB) + 200
-        $dfOut = & adb shell df -m /data 2>$null | Select-Object -Last 1
+        # Sprint 75: native adb output is judged by its TEXT below, so this
+        # block runs under 'Continue' (see Step 1) -- under 'Stop' any stderr
+        # line, even one sent to $null, threw and aborted the install. And
+        # `df -m` is not supported by the Android 14 image's toybox df
+        # ("Unknown option 'm'"); `-k` (1 KB blocks) works on old and new
+        # images, so Available is read in KB and converted.
+        $ErrorActionPreference = 'Continue'
+        $dfOut = & adb shell df -k /data 2>$null | Select-Object -Last 1
         if ($dfOut -match '\s(\d+)\s+\d+%') {
-            $freeMB = [int]$Matches[1]
+            $freeMB = [int]([long]$Matches[1] / 1024)
             if ($freeMB -lt $neededMB) {
                 Write-Host "[Step 5/6] Low emulator storage (${freeMB}MB free, want ${neededMB}MB) -- trimming caches..." -ForegroundColor Yellow
                 & adb shell pm trim-caches 2000M 2>$null | Out-Null
@@ -724,6 +745,7 @@ try {
                 Start-Sleep -Seconds 4
             }
         }
+        $ErrorActionPreference = $savedErrorAction
         if (-not $installSuccess) {
             Write-Host "[ERROR]: APK install failed after $maxInstallTries attempts." -ForegroundColor Red
             exit 1

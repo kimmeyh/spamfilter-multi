@@ -595,6 +595,25 @@ class SettingsStore {
     return value == 'true';
   }
 
+  /// F239 (Sprint 75): true when this Gmail account's sign-in could not be
+  /// renewed without the user -- the account list then offers "Sign In
+  /// Again". Set where renewal fails; cleared by any successful sign-in,
+  /// renewal or credential load. Absent = false.
+  Future<bool> getGmailSignInRequired(String accountId) async {
+    final value = await _getAccountSetting(accountId, 'gmail_sign_in_required');
+    return value == 'true';
+  }
+
+  /// F239: see [getGmailSignInRequired]. `false` removes the setting.
+  Future<void> setGmailSignInRequired(String accountId, bool required) async {
+    if (!required) {
+      await _deleteAccountSetting(accountId, 'gmail_sign_in_required');
+    } else {
+      await _setAccountSetting(
+          accountId, 'gmail_sign_in_required', 'true', 'bool');
+    }
+  }
+
   /// Set account-specific background scan enabled override
   /// Pass null to clear the override
   Future<void> setAccountBackgroundEnabled(String accountId, bool? enabled) async {

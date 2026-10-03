@@ -80,7 +80,14 @@ void main() {
     test('the header reads the flag rather than the status alone', () {
       final source =
           File('lib/ui/screens/scan_progress_screen.dart').readAsStringSync();
-      expect(source.contains("wasCancelled ? 'Scan cancelled' : 'Scan failed'"),
+      // Sprint 75 (Harold Q3): a refusal reads "Scan not started" too, so
+      // the expression grew a middle branch; the cancel flag still decides
+      // first. The refusal's behavior is pinned by s75_refusal_display_test.
+      expect(
+          RegExp(r"wasCancelled\s*\?\s*'Scan cancelled'\s*:\s*"
+                  r"scanProvider\.wasRefused\s*\?\s*'Scan not started'\s*:\s*"
+                  r"'Scan failed'")
+              .hasMatch(source),
           isTrue,
           reason: 'mapping ScanStatus.error straight to "Scan failed" is the '
               'defect -- the flag is what distinguishes the two');

@@ -16,6 +16,7 @@ import '../../core/storage/database_helper.dart';
 import '../../core/storage/scan_result_store.dart';
 import '../../core/storage/settings_store.dart';
 import '../../core/storage/unmatched_email_store.dart';
+import '../services/background_scan_core.dart' show BackgroundScanCore;
 import '../services/scan_coordinator.dart';
 import '../../core/utils/pattern_normalization.dart';
 import '../../util/redact.dart';
@@ -298,26 +299,79 @@ class EmailScanProvider extends ChangeNotifier {
   /// or process (Windows Task Scheduler), so the DATABASE row is the only
   /// cross-boundary liveness signal. A failed write is logged, never thrown --
   /// a missed beat must not fail the scan it describes.
+  ///
+  /// F238 (Sprint 75): the same tick is also the ONLY way a stop request from
+  /// another isolate or process reaches this scan. After the beat it reads
+  /// `scan_results.cancel_requested_at` on its own row; when set, it requests
+  /// cancel through THIS isolate's [ScanCoordinator] -- the existing F224
+  /// path -- so the scan stops at its next batch boundary and the scanner's
+  /// own `ScanCancelledException` handler calls [cancelScan], which closes the
+  /// row with [ScanResultStore.stoppedForManualScanReason]. The tick itself
+  /// must NOT close the row: the row closing is what admits the waiting manual
+  /// scan, and that may happen only once this scan's lease and IMAP session
+  /// are actually being torn down.
   void _startHeartbeat() {
     _stopHeartbeat();
+    _pendingCancelReason = null;
     final id = _currentScanResultId;
     final store = _scanResultStore;
     if (id == null || store == null) return;
     _heartbeatTimer = Timer.periodic(
         debugHeartbeatIntervalOverride ?? ScanCoordinator.heartbeatInterval,
-        (_) async {
+        (timer) async {
       try {
         await store.recordHeartbeat(id);
       } catch (e) {
         _logger.w('Scan heartbeat write failed for id=$id: $e');
       }
+      // Review (Sprint 75, M-1): cancelling the timer does not stop a tick
+      // that is already running. If this scan ended while the tick awaited,
+      // requestCancel(accountId) below would hit the NEXT scan on the
+      // account -- possibly the user's manual scan.
+      if (!identical(_heartbeatTimer, timer)) return;
+      await _honorCancelRequest(store, id, timer);
     });
+  }
+
+  /// F238: one read per tick; a failed read is logged and retried next tick.
+  Future<void> _honorCancelRequest(
+      ScanResultStore store, int id, Timer timer) async {
+    final accountId = _currentAccountId;
+    if (accountId == null) return;
+    bool requested;
+    try {
+      requested = await store.isCancelRequested(id);
+    } catch (e) {
+      _logger.w('Scan cancel-request read failed for id=$id: $e');
+      return;
+    }
+    if (!requested) return;
+    // Same guard after the read (M-1): the scan may have ended meanwhile.
+    if (!identical(_heartbeatTimer, timer)) return;
+    final accepted =
+        ScanCoordinator.instance.requestCancel(accountId: accountId);
+    if (_pendingCancelReason == null) {
+      _pendingCancelReason = ScanResultStore.stoppedForManualScanReason;
+      _logger.i('F238: stop request found on scan row id=$id -- cancel '
+          '${accepted ? 'requested' : 'NOT yet accepted (no active lease '
+              'for this account in this isolate; will retry next tick)'}');
+    }
   }
 
   void _stopHeartbeat() {
     _heartbeatTimer?.cancel();
     _heartbeatTimer = null;
   }
+
+  /// F238: set when the heartbeat tick found a stop request on the row, so the
+  /// scanner's cancel handler (which calls [cancelScan] with no argument)
+  /// records WHY the scan stopped. Cleared when a scan starts.
+  String? _pendingCancelReason;
+
+  /// Test seam: the reason the next [cancelScan] will record, if a stop
+  /// request has been seen on the row.
+  @visibleForTesting
+  String? get debugPendingCancelReason => _pendingCancelReason;
 
   /// Test seam: a short interval so a test can observe a REAL heartbeat
   /// write (review C-2) instead of only the timer's start/stop.
@@ -717,19 +771,30 @@ class EmailScanProvider extends ChangeNotifier {
   ///
   /// Partial counts are deliberately NOT reset (AC-4) -- work that really
   /// happened stays recorded.
-  Future<void> cancelScan() async {
+  ///
+  /// F238 (Sprint 75): [reason] is what Scan History shows for the stopped
+  /// scan. The scanner's handler passes nothing, so the reason is the one the
+  /// heartbeat tick queued when it found a stop request on the row
+  /// ("Stopped so your manual scan could start"), or else the user's own
+  /// Cancel text. Never an error (R-4).
+  Future<void> cancelScan({String? reason}) async {
     _stopHeartbeat();
+    final recordedReason = reason ??
+        _pendingCancelReason ??
+        ScanResultStore.cancelledByUserReason;
+    _pendingCancelReason = null;
     _status = ScanStatus.error;
     _wasCancelled = true;
     _wasRefused = false;
     _statusMessage = 'Scan cancelled. '
         '$_processedCount of $_totalEmails emails had been checked.';
     _currentEmail = null;
-    _logger.i('Scan cancelled by the user after $_processedCount emails');
+    _logger.i('Scan cancelled after $_processedCount emails: $recordedReason');
 
     if (_scanResultStore != null && _currentScanResultId != null) {
       try {
-        await _scanResultStore!.markScanCancelled(_currentScanResultId!);
+        await _markCancelledWithRetry(
+            _scanResultStore!, _currentScanResultId!, recordedReason);
       } catch (e) {
         // A failure to record the cancel must not mask the cancel itself.
         _logger.e('Failed to mark scan cancelled: $e');
@@ -738,6 +803,28 @@ class EmailScanProvider extends ChangeNotifier {
 
     notifyListeners();
   }
+
+  /// Review (Sprint 75, SF-5): on Windows the UI process polls this row every
+  /// 2 s while waiting for the stop, so the close can meet "database is
+  /// locked". Left unwritten, the row stays in_progress with a dead
+  /// heartbeat, the manual side times out at 90 s saying the scan did not
+  /// stop (it did), and the claim refuses the account for 5 minutes.
+  Future<void> _markCancelledWithRetry(
+      ScanResultStore store, int id, String reason) async {
+    try {
+      await store.markScanCancelled(id, reason: reason);
+    } catch (e) {
+      // The shared classifier (also matches SQLite's "(code 5)" form).
+      if (!BackgroundScanCore.isDatabaseLocked(e)) rethrow;
+      _logger.w('Scan cancel write met a locked database; retrying once');
+      await Future<void>.delayed(markCancelledRetryDelay);
+      await store.markScanCancelled(id, reason: reason);
+    }
+  }
+
+  /// Seam for tests: the wait before the one retry.
+  @visibleForTesting
+  static Duration markCancelledRetryDelay = const Duration(milliseconds: 750);
 
   @override
   void dispose() {

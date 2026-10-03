@@ -55,7 +55,15 @@ abstract class RuleDatabaseProvider {
 ///     OTHER isolates/processes can tell a live scan from a dead one --
 ///     the UI's ScanCoordinator cannot see a background scan on either
 ///     platform. Existing rows stay NULL and fall back to started_at.
-const int databaseVersion = 10;
+/// v10: Data only -- subject rules reclassified pattern_sub_type
+///      'exact_domain' -> 'keyword' (Sprint 74 Manual Validation).
+/// v11: Add cancel_requested_at (nullable INTEGER, epoch ms) to scan_results
+///      (F238, Sprint 75). The ONLY cross-isolate / cross-process control
+///      channel into a running scan: the UI writes it on a background scan's
+///      row, and the scanning isolate reads it on its heartbeat tick and
+///      requests cancel through its own ScanCoordinator. Existing rows stay
+///      NULL (no request).
+const int databaseVersion = 11;
 
 /// SQLite database helper - singleton pattern
 class DatabaseHelper implements RuleDatabaseProvider {
@@ -185,6 +193,7 @@ class DatabaseHelper implements RuleDatabaseProvider {
         error_message TEXT,
         folders_scanned TEXT NOT NULL,
         last_heartbeat_at INTEGER,
+        cancel_requested_at INTEGER,
         FOREIGN KEY (account_id) REFERENCES accounts(account_id)
       );
     ''');
@@ -637,6 +646,24 @@ class DatabaseHelper implements RuleDatabaseProvider {
         _logger.i('v10 migration complete: $n subject rule(s) reclassified '
             'exact_domain -> keyword');
       }
+    }
+
+    if (oldVersion < 11) {
+      // v11: F238 (Sprint 75) -- cross-isolate cancel request on scan_results.
+      // Nullable and additive; guarded like v9 so a fresh-install table (which
+      // already has the column from _createTables) is not re-altered, and
+      // like v10 on the TABLE existing (partial test schemas built at an
+      // earlier version may lack it; PRAGMA table_info on a missing table
+      // returns no rows, which the column check alone would read as "add").
+      _logger.i('Applying v11 migration: adding scan_results.cancel_requested_at');
+      final scanInfo = await db.rawQuery('PRAGMA table_info(scan_results)');
+      final scanColumns = scanInfo.map((r) => r['name'] as String).toSet();
+      if (scanColumns.isNotEmpty &&
+          !scanColumns.contains('cancel_requested_at')) {
+        await db.execute(
+            'ALTER TABLE scan_results ADD COLUMN cancel_requested_at INTEGER;');
+      }
+      _logger.i('v11 migration complete');
     }
   }
 

@@ -51,9 +51,8 @@ void main() {
           source.contains('if (Platform.isAndroid && _backgroundScanEnabled)\n'
               '          _buildAndroidDozeStatusLine(),'),
           isTrue,
-          reason: 'Windows has no Doze equivalent and already has its own '
-              'deferral line -- showing this there would be wrong, not merely '
-              'redundant');
+          reason: 'Windows has no Doze equivalent -- showing this there would '
+              'be wrong, not merely redundant');
     });
 
     test('it is shown only when background scanning is ON', () {
@@ -97,10 +96,23 @@ void main() {
           reason: 'F235 R-6: the caveat gets MORE accurate, not softer');
     });
 
-    test('the Windows sibling is untouched', () {
-      expect(source.contains("Key('background_deferral_status_line')"), isTrue,
-          reason: 'the two lines are siblings, each describing the platform '
-              'the user is actually on');
+    test('F243: the Windows "pause while this app is open" texts are gone',
+        () {
+      // F243 (Sprint 75): Windows background scans now RUN while the app is
+      // open (the per-account scan claim decides), so both Windows texts that
+      // said they pause -- this file's former sibling line and the Scan
+      // History hint -- would now be false claims to the user.
+      //
+      // What this does NOT catch: the same claim reworded and reintroduced
+      // somewhere else (Help content is checked separately by
+      // help_platform_claims_test).
+      final history =
+          File('lib/ui/screens/scan_history_screen.dart').readAsStringSync();
+      for (final src in [source, history]) {
+        expect(src.contains('pause while this app is open'), isFalse);
+        expect(src.contains("Key('background_deferral_status_line')"), isFalse);
+        expect(src.contains("Key('scan_history_deferral_hint')"), isFalse);
+      }
     });
   });
 
