@@ -9,8 +9,9 @@
     "status": "Sprint 75 Phase 3.7 Plan Approval -- plan PROPOSED (docs/sprints/SPRINT_75_PLAN.md), draft PR open; scope F238, F216, F214, F236, F239, F215; version stays 0.17.0+8 (EXCEPTION, Harold 2026-10-02); awaiting approval + 4 open questions.",
     "plan_approved": false,
     "blanket_execution_approved": false,
-    "pr_number": null,
-    "version": "0.17.0+8 (NO bump this sprint -- exception, Harold 2026-10-02)"
+    "pr_number": 448,
+    "version": "0.17.0+8 (NO bump this sprint -- exception, Harold 2026-10-02)",
+    "pr_url": "https://github.com/kimmeyh/spamfilter-multi/pull/448"
   },
   "previous_sprint": {
     "number": 74,

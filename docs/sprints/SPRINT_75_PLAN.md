@@ -1,7 +1,7 @@
 # Sprint 75 Plan -- PROPOSED, awaiting Phase 3.7 approval
 
 **Status**: **DRAFT -- NOT APPROVED.** No task execution begins until Harold approves (Phase 3.7).
-**Branch**: `feature/20261002_Sprint_75` | **PR**: draft (Phase 3.3.1)
+**Branch**: `feature/20261002_Sprint_75` | **PR**: #448 (draft, Phase 3.3.1)
 **Issues**: #441 (F238), #442 (F239), #444 (F216), #445 (F214), #446 (F236), #447 (F215)
 **Version**: **0.17.0+8 -- NO BUMP this sprint (EXCEPTION, Harold 2026-10-02)**: *"no store release
 was done after the last sprint, so keep 0.17.0 for this sprint (note as an exception)"*. F190
