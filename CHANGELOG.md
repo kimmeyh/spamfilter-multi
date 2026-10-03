@@ -27,6 +27,7 @@ Format: `- **type**: Description (Issue #N)` where type is feat|fix|chore|docs
 ## [Unreleased]
 
 ### 2026-10-03 (Sprint 75)
+- **fix**: exporting rules or safe senders to YAML now opens the save dialog in your export folder (Settings > General, or the default: Documents on Android, Downloads on Windows) instead of wherever the dialog last was. (Issue #446)
 - **fix**: when a scan cannot start because another scan is already running on the account, the Manual Scan screen now says "Scan not started" instead of "Scan failed", and the Results screen shows the reason. Before, that note never appeared. (Issue #441)
 - **feat**: on Windows, scheduled background scans now run while the app is open, as they already did on Android. A background scan skips only an account you are scanning by hand, and tries it again a few minutes later. The notes saying background scans pause while the app is open are removed. (Issue #450)
 - **feat**: when you start a scan while a background scan is running on the same account, the "A scan is already running" message now offers "Stop the background scan and start mine". The background scan stops at its next check point and your scan starts. Scan History shows the stopped scan as not finished, with the reason. A stopped background scan no longer sends a "scan complete" notification. (Issue #441)

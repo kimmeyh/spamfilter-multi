@@ -6,23 +6,38 @@
 ///
 /// These tests drive [saveYamlExport] with a recording fake picker.
 ///
+/// Sprint 75 (Harold Q5 at Manual Validation): the dialog now OPENS in the
+/// export folder (Settings > General, else the platform default) -- on Android
+/// it opened in Downloads although the default folder is Documents.
+///
 /// What they do NOT catch: the real Android save dialog (the platform channel
-/// and SAF), and whether the plugin's returned value is shown sensibly in the
-/// status line -- both are Manual Validation on the phone.
+/// and SAF -- whether the OS honors the starting URI), and whether the plugin's
+/// returned value is shown sensibly in the status line -- both are Manual
+/// Validation on the device.
 library;
 
 import 'dart:convert';
+import 'dart:io';
 import 'dart:typed_data';
 
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:my_email_spam_filter/core/services/export_directories.dart';
+import 'package:my_email_spam_filter/core/storage/settings_store.dart';
 import 'package:my_email_spam_filter/ui/screens/yaml_import_export_screen.dart';
+
+class _BrokenSettings extends SettingsStore {
+  @override
+  Future<String?> getCsvExportDirectory() async =>
+      throw StateError('no database');
+}
 
 class _RecordingPicker implements FilePicker {
   _RecordingPicker(this.returns);
 
   final String? returns;
   Uint8List? bytes;
+  String? initialDirectory;
   int saveCalls = 0;
 
   @override
@@ -37,6 +52,7 @@ class _RecordingPicker implements FilePicker {
   }) async {
     saveCalls++;
     this.bytes = bytes;
+    this.initialDirectory = initialDirectory;
     return returns;
   }
 
@@ -99,5 +115,75 @@ void main() {
       expect(result, isNull);
       expect(appWrites, 0, reason: 'mobile=$mobile');
     }
+  });
+
+  group('Sprint 75: the dialog opens in the export folder', () {
+    test('the starting folder reaches the picker on BOTH paths', () async {
+      for (final mobile in [true, false]) {
+        final picker = _RecordingPicker(null);
+        await saveYamlExport(
+          picker: picker,
+          isMobile: mobile,
+          dialogTitle: 't',
+          fileName: 'rules.yaml',
+          yaml: yaml,
+          writeDesktopFile: (_) async {},
+          initialDirectory: 'START',
+        );
+        expect(picker.initialDirectory, 'START', reason: 'mobile=$mobile');
+      }
+    });
+
+    test('Android: a shared-storage path becomes the document URI the save '
+        'dialog takes', () {
+      expect(
+          ExportDirectories.androidDocumentUri('/storage/emulated/0/Documents'),
+          'content://com.android.externalstorage.documents/document/'
+          'primary%3ADocuments');
+      expect(
+          ExportDirectories.androidDocumentUri(
+              '/storage/emulated/0/Documents/Spam Exports/'),
+          'content://com.android.externalstorage.documents/document/'
+          'primary%3ADocuments%2FSpam%20Exports');
+      expect(ExportDirectories.androidDocumentUri('/storage/emulated/0'),
+          'content://com.android.externalstorage.documents/document/primary%3A');
+    });
+
+    test('Android: anything else gives NO hint rather than a guessed URI', () {
+      for (final p in [
+        '/storage/emulated/10/Documents', // another user / work profile
+        '/storage/emulated/01/Documents', // not the primary root
+        '/data/user/0/com.myemailspamfilter/files',
+        'C:\\Users\\x\\Downloads',
+      ]) {
+        expect(ExportDirectories.androidDocumentUri(p), isNull, reason: p);
+      }
+    });
+
+    test('saveDialogStart falls back to the platform default and never throws '
+        'when the setting cannot be read', () async {
+      final dir = Directory.systemTemp.createTempSync('s75_q5_');
+      addTearDown(() {
+        ExportDirectories.overrideDefaultForTest(null);
+        ExportDirectories.debugWritableOverride = null;
+        dir.deleteSync(recursive: true);
+      });
+      ExportDirectories.overrideDefaultForTest(dir.path);
+      ExportDirectories.debugWritableOverride = true;
+      final start = await ExportDirectories.saveDialogStart(
+          settingsStore: _BrokenSettings());
+      // The test host is Windows or Linux (CI): a filesystem path.
+      expect(start, dir.path);
+    });
+
+    test('both export buttons pass the export folder (source gate)', () {
+      final src = File('lib/ui/screens/yaml_import_export_screen.dart')
+          .readAsStringSync();
+      expect(
+          'initialDirectory: await ExportDirectories.saveDialogStart(),'
+              .allMatches(src)
+              .length,
+          2);
+    });
   });
 }
