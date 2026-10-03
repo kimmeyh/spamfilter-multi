@@ -21,6 +21,7 @@
 library;
 
 import 'dart:async';
+import 'dart:convert';
 import 'dart:io';
 
 import 'package:flutter/services.dart';
@@ -33,6 +34,7 @@ import 'package:my_email_spam_filter/adapters/email_providers/spam_filter_platfo
 import 'package:my_email_spam_filter/core/services/background_mode_service.dart';
 import 'package:my_email_spam_filter/core/storage/database_helper.dart';
 import 'package:my_email_spam_filter/core/storage/settings_store.dart';
+import 'package:my_email_spam_filter/util/error_messages.dart';
 
 import '../../helpers/database_test_helper.dart';
 
@@ -49,14 +51,25 @@ void main() {
   const secureStorage =
       MethodChannel('plugins.it_nomads.com/flutter_secure_storage');
   late DatabaseTestHelper testHelper;
+  // Fake secure storage. Empty by default: renewal finds nothing.
+  final store = <String, String>{};
 
   setUpAll(DatabaseTestHelper.initializeFfi);
 
   setUp(() async {
-    // No saved accounts or tokens: renewal finds nothing and returns null.
+    store.clear();
     TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
         .setMockMethodCallHandler(secureStorage, (call) async {
-      if (call.method == 'readAll') return <String, String>{};
+      final key = (call.arguments as Map?)?['key'] as String?;
+      switch (call.method) {
+        case 'read':
+          return store[key];
+        case 'write':
+          store[key!] = call.arguments['value'] as String;
+          return null;
+        case 'readAll':
+          return Map<String, String>.from(store);
+      }
       return null;
     });
     testHelper = DatabaseTestHelper();
@@ -79,6 +92,32 @@ void main() {
   http.Response json(int status, String body) => http.Response(body, status,
       headers: {'content-type': 'application/json; charset=utf-8'});
 
+  test('the scan text keeps what went wrong this time (wrong account)', () {
+    expect(
+        ErrorMessages.humanize(GmailSignInRequiredException(
+            detail: 'You signed in as x@gmail.com. To fix $_gmail, sign in '
+                'with $_gmail.')),
+        'Gmail needs you to sign in again. You signed in as x@gmail.com. '
+        'To fix $_gmail, sign in with $_gmail.');
+    expect(ErrorMessages.humanize(GmailSignInRequiredException()),
+        'Gmail needs you to sign in again.');
+  });
+
+  test('Android renewal refuses a different account BEFORE saving (source '
+      'gate -- the native SDK has no seam on this host)', () {
+    final src =
+        File('lib/adapters/auth/google_auth_service.dart').readAsStringSync();
+    final start = src.indexOf('Future<AuthResult> _refreshViaNativeSignIn(');
+    final lightweight =
+        src.indexOf('attemptLightweightAuthentication()', start);
+    final check =
+        src.indexOf('isExpectedAccount(user.email, tokens.email)', lightweight);
+    final save = src.indexOf('saveGmailTokens(accountId, newTokens)', check);
+    expect(lightweight, greaterThan(start));
+    expect(check, greaterThan(lightweight));
+    expect(save, greaterThan(check));
+  });
+
   test('network errors are classified as "not reachable", a refusal is not',
       () {
     expect(GmailApiAdapter.isNetworkError(const SocketException('down')),
@@ -98,6 +137,36 @@ void main() {
       await expectLater(GmailApiAdapter().loadCredentials(_creds()),
           throwsA(isA<ConnectionException>()));
       expect(await flagged(), isFalse);
+    });
+
+    test('Gmail says "try later" (503): a connection error, NOT flagged',
+        () async {
+      GmailApiAdapter.debugHttpClientFactory = () => MockClient((_) async =>
+          json(503, '{"error":{"code":503,"message":"Backend Error"}}'));
+      await expectLater(GmailApiAdapter().loadCredentials(_creds()),
+          throwsA(isA<ConnectionException>()));
+      expect(await flagged(), isFalse);
+    });
+
+    test('renewal handing back the SAME refused token is not a renewal: '
+        'flagged, never scanned with the dead token', () async {
+      // The stored token has NOT reached its local expiry, so
+      // getValidAccessToken returns it unchanged -- the token Gmail refused.
+      store['saved_accounts'] = _gmail;
+      store['credentials_${_gmail}_platformId'] = 'gmail';
+      store['token_${_gmail}_gmail_tokens'] = jsonEncode({
+        'accessToken': 'stored-token',
+        'refreshToken': null,
+        'expiresAt':
+            DateTime.now().add(const Duration(minutes: 30)).toIso8601String(),
+        'grantedScopes': ['https://www.googleapis.com/auth/gmail.modify'],
+        'email': _gmail,
+      });
+      GmailApiAdapter.debugHttpClientFactory = () => MockClient((_) async =>
+          json(401, '{"error":{"code":401,"message":"Invalid Credentials"}}'));
+      await expectLater(GmailApiAdapter().loadCredentials(_creds()),
+          throwsA(isA<GmailSignInRequiredException>()));
+      expect(await flagged(), isTrue);
     });
 
     test('token refused and renewal impossible in the background: flagged, '

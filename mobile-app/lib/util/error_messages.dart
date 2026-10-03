@@ -43,8 +43,11 @@ class ErrorMessages {
       return 'Too many failed sign-in attempts. Try again at $hh:$mm.';
     }
     if (error is GmailSignInRequiredException) {
-      // F239: the user can fix this one, and the app says how.
-      return '${GmailSignInRequiredException.reason}.';
+      // F239: the user can fix this one, and the app says how -- plus what
+      // went wrong this time (a wrong account, a cancelled sign-in).
+      final detail = error.detail;
+      return '${GmailSignInRequiredException.reason}.'
+          '${detail == null || detail.isEmpty ? '' : ' $detail'}';
     }
     if (error is AuthenticationException) {
       // Copilot review (PR #317): provider-agnostic wording -- OAuth flows

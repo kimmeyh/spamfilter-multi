@@ -270,7 +270,10 @@ class GoogleAuthService {
         return await _refreshViaNativeSignIn(accountId, tokens);
       }
     } catch (e) {
-      Redact.logSafe('Token refresh failed: ${e.runtimeType}');
+      // Review (Sprint 75): logSafe is debug-only, so a release build kept
+      // no trace of WHY renewal failed. Type and code carry no account data.
+      Redact.logWarning('Token refresh failed: ${e.runtimeType}'
+          '${e is PlatformException ? ' code=${e.code}' : ''}');
       // Sprint 74 MV (Harold Q1, 2026-09-27): a failed renewal NO LONGER
       // deletes the stored tokens -- here or in the four sites below. The
       // failure may be transient (no network, no Activity in a background
@@ -298,7 +301,14 @@ class GoogleAuthService {
       // with NO_ACTIVITY in a WorkManager worker); this call does not, if
       // the R-1 spike confirms it. Anything but a token falls through to the
       // existing path unchanged.
-      final directToken = await authorizeWithoutActivity(tokens.email);
+      //
+      // OFF until the spike result is recorded (review M-3): R-2 was
+      // approved only if the spike passes, and whether the returned token is
+      // scoped to that one account is not yet verified. The debug-build
+      // probe in the Android worker exercises the call meanwhile.
+      final directToken = noActivityRenewalEnabled
+          ? await authorizeWithoutActivity(tokens.email)
+          : null;
       if (directToken != null) {
         final newTokens = GmailTokens(
           accessToken: directToken,
@@ -319,6 +329,17 @@ class GoogleAuthService {
       if (user == null) {
         // Silent sign-in failed. Tokens are KEPT (Harold Q1, Sprint 74 MV --
         // see _refreshToken): this can be transient.
+        _state = AuthState.unauthenticated;
+        return AuthResult.unauthenticated();
+      }
+
+      // Review (Sprint 75, M-4): the SDK returns whichever Google account it
+      // last signed in -- after a refused wrong-account Sign In Again, that
+      // can be another account. Saving its token under THIS id would scan
+      // the other mailbox with this account's rules. Save nothing.
+      if (!isExpectedAccount(user.email, tokens.email)) {
+        Redact.logWarning('Renewal returned a different Google account; '
+            'nothing saved');
         _state = AuthState.unauthenticated;
         return AuthResult.unauthenticated();
       }
@@ -351,6 +372,11 @@ class GoogleAuthService {
       rethrow;
     }
   }
+
+  /// F239 R-2 (Sprint 75): whether Android renewal tries
+  /// [authorizeWithoutActivity] first. False until the R-1 emulator spike is
+  /// recorded as PASS (Harold's conditional approval, plan Open question 2).
+  static bool noActivityRenewalEnabled = false;
 
   /// F239 (Sprint 75): test seam for [authorizeWithoutActivity].
   @visibleForTesting
@@ -385,11 +411,12 @@ class GoogleAuthService {
         BackgroundModeService.isBackgroundMode ? 'background' : 'foreground';
     try {
       final token = await authorize(email, _scopes);
-      Redact.logSafe('[F239 spike] authorization without an Activity '
-          '($where): ${token == null ? 'NULL (needs the user)' : 'PASS'}');
-      return (token == null || token.isEmpty) ? null : token;
+      final passed = token != null && token.isNotEmpty;
+      Redact.logWarning('[F239 spike] authorization without an Activity '
+          '($where): ${passed ? 'PASS' : 'NULL (needs the user)'}');
+      return passed ? token : null;
     } catch (e) {
-      Redact.logSafe('[F239 spike] authorization without an Activity '
+      Redact.logWarning('[F239 spike] authorization without an Activity '
           '($where): ERROR ${e.runtimeType}'
           '${e is PlatformException ? ' code=${e.code}' : ''}');
       return null;

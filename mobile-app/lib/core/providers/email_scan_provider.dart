@@ -317,18 +317,24 @@ class EmailScanProvider extends ChangeNotifier {
     if (id == null || store == null) return;
     _heartbeatTimer = Timer.periodic(
         debugHeartbeatIntervalOverride ?? ScanCoordinator.heartbeatInterval,
-        (_) async {
+        (timer) async {
       try {
         await store.recordHeartbeat(id);
       } catch (e) {
         _logger.w('Scan heartbeat write failed for id=$id: $e');
       }
-      await _honorCancelRequest(store, id);
+      // Review (Sprint 75, M-1): cancelling the timer does not stop a tick
+      // that is already running. If this scan ended while the tick awaited,
+      // requestCancel(accountId) below would hit the NEXT scan on the
+      // account -- possibly the user's manual scan.
+      if (!identical(_heartbeatTimer, timer)) return;
+      await _honorCancelRequest(store, id, timer);
     });
   }
 
   /// F238: one read per tick; a failed read is logged and retried next tick.
-  Future<void> _honorCancelRequest(ScanResultStore store, int id) async {
+  Future<void> _honorCancelRequest(
+      ScanResultStore store, int id, Timer timer) async {
     final accountId = _currentAccountId;
     if (accountId == null) return;
     bool requested;
@@ -339,6 +345,8 @@ class EmailScanProvider extends ChangeNotifier {
       return;
     }
     if (!requested) return;
+    // Same guard after the read (M-1): the scan may have ended meanwhile.
+    if (!identical(_heartbeatTimer, timer)) return;
     final accepted =
         ScanCoordinator.instance.requestCancel(accountId: accountId);
     if (_pendingCancelReason == null) {
@@ -784,8 +792,8 @@ class EmailScanProvider extends ChangeNotifier {
 
     if (_scanResultStore != null && _currentScanResultId != null) {
       try {
-        await _scanResultStore!.markScanCancelled(_currentScanResultId!,
-            reason: recordedReason);
+        await _markCancelledWithRetry(
+            _scanResultStore!, _currentScanResultId!, recordedReason);
       } catch (e) {
         // A failure to record the cancel must not mask the cancel itself.
         _logger.e('Failed to mark scan cancelled: $e');
@@ -794,6 +802,27 @@ class EmailScanProvider extends ChangeNotifier {
 
     notifyListeners();
   }
+
+  /// Review (Sprint 75, SF-5): on Windows the UI process polls this row every
+  /// 2 s while waiting for the stop, so the close can meet "database is
+  /// locked". Left unwritten, the row stays in_progress with a dead
+  /// heartbeat, the manual side times out at 90 s saying the scan did not
+  /// stop (it did), and the claim refuses the account for 5 minutes.
+  Future<void> _markCancelledWithRetry(
+      ScanResultStore store, int id, String reason) async {
+    try {
+      await store.markScanCancelled(id, reason: reason);
+    } catch (e) {
+      if (!e.toString().toLowerCase().contains('database is locked')) rethrow;
+      _logger.w('Scan cancel write met a locked database; retrying once');
+      await Future<void>.delayed(markCancelledRetryDelay);
+      await store.markScanCancelled(id, reason: reason);
+    }
+  }
+
+  /// Seam for tests: the wait before the one retry.
+  @visibleForTesting
+  static Duration markCancelledRetryDelay = const Duration(milliseconds: 750);
 
   @override
   void dispose() {

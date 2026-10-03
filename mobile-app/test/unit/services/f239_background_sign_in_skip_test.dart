@@ -23,6 +23,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:my_email_spam_filter/adapters/email_providers/mock_email_provider.dart';
 import 'package:my_email_spam_filter/adapters/email_providers/platform_registry.dart';
 import 'package:my_email_spam_filter/adapters/email_providers/spam_filter_platform.dart';
+import 'package:my_email_spam_filter/core/models/email_message.dart';
 import 'package:my_email_spam_filter/core/providers/rule_set_provider.dart';
 import 'package:my_email_spam_filter/core/services/background_scan_core.dart';
 import 'package:my_email_spam_filter/core/storage/scan_result_store.dart';
@@ -34,6 +35,17 @@ import '../../helpers/database_test_helper.dart';
 class _NeedsSignInPlatform extends MockEmailProvider {
   @override
   void setDeletedRuleFolder(String? folderName) =>
+      throw GmailSignInRequiredException();
+}
+
+/// Review H-1: the Windows scopes path throws from INSIDE the folder loop,
+/// where a per-folder catch used to count it as a folder error and carry on.
+class _NeedsSignInMidFetchPlatform extends MockEmailProvider {
+  @override
+  Future<List<EmailMessage>> fetchMessages({
+    required int daysBack,
+    required List<String> folderNames,
+  }) =>
       throw GmailSignInRequiredException();
 }
 
@@ -85,6 +97,16 @@ void main() {
     expect(waits, isEmpty,
         reason: 'the busy wait is for a busy account; only the user can fix '
             'a sign-in');
+  });
+
+  test('needing sign-in INSIDE the folder loop is the same skip, not a '
+      'completed scan with folder errors', () async {
+    usePlatform(_NeedsSignInMidFetchPlatform.new);
+    final outcome = await scan();
+    expect(outcome.needsSignIn, isTrue,
+        reason: 'a per-folder catch must not absorb it (Sprint 73 swallow '
+            'class)');
+    expect(waits, isEmpty);
   });
 
   test('any other sign-in failure is still a failure (rethrown)', () async {

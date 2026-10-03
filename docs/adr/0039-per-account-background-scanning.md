@@ -498,6 +498,12 @@ it, so the bound can expire although the request will be honored later; and
 the scanner marks the row before its `finally` disconnects, so a sub-second
 window exists where the manual claim is granted while the background socket
 is still closing (pre-existing F224 ordering, not changed here). Windows
-Manual Validation with a background scan really running (Settings > Test
-Background Scan, then Start Live Scan) covers the first; the phone follows in
-Sprint 76 (Harold Q3).
+Manual Validation with a background scan really running in ANOTHER PROCESS
+covers the first. **Not** Settings > Test Background Scan: on Windows that runs
+the worker inside the UI process (one connection, one ScanCoordinator), so it
+exercises the same-isolate path only (Sprint 75 review H-2). The Windows
+recipe starts the dev exe with `--background-scan --account-id=<account>`
+FIRST -- a background launch defers when the UI is already running (F109) --
+then opens the app and starts a live scan on that account while the
+background process is still scanning. The phone follows in Sprint 76
+(Harold Q3).

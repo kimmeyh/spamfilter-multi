@@ -168,7 +168,9 @@ see OK only.
   delaying the batch boundary -- Manual Validation (Windows now; phone per Open question 3).
 
 **Definition of Done**: default DoD PLUS: Windows Manual Validation with a background scan really
-running (Settings > Test Background Scan, then Start Live Scan on the same account); ADR-0039
+running IN ANOTHER PROCESS (dev exe started with `--background-scan --account-id=<account>`
+first, then the app opened and Start Live Scan on that account -- NOT Settings > Test Background
+Scan, which runs in-process on Windows; review H-2, 2026-10-03); ADR-0039
 amendment (the cancel channel); ARCHITECTURE.md (schema v11, the dialog flow).
 
 **Model**: **Fable 5.1** (Harold named it) -- *why not cheaper*: cross-isolate/cross-process control

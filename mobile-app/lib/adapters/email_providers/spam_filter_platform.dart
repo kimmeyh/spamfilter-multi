@@ -432,8 +432,19 @@ class AuthenticationException implements Exception {
 class GmailSignInRequiredException extends AuthenticationException {
   static const String reason = 'Gmail needs you to sign in again';
 
-  GmailSignInRequiredException([dynamic originalError])
+  /// User-facing text that says what went wrong in THIS attempt, for example
+  /// "You signed in as X. To fix Y, sign in with Y." Shown after [reason].
+  final String? detail;
+
+  GmailSignInRequiredException({this.detail, dynamic originalError})
       : super(reason, originalError);
+
+  /// Review (Sprint 75): the base class drops the cause, so a release-build
+  /// log said only "needs you to sign in again" and the cause of a renewal
+  /// failure could not be diagnosed. The cause's TYPE is safe to log.
+  @override
+  String toString() => 'GmailSignInRequiredException: $reason'
+      '${originalError == null ? '' : ' (cause: ${originalError.runtimeType})'}';
 }
 
 /// Exception thrown during connection

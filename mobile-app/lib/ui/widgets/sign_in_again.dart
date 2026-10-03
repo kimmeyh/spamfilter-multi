@@ -36,6 +36,20 @@ class SignInAgain {
   /// Run sign-in for [accountId] and report the result in a snackbar.
   /// Returns true when the account is signed in again.
   static Future<bool> run(BuildContext context, String accountId) async {
+    // Review (Sprint 75): a second tap while the first sign-in is open would
+    // start a second browser flow (and fail to bind the loopback port).
+    if (_running) return false;
+    _running = true;
+    try {
+      return await _run(context, accountId);
+    } finally {
+      _running = false;
+    }
+  }
+
+  static bool _running = false;
+
+  static Future<bool> _run(BuildContext context, String accountId) async {
     final messenger = ScaffoldMessenger.of(context);
     final signIn = debugSignIn ??
         (String id) => GoogleAuthService().signIn(expectedAccountId: id);

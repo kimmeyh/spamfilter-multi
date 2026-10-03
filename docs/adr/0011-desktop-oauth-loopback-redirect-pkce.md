@@ -98,7 +98,10 @@ OAuth client credentials are injected at build time via `--dart-define-from-file
 
 ## Amendment -- Sprint 75 (F239, Issue #442): renewal that needs the user
 
-Six rules, identical on Windows and Android (ADR-0042):
+The user-facing behavior is identical on Windows and Android (ADR-0042): the same flag, the same
+"Sign In Again" control in the same two places, the same skip. HOW renewal fails differs, because
+Windows renews over HTTP with a refresh token and Android renews through the Google sign-in SDK;
+rules 6 and 7 say where.
 
 1. **A token is always looked up for a named account.** `getValidAccessToken({accountId})` uses the
    account asked for, or the service's current account, and otherwise returns null. It used to fall
@@ -109,11 +112,13 @@ Six rules, identical on Windows and Android (ADR-0042):
    is now also set in the Android WorkManager isolate (`markBackgroundIsolate`), and the adapter
    checks it before any interactive path.
 3. **When renewal needs the user, say so and keep everything.** The adapter throws
-   `GmailSignInRequiredException` ("Gmail needs you to sign in again"), sets the per-account
-   setting `gmail_sign_in_required`, and keeps the tokens (Sprint 74 rule). The account list then
-   shows that text with a **Sign In Again** button, which re-runs sign-in for that account. A
-   background scan maps the exception to a SKIP (`AccountScanOutcome.needsSignIn`): not counted as a
-   failure, no notification, and no 2-6 minute busy retry, because only the user can fix it.
+   `GmailSignInRequiredException` ("Gmail needs you to sign in again", plus a `detail` such as the
+   wrong-account message), sets the per-account setting `gmail_sign_in_required`, and keeps the
+   tokens (Sprint 74 rule). The account list shows that text with a **Sign In Again** button, and so
+   does a failed scan. A background scan maps the exception to a SKIP
+   (`AccountScanOutcome.needsSignIn`): not counted as a failure, no notification, and no 2-6 minute
+   busy retry, because only the user can fix it. The scanner's per-folder catch rethrows it (the
+   Sprint 73 swallow class): the Windows insufficient-scopes path throws from inside the folder loop.
 4. **Sign In Again accepts only the same account.** `signIn({expectedAccountId})` compares the
    returned address (case-insensitive) BEFORE saving tokens; a different Google account is refused
    with "You signed in as X. To fix Y, sign in with Y." Saving first would add the other account to
@@ -121,23 +126,35 @@ Six rules, identical on Windows and Android (ADR-0042):
    sign-in paths derive it from the signed-in email (`_signInNative`, `_signInDesktop`) -- so the
    flag, the token lookup and the expected-account check all use one key. A future
    `{platform}-{email}` Gmail id would break the check and must normalize first.
-5. **Every path that needs the user does all of rule 3** -- including the Windows
-   insufficient-scopes re-authorization in `fetchMessages`, which keeps the account id from
-   `loadCredentials` because it has no credentials in hand.
-6. **No network is not an expired sign-in.** Renewal swallows network errors into "Session
-   expired", so the first Gmail call (`getProfile`) checks `GmailApiAdapter.isNetworkError` and
-   fails as a `ConnectionException` without entering renewal. Otherwise an offline background scan
-   flagged a healthy account.
+5. **Renewal never saves, and a scan never uses, a different account.** Android's lightweight
+   renewal returns whichever account the SDK last signed in; `_refreshViaNativeSignIn` now compares
+   it with the stored email and saves nothing on a mismatch. If the connected account still differs
+   from the account being scanned, `loadCredentials` stops with the typed exception instead of only
+   logging -- otherwise this account's rules (possibly deleting) would run against another mailbox.
+6. **Windows: only a REFUSED token enters renewal.** The first Gmail call (`getProfile`) fails as a
+   `ConnectionException` for a network error (`isNetworkError`) or a "try later" answer
+   (`isTransientApiError`: 429, 5xx). And renewal that hands back the same token Gmail just refused
+   (the stored token is returned while its local expiry has not passed) counts as no renewal.
+7. **Android: only an unauthenticated RESULT flags the account.** An exception from `initialize`
+   (network, plugin, storage) fails the scan as before Sprint 75 and is not flagged.
 
 **Known limits, not proven by tests:**
 - The scan row is created by the claim before credentials load, so a sign-in skip still leaves a
   row with status `error` and the reason as its message. No `skipped` row status exists; adding one
   changes what a stored value means (Class 1) and was not done.
-- On Android with no refresh token, a network failure during native renewal is indistinguishable
-  from "needs the user", so the account can be flagged during an outage. The flag clears on the
-  next successful connect, and Sign In Again also clears it.
-- Renewing Android tokens WITHOUT an Activity (the R-1 capability spike) is not part of this
-  amendment; if it passes it is recorded as a declared ADR-0042 platform exception.
+- Renewal itself reports some network failures as an unauthenticated RESULT, not an exception: on
+  Android every renewal goes through the SDK; on Windows the refresh call after a refused token.
+  An outage at that moment can still flag a healthy account. The flag clears on the next successful
+  connect, and Sign In Again also clears it.
+- The Android path (rules 5 and 7) runs only on Android; the Windows test host pins it with source
+  gates, and the emulator spike and Manual Validation exercise it.
+- Renewing Android tokens WITHOUT an Activity (R-1/R-2): `GoogleAuthService.authorizeWithoutActivity`
+  exists and a debug-build probe in the Android worker exercises it, but renewal does NOT call it
+  (`noActivityRenewalEnabled = false`) until the R-1 spike is recorded as PASS; then it becomes a
+  declared ADR-0042 platform exception. Not yet verified: whether the returned token is scoped to the
+  one account named by email, and how long it lives (`expiresAt` is set to one hour).
+- Renewal failures are logged at warning level by type and platform code (release builds too); the
+  account address and tokens are never logged.
 
 ## References
 

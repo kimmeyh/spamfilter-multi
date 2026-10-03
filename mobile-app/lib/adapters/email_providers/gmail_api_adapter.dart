@@ -75,6 +75,13 @@ class GmailApiAdapter with BatchOperationsMixin implements SpamFilterPlatform {
       e is TimeoutException ||
       e is http.ClientException;
 
+  /// Review (Sprint 75): a Gmail answer that says "try later" (429, 5xx)
+  /// rather than "this token is refused" (401/403).
+  @visibleForTesting
+  static bool isTransientApiError(Object e) =>
+      e is gmail.DetailedApiRequestError &&
+      (e.status == 429 || (e.status != null && e.status! >= 500));
+
   /// F239 (Sprint 75): test-only HTTP client for the clients this adapter
   /// builds itself, so a test can make Gmail unreachable. Production code
   /// never sets it.
@@ -195,15 +202,21 @@ class GmailApiAdapter with BatchOperationsMixin implements SpamFilterPlatform {
         // swallows network errors into "Session expired", so without this
         // an offline background scan flagged a healthy account "Gmail needs
         // you to sign in again". Fail as a connection error instead.
-        if (isNetworkError(e)) {
+        if (isNetworkError(e) || isTransientApiError(e)) {
           throw ConnectionException('Gmail could not be reached', e);
         }
         Redact.logSafe('Stored access token appears invalid; attempting refresh via GoogleAuthService...');
         
         // Try to get a valid token from GoogleAuthService
         // F239 R-5: the token for THIS account, never another account's.
-        final newAccessToken =
+        final renewed =
             await _authService.getValidAccessToken(accountId: credentials.email);
+        // Review (Sprint 75): getValidAccessToken returns the STORED token
+        // while its local expiry has not passed -- the very token Gmail just
+        // refused. Treating that as a renewal cleared the flag and scanned
+        // with a dead token.
+        final newAccessToken =
+            renewed == credentials.accessToken ? null : renewed;
         
         if (newAccessToken == null || newAccessToken.isEmpty) {
           Redact.logSafe('Token refresh failed; attempting interactive re-authentication...');
@@ -214,7 +227,7 @@ class GmailApiAdapter with BatchOperationsMixin implements SpamFilterPlatform {
           // the account list) and fail; the worker records a skip.
           if (BackgroundModeService.isBackgroundMode) {
             await _setSignInRequired(credentials, true);
-            throw GmailSignInRequiredException();
+            throw GmailSignInRequiredException(originalError: e);
           }
           // Refresh failed - prompt the user to re-authenticate via browser,
           // for THIS account only (F239: a different account is refused).
@@ -223,7 +236,7 @@ class GmailApiAdapter with BatchOperationsMixin implements SpamFilterPlatform {
           
           if (!result.success || result.accessToken == null) {
             await _setSignInRequired(credentials, true);
-            throw GmailSignInRequiredException(result.errorMessage);
+            throw GmailSignInRequiredException(detail: result.errorMessage);
           }
 
           // Use new access token from re-auth
@@ -253,29 +266,44 @@ class GmailApiAdapter with BatchOperationsMixin implements SpamFilterPlatform {
     if (_gmailApi == null || !_isConnected) {
       // Attempt to initialize and restore session via GoogleAuthService
       // Pass the specific account email to initialize (not just first account)
+      AuthResult result;
       try {
-        final result = await _authService.initialize(accountId: credentials.email);
-
-        if (!result.success || result.accessToken == null) {
-          throw AuthenticationException('Not authenticated with Google');
-        }
-
-        final headers = {'Authorization': 'Bearer ${result.accessToken}'};
-        _setGmailApi(headers);
-        _userEmail = result.email;
-        _isConnected = true;
-        await _setSignInRequired(credentials, false);
+        result = await _authService.initialize(accountId: credentials.email);
       } catch (e) {
+        // Review (Sprint 75, M-2): an EXCEPTION here is not "the user must
+        // sign in" -- it is a network, plugin or storage failure (renewal
+        // itself returns failures as results). Flagging it told the user to
+        // sign in for an outage and turned a real failure into a quiet skip.
+        if (isNetworkError(e)) {
+          throw ConnectionException('Gmail could not be reached', e);
+        }
+        throw AuthenticationException('Gmail OAuth not established', e);
+      }
+      if (!result.success || result.accessToken == null) {
         // F239: the renewal could not happen without the user -- offer "Sign
         // In Again" for this account instead of a dead end.
         await _setSignInRequired(credentials, true);
-        throw GmailSignInRequiredException(e);
+        throw GmailSignInRequiredException(
+            originalError: result.errorMessage ?? 'unauthenticated');
       }
+      final headers = {'Authorization': 'Bearer ${result.accessToken}'};
+      _setGmailApi(headers);
+      _userEmail = result.email;
+      _isConnected = true;
+      await _setSignInRequired(credentials, false);
     }
 
     if (credentials.email.isNotEmpty && _userEmail != null) {
       if (credentials.email.toLowerCase() != _userEmail!.toLowerCase()) {
-        Redact.logSafe('Loaded credentials email does not match signed-in user');
+        // Review (Sprint 75, M-4): Google's session is a DIFFERENT account.
+        // Scanning on would run this account's rules -- possibly in a
+        // deleting mode -- against another mailbox. Stop and ask the user.
+        Redact.logWarning('Loaded credentials email does not match the '
+            'signed-in Google account; scan stopped');
+        _isConnected = false;
+        await _setSignInRequired(credentials, true);
+        throw GmailSignInRequiredException(
+            detail: 'Google returned a different account.');
       }
     }
   }
@@ -359,7 +387,7 @@ class GmailApiAdapter with BatchOperationsMixin implements SpamFilterPlatform {
                 // F239: flag it and say so, like every other path that
                 // needs the user -- the scan screen then offers Sign In Again.
                 await _setSignInRequiredFor(_signInFlagAccountId, true);
-                throw GmailSignInRequiredException(result.errorMessage);
+                throw GmailSignInRequiredException(detail: result.errorMessage);
               }
 
               final newAccess = result.accessToken!;
