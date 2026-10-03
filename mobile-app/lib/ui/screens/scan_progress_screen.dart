@@ -22,6 +22,7 @@ import 'results_display_screen.dart';
 import 'scan_history_screen.dart';
 import 'help_screen.dart';
 import '../widgets/screen_version_line.dart'; // F229 (Sprint 73)
+import '../widgets/sign_in_again.dart'; // F239 (Sprint 75)
 import '../widgets/system_inset_wrapper.dart'; // F209 (Sprint 69)
 
 /// Displays live scan progress bound to EmailScanProvider.
@@ -366,11 +367,25 @@ class _ScanProgressScreenState extends State<ScanProgressScreen>
             overflow: TextOverflow.ellipsis,
             maxLines: 2,
           ),
-        ] else
+        ] else ...[
           Text(
             scanProvider.statusMessage ?? 'Waiting to begin...',
             style: TextStyle(color: Colors.grey.shade600),
           ),
+          // F239 (Sprint 75): the scan failed because Gmail needs the user
+          // -- offer the fix right here, the same action as the account list.
+          if (scanProvider.status == ScanStatus.error &&
+              !scanProvider.wasCancelled &&
+              SignInAgain.isSignInRequiredMessage(scanProvider.statusMessage))
+            Align(
+              alignment: Alignment.centerLeft,
+              child: TextButton(
+                key: const Key('scan_sign_in_again'),
+                onPressed: () => SignInAgain.run(context, widget.accountId),
+                child: const Text(SignInAgain.label),
+              ),
+            ),
+        ],
       ],
     );
   }

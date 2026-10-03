@@ -9,7 +9,7 @@
 ///
 /// These tests mount the REAL AccountSelectionScreen over fake secure storage
 /// and a real test database, and replace only the interactive Google sign-in
-/// (`AccountSelectionScreen.debugSignInAgain`).
+/// (`SignInAgain.debugSignIn`).
 ///
 /// What these do NOT catch: the real Google sign-in (browser on Windows,
 /// account picker on Android) and the wrong-account refusal inside
@@ -29,7 +29,11 @@ import 'package:my_email_spam_filter/core/providers/rule_set_provider.dart';
 import 'package:my_email_spam_filter/core/providers/selected_account_provider.dart';
 import 'package:my_email_spam_filter/core/storage/database_helper.dart';
 import 'package:my_email_spam_filter/core/storage/settings_store.dart';
+import 'package:my_email_spam_filter/adapters/email_providers/spam_filter_platform.dart';
 import 'package:my_email_spam_filter/ui/screens/account_selection_screen.dart';
+import 'package:my_email_spam_filter/ui/screens/scan_progress_screen.dart';
+import 'package:my_email_spam_filter/util/error_messages.dart';
+import 'package:my_email_spam_filter/ui/widgets/sign_in_again.dart';
 
 import '../../helpers/database_test_helper.dart';
 
@@ -75,7 +79,7 @@ void main() {
   });
 
   tearDown(() async {
-    AccountSelectionScreen.debugSignInAgain = null;
+    SignInAgain.debugSignIn = null;
     TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
         .setMockMethodCallHandler(secureStorageChannel, null);
     await testHelper.tearDown();
@@ -140,7 +144,7 @@ void main() {
     seedGmail(withTokens: true);
     await tester.runAsync(
         () => SettingsStore().setGmailSignInRequired(_gmail, true));
-    AccountSelectionScreen.debugSignInAgain = (id) async {
+    SignInAgain.debugSignIn = (id) async {
       signInCalls.add(id);
       return AuthResult.success(id, 'new-token');
     };
@@ -183,11 +187,71 @@ void main() {
     await drain(tester);
   });
 
+  group('the scan error offers the same Sign In Again', () {
+    Future<EmailScanProvider> mountScan(WidgetTester tester) async {
+      final provider = EmailScanProvider();
+      await tester.pumpWidget(MultiProvider(
+        providers: [
+          ChangeNotifierProvider.value(value: provider),
+          ChangeNotifierProvider(create: (_) => RuleSetProvider()),
+        ],
+        child: const MaterialApp(
+          home: ScanProgressScreen(
+            platformId: 'gmail',
+            platformDisplayName: 'Gmail',
+            accountId: _gmail,
+            accountEmail: _gmail,
+          ),
+        ),
+      ));
+      await tester.pump();
+      return provider;
+    }
+
+    final scanButton = find.byKey(const Key('scan_sign_in_again'));
+
+    testWidgets('a scan that failed because Gmail needs the user offers it, '
+        'and it signs in THIS account', (tester) async {
+      SignInAgain.debugSignIn = (id) async {
+        signInCalls.add(id);
+        return AuthResult.success(id, 'new-token');
+      };
+      final provider = await mountScan(tester);
+      await tester.runAsync(() => provider.errorScan(
+          ErrorMessages.humanize(GmailSignInRequiredException())));
+      await tester.pump();
+      expect(scanButton, findsOneWidget);
+
+      await tester.runAsync(() async {
+        await tester.tap(scanButton);
+        await Future<void>.delayed(const Duration(milliseconds: 300));
+      });
+      await tester.pump();
+      expect(signInCalls, [_gmail]);
+      expect(find.textContaining('Signed in again as $_gmail'), findsOneWidget);
+      await drain(tester);
+    });
+
+    testWidgets('any other scan failure, or a cancel, does not offer it',
+        (tester) async {
+      final provider = await mountScan(tester);
+      await tester.runAsync(() => provider.errorScan(
+          ErrorMessages.humanize(Exception('socket closed'))));
+      await tester.pump();
+      expect(scanButton, findsNothing);
+
+      await tester.runAsync(() => provider.cancelScan());
+      await tester.pump();
+      expect(scanButton, findsNothing);
+      await drain(tester);
+    });
+  });
+
   testWidgets('a failed sign-in says why and keeps the flag', (tester) async {
     seedGmail(withTokens: true);
     await tester.runAsync(
         () => SettingsStore().setGmailSignInRequired(_gmail, true));
-    AccountSelectionScreen.debugSignInAgain = (id) async =>
+    SignInAgain.debugSignIn = (id) async =>
         AuthResult.failure('You signed in as other@gmail.com. To fix $id, '
             'sign in with $id.');
     await mount(tester);

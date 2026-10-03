@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:logger/logger.dart';
 import 'package:provider/provider.dart';
 import '../../core/providers/selected_account_provider.dart';
-import '../../adapters/auth/google_auth_service.dart';
 import '../../adapters/storage/secure_credentials_store.dart';
 import '../../core/storage/settings_store.dart';
 import '../../core/services/data_deletion_service.dart';
@@ -22,6 +21,7 @@ import 'scan_progress_screen.dart';
 import 'help_screen.dart';
 import 'settings_screen.dart';
 import '../widgets/screen_version_line.dart'; // F229 (Sprint 73)
+import '../widgets/sign_in_again.dart'; // F239 (Sprint 75)
 import '../widgets/system_inset_wrapper.dart'; // F209 (Sprint 69)
 
 /// Display data for an account in the account selection list.
@@ -71,12 +71,6 @@ class AccountDisplayData {
 /// [NEW] PHASE 2 SPRINT 3: Account persistence between app runs
 class AccountSelectionScreen extends StatefulWidget {
   const AccountSelectionScreen({super.key});
-
-  /// F239 (Sprint 75): test seam for the "Sign In Again" action. Production
-  /// re-runs the interactive Google sign-in for THIS account only
-  /// ([GoogleAuthService.signIn] refuses a different account before saving).
-  @visibleForTesting
-  static Future<AuthResult> Function(String accountId)? debugSignInAgain;
 
   @override
   State<AccountSelectionScreen> createState() => _AccountSelectionScreenState();
@@ -671,25 +665,9 @@ class _AccountSelectionScreenState extends State<AccountSelectionScreen> with Wi
   /// F239: repair the sign-in of an existing Gmail account. The account keeps
   /// its id, settings and history -- nothing is deleted.
   Future<void> _signInAgain(String accountId) async {
-    final signIn = AccountSelectionScreen.debugSignInAgain ??
-        (String id) => GoogleAuthService().signIn(expectedAccountId: id);
-    final result = await signIn(accountId);
-    if (!mounted) return;
-    if (result.success) {
-      try {
-        await SettingsStore().setGmailSignInRequired(accountId, false);
-      } catch (e) {
-        _logger.w('F239: could not clear the Gmail sign-in state: $e');
-      }
-      if (!mounted) return;
+    final signedIn = await SignInAgain.run(context, accountId);
+    if (signedIn && mounted) {
       setState(() => _accountDataCache.remove(accountId));
-      ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-        content: Text('Signed in again as $accountId.'),
-      ));
-    } else {
-      ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-        content: Text(result.errorMessage ?? 'Sign-in did not complete.'),
-      ));
     }
   }
 
@@ -1038,7 +1016,7 @@ class _AccountSelectionScreenState extends State<AccountSelectionScreen> with Wi
                                 TextButton(
                                   key: Key('sign_in_again_$accountId'),
                                   onPressed: () => _signInAgain(accountId),
-                                  child: const Text('Sign In Again'),
+                                  child: const Text(SignInAgain.label),
                                 ),
                               IconButton(
                                 icon: const Icon(Icons.play_arrow, color: Colors.green),
