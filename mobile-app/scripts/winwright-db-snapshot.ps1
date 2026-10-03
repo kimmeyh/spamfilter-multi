@@ -101,7 +101,14 @@ function Get-TableRows {
     # until the Sprint 59 sweep). The `-list` CLI flag replaces `.mode list`,
     # and the SQL travels as an argument, so no encoding trap exists.
     # ORDER BY rowid ensures consistent ordering across runs.
-    $sql = "SELECT * FROM `"$TableName`" ORDER BY rowid;"
+    #
+    # Sprint 75 Task 7: app_settings is compared WITHOUT its date_modified
+    # column. A script that toggles a setting and restores it (the WinWright
+    # state-restore rule) leaves the same key, value and type but a new
+    # timestamp; comparing the timestamp reported that as a leak. A value that
+    # was NOT restored still differs and is still reported.
+    $columns = if ($TableName -eq 'app_settings') { 'key, value, value_type' } else { '*' }
+    $sql = "SELECT $columns FROM `"$TableName`" ORDER BY rowid;"
     $rows = & $Sqlite3Exe -list $DbFilePath $sql 2>&1
     if ($LASTEXITCODE -ne 0) {
         $errText = ($rows | Out-String).Trim()
@@ -256,7 +263,9 @@ CREATE TABLE IF NOT EXISTS safe_senders (
 );
 CREATE TABLE IF NOT EXISTS app_settings (
     key TEXT PRIMARY KEY,
-    value TEXT NOT NULL
+    value TEXT NOT NULL,
+    value_type TEXT NOT NULL DEFAULT 'string',
+    date_modified INTEGER NOT NULL DEFAULT 0
 );
 INSERT INTO app_settings (key, value) VALUES ('scan_mode', 'read_only');
 INSERT INTO app_settings (key, value) VALUES ('background_enabled', '0');
@@ -347,6 +356,27 @@ INSERT INTO app_settings (key, value) VALUES ('background_enabled', '0');
     }
 
     Write-Host "[SELF-TEST] Step 7: PASS -- no drift detected after cleanup." -ForegroundColor Green
+
+    # --- STEP 7b (Sprint 75 Task 7): a setting toggled AND restored is not a
+    # leak -- only its date_modified changed. A setting NOT restored is.
+    Write-Host ""
+    Write-Host "[SELF-TEST] Step 7b: timestamp-only change -> no drift; value change -> drift..." -ForegroundColor Yellow
+    "UPDATE app_settings SET date_modified = 999 WHERE key='scan_mode';" | & $Sqlite3Exe $tempTestDb
+    $touched = Compare-DbSnapshots -Before $snapshotBefore -After (Invoke-DbSnapshot)
+    if ($touched.HasDrift) {
+        Write-Host "[SELF-TEST] FAIL: a restored setting (timestamp only) was reported as drift." -ForegroundColor Red
+        Remove-Item $tempTestDb -Force -ErrorAction SilentlyContinue
+        exit 1
+    }
+    "UPDATE app_settings SET value = 'full' WHERE key='scan_mode';" | & $Sqlite3Exe $tempTestDb
+    $leaked = Compare-DbSnapshots -Before $snapshotBefore -After (Invoke-DbSnapshot)
+    if (-not $leaked.HasDrift -or -not ($leaked.DriftLines -match 'scan_mode')) {
+        Write-Host "[SELF-TEST] FAIL: a setting left changed was NOT reported as drift." -ForegroundColor Red
+        Remove-Item $tempTestDb -Force -ErrorAction SilentlyContinue
+        exit 1
+    }
+    "UPDATE app_settings SET value = 'read_only' WHERE key='scan_mode';" | & $Sqlite3Exe $tempTestDb
+    Write-Host "[SELF-TEST] Step 7b: PASS -- restore with a new timestamp is clean; a changed value is a leak." -ForegroundColor Green
 
     # --- STEP 8 (Sprint 74 retro IMP-3): a row that exists ONLY in the WAL ---
     # A Python process switches the DB to WAL, commits a row and keeps its
