@@ -17,6 +17,7 @@ import '../../core/services/background_scan_windows_worker.dart';
 import '../../core/services/background_scan_scheduler.dart';
 import '../../core/storage/database_helper.dart';
 import '../../core/storage/settings_store.dart';
+import '../../core/services/export_directories.dart';
 import '../../core/services/diagnostic_logger.dart';
 import '../../core/storage/background_scan_log_store.dart';
 import '../../core/services/background_deferral_ingest.dart' show kDeferredStatus;
@@ -118,9 +119,12 @@ class _SettingsScreenState extends State<SettingsScreen> with SingleTickerProvid
   // F90 (Sprint 39): live-scan debug CSV opt-in (Manual Scan tab Debug section)
   bool _liveScanDebugCsv = SettingsStore.defaultLiveScanDebugCsv;
   String? _csvExportDirectory;
+  bool _exportRedacted = false; // F206 Part C (Sprint 74)
   // F43: Track current folder selections for display
   String? _safeSenderFolder;
   String? _deletedRuleFolder;
+  String? _safeSenderFolderDefault; // F202 (Sprint 74)
+  String? _deletedRuleFolderDefault; // F202 (Sprint 74)
   int _manualDaysBack = SettingsStore.defaultManualScanDaysBack;
   int _backgroundDaysBack = SettingsStore.defaultBackgroundScanDaysBack;
   int _scanHistoryRetentionDays = SettingsStore.defaultScanHistoryRetentionDays;
@@ -423,6 +427,7 @@ class _SettingsScreenState extends State<SettingsScreen> with SingleTickerProvid
       // account at all.
       _confirmDialogsEnabled = await _settingsStore.getConfirmDialogsEnabled();
       _csvExportDirectory = await _settingsStore.getCsvExportDirectory();
+      _exportRedacted = await _settingsStore.getExportRedacted();
       _scanHistoryRetentionDays =
           await _settingsStore.getScanHistoryRetentionDays();
       _retentionDaysController.text = _scanHistoryRetentionDays.toString();
@@ -464,9 +469,13 @@ class _SettingsScreenState extends State<SettingsScreen> with SingleTickerProvid
       // F113 (Sprint 47): when the account has no folder selection, default to
       // the provider-specific folder set (AOL: Inbox/Bulk/Bulk Mail; Gmail:
       // INBOX/[Gmail]/Spam/Unwanted) instead of the generic global default.
+      // F202 (Sprint 74, review I-4): show EXACTLY what the scan will use --
+      // the same resolver, so the stored platform id (gmail vs gmail-imap)
+      // and the overall tier apply here too. The sync accountId heuristic
+      // could show one Gmail folder list while the scan used the other.
       final accountManualFolders = await _settingsStore.getAccountManualScanFolders(accountId);
       _manualScanFolders = accountManualFolders ??
-          SettingsStore.providerDefaultFolders(accountId);
+          await _settingsStore.getEffectiveFolders(accountId);
 
       _confirmDialogsEnabled = await _settingsStore.getConfirmDialogsEnabled();
       // F98 (ADR-0039): the Background tab is account-scoped -- load the
@@ -482,7 +491,7 @@ class _SettingsScreenState extends State<SettingsScreen> with SingleTickerProvid
       // F113 (Sprint 47): provider-specific folder default for background too.
       final accountBgFolders = await _settingsStore.getAccountBackgroundScanFolders(accountId);
       _backgroundScanFolders = accountBgFolders ??
-          SettingsStore.providerDefaultFolders(accountId);
+          await _settingsStore.getEffectiveFolders(accountId, isBackground: true);
 
       _backgroundScanDebugCsv = await _settingsStore.getBackgroundScanDebugCsv();
       _liveScanDebugCsv = await _settingsStore.getLiveScanDebugCsv();
@@ -512,6 +521,14 @@ class _SettingsScreenState extends State<SettingsScreen> with SingleTickerProvid
       // F43: Load current folder selections for display
       _safeSenderFolder = await _settingsStore.getAccountSafeSenderFolder(accountId);
       _deletedRuleFolder = await _settingsStore.getAccountDeletedRuleFolder(accountId);
+      // F202 (Sprint 74): the RESOLVED defaults (provider, then overall), shown
+      // when the account has no override -- the rows used to say "INBOX
+      // (default)" / "Trash (default)" for every provider, which is wrong for
+      // iCloud (its deleted folder is "Deleted Messages").
+      _safeSenderFolderDefault =
+          await _settingsStore.getEffectiveSafeSenderFolder(accountId);
+      _deletedRuleFolderDefault =
+          await _settingsStore.getEffectiveDeletedRuleFolder(accountId);
 
       // [NEW] ISSUE #153: Load days-back settings (per-account with app-wide fallback)
       final accountManualDays = await _settingsStore.getAccountManualDaysBack(accountId);
@@ -700,6 +717,20 @@ class _SettingsScreenState extends State<SettingsScreen> with SingleTickerProvid
         // Positioned just above Import / Export YAML to group all
         // import/export-related controls together.
         _buildCsvExportDirectorySelector(),
+        // F206 Part C (Sprint 74): redacted exports, for a file shared outside
+        // the team. Applies to every export (results CSV, per-scan exports).
+        SwitchListTile(
+          key: const Key('export_redacted_toggle'),
+          title: const Text('Hide sender details in exports'),
+          subtitle: const Text(
+              'Exported files show the sender\'s domain only, and leave out '
+              'the subject and message ID.'),
+          value: _exportRedacted,
+          onChanged: (value) async {
+            setState(() => _exportRedacted = value);
+            await _settingsStore.setExportRedacted(value);
+          },
+        ),
         const SizedBox(height: 8),
 
         OutlinedButton.icon(
@@ -1189,7 +1220,8 @@ class _SettingsScreenState extends State<SettingsScreen> with SingleTickerProvid
               leading: const Icon(Icons.folder_special_outlined),
               title: const Text('Safe Sender Folder'),
               subtitle: Text(
-                _safeSenderFolder ?? 'INBOX (default)',
+                _safeSenderFolder ??
+                    '${_safeSenderFolderDefault ?? SettingsStore.defaultSafeSenderFolder} (default)',
                 style: TextStyle(color: Colors.green.shade700),
               ),
               trailing: const Icon(Icons.chevron_right),
@@ -1202,7 +1234,7 @@ class _SettingsScreenState extends State<SettingsScreen> with SingleTickerProvid
               leading: const Icon(Icons.folder_delete_outlined),
               title: const Text('Deleted Rule Folder'),
               subtitle: Text(
-                _deletedRuleFolder ?? 'Trash (default)',
+                _deletedRuleFolder ?? '${_deletedRuleFolderDefault ?? 'Trash'} (default)',
                 style: TextStyle(color: Colors.red.shade700),
               ),
               trailing: const Icon(Icons.chevron_right),
@@ -1299,7 +1331,10 @@ class _SettingsScreenState extends State<SettingsScreen> with SingleTickerProvid
   }
 
   Widget _buildCsvExportDirectorySelector() {
-    final displayPath = _csvExportDirectory ?? 'Downloads folder (default)';
+    // F206 (Sprint 74): the real per-platform default -- this label used to say
+    // "Downloads folder (default)" on every platform, which was true on none.
+    final displayPath =
+        _csvExportDirectory ?? ExportDirectories.defaultLabel;
 
     return Card(
       child: ListTile(

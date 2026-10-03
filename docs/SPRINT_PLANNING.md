@@ -404,6 +404,8 @@ Bold = mandatory. _Italic_ = optional (include only when the trigger applies). T
 
 **User-reachable control**: <the control and the screen it lives on> / N/A   <!-- MANDATORY when the card adds user-facing capability. IMP-2, Sprint 72: F233 shipped a logger, settings keys, rotation and a delete function with NO TOGGLE -- ten tests passed via the test seam and no user could enable it. "The logger writes when enabled" is not an acceptance criterion; "Settings > General shows a toggle that enables it" is. -->
 
+**Observable behavior -- before / after**: BEFORE: <what the user sees today, in plain words> / AFTER: <what the user will see> / N/A   <!-- MANDATORY when the card changes anything a user sees (order, labels, dialogs, messages, what a button does). Sprint 74 retro IMP-1: the F222 card described an IMPLEMENTATION ("newest-first, clustered by base domain"), so plan approval could not see it differed from what Harold meant ("keep the folder/domain/address default; add a switch to newest first") -- built, shown, rebuilt (~60 min). Describe what is SEEN, not how it is built; this is the requirement echo (memory feedback_echo_requirements) moved into the card Harold approves. -->
+
 **Dependencies / blockers**:   <!-- MANDATORY IF ANY; else "None" -->
 - <Task X must land first> / <external Harold action> / None
 

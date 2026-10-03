@@ -213,7 +213,8 @@ class _RuleQuickAddScreenState extends State<RuleQuickAddScreen> {
       sourceDomain = widget.email.from;
     } else if (subjectPatterns.isNotEmpty) {
       patternCategory = 'subject';
-      patternSubType = 'exact_domain';
+      // Sprint 74 MV: 'keyword', not 'exact_domain' (see RuleQuickActionService).
+      patternSubType = 'keyword';
       sourceDomain = _subjectPatternController.text.trim();
     } else if (bodyPatterns.isNotEmpty) {
       patternCategory = 'body';

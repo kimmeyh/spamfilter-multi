@@ -1,0 +1,1 @@
+{"session_id": "hg-allow-2", "cwd": "D:/Data/Harold/github/spamfilter-multi", "hook_event_name": "PreToolUse", "tool_name": "Bash", "tool_input": {"command": "python \"C:/Users/kimme/AppData/Local/Temp/claude/x/scratchpad/edit.py\" --pattern '\\d+'"}}

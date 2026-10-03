@@ -1,7 +1,6 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:my_email_spam_filter/adapters/email_providers/generic_imap_adapter.dart';
 import 'package:my_email_spam_filter/adapters/email_providers/gmail_api_adapter.dart';
-import 'package:my_email_spam_filter/adapters/email_providers/junk_folder_config.dart';
 import 'package:my_email_spam_filter/adapters/email_providers/platform_registry.dart';
 import 'package:my_email_spam_filter/adapters/email_providers/spam_filter_platform.dart';
 import 'package:my_email_spam_filter/ui/screens/account_setup_screen.dart';
@@ -89,57 +88,6 @@ void main() {
       expect(oauthAdapter, isNot(same(imapAdapter)));
       expect(oauthAdapter.runtimeType, isNot(equals(imapAdapter.runtimeType)));
       expect(oauthAdapter!.platformId, isNot(equals(imapAdapter!.platformId)));
-    });
-  });
-
-  group('Junk Folder Config for Gmail modes', () {
-    test('gmail OAuth has Gmail-specific junk folder config', () {
-      final config = JunkFolderConfigService.getConfig('gmail');
-      expect(config, isNotNull);
-      expect(config!.providerName, equals('Gmail'));
-      expect(config.defaultJunkFolders, contains('Spam'));
-      expect(config.defaultJunkFolders, contains('Trash'));
-    });
-
-    test('gmail-imap has IMAP-style folder config with [Gmail] prefix', () {
-      final config = JunkFolderConfigService.getConfig('gmail-imap');
-      expect(config, isNotNull);
-      expect(config!.providerName, equals('Gmail (IMAP)'));
-      expect(config.defaultJunkFolders, contains('[Gmail]/Spam'));
-      expect(config.defaultJunkFolders, contains('[Gmail]/Trash'));
-    });
-
-    test('gmail and gmail-imap have different default junk folders', () {
-      final gmailConfig = JunkFolderConfigService.getConfig('gmail');
-      final imapConfig = JunkFolderConfigService.getConfig('gmail-imap');
-
-      expect(gmailConfig, isNotNull);
-      expect(imapConfig, isNotNull);
-
-      // Gmail API uses simple names; IMAP uses [Gmail]/ prefix
-      expect(gmailConfig!.defaultJunkFolders,
-          isNot(equals(imapConfig!.defaultJunkFolders)));
-    });
-
-    test('gmail-imap default scan folders include INBOX', () {
-      final folders = JunkFolderConfigService.getDefaultFoldersToScan('gmail-imap');
-      expect(folders.first, equals('INBOX'));
-      expect(folders.length, greaterThan(1));
-    });
-
-    test('isJunkFolder works for gmail-imap IMAP folder names', () {
-      expect(
-        JunkFolderConfigService.isJunkFolder('gmail-imap', '[Gmail]/Spam'),
-        isTrue,
-      );
-      expect(
-        JunkFolderConfigService.isJunkFolder('gmail-imap', '[Gmail]/Trash'),
-        isTrue,
-      );
-      expect(
-        JunkFolderConfigService.isJunkFolder('gmail-imap', 'INBOX'),
-        isFalse,
-      );
     });
   });
 

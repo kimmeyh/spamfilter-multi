@@ -9,6 +9,197 @@ If questions must be asked, ask as late as possible - do everything that can be 
 Sprint 7n Scope should include the below items. Please complete sprint planning (/docs/sprint_planning.md) for the below items and present for approval.  Note that everything needs to take into account both the Windows App and the Android app and ADR stating that everything should be functionally and UI the same unless it cannot be - and where it cannot be it should be implemented as a platform exception for what is needed -- this applies to all backend code, frontend code, data, architecture, development, security, testing, deployment.
 
 ---------------------------------------------------------------------------------------------------------
+Sprint 74 Scope should include the below items. Please complete sprint planning (/docs/sprint_planning.md) for the below items and present for approval.  Note that everything needs to take into account both the Windows App and the Android app and ADR stating that everything should be functionally and UI the same unless it cannot be - and where it cannot be it should be implemented as a platform exception for what is needed -- this applies to all backend code, frontend code, data, architecture, development, security, testing, deployment.
+  - MV74-1. F235 Doze scheduling -- validate on the S24+ (~20-40m, plus hours of elapsed device time) Priority 2
+  - MV74-2. F207 -- settle the WorkManager ISOLATE question (~30-60m; add ~120-180m if confirmed) Priority 2
+  - MV74-3. F232 mechanism B + F205 -- device run with diagnostic logging (~30-60m) Priority 4
+  - F202. Per-provider folder defaults -- overall default plus provider overrides for all four folder settings (~150-240m) Priority 10
+  - F222. Scan results are not ordered by received date (~45-90m) Priority 22
+  - F232. Mechanism B -- a live re-process batch fails 9 of 9 on a healthy connection (~60-120m) Priority 6
+  - F206. Diagnostic export as a PLATFORM CAPABILITY (~120-210m) Priority 14
+  - F205. Closed-test error rate: 53 errors in 3,833 scanned on the S24+ -- find out what they ARE (~30-60m) Priority 18
+
+  Recommendation
+
+  Sprint 74 = MV74-1, MV74-2, MV74-3, F202 and F222 (~275-490m of development time).
+
+  - The three carry-ins need little of my time. Most of the work is device runs on your S24+ once 0.16.0 reaches it through Play. MV74-2 is a correctness
+    risk: the F207 warning may be hidden while a background scan is really running.
+  - F202 has the most user value on the slate. A user who accepts the defaults gets INBOX only, so their spam folder is never scanned.
+  - F222 is a tester's report and is small.
+  - I recommend holding F232 and F205 until MV74-3 produces the device log. Both cards say not to plan a fix before that data exists.
+  - F199-b is blocked until Microsoft support answers.
+
+  Candidates at a glance
+
+  - MV74-1. F235 Doze scheduling -- validate on the S24+ (~20-40m, plus hours of elapsed device time) Priority 2
+  - MV74-2. F207 -- settle the WorkManager ISOLATE question (~30-60m; add ~120-180m if confirmed) Priority 2
+  - MV74-3. F232 mechanism B + F205 -- device run with diagnostic logging (~30-60m) Priority 4
+  - F232. Mechanism B -- a live re-process batch fails 9 of 9 on a healthy connection (~60-120m) Priority 6
+  - F202. Per-provider folder defaults -- overall default plus provider overrides for all four folder settings (~150-240m) Priority 10
+  - F199-b. Partner Center publisher display name -- the last surface of the LLC rename (~15m once unblocked) Priority 12
+  - F206. Diagnostic export as a PLATFORM CAPABILITY (~120-210m) Priority 14
+  - F205. Closed-test error rate: 53 errors in 3,833 scanned on the S24+ -- find out what they ARE (~30-60m) Priority 18
+  - F222. Scan results are not ordered by received date (~45-90m) Priority 22
+  - F204. Gate the three Play requirements that are documented but not asserted (~60-90m) Priority 24
+
+  - HOLD items follow, one line each. Most HOLD cards still carry hour estimates. The format requires minutes, re-derived from step types, so each card
+    needs converting when it leaves HOLD:
+  - F165. Cross-device rules-DB sharing -- user cloud storage exploration + hosted-tier option (~half-day exploration) Priority HOLD
+  - F173. Periodic "Test Coverage and Appropriate Testing" Deep Dive (~4-8h per review) Priority HOLD
+  - F183. Upstream civyk-winwright request: script-runner replay support for ww_wait (~15m to file, then external) Priority HOLD
+  - F179. Subject-blocking phrase picker (~3-5h) Priority HOLD
+  - F152. Periodic User-Centric First-Run Evaluation (~2-3h per review) Priority HOLD
+  - F189. Periodic Skills Audit (~4-8h per review) Priority HOLD
+  - GP-4. Gmail API OAuth Verification / CASA -- THE SUBMISSION ITSELF (~40-80h) Priority HOLD
+  - F111. Periodic Windows App Store upload readiness verification (~110-175m per review) Priority HOLD
+  - F139. Local-install smoke test for a release-candidate MSIX (~30-50m per review) Priority HOLD
+  - F70. Periodic Security Deep Dive (~4-8h per review) Priority HOLD
+  - F130. Periodic Process-Docs Consistency Deep Dive (no-history, unbounded) Priority HOLD
+  - F71. Periodic Architecture Deep Dive (~4-8h per review) Priority HOLD
+  - F201. Periodic Web Property Accuracy Re-Review (~1-2h per review) Priority HOLD
+  - F95. iOS variants + cross-store hardening (~10-16h) Priority HOLD
+  - F63. Responsive design framework -- SUPERSEDED by F141 Priority HOLD
+  - SEC-15. IMAP host validation for custom servers (~1h) Priority HOLD
+  - SEC-8b. Certificate pinning for IMAP endpoints (~4-6h) Priority HOLD
+  - F6. Provider-Specific Optimizations (~10-12h) Priority HOLD
+  - F67. Platform validation - iOS, Linux, macOS (~4-6h per platform) Priority HOLD
+  - SEC-11b. Database-at-rest encryption via SQLite3MultipleCiphers (~8-12h) Priority HOLD
+  - F106. SEC-11b verification-window cleanup (~30m) Priority HOLD
+  - H1. GenAI Pattern Suggestions - Crowdsourced Spam Intelligence (TBD) Priority HOLD
+  - H2. Rule Pattern Consistency - Domain Matching Standards (~4-6h) Priority HOLD
+  - H3. Requirements Documentation System (TBD) Priority HOLD
+  - H4. Sent Messages Scan for Safe Senders (~12-16h) Priority HOLD
+  - H5. Outlook.com / Office 365 email provider adapter (~16-20h) Priority HOLD
+
+  Sprint 74 Manual Validation carry-ins
+
+  MV74-1. F235 Doze scheduling -- validate on the S24+ (~20-40m, plus hours of elapsed device time) Priority 2
+  - Phase: Core App Quality
+  - Platform: Android only (declared ADR-0042 exception; Windows has no Doze)
+  - Validate two things: background scans fire while the phone is idle or the screen is off, and the schedule survives a reboot. The reboot case matters
+    most: without BootReceiver working, this is a regression against WorkManager.
+  - The delivery window is about an hour, so this takes hours of observation, not a five-minute check.
+  - H4. Sent Messages Scan for Safe Senders (~12-16h) Priority HOLD
+  - H5. Outlook.com / Office 365 email provider adapter (~16-20h) Priority HOLD
+
+  Sprint 74 Manual Validation carry-ins
+
+  MV74-1. F235 Doze scheduling -- validate on the S24+ (~20-40m, plus hours of elapsed device time) Priority 2
+  - Phase: Core App Quality
+  - Platform: Android only (declared ADR-0042 exception; Windows has no Doze)
+  - Validate two things: background scans fire while the phone is idle or the screen is off, and the schedule survives a reboot. The reboot case matters most: without
+    BootReceiver working, this is a regression against WorkManager.
+  - The delivery window is about an hour, so this takes hours of observation, not a five-minute check.
+  - Depends on: 0.16.0 reaching the S24+ (the Play upload above).
+
+  MV74-2. F207 -- settle the WorkManager ISOLATE question (~30-60m; add ~120-180m if confirmed) Priority 2
+  - Phase: Core App Quality
+  - Platform: Android only
+  - The question: if the background scan runs in its own Dart isolate, the UI's coordinator reads idle during a live scan.
+  - The Phase 7.7 review already removed the suppression that could have hidden a real warning. What remains is to settle the mechanism, then build the proper fix.
+  - How to settle it: start a background scan, then open Manual Scan and see whether the notice appears. Or log Isolate.current.debugName in both places.
+  - If confirmed, the fix is a freshness check on a heartbeat column, which scan_results does not have yet.
+
+  MV74-3. F232 mechanism B + F205 -- device run with diagnostic logging (~30-60m) Priority 4
+  - Phase: Core App Quality
+  - Platform: Android
+  - Steps: turn on diagnostic logging in Settings, reproduce, export from inside the app, then copy the file over MTP. No adb is needed.
+  - Do not plan a fix for either item until the log exists.
+
+  Core App Quality
+
+  F232. Mechanism B -- a live re-process batch fails 9 of 9 on a healthy connection (~60-120m) Priority 6
+  - Phase: Bug Fix
+  - Platform: All (shared code)
+  - The app shows every sign of success while nothing happens on the mail server. The failure was observed as "Re-processed 0 of 9 (9 failed)" with full signal.
+  - Mechanism A shipped in Sprint 72. Mechanism B is instrumented, not guessed at.
+  - Depends on: the MV74-3 log.
+
+  F202. Per-provider folder defaults -- overall default plus provider overrides for all four folder settings (~150-240m) Priority 10
+  - Phase: Core App Quality
+  - Platform: All (ADR-0042 parity, no exception anticipated)
+  - An overall default plus per-provider overrides for four settings: Safe Senders Folder, Deleted Rule Folder, Manual Scan Selected Folders, and Background Scan Selected
+    Folders.
+  - Providers name their folders differently: Yahoo Bulk, AOL Bulk and Bulk Mail, Gmail [Gmail]/Spam. With the defaults as they are, a user scans INBOX only.
+
+  F206. Diagnostic export as a PLATFORM CAPABILITY (~120-210m) Priority 14
+  - Phase: Core App Quality
+  - Platform: All; the storage mechanism is a declared ADR-0042 exception
+  - The design is a DiagnosticExporter platform factory: Windows writes to an AppData path, and Android uses the share sheet or the system file picker (SAF).
+  - It also lets the user reset the counters.
+  - The delivery window is about an hour, so this takes hours of observation, not a five-minute check.
+  - Depends on: 0.16.0 reaching the S24+ (the Play upload above).
+
+  MV74-2. F207 -- settle the WorkManager ISOLATE question (~30-60m; add ~120-180m if confirmed) Priority 2
+  - Phase: Core App Quality
+  - Platform: Android only
+  - The question: if the background scan runs in its own Dart isolate, the UI's coordinator reads idle during a live scan.
+  - The Phase 7.7 review already removed the suppression that could have hidden a real warning. What remains is to settle the mechanism, then build the
+    proper fix.
+  - How to settle it: start a background scan, then open Manual Scan and see whether the notice appears. Or log Isolate.current.debugName in both places.
+  - If confirmed, the fix is a freshness check on a heartbeat column, which scan_results does not have yet.
+
+  MV74-3. F232 mechanism B + F205 -- device run with diagnostic logging (~30-60m) Priority 4
+  - Phase: Core App Quality
+  - Platform: Android
+  - Steps: turn on diagnostic logging in Settings, reproduce, export from inside the app, then copy the file over MTP. No adb is needed.
+  - Do not plan a fix for either item until the log exists.
+
+  Core App Quality
+
+  F232. Mechanism B -- a live re-process batch fails 9 of 9 on a healthy connection (~60-120m) Priority 6
+  - Phase: Bug Fix
+  - Platform: All (shared code)
+  - The app shows every sign of success while nothing happens on the mail server. The failure was observed as "Re-processed 0 of 9 (9 failed)" with full
+    signal.
+  - Mechanism A shipped in Sprint 72. Mechanism B is instrumented, not guessed at.
+  - Depends on: the MV74-3 log.
+
+  F202. Per-provider folder defaults -- overall default plus provider overrides for all four folder settings (~150-240m) Priority 10
+  - Phase: Core App Quality
+  - Platform: All (ADR-0042 parity, no exception anticipated)
+  - An overall default plus per-provider overrides for four settings: Safe Senders Folder, Deleted Rule Folder, Manual Scan Selected Folders, and
+    Background Scan Selected Folders.
+  - Providers name their folders differently: Yahoo Bulk, AOL Bulk and Bulk Mail, Gmail [Gmail]/Spam. With the defaults as they are, a user scans INBOX
+    only.
+
+  F206. Diagnostic export as a PLATFORM CAPABILITY (~120-210m) Priority 14
+  - Phase: Core App Quality
+  - Platform: All; the storage mechanism is a declared ADR-0042 exception
+  - The design is a DiagnosticExporter platform factory: Windows writes to an AppData path, and Android uses the share sheet or the system file picker
+    (SAF).
+  - It also lets the user reset the counters.
+
+  F205. Closed-test error rate: 53 errors in 3,833 scanned on the S24+ -- find out what they ARE (~30-60m) Priority 18
+  - Phase: Core App Quality
+  - Platform: Android (check Windows for the same class)
+  - Already narrowed: the errors are Gmail-only and from before 0.15.0. First confirm that no new errors build up on current builds.
+  - Depends on: MV74-3.
+
+  F222. Scan results are not ordered by received date (~45-90m) Priority 22
+  - Phase: Core App Quality
+  - Platform: All
+  - A tester reported that the results list looks shuffled.
+  - You specified the order: the provider section stays pinned at the top. Everything else is newest-first, clustered by base domain.
+
+  Android / Google Play Store Readiness
+
+  F204. Gate the three Play requirements that are documented but not asserted (~60-90m) Priority 24
+  - Phase: Android / Google Play Store Readiness
+  - Platform: Android
+  - Assert the documented requirements, starting with targetSdk, which is inherited from Flutter and never asserted.
+  - Do not build a gate that claims to predict Play's pre-review checks, because Google does not publish them.
+
+  Process
+
+  F199-b. Partner Center publisher display name -- the last surface of the LLC rename (~15m once unblocked) Priority 12
+  - Phase: Release Readiness
+  - Platform: Windows Desktop (Microsoft Store account surface)
+  - The next action is yours: a support ticket at https://aka.ms/windowsdevelopersupport. Do not touch msix_config.publisher.
+  - Depends on: a Microsoft support answer.
+
+---------------------------------------------------------------------------------------------------------
 Sprint 73 Scope should include the below items. Please complete sprint planning (/docs/sprint_planning.md) for the below items and present for approval.  Note that everything needs to take into account both the Windows App and the Android app and ADR stating that everything should be functionally and UI the same unless it cannot be - and where it cannot be it should be implemented as a platform exception for what is needed -- this applies to all backend code, frontend code, data, architecture, development, security, testing, deployment.
 F235 + F232 + F234
   F229. Make the build identifiable on phone-width screens and in exports (~3-5h) Priority 12

@@ -15,13 +15,11 @@ library;
 import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:logger/logger.dart';
-import 'package:path_provider/path_provider.dart';
 import '../../core/models/rule_set.dart';
 import '../../core/storage/database_helper.dart';
 import '../widgets/copy_all_shortcut.dart';
 import '../widgets/list_selection_controller.dart';
 import '../../core/storage/rule_database_store.dart';
-import '../../core/storage/settings_store.dart';
 import '../widgets/app_bar_with_exit.dart';
 import 'help_screen.dart';
 import 'manual_rule_create_screen.dart';
@@ -30,6 +28,7 @@ import 'rule_test_screen.dart';
 import '../widgets/standard_app_bar_actions.dart';
 import '../widgets/screen_version_line.dart'; // F229 (Sprint 73)
 import '../widgets/system_inset_wrapper.dart'; // F209 (Sprint 69)
+import '../../core/services/export_directories.dart';
 
 /// Screen for managing spam filtering rules
 class RulesManagementScreen extends StatefulWidget {
@@ -65,11 +64,21 @@ class _RulesManagementScreenState extends State<RulesManagementScreen>
     'body': 'Body',
   };
 
+  // The Header / From sub-type FILTER CHIPS. Header/from only -- the chip row
+  // is labeled "Header / From sub-types".
   static const Map<String, String> _subTypeLabels = {
     'entire_domain': 'Entire Domain',
     'exact_domain': 'Exact Domain',
     'exact_email': 'Exact Email',
     'top_level_domain': 'Top-Level Domain',
+  };
+
+  // Sprint 74 MV (Harold): labels for DISPLAY (tile, details, CSV) include
+  // 'keyword' -- subject and body phrase rules -- which is not a Header /
+  // From sub-type and so is not a chip.
+  static const Map<String, String> _displaySubTypeLabels = {
+    ..._subTypeLabels,
+    'keyword': 'Keyword',
   };
 
   // F124 (Sprint 50): legacy pre-classification rules (e.g.
@@ -180,10 +189,15 @@ class _RulesManagementScreenState extends State<RulesManagementScreen>
         if (!_selectedCategories.contains(cat)) return false;
       }
 
-      // SubType filter
+      // SubType filter -- Header / From sub-types only (Sprint 74 MV: a
+      // subject or body rule sharing a sub-type value must not appear under
+      // a Header / From chip).
       if (_selectedSubTypes.isNotEmpty) {
         final sub = rule.patternSubType ?? '';
-        if (!_selectedSubTypes.contains(sub)) return false;
+        if (rule.patternCategory != 'header_from' ||
+            !_selectedSubTypes.contains(sub)) {
+          return false;
+        }
       }
 
       // Search filter
@@ -208,10 +222,13 @@ class _RulesManagementScreenState extends State<RulesManagementScreen>
     return counts;
   }
 
-  /// Count rules per sub-type
+  /// Count Header / From rules per sub-type (the chips are Header / From
+  /// only; Sprint 74 MV -- counting every category made "Exact Domain" read
+  /// 46 when 14 rules were header exact-domain rules).
   Map<String, int> _getSubTypeCounts() {
     final counts = <String, int>{};
     for (final rule in _rules) {
+      if (rule.patternCategory != 'header_from') continue;
       final sub = rule.patternSubType ?? 'unknown';
       counts[sub] = (counts[sub] ?? 0) + 1;
     }
@@ -324,7 +341,7 @@ class _RulesManagementScreenState extends State<RulesManagementScreen>
     // category alone when the sub-type is empty) and mislabels a
     // partially-classified rule as legacy. Only a rule with NO category is
     // legacy-uncategorized.
-    final subTypeLabel = _subTypeLabels[rule.patternSubType] ??
+    final subTypeLabel = _displaySubTypeLabels[rule.patternSubType] ??
         rule.patternSubType ??
         (rule.patternCategory == null ? _uncategorizedLabel : 'Not applicable');
 
@@ -934,7 +951,7 @@ class _RulesManagementScreenState extends State<RulesManagementScreen>
   Widget _buildRuleTile(Rule rule, int index) {
     final displayName = rule.sourceDomain ?? rule.name;
     final categoryLabel = _categoryLabels[rule.patternCategory] ?? rule.patternCategory ?? _uncategorizedLabel;
-    final subTypeLabel = _subTypeLabels[rule.patternSubType] ?? rule.patternSubType ?? '';
+    final subTypeLabel = _displaySubTypeLabels[rule.patternSubType] ?? rule.patternSubType ?? '';
 
     // F188: check if rule has all empty condition lists (invalid -- matches nothing)
     final hasAllEmptyConditions = rule.conditions.from.isEmpty &&
@@ -1097,25 +1114,9 @@ class _RulesManagementScreenState extends State<RulesManagementScreen>
   Future<void> _exportFilteredRules() async {
     if (_filteredRules.isEmpty) return;
     try {
-      final settingsStore = SettingsStore();
-      final configuredDir = await settingsStore.getCsvExportDirectory();
-
-      String exportPath;
-      if (configuredDir != null && configuredDir.isNotEmpty) {
-        final dir = Directory(configuredDir);
-        if (!await dir.exists()) {
-          await dir.create(recursive: true);
-        }
-        exportPath = configuredDir;
-      } else {
-        final directory = Platform.isAndroid || Platform.isIOS
-            ? await getExternalStorageDirectory()
-            : await getApplicationDocumentsDirectory();
-        if (directory == null) {
-          throw Exception('Could not access storage directory');
-        }
-        exportPath = directory.path;
-      }
+      // F206 (Sprint 74): ONE resolver for every export (configured folder,
+      // else the platform default) -- this block used to be a local copy.
+      final exportPath = await ExportDirectories.resolve();
 
       String normalizedPath = exportPath;
       while (normalizedPath.endsWith('/') || normalizedPath.endsWith('\\')) {
@@ -1138,7 +1139,7 @@ class _RulesManagementScreenState extends State<RulesManagementScreen>
         final name = _csvEscape(r.name);
         final pattern = _csvEscape(_collectPatternsForCsv(r));
         final cat = _csvEscape(_categoryLabels[r.patternCategory] ?? r.patternCategory ?? '');
-        final sub = _csvEscape(_subTypeLabels[r.patternSubType] ?? r.patternSubType ?? '');
+        final sub = _csvEscape(_displaySubTypeLabels[r.patternSubType] ?? r.patternSubType ?? '');
         final action = _csvEscape(_getActionLabel(r));
         final enabled = r.enabled ? 'true' : 'false';
         buffer.writeln('$domain,$name,$pattern,$cat,$sub,$action,$enabled,${r.executionOrder}');

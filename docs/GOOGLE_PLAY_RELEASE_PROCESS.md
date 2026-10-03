@@ -154,7 +154,8 @@ Microsoft Store. (Sprint 66 IMP-1.)
 D:\Data\Harold\github\spamfilter-multi\mobile-app\build\app\outputs\bundle\prodRelease\app-prod-release.aab
 ```
 
-Approx 53 MB. **Note this is the DEV worktree** -- unlike the Windows MSIX, the Play bundle is
+Approx 67 MB (0.15.2: 66.9 MB; 0.16.0: 67.0 MB -- the older "53 MB" figure was Sprint 66's
+bundle and is stale). **Note this is the DEV worktree** -- unlike the Windows MSIX, the Play bundle is
 built from `spamfilter-multi\`, not `spamfilter-multi-prod\`. The two releases build from
 different worktrees, which is easy to get backwards.
 

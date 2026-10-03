@@ -26,7 +26,9 @@ library;
 
 import 'dart:io';
 
+import 'package:flutter/material.dart' show Colors;
 import 'package:flutter_test/flutter_test.dart';
+import 'package:my_email_spam_filter/core/storage/scan_result_store.dart';
 import 'package:my_email_spam_filter/ui/screens/results_display_screen.dart';
 
 void main() {
@@ -131,6 +133,56 @@ void main() {
     test('a failure toast stays up longer than a success (F231)', () {
       expect(source.contains('outcome.anyFailed ? 8 : 5'), isTrue,
           reason: 'Harold measured ~1s of readable time on the old 3s value');
+    });
+  });
+
+  // PR #440 test review: a BUSY outcome (another scan held the account, the
+  // mailbox was not touched) has attempted = 0 and failed = 0 -- exactly the
+  // shape the success branch would accept. describeActionOutcome is the
+  // production decision; these pin its branch order.
+  //
+  // What this does NOT catch: the snackbar actually shown on screen (the
+  // widget path through _showActionOutcome) -- it calls this function, which
+  // is what is tested.
+  group('PR #440: a busy re-process is never shown as success', () {
+    ScanResult holder(String type) => ScanResult(
+          accountId: 'a', scanType: type, scanMode: 'readOnly',
+          startedAt: 0, totalEmails: 0, status: 'in_progress');
+
+    test('held by a background scan: says so, mailbox not changed, not green',
+        () {
+      final d = describeActionOutcome(
+        baseMessage: 'Created rule',
+        progressSuffix: ' -- 3 removed',
+        outcome: ReProcessOutcome.busy(
+            ScanAccountBusyException(holder('background'))),
+        successColor: Colors.green,
+      );
+      expect(d.message, contains('background scan is running on this account'));
+      expect(d.message, contains('your mailbox was not changed'));
+      expect(d.message, isNot(contains('3 removed')),
+          reason: 'the success suffix must not appear');
+      expect(d.background, isNot(Colors.green));
+    });
+
+    test('lock could not be checked: says so, not green', () {
+      final d = describeActionOutcome(
+        baseMessage: 'Created rule',
+        progressSuffix: '',
+        outcome: ReProcessOutcome.busy(
+            ScanAccountBusyException.unverifiable(Exception('locked'))),
+        successColor: Colors.green,
+      );
+      expect(d.message, contains('could not check'));
+      expect(d.background, isNot(Colors.green));
+    });
+
+    test('the outcome flags alone would read as success-shaped', () {
+      final o = ReProcessOutcome.busy(
+          ScanAccountBusyException(holder('manual')));
+      expect(o.anyFailed, isFalse);
+      expect(o.skippedReadOnly, isFalse);
+      expect(o.allSucceeded, isFalse);
     });
   });
 }

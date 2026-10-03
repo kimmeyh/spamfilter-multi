@@ -267,8 +267,14 @@ class GoogleAuthService {
       }
     } catch (e) {
       Redact.logSafe('Token refresh failed: ${e.runtimeType}');
-      // Refresh failed - tokens may be revoked
-      await _credStore.deleteGmailTokens(accountId);
+      // Sprint 74 MV (Harold Q1, 2026-09-27): a failed renewal NO LONGER
+      // deletes the stored tokens -- here or in the four sites below. The
+      // failure may be transient (no network, no Activity in a background
+      // worker, Credential Manager briefly unavailable), and deleting turned
+      // every such failure into "Error: Missing credentials" with Delete as
+      // the only option (Fold8, 0.16.0). Keeping a token that really was
+      // revoked costs one more failed attempt; deleting a good one costs the
+      // account. Only signOut() deletes tokens.
       _state = AuthState.unauthenticated;
       return AuthResult.failure('Session expired. Please sign in again.');
     }
@@ -286,8 +292,8 @@ class GoogleAuthService {
       final user = await _googleSignIn.attemptLightweightAuthentication();
 
       if (user == null) {
-        // Silent sign-in failed, tokens may be revoked
-        await _credStore.deleteGmailTokens(accountId);
+        // Silent sign-in failed. Tokens are KEPT (Harold Q1, Sprint 74 MV --
+        // see _refreshToken): this can be transient.
         _state = AuthState.unauthenticated;
         return AuthResult.unauthenticated();
       }
@@ -297,7 +303,7 @@ class GoogleAuthService {
       // Get fresh access token via authorization
       final authorization = await user.authorizationClient.authorizationForScopes(_scopes);
       if (authorization == null) {
-        await _credStore.deleteGmailTokens(accountId);
+        // Tokens KEPT (Harold Q1, Sprint 74 MV -- see _refreshToken).
         _state = AuthState.unauthenticated;
         return AuthResult.unauthenticated();
       }
@@ -357,7 +363,7 @@ class GoogleAuthService {
       );
 
       if (newAccessToken.isEmpty) {
-        await _credStore.deleteGmailTokens(accountId);
+        // Tokens KEPT (Harold Q1, Sprint 74 MV -- see _refreshToken).
         _state = AuthState.unauthenticated;
         return AuthResult.failure('Token refresh failed');
       }
@@ -374,7 +380,7 @@ class GoogleAuthService {
       return AuthResult.success(tokens.email, newAccessToken);
     } catch (e) {
       Redact.logSafe('Desktop token refresh failed: ${e.runtimeType}');
-      await _credStore.deleteGmailTokens(accountId);
+      // Tokens KEPT (Harold Q1, Sprint 74 MV -- see _refreshToken).
       _state = AuthState.unauthenticated;
       return AuthResult.failure('Session expired. Please sign in again.');
     }

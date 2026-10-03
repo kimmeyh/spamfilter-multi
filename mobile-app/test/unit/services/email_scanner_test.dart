@@ -3,13 +3,32 @@ import 'package:my_email_spam_filter/core/services/email_scanner.dart';
 import 'package:my_email_spam_filter/core/providers/email_scan_provider.dart';
 import 'package:my_email_spam_filter/core/providers/rule_set_provider.dart';
 
+import '../../helpers/database_test_helper.dart';
+
 void main() {
   late EmailScanProvider scanProvider;
   late RuleSetProvider ruleSetProvider;
+  late DatabaseTestHelper testHelper;
 
-  setUp(() {
+  setUpAll(() {
+    DatabaseTestHelper.initializeFfi();
+  });
+
+  // Harold Q4 (Sprint 74 MV): a scan now takes the per-account lock in the
+  // database BEFORE it resolves the platform, and a lock it cannot check
+  // refuses the scan (fail closed). These tests used to run with no database
+  // at all -- the scan "continued without persistence" and reached the
+  // platform error they assert. A real test database lets them test that
+  // error again instead of the missing database.
+  setUp(() async {
+    testHelper = DatabaseTestHelper();
+    await testHelper.setUp();
     scanProvider = EmailScanProvider();
     ruleSetProvider = RuleSetProvider();
+  });
+
+  tearDown(() async {
+    await testHelper.tearDown();
   });
 
   group('EmailScanner constructor', () {

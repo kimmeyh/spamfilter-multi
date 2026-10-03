@@ -31,7 +31,6 @@ Please review the "Sprint Execution Docs", Sprint plan and sprint checklist to d
 Common prompt when it did not follow instructions:
 Figure out how this happened and update all "sprint execution docs", memories, skills, agents, claude.md, commands, hooks... so that it does not occur in the future.
 
-
 Microsoft Store Update:
 Follow the Microsoft Store release process in docs/STORE_RELEASE_PROCESS.md to build and prep the next update.
 

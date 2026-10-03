@@ -49,6 +49,17 @@ class _TestAppPaths extends AppPaths {
 class _FailingFolderMockProvider extends MockEmailProvider {
   static const String badFolder = 'BAD';
 
+  /// F202 R-6 (Sprint 74): 'BAD' EXISTS on this account and fails to fetch --
+  /// the case F174 protects. (A folder absent from the listing is now skipped
+  /// as missing, not counted; see _MissingFolderMockProvider.)
+  @override
+  Future<List<FolderInfo>> listFolders() async => [
+        ...await super.listFolders(),
+        const FolderInfo(
+            id: badFolder, displayName: badFolder,
+            canonicalName: CanonicalFolder.custom),
+      ];
+
   @override
   Future<List<EmailMessage>> fetchMessages({
     required int daysBack,
@@ -68,6 +79,37 @@ class _FailingFolderMockProvider extends MockEmailProvider {
         folderName: folderNames.first,
       ),
     ];
+  }
+}
+
+/// F202 R-6 (Sprint 74): a configured folder that does NOT EXIST on the
+/// account -- the fetch throws, and the listing does not contain it.
+class _MissingFolderMockProvider extends _FailingFolderMockProvider {
+  @override
+  Future<List<FolderInfo>> listFolders() async =>
+      (await super.listFolders())
+          .where((f) => f.id != _FailingFolderMockProvider.badFolder)
+          .toList();
+}
+
+/// F202 R-6: the fetch throws AND the folder listing itself fails -- the
+/// scanner cannot tell missing from failed, so it must count the error.
+class _UnlistableFolderMockProvider extends _FailingFolderMockProvider {
+  @override
+  Future<List<FolderInfo>> listFolders() async =>
+      throw Exception('simulated listing failure');
+}
+
+/// F202 (review, item d): records the Deleted Rule folder the SCANNER hands
+/// the adapter, so the Gmail API vs gmail-imap split is proven at the
+/// scanner/adapter boundary, not only inside SettingsStore.
+class _RecordingFolderMockProvider extends MockEmailProvider {
+  static final List<String?> deletedRuleFolders = [];
+
+  @override
+  void setDeletedRuleFolder(String? folderName) {
+    deletedRuleFolders.add(folderName);
+    super.setDeletedRuleFolder(folderName);
   }
 }
 
@@ -254,5 +296,104 @@ void main() {
     expect(scanProvider.status, isNot(ScanStatus.error),
         reason: 'a per-folder failure degrades, not aborts -- unchanged '
             'behavior, now visible');
+  });
+
+  test('Harold Q1: a scan that fails BEFORE connecting leaves its row CLOSED '
+      '(error), never in_progress -- proving the row now exists before the '
+      'connect', () async {
+    await db.insertAccount({
+      'account_id': 'nope@example.com',
+      'platform_id': 'aol',
+      'email': 'nope@example.com',
+      'display_name': 'Test',
+      'date_added': DateTime.now().millisecondsSinceEpoch,
+    });
+    final scanner = EmailScanner(
+      platformId: 'no-such-platform', // fails at Step 1, before any connect
+      accountId: 'nope@example.com',
+      ruleSetProvider: RuleSetProvider(),
+      scanProvider: EmailScanProvider()..initializeScanMode(mode: ScanMode.readOnly),
+    );
+    await expectLater(scanner.scanInbox(daysBack: 0), throwsA(anything));
+    final rows = await (await db.database).query('scan_results',
+        where: 'account_id = ?', whereArgs: ['nope@example.com']);
+    expect(rows, hasLength(1),
+        reason: 'before Q1 the row was written only AFTER connecting, so a '
+            'pre-connect failure left no row -- and no signal for the '
+            'background exclusion during the connect');
+    expect(rows.single['status'], 'error',
+        reason: 'Harold: a scan that fails before connecting must show it is '
+            'no longer running');
+  });
+
+  Future<String?> deletedFolderHandedToAdapter(String storedPlatform) async {
+    _RecordingFolderMockProvider.deletedRuleFolders.clear();
+    await db.insertAccount({
+      'account_id': 'demo@example.com',
+      'platform_id': storedPlatform,
+      'email': 'demo@example.com',
+      'display_name': 'Test',
+      'date_added': DateTime.now().millisecondsSinceEpoch,
+    });
+    final previous = PlatformRegistry.overrideFactoryForTest(
+        'demo', () => _RecordingFolderMockProvider());
+    addTearDown(() => PlatformRegistry.overrideFactoryForTest('demo', previous));
+    await EmailScanner(
+      platformId: 'demo',
+      accountId: 'demo@example.com',
+      ruleSetProvider: RuleSetProvider(),
+      scanProvider: EmailScanProvider()..initializeScanMode(mode: ScanMode.readOnly),
+    ).scanInbox(daysBack: 0, folderNames: ['INBOX']);
+    return _RecordingFolderMockProvider.deletedRuleFolders.first;
+  }
+
+  test('F202 boundary: a Gmail API account hands the adapter NULL, so the '
+      'adapter uses its built-in trash (an IMAP name there fails every delete)',
+      () async {
+    expect(await deletedFolderHandedToAdapter('gmail'), isNull);
+  });
+
+  test('F202 boundary: a gmail-imap account hands the adapter [Gmail]/Trash',
+      () async {
+    expect(await deletedFolderHandedToAdapter('gmail-imap'), '[Gmail]/Trash');
+  });
+
+  test('F202 boundary: an iCloud account hands the adapter "Deleted Messages"',
+      () async {
+    expect(await deletedFolderHandedToAdapter('icloud'), 'Deleted Messages');
+  });
+
+  Future<EmailScanProvider> scanWith(MockEmailProvider Function() make) async {
+    final previous = PlatformRegistry.overrideFactoryForTest('demo', make);
+    addTearDown(() => PlatformRegistry.overrideFactoryForTest('demo', previous));
+    final scanProvider = EmailScanProvider()
+      ..initializeScanMode(mode: ScanMode.readOnly);
+    await EmailScanner(
+      platformId: 'demo',
+      accountId: 'demo@example.com',
+      ruleSetProvider: RuleSetProvider(),
+      scanProvider: scanProvider,
+    ).scanInbox(
+      daysBack: 0,
+      folderNames: ['INBOX', _FailingFolderMockProvider.badFolder, 'Second'],
+    );
+    return scanProvider;
+  }
+
+  test(
+      'F202 R-6 (Harold decision 3): a configured folder that does NOT EXIST '
+      'is skipped, NOT counted as an error', () async {
+    final scanProvider = await scanWith(() => _MissingFolderMockProvider());
+    expect(scanProvider.errorCount, 0,
+        reason: 'a provider default can name a folder some accounts lack; '
+            'that must not produce a phantom error on every scan');
+    expect(scanProvider.totalEmails, 2);
+  });
+
+  test(
+      'F202 R-6: when the folder listing itself fails, the fetch error is '
+      'still counted (F174 is not undone)', () async {
+    final scanProvider = await scanWith(() => _UnlistableFolderMockProvider());
+    expect(scanProvider.errorCount, 1);
   });
 }

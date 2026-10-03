@@ -1,0 +1,1 @@
+{"session_id": "hg-violation-4", "cwd": "D:/Data/Harold/github/spamfilter-multi", "hook_event_name": "PreToolUse", "tool_name": "Bash", "tool_input": {"command": "/usr/bin/python3 - <<EOF\nprint('a\\nb')\nEOF"}}

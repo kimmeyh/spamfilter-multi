@@ -172,6 +172,29 @@ class EmailScanner {
         accountId: accountId,
       );
 
+      // 3. [UPDATED] ISSUE #128: Start scan with 0 emails, will increment as found.
+      //
+      // Harold Q1 (Sprint 74, MV74-2): this runs BEFORE connecting (it used to
+      // run after Step 2). The `scan_results` row it writes is the only
+      // cross-isolate/process signal that this account is being scanned: a
+      // background scan checks for it before opening its own session. Written
+      // after connecting, it left a window of seconds in which both scans
+      // held a session on one account -- the Sprint 61 session-cap failure.
+      // It still runs AFTER the lease, so a scan waiting in the queue holds no
+      // row (F221). A failure before connecting now reaches the outer catch
+      // with a row to close: errorScan marks it `error`, cancelScan
+      // `interrupted`, so it never reads as still running (Harold's
+      // condition).
+      AppLogger.scan('Step 3: Calling scanProvider.startScan(totalEmails: 0, scanType: $scanType)');
+      AppLogger.scan('Step 3: scanProvider.status BEFORE startScan: ${scanProvider.status}');
+      await scanProvider.startScan(
+        totalEmails: 0,
+        scanType: scanType,
+        foldersScanned: folderNames,
+        platformId: platformId,
+      );
+      AppLogger.scan('Step 3: scanProvider.status AFTER startScan: ${scanProvider.status}');
+
       // 1. Get platform adapter
       platform = PlatformRegistry.getPlatform(platformId);
       if (platform == null) {
@@ -199,23 +222,15 @@ class EmailScanner {
         }
       }
 
-      // 2.5. Configure deleted rule folder from account settings
-      final deletedRuleFolder = await _settingsStore.getAccountDeletedRuleFolder(accountId);
+      // 2.5. Configure deleted rule folder. F202 (Sprint 74): account ->
+      // provider default; null still means "the adapter's own default".
+      final deletedRuleFolder =
+          await _settingsStore.getEffectiveDeletedRuleFolder(accountId);
       platform.setDeletedRuleFolder(deletedRuleFolder);
       if (isLiveScan) {
         await LiveScanLogger.log('Step 2.5: deletedRuleFolder=${deletedRuleFolder ?? "(default Trash)"}');
       }
 
-      // 3. [UPDATED] ISSUE #128: Start scan with 0 emails, will increment as found
-      AppLogger.scan('Step 3: Calling scanProvider.startScan(totalEmails: 0, scanType: $scanType)');
-      AppLogger.scan('Step 3: scanProvider.status BEFORE startScan: ${scanProvider.status}');
-      await scanProvider.startScan(
-        totalEmails: 0,
-        scanType: scanType,
-        foldersScanned: folderNames,
-        platformId: platformId,
-      );
-      AppLogger.scan('Step 3: scanProvider.status AFTER startScan: ${scanProvider.status}');
 
       // F177 (Sprint 62): the evaluator is constructed BEFORE the fetch loop
       // because evaluation now happens PER FETCH BATCH (m=20, universal)
@@ -262,10 +277,12 @@ class EmailScanner {
       );
 
       final evaluatedEmails = <_EvaluatedEmail>[];
-      final safeSenderFolder = await _settingsStore.getAccountSafeSenderFolder(accountId);
+      // F202 (Sprint 74): account -> provider -> overall ('INBOX').
+      final safeSenderFolder =
+          await _settingsStore.getEffectiveSafeSenderFolder(accountId);
       // Normalize INBOX to uppercase for RFC 3501 compliance (INBOX is case-insensitive
       // per spec, but some IMAP servers may not handle mixed-case correctly)
-      final rawTarget = safeSenderFolder ?? 'INBOX';
+      final rawTarget = safeSenderFolder;
       final safeSenderTarget = rawTarget.toLowerCase() == 'inbox' ? 'INBOX' : rawTarget;
       AppLogger.scan('Safe sender target folder: "$safeSenderTarget" (raw: "$rawTarget")');
 
@@ -371,6 +388,9 @@ class EmailScanner {
       // (F177: fetched in m=20 batches, evaluated per batch -- see above)
       var totalFetched = 0;
       AppLogger.scan('Step 4: Starting folder-by-folder fetch. Total folders: ${folderNames.length}');
+      // F202 R-6: the account's folder list, fetched at most once per scan and
+      // only if a folder fetch fails.
+      final folderListCache = <List<FolderInfo>>[];
       for (final folderName in folderNames) {
         AppLogger.scan('Step 4: Fetching folder "$folderName" (daysBack=$daysBack)...');
         // [NEW] ISSUE #128: Report folder being fetched
@@ -411,11 +431,13 @@ class EmailScanner {
             // session on every path including this one. Signalling any other
             // way would need a second teardown path and risks the Sprint 61
             // leak (lease freed while the socket is still open).
-            if (ScanCoordinator.instance.isCancelRequested) {
+            if (scanLease!.info.cancelRequested) {
               AppLogger.scan('F224: cancellation observed at a batch boundary '
                   '-- stopping the scan');
             }
-            ScanCoordinator.instance.throwIfCancelled();
+            // Sprint 74 MV review: checks THIS scan's lease, so a scan whose
+            // lease was force-released (timeout) also stops here.
+            ScanCoordinator.instance.throwIfCancelled(scanLease);
             folderCount += batch.length;
             scanProvider.incrementFoundEmails(batch.length);
             scanProvider.updateProgress(
@@ -506,6 +528,23 @@ class EmailScanner {
           // `finally` releases the lease and disconnects the session.
           rethrow;
         } catch (e, st) {
+          // F202 R-6 (Sprint 74, Harold's decision 3): a folder that simply
+          // does NOT EXIST on this account is not an error -- a provider
+          // default can name a folder some accounts lack (AOL "Bulk Mail", an
+          // iCloud junk folder not yet created). Decided HERE, only after a
+          // fetch has failed, so a successful fetch never pays for a folder
+          // listing, and a Gmail API label (which returns zero results
+          // rather than throwing) is never second-guessed. A folder that DOES
+          // exist and failed stays an F174 error below.
+          if (await _folderIsMissing(platform, folderName, folderListCache)) {
+            AppLogger.scan('Step 4: folder "$folderName" does not exist on '
+                'this account -- skipped, not an error (F202)');
+            if (isLiveScan) {
+              await LiveScanLogger.log('Step 4: folder "$folderName" does not '
+                  'exist -- skipped (F202)');
+            }
+            continue;
+          }
           AppLogger.error('Step 4: EXCEPTION fetching folder "$folderName"', error: e, stackTrace: st);
           if (isLiveScan) {
             await LiveScanLogger.log('Step 4: EXCEPTION fetching folder "$folderName": $e');
@@ -926,6 +965,14 @@ class EmailScanner {
 
       // 7. Complete scan ([NEW] SPRINT 4: Now async to persist final state)
       AppLogger.scan('Step 7: Completing scan. Final counts: found=${scanProvider.totalEmails}, processed=${scanProvider.processedCount}, deleted=${scanProvider.deletedCount}, moved=${scanProvider.movedCount}, safe=${scanProvider.safeSendersCount}, noRule=${scanProvider.noRuleCount}, errors=${scanProvider.errorCount}');
+      if (scanLease.info.revoked) {
+        // Sprint 74 MV review: this scan's lease was force-released (timed
+        // out) and the provider may now belong to the next scan -- its row
+        // was already closed by the timeout path. Leave both alone.
+        AppLogger.scan('Scan finished AFTER its lease was revoked -- not '
+            'touching the scan provider');
+        return;
+      }
       await scanProvider.completeScan();
 
       // Sprint 38 Round 1 (F86 revised, post-retro 2026-05-16): reload
@@ -976,6 +1023,18 @@ class EmailScanner {
           settingsStore: _settingsStore,
         );
       }
+    } on ScanAccountBusyException catch (e) {
+      // Harold Q4 (Sprint 74 MV): REFUSED, not failed -- another scan holds
+      // this account. startScan already set the status message and wrote no
+      // row, so errorScan (which prefixes "Scan failed: ") must not run.
+      // Rethrown so each caller maps it to its own outcome: a background
+      // scan records a skip, a manual scan shows the message.
+      AppLogger.scan('SCAN REFUSED: $e');
+      if (isLiveScan) {
+        await LiveScanLogger.log(
+            'SCAN REFUSED accountId=${Redact.accountId(accountId)} $e');
+      }
+      rethrow;
     } on ScanCancelledException {
       // F224 (Sprint 73): the user asked for this, so it is NOT a failure.
       //
@@ -995,7 +1054,12 @@ class EmailScanner {
         await LiveScanLogger.log(
             'SCAN CANCELLED accountId=${Redact.accountId(accountId)}');
       }
-      await scanProvider.cancelScan();
+      // Sprint 74 MV review: a REVOKED scan (lease force-released on
+      // timeout) stops through this same path -- but its row is already
+      // closed and the provider may belong to the next scan.
+      if (scanLease?.info.revoked != true) {
+        await scanProvider.cancelScan();
+      }
     } catch (e, st) {
       // Handle scan error
       AppLogger.error('SCAN FAILED with exception', error: e, stackTrace: st);
@@ -1020,7 +1084,9 @@ class EmailScanner {
       final msg = e.runtimeType.toString() == '_Exception'
           ? e.toString().replaceFirst('Exception: ', '')
           : ErrorMessages.humanize(e);
-      await scanProvider.errorScan(msg);
+      if (scanLease?.info.revoked != true) {
+        await scanProvider.errorScan(msg);
+      }
       rethrow;
     } finally {
       // F175 (Sprint 62): release the scan lease on EVERY path -- a crashed
@@ -1045,6 +1111,27 @@ class EmailScanner {
       }
     }
   }
+  /// F202 R-6: true only when [folderName] is confidently ABSENT from the
+  /// account's folder list (matched case-insensitively on id or display
+  /// name). A listing failure answers false, so the fetch error is still
+  /// counted -- the conservative direction (F174 must not be undone).
+  static Future<bool> _folderIsMissing(
+    SpamFilterPlatform platform,
+    String folderName,
+    List<List<FolderInfo>> cache,
+  ) async {
+    try {
+      if (cache.isEmpty) cache.add(await platform.listFolders());
+    } catch (e) {
+      AppLogger.warning('F202: could not list folders to classify a failed '
+          'fetch of "$folderName"; counting it as an error: $e');
+      return false;
+    }
+    final wanted = folderName.toLowerCase();
+    return !cache.first.any((f) =>
+        f.id.toLowerCase() == wanted || f.displayName.toLowerCase() == wanted);
+  }
+
 
   /// F91 (Sprint 39): post-safe-sender-move source-folder dedup (AOL
   /// copy-not-move reconciliation).
@@ -1374,8 +1461,9 @@ class EmailScanner {
 
       await platform.loadCredentials(credentials);
 
-      // Configure deleted rule folder from account settings
-      final deletedRuleFolder = await _settingsStore.getAccountDeletedRuleFolder(accountId);
+      // Configure deleted rule folder (F202: account -> provider default)
+      final deletedRuleFolder =
+          await _settingsStore.getEffectiveDeletedRuleFolder(accountId);
       platform.setDeletedRuleFolder(deletedRuleFolder);
 
       // List all folders

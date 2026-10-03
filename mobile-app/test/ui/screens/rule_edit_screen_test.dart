@@ -485,6 +485,47 @@ void main() {
     // one viewport and no scrollUntilVisible is needed. This eliminates
     // test-pollution from scroll state left by prior tests.
 
+    // PR #440 review (IMPORTANT): a subject rule stored with sub-type
+    // 'keyword' (Sprint 74) must survive an unchanged Save as a SUBJECT
+    // rule. The editor maps 'keyword' to Body Phrase; for a lowercase,
+    // space-free subject the body-phrase generator reproduces the stored
+    // pattern, so the screen stayed in guided mode and Save rewrote the rule
+    // as a BODY rule. What this does NOT catch: a subject rule the user
+    // deliberately switches to another type in guided mode (not reachable
+    // now -- subject rules always open in direct-regex mode).
+    testWidgets('an unchanged Save keeps a subject/keyword rule a SUBJECT rule',
+        (tester) async {
+      tester.view.physicalSize = const Size(1080, 1920);
+      tester.view.devicePixelRatio = 1.0;
+      addTearDown(tester.view.resetPhysicalSize);
+      addTearDown(tester.view.resetDevicePixelRatio);
+
+      final subjectRule = Rule(
+        name: 'Block_Subject_viagra',
+        enabled: true,
+        isLocal: true,
+        executionOrder: 60,
+        conditions: RuleConditions(type: 'OR', subject: [RegExp.escape('viagra')]),
+        actions: RuleActions(delete: true),
+        patternCategory: 'subject',
+        patternSubType: 'keyword',
+        sourceDomain: 'viagra',
+      );
+      final stubStore = _StubRuleDatabaseStore();
+      await tester.pumpWidget(_buildScreen(subjectRule, store: stubStore));
+      await tester.pumpAndSettle();
+
+      await tester.tap(find.byKey(const Key('rule_edit_save_button')));
+      await tester.pumpAndSettle();
+
+      final saved = stubStore.lastUpdatedRule!;
+      expect(saved.patternCategory, 'subject');
+      expect(saved.conditions.subject, [RegExp.escape('viagra')]);
+      expect(saved.conditions.body, isEmpty,
+          reason: 'the rule must not move into the body condition');
+      expect(saved.patternSubType, 'keyword');
+    });
+
     testWidgets('Save Changes button calls store.updateRule on success', (tester) async {
       tester.view.physicalSize = const Size(1080, 1920);
       tester.view.devicePixelRatio = 1.0;

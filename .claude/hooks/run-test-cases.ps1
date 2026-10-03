@@ -15,6 +15,7 @@
       test-cases/stash-guard/*.json      -> block-carry-forward-stash.ps1 (PreToolUse)
       test-cases/closeout/*.json         -> verify-closeout-complete.ps1 (Stop)
       test-cases/sprint-cards/*.json     -> require-sprint-cards.ps1 (PreToolUse)
+      test-cases/heredoc-guard/*.json    -> block-heredoc-python-backslash.ps1 (PreToolUse)
 
     Prints a per-case PASS/FAIL line and a summary. Exits 0 if all pass, 1 if
     any fail.
@@ -42,6 +43,7 @@ $routes = @{
     'stash-guard'  = 'block-carry-forward-stash.ps1'
     'closeout'     = 'verify-closeout-complete.ps1'
     'sprint-cards' = 'require-sprint-cards.ps1'
+    'heredoc-guard' = 'block-heredoc-python-backslash.ps1'   # Sprint 74 retro IMP-6
 }
 
 $pass = 0

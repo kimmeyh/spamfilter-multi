@@ -73,6 +73,17 @@ class YamlService {
     return SafeSenderList.fromMap(Map<String, dynamic>.from(yaml));
   }
 
+  /// The rules export text (normalized, sorted, single-quoted patterns),
+  /// without touching any file. Sprint 74 MV: Android and iOS hand these
+  /// bytes to the system save dialog, which writes the file itself.
+  String renderRules(RuleSet ruleSet) =>
+      _convertToYaml(_normalizeRuleSet(ruleSet).toMap());
+
+  /// The safe senders export text, without touching any file (see
+  /// [renderRules]).
+  String renderSafeSenders(SafeSenderList safeSenders) =>
+      _convertToYaml(_normalizeSafeSenders(safeSenders).toMap());
+
   /// Export rules to YAML file with backup
   Future<void> exportRules(RuleSet ruleSet, String filePath) async {
     // Create backup if file exists
@@ -80,13 +91,7 @@ class YamlService {
     if (await file.exists()) {
       await _createBackup(filePath);
     }
-
-    // Normalize and sort
-    final normalized = _normalizeRuleSet(ruleSet);
-    
-    // Write YAML with single quotes for patterns
-    final yaml = _convertToYaml(normalized.toMap());
-    await file.writeAsString(yaml);
+    await file.writeAsString(renderRules(ruleSet));
   }
 
   /// Export safe senders to YAML file with backup
@@ -96,13 +101,7 @@ class YamlService {
     if (await file.exists()) {
       await _createBackup(filePath);
     }
-
-    // Normalize and sort
-    final normalized = _normalizeSafeSenders(safeSenders);
-    
-    // Write YAML
-    final yaml = _convertToYaml(normalized.toMap());
-    await file.writeAsString(yaml);
+    await file.writeAsString(renderSafeSenders(safeSenders));
   }
 
   Future<void> _createBackup(String filePath) async {
