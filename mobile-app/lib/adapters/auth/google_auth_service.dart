@@ -28,8 +28,12 @@ import 'dart:async';
 import 'dart:io';
 
 import 'package:flutter/foundation.dart';
+import 'package:flutter/services.dart' show PlatformException;
 import 'package:http/http.dart' as http;
 import 'package:google_sign_in/google_sign_in.dart';
+import 'package:google_sign_in_platform_interface/google_sign_in_platform_interface.dart'
+    as gsi_platform;
+import 'package:my_email_spam_filter/core/services/background_mode_service.dart';
 import 'package:my_email_spam_filter/adapters/auth/token_store.dart';
 import 'package:my_email_spam_filter/adapters/storage/secure_credentials_store.dart';
 import 'package:my_email_spam_filter/adapters/email_providers/gmail_windows_oauth_handler.dart';
@@ -288,6 +292,27 @@ class GoogleAuthService {
       // Initialize if needed
       await _ensureNativeSignInInitialized();
 
+      // F239 R-1/R-2 (Sprint 75): ask for a token for THIS account's email
+      // with no prompt. Google: an already-granted request returns the token
+      // with no UI. Lightweight sign-in below needs an Activity (it fails
+      // with NO_ACTIVITY in a WorkManager worker); this call does not, if
+      // the R-1 spike confirms it. Anything but a token falls through to the
+      // existing path unchanged.
+      final directToken = await authorizeWithoutActivity(tokens.email);
+      if (directToken != null) {
+        final newTokens = GmailTokens(
+          accessToken: directToken,
+          refreshToken: tokens.refreshToken,
+          expiresAt: DateTime.now().add(const Duration(hours: 1)),
+          grantedScopes: _scopes,
+          email: tokens.email,
+        );
+        await _credStore.saveGmailTokens(accountId, newTokens);
+        _currentAccountId = accountId;
+        _state = AuthState.authenticated;
+        return AuthResult.success(tokens.email, directToken);
+      }
+
       // Try lightweight authentication (silent sign-in)
       final user = await _googleSignIn.attemptLightweightAuthentication();
 
@@ -324,6 +349,50 @@ class GoogleAuthService {
     } catch (e) {
       Redact.logSafe('Native sign-in refresh failed: ${e.runtimeType}');
       rethrow;
+    }
+  }
+
+  /// F239 (Sprint 75): test seam for [authorizeWithoutActivity].
+  @visibleForTesting
+  static Future<String?> Function(String email, List<String> scopes)?
+      debugAuthorizeWithoutActivity;
+
+  /// F239 R-1/R-2 (Sprint 75): an access token for [email]'s already-granted
+  /// Gmail scopes, without any UI and without an Activity -- or null.
+  ///
+  /// Uses the platform interface because it accepts the account EMAIL;
+  /// google_sign_in 7.2.0's instance-level client passes no account hint.
+  /// Logs the outcome on one line tagged `[F239 spike]` (no address, no
+  /// token) so the emulator spike can be read from logcat.
+  Future<String?> authorizeWithoutActivity(String email) async {
+    final authorize = debugAuthorizeWithoutActivity ??
+        (String e, List<String> scopes) async {
+          await _ensureNativeSignInInitialized();
+          final data = await gsi_platform.GoogleSignInPlatform.instance
+              .clientAuthorizationTokensForScopes(
+            gsi_platform.ClientAuthorizationTokensForScopesParameters(
+              request: gsi_platform.AuthorizationRequestDetails(
+                scopes: scopes,
+                userId: null,
+                email: e,
+                promptIfUnauthorized: false,
+              ),
+            ),
+          );
+          return data?.accessToken;
+        };
+    final where =
+        BackgroundModeService.isBackgroundMode ? 'background' : 'foreground';
+    try {
+      final token = await authorize(email, _scopes);
+      Redact.logSafe('[F239 spike] authorization without an Activity '
+          '($where): ${token == null ? 'NULL (needs the user)' : 'PASS'}');
+      return (token == null || token.isEmpty) ? null : token;
+    } catch (e) {
+      Redact.logSafe('[F239 spike] authorization without an Activity '
+          '($where): ERROR ${e.runtimeType}'
+          '${e is PlatformException ? ' code=${e.code}' : ''}');
+      return null;
     }
   }
 

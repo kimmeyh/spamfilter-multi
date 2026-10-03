@@ -81,6 +81,53 @@ void main() {
     });
   });
 
+  group('R-1/R-2: authorization without an Activity', () {
+    tearDown(() => GoogleAuthService.debugAuthorizeWithoutActivity = null);
+
+    test('asks for THIS account\'s email and the Gmail scopes; a token is '
+        'returned as-is', () async {
+      final asked = <String>[];
+      GoogleAuthService.debugAuthorizeWithoutActivity = (email, scopes) async {
+        asked.add(email);
+        expect(scopes, isNotEmpty);
+        return 'fresh-token';
+      };
+      final token = await GoogleAuthService(
+              credentialsStore: _FakeCredStore(const [], const {}))
+          .authorizeWithoutActivity('someone@gmail.com');
+      expect(token, 'fresh-token');
+      expect(asked, ['someone@gmail.com']);
+    });
+
+    test('"needs the user" (null) and a platform error both return null, so '
+        'renewal falls through to the existing path', () async {
+      final service =
+          GoogleAuthService(credentialsStore: _FakeCredStore(const [], const {}));
+      GoogleAuthService.debugAuthorizeWithoutActivity = (_, __) async => null;
+      expect(await service.authorizeWithoutActivity('a@gmail.com'), isNull);
+      GoogleAuthService.debugAuthorizeWithoutActivity =
+          (_, __) async => throw Exception('NO_ACTIVITY');
+      expect(await service.authorizeWithoutActivity('a@gmail.com'), isNull);
+    });
+
+    test('Android renewal tries it FIRST and saves under the same account id '
+        '(source gate -- the native path has no seam on this host)', () {
+      final src =
+          File('lib/adapters/auth/google_auth_service.dart').readAsStringSync();
+      final start = src.indexOf('Future<AuthResult> _refreshViaNativeSignIn(');
+      final direct = src.indexOf('authorizeWithoutActivity(tokens.email)', start);
+      final save = src.indexOf('saveGmailTokens(accountId, newTokens)', direct);
+      final lightweight =
+          src.indexOf('attemptLightweightAuthentication()', start);
+      expect(start, greaterThan(-1));
+      expect(direct, greaterThan(start));
+      expect(save, greaterThan(direct));
+      expect(lightweight, greaterThan(save),
+          reason: 'the no-Activity call must come before lightweight sign-in, '
+              'which fails with NO_ACTIVITY in a worker');
+    });
+  });
+
   group('R-5: getValidAccessToken never falls back to another account', () {
     test('with AOL saved FIRST, asking for the Gmail account returns the Gmail '
         'token', () async {
