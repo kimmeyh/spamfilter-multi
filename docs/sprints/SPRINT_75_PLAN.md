@@ -1,8 +1,8 @@
-# Sprint 75 Plan -- PROPOSED, awaiting Phase 3.7 approval
+# Sprint 75 Plan -- APPROVED 2026-10-03
 
-**Status**: **DRAFT -- NOT APPROVED.** No task execution begins until Harold approves (Phase 3.7).
+**Status**: **APPROVED 2026-10-03 by Harold, as amended** (see Phase 3.7 approval). Executing.
 **Branch**: `feature/20261002_Sprint_75` | **PR**: #448 (draft, Phase 3.3.1)
-**Issues**: #441 (F238), #442 (F239), #444 (F216), #445 (F214), #446 (F236), #447 (F215)
+**Issues**: #441 (F238), #442 (F239), #444 (F216), #445 (F214), #446 (F236), #447 (F215), #449 (Task 7)
 **Version**: **0.17.0+8 -- NO BUMP this sprint (EXCEPTION, Harold 2026-10-02)**: *"no store release
 was done after the last sprint, so keep 0.17.0 for this sprint (note as an exception)"*. F190
 normally bumps MINOR at plan approval; it is skipped because 0.17.0 never reached a store, so the
@@ -451,7 +451,44 @@ shows.
 
 ---
 
-## Carry-ins from the Sprint 74 retrospective (Category 13) -- NOT in the selected scope; Open question 4
+## Task 7 -- Sprint 74 carry-ins: WinWright scripts + widget tests for the new controls (Harold Q4 = add)
+
+**Value**: This puts the controls added in Sprints 74-75 under the same automated checks as the
+older screens, so a later change cannot silently break them.
+
+**Requirements**:
+- R-1: WinWright scripts (`test/winwright/`, run by `run-winwright-tests.ps1`) for: the Scan Results
+  Sort chip (toggles the label), Scan History Clear history (dialog opens and cancels -- no data
+  change), Settings "Hide sender details in exports" (toggle and restore), the resolved-default folder
+  rows (visible). Each script restores any state it changes (WinWright policy).
+- R-2: Widget tests (PR #440 test review MINOR 5/7/8/9): the Results "another scan is running" row
+  uses the info style, never the error style; the Manual Scan OK-only dialog and the refusal
+  snackbar; the redaction toggle persists `getExportRedacted()`; Clear history's zero-finished
+  snackbar and scope text.
+- R-3: The F238 dialog action (Task 1) gets its widget test in Task 1 (T-3); a WinWright script for it
+  is added here only if a background scan can be held deterministically -- otherwise recorded as
+  Manual Validation only.
+
+**Affected components / files**: `mobile-app/test/winwright/*.json` (new), `mobile-app/test/ui/screens/`
+(new widget tests); `docs/WINWRIGHT_SELECTORS.md` if new selectors are used.
+
+**User-reachable control**: N/A (tests). **Observable behavior -- before / after**: N/A (no app change).
+**Dependencies / blockers**: Task 1 (the dialog), WinWright pre-flight (screen-reader flag, unlocked
+workstation).
+
+**Acceptance criteria**:
+- AC-1: The new scripts pass in the sweep with no DB drift.
+- AC-2: The four widget tests pass and each is mutation-checked (`scripts/mutation-test.ps1`).
+
+**Tests to write**: as R-1 and R-2.
+**Definition of Done**: default DoD (no CHANGELOG entry: not user-facing).
+**Model**: Sonnet -- *why not cheaper*: WinWright selector work needs judgment on the semantics tree.
+**Step-types**: TEST-WIDGET, TEST-E2E
+**Est-Effort**: 105-165m.
+
+---
+
+## Carry-ins from the Sprint 74 retrospective (Category 13) -- WinWright + widget tests are now Task 7 (Q4 = add)
 
 - **Phone validation checklist** (0.17.0 phone build; timing per Open question 3):
   1. MV74-1 -- background scans fire in Doze; the schedule survives a reboot (#428).
@@ -539,4 +576,18 @@ Validation work was most of the effort. These estimates do not include MV rework
 
 ## Phase 3.7 approval
 
-(pending)
+**APPROVED 2026-10-03 by Harold, as amended.** Verbatim: *"Sprint plan approved as amended (with any
+comments I provided), proceed with execution. All Sprint tasks and sub-tasks are approved. Do not
+stop between tasks as they are all approved, please continue to complete all tasks and without
+addition approvals until Manual Validation, providing your recommendation for Manual Validation
+steps. Do not stop to ask questions unless meeting the criteria in \docs\SPRINT_STOPPING_CRITERIA.md
+If questions must be asked, ask as late as possible - do everything that can be done (all tasks and
+parts of takss, without the answer to the question(s), then ask the question(s)"*
+
+**Amendments (Harold's answers, 2026-10-03)**:
+- **Q1 -- 1**: F238's cross-isolate cancel request through the database (DB v11) APPROVED (Class-1).
+- **Q2 -- 1**: F239 -- build the Android renewal if the emulator spike passes; stop and surface if it
+  fails (Class-1, conditional approval).
+- **Q3**: *"Can't run until 0.17.0 goes live (next sprint)"* -- the phone validation checklist moves to
+  Sprint 76; Sprint 75 Manual Validation is Windows (plus the emulator for F239).
+- **Q4 -- 1**: the Sprint 74 carry-ins (WinWright scripts + widget tests) are ADDED as Task 7.

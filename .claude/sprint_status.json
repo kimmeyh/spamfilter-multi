@@ -1,14 +1,14 @@
 {
   "_description": "Sprint status file that persists across context compaction. Update after each phase/sub-phase completion.",
-  "_last_updated": "2026-10-03T03:07:48Z",
+  "_last_updated": "2026-10-03T12:55:48Z",
   "_usage": "Read this file after context compaction to restore sprint approval state and progress.",
   "_staleness_note": "This file had drifted 15 sprints (last updated at Sprint 35, 2026-04-19) before being refreshed at Sprint 50 close-out. It is a Phase 7.7 checklist item -- update it at every sprint close-out, not opportunistically.",
   "current_sprint": {
     "number": 75,
     "branch": "feature/20261002_Sprint_75",
-    "status": "Sprint 75 Phase 3.7 Plan Approval -- plan PROPOSED (docs/sprints/SPRINT_75_PLAN.md), draft PR open; scope F238, F216, F214, F236, F239, F215; version stays 0.17.0+8 (EXCEPTION, Harold 2026-10-02); awaiting approval + 4 open questions.",
-    "plan_approved": false,
-    "blanket_execution_approved": false,
+    "status": "Sprint 75 Phase 4 Execution -- plan APPROVED 2026-10-03 (Q1 yes, Q2 build-if-spike-passes, Q3 phone checks -> Sprint 76 after 0.17.0 is live, Q4 Task 7 added). Version stays 0.17.0+8.",
+    "plan_approved": true,
+    "blanket_execution_approved": true,
     "pr_number": 448,
     "version": "0.17.0+8 (NO bump this sprint -- exception, Harold 2026-10-02)",
     "pr_url": "https://github.com/kimmeyh/spamfilter-multi/pull/448"
@@ -52,8 +52,7 @@
   ],
   "blocking_issues": [],
   "next_actions": [
-    "Harold: approve the Sprint 75 plan and answer Open questions 1-4.",
-    "On approval: 3.7.1 PR update (keep draft), then execute Task 0 onward."
+    "Execute Tasks 0-7; Phase 5; Manual Validation (Windows + emulator)."
   ],
   "next_sprint_targeted": {
     "number": 75,

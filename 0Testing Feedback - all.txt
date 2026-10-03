@@ -7,6 +7,12 @@ Manual Validation complete
 Sprint 7n Manual Validation Feedback 
 
 ---------------------------------------------------------------------------------------------------------
+Sprint 75 Manual Validation Feedback 
+
+
+
+
+---------------------------------------------------------------------------------------------------------
 Sprint 74 Manual Validation Feedback 
   1. Scan Results order. Open a scan's results.
   2. Dates. Each row reads folder • yyyy-mm-dd hh:mm • subject • rule. The date matches the assign-a-rule pop-up for the same email.
