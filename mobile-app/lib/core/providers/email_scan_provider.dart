@@ -16,6 +16,7 @@ import '../../core/storage/database_helper.dart';
 import '../../core/storage/scan_result_store.dart';
 import '../../core/storage/settings_store.dart';
 import '../../core/storage/unmatched_email_store.dart';
+import '../services/background_scan_core.dart' show BackgroundScanCore;
 import '../services/scan_coordinator.dart';
 import '../../core/utils/pattern_normalization.dart';
 import '../../util/redact.dart';
@@ -813,7 +814,8 @@ class EmailScanProvider extends ChangeNotifier {
     try {
       await store.markScanCancelled(id, reason: reason);
     } catch (e) {
-      if (!e.toString().toLowerCase().contains('database is locked')) rethrow;
+      // The shared classifier (also matches SQLite's "(code 5)" form).
+      if (!BackgroundScanCore.isDatabaseLocked(e)) rethrow;
       _logger.w('Scan cancel write met a locked database; retrying once');
       await Future<void>.delayed(markCancelledRetryDelay);
       await store.markScanCancelled(id, reason: reason);

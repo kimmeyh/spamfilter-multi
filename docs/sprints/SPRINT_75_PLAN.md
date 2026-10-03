@@ -553,6 +553,23 @@ workstation).
     token lookup and expected-account check share one key -- written into ADR-0011 as an invariant.
     M87-M90 KILLED.
 
+## Phase 5 evidence
+
+- **5.1.1 automated code review**: 2026-10-03, `pr-review-toolkit:code-reviewer` (opus) + `pr-review-toolkit:silent-failure-hunter` (opus) on the post-approval diff (1f80ecd..d9f241b), with the mandatory related-patterns grep. No CRITICAL. Fixed in 8a1234a (mutations M96-M98, M100-M103 KILLED):
+  - H-1 (both reviewers): the per-folder catch swallowed `GmailSignInRequiredException` (Windows scopes path) -- background "completed" and notified; no Sign In Again on the scan screen. Rethrown now.
+  - H-2: Windows "Test Background Scan" runs IN-PROCESS; the F238 cross-process recipe was wrong. ADR-0039 + this plan corrected; Manual Validation uses `--background-scan --account-id`.
+  - Same refused token handed back by renewal cleared the flag (SF-2); 429/5xx no longer read as sign-in; Android exceptions no longer flagged (M-2); renewal and connect refuse a different account (M-4, SF-4); `authorizeWithoutActivity` gated OFF until the spike (M-3); release-build warning logs for renewal failures (SF-3); scan text keeps the wrong-account detail (SF-6); stale heartbeat tick cannot cancel the next scan (M-1); locked close retried (SF-5); Sign In Again double tap (SF-9). ADR-0011 amendment rewritten -- it overstated parity.
+  - Accepted / recorded, not fixed: SF-7 (Windows refresh-call outage can still flag -- ADR-0011 known limit); SF-8 (a failed flag write plus a silent skip leaves no signal -- backlog candidate: one-time notification for a needs-sign-in skip); SF-10 (token lifetime set to 1 h, pre-existing pattern); SF-11 (Windows bg log row reads `success` for a sign-in skip, per the MV74-2 skip decision); SF-12 (Android: cancelling the native picker may fall back to the browser -- unverified, pre-existing); LOW: `gmail_client.dart` and `GmailApiAdapter.signIn()` have no production callers; no cancel checkpoint after the last fetch batch (outcome still safe); a creds-less Gmail row's Start Scan fails with "No credentials" (the row itself offers Sign In Again).
+- **5.1.2 F-PRECHECK** (2026-10-03, run against the sprint diff):
+  1. Mirror/parallel sites: CLEAN -- sign-in skip and stopped skip live in the shared `BackgroundScanCore` (both workers); Windows-only adapter tests carry `skip: !Platform.isWindows`, classifier/humanize tests run on CI too; no `Platform.is` gate behind the new scan-screen button.
+  2. Helper wired into production: CLEAN -- `SignInAgain` (account list + scan screen), `isNetworkError`/`isTransientApiError` (loadCredentials), `needsSignIn`/`stopped` (scanAccount), `requestCancel` (startRealScan). `authorizeWithoutActivity` is deliberately NOT wired (gated until the spike) -- stated in ADR-0011.
+  3. Doc-comment drift: FOUND by review and fixed (ADR-0011 rules 5-7, ADR-0039 recipe).
+  4. Fragile parsing: FOUND -- the new lock retry matched "database is locked" by hand although `BackgroundScanCore.isDatabaseLocked` exists (also matches code 5); switched to it. `isSignInRequiredMessage` matches a shared constant (content, not position).
+  5. API scope: CLEAN -- `requestCancel`/`markScanCancelled` are per row id; the no-Activity authorization names one email (its token scope is unverified, hence gated).
+  6. Silent failure: covered by the silent-failure hunter (above); every new catch logs at warning or higher.
+- **5.1.5 WinWright sweep**: PENDING the final build.
+- **5.1.6 Runtime launch gate**: N/A -- no Android config touched (`android/**`, manifest, gradle, ProGuard unchanged; `pubspec.yaml` gained a Dart dependency only).
+
 ## Phase 3.6.1 Architecture Impact Check
 
 - **ARCHITECTURE.md** -- updates REQUIRED (each card's DoD, before Manual Validation):
