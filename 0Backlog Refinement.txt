@@ -9,6 +9,149 @@ If questions must be asked, ask as late as possible - do everything that can be 
 Sprint 7n Scope should include the below items. Please complete sprint planning (/docs/sprint_planning.md) for the below items and present for approval.  Note that everything needs to take into account both the Windows App and the Android app and ADR stating that everything should be functionally and UI the same unless it cannot be - and where it cannot be it should be implemented as a platform exception for what is needed -- this applies to all backend code, frontend code, data, architecture, development, security, testing, deployment.
 
 ---------------------------------------------------------------------------------------------------------
+Sprint 75 Scope should include the below items. Please complete sprint planning (/docs/sprint_planning.md) for the below items and present for approval.  Note that everything needs to take into account both the Windows App and the Android app and ADR stating that everything should be functionally and UI the same unless it cannot be - and where it cannot be it should be implemented as a platform exception for what is needed -- this applies to all backend code, frontend code, data, architecture, development, security, testing, deployment.
+
+
+
+  Recommendation
+
+  Sprint 75 = F238 (already committed) + F216 + F214 + F236. About 265 to 475 minutes in total.
+  - F238 is the release blocker for 0.17.0.
+  - F216 and F214 are both tester-visible polish in shared screens. They are cheap, and they make the next store update better.
+  - F236 is a small, contained change.
+
+  One thing for you to decide at planning: when do the phone checks run? They cannot run in Sprint 75 Manual Validation, because no AAB exists until the
+  Sprint 75 PR merges. The choices are:
+  1. Run them after the Sprint 75 merge, before the store submission (Phase 8). This is my recommendation: it keeps your no-AAB rule, and the submission
+     waits on the checks.
+  2. Build a closed-test AAB during Sprint 75 Manual Validation, as an exception to that rule.
+
+  A related point: Sprint 75's version bump at plan approval makes it 0.18.0. So the release that carries F238 will be 0.18.0, not 0.17.0. The 0.17.0
+  release notes already say they carry forward.
+
+  Candidates at a glance
+
+  - F238. Offer to stop a running background scan in favor of a manual scan (~180-300m) Priority 1
+  - MV74-1. F235 Doze scheduling: validate on the phone (~30-60m hands-on, over hours) Priority 2
+  - MV74-3. F205: classify the scan errors on a 0.17.0 phone build (~30-60m) Priority 4
+  - F239. Gmail on Android: renew the token without the app open, plus "Sign In Again" (~240-480m) Priority 12
+  - F199-b. Partner Center publisher display name (~15m once unblocked) Priority 12
+  - F204. Gate the three Play requirements that are documented but not asserted (~60-90m) Priority 24
+  - F215. Wire the validation-screenshot folder into every Android screenshot process (~30-60m) Priority 30
+  - F216. Supporting text smaller than the text it should match (~45-90m) Priority 32
+  - F192. Custom IMAP Server support: build the host-entry UI (~120-180m) Priority 32
+  - F214. Scan Range slider misaligned with the controls above it (~20-45m) Priority 34
+  - F236. Stamp the app version into the YAML rules export (~20-40m) Priority 36
+  - F237. Quiet the non-fatal Kotlin "Daemon compilation failed" traces (~20-40m) Priority 38
+  - F213. Migrate Android Gmail OAuth off custom URI schemes to Google Identity Services (~180-300m) Priority 40
+  - F240. Body-rule sub-type consistency (~45-90m) Priority 40
+  - F242. Span-replacing edit scripts assert what the span contains (~20-40m) Priority 50
+  - F241. Remove or wire getActiveBackgroundScan (~15-30m) Priority 60
+
+  F205 also has its own entry at Priority 18, which is the same work as MV74-3. I listed it once.
+
+  HOLD items (efforts as recorded; the hour figures have not yet been re-derived in minutes):
+  - F165. Cross-device rules-DB sharing + hosted tier exploration (~half-day) Priority HOLD
+  - F173. Periodic test-coverage deep dive (~4-8h per review) Priority HOLD
+  - F183. Upstream civyk-winwright ww_wait replay request (~15m to file) Priority HOLD
+  - F179. Subject-blocking phrase picker (~3-5h) Priority HOLD
+  - F152. Periodic user-centric first-run evaluation (~2-3h per review) Priority HOLD
+  - F189. Periodic skills audit (~4-8h per review) Priority HOLD
+  - GP-4. Gmail API OAuth verification / CASA submission (~40-80h) Priority HOLD
+  - F111. Periodic Windows Store upload readiness verification (~110-175m per review) Priority HOLD
+  - F139. Local-install smoke test for a release-candidate MSIX (~30-50m per review) Priority HOLD
+  - F70. Periodic security deep dive (~4-8h per review) Priority HOLD
+  - F130. Periodic process-docs consistency deep dive (no history to estimate from) Priority HOLD
+  - F71. Periodic architecture deep dive (~4-8h per review) Priority HOLD
+  - F201. Periodic web property accuracy re-review (~1-2h per review) Priority HOLD
+  - F95. iOS variants + cross-store hardening (~10-16h) Priority HOLD
+  - F63. Responsive design framework (superseded by F141) Priority HOLD
+  - SEC-15. IMAP host validation for custom servers (~1h) Priority HOLD
+  - SEC-8b. Certificate pinning for IMAP endpoints (~4-6h) Priority HOLD
+  - F6. Provider-specific optimizations (~10-12h) Priority HOLD
+  - F67. Platform validation on iOS, Linux and macOS (~4-6h per platform) Priority HOLD
+  - SEC-11b. Database-at-rest encryption via sqlite3mc (~8-12h) Priority HOLD
+  - F106. SEC-11b verification-window cleanup (~30m) Priority HOLD
+  - H1. GenAI pattern suggestions (TBD) Priority HOLD
+  - H2. Rule pattern consistency for domain matching (~4-6h) Priority HOLD
+  - H3. Requirements documentation system (TBD) Priority HOLD
+  - H4. Sent messages scan for safe senders (~12-16h) Priority HOLD
+  - H5. Outlook.com / Office 365 adapter (~16-20h) Priority HOLD
+
+  The next 10
+
+  Sprint 75 (committed)
+
+  F238. Offer to stop a running background scan in favor of a manual scan (~180-300m) Priority 1
+  - Phase: Core App Quality
+  - Platform: All (Windows and Android, same dialog)
+  - The "A scan is already running" dialog gains "Stop the background scan and start mine". The background scan is asked to stop through its database row
+    (DB v11); the worker reacts on its next 30-second "still alive" check.
+  - Release blocker for 0.17.0. Model: Fable 5.1. Full card: #441.
+
+  Phone validation (needs a 0.17.0 or later phone build)
+
+  MV74-1. F235 Doze scheduling: validate on the phone (~30-60m hands-on, over hours) Priority 2
+  - Phase: Core App Quality
+  - Platform: Android only (Doze has no Windows equivalent; a declared exception)
+  - Check that background scans fire while the phone is idle, and that the schedule survives a reboot. Issue #428.
+
+  MV74-3. F205: classify the scan errors on a 0.17.0 phone build (~30-60m) Priority 4
+  - Phase: Core App Quality
+  - Platform: Android
+  - Classify every scan error on the current build, or record that there are none. The earlier narrowing showed the errors were Gmail-only and before
+    0.15.0. Issue #433.
+
+  Core App Quality
+
+  F239. Gmail on Android: renew the token without the app open, plus "Sign In Again" (~240-480m) Priority 12
+  - Phase: Core App Quality
+  - Platform: Android, plus the "Sign In Again" path on all platforms
+  - A Gmail background scan cannot renew its sign-in after about an hour. The "Sign In Again" widget exists but no screen uses it.
+  - The sign-in mechanism is an architecture decision you must approve, and may need a Google Cloud console change. Issue #442.
+
+  F216. Supporting text smaller than the text it should match (~45-90m) Priority 32
+  - Phase: Core App Quality
+  - Platform: All (shared UI)
+  - Rule Tester, Safe Sender quick-add and the email action pop-up use smaller text than the text beside them. Confirmed in code; you found it during
+    Sprint 69 validation.
+
+  F192. Custom IMAP Server support: build the host-entry UI (~120-180m) Priority 32
+  - Phase: Core App Quality
+  - Platform: All
+  - A server-details form (host, port defaulting to 993, TLS, username, password), a "Test Connection" check, and saved per-account settings. Turns
+    "Gmail and AOL" into "any IMAP provider".
+
+  F214. Scan Range slider misaligned with the controls above it (~20-45m) Priority 34
+  - Phase: Core App Quality
+  - Platform: All (shared UI)
+  - Three padding layers stack up, so the slider sits narrower than the controls above it. Reported by a tester; confirmed in settings_screen.dart.
+
+  Release Readiness
+
+  F199-b. Partner Center publisher display name (~15m once unblocked) Priority 12
+  - Phase: Release Readiness
+  - Platform: Windows (Microsoft Store account)
+  - This is the last place still showing the old company name. It is blocked outside this project, because Microsoft's own documentation contradicts
+    itself on whether this account type can change it.
+
+  Android / Google Play Store Readiness
+
+  F204. Gate the three Play requirements that are documented but not asserted (~60-90m) Priority 24
+  - Phase: Android / Google Play Store Readiness
+  - Platform: Android
+  - Play's own pre-review checks cannot be run locally. This adds automated test gates for the three requirements we have documented but never checked.
+
+  Developer Workflow / Tooling
+
+  F215. Wire the validation-screenshot folder into every Android screenshot process (~30-60m) Priority 30
+  - Phase: Developer Workflow / Tooling
+  - Platform: N/A (process and docs)
+  - The validation-screenshots/sprint-NN/ folder exists; this points every screenshot-handling process at it.
+
+  Please select the Sprint 75 scope; F238 is already in. When you do, also give the phone-check timing as 1 or 2 from the recommendation above.
+
+---------------------------------------------------------------------------------------------------------
 Sprint 74 Scope should include the below items. Please complete sprint planning (/docs/sprint_planning.md) for the below items and present for approval.  Note that everything needs to take into account both the Windows App and the Android app and ADR stating that everything should be functionally and UI the same unless it cannot be - and where it cannot be it should be implemented as a platform exception for what is needed -- this applies to all backend code, frontend code, data, architecture, development, security, testing, deployment.
   - MV74-1. F235 Doze scheduling -- validate on the S24+ (~20-40m, plus hours of elapsed device time) Priority 2
   - MV74-2. F207 -- settle the WorkManager ISOLATE question (~30-60m; add ~120-180m if confirmed) Priority 2

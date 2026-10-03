@@ -33,6 +33,8 @@ Partner Center before saying anything about the Store version.
 *"it is the largest bug that we have."* **No AAB is built until BOTH the Sprint 74 and Sprint 75
 PRs are merged.** The 0.17.0+8 AAB built on 2026-09-25 is superseded and must not be uploaded.
 
+**Re-confirmed by Harold, 2026-10-02 (option 1): keep the hold.** The next store release ships AFTER Sprint 75, with F238 included, under Sprint 75's version (0.18.0 after the plan-approval bump). The 0.17.0 notes carry forward into it. Weighed against: 0.16.0 (live) still has colliding scans, failing rule adds from saved scans, Gmail "Missing credentials" and the Android YAML export failure; 0.17.0 fixes those but has the F238 dead end on BOTH platforms.
+
 ## msix_version convention (which worktree's value ships)
 
 ## 0.15.2 release -- COMPLETE ON BOTH STORES (2026-09-21)

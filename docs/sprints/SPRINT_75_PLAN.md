@@ -36,3 +36,4 @@ carry-ins. Planning (Phase 3) replaces this file.
 - New card template line (Sprint 74 retro IMP-1): "Observable behavior -- before / after" is
   mandatory for any card that changes what a user sees.
 - No AAB until the Sprint 74 and Sprint 75 PRs are both merged (Harold, 2026-09-27).
+- **Re-confirmed by Harold, 2026-10-02 (option 1): keep the hold.** The next store release ships AFTER Sprint 75, with F238 included, under Sprint 75's version (0.18.0 after the plan-approval bump). The 0.17.0 notes carry forward into it. Weighed against: 0.16.0 (live) still has colliding scans, failing rule adds from saved scans, Gmail "Missing credentials" and the Android YAML export failure; 0.17.0 fixes those but has the F238 dead end on BOTH platforms.
