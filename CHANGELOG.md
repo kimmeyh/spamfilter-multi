@@ -27,6 +27,7 @@ Format: `- **type**: Description (Issue #N)` where type is feat|fix|chore|docs
 ## [Unreleased]
 
 ### 2026-10-03 (Sprint 75)
+- **fix**: when a scan cannot start because another scan is already running on the account, the Manual Scan screen now says "Scan not started" instead of "Scan failed", and the Results screen shows the reason. Before, that note never appeared. (Issue #441)
 - **feat**: on Windows, scheduled background scans now run while the app is open, as they already did on Android. A background scan skips only an account you are scanning by hand, and tries it again a few minutes later. The notes saying background scans pause while the app is open are removed. (Issue #450)
 - **feat**: when you start a scan while a background scan is running on the same account, the "A scan is already running" message now offers "Stop the background scan and start mine". The background scan stops at its next check point and your scan starts. Scan History shows the stopped scan as not finished, with the reason. A stopped background scan no longer sends a "scan complete" notification. (Issue #441)
 - **feat**: a Gmail account that needs you to sign in again now says so in the account list and offers "Sign In Again", which signs in that same account and keeps its settings and history. Signing in with a different Google account is refused instead of adding a second account. A background scan that cannot renew Gmail's sign-in is skipped with that reason instead of failing, and on Windows it no longer opens a browser with nobody watching. (Issue #442)

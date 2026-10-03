@@ -7,20 +7,14 @@
 /// never the ERROR style (`Icons.error_outline`, `Colors.red[700]`) a genuine
 /// scan failure (`EmailScanProvider.errorScan`) uses.
 ///
-/// **Reachability note.** `_buildScanStatusIndicator` is only built when
-/// `hasLiveResults` is true (`results.isNotEmpty || status == scanning`,
-/// `results_display_screen.dart` ~line 1348). A scan refused before any
-/// email is fetched leaves `results` empty, so these tests first record one
-/// `EmailActionResult` (`EmailScanProvider.recordResult`, a plain in-memory
-/// method with no IMAP/DB side effect in read-only mode) to put the provider
-/// in the state this row actually renders under.
+/// **Reachability note.** These tests record one `EmailActionResult` first so
+/// the row renders through `hasLiveResults`. That gap -- a REAL refusal leaves
+/// `results` empty, so the row never rendered -- was found while writing this
+/// file and fixed in Sprint 75 (`showLiveRefusal`); the empty-results path is
+/// pinned by `s75_refusal_display_test.dart`.
 ///
-/// **What these tests do NOT catch**: whether `markScanRefused` is actually
-/// reachable with a non-empty `results` list through the real production
-/// scan path (the refusal happens at `EmailScanProvider.startScan`'s claim,
-/// before any email is fetched, so `results` is normally still empty when it
-/// fires) -- that is a separate reachability question from the style this
-/// test pins, and is a candidate for a follow-up card, not this test.
+/// **What these tests do NOT catch**: the empty-results refusal path (that is
+/// the sibling file's job) -- these pin the STYLE only.
 library;
 
 import 'package:flutter/material.dart';

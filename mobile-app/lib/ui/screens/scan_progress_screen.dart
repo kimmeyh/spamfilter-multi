@@ -301,9 +301,14 @@ class _ScanProgressScreenState extends State<ScanProgressScreen>
       ScanStatus.scanning => 'Scanning in progress',
       ScanStatus.paused => 'Paused',
       ScanStatus.completed => 'Scan complete - $modeName',
-      // PR #435 review I-4: a cancel is not a failure.
-      ScanStatus.error =>
-        scanProvider.wasCancelled ? 'Scan cancelled' : 'Scan failed',
+      // PR #435 review I-4: a cancel is not a failure. Sprint 75 (Harold Q3
+      // at Manual Validation): neither is a refusal -- another scan holds
+      // the account, so this one never started.
+      ScanStatus.error => scanProvider.wasCancelled
+          ? 'Scan cancelled'
+          : scanProvider.wasRefused
+              ? 'Scan not started'
+              : 'Scan failed',
     };
 
     // [NEW] ISSUE #125: Show demo mode indicator if using demo platform

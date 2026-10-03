@@ -1349,6 +1349,13 @@ class _ResultsDisplayScreenState extends State<ResultsDisplayScreen> {
         (scanProvider.results.isNotEmpty ||
             scanProvider.status == ScanStatus.scanning);
     final showingHistorical = !hasLiveResults && _lastCompletedScan != null;
+    // Sprint 75 (Harold Q3 at Manual Validation): a REFUSED scan clears the
+    // results before its claim is refused, so hasLiveResults alone made the
+    // "another scan is running" row unreachable on exactly the path that
+    // produces it. Used by BOTH the status row and the block that holds it.
+    final showLiveRefusal = !isViewingHistory &&
+        scanProvider.status == ScanStatus.error &&
+        scanProvider.wasRefused;
 
     // [UPDATED] FB-2a: Use historical scan's mode when showing historical results,
     // not the live provider's mode (which defaults to readonly when idle)
@@ -1404,7 +1411,8 @@ class _ResultsDisplayScreenState extends State<ResultsDisplayScreen> {
             ),
             if (scanTypeLabel != null ||
                 scanTimeLabel != null ||
-                hasLiveResults) ...[
+                hasLiveResults ||
+                showLiveRefusal) ...[
               const SizedBox(height: 4),
               // F166 (Sprint 60 MV, Harold): the scan status indicator
               // ("Scan complete <duration>" / progress) renders INLINE on
@@ -1430,7 +1438,11 @@ class _ResultsDisplayScreenState extends State<ResultsDisplayScreen> {
                         color: Colors.grey[600],
                       ),
                     ),
-                  if (hasLiveResults)
+                  // Sprint 75 (Harold Q3 at Manual Validation): a REFUSED scan
+                  // clears the results before its claim is refused, so
+                  // hasLiveResults alone made the "another scan is running"
+                  // row unreachable on exactly the path that produces it.
+                  if (hasLiveResults || showLiveRefusal)
                     _buildScanStatusIndicator(scanProvider),
                 ],
               ),

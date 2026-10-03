@@ -129,7 +129,12 @@ void main() {
 
     final message = find.textContaining(
         'A background scan is already running on this account');
-    expect(message, findsOneWidget,
+    // TWO places now (Sprint 75, Harold Q3 at Manual Validation):
+    // startRealScan pushes the Results screen before scanning, and that
+    // screen's refusal row -- previously unreachable for a real refusal --
+    // now shows the same words beside the SnackBar. Both carry it; the
+    // SnackBar half is asserted separately below.
+    expect(message, findsNWidgets(2),
         reason: 'the claim-level refusal must reach the user with the same '
             'wording as the pre-check dialog, not "Something went wrong"');
 
