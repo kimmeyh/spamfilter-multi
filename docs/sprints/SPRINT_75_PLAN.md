@@ -568,6 +568,7 @@ _**Decision-class interrupts**_: Class 1 (reverses BUG-S37-1 / F109) and Class 3
 
 ## Progress (live)
 
+- **Task 8 F243 -- DONE** (7478eb1; added at Manual Validation, Harold 2026-10-03). Windows background scans run with the app open; the per-account claim decides. Native integration script inverted and PASS on the rebuilt exe; M106 (old exit restored + rebuilt) KILLED; M104/M105 (removed texts reintroduced) KILLED. Finding, not fixed: an account-scoped Windows run that matches no account (or only a disabled one) exits 1 / logs "FAILURE" -- pre-existing worker accounting. Executed-by: Opus 5.5 (main session), as assigned.
 - **Task 3 F214 -- DONE** (commit 1f80ecd). Flank labels removed. The agent's first test passed
   vacuously (no Slider rendered with no account); rewritten on the one-account harness to measure the
   slider's left edge and width against the "Scan all emails" tile. M76 KILLED.
@@ -626,8 +627,9 @@ _**Decision-class interrupts**_: Class 1 (reverses BUG-S37-1 / F109) and Class 3
   4. Fragile parsing: FOUND -- the new lock retry matched "database is locked" by hand although `BackgroundScanCore.isDatabaseLocked` exists (also matches code 5); switched to it. `isSignInRequiredMessage` matches a shared constant (content, not position).
   5. API scope: CLEAN -- `requestCancel`/`markScanCancelled` are per row id; the no-Activity authorization names one email (its token scope is unverified, hence gated).
   6. Silent failure: covered by the silent-failure hunter (above); every new catch logs at warning or higher.
-- **5.1.5 WinWright sweep**: 2026-10-03, final dev build of d56b557: 3 scripts, 3 PASS, 0 FAIL, DB drift none (test_f124_rule_labels, test_mt2c_no_rule_sweep, test_s75_new_controls -- the last is new this sprint, Task 7 R-1). f37/f56 excluded by the runner as documented (dialog-settle).
-  sweep-head: d56b557
+- **5.1.5 WinWright sweep**: 2026-10-03, re-run after F243 (Task 8 changed lib/ui) on the dev build of 16d15c1: 3 scripts, 3 PASS, 0 FAIL, DB drift none (test_f124_rule_labels, test_mt2c_no_rule_sweep, test_s75_new_controls -- the last is new this sprint, Task 7 R-1). f37/f56 excluded by the runner as documented (dialog-settle). Earlier run at d56b557 also 3/3.
+  sweep-head: 16d15c1
+- **F243 native integration test**: `scripts/test-background-scan-skip.ps1` (inverted) PASS on the rebuilt exe; mutation M106 (old exit restored, rebuilt) KILLED. Full suite after F243: 2,496 passed, 15 skipped, 0 failed; analyzer clean.
 - **5.2 full suite**: 2,496 passed, 15 skipped, 0 failed; `flutter analyze` clean (d56b557, run with nothing concurrent). An earlier run that overlapped the WinWright sweep lost 16 FILES at load ("Connection closed before full header was received" from flutter_tester to its local runner, starting the minute the sweep launched); those 16 files then passed alone (215 tests). Mechanism of the interference not established -- the rule taken from it: never run the suite and the sweep at the same time.
 - **5.1.6 Runtime launch gate**: N/A -- no Android config touched (`android/**`, manifest, gradle, ProGuard unchanged; `pubspec.yaml` gained a Dart dependency only).
 
