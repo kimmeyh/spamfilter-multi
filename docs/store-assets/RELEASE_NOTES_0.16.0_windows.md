@@ -16,6 +16,13 @@ Sprint 72 and Sprint 73 entries of `CHANGELOG.md` `[Unreleased]`.
 
 ---
 
+Adding a rule while reviewing a saved scan now acts on your mailbox.
+
+The email action panel is easier to read: larger text that follows your text-size setting, and the
+sender address is no longer cut short.
+
+The app version is shown on every screen, including in narrow windows.
+
 You can now cancel a scan that is taking too long. What it already checked is kept.
 
 A manual scan no longer warns about a background scan that has already finished.
@@ -29,15 +36,10 @@ about failed actions stay on screen longer.
 The app no longer reports success when your mail server refused a change. It says how many emails
 could not be updated.
 
-Adding a rule while reviewing a saved scan now acts on your mailbox.
-
 Exporting results from Scan History now includes the results, not just the column headings.
 Exported files also record the app version that produced them.
 
 An optional diagnostic log in Settings records why an action on your mailbox failed. It is off by
 default, records no message content, and can be deleted from the same screen.
 
-The email action panel is easier to read: larger text that follows your text-size setting, and the
-sender address is no longer cut short.
 
-The app version is shown on every screen, including in narrow windows.

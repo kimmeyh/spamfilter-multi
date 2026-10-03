@@ -8,6 +8,7 @@ import 'package:my_email_spam_filter/core/providers/email_scan_provider.dart';
 import 'package:my_email_spam_filter/core/services/app_environment.dart';
 import 'package:my_email_spam_filter/core/services/app_version.dart';
 import 'package:my_email_spam_filter/core/services/live_scan_logger.dart';
+import 'package:my_email_spam_filter/core/services/export_directories.dart';
 import 'package:my_email_spam_filter/core/storage/settings_store.dart';
 
 /// F92 (Sprint 39): Dedicated unit tests for [LiveScanLogger].
@@ -206,10 +207,12 @@ void main() {
   // exportCsvIfEnabled(): gated by getLiveScanDebugCsv setting
   // ---------------------------------------------------------------------------
   group('exportCsvIfEnabled', () {
-    String logDirPath() => p.join(
-          '${appSupport.path}${AppEnvironment.dataDirSuffix}',
-          'logs',
-        );
+    // F206 (Sprint 74): the per-scan export goes to the EXPORT folder's
+    // `scan_exports/` (ExportDirectories), no longer the app-private logs
+    // folder -- which on Android the user could not reach. The runtime log
+    // (above) still lives in getLogDir().
+    String exportRoot() => p.join(appSupport.path, 'exports');
+    String logDirPath() => p.join(exportRoot(), 'scan_exports');
 
     String dataCsvPath(String accountId) {
       final safe = accountId.replaceAll('@', '_at_').replaceAll('.', '_');
@@ -226,10 +229,13 @@ void main() {
     }
 
     setUp(() {
-      // Ensure a clean logs directory for each export test.
+      ExportDirectories.overrideDefaultForTest(exportRoot());
+      // Ensure a clean export directory for each export test.
       final dir = Directory(logDirPath());
       if (dir.existsSync()) dir.deleteSync(recursive: true);
     });
+
+    tearDown(() => ExportDirectories.overrideDefaultForTest(null));
 
     test('returns 0 and writes no file when the setting is OFF', () async {
       const accountId = 'aol-off@example.com';
@@ -336,6 +342,14 @@ class _FakeSettingsStore extends SettingsStore {
 
   @override
   Future<bool> getLiveScanDebugCsv() async => _enabled;
+
+  // F206: the export now asks for the user's folder (none -> the platform
+  // default, overridden in the test) and the redaction setting.
+  @override
+  Future<String?> getCsvExportDirectory() async => null;
+
+  @override
+  Future<bool> getExportRedacted() async => false;
 }
 
 /// Fake [EmailScanProvider] that returns canned Excel rows without running
@@ -346,5 +360,5 @@ class _FakeScanProvider extends EmailScanProvider {
   final List<List<String>> _rows;
 
   @override
-  List<List<String>> getExcelRows() => _rows;
+  List<List<String>> getExcelRows({bool redact = false}) => _rows;
 }

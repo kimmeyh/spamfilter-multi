@@ -105,12 +105,22 @@ class _RuleEditScreenState extends State<RuleEditScreen> {
     // Determine sub-type from patternSubType field (set at creation time).
     _selectedType = _subTypeToManualRuleType(rule.patternSubType);
 
+    // PR #440 review (IMPORTANT): a SUBJECT rule always opens in direct-regex
+    // mode, which keeps its category. ManualRuleType has no subject variant,
+    // and since Sprint 74 subject rules carry pattern_sub_type 'keyword',
+    // which maps to Body Phrase -- so a subject rule whose pattern the
+    // body-phrase generator reproduces (any lowercase, space-free subject
+    // such as "viagra") stayed in guided mode, and a plain Save rewrote it
+    // as a BODY rule. Before Sprint 74 it was safe only by accident: its
+    // 'exact_domain' sub-type never regenerated the pattern.
+    final isSubjectRule = rule.patternCategory == 'subject';
+
     if (existingPattern != null) {
       // Start in plaintext mode only when the pattern matches what the
       // generator would produce for the stored source domain. For any other
       // pattern, start in direct-regex mode so the user edits it as-is.
       final sourceDomain = rule.sourceDomain;
-      if (sourceDomain != null) {
+      if (sourceDomain != null && !isSubjectRule) {
         // Pre-fill the plaintext input with the source domain so the user
         // can regenerate or tweak from a known starting point.
         _inputController.text = sourceDomain;

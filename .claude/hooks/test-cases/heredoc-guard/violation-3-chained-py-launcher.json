@@ -1,0 +1,1 @@
+{"session_id": "hg-violation-3", "cwd": "D:/Data/Harold/github/spamfilter-multi", "hook_event_name": "PreToolUse", "tool_name": "Bash", "tool_input": {"command": "git status --short && py -3 - << \"PY\"\np = 'C:\\\\Users\\\\kimme'\nprint(p)\nPY"}}

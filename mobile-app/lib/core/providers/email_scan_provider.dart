@@ -4,6 +4,8 @@
 /// for display in UI screens.
 library;
 
+import 'dart:async';
+
 import 'package:flutter/foundation.dart';
 import 'package:logger/logger.dart';
 
@@ -14,6 +16,7 @@ import '../../core/storage/database_helper.dart';
 import '../../core/storage/scan_result_store.dart';
 import '../../core/storage/settings_store.dart';
 import '../../core/storage/unmatched_email_store.dart';
+import '../services/scan_coordinator.dart';
 import '../../core/utils/pattern_normalization.dart';
 import '../../util/redact.dart';
 
@@ -101,18 +104,8 @@ class EmailScanProvider extends ChangeNotifier {
   ScanResultStore? _scanResultStore;
   UnmatchedEmailStore? _unmatchedEmailStore;
   int? _currentScanResultId;  // Track current scan result for persistence
+  Timer? _heartbeatTimer;  // MV74-2 (Sprint 74): liveness for OTHER isolates
   DatabaseHelper? _databaseHelper;  // For email_actions persistence
-
-  // [NEW] MULTI-ACCOUNT SUPPORT: Provider-specific junk folder configuration
-  static const Map<String, List<String>> JUNK_FOLDERS_BY_PROVIDER = {
-    'aol': ['Bulk Mail', 'Spam'],           // AOL Mail junk folders
-    'gmail': ['Spam', 'Trash'],              // Gmail junk folders
-    'outlook': ['Junk Email', 'Spam'],       // Outlook.com junk folders
-    'yahoo': ['Bulk', 'Spam'],               // Yahoo Mail junk folders
-    'icloud': ['Junk', 'Trash'],             // iCloud Mail junk folders
-    // 'protonmail': handled via ProtonMail Bridge
-    // Custom IMAP servers default to 'Spam' and 'Junk'
-  };
 
   // Scan state
   ScanStatus _status = ScanStatus.idle;
@@ -197,6 +190,13 @@ class EmailScanProvider extends ChangeNotifier {
   /// only the live header was wrong.
   bool get wasCancelled => _wasCancelled;
   bool _wasCancelled = false;
+
+  /// Harold Q4 (Sprint 74 MV): true when the last scan was REFUSED at the
+  /// per-account scan lock (another scan held the account). The status is
+  /// `error` so every existing "not running" check holds, but the Results
+  /// screen shows it as information, not a failure.
+  bool get wasRefused => _wasRefused;
+  bool _wasRefused = false;
   int get processedCount => _processedCount;
   int get totalEmails => _totalEmails;
   EmailMessage? get currentEmail => _currentEmail;
@@ -292,6 +292,42 @@ class EmailScanProvider extends ChangeNotifier {
     _logger.d('Set current account ID: ${Redact.accountId(accountId)}');
   }
 
+  /// MV74-2 (Sprint 74): refresh this scan's `scan_results` heartbeat every
+  /// [ScanCoordinator.heartbeatInterval] until the scan ends. The UI's
+  /// ScanCoordinator cannot see a scan in another isolate (Android WorkManager)
+  /// or process (Windows Task Scheduler), so the DATABASE row is the only
+  /// cross-boundary liveness signal. A failed write is logged, never thrown --
+  /// a missed beat must not fail the scan it describes.
+  void _startHeartbeat() {
+    _stopHeartbeat();
+    final id = _currentScanResultId;
+    final store = _scanResultStore;
+    if (id == null || store == null) return;
+    _heartbeatTimer = Timer.periodic(
+        debugHeartbeatIntervalOverride ?? ScanCoordinator.heartbeatInterval,
+        (_) async {
+      try {
+        await store.recordHeartbeat(id);
+      } catch (e) {
+        _logger.w('Scan heartbeat write failed for id=$id: $e');
+      }
+    });
+  }
+
+  void _stopHeartbeat() {
+    _heartbeatTimer?.cancel();
+    _heartbeatTimer = null;
+  }
+
+  /// Test seam: a short interval so a test can observe a REAL heartbeat
+  /// write (review C-2) instead of only the timer's start/stop.
+  @visibleForTesting
+  static Duration? debugHeartbeatIntervalOverride;
+
+  /// Test seam: whether a heartbeat timer is running.
+  @visibleForTesting
+  bool get debugHeartbeatActive => _heartbeatTimer?.isActive ?? false;
+
   /// Start a new scan session
   ///
   /// Initialize with total email count for progress tracking
@@ -304,6 +340,7 @@ class EmailScanProvider extends ChangeNotifier {
     String? platformId,  // PR #335 review: explicit platform for the ensured accounts row (no accountId parsing)
   }) async {
     _wasCancelled = false;
+    _wasRefused = false;
     _status = ScanStatus.scanning;
     _processedCount = 0;
     _totalEmails = totalEmails;
@@ -324,8 +361,14 @@ class EmailScanProvider extends ChangeNotifier {
     _emailsSinceLastNotification = 0;
     _lastProgressNotification = null;
 
+    // Harold Q4 (Sprint 74 MV): a refused claim must never leave the PREVIOUS
+    // scan's id here, or errorScan/cancelScan on this refused scan would
+    // close that earlier, finished row.
+    if (persist) _currentScanResultId = null;
+
     // [NEW] SPRINT 4: Create scan result record if persistence is enabled
     if (persist && _scanResultStore != null && _currentAccountId != null) {
+      ScanClaimResult? claim;
       try {
         // F156/Sprint 60 (Android walk-through root cause): scan_results has
         // an FK to accounts(account_id), but until now the ONLY code that
@@ -348,12 +391,28 @@ class EmailScanProvider extends ChangeNotifier {
           status: 'in_progress',
         );
 
-        _currentScanResultId = await _scanResultStore!.addScanResult(scanResult);
-        _logger.i('Created scan result record: id=$_currentScanResultId, type=$scanType');
+        // Harold Q4 (Sprint 74 MV): the per-account scan SEMAPHORE -- the
+        // row is inserted only if no other scan of any type holds the
+        // account (ScanResultStore.claimAccountScan).
+        claim = await _scanResultStore!.claimAccountScan(scanResult);
       } catch (e) {
-        _logger.e('Failed to create scan result: $e');
-        // Continue without persistence
+        // Fail CLOSED (Harold Q4): this used to "continue without
+        // persistence", which for the lock means scanning unprotected.
+        _logger.e('Failed to take the scan lock: $e');
+        final refused = ScanAccountBusyException.unverifiable(e);
+        markScanRefused(refused.userMessage);
+        throw refused;
       }
+      if (!claim.granted) {
+        _logger.i('Scan NOT started: ${claim.blockedBy!.scanType} scan '
+            '${claim.blockedBy!.id} holds this account');
+        final refused = ScanAccountBusyException(claim.blockedBy!);
+        markScanRefused(refused.userMessage);
+        throw refused;
+      }
+      _currentScanResultId = claim.id;
+      _logger.i('Created scan result record: id=$_currentScanResultId, type=$scanType');
+      _startHeartbeat();
     }
 
     _logger.i('Started scan of $totalEmails emails');
@@ -435,6 +494,7 @@ class EmailScanProvider extends ChangeNotifier {
   /// regardless of throttling state (provides complete final counts)
   /// [NEW] SPRINT 4: Complete scan and persist final results
   Future<void> completeScan() async {
+    _stopHeartbeat();
     _status = ScanStatus.completed;
     _scanEndTime = DateTime.now();  // PR #335 review: freeze the duration
     _currentEmail = null;
@@ -604,11 +664,27 @@ class EmailScanProvider extends ChangeNotifier {
         '(scan persistence FK)');
   }
 
+  /// Harold Q4 (Sprint 74 MV): the scan was REFUSED before it started,
+  /// because another scan holds the account. Not a failure and not a cancel:
+  /// no row was written, so there is nothing to close. The status shows
+  /// [message] as-is -- no "Scan failed: " prefix, because nothing failed.
+  void markScanRefused(String message) {
+    _stopHeartbeat();
+    _status = ScanStatus.error;
+    _wasCancelled = false;
+    _wasRefused = true;
+    _statusMessage = message;
+    _currentEmail = null;
+    notifyListeners();
+  }
+
   /// [NEW] SPRINT 4: Mark scan as failed with error and persist error state
   Future<void> errorScan(String errorMessage) async {
+    _stopHeartbeat();
     _status = ScanStatus.error;
     // A real failure must never inherit a previous cancel's flag.
     _wasCancelled = false;
+    _wasRefused = false;
     _statusMessage = 'Scan failed: $errorMessage';
     _currentEmail = null;
     _logger.e('Scan error: $errorMessage');
@@ -642,8 +718,10 @@ class EmailScanProvider extends ChangeNotifier {
   /// Partial counts are deliberately NOT reset (AC-4) -- work that really
   /// happened stays recorded.
   Future<void> cancelScan() async {
+    _stopHeartbeat();
     _status = ScanStatus.error;
     _wasCancelled = true;
+    _wasRefused = false;
     _statusMessage = 'Scan cancelled. '
         '$_processedCount of $_totalEmails emails had been checked.';
     _currentEmail = null;
@@ -661,10 +739,26 @@ class EmailScanProvider extends ChangeNotifier {
     notifyListeners();
   }
 
+  @override
+  void dispose() {
+    // MV74-2: a provider disposed mid-scan must not leave a timer writing
+    // heartbeats for a scan nobody is running.
+    _stopHeartbeat();
+    super.dispose();
+  }
+
   /// Reset scan state to idle
   void reset() {
+    // Harold Q4 (Sprint 74 MV): reset() does NOT stop the heartbeat. It is
+    // UI state -- scan_progress_screen calls it from didPopNext, i.e. every
+    // time the user backs out of Results, INCLUDING while the scan is still
+    // running. The heartbeat belongs to the scan ROW, which only
+    // completeScan / errorScan / cancelScan close. Stopping it here made a
+    // running scan look dead after heartbeatFreshness, and the scan lock
+    // would then close its row and let a second scan onto the account.
     _status = ScanStatus.idle;
     _wasCancelled = false;
+    _wasRefused = false;
     _processedCount = 0;
     _totalEmails = 0;
     _currentEmail = null;
@@ -699,26 +793,6 @@ class EmailScanProvider extends ChangeNotifier {
       'errors': _errorCount,
       'progress': progress,
     };
-  }
-
-  /// [NEW] MULTI-FOLDER SUPPORT: Get junk folder names for provider
-  /// 
-  /// Returns list of junk folder names for the given email provider.
-  /// Supports multiple folders per provider (e.g., AOL has both "Bulk Mail" and "Spam").
-  /// 
-  /// Example:
-  /// ```dart
-  /// final junkFolders = provider.getJunkFoldersForProvider('aol');
-  /// // Returns: ['Bulk Mail', 'Spam']
-  /// 
-  /// // Scan both Inbox and all Junk folders
-  /// await scanFolder(accountId, 'aol', 'Inbox');
-  /// for (var folder in junkFolders) {
-  ///   await scanFolder(accountId, 'aol', folder);
-  /// }
-  /// ```
-  List<String> getJunkFoldersForProvider(String platformId) {
-    return JUNK_FOLDERS_BY_PROVIDER[platformId] ?? ['Spam', 'Junk'];
   }
 
   /// [NEW] MULTI-FOLDER SUPPORT: Set current folder being scanned
@@ -978,10 +1052,16 @@ class EmailScanProvider extends ChangeNotifier {
   /// [appVersion] stamps the build into the file (F229). An export that cannot
   /// name the build that produced it is weak evidence, and this export is
   /// exactly what a tester sends back.
+  ///
+  /// [redact] (F206 Part C, Sprint 74): mask the sender (domain kept, via
+  /// [Redact.email]), the subject and the message id, for a file shared
+  /// outside the team. Rule names and patterns are the user's own rules and
+  /// stay.
   String exportResultsToCSV({
     List<EmailActionResult>? rows,
     String? appVersion,
     DateTime? scanDate,
+    bool redact = false,
   }) {
     final buffer = StringBuffer();
     final source = rows ?? _results;
@@ -1015,27 +1095,47 @@ class EmailScanProvider extends ChangeNotifier {
     // CSV Rows
     for (final result in source) {
       final receivedDate = result.email.receivedDate.toIso8601String();
-      final from = _escapeCsv(result.email.from);
+      final from = _escapeCsv(
+          redact ? _redactSender(result.email.from) : result.email.from);
       final folder = _escapeCsv(result.email.folderName);
       // Clean subject for CSV (remove tabs, extra spaces, repeated punctuation)
       final cleanedSubject = PatternNormalization.cleanSubjectForDisplay(result.email.subject);
-      final subject = _escapeCsv(cleanedSubject);
-      final rule = _escapeCsv(result.evaluationResult?.matchedRule ?? 'No rule');
+      final subject = _escapeCsv(redact ? _redacted : cleanedSubject);
+      final ruleText = result.evaluationResult?.matchedRule ?? 'No rule';
+      final rule = _escapeCsv(redact ? _redactAddressesIn(ruleText) : ruleText);
 
       // Extract matched pattern from evaluation result (if available)
+      final patternText = result.evaluationResult?.matchedPattern ?? 'N/A';
       final matchCondition = _escapeCsv(
-        result.evaluationResult?.matchedPattern ?? 'N/A',
+        redact ? _redactAddressesIn(patternText) : patternText,
       );
 
       final action = _getActionName(result.action);
       final status = result.success ? 'Success' : 'Failed';
-      final emailId = _escapeCsv(result.email.id);
+      final emailId = _escapeCsv(redact ? _redacted : result.email.id);
 
       buffer.writeln(
           '"$scanDateText","$receivedDate","$from","$folder","$subject","$rule","$matchCondition","$action","$status","$emailId"');
     }
 
     return buffer.toString();
+  }
+
+  static const String _redacted = '[redacted]';
+
+  /// F206 Part C (review I-3): mask every email-address-shaped run inside
+  /// free text -- a rule name or an exact-sender pattern such as
+  /// `^john\.smith@example\.com$` would otherwise print the address the
+  /// "domain only" setting promises to hide. Domain kept, as for the sender.
+  static String _redactAddressesIn(String text) => text.replaceAllMapped(
+      RegExp(r'[^\s<>"(),;|]+@[^\s<>"(),;|]+'),
+      (m) => Redact.email(m.group(0)));
+
+  /// F206 Part C: the sender with its local part masked and the domain kept --
+  /// the domain is what diagnosis needs, the person is not.
+  static String _redactSender(String from) {
+    final match = RegExp(r'[^\s<>"]+@[^\s<>"]+').firstMatch(from);
+    return match == null ? _redacted : Redact.email(match.group(0));
   }
 
   /// Helper to escape CSV values (handle quotes and commas)
@@ -1091,7 +1191,8 @@ class EmailScanProvider extends ChangeNotifier {
     return failures;
   }
 
-  List<List<String>> getExcelRows() {
+  /// [redact]: see [exportResultsToCSV].
+  List<List<String>> getExcelRows({bool redact = false}) {
     if (_results.isEmpty) return [];
 
     final scanDate = _scanStartTime != null
@@ -1105,11 +1206,16 @@ class EmailScanProvider extends ChangeNotifier {
       final status = result.success ? 'Success' : 'Failed';
       final folder = result.email.folderName;
       final action = _getActionName(result.action);
-      final rule = result.evaluationResult?.matchedRule ?? 'No rule';
-      final from = result.email.from;
-      final subject = PatternNormalization.cleanSubjectForDisplay(result.email.subject);
-      final matchCondition = result.evaluationResult?.matchedPattern ?? 'N/A';
-      final emailId = result.email.id;
+      final ruleText = result.evaluationResult?.matchedRule ?? 'No rule';
+      final rule = redact ? _redactAddressesIn(ruleText) : ruleText;
+      final from =
+          redact ? _redactSender(result.email.from) : result.email.from;
+      final subject = redact
+          ? _redacted
+          : PatternNormalization.cleanSubjectForDisplay(result.email.subject);
+      final patternText = result.evaluationResult?.matchedPattern ?? 'N/A';
+      final matchCondition = redact ? _redactAddressesIn(patternText) : patternText;
+      final emailId = redact ? _redacted : result.email.id;
       // F110 (Sprint 43): "Phishing SPF/DKIM/DMARC" -- the comma-separated list
       // of authentication checks this email HARD-FAILED (e.g. "SPF,DMARC").
       // Blank when nothing failed. Every scanned email keeps its row; this

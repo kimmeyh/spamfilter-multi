@@ -99,7 +99,7 @@ class _ScreenVersionLineState extends State<ScreenVersionLine> {
     final version = _version;
     if (version == null) return const SizedBox.shrink();
 
-    // `V0.16.0` rather than `Version 0.16.0`: the short form is what Harold
+    // `V<version>` rather than `Version <version>`: the short form is what Harold
     // asked for, and this line has no title competing for the reader's eye.
     // The runtime value, never a literal -- version_consistency_test and
     // stale_footer_test both police that.

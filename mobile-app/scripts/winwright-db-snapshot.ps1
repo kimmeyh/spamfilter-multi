@@ -54,13 +54,26 @@ function Copy-DbToTemp {
         throw "[DB-SNAPSHOT] Dev DB not found at '$SourcePath'. Is the dev app built? (build-windows.ps1)"
     }
 
+    if ($null -eq $Sqlite3Exe) {
+        throw "[DB-SNAPSHOT] sqlite3.exe not found. Expected at C:\Android\android-sdk\platform-tools\sqlite3.exe or in PATH."
+    }
+
+    # Sprint 74 retro IMP-3: copy through SQLite's own backup, NOT Copy-Item.
+    # The dev DB runs in WAL mode, so recent commits live in spam_filter.db-wal
+    # until a checkpoint. Copy-Item took only spam_filter.db, so the "before"
+    # snapshot of the Sprint 74 sweep predated the v10 migration and 32
+    # reclassified rules were reported as a sweep LEAK (a false failure).
+    # `.backup` reads the database through its WAL exactly as the app sees it.
+    # (The dot-command travels as an ARGUMENT, not stdin -- see the Sprint 59
+    # BOM note in Get-TableRows.)
     $tempFile = [System.IO.Path]::GetTempFileName()
-    try {
-        Copy-Item -Path $SourcePath -Destination $tempFile -Force -ErrorAction Stop
-    } catch {
+    Remove-Item $tempFile -Force -ErrorAction SilentlyContinue
+    $dest = $tempFile -replace '\\', '/'
+    $out = & $Sqlite3Exe $SourcePath ".backup '$dest'" 2>&1
+    if ($LASTEXITCODE -ne 0 -or -not (Test-Path $tempFile)) {
         Remove-Item $tempFile -Force -ErrorAction SilentlyContinue
-        throw "[DB-SNAPSHOT] Cannot copy dev DB -- file may be locked by a running app instance. " +
-              "Close the app and retry, or ensure WAL mode allows concurrent reads. Error: $_"
+        throw "[DB-SNAPSHOT] Cannot back up dev DB via sqlite3 .backup. " +
+              "Error: $(($out | Out-String).Trim())"
     }
     return $tempFile
 }
@@ -335,11 +348,49 @@ INSERT INTO app_settings (key, value) VALUES ('background_enabled', '0');
 
     Write-Host "[SELF-TEST] Step 7: PASS -- no drift detected after cleanup." -ForegroundColor Green
 
+    # --- STEP 8 (Sprint 74 retro IMP-3): a row that exists ONLY in the WAL ---
+    # A Python process switches the DB to WAL, commits a row and keeps its
+    # connection OPEN, so the row sits in <db>-wal un-checkpointed -- the
+    # state the live dev app leaves after a migration. The snapshot must see
+    # it. The old Copy-Item snapshot read only the main file and missed it.
+    Write-Host ""
+    Write-Host "[SELF-TEST] Step 8: A committed row held only in the WAL must be visible..." -ForegroundColor Yellow
+    $python = Get-Command python -ErrorAction SilentlyContinue
+    if ($null -eq $python) {
+        Write-Host "[SELF-TEST] FAIL: python not found -- Step 8 needs it to hold a WAL open." -ForegroundColor Red
+        Remove-Item $tempTestDb -Force -ErrorAction SilentlyContinue
+        exit 1
+    }
+    $marker = "$tempTestDb.ready"
+    $walScript = "$tempTestDb.hold_wal.py"
+    @"
+import sqlite3, sys, time
+c = sqlite3.connect(sys.argv[1])
+c.execute('PRAGMA journal_mode=WAL')
+c.execute('PRAGMA wal_autocheckpoint=0')
+c.execute("INSERT INTO rules (name, pattern, enabled, rule_type) VALUES ('WAL-ONLY-ROW', 'x', 1, 'tld')")
+c.commit()
+open(sys.argv[2], 'w').close()
+time.sleep(20)
+c.close()
+"@ | Set-Content -Path $walScript -Encoding ASCII
+    $holder = Start-Process -FilePath $python.Source -ArgumentList "`"$walScript`"", "`"$tempTestDb`"", "`"$marker`"" -PassThru -WindowStyle Hidden
+    for ($i = 0; $i -lt 50 -and -not (Test-Path $marker); $i++) { Start-Sleep -Milliseconds 200 }
+    $walSnap = Invoke-DbSnapshot
+    Stop-Process -Id $holder.Id -Force -ErrorAction SilentlyContinue
+    Remove-Item $marker, $walScript -Force -ErrorAction SilentlyContinue
+    if (-not ($walSnap.Tables['rules'] -match 'WAL-ONLY-ROW')) {
+        Write-Host "[SELF-TEST] FAIL: a committed row held in the WAL was not in the snapshot -- the snapshot reads the main file only (the Sprint 74 false-drift defect)." -ForegroundColor Red
+        Remove-Item "$tempTestDb*" -Force -ErrorAction SilentlyContinue
+        exit 1
+    }
+    Write-Host "[SELF-TEST] Step 8: PASS -- WAL-held row visible in the snapshot." -ForegroundColor Green
+
     # Restore $DevDbPath
     $DevDbPath = $savedDevDbPath
 
-    # Clean up temp DB
-    Remove-Item $tempTestDb -Force -ErrorAction SilentlyContinue
+    # Clean up temp DB (and any -wal/-shm left by Step 8)
+    Remove-Item "$tempTestDb*" -Force -ErrorAction SilentlyContinue
 
     Write-Host ""
     Write-Host "==========================================" -ForegroundColor Green

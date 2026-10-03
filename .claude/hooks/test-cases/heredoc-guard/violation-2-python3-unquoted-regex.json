@@ -1,0 +1,1 @@
+{"session_id": "hg-violation-2", "cwd": "D:/Data/Harold/github/spamfilter-multi", "hook_event_name": "PreToolUse", "tool_name": "Bash", "tool_input": {"command": "python3 <<EOF\nimport re\nprint(re.sub(r'\\bfoo\\b', 'bar', 'foo'))\nEOF"}}

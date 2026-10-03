@@ -16,13 +16,17 @@
 library;
 
 import 'dart:async';
+import 'dart:math';
 
+import 'package:flutter/foundation.dart' show visibleForTesting;
 import 'package:logger/logger.dart';
 
 import '../../adapters/storage/secure_credentials_store.dart';
 import '../../util/redact.dart';
 import '../providers/email_scan_provider.dart';
 import '../providers/rule_set_provider.dart';
+import '../storage/database_helper.dart';
+import '../storage/scan_result_store.dart';
 import '../storage/settings_store.dart';
 import 'email_scanner.dart';
 import 'scan_coordinator.dart';
@@ -43,6 +47,13 @@ class AccountScanOutcome {
   /// reads auth failures and the Excel exporter off it after the scan.
   final EmailScanProvider scanProvider;
 
+  /// MV74-2 (Sprint 74): non-null when the account was deliberately NOT
+  /// scanned because an interactive scan was live on it (ADR-0039 amendment).
+  /// All counts are zero. Not a failure: the run did what it should.
+  final String? skippedReason;
+
+  bool get skipped => skippedReason != null;
+
   const AccountScanOutcome({
     required this.emailsProcessed,
     required this.deletedCount,
@@ -51,11 +62,40 @@ class AccountScanOutcome {
     required this.unmatchedCount,
     required this.errorCount,
     required this.scanProvider,
+    this.skippedReason,
   });
+
+  /// A deliberate skip -- see [skippedReason].
+  AccountScanOutcome.skipped(String reason, EmailScanProvider provider)
+      : emailsProcessed = 0,
+        deletedCount = 0,
+        movedCount = 0,
+        safeCount = 0,
+        unmatchedCount = 0,
+        errorCount = 0,
+        scanProvider = provider,
+        skippedReason = reason;
 }
 
 class BackgroundScanCore {
   BackgroundScanCore._();
+
+  /// What a worker does AFTER an account scan (review I-1, Sprint 74) -- a
+  /// seam so both branches are testable rather than guarded by source text:
+  ///   - a deliberate SKIP (a live interactive scan on the account) exports
+  ///     nothing and notifies nothing -- otherwise the user would get a
+  ///     "0 processed" notification every cycle while scanning by hand;
+  ///   - a real scan runs the export (F206: this call is what makes Android's
+  ///     background export exist at all) and then the notification.
+  static Future<void> completeAccount(
+    AccountScanOutcome outcome, {
+    required Future<void> Function() export,
+    required Future<void> Function() notify,
+  }) async {
+    if (outcome.skipped) return;
+    await export();
+    await notify();
+  }
 
   static final Logger _logger = Logger();
 
@@ -67,6 +107,14 @@ class BackgroundScanCore {
   /// dash inside a plain email ("my-name@gmail.com") must never be read as a
   /// platform prefix. Returns null when no platform can be determined -- the
   /// caller skips the account rather than guessing.
+  /// Sprint 74 MV review (finding 2): is a scan-lock refusal a SKIP? Only
+  /// when another scan actually holds the account. A lock that could not be
+  /// checked (a database error) is a failure, and is rethrown so the workers
+  /// count it as one -- and the Windows "database is locked" retry sees it.
+  @visibleForTesting
+  static bool isSkipRefusal(ScanAccountBusyException e) =>
+      e.blockingScan != null;
+
   static Future<String?> resolvePlatformId(
     SecureCredentialsStore credStore,
     String accountId,
@@ -92,14 +140,113 @@ class BackgroundScanCore {
   /// provider's persistence with the database helper), so both platforms
   /// persist scan_results, email_actions, and unmatched_emails identically --
   /// the invariant Sprint 60's accounts-FK bug taught us to guard.
+  ///
+  /// Harold, Sprint 74 MV round 4 (2026-09-28): *"if either of the N account
+  /// scans finds the DB busy it waits random number of minutes between 2 and
+  /// 6 minutes then starts (won't worry about conflict if they still
+  /// conflict)"*. "Busy" is either case below, on the FIRST attempt:
+  ///   - another scan holds this account (the early check or the scan lock
+  ///     refused it -- both return a skip), or
+  ///   - SQLite reported "database is locked" anywhere in the attempt.
+  /// The scan then waits [busyRetryDelay] (random, 2:00 to 6:00) and runs
+  /// ONCE more, through the same lock -- "starts" never means bypassing the
+  /// lock, which would reopen two sessions on one account. If that attempt is
+  /// busy too, its outcome stands (a skip, or the lock error rethrown).
+  /// The random delay also spreads out the Doze batch, which delivers every
+  /// account's alarm at the same moment.
+  ///
+  /// Replaces the Windows-only F98/F101 loop (15 attempts, 1 minute apart);
+  /// one shared rule for both platforms (ADR-0042).
+  ///
+  /// Android caveat: a WorkManager worker has about 10 minutes without a
+  /// foreground service, so a 6-minute wait leaves about 4 for the scan.
   static Future<AccountScanOutcome> scanAccount({
     required String accountId,
     required String platformId,
     required RuleSetProvider ruleSetProvider,
     required SettingsStore settingsStore,
+    ScanResultStore? scanResultStore,
+  }) async {
+    Future<AccountScanOutcome> attempt() => _scanAccountOnce(
+          accountId: accountId,
+          platformId: platformId,
+          ruleSetProvider: ruleSetProvider,
+          settingsStore: settingsStore,
+          scanResultStore: scanResultStore,
+        );
+
+    String busyBecause;
+    try {
+      final first = await attempt();
+      if (!first.skipped) return first;
+      busyBecause = first.skippedReason!;
+    } catch (e) {
+      if (!isDatabaseLocked(e)) rethrow;
+      busyBecause = 'database is locked';
+    }
+    final wait = busyRetryDelay();
+    _logger.i('Background scan of ${Redact.accountId(accountId)} found it '
+        'busy ($busyBecause); waiting ${wait.inSeconds}s, then one more '
+        'attempt');
+    await busyWait(wait);
+    return attempt();
+  }
+
+  /// The wait before the one retry: random, 2:00 to 6:00 (Harold). A seam so
+  /// tests need not wait minutes.
+  @visibleForTesting
+  static Duration Function() busyRetryDelay = randomBusyRetryDelay;
+
+  /// How the wait is taken. A seam for tests.
+  @visibleForTesting
+  static Future<void> Function(Duration) busyWait =
+      (d) => Future<void>.delayed(d);
+
+  static final Random _random = Random();
+
+  /// A uniformly random delay from 2:00 to 6:00 inclusive, to the second.
+  static Duration randomBusyRetryDelay() =>
+      Duration(seconds: 120 + _random.nextInt(241));
+
+  /// True if [error] is (or wraps) a SQLite "database is locked" error.
+  /// Moved here from the Windows worker (F98) so both platforms share it.
+  static bool isDatabaseLocked(Object error) {
+    final s = error.toString().toLowerCase();
+    return s.contains('database is locked') || s.contains('(code 5)');
+  }
+
+  static Future<AccountScanOutcome> _scanAccountOnce({
+    required String accountId,
+    required String platformId,
+    required RuleSetProvider ruleSetProvider,
+    required SettingsStore settingsStore,
+    ScanResultStore? scanResultStore,
   }) async {
     _logger.i(
         'Scanning account: ${Redact.accountId(accountId)} (platform: $platformId)');
+
+    // MV74-2 (Sprint 74, Harold Q3 -- ADR-0039 amendment): YIELD to a live
+    // interactive scan on this account. The UI's ScanCoordinator cannot see
+    // this scan -- it runs in a separate isolate (Android WorkManager) or
+    // process (Windows Task Scheduler) -- so without this check a manual scan
+    // and a background scan could hold two IMAP sessions on one account, the
+    // Sprint 61 session-cap failure. The shared database row's heartbeat is
+    // the only signal both sides can read. Checked BEFORE any connection.
+    //
+    // Harold Q4 (Sprint 74 MV): widened to a live scan of ANY type, including
+    // another BACKGROUND scan -- the periodic task, the F235 Doze one-off and
+    // Test Background Scan are separate WorkManager chains, and four ran on
+    // one account inside a minute on the Fold8. This is only the cheap early
+    // skip; the atomic claim in EmailScanProvider.startScan decides.
+    final store = scanResultStore ?? ScanResultStore(DatabaseHelper());
+    final live = await store.getActiveScanForAccount(accountId);
+    if (live != null) {
+      final reason = 'a ${live.scanType} scan is in progress on this account '
+          '(scan id ${live.id})';
+      _logger.i('Background scan SKIPPED for ${Redact.accountId(accountId)}: '
+          '$reason');
+      return AccountScanOutcome.skipped(reason, EmailScanProvider());
+    }
 
     // Get effective background scan settings for this account
     final scanMode = await settingsStore.getEffectiveScanMode(
@@ -155,6 +302,21 @@ class BackgroundScanCore {
             scanType: 'background',
           )
           .timeout(ScanCoordinator.scanTimeout);
+    } on ScanAccountBusyException catch (e) {
+      // Harold Q4 (Sprint 74 MV): the claim was refused -- another scan took
+      // the account between the early check above and the claim. A skip,
+      // exactly like the early check: not an error, no row written.
+      //
+      // ONLY when another scan actually holds the account (review finding
+      // 2). A lock that could not be CHECKED is a database failure and must
+      // read as one: mapped to a skip, the workers counted it as success,
+      // so a persistent database error would have stopped background
+      // scanning while every run reported success -- and the Windows
+      // worker's "database is locked" retry never saw the error.
+      if (!isSkipRefusal(e)) rethrow;
+      _logger.i('Background scan SKIPPED for ${Redact.accountId(accountId)} '
+          'at the scan lock: $e');
+      return AccountScanOutcome.skipped(e.userMessage, scanProvider);
     } on TimeoutException {
       final minutes = ScanCoordinator.scanTimeout.inMinutes;
       _logger.e('Background scan TIMED OUT after $minutes minutes for '

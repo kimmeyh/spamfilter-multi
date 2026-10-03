@@ -18,8 +18,11 @@ import java.util.concurrent.TimeUnit
  * More importantly, the Dart worker already carries protections this card must
  * not re-implement or bypass:
  *
- *  - the `ScanCoordinator` lease (F175), which stops two scans opening two IMAP
- *    sessions to one account -- the Sprint 61 per-account session-cap failure;
+ *  - the cross-isolate exclusion (ADR-0039 amendment, Sprint 74): the worker
+ *    skips an account with a live interactive scan, via a heartbeat on the
+ *    shared `scan_results` row. (NOT the `ScanCoordinator` lease -- this
+ *    worker runs in its own FlutterEngine, so that lease never sees the UI's
+ *    scans; corrected in MV74-2);
  *  - the F177 per-batch memory handling that stopped Android low-memory kills;
  *  - the F175 R-6 exponential backoff that bounded a crashing scan.
  *

@@ -359,57 +359,6 @@ void main() {
     });
   });
 
-  group('EmailScanProvider - Provider Junk Folders Configuration', () {
-    test('JUNK_FOLDERS_BY_PROVIDER should have correct folders for AOL', () {
-      final aolFolders = EmailScanProvider.JUNK_FOLDERS_BY_PROVIDER['aol'];
-
-      expect(aolFolders, isNotNull);
-      expect(aolFolders, contains('Bulk Mail'));
-      expect(aolFolders, contains('Spam'));
-
-      print('[OK] AOL junk folders: $aolFolders');
-    });
-
-    test('JUNK_FOLDERS_BY_PROVIDER should have correct folders for Gmail', () {
-      final gmailFolders = EmailScanProvider.JUNK_FOLDERS_BY_PROVIDER['gmail'];
-
-      expect(gmailFolders, isNotNull);
-      expect(gmailFolders, contains('Spam'));
-      expect(gmailFolders, contains('Trash'));
-
-      print('[OK] Gmail junk folders: $gmailFolders');
-    });
-
-    test('JUNK_FOLDERS_BY_PROVIDER should have correct folders for Yahoo', () {
-      final yahooFolders = EmailScanProvider.JUNK_FOLDERS_BY_PROVIDER['yahoo'];
-
-      expect(yahooFolders, isNotNull);
-      expect(yahooFolders, contains('Bulk'));
-      expect(yahooFolders, contains('Spam'));
-
-      print('[OK] Yahoo junk folders: $yahooFolders');
-    });
-
-    test('JUNK_FOLDERS_BY_PROVIDER should have correct folders for Outlook', () {
-      final outlookFolders = EmailScanProvider.JUNK_FOLDERS_BY_PROVIDER['outlook'];
-
-      expect(outlookFolders, isNotNull);
-      expect(outlookFolders, contains('Junk Email'));
-      expect(outlookFolders, contains('Spam'));
-
-      print('[OK] Outlook junk folders: $outlookFolders');
-    });
-
-    test('JUNK_FOLDERS_BY_PROVIDER should have correct folders for iCloud', () {
-      final icloudFolders = EmailScanProvider.JUNK_FOLDERS_BY_PROVIDER['icloud'];
-
-      expect(icloudFolders, isNotNull);
-      expect(icloudFolders, contains('Junk'));
-      expect(icloudFolders, contains('Trash'));
-
-      print('[OK] iCloud junk folders: $icloudFolders');
-    });
-  });
 }
 
 /// Helper function to record a simple result

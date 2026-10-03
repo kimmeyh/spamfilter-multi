@@ -4,7 +4,7 @@
 
 **Audience**: Claude Code models planning sprints; User prioritizing future work
 
-**Last Updated**: 2026-09-22 (**Sprint 72 COMPLETE** -- PR #420 -> develop. Ran on the Sprint 71 branch; Sprint 71 was never separately executed and its stub is marked SUPERSEDED. Delivered: F233 diagnostic log + the header-only CSV export fix, F232 mechanism A (historical-view rules now act on the mailbox; MECHANISM B REMAINS UNDIAGNOSED and is now instrumented), F228 honest action toast, F230+F231 action-sheet layout and durable outcomes, F217 honest Doze caveat (MECHANISM DELIBERATELY NOT BUILT -- the "is this the only way" search Harold required found it is not, and that the exemption carries a Play policy cost), F229 export half (the screen half was attempted and REVERTED after it overflowed by 18px at phone width). Suite 2,155 -> 2,233; analyzer clean; hooks 75/0; WinWright 2/2 twice; CI all green. **THREE CRITICAL findings across two reviews, all fixed, none deferred** -- and two of them were defects introduced BY this sprint: the F232 fix created an unintended deletion path from screen load (a method three callers share, the third safe only by accident), and the diagnostic logger silently destroyed concurrent records, which is the exact failure it existed to prevent. Manual validation found F233 shipped with NO UI at all -- ten tests passed via the test seam. Retrospective: Harold 12x Very Good; IMP-1..IMP-5 approved and applied. NEW backlog: F234 (read-only as a preview mode) and F235 (Android Doze via setExactAndAllowWhileIdle, TARGETED FOR SPRINT 73). Earlier history in prior revisions of this line (git).)
+**Last Updated**: 2026-09-29 (**Sprint 74 COMPLETE** -- PR #440; retro IMP-1/2/3/4/6 applied; F240/F241 added from Category 14; 0.17.0 held for F238.) Earlier 2026-09-27 (Sprint 74 Manual Validation: **F238 (Issue #441) added as the Sprint 75 release blocker for 0.17.0**, model Fable 5.1; no AAB until the Sprint 74 and 75 PRs both merge.) Previous: 2026-09-22 (**Sprint 72 COMPLETE** -- PR #420 -> develop. Ran on the Sprint 71 branch; Sprint 71 was never separately executed and its stub is marked SUPERSEDED. Delivered: F233 diagnostic log + the header-only CSV export fix, F232 mechanism A (historical-view rules now act on the mailbox; MECHANISM B REMAINS UNDIAGNOSED and is now instrumented), F228 honest action toast, F230+F231 action-sheet layout and durable outcomes, F217 honest Doze caveat (MECHANISM DELIBERATELY NOT BUILT -- the "is this the only way" search Harold required found it is not, and that the exemption carries a Play policy cost), F229 export half (the screen half was attempted and REVERTED after it overflowed by 18px at phone width). Suite 2,155 -> 2,233; analyzer clean; hooks 75/0; WinWright 2/2 twice; CI all green. **THREE CRITICAL findings across two reviews, all fixed, none deferred** -- and two of them were defects introduced BY this sprint: the F232 fix created an unintended deletion path from screen load (a method three callers share, the third safe only by accident), and the diagnostic logger silently destroyed concurrent records, which is the exact failure it existed to prevent. Manual validation found F233 shipped with NO UI at all -- ten tests passed via the test seam. Retrospective: Harold 12x Very Good; IMP-1..IMP-5 approved and applied. NEW backlog: F234 (read-only as a preview mode) and F235 (Android Doze via setExactAndAllowWhileIdle, TARGETED FOR SPRINT 73). Earlier history in prior revisions of this line (git).)
 
 ## How to Maintain This Document
 
@@ -141,6 +141,7 @@ Historical sprint information lives in individual documents in `docs/sprints/` a
 | 71 | docs/sprints/SPRINT_71_PLAN.md | [SUPERSEDED] | Never executed separately -- its stub's carry-ins were folded into Sprint 72, which ran on the Sprint 71 branch |
 | 72 | docs/sprints/SPRINT_72_SUMMARY.md | [OK] Complete | Sep 22, 2026 (PR #420 -> develop, #429 -> main; 0.15.3, NOT submitted to either store. F233 diagnostic log + empty-export fix, F232 mechanism A, F228 honest action toast, F230/F231 action sheet, F217 Doze caveat. Two of three CRITICAL review findings were defects the sprint introduced) |
 | 73 | docs/sprints/SPRINT_73_SUMMARY.md | [OK] Complete | Sep 22-23, 2026 (PR #435 -> develop; 0.16.0. F235 Doze scheduling, F234 read-only preview, F224+F207 cancel scan, F229 version on every screen, F226. Two CRITICAL defects were inert features with green suites -- verification by source text, not behavior) |
+| 74 | docs/sprints/SPRINT_74_SUMMARY.md | [OK] Complete | Sep 24-29, 2026 (PR #440 -> develop; 0.17.0, HELD for F238. Per-account scan lock (any type, fail closed, dead holders reaped, 2-6 min busy retry), F232 mechanism B fixed, F222 Sort chip + row dates, F202 provider folder defaults, F206 exports + clear history + redaction, Gmail keeps sign-in, subject rules = Keyword (DB v10). Device checks moved to Sprint 75) |
 
 **Key Achievements**: See CHANGELOG.md for detailed feature history.
 
@@ -148,36 +149,43 @@ Historical sprint information lives in individual documents in `docs/sprints/` a
 
 ## Last Completed Sprint
 
-**Sprint 73** (2026-09-22 -- 2026-09-23; PR #435 -> develop; version 0.16.0+7, not yet submitted)
-- **Type**: act on Harold's Sprint 72 device testing. Scope F235, F234, F224 + F207, F229, F226;
-  F232 mechanism B and F205 parked for a device run with diagnostic logging (MV74-3).
-- **F235 -- background scans now fire in Doze.** An inexact `setAndAllowWhileIdle` alarm per
-  account wakes the device and enqueues the existing WorkManager scan; `BootReceiver` restores the
-  alarms after a reboot. The inexact variant needs no exact-alarm permission and carries no Play
-  policy burden; the cost is a delivery window of about an hour. Real-hardware validation is
-  MV74-1 on the S24+. See ARCHITECTURE.md "Android in Doze" and the ADR-0039 amendment.
-- **F234 -- read-only became a rehearsal instead of a refusal**: adding a rule on a read-only
-  account reports what it WOULD have filed, mailbox untouched.
-- **F224 + F207 -- a running scan can be cancelled** from both surfaces, and a dead background scan
-  no longer leaves a stale warning. The F207 Android suppression was REMOVED in the Phase 7.7
-  review because it hid warnings for live scans; the proper fix (a cross-isolate heartbeat) is
-  MV74-2.
-- **THE SPRINT'S DEFINING EVENT: two CRITICAL defects, both inert features with green suites.**
-  F234's preview could never report anything but zero, and F224's cancel did nothing on every real
-  IMAP account because an identical exception swallow sat one layer below the one fixed. One cause:
-  verification by SOURCE TEXT rather than behavior. Re-mutating after the fix then showed the call
-  site was still untested -- "correct abstraction, wrong wiring".
-- **The Android build was never blocked.** The "Daemon compilation failed" traces are non-fatal
-  noise from plugin sources on `C:` and the project on `D:`; five build "failures" were builds the
-  diagnosing session interrupted itself. Recorded in TROUBLESHOOTING.md.
-- **Results**: suite 2,233 -> 2,314, analyzer clean, WinWright 2/2, hook suite 75/75. Six retro
-  improvements applied prevention-first; PR reviews 3 CRITICAL + 6 IMPORTANT, all fixed.
+**Sprint 74** (2026-09-24 -- 2026-09-29; PR #440 -> develop; version 0.17.0+8, **RELEASE HOLD** until F238 ships)
+- **Type**: device carry-ins (MV74-1/2/3) plus F202, F222, F206, F232, F205; Manual Validation ran five rounds and added most of the sprint's work.
+- **One scan per account at a time, of ANY type** (the Fold8 showed four background scans on one account in a minute): `ScanResultStore.claimAccountScan` -- one `BEGIN IMMEDIATE` transaction that reaps dead holders (heartbeat > 5 min or age > 30 min), refuses if any scan holds the account, else inserts. Fail closed. A timed-out scan now actually stops (revoked lease). A busy background scan waits a random 2-6 minutes and tries once more (replaces the Windows 15 x 1-minute retry). Per ACCOUNT, not global (Harold confirmed after the evidence).
+- **F232 mechanism B -- FIXED from the Fold8 log**: Scan History split the accountId on a dash and got an empty platform ("Platform  not supported"); every rule added from a saved scan failed.
+- **F222 -- reworked at MV**: default folder -> domain -> address kept; a Sort chip switches to newest first; each row shows its received date; Gmail dates fixed. The first version followed the card text, not the intent -- the Sprint 74 retro IMP-1 cause.
+- **F202** per-provider folder defaults; **F206** exports reachable on both platforms, off by default, redaction, Clear history, Android YAML export fixed; **Gmail** keeps its sign-in on a failed renewal; **subject rules** reclassified to `keyword` (DB v10).
+- **Moved to Sprint 75 Manual Validation** (no AAB until both PRs merge): MV74-1 Doze + reboot, live deletion from a saved scan, F205 error classification, the lock under real Doze batching, Android YAML export.
+- **Results**: suite 2,314 -> 2,417, analyzer clean, WinWright 2/2, hook suite 75 -> 83; ~38 mutations, all KILLED. Retro: Harold all Very Good; IMP-1/2/3/4/6 applied (card before/after line, UI-text verification, WinWright snapshot via `.backup`, `scripts/mutation-test.ps1`, heredoc-backslash hook).
 
 ## Next Sprint Candidates
 
-**Last Reviewed**: August 27, 2026 (Sprint 63 cycle, Phase 8.2 pass-1 COMPLETENESS SWEEP -- no scope selected: 7 Sprint 63 DONE stubs cleared from candidates (F164, F180, F181, F182, F185, F94, GP-12); close-out verified complete (cards #357-#365 closed with zero open issues, docs triad + Sprint 64 stub, master plan rolled to Sprint 63, sprint_status current, CHANGELOG through the retro-improvements entry, retro IMPs 8/8 applied, Copilot 3/3 + Claude review round 2 resolved, Phase 5 evidence mirrored into the plan per the close-out hook). Carries remaining in candidates: GP-16 (Sprint 64 FIRST task, guided walkthrough) + GP-5 (publication at that walkthrough). Fresh MV-sourced items: F186 (P22), F187 (P24), F188 (P26). Prior review: August 21, 2026 (Sprint 62 cycle, Phase 8.2).)
+**Sprint 74 scope -- COMPLETE 2026-09-29 (PR #440)** (Phase 8.4 pass 2, selected by Harold 2026-09-24): MV74-1 (#428), MV74-2 (#434), MV74-3 (#422, #433), F202 (#438), F222 (#437), F232 (#422), F206 (#439), F205 (#433). Plan: `docs/sprints/SPRINT_74_PLAN.md`.
+
+**Last Reviewed**: September 24, 2026 (Sprint 73 cycle, Phase 8.2 pass-1 COMPLETENESS SWEEP -- no scope selected: 6 Sprint 73 DONE cards cleared (F235 -> MV74-1, F234, F229, F226, F224, F207 -> MV74-2); new F236 (YAML export version, from #427) and F237 (Android build-log noise); issues #426 #430 #431 #432 closed; master plan rolled to Sprint 73.)
 
 All incomplete items in relative priority order. Priority in increments of 10; items that can sprint together in increments of 2. HOLD items grouped at bottom. See [Feature and Bug Details](#feature-and-bug-details) for deep-dive specs. See [BACKLOG_REFINEMENT.md](BACKLOG_REFINEMENT.md) for presentation format rules.
+
+### Sprint 75 -- committed by Harold at Sprint 74 Manual Validation (2026-09-27)
+
+**F238. Offer to stop a running background scan in favor of a manual scan (Issue #441) Priority 1 -- RELEASE BLOCKER for 0.17.0**
+- Harold: *"0.17.0 cannot ship without a fix - add to backlog, full sprint planning for it, full sprint card, assign it to Fable 5.1"*; *"it is the largest bug that we have."*
+- **Model: Fable 5.1** (Harold named it). Full card: Issue #441 (augmented template -- Value, R-1..R-6, AC-1..AC-4, T-1..T-4, DoD, risk, Class-1 interrupt).
+- Builds on the Sprint 74 per-account scan lock (`ScanResultStore.claimAccountScan`): the "A scan is already running" dialog gains "Stop the background scan and start mine", which writes a cancel request onto the background scan's row (DB v11; v10 was used by the Sprint 74 subject-rule reclassification); the worker honors it on its heartbeat tick through the F224 cancellation token.
+- **Release gate**: 0.17.0 is not submitted to either store until F238 ships. No AAB is built until BOTH the Sprint 74 and Sprint 75 PRs are merged (Harold, 2026-09-27) -- so every 0.17.0 phone check moves to Sprint 75 Manual Validation.
+
+**F239. Gmail on Android -- renew the token without the app open, and a "Sign In Again" path (Issue #442) Priority 12 -- backlog**
+- Harold, 2026-09-28 (Q1 option 1): Sprint 74 stopped DELETING the tokens on a failed renewal (no more "Missing credentials"); this card is the other half.
+- Android stores no refresh token and a WorkManager worker has no Activity, so a Gmail background scan cannot renew its token after about an hour. The "Sign In Again" widget in `error_display.dart` exists but no screen uses it. Full card: Issue #442 (Class-1: auth mechanism, may need a Google Cloud console change).
+
+**F240. Body-rule sub-type consistency Priority 40 -- backlog (Sprint 74 retro Category 14a)**
+- Quick-add and the default rule-set split store body rules as `entire_domain`; manual and imported body rules use `keyword`. Same shape as the subject-rule label fix (DB v10). Decide per body pattern kind (URL/domain vs phrase), then align the creators and reclassify stored rows.
+
+**F242. Span-replacing edit scripts assert what the span contains Priority 50 -- backlog (Sprint 74 retro IMP-5, Harold 2026-10-02: "add to backlog")**
+- A script that replaces the text between two anchors must assert the span's content (for example exactly one `testWidgets(`) and compare the test count before and after. Sprint 74: an end anchor matched one test too far and deleted a neighboring widget test; only an unused-import warning revealed it. Prevention: extend CLAUDE.md IMP-3 ("every mutation script asserts its anchor matched"); consider a span-replace mode in `scripts/mutation-test.ps1` or a shared edit helper.
+
+**F241. Remove or wire `ScanResultStore.getActiveBackgroundScan` Priority 60 -- backlog (Sprint 74 retro Category 14b)**
+- No production caller since the manual-scan dialog moved to the per-account `getActiveScanForAccount`; kept with its tests. Delete with its tests, or use it if F238 needs an any-account background check.
 
 ### Sprint 74 Manual Validation carry-ins (device-blocked from Sprint 73)
 
@@ -510,106 +518,6 @@ step.
 **F233 DONE Sprint 72 (2026-09-22, PR #420, issue #421)** -- Diagnostic log shipped with its Settings UI -- toggle, retention flag, size and delete -- plus the header-only CSV export fix. Two defects caught in review: the UI was missing on first pass, and concurrent writes destroyed each other records (two simultaneous failures produced ONE line). Both fixed and mutation-verified.
 
 
-**F235. Make Android background scans actually fire in Doze (~90-180m) Priority 4 -- TARGETED FOR SPRINT 73 (NEW, 2026-09-22 -- Harold, after the Sprint 72 "is it the only way" search)**
-- Phase: Core / Android
-- Platform: **DECLARED ADR-0042 EXCEPTION -- Android only.** The OS behavior that differs is named:
-  Android's Doze and App Standby defer background work, and Windows has no equivalent arbiter
-  (its background scanning is a scheduled task). The exception covers the SCHEDULING MECHANISM
-  only; the scan logic itself stays shared.
-- **This is the MECHANISM half of [[F217]].** Sprint 72 shipped the honest messaging -- Settings
-  now tells the user the phone may delay scans -- and deliberately stopped there, because the
-  search Harold asked for changed the premise of his 2026-09-19 decision.
-
-- **Harold's instruction, 2026-09-22**: *"Need to add to backlog and target for next sprint to
-  implement the use of Doze on Android."*
-
-- **WHY THE MECHANISM CHANGED, and it is the whole reason this is a separate card.** Harold's
-  original instruction was conditional: *"if ... asking for battery usage is the only way to
-  implement this (search to ensure this is the only way), then I think asking for battery usage is
-  appropriate."* The search was run against primary sources and the condition FAILED:
-  - **Our own code is not the cause.** `background_scan_scheduler.dart:258` registers periodic work
-    with `networkType: connected` ONLY -- no battery constraint, no idle constraint, no foreground
-    service. Checked and eliminated before looking outward.
-  - **The diagnosis is confirmed** by Android's own documentation: Doze *"doesn't let JobScheduler
-    run... WorkManager uses JobScheduler internally, so WorkManager tasks don't run."* Harold's
-    experience -- *"background jobs only run when the app is open and in view"* -- matches exactly.
-  - **The exemption is NOT the only route.** `setExactAndAllowWhileIdle()` fires in Doze with NO
-    special permission, capped at once per 9 minutes per app -- which is COMPATIBLE with the app's
-    15-minute floor.
-  - **And the exemption carries a Play policy cost**: Google *"prohibit[s] apps from requesting
-    direct exemption from Power Management features... unless the core function of the app is
-    adversely affected"*, with acceptable categories limited to safety, task automation and
-    peripheral companion apps.
-
-- **RECOMMENDED APPROACH (and why it is not the exemption)**: implement
-  `setExactAndAllowWhileIdle()` as the Android scheduling path. It gets the functional outcome
-  Harold wants -- scans that fire while the phone is idle -- WITHOUT spending Play-review risk
-  during a closed test whose production access is gated on the 12-tester/14-day clock. The 9-minute
-  floor does not constrain a 15-minute schedule. If measurement then shows the alarm is still
-  deferred too aggressively, the exemption becomes option 2 WITH evidence behind its justification
-  rather than an assertion.
-
-- **Audit-first (MANDATORY, run 2026-09-22)**: **Is any of this already present? NO.** Grep for
-  `setExactAndAllowWhileIdle` and `AlarmManager` across the Android manifest and the scheduler
-  returns nothing. Genuine build work. **Note the Sprint 70 correction**: check the MERGED manifest,
-  not just the source -- `FOREGROUND_SERVICE` and `WAKE_LOCK` arrive via workmanager and are
-  invisible in the source manifest.
-
-- **Requirements**:
-  - R-1: Android scheduling uses an exact-while-idle alarm; Windows is untouched.
-  - R-2: **`SCHEDULE_EXACT_ALARM` / `USE_EXACT_ALARM` permission review.** Android 12+ restricts
-    exact alarms, and `USE_EXACT_ALARM` has its OWN Play policy justification requirement. **Verify
-    which permission this actually needs before building** -- if it turns out to need
-    `USE_EXACT_ALARM` with a comparable review burden, the advantage over the exemption shrinks and
-    this decision should go back to Harold.
-  - R-3: The 9-minute floor must be enforced or documented; a future frequency below it would be
-    silently clamped by the OS.
-  - R-4: Rescheduling after device reboot (`BOOT_COMPLETED`) -- an alarm does not survive a restart
-    the way WorkManager's persisted work does. **This is a real regression risk versus today.**
-  - R-5: Keep the F217 honest-timing caveat. Even an exact alarm can be delayed; the message should
-    soften, not disappear.
-  - R-6: The existing `Constraints(networkType: connected)` behavior must be preserved -- an alarm
-    has no network constraint, so the scan itself must check connectivity and defer gracefully.
-
-- **Acceptance**: the only evidence that matters is Harold's device over real intervals -- a scan
-  firing while the phone is locked and the app is closed, confirmed from Scan History timestamps.
-  No unit test can prove this, which R-4 makes especially important to validate after a reboot.
-- Source: Harold, 2026-09-22. Full research and the four options are recorded under [[F217]].
-
-**F234. Read-only as a PREVIEW mode -- record what WOULD have been deleted (~90-150m) Priority 8 (NEW, 2026-09-22 -- Harold, during Sprint 72 manual validation)**
-- Phase: UX / Core
-- Platform: All (shared logic; especially valuable on Windows, which is configured read-only)
-- **Harold's idea, verbatim**: *"I am thinking that if Manual > Scan mode is readonly then add the
-  rule, but don't delete the email, but add it to 'would have been deleted'."*
-- **Today** a read-only account says the rule was saved and the mailbox was not changed (F228/F232,
-  Sprint 72). That is honest but it throws away the interesting half: WHICH emails the new rule
-  matched. The user has to enable live actions to find out, which is exactly the wrong order --
-  they would be finding out by deleting.
-- **The proposal turns read-only into a safe preview.** A user could add a broad rule, see it would
-  have matched 340 emails across three folders, and decide that is too broad BEFORE anything is
-  deleted. Read-only stops being a restriction and becomes a rehearsal.
-- **This is genuinely new capability, not a fix.** Filed rather than folded into Sprint 72 mid
-  validation.
-- **Design notes**:
-  - The data already exists at the decision point: `_reProcessAffectedEmails` builds `toDelete` and
-    `toMoveSafe` BEFORE the mode check. Today the read-only path returns before using them. A
-    preview would record those lists instead of discarding them.
-  - Surface it where the user already looks: the session activity list added by F231 is the natural
-    home, or a "would have been actioned" count on the results footer.
-  - **Must never be mistakable for a real action.** Wording and colour have to make "would have"
-    unambiguous -- the whole point of Sprint 72's F228 was that a message implying a mailbox change
-    that did not happen is a defect.
-  - Consider persisting it, so a preview survives leaving the screen ([[F231]] made exactly this
-    argument about transient outcomes).
-- **Scope question for Harold at planning**: preview for BLOCK rules only, or safe-sender moves too?
-  A safe-sender preview is the same mechanism but a different message.
-- **Confirmed decided in Sprint 72 and NOT part of this card**: the MANUAL mode alone governs a
-  foreground action from the results screen (`isBackground: false`). Background mode answers a
-  different question -- what may run unattended -- and letting it govern a click would be one
-  setting answering a question it was not asked. Harold validated this on Windows 2026-09-22.
-- Source: Harold, 2026-09-22, Sprint 72 manual validation step A. Related: [[F232]], [[F228]],
-  [[F231]].
-
 **F232. Mechanism B -- a live re-process batch fails 9 of 9 on a healthy connection (~60-120m) Priority 6 (RE-SCOPED 2026-09-22: mechanism A SHIPPED in Sprint 72)**
 - Phase: Bug Fix
 - Platform: All (shared code)
@@ -795,103 +703,29 @@ step.
 **F231 DONE Sprint 72 (2026-09-22, PR #420, issue #425)** -- Outcomes are now recorded to a session activity list with a history control, so a missed or covered toast no longer loses the result. Investigation corrected the planned fix: the dialog is popped before the action runs, so the occlusion was auto-advance opening the NEXT dialog -- a margin change would have fixed nothing.
 
 
-**F229. Make the build identifiable on phone-width screens and in exports (~60-120m) Priority 12 (NEW, 2026-09-21 -- Harold, during the 0.15.2 Play verification)**
-- Phase: UX / Supportability
-- Platform: All -- the divergence is by WIDTH, not by OS, so it hits Android phones and a narrow
-  Windows window alike.
-- **This is NOT a missing feature. It is a deliberate F172 (Sprint 61) trade-off whose assumption
-  has now failed.** `AppBarVersionLabel` in `lib/ui/widgets/standard_app_bar_actions.dart` renders
-  the version on every screen using `StandardAppBarActions`, then **returns `SizedBox.shrink()`
-  below 600px width** because the action row overflowed the AppBar by ~81px at 411px (caught by the
-  F169 tests). That reasoning is sound and the fix must not simply revert it -- overflowing clips
-  real action buttons.
-- **The failed assumption, quoted from the code**: *"Windows at its 1024x640 epx minimum is
-  comfortably above this, so the label is always present where screenshots are actually taken."*
-  Screenshots are now routinely taken on a 411px phone. On 2026-09-20 a full testing session
-  produced 26 screenshots and **not one showed a version**, so confirming which build was running
-  needed a phone reconnect and a purpose-taken Settings screenshot. Step 6 of
-  `GOOGLE_PLAY_RELEASE_PROCESS.md` requires confirming the installed version, and the app made its
-  own release process harder to complete.
-- **Screens verified WITHOUT a version at phone width (Android, 0.15.2)**: Scan History, Scan
-  Results (filtered and completed views), the live-scan "Scan Started" screen, the No-rule action
-  sheet. Present on Settings > General, which has its own label independent of the AppBar
-  (`settings_screen.dart:613`).
-- **Design direction -- do NOT just lower the 600px threshold.** Options worth weighing:
-  (a) move the label out of the crowded action row into the AppBar title/subtitle line;
-  (b) show a short form (`0.15.2` without the `Version ` prefix) below the breakpoint;
-  (c) overflow menu entry. Whatever is chosen must keep the `[DEV]` suffix visible -- that marker
-  is what would have caught the 0.5.5/0.5.6 Store dev-leak -- and must re-run the F169/F172 width
-  tests at 411px, which are the tests that caught the original overflow.
-- **Also stamp the build into EXPORTS.** `scan_results_2026-09-21T01-15-34.csv` pulled from the
-  device is a bare header row with no version anywhere, so an exported CSV cannot be attributed to
-  the build that produced it. A tester's export is evidence; evidence that cannot name its build is
-  weak. Add app version + build number as a header comment or column. **Inspect the YAML export
-  path too** -- same argument, NOT yet checked.
-- **Watch the gates**: `stale_footer_test` flags hardcoded version literals in `lib/ui/`, and
-  `version_consistency_test` asserts every literal matches `pubspec.yaml`. Use the existing
-  `AppVersion.get()` runtime lookup; do NOT introduce a literal.
-- Source: Harold, 2026-09-21, during Play 0.15.2 Step 6 verification. [[F228]] was found in the same
-  session.
-
-**F228 DONE Sprint 72 (2026-09-22, PR #420, issue #423)** -- The per-action toast now derives its colour and wording from a returned ReProcessOutcome instead of a hardcoded success colour. The correct batch summary was deliberately left alone as the model for the fix.
-
-
-**F226. WinWright scripts fail intermittently when run back-to-back in one sweep (~60-120m) Priority 14 (NEW, 2026-09-18 -- found during the Sprint 70 5.1.5 sweep)**
-- Phase: Developer Tooling
-- Platform: Windows Desktop (WinWright is Windows-only)
-- **Symptom**: in a full sweep one of the two runnable scripts fails, and WHICH ONE SWAPS between
-  runs. Sprint 70 run 1: `test_f124_rule_labels` FAIL, `test_mt2c_no_rule_sweep` PASS. Run 2 on the
-  same build: exactly reversed. Run individually, **both pass 29/29 with no DB drift**.
-- **Not a sprint regression**, and that is the point of filing it: the sweep is the gate that is
-  supposed to tell us whether sprint UI changes broke a screen. A gate that is red for unrelated
-  reasons cannot answer that question, and it trains the reader to discount failures -- the same
-  bypass-training problem as [[F225]].
-- **Likely cause** (hypothesis, NOT verified): residual app state between scripts in one sweep. The
-  runner drives a single long-lived app instance; the first script leaves a screen, filter, or
-  dialog in a state the second does not expect. Each script is required to restore the state it
-  modifies (Sprint 37 retro policy) -- the swap pattern suggests one of them does not fully do so,
-  or that restoration races the next script's first selector.
-- **Investigation direction**: run the pair in both orders with the runner's per-script logs kept,
-  and diff the accessibility tree at each script's first step against the tree when that script
-  runs alone. The `ww_get_state_hash` / `ww_diff_state` tools exist for exactly this.
-- **Do NOT fix by adding sleeps.** That is the shape of the f56/f37 dialog-settle problem that was
-  already quarantined out of the sweep; another timing patch grows the same debt.
-- Source: Sprint 70 Phase 5.1.5 sweep, 2026-09-18. Recorded in `SPRINT_70_PLAN.md` Phase 5
-  completion notes.
-
-
-**F224. Let the user CANCEL a running scan from where they actually are (~120-240m) Priority 6 (NEW, 2026-09-17 -- Harold, alongside the F221 timeout reversal)**
+**F236. Stamp the app version into the YAML rules export (~20-40m) Priority 36 (NEW, 2026-09-24 -- Phase 8.2 pass 1, from the #427 leftover)**
 - Phase: Core App Quality
-- Platform: All (shared UI and coordinator; ADR-0042 -- no platform exception expected)
-- **Why this exists.** Sprint 70 gave manual scans a 30-minute timeout because the old
-  justification for having none -- *"a user is watching and can cancel"* -- stops being true the
-  moment the user leaves the scan screen. The timeout makes a hung scan survivable. It does NOT
-  give the user back the control the old comment assumed they had: 30 minutes is a long time to
-  wait for something you already know you want to stop.
-- **Two cancel affordances, both requested verbatim by Harold (2026-09-17):**
-  1. **From View Scan Results**: *"there should be a new way from the View Scan Results page to
-     cancel (click on the scan 'bar' and pop-up to cancel."* Tapping the in-progress scan bar
-     opens a popup offering cancel. This is the screen a user lands on after starting a scan, so
-     it is where they will look.
-  2. **From the Manual Scan popup**: *"Also add to the Manual Scan pop-up that a background scan
-     is in process an option to cancel the background scan, so they can run an manual scan
-     instead."* The popup at `scan_progress_screen.dart` (startRealScan, the getActiveBackgroundScan
-     branch) already tells the user a background scan is running and offers "Wait and start". Add
-     a third option: cancel the background scan and run mine now.
-- **The hard part is cancellation itself, not the buttons.** `Future.timeout` does NOT cancel the
-  underlying work -- Sprint 62 recorded this explicitly, and both timeout paths work around it by
-  force-releasing the coordinator lease while the zombie scan keeps running. A user-facing Cancel
-  that only releases the lease would let a second scan start while the first is still holding an
-  IMAP session, which is the Sprint 61 per-account session-cap failure. **Design the cooperative
-  cancellation first** (a cancellation token the fetch/evaluate loop checks between batches, which
-  `email_scanner.dart` already has natural boundaries for at m=20), then add the two UI entries.
-- **Cross-process caveat**: on Windows the background worker scans in a SEPARATE process. Cancel
-  from the app cannot reach into it directly; needs a database-backed cancel flag the worker polls,
-  or the scope must be explicitly limited to in-process scans with the limit stated in the UI.
-- Depends on: F220 and F221 (both Sprint 70) -- the lease lifetime and the timeout are the
-  foundation this sits on.
-- Source: Harold, 2026-09-17, in the same message that reversed the manual-scan no-timeout
-  decision.
+- Platform: All
+- Sprint 72 stamped the app version into CSV exports (#427). The YAML rules export was checked and
+  deliberately left out: it is a rules backup, not diagnostic evidence, so it was "left for
+  prioritization". This card is that prioritization; it previously lived only as a stale note in
+  the delivered F229 card.
+- Add the version as a leading YAML comment via `AppVersion.get()`. Do NOT introduce a literal:
+  `version_consistency_test` and `stale_footer_test` both gate that.
+- Check the IMPORT path ignores the comment, and that the export invariants (lowercase, sorted,
+  single quotes) are unaffected.
+
+**F237. Quiet the non-fatal Kotlin "Daemon compilation failed" traces in the Android build (~20-40m) Priority 38 (NEW, 2026-09-24 -- Sprint 73 build misdiagnosis)**
+- Phase: Core App Quality
+- Platform: Android
+- Every Android build prints dozens of `e: Daemon compilation failed: null` / "Could not close
+  incremental caches" traces. They are NOT failures: plugin sources in the pub cache on `C:` cannot
+  be made relative to the project on `D:` (`this and base files have different roots`), and Kotlin
+  falls back and builds. Reading them as fatal cost Sprint 73 an evening and five self-interrupted
+  builds. Full diagnosis: TROUBLESHOOTING.md.
+- Options: `kotlin.incremental=false` in `mobile-app/android/gradle.properties`, or move the pub
+  cache to `D:` via `PUB_CACHE`. Measure the build-time cost of the first before choosing it.
+- Value is preventive only: a working build does not need it.
 
 **F222. Scan results are not ordered by received date (~45-90m) Priority 22 (NEW, 2026-09-17 -- Sean Jarvis, tester)**
 - Phase: Core App Quality
@@ -1248,37 +1082,6 @@ deferred, option 1 then has evidence behind its justification rather than an ass
 - Source: found 2026-09-11 while verifying Google's current wording for F211 R-2. Sources:
   developers.googleblog.com "Improving user safety in OAuth flows through new OAuth Custom URI
   scheme restrictions"; developers.google.com/identity/protocols/oauth2/native-app.
-
-**F207. A manual scan is refused while a background scan is "in progress" -- and the block appears to outlive the scan (~30-60m) Priority 20 (NEW, 2026-09-10 -- Harold, on the S24+)**
-- Phase: Core App Quality
-- Platform: Android (closed test); check Windows for the same lock
-- **Harold, 2026-09-10**: Gmail *"won't currently run a manual scan saying that a background
-  scan is in progress"*.
-- **The refusal itself is probably CORRECT** -- concurrent scans on one account would race on the
-  same folders and the same UID cursor. A mutual exclusion is the right design. `ScanCoordinator`
-  already owns a lease with a 30-minute `scanTimeout`, and F175 exists precisely because leases
-  can be left behind (`reconcileStaleInProgressScans` reconciles them at STARTUP only).
-- **What needs investigating is whether the block is HONEST.** Three possibilities, and they need
-  different fixes:
-  1. A background scan genuinely was running. Correct behaviour; the only issue is whether the
-     message tells the user when to retry.
-  2. A previous background scan died and left its lease held. F175 reconciles those **at startup
-     only** -- so on a phone, where the app may not be restarted for days, a stale lease could
-     block manual scans indefinitely. That is the failure mode to rule out first.
-  3. The 15-minute background cadence means a scan is *often* in flight, so manual scanning is
-     effectively unavailable on the closed-test build much of the time.
-- **Why it matters on THIS build specifically**: the closed test runs background scans every 15
-  minutes on every account. If (2) or (3) holds, a tester who wants to scan on demand simply
-  cannot -- and their natural report would be "the scan button does not work", which is a
-  usability defect rather than the correctness one it actually is.
-- **Scope**: reproduce; determine which of the three it is; then either (a) make the message
-  actionable ("a background scan is running, try again in N minutes"), (b) extend F175's
-  reconciliation beyond startup, or (c) queue the manual request behind the running scan instead
-  of refusing it. Decide AFTER reproducing, not before.
-- **Do not "fix" this by removing the lock.** Concurrent scans on one mailbox are the thing the
-  lock exists to prevent, and this build acts on real mail.
-- Depends on: nothing. Overlaps F205 only in that both are closed-test observations.
-- Source: Harold, 2026-09-10, while gathering Android screenshots.
 
 **F205. Closed-test error rate: 53 errors in 3,833 scanned on the S24+ -- find out what they ARE (~30-60m) Priority 18 (NEW, 2026-09-10 -- observed on the closed-test device)**
 - Phase: Core App Quality

@@ -9,6 +9,8 @@ library;
 /// - Retrieving scan results by account or date
 /// - Deleting scan results (with cascade to unmatched emails)
 
+import 'dart:async';
+
 import 'package:logger/logger.dart';
 
 import '../../util/redact.dart';
@@ -519,26 +521,52 @@ class ScanResultStore {
     }
   }
 
+  /// MV74-2 (Sprint 74): refresh the liveness heartbeat of an in-progress
+  /// scan. Written by the scanning isolate every
+  /// [ScanCoordinator.heartbeatInterval]; read by the cross-isolate checks
+  /// below. A single-row UPDATE (WAL + busy_timeout make it safe against a
+  /// concurrent writer in another isolate or process). Guarded on
+  /// `in_progress` so a late tick can never touch a finished row.
+  Future<void> recordHeartbeat(int scanResultId) async {
+    final db = await _databaseHelper.database;
+    await db.update(
+      'scan_results',
+      {'last_heartbeat_at': DateTime.now().millisecondsSinceEpoch},
+      where: 'id = ? AND status = ?',
+      whereArgs: [scanResultId, 'in_progress'],
+    );
+  }
+
   /// F175 (Sprint 62): the ACTIVE background scan, if any -- an
   /// `in_progress` row with scan_type `background` whose `started_at` is
   /// within [freshWithin]. Database-backed so it sees background scans in
-  /// OTHER processes too (the Windows Task Scheduler worker shares this
-  /// database), which an in-process registry cannot -- this is what makes
-  /// the manual-scan wait notice platform-uniform.
+  /// OTHER isolates and processes -- the Android WorkManager isolate and the
+  /// Windows Task Scheduler process -- which the in-isolate
+  /// [ScanCoordinator] cannot. This is what makes the manual-scan wait notice
+  /// platform-uniform.
+  ///
+  /// MV74-2 (Sprint 74): ALSO requires a live heartbeat --
+  /// `COALESCE(last_heartbeat_at, started_at)` within [heartbeatWithin]. A
+  /// scan that died without marking its row stops blocking within minutes
+  /// instead of holding a false notice for the full 30. `started_at` covers
+  /// a brand-new row (before its first tick) and pre-v9 rows.
   Future<ScanResult?> getActiveBackgroundScan({
     // Sprint 62 code review (M-3): same single-source rule as above -- a
     // row older than the scan timeout is stale by definition, never active.
     Duration freshWithin = ScanCoordinator.scanTimeout,
+    Duration heartbeatWithin = ScanCoordinator.heartbeatFreshness,
   }) async {
     try {
       final db = await _databaseHelper.database;
-      final cutoff =
-          DateTime.now().subtract(freshWithin).millisecondsSinceEpoch;
+      final now = DateTime.now();
+      final cutoff = now.subtract(freshWithin).millisecondsSinceEpoch;
+      final beatCutoff = now.subtract(heartbeatWithin).millisecondsSinceEpoch;
 
       final maps = await db.query(
         'scan_results',
-        where: 'status = ? AND scan_type = ? AND started_at >= ?',
-        whereArgs: ['in_progress', 'background', cutoff],
+        where: 'status = ? AND scan_type = ? AND started_at >= ? '
+            'AND COALESCE(last_heartbeat_at, started_at) >= ?',
+        whereArgs: ['in_progress', 'background', cutoff, beatCutoff],
         orderBy: 'started_at DESC',
         limit: 1,
       );
@@ -547,6 +575,148 @@ class ScanResultStore {
       return ScanResult.fromMap(maps.first);
     } catch (e) {
       _logger.e('Failed to query active background scan: $e');
+      return null;
+    }
+  }
+
+  /// Harold Q4 (Sprint 74 Manual Validation, 2026-09-27): **one scan per
+  /// account at a time, of ANY type** -- *"If one is already running, don't
+  /// start a new one. It is a semaphore type problem and scans cannot run
+  /// forever."*
+  ///
+  /// This is the semaphore. In ONE SQLite transaction -- sqflite opens it
+  /// with `BEGIN IMMEDIATE`, which takes the database write lock, so the
+  /// Android WorkManager isolates and the Windows worker process are
+  /// serialized against each other and against the app (busy_timeout 30s,
+  /// `DatabaseHelper.onConfigure`) -- it:
+  ///
+  /// 1. REAPS this account's dead holders: an `in_progress` row whose
+  ///    heartbeat is older than [ScanCoordinator.heartbeatFreshness], or
+  ///    that started more than [ScanCoordinator.scanTimeout] ago, is marked
+  ///    `interrupted`. This is what makes "scans cannot run forever" true
+  ///    without an app restart -- the Fold8 rows sat "In progress" for hours
+  ///    because only app startup ever reconciled them.
+  /// 2. Refuses if any OTHER `in_progress` row remains for the account.
+  /// 3. Otherwise inserts [row] and grants the claim.
+  ///
+  /// The check and the insert happen inside the same write lock -- a check
+  /// done before it is the check-then-act race that let four background
+  /// scans start on one account inside a minute (Fold8, 18:31).
+  ///
+  /// Per ACCOUNT, not global: the harm is the provider's per-account session
+  /// cap, and Doze delivers every account's alarm in one batch, so a global
+  /// lock would starve all but one account each interval.
+  ///
+  /// Throws on a database error. Callers treat that as a refusal (fail
+  /// CLOSED): a semaphore that lets work through when it cannot check is not
+  /// a semaphore.
+  Future<ScanClaimResult> claimAccountScan(ScanResult row) async {
+    final db = await _databaseHelper.database;
+    return db.transaction((txn) async {
+      final now = DateTime.now();
+      final beatCutoff = now
+          .subtract(ScanCoordinator.heartbeatFreshness)
+          .millisecondsSinceEpoch;
+      final ageCutoff =
+          now.subtract(ScanCoordinator.scanTimeout).millisecondsSinceEpoch;
+
+      final reaped = await txn.update(
+        'scan_results',
+        {
+          'status': 'interrupted',
+          'error_message': 'Scan stopped responding and was closed so a new '
+              'scan could start on this account',
+        },
+        where: 'status = ? AND account_id = ? AND '
+            '(COALESCE(last_heartbeat_at, started_at) < ? OR started_at < ?)',
+        whereArgs: ['in_progress', row.accountId, beatCutoff, ageCutoff],
+      );
+      if (reaped > 0) {
+        _logger.i('Scan lock: closed $reaped dead scan(s) on '
+            '${Redact.accountId(row.accountId)}');
+      }
+
+      final live = await txn.query(
+        'scan_results',
+        where: 'status = ? AND account_id = ?',
+        whereArgs: ['in_progress', row.accountId],
+        orderBy: 'started_at DESC',
+        limit: 1,
+      );
+      if (live.isNotEmpty) {
+        return ScanClaimResult._(blockedBy: ScanResult.fromMap(live.first));
+      }
+      final id = await txn.insert('scan_results', row.toMap());
+      return ScanClaimResult._(id: id);
+    });
+  }
+
+  /// Harold Q1 (Sprint 74): hold a live `in_progress` row for interactive work
+  /// that is NOT a scan -- re-processing mail from Scan Results -- so no other
+  /// scan starts on the account while it runs. The row is a CLAIM, not
+  /// history: [InteractiveScanClaim.end] deletes it, and [getAllScanHistory]
+  /// never lists `reprocess` rows.
+  ///
+  /// Harold Q4 (Sprint 74 MV): taken through the same [claimAccountScan]
+  /// semaphore as every scan. Throws [ScanAccountBusyException] when another
+  /// scan holds the account, and also when the claim cannot be written (fail
+  /// CLOSED -- this used to return null and let the re-process run
+  /// unprotected).
+  Future<InteractiveScanClaim> claimInteractive(
+    String accountId, {
+    String scanType = 'reprocess',
+    Duration? heartbeatInterval,
+  }) async {
+    final ScanClaimResult result;
+    try {
+      result = await claimAccountScan(ScanResult(
+        accountId: accountId,
+        scanType: scanType,
+        scanMode: 'n/a',
+        startedAt: DateTime.now().millisecondsSinceEpoch,
+        totalEmails: 0,
+        status: 'in_progress',
+      ));
+    } catch (e) {
+      _logger.w('Could not take the $scanType claim for '
+          '${Redact.accountId(accountId)}: $e');
+      throw ScanAccountBusyException.unverifiable(e);
+    }
+    if (!result.granted) {
+      throw ScanAccountBusyException(result.blockedBy!);
+    }
+    return InteractiveScanClaim._(this, result.id!,
+        heartbeatInterval ?? ScanCoordinator.heartbeatInterval);
+  }
+
+  /// The LIVE scan of ANY type on [accountId], if any -- an `in_progress` row
+  /// with a fresh heartbeat. A background scan calls this as a cheap early
+  /// skip before loading its settings; [claimAccountScan] is the
+  /// authoritative check (Harold Q4, Sprint 74 MV -- this used to ignore
+  /// other BACKGROUND scans, which is how four ran on one account at once).
+  /// A query failure returns null: the claim still decides.
+  Future<ScanResult?> getActiveScanForAccount(
+    String accountId, {
+    Duration freshWithin = ScanCoordinator.scanTimeout,
+    Duration heartbeatWithin = ScanCoordinator.heartbeatFreshness,
+  }) async {
+    try {
+      final db = await _databaseHelper.database;
+      final now = DateTime.now();
+      final cutoff = now.subtract(freshWithin).millisecondsSinceEpoch;
+      final beatCutoff = now.subtract(heartbeatWithin).millisecondsSinceEpoch;
+      final maps = await db.query(
+        'scan_results',
+        where: 'status = ? AND account_id = ? '
+            'AND started_at >= ? AND COALESCE(last_heartbeat_at, started_at) >= ?',
+        whereArgs: ['in_progress', accountId, cutoff, beatCutoff],
+        orderBy: 'started_at DESC',
+        limit: 1,
+      );
+      if (maps.isEmpty) return null;
+      return ScanResult.fromMap(maps.first);
+    } catch (e) {
+      _logger.e('Failed to query active scan: $e');
       return null;
     }
   }
@@ -612,6 +782,58 @@ class ScanResultStore {
     }
   }
 
+  /// F206 Part A (Sprint 74): delete FINISHED scans -- the Scan History
+  /// "Clear history" action. Scoped to [accountId] / [scanType] when given
+  /// (null = all), so it clears exactly what the user's filters show.
+  ///
+  /// **Never deletes an `in_progress` row.** That row carries a live scan's
+  /// heartbeat, which the manual-scan notice and the background-scan exclusion
+  /// both read (MV74-2); deleting it mid-scan would let a background scan open
+  /// a second session on the account. Children cascade (email_actions,
+  /// unmatched_emails). Returns the number of scans deleted.
+  /// Review M-3: the number [deleteFinishedScanResults] would delete, so the
+  /// confirmation dialog states the real count (the history list it used to
+  /// count from is capped at 500 rows; the delete is not).
+  Future<int> countFinishedScanResults({String? accountId, String? scanType}) async {
+    final db = await _databaseHelper.database;
+    final where = <String>['status != ?'];
+    final args = <Object>['in_progress'];
+    if (accountId != null) {
+      where.add('account_id = ?');
+      args.add(accountId);
+    }
+    if (scanType != null) {
+      where.add('scan_type = ?');
+      args.add(scanType);
+    }
+    final rows = await db.rawQuery(
+        'SELECT COUNT(*) AS c FROM scan_results WHERE ${where.join(' AND ')}', args);
+    return (rows.first['c'] as int?) ?? 0;
+  }
+
+  Future<int> deleteFinishedScanResults({
+    String? accountId,
+    String? scanType,
+  }) async {
+    final db = await _databaseHelper.database;
+    final where = <String>['status != ?'];
+    final args = <Object>['in_progress'];
+    if (accountId != null) {
+      where.add('account_id = ?');
+      args.add(accountId);
+    }
+    if (scanType != null) {
+      where.add('scan_type = ?');
+      args.add(scanType);
+    }
+    final count = await db.delete('scan_results',
+        where: where.join(' AND '), whereArgs: args);
+    _logger.i('F206: cleared $count finished scan(s)'
+        '${accountId != null ? ' for ${Redact.accountId(accountId)}' : ''}'
+        '${scanType != null ? ' of type $scanType' : ''}');
+    return count;
+  }
+
   /// Delete all scans for a specific account (CASCADE)
   ///
   /// Returns number of scans deleted, throws exception on error
@@ -662,9 +884,13 @@ class ScanResultStore {
       String? where;
       List<dynamic>? whereArgs;
 
+      // Harold Q1 (Sprint 74): re-processing claim rows are not scans.
       if (scanType != null) {
-        where = 'scan_type = ?';
-        whereArgs = [scanType];
+        where = 'scan_type = ? AND scan_type != ?';
+        whereArgs = [scanType, 'reprocess'];
+      } else {
+        where = 'scan_type != ?';
+        whereArgs = ['reprocess'];
       }
 
       final maps = await db.query(
@@ -738,4 +964,99 @@ class ScanResultStore {
       rethrow;
     }
   }
+}
+
+/// Harold Q1 (Sprint 74): a live claim on an account for interactive work that
+/// is not a scan (re-processing). Heartbeats like a scan, so the background
+/// exclusion and its freshness rule treat it the same way.
+class InteractiveScanClaim {
+  final ScanResultStore _store;
+  final int id;
+  Timer? _timer;
+
+  InteractiveScanClaim._(this._store, this.id, Duration interval) {
+    _timer = Timer.periodic(interval, (_) async {
+      try {
+        await _store.recordHeartbeat(id);
+      } catch (_) {
+        // A missed beat must not fail the work it describes.
+      }
+    });
+  }
+
+  /// Stop the heartbeat and remove the claim row. Safe to call twice.
+  Future<void> end() async {
+    _timer?.cancel();
+    _timer = null;
+    try {
+      await _store.deleteScanResult(id);
+    } catch (_) {
+      // The reconciler marks a leftover row interrupted after the timeout.
+    }
+  }
+}
+
+/// Harold Q4 (Sprint 74 MV): the answer from [ScanResultStore.claimAccountScan]
+/// -- either the new row's [id] (granted) or the live row that holds the
+/// account ([blockedBy]).
+class ScanClaimResult {
+  final int? id;
+  final ScanResult? blockedBy;
+
+  const ScanClaimResult._({this.id, this.blockedBy});
+
+  bool get granted => id != null;
+}
+
+/// Harold Q4 (Sprint 74 MV): a scan was NOT started because another scan
+/// holds the account (or the lock could not be checked). Not a failure of the
+/// refused scan -- no row is written for it -- so callers map it to their own
+/// "skipped" outcome instead of an error.
+class ScanAccountBusyException implements Exception {
+  /// The live scan that holds the account; null when the lock could not be
+  /// checked at all.
+  final ScanResult? blockingScan;
+
+  /// The database error, when the lock could not be checked.
+  final Object? cause;
+
+  ScanAccountBusyException(ScanResult this.blockingScan) : cause = null;
+
+  ScanAccountBusyException.unverifiable(Object this.cause)
+      : blockingScan = null;
+
+  /// Plain words for the user: which kind of scan holds the account.
+  String get userMessage {
+    final holder = blockingScan;
+    if (holder == null) {
+      // Covers both "could not check the lock" and "could not record the
+      // scan" (the account row is ensured in the same step) -- say only
+      // what is certain.
+      return 'The app could not record this scan in its database, so it did '
+          'not start. Try again.';
+    }
+    return 'A ${describeScanType(holder.scanType)} is already running on '
+        'this account. Only one scan can run on an account at a time; try '
+        'again when it finishes.';
+  }
+
+  /// "background scan", "manual scan", "demo scan", "rule update".
+  static String describeScanType(String scanType) {
+    switch (scanType) {
+      case 'reprocess':
+        return 'rule update';
+      case 'background':
+      case 'manual':
+      case 'demo':
+        return '$scanType scan';
+      default:
+        return 'scan';
+    }
+  }
+
+  @override
+  String toString() => cause == null
+      ? 'ScanAccountBusyException: held by ${blockingScan?.scanType} scan '
+          '${blockingScan?.id}'
+      : 'ScanAccountBusyException: lock unverifiable: $cause';
 }

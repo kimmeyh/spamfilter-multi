@@ -5,8 +5,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 import 'package:logger/logger.dart';
-import 'package:path_provider/path_provider.dart';
-import '../widgets/account_email_label.dart'; // F176 (Sprint 62)
 import '../widgets/app_bar_with_exit.dart';
 import '../widgets/standard_app_bar_actions.dart';
 import '../widgets/auth_warning_dialog.dart';
@@ -39,6 +37,7 @@ import '../../core/storage/scan_result_store.dart';
 import '../../core/storage/settings_store.dart';
 import '../../core/utils/pattern_normalization.dart';
 import '../../core/utils/provider_sender_grouping.dart';
+import '../../core/utils/result_ordering.dart';
 import '../../core/data/common_email_providers.dart';
 import '../widgets/provider_group_markers.dart';
 import '../../adapters/email_providers/platform_registry.dart';
@@ -48,8 +47,59 @@ import '../../adapters/storage/secure_credentials_store.dart';
 import '../widgets/empty_state.dart';
 import '../widgets/screen_version_line.dart'; // F229 (Sprint 73)
 import '../widgets/system_inset_wrapper.dart'; // F209 (Sprint 69)
+import '../../core/services/export_directories.dart';
 
 /// Displays summary of scan results bound to EmailScanProvider.
+/// F222 (Sprint 74, reworked at Manual Validation): the display order,
+/// extracted so the WIRING is testable (a test of the pure orders alone would
+/// pass with the call site still sorting some other way -- the Sprint 73
+/// "correct abstraction, wrong wiring" defect class).
+///
+/// [order] defaults to [ResultSortOrder.folderDomainAddress], the
+/// pre-Sprint-74 order Harold asked to keep as the default. The folder,
+/// domain and address keys are the ones the old in-place sort used
+/// (`EmailBodyParser`), so the default is unchanged, not re-derived.
+@visibleForTesting
+List<EmailActionResult> orderResultsForDisplay(
+  List<EmailActionResult> results, {
+  ResultSortOrder order = ResultSortOrder.folderDomainAddress,
+}) {
+  final parser = EmailBodyParser();
+  String tieBreak(EmailActionResult r) =>
+      '${r.email.from}\u0000${r.email.subject}';
+  switch (order) {
+    case ResultSortOrder.folderDomainAddress:
+      return orderByFolderDomainAddress<EmailActionResult>(
+        results,
+        folderOf: (r) => r.email.folderName,
+        domainOf: (r) => parser.extractDomainFromEmail(r.email.from) ?? '',
+        addressOf: (r) => parser.extractEmailAddress(r.email.from),
+        tieBreak: tieBreak,
+      );
+    case ResultSortOrder.newestFirst:
+      return orderNewestFirst<EmailActionResult>(
+        results,
+        receivedAt: (r) => r.email.receivedDate,
+        tieBreak: tieBreak,
+      );
+  }
+}
+
+/// F222 (Sprint 74 MV, Harold): the received date and time on the
+/// assign-a-rule pop-up. Local time, to the minute ("2026-09-26 22:05").
+@visibleForTesting
+String formatReceivedDateForDisplay(DateTime receivedDate) =>
+    receivedDate.toLocal().toString().substring(0, 16);
+
+/// F222 (Sprint 74 MV round 2, Harold): the Scan Results ROW shows the date
+/// only -- *"do not need time displayed on the results screen, only date is
+/// needed (Ok to keep time on the assign rule pop-up)"*. Derived from
+/// [formatReceivedDateForDisplay], so the row's date is always the pop-up's
+/// date ("2026-09-26").
+@visibleForTesting
+String formatReceivedDayForRow(DateTime receivedDate) =>
+    formatReceivedDateForDisplay(receivedDate).substring(0, 10);
+
 class ResultsDisplayScreen extends StatefulWidget {
   final String platformId;
   final String platformDisplayName;
@@ -140,7 +190,7 @@ class ReProcessOutcome {
     this.skippedReadOnly = false,
     this.wouldHaveDeleted = 0,
     this.wouldHaveMoved = 0,
-  });
+  }) : busy = null;
 
   /// Nothing needed doing -- not a failure, and not a success worth claiming.
   const ReProcessOutcome.nothingToDo()
@@ -149,7 +199,8 @@ class ReProcessOutcome {
         failed = 0,
         skippedReadOnly = false,
         wouldHaveDeleted = 0,
-        wouldHaveMoved = 0;
+        wouldHaveMoved = 0,
+        busy = null;
 
   /// The account is configured read-only; the mailbox was deliberately not
   /// touched. Distinct from a failure, and the user is told.
@@ -169,7 +220,8 @@ class ReProcessOutcome {
   })  : attempted = 0,
         succeeded = 0,
         failed = 0,
-        skippedReadOnly = true;
+        skippedReadOnly = true,
+        busy = null;
 
   final int attempted;
   final int succeeded;
@@ -181,6 +233,19 @@ class ReProcessOutcome {
   /// may read them as one that did.
   final int wouldHaveDeleted;
   final int wouldHaveMoved;
+
+  /// Harold Q4 (Sprint 74 MV): another scan held the account, so the mailbox
+  /// was NOT touched. The rule or safe sender itself is already saved.
+  const ReProcessOutcome.busy(ScanAccountBusyException this.busy)
+      : attempted = 0,
+        succeeded = 0,
+        failed = 0,
+        skippedReadOnly = false,
+        wouldHaveDeleted = 0,
+        wouldHaveMoved = 0;
+
+  /// Non-null only for [ReProcessOutcome.busy].
+  final ScanAccountBusyException? busy;
 
   /// True when a read-only run had something it would have acted on.
   bool get hasPreview =>
@@ -206,6 +271,65 @@ class ReProcessOutcome {
   bool get allSucceeded => attempted > 0 && failed == 0;
 
   bool get anyFailed => failed > 0;
+}
+
+/// PR #440 test review: the action toast's wording and color, pulled out of
+/// `_showActionOutcome` so the BRANCH ORDER is testable -- a busy or read-only
+/// outcome has attempted = 0 and failed = 0, so if its branch moved below the
+/// failure check it would fall into the success branch and report a change
+/// that did not happen (the F228 defect).
+@visibleForTesting
+({String message, Color background}) describeActionOutcome({
+  required String baseMessage,
+  required String progressSuffix,
+  required ReProcessOutcome outcome,
+  required Color successColor,
+}) {
+  final String message;
+  final Color background;
+
+  if (outcome.busy != null) {
+    final holder = outcome.busy!.blockingScan;
+    message = holder == null
+        ? '$baseMessage -- saved. The app could not check whether another '
+            'scan is running on this account, so your mailbox was not '
+            'changed. The next scan applies it.'
+        : '$baseMessage -- saved. A '
+            '${ScanAccountBusyException.describeScanType(holder.scanType)} '
+            'is running on this account, so your mailbox was not changed '
+            'yet. The next scan applies it.';
+    background = Colors.blueGrey;
+  } else if (outcome.skippedReadOnly) {
+    // F234: when there is something to preview, SAY WHAT IT WOULD HAVE DONE.
+    // "would have" is stated twice and the mailbox is named as unchanged --
+    // the wording carries the whole risk of this card, because a preview
+    // misread as a completed action is the F228 defect wearing a new hat.
+    if (outcome.hasPreview) {
+      final parts = <String>[];
+      if (outcome.wouldHaveDeleted > 0) {
+        parts.add('${outcome.wouldHaveDeleted} would have been filed');
+      }
+      if (outcome.wouldHaveMoved > 0) {
+        parts.add('${outcome.wouldHaveMoved} would have been moved');
+      }
+      message = '$baseMessage -- saved. Preview only: ${parts.join(', ')}. '
+          'This account is read-only, so your mailbox was NOT changed.';
+    } else {
+      message = '$baseMessage -- saved. This account is read-only, so your '
+          'mailbox was not changed.';
+    }
+    background = Colors.blueGrey;
+  } else if (outcome.anyFailed) {
+    // Name the number. "Something went wrong" is what sent Harold to Scan
+    // History to work out what had actually happened.
+    message = '$baseMessage -- saved, but ${outcome.failed} of '
+        '${outcome.attempted} could not be applied to your mailbox.';
+    background = Colors.orange;
+  } else {
+    message = '$baseMessage$progressSuffix';
+    background = successColor;
+  }
+  return (message: message, background: background);
 }
 
 class _ResultsDisplayScreenState extends State<ResultsDisplayScreen> {
@@ -255,6 +379,11 @@ class _ResultsDisplayScreenState extends State<ResultsDisplayScreen> {
 
   // Folder filter state (Item 6: folder dropdown)
   Set<String> _selectedFolders = {};
+
+  /// F222 (Sprint 74 MV): the Scan Results order, switched by the Sort chip.
+  /// Screen state only -- every visit starts on the default, which is what
+  /// Harold asked to keep.
+  ResultSortOrder _sortOrder = ResultSortOrder.folderDomainAddress;
 
   // Issue 3: Cache folders for performance
   List<String>? _cachedFolders;
@@ -545,9 +674,11 @@ class _ResultsDisplayScreenState extends State<ResultsDisplayScreen> {
       // selection is deliberate: a second copy of that logic is how the two
       // drift apart again.
       final appVersion = await AppVersion.get();
+      final redact = await SettingsStore().getExportRedacted();
       final csvContent = scanProvider.exportResultsToCSV(
         rows: _currentResults(),
         appVersion: appVersion,
+        redact: redact,
         // I-3: a historical view must stamp the SCAN's date, not the live
         // session's. Null on a live view, where the provider's own
         // _scanStartTime is the right answer.
@@ -556,29 +687,9 @@ class _ResultsDisplayScreenState extends State<ResultsDisplayScreen> {
             : null,
       );
 
-      // Get configured export directory from Settings, or use default
-      final settingsStore = SettingsStore();
-      final configuredDir = await settingsStore.getCsvExportDirectory();
-
-      String exportPath;
-      if (configuredDir != null && configuredDir.isNotEmpty) {
-        // Use configured directory
-        final dir = Directory(configuredDir);
-        if (!await dir.exists()) {
-          await dir.create(recursive: true);
-        }
-        exportPath = configuredDir;
-      } else {
-        // Use default directory (downloads on mobile, documents on desktop)
-        final directory = Platform.isAndroid || Platform.isIOS
-            ? await getExternalStorageDirectory()
-            : await getApplicationDocumentsDirectory();
-
-        if (directory == null) {
-          throw Exception('Could not access storage directory');
-        }
-        exportPath = directory.path;
-      }
+      // F206 (Sprint 74): ONE resolver for every export (configured folder,
+      // else the platform default) -- this block used to be a local copy.
+      final exportPath = await ExportDirectories.resolve();
 
       // Create filename with timestamp
       final timestamp =
@@ -725,28 +836,16 @@ class _ResultsDisplayScreenState extends State<ResultsDisplayScreen> {
       }).toList();
     }
 
-    // Item 5: Sort by folder → domain.tld → email
-    results.sort((a, b) {
-      // First sort by folder
-      final folderCompare = a.email.folderName.compareTo(b.email.folderName);
-      if (folderCompare != 0) return folderCompare;
-
-      // Then sort by domain
-      final bodyParser = EmailBodyParser();
-      final domainA = bodyParser.extractDomainFromEmail(a.email.from) ?? '';
-      final domainB = bodyParser.extractDomainFromEmail(b.email.from) ?? '';
-      final domainCompare = domainA.compareTo(domainB);
-      if (domainCompare != 0) return domainCompare;
-
-      // Finally sort by email
-      final emailA = bodyParser.extractEmailAddress(a.email.from);
-      final emailB = bodyParser.extractEmailAddress(b.email.from);
-      return emailA.compareTo(emailB);
-    });
+    // F222 (Sprint 74, reworked at MV): the user's chosen order -- default
+    // folder -> domain -> address, or newest first -- from the Sort chip.
+    // Returns a NEW list, so the provider's own list is never reordered in
+    // place (the old in-place sort was safe only when a filter above had
+    // already copied it).
+    results = orderResultsForDisplay(results, order: _sortOrder);
 
     // Sprint 46 retro IMP-1 (Harold): email-provider senders group at the
-    // TOP (stable partition -- the folder/domain/email sort above is kept
-    // within both groups). Applies under every filter; the heading / end
+    // TOP (stable partition -- the F222 order above is kept within both
+    // groups). Applies under every filter; the heading / end
     // indicator are rendered by the list builder only when the group is
     // non-empty. Boundary index is exposed via _providerGroupCount.
     final partitioned = ProviderSenderGrouping.partitionProviderFirst(
@@ -1295,10 +1394,9 @@ class _ResultsDisplayScreenState extends State<ResultsDisplayScreen> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // F176 (Sprint 62): which account these results belong to -- the
-            // AppBar title carries it too, but truncates at phone width.
-            AccountEmailLabel(email: widget.accountEmail),
-            const SizedBox(height: 2),
+            // Sprint 74 MV (Harold): the account email appears ONCE on this
+            // screen, in the "Results - <email>" title. F176 (Sprint 62) had
+            // added a second copy here; the Manual Scan screen keeps its own.
             Text(
               _buildSummaryTitle(
                   hasLiveResults, showingHistorical, scanProvider, allResults),
@@ -1456,6 +1554,7 @@ class _ResultsDisplayScreenState extends State<ResultsDisplayScreen> {
                       ),
                     ),
                   _buildFolderFilterChip(allResults),
+                  _buildSortChip(),
                 ],
               );
             }),
@@ -1564,6 +1663,31 @@ class _ResultsDisplayScreenState extends State<ResultsDisplayScreen> {
               style: TextStyle(fontSize: 12, color: Colors.grey[600]),
             ),
           ],
+        ],
+      );
+    }
+
+    if (hasError && scanProvider.wasRefused) {
+      // Harold Q4 (Sprint 74 MV): another scan holds this account, so this one
+      // did not start. Information, not a failure -- neutral colors, and the
+      // whole sentence wraps instead of being cut off.
+      return Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(Icons.info_outline,
+              size: 16, color: Theme.of(context).colorScheme.secondary),
+          const SizedBox(width: 6),
+          Flexible(
+            child: Text(
+              scanProvider.statusMessage ?? 'Another scan is running',
+              style: TextStyle(
+                fontSize: 13,
+                fontWeight: FontWeight.w500,
+                color: Theme.of(context).colorScheme.onSurface,
+              ),
+            ),
+          ),
         ],
       );
     }
@@ -1705,6 +1829,57 @@ class _ResultsDisplayScreenState extends State<ResultsDisplayScreen> {
     );
   }
 
+  /// F222 (Sprint 74 MV, Harold): switches the list between the default
+  /// order (folder, domain, address) and newest first. Built like the
+  /// Folders chip beside it; one tap toggles. The "from email providers"
+  /// group stays at the top in both orders.
+  Widget _buildSortChip() {
+    final isNewest = _sortOrder == ResultSortOrder.newestFirst;
+    final label = isNewest ? 'Sort: Newest first' : 'Sort: Folder';
+    return Semantics(
+      container: true,
+      button: true,
+      excludeSemantics: true,
+      label: label,
+      hint: isNewest
+          ? 'Switch to folder, domain and address order'
+          : 'Switch to newest first',
+      onTap: _toggleSortOrder,
+      child: Tooltip(
+        message: isNewest
+            ? 'Newest first. Tap for folder, domain, address.'
+            : 'Folder, then domain, then address. Tap for newest first.',
+        child: GestureDetector(
+          onTap: _toggleSortOrder,
+          child: Chip(
+            key: const Key('results_sort_chip'),
+            label: Text(label),
+            avatar: const Icon(Icons.sort, size: 18),
+            backgroundColor: isNewest
+                ? Colors.indigo.withValues(alpha: 0.7)
+                : Colors.indigo,
+            labelStyle: TextStyle(
+              color: Colors.white,
+              fontWeight: isNewest ? FontWeight.w900 : FontWeight.bold,
+            ),
+            side: isNewest
+                ? const BorderSide(color: Colors.black, width: 2)
+                : BorderSide.none,
+            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+          ),
+        ),
+      ),
+    );
+  }
+
+  void _toggleSortOrder() {
+    setState(() {
+      _sortOrder = _sortOrder == ResultSortOrder.newestFirst
+          ? ResultSortOrder.folderDomainAddress
+          : ResultSortOrder.newestFirst;
+    });
+  }
+
   Widget _buildFolderFilterChip(List<EmailActionResult> allResults) {
     // Issue 3: Use cached folders for performance
     final folders = _cachedFolders ?? [];
@@ -1832,7 +2007,10 @@ class _ResultsDisplayScreenState extends State<ResultsDisplayScreen> {
     final effectiveEval = _getEffectiveEvaluation(result);
     final matchedRule = effectiveEval?.matchedRule ?? '';
     final rule = matchedRule.isNotEmpty ? matchedRule : 'No rule';
-    final subtitle = '$folder • $subject • $rule';
+    // F222 (Sprint 74 MV, Harold): the received date, before the subject so a
+    // long subject cannot push it off the line.
+    final date = formatReceivedDayForRow(result.email.receivedDate);
+    final subtitle = '$folder • $date • $subject • $rule';
     final trailing = result.success
         ? const Icon(Icons.check, color: Colors.green)
         : const Icon(Icons.error, color: Colors.red);
@@ -1897,7 +2075,7 @@ class _ResultsDisplayScreenState extends State<ResultsDisplayScreen> {
         cleanedSubject.isNotEmpty ? cleanedSubject : '(No subject)';
 
     // Format date/time
-    final dateStr = email.receivedDate.toString().substring(0, 16);
+    final dateStr = formatReceivedDateForDisplay(email.receivedDate);
 
     // Sprint 46 (Harold speed follow-up): predicates predicting which OTHER
     // "No rule" items the quick action about to be taken will ALSO address,
@@ -3009,6 +3187,13 @@ class _ResultsDisplayScreenState extends State<ResultsDisplayScreen> {
     unawaited(action().catchError((Object e, StackTrace s) {
       Logger().e('Background quick-action pipeline failed',
           error: e, stackTrace: s);
+      // Sprint 74 MV: this failure was console-only, so a tapped action that
+      // died here left no trace a tester could read. Error class only.
+      unawaited(DiagnosticLogger.failure(
+        context: 'quick-action',
+        kind: DiagnosticLogger.kindException,
+        reason: 'pipeline failed after the tap: ${e.runtimeType}',
+      ));
     }));
 
     // Step 3: show the next item's popup right away.
@@ -3429,39 +3614,14 @@ class _ResultsDisplayScreenState extends State<ResultsDisplayScreen> {
   }) {
     if (!mounted) return;
 
-    final String message;
-    final Color background;
-
-    if (outcome.skippedReadOnly) {
-      // F234: when there is something to preview, SAY WHAT IT WOULD HAVE DONE.
-      // "would have" is stated twice and the mailbox is named as unchanged --
-      // the wording carries the whole risk of this card, because a preview
-      // misread as a completed action is the F228 defect wearing a new hat.
-      if (outcome.hasPreview) {
-        final parts = <String>[];
-        if (outcome.wouldHaveDeleted > 0) {
-          parts.add('${outcome.wouldHaveDeleted} would have been filed');
-        }
-        if (outcome.wouldHaveMoved > 0) {
-          parts.add('${outcome.wouldHaveMoved} would have been moved');
-        }
-        message = '$baseMessage -- saved. Preview only: ${parts.join(', ')}. '
-            'This account is read-only, so your mailbox was NOT changed.';
-      } else {
-        message = '$baseMessage -- saved. This account is read-only, so your '
-            'mailbox was not changed.';
-      }
-      background = Colors.blueGrey;
-    } else if (outcome.anyFailed) {
-      // Name the number. "Something went wrong" is what sent Harold to Scan
-      // History to work out what had actually happened.
-      message = '$baseMessage -- saved, but ${outcome.failed} of '
-          '${outcome.attempted} could not be applied to your mailbox.';
-      background = Colors.orange;
-    } else {
-      message = '$baseMessage$progressSuffix';
-      background = successColor;
-    }
+    final described = describeActionOutcome(
+      baseMessage: baseMessage,
+      progressSuffix: progressSuffix,
+      outcome: outcome,
+      successColor: successColor,
+    );
+    final message = described.message;
+    final background = described.background;
 
     // F231: record BEFORE showing. The toast can be missed, replaced or
     // covered by the next item's dialog; this cannot.
@@ -3864,12 +4024,21 @@ class _ResultsDisplayScreenState extends State<ResultsDisplayScreen> {
     // "waiting" signal the scanner shows; the re-processing banner already
     // renders while this runs, so the wait is visible rather than silent.
     ScanLease? lease;
+    InteractiveScanClaim? claim;
+    ScanAccountBusyException? busy;
 
     try {
       lease = await ScanCoordinator.instance.acquire(
         scanType: 'reprocess',
         accountId: widget.accountId,
       );
+      // Harold Q1 (Sprint 74): a live claim row BEFORE connecting, so a
+      // background scan (another isolate or process) sees this account is
+      // busy and yields instead of opening a second session.
+      // Harold Q4 (Sprint 74 MV): taken through the per-account scan lock;
+      // if another scan holds the account, this throws and NOTHING connects.
+      claim = await ScanResultStore(DatabaseHelper())
+          .claimInteractive(widget.accountId);
 
       // Create platform connection
       platform = PlatformRegistry.getPlatform(widget.platformId);
@@ -3892,8 +4061,10 @@ class _ResultsDisplayScreenState extends State<ResultsDisplayScreen> {
 
       // Execute delete actions
       if (toDelete.isNotEmpty) {
+        // F202 (Sprint 74): account -> provider default, same resolver as
+        // the scanner. LIVE-DELETION PATH: this decides where real mail goes.
         final deletedRuleFolder =
-            await settingsStore.getAccountDeletedRuleFolder(widget.accountId);
+            await settingsStore.getEffectiveDeletedRuleFolder(widget.accountId);
         if (deletedRuleFolder != null) {
           platform.setDeletedRuleFolder(deletedRuleFolder);
         }
@@ -3953,9 +4124,9 @@ class _ResultsDisplayScreenState extends State<ResultsDisplayScreen> {
 
       // Execute safe sender move actions
       if (toMoveSafe.isNotEmpty) {
-        final safeSenderFolder =
-            await settingsStore.getAccountSafeSenderFolder(widget.accountId);
-        final targetFolder = safeSenderFolder ?? 'INBOX';
+        // F202 (Sprint 74): account -> provider -> overall, as in the scanner.
+        final targetFolder =
+            await settingsStore.getEffectiveSafeSenderFolder(widget.accountId);
 
         var moveFailedIds = <String>{};
         try {
@@ -3986,6 +4157,11 @@ class _ResultsDisplayScreenState extends State<ResultsDisplayScreen> {
           });
         }
       }
+    } on ScanAccountBusyException catch (e) {
+      // Harold Q4 (Sprint 74 MV): refused before connecting. The rule or safe
+      // sender is already saved; only the mailbox action waits for a scan.
+      logger.i('[F38] Re-processing NOT started: $e');
+      busy = e;
     } catch (e) {
       logger.e('[F38] Re-processing failed: $e');
       // F233: the line Sprint 71 needed and could not read. An exception HERE
@@ -4019,9 +4195,20 @@ class _ResultsDisplayScreenState extends State<ResultsDisplayScreen> {
       // F212 R-3: release on EVERY path, including the throw. A lease leaked
       // here would wedge every later scan behind work that already finished --
       // the same process-global wedge F220 fixed for the scan screen.
+      // The claim ends on every path, like the lease -- and BEFORE the lease
+      // is released (PR #440 review): release() hands the lease straight to
+      // a queued manual scan, which would otherwise reach the account lock
+      // while this claim row still exists and be refused ("a rule update is
+      // already running").
+      await claim?.end();
       if (lease != null) {
         ScanCoordinator.instance.release(lease);
       }
+    }
+
+    if (busy != null) {
+      if (mounted) setState(() => _isReProcessing = false);
+      return ReProcessOutcome.busy(busy);
     }
 
     // Hide banner and show result snackbar
@@ -4172,11 +4359,32 @@ class _ResultsDisplayScreenState extends State<ResultsDisplayScreen> {
     final senderEmailForConflictCheck = type != 'subject' && email != null
         ? EmailBodyParser().extractEmailAddress(email.from).toLowerCase().trim()
         : null;
+    // Sprint 74 MV (Harold): a subject rule tapped from a saved scan never
+    // reached the database, and nothing recorded whether the tap arrived.
+    // These lines make the next occurrence settle it. Type and error CLASS
+    // only -- the diagnostic log records no message content, and the value
+    // is a subject, address or domain.
+    unawaited(DiagnosticLogger.failure(
+      context: 'rule-create',
+      kind: DiagnosticLogger.kindInfo,
+      reason: 'block rule requested (type: $type)',
+    ));
     final result = await service.createBlockRule(
       type: type,
       value: value,
       senderEmailForConflictCheck: senderEmailForConflictCheck,
     );
+    unawaited(DiagnosticLogger.failure(
+      context: 'rule-create',
+      kind: result.success
+          ? DiagnosticLogger.kindInfo
+          : DiagnosticLogger.kindException,
+      reason: result.success
+          ? 'block rule saved (type: $type'
+              '${result.alreadyExisted ? ', already existed' : ''})'
+          : 'block rule NOT saved (type: $type, '
+              'error: ${result.error?.runtimeType ?? 'rejected'})',
+    ));
 
     if (!result.success) {
       logger.e('[FAIL] Failed to create block rule: ${result.error}');

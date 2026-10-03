@@ -1,8 +1,6 @@
 import 'dart:io';
 import 'package:logger/logger.dart';
-import 'package:path/path.dart' as path;
 import 'package:path_provider/path_provider.dart';
-import 'package:syncfusion_flutter_xlsio/xlsio.dart' as xlsio;
 
 import '../storage/database_helper.dart';
 import '../storage/background_scan_log_store.dart';
@@ -16,6 +14,7 @@ import '../../adapters/storage/app_paths.dart';
 import '../../adapters/storage/secure_credentials_store.dart';
 import '../../util/redact.dart';
 import 'background_scan_core.dart';
+import 'scan_sheet_export.dart';
 
 /// Windows-specific background scan worker
 ///
@@ -65,52 +64,6 @@ class BackgroundScanWindowsWorker {
         mode: FileMode.append,
       );
     } catch (_) {}
-  }
-
-  /// Maximum attempts when the DB is locked by a concurrent process.
-  ///
-  /// F101 (Sprint 43, Harold direction 2026-06-23): capped at 15 (was 20) so a
-  /// genuinely stuck lock fails in ~15 min instead of ~20. With
-  /// [_dbLockRetryDelay] = 1 min BETWEEN attempts (no trailing delay after the
-  /// final attempt), 15 attempts means at most 14 one-minute waits + the scan
-  /// work itself -- a worst case of ~15 min before the lock error is rethrown
-  /// and the failure recorded.
-  static const int _dbLockMaxAttempts = 15;
-
-  /// Delay between DB-lock retries.
-  static const Duration _dbLockRetryDelay = Duration(minutes: 1);
-
-  /// Returns true if [error] is (or wraps) a SQLite "database is locked" error.
-  static bool _isDatabaseLocked(Object error) {
-    final s = error.toString().toLowerCase();
-    return s.contains('database is locked') || s.contains('(code 5)');
-  }
-
-  /// Runs [action], retrying on a SQLite "database is locked" error (caused by a
-  /// concurrent per-account background-scan process). Waits
-  /// [_dbLockRetryDelay] between attempts, up to [_dbLockMaxAttempts] times
-  /// (F98, Sprint 42). Non-lock errors are rethrown immediately. After the final
-  /// attempt the lock error is rethrown so the caller records the failure.
-  static Future<T> _withDbLockRetry<T>({
-    required String accountId,
-    required Future<T> Function() action,
-  }) async {
-    for (var attempt = 1; attempt <= _dbLockMaxAttempts; attempt++) {
-      try {
-        return await action();
-      } catch (e) {
-        if (!_isDatabaseLocked(e) || attempt == _dbLockMaxAttempts) {
-          rethrow;
-        }
-        await _bgLog(
-            'DB locked scanning ${Redact.accountId(accountId)} (attempt '
-            '$attempt/$_dbLockMaxAttempts); waiting '
-            '${_dbLockRetryDelay.inMinutes}m before retry');
-        await Future<void>.delayed(_dbLockRetryDelay);
-      }
-    }
-    // Unreachable: the loop either returns or rethrows.
-    throw StateError('DB lock retry loop exited unexpectedly');
   }
 
   /// Execute background scan for accounts.
@@ -255,18 +208,17 @@ class BackgroundScanWindowsWorker {
           // Execute scan for this account
           await _bgLog('Executing scan for ${Redact.accountId(accountId)} (platform: $platformId)');
           try {
-            // F98 (Sprint 42): concurrent per-account processes can hit
-            // "database is locked" (code 5). Retry the whole scan on a lock,
-            // waiting 1 minute between attempts, up to 20 times.
-            final result = await _withDbLockRetry(
+            // F98 (Sprint 42) retried a "database is locked" scan up to 15
+            // times, 1 minute apart. Replaced (Harold, Sprint 74 MV round 4)
+            // by the shared rule in BackgroundScanCore.scanAccount: a busy
+            // account or database waits a random 2-6 minutes, then one more
+            // attempt -- identical on Android.
+            final result = await _scanAccount(
               accountId: accountId,
-              action: () => _scanAccount(
-                accountId: accountId,
-                platformId: platformId!,
-                dbHelper: dbHelper,
-                ruleSetProvider: ruleSetProvider,
-                settingsStore: settingsStore,
-              ),
+              platformId: platformId,
+              dbHelper: dbHelper,
+              ruleSetProvider: ruleSetProvider,
+              settingsStore: settingsStore,
             );
 
             // Update log with success
@@ -281,6 +233,16 @@ class BackgroundScanWindowsWorker {
               unmatchedCount: result.unmatchedCount,
             );
             await logStore.updateLog(successLog);
+            if (result.skippedReason != null) {
+              // MV74-2: deliberately not scanned -- say so, rather than a
+              // SUCCESS line with zero counts that reads like an empty mailbox.
+              await _bgLog('Account ${Redact.accountId(accountId)} scan SKIPPED: '
+                  '${result.skippedReason}');
+              // A deliberate skip is a SUCCESS for the worker's exit status;
+              // a run that only skipped must not report failure.
+              successCount++;
+              continue;
+            }
             await _bgLog('Account ${Redact.accountId(accountId)} scan SUCCESS: Processed: ${result.emailsProcessed}, Deleted: ${result.deletedCount}, Moved: ${result.movedCount}, Safe: ${result.safeCount}, No Rule: ${result.unmatchedCount}, Errors: ${result.errorCount}');
 
             // F110 (Sprint 43): one phishing line per email that HARD-FAILED at
@@ -295,10 +257,13 @@ class BackgroundScanWindowsWorker {
             }
 
             // Export debug CSV if enabled
-            await _exportDebugCsvIfEnabled(
+            // F206 (Sprint 74): the SHARED export (was a Windows-only copy
+            // here, so Android's toggle did nothing).
+            await BackgroundScanExport.exportIfEnabled(
               scanProvider: result.scanProvider,
               accountId: accountId,
               settingsStore: settingsStore,
+              log: _bgLog,
             );
 
             successCount++;
@@ -405,122 +370,6 @@ class BackgroundScanWindowsWorker {
   ///
   /// Field order: Scan Date/Time, Received Date/Time, Status, Folder, Action,
   /// Rule, From, Subject, Match Condition, Email ID
-  static Future<void> _exportDebugCsvIfEnabled({
-    required EmailScanProvider scanProvider,
-    required String accountId,
-    required SettingsStore settingsStore,
-  }) async {
-    try {
-      final debugCsvEnabled = await settingsStore.getBackgroundScanDebugCsv();
-      if (!debugCsvEnabled) return;
-
-      // Export to environment-aware AppData directory (ADR-0035)
-      // [UPDATED] Issue #218: Use path_provider for MSIX sandbox compatibility
-      final exportDir = await _getLogDir();
-
-      // Ensure directory exists
-      final dir = Directory(exportDir);
-      if (!await dir.exists()) {
-        await dir.create(recursive: true);
-      }
-
-      // F45: Daily filename (no time component), with _dev suffix per ADR-0035.
-      // F98: use the shared sanitizer so the CSV/XLSX token matches the log and
-      // Task Scheduler tokens exactly.
-      final safeAccountId = sanitizeAccountId(accountId);
-      final dateStr = DateTime.now().toIso8601String().split('T')[0];
-      final devSuffix = AppEnvironment.isDev ? '_dev' : '';
-      final xlsxFilename = 'background_scan_${safeAccountId}_$dateStr$devSuffix.xlsx';
-      final dataFilename = 'background_scan_${safeAccountId}_$dateStr$devSuffix.data.csv';
-      final xlsxPath = path.join(exportDir, xlsxFilename);
-      final dataPath = path.join(exportDir, dataFilename);
-
-      // Get new rows from this scan run
-      final newRows = scanProvider.getExcelRows();
-
-      // F45: Append new rows to the daily data file (CSV accumulator)
-      final dataFile = File(dataPath);
-      final buffer = StringBuffer();
-
-      if (newRows.isEmpty) {
-        // Placeholder row for empty scan runs
-        final scanDate = DateTime.now().toIso8601String();
-        // 11 columns: Scan, Received, Status, Folder, Action, Rule, From,
-        // Subject, Match Condition, Email ID, Auth (Sprint 43). The
-        // "<no records>" marker sits in the From column for visibility.
-        buffer.writeln('$scanDate\t$scanDate\t\t\t\t\t<no records to process>\t\t\t\t');
-      } else {
-        for (final row in newRows) {
-          buffer.writeln(row.join('\t'));
-        }
-      }
-
-      // Append to existing data file or create new
-      await dataFile.writeAsString(
-        buffer.toString(),
-        mode: FileMode.append,
-      );
-
-      // Read all accumulated rows and generate Excel
-      final allDataLines = (await dataFile.readAsString())
-          .split('\n')
-          .where((line) => line.trim().isNotEmpty)
-          .toList();
-
-      const headers = [
-        'Scan Date and Time',
-        'Received Date and Time',
-        'Status',
-        'Folder',
-        'Action',
-        'Rule',
-        'From',
-        'Subject',
-        'Match Condition',
-        'Email ID',
-        // F110 (Sprint 43): comma-separated list of the SPF/DKIM/DMARC checks
-        // this email HARD-FAILED (e.g. "SPF,DMARC"); blank when none failed.
-        'Phishing SPF/DKIM/DMARC',
-      ];
-
-      final workbook = xlsio.Workbook();
-      final sheet = workbook.worksheets[0];
-      sheet.name = 'Background Scan';
-
-      // Write header row with formatting
-      for (var col = 0; col < headers.length; col++) {
-        final cell = sheet.getRangeByIndex(1, col + 1);
-        cell.setText(headers[col]);
-        cell.cellStyle.bold = true;
-        cell.cellStyle.backColor = '#D9E2F3';
-      }
-
-      // Write all accumulated data rows
-      for (var row = 0; row < allDataLines.length; row++) {
-        final cells = allDataLines[row].split('\t');
-        for (var col = 0; col < cells.length && col < headers.length; col++) {
-          sheet.getRangeByIndex(row + 2, col + 1).setText(cells[col]);
-        }
-      }
-
-      // Auto-fit column widths
-      for (var col = 1; col <= headers.length; col++) {
-        sheet.autoFitColumn(col);
-      }
-
-      // Save Excel file
-      final bytes = workbook.saveAsStream();
-      await File(xlsxPath).writeAsBytes(bytes);
-      workbook.dispose();
-
-      final addedRows = newRows.isEmpty ? 1 : newRows.length;
-      // SEC-17: Log redacted filename rather than full path (path contains account email)
-      await _bgLog('Debug Excel exported for ${Redact.accountId(accountId)} ($addedRows new rows, ${allDataLines.length} total)');
-    } catch (e) {
-      await _bgLog('Debug Excel export failed: $e');
-      // Not critical - do not rethrow
-    }
-  }
 
   /// Scan a single account using EmailScanner
   static Future<_ScanResult> _scanAccount({
@@ -552,6 +401,7 @@ class BackgroundScanWindowsWorker {
       unmatchedCount: outcome.unmatchedCount,
       errorCount: outcome.errorCount,
       scanProvider: outcome.scanProvider,
+      skippedReason: outcome.skippedReason,
     );
   }
 }
@@ -565,6 +415,7 @@ class _ScanResult {
   final int unmatchedCount;
   final int errorCount;
   final EmailScanProvider scanProvider;
+  final String? skippedReason; // MV74-2: see AccountScanOutcome.skippedReason
 
   const _ScanResult({
     required this.emailsProcessed,
@@ -574,5 +425,6 @@ class _ScanResult {
     required this.unmatchedCount,
     required this.errorCount,
     required this.scanProvider,
+    this.skippedReason,
   });
 }

@@ -2,6 +2,7 @@ import 'dart:async';
 import 'dart:convert' show base64Url, jsonDecode, utf8;
 import 'dart:io' show Platform;
 import 'package:flutter/foundation.dart' show visibleForTesting;
+import 'package:enough_mail/codecs.dart' show DateCodec;
 import 'package:googleapis/gmail/v1.dart' as gmail;
 import 'package:http/http.dart' as http;
 import '../../adapters/auth/google_auth_service.dart';
@@ -1055,13 +1056,13 @@ class GmailApiAdapter with BatchOperationsMixin implements SpamFilterPlatform {
         }
       }
 
-      // Parse date more robustly
-      DateTime parsedDate;
-      try {
-        parsedDate = DateTime.tryParse(getHeader('Date')) ?? DateTime.now();
-      } catch (e) {
-        parsedDate = DateTime.now();
-      }
+      // F222 (Sprint 74): see resolveGmailReceivedDate -- the previous
+      // DateTime.tryParse on the RFC 2822 header returned null for every real
+      // message, so every Gmail email carried the SCAN time.
+      final parsedDate = resolveGmailReceivedDate(
+        internalDate: gmailMessage.internalDate,
+        dateHeader: getHeader('Date'),
+      );
 
       // F91 (Sprint 39): capture the RFC 5322 Message-ID header. getHeader is
       // already case-insensitive. Gmail OAuth dedup is skipped at the scanner
@@ -1094,6 +1095,41 @@ class GmailApiAdapter with BatchOperationsMixin implements SpamFilterPlatform {
   EmailMessage? debugConvertGmailMessage(
           gmail.Message gmailMessage, String folderName) =>
       _convertGmailMessage(gmailMessage, folderName);
+
+  /// F222 (Sprint 74): the received date of a Gmail message.
+  ///
+  /// 1. `internalDate` (epoch ms) -- Google documents it as the timestamp
+  ///    "which determines ordering in the inbox" and "more reliable than the
+  ///    `Date` header" (googleapis 11.4.0, gmail/v1.dart Message.internalDate).
+  ///    Exactly what "match the inbox" needs.
+  /// 2. The `Date` header, parsed as RFC 2822 by enough_mail's DateCodec.
+  ///    `DateTime.tryParse` -- used here before -- accepts ISO-8601 only, so
+  ///    `Tue, 23 Sep 2026 14:05:11 -0400` returned null (verified by running
+  ///    it) and every Gmail message fell through to...
+  /// 3. ...the scan time, now only a genuine last resort.
+  ///
+  /// Public static so the contract is directly testable; never throws.
+  static DateTime resolveGmailReceivedDate({
+    required String? internalDate,
+    required String dateHeader,
+    DateTime Function()? now,
+  }) {
+    final ms = int.tryParse(internalDate ?? '');
+    if (ms != null && ms > 0) {
+      return DateTime.fromMillisecondsSinceEpoch(ms);
+    }
+    try {
+      final fromHeader = DateCodec.decodeDate(dateHeader);
+      if (fromHeader != null) return fromHeader;
+    } catch (e) {
+      // Malformed header: fall through to the scan time -- LOGGED, because a
+      // silent scan-time fallback is exactly how F222's Gmail date defect
+      // went unnoticed.
+      AppLogger.warning('Gmail received date unreadable (internalDate='
+          '$internalDate); using the scan time: $e');
+    }
+    return (now ?? DateTime.now)();
+  }
 
   /// F185 (Sprint 63): decode Gmail's base64url body data to text. Public
   /// static so the decoding contract is directly unit-testable. Undecodable

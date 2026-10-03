@@ -50,7 +50,12 @@ abstract class RuleDatabaseProvider {
 ///     those reconstructed paths re-parse headers that carry only From/Subject
 ///     and always classify GREY (F89 coverage gap). Per the Sprint 43 Class-1
 ///     decision, only the classification enum is persisted, not the raw headers.
-const int databaseVersion = 8;
+/// v9: Add last_heartbeat_at (nullable INTEGER, epoch ms) to scan_results
+///     (MV74-2, Sprint 74). The scanning isolate refreshes it every 30s so
+///     OTHER isolates/processes can tell a live scan from a dead one --
+///     the UI's ScanCoordinator cannot see a background scan on either
+///     platform. Existing rows stay NULL and fall back to started_at.
+const int databaseVersion = 10;
 
 /// SQLite database helper - singleton pattern
 class DatabaseHelper implements RuleDatabaseProvider {
@@ -179,6 +184,7 @@ class DatabaseHelper implements RuleDatabaseProvider {
         status TEXT NOT NULL,
         error_message TEXT,
         folders_scanned TEXT NOT NULL,
+        last_heartbeat_at INTEGER,
         FOREIGN KEY (account_id) REFERENCES accounts(account_id)
       );
     ''');
@@ -594,6 +600,43 @@ class DatabaseHelper implements RuleDatabaseProvider {
             'ALTER TABLE unmatched_emails ADD COLUMN auth_classification TEXT;');
       }
       _logger.i('v8 migration complete');
+    }
+
+    if (oldVersion < 9) {
+      // v9: MV74-2 (Sprint 74) -- liveness heartbeat on scan_results. Nullable
+      // and additive; guarded so a fresh-install table (which already has the
+      // column from _createTables) is not re-altered.
+      _logger.i('Applying v9 migration: adding scan_results.last_heartbeat_at');
+      final scanInfo = await db.rawQuery('PRAGMA table_info(scan_results)');
+      final scanColumns = scanInfo.map((r) => r['name'] as String).toSet();
+      if (!scanColumns.contains('last_heartbeat_at')) {
+        await db.execute(
+            'ALTER TABLE scan_results ADD COLUMN last_heartbeat_at INTEGER;');
+      }
+      _logger.i('v9 migration complete');
+    }
+
+    if (oldVersion < 10) {
+      // v10: Sprint 74 Manual Validation (Harold) -- subject rules were stored
+      // with pattern_sub_type 'exact_domain' by all three creators, so Manage
+      // Rules labeled them "Subject - Exact Domain" and counted them under the
+      // Header / From "Exact Domain" chip. A subject pattern is a phrase:
+      // 'keyword', like body phrase rules. Data only; matching is unchanged
+      // (patterns live in condition_subject either way).
+      // Guarded like the earlier migrations: only when the rules table and
+      // its classification columns exist (partial test schemas lack them).
+      final ruleCols = (await db.rawQuery('PRAGMA table_info(rules)'))
+          .map((r) => r['name'] as String)
+          .toSet();
+      if (ruleCols.contains('pattern_category') &&
+          ruleCols.contains('pattern_sub_type')) {
+        final n = await db.rawUpdate(
+            "UPDATE rules SET pattern_sub_type = 'keyword' "
+            "WHERE pattern_category = 'subject' "
+            "AND pattern_sub_type = 'exact_domain'");
+        _logger.i('v10 migration complete: $n subject rule(s) reclassified '
+            'exact_domain -> keyword');
+      }
     }
   }
 

@@ -7,6 +7,97 @@ Manual Validation complete
 Sprint 7n Manual Validation Feedback 
 
 ---------------------------------------------------------------------------------------------------------
+Sprint 74 Manual Validation Feedback 
+  1. Scan Results order. Open a scan's results.
+  2. Dates. Each row reads folder • yyyy-mm-dd hh:mm • subject • rule. The date matches the assign-a-rule pop-up for the same email.
+- working, but do not need time displayed on the results screen, only date is needed (Ok to keep time on the assign rule pop-up)
+  3. One address. The address appears only in the "Results - address" title.
+- Working as expected
+  4. Scan History rule adds. Open a saved scan: the provider name shows after the address. Add a block rule: no "N of N could not be applied" message.
+     Windows is read-only, so you should see the preview message, not a mailbox change. Live deletion is an Android check in Sprint 75.
+- Opened a saved scan in Scan History, then rule pop-up for parknazcameras@gmail.com and it shows email provider (gmail.com) after the date/time
+- Opened a saved scan in Scan History, then rule pop-up for bn@finimeigee.com and assigned a block entire domain rule (see image 5)
+  5. The lock (the one case Windows can show):
+     - Start a manual scan.
+     - Go back to Manual Scan while it runs, and tap Start Scan again.
+     - Expect "A scan is already running" with only OK. The first scan completes, and Scan History shows one row for it.
+     - Seeing a background scan hold the account needs Android.
+- see image 6
+  6. YAML export regression check. Export on Windows still saves to Downloads.
+- it Saves to the CSV Export Directory - currently C:\Users\kimme\Downloads
+
+- Other Items
+  - Added a subject rule for “Your next backup may fail. Fix it now” 9/26/26 email from reply@blegn.nnd-qjenqnd.com and did not show up in delete rules when searched and re-opening the View Results History manual scan from 9/28 showed the email again. Opening the email in apply rule pop-up does not indicate an existing rule exists.
+
+
+
+Second set
+  Windows validation steps (dev app, now running)
+
+  Your earlier Windows steps (Gmail dates, export folder, redaction, folder defaults) do not need repeating.
+
+  1. Scan Results order. Open a scan's results.
+     - The default order is folder, then sender domain A to Z, then address.
+     - The chip row shows "Sort: Folder". Tap it: the list becomes newest first and the chip reads "Sort: Newest first". Tap again to go back.
+  2. Dates. Each row reads folder • yyyy-mm-dd hh:mm • subject • rule. The date matches the assign-a-rule pop-up for the same email.
+  3. One address. The address appears only in the "Results - address" title.
+  4. Scan History rule adds. Open a saved scan: the provider name shows after the address. Add a block rule: no "N of N could not be applied" message.
+     Windows is read-only, so you should see the preview message, not a mailbox change. Live deletion is an Android check in Sprint 75.
+  5. The lock (the one case Windows can show):
+     - Start a manual scan.
+     - Go back to Manual Scan while it runs, and tap Start Scan again.
+     - Expect "A scan is already running" with only OK. The first scan completes, and Scan History shows one row for it.
+     - Seeing a background scan hold the account needs Android.
+  6. YAML export regression check. Export on Windows still saves to Downloads.
+
+First Set
+  Windows steps (0.17.0 dev, already running)
+
+  1. Result order: open Scan History, then any saved scan. Check that the newest email is at the top, and that each sender domain's other emails follow
+     its newest one (news.example.com groups with example.com). The email-provider section stays pinned at the top.
+Didn’t think this was the request. Wasn’t to have a sort feature that flipped between the default (“<first-level domain>.<TLD>”, then by date descending) and an option to purely sort by date descending (newest first) with everything grouped with email providers first, then everything else). Run this past me so we can confirm exactly what is happening before the sprint and what we now want.  Noting there is no date visible on the Results screen.
+  2. Gmail dates: in a Gmail scan, check that the received dates differ from each other and are not all the scan time.
+yes
+  3. Export folder: go to Settings > General. The CSV Export Directory should read "Downloads folder (default)". Export results from a scan, and check
+     the file is in %USERPROFILE%\Downloads.
+Set the download folder to %USERPROFILE%\Downloads and successfully exported the 2 YAML files on windows
+  4. Redaction: turn on "Hide sender details in exports" and export again. The sender should show as x***@domain, and the subject and message ID should
+     read [redacted]. The file name ends in _redacted.
+Did a live scan. Exported results from kimmeyharold@aol.com Wored as expected
+  5. Clear history: in Scan History, filter to one account, then tap the new Clear history button (the sweep icon). Check the dialog's count, then choose
+     Cancel. Only confirm if you are willing to lose that account's dev history.
+export successful
+  6. Folder defaults: in Settings > Account, the Safe Sender and Deleted Rule rows show the real resolved default wherever you have no saved value. Also
+     check whether your Gmail account's saved Deleted Rule folder is [Gmail]/Trash. If that account signs in with Google (not IMAP), deletes may already
+     be failing today. I have not verified this; it is pre-existing and not caused by this sprint.
+OK
+
+  S24+ steps (after Q4) - **based on 0.16.0 download**
+Pull recent Z Fold8 Ultra images that are app screenshots and analyze - there are issues. running 2 at a time
+  7. MV74-1, background scans while the phone is idle (0.16.0 is enough): leave background scanning on for several hours with the screen off. Check that
+     Background rows appear in Scan History. Then restart the phone and check that scans resume without opening the app.
+Pull recent Z Fold8 Ultra images that are app screenshots and analyze - there are issues. running 2 at a time
+  8. Export folder on Android (0.17.0): export results and check the file lands in Documents. Turn on "Settings > Background: export CSV" and check that
+     Documents/scan_exports fills.
+Won’t export to Downloads (should update so this is the default - see screenshots for full directory name)
+Check to see if any are found in documents folder
+  9. MV74-3, diagnostic log run:
+     a. Turn on the diagnostic log in Settings.
+Done. Might have defaulted early runs or all runs to downloads and failed
+     b. Open a saved scan and add a block rule, which reproduces F232.
+Done. See screenshots for failures - looks like ever block rule failed (added 20+)
+     c. Run a Gmail manual scan.
+Done. Added Gmail via Oauth - worked, did a scan, then started failing. See screenshots
+     d. Copy Documents/diagnostics/ to the PC over USB file transfer (MTP).
+        I then diagnose F232 and classify F205's errors from that log (Tasks 7-8).
+Asking you to find and make a copy of any/all scan logs available
+  10. Scan exclusion, Android: start a manual scan while a background scan is due. The background scan should skip that account rather than open a second
+      connection.
+Did not work as expected. Did not pop-up with option to cancel background scan in favor of Manual scan
+
+Other Feedback:
+- email address is only needed once on the Scan Results screen - can you remove the one on the line directly above “Summary - ...” and leave the one in at the top “Results - <email address>”
+---------------------------------------------------------------------------------------------------------
 Sprint 73 Manual Validation Feedback 
   1. F234 preview (Windows is read-only, so this is the platform it serves). Scan Results → select a tile → block an entire domain. Expect: "Preview
      only: N would have been filed... your mailbox was NOT changed." The rows should stay visible. Judge whether it reads as a preview, not a completed
