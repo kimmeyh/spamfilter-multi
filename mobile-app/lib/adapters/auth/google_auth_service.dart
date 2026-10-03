@@ -389,17 +389,23 @@ class GoogleAuthService {
   /// Interactive sign-in flow.
   ///
   /// Shows Google consent screen and stores tokens on success.
-  Future<AuthResult> signIn() async {
+  ///
+  /// F239 (Sprint 75): [expectedAccountId] is the "Sign In Again" path -- the
+  /// user is repairing ONE existing account. If Google returns a different
+  /// account, NOTHING is saved and the failure names both addresses. The check
+  /// must come before `saveGmailTokens`, because saving also ADDS the account
+  /// to the saved-account list (a stray second account otherwise).
+  Future<AuthResult> signIn({String? expectedAccountId}) async {
     _state = AuthState.authenticating;
 
     try {
       if (_hasNativeSignIn) {
-        return await _signInNative();
+        return await _signInNative(expectedAccountId: expectedAccountId);
       } else if (_isDesktop) {
-        return await _signInDesktop();
+        return await _signInDesktop(expectedAccountId: expectedAccountId);
       } else {
         // Web fallback
-        return await _signInNative();
+        return await _signInNative(expectedAccountId: expectedAccountId);
       }
     } catch (e) {
       _state = AuthState.error;
@@ -412,7 +418,20 @@ class GoogleAuthService {
   /// 
   /// Uses google_sign_in 7.x API with authenticate() method.
   /// On Android, uses browser-based OAuth as fallback if native fails.
-  Future<AuthResult> _signInNative() async {
+  /// F239: true when [signedInEmail] is the account being repaired (case is
+  /// ignored; Google may return a different case than was stored). Always
+  /// true when no account is expected (a first-time add).
+  @visibleForTesting
+  static bool isExpectedAccount(String signedInEmail, String? expectedAccountId) =>
+      expectedAccountId == null ||
+      signedInEmail.trim().toLowerCase() ==
+          expectedAccountId.trim().toLowerCase();
+
+  static AuthResult _wrongAccount(String signedIn, String expected) =>
+      AuthResult.failure('You signed in as $signedIn. To fix $expected, sign '
+          'in with $expected.');
+
+  Future<AuthResult> _signInNative({String? expectedAccountId}) async {
     try {
       await _ensureNativeSignInInitialized();
 
@@ -432,6 +451,11 @@ class GoogleAuthService {
       final authorization = await _currentUser!.authorizationClient.authorizeScopes(_scopes);
 
       final accountId = _currentUser!.email;
+      // F239: refuse a different account BEFORE saving (saving adds it).
+      if (!isExpectedAccount(accountId, expectedAccountId)) {
+        _state = AuthState.unauthenticated;
+        return _wrongAccount(accountId, expectedAccountId!);
+      }
       _currentAccountId = accountId;
 
       final tokens = GmailTokens(
@@ -454,7 +478,8 @@ class GoogleAuthService {
       // On Android, fall back to browser-based OAuth if native fails
       if (Platform.isAndroid) {
         Redact.logSafe('[Auth] Trying browser-based OAuth fallback on Android...');
-        return await _signInDesktop(); // Desktop method works for Android too
+        return await _signInDesktop(
+            expectedAccountId: expectedAccountId); // Desktop method works for Android too
       }
       
       return AuthResult.failure('Sign-in failed: ${e.toString()}');
@@ -462,7 +487,7 @@ class GoogleAuthService {
   }
 
   /// Desktop browser-based OAuth with PKCE.
-  Future<AuthResult> _signInDesktop() async {
+  Future<AuthResult> _signInDesktop({String? expectedAccountId}) async {
     try {
       // Use existing GmailWindowsOAuthHandler for browser-based OAuth
       final tokenResult = await GmailWindowsOAuthHandler.authenticateWithBrowser();
@@ -484,6 +509,11 @@ class GoogleAuthService {
       // Get user email from access token
       final email = await GmailWindowsOAuthHandler.getUserEmail(accessToken);
       final accountId = email;
+      // F239: refuse a different account BEFORE saving (saving adds it).
+      if (!isExpectedAccount(accountId, expectedAccountId)) {
+        _state = AuthState.unauthenticated;
+        return _wrongAccount(accountId, expectedAccountId!);
+      }
       _currentAccountId = accountId;
 
       // Calculate expiry
@@ -599,21 +629,31 @@ class GoogleAuthService {
   /// Get valid access token (refreshing if needed).
   ///
   /// Returns null if not authenticated or refresh fails.
-  Future<String?> getValidAccessToken() async {
-    if (_state != AuthState.authenticated) {
-      final result = await initialize();
+  ///
+  /// F239 (Sprint 75, R-5): the token is for [accountId] (or the account this
+  /// service already serves) -- NEVER `accounts.first`. A fresh service with
+  /// AOL saved first used to look up AOL's Gmail tokens and fail, or worse,
+  /// serve another Gmail account's token.
+  Future<String?> getValidAccessToken({String? accountId}) async {
+    final target = accountId ?? _currentAccountId;
+    if (target == null) {
+      Redact.logSafe('[Auth] getValidAccessToken: no account given -- refusing '
+          'to guess one');
+      return null;
+    }
+    if (_state != AuthState.authenticated || _currentAccountId != target) {
+      final result = await initialize(accountId: target);
       if (!result.success) return null;
     }
 
     final accounts = await _credStore.getSavedAccounts();
-    if (accounts.isEmpty) return null;
+    if (!accounts.contains(target)) return null;
 
-    final accountId = _currentAccountId ?? accounts.first;
-    final tokens = await _credStore.getGmailTokens(accountId);
+    final tokens = await _credStore.getGmailTokens(target);
     if (tokens == null) return null;
 
     if (tokens.isExpired) {
-      final result = await _attemptSilentSignIn(accountId);
+      final result = await _attemptSilentSignIn(target);
       return result.accessToken;
     }
 

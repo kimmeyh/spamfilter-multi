@@ -21,6 +21,8 @@ import 'dart:math';
 import 'package:flutter/foundation.dart' show visibleForTesting;
 import 'package:logger/logger.dart';
 
+import '../../adapters/email_providers/spam_filter_platform.dart'
+    show GmailSignInRequiredException;
 import '../../adapters/storage/secure_credentials_store.dart';
 import '../../util/redact.dart';
 import '../providers/email_scan_provider.dart';
@@ -54,6 +56,16 @@ class AccountScanOutcome {
 
   bool get skipped => skippedReason != null;
 
+  /// F239 (Sprint 75): the skip is because Gmail needs the user to sign in
+  /// again -- NOT because the account was busy. [BackgroundScanCore.scanAccount]
+  /// must not wait and retry this one: only the user can fix it.
+  final bool needsSignIn;
+
+  /// F238 (Sprint 75): the scan was STOPPED on request (so a manual scan
+  /// could start). Like [needsSignIn], never retried after the busy wait --
+  /// the user is scanning this account by hand right now.
+  final bool stopped;
+
   const AccountScanOutcome({
     required this.emailsProcessed,
     required this.deletedCount,
@@ -63,10 +75,13 @@ class AccountScanOutcome {
     required this.errorCount,
     required this.scanProvider,
     this.skippedReason,
+    this.needsSignIn = false,
+    this.stopped = false,
   });
 
   /// A deliberate skip -- see [skippedReason].
-  AccountScanOutcome.skipped(String reason, EmailScanProvider provider)
+  AccountScanOutcome.skipped(String reason, EmailScanProvider provider,
+      {this.needsSignIn = false, this.stopped = false})
       : emailsProcessed = 0,
         deletedCount = 0,
         movedCount = 0,
@@ -178,7 +193,9 @@ class BackgroundScanCore {
     String busyBecause;
     try {
       final first = await attempt();
-      if (!first.skipped) return first;
+      // F239 / F238: a sign-in skip or a stopped scan is not "busy" --
+      // waiting and scanning again cannot be what the user wants.
+      if (!first.skipped || first.needsSignIn || first.stopped) return first;
       busyBecause = first.skippedReason!;
     } catch (e) {
       if (!isDatabaseLocked(e)) rethrow;
@@ -317,6 +334,22 @@ class BackgroundScanCore {
       _logger.i('Background scan SKIPPED for ${Redact.accountId(accountId)} '
           'at the scan lock: $e');
       return AccountScanOutcome.skipped(e.userMessage, scanProvider);
+    } on GmailSignInRequiredException {
+      // F239 R-3 (Sprint 75): Gmail could not renew this account's sign-in
+      // without the user. A SKIP -- not a failure, so Android does not
+      // retry it on a timer and Windows does not report the run failed --
+      // with the reason the account list repeats ("Sign In Again"). The
+      // adapter has already flagged the account and kept its tokens.
+      //
+      // Known limit: the scan row was created by the claim before the
+      // sign-in failed, and the scanner closed it as `error` with this same
+      // reason. There is no `skipped` row status; adding one would change
+      // what a stored value means (Class 1), so it was not done here.
+      _logger.i('Background scan SKIPPED for ${Redact.accountId(accountId)}: '
+          '${GmailSignInRequiredException.reason}');
+      return AccountScanOutcome.skipped(
+          GmailSignInRequiredException.reason, scanProvider,
+          needsSignIn: true);
     } on TimeoutException {
       final minutes = ScanCoordinator.scanTimeout.inMinutes;
       _logger.e('Background scan TIMED OUT after $minutes minutes for '
@@ -335,6 +368,20 @@ class BackgroundScanCore {
       await scanProvider
           .errorScan('Scan timed out after $minutes minutes (F175)');
       rethrow;
+    }
+
+    // F238 (Sprint 75): the scanner swallows a cancel (a normal outcome for
+    // a MANUAL scan), so a background scan stopped for a manual scan arrives
+    // here looking finished. Without this, the worker exported partial
+    // results and notified "scan complete" for a scan the user had just
+    // stopped. The row already records it as interrupted with the reason.
+    if (scanProvider.wasCancelled) {
+      _logger.i('Background scan STOPPED for ${Redact.accountId(accountId)} '
+          'after ${scanProvider.processedCount} emails: '
+          '${ScanResultStore.stoppedForManualScanReason}');
+      return AccountScanOutcome.skipped(
+          ScanResultStore.stoppedForManualScanReason, scanProvider,
+          stopped: true);
     }
 
     // Extract results from the scan provider

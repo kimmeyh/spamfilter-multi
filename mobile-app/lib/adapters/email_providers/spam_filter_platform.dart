@@ -425,6 +425,17 @@ class AuthenticationException implements Exception {
   String toString() => 'AuthenticationException: $message';
 }
 
+/// F239 (Sprint 75): Gmail could not renew this account's sign-in without
+/// the user. The account is flagged ("Sign In Again" in the account list),
+/// its tokens are kept, and a background scan records a SKIP rather than a
+/// failure -- the user must act; retrying on a timer cannot fix it.
+class GmailSignInRequiredException extends AuthenticationException {
+  static const String reason = 'Gmail needs you to sign in again';
+
+  GmailSignInRequiredException([dynamic originalError])
+      : super(reason, originalError);
+}
+
 /// Exception thrown during connection
 class ConnectionException implements Exception {
   final String message;

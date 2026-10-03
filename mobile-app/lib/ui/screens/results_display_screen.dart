@@ -2366,11 +2366,17 @@ class _ResultsDisplayScreenState extends State<ResultsDisplayScreen> {
                                   const SizedBox(width: 4),
                                   Text(
                                     dateStr,
-                                    // F230: was `fontSize: 11`, the smallest
-                                    // text on the sheet.
+                                    // F216 (Sprint 75): was `bodySmall`
+                                    // (12sp, originally `fontSize: 11`
+                                    // under F230). Harold, 2026-09-12,
+                                    // answer "2. a": the date/domain row
+                                    // must match the folder/subject/rule
+                                    // line above it, which F230 already
+                                    // promoted to bodyMedium. The sender
+                                    // line is unchanged.
                                     style: Theme.of(context)
                                         .textTheme
-                                        .bodySmall
+                                        .bodyMedium
                                         ?.copyWith(color: Colors.grey.shade700),
                                   ),
                                   if (displaySenderDomain != null) ...[
@@ -2390,9 +2396,12 @@ class _ResultsDisplayScreenState extends State<ResultsDisplayScreen> {
                                       child: Text(
                                         displaySenderDomain,
                                         overflow: TextOverflow.ellipsis,
+                                        // F216 (Sprint 75): was `bodySmall`
+                                        // -- see the date Text above for
+                                        // the same reasoning.
                                         style: Theme.of(context)
                                             .textTheme
-                                            .bodySmall
+                                            .bodyMedium
                                             ?.copyWith(
                                                 color: Colors.grey.shade700),
                                       ),

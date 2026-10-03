@@ -213,7 +213,10 @@ class _FolderSelectionScreenState extends State<FolderSelectionScreen> {
         // - Token expiration checking
         // - Automatic refresh if expired
         // - Re-authentication if refresh fails
-        final accessToken = await authService.getValidAccessToken();
+        // F239 R-5: the token for THIS account -- a fresh service has no
+        // current account, and used to fall back to the first saved account.
+        final accessToken =
+            await authService.getValidAccessToken(accountId: widget.accountId);
 
         if (accessToken == null || accessToken.isEmpty) {
           throw Exception('Unable to get valid Gmail access token for account ${widget.accountId}. Please sign in again.');

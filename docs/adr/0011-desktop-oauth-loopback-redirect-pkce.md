@@ -96,6 +96,39 @@ OAuth client credentials are injected at build time via `--dart-define-from-file
 - **Client secret in desktop app**: Google requires a client secret for desktop OAuth clients, but desktop apps are "public clients" where the secret cannot truly be protected. The secret is injected at build time and present in the binary, which is accepted practice for desktop OAuth (the PKCE flow provides the actual security, not the client secret)
 - **Redirect URI configuration**: The redirect URI defaults to `http://localhost:8080/oauth/callback` but can be overridden via build-time environment variable, providing flexibility for development and testing environments
 
+## Amendment -- Sprint 75 (F239, Issue #442): renewal that needs the user
+
+Four rules, identical on Windows and Android (ADR-0042):
+
+1. **A token is always looked up for a named account.** `getValidAccessToken({accountId})` uses the
+   account asked for, or the service's current account, and otherwise returns null. It used to fall
+   back to `getSavedAccounts().first` -- a guess. Folder Selection creates a fresh service, so with
+   an AOL account saved first it looked up AOL's Gmail tokens.
+2. **A background scan never starts an interactive sign-in.** In the Windows worker the renewal
+   fallback opened the system browser with nobody watching. `BackgroundModeService.isBackgroundMode`
+   is now also set in the Android WorkManager isolate (`markBackgroundIsolate`), and the adapter
+   checks it before any interactive path.
+3. **When renewal needs the user, say so and keep everything.** The adapter throws
+   `GmailSignInRequiredException` ("Gmail needs you to sign in again"), sets the per-account
+   setting `gmail_sign_in_required`, and keeps the tokens (Sprint 74 rule). The account list then
+   shows that text with a **Sign In Again** button, which re-runs sign-in for that account. A
+   background scan maps the exception to a SKIP (`AccountScanOutcome.needsSignIn`): not counted as a
+   failure, no notification, and no 2-6 minute busy retry, because only the user can fix it.
+4. **Sign In Again accepts only the same account.** `signIn({expectedAccountId})` compares the
+   returned address (case-insensitive) BEFORE saving tokens; a different Google account is refused
+   with "You signed in as X. To fix Y, sign in with Y." Saving first would add the other account to
+   the saved list.
+
+**Known limits, not proven by tests:**
+- The scan row is created by the claim before credentials load, so a sign-in skip still leaves a
+  row with status `error` and the reason as its message. No `skipped` row status exists; adding one
+  changes what a stored value means (Class 1) and was not done.
+- On Android with no refresh token, a network failure during native renewal is indistinguishable
+  from "needs the user", so the account can be flagged during an outage. The flag clears on the
+  next successful connect, and Sign In Again also clears it.
+- Renewing Android tokens WITHOUT an Activity (the R-1 capability spike) is not part of this
+  amendment; if it passes it is recorded as a declared ADR-0042 platform exception.
+
 ## References
 
 - `mobile-app/lib/adapters/email_providers/gmail_windows_oauth_handler.dart` - Desktop+mobile OAuth implementation (lines 1-377): loopback server (lines 193-237), PKCE (lines 364-375), platform branching (lines 81-90)

@@ -806,6 +806,19 @@ class _ScanHistoryScreenState extends State<ScanHistoryScreen> {
                   overflow: TextOverflow.ellipsis,
                 ),
               ],
+              // F238 (Sprint 75): WHY a "Not finished" scan stopped -- "Stopped
+              // so your manual scan could start", the user's own Cancel, or
+              // the reaper -- in the details color, not red: it is not an
+              // error (R-4). The same `error_message` column carries it.
+              if (isInterrupted && scan.errorMessage != null) ...[
+                const SizedBox(height: 4),
+                Text(
+                  scan.errorMessage!,
+                  style: TextStyle(fontSize: 12, color: Colors.grey.shade700),
+                  maxLines: 2,
+                  overflow: TextOverflow.ellipsis,
+                ),
+              ],
             ],
           ),
         ),

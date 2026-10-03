@@ -507,7 +507,40 @@ workstation).
 
 ## Progress (live)
 
-- (filled during execution)
+- **Task 3 F214 -- DONE** (commit 1f80ecd). Flank labels removed. The agent's first test passed
+  vacuously (no Slider rendered with no account); rewritten on the one-account harness to measure the
+  slider's left edge and width against the "Scan all emails" tile. M76 KILLED.
+- **Task 4 F236 -- DONE** (1f80ecd). **Parity defect found in review**: the header was added only to
+  `renderRules` / `renderSafeSenders` (the Android/iOS save path); Windows writes through
+  `exportRules` / `exportSafeSenders` and would have shipped no header. Both now take `appVersion`;
+  both paths tested. The agent's test did not compile (nonexistent `models/rule.dart`); rewritten.
+  M77, M78 KILLED.
+- **Task 6 F215 -- DONE** (1f80ecd). AC-1: `-Sprint 75 -ListOnly` names
+  `validation-screenshots\sprint-75`. AC-2: grep finds the folder in all four docs. Fixed in review:
+  the script's default destination hardcoded THIS session's scratchpad path (now `%TEMP%`), and the
+  README's `~/.claude/image-cache/` claim -- that folder does not exist on 2026-10-03; images now live
+  only inside the session transcript (verified: 28 image entries in this session's `.jsonl`).
+- **Task 1 F238 -- DONE**. 12 agent mutations KILLED. **Defect found in review (agent's flagged
+  Decision 2)**: the scanner swallows a cancel, so a stopped background scan EXPORTED and NOTIFIED
+  "scan complete", and as a plain skip it would also have taken the 2-6 minute busy retry. Fixed in
+  `BackgroundScanCore` (`stopped: true` skip). M82, M83 KILLED. Agent Decision 1 (Scan History now
+  shows the reason on EVERY interrupted row, including user Cancel and reaper text) -- shown to Harold
+  at Manual Validation. Decision 3 (v11 guard also requires the table to exist) and 4
+  (`subject_rule_keyword_test` version `>= 10`) accepted.
+- **Task 2 F216 -- DONE**. 8 mutations KILLED; tests read the painted `RenderParagraph` size.
+  Floating label deliberately unchanged (Flutter paints it at 0.75x, so `bodyMedium` would SHRINK it
+  to 10.5sp; reaching 14sp needs a literal, which ADR-0037 forbids). No Rule Review and Scan History
+  title/subtitle pairs left as a hierarchy, not peers.
+- **Task 5 F239 -- R-3, R-4, R-5 DONE; R-1 spike pending.** M71-M75, M79-M81, M80b KILLED.
+  - R-5: `getValidAccessToken({accountId})`; real cross-account bug fixed in `folder_selection_screen`.
+  - R-4: account-list "Sign In Again"; `signIn({expectedAccountId})` refuses another account before
+    saving tokens.
+  - R-3: `GmailSignInRequiredException` -> background SKIP (`needsSignIn`, no busy retry).
+    **Development-decision change, surfaced at Manual Validation**: the Windows background worker's
+    interactive sign-in fallback (it opened a browser with nobody watching) is REMOVED; a background
+    scan now flags the account instead. **Known limit**: the scan row still reads `error` with the
+    reason, because the claim creates it before sign-in fails and there is no `skipped` row status
+    (adding one is Class 1 -- not done).
 
 ## Phase 3.6.1 Architecture Impact Check
 

@@ -765,6 +765,151 @@ bool shouldWarnAboutBackgroundScan({
   return hasActiveRow;
 }
 
+/// F238 (Sprint 75): what the user chose in the "A scan is already running"
+/// dialog.
+enum ScanBusyChoice {
+  /// OK -- nothing starts.
+  ok,
+
+  /// "Stop the background scan and start mine" -- offered ONLY when the
+  /// holder is a background scan (R-6).
+  stopBackgroundAndStart,
+}
+
+/// F238 (Sprint 75): the "A scan is already running" dialog, extracted so a
+/// widget test can pump it without a database.
+///
+/// Offers "Stop the background scan and start mine" ONLY when [holder] is a
+/// `background` scan. A manual scan or a rule update (`reprocess`) holding
+/// the account keeps the OK-only dialog: those are the user's own work, and
+/// stopping them from here would discard it (R-6). Same dialog on every
+/// platform (ADR-0042); the stop travels through the database row, which is
+/// what the worker isolate (Android) and worker process (Windows) both read.
+///
+/// Returns [ScanBusyChoice.ok] when the dialog is dismissed any other way.
+@visibleForTesting
+Future<ScanBusyChoice> showScanAlreadyRunningDialog({
+  required BuildContext context,
+  required ScanResult holder,
+  required String accountEmail,
+  required String estimate,
+}) async {
+  final canStop = holder.scanType == 'background';
+  final choice = await showDialog<ScanBusyChoice>(
+    context: context,
+    builder: (dialogContext) => AlertDialog(
+      title: const Text('A scan is already running'),
+      content: Text(
+        'A ${ScanAccountBusyException.describeScanType(holder.scanType)} '
+        'of $accountEmail is running. '
+        '${estimate.isEmpty ? '' : '$estimate\n\n'}'
+        'Only one scan can run on an account at a time. '
+        '${canStop ? 'You can stop the background scan now and start your '
+            'scan in its place, or start this scan again when it finishes.'
+            : 'Start this scan again when it finishes.'}',
+      ),
+      actions: [
+        if (canStop)
+          TextButton(
+            key: const Key('f238_stop_background_scan_action'),
+            onPressed: () => Navigator.of(dialogContext)
+                .pop(ScanBusyChoice.stopBackgroundAndStart),
+            child: const Text(stopBackgroundScanActionLabel),
+          ),
+        FilledButton(
+          onPressed: () => Navigator.of(dialogContext).pop(ScanBusyChoice.ok),
+          child: const Text('OK'),
+        ),
+      ],
+    ),
+  );
+  return choice ?? ScanBusyChoice.ok;
+}
+
+/// F238 (Sprint 75): the third action's label. The button's text IS its
+/// accessibility name (a Material button exposes its child text as the
+/// semantics label), so WinWright addresses it by this string.
+const String stopBackgroundScanActionLabel =
+    'Stop the background scan and start mine';
+
+/// F238 (Sprint 75): show "Stopping the background scan..." while [wait]
+/// runs, then return its result. The dialog cannot be dismissed by the user:
+/// it closes itself when [wait] completes, with `true` when the holder closed
+/// and `false` when the bound expired. A dialog removed any other way (the
+/// route being torn down) reads as `false` -- nothing starts on a guess.
+@visibleForTesting
+Future<bool> showStoppingBackgroundScanDialog({
+  required BuildContext context,
+  required Future<bool> Function() wait,
+}) async {
+  final closed = await showDialog<bool>(
+    context: context,
+    barrierDismissible: false,
+    builder: (_) => _StoppingBackgroundScanDialog(wait: wait),
+  );
+  return closed ?? false;
+}
+
+class _StoppingBackgroundScanDialog extends StatefulWidget {
+  const _StoppingBackgroundScanDialog({required this.wait});
+
+  final Future<bool> Function() wait;
+
+  @override
+  State<_StoppingBackgroundScanDialog> createState() =>
+      _StoppingBackgroundScanDialogState();
+}
+
+class _StoppingBackgroundScanDialogState
+    extends State<_StoppingBackgroundScanDialog> {
+  @override
+  void initState() {
+    super.initState();
+    _waitThenClose();
+  }
+
+  /// Runs the wait and pops the dialog with its answer. Started from
+  /// initState; the `await` attaches to the wait's future at once, so an
+  /// error completing it is never left unlistened. A wait that throws
+  /// (database error) pops `false`: the user is told the scan did not stop,
+  /// and nothing starts.
+  Future<void> _waitThenClose() async {
+    bool closed;
+    try {
+      closed = await widget.wait();
+    } catch (e) {
+      Logger().e('F238: waiting for the background scan to stop failed: $e');
+      closed = false;
+    }
+    if (mounted) Navigator.of(context).pop(closed);
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return PopScope(
+      canPop: false,
+      child: const AlertDialog(
+        title: Text('Stopping the background scan...'),
+        content: Row(
+          children: [
+            SizedBox(
+              width: 24,
+              height: 24,
+              child: CircularProgressIndicator(strokeWidth: 3),
+            ),
+            SizedBox(width: 16),
+            Expanded(
+              child: Text(
+                'Your scan starts as soon as the background scan stops. '
+                'This can take up to a minute and a half.',
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
 
 Future<void> startRealScan({
   required BuildContext context,
@@ -818,28 +963,60 @@ Future<void> startRealScan({
             )
           : '';
       if (!context.mounted) return;
-      await showDialog<void>(
+      final choice = await showScanAlreadyRunningDialog(
         context: context,
-        builder: (dialogContext) => AlertDialog(
-          title: const Text('A scan is already running'),
-          content: Text(
-            'A ${ScanAccountBusyException.describeScanType(activeScan.scanType)} '
-            'of $accountEmail is running. '
-            '${estimate.isEmpty ? '' : '$estimate\n\n'}'
-            'Only one scan can run on an account at a time. Start this scan '
-            'again when it finishes.',
-          ),
-          actions: [
-            FilledButton(
-              onPressed: () => Navigator.of(dialogContext).pop(),
-              child: const Text('OK'),
-            ),
-          ],
-        ),
+        holder: activeScan,
+        accountEmail: accountEmail,
+        estimate: estimate,
       );
-      logger.i('[SCAN_SCREEN] manual scan not started -- a '
-          '${activeScan.scanType} scan holds this account (Harold Q4)');
-      return;
+      if (choice != ScanBusyChoice.stopBackgroundAndStart) {
+        logger.i('[SCAN_SCREEN] manual scan not started -- a '
+            '${activeScan.scanType} scan holds this account (Harold Q4)');
+        return;
+      }
+      // F238 (Sprint 75): the user chose to stop the background scan. Write
+      // the request onto ITS row -- the only thing this isolate and the
+      // worker isolate/process both see -- then wait, bounded, for the row
+      // to close. The claim inside EmailScanProvider.startScan is still the
+      // lock; this only clears the way for it.
+      final requested = await scanResultStore.requestCancel(activeScan.id!);
+      if (requested) {
+        if (!context.mounted) return;
+        final closed = await showStoppingBackgroundScanDialog(
+          context: context,
+          wait: () => scanResultStore.waitForScanToClose(activeScan.id!),
+        );
+        if (!closed) {
+          logger.w('[SCAN_SCREEN] F238: the background scan did not stop '
+              'within the bound -- manual scan not started');
+          if (!context.mounted) return;
+          await showDialog<void>(
+            context: context,
+            builder: (dialogContext) => AlertDialog(
+              title: const Text('The background scan did not stop'),
+              content: const Text(
+                'The background scan has not stopped yet, so your scan was '
+                'not started. It will stop at its next check point. Start '
+                'this scan again in a minute.',
+              ),
+              actions: [
+                FilledButton(
+                  onPressed: () => Navigator.of(dialogContext).pop(),
+                  child: const Text('OK'),
+                ),
+              ],
+            ),
+          );
+          return;
+        }
+        logger.i('[SCAN_SCREEN] F238: background scan stopped -- starting '
+            'the manual scan');
+      } else {
+        // The holder closed between the pre-check and the tap. Nothing to
+        // stop; the claim below decides as it always does.
+        logger.i('[SCAN_SCREEN] F238: the background scan had already '
+            'finished -- starting the manual scan');
+      }
     }
     if (!context.mounted) return;
     // Load scan configuration directly from Settings (no dialog popup)

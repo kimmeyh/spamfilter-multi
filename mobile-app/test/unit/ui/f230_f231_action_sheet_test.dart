@@ -107,7 +107,11 @@ void main() {
               '                                        color: Colors.grey.shade600'),
           isFalse,
           reason: 'this was the smallest text on the sheet');
-      expect(source.contains('.bodySmall'), isTrue);
+      // F230 moved them to the theme (bodySmall); F216 (Sprint 75) then
+      // matched them to the subtitle line beside them (bodyMedium). What
+      // F230 guards is "a theme style, not a literal"; the rendered size is
+      // pinned by f216_supporting_text_size_test.
+      expect(source.contains('textTheme.bodyMedium'), isTrue);
     });
 
     test('the change is UNCONDITIONAL -- no platform branch', () {

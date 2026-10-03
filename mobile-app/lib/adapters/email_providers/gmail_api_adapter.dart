@@ -7,6 +7,8 @@ import 'package:googleapis/gmail/v1.dart' as gmail;
 import 'package:http/http.dart' as http;
 import '../../adapters/auth/google_auth_service.dart';
 import '../../core/models/batch_action_result.dart';
+import '../../core/services/background_mode_service.dart';
+import '../../core/storage/settings_store.dart';
 import '../../core/utils/app_logger.dart';
 import '../../util/redact.dart';
 
@@ -167,18 +169,29 @@ class GmailApiAdapter with BatchOperationsMixin implements SpamFilterPlatform {
         Redact.logSafe('Stored access token appears invalid; attempting refresh via GoogleAuthService...');
         
         // Try to get a valid token from GoogleAuthService
-        final newAccessToken = await _authService.getValidAccessToken();
+        // F239 R-5: the token for THIS account, never another account's.
+        final newAccessToken =
+            await _authService.getValidAccessToken(accountId: credentials.email);
         
         if (newAccessToken == null || newAccessToken.isEmpty) {
           Redact.logSafe('Token refresh failed; attempting interactive re-authentication...');
           
-          // Refresh failed - prompt user to re-authenticate via browser
-          final result = await _authService.signIn();
+          // F239 (Sprint 75): a BACKGROUND scan must never start an
+          // interactive sign-in -- that opened a browser from the Windows
+          // worker with nobody watching. Flag the account ("Sign In Again" in
+          // the account list) and fail; the worker records a skip.
+          if (BackgroundModeService.isBackgroundMode) {
+            await _setSignInRequired(credentials, true);
+            throw GmailSignInRequiredException();
+          }
+          // Refresh failed - prompt the user to re-authenticate via browser,
+          // for THIS account only (F239: a different account is refused).
+          final result =
+              await _authService.signIn(expectedAccountId: credentials.email);
           
           if (!result.success || result.accessToken == null) {
-            throw AuthenticationException(
-              'Gmail OAuth session expired. Please re-authenticate.',
-            );
+            await _setSignInRequired(credentials, true);
+            throw GmailSignInRequiredException(result.errorMessage);
           }
 
           // Use new access token from re-auth
@@ -188,6 +201,7 @@ class GmailApiAdapter with BatchOperationsMixin implements SpamFilterPlatform {
           _setGmailApi(reAuthHeaders);
           _userEmail = result.email;
           Redact.logSafe('Re-authentication successful: ${Redact.email(_userEmail ?? "")}');
+          await _setSignInRequired(credentials, false);
           return;
         }
 
@@ -198,6 +212,7 @@ class GmailApiAdapter with BatchOperationsMixin implements SpamFilterPlatform {
         _setGmailApi(refreshedHeaders);
         Redact.logSafe('Access token refreshed successfully via GoogleAuthService');
       }
+      await _setSignInRequired(credentials, false);
       return;
     }
 
@@ -217,8 +232,12 @@ class GmailApiAdapter with BatchOperationsMixin implements SpamFilterPlatform {
         _setGmailApi(headers);
         _userEmail = result.email;
         _isConnected = true;
+        await _setSignInRequired(credentials, false);
       } catch (e) {
-        throw AuthenticationException('Gmail OAuth not established', e);
+        // F239: the renewal could not happen without the user -- offer "Sign
+        // In Again" for this account instead of a dead end.
+        await _setSignInRequired(credentials, true);
+        throw GmailSignInRequiredException(e);
       }
     }
 
@@ -226,6 +245,21 @@ class GmailApiAdapter with BatchOperationsMixin implements SpamFilterPlatform {
       if (credentials.email.toLowerCase() != _userEmail!.toLowerCase()) {
         Redact.logSafe('Loaded credentials email does not match signed-in user');
       }
+    }
+  }
+
+  /// F239 (Sprint 75): record whether this Gmail account needs the user to
+  /// sign in again (the account list shows "Sign In Again" while it does).
+  /// Best effort: a failed write must never turn a sign-in result into a
+  /// different error.
+  Future<void> _setSignInRequired(Credentials credentials, bool required) async {
+    final accountId =
+        credentials.additionalParams?['accountId'] ?? credentials.email;
+    if (accountId.isEmpty) return;
+    try {
+      await SettingsStore().setGmailSignInRequired(accountId, required);
+    } catch (e) {
+      AppLogger.warning('F239: could not record the Gmail sign-in state: $e');
     }
   }
 
@@ -281,7 +315,12 @@ class GmailApiAdapter with BatchOperationsMixin implements SpamFilterPlatform {
             Redact.logSafe('Insufficient Gmail scopes detected. Attempting re-auth via GoogleAuthService...');
             // Attempt to upgrade scopes via GoogleAuthService and retry once
             try {
-              final result = await _authService.signIn();
+              if (BackgroundModeService.isBackgroundMode) {
+                // F239: no interactive sign-in from a background worker.
+                throw GmailSignInRequiredException();
+              }
+              final result =
+                  await _authService.signIn(expectedAccountId: _userEmail);
               if (!result.success || result.accessToken == null) {
                 throw AuthenticationException('User cancelled Gmail OAuth re-authentication');
               }

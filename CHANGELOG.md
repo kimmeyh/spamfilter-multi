@@ -27,6 +27,10 @@ Format: `- **type**: Description (Issue #N)` where type is feat|fix|chore|docs
 ## [Unreleased]
 
 ### 2026-10-03 (Sprint 75)
+- **feat**: when you start a scan while a background scan is running on the same account, the "A scan is already running" message now offers "Stop the background scan and start mine". The background scan stops at its next check point and your scan starts. Scan History shows the stopped scan as not finished, with the reason. A stopped background scan no longer sends a "scan complete" notification. (Issue #441)
+- **feat**: a Gmail account that needs you to sign in again now says so in the account list and offers "Sign In Again", which signs in that same account and keeps its settings and history. Signing in with a different Google account is refused instead of adding a second account. A background scan that cannot renew Gmail's sign-in is skipped with that reason instead of failing, and on Windows it no longer opens a browser with nobody watching. (Issue #442)
+- **fix**: Gmail token lookups always use the account being scanned. Before, the folder list could look up the first saved account's tokens. (Issue #442)
+- **fix**: supporting text (the date and domain in the email details popup; the examples, Type, Source and Phrase lines in the rule editors) is now the same size as the text beside it. (Issue #444)
 - **feat**: exported rules and safe-senders YAML files now start with a comment that names the app version and export date, on Windows and Android alike. Importing ignores it. (Issue #446)
 - **fix**: the Scan Range slider in Settings now lines up with the "Scan all emails" option above it. The "1" and "90" labels beside it are removed; the chosen value still shows below the slider. (Issue #445)
 

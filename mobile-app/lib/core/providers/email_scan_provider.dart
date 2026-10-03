@@ -298,8 +298,20 @@ class EmailScanProvider extends ChangeNotifier {
   /// or process (Windows Task Scheduler), so the DATABASE row is the only
   /// cross-boundary liveness signal. A failed write is logged, never thrown --
   /// a missed beat must not fail the scan it describes.
+  ///
+  /// F238 (Sprint 75): the same tick is also the ONLY way a stop request from
+  /// another isolate or process reaches this scan. After the beat it reads
+  /// `scan_results.cancel_requested_at` on its own row; when set, it requests
+  /// cancel through THIS isolate's [ScanCoordinator] -- the existing F224
+  /// path -- so the scan stops at its next batch boundary and the scanner's
+  /// own `ScanCancelledException` handler calls [cancelScan], which closes the
+  /// row with [ScanResultStore.stoppedForManualScanReason]. The tick itself
+  /// must NOT close the row: the row closing is what admits the waiting manual
+  /// scan, and that may happen only once this scan's lease and IMAP session
+  /// are actually being torn down.
   void _startHeartbeat() {
     _stopHeartbeat();
+    _pendingCancelReason = null;
     final id = _currentScanResultId;
     final store = _scanResultStore;
     if (id == null || store == null) return;
@@ -311,13 +323,46 @@ class EmailScanProvider extends ChangeNotifier {
       } catch (e) {
         _logger.w('Scan heartbeat write failed for id=$id: $e');
       }
+      await _honorCancelRequest(store, id);
     });
+  }
+
+  /// F238: one read per tick; a failed read is logged and retried next tick.
+  Future<void> _honorCancelRequest(ScanResultStore store, int id) async {
+    final accountId = _currentAccountId;
+    if (accountId == null) return;
+    bool requested;
+    try {
+      requested = await store.isCancelRequested(id);
+    } catch (e) {
+      _logger.w('Scan cancel-request read failed for id=$id: $e');
+      return;
+    }
+    if (!requested) return;
+    final accepted =
+        ScanCoordinator.instance.requestCancel(accountId: accountId);
+    if (_pendingCancelReason == null) {
+      _pendingCancelReason = ScanResultStore.stoppedForManualScanReason;
+      _logger.i('F238: stop request found on scan row id=$id -- cancel '
+          '${accepted ? 'requested' : 'NOT yet accepted (no active lease '
+              'for this account in this isolate; will retry next tick)'}');
+    }
   }
 
   void _stopHeartbeat() {
     _heartbeatTimer?.cancel();
     _heartbeatTimer = null;
   }
+
+  /// F238: set when the heartbeat tick found a stop request on the row, so the
+  /// scanner's cancel handler (which calls [cancelScan] with no argument)
+  /// records WHY the scan stopped. Cleared when a scan starts.
+  String? _pendingCancelReason;
+
+  /// Test seam: the reason the next [cancelScan] will record, if a stop
+  /// request has been seen on the row.
+  @visibleForTesting
+  String? get debugPendingCancelReason => _pendingCancelReason;
 
   /// Test seam: a short interval so a test can observe a REAL heartbeat
   /// write (review C-2) instead of only the timer's start/stop.
@@ -717,19 +762,30 @@ class EmailScanProvider extends ChangeNotifier {
   ///
   /// Partial counts are deliberately NOT reset (AC-4) -- work that really
   /// happened stays recorded.
-  Future<void> cancelScan() async {
+  ///
+  /// F238 (Sprint 75): [reason] is what Scan History shows for the stopped
+  /// scan. The scanner's handler passes nothing, so the reason is the one the
+  /// heartbeat tick queued when it found a stop request on the row
+  /// ("Stopped so your manual scan could start"), or else the user's own
+  /// Cancel text. Never an error (R-4).
+  Future<void> cancelScan({String? reason}) async {
     _stopHeartbeat();
+    final recordedReason = reason ??
+        _pendingCancelReason ??
+        ScanResultStore.cancelledByUserReason;
+    _pendingCancelReason = null;
     _status = ScanStatus.error;
     _wasCancelled = true;
     _wasRefused = false;
     _statusMessage = 'Scan cancelled. '
         '$_processedCount of $_totalEmails emails had been checked.';
     _currentEmail = null;
-    _logger.i('Scan cancelled by the user after $_processedCount emails');
+    _logger.i('Scan cancelled after $_processedCount emails: $recordedReason');
 
     if (_scanResultStore != null && _currentScanResultId != null) {
       try {
-        await _scanResultStore!.markScanCancelled(_currentScanResultId!);
+        await _scanResultStore!.markScanCancelled(_currentScanResultId!,
+            reason: recordedReason);
       } catch (e) {
         // A failure to record the cancel must not mask the cancel itself.
         _logger.e('Failed to mark scan cancelled: $e');
