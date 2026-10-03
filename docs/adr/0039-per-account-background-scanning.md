@@ -503,7 +503,44 @@ covers the first. **Not** Settings > Test Background Scan: on Windows that runs
 the worker inside the UI process (one connection, one ScanCoordinator), so it
 exercises the same-isolate path only (Sprint 75 review H-2). The Windows
 recipe starts the dev exe with `--background-scan --account-id=<account>`
-FIRST -- a background launch defers when the UI is already running (F109) --
-then opens the app and starts a live scan on that account while the
-background process is still scanning. The phone follows in Sprint 76
-(Harold Q3).
+and then starts a live scan on that account while the background process is
+still scanning (since F243, below, the app may already be open). The phone
+follows in Sprint 76 (Harold Q3).
+
+## Amendment -- Sprint 75 (F243, Harold at Manual Validation, 2026-10-03): Windows background scans run while the app is open
+
+**Before.** BUG-S37-1 (Sprint 38) made every Windows `--background-scan` launch
+EXIT when the foreground app was running -- a read-only probe of the UI's
+single-instance mutex in `windows/runner/main.cpp` -- because the two
+processes then failed with "database is locked" on one SQLite file. F109
+(Sprint 44) added the "deferred" record and the two texts explaining it. On
+Windows, scheduled scans therefore did not run for as long as the window was
+open; Android, whose worker runs in its own isolate with its own connection,
+never deferred.
+
+**Decision.** Remove the deferral. The probe stays only to LOG that the UI was
+open ("Foreground UI is running; background scan proceeds"); the background
+process still never takes the mutex, so the UI can open during a scan.
+
+**Why it is safe now.** The cause is handled where it belongs:
+- the database runs in WAL mode with `busy_timeout` 30 s
+  (`database_helper.dart`), so a second writer waits instead of failing;
+- the per-account claim (Sprint 74 amendments above) decides who scans: a
+  background scan of an account a live scan holds is REFUSED and skipped, and
+  retried once after 2-6 minutes (`BackgroundScanCore.scanAccount`), which also
+  covers a lock that outlasts the busy timeout;
+- a background scan that started FIRST is stopped by the user through the F238
+  offer above.
+Scope is PER ACCOUNT (Harold's Sprint 74 Q4 rule): other accounts keep
+scanning. Windows now behaves like Android (ADR-0042; no exception remains).
+
+**Removed with it**: the Settings > Background status line (F109a) and the Scan
+History hint (F109b), both of which said background scans pause while the app
+is open. The F109c ingest stays: it only converts an old handoff file into
+`deferred` rows, and existing rows stay readable.
+
+**What is not proven by tests.** Two real processes writing at once under load
+(the native integration script, `scripts/test-background-scan-skip.ps1`,
+proves the launch PROCEEDS with the UI open, against a non-existent account so
+it touches no mail); the claim's behavior across processes is covered by the
+Dart tests on one connection and by Manual Validation.

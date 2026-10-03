@@ -2,7 +2,7 @@
 
 **Status**: **APPROVED 2026-10-03 by Harold, as amended** (see Phase 3.7 approval). Executing.
 **Branch**: `feature/20261002_Sprint_75` | **PR**: #448 (draft, Phase 3.3.1)
-**Issues**: #441 (F238), #442 (F239), #444 (F216), #445 (F214), #446 (F236), #447 (F215), #449 (Task 7)
+**Issues**: #441 (F238), #442 (F239), #444 (F216), #445 (F214), #446 (F236), #447 (F215), #449 (Task 7), #450 (F243, Task 8 -- added at Manual Validation)
 **Version**: **0.17.0+8 -- NO BUMP this sprint (EXCEPTION, Harold 2026-10-02)**: *"no store release
 was done after the last sprint, so keep 0.17.0 for this sprint (note as an exception)"*. F190
 normally bumps MINOR at plan approval; it is skipped because 0.17.0 never reached a store, so the
@@ -487,6 +487,65 @@ workstation).
 **Model**: Sonnet -- *why not cheaper*: WinWright selector work needs judgment on the semantics tree.
 **Step-types**: TEST-WIDGET, TEST-E2E
 **Est-Effort**: 105-165m.
+
+---
+
+## Task 8 -- F243: Windows background scans run while the app is open (Issue #450; added at Manual Validation, Harold 2026-10-03)
+
+**Value**: This keeps Windows background scans protecting the mailbox while the app is open -- as Android already does -- instead of stopping for as long as the window stays open.
+
+**Requirements**:
+- R-1: A `--background-scan` launch no longer exits because the foreground app is running. `windows/runner/main.cpp`'s read-only mutex probe (BUG-S37-1, Sprint 38) is removed; the background process never takes the UI mutex (unchanged), so the UI can still open during a background scan.
+- R-2: "Not during a live scan" is decided by the database, PER ACCOUNT (Harold Sprint 74 Q4: one scan per account of any type): the Sprint 74 claim (`ScanResultStore.claimAccountScan`, `in_progress` row + `last_heartbeat_at`) refuses a background scan of an account a live scan holds -> skip, one retry after 2-6 min (`BackgroundScanCore.scanAccount`). A background scan that started FIRST is stopped by the user through the F238 offer (`cancel_requested_at`). No new field, no new lock.
+- R-3: Remove the Windows texts that would become false: Settings > Background "Background scans pause while this app is open..." (F109a) and the Scan History hint (F109b). Old `deferred` rows stay readable; the F109c ingest stays (it consumes a stale handoff file, harmlessly).
+- R-4: The BUG-S37-1 integration script (`scripts/test-background-scan-skip.ps1`) is inverted: with the UI open, a background launch must RUN (no "mutex held" skip line), not exit.
+- R-5: ADR-0039 amendment + ARCHITECTURE: the deferral is replaced by the claim; record why it is now safe (WAL + 30 s busy_timeout in `database_helper.dart`; claim; busy retry) and that Windows now matches Android (ADR-0042, no exception).
+
+**Affected components / files**:
+- `mobile-app/windows/runner/main.cpp` -- probe + `LogBackgroundScanSkip` / `RecordBackgroundScanDeferral` / `ExtractAccountId` removed (`/W4 /WX`: unused statics would fail the build).
+- `mobile-app/lib/ui/screens/settings_screen.dart` -- F109a status line + its deferral lookup removed.
+- `mobile-app/lib/ui/screens/scan_history_screen.dart` -- F109b hint removed.
+- `mobile-app/scripts/test-background-scan-skip.ps1` -- assertion inverted.
+- `mobile-app/test/unit/ui/f217_doze_honesty_test.dart` -- its "Windows sibling untouched" assertion becomes "Windows line removed (F243)".
+- `docs/adr/0039-per-account-background-scanning.md`, `docs/ARCHITECTURE.md`, `CHANGELOG.md`.
+
+**Existing abstraction checked**: `ScanResultStore.claimAccountScan` + `BackgroundScanCore.scanAccount` busy retry + F238 `requestCancel` -- REUSED; nothing new added.
+
+**Callers of any guard being changed**: the probe has ONE caller path -- `wWinMain` with `--background-scan` (Task Scheduler per-account tasks, and a manual CLI launch). Foreground launches are untouched (they still take the mutex and activate an existing window). Effect on that path: it now proceeds to `executeBackgroundScan`, which reaches the claim BEFORE any IMAP connection (MV74-2 early check, then the atomic claim).
+
+**User-reachable control**: N/A (no new control) -- the existing Settings > Background > Enable Background Scanning now also scans while the app is open.
+
+**Observable behavior -- before / after**: BEFORE: on Windows, while the app window is open, scheduled background scans do not run ("deferred"); Settings and Scan History say so. AFTER: they run on schedule with the app open; an account you are scanning by hand is skipped by the background scan (and retried a few minutes later); a background scan already running when you start a Live Scan offers "Stop the background scan and start mine". The "pause while this app is open" texts are gone.
+
+**Dependencies / blockers**: Task 1 (F238) -- landed.
+
+**Non-functional requirements**:
+- Platform: the change REMOVES a Windows-only behavior, bringing Windows to Android's (ADR-0042) -- no new platform branch.
+- Persistence: two processes on one DB file -- WAL + busy_timeout 30 s (verified in `database_helper.dart` at planning); the claim is one `BEGIN IMMEDIATE`.
+
+**Acceptance criteria**:
+- AC-1: Given the dev app is open, When `MyEmailSpamFilter-Dev.exe --background-scan --account-id=<a>` runs for an account with background enabled, Then the background log shows the worker scanning that account (no "mutex held" skip).
+- AC-2: Given a Live Scan holds account A, When a background scan of A starts, Then it records a skip (no second session on A).
+- AC-3: Given a background scan of A is running, When the user starts a Live Scan on A, Then the F238 offer appears (the Manual Validation F238 check, now runnable with the app open).
+- AC-4: Neither "pause while this app is open" text is shown anywhere.
+
+**Tests to write**:
+- T-1 (AC-1) -- TEST-INTEGRATION (native): `scripts/test-background-scan-skip.ps1`, inverted, against the rebuilt exe.
+- T-2 (AC-2) -- already covered: `mv74_2_scan_heartbeat_test.dart` ("SKIPS the account while a manual scan is live", "busy -> one wait"); re-run, no new test.
+- T-3 (AC-4) -- TEST-UNIT source gate in `f217_doze_honesty_test.dart`: neither text nor key remains in lib/ (mutation-checked by restoring one).
+- AC-3 -- Manual Validation (two real processes).
+
+**Definition of Done**: default DoD PLUS: Windows rebuild; T-1 run green; the Manual Validation F238 check re-run with the app open.
+
+**Model**: Fable/Opus (main session) -- *why not cheaper*: reverses a Class-1 decision across native C++ and two processes on one DB; the claim/retry reasoning is the whole task.
+
+**Step-types**: NATIVE-WIN, UI-MOVE, TEST-INTEGRATION, TEST-UNIT, DOCS.
+
+**Est-Effort**: 60-90m.
+
+_**Risk & rollback**_: Risk -- a "database is locked" mid-scan write that outlasts the 30 s busy timeout while the UI writes heavily (the BUG-S37-1 symptom). Mitigation: WAL readers never block the writer; the claim/busy retry. Rollback: restore the probe in `main.cpp` (one block) and the two texts.
+
+_**Decision-class interrupts**_: Class 1 (reverses BUG-S37-1 / F109) and Class 3 (scope added at MV) -- both approved by Harold, 2026-10-03 ("OK to create a full sprint plan for this item ... and then do now"); per-account scope taken as the recommended option.
 
 ---
 

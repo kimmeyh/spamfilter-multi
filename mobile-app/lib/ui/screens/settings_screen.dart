@@ -10,7 +10,6 @@ import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 import '../../core/providers/selected_account_provider.dart';
-import 'package:intl/intl.dart';
 import 'package:logger/logger.dart';
 import '../../core/services/scan_frequency.dart';
 import '../../core/services/background_scan_windows_worker.dart';
@@ -19,8 +18,6 @@ import '../../core/storage/database_helper.dart';
 import '../../core/storage/settings_store.dart';
 import '../../core/services/export_directories.dart';
 import '../../core/services/diagnostic_logger.dart';
-import '../../core/storage/background_scan_log_store.dart';
-import '../../core/services/background_deferral_ingest.dart' show kDeferredStatus;
 import '../../core/storage/unmatched_email_store.dart'
     show kBodyPreviewMaxLength;
 import '../../core/providers/email_scan_provider.dart';
@@ -108,11 +105,6 @@ class _SettingsScreenState extends State<SettingsScreen> with SingleTickerProvid
   bool _confirmDialogsEnabled = SettingsStore.defaultConfirmDialogsEnabled;
   bool _backgroundScanEnabled = SettingsStore.defaultBackgroundScanEnabled;
   int _backgroundScanFrequency = SettingsStore.defaultBackgroundScanFrequency;
-  // F109a (Sprint 44): timestamp of the most recent background-scan deferral
-  // (a scheduled run that was skipped because the foreground app was open).
-  // Null when none recorded. Surfaced as an explanatory status line so the user
-  // does not read "enabled" as "scanning while I have the app open".
-  DateTime? _lastBackgroundDeferral;
   ScanMode _backgroundScanMode = SettingsStore.defaultBackgroundScanMode;
   List<String> _backgroundScanFolders = List.from(SettingsStore.defaultBackgroundScanFolders);
   bool _backgroundScanDebugCsv = SettingsStore.defaultBackgroundScanDebugCsv;
@@ -496,27 +488,6 @@ class _SettingsScreenState extends State<SettingsScreen> with SingleTickerProvid
       _backgroundScanDebugCsv = await _settingsStore.getBackgroundScanDebugCsv();
       _liveScanDebugCsv = await _settingsStore.getLiveScanDebugCsv();
       _csvExportDirectory = await _settingsStore.getCsvExportDirectory();
-
-      // F109a (Sprint 44): load the most recent deferral for this account so the
-      // Background tab can show "last run deferred at ...". Best-effort.
-      try {
-        final latestDeferral =
-            await BackgroundScanLogStore(DatabaseHelper()).getLogsByStatus(
-          kDeferredStatus,
-        );
-        final forAccount = latestDeferral
-            .where((e) => e.accountId == accountId)
-            .toList();
-        if (forAccount.isNotEmpty) {
-          _lastBackgroundDeferral = DateTime.fromMillisecondsSinceEpoch(
-              forAccount.first.scheduledTime);
-        }
-      } catch (e) {
-        // Non-fatal: the status line just omits the timestamp. Log so a failed
-        // deferral ingest / DB-availability issue is diagnosable (PR #266
-        // Copilot review).
-        Logger().w('Failed to load last background-scan deferral: $e');
-      }
 
       // F43: Load current folder selections for display
       _safeSenderFolder = await _settingsStore.getAccountSafeSenderFolder(accountId);
@@ -1494,10 +1465,10 @@ class _SettingsScreenState extends State<SettingsScreen> with SingleTickerProvid
   /// dimension; this line is honest under every outcome of that decision, which
   /// is why it lands first.
   ///
-  /// ADR-0042: Android-only by nature -- Windows has no Doze equivalent, and
-  /// its own deferral behavior is already explained by
-  /// [_buildBackgroundDeferralStatusLine]. The two lines are siblings, each
-  /// describing the platform the user is actually on.
+  /// ADR-0042: Android-only by nature -- Windows has no Doze equivalent. (Its
+  /// former Windows sibling, which said background scans stop while the app
+  /// is open, was removed by F243 in Sprint 75: Windows background scans now run with
+  /// the app open, and the per-account scan claim decides.)
   Widget _buildAndroidDozeStatusLine() {
     return Padding(
       key: const Key('android_doze_status_line'),
@@ -1513,41 +1484,6 @@ class _SettingsScreenState extends State<SettingsScreen> with SingleTickerProvid
               'while the phone is idle or the screen is off, so a scan can run '
               'later than the interval you choose. Opening the app runs any '
               'work that was waiting.',
-              style: Theme.of(context).textTheme.bodySmall,
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  /// F109a (Sprint 44): a non-blocking info line explaining that background
-  /// scans pause while the foreground app is open (correct F98 behavior), with
-  /// the last deferral time when one has been recorded.
-  ///
-  /// (I-4, Phase 5.1.1 review: the F217 block was inserted between this comment
-  /// and its function, so this sibling lost its documentation and the Android
-  /// line gained a leading sentence describing Windows. Restored here.)
-  Widget _buildBackgroundDeferralStatusLine() {
-    final when = _lastBackgroundDeferral;
-    // Use intl for a stable, locale-appropriate date/time (PR #266 Copilot
-    // review: toString().substring(0,16) is brittle and locale-blind).
-    final suffix = when != null
-        ? ' Last run deferred at ${DateFormat.yMd().add_jm().format(when)}.'
-        : '';
-    return Padding(
-      key: const Key('background_deferral_status_line'),
-      padding: const EdgeInsets.fromLTRB(16, 4, 16, 8),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Icon(Icons.info_outline, size: 16, color: Colors.blueGrey.shade400),
-          const SizedBox(width: 8),
-          Expanded(
-            child: Text(
-              'Background scans pause while this app is open (to avoid database '
-              'conflicts); they resume on the next interval after you close it.'
-              '$suffix',
               style: Theme.of(context).textTheme.bodySmall,
             ),
           ),
@@ -1589,10 +1525,6 @@ class _SettingsScreenState extends State<SettingsScreen> with SingleTickerProvid
             await _updateScheduledScan(enabled: value);
           },
         ),
-        // F109a (Sprint 44): explain the deferral-while-app-open behavior so an
-        // enabled account that shows no recent scans is not read as "broken".
-        if (Platform.isWindows && _backgroundScanEnabled)
-          _buildBackgroundDeferralStatusLine(),
         // F217 (Sprint 72): the Android sibling of the line above.
         if (Platform.isAndroid && _backgroundScanEnabled)
           _buildAndroidDozeStatusLine(),

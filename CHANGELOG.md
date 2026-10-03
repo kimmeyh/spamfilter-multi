@@ -27,6 +27,7 @@ Format: `- **type**: Description (Issue #N)` where type is feat|fix|chore|docs
 ## [Unreleased]
 
 ### 2026-10-03 (Sprint 75)
+- **feat**: on Windows, scheduled background scans now run while the app is open, as they already did on Android. A background scan skips only an account you are scanning by hand, and tries it again a few minutes later. The notes saying background scans pause while the app is open are removed. (Issue #450)
 - **feat**: when you start a scan while a background scan is running on the same account, the "A scan is already running" message now offers "Stop the background scan and start mine". The background scan stops at its next check point and your scan starts. Scan History shows the stopped scan as not finished, with the reason. A stopped background scan no longer sends a "scan complete" notification. (Issue #441)
 - **feat**: a Gmail account that needs you to sign in again now says so in the account list and offers "Sign In Again", which signs in that same account and keeps its settings and history. Signing in with a different Google account is refused instead of adding a second account. A background scan that cannot renew Gmail's sign-in is skipped with that reason instead of failing, and on Windows it no longer opens a browser with nobody watching. (Issue #442)
 - **fix**: Gmail token lookups always use the account being scanned. Before, the folder list could look up the first saved account's tokens. (Issue #442)
