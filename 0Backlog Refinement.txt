@@ -10,8 +10,11 @@ Sprint 7n Scope should include the below items. Please complete sprint planning 
 
 ---------------------------------------------------------------------------------------------------------
 Sprint 75 Scope should include the below items. Please complete sprint planning (/docs/sprint_planning.md) for the below items and present for approval.  Note that everything needs to take into account both the Windows App and the Android app and ADR stating that everything should be functionally and UI the same unless it cannot be - and where it cannot be it should be implemented as a platform exception for what is needed -- this applies to all backend code, frontend code, data, architecture, development, security, testing, deployment.
-
-
+  - F238 is the release blocker for 0.17.0.
+  - F216 and F214 are both tester-visible polish in shared screens. They are cheap, and they make the next store update better.
+  - F236 is a small, contained change.
+  - F239. Gmail on Android: renew the token without the app open, plus "Sign In Again" (~240-480m) Priority 12
+  - F215. Wire the validation-screenshot folder into every Android screenshot process (~30-60m) Priority 30
 
   Recommendation
 
