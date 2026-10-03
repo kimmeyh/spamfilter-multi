@@ -26,6 +26,10 @@ Format: `- **type**: Description (Issue #N)` where type is feat|fix|chore|docs
 
 ## [Unreleased]
 
+### 2026-10-03 (Sprint 75)
+- **feat**: exported rules and safe-senders YAML files now start with a comment that names the app version and export date, on Windows and Android alike. Importing ignores it. (Issue #446)
+- **fix**: the Scan Range slider in Settings now lines up with the "Scan all emails" option above it. The "1" and "90" labels beside it are removed; the chosen value still shows below the slider. (Issue #445)
+
 ### 2026-09-27 (Sprint 74)
 - **fix**: adding a rule or safe sender while reviewing a saved scan from Scan History works again. The app lost track of the account's email provider, so every action failed with "N of N could not be applied". (Issue #422)
 - **change**: the Scan Results screen shows the account's email address once, in the title. (Issue #422)

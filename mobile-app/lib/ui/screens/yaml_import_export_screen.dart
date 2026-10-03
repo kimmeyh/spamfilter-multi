@@ -24,6 +24,7 @@ import '../../adapters/storage/app_paths.dart';
 import '../../adapters/storage/local_rule_store.dart';
 import '../../core/models/rule_set.dart';
 import '../../core/models/safe_sender_list.dart';
+import '../../core/services/app_version.dart';
 import '../../core/services/yaml_service.dart';
 import '../../core/storage/database_helper.dart';
 import '../../core/storage/rule_database_store.dart';
@@ -331,6 +332,9 @@ class _YamlImportExportScreenState extends State<YamlImportExportScreen> {
         return;
       }
 
+      // Get app version for the export header
+      final appVersion = await AppVersion.get();
+
       // Let user pick save location
       // F208: saveFile is deliberately LEFT as FileType.custom. The Android
       // MIME failure is in the OPEN path, where the picker must resolve a
@@ -346,8 +350,9 @@ class _YamlImportExportScreenState extends State<YamlImportExportScreen> {
         isMobile: Platform.isAndroid || Platform.isIOS,
         dialogTitle: 'Export Rules YAML',
         fileName: 'rules.yaml',
-        yaml: _yamlService.renderRules(ruleSet),
-        writeDesktopFile: (path) => _yamlService.exportRules(ruleSet, path),
+        yaml: _yamlService.renderRules(ruleSet, appVersion: appVersion),
+        writeDesktopFile: (path) =>
+            _yamlService.exportRules(ruleSet, path, appVersion: appVersion),
       );
 
       if (outputPath == null) {
@@ -384,6 +389,9 @@ class _YamlImportExportScreenState extends State<YamlImportExportScreen> {
         return;
       }
 
+      // Get app version for the export header
+      final appVersion = await AppVersion.get();
+
       // Let user pick save location (see [saveYamlExport] for the platform
       // difference).
       final outputPath = await saveYamlExport(
@@ -391,9 +399,10 @@ class _YamlImportExportScreenState extends State<YamlImportExportScreen> {
         isMobile: Platform.isAndroid || Platform.isIOS,
         dialogTitle: 'Export Safe Senders YAML',
         fileName: 'rules_safe_senders.yaml',
-        yaml: _yamlService.renderSafeSenders(safeSenders),
+        yaml: _yamlService.renderSafeSenders(safeSenders, appVersion: appVersion),
         writeDesktopFile: (path) =>
-            _yamlService.exportSafeSenders(safeSenders, path),
+            _yamlService.exportSafeSenders(safeSenders, path,
+                appVersion: appVersion),
       );
 
       if (outputPath == null) {

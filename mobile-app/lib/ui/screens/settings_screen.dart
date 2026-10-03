@@ -2404,24 +2404,16 @@ class _SettingsScreenState extends State<SettingsScreen> with SingleTickerProvid
               contentPadding: EdgeInsets.zero,
             ),
             const SizedBox(height: 8),
-            Row(
-              children: [
-                const Text('1'),
-                Expanded(
-                  child: Slider(
-                    value: sliderValue.toDouble().clamp(1, 90),
-                    min: 1,
-                    max: 90,
-                    divisions: 89,
-                    label: '$sliderValue day${sliderValue == 1 ? "" : "s"}',
-                    onChanged: (value) async {
-                      // Moving the slider unchecks "Scan all emails"
-                      await onChanged(value.round());
-                    },
-                  ),
-                ),
-                const Text('90'),
-              ],
+            Slider(
+              value: sliderValue.toDouble().clamp(1, 90),
+              min: 1,
+              max: 90,
+              divisions: 89,
+              label: '$sliderValue day${sliderValue == 1 ? "" : "s"}',
+              onChanged: (value) async {
+                // Moving the slider unchecks "Scan all emails"
+                await onChanged(value.round());
+              },
             ),
             Center(
               child: Text(

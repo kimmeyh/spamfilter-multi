@@ -880,6 +880,12 @@ After Phase 5.2 all tests pass, context can be compacted for efficiency:
   - Check for regressions in existing features
   - Document any issues found
 
+  **Phone Screenshots** (Android/iOS validation):
+  - Save screenshots to `validation-screenshots/sprint-NN/` with descriptive names before discussing them
+  - Use `scripts/pull-phone-screenshots.ps1 -Sprint N` to copy them from the device over MTP
+  - Example: `scripts/pull-phone-screenshots.ps1 -Sprint 75` saves to `validation-screenshots/sprint-75/`
+  - Include the folder path in your analysis comments so evidence is preserved after the session
+
   **Reference**: See `docs/MANUAL_INTEGRATION_TESTS.md` for comprehensive test scenarios
 
   **Conditional WinWright E2E (Sprint 35 policy)**: If sprint changes touch any UI surface covered by a WinWright script, run the matching script(s) only -- not the full suite. See the When-to-Run table in `docs/TESTING_STRATEGY.md` (Desktop E2E section). Every script must obey the state-restore rule: any rule, safe sender, or setting it creates or modifies must be reverted before the script ends. The full WinWright sweep (F79, HOLD, Issue #240) is on-demand only.
