@@ -1,31 +1,30 @@
 {
   "_description": "Sprint status file that persists across context compaction. Update after each phase/sub-phase completion.",
-  "_last_updated": "2026-09-30T04:09:15Z",
+  "_last_updated": "2026-10-03T02:20:06Z",
   "_usage": "Read this file after context compaction to restore sprint approval state and progress.",
   "_staleness_note": "This file had drifted 15 sprints (last updated at Sprint 35, 2026-04-19) before being refreshed at Sprint 50 close-out. It is a Phase 7.7 checklist item -- update it at every sprint close-out, not opportunistically.",
   "current_sprint": {
-    "number": 74,
-    "branch": "feature/20260924_Sprint_74",
-    "status": "Sprint 74 Phase 7.7 Ready for Final Approval -- reviews addressed (Copilot: no findings; Claude code 1 IMPORTANT + 3 MINOR fixed; Claude tests 4 IMPORTANT fixed, 4 MINOR -> Sprint 75); CI green on a3a262a; PR #440 ready, mergeable. 0.17.0 HELD for F238; no AAB until Sprint 74 and 75 PRs merge.",
-    "plan_approved": true,
-    "blanket_execution_approved": true,
-    "pr_number": 440,
-    "pr_url": "https://github.com/kimmeyh/spamfilter-multi/pull/440",
-    "version": "0.17.0+8",
-    "suite": "2,424 passed / 15 skipped / 0 failed (6633ffd); analyzer clean; CI green on a3a262a"
+    "number": 75,
+    "branch": "feature/20261002_Sprint_75",
+    "status": "Sprint 75 Phase 8.2 Backlog Refinement -- pass 1 complete (2026-10-02); store release N/A (0.17.0 held for F238); awaiting Harold's scope selection (pass 2).",
+    "plan_approved": false,
+    "blanket_execution_approved": false,
+    "pr_number": null,
+    "version": "0.17.0+8 (bump at Sprint 75 plan approval)"
   },
   "previous_sprint": {
-    "number": 73,
-    "branch": "feature/20260922_Sprint_73",
-    "pr": "#435 -> develop (merged 2026-09-24T04:02Z, 970355f), #436 develop -> main (merged 2026-09-24T04:04Z)",
-    "deliverables": "F235 Doze scheduling (device validation = MV74-1), F234 read-only preview, F224+F207 cancel scan (F207 isolate question = MV74-2), F229 version on every screen, F226 WinWright guard. F232-B + F205 parked for MV74-3.",
-    "reviews": "PR #435: 3 CRITICAL + 6 IMPORTANT, all fixed; Copilot 2/2 resolved. CI green on 4c64a30 incl. Android Build Verification.",
-    "metrics": "Suite 2,233 -> 2,314; analyzer clean; hooks 75/75; policy 123/123; WinWright 2/2 (29/29) at 4ff13dd."
+    "number": 74,
+    "branch": "feature/20260924_Sprint_74",
+    "pr": "#440 -> develop (merged 2026-10-03T02:17Z, 9045fbb), #443 develop -> main (8f5f8f9)",
+    "deliverables": "Per-account scan lock (any type, fail closed, reaping, 2-6 min busy retry); F232 mechanism B fixed; F222 Sort chip + row dates; F202 provider folder defaults; F206 exports + Clear history + redaction; Gmail keeps sign-in; subject rules = keyword (DB v10). Phone checks moved to Sprint 75.",
+    "reviews": "PR #440: Copilot no findings; Claude code 1 IMPORTANT + 3 MINOR fixed; Claude tests 4 IMPORTANT fixed, 4 MINOR -> Sprint 75. CI green.",
+    "metrics": "Suite 2,314 -> 2,424; analyzer clean; hooks 75 -> 86; WinWright 2/2 at 6633ffd, no drift.",
+    "retro": "Harold all Very Good. IMP-1/2/3/4/6 applied; IMP-5 -> backlog F242; IMP-7 skipped."
   },
   "github_issues": {
     "sprint_73": "#428 (open, MV74-1), #422 (open, MV74-3), #430 closed, #434 (open, MV74-2), #431 closed, #432 closed, #433 (open, MV74-3). Also closed in pass 1: #426 (superseded by #428), #427 (leftover captured as F236).",
     "note": "Closes #N does NOT auto-fire here.",
-    "sprint_74": "#428 MV74-1 (open -> Sprint 75 device check), #434 MV74-2 (done), #422 F232 (done; live-deletion check -> Sprint 75), #433 F205 (open -> Sprint 75), #437 F222 (done), #438 F202 (done), #439 F206 (done). New: #441 F238 (Sprint 75), #442 F239 (backlog). Close by hand after merge."
+    "sprint_74": "Closed by hand 2026-10-02: #422 #434 #437 #438 #439. Open, carried: #428 (MV74-1 phone), #433 (F205 phone), #441 (F238), #442 (F239)."
   },
   "_github_issues_note": "Sprint 66 cards created at Phase 3.3.1 (2026-09-07): #387 GP-19, #388 GP-4. Close by hand at Post-Merge Cleanup.",
   "test_metrics": {
@@ -42,7 +41,7 @@
     "live_play": "0.15.2 versionCode 5 -- closed testing, device-verified 2026-09-21 on the S24+.",
     "consequence": "F219 AC-1 and F227 remain blocked: they need a Play-INSTALLED build, and 0.15.3 is not going out. They wait for the next release that ships.",
     "status_0_16_0": "SUBMITTED / ROLLOUT IN PROCESS on BOTH stores (Harold, 2026-09-24, reported between 12:17am and 8:39am ET). NOT yet observed live on either. Built + verified 2026-09-24: MSIX 0.16.0.0 (prod worktree bf005f3, self-test 6/6 PASS, 17.5 MB) and AAB versionCode 7 / 0.16.0 (67.0 MB). Step 7 records (STORE_VERSION_STATUS.md live rows) wait for a direct console observation.",
-    "status_0_17_0": "RELEASE HOLD on both stores until F238 (#441) ships (Harold, 2026-09-27). No AAB until the Sprint 74 and Sprint 75 PRs are merged. The 0.17.0+8 AAB of 2026-09-25 is superseded -- do not upload. Notes re-derived 2026-09-29."
+    "status_0_17_0": "RELEASE HOLD on both stores until F238 (#441) ships (Harold, 2026-09-27). Phase 8.3 N/A for the Sprint 74 cycle: no MSIX, no AAB until the Sprint 74 and 75 PRs are merged."
   },
   "environment_notes": [
     "RESOLVED 2026-07-29 (verified 07-30): the Store fault was an Acronis file-system filter blocking AppXSvc cleanup, fixed by an Acronis Protection exclusion. 23h uptime with ZERO Id-493 events vs a 176-file/6-min baseline; Store client self-updated 22606.1401.6.0 -> .10.0 (requires a working deployment pipeline). Filter drivers remain loaded -- backup protection was NOT disabled. See ALL_SPRINTS_MASTER_PLAN ENV-1 for the picker gotcha if it recurs.",
@@ -51,9 +50,8 @@
   ],
   "blocking_issues": [],
   "next_actions": [
-    "Harold: review and merge PR #440 (develop).",
-    "Harold: IMP-5 and IMP-7 decisions (none given).",
-    "After merge: 6.6 open feature/<date>_Sprint_75 from the Sprint 74 branch; close #434 #437 #438 #439 #422 by hand; Phase 8 (no store release -- 0.17.0 held)."
+    "Harold: select Sprint 75 scope from the pass-2 slate (F238 already committed).",
+    "Phase 3 planning for Sprint 75 (version bump at approval, cards, draft PR)."
   ],
   "next_sprint_targeted": {
     "number": 75,
