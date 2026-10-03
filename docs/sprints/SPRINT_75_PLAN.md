@@ -541,6 +541,15 @@ workstation).
     scan now flags the account instead. **Known limit**: the scan row still reads `error` with the
     reason, because the claim creates it before sign-in fails and there is no `skipped` row status
     (adding one is Class 1 -- not done).
+  - R-4 second surface: the scan screen offers Sign In Again when a scan failed for this reason;
+    one `SignInAgain` helper serves both surfaces. M73b, M74b, M84-M86 KILLED.
+  - **Three gaps found by a review of the committed work, all fixed**: (1) the Windows
+    insufficient-scopes path neither flagged the account nor threw the typed exception; (2) an
+    OFFLINE Windows background scan flagged a healthy account, because renewal swallows network
+    errors -- the first Gmail call now fails as a connection error without entering renewal;
+    (3) VERIFIED (no change): a Gmail account id is its email on both sign-in paths, so the flag,
+    token lookup and expected-account check share one key -- written into ADR-0011 as an invariant.
+    M87-M90 KILLED.
 
 ## Phase 3.6.1 Architecture Impact Check
 

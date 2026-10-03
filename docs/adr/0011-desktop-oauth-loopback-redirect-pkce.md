@@ -98,7 +98,7 @@ OAuth client credentials are injected at build time via `--dart-define-from-file
 
 ## Amendment -- Sprint 75 (F239, Issue #442): renewal that needs the user
 
-Four rules, identical on Windows and Android (ADR-0042):
+Six rules, identical on Windows and Android (ADR-0042):
 
 1. **A token is always looked up for a named account.** `getValidAccessToken({accountId})` uses the
    account asked for, or the service's current account, and otherwise returns null. It used to fall
@@ -117,7 +117,17 @@ Four rules, identical on Windows and Android (ADR-0042):
 4. **Sign In Again accepts only the same account.** `signIn({expectedAccountId})` compares the
    returned address (case-insensitive) BEFORE saving tokens; a different Google account is refused
    with "You signed in as X. To fix Y, sign in with Y." Saving first would add the other account to
-   the saved list.
+   the saved list. **Invariant this relies on**: a Gmail account id IS its email address -- both
+   sign-in paths derive it from the signed-in email (`_signInNative`, `_signInDesktop`) -- so the
+   flag, the token lookup and the expected-account check all use one key. A future
+   `{platform}-{email}` Gmail id would break the check and must normalize first.
+5. **Every path that needs the user does all of rule 3** -- including the Windows
+   insufficient-scopes re-authorization in `fetchMessages`, which keeps the account id from
+   `loadCredentials` because it has no credentials in hand.
+6. **No network is not an expired sign-in.** Renewal swallows network errors into "Session
+   expired", so the first Gmail call (`getProfile`) checks `GmailApiAdapter.isNetworkError` and
+   fails as a `ConnectionException` without entering renewal. Otherwise an offline background scan
+   flagged a healthy account.
 
 **Known limits, not proven by tests:**
 - The scan row is created by the claim before credentials load, so a sign-in skip still leaves a
