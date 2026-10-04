@@ -27,6 +27,8 @@ Format: `- **type**: Description (Issue #N)` where type is feat|fix|chore|docs
 ## [Unreleased]
 
 ### 2026-10-03 (Sprint 75)
+- **fix**: adding a Gmail account now finishes like AOL and Yahoo: a "saved" message, then the Manual Scan screen for the new account, then back to your account list. Before, it opened a folder screen with no way to continue and then returned to the sign-in page. Choose Gmail folders later in Settings > Account. (Issue #442)
+- **fix**: the Gmail Setup box no longer tells you to generate an app password; Gmail signs in with Google. (Issue #442)
 - **fix**: exporting rules or safe senders to YAML now opens the save dialog in your export folder (Settings > General, or the default: Documents on Android, Downloads on Windows) instead of wherever the dialog last was. (Issue #446)
 - **fix**: when a scan cannot start because another scan is already running on the account, the Manual Scan screen now says "Scan not started" instead of "Scan failed", and the Results screen shows the reason. Before, that note never appeared. (Issue #441)
 - **feat**: on Windows, scheduled background scans now run while the app is open, as they already did on Android. A background scan skips only an account you are scanning by hand, and tries it again a few minutes later. The notes saying background scans pause while the app is open are removed. (Issue #450)

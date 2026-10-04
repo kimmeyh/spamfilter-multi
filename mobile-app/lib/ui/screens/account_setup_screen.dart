@@ -303,43 +303,65 @@ class _AccountSetupScreenState extends State<AccountSetupScreen> {
 
     setState(() => _isLoading = false);
 
-    if (mounted) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text('[OK] Account $email saved successfully'),
-          backgroundColor: Colors.green,
-        ),
-      );
+    await _finishAccountAdded(
+      accountId: accountId,
+      email: email,
+      platformId: _effectivePlatformId,
+      displayName: _effectiveDisplayName,
+    );
+  }
 
-      // [NEW] PHASE 3.1: Navigate directly to ScanProgressScreen
-      // [UPDATED] ISSUE #123: Scan mode from Settings (single source of truth)
-      final scanProvider = context.read<EmailScanProvider>();
-      final settingsStore = SettingsStore();
-      final manualScanMode = await settingsStore.getManualScanMode();
-      scanProvider.initializeScanMode(mode: manualScanMode);
+  /// What happens once a new account is saved -- ONE path for every provider
+  /// (Harold, Sprint 75 Manual Validation: a Gmail account must finish "the
+  /// same that is done after adding AOL and Yahoo accounts"): the saved
+  /// message, then the Manual Scan screen for that account, then back to the
+  /// account list.
+  Future<void> _finishAccountAdded({
+    required String accountId,
+    required String email,
+    required String platformId,
+    required String displayName,
+  }) async {
+    if (!mounted) return;
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text('[OK] Account $email saved successfully'),
+        backgroundColor: Colors.green,
+      ),
+    );
 
-      Navigator.of(context).pushReplacement(
-        MaterialPageRoute(
-          builder: (_) => ScanProgressScreen(
-            platformId: _effectivePlatformId,
-            platformDisplayName: _effectiveDisplayName,
-            accountId: accountId,
-            accountEmail: email,
-          ),
+    // [NEW] PHASE 3.1: Navigate directly to ScanProgressScreen
+    // [UPDATED] ISSUE #123: Scan mode from Settings (single source of truth)
+    final scanProvider = context.read<EmailScanProvider>();
+    final settingsStore = SettingsStore();
+    final manualScanMode = await settingsStore.getManualScanMode();
+    scanProvider.initializeScanMode(mode: manualScanMode);
+    if (!mounted) return;
+
+    Navigator.of(context).pushReplacement(
+      MaterialPageRoute(
+        builder: (_) => ScanProgressScreen(
+          platformId: platformId,
+          platformDisplayName: displayName,
+          accountId: accountId,
+          accountEmail: email,
         ),
-      ).then((_) {
-        // After scan screen is popped, pop account setup to return to account selection
-        if (mounted) {
-          Navigator.of(context).pop(true);
-        }
-      });
-    }
+      ),
+    ).then((_) {
+      // After scan screen is popped, pop account setup to return to account selection
+      if (mounted) {
+        Navigator.of(context).pop(true);
+      }
+    });
   }
 
   Future<void> _startGmailOAuth() async {
     if (!mounted) return;
 
-    final added = await Navigator.push<bool>(
+    // The sign-in screen returns the signed-in address once the account is
+    // saved (null if the user backed out), and the account then finishes
+    // exactly like an AOL or Yahoo account.
+    final email = await Navigator.push<String>(
       context,
       MaterialPageRoute(
         builder: (context) => GmailOAuthScreen(
@@ -348,8 +370,13 @@ class _AccountSetupScreenState extends State<AccountSetupScreen> {
       ),
     );
 
-    if (added == true && mounted) {
-      Navigator.of(context).pop(true);
+    if (email != null && mounted) {
+      await _finishAccountAdded(
+        accountId: email,
+        email: email,
+        platformId: widget.platformId,
+        displayName: 'Gmail',
+      );
     }
   }
 

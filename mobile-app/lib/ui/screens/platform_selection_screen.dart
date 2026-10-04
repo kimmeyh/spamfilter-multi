@@ -454,7 +454,13 @@ class _SetupInstructionsDialogState extends State<_SetupInstructionsDialog> {
             mainAxisSize: MainAxisSize.min,
             children: [
               Text(
-                'Before connecting, you\'ll need to generate an app password:',
+                // Sprint 75 (Harold Q2 at Manual Validation): Gmail signs in
+                // with Google -- the app-password sentence is for the IMAP
+                // providers only (it contradicted the "No app password
+                // needed" box below). Same id check as the checkbox.
+                widget.platformInfo.id == 'gmail'
+                    ? 'Here is what happens when you connect:'
+                    : 'Before connecting, you\'ll need to generate an app password:',
               style: Theme.of(context).textTheme.bodyMedium,
             ),
             const SizedBox(height: 16),
