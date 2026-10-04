@@ -6,7 +6,7 @@
   "current_sprint": {
     "number": 75,
     "branch": "feature/20261002_Sprint_75",
-    "status": "Phase 7 Sprint Review and Retrospective -- Sprint 75: Manual Validation COMPLETE (Harold, 2026-10-03). 8 tasks (Task 8 F243 added at MV) plus MV fixes; F239 R-1 spike FAILED (R-2 not built; F246 backlog); suite 2,508/15/0; WinWright 3/3 no drift (sweep-head 7e807d5). Harold retro: all Very Good, no carry-ins, no backlog items. Version stays 0.17.0+8.",
+    "status": "Phase 7.5 Improvement Approval -- Sprint 75: Manual Validation COMPLETE (Harold, 2026-10-03). 8 tasks (Task 8 F243 added at MV) plus MV fixes; F239 R-1 spike FAILED (R-2 not built; F246 backlog); suite 2,508/15/0; WinWright 3/3 no drift (sweep-head 7e807d5). Harold retro: all Very Good, no carry-ins, no backlog items. Version stays 0.17.0+8.",
     "plan_approved": true,
     "blanket_execution_approved": true,
     "pr_number": 448,
