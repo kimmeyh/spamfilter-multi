@@ -1,33 +1,32 @@
 {
   "_description": "Sprint status file that persists across context compaction. Update after each phase/sub-phase completion.",
-  "_last_updated": "2026-10-04T05:15:00Z",
+  "_last_updated": "2026-10-04T15:30:00Z",
   "_usage": "Read this file after context compaction to restore sprint approval state and progress.",
   "_staleness_note": "This file had drifted 15 sprints (last updated at Sprint 35, 2026-04-19) before being refreshed at Sprint 50 close-out. It is a Phase 7.7 checklist item -- update it at every sprint close-out, not opportunistically.",
   "current_sprint": {
-    "number": 75,
-    "branch": "feature/20261002_Sprint_75",
-    "status": "Phase 7.7 PR Reviews -- COMPLETE. PR #448 ready for Harold's final approval and merge (Copilot: no findings; Claude reviews fixed in 8e4a21b + 5449565, F247 to Sprint 76; CI green on 5449565).",
-    "plan_approved": true,
-    "blanket_execution_approved": true,
-    "pr_number": 448,
-    "version": "0.17.0+8 (NO bump this sprint -- exception, Harold 2026-10-02)",
-    "pr_url": "https://github.com/kimmeyh/spamfilter-multi/pull/448",
-    "deliverables": "F238 stop-for-manual (DB v11, release hold satisfied); F239 Sign In Again (Android renewal spike FAILED -> F246); F243 Windows background scans run with the app open; F216, F214, F236, F215; Task 7 WinWright + widget tests; MV fixes (Scan not started, YAML save folder, Gmail add flow, Gmail Setup sentence). Retro IMP-1..6 applied."
+    "number": 76,
+    "branch": "feature/20261004_Sprint_76",
+    "status": "Phase 8.3 Store release -- Sprint 75 cycle. 8.1 develop->main DONE (e724faa); 8.2 pass 1 completeness sweep DONE (issues closed, master plan corrected); now building 0.17.0 for the Microsoft Store and Google Play; then 8.4 pass 2 scope selection.",
+    "plan_approved": false,
+    "blanket_execution_approved": false,
+    "pr_number": null,
+    "version": "0.17.0+8 (release candidate; dev bump at Sprint 76 plan approval)",
+    "pr_url": null
   },
   "previous_sprint": {
-    "number": 74,
-    "branch": "feature/20260924_Sprint_74",
-    "pr": "#440 -> develop (merged 2026-10-03T02:17Z, 9045fbb), #443 develop -> main (8f5f8f9)",
-    "deliverables": "Per-account scan lock (any type, fail closed, reaping, 2-6 min busy retry); F232 mechanism B fixed; F222 Sort chip + row dates; F202 provider folder defaults; F206 exports + Clear history + redaction; Gmail keeps sign-in; subject rules = keyword (DB v10). Phone checks moved to Sprint 75.",
-    "reviews": "PR #440: Copilot no findings; Claude code 1 IMPORTANT + 3 MINOR fixed; Claude tests 4 IMPORTANT fixed, 4 MINOR -> Sprint 75. CI green.",
-    "metrics": "Suite 2,314 -> 2,424; analyzer clean; hooks 75 -> 86; WinWright 2/2 at 6633ffd, no drift.",
-    "retro": "Harold all Very Good. IMP-1/2/3/4/6 applied; IMP-5 -> backlog F242; IMP-7 skipped."
+    "number": 75,
+    "branch": "feature/20261002_Sprint_75",
+    "pr": "#448 -> develop (merged, 85c602c), #451 develop -> main (e724faa)",
+    "deliverables": "F238 stop-for-manual (DB v11, release hold satisfied); F239 Sign In Again (Android renewal spike FAILED -> F246); F243 Windows background scans run with the app open; F216, F214, F236, F215; Task 7 WinWright + widget tests; MV fixes (Scan not started, YAML save folder, Gmail add flow, Gmail Setup sentence). Retro IMP-1..6 applied.",
+    "reviews": "PR #448: Copilot no findings; Claude code 0 CRITICAL/IMPORTANT (4 MINOR fixed, 1 -> F247); Claude tests 2 CRITICAL + 3 IMPORTANT fixed, rest -> F247; comment review 8 fixed. CI green on 5449565.",
+    "metrics": "Suite 2,417 -> 2,516 (15 skipped); analyzer clean; hooks 83 -> 93; WinWright 3/3; mutations M71-M126 all KILLED.",
+    "retro": "Harold all Very Good. IMP-1..6 applied."
   },
   "github_issues": {
     "sprint_73": "#428 (open, MV74-1), #422 (open, MV74-3), #430 closed, #434 (open, MV74-2), #431 closed, #432 closed, #433 (open, MV74-3). Also closed in pass 1: #426 (superseded by #428), #427 (leftover captured as F236).",
     "note": "Closes #N does NOT auto-fire here.",
     "sprint_74": "Closed by hand 2026-10-02: #422 #434 #437 #438 #439. Open, carried: #428 (MV74-1 phone), #433 (F205 phone), #441 (F238), #442 (F239).",
-    "sprint_75": "#441 F238, #442 F239, #444 F216, #445 F214, #446 F236, #447 F215, #449 Task 7, #450 F243 -- all open; close by hand after merge (Closes #N does not auto-fire). #442 closes with F239's delivered half; renewal tracked as F246. Carried open to Sprint 76: #428 (MV74-1 phone), #433 (F205 phone)."
+    "sprint_75": "Closed by hand 2026-10-04: #441 #442 #444 #445 #446 #447 #449 #450. Open, carried to Sprint 76 phone checks: #428 (MV74-1), #433 (F205)."
   },
   "_github_issues_note": "Sprint 66 cards created at Phase 3.3.1 (2026-09-07): #387 GP-19, #388 GP-4. Close by hand at Post-Merge Cleanup.",
   "test_metrics": {
@@ -53,14 +52,14 @@
   ],
   "blocking_issues": [],
   "next_actions": [
-    "Harold: review and merge PR #448 (Claude never merges).",
-    "On merge: open the Sprint 76 branch from feature/20261002_Sprint_75 (Phase 6.6); close #441 #442 #444 #445 #446 #447 #449 #450 by hand.",
-    "Phase 8: develop -> main (Harold); refinement pass 1; 0.17.0 release to both stores (new AAB from main).",
-    "Sprint 76: phone validation checklist + F247 (docs/sprints/SPRINT_76_PLAN.md)."
+    "Phase 8.3: build + verify the 0.17.0 MSIX from the prod worktree on main (STORE_RELEASE_PROCESS.md); Harold uploads.",
+    "Phase 8.3 (Android): build the 0.17.0 AAB (versionCode 8) from main; Harold uploads to Play closed testing.",
+    "Phase 8.4: pass 2 scope selection -- present the top 10 per BACKLOG_REFINEMENT.md with a recommendation.",
+    "Then Phase 3 planning for Sprint 76 (stub: docs/sprints/SPRINT_76_PLAN.md)."
   ],
   "next_sprint_targeted": {
     "number": 76,
     "stub": "docs/sprints/SPRINT_76_PLAN.md",
-    "committed": "Phone validation checklist on the live 0.17.0 build (MV74-1, F205, saved-scan deletion, Doze lock, YAML export, F238/F239 on the phone)"
+    "committed": "Phone validation checklist on the 0.17.0 build + F247 (PR #448 review carry-in)"
   }
 }
