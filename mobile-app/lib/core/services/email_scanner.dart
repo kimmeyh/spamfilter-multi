@@ -527,6 +527,13 @@ class EmailScanner {
           // Rethrow so it reaches scanInbox's outer handler, where the
           // `finally` releases the lease and disconnects the session.
           rethrow;
+        } on GmailSignInRequiredException {
+          // F239 (Sprint 75, review H-1): the same swallow, for sign-in. The
+          // account needs the user, which no other folder can fix: counted as
+          // a folder error, a background scan "completed" (exported, notified)
+          // instead of skipping, and a manual scan offered no Sign In Again.
+          // Every folder after it would fail the same way.
+          rethrow;
         } catch (e, st) {
           // F202 R-6 (Sprint 74, Harold's decision 3): a folder that simply
           // does NOT EXIST on this account is not an error -- a provider

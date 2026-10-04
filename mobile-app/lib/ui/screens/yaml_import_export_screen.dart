@@ -24,6 +24,8 @@ import '../../adapters/storage/app_paths.dart';
 import '../../adapters/storage/local_rule_store.dart';
 import '../../core/models/rule_set.dart';
 import '../../core/models/safe_sender_list.dart';
+import '../../core/services/app_version.dart';
+import '../../core/services/export_directories.dart';
 import '../../core/services/yaml_service.dart';
 import '../../core/storage/database_helper.dart';
 import '../../core/storage/rule_database_store.dart';
@@ -45,6 +47,10 @@ import '../widgets/system_inset_wrapper.dart'; // F209 (Sprint 69)
 /// the plugin contract differs; the exported TEXT is identical on every
 /// platform ([YamlService.renderRules] / [YamlService.renderSafeSenders]).
 ///
+/// [initialDirectory] (Sprint 75, Harold Q5): where the dialog opens -- the
+/// export folder, from [ExportDirectories.saveDialogStart] (a path on Windows,
+/// a document URI on Android). Null keeps the dialog's own last folder.
+///
 /// Returns what the dialog returned (null = cancelled).
 @visibleForTesting
 Future<String?> saveYamlExport({
@@ -54,6 +60,7 @@ Future<String?> saveYamlExport({
   required String fileName,
   required String yaml,
   required Future<void> Function(String path) writeDesktopFile,
+  String? initialDirectory,
 }) async {
   if (isMobile) {
     // The plugin writes these bytes; the app must NOT write afterwards (the
@@ -61,6 +68,7 @@ Future<String?> saveYamlExport({
     return picker.saveFile(
       dialogTitle: dialogTitle,
       fileName: fileName,
+      initialDirectory: initialDirectory,
       type: FileType.custom,
       allowedExtensions: ['yaml', 'yml'],
       bytes: utf8.encode(yaml),
@@ -69,6 +77,7 @@ Future<String?> saveYamlExport({
   final path = await picker.saveFile(
     dialogTitle: dialogTitle,
     fileName: fileName,
+    initialDirectory: initialDirectory,
     type: FileType.custom,
     allowedExtensions: ['yaml', 'yml'],
   );
@@ -331,6 +340,9 @@ class _YamlImportExportScreenState extends State<YamlImportExportScreen> {
         return;
       }
 
+      // Get app version for the export header
+      final appVersion = await AppVersion.get();
+
       // Let user pick save location
       // F208: saveFile is deliberately LEFT as FileType.custom. The Android
       // MIME failure is in the OPEN path, where the picker must resolve a
@@ -346,8 +358,10 @@ class _YamlImportExportScreenState extends State<YamlImportExportScreen> {
         isMobile: Platform.isAndroid || Platform.isIOS,
         dialogTitle: 'Export Rules YAML',
         fileName: 'rules.yaml',
-        yaml: _yamlService.renderRules(ruleSet),
-        writeDesktopFile: (path) => _yamlService.exportRules(ruleSet, path),
+        initialDirectory: await ExportDirectories.saveDialogStart(),
+        yaml: _yamlService.renderRules(ruleSet, appVersion: appVersion),
+        writeDesktopFile: (path) =>
+            _yamlService.exportRules(ruleSet, path, appVersion: appVersion),
       );
 
       if (outputPath == null) {
@@ -384,6 +398,9 @@ class _YamlImportExportScreenState extends State<YamlImportExportScreen> {
         return;
       }
 
+      // Get app version for the export header
+      final appVersion = await AppVersion.get();
+
       // Let user pick save location (see [saveYamlExport] for the platform
       // difference).
       final outputPath = await saveYamlExport(
@@ -391,9 +408,11 @@ class _YamlImportExportScreenState extends State<YamlImportExportScreen> {
         isMobile: Platform.isAndroid || Platform.isIOS,
         dialogTitle: 'Export Safe Senders YAML',
         fileName: 'rules_safe_senders.yaml',
-        yaml: _yamlService.renderSafeSenders(safeSenders),
+        initialDirectory: await ExportDirectories.saveDialogStart(),
+        yaml: _yamlService.renderSafeSenders(safeSenders, appVersion: appVersion),
         writeDesktopFile: (path) =>
-            _yamlService.exportSafeSenders(safeSenders, path),
+            _yamlService.exportSafeSenders(safeSenders, path,
+                appVersion: appVersion),
       );
 
       if (outputPath == null) {

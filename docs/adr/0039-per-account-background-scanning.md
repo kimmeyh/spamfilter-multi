@@ -436,4 +436,111 @@ a foreground service, so a 6-minute wait leaves about 4 for the scan.
 **What is still not proven by tests**: contention between two real SQLite
 connections (two isolates or processes) -- the unit tests run on one
 connection. That is Manual Validation on the device. The "Stop the background
-scan and start mine" action is F238 (Sprint 75, release blocker for 0.17.0).
+scan and start mine" action is F238 (Sprint 75, release blocker for 0.17.0) --
+see the next amendment.
+
+## Amendment -- Sprint 75 (F238, Harold Q1 at plan approval, 2026-10-03): a cross-isolate stop request through the row
+
+**Why.** With the lock above, a user who taps Start Live Scan while a
+background scan holds the account is told "A scan is already running" with
+only OK. The background scan is invisible and cannot be stopped from the UI:
+it runs in another isolate (Android WorkManager) or another process (Windows
+Task Scheduler), so the F224 cancel (`ScanCoordinator.requestCancel`, a flag
+on an in-memory lease) cannot reach it. Harold, Sprint 74 Manual Validation:
+*"0.17.0 cannot ship without a fix ... it is the largest bug that we have."*
+
+**Decision (Class-1, approved as Sprint 75 open question 1).** The shared
+`scan_results` row, already the liveness and exclusion channel, becomes the
+ONLY control channel into a running scan as well:
+
+- DB v11 adds nullable `scan_results.cancel_requested_at` (additive, guarded
+  migration; existing rows stay NULL).
+- The dialog offers a third action, "Stop the background scan and start
+  mine", ONLY when the holder is a `background` scan. A manual, demo or
+  `reprocess` holder is the user's own work and keeps OK only.
+- The UI writes the request on the holder row by id, guarded on
+  `status = 'in_progress'` (`ScanResultStore.requestCancel`). One row, one
+  account: it can never stop another account's scan.
+- The scanning isolate reads its own row on the EXISTING heartbeat tick
+  (`EmailScanProvider._startHeartbeat`, every 30 s) and, when set, calls
+  `ScanCoordinator.requestCancel` in ITS OWN isolate. From there the F224 path
+  is unchanged: the scan stops at its next batch boundary, its partial counts
+  are kept, its `finally` releases the lease and closes the IMAP session, and
+  `cancelScan` closes the row `interrupted` with the reason "Stopped so your
+  manual scan could start" -- never `error`. The tick never closes the row
+  itself: the row closing is what admits the waiting manual scan, so it may
+  happen only when the lease and session are really being torn down.
+- The manual side shows "Stopping the background scan..." and waits, BOUNDED
+  (90 s, polling every 2 s), for the holder row to leave `in_progress` or for
+  its heartbeat to go stale -- the same condition `claimAccountScan` reaps on.
+  It then starts through the NORMAL path, so the claim still decides. If the
+  bound expires, the user is told and nothing starts; the request stays on
+  the row and is honored at the scan's next check point, and the claim reaps
+  the holder if it is dead.
+- Same code on both platforms (ADR-0042): cross-isolate on Android,
+  cross-process on Windows. No exception declared.
+- The stopped background scan is NOT a completed scan. The scanner swallows
+  a cancel (right for a manual scan), so `BackgroundScanCore` checks
+  `scanProvider.wasCancelled` and returns a skip with `stopped: true`: no
+  export, no "scan complete" notification, and no 2-6 minute busy retry --
+  the user is scanning that account by hand.
+
+**Why not a second channel.** The F224 token and the MV74-2 heartbeat timer
+are reused as-is: no second cancel path, no second timer. A platform channel
+(Android) or a named pipe / signal (Windows) would have been two mechanisms
+for one behavior, and ADR-0042 asks for one.
+
+**What is still not proven by tests.** Two real connections (the tests run on
+one); the scanner's `ScanCancelledException` handler is simulated by calling
+`cancelScan()` as it does, and its wiring is pinned by the F224 source gate;
+a single IMAP fetch or connect longer than the bound has no batch boundary in
+it, so the bound can expire although the request will be honored later; and
+the scanner marks the row before its `finally` disconnects, so a sub-second
+window exists where the manual claim is granted while the background socket
+is still closing (pre-existing F224 ordering, not changed here). Windows
+Manual Validation with a background scan really running in ANOTHER PROCESS
+covers the first. **Not** Settings > Test Background Scan: on Windows that runs
+the worker inside the UI process (one connection, one ScanCoordinator), so it
+exercises the same-isolate path only (Sprint 75 review H-2). The Windows
+recipe starts the dev exe with `--background-scan --account-id=<account>`
+and then starts a live scan on that account while the background process is
+still scanning (since F243, below, the app may already be open). The phone
+follows in Sprint 76 (Harold Q3).
+
+## Amendment -- Sprint 75 (F243, Harold at Manual Validation, 2026-10-03): Windows background scans run while the app is open
+
+**Before.** BUG-S37-1 (Sprint 38) made every Windows `--background-scan` launch
+EXIT when the foreground app was running -- a read-only probe of the UI's
+single-instance mutex in `windows/runner/main.cpp` -- because the two
+processes then failed with "database is locked" on one SQLite file. F109
+(Sprint 44) added the "deferred" record and the two texts explaining it. On
+Windows, scheduled scans therefore did not run for as long as the window was
+open; Android, whose worker runs in its own isolate with its own connection,
+never deferred.
+
+**Decision.** Remove the deferral. The probe stays only to LOG that the UI was
+open ("Foreground UI is running; background scan proceeds"); the background
+process still never takes the mutex, so the UI can open during a scan.
+
+**Why it is safe now.** The cause is handled where it belongs:
+- the database runs in WAL mode with `busy_timeout` 30 s
+  (`database_helper.dart`), so a second writer waits instead of failing;
+- the per-account claim (Sprint 74 amendments above) decides who scans: a
+  background scan of an account a live scan holds is REFUSED and skipped, and
+  retried once after 2-6 minutes (`BackgroundScanCore.scanAccount`), which also
+  covers a lock that outlasts the busy timeout;
+- a background scan that started FIRST is stopped by the user through the F238
+  offer above.
+Scope is PER ACCOUNT (Harold's Sprint 74 Q4 rule): other accounts keep
+scanning. Windows now behaves like Android (ADR-0042; no exception remains).
+
+**Removed with it**: the Settings > Background status line (F109a) and the Scan
+History hint (F109b), both of which said background scans pause while the app
+is open. The F109c ingest stays: it only converts an old handoff file into
+`deferred` rows, and existing rows stay readable.
+
+**What is not proven by tests.** Two real processes writing at once under load
+(the native integration script, `scripts/test-background-scan-skip.ps1`,
+proves the launch PROCEEDS with the UI open, against a non-existent account so
+it touches no mail); the claim's behavior across processes is covered by the
+Dart tests on one connection and by Manual Validation.

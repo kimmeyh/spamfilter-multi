@@ -1,3 +1,5 @@
+import 'dart:io';
+
 import 'package:flutter_test/flutter_test.dart';
 import 'package:my_email_spam_filter/core/services/background_mode_service.dart';
 
@@ -135,6 +137,35 @@ void main() {
       test('has correct value', () {
         // Assert
         expect(BackgroundModeService.backgroundScanFlag, equals('--background-scan'));
+      });
+    });
+
+    // PR #448 test review (Sprint 75, F239): the Android WorkManager isolate
+    // never sees `--background-scan`, so the worker marks itself. Without the
+    // mark, an insufficient-scopes error in the worker takes the FOREGROUND
+    // branch of GmailApiAdapter and starts an interactive sign-in from a
+    // background worker -- exactly what F239 forbids.
+    // Does NOT catch: a second Android entry point added without the mark.
+    group('markBackgroundIsolate (F239)', () {
+      test('switches this isolate to background mode', () {
+        BackgroundModeService.initialize(<String>[]);
+        expect(BackgroundModeService.isBackgroundMode, isFalse);
+        BackgroundModeService.markBackgroundIsolate();
+        expect(BackgroundModeService.isBackgroundMode, isTrue);
+      });
+
+      test('the Android worker entry point marks its isolate BEFORE it scans '
+          '(source gate -- WorkManager has no seam on this host)', () {
+        final src = File('lib/core/services/android_background_scan_worker.dart')
+            .readAsStringSync();
+        final entry = src.indexOf('void androidBackgroundScanDispatcher()');
+        final mark =
+            src.indexOf('BackgroundModeService.markBackgroundIsolate();', entry);
+        final scan =
+            src.indexOf('AndroidBackgroundScanWorker.executeScan(', entry);
+        expect(entry, greaterThanOrEqualTo(0));
+        expect(mark, greaterThan(entry));
+        expect(scan, greaterThan(mark));
       });
     });
   });

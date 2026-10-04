@@ -233,8 +233,11 @@ For newly identified work:
 **Estimated Effort**: [XS/S/M/L/XL] (~N hours)
 **Value Statement**: This enables... / This prevents...
 **Dependencies**: [List any blockers]
+**Evidence** (if from screenshot): `validation-screenshots/sprint-NN/filename.png`
 **Notes**: [Any context from refinement discussion]
 ```
+
+When a card is authored from a screenshot, include the relative image path in the Evidence field so the visual evidence is preserved after the session ends.
 
 #### 5.2 Defer Details
 

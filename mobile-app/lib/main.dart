@@ -313,10 +313,11 @@ void main(List<String> args) async {
   }
 
   if (Platform.isWindows) {
-    // F109c (Sprint 44): ingest any background-scan deferrals the native runner
-    // recorded to the handoff file while this foreground app was open, into the
-    // background_scan_log table (status='deferred') so they surface in Settings
-    // + Scan History. Best-effort; never blocks startup.
+    // F109c (Sprint 44), legacy since F243 (Sprint 75): drain a deferral
+    // handoff file written by a pre-F243 native runner into
+    // background_scan_log (status='deferred'). The runner no longer writes it,
+    // so this is a no-op once old files are gone. Best-effort; never blocks
+    // startup.
     try {
       await BackgroundDeferralIngest(BackgroundScanLogStore(DatabaseHelper()))
           .ingest();

@@ -49,3 +49,19 @@ the screenshot is exhausted as evidence -- go to the source.
 When a card is written from an image here, cite it by relative path
 (`validation-screenshots/sprint-69/f209-import-error-cut-off.png`) so a reader knows the
 evidence exists and where to look, even though `git log` will never show it.
+
+## Retention Policy
+
+**Keep indefinitely. No pruning.** Each sprint's folder is a dated record of what was tested and
+what was observed. Months or years later, a card's reasoning may need re-examination against the
+evidence it cites. Delete nothing.
+
+## Per-Session Image Cache
+
+Images pasted into a Claude Code session can be re-read **within that session only**. Where they
+live has changed between Claude Code versions: in Sprint 69 they were files under
+`C:\Users\kimme\.claude\image-cache\<session-guid>\<n>.png`; on 2026-10-03 (Sprint 75) that
+directory did not exist, and the images were stored only inside the session transcript
+(`C:\Users\kimme\.claude\projects\<project>\<session-guid>.jsonl`). Neither is a place to keep
+evidence. Save it to `validation-screenshots/sprint-NN/` (for phone screenshots:
+`scripts/pull-phone-screenshots.ps1 -Sprint NN`) before the session ends.

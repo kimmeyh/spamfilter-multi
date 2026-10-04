@@ -812,7 +812,11 @@ class _RuleEditScreenState extends State<RuleEditScreen> {
         const SizedBox(height: 4),
         Text(
           _inputExample,
-          style: Theme.of(context).textTheme.bodySmall,
+          // F216 (Sprint 75): was `bodySmall`. This hint supports the
+          // field directly below it, so it is promoted to match the
+          // RadioListTile subtitles above it, consistent with the same
+          // hint in ManualRuleCreateScreen.
+          style: Theme.of(context).textTheme.bodyMedium,
         ),
         const SizedBox(height: 8),
         TextFormField(
@@ -953,8 +957,10 @@ class _RuleEditScreenState extends State<RuleEditScreen> {
           ),
           const SizedBox(height: 4),
           Text(
+            // F216 (Sprint 75): was `bodySmall`; promoted to match
+            // ManualRuleCreateScreen's same pair.
             'Type: $typeLabel',
-            style: Theme.of(context).textTheme.bodySmall,
+            style: Theme.of(context).textTheme.bodyMedium,
           ),
           // "Phrase" for a body rule, "Source" for a domain rule -- matches
           // ManualRuleCreateScreen's preview and confirm dialog. An empty
@@ -962,7 +968,8 @@ class _RuleEditScreenState extends State<RuleEditScreen> {
           if (sourceDomain != null && sourceDomain.isNotEmpty)
             Text(
               '${_selectedType == ManualRuleType.bodyPhrase ? 'Phrase' : 'Source'}: $sourceDomain',
-              style: Theme.of(context).textTheme.bodySmall,
+              // F216 (Sprint 75): was `bodySmall`.
+              style: Theme.of(context).textTheme.bodyMedium,
             ),
         ],
       ),

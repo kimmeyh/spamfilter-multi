@@ -1,0 +1,1 @@
+{"session_id": "hg-allow-9", "cwd": "D:/Data/Harold/github/spamfilter-multi", "hook_event_name": "PreToolUse", "tool_name": "Bash", "tool_input": {"command": "cat > notes.md <<'EOF'\nTo reset the file run:\ncat > out.txt\nthen type the text.\nEOF"}}

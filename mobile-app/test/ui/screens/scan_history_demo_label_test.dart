@@ -138,4 +138,52 @@ void main() {
         reason: 'an interrupted row (completed_at null by design) must name '
             'its state, never render as "In progress"');
   });
+
+  // F238 (Sprint 75): a background scan the user stopped so a manual scan
+  // could start reads "Not finished" WITH its reason. Before this the reason
+  // in `error_message` was shown only for `error` rows, so the user could see
+  // that a scan stopped but never why. (What this does not catch: the reason
+  // being rendered red -- the color is asserted on the Text style below, but
+  // whether grey.shade700 reads as "information" rather than "warning" is
+  // Harold's judgment at Manual Validation.)
+  testWidgets('a scan stopped for a manual scan shows its reason, in the '
+      'details color, not red', (tester) async {
+    tester.view.physicalSize = const Size(1600, 900);
+    tester.view.devicePixelRatio = 1.0;
+    addTearDown(tester.view.resetPhysicalSize);
+    addTearDown(tester.view.resetDevicePixelRatio);
+
+    const reason = 'Stopped so your manual scan could start';
+    await tester.runAsync(() async {
+      await testHelper.dbHelper.insertScanResult({
+        'account_id': 'aol-user@aol.com',
+        'scan_type': 'background',
+        'scan_mode': 'readonly',
+        'started_at': DateTime.now().millisecondsSinceEpoch,
+        'total_emails': 40,
+        'processed_count': 12,
+        'deleted_count': 0,
+        'moved_count': 0,
+        'safe_sender_count': 0,
+        'no_rule_count': 0,
+        'error_count': 0,
+        'status': 'interrupted',
+        'error_message': reason,
+        'folders_scanned': '["INBOX"]',
+      });
+      await mountAndLoadDbWidget(
+        tester,
+        const MaterialApp(home: ScanHistoryScreen()),
+      );
+    });
+    await tester.pump();
+
+    final reasonText = find.text(reason);
+    expect(reasonText, findsOneWidget,
+        reason: 'the user must be able to see WHY the scan did not finish');
+    final style = tester.widget<Text>(reasonText).style;
+    expect(style?.color, isNot(Colors.red.shade700),
+        reason: 'R-4: the user stopping a scan is never shown as an error');
+    expect(find.textContaining('Not finished'), findsOneWidget);
+  });
 }

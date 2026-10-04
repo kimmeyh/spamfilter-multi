@@ -449,7 +449,14 @@ class ScanResultStore {
   /// makes the record honest (AC-4): a scan cancelled after 200 emails really
   /// did process 200, and must not be reported as a completed scan of 200 nor
   /// as a failure that did nothing.
-  Future<bool> markScanCancelled(int scanResultId) async {
+  ///
+  /// F238 (Sprint 75): [reason] is the user-facing line Scan History shows.
+  /// The default is the user's own Cancel button; a background scan stopped
+  /// so a manual scan could start passes [stoppedForManualScanReason].
+  Future<bool> markScanCancelled(
+    int scanResultId, {
+    String reason = cancelledByUserReason,
+  }) async {
     try {
       final db = await _databaseHelper.database;
 
@@ -457,7 +464,7 @@ class ScanResultStore {
         'scan_results',
         {
           'status': 'interrupted',
-          'error_message': 'Cancelled by the user before it finished',
+          'error_message': reason,
         },
         where: 'id = ?',
         whereArgs: [scanResultId],
@@ -535,6 +542,119 @@ class ScanResultStore {
       where: 'id = ? AND status = ?',
       whereArgs: [scanResultId, 'in_progress'],
     );
+  }
+
+  /// The reason [markScanCancelled] writes for the user's own Cancel button
+  /// (F224). Shown in Scan History.
+  static const String cancelledByUserReason =
+      'Cancelled by the user before it finished';
+
+  /// F238 (Sprint 75): the reason written when a background scan was stopped
+  /// so the user's manual scan could start. Plain words; never "error".
+  static const String stoppedForManualScanReason =
+      'Stopped so your manual scan could start';
+
+  /// F238 (Sprint 75): ask the scan that owns row [scanResultId] to stop.
+  ///
+  /// The scan may be running in ANOTHER isolate (Android WorkManager) or
+  /// ANOTHER process (Windows Task Scheduler), where this isolate's
+  /// [ScanCoordinator] cannot reach it. The shared row is the only channel
+  /// both sides can see, so the request is a timestamp on the row:
+  /// `cancel_requested_at`. The scanning isolate reads it on its own heartbeat
+  /// tick (`EmailScanProvider._startHeartbeat`) and requests cancel through
+  /// ITS coordinator, so the scan stops at its next batch boundary through the
+  /// existing F224 path -- partial counts kept, lease released, IMAP session
+  /// closed by the scanner's own `finally`.
+  ///
+  /// Guarded on `in_progress`: a request can never be written onto a finished
+  /// row. Targets the row by id, so one account's request can never stop
+  /// another account's scan. Returns true when a live row took the request;
+  /// false means the holder already closed and there is nothing to stop.
+  Future<bool> requestCancel(int scanResultId) async {
+    final db = await _databaseHelper.database;
+    final rows = await db.update(
+      'scan_results',
+      {'cancel_requested_at': DateTime.now().millisecondsSinceEpoch},
+      where: 'id = ? AND status = ?',
+      whereArgs: [scanResultId, 'in_progress'],
+    );
+    _logger.i(rows > 0
+        ? 'F238: cancel requested on scan $scanResultId'
+        : 'F238: cancel NOT requested -- scan $scanResultId is not in progress');
+    return rows > 0;
+  }
+
+  /// F238 (Sprint 75): has someone asked the scan that owns [scanResultId] to
+  /// stop? Read by the scanning isolate on its heartbeat tick. A missing row
+  /// reads as "no request" -- the scan has nothing left to stop for.
+  Future<bool> isCancelRequested(int scanResultId) async {
+    final db = await _databaseHelper.database;
+    final rows = await db.query(
+      'scan_results',
+      columns: ['cancel_requested_at'],
+      where: 'id = ?',
+      whereArgs: [scanResultId],
+      limit: 1,
+    );
+    if (rows.isEmpty) return false;
+    return rows.first['cancel_requested_at'] != null;
+  }
+
+  /// F238 (Sprint 75): wait, BOUNDED, for the scan that owns [scanResultId]
+  /// to stop holding the account.
+  ///
+  /// "Closed" is deliberately the SAME condition [claimAccountScan] uses to
+  /// grant: the row is gone or no longer `in_progress`, or its heartbeat is
+  /// older than [ScanCoordinator.heartbeatFreshness] (the claim reaps it), or
+  /// it started more than [ScanCoordinator.scanTimeout] ago. So a `true`
+  /// return means the manual scan's claim will be granted unless a NEW holder
+  /// has appeared since -- and the claim, not this wait, still decides.
+  ///
+  /// Checks at once, then every [pollInterval] until [bound] has elapsed.
+  /// Returns false when the bound expires with the holder still live; the
+  /// caller then starts nothing and tells the user (R-5). Both durations are
+  /// parameters so tests run in milliseconds; production uses the defaults.
+  Future<bool> waitForScanToClose(
+    int scanResultId, {
+    Duration bound = stopForManualScanBound,
+    Duration pollInterval = stopForManualScanPollInterval,
+  }) async {
+    final deadline = DateTime.now().add(bound);
+    while (true) {
+      if (await _scanHasClosed(scanResultId)) return true;
+      if (!DateTime.now().isBefore(deadline)) {
+        _logger.w('F238: scan $scanResultId did not stop within '
+            '${bound.inSeconds}s');
+        return false;
+      }
+      await Future<void>.delayed(pollInterval);
+    }
+  }
+
+  /// How long the manual side waits for a background scan to honor a stop
+  /// request before giving up (R-5). One heartbeat interval for the request
+  /// to be seen, plus time for the scan to reach its next batch boundary.
+  static const Duration stopForManualScanBound = Duration(seconds: 90);
+
+  /// How often [waitForScanToClose] re-reads the holder row.
+  static const Duration stopForManualScanPollInterval = Duration(seconds: 2);
+
+  Future<bool> _scanHasClosed(int scanResultId) async {
+    final db = await _databaseHelper.database;
+    final now = DateTime.now();
+    final beatCutoff =
+        now.subtract(ScanCoordinator.heartbeatFreshness).millisecondsSinceEpoch;
+    final ageCutoff =
+        now.subtract(ScanCoordinator.scanTimeout).millisecondsSinceEpoch;
+    final live = await db.query(
+      'scan_results',
+      columns: ['id'],
+      where: 'id = ? AND status = ? AND '
+          'COALESCE(last_heartbeat_at, started_at) >= ? AND started_at >= ?',
+      whereArgs: [scanResultId, 'in_progress', beatCutoff, ageCutoff],
+      limit: 1,
+    );
+    return live.isEmpty;
   }
 
   /// F175 (Sprint 62): the ACTIVE background scan, if any -- an

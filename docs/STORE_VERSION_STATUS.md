@@ -28,10 +28,16 @@ Partner Center before saying anything about the Store version.
 
 ## 0.17.0 -- RELEASE HOLD (Harold, 2026-09-27)
 
+**HOLD SATISFIED (2026-10-04)**: F238 shipped in Sprint 75 (PR #448, Manual Validation PASS on Windows). 0.17.0 may be built from `main` after #448 and the develop -> main merge. Build a NEW AAB; the 2026-09-25 one stays superseded. Release notes re-derived: `docs/store-assets/RELEASE_NOTES_0.17.0_windows.md` and `_play.md`.
+
 **0.17.0 is NOT submitted to either store until F238 (Issue #441, Sprint 75) ships** -- the
 "stop the background scan and start mine" action. Harold: *"0.17.0 cannot ship without a fix"*,
 *"it is the largest bug that we have."* **No AAB is built until BOTH the Sprint 74 and Sprint 75
 PRs are merged.** The 0.17.0+8 AAB built on 2026-09-25 is superseded and must not be uploaded.
+
+**VERSION EXCEPTION (Harold, 2026-10-02)**: Sprint 75 does NOT bump the version -- *"no store release was done after the last sprint, so keep 0.17.0 for this sprint (note as an exception)"*. The release carrying F238 is therefore **0.17.0**, not 0.18.0 (this supersedes the 0.18.0 wording below).
+
+**Re-confirmed by Harold, 2026-10-02 (option 1): keep the hold.** The next store release ships AFTER Sprint 75, with F238 included, under Sprint 75's version (0.18.0 after the plan-approval bump). The 0.17.0 notes carry forward into it. Weighed against: 0.16.0 (live) still has colliding scans, failing rule adds from saved scans, Gmail "Missing credentials" and the Android YAML export failure; 0.17.0 fixes those but has the F238 dead end on BOTH platforms.
 
 ## msix_version convention (which worktree's value ships)
 

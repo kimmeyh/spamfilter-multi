@@ -3,6 +3,7 @@ import 'package:logger/logger.dart';
 import 'package:provider/provider.dart';
 import '../../core/providers/selected_account_provider.dart';
 import '../../adapters/storage/secure_credentials_store.dart';
+import '../../core/storage/settings_store.dart';
 import '../../core/services/data_deletion_service.dart';
 import '../../core/utils/platform_inference.dart';
 import '../../util/redact.dart';
@@ -20,6 +21,7 @@ import 'scan_progress_screen.dart';
 import 'help_screen.dart';
 import 'settings_screen.dart';
 import '../widgets/screen_version_line.dart'; // F229 (Sprint 73)
+import '../widgets/sign_in_again.dart'; // F239 (Sprint 75)
 import '../widgets/system_inset_wrapper.dart'; // F209 (Sprint 69)
 
 /// Display data for an account in the account selection list.
@@ -27,9 +29,14 @@ class AccountDisplayData {
   final String email;
   final String platformId;
 
+  /// F239 (Sprint 75): Gmail could not renew this account's sign-in without
+  /// the user, so the row offers "Sign In Again".
+  final bool signInRequired;
+
   AccountDisplayData({
     required this.email,
     required this.platformId,
+    this.signInRequired = false,
   });
 
   @override
@@ -38,10 +45,12 @@ class AccountDisplayData {
       other is AccountDisplayData &&
           runtimeType == other.runtimeType &&
           email == other.email &&
-          platformId == other.platformId;
+          platformId == other.platformId &&
+          signInRequired == other.signInRequired;
 
   @override
-  int get hashCode => email.hashCode ^ platformId.hashCode;
+  int get hashCode =>
+      email.hashCode ^ platformId.hashCode ^ signInRequired.hashCode;
 }
 
 /// Screen to select existing account or add new one
@@ -191,6 +200,17 @@ class _AccountSelectionScreenState extends State<AccountSelectionScreen> with Wi
 
       if (creds == null) {
         _logger.w('[WARNING] No credentials found for account: ${Redact.accountId(accountId)}');
+        // F239 (Sprint 75): a Gmail account with no usable sign-in is a
+        // sign-in to repair, not an account to delete -- show it normally
+        // with "Sign In Again" instead of the "Missing credentials" dead end.
+        final storedPlatform = await _credStore.getPlatformId(accountId);
+        if (storedPlatform == 'gmail' && accountId.contains('@')) {
+          return AccountDisplayData(
+            email: accountId,
+            platformId: 'gmail',
+            signInRequired: true,
+          );
+        }
         return null;
       }
 
@@ -225,9 +245,21 @@ class _AccountSelectionScreenState extends State<AccountSelectionScreen> with Wi
 
       _logger.d('[OK] Loaded account data: email=${Redact.email(email)}, platformId=$platformId for accountId=${Redact.accountId(accountId)}');
 
+      // F239: the flag the Gmail adapter sets when renewal needed the user.
+      var signInRequired = false;
+      if (platformId == 'gmail') {
+        try {
+          signInRequired =
+              await SettingsStore().getGmailSignInRequired(accountId);
+        } catch (e) {
+          _logger.w('F239: could not read the Gmail sign-in state: $e');
+        }
+      }
+
       return AccountDisplayData(
         email: email,
         platformId: platformId,
+        signInRequired: signInRequired,
       );
     } catch (e) {
       _logger.e('[FAIL] Error loading account display data for ${Redact.accountId(accountId)}: $e');
@@ -630,6 +662,15 @@ class _AccountSelectionScreenState extends State<AccountSelectionScreen> with Wi
   /// an account-scoped screen that would then fail to load its credentials.
   /// `clearIfSelected` is used rather than `clear` so deleting a DIFFERENT
   /// account leaves a valid selection intact.
+  /// F239: repair the sign-in of an existing Gmail account. The account keeps
+  /// its id, settings and history -- nothing is deleted.
+  Future<void> _signInAgain(String accountId) async {
+    final signedIn = await SignInAgain.run(context, accountId);
+    if (signedIn && mounted) {
+      setState(() => _accountDataCache.remove(accountId));
+    }
+  }
+
   Future<void> _deleteAccount(String accountId) async {
     final email = accountId; // accountId is the email
 
@@ -956,16 +997,27 @@ class _AccountSelectionScreenState extends State<AccountSelectionScreen> with Wi
                           subtitle: Padding(
                             padding: const EdgeInsets.only(top: 4),
                             child: Text(
-                              accountId,
+                              // F239: say why the row offers Sign In Again.
+                              displayData.signInRequired
+                                  ? '$accountId\nGmail needs you to sign in again'
+                                  : accountId,
                               style: TextStyle(
                                 fontSize: 12,
-                                color: Colors.grey[600],
+                                color: displayData.signInRequired
+                                    ? Theme.of(context).colorScheme.error
+                                    : Colors.grey[600],
                               ),
                             ),
                           ),
                           trailing: Row(
                             mainAxisSize: MainAxisSize.min,
                             children: [
+                              if (displayData.signInRequired)
+                                TextButton(
+                                  key: Key('sign_in_again_$accountId'),
+                                  onPressed: () => _signInAgain(accountId),
+                                  child: const Text(SignInAgain.label),
+                                ),
                               IconButton(
                                 icon: const Icon(Icons.play_arrow, color: Colors.green),
                                 onPressed: () => _selectAccount(accountId,

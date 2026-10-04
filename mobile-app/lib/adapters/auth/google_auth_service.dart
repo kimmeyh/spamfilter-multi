@@ -28,8 +28,12 @@ import 'dart:async';
 import 'dart:io';
 
 import 'package:flutter/foundation.dart';
+import 'package:flutter/services.dart' show PlatformException;
 import 'package:http/http.dart' as http;
 import 'package:google_sign_in/google_sign_in.dart';
+import 'package:google_sign_in_platform_interface/google_sign_in_platform_interface.dart'
+    as gsi_platform;
+import 'package:my_email_spam_filter/core/services/background_mode_service.dart';
 import 'package:my_email_spam_filter/adapters/auth/token_store.dart';
 import 'package:my_email_spam_filter/adapters/storage/secure_credentials_store.dart';
 import 'package:my_email_spam_filter/adapters/email_providers/gmail_windows_oauth_handler.dart';
@@ -266,7 +270,10 @@ class GoogleAuthService {
         return await _refreshViaNativeSignIn(accountId, tokens);
       }
     } catch (e) {
-      Redact.logSafe('Token refresh failed: ${e.runtimeType}');
+      // Review (Sprint 75): logSafe is debug-only, so a release build kept
+      // no trace of WHY renewal failed. Type and code carry no account data.
+      Redact.logWarning('Token refresh failed: ${e.runtimeType}'
+          '${e is PlatformException ? ' code=${e.code}' : ''}');
       // Sprint 74 MV (Harold Q1, 2026-09-27): a failed renewal NO LONGER
       // deletes the stored tokens -- here or in the four sites below. The
       // failure may be transient (no network, no Activity in a background
@@ -288,12 +295,51 @@ class GoogleAuthService {
       // Initialize if needed
       await _ensureNativeSignInInitialized();
 
+      // F239 R-1/R-2 (Sprint 75): ask for a token for THIS account's email
+      // with no prompt. Google: an already-granted request returns the token
+      // with no UI. Lightweight sign-in below needs an Activity (it fails
+      // with NO_ACTIVITY in a WorkManager worker). Anything but a token falls
+      // through to the existing path unchanged.
+      //
+      // OFF: the R-1 emulator spike FAILED on 2026-10-03 -- from a
+      // WorkManager isolate the call returned NULL for an account that had
+      // granted the scopes (ADR-0011). R-2 was approved only if the spike
+      // passed, so it is not built. Backlog F246 (server-side token
+      // exchange) replaces this route; the debug probe was removed.
+      final directToken = noActivityRenewalEnabled
+          ? await authorizeWithoutActivity(tokens.email)
+          : null;
+      if (directToken != null) {
+        final newTokens = GmailTokens(
+          accessToken: directToken,
+          refreshToken: tokens.refreshToken,
+          expiresAt: DateTime.now().add(const Duration(hours: 1)),
+          grantedScopes: _scopes,
+          email: tokens.email,
+        );
+        await _credStore.saveGmailTokens(accountId, newTokens);
+        _currentAccountId = accountId;
+        _state = AuthState.authenticated;
+        return AuthResult.success(tokens.email, directToken);
+      }
+
       // Try lightweight authentication (silent sign-in)
       final user = await _googleSignIn.attemptLightweightAuthentication();
 
       if (user == null) {
         // Silent sign-in failed. Tokens are KEPT (Harold Q1, Sprint 74 MV --
         // see _refreshToken): this can be transient.
+        _state = AuthState.unauthenticated;
+        return AuthResult.unauthenticated();
+      }
+
+      // Review (Sprint 75, M-4): the SDK returns whichever Google account it
+      // last signed in -- after a refused wrong-account Sign In Again, that
+      // can be another account. Saving its token under THIS id would scan
+      // the other mailbox with this account's rules. Save nothing.
+      if (!isExpectedAccount(user.email, tokens.email)) {
+        Redact.logWarning('Renewal returned a different Google account; '
+            'nothing saved');
         _state = AuthState.unauthenticated;
         return AuthResult.unauthenticated();
       }
@@ -324,6 +370,59 @@ class GoogleAuthService {
     } catch (e) {
       Redact.logSafe('Native sign-in refresh failed: ${e.runtimeType}');
       rethrow;
+    }
+  }
+
+  /// F239 R-2 (Sprint 75): whether Android renewal tries
+  /// [authorizeWithoutActivity] first. False: the R-1 emulator spike FAILED
+  /// (2026-10-03, ADR-0011), and R-2 was approved only if it passed (plan
+  /// Open question 2). Do not enable without a new spike and a new approval.
+  static bool noActivityRenewalEnabled = false;
+
+  /// F239 (Sprint 75): test seam for [authorizeWithoutActivity].
+  @visibleForTesting
+  static Future<String?> Function(String email, List<String> scopes)?
+      debugAuthorizeWithoutActivity;
+
+  /// F239 R-1/R-2 (Sprint 75): an access token for [email]'s already-granted
+  /// Gmail scopes, without any UI and without an Activity -- or null.
+  ///
+  /// Uses the platform interface because it accepts the account EMAIL;
+  /// google_sign_in 7.2.0's instance-level client passes no account hint.
+  /// Logs the outcome on one line tagged `[F239 spike]` (no address, no
+  /// token), kept so a scope-matched retry of the spike (F246) can be read
+  /// from logcat. No production path calls this while
+  /// [noActivityRenewalEnabled] is false.
+  Future<String?> authorizeWithoutActivity(String email) async {
+    final authorize = debugAuthorizeWithoutActivity ??
+        (String e, List<String> scopes) async {
+          await _ensureNativeSignInInitialized();
+          final data = await gsi_platform.GoogleSignInPlatform.instance
+              .clientAuthorizationTokensForScopes(
+            gsi_platform.ClientAuthorizationTokensForScopesParameters(
+              request: gsi_platform.AuthorizationRequestDetails(
+                scopes: scopes,
+                userId: null,
+                email: e,
+                promptIfUnauthorized: false,
+              ),
+            ),
+          );
+          return data?.accessToken;
+        };
+    final where =
+        BackgroundModeService.isBackgroundMode ? 'background' : 'foreground';
+    try {
+      final token = await authorize(email, _scopes);
+      final passed = token != null && token.isNotEmpty;
+      Redact.logWarning('[F239 spike] authorization without an Activity '
+          '($where): ${passed ? 'PASS' : 'NULL (needs the user)'}');
+      return passed ? token : null;
+    } catch (e) {
+      Redact.logWarning('[F239 spike] authorization without an Activity '
+          '($where): ERROR ${e.runtimeType}'
+          '${e is PlatformException ? ' code=${e.code}' : ''}');
+      return null;
     }
   }
 
@@ -389,17 +488,23 @@ class GoogleAuthService {
   /// Interactive sign-in flow.
   ///
   /// Shows Google consent screen and stores tokens on success.
-  Future<AuthResult> signIn() async {
+  ///
+  /// F239 (Sprint 75): [expectedAccountId] is the "Sign In Again" path -- the
+  /// user is repairing ONE existing account. If Google returns a different
+  /// account, NOTHING is saved and the failure names both addresses. The check
+  /// must come before `saveGmailTokens`, because saving also ADDS the account
+  /// to the saved-account list (a stray second account otherwise).
+  Future<AuthResult> signIn({String? expectedAccountId}) async {
     _state = AuthState.authenticating;
 
     try {
       if (_hasNativeSignIn) {
-        return await _signInNative();
+        return await _signInNative(expectedAccountId: expectedAccountId);
       } else if (_isDesktop) {
-        return await _signInDesktop();
+        return await _signInDesktop(expectedAccountId: expectedAccountId);
       } else {
         // Web fallback
-        return await _signInNative();
+        return await _signInNative(expectedAccountId: expectedAccountId);
       }
     } catch (e) {
       _state = AuthState.error;
@@ -412,7 +517,20 @@ class GoogleAuthService {
   /// 
   /// Uses google_sign_in 7.x API with authenticate() method.
   /// On Android, uses browser-based OAuth as fallback if native fails.
-  Future<AuthResult> _signInNative() async {
+  /// F239: true when [signedInEmail] is the account being repaired (case is
+  /// ignored; Google may return a different case than was stored). Always
+  /// true when no account is expected (a first-time add).
+  @visibleForTesting
+  static bool isExpectedAccount(String signedInEmail, String? expectedAccountId) =>
+      expectedAccountId == null ||
+      signedInEmail.trim().toLowerCase() ==
+          expectedAccountId.trim().toLowerCase();
+
+  static AuthResult _wrongAccount(String signedIn, String expected) =>
+      AuthResult.failure('You signed in as $signedIn. To fix $expected, sign '
+          'in with $expected.');
+
+  Future<AuthResult> _signInNative({String? expectedAccountId}) async {
     try {
       await _ensureNativeSignInInitialized();
 
@@ -432,6 +550,11 @@ class GoogleAuthService {
       final authorization = await _currentUser!.authorizationClient.authorizeScopes(_scopes);
 
       final accountId = _currentUser!.email;
+      // F239: refuse a different account BEFORE saving (saving adds it).
+      if (!isExpectedAccount(accountId, expectedAccountId)) {
+        _state = AuthState.unauthenticated;
+        return _wrongAccount(accountId, expectedAccountId!);
+      }
       _currentAccountId = accountId;
 
       final tokens = GmailTokens(
@@ -454,7 +577,8 @@ class GoogleAuthService {
       // On Android, fall back to browser-based OAuth if native fails
       if (Platform.isAndroid) {
         Redact.logSafe('[Auth] Trying browser-based OAuth fallback on Android...');
-        return await _signInDesktop(); // Desktop method works for Android too
+        return await _signInDesktop(
+            expectedAccountId: expectedAccountId); // Desktop method works for Android too
       }
       
       return AuthResult.failure('Sign-in failed: ${e.toString()}');
@@ -462,7 +586,7 @@ class GoogleAuthService {
   }
 
   /// Desktop browser-based OAuth with PKCE.
-  Future<AuthResult> _signInDesktop() async {
+  Future<AuthResult> _signInDesktop({String? expectedAccountId}) async {
     try {
       // Use existing GmailWindowsOAuthHandler for browser-based OAuth
       final tokenResult = await GmailWindowsOAuthHandler.authenticateWithBrowser();
@@ -484,6 +608,11 @@ class GoogleAuthService {
       // Get user email from access token
       final email = await GmailWindowsOAuthHandler.getUserEmail(accessToken);
       final accountId = email;
+      // F239: refuse a different account BEFORE saving (saving adds it).
+      if (!isExpectedAccount(accountId, expectedAccountId)) {
+        _state = AuthState.unauthenticated;
+        return _wrongAccount(accountId, expectedAccountId!);
+      }
       _currentAccountId = accountId;
 
       // Calculate expiry
@@ -599,21 +728,31 @@ class GoogleAuthService {
   /// Get valid access token (refreshing if needed).
   ///
   /// Returns null if not authenticated or refresh fails.
-  Future<String?> getValidAccessToken() async {
-    if (_state != AuthState.authenticated) {
-      final result = await initialize();
+  ///
+  /// F239 (Sprint 75, R-5): the token is for [accountId] (or the account this
+  /// service already serves) -- NEVER `accounts.first`. A fresh service with
+  /// AOL saved first used to look up AOL's Gmail tokens and fail, or worse,
+  /// serve another Gmail account's token.
+  Future<String?> getValidAccessToken({String? accountId}) async {
+    final target = accountId ?? _currentAccountId;
+    if (target == null) {
+      Redact.logSafe('[Auth] getValidAccessToken: no account given -- refusing '
+          'to guess one');
+      return null;
+    }
+    if (_state != AuthState.authenticated || _currentAccountId != target) {
+      final result = await initialize(accountId: target);
       if (!result.success) return null;
     }
 
     final accounts = await _credStore.getSavedAccounts();
-    if (accounts.isEmpty) return null;
+    if (!accounts.contains(target)) return null;
 
-    final accountId = _currentAccountId ?? accounts.first;
-    final tokens = await _credStore.getGmailTokens(accountId);
+    final tokens = await _credStore.getGmailTokens(target);
     if (tokens == null) return null;
 
     if (tokens.isExpired) {
-      final result = await _attemptSilentSignIn(accountId);
+      final result = await _attemptSilentSignIn(target);
       return result.accessToken;
     }
 
