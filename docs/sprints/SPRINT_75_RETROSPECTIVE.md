@@ -118,4 +118,45 @@ Every planned item shipped and validated. F243 (Windows background scans while t
 
 ## Improvement Recommendations
 
-(Proposed; Harold decides in Phase 7.5. See the chat presentation for the approval list.)
+Harold's decision (Phase 7.5, 2026-10-04): **"do now: imp-1, 2, 3, 4, 5, 6"** -- all six implemented this sprint. Each one prevents first and extends an existing control.
+
+### High Priority (Implement Now)
+
+1. **IMP-1 -- a compile failure was counted as "caught"**
+   - **Root Cause**: `scripts/mutation-test.ps1` judged only the check's exit code; M80 and M96 (as first written) did not compile and were reported KILLED.
+   - **Proposed Solution**: run each check once on the unchanged code first (`BASELINE FAILS` if red); keep the check's output and report a Dart/C++ compile error as `INVALID` (fails the run).
+   - **Effort**: ~30 min. **Impact**: a KILLED now means a test caught a behavior change.
+   - **Files to Update**: `scripts/mutation-test.ps1`, CLAUDE.md (the promoted-script bullet).
+   - **DONE**: self-test of all four verdicts on real cases -- KILLED (M84), SURVIVED (comment-only), INVALID (M80's original form: `.dart:337:10: Error:`), BASELINE FAILS (`cmd /c exit 1`).
+
+2. **IMP-2 -- heredoc corruption beyond Python; a stdin-waiting `cat`**
+   - **Root Cause**: the guard covered Python heredocs only; a JSON spec written through a `cat` heredoc lost every `\\`; a bare `cat > file` waited on stdin twice.
+   - **Proposed Solution**: extend `block-heredoc-python-backslash.ps1` -- block any heredoc body with a DOUBLE backslash, and a bare `cat >` with no input. Single backslashes (Windows paths in commit messages) stay allowed.
+   - **Effort**: ~30 min. **Files**: the hook, 5 new cases in `test-cases/heredoc-guard/`, CLAUDE.md.
+   - **DONE**: hook suite 91/91 (86 + 5); M116 (bare-cat block disabled) and M117 (double-backslash block disabled) KILLED.
+
+3. **IMP-3 -- the swallow-class walk must also run when ADDING an exception**
+   - **Root Cause**: the Sprint 73 rule fired only when removing a pattern; F239's new exception was swallowed by the per-folder catch (review H-1).
+   - **Proposed Solution**: extend the CLAUDE.md Sprint 73 bullet: list every catch between a new throw site and its handler, in the card.
+   - **Effort**: ~10 min. **DONE**: CLAUDE.md.
+
+4. **IMP-5 -- Manual Validation steps traced to the code they test**
+   - **Root Cause**: two wrong recipes (Test Background Scan is in-process on Windows; the app was open and the setting off).
+   - **Proposed Solution**: extend the Sprint 74 IMP-2 bullet (user-visible text) to MV steps: state preconditions, confirm the step reaches the code.
+   - **Effort**: ~10 min. **DONE**: CLAUDE.md.
+
+### Medium Priority
+
+5. **IMP-4 -- tooling that launches or kills the exe counts as a "caller"**
+   - **Root Cause**: F243 changed when the background process runs; the WinWright runner and pre-build cleanup kill every process of the exe -- found at the fourth sweep.
+   - **Proposed Solution**: extend the card template's "Callers of any guard" field with a tooling line.
+   - **Effort**: ~15 min. **DONE**: `docs/SPRINT_PLANNING.md` (augmented template).
+
+6. **IMP-6 -- one delegation checklist in every coding sub-agent prompt**
+   - **Root Cause**: the Haiku batch's prompt lacked the checks the Sonnet/Fable prompts spelled out; its output needed ~35 min of rework.
+   - **Proposed Solution**: a six-item checklist beside the Model field (run tests, compiling mutation check, prove the test can fail, "does not catch" line, both platform paths, report judgment calls), plus a card line recording that it was included.
+   - **Effort**: ~15 min. **DONE**: `docs/SPRINT_PLANNING.md`.
+
+### Low Priority (Future)
+
+None.

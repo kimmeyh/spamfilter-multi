@@ -400,7 +400,8 @@ Bold = mandatory. _Italic_ = optional (include only when the trigger applies). T
 
 **Existing abstraction checked**: `<name>` / none found   <!-- MANDATORY when ADDING a member to a shared abstraction (a resolver, a helper family, a gate). IMP-5, Sprint 72: the "read the existing one first" rule already existed; this line is what forces the grep. Sprint 72 hand-rolled a scan-mode resolver while SettingsStore.getEffectiveScanMode existed and was documented -- the copy implemented 2 of its 3 tiers and could act on a mailbox the user had configured not to touch. -->
 
-**Callers of any guard being changed**: <list, and what the change does to each>   <!-- MANDATORY when a card changes a guard, early return, or mode check. IMP-1, Sprint 72: F232's fix went inside a method THREE callers share; the third ran on screen load with no user intent and was safe only BY ACCIDENT, so removing the accident created a deletion path from viewing history. A caller that was safe by accident is the dangerous one, because nothing marks it. -->
+**Callers of any guard being changed**: <list, and what the change does to each>   <!-- MANDATORY when a card changes a guard, early return, or mode check. IMP-1, Sprint 72: F232's fix went inside a method THREE callers share; the third ran on screen load with no user intent and was safe only BY ACCIDENT, so removing the accident created a deletion path from viewing history. A caller that was safe by accident is the dangerous one, because nothing marks it. Sprint 75 retro IMP-4: when the change alters WHEN or HOW a PROCESS runs (startup, a background launch, a lock, a deferral), the "callers" include the TOOLING that launches or kills that executable -- the WinWright runner, build scripts, Claude's own pre-build cleanup. F243 let background scans run with the app open; the WinWright runner's per-script cleanup (stop every process of the exe) then also killed background scans, and a background scan changed test data mid-sweep -- found only at the fourth sweep. -->
+- Tooling that launches or kills the same executable (when process behavior changes): <runner/script, and what the change does to it> / N/A
 
 **User-reachable control**: <the control and the screen it lives on> / N/A   <!-- MANDATORY when the card adds user-facing capability. IMP-2, Sprint 72: F233 shipped a logger, settings keys, rotation and a delete function with NO TOGGLE -- ten tests passed via the test seam and no user could enable it. "The logger writes when enabled" is not an acceptance criterion; "Settings > General shows a toggle that enables it" is. -->
 
@@ -427,6 +428,24 @@ Bold = mandatory. _Italic_ = optional (include only when the trigger applies). T
 - <task-specific extra, e.g. "manual clean-user visual verification on a prod build">
 
 **Model**: <Haiku|Sonnet|Fable/Opus> -- *why not the cheaper tier*: <one line>   <!-- MANDATORY (existing rule) -->
+<!-- Sprint 75 retro IMP-6: every CODING SUB-AGENT prompt (any tier) carries the
+     delegation checklist below, verbatim. Sprint 75: the Sonnet/Fable prompts that
+     spelled these out got clean, mutation-checked work; the Haiku batch, without
+     them, returned a test that did not compile, a test that passed vacuously (no
+     slider rendered), and an export header added on the Android path only. The
+     gap tracked the prompt more than the model.
+     DELEGATION CHECKLIST:
+       1. Run every new or changed test file and report the pass count.
+       2. Mutation-check each test with scripts/mutation-test.ps1 (specs written with
+          the Write tool); every mutant must COMPILE and be KILLED -- INVALID or
+          SURVIVED means the work is not done.
+       3. Prove the test can fail on the real path: a test that passes with the
+          feature absent (nothing rendered, nothing called) is vacuous.
+       4. Write each test's "what this does NOT catch" line.
+       5. ADR-0042: name the Windows AND Android paths the change runs on and show
+          both are covered (or that only one exists).
+       6. Report judgment calls and anything not done -- never commit or push. -->
+**Delegation checklist included in the sub-agent prompt** (when delegated): yes / N/A
 
 **Executed-by** (filled at completion): <model that actually executed> -- <one line why, MANDATORY whenever it deviates from the assignment>   <!-- MANDATORY at completion (Sprint 49 retro IMP-3; justification hardened Sprint 50 retro IMP-7) -->
 
