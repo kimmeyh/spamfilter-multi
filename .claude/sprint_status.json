@@ -1,12 +1,12 @@
 {
   "_description": "Sprint status file that persists across context compaction. Update after each phase/sub-phase completion.",
-  "_last_updated": "2026-10-04T15:30:00Z",
+  "_last_updated": "2026-10-04T23:00:00Z",
   "_usage": "Read this file after context compaction to restore sprint approval state and progress.",
   "_staleness_note": "This file had drifted 15 sprints (last updated at Sprint 35, 2026-04-19) before being refreshed at Sprint 50 close-out. It is a Phase 7.7 checklist item -- update it at every sprint close-out, not opportunistically.",
   "current_sprint": {
     "number": 76,
     "branch": "feature/20261004_Sprint_76",
-    "status": "Phase 8.3 Store release -- Sprint 75 cycle. 8.1 develop->main DONE (e724faa); 8.2 pass 1 completeness sweep DONE (issues closed, master plan corrected); now building 0.17.0 for the Microsoft Store and Google Play; then 8.4 pass 2 scope selection.",
+    "status": "Phase 8.4 Backlog Refinement pass 2 -- Sprint 75 cycle. 0.17.0 MSIX + AAB BUILT and VERIFIED (not submitted); awaiting Harold's uploads and his Sprint 76 scope selection.",
     "plan_approved": false,
     "blanket_execution_approved": false,
     "pr_number": null,
@@ -43,7 +43,7 @@
     "live_play": "0.15.2 versionCode 5 -- closed testing, device-verified 2026-09-21 on the S24+.",
     "consequence": "F219 AC-1 and F227 remain blocked: they need a Play-INSTALLED build, and 0.15.3 is not going out. They wait for the next release that ships.",
     "status_0_16_0": "SUBMITTED / ROLLOUT IN PROCESS on BOTH stores (Harold, 2026-09-24, reported between 12:17am and 8:39am ET). NOT yet observed live on either. Built + verified 2026-09-24: MSIX 0.16.0.0 (prod worktree bf005f3, self-test 6/6 PASS, 17.5 MB) and AAB versionCode 7 / 0.16.0 (67.0 MB). Step 7 records (STORE_VERSION_STATUS.md live rows) wait for a direct console observation.",
-    "status_0_17_0": "HOLD SATISFIED: F238 shipped in Sprint 75 (PR #448). Version stays 0.17.0 (exception, Harold 2026-10-02). Release notes re-derived 2026-10-04 (docs/store-assets/RELEASE_NOTES_0.17.0_*.md, gate 3/3). Next: after #448 merges and develop -> main, build the MSIX and a NEW AAB from main (the 2026-09-25 AAB is superseded). Phone checks follow in Sprint 76."
+    "status_0_17_0": "BUILT + VERIFIED 2026-10-04, NOT SUBMITTED. MSIX 0.17.0.0 (prod worktree at e724faa, self-test PASS, 18.4 MB); AAB 0.17.0 versionCode 8 (targetSdk 36, no .dev, OAuth scheme present, AD_ID absent, 67.2 MB). Harold: upload both; confirm versionCode 8 unused in App bundle explorer; Step 4.2/Check C after install. Record SUBMITTED/LIVE only from a direct console observation."
   },
   "environment_notes": [
     "RESOLVED 2026-07-29 (verified 07-30): the Store fault was an Acronis file-system filter blocking AppXSvc cleanup, fixed by an Acronis Protection exclusion. 23h uptime with ZERO Id-493 events vs a 176-file/6-min baseline; Store client self-updated 22606.1401.6.0 -> .10.0 (requires a working deployment pipeline). Filter drivers remain loaded -- backup protection was NOT disabled. See ALL_SPRINTS_MASTER_PLAN ENV-1 for the picker gotcha if it recurs.",
@@ -52,10 +52,10 @@
   ],
   "blocking_issues": [],
   "next_actions": [
-    "Phase 8.3: build + verify the 0.17.0 MSIX from the prod worktree on main (STORE_RELEASE_PROCESS.md); Harold uploads.",
-    "Phase 8.3 (Android): build the 0.17.0 AAB (versionCode 8) from main; Harold uploads to Play closed testing.",
-    "Phase 8.4: pass 2 scope selection -- present the top 10 per BACKLOG_REFINEMENT.md with a recommendation.",
-    "Then Phase 3 planning for Sprint 76 (stub: docs/sprints/SPRINT_76_PLAN.md)."
+    "Harold: upload the MSIX to Partner Center and the AAB to Play closed testing; paste the 0.17.0 release notes.",
+    "Harold: select Sprint 76 scope from the pass 2 slate.",
+    "Then Phase 3 planning for Sprint 76 (stub: docs/sprints/SPRINT_76_PLAN.md).",
+    "After live: STORE_RELEASE_PROCESS Step 7 (STORE_VERSION_STATUS rows, CHANGELOG [0.17.0] heading, dev bump at Sprint 76 plan approval)."
   ],
   "next_sprint_targeted": {
     "number": 76,

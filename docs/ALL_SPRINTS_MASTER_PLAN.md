@@ -410,7 +410,7 @@ VALIDATION, not a re-implementation.
   produces.
 - Source: Harold, 2026-09-10 -- *"target is not perfection, but as good as reasonably possible."*
 
-**F192. Custom IMAP Server support -- build the host-entry UI (~120-180m) Priority 32 (PLANNED FOR SPRINT 69 -- Harold, 2026-09-09, Sprint 68 scope selection; split from F191, genuinely unbuilt)**
+**F192. Custom IMAP Server support -- build the host-entry UI (~120-180m) Priority 32 (planned for Sprint 69 at the Sprint 68 scope selection, then NOT SELECTED -- `SPRINT_69_PLAN.md`; still unbuilt as of 2026-10-04: no `lib/ui` file collects `imapHost`; split from F191)**
 - Phase: Core App Quality
 - Platform: All
 - **Deliberately SEPARATE from F191, because it is not the same kind of work.** Yahoo and iCloud need a gate opened; Custom IMAP needs a feature built. `GenericIMAPAdapter.custom()` defaults `imapHost: ''` -- it expects the host, port and TLS flag to be supplied by a caller, and no caller supplies them: `grep -rn "imapHost" lib/ui/` returns ZERO matches. There is no screen anywhere that collects a server address, so flipping `imap` to phase 1 would ship a provider that cannot connect to anything.
