@@ -187,6 +187,9 @@ All incomplete items in relative priority order. Priority in increments of 10; i
 **F244. Tell the user when a Gmail background scan skips for sign-in Priority 45 -- backlog (Sprint 75 5.1.1 review SF-8; Harold at Manual Validation 2026-10-03: "backlog")**
 - F239 records a skip -- no notification, no export -- when Gmail needs the user, and relies on the per-account `gmail_sign_in_required` flag to show "Sign In Again" in the account list. That write is best effort: if it fails (a locked database), background scans of the account skip every cycle and nothing tells the user. Fix: a one-time notification for a needs-sign-in skip, independent of the flag, or a retry of the flag write.
 
+**F245. Background scans must not re-add No Rule rows for emails already listed Priority 35 -- backlog (Sprint 75 Manual Validation, Harold 2026-10-03: "q2 1")**
+- Each read-only background scan of an all-mail range adds its own `unmatched_emails` rows, so the same emails are listed again every run: about 115 rows per AOL run, 2,266 rows in one evening (5,035 -> 7,301). Older behavior, but F243 (Windows background scans run while the app is open) makes it happen every 15 minutes, roughly 11,000 rows a day until the 90-day retention removes them. Decide the identity of a No Rule entry (account + message id / folder + uid) and skip or refresh an existing entry instead of inserting a duplicate; check the No Rule Review counts and the Scan History "No Rule" totals against it.
+
 **F241. Remove or wire `ScanResultStore.getActiveBackgroundScan` Priority 60 -- backlog (Sprint 74 retro Category 14b)**
 - No production caller since the manual-scan dialog moved to the per-account `getActiveScanForAccount`; kept with its tests. Delete with its tests, or use it if F238 needs an any-account background check.
 
