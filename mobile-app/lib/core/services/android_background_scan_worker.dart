@@ -16,13 +16,11 @@ library;
 
 import 'dart:ui' show DartPluginRegistrant;
 
-import 'package:flutter/foundation.dart' show kDebugMode;
 import 'package:flutter/widgets.dart' show WidgetsFlutterBinding;
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:logger/logger.dart';
 import 'package:workmanager/workmanager.dart';
 
-import '../../adapters/auth/google_auth_service.dart';
 import '../../adapters/storage/app_paths.dart';
 import '../../adapters/storage/secure_credentials_store.dart';
 import '../../util/redact.dart';
@@ -129,18 +127,6 @@ class AndroidBackgroundScanWorker {
 
         final platformId =
             await BackgroundScanCore.resolvePlatformId(credStore, id);
-
-        // F239 R-1 capability spike (Sprint 75) -- DEBUG BUILDS ONLY, removed
-        // once the result is recorded. Calls the no-Activity authorization
-        // from this real WorkManager isolate for the account's own email
-        // (expected PASS) and for an address that granted nothing (expected
-        // NULL), regardless of token expiry. Result lines: `[F239 spike]` in
-        // logcat. Not a renewal: nothing is saved.
-        if (kDebugMode && platformId == 'gmail') {
-          final auth = GoogleAuthService();
-          await auth.authorizeWithoutActivity(id);
-          await auth.authorizeWithoutActivity('f239-spike-not-granted@example.com');
-        }
 
         if (platformId == null) {
           _logger.w('Cannot determine platform for ${Redact.accountId(id)}, '

@@ -148,11 +148,16 @@ rules 6 and 7 say where.
   connect, and Sign In Again also clears it.
 - The Android path (rules 5 and 7) runs only on Android; the Windows test host pins it with source
   gates, and the emulator spike and Manual Validation exercise it.
-- Renewing Android tokens WITHOUT an Activity (R-1/R-2): `GoogleAuthService.authorizeWithoutActivity`
-  exists and a debug-build probe in the Android worker exercises it, but renewal does NOT call it
-  (`noActivityRenewalEnabled = false`) until the R-1 spike is recorded as PASS; then it becomes a
-  declared ADR-0042 platform exception. Not yet verified: whether the returned token is scoped to the
-  one account named by email, and how long it lives (`expiresAt` is set to one hour).
+- Renewing Android tokens WITHOUT an Activity (R-1/R-2): **the R-1 spike FAILED (2026-10-03, emulator,
+  google_sign_in 7.2.0 / google_sign_in_android 7.2.7)**. From a real WorkManager worker,
+  `clientAuthorizationTokensForScopes` with the account's own email and `promptIfUnauthorized: false`
+  returned NULL ("needs the user") for an account that had granted the Gmail scopes minutes earlier;
+  for an address that granted nothing it threw `GoogleSignInException`. So a background worker cannot
+  renew an Android Gmail token this way, and R-2 was not built (R-6). `authorizeWithoutActivity`
+  stays switched off (`noActivityRenewalEnabled = false`); the debug probe was removed. Not
+  established: WHY it returned null (a scope-set mismatch with what was granted, or the API needing a
+  foreground UI context) -- a scope-matched retry would settle the first. Android Gmail renewal
+  therefore still needs the app in the foreground about hourly, with "Sign In Again" as the repair.
 - Renewal failures are logged at warning level by type and platform code (release builds too); the
   account address and tokens are never logged.
 
