@@ -69,6 +69,7 @@ if ($Sprint -and -not $Dest) {
 }
 
 # Fall back to a temporary folder. Never a session scratchpad path: that
+# path names one Claude Code session and does not exist in the next one.
 if (-not $Dest) {
     $Dest = Join-Path $env:TEMP 'phone-screenshots'
 }
@@ -117,7 +118,8 @@ foreach ($item in $folder.Items()) {
     }
     $target = Join-Path $Dest $item.Name
     if (Test-Path $target) { continue }
-    # 16 = respond yes to all, 512 = no confirm-overwrite UI
+    # 16 = respond "Yes to All" to any dialog, 512 = do not confirm creating
+    # a new directory (Folder.CopyHere flags, Microsoft Learn)
     $destNs.CopyHere($item, 16 -bor 512)
     $copied++
 }

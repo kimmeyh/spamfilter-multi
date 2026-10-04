@@ -415,6 +415,11 @@ try {
     Write-Warning "[WW-BG] Could not pause dev background-scan tasks: $_ -- a background scan may run during the sweep."
 }
 
+# PR #448 review: everything between the pause and the restore runs inside
+# try/finally, so Ctrl+C or a terminating error ($ErrorActionPreference is
+# Stop) cannot leave the user's background scans silently disabled.
+try {
+
 $seedScript = Join-Path $PSScriptRoot "winwright-seed-no-rule.ps1"
 $didSeed = $false
 $needsSeed = @($tests | Where-Object { $_.Name -like "*mt2c*" }).Count -gt 0
@@ -494,6 +499,7 @@ foreach ($test in $tests) {
 # and prevents a leftover instance from interfering with the post-sweep snapshot.
 Get-Process $appProcName -ErrorAction SilentlyContinue | Stop-Process -Force -ErrorAction SilentlyContinue
 
+} finally {
 # F243: restore exactly the background-scan tasks paused before the sweep.
 foreach ($t in $pausedBgTasks) {
     try {
@@ -504,6 +510,7 @@ foreach ($t in $pausedBgTasks) {
 }
 if ($pausedBgTasks.Count -gt 0) {
     Write-Host "[WW-BG] Re-enabled $($pausedBgTasks.Count) dev background-scan task(s)." -ForegroundColor DarkCyan
+}
 }
 
 # F182: remove the synthetic no-rule rows -- runs whether the sweep passed or

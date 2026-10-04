@@ -308,8 +308,12 @@ class EmailScanProvider extends ChangeNotifier {
   /// own `ScanCancelledException` handler calls [cancelScan], which closes the
   /// row with [ScanResultStore.stoppedForManualScanReason]. The tick itself
   /// must NOT close the row: the row closing is what admits the waiting manual
-  /// scan, and that may happen only once this scan's lease and IMAP session
-  /// are actually being torn down.
+  /// scan, so it must wait until the scan has actually stopped. Note the
+  /// order: [cancelScan] closes the row inside the scanner's
+  /// `ScanCancelledException` handler, and the lease release and
+  /// `platform.disconnect()` follow in the scanner's `finally`. The manual
+  /// scan's 2-second poll plus its settings load make an overlapping IMAP
+  /// session unlikely, but it is not excluded (PR #448 review).
   void _startHeartbeat() {
     _stopHeartbeat();
     _pendingCancelReason = null;

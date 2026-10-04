@@ -298,14 +298,14 @@ class GoogleAuthService {
       // F239 R-1/R-2 (Sprint 75): ask for a token for THIS account's email
       // with no prompt. Google: an already-granted request returns the token
       // with no UI. Lightweight sign-in below needs an Activity (it fails
-      // with NO_ACTIVITY in a WorkManager worker); this call does not, if
-      // the R-1 spike confirms it. Anything but a token falls through to the
-      // existing path unchanged.
+      // with NO_ACTIVITY in a WorkManager worker). Anything but a token falls
+      // through to the existing path unchanged.
       //
-      // OFF until the spike result is recorded (review M-3): R-2 was
-      // approved only if the spike passes, and whether the returned token is
-      // scoped to that one account is not yet verified. The debug-build
-      // probe in the Android worker exercises the call meanwhile.
+      // OFF: the R-1 emulator spike FAILED on 2026-10-03 -- from a
+      // WorkManager isolate the call returned NULL for an account that had
+      // granted the scopes (ADR-0011). R-2 was approved only if the spike
+      // passed, so it is not built. Backlog F246 (server-side token
+      // exchange) replaces this route; the debug probe was removed.
       final directToken = noActivityRenewalEnabled
           ? await authorizeWithoutActivity(tokens.email)
           : null;
@@ -374,8 +374,9 @@ class GoogleAuthService {
   }
 
   /// F239 R-2 (Sprint 75): whether Android renewal tries
-  /// [authorizeWithoutActivity] first. False until the R-1 emulator spike is
-  /// recorded as PASS (Harold's conditional approval, plan Open question 2).
+  /// [authorizeWithoutActivity] first. False: the R-1 emulator spike FAILED
+  /// (2026-10-03, ADR-0011), and R-2 was approved only if it passed (plan
+  /// Open question 2). Do not enable without a new spike and a new approval.
   static bool noActivityRenewalEnabled = false;
 
   /// F239 (Sprint 75): test seam for [authorizeWithoutActivity].
@@ -389,7 +390,9 @@ class GoogleAuthService {
   /// Uses the platform interface because it accepts the account EMAIL;
   /// google_sign_in 7.2.0's instance-level client passes no account hint.
   /// Logs the outcome on one line tagged `[F239 spike]` (no address, no
-  /// token) so the emulator spike can be read from logcat.
+  /// token), kept so a scope-matched retry of the spike (F246) can be read
+  /// from logcat. No production path calls this while
+  /// [noActivityRenewalEnabled] is false.
   Future<String?> authorizeWithoutActivity(String email) async {
     final authorize = debugAuthorizeWithoutActivity ??
         (String e, List<String> scopes) async {

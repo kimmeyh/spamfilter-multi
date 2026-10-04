@@ -314,8 +314,9 @@ class _AccountSetupScreenState extends State<AccountSetupScreen> {
   /// What happens once a new account is saved -- ONE path for every provider
   /// (Harold, Sprint 75 Manual Validation: a Gmail account must finish "the
   /// same that is done after adding AOL and Yahoo accounts"): the saved
-  /// message, then the Manual Scan screen for that account, then back to the
-  /// account list.
+  /// message, then the Manual Scan screen for that account, which REPLACES
+  /// this screen. Its back arrow is a plain pop to the route below; the
+  /// account list refreshes when it is shown again (`didPopNext`).
   Future<void> _finishAccountAdded({
     required String accountId,
     required String email,
@@ -347,12 +348,10 @@ class _AccountSetupScreenState extends State<AccountSetupScreen> {
           accountEmail: email,
         ),
       ),
-    ).then((_) {
-      // After scan screen is popped, pop account setup to return to account selection
-      if (mounted) {
-        Navigator.of(context).pop(true);
-      }
-    });
+    );
+    // PR #448 review: no `.then` here. `pushReplacement` disposes this
+    // State, so a callback guarded by `mounted` could never run (it was
+    // dead code that read as "pop back to the account list").
   }
 
   Future<void> _startGmailOAuth() async {

@@ -8,11 +8,16 @@
 /// every tick (Sprint 19 F27) and is left with the back arrow, which returns
 /// no list; the sign-in screen waited for one and stayed on its own page.
 /// Harold: finish "the same that is done after adding AOL and Yahoo accounts"
-/// -- saved message, Manual Scan screen, then the account list.
+/// -- saved message, then the Manual Scan screen (its back arrow pops to the
+/// route below).
 ///
 /// What these do NOT catch: the live Google sign-in and the navigation it
 /// drives (there is no seam for a fake Google sign-in; the source gates below
 /// pin the wiring, and Manual Validation on the emulator runs the real flow).
+/// Only `gmail_oauth_screen.dart` is gated: the WebView and manual-token
+/// fallback screens (`gmail_webview_oauth_screen.dart`,
+/// `gmail_manual_token_screen.dart`) still go to the folder step and are not
+/// covered (PR #448 review; behavior test tracked as F247).
 library;
 
 import 'dart:io';

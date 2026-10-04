@@ -21,6 +21,13 @@ on the live 0.17.0 phone build (S24+ / Fold8; no adb -- screenshots over MTP int
      app was last opened skips with "Gmail needs you to sign in again" (expected: the renewal spike
      failed, see F246) (#442).
 
+## Carry-in from the PR #448 reviews
+
+- **F247** -- behavior tests for navigation and platform-gated paths (startRealScan F238 branches, the
+  Gmail add-flow route and its fallback screens, Windows token-path tests on CI, the Android
+  `initialize` exception path, Sign In Again details, a mutation-test self-test). Full card in
+  `ALL_SPRINTS_MASTER_PLAN.md`.
+
 ## Carry-ins from the Sprint 75 retrospective (Category 13)
 
 - None (Harold and Claude). The checklist above was already planned at Sprint 75 approval.

@@ -71,7 +71,22 @@ $pythonToken = [regex]::new('(?:^|[\s;&|(/\\])(?:python3?|py)(?:\.exe)?(?=\s|$|[
 # command times out. It happened twice in Sprint 75 (a stray `cat >` at the
 # start of a compound command). Checked per command segment; a segment fed by
 # a pipe never starts with `cat`, so `echo x | cat > f` stays allowed.
-$segments = $cmd -split '(?:\r?\n|;|&&|\|\|)'
+# PR #448 review: heredoc BODIES are text, not commands. Without removing them,
+# a heredoc writing a doc or script with a line starting `cat > file` was
+# blocked (both reviewers reproduced it).
+$scanText = New-Object System.Text.StringBuilder
+$pos = 0
+foreach ($m in $opener.Matches($cmd)) {
+    if ($m.Index -lt $pos) { continue }
+    $bodyStart = $m.Index + $m.Length
+    $null = $scanText.Append($cmd.Substring($pos, $bodyStart - $pos))
+    $d = $m.Groups[2].Value
+    $after = $cmd.Substring($bodyStart)
+    $end = [regex]::Match($after, "(?m)^\s*$([regex]::Escape($d))\s*$")
+    $pos = if ($end.Success) { $bodyStart + $end.Index } else { $cmd.Length }
+}
+$null = $scanText.Append($cmd.Substring($pos))
+$segments = $scanText.ToString() -split '(?:\r?\n|;|&&|\|\|)'
 foreach ($seg in $segments) {
     if ($seg -match '^\s*cat\s*>{1,2}\s*("[^"]*"|''[^'']*''|[^\s<|]+)(\s+2>(&1|\S+))?\s*$') {
         [Console]::Error.WriteLine(@"

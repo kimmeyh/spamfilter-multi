@@ -271,9 +271,13 @@ class GmailApiAdapter with BatchOperationsMixin implements SpamFilterPlatform {
         result = await _authService.initialize(accountId: credentials.email);
       } catch (e) {
         // Review (Sprint 75, M-2): an EXCEPTION here is not "the user must
-        // sign in" -- it is a network, plugin or storage failure (renewal
-        // itself returns failures as results). Flagging it told the user to
-        // sign in for an outage and turned a real failure into a quiet skip.
+        // sign in" -- it is a network, plugin or storage failure. Most
+        // renewal failures come back as results; the exception is Android,
+        // where `initialize` calls `_refreshViaNativeSignIn`, which RETHROWS
+        // plugin errors. Those land here as a plain AuthenticationException
+        // (a failed scan, not a Sign In Again skip) -- deliberately: flagging
+        // an exception told the user to sign in for an outage and turned a
+        // real failure into a quiet skip.
         if (isNetworkError(e)) {
           throw ConnectionException('Gmail could not be reached', e);
         }

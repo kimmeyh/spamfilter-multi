@@ -597,8 +597,8 @@ class SettingsStore {
 
   /// F239 (Sprint 75): true when this Gmail account's sign-in could not be
   /// renewed without the user -- the account list then offers "Sign In
-  /// Again". Set where renewal fails; cleared by any successful sign-in,
-  /// renewal or credential load. Absent = false.
+  /// Again". Set where renewal fails; cleared when a Gmail credential load
+  /// succeeds or Sign In Again succeeds. Absent = false.
   Future<bool> getGmailSignInRequired(String accountId) async {
     final value = await _getAccountSetting(accountId, 'gmail_sign_in_required');
     return value == 'true';

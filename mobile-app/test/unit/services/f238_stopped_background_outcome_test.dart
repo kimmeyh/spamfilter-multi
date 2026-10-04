@@ -22,6 +22,8 @@ library;
 import 'package:flutter_test/flutter_test.dart';
 import 'package:my_email_spam_filter/adapters/email_providers/mock_email_provider.dart';
 import 'package:my_email_spam_filter/adapters/email_providers/platform_registry.dart';
+import 'package:my_email_spam_filter/core/models/email_message.dart';
+import 'package:my_email_spam_filter/core/providers/email_scan_provider.dart';
 import 'package:my_email_spam_filter/core/providers/rule_set_provider.dart';
 import 'package:my_email_spam_filter/core/services/background_scan_core.dart';
 import 'package:my_email_spam_filter/core/services/scan_coordinator.dart';
@@ -31,6 +33,28 @@ import 'package:my_email_spam_filter/core/storage/settings_store.dart';
 import '../../helpers/database_test_helper.dart';
 
 const _account = 'acct-a';
+
+/// PR #448 test review: the WHOLE stop chain, as the manual scan's dialog
+/// drives it -- a stop request WRITTEN TO THE ROW (`requestCancel(rowId)`),
+/// found by the scanning provider's heartbeat tick, honored through the
+/// coordinator, and recorded with the stopped-for-manual reason. The class
+/// above bypasses the row and the heartbeat.
+class _RowRequestMidScanPlatform extends MockEmailProvider {
+  _RowRequestMidScanPlatform(this.store);
+  final ScanResultStore store;
+
+  @override
+  Future<List<EmailMessage>> fetchMessages({
+    required int daysBack,
+    required List<String> folderNames,
+  }) async {
+    final row = await store.getActiveScanForAccount(_account);
+    if (row?.id != null) await store.requestCancel(row!.id!);
+    // Several heartbeat ticks (interval overridden to 20 ms below).
+    await Future<void>.delayed(const Duration(milliseconds: 300));
+    return super.fetchMessages(daysBack: daysBack, folderNames: folderNames);
+  }
+}
 
 class _StoppedMidScanPlatform extends MockEmailProvider {
   @override
@@ -88,5 +112,34 @@ void main() {
         notify: () async => notified = true);
     expect(exported, isFalse);
     expect(notified, isFalse, reason: 'no "scan complete" for a stopped scan');
+  });
+
+  test('end to end: a stop request on the ROW, found by the heartbeat, '
+      'stops the scan and records the stopped-for-manual reason', () async {
+    final store = ScanResultStore(testHelper.dbHelper);
+    PlatformRegistry.overrideFactoryForTest(
+        'demo', () => _RowRequestMidScanPlatform(store));
+    EmailScanProvider.debugHeartbeatIntervalOverride =
+        const Duration(milliseconds: 20);
+    addTearDown(() => EmailScanProvider.debugHeartbeatIntervalOverride = null);
+
+    final outcome = await BackgroundScanCore.scanAccount(
+      accountId: _account,
+      platformId: 'demo',
+      ruleSetProvider: RuleSetProvider(),
+      settingsStore: SettingsStore(testHelper.dbHelper),
+      scanResultStore: store,
+    );
+
+    expect(outcome.stopped, isTrue,
+        reason: 'the row request must reach the scan through the heartbeat');
+    expect(waits, isEmpty);
+    final rows = await store.getScanResultsByAccount(_account);
+    expect(rows, hasLength(1));
+    final row = rows.single;
+    expect(row.status, 'interrupted');
+    expect(row.errorMessage, ScanResultStore.stoppedForManualScanReason,
+        reason: 'Scan History must say it was stopped for a manual scan, not '
+            'cancelled by the user (F238 R-4)');
   });
 }
