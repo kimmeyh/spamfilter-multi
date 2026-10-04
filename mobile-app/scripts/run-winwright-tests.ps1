@@ -390,6 +390,31 @@ Write-Host ""
 # 59/60/62. The seeded tables (scan_results, unmatched_emails) are NOT
 # drift-guard tables, and unseed restores them regardless.
 # ---------------------------------------------------------------------------
+# ---------------------------------------------------------------------------
+# F243 (Sprint 75): pause this environment's scheduled background scans for the
+# whole sweep. Since F243 a background scan RUNS while the app is open (it used
+# to defer), so during a sweep it could (a) change the No Rule list under a
+# script -- mt2c lost its selection mid-script on 2026-10-03 while background
+# scans of a real account ran every 15 minutes -- and (b) be killed by the
+# per-script cleanup below, which stops every process of this exe, leaving an
+# orphaned in_progress row. Only tasks that were ENABLED are paused, and only
+# those are re-enabled in the teardown, so a user's settings are restored as
+# found.
+# ---------------------------------------------------------------------------
+$pausedBgTasks = @()
+try {
+    $pausedBgTasks = @(Get-ScheduledTask -TaskName 'SpamFilterBackgroundScan_*' -ErrorAction SilentlyContinue |
+        Where-Object { $_.TaskName -like '*_Dev' -and $_.State -ne 'Disabled' })
+    foreach ($t in $pausedBgTasks) {
+        $null = Disable-ScheduledTask -TaskName $t.TaskName -TaskPath $t.TaskPath -ErrorAction Stop
+    }
+    if ($pausedBgTasks.Count -gt 0) {
+        Write-Host "[WW-BG] Paused $($pausedBgTasks.Count) dev background-scan task(s) for the sweep." -ForegroundColor DarkCyan
+    }
+} catch {
+    Write-Warning "[WW-BG] Could not pause dev background-scan tasks: $_ -- a background scan may run during the sweep."
+}
+
 $seedScript = Join-Path $PSScriptRoot "winwright-seed-no-rule.ps1"
 $didSeed = $false
 $needsSeed = @($tests | Where-Object { $_.Name -like "*mt2c*" }).Count -gt 0
@@ -468,6 +493,18 @@ foreach ($test in $tests) {
 # normally closes it, but a hung script could leave one). Keeps the machine clean
 # and prevents a leftover instance from interfering with the post-sweep snapshot.
 Get-Process $appProcName -ErrorAction SilentlyContinue | Stop-Process -Force -ErrorAction SilentlyContinue
+
+# F243: restore exactly the background-scan tasks paused before the sweep.
+foreach ($t in $pausedBgTasks) {
+    try {
+        $null = Enable-ScheduledTask -TaskName $t.TaskName -TaskPath $t.TaskPath -ErrorAction Stop
+    } catch {
+        Write-Warning "[WW-BG] Could not re-enable '$($t.TaskName)': $_ -- re-enable it in Task Scheduler or toggle Background in Settings."
+    }
+}
+if ($pausedBgTasks.Count -gt 0) {
+    Write-Host "[WW-BG] Re-enabled $($pausedBgTasks.Count) dev background-scan task(s)." -ForegroundColor DarkCyan
+}
 
 # F182: remove the synthetic no-rule rows -- runs whether the sweep passed or
 # failed (the loop above never throws), restoring the seeded tables.
