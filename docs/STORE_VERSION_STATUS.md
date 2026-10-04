@@ -28,6 +28,8 @@ Partner Center before saying anything about the Store version.
 
 ## 0.17.0 -- RELEASE HOLD (Harold, 2026-09-27)
 
+**HOLD SATISFIED (2026-10-04)**: F238 shipped in Sprint 75 (PR #448, Manual Validation PASS on Windows). 0.17.0 may be built from `main` after #448 and the develop -> main merge. Build a NEW AAB; the 2026-09-25 one stays superseded. Release notes re-derived: `docs/store-assets/RELEASE_NOTES_0.17.0_windows.md` and `_play.md`.
+
 **0.17.0 is NOT submitted to either store until F238 (Issue #441, Sprint 75) ships** -- the
 "stop the background scan and start mine" action. Harold: *"0.17.0 cannot ship without a fix"*,
 *"it is the largest bug that we have."* **No AAB is built until BOTH the Sprint 74 and Sprint 75

@@ -116,6 +116,14 @@ Developer response ("Very Good" in every category; none for categories 13-14; no
 
 Every planned item shipped and validated. F243 (Windows background scans while the app is open) and four Manual Validation fixes were added and validated the same day. The F239 renewal spike failed and was stopped as planned. Harold rated every category Very Good. The Claude-side lessons cluster in three places: verification tools that report success they did not prove (compile-failed mutants counted as KILLED; WinWright runs not isolated from background scans), shell mechanics (stdin-waiting `cat`, backslash-eating heredocs beyond Python), and two rules applied in only one direction (the swallow-class grep when adding an exception; MV recipes not traced to the code they test).
 
+## Architecture Compliance Check (Phase 7.4.1)
+
+- **ARCHITECTURE.md**: current. `scan_results.cancel_requested_at` (DB v11), the stop-for-manual flow, the Sign In Again path and F243 (background scans with the app open) are all described (updated per card, before Manual Validation).
+- **ADRs**: ADR-0039 amended (cross-isolate cancel request; F243 removes the Windows foreground deferral; the Manual Validation recipe corrected after review H-2). ADR-0011 amended (Sign In Again, the account-id invariant, the R-1 spike FAIL and the switched-off `authorizeWithoutActivity`). ADR-0042: F243 REMOVES a divergence; F239's Android-only renewal was never built, so no new exception was declared.
+- **ARSD.md**: no requirement changes.
+- **Divergence without approval**: none. Two decisions were surfaced and approved at Manual Validation: removing the Windows background interactive sign-in (development decision, Q1 "keep") and F243 per account (Q7). F238's DB v11 was approved at Phase 3.7 (Q1).
+- **Step 2 note**: the Claude draft was written directly into this file, not into `docs/sprints/drafts/`; Harold's verbatim lines and Claude's lines are kept separate per role above.
+
 ## Improvement Recommendations
 
 Harold's decision (Phase 7.5, 2026-10-04): **"do now: imp-1, 2, 3, 4, 5, 6"** -- all six implemented this sprint. Each one prevents first and extends an existing control.

@@ -4,7 +4,7 @@
 
 **Audience**: Claude Code models planning sprints; User prioritizing future work
 
-**Last Updated**: 2026-09-29 (**Sprint 74 COMPLETE** -- PR #440; retro IMP-1/2/3/4/6 applied; F240/F241 added from Category 14; 0.17.0 held for F238.) Earlier 2026-09-27 (Sprint 74 Manual Validation: **F238 (Issue #441) added as the Sprint 75 release blocker for 0.17.0**, model Fable 5.1; no AAB until the Sprint 74 and 75 PRs both merge.) Previous: 2026-09-22 (**Sprint 72 COMPLETE** -- PR #420 -> develop. Ran on the Sprint 71 branch; Sprint 71 was never separately executed and its stub is marked SUPERSEDED. Delivered: F233 diagnostic log + the header-only CSV export fix, F232 mechanism A (historical-view rules now act on the mailbox; MECHANISM B REMAINS UNDIAGNOSED and is now instrumented), F228 honest action toast, F230+F231 action-sheet layout and durable outcomes, F217 honest Doze caveat (MECHANISM DELIBERATELY NOT BUILT -- the "is this the only way" search Harold required found it is not, and that the exemption carries a Play policy cost), F229 export half (the screen half was attempted and REVERTED after it overflowed by 18px at phone width). Suite 2,155 -> 2,233; analyzer clean; hooks 75/0; WinWright 2/2 twice; CI all green. **THREE CRITICAL findings across two reviews, all fixed, none deferred** -- and two of them were defects introduced BY this sprint: the F232 fix created an unintended deletion path from screen load (a method three callers share, the third safe only by accident), and the diagnostic logger silently destroyed concurrent records, which is the exact failure it existed to prevent. Manual validation found F233 shipped with NO UI at all -- ten tests passed via the test seam. Retrospective: Harold 12x Very Good; IMP-1..IMP-5 approved and applied. NEW backlog: F234 (read-only as a preview mode) and F235 (Android Doze via setExactAndAllowWhileIdle, TARGETED FOR SPRINT 73). Earlier history in prior revisions of this line (git).)
+**Last Updated**: 2026-10-04 (**Sprint 75 COMPLETE** -- PR #448; F238 shipped, so the 0.17.0 release hold is satisfied; F216, F214, F236, F215, Task 7 delivered; F239 delivered Sign In Again, its Android renewal spike FAILED (-> F246); F243 added at Manual Validation; retro IMP-1..6 applied; F244/F245/F246 added.) Earlier 2026-09-29 (**Sprint 74 COMPLETE** -- PR #440; retro IMP-1/2/3/4/6 applied; F240/F241 added from Category 14; 0.17.0 held for F238.) Earlier 2026-09-27 (Sprint 74 Manual Validation: **F238 (Issue #441) added as the Sprint 75 release blocker for 0.17.0**, model Fable 5.1; no AAB until the Sprint 74 and 75 PRs both merge.) Previous: 2026-09-22 (**Sprint 72 COMPLETE** -- PR #420 -> develop. Ran on the Sprint 71 branch; Sprint 71 was never separately executed and its stub is marked SUPERSEDED. Delivered: F233 diagnostic log + the header-only CSV export fix, F232 mechanism A (historical-view rules now act on the mailbox; MECHANISM B REMAINS UNDIAGNOSED and is now instrumented), F228 honest action toast, F230+F231 action-sheet layout and durable outcomes, F217 honest Doze caveat (MECHANISM DELIBERATELY NOT BUILT -- the "is this the only way" search Harold required found it is not, and that the exemption carries a Play policy cost), F229 export half (the screen half was attempted and REVERTED after it overflowed by 18px at phone width). Suite 2,155 -> 2,233; analyzer clean; hooks 75/0; WinWright 2/2 twice; CI all green. **THREE CRITICAL findings across two reviews, all fixed, none deferred** -- and two of them were defects introduced BY this sprint: the F232 fix created an unintended deletion path from screen load (a method three callers share, the third safe only by accident), and the diagnostic logger silently destroyed concurrent records, which is the exact failure it existed to prevent. Manual validation found F233 shipped with NO UI at all -- ten tests passed via the test seam. Retrospective: Harold 12x Very Good; IMP-1..IMP-5 approved and applied. NEW backlog: F234 (read-only as a preview mode) and F235 (Android Doze via setExactAndAllowWhileIdle, TARGETED FOR SPRINT 73). Earlier history in prior revisions of this line (git).)
 
 ## How to Maintain This Document
 
@@ -142,6 +142,7 @@ Historical sprint information lives in individual documents in `docs/sprints/` a
 | 72 | docs/sprints/SPRINT_72_SUMMARY.md | [OK] Complete | Sep 22, 2026 (PR #420 -> develop, #429 -> main; 0.15.3, NOT submitted to either store. F233 diagnostic log + empty-export fix, F232 mechanism A, F228 honest action toast, F230/F231 action sheet, F217 Doze caveat. Two of three CRITICAL review findings were defects the sprint introduced) |
 | 73 | docs/sprints/SPRINT_73_SUMMARY.md | [OK] Complete | Sep 22-23, 2026 (PR #435 -> develop; 0.16.0. F235 Doze scheduling, F234 read-only preview, F224+F207 cancel scan, F229 version on every screen, F226. Two CRITICAL defects were inert features with green suites -- verification by source text, not behavior) |
 | 74 | docs/sprints/SPRINT_74_SUMMARY.md | [OK] Complete | Sep 24-29, 2026 (PR #440 -> develop; 0.17.0, HELD for F238. Per-account scan lock (any type, fail closed, dead holders reaped, 2-6 min busy retry), F232 mechanism B fixed, F222 Sort chip + row dates, F202 provider folder defaults, F206 exports + clear history + redaction, Gmail keeps sign-in, subject rules = Keyword (DB v10). Device checks moved to Sprint 75) |
+| 75 | docs/sprints/SPRINT_75_SUMMARY.md | [OK] Complete | Oct 2-4, 2026 (PR #448 -> develop; 0.17.0 kept by exception, hold satisfied. F238 stop a background scan for a manual one (DB v11), F239 Sign In Again (renewal spike FAILED -> F246), F243 Windows background scans run with the app open, F216/F214/F236/F215, Task 7 WinWright + widget tests, four MV fixes. Phone checks moved to Sprint 76) |
 
 **Key Achievements**: See CHANGELOG.md for detailed feature history.
 
@@ -149,16 +150,18 @@ Historical sprint information lives in individual documents in `docs/sprints/` a
 
 ## Last Completed Sprint
 
-**Sprint 74** (2026-09-24 -- 2026-09-29; PR #440 -> develop; version 0.17.0+8, **RELEASE HOLD** until F238 ships)
-- **Type**: device carry-ins (MV74-1/2/3) plus F202, F222, F206, F232, F205; Manual Validation ran five rounds and added most of the sprint's work.
-- **One scan per account at a time, of ANY type** (the Fold8 showed four background scans on one account in a minute): `ScanResultStore.claimAccountScan` -- one `BEGIN IMMEDIATE` transaction that reaps dead holders (heartbeat > 5 min or age > 30 min), refuses if any scan holds the account, else inserts. Fail closed. A timed-out scan now actually stops (revoked lease). A busy background scan waits a random 2-6 minutes and tries once more (replaces the Windows 15 x 1-minute retry). Per ACCOUNT, not global (Harold confirmed after the evidence).
-- **F232 mechanism B -- FIXED from the Fold8 log**: Scan History split the accountId on a dash and got an empty platform ("Platform  not supported"); every rule added from a saved scan failed.
-- **F222 -- reworked at MV**: default folder -> domain -> address kept; a Sort chip switches to newest first; each row shows its received date; Gmail dates fixed. The first version followed the card text, not the intent -- the Sprint 74 retro IMP-1 cause.
-- **F202** per-provider folder defaults; **F206** exports reachable on both platforms, off by default, redaction, Clear history, Android YAML export fixed; **Gmail** keeps its sign-in on a failed renewal; **subject rules** reclassified to `keyword` (DB v10).
-- **Moved to Sprint 75 Manual Validation** (no AAB until both PRs merge): MV74-1 Doze + reboot, live deletion from a saved scan, F205 error classification, the lock under real Doze batching, Android YAML export.
-- **Results**: suite 2,314 -> 2,417, analyzer clean, WinWright 2/2, hook suite 75 -> 83; ~38 mutations, all KILLED. Retro: Harold all Very Good; IMP-1/2/3/4/6 applied (card before/after line, UI-text verification, WinWright snapshot via `.backup`, `scripts/mutation-test.ps1`, heredoc-backslash hook).
+**Sprint 75** (2026-10-02 -- 2026-10-04; PR #448 -> develop; version 0.17.0+8, **no bump by exception** -- no store release after Sprint 74)
+- **Type**: the 0.17.0 release blocker (F238) plus five backlog cards and the Sprint 74 test carry-ins; F243 and four fixes added at Manual Validation.
+- **F238 (#441)**: the "A scan is already running" dialog offers "Stop the background scan and start mine". The request is written to the scan row (`cancel_requested_at`, DB v11); the background scan stops at its next heartbeat, records a stopped skip (no export, no notification, no busy retry). PASSED on Windows (manual scan started 22 s after the request). **This satisfies the 0.17.0 release hold.**
+- **F239 (#442)**: "Sign In Again" in the account list and on the scan screen, refusing a different Google account; a background scan that needs sign-in skips with that reason, and on Windows no longer opens a browser unattended. **The Android no-Activity renewal spike FAILED** (NULL for a granted account); R-2 not built, `authorizeWithoutActivity` stays off -> F246.
+- **F243 (#450)**: Windows background scans run while the app is open; the per-account claim decides. The WinWright runner now pauses this environment's background tasks during a sweep.
+- **F216, F214, F236, F215, Task 7** delivered. **MV fixes**: "Scan not started" and a reachable refusal row; the YAML save dialog opens in the export folder; adding a Gmail account finishes like AOL/Yahoo; the Gmail Setup sentence.
+- **Moved to Sprint 76** (Harold, Q3 at approval: phone checks wait until 0.17.0 is live): MV74-1, F205, the live deletion from a saved scan, the lock under Doze, Android YAML export, F238/F239 on the phone.
+- **Results**: suite 2,417 -> 2,508 (15 skipped), analyzer clean, WinWright 3/3, hook suite 83 -> 91; mutations M71-M117, all KILLED (two compile failures rewritten). Retro: Harold all Very Good; IMP-1..6 applied (mutation-test baseline + INVALID verdict, heredoc guard for `\\` and bare `cat >`, swallow walk on ADDED exceptions, tooling as a caller, MV steps traced, delegation checklist).
 
 ## Next Sprint Candidates
+
+**Sprint 75 scope -- COMPLETE 2026-10-04 (PR #448)**: F238 (#441), F216 (#444), F214 (#445), F236 (#446), F239 (#442), F215 (#447), Task 7 (#449), F243 (#450, added at Manual Validation). Plan: `docs/sprints/SPRINT_75_PLAN.md`.
 
 **Sprint 74 scope -- COMPLETE 2026-09-29 (PR #440)** (Phase 8.4 pass 2, selected by Harold 2026-09-24): MV74-1 (#428), MV74-2 (#434), MV74-3 (#422, #433), F202 (#438), F222 (#437), F232 (#422), F206 (#439), F205 (#433). Plan: `docs/sprints/SPRINT_74_PLAN.md`.
 
@@ -166,17 +169,7 @@ Historical sprint information lives in individual documents in `docs/sprints/` a
 
 All incomplete items in relative priority order. Priority in increments of 10; items that can sprint together in increments of 2. HOLD items grouped at bottom. See [Feature and Bug Details](#feature-and-bug-details) for deep-dive specs. See [BACKLOG_REFINEMENT.md](BACKLOG_REFINEMENT.md) for presentation format rules.
 
-### Sprint 75 -- committed by Harold at Sprint 74 Manual Validation (2026-09-27)
-
-**F238. Offer to stop a running background scan in favor of a manual scan (Issue #441) Priority 1 -- RELEASE BLOCKER for 0.17.0**
-- Harold: *"0.17.0 cannot ship without a fix - add to backlog, full sprint planning for it, full sprint card, assign it to Fable 5.1"*; *"it is the largest bug that we have."*
-- **Model: Fable 5.1** (Harold named it). Full card: Issue #441 (augmented template -- Value, R-1..R-6, AC-1..AC-4, T-1..T-4, DoD, risk, Class-1 interrupt).
-- Builds on the Sprint 74 per-account scan lock (`ScanResultStore.claimAccountScan`): the "A scan is already running" dialog gains "Stop the background scan and start mine", which writes a cancel request onto the background scan's row (DB v11; v10 was used by the Sprint 74 subject-rule reclassification); the worker honors it on its heartbeat tick through the F224 cancellation token.
-- **Release gate**: 0.17.0 is not submitted to either store until F238 ships. No AAB is built until BOTH the Sprint 74 and Sprint 75 PRs are merged (Harold, 2026-09-27) -- so every 0.17.0 phone check moves to Sprint 75 Manual Validation.
-
-**F239. Gmail on Android -- renew the token without the app open, and a "Sign In Again" path (Issue #442) Priority 12 -- backlog**
-- Harold, 2026-09-28 (Q1 option 1): Sprint 74 stopped DELETING the tokens on a failed renewal (no more "Missing credentials"); this card is the other half.
-- Android stores no refresh token and a WorkManager worker has no Activity, so a Gmail background scan cannot renew its token after about an hour. The "Sign In Again" widget in `error_display.dart` exists but no screen uses it. Full card: Issue #442 (Class-1: auth mechanism, may need a Google Cloud console change).
+### Backlog from the Sprint 74-75 retrospectives and Manual Validation
 
 **F240. Body-rule sub-type consistency Priority 40 -- backlog (Sprint 74 retro Category 14a)**
 - Quick-add and the default rule-set split store body rules as `entire_domain`; manual and imported body rules use `keyword`. Same shape as the subject-rule label fix (DB v10). Decide per body pattern kind (URL/domain vs phrase), then align the creators and reclassify stored rows.
@@ -194,9 +187,11 @@ All incomplete items in relative priority order. Priority in increments of 10; i
 - From a WorkManager worker, `clientAuthorizationTokensForScopes(email, promptIfUnauthorized: false)` returned NULL for an already-granted Gmail account (emulator, google_sign_in 7.2.0 / android 7.2.7; ADR-0011 known limit). Android stores no refresh token, so a Gmail background scan more than about an hour after the app was last opened skips with "Gmail needs you to sign in again". Google's documented route: request a server auth code at sign-in and exchange it on a server for a refresh token. Needs a backend this app does not have (hosting, secret handling, privacy-policy update, ADR); a Class-1 architecture decision. Before committing to it, a 30-minute scope-matched retry of the spike would rule out a requested-vs-granted scope mismatch. The switched-off `GoogleAuthService.authorizeWithoutActivity` is the code to remove or reuse.
 
 **F241. Remove or wire `ScanResultStore.getActiveBackgroundScan` Priority 60 -- backlog (Sprint 74 retro Category 14b)**
-- No production caller since the manual-scan dialog moved to the per-account `getActiveScanForAccount`; kept with its tests. Delete with its tests, or use it if F238 needs an any-account background check.
+- No production caller since the manual-scan dialog moved to the per-account `getActiveScanForAccount`; kept with its tests. Delete with its tests, or wire it. F238 shipped without it (Sprint 75).
 
-### Sprint 75 Manual Validation carry-ins (device-blocked; no 0.17.0 phone build until the Sprint 74 and 75 PRs merge)
+### Sprint 76 phone validation carry-ins (after 0.17.0 is live -- Harold, Sprint 75 approval Q3)
+
+**Sprint 75 close-out (2026-10-04)**: still device-blocked; moved to Sprint 76 with F238 stop-for-manual and F239 Sign In Again on the phone. The checklist is in `docs/sprints/SPRINT_76_PLAN.md`.
 
 **Phase 8.2 pass 1 (2026-10-02)**: MV74-2 SHIPPED in Sprint 74 (the per-account scan lock) and is removed; the F232 half of MV74-3 SHIPPED (cause named from the Fold8 log, fixed). What remains below is phone validation only -- the full checklist is in `docs/sprints/SPRINT_75_PLAN.md`.
 
@@ -237,18 +232,6 @@ VALIDATION, not a re-implementation.
 
 ### Core App Quality
 
-**F236. Stamp the app version into the YAML rules export (~20-40m) Priority 36 (NEW, 2026-09-24 -- Phase 8.2 pass 1, from the #427 leftover)**
-- Phase: Core App Quality
-- Platform: All
-- Sprint 72 stamped the app version into CSV exports (#427). The YAML rules export was checked and
-  deliberately left out: it is a rules backup, not diagnostic evidence, so it was "left for
-  prioritization". This card is that prioritization; it previously lived only as a stale note in
-  the delivered F229 card.
-- Add the version as a leading YAML comment via `AppVersion.get()`. Do NOT introduce a literal:
-  `version_consistency_test` and `stale_footer_test` both gate that.
-- Check the IMPORT path ignores the comment, and that the export invariants (lowercase, sorted,
-  single quotes) are unaffected.
-
 **F237. Quiet the non-fatal Kotlin "Daemon compilation failed" traces in the Android build (~20-40m) Priority 38 (NEW, 2026-09-24 -- Sprint 73 build misdiagnosis)**
 - Phase: Core App Quality
 - Platform: Android
@@ -260,179 +243,6 @@ VALIDATION, not a re-implementation.
 - Options: `kotlin.incremental=false` in `mobile-app/android/gradle.properties`, or move the pub
   cache to `D:` via `PUB_CACHE`. Measure the build-time cost of the first before choosing it.
 - Value is preventive only: a working build does not need it.
-
-**F216. Supporting text is smaller than the text it should match -- Rule Tester, Safe Sender quick-add, AND the email action popup (~45-90m) Priority 32 (NEW, 2026-09-11, EXPANDED 2026-09-12 -- Harold)**
-- Phase: Core App Quality
-- Platform: All (shared Flutter UI) -- observed on Windows dark mode
-- **Harold, 2026-09-11**, during Sprint 69 Manual Validation: *"Examples:...", "Enter a phrase...",
-  "justin\ timberlake", Type: "Body Phrase", and "Phrase:..." are too small. Can they match the
-  size of "Block emails whose body..." (in the same image)*
-- **Confirmed in code -- a real inconsistency, not a rendering artifact.** The reference text he
-  names is a `RadioListTile` subtitle, which Material renders at **bodyMedium (14sp)**. Everything
-  he flagged is **bodySmall (12sp)** or the ~12sp floating field label, so the supporting text is
-  two steps below the text immediately above it on the same screen.
-- **Where** (`manual_rule_create_screen.dart`, which serves BOTH block rules and safe senders --
-  hence the identical finding on two screenshots):
-  - the `Examples: ...` hint under the Input heading
-  - the input field's floating label (`Enter a phrase to match in the email body`)
-  - `:808` `Type: ${_selectedType.label}` -- `textTheme.bodySmall`
-  - `:816` `Source:/Phrase: $_sourceDomain` -- `textTheme.bodySmall`
-  - the same pair again in the confirm dialog at `:622` and `:631`
-- **This is NOT F210 and was deliberately not fixed in Sprint 69.** F210 is a CONTRAST defect --
-  text unreadable because of colour. This is a LEGIBILITY defect -- text hard to read because of
-  size. Fixing it during Manual Validation would have been an unapproved Class-3 scope addition,
-  so it was filed instead.
-- **Do the survey before the edit.** `bodySmall` is used widely and correctly for genuinely
-  secondary text; promoting every instance would flatten the hierarchy the theme exists to
-  express. The question to answer first is which of these are SUPPORTING text for a control the
-  user is actively filling in (promote) versus genuinely ambient labelling (leave). The generated
-  pattern's `Type:`/`Phrase:` lines describe what the app is about to create from the user's
-  input, which argues for promotion.
-- **Check `rule_edit_screen.dart:938`** in the same pass -- it has the same `Type: $typeLabel`
-  shape and will look inconsistent if only one screen is changed.
-- **Kin to F214** (the tester's slider-margin report). Both are "this control does not visually
-  match its neighbours" on a form-style screen, and both came from someone using the app rather
-  than from a test. Worth considering whether they are one card about visual consistency on input
-  screens rather than two.
-- **Verify in BOTH themes after changing.** A size change alters the contrast-to-background ratio
-  at small sizes; the F210 gate covers colour pairing, not size.
-- **SECOND INSTANCE, added 2026-09-12 at Harold's direction ("1. a") -- the email action popup.**
-  Harold: *"the font on the scan results for the folder, subject, date and domain are acceptable,
-  but the font size in the pop-up is much smaller and too small. Can the pop-up text for the
-  folder, subject, date and domain use the same size as in the scan results page?"*
-- **Proven from a BEFORE/AFTER pair of the SAME email**, not from two similar screens:
-  `validation-screenshots/sprint-69/Screenshot_20260910_183529.png` (the list) and
-  `Screenshot_20260910_183550.png` (the popup), both showing `kkrmlexjnr@hotaucage.net`.
-- **Measured sizes** (`results_display_screen.dart`):
-
-  | Field | List row | Popup | Gap |
-  |---|---|---|---|
-  | sender | **16sp** (ListTile `title`, Material bodyLarge) | 14sp (`:1858`) | -2 |
-  | `folder - subject - rule` | **14sp** (ListTile `subtitle`, bodyMedium) | **12sp** (`:1906`) | **-2** |
-  | date | -- | 11sp (`:1921`) | -- |
-  | sender domain | -- | 11sp (`:1932`) | -- |
-  | rule chip | -- | 11sp | -- |
-
-  The list row is a plain `ListTile` with **no `fontSize` overrides at all**, so it inherits
-  Material's defaults. Every size in the popup is hardcoded and every one is smaller.
-- **DECISION (Harold, 2026-09-12, answer "2. a")**: match the list's SUBTITLE line -- the one
-  carrying those same four fields -- not its sender line. So:
-  - popup `folder - subject - rule`: 12sp -> **14sp**
-  - popup date and domain: 11sp -> **14sp**, so the popup is internally consistent rather than
-    trading one mismatch for another
-  - the sender at 14sp is NOT part of this change. Harold called the list acceptable and did not
-    raise the sender; leaving it avoids widening the card into a redesign.
-- **Why this one matters more than the Rule Tester instance**: the popup exists SO THAT a user
-  can confirm they tapped the right email before blocking a sender or a whole domain. Making its
-  metadata harder to read than the list it came from is backwards at exactly the moment accuracy
-  matters. The actions on that sheet are destructive.
-- **Two corrections recorded so they are not repeated.** Both came from grepping `fontSize` and
-  matching values to a code region rather than reading the rendering:
-  1. The popup was first reported as 11sp throughout. 11sp is the date/domain row; the metadata
-     line is 12sp.
-  2. The list was first reported as 14sp sender / 12sp subtitle. It overrides nothing and
-     inherits 16/14.
-  The relationship Harold described was right in both cases; the numbers were not. **Read the
-  widget, not a nearby grep hit.**
-- **Check for the same shape elsewhere before editing**: `no_rule_review_screen.dart` renders a
-  comparable metadata line, and `scan_history_screen.dart` has its own. If only the popup is
-  changed, the inconsistency moves rather than resolving.
-- Depends on: nothing.
-- Source: Harold, 2026-09-11, Sprint 69 Manual Validation, Windows dark mode. Two screenshots
-  (Rule Tester with a Body Phrase rule, Safe Sender quick-add with an Exact Email rule).
-
-**F215. Wire the validation-screenshot folder into every process that handles Android screenshots (~30-60m) Priority 30 (NEW, 2026-09-11 -- Harold)**
-- Phase: Developer Workflow / Tooling
-- Platform: N/A (process and docs)
-- **Harold, 2026-09-11**: *"I would like to keep a history of them in the directory, but not in
-  the repo... add to backlog so that we can update all the 'processing of future screenshots from
-  android' know to put them there and reference them there"*.
-- **ALREADY DONE in Sprint 69** (the location itself, so this card is only the wiring):
-  - `validation-screenshots/` created, with `sprint-NN/` subfolders.
-  - `.gitignore:275-276` excludes everything under it EXCEPT `README.md`, so the convention is
-    tracked even though the images never are.
-  - `validation-screenshots/README.md` records the layout, the naming rule (name by WHAT IT
-    SHOWS, not when it was taken), why images stay out of git, and the standing Sprint 68 rule
-    that a screenshot proves STATE and never CAUSE.
-- **WHAT REMAINS -- the actual work of this card.** Every place that handles an Android
-  screenshot still behaves as though the images are ephemeral. Each needs updating to pull from,
-  and write to, the new folder:
-  1. **`SPRINT_EXECUTION_WORKFLOW.md` Phase 5.3** -- Manual Validation should instruct that
-     screenshots are saved to `validation-screenshots/sprint-NN/` before being discussed, so the
-     evidence outlives the chat session.
-  2. **The MTP shell-COM retrieval recipe** (established Sprint 68, currently living only in a
-     transcript) -- it pulls screenshots off the phone over the MTP namespace, where `Test-Path`
-     fails and `Shell.Application` works. It should land files directly in the sprint folder, and
-     the recipe itself should be written down somewhere durable rather than rediscovered.
-  3. **Backlog-card authoring** -- when a card is written from an image, cite the relative path
-     so a later reader knows the evidence exists and where it is. F210, F208, F209, F212 and F214
-     were all written from images that no longer exist anywhere.
-  4. **`SPRINT_RETROSPECTIVE.md`** -- validation evidence referenced in a retrospective should
-     point at the folder rather than at a screenshot nobody can open any more.
-  5. **`TESTING_STRATEGY.md`** -- name the folder as the home for manual-validation evidence,
-     alongside the existing WinWright artifact conventions.
-- **Do NOT** start committing the images to make them easier to reference. Phone screenshots run
-  1-3 MB each and git history never forgets a binary; that trade was considered and declined.
-- **Worth deciding while doing this**: whether a sprint's folder should be pruned at close-out or
-  kept indefinitely. Keeping everything is simplest and costs nothing but local disk, which is
-  why nothing prunes today -- but it is a decision, not an oversight, and should be recorded as
-  one.
-- Depends on: nothing. The folder and its gitignore rules already exist.
-- **CORRECTION (Harold, 2026-09-11): screenshots ARE cached, and the earlier "kept nowhere" was
-  wrong.** Claude Code writes every pasted image to
-  `C:\Users\kimme\.claude\image-cache\<session-guid>\<n>.png`. Harold asked "aren't the
-  screenshots in the scratchpad?" -- not the scratchpad, but a real on-disk cache.
-  **This does not remove the need for this card**, for three reasons:
-  1. **Per-session, and it does not survive.** At the time of checking, the cache held ONE
-     session folder with 9 files, all from that evening. Every image from earlier in Sprint 69
-     and from Sprint 68 -- the No Rule popups, the "Re-processed 0 of 8" screens that F212 was
-     written from -- was already gone.
-  2. **It is a tool cache, not an archive.** Files are named by session GUID and sequence
-     number, with no documented retention. Nothing should be built on the assumption that an
-     image is still there tomorrow.
-  3. **Sequence numbers carry no meaning.** `167.png` says nothing about what it shows. The
-     whole point of `validation-screenshots/sprint-NN/<what-it-shows>.png` is that a file name
-     survives as evidence.
-  The cache IS useful WITHIN a session -- an image Harold sent an hour ago can be re-read
-  rather than re-requested -- and this card should say so rather than implying the only copy
-  is the chat transcript.
-- Source: Harold, 2026-09-11, after asking where validation screenshots were being stored and
-  learning the answer was "nowhere durable" (corrected above: cached per session, not archived).
-
-**F214. Scan Range slider does not align with the controls above it -- left/right margins read as too wide (~20-45m) Priority 34 (NEW, 2026-09-11 -- reported by a TESTER)**
-- Phase: Core App Quality
-- Platform: All (shared Flutter UI) -- reported on Android
-- **Tester, via Harold 2026-09-11**: *"i think the l-r margins look wide between the slider and the
-  screen border."* The second piece of feedback this project has received from someone other than
-  Harold.
-- **Where**: the Scan Range slider, `settings_screen.dart:2179-2196`.
-- **Confirmed in the code as a real misalignment, not a matter of taste.** Three insets stack on
-  each side, and only the slider carries all three:
-  1. `EdgeInsets.all(16)` on the enclosing Card.
-  2. The `Text('1')` and `Text('90')` that flank the `Expanded` slider inside a `Row`.
-  3. Flutter's `Slider` adds its own overlay padding (roughly 24 logical pixels) so the thumb
-     target is not clipped at the ends of the track.
-  The result is a track starting about 50-60px from the card edge, while the "Scan all emails"
-  checkbox directly above it sets `contentPadding: EdgeInsets.zero` and starts at 16px. The
-  slider is the ONE control in that card that does not line up with its neighbours, which is what
-  makes it read as wrong without an obvious cause.
-- **Candidate fixes, to evaluate rather than assume**: (a) drop the flanking "1"/"90" labels and
-  rely on the slider's own `label`, which already shows the live value on drag -- fewest moving
-  parts; (b) move the min/max labels BELOW the track, aligned to the card gutter; (c) negative
-  horizontal margin on the slider so its TRACK, not its overlay box, aligns to 16px.
-  **(a) is likely correct** and also removes two widgets.
-- **Check the other sliders in the same pass.** If any other screen uses the same Row + Expanded +
-  flanking-label shape, it has the same misalignment; fix them together or the inconsistency just
-  moves.
-- **NOT a dark-mode or contrast issue** -- unrelated to F210, despite arriving in the same batch of
-  tester feedback.
-- **Verification caveat recorded honestly**: this was diagnosed by reading the layout code against
-  the tester's words. Claude has NOT seen the screenshot and has NOT measured it on a device. A
-  screenshot proves what it looks like; the code explains why. Confirm the screen matches this
-  description before implementing.
-- Depends on: nothing.
-- Source: a closed tester via Harold, 2026-09-11. Filed at Harold's instruction during Sprint 69
-  execution; deliberately NOT pulled into Sprint 69 scope.
 
 **F213. Migrate Android Gmail OAuth off Custom URI schemes to Google Identity Services (~180-300m) Priority 40 (NEW, 2026-09-11 -- found while fixing F211)**
 - Phase: Android / Google Play Store Readiness

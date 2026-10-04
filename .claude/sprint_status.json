@@ -1,17 +1,18 @@
 {
   "_description": "Sprint status file that persists across context compaction. Update after each phase/sub-phase completion.",
-  "_last_updated": "2026-10-03T12:55:48Z",
+  "_last_updated": "2026-10-04T15:00:00Z",
   "_usage": "Read this file after context compaction to restore sprint approval state and progress.",
   "_staleness_note": "This file had drifted 15 sprints (last updated at Sprint 35, 2026-04-19) before being refreshed at Sprint 50 close-out. It is a Phase 7.7 checklist item -- update it at every sprint close-out, not opportunistically.",
   "current_sprint": {
     "number": 75,
     "branch": "feature/20261002_Sprint_75",
-    "status": "Phase 7.5 Improvement Approval -- Sprint 75: Manual Validation COMPLETE (Harold, 2026-10-03). 8 tasks (Task 8 F243 added at MV) plus MV fixes; F239 R-1 spike FAILED (R-2 not built; F246 backlog); suite 2,508/15/0; WinWright 3/3 no drift (sweep-head 7e807d5). Harold retro: all Very Good, no carry-ins, no backlog items. Version stays 0.17.0+8.",
+    "status": "Phase 7.7 PR Reviews -- Sprint 75 close-out done (summary, master plan, Sprint 76 stub, 0.17.0 release notes re-derived). PR #448 marked ready; Claude (pr-review-toolkit) and Copilot reviews requested; address every comment, reply, resolve; then tell Harold it is ready to merge.",
     "plan_approved": true,
     "blanket_execution_approved": true,
     "pr_number": 448,
     "version": "0.17.0+8 (NO bump this sprint -- exception, Harold 2026-10-02)",
-    "pr_url": "https://github.com/kimmeyh/spamfilter-multi/pull/448"
+    "pr_url": "https://github.com/kimmeyh/spamfilter-multi/pull/448",
+    "deliverables": "F238 stop-for-manual (DB v11, release hold satisfied); F239 Sign In Again (Android renewal spike FAILED -> F246); F243 Windows background scans run with the app open; F216, F214, F236, F215; Task 7 WinWright + widget tests; MV fixes (Scan not started, YAML save folder, Gmail add flow, Gmail Setup sentence). Retro IMP-1..6 applied."
   },
   "previous_sprint": {
     "number": 74,
@@ -26,16 +27,16 @@
     "sprint_73": "#428 (open, MV74-1), #422 (open, MV74-3), #430 closed, #434 (open, MV74-2), #431 closed, #432 closed, #433 (open, MV74-3). Also closed in pass 1: #426 (superseded by #428), #427 (leftover captured as F236).",
     "note": "Closes #N does NOT auto-fire here.",
     "sprint_74": "Closed by hand 2026-10-02: #422 #434 #437 #438 #439. Open, carried: #428 (MV74-1 phone), #433 (F205 phone), #441 (F238), #442 (F239).",
-    "sprint_75": "#441 F238, #442 F239, #444 F216, #445 F214, #446 F236, #447 F215"
+    "sprint_75": "#441 F238, #442 F239, #444 F216, #445 F214, #446 F236, #447 F215, #449 Task 7, #450 F243 -- all open; close by hand after merge (Closes #N does not auto-fire). #442 closes with F239's delivered half; renewal tracked as F246. Carried open to Sprint 76: #428 (MV74-1 phone), #433 (F205 phone)."
   },
   "_github_issues_note": "Sprint 66 cards created at Phase 3.3.1 (2026-09-07): #387 GP-19, #388 GP-4. Close by hand at Post-Merge Cleanup.",
   "test_metrics": {
-    "suite": "2,424 passed / 15 skipped / 0 failed",
-    "policy_suite": "release_notes_test 3/3; hook suite 86 passed / 0 failed",
-    "winwright": "2/2 at 6633ffd, no DB drift (.backup snapshot)",
+    "suite": "2,508 passed / 15 skipped / 0 failed (at 7e807d5)",
+    "policy_suite": "release_notes_test 3/3 (2026-10-04, after the re-derive); hook suite 91 passed / 0 failed",
+    "winwright": "3/3 at 7e807d5, no DB drift",
     "analyzer": "clean",
-    "mutations": "M26-M63 run in Sprint 74; all targeted mutations KILLED (M62 SURVIVED by design as the tool's own check)",
-    "as_of": "2026-09-30, Sprint 74 Phase 7.7"
+    "mutations": "M71-M117 in Sprint 75; all targeted mutations KILLED (M80/M96 first forms did not compile -- rewritten; IMP-1 now reports INVALID)",
+    "as_of": "2026-10-04, Sprint 75 Phase 7.7"
   },
   "store_release": {
     "status_0_15_3": "NOT SUBMITTED TO EITHER STORE. Harold, 2026-09-22: \"not pushing to either store this time\". Phase 8.3 explicitly N/A for this cycle.",
@@ -43,7 +44,7 @@
     "live_play": "0.15.2 versionCode 5 -- closed testing, device-verified 2026-09-21 on the S24+.",
     "consequence": "F219 AC-1 and F227 remain blocked: they need a Play-INSTALLED build, and 0.15.3 is not going out. They wait for the next release that ships.",
     "status_0_16_0": "SUBMITTED / ROLLOUT IN PROCESS on BOTH stores (Harold, 2026-09-24, reported between 12:17am and 8:39am ET). NOT yet observed live on either. Built + verified 2026-09-24: MSIX 0.16.0.0 (prod worktree bf005f3, self-test 6/6 PASS, 17.5 MB) and AAB versionCode 7 / 0.16.0 (67.0 MB). Step 7 records (STORE_VERSION_STATUS.md live rows) wait for a direct console observation.",
-    "status_0_17_0": "RELEASE HOLD on both stores until F238 (#441) ships (Harold, 2026-09-27). Phase 8.3 N/A for the Sprint 74 cycle: no MSIX, no AAB until the Sprint 74 and 75 PRs are merged. Re-confirmed 2026-10-02 (Harold, option 1): keep the hold; release after Sprint 75 with F238, as Sprint 75's version (0.18.0). VERSION EXCEPTION 2026-10-02: Sprint 75 keeps 0.17.0 (no bump), so the release carrying F238 is 0.17.0."
+    "status_0_17_0": "HOLD SATISFIED: F238 shipped in Sprint 75 (PR #448). Version stays 0.17.0 (exception, Harold 2026-10-02). Release notes re-derived 2026-10-04 (docs/store-assets/RELEASE_NOTES_0.17.0_*.md, gate 3/3). Next: after #448 merges and develop -> main, build the MSIX and a NEW AAB from main (the 2026-09-25 AAB is superseded). Phone checks follow in Sprint 76."
   },
   "environment_notes": [
     "RESOLVED 2026-07-29 (verified 07-30): the Store fault was an Acronis file-system filter blocking AppXSvc cleanup, fixed by an Acronis Protection exclusion. 23h uptime with ZERO Id-493 events vs a 176-file/6-min baseline; Store client self-updated 22606.1401.6.0 -> .10.0 (requires a working deployment pipeline). Filter drivers remain loaded -- backup protection was NOT disabled. See ALL_SPRINTS_MASTER_PLAN ENV-1 for the picker gotcha if it recurs.",
@@ -52,11 +53,13 @@
   ],
   "blocking_issues": [],
   "next_actions": [
-    "Execute Tasks 0-7; Phase 5; Manual Validation (Windows + emulator)."
+    "Phase 7.7: PR #448 ready; run Claude pr-review-toolkit review + Copilot review; address every comment (prefer Copilot's when both raise it); reply and resolve each; tell Harold when ready to merge.",
+    "Phase 8: Harold merges #448 and develop -> main; refinement pass 1; 0.17.0 release to both stores (new AAB from main).",
+    "Sprint 76: phone validation checklist (docs/sprints/SPRINT_76_PLAN.md)."
   ],
   "next_sprint_targeted": {
-    "number": 75,
-    "stub": "docs/sprints/SPRINT_75_PLAN.md",
-    "committed": "F238 (#441, Fable 5.1, release blocker) + the device checklist"
+    "number": 76,
+    "stub": "docs/sprints/SPRINT_76_PLAN.md",
+    "committed": "Phone validation checklist on the live 0.17.0 build (MV74-1, F205, saved-scan deletion, Doze lock, YAML export, F238/F239 on the phone)"
   }
 }
