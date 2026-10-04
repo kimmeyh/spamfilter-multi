@@ -2,16 +2,12 @@ import 'dart:io' show Platform;
 import 'package:flutter/foundation.dart' show visibleForTesting;
 import 'package:flutter/material.dart';
 import 'package:logger/logger.dart';
-import 'package:provider/provider.dart';
 
 import '../../adapters/auth/google_auth_service.dart';
 import '../../adapters/storage/secure_credentials_store.dart';
-import '../../core/providers/email_scan_provider.dart';
 import 'gmail_webview_oauth_screen.dart';
 import 'gmail_manual_token_screen.dart';
 import '../../util/redact.dart';
-import 'folder_selection_screen.dart';
-import 'scan_progress_screen.dart';
 import '../widgets/screen_version_line.dart'; // F229 (Sprint 73)
 import '../widgets/system_inset_wrapper.dart'; // F209 (Sprint 69)
 
@@ -317,44 +313,14 @@ class _GmailOAuthScreenState extends State<GmailOAuthScreen> {
 
       Redact.logSafe('Gmail OAuth successful for ${Redact.email(email)}');
 
-      // Initialize scan provider and navigate to folder selection
-      final scanProvider = Provider.of<EmailScanProvider>(context, listen: false);
-      scanProvider.reset();
-
-      if (!mounted) return;
-
-      final selectedFolders = await Navigator.push<List<String>>(
-        context,
-        MaterialPageRoute(
-          builder: (context) => FolderSelectionScreen(
-            platformId: widget.platformId,
-            accountId: accountId,
-            accountEmail: email,
-            onFoldersSelected: (folders) {
-              _logger.i('Folders selected after browser OAuth: $folders');
-            },
-          ),
-        ),
-      );
-
-      if (selectedFolders != null && selectedFolders.isNotEmpty && mounted) {
-        // Navigate to scan progress screen instead of just popping back
-        await Navigator.pushReplacement(
-          context,
-          MaterialPageRoute(
-            builder: (context) => ScanProgressScreen(
-              platformId: widget.platformId,
-              platformDisplayName: 'Gmail',
-              accountId: accountId,
-              accountEmail: email,
-            ),
-          ),
-        );
-      } else if (mounted) {
-        setState(() {
-          _isSigningIn = false;
-        });
-      }
+      // Harold, Sprint 75 Manual Validation: finish exactly as AOL and Yahoo do.
+      // The account is saved, so hand its address back; AccountSetupScreen runs
+      // the SAME finish as an IMAP account (saved message -> Manual Scan ->
+      // account list). There is no folder step here any more: the folder screen
+      // saves on every tick (Sprint 19 F27) and is left with the back arrow,
+      // which returns no list, so this screen used to stay on its own page.
+      // Folders are set later in Settings > Account, like every other account.
+      if (mounted) Navigator.pop(context, email);
     } catch (e, stackTrace) {
       Redact.logError('Browser OAuth failed', e);
       _logger.e('Browser OAuth failed', error: e, stackTrace: stackTrace);
@@ -427,45 +393,14 @@ class _GmailOAuthScreenState extends State<GmailOAuthScreen> {
           return;
         }
 
-        // Initialize scan provider
-        final scanProvider = Provider.of<EmailScanProvider>(context, listen: false);
-        scanProvider.reset();
-
-        // Navigate to folder selection and bubble success upward
-        if (mounted) {
-          final selectedFolders = await Navigator.push<List<String>>(
-            context,
-            MaterialPageRoute(
-              builder: (context) => FolderSelectionScreen(
-                platformId: widget.platformId,
-                accountId: accountId,
-                accountEmail: result.email!,
-                onFoldersSelected: (folders) {
-                  _logger.i('Folders selected after OAuth: $folders');
-                },
-              ),
-            ),
-          );
-
-          if (selectedFolders != null && selectedFolders.isNotEmpty && mounted) {
-            // Navigate to scan progress screen instead of just popping back
-            await Navigator.pushReplacement(
-              context,
-              MaterialPageRoute(
-                builder: (context) => ScanProgressScreen(
-                  platformId: widget.platformId,
-                  platformDisplayName: 'Gmail',
-                  accountId: accountId,
-                  accountEmail: result.email!,
-                ),
-              ),
-            );
-          } else if (mounted) {
-            setState(() {
-              _isSigningIn = false;
-            });
-          }
-        }
+        // Harold, Sprint 75 Manual Validation: finish exactly as AOL and Yahoo do.
+        // The account is saved, so hand its address back; AccountSetupScreen runs
+        // the SAME finish as an IMAP account (saved message -> Manual Scan ->
+        // account list). There is no folder step here any more: the folder screen
+        // saves on every tick (Sprint 19 F27) and is left with the back arrow,
+        // which returns no list, so this screen used to stay on its own page.
+        // Folders are set later in Settings > Account, like every other account.
+        if (mounted) Navigator.pop(context, accountId);
       } else {
         Redact.logSafe('Gmail sign-in failed or was cancelled');
         setState(() {

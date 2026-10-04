@@ -27,6 +27,7 @@ import '../../util/redact.dart';
 import '../providers/rule_set_provider.dart';
 import '../storage/database_helper.dart';
 import '../storage/settings_store.dart';
+import 'background_mode_service.dart';
 import 'background_scan_core.dart';
 import 'scan_sheet_export.dart';
 
@@ -54,6 +55,9 @@ void androidBackgroundScanDispatcher() {
   Workmanager().executeTask((taskName, inputData) async {
     WidgetsFlutterBinding.ensureInitialized();
     DartPluginRegistrant.ensureInitialized();
+    // F239 (Sprint 75): this isolate is a background worker -- no interactive
+    // sign-in may start from it (BackgroundModeService.isBackgroundMode).
+    BackgroundModeService.markBackgroundIsolate();
 
     final accountId = inputData?['accountId'] as String?;
     final isTest = taskName == kAndroidScanTestTaskName;
@@ -123,6 +127,7 @@ class AndroidBackgroundScanWorker {
 
         final platformId =
             await BackgroundScanCore.resolvePlatformId(credStore, id);
+
         if (platformId == null) {
           _logger.w('Cannot determine platform for ${Redact.accountId(id)}, '
               'skipping');

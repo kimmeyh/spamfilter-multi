@@ -1,0 +1,1 @@
+{"session_id": "hg-violation-7", "cwd": "D:/Data/Harold/github/spamfilter-multi", "hook_event_name": "PreToolUse", "tool_name": "Bash", "tool_input": {"command": "cd /d/Data/Harold/github/spamfilter-multi/mobile-app; cat > \"$TMPDIR/../x\" 2>/dev/null; SP=\"/tmp/sp\"; echo ok"}}

@@ -25,6 +25,13 @@
     file with `cat > f <<EOF` (not an interpreter), so correct work is not
     blocked -- a guard that fires on correct work trains people to bypass it.
 
+    Sprint 75 retro IMP-2 extends it, by evidence, in two places:
+      - ANY heredoc whose body contains a DOUBLE backslash (\\) is blocked: a
+        JSON spec written through `cat > f <<'EOF'` lost every \\.
+      - A bare `cat > file` with no input is blocked: it waits on stdin until
+        the command times out (twice in Sprint 75).
+    Single backslashes in a non-Python heredoc stay allowed.
+
 .NOTES
     Exit 0 = allow; Exit 2 = block (stderr fed to Claude).
     Bypass: include the literal token allow_heredoc_backslash in the command.
@@ -59,8 +66,64 @@ if ($cmd -match 'allow_heredoc_backslash') { exit 0 }
 $opener = [regex]::new('(?m)^[^\n]*?<<-?\s*([''"]?)([A-Za-z_][A-Za-z0-9_]*)\1[^\n]*$')
 $pythonToken = [regex]::new('(?:^|[\s;&|(/\\])(?:python3?|py)(?:\.exe)?(?=\s|$|[;&|)])')
 
+# Sprint 75 retro IMP-2 (a): a bare `cat > file` -- an output redirect, no
+# input (no heredoc, no `<`, not fed by a pipe) -- waits on stdin until the
+# command times out. It happened twice in Sprint 75 (a stray `cat >` at the
+# start of a compound command). Checked per command segment; a segment fed by
+# a pipe never starts with `cat`, so `echo x | cat > f` stays allowed.
+# PR #448 review: heredoc BODIES are text, not commands. Without removing them,
+# a heredoc writing a doc or script with a line starting `cat > file` was
+# blocked (both reviewers reproduced it).
+$scanText = New-Object System.Text.StringBuilder
+$pos = 0
 foreach ($m in $opener.Matches($cmd)) {
-    if (-not $pythonToken.IsMatch($m.Value)) { continue }
+    if ($m.Index -lt $pos) { continue }
+    $bodyStart = $m.Index + $m.Length
+    $null = $scanText.Append($cmd.Substring($pos, $bodyStart - $pos))
+    $d = $m.Groups[2].Value
+    $after = $cmd.Substring($bodyStart)
+    $end = [regex]::Match($after, "(?m)^\s*$([regex]::Escape($d))\s*$")
+    $pos = if ($end.Success) { $bodyStart + $end.Index } else { $cmd.Length }
+}
+$null = $scanText.Append($cmd.Substring($pos))
+$segments = $scanText.ToString() -split '(?:\r?\n|;|&&|\|\|)'
+foreach ($seg in $segments) {
+    if ($seg -match '^\s*cat\s*>{1,2}\s*("[^"]*"|''[^'']*''|[^\s<|]+)(\s+2>(&1|\S+))?\s*$') {
+        [Console]::Error.WriteLine(@"
+[BLOCKED] ``cat`` with an output redirect and NO input waits on stdin forever:
+  $($seg.Trim())
+
+Sprint 75 retro IMP-2: this hung a command until timeout twice. Write the file
+with the Write tool, or give cat its input (a heredoc, < file, or a pipe).
+"@)
+        exit 2
+    }
+}
+
+foreach ($m in $opener.Matches($cmd)) {
+    if (-not $pythonToken.IsMatch($m.Value)) {
+        # Sprint 75 retro IMP-2 (b): ANY heredoc, not only Python. A DOUBLE
+        # backslash in a heredoc body came out as one: a JSON spec written with
+        # `cat > specs.json <<'EOF'` lost every `\\` and failed to parse. Single
+        # backslashes (a Windows path in a commit message) are unaffected and
+        # stay allowed.
+        $d = $m.Groups[2].Value
+        $after = $cmd.Substring($m.Index + $m.Length)
+        $end = [regex]::Match($after, "(?m)^\s*$([regex]::Escape($d))\s*$")
+        $hbody = if ($end.Success) { $after.Substring(0, $end.Index) } else { $after }
+        if ($hbody.Contains('\\')) {
+            [Console]::Error.WriteLine(@"
+[BLOCKED] A heredoc body contains a DOUBLE backslash (\\).
+
+Sprint 75 retro IMP-2: a JSON spec written through a heredoc lost every \\
+(it became \) and the file no longer parsed. Write the file with the Write
+tool instead. If the backslashes are genuinely safe, re-run with the literal
+token allow_heredoc_backslash in the command.
+"@)
+            exit 2
+        }
+        continue
+    }
     $delim = $m.Groups[2].Value
     $rest = $cmd.Substring($m.Index + $m.Length)
     $close = [regex]::Match($rest, "(?m)^\s*$([regex]::Escape($delim))\s*$")

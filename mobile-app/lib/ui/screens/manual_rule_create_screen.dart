@@ -620,8 +620,11 @@ class _ManualRuleCreateScreenState extends State<ManualRuleCreateScreen> {
               ),
               const SizedBox(height: 12),
               Text(
+                // F216 (Sprint 75): was `bodySmall`; promoted to match the
+                // same pair in the Generated Pattern panel this dialog
+                // confirms.
                 'Type: ${_selectedType.label}',
-                style: Theme.of(context).textTheme.bodySmall,
+                style: Theme.of(context).textTheme.bodyMedium,
               ),
               // _sourceDomain is the domain for domain rules and the plain
               // phrase for body phrases; label it accordingly. Omitted when
@@ -629,7 +632,8 @@ class _ManualRuleCreateScreenState extends State<ManualRuleCreateScreen> {
               if (_sourceDomain.isNotEmpty)
                 Text(
                   '${_selectedType == ManualRuleType.bodyPhrase ? 'Phrase' : 'Source'}: $_sourceDomain',
-                  style: Theme.of(context).textTheme.bodySmall,
+                  // F216 (Sprint 75): was `bodySmall`.
+                  style: Theme.of(context).textTheme.bodyMedium,
                 ),
             ],
           ),
@@ -729,13 +733,32 @@ class _ManualRuleCreateScreenState extends State<ManualRuleCreateScreen> {
                 const SizedBox(height: 4),
                 Text(
                   _inputExample,
-                  style: Theme.of(context).textTheme.bodySmall,
+                  // F216 (Sprint 75): was `bodySmall`. This hint supports
+                  // the field directly below it, so it is promoted to
+                  // match the RadioListTile subtitles above it rather
+                  // than left as ambient secondary text.
+                  style: Theme.of(context).textTheme.bodyMedium,
                 ),
                 const SizedBox(height: 8),
                 TextFormField(
                   controller: _inputController,
                   decoration: InputDecoration(
                     labelText: _inputHint,
+                    // F216 (Sprint 75): the floating label is NOT changed
+                    // here. It is out of the approved card's R-3 scope
+                    // (which lists the Examples hint, Type/Phrase lines,
+                    // and the confirm dialog pair only). It is also not a
+                    // clean theme-style fix: Flutter always paints the
+                    // floated label through a fixed 0.75x scale transform
+                    // on top of whatever style resolves
+                    // (input_decorator.dart `_kFinalLabelScale`), so
+                    // today's ~12sp is bodyLarge(16) x 0.75, and setting
+                    // this to bodyMedium would render at 14 x 0.75 =
+                    // 10.5sp -- SMALLER than today, the opposite of the
+                    // intended fix. Reaching 14sp would require a
+                    // hardcoded pre-scale size, which ADR-0037 forbids
+                    // (it would stop following the OS text-scale
+                    // setting). Left at the Material default.
                     border: const OutlineInputBorder(),
                     suffixIcon: _inputController.text.isNotEmpty
                         ? IconButton(
@@ -812,15 +835,20 @@ class _ManualRuleCreateScreenState extends State<ManualRuleCreateScreen> {
                           ),
                           const SizedBox(height: 8),
                           Text(
+                            // F216 (Sprint 75): was `bodySmall`. This line
+                            // describes what the app is about to create
+                            // from the user's input, so it is promoted to
+                            // bodyMedium to match the subtitles beside it.
                             'Type: ${_selectedType.label}',
-                            style: Theme.of(context).textTheme.bodySmall,
+                            style: Theme.of(context).textTheme.bodyMedium,
                           ),
                           // Domain for domain rules, plain phrase for body
                           // phrases; omitted when empty rather than "Source: ".
                           if (_sourceDomain.isNotEmpty)
                             Text(
                               '${_selectedType == ManualRuleType.bodyPhrase ? 'Phrase' : 'Source'}: $_sourceDomain',
-                              style: Theme.of(context).textTheme.bodySmall,
+                              // F216 (Sprint 75): was `bodySmall`.
+                              style: Theme.of(context).textTheme.bodyMedium,
                             ),
                         ],
                       ),

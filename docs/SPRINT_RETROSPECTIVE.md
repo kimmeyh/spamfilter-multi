@@ -176,6 +176,9 @@ If a role has nothing to say for a category, write `Product Owner: No issues -- 
 > **Lead Developer**: Need a database migration test fixture; we keep finding migration regressions in manual validation.
 > **Claude Code Development Team**: Test discovery worked well via flutter test but writing async timer tests required multiple iterations.
 
+**Manual Validation Evidence**:
+Manual validation evidence (screenshots, test results, session logs) are saved to `validation-screenshots/sprint-NN/` and referenced in this retrospective. These artifacts are preserved after the session for future reference and auditing.
+
 #### 3. Effort Accuracy
 
 **Questions**:

@@ -76,32 +76,39 @@ class YamlService {
   /// The rules export text (normalized, sorted, single-quoted patterns),
   /// without touching any file. Sprint 74 MV: Android and iOS hand these
   /// bytes to the system save dialog, which writes the file itself.
-  String renderRules(RuleSet ruleSet) =>
-      _convertToYaml(_normalizeRuleSet(ruleSet).toMap());
+  ///
+  /// If [appVersion] is provided, the export will start with a comment line
+  /// containing the version and export date. This is optional to keep the
+  /// pure render function testable without version dependencies.
+  String renderRules(RuleSet ruleSet, {String? appVersion}) =>
+      _convertToYaml(_normalizeRuleSet(ruleSet).toMap(), appVersion: appVersion);
 
   /// The safe senders export text, without touching any file (see
   /// [renderRules]).
-  String renderSafeSenders(SafeSenderList safeSenders) =>
-      _convertToYaml(_normalizeSafeSenders(safeSenders).toMap());
+  String renderSafeSenders(SafeSenderList safeSenders, {String? appVersion}) =>
+      _convertToYaml(_normalizeSafeSenders(safeSenders).toMap(), appVersion: appVersion);
 
   /// Export rules to YAML file with backup
-  Future<void> exportRules(RuleSet ruleSet, String filePath) async {
+  Future<void> exportRules(RuleSet ruleSet, String filePath,
+      {String? appVersion}) async {
     // Create backup if file exists
     final file = File(filePath);
     if (await file.exists()) {
       await _createBackup(filePath);
     }
-    await file.writeAsString(renderRules(ruleSet));
+    await file.writeAsString(renderRules(ruleSet, appVersion: appVersion));
   }
 
   /// Export safe senders to YAML file with backup
-  Future<void> exportSafeSenders(SafeSenderList safeSenders, String filePath) async {
+  Future<void> exportSafeSenders(SafeSenderList safeSenders, String filePath,
+      {String? appVersion}) async {
     // Create backup if file exists
     final file = File(filePath);
     if (await file.exists()) {
       await _createBackup(filePath);
     }
-    await file.writeAsString(renderSafeSenders(safeSenders));
+    await file.writeAsString(
+        renderSafeSenders(safeSenders, appVersion: appVersion));
   }
 
   Future<void> _createBackup(String filePath) async {
@@ -166,9 +173,19 @@ class YamlService {
       ..sort();
   }
 
-  String _convertToYaml(Map<String, dynamic> data) {
+  String _convertToYaml(Map<String, dynamic> data, {String? appVersion}) {
     // Simple YAML conversion - for production use a proper YAML encoder
     final buffer = StringBuffer();
+
+    // Prepend version and export date comment if version is provided
+    if (appVersion != null) {
+      final now = DateTime.now();
+      final dateStr = '${now.year.toString().padLeft(4, '0')}-'
+          '${now.month.toString().padLeft(2, '0')}-'
+          '${now.day.toString().padLeft(2, '0')}';
+      buffer.writeln('# Exported by MyEmailSpamFilter $appVersion on $dateStr');
+    }
+
     _writeYaml(buffer, data, 0);
     return buffer.toString();
   }

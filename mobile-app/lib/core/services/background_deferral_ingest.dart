@@ -1,6 +1,12 @@
 /// F109c (Sprint 44): ingest background-scan deferral events recorded by the
 /// native Windows runner (`windows/runner/main.cpp`).
 ///
+/// LEGACY since F243 (Sprint 75): `main.cpp` no longer defers or writes the
+/// handoff file -- a background scan now runs while the app is open and the
+/// per-account scan claim decides. This service only drains a file written
+/// by a pre-F243 build, so those old rows are not lost. The text below
+/// describes the pre-F243 mechanism.
+///
 /// WHY A HANDOFF FILE: a scheduled `--background-scan` process detects "the
 /// foreground UI is running" via a read-only mutex probe in `main.cpp` and
 /// exits BEFORE any Flutter/Dart/DB code runs (F98 / BUG-S37-1 DB-contention

@@ -96,6 +96,45 @@ class ExportDirectories {
     return '${appExternalPath.substring(0, i)}/Documents';
   }
 
+  /// Sprint 75 (Harold Q5 at Manual Validation): where a SAVE DIALOG should
+  /// open, so a YAML export starts in the same folder every other export
+  /// uses ([resolve]: Settings > General folder, else the platform default).
+  ///
+  /// Windows takes a filesystem path. Android's system save dialog takes a
+  /// DOCUMENT URI (file_picker 8.3.7 passes `initialDirectory` through
+  /// `Uri.parse` into `DocumentsContract.EXTRA_INITIAL_URI`), so the path is
+  /// converted by [androidDocumentUri]. Null -- the dialog's own last folder,
+  /// today's behavior -- when there is nothing usable. Never throws: where the
+  /// dialog opens must never be the reason an export fails. The hint is the
+  /// OS's to honor; Android documents it as a starting location, not a rule.
+  static Future<String?> saveDialogStart({SettingsStore? settingsStore}) async {
+    try {
+      final dir = await resolve(settingsStore: settingsStore);
+      if (Platform.isAndroid) return androidDocumentUri(dir);
+      return dir;
+    } catch (e) {
+      _logger.w('No starting folder for the save dialog: $e');
+      return null;
+    }
+  }
+
+  /// `/storage/emulated/0/Documents/Sub` ->
+  /// `content://com.android.externalstorage.documents/document/primary%3ADocuments%2FSub`.
+  /// Only the PRIMARY user's shared storage (`/storage/emulated/0`) maps to
+  /// the `primary:` document id; any other shape returns null rather than a
+  /// guessed URI.
+  @visibleForTesting
+  static String? androidDocumentUri(String fsPath) {
+    const root = '/storage/emulated/0';
+    if (fsPath != root && !fsPath.startsWith('$root/')) return null;
+    var rel = fsPath.length > root.length ? fsPath.substring(root.length + 1) : '';
+    while (rel.endsWith('/')) {
+      rel = rel.substring(0, rel.length - 1);
+    }
+    return 'content://com.android.externalstorage.documents/document/'
+        '${Uri.encodeComponent('primary:$rel')}';
+  }
+
   /// The folder to write an export to, created if missing.
   ///
   /// The user's configured folder (Settings > General) wins; otherwise the

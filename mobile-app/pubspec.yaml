@@ -28,6 +28,10 @@ dependencies:
   # Phase 2 - Gmail Support (Native API) - activated
   googleapis: ^11.4.0
   google_sign_in: ^7.2.0
+  # F239 (Sprint 75): direct use of clientAuthorizationTokensForScopes, which
+  # takes the account EMAIL; google_sign_in's instance-level client does not.
+  # Already resolved transitively at 3.1.0.
+  google_sign_in_platform_interface: ^3.1.0
   
   # Phase 2 - Outlook/Office365 Support (Native API) - activated
   msal_auth: ^3.3.0
