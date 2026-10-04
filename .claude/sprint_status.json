@@ -1,12 +1,12 @@
 {
   "_description": "Sprint status file that persists across context compaction. Update after each phase/sub-phase completion.",
-  "_last_updated": "2026-10-04T15:00:00Z",
+  "_last_updated": "2026-10-04T05:15:00Z",
   "_usage": "Read this file after context compaction to restore sprint approval state and progress.",
   "_staleness_note": "This file had drifted 15 sprints (last updated at Sprint 35, 2026-04-19) before being refreshed at Sprint 50 close-out. It is a Phase 7.7 checklist item -- update it at every sprint close-out, not opportunistically.",
   "current_sprint": {
     "number": 75,
     "branch": "feature/20261002_Sprint_75",
-    "status": "Phase 7.7 PR Reviews -- Sprint 75 close-out done (summary, master plan, Sprint 76 stub, 0.17.0 release notes re-derived). PR #448 marked ready; Claude (pr-review-toolkit) and Copilot reviews requested; address every comment, reply, resolve; then tell Harold it is ready to merge.",
+    "status": "Phase 7.7 PR Reviews -- COMPLETE. PR #448 ready for Harold's final approval and merge (Copilot: no findings; Claude reviews fixed in 8e4a21b + 5449565, F247 to Sprint 76; CI green on 5449565).",
     "plan_approved": true,
     "blanket_execution_approved": true,
     "pr_number": 448,
@@ -31,12 +31,12 @@
   },
   "_github_issues_note": "Sprint 66 cards created at Phase 3.3.1 (2026-09-07): #387 GP-19, #388 GP-4. Close by hand at Post-Merge Cleanup.",
   "test_metrics": {
-    "suite": "2,508 passed / 15 skipped / 0 failed (at 7e807d5)",
-    "policy_suite": "release_notes_test 3/3 (2026-10-04, after the re-derive); hook suite 91 passed / 0 failed",
+    "suite": "2,516 passed / 15 skipped / 0 failed (local Windows, 8e4a21b); CI green on 5449565",
+    "policy_suite": "release_notes_test 3/3; hook suite 93 passed / 0 failed",
     "winwright": "3/3 at 7e807d5, no DB drift",
     "analyzer": "clean",
-    "mutations": "M71-M117 in Sprint 75; all targeted mutations KILLED (M80/M96 first forms did not compile -- rewritten; IMP-1 now reports INVALID)",
-    "as_of": "2026-10-04, Sprint 75 Phase 7.7"
+    "mutations": "M71-M126 in Sprint 75 (M118-M126 from the PR reviews); all targeted mutations KILLED",
+    "as_of": "2026-10-04, Sprint 75 Phase 7.7 PR reviews"
   },
   "store_release": {
     "status_0_15_3": "NOT SUBMITTED TO EITHER STORE. Harold, 2026-09-22: \"not pushing to either store this time\". Phase 8.3 explicitly N/A for this cycle.",
@@ -53,9 +53,10 @@
   ],
   "blocking_issues": [],
   "next_actions": [
-    "Phase 7.7: PR #448 ready; run Claude pr-review-toolkit review + Copilot review; address every comment (prefer Copilot's when both raise it); reply and resolve each; tell Harold when ready to merge.",
-    "Phase 8: Harold merges #448 and develop -> main; refinement pass 1; 0.17.0 release to both stores (new AAB from main).",
-    "Sprint 76: phone validation checklist (docs/sprints/SPRINT_76_PLAN.md)."
+    "Harold: review and merge PR #448 (Claude never merges).",
+    "On merge: open the Sprint 76 branch from feature/20261002_Sprint_75 (Phase 6.6); close #441 #442 #444 #445 #446 #447 #449 #450 by hand.",
+    "Phase 8: develop -> main (Harold); refinement pass 1; 0.17.0 release to both stores (new AAB from main).",
+    "Sprint 76: phone validation checklist + F247 (docs/sprints/SPRINT_76_PLAN.md)."
   ],
   "next_sprint_targeted": {
     "number": 76,
