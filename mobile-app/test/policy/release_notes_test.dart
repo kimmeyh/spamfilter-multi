@@ -134,6 +134,33 @@ void main() {
     }
   });
 
+  test('the Windows notes fit Partner Center\'s 1,500-character limit', () {
+    // Microsoft: "What's new in this version ... This field has a 1500
+    // character limit" (learn.microsoft.com, Add and edit Store listing info
+    // for MSIX app). This repo's process doc said 10,000 -- that is the
+    // DESCRIPTION field. Found 2026-10-04: the 0.17.0 notes (1,521 characters
+    // by this count) were refused as 15 over. Partner Center's own count
+    // differs slightly from every count here, so this measures the STRICTEST
+    // one (each line break as two characters, as pasted on Windows) against
+    // the documented 1,500 -- which also satisfies Harold's rule of "15 less
+    // than the rejected length" (1,506).
+    const windowsLimit = 1500;
+    final v = currentVersion();
+    final f = File('../docs/store-assets/RELEASE_NOTES_${v}_windows.md');
+    if (!f.existsSync()) return;
+    final content = f.readAsStringSync().replaceAll('\r\n', '\n');
+    final sep = content.indexOf('\n---\n');
+    if (sep < 0) return; // the identifier test reports a missing separator
+    var shipped = content.substring(sep + 5);
+    final auditTail = shipped.indexOf('**Excluded from this file**');
+    if (auditTail > -1) shipped = shipped.substring(0, auditTail);
+    final strictest = shipped.trim().replaceAll('\n', '\r\n').length;
+    expect(strictest, lessThanOrEqualTo(windowsLimit),
+        reason: 'the Windows notes measure $strictest characters (line breaks '
+            'counted as two) against Partner Center\'s $windowsLimit-character '
+            '"What\'s new in this version" limit. Shorten them.');
+  });
+
   test('shipped paragraphs are ONE line each (no hard wrapping)', () {
     // Harold, 2026-10-04: the 0.17.0 Windows notes were hard-wrapped at ~100
     // columns like the derivation header above them. A line break inside a

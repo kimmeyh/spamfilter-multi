@@ -190,6 +190,13 @@ hard-wrapped paragraph in either store's file.
 - **Microsoft Store**: the "What's new in this version" field lives under Store
   listings and **only appears once a package is attached**, so upload the MSIX
   and let validation finish before looking for it.
+- **Microsoft Store: 1,500 characters.** Microsoft's page states it: *"This field
+  has a 1500 character limit."* Learned 2026-10-04 when the 0.17.0 notes (1,521
+  characters) were refused as 15 over -- this document had wrongly said 10,000.
+  Partner Center's count does not match a plain character count exactly, so
+  `release_notes_test.dart` measures the STRICTEST count (line breaks as two
+  characters) against 1,500. Aim well under it -- a few hundred characters of
+  headroom costs nothing and avoids a second paste.
 
 **If a store's derived notes come out empty or trivial**, that is a signal worth
 heeding rather than a formatting problem: the release may not be worth
@@ -470,7 +477,7 @@ Now the prod worktree is ready for Step 3 (build MSIX).
    - Click **Add packages** (or drag-drop the `.msix`).
    - Wait for cert + validation. Takes 1-3 minutes. If validation fails, fix the MSIX per the error message (most common: version number already used -- go back to Step 1 and bump again).
    - Confirm the version number shown matches the target.
-6. **Release notes** (Sprint 51 addition -- this was not documented and cost a round-trip during the 0.5.8 release): release notes are NOT in the Packages section. They live in **Store listings -> \<language\> -> "What's new in this version"** (below Description, above Screenshots; 10,000-char limit, per-language -- currently English (United States) only).
+6. **Release notes** (Sprint 51 addition -- this was not documented and cost a round-trip during the 0.5.8 release): release notes are NOT in the Packages section. They live in **Store listings -> \<language\> -> "What's new in this version"** (below Description, above Screenshots; **1,500-character limit**, per-language -- currently English (United States) only). **CORRECTED 2026-10-04**: this said 10,000, which is the DESCRIPTION field's limit; Microsoft documents "What's new in this version" at 1,500, and the 0.17.0 notes were refused as 15 over. Gated by `release_notes_test.dart`.
    - **Order matters**: the field only appears once a package is attached to the submission. Upload the MSIX and let validation finish FIRST, then open Store listings.
    - Write for Store users, not for the repo: describe user-visible behavior changes only. Omit internal work (local-DB repairs, CI fixes, provider refactors) -- it is noise on a public listing.
    - Confirm the screenshots carried over from the previous submission while you are on this page. Masters live in `docs/store-assets/windows/` if they need re-uploading.
