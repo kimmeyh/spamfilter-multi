@@ -28,6 +28,8 @@ Partner Center before saying anything about the Store version.
 
 ## 0.17.0 -- RELEASE HOLD (Harold, 2026-09-27)
 
+**0.17.1 (versionCode 9) -- GOOGLE PLAY CLOSED TESTING: SUBMITTED 2026-10-05 ~12:45am ET** (Harold's Publishing overview screenshot: "Changes in review", Closed testing - Alpha, 9 (0.17.1) Start full rollout, quick checks running; managed publishing off). Sprint 76 diagnostic build (F248 log, F249 part 1). Artifact verified from the file: versionName 0.17.1, versionCode 9, targetSdk 36, no `.dev`, OAuth scheme present, AD_ID absent, 67.2 MB. Not yet observed live. Microsoft Store: not submitted (Harold's call at release).
+
 **MICROSOFT STORE: SUBMITTED FOR CERTIFICATION 2026-10-04 ~10:40pm ET** (Harold's report; not yet observed live -- the public Store product API still showed the 0.16.0 listing, LastUpdateDateUtc 2026-09-24T12:51:35Z, at 10:41pm). **Google Play: upload not yet reported.**
 
 **BUILT + VERIFIED (2026-10-04, Sprint 75 cycle Phase 8.3)** -- record a submission only after seeing it in each console:
