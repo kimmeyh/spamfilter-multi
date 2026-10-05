@@ -41,6 +41,30 @@ scan was not started"; at 11:25 the row was still "In progress", Found 0. An ear
 Found 0, then the stop), export the log in-app, pull over MTP. Then card the fix (likely a cancel/timeout
 around connect, or a stale-heartbeat close in `waitForScanToClose`) as a Sprint 76 item.
 
+**CORRECTION (same night)**: the diagnostic log CANNOT settle this as the app stands. Its only write
+sites are rule re-processing (`results_display_screen.dart`) and three IMAP batch problems
+(`generic_imap_adapter.dart`) -- no worker start, claim, connect, heartbeat, stop-request or outcome
+event is logged. The Fold's logs confirm it: `Documents/diagnostics/` holds only `diag_v0.16.0_*`
+files (last 10/02), all re-process lines. **Fix first**: add scan-lifecycle events to the diagnostic
+log (both workers and the manual path), THEN reproduce.
+
+## Gmail add flow on the live 0.17.0 Play build (2026-10-04 23:28-23:31, Fold)
+
+`Screenshot_20261004_2328*` to `_2331*`: Gmail Setup dialog (Sprint 75 wording) -> Sign In Method ->
+Google Sign-In -> native account picker (Google Play services) -> **Chrome "Sign in with Google"
+account chooser** -> "Google hasn't verified this app" (expected: OAuth app in testing; GP-4 HOLD) ->
+signing back in -> consent ("already has some access") -> "[OK] Account kimmeyh@gmail.com saved
+successfully" on Manual Scan -> read-only live scan complete (4s) -> Back to Accounts -> the account
+list now shows the Gmail account. **The Sprint 75 add-flow fix PASSES on the phone.**
+
+**Finding -- the account is chosen TWICE.** In code (`google_auth_service.dart:577-581`) the Chrome
+page appears only when `_signInNative` THROWS -- from `authenticate()` or `authorizeScopes()` -- and
+falls back to `_signInDesktop`. So native sign-in failed on the Fold and the browser fallback did the
+real sign-in (Sprint 75 review SF-12 named this path as unverified). Which call threw is NOT known:
+`Redact.logError` goes to logcat, unreachable without adb. Worth knowing for F246: the browser PKCE
+path may store a refresh token where the native path does not -- unverified; check what this
+account's saved tokens contain.
+
 ## Carry-in from the PR #448 reviews
 
 - **F247** -- behavior tests for navigation and platform-gated paths (startRealScan F238 branches, the
