@@ -28,7 +28,9 @@ Partner Center before saying anything about the Store version.
 
 ## 0.17.0 -- RELEASE HOLD (Harold, 2026-09-27)
 
-**BUILT + VERIFIED, NOT SUBMITTED (2026-10-04, Sprint 75 cycle Phase 8.3)** -- record a submission only after seeing it in each console:
+**MICROSOFT STORE: SUBMITTED FOR CERTIFICATION 2026-10-04 ~10:40pm ET** (Harold's report; not yet observed live -- the public Store product API still showed the 0.16.0 listing, LastUpdateDateUtc 2026-09-24T12:51:35Z, at 10:41pm). **Google Play: upload not yet reported.**
+
+**BUILT + VERIFIED (2026-10-04, Sprint 75 cycle Phase 8.3)** -- record a submission only after seeing it in each console:
 - **MSIX 0.17.0.0**: prod worktree pulled to `main` e724faa (it was 74 commits behind); `msix:create` log shows `--dart-define=APP_ENV=prod --dart-define-from-file=secrets.prod.json`; `--release-self-test --expected-version=0.17.0` RESULT: PASS (6/6); manifest Identity `Version="0.17.0.0"`; 18.4 MB. `D:\Data\Harold\github\spamfilter-multi-prod\mobile-app\build\windows\x64\runner\Release\my_email_spam_filter.msix`. Open: Step 4.2 / Check C (Gmail sign-in URL and About screen on an installed build).
 - **AAB 0.17.0 (versionCode 8)**: built from the dev worktree (app code identical to `main`); read FROM THE ARTIFACT: versionName 0.17.0, versionCode 8, targetSdk 36, minSdk 24, package `com.myemailspamfilter` (no `.dev`), Gmail OAuth scheme present, `AD_ID` absent; 67.2 MB. `D:\Data\Harold\github\spamfilter-multi\mobile-app\build\app\outputs\bundle\prodRelease\app-prod-release.aab`. Open: confirm versionCode 8 is unused in Play Console's App bundle explorer (the superseded 2026-09-25 AAB also carried +8).
 
