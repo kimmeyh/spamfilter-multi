@@ -27,6 +27,7 @@ Format: `- **type**: Description (Issue #N)` where type is feat|fix|chore|docs
 ## [Unreleased]
 
 ### 2026-10-05 (Sprint 76)
+- **fix**: "Stop the background scan and start mine" and Cancel Scan now take effect right after the scan connects, at the start of each folder and before results are applied -- not only once emails have been fetched. Before, a scan that had found nothing yet ignored the request and went on to finish, which is how a stuck background scan on a phone could not be stopped. (Issue #453)
 - **feat**: the diagnostic log now records each scan's progress (start, connect, each folder, how it ended), each scan error with its cause, the background stop request, Gmail sign-in steps, and a line when the app starts or logging is turned on. Before, a scan wrote nothing to it, so a stuck background scan or a failed sign-in could not be explained. Email addresses are shortened; no message content is recorded. (Issue #452)
 - **feat**: Settings shows the folder the diagnostic log is written to. (Issue #452)
 - **fix**: the export folder setting is now called "Export folder" (it also decides where YAML exports and the diagnostic log go), and its reset is a visible "Reset to default" button instead of an unlabeled X. If the export folder you choose is the diagnostics folder itself, the log is no longer put in a second diagnostics folder inside it. (Issue #452)

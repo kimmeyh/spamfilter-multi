@@ -336,6 +336,15 @@ when the log names the cause, not pre-approved here.
   1. Mutations M128-M137 all KILLED. Suite 2,528 / 15 skipped / 0 failed; analyzer clean.
   Existing abstraction checked: `DiagnosticLogger` (extended); `LiveScanLogger` (not usable: manual-only,
   app-private storage).
+- **Task 2 F249 -- PART 1 DONE** (candidate 1, shown by test, no phone log needed): cancel check points
+  after the connect, at each folder start and after the last folder (`EmailScanner._cancelCheckpoint`).
+  Callers of the checkpoint (IMP-1): every scan type through `scanInbox` (manual, background, test,
+  demo); the three cancel sources -- manual Cancel Scan, the F238 heartbeat stop, a timeout's revoked
+  lease -- all now stop at these points; exit unchanged (`ScanCancelledException` handler + `finally`).
+  Re-process does not use `scanInbox` (unaffected). Tooling: none. Tests `f249_cancel_checkpoints_test` 3
+  (stop during connect / during an empty folder / during the last folder); M138-M140 KILLED; suite 2,531 /
+  15 / 0. ADR-0039 amended. **Still open (part 2)**: a stop while the connect or a folder search is itself
+  BLOCKED (no check point inside one awaited call) and an orphaned row -- decided from the 0.17.1 phone log.
 - **Harold, 2026-10-05**: *"can you confirm if we have completed these 2 items (MV74-1, MV74-3) ... if
   not, can we do them next as part of this sprint"*. Not complete (both need a phone build). They move
   UP: they run on the 0.17.1 build together with the F249/F250 reproductions -- MV74-3 now has per-error

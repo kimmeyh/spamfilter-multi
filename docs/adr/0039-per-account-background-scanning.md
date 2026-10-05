@@ -464,7 +464,7 @@ ONLY control channel into a running scan as well:
 - The scanning isolate reads its own row on the EXISTING heartbeat tick
   (`EmailScanProvider._startHeartbeat`, every 30 s) and, when set, calls
   `ScanCoordinator.requestCancel` in ITS OWN isolate. From there the F224 path
-  is unchanged: the scan stops at its next batch boundary, its partial counts
+  is unchanged: the scan stops at its next check point, its partial counts
   are kept, its `finally` releases the lease and closes the IMAP session, and
   `cancelScan` closes the row `interrupted` with the reason "Stopped so your
   manual scan could start" -- never `error`. The tick never closes the row
@@ -484,6 +484,19 @@ ONLY control channel into a running scan as well:
   `scanProvider.wasCancelled` and returns a skip with `stopped: true`: no
   export, no "scan complete" notification, and no 2-6 minute busy retry --
   the user is scanning that account by hand.
+
+**Amendment (Sprint 76, F249) -- the check points.** Until 0.17.0 the only
+check point was a BATCH boundary. On the Fold (2026-10-04) a background scan
+stuck at Found 0 never reached one, so the stop was accepted and ignored; a
+test (F248) then showed the same: accepted at the first folder, and the scan
+went on to "completed" because empty folders produce no batch. The scanner now
+also checks right after the connect, at each folder start, and after the last
+folder (`EmailScanner._cancelCheckpoint`), with the same lease check and the
+same exit (`ScanCancelledException` -> `cancelScan` -> `finally`). This also
+makes the user's Cancel Scan and a timeout's revoked lease take effect at those
+points. Still NOT covered: a stop while the connect or one folder's search is
+itself blocked -- there is no check point inside a single awaited call; the
+F248 diagnostic log on the phone decides whether that case needs a cancel race.
 
 **Why not a second channel.** The F224 token and the MV74-2 heartbeat timer
 are reused as-is: no second cancel path, no second timer. A platform channel

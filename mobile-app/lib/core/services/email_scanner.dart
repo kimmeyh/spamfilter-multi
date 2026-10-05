@@ -238,6 +238,9 @@ class EmailScanner {
         final connectWatch = Stopwatch()..start();
         await platform.loadCredentials(credentials);
         diag('connect', 'done in ${connectWatch.elapsedMilliseconds}ms');
+        // F249: a stop that arrived while connecting is honored now, before
+        // any folder is searched.
+        _cancelCheckpoint(scanLease, 'after connect', diag);
         AppLogger.scan('Step 2: IMAP connected and authenticated');
         if (isLiveScan) {
           await LiveScanLogger.log('Step 2: IMAP/provider connected and authenticated');
@@ -414,6 +417,14 @@ class EmailScanner {
       // only if a folder fetch fails.
       final folderListCache = <List<FolderInfo>>[];
       for (final folderName in folderNames) {
+        // F249 (Sprint 76): a cancel is also honored at each FOLDER start,
+        // not only at a batch boundary. Before this, a scan that had fetched
+        // nothing yet (Found 0 -- the Fold's stuck row) never reached a
+        // checkpoint, so an ACCEPTED stop was ignored and the scan went on to
+        // "completed" (shown by f249_cancel_checkpoints_test). Thrown OUTSIDE
+        // the per-folder try below, so it exits through the scan's cancel
+        // handler and `finally`, like the batch checkpoint.
+        _cancelCheckpoint(scanLease, 'folder "$folderName" start', diag);
         AppLogger.scan('Step 4: Fetching folder "$folderName" (daysBack=$daysBack)...');
         // [NEW] ISSUE #128: Report folder being fetched
         scanProvider.setCurrentFolder(folderName);
@@ -587,6 +598,9 @@ class EmailScanner {
           scanProvider.recordFolderFetchError(folderName, e.toString());
         }
       }
+      // F249: a stop that arrived during the LAST folder's fetch is honored
+      // before any result is acted on, rather than after the scan completes.
+      _cancelCheckpoint(scanLease, 'after the last folder', diag);
       AppLogger.scan('Step 4: COMPLETE - Total messages across all folders: $totalFetched');
       if (isLiveScan) {
         await LiveScanLogger.log('Step 4 COMPLETE: total messages across all folders = $totalFetched');
@@ -1533,6 +1547,25 @@ class EmailScanner {
       }
       rethrow;
     }
+  }
+
+  /// F249 (Sprint 76): a cooperative cancel checkpoint outside the batch
+  /// sink. Same rule as the batch checkpoint -- checks THIS scan's lease, so
+  /// a manual Cancel Scan, a background stop requested for a manual scan
+  /// (F238) and a timeout's revoked lease all stop here -- and the same exit:
+  /// the throw reaches scanInbox's `ScanCancelledException` handler and its
+  /// `finally` (lease release, disconnect). [where] is written to the
+  /// diagnostic log when the stop is taken.
+  void _cancelCheckpoint(
+    ScanLease? lease,
+    String where,
+    void Function(String stage, [String detail]) diag,
+  ) {
+    if (lease != null && lease.info.cancelRequested) {
+      AppLogger.scan('F249: cancellation observed $where -- stopping the scan');
+      diag('cancel', 'observed $where');
+    }
+    ScanCoordinator.instance.throwIfCancelled(lease);
   }
 
   /// Sprint 38 F6c Phase 2 (Issue #250) + Sprint 38 Round 1 IMAP extension
