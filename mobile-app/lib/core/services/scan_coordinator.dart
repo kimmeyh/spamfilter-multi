@@ -88,6 +88,13 @@ class ActiveScanInfo {
   /// provider on its way out -- the provider may already belong to the next
   /// scan.
   bool revoked = false;
+
+  /// Sprint 76: WHO asked this scan to stop, for the diagnostic log only.
+  /// A 0.17.1 log read `stopped (cancel) ... revoked=true`, and with the
+  /// account's background scan off that still left two causes (the F220
+  /// backgrounding handler, or a timeout) that the line could not tell apart.
+  /// Set alongside [cancelRequested]; first writer wins.
+  String? stopReason;
 }
 
 /// A granted right to scan. Pass back to [ScanCoordinator.release] exactly
@@ -213,7 +220,10 @@ class ScanCoordinator {
   /// Scoped to [accountId] so cancelling one account's scan can never stop
   /// another's (the card's account-scoping NFR). Returns true when a matching
   /// active scan was asked to stop.
-  bool requestCancel({required String accountId}) {
+  bool requestCancel({
+    required String accountId,
+    String reason = 'stop requested',
+  }) {
     final holder = _active;
     if (holder == null) return false;
     if (holder.accountId != accountId) {
@@ -222,6 +232,7 @@ class ScanCoordinator {
       return false;
     }
     holder.cancelRequested = true;
+    holder.stopReason ??= reason;
     _logger.i('ScanCoordinator: cancel requested for the active '
         '${holder.scanType} scan');
     return true;
@@ -296,6 +307,7 @@ class ScanCoordinator {
   void releaseActiveByOwner({
     required String scanType,
     required String accountId,
+    String reason = 'timed out',
   }) {
     final holder = _active;
     if (holder == null) return;
@@ -313,6 +325,7 @@ class ScanCoordinator {
     // per-account lock admit a second scan beside it.
     holder.cancelRequested = true;
     holder.revoked = true;
+    holder.stopReason ??= reason;
     _handOffOrIdle();
   }
 

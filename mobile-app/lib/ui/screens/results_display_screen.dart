@@ -3357,6 +3357,19 @@ class _ResultsDisplayScreenState extends State<ResultsDisplayScreen> {
   /// case lets the capture fire on the next rebuild after the async load.
   void _captureInitialNoRuleCount() {
     if (_initialNoRuleCount != null) return;
+    // Sprint 76 (Fold, 0.17.1): NOT while a live scan is still running. The
+    // screen renders while results stream in, so the first capture took the
+    // count at that moment -- "0 of 1 ... 148 remaining", then "22 of 1".
+    // Until the scan completes, _computeNoRuleStats falls back to the live
+    // count; the full total is captured on the first render after it ends.
+    // (The Sprint 38 Round 8 re-entry semantic is unchanged.)
+    if (widget.historicalScanId == null) {
+      final status =
+          Provider.of<EmailScanProvider>(context, listen: false).status;
+      if (status == ScanStatus.scanning || status == ScanStatus.paused) {
+        return;
+      }
+    }
     final stats = _computeNoRuleStats();
     final total = stats.remaining + stats.addressed;
     if (total == 0) return; // wait for async load (or genuinely empty scan)
@@ -3795,7 +3808,9 @@ class _ResultsDisplayScreenState extends State<ResultsDisplayScreen> {
   void _cancelRunningScan(
       BuildContext context, EmailScanProvider scanProvider) {
     final requested =
-        ScanCoordinator.instance.requestCancel(accountId: widget.accountId);
+        ScanCoordinator.instance.requestCancel(
+            accountId: widget.accountId,
+            reason: 'user tapped Stop (Results)');
     final messenger = ScaffoldMessenger.of(context);
     messenger.hideCurrentSnackBar();
     messenger.showSnackBar(

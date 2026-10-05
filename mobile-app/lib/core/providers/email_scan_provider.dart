@@ -362,7 +362,9 @@ class EmailScanProvider extends ChangeNotifier {
     // Same guard after the read (M-1): the scan may have ended meanwhile.
     if (!identical(_heartbeatTimer, timer)) return;
     final accepted =
-        ScanCoordinator.instance.requestCancel(accountId: accountId);
+        ScanCoordinator.instance.requestCancel(
+            accountId: accountId,
+            reason: 'stop request from another scan (F238)');
     // F248: the F249 evidence point -- was the request seen, and did this
     // isolate's coordinator have a lease to cancel? Written when first seen
     // and when the answer CHANGES, not on every tick: the request stays on

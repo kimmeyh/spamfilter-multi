@@ -506,7 +506,9 @@ class _ScanProgressScreenState extends State<ScanProgressScreen>
   /// rather than leaving the tap looking ignored.
   void _cancelScan(BuildContext context, EmailScanProvider scanProvider) {
     final requested =
-        ScanCoordinator.instance.requestCancel(accountId: widget.accountId);
+        ScanCoordinator.instance.requestCancel(
+            accountId: widget.accountId,
+            reason: 'user tapped Stop (Scan progress)');
     final messenger = ScaffoldMessenger.of(context);
     messenger.hideCurrentSnackBar();
     messenger.showSnackBar(

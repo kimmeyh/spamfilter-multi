@@ -54,12 +54,15 @@ void main() {
   group('C-1: the handler frees the COORDINATOR, not just the provider', () {
     test('backgrounding an active scan releases the lease', () async {
       final coordinator = ScanCoordinator.instance;
-      await coordinator.acquire(scanType: 'manual', accountId: accountId);
+      final lease =
+          await coordinator.acquire(scanType: 'manual', accountId: accountId);
       final provider = await scanningProvider();
 
       failScanInterruptedByBackgrounding(
           isAndroid: true, scanProvider: provider);
 
+      // Sprint 76: the diagnostic "stopped" line reads this.
+      expect(lease.info.stopReason, 'app moved to the background (F220)');
       expect(coordinator.active, isNull,
           reason: 'THE C-1 ASSERTION. Its absence is why the defect shipped: '
               'errorScan alone leaves the lease held and every later scan '

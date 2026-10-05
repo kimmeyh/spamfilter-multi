@@ -1090,6 +1090,10 @@ class EmailScanner {
           'deleted=${scanProvider.deletedCount} moved=${scanProvider.movedCount} '
           'safe=${scanProvider.safeSendersCount} noRule=${scanProvider.noRuleCount} '
           'errors=${scanProvider.errorCount} '
+          // Sprint 76: the 0.17.1 Fold log read found=638 processed=163; the
+          // F203 already-filed skips are the expected difference, and
+          // printing them shows whether they account for all of it.
+          'alreadyFiled=${scanProvider.skippedAlreadyFiledCount} '
           'in ${(scanWatch.elapsedMilliseconds / 1000).toStringAsFixed(1)}s');
 
       // F90 (Sprint 39): write live-scan summary + per-account CSV/XLSX
@@ -1138,7 +1142,8 @@ class EmailScanner {
       AppLogger.scan('SCAN CANCELLED by the user');
       diag('outcome',
           'stopped (cancel) processed=${scanProvider.processedCount} '
-          'revoked=${scanLease?.info.revoked == true}');
+          'revoked=${scanLease?.info.revoked == true} '
+          'reason=${scanLease?.info.stopReason ?? 'unknown'}');
       if (isLiveScan) {
         await LiveScanLogger.log(
             'SCAN CANCELLED accountId=${Redact.accountId(accountId)}');

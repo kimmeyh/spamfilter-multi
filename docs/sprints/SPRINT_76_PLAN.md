@@ -381,3 +381,25 @@ when the log names the cause, not pre-approved here.
   not, can we do them next as part of this sprint"*. Not complete (both need a phone build). They move
   UP: they run on the 0.17.1 build together with the F249/F250 reproductions -- MV74-3 now has per-error
   causes in the log, MV74-1 has worker start/exit lines that show each Doze firing.
+- **0.17.1 phone log + screenshots (Fold, 2026-10-05 07:06-07:26), analyzed.** Harold: AOL 15-minute
+  background scanning was turned OFF on purpose for manual-scan debugging -- so no worker lines is expected,
+  and the 07:08 `stopped (cancel) processed=1 revoked=true` was NOT a background stop. `revoked=true` is set
+  only by `releaseActiveByOwner` (the F220 backgrounding handler, or a timeout); the line could not say which.
+  Found 638 / processed 163 (= deleted 14 + safe 1 + noRule 148); the 475 difference is expected to be F203
+  already-filed skips, but the line did not print them.
+  - **New defect F251 (#456) -- DONE**: the Results "M of N No Rule addressed" banner read "0 of 1 ... 148
+    remaining", then "22 of 1". `_captureInitialNoRuleCount` captured the total on the FIRST render with any
+    No Rule email, and Results renders while a live scan streams in. Fix: no capture while a live
+    (non-historical) scan is scanning or paused; the banner uses the live count until the scan ends.
+    Callers (IMP-1): one, `_buildNoRuleProgressFooter`; saved scans unaffected (Sprint 38 guard kept).
+    Test `s76_no_rule_banner_live_scan_test` (red before, green after); M148 KILLED.
+  - **Diagnostics added**: `ActiveScanInfo.stopReason` (first writer wins), set by every stop source --
+    user Stop on Results / Scan progress, the F238 heartbeat stop request, the F220 backgrounding handler,
+    a timeout (default). The `stopped` line prints `reason=`; the `completed` line prints `alreadyFiled=`.
+    Callers of `requestCancel` / `releaseActiveByOwner` (IMP-1): six, all listed above; the parameter is
+    optional and named, so no caller's behavior changes. Tests extended in `scan_lock_review_test`,
+    `f220_lifecycle_handler_test`, `f248_scan_diagnostic_log_test`; M149-M153 KILLED.
+  - Suite 2,536 / 15 skipped / 0 failed; analyzer clean; policy gates 130/130.
+  - **Version 0.17.3+11** (plan rule: the code above missed the 0.17.2 / versionCode 10 build Harold is
+    uploading); provisional 0.17.3 notes. 0.17.2 is still the build to run the phone checklist on; 0.17.3
+    adds the banner fix and the stop reason.

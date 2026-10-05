@@ -202,6 +202,9 @@ void main() {
     expect(log, contains('stop-request found on row'));
     expect(log, contains('coordinator accepted'));
     expect(log, contains('outcome -- stopped (cancel)'));
+    // Sprint 76: the line names WHO stopped it (0.17.1 could not tell an F220
+    // backgrounding revoke from a timeout).
+    expect(log, contains('reason=stop request from another scan (F238)'));
     expect('stop-request found on row'.allMatches(log).length, 1,
         reason: 'logged once per scan, not once per heartbeat tick');
   });
@@ -248,6 +251,8 @@ void main() {
     expect(log, contains(RegExp(r'\[scan/persist\] .* stored \d+ action record\(s\), [1-9]\d* No Rule row\(s\)')),
         reason: 'the sample mail matches no rule, so No Rule rows are stored');
     expect(log, contains(RegExp(r'outcome -- completed found=[1-9]\d* .* in \d+\.\ds')));
+    // Sprint 76: found minus processed was unexplained on the Fold (638/163).
+    expect(log, contains(RegExp(r'outcome -- completed .* alreadyFiled=\d+ in ')));
     expect(log, isNot(contains('@bad.example')),
         reason: 'no sender addresses from the mail itself');
   });

@@ -38,6 +38,23 @@ void main() {
       expect(zombie.info.revoked, isTrue);
       expect(() => c.throwIfCancelled(zombie),
           throwsA(isA<ScanCancelledException>()));
+      expect(zombie.info.stopReason, 'timed out',
+          reason: 'Sprint 76: the default reason is the timeout path');
+    });
+
+    test('Sprint 76: the stop reason is the FIRST one set -- a later revoke '
+        'does not overwrite the user\'s stop', () async {
+      // What this does NOT catch: a call site passing the wrong reason text;
+      // the F220 and F238 texts are pinned by f220_lifecycle_handler_test
+      // and f248_scan_diagnostic_log_test respectively.
+      final c = ScanCoordinator.instance;
+      final lease = await c.acquire(scanType: 'manual', accountId: 'acct-a');
+      c.requestCancel(accountId: 'acct-a', reason: 'user tapped Stop');
+      c.releaseActiveByOwner(
+          scanType: 'manual',
+          accountId: 'acct-a',
+          reason: 'app moved to the background (F220)');
+      expect(lease.info.stopReason, 'user tapped Stop');
     });
 
     test('the NEXT scan is not stopped by the old scan\'s cancel, and the old '

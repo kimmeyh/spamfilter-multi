@@ -529,6 +529,7 @@ void failScanInterruptedByBackgrounding({
     ScanCoordinator.instance.releaseActiveByOwner(
       scanType: 'manual',
       accountId: accountId,
+      reason: 'app moved to the background (F220)',
     );
   }
 
