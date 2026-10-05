@@ -27,6 +27,7 @@ import '../../util/redact.dart';
 import '../../adapters/email_providers/email_provider.dart' show Credentials;
 import '../widgets/app_bar_with_exit.dart';
 import '../widgets/battery_optimization_row.dart'; // F252 (Sprint 76)
+import '../widgets/new_mail_trigger_row.dart'; // F253 (Sprint 76)
 import '../widgets/standard_app_bar_actions.dart';
 import 'folder_selection_screen.dart';
 import 'help_screen.dart';
@@ -1566,6 +1567,9 @@ class _SettingsScreenState extends State<SettingsScreen> with SingleTickerProvid
         // Battery > Unrestricted. Shown whenever background scanning is on.
         if (Platform.isAndroid && _backgroundScanEnabled)
           const BatteryOptimizationRow(),
+        // F253 (Sprint 76): event-driven scans from mail-app notifications.
+        if (Platform.isAndroid && _backgroundScanEnabled)
+          const NewMailTriggerRow(),
         const Divider(),
         // [UPDATED] FB-4: Test section moved before Frequency
         _buildSectionHeader('Test'),

@@ -27,6 +27,10 @@ platforms, but a version may advance without being submitted everywhere). Ask be
   noise outweighs the churn, a cosmetic one may not.
 - **An update does NOT reset any tester's 14-day clock.** Opting OUT does. Shipping a fix mid
   test is safe; it is only the tester's continuous opt-in that matters.
+- **PRODUCTION releases only -- notification access (F253, ADR-0044).** The app declares a
+  notification listener ("Scan when new mail arrives"). Before the FIRST production release that
+  carries it: (1) the store listing describes the feature and that only the posting app's name is
+  read; (2) the Data safety form is reviewed for it. Closed testing does not need either.
 
 ---
 

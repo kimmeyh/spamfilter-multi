@@ -5,6 +5,7 @@ import android.content.Intent
 import android.net.Uri
 import android.os.PowerManager
 import android.provider.Settings
+import androidx.core.app.NotificationManagerCompat
 import io.flutter.embedding.android.FlutterActivity
 import io.flutter.embedding.engine.FlutterEngine
 import io.flutter.plugin.common.MethodChannel
@@ -27,6 +28,7 @@ class MainActivity : FlutterActivity() {
     private companion object {
         const val CHANNEL = "com.myemailspamfilter/doze_alarm"
         const val BATTERY_CHANNEL = "com.myemailspamfilter/battery"
+        const val NEW_MAIL_CHANNEL = "com.myemailspamfilter/new_mail_trigger"
     }
 
     override fun configureFlutterEngine(flutterEngine: FlutterEngine) {
@@ -111,6 +113,51 @@ class MainActivity : FlutterActivity() {
                 }
 
                 else -> result.notImplemented()
+            }
+        }
+
+        // F253 (Sprint 76): "Scan when new mail arrives". The enabled flag lives
+        // in native preferences because the listener -- which has no Flutter
+        // engine -- is what reads it.
+        MethodChannel(
+            flutterEngine.dartExecutor.binaryMessenger,
+            NEW_MAIL_CHANNEL,
+        ).setMethodCallHandler { call, result ->
+            try {
+                val prefs = getSharedPreferences(
+                    MailNotificationListener.PREFS, Context.MODE_PRIVATE,
+                )
+                when (call.method) {
+                    "isAccessGranted" -> result.success(
+                        NotificationManagerCompat.getEnabledListenerPackages(this)
+                            .contains(packageName),
+                    )
+
+                    "openAccessSettings" -> {
+                        startActivity(
+                            Intent(Settings.ACTION_NOTIFICATION_LISTENER_SETTINGS)
+                                .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK),
+                        )
+                        result.success(true)
+                    }
+
+                    "isEnabled" -> result.success(
+                        prefs.getBoolean(MailNotificationListener.KEY_ENABLED, false),
+                    )
+
+                    "setEnabled" -> {
+                        val on = call.argument<Boolean>("enabled") ?: false
+                        prefs.edit()
+                            .putBoolean(MailNotificationListener.KEY_ENABLED, on)
+                            .apply()
+                        result.success(true)
+                    }
+
+                    else -> result.notImplemented()
+                }
+            } catch (t: Throwable) {
+                // Same contract as the other channels: report, never throw.
+                result.success(null)
             }
         }
     }

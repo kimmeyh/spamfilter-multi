@@ -617,6 +617,18 @@ when the log names the cause, not pre-approved here.
   (M154 first written non-compiling = INVALID, rewritten). Android debug build compiles (exit 0). Suite
   2,550 / 15 / 0; analyzer clean. Samsung menu wording in the row is from a secondary source -- check on
   the Fold.
+- **Task 6 F253 -- CODE DONE (R-1 to R-8); AC-5 pending the 0.17.3 Fold build.** `MailNotificationListener`
+  (reads only `sbn.packageName` / `sbn.postTime`), pure `MailNotificationPolicy` (allowlist, switch, 2-minute
+  gap), `DozeScanTrigger.enqueueAllAccounts` (unique work, KEEP, network required), channel
+  `com.myemailspamfilter/new_mail_trigger` (flag in native preferences), Settings switch
+  `NewMailTriggerRow` (off by default; turning on opens Notification access; status re-read on resume),
+  worker line `trigger=notification app=<pkg> delay=Ns`. ADR-0044; Play production precondition in
+  `GOOGLE_PLAY_RELEASE_PROCESS.md`. Callers (IMP-1): no guard changed; the worker's all-accounts path
+  gates each account on `getEffectiveBackgroundEnabled` (line 149). Tests: the project's first JVM test
+  `MailNotificationPolicyTest` (5, run via `gradlew :app:testDevDebugUnitTest` -- CI runs `flutter test`
+  only), `f253_new_mail_switch_test` (9); M168-M175 KILLED. Debug APK builds (exit 0; manifest merges).
+  Suite 2,564 / 15 / 0; analyzer clean. Unverified until the Fold: the AOL and Yahoo package names, and
+  whether a triggered scan reaches the network while idle without Unrestricted.
 - **0.17.2 Fold log (08:57-14:22) analysis, 2026-10-05**: Gmail safe-sender move out of Spam fails 400
   "Cannot both add and remove the same label" (`gmail_api_adapter.dart:1343`, `:1650` add AND remove
   INBOX); AOL re-process safe-sender moves fail and are retried on every rule (2 -> 29), cause not in the

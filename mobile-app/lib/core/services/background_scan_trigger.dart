@@ -21,6 +21,10 @@ const String kTriggerSourceKey = 'triggerSource';
 /// Must match `DozeScanTrigger.KEY_TRIGGER_AT_MS` in `DozeScanTrigger.kt`.
 const String kTriggerAtMsKey = 'triggerAtMs';
 
+/// F253: the mail app (package name) whose notification started the scan.
+/// Must match `DozeScanTrigger.KEY_TRIGGER_APP` in `DozeScanTrigger.kt`.
+const String kTriggerAppKey = 'triggerApp';
+
 /// Describe what started this worker run, e.g. `trigger=doze-alarm delay=42s`.
 ///
 /// - [isTest]: the Settings "Test Background Scan" one-off.
@@ -38,6 +42,8 @@ String describeBackgroundTrigger({
   if (source is! String || source.isEmpty) return 'trigger=periodic';
 
   final buffer = StringBuffer('trigger=$source');
+  final app = inputData?[kTriggerAppKey];
+  if (app is String && app.isNotEmpty) buffer.write(' app=$app');
   final at = inputData?[kTriggerAtMsKey];
   if (at is num) {
     final delayMs = now.millisecondsSinceEpoch - at.toInt();

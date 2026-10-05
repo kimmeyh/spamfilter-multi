@@ -2,7 +2,9 @@ package com.myemailspamfilter
 
 import android.content.Context
 import android.util.Log
+import androidx.work.Constraints
 import androidx.work.ExistingWorkPolicy
+import androidx.work.NetworkType
 import androidx.work.OneTimeWorkRequest
 import androidx.work.WorkManager
 import dev.fluttercommunity.workmanager.BackgroundWorker
@@ -121,5 +123,50 @@ object DozeScanTrigger {
             // missed; the alarm has already re-armed, so the next one fires.
             Log.e(TAG, "enqueue failed: ${t.message}")
         }
+    }
+
+    /** Must match `kTriggerAppKey` in `background_scan_trigger.dart`. */
+    const val KEY_TRIGGER_APP = "triggerApp"
+    private const val UNIQUE_NEW_MAIL = "f253_new_mail_scan"
+
+    /**
+     * F253 (Sprint 76): one scan of EVERY account (no accountId -- the worker's
+     * all-accounts path, where each account's own background switch and the
+     * per-account claim still decide), started by a mail app's notification.
+     *
+     * KEEP, not REPLACE: a notification that arrives while a triggered scan is
+     * queued or running must not cancel it or stack a second (R-5). Requires a
+     * network connection, so a trigger in a no-network moment waits instead of
+     * running a scan that can only fail.
+     */
+    fun enqueueAllAccounts(
+        context: Context,
+        source: String,
+        triggerAtMs: Long,
+        sourceApp: String,
+    ) {
+        val input = buildTaskInputData(
+            dartTask = TASK_NAME,
+            payload = mapOf(
+                KEY_TRIGGER_SOURCE to source,
+                KEY_TRIGGER_AT_MS to triggerAtMs,
+                KEY_TRIGGER_APP to sourceApp,
+            ),
+            uniqueName = UNIQUE_NEW_MAIL,
+        )
+        val request = OneTimeWorkRequest.Builder(BackgroundWorker::class.java)
+            .setInputData(input)
+            .setConstraints(
+                Constraints.Builder()
+                    .setRequiredNetworkType(NetworkType.CONNECTED)
+                    .build()
+            )
+            .build()
+        WorkManager.getInstance(context).enqueueUniqueWork(
+            UNIQUE_NEW_MAIL,
+            ExistingWorkPolicy.KEEP,
+            request,
+        )
+        Log.i(TAG, "scan enqueued after a mail notification")
     }
 }

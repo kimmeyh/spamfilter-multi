@@ -579,6 +579,16 @@ in Doze and is outside the App Standby bucket limits. The app does not declare
 `REQUEST_IGNORE_BATTERY_OPTIMIZATIONS` (restricted by Google Play); the user
 chooses Unrestricted.
 
+**Scan when new mail arrives** (F253, Sprint 76, ADR-0044; Android only):
+`MailNotificationListener` (a `NotificationListenerService`) reads only the
+posting package name and time. A notification from an allowlisted mail app
+(`MailNotificationPolicy`) enqueues ONE all-accounts one-off worker
+(`DozeScanTrigger.enqueueAllAccounts`, unique work + KEEP, network required,
+at most one per 2 minutes); each account's background switch and claim still
+decide. Off by default: the Settings switch (flag in native preferences,
+channel `com.myemailspamfilter/new_mail_trigger`) plus Android Notification
+access.
+
 ### Rule Evaluation Flow (ADR-0005)
 
 ```
