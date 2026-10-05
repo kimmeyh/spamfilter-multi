@@ -1,91 +1,316 @@
-# Sprint 76 Plan -- STUB (scope not yet selected)
+# Sprint 76 Plan -- 0.17.0 field issues first (F248, F249, F250), release 0.17.1
 
-**Status**: **STUB -- NOT PLANNED, NOT APPROVED.** Created at Sprint 75 Phase 7.7 to hold the
-carry-ins. Planning (Phase 3) replaces this file.
+**Branch**: `feature/20261004_Sprint_76` | **Version**: 0.17.0+8 -> **0.17.1+9** (PATCH: fixes and
+diagnostics only; Play needs versionCode 9) | **Status**: APPROVED 2026-10-04 (see "Phase 3.7 approval")
 
-## Committed by Harold at Sprint 75 approval (Q3)
+**Why this sprint is shaped this way.** 0.17.0 went live on both stores on 2026-10-04. The same night the
+Fold showed two field defects that no Windows run could have caught, and a third finding made them
+undiagnosable: the diagnostic log records no scan or sign-in event at all. Harold: *"Need to work any
+issues before choosing backlog"* (Q1), then Q3 = 1 (these three as Sprint 76's first cards), then
+*"continue with i-\*"*. Backlog scope selection (Phase 8.4 pass 2) resumes after these ship.
 
-*"Can't run until 0.17.0 goes live (next sprint)"* -- the phone validation checklist runs in Sprint 76,
-on the live 0.17.0 phone build (S24+ / Fold8; no adb -- screenshots over MTP into
-`validation-screenshots/sprint-76/`).
+## ADR-0042 applies to EVERY task
 
-- **Phone validation checklist**:
-  1. MV74-1 -- background scans fire in Doze; the schedule survives a reboot (over hours) (#428).
-  2. A block rule added from a saved scan moves the mail; the toast reports N of N (F232 AC-2).
-  3. F205 -- classify every scan error on the current build, or record zero (#433).
-  4. The per-account lock under a real Doze batch -- never two `in_progress` rows for one account.
-  5. The 2-6 minute busy wait against Android's ~10-minute worker limit.
-  6. Android YAML export saves through the system dialog, starting in the export folder.
-  7. F238 -- "Stop the background scan and start mine" on the phone (#441).
-  8. F239 -- Gmail "Sign In Again" on the phone; a background scan more than about an hour after the
-     app was last opened skips with "Gmail needs you to sign in again" (expected: the renewal spike
-     failed, see F246) (#442).
+Every change is shared Flutter/Dart code unless the card declares an exception. F249 and F250 were found
+on Android; each card states whether the defect and the fix exist on Windows too.
 
-## Device finding on the live 0.17.0 Play build (2026-10-04, Fold, before planning)
+## Evidence gathered before planning (2026-10-04, Fold, live 0.17.0 Play build)
 
-**F238 stop did NOT work on the phone.** Screenshots `validation-screenshots/sprint-76/Screenshot_20261004_2320*.png`
-to `_2325*.png`: an AOL background scan started 11:20 PM sat "In progress" with Found 0; "Stop the
-background scan and start mine" at 11:21 ended at 11:24 with "The background scan did not stop ... your
-scan was not started"; at 11:25 the row was still "In progress", Found 0. An earlier AOL background row
-(2:52 PM) had been closed as "Scan stopped responding". The app behaved honestly (no second scan).
+Screenshots: `validation-screenshots/sprint-76/Screenshot_20261004_2320*` to `_2348*`.
 
-**Cause NOT established** -- two candidates, which the diagnostic log separates:
-1. The worker is blocked BEFORE its first cancel checkpoint (connect/login). The heartbeat finds the
-   request and calls `ScanCoordinator.requestCancel`, but `throwIfCancelled` runs only at batch
-   boundaries, so a hung connect is never interrupted. Windows validation stopped a scan that was
-   already fetching, which is why it passed there.
-2. No live worker holds the row (an orphaned `in_progress` row) -- nothing can honor the request, and
-   the row is only reaped once its heartbeat is 5 minutes stale.
+1. **F238 stop did not stop a stuck AOL background scan** (11:20-11:25 PM): row "In progress", Found 0;
+   "Stop the background scan and start mine" at 11:21; at 11:24 "The background scan did not stop ...
+   your scan was not started"; at 11:25 still "In progress", Found 0. An earlier AOL row (2:52 PM) was
+   closed as "Scan stopped responding". The app stayed honest (no second scan).
+2. **Gmail add flow passes, but the account is picked twice** (11:28-11:31 PM): native picker, then a
+   Chrome "Sign in with Google" chooser. Harold (Q2 = 1): he tapped the account in the native picker and
+   the Chrome page appeared anyway. In code the Chrome page appears only when `_signInNative` THROWS
+   (`google_auth_service.dart:573-582`), so native sign-in failed AFTER the pick.
+3. **The diagnostic log works but records nothing about scans or sign-in.** Its write sites are 9 calls in
+   two files: three IMAP batch failures (`generic_imap_adapter.dart`) and six Results-screen re-process
+   and rule-action events (`results_display_screen.dart`). A guaranteed write (opening a saved scan, the
+   C-1 "screen-load re-evaluation" line) produced `diag_v0.17.0_2026-10-04.log` at 23:45:50 -- in
+   `Documents/diagnostics/diagnostics/`, because the export folder setting had been
+   `Documents/diagnostics` (Harold reset it to `Documents`). Not a regression.
+4. **The export folder row**: the reset control is a bare X (tooltip only -- invisible on a phone), and
+   the row is titled "CSV Export Directory" although it also decides where the diagnostic log and YAML
+   exports go.
 
-**Settle it first**: Settings > diagnostic logging ON on the Fold, reproduce (background scan stuck at
-Found 0, then the stop), export the log in-app, pull over MTP. Then card the fix (likely a cancel/timeout
-around connect, or a stale-heartbeat close in `waitForScanToClose`) as a Sprint 76 item.
+---
 
-**CORRECTION (same night)**: the diagnostic log CANNOT settle this as the app stands. Its only write
-sites are rule re-processing (`results_display_screen.dart`) and three IMAP batch problems
-(`generic_imap_adapter.dart`) -- no worker start, claim, connect, heartbeat, stop-request or outcome
-event is logged. The Fold's logs confirm it: `Documents/diagnostics/` holds only `diag_v0.16.0_*`
-files (last 10/02), all re-process lines. **Fix first**: add scan-lifecycle events to the diagnostic
-log (both workers and the manual path), THEN reproduce.
+## Task 0 -- Version 0.17.1+9 and its release notes (Phase 3.7.0b)
 
-## Gmail add flow on the live 0.17.0 Play build (2026-10-04 23:28-23:31, Fold)
+**Value**: Prevents a dev build reading as production (F190), and gives Play an unused versionCode (9).
 
-`Screenshot_20261004_2328*` to `_2331*`: Gmail Setup dialog (Sprint 75 wording) -> Sign In Method ->
-Google Sign-In -> native account picker (Google Play services) -> **Chrome "Sign in with Google"
-account chooser** -> "Google hasn't verified this app" (expected: OAuth app in testing; GP-4 HOLD) ->
-signing back in -> consent ("already has some access") -> "[OK] Account kimmeyh@gmail.com saved
-successfully" on Manual Scan -> read-only live scan complete (4s) -> Back to Accounts -> the account
-list now shows the Gmail account. **The Sprint 75 add-flow fix PASSES on the phone.**
+**Requirements**:
+- R-1: `pubspec.yaml` `version: 0.17.1+9`, `msix_version: 0.17.1.0`.
+- R-2: `docs/store-assets/RELEASE_NOTES_0.17.1_windows.md` and `_play.md` exist (PROVISIONAL until
+  Phase 7.7), one line per paragraph, Windows text <= 1,500, Play <= 500.
 
-**Finding -- the account is chosen TWICE.** In code (`google_auth_service.dart:577-581`) the Chrome
-page appears only when `_signInNative` THROWS -- from `authenticate()` or `authorizeScopes()` -- and
-falls back to `_signInDesktop`. So native sign-in failed on the Fold and the browser fallback did the
-real sign-in (Sprint 75 review SF-12 named this path as unverified). Which call threw is NOT known:
-`Redact.logError` goes to logcat, unreachable without adb. Worth knowing for F246: the browser PKCE
-path may store a refresh token where the native path does not -- unverified; check what this
-account's saved tokens contain.
+**Affected components / files**: `mobile-app/pubspec.yaml`; `docs/store-assets/`; `docs/STORE_VERSION_STATUS.md` Dev row.
 
-## Carry-in from the PR #448 reviews
+**Acceptance criteria**:
+- AC-1: `version_consistency_test`, `dev_version_ahead_test`, `release_notes_test` pass.
 
-- **F247** -- behavior tests for navigation and platform-gated paths (startRealScan F238 branches, the
-  Gmail add-flow route and its fallback screens, Windows token-path tests on CI, the Android
-  `initialize` exception path, Sign In Again details, a mutation-test self-test). Full card in
-  `ALL_SPRINTS_MASTER_PLAN.md`.
+**Tests to write**: none new (existing gates).
 
-## Carry-ins from the Sprint 75 retrospective (Category 13)
+**Definition of Done**: None -- default DoD only.
 
-- None (Harold and Claude). The checklist above was already planned at Sprint 75 approval.
+**Model**: Opus 5.5 (main session) -- *why not cheaper*: two-line change bundled with the session; no delegation overhead.
 
-## Backlog candidates (for scope selection)
+**Step-types**: DATA, DOCS | **Est-Effort**: 10-20m
 
-- F246 server-side Gmail token exchange (Class-1, needs a backend); F245 no duplicate No Rule rows
-  from repeated background scans; F244 notify on a needs-sign-in skip; F240 body-rule sub-types;
-  F241 unused query; F242 span-replacing edit scripts.
+---
 
-## Process notes
+## Task 1 -- F248: Diagnostic log records scan lifecycle and sign-in events (Priority 1, Issue #452)
 
-- Sprint 75 retro IMP-6: every coding sub-agent prompt carries the delegation checklist
-  (`docs/SPRINT_PLANNING.md`), and the card records that it was included.
-- Sprint 75 retro IMP-4: tooling that launches or kills the exe (WinWright runner, pre-build cleanup)
-  is listed under the card's "Callers" field.
-- `scripts/mutation-test.ps1` now runs a baseline and reports a compile error as INVALID (IMP-1).
+**Value**: This enables diagnosing F249 and F250 (and any future field defect) from a log the user can
+hand over, instead of from screenshots, which show state but never cause.
+
+**Requirements**:
+- R-1: Every scan -- manual, background (Android WorkManager, Windows Task Scheduler) and Test Background
+  Scan -- writes a line at each stage when diagnostic logging is on: worker start/exit (with the task or
+  trigger name), early skip (live scan found), claim granted / refused, credential load / connect start,
+  connect done (elapsed ms) or failed (error type), each folder fetch start, stop request found by the
+  heartbeat and whether the coordinator accepted it, and the outcome (completed with counts / stopped /
+  skipped with reason / timed out / error with type).
+- R-2: The manual side of F238 writes: stop requested (row id), wait result (closed after N s / not
+  closed after N s).
+- R-3: Gmail sign-in writes: native `authenticate()` result or failure, `authorizeScopes()` result or
+  failure (exception type and message), and whether the browser fallback was taken and how it ended.
+- R-4: A line is written when logging is turned ON and at each app start while it is on (version,
+  environment, platform), so the file appears immediately and "is logging working" is observable.
+- R-5: Every address and account id in these lines is redacted (`Redact.email` / `Redact.accountId`):
+  the log is a file the user shares.
+- R-6: Settings shows the folder the log is actually written to, under the diagnostic-logging toggle.
+- R-7: The export folder row is titled "Export folder" (it governs CSV, YAML and the diagnostic log), and
+  its reset control is labeled "Reset to default" in visible text, not an icon alone.
+- R-8: If the chosen export folder is itself named `diagnostics`, the log is not nested in a second one.
+- R-9: Logging never fails or slows a scan: every call is fire-and-forget (`unawaited`), and a logging
+  error is swallowed (existing `DiagnosticLogger` contract).
+
+**Affected components / files**:
+- `lib/core/services/diagnostic_logger.dart` -- a `kindScan` / `kindSignIn` / `kindApp` set; an `event()`
+  convenience; R-8 path rule; a getter for the resolved folder (R-6).
+- `lib/core/services/background_scan_core.dart` -- R-1 stages around `_scanAccountOnce` (lines 242-405).
+- `lib/core/services/email_scanner.dart` -- connect (`loadCredentials`, line 218), folder fetch, cancel.
+- `lib/core/providers/email_scan_provider.dart` -- claim result; heartbeat stop request (`_honorCancelRequest`).
+- `lib/core/services/android_background_scan_worker.dart`, `background_scan_windows_worker.dart` -- worker start/exit.
+- `lib/ui/screens/scan_progress_screen.dart` -- R-2 (stop requested, wait result).
+- `lib/adapters/auth/google_auth_service.dart` -- R-3 (`_signInNative` 533-586, `_signInDesktop`).
+- `lib/main.dart` -- R-4 app-start line; `lib/ui/screens/settings_screen.dart` -- R-4 toggle line, R-6, R-7.
+
+**Existing abstraction checked**: `DiagnosticLogger.log` / `.failure` and its `kind*` constants (extend,
+do not add a second logger); `Redact` (reuse).
+
+**Callers of any guard being changed**: none -- logging only; no guard, early return or mode check changes.
+- Tooling that launches or kills the same executable: N/A (no process behavior change).
+
+**User-reachable control**: Settings > General > Privacy & Logging: the existing diagnostic-logging
+toggle (unchanged) now shows "Writing to: <folder>"; the export folder row's "Reset to default" button.
+
+**Observable behavior -- before / after**: BEFORE: turning logging on and running a scan creates no file;
+the export folder row reads "CSV Export Directory" with a bare X. AFTER: turning logging on writes a line
+at once; every scan adds lines for each stage; Settings shows where the file is; the row reads "Export
+folder" with a "Reset to default" button.
+
+**Dependencies / blockers**: None.
+
+**Non-functional requirements**:
+- Privacy: R-5 redaction on every new line (no full address, no token, no subject).
+- Platform: shared code; both workers instrumented (ADR-0042 -- no exception).
+- Concurrency: two isolates/processes may append to one file; lines are single small appends
+  (`FileMode.append`). Interleaving at line granularity is acceptable; record it in the doc comment.
+
+**Acceptance criteria**:
+- AC-1: With logging on, a background scan (real `BackgroundScanCore.scanAccount` over the demo platform)
+  writes start, claim, connect, fetch and outcome lines, in that order.
+- AC-2: A stop request found by the heartbeat writes a "stop request found" line and an outcome "stopped" line.
+- AC-3: With logging OFF, the same scan writes nothing (no file).
+- AC-4: A native sign-in failure writes the failing step and exception type; the fallback writes its result.
+- AC-5: No new line contains a full email address (asserted on the test address).
+- AC-6 (behavioral UI): Given logging on, When Settings > General is shown, Then "Writing to:" shows the
+  resolved folder; Given a chosen export folder, Then "Reset to default" is visible text and clears it.
+- AC-7: An export folder named `diagnostics` yields log path `<folder>/diag_v...log`, not `<folder>/diagnostics/...`.
+
+**Tests to write**:
+- T-1 (AC-1, AC-3, AC-5) -- TEST-UNIT `test/unit/services/f248_scan_diagnostic_log_test.dart`: real core over the demo platform, read the log file.
+- T-2 (AC-2) -- same file: row stop request + heartbeat override (as in `f238_stopped_background_outcome_test`).
+- T-3 (AC-4) -- TEST-UNIT `test/unit/adapters/f248_sign_in_diagnostic_log_test.dart`: seam for the native calls; failure step recorded.
+- T-4 (AC-6) -- TEST-WIDGET `test/ui/screens/f248_settings_log_location_test.dart`.
+- T-5 (AC-7) -- TEST-UNIT in `test/unit/services/diagnostic_logger_test.dart` (existing file).
+- Each test carries its "what this does NOT catch" line; each is mutation-checked.
+
+**Definition of Done**: default DoD PLUS: a phone build of 0.17.1 produces a log with scan lines on the Fold (Manual Validation).
+
+**Model**: Opus 5.5 (main session) -- *why not cheaper*: cross-isolate instrumentation in eight files with redaction rules; this session already holds the call-path knowledge from tonight's diagnosis.
+
+**Delegation checklist included in the sub-agent prompt**: N/A (not delegated)
+
+**Step-types**: SVC-EDIT, UI-MOVE, TEST-UNIT, TEST-WIDGET | **Est-Effort**: 90-150m
+
+---
+
+## Task 2 -- F249: The F238 stop does not stop a stuck Android background scan (Priority 2, Issue #453)
+
+**Value**: This prevents a background scan that is stuck (Found 0) from blocking the user's own scan of
+the account for up to its 5-minute heartbeat window -- the exact situation F238 was built for.
+
+**Requirements**:
+- R-1: Diagnose from a 0.17.1 log on the Fold (F248): stuck before the first cancel checkpoint (connect)
+  vs. no live worker behind the row (orphaned `in_progress`). Record the cause with the log lines.
+- R-2: If stuck in connect: a stop request found by the heartbeat interrupts a scan that has not reached
+  its first checkpoint (the connect is raced against the cancel), and the row closes as stopped.
+- R-3: If orphaned: the manual side's wait treats a holder whose heartbeat is silent as dead sooner than
+  5 minutes -- only with Harold's approval (see interrupt).
+- R-4: Whichever applies, the user's scan starts without a second tap once the holder is gone.
+
+**Affected components / files** (final list depends on R-1):
+- `lib/core/services/email_scanner.dart` (connect, line 218) and/or `lib/core/services/scan_coordinator.dart`.
+- `lib/core/storage/scan_result_store.dart` (`waitForScanToClose`, `heartbeatFreshness`).
+- `lib/ui/screens/scan_progress_screen.dart` (`startRealScan` F238 branch).
+
+**Existing abstraction checked**: `ScanCoordinator.requestCancel` / `throwIfCancelled` (F224);
+`ScanResultStore.waitForScanToClose` / `claimAccountScan` reaping (Sprint 74-75).
+
+**Callers of any guard being changed**: to be listed in this card BEFORE the change, once R-1 picks the
+branch (IMP-1). Candidates: `claimAccountScan` (manual, background, demo, re-process all take it),
+`waitForScanToClose` (F238 dialog only), the scanner's connect (every scan type).
+- Tooling that launches or kills the same executable: the WinWright runner (pauses dev background tasks; unaffected unless claim timing changes).
+
+**User-reachable control**: Manual Scan > "A scan is already running" > "Stop the background scan and start mine" (existing).
+
+**Observable behavior -- before / after**: BEFORE: with a stuck background scan, "Stop ... and start mine"
+waits 90 s and says "The background scan did not stop". AFTER: the stuck scan stops (or is closed) and
+the user's scan starts.
+
+**Dependencies / blockers**: Task 1 shipped in a 0.17.1 phone build and one reproduction on the Fold (Harold).
+
+**Non-functional requirements**: Platform -- the fix is shared code; Windows behavior must stay as
+validated in Sprint 75 (row 6841 stopped in 22 s).
+
+**Acceptance criteria**:
+- AC-1: The cause is named in this card with the log lines that show it.
+- AC-2: Given a background scan blocked before its first checkpoint, When a stop is requested on its row,
+  Then it stops within one heartbeat plus the connect race and its row reads the stopped-for-manual reason.
+- AC-3 (if R-3): Given an `in_progress` row with a silent heartbeat, When the user chooses stop, Then the
+  manual scan starts after the approved threshold, not after 5 minutes.
+
+**Tests to write**:
+- T-1 (AC-2) -- TEST-UNIT: a platform whose `loadCredentials` never completes; stop request on the row; assert stopped.
+- T-2 (AC-3) -- TEST-UNIT: a holder row with an old heartbeat; assert the wait returns closed at the threshold.
+
+**Definition of Done**: default DoD PLUS: reproduced and fixed on the Fold (Manual Validation).
+
+**Model**: Opus 5.5 -- *why not cheaper*: cross-isolate cancellation with a field-only failure; diagnosis-led.
+
+**Step-types**: SVC-EDIT, TEST-UNIT | **Est-Effort**: 90-180m (after diagnosis)
+
+_**Risk & rollback**_: A stop that interrupts a connect could leave a half-open IMAP session; the race must
+still run the scanner's `finally` (release + disconnect). Rollback: revert the race; F238 Windows behavior is unaffected.
+
+_**Decision-class interrupts**_: Class 1/2 if R-3 applies -- shortening when a silent holder counts as
+dead changes the Sprint 74 reaping rule (heartbeat > 5 min) that every scan type relies on. Surface with
+the log evidence and wait.
+
+---
+
+## Task 3 -- F250: Gmail native sign-in fails after the account pick (Priority 3, Issue #454)
+
+**Value**: This prevents every Android Gmail user from choosing their account twice (native picker, then
+Chrome) and from getting the less-integrated browser sign-in.
+
+**Requirements**:
+- R-1: Diagnose from a 0.17.1 log (F248 R-3): which call throws (`authenticate()` or
+  `authorizeScopes()`), with the exception type and message.
+- R-2: Fix the cause so one pick in the native picker completes sign-in -- or, if the cause is on
+  Google's side (OAuth client configuration, unverified-app status), record it and surface the console
+  change to Harold instead of patching around it.
+- R-3: Check what the browser-fallback sign-in stored for `kimmeyh@gmail.com` (a refresh token or not) and
+  record it on F246 -- it decides whether Android background renewal is possible on that path.
+
+**Affected components / files**: `lib/adapters/auth/google_auth_service.dart` (`_signInNative` 533-586);
+possibly Google Cloud Console (Harold).
+
+**Existing abstraction checked**: `GoogleAuthService.signIn` / `_signInNative` / `_signInDesktop`.
+
+**Callers of any guard being changed**: to be listed once R-1 names the cause. Callers of `signIn`: the
+Gmail OAuth add screen, Sign In Again (account list and scan screen), the adapter's scope re-auth.
+- Tooling: N/A.
+
+**User-reachable control**: Add Account > Gmail > Google Sign-In; Sign In Again (existing).
+
+**Observable behavior -- before / after**: BEFORE: pick the account in the native picker, then a Chrome
+page asks to pick it again. AFTER: one pick, then Google's consent, then "saved".
+
+**Dependencies / blockers**: Task 1 shipped; one Gmail add on the Fold with logging on (Harold).
+
+**Non-functional requirements**: Platform -- Android only (Windows uses the browser flow by design;
+declared ADR-0042 exception already in ADR-0011).
+
+**Acceptance criteria**:
+- AC-1: The failing call and exception are named in this card from the log.
+- AC-2: On the Fold, adding a Gmail account takes one account pick (Manual Validation), or the
+  Google-side cause is documented with Harold's console decision.
+
+**Tests to write**: T-1 -- TEST-UNIT with the native seam: the corrected path signs in without falling back
+(shape depends on R-1).
+
+**Definition of Done**: default DoD PLUS: Fold validation.
+
+**Model**: Opus 5.5 -- *why not cheaper*: plugin/native diagnosis (memory: trace through plugin source).
+
+**Step-types**: SVC-EDIT, TEST-UNIT | **Est-Effort**: 60-180m (cause-dependent)
+
+_**Decision-class interrupts**_: Class 1 if the fix changes the sign-in mechanism (for example dropping the
+browser fallback); a Google Cloud Console change is Harold's.
+
+---
+
+## Task 4 -- Phone validation checklist (carried; Harold at Sprint 75 approval, Q3)
+
+Runs at Manual Validation on the 0.17.1 Play build (validation only, no code):
+1. MV74-1 -- background scans fire in Doze; the schedule survives a reboot (over hours) (#428).
+2. A block rule added from a saved scan moves the mail; the toast reports N of N (F232 AC-2).
+3. F205 -- classify every scan error on the current build, or record zero (#433).
+4. The per-account lock under a real Doze batch -- never two `in_progress` rows for one account.
+5. The 2-6 minute busy wait against Android's ~10-minute worker limit.
+6. Android YAML export saves through the system dialog, starting in the export folder.
+7. F238 on the phone -- now F249 (Task 2).
+8. F239 Sign In Again on the phone; a background scan more than about an hour after the app was last
+   opened skips with "Gmail needs you to sign in again" (#442 closed; check only).
+Already done on 0.17.0 (2026-10-04): the Gmail add flow -- PASS, with the double pick now F250.
+
+---
+
+## Sprint summary
+
+- Task 0 -- version 0.17.1+9 -- 10-20m
+- Task 1 -- F248 diagnostic log events -- 90-150m
+- Task 2 -- F249 F238 stop on Android -- 90-180m (after a phone reproduction)
+- Task 3 -- F250 Gmail double pick -- 60-180m (after a phone reproduction)
+- Task 4 -- phone checklist -- validation time only
+
+**Total**: 250-530 minutes, plus phone time. **Order**: 0 -> 1 -> build and ship 0.17.1 to Play closed
+testing -> Harold reproduces both on the Fold with logging on -> 2 and 3 from the log -> 0.17.2 if they
+change code. Tasks 2 and 3 cannot start until the log exists; that wait is a planned external
+dependency (Stopping Criterion 2), not a de-scope.
+
+**Not in this sprint until pass 2**: F247, F245, F204 and the rest of the slate presented 2026-10-04.
+
+## Phase 3.6.1 Architecture Impact Check
+
+- ARCHITECTURE.md: the diagnostic log's scope (scan and sign-in events) -- Task 1.
+- ADRs: none expected for Task 1; Task 2 may amend ADR-0039 (stop semantics) if R-2/R-3 change them;
+  Task 3 may amend ADR-0011.
+
+## Phase 3.7 approval
+
+**APPROVED 2026-10-04 by Harold.** Sequence: Q1 *"Need to work any issues before choosing backlog"*; Q3 = 1
+(*"Start Sprint 76 with I-1, I-2 and I-3 as its first cards (0.17.1)"*); then *"continue with i-\*"*.
+I-1 = F248 (#452), I-2 = F249 (#453), I-3 = F250 (#454). Class-1/2 items inside Tasks 2-3 are surfaced
+when the log names the cause, not pre-approved here.
+
+## Progress (live)
+
+- (none yet)
