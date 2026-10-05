@@ -629,6 +629,23 @@ when the log names the cause, not pre-approved here.
   only), `f253_new_mail_switch_test` (9); M168-M175 KILLED. Debug APK builds (exit 0; manifest merges).
   Suite 2,564 / 15 / 0; analyzer clean. Unverified until the Fold: the AOL and Yahoo package names, and
   whether a triggered scan reaches the network while idle without Unrestricted.
+- **0.17.3 Fold log (16:45-18:48), 2026-10-05 -- first evidence for F252 R-6 and F253 AC-5.**
+  - Unattended AOL background scans ran all evening: 19 worker starts, every one `completed`, 8-12 s each
+    after the Background Scan Range changed to 1 day at about 16:55 (was "Scan all", 60 s).
+  - Every Doze-alarm worker read `trigger=doze-alarm delay=0s` (6 of 6): the alarm-to-WorkManager handoff
+    ran immediately. Whether the phone was idle/locked at those times is not in the log -- R-6 still needs
+    the overnight-idle run.
+  - The alarm and the periodic task run as two separate ~15-19 minute cycles, so AOL scanned about twice
+    per cycle, often 1-2 minutes apart (18:04/18:05, 18:44/18:45); at 17:45 both fired together, one was
+    refused, waited 124 s, and ran a second scan straight after the first. Redundant work -- a Class-2 item
+    for Manual Validation (e.g. skip a background scan when the account completed one within half the
+    interval).
+  - F249 part 2: periodic row 354 (16:45:49, full Inbox fetch) died before its first 30 s heartbeat; the
+    16:52 manual scan reaped it ("started 410s ago, last heartbeat never") and ran. The reaper worked; the
+    cause of the death is unknown. Periodic registration uses `ExistingPeriodicWorkPolicy.update` (not
+    REPLACE), which I believe does not interrupt running work (unverified).
+  - No `trigger=notification` line: F253 did not fire in this window (switch state not in the log).
+  - Gmail: still "needs you to sign in again" on every manual scan (F246/F250).
 - **0.17.2 Fold log (08:57-14:22) analysis, 2026-10-05**: Gmail safe-sender move out of Spam fails 400
   "Cannot both add and remove the same label" (`gmail_api_adapter.dart:1343`, `:1650` add AND remove
   INBOX); AOL re-process safe-sender moves fail and are retried on every rule (2 -> 29), cause not in the
