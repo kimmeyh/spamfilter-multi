@@ -1,17 +1,17 @@
 {
   "_description": "Sprint status file that persists across context compaction. Update after each phase/sub-phase completion.",
-  "_last_updated": "2026-10-05T03:40:00Z",
+  "_last_updated": "2026-10-05T04:10:00Z",
   "_usage": "Read this file after context compaction to restore sprint approval state and progress.",
   "_staleness_note": "This file had drifted 15 sprints (last updated at Sprint 35, 2026-04-19) before being refreshed at Sprint 50 close-out. It is a Phase 7.7 checklist item -- update it at every sprint close-out, not opportunistically.",
   "current_sprint": {
     "number": 76,
     "branch": "feature/20261004_Sprint_76",
-    "status": "Phase 8.4 Backlog Refinement pass 2 -- Sprint 75 cycle. 0.17.0 LIVE on both stores (Harold, 2026-10-04 ~11:20pm ET). Device finding: F238 stop did not stop a stuck AOL background scan on the Fold (cause not established; Sprint 76 plan). Awaiting Harold's Sprint 76 scope selection.",
-    "plan_approved": false,
-    "blanket_execution_approved": false,
-    "pr_number": null,
-    "version": "0.17.0+8 (release candidate; dev bump at Sprint 76 plan approval)",
-    "pr_url": null
+    "status": "Phase 4 Execution -- Sprint 76 plan APPROVED 2026-10-04 (Harold: Q3=1, 'continue with i-*'). Task 0 version 0.17.1+9, then Task 1 F248 (#452). Tasks 2-3 (F249 #453, F250 #454) wait for a 0.17.1 phone log.",
+    "plan_approved": true,
+    "blanket_execution_approved": true,
+    "pr_number": 455,
+    "version": "0.17.1+9 (bumped at plan approval, Phase 3.7.0b)",
+    "pr_url": "https://github.com/kimmeyh/spamfilter-multi/pull/455"
   },
   "previous_sprint": {
     "number": 75,
@@ -26,7 +26,8 @@
     "sprint_73": "#428 (open, MV74-1), #422 (open, MV74-3), #430 closed, #434 (open, MV74-2), #431 closed, #432 closed, #433 (open, MV74-3). Also closed in pass 1: #426 (superseded by #428), #427 (leftover captured as F236).",
     "note": "Closes #N does NOT auto-fire here.",
     "sprint_74": "Closed by hand 2026-10-02: #422 #434 #437 #438 #439. Open, carried: #428 (MV74-1 phone), #433 (F205 phone), #441 (F238), #442 (F239).",
-    "sprint_75": "Closed by hand 2026-10-04: #441 #442 #444 #445 #446 #447 #449 #450. Open, carried to Sprint 76 phone checks: #428 (MV74-1), #433 (F205)."
+    "sprint_75": "Closed by hand 2026-10-04: #441 #442 #444 #445 #446 #447 #449 #450. Open, carried to Sprint 76 phone checks: #428 (MV74-1), #433 (F205).",
+    "sprint_76": "#452 F248, #453 F249, #454 F250 (open). Carried: #428 MV74-1, #433 F205."
   },
   "_github_issues_note": "Sprint 66 cards created at Phase 3.3.1 (2026-09-07): #387 GP-19, #388 GP-4. Close by hand at Post-Merge Cleanup.",
   "test_metrics": {
@@ -52,9 +53,10 @@
   ],
   "blocking_issues": [],
   "next_actions": [
-    "Harold: Sprint 76 scope selection (pass 2 slate presented 2026-10-04); include the F238-on-Android device finding.",
-    "Diagnose the F238 Android finding from a diagnostic log (Fold): stuck-before-checkpoint vs orphaned row.",
-    "Then Phase 3 planning for Sprint 76 (dev version bump to 0.18.0 at plan approval)."
+    "Task 0: version 0.17.1+9 + RELEASE_NOTES_0.17.1_* (PROVISIONAL).",
+    "Task 1: F248 diagnostic log events (scan lifecycle, sign-in, app start, Settings folder display).",
+    "Build 0.17.1 AAB (versionCode 9) for Play closed testing; Harold reproduces F249 and F250 on the Fold with logging on.",
+    "Tasks 2-3 from the log; then Manual Validation; then Phase 8.4 pass 2 scope selection (deferred by Harold)."
   ],
   "next_sprint_targeted": {
     "number": 76,
