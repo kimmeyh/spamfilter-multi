@@ -5,6 +5,7 @@ import 'package:flutter/foundation.dart';
 import 'package:path/path.dart' as path;
 import 'package:path_provider/path_provider.dart';
 
+import '../../util/redact.dart';
 import '../storage/settings_store.dart';
 import 'app_environment.dart';
 import 'app_version.dart';
@@ -26,9 +27,23 @@ import 'export_directories.dart';
 /// across every version back to 0.5.8.
 ///
 /// **What it deliberately does NOT do.** It is not a general logging framework
-/// and it does not replace `AppLogger` or `LiveScanLogger`. It captures FAILURE
-/// paths, off by default, so that when a user reports "it said it worked and it
-/// did not" there is something to read.
+/// and it does not replace `AppLogger` or `LiveScanLogger`. It is off by
+/// default, and when on it captures the events a field report needs.
+///
+/// **Scope widened by F248 (Sprint 76).** It used to capture FAILURE paths
+/// only (re-processing and a few IMAP batch problems) -- and that left the
+/// 0.17.0 phone defects undiagnosable: a background scan stuck at Found 0 and
+/// a Gmail sign-in that fell back to the browser wrote nothing at all. It now
+/// also records each scan's stages ([kindScan], for every scan type and
+/// platform), Gmail sign-in steps ([kindSignIn]) and app start / logging-on
+/// lines ([kindApp]). `LiveScanLogger` was checked and is not a substitute: it
+/// covers manual scans only and writes to app-private storage, which cannot
+/// be reached on Android.
+///
+/// **Two writers.** The UI and a background worker (another isolate on
+/// Android, another process on Windows) can append to the same file. Each
+/// record is one small append, so the worst case is lines from the two
+/// writers interleaving -- every line carries its own timestamp and context.
 ///
 /// **Cross-platform (ADR-0042).** Same behavior on Windows and Android: same
 /// format, same rotation, same redaction. The OS behavior assumed identical is
@@ -48,6 +63,18 @@ class DiagnosticLogger {
   static const String kindSkipped = 'SKIPPED';
   static const String kindException = 'EXCEPTION';
   static const String kindInfo = 'INFO';
+
+  /// F248 (Sprint 76): a scan stage -- start, claim, connect, fetch, stop
+  /// request, outcome. Written for manual, background and test scans alike.
+  static const String kindScan = 'SCAN';
+
+  /// F248: a Gmail sign-in step -- which call ran, how it ended, whether the
+  /// browser fallback was taken.
+  static const String kindSignIn = 'SIGN_IN';
+
+  /// F248: app start and "logging turned on" -- so the file exists as soon as
+  /// logging is on, and a reader can see which build wrote what follows.
+  static const String kindApp = 'APP';
 
   /// Hard ceiling for a single log file. Rotation is not optional: Harold runs
   /// with this enabled permanently, and an unbounded append on a phone is a
@@ -138,8 +165,21 @@ class DiagnosticLogger {
       // Environment-suffixed (review I-1, ADR-0035): DEV and PROD resolve
       // the SAME export folder, and "Delete logs" / rotation in one must
       // never touch the other's files.
+      final sub = 'diagnostics${AppEnvironment.dataDirSuffix}';
+      // F248 R-8: a user who picks the diagnostics folder ITSELF as the
+      // export folder (found on the Fold, 2026-10-04: the log landed in
+      // Documents/diagnostics/diagnostics) gets the log in that folder, not
+      // one level deeper.
+      String? chosen;
+      try {
+        chosen = await SettingsStore().getCsvExportDirectory();
+      } catch (_) {
+        chosen = null;
+      }
+      final alreadyThere =
+          chosen != null && chosen.isNotEmpty && path.basename(chosen) == sub;
       _cachedDir = await ExportDirectories.resolve(
-          subfolder: 'diagnostics${AppEnvironment.dataDirSuffix}');
+          subfolder: alreadyThere ? null : sub);
       return _cachedDir!;
     } catch (_) {
       final appSupport = await getApplicationSupportDirectory();
@@ -217,6 +257,59 @@ class DiagnosticLogger {
         ? ' (attempted=${attempted ?? '?'}, failed=${failed ?? '?'})'
         : '';
     return log(kind: kind, context: context, detail: '$reason$counts');
+  }
+
+  static final RegExp _addressInText =
+      RegExp(r'[A-Za-z0-9._%+\-]+@[A-Za-z0-9.\-]+\.[A-Za-z]{2,}');
+
+  /// F248 R-5: redact every email address inside free text (an exception
+  /// message can carry one -- "No credentials found for account x@y").
+  static String scrub(String text) =>
+      text.replaceAllMapped(_addressInText, (m) => Redact.email(m.group(0)));
+
+  /// F248: an error as `<Type>: <scrubbed message>`, capped so one huge
+  /// message cannot flood the file.
+  static String describeError(Object error) {
+    final text = scrub(error.toString());
+    final capped = text.length > 300 ? '${text.substring(0, 300)}...' : text;
+    return '${error.runtimeType}: $capped';
+  }
+
+  /// F248 R-4: an app-level record (start, logging turned on) carrying the
+  /// build that wrote what follows. No address, nothing private.
+  static Future<void> appEvent(String what) async {
+    String version;
+    try {
+      version = await AppVersion.get();
+    } catch (_) {
+      version = '?';
+    }
+    return log(
+      kind: kindApp,
+      context: 'app',
+      detail: '$what -- v$version env=${AppEnvironment.current} '
+          'platform=${Platform.operatingSystem}',
+    );
+  }
+
+  /// F248: one scan-stage record, with the account redacted.
+  ///
+  /// [scanType] is `manual`, `background` or `demo`; [stage] is a short
+  /// fixed word (`start`, `claim`, `connect`, `fetch`, `stop-request`,
+  /// `outcome` ...) so a reader can grep for it; [detail] must not contain an
+  /// unredacted address, a subject or a token.
+  static Future<void> scanEvent({
+    required String scanType,
+    required String accountId,
+    required String stage,
+    String detail = '',
+  }) {
+    final tail = detail.isEmpty ? '' : ' -- $detail';
+    return log(
+      kind: kindScan,
+      context: 'scan/$scanType',
+      detail: '${Redact.accountId(accountId)} $stage$tail',
+    );
   }
 
   static Future<File> _currentFile() async {

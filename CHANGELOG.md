@@ -26,6 +26,11 @@ Format: `- **type**: Description (Issue #N)` where type is feat|fix|chore|docs
 
 ## [Unreleased]
 
+### 2026-10-05 (Sprint 76)
+- **feat**: the diagnostic log now records each scan's progress (start, connect, each folder, how it ended), each scan error with its cause, the background stop request, Gmail sign-in steps, and a line when the app starts or logging is turned on. Before, a scan wrote nothing to it, so a stuck background scan or a failed sign-in could not be explained. Email addresses are shortened; no message content is recorded. (Issue #452)
+- **feat**: Settings shows the folder the diagnostic log is written to. (Issue #452)
+- **fix**: the export folder setting is now called "Export folder" (it also decides where YAML exports and the diagnostic log go), and its reset is a visible "Reset to default" button instead of an unlabeled X. If the export folder you choose is the diagnostics folder itself, the log is no longer put in a second diagnostics folder inside it. (Issue #452)
+
 ### 2026-10-03 (Sprint 75)
 - **fix**: adding a Gmail account now finishes like AOL and Yahoo: a "saved" message, then the Manual Scan screen for the new account, then back to your account list. Before, it opened a folder screen with no way to continue and then returned to the sign-in page. Choose Gmail folders later in Settings > Account. (Issue #442)
 - **fix**: the Gmail Setup box no longer tells you to generate an app password; Gmail signs in with Google. (Issue #442)

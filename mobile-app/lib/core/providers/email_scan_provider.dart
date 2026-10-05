@@ -17,6 +17,7 @@ import '../../core/storage/scan_result_store.dart';
 import '../../core/storage/settings_store.dart';
 import '../../core/storage/unmatched_email_store.dart';
 import '../services/background_scan_core.dart' show BackgroundScanCore;
+import '../services/diagnostic_logger.dart';
 import '../services/scan_coordinator.dart';
 import '../../core/utils/pattern_normalization.dart';
 import '../../util/redact.dart';
@@ -317,6 +318,7 @@ class EmailScanProvider extends ChangeNotifier {
   void _startHeartbeat() {
     _stopHeartbeat();
     _pendingCancelReason = null;
+    _stopRequestLogged = null;
     final id = _currentScanResultId;
     final store = _scanResultStore;
     if (id == null || store == null) return;
@@ -327,6 +329,13 @@ class EmailScanProvider extends ChangeNotifier {
         await store.recordHeartbeat(id);
       } catch (e) {
         _logger.w('Scan heartbeat write failed for id=$id: $e');
+        // F248: a holder whose beats fail looks dead to every other scan.
+        unawaited(DiagnosticLogger.log(
+          kind: DiagnosticLogger.kindScan,
+          context: 'scan/heartbeat',
+          detail: 'beat write FAILED on row $id: '
+              '${DiagnosticLogger.describeError(e)}',
+        ));
       }
       // Review (Sprint 75, M-1): cancelling the timer does not stop a tick
       // that is already running. If this scan ended while the tick awaited,
@@ -354,6 +363,20 @@ class EmailScanProvider extends ChangeNotifier {
     if (!identical(_heartbeatTimer, timer)) return;
     final accepted =
         ScanCoordinator.instance.requestCancel(accountId: accountId);
+    // F248: the F249 evidence point -- was the request seen, and did this
+    // isolate's coordinator have a lease to cancel? Written when first seen
+    // and when the answer CHANGES, not on every tick: the request stays on
+    // the row, and one line per beat flooded the log (a test at a 20 ms beat
+    // queued 77 in two seconds).
+    if (_stopRequestLogged != accepted) {
+      _stopRequestLogged = accepted;
+      unawaited(DiagnosticLogger.log(
+        kind: DiagnosticLogger.kindScan,
+        context: 'scan/heartbeat',
+        detail: '${Redact.accountId(accountId)} stop-request found on row $id; '
+            'coordinator ${accepted ? 'accepted' : 'had no lease (not accepted)'}',
+      ));
+    }
     if (_pendingCancelReason == null) {
       _pendingCancelReason = ScanResultStore.stoppedForManualScanReason;
       _logger.i('F238: stop request found on scan row id=$id -- cancel '
@@ -371,6 +394,10 @@ class EmailScanProvider extends ChangeNotifier {
   /// scanner's cancel handler (which calls [cancelScan] with no argument)
   /// records WHY the scan stopped. Cleared when a scan starts.
   String? _pendingCancelReason;
+
+  /// F248: the last "accepted" value logged for this scan's stop request
+  /// (null = not logged yet). Reset when a scan's heartbeat starts.
+  bool? _stopRequestLogged;
 
   /// Test seam: the reason the next [cancelScan] will record, if a stop
   /// request has been seen on the row.
@@ -494,6 +521,13 @@ class EmailScanProvider extends ChangeNotifier {
   /// scan reported errors=0 (the F168 silent-scope class in miniature).
   void recordFolderFetchError(String folderName, String error) {
     _errorCount++;
+    // F248 (Sprint 76): the cause of each counted error (F205 / MV74-3).
+    unawaited(DiagnosticLogger.log(
+      kind: DiagnosticLogger.kindScan,
+      context: 'scan/error',
+      detail: '${Redact.accountId(_currentAccountId)} folder "$folderName" '
+          'fetch failed: ${DiagnosticLogger.scrub(error)}',
+    ));
     _logger.e('Folder fetch FAILED for "$folderName": $error '
         '(errorCount now $_errorCount)');
     notifyListeners();
@@ -1027,6 +1061,16 @@ class EmailScanProvider extends ChangeNotifier {
 
     if (!result.success) {
       _errorCount++;
+      // F248 (Sprint 76): each counted error with its cause, so the Scan
+      // History "Errors" total can be classified from the log (F205 /
+      // MV74-3). Folder and action only -- no sender, subject or body.
+      unawaited(DiagnosticLogger.log(
+        kind: DiagnosticLogger.kindScan,
+        context: 'scan/error',
+        detail: '${Redact.accountId(_currentAccountId)} action '
+            '${result.action.name} failed in folder "${result.email.folderName}": '
+            '${DiagnosticLogger.scrub(result.error ?? 'no message')}',
+      ));
     }
 
     // Unmatched ("No rule") emails are persisted in batch at scan completion

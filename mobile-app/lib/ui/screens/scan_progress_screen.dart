@@ -8,6 +8,7 @@ import 'package:flutter/foundation.dart' show visibleForTesting;
 
 import '../../core/providers/email_scan_provider.dart';
 import '../../core/providers/rule_set_provider.dart';
+import '../../core/services/diagnostic_logger.dart';
 import '../../core/services/email_scanner.dart';
 import '../../core/storage/database_helper.dart'; // F175 (Sprint 62)
 import '../../core/services/scan_coordinator.dart'; // F221 (Sprint 70)
@@ -989,6 +990,16 @@ Future<void> startRealScan({
         accountEmail: accountEmail,
         estimate: estimate,
       );
+      // F248: the manual side of F238/F249 -- who held the account, and what
+      // the user chose.
+      void stopLog(String detail) => unawaited(DiagnosticLogger.scanEvent(
+            scanType: 'manual',
+            accountId: accountId,
+            stage: 'busy',
+            detail: detail,
+          ));
+      stopLog('${activeScan.scanType} scan row ${activeScan.id} holds the '
+          'account; user chose ${choice.name}');
       if (choice != ScanBusyChoice.stopBackgroundAndStart) {
         logger.i('[SCAN_SCREEN] manual scan not started -- a '
             '${activeScan.scanType} scan holds this account (Harold Q4)');
@@ -1000,12 +1011,17 @@ Future<void> startRealScan({
       // to close. The claim inside EmailScanProvider.startScan is still the
       // lock; this only clears the way for it.
       final requested = await scanResultStore.requestCancel(activeScan.id!);
+      stopLog('stop requested on row ${activeScan.id}: '
+          '${requested ? 'written' : 'not written (row no longer in progress)'}');
       if (requested) {
         if (!context.mounted) return;
+        final waitWatch = Stopwatch()..start();
         final closed = await showStoppingBackgroundScanDialog(
           context: context,
           wait: () => scanResultStore.waitForScanToClose(activeScan.id!),
         );
+        stopLog('row ${activeScan.id} ${closed ? 'closed' : 'NOT closed'} '
+            'after ${waitWatch.elapsed.inSeconds}s');
         if (!closed) {
           logger.w('[SCAN_SCREEN] F238: the background scan did not stop '
               'within the bound -- manual scan not started');

@@ -1,6 +1,8 @@
 /// Email scanning service that connects IMAP adapters with rule evaluation
 library;
 
+import 'dart:async' show unawaited;
+
 import 'package:flutter/foundation.dart' show visibleForTesting;
 
 import '../models/email_message.dart';
@@ -18,6 +20,7 @@ import '../storage/settings_store.dart';
 import '../storage/unmatched_email_store.dart';
 import '../utils/app_logger.dart';
 import '../../util/redact.dart';
+import 'diagnostic_logger.dart';
 import 'live_scan_logger.dart';
 import 'scan_coordinator.dart';
 import '../../adapters/email_providers/generic_imap_adapter.dart';
@@ -115,7 +118,20 @@ class EmailScanner {
     // `BackgroundScanWindowsWorker._bgLog`. Demo + background both skip.
     final bool isLiveScan = scanType == 'manual' && platformId != 'demo';
 
+    // F248 (Sprint 76): every scan type writes its stages to the diagnostic
+    // log (when the user turned it on). Fire-and-forget: logging must never
+    // slow or fail the scan it describes.
+    void diag(String stage, [String detail = '']) =>
+        unawaited(DiagnosticLogger.scanEvent(
+          scanType: scanType,
+          accountId: accountId,
+          stage: stage,
+          detail: detail,
+        ));
+
     try {
+      diag('start',
+          'platform=$platformId folders=${folderNames.length} daysBack=$daysBack');
       AppLogger.scan('========== SCAN START ==========');
       AppLogger.scan('platformId=$platformId, accountId=$accountId');
       AppLogger.scan('daysBack=$daysBack, folders=$folderNames, scanType=$scanType');
@@ -194,6 +210,7 @@ class EmailScanner {
         platformId: platformId,
       );
       AppLogger.scan('Step 3: scanProvider.status AFTER startScan: ${scanProvider.status}');
+      diag('claim', 'granted, mode=${scanProvider.scanMode.name}');
 
       // 1. Get platform adapter
       platform = PlatformRegistry.getPlatform(platformId);
@@ -215,7 +232,12 @@ class EmailScanner {
         if (isLiveScan) {
           await LiveScanLogger.log('Step 2: Credentials loaded for ${Redact.email(credentials.email)}');
         }
+        // F248: the connect is where a stuck background scan would sit at
+        // Found 0 (F249) -- a "begin" with no "done" names it.
+        diag('connect', 'begin (${platform.runtimeType})');
+        final connectWatch = Stopwatch()..start();
         await platform.loadCredentials(credentials);
+        diag('connect', 'done in ${connectWatch.elapsedMilliseconds}ms');
         AppLogger.scan('Step 2: IMAP connected and authenticated');
         if (isLiveScan) {
           await LiveScanLogger.log('Step 2: IMAP/provider connected and authenticated');
@@ -463,6 +485,7 @@ class EmailScanner {
           // an empty list; list-returning paths (Gmail, demo, mock) are fed
           // through the same sink in m=20 slices below, so every path gets
           // identical per-batch evaluation and body-truncated retention.
+          diag('fetch', 'folder "$folderName" begin');
           final folderMessages = await _fetchFolderMessages(
             platform: platform,
             folderName: folderName,
@@ -1013,6 +1036,12 @@ class EmailScanner {
       }
 
       AppLogger.scan('========== SCAN COMPLETE ==========');
+      diag('outcome',
+          'completed found=${scanProvider.totalEmails} '
+          'processed=${scanProvider.processedCount} '
+          'deleted=${scanProvider.deletedCount} moved=${scanProvider.movedCount} '
+          'safe=${scanProvider.safeSendersCount} noRule=${scanProvider.noRuleCount} '
+          'errors=${scanProvider.errorCount}');
 
       // F90 (Sprint 39): write live-scan summary + per-account CSV/XLSX
       // export. Mirrors `BackgroundScanWindowsWorker` end-of-scan logging.
@@ -1037,6 +1066,7 @@ class EmailScanner {
       // Rethrown so each caller maps it to its own outcome: a background
       // scan records a skip, a manual scan shows the message.
       AppLogger.scan('SCAN REFUSED: $e');
+      diag('outcome', 'refused -- ${DiagnosticLogger.scrub(e.userMessage)}');
       if (isLiveScan) {
         await LiveScanLogger.log(
             'SCAN REFUSED accountId=${Redact.accountId(accountId)} $e');
@@ -1057,6 +1087,9 @@ class EmailScanner {
       // IMAP session -- because that is what `finally` does. That is the whole
       // reason cancellation is expressed as a throw.
       AppLogger.scan('SCAN CANCELLED by the user');
+      diag('outcome',
+          'stopped (cancel) processed=${scanProvider.processedCount} '
+          'revoked=${scanLease?.info.revoked == true}');
       if (isLiveScan) {
         await LiveScanLogger.log(
             'SCAN CANCELLED accountId=${Redact.accountId(accountId)}');
@@ -1070,6 +1103,7 @@ class EmailScanner {
     } catch (e, st) {
       // Handle scan error
       AppLogger.error('SCAN FAILED with exception', error: e, stackTrace: st);
+      diag('outcome', 'error ${DiagnosticLogger.describeError(e)}');
       if (isLiveScan) {
         // Note: exception text is included as-is. It may transitively
         // contain identifiers in rare cases (e.g., an IMAP error echoing

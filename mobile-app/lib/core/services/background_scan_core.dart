@@ -30,6 +30,7 @@ import '../providers/rule_set_provider.dart';
 import '../storage/database_helper.dart';
 import '../storage/scan_result_store.dart';
 import '../storage/settings_store.dart';
+import 'diagnostic_logger.dart';
 import 'email_scanner.dart';
 import 'scan_coordinator.dart';
 
@@ -205,6 +206,12 @@ class BackgroundScanCore {
     _logger.i('Background scan of ${Redact.accountId(accountId)} found it '
         'busy ($busyBecause); waiting ${wait.inSeconds}s, then one more '
         'attempt');
+    unawaited(DiagnosticLogger.scanEvent(
+      scanType: 'background',
+      accountId: accountId,
+      stage: 'busy-retry',
+      detail: 'waiting ${wait.inSeconds}s (${DiagnosticLogger.scrub(busyBecause)})',
+    ));
     await busyWait(wait);
     return attempt();
   }
@@ -262,6 +269,11 @@ class BackgroundScanCore {
           '(scan id ${live.id})';
       _logger.i('Background scan SKIPPED for ${Redact.accountId(accountId)}: '
           '$reason');
+      unawaited(DiagnosticLogger.scanEvent(
+          scanType: 'background',
+          accountId: accountId,
+          stage: 'skip',
+          detail: reason));
       return AccountScanOutcome.skipped(reason, EmailScanProvider());
     }
 
@@ -347,6 +359,11 @@ class BackgroundScanCore {
       // what a stored value means (Class 1), so it was not done here.
       _logger.i('Background scan SKIPPED for ${Redact.accountId(accountId)}: '
           '${GmailSignInRequiredException.reason}');
+      unawaited(DiagnosticLogger.scanEvent(
+          scanType: 'background',
+          accountId: accountId,
+          stage: 'skip',
+          detail: 'needs sign-in: ${GmailSignInRequiredException.reason}'));
       return AccountScanOutcome.skipped(
           GmailSignInRequiredException.reason, scanProvider,
           needsSignIn: true);
@@ -354,6 +371,11 @@ class BackgroundScanCore {
       final minutes = ScanCoordinator.scanTimeout.inMinutes;
       _logger.e('Background scan TIMED OUT after $minutes minutes for '
           '${Redact.accountId(accountId)} -- marking failed (F175)');
+      unawaited(DiagnosticLogger.scanEvent(
+          scanType: 'background',
+          accountId: accountId,
+          stage: 'outcome',
+          detail: 'timed out after $minutes minutes'));
       // Sprint 62 code review (C-2): the hung scanInbox still holds the
       // coordinator lease -- its `finally` cannot run until the hang
       // resolves, which may be never. Without this, every queued scan

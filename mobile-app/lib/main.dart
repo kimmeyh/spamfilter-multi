@@ -26,6 +26,7 @@ import 'core/storage/unmatched_email_store.dart';
 import 'core/storage/database_helper.dart';
 import 'core/storage/background_scan_log_store.dart';
 import 'core/services/background_deferral_ingest.dart';
+import 'core/services/diagnostic_logger.dart';
 import 'adapters/storage/app_paths.dart';
 import 'adapters/storage/secure_credentials_store.dart';
 import 'core/security/certificate_pinner.dart';
@@ -418,6 +419,11 @@ void main(List<String> args) async {
       }
     }
   }
+
+  // F248 (Sprint 76): one line per foreground start while diagnostic logging
+  // is on -- the file exists as soon as logging is on, and it names the
+  // build that wrote everything after it.
+  unawaited(DiagnosticLogger.appEvent('app start (foreground)'));
 
   runApp(const SpamFilterApp());
 }

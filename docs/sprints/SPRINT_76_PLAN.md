@@ -313,4 +313,30 @@ when the log names the cause, not pre-approved here.
 
 ## Progress (live)
 
-- (none yet)
+- **Task 0 -- DONE** (014da46): 0.17.1+9; provisional 0.17.1 release notes; gates 22/22.
+- **F249 evidence found while testing F248 (2026-10-05, before any phone log)**: with a 20 ms heartbeat,
+  the stop request was found and the coordinator ACCEPTED it ("stop-request found on row 1; coordinator
+  accepted"), yet the scan fetched two more folders and ended `outcome -- completed found=0`. Mechanism,
+  read from code: the only cancel checkpoint is `ScanCoordinator.throwIfCancelled` at a BATCH boundary
+  (`email_scanner.dart` ~line 462); there is none between folders, before or after the connect, or while
+  a folder's search runs. A scan that has fetched nothing yet -- Found 0, exactly the Fold's 11:20 row --
+  cannot see an accepted stop. This is candidate 1 of Task 2, shown in a test; the phone log will say
+  whether the Fold's scan was in connect or in a folder search, which decides where the new checkpoints
+  and the cancel race go.
+- **Task 1 F248 -- DONE**: logger kinds (`SCAN`, `SIGN_IN`, `APP`), `scrub` / `describeError`, R-8 path
+  rule; lines from the scanner (start, claim, connect begin/done, folder fetch, outcome), the core (skip,
+  busy-retry, needs-sign-in, timeout), both workers (start/exit, awaited at exit so queued lines flush),
+  the heartbeat (stop request found, once per change -- a 20 ms beat had queued 77), the manual stop
+  (holder, choice, request, wait result), Gmail sign-in steps + fallback (+ whether a refresh token was
+  stored, F246), app start, logging turned on. **Added mid-task at Harold's MV74-3 question**: each
+  COUNTED scan error is logged with its cause (`scan/error`: folder fetch failure, failed action) -- the
+  F205 classification now comes from the same log. Settings: "Writing to:", "Export folder", visible
+  "Reset to default", accurate toggle text. Tests: `f248_scan_diagnostic_log_test` 6,
+  `f248_log_folder_and_sign_in_test` 3 (R-3 declared SOURCE-TEXT VERIFIED), `f248_settings_log_location_test`
+  1. Mutations M128-M137 all KILLED. Suite 2,528 / 15 skipped / 0 failed; analyzer clean.
+  Existing abstraction checked: `DiagnosticLogger` (extended); `LiveScanLogger` (not usable: manual-only,
+  app-private storage).
+- **Harold, 2026-10-05**: *"can you confirm if we have completed these 2 items (MV74-1, MV74-3) ... if
+  not, can we do them next as part of this sprint"*. Not complete (both need a phone build). They move
+  UP: they run on the 0.17.1 build together with the F249/F250 reproductions -- MV74-3 now has per-error
+  causes in the log, MV74-1 has worker start/exit lines that show each Doze firing.

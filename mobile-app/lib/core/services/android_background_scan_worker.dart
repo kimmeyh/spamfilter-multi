@@ -14,6 +14,7 @@
 ///     file log, Excel export) stay in the Windows worker.
 library;
 
+import 'dart:async' show unawaited;
 import 'dart:ui' show DartPluginRegistrant;
 
 import 'package:flutter/widgets.dart' show WidgetsFlutterBinding;
@@ -29,6 +30,7 @@ import '../storage/database_helper.dart';
 import '../storage/settings_store.dart';
 import 'background_mode_service.dart';
 import 'background_scan_core.dart';
+import 'diagnostic_logger.dart';
 import 'scan_sheet_export.dart';
 
 /// Prefix for the per-account WorkManager task name, mirroring the Windows
@@ -101,6 +103,17 @@ class AndroidBackgroundScanWorker {
       final credStore = SecureCredentialsStore();
       final settingsStore = SettingsStore(dbHelper);
 
+      // F248: AFTER the database paths are set -- the logger reads its
+      // on/off setting from the database. Proves the worker ran at all,
+      // which is one of the two F249 candidates.
+      void workerLog(String detail) => unawaited(DiagnosticLogger.log(
+            kind: DiagnosticLogger.kindScan,
+            context: 'worker/android',
+            detail: detail,
+          ));
+      workerLog('start ${isTest ? '[TEST] ' : ''}'
+          '${accountId != null ? Redact.accountId(accountId) : '(all accounts)'}');
+
       final ruleSetProvider = RuleSetProvider();
       await ruleSetProvider.initialize();
 
@@ -157,12 +170,27 @@ class AndroidBackgroundScanWorker {
         } catch (e) {
           _logger.e('Background scan failed for ${Redact.accountId(id)}',
               error: e);
+          workerLog('account ${Redact.accountId(id)} FAILED: '
+              '${DiagnosticLogger.describeError(e)}');
           allSucceeded = false;
         }
       }
+      // Awaited: the worker's isolate can end as soon as this returns, and
+      // the logger chains its writes, so awaiting the last one also flushes
+      // every scan line queued before it.
+      await DiagnosticLogger.log(
+        kind: DiagnosticLogger.kindScan,
+        context: 'worker/android',
+        detail: 'exit ${allSucceeded ? 'success' : 'with failures'}',
+      );
       return allSucceeded;
     } catch (e) {
       _logger.e('Android background scan worker failed', error: e);
+      unawaited(DiagnosticLogger.log(
+        kind: DiagnosticLogger.kindScan,
+        context: 'worker/android',
+        detail: 'worker FAILED: ${DiagnosticLogger.describeError(e)}',
+      ));
       return false;
     }
   }

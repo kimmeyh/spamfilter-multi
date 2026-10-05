@@ -789,10 +789,14 @@ class _SettingsScreenState extends State<SettingsScreen> with SingleTickerProvid
           key: const Key('diagnostic_log_toggle'),
           contentPadding: EdgeInsets.zero,
           title: const Text('Write a diagnostic log'),
+          // F248 (Sprint 76): the text now says what the log records. It used
+          // to promise only "why an action on your mailbox failed"; it also
+          // records each scan's progress and Gmail sign-in steps now.
           subtitle: const Text(
-            'Records why an action on your mailbox failed, so a problem can be '
-            'investigated after the fact. Off by default. No message content '
-            'or passwords are recorded, and email addresses are shortened.',
+            'Records each scan\'s progress, Gmail sign-in steps, and why an '
+            'action on your mailbox failed, so a problem can be investigated '
+            'after the fact. Off by default. No message content or passwords '
+            'are recorded, and email addresses are shortened.',
           ),
           value: _diagnosticLogEnabled,
           onChanged: (value) async {
@@ -803,6 +807,10 @@ class _SettingsScreenState extends State<SettingsScreen> with SingleTickerProvid
             // review: `debug*` is this repo's convention for test-only, so
             // production calling it invites a future reader to guard it away.
             DiagnosticLogger.invalidateCache();
+            // F248 R-4: the file appears the moment logging is on.
+            if (value) {
+              await DiagnosticLogger.appEvent('diagnostic logging turned on');
+            }
             final bytes = await DiagnosticLogger.totalBytes();
             if (mounted) {
               setState(() {
@@ -813,6 +821,23 @@ class _SettingsScreenState extends State<SettingsScreen> with SingleTickerProvid
           },
         ),
         if (_diagnosticLogEnabled) ...[
+          // F248 R-6 (Sprint 76): say WHERE the log goes. On 2026-10-04 the
+          // Fold wrote it one folder deeper than expected and nobody could
+          // tell without a test. A FutureBuilder, like the size row below,
+          // so it follows an export-folder change without a restart.
+          FutureBuilder<String>(
+            key: const Key('diagnostic_log_location'),
+            future: DiagnosticLogger.resolveLogDir(),
+            builder: (context, snapshot) => Padding(
+              padding: const EdgeInsets.only(bottom: 4),
+              child: SelectableText(
+                snapshot.hasData
+                    ? 'Writing to: ${snapshot.data}'
+                    : 'Writing to: (finding the folder...)',
+                style: Theme.of(context).textTheme.bodyMedium,
+              ),
+            ),
+          ),
           SwitchListTile(
             key: const Key('diagnostic_log_keep_all'),
             contentPadding: EdgeInsets.zero,
@@ -1307,34 +1332,42 @@ class _SettingsScreenState extends State<SettingsScreen> with SingleTickerProvid
     final displayPath =
         _csvExportDirectory ?? ExportDirectories.defaultLabel;
 
+    // F248 R-7 (Sprint 76): "Export folder", not "CSV Export Directory" -- it
+    // also decides where YAML exports and the diagnostic log go. And the reset
+    // is visible TEXT: as a bare X with only a tooltip it could not be found
+    // on a phone (Fold, 2026-10-04: "not seeing a reset option").
     return Card(
-      child: ListTile(
-        leading: const Icon(Icons.folder_outlined),
-        title: const Text('CSV Export Directory'),
-        subtitle: Text(
-          displayPath,
-          maxLines: 1,
-          overflow: TextOverflow.ellipsis,
-        ),
-        trailing: Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            if (_csvExportDirectory != null)
-              IconButton(
-                icon: const Icon(Icons.clear),
-                tooltip: 'Reset to default',
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          ListTile(
+            leading: const Icon(Icons.folder_outlined),
+            title: const Text('Export folder'),
+            subtitle: Text(
+              displayPath,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+            ),
+            trailing: IconButton(
+              icon: const Icon(Icons.folder_open),
+              tooltip: 'Browse for folder',
+              onPressed: _selectCsvExportDirectory,
+            ),
+          ),
+          if (_csvExportDirectory != null)
+            Padding(
+              padding: const EdgeInsets.only(left: 56, bottom: 8),
+              child: TextButton.icon(
+                key: const Key('export_folder_reset'),
+                icon: const Icon(Icons.restart_alt, size: 18),
+                label: const Text('Reset to default'),
                 onPressed: () async {
                   setState(() => _csvExportDirectory = null);
                   await _settingsStore.setCsvExportDirectory(null);
                 },
               ),
-            IconButton(
-              icon: const Icon(Icons.folder_open),
-              tooltip: 'Browse for folder',
-              onPressed: _selectCsvExportDirectory,
             ),
-          ],
-        ),
+        ],
       ),
     );
   }

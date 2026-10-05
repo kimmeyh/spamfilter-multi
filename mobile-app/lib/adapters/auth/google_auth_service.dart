@@ -34,6 +34,7 @@ import 'package:google_sign_in/google_sign_in.dart';
 import 'package:google_sign_in_platform_interface/google_sign_in_platform_interface.dart'
     as gsi_platform;
 import 'package:my_email_spam_filter/core/services/background_mode_service.dart';
+import 'package:my_email_spam_filter/core/services/diagnostic_logger.dart';
 import 'package:my_email_spam_filter/adapters/auth/token_store.dart';
 import 'package:my_email_spam_filter/adapters/storage/secure_credentials_store.dart';
 import 'package:my_email_spam_filter/adapters/email_providers/gmail_windows_oauth_handler.dart';
@@ -531,23 +532,33 @@ class GoogleAuthService {
           'in with $expected.');
 
   Future<AuthResult> _signInNative({String? expectedAccountId}) async {
+    // F248 (Sprint 76): which step was running when it failed. On the Fold
+    // (0.17.0) native sign-in failed AFTER the account pick and fell back to
+    // the browser (F250); without this nobody can say which call threw.
+    var step = 'initialize';
     try {
       await _ensureNativeSignInInitialized();
 
       Redact.logSafe('[Auth] Starting Gmail OAuth sign-in via GoogleAuthService...');
 
       // Use authenticate() for interactive sign-in (7.x API)
+      step = 'authenticate';
       _currentUser = await _googleSignIn.authenticate();
-      
+
       if (_currentUser == null) {
         _state = AuthState.unauthenticated;
         Redact.logSafe('[Auth] Gmail sign-in failed or was cancelled');
+        _signInLog('native authenticate returned no user (cancelled)');
         return AuthResult.failure('Sign-in cancelled');
       }
+      _signInLog('native authenticate ok: '
+          '${Redact.email(_currentUser!.email)}');
 
       // Request authorization for scopes
       Redact.logSafe('[Auth] Got user, requesting Gmail API scopes...');
+      step = 'authorizeScopes';
       final authorization = await _currentUser!.authorizationClient.authorizeScopes(_scopes);
+      _signInLog('native authorizeScopes ok');
 
       final accountId = _currentUser!.email;
       // F239: refuse a different account BEFORE saving (saving adds it).
@@ -573,17 +584,38 @@ class GoogleAuthService {
     } catch (e) {
       _state = AuthState.error;
       Redact.logError('Native sign-in failed', e);
-      
+      _signInLog('native $step FAILED: ${DiagnosticLogger.describeError(e)}');
+
       // On Android, fall back to browser-based OAuth if native fails
       if (Platform.isAndroid) {
         Redact.logSafe('[Auth] Trying browser-based OAuth fallback on Android...');
-        return await _signInDesktop(
+        _signInLog('falling back to the browser sign-in');
+        final fallback = await _signInDesktop(
             expectedAccountId: expectedAccountId); // Desktop method works for Android too
+        if (fallback.success) {
+          // F250 R-3 / F246: whether the browser path stored a refresh token
+          // decides if Android background renewal could work on this path.
+          final saved = await _credStore.getGmailTokens(fallback.email ?? '');
+          _signInLog('browser sign-in succeeded (refresh token '
+              '${saved?.refreshToken == null ? 'NOT stored' : 'stored'})');
+        } else {
+          _signInLog('browser sign-in failed: '
+              '${DiagnosticLogger.scrub(fallback.errorMessage ?? 'no message')}');
+        }
+        return fallback;
       }
       
       return AuthResult.failure('Sign-in failed: ${e.toString()}');
     }
   }
+
+  /// F248: one Gmail sign-in record (fire-and-forget). Addresses must already
+  /// be redacted by the caller.
+  void _signInLog(String detail) => unawaited(DiagnosticLogger.log(
+        kind: DiagnosticLogger.kindSignIn,
+        context: 'gmail/sign-in',
+        detail: detail,
+      ));
 
   /// Desktop browser-based OAuth with PKCE.
   Future<AuthResult> _signInDesktop({String? expectedAccountId}) async {
