@@ -8,6 +8,7 @@ import 'package:http/http.dart' as http;
 import '../../adapters/auth/google_auth_service.dart';
 import '../../core/models/batch_action_result.dart';
 import '../../core/services/background_mode_service.dart';
+import '../../core/services/diagnostic_logger.dart';
 import '../../core/storage/settings_store.dart';
 import '../../core/utils/app_logger.dart';
 import '../../util/redact.dart';
@@ -256,6 +257,12 @@ class GmailApiAdapter with BatchOperationsMixin implements SpamFilterPlatform {
         };
         _setGmailApi(refreshedHeaders);
         Redact.logSafe('Access token refreshed successfully via GoogleAuthService');
+        unawaited(DiagnosticLogger.log(
+          kind: DiagnosticLogger.kindSignIn,
+          context: 'gmail/token',
+          detail: '${Redact.accountId(credentials.email)} stored token was '
+              'refused; renewed without the user',
+        ));
       }
       await _setSignInRequired(credentials, false);
       return;
@@ -321,6 +328,17 @@ class GmailApiAdapter with BatchOperationsMixin implements SpamFilterPlatform {
 
   Future<void> _setSignInRequiredFor(String? accountId, bool required) async {
     if (accountId == null || accountId.isEmpty) return;
+    // F248 (Sprint 76): the moment an account starts needing the user. Only
+    // SET is logged -- clearing runs on every successful load and would be
+    // noise.
+    if (required) {
+      unawaited(DiagnosticLogger.log(
+        kind: DiagnosticLogger.kindSignIn,
+        context: 'gmail/token',
+        detail: '${Redact.accountId(accountId)} marked "needs you to sign in '
+            'again"',
+      ));
+    }
     try {
       await SettingsStore().setGmailSignInRequired(accountId, required);
     } catch (e) {

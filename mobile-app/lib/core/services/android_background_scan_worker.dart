@@ -111,6 +111,8 @@ class AndroidBackgroundScanWorker {
             context: 'worker/android',
             detail: detail,
           ));
+      // F248: the worker is its own isolate -- name the build it runs.
+      unawaited(DiagnosticLogger.appEvent('background worker start (android)'));
       workerLog('start ${isTest ? '[TEST] ' : ''}'
           '${accountId != null ? Redact.accountId(accountId) : '(all accounts)'}');
 

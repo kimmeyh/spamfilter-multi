@@ -35,6 +35,17 @@ import '../../helpers/database_test_helper.dart';
 
 const _account = 'someone@example.com';
 
+/// Returns the full sample mail for any folder (the account's AOL folder
+/// names match none of the mock's own).
+class _AllMailPlatform extends MockEmailProvider {
+  @override
+  Future<List<EmailMessage>> fetchMessages({
+    required int daysBack,
+    required List<String> folderNames,
+  }) =>
+      super.fetchMessages(daysBack: daysBack, folderNames: ['All Folders']);
+}
+
 /// Asks for a stop ON THE ROW mid-scan, then gives the heartbeat time to see it.
 class _RowStopPlatform extends MockEmailProvider {
   _RowStopPlatform(this.store);
@@ -222,6 +233,54 @@ void main() {
     expect(log, isNot(contains('SECRET SUBJECT')));
     expect(log, isNot(contains('spammer@bad.example')));
     expect(log, isNot(contains(_account)));
+  });
+
+  test('a scan that finds mail logs rules loaded, each folder\'s count and '
+      'time, the action plan, the stored No Rule rows and its duration',
+      () async {
+    PlatformRegistry.overrideFactoryForTest('aol', _AllMailPlatform.new);
+    await runBackgroundScan();
+    final log = await readLog();
+
+    expect(log, contains(RegExp(r'rules -- rules=\d+ enabled=\d+ safeSenders=\d+')));
+    expect(log, contains(RegExp(r'fetch -- folder "Inbox" done: \d+ emails in \d+ms')));
+    expect(log, contains(RegExp(r'actions -- mode=\w+ executeRules=(true|false)')));
+    expect(log, contains(RegExp(r'\[scan/persist\] .* stored \d+ action record\(s\), [1-9]\d* No Rule row\(s\)')),
+        reason: 'the sample mail matches no rule, so No Rule rows are stored');
+    expect(log, contains(RegExp(r'outcome -- completed found=[1-9]\d* .* in \d+\.\ds')));
+    expect(log, isNot(contains('@bad.example')),
+        reason: 'no sender addresses from the mail itself');
+  });
+
+  test('a dead holder reaped by the claim is named with its heartbeat age',
+      () async {
+    final scanStore = ScanResultStore(testHelper.dbHelper);
+    ScanResult row() => ScanResult(
+          accountId: _account,
+          scanType: 'background',
+          scanMode: 'readOnly',
+          startedAt: DateTime.now().millisecondsSinceEpoch,
+          totalEmails: 0,
+          foldersScanned: const ['INBOX'],
+          status: 'in_progress',
+        );
+    final first = await scanStore.claimAccountScan(row());
+    expect(first.granted, isTrue);
+    // Age the holder past the heartbeat freshness: it stopped beating.
+    final db = await testHelper.dbHelper.database;
+    final old = DateTime.now()
+        .subtract(const Duration(minutes: 10))
+        .millisecondsSinceEpoch;
+    await db.update('scan_results',
+        {'started_at': old, 'last_heartbeat_at': old},
+        where: 'id = ?', whereArgs: [first.id]);
+
+    final second = await scanStore.claimAccountScan(row());
+    expect(second.granted, isTrue);
+    final log = await readLog();
+    expect(log,
+        contains(RegExp('reaped dead background row ${first.id}: started '
+            r'\d+s ago, last heartbeat \d+s ago')));
   });
 
   test('error text is scrubbed of addresses (R-5)', () {

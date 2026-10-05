@@ -108,9 +108,23 @@ class BackgroundScanCore {
     required Future<void> Function() export,
     required Future<void> Function() notify,
   }) async {
-    if (outcome.skipped) return;
+    void postLog(String detail) => unawaited(DiagnosticLogger.log(
+          kind: DiagnosticLogger.kindScan,
+          context: 'scan/post',
+          detail: detail,
+        ));
+    // F248: whether the export and the "scan complete" notification ran --
+    // a stopped or skipped scan deliberately does neither (F238 / MV74-2).
+    if (outcome.skipped) {
+      postLog('no export, no notification '
+          '(${outcome.stopped ? 'stopped' : 'skipped'}: '
+          '${DiagnosticLogger.scrub(outcome.skippedReason ?? '')})');
+      return;
+    }
     await export();
+    postLog('export step done');
     await notify();
+    postLog('notification step done');
   }
 
   static final Logger _logger = Logger();

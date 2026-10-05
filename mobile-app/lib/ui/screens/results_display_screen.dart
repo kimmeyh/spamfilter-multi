@@ -3984,6 +3984,14 @@ class _ResultsDisplayScreenState extends State<ResultsDisplayScreen> {
     if (isReadOnly) {
       logger.i('[F38] read-only preview: would delete ${toDelete.length}, '
           'would move ${toMoveSafe.length}');
+      // F248 / Q4 (Sprint 76): successful and preview outcomes are logged
+      // too, not only failures -- otherwise a rule's real reach is invisible.
+      unawaited(DiagnosticLogger.log(
+        kind: DiagnosticLogger.kindInfo,
+        context: 'F38/re-process',
+        detail: 'read-only preview: would delete ${toDelete.length}, would '
+            'move ${toMoveSafe.length} (no mailbox change)',
+      ));
       return ReProcessOutcome.readOnly(
         wouldHaveDeleted: toDelete.length,
         wouldHaveMoved: toMoveSafe.length,
@@ -3992,6 +4000,11 @@ class _ResultsDisplayScreenState extends State<ResultsDisplayScreen> {
 
     if (toDelete.isEmpty && toMoveSafe.isEmpty) {
       logger.i('[F38] No emails need IMAP re-processing');
+      unawaited(DiagnosticLogger.log(
+        kind: DiagnosticLogger.kindInfo,
+        context: 'F38/re-process',
+        detail: 'nothing to act on (mode ${effectiveMode.name})',
+      ));
       return const ReProcessOutcome.nothingToDo();
     }
 
@@ -4251,6 +4264,17 @@ class _ResultsDisplayScreenState extends State<ResultsDisplayScreen> {
         ),
       );
     }
+
+    // F248 / Q4 (Sprint 76): the outcome of every run, success included --
+    // "acted on N of N" is the evidence a block rule from a saved scan really
+    // moved the mail (Sprint 76 phone checklist item 2).
+    unawaited(DiagnosticLogger.log(
+      kind: DiagnosticLogger.kindInfo,
+      context: 'F38/re-process',
+      detail: 'acted on $successCount of $total (failed $failCount): '
+          'delete=${toDelete.length} moveSafe=${toMoveSafe.length} '
+          'mode=${effectiveMode.name}',
+    ));
 
     // F228 (Sprint 72): hand the outcome back so the CALLER can tell the truth.
     // This method used to return void and report only through the snackbar

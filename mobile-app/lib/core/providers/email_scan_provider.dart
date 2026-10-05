@@ -713,6 +713,15 @@ class EmailScanProvider extends ChangeNotifier {
           await _unmatchedEmailStore!.addUnmatchedEmailBatch(unmatched);
           _logger.i('Persisted ${unmatched.length} unmatched ("No rule") '
               'emails for scan $_currentScanResultId');
+          // F248: how many No Rule rows this scan ADDED -- the growth F245
+          // describes (the same emails re-listed by every background scan).
+          unawaited(DiagnosticLogger.log(
+            kind: DiagnosticLogger.kindScan,
+            context: 'scan/persist',
+            detail: '${Redact.accountId(_currentAccountId)} row '
+                '$_currentScanResultId stored ${actions.length} action '
+                'record(s), ${unmatched.length} No Rule row(s)',
+          ));
         }
       }
     } catch (e) {

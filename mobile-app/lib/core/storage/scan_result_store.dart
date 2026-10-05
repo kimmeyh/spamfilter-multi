@@ -14,6 +14,7 @@ import 'dart:async';
 import 'package:logger/logger.dart';
 
 import '../../util/redact.dart';
+import '../services/diagnostic_logger.dart';
 import '../services/scan_coordinator.dart';
 import 'database_helper.dart';
 
@@ -520,6 +521,12 @@ class ScanResultStore {
       if (count > 0) {
         _logger.i('F175: reconciled $count stale in_progress scan(s) '
             'to interrupted');
+        // F248: rows a dead scan left behind, closed at app start.
+        unawaited(DiagnosticLogger.log(
+          kind: DiagnosticLogger.kindScan,
+          context: 'scan/reconcile',
+          detail: 'closed $count stale in_progress row(s) at startup',
+        ));
       }
       return count;
     } catch (e) {
@@ -740,6 +747,16 @@ class ScanResultStore {
       final ageCutoff =
           now.subtract(ScanCoordinator.scanTimeout).millisecondsSinceEpoch;
 
+      // F248 (Sprint 76): name what is about to be reaped -- a holder closed
+      // here is a scan that stopped beating (F249 candidate 2: a row with no
+      // live worker behind it), and its last beat says for how long.
+      final dying = await txn.query(
+        'scan_results',
+        columns: ['id', 'scan_type', 'started_at', 'last_heartbeat_at'],
+        where: 'status = ? AND account_id = ? AND '
+            '(COALESCE(last_heartbeat_at, started_at) < ? OR started_at < ?)',
+        whereArgs: ['in_progress', row.accountId, beatCutoff, ageCutoff],
+      );
       final reaped = await txn.update(
         'scan_results',
         {
@@ -754,6 +771,19 @@ class ScanResultStore {
       if (reaped > 0) {
         _logger.i('Scan lock: closed $reaped dead scan(s) on '
             '${Redact.accountId(row.accountId)}');
+        for (final d in dying) {
+          final started = d['started_at'] as int? ?? 0;
+          final beat = d['last_heartbeat_at'] as int?;
+          final nowMs = now.millisecondsSinceEpoch;
+          unawaited(DiagnosticLogger.log(
+            kind: DiagnosticLogger.kindScan,
+            context: 'scan/claim',
+            detail: '${Redact.accountId(row.accountId)} reaped dead '
+                '${d['scan_type']} row ${d['id']}: started '
+                '${((nowMs - started) / 1000).round()}s ago, last heartbeat '
+                '${beat == null ? 'never' : '${((nowMs - beat) / 1000).round()}s ago'}',
+          ));
+        }
       }
 
       final live = await txn.query(

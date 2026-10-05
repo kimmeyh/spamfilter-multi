@@ -194,7 +194,14 @@ class DiagnosticLogger {
   static Future<bool> _enabled() async {
     if (_cachedEnabled != null) return _cachedEnabled!;
     try {
-      return await SettingsStore().getDiagnosticLogEnabled();
+      // F248 (Sprint 76): CACHE what was read. Before, every log call read the
+      // setting from the database -- harmless while the log had a handful of
+      // failure lines, but F248 puts a line at every scan stage and on UI
+      // paths, so each became a database query (and, in widget tests, a
+      // sqflite timer still pending when a test ended). The Settings toggle
+      // already calls [invalidateCache] when it changes, so the cache cannot
+      // go stale in this isolate; a background worker reads it once per run.
+      return _cachedEnabled = await SettingsStore().getDiagnosticLogEnabled();
     } catch (_) {
       // Default OFF on any failure -- never start writing files because a
       // settings read threw.

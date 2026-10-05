@@ -34,6 +34,20 @@ import '../../util/error_messages.dart';
 class EmailScanner {
   final String platformId;
   final String accountId;
+
+  /// F248 (Sprint 76): the scan type of the scan in progress, for
+  /// [_diag] lines written from helpers outside `scanInbox`.
+  String _diagScanType = 'manual';
+
+  /// F248: one diagnostic-log line for this scan (fire-and-forget; redacted
+  /// by [DiagnosticLogger.scanEvent]). Never pass a sender, subject or body.
+  void _diag(String stage, [String detail = '']) =>
+      unawaited(DiagnosticLogger.scanEvent(
+        scanType: _diagScanType,
+        accountId: accountId,
+        stage: stage,
+        detail: detail,
+      ));
   final RuleSetProvider ruleSetProvider;
   final EmailScanProvider scanProvider;
   final SecureCredentialsStore _credStore;
@@ -121,13 +135,9 @@ class EmailScanner {
     // F248 (Sprint 76): every scan type writes its stages to the diagnostic
     // log (when the user turned it on). Fire-and-forget: logging must never
     // slow or fail the scan it describes.
-    void diag(String stage, [String detail = '']) =>
-        unawaited(DiagnosticLogger.scanEvent(
-          scanType: scanType,
-          accountId: accountId,
-          stage: stage,
-          detail: detail,
-        ));
+    _diagScanType = scanType;
+    void diag(String stage, [String detail = '']) => _diag(stage, detail);
+    final scanWatch = Stopwatch()..start();
 
     try {
       diag('start',
@@ -274,6 +284,11 @@ class EmailScanner {
       AppLogger.scan('=== SCAN DIAGNOSTICS ===');
       AppLogger.rules('Rules loaded: ${ruleSetProvider.rules.rules.length}');
       AppLogger.rules('Safe senders loaded: ${ruleSetProvider.safeSenders.safeSenders.length}');
+      // F248: "0 rules loaded" explains a scan that matched nothing.
+      diag('rules',
+          'rules=${ruleSetProvider.rules.rules.length} '
+          'enabled=${ruleSetProvider.rules.rules.where((r) => r.enabled).length} '
+          'safeSenders=${ruleSetProvider.safeSenders.safeSenders.length}');
       AppLogger.debug('RuleSetProvider state: isLoading=${ruleSetProvider.isLoading}, isError=${ruleSetProvider.isError}, error=${ruleSetProvider.error}');
       if (ruleSetProvider.rules.rules.isNotEmpty) {
         AppLogger.rules('First rule: ${ruleSetProvider.rules.rules[0].name} (enabled=${ruleSetProvider.rules.rules[0].enabled})');
@@ -497,6 +512,7 @@ class EmailScanner {
           // through the same sink in m=20 slices below, so every path gets
           // identical per-batch evaluation and body-truncated retention.
           diag('fetch', 'folder "$folderName" begin');
+          final folderWatch = Stopwatch()..start();
           final folderMessages = await _fetchFolderMessages(
             platform: platform,
             folderName: folderName,
@@ -514,6 +530,9 @@ class EmailScanner {
           }
 
           totalFetched += folderCount;
+          diag('fetch',
+              'folder "$folderName" done: $folderCount emails in '
+              '${folderWatch.elapsedMilliseconds}ms');
           AppLogger.scan('Step 4: Folder "$folderName" returned $folderCount messages');
           if (isLiveScan) {
             await LiveScanLogger.log('Step 4: Folder "$folderName" returned $folderCount messages');
@@ -684,6 +703,14 @@ class EmailScanner {
 
       AppLogger.scan('Step 6b: Batch execution starting. canExecuteRules=$canExecuteRules, canExecuteSafeSenders=$canExecuteSafeSenders');
       AppLogger.scan('Step 6b: Batch sizes: delete=${deleteEmails.length}, moveToJunk=${moveToJunkEmails.length}, safeSender=${safeSenderMoveEmails.length}');
+      // F248: what the scan was ALLOWED to do and what it planned -- the
+      // difference between "matched" and "acted" (read-only, rules-only).
+      diag('actions',
+          'mode=${scanProvider.scanMode.name} executeRules=$canExecuteRules '
+          'executeSafeSenders=$canExecuteSafeSenders planned: '
+          'delete=${deleteEmails.length} moveToJunk=${moveToJunkEmails.length} '
+          'safeSenderMove=${safeSenderMoveEmails.length} '
+          'safeSenderTarget="$safeSenderTarget"');
       if (isLiveScan) {
         await LiveScanLogger.log(
           'Step 6b: Batch execution starting. canExecuteRules=$canExecuteRules '
@@ -736,6 +763,7 @@ class EmailScanner {
             safeSenderTarget,
           );
           AppLogger.scan('Step 6b-1: Safe sender move to "$safeSenderTarget": ${moveResult.successCount} succeeded, ${moveResult.failureCount} failed');
+          diag('action-result', 'safe-sender move: ${moveResult.successCount} succeeded, ${moveResult.failureCount} failed');
           if (isLiveScan) {
             await LiveScanLogger.log(
               'Step 6b-1: Safe sender move to "$safeSenderTarget": '
@@ -751,6 +779,7 @@ class EmailScanner {
           batchErrors.addAll(moveResult.failedIds);
         } catch (e) {
           AppLogger.warning('Batch safe sender move failed entirely: $e');
+          diag('action-result', 'safe sender move batch FAILED entirely: ${DiagnosticLogger.describeError(e)}');
           if (isLiveScan) {
             await LiveScanLogger.log('Step 6b-1: BATCH FAILED ENTIRELY: $e');
           }
@@ -836,6 +865,7 @@ class EmailScanner {
         try {
           final markResult = await platform.markAsReadBatch(deleteMessages);
           AppLogger.scan('Step 6b-2a: markAsReadBatch DONE: ${markResult.successCount} succeeded, ${markResult.failureCount} failed');
+          diag('action-result', 'mark as read: ${markResult.successCount} succeeded, ${markResult.failureCount} failed');
         } catch (e) {
           AppLogger.warning('Step 6b-2a: markAsReadBatch FAILED: $e');
         }
@@ -848,6 +878,7 @@ class EmailScanner {
             FilterAction.delete,
           );
           AppLogger.scan('Step 6b-2b: takeActionBatch (delete) DONE: ${deleteResult.successCount} succeeded, ${deleteResult.failureCount} failed');
+          diag('action-result', 'delete: ${deleteResult.successCount} succeeded, ${deleteResult.failureCount} failed');
           if (isLiveScan) {
             await LiveScanLogger.log(
               'Step 6b-2: Delete batch DONE: '
@@ -860,6 +891,7 @@ class EmailScanner {
           batchErrors.addAll(deleteResult.failedIds);
         } catch (e) {
           AppLogger.warning('Batch delete failed entirely: $e');
+          diag('action-result', 'delete batch FAILED entirely: ${DiagnosticLogger.describeError(e)}');
           if (isLiveScan) {
             await LiveScanLogger.log('Step 6b-2: BATCH FAILED ENTIRELY: $e');
           }
@@ -927,6 +959,7 @@ class EmailScanner {
             FilterAction.moveToJunk,
           );
           AppLogger.scan('Step 6b-3: takeActionBatch (moveToJunk) DONE: ${junkResult.successCount} succeeded, ${junkResult.failureCount} failed');
+          diag('action-result', 'move to junk: ${junkResult.successCount} succeeded, ${junkResult.failureCount} failed');
           if (isLiveScan) {
             await LiveScanLogger.log(
               'Step 6b-3: moveToJunk batch DONE: '
@@ -939,6 +972,7 @@ class EmailScanner {
           batchErrors.addAll(junkResult.failedIds);
         } catch (e) {
           AppLogger.warning('Batch moveToJunk failed entirely: $e');
+          diag('action-result', 'moveToJunk batch FAILED entirely: ${DiagnosticLogger.describeError(e)}');
           if (isLiveScan) {
             await LiveScanLogger.log('Step 6b-3: BATCH FAILED ENTIRELY: $e');
           }
@@ -1055,7 +1089,8 @@ class EmailScanner {
           'processed=${scanProvider.processedCount} '
           'deleted=${scanProvider.deletedCount} moved=${scanProvider.movedCount} '
           'safe=${scanProvider.safeSendersCount} noRule=${scanProvider.noRuleCount} '
-          'errors=${scanProvider.errorCount}');
+          'errors=${scanProvider.errorCount} '
+          'in ${(scanWatch.elapsedMilliseconds / 1000).toStringAsFixed(1)}s');
 
       // F90 (Sprint 39): write live-scan summary + per-account CSV/XLSX
       // export. Mirrors `BackgroundScanWindowsWorker` end-of-scan logging.
@@ -1639,6 +1674,8 @@ class EmailScanner {
     // contradicting the setting's own UI text. Re-capture historyId
     // afterward so a later windowed scan still resumes incrementally.
     if (lastHistoryId == null || daysBack <= 0) {
+      _diag('fetch-path',
+          'folder "$folderName" Gmail full fetch (${lastHistoryId == null ? 'no history cursor yet' : 'scan all'})');
       AppLogger.scan(lastHistoryId == null
           ? 'Step 4: Gmail first-scan for $folderName -- full fetch'
           : 'Step 4: Gmail full-fetch for $folderName (daysBack=$daysBack "scan all" -- bypassing historyId=$lastHistoryId)');
@@ -1655,6 +1692,8 @@ class EmailScanner {
     }
 
     // Subsequent Gmail scan: incremental delta from persisted historyId.
+    _diag('fetch-path',
+        'folder "$folderName" Gmail incremental from history cursor');
     AppLogger.scan(
         'Step 4: Gmail incremental scan for $folderName from historyId=$lastHistoryId');
     final result = await gmail.fetchMessagesIncremental(
@@ -1666,6 +1705,8 @@ class EmailScanner {
       // Gmail rotated the history window; we have to start over with a full
       // fetch and re-capture historyId.
       AppLogger.scan('Step 4: Gmail historyId expired -- falling back to full scan');
+      _diag('fetch-path',
+          'folder "$folderName" history cursor EXPIRED -- falling back to full fetch');
       await dbHelper.setLastHistoryId(accountId, null);
       final messages = await gmail.fetchMessages(
         daysBack: daysBack,
@@ -1736,6 +1777,9 @@ class EmailScanner {
     // the cursor after this full fetch (it runs unconditionally on whatever
     // was evaluated), so a later windowed scan resumes incrementally as normal.
     if (oldestNoRuleUid == null || daysBack <= 0) {
+      _diag('fetch-path',
+          'folder "$folderName" IMAP full fetch daysBack=$daysBack '
+          '(${oldestNoRuleUid == null ? 'no backlog cursor' : 'scan all'})');
       AppLogger.scan(oldestNoRuleUid == null
           ? 'Step 4: IMAP full-fetch for $folderName (daysBack=$daysBack, no no-rule backlog cursor)'
           : 'Step 4: IMAP full-fetch for $folderName (daysBack=$daysBack "scan all" -- bypassing no-rule cursor=$oldestNoRuleUid)');
@@ -1753,6 +1797,8 @@ class EmailScanner {
     //
     // Use startUid = cursor - 1 so the cursor itself is INCLUDED in the
     // result (fetchMessagesIncremental does `UID startUid+1:*`).
+    _diag('fetch-path',
+        'folder "$folderName" IMAP backlog re-scan from UID $oldestNoRuleUid');
     AppLogger.scan(
         'Step 4: IMAP backlog re-scan for $folderName from oldest no-rule UID=$oldestNoRuleUid');
     final result = await imap.fetchMessagesIncremental(

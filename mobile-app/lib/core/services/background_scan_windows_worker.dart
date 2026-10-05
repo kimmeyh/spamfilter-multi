@@ -113,6 +113,8 @@ class BackgroundScanWindowsWorker {
       // F248: the same worker start/exit lines the Android worker writes
       // (ADR-0042), into the user-reachable diagnostic log -- the _bgLog file
       // above stays as the Windows-only detailed trace.
+      // F248: the worker is its own process -- name the build it runs.
+      unawaited(DiagnosticLogger.appEvent('background worker start (windows)'));
       unawaited(DiagnosticLogger.log(
         kind: DiagnosticLogger.kindScan,
         context: 'worker/windows',

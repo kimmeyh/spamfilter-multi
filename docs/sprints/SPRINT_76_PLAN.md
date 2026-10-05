@@ -345,6 +345,38 @@ when the log names the cause, not pre-approved here.
   (stop during connect / during an empty folder / during the last folder); M138-M140 KILLED; suite 2,531 /
   15 / 0. ADR-0039 amended. **Still open (part 2)**: a stop while the connect or a folder search is itself
   BLOCKED (no check point inside one awaited call) and an orphaned row -- decided from the 0.17.1 phone log.
+- **F248 extension -- "diagnostic information about ALL scans" (Harold, 2026-10-05: *"We need diagnostic
+  information about all scans - do an analysis of what information would be useful and then add to the
+  'Write diagnostic log' file"*; Q4 = 1).** Analysis: the questions a field report has to answer, what the
+  log said after the first F248 commit, and what was added.
+  - *Did the scan run, and which build ran it?* -- had: start / worker start / outcome. ADDED: an `APP`
+    line (version, environment, platform) at each background worker start -- a worker is its own
+    isolate/process and never wrote the app-start line.
+  - *What was the scan working with?* -- had: platform, folder count, days back, mode. ADDED: rules loaded
+    (total / enabled) and safe senders (`rules --`), so "matched nothing" can be told from "had no rules".
+  - *Where did the time go, and what did each folder return?* -- had: folder begin. ADDED: per-folder
+    `done: N emails in Ms`, and the fetch PATH per folder (`fetch-path`: Gmail incremental / Gmail full and
+    why / history cursor EXPIRED fallback / IMAP full / IMAP backlog re-scan from UID), plus total scan
+    duration on the outcome line.
+  - *What did it do to the mailbox?* -- had: counts. ADDED: the plan (`actions --`: mode, whether rules
+    and safe senders may execute, planned delete / move-to-junk / safe-sender move, target folder) and each
+    batch's result (`action-result --`: N succeeded, N failed; or the batch failing entirely).
+  - *What did it store?* -- ADDED: `scan/persist` -- action records and No Rule rows added per scan (the
+    F245 growth, measurable per run).
+  - *Why did a scan get closed or skipped?* -- had: skip, busy retry, refusal, timeout, stop. ADDED: the
+    claim REAPING a dead holder (`scan/claim -- reaped dead <type> row N: started Ns ago, last heartbeat
+    Ns ago` -- F249 candidate 2) and startup reconciliation (`scan/reconcile`).
+  - *What happened after the scan?* -- ADDED: `scan/post` -- export and notification ran, or why not.
+  - *Gmail token health* -- had: native sign-in steps. ADDED: `gmail/token` -- an account being marked
+    "needs you to sign in again", and a refused token renewed without the user.
+  - *Rule actions from Results (Q4)* -- had: failures only. ADDED: every run's outcome -- read-only preview
+    (would delete / would move), nothing to act on, or `acted on N of M (failed F)` with the mode.
+  - *Deliberately NOT added*: network type and battery/Doze state (needs a new plugin call inside the
+    WorkManager engine -- a risk on the path being diagnosed); per-email lines (volume, and a sender or
+    subject must never be written). Privacy unchanged: addresses redacted, no subject/body/token.
+  - Found while testing: `DiagnosticLogger._enabled()` never cached what it read, so every log call was a
+    database query. Now cached (the toggle already invalidates it). Tests: +2 behavior tests, +1 source
+    gate (Q4); M141-M147 KILLED; suite 2,534 / 15 / 0.
 - **Harold, 2026-10-05**: *"can you confirm if we have completed these 2 items (MV74-1, MV74-3) ... if
   not, can we do them next as part of this sprint"*. Not complete (both need a phone build). They move
   UP: they run on the 0.17.1 build together with the F249/F250 reproductions -- MV74-3 now has per-error

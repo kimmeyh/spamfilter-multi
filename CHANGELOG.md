@@ -27,6 +27,7 @@ Format: `- **type**: Description (Issue #N)` where type is feat|fix|chore|docs
 ## [Unreleased]
 
 ### 2026-10-05 (Sprint 76)
+- **feat**: the diagnostic log now covers every scan in detail: which build ran a background scan, the rules loaded, each folder's email count and time and how it was fetched, what the scan planned to do and how each batch of actions went, the No Rule entries it stored, total duration, a stuck scan being closed (and how long it had been silent), the export and notification, Gmail sign-in renewals, and the result of every rule you add from Scan Results -- not only failures. (Issue #452)
 - **fix**: "Stop the background scan and start mine" and Cancel Scan now take effect right after the scan connects, at the start of each folder and before results are applied -- not only once emails have been fetched. Before, a scan that had found nothing yet ignored the request and went on to finish, which is how a stuck background scan on a phone could not be stopped. (Issue #453)
 - **feat**: the diagnostic log now records each scan's progress (start, connect, each folder, how it ended), each scan error with its cause, the background stop request, Gmail sign-in steps, and a line when the app starts or logging is turned on. Before, a scan wrote nothing to it, so a stuck background scan or a failed sign-in could not be explained. Email addresses are shortened; no message content is recorded. (Issue #452)
 - **feat**: Settings shows the folder the diagnostic log is written to. (Issue #452)

@@ -93,4 +93,28 @@ void main() {
     expect(body.contains("_signInLog('falling back to the browser sign-in')"),
         isTrue);
   });
+
+  test('Q4: every rule-action run from Results logs its outcome -- preview, '
+      'nothing to do, and acted on N of M (source gate; settled on the phone '
+      'by checklist item 2)', () {
+    final src =
+        File('lib/ui/screens/results_display_screen.dart').readAsStringSync();
+    final start = src.indexOf('Future<ReProcessOutcome> _reProcessAffectedEmails(');
+    final end = src.indexOf('Future<void> _addSafeSender(', start);
+    final body = src.substring(start, end);
+    int before(String log, String ret) {
+      final r = body.indexOf(ret);
+      final l = body.lastIndexOf(log, r);
+      return r - l;
+    }
+
+    expect(before("detail: 'read-only preview: would delete",
+            'return ReProcessOutcome.readOnly('),
+        inInclusiveRange(1, 400));
+    expect(before("detail: 'nothing to act on", 'return const ReProcessOutcome.nothingToDo();'),
+        inInclusiveRange(1, 400));
+    expect(before("detail: 'acted on \$successCount of \$total",
+            '    return ReProcessOutcome(\n'),
+        inInclusiveRange(1, 1200));
+  });
 }
