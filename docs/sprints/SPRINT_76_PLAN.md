@@ -283,6 +283,200 @@ Already done on 0.17.0 (2026-10-04): the Gmail add flow -- PASS, with the double
 
 ---
 
+## Scope added 2026-10-05 (Harold, after the unattended-scanning analysis)
+
+Harold: *"Generally the app makes no sense if it can't run without the user going to the app"*, then
+*"we are ONLY wanting to do the same thing that the email app currently does - periodically wake up, scan
+for new emails, update the app and go quit again"*, then *"yes, lets plan option 1 for this sprint (full
+card...) q2. 1 q3 1"*. Option 1 = the notification-listener trigger (Task 6); Q2 = 1 = the Option A
+measurement steps now, in 0.17.3 (Task 5); Q3 = 1 = a home-screen widget card to the backlog (F254).
+Harold's correction to the listener design: a notification only says "mail arrived" -- the scan it
+triggers covers ALL mail since the last scan, Bulk folders included, so it also helps users whose mail
+app notifies only for the Inbox.
+
+The analysis behind it (sources quoted in the session, 2026-10-05): Doze *"Suspends network access"* and
+*"Doesn't let JobScheduler run"*; an app with *"No user interaction for 8 days"* enters the Restricted
+bucket (*"Jobs: Once per day"*, *"Alarms: One per day"*); apps on the battery-optimization exemption list
+*"bypass bucket-based restrictions entirely"* and *"can use the network and hold partial wake locks during
+Doze"*; *"Most apps can invoke"* `ACTION_IGNORE_BATTERY_OPTIMIZATION_SETTINGS`, while Play restricts the
+direct `REQUEST_IGNORE_BATTERY_OPTIMIZATIONS` request. Thunderbird for Android -- the closest comparable,
+a third-party IMAP app on a timer -- has the same 15-minute floor and Doze delays (its spike #11059,
+2026-05-27).
+
+---
+
+## Task 5 -- F252: Keep background scans running -- battery setting and wake-to-scan timing (Priority 1, Issue #457)
+
+**Value**: This prevents Android from cutting background scans to once a day (or none) for a user who
+does not open the app, and measures whether a Doze alarm actually produces a scan.
+
+**Requirements**:
+- R-1 (audit first -- DONE 2026-10-05): nothing in `lib/` or `android/app/src` reads the battery-optimization
+  state or opens its settings; `DozeScanTrigger.kt` sends `f235DozeWake` in the worker payload and no Dart
+  code reads it, so the log cannot tell an alarm-started worker from a periodic one or show the delay.
+- R-2: The alarm records the time it fired in the worker payload; the worker's start line in the diagnostic
+  log names its trigger (`doze-alarm`, `periodic`, `notification`, `test`) and, for an alarm or a
+  notification, the seconds between the trigger and the worker starting.
+- R-3: Settings (Android only) shows a "Keep background scans running" row with the current state read
+  from Android (`PowerManager.isIgnoringBatteryOptimizations`): "Unrestricted" or "Optimized -- Android may
+  delay or skip background scans".
+- R-4: The row's button opens this app's Android settings page (App info), where Battery > Unrestricted
+  is set; the row text names the steps, including Samsung's "Never sleeping apps". The state is re-read
+  when the user returns to the app.
+- R-5: The app does NOT declare `REQUEST_IGNORE_BATTERY_OPTIMIZATIONS` (Play policy: direct exemption
+  requests are prohibited unless the core function is adversely affected).
+- R-6: Measurement (Harold, on the Fold, 0.17.3): one day with the app Unrestricted and the phone idle;
+  record alarm-fire vs worker-start times and how many alarms produced a scan. The result decides
+  whether the alarm must run the scan itself (see interrupt).
+
+**Affected components / files**:
+- `android/app/src/main/kotlin/com/myemailspamfilter/DozeAlarmScheduler.kt`, `DozeScanTrigger.kt` -- fire time in payload.
+- New `android/.../BatteryStatusChannel` (or an extra method on the existing `MainActivity` channel) -- state + open settings.
+- `lib/core/services/android_background_scan_worker.dart` -- trigger and delay on the start line.
+- `lib/ui/screens/settings_screen.dart` -- the row (Background section, Android only), near `_buildAndroidDozeStatusLine`.
+
+**Existing abstraction checked**: `AndroidDozeAlarm` / `com.myemailspamfilter/doze_alarm` channel (MainActivity);
+`DiagnosticLogger.appEvent` worker start line (F248); `_buildAndroidDozeStatusLine` (Settings).
+
+**Callers of any guard being changed**: none -- no guard changes; the payload gains a key that only the
+worker's log line reads. Tooling: N/A (Android only; WinWright unaffected).
+
+**User-reachable control**: Settings > Background > "Keep background scans running" (status + "Open battery settings").
+
+**Observable behavior -- before / after**: BEFORE: Settings says Android may delay scans; nothing shows
+whether this phone does, and nothing helps fix it. AFTER: Settings shows "Unrestricted" or "Optimized",
+and one tap opens the page where the user sets Unrestricted.
+
+**Dependencies / blockers**: None to build; R-6 needs the 0.17.3 build on the Fold (Harold).
+
+**Non-functional requirements**:
+- Platform: Android only -- a declared ADR-0042 exception (Windows has no Doze or battery optimization;
+  the row is not shown there).
+- Accessibility: the status is text, not color alone.
+
+**Acceptance criteria**:
+- AC-1: A worker started by the alarm writes a start line with `trigger=doze-alarm` and a delay in seconds;
+  a periodic one writes `trigger=periodic`.
+- AC-2: Given the app is Optimized, When Settings opens, Then the row reads "Optimized ..." and shows the
+  button; Given Unrestricted, Then it reads "Unrestricted".
+- AC-3: Tapping the button invokes the open-settings channel method.
+- AC-4: The merged manifest does not contain `REQUEST_IGNORE_BATTERY_OPTIMIZATIONS`.
+- AC-5: The R-6 measurement is recorded in this card.
+
+**Tests to write**:
+- T-1 (AC-1) -- TEST-UNIT `test/unit/services/f252_worker_trigger_line_test.dart`: payload with and without the alarm keys -> start line.
+- T-2 (AC-2, AC-3) -- TEST-WIDGET `test/ui/screens/f252_battery_row_test.dart`: channel stub returns each state; button calls the open method; row absent off Android.
+- T-3 (AC-4) -- TEST-UNIT (policy) on `AndroidManifest.xml`: the permission is not declared.
+
+**Definition of Done**: default DoD PLUS: R-6 measured on the Fold; ADR-0042 exception noted in the code
+comment and in ARCHITECTURE.md's background-scan section.
+
+**Model**: Opus 5.5 -- *why not cheaper*: native channel + worker payload across Kotlin and Dart; single interactive session (Sprint 68 IMP-4 (a)).
+
+**Step-types**: NATIVE-ANDROID, SVC-EDIT, UI-MOVE, TEST-UNIT, TEST-WIDGET | **Est-Effort**: 120-200m
+
+_**Risk & rollback**_: Samsung may re-add the app to sleeping apps after an update -- the status row makes
+that visible. Rollback: remove the row; the payload key is inert.
+
+_**Decision-class interrupts**_: Class 1 if R-6 shows alarms do not produce scans -- running the scan from
+the alarm in a foreground service (Play declaration + video) reverses F235's handoff design. Surface with
+the measurement and wait.
+
+---
+
+## Task 6 -- F253: Scan when a mail app says new mail arrived (Priority 2, Issue #458)
+
+**Value**: This enables a scan within about a minute of new mail -- including while the phone sleeps and
+the app is unopened -- for users whose mail app shows new-mail notifications, instead of waiting for
+Android to release the next 15-minute slot.
+
+**Requirements**:
+- R-1 (audit first -- DONE 2026-10-05): no notification listener exists; the one-off worker path
+  (`DozeScanTrigger.enqueue` -> `BackgroundWorker`) exists, and a worker with no `accountId` scans every
+  saved account, each gated by its own background setting and the per-account claim.
+- R-2: A `NotificationListenerService` (Android) reacts only to notifications posted by mail apps on a
+  single allowlist in code (Gmail, AOL Mail, Yahoo Mail, Samsung Email, Outlook; extendable).
+- R-3: Privacy: the listener reads ONLY the posting package name and the post time. It never reads the
+  notification's title, text or extras, and stores nothing from the notification.
+- R-4: On a match it enqueues the existing one-off worker with no account (all accounts), marked
+  `trigger=notification`. Each account's scan covers everything since its last scan in all its selected
+  folders, Bulk included (Harold, 2026-10-05) -- the existing incremental cursors already do this.
+- R-5: Bursts collapse: one unique work name, so a notification that arrives while a triggered scan is
+  queued or running does not start a second one; at most one triggered scan per 2 minutes.
+- R-6: Settings (Android only): a "Scan when new mail arrives" switch, OFF by default. Turning it on opens
+  Android's Notification access screen; the row shows whether access is granted. With the switch off,
+  the listener ignores every notification even if access is still granted.
+- R-7: The worker's start line (F252 R-2) shows `trigger=notification`, the mail app's package, and the
+  delay from the notification's post time.
+- R-8: A new ADR records the listener: why (the 2026-10-05 analysis), the privacy limits in R-3, the
+  Android-only ADR-0042 exception, and the Play disclosure work (listing text, Data safety) required before
+  a production release. Closed testing may run without it.
+
+**Affected components / files**:
+- New `android/.../MailNotificationListener.kt`; `AndroidManifest.xml` (service with
+  `BIND_NOTIFICATION_LISTENER_SERVICE`).
+- `DozeScanTrigger.kt` -- an all-accounts variant with its own unique name and trigger marker.
+- The native channel (state, open Notification access settings, enabled flag in native preferences).
+- `lib/ui/screens/settings_screen.dart` -- the switch; `lib/core/services/android_background_scan_worker.dart` -- start line.
+- `docs/adr/00NN-notification-triggered-scan.md`, `docs/ARCHITECTURE.md`.
+
+**Existing abstraction checked**: `DozeScanTrigger.enqueue` (reused, not copied); the worker's
+all-accounts path; `claimAccountScan` (F236 per-account lock) prevents overlap with the 15-minute scan.
+
+**Callers of any guard being changed**: none changed. The new caller of the worker path is the listener;
+the per-account claim already arbitrates between it, the periodic task, the alarm, and a manual scan.
+Tooling: N/A (Android only).
+
+**User-reachable control**: Settings > Background > "Scan when new mail arrives" (switch + access status).
+
+**Observable behavior -- before / after**: BEFORE: new mail waits for the next background slot (15
+minutes at best, much longer while the phone sleeps). AFTER: with the switch on and access granted, a
+scan starts shortly after a mail app shows a new-mail notification, and its results appear in Scan History.
+
+**Dependencies / blockers**: Task 5 R-2 (the shared worker start line). Fold validation needs a mail app
+with notifications ON -- Harold's own phone has them off, so he turns them on for one account to test.
+
+**Non-functional requirements**:
+- Privacy/security: R-3; access requested only from the switch, never at startup.
+- Platform: Android only (declared ADR-0042 exception; Windows has no equivalent and needs none).
+- Battery: no work for non-mail notifications beyond a package-name comparison.
+
+**Acceptance criteria**:
+- AC-1: A notification from an allowlisted package enqueues exactly one triggered scan; one from any other
+  package enqueues none.
+- AC-2: Five allowlisted notifications in 10 seconds produce one triggered scan.
+- AC-3: With the switch off, an allowlisted notification enqueues nothing.
+- AC-4: The listener source never calls the notification's title, text or extras accessors (source gate,
+  declared SOURCE-TEXT VERIFIED -- the privacy promise is about what the code reads).
+- AC-5 (behavioral): Given the switch on, access granted and the phone idle, When new mail arrives in an
+  account whose mail app notifies, Then a scan with `trigger=notification` appears in the log within a
+  few minutes and Scan History shows it (Fold, Manual Validation).
+
+**Tests to write**:
+- T-1 (AC-1, AC-2, AC-3) -- TEST-UNIT (JVM, `android/app/src/test`) on the listener's decision function
+  (package, enabled flag, last-trigger time -> enqueue or not), extracted as a pure function so it runs
+  without a device.
+- T-2 (AC-4) -- TEST-UNIT (policy) `test/policy/f253_listener_privacy_test.dart`.
+- T-3 (R-6) -- TEST-WIDGET `test/ui/screens/f253_new_mail_switch_test.dart`: switch off by default; turning
+  on calls the open-access method; status text for granted / not granted; absent off Android.
+
+**Definition of Done**: default DoD PLUS: the ADR; Fold validation (AC-5); the Play disclosure items
+listed in the ADR as a production-release precondition in `GOOGLE_PLAY_RELEASE_PROCESS.md`.
+
+**Model**: Opus 5.5 -- *why not cheaper*: new Android service, privacy-bounded, cross-language; single interactive session.
+
+**Step-types**: NATIVE-ANDROID, SVC-EDIT, UI-MOVE, TEST-UNIT, TEST-WIDGET, DOCS | **Est-Effort**: 180-300m
+
+_**Risk & rollback**_: Play review may question notification access -- mitigated by OFF-by-default, a
+package-name-only read and the disclosure; rollback is removing the service from the manifest (the
+switch then reports "not available"). A triggered scan in Doze may still lack network without
+Unrestricted (Task 5) -- the log's delay line shows it.
+
+_**Decision-class interrupts**_: Class 1 APPROVED by Harold 2026-10-05 (*"yes, lets plan option 1 for this
+sprint"*). A foreground service for triggered scans would be a further Class-1 item -- not in this card.
+
+---
+
 ## Sprint summary
 
 - Task 0 -- version 0.17.1+9 -- 10-20m
@@ -290,6 +484,9 @@ Already done on 0.17.0 (2026-10-04): the Gmail add flow -- PASS, with the double
 - Task 2 -- F249 F238 stop on Android -- 90-180m (after a phone reproduction)
 - Task 3 -- F250 Gmail double pick -- 60-180m (after a phone reproduction)
 - Task 4 -- phone checklist -- validation time only
+- Task 5 -- F252 keep background scans running (battery row + wake-to-scan timing) -- 120-200m (added 2026-10-05)
+- Task 6 -- F253 scan when a mail app says new mail arrived -- 180-300m (added 2026-10-05)
+- Backlog: F254 home-screen widget (Harold Q3 = 1, 2026-10-05)
 
 **Total**: 250-530 minutes, plus phone time. **Order**: 0 -> 1 -> build and ship 0.17.1 to Play closed
 testing -> Harold reproduces both on the Fold with logging on -> 2 and 3 from the log -> 0.17.2 if they
