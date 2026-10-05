@@ -1,11 +1,5 @@
 ***BELOW IS NOT FOR CLAUDE CODE, GITHUB COPILOT, CHATGPT OR COPILOT PULL REQUEST (PR) REVIEW USE***
 
-# WINDOWS APP
-# *** build + launch DEV variant (creates Release-dev/MyEmailSpamFilter-Dev.exe, runs it)
-  powershell -NoProfile -ExecutionPolicy Bypass -File "D:\Data\Harold\github\spamfilter-multi\mobile-app\scripts\build-windows.ps1" -Environment dev
-
-# *** build + launch PROD variant (creates Release-prod/MyEmailSpamFilter.exe, runs it)
-  powershell -NoProfile -ExecutionPolicy Bypass -File "D:\Data\Harold\github\spamfilter-multi\mobile-app\scripts\build-windows.ps1" -Environment prod
 
 # *** RUN DEV variant manually
 Start-Process "D:\Data\Harold\github\spamfilter-multi\mobile-app\dist\dev\MyEmailSpamFilter-Dev.exe"
@@ -17,10 +11,17 @@ Get-Process -Name "MyEmailSpamFilter-Dev" -ErrorAction SilentlyContinue |
 Start-Process myemailspamfilter.exe
 Start-Process "shell:AppsFolder\KimmeyConsulting-Ohio.MyEmailSpamFilter_3t07cykjy5226!myemailspamfilter"
 
-
 # Android Run Emulator (simple, no rebuild) -------------------------
 #   Preferred method
 powershell -NoProfile -ExecutionPolicy Bypass -Command "cd D:\Data\Harold\github\spamfilter-multi\mobile-app\scripts; .\start-emulator.ps1"
+
+
+# WINDOWS APP - Build and Run
+# *** build + launch DEV variant (creates Release-dev/MyEmailSpamFilter-Dev.exe, runs it)
+  powershell -NoProfile -ExecutionPolicy Bypass -File "D:\Data\Harold\github\spamfilter-multi\mobile-app\scripts\build-windows.ps1" -Environment dev
+
+# *** build + launch PROD variant (creates Release-prod/MyEmailSpamFilter.exe, runs it)
+  powershell -NoProfile -ExecutionPolicy Bypass -File "D:\Data\Harold\github\spamfilter-multi\mobile-app\scripts\build-windows.ps1" -Environment prod
 
 
 powershell -NoProfile -ExecutionPolicy Bypass -Command "cd D:\Data\Harold\github\spamfilter-multi\mobile-app\scripts; .\build-with-secrets.ps1 -Run"

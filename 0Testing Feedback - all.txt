@@ -8,7 +8,44 @@ Sprint 7n Manual Validation Feedback
 
 ---------------------------------------------------------------------------------------------------------
 Sprint 75 Manual Validation Feedback 
-
+  Manual Validation steps (Windows dev app, already open)
+  1. F214: Settings > Manual Scan tab. The Scan Range slider starts at the same left edge as "Scan all emails", with no "1" or "90" beside it. Check the
+     Background tab too.
+Looks and works OK on Windows and Android Emulator (not sure how it will work on android phone with finger instead of mouse)
+  2. F216:
+     - Open a scan result and click an email. The date and domain lines are the same size as the folder and subject lines.
+     - Manage Rules > add a rule. The Examples, Type and Source lines match the option text beside them.
+     - Check in both light and dark mode.
+Windows - looks good.
+Android - looks good.
+  3. F236:
+     - Settings > General > Export rules YAML. The file's first line reads # Exported by MyEmailSpamFilter 0.17.0 on 2026-10-03.
+     - Import that file. It imports normally.
+Windows - looks good.
+Android - tried to save to the Downloads directory and should be saving to Documents directory see image 
+  4. F238 (cross-process stop). Do not use Test Background Scan for this check: on Windows it runs inside the app, so it does not test two processes.
+     a. Settings > Background: turn background scanning ON for kimmeyharold@aol.com. Leave its mode read-only.
+     b. Close the app.
+     c. In PowerShell, run: & "D:\Data\Harold\github\spamfilter-multi\mobile-app\dist\dev\MyEmailSpamFilter-Dev.exe" --background-scan --account-id=kimmeyharold@aol.com
+     d. Within a few seconds, open the dev app and start a Live Scan on that account.
+     e. Expect "A scan is already running" with Stop the background scan and start mine. Choose it. Expect "Stopping the background scan...", then your
+        scan starts.
+Windows - it just let it run - no pop-up - tried twice - see image
+     f. Scan History shows the background row "Not finished", with "Stopped so your manual scan could start" in gray.
+     g. No "scan complete" notification appears for the stopped scan.
+     h. Turn background scanning OFF again.
+  5. F239 on Windows: your Gmail row should look normal, with no Sign In Again button. Sign In Again appears only when Gmail needs you.
+Correct - signed in via IMAP
+  6. F239 spike (emulator, about 5 minutes):
+     a. On the emulator, open Settings > Passwords and accounts > Add account > Google, and sign in to your Gmail account.
+Already had account
+     b. In the app, add that Gmail account.
+Error - see images. 
+Added another way - email address and password - see images, tried to sign me into Chrome
+Did not add the gmail account 
+     c. Settings > Background > Test Background Scan.
+     d. Tell me when done. I will read the [F239 spike] lines (PASS, NULL or ERROR) from logcat and record the result.
+  7. F215: if you take phone screenshots, run scripts/pull-phone-screenshots.ps1 -Sprint 75. They land in validation-screenshots/sprint-75/.
 
 
 

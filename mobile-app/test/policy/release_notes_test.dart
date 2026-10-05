@@ -133,4 +133,39 @@ void main() {
               'in text a user reads. Describe what changed for THEM.');
     }
   });
+
+  test('shipped paragraphs are ONE line each (no hard wrapping)', () {
+    // Harold, 2026-10-04: the 0.17.0 Windows notes were hard-wrapped at ~100
+    // columns like the derivation header above them. A line break inside a
+    // paragraph is a real character: pasted into Partner Center's "What's new"
+    // field or Play's release-notes field it becomes a broken line on the
+    // listing. Each paragraph is one line; paragraphs are separated by a blank
+    // line. A block whose every line is a list item ("- ") is a deliberate
+    // list and is allowed.
+    final v = currentVersion();
+    for (final store in ['windows', 'play']) {
+      final f = File('../docs/store-assets/RELEASE_NOTES_${v}_$store.md');
+      if (!f.existsSync()) continue;
+      final content = f.readAsStringSync().replaceAll('\r\n', '\n');
+      final sep = content.indexOf('\n---\n');
+      if (sep < 0) continue; // the identifier test reports a missing separator
+      var shipped = content.substring(sep + 5);
+      final auditTail = shipped.indexOf('**Excluded from this file**');
+      if (auditTail > -1) shipped = shipped.substring(0, auditTail);
+      shipped = shipped.replaceAll(RegExp(r'</?en-US>'), '\n');
+
+      final wrapped = shipped
+          .split(RegExp(r'\n\s*\n'))
+          .map((p) => p.trim())
+          .where((p) => p.contains('\n'))
+          .where((p) => !p.split('\n').every((l) => l.trimLeft().startsWith('- ')))
+          .toList();
+      expect(wrapped, isEmpty,
+          reason: 'the $store release notes hard-wrap ${wrapped.length} '
+              'paragraph(s); the first starts "${wrapped.isEmpty ? '' : wrapped.first.split('\n').first}". '
+              'Put each paragraph on ONE line -- the line breaks are pasted '
+              'into the store field as real breaks (STORE_RELEASE_PROCESS.md '
+              'Step 1b).');
+    }
+  });
 }

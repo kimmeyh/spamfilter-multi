@@ -9,6 +9,210 @@ If questions must be asked, ask as late as possible - do everything that can be 
 Sprint 7n Scope should include the below items. Please complete sprint planning (/docs/sprint_planning.md) for the below items and present for approval.  Note that everything needs to take into account both the Windows App and the Android app and ADR stating that everything should be functionally and UI the same unless it cannot be - and where it cannot be it should be implemented as a platform exception for what is needed -- this applies to all backend code, frontend code, data, architecture, development, security, testing, deployment.
 
 ---------------------------------------------------------------------------------------------------------
+Sprint 76 Scope should include the below items. Please complete sprint planning (/docs/sprint_planning.md) for the below items and present for approval.  Note that everything needs to take into account both the Windows App and the Android app and ADR stating that everything should be functionally and UI the same unless it cannot be - and where it cannot be it should be implemented as a platform exception for what is needed -- this applies to all backend code, frontend code, data, architecture, development, security, testing, deployment.
+- Add to backlog for future sprint
+  - Deep dive on tools that can be used with stored email content for Heuristics, ML and GenAI spam identification tools
+    - Should result in one or more backlog items to develop Heuristic, ML and GenAI pipelines and how they can be used:
+      - Updates to YAML imports:
+	- new delete rules: new known bad domains (...domain.TLD) of domains, subject string regex and body regex
+        - New tools to find and identify safe senders
+      - One device Heuristics, ML or GenAI tools
+- Add to backlog for this sprint
+  - Store history of email content for future use of Heuristics, ML and GenAI spam identifiers (exact methods TBD)
+  - Probably a database of fields - design and implement
+  - Can use all of my personal emails via Windows App, Android App (eventually iPhone) scans
+  - no duplicate emails
+  - can initially populate from existing delete rules and safe sender rules on Windows/Android
+
+
+
+  Your steps: Microsoft Store
+
+  1. Partner Center > MyEmailSpamFilter > Start update > Packages > add:
+     D:\Data\Harold\github\spamfilter-multi-prod\mobile-app\build\windows\x64\runner\Release\my_email_spam_filter.msix
+  2. Wait for validation. Confirm it shows version 0.17.0.0.
+  3. Store listings > English (United States) > "What's new in this version". Paste the text below the --- line from:
+     D:\Data\Harold\github\spamfilter-multi\docs\store-assets\RELEASE_NOTES_0.17.0_windows.md
+  4. Click Submit for certification.
+  5. Once it is live and installed: Gmail sign-in must show the real client ID in the browser address, and About must read "Version 0.17.0" with no
+     [DEV]. I could not run these two checks headless.
+
+  Your steps: Google Play
+
+  1. Play Console > Test and release > App bundle explorer. Confirm that versionCode 8 was never uploaded. The superseded 2026-09-25 bundle also
+     carried 8. If 8 is taken, tell me and I will rebuild as 9.
+  2. Closed testing > Create new release > upload:
+     D:\Data\Harold\github\spamfilter-multi\mobile-app\build\app\outputs\bundle\prodRelease\app-prod-release.aab
+  3. Release name: Closed testing 0.17.0.
+  4. Release notes: paste this block with its tags. The length check passed against the 500-character limit; the source is RELEASE_NOTES_0.17.0_play.md.
+  <en-US>
+  Scan results show each email's date; Sort lists newest first.
+
+  Rules added while reviewing a saved scan work again.
+
+  One scan per account at a time. You can stop a running background scan and start yours. A stuck scan no longer shows "In progress".
+
+  New accounts get the right folders, including spam.
+
+  Gmail offers Sign In Again when needed, keeps its settings, and shows real email dates.
+
+  Exports save to Documents, can hide sender details, and rule export works. Scan history can be cleared.
+  </en-US>
+  5. Save, roll out, then Publishing overview > Send changes for review.
+
+  Tell me when each upload is submitted. I will record it as submitted only from what you saw in the console.
+
+  Recommendation for Sprint 76
+
+  My recommendation is items 1, 2, 5, 8 and 4, plus the committed F238/F239 phone checks. That comes to about 310-510 minutes of coding, plus elapsed
+  phone time:
+  - MV74-1 and MV74-3/F205: the phone checks you committed to Sprint 76. Their dependency, a 0.17.0 phone build, is ready once you upload it.
+  - F247: already targeted for Sprint 76. It closes the test gaps the PR #448 reviews found.
+  - F245: raise its priority. 0.17.0 ships F243, so any Windows user with background scans on gets duplicate No Rule rows every 15 minutes, roughly
+    11,000 a day on your AOL account. That is now user-visible clutter, not a lab issue.
+  - F204, gaps 1 and 2 only: the target SDK is 36 today, but nothing stops a regression, and Google's extension deadline is 2026-11-01. I already read
+    both values from the artifact this session, so the check is mostly written. Gap 3 (16 KB alignment) is due 2027-02-01 and can wait.
+
+  Candidates at a glance
+
+  - MV74-1. F235 Doze scheduling -- validate on the S24+ (~20-40m, plus hours on the device) Priority 2
+  - MV74-3. F205 -- classify the scan errors on a 0.17.0 phone build (~30-60m) Priority 4 (the same work as the F205 card at Priority 18; counted once)
+  - F199-b. Partner Center publisher display name (~15m once unblocked) Priority 12
+  - F204. Gate the three Play requirements that are documented but not asserted (~110-170m) Priority 24
+  - F247. Behavior tests for navigation and platform-gated paths (~120-180m) Priority 25
+  - F246. Android Gmail background renewal through a server-side token exchange (~30-60m retry spike, then a backend with no estimate history) Priority
+    30
+  - F192. Custom IMAP Server support -- build the host-entry UI (~120-180m) Priority 32
+  - F245. Background scans must not re-add No Rule rows for emails already listed (~90-150m) Priority 35
+  - F237. Quiet the non-fatal Kotlin "Daemon compilation failed" traces (~20-40m) Priority 38
+  - F240. Body-rule sub-type consistency (~60-120m) Priority 40
+  - HOLD items, one line each:
+  - F165. Cross-device rules-DB sharing -- user cloud storage exploration + hosted-tier option (~half-day exploration) Priority HOLD
+  - F173. Periodic "Test Coverage and Appropriate Testing" Deep Dive (~4-8h per review) Priority HOLD
+  - F183. Upstream civyk-winwright request: script-runner replay support for ww_wait (~15m to file, then external) Priority HOLD
+  - F179. Subject-blocking phrase picker (~3-5h) Priority HOLD
+  - F152. Periodic User-Centric First-Run Evaluation (~2-3h per review) Priority HOLD
+  - F189. Periodic Skills Audit (~4-8h per review) Priority HOLD
+  - GP-4. Gmail API OAuth Verification / CASA -- the submission itself (~40-80h) Priority HOLD
+  - F111. Periodic Windows App Store upload readiness verification (~110-175m per review) Priority HOLD
+  - F139. Local-install smoke test for a release-candidate MSIX (~30-50m per review) Priority HOLD
+  - F70. Periodic Security Deep Dive (~4-8h per review) Priority HOLD
+  - F130. Periodic Process-Docs Consistency Deep Dive (no estimate history) Priority HOLD
+  - F71. Periodic Architecture Deep Dive (~4-8h per review) Priority HOLD
+  - F201. Periodic Web Property Accuracy Re-Review (~1-2h per review) Priority HOLD
+  - F95. iOS variants + cross-store hardening (~10-16h) Priority HOLD
+  - F63. Responsive design framework (superseded by F141's findings) Priority HOLD
+  - SEC-15. IMAP host validation for custom servers (~1h) Priority HOLD
+  - SEC-8b. Certificate pinning for IMAP endpoints (~4-6h) Priority HOLD
+  - F6. Provider-Specific Optimizations (~10-12h) Priority HOLD
+  - F67. Platform validation - iOS, Linux, macOS (~4-6h per platform) Priority HOLD
+  - SEC-11b. Database-at-rest encryption via sqlite3mc + migration (~8-12h) Priority HOLD
+  - F106. SEC-11b verification-window cleanup (~30m) Priority HOLD
+  - H1. GenAI Pattern Suggestions (TBD) Priority HOLD
+  - H2. Rule Pattern Consistency - Domain Matching Standards (~4-6h) Priority HOLD
+  - H3. Requirements Documentation System (TBD) Priority HOLD
+  - H4. Sent Messages Scan for Safe Senders (~12-16h) Priority HOLD
+  - H5. Outlook.com / Office 365 email provider adapter (~16-20h) Priority HOLD
+
+  Beyond the top 10, the active backlog also holds F213 (Priority 40), F244 (45), F242 (50) and F241 (60).
+
+  Top 10, in detail
+
+  Sprint 76 phone validation carry-ins
+
+  MV74-1. F235 Doze scheduling -- validate on the S24+ (~20-40m, plus hours on the device) Priority 2
+  - Phase: Core App Quality
+  - Platform: Android only (a declared ADR-0042 exception; Windows has no Doze)
+  - Checks that background scans fire while the phone is idle or the screen is off, and that the schedule survives a reboot.
+  - The reboot case matters most: without it, this is a regression against WorkManager.
+  - Depends on: the 0.17.0 Play build reaching the S24+ (your upload above).
+
+  MV74-3. F205 -- classify the scan errors on a 0.17.0 phone build (~30-60m) Priority 4
+  - Phase: Core App Quality
+  - Platform: Android
+  - Turn on the diagnostic log, reproduce, export it in-app, and pull it over MTP (no adb needed). Then group the errors by cause.
+  - The 2026-09-10 errors were Gmail-only and from before 0.15.0, so first confirm that none recur on 0.17.0.
+  - Depends on: the 0.17.0 phone build.
+
+  Release Readiness
+
+  F199-b. Partner Center publisher display name (~15m once unblocked) Priority 12
+  - Phase: Release Readiness
+  - Platform: Windows Desktop (Microsoft Store account)
+  - Partner Center still shows "Kimmey Consulting - Ohio". Microsoft's own documents contradict each other on whether an Individual account can change
+    it.
+  - The next step is yours: a support ticket at https://aka.ms/windowsdevelopersupport.
+  - Depends on: Microsoft's answer. Externally blocked.
+
+  Android / Google Play Store Readiness
+
+  F204. Gate the three Play requirements that are documented but not asserted (~110-170m) Priority 24
+  - Phase: Android / Google Play Store Readiness
+  - Platform: Android
+  - Gap 1 (~30m): assert targetSdk >= 36, read from the built AAB. The value is 36 today but only inherited from Flutter. The deadline extension runs to
+    2026-11-01.
+  - Gap 2 (~20m): assert that AD_ID never appears in the merged manifest. A dependency that pulled it in would make the "no ads" Data safety declaration
+    false.
+  - Gap 3 (~60-120m): 16 KB page alignment, due 2027-02-01.
+  - Depends on: nothing. The protobuf manifest reader written this session can become the gate's reader.
+
+  F246. Android Gmail background renewal through a server-side token exchange (~30-60m retry spike, then a backend with no estimate history) Priority 30
+  - Phase: Android / Google Play Store Readiness
+  - Platform: Android
+  - Today an Android Gmail background scan skips with "Gmail needs you to sign in again" about an hour after the app was last opened.
+  - Google's documented fix needs a server, which this app does not have. Building one is a Class-1 architecture decision.
+  - First, a 30-minute retry of the spike with matched scopes would rule out a scope mismatch.
+  - Depends on: an architecture decision from you.
+
+  Testing
+
+  F247. Behavior tests for navigation and platform-gated paths (~120-180m) Priority 25
+  - Phase: Core App Quality
+  - Platform: All
+  - This is the PR #448 review carry-in. It covers:
+    - the F238 branches of the manual scan start;
+    - the Gmail add-flow route, which also settles where Back lands;
+    - the Windows token tests on CI;
+    - the Android sign-in exception path;
+    - Sign In Again details;
+    - a self-test for the mutation tool.
+  - Item 3 adds a test hook to production code (Class-2), which I will raise at planning.
+  - Depends on: nothing.
+
+  Core App Quality
+
+  F192. Custom IMAP Server support -- build the host-entry UI (~120-180m) Priority 32
+  - Phase: Core App Quality
+  - Platform: All
+  - A form for server, port (default 993), TLS, username and password, with Test Connection, and saved per account.
+  - No screen collects a server address today, so the "any IMAP provider" claim cannot be met yet.
+  - Depends on: nothing.
+
+  F245. Background scans must not re-add No Rule rows for emails already listed (~90-150m) Priority 35
+  - Phase: Core App Quality
+  - Platform: All (made frequent on Windows by F243 in 0.17.0)
+  - Every read-only background scan inserts the same No Rule rows again: about 115 per AOL run, roughly 11,000 a day.
+  - Fix: decide what identifies a No Rule entry (account plus message ID, or folder plus UID), then update an existing entry instead of inserting a
+    duplicate.
+  - Depends on: nothing.
+
+  F237. Quiet the non-fatal Kotlin "Daemon compilation failed" traces (~20-40m) Priority 38
+  - Phase: Core App Quality
+  - Platform: Android
+  - The traces are harmless noise caused by the pub cache sitting on a different drive (C: versus D:), but they cost Sprint 73 an evening of
+    misdiagnosis.
+  - Options: kotlin.incremental=false, or move the pub cache to D:.
+  - Depends on: nothing. Preventive only.
+
+  F240. Body-rule sub-type consistency (~60-120m) Priority 40
+  - Phase: Core App Quality
+  - Platform: All
+  - Quick-add and the default rule set store body rules as entire_domain, while manual and imported body rules use keyword.
+  - Decide per pattern kind, align the creators, and reclassify the stored rows. This needs a DB migration, the same shape as the Sprint 74 subject-rule
+    fix.
+  - Depends on: nothing.
+
+---------------------------------------------------------------------------------------------------------
 Sprint 75 Scope should include the below items. Please complete sprint planning (/docs/sprint_planning.md) for the below items and present for approval.  Note that everything needs to take into account both the Windows App and the Android app and ADR stating that everything should be functionally and UI the same unless it cannot be - and where it cannot be it should be implemented as a platform exception for what is needed -- this applies to all backend code, frontend code, data, architecture, development, security, testing, deployment.
   - F238 is the release blocker for 0.17.0.
   - F216 and F214 are both tester-visible polish in shared screens. They are cheap, and they make the next store update better.

@@ -158,6 +158,29 @@ for an engineer; a release note is written for someone deciding whether to care
 about an update. Drop issue numbers, drop internal identifiers (F190, GP-4),
 and say what changed for them.
 
+**One line per paragraph -- NEVER hard-wrap the shipped text (Harold, 2026-10-04).** Below the
+`---` separator, write each paragraph as a single line, with one blank line between paragraphs.
+Do not wrap at 100 columns the way the rest of this repo's Markdown is wrapped: a line break inside
+a paragraph is a real character, and it is pasted into Partner Center's "What's new" field and
+Play's release-notes field as a broken line. A deliberate list (every line starting `- `) is the
+only multi-line block allowed. The derivation header ABOVE the separator is never pasted and may
+wrap. Example -- correct:
+
+```
+Scan results are easier to work through. Each email shows the date it arrived, and a new Sort button switches between the usual order (folder, then sender domain, then sender address) and newest first.
+```
+
+Wrong (three lines, so three broken lines on the listing):
+
+```
+Scan results are easier to work through. Each email shows the date it arrived, and a new Sort
+button switches between the usual order (folder, then sender domain, then sender address) and
+newest first.
+```
+
+Gated: `test/policy/release_notes_test.dart` ("shipped paragraphs are ONE line each") fails on any
+hard-wrapped paragraph in either store's file.
+
 **Hard limits, both learned the hard way in Sprint 66:**
 
 - **Google Play: 500 characters per language**, and the field requires

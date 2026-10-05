@@ -84,6 +84,12 @@ D:\Data\Harold\github\spamfilter-multi\docs\store-assets\RELEASE_NOTES_<version>
 Paste the `<en-US>` block INCLUDING its tags. Everything above the `---` separator is the
 derivation header and audit trail, which never goes into the console.
 
+**One line per paragraph -- NEVER hard-wrap the text inside `<en-US>` (Harold, 2026-10-04).** Each
+paragraph is a single line, with one blank line between paragraphs; a line break inside a
+paragraph is pasted into the console as a real break. Same rule as the Windows notes -- see
+`STORE_RELEASE_PROCESS.md` Step 1b for the correct/wrong example. Gated by
+`release_notes_test.dart` ("shipped paragraphs are ONE line each").
+
 **Hard limits, both learned by hitting them:**
 
 - **500 characters per language.** MEASURE it, never estimate -- Sprint 66 estimated three
