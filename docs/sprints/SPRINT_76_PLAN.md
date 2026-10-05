@@ -629,6 +629,19 @@ when the log names the cause, not pre-approved here.
   only), `f253_new_mail_switch_test` (9); M168-M175 KILLED. Debug APK builds (exit 0; manifest merges).
   Suite 2,564 / 15 / 0; analyzer clean. Unverified until the Fold: the AOL and Yahoo package names, and
   whether a triggered scan reaches the network while idle without Unrestricted.
+- **Task 3 F250 -- R-1 DONE, configuration checked (2026-10-05).** AC-1: the failing call is the native
+  `authenticate()` -- `GoogleSignInException(code canceled, [16] Account reauth failed.)` (0.17.2 log 09:43:24
+  and 09:43:44); the browser fallback then succeeds. Checked from Harold's screens, not inferred: the Google
+  Cloud "Android App OAuth Client" has package `com.myemailspamfilter` and SHA-1
+  `3B:C2:42:60:27:14:4F:7F:AD:6E:10:D1:5E:DF:42:8F:E2:01:33:92`, which equals the Play App signing key recorded in
+  `docs/OAUTH_SETUP.md:179` (F211). `google-services.json` (client IDs read with Harold's Q1 = 1) names project
+  `spamfilter-multi` and web client `...-15np...` ("spamfilter web oauth client", shown "not used"). The
+  `authenticate()` request is unchanged since 0.16.0 (`git diff dfa4881 8e4a21b`: Sprint 75 added only a
+  post-sign-in account check and a disabled renewal path; `google_sign_in` version unchanged). Conclusion:
+  no mismatch found in the app or the OAuth clients; the cause is not in the code path that changed. The
+  "Last used Sep 26" on the Android client is NOT evidence of a native success -- the browser fallback uses
+  that client too. Cause unknown; candidates to check on the device: the Google account's state on the Fold
+  (an account that Android itself wants re-authenticated), and the same add flow on a second device.
 - **0.17.3 Fold log (16:45-18:48), 2026-10-05 -- first evidence for F252 R-6 and F253 AC-5.**
   - Unattended AOL background scans ran all evening: 19 worker starts, every one `completed`, 8-12 s each
     after the Background Scan Range changed to 1 day at about 16:55 (was "Scan all", 60 s).
