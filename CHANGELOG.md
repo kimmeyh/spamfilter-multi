@@ -27,6 +27,7 @@ Format: `- **type**: Description (Issue #N)` where type is feat|fix|chore|docs
 ## [Unreleased]
 
 ### 2026-10-05 (Sprint 76)
+- **feat**: the diagnostic log now records WHY a rule update's mailbox actions failed (grouped by reason, addresses removed), and a safe-sender move batch that fails entirely. The 0.17.2 phone log showed "29 failed" with no cause. (Issue #452)
 - **feat**: Android Settings > Background now shows "Keep background scans running": whether Android lets the app run in the background (Battery: Unrestricted or Optimized) and a button that opens the page to change it, with the Samsung "Never sleeping apps" step. Without it Android can hold background scans back while the phone is idle and limit them to about once a day for an app that is not opened. The diagnostic log's background-worker line now says what started each scan and, for the wake-up alarm, how long Android delayed it. (Issue #457)
 - **fix**: the Results screen's "M of N 'No rule' emails addressed" banner now uses the scan's full No Rule total. It took its total on the first render, so a Results screen opened while the scan was still running kept the count at that moment ("0 of 1 ... 148 remaining", then "22 of 1"). (Issue #456)
 - **feat**: the diagnostic log's "stopped" line now names who stopped the scan (the user, a stop request from another scan, the app moving to the background, or a timeout), and the "completed" line includes the emails skipped because they were already filed. (Issue #452)

@@ -182,6 +182,36 @@ ReProcessBucket classifyForReProcess({
   return ReProcessBucket.none;
 }
 
+/// Sprint 76 (0.17.2 Fold log): WHY a rule update's mailbox actions failed,
+/// grouped by reason, for the diagnostic log.
+///
+/// The log read "acted on 0 of 29 (failed 29): moveSafe=29" with no cause --
+/// the batch result carried each id's reason and nothing wrote it down.
+/// Grouped so 29 identical failures are one line, not 29; capped at
+/// [maxReasons] distinct reasons; each reason scrubbed of addresses and capped
+/// at 200 characters. Message ids are never written.
+@visibleForTesting
+List<String> summarizeBatchFailureReasons(
+  Map<String, String> failedIds, {
+  int maxReasons = 3,
+}) {
+  final counts = <String, int>{};
+  for (final reason in failedIds.values) {
+    final scrubbed = DiagnosticLogger.scrub(reason);
+    final capped =
+        scrubbed.length > 200 ? '${scrubbed.substring(0, 200)}...' : scrubbed;
+    counts[capped] = (counts[capped] ?? 0) + 1;
+  }
+  final ordered = counts.entries.toList()
+    ..sort((a, b) => b.value.compareTo(a.value));
+  final lines = [
+    for (final e in ordered.take(maxReasons)) '${e.value} x ${e.key}',
+  ];
+  final more = ordered.length - maxReasons;
+  if (more > 0) lines.add('... and $more other reason(s)');
+  return lines;
+}
+
 class ReProcessOutcome {
   const ReProcessOutcome({
     required this.attempted,
@@ -3477,6 +3507,21 @@ class _ResultsDisplayScreenState extends State<ResultsDisplayScreen> {
   /// re-processed set as well, so a later retry is not skipped as "already
   /// done" -- otherwise a failed email would be permanently unactionable
   /// without a restart, which is the same shape of trap F220 fixed.
+  /// Sprint 76: one diagnostic line per distinct failure reason of a rule
+  /// update's batch (see [summarizeBatchFailureReasons]). Nothing when all
+  /// succeeded.
+  void _logReProcessFailureReasons(
+      String action, Map<String, String> failedIds) {
+    if (failedIds.isEmpty) return;
+    for (final line in summarizeBatchFailureReasons(failedIds)) {
+      unawaited(DiagnosticLogger.log(
+        kind: DiagnosticLogger.kindInfo,
+        context: 'F38/re-process',
+        detail: '$action failed: $line',
+      ));
+    }
+  }
+
   void _recordBatchFailures(
     List<EmailMessage> attempted,
     Set<String> failedIds,
@@ -4134,6 +4179,7 @@ class _ResultsDisplayScreenState extends State<ResultsDisplayScreen> {
           _recordBatchFailures(toDelete, result.failedIds.keys.toSet());
           logger.i(
               '[F38] Delete batch: ${result.successCount} succeeded, ${result.failureCount} failed');
+          _logReProcessFailureReasons('delete', result.failedIds);
         } catch (e) {
           logger.e('[F38] Delete batch failed: $e');
           // F233 (Sprint 72): this is the SERVER_REFUSED shape -- the batch ran
@@ -4187,8 +4233,19 @@ class _ResultsDisplayScreenState extends State<ResultsDisplayScreen> {
           _recordBatchFailures(toMoveSafe, result.failedIds.keys.toSet());
           logger.i(
               '[F38] Safe sender move batch: ${result.successCount} succeeded, ${result.failureCount} failed');
+          _logReProcessFailureReasons(
+              'safe-sender move to "$targetFolder"', result.failedIds);
         } catch (e) {
           logger.e('[F38] Safe sender move batch failed: $e');
+          // Sprint 76: the delete batch's sibling line -- this path wrote
+          // nothing to the diagnostic log.
+          unawaited(DiagnosticLogger.failure(
+            context: 'F38/move-safe-batch',
+            kind: DiagnosticLogger.kindServerRefused,
+            reason: 'batch threw: ${DiagnosticLogger.describeError(e)}',
+            attempted: toMoveSafe.length,
+            failed: toMoveSafe.length,
+          ));
           failCount += toMoveSafe.length;
           moveFailedIds = toMoveSafe.map((m) => m.id).toSet();
           _recordBatchFailures(toMoveSafe, moveFailedIds);
