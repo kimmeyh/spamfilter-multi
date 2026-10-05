@@ -21,6 +21,26 @@ on the live 0.17.0 phone build (S24+ / Fold8; no adb -- screenshots over MTP int
      app was last opened skips with "Gmail needs you to sign in again" (expected: the renewal spike
      failed, see F246) (#442).
 
+## Device finding on the live 0.17.0 Play build (2026-10-04, Fold, before planning)
+
+**F238 stop did NOT work on the phone.** Screenshots `validation-screenshots/sprint-76/Screenshot_20261004_2320*.png`
+to `_2325*.png`: an AOL background scan started 11:20 PM sat "In progress" with Found 0; "Stop the
+background scan and start mine" at 11:21 ended at 11:24 with "The background scan did not stop ... your
+scan was not started"; at 11:25 the row was still "In progress", Found 0. An earlier AOL background row
+(2:52 PM) had been closed as "Scan stopped responding". The app behaved honestly (no second scan).
+
+**Cause NOT established** -- two candidates, which the diagnostic log separates:
+1. The worker is blocked BEFORE its first cancel checkpoint (connect/login). The heartbeat finds the
+   request and calls `ScanCoordinator.requestCancel`, but `throwIfCancelled` runs only at batch
+   boundaries, so a hung connect is never interrupted. Windows validation stopped a scan that was
+   already fetching, which is why it passed there.
+2. No live worker holds the row (an orphaned `in_progress` row) -- nothing can honor the request, and
+   the row is only reaped once its heartbeat is 5 minutes stale.
+
+**Settle it first**: Settings > diagnostic logging ON on the Fold, reproduce (background scan stuck at
+Found 0, then the stop), export the log in-app, pull over MTP. Then card the fix (likely a cancel/timeout
+around connect, or a stale-heartbeat close in `waitForScanToClose`) as a Sprint 76 item.
+
 ## Carry-in from the PR #448 reviews
 
 - **F247** -- behavior tests for navigation and platform-gated paths (startRealScan F238 branches, the
