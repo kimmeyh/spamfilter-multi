@@ -26,6 +26,7 @@ import '../../core/security/certificate_pinner.dart';
 import '../../util/redact.dart';
 import '../../adapters/email_providers/email_provider.dart' show Credentials;
 import '../widgets/app_bar_with_exit.dart';
+import '../widgets/battery_optimization_row.dart'; // F252 (Sprint 76)
 import '../widgets/standard_app_bar_actions.dart';
 import 'folder_selection_screen.dart';
 import 'help_screen.dart';
@@ -1561,6 +1562,10 @@ class _SettingsScreenState extends State<SettingsScreen> with SingleTickerProvid
         // F217 (Sprint 72): the Android sibling of the line above.
         if (Platform.isAndroid && _backgroundScanEnabled)
           _buildAndroidDozeStatusLine(),
+        // F252 (Sprint 76): the fix for what the line above describes --
+        // Battery > Unrestricted. Shown whenever background scanning is on.
+        if (Platform.isAndroid && _backgroundScanEnabled)
+          const BatteryOptimizationRow(),
         const Divider(),
         // [UPDATED] FB-4: Test section moved before Frequency
         _buildSectionHeader('Test'),

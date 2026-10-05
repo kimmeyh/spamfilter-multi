@@ -399,8 +399,15 @@ Android to release the next 15-minute slot.
 - R-3: Privacy: the listener reads ONLY the posting package name and the post time. It never reads the
   notification's title, text or extras, and stores nothing from the notification.
 - R-4: On a match it enqueues the existing one-off worker with no account (all accounts), marked
-  `trigger=notification`. Each account's scan covers everything since its last scan in all its selected
-  folders, Bulk included (Harold, 2026-10-05) -- the existing incremental cursors already do this.
+  `trigger=notification`. Each account's scan covers all its selected folders, Bulk included (Harold,
+  2026-10-05). **Correction (2026-10-05, from the 0.17.2 Fold log + `email_scanner.dart`)**: the planning
+  claim "the existing incremental cursors already do this" is only PARTLY true. A scan fetches only new
+  mail when the account's Background Scan Range is a date window (Gmail: historyId delta; IMAP: from the
+  oldest unaddressed No Rule UID forward -- the backlog, not "since the last scan"). With "Scan all" both
+  paths do a FULL fetch every time by design (F147, Sprint 55): the Fold's AOL background scans read
+  ~550 Inbox emails in ~48 s on every run. A trigger per notification on a "Scan all" account therefore
+  costs a full scan; the 2-minute collapse (R-5) bounds it. A true "since the last scan" fetch would
+  change F147's semantics -- a Class-2 decision, surfaced at Manual Validation, not assumed here.
 - R-5: Bursts collapse: one unique work name, so a notification that arrives while a triggered scan is
   queued or running does not start a second one; at most one triggered scan per 2 minutes.
 - R-6: Settings (Android only): a "Scan when new mail arrives" switch, OFF by default. Turning it on opens
@@ -600,3 +607,22 @@ when the log names the cause, not pre-approved here.
   - **Version 0.17.3+11** (plan rule: the code above missed the 0.17.2 / versionCode 10 build Harold is
     uploading); provisional 0.17.3 notes. 0.17.2 is still the build to run the phone checklist on; 0.17.3
     adds the banner fix and the stop reason.
+- **Task 5 F252 -- CODE DONE (R-1 to R-5); R-6 measurement pending the 0.17.3 Fold build.** The alarm reads
+  the clock first and passes `triggerSource` / `triggerAtMs`; `describeBackgroundTrigger` (pure) writes
+  `trigger=doze-alarm delay=Ns` / `periodic` / `test` on the worker start line. Settings > Background >
+  "Keep background scans running" (`BatteryOptimizationRow`, channel `com.myemailspamfilter/battery`):
+  Unrestricted / Optimized / not available, re-read on resume, "Open battery settings" opens App info.
+  No `REQUEST_IGNORE_BATTERY_OPTIMIZATIONS` (gated). Callers (IMP-1): `executeScan` has one caller (the
+  dispatcher). Tests: `f252_worker_trigger_line_test` 7, `f252_battery_row_test` 7; M154b-M163 KILLED
+  (M154 first written non-compiling = INVALID, rewritten). Android debug build compiles (exit 0). Suite
+  2,550 / 15 / 0; analyzer clean. Samsung menu wording in the row is from a secondary source -- check on
+  the Fold.
+- **0.17.2 Fold log (08:57-14:22) analysis, 2026-10-05**: Gmail safe-sender move out of Spam fails 400
+  "Cannot both add and remove the same label" (`gmail_api_adapter.dart:1343`, `:1650` add AND remove
+  INBOX); AOL re-process safe-sender moves fail and are retried on every rule (2 -> 29), cause not in the
+  log; scan 291 died mid-fetch at 11:32:40 leaving an orphaned row until the 13:55 app start (F249 part 2
+  evidence); F250 R-1 = `GoogleSignInException canceled, [16] Account reauth failed.`; Gmail background
+  "needs sign-in" from 11:32 despite "refresh token stored" at 09:44 (F246/F250 R-3); a no-network Gmail
+  scan recorded "completed, errors=3" and not retried; 2-4 workers start together; log lines fragment
+  when isolates write at once; Gmail "found" counter wrong. New items held for Harold at Manual
+  Validation (Class 3).

@@ -30,6 +30,7 @@ import '../storage/database_helper.dart';
 import '../storage/settings_store.dart';
 import 'background_mode_service.dart';
 import 'background_scan_core.dart';
+import 'background_scan_trigger.dart';
 import 'diagnostic_logger.dart';
 import 'scan_sheet_export.dart';
 
@@ -66,6 +67,13 @@ void androidBackgroundScanDispatcher() {
     return AndroidBackgroundScanWorker.executeScan(
       accountId: accountId,
       isTest: isTest,
+      // F252: computed HERE, at entry, so the delay measures how long Android
+      // held the work back -- not the worker's own setup time.
+      trigger: describeBackgroundTrigger(
+        isTest: isTest,
+        inputData: inputData,
+        now: DateTime.now(),
+      ),
     );
   });
 }
@@ -86,6 +94,7 @@ class AndroidBackgroundScanWorker {
   static Future<bool> executeScan({
     String? accountId,
     bool isTest = false,
+    String? trigger,
   }) async {
     _logger.i('Android background scan started'
         '${accountId != null ? ' for ${Redact.accountId(accountId)}' : ' (all accounts)'}'
@@ -114,7 +123,8 @@ class AndroidBackgroundScanWorker {
       // F248: the worker is its own isolate -- name the build it runs.
       unawaited(DiagnosticLogger.appEvent('background worker start (android)'));
       workerLog('start ${isTest ? '[TEST] ' : ''}'
-          '${accountId != null ? Redact.accountId(accountId) : '(all accounts)'}');
+          '${accountId != null ? Redact.accountId(accountId) : '(all accounts)'}'
+          '${trigger != null ? ' $trigger' : ''}');
 
       final ruleSetProvider = RuleSetProvider();
       await ruleSetProvider.initialize();

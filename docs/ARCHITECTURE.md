@@ -566,6 +566,19 @@ so the scan itself still runs in the same worker as above. `BootReceiver` re-arm
 all alarms after a reboot, because alarms (unlike WorkManager work) are not
 persisted. The periodic WorkManager task remains registered as a safety net.
 
+**Measuring and enabling unattended scans** (F252, Sprint 76; Android only, a
+declared ADR-0042 exception): the alarm passes its fire time and source
+(`triggerSource`, `triggerAtMs`) in the worker payload, and the worker's
+diagnostic start line reads `trigger=doze-alarm delay=Ns` (or `periodic` /
+`test`) -- the evidence for whether an alarm produces a scan while the phone is
+idle. Settings > Background shows "Keep background scans running": the
+battery-optimization state read through `com.myemailspamfilter/battery`
+(`PowerManager.isIgnoringBatteryOptimizations`) and a button that opens the
+app's Android settings page. An exempt (Unrestricted) app keeps network access
+in Doze and is outside the App Standby bucket limits. The app does not declare
+`REQUEST_IGNORE_BATTERY_OPTIMIZATIONS` (restricted by Google Play); the user
+chooses Unrestricted.
+
 ### Rule Evaluation Flow (ADR-0005)
 
 ```

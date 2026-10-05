@@ -64,7 +64,27 @@ object DozeScanTrigger {
      */
     private const val TASK_NAME = "spamfilter_background_scan"
 
-    fun enqueue(context: Context, accountId: String?) {
+    /**
+     * Payload keys the Dart worker reads to name what started it (F252 R-2).
+     * Must match `kTriggerSourceKey` / `kTriggerAtMsKey` in
+     * `lib/core/services/background_scan_trigger.dart` (pinned by a source-parity
+     * test, the same way TASK_NAME is).
+     */
+    const val KEY_TRIGGER_SOURCE = "triggerSource"
+    const val KEY_TRIGGER_AT_MS = "triggerAtMs"
+    const val SOURCE_DOZE_ALARM = "doze-alarm"
+
+    /**
+     * [triggerAtMs] is when the ALARM fired (wall clock), so the worker can log
+     * how long Android held the scan back after the alarm. F252: that delay is
+     * the measurement that decides whether the alarm-to-WorkManager handoff
+     * actually scans while the phone is idle.
+     */
+    fun enqueue(
+        context: Context,
+        accountId: String?,
+        triggerAtMs: Long = System.currentTimeMillis(),
+    ) {
         if (accountId == null) {
             Log.w(TAG, "no accountId on the alarm intent; nothing enqueued")
             return
@@ -76,7 +96,8 @@ object DozeScanTrigger {
                 dartTask = TASK_NAME,
                 payload = mapOf(
                     "accountId" to accountId,
-                    "f235DozeWake" to true,
+                    KEY_TRIGGER_SOURCE to SOURCE_DOZE_ALARM,
+                    KEY_TRIGGER_AT_MS to triggerAtMs,
                 ),
                 uniqueName = uniqueName,
             )
