@@ -5,6 +5,7 @@ import android.content.Intent
 import android.net.Uri
 import android.os.PowerManager
 import android.provider.Settings
+import android.util.Log
 import androidx.core.app.NotificationManagerCompat
 import io.flutter.embedding.android.FlutterActivity
 import io.flutter.embedding.engine.FlutterEngine
@@ -95,6 +96,7 @@ class MainActivity : FlutterActivity() {
                         result.success(pm.isIgnoringBatteryOptimizations(packageName))
                     } catch (t: Throwable) {
                         // Unknown, not "optimized": Dart shows no status.
+                        Log.e("MainActivity", "battery state read failed: ${t.message}")
                         result.success(null)
                     }
                 }
@@ -108,6 +110,7 @@ class MainActivity : FlutterActivity() {
                         startActivity(intent)
                         result.success(true)
                     } catch (t: Throwable) {
+                        Log.e("MainActivity", "open app settings failed: ${t.message}")
                         result.success(false)
                     }
                 }
@@ -146,17 +149,30 @@ class MainActivity : FlutterActivity() {
                     )
 
                     "setEnabled" -> {
-                        val on = call.argument<Boolean>("enabled") ?: false
-                        prefs.edit()
-                            .putBoolean(MailNotificationListener.KEY_ENABLED, on)
-                            .apply()
-                        result.success(true)
+                        // Review near-miss: a missing argument is an error, not
+                        // a silent "off".
+                        val on = call.argument<Boolean>("enabled")
+                        if (on == null) {
+                            result.success(false)
+                        } else {
+                            MailNotificationListener.applyEnabled(applicationContext, on)
+                            result.success(true)
+                        }
                     }
+
+                    // Review HIGH-3: the last trigger's outcome, for Settings
+                    // and the diagnostic log ("<epoch ms>|<outcome>" or null).
+                    "lastResult" -> result.success(
+                        prefs.getString(MailNotificationListener.KEY_LAST_RESULT, null),
+                    )
 
                     else -> result.notImplemented()
                 }
             } catch (t: Throwable) {
-                // Same contract as the other channels: report, never throw.
+                // Same contract as the other channels: report, never throw --
+                // and say so in logcat (review HIGH-2).
+                Log.e("MainActivity", "new_mail_trigger ${call.method} failed: "
+                    + "${t.javaClass.simpleName}: ${t.message}")
                 result.success(null)
             }
         }

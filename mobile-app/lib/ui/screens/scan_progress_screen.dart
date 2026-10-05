@@ -1230,6 +1230,7 @@ Future<void> startRealScan({
         ScanCoordinator.instance.releaseActiveByOwner(
           scanType: 'manual',
           accountId: accountId,
+          reason: 'timed out after $minutes minutes (F221)',
         );
       }
       // H-5: the message must match the actual cause. "The mail server may

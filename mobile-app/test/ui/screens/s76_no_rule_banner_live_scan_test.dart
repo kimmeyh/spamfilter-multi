@@ -118,4 +118,90 @@ void main() {
     await tester.pumpWidget(const SizedBox());
     await tester.pump(const Duration(seconds: 11));
   });
+
+  /// Review M-3: the guard's other two branches. Mounts Results with one No
+  /// Rule email already recorded on a scanning provider.
+  Future<EmailScanProvider> mountMidScan(WidgetTester tester) async {
+    tester.view.physicalSize = const Size(1200, 2400);
+    tester.view.devicePixelRatio = 1.0;
+    addTearDown(tester.view.resetPhysicalSize);
+    addTearDown(tester.view.resetDevicePixelRatio);
+    late EmailScanProvider scanProvider;
+    await tester.runAsync(() async {
+      final ruleProvider = RuleSetProvider()
+        ..initializeForTesting(
+          databaseStore: RuleDatabaseStore(testHelper.dbHelper),
+          safeSenderStore: SafeSenderDatabaseStore(testHelper.dbHelper),
+        );
+      await ruleProvider.loadRules();
+      await ruleProvider.loadSafeSenders();
+      scanProvider = EmailScanProvider();
+      await scanProvider.startScan(totalEmails: 0, persist: false);
+      scanProvider.recordResult(noRule(1));
+      await mountAndLoadDbWidget(
+        tester,
+        MultiProvider(
+          providers: [
+            ChangeNotifierProvider<RuleSetProvider>.value(value: ruleProvider),
+            ChangeNotifierProvider<EmailScanProvider>.value(
+                value: scanProvider),
+          ],
+          child: const MaterialApp(
+            home: ResultsDisplayScreen(
+              platformId: 'aol',
+              platformDisplayName: 'AOL',
+              accountId: accountId,
+              accountEmail: accountId,
+            ),
+          ),
+        ),
+      );
+    });
+    await tester.pump();
+    return scanProvider;
+  }
+
+  testWidgets('M-3: a PAUSED live scan does not freeze the total -- results '
+      'that arrive after the resume are counted', (tester) async {
+    final scanProvider = await mountMidScan(tester);
+    scanProvider.recordResult(noRule(2));
+    scanProvider.pauseScan();
+    await tester.pump(); // a render while paused must not capture "2"
+    scanProvider.resumeScan();
+    scanProvider.recordResult(noRule(3));
+    scanProvider.recordResult(noRule(4));
+    await tester.runAsync(() async {
+      await scanProvider.completeScan();
+      await Future<void>.delayed(const Duration(milliseconds: 50));
+    });
+    await tester.pump();
+
+    expect(find.textContaining('0 of 4 "No rule" emails addressed -- 4 remaining'),
+        findsOneWidget,
+        reason: 'capturing during the pause would freeze the total at 2');
+
+    await tester.pumpWidget(const SizedBox());
+    await tester.pump(const Duration(seconds: 11));
+  });
+
+  testWidgets('M-3: a live scan that ENDS IN ERROR shows its full total',
+      (tester) async {
+    // What this does NOT catch: adding `error` to the guard -- with no
+    // results arriving after the error, the uncaptured fallback (the live
+    // count) equals the captured total, so the two are indistinguishable.
+    final scanProvider = await mountMidScan(tester);
+    scanProvider.recordResult(noRule(2));
+    scanProvider.recordResult(noRule(3));
+    await tester.runAsync(() async {
+      await scanProvider.errorScan('connection lost');
+      await Future<void>.delayed(const Duration(milliseconds: 50));
+    });
+    await tester.pump();
+
+    expect(find.textContaining('0 of 3 "No rule" emails addressed -- 3 remaining'),
+        findsOneWidget);
+
+    await tester.pumpWidget(const SizedBox());
+    await tester.pump(const Duration(seconds: 11));
+  });
 }

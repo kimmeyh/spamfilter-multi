@@ -629,6 +629,41 @@ when the log names the cause, not pre-approved here.
   only), `f253_new_mail_switch_test` (9); M168-M175 KILLED. Debug APK builds (exit 0; manifest merges).
   Suite 2,564 / 15 / 0; analyzer clean. Unverified until the Fold: the AOL and Yahoo package names, and
   whether a triggered scan reaches the network while idle without Unrestricted.
+- **5.1.1 automated code review**: DONE 2026-10-05 -- `pr-review-toolkit:code-reviewer` (with the mandatory
+  related-patterns grep) and `pr-review-toolkit:silent-failure-hunter`, both on `origin/develop...HEAD`
+  (39 files, +2771/-41). Both independently found the same HIGH. Dispositions:
+  - FIXED -- H-1 / HIGH-1: a notification-triggered worker returned `false` on any account failure ->
+    plugin `Result.retry()` -> unique work stuck in backoff (up to 5 h) -> KEEP dropped every later trigger
+    while the row read "On". Now `retryOnFailureFor(inputData)` / `workerResult(...)`: a notification run
+    never retries (the next notification is the retry); turning the switch off cancels a queued scan.
+  - FIXED -- HIGH-2: a failed `setEnabled` is reverted and reported; a missing argument is an error, not a
+    silent "off"; native catch logs. HIGH-3: the listener records its last outcome in prefs (shown in the
+    row; copied to the diagnostic log at each app start) and advances the throttle only after a successful
+    enqueue. MEDIUM-1: an unreadable state shows "Status unavailable" and the switch is disabled; an open
+    failure gives the manual path. M-1: the app-wide switch is no longer gated on the selected account's
+    background switch. M-2: turning it off disables the listener component (Android stops binding it).
+    M-3: tests for the F251 guard's paused and error branches. MEDIUM-3: a failing diagnostic write is
+    shown in Settings. MEDIUM-4: "refresh token unknown" when the tokens could not be read back.
+    MEDIUM-5: the worker's FAILED line is awaited. L-1: privacy gate covers `activeNotifications` and
+    friends. L-2: stale refresh cannot overwrite a tap. L-3: `executeScan` doc. L-4: export dialog title.
+    L-5: reset writes before rebuilding. L-6: `reason` is REQUIRED on `requestCancel` /
+    `releaseActiveByOwner` (both timeout callers now name their timeout). L-7: checklist line for the
+    JVM tests. LOWs: reaping query cannot fail the claim; heartbeat failure logged once per run; move-safe
+    throw labeled EXCEPTION; "marked needs sign-in" logged after the write; native battery catches log;
+    the scanner's markAsRead batch failure is logged.
+  - NO CHANGE -- POTENTIAL_MISS scanner batch reasons (`email_scanner.dart` 6b-1/2/3): each failed email
+    already reaches the log as a `scan/error` line with its reason via `recordResult(success: false)`.
+  - HELD FOR MANUAL VALIDATION (Class 2) -- POTENTIAL_MISS `DozeScanTrigger.enqueue` REPLACE can cancel a
+    RUNNING Doze-started scan (the reviewer confirmed the scenario; F249 part 2 candidate).
+  - L-8: AOL / Yahoo package names stay unverified until the Fold run (AC-5).
+  - Found while fixing (Harold: *"I had to re-authenticate the gamil account at least once today"*):
+    on Android a Gmail token RENEWAL always goes through the native SDK (`_refreshViaNativeSignIn`) -- the
+    same path that fails with F250's `[16]` -- and the refresh token the browser fallback stored is never
+    used (only the desktop HTTP path reads it). Read from code, unverified on the device; new
+    `gmail/renewal` log lines name the failing step. Using that refresh token on Android changes the
+    sign-in design -- Class 2, held for Manual Validation.
+  - Verification: mutations M176-M184 KILLED; Kotlin compiles, JVM tests 5/5; suite 2,575 / 15 / 0;
+    analyzer clean.
 - **Task 3 F250 -- R-1 DONE, configuration checked (2026-10-05).** AC-1: the failing call is the native
   `authenticate()` -- `GoogleSignInException(code canceled, [16] Account reauth failed.)` (0.17.2 log 09:43:24
   and 09:43:44); the browser fallback then succeeds. Checked from Harold's screens, not inferred: the Google

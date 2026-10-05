@@ -868,6 +868,9 @@ class EmailScanner {
           diag('action-result', 'mark as read: ${markResult.successCount} succeeded, ${markResult.failureCount} failed');
         } catch (e) {
           AppLogger.warning('Step 6b-2a: markAsReadBatch FAILED: $e');
+          // Review (Sprint 76): its siblings write a failure line; this did not.
+          diag('action-result',
+              'mark as read batch FAILED entirely: ${DiagnosticLogger.describeError(e)}');
         }
 
         // Step 2b: Batch delete (move to trash/configured folder)

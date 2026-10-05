@@ -4241,7 +4241,9 @@ class _ResultsDisplayScreenState extends State<ResultsDisplayScreen> {
           // nothing to the diagnostic log.
           unawaited(DiagnosticLogger.failure(
             context: 'F38/move-safe-batch',
-            kind: DiagnosticLogger.kindServerRefused,
+            // Review LOW: a thrown batch is usually a connection error, not a
+            // server refusal.
+            kind: DiagnosticLogger.kindException,
             reason: 'batch threw: ${DiagnosticLogger.describeError(e)}',
             attempted: toMoveSafe.length,
             failed: toMoveSafe.length,

@@ -275,6 +275,7 @@ class GoogleAuthService {
       // no trace of WHY renewal failed. Type and code carry no account data.
       Redact.logWarning('Token refresh failed: ${e.runtimeType}'
           '${e is PlatformException ? ' code=${e.code}' : ''}');
+      _renewalLog('renewal threw ${DiagnosticLogger.describeError(e)}');
       // Sprint 74 MV (Harold Q1, 2026-09-27): a failed renewal NO LONGER
       // deletes the stored tokens -- here or in the four sites below. The
       // failure may be transient (no network, no Activity in a background
@@ -330,6 +331,13 @@ class GoogleAuthService {
       if (user == null) {
         // Silent sign-in failed. Tokens are KEPT (Harold Q1, Sprint 74 MV --
         // see _refreshToken): this can be transient.
+        // Sprint 76 (Harold: "I had to re-authenticate the gmail account at
+        // least once today"): name the step that failed, and whether a
+        // refresh token from the browser sign-in was sitting unused -- on
+        // Android renewal never reads it (only the desktop HTTP path does).
+        _renewalLog('native silent sign-in returned no account '
+            '(stored refresh token: '
+            '${tokens.refreshToken == null ? 'none' : 'present, not used on Android'})');
         _state = AuthState.unauthenticated;
         return AuthResult.unauthenticated();
       }
@@ -351,6 +359,7 @@ class GoogleAuthService {
       final authorization = await user.authorizationClient.authorizationForScopes(_scopes);
       if (authorization == null) {
         // Tokens KEPT (Harold Q1, Sprint 74 MV -- see _refreshToken).
+        _renewalLog('native authorizationForScopes returned no token');
         _state = AuthState.unauthenticated;
         return AuthResult.unauthenticated();
       }
@@ -596,8 +605,10 @@ class GoogleAuthService {
           // F250 R-3 / F246: whether the browser path stored a refresh token
           // decides if Android background renewal could work on this path.
           final saved = await _credStore.getGmailTokens(fallback.email ?? '');
+          // Review MEDIUM-4: getGmailTokens returns null on a READ failure
+          // too, so "none" is not proof nothing was stored.
           _signInLog('browser sign-in succeeded (refresh token '
-              '${saved?.refreshToken == null ? 'NOT stored' : 'stored'})');
+              '${saved == null ? 'unknown: tokens could not be read back' : saved.refreshToken == null ? 'NOT stored' : 'stored'})');
         } else {
           _signInLog('browser sign-in failed: '
               '${DiagnosticLogger.scrub(fallback.errorMessage ?? 'no message')}');
@@ -614,6 +625,13 @@ class GoogleAuthService {
   void _signInLog(String detail) => unawaited(DiagnosticLogger.log(
         kind: DiagnosticLogger.kindSignIn,
         context: 'gmail/sign-in',
+        detail: detail,
+      ));
+
+  /// Sprint 76: why a token RENEWAL failed (no account data in the text).
+  void _renewalLog(String detail) => unawaited(DiagnosticLogger.log(
+        kind: DiagnosticLogger.kindSignIn,
+        context: 'gmail/renewal',
         detail: detail,
       ));
 

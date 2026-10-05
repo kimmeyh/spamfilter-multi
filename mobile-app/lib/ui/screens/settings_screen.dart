@@ -43,7 +43,7 @@ import '../widgets/system_inset_wrapper.dart'; // F209 (Sprint 69)
 /// Provides:
 /// - Manual Scan Defaults (scan mode, folders, confirmation dialogs)
 /// - Background Scan Defaults (enabled, frequency, mode, folders)
-/// - CSV Export Directory
+/// - Export folder
 ///
 /// Note: Folder settings are account-specific. Select an account first,
 /// then configure folders in Account Details > Folders.
@@ -833,9 +833,16 @@ class _SettingsScreenState extends State<SettingsScreen> with SingleTickerProvid
             builder: (context, snapshot) => Padding(
               padding: const EdgeInsets.only(bottom: 4),
               child: SelectableText(
-                snapshot.hasData
-                    ? 'Writing to: ${snapshot.data}'
-                    : 'Writing to: (finding the folder...)',
+                // Review MEDIUM-3 (Sprint 76): a failing write is said, not
+                // hidden behind a confident folder name.
+                DiagnosticLogger.lastWriteError != null
+                    ? 'Could not write to ${snapshot.data ?? 'the log folder'}: '
+                        '${DiagnosticLogger.lastWriteError}'
+                    : snapshot.hasError
+                        ? 'Writing to: (the folder could not be found)'
+                        : snapshot.hasData
+                            ? 'Writing to: ${snapshot.data}'
+                            : 'Writing to: (finding the folder...)',
                 style: Theme.of(context).textTheme.bodyMedium,
               ),
             ),
@@ -1364,8 +1371,12 @@ class _SettingsScreenState extends State<SettingsScreen> with SingleTickerProvid
                 icon: const Icon(Icons.restart_alt, size: 18),
                 label: const Text('Reset to default'),
                 onPressed: () async {
-                  setState(() => _csvExportDirectory = null);
+                  // Review L-5 (Sprint 76): write FIRST, then rebuild, so the
+                  // "Writing to:" line resolves the new folder, not the old.
                   await _settingsStore.setCsvExportDirectory(null);
+                  DiagnosticLogger.invalidateCache();
+                  if (!mounted) return;
+                  setState(() => _csvExportDirectory = null);
                 },
               ),
             ),
@@ -1377,7 +1388,7 @@ class _SettingsScreenState extends State<SettingsScreen> with SingleTickerProvid
   Future<void> _selectCsvExportDirectory() async {
     try {
       final selectedDirectory = await FilePicker.platform.getDirectoryPath(
-        dialogTitle: 'Select CSV Export Directory',
+        dialogTitle: 'Select export folder',
         initialDirectory: _csvExportDirectory,
       );
 
@@ -1568,8 +1579,10 @@ class _SettingsScreenState extends State<SettingsScreen> with SingleTickerProvid
         if (Platform.isAndroid && _backgroundScanEnabled)
           const BatteryOptimizationRow(),
         // F253 (Sprint 76): event-driven scans from mail-app notifications.
-        if (Platform.isAndroid && _backgroundScanEnabled)
-          const NewMailTriggerRow(),
+        // App-wide (it scans every background-enabled account), so it is NOT
+        // gated on this account's background switch -- review M-1: gating it
+        // hid the only control while the feature kept running for others.
+        if (Platform.isAndroid) const NewMailTriggerRow(),
         const Divider(),
         // [UPDATED] FB-4: Test section moved before Frequency
         _buildSectionHeader('Test'),

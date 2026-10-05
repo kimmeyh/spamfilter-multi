@@ -1,15 +1,18 @@
 /// F253 (Sprint 76): Settings > Background > "Scan when new mail arrives".
 ///
 /// What this does NOT catch: Android binding the listener and delivering a
-/// real notification, or the scan it starts (Fold validation, AC-5); the
-/// listener's decision rule is covered by the JVM test
-/// `android/app/src/test/.../MailNotificationPolicyTest.kt`.
+/// real notification, the component enable/disable taking effect, or the scan
+/// it starts (Fold validation, AC-5); the listener's decision rule is covered
+/// by the JVM test `android/app/src/test/.../MailNotificationPolicyTest.kt`.
 library;
 
+import 'dart:async';
 import 'dart:io';
 
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:my_email_spam_filter/core/services/android_background_scan_worker.dart';
 import 'package:my_email_spam_filter/core/services/background_scan_trigger.dart';
 import 'package:my_email_spam_filter/core/services/new_mail_trigger.dart';
 import 'package:my_email_spam_filter/ui/widgets/new_mail_trigger_row.dart';
@@ -22,23 +25,42 @@ void main() {
   late List<String> calls;
   late bool enabled;
   late bool granted;
+  late bool saveWorks;
+  late bool readWorks;
+  late String? lastResult;
+  Completer<void>? holdFirstRead;
 
   setUp(() {
     calls = [];
     enabled = false;
     granted = false;
+    saveWorks = true;
+    readWorks = true;
+    lastResult = null;
+    holdFirstRead = null;
     messenger.setMockMethodCallHandler(NewMailTrigger.channel, (call) async {
       calls.add(call.method);
       switch (call.method) {
         case 'isEnabled':
+          final hold = holdFirstRead;
+          if (hold != null) {
+            holdFirstRead = null;
+            final before = enabled;
+            await hold.future;
+            return before; // a read that started before the user's tap
+          }
+          if (!readWorks) throw PlatformException(code: 'x');
           return enabled;
         case 'isAccessGranted':
           return granted;
         case 'setEnabled':
+          if (!saveWorks) return null;
           enabled = (call.arguments as Map)['enabled'] as bool;
           return true;
         case 'openAccessSettings':
           return true;
+        case 'lastResult':
+          return lastResult;
       }
       return null;
     });
@@ -57,13 +79,12 @@ void main() {
       .widget<Text>(find.byKey(const Key('new_mail_trigger_status')))
       .data!;
 
-  bool switchValue(WidgetTester tester) => tester
-      .widget<SwitchListTile>(find.byKey(const Key('new_mail_trigger_switch')))
-      .value;
+  SwitchListTile tile(WidgetTester tester) => tester
+      .widget<SwitchListTile>(find.byKey(const Key('new_mail_trigger_switch')));
 
   testWidgets('OFF by default and asks for nothing', (tester) async {
     await pumpRow(tester);
-    expect(switchValue(tester), isFalse);
+    expect(tile(tester).value, isFalse);
     expect(status(tester), startsWith('Off.'));
     expect(calls, isNot(contains('openAccessSettings')),
         reason: 'access is requested only from the switch, never on display');
@@ -84,7 +105,7 @@ void main() {
     enabled = true;
     granted = true;
     await pumpRow(tester);
-    expect(status(tester), startsWith('On.'));
+    expect(status(tester), startsWith('On, for all accounts'));
     expect(status(tester), contains('never its content'));
     expect(find.byKey(const Key('new_mail_trigger_open_access')), findsNothing);
   });
@@ -98,7 +119,59 @@ void main() {
     tester.binding.handleAppLifecycleStateChanged(AppLifecycleState.paused);
     tester.binding.handleAppLifecycleStateChanged(AppLifecycleState.resumed);
     await tester.pump();
-    expect(status(tester), startsWith('On.'));
+    expect(status(tester), startsWith('On, for all accounts'));
+  });
+
+  testWidgets('review HIGH-2: a change the phone did not confirm is reverted '
+      'and reported', (tester) async {
+    saveWorks = false;
+    await pumpRow(tester);
+    await tester.tap(find.byKey(const Key('new_mail_trigger_switch')));
+    await tester.pump();
+    expect(tile(tester).value, isFalse, reason: 'must not show ON');
+    expect(find.byKey(const Key('new_mail_trigger_problem')), findsOneWidget);
+    expect(calls, isNot(contains('openAccessSettings')));
+  });
+
+  testWidgets('review MEDIUM-1: an unreadable state is shown as unknown and '
+      'the switch is disabled, never drawn OFF', (tester) async {
+    readWorks = false;
+    await pumpRow(tester);
+    expect(status(tester), 'Status unavailable.');
+    expect(tile(tester).onChanged, isNull);
+  });
+
+  testWidgets('the last trigger outcome is shown while on', (tester) async {
+    enabled = true;
+    granted = true;
+    lastResult = '${DateTime(2026, 10, 5, 18, 30).millisecondsSinceEpoch}'
+        '|FAILED: IllegalStateException: boom';
+    await pumpRow(tester);
+    final line = tester
+        .widget<Text>(find.byKey(const Key('new_mail_trigger_last')))
+        .data!;
+    expect(line, contains('2026-10-05 18:30'));
+    expect(line, contains('FAILED: IllegalStateException'));
+  });
+
+  testWidgets('review L-2: a refresh that started before the tap cannot '
+      'overwrite it', (tester) async {
+    await pumpRow(tester); // OFF, readable
+    // A resume starts a read that captures OFF and is held in flight...
+    holdFirstRead = Completer<void>();
+    final held = holdFirstRead!;
+    tester.binding.handleAppLifecycleStateChanged(AppLifecycleState.paused);
+    tester.binding.handleAppLifecycleStateChanged(AppLifecycleState.resumed);
+    await tester.pump();
+    // ...the user turns the switch ON meanwhile...
+    await tester.tap(find.byKey(const Key('new_mail_trigger_switch')));
+    await tester.pump();
+    // ...and the stale read (OFF) lands afterwards.
+    held.complete();
+    await tester.pump();
+    await tester.pump();
+    expect(tile(tester).value, isTrue,
+        reason: 'the stale read must not overwrite the user\'s tap');
   });
 
   test('the worker start line names the mail app', () {
@@ -112,6 +185,30 @@ void main() {
       now: DateTime.fromMillisecondsSinceEpoch(6000),
     );
     expect(line, 'trigger=notification app=com.google.android.gm delay=5s');
+  });
+
+  group('review H-1: a notification-triggered run never asks for a retry', () {
+    test('the notification trigger opts out of retry; others keep it', () {
+      expect(retryOnFailureFor({kTriggerSourceKey: 'notification'}), isFalse);
+      expect(retryOnFailureFor({kTriggerSourceKey: 'doze-alarm'}), isTrue);
+      expect(retryOnFailureFor({'accountId': 'a'}), isTrue);
+      expect(retryOnFailureFor(null), isTrue);
+    });
+
+    test('a failed run returns done when retry is off, retry when on', () {
+      expect(workerResult(allSucceeded: false, retryOnFailure: false), isTrue);
+      expect(workerResult(allSucceeded: false, retryOnFailure: true), isFalse);
+      expect(workerResult(allSucceeded: true, retryOnFailure: true), isTrue);
+    });
+
+    test('the dispatcher passes the trigger into executeScan', () {
+      // SOURCE-TEXT VERIFIED: the WorkManager dispatcher runs only inside a
+      // plugin isolate; the gate pins that it feeds the retry decision.
+      final src = File('lib/core/services/android_background_scan_worker.dart')
+          .readAsStringSync();
+      expect(src.contains('retryOnFailure: retryOnFailureFor(inputData),'),
+          isTrue);
+    });
   });
 
   group('source gates', () {
@@ -132,6 +229,12 @@ void main() {
         '.extras',
         'tickerText',
         'EXTRA_',
+        // Review L-1: inherited accessors that return full notifications.
+        'activeNotifications',
+        'getActiveNotifications',
+        'getSnoozedNotifications',
+        'sbn?.let',
+        'sbn.let',
       ]) {
         expect(code.contains(forbidden), isFalse,
             reason: 'MailNotificationListener must not touch $forbidden');
@@ -150,15 +253,28 @@ void main() {
       expect(m?.group(1), kTriggerAppKey);
     });
 
-    test('placement: Settings shows the switch on Android with background on',
-        () {
+    test('review M-1: Settings shows the switch on Android regardless of the '
+        'selected account\'s background switch', () {
       // SOURCE-TEXT VERIFIED: behind Platform.isAndroid, unreachable from a
       // host widget test.
       final src = File('lib/ui/screens/settings_screen.dart').readAsStringSync();
-      expect(
-          src.contains('if (Platform.isAndroid && _backgroundScanEnabled)\n'
-              '          const NewMailTriggerRow(),'),
+      expect(src.contains('if (Platform.isAndroid) const NewMailTriggerRow(),'),
           isTrue);
+    });
+
+    test('turning it off disables the listener and cancels a queued scan', () {
+      // SOURCE-TEXT VERIFIED: PackageManager and WorkManager are device APIs.
+      expect(listener.contains('COMPONENT_ENABLED_STATE_DISABLED'), isTrue);
+      expect(listener.contains('DozeScanTrigger.cancelNewMailScan(context)'),
+          isTrue);
+    });
+
+    test('the throttle advances only after a successful enqueue', () {
+      // SOURCE-TEXT VERIFIED: ordering inside a device-only service.
+      final enqueue = listener.indexOf('DozeScanTrigger.enqueueAllAccounts(');
+      final stamp = listener.indexOf('.putLong(KEY_LAST_TRIGGER_MS, now)');
+      expect(enqueue, greaterThan(-1));
+      expect(stamp, greaterThan(enqueue));
     });
 
     test('the manifest declares the listener behind the BIND permission', () {

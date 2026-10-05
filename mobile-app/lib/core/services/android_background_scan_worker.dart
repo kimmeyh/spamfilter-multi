@@ -17,6 +17,7 @@ library;
 import 'dart:async' show unawaited;
 import 'dart:ui' show DartPluginRegistrant;
 
+import 'package:flutter/foundation.dart' show visibleForTesting;
 import 'package:flutter/widgets.dart' show WidgetsFlutterBinding;
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:logger/logger.dart';
@@ -67,6 +68,7 @@ void androidBackgroundScanDispatcher() {
     return AndroidBackgroundScanWorker.executeScan(
       accountId: accountId,
       isTest: isTest,
+      retryOnFailure: retryOnFailureFor(inputData),
       // F252: computed HERE, at entry, so the delay measures how long Android
       // held the work back -- not the worker's own setup time.
       trigger: describeBackgroundTrigger(
@@ -78,23 +80,44 @@ void androidBackgroundScanDispatcher() {
   });
 }
 
+/// Sprint 76 review H-1: whether a failed run may ask WorkManager to RETRY.
+///
+/// The plugin maps a `false` result to `Result.retry()` with WorkManager's
+/// default backoff (30 s doubling to 5 h, no attempt limit). For the F253
+/// new-mail trigger that is a trap: its unique work uses KEEP, so while a
+/// retry waits in backoff every later notification is dropped -- one account
+/// that always fails would turn "scan when new mail arrives" into "scan every
+/// few hours", with Settings still reading "On". The next notification IS the
+/// retry, so a notification-triggered run never asks for one. Every other
+/// trigger keeps the existing retry behavior (F175 R-6 bounded backoff).
+@visibleForTesting
+bool retryOnFailureFor(Map<String, dynamic>? inputData) =>
+    inputData?[kTriggerSourceKey] != 'notification';
+
+/// The value handed back to WorkManager: `true` = done, `false` = retry.
+@visibleForTesting
+bool workerResult({required bool allSucceeded, required bool retryOnFailure}) =>
+    allSucceeded || !retryOnFailure;
+
 class AndroidBackgroundScanWorker {
   AndroidBackgroundScanWorker._();
 
   static final Logger _logger = Logger();
 
-  /// Execute a background scan for [accountId] (or, defensively, all enabled
-  /// accounts when null -- a scheduled task always carries its account in
-  /// inputData, so null means something unexpected happened; scanning enabled
-  /// accounts beats silently doing nothing).
+  /// Execute a background scan for [accountId], or for every saved account
+  /// whose background scanning is on when [accountId] is null. Null is the
+  /// normal case for the F253 new-mail trigger (one scan of all accounts) and
+  /// a defensive fallback for anything else -- a scheduled task always carries
+  /// its account.
   ///
-  /// Returns true when every attempted account scan succeeded -- WorkManager
-  /// uses the return value to decide whether to retry per the task's backoff
-  /// policy.
+  /// Returns what WorkManager should do: true = done, false = retry per the
+  /// task's backoff policy. A failure retries only when [retryOnFailure] is
+  /// true (see [retryOnFailureFor]); per-account failures are always logged.
   static Future<bool> executeScan({
     String? accountId,
     bool isTest = false,
     String? trigger,
+    bool retryOnFailure = true,
   }) async {
     _logger.i('Android background scan started'
         '${accountId != null ? ' for ${Redact.accountId(accountId)}' : ' (all accounts)'}'
@@ -193,17 +216,21 @@ class AndroidBackgroundScanWorker {
       await DiagnosticLogger.log(
         kind: DiagnosticLogger.kindScan,
         context: 'worker/android',
-        detail: 'exit ${allSucceeded ? 'success' : 'with failures'}',
+        detail: 'exit ${allSucceeded ? 'success' : 'with failures'}'
+            '${!allSucceeded && !retryOnFailure ? ' (no retry: the next new-mail notification retries)' : ''}',
       );
-      return allSucceeded;
+      return workerResult(
+          allSucceeded: allSucceeded, retryOnFailure: retryOnFailure);
     } catch (e) {
       _logger.e('Android background scan worker failed', error: e);
-      unawaited(DiagnosticLogger.log(
+      // Review MEDIUM-5: awaited, like the exit line above -- the isolate can
+      // end as soon as this returns, and this is the line most worth keeping.
+      await DiagnosticLogger.log(
         kind: DiagnosticLogger.kindScan,
         context: 'worker/android',
         detail: 'worker FAILED: ${DiagnosticLogger.describeError(e)}',
-      ));
-      return false;
+      );
+      return workerResult(allSucceeded: false, retryOnFailure: retryOnFailure);
     }
   }
 

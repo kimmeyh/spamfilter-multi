@@ -209,6 +209,10 @@ class DiagnosticLogger {
     }
   }
 
+  /// The most recent write failure in THIS isolate (null after a successful
+  /// write). Review MEDIUM-3 (Sprint 76): read by Settings.
+  static String? lastWriteError;
+
   /// Append one diagnostic record.
   ///
   /// [kind] is one of the `kind*` constants; [context] names where it happened
@@ -241,9 +245,13 @@ class DiagnosticLogger {
         await file.parent.create(recursive: true);
         await _rotateIfNeeded(file);
         await file.writeAsString(line, mode: FileMode.append);
-      }).catchError((Object _) {
+        lastWriteError = null;
+      }).catchError((Object e) {
         // Swallow so the chain survives; the caller already treats logging as
-        // best-effort.
+        // best-effort. Review MEDIUM-3 (Sprint 76): but REMEMBER it, so
+        // Settings can say the log is not being written instead of showing a
+        // confident "Writing to: <folder>".
+        lastWriteError = scrub(e.toString());
       });
       _writeTail = queued;
       await queued;

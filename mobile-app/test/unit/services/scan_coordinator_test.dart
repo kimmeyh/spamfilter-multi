@@ -194,18 +194,18 @@ void main() {
 
       // Wrong owner (the timed-out scan was still queued, not active):
       // must NOT evict the live holder.
-      c.releaseActiveByOwner(scanType: 'manual', accountId: 'b@x.com');
+      c.releaseActiveByOwner(scanType: 'manual', accountId: 'b@x.com', reason: 'timed out');
       expect(c.active?.scanType, 'background',
           reason: 'a non-matching force-release must be a no-op');
 
       // Matching owner: the hung scan's lease is freed and handed on.
-      c.releaseActiveByOwner(scanType: 'background', accountId: 'a@x.com');
+      c.releaseActiveByOwner(scanType: 'background', accountId: 'a@x.com', reason: 'timed out');
       final lease = await waiter;
       expect(c.active?.scanType, 'manual');
 
       // The zombie scan's own finally later releases a STALE lease -- the
       // identical() guard must ignore it without disturbing the new holder.
-      c.releaseActiveByOwner(scanType: 'background', accountId: 'a@x.com');
+      c.releaseActiveByOwner(scanType: 'background', accountId: 'a@x.com', reason: 'timed out');
       expect(c.active?.scanType, 'manual');
       c.release(lease);
       expect(c.active, isNull);

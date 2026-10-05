@@ -400,6 +400,7 @@ class BackgroundScanCore {
       ScanCoordinator.instance.releaseActiveByOwner(
         scanType: 'background',
         accountId: accountId,
+        reason: 'timed out after $minutes minutes (F175)',
       );
       await scanProvider
           .errorScan('Scan timed out after $minutes minutes (F175)');

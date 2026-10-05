@@ -328,21 +328,24 @@ class GmailApiAdapter with BatchOperationsMixin implements SpamFilterPlatform {
 
   Future<void> _setSignInRequiredFor(String? accountId, bool required) async {
     if (accountId == null || accountId.isEmpty) return;
+    var stored = true;
+    try {
+      await SettingsStore().setGmailSignInRequired(accountId, required);
+    } catch (e) {
+      stored = false;
+      AppLogger.warning('F239: could not record the Gmail sign-in state: $e');
+    }
     // F248 (Sprint 76): the moment an account starts needing the user. Only
     // SET is logged -- clearing runs on every successful load and would be
-    // noise.
+    // noise. Review LOW: logged AFTER the write, saying whether it stuck.
     if (required) {
       unawaited(DiagnosticLogger.log(
         kind: DiagnosticLogger.kindSignIn,
         context: 'gmail/token',
-        detail: '${Redact.accountId(accountId)} marked "needs you to sign in '
-            'again"',
+        detail: '${Redact.accountId(accountId)} '
+            '${stored ? 'marked' : 'could NOT be marked'} "needs you to sign '
+            'in again"',
       ));
-    }
-    try {
-      await SettingsStore().setGmailSignInRequired(accountId, required);
-    } catch (e) {
-      AppLogger.warning('F239: could not record the Gmail sign-in state: $e');
     }
   }
 

@@ -222,7 +222,9 @@ class ScanCoordinator {
   /// active scan was asked to stop.
   bool requestCancel({
     required String accountId,
-    String reason = 'stop requested',
+    // Required (review L-6): a default would label a future caller's stop by
+    // omission.
+    required String reason,
   }) {
     final holder = _active;
     if (holder == null) return false;
@@ -307,7 +309,7 @@ class ScanCoordinator {
   void releaseActiveByOwner({
     required String scanType,
     required String accountId,
-    String reason = 'timed out',
+    required String reason,
   }) {
     final holder = _active;
     if (holder == null) return;

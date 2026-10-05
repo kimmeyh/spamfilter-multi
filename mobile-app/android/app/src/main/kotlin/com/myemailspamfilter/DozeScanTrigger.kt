@@ -167,6 +167,13 @@ object DozeScanTrigger {
             ExistingWorkPolicy.KEEP,
             request,
         )
-        Log.i(TAG, "scan enqueued after a mail notification")
+        // "requested", not "enqueued": with KEEP an already-queued scan wins
+        // and this request is dropped by design (review H-1).
+        Log.i(TAG, "scan requested after a mail notification")
+    }
+
+    /** Turning F253 off cancels a queued or backing-off new-mail scan (review H-1). */
+    fun cancelNewMailScan(context: Context) {
+        WorkManager.getInstance(context).cancelUniqueWork(UNIQUE_NEW_MAIL)
     }
 }

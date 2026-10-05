@@ -319,6 +319,7 @@ class EmailScanProvider extends ChangeNotifier {
     _stopHeartbeat();
     _pendingCancelReason = null;
     _stopRequestLogged = null;
+    _beatFailureLogged = false;
     final id = _currentScanResultId;
     final store = _scanResultStore;
     if (id == null || store == null) return;
@@ -327,15 +328,27 @@ class EmailScanProvider extends ChangeNotifier {
         (timer) async {
       try {
         await store.recordHeartbeat(id);
+        if (_beatFailureLogged) {
+          _beatFailureLogged = false;
+          unawaited(DiagnosticLogger.log(
+            kind: DiagnosticLogger.kindScan,
+            context: 'scan/heartbeat',
+            detail: 'beat writes recovered on row $id',
+          ));
+        }
       } catch (e) {
         _logger.w('Scan heartbeat write failed for id=$id: $e');
         // F248: a holder whose beats fail looks dead to every other scan.
-        unawaited(DiagnosticLogger.log(
-          kind: DiagnosticLogger.kindScan,
-          context: 'scan/heartbeat',
-          detail: 'beat write FAILED on row $id: '
-              '${DiagnosticLogger.describeError(e)}',
-        ));
+        // Review LOW (Sprint 76): once per failure run, not every tick.
+        if (!_beatFailureLogged) {
+          _beatFailureLogged = true;
+          unawaited(DiagnosticLogger.log(
+            kind: DiagnosticLogger.kindScan,
+            context: 'scan/heartbeat',
+            detail: 'beat write FAILED on row $id: '
+                '${DiagnosticLogger.describeError(e)}',
+          ));
+        }
       }
       // Review (Sprint 75, M-1): cancelling the timer does not stop a tick
       // that is already running. If this scan ended while the tick awaited,
@@ -400,6 +413,10 @@ class EmailScanProvider extends ChangeNotifier {
   /// F248: the last "accepted" value logged for this scan's stop request
   /// (null = not logged yet). Reset when a scan's heartbeat starts.
   bool? _stopRequestLogged;
+
+  /// Review LOW (Sprint 76): a failing beat is logged once per run of
+  /// failures, plus one line when beats recover.
+  bool _beatFailureLogged = false;
 
   /// Test seam: the reason the next [cancelScan] will record, if a stop
   /// request has been seen on the row.

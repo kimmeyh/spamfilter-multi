@@ -750,13 +750,21 @@ class ScanResultStore {
       // F248 (Sprint 76): name what is about to be reaped -- a holder closed
       // here is a scan that stopped beating (F249 candidate 2: a row with no
       // live worker behind it), and its last beat says for how long.
-      final dying = await txn.query(
-        'scan_results',
-        columns: ['id', 'scan_type', 'started_at', 'last_heartbeat_at'],
-        where: 'status = ? AND account_id = ? AND '
-            '(COALESCE(last_heartbeat_at, started_at) < ? OR started_at < ?)',
-        whereArgs: ['in_progress', row.accountId, beatCutoff, ageCutoff],
-      );
+      // Review LOW (Sprint 76): diagnostic only, so it must never fail the
+      // claim -- the claim fails CLOSED, and a logging query would otherwise
+      // refuse a scan for a logging reason.
+      List<Map<String, Object?>> dying = const [];
+      try {
+        dying = await txn.query(
+          'scan_results',
+          columns: ['id', 'scan_type', 'started_at', 'last_heartbeat_at'],
+          where: 'status = ? AND account_id = ? AND '
+              '(COALESCE(last_heartbeat_at, started_at) < ? OR started_at < ?)',
+          whereArgs: ['in_progress', row.accountId, beatCutoff, ageCutoff],
+        );
+      } catch (e) {
+        _logger.w('Scan lock: reaping diagnostics query failed: $e');
+      }
       final reaped = await txn.update(
         'scan_results',
         {
@@ -772,16 +780,17 @@ class ScanResultStore {
         _logger.i('Scan lock: closed $reaped dead scan(s) on '
             '${Redact.accountId(row.accountId)}');
         for (final d in dying) {
-          final started = d['started_at'] as int? ?? 0;
-          final beat = d['last_heartbeat_at'] as int?;
+          final started = d['started_at'];
+          final beat = d['last_heartbeat_at'];
           final nowMs = now.millisecondsSinceEpoch;
+          String ago(Object? ms) =>
+              ms is int ? '${((nowMs - ms) / 1000).round()}s ago' : 'unknown';
           unawaited(DiagnosticLogger.log(
             kind: DiagnosticLogger.kindScan,
             context: 'scan/claim',
             detail: '${Redact.accountId(row.accountId)} reaped dead '
-                '${d['scan_type']} row ${d['id']}: started '
-                '${((nowMs - started) / 1000).round()}s ago, last heartbeat '
-                '${beat == null ? 'never' : '${((nowMs - beat) / 1000).round()}s ago'}',
+                '${d['scan_type']} row ${d['id']}: started ${ago(started)}, '
+                'last heartbeat ${beat == null ? 'never' : ago(beat)}',
           ));
         }
       }
