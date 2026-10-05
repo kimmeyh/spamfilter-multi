@@ -664,6 +664,29 @@ when the log names the cause, not pre-approved here.
     sign-in design -- Class 2, held for Manual Validation.
   - Verification: mutations M176-M184 KILLED; Kotlin compiles, JVM tests 5/5; suite 2,575 / 15 / 0;
     analyzer clean.
+- **5.1.2 F-PRECHECK** (2026-10-05, against `origin/develop...HEAD` after the 5.1.1 fixes):
+  1. Mirror/parallel-site sync: CLEAN -- the worker start/exit lines exist in both workers; the trigger
+     fields are Android-only payload (declared ADR-0042 exception); the platform-gated Settings rows are
+     tested as widgets directly plus source gates, so no Windows-vs-ubuntu assertion depends on `Platform.is*`.
+  2. Helper wired into the PRODUCTION path: CLEAN -- `describeBackgroundTrigger` and `retryOnFailureFor`
+     are called by the WorkManager dispatcher; `summarizeBatchFailureReasons` by both re-process batch
+     paths; `AndroidBatteryStatus` / `NewMailTrigger` by the Settings rows and `main.dart` (grep: 20 call
+     sites in 7 lib files).
+  3. Doc-comment-vs-code drift: FIXED in 5.1.1 (L-3 `executeScan` doc; L-6 removed the defaulted reason the
+     comments described); ARCHITECTURE F252/F253 sections match the code.
+  4. Fragile input parsing: CLEAN -- the one new parser (`NewMailTrigger.parseLastResult`) splits
+     "<epoch ms>|<outcome>" at the FIRST `|`; the millisecond field cannot contain one, the outcome may.
+  5. API scope matches caller intent: CLEAN -- `enqueueAllAccounts` scans every background-enabled account
+     by design (Harold, 2026-10-05); `cancelNewMailScan` cancels only `f253_new_mail_scan`;
+     `getEnabledListenerPackages` is checked for this package only.
+  6. Silent failure: covered by the 5.1.1 silent-failure hunter; HIGH-2/HIGH-3/MEDIUM-1/3/4/5 fixed.
+- **5.1.5 WinWright sweep**: 2026-10-05 -- 3 scripts (`test_f124_rule_labels`, `test_mt2c_no_rule_sweep`,
+  `test_s75_new_controls`), 27 steps, 3 PASS / 0 FAIL, DB drift none, on the 0.17.4 dev Windows build.
+  sweep-head: 30f44ef. The new Android-only rows (F252, F253) are not reachable on Windows. Sprint 77
+  carry-in: add WinWright coverage for the Windows-visible Sprint 76 UI -- Settings "Writing to:" line and
+  "Export folder > Reset to default" (F248), and the Results "No rule" banner total after a live scan (F251).
+- **5.1.6 runtime launch gate**: 0.17.3 (and 0.17.1/0.17.2) installed from Play launched on the Fold -- the
+  diagnostic log's `app start (foreground) -- v0.17.3 env=prod platform=android` line (16:45:13).
 - **Task 3 F250 -- R-1 DONE, configuration checked (2026-10-05).** AC-1: the failing call is the native
   `authenticate()` -- `GoogleSignInException(code canceled, [16] Account reauth failed.)` (0.17.2 log 09:43:24
   and 09:43:44); the browser fallback then succeeds. Checked from Harold's screens, not inferred: the Google
