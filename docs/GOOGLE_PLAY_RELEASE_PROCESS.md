@@ -158,11 +158,21 @@ is missing for a RELEASE build"*, because it drops the gradle properties the scr
 from `secrets.*.json`. That gate exists because F119 shipped a credential-less build to the
 Microsoft Store. (Sprint 66 IMP-1.)
 
-**Output -- FULL PATH, ready to paste into the Play Console upload dialog:**
+**Output -- FULL PATH, ready to paste into the Play Console upload dialog** (Sprint 76 retro IMP-1: the
+script KEEPS a copy outside `build/`, so a later Windows or Android build's `flutter clean` cannot delete
+it -- upload THIS one):
 
 ```
-D:\Data\Harold\github\spamfilter-multi\mobile-app\build\app\outputs\bundle\prodRelease\app-prod-release.aab
+D:\Data\Harold\github\spamfilter-multi\mobile-app\dist\android-<version>\app-prod-release.aab
 ```
+
+(The working copy at `mobile-app\build\app\outputs\bundle\prodRelease\app-prod-release.aab` is wiped by the
+next build of either platform.)
+
+**Before building (Sprint 76 retro IMP-2)**: the script refuses a bundle whose versionCode is not above the
+"Last uploaded to Play (any track)" row in `docs/STORE_VERSION_STATUS.md` -- Play rejects a code it has
+already received on any track. After every upload, update that row in the same commit as the next
+`pubspec.yaml` bump.
 
 Approx 67 MB (0.15.2: 66.9 MB; 0.16.0: 67.0 MB -- the older "53 MB" figure was Sprint 66's
 bundle and is stale). **Note this is the DEV worktree** -- unlike the Windows MSIX, the Play bundle is

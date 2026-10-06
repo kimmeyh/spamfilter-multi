@@ -118,4 +118,23 @@ Very Good. The process misses were all execution-side and are the subject of the
 
 ## Improvement Decisions
 
-(Recorded at Step 6.)
+Harold, 2026-10-06: *"now: imp-1, 2, 3, 4, 6 | imp-8 a and c to backlog | do not do 5 - undersand the
+intent, but that seems like it would cause many more issues than it tries to resolve (hundreds) and 7 is
+not needed by the non-coding agent team - nothing to gain | do not do imp-8b as that is not preventative -
+if anything it should run earlier and not be needed"*
+
+- **IMP-1 Keep finished builds where a clean cannot reach them** -- APPLY NOW.
+- **IMP-2 Block reusing a Play versionCode** (extends `dev_version_ahead_test`) -- APPLY NOW.
+- **IMP-3 Name each platform's behavior for an OS primitive a fix relies on** (extends CLAUDE.md Sprint 70
+  IMP-5) -- APPLY NOW.
+- **IMP-4 Hook: no `git add -A` / `git add .` without `git status` first** -- APPLY NOW.
+- **IMP-5 Hook: block whole-file `dart format`** -- SKIP (Harold: would cause many more issues than it
+  resolves).
+- **IMP-6 Card line "Existing behavior relied on ... verified at"** (extends the Sprint 72 IMP-5 line) --
+  APPLY NOW.
+- **IMP-7 Re-estimate on mid-sprint scope additions** -- SKIP (Harold: not needed by the non-coding agent
+  team, nothing to gain).
+- **IMP-8a Rename `GmailWindowsOAuthHandler`** -- BACKLOG.
+- **IMP-8b Run the Kotlin JVM tests in CI** -- SKIP (Harold: not preventative; if anything it should run
+  earlier and not be needed).
+- **IMP-8c Scan History shows which mechanism started each background scan** -- BACKLOG.

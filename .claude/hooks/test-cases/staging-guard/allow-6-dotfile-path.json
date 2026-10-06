@@ -1,0 +1,1 @@
+{"session_id": "sg-allow-6-dotfile-path", "cwd": "D:/Data/Harold/github/spamfilter-multi", "hook_event_name": "PreToolUse", "tool_name": "Bash", "tool_input": {"command": "git add .claude/settings.json"}}

@@ -1,0 +1,1 @@
+{"session_id": "sg-violation-2-status-after-add", "cwd": "D:/Data/Harold/github/spamfilter-multi", "hook_event_name": "PreToolUse", "tool_name": "Bash", "tool_input": {"command": "git add .; git status --short"}}
