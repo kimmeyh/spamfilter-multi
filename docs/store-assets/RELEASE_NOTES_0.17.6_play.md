@@ -1,7 +1,7 @@
 # Release notes -- 0.17.6 -- Google Play
 
-**PROVISIONAL** -- written at Sprint 76 (2026-10-06) from the CHANGELOG so far; re-derive from the finished
-CHANGELOG at Phase 7.7 (STORE_RELEASE_PROCESS.md Step 1b, GOOGLE_PLAY_RELEASE_PROCESS.md Step 2).
+**Final** -- re-derived from the finished Sprint 76 CHANGELOG at Phase 7.7 (2026-10-06, STORE_RELEASE_PROCESS.md
+Step 1b, GOOGLE_PLAY_RELEASE_PROCESS.md Step 2).
 
 **Range**: everything after 0.17.0 (versionCode 8, live 2026-10-04). 0.17.1-0.17.5 (versionCodes 9-13) were
 closed-test builds in the same sprint; this build is versionCode 14.

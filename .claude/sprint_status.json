@@ -1,18 +1,19 @@
 {
   "_description": "Sprint status file that persists across context compaction. Update after each phase/sub-phase completion.",
-  "_last_updated": "2026-10-05T23:40:00Z",
+  "_last_updated": "2026-10-06T23:30:00Z",
   "_usage": "Read this file after context compaction to restore sprint approval state and progress.",
   "_staleness_note": "This file had drifted 15 sprints (last updated at Sprint 35, 2026-04-19) before being refreshed at Sprint 50 close-out. It is a Phase 7.7 checklist item -- update it at every sprint close-out, not opportunistically.",
   "current_sprint": {
     "number": 76,
     "branch": "feature/20261004_Sprint_76",
-    "status": "Phase 7 Sprint Review -- retrospective prompt sent 2026-10-06; Claude draft at docs/sprints/drafts/SPRINT_76_RETROSPECTIVE_claude_draft.md; Copilot review requested on PR #455 (verified attached via GraphQL). Phase 6: Manual Validation COMPLETE (Harold 2026-10-06); final builds 0.17.6+14 at b6d5179; remaining Fold checks carried to Sprint 77 (MV76-1). Earlier: Sprint 76 code complete through 0.17.4+12 (AAB built and verified, 30f44ef): F248 (#452), F249 part 1 (#453), F251 (#456), F252 (#457), F253 (#458), Phase 5.1.1 review fixes. 5.1.1/5.1.2/5.1.5 evidence recorded in SPRINT_76_PLAN.md. Remaining items wait on Harold's Fold runs and Class-2 decisions (F249 part 2 REPLACE->KEEP, Android Gmail renewal via the stored refresh token, double scan cadence, Gmail safe-sender move bug, no-network scan counted complete, cross-isolate log corruption).",
+    "status": "Phase 7.7 complete (2026-10-06) -- PR #455 marked ready for review; awaiting Harold's merge to develop, then Phase 8 Release Cycle. Retrospective complete (all Very Good); IMP-1, 2, 3, 4, 6 applied (556a1ac). SPRINT_76_PLAN/RETROSPECTIVE/SUMMARY present. Manual Validation complete per Harold; remaining Fold checks carried to Sprint 77 (MV76-1). Final builds 0.17.6+14: AAB at mobile-app/dist/android-0.17.6+14/app-prod-release.aab; Windows dev at mobile-app/dist/dev/.",
     "plan_approved": true,
     "blanket_execution_approved": true,
     "pr_number": 455,
-    "version": "0.17.1+9 (bumped at plan approval, Phase 3.7.0b)",
+    "version": "0.17.6+14 (six closed-test builds 0.17.1-0.17.6, versionCodes 9-14)",
     "pr_url": "https://github.com/kimmeyh/spamfilter-multi/pull/455"
   },
+  "previous_sprint_note": "Sprint 76 stays in current_sprint until its PR merges; Sprint 75 below is the last MERGED sprint.",
   "previous_sprint": {
     "number": 75,
     "branch": "feature/20261002_Sprint_75",
@@ -27,16 +28,16 @@
     "note": "Closes #N does NOT auto-fire here.",
     "sprint_74": "Closed by hand 2026-10-02: #422 #434 #437 #438 #439. Open, carried: #428 (MV74-1 phone), #433 (F205 phone), #441 (F238), #442 (F239).",
     "sprint_75": "Closed by hand 2026-10-04: #441 #442 #444 #445 #446 #447 #449 #450. Open, carried to Sprint 76 phone checks: #428 (MV74-1), #433 (F205).",
-    "sprint_76": "#452 F248, #453 F249, #454 F250 (open). Carried: #428 MV74-1, #433 F205."
+    "sprint_76": "Close by hand after merge: #452 F248, #453 F249, #454 F250, #456 F251, #457 F252, #458 F253. Open, carried to Sprint 77 (MV76-1): #428 MV74-1 (reboot half), #433 F205."
   },
   "_github_issues_note": "Sprint 66 cards created at Phase 3.3.1 (2026-09-07): #387 GP-19, #388 GP-4. Close by hand at Post-Merge Cleanup.",
   "test_metrics": {
-    "suite": "2,516 passed / 15 skipped / 0 failed (local Windows, 8e4a21b); CI green on 5449565",
-    "policy_suite": "release_notes_test 3/3; hook suite 93 passed / 0 failed",
-    "winwright": "3/3 at 7e807d5, no DB drift",
+    "suite": "2,601 passed / 15 skipped / 0 failed (local Windows)",
+    "policy_suite": "release_notes_test 5/5; hook suite 104 passed / 0 failed; JVM MailNotificationPolicyTest 5/5",
+    "winwright": "3/3, 85 steps at 18392ad",
     "analyzer": "clean",
-    "mutations": "M71-M126 in Sprint 75 (M118-M126 from the PR reviews); all targeted mutations KILLED",
-    "as_of": "2026-10-04, Sprint 75 Phase 7.7 PR reviews"
+    "mutations": "M118-M209 in Sprint 76; M189 mis-specified (recorded), rest KILLED",
+    "as_of": "2026-10-06, Sprint 76 Phase 7.7"
   },
   "store_release": {
     "status_0_15_3": "NOT SUBMITTED TO EITHER STORE. Harold, 2026-09-22: \"not pushing to either store this time\". Phase 8.3 explicitly N/A for this cycle.",
@@ -53,14 +54,14 @@
   ],
   "blocking_issues": [],
   "next_actions": [
-    "Task 0: version 0.17.1+9 + RELEASE_NOTES_0.17.1_* (PROVISIONAL).",
-    "Task 1: F248 diagnostic log events (scan lifecycle, sign-in, app start, Settings folder display).",
-    "Build 0.17.1 AAB (versionCode 9) for Play closed testing; Harold reproduces F249 and F250 on the Fold with logging on.",
-    "Tasks 2-3 from the log; then Manual Validation; then Phase 8.4 pass 2 scope selection (deferred by Harold)."
+    "Harold merges PR #455 to develop (Claude never merges).",
+    "On merge: branch feature/<date>_Sprint_77 FROM feature/20261004_Sprint_76; close #452 #453 #454 #456 #457 #458 by hand.",
+    "Phase 8: Harold merges develop -> main in parallel with refinement pass 1; Store release of 0.17.6 is Harold's call (AAB kept in mobile-app/dist/android-0.17.6+14/).",
+    "Phase 8.4 refinement pass 2: select Sprint 77 scope from MV76-1 and R76-1..R76-4."
   ],
   "next_sprint_targeted": {
-    "number": 76,
-    "stub": "docs/sprints/SPRINT_76_PLAN.md",
-    "committed": "Phone validation checklist on the 0.17.0 build + F247 (PR #448 review carry-in)"
+    "number": 77,
+    "stub": "docs/sprints/SPRINT_77_PLAN.md",
+    "committed": "MV76-1 (Fold checks on 0.17.6) + R76-1..R76-4 (Sprint 76 retro Category 13 carry-ins)"
   }
 }

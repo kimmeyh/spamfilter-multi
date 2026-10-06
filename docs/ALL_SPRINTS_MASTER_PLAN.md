@@ -143,6 +143,7 @@ Historical sprint information lives in individual documents in `docs/sprints/` a
 | 73 | docs/sprints/SPRINT_73_SUMMARY.md | [OK] Complete | Sep 22-23, 2026 (PR #435 -> develop; 0.16.0. F235 Doze scheduling, F234 read-only preview, F224+F207 cancel scan, F229 version on every screen, F226. Two CRITICAL defects were inert features with green suites -- verification by source text, not behavior) |
 | 74 | docs/sprints/SPRINT_74_SUMMARY.md | [OK] Complete | Sep 24-29, 2026 (PR #440 -> develop; 0.17.0, HELD for F238. Per-account scan lock (any type, fail closed, dead holders reaped, 2-6 min busy retry), F232 mechanism B fixed, F222 Sort chip + row dates, F202 provider folder defaults, F206 exports + clear history + redaction, Gmail keeps sign-in, subject rules = Keyword (DB v10). Device checks moved to Sprint 75) |
 | 75 | docs/sprints/SPRINT_75_SUMMARY.md | [OK] Complete | Oct 2-4, 2026 (PR #448 -> develop; 0.17.0 kept by exception, hold satisfied. F238 stop a background scan for a manual one (DB v11), F239 Sign In Again (renewal spike FAILED -> F246), F243 Windows background scans run with the app open, F216/F214/F236/F215, Task 7 WinWright + widget tests, four MV fixes. Phone checks moved to Sprint 76) |
+| 76 | docs/sprints/SPRINT_76_SUMMARY.md | [OK] Complete | Oct 4-6, 2026 (PR #455 -> develop; 0.17.6+14, six closed-test builds. Unattended Android background scanning works -- overnight 0.17.4: 95 worker starts, 111/113 completed, 10 spam deletions with the app unopened. F248 scan diagnostics, F249 stop/KEEP/spacing, F250 Gmail renewal by stored refresh token, F251-F253 (battery row, notification trigger, ADR-0044), nine MV fixes. Fold checks carried as MV76-1) |
 
 **Key Achievements**: See CHANGELOG.md for detailed feature history.
 
@@ -150,14 +151,16 @@ Historical sprint information lives in individual documents in `docs/sprints/` a
 
 ## Last Completed Sprint
 
-**Sprint 75** (2026-10-02 -- 2026-10-04; PR #448 -> develop; version 0.17.0+8, **no bump by exception** -- no store release after Sprint 74)
-- **Type**: the 0.17.0 release blocker (F238) plus five backlog cards and the Sprint 74 test carry-ins; F243 and four fixes added at Manual Validation.
-- **F238 (#441)**: the "A scan is already running" dialog offers "Stop the background scan and start mine". The request is written to the scan row (`cancel_requested_at`, DB v11); the background scan stops at its next heartbeat, records a stopped skip (no export, no notification, no busy retry). PASSED on Windows (manual scan started 22 s after the request). **This satisfies the 0.17.0 release hold.**
-- **F239 (#442)**: "Sign In Again" in the account list and on the scan screen, refusing a different Google account; a background scan that needs sign-in skips with that reason, and on Windows no longer opens a browser unattended. **The Android no-Activity renewal spike FAILED** (NULL for a granted account); R-2 not built, `authorizeWithoutActivity` stays off -> F246.
-- **F243 (#450)**: Windows background scans run while the app is open; the per-account claim decides. The WinWright runner now pauses this environment's background tasks during a sweep.
-- **F216, F214, F236, F215, Task 7** delivered. **MV fixes**: "Scan not started" and a reachable refusal row; the YAML save dialog opens in the export folder; adding a Gmail account finishes like AOL/Yahoo; the Gmail Setup sentence.
-- **Moved to Sprint 76** (Harold, Q3 at approval: phone checks wait until 0.17.0 is live): MV74-1, F205, the live deletion from a saved scan, the lock under Doze, Android YAML export, F238/F239 on the phone.
-- **Results**: suite 2,417 -> 2,508 (15 skipped), analyzer clean, WinWright 3/3, hook suite 83 -> 91; mutations M71-M117, all KILLED (two compile failures rewritten). Retro: Harold all Very Good; IMP-1..6 applied (mutation-test baseline + INVALID verdict, heredoc guard for `\\` and bare `cat >`, swallow walk on ADDED exceptions, tooling as a caller, MV steps traced, delegation checklist).
+**Sprint 76** (2026-10-04 -- 2026-10-06; PR #455 -> develop; version 0.17.6+14; six Play closed-test builds 0.17.1-0.17.6)
+- **Type**: the 0.17.0 field issues (F248-F250), grown at Harold's direction into making unattended Android background scanning work (F251-F253 and nine Manual Validation fixes).
+- **F248 (#452)**: the diagnostic log covers every scan, sign-in and renewal step, worker trigger and delay, stop reason, rule-update failures with reasons; a cross-isolate lock-file mutex (the per-process OS lock did not separate isolates on Android).
+- **F249 (#453)**: cancel checkpoints; Doze enqueue KEEP (REPLACE cancelled running scans); 5-minute spacing, never a skip; a scan where every folder failed is a failure, retried.
+- **F250 (#454)**: native sign-in cause named (`[16] Account reauth failed`); Android renewal falls back to the stored refresh token with the Android client -- confirmed on the Fold, overnight.
+- **F251-F253 (#456-#458)**: No Rule banner total; "Keep background scans running" battery row; "Scan when new mail arrives" notification listener (ADR-0044, package name only, off by default).
+- **MV fixes**: Gmail safe-sender move out of Spam; Gmail custom-label ID in incremental fetch; scan screen no longer zeroes a running scan; rule update skips a safe sender already in the target; export header row.
+- **Field evidence**: overnight 0.17.4 -- 95 worker starts, 111/113 completed, 10 spam deletions with the app unopened; 0.17.5 -- 52 scans all completed, zero broken log lines.
+- **Moved to Sprint 77** (Harold): MV76-1 Fold checks (F253 notification trigger, reboot, export header, rule-update fix, F250 account state, MV74-3).
+- **Results**: suite 2,508 -> 2,601 (15 skipped), analyzer clean, WinWright 3/3 (85 steps), hook suite 91 -> 104, first JVM test; mutations M118-M209. Copilot: Findings None. Retro: Harold all Very Good; IMP-1/2/3/4/6 applied (kept AAB in dist/, versionCode reuse gate, OS-primitive rule, blind-staging hook, "Existing behavior relied on" card line); IMP-5/7/8b skipped; IMP-8a/c to backlog.
 
 ## Next Sprint Candidates
 
@@ -178,6 +181,26 @@ All incomplete items in relative priority order. Priority in increments of 10; i
 - A Results rule update for an Inbox safe sender reports no failure (the 0.17.6 re-process fix).
 - F250: the Google account state screenshot on the Fold; decide whether the native sign-in still matters now that refresh-token renewal works (#454).
 - MV74-3: classify every scan error from normal use, or record zero (#433).
+
+**R76-1. Battery deep dive for "Scan when new mail arrives" -- A/B tests on the Android emulator Priority 2 -- CARRY-IN (Sprint 76 retro Cat 13, Harold)**
+- Deep dive on how to minimize battery usage for Android when set to run Background jobs on "scan when new mail arrives" while maintaining functionality; then add potential items to the backlog in priority order based on most likely success, written like A/B tests to be tested on the android simulator. OK to apply to both Windows and Android, primarily targeting Android (split solutions between platforms only if it greatly benefits Android).
+
+**R76-2. Move "Scan when new mail arrives" to the General tab? Priority 3 -- CARRY-IN (Sprint 76 retro Cat 13, Harold)**
+- It affects all accounts; if it moves, deep dive on how the whole "Background scanning" settings and help text should be adjusted.
+
+**R76-3. Deep dive: Heuristics, ML and GenAI spam identification from stored email content Priority 4 -- CARRY-IN (Sprint 76 retro Cat 13, Harold)**
+- Result: one or more backlog items for Heuristic, ML and GenAI pipelines and how they are used -- updates to YAML imports (new delete rules: known bad domains, subject regex, body regex), new tools to find and identify safe senders, on-device Heuristics/ML/GenAI tools.
+
+**R76-4. Store a history of email content for future Heuristics/ML/GenAI identifiers Priority 5 -- CARRY-IN (Sprint 76 retro Cat 13, Harold)**
+- Probably a database of fields -- design and implement. Fed by the Windows and Android scans (eventually iPhone); no duplicate emails; initially populated from the existing delete and safe-sender rules; Harold has a partial history of deleted emails to run through for more examples.
+
+### Backlog from the Sprint 76 retrospective
+
+**F256. Rename `GmailWindowsOAuthHandler` to reflect both platforms Priority 60 -- backlog (Sprint 76 retro IMP-8a, Harold 2026-10-06)**
+- Since Sprint 76 it serves Android too (`refreshAccessTokenMobile`, the mobile browser sign-in), so the name misleads. Rename the class and file; update callers, tests and docs.
+
+**F257. Scan History shows which mechanism started each background scan Priority 55 -- backlog (Sprint 76 retro IMP-8c, Harold 2026-10-06)**
+- The worker already logs `trigger=doze-alarm|periodic|notification|test` (F252/F253); persist it on the scan row and show it in Scan History, so "why did this scan run" is answerable without the diagnostic log.
 
 ### Backlog from the Sprint 74-75 retrospectives and Manual Validation
 
