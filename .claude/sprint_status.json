@@ -6,7 +6,7 @@
   "current_sprint": {
     "number": 76,
     "branch": "feature/20261004_Sprint_76",
-    "status": "Phase 6 Push & Finalize PR -- Manual Validation COMPLETE (Harold 2026-10-06); final builds 0.17.6+14 at b6d5179; remaining Fold checks carried to Sprint 77 (MV76-1). Earlier: Sprint 76 code complete through 0.17.4+12 (AAB built and verified, 30f44ef): F248 (#452), F249 part 1 (#453), F251 (#456), F252 (#457), F253 (#458), Phase 5.1.1 review fixes. 5.1.1/5.1.2/5.1.5 evidence recorded in SPRINT_76_PLAN.md. Remaining items wait on Harold's Fold runs and Class-2 decisions (F249 part 2 REPLACE->KEEP, Android Gmail renewal via the stored refresh token, double scan cadence, Gmail safe-sender move bug, no-network scan counted complete, cross-isolate log corruption).",
+    "status": "Phase 7 Sprint Review -- retrospective prompt sent 2026-10-06; Claude draft at docs/sprints/drafts/SPRINT_76_RETROSPECTIVE_claude_draft.md; Copilot review requested on PR #455 (verified attached via GraphQL). Phase 6: Manual Validation COMPLETE (Harold 2026-10-06); final builds 0.17.6+14 at b6d5179; remaining Fold checks carried to Sprint 77 (MV76-1). Earlier: Sprint 76 code complete through 0.17.4+12 (AAB built and verified, 30f44ef): F248 (#452), F249 part 1 (#453), F251 (#456), F252 (#457), F253 (#458), Phase 5.1.1 review fixes. 5.1.1/5.1.2/5.1.5 evidence recorded in SPRINT_76_PLAN.md. Remaining items wait on Harold's Fold runs and Class-2 decisions (F249 part 2 REPLACE->KEEP, Android Gmail renewal via the stored refresh token, double scan cadence, Gmail safe-sender move bug, no-network scan counted complete, cross-isolate log corruption).",
     "plan_approved": true,
     "blanket_execution_approved": true,
     "pr_number": 455,
