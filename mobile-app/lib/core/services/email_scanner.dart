@@ -30,6 +30,28 @@ import '../../adapters/email_providers/spam_filter_platform.dart';
 import '../../adapters/storage/secure_credentials_store.dart';
 import '../../util/error_messages.dart';
 
+/// Sprint 76 (Harold Q4): every folder that exists on the account failed to
+/// fetch -- typically no network. The scan ends as an error, not "completed".
+class ScanFetchFailedException implements Exception {
+  ScanFetchFailedException(this.message);
+  final String message;
+  @override
+  String toString() => 'ScanFetchFailedException: $message';
+}
+
+/// Whether a scan fetched nothing because every EXISTING folder failed.
+/// Folders that do not exist (F202) are not failures; a scan with at least one
+/// successful folder is not "nothing" (partial failures stay F174 errors).
+@visibleForTesting
+bool scanFetchedNothing({
+  required int folders,
+  required int missing,
+  required int failed,
+}) {
+  final existing = folders - missing;
+  return existing > 0 && failed >= existing;
+}
+
 /// Service to orchestrate email scanning with live IMAP connection
 class EmailScanner {
   final String platformId;
@@ -431,6 +453,12 @@ class EmailScanner {
       // F202 R-6: the account's folder list, fetched at most once per scan and
       // only if a folder fetch fails.
       final folderListCache = <List<FolderInfo>>[];
+      // Sprint 76 (Harold Q4): count folders that EXIST and folders whose
+      // fetch failed, so a scan where every existing folder failed (no
+      // network) ends as an error instead of "completed".
+      var foldersMissing = 0;
+      var foldersFailed = 0;
+      String? firstFetchError;
       for (final folderName in folderNames) {
         // F249 (Sprint 76): a cancel is also honored at each FOLDER start,
         // not only at a batch boundary. Before this, a scan that had fetched
@@ -603,8 +631,11 @@ class EmailScanner {
               await LiveScanLogger.log('Step 4: folder "$folderName" does not '
                   'exist -- skipped (F202)');
             }
+            foldersMissing++;
             continue;
           }
+          foldersFailed++;
+          firstFetchError ??= e.toString();
           AppLogger.error('Step 4: EXCEPTION fetching folder "$folderName"', error: e, stackTrace: st);
           if (isLiveScan) {
             await LiveScanLogger.log('Step 4: EXCEPTION fetching folder "$folderName": $e');
@@ -620,6 +651,18 @@ class EmailScanner {
       // F249: a stop that arrived during the LAST folder's fetch is honored
       // before any result is acted on, rather than after the scan completes.
       _cancelCheckpoint(scanLease, 'after the last folder', diag);
+      // Sprint 76 (Harold Q4; 0.17.2 Fold log 09:58:35): every folder failed
+      // with "Failed host lookup" and the scan still read "completed,
+      // errors=3", so the worker exited success and was not retried. A scan
+      // that could fetch NOTHING is a failed scan; a partial failure still
+      // completes with its errors counted (F174).
+      if (scanFetchedNothing(
+          folders: folderNames.length,
+          missing: foldersMissing,
+          failed: foldersFailed)) {
+        throw ScanFetchFailedException(
+            'every folder failed to fetch: ${firstFetchError ?? 'unknown'}');
+      }
       AppLogger.scan('Step 4: COMPLETE - Total messages across all folders: $totalFetched');
       if (isLiveScan) {
         await LiveScanLogger.log('Step 4 COMPLETE: total messages across all folders = $totalFetched');

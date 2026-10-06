@@ -557,3 +557,31 @@ is open. The F109c ingest stays: it only converts an old handoff file into
 proves the launch PROCEEDS with the UI open, against a non-existent account so
 it touches no mail); the claim's behavior across processes is covered by the
 Dart tests on one connection and by Manual Validation.
+
+## Amendment -- Sprint 76 Manual Validation (Harold, 2026-10-05: "q1 1 ... q3 2"): KEEP, and five-minute spacing
+
+**1. The Doze one-off uses KEEP (Q1 = 1).** `DozeScanTrigger.enqueue` used
+`ExistingWorkPolicy.REPLACE`, which cancels the existing work even while it is
+RUNNING: an alarm firing during a long Doze-started scan killed that scan
+mid-fetch, with no outcome line and an `in_progress` row left for the reaper
+(both Phase 5.1.1 reviewers confirmed the scenario; F249 part 2). KEEP lets the
+running scan finish and drops the new request -- the next alarm re-arms anyway.
+APPEND stays rejected (it stacks scans, F175). The F253 new-mail one-off
+already used KEEP.
+
+**2. Five-minute spacing, never a skip (Q3 = 2, with Harold's refinement).**
+Harold rejected skipping a background scan that falls soon after another:
+*"no as when emails arrive is the best possible position - if < 5 minutes can
+it delay until 5 minutes before starting the scan"*. `BackgroundScanCore.scanAccount`
+now waits until 5 minutes after the account's last COMPLETED scan (any type)
+before its first attempt, then scans. The spacing wait and the existing 2-6
+minute busy retry share one 6-minute budget (`cappedBusyWait`), so the worst
+case is unchanged and an Android worker (about 10 minutes) keeps time to scan.
+Shared by both platforms (ADR-0042).
+
+**3. A scan that fetched nothing is a failed scan (Q4).** When every folder
+that exists on the account failed to fetch -- no network -- the scan now ends
+with `ScanFetchFailedException` instead of "completed, errors=N", so the worker
+reports a failure and WorkManager retries it (a notification-triggered run does
+not retry; its next notification is the retry). A partial failure still
+completes with its errors counted (F174).

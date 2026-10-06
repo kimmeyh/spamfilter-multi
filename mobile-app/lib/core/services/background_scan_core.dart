@@ -205,6 +205,22 @@ class BackgroundScanCore {
           scanResultStore: scanResultStore,
         );
 
+    // Sprint 76 (Harold Q3, 2026-10-05): "when emails arrive is the best
+    // possible position - if < 5 minutes can it delay until 5 minutes before
+    // starting the scan". Never skip: wait out the rest of the 5 minutes
+    // since this account's last completed scan (any type), then scan.
+    final spacing = await _spacingWait(accountId, scanResultStore);
+    if (spacing > Duration.zero) {
+      unawaited(DiagnosticLogger.scanEvent(
+        scanType: 'background',
+        accountId: accountId,
+        stage: 'spacing',
+        detail: 'waiting ${spacing.inSeconds}s (last scan of this account '
+            'finished less than ${kMinScanSpacing.inMinutes} minutes ago)',
+      ));
+      await busyWait(spacing);
+    }
+
     String busyBecause;
     try {
       final first = await attempt();
@@ -216,7 +232,9 @@ class BackgroundScanCore {
       if (!isDatabaseLocked(e)) rethrow;
       busyBecause = 'database is locked';
     }
-    final wait = busyRetryDelay();
+    // Sprint 76: the spacing wait and the busy wait share one budget, so a
+    // WorkManager worker (about 10 minutes) still has time left to scan.
+    final wait = cappedBusyWait(busyRetryDelay(), alreadyWaited: spacing);
     _logger.i('Background scan of ${Redact.accountId(accountId)} found it '
         'busy ($busyBecause); waiting ${wait.inSeconds}s, then one more '
         'attempt');
@@ -228,6 +246,53 @@ class BackgroundScanCore {
     ));
     await busyWait(wait);
     return attempt();
+  }
+
+  /// Sprint 76 (Harold Q3): minimum time between the end of an account's last
+  /// scan and the start of its next background scan.
+  static const Duration kMinScanSpacing = Duration(minutes: 5);
+
+  /// Sprint 76: total waiting allowed before a background scan (spacing plus
+  /// busy retry) -- the old busy-retry maximum, so the worst case is unchanged.
+  static const Duration kMaxTotalWait = Duration(minutes: 6);
+
+  /// How long to wait so the scan starts [kMinScanSpacing] after the last
+  /// completed scan ended. Zero when there is none, it is older, or the clock
+  /// says it ended in the future.
+  @visibleForTesting
+  static Duration spacingWaitFor({DateTime? lastCompletedAt, required DateTime now}) {
+    if (lastCompletedAt == null) return Duration.zero;
+    final elapsed = now.difference(lastCompletedAt);
+    if (elapsed.isNegative || elapsed >= kMinScanSpacing) return Duration.zero;
+    return kMinScanSpacing - elapsed;
+  }
+
+  /// The busy-retry wait, reduced so spacing + busy never exceeds
+  /// [kMaxTotalWait].
+  @visibleForTesting
+  static Duration cappedBusyWait(Duration wanted, {required Duration alreadyWaited}) {
+    final left = kMaxTotalWait - alreadyWaited;
+    if (left <= Duration.zero) return Duration.zero;
+    return wanted > left ? left : wanted;
+  }
+
+  static Future<Duration> _spacingWait(
+      String accountId, ScanResultStore? scanResultStore) async {
+    try {
+      final store = scanResultStore ?? ScanResultStore(DatabaseHelper());
+      final last = await store.getLatestCompletedScan(accountId);
+      final at = last?.completedAt;
+      return spacingWaitFor(
+        lastCompletedAt:
+            at == null ? null : DateTime.fromMillisecondsSinceEpoch(at),
+        now: DateTime.now(),
+      );
+    } catch (e) {
+      // Best effort: spacing is a courtesy; an unreadable history must not
+      // stop the scan.
+      _logger.w('Scan spacing check failed: $e');
+      return Duration.zero;
+    }
   }
 
   /// The wait before the one retry: random, 2:00 to 6:00 (Harold). A seam so

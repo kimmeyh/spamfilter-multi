@@ -1274,6 +1274,48 @@ class GmailApiAdapter with BatchOperationsMixin implements SpamFilterPlatform {
   }
 
   /// Map folder name to Gmail label ID
+  /// Sprint 76 (Harold Q4): the labels a Gmail "move" adds and removes.
+  ///
+  /// Before: every move sent `add [target]` with `remove ['INBOX', 'UNREAD']`.
+  /// A safe-sender rescue out of Spam targets INBOX, so the request added AND
+  /// removed INBOX and Gmail refused it -- 400 "Cannot both add and remove the
+  /// same label" (0.17.2 Fold log, every rescue) -- and it never removed SPAM,
+  /// so even a successful move would have left the mail in Spam.
+  ///
+  /// Now: remove INBOX, UNREAD (unchanged behavior) and the message's own
+  /// SYSTEM source label (SPAM / TRASH), minus whatever is being added. A
+  /// custom-label source is not removed: its label ID is not its name, and
+  /// sending the name would be refused for a different reason.
+  @visibleForTesting
+  static ({List<String> add, List<String> remove}) moveLabels({
+    required String sourceFolder,
+    required String targetFolder,
+  }) {
+    const system = {'INBOX', 'SPAM', 'TRASH'};
+    final target = _systemLabelOrSelf(targetFolder);
+    final source = _systemLabelOrSelf(sourceFolder);
+    final remove = <String>{
+      'INBOX',
+      'UNREAD',
+      if (system.contains(source)) source,
+    }..remove(target);
+    return (add: [target], remove: remove.toList());
+  }
+
+  static String _systemLabelOrSelf(String folder) {
+    switch (folder.toUpperCase()) {
+      case 'INBOX':
+        return 'INBOX';
+      case 'SPAM':
+      case 'JUNK':
+        return 'SPAM';
+      case 'TRASH':
+        return 'TRASH';
+      default:
+        return folder;
+    }
+  }
+
   String _folderToLabelId(String folder) {
     switch (folder.toUpperCase()) {
       case 'INBOX':
@@ -1340,11 +1382,13 @@ class GmailApiAdapter with BatchOperationsMixin implements SpamFilterPlatform {
     }
 
     try {
-      // Use modify API to add target label and remove INBOX
+      // Sprint 76: the source-aware label change (see moveLabels).
+      final labels = moveLabels(
+          sourceFolder: message.folderName, targetFolder: targetFolder);
       await _gmailApi!.users.messages.modify(
         gmail.ModifyMessageRequest(
-          addLabelIds: [targetFolder],
-          removeLabelIds: ['INBOX', 'UNREAD'],
+          addLabelIds: labels.add,
+          removeLabelIds: labels.remove,
         ),
         'me',
         message.id,
@@ -1637,41 +1681,52 @@ class GmailApiAdapter with BatchOperationsMixin implements SpamFilterPlatform {
       return const BatchActionResult(succeededIds: [], failedIds: {});
     }
 
-    final allIds = messages.map((m) => m.id).toList();
     final succeeded = <String>[];
     final failed = <String, String>{};
 
-    for (var i = 0; i < allIds.length; i += _gmailBatchLimit) {
-      final chunk = allIds.sublist(
-        i,
-        i + _gmailBatchLimit > allIds.length ? allIds.length : i + _gmailBatchLimit,
-      );
-      try {
-        await _gmailApi!.users.messages.batchModify(
-          gmail.BatchModifyMessagesRequest(
-            ids: chunk,
-            addLabelIds: [targetFolder],
-            removeLabelIds: ['INBOX', 'UNREAD'],
-          ),
-          'me',
+    // Sprint 76: one batchModify per source folder -- the labels removed depend
+    // on where each message is (see moveLabels).
+    final bySource = <String, List<String>>{};
+    for (final m in messages) {
+      bySource.putIfAbsent(m.folderName, () => []).add(m.id);
+    }
+
+    for (final group in bySource.entries) {
+      final labels =
+          moveLabels(sourceFolder: group.key, targetFolder: targetFolder);
+      final allIds = group.value;
+      for (var i = 0; i < allIds.length; i += _gmailBatchLimit) {
+        final chunk = allIds.sublist(
+          i,
+          i + _gmailBatchLimit > allIds.length ? allIds.length : i + _gmailBatchLimit,
         );
-        succeeded.addAll(chunk);
-        Redact.logSafe('Gmail batch moveToFolder "$targetFolder": ${chunk.length} messages');
-      } catch (e) {
-        Redact.logError('Gmail batch moveToFolder failed for chunk, falling back to individual', e);
-        for (final id in chunk) {
-          try {
-            await _gmailApi!.users.messages.modify(
-              gmail.ModifyMessageRequest(
-                addLabelIds: [targetFolder],
-                removeLabelIds: ['INBOX', 'UNREAD'],
-              ),
-              'me',
-              id,
-            );
-            succeeded.add(id);
-          } catch (individualError) {
-            failed[id] = individualError.toString();
+        try {
+          await _gmailApi!.users.messages.batchModify(
+            gmail.BatchModifyMessagesRequest(
+              ids: chunk,
+              addLabelIds: labels.add,
+              removeLabelIds: labels.remove,
+            ),
+            'me',
+          );
+          succeeded.addAll(chunk);
+          Redact.logSafe('Gmail batch moveToFolder "$targetFolder": ${chunk.length} messages');
+        } catch (e) {
+          Redact.logError('Gmail batch moveToFolder failed for chunk, falling back to individual', e);
+          for (final id in chunk) {
+            try {
+              await _gmailApi!.users.messages.modify(
+                gmail.ModifyMessageRequest(
+                  addLabelIds: labels.add,
+                  removeLabelIds: labels.remove,
+                ),
+                'me',
+                id,
+              );
+              succeeded.add(id);
+            } catch (individualError) {
+              failed[id] = individualError.toString();
+            }
           }
         }
       }

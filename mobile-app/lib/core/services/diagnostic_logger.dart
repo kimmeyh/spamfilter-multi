@@ -1,3 +1,4 @@
+import 'dart:convert';
 import 'dart:io';
 
 import 'package:flutter/foundation.dart';
@@ -213,6 +214,39 @@ class DiagnosticLogger {
   /// write). Review MEDIUM-3 (Sprint 76): read by Settings.
   static String? lastWriteError;
 
+  /// Sprint 76 (Harold Q4): append [line] to [file] as ONE write under an
+  /// exclusive OS file lock.
+  ///
+  /// The write chain orders writes inside one isolate only. Background
+  /// workers are separate isolates (and the UI a third), and the 0.17.2 Fold
+  /// log had fragments -- a lone "m", half a line -- where two of them appended
+  /// at once. `RandomAccessFile.lock` is an OS-level lock, so it serializes
+  /// every isolate and process writing this file; the whole line is one
+  /// `writeFrom`, so no partial line is visible to another writer.
+  @visibleForTesting
+  static Future<void> appendLocked(File file, String line) async {
+    final raf = await file.open(mode: FileMode.append);
+    try {
+      // Best effort: some storage (Android shared/FUSE storage) may refuse
+      // file locks. A refused lock must not stop logging -- the line is still
+      // written as a single write, which is the most a lock-less file allows.
+      var locked = false;
+      try {
+        await raf.lock(FileLock.blockingExclusive);
+        locked = true;
+      } catch (_) {}
+      try {
+        await raf.setPosition(await raf.length());
+        await raf.writeFrom(utf8.encode(line));
+        await raf.flush();
+      } finally {
+        if (locked) await raf.unlock();
+      }
+    } finally {
+      await raf.close();
+    }
+  }
+
   /// Append one diagnostic record.
   ///
   /// [kind] is one of the `kind*` constants; [context] names where it happened
@@ -244,7 +278,7 @@ class DiagnosticLogger {
         final file = await _currentFile();
         await file.parent.create(recursive: true);
         await _rotateIfNeeded(file);
-        await file.writeAsString(line, mode: FileMode.append);
+        await appendLocked(file, line);
         lastWriteError = null;
       }).catchError((Object e) {
         // Swallow so the chain survives; the caller already treats logging as

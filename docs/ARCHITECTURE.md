@@ -579,6 +579,17 @@ in Doze and is outside the App Standby bucket limits. The app does not declare
 `REQUEST_IGNORE_BATTERY_OPTIMIZATIONS` (restricted by Google Play); the user
 chooses Unrestricted.
 
+**Sprint 76 Manual Validation decisions** (ADR-0039 amendment): the Doze
+one-off uses `ExistingWorkPolicy.KEEP` (REPLACE cancelled RUNNING scans); a
+background scan waits until 5 minutes after the account's last completed scan
+(never skipped; spacing + busy retry share a 6-minute budget); a scan where
+every existing folder failed ends as an error (`ScanFetchFailedException`), not
+"completed". On Android a failed native Gmail renewal falls back to the refresh
+token the browser sign-in stored, refreshed with the Android OAuth client
+(`GmailWindowsOAuthHandler.refreshAccessTokenMobile`). The diagnostic log
+appends each line as one write under an exclusive OS file lock, best effort
+(`DiagnosticLogger.appendLocked`), so concurrent isolates cannot interleave.
+
 **Scan when new mail arrives** (F253, Sprint 76, ADR-0044; Android only):
 `MailNotificationListener` (a `NotificationListenerService`) reads only the
 posting package name and time. A notification from an allowlisted mail app

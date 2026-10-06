@@ -629,6 +629,33 @@ when the log names the cause, not pre-approved here.
   only), `f253_new_mail_switch_test` (9); M168-M175 KILLED. Debug APK builds (exit 0; manifest merges).
   Suite 2,564 / 15 / 0; analyzer clean. Unverified until the Fold: the AOL and Yahoo package names, and
   whether a triggered scan reaches the network while idle without Unrestricted.
+- **Manual Validation decisions (Harold, 2026-10-05: "q1 1 q2 1 q3 2 no as when emails arrive is the best
+  possible position - if < 5 minutes can it delay until 5 minutes before starting the scan q4 fix all 5";
+  then "fix these before re-creating the .aab file") -- ALL DONE, in 0.17.4+12 (versionCode 12 was never
+  uploaded, so the number stands):**
+  - Q1 = 1 (F249 part 2): `DozeScanTrigger.enqueue` REPLACE -> KEEP (a Doze wake no longer cancels a RUNNING
+    scan). ADR-0039 amended.
+  - Q2 = 1 (F250 R-3 / F246 for the browser path): on Android a failed native renewal falls back to the
+    stored refresh token, refreshed with the ANDROID client (`refreshAccessTokenMobile`, AppAuth token
+    request, no secret). Found while building it: the existing `refreshAccessToken` sends the DESKTOP client
+    and secret, which Google would refuse for an Android-issued token. Works without an Activity, so
+    background renewal is covered too. Needs the Fold to confirm Google accepts it.
+  - Q3 = 2 with Harold's refinement: never skip; a background scan waits until 5 minutes after the
+    account's last completed scan (`spacingWaitFor`), sharing a 6-minute budget with the busy retry
+    (`cappedBusyWait`). ADR-0039 amended.
+  - Q4 = all: (1) Gmail safe-sender move out of Spam -- `GmailApiAdapter.moveLabels` removes the system
+    source label and never the target; batch grouped by source folder. (2) A scan where every existing
+    folder failed ends with `ScanFetchFailedException` (worker failure -> retry), not "completed". (3) Log
+    lines are appended as one write under an exclusive OS file lock, best effort (`appendLocked`).
+    (4) Wrong "found" count: cause read from code -- `scan_progress_screen` reset the shared provider
+    (`initState` and `didPopNext`) even while a scan was RUNNING, zeroing its counters mid-scan; both
+    sites now go through `shouldResetScanState` (callers of `reset()`: exactly those two -- IMP-1).
+  - Tests: `s76_mv_decisions_test` (14, incl. a 4-isolate x 150-line append test), +2 behavior tests in
+    `f248_scan_diagnostic_log_test` (offline scan ends as an error; spacing waits then scans), +1 KEEP gate
+    in `f252_worker_trigger_line_test`. Mutations M185-M195: 10 KILLED; M189 SURVIVED because the mutant
+    was mis-specified (it split the write while still holding the lock -- correctly serialized), not a
+    test gap; M188 (lock removed) KILLED shows the lock is what keeps lines whole. Suite 2,592 / 15 / 0;
+    analyzer clean.
 - **5.1.1 automated code review**: DONE 2026-10-05 -- `pr-review-toolkit:code-reviewer` (with the mandatory
   related-patterns grep) and `pr-review-toolkit:silent-failure-hunter`, both on `origin/develop...HEAD`
   (39 files, +2771/-41). Both independently found the same HIGH. Dispositions:

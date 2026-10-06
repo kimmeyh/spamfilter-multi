@@ -340,6 +340,34 @@ class GmailWindowsOAuthHandler {
     }
   }
 
+  /// Sprint 76 (Harold Q2 = 1): renew with a refresh token that the MOBILE
+  /// browser sign-in issued.
+  ///
+  /// That token belongs to the Android OAuth client ([_androidClientId],
+  /// custom-scheme redirect, no client secret), so it must be refreshed with
+  /// that client -- [refreshAccessToken] sends the DESKTOP client and secret,
+  /// which Google would refuse for it. AppAuth's token request is the standard
+  /// installed-app refresh. Returns the new access token, or '' when Google
+  /// returned none. Throws on a transport or OAuth error (the caller logs it).
+  static Future<String> refreshAccessTokenMobile(String refreshToken) async {
+    if (_androidClientId.isEmpty) {
+      throw StateError('ANDROID_GMAIL_CLIENT_ID is not set');
+    }
+    final result = await _appAuth.token(
+      TokenRequest(
+        _androidClientId,
+        _mobileRedirectUri,
+        refreshToken: refreshToken,
+        serviceConfiguration: const AuthorizationServiceConfiguration(
+          authorizationEndpoint: _authEndpoint,
+          tokenEndpoint: _tokenEndpoint,
+        ),
+        scopes: _scopes,
+      ),
+    );
+    return result.accessToken ?? '';
+  }
+
   /// Refresh access token using refresh token (no client secret with PKCE)
   static Future<String> refreshAccessToken(String refreshToken) async {
     try {

@@ -262,7 +262,26 @@ class GoogleAuthService {
 
       if (_hasNativeSignIn) {
         // Use native Google Sign-In SDK for refresh
-        return await _refreshViaNativeSignIn(accountId, tokens);
+        AuthResult native;
+        try {
+          native = await _refreshViaNativeSignIn(accountId, tokens);
+        } catch (e) {
+          _renewalLog('native renewal threw ${DiagnosticLogger.describeError(e)}');
+          native = AuthResult.failure('Session expired. Please sign in again.');
+        }
+        // Sprint 76 (Harold Q2 = 1): when native renewal fails on Android and
+        // the browser sign-in left a refresh token, renew with it. Before,
+        // that token was stored and never used, so every expiry asked the
+        // user to sign in again ("I had to re-authenticate the gmail account
+        // at least once today"). It needs no Activity, so it also works in a
+        // background worker.
+        if (shouldTryStoredRefreshToken(
+            nativeSucceeded: native.success,
+            isAndroid: Platform.isAndroid,
+            hasRefreshToken: tokens.refreshToken?.isNotEmpty == true)) {
+          return await _refreshViaStoredRefreshToken(accountId, tokens);
+        }
+        return native;
       } else if (_isDesktop) {
         // Use HTTP token refresh for desktop
         return await _refreshViaHttp(accountId, tokens);
@@ -455,6 +474,50 @@ class GoogleAuthService {
     } catch (e) {
       Redact.logSafe('Google Sign-In initialization failed: ${e.runtimeType}');
       rethrow;
+    }
+  }
+
+  /// Sprint 76 (Harold Q2 = 1): whether to fall back to the stored refresh
+  /// token after native renewal.
+  @visibleForTesting
+  static bool shouldTryStoredRefreshToken({
+    required bool nativeSucceeded,
+    required bool isAndroid,
+    required bool hasRefreshToken,
+  }) =>
+      !nativeSucceeded && isAndroid && hasRefreshToken;
+
+  /// Test seam for [_refreshViaStoredRefreshToken]'s token call.
+  @visibleForTesting
+  static Future<String> Function(String refreshToken)? debugMobileRefresh;
+
+  /// Renew with the refresh token the Android browser sign-in stored, using
+  /// the Android OAuth client that issued it. Tokens are KEPT on failure
+  /// (Harold Q1, Sprint 74 MV -- see _refreshToken).
+  Future<AuthResult> _refreshViaStoredRefreshToken(
+      String accountId, GmailTokens tokens) async {
+    try {
+      final refresh =
+          debugMobileRefresh ?? GmailWindowsOAuthHandler.refreshAccessTokenMobile;
+      final newAccessToken = await refresh(tokens.refreshToken!);
+      if (newAccessToken.isEmpty) {
+        _renewalLog('stored refresh token: Google returned no access token');
+        _state = AuthState.unauthenticated;
+        return AuthResult.failure('Session expired. Please sign in again.');
+      }
+      final newTokens = tokens.copyWith(
+        accessToken: newAccessToken,
+        expiresAt: DateTime.now().add(const Duration(hours: 1)),
+      );
+      await _credStore.saveGmailTokens(accountId, newTokens);
+      _currentAccountId = accountId;
+      _state = AuthState.authenticated;
+      _renewalLog('renewed with the stored refresh token');
+      return AuthResult.success(tokens.email, newAccessToken);
+    } catch (e) {
+      _renewalLog('stored refresh token failed: ${DiagnosticLogger.describeError(e)}');
+      _state = AuthState.unauthenticated;
+      return AuthResult.failure('Session expired. Please sign in again.');
     }
   }
 

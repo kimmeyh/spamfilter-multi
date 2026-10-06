@@ -109,12 +109,17 @@ object DozeScanTrigger {
                 .setInitialDelay(0, TimeUnit.SECONDS)
                 .build()
 
-            // REPLACE, not APPEND: if a scan for this account is somehow still
-            // queued, running a second is exactly the stacking F175 and the
-            // Sprint 61 forensics exist to prevent.
+            // KEEP, not REPLACE and not APPEND (F249 part 2, Harold Q1 = 1,
+            // 2026-10-05). APPEND would stack scans (F175, the Sprint 61
+            // forensics). REPLACE was used until 0.17.4, but it CANCELS the
+            // existing work even while it is RUNNING: an alarm firing during a
+            // long Doze-started scan killed that scan mid-fetch, with no outcome
+            // line and an in_progress row left for the reaper (both 5.1.1
+            // reviewers confirmed the scenario). KEEP lets the running scan
+            // finish and drops the new request; the next alarm re-arms anyway.
             WorkManager.getInstance(context).enqueueUniqueWork(
                 uniqueName,
-                ExistingWorkPolicy.REPLACE,
+                ExistingWorkPolicy.KEEP,
                 request,
             )
             Log.i(TAG, "scan enqueued after Doze wake")

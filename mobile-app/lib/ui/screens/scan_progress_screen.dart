@@ -26,6 +26,18 @@ import '../widgets/screen_version_line.dart'; // F229 (Sprint 73)
 import '../widgets/sign_in_again.dart'; // F239 (Sprint 75)
 import '../widgets/system_inset_wrapper.dart'; // F209 (Sprint 69)
 
+/// Sprint 76 (Harold Q4): whether the screen may reset the shared scan state.
+///
+/// Both reset sites (entering this screen, and backing out of Results via
+/// `didPopNext`) mean "show Ready to Scan for a FINISHED scan". They ran even
+/// while a scan was still running, zeroing its counters mid-scan -- the
+/// 0.17.2 Fold log's Gmail scans read `found=0 processed=6` and `found=6`
+/// against 40 and 63 fetched. A running or paused scan is left alone; it
+/// resets the screen when it ends and the user next arrives here.
+@visibleForTesting
+bool shouldResetScanState(ScanStatus status) =>
+    status != ScanStatus.scanning && status != ScanStatus.paused;
+
 /// Displays live scan progress bound to EmailScanProvider.
 /// Provides controls to start/pause/resume/reset a scan and
 /// view results. Uses demo helpers to exercise the UI without
@@ -70,9 +82,10 @@ class _ScanProgressScreenState extends State<ScanProgressScreen>
     // [NEW] ISSUE #41 FIX: Set current account for per-account folder storage
     scanProvider.setCurrentAccount(widget.accountId);
 
-    // Auto-reset scan state when navigating to this screen
+    // Auto-reset scan state when navigating to this screen -- unless a scan is
+    // still running (Sprint 76, see shouldResetScanState).
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      scanProvider.reset();
+      if (shouldResetScanState(scanProvider.status)) scanProvider.reset();
     });
 
     // Load configured scan settings for display in header
@@ -118,7 +131,7 @@ class _ScanProgressScreenState extends State<ScanProgressScreen>
   @override
   void didPopNext() {
     final scanProvider = Provider.of<EmailScanProvider>(context, listen: false);
-    scanProvider.reset();
+    if (shouldResetScanState(scanProvider.status)) scanProvider.reset();
   }
 
   Future<void> _loadConfiguredSettings() async {

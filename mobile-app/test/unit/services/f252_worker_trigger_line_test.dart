@@ -89,6 +89,18 @@ void main() {
       expect(kotlinConst('KEY_TRIGGER_AT_MS'), kTriggerAtMsKey);
     });
 
+    test('F249 part 2 (Harold Q1 = 1): the Doze enqueue uses KEEP, never '
+        'REPLACE -- REPLACE cancels a RUNNING scan', () {
+      // SOURCE-TEXT VERIFIED: WorkManager's conflict policy is a device-only
+      // behavior; the gate pins the policy literal on the alarm path.
+      final code = trigger
+          .replaceAll(RegExp(r'/\*[\s\S]*?\*/'), '')
+          .replaceAll(RegExp(r'//[^\n]*'), '');
+      expect(code.contains('ExistingWorkPolicy.REPLACE'), isFalse);
+      expect('ExistingWorkPolicy.KEEP'.allMatches(code).length, 2,
+          reason: 'both the Doze path and the new-mail path keep running work');
+    });
+
     test('the receiver reads the clock before re-arming and passes it on', () {
       // SOURCE-TEXT VERIFIED: a BroadcastReceiver cannot run off a device; the
       // order is what makes the delay measure Android's hold-back.

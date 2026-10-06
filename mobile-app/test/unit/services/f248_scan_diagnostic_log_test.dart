@@ -46,6 +46,20 @@ class _AllMailPlatform extends MockEmailProvider {
       super.fetchMessages(daysBack: daysBack, folderNames: ['All Folders']);
 }
 
+/// Sprint 76 (Harold Q4): no network -- every fetch and the folder listing fail.
+class _OfflinePlatform extends MockEmailProvider {
+  @override
+  Future<List<EmailMessage>> fetchMessages({
+    required int daysBack,
+    required List<String> folderNames,
+  }) async =>
+      throw const SocketException("Failed host lookup: 'imap.aol.com'");
+
+  @override
+  Future<List<FolderInfo>> listFolders() async =>
+      throw const SocketException("Failed host lookup: 'imap.aol.com'");
+}
+
 /// Asks for a stop ON THE ROW mid-scan, then gives the heartbeat time to see it.
 class _RowStopPlatform extends MockEmailProvider {
   _RowStopPlatform(this.store);
@@ -255,6 +269,42 @@ void main() {
     expect(log, contains(RegExp(r'outcome -- completed .* alreadyFiled=\d+ in ')));
     expect(log, isNot(contains('@bad.example')),
         reason: 'no sender addresses from the mail itself');
+  });
+
+  test('Sprint 76 Q4: a scan where EVERY folder failed (no network) ends as '
+      'an error, not "completed"', () async {
+    // What this does NOT catch: a partial failure (one folder ok) -- that
+    // stays "completed" with errors by design (F174), covered by the pure
+    // scanFetchedNothing tests.
+    PlatformRegistry.overrideFactoryForTest('aol', _OfflinePlatform.new);
+    Object? thrown;
+    try {
+      await runBackgroundScan();
+    } catch (e) {
+      thrown = e;
+    }
+    final log = await readLog();
+    expect(log, contains('every folder failed to fetch'));
+    expect(log, isNot(contains('outcome -- completed')),
+        reason: '0.17.2 Fold: "completed found=0 ... errors=3" and no retry');
+    expect(thrown, isNotNull,
+        reason: 'the failure reaches the worker, so WorkManager can retry');
+  });
+
+  test('Sprint 76 Q3: a background scan right after another waits out the '
+      '5-minute spacing, then scans', () async {
+    await runBackgroundScan(); // completes now
+    final waits = <Duration>[];
+    BackgroundScanCore.busyWait = (d) async => waits.add(d);
+    await runBackgroundScan();
+    final log = await readLog();
+
+    expect(waits, isNotEmpty);
+    expect(waits.first, greaterThan(const Duration(minutes: 4, seconds: 50)));
+    expect(waits.first, lessThanOrEqualTo(const Duration(minutes: 5)));
+    expect(log, contains('spacing -- waiting'));
+    expect('outcome -- completed'.allMatches(log).length, 2,
+        reason: 'spacing delays the scan; it never skips it');
   });
 
   test('a dead holder reaped by the claim is named with its heartbeat age',
