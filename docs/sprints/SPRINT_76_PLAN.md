@@ -768,7 +768,9 @@ when the log names the cause, not pre-approved here.
   6. Silent failure: covered by the 5.1.1 silent-failure hunter; HIGH-2/HIGH-3/MEDIUM-1/3/4/5 fixed.
 - **5.1.5 WinWright sweep**: 2026-10-05 -- 3 scripts (`test_f124_rule_labels`, `test_mt2c_no_rule_sweep`,
   `test_s75_new_controls`), 27 steps, 3 PASS / 0 FAIL, DB drift none, on the 0.17.4 dev Windows build.
-  sweep-head: 30f44ef. The new Android-only rows (F252, F253) are not reachable on Windows. Sprint 77
+  RE-RUN at close-out 2026-10-06 on the 0.17.6 dev build (lib/ui changed after the first sweep:
+  ef04061, b6d5179): 3 scripts, 85 steps (29 + 29 + 27), 3 PASS / 0 FAIL, DB drift none.
+  sweep-head: 18392ad. The new Android-only rows (F252, F253) are not reachable on Windows. Sprint 77
   carry-in: add WinWright coverage for the Windows-visible Sprint 76 UI -- Settings "Writing to:" line and
   "Export folder > Reset to default" (F248), and the Results "No rule" banner total after a live scan (F251).
 - **5.1.6 runtime launch gate**: 0.17.3 (and 0.17.1/0.17.2) installed from Play launched on the Fold -- the
