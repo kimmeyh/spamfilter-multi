@@ -773,6 +773,10 @@ when the log names the cause, not pre-approved here.
   sweep-head: 18392ad. The new Android-only rows (F252, F253) are not reachable on Windows. Sprint 77
   carry-in: add WinWright coverage for the Windows-visible Sprint 76 UI -- Settings "Writing to:" line and
   "Export folder > Reset to default" (F248), and the Results "No rule" banner total after a live scan (F251).
+- **6.4.1 Copilot review**: requested 2026-10-06 via GraphQL `requestReviews` (bot `copilot-pull-request-
+  reviewer`, attachment verified), arrived in ~10 minutes: "Findings: None", 0 inline comments, nothing to
+  fix or reply to. Its overview flags the Class-1 notification listener, the OAuth refresh-token fallback
+  and the device-dependent WorkManager policy changes for final human review (Harold's merge).
 - **5.1.6 runtime launch gate**: 0.17.3 (and 0.17.1/0.17.2) installed from Play launched on the Fold -- the
   diagnostic log's `app start (foreground) -- v0.17.3 env=prod platform=android` line (16:45:13).
 - **Task 3 F250 -- R-1 DONE, configuration checked (2026-10-05).** AC-1: the failing call is the native
