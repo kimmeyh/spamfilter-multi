@@ -25,6 +25,7 @@ import '../../core/models/rule_set.dart' show Rule, RuleSet;
 import '../../core/models/safe_sender_list.dart' show SafeSenderList;
 import '../../core/services/auth_results_parser.dart';
 import '../../core/services/diagnostic_logger.dart';
+import '../../core/services/email_scanner.dart' show safeSenderAlreadyInTarget;
 import '../../core/services/app_version.dart';
 import '../../util/redact.dart';
 import '../../core/services/email_body_parser.dart';
@@ -4223,14 +4224,38 @@ class _ResultsDisplayScreenState extends State<ResultsDisplayScreen> {
         final targetFolder =
             await settingsStore.getEffectiveSafeSenderFolder(widget.accountId);
 
+        // Sprint 76 (0.17.5 Fold, 12:02): an email ALREADY in the target is
+        // addressed with no mailbox call -- the same rule the scan uses.
+        // Before, AOL "moved" it Inbox -> Inbox, acknowledged without moving,
+        // and the update reported "could not be applied".
+        final alreadyThere = [
+          for (final m in toMoveSafe)
+            if (safeSenderAlreadyInTarget(
+                platformId: widget.platformId,
+                messageFolderName: m.folderName,
+                safeSenderTarget: targetFolder))
+              m,
+        ];
+        final toMove = [
+          for (final m in toMoveSafe)
+            if (!alreadyThere.contains(m)) m,
+        ];
+        if (alreadyThere.isNotEmpty) {
+          successCount += alreadyThere.length;
+          _recordBatchFailures(alreadyThere, const <String>{});
+          logger.i('[F38] Safe sender move: ${alreadyThere.length} already in '
+              '"$targetFolder", nothing to move');
+        }
+
         var moveFailedIds = <String>{};
+        if (toMove.isNotEmpty) {
         try {
           final result =
-              await platform.moveToFolderBatch(toMoveSafe, targetFolder);
+              await platform.moveToFolderBatch(toMove, targetFolder);
           successCount += result.successCount;
           failCount += result.failureCount;
           moveFailedIds = result.failedIds.keys.toSet();
-          _recordBatchFailures(toMoveSafe, result.failedIds.keys.toSet());
+          _recordBatchFailures(toMove, result.failedIds.keys.toSet());
           logger.i(
               '[F38] Safe sender move batch: ${result.successCount} succeeded, ${result.failureCount} failed');
           _logReProcessFailureReasons(
@@ -4245,12 +4270,13 @@ class _ResultsDisplayScreenState extends State<ResultsDisplayScreen> {
             // server refusal.
             kind: DiagnosticLogger.kindException,
             reason: 'batch threw: ${DiagnosticLogger.describeError(e)}',
-            attempted: toMoveSafe.length,
-            failed: toMoveSafe.length,
+            attempted: toMove.length,
+            failed: toMove.length,
           ));
-          failCount += toMoveSafe.length;
-          moveFailedIds = toMoveSafe.map((m) => m.id).toSet();
-          _recordBatchFailures(toMoveSafe, moveFailedIds);
+          failCount += toMove.length;
+          moveFailedIds = toMove.map((m) => m.id).toSet();
+          _recordBatchFailures(toMove, moveFailedIds);
+        }
         }
 
         // Mark as re-processed and update banner.

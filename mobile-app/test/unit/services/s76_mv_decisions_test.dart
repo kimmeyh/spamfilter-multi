@@ -70,6 +70,38 @@ void main() {
     });
   });
 
+  group('a rule update does not "move" a safe sender already in the target', () {
+    test('the shared rule: same folder (any case) = already there; demo never',
+        () {
+      expect(
+          safeSenderAlreadyInTarget(
+              platformId: 'aol', messageFolderName: 'Inbox', safeSenderTarget: 'INBOX'),
+          isTrue);
+      expect(
+          safeSenderAlreadyInTarget(
+              platformId: 'aol', messageFolderName: 'Bulk', safeSenderTarget: 'Inbox'),
+          isFalse);
+      expect(
+          safeSenderAlreadyInTarget(
+              platformId: 'demo', messageFolderName: 'Inbox', safeSenderTarget: 'Inbox'),
+          isFalse,
+          reason: 'F151d: Demo Mode is never skipped');
+    });
+
+    test('the Results rule update applies it before the move batch', () {
+      // SOURCE-TEXT VERIFIED: the update runs against a live mailbox; the gate
+      // pins that only emails NOT already in the target reach the batch
+      // (0.17.5 Fold: "1 could not be applied" for an Inbox -> Inbox move).
+      final src =
+          File('lib/ui/screens/results_display_screen.dart').readAsStringSync();
+      final check = src.indexOf('if (safeSenderAlreadyInTarget(');
+      final batch = src.indexOf('platform.moveToFolderBatch(toMove, targetFolder)');
+      expect(check, greaterThan(-1));
+      expect(batch, greaterThan(check));
+      expect(src.contains('platform.moveToFolderBatch(toMoveSafe,'), isFalse);
+    });
+  });
+
   group('Q4.2 a scan that fetched nothing', () {
     test('every existing folder failed -> nothing fetched', () {
       expect(scanFetchedNothing(folders: 3, missing: 0, failed: 3), isTrue);

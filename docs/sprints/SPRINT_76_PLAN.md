@@ -656,6 +656,17 @@ when the log names the cause, not pre-approved here.
     was mis-specified (it split the write while still holding the lock -- correctly serialized), not a
     test gap; M188 (lock removed) KILLED shows the lock is what keeps lines whole. Suite 2,592 / 15 / 0;
     analyzer clean.
+- **0.17.5 Fold run, 2026-10-06 11:59-14:44 -- confirmations and one fix:**
+  - 52 scans, all `completed`; ZERO fragmented log lines in 1,076 (the lock-file mutex works on Android);
+    no "Invalid label" (Gmail label-ID fix works); Gmail safe-sender rescue "2 succeeded, 0 failed"
+    (Q4.1 confirmed); renewal by stored refresh token continues. Still no `trigger=notification`.
+  - FIX: the Results rule update "moved" a safe-sender email already in "Inbox" to "Inbox"; AOL
+    acknowledged without moving and the update reported "1 could not be applied" (screenshots 12:02;
+    log: "Server acknowledged move to Inbox but message remained in Inbox"). The scan already skips such
+    emails; the re-process path did not. One shared rule now (`safeSenderAlreadyInTarget`, lifted from
+    `EmailScanner.shouldSkipSafeSenderAlreadyInTarget`, IMP-5); emails already in the target count as
+    addressed with no mailbox call. Very likely the cause of the 0.17.2 "29 could not be applied".
+    M204-M205 KILLED; suite 2,601 / 15 / 0.
 - **Overnight 0.17.4 run, 2026-10-06 00:00-08:23 (phone idle) -- MV74-1 evidence (Doze part):**
   - 95 background worker starts across AOL, Yahoo and Gmail, every ~15-40 minutes per account; longest AOL
     gap 41 min (02:06-02:47). Doze batching visible (alarm + periodic in the same second, e.g. 02:47:08,

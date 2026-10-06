@@ -30,6 +30,23 @@ import '../../adapters/email_providers/spam_filter_platform.dart';
 import '../../adapters/storage/secure_credentials_store.dart';
 import '../../util/error_messages.dart';
 
+/// Whether a safe-sender email is ALREADY in the safe-sender target folder, so
+/// "moving" it would be a no-op. One rule for the scan
+/// ([EmailScanner.shouldSkipSafeSenderAlreadyInTarget]) and, since Sprint 76,
+/// for the Results rule update -- which lacked it: an AOL Inbox email whose
+/// sender became safe was "moved" Inbox -> Inbox, the server acknowledged
+/// without moving it, and the update reported "could not be applied" (0.17.5
+/// Fold, 12:02; very likely the 29 failures on 0.17.2). Demo Mode keeps its
+/// F151d exception (never skipped).
+bool safeSenderAlreadyInTarget({
+  required String platformId,
+  required String messageFolderName,
+  required String safeSenderTarget,
+}) {
+  if (platformId == 'demo') return false;
+  return messageFolderName.toLowerCase() == safeSenderTarget.toLowerCase();
+}
+
 /// Sprint 76 (Harold Q4): every folder that exists on the account failed to
 /// fetch -- typically no network. The scan ends as an error, not "completed".
 class ScanFetchFailedException implements Exception {
@@ -1486,10 +1503,12 @@ class EmailScanner {
     required String platformId,
     required String messageFolderName,
     required String safeSenderTarget,
-  }) {
-    if (platformId == 'demo') return false;
-    return messageFolderName.toLowerCase() == safeSenderTarget.toLowerCase();
-  }
+  }) =>
+      safeSenderAlreadyInTarget(
+        platformId: platformId,
+        messageFolderName: messageFolderName,
+        safeSenderTarget: safeSenderTarget,
+      );
 
   /// Exposed and [visibleForTesting] so this can be exercised with a fake
   /// [SpamFilterPlatform] and mocked IMAP search responses, mirroring how

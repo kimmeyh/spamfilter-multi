@@ -27,6 +27,7 @@ Format: `- **type**: Description (Issue #N)` where type is feat|fix|chore|docs
 ## [Unreleased]
 
 ### 2026-10-06 (Sprint 76)
+- **fix**: adding a rule from Results no longer reports "could not be applied" for a safe sender's email that is already in the Inbox -- it is counted as done, with nothing to move.
 - **feat**: a new daily scan export file (`scan_exports/*.data.csv`) now starts with a row of column names, so a spreadsheet opens it with labeled columns. The "<no records to process>" row for an empty scan stays.
 
 ### 2026-10-05 (Sprint 76)
