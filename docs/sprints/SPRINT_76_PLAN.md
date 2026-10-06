@@ -656,6 +656,19 @@ when the log names the cause, not pre-approved here.
     was mis-specified (it split the write while still holding the lock -- correctly serialized), not a
     test gap; M188 (lock removed) KILLED shows the lock is what keeps lines whole. Suite 2,592 / 15 / 0;
     analyzer clean.
+- **Overnight 0.17.4 run, 2026-10-06 00:00-08:23 (phone idle) -- MV74-1 evidence (Doze part):**
+  - 95 background worker starts across AOL, Yahoo and Gmail, every ~15-40 minutes per account; longest AOL
+    gap 41 min (02:06-02:47). Doze batching visible (alarm + periodic in the same second, e.g. 02:47:08,
+    03:48:06, 05:19:53). One alarm read `delay=37s`; all others `delay=0s`.
+  - 113 outcomes: 111 completed, 1 error (AOL server: "[SERVERBUG] LOGIN Server error - Please try again
+    later"; worker FAILED -> WorkManager retry), 1 refused by the account lock (by design).
+  - Unattended filtering worked: the AOL export shows 10 spam deletions overnight (9 Bulk, 1 Inbox), all
+    `Success`. Gmail renewed with the stored refresh token 9 times overnight (Q2 holds).
+  - Still present on 0.17.4 (both fixed in 0.17.5): 17 Gmail "Unwanted" 400s; one fragmented log line.
+  - Exports: tab-separated rows with no header row; a "<no records to process>" row for every empty scan;
+    the same unaddressed No Rule email (UID 232848) listed again on every scan 06:52-08:21 (10 times) --
+    the export side of backlog F245. Recorded, not changed this sprint.
+  - Not yet covered: the REBOOT half of MV74-1 (schedule survives a restart).
 - **0.17.4 Fold log (22:02-23:15) + screenshots, 2026-10-05 -- evidence and two follow-up fixes (0.17.5+13):**
   - Q2 CONFIRMED on the device: `gmail/renewal ... renewed with the stored refresh token` at 22:02
     (foreground) and 23:05 (inside a background worker) -- Google accepted the Android-client refresh.
