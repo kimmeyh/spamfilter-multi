@@ -43,6 +43,9 @@ const List<String> scanSheetHeaders = [
   'Phishing SPF/DKIM/DMARC',
 ];
 
+/// Sprint 76: the header line written at the top of a new `.data.csv`.
+final String scanSheetHeaderLine = scanSheetHeaders.join('\t');
+
 /// Outcome of one append.
 class ScanSheetExportResult {
   final int addedRows;
@@ -89,6 +92,12 @@ class ScanSheetExport {
     final dataFile = File(path.join(dir, '$base.data.csv'));
 
     final buffer = StringBuffer();
+    // Sprint 76 (Harold, 2026-10-06: "q1 1"): a NEW daily file starts with the
+    // column names, so a spreadsheet opens it with labeled columns. A file
+    // already started without one is left as is (no rewrite mid-day).
+    if (!await dataFile.exists() || await dataFile.length() == 0) {
+      buffer.writeln(scanSheetHeaderLine);
+    }
     if (newRows.isEmpty) {
       final scanDate = DateTime.now().toIso8601String();
       // 11 columns; the "<no records>" marker sits in the From column.
@@ -101,9 +110,12 @@ class ScanSheetExport {
     }
     await dataFile.writeAsString(buffer.toString(), mode: FileMode.append);
 
+    // The header line is written once into the .data.csv; the workbook writes
+    // its own styled header row, so it is not repeated as data.
     final allDataLines = (await dataFile.readAsString())
         .split('\n')
-        .where((line) => line.trim().isNotEmpty)
+        .map((line) => line.replaceAll('\r', ''))
+        .where((line) => line.trim().isNotEmpty && line != scanSheetHeaderLine)
         .toList();
 
     final workbook = xlsio.Workbook();

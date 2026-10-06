@@ -669,6 +669,11 @@ when the log names the cause, not pre-approved here.
     the same unaddressed No Rule email (UID 232848) listed again on every scan 06:52-08:21 (10 times) --
     the export side of backlog F245. Recorded, not changed this sprint.
   - Not yet covered: the REBOOT half of MV74-1 (schedule survives a restart).
+  - Harold's export decisions (2026-10-06: "q1 1, 3 but I would like to keep the 'Skip the <no records
+    to process> rows'", then "OK for 3 you can fold into F245, but do 1 now"): (1) DONE -- a new daily
+    `.data.csv` starts with the column names (`scanSheetHeaderLine`); the workbook rebuild skips it; a file
+    already started without one is not rewritten. Tests `s76_export_header_test` (3); M201-M203 KILLED.
+    (3) folded into backlog F245 (export side). The "<no records to process>" row stays.
 - **0.17.4 Fold log (22:02-23:15) + screenshots, 2026-10-05 -- evidence and two follow-up fixes (0.17.5+13):**
   - Q2 CONFIRMED on the device: `gmail/renewal ... renewed with the stored refresh token` at 22:02
     (foreground) and 23:05 (inside a background worker) -- Google accepted the Android-client refresh.

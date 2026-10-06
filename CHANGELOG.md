@@ -26,6 +26,9 @@ Format: `- **type**: Description (Issue #N)` where type is feat|fix|chore|docs
 
 ## [Unreleased]
 
+### 2026-10-06 (Sprint 76)
+- **feat**: a new daily scan export file (`scan_exports/*.data.csv`) now starts with a row of column names, so a spreadsheet opens it with labeled columns. The "<no records to process>" row for an empty scan stays.
+
 ### 2026-10-05 (Sprint 76)
 - **fix**: Gmail background scans with a date range now check labels you created (such as "Unwanted"); before, every such scan failed that label with "Invalid label value in query".
 - **fix**: the diagnostic log no longer has broken lines on Android when the app and background scans write at once (the previous lock did not separate them on Android). (Issue #452)
