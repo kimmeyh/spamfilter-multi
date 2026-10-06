@@ -125,7 +125,7 @@ $cardFix = @"
     -> record the numbers in .claude/sprint_status.json "github_issues": [<n>, ...]
 "@
 $prFix = @"
-  Draft PR (MUST be --draft; see the Sprint 43 Copilot-per-commit failure):
+  Draft PR (MUST be --draft; it stays draft until the end of Phase 7.7):
     git push -u origin <sprint-branch>
     gh pr create --draft --base develop --title "Sprint ${number}: <title>" --body "<approved plan>"
     -> record pr_number / pr_url in .claude/sprint_status.json
@@ -158,8 +158,8 @@ $fixText
 Then re-run the commit. Reference the card in the CHANGELOG entry: (Issue #N)
 
 Notes:
-  - Keep the PR a DRAFT until the END of Phase 7.7. Marking it ready early
-    triggers a GitHub Copilot review on EVERY subsequent commit (Sprint 43).
+  - Keep the PR a DRAFT until the END of Phase 7.7, then start the 7.7.1
+    final code reviews (Copilot by hand + pr-review-toolkit) in the same turn.
   - `Closes #N` does NOT auto-fire in this GitFlow repo -- PRs merge
     feature -> develop, and GitHub only auto-closes on merge to the DEFAULT
     branch. Close cards by hand at Post-Merge Cleanup.

@@ -64,8 +64,8 @@ One-line-per-phase quick reference. Use this at the start of a sprint and at eve
 | [**3. Sprint Kickoff & Planning**](#phase-3-sprint-kickoff--planning) | Draft `docs/sprints/SPRINT_N_PLAN.md`; open Issue #N + create draft PR (3.3.1); **get explicit Phase 3.7 approval** | User says "plan approved" (or equivalent) -- this authorizes Phases 4-7 (durable) |
 | [**4. Sprint Execution (Development)**](#phase-4-sprint-execution-development) | Implement tasks in plan order; run tests + analyze after each; commit with issue number | All acceptance criteria in plan met; test suite green |
 | [**5. Code Review & Testing**](#phase-5-code-review--testing) | Test-assertion sibling sweep (5.1.1); full test suite; build + launch Windows app for manual test | Manual test golden-path + edge cases verified; no regressions |
-| [**6. Push to Remote & Finalize PR**](#phase-6-push-to-remote--create-pr) | Push branch; **UPDATE** the existing sprint PR (created 3.3.1, kept DRAFT); interim status to user -- NOT "ready" (6.5); **on merge, immediately open the NEXT sprint branch FROM THE CURRENT FEATURE BRANCH -- not from develop (6.6)**. The draft->ready conversion happens at end of Phase 7.7 (retro improvements done); the PO/SM readiness announcement happens at 7.7.5. | PR updated + still DRAFT; Copilot review requested IF configured; next sprint branch created FROM the current feature branch as soon as the PR merges (no post-merge commits stranded, no uncommitted work lost) |
-| [**7. Sprint Review & Retrospective**](#phase-7-sprint-review--retrospective-after-pr-submitted---mandatory-for-all-sprints) | Send retro prompt; draft Claude feedback in parallel; combine + apply now-vs-backlog decisions; **when "apply now" IMPs done -> set PR "Ready for Review" (end 7.7)**; **FINAL GATE (7.7.5)** after manual-validation + retro + IMPs + Copilot all complete -> final PR update if needed -> notify PO/SM ready for final approval | Retrospective doc committed (4 roles x 14 categories); Cat 13 -> Sprint N+1 plan; Cat 14 -> backlog; **PR set Ready-for-Review when retro improvements done; PO/SM notified for final approval at the gate (the one readiness announcement)** |
+| [**6. Push to Remote & Finalize PR**](#phase-6-push-to-remote--create-pr) | Push branch; **UPDATE** the existing sprint PR (created 3.3.1, kept DRAFT); interim status to user -- NOT "ready" (6.5); **on merge, immediately open the NEXT sprint branch FROM THE CURRENT FEATURE BRANCH -- not from develop (6.6)**. The draft->ready conversion happens at end of Phase 7.7 (retro improvements done); the PO/SM readiness announcement happens at 7.7.5. | PR updated + still DRAFT; NO Copilot review here (it runs at 7.7.1); next sprint branch created FROM the current feature branch as soon as the PR merges (no post-merge commits stranded, no uncommitted work lost) |
+| [**7. Sprint Review & Retrospective**](#phase-7-sprint-review--retrospective-after-pr-submitted---mandatory-for-all-sprints) | Send retro prompt; draft Claude feedback in parallel; combine + apply now-vs-backlog decisions; **when "apply now" IMPs done (or there were none) -> set PR "Ready for Review" and IMMEDIATELY start BOTH final code reviews -- Copilot + pr-review-toolkit (7.7.1)**; **FINAL GATE (7.7.5)** after manual-validation + retro + IMPs + both final reviews dispositioned -> final PR update if needed -> notify PO/SM ready for final approval | Retrospective doc committed (4 roles x 14 categories); Cat 13 -> Sprint N+1 plan; Cat 14 -> backlog; **PR set Ready-for-Review when retro improvements done; PO/SM notified for final approval at the gate (the one readiness announcement)** |
 
 **Invariants** (apply to all phases):
 
@@ -330,20 +330,20 @@ This change was introduced after Sprint 36 kickoff skipped Phase 1 (prior "OPTIO
   - **When**: as soon as `SPRINT_N_PLAN.md` is **drafted** -- this is BEFORE Phase 3.7 approval. (Do not wait for approval to create the PR.)
   - **[CRITICAL] THE PR STAYS DRAFT THROUGH PHASES 3-7. It is converted to "Ready for Review" at EXACTLY ONE point: end of Phase 7.7, after all "apply now" retrospective improvements are implemented + committed.** (Sprint 43 retro IMP-2, Harold 2026-06-25.)
     - **NEVER** run `gh pr ready`, nor click "Ready for review" in the GitHub UI, at ANY other step -- not at create, not at plan-approval, not at end-of-dev, not during Phase 6.
-    - **Why this matters (the concrete failure)**: in Sprint 43 the PR was marked "Ready for Review" early (before the plan was even approved), which triggered a **GitHub Copilot review on every subsequent commit** -- dozens of unwanted reviews. Draft status SUPPRESSES Copilot-per-commit until the work is genuinely ready. Marking ready early = Copilot noise on every push.
+    - **Why this matters (the concrete failure)**: in Sprint 43 the PR was marked "Ready for Review" early (before the plan was even approved), which triggered a **GitHub Copilot review on every subsequent commit** -- dozens of unwanted reviews. That trigger was the repository ruleset's "Automatically request Copilot code review" rule, which was **REMOVED on 2026-10-06** (Harold, Sprint 76 close-out; the ruleset is now "PR Rules (All Branches)"). Copilot no longer reviews on its own; it is requested by hand at 7.7.1. Draft status still matters: it signals work-in-progress, and it still suppresses Copilot if anyone's PERSONAL "Automatic Copilot code review" setting is on (a source the repo cannot turn off -- GitHub: "A pull request can qualify for automatic review from several independent sources: your user settings, repository rulesets, or organization rulesets").
     - Every PR-touch step below carries a `[keep DRAFT]` reminder. If you ever find the PR is not in draft before Phase 7.7, set it back to draft (`gh pr ready --undo`) and note it.
   - **THE PR LIFECYCLE** (one PR per sprint, updated at four checkpoints -- Sprint 42 retro, Harold's spec):
     1. **3.3.1 (here)** -- CREATE the PR as a **draft**, body = the drafted sprint plan. **[keep DRAFT -- do not mark ready (see 7.7)]**
     2. **3.7 (plan approved)** -- UPDATE the PR body to reflect the **approved** plan (if for some reason the PR does not exist yet, create it now). **[keep DRAFT -- do not mark ready (see 7.7)]**
     3. **End of sprint-plan development** (Phase 5, when all planned + manual-validation-feedback dev is complete) -- UPDATE the PR for anything that changed during the sprint (if it does not exist yet, create it). **[keep DRAFT -- do not mark ready (see 7.7)]**
-    4. **End of Phase 7.7 (retro improvements done)** -- once ALL "apply now" retrospective suggestions are implemented + committed, set the PR to **"Ready for Review"** on GitHub (`gh pr ready` -- the draft->ready STATE change; **this is the ONE and ONLY place the PR is marked ready**). THEN at the **7.7.5 final gate** (after manual validation AND retro AND retro improvements AND any Copilot review AND Copilot comments addressed are all complete): a final update if anything needs it (no-op if nothing changed), and the **notify Product Owner / Scrum Master ready for final approval** (the human signal). (See Phase 7 steps 7.7 and 7.7.5.)
+    4. **End of Phase 7.7 (retro improvements done -- or none were approved)** -- set the PR to **"Ready for Review"** on GitHub (`gh pr ready` -- the draft->ready STATE change; **this is the ONE and ONLY place the PR is marked ready**) and IMMEDIATELY start BOTH final code reviews (**7.7.1**: Copilot requested by hand + pr-review-toolkit). THEN at the **7.7.5 final gate** (after manual validation AND retro AND retro improvements AND both 7.7.1 reviews with every finding dispositioned): a final update if anything needs it (no-op if nothing changed), and the **notify Product Owner / Scrum Master ready for final approval** (the human signal). (See Phase 7 steps 7.7 and 7.7.5.)
   - **Important**: create a NEW draft PR for each sprint (do not reuse planning/architecture PRs).
   - **How**:
     ```powershell
     git push -u origin feature/YYYYMMDD_Sprint_N
     gh pr create --draft --title "Sprint N: [Title]" --body "Sprint plan: [link or summary]"
     ```
-  - **Why draft until the final gate**: the PR is NOT announced "ready for final approval" until the very end (gate #4 above). Draft status signals work-in-progress through coding, manual validation, retrospective, and the Copilot review. This replaces the old "convert to ready when Phase 5.2 tests pass" guidance (which announced readiness too early -- before retro and Copilot).
+  - **Why draft until the final gate**: the PR is NOT announced "ready for final approval" until the very end (gate #4 above). Draft status signals work-in-progress through coding, manual validation and the retrospective. This replaces the old "convert to ready when Phase 5.2 tests pass" guidance (which announced readiness too early -- before retro and Copilot).
   - **PR Body Template**:
     ```markdown
     ## Sprint N: [Title]
@@ -359,7 +359,7 @@ This change was introduced after Sprint 36 kickoff skipped Phase 1 (prior "OPTIO
     - Closes #XX, #YY, #ZZ
 
     ---
-    *Draft until the Phase 7 final-update gate (manual validation + retro + retro improvements + Copilot review all complete). Marked ready for final approval there.*
+    *Draft until the retrospective improvements are complete; then marked ready, final code reviews run (Copilot + pr-review-toolkit), and the PR is announced ready for final approval once their findings are dispositioned.*
     ```
 
 - [ ] **3.4 Create GitHub Sprint Cards** (MANDATORY - Never Skip)
@@ -799,7 +799,7 @@ After Phase 5.2 all tests pass, context can be compacted for efficiency:
    - While user tests in VSCode, Claude:
      - **UPDATES the existing sprint PR (PR lifecycle checkpoint #3)** - **REQUIRED, DO NOT SKIP**
        - The PR already exists (created at 3.3.1, updated to the approved plan at 3.7.1). Here, UPDATE its body/description for anything that changed during development. (If for some reason it does not exist yet, create it now -- draft, target `develop` NOT main, title "Sprint N: <summary>".)
-       - **[keep DRAFT -- do not mark ready (see 7.7)]** Do NOT run `gh pr ready` here. The PR stays DRAFT; it is converted to ready ONLY at the end-of-7.7 step (after retro improvements), never during Phase 6 (marking ready early triggers Copilot-per-commit -- Sprint 43 retro IMP-2).
+       - **[keep DRAFT -- do not mark ready (see 7.7)]** Do NOT run `gh pr ready` here. The PR stays DRAFT; it is converted to ready ONLY at the end-of-7.7 step (after retro improvements), never during Phase 6 (Sprint 43 retro IMP-2; see 3.3.1 for why draft still matters now that the ruleset's automatic Copilot review is off).
      - Writes documentation
      - Conducts code review analysis
      - Prepares Phase 7 review
@@ -813,7 +813,7 @@ After Phase 5.2 all tests pass, context can be compacted for efficiency:
    - No impact on quality (work is independent)
 
 3. **Phase 7 Complete + Final PR Gate**
-   - Do NOT announce "PR ready for approval" merely because Phase 6 work is done. The readiness announcement happens ONLY at the Phase 7 final-update gate (7.7): after manual validation AND retrospective AND retro improvements AND any Copilot review AND Copilot-comment responses are ALL complete.
+   - Do NOT announce "PR ready for approval" merely because Phase 6 work is done. The readiness announcement happens ONLY at the Phase 7 final-update gate (7.7): after manual validation AND retrospective AND retro improvements AND both 7.7.1 final code reviews (Copilot + pr-review-toolkit) with every finding dispositioned are ALL complete.
    - At that gate: final PR update if anything needs it (no-op if nothing changed), convert draft -> ready, then notify Product Owner / Scrum Master the PR is ready for **final approval**.
 
 4. **Efficiency Gain**
@@ -1014,63 +1014,13 @@ After Phase 5.2 all tests pass, context can be compacted for efficiency:
 
 - [ ] **6.4 Assign Code Review**
   - **@kimmeyh** is auto-assigned via `.github/CODEOWNERS`.
-  - **Copilot review is OPTIONAL** (Sprint 37 retrospective Imp-6, Phase 7.6 decision). Copilot is auto-assigned via Repository Ruleset (Settings -> Rules -> Rulesets -> enable "Automatically request Copilot code review") IF the Copilot reviewer is configured as a collaborator on the repository. Note: CODEOWNERS does NOT support the Copilot bot; the Ruleset is the only supported mechanism.
-  - **[CORRECTED Sprint 67, Harold -- verified empirically on PR #396]** The `gh pr edit --add-reviewer` forms below **FAIL SILENTLY**. They print success output and exit 0 with nothing attached, which is worse than a 422 because it looks like it worked.
+  - **No Copilot review is requested here.** Copilot and the pr-review-toolkit final pass both run at **Phase 7.7.1**, as soon as the retrospective improvements are complete (Harold, 2026-10-06). The repository ruleset no longer requests Copilot automatically; see 7.7.1 for how to request it by hand and how to verify the request.
 
-    **Use the REST endpoint, with the `[bot]` suffix:**
-
-    ```bash
-    gh api -X POST repos/<owner>/<repo>/pulls/<PR#>/requested_reviewers \
-      -f "reviewers[]=copilot-pull-request-reviewer[bot]"
-    ```
-
-    **VERIFY VIA THE TIMELINE, NOT `reviewRequests`.** This is the part that costs time:
-
-    ```bash
-    # WRONG -- returns [] even on SUCCESS. gh does not render bot reviewers.
-    gh pr view <PR#> --json reviewRequests --jq '.reviewRequests'
-
-    # RIGHT -- the only reliable check
-    gh api repos/<owner>/<repo>/issues/<PR#>/timeline \
-      --jq '[.[] | select(.event=="review_requested")] | length'
-    ```
-
-    Confirmed in both directions during Sprint 67: immediately after a successful REST request, `reviewRequests` returned `[]` while the timeline returned `1`. Harold: *"gh pr view --json reviewRequests returns [] even on success because it does not render bot reviewers, so the timeline is the only reliable check."*
-
-    A `422` from the REST call (validation failed: reviewer is not a collaborator) still means Copilot is not wired up on this repo -- proceed without it and skip Phase 6.4.1.
-
-  - Superseded forms, kept only so nobody re-derives them: `gh pr edit <PR#> --add-reviewer copilot-pull-request-reviewer` and `gh pr edit <PR#> --add-reviewer "@copilot"`. Both report success and attach nothing.
-  - Copilot instructions come from `.github/copilot-instructions.md` on the PR base branch (develop).
-  - **Sprint 35-37 history note**: Copilot reviewer was NOT a collaborator on this repo across Sprints 35, 36, and 37; the auto-assignment + manual fallback both returned 422. Treat Copilot review as "if available" rather than mandatory; document its absence in the retrospective Process Issues category if it remains unavailable.
-
-- [ ] **6.4.1 GitHub Copilot Review Response** (Sprint 32 improvement - if Copilot enabled)
-  - **Purpose**: External review layer independent of Claude Code. Catches language-specific issues, convention violations, best-practice gaps.
-  - **Trigger**: Wait for Copilot review to complete after PR creation (typically 1-3 minutes).
-  - **Known gotcha**: The auto-assignment Ruleset fires on push to an existing PR, not reliably at PR creation. If a PR opens with a single initial commit and Copilot review does not appear within 3-5 minutes, push a follow-up commit or manually request via `gh pr edit <PR#> --add-reviewer "@copilot"`.
-  - **Process**:
-    1. Fetch Copilot review comments: `gh pr view <PR#> --json reviews,reviewThreads` or review on GitHub UI.
-    2. For each Copilot comment, draft a response with these fields:
-       - **What**: Copilot's feedback quoted or summarized.
-       - **Why**: Context of the code being reviewed.
-       - **Impact**: What would change if addressed (similar to mini-ADR).
-       - **Recommendation**: One of:
-         - `Fix now` (with proposed diff).
-         - `Add to backlog` (with backlog item title + rationale).
-         - `Not applicable` (with reasoning).
-    3. Present all responses to user sequentially (or as a batch table) for decision:
-       - **y** = approve recommendation.
-       - **n** = decline recommendation (ask for alternative).
-       - **comment** = user feedback; revise recommendation.
-    4. Accumulate approved responses.
-    5. Implement approved "Fix now" items as part of retrospective (Phase 7).
-    6. Add approved "Add to backlog" items to ALL_SPRINTS_MASTER_PLAN.md.
-    7. Post reply comments to Copilot threads explaining resolution.
-  - **Model**: Requires Fable/Opus (top tier; review analysis -- see SPRINT_PLANNING.md "Activities Requiring Fable/Opus").
-  - **Skip condition**: If Copilot review is not enabled in repo, skip this step (document in retrospective that Copilot review was unavailable).
+- [ ] **6.4.1 (MOVED to 7.7.1, 2026-10-06)** -- the Copilot review and its Fix now / Add to backlog / Not applicable response process now run at Phase 7.7.1 together with the pr-review-toolkit final review. Nothing happens at this step any more; the number is kept so older sprint records that cite "6.4.1" still resolve.
 
 - [ ] **6.5 Interim status to user (NOT "ready for approval")**
   - Inform the user that development is complete and the sprint PR (draft) reflects the work; provide a summary of sprint results.
-  - **Do NOT announce the PR is "ready for review / final approval" here.** That announcement is the Phase 7 final-update gate (7.7), after the retrospective, retro improvements, and any Copilot review + responses are all complete. (Sprint 42, Harold's spec: readiness is announced once, at the end -- not at the start of Phase 6.)
+  - **Do NOT announce the PR is "ready for review / final approval" here.** That announcement is the Phase 7 final-update gate (7.7.5), after the retrospective, retro improvements, and both 7.7.1 final code reviews with their findings dispositioned. (Sprint 42, Harold's spec: readiness is announced once, at the end -- not at the start of Phase 6.)
   - The PR stays in DRAFT through Phase 7.
 
 - [ ] **6.6 Open the NEXT sprint branch immediately after merge** [WARNING] MANDATORY (Sprint 42 retro -- this was missed)
@@ -1310,6 +1260,23 @@ Before conducting sprint review, build and test the Windows desktop app:
   - Verify: `gh pr view <PR#> --json isDraft,mergeable` shows `isDraft:false`, `mergeable:MERGEABLE`.
   - This is the GitHub STATE change (draft -> Ready for Review). It is distinct from the PO/SM readiness NOTIFICATION, which happens at 7.7.5 after the full final-gate checklist passes. (If there are no "apply now" improvements, set the PR ready here once the retrospective itself is complete.)
 
+- [ ] **7.7.1 FINAL CODE REVIEWS -- Copilot AND pr-review-toolkit** (MANDATORY, Harold 2026-10-06)
+  - **Trigger**: the moment the retrospective improvements are committed and pushed -- **or immediately after the Step 6 decisions when NO improvement was approved for "apply now"**. "There were no improvements" is never a reason to skip this step. Start it in the same turn as `gh pr ready`; do the sprint-completion docs (7.7 continued) WHILE the reviews run.
+  - **Why here**: the reviews must see the FINAL code. Before this change Copilot reviewed automatically when the PR left draft, and Claude's only review was 5.1.1, before Manual Validation. In Sprint 76 that left ~500 lines of Manual Validation fixes (lib/ and android/) reviewed by Copilot only, and the retrospective's new hook and build gate reviewed by nobody. The late Claude pass then found 2 HIGH defects in that code. **5.1.1 stays where it is** -- it reviews before a build reaches Harold's phone; 7.7.1 reviews what will actually merge.
+  - **Automatic Copilot review is OFF.** The repository ruleset's "Automatically request Copilot code review" rule was removed 2026-10-06 (ruleset now "PR Rules (All Branches)"). Do not re-enable it. If a Copilot review appears that nobody requested, someone's PERSONAL Copilot setting ("Automatic Copilot code review", github.com/settings/copilot) is on -- the repo cannot disable that source.
+  - **Start all three in parallel**:
+    1. **Copilot, requested by hand** with the GraphQL `requestReviews` mutation (bot id `BOT_kgDOCnlnWA`, `union: true`) -- the procedure and its verification are in the `copilot-pr-review` skill. Verify the request through GraphQL `reviewRequests` or the issue timeline, NEVER the REST `requested_reviewers` endpoint (it does not list bot reviewers). Wait by polling reviews with a `startswith("copilot")` match (the REST login carries a `[bot]` suffix).
+    2. **`pr-review-toolkit:code-reviewer`** on the FULL sprint diff (`origin/develop...HEAD`), with the related-patterns / sibling grep and, for any new exception type, the catch-chain walk (CLAUDE.md, Sprint 73/75 rules).
+    3. **`pr-review-toolkit:silent-failure-hunter`** on the same diff.
+    Run the two toolkit agents in the background. Name all three launches in the next message to Harold.
+  - **Disposition every finding** (all three sources) with these fields: **What** (quoted or summarized), **Why** (context), **Impact** (what changes if addressed), **Recommendation** -- `Fix now` (with proposed change), `Add to backlog` (title + rationale), or `Not applicable` (reasoning). Present them to Harold as a numbered list he can answer by digit; this is Phase 7, so asking is correct.
+  - **Apply** approved `Fix now` items as commits on the sprint branch, each with a mutation check when it guards a bug (`scripts/mutation-test.ps1`), then analyzer + full suite green and push. File approved `Add to backlog` items in ALL_SPRINTS_MASTER_PLAN.md. Reply to and resolve every Copilot thread.
+  - **No automatic re-review.** A fix commit does not trigger Copilot again. If the fixes change behavior substantially, say so to Harold and offer one more 7.7.1 round; do not run it unasked.
+  - **Record the evidence** in `SPRINT_N_PLAN.md` as ONE canonical bullet (the close-out hook `verify-closeout-complete.ps1` check 3d-2 blocks a close-out claim from Sprint 77 on if it is missing, empty, or `PENDING`):
+    `- **7.7.1 final code reviews**: <date>, Copilot <result>; code-reviewer <counts>; silent-failure-hunter <counts>; <Fix now / backlog / N/A dispositions>; commits <hashes>`
+  - **Skip condition**: none for the toolkit reviews. If Copilot genuinely cannot be attached (the request returns an error), record that on the marker line and continue with the toolkit reviews.
+  - **Model**: top tier (Fable/Opus) for the disposition analysis.
+
   **RE-VERIFY THE VERSION BUMP FIRST (F190, Sprint 66).** The bump happened at 3.7.0b, before
   the sprint's content was fully known. Now that retrospective improvements have landed, confirm
   the KIND is still right: if `[Unreleased]` contains a `feat` but the sprint took a PATCH bump,
@@ -1416,9 +1383,9 @@ Before conducting sprint review, build and test the Windows desktop app:
     - [ ] Manual validation complete (Lead Developer signed off, Phase 5.3 loop done)
     - [ ] Sprint retrospective complete (4 roles x 14 categories)
     - [ ] Retrospective improvements complete (all "apply now" IMPs implemented + committed per 7.7; "backlog" IMPs filed)
-    - [ ] Any GitHub Copilot review complete (or confirmed unavailable on this repo)
-    - [ ] Any Copilot review comments addressed (fix-now done, replies posted, threads resolved) -- or none existed
-  - **Action**: give the PR a **final update IF anything needs updating** (description reflects final scope/IMPs/Copilot fixes). **If nothing changed since the last update, NO update is required** -- do not churn the PR for its own sake.
+    - [ ] 7.7.1 final code reviews complete -- Copilot (requested by hand) AND pr-review-toolkit code-reviewer + silent-failure-hunter -- and the `7.7.1 final code reviews` marker recorded in SPRINT_N_PLAN.md
+    - [ ] Every 7.7.1 finding dispositioned (Fix now committed + green, backlog filed, N/A reasoned; Copilot threads replied to and resolved)
+  - **Action**: give the PR a **final update IF anything needs updating** (description reflects final scope/IMPs/review fixes). **If nothing changed since the last update, NO update is required** -- do not churn the PR for its own sake.
   - **Verify the PR is already "Ready for Review"** -- it was converted draft -> ready at the end of Phase 7.7 (when the "apply now" retro improvements completed). Confirm `gh pr view <PR#> --json isDraft,mergeable` shows `isDraft:false`, `mergeable:MERGEABLE`. (If for any reason it is still draft -- e.g. there were no "apply now" IMPs and 7.7 was skipped -- `gh pr ready <PR#>` now.)
   - **THEN notify the Product Owner / Scrum Master that the PR is ready for FINAL APPROVAL.** This is the ONE readiness announcement of the sprint -- it does not happen earlier (not at 6.5, not at "Phase 6 done"). NOTE: setting the PR to "Ready for Review" (the GitHub state) happens at end-of-7.7; this PO/SM notification (the human signal) happens here after the full gate passes.
   - On merge, Phase 6.6 fires (open the next sprint branch immediately).

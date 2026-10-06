@@ -27,6 +27,7 @@ Format: `- **type**: Description (Issue #N)` where type is feat|fix|chore|docs
 ## [Unreleased]
 
 ### 2026-10-06 (Sprint 76)
+- **chore**: final code reviews moved to Phase 7.7.1 -- Copilot (now requested by hand; the repository ruleset's automatic Copilot review was removed) and the pr-review-toolkit reviews start as soon as the retrospective improvements are complete, even when there are none; the close-out hook requires the recorded result from Sprint 77 on.
 - **chore**: release tooling -- the Android build keeps the finished Play bundle in `mobile-app/dist/android-<version>/` so a later build cannot delete it, and refuses to build a bundle whose versionCode Play has already received; a hook blocks staging every file without checking `git status` first (Sprint 76 retrospective).
 - **fix**: adding a rule from Results no longer reports "could not be applied" for a safe sender's email that is already in the Inbox -- it is counted as done, with nothing to move.
 - **feat**: a new daily scan export file (`scan_exports/*.data.csv`) now starts with a row of column names, so a spreadsheet opens it with labeled columns. The "<no records to process>" row for an empty scan stays.

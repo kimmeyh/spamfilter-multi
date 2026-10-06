@@ -1,0 +1,12 @@
+{
+  "_description": "Test fixture: Sprint 77 at close-out with the 7.7.1 final code reviews marker still seeded PENDING -- check 3d-2 must block.",
+  "_last_updated": "2026-10-10T20:00:00Z",
+  "current_sprint": {
+    "number": 77,
+    "branch": "feature/20261010_Sprint_77",
+    "status": "Phase 7.7 close-out",
+    "plan_approved": true,
+    "pr_number": 460,
+    "pr_url": "https://github.com/kimmeyh/spamfilter-multi/pull/460"
+  }
+}

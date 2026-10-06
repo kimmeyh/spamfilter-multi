@@ -127,6 +127,10 @@ It IS a hard precondition of the Store MSIX build, which is built from the prod 
 
 **Rule: do not wait for the `main` merge; DO confirm it before building the MSIX.**
 
+### WHEN the final code reviews happen (Harold, 2026-10-06)
+
+**Copilot does NOT review automatically.** The repository ruleset rule that requested it on "Ready for Review" and on every push was removed (ruleset now "PR Rules (All Branches)"); do not re-enable it. Both final reviews -- **Copilot, requested by hand** (GraphQL, `copilot-pr-review` skill) and **`pr-review-toolkit` code-reviewer + silent-failure-hunter** -- start in the same turn as `gh pr ready`, the moment the retrospective improvements are complete, **and still run when there were no improvements**. That is Phase **7.7.1**; the 5.1.1 review before Manual Validation stays. Record `- **7.7.1 final code reviews**: <evidence>` in the sprint plan; `verify-closeout-complete.ps1` check 3d-2 blocks close-out without it (Sprint 77+). (Sprint 76: the only Claude review ran before Manual Validation, so ~500 lines of later fixes were reviewed by Copilot alone -- the late Claude pass then found 2 HIGH defects in them.)
+
 ### Reference
 
 - See `docs/SPRINT_EXECUTION_WORKFLOW.md` Phase 6.3 for PR creation instructions
