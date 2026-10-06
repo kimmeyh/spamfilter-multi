@@ -656,6 +656,26 @@ when the log names the cause, not pre-approved here.
     was mis-specified (it split the write while still holding the lock -- correctly serialized), not a
     test gap; M188 (lock removed) KILLED shows the lock is what keeps lines whole. Suite 2,592 / 15 / 0;
     analyzer clean.
+- **0.17.4 Fold log (22:02-23:15) + screenshots, 2026-10-05 -- evidence and two follow-up fixes (0.17.5+13):**
+  - Q2 CONFIRMED on the device: `gmail/renewal ... renewed with the stored refresh token` at 22:02
+    (foreground) and 23:05 (inside a background worker) -- Google accepted the Android-client refresh.
+  - Q3 CONFIRMED: `spacing -- waiting Ns` lines (272 s, 247 s, 177 s, 35 s ...), each followed by a completed
+    scan; never a skip. Q1 (KEEP): no orphaned rows or reaps in the window.
+  - Unattended scanning with the APP CLOSED (Harold: 23:00-23:22): background scans ran at 23:05, 23:08,
+    23:09, 23:10, 23:12, 23:14, all completed, every alarm `delay=0s`. (Not proof of deep Doze -- the
+    overnight run still decides MV74-1.)
+  - Screenshots: Battery "Unrestricted"; "Scan when new mail arrives" On with access granted. No
+    `trigger=notification` line yet (F253 AC-5 still open -- the mail apps' notifications state unknown).
+  - FIX (Q4 follow-up): log lines still fragmented (lines 88, 112). Cause: on Android/Linux
+    `RandomAccessFile.lock` is a POSIX record lock held PER PROCESS, and the UI isolate and every
+    WorkManager isolate share one process, so they never excluded each other (the Windows test passed
+    because Windows locks are per handle). Replaced with an exclusive-create lock file
+    (`<log>.lock`, O_EXCL on every platform), stale-lock break, never loses a line. M196-M198 KILLED.
+  - FIX (found in MV, flagged to Harold): Gmail background scans on the 1-day range use the incremental
+    history path, which passed the custom label NAME ("Unwanted") as `labelId` -> 400 "Invalid label value
+    in query" on every run. Now resolved to the label ID (`_labelIdFor`, cached; system labels pass
+    through). Pre-existing; surfaced when the background range left "Scan all". M199-M200 KILLED.
+  - Suite 2,596 / 15 / 0; analyzer clean; policy gates 130/130.
 - **5.1.1 automated code review**: DONE 2026-10-05 -- `pr-review-toolkit:code-reviewer` (with the mandatory
   related-patterns grep) and `pr-review-toolkit:silent-failure-hunter`, both on `origin/develop...HEAD`
   (39 files, +2771/-41). Both independently found the same HIGH. Dispositions:

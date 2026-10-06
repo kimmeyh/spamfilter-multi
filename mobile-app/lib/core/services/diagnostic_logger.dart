@@ -214,36 +214,80 @@ class DiagnosticLogger {
   /// write). Review MEDIUM-3 (Sprint 76): read by Settings.
   static String? lastWriteError;
 
-  /// Sprint 76 (Harold Q4): append [line] to [file] as ONE write under an
-  /// exclusive OS file lock.
+  /// Sprint 76 (Harold Q4): append [line] to [file] as ONE write, holding a
+  /// cross-isolate mutex.
   ///
   /// The write chain orders writes inside one isolate only. Background
-  /// workers are separate isolates (and the UI a third), and the 0.17.2 Fold
-  /// log had fragments -- a lone "m", half a line -- where two of them appended
-  /// at once. `RandomAccessFile.lock` is an OS-level lock, so it serializes
-  /// every isolate and process writing this file; the whole line is one
-  /// `writeFrom`, so no partial line is visible to another writer.
+  /// workers are separate isolates (and the UI a third), and the Fold logs
+  /// had fragments -- the TAIL of a line whose start another writer had
+  /// overwritten -- because each writer seeks to the current end and two
+  /// writers that seek at the same moment write at the same offset.
+  ///
+  /// **Why a lock FILE, not `RandomAccessFile.lock`** (0.17.4 Fold log, lines
+  /// 88 and 112 -- still fragmented): on Android/Linux that is a POSIX record
+  /// lock, which is held PER PROCESS, and the UI isolate and every WorkManager
+  /// isolate run in ONE Android process -- so they never excluded each other.
+  /// (It passed on Windows only because Windows locks are per handle.)
+  /// Creating `<log>.lock` with `exclusive: true` is an atomic O_EXCL create
+  /// on every platform, so it excludes isolates in one process and separate
+  /// processes alike.
+  ///
+  /// Never loses a line: after [lockWait] without the mutex (a writer died
+  /// holding it), a lock older than [staleLock] is broken, and failing that
+  /// the line is written anyway.
   @visibleForTesting
   static Future<void> appendLocked(File file, String line) async {
-    final raf = await file.open(mode: FileMode.append);
+    final lockFile = File('${file.path}.lock');
+    final held = await _acquireLock(lockFile);
     try {
-      // Best effort: some storage (Android shared/FUSE storage) may refuse
-      // file locks. A refused lock must not stop logging -- the line is still
-      // written as a single write, which is the most a lock-less file allows.
-      var locked = false;
-      try {
-        await raf.lock(FileLock.blockingExclusive);
-        locked = true;
-      } catch (_) {}
+      final raf = await file.open(mode: FileMode.append);
       try {
         await raf.setPosition(await raf.length());
         await raf.writeFrom(utf8.encode(line));
         await raf.flush();
       } finally {
-        if (locked) await raf.unlock();
+        await raf.close();
       }
     } finally {
-      await raf.close();
+      if (held) {
+        try {
+          await lockFile.delete();
+        } catch (_) {}
+      }
+    }
+  }
+
+  /// How long a writer waits for the log mutex before checking for a stale
+  /// lock. A test seam.
+  @visibleForTesting
+  static Duration lockWait = const Duration(seconds: 2);
+
+  /// A lock file older than this is assumed left by a writer that died.
+  @visibleForTesting
+  static Duration staleLock = const Duration(seconds: 10);
+
+  static Future<bool> _acquireLock(File lockFile) async {
+    final deadline = DateTime.now().add(lockWait);
+    var brokeStale = false;
+    while (true) {
+      try {
+        await lockFile.create(exclusive: true);
+        return true;
+      } catch (_) {
+        // Held by another writer -- wait briefly and retry.
+      }
+      if (DateTime.now().isAfter(deadline)) {
+        if (!brokeStale) {
+          brokeStale = true;
+          try {
+            final age = DateTime.now().difference(await lockFile.lastModified());
+            if (age > staleLock) await lockFile.delete();
+          } catch (_) {}
+          continue;
+        }
+        return false; // write without the mutex rather than lose the line
+      }
+      await Future<void>.delayed(const Duration(milliseconds: 5));
     }
   }
 

@@ -847,11 +847,21 @@ class GmailApiAdapter with BatchOperationsMixin implements SpamFilterPlatform {
       // label so we do not get Sent/Trash/Drafts/Promotions changes
       // attributed to this folder. labelId is documented as a server-side
       // filter on users.history.list.
+      // Sprint 76 (0.17.4 Fold log): `labelId` must be a label ID. System
+      // labels (INBOX, SPAM) are their own IDs, but a custom label such as
+      // "Unwanted" has an ID like "Label_123" -- passing its NAME failed every
+      // background scan with 400 "Invalid label value in query". Only the
+      // incremental path hit it: the full fetch queries `label:<name>`.
+      final labelId = await _labelIdFor(folderForLabel);
+      if (labelId == null) {
+        // The label does not exist on this account: nothing to fetch.
+        return IncrementalFetchResult.empty(newHistoryId: startHistoryId);
+      }
       final historyResponse = await _gmailApi!.users.history.list(
         'me',
         startHistoryId: startHistoryId,
         historyTypes: ['messageAdded', 'labelAdded', 'labelRemoved'],
-        labelId: folderForLabel,
+        labelId: labelId,
       );
 
       final messageIds = <String>{};
@@ -1300,6 +1310,31 @@ class GmailApiAdapter with BatchOperationsMixin implements SpamFilterPlatform {
       if (system.contains(source)) source,
     }..remove(target);
     return (add: [target], remove: remove.toList());
+  }
+
+  /// Sprint 76: label NAME -> label ID for `users.history.list`, cached for
+  /// this connection. System labels are their own IDs. null = no such label.
+  final Map<String, String?> _labelIds = {};
+
+  /// Gmail's system label IDs (they are their own IDs); everything else is a
+  /// user label whose ID must be looked up.
+  @visibleForTesting
+  static bool isSystemLabelId(String id) =>
+      const {
+        'INBOX', 'SPAM', 'TRASH', 'SENT', 'DRAFT', 'STARRED', 'IMPORTANT',
+        'UNREAD', 'CHAT',
+      }.contains(id) ||
+      id.startsWith('CATEGORY_');
+
+  Future<String?> _labelIdFor(String folder) async {
+    final mapped = _folderToLabelId(folder);
+    if (isSystemLabelId(mapped)) return mapped;
+    if (_labelIds.containsKey(folder)) return _labelIds[folder];
+    final labels = (await _gmailApi!.users.labels.list('me')).labels ?? const [];
+    for (final l in labels) {
+      if (l.name != null && l.id != null) _labelIds[l.name!] = l.id;
+    }
+    return _labelIds.putIfAbsent(folder, () => null);
   }
 
   static String _systemLabelOrSelf(String folder) {

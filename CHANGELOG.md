@@ -27,6 +27,8 @@ Format: `- **type**: Description (Issue #N)` where type is feat|fix|chore|docs
 ## [Unreleased]
 
 ### 2026-10-05 (Sprint 76)
+- **fix**: Gmail background scans with a date range now check labels you created (such as "Unwanted"); before, every such scan failed that label with "Invalid label value in query".
+- **fix**: the diagnostic log no longer has broken lines on Android when the app and background scans write at once (the previous lock did not separate them on Android). (Issue #452)
 - **fix**: Gmail on Android no longer asks you to sign in again about an hour after signing in through the browser -- the saved sign-in is now used to renew access, including in background scans. (Issue #454)
 - **fix**: a Gmail safe sender found in Spam is now moved to the Inbox; before, every such move failed ("Cannot both add and remove the same label") and the email stayed in Spam.
 - **fix**: a background scan that could not reach the mail server at all (no network) is now recorded as failed and retried, not as completed with errors. A scan that starts less than 5 minutes after the account's previous scan now waits until 5 minutes have passed instead of running back to back. A Doze wake-up can no longer cancel a scan that is already running. (Issue #453)

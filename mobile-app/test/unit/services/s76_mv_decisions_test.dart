@@ -49,6 +49,27 @@ void main() {
     });
   });
 
+  group('Gmail incremental fetch resolves a custom label to its ID', () {
+    test('system labels pass through; a custom label name does not', () {
+      for (final id in ['INBOX', 'SPAM', 'TRASH', 'CATEGORY_PROMOTIONS']) {
+        expect(GmailApiAdapter.isSystemLabelId(id), isTrue, reason: id);
+      }
+      for (final name in ['Unwanted', 'SPAMFILTER', 'Label_123']) {
+        expect(GmailApiAdapter.isSystemLabelId(name), isFalse, reason: name);
+      }
+    });
+
+    test('history.list is given the resolved ID, not the folder name', () {
+      // SOURCE-TEXT VERIFIED: the call needs a live Gmail API; the 0.17.4 Fold
+      // log showed 400 "Invalid label value in query" for "Unwanted".
+      final src = File('lib/adapters/email_providers/gmail_api_adapter.dart')
+          .readAsStringSync();
+      expect(src.contains('final labelId = await _labelIdFor(folderForLabel);'),
+          isTrue);
+      expect(src.contains('labelId: folderForLabel,'), isFalse);
+    });
+  });
+
   group('Q4.2 a scan that fetched nothing', () {
     test('every existing folder failed -> nothing fetched', () {
       expect(scanFetchedNothing(folders: 3, missing: 0, failed: 3), isTrue);
@@ -81,6 +102,40 @@ void main() {
       final whole = RegExp(r'^\[w[0-3]\] line \d+ x{200}$');
       expect(lines.where((l) => !whole.hasMatch(l)), isEmpty,
           reason: 'the 0.17.2 Fold log had fragments such as a lone "m"');
+      expect(File('$path.lock').existsSync(), isFalse,
+          reason: 'the mutex is released after every line');
+    });
+
+    test('a stale lock left by a dead writer is broken and the line written',
+        () async {
+      final dir = await Directory.systemTemp.createTemp('s76_stale_');
+      addTearDown(() => dir.delete(recursive: true));
+      final log = File('${dir.path}${Platform.pathSeparator}diag.log');
+      final lock = File('${log.path}.lock')..createSync();
+      lock.setLastModifiedSync(DateTime.now().subtract(const Duration(minutes: 1)));
+      final savedWait = DiagnosticLogger.lockWait;
+      DiagnosticLogger.lockWait = const Duration(milliseconds: 50);
+      addTearDown(() => DiagnosticLogger.lockWait = savedWait);
+
+      await DiagnosticLogger.appendLocked(log, 'after a crash\n');
+      expect(log.readAsStringSync(), 'after a crash\n');
+      expect(lock.existsSync(), isFalse);
+    });
+
+    test('a lock held by a live writer delays, but never loses, the line',
+        () async {
+      final dir = await Directory.systemTemp.createTemp('s76_held_');
+      addTearDown(() => dir.delete(recursive: true));
+      final log = File('${dir.path}${Platform.pathSeparator}diag.log');
+      final lock = File('${log.path}.lock')..createSync(); // fresh: not stale
+      final savedWait = DiagnosticLogger.lockWait;
+      DiagnosticLogger.lockWait = const Duration(milliseconds: 50);
+      addTearDown(() => DiagnosticLogger.lockWait = savedWait);
+
+      await DiagnosticLogger.appendLocked(log, 'still written\n');
+      expect(log.readAsStringSync(), 'still written\n');
+      expect(lock.existsSync(), isTrue,
+          reason: 'another writer\'s live lock is not deleted');
     });
   });
 
