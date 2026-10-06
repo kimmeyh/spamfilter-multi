@@ -656,6 +656,16 @@ when the log names the cause, not pre-approved here.
     was mis-specified (it split the write while still holding the lock -- correctly serialized), not a
     test gap; M188 (lock removed) KILLED shows the lock is what keeps lines whole. Suite 2,592 / 15 / 0;
     analyzer clean.
+- **Manual Validation COMPLETE (Harold, 2026-10-06: "build for both andriod and windows at 0.17.6 - after
+  that we will close this sprint - consider manual validation complete and push the remaining fold steps
+  to the next sprint").** Final builds at b6d5179: Android AAB 0.17.6 (versionCode 14, verified) and the
+  Windows dev build (copied to `spamfilter-multi-builds\windows-0.17.6-dev`). **Carried to Sprint 77 (Fold,
+  on 0.17.6):** (1) F253 AC-5 -- a scan started by a mail app's notification (`trigger=notification`), with
+  the AOL/Yahoo package names checked; (2) MV74-1 reboot half -- background scans resume after a restart
+  without opening the app; (3) the export header row on a new daily file; (4) the re-process fix -- an
+  Inbox safe sender reports no failure; (5) F250 -- the Google account state screenshot, and a decision on
+  whether native sign-in still matters now that the refresh-token renewal works; (6) MV74-3 normal-use
+  error classification (#433).
 - **0.17.5 Fold run, 2026-10-06 11:59-14:44 -- confirmations and one fix:**
   - 52 scans, all `completed`; ZERO fragmented log lines in 1,076 (the lock-file mutex works on Android);
     no "Invalid label" (Gmail label-ID fix works); Gmail safe-sender rescue "2 succeeded, 0 failed"

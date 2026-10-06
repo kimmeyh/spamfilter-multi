@@ -169,6 +169,16 @@ Historical sprint information lives in individual documents in `docs/sprints/` a
 
 All incomplete items in relative priority order. Priority in increments of 10; items that can sprint together in increments of 2. HOLD items grouped at bottom. See [Feature and Bug Details](#feature-and-bug-details) for deep-dive specs. See [BACKLOG_REFINEMENT.md](BACKLOG_REFINEMENT.md) for presentation format rules.
 
+### Sprint 77 carry-in -- Fold validation on 0.17.6 (Harold, Sprint 76 close, 2026-10-06)
+
+**MV76-1. Finish the Sprint 76 Fold checks on 0.17.6 (~validation time) Priority 1 -- CARRY-IN**
+- F253 AC-5: a scan started by a mail app's new-mail notification (`trigger=notification` in the log); confirm the AOL and Yahoo package names on the device (#458).
+- MV74-1 reboot half: background scans resume after a phone restart without opening the app (#428). The Doze half PASSED on the 0.17.4 overnight run (95 worker starts, 111/113 completed).
+- The scan-export header row on a new daily `.data.csv`.
+- A Results rule update for an Inbox safe sender reports no failure (the 0.17.6 re-process fix).
+- F250: the Google account state screenshot on the Fold; decide whether the native sign-in still matters now that refresh-token renewal works (#454).
+- MV74-3: classify every scan error from normal use, or record zero (#433).
+
 ### Backlog from the Sprint 74-75 retrospectives and Manual Validation
 
 **F240. Body-rule sub-type consistency Priority 40 -- backlog (Sprint 74 retro Category 14a)**
