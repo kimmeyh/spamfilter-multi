@@ -1,0 +1,1 @@
+{"session_id": "sg-allow-1-status-first", "cwd": "D:/Data/Harold/github/spamfilter-multi", "hook_event_name": "PreToolUse", "tool_name": "PowerShell", "tool_input": {"command": "cd D:/r; git status --short; git add -A; git commit -q -m x"}}

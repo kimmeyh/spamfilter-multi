@@ -1,3 +1,4 @@
+import 'dart:convert';
 import 'dart:io';
 
 import 'package:flutter/foundation.dart';
@@ -5,6 +6,7 @@ import 'package:flutter/foundation.dart';
 import 'package:path/path.dart' as path;
 import 'package:path_provider/path_provider.dart';
 
+import '../../util/redact.dart';
 import '../storage/settings_store.dart';
 import 'app_environment.dart';
 import 'app_version.dart';
@@ -26,9 +28,23 @@ import 'export_directories.dart';
 /// across every version back to 0.5.8.
 ///
 /// **What it deliberately does NOT do.** It is not a general logging framework
-/// and it does not replace `AppLogger` or `LiveScanLogger`. It captures FAILURE
-/// paths, off by default, so that when a user reports "it said it worked and it
-/// did not" there is something to read.
+/// and it does not replace `AppLogger` or `LiveScanLogger`. It is off by
+/// default, and when on it captures the events a field report needs.
+///
+/// **Scope widened by F248 (Sprint 76).** It used to capture FAILURE paths
+/// only (re-processing and a few IMAP batch problems) -- and that left the
+/// 0.17.0 phone defects undiagnosable: a background scan stuck at Found 0 and
+/// a Gmail sign-in that fell back to the browser wrote nothing at all. It now
+/// also records each scan's stages ([kindScan], for every scan type and
+/// platform), Gmail sign-in steps ([kindSignIn]) and app start / logging-on
+/// lines ([kindApp]). `LiveScanLogger` was checked and is not a substitute: it
+/// covers manual scans only and writes to app-private storage, which cannot
+/// be reached on Android.
+///
+/// **Two writers.** The UI and a background worker (another isolate on
+/// Android, another process on Windows) can append to the same file. Each
+/// record is one small append, so the worst case is lines from the two
+/// writers interleaving -- every line carries its own timestamp and context.
 ///
 /// **Cross-platform (ADR-0042).** Same behavior on Windows and Android: same
 /// format, same rotation, same redaction. The OS behavior assumed identical is
@@ -48,6 +64,18 @@ class DiagnosticLogger {
   static const String kindSkipped = 'SKIPPED';
   static const String kindException = 'EXCEPTION';
   static const String kindInfo = 'INFO';
+
+  /// F248 (Sprint 76): a scan stage -- start, claim, connect, fetch, stop
+  /// request, outcome. Written for manual, background and test scans alike.
+  static const String kindScan = 'SCAN';
+
+  /// F248: a Gmail sign-in step -- which call ran, how it ended, whether the
+  /// browser fallback was taken.
+  static const String kindSignIn = 'SIGN_IN';
+
+  /// F248: app start and "logging turned on" -- so the file exists as soon as
+  /// logging is on, and a reader can see which build wrote what follows.
+  static const String kindApp = 'APP';
 
   /// Hard ceiling for a single log file. Rotation is not optional: Harold runs
   /// with this enabled permanently, and an unbounded append on a phone is a
@@ -138,8 +166,21 @@ class DiagnosticLogger {
       // Environment-suffixed (review I-1, ADR-0035): DEV and PROD resolve
       // the SAME export folder, and "Delete logs" / rotation in one must
       // never touch the other's files.
+      final sub = 'diagnostics${AppEnvironment.dataDirSuffix}';
+      // F248 R-8: a user who picks the diagnostics folder ITSELF as the
+      // export folder (found on the Fold, 2026-10-04: the log landed in
+      // Documents/diagnostics/diagnostics) gets the log in that folder, not
+      // one level deeper.
+      String? chosen;
+      try {
+        chosen = await SettingsStore().getCsvExportDirectory();
+      } catch (_) {
+        chosen = null;
+      }
+      final alreadyThere =
+          chosen != null && chosen.isNotEmpty && path.basename(chosen) == sub;
       _cachedDir = await ExportDirectories.resolve(
-          subfolder: 'diagnostics${AppEnvironment.dataDirSuffix}');
+          subfolder: alreadyThere ? null : sub);
       return _cachedDir!;
     } catch (_) {
       final appSupport = await getApplicationSupportDirectory();
@@ -154,11 +195,153 @@ class DiagnosticLogger {
   static Future<bool> _enabled() async {
     if (_cachedEnabled != null) return _cachedEnabled!;
     try {
-      return await SettingsStore().getDiagnosticLogEnabled();
+      // F248 (Sprint 76): CACHE what was read. Before, every log call read the
+      // setting from the database -- harmless while the log had a handful of
+      // failure lines, but F248 puts a line at every scan stage and on UI
+      // paths, so each became a database query (and, in widget tests, a
+      // sqflite timer still pending when a test ended). The Settings toggle
+      // already calls [invalidateCache] when it changes, so the cache cannot
+      // go stale in this isolate; a background worker reads it once per run.
+      return _cachedEnabled = await SettingsStore().getDiagnosticLogEnabled();
     } catch (_) {
       // Default OFF on any failure -- never start writing files because a
       // settings read threw.
       return false;
+    }
+  }
+
+  /// The most recent write failure in THIS isolate (null after a successful
+  /// write). Review MEDIUM-3 (Sprint 76): read by Settings.
+  static String? lastWriteError;
+
+  /// The most recent LOCK problem in this isolate (null after a write made
+  /// under the mutex): the line WAS written, but without the cross-isolate
+  /// mutex, or its rotation failed. Sprint 76 7.7.1 review: this used to be
+  /// silent, so an unprotected log looked healthy. Read by Settings.
+  static String? lastLockProblem;
+
+  /// Sprint 76 (Harold Q4): append [line] to [file] as ONE write, holding a
+  /// cross-isolate mutex.
+  ///
+  /// The write chain orders writes inside one isolate only. Background
+  /// workers are separate isolates (and the UI a third), and the Fold logs
+  /// had fragments -- the TAIL of a line whose start another writer had
+  /// overwritten -- because each writer seeks to the current end and two
+  /// writers that seek at the same moment write at the same offset.
+  ///
+  /// **Why a lock FILE, not `RandomAccessFile.lock`** (0.17.4 Fold log, lines
+  /// 88 and 112 -- still fragmented): on Android/Linux that is a POSIX record
+  /// lock, which is held PER PROCESS, and the UI isolate and every WorkManager
+  /// isolate run in ONE Android process -- so they never excluded each other.
+  /// (It passed on Windows only because Windows locks are per handle.)
+  /// Creating `<log>.lock` with `exclusive: true` is an atomic O_EXCL create
+  /// on every platform, so it excludes isolates in one process and separate
+  /// processes alike.
+  ///
+  /// Never loses a line: after [lockWait] without the mutex (a writer died
+  /// holding it), a lock older than [staleLock] is broken, and failing that
+  /// the line is written anyway.
+  ///
+  /// Rotation runs INSIDE the mutex (Sprint 76 7.7.1 review): two writers
+  /// that both saw a full file used to both rename it, and the loser's line
+  /// was lost. A failed rotation no longer costs the line either.
+  ///
+  /// Returns null when the line was written under the mutex, or a short
+  /// description of the lock problem otherwise -- the caller surfaces it in
+  /// Settings, so an unprotected log is no longer reported as healthy.
+  @visibleForTesting
+  static Future<String?> appendLocked(
+    File file,
+    String line, {
+    Future<void> Function(File file)? rotate,
+  }) async {
+    final lockFile = File('${file.path}.lock');
+    final acquired = await _acquireLock(lockFile);
+    String? problem = acquired.problem;
+    try {
+      if (rotate != null) {
+        try {
+          await rotate(file);
+        } catch (e) {
+          problem ??= 'log rotation failed: ${scrub(e.toString())}';
+        }
+      }
+      final raf = await file.open(mode: FileMode.append);
+      try {
+        await raf.setPosition(await raf.length());
+        await raf.writeFrom(utf8.encode(line));
+        await raf.flush();
+      } finally {
+        await raf.close();
+      }
+    } finally {
+      if (acquired.held) {
+        try {
+          await lockFile.delete();
+        } catch (e) {
+          // A lock we cannot remove stalls every writer for [lockWait] until
+          // it goes stale -- report it rather than hide it (7.7.1 review).
+          problem ??= 'log lock could not be released: ${scrub(e.toString())}';
+        }
+      }
+    }
+    return problem;
+  }
+
+  /// How long a writer waits for the log mutex before checking for a stale
+  /// lock. A test seam.
+  @visibleForTesting
+  static Duration lockWait = const Duration(seconds: 2);
+
+  /// A lock file older than this is assumed left by a writer that died.
+  @visibleForTesting
+  static Duration staleLock = const Duration(seconds: 10);
+
+  static Future<({bool held, String? problem})> _acquireLock(
+      File lockFile) async {
+    final deadline = DateTime.now().add(lockWait);
+    var brokeStale = false;
+    var failedWithoutLock = 0;
+    while (true) {
+      try {
+        await lockFile.create(exclusive: true);
+        return (held: true, problem: null);
+      } on FileSystemException catch (e) {
+        // Only an EXISTING lock file is contention. Any other failure
+        // (permission, disk full, bad path) will not clear by waiting, so do
+        // not spin [lockWait] on every line: write unlocked and say so
+        // (Sprint 76 7.7.1 review -- this used to be silent).
+        //
+        // ONE miss is not proof: the holder may have deleted the lock between
+        // our failed create and the exists() check (the 4-isolate test lost
+        // 19 of 600 lines when a single miss was trusted). A permanent fault
+        // misses every time; a race clears on the next try.
+        if (await lockFile.exists()) {
+          failedWithoutLock = 0;
+        } else if (++failedWithoutLock >= 3) {
+          return (
+            held: false,
+            problem: 'log lock unavailable: ${scrub(e.message)}',
+          );
+        } else {
+          continue;
+        }
+      }
+      if (DateTime.now().isAfter(deadline)) {
+        if (!brokeStale) {
+          brokeStale = true;
+          try {
+            final age = DateTime.now().difference(await lockFile.lastModified());
+            if (age > staleLock) await lockFile.delete();
+          } catch (_) {
+            // The lock vanished or changed under us -- just retry the create.
+          }
+          continue;
+        }
+        // Write without the mutex rather than lose the line.
+        return (held: false, problem: 'log lock busy; line written unlocked');
+      }
+      await Future<void>.delayed(const Duration(milliseconds: 5));
     }
   }
 
@@ -192,11 +375,15 @@ class DiagnosticLogger {
       final queued = _writeTail.then((_) async {
         final file = await _currentFile();
         await file.parent.create(recursive: true);
-        await _rotateIfNeeded(file);
-        await file.writeAsString(line, mode: FileMode.append);
-      }).catchError((Object _) {
+        lastLockProblem =
+            await appendLocked(file, line, rotate: _rotateIfNeeded);
+        lastWriteError = null;
+      }).catchError((Object e) {
         // Swallow so the chain survives; the caller already treats logging as
-        // best-effort.
+        // best-effort. Review MEDIUM-3 (Sprint 76): but REMEMBER it, so
+        // Settings can say the log is not being written instead of showing a
+        // confident "Writing to: <folder>".
+        lastWriteError = scrub(e.toString());
       });
       _writeTail = queued;
       await queued;
@@ -217,6 +404,59 @@ class DiagnosticLogger {
         ? ' (attempted=${attempted ?? '?'}, failed=${failed ?? '?'})'
         : '';
     return log(kind: kind, context: context, detail: '$reason$counts');
+  }
+
+  static final RegExp _addressInText =
+      RegExp(r'[A-Za-z0-9._%+\-]+@[A-Za-z0-9.\-]+\.[A-Za-z]{2,}');
+
+  /// F248 R-5: redact every email address inside free text (an exception
+  /// message can carry one -- "No credentials found for account x@y").
+  static String scrub(String text) =>
+      text.replaceAllMapped(_addressInText, (m) => Redact.email(m.group(0)));
+
+  /// F248: an error as `<Type>: <scrubbed message>`, capped so one huge
+  /// message cannot flood the file.
+  static String describeError(Object error) {
+    final text = scrub(error.toString());
+    final capped = text.length > 300 ? '${text.substring(0, 300)}...' : text;
+    return '${error.runtimeType}: $capped';
+  }
+
+  /// F248 R-4: an app-level record (start, logging turned on) carrying the
+  /// build that wrote what follows. No address, nothing private.
+  static Future<void> appEvent(String what) async {
+    String version;
+    try {
+      version = await AppVersion.get();
+    } catch (_) {
+      version = '?';
+    }
+    return log(
+      kind: kindApp,
+      context: 'app',
+      detail: '$what -- v$version env=${AppEnvironment.current} '
+          'platform=${Platform.operatingSystem}',
+    );
+  }
+
+  /// F248: one scan-stage record, with the account redacted.
+  ///
+  /// [scanType] is `manual`, `background` or `demo`; [stage] is a short
+  /// fixed word (`start`, `claim`, `connect`, `fetch`, `stop-request`,
+  /// `outcome` ...) so a reader can grep for it; [detail] must not contain an
+  /// unredacted address, a subject or a token.
+  static Future<void> scanEvent({
+    required String scanType,
+    required String accountId,
+    required String stage,
+    String detail = '',
+  }) {
+    final tail = detail.isEmpty ? '' : ' -- $detail';
+    return log(
+      kind: kindScan,
+      context: 'scan/$scanType',
+      detail: '${Redact.accountId(accountId)} $stage$tail',
+    );
   }
 
   static Future<File> _currentFile() async {

@@ -10,6 +10,10 @@ background-scan change is named in its text and appears here only.
 background scan and start mine" action shipped in Sprint 75. Sprint 75 kept version 0.17.0 by exception
 (Harold, 2026-10-02), so these are the notes for the next Store release.
 
+**Shortened 2026-10-04**: the first version (1,521 characters) was rejected by Partner Center as 15
+characters over the field's limit (Microsoft documents 1,500). `release_notes_test.dart` now gates the
+Windows text at 1,500. Dropped for length: the "Missing credentials" detail of the Gmail fix.
+
 **Excluded from this file** (engineering or Android-only detail, not a Windows user change): the
 Android export-folder fallback, the Android YAML export fix, the Android background export setting,
 separate development/production diagnostic logs, Gmail token lookups always using the scanned account,
@@ -17,30 +21,18 @@ the supporting-text size change.
 
 ---
 
-Scan results are easier to work through. Each email shows the date it arrived, and a new Sort
-button switches between the usual order (folder, then sender domain, then sender address) and
-newest first.
+Scan results show the date each email arrived, and a new Sort button switches between the usual order (folder, then sender domain, then sender address) and newest first.
 
-Adding a rule or safe sender while reviewing a saved scan works again. It used to fail for every
-email.
+Adding a rule or safe sender while reviewing a saved scan works again.
 
-Only one scan runs on an account at a time, whether you started it or it runs in the background.
-If a background scan is running when you start a scan, you can stop it and start yours. A scan
-that stops responding is closed so the next one can start, instead of showing "In progress" for
-hours.
+Only one scan runs on an account at a time. If a background scan is running when you start a scan, you can stop it and start yours. A scan that stops responding is closed instead of showing "In progress" for hours.
 
-Scheduled background scans now run while the app is open. They skip only an account you are
-scanning yourself, and try it again a few minutes later.
+Scheduled background scans now run while the app is open, skipping only an account you are scanning yourself.
 
-A Gmail account that needs you to sign in again says so and offers Sign In Again, which keeps its
-settings and history. A failed renewal no longer shows "Missing credentials", and a background
-scan no longer opens a browser on its own. Adding a Gmail account now finishes like AOL and Yahoo,
-and Gmail emails show the date they arrived.
+A Gmail account that needs you to sign in again offers Sign In Again and keeps its settings and history. A background scan no longer opens a browser on its own, adding a Gmail account now finishes like AOL and Yahoo, and Gmail emails show the date they arrived.
 
-New accounts start with the right folders for their email provider, including its spam folder.
-A folder that does not exist on your account is skipped instead of reported as an error.
+New accounts start with the right folders for their email provider, including spam. A folder that does not exist on your account is skipped instead of reported as an error.
 
-Exports go to your Downloads folder unless you choose another, are off by default after each scan,
-can hide sender details, and Scan History can be cleared. Exported rule files name the app version.
+Exports go to your Downloads folder unless you choose another, are off by default after each scan, and can hide sender details. Scan History can be cleared, and exported rule files name the app version.
 
 Manage Rules labels subject rules correctly.

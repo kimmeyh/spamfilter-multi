@@ -1,6 +1,8 @@
 /// Email scanning service that connects IMAP adapters with rule evaluation
 library;
 
+import 'dart:async' show unawaited;
+
 import 'package:flutter/foundation.dart' show visibleForTesting;
 
 import '../models/email_message.dart';
@@ -18,6 +20,7 @@ import '../storage/settings_store.dart';
 import '../storage/unmatched_email_store.dart';
 import '../utils/app_logger.dart';
 import '../../util/redact.dart';
+import 'diagnostic_logger.dart';
 import 'live_scan_logger.dart';
 import 'scan_coordinator.dart';
 import '../../adapters/email_providers/generic_imap_adapter.dart';
@@ -27,10 +30,69 @@ import '../../adapters/email_providers/spam_filter_platform.dart';
 import '../../adapters/storage/secure_credentials_store.dart';
 import '../../util/error_messages.dart';
 
+/// Whether a safe-sender email is ALREADY in the safe-sender target folder, so
+/// "moving" it would be a no-op. One rule for the scan
+/// ([EmailScanner.shouldSkipSafeSenderAlreadyInTarget]) and, since Sprint 76,
+/// for the Results rule update -- which lacked it: an AOL Inbox email whose
+/// sender became safe was "moved" Inbox -> Inbox, the server acknowledged
+/// without moving it, and the update reported "could not be applied" (0.17.5
+/// Fold, 12:02; very likely the 29 failures on 0.17.2). Demo Mode keeps its
+/// F151d exception (never skipped).
+bool safeSenderAlreadyInTarget({
+  required String platformId,
+  required String messageFolderName,
+  required String safeSenderTarget,
+}) {
+  if (platformId == 'demo') return false;
+  return messageFolderName.toLowerCase() == safeSenderTarget.toLowerCase();
+}
+
+/// Sprint 76 (Harold Q4): every folder that exists on the account failed to
+/// fetch -- typically no network. The scan ends as an error, not "completed".
+class ScanFetchFailedException implements Exception {
+  ScanFetchFailedException(this.message, {this.cause});
+  final String message;
+
+  /// The first folder's underlying error, kept as an OBJECT so the user
+  /// message can still tell "no network" from anything else (Sprint 76 7.7.1
+  /// review: only its text was kept, so an offline manual scan read
+  /// "Something went wrong").
+  final Object? cause;
+  @override
+  String toString() => 'ScanFetchFailedException: $message';
+}
+
+/// Whether a scan fetched nothing because every EXISTING folder failed.
+/// Folders that do not exist (F202) are not failures; a scan with at least one
+/// successful folder is not "nothing" (partial failures stay F174 errors).
+@visibleForTesting
+bool scanFetchedNothing({
+  required int folders,
+  required int missing,
+  required int failed,
+}) {
+  final existing = folders - missing;
+  return existing > 0 && failed >= existing;
+}
+
 /// Service to orchestrate email scanning with live IMAP connection
 class EmailScanner {
   final String platformId;
   final String accountId;
+
+  /// F248 (Sprint 76): the scan type of the scan in progress, for
+  /// [_diag] lines written from helpers outside `scanInbox`.
+  String _diagScanType = 'manual';
+
+  /// F248: one diagnostic-log line for this scan (fire-and-forget; redacted
+  /// by [DiagnosticLogger.scanEvent]). Never pass a sender, subject or body.
+  void _diag(String stage, [String detail = '']) =>
+      unawaited(DiagnosticLogger.scanEvent(
+        scanType: _diagScanType,
+        accountId: accountId,
+        stage: stage,
+        detail: detail,
+      ));
   final RuleSetProvider ruleSetProvider;
   final EmailScanProvider scanProvider;
   final SecureCredentialsStore _credStore;
@@ -115,7 +177,16 @@ class EmailScanner {
     // `BackgroundScanWindowsWorker._bgLog`. Demo + background both skip.
     final bool isLiveScan = scanType == 'manual' && platformId != 'demo';
 
+    // F248 (Sprint 76): every scan type writes its stages to the diagnostic
+    // log (when the user turned it on). Fire-and-forget: logging must never
+    // slow or fail the scan it describes.
+    _diagScanType = scanType;
+    void diag(String stage, [String detail = '']) => _diag(stage, detail);
+    final scanWatch = Stopwatch()..start();
+
     try {
+      diag('start',
+          'platform=$platformId folders=${folderNames.length} daysBack=$daysBack');
       AppLogger.scan('========== SCAN START ==========');
       AppLogger.scan('platformId=$platformId, accountId=$accountId');
       AppLogger.scan('daysBack=$daysBack, folders=$folderNames, scanType=$scanType');
@@ -194,6 +265,7 @@ class EmailScanner {
         platformId: platformId,
       );
       AppLogger.scan('Step 3: scanProvider.status AFTER startScan: ${scanProvider.status}');
+      diag('claim', 'granted, mode=${scanProvider.scanMode.name}');
 
       // 1. Get platform adapter
       platform = PlatformRegistry.getPlatform(platformId);
@@ -215,7 +287,15 @@ class EmailScanner {
         if (isLiveScan) {
           await LiveScanLogger.log('Step 2: Credentials loaded for ${Redact.email(credentials.email)}');
         }
+        // F248: the connect is where a stuck background scan would sit at
+        // Found 0 (F249) -- a "begin" with no "done" names it.
+        diag('connect', 'begin (${platform.runtimeType})');
+        final connectWatch = Stopwatch()..start();
         await platform.loadCredentials(credentials);
+        diag('connect', 'done in ${connectWatch.elapsedMilliseconds}ms');
+        // F249: a stop that arrived while connecting is honored now, before
+        // any folder is searched.
+        _cancelCheckpoint(scanLease, 'after connect', diag);
         AppLogger.scan('Step 2: IMAP connected and authenticated');
         if (isLiveScan) {
           await LiveScanLogger.log('Step 2: IMAP/provider connected and authenticated');
@@ -249,6 +329,11 @@ class EmailScanner {
       AppLogger.scan('=== SCAN DIAGNOSTICS ===');
       AppLogger.rules('Rules loaded: ${ruleSetProvider.rules.rules.length}');
       AppLogger.rules('Safe senders loaded: ${ruleSetProvider.safeSenders.safeSenders.length}');
+      // F248: "0 rules loaded" explains a scan that matched nothing.
+      diag('rules',
+          'rules=${ruleSetProvider.rules.rules.length} '
+          'enabled=${ruleSetProvider.rules.rules.where((r) => r.enabled).length} '
+          'safeSenders=${ruleSetProvider.safeSenders.safeSenders.length}');
       AppLogger.debug('RuleSetProvider state: isLoading=${ruleSetProvider.isLoading}, isError=${ruleSetProvider.isError}, error=${ruleSetProvider.error}');
       if (ruleSetProvider.rules.rules.isNotEmpty) {
         AppLogger.rules('First rule: ${ruleSetProvider.rules.rules[0].name} (enabled=${ruleSetProvider.rules.rules[0].enabled})');
@@ -391,7 +476,22 @@ class EmailScanner {
       // F202 R-6: the account's folder list, fetched at most once per scan and
       // only if a folder fetch fails.
       final folderListCache = <List<FolderInfo>>[];
+      // Sprint 76 (Harold Q4): count folders that EXIST and folders whose
+      // fetch failed, so a scan where every existing folder failed (no
+      // network) ends as an error instead of "completed".
+      var foldersMissing = 0;
+      var foldersFailed = 0;
+      String? firstFetchError;
+      Object? firstFetchCause;
       for (final folderName in folderNames) {
+        // F249 (Sprint 76): a cancel is also honored at each FOLDER start,
+        // not only at a batch boundary. Before this, a scan that had fetched
+        // nothing yet (Found 0 -- the Fold's stuck row) never reached a
+        // checkpoint, so an ACCEPTED stop was ignored and the scan went on to
+        // "completed" (shown by f249_cancel_checkpoints_test). Thrown OUTSIDE
+        // the per-folder try below, so it exits through the scan's cancel
+        // handler and `finally`, like the batch checkpoint.
+        _cancelCheckpoint(scanLease, 'folder "$folderName" start', diag);
         AppLogger.scan('Step 4: Fetching folder "$folderName" (daysBack=$daysBack)...');
         // [NEW] ISSUE #128: Report folder being fetched
         scanProvider.setCurrentFolder(folderName);
@@ -463,6 +563,8 @@ class EmailScanner {
           // an empty list; list-returning paths (Gmail, demo, mock) are fed
           // through the same sink in m=20 slices below, so every path gets
           // identical per-batch evaluation and body-truncated retention.
+          diag('fetch', 'folder "$folderName" begin');
+          final folderWatch = Stopwatch()..start();
           final folderMessages = await _fetchFolderMessages(
             platform: platform,
             folderName: folderName,
@@ -480,6 +582,9 @@ class EmailScanner {
           }
 
           totalFetched += folderCount;
+          diag('fetch',
+              'folder "$folderName" done: $folderCount emails in '
+              '${folderWatch.elapsedMilliseconds}ms');
           AppLogger.scan('Step 4: Folder "$folderName" returned $folderCount messages');
           if (isLiveScan) {
             await LiveScanLogger.log('Step 4: Folder "$folderName" returned $folderCount messages');
@@ -550,8 +655,12 @@ class EmailScanner {
               await LiveScanLogger.log('Step 4: folder "$folderName" does not '
                   'exist -- skipped (F202)');
             }
+            foldersMissing++;
             continue;
           }
+          foldersFailed++;
+          firstFetchError ??= e.toString();
+          firstFetchCause ??= e;
           AppLogger.error('Step 4: EXCEPTION fetching folder "$folderName"', error: e, stackTrace: st);
           if (isLiveScan) {
             await LiveScanLogger.log('Step 4: EXCEPTION fetching folder "$folderName": $e');
@@ -563,6 +672,22 @@ class EmailScanner {
           // remaining folders, as before.
           scanProvider.recordFolderFetchError(folderName, e.toString());
         }
+      }
+      // F249: a stop that arrived during the LAST folder's fetch is honored
+      // before any result is acted on, rather than after the scan completes.
+      _cancelCheckpoint(scanLease, 'after the last folder', diag);
+      // Sprint 76 (Harold Q4; 0.17.2 Fold log 09:58:35): every folder failed
+      // with "Failed host lookup" and the scan still read "completed,
+      // errors=3", so the worker exited success and was not retried. A scan
+      // that could fetch NOTHING is a failed scan; a partial failure still
+      // completes with its errors counted (F174).
+      if (scanFetchedNothing(
+          folders: folderNames.length,
+          missing: foldersMissing,
+          failed: foldersFailed)) {
+        throw ScanFetchFailedException(
+            'every folder failed to fetch: ${firstFetchError ?? 'unknown'}',
+            cause: firstFetchCause);
       }
       AppLogger.scan('Step 4: COMPLETE - Total messages across all folders: $totalFetched');
       if (isLiveScan) {
@@ -647,6 +772,14 @@ class EmailScanner {
 
       AppLogger.scan('Step 6b: Batch execution starting. canExecuteRules=$canExecuteRules, canExecuteSafeSenders=$canExecuteSafeSenders');
       AppLogger.scan('Step 6b: Batch sizes: delete=${deleteEmails.length}, moveToJunk=${moveToJunkEmails.length}, safeSender=${safeSenderMoveEmails.length}');
+      // F248: what the scan was ALLOWED to do and what it planned -- the
+      // difference between "matched" and "acted" (read-only, rules-only).
+      diag('actions',
+          'mode=${scanProvider.scanMode.name} executeRules=$canExecuteRules '
+          'executeSafeSenders=$canExecuteSafeSenders planned: '
+          'delete=${deleteEmails.length} moveToJunk=${moveToJunkEmails.length} '
+          'safeSenderMove=${safeSenderMoveEmails.length} '
+          'safeSenderTarget="$safeSenderTarget"');
       if (isLiveScan) {
         await LiveScanLogger.log(
           'Step 6b: Batch execution starting. canExecuteRules=$canExecuteRules '
@@ -699,6 +832,7 @@ class EmailScanner {
             safeSenderTarget,
           );
           AppLogger.scan('Step 6b-1: Safe sender move to "$safeSenderTarget": ${moveResult.successCount} succeeded, ${moveResult.failureCount} failed');
+          diag('action-result', 'safe-sender move: ${moveResult.successCount} succeeded, ${moveResult.failureCount} failed');
           if (isLiveScan) {
             await LiveScanLogger.log(
               'Step 6b-1: Safe sender move to "$safeSenderTarget": '
@@ -714,6 +848,7 @@ class EmailScanner {
           batchErrors.addAll(moveResult.failedIds);
         } catch (e) {
           AppLogger.warning('Batch safe sender move failed entirely: $e');
+          diag('action-result', 'safe sender move batch FAILED entirely: ${DiagnosticLogger.describeError(e)}');
           if (isLiveScan) {
             await LiveScanLogger.log('Step 6b-1: BATCH FAILED ENTIRELY: $e');
           }
@@ -799,8 +934,12 @@ class EmailScanner {
         try {
           final markResult = await platform.markAsReadBatch(deleteMessages);
           AppLogger.scan('Step 6b-2a: markAsReadBatch DONE: ${markResult.successCount} succeeded, ${markResult.failureCount} failed');
+          diag('action-result', 'mark as read: ${markResult.successCount} succeeded, ${markResult.failureCount} failed');
         } catch (e) {
           AppLogger.warning('Step 6b-2a: markAsReadBatch FAILED: $e');
+          // Review (Sprint 76): its siblings write a failure line; this did not.
+          diag('action-result',
+              'mark as read batch FAILED entirely: ${DiagnosticLogger.describeError(e)}');
         }
 
         // Step 2b: Batch delete (move to trash/configured folder)
@@ -811,6 +950,7 @@ class EmailScanner {
             FilterAction.delete,
           );
           AppLogger.scan('Step 6b-2b: takeActionBatch (delete) DONE: ${deleteResult.successCount} succeeded, ${deleteResult.failureCount} failed');
+          diag('action-result', 'delete: ${deleteResult.successCount} succeeded, ${deleteResult.failureCount} failed');
           if (isLiveScan) {
             await LiveScanLogger.log(
               'Step 6b-2: Delete batch DONE: '
@@ -823,6 +963,7 @@ class EmailScanner {
           batchErrors.addAll(deleteResult.failedIds);
         } catch (e) {
           AppLogger.warning('Batch delete failed entirely: $e');
+          diag('action-result', 'delete batch FAILED entirely: ${DiagnosticLogger.describeError(e)}');
           if (isLiveScan) {
             await LiveScanLogger.log('Step 6b-2: BATCH FAILED ENTIRELY: $e');
           }
@@ -890,6 +1031,7 @@ class EmailScanner {
             FilterAction.moveToJunk,
           );
           AppLogger.scan('Step 6b-3: takeActionBatch (moveToJunk) DONE: ${junkResult.successCount} succeeded, ${junkResult.failureCount} failed');
+          diag('action-result', 'move to junk: ${junkResult.successCount} succeeded, ${junkResult.failureCount} failed');
           if (isLiveScan) {
             await LiveScanLogger.log(
               'Step 6b-3: moveToJunk batch DONE: '
@@ -902,6 +1044,7 @@ class EmailScanner {
           batchErrors.addAll(junkResult.failedIds);
         } catch (e) {
           AppLogger.warning('Batch moveToJunk failed entirely: $e');
+          diag('action-result', 'moveToJunk batch FAILED entirely: ${DiagnosticLogger.describeError(e)}');
           if (isLiveScan) {
             await LiveScanLogger.log('Step 6b-3: BATCH FAILED ENTIRELY: $e');
           }
@@ -1013,6 +1156,17 @@ class EmailScanner {
       }
 
       AppLogger.scan('========== SCAN COMPLETE ==========');
+      diag('outcome',
+          'completed found=${scanProvider.totalEmails} '
+          'processed=${scanProvider.processedCount} '
+          'deleted=${scanProvider.deletedCount} moved=${scanProvider.movedCount} '
+          'safe=${scanProvider.safeSendersCount} noRule=${scanProvider.noRuleCount} '
+          'errors=${scanProvider.errorCount} '
+          // Sprint 76: the 0.17.1 Fold log read found=638 processed=163; the
+          // F203 already-filed skips are the expected difference, and
+          // printing them shows whether they account for all of it.
+          'alreadyFiled=${scanProvider.skippedAlreadyFiledCount} '
+          'in ${(scanWatch.elapsedMilliseconds / 1000).toStringAsFixed(1)}s');
 
       // F90 (Sprint 39): write live-scan summary + per-account CSV/XLSX
       // export. Mirrors `BackgroundScanWindowsWorker` end-of-scan logging.
@@ -1037,6 +1191,7 @@ class EmailScanner {
       // Rethrown so each caller maps it to its own outcome: a background
       // scan records a skip, a manual scan shows the message.
       AppLogger.scan('SCAN REFUSED: $e');
+      diag('outcome', 'refused -- ${DiagnosticLogger.scrub(e.userMessage)}');
       if (isLiveScan) {
         await LiveScanLogger.log(
             'SCAN REFUSED accountId=${Redact.accountId(accountId)} $e');
@@ -1057,6 +1212,10 @@ class EmailScanner {
       // IMAP session -- because that is what `finally` does. That is the whole
       // reason cancellation is expressed as a throw.
       AppLogger.scan('SCAN CANCELLED by the user');
+      diag('outcome',
+          'stopped (cancel) processed=${scanProvider.processedCount} '
+          'revoked=${scanLease?.info.revoked == true} '
+          'reason=${scanLease?.info.stopReason ?? 'unknown'}');
       if (isLiveScan) {
         await LiveScanLogger.log(
             'SCAN CANCELLED accountId=${Redact.accountId(accountId)}');
@@ -1070,6 +1229,7 @@ class EmailScanner {
     } catch (e, st) {
       // Handle scan error
       AppLogger.error('SCAN FAILED with exception', error: e, stackTrace: st);
+      diag('outcome', 'error ${DiagnosticLogger.describeError(e)}');
       if (isLiveScan) {
         // Note: exception text is included as-is. It may transitively
         // contain identifiers in rare cases (e.g., an IMAP error echoing
@@ -1352,10 +1512,12 @@ class EmailScanner {
     required String platformId,
     required String messageFolderName,
     required String safeSenderTarget,
-  }) {
-    if (platformId == 'demo') return false;
-    return messageFolderName.toLowerCase() == safeSenderTarget.toLowerCase();
-  }
+  }) =>
+      safeSenderAlreadyInTarget(
+        platformId: platformId,
+        messageFolderName: messageFolderName,
+        safeSenderTarget: safeSenderTarget,
+      );
 
   /// Exposed and [visibleForTesting] so this can be exercised with a fake
   /// [SpamFilterPlatform] and mocked IMAP search responses, mirroring how
@@ -1501,6 +1663,25 @@ class EmailScanner {
     }
   }
 
+  /// F249 (Sprint 76): a cooperative cancel checkpoint outside the batch
+  /// sink. Same rule as the batch checkpoint -- checks THIS scan's lease, so
+  /// a manual Cancel Scan, a background stop requested for a manual scan
+  /// (F238) and a timeout's revoked lease all stop here -- and the same exit:
+  /// the throw reaches scanInbox's `ScanCancelledException` handler and its
+  /// `finally` (lease release, disconnect). [where] is written to the
+  /// diagnostic log when the stop is taken.
+  void _cancelCheckpoint(
+    ScanLease? lease,
+    String where,
+    void Function(String stage, [String detail]) diag,
+  ) {
+    if (lease != null && lease.info.cancelRequested) {
+      AppLogger.scan('F249: cancellation observed $where -- stopping the scan');
+      diag('cancel', 'observed $where');
+    }
+    ScanCoordinator.instance.throwIfCancelled(lease);
+  }
+
   /// Sprint 38 F6c Phase 2 (Issue #250) + Sprint 38 Round 1 IMAP extension
   /// (post-retro): Fetch messages for a single folder using whichever
   /// incremental-scan capability the platform exposes, falling back to the
@@ -1572,6 +1753,8 @@ class EmailScanner {
     // contradicting the setting's own UI text. Re-capture historyId
     // afterward so a later windowed scan still resumes incrementally.
     if (lastHistoryId == null || daysBack <= 0) {
+      _diag('fetch-path',
+          'folder "$folderName" Gmail full fetch (${lastHistoryId == null ? 'no history cursor yet' : 'scan all'})');
       AppLogger.scan(lastHistoryId == null
           ? 'Step 4: Gmail first-scan for $folderName -- full fetch'
           : 'Step 4: Gmail full-fetch for $folderName (daysBack=$daysBack "scan all" -- bypassing historyId=$lastHistoryId)');
@@ -1588,6 +1771,8 @@ class EmailScanner {
     }
 
     // Subsequent Gmail scan: incremental delta from persisted historyId.
+    _diag('fetch-path',
+        'folder "$folderName" Gmail incremental from history cursor');
     AppLogger.scan(
         'Step 4: Gmail incremental scan for $folderName from historyId=$lastHistoryId');
     final result = await gmail.fetchMessagesIncremental(
@@ -1599,6 +1784,8 @@ class EmailScanner {
       // Gmail rotated the history window; we have to start over with a full
       // fetch and re-capture historyId.
       AppLogger.scan('Step 4: Gmail historyId expired -- falling back to full scan');
+      _diag('fetch-path',
+          'folder "$folderName" history cursor EXPIRED -- falling back to full fetch');
       await dbHelper.setLastHistoryId(accountId, null);
       final messages = await gmail.fetchMessages(
         daysBack: daysBack,
@@ -1669,6 +1856,9 @@ class EmailScanner {
     // the cursor after this full fetch (it runs unconditionally on whatever
     // was evaluated), so a later windowed scan resumes incrementally as normal.
     if (oldestNoRuleUid == null || daysBack <= 0) {
+      _diag('fetch-path',
+          'folder "$folderName" IMAP full fetch daysBack=$daysBack '
+          '(${oldestNoRuleUid == null ? 'no backlog cursor' : 'scan all'})');
       AppLogger.scan(oldestNoRuleUid == null
           ? 'Step 4: IMAP full-fetch for $folderName (daysBack=$daysBack, no no-rule backlog cursor)'
           : 'Step 4: IMAP full-fetch for $folderName (daysBack=$daysBack "scan all" -- bypassing no-rule cursor=$oldestNoRuleUid)');
@@ -1686,6 +1876,8 @@ class EmailScanner {
     //
     // Use startUid = cursor - 1 so the cursor itself is INCLUDED in the
     // result (fetchMessagesIncremental does `UID startUid+1:*`).
+    _diag('fetch-path',
+        'folder "$folderName" IMAP backlog re-scan from UID $oldestNoRuleUid');
     AppLogger.scan(
         'Step 4: IMAP backlog re-scan for $folderName from oldest no-rule UID=$oldestNoRuleUid');
     final result = await imap.fetchMessagesIncremental(

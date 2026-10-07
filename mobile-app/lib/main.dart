@@ -26,6 +26,7 @@ import 'core/storage/unmatched_email_store.dart';
 import 'core/storage/database_helper.dart';
 import 'core/storage/background_scan_log_store.dart';
 import 'core/services/background_deferral_ingest.dart';
+import 'core/services/diagnostic_logger.dart';
 import 'adapters/storage/app_paths.dart';
 import 'adapters/storage/secure_credentials_store.dart';
 import 'core/security/certificate_pinner.dart';
@@ -37,6 +38,7 @@ import 'ui/screens/main_navigation_screen.dart'; // NEW: Main navigation with bo
 import 'ui/theme/app_theme.dart';
 import 'package:workmanager/workmanager.dart';
 import 'core/services/android_background_scan_worker.dart';
+import 'core/services/new_mail_trigger.dart';
 
 /// Global RouteObserver for tracking navigation events
 final RouteObserver<ModalRoute<void>> routeObserver = RouteObserver<ModalRoute<void>>();
@@ -419,7 +421,29 @@ void main(List<String> args) async {
     }
   }
 
+  // F248 (Sprint 76): one line per foreground start while diagnostic logging
+  // is on -- the file exists as soon as logging is on, and it names the
+  // build that wrote everything after it.
+  unawaited(DiagnosticLogger.appEvent('app start (foreground)'));
+  // F253 review HIGH-3 (Sprint 76): the new-mail listener is native and cannot
+  // write this log, so copy its last recorded outcome here. Android only
+  // (ADR-0044); once per foreground start.
+  if (Platform.isAndroid) unawaited(_logNewMailTriggerOutcome());
+
   runApp(const SpamFilterApp());
+}
+
+/// F253 review HIGH-3 (Sprint 76): copy the native listener's last recorded
+/// trigger outcome into the diagnostic log. Nothing when the feature never
+/// fired or the record cannot be read.
+Future<void> _logNewMailTriggerOutcome() async {
+  final parsed = NewMailTrigger.parseLastResult(await NewMailTrigger.lastResult());
+  if (parsed == null) return;
+  await DiagnosticLogger.log(
+    kind: DiagnosticLogger.kindApp,
+    context: 'new-mail-trigger',
+    detail: 'last trigger at ${parsed.at.toIso8601String()}: ${parsed.outcome}',
+  );
 }
 
 class SpamFilterApp extends StatelessWidget {
@@ -523,6 +547,7 @@ void failScanInterruptedByBackgrounding({
     ScanCoordinator.instance.releaseActiveByOwner(
       scanType: 'manual',
       accountId: accountId,
+      reason: 'app moved to the background (F220)',
     );
   }
 

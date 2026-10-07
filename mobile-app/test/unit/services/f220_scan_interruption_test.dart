@@ -98,7 +98,7 @@ void main() {
 
       coordinator.releaseActiveByOwner(
         scanType: 'background',
-        accountId: 'gmail-test@example.com',
+        accountId: 'gmail-test@example.com', reason: 'timed out'
       );
       expect(coordinator.active, isNull);
     });
@@ -114,7 +114,7 @@ void main() {
       // A stale timeout for some OTHER scan must not free this one.
       coordinator.releaseActiveByOwner(
         scanType: 'background',
-        accountId: 'gmail-test@example.com',
+        accountId: 'gmail-test@example.com', reason: 'timed out'
       );
 
       expect(coordinator.active, isNotNull,
@@ -173,7 +173,7 @@ void main() {
 
       coordinator.releaseActiveByOwner(
         scanType: 'manual',
-        accountId: 'aol-test@example.com',
+        accountId: 'aol-test@example.com', reason: 'timed out'
       );
       await provider.errorScan('backgrounded');
 

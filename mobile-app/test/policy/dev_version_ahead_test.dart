@@ -156,6 +156,37 @@ void main() {
     }
   });
 
+  /// Sprint 76 retro IMP-2: Play refuses a versionCode it has already
+  /// received on ANY track, closed testing included. The live-row check above
+  /// cannot see a closed-test upload, and in Sprint 76 a 0.17.5 bundle was
+  /// rebuilt after 0.17.5 (versionCode 13) had already been uploaded -- found
+  /// only when Play rejected it. The "Last uploaded to Play (any track)" row
+  /// records the highest code Play has; the build number must exceed it.
+  test('the pubspec build number is above the last versionCode uploaded to '
+      'Play on any track', () {
+    final raw = RegExp(r'^version:\s*\S+\+(\d+)', multiLine: true)
+        .firstMatch(pubspec.readAsStringSync())
+        ?.group(1);
+    expect(raw, isNotNull, reason: 'could not read the `+N` build number');
+    final buildNumber = int.parse(raw!);
+
+    final row = RegExp(
+      r'^\|\s*\*\*Last uploaded to Play[^|]*\*\*[^|]*\|[^|]*versionCode\s+(\d+)',
+      multiLine: true,
+    ).firstMatch(storeStatus.readAsStringSync());
+    expect(row, isNotNull,
+        reason: 'STORE_VERSION_STATUS.md has no "Last uploaded to Play (any '
+            'track)" row with a versionCode. It is the only record of codes Play '
+            'has already received; restore it rather than weakening this gate.');
+    final lastUploaded = int.parse(row!.group(1)!);
+
+    expect(buildNumber, greaterThan(lastUploaded),
+        reason: 'pubspec build number +$buildNumber is not above versionCode '
+            '$lastUploaded, which Play has already received. Bump `version:` '
+            '(and msix_version) to the next PATCH with +${lastUploaded + 1} '
+            'before building another bundle.');
+  });
+
   test('pubspec version and msix_version agree', () {
     // They are two separate literals and nothing else makes them match. A bump
     // that updates one and not the other ships an MSIX whose Store-visible

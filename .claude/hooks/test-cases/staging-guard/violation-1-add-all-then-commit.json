@@ -1,0 +1,1 @@
+{"session_id": "sg-violation-1-add-all-then-commit", "cwd": "D:/Data/Harold/github/spamfilter-multi", "hook_event_name": "PreToolUse", "tool_name": "PowerShell", "tool_input": {"command": "cd D:/r; git add -A; git commit -q -m x"}}

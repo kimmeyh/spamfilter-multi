@@ -34,6 +34,7 @@ import 'package:google_sign_in/google_sign_in.dart';
 import 'package:google_sign_in_platform_interface/google_sign_in_platform_interface.dart'
     as gsi_platform;
 import 'package:my_email_spam_filter/core/services/background_mode_service.dart';
+import 'package:my_email_spam_filter/core/services/diagnostic_logger.dart';
 import 'package:my_email_spam_filter/adapters/auth/token_store.dart';
 import 'package:my_email_spam_filter/adapters/storage/secure_credentials_store.dart';
 import 'package:my_email_spam_filter/adapters/email_providers/gmail_windows_oauth_handler.dart';
@@ -261,7 +262,30 @@ class GoogleAuthService {
 
       if (_hasNativeSignIn) {
         // Use native Google Sign-In SDK for refresh
-        return await _refreshViaNativeSignIn(accountId, tokens);
+        AuthResult native;
+        try {
+          native = await _refreshViaNativeSignIn(accountId, tokens);
+        } catch (e) {
+          _renewalLog('native renewal threw ${DiagnosticLogger.describeError(e)}');
+          native = AuthResult.failure('Session expired. Please sign in again.');
+        }
+        // Sprint 76 (Harold Q2 = 1): when native renewal fails on Android and
+        // the browser sign-in left a refresh token, renew with it. Before,
+        // that token was stored and never used, so every expiry asked the
+        // user to sign in again ("I had to re-authenticate the gmail account
+        // at least once today"). It needs no Activity, so it also works in a
+        // background worker.
+        if (shouldTryStoredRefreshToken(
+            nativeSucceeded: native.success,
+            isAndroid: Platform.isAndroid,
+            hasRefreshToken: tokens.refreshToken?.isNotEmpty == true)) {
+          return await _refreshViaStoredRefreshToken(accountId, tokens);
+        }
+        // 7.7.1 review (Sprint 76): the inner catch above stops a native
+        // throw from reaching the outer catch -- the only place that left
+        // `refreshing` -- so with no fallback the state stuck at refreshing.
+        if (!native.success) _state = AuthState.unauthenticated;
+        return native;
       } else if (_isDesktop) {
         // Use HTTP token refresh for desktop
         return await _refreshViaHttp(accountId, tokens);
@@ -274,6 +298,7 @@ class GoogleAuthService {
       // no trace of WHY renewal failed. Type and code carry no account data.
       Redact.logWarning('Token refresh failed: ${e.runtimeType}'
           '${e is PlatformException ? ' code=${e.code}' : ''}');
+      _renewalLog('renewal threw ${DiagnosticLogger.describeError(e)}');
       // Sprint 74 MV (Harold Q1, 2026-09-27): a failed renewal NO LONGER
       // deletes the stored tokens -- here or in the four sites below. The
       // failure may be transient (no network, no Activity in a background
@@ -329,6 +354,13 @@ class GoogleAuthService {
       if (user == null) {
         // Silent sign-in failed. Tokens are KEPT (Harold Q1, Sprint 74 MV --
         // see _refreshToken): this can be transient.
+        // Sprint 76 (Harold: "I had to re-authenticate the gmail account at
+        // least once today"): name the step that failed, and whether a
+        // refresh token from the browser sign-in was sitting unused -- on
+        // Android renewal never reads it (only the desktop HTTP path does).
+        _renewalLog('native silent sign-in returned no account '
+            '(stored refresh token: '
+            '${tokens.refreshToken == null ? 'none' : 'present, not used on Android'})');
         _state = AuthState.unauthenticated;
         return AuthResult.unauthenticated();
       }
@@ -350,6 +382,7 @@ class GoogleAuthService {
       final authorization = await user.authorizationClient.authorizationForScopes(_scopes);
       if (authorization == null) {
         // Tokens KEPT (Harold Q1, Sprint 74 MV -- see _refreshToken).
+        _renewalLog('native authorizationForScopes returned no token');
         _state = AuthState.unauthenticated;
         return AuthResult.unauthenticated();
       }
@@ -448,6 +481,50 @@ class GoogleAuthService {
     }
   }
 
+  /// Sprint 76 (Harold Q2 = 1): whether to fall back to the stored refresh
+  /// token after native renewal.
+  @visibleForTesting
+  static bool shouldTryStoredRefreshToken({
+    required bool nativeSucceeded,
+    required bool isAndroid,
+    required bool hasRefreshToken,
+  }) =>
+      !nativeSucceeded && isAndroid && hasRefreshToken;
+
+  /// Test seam for [_refreshViaStoredRefreshToken]'s token call.
+  @visibleForTesting
+  static Future<String> Function(String refreshToken)? debugMobileRefresh;
+
+  /// Renew with the refresh token the Android browser sign-in stored, using
+  /// the Android OAuth client that issued it. Tokens are KEPT on failure
+  /// (Harold Q1, Sprint 74 MV -- see _refreshToken).
+  Future<AuthResult> _refreshViaStoredRefreshToken(
+      String accountId, GmailTokens tokens) async {
+    try {
+      final refresh =
+          debugMobileRefresh ?? GmailWindowsOAuthHandler.refreshAccessTokenMobile;
+      final newAccessToken = await refresh(tokens.refreshToken!);
+      if (newAccessToken.isEmpty) {
+        _renewalLog('stored refresh token: Google returned no access token');
+        _state = AuthState.unauthenticated;
+        return AuthResult.failure('Session expired. Please sign in again.');
+      }
+      final newTokens = tokens.copyWith(
+        accessToken: newAccessToken,
+        expiresAt: DateTime.now().add(const Duration(hours: 1)),
+      );
+      await _credStore.saveGmailTokens(accountId, newTokens);
+      _currentAccountId = accountId;
+      _state = AuthState.authenticated;
+      _renewalLog('renewed with the stored refresh token');
+      return AuthResult.success(tokens.email, newAccessToken);
+    } catch (e) {
+      _renewalLog('stored refresh token failed: ${DiagnosticLogger.describeError(e)}');
+      _state = AuthState.unauthenticated;
+      return AuthResult.failure('Session expired. Please sign in again.');
+    }
+  }
+
   /// Refresh using HTTP token endpoint (desktop platforms).
   Future<AuthResult> _refreshViaHttp(String accountId, GmailTokens tokens) async {
     if (tokens.refreshToken == null) {
@@ -531,23 +608,33 @@ class GoogleAuthService {
           'in with $expected.');
 
   Future<AuthResult> _signInNative({String? expectedAccountId}) async {
+    // F248 (Sprint 76): which step was running when it failed. On the Fold
+    // (0.17.0) native sign-in failed AFTER the account pick and fell back to
+    // the browser (F250); without this nobody can say which call threw.
+    var step = 'initialize';
     try {
       await _ensureNativeSignInInitialized();
 
       Redact.logSafe('[Auth] Starting Gmail OAuth sign-in via GoogleAuthService...');
 
       // Use authenticate() for interactive sign-in (7.x API)
+      step = 'authenticate';
       _currentUser = await _googleSignIn.authenticate();
-      
+
       if (_currentUser == null) {
         _state = AuthState.unauthenticated;
         Redact.logSafe('[Auth] Gmail sign-in failed or was cancelled');
+        _signInLog('native authenticate returned no user (cancelled)');
         return AuthResult.failure('Sign-in cancelled');
       }
+      _signInLog('native authenticate ok: '
+          '${Redact.email(_currentUser!.email)}');
 
       // Request authorization for scopes
       Redact.logSafe('[Auth] Got user, requesting Gmail API scopes...');
+      step = 'authorizeScopes';
       final authorization = await _currentUser!.authorizationClient.authorizeScopes(_scopes);
+      _signInLog('native authorizeScopes ok');
 
       final accountId = _currentUser!.email;
       // F239: refuse a different account BEFORE saving (saving adds it).
@@ -573,17 +660,47 @@ class GoogleAuthService {
     } catch (e) {
       _state = AuthState.error;
       Redact.logError('Native sign-in failed', e);
-      
+      _signInLog('native $step FAILED: ${DiagnosticLogger.describeError(e)}');
+
       // On Android, fall back to browser-based OAuth if native fails
       if (Platform.isAndroid) {
         Redact.logSafe('[Auth] Trying browser-based OAuth fallback on Android...');
-        return await _signInDesktop(
+        _signInLog('falling back to the browser sign-in');
+        final fallback = await _signInDesktop(
             expectedAccountId: expectedAccountId); // Desktop method works for Android too
+        if (fallback.success) {
+          // F250 R-3 / F246: whether the browser path stored a refresh token
+          // decides if Android background renewal could work on this path.
+          final saved = await _credStore.getGmailTokens(fallback.email ?? '');
+          // Review MEDIUM-4: getGmailTokens returns null on a READ failure
+          // too, so "none" is not proof nothing was stored.
+          _signInLog('browser sign-in succeeded (refresh token '
+              '${saved == null ? 'unknown: tokens could not be read back' : saved.refreshToken == null ? 'NOT stored' : 'stored'})');
+        } else {
+          _signInLog('browser sign-in failed: '
+              '${DiagnosticLogger.scrub(fallback.errorMessage ?? 'no message')}');
+        }
+        return fallback;
       }
       
       return AuthResult.failure('Sign-in failed: ${e.toString()}');
     }
   }
+
+  /// F248: one Gmail sign-in record (fire-and-forget). Addresses must already
+  /// be redacted by the caller.
+  void _signInLog(String detail) => unawaited(DiagnosticLogger.log(
+        kind: DiagnosticLogger.kindSignIn,
+        context: 'gmail/sign-in',
+        detail: detail,
+      ));
+
+  /// Sprint 76: why a token RENEWAL failed (no account data in the text).
+  void _renewalLog(String detail) => unawaited(DiagnosticLogger.log(
+        kind: DiagnosticLogger.kindSignIn,
+        context: 'gmail/renewal',
+        detail: detail,
+      ));
 
   /// Desktop browser-based OAuth with PKCE.
   Future<AuthResult> _signInDesktop({String? expectedAccountId}) async {

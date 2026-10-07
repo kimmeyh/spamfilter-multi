@@ -285,6 +285,12 @@ dependencies {
     // unblocks their on-device validation -- is not held hostage to a
     // 9-month SDK jump performed under release-day pressure.
     releaseImplementation(project(":integration_test"))
+
+    // F253 (Sprint 76): JVM unit tests for pure Kotlin decision code (the
+    // new-mail notification rule). Test-only -- not linked into any APK/AAB.
+    // Run with `gradlew :app:testDevDebugUnitTest` from mobile-app/android;
+    // CI runs `flutter test` only, so these run locally (recorded in the card).
+    testImplementation("junit:junit:4.13.2")
 }
 
 flutter {

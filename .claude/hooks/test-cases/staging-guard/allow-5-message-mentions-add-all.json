@@ -1,0 +1,1 @@
+{"session_id": "sg-allow-5-message-mentions-add-all", "cwd": "D:/Data/Harold/github/spamfilter-multi", "hook_event_name": "PreToolUse", "tool_name": "PowerShell", "tool_input": {"command": "git commit -m \"never run git add -A blind\""}}

@@ -25,6 +25,7 @@ import '../../core/models/rule_set.dart' show Rule, RuleSet;
 import '../../core/models/safe_sender_list.dart' show SafeSenderList;
 import '../../core/services/auth_results_parser.dart';
 import '../../core/services/diagnostic_logger.dart';
+import '../../core/services/email_scanner.dart' show safeSenderAlreadyInTarget;
 import '../../core/services/app_version.dart';
 import '../../util/redact.dart';
 import '../../core/services/email_body_parser.dart';
@@ -180,6 +181,36 @@ ReProcessBucket classifyForReProcess({
     return ReProcessBucket.moveSafe;
   }
   return ReProcessBucket.none;
+}
+
+/// Sprint 76 (0.17.2 Fold log): WHY a rule update's mailbox actions failed,
+/// grouped by reason, for the diagnostic log.
+///
+/// The log read "acted on 0 of 29 (failed 29): moveSafe=29" with no cause --
+/// the batch result carried each id's reason and nothing wrote it down.
+/// Grouped so 29 identical failures are one line, not 29; capped at
+/// [maxReasons] distinct reasons; each reason scrubbed of addresses and capped
+/// at 200 characters. Message ids are never written.
+@visibleForTesting
+List<String> summarizeBatchFailureReasons(
+  Map<String, String> failedIds, {
+  int maxReasons = 3,
+}) {
+  final counts = <String, int>{};
+  for (final reason in failedIds.values) {
+    final scrubbed = DiagnosticLogger.scrub(reason);
+    final capped =
+        scrubbed.length > 200 ? '${scrubbed.substring(0, 200)}...' : scrubbed;
+    counts[capped] = (counts[capped] ?? 0) + 1;
+  }
+  final ordered = counts.entries.toList()
+    ..sort((a, b) => b.value.compareTo(a.value));
+  final lines = [
+    for (final e in ordered.take(maxReasons)) '${e.value} x ${e.key}',
+  ];
+  final more = ordered.length - maxReasons;
+  if (more > 0) lines.add('... and $more other reason(s)');
+  return lines;
 }
 
 class ReProcessOutcome {
@@ -3357,6 +3388,19 @@ class _ResultsDisplayScreenState extends State<ResultsDisplayScreen> {
   /// case lets the capture fire on the next rebuild after the async load.
   void _captureInitialNoRuleCount() {
     if (_initialNoRuleCount != null) return;
+    // Sprint 76 (Fold, 0.17.1): NOT while a live scan is still running. The
+    // screen renders while results stream in, so the first capture took the
+    // count at that moment -- "0 of 1 ... 148 remaining", then "22 of 1".
+    // Until the scan completes, _computeNoRuleStats falls back to the live
+    // count; the full total is captured on the first render after it ends.
+    // (The Sprint 38 Round 8 re-entry semantic is unchanged.)
+    if (widget.historicalScanId == null) {
+      final status =
+          Provider.of<EmailScanProvider>(context, listen: false).status;
+      if (status == ScanStatus.scanning || status == ScanStatus.paused) {
+        return;
+      }
+    }
     final stats = _computeNoRuleStats();
     final total = stats.remaining + stats.addressed;
     if (total == 0) return; // wait for async load (or genuinely empty scan)
@@ -3464,6 +3508,21 @@ class _ResultsDisplayScreenState extends State<ResultsDisplayScreen> {
   /// re-processed set as well, so a later retry is not skipped as "already
   /// done" -- otherwise a failed email would be permanently unactionable
   /// without a restart, which is the same shape of trap F220 fixed.
+  /// Sprint 76: one diagnostic line per distinct failure reason of a rule
+  /// update's batch (see [summarizeBatchFailureReasons]). Nothing when all
+  /// succeeded.
+  void _logReProcessFailureReasons(
+      String action, Map<String, String> failedIds) {
+    if (failedIds.isEmpty) return;
+    for (final line in summarizeBatchFailureReasons(failedIds)) {
+      unawaited(DiagnosticLogger.log(
+        kind: DiagnosticLogger.kindInfo,
+        context: 'F38/re-process',
+        detail: '$action failed: $line',
+      ));
+    }
+  }
+
   void _recordBatchFailures(
     List<EmailMessage> attempted,
     Set<String> failedIds,
@@ -3795,7 +3854,9 @@ class _ResultsDisplayScreenState extends State<ResultsDisplayScreen> {
   void _cancelRunningScan(
       BuildContext context, EmailScanProvider scanProvider) {
     final requested =
-        ScanCoordinator.instance.requestCancel(accountId: widget.accountId);
+        ScanCoordinator.instance.requestCancel(
+            accountId: widget.accountId,
+            reason: 'user tapped Stop (Results)');
     final messenger = ScaffoldMessenger.of(context);
     messenger.hideCurrentSnackBar();
     messenger.showSnackBar(
@@ -3984,6 +4045,14 @@ class _ResultsDisplayScreenState extends State<ResultsDisplayScreen> {
     if (isReadOnly) {
       logger.i('[F38] read-only preview: would delete ${toDelete.length}, '
           'would move ${toMoveSafe.length}');
+      // F248 / Q4 (Sprint 76): successful and preview outcomes are logged
+      // too, not only failures -- otherwise a rule's real reach is invisible.
+      unawaited(DiagnosticLogger.log(
+        kind: DiagnosticLogger.kindInfo,
+        context: 'F38/re-process',
+        detail: 'read-only preview: would delete ${toDelete.length}, would '
+            'move ${toMoveSafe.length} (no mailbox change)',
+      ));
       return ReProcessOutcome.readOnly(
         wouldHaveDeleted: toDelete.length,
         wouldHaveMoved: toMoveSafe.length,
@@ -3992,6 +4061,11 @@ class _ResultsDisplayScreenState extends State<ResultsDisplayScreen> {
 
     if (toDelete.isEmpty && toMoveSafe.isEmpty) {
       logger.i('[F38] No emails need IMAP re-processing');
+      unawaited(DiagnosticLogger.log(
+        kind: DiagnosticLogger.kindInfo,
+        context: 'F38/re-process',
+        detail: 'nothing to act on (mode ${effectiveMode.name})',
+      ));
       return const ReProcessOutcome.nothingToDo();
     }
 
@@ -4106,6 +4180,7 @@ class _ResultsDisplayScreenState extends State<ResultsDisplayScreen> {
           _recordBatchFailures(toDelete, result.failedIds.keys.toSet());
           logger.i(
               '[F38] Delete batch: ${result.successCount} succeeded, ${result.failureCount} failed');
+          _logReProcessFailureReasons('delete', result.failedIds);
         } catch (e) {
           logger.e('[F38] Delete batch failed: $e');
           // F233 (Sprint 72): this is the SERVER_REFUSED shape -- the batch ran
@@ -4149,21 +4224,59 @@ class _ResultsDisplayScreenState extends State<ResultsDisplayScreen> {
         final targetFolder =
             await settingsStore.getEffectiveSafeSenderFolder(widget.accountId);
 
+        // Sprint 76 (0.17.5 Fold, 12:02): an email ALREADY in the target is
+        // addressed with no mailbox call -- the same rule the scan uses.
+        // Before, AOL "moved" it Inbox -> Inbox, acknowledged without moving,
+        // and the update reported "could not be applied".
+        final alreadyThere = [
+          for (final m in toMoveSafe)
+            if (safeSenderAlreadyInTarget(
+                platformId: widget.platformId,
+                messageFolderName: m.folderName,
+                safeSenderTarget: targetFolder))
+              m,
+        ];
+        final toMove = [
+          for (final m in toMoveSafe)
+            if (!alreadyThere.contains(m)) m,
+        ];
+        if (alreadyThere.isNotEmpty) {
+          successCount += alreadyThere.length;
+          _recordBatchFailures(alreadyThere, const <String>{});
+          logger.i('[F38] Safe sender move: ${alreadyThere.length} already in '
+              '"$targetFolder", nothing to move');
+        }
+
         var moveFailedIds = <String>{};
+        if (toMove.isNotEmpty) {
         try {
           final result =
-              await platform.moveToFolderBatch(toMoveSafe, targetFolder);
+              await platform.moveToFolderBatch(toMove, targetFolder);
           successCount += result.successCount;
           failCount += result.failureCount;
           moveFailedIds = result.failedIds.keys.toSet();
-          _recordBatchFailures(toMoveSafe, result.failedIds.keys.toSet());
+          _recordBatchFailures(toMove, result.failedIds.keys.toSet());
           logger.i(
               '[F38] Safe sender move batch: ${result.successCount} succeeded, ${result.failureCount} failed');
+          _logReProcessFailureReasons(
+              'safe-sender move to "$targetFolder"', result.failedIds);
         } catch (e) {
           logger.e('[F38] Safe sender move batch failed: $e');
-          failCount += toMoveSafe.length;
-          moveFailedIds = toMoveSafe.map((m) => m.id).toSet();
-          _recordBatchFailures(toMoveSafe, moveFailedIds);
+          // Sprint 76: the delete batch's sibling line -- this path wrote
+          // nothing to the diagnostic log.
+          unawaited(DiagnosticLogger.failure(
+            context: 'F38/move-safe-batch',
+            // Review LOW: a thrown batch is usually a connection error, not a
+            // server refusal.
+            kind: DiagnosticLogger.kindException,
+            reason: 'batch threw: ${DiagnosticLogger.describeError(e)}',
+            attempted: toMove.length,
+            failed: toMove.length,
+          ));
+          failCount += toMove.length;
+          moveFailedIds = toMove.map((m) => m.id).toSet();
+          _recordBatchFailures(toMove, moveFailedIds);
+        }
         }
 
         // Mark as re-processed and update banner.
@@ -4251,6 +4364,17 @@ class _ResultsDisplayScreenState extends State<ResultsDisplayScreen> {
         ),
       );
     }
+
+    // F248 / Q4 (Sprint 76): the outcome of every run, success included --
+    // "acted on N of N" is the evidence a block rule from a saved scan really
+    // moved the mail (Sprint 76 phone checklist item 2).
+    unawaited(DiagnosticLogger.log(
+      kind: DiagnosticLogger.kindInfo,
+      context: 'F38/re-process',
+      detail: 'acted on $successCount of $total (failed $failCount): '
+          'delete=${toDelete.length} moveSafe=${toMoveSafe.length} '
+          'mode=${effectiveMode.name}',
+    ));
 
     // F228 (Sprint 72): hand the outcome back so the CALLER can tell the truth.
     // This method used to return void and report only through the snackbar

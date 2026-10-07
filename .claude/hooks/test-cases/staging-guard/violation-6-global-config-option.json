@@ -1,0 +1,1 @@
+{"session_id":"sg-violation-6-global-config-option","cwd":"D:/Data/Harold/github/spamfilter-multi","hook_event_name":"PreToolUse","tool_name":"Bash","tool_input":{"command":"git -c core.autocrlf=false add -A"}}

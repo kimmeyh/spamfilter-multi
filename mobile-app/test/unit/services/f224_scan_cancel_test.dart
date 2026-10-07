@@ -31,7 +31,7 @@ void main() {
       await c.acquire(scanType: 'manual', accountId: 'a@x.com');
 
       expect(c.isCancelRequested, isFalse, reason: 'nothing asked for yet');
-      expect(c.requestCancel(accountId: 'a@x.com'), isTrue);
+      expect(c.requestCancel(accountId: 'a@x.com', reason: 'test'), isTrue);
       expect(c.isCancelRequested, isTrue);
     });
 
@@ -41,7 +41,7 @@ void main() {
       final c = ScanCoordinator.instance;
       await c.acquire(scanType: 'background', accountId: 'a@x.com');
 
-      expect(c.requestCancel(accountId: 'OTHER@x.com'), isFalse);
+      expect(c.requestCancel(accountId: 'OTHER@x.com', reason: 'test'), isFalse);
       expect(c.isCancelRequested, isFalse,
           reason: 'the wrong account must not be able to stop this scan');
     });
@@ -49,7 +49,7 @@ void main() {
     test('cancelling when nothing runs is a no-op, not a crash', () {
       // The unhappy input: the user taps Cancel just as the scan finishes.
       final c = ScanCoordinator.instance;
-      expect(c.requestCancel(accountId: 'a@x.com'), isFalse);
+      expect(c.requestCancel(accountId: 'a@x.com', reason: 'test'), isFalse);
       expect(c.isCancelRequested, isFalse);
     });
 
@@ -60,7 +60,7 @@ void main() {
       final c = ScanCoordinator.instance;
       await c.acquire(scanType: 'manual', accountId: 'a@x.com');
 
-      c.requestCancel(accountId: 'a@x.com');
+      c.requestCancel(accountId: 'a@x.com', reason: 'test');
 
       expect(c.active, isNotNull,
           reason: 'the lease is released by the SCAN, in its finally -- never '
@@ -74,7 +74,7 @@ void main() {
         () async {
       final c = ScanCoordinator.instance;
       final lease = await c.acquire(scanType: 'manual', accountId: 'a@x.com');
-      c.requestCancel(accountId: 'a@x.com');
+      c.requestCancel(accountId: 'a@x.com', reason: 'test');
 
       // What scanInbox's `finally` does.
       c.release(lease);
@@ -88,7 +88,7 @@ void main() {
         () async {
       final c = ScanCoordinator.instance;
       final first = await c.acquire(scanType: 'manual', accountId: 'a@x.com');
-      c.requestCancel(accountId: 'a@x.com');
+      c.requestCancel(accountId: 'a@x.com', reason: 'test');
       c.release(first);
 
       final second = await c.acquire(scanType: 'manual', accountId: 'a@x.com')
@@ -111,7 +111,7 @@ void main() {
       final queued = c.acquire(scanType: 'background', accountId: 'b@x.com');
       await Future<void>.delayed(Duration.zero);
 
-      c.requestCancel(accountId: 'a@x.com');
+      c.requestCancel(accountId: 'a@x.com', reason: 'test');
       expect(c.isCancelRequested, isTrue);
 
       c.release(first);
@@ -134,7 +134,7 @@ void main() {
     test('THE FEATURE: it throws once a cancel is pending', () async {
       final c = ScanCoordinator.instance;
       await c.acquire(scanType: 'manual', accountId: 'a@x.com');
-      c.requestCancel(accountId: 'a@x.com');
+      c.requestCancel(accountId: 'a@x.com', reason: 'test');
 
       expect(() => c.throwIfCancelled(),
           throwsA(isA<ScanCancelledException>()));
@@ -157,7 +157,7 @@ void main() {
     test('it stops throwing once the lease is released', () async {
       final c = ScanCoordinator.instance;
       final lease = await c.acquire(scanType: 'manual', accountId: 'a@x.com');
-      c.requestCancel(accountId: 'a@x.com');
+      c.requestCancel(accountId: 'a@x.com', reason: 'test');
       c.release(lease);
 
       expect(c.throwIfCancelled, returnsNormally,
