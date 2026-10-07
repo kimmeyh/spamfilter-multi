@@ -11,8 +11,9 @@ Phase 3; this stub only records what Sprint 76 carried in.
   Google account state, MV74-3 error classification.
 - **R76-1** -- battery deep dive for "Scan when new mail arrives", written as A/B tests on the Android
   emulator, prioritized by likely success (Sprint 76 retro Cat 13).
-- **R76-2** -- should "Scan when new mail arrives" move to the General tab; if so, how the Background
-  scanning settings and help text change (Cat 13).
+- **R76-2** -- rework the Background section and its help text for the per-account "Scan when new mail
+  arrives" switch and the new interval control (Cat 13; updated 2026-10-06 by F264, which makes the
+  switch per account, so it does not move to General).
 - **R76-3** -- deep dive on Heuristics, ML and GenAI spam identification from stored email content,
   ending in backlog items (Cat 13).
 - **R76-4** -- design and implement a history of email content for those identifiers; no duplicates;

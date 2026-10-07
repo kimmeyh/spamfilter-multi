@@ -9,58 +9,22 @@ If questions must be asked, ask as late as possible - do everything that can be 
 Sprint 7n Scope should include the below items. Please complete sprint planning (/docs/sprint_planning.md) for the below items and present for approval.  Note that everything needs to take into account both the Windows App and the Android app and ADR stating that everything should be functionally and UI the same unless it cannot be - and where it cannot be it should be implemented as a platform exception for what is needed -- this applies to all backend code, frontend code, data, architecture, development, security, testing, deployment.
 
 ---------------------------------------------------------------------------------------------------------
+Sprint 77 Scope should include the below items. Please complete sprint planning (/docs/sprint_planning.md) for the below items and present for approval.  Note that everything needs to take into account both the Windows App and the Android app and ADR stating that everything should be functionally and UI the same unless it cannot be - and where it cannot be it should be implemented as a platform exception for what is needed -- this applies to all backend code, frontend code, data, architecture, development, security, testing, deployment.
+
+
+Likely candidates if they have not already been addressed in 76
+  - MV74-1. F235 Doze scheduling -- validate on the S24+ (~20-40m, plus hours on the device) Priority 2
+  - MV74-3. F205 -- classify the scan errors on a 0.17.0 phone build (~30-60m) Priority 4 (the same work as the F205 card at Priority 18; counted once)
+  - F245: raise its priority. 0.17.0 ships F243, so any Windows user with background scans on gets duplicate No Rule rows every 15 minutes, roughly 11,000 a day on your AOL account. That is now user-visible clutter, not a lab issue.
+  - F192. Custom IMAP Server support -- build the host-entry UI (~120-180m) Priority 32
+  - SEC-15. IMAP host validation for custom servers (~1h) Priority HOLD
+    - indicate as many email providers/email domains this includes and a list of to 20 email providers/email domains that it does not include
+  - SEC-8b. Certificate pinning for IMAP endpoints (~4-6h) Priority HOLD
+  - H5. Outlook.com / Office 365 email provider adapter (~16-20h) Priority HOLD
+    - All form of Microsoft user provider email domains.
+---------------------------------------------------------------------------------------------------------
 Sprint 76 Scope should include the below items. Please complete sprint planning (/docs/sprint_planning.md) for the below items and present for approval.  Note that everything needs to take into account both the Windows App and the Android app and ADR stating that everything should be functionally and UI the same unless it cannot be - and where it cannot be it should be implemented as a platform exception for what is needed -- this applies to all backend code, frontend code, data, architecture, development, security, testing, deployment.
-- Add to backlog for future sprint
-  - Deep dive on tools that can be used with stored email content for Heuristics, ML and GenAI spam identification tools
-    - Should result in one or more backlog items to develop Heuristic, ML and GenAI pipelines and how they can be used:
-      - Updates to YAML imports:
-	- new delete rules: new known bad domains (...domain.TLD) of domains, subject string regex and body regex
-        - New tools to find and identify safe senders
-      - One device Heuristics, ML or GenAI tools
-- Add to backlog for this sprint
-  - Store history of email content for future use of Heuristics, ML and GenAI spam identifiers (exact methods TBD)
-  - Probably a database of fields - design and implement
-  - Can use all of my personal emails via Windows App, Android App (eventually iPhone) scans
-  - no duplicate emails
-  - can initially populate from existing delete rules and safe sender rules on Windows/Android
 
-
-
-  Your steps: Microsoft Store
-
-  1. Partner Center > MyEmailSpamFilter > Start update > Packages > add:
-     D:\Data\Harold\github\spamfilter-multi-prod\mobile-app\build\windows\x64\runner\Release\my_email_spam_filter.msix
-  2. Wait for validation. Confirm it shows version 0.17.0.0.
-  3. Store listings > English (United States) > "What's new in this version". Paste the text below the --- line from:
-     D:\Data\Harold\github\spamfilter-multi\docs\store-assets\RELEASE_NOTES_0.17.0_windows.md
-  4. Click Submit for certification.
-  5. Once it is live and installed: Gmail sign-in must show the real client ID in the browser address, and About must read "Version 0.17.0" with no
-     [DEV]. I could not run these two checks headless.
-
-  Your steps: Google Play
-
-  1. Play Console > Test and release > App bundle explorer. Confirm that versionCode 8 was never uploaded. The superseded 2026-09-25 bundle also
-     carried 8. If 8 is taken, tell me and I will rebuild as 9.
-  2. Closed testing > Create new release > upload:
-     D:\Data\Harold\github\spamfilter-multi\mobile-app\build\app\outputs\bundle\prodRelease\app-prod-release.aab
-  3. Release name: Closed testing 0.17.0.
-  4. Release notes: paste this block with its tags. The length check passed against the 500-character limit; the source is RELEASE_NOTES_0.17.0_play.md.
-  <en-US>
-  Scan results show each email's date; Sort lists newest first.
-
-  Rules added while reviewing a saved scan work again.
-
-  One scan per account at a time. You can stop a running background scan and start yours. A stuck scan no longer shows "In progress".
-
-  New accounts get the right folders, including spam.
-
-  Gmail offers Sign In Again when needed, keeps its settings, and shows real email dates.
-
-  Exports save to Documents, can hide sender details, and rule export works. Scan history can be cleared.
-  </en-US>
-  5. Save, roll out, then Publishing overview > Send changes for review.
-
-  Tell me when each upload is submitted. I will record it as submitted only from what you saw in the console.
 
   Recommendation for Sprint 76
 
