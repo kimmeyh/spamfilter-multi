@@ -236,6 +236,26 @@ Each item is fixed PREVENTION FIRST (SPRINT_EXECUTION_WORKFLOW.md 7.7.1): name h
 - Prevention first: one shared interval parser/validator (unit + number -> minutes, min/max) used by both platforms' UI and the schedulers, with tests at 4, 5, 99 minutes and 99 hours; the package-to-provider mapping lives in the existing `MailNotificationPolicy` (extend it, JVM-tested).
 - **Sprint 77**: SELECTED (Task 5, #465) with Harold's decisions Q8-Q14 recorded in `docs/sprints/SPRINT_77_PLAN.md`.
 
+**F277. Fold energy check: interval 5 against interval 15 (~45-60m + phone time) Priority 20 -- backlog (Sprint 77 R76-1, was R77-BAT-1)**
+- Phase: Core App Quality
+- Platform: Android
+- The emulator measures counts, not energy. Decision rule for the F264 floor: if an interval-5 account costs more than 3x an interval-15 account on the Fold (Settings > Battery screenshots over MTP), raise `kMinIntervalMinutes` to 10. Protocol: `docs/research/R76-1_BATTERY_AB_RESULTS.md` section R77-BAT-1.
+
+**F278. Notifications that produced no scan, and alarm + WorkManager scans coexisting (~60-90m) Priority 34 -- backlog (Sprint 77 R76-1, was R77-BAT-2)**
+- Phase: Core App Quality
+- Platform: Android
+- In arm 5, 2 of 4 posts left no scan and no log line (cause unknown); alarm and periodic starts also coexisted. Protocol and what would settle it: results doc section R77-BAT-2.
+
+**F279. Listener gap 2 minutes vs 5 minutes (~30-45m) Priority 50 -- backlog (Sprint 77 R76-1, was arm 6 / R77-BAT-3)**
+- Phase: Core App Quality
+- Platform: Android
+- Needs a change to `MailNotificationPolicy.MIN_GAP_MS`; likely redundant with the worker's 5-minute `kMinScanSpacing`. A/B in results doc section R77-BAT-3.
+
+**F280. Doze network availability for alarm scans (~45-60m) Priority 36 -- backlog (Sprint 77 R76-1, was R77-BAT-4)**
+- Phase: Core App Quality
+- Platform: Android
+- In arm 4, 2 of 3 alarm scans failed at DNS rather than login under forced Doze (cause unverified). Results doc section R77-BAT-4.
+
 **F276. No Rule Review lists mail already deleted in the mail client (~60-90m) Priority 30 -- backlog (Sprint 77 5.1.2 F-PRECHECK; consequence of Q21 = 2)**
 - Phase: Core App Quality
 - Platform: All

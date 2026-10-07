@@ -1,7 +1,7 @@
 # R76-1 Battery A/B results, first half (Sprint 77, Issue #464)
 
 **Status**: arms 1 and 2 measured on today's code (0.18.0+15 dev debug build, before F264). Arm 7 is BLOCKED
-(see below). Arms 3-6 are pending F264 and are described in the last section.
+(see below). Arms 3-5 were measured on the F264 build (second half section); arm 6 was not run (backlog item).
 **Date**: 2026-10-07. **Author**: Claude Code (Sonnet 5.5), Sprint 77 Task 4 first half.
 
 ## What an emulator cannot show (read first)
@@ -115,7 +115,167 @@
   run `--background-scan --account-id=<id>` once per setting against the same mailbox, and read the fetched message
   count and bytes from the scan log. Do not run the Windows build while any Android build or emulator test runs.
 
-## Arms 3-6 (pending F264)
+## Second half: arms 3-5 on the F264 build (Sprint 77 Task 4 second half)
+
+**Build**: `build-with-secrets.ps1 -BuildType debug -Env dev -InstallToEmulator -SkipUninstall` from HEAD 31e3aeb
+(0.18.0+15, dev debug, package `com.myemailspamfilter.dev`; the prod package was not touched and was not disabled).
+Same AVD, same two fake accounts, same standby bucket, Read-Only mode, diagnostic log ON. Notification access was
+still granted after the reinstall (verified in `enabled_notification_listeners`).
+**Deviation**: each arm is a 20-minute window after force-idle at minute 2 (about 1,205 s of idle), not 35 or 60
+minutes, to fit the remaining emulator time. Arms 1 and 2 used about 2,110 s. Counts are NOT scaled; where arms are
+compared the table below normalizes to 1,205 s of idle and says so. Emulator time for this half: about 95 minutes
+including the build and the settings changes made through the app UI.
+**Energy is not measured** (see the first section). Network bytes are NOT captured: the per-UID netstats history did
+not change between the before and after snapshots of arms 3, 4 and 5 (the uid 10194 bucket stayed at rb=162,664 for
+arm 3 and rb=192,856 for arms 4 and 5), so no byte figure is claimed. The scans are failed logins, so their bytes are
+small anyway.
+**Settings per arm** (set through Settings > Background, per account, then verified by screenshot):
+- Arm 3: AOL interval 15 min, new-mail ON. Yahoo interval 15 min, new-mail OFF. Shell notification every 5 min.
+- Arm 4: both accounts interval 5 min ("Background scan scheduled every 5 minutes" toast), new-mail OFF for both.
+- Arm 5: both accounts interval 5 min. AOL new-mail ON, Yahoo OFF. Shell notification every 5 min.
+Note on labels: a notification worker logs `start (all accounts) trigger=notification` even when the per-account filter
+then skips accounts. Count scans with the `[scan/background] <account> start --` lines, as the summarizer now does
+(it also counts the `account <addr> not selected by this notification` lines).
+
+### Per-arm numbers
+
+- **Arm 3 (new-mail ON per account, interval 15, 4 notifications)**: worker starts 4 (all notification, at +3, +302,
+  +603, +903 s). Account scans run: AOL 4, Yahoo 0. Yahoo skipped by the filter: 4. Doze-alarm and periodic starts: 0.
+  Longest gap 301 s. App-UID wakeup alarms in the window: 0 (6 before, 6 after). Jobs: 4 runs, 33.7 s, completions
+  `successful_finish(3x) canceled(1x)`. Partial wakelock 33.7 s actual (20.7 s blamed). CPU user 12.7 s + system 29.3 s.
+- **Arm 4 (interval 5, new-mail OFF, no notifications)**: worker starts 3, all `doze-alarm`, at +365 s (Yahoo only),
+  +889 s (Yahoo and AOL). Account scans run: Yahoo 2, AOL 1. Gap between the two alarm firings: **524 s (8.7
+  minutes)**. Longest gap 524 s. Wakeup alarms for the app UID: 4 (`dumpsys alarm` 6 to 10; batterystats "ACTION_DOZE_SCAN:
+  4 times"), which is 2 firings times 2 per-account alarms. No periodic start in 1,205 s. Jobs and wakelock: batterystats
+  recorded no Job or wakelock line for the alarm path. CPU user 8.3 s + system 18.9 s. Two of the three scans failed at
+  DNS (`Failed host lookup: imap.mail.yahoo.com`, `imap.aol.com`) rather than at login, unlike every scan in arms 1 to 3
+  and 5. Cause unverified (candidate: Doze network restriction while the first alarm ran); what would settle it: log
+  `ConnectivityManager` network state in the worker.
+- **Arm 5 (interval 5 + new-mail ON per account, 4 notifications)**: worker starts 8: doze-alarm 4 (+9, +10, +528,
+  +1,052 s), periodic 2 (+323, +371 s), notification 2 (+603, +903 s). Account scans run: Yahoo 4, AOL 4. Yahoo skipped
+  by the filter: 2. Doze-alarm gaps 519 s and 524 s (8.7 minutes). Longest gap between any two starts 313 s. Wakeup
+  alarms for the app UID: 6 (10 to 16). Jobs: 5 runs, 6 m 33.7 s, completions `successful_finish(8x) canceled(1x)`.
+  Partial wakelock 6 m 33.9 s actual (6 m 21.8 s blamed). CPU user 21.4 s + system 57.9 s.
+  **Two of the four posts (at +1 s and +301 s) produced no notification scan and no log line.** Cause unknown. Candidates:
+  the Dart-side `kMinScanSpacing` (5 minutes) deferred them because alarm scans had just finished, or the native
+  listener did not fire. What would settle it: logcat from `MailNotificationListener` during the window (the buffer had
+  rolled over by the time this was checked).
+
+### Comparison, normalized to 1,205 s of force-idle
+
+Account scans run (arm 1 and arm 2 values scaled from 2,110 s and 2,105 s; the scaling assumes a steady rate and is
+only indicative):
+- Arm 1, interval 15, new-mail off: 5 in 2,110 s, about **2.9**.
+- Arm 2, interval 15, new-mail on for all accounts (pre-F264): 19 in 2,105 s (7 notification scans times 2 accounts, plus
+  3 alarm and 2 periodic), about **10.9**.
+- Arm 3, interval 15, new-mail on for AOL only: **4**.
+- Arm 4, interval 5, new-mail off: **3**.
+- Arm 5, interval 5, new-mail on for AOL only: **8**, which is **2.8 times arm 1**.
+
+Does the per-account mapping measurably reduce scans? **Yes for account scans, no for process wakeups.** Per
+notification, the scans run fell from 2 (every account, arm 2) to 1 (AOL only, arm 3), and Yahoo was skipped on every
+notification (4 of 4 in arm 3, 2 of 2 in arm 5). The notification still starts one worker per post, so wakeups and
+job starts per notification did not change. The saving is the connect, login and listing work for the skipped account,
+which on a real mailbox is the expensive part (not measurable here because the logins fail).
+
+Does the 5-minute floor deliver 5-minute scans? **Not in forced Doze.** Alarm scans came 519 to 524 s apart in arms 4
+and 5, which matches Google's "once per nine minutes, per app" limit for `setAndAllowWhileIdle` and
+`setExactAndAllowWhileIdle` (cited in the plan, not re-verified in this task). A 5-minute setting therefore costs about
+7 alarm scans an hour per account in idle, not 12. Outside Doze (screen on, charging, app open) the 5-minute value is
+not capped by this limit; that case was not measured here.
+
+### Recommendation on the interval floor (`kMinIntervalMinutes`, one constant)
+
+**Keep 5.** Evidence:
+- The card rule was "keep the 5-minute floor only if arm 5 stays within a small multiple of arm 1 in scans and wakelock
+  time." Scans: 2.8 times arm 1, inside a small multiple. Wakelock: arm 5 shows 6 m 22 s blamed partial wakelock against
+  9.4 s for arm 1, which would fail the rule, BUT that figure is not trustworthy as a cost of the setting: the logged
+  scans last 7 to 12 s each (8 scans is about 1.5 minutes), arm 3 shows 8.4 s of wakelock per scan, and arm 5 shows about
+  49 s per scan. The extra wakelock time is unexplained (candidate: WorkManager jobs held open after the scan; cause
+  unknown). Treat the wakelock result as an open question, not a pass or a fail.
+- Android itself caps the idle alarm band near 8.7 minutes (arms 4 and 5), so lowering the floor below 5 would buy
+  nothing in idle and raising it to 10 would change the idle cost by little (about 7 against 6 alarm scans an hour).
+- A 5-minute interval is an explicit per-account opt-in; the default stays at 15.
+- **Trigger to raise the floor to 10**: the Fold battery check (R77-BAT-1) showing an interval-5 account costing more than
+  about 3 times the interval-15 account in Settings > Battery over the same idle period. The emulator cannot show energy,
+  so this recommendation is provisional until that check runs.
+- Side finding for the lead: the Settings text under Background reads "While the phone is idle, expect up to about 45
+  minutes between scans, even with a shorter interval." Arms 4 and 5 measured 8.7 minutes in FORCED Doze, which is not the
+  same state as a phone left idle overnight (deeper maintenance windows). The sentence is about the real device; do not
+  change it on this evidence.
+
+### Arm 6 (listener gap 2 minutes against 5 minutes): NOT RUN, backlog item
+
+Changing `MailNotificationPolicy.MIN_GAP_MS` (a Kotlin constant at line 94) is a code change, which this task forbids.
+Also, the Dart worker already enforces `BackgroundScanCore.kMinScanSpacing` (5 minutes) after every finished scan, so
+the observed notification-scan spacing in arms 3 and 5 (301 to 313 s) was set by that, not by the 2-minute listener gap.
+A listener gap of 5 minutes is likely redundant with it. Described as R77-BAT-3 below.
+
+### Backlog items (A/B tests; placeholder ids, in `docs/BACKLOG_REFINEMENT.md` item format)
+
+### R77-BAT-1: Fold energy check of interval 5 against interval 15
+**Status**: [CHECKLIST] NEW (2026-10-07, Sprint 77 R76-1)
+**Priority**: High
+**Estimated Effort**: S (~1 hour of hands-on time plus two overnight windows)
+**Value Statement**: This prevents shipping a 5-minute floor that drains a real battery, and replaces the emulator's
+count-only evidence with a measured one.
+**Dependencies**: A debug or closed-test build with F264 on the Fold (adb is unavailable, so use Settings > Battery
+screenshots over MTP, `scripts/pull-phone-screenshots.ps1`).
+**Hypothesis**: An interval-5 account costs no more than 3 times the battery of an interval-15 account over the same idle night.
+**Arms**: (A) one real account, interval 15, new-mail off; (B) same account, interval 5, new-mail off; (C) interval 5,
+new-mail on. Same screen-off, unplugged, 8-hour window each, same standby bucket and network.
+**Metric**: Settings > Battery percent attributed to the app, plus the diagnostic-log scan count and the background
+wakelock line.
+**Decision rule**: If B is at most 3 times A, keep the floor at 5. If B exceeds 3 times A, raise `kMinIntervalMinutes`
+to 10 and re-run B. If C exceeds B by more than 50 percent, raise the new-mail minimum spacing.
+**Notes**: Also explains the unexplained 6 m 22 s wakelock in arm 5 (see above).
+
+### R77-BAT-2: Why two notifications in arm 5 produced no scan, and why alarm and WorkManager scans coexist
+**Status**: [CHECKLIST] NEW (2026-10-07, Sprint 77 R76-1)
+**Priority**: Medium
+**Estimated Effort**: S (~30 minutes)
+**Value Statement**: This prevents a silent loss of new-mail triggers, and shows whether alarm plus periodic scans
+overlap wastefully.
+**Dependencies**: None (emulator and the existing scripts).
+**Hypothesis**: Posts that arrive within 5 minutes of a finished scan are deferred or dropped by `kMinScanSpacing`, not by the listener.
+**Arms**: (A) arm 5 as run, with `logcat` filtered to `MailNotificationListener` and the `[new-mail-trigger]` log lines
+kept; (B) same with the notification cadence at 10 minutes; (C) same with interval 15.
+**Metric**: Posts that produced a worker start, posts that were logged as skipped, and posts with no log line.
+**Decision rule**: If any post leaves no log line, add a log line at the drop point (a post with no trace is
+unobservable to users and to us). If every dropped post is explained by `kMinScanSpacing`, record that and close.
+**Notes**: Arm 3 showed 4 of 4 posts producing a scan at a 5-minute cadence; arm 5 only 2 of 4.
+
+### R77-BAT-3: Listener gap 2 minutes against 5 minutes (was arm 6)
+**Status**: [CHECKLIST] NEW (2026-10-07, Sprint 77 R76-1)
+**Priority**: Low
+**Estimated Effort**: XS (~20 minutes plus two 20-minute emulator windows)
+**Value Statement**: This enables dropping or keeping the native 2-minute gap with evidence.
+**Dependencies**: One-line debug change to `MailNotificationPolicy.MIN_GAP_MS` under a mutation lock, and a decision
+on whether it duplicates `kMinScanSpacing` (5 minutes).
+**Hypothesis**: At a post cadence of 2 and 3 minutes, a 5-minute listener gap produces the same scans as a 2-minute gap,
+because the Dart 5-minute spacing already limits them.
+**Arms**: (A) gap 2 minutes, cadence 2; (B) gap 5 minutes, cadence 2; (C) gap 2 minutes, cadence 3; (D) gap 5 minutes,
+cadence 3. All on interval 15, new-mail on for AOL only, 20-minute windows after force-idle.
+**Metric**: Worker starts, account scans run, wakeup alarms, wakelock, longest gap.
+**Decision rule**: If A and B differ by 1 scan or fewer, remove the native gap (one place owns the spacing). If B has at
+least 2 fewer scans, keep the native gap and document why both exist.
+
+### R77-BAT-4: Doze network availability for alarm scans
+**Status**: [CHECKLIST] NEW (2026-10-07, Sprint 77 R76-1)
+**Priority**: Medium
+**Estimated Effort**: S (~45 minutes)
+**Value Statement**: This prevents interval-5 scans that run at the alarm and fail for lack of a network.
+**Dependencies**: None.
+**Hypothesis**: An alarm scan that starts in deep Doze can run before the OS grants network, which causes `Failed host
+lookup` (seen in 2 of 3 scans in arm 4).
+**Arms**: (A) arm 4 as run with the worker logging network state at start; (B) same with a short wait-for-network step
+in the worker; (C) same, charger plugged in.
+**Metric**: Share of alarm scans that fail at DNS instead of login.
+**Decision rule**: If A fails at DNS in at least 25 percent of scans and B fixes it without raising wakelock time by more
+than 20 percent, add the wait; otherwise record the cause and close.
+**Notes**: A DNS failure on a real account would look like a skipped scan and delay mail handling by one interval.
+
+## Original plan for arms 3-6 (kept for the record; superseded by the section above)
 
 Prerequisites: F264 built into the dev debug APK (per-account new-mail mapping, interval unit plus number, the
 5-minute `kMinScanSpacing` constant). Use `-Env dev` and the same two fake accounts, standby bucket, Read-Only mode and

@@ -35,6 +35,25 @@ post_idle = [s for s in win if s[0] >= idle]
 by = {}
 for s in post_idle:
     by[s[1]] = by.get(s[1], 0) + 1
+per_acct = {}
+for s in post_idle:
+    am = re.match(r"(\(all accounts\)|\S+@\S+)", s[2])
+    key = (am.group(1) if am else "?", s[1])
+    per_acct[key] = per_acct.get(key, 0) + 1
+print("worker starts after force-idle by (account, trigger):", per_acct)
+# Real per-account scans = `[scan/background] <addr> start --` lines. Accounts a notification skipped =
+# `account <addr> not selected by this notification` lines (F264 per-account mapping).
+attempts, skipped = {}, {}
+for f in glob.glob(d + "/diag/*.log"):
+    for line in open(f, encoding="utf-8", errors="replace"):
+        m = re.match(r"\[(\S+)\] \[SCAN\] \[scan/background\] (\S+) start --", line)
+        if m and idle <= ep(m.group(1)) <= end:
+            attempts[m.group(2)] = attempts.get(m.group(2), 0) + 1
+        m = re.match(r"\[(\S+)\] \[SCAN\] \[worker/android\] account (\S+) not selected", line)
+        if m and idle <= ep(m.group(1)) <= end:
+            skipped[m.group(2)] = skipped.get(m.group(2), 0) + 1
+print("account scans actually run after force-idle:", attempts)
+print("account scans SKIPPED by the notification filter after force-idle:", skipped)
 gaps = [post_idle[i + 1][0] - post_idle[i][0] for i in range(len(post_idle) - 1)]
 print(f"window_s={end-start} idle_s={end-idle} notifications_posted={posted}")
 print(f"worker starts after force-idle: {len(post_idle)} by trigger {by}; before idle in window: {len(win)-len(post_idle)}")
