@@ -1,17 +1,17 @@
 {
     "_description":  "Sprint status file that persists across context compaction. Update after each phase/sub-phase completion.",
-    "_last_updated":  "2026-10-07T01:40:00Z",
+    "_last_updated":  "2026-10-07T03:30:00Z",
     "_usage":  "Read this file after context compaction to restore sprint approval state and progress.",
     "_staleness_note":  "This file had drifted 15 sprints (last updated at Sprint 35, 2026-04-19) before being refreshed at Sprint 50 close-out. It is a Phase 7.7 checklist item -- update it at every sprint close-out, not opportunistically.",
     "current_sprint":  {
                            "number":  77,
                            "branch":  "feature/20261006_Sprint_77",
-                           "status":  "Phase 8.3 Store release -- 0.17.6 SUBMITTED to both stores (in certification / in review); next 8.4 pass 2 scope selection (Harold).",
+                           "status":  "Phase 3.7 -- plan drafted (docs/sprints/SPRINT_77_PLAN.md, 3b606a3), draft PR #460 created; awaiting Harold\u0027s approval and answers to 28 decision questions. Scope (Harold, Phase 8.4): MV76-1, F258, F245, R76-1, F264+R76-2, F192(+SEC-15), SEC-8b, R76-3. 0.17.6 submitted to both stores.",
                            "plan_approved":  false,
                            "blanket_execution_approved":  false,
-                           "pr_number":  null,
-                           "version":  "0.17.6+14 (release build target)",
-                           "pr_url":  null
+                           "pr_number":  460,
+                           "version":  "0.17.6+14 now; 0.18.0+15 proposed at approval (Q28)",
+                           "pr_url":  "https://github.com/kimmeyh/spamfilter-multi/pull/460"
                        },
     "previous_sprint":  {
                             "number":  76,
@@ -56,9 +56,9 @@
 
                         ],
     "next_actions":  [
-                         "8.4 pass 2: Harold selects Sprint 77 scope (Claude recommendation: MV76-1, F264 + R76-2, F258, R76-1, R76-3; defer R76-4).",
-                         "When either store shows live: update STORE_VERSION_STATUS Live rows from the direct observation; fill Submission 31 certified time in STORE_SUBMISSION_TIMING.md.",
-                         "Phase 3.7.0b bump: in the SAME commit set STORE_VERSION_STATUS \"Last uploaded to Play\" to 0.17.6 (versionCode 14); next versionCode \u003e= 15."
+                         "Harold: approve the Sprint 77 plan and answer Q1-Q28 (SPRINT_77_PLAN.md \"Decision questions\").",
+                         "On approval: 3.7.0 create issue cards; 3.7.0b version bump with STORE_VERSION_STATUS Last-uploaded row -\u003e 0.17.6 (14) in the same commit; 3.7.1 update PR #460 to the approved plan; then Task 1.",
+                         "When either store shows 0.17.6 live: update STORE_VERSION_STATUS Live rows and STORE_SUBMISSION_TIMING Submission 31."
                      ],
     "next_sprint_targeted":  {
                                  "number":  77,
