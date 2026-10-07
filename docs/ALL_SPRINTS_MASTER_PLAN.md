@@ -233,6 +233,13 @@ Each item is fixed PREVENTION FIRST (SPRINT_EXECUTION_WORKFLOW.md 7.7.1): name h
 - **Fixes a latent bug**: the current dropdown offers 2 and 4 hours, but `ScanFrequency.fromMinutes(120|240)` returns `disabled`, so `settings_screen.dart:1443-1444` returns without rescheduling (read from code; not observed on a device).
 - **"Scan when new mail arrives" becomes per account**, in each account's Background section beside the interval. Notification access stays one Android permission for the app. Android reports only WHICH MAIL APP posted, not which account, so: Gmail app -> Gmail accounts with the switch on; AOL app -> AOL accounts; Yahoo Mail -> Yahoo accounts; Samsung Email and Outlook (any provider) -> every account with the switch on. The 5-minute spacing still applies. Replaces the app-wide switch from F253 (#458); R76-2 updated accordingly; R76-1 (battery A/B) should measure the per-account mapping.
 - Prevention first: one shared interval parser/validator (unit + number -> minutes, min/max) used by both platforms' UI and the schedulers, with tests at 4, 5, 99 minutes and 99 hours; the package-to-provider mapping lives in the existing `MailNotificationPolicy` (extend it, JVM-tested).
+- **Sprint 77**: SELECTED (Task 5, #465) with Harold's decisions Q8-Q14 recorded in `docs/sprints/SPRINT_77_PLAN.md`.
+
+**F265. Android Gmail native one-pick sign-in -- revisit only when a second device reproduces the failure Priority HOLD -- backlog (Sprint 77 plan Q24 = 2, Harold 2026-10-06)**
+- Phase: Core App Quality
+- Platform: Android
+- F250 (#454, closed in Sprint 76): the native `authenticate()` fails with `[16] Account reauth failed` on the Fold, and the browser fallback then succeeds; since Sprint 76 Android renews through the stored refresh token, so users stay signed in. The cause is outside the changed code (OAuth clients, package and SHA-1 verified, `SPRINT_76_PLAN.md:783-795`). Harold chose to wait for a SECOND device that reproduces it before spending more time.
+- Trigger to leave HOLD: a reproduction on another device (S24+ or a tester), with the diagnostic log's `gmail/renewal` and sign-in lines.
 
 ### Backlog from the Sprint 74-75 retrospectives and Manual Validation
 
