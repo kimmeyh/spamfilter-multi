@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:logger/logger.dart';
 
 import '../../adapters/storage/secure_credentials_store.dart';
 import '../../core/services/new_mail_trigger.dart';
@@ -78,6 +79,7 @@ class _NewMailTriggerRowState extends State<NewMailTriggerRow>
     with WidgetsBindingObserver {
   late final SettingsStore _settings =
       widget.settingsStore ?? SettingsStore();
+  final Logger _logger = Logger();
 
   /// This account's switch. null = not read yet or unreadable.
   bool? _enabled;
@@ -125,8 +127,9 @@ class _NewMailTriggerRowState extends State<NewMailTriggerRow>
     try {
       enabled = await _settings.getAccountNewMailTrigger(widget.accountId) ??
           false;
-    } catch (_) {
+    } catch (e) {
       enabled = null; // unreadable is UNKNOWN, never "off"
+      _logger.w('New-mail switch for this account could not be read: $e');
     }
     final granted = await NewMailTrigger.isAccessGranted();
     final last = await NewMailTrigger.lastResult();
@@ -145,7 +148,9 @@ class _NewMailTriggerRowState extends State<NewMailTriggerRow>
       await _settings.setAccountNewMailTrigger(widget.accountId, value);
       return await NewMailTrigger.syncAnyAccountOn(
           _settings, await _savedAccountIds());
-    } catch (_) {
+    } catch (e) {
+      // The caller shows the failure to the user; the cause goes to the log.
+      _logger.w('New-mail switch could not be saved: $e');
       return false;
     }
   }

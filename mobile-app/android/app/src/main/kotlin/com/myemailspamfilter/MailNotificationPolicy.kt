@@ -111,4 +111,61 @@ object MailNotificationPolicy {
         if (lastTriggerMs > nowMs) return true
         return nowMs - lastTriggerMs >= MIN_GAP_MS
     }
+
+    /**
+     * Sprint 77 Phase 5.1.2 F-PRECHECK: the throttle and the queued work are
+     * kept PER PROVIDER SET. Since F264 a run scans only the accounts of the
+     * posting app's providers, but the 2-minute throttle and the WorkManager
+     * unique work (KEEP) were still single, app-wide slots: an AOL
+     * notification within 2 minutes of a Gmail one, or while the Gmail run was
+     * still queued, was DROPPED and the AOL account was not scanned. Keyed by
+     * the encoded provider set, different providers never block each other,
+     * and the same provider still respects the 2-minute gap and KEEP.
+     *
+     * [key] is the encoded set ([encodeProviders]) with "*" spelled "any".
+     */
+    fun providerKey(providers: String): String =
+        if (providers == ANY_PROVIDER) "any" else providers
+
+    /** SharedPreferences key holding the last trigger time for [providers]. */
+    fun throttlePrefKey(providers: String): String = "last_trigger_ms_${providerKey(providers)}"
+
+    /** Tag on every new-mail work request, so turning the feature off cancels all of them. */
+    const val NEW_MAIL_WORK_TAG = "f253_new_mail_scan"
+
+    /** WorkManager unique work name for [providers] (KEEP applies within one set only). */
+    fun newMailWorkName(providers: String): String = "${NEW_MAIL_WORK_TAG}_${providerKey(providers)}"
+
+    /** What the listener does for one accepted notification. */
+    data class NewMailTrigger(
+        val providers: String,
+        val throttlePrefKey: String,
+        val workName: String,
+    )
+
+    /**
+     * The whole listener decision as one pure function, so the per-provider
+     * wiring is JVM-tested: null to ignore the notification, otherwise the
+     * provider set, the throttle key to read and stamp, and the work name.
+     * [lastTriggerMsFor] reads a throttle key (0 when never stamped).
+     */
+    fun decide(
+        packageName: String?,
+        enabled: Boolean,
+        nowMs: Long,
+        lastTriggerMsFor: (String) -> Long,
+        debugBuild: Boolean = false,
+    ): NewMailTrigger? {
+        val providers = encodeProviders(packageName, debugBuild)
+        val key = throttlePrefKey(providers)
+        val ok = shouldTrigger(
+            packageName = packageName,
+            enabled = enabled,
+            nowMs = nowMs,
+            lastTriggerMs = lastTriggerMsFor(key),
+            debugBuild = debugBuild,
+        )
+        if (!ok || providers.isEmpty()) return null
+        return NewMailTrigger(providers, key, newMailWorkName(providers))
+    }
 }

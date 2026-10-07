@@ -1,3 +1,7 @@
+import 'dart:async' show TimeoutException;
+import 'dart:io' show SocketException;
+
+import 'package:flutter/foundation.dart' show visibleForTesting;
 import 'package:flutter/material.dart';
 import 'package:logger/logger.dart';
 import 'package:provider/provider.dart';
@@ -45,6 +49,13 @@ class AccountSetupScreen extends StatefulWidget {
     required this.platformId,
     required this.platformDisplayName,
   });
+
+  /// SEC-8b: shown when Save goes ahead because the server could not be
+  /// reached to check its certificate (the only failure that may save).
+  @visibleForTesting
+  static const String savedUncheckedMessage =
+      'The server could not be reached, so its certificate was not checked. '
+      'It is checked the first time the app connects.';
 
   @override
   State<AccountSetupScreen> createState() => _AccountSetupScreenState();
@@ -345,10 +356,18 @@ class _AccountSetupScreenState extends State<AccountSetupScreen> {
   /// scan can never ask). No password is sent by this check.
   ///
   /// Returns the settings to store (with the fingerprint of a certificate
-  /// the device trusts or the user accepted), or null when the user declined.
-  /// A network failure does not block Save (Save never required a
-  /// connection); the certificate is then checked on the first connection,
-  /// where an untrusted one stops with a message that says how to confirm it.
+  /// the device trusts or the user accepted), or null when Save must stop.
+  ///
+  /// Only a server that could not be REACHED (`SocketException`,
+  /// `TimeoutException` -- no network, wrong address, port closed) lets Save
+  /// continue, because Save never required a connection; the user is told
+  /// the certificate was not checked, and it is checked on the first
+  /// connection, where an untrusted one stops with a message that says how
+  /// to confirm it. Every other failure means the server WAS reached and the
+  /// secure connection failed (STARTTLS refused, TLS handshake failure, a
+  /// broken exchange): saving would store an account whose every scan fails,
+  /// so Save stops with the named reason (Sprint 77 Phase 5.1.2 F-PRECHECK;
+  /// before, a catch-all saved it anyway and reported "Account saved").
   Future<CustomImapSettings?> _checkCertificateBeforeSave(
       String email, String password, CustomImapSettings settings) async {
     final platform = PlatformRegistry.getPlatform(_effectivePlatformId);
@@ -372,11 +391,34 @@ class _AccountSetupScreenState extends State<AccountSetupScreen> {
         return null;
       }
       return settings.withTrustedCertificate(e.certificate.sha256Hex);
+    } on SocketException catch (e) {
+      return _saveUnchecked(settings, e);
+    } on TimeoutException catch (e) {
+      return _saveUnchecked(settings, e);
     } catch (e) {
-      _logger.w('Certificate check before Save failed; saving without a '
-          'recorded certificate: $e');
-      return settings;
+      // UserFacingConnectionException (STARTTLS refused), HandshakeException
+      // and anything else: the server answered and the secure connection
+      // failed. Never saved.
+      _logger.w('Certificate check before Save failed; not saved: $e');
+      if (mounted) {
+        setState(() => _connectionStatus =
+            '[FAIL] Not saved: ${ErrorMessages.humanize(e)}');
+      }
+      return null;
     }
+  }
+
+  /// A network failure only (see [_checkCertificateBeforeSave]): save, and
+  /// say the certificate was not checked.
+  CustomImapSettings _saveUnchecked(CustomImapSettings settings, Object e) {
+    _logger.w('Server not reachable during the certificate check; saving '
+        'without a recorded certificate: $e');
+    if (mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text(AccountSetupScreen.savedUncheckedMessage)),
+      );
+    }
+    return settings;
   }
 
   /// The one-time local-network warning (Sprint 77 Q2). Text is fixed by
@@ -1065,7 +1107,7 @@ class _AccountSetupScreenState extends State<AccountSetupScreen> {
                     ? const CircularProgressIndicator()
                     : Text(showOAuthInfo
                         ? 'Sign in with Google (OAuth 2.0)'
-                        : 'Save Credentials & Continue'),
+                        : kSaveAccountButtonLabel),
               ),
 
               const SizedBox(height: 16),

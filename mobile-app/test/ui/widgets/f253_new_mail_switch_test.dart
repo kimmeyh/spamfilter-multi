@@ -356,10 +356,10 @@ void main() {
       final listenerSrc = File(
               'android/app/src/main/kotlin/com/myemailspamfilter/MailNotificationListener.kt')
           .readAsStringSync();
-      expect(
-          listenerSrc.contains(
-              'providers = MailNotificationPolicy.encodeProviders(pkg, debugBuild = BuildConfig.DEBUG),'),
-          isTrue);
+      // F-PRECHECK: the set comes from MailNotificationPolicy.decide(), which
+      // encodes it from the package name with the build's debug flag.
+      expect(listenerSrc.contains('providers = trigger.providers,'), isTrue);
+      expect(listenerSrc.contains('debugBuild = BuildConfig.DEBUG,'), isTrue);
     });
 
     test('the dispatcher passes the provider set into executeScan', () {
@@ -478,9 +478,27 @@ void main() {
     test('the throttle advances only after a successful enqueue', () {
       // SOURCE-TEXT VERIFIED: ordering inside a device-only service.
       final enqueue = listener.indexOf('DozeScanTrigger.enqueueAllAccounts(');
-      final stamp = listener.indexOf('.putLong(KEY_LAST_TRIGGER_MS, now)');
+      final stamp = listener.indexOf('.putLong(trigger.throttlePrefKey, now)');
       expect(enqueue, greaterThan(-1));
       expect(stamp, greaterThan(enqueue));
+    });
+
+    test('F-PRECHECK: the throttle and the queued work are per provider set',
+        () {
+      // SOURCE-TEXT VERIFIED: the listener wiring is device-only; the JVM test
+      // MailNotificationPolicyTest drives decide() itself. What this does NOT
+      // catch: WorkManager's own KEEP behavior per unique name.
+      expect(listener.contains('MailNotificationPolicy.decide('), isTrue);
+      expect(listener.contains('lastTriggerMsFor = { key -> prefs.getLong(key, 0L) }'),
+          isTrue);
+      expect(listener.contains('uniqueWorkName = trigger.workName'), isTrue);
+      final trigger = File(
+              'android/app/src/main/kotlin/com/myemailspamfilter/DozeScanTrigger.kt')
+          .readAsStringSync();
+      expect(trigger.contains('uniqueWorkName,\n            ExistingWorkPolicy.KEEP'),
+          isTrue);
+      expect(trigger.contains('cancelAllWorkByTag(MailNotificationPolicy.NEW_MAIL_WORK_TAG)'),
+          isTrue);
     });
 
     test('the manifest declares the listener behind the BIND permission', () {

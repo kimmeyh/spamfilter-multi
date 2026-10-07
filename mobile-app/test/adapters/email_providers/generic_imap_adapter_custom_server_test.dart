@@ -296,6 +296,29 @@ void main() {
           reason: 'fixed-host providers log in with the email address');
     });
 
+    // F-PRECHECK (Sprint 77 Phase 5.1.2): the enough_mail STARTTLS branch for
+    // fixed-host providers was unreachable and was removed; that path now
+    // always connects with TLS. This guard is what keeps it unreachable: a
+    // fixed-host provider can never be built with STARTTLS (which on that
+    // path would now mean a cleartext LOGIN).
+    // What this does NOT catch: a new code path that changes `_encryption`
+    // after construction for a non-imap platform (today only
+    // _resolveCustomServer writes it, for 'imap' only).
+    test('a fixed-host provider cannot be built with STARTTLS', () {
+      expect(
+          () => GenericIMAPAdapter(
+              imapHost: 'imap.example.com',
+              platformId: 'aol',
+              encryption: ImapEncryption.startTls),
+          throwsArgumentError);
+      expect(
+          GenericIMAPAdapter(
+                  imapHost: 'x', encryption: ImapEncryption.startTls)
+              .platformId,
+          'imap',
+          reason: 'Custom IMAP keeps STARTTLS (through ImapTlsConnector)');
+    });
+
     test('a blank username falls back to the email address', () async {
       final server = await FakeImapServer.implicitTls(serverContext);
       addTearDown(server.close);

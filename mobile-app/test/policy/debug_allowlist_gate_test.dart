@@ -55,8 +55,13 @@ void main() {
     expect(listener, isNot(contains('debugBuild = true')));
     // Lead merge (Sprint 77): the PROVIDER mapping is the second wiring point
     // -- a literal there would map the debug poster to accounts in release.
-    expect(listener,
-        contains('encodeProviders(pkg, debugBuild = BuildConfig.DEBUG)'));
+    // Sprint 77 F-PRECHECK: both wiring points now live in
+    // MailNotificationPolicy.decide(), which the listener calls with
+    // BuildConfig.DEBUG; decide() hands that SAME flag to the mapping and to
+    // the allowlist check, never a literal.
+    expect(listener, contains('MailNotificationPolicy.decide('));
+    expect(policy, contains('val providers = encodeProviders(packageName, debugBuild)'));
+    expect(policy, contains('            debugBuild = debugBuild,\n        )'));
   });
 
   test('the policy defaults to the RELEASE allowlist', () {

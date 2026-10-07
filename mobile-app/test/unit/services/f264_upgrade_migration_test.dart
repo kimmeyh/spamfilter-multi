@@ -109,7 +109,10 @@ void main() {
         BackgroundIntervalMigration(
           settingsStore: store,
           getAccountIds: () async => ids,
-          reschedule: (id, minutes) async => calls.add((id, minutes)),
+          reschedule: (id, minutes) async {
+            calls.add((id, minutes));
+            return true;
+          },
         );
 
     test('converts stored values and re-registers enabled accounts only',
@@ -164,6 +167,39 @@ void main() {
       expect(await m.runIfNeeded(), isFalse);
       expect(await store.getRawAppSetting(BackgroundIntervalMigration.sentinelKey),
           isNull);
+    });
+
+    // F-PRECHECK (Sprint 77 Phase 5.1.2): `schedule()` reports failure by
+    // RETURNING false; the migration ignored it and set the marker, so an
+    // Android account at 120/240 that failed to register was never retried.
+    // What this does NOT catch: main.dart passing schedule()'s result through
+    // (the bool-returning callback type makes the compiler check that).
+    test('a scheduler that returns false leaves the marker unset, still tries '
+        'the other accounts, and a later successful run sets it', () async {
+      await store.setAccountBackgroundEnabled('a', true);
+      await store.setAccountBackgroundFrequency('a', 240);
+      await store.setAccountBackgroundEnabled('b', true);
+      final tried = <String>[];
+      var registers = false;
+      BackgroundIntervalMigration m() => BackgroundIntervalMigration(
+            settingsStore: store,
+            getAccountIds: () async => ['a', 'b'],
+            reschedule: (id, minutes) async {
+              tried.add(id);
+              return registers || id != 'a';
+            },
+          );
+      expect(await m().runIfNeeded(), isFalse);
+      expect(tried, ['a', 'b'], reason: 'one failure does not skip the rest');
+      expect(await store.getRawAppSetting(BackgroundIntervalMigration.sentinelKey),
+          isNull);
+
+      registers = true;
+      tried.clear();
+      expect(await m().runIfNeeded(), isTrue, reason: 'retried next start');
+      expect(tried, ['a', 'b']);
+      expect(await store.getRawAppSetting(BackgroundIntervalMigration.sentinelKey),
+          'true');
     });
   });
 

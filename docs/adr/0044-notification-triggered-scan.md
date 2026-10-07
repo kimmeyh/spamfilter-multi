@@ -107,8 +107,17 @@ table is `MailNotificationPolicy` (`providersFor`, JVM-tested). The listener put
 the resolved set in the work payload (`triggerProviders`, derived from the package
 name only) and the Dart worker selects accounts with
 `accountSelectedByNotification`: provider matches AND the account's own switch is
-on AND its background scanning is on. The 2-minute gap, the unique KEEP work and
-the 5-minute `BackgroundScanCore` spacing are unchanged.
+on AND its background scanning is on. The 5-minute `BackgroundScanCore` spacing
+is unchanged. **The 2-minute gap and the unique KEEP work are per provider set**
+(corrected at Sprint 77 Phase 5.1.2): once a run scans only one provider's
+accounts, a single app-wide gap and work name meant an AOL notification within 2
+minutes of a Gmail one, or while the Gmail run was queued, was dropped and the AOL
+account not scanned. `MailNotificationPolicy.decide` keys the throttle timestamp
+(`throttlePrefKey`) and the unique work name (`newMailWorkName`) by the encoded
+provider set ("*" spelled "any"), so different providers never block each other
+and the same provider still waits 2 minutes and keeps KEEP. Every request carries
+the tag `f253_new_mail_scan`; turning the feature off cancels by that tag (all
+sets) plus the pre-fix single name. JVM-tested (`MailNotificationPolicyTest`).
 
 **3. Privacy contract unchanged.** The listener still reads only the package name
 and post time. The provider set is computed from the package name and carries no

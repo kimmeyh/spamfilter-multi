@@ -50,7 +50,7 @@ class BackgroundIntervalMigration {
   BackgroundIntervalMigration({
     required SettingsStore settingsStore,
     required Future<List<String>> Function() getAccountIds,
-    required Future<void> Function(String accountId, int intervalMinutes)?
+    required Future<bool> Function(String accountId, int intervalMinutes)?
         reschedule,
     Logger? logger,
   })  : _settings = settingsStore,
@@ -61,10 +61,18 @@ class BackgroundIntervalMigration {
   final SettingsStore _settings;
   final Future<List<String>> Function() _getAccountIds;
 
-  /// Re-registers one account's schedule at its (converted) minutes, or null
-  /// when scheduling must not happen in this process (a Windows debug run,
-  /// whose executable path is a temporary runner).
-  final Future<void> Function(String accountId, int intervalMinutes)?
+  /// Re-registers one account's schedule at its (converted) minutes and
+  /// returns whether it was registered, or is null when scheduling must not
+  /// happen in this process (a Windows debug run, whose executable path is a
+  /// temporary runner).
+  ///
+  /// Returns `bool`, not `void`, ON PURPOSE (Sprint 77 Phase 5.1.2
+  /// F-PRECHECK): `BackgroundScanScheduler.schedule` reports failure by
+  /// returning false, not by throwing, and the `void` callback dropped that
+  /// result, so the done marker was written after a failed registration and
+  /// the account was never retried. The type makes every caller hand the
+  /// result back.
+  final Future<bool> Function(String accountId, int intervalMinutes)?
       _reschedule;
   final Logger _logger;
 
@@ -90,6 +98,7 @@ class BackgroundIntervalMigration {
       final ids = await _getAccountIds();
       var converted = 0;
       var rescheduled = 0;
+      var failed = 0;
       for (final id in ids) {
         final before = await _settings.getEffectiveBackgroundFrequency(id);
         final minutes = await reconcileAccountInterval(
@@ -101,12 +110,22 @@ class BackgroundIntervalMigration {
         final reschedule = _reschedule;
         if (reschedule != null &&
             await _settings.getEffectiveBackgroundEnabled(id)) {
-          await reschedule(id, minutes);
-          rescheduled++;
+          if (await reschedule(id, minutes)) {
+            rescheduled++;
+          } else {
+            // Keep going for the other accounts; the marker stays unset so
+            // this one is retried at the next start (conversion is idempotent).
+            failed++;
+          }
         }
       }
       _logger.i('F264 interval migration: ${ids.length} account(s), '
-          '$converted converted, $rescheduled re-registered');
+          '$converted converted, $rescheduled re-registered, $failed failed');
+      if (failed > 0) {
+        _logger.w('F264 interval migration: $failed schedule(s) not '
+            'registered; will retry next launch');
+        return false;
+      }
       await _settings.setRawAppSetting(sentinelKey, 'true', 'bool');
       return true;
     } catch (e) {

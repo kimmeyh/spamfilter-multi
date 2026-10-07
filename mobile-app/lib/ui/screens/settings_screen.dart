@@ -107,6 +107,20 @@ class SettingsScreen extends StatefulWidget {
   static bool get showsAndroidBackgroundRows =>
       debugIsAndroid ?? Platform.isAndroid;
 
+  /// Subtitle of the "Pin Google OAuth certificates" switch, per platform
+  /// (Sprint 77 Phase 5.1.2 F-PRECHECK). On Windows the switch controls the
+  /// pinned Google sign-in and token renewal calls; on Android sign-in goes
+  /// through the system and the switch does not apply.
+  static String certificatePinningSubtitle({required bool isAndroid}) =>
+      isAndroid
+          ? 'On Android, Google sign-in uses Android\'s own sign-in service '
+              'and the system\'s certificate checks; this switch does not '
+              'change them.'
+          : 'Google sign-in connects only when the server certificate was '
+              'issued by Google Trust Services. Turn off only if Google '
+              'sign-in fails with a certificate message on a network you '
+              'trust.';
+
   const SettingsScreen({super.key, this.accountId});
 
   @override
@@ -965,14 +979,17 @@ class _SettingsScreenState extends State<SettingsScreen> with SingleTickerProvid
         SwitchListTile(
           contentPadding: EdgeInsets.zero,
           title: const Text('Pin Google OAuth certificates'),
-          // SEC-8b (Sprint 77): describes what `PinnedHttpClient` now does on
-          // every connection (chain must lead to a Google Trust Services
-          // root). It does not cover Custom IMAP certificate trust.
-          subtitle: const Text(
-            'Google sign-in connects only when the server certificate was '
-            'issued by Google Trust Services. Turn off only if Google sign-in '
-            'fails with a certificate message on a network you trust.',
-          ),
+          // SEC-8b (Sprint 77): describes what `PinnedHttpClient` does on every
+          // connection (chain must lead to a Google Trust Services root). It
+          // does not cover Custom IMAP certificate trust. Text per platform
+          // (F-PRECHECK; ADR-0042 declared difference): only the desktop
+          // sign-in, renewal and user-info calls in
+          // `gmail_windows_oauth_handler.dart` use `PinnedHttpClient`; Android
+          // signs in through google_sign_in / flutter_appauth, which use the
+          // system's own certificate checks, so the switch changes nothing
+          // there and the text must not claim it does.
+          subtitle: Text(SettingsScreen.certificatePinningSubtitle(
+              isAndroid: SettingsScreen.showsAndroidBackgroundRows)),
           value: _certificatePinningEnabled,
           onChanged: (value) async {
             await _settingsStore.setCertificatePinningEnabled(value);

@@ -10,11 +10,15 @@
 ///  - Yahoo Mail -> Yahoo accounts
 ///  - Samsung Email and Outlook -> every account with the switch on
 ///
-/// **ONE copy of the package table.** The table lives in Kotlin
-/// (`MailNotificationPolicy.providersFor`, JVM-tested) and the listener puts the
+/// **The package table is authoritative in Kotlin only.** It lives in
+/// `MailNotificationPolicy.providersFor` (JVM-tested), and the listener puts the
 /// resolved provider set into the work payload under [kTriggerProvidersKey];
-/// this file only reads that set. A second Dart copy of the package names would
-/// be able to drift from the Kotlin one, so none exists.
+/// this file only reads that set and holds no package names. There IS one
+/// Dart copy of the app-to-provider MAPPING, as display names for the status
+/// line (`NewMailTriggerRow.appsFor`); it decides nothing, and
+/// `test/ui/widgets/f253_new_mail_switch_test.dart` parses the Kotlin table
+/// and fails if the two disagree. (Corrected at Sprint 77 Phase 5.1.2: this
+/// comment used to say no Dart copy exists.)
 ///
 /// Pure (no I/O) so the provider x switch x background matrix is unit-testable
 /// without a phone. ADR-0042: Android only by nature (the payload comes only

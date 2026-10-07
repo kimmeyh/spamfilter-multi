@@ -58,6 +58,26 @@ account would merge two different emails.
    (`UnmatchedEmailStore.getUnprocessedForAccount`). It used to read only the
    latest completed scan. With one row per email there are no duplicates, and
    a row owned by an older scan is still unaddressed.
+
+   **Two other paths delete No Rule rows, unaddressed ones included**
+   (recorded at Sprint 77 Phase 5.1.2). `unmatched_emails.scan_result_id` is
+   `REFERENCES scan_results(id) ON DELETE CASCADE`, and `DatabaseHelper`
+   turns `PRAGMA foreign_keys = ON` in `onConfigure` for every connection, so
+   deleting a scan deletes every row it owns -- and after item 4 a row is
+   owned by the LATEST scan that saw it:
+   - **Clear history** (Scan History > "Clear history",
+     `ScanResultStore.deleteFinishedScanResults`, scoped by the screen's
+     account and type filters) deletes every finished scan in scope, so every
+     No Rule row those scans own goes too, whether or not it was addressed.
+   - **Scan history retention** (`ScanResultStore.purgeOldScanResults`, run
+     each time Scan History loads) deletes scans older than the user's
+     retention setting. A retention SHORTER than 90 days removes a No Rule
+     row before the 90-day `last_seen_at` cleanup of item 6 would, once the
+     scan that last saw it ages out; a row a recent scan still sees survives,
+     because the upsert moved it to that scan.
+   Both are user-chosen deletions of scan history and are kept as they are;
+   this records that they reach No Rule rows. An email that is still in the
+   mailbox with no rule returns at the next scan that finds it (item 5).
 8. **Background export lists once (Harold, Q19 = 1).** The upsert reports for
    each email whether it was inserted, changed (subject), reappeared (was
    dismissed), or unchanged. The BACKGROUND export omits the unchanged ones

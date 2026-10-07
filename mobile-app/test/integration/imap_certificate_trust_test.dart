@@ -36,6 +36,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:my_email_spam_filter/adapters/email_providers/custom_imap_settings.dart';
 import 'package:my_email_spam_filter/adapters/email_providers/email_provider.dart';
 import 'package:my_email_spam_filter/adapters/email_providers/generic_imap_adapter.dart';
+import 'package:my_email_spam_filter/adapters/email_providers/spam_filter_platform.dart';
 import 'package:my_email_spam_filter/core/security/imap_certificate_trust.dart';
 import 'package:my_email_spam_filter/util/error_messages.dart';
 
@@ -304,6 +305,91 @@ void main() {
     );
     expectNoCredentialSent(server);
   });
+
+  // F-PRECHECK (Sprint 77 Phase 5.1.2): the instruction said "choose Test
+  // Connection", which never stores trust (no account id: the recorder
+  // returns early). Save is what stores it, and the text names Save's label
+  // through the same constant the button uses.
+  // What this does NOT catch: the Save path storing the fingerprint (the
+  // setup-flow widget test "Save: an untrusted certificate asks first" does).
+  test('the "how to confirm" text names the Save button, not Test Connection',
+      () async {
+    for (final message in [
+      ServerCertificateNotTrustedException.notTrustedMessage,
+      ServerCertificateNotTrustedException.changedMessage,
+    ]) {
+      expect(message, contains(kSaveAccountButtonLabel));
+      expect(message, isNot(contains('Test Connection')));
+    }
+    // Test Connection really does not store it: no account id, no record.
+    final server = await serverFor(ImapEncryption.sslTls, 1);
+    final adapter = GenericIMAPAdapter.custom();
+    addTearDown(adapter.disconnect);
+    await adapter.loadCredentials(creds(server.port, ImapEncryption.sslTls));
+    expect(recorded, isEmpty);
+    // The button shows that same constant.
+    expect(
+        File('lib/ui/screens/account_setup_screen.dart')
+            .readAsStringSync()
+            .contains(": kSaveAccountButtonLabel),"),
+        isTrue);
+  });
+
+  // F-PRECHECK (Sprint 77 Phase 5.1.2): Save's probe let a raw
+  // HandshakeException through, so a blocked Save showed a generic sentence
+  // while Test Connection named the reason. Both now share one mapping.
+  // What this does NOT catch: other handshake failure shapes (an expired
+  // certificate, a protocol version) -- same mapping, not each exercised.
+  test('probeServerCertificate (Save) names a TLS handshake failure the same '
+      'way loadCredentials does', () async {
+    // An SSL/TLS client against a server that speaks plain text: the
+    // handshake fails before any certificate is seen.
+    final plain = await FakeImapServer.startTls(
+        StartTlsBehavior.refuse, fixtureServerContext(1));
+    addTearDown(plain.close);
+    for (final attempt in [
+      () => GenericIMAPAdapter.custom()
+          .probeServerCertificate(creds(plain.port, ImapEncryption.sslTls)),
+      () => GenericIMAPAdapter.custom()
+          .loadCredentials(creds(plain.port, ImapEncryption.sslTls)),
+    ]) {
+      await expectLater(
+        attempt(),
+        throwsA(isA<UserFacingConnectionException>().having((e) => e.userMessage,
+            'userMessage', contains('could not be verified'))),
+      );
+    }
+    expect(plain.everything, isNot(contains(password)));
+  });
+
+  // F-PRECHECK (Sprint 77 Phase 5.1.2, LOW): the pre-TLS reader had no bound,
+  // so a hostile server could grow memory with a line that never ends, or hold
+  // the connection with endless untagged lines.
+  // What this does NOT catch: a slow drip of bytes under the limit (bounded by
+  // the per-line timeout, not tested here).
+  for (final behavior in [
+    StartTlsBehavior.oversizedLine,
+    StartTlsBehavior.untaggedFlood,
+  ]) {
+    test('STARTTLS: ${behavior.name} is refused, nothing sent after STARTTLS',
+        () async {
+      final server =
+          await serverFor(ImapEncryption.startTls, 1, behavior: behavior);
+      final adapter = GenericIMAPAdapter.custom();
+      addTearDown(adapter.disconnect);
+      await expectLater(
+        adapter.loadCredentials(creds(server.port, ImapEncryption.startTls)),
+        throwsA(isA<UserFacingConnectionException>().having(
+            (e) => e.toString(),
+            'detail',
+            // "more than", not a timeout: without the bound this would still
+            // fail -- 20 seconds later, by the per-line timeout.
+            allOf(contains('STARTTLS upgrade failed'), contains('more than')))),
+      );
+      expect(server.everything, isNot(contains(password)));
+      expect(server.everything, isNot(contains('LOGIN')));
+    });
+  }
 
   test('ServerCertificateInfo.displayFingerprint is 32 colon pairs', () {
     final info = ServerCertificateInfo(

@@ -33,8 +33,11 @@
 /// `gmail_windows_oauth_handler.dart` call sites use it).
 library;
 
+import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
+
+import 'package:http/http.dart' as http;
 
 import 'package:crypto/crypto.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -243,6 +246,24 @@ void main() {
       }
     }
 
+    // F-PRECHECK (Sprint 77 Phase 5.1.2, LOW): these tests reach the real
+    // internet, so on the ubuntu CI host a resolved name with a failed
+    // connection made them flaky. A NETWORK failure skips; a pin mismatch is
+    // its own type (CertificatePinMismatchException, thrown only when the
+    // pinned context rejected a certificate it saw) and is never skipped.
+    // What this does NOT catch: a network failure that surfaces as some
+    // other type (it would fail the test, loudly, not pass it).
+    bool isNetworkFailure(Object e) =>
+        e is! CertificatePinMismatchException &&
+        (e is SocketException ||
+            e is TimeoutException ||
+            e is HandshakeException ||
+            e is http.ClientException);
+
+    Future<http.Response> fetch(PinnedHttpClient client, String host) => client
+        .get(Uri.parse('https://$host/'))
+        .timeout(const Duration(seconds: 20));
+
     for (final host in CertificatePinner.googlePinnedHosts) {
       test('$host passes the pin', () async {
         if (!await online(host)) {
@@ -251,8 +272,15 @@ void main() {
         }
         final client = PinnedHttpClient();
         addTearDown(client.close);
+        final http.Response response;
+        try {
+          response = await fetch(client, host);
+        } catch (e) {
+          if (!isNetworkFailure(e)) rethrow;
+          markTestSkipped('network failure reaching $host: $e');
+          return;
+        }
         // Any HTTP status proves the TLS handshake passed the pin.
-        final response = await client.get(Uri.parse('https://$host/'));
         expect(response.statusCode, greaterThan(0));
       }, timeout: const Timeout(Duration(seconds: 30)));
     }
@@ -267,9 +295,27 @@ void main() {
           {host: CertificatePinner.googleTrustServicesRootsPem});
       final client = PinnedHttpClient();
       addTearDown(client.close);
-      await expectLater(client.get(Uri.parse('https://$host/')),
-          throwsA(isA<CertificatePinMismatchException>()));
+      try {
+        await fetch(client, host);
+      } on CertificatePinMismatchException {
+        return; // refused by the pin: the expected outcome
+      } catch (e) {
+        if (!isNetworkFailure(e)) rethrow;
+        markTestSkipped('network failure reaching $host: $e');
+        return;
+      }
+      fail('$host connected although it is pinned to the Google roots');
     }, timeout: const Timeout(Duration(seconds: 30)));
+
+    test('the skip rule never treats a pin mismatch as a network failure', () {
+      final mismatch = CertificatePinMismatchException(
+          host: 'h', expected: 'e', actual: 'a');
+      expect(isNetworkFailure(mismatch), isFalse);
+      expect(isNetworkFailure(const SocketException('x')), isTrue);
+      expect(isNetworkFailure(TimeoutException('x')), isTrue);
+      expect(isNetworkFailure(const HandshakeException('x')), isTrue);
+      expect(isNetworkFailure(StateError('x')), isFalse);
+    });
   });
 
   test('CertificatePinMismatchException names host, expectation and the '

@@ -82,8 +82,17 @@ finished socket to enough_mail and waits for the greeting before any command.
   (marked self-signed when it signed itself), validity dates and server. Yes
   stores the fingerprint for that exact host, port and encryption; No stores
   nothing (Save does not save). Save performs a certificate check without
-  LOGIN before storing the account. A network failure during that check does
-  not block Save; the certificate is then checked on the first connection.
+  LOGIN before storing the account. Only a server that could not be REACHED
+  (`SocketException` / `TimeoutException`: no network, wrong address, closed
+  port) lets Save continue, and the form says the certificate was not checked;
+  it is then checked on the first connection. Every other failure means the
+  server answered and the secure connection failed (STARTTLS refused, TLS
+  handshake failure, a broken exchange), so Save stops with the named reason
+  and stores nothing. (Corrected at Sprint 77 Phase 5.1.2: a catch-all saved
+  the account after any failure, so a server that refused STARTTLS was saved
+  and every scan then failed.) Only Save stores trust: a "Trust" answered
+  during Test Connection sets the form's state, which the next Save uses; Test
+  Connection itself has no account id, so it never writes a fingerprint.
 - **Background**: a scan can never show a dialog. An untrusted or changed
   certificate fails the scan with a named reason, "Server certificate changed
   -- open the app and confirm the server." (or "... not trusted ..."), plus how
@@ -109,7 +118,16 @@ finished socket to enough_mail and waits for the greeting before any command.
 - **How to confirm a changed certificate later**: there is no edit screen for
   a Custom IMAP account yet (F192: delete and add again). The message tells the
   user to add the account again (Accounts > Add Account > Custom IMAP Server >
-  Test Connection); saving the same address replaces the stored settings.
+  "Save Credentials & Continue", which asks whether to trust the server);
+  saving the same address replaces the stored settings. The sentence takes the
+  button label from the same constant the button uses
+  (`kSaveAccountButtonLabel`). (Corrected at Sprint 77 Phase 5.1.2: it said
+  "Test Connection", which does not store trust.)
+- **Pre-TLS input is bounded**: before the STARTTLS handshake the connector
+  holds at most 16 KB without a line end and accepts at most 50 untagged
+  lines before the tagged reply; more is refused as a failed STARTTLS
+  (password never sent), so a hostile server cannot grow memory or hold the
+  connection open.
 
 The Settings switch "Pin Google OAuth certificates" does NOT affect this rule.
 

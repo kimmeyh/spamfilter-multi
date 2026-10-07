@@ -625,9 +625,17 @@ minutes between scans, even with a shorter interval").
 
 **5. Start-time jitter (Q13: "if > 15 min then random +/- 5 minutes").** For
 intervals over 15 minutes only; none at 15 or below. Windows: the trigger starts
-5 minutes early (`-At "11:55PM"`) and `-RandomDelay` adds 0 to 10 minutes, which
+5 minutes early (23:55 YESTERDAY) and `-RandomDelay` adds 0 to 10 minutes, which
 nets minus 5 to plus 5 around the nominal time (`-RandomDelay` can only delay, so
-"either way" needs both parts). Android: `AlarmJitter.offsetMs` adds a uniform
+"either way" needs both parts). **First-run timing (corrected at Sprint 77 Phase
+5.1.2)**: the trigger's start is ALWAYS in the past -- midnight today, or 23:55
+yesterday with jitter -- so Task Scheduler runs the task at the next repetition
+after registration, at most one interval away. The first F264 version used
+`-At "11:55PM"`, which is 23:55 TODAY, a future start for most of the day: a task
+over 15 minutes did not run until that night. The start is now computed in Dart
+(`PowerShellScriptGenerator.startBoundary`) and passed as a literal; a test checks
+it is never after the registration time, and a Windows-only test runs the real
+`New-ScheduledTaskTrigger` and checks its `StartBoundary` is in the past. Android: `AlarmJitter.offsetMs` adds a uniform
 offset within plus or minus 5 minutes each time the alarm is armed, natively,
 because every re-arm after a firing and after boot comes through
 `DozeAlarmScheduler.schedule`. The two constants are pinned equal by a test.

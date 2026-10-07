@@ -929,16 +929,19 @@ class GmailApiAdapter with BatchOperationsMixin implements SpamFilterPlatform {
         await _gmailApi!.users.messages.trash('me', message.id);
         Redact.logSafe('Gmail message ${message.id} moved to trash');
       } else {
-        // F258: resolve custom label name to ID before using it
-        final labelId = await _labelIdFor(targetLabel);
-        if (labelId == null) {
-          throw GmailLabelNotFoundException(targetLabel);
-        }
-        // Use modify API for custom labels
+        // Sprint 77 Phase 5.1.2 F-PRECHECK: the SAME source-aware label
+        // change as the batch path (`takeActionBatch` delete ->
+        // `moveToFolderBatch` -> `_resolvedMoveLabels`). This path used to
+        // remove only INBOX and UNREAD, so a "deleted" message found in Spam
+        // (or in a custom label) kept that label and stayed there. One
+        // helper for both paths is the prevention; a parity test pins it.
+        // Throws GmailLabelNotFoundException for a missing label (F258, Q16).
+        final labels = await _resolvedMoveLabels(
+            sourceFolder: message.folderName, targetFolder: targetLabel);
         await _gmailApi!.users.messages.modify(
           gmail.ModifyMessageRequest(
-            addLabelIds: [labelId],
-            removeLabelIds: ['INBOX', 'UNREAD'],
+            addLabelIds: labels.add,
+            removeLabelIds: labels.remove,
           ),
           'me',
           message.id,
@@ -1339,22 +1342,34 @@ class GmailApiAdapter with BatchOperationsMixin implements SpamFilterPlatform {
       throw GmailLabelNotFoundException(targetFolder);
     }
 
-    // Update add list with resolved target ID
-    final add = [targetId];
-
-    // Q17: when moving OUT of a custom source label, remove it by ID
-    // Keep system labels as-is (they are already handled by moveLabels)
-    final remove = base.remove.toList();
+    // Q17: when moving OUT of a custom source label, remove it by ID.
+    // If sourceId is null, the source label does not exist; keep remove as-is.
     final sourceId = await _labelIdFor(sourceFolder);
-    if (sourceId != null && !isSystemLabelId(sourceId)) {
-      // Custom source label resolved to ID; add it to remove list
-      if (!remove.contains(sourceId)) {
-        remove.add(sourceId);
-      }
-    }
-    // If sourceId is null, the source label does not exist; keep remove as-is
+    return withResolvedIds(base: base, targetId: targetId, sourceId: sourceId);
+  }
 
-    return (add: add, remove: remove);
+  /// The final label change once the IDs are known. Pure, so the invariant
+  /// is tested directly: a label is NEVER both added and removed.
+  ///
+  /// Gmail refuses a request that adds and removes the same label (400
+  /// "Cannot both add and remove the same label") and fails the WHOLE batch
+  /// group. Sprint 77 Phase 5.1.2 F-PRECHECK: scanning the custom Deleted
+  /// Rule label itself, a block rule's "move to that label" resolved source
+  /// and target to the same ID; the source was added to `remove` without
+  /// excluding the target (the pure [moveLabels] always excluded it). The
+  /// target is now removed from `remove` as the last step, whatever produced
+  /// the list.
+  @visibleForTesting
+  static ({List<String> add, List<String> remove}) withResolvedIds({
+    required ({List<String> add, List<String> remove}) base,
+    required String targetId,
+    required String? sourceId,
+  }) {
+    final remove = <String>{
+      ...base.remove,
+      if (sourceId != null && !isSystemLabelId(sourceId)) sourceId,
+    }..remove(targetId);
+    return (add: [targetId], remove: remove.toList());
   }
 
   /// Sprint 76: label NAME -> label ID for `users.history.list`, cached for

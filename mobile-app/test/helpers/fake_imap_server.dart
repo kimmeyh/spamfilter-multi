@@ -24,6 +24,14 @@ enum StartTlsBehavior {
   /// Reply "OK" followed by an injected plaintext line in the SAME write,
   /// before the handshake (the STARTTLS command-injection shape).
   okWithInjection,
+
+  /// Answer STARTTLS with 64 KB and no line end (a hostile server growing
+  /// the client's pre-TLS buffer).
+  oversizedLine,
+
+  /// Answer STARTTLS with an endless run of untagged lines and never the
+  /// tagged reply.
+  untaggedFlood,
 }
 
 /// Fixture paths under `test/fixtures/tls/` (see its README.txt).
@@ -115,6 +123,14 @@ class FakeImapServer {
           case 'STARTTLS':
             if (tls || _behavior == StartTlsBehavior.refuse) {
               socket.write('$tag NO STARTTLS not available\r\n');
+            } else if (_behavior == StartTlsBehavior.oversizedLine) {
+              socket.write('* ${'x' * (64 * 1024)}');
+            } else if (_behavior == StartTlsBehavior.untaggedFlood) {
+              // One write; the client is expected to hang up part way, so a
+              // failed write is the expected outcome, not a test error.
+              socket.done.then((_) {}, onError: (_) {});
+              socket.write(List.generate(200, (i) => '* $i still thinking\r\n')
+                  .join());
             } else if (_behavior == StartTlsBehavior.okThenClose) {
               socket.write('$tag OK Begin TLS negotiation\r\n');
               await socket.flush();

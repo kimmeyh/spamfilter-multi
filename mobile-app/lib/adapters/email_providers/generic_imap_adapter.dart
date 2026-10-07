@@ -101,7 +101,17 @@ class GenericIMAPAdapter with BatchOperationsMixin implements SpamFilterPlatform
         _imapPort = imapPort,
         _encryption = encryption,
         displayName = displayName ?? 'IMAP Server',
-        platformId = platformId ?? 'imap';
+        platformId = platformId ?? 'imap' {
+    // STARTTLS exists only for Custom IMAP, through ImapTlsConnector (the
+    // one path that refuses to send the password unless the upgrade
+    // succeeds). A fixed-host provider is SSL/TLS only; refusing any other
+    // combination here is what lets _connectAndLogin have no STARTTLS
+    // branch of its own (Sprint 77 Phase 5.1.2 F-PRECHECK).
+    if (this.platformId != 'imap' && encryption != ImapEncryption.sslTls) {
+      throw ArgumentError.value(encryption, 'encryption',
+          'only Custom IMAP (platform "imap") supports $encryption');
+    }
+  }
 
   /// Factory constructor for AOL Mail (Phase 1 MVP)
   factory GenericIMAPAdapter.aol() {
@@ -224,19 +234,7 @@ class GenericIMAPAdapter with BatchOperationsMixin implements SpamFilterPlatform
       // Map handshake and network errors to connection failures so the UI
       // reports the real root cause instead of "Authentication failed".
       if (e is HandshakeException) {
-        if (platformId == 'imap') {
-          // A custom server is the one place a certificate failure is
-          // likely to be the user's to understand (self-signed, wrong name),
-          // so say so plainly instead of "check your internet connection".
-          throw UserFacingConnectionException(
-            'TLS certificate validation failed: ${e.toString()}',
-            'The server certificate could not be verified, so the app did not '
-            'connect or send your password. Check the server name and the '
-            'encryption setting.',
-            e,
-          );
-        }
-        throw ConnectionException('TLS certificate validation failed: ${e.toString()}', e);
+        throw _handshakeFailure(e);
       }
       if (e is SocketException || e is TimeoutException) {
         throw ConnectionException('Network connection failed: ${e.toString()}', e);
@@ -302,18 +300,43 @@ class GenericIMAPAdapter with BatchOperationsMixin implements SpamFilterPlatform
       throw StateError('probeServerCertificate is for Custom IMAP only');
     }
     _resolveCustomServer(credentials);
-    final connection = await ImapTlsConnector.connect(
-      host: _imapHost,
-      port: _imapPort,
-      encryption: _encryption,
-      trustedFingerprint: _trustedCertSha256,
-    );
+    final ImapTlsConnection connection;
+    try {
+      connection = await ImapTlsConnector.connect(
+        host: _imapHost,
+        port: _imapPort,
+        encryption: _encryption,
+        trustedFingerprint: _trustedCertSha256,
+      );
+    } on HandshakeException catch (e) {
+      // Same sentence as loadCredentials, so Save names the reason too.
+      throw _handshakeFailure(e);
+    }
     try {
       await connection.client.disconnect();
     } catch (_) {
       // The probe is finished; a failed close changes nothing.
     }
     return connection.certificate;
+  }
+
+  /// The exception a TLS handshake failure becomes, for [loadCredentials] and
+  /// for [probeServerCertificate] (Save) alike -- ONE mapping, so Save blocks
+  /// with the same named reason a connection shows (Sprint 77 Phase 5.1.2).
+  /// A custom server is the one place a certificate failure is likely to be
+  /// the user's to understand (self-signed, wrong name), so it gets a plain
+  /// sentence instead of "check your internet connection".
+  ConnectionException _handshakeFailure(HandshakeException e) {
+    if (platformId == 'imap') {
+      return UserFacingConnectionException(
+        'TLS certificate validation failed: ${e.toString()}',
+        'The server certificate could not be verified, so the app did not '
+        'connect or send your password. Check the server name and the '
+        'encryption setting.',
+        e,
+      );
+    }
+    return ConnectionException('TLS certificate validation failed: ${e.toString()}', e);
   }
 
   /// The login name for [credentials]: the custom account's own username when
@@ -329,11 +352,13 @@ class GenericIMAPAdapter with BatchOperationsMixin implements SpamFilterPlatform
   ///
   /// Encryption (Sprint 77 Q3):
   /// - [ImapEncryption.sslTls]: TLS from the first byte.
-  /// - [ImapEncryption.startTls]: plain connect, then the library's
-  ///   `startTls()`, then the password. If the upgrade fails for ANY reason
-  ///   the password is never sent. The password is gated on `startTls()`
-  ///   returning without throwing, NOT on `connectionInfo.isSecure`: after the
-  ///   library upgrades the socket it leaves that field `false`.
+  /// - [ImapEncryption.startTls]: Custom IMAP only. [ImapTlsConnector]
+  ///   connects in plain text, sends STARTTLS itself, and refuses (the
+  ///   password is never sent) unless the upgrade succeeds. The constructor
+  ///   refuses STARTTLS for every other platform, so the enough_mail path
+  ///   below is always SSL/TLS. (An earlier STARTTLS branch on that path,
+  ///   using the library's `startTls()`, was unreachable for that reason and
+  ///   was removed at Sprint 77 Phase 5.1.2.)
   ///
   /// Certificate checking (SEC-8b, ADR-0046):
   /// - Custom IMAP (platform 'imap'): [ImapTlsConnector] opens the socket
@@ -373,33 +398,10 @@ class GenericIMAPAdapter with BatchOperationsMixin implements SpamFilterPlatform
     final client = ImapClient(isLogEnabled: false);
     _imapClient = client;
 
-    await client.connectToServer(
-      _imapHost,
-      _imapPort,
-      isSecure: _encryption == ImapEncryption.sslTls,
-    );
-
-    if (_encryption == ImapEncryption.startTls) {
-      try {
-        await client.startTls();
-      } catch (e) {
-        _logger.w('[IMAP] STARTTLS upgrade failed; password not sent: $e');
-        try {
-          await client.disconnect();
-        } catch (_) {
-          // The socket is being abandoned; nothing more to do.
-        }
-        _imapClient = null;
-        if (e is HandshakeException) rethrow;
-        throw UserFacingConnectionException(
-          'STARTTLS upgrade failed: $e',
-          'The server did not accept a secure (STARTTLS) connection, so the '
-          'app did not send your password. Check the encryption setting or '
-          'use SSL/TLS.',
-          e,
-        );
-      }
-    }
+    // Always SSL/TLS here: the constructor refuses any other encryption for
+    // a platform other than 'imap', and only 'imap' changes it later
+    // (_resolveCustomServer). Never a cleartext connect.
+    await client.connectToServer(_imapHost, _imapPort, isSecure: true);
 
     _logger.i('[IMAP] IMAP login attempt for $displayName');
 

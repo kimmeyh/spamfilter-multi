@@ -140,6 +140,60 @@ class MailNotificationPolicyTest {
         assertEquals("", MailNotificationPolicy.encodeProviders(shell, debugBuild = false))
     }
 
+    /**
+     * Sprint 77 Phase 5.1.2 F-PRECHECK: one app-wide throttle and one unique
+     * work name dropped an AOL notification within 2 minutes of a Gmail one.
+     * Drives [MailNotificationPolicy.decide] the way the listener does, with a
+     * map standing in for SharedPreferences.
+     *
+     * What this does NOT catch: the listener stamping the key decide()
+     * returned (a Dart source gate pins that line), or WorkManager honoring
+     * KEEP per unique name (device behavior).
+     */
+    @Test
+    fun differentProvidersNeverBlockEachOtherAndTheSameProviderStillWaits() {
+        val prefs = mutableMapOf<String, Long>()
+        fun fire(pkg: String, at: Long): MailNotificationPolicy.NewMailTrigger? {
+            val t = MailNotificationPolicy.decide(pkg, true, at, { prefs[it] ?: 0L })
+            if (t != null) prefs[t.throttlePrefKey] = at
+            return t
+        }
+        val aol = "com.aol.mobile.aolapp"
+        val outlook = "com.microsoft.office.outlook"
+
+        val g = fire(gmail, now)!!
+        val a = fire(aol, now + 30_000L)
+        assertTrue("AOL 30 s after Gmail must still trigger", a != null)
+        assertTrue(g.workName != a!!.workName)
+        assertTrue(g.throttlePrefKey != a.throttlePrefKey)
+        assertEquals("gmail", g.providers)
+        assertEquals("aol", a.providers)
+
+        assertNull("Gmail again within 2 minutes is throttled", fire(gmail, now + 60_000L))
+        assertTrue(fire(gmail, now + MailNotificationPolicy.MIN_GAP_MS) != null)
+
+        val any = fire(outlook, now + 1_000L)!!
+        assertEquals(MailNotificationPolicy.ANY_PROVIDER, any.providers)
+        assertEquals("f253_new_mail_scan_any", any.workName)
+        assertEquals("last_trigger_ms_any", any.throttlePrefKey)
+    }
+
+    @Test
+    fun workNamesAndThrottleKeysAreStablePerProviderSet() {
+        assertEquals("f253_new_mail_scan_gmail", MailNotificationPolicy.newMailWorkName("gmail"))
+        assertEquals(
+            MailNotificationPolicy.newMailWorkName("aol"),
+            MailNotificationPolicy.newMailWorkName("aol"),
+        )
+        assertEquals("last_trigger_ms_aol", MailNotificationPolicy.throttlePrefKey("aol"))
+        assertTrue(
+            MailNotificationPolicy.newMailWorkName("gmail")
+                .startsWith(MailNotificationPolicy.NEW_MAIL_WORK_TAG)
+        )
+        assertNull(MailNotificationPolicy.decide("com.whatsapp", true, now, { 0L }))
+        assertNull(MailNotificationPolicy.decide(gmail, false, now, { 0L }))
+    }
+
     @Test
     fun theTriggerGapAndEnabledRulesAreUnchangedByTheMapping() {
         assertFalse(MailNotificationPolicy.shouldTrigger(gmail, false, now, 0L))

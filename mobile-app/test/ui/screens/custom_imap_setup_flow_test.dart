@@ -20,6 +20,7 @@
 /// a phone-sized screen.
 library;
 
+import 'dart:async';
 import 'dart:io';
 
 import 'package:flutter/material.dart';
@@ -36,6 +37,7 @@ import 'package:my_email_spam_filter/core/providers/email_scan_provider.dart';
 import 'package:my_email_spam_filter/core/providers/rule_set_provider.dart';
 import 'package:my_email_spam_filter/core/security/imap_certificate_trust.dart';
 import 'package:my_email_spam_filter/core/security/imap_host_policy.dart';
+import 'package:my_email_spam_filter/ui/screens/account_setup_screen.dart';
 import 'package:my_email_spam_filter/ui/screens/platform_selection_screen.dart';
 
 import '../../helpers/database_test_helper.dart';
@@ -503,6 +505,81 @@ void main() {
       expect(stored, isEmpty);
       expect(find.textContaining('Not saved'), findsOneWidget);
     });
+
+    // F-PRECHECK (Sprint 77 Phase 5.1.2): a catch-all used to save the
+    // account after ANY failed check, so a server that refused STARTTLS was
+    // saved as "Account saved" and every scan then failed. Only an unreachable
+    // server may save (Save never required a connection).
+    // What these do NOT catch: which exception a REAL socket raises for a
+    // given server problem (the connector tests with real sockets cover that).
+    for (final blocked in <(String, Object)>[
+      (
+        'STARTTLS refused',
+        UserFacingConnectionException(
+          'STARTTLS upgrade failed: NO',
+          'The server did not accept a secure (STARTTLS) connection, so the '
+              'app did not send your password.',
+        )
+      ),
+      // What the real probe throws for a handshake failure (the adapter's
+      // one mapping, proven against a real socket in
+      // imap_certificate_trust_test.dart).
+      (
+        'TLS handshake failure',
+        UserFacingConnectionException(
+          'TLS certificate validation failed: bad record',
+          'The server certificate could not be verified, so the app did not '
+              'connect or send your password.',
+        )
+      ),
+      ('a raw handshake exception', const HandshakeException('bad record')),
+      ('an unexpected error', StateError('broken exchange')),
+    ]) {
+      testWidgets('Save: ${blocked.$1} blocks Save with the named reason',
+          (tester) async {
+        await openCustomImapForm(tester);
+        await fill(tester);
+        adapter.probeError = blocked.$2;
+
+        await tapSave(tester);
+
+        expect(stored, isEmpty, reason: '${blocked.$1} must not be saved');
+        expect(find.textContaining('[FAIL] Not saved'), findsOneWidget);
+        expect(find.textContaining('saved successfully'), findsNothing);
+        if (blocked.$2 is UserFacingConnectionException) {
+          // The named reason itself is on screen, not a generic sentence.
+          expect(
+              find.textContaining(
+                  (blocked.$2 as UserFacingConnectionException).userMessage),
+              findsOneWidget);
+        }
+        await endTest(tester);
+      });
+    }
+
+    for (final offline in <(String, Object)>[
+      ('no network', const SocketException('unreachable')),
+      ('a timeout', TimeoutException('no answer')),
+    ]) {
+      testWidgets('Save: ${offline.$1} saves and says the certificate was not '
+          'checked', (tester) async {
+        await openCustomImapForm(tester);
+        await fill(tester);
+        adapter.probeError = offline.$2;
+
+        await tapSave(tester);
+
+        expect(stored['credentials_person@example.com_imapHost'],
+            'imap.example.com');
+        expect(stored['credentials_person@example.com_imapTrustedCertSha256'],
+            isNull);
+        // The SnackBar is shown on every Scaffold registered with the
+        // messenger during the screen change, so it can appear more than once.
+        expect(find.text(AccountSetupScreen.savedUncheckedMessage, skipOffstage: false),
+            findsWidgets);
+        await endTest(tester);
+      });
+    }
 
     testWidgets('Save: a certificate the device trusts is recorded without a '
         'question', (tester) async {

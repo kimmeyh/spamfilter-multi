@@ -616,7 +616,11 @@ appends each line as one write under an exclusive OS file lock, best effort
 posting package name and time. A notification from an allowlisted mail app
 (`MailNotificationPolicy`) enqueues ONE one-off worker
 (`DozeScanTrigger.enqueueAllAccounts`, unique work + KEEP, network required,
-at most one per 2 minutes). Per account since F264 (Sprint 77): each account has
+at most one per 2 minutes). The 2-minute throttle and the unique work name are
+kept PER PROVIDER SET (`MailNotificationPolicy.decide`, `throttlePrefKey`,
+`newMailWorkName`; Sprint 77 Phase 5.1.2), so a Gmail trigger never drops an
+AOL one; turning the feature off cancels every set by the work tag
+`f253_new_mail_scan`. Per account since F264 (Sprint 77): each account has
 its own switch in the app database (`account_settings` key `new_mail_trigger`);
 the native flag in preferences (channel `com.myemailspamfilter/new_mail_trigger`)
 is now only "any account has it on", kept in step by

@@ -73,6 +73,12 @@ import '../../adapters/email_providers/custom_imap_settings.dart';
 import '../../adapters/email_providers/spam_filter_platform.dart'
     show UserFacingConnectionException;
 
+/// The account setup form's Save button label. ONE constant, used by the
+/// button (`account_setup_screen.dart`) and by the "how to confirm" sentence
+/// in [ServerCertificateNotTrustedException], so the instruction always names
+/// the control that actually stores trust.
+const String kSaveAccountButtonLabel = 'Save Credentials & Continue';
+
 /// Lower-case hex SHA-256 of a certificate's DER encoding (64 characters).
 ///
 /// This is the whole-certificate fingerprint that browsers and
@@ -172,12 +178,21 @@ class ServerCertificateNotTrustedException
   final ServerCertificateInfo certificate;
   final CertificateTrustProblem problem;
 
-  /// Where the user confirms a server (verified: `account_selection_screen`
-  /// "Add Account" > picker "Custom IMAP Server" > form "Test Connection";
-  /// saving the same email address again replaces the stored settings).
+  /// Where the user confirms a server. Only SAVE stores trust: the form's
+  /// Save checks the certificate, asks "Trust this server?", and stores the
+  /// fingerprint with the account (`account_setup_screen.dart`
+  /// `_checkCertificateBeforeSave`); saving the same email address again
+  /// replaces the stored settings. Test Connection does NOT store it: the
+  /// form has no account id yet, so the adapter's recorder returns early
+  /// (`generic_imap_adapter.dart` `_rememberDeviceTrustedCertificate`) and a
+  /// "Trust" there only sets form state (Sprint 77 Phase 5.1.2 F-PRECHECK:
+  /// this text used to say "choose Test Connection"). The button name is
+  /// [kSaveAccountButtonLabel], the same constant the button shows.
   static const String _howToConfirm =
       'To review it, open Accounts, choose Add Account, pick Custom IMAP '
-      'Server, enter this account again and choose Test Connection.';
+      'Server, enter this account again and choose '
+      '"$kSaveAccountButtonLabel"; the app then asks whether to trust the '
+      'server.';
 
   /// Named reason for a changed certificate (Sprint 77 Q4 wording).
   static const String changedMessage =
@@ -291,6 +306,14 @@ class ImapTlsConnector {
   /// Tag used for the STARTTLS command this connector sends itself.
   static const String _startTlsTag = 'S1';
 
+  /// Most bytes the pre-TLS reader holds at once. A greeting and a STARTTLS
+  /// reply are well under 1 KB; a server that sends more without a line end
+  /// is refused instead of growing memory without limit (F-PRECHECK).
+  static const int maxPreTlsBufferedBytes = 16 * 1024;
+
+  /// Most untagged lines accepted before the tagged STARTTLS reply.
+  static const int maxPreTlsUntaggedLines = 50;
+
   /// Connect, verify the certificate, and return a client whose greeting has
   /// been processed. Sends NO credential. Throws:
   /// - [ServerCertificateNotTrustedException] for an untrusted certificate
@@ -380,9 +403,19 @@ class ImapTlsConnector {
       }
       plain.write('$_startTlsTag STARTTLS\r\n');
       await plain.flush();
+      var untagged = 0;
       while (true) {
         final line = await reader.nextLine().timeout(timeout);
-        if (line.startsWith('* ')) continue; // untagged data, ignore
+        if (line.startsWith('* ')) {
+          // Untagged data, ignored -- but bounded, so a server that never
+          // sends the tagged reply cannot keep the connection open forever
+          // (each line resets only the per-line timeout).
+          if (++untagged > maxPreTlsUntaggedLines) {
+            throw _refused('the server sent more than '
+                '$maxPreTlsUntaggedLines lines before answering STARTTLS');
+          }
+          continue;
+        }
         if (line.toUpperCase().startsWith('$_startTlsTag OK')) break;
         throw _refused('the server answered "${_clip(line)}"');
       }
@@ -423,12 +456,24 @@ class ImapTlsConnector {
 }
 
 /// Reads CRLF-terminated lines from a plain socket before STARTTLS.
+///
+/// Bounded: once more than [ImapTlsConnector.maxPreTlsBufferedBytes] are
+/// held (one over-long line, or a flood), the reader fails with a STARTTLS
+/// refusal, stops reading, and drops what it held.
 class _LineReader {
   _LineReader(Socket socket) {
     _subscription = socket.listen(
       (data) {
+        if (_error != null) return;
         _buffer.addAll(data);
         _drain();
+        if (_buffer.length > ImapTlsConnector.maxPreTlsBufferedBytes) {
+          _buffer.clear();
+          _subscription.pause();
+          _fail(ImapTlsConnector._refused('the server sent more than '
+              '${ImapTlsConnector.maxPreTlsBufferedBytes} bytes without a '
+              'line end before TLS'));
+        }
       },
       onError: (Object e) => _fail(e),
       onDone: () => _fail(const SocketException('connection closed')),

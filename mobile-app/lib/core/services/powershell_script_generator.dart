@@ -1,4 +1,5 @@
 import 'dart:io';
+import 'package:flutter/foundation.dart' show visibleForTesting;
 import 'package:path/path.dart' as path;
 import 'package:logger/logger.dart';
 
@@ -211,8 +212,19 @@ try {
   /// be passed directly to New-ScheduledTaskTrigger (not set as properties
   /// after creation, as the Repetition sub-object is null on new triggers).
   ///
-  /// [FIX] ISSUE #161: -Once with past start time does not persist across
-  /// reboots. Using -At "12:00AM" with repetition ensures consistent runs.
+  /// ISSUE #161 (Sprint 17): the original trigger was `-Once -At (Get-Date)`,
+  /// a suspected (not proven) cause of the task not running on schedule. It
+  /// was replaced by a fixed anchor at midnight with repetition.
+  ///
+  /// **The start is ALWAYS in the past (Sprint 77 Phase 5.1.2 F-PRECHECK
+  /// HIGH).** The F264 jitter first used `-At "11:55PM"`, which PowerShell
+  /// reads as 23:55 TODAY: for most of the day that is in the future, so a
+  /// task for any interval over 15 minutes did not fire until that night (up
+  /// to about 22 hours with no scan, while the app said "every 30 minutes").
+  /// Task Scheduler runs a repeating trigger at the next repetition after
+  /// now only when its start is already past. [startBoundary] computes the
+  /// start in Dart and the script receives it as a literal, so the value the
+  /// tests check is the value Task Scheduler gets.
   ///
   /// F264 (Sprint 77): ONE trigger shape for every interval. The repetition
   /// interval is the user's minutes, inside Microsoft's documented range for
@@ -224,9 +236,10 @@ try {
   /// **Jitter (Sprint 77 Q13, Harold: "if > 15 min then random +/- 5
   /// minutes")**: only for intervals over 15 minutes. `-RandomDelay` can only
   /// delay, never advance, so "either way" is built from two parts: the start
-  /// time is moved 5 minutes EARLIER (11:55PM) and `-RandomDelay` adds 0 to 10
-  /// minutes, which nets -5 to +5 around the nominal time. At 15 minutes or
-  /// less there is no `-RandomDelay` and the start is exactly midnight.
+  /// time is moved 5 minutes EARLIER (23:55 YESTERDAY, which is in the past)
+  /// and `-RandomDelay` adds 0 to 10 minutes, which nets -5 to +5 around the
+  /// nominal time. At 15 minutes or less there is no `-RandomDelay` and the
+  /// start is exactly midnight today (also in the past).
   ///
   /// Known consequence, decided by the Product Owner and recorded in
   /// ADR-0039: the F98 (Sprint 42) anti-collision delay (interval minus one
@@ -236,20 +249,45 @@ try {
   ///
   /// The constants come from `scan_interval.dart`; a test ties them to the
   /// Kotlin alarm's copies.
-  static String triggerForInterval(int intervalMinutes) {
+  static String triggerForInterval(int intervalMinutes, {DateTime? now}) {
     if (intervalMinutes <= 0) {
       // Should not happen (callers refuse non-positive intervals), but keep a
       // harmless fallback instead of emitting an invalid trigger.
       return r'$trigger = New-ScheduledTaskTrigger -Once -At (Get-Date).AddDays(365)';
     }
     final jitter = ScanInterval.hasJitter(intervalMinutes);
-    final at = jitter ? '11:55PM' : '12:00AM';
+    final start = startBoundary(now ?? DateTime.now(), intervalMinutes);
     final randomDelay = jitter
         ? ' -RandomDelay (New-TimeSpan -Minutes ${2 * kJitterMinutes})'
         : '';
-    return '\$trigger = New-ScheduledTaskTrigger -Once -At "$at" '
+    return '\$trigger = New-ScheduledTaskTrigger -Once '
+        "-At ([datetime]'${powerShellDateTime(start)}') "
         '-RepetitionInterval (New-TimeSpan -Minutes $intervalMinutes) '
         '-RepetitionDuration (New-TimeSpan -Days 365)$randomDelay';
+  }
+
+  /// The trigger's start (Task Scheduler `StartBoundary`) for a task
+  /// registered at [now]: midnight at the start of [now]'s day, moved
+  /// [kJitterMinutes] earlier when the interval has jitter (Q13). Never later
+  /// than [now], so the first run is at most one interval away.
+  @visibleForTesting
+  static DateTime startBoundary(DateTime now, int intervalMinutes) {
+    final midnight = DateTime(now.year, now.month, now.day);
+    return ScanInterval.hasJitter(intervalMinutes)
+        ? midnight.subtract(const Duration(minutes: kJitterMinutes))
+        : midnight;
+  }
+
+  /// [value] as `yyyy-MM-ddTHH:mm:ss`. A PowerShell `[datetime]` cast parses
+  /// with the invariant culture, so this literal reads the same on every
+  /// Windows display language; the value is local time, as Task Scheduler
+  /// expects.
+  @visibleForTesting
+  static String powerShellDateTime(DateTime value) {
+    String two(int n) => n.toString().padLeft(2, '0');
+    return '${value.year.toString().padLeft(4, '0')}-${two(value.month)}-'
+        '${two(value.day)}T${two(value.hour)}:${two(value.minute)}:'
+        '${two(value.second)}';
   }
 
   /// Write script content to a temporary file

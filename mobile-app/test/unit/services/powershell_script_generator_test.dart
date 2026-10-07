@@ -111,7 +111,13 @@ void main() {
 
       test('F264 AC-6: 5, 90, 1440 and 5940 minutes each get the ONE trigger '
           'shape, with the Q13 jitter rule and no -Daily', () async {
-        // [interval, expects a RandomDelay of 10 minutes and an 11:55PM start]
+        // [interval, expects a RandomDelay of 10 minutes and a start 5 minutes
+        // before today's midnight]
+        final now = DateTime.now();
+        final midnight = DateTime(now.year, now.month, now.day);
+        final early = PowerShellScriptGenerator.powerShellDateTime(
+            midnight.subtract(const Duration(minutes: 5)));
+        final onTime = PowerShellScriptGenerator.powerShellDateTime(midnight);
         for (final c in [(5, false), (90, true), (1440, true), (5940, true)]) {
           final minutes = c.$1;
           for (final content in [
@@ -131,13 +137,15 @@ void main() {
                 reason: '$minutes minutes must be the repetition interval');
             expect(content, isNot(contains('-Daily')),
                 reason: 'a daily scan is just 1440 minutes (F264)');
+            expect(content, isNot(contains('11:55PM')),
+                reason: '"11:55PM" is TONIGHT -- a future start (F-PRECHECK)');
             if (c.$2) {
-              expect(content, contains('-At "11:55PM"'));
+              expect(content, contains("-At ([datetime]'$early')"));
               expect(content, contains('-RandomDelay (New-TimeSpan -Minutes 10)'),
                   reason: 'start 5 minutes early plus 0-10 minutes of delay '
                       'is plus or minus 5 minutes around the nominal time');
             } else {
-              expect(content, contains('-At "12:00AM"'));
+              expect(content, contains("-At ([datetime]'$onTime')"));
               expect(content, isNot(contains('RandomDelay')));
             }
           }
@@ -171,6 +179,59 @@ void main() {
             PowerShellScriptGenerator.triggerForInterval(kJitterThresholdMinutes + 1),
             contains('-Minutes ${2 * kJitterMinutes}'));
       });
+
+      // F-PRECHECK (Sprint 77 Phase 5.1.2, HIGH): "-At 11:55PM" was 23:55
+      // TODAY -- in the future for most of the day -- so the first scan of a
+      // task over 15 minutes waited until that night. The start the script
+      // receives is startBoundary(), so this checks the value Task Scheduler
+      // gets. Runs on every host (no PowerShell).
+      // What this does NOT catch: Task Scheduler reading the literal
+      // differently from Dart (time zone, culture) -- the Windows-only test
+      // below executes the real cmdlet for that.
+      test('the trigger start is never in the future, at any time of day, for '
+          'every interval; jitter starts exactly 5 minutes earlier', () {
+        final days = [DateTime(2026, 10, 7), DateTime(2026, 3, 8), DateTime(2026, 1, 1)];
+        for (final day in days) {
+          for (final minuteOfDay in [0, 1, 4, 5, 6, 600, 1435, 1439]) {
+            final now = day.add(Duration(minutes: minuteOfDay, seconds: 30));
+            for (final interval in [5, 15, 16, 30, 90, 1440, 5940]) {
+              final start = PowerShellScriptGenerator.startBoundary(now, interval);
+              expect(start.isAfter(now), isFalse,
+                  reason: '$interval min registered at $now starts at $start');
+              expect(now.difference(start), lessThan(const Duration(days: 1, minutes: 6)),
+                  reason: 'anchored on today, not an arbitrary past date');
+            }
+            final plain = PowerShellScriptGenerator.startBoundary(now, 15);
+            final jittered = PowerShellScriptGenerator.startBoundary(now, 16);
+            expect(plain, DateTime(now.year, now.month, now.day));
+            expect(plain.difference(jittered), const Duration(minutes: kJitterMinutes));
+          }
+        }
+        // The emitted script carries exactly that start.
+        final now = DateTime(2026, 10, 7, 9, 30);
+        expect(PowerShellScriptGenerator.triggerForInterval(30, now: now),
+            contains("-At ([datetime]'2026-10-06T23:55:00')"));
+        expect(PowerShellScriptGenerator.triggerForInterval(15, now: now),
+            contains("-At ([datetime]'2026-10-07T00:00:00')"));
+      });
+
+      // What this does NOT catch: whether Register-ScheduledTask then runs the
+      // task at the next repetition (Task Scheduler behavior; manual
+      // validation). Skipped on the ubuntu CI host (no Task Scheduler).
+      test('Windows: the real New-ScheduledTaskTrigger gets a StartBoundary in '
+          'the past', () async {
+        for (final interval in [15, 30, 1440]) {
+          final line = PowerShellScriptGenerator.triggerForInterval(interval);
+          final script = '$line\n'
+              r"if ([datetime]$trigger.StartBoundary -le (Get-Date)) { 'PAST' } "
+              r"else { 'FUTURE ' + $trigger.StartBoundary }";
+          final result = await Process.run(
+              'powershell', ['-NoProfile', '-NonInteractive', '-Command', script]);
+          expect(result.exitCode, 0, reason: '${result.stderr}');
+          expect((result.stdout as String).trim(), 'PAST',
+              reason: '$interval minutes: ${result.stdout} ${result.stderr}');
+        }
+      }, skip: !Platform.isWindows ? 'needs Windows Task Scheduler cmdlets' : false);
 
       test('script includes error handling', () async {
         // Act
