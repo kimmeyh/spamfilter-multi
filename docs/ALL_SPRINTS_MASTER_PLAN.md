@@ -236,6 +236,12 @@ Each item is fixed PREVENTION FIRST (SPRINT_EXECUTION_WORKFLOW.md 7.7.1): name h
 - Prevention first: one shared interval parser/validator (unit + number -> minutes, min/max) used by both platforms' UI and the schedulers, with tests at 4, 5, 99 minutes and 99 hours; the package-to-provider mapping lives in the existing `MailNotificationPolicy` (extend it, JVM-tested).
 - **Sprint 77**: SELECTED (Task 5, #465) with Harold's decisions Q8-Q14 recorded in `docs/sprints/SPRINT_77_PLAN.md`.
 
+**F276. No Rule Review lists mail already deleted in the mail client (~60-90m) Priority 30 -- backlog (Sprint 77 5.1.2 F-PRECHECK; consequence of Q21 = 2)**
+- Phase: Core App Quality
+- Platform: All
+- Since Sprint 77 No Rule Review lists every unprocessed row across scans (Harold Q21 = 2) and retention counts from the last sighting (Q22 = 1), so an email the user deleted in their mail app stays listed up to 90 days and actions on it fail. No status marks it gone: `UnmatchedEmailStore.updateAvailabilityStatus` has no caller in lib/ and `EmailAvailabilityChecker` is never constructed, so every row stays 'unknown'.
+- Prevention-first fix: set the row's availability to deleted when an action on it fails with "not found" (one place, the shared action path) and filter it in the Review query; optionally run the existing availability checker for rows not seen in the latest scan.
+
 **F265. Android Gmail native one-pick sign-in -- revisit only when a second device reproduces the failure Priority HOLD -- backlog (Sprint 77 plan Q24 = 2, Harold 2026-10-06)**
 - Phase: Core App Quality
 - Platform: Android
