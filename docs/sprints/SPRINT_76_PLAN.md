@@ -777,6 +777,7 @@ when the log names the cause, not pre-approved here.
   reviewer`, attachment verified), arrived in ~10 minutes: "Findings: None", 0 inline comments, nothing to
   fix or reply to. Its overview flags the Class-1 notification listener, the OAuth refresh-token fallback
   and the device-dependent WorkManager policy changes for final human review (Harold's merge).
+- **7.7.1 final code reviews**: 2026-10-06, run after the retro improvements on 776a6b1..HEAD (the first sprint under the new order; Harold moved the reviews here the same day). Copilot (requested by hand, GraphQL) at 7bdaddc: Findings None. `pr-review-toolkit:code-reviewer`: 2 HIGH, 3 MEDIUM, 3 LOW; `silent-failure-hunter`: 3 HIGH, 6 MEDIUM, 4 LOW (overlapping). Harold's dispositions: FIX NOW items 1-7 and 14 -- Doze retry trap (prevention: every Kotlin `SOURCE_` must opt out of retry, M218), log lock fail-fast and release reporting, rotation inside the lock, auth state reset, offline message, Doze log line, kept-bundle warning, staging hook gaps (13 cases) -- in 82c65a4, M210-M218 KILLED. BACKLOG: F258 (Gmail label names on write paths), F259, F260 (Harold Q11), F261, F262, F263. Item 10 superseded by Harold's per-account interval/new-mail draft (read back for confirmation).
 - **5.1.6 runtime launch gate**: 0.17.3 (and 0.17.1/0.17.2) installed from Play launched on the Fold -- the
   diagnostic log's `app start (foreground) -- v0.17.3 env=prod platform=android` line (16:45:13).
 - **Task 3 F250 -- R-1 DONE, configuration checked (2026-10-05).** AC-1: the failing call is the native

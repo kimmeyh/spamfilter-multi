@@ -202,6 +202,28 @@ All incomplete items in relative priority order. Priority in increments of 10; i
 **F257. Scan History shows which mechanism started each background scan Priority 55 -- backlog (Sprint 76 retro IMP-8c, Harold 2026-10-06)**
 - The worker already logs `trigger=doze-alarm|periodic|notification|test` (F252/F253); persist it on the scan row and show it in Scan History, so "why did this scan run" is answerable without the diagnostic log.
 
+### Backlog from the Sprint 76 7.7.1 final code reviews (Harold, 2026-10-06: "otherwise as recommended")
+
+Each item is fixed PREVENTION FIRST (SPRINT_EXECUTION_WORKFLOW.md 7.7.1): name how the class is prevented, extending the connected existing control, before the instance fix.
+
+**F258. Gmail moves to a custom label send the label NAME, not its ID Priority 25 -- backlog (7.7.1 code review H-2; predates Sprint 76)**
+- Five write sites pass a stored folder NAME where Gmail expects a label ID: `deleteMessage` (`addLabelIds: [targetLabel]`), `moveMessage` via `_folderToLabelId`, `moveLabels` (`add: [target]`), and delete-to-custom-folder via `moveToFolderBatch`. The folder picker saves `displayName`, so a Deleted-Rule folder or safe-sender target such as "Unwanted" gets 400 "Invalid label" on every move. Prevention: route EVERY label write through the Sprint 76 `_labelIdFor` resolver (the read path already uses it; `_getOrCreateLabel` is the precedent) and add a source gate that no `addLabelIds:` / `removeLabelIds:` receives an unresolved folder name. Needs a Fold or Windows Gmail check with a custom target.
+
+**F259. A missing Gmail label scans as 0 messages with no trace; history cursor is per account Priority 35 -- backlog (7.7.1 review L-3 / silent-failure M-8)**
+- `_labelIdFor` returning null yields an empty fetch with no log line and no F202 "missing folder" classification, cached for the connection (a renamed label scans empty forever; the lookup is case-sensitive). Related, pre-existing: the incremental history cursor is stored per ACCOUNT (`getLastHistoryId(accountId)`), and INBOX saves the current historyId first, so later folders (a custom label, SPAM) read from "now". Prevention: route null through the existing F202 missing-folder path (extends that classifier) and store the cursor per account + folder.
+
+**F260. Stale log-lock takeover by atomic rename Priority 50 -- backlog (7.7.1 silent-failure M-7; Harold Q11 "can a semaphore-type technique be used")**
+- Two writers that break the same stale `<log>.lock` can race (one deletes the other's fresh lock, or one writes unlocked beside the other). Extend the existing lock-file mutex with an atomic takeover: rename the stale lock to a unique name -- only one rename can succeed on Android/Linux and Windows -- and only that winner deletes it and retries the create; losers simply retry. This makes the lock a true binary semaphore without a new mechanism. Also have `deleteAll` remove orphaned `.lock` files.
+
+**F261. Export header recognized by its first column, not the full text Priority 65 -- backlog (7.7.1 silent-failure M-9)**
+- The daily `.data.csv` header row is skipped by exact match with the CURRENT header text, so after any column change an older day file's header would read as a data row; two scans creating the same new day file at once could write two headers. Prevention: recognize the header by its first column name in the one shared `scanSheetHeaderLine` helper.
+
+**F262. Gmail renewal failures named by cause; stale log line Priority 45 -- backlog (7.7.1 silent-failure M-5)**
+- Three refresh failures all read "Session expired. Please sign in again.": a build-configuration error (`ANDROID_GMAIL_CLIENT_ID is not set`, which signing in cannot fix), a revoked refresh token (`invalid_grant`), and a network drop (transient -- should not mark the account as needing sign-in). The diagnostic line "refresh token present, not used on Android" is false since Sprint 76. Prevention: classify in the existing `GmailSignInRequiredException` / `humanize` path rather than per call site.
+
+**F263. Background scan spacing: per-worker budget, Test Background Scan, sign-in skip Priority 40 -- backlog (7.7.1 review M-1, M-2, silent-failure LOW)**
+- The 5-minute spacing and 6-minute busy cap are per ACCOUNT, so one Android worker scanning several accounts in sequence can exceed WorkManager's ~10-minute run limit and leave an `in_progress` row. Test Background Scan also waits out the spacing (up to 5 minutes with nothing visible), and an account that needs sign-in still waits before it is skipped. Prevention: one spacing budget per worker run in `BackgroundScanCore` (extends the existing `cappedBusyWait` cap), the test trigger exempt, and the sign-in check before the wait.
+
 ### Backlog from the Sprint 74-75 retrospectives and Manual Validation
 
 **F240. Body-rule sub-type consistency Priority 40 -- backlog (Sprint 74 retro Category 14a)**
