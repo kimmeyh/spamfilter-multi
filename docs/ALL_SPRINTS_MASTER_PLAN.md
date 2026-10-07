@@ -194,6 +194,7 @@ All incomplete items in relative priority order. Priority in increments of 10; i
 - Result: one or more backlog items for Heuristic, ML and GenAI pipelines and how they are used -- updates to YAML imports (new delete rules: known bad domains, subject regex, body regex), new tools to find and identify safe senders, on-device Heuristics/ML/GenAI tools.
 
 **R76-4. Store a history of email content for future Heuristics/ML/GenAI identifiers Priority 5 -- CARRY-IN (Sprint 76 retro Cat 13, Harold)**
+- **Input from R76-3 (2026-10-07)**: the recommended fields (what to store, what never to store) are in Section 6 of `docs/research/R76-3_HEURISTICS_ML_GENAI_SPAM_IDENTIFICATION.md`; storing content beyond the 100-character preview is a Class-1 decision with a privacy-policy revision (F273).
 - Probably a database of fields -- design and implement. Fed by the Windows and Android scans (eventually iPhone); no duplicate emails; initially populated from the existing delete and safe-sender rules; Harold has a partial history of deleted emails to run through for more examples.
 
 ### Backlog from the Sprint 76 retrospective
@@ -240,6 +241,123 @@ Each item is fixed PREVENTION FIRST (SPRINT_EXECUTION_WORKFLOW.md 7.7.1): name h
 - Platform: Android
 - F250 (#454, closed in Sprint 76): the native `authenticate()` fails with `[16] Account reauth failed` on the Fold, and the browser fallback then succeeds; since Sprint 76 Android renews through the stored refresh token, so users stay signed in. The cause is outside the changed code (OAuth clients, package and SHA-1 verified, `SPRINT_76_PLAN.md:783-795`). Harold chose to wait for a SECOND device that reproduces it before spending more time.
 - Trigger to leave HOLD: a reproduction on another device (S24+ or a tester), with the diagnostic log's `gmail/renewal` and sign-in lines.
+
+### Backlog from the R76-3 research (Sprint 77, 2026-10-07)
+
+Source: `docs/research/R76-3_HEURISTICS_ML_GENAI_SPAM_IDENTIFICATION.md` (Issue #468), placeholder ids R77-RS-1..10 renumbered F266-F275. Section 4.7 of that document lists the Class-1 questions (content storage, learned data, off-device lookups, bundling rules derived from Gmail data).
+
+**F266. Unmatchable safe-sender patterns: validator check and seed fix (~45m) Priority 10** -- VERIFIED 2026-10-07 by the lead: 23 of 426 bundled safe-sender patterns carry a second literal `@` (e.g. `banking.jpmchase.com`, `accountprotection.microsoft.com`) and can never match, so those senders are NOT protected and a block rule can catch them. Surface at Sprint 77 Manual Validation as a scope question.
+- Phase: Core App Quality
+- Platform: All
+- Value: safe senders the user believes are protected are not protected; 23 of 426 seed patterns can never match.
+- Prevention first: extend `PatternCompiler.validatePattern` with an "unmatchable" check (a second `@` after the
+  local part, and similar impossible shapes) so the quick-add screen, the import path and any future generator
+  share one gate; then fix the 23 seed patterns and check Harold's live database (a DB data migration if they are
+  there).
+- Control and screen: existing Safe Senders management screen and Import / Export YAML (warning shown on import).
+- Privacy precondition: none. Parity: shared Dart.
+- Depends on: none.
+
+**F267. Rule evaluation harness: score candidate rules against your own history, read only (~150m) Priority 20**
+- Phase: Core App Quality
+- Platform: All (Windows DEV for the dry run)
+- Value: no proposed rule or score acts on mail until measured; the bar is zero safe-sender hits and precision of
+  at least 0.99 (Section 4.8).
+- Scope: a Dart CLI in `scripts/` that loads candidate YAML plus an exported database copy and reports precision,
+  safe-sender false positives and recall; reuses `RuleEvaluator` and `PatternCompiler` unchanged.
+- Control and screen: developer tool (no app UI); results feed F268 to F272.
+- Privacy precondition: none (reads data already on Harold's PC). Parity: N/A (developer tool), engine code shared.
+- Depends on: none.
+
+**F268. PC-side rule miner: deleted-mail history to candidate delete rules (YAML) (~180m) Priority 22**
+- Phase: Core App Quality
+- Platform: N/A (developer tool on Harold's PC); output imported on All
+- Value: closes the corpus gap (zero subject and body rules today) with known bad domains, subject regex and body
+  regex mined from Harold's partial deleted-mail history, without the app storing any new content.
+- Scope: script in `scripts/` reads Harold's exported deleted-mail history, mines recurring domains, subject
+  phrases and body phrases, writes candidate YAML in `docs/RULE_FORMAT.md` shape, validated by F266 and scored by
+  F267 before import.
+- Control and screen: Settings > Import / Export YAML (merge via F269, or export-merge-import until F269 ships).
+- Privacy precondition: content stays on Harold's PC; rules derived from his Gmail data must not be bundled into
+  the shipped seed until the open legal question in Section 4.7 is settled (Class-1 if bundling is proposed).
+- Depends on: F266, F267.
+
+**F269. YAML import merge mode (add without replacing) (~90m) Priority 24**
+- Phase: Core App Quality
+- Platform: All
+- Value: mined or shared rule files can be added without wiping the user's rules (import today replaces all).
+- Scope: a "Merge" choice beside "Replace" on import; duplicates resolved by the existing
+  `manual_rule_duplicate_checker` / `rule_conflict_detector` services; every new pattern passes F266.
+- Control and screen: Settings > Import / Export YAML, import confirmation dialog.
+- Decision class: Class-2 (changes import semantics; replace stays the default).
+- Privacy precondition: none. Parity: shared Dart.
+- Depends on: F266.
+
+**F270. Safe-sender discovery: propose safe senders from history for review (~150m) Priority 30**
+- Phase: Core App Quality
+- Platform: All
+- Value: fewer false positives; senders the user trusts are protected before a broad rule catches them.
+- Scope: v1 uses stored data only -- repeated No Rule senders that pass DMARC and were never deleted; v2 adds
+  Sent-folder recipients (reply pairs). Candidates are listed for accept or reject; nothing is added silently.
+  Device contacts are excluded (new permission, platform exception).
+- Control and screen: a "Suggested safe senders" list on the Safe Senders management screen.
+- Privacy precondition: v1 none; v2 adds the Sent folder to "What the app accesses" in the privacy policy.
+- Parity: shared Dart. Depends on: F266, F267.
+
+**F271. Heuristic reasons and rule suggestions on No Rule Review (~210m) Priority 32**
+- Phase: Core App Quality
+- Platform: All
+- Value: the user sees why an email looks like spam (Reply-To differs from From, auth failed, lookalike domain,
+  bad TLD, bulk mail without unsubscribe) and gets a one-tap candidate rule.
+- Scope: header-only signals computed at scan time from headers already fetched (no body fetch); shown as reason
+  chips; "Create rule" opens the existing quick-add screen prefilled. Signals never act on mail by themselves.
+  Two-header comparisons are computed in Dart, not added to the YAML grammar (a grammar change would be Class-2).
+- Control and screen: No Rule Review screen, per-email reason chips and a "Create rule" action.
+- Privacy precondition: none if signals are computed and shown, not stored; storing them is R76-4.
+- Parity: shared Dart. Depends on: F267.
+
+**F273. Privacy policy and Data safety revision for the content history and learning (~60m) Priority 40**
+- Phase: Core App Quality
+- Platform: All (one policy; Play and Microsoft Store)
+- Value: keeps the published policy true before any build stores more content or learns from it.
+- Scope: the rewrites listed in Section 4.7 "Exactly what would change"; cite the Workspace policy; re-run
+  `data_safety_declarations_test.dart`; Play Data safety stays "No" while nothing leaves the device.
+- Control and screen: N/A (documents and the website).
+- Depends on: Harold's Class-1 decision on R76-4 (and on F272 if it is selected); it is written before
+  either ships.
+
+**F272. Per-user on-device spam classifier (pure Dart) ranking No Rule Review (~300m) Priority 42**
+- Phase: Core App Quality
+- Platform: All
+- Value: learns each user's own spam from their own decisions and sorts likely spam to the top of review.
+- Scope: hashed-token naive Bayes over From domain, subject and header tokens (body optional and off by default);
+  trained incrementally on the device from the user's own actions; about 2 MiB of state; no new dependency
+  (probe: about 161 microseconds per 1.2 kB text on the development laptop; Fold timing to measure first). The
+  score ranks and suggests; it does not delete until it passes the F267 bar and Harold approves acting.
+- Control and screen: Settings > General switch "Learn from my decisions" (off by default) and the No Rule Review
+  sort order.
+- Policy: inside the Workspace policy's "specific user's personalized model" carve-out; never trained on one
+  user's data for another user.
+- Privacy precondition: F273 published before a shipped build carries it. Parity: shared Dart.
+- Depends on: R76-4 (labels), F267, F273. Decision class: Class-1 (new derived data store).
+**HOLD (no viable runtime or contradicts the privacy posture):**
+
+**F274. On-device GenAI rule explanations (~240m) Priority HOLD**
+- Phase: Core App Quality
+- Platform: All (would be two platform exceptions today)
+- Why HOLD: Android ML Kit GenAI is foreground-only, Beta and absent from the Galaxy S24 family; Windows Phi
+  Silica needs a Copilot+ NPU or a Developer Mode GPU path and is removed in January 2027; a bundled LLM costs a
+  100+ MB download (size UNVERIFIED) under the Gemma pass-through terms.
+- Revisit trigger: a GenAI API available to Store users on both platforms that runs in background work, or the
+  Windows successor model (Aion Instruct) reaching retail with a non-Developer-Mode path.
+
+**F275. Cloud GenAI classification (~360m) Priority HOLD**
+- Phase: Core App Quality
+- Platform: All
+- Why HOLD: sends personal mail content to a third party; contradicts four sentences of the privacy policy; flips
+  Play Data safety to "Emails collected and shared"; Gmail data transfer limits; no server for key management.
+  About $0.0002-$0.0006 per email (Section 4.4).
+- Revisit trigger: Harold decides the product posture changes (Class-1), with an explicit per-user opt-in design.
 
 ### Backlog from the Sprint 74-75 retrospectives and Manual Validation
 

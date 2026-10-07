@@ -26,6 +26,9 @@ Format: `- **type**: Description (Issue #N)` where type is feat|fix|chore|docs
 
 ## [Unreleased]
 
+### 2026-10-07 (Sprint 77)
+- **docs**: research on heuristic, ML and GenAI spam identification, with proposed backlog items (Issue #468)
+
 ### 2026-10-06 (Sprint 76)
 - **fix**: a background scan started by an Android wake-up alarm that fails (for example with no network) no longer waits in a retry queue that blocked every later alarm for that account for up to hours; the next alarm runs it again. (Issue #453)
 - **fix**: a manual scan that cannot reach any folder now says to check the internet connection instead of "Something went wrong".
