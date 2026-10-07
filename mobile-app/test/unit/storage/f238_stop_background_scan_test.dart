@@ -35,6 +35,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:sqflite_common_ffi/sqflite_ffi.dart';
 import 'package:my_email_spam_filter/core/providers/email_scan_provider.dart';
 import 'package:my_email_spam_filter/core/services/scan_coordinator.dart';
+import 'package:my_email_spam_filter/core/storage/database_helper.dart' show databaseVersion;
 import 'package:my_email_spam_filter/core/storage/scan_result_store.dart';
 import 'package:my_email_spam_filter/core/storage/unmatched_email_store.dart';
 
@@ -355,7 +356,7 @@ void main() {
       expect(rows, hasLength(1), reason: 'existing rows must survive v11');
       expect(rows.single['cancel_requested_at'], isNull,
           reason: 'an old row carries no request');
-      expect(await upgraded.getVersion(), 11);
+      expect(await upgraded.getVersion(), databaseVersion);
     });
   });
 }

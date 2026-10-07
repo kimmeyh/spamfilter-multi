@@ -39,6 +39,16 @@ class FakeUnmatchedEmailStore implements UnmatchedEmailStore {
       [];
 
   @override
+  Future<List<UnmatchedUpsertResult>> upsertUnmatchedEmails(
+          List<UnmatchedEmail> emails) async =>
+      [];
+
+  @override
+  Future<List<UnmatchedEmail>> getUnprocessedForAccount(
+          String accountId) async =>
+      [];
+
+  @override
   Future<List<UnmatchedEmail>> getUnmatchedEmailsByScanFiltered(
     int scanResultId, {
     bool? availabilityOnly,

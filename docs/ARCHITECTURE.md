@@ -363,7 +363,7 @@ SQLite database schema. See [ADR-0010](adr/0010-normalized-database-schema.md) f
 | **app_settings** | Global app settings | key-value pairs |
 | **account_settings** | Per-account setting overrides (ADR-0013) | account_id, setting key-value pairs |
 | **background_scan_log** | Background scan execution logs | timestamp, account_id, status, stats |
-| **unmatched_emails** | Emails captured by scans that did not match any rule. Body previews truncated to 100 chars at insert (SEC-14); rows pruned by `UnmatchedEmailStore.deleteOlderThan` on startup + after each scan (default 30d, configurable) | id (PK), scan_result_id (FK), provider_identifier_type/value, from_email, subject, body_preview, folder_name, availability_status, processed, created_at |
+| **unmatched_emails** | Emails captured by scans that did not match any rule. Body previews truncated to 100 chars at insert (SEC-14); rows pruned by `UnmatchedEmailStore.deleteOlderThan` on startup + after each scan (default 90d, configurable; the cut is on `last_seen_at`, F245) | id (PK), scan_result_id (FK), provider_identifier_type/value, from_email, subject, body_preview, folder_name, availability_status, processed, created_at (first seen), last_seen_at (v12, last scan that saw the email). ONE row per email: identity = (account via `scan_results`, provider_identifier_type, provider_identifier_value, folder_name), written only by `UnmatchedEmailStore.upsertUnmatchedEmails` (F245, ADR-0045) |
 | **auth_rate_limit** (DB v3, SEC-22 Sprint 33) | Tracks failed IMAP auth attempts per account for rate limiting | account_id (PK), window_start, attempts, block_until |
 
 **Schema version history**:
@@ -378,6 +378,7 @@ SQLite database schema. See [ADR-0010](adr/0010-normalized-database-schema.md) f
 - v9: `scan_results.last_heartbeat_at` -- cross-isolate/process scan liveness heartbeat (MV74-2, Sprint 74)
 - v10: data only -- subject rules reclassified `pattern_sub_type` `exact_domain` -> `keyword` (Sprint 74 MV; all three creators now write `keyword`)
 - v11: `scan_results.cancel_requested_at` -- the cross-isolate/process stop request a manual scan writes onto a background scan's row; the scanning isolate reads it on its heartbeat tick (F238, Sprint 75)
+- v12: `unmatched_emails.last_seen_at` plus the non-unique lookup index `idx_unmatched_identity`; the migration dedups existing rows to one per email within an account (F245, Sprint 77, ADR-0045)
 
 **Indexes**: 10+ targeted indexes for fast lookups (by platform, account, completion time, scan ID, folder, no-rule matches).
 

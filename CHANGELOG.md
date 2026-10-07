@@ -27,6 +27,8 @@ Format: `- **type**: Description (Issue #N)` where type is feat|fix|chore|docs
 ## [Unreleased]
 
 ### 2026-10-07 (Sprint 77)
+- **test**: debug builds (never release) accept new-mail notifications posted from the Android shell, so the emulator can test "Scan when new mail arrives" without a mail app; a JVM test and a source gate prove release builds never accept it (Issue #464)
+- **fix**: each email that matched no rule is now listed once, not once per scan. Background scans used to add the same unaddressed email again on every run, so the list and the database grew by about 115 rows per scan. The No Rule Review screen now shows every email you have not addressed, from any scan, once. An email you dismissed comes back after the next scan that still finds no rule for it, so you can decide again. The 90-day cleanup counts from the last time a scan saw the email. The background scan export file lists an unaddressed email once; manual scan exports and Scan History counts are unchanged. Existing duplicates are removed when the app updates. (Issue #463)
 - **fix**: Gmail moves and deletes to a label you created now work -- the app sends Gmail the label's ID instead of its name, which Gmail refused with "Invalid label". If the label was renamed or deleted, the email is left where it is and the scan names the missing label so you can choose the folder again in Settings. A move out of a label you created also removes that label, so the email is in one place. (Issue #462)
 - **docs**: research on heuristic, ML and GenAI spam identification, with proposed backlog items (Issue #468)
 

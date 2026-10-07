@@ -13,7 +13,6 @@ import '../../core/services/pattern_compiler.dart';
 import '../../core/services/rule_evaluator.dart';
 import '../../core/services/rule_quick_action_service.dart';
 import '../../core/storage/database_helper.dart';
-import '../../core/storage/scan_result_store.dart';
 import '../../core/storage/unmatched_email_store.dart';
 import '../../core/utils/pattern_normalization.dart';
 import '../../core/utils/provider_sender_grouping.dart';
@@ -60,7 +59,6 @@ class _NoRuleItem {
 class _NoRuleReviewScreenState extends State<NoRuleReviewScreen> {
   final Logger _logger = Logger();
   final DatabaseHelper _dbHelper = DatabaseHelper();
-  late final ScanResultStore _scanResultStore;
   late final UnmatchedEmailStore _unmatchedStore;
 
   bool _isLoading = true;
@@ -83,7 +81,6 @@ class _NoRuleReviewScreenState extends State<NoRuleReviewScreen> {
   @override
   void initState() {
     super.initState();
-    _scanResultStore = ScanResultStore(_dbHelper);
     _unmatchedStore = UnmatchedEmailStore(_dbHelper);
     _loadItems();
   }
@@ -91,8 +88,8 @@ class _NoRuleReviewScreenState extends State<NoRuleReviewScreen> {
   /// F135 (Sprint 52): resolve an account for the account-scoped Settings
   /// destination that F134 adds to this screen's AppBar.
   ///
-  /// This screen is CROSS-ACCOUNT by design -- it aggregates the latest scan
-  /// from every configured account -- so it must never PROMPT (Harold's rule
+  /// This screen is CROSS-ACCOUNT by design -- it aggregates the unprocessed No Rule rows
+  /// of every configured account -- so it must never PROMPT (Harold's rule
   /// lists only the 3 account-specific Settings tabs and Manual Live Scan as
   /// prompting surfaces). It only resolves:
   ///   1. the session selection, if that account still appears here, else
@@ -171,7 +168,7 @@ class _NoRuleReviewScreenState extends State<NoRuleReviewScreen> {
   ///
   /// Harold, 2026-07-31 (manual validation): *"what does the refresh icon do -
   /// as it appears to do nothing"*. It was doing its job and saying nothing.
-  /// [_loadItems] re-reads the latest completed scan and re-runs the coverage
+  /// [_loadItems] re-reads every unprocessed row and re-runs the coverage
   /// sweep, but all of that is local-DB work that finishes in milliseconds, so
   /// the loading spinner never paints a perceptible frame. With nothing newly
   /// covered the list is identical afterwards and the press is indistinguishable
@@ -243,13 +240,11 @@ class _NoRuleReviewScreenState extends State<NoRuleReviewScreen> {
 
       final items = <_NoRuleItem>[];
       for (final accountId in sortedAccounts) {
-        final latestScan = await _scanResultStore.getLatestCompletedScan(accountId);
-        if (latestScan == null || latestScan.id == null) continue;
-
-        final unmatched = await _unmatchedStore.getUnmatchedEmailsByScanFiltered(
-          latestScan.id!,
-          unprocessedOnly: true,
-        );
+        // F245 (Sprint 77, Harold Q21): every UNPROCESSED row for the account,
+        // across scans. The scan-by-scan snapshot this replaced is no longer
+        // needed: the upsert keeps ONE row per email (ADR-0045), so nothing
+        // is listed twice, and a row an older scan owns is still unaddressed.
+        final unmatched = await _unmatchedStore.getUnprocessedForAccount(accountId);
 
         for (final email in unmatched) {
           items.add(_NoRuleItem(
@@ -1003,7 +998,7 @@ class _NoRuleReviewScreenState extends State<NoRuleReviewScreen> {
     return const EmptyState(
       icon: Icons.check_circle_outline,
       title: 'No unaddressed items',
-      message: 'All "No rule" emails from the latest scans have been reviewed.',
+      message: 'All "No rule" emails have been reviewed.',
     );
   }
 

@@ -45,7 +45,14 @@ class UnmatchedEmail {
   final String availabilityStatus; // 'available', 'deleted', 'moved', 'unknown'
   final DateTime? availabilityCheckedAt;
   final bool processed;
+  /// First time a scan saw this email (F245: never changes after insert).
   final DateTime createdAt;
+
+  /// F245 (Sprint 77): the last time a scan saw this email. Refreshed by the
+  /// upsert; the 90-day retention cuts on this, so an email a scan still
+  /// sees never ages out. Null on a model built for insert means "now"
+  /// ([createdAt]); rows migrated from v11 start equal to created_at.
+  final DateTime? lastSeenAt;
 
   /// F96 (Sprint 43): the SPF/DKIM/DMARC classification name
   /// (`green`/`yellow`/`red`/`grey`) captured at scan time, so the
@@ -69,6 +76,7 @@ class UnmatchedEmail {
     this.availabilityCheckedAt,
     this.processed = false,
     required this.createdAt,
+    this.lastSeenAt,
     this.authClassification,
   });
 
@@ -90,6 +98,7 @@ class UnmatchedEmail {
         'availability_checked_at': availabilityCheckedAt?.millisecondsSinceEpoch,
         'processed': processed ? 1 : 0,
         'created_at': createdAt.millisecondsSinceEpoch,
+        'last_seen_at': (lastSeenAt ?? createdAt).millisecondsSinceEpoch,
         'auth_classification': authClassification,
       };
 
@@ -115,6 +124,9 @@ class UnmatchedEmail {
         processed: (map['processed'] as int?) == 1,
         createdAt: DateTime.fromMillisecondsSinceEpoch(
             map['created_at'] as int? ?? 0),
+        lastSeenAt: map['last_seen_at'] != null
+            ? DateTime.fromMillisecondsSinceEpoch(map['last_seen_at'] as int)
+            : null,
         authClassification: map['auth_classification'] as String?,
       );
 
@@ -134,6 +146,7 @@ class UnmatchedEmail {
     DateTime? availabilityCheckedAt,
     bool? processed,
     DateTime? createdAt,
+    DateTime? lastSeenAt,
     String? authClassification,
   }) =>
       UnmatchedEmail(
@@ -154,12 +167,41 @@ class UnmatchedEmail {
             availabilityCheckedAt ?? this.availabilityCheckedAt,
         processed: processed ?? this.processed,
         createdAt: createdAt ?? this.createdAt,
+        lastSeenAt: lastSeenAt ?? this.lastSeenAt,
         authClassification: authClassification ?? this.authClassification,
       );
 
   @override
   String toString() =>
       'UnmatchedEmail(id: $id, from: $fromEmail, subject: $subject, status: $availabilityStatus)';
+}
+
+/// What [UnmatchedEmailStore.upsertUnmatchedEmails] did with one email.
+enum UnmatchedUpsertOutcome {
+  /// First sighting: a new row.
+  inserted,
+
+  /// Already listed, but a descriptive field (the subject) differs.
+  changed,
+
+  /// Already listed and DISMISSED (processed = 1); this scan re-found it with
+  /// no rule, so it was reset to unprocessed (Q20, "deferred until the next
+  /// scan").
+  reappeared,
+
+  /// Already listed, unprocessed and identical: nothing for the user to see.
+  unchanged,
+}
+
+/// One result of an upsert: the row id and what happened.
+class UnmatchedUpsertResult {
+  final int id;
+  final UnmatchedUpsertOutcome outcome;
+  const UnmatchedUpsertResult(this.id, this.outcome);
+
+  /// True when the background export should list the email (Q19): everything
+  /// except an unchanged, still-unaddressed row.
+  bool get listInBackgroundExport => outcome != UnmatchedUpsertOutcome.unchanged;
 }
 
 /// Database store for managing unmatched emails
@@ -169,44 +211,157 @@ class UnmatchedEmailStore {
 
   UnmatchedEmailStore(this._databaseHelper);
 
-  /// Add a single unmatched email to database
+  /// Add a single unmatched email (F245: through [upsertUnmatchedEmails]).
   ///
-  /// Returns the ID of the inserted row, or throws exception on error
+  /// Returns the ID of the row now holding the email (inserted or refreshed).
   Future<int> addUnmatchedEmail(UnmatchedEmail email) async {
-    try {
-      final db = await _databaseHelper.database;
-      final id = await db.insert('unmatched_emails', email.toMap());
-      _logger.d(
-          'Added unmatched email: ${email.fromEmail} (id: $id, scan: ${email.scanResultId})');
-      return id;
-    } catch (e) {
-      _logger.e('Failed to add unmatched email: $e');
-      rethrow;
-    }
+    final results = await upsertUnmatchedEmails([email]);
+    _logger.d('Upserted unmatched email: ${email.fromEmail} '
+        '(id: ${results.single.id}, ${results.single.outcome.name}, '
+        'scan: ${email.scanResultId})');
+    return results.single.id;
   }
 
-  /// Add multiple unmatched emails in a single transaction (PERFORMANCE CRITICAL)
-  ///
-  /// Using transaction ensures all-or-nothing semantics and better performance
-  /// Returns list of inserted IDs in order, or throws exception on error
+  /// Add multiple unmatched emails in one transaction (F245: through
+  /// [upsertUnmatchedEmails]). Returns the row ids in input order.
   Future<List<int>> addUnmatchedEmailBatch(List<UnmatchedEmail> emails) async {
+    final results = await upsertUnmatchedEmails(emails);
+    return [for (final r in results) r.id];
+  }
+
+  /// F245 (Sprint 77, ADR-0045): THE ONLY WRITER of `unmatched_emails`.
+  ///
+  /// One No Rule row per email. Identity is
+  /// (account, provider_identifier_type, provider_identifier_value,
+  /// folder_name), where the account comes from
+  /// `unmatched_emails.scan_result_id -> scan_results.account_id`; there is no
+  /// account column (Harold, Q18). The match is ALWAYS inside the row's own
+  /// account: two IMAP accounts can hold the same UID in a same-named folder,
+  /// and those are two different emails.
+  ///
+  /// A matching row is REFRESHED in place (its id is kept, because the No Rule
+  /// Review multi-select is keyed on it): `scan_result_id` moves to the current
+  /// scan, `last_seen_at` and the descriptive fields are updated, and
+  /// `created_at` (first seen) is kept. `processed` is RESET to 0 (Harold, Q20):
+  /// a dismissed email is "deferred until the next scan" -- when a later scan
+  /// still finds it with no rule, it comes back for a decision.
+  ///
+  /// PLATFORM PRIMITIVE (ADR-0042, Sprint 76 retro IMP-3): this is
+  /// SELECT-then-UPDATE-or-INSERT inside one transaction, NOT
+  /// `INSERT ... ON CONFLICT DO UPDATE`. UPSERT syntax needs SQLite 3.24+.
+  /// Windows runs `sqflite_common_ffi` (a bundled, recent SQLite), but Android
+  /// runs `sqflite` on the DEVICE's own SQLite and `minSdk` is 24, which is
+  /// not guaranteed to ship 3.24 (unverified: the platform SQLite version per
+  /// API level was not confirmed from developer.android.com). The portable
+  /// form behaves the same on both. Serialization: `Database.transaction`
+  /// issues `BEGIN IMMEDIATE` (sqflite_common `txnBeginTransaction`, shared by
+  /// the ffi and Android implementations), which takes the write lock before
+  /// the SELECT, so the UI isolate and a background worker (another isolate on
+  /// Android, another process on Windows) cannot both miss the SELECT and
+  /// insert; the second waits on `busy_timeout`. There is deliberately no
+  /// cross-account UNIQUE index (it cannot express the account match without
+  /// a new column), so this transaction is the only guard.
+  ///
+  /// Returns one [UnmatchedUpsertResult] per input, in order. The outcome says
+  /// whether the email was new, changed, came back after being dismissed, or
+  /// was already listed and unchanged (the background export omits those).
+  Future<List<UnmatchedUpsertResult>> upsertUnmatchedEmails(
+      List<UnmatchedEmail> emails) async {
     if (emails.isEmpty) return [];
 
     try {
       final db = await _databaseHelper.database;
-      final ids = <int>[];
+      final results = <UnmatchedUpsertResult>[];
+      final accountByScan = <int, String?>{};
 
       await db.transaction((txn) async {
         for (final email in emails) {
-          final id = await txn.insert('unmatched_emails', email.toMap());
-          ids.add(id);
+          if (!accountByScan.containsKey(email.scanResultId)) {
+            final scanRows = await txn.query('scan_results',
+                columns: ['account_id'],
+                where: 'id = ?',
+                whereArgs: [email.scanResultId],
+                limit: 1);
+            accountByScan[email.scanResultId] =
+                scanRows.isEmpty ? null : scanRows.first['account_id'] as String?;
+          }
+          final accountId = accountByScan[email.scanResultId];
+
+          final existing = accountId == null
+              ? const <Map<String, Object?>>[]
+              : await txn.rawQuery(
+                  'SELECT u.id AS id, u.subject AS subject, u.processed AS processed '
+                  'FROM unmatched_emails u '
+                  'JOIN scan_results s ON s.id = u.scan_result_id '
+                  'WHERE s.account_id = ? '
+                  'AND u.provider_identifier_type = ? '
+                  'AND u.provider_identifier_value = ? '
+                  'AND u.folder_name = ? '
+                  'ORDER BY u.id DESC LIMIT 1',
+                  [
+                    accountId,
+                    email.providerIdentifierType,
+                    email.providerIdentifierValue,
+                    email.folderName,
+                  ],
+                );
+
+          final values = email.toMap();
+          if (existing.isEmpty) {
+            final id = await txn.insert('unmatched_emails', values);
+            results.add(UnmatchedUpsertResult(id, UnmatchedUpsertOutcome.inserted));
+            continue;
+          }
+
+          final row = existing.first;
+          final id = row['id'] as int;
+          final wasProcessed = (row['processed'] as int?) == 1;
+          final subjectChanged = (row['subject'] as String?) != email.subject;
+          // Keep first-seen and the row id; everything else describes this sighting.
+          values
+            ..remove('id')
+            ..remove('created_at')
+            ..['processed'] = 0;
+          await txn.update('unmatched_emails', values,
+              where: 'id = ?', whereArgs: [id]);
+          results.add(UnmatchedUpsertResult(
+              id,
+              wasProcessed
+                  ? UnmatchedUpsertOutcome.reappeared
+                  : subjectChanged
+                      ? UnmatchedUpsertOutcome.changed
+                      : UnmatchedUpsertOutcome.unchanged));
         }
       });
 
-      _logger.d('Batch inserted ${emails.length} unmatched emails');
-      return ids;
+      final inserted = results
+          .where((r) => r.outcome == UnmatchedUpsertOutcome.inserted)
+          .length;
+      _logger.d('Upserted ${emails.length} unmatched emails '
+          '($inserted new, ${emails.length - inserted} refreshed)');
+      return results;
     } catch (e) {
-      _logger.e('Failed to batch insert unmatched emails: $e');
+      _logger.e('Failed to upsert unmatched emails: $e');
+      rethrow;
+    }
+  }
+
+  /// F245 (Sprint 77, Harold Q21): every UNPROCESSED No Rule row for one
+  /// account, across scans. With one row per email there are no duplicates.
+  /// The account comes from `scan_results.account_id` (no account column).
+  Future<List<UnmatchedEmail>> getUnprocessedForAccount(String accountId) async {
+    try {
+      final db = await _databaseHelper.database;
+      final maps = await db.rawQuery(
+        'SELECT u.* FROM unmatched_emails u '
+        'JOIN scan_results s ON s.id = u.scan_result_id '
+        'WHERE s.account_id = ? AND u.processed = 0 '
+        'ORDER BY u.created_at DESC, u.id ASC',
+        [accountId],
+      );
+      return maps.map(UnmatchedEmail.fromMap).toList();
+    } catch (e) {
+      _logger.e('Failed to get unprocessed unmatched emails for account: $e');
       rethrow;
     }
   }
@@ -404,7 +559,9 @@ class UnmatchedEmailStore {
 
   /// Delete unmatched emails older than [retentionDays] days (SEC-14, Sprint 33).
   ///
-  /// Removes rows whose `created_at` is older than `now - retentionDays * 1d`.
+  /// Removes rows whose LAST-SEEN time (F245, Harold Q22; `created_at` for a
+  /// row that has none) is older than `now - retentionDays * 1d`, so an email
+  /// a scan still finds is never cut at 90 days.
   /// Returns the number of rows deleted. Intended to be called on app startup
   /// and after each scan completes so retention enforcement is continuous and
   /// independent of UI navigation.
@@ -426,7 +583,7 @@ class UnmatchedEmailStore {
       final db = await _databaseHelper.database;
       final count = await db.delete(
         'unmatched_emails',
-        where: 'created_at < ?',
+        where: 'COALESCE(last_seen_at, created_at) < ?',
         whereArgs: [cutoff],
       );
 

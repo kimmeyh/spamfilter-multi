@@ -63,7 +63,12 @@ abstract class RuleDatabaseProvider {
 ///      row, and the scanning isolate reads it on its heartbeat tick and
 ///      requests cancel through its own ScanCoordinator. Existing rows stay
 ///      NULL (no request).
-const int databaseVersion = 11;
+/// v12: unmatched_emails gets last_seen_at (nullable INTEGER, epoch ms) and a
+///      non-unique lookup index on (provider_identifier_type,
+///      provider_identifier_value, folder_name) (F245, Sprint 77, ADR-0045).
+///      The migration also DEDUPS existing rows to one per identity within an
+///      account. The 90-day retention cuts on last_seen_at.
+const int databaseVersion = 12;
 
 /// SQLite database helper - singleton pattern
 class DatabaseHelper implements RuleDatabaseProvider {
@@ -330,10 +335,12 @@ class DatabaseHelper implements RuleDatabaseProvider {
         processed INTEGER DEFAULT 0,
         created_at INTEGER NOT NULL,
         auth_classification TEXT,
+        last_seen_at INTEGER,
         FOREIGN KEY (scan_result_id) REFERENCES scan_results(id) ON DELETE CASCADE
       );
     ''');
     await db.execute('CREATE INDEX IF NOT EXISTS idx_unmatched_scan ON unmatched_emails(scan_result_id);');
+    await db.execute('CREATE INDEX IF NOT EXISTS idx_unmatched_identity ON unmatched_emails(provider_identifier_type, provider_identifier_value, folder_name);');
     await db.execute('CREATE INDEX IF NOT EXISTS idx_unmatched_processed ON unmatched_emails(processed);');
     await db.execute('CREATE INDEX IF NOT EXISTS idx_unmatched_availability ON unmatched_emails(availability_status);');
 
@@ -665,6 +672,108 @@ class DatabaseHelper implements RuleDatabaseProvider {
       }
       _logger.i('v11 migration complete');
     }
+
+    if (oldVersion < 12) {
+      await _migrateV12UnmatchedIdentity(db);
+    }
+  }
+
+  /// v12 (F245, Sprint 77, ADR-0045): one No Rule row per email.
+  ///
+  /// Runs inside sqflite's upgrade transaction (sqflite_common
+  /// `openDatabase` wraps onCreate/onUpgrade in `transaction`), so a failure
+  /// leaves the database at v11. Steps: (1) add `last_seen_at`, (2) back-fill
+  /// it from `created_at`, (3) dedup to ONE row per identity within an account
+  /// (account via `scan_results`, never across accounts), (4) add the
+  /// non-unique lookup index.
+  ///
+  /// Dedup rule: the NEWEST row (highest scan_result_id, then id) survives and
+  /// keeps its own `processed` state, which is the state of the latest sighting
+  /// (the Q20 semantics: a later sighting reset the flag, and a dismissal made
+  /// after it is on the newest row). It takes the OLDEST `created_at` of the
+  /// group (first seen) and the newest `last_seen_at`. The survivor is already
+  /// on the newest scan, so No Rule Review still finds it.
+  ///
+  /// Guarded on the TABLE existing (partial test schemas built at an earlier
+  /// version may lack it) like v10/v11.
+  Future<void> _migrateV12UnmatchedIdentity(Database db) async {
+    _logger.i('Applying v12 migration: unmatched_emails last_seen_at + dedup');
+    final cols = (await db.rawQuery('PRAGMA table_info(unmatched_emails)'))
+        .map((r) => r['name'] as String)
+        .toSet();
+    if (cols.isEmpty) {
+      _logger.i('v12 migration skipped: no unmatched_emails table');
+      return;
+    }
+    if (!cols.contains('last_seen_at')) {
+      await db.execute(
+          'ALTER TABLE unmatched_emails ADD COLUMN last_seen_at INTEGER;');
+    }
+    await db.execute(
+        'UPDATE unmatched_emails SET last_seen_at = created_at '
+        'WHERE last_seen_at IS NULL');
+
+    final scanCols = (await db.rawQuery('PRAGMA table_info(scan_results)'))
+        .map((r) => r['name'] as String)
+        .toSet();
+    if (scanCols.contains('account_id')) {
+      final rows = await db.rawQuery(
+          'SELECT u.id AS id, u.scan_result_id AS scan_id, '
+          'u.created_at AS created_at, u.last_seen_at AS last_seen_at, '
+          's.account_id AS account_id, '
+          'u.provider_identifier_type AS t, u.provider_identifier_value AS v, '
+          'u.folder_name AS f '
+          'FROM unmatched_emails u '
+          'LEFT JOIN scan_results s ON s.id = u.scan_result_id '
+          'ORDER BY u.scan_result_id DESC, u.id DESC');
+      // Rows arrive newest first, so the first row of each identity survives.
+      final survivors = <String, Map<String, Object?>>{};
+      final oldestCreated = <String, int>{};
+      final newestSeen = <String, int>{};
+      final losers = <int>[];
+      for (final r in rows) {
+        // Length-prefixed parts cannot collide the way a plain delimiter can.
+        final parts = [r['account_id'] ?? '', r['t'], r['v'], r['f']]
+            .map((p) => '${p.toString().length}:$p')
+            .join('|');
+        final created = (r['created_at'] as int?) ?? 0;
+        final seen = (r['last_seen_at'] as int?) ?? created;
+        if (survivors.containsKey(parts)) {
+          losers.add(r['id'] as int);
+          if (created < oldestCreated[parts]!) oldestCreated[parts] = created;
+          if (seen > newestSeen[parts]!) newestSeen[parts] = seen;
+        } else {
+          survivors[parts] = r;
+          oldestCreated[parts] = created;
+          newestSeen[parts] = seen;
+        }
+      }
+      for (var i = 0; i < losers.length; i += 500) {
+        final chunk = losers.sublist(
+            i, i + 500 > losers.length ? losers.length : i + 500);
+        await db.delete('unmatched_emails',
+            where: 'id IN (${List.filled(chunk.length, '?').join(',')})',
+            whereArgs: chunk);
+      }
+      for (final entry in survivors.entries) {
+        final r = entry.value;
+        final created = oldestCreated[entry.key]!;
+        final seen = newestSeen[entry.key]!;
+        if (created != (r['created_at'] as int?) ||
+            seen != (r['last_seen_at'] as int?)) {
+          await db.update(
+              'unmatched_emails', {'created_at': created, 'last_seen_at': seen},
+              where: 'id = ?', whereArgs: [r['id']]);
+        }
+      }
+      _logger.i('v12 migration: removed ${losers.length} duplicate No Rule '
+          'row(s), kept ${survivors.length}');
+    }
+
+    await db.execute(
+        'CREATE INDEX IF NOT EXISTS idx_unmatched_identity ON unmatched_emails('
+        'provider_identifier_type, provider_identifier_value, folder_name);');
+    _logger.i('v12 migration complete');
   }
 
   // ============================================================================

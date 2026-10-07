@@ -120,6 +120,13 @@ class EmailScanProvider extends ChangeNotifier {
 
   // Results tracking
   final List<EmailActionResult> _results = [];
+
+  /// F245 (Sprint 77, Harold Q19): results whose No Rule row was ALREADY
+  /// listed and unchanged when this scan persisted it. The BACKGROUND export
+  /// omits them (an unaddressed email is listed once); the manual export and
+  /// every count ignore this set. Filled by [_persistEmailActions], so it is
+  /// empty (nothing omitted) when persistence is off or failed.
+  final Set<EmailActionResult> _alreadyListedNoRule = Set.identity();
   int _deletedCount = 0;
   int _movedCount = 0;
   int _safeSendersCount = 0;
@@ -449,6 +456,7 @@ class EmailScanProvider extends ChangeNotifier {
     _processedCount = 0;
     _totalEmails = totalEmails;
     _results.clear();
+    _alreadyListedNoRule.clear();
     _deletedCount = 0;
     _movedCount = 0;
     _safeSendersCount = 0;
@@ -708,8 +716,9 @@ class EmailScanProvider extends ChangeNotifier {
       // Task D") only logged, so the review screen always showed 0 items
       // while scan_results.no_rule_count said otherwise.
       if (_unmatchedEmailStore != null) {
-        final unmatched = _results
-            .where((r) => r.action == EmailActionType.none)
+        final noRuleResults =
+            _results.where((r) => r.action == EmailActionType.none).toList();
+        final unmatched = noRuleResults
             .map((r) => UnmatchedEmail(
                   scanResultId: _currentScanResultId!,
                   providerIdentifierType: 'email_id',
@@ -729,17 +738,30 @@ class EmailScanProvider extends ChangeNotifier {
                 ))
             .toList();
         if (unmatched.isNotEmpty) {
-          await _unmatchedEmailStore!.addUnmatchedEmailBatch(unmatched);
+          // F245 (Sprint 77, ADR-0045): ONE row per email -- a re-found
+          // email refreshes its row instead of adding a copy. The outcomes
+          // also tell the background export which rows are already listed.
+          final upserts =
+              await _unmatchedEmailStore!.upsertUnmatchedEmails(unmatched);
+          _alreadyListedNoRule.clear();
+          var added = 0;
+          for (var i = 0; i < upserts.length; i++) {
+            if (upserts[i].outcome == UnmatchedUpsertOutcome.inserted) added++;
+            if (!upserts[i].listInBackgroundExport) {
+              _alreadyListedNoRule.add(noRuleResults[i]);
+            }
+          }
           _logger.i('Persisted ${unmatched.length} unmatched ("No rule") '
-              'emails for scan $_currentScanResultId');
-          // F248: how many No Rule rows this scan ADDED -- the growth F245
-          // describes (the same emails re-listed by every background scan).
+              'emails for scan $_currentScanResultId ($added new, '
+              '${unmatched.length - added} already listed and refreshed)');
+          // F248: how many No Rule rows this scan ADDED versus refreshed.
           unawaited(DiagnosticLogger.log(
             kind: DiagnosticLogger.kindScan,
             context: 'scan/persist',
             detail: '${Redact.accountId(_currentAccountId)} row '
                 '$_currentScanResultId stored ${actions.length} action '
-                'record(s), ${unmatched.length} No Rule row(s)',
+                'record(s), ${unmatched.length} No Rule row(s) '
+                '($added new, ${unmatched.length - added} refreshed)',
           ));
         }
       }
@@ -917,6 +939,7 @@ class EmailScanProvider extends ChangeNotifier {
     _currentEmail = null;
     _statusMessage = null;
     _results.clear();
+    _alreadyListedNoRule.clear();
     _deletedCount = 0;
     _movedCount = 0;
     _safeSendersCount = 0;
@@ -1355,7 +1378,17 @@ class EmailScanProvider extends ChangeNotifier {
   }
 
   /// [redact]: see [exportResultsToCSV].
-  List<List<String>> getExcelRows({bool redact = false}) {
+  ///
+  /// [omitAlreadyListedNoRule] (F245, Harold Q19): leave out a No Rule email
+  /// that was already listed, unprocessed and unchanged when this scan
+  /// persisted it. ONLY the background export passes true; the manual-scan
+  /// export stays complete. Actions taken are never omitted, and a scan whose
+  /// rows are all omitted returns an empty list, which the sheet writer turns
+  /// into the "<no records to process>" row.
+  List<List<String>> getExcelRows({
+    bool redact = false,
+    bool omitAlreadyListedNoRule = false,
+  }) {
     if (_results.isEmpty) return [];
 
     final scanDate = _scanStartTime != null
@@ -1365,6 +1398,9 @@ class EmailScanProvider extends ChangeNotifier {
     final rows = <List<String>>[];
 
     for (final result in _results) {
+      if (omitAlreadyListedNoRule && _alreadyListedNoRule.contains(result)) {
+        continue;
+      }
       final receivedDate = result.email.receivedDate.toIso8601String();
       final status = result.success ? 'Success' : 'Failed';
       final folder = result.email.folderName;

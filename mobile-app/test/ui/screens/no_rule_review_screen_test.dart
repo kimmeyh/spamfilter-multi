@@ -656,7 +656,7 @@ void main() {
   });
 
   testWidgets(
-      'only the latest completed scan per account is included, not an older one',
+      'F245 Q21: every UNPROCESSED row across scans is listed, an older scan included',
       (tester) async {
     tester.view.physicalSize = const Size(1200, 2400);
     tester.view.devicePixelRatio = 1.0;
@@ -668,15 +668,15 @@ void main() {
       await testHelper.createTestAccount(accountId);
       registerSavedAccount(accountId);
 
-      // Older scan: 5 unprocessed items -- must NOT appear.
+      // Older scan: 5 unprocessed items -- still unaddressed, so they ARE listed.
       await insertCompletedScan(accountId, completedAtMs: 1000, noRuleCount: 5);
-      // Newer scan: 2 unprocessed items -- must be the only ones shown.
+      // Newer scan: 2 more distinct items. (One row per email, so no duplicates.)
       await insertCompletedScan(accountId, completedAtMs: 2000, noRuleCount: 2);
 
       await mountAndLoad(tester);
     });
 
-    expect(find.text('2 items'), findsOneWidget);
+    expect(find.text('7 items'), findsOneWidget);
   });
 
   // MT-2c (Sprint 51, F129): the sweep runs on EVERY load, so an item whose
