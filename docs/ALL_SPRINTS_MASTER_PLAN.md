@@ -164,11 +164,13 @@ Historical sprint information lives in individual documents in `docs/sprints/` a
 
 ## Next Sprint Candidates
 
+**Sprint 76 scope -- COMPLETE 2026-10-06 (PR #455)**: F248 (#452), F249 (#453), F250 (#454), F251 (#456), F252 (#457), F253 (#458), plus nine Manual Validation fixes and the 7.7.1 review fixes. Plan: `docs/sprints/SPRINT_76_PLAN.md`.
+
 **Sprint 75 scope -- COMPLETE 2026-10-04 (PR #448)**: F238 (#441), F216 (#444), F214 (#445), F236 (#446), F239 (#442), F215 (#447), Task 7 (#449), F243 (#450, added at Manual Validation). Plan: `docs/sprints/SPRINT_75_PLAN.md`.
 
 **Sprint 74 scope -- COMPLETE 2026-09-29 (PR #440)** (Phase 8.4 pass 2, selected by Harold 2026-09-24): MV74-1 (#428), MV74-2 (#434), MV74-3 (#422, #433), F202 (#438), F222 (#437), F232 (#422), F206 (#439), F205 (#433). Plan: `docs/sprints/SPRINT_74_PLAN.md`.
 
-**Last Reviewed**: October 4, 2026 (Sprint 75 cycle, Phase 8.2 pass-1 COMPLETENESS SWEEP -- no scope selected: PR #448 merged to develop (85c602c) and main (e724faa); Sprint 76 branch opened from the Sprint 75 branch; #441 #442 #444 #445 #446 #447 #449 #450 closed by hand; #428 #433 stay open as Sprint 76 phone checks; triad present; shipped F238/F239/F216/F214/F236/F215 already pruned at close-out; F247 added from the PR reviews; MV74-1 dependency moved to the 0.17.0 Play build.) Previous: October 2, 2026 (Sprint 74 cycle, Phase 8.2 pass-1 COMPLETENESS SWEEP -- no scope selected: shipped MV74-2, F202, F206, F232, F222 pruned; MV74-1 + MV74-3 (F205) re-labeled as Sprint 75 phone validation; #422 #434 #437 #438 #439 closed by hand; 0.17.0 store release N/A (held for F238).) Previous: September 24, 2026 (Sprint 73 cycle, Phase 8.2 pass-1 COMPLETENESS SWEEP -- no scope selected: 6 Sprint 73 DONE cards cleared (F235 -> MV74-1, F234, F229, F226, F224, F207 -> MV74-2); new F236 (YAML export version, from #427) and F237 (Android build-log noise); issues #426 #430 #431 #432 closed; master plan rolled to Sprint 73.)
+**Last Reviewed**: October 6, 2026 (Sprint 76 cycle, Phase 8.2 pass-1 COMPLETENESS SWEEP -- no scope selected: PR #455 merged to develop (96a9cfe) and main (31b7135); Sprint 77 branch opened from the Sprint 76 branch; #452 #453 #454 #456 #457 #458 closed by hand; #428 #433 stay open inside MV76-1; triad present; shipped F248-F253 already pruned at close-out; MV74-1/MV74-3 folded into MV76-1; F247 relabeled not-delivered; F258-F264 added at 7.7.1.) Previous: October 4, 2026 (Sprint 75 cycle, Phase 8.2 pass-1 COMPLETENESS SWEEP -- no scope selected: PR #448 merged to develop (85c602c) and main (e724faa); Sprint 76 branch opened from the Sprint 75 branch; #441 #442 #444 #445 #446 #447 #449 #450 closed by hand; #428 #433 stay open as Sprint 76 phone checks; triad present; shipped F238/F239/F216/F214/F236/F215 already pruned at close-out; F247 added from the PR reviews; MV74-1 dependency moved to the 0.17.0 Play build.) Previous: October 2, 2026 (Sprint 74 cycle, Phase 8.2 pass-1 COMPLETENESS SWEEP -- no scope selected: shipped MV74-2, F202, F206, F232, F222 pruned; MV74-1 + MV74-3 (F205) re-labeled as Sprint 75 phone validation; #422 #434 #437 #438 #439 closed by hand; 0.17.0 store release N/A (held for F238).) Previous: September 24, 2026 (Sprint 73 cycle, Phase 8.2 pass-1 COMPLETENESS SWEEP -- no scope selected: 6 Sprint 73 DONE cards cleared (F235 -> MV74-1, F234, F229, F226, F224, F207 -> MV74-2); new F236 (YAML export version, from #427) and F237 (Android build-log noise); issues #426 #430 #431 #432 closed; master plan rolled to Sprint 73.)
 
 All incomplete items in relative priority order. Priority in increments of 10; items that can sprint together in increments of 2. HOLD items grouped at bottom. See [Feature and Bug Details](#feature-and-bug-details) for deep-dive specs. See [BACKLOG_REFINEMENT.md](BACKLOG_REFINEMENT.md) for presentation format rules.
 
@@ -253,7 +255,7 @@ Each item is fixed PREVENTION FIRST (SPRINT_EXECUTION_WORKFLOW.md 7.7.1): name h
 **F254. Home-screen widget: last scan and new No Rule count Priority 45 -- backlog (Harold 2026-10-05, Q3 = 1)**
 - A widget showing the last background scan time and the No Rule emails waiting. Two reasons: users see that unattended scanning runs without opening the app, and Android exempts apps with an active widget from the Restricted standby bucket (developer.android.com/topic/performance/appstandby: exemptions include "Apps with active widgets"), the bucket that limits jobs to once a day after 8 days without interaction. Android first (a declared ADR-0042 exception unless a Windows equivalent is wanted). Context: Sprint 76 unattended-scanning analysis, F252 (#457), F253 (#458).
 
-**F247. Behavior tests for navigation and platform-gated paths (~120-180m) Priority 25 -- TARGETED FOR SPRINT 76 (PR #448 review carry-in, 2026-10-04)**
+**F247. Behavior tests for navigation and platform-gated paths (~120-180m) Priority 25 -- backlog (PR #448 review carry-in, 2026-10-04; targeted for Sprint 76 but NOT delivered -- that sprint was redirected to unattended Android scanning)**
 - From the PR #448 Claude reviews (test analyzer items 5 and 7, code reviewer MINOR 5, plus test MINORs). Each needs a new navigation harness or a production test seam, so one planned card is more effective than piecemeal fixes at merge time.
   1. `scan_progress_screen.dart` `startRealScan` F238 branches as BEHAVIOR, not source gates: OK returns; `requested == false` proceeds; `!closed` shows "did not stop" and returns; plus the end-to-end success case (holder row present, stop chosen, row closed, manual scan claims). Harness: `s75_t7_scan_busy_snackbar_test.dart` already drives the real `startRealScan`.
   2. Gmail add flow as a widget test: push `AccountSetupScreen`, complete a stubbed `GmailOAuthScreen` with an address, assert the route on top -- and settle where Back lands (code review says the provider picker; Harold's MV round 4 saw the account list). Decide the WebView and manual-token fallback screens, which still open the folder step.
@@ -265,46 +267,9 @@ Each item is fixed PREVENTION FIRST (SPRINT_EXECUTION_WORKFLOW.md 7.7.1): name h
 **F241. Remove or wire `ScanResultStore.getActiveBackgroundScan` Priority 60 -- backlog (Sprint 74 retro Category 14b)**
 - No production caller since the manual-scan dialog moved to the per-account `getActiveScanForAccount`; kept with its tests. Delete with its tests, or wire it. F238 shipped without it (Sprint 75).
 
-### Sprint 76 phone validation carry-ins (after 0.17.0 is live -- Harold, Sprint 75 approval Q3)
+### Superseded: Sprint 76 phone validation carry-ins (Phase 8.2 pass 1, 2026-10-06)
 
-**Sprint 75 close-out (2026-10-04)**: still device-blocked; moved to Sprint 76 with F238 stop-for-manual and F239 Sign In Again on the phone. The checklist is in `docs/sprints/SPRINT_76_PLAN.md`.
-
-**Phase 8.2 pass 1 (2026-10-02)**: MV74-2 SHIPPED in Sprint 74 (the per-account scan lock) and is removed; the F232 half of MV74-3 SHIPPED (cause named from the Fold8 log, fixed). What remains below is phone validation only -- the full checklist is in `docs/sprints/SPRINT_75_PLAN.md`.
-
-**Harold, 2026-09-23**: *"1. and 2. add to sprint 74 Manual Validation"*. These three are NOT new
-work -- the code shipped in Sprint 73 and is committed. What is missing is the only evidence that
-can settle them, which is a run on the S24+. They are listed here so Sprint 74 plans the
-VALIDATION, not a re-implementation.
-
-**MV74-1. F235 Doze scheduling -- validate on the S24+ (Issue #428) Priority 2 (CARRY-IN, Sprint 73 MV step 6)**
-- Phase: Core App Quality
-- Platform: **Android only** (declared ADR-0042 exception -- Doze has no Windows equivalent)
-- **What shipped**: `setAndAllowWhileIdle()` via a new MethodChannel, a Kotlin alarm scheduler, an
-  alarm receiver that RE-ARMS BEFORE scanning, and a `BOOT_COMPLETED` receiver. 13 tests,
-  mutation-verified, Android APK builds.
-- **What to validate**: (a) background scans fire while the phone is idle / screen off; (b) the
-  schedule survives a reboot. Both need real elapsed time -- the delivery window is ~1 hour, so
-  this is an over-hours observation, not a five-minute check.
-- **What NO test can supply** (IMP-1): no unit test can prove an alarm fired on a real dozing
-  phone, nor that a reboot restored the schedule. Without `BootReceiver` working this is a
-  REGRESSION against WorkManager, whose work is persisted -- so the reboot case is the one that
-  matters most.
-- Depends on: the 0.17.0 Play build reaching the S24+ (Sprint 76; 0.17.0 release prepared 2026-10-04).
-
-**MV74-3. F205 -- classify the scan errors on a 0.17.0 phone build (Issue #433) Priority 4 (CARRY-IN; the F232 half SHIPPED in Sprint 74, #422 closed)**
-- Phase: Core App Quality
-- Platform: Android (the reproduction is device-side; any fix follows ADR-0042)
-- **Both were blocked on the same missing thing in Sprint 73: data from the phone.** F232
-  mechanism A was fixed in Sprint 72 and mechanism B remains undiagnosed and INSTRUMENTED rather
-  than guessed at. F205 needs the 53 errors in 3,833 scanned classified before anything can be
-  fixed.
-- **The route is already built and needs no adb.** F233 (Sprint 72) added the diagnostic log and
-  its in-app export, which writes to `Android/data/com.myemailspamfilter/files/` -- confirmed
-  reachable over MTP on 2026-09-23. So: enable diagnostic logging in Settings, reproduce, export
-  from within the app, and the file can be pulled without USB debugging (permanently blocked by
-  company policy on both the S24+ and the Fold8 Ultra).
-- **Do NOT plan a fix for either until the log exists.** Sprint 73 deliberately did not guess at
-  mechanism B, and that decision should hold.
+MV74-1 (F235 Doze, #428) and MV74-3 (F205 errors, #433) are folded into **MV76-1** above. The Doze half of MV74-1 PASSED on the 0.17.4 overnight run (95 worker starts, 111/113 completed); the reboot half and the MV74-3 classification remain, on 0.17.6, inside MV76-1. Both issues stay open until MV76-1 runs. The F205 card under Core App Quality remains the place for any fix the classification calls for.
 
 ### Core App Quality
 
