@@ -162,6 +162,25 @@ class SafeSenderDatabaseStore {
     }
   }
 
+  /// F266 (Sprint 77): reject a pattern, or an exception pattern, that can
+  /// never match an email address (for example a second literal `@` after
+  /// the subdomain wildcard). Safe senders and their exceptions are matched
+  /// against a single address, so the check is valid for every one of them.
+  /// Sibling of the ReDoS check above: same boundary, same exception type.
+  static void _rejectIfUnmatchable(SafeSenderPattern safeSender) {
+    for (final pattern in [
+      safeSender.pattern,
+      ...?safeSender.exceptionPatterns,
+    ]) {
+      final problems = PatternCompiler.detectUnmatchable(pattern);
+      if (problems.isNotEmpty) {
+        throw SafeSenderDatabaseException(
+          'Pattern "$pattern" was rejected: ${problems.first}',
+        );
+      }
+    }
+  }
+
   /// Add new safe sender pattern to database
   ///
   /// Inserts a new safe sender pattern with optional exception patterns.
@@ -181,6 +200,7 @@ class SafeSenderDatabaseStore {
           '${redosWarnings.first}',
         );
       }
+      _rejectIfUnmatchable(safeSender);
 
       _logger.i('Adding safe sender "${safeSender.pattern}" to database');
 
@@ -213,6 +233,7 @@ class SafeSenderDatabaseStore {
           '${redosWarnings.first}',
         );
       }
+      _rejectIfUnmatchable(updatedSender);
 
       _logger.i('Updating safe sender "$pattern" in database');
 

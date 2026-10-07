@@ -281,7 +281,7 @@ void main() {
 
       final db = await testHelper.dbHelper.database;
       expect(await db.getVersion(), databaseVersion);
-      expect(databaseVersion, 12);
+      expect(databaseVersion, 13);
 
       final rows = await db.query('unmatched_emails', orderBy: 'id');
       expect(rows, hasLength(3), reason: '6 fixture rows -> 3 identities');

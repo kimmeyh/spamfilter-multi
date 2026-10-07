@@ -3,6 +3,7 @@ import 'package:sqflite/sqflite.dart';
 import 'package:logger/logger.dart';
 
 import '../../adapters/storage/app_paths.dart';
+import '../services/pattern_compiler.dart';
 
 /// Minimal database interface for rule storage operations
 abstract class RuleDatabaseProvider {
@@ -68,7 +69,12 @@ abstract class RuleDatabaseProvider {
 ///      provider_identifier_value, folder_name) (F245, Sprint 77, ADR-0045).
 ///      The migration also DEDUPS existing rows to one per identity within an
 ///      account. The 90-day retention cuts on last_seen_at.
-const int databaseVersion = 12;
+///
+/// v13: Data only -- repairs stored safe-sender (and rule `from`) patterns with
+///      a stray second literal `@` after the domain wildcard, which could never
+///      match any address (F266, Sprint 77). A repair that would duplicate an
+///      existing row deletes the broken row instead.
+const int databaseVersion = 13;
 
 /// SQLite database helper - singleton pattern
 class DatabaseHelper implements RuleDatabaseProvider {
@@ -676,6 +682,107 @@ class DatabaseHelper implements RuleDatabaseProvider {
     if (oldVersion < 12) {
       await _migrateV12UnmatchedIdentity(db);
     }
+
+    if (oldVersion < 13) {
+      await _migrateV13UnmatchableAtSign(db);
+    }
+  }
+
+  /// v13 (F266, Sprint 77): repair stored patterns that can never match.
+  ///
+  /// 23 bundled safe senders shipped with a stray second literal `@` after
+  /// the domain wildcard (`...)*@banking\.jpmchase\.com$`), so those senders
+  /// were not protected. The fix to the bundled asset only reaches fresh
+  /// installs; this migration repairs existing databases.
+  ///
+  /// Data only, no schema change. Plain SELECT, UPDATE and DELETE by primary
+  /// key inside sqflite's upgrade transaction, the same primitives v7, v10 and
+  /// v12 use: sqflite on Android and sqflite_common_ffi on Windows run the
+  /// identical SQLite statements, and the rewrite logic is shared Dart
+  /// ([PatternCompiler.repairStrayAtAfterDomainWildcard]).
+  ///
+  /// `safe_senders.pattern` is UNIQUE, so a rewrite that would collide with an
+  /// existing row deletes the broken row instead. Block rules are walked too
+  /// (`condition_from`, `exception_from`; the only columns the unmatchable
+  /// check covers); the bundled rules.yaml has none, but a user rule might.
+  /// Guarded on each TABLE existing (partial test schemas) like v10 to v12.
+  Future<void> _migrateV13UnmatchableAtSign(Database db) async {
+    _logger.i('Applying v13 migration: repair unmatchable @ patterns');
+    final now = DateTime.now().millisecondsSinceEpoch;
+
+    final ssCols = (await db.rawQuery('PRAGMA table_info(safe_senders)'))
+        .map((r) => r['name'] as String)
+        .toSet();
+    var ssRepaired = 0;
+    var ssDeleted = 0;
+    if (ssCols.isNotEmpty) {
+      final rows = await db.query('safe_senders', columns: ['id', 'pattern']);
+      for (final row in rows) {
+        final old = row['pattern'] as String;
+        final repaired = PatternCompiler.repairStrayAtAfterDomainWildcard(old);
+        if (repaired == null) continue;
+        final clash = await db.query('safe_senders',
+            columns: ['id'], where: 'pattern = ?', whereArgs: [repaired]);
+        if (clash.isNotEmpty) {
+          await db.delete('safe_senders',
+              where: 'id = ?', whereArgs: [row['id']]);
+          ssDeleted++;
+        } else {
+          await db.update(
+              'safe_senders',
+              {
+                'pattern': repaired,
+                if (ssCols.contains('date_modified')) 'date_modified': now,
+              },
+              where: 'id = ?',
+              whereArgs: [row['id']]);
+          ssRepaired++;
+        }
+      }
+    }
+
+    final ruleCols = (await db.rawQuery('PRAGMA table_info(rules)'))
+        .map((r) => r['name'] as String)
+        .toSet();
+    var rulesRepaired = 0;
+    if (ruleCols.contains('condition_from')) {
+      final fromColumns = [
+        'condition_from',
+        if (ruleCols.contains('exception_from')) 'exception_from',
+      ];
+      final rows = await db.query('rules', columns: ['id', ...fromColumns]);
+      for (final row in rows) {
+        final updates = <String, Object?>{};
+        for (final column in fromColumns) {
+          final raw = row[column];
+          if (raw is! String) continue;
+          try {
+            final patterns = (jsonDecode(raw) as List).cast<String>();
+            var changed = false;
+            final fixed = <String>[];
+            for (final p in patterns) {
+              final repaired =
+                  PatternCompiler.repairStrayAtAfterDomainWildcard(p);
+              final next = repaired ?? p;
+              if (repaired != null) changed = true;
+              if (!fixed.contains(next)) fixed.add(next);
+            }
+            if (changed) updates[column] = jsonEncode(fixed);
+          } catch (_) {
+            // Malformed JSON: skip rather than fail the migration.
+          }
+        }
+        if (updates.isNotEmpty) {
+          await db.update('rules', updates,
+              where: 'id = ?', whereArgs: [row['id']]);
+          rulesRepaired++;
+        }
+      }
+    }
+
+    _logger.i('v13 migration complete: $ssRepaired safe sender(s) repaired, '
+        '$ssDeleted broken duplicate(s) deleted, $rulesRepaired rule(s) '
+        'repaired');
   }
 
   /// v12 (F245, Sprint 77, ADR-0045): one No Rule row per email.

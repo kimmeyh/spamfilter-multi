@@ -195,8 +195,16 @@ class PatternCompiler {
   ///
   /// Warnings do not prevent pattern compilation; they help users write
   /// better patterns.
-  List<String> validatePattern(String pattern) {
+  ///
+  /// Set [addressField] to true when the pattern is matched against a single
+  /// email address (safe senders, rule `from`). It adds the F266
+  /// [detectUnmatchable] check, which is wrong for subject and body patterns.
+  List<String> validatePattern(String pattern, {bool addressField = false}) {
     final warnings = <String>[];
+
+    if (addressField) {
+      warnings.addAll(detectUnmatchable(pattern));
+    }
 
     // SEC-1: Check for ReDoS-vulnerable patterns (nested quantifiers)
     final redosWarnings = detectReDoS(pattern);
@@ -237,6 +245,66 @@ class PatternCompiler {
     }
 
     return warnings;
+  }
+
+  /// Detect an UNMATCHABLE address pattern (F266, Sprint 77).
+  ///
+  /// An email address contains exactly one `@`. A pattern whose every match
+  /// path needs at least two literal `@` characters outside a character
+  /// class can therefore never match any address. The shipped defect was
+  /// `^[^@\s]+@(?:[a-z0-9-]+\.)*@banking\.jpmchase\.com$`: a stray second
+  /// `@` after the subdomain wildcard, present in 23 bundled safe senders.
+  /// Those senders looked protected and were not.
+  ///
+  /// Returns a one-element list with a user-facing message, or an empty list.
+  /// Same contract as [detectReDoS], and it is called from the same places.
+  ///
+  /// Apply it ONLY to patterns matched against a single address: safe
+  /// senders, rule `from` conditions and exceptions. Do NOT apply it to
+  /// subject, body or non-From header patterns, where two `@` can be legal.
+  ///
+  /// Method: count the MINIMUM number of literal `@` any match must contain.
+  /// `|` takes the cheapest branch, `*` `?` `{0,n}` make a part optional (0),
+  /// `+` and `{n,m}` repeat it n times, lookarounds count 0, and a character
+  /// class counts 0, so `[^@\s]` is not a literal `@`. An escaped `\@` is a
+  /// literal `@`.
+  ///
+  /// What this does NOT catch: other impossible shapes (an anchor in the
+  /// wrong place, a class that excludes what the pattern requires, a
+  /// contradictory lookahead), a missing `@` (a domain-only pattern is legal
+  /// for non-address header text), and patterns whose regex does not parse.
+  static List<String> detectUnmatchable(String pattern) {
+    final count = _AtSignCounter(pattern).minimumLiteralAtSigns();
+    if (count > 1) {
+      return const [
+        'Pattern requires more than one "@" character, but an email address '
+            'contains exactly one, so it can never match. Remove the extra '
+            '"@" (for example after the subdomain wildcard).'
+      ];
+    }
+    return const [];
+  }
+
+  /// The domain wildcard group every bundled entire-domain pattern uses.
+  static const String _domainWildcard = r'(?:[a-z0-9-]+\.)*';
+
+  /// Repair the one shipped F266 defect shape: a stray literal `@` directly
+  /// after the domain wildcard, as in
+  /// `^[^@\s]+@(?:[a-z0-9-]+\.)*@banking\.jpmchase\.com$`.
+  ///
+  /// Returns the repaired pattern (the second `@` removed), or `null` when
+  /// the pattern is not of this shape or the repair would not fix it. The
+  /// result is only returned when [detectUnmatchable] is clean for it, so a
+  /// legitimate pattern is never touched. Deterministic and pure: the v13
+  /// database migration and the seed test both use it.
+  static String? repairStrayAtAfterDomainWildcard(String pattern) {
+    if (detectUnmatchable(pattern).isEmpty) return null;
+    const needle = '$_domainWildcard@';
+    final at = pattern.indexOf(needle);
+    if (at < 0) return null;
+    final repaired = pattern.substring(0, at + _domainWildcard.length) +
+        pattern.substring(at + needle.length);
+    return detectUnmatchable(repaired).isEmpty ? repaired : null;
   }
 
   /// Detect ReDoS-vulnerable patterns (SEC-1).
@@ -319,5 +387,122 @@ class PatternCompiler {
     }
 
     return warnings;
+  }
+}
+
+/// Computes the minimum number of literal `@` characters any match of a regex
+/// must contain (F266). Private helper of [PatternCompiler.detectUnmatchable].
+///
+/// This is a small recursive-descent walk, not a regex engine. It never
+/// throws: on any parse surprise it reports 0, which means "do not flag".
+/// A false negative is acceptable here; a false positive would reject a
+/// legal pattern.
+class _AtSignCounter {
+  _AtSignCounter(this._p);
+
+  final String _p;
+  int _i = 0;
+
+  int minimumLiteralAtSigns() {
+    try {
+      _i = 0;
+      return _alternation();
+    } catch (_) {
+      return 0;
+    }
+  }
+
+  /// Alternation: the cheapest branch decides the minimum.
+  int _alternation() {
+    var best = _sequence();
+    while (_i < _p.length && _p[_i] == '|') {
+      _i++;
+      final branch = _sequence();
+      if (branch < best) best = branch;
+    }
+    return best;
+  }
+
+  int _sequence() {
+    var total = 0;
+    while (_i < _p.length) {
+      final c = _p[_i];
+      if (c == '|' || c == ')') break;
+      int atom;
+      if (c == r'\') {
+        // An escaped at sign is still one literal at sign.
+        atom = (_i + 1 < _p.length && _p[_i + 1] == '@') ? 1 : 0;
+        _i += 2;
+      } else if (c == '[') {
+        _skipCharacterClass();
+        atom = 0;
+      } else if (c == '(') {
+        atom = _group();
+      } else {
+        atom = c == '@' ? 1 : 0;
+        _i++;
+      }
+      total += atom * _quantifierMinimum();
+    }
+    return total;
+  }
+
+  int _group() {
+    _i++; // past '('
+    var zeroWidth = false;
+    if (_i < _p.length && _p[_i] == '?') {
+      final next = _i + 1 < _p.length ? _p[_i + 1] : '';
+      if (next == ':') {
+        _i += 2;
+      } else if (next == '=' || next == '!') {
+        zeroWidth = true;
+        _i += 2;
+      } else if (next == '<') {
+        final after = _i + 2 < _p.length ? _p[_i + 2] : '';
+        if (after == '=' || after == '!') {
+          zeroWidth = true;
+          _i += 3;
+        } else {
+          final close = _p.indexOf('>', _i);
+          if (close < 0) return 0;
+          _i = close + 1; // named capture group
+        }
+      }
+    }
+    final inner = _alternation();
+    if (_i < _p.length && _p[_i] == ')') _i++;
+    return zeroWidth ? 0 : inner;
+  }
+
+  void _skipCharacterClass() {
+    _i++; // past '['
+    if (_i < _p.length && _p[_i] == '^') _i++;
+    while (_i < _p.length && _p[_i] != ']') {
+      _i += _p[_i] == r'\' ? 2 : 1;
+    }
+    _i++; // past ']'
+  }
+
+  /// Minimum repeat count of the atom just read (1 when there is no
+  /// quantifier). Also consumes a trailing lazy `?`.
+  int _quantifierMinimum() {
+    if (_i >= _p.length) return 1;
+    var min = 1;
+    final c = _p[_i];
+    if (c == '*' || c == '?') {
+      min = 0;
+      _i++;
+    } else if (c == '+') {
+      _i++;
+    } else if (c == '{') {
+      final m = RegExp(r'\{(\d+)(?:,\d*)?\}').matchAsPrefix(_p, _i);
+      if (m == null) return 1; // a literal brace, not a quantifier
+      min = int.parse(m.group(1)!);
+      _i = m.end;
+    } else {
+      return 1;
+    }
+    if (_i < _p.length && _p[_i] == '?') _i++; // lazy modifier
+    return min;
   }
 }

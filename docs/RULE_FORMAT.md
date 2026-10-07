@@ -466,6 +466,7 @@ When loading YAML files, the following validations are performed:
    - All patterns must be valid regex (compile without error)
    - Patterns should not be empty strings
    - Patterns are trimmed and lowercased on export
+   - Address patterns (safe senders, rule `from` conditions and exceptions) must be matchable (F266): an email address has exactly one `@`, so a pattern that needs two literal `@` outside a character class can never match. Rejected shape: `^[^@\s]+@(?:[a-z0-9-]+\.)*@banking\.jpmchase\.com$` (correct: `^[^@\s]+@(?:[a-z0-9-]+\.)*banking\.jpmchase\.com$`). `PatternCompiler.detectUnmatchable` is the single check. The quick-add, manual rule, rule edit and rule test screens, YAML import and the database stores all use it, and import skips and reports such entries. Subject, body and non-From header patterns are not checked, because two `@` can be legal there
 
 ### Best Practices
 

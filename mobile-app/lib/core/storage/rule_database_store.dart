@@ -211,6 +211,13 @@ class RuleDatabaseStore {
     try {
       _logger.i('Saving ${ruleSet.rules.length} rules to database');
 
+      // F266: validate BEFORE the delete so a bad import cannot leave the
+      // table empty. The import screen filters first and reports what it
+      // skipped; this is the backstop for any other caller.
+      for (final rule in ruleSet.rules) {
+        _rejectIfUnmatchable(rule);
+      }
+
       // Delete all existing rules (cascade deletes related email_actions)
       final db = await databaseProvider.database;
       await db.delete('rules');
@@ -235,6 +242,11 @@ class RuleDatabaseStore {
   Future<void> saveSafeSenders(SafeSenderList safeSenders) async {
     try {
       _logger.i('Saving ${safeSenders.safeSenders.length} safe sender patterns to database');
+
+      // F266: validate BEFORE the delete (see saveRules).
+      for (final pattern in safeSenders.safeSenders) {
+        _rejectUnmatchableSafeSender(pattern);
+      }
 
       // Delete all existing safe senders
       final db = await databaseProvider.database;
@@ -326,6 +338,37 @@ class RuleDatabaseStore {
       if (warnings.isNotEmpty) {
         throw RuleDatabaseStorageException(
           'Pattern "$pattern" was rejected: ${warnings.first}',
+        );
+      }
+    }
+    _rejectIfUnmatchable(rule);
+  }
+
+  /// F266 (Sprint 77): safe-sender counterpart of [_rejectIfUnmatchable].
+  static void _rejectUnmatchableSafeSender(String pattern) {
+    final problems = PatternCompiler.detectUnmatchable(pattern);
+    if (problems.isNotEmpty) {
+      throw RuleDatabaseStorageException(
+        'Pattern "$pattern" was rejected: ${problems.first}',
+      );
+    }
+  }
+
+  /// F266 (Sprint 77): reject a rule whose `from` condition or `from`
+  /// exception can never match an address. Only the `from` lists are
+  /// checked: subject and body patterns can legally contain two `@`, and
+  /// non-From header patterns match `key:value` text, not one address.
+  /// Called from [_rejectIfReDoS] (add and update) and from [saveRules]
+  /// (import).
+  static void _rejectIfUnmatchable(Rule rule) {
+    for (final pattern in [
+      ...rule.conditions.from,
+      ...?rule.exceptions?.from,
+    ]) {
+      final problems = PatternCompiler.detectUnmatchable(pattern);
+      if (problems.isNotEmpty) {
+        throw RuleDatabaseStorageException(
+          'Pattern "$pattern" was rejected: ${problems.first}',
         );
       }
     }
@@ -422,6 +465,8 @@ class RuleDatabaseStore {
   Future<void> addSafeSender(String pattern) async {
     try {
       _logger.i('Adding safe sender pattern "$pattern" to database');
+
+      _rejectUnmatchableSafeSender(pattern); // F266
 
       final db = await databaseProvider.database;
       final patternType = _determinePatternType(pattern);

@@ -533,6 +533,14 @@ class _YamlImportExportScreenState extends State<YamlImportExportScreen> {
         return;
       }
 
+      // F266: drop patterns that can never match, and say which ones.
+      final sanitized = YamlService.sanitizeRules(importedRules);
+      importedRules = sanitized.ruleSet;
+      final skipped = sanitized.skipped;
+      for (final line in skipped) {
+        _logger.w('Import skipped (unmatchable): $line');
+      }
+
       // Show confirmation dialog
       if (!mounted) return;
       final confirmed = await _showImportConfirmation(
@@ -540,6 +548,7 @@ class _YamlImportExportScreenState extends State<YamlImportExportScreen> {
         itemCount: importedRules.rules.length,
         itemType: 'rules',
         filePath: filePath,
+        skipped: skipped,
       );
 
       if (confirmed != true) {
@@ -555,7 +564,8 @@ class _YamlImportExportScreenState extends State<YamlImportExportScreen> {
       await _localRuleStore.saveRules(importedRules);
 
       _logger.i('Imported ${importedRules.rules.length} rules from $filePath');
-      _showStatus('Imported ${importedRules.rules.length} rules successfully');
+      _showStatus('Imported ${importedRules.rules.length} rules successfully'
+          '${_skippedSuffix(skipped)}');
     } catch (e) {
       _logger.e('Failed to import rules', error: e);
       _showStatus('Import failed: $e', isError: true);
@@ -587,6 +597,14 @@ class _YamlImportExportScreenState extends State<YamlImportExportScreen> {
         return;
       }
 
+      // F266: drop patterns that can never match, and say which ones.
+      final sanitized = YamlService.sanitizeSafeSenders(importedSafeSenders);
+      importedSafeSenders = sanitized.list;
+      final skipped = sanitized.skipped;
+      for (final line in skipped) {
+        _logger.w('Import skipped (unmatchable): $line');
+      }
+
       // Show confirmation dialog
       if (!mounted) return;
       final confirmed = await _showImportConfirmation(
@@ -594,6 +612,7 @@ class _YamlImportExportScreenState extends State<YamlImportExportScreen> {
         itemCount: importedSafeSenders.safeSenders.length,
         itemType: 'safe senders',
         filePath: filePath,
+        skipped: skipped,
       );
 
       if (confirmed != true) {
@@ -610,7 +629,8 @@ class _YamlImportExportScreenState extends State<YamlImportExportScreen> {
 
       _logger.i('Imported ${importedSafeSenders.safeSenders.length} safe senders from $filePath');
       _showStatus(
-        'Imported ${importedSafeSenders.safeSenders.length} safe senders successfully',
+        'Imported ${importedSafeSenders.safeSenders.length} safe senders '
+        'successfully${_skippedSuffix(skipped)}',
       );
     } catch (e) {
       _logger.e('Failed to import safe senders', error: e);
@@ -627,12 +647,14 @@ class _YamlImportExportScreenState extends State<YamlImportExportScreen> {
     required int itemCount,
     required String itemType,
     required String filePath,
+    List<String> skipped = const [],
   }) {
     return showDialog<bool>(
       context: context,
       builder: (ctx) => AlertDialog(
         title: Text(title),
-        content: Column(
+        content: SingleChildScrollView(
+         child: Column(
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
@@ -640,6 +662,22 @@ class _YamlImportExportScreenState extends State<YamlImportExportScreen> {
               'This will replace ALL existing $itemType with '
               '$itemCount $itemType from the selected file.',
             ),
+            if (skipped.isNotEmpty) ...[
+              const SizedBox(height: 12),
+              Text(
+                '${skipped.length} unusable '
+                '${skipped.length == 1 ? 'entry was' : 'entries were'} '
+                'skipped because ${skipped.length == 1 ? 'it' : 'they'} '
+                'can never match an email address:',
+                style: TextStyle(color: Colors.orange.shade800, fontSize: 13),
+              ),
+              const SizedBox(height: 4),
+              for (final line in skipped.take(5))
+                Text(line, style: const TextStyle(fontSize: 12)),
+              if (skipped.length > 5)
+                Text('...and ${skipped.length - 5} more',
+                    style: const TextStyle(fontSize: 12)),
+            ],
             const SizedBox(height: 12),
             Container(
               padding: const EdgeInsets.all(8),
@@ -666,6 +704,7 @@ class _YamlImportExportScreenState extends State<YamlImportExportScreen> {
               style: TextStyle(color: Colors.red.shade700, fontSize: 13),
             ),
           ],
+         ),
         ),
         actions: [
           TextButton(
@@ -685,6 +724,12 @@ class _YamlImportExportScreenState extends State<YamlImportExportScreen> {
   }
 
   // --- Helpers ---
+
+  /// F266: status-line suffix naming how many import entries were skipped.
+  String _skippedSuffix(List<String> skipped) => skipped.isEmpty
+      ? ''
+      : ' (${skipped.length} unusable '
+          '${skipped.length == 1 ? 'entry' : 'entries'} skipped)';
 
   String _shortenPath(String path) {
     // Show just the file name if the path is very long

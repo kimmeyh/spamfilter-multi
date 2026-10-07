@@ -2,6 +2,7 @@ import 'dart:io';
 import 'package:yaml/yaml.dart';
 import '../models/rule_set.dart';
 import '../models/safe_sender_list.dart';
+import 'pattern_compiler.dart';
 
 /// Handles YAML import/export for rules and safe senders
 class YamlService {
@@ -71,6 +72,99 @@ class YamlService {
     final content = await file.readAsString();
     final yaml = loadYaml(content) as Map;
     return SafeSenderList.fromMap(Map<String, dynamic>.from(yaml));
+  }
+
+  /// F266 (Sprint 77): drop safe-sender patterns that can never match an
+  /// address (see [PatternCompiler.detectUnmatchable]) from an imported list.
+  /// Returns the cleaned list and one human-readable line per skipped entry,
+  /// for the import screen to report. The persistence layer rejects the same
+  /// patterns, so this filter only turns a hard failure into a reported skip.
+  static ({SafeSenderList list, List<String> skipped}) sanitizeSafeSenders(
+      SafeSenderList imported) {
+    final kept = <String>[];
+    final skipped = <String>[];
+    for (final pattern in imported.safeSenders) {
+      if (PatternCompiler.detectUnmatchable(pattern).isEmpty) {
+        kept.add(pattern);
+      } else {
+        skipped.add('Safe sender "$pattern": requires more than one "@", '
+            'can never match');
+      }
+    }
+    return (list: SafeSenderList(safeSenders: kept), skipped: skipped);
+  }
+
+  /// F266 (Sprint 77): rules counterpart of [sanitizeSafeSenders]. Only the
+  /// `from` lists are checked (see [PatternCompiler.detectUnmatchable]).
+  ///
+  /// An OR rule loses just the unmatchable `from` pattern (it never matched,
+  /// so behavior is unchanged), and the rule is skipped if that leaves it
+  /// with no conditions. An AND rule is skipped whole: dropping one of its
+  /// conditions would WIDEN what the rule matches. An unmatchable `from`
+  /// exception is dropped (it never matched, so behavior is unchanged).
+  static ({RuleSet ruleSet, List<String> skipped}) sanitizeRules(
+      RuleSet imported) {
+    final kept = <Rule>[];
+    final skipped = <String>[];
+    bool bad(String p) => PatternCompiler.detectUnmatchable(p).isNotEmpty;
+
+    for (final rule in imported.rules) {
+      final c = rule.conditions;
+      final e = rule.exceptions;
+      final badFrom = c.from.where(bad).toList();
+      final badExceptionFrom = (e?.from ?? const <String>[]).where(bad).toList();
+      if (badFrom.isEmpty && badExceptionFrom.isEmpty) {
+        kept.add(rule);
+        continue;
+      }
+      for (final p in [...badFrom, ...badExceptionFrom]) {
+        skipped.add('Rule "${rule.name}": pattern "$p" requires more than '
+            'one "@", can never match');
+      }
+      final remainingFrom = c.from.where((p) => !bad(p)).toList();
+      final noConditionsLeft = remainingFrom.isEmpty &&
+          c.header.isEmpty &&
+          c.subject.isEmpty &&
+          c.body.isEmpty;
+      if (badFrom.isNotEmpty && (c.type == 'AND' || noConditionsLeft)) {
+        skipped.add('Rule "${rule.name}": skipped');
+        continue;
+      }
+      kept.add(Rule(
+        name: rule.name,
+        enabled: rule.enabled,
+        isLocal: rule.isLocal,
+        executionOrder: rule.executionOrder,
+        conditions: RuleConditions(
+          type: c.type,
+          from: remainingFrom,
+          header: c.header,
+          subject: c.subject,
+          body: c.body,
+        ),
+        actions: rule.actions,
+        exceptions: e == null
+            ? null
+            : RuleExceptions(
+                from: e.from.where((p) => !bad(p)).toList(),
+                header: e.header,
+                subject: e.subject,
+                body: e.body,
+              ),
+        metadata: rule.metadata,
+        patternCategory: rule.patternCategory,
+        patternSubType: rule.patternSubType,
+        sourceDomain: rule.sourceDomain,
+      ));
+    }
+    return (
+      ruleSet: RuleSet(
+        version: imported.version,
+        settings: imported.settings,
+        rules: kept,
+      ),
+      skipped: skipped,
+    );
   }
 
   /// The rules export text (normalized, sorted, single-quoted patterns),

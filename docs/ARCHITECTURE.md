@@ -381,6 +381,7 @@ SQLite database schema. See [ADR-0010](adr/0010-normalized-database-schema.md) f
 - v10: data only -- subject rules reclassified `pattern_sub_type` `exact_domain` -> `keyword` (Sprint 74 MV; all three creators now write `keyword`)
 - v11: `scan_results.cancel_requested_at` -- the cross-isolate/process stop request a manual scan writes onto a background scan's row; the scanning isolate reads it on its heartbeat tick (F238, Sprint 75)
 - v12: `unmatched_emails.last_seen_at` plus the non-unique lookup index `idx_unmatched_identity`; the migration dedups existing rows to one per email within an account (F245, Sprint 77, ADR-0045)
+- v13: data only -- repairs stored safe-sender patterns (and rule `from` patterns) that carry a stray second literal `@` after the domain wildcard and so could never match; a repair that would duplicate an existing row deletes the broken row instead (F266, Sprint 77)
 
 **Indexes**: 10+ targeted indexes for fast lookups (by platform, account, completion time, scan ID, folder, no-rule matches).
 

@@ -184,7 +184,10 @@ class _RuleTestScreenState extends State<RuleTestScreen> {
     }
 
     // Validate pattern
-    final warnings = _compiler.validatePattern(pattern);
+    final warnings = _compiler.validatePattern(
+      pattern,
+      addressField: _conditionType == 'from',
+    );
     try {
       RegExp(pattern, caseSensitive: false);
     } catch (e) {

@@ -341,6 +341,17 @@ class _RuleEditScreenState extends State<RuleEditScreen> {
       }
     }
 
+    // F266: every type except a body phrase is matched against one address.
+    if (pattern.isNotEmpty &&
+        error == null &&
+        _selectedType != ManualRuleType.bodyPhrase) {
+      final unmatchable = PatternCompiler.detectUnmatchable(pattern);
+      if (unmatchable.isNotEmpty) {
+        error = 'Pattern rejected: ${unmatchable.first}';
+        pattern = '';
+      }
+    }
+
     // Compile check
     if (pattern.isNotEmpty && error == null) {
       try {
@@ -374,6 +385,16 @@ class _RuleEditScreenState extends State<RuleEditScreen> {
     final redosWarnings = PatternCompiler.detectReDoS(value.trim());
     if (redosWarnings.isNotEmpty) {
       error = 'Pattern rejected: ${redosWarnings.first}';
+    }
+
+    // F266: only From-matched rules are address patterns. Subject and body
+    // rules can legally contain two "@".
+    final category = widget.rule.patternCategory ?? 'header_from';
+    if (error == null && category != 'subject' && category != 'body') {
+      final unmatchable = PatternCompiler.detectUnmatchable(value.trim());
+      if (unmatchable.isNotEmpty) {
+        error = 'Pattern rejected: ${unmatchable.first}';
+      }
     }
 
     // Compile check
