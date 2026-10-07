@@ -21,6 +21,16 @@ Phase 3; this stub only records what Sprint 76 carried in.
 
 Details: `docs/ALL_SPRINTS_MASTER_PLAN.md`, "Sprint 77 carry-in".
 
+## Phase 3.7.0b version bump -- MUST include (recorded 2026-10-06, Phase 8.3)
+
+- 0.17.6 (versionCode 14) was UPLOADED to Play closed testing (Alpha) on 2026-10-06 (Harold's
+  Publishing overview screenshot: "14 (0.17.6) Start full rollout", quick checks running). In the SAME
+  commit as the Sprint 77 `pubspec.yaml` bump, update `docs/STORE_VERSION_STATUS.md` "Last uploaded to
+  Play (any track)" to 0.17.6 (versionCode 14) -- not before (Sprint 76 IMP-2: updating it first turns
+  `dev_version_ahead_test` red). The next build must use versionCode 15 or higher.
+- Microsoft Store: Submission 31 (0.17.6.0) in certification since 2026-10-06; update the Live row only
+  from a direct Partner Center observation.
+
 ## Open question carried
 
 - Does the native Gmail sign-in (F250) still matter now that refresh-token renewal works?
