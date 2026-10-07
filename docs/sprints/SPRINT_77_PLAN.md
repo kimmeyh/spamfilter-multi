@@ -201,6 +201,11 @@ question"*; each asked with what / options / pros / cons / recommendation / why,
 
 All decision questions are answered; execution proceeds without further approval until Manual Validation.
 
+## Phase 5 evidence
+
+- **5.1.2 F-PRECHECK**: 2026-10-07, read-only Opus run over `git diff origin/develop...HEAD` (117 files), all six classes. (1) Mirror-site sync: 1 HIGH -- Windows jitter start "-At 11:55PM" is today's 23:55 (in the future), so any interval over 15 minutes would not fire until tonight; plus a source==target remove-list bug in `_resolvedMoveLabels` (MEDIUM), the single-message delete path not removing SPAM (LOW), live certificate tests that can flake on the ubuntu CI (LOW). (2) Helper wiring: CLEAN, every new helper has a production caller (cited). (3) Doc/text drift: the certificate-changed message points at Test Connection, which never stores trust (MEDIUM); ADR-0045 omits two deletion paths (MEDIUM); several LOW comment fixes. (4) Fragile parsing: CLEAN except an unbounded pre-TLS line reader (LOW). (5) API scope: one per-app throttle and unique work now drop a second provider's notification (MEDIUM). (6) Silent failure: Save proceeds after a STARTTLS/TLS failure (MEDIUM); the F264 migration marks done after a failed reschedule (LOW-MEDIUM). Other: No Rule Review lists mail already deleted in the client (MEDIUM). No path accepts an untrusted certificate. All HIGH/MEDIUM and the cheap LOWs dispatched to a fix agent (prevention first, mutation-checked); result recorded below when merged.
+- **5.1.5 WinWright sweep**: PENDING (runs on the Windows dev build after the emulator work ends -- builds are serialized).
+
 ---
 
 # Cards
