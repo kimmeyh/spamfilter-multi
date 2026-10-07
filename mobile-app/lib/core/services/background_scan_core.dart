@@ -30,6 +30,7 @@ import '../providers/rule_set_provider.dart';
 import '../storage/database_helper.dart';
 import '../storage/scan_result_store.dart';
 import '../storage/settings_store.dart';
+import 'diagnostic_logger.dart';
 import 'email_scanner.dart';
 import 'scan_coordinator.dart';
 
@@ -107,9 +108,23 @@ class BackgroundScanCore {
     required Future<void> Function() export,
     required Future<void> Function() notify,
   }) async {
-    if (outcome.skipped) return;
+    void postLog(String detail) => unawaited(DiagnosticLogger.log(
+          kind: DiagnosticLogger.kindScan,
+          context: 'scan/post',
+          detail: detail,
+        ));
+    // F248: whether the export and the "scan complete" notification ran --
+    // a stopped or skipped scan deliberately does neither (F238 / MV74-2).
+    if (outcome.skipped) {
+      postLog('no export, no notification '
+          '(${outcome.stopped ? 'stopped' : 'skipped'}: '
+          '${DiagnosticLogger.scrub(outcome.skippedReason ?? '')})');
+      return;
+    }
     await export();
+    postLog('export step done');
     await notify();
+    postLog('notification step done');
   }
 
   static final Logger _logger = Logger();
@@ -190,6 +205,22 @@ class BackgroundScanCore {
           scanResultStore: scanResultStore,
         );
 
+    // Sprint 76 (Harold Q3, 2026-10-05): "when emails arrive is the best
+    // possible position - if < 5 minutes can it delay until 5 minutes before
+    // starting the scan". Never skip: wait out the rest of the 5 minutes
+    // since this account's last completed scan (any type), then scan.
+    final spacing = await _spacingWait(accountId, scanResultStore);
+    if (spacing > Duration.zero) {
+      unawaited(DiagnosticLogger.scanEvent(
+        scanType: 'background',
+        accountId: accountId,
+        stage: 'spacing',
+        detail: 'waiting ${spacing.inSeconds}s (last scan of this account '
+            'finished less than ${kMinScanSpacing.inMinutes} minutes ago)',
+      ));
+      await busyWait(spacing);
+    }
+
     String busyBecause;
     try {
       final first = await attempt();
@@ -201,12 +232,67 @@ class BackgroundScanCore {
       if (!isDatabaseLocked(e)) rethrow;
       busyBecause = 'database is locked';
     }
-    final wait = busyRetryDelay();
+    // Sprint 76: the spacing wait and the busy wait share one budget, so a
+    // WorkManager worker (about 10 minutes) still has time left to scan.
+    final wait = cappedBusyWait(busyRetryDelay(), alreadyWaited: spacing);
     _logger.i('Background scan of ${Redact.accountId(accountId)} found it '
         'busy ($busyBecause); waiting ${wait.inSeconds}s, then one more '
         'attempt');
+    unawaited(DiagnosticLogger.scanEvent(
+      scanType: 'background',
+      accountId: accountId,
+      stage: 'busy-retry',
+      detail: 'waiting ${wait.inSeconds}s (${DiagnosticLogger.scrub(busyBecause)})',
+    ));
     await busyWait(wait);
     return attempt();
+  }
+
+  /// Sprint 76 (Harold Q3): minimum time between the end of an account's last
+  /// scan and the start of its next background scan.
+  static const Duration kMinScanSpacing = Duration(minutes: 5);
+
+  /// Sprint 76: total waiting allowed before a background scan (spacing plus
+  /// busy retry) -- the old busy-retry maximum, so the worst case is unchanged.
+  static const Duration kMaxTotalWait = Duration(minutes: 6);
+
+  /// How long to wait so the scan starts [kMinScanSpacing] after the last
+  /// completed scan ended. Zero when there is none, it is older, or the clock
+  /// says it ended in the future.
+  @visibleForTesting
+  static Duration spacingWaitFor({DateTime? lastCompletedAt, required DateTime now}) {
+    if (lastCompletedAt == null) return Duration.zero;
+    final elapsed = now.difference(lastCompletedAt);
+    if (elapsed.isNegative || elapsed >= kMinScanSpacing) return Duration.zero;
+    return kMinScanSpacing - elapsed;
+  }
+
+  /// The busy-retry wait, reduced so spacing + busy never exceeds
+  /// [kMaxTotalWait].
+  @visibleForTesting
+  static Duration cappedBusyWait(Duration wanted, {required Duration alreadyWaited}) {
+    final left = kMaxTotalWait - alreadyWaited;
+    if (left <= Duration.zero) return Duration.zero;
+    return wanted > left ? left : wanted;
+  }
+
+  static Future<Duration> _spacingWait(
+      String accountId, ScanResultStore? scanResultStore) async {
+    try {
+      final store = scanResultStore ?? ScanResultStore(DatabaseHelper());
+      final last = await store.getLatestCompletedScan(accountId);
+      final at = last?.completedAt;
+      return spacingWaitFor(
+        lastCompletedAt:
+            at == null ? null : DateTime.fromMillisecondsSinceEpoch(at),
+        now: DateTime.now(),
+      );
+    } catch (e) {
+      // Best effort: spacing is a courtesy; an unreadable history must not
+      // stop the scan.
+      _logger.w('Scan spacing check failed: $e');
+      return Duration.zero;
+    }
   }
 
   /// The wait before the one retry: random, 2:00 to 6:00 (Harold). A seam so
@@ -262,6 +348,11 @@ class BackgroundScanCore {
           '(scan id ${live.id})';
       _logger.i('Background scan SKIPPED for ${Redact.accountId(accountId)}: '
           '$reason');
+      unawaited(DiagnosticLogger.scanEvent(
+          scanType: 'background',
+          accountId: accountId,
+          stage: 'skip',
+          detail: reason));
       return AccountScanOutcome.skipped(reason, EmailScanProvider());
     }
 
@@ -347,6 +438,11 @@ class BackgroundScanCore {
       // what a stored value means (Class 1), so it was not done here.
       _logger.i('Background scan SKIPPED for ${Redact.accountId(accountId)}: '
           '${GmailSignInRequiredException.reason}');
+      unawaited(DiagnosticLogger.scanEvent(
+          scanType: 'background',
+          accountId: accountId,
+          stage: 'skip',
+          detail: 'needs sign-in: ${GmailSignInRequiredException.reason}'));
       return AccountScanOutcome.skipped(
           GmailSignInRequiredException.reason, scanProvider,
           needsSignIn: true);
@@ -354,6 +450,11 @@ class BackgroundScanCore {
       final minutes = ScanCoordinator.scanTimeout.inMinutes;
       _logger.e('Background scan TIMED OUT after $minutes minutes for '
           '${Redact.accountId(accountId)} -- marking failed (F175)');
+      unawaited(DiagnosticLogger.scanEvent(
+          scanType: 'background',
+          accountId: accountId,
+          stage: 'outcome',
+          detail: 'timed out after $minutes minutes'));
       // Sprint 62 code review (C-2): the hung scanInbox still holds the
       // coordinator lease -- its `finally` cannot run until the hang
       // resolves, which may be never. Without this, every queued scan
@@ -364,6 +465,7 @@ class BackgroundScanCore {
       ScanCoordinator.instance.releaseActiveByOwner(
         scanType: 'background',
         accountId: accountId,
+        reason: 'timed out after $minutes minutes (F175)',
       );
       await scanProvider
           .errorScan('Scan timed out after $minutes minutes (F175)');

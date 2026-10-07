@@ -2,7 +2,9 @@ package com.myemailspamfilter
 
 import android.content.Context
 import android.util.Log
+import androidx.work.Constraints
 import androidx.work.ExistingWorkPolicy
+import androidx.work.NetworkType
 import androidx.work.OneTimeWorkRequest
 import androidx.work.WorkManager
 import dev.fluttercommunity.workmanager.BackgroundWorker
@@ -64,7 +66,27 @@ object DozeScanTrigger {
      */
     private const val TASK_NAME = "spamfilter_background_scan"
 
-    fun enqueue(context: Context, accountId: String?) {
+    /**
+     * Payload keys the Dart worker reads to name what started it (F252 R-2).
+     * Must match `kTriggerSourceKey` / `kTriggerAtMsKey` in
+     * `lib/core/services/background_scan_trigger.dart` (pinned by a source-parity
+     * test, the same way TASK_NAME is).
+     */
+    const val KEY_TRIGGER_SOURCE = "triggerSource"
+    const val KEY_TRIGGER_AT_MS = "triggerAtMs"
+    const val SOURCE_DOZE_ALARM = "doze-alarm"
+
+    /**
+     * [triggerAtMs] is when the ALARM fired (wall clock), so the worker can log
+     * how long Android held the scan back after the alarm. F252: that delay is
+     * the measurement that decides whether the alarm-to-WorkManager handoff
+     * actually scans while the phone is idle.
+     */
+    fun enqueue(
+        context: Context,
+        accountId: String?,
+        triggerAtMs: Long = System.currentTimeMillis(),
+    ) {
         if (accountId == null) {
             Log.w(TAG, "no accountId on the alarm intent; nothing enqueued")
             return
@@ -76,7 +98,8 @@ object DozeScanTrigger {
                 dartTask = TASK_NAME,
                 payload = mapOf(
                     "accountId" to accountId,
-                    "f235DozeWake" to true,
+                    KEY_TRIGGER_SOURCE to SOURCE_DOZE_ALARM,
+                    KEY_TRIGGER_AT_MS to triggerAtMs,
                 ),
                 uniqueName = uniqueName,
             )
@@ -86,19 +109,78 @@ object DozeScanTrigger {
                 .setInitialDelay(0, TimeUnit.SECONDS)
                 .build()
 
-            // REPLACE, not APPEND: if a scan for this account is somehow still
-            // queued, running a second is exactly the stacking F175 and the
-            // Sprint 61 forensics exist to prevent.
+            // KEEP, not REPLACE and not APPEND (F249 part 2, Harold Q1 = 1,
+            // 2026-10-05). APPEND would stack scans (F175, the Sprint 61
+            // forensics). REPLACE was used until 0.17.4, but it CANCELS the
+            // existing work even while it is RUNNING: an alarm firing during a
+            // long Doze-started scan killed that scan mid-fetch, with no outcome
+            // line and an in_progress row left for the reaper (both 5.1.1
+            // reviewers confirmed the scenario). KEEP lets the running scan
+            // finish and drops the new request; the next alarm re-arms anyway.
             WorkManager.getInstance(context).enqueueUniqueWork(
                 uniqueName,
-                ExistingWorkPolicy.REPLACE,
+                ExistingWorkPolicy.KEEP,
                 request,
             )
-            Log.i(TAG, "scan enqueued after Doze wake")
+            // KEEP drops this request when a scan is already queued or running
+            // for the account, so "enqueued" would overstate it (7.7.1 review).
+            Log.i(TAG, "scan requested after Doze wake (KEEP: dropped if one is already queued or running)")
         } catch (t: Throwable) {
             // Never crash the receiver. A failed enqueue means this interval is
             // missed; the alarm has already re-armed, so the next one fires.
             Log.e(TAG, "enqueue failed: ${t.message}")
         }
+    }
+
+    /** Must match `kTriggerAppKey` in `background_scan_trigger.dart`. */
+    const val KEY_TRIGGER_APP = "triggerApp"
+    private const val UNIQUE_NEW_MAIL = "f253_new_mail_scan"
+
+    /**
+     * F253 (Sprint 76): one scan of EVERY account (no accountId -- the worker's
+     * all-accounts path, where each account's own background switch and the
+     * per-account claim still decide), started by a mail app's notification.
+     *
+     * KEEP, not REPLACE: a notification that arrives while a triggered scan is
+     * queued or running must not cancel it or stack a second (R-5). Requires a
+     * network connection, so a trigger in a no-network moment waits instead of
+     * running a scan that can only fail.
+     */
+    fun enqueueAllAccounts(
+        context: Context,
+        source: String,
+        triggerAtMs: Long,
+        sourceApp: String,
+    ) {
+        val input = buildTaskInputData(
+            dartTask = TASK_NAME,
+            payload = mapOf(
+                KEY_TRIGGER_SOURCE to source,
+                KEY_TRIGGER_AT_MS to triggerAtMs,
+                KEY_TRIGGER_APP to sourceApp,
+            ),
+            uniqueName = UNIQUE_NEW_MAIL,
+        )
+        val request = OneTimeWorkRequest.Builder(BackgroundWorker::class.java)
+            .setInputData(input)
+            .setConstraints(
+                Constraints.Builder()
+                    .setRequiredNetworkType(NetworkType.CONNECTED)
+                    .build()
+            )
+            .build()
+        WorkManager.getInstance(context).enqueueUniqueWork(
+            UNIQUE_NEW_MAIL,
+            ExistingWorkPolicy.KEEP,
+            request,
+        )
+        // "requested", not "enqueued": with KEEP an already-queued scan wins
+        // and this request is dropped by design (review H-1).
+        Log.i(TAG, "scan requested after a mail notification")
+    }
+
+    /** Turning F253 off cancels a queued or backing-off new-mail scan (review H-1). */
+    fun cancelNewMailScan(context: Context) {
+        WorkManager.getInstance(context).cancelUniqueWork(UNIQUE_NEW_MAIL)
     }
 }

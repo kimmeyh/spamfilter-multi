@@ -345,10 +345,16 @@ if ($branch -match '_Sprint_(\d+)') {
                             #
                             # Prose that merely mentions "5.1.1" cannot satisfy it,
                             # because prose is not a leading bullet with a colon.
+                            #
+                            # 5.1.1 REMOVED (Harold, 2026-10-06): the automated
+                            # code review no longer runs before Manual Validation.
+                            # Both final reviews (Copilot + pr-review-toolkit) run
+                            # at Phase 7.7.1, after the retrospective improvements,
+                            # and verify-closeout-complete.ps1 check 3d-2 requires
+                            # their record. A plan may still carry an old 5.1.1
+                            # line; it is simply no longer required.
                             $missingF193 = @()
                             $evidenceF193 = @(
-                                @{ Name = '5.1.1 automated code review';
-                                   Pattern = '(?im)^\s*-\s*\**\s*5\.1\.1\b[^:\r\n]*\**\s*:\s*(.*)$' },
                                 @{ Name = '5.1.2 F-PRECHECK';
                                    Pattern = '(?im)^\s*-\s*\**\s*5\.1\.2\b[^:\r\n]*\**\s*:\s*(.*)$' },
                                 @{ Name = '5.1.5 WinWright sweep';

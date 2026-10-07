@@ -9,6 +9,7 @@ import 'package:my_email_spam_filter/core/services/app_environment.dart';
 import 'package:my_email_spam_filter/core/services/app_version.dart';
 import 'package:my_email_spam_filter/core/services/live_scan_logger.dart';
 import 'package:my_email_spam_filter/core/services/export_directories.dart';
+import 'package:my_email_spam_filter/core/services/scan_sheet_export.dart';
 import 'package:my_email_spam_filter/core/storage/settings_store.dart';
 
 /// F92 (Sprint 39): Dedicated unit tests for [LiveScanLogger].
@@ -321,10 +322,12 @@ void main() {
           .split('\n')
           .where((l) => l.trim().isNotEmpty)
           .toList();
-      // Two scans, one data row each -> CSV accumulates to 2 rows.
-      expect(lines.length, 2);
-      expect(lines[0], contains('first'));
-      expect(lines[1], contains('second'));
+      // Sprint 76: a new file starts with the column names, then the two
+      // scans' rows accumulate after it (one each).
+      expect(lines.length, 3);
+      expect(lines[0], scanSheetHeaders.join('\t'));
+      expect(lines[1], contains('first'));
+      expect(lines[2], contains('second'));
       // XLSX is regenerated each call from the accumulated CSV.
       expect(File(xlsxPath(accountId)).existsSync(), isTrue);
     });

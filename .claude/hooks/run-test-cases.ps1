@@ -16,6 +16,7 @@
       test-cases/closeout/*.json         -> verify-closeout-complete.ps1 (Stop)
       test-cases/sprint-cards/*.json     -> require-sprint-cards.ps1 (PreToolUse)
       test-cases/heredoc-guard/*.json    -> block-heredoc-python-backslash.ps1 (PreToolUse)
+      test-cases/staging-guard/*.json    -> block-blind-staging.ps1 (PreToolUse)
 
     Prints a per-case PASS/FAIL line and a summary. Exits 0 if all pass, 1 if
     any fail.
@@ -44,6 +45,7 @@ $routes = @{
     'closeout'     = 'verify-closeout-complete.ps1'
     'sprint-cards' = 'require-sprint-cards.ps1'
     'heredoc-guard' = 'block-heredoc-python-backslash.ps1'   # Sprint 74 retro IMP-6
+    'staging-guard' = 'block-blind-staging.ps1'              # Sprint 76 retro IMP-4
 }
 
 $pass = 0

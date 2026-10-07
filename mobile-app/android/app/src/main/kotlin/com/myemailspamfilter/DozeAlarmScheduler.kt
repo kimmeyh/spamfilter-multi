@@ -182,6 +182,9 @@ object DozeAlarmScheduler {
  */
 class DozeAlarmReceiver : BroadcastReceiver() {
     override fun onReceive(context: Context, intent: Intent) {
+        // F252: read the clock FIRST -- this is the moment the alarm was
+        // delivered, and the worker logs how long after it the scan started.
+        val firedAtMs = System.currentTimeMillis()
         val accountId = intent.getStringExtra(DozeAlarmScheduler.EXTRA_ACCOUNT_ID)
         Log.i("DozeAlarmReceiver", "fired")
 
@@ -205,7 +208,7 @@ class DozeAlarmReceiver : BroadcastReceiver() {
         // The scan itself runs through the existing WorkManager one-off path,
         // so the Dart worker, the ScanCoordinator lease and all the F175/F177
         // protections are reused rather than duplicated here.
-        DozeScanTrigger.enqueue(context, accountId)
+        DozeScanTrigger.enqueue(context, accountId, firedAtMs)
     }
 }
 

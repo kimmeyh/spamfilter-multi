@@ -8,6 +8,7 @@ import 'package:flutter/foundation.dart' show visibleForTesting;
 
 import '../../core/providers/email_scan_provider.dart';
 import '../../core/providers/rule_set_provider.dart';
+import '../../core/services/diagnostic_logger.dart';
 import '../../core/services/email_scanner.dart';
 import '../../core/storage/database_helper.dart'; // F175 (Sprint 62)
 import '../../core/services/scan_coordinator.dart'; // F221 (Sprint 70)
@@ -24,6 +25,18 @@ import 'help_screen.dart';
 import '../widgets/screen_version_line.dart'; // F229 (Sprint 73)
 import '../widgets/sign_in_again.dart'; // F239 (Sprint 75)
 import '../widgets/system_inset_wrapper.dart'; // F209 (Sprint 69)
+
+/// Sprint 76 (Harold Q4): whether the screen may reset the shared scan state.
+///
+/// Both reset sites (entering this screen, and backing out of Results via
+/// `didPopNext`) mean "show Ready to Scan for a FINISHED scan". They ran even
+/// while a scan was still running, zeroing its counters mid-scan -- the
+/// 0.17.2 Fold log's Gmail scans read `found=0 processed=6` and `found=6`
+/// against 40 and 63 fetched. A running or paused scan is left alone; it
+/// resets the screen when it ends and the user next arrives here.
+@visibleForTesting
+bool shouldResetScanState(ScanStatus status) =>
+    status != ScanStatus.scanning && status != ScanStatus.paused;
 
 /// Displays live scan progress bound to EmailScanProvider.
 /// Provides controls to start/pause/resume/reset a scan and
@@ -69,9 +82,10 @@ class _ScanProgressScreenState extends State<ScanProgressScreen>
     // [NEW] ISSUE #41 FIX: Set current account for per-account folder storage
     scanProvider.setCurrentAccount(widget.accountId);
 
-    // Auto-reset scan state when navigating to this screen
+    // Auto-reset scan state when navigating to this screen -- unless a scan is
+    // still running (Sprint 76, see shouldResetScanState).
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      scanProvider.reset();
+      if (shouldResetScanState(scanProvider.status)) scanProvider.reset();
     });
 
     // Load configured scan settings for display in header
@@ -117,7 +131,7 @@ class _ScanProgressScreenState extends State<ScanProgressScreen>
   @override
   void didPopNext() {
     final scanProvider = Provider.of<EmailScanProvider>(context, listen: false);
-    scanProvider.reset();
+    if (shouldResetScanState(scanProvider.status)) scanProvider.reset();
   }
 
   Future<void> _loadConfiguredSettings() async {
@@ -505,7 +519,9 @@ class _ScanProgressScreenState extends State<ScanProgressScreen>
   /// rather than leaving the tap looking ignored.
   void _cancelScan(BuildContext context, EmailScanProvider scanProvider) {
     final requested =
-        ScanCoordinator.instance.requestCancel(accountId: widget.accountId);
+        ScanCoordinator.instance.requestCancel(
+            accountId: widget.accountId,
+            reason: 'user tapped Stop (Scan progress)');
     final messenger = ScaffoldMessenger.of(context);
     messenger.hideCurrentSnackBar();
     messenger.showSnackBar(
@@ -989,6 +1005,16 @@ Future<void> startRealScan({
         accountEmail: accountEmail,
         estimate: estimate,
       );
+      // F248: the manual side of F238/F249 -- who held the account, and what
+      // the user chose.
+      void stopLog(String detail) => unawaited(DiagnosticLogger.scanEvent(
+            scanType: 'manual',
+            accountId: accountId,
+            stage: 'busy',
+            detail: detail,
+          ));
+      stopLog('${activeScan.scanType} scan row ${activeScan.id} holds the '
+          'account; user chose ${choice.name}');
       if (choice != ScanBusyChoice.stopBackgroundAndStart) {
         logger.i('[SCAN_SCREEN] manual scan not started -- a '
             '${activeScan.scanType} scan holds this account (Harold Q4)');
@@ -1000,12 +1026,17 @@ Future<void> startRealScan({
       // to close. The claim inside EmailScanProvider.startScan is still the
       // lock; this only clears the way for it.
       final requested = await scanResultStore.requestCancel(activeScan.id!);
+      stopLog('stop requested on row ${activeScan.id}: '
+          '${requested ? 'written' : 'not written (row no longer in progress)'}');
       if (requested) {
         if (!context.mounted) return;
+        final waitWatch = Stopwatch()..start();
         final closed = await showStoppingBackgroundScanDialog(
           context: context,
           wait: () => scanResultStore.waitForScanToClose(activeScan.id!),
         );
+        stopLog('row ${activeScan.id} ${closed ? 'closed' : 'NOT closed'} '
+            'after ${waitWatch.elapsed.inSeconds}s');
         if (!closed) {
           logger.w('[SCAN_SCREEN] F238: the background scan did not stop '
               'within the bound -- manual scan not started');
@@ -1212,6 +1243,7 @@ Future<void> startRealScan({
         ScanCoordinator.instance.releaseActiveByOwner(
           scanType: 'manual',
           accountId: accountId,
+          reason: 'timed out after $minutes minutes (F221)',
         );
       }
       // H-5: the message must match the actual cause. "The mail server may

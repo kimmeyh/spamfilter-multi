@@ -464,7 +464,7 @@ ONLY control channel into a running scan as well:
 - The scanning isolate reads its own row on the EXISTING heartbeat tick
   (`EmailScanProvider._startHeartbeat`, every 30 s) and, when set, calls
   `ScanCoordinator.requestCancel` in ITS OWN isolate. From there the F224 path
-  is unchanged: the scan stops at its next batch boundary, its partial counts
+  is unchanged: the scan stops at its next check point, its partial counts
   are kept, its `finally` releases the lease and closes the IMAP session, and
   `cancelScan` closes the row `interrupted` with the reason "Stopped so your
   manual scan could start" -- never `error`. The tick never closes the row
@@ -484,6 +484,19 @@ ONLY control channel into a running scan as well:
   `scanProvider.wasCancelled` and returns a skip with `stopped: true`: no
   export, no "scan complete" notification, and no 2-6 minute busy retry --
   the user is scanning that account by hand.
+
+**Amendment (Sprint 76, F249) -- the check points.** Until 0.17.0 the only
+check point was a BATCH boundary. On the Fold (2026-10-04) a background scan
+stuck at Found 0 never reached one, so the stop was accepted and ignored; a
+test (F248) then showed the same: accepted at the first folder, and the scan
+went on to "completed" because empty folders produce no batch. The scanner now
+also checks right after the connect, at each folder start, and after the last
+folder (`EmailScanner._cancelCheckpoint`), with the same lease check and the
+same exit (`ScanCancelledException` -> `cancelScan` -> `finally`). This also
+makes the user's Cancel Scan and a timeout's revoked lease take effect at those
+points. Still NOT covered: a stop while the connect or one folder's search is
+itself blocked -- there is no check point inside a single awaited call; the
+F248 diagnostic log on the phone decides whether that case needs a cancel race.
 
 **Why not a second channel.** The F224 token and the MV74-2 heartbeat timer
 are reused as-is: no second cancel path, no second timer. A platform channel
@@ -544,3 +557,31 @@ is open. The F109c ingest stays: it only converts an old handoff file into
 proves the launch PROCEEDS with the UI open, against a non-existent account so
 it touches no mail); the claim's behavior across processes is covered by the
 Dart tests on one connection and by Manual Validation.
+
+## Amendment -- Sprint 76 Manual Validation (Harold, 2026-10-05: "q1 1 ... q3 2"): KEEP, and five-minute spacing
+
+**1. The Doze one-off uses KEEP (Q1 = 1).** `DozeScanTrigger.enqueue` used
+`ExistingWorkPolicy.REPLACE`, which cancels the existing work even while it is
+RUNNING: an alarm firing during a long Doze-started scan killed that scan
+mid-fetch, with no outcome line and an `in_progress` row left for the reaper
+(both Phase 5.1.1 reviewers confirmed the scenario; F249 part 2). KEEP lets the
+running scan finish and drops the new request -- the next alarm re-arms anyway.
+APPEND stays rejected (it stacks scans, F175). The F253 new-mail one-off
+already used KEEP.
+
+**2. Five-minute spacing, never a skip (Q3 = 2, with Harold's refinement).**
+Harold rejected skipping a background scan that falls soon after another:
+*"no as when emails arrive is the best possible position - if < 5 minutes can
+it delay until 5 minutes before starting the scan"*. `BackgroundScanCore.scanAccount`
+now waits until 5 minutes after the account's last COMPLETED scan (any type)
+before its first attempt, then scans. The spacing wait and the existing 2-6
+minute busy retry share one 6-minute budget (`cappedBusyWait`), so the worst
+case is unchanged and an Android worker (about 10 minutes) keeps time to scan.
+Shared by both platforms (ADR-0042).
+
+**3. A scan that fetched nothing is a failed scan (Q4).** When every folder
+that exists on the account failed to fetch -- no network -- the scan now ends
+with `ScanFetchFailedException` instead of "completed, errors=N", so the worker
+reports a failure and WorkManager retries it (a notification-triggered run does
+not retry; its next notification is the retry). A partial failure still
+completes with its errors counted (F174).

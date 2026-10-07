@@ -133,4 +133,66 @@ void main() {
               'in text a user reads. Describe what changed for THEM.');
     }
   });
+
+  test('the Windows notes fit Partner Center\'s 1,500-character limit', () {
+    // Microsoft: "What's new in this version ... This field has a 1500
+    // character limit" (learn.microsoft.com, Add and edit Store listing info
+    // for MSIX app). This repo's process doc said 10,000 -- that is the
+    // DESCRIPTION field. Found 2026-10-04: the 0.17.0 notes (1,521 characters
+    // by this count) were refused as 15 over. Partner Center's own count
+    // differs slightly from every count here, so this measures the STRICTEST
+    // one (each line break as two characters, as pasted on Windows) against
+    // the documented 1,500 -- which also satisfies Harold's rule of "15 less
+    // than the rejected length" (1,506).
+    const windowsLimit = 1500;
+    final v = currentVersion();
+    final f = File('../docs/store-assets/RELEASE_NOTES_${v}_windows.md');
+    if (!f.existsSync()) return;
+    final content = f.readAsStringSync().replaceAll('\r\n', '\n');
+    final sep = content.indexOf('\n---\n');
+    if (sep < 0) return; // the identifier test reports a missing separator
+    var shipped = content.substring(sep + 5);
+    final auditTail = shipped.indexOf('**Excluded from this file**');
+    if (auditTail > -1) shipped = shipped.substring(0, auditTail);
+    final strictest = shipped.trim().replaceAll('\n', '\r\n').length;
+    expect(strictest, lessThanOrEqualTo(windowsLimit),
+        reason: 'the Windows notes measure $strictest characters (line breaks '
+            'counted as two) against Partner Center\'s $windowsLimit-character '
+            '"What\'s new in this version" limit. Shorten them.');
+  });
+
+  test('shipped paragraphs are ONE line each (no hard wrapping)', () {
+    // Harold, 2026-10-04: the 0.17.0 Windows notes were hard-wrapped at ~100
+    // columns like the derivation header above them. A line break inside a
+    // paragraph is a real character: pasted into Partner Center's "What's new"
+    // field or Play's release-notes field it becomes a broken line on the
+    // listing. Each paragraph is one line; paragraphs are separated by a blank
+    // line. A block whose every line is a list item ("- ") is a deliberate
+    // list and is allowed.
+    final v = currentVersion();
+    for (final store in ['windows', 'play']) {
+      final f = File('../docs/store-assets/RELEASE_NOTES_${v}_$store.md');
+      if (!f.existsSync()) continue;
+      final content = f.readAsStringSync().replaceAll('\r\n', '\n');
+      final sep = content.indexOf('\n---\n');
+      if (sep < 0) continue; // the identifier test reports a missing separator
+      var shipped = content.substring(sep + 5);
+      final auditTail = shipped.indexOf('**Excluded from this file**');
+      if (auditTail > -1) shipped = shipped.substring(0, auditTail);
+      shipped = shipped.replaceAll(RegExp(r'</?en-US>'), '\n');
+
+      final wrapped = shipped
+          .split(RegExp(r'\n\s*\n'))
+          .map((p) => p.trim())
+          .where((p) => p.contains('\n'))
+          .where((p) => !p.split('\n').every((l) => l.trimLeft().startsWith('- ')))
+          .toList();
+      expect(wrapped, isEmpty,
+          reason: 'the $store release notes hard-wrap ${wrapped.length} '
+              'paragraph(s); the first starts "${wrapped.isEmpty ? '' : wrapped.first.split('\n').first}". '
+              'Put each paragraph on ONE line -- the line breaks are pasted '
+              'into the store field as real breaks (STORE_RELEASE_PROCESS.md '
+              'Step 1b).');
+    }
+  });
 }

@@ -14,8 +14,10 @@
 ///     file log, Excel export) stay in the Windows worker.
 library;
 
+import 'dart:async' show unawaited;
 import 'dart:ui' show DartPluginRegistrant;
 
+import 'package:flutter/foundation.dart' show visibleForTesting;
 import 'package:flutter/widgets.dart' show WidgetsFlutterBinding;
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:logger/logger.dart';
@@ -29,6 +31,8 @@ import '../storage/database_helper.dart';
 import '../storage/settings_store.dart';
 import 'background_mode_service.dart';
 import 'background_scan_core.dart';
+import 'background_scan_trigger.dart';
+import 'diagnostic_logger.dart';
 import 'scan_sheet_export.dart';
 
 /// Prefix for the per-account WorkManager task name, mirroring the Windows
@@ -64,26 +68,63 @@ void androidBackgroundScanDispatcher() {
     return AndroidBackgroundScanWorker.executeScan(
       accountId: accountId,
       isTest: isTest,
+      retryOnFailure: retryOnFailureFor(inputData),
+      // F252: computed HERE, at entry, so the delay measures how long Android
+      // held the work back -- not the worker's own setup time.
+      trigger: describeBackgroundTrigger(
+        isTest: isTest,
+        inputData: inputData,
+        now: DateTime.now(),
+      ),
     );
   });
 }
+
+/// Sprint 76 review H-1: whether a failed run may ask WorkManager to RETRY.
+///
+/// The plugin maps a `false` result to `Result.retry()` with WorkManager's
+/// default backoff (30 s doubling to 5 h, no attempt limit). For the F253
+/// new-mail trigger that is a trap: its unique work uses KEEP, so while a
+/// retry waits in backoff every later notification is dropped -- one account
+/// that always fails would turn "scan when new mail arrives" into "scan every
+/// few hours", with Settings still reading "On". The next notification IS the
+/// retry, so a notification-triggered run never asks for one.
+///
+/// The Doze one-off is the same trap (Sprint 76 7.7.1 review H-1): it also
+/// uses KEEP since the Manual Validation decision, so a failed alarm run (for
+/// example offline in Doze, which now counts as a failure) would sit in
+/// backoff and swallow every later alarm. The next alarm IS its retry too.
+/// The periodic task keeps the existing retry behavior (F175 R-6).
+@visibleForTesting
+bool retryOnFailureFor(Map<String, dynamic>? inputData) {
+  final source = inputData?[kTriggerSourceKey];
+  return source != 'notification' && source != 'doze-alarm';
+}
+
+/// The value handed back to WorkManager: `true` = done, `false` = retry.
+@visibleForTesting
+bool workerResult({required bool allSucceeded, required bool retryOnFailure}) =>
+    allSucceeded || !retryOnFailure;
 
 class AndroidBackgroundScanWorker {
   AndroidBackgroundScanWorker._();
 
   static final Logger _logger = Logger();
 
-  /// Execute a background scan for [accountId] (or, defensively, all enabled
-  /// accounts when null -- a scheduled task always carries its account in
-  /// inputData, so null means something unexpected happened; scanning enabled
-  /// accounts beats silently doing nothing).
+  /// Execute a background scan for [accountId], or for every saved account
+  /// whose background scanning is on when [accountId] is null. Null is the
+  /// normal case for the F253 new-mail trigger (one scan of all accounts) and
+  /// a defensive fallback for anything else -- a scheduled task always carries
+  /// its account.
   ///
-  /// Returns true when every attempted account scan succeeded -- WorkManager
-  /// uses the return value to decide whether to retry per the task's backoff
-  /// policy.
+  /// Returns what WorkManager should do: true = done, false = retry per the
+  /// task's backoff policy. A failure retries only when [retryOnFailure] is
+  /// true (see [retryOnFailureFor]); per-account failures are always logged.
   static Future<bool> executeScan({
     String? accountId,
     bool isTest = false,
+    String? trigger,
+    bool retryOnFailure = true,
   }) async {
     _logger.i('Android background scan started'
         '${accountId != null ? ' for ${Redact.accountId(accountId)}' : ' (all accounts)'}'
@@ -100,6 +141,20 @@ class AndroidBackgroundScanWorker {
 
       final credStore = SecureCredentialsStore();
       final settingsStore = SettingsStore(dbHelper);
+
+      // F248: AFTER the database paths are set -- the logger reads its
+      // on/off setting from the database. Proves the worker ran at all,
+      // which is one of the two F249 candidates.
+      void workerLog(String detail) => unawaited(DiagnosticLogger.log(
+            kind: DiagnosticLogger.kindScan,
+            context: 'worker/android',
+            detail: detail,
+          ));
+      // F248: the worker is its own isolate -- name the build it runs.
+      unawaited(DiagnosticLogger.appEvent('background worker start (android)'));
+      workerLog('start ${isTest ? '[TEST] ' : ''}'
+          '${accountId != null ? Redact.accountId(accountId) : '(all accounts)'}'
+          '${trigger != null ? ' $trigger' : ''}');
 
       final ruleSetProvider = RuleSetProvider();
       await ruleSetProvider.initialize();
@@ -157,13 +212,32 @@ class AndroidBackgroundScanWorker {
         } catch (e) {
           _logger.e('Background scan failed for ${Redact.accountId(id)}',
               error: e);
+          workerLog('account ${Redact.accountId(id)} FAILED: '
+              '${DiagnosticLogger.describeError(e)}');
           allSucceeded = false;
         }
       }
-      return allSucceeded;
+      // Awaited: the worker's isolate can end as soon as this returns, and
+      // the logger chains its writes, so awaiting the last one also flushes
+      // every scan line queued before it.
+      await DiagnosticLogger.log(
+        kind: DiagnosticLogger.kindScan,
+        context: 'worker/android',
+        detail: 'exit ${allSucceeded ? 'success' : 'with failures'}'
+            '${!allSucceeded && !retryOnFailure ? ' (no retry: the next notification or alarm retries)' : ''}',
+      );
+      return workerResult(
+          allSucceeded: allSucceeded, retryOnFailure: retryOnFailure);
     } catch (e) {
       _logger.e('Android background scan worker failed', error: e);
-      return false;
+      // Review MEDIUM-5: awaited, like the exit line above -- the isolate can
+      // end as soon as this returns, and this is the line most worth keeping.
+      await DiagnosticLogger.log(
+        kind: DiagnosticLogger.kindScan,
+        context: 'worker/android',
+        detail: 'worker FAILED: ${DiagnosticLogger.describeError(e)}',
+      );
+      return workerResult(allSucceeded: false, retryOnFailure: retryOnFailure);
     }
   }
 

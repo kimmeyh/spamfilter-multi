@@ -59,7 +59,7 @@ class _RowRequestMidScanPlatform extends MockEmailProvider {
 class _StoppedMidScanPlatform extends MockEmailProvider {
   @override
   void setDeletedRuleFolder(String? folderName) {
-    ScanCoordinator.instance.requestCancel(accountId: _account);
+    ScanCoordinator.instance.requestCancel(accountId: _account, reason: 'test');
     super.setDeletedRuleFolder(folderName);
   }
 }

@@ -27,6 +27,10 @@ platforms, but a version may advance without being submitted everywhere). Ask be
   noise outweighs the churn, a cosmetic one may not.
 - **An update does NOT reset any tester's 14-day clock.** Opting OUT does. Shipping a fix mid
   test is safe; it is only the tester's continuous opt-in that matters.
+- **PRODUCTION releases only -- notification access (F253, ADR-0044).** The app declares a
+  notification listener ("Scan when new mail arrives"). Before the FIRST production release that
+  carries it: (1) the store listing describes the feature and that only the posting app's name is
+  read; (2) the Data safety form is reviewed for it. Closed testing does not need either.
 
 ---
 
@@ -83,6 +87,12 @@ D:\Data\Harold\github\spamfilter-multi\docs\store-assets\RELEASE_NOTES_<version>
 
 Paste the `<en-US>` block INCLUDING its tags. Everything above the `---` separator is the
 derivation header and audit trail, which never goes into the console.
+
+**One line per paragraph -- NEVER hard-wrap the text inside `<en-US>` (Harold, 2026-10-04).** Each
+paragraph is a single line, with one blank line between paragraphs; a line break inside a
+paragraph is pasted into the console as a real break. Same rule as the Windows notes -- see
+`STORE_RELEASE_PROCESS.md` Step 1b for the correct/wrong example. Gated by
+`release_notes_test.dart` ("shipped paragraphs are ONE line each").
 
 **Hard limits, both learned by hitting them:**
 
@@ -148,11 +158,21 @@ is missing for a RELEASE build"*, because it drops the gradle properties the scr
 from `secrets.*.json`. That gate exists because F119 shipped a credential-less build to the
 Microsoft Store. (Sprint 66 IMP-1.)
 
-**Output -- FULL PATH, ready to paste into the Play Console upload dialog:**
+**Output -- FULL PATH, ready to paste into the Play Console upload dialog** (Sprint 76 retro IMP-1: the
+script KEEPS a copy outside `build/`, so a later Windows or Android build's `flutter clean` cannot delete
+it -- upload THIS one):
 
 ```
-D:\Data\Harold\github\spamfilter-multi\mobile-app\build\app\outputs\bundle\prodRelease\app-prod-release.aab
+D:\Data\Harold\github\spamfilter-multi\mobile-app\dist\android-<version>\app-prod-release.aab
 ```
+
+(The working copy at `mobile-app\build\app\outputs\bundle\prodRelease\app-prod-release.aab` is wiped by the
+next build of either platform.)
+
+**Before building (Sprint 76 retro IMP-2)**: the script refuses a bundle whose versionCode is not above the
+"Last uploaded to Play (any track)" row in `docs/STORE_VERSION_STATUS.md` -- Play rejects a code it has
+already received on any track. After every upload, update that row in the same commit as the next
+`pubspec.yaml` bump.
 
 Approx 67 MB (0.15.2: 66.9 MB; 0.16.0: 67.0 MB -- the older "53 MB" figure was Sprint 66's
 bundle and is stale). **Note this is the DEV worktree** -- unlike the Windows MSIX, the Play bundle is

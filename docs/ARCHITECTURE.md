@@ -234,6 +234,7 @@ namespace).
 | **DefaultRuleSetService** | Seed bundled rules on first launch; reset to defaults; SEC-1b marks seeded patterns as `bundled` provenance so they skip ReDoS checks. Includes F53 `ensureTldBlockRules` post-seed migration for existing installs, plus the BUG-S37-2 ccTLD gap-fill reconciling the bundled `top_level_domain` set against the ISO 3166-1 list. **Current bundled coverage (BUG-S37-2 audit, Sprint 42): 247 of 248 IANA ccTLDs blocked -- only `.us` is unblocked** (`.uk`/`.ca` ARE blocked; the bundled list is an initial load the user overrides per-account via safe-sender rules). DB v6/v7 migrations remove malformed TLD typos (`.c`, `.giw`, `.sweepss`, ... and Sprint-42 `.sho`/`.sweeps`) |
 | **LiveScanLogger** (F90, Sprint 39 warmup) | Persists the live-scan runtime log to `{appDataDir}/logs/`, env-aware path (dev/prod), append-mode. Its setting-gated per-account CSV/XLSX export goes to the EXPORT folder's `scan_exports/` via `ScanSheetExport` since F206 (Sprint 74) -- it used to sit in app-private logs, unreachable on Android |
 | **ExportDirectories** (`export_directories.dart`, F206 Sprint 74) | The ONE place an export's folder is decided: the user's Settings > General folder, else the platform default -- Android public `Documents` (derived from `getExternalStorageDirectory()`, so it works in the WorkManager engine too), Windows the Downloads known folder (`%USERPROFILE%\Downloads`). Used by the results / rules / safe-senders CSV exports, `ScanSheetExport`, and `DiagnosticLogger` (`diagnostics/` subfolder). Deliberately a single conditional, NOT a factory (ADR-0042: an export-directory choice is a two-value difference); recorded in ADR-0042 "Deliberate non-parity". Call sites pinned by `factory_call_site_test` |
+| **DiagnosticLogger** (`diagnostic_logger.dart`, F233 Sprint 72; scope widened F248 Sprint 76) | The user-shareable, opt-in log (Settings > General > Privacy & Logging), written to the export folder's `diagnostics` subfolder (Settings shows the exact path). Kinds: re-process / IMAP failures (F233), `SCAN` (every scan type: start, claim, rules loaded, connect begin/done, fetch path and per-folder count/time, action plan and per-batch results, `scan/persist` rows stored, `scan/claim` reaped holders, `scan/reconcile`, `scan/post` export/notify, duration, `scan/error` per counted error, stop request found by the heartbeat, outcome; both background workers' start/exit), `SIGN_IN` (Gmail native steps and the browser fallback), `APP` (app start, logging turned on). Every address is redacted (`Redact`, `scrub`); no subject, body or token. Writes are serialized per isolate; a UI and a worker may interleave lines in one file. `LiveScanLogger` (manual scans, app-private) is not a substitute on Android. |
 | **ScanSheetExport / BackgroundScanExport** (`scan_sheet_export.dart`, F206 Sprint 74) | The shared per-scan CSV accumulator + regenerated XLSX, used by live scans AND by BOTH background workers (it used to exist only in the Windows worker, so the Android toggle did nothing). Honors the `export_redacted` setting (sender domain kept; local part, subject and message id masked) |
 | **AuthResultsParser** (F89, Sprint 39) | Parses `Authentication-Results` / `Received-SPF` / DKIM / ARC headers (RFC 8601, tolerant of AOL/Yahoo/Gmail variants) into an `EmailAuthResult {spf, dkim, dmarc, raw}`, and classifies to GREEN/YELLOW/RED/GREY. Drives the auth badge + warn-then-confirm dialog on rule / safe-sender quick-add prompts so a user does not whitelist a sender whose mail failed authentication |
 | **ManualRulePatternGenerator** (F25, Sprint 40; extended F186, Sprint 64) | Public utility (`lib/core/utils/manual_rule_pattern_generator.dart`) with 6 static methods: `generateTopLevelDomain`, `generateEntireDomain`, `generateExactDomain`, `generateExactEmail`, `generateFromPlaintext` (auto-detect), and `generateBodyPhrase`. Extracted from `ManualRuleCreateScreen`'s previously-private generators so create-flow, edit-flow (F35 `RuleEditScreen`), and rule-test plaintext->regex conversion (F25) all share the same source of truth |
@@ -564,6 +565,40 @@ firing it re-arms itself and enqueues a one-off WorkManager task for that accoun
 so the scan itself still runs in the same worker as above. `BootReceiver` re-arms
 all alarms after a reboot, because alarms (unlike WorkManager work) are not
 persisted. The periodic WorkManager task remains registered as a safety net.
+
+**Measuring and enabling unattended scans** (F252, Sprint 76; Android only, a
+declared ADR-0042 exception): the alarm passes its fire time and source
+(`triggerSource`, `triggerAtMs`) in the worker payload, and the worker's
+diagnostic start line reads `trigger=doze-alarm delay=Ns` (or `periodic` /
+`test`) -- the evidence for whether an alarm produces a scan while the phone is
+idle. Settings > Background shows "Keep background scans running": the
+battery-optimization state read through `com.myemailspamfilter/battery`
+(`PowerManager.isIgnoringBatteryOptimizations`) and a button that opens the
+app's Android settings page. An exempt (Unrestricted) app keeps network access
+in Doze and is outside the App Standby bucket limits. The app does not declare
+`REQUEST_IGNORE_BATTERY_OPTIMIZATIONS` (restricted by Google Play); the user
+chooses Unrestricted.
+
+**Sprint 76 Manual Validation decisions** (ADR-0039 amendment): the Doze
+one-off uses `ExistingWorkPolicy.KEEP` (REPLACE cancelled RUNNING scans); a
+background scan waits until 5 minutes after the account's last completed scan
+(never skipped; spacing + busy retry share a 6-minute budget); a scan where
+every existing folder failed ends as an error (`ScanFetchFailedException`), not
+"completed". On Android a failed native Gmail renewal falls back to the refresh
+token the browser sign-in stored, refreshed with the Android OAuth client
+(`GmailWindowsOAuthHandler.refreshAccessTokenMobile`). The diagnostic log
+appends each line as one write under an exclusive OS file lock, best effort
+(`DiagnosticLogger.appendLocked`), so concurrent isolates cannot interleave.
+
+**Scan when new mail arrives** (F253, Sprint 76, ADR-0044; Android only):
+`MailNotificationListener` (a `NotificationListenerService`) reads only the
+posting package name and time. A notification from an allowlisted mail app
+(`MailNotificationPolicy`) enqueues ONE all-accounts one-off worker
+(`DozeScanTrigger.enqueueAllAccounts`, unique work + KEEP, network required,
+at most one per 2 minutes); each account's background switch and claim still
+decide. Off by default: the Settings switch (flag in native preferences,
+channel `com.myemailspamfilter/new_mail_trigger`) plus Android Notification
+access.
 
 ### Rule Evaluation Flow (ADR-0005)
 

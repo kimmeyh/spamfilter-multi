@@ -459,6 +459,32 @@ try {
     }
     $buildTarget = if ($Output -eq 'aab') { 'appbundle' } else { 'apk' }
 
+    # Sprint 76 retro IMP-2: refuse a bundle whose versionCode Play has already
+    # received on ANY track (closed testing included). In Sprint 76 a 0.17.5
+    # bundle was rebuilt after versionCode 13 had been uploaded; Play rejected
+    # it at upload. The "Last uploaded to Play (any track)" row in
+    # docs/STORE_VERSION_STATUS.md records the highest code Play has; it is
+    # also enforced by test/policy/dev_version_ahead_test.dart.
+    if ($Output -eq 'aab') {
+        $pubspecForCode = Join-Path $mobileAppDir 'pubspec.yaml'
+        $codeLine = Select-String -Path $pubspecForCode -Pattern '^version:\s*\S+\+(\d+)' | Select-Object -First 1
+        $statusPath = Join-Path (Split-Path $mobileAppDir -Parent) 'docs\STORE_VERSION_STATUS.md'
+        $uploadedLine = if (Test-Path $statusPath) {
+            Select-String -Path $statusPath -Pattern '^\|\s*\*\*Last uploaded to Play[^|]*\*\*[^|]*\|[^|]*versionCode\s+(\d+)' | Select-Object -First 1
+        } else { $null }
+        if (-not $codeLine -or -not $uploadedLine) {
+            Write-Host "[ERROR] IMP-2: cannot read the pubspec build number or the 'Last uploaded to Play (any track)' row in $statusPath." -ForegroundColor Red
+            exit 1
+        }
+        $buildCode = [int]$codeLine.Matches[0].Groups[1].Value
+        $lastUploaded = [int]$uploadedLine.Matches[0].Groups[1].Value
+        if ($buildCode -le $lastUploaded) {
+            Write-Host "[ERROR] IMP-2: versionCode $buildCode is not above $lastUploaded, which Play has already received. Bump pubspec.yaml (version and msix_version) to +$($lastUploaded + 1) first." -ForegroundColor Red
+            exit 1
+        }
+        Write-Host "[INFO] IMP-2: versionCode $buildCode is above the last uploaded ($lastUploaded)." -ForegroundColor Cyan
+    }
+
     # GP-9 (Sprint 64): Dart-side obfuscation for RELEASE builds only (R-3:
     # debug builds are completely unchanged -- no obfuscate args added to the
     # debug branches below). Symbol files are retained OUTSIDE the repository
@@ -518,6 +544,24 @@ try {
     }
 
     Write-Host "[INFO] Artifact location: $apkPath" -ForegroundColor Gray
+
+    # Sprint 76 retro IMP-1: keep the finished bundle where `flutter clean`
+    # cannot reach it. build-windows.ps1 (and this script) clean `build/`, so a
+    # later build of EITHER platform deleted the AAB that had just been
+    # verified -- Harold found it missing at upload. Extends the existing
+    # Sprint 37 F52 pattern: build-windows.ps1 already copies each Windows
+    # build to mobile-app/dist/<env>/ (gitignored, outside build/); the bundle
+    # goes to mobile-app/dist/android-<version>/ beside it.
+    if ($Output -eq 'aab' -and (Test-Path $apkPath)) {
+        $versionForCopy = (Select-String -Path (Join-Path $mobileAppDir 'pubspec.yaml') -Pattern '^version:\s*(\S+)' | Select-Object -First 1).Matches[0].Groups[1].Value
+        $keepDir = Join-Path $mobileAppDir "dist\android-$versionForCopy"
+        New-Item -ItemType Directory -Force -Path $keepDir | Out-Null
+        Copy-Item -Force $apkPath $keepDir
+        Write-Host "[INFO] IMP-1: bundle kept at $(Join-Path $keepDir (Split-Path $apkPath -Leaf))" -ForegroundColor Green
+    } elseif ($Output -eq 'aab') {
+        # Sprint 76 7.7.1 review: the copy used to be skipped with no message.
+        Write-Host "[WARNING] IMP-1: no bundle at $apkPath -- nothing was kept in dist/. Check the build output above." -ForegroundColor Yellow
+    }
     Write-Host ""
 
     # Install to emulator if requested

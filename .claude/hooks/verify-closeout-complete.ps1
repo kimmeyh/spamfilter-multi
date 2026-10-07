@@ -241,8 +241,9 @@ if ($sprintNum -ge 63 -and $status -and $null -ne $status.current_sprint -and
     $planPath = Join-Path $cwd ("docs/sprints/SPRINT_{0}_PLAN.md" -f $sprintNum)
     if (Test-Path -LiteralPath $planPath) {
         $planText = Get-Content -LiteralPath $planPath -Raw
+        # 5.1.1 removed from this list 2026-10-06 (Harold): the code review now
+        # runs at Phase 7.7.1 and is checked by 3d-2 below.
         $evidence = @(
-            @{ Name = '5.1.1 automated code review record'; Pattern = '(?i)(5\.1\.1|automated code review|code[- ]reviewer)' },
             @{ Name = '5.1.2 F-PRECHECK record';            Pattern = '(?i)F-PRECHECK' },
             @{ Name = '5.1.5 WinWright sweep artifact';     Pattern = '(?i)WinWright[\s\S]{0,200}?sweep|sweep[\s\S]{0,200}?WinWright' }
         )
@@ -296,6 +297,41 @@ if ($sprintNum -ge 63 -and $status -and $null -ne $status.current_sprint -and
                         $violations += "This sprint changed mobile-app/lib/ui but SPRINT_${sprintNum}_PLAN.md's sweep artifact records no 'sweep-head: <hash>' line. Record the commit the sweep ran at so close-out can prove the sweep covered the FINAL UI (Sprint 62 retro IMP-2)."
                     }
                 } catch { }
+            }
+        }
+    }
+}
+
+# 3d-2. Final code reviews recorded (Harold, 2026-10-06, Sprint 76 close-out).
+#
+#     The final PR review pair -- Copilot AND pr-review-toolkit -- runs at
+#     Phase 7.7.1, the moment the retrospective improvements are complete
+#     (or immediately after the retrospective when there are none). Before
+#     this, Copilot reviewed automatically through a repository ruleset at
+#     "Ready for Review" / on push, so its review saw code BEFORE the retro
+#     improvements landed, and Claude's 5.1.1 review never saw the Manual
+#     Validation fixes at all (Sprint 76: ~500 lines of lib/android code
+#     reviewed by Copilot only, and the retro's new hook and build gate by
+#     nobody). The ruleset's Copilot rule was removed the same day.
+#
+#     The marker must be the canonical bullet form and must carry evidence --
+#     a seeded "PENDING" (or an empty value) is not a record:
+#       - **7.7.1 final code reviews**: <date>, Copilot <result>; code-reviewer + silent-failure-hunter <result>; <dispositions>
+#
+#     Enforced from Sprint 77: Sprint 76 ran the new order once by hand while
+#     the rule was being written, and earlier sprints predate it.
+if ($sprintNum -ge 77 -and $status -and $null -ne $status.current_sprint -and
+    $status.current_sprint.plan_approved -eq $true) {
+    $planPath77 = Join-Path $cwd ("docs/sprints/SPRINT_{0}_PLAN.md" -f $sprintNum)
+    if (Test-Path -LiteralPath $planPath77) {
+        $planText77 = Get-Content -LiteralPath $planPath77 -Raw
+        $m = [regex]::Match($planText77, '(?im)^\s*-\s*\**\s*7\.7\.1\b[^:\r\n]*\**\s*:\s*(.*)$')
+        if (-not $m.Success) {
+            $violations += "SPRINT_${sprintNum}_PLAN.md has no '- **7.7.1 final code reviews**: <evidence>' line. Phase 7.7.1 runs BOTH final reviews (Copilot requested by hand + pr-review-toolkit code-reviewer and silent-failure-hunter) as soon as the retrospective improvements are complete -- even when there were none -- and their findings must be dispositioned before the PR is announced ready (SPRINT_EXECUTION_WORKFLOW.md 7.7.1)."
+        } else {
+            $value = $m.Groups[1].Value.Trim()
+            if ([string]::IsNullOrWhiteSpace($value) -or $value -match '^(?i)[\s*_`]*PENDING') {
+                $violations += "SPRINT_${sprintNum}_PLAN.md's 7.7.1 final code reviews marker reads '$value'. Run both final reviews (Copilot + pr-review-toolkit) now, disposition every finding, and record the evidence on that line (SPRINT_EXECUTION_WORKFLOW.md 7.7.1)."
             }
         }
     }

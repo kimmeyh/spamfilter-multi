@@ -1,3 +1,4 @@
+import 'dart:async' show unawaited;
 import 'dart:io';
 import 'package:logger/logger.dart';
 import 'package:path_provider/path_provider.dart';
@@ -14,6 +15,7 @@ import '../../adapters/storage/app_paths.dart';
 import '../../adapters/storage/secure_credentials_store.dart';
 import '../../util/redact.dart';
 import 'background_scan_core.dart';
+import 'diagnostic_logger.dart';
 import 'scan_sheet_export.dart';
 
 /// Windows-specific background scan worker
@@ -108,6 +110,17 @@ class BackgroundScanWindowsWorker {
       final credStore = SecureCredentialsStore();
       final settingsStore = SettingsStore(dbHelper);
       await _bgLog('Stores initialized');
+      // F248: the same worker start/exit lines the Android worker writes
+      // (ADR-0042), into the user-reachable diagnostic log -- the _bgLog file
+      // above stays as the Windows-only detailed trace.
+      // F248: the worker is its own process -- name the build it runs.
+      unawaited(DiagnosticLogger.appEvent('background worker start (windows)'));
+      unawaited(DiagnosticLogger.log(
+        kind: DiagnosticLogger.kindScan,
+        context: 'worker/windows',
+        detail: 'start ${isTest ? '[TEST] ' : ''}'
+            '${accountId != null ? Redact.accountId(accountId) : '(all accounts)'}',
+      ));
 
       // Initialize rule set provider
       await _bgLog('Initializing RuleSetProvider...');
@@ -270,6 +283,12 @@ class BackgroundScanWindowsWorker {
           } catch (e, stackTrace) {
             _logger.e('Failed to scan account ${Redact.accountId(accountId)}', error: e);
             await _bgLog('Account ${Redact.accountId(accountId)} scan FAILED: $e');
+            unawaited(DiagnosticLogger.log(
+              kind: DiagnosticLogger.kindScan,
+              context: 'worker/windows',
+              detail: 'account ${Redact.accountId(accountId)} FAILED: '
+                  '${DiagnosticLogger.describeError(e)}',
+            ));
             await _bgLog('Stack trace: $stackTrace');
 
             // Update log with failure
@@ -304,6 +323,12 @@ class BackgroundScanWindowsWorker {
         'Windows background scan worker completed: $successCount succeeded, $failureCount failed',
       );
       await _bgLog('Worker completed: $successCount succeeded, $failureCount failed');
+      // Awaited (not fire-and-forget): the process exits right after this.
+      await DiagnosticLogger.log(
+        kind: DiagnosticLogger.kindScan,
+        context: 'worker/windows',
+        detail: 'exit $successCount succeeded, $failureCount failed',
+      );
 
       // Consider successful if at least some accounts scanned
       return successCount > 0;
