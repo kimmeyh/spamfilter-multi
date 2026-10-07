@@ -147,8 +147,37 @@ class SecureCredentialsStore {
     }
   }
 
+  /// SEC-8b (Sprint 77, ADR-0046): replace the trusted server certificate
+  /// fingerprint of an EXISTING Custom IMAP account. Writes the same side key
+  /// [saveCredentials] writes ([CustomImapSettings.keyTrustedCertSha256]), so
+  /// [getCredentials] returns it and [deleteCredentials] removes it.
+  ///
+  /// Does nothing for an account with no stored server settings (it would
+  /// otherwise create an orphan key for an account that is not Custom IMAP).
+  /// Rejects a value that is not 64 lower-case hex characters.
+  Future<void> saveImapTrustedCertificate(
+      String accountId, String sha256Hex) async {
+    if (!CustomImapSettings.isSha256Hex(sha256Hex)) {
+      throw ArgumentError.value(sha256Hex, 'sha256Hex', 'not a SHA-256 hex');
+    }
+    try {
+      final host = await _storage.read(
+        key: '$_credentialsPrefix${accountId}_${CustomImapSettings.keyHost}',
+      );
+      if (host == null) return;
+      await _storage.write(
+        key: '$_credentialsPrefix${accountId}_'
+            '${CustomImapSettings.keyTrustedCertSha256}',
+        value: sha256Hex,
+      );
+    } catch (e) {
+      throw CredentialStorageException(
+          'Failed to save the trusted server certificate', e);
+    }
+  }
+
   /// Load credentials for an account
-  /// 
+  ///
   /// Returns null if credentials don't exist
   Future<Credentials?> getCredentials(String accountId) async {
     try {

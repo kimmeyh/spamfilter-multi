@@ -931,10 +931,13 @@ class _SettingsScreenState extends State<SettingsScreen> with SingleTickerProvid
         SwitchListTile(
           contentPadding: EdgeInsets.zero,
           title: const Text('Pin Google OAuth certificates'),
+          // SEC-8b (Sprint 77): describes what `PinnedHttpClient` now does on
+          // every connection (chain must lead to a Google Trust Services
+          // root). It does not cover Custom IMAP certificate trust.
           subtitle: const Text(
-            'Rejects TLS connections to Google sign-in endpoints whose '
-            'certificate does not match the pinned hashes. Turn off if you '
-            'start seeing sign-in failures after a Google CA rotation.',
+            'Google sign-in connects only when the server certificate was '
+            'issued by Google Trust Services. Turn off only if Google sign-in '
+            'fails with a certificate message on a network you trust.',
           ),
           value: _certificatePinningEnabled,
           onChanged: (value) async {

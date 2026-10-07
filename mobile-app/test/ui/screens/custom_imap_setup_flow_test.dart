@@ -20,6 +20,8 @@
 /// a phone-sized screen.
 library;
 
+import 'dart:io';
+
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -32,6 +34,7 @@ import 'package:my_email_spam_filter/adapters/email_providers/platform_registry.
 import 'package:my_email_spam_filter/adapters/email_providers/spam_filter_platform.dart';
 import 'package:my_email_spam_filter/core/providers/email_scan_provider.dart';
 import 'package:my_email_spam_filter/core/providers/rule_set_provider.dart';
+import 'package:my_email_spam_filter/core/security/imap_certificate_trust.dart';
 import 'package:my_email_spam_filter/core/security/imap_host_policy.dart';
 import 'package:my_email_spam_filter/ui/screens/platform_selection_screen.dart';
 
@@ -45,10 +48,29 @@ class _RecordingAdapter extends GenericIMAPAdapter {
   ConnectionStatus status = ConnectionStatus.success();
   Object? loadError;
 
+  /// SEC-8b: errors thrown by successive loadCredentials calls, first first.
+  /// When empty, [loadError] applies.
+  final List<Object> loadErrorQueue = [];
+
+  /// SEC-8b: what the Save certificate check returns or throws.
+  final List<Credentials> probed = [];
+  Object? probeError;
+  ServerCertificateInfo? probeResult;
+
   @override
   Future<void> loadCredentials(Credentials credentials) async {
     loaded.add(credentials);
+    if (loadErrorQueue.isNotEmpty) throw loadErrorQueue.removeAt(0);
     if (loadError != null) throw loadError!;
+  }
+
+  @override
+  Future<ServerCertificateInfo> probeServerCertificate(
+      Credentials credentials) async {
+    probed.add(credentials);
+    if (probeError != null) throw probeError!;
+    if (probeResult != null) return probeResult!;
+    throw const SocketException('offline in this test');
   }
 
   @override
@@ -360,5 +382,146 @@ void main() {
     expect(stored['${prefix}imapUsername'], 'person@example.com');
     expect(stored['${prefix}platformId'], 'imap');
     await endTest(tester);
+  });
+
+  group('"Trust this server?" (SEC-8b, Sprint 77 Q4)', () {
+    const fp = 'ab12cd34ab12cd34ab12cd34ab12cd34ab12cd34ab12cd34ab12cd34ab12cd34';
+    const otherFp =
+        '0000000000000000000000000000000000000000000000000000000000000001';
+    final cert = ServerCertificateInfo(
+      sha256Hex: fp,
+      subject: '/CN=mail.home.test',
+      issuer: '/CN=mail.home.test',
+      validFrom: DateTime(2026, 1, 1),
+      validTo: DateTime(2036, 1, 1),
+    );
+    ServerCertificateNotTrustedException untrusted(
+            {CertificateTrustProblem problem = CertificateTrustProblem.notTrusted}) =>
+        ServerCertificateNotTrustedException(
+            host: 'imap.example.com', port: 993, certificate: cert, problem: problem);
+
+    String? trustedIn(Credentials c) =>
+        c.additionalParams?[CustomImapSettings.keyTrustedCertSha256];
+
+    testWidgets('Test Connection: the dialog shows fingerprint, subject, issuer '
+        'and validity; Do Not Trust stops, Trust retries with that fingerprint',
+        (tester) async {
+      await openCustomImapForm(tester);
+      await fill(tester);
+      adapter.loadErrorQueue.add(untrusted());
+
+      await tapTest(tester);
+      expect(find.text('Trust this server?'), findsOneWidget);
+      expect(find.text(cert.displayFingerprint), findsOneWidget);
+      expect(find.text('Issued to: /CN=mail.home.test'), findsOneWidget);
+      expect(find.text('Issued by: /CN=mail.home.test (self-signed)'),
+          findsOneWidget);
+      expect(find.textContaining('Valid: 2026-01-01 to 2036-01-01'),
+          findsOneWidget);
+      await tester.tap(find.text('Do Not Trust'));
+      await tester.pumpAndSettle();
+      expect(adapter.loaded, hasLength(1), reason: 'declining must not retry');
+      expect(trustedIn(adapter.loaded.single), isNull);
+
+      adapter.loadErrorQueue.add(untrusted());
+      await tapTest(tester);
+      await tester.tap(find.text('Trust'));
+      await tester.pumpAndSettle();
+      expect(adapter.loaded, hasLength(3));
+      expect(trustedIn(adapter.loaded[1]), isNull);
+      expect(trustedIn(adapter.loaded[2]), fp,
+          reason: 'the retry may accept ONLY the certificate the user saw');
+      expect(find.text('[OK] Connection successful!'), findsOneWidget);
+    });
+
+    testWidgets('a changed certificate says so in the dialog', (tester) async {
+      await openCustomImapForm(tester);
+      await fill(tester);
+      adapter.loadErrorQueue
+          .add(untrusted(problem: CertificateTrustProblem.changed));
+      await tapTest(tester);
+      expect(find.textContaining('is different from the one you trusted'),
+          findsOneWidget);
+      await tester.tap(find.text('Do Not Trust'));
+      await tester.pumpAndSettle();
+    });
+
+    testWidgets('trust given to one server is not carried to another host',
+        (tester) async {
+      await openCustomImapForm(tester);
+      await fill(tester);
+      adapter.loadErrorQueue.add(untrusted());
+      await tapTest(tester);
+      await tester.tap(find.text('Trust'));
+      await tester.pumpAndSettle();
+      expect(trustedIn(adapter.loaded.last), fp);
+
+      await tester.enterText(
+          find.byKey(const Key('custom_imap_host')), 'imap.other.test');
+      await tester.pump();
+      await tapTest(tester);
+      expect(trustedIn(adapter.loaded.last), isNull);
+    });
+
+    testWidgets('Save: an untrusted certificate asks first; Trust stores its '
+        'fingerprint with the account', (tester) async {
+      await openCustomImapForm(tester);
+      await fill(tester);
+      adapter.probeError = untrusted();
+
+      await tester.tap(find.text('Save Credentials & Continue'));
+      await tester.pump(const Duration(milliseconds: 100));
+      await tester.runAsync(
+          () => Future<void>.delayed(const Duration(milliseconds: 200)));
+      await tester.pump();
+      expect(find.text('Trust this server?'), findsOneWidget);
+      expect(stored, isEmpty, reason: 'nothing is saved before the answer');
+      await tester.tap(find.text('Trust'));
+      await tester.pump(const Duration(milliseconds: 100));
+      await tester.runAsync(
+          () => Future<void>.delayed(const Duration(milliseconds: 400)));
+      await tester.pump(const Duration(milliseconds: 100));
+
+      expect(adapter.probed, hasLength(1));
+      expect(stored['credentials_person@example.com_imapTrustedCertSha256'], fp);
+      await endTest(tester);
+    });
+
+    testWidgets('Save: Do Not Trust saves nothing', (tester) async {
+      await openCustomImapForm(tester);
+      await fill(tester);
+      adapter.probeError = untrusted();
+
+      await tester.tap(find.text('Save Credentials & Continue'));
+      await tester.pump(const Duration(milliseconds: 100));
+      await tester.runAsync(
+          () => Future<void>.delayed(const Duration(milliseconds: 200)));
+      await tester.pump();
+      await tester.tap(find.text('Do Not Trust'));
+      await tester.pumpAndSettle();
+
+      expect(stored, isEmpty);
+      expect(find.textContaining('Not saved'), findsOneWidget);
+    });
+
+    testWidgets('Save: a certificate the device trusts is recorded without a '
+        'question', (tester) async {
+      await openCustomImapForm(tester);
+      await fill(tester);
+      adapter.probeResult = ServerCertificateInfo(
+        sha256Hex: otherFp,
+        subject: '/CN=imap.example.com',
+        issuer: '/CN=Some Public CA',
+        validFrom: DateTime(2026),
+        validTo: DateTime(2027),
+      );
+
+      await tapSave(tester);
+
+      expect(find.text('Trust this server?'), findsNothing);
+      expect(stored['credentials_person@example.com_imapTrustedCertSha256'],
+          otherFp);
+      await endTest(tester);
+    });
   });
 }

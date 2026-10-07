@@ -60,6 +60,12 @@ class CustomImapSettings {
   /// Key for the login name (may differ from the email address).
   static const String keyUsername = 'imapUsername';
 
+  /// SEC-8b (Sprint 77, ADR-0046): SHA-256 (64 lower-case hex characters) of
+  /// the server certificate trusted for this account -- one the user accepted
+  /// in the "Trust this server?" dialog, or one the device already trusted.
+  /// Optional: absent until the first successful certificate check.
+  static const String keyTrustedCertSha256 = 'imapTrustedCertSha256';
+
   /// Every key, in a fixed order. The secure store saves, reads and deletes
   /// exactly this list, so a new key cannot be saved and forgotten on delete.
   static const List<String> paramKeys = <String>[
@@ -67,6 +73,7 @@ class CustomImapSettings {
     keyPort,
     keyEncryption,
     keyUsername,
+    keyTrustedCertSha256,
   ];
 
   const CustomImapSettings({
@@ -74,6 +81,7 @@ class CustomImapSettings {
     required this.port,
     required this.encryption,
     this.username = '',
+    this.trustedCertificateSha256,
   });
 
   /// Server host name or address, trimmed.
@@ -88,6 +96,21 @@ class CustomImapSettings {
   /// Login name. Empty means "use the email address".
   final String username;
 
+  /// Fingerprint of the trusted server certificate, or null when none is
+  /// recorded. Never a default: null means "ask the user" in the foreground
+  /// and "fail" in the background (ADR-0046).
+  final String? trustedCertificateSha256;
+
+  /// A copy with [trustedCertificateSha256] replaced.
+  CustomImapSettings withTrustedCertificate(String? sha256Hex) =>
+      CustomImapSettings(
+        host: host,
+        port: port,
+        encryption: encryption,
+        username: username,
+        trustedCertificateSha256: sha256Hex,
+      );
+
   /// The login name to send, falling back to [email] when none was entered.
   String loginName(String email) => username.trim().isEmpty ? email : username;
 
@@ -97,6 +120,8 @@ class CustomImapSettings {
         keyPort: port.toString(),
         keyEncryption: encryption.wireValue,
         keyUsername: username,
+        if (trustedCertificateSha256 != null)
+          keyTrustedCertSha256: trustedCertificateSha256!,
       };
 
   /// Rebuild from stored params.
@@ -117,6 +142,16 @@ class CustomImapSettings {
       port: port,
       encryption: encryption,
       username: params[keyUsername] ?? '',
+      // A malformed stored fingerprint is treated as NO trust (the user is
+      // asked again), never as a reason to skip the check.
+      trustedCertificateSha256: isSha256Hex(params[keyTrustedCertSha256])
+          ? params[keyTrustedCertSha256]
+          : null,
     );
   }
+
+  /// True for 64 lower-case hex characters (a stored SHA-256 fingerprint).
+  /// The ONE format check; imap_certificate_trust.dart uses it too.
+  static bool isSha256Hex(String? value) =>
+      value != null && RegExp(r'^[0-9a-f]{64}$').hasMatch(value);
 }

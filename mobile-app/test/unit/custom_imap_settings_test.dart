@@ -50,12 +50,38 @@ void main() {
       expect(back.username, 'me');
     });
 
-    test('paramKeys lists exactly the four keys toParams writes', () {
+    test('paramKeys lists exactly the five keys toParams can write '
+        '(the certificate key only once a certificate is trusted)', () {
       const settings = CustomImapSettings(
           host: 'h.example.com', port: 993, encryption: ImapEncryption.sslTls);
       expect(settings.toParams().keys.toSet(),
+          CustomImapSettings.paramKeys.toSet()
+            ..remove(CustomImapSettings.keyTrustedCertSha256));
+      final trusted = settings.withTrustedCertificate('a' * 64);
+      expect(trusted.toParams().keys.toSet(),
           CustomImapSettings.paramKeys.toSet());
-      expect(CustomImapSettings.paramKeys.length, 4);
+      expect(CustomImapSettings.paramKeys.length, 5);
+    });
+
+    test('SEC-8b: the trusted fingerprint round-trips; a malformed one reads '
+        'as NO trust, never as a setting that skips the check', () {
+      final good = 'ab' * 32;
+      final back = CustomImapSettings.tryFromParams(const CustomImapSettings(
+              host: 'h', port: 993, encryption: ImapEncryption.sslTls)
+          .withTrustedCertificate(good)
+          .toParams())!;
+      expect(back.trustedCertificateSha256, good);
+      for (final bad in ['', 'AB' * 32, 'ab' * 31, 'zz' * 32, '${'ab' * 32} ']) {
+        final params = <String, String>{
+          CustomImapSettings.keyHost: 'h',
+          CustomImapSettings.keyPort: '993',
+          CustomImapSettings.keyEncryption: 'sslTls',
+          CustomImapSettings.keyTrustedCertSha256: bad,
+        };
+        final parsed = CustomImapSettings.tryFromParams(params);
+        expect(parsed, isNotNull, reason: 'a bad fingerprint is not a bad server');
+        expect(parsed!.trustedCertificateSha256, isNull, reason: '"$bad"');
+      }
     });
 
     test('null, empty, blank host, bad port or bad encryption parse to null',
@@ -78,8 +104,9 @@ void main() {
         expect(CustomImapSettings.tryFromParams(params), isNull,
             reason: '${entry.key}=${entry.value}');
       }
-      for (final missing in CustomImapSettings.paramKeys
-          .where((k) => k != CustomImapSettings.keyUsername)) {
+      for (final missing in CustomImapSettings.paramKeys.where((k) =>
+          k != CustomImapSettings.keyUsername &&
+          k != CustomImapSettings.keyTrustedCertSha256)) {
         final params = ok()..remove(missing);
         expect(CustomImapSettings.tryFromParams(params), isNull,
             reason: 'missing $missing');

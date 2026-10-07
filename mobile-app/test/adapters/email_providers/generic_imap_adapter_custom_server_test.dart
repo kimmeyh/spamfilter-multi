@@ -24,7 +24,6 @@
 library;
 
 import 'dart:async';
-import 'dart:convert';
 import 'dart:io';
 
 import 'package:flutter_test/flutter_test.dart';
@@ -36,130 +35,7 @@ import 'package:my_email_spam_filter/adapters/email_providers/spam_filter_platfo
 import 'package:my_email_spam_filter/util/error_messages.dart';
 
 import '../../helpers/database_test_helper.dart';
-
-enum _StartTlsBehavior {
-  /// Reply "NO" to STARTTLS.
-  refuse,
-
-  /// Reply "OK" and then close the socket, so the TLS handshake cannot finish.
-  okThenClose,
-
-  /// Reply "OK" and complete a real TLS handshake with the fixture certificate.
-  accept,
-}
-
-/// An in-process IMAP server that records everything it receives.
-class _FakeImapServer {
-  _FakeImapServer._(this._plain, this._secure, this._behavior, this._context);
-
-  final ServerSocket? _plain;
-  final SecureServerSocket? _secure;
-  final _StartTlsBehavior _behavior;
-  final SecurityContext? _context;
-
-  /// Number of TCP connections accepted.
-  int connections = 0;
-
-  /// Every byte received on any connection, decoded as Latin-1 (so a binary
-  /// TLS ClientHello cannot throw).
-  final StringBuffer rawReceived = StringBuffer();
-
-  /// IMAP command lines received IN CLEARTEXT (before any TLS).
-  final List<String> plaintextCommands = [];
-
-  /// IMAP command lines received over TLS.
-  final List<String> tlsCommands = [];
-
-  int get port => _plain?.port ?? _secure!.port;
-
-  /// All text the server ever saw, to assert a secret never appeared.
-  String get everything => rawReceived.toString();
-
-  /// Server that speaks TLS from the first byte (port-993 style).
-  static Future<_FakeImapServer> implicitTls(SecurityContext context) async {
-    final secure = await SecureServerSocket.bind(
-        InternetAddress.loopbackIPv4, 0, context);
-    final server =
-        _FakeImapServer._(null, secure, _StartTlsBehavior.refuse, context);
-    secure.listen((socket) => server._serve(socket, tls: true));
-    return server;
-  }
-
-  /// Server that starts in cleartext and offers STARTTLS (port-143 style).
-  static Future<_FakeImapServer> startTls(
-      _StartTlsBehavior behavior, SecurityContext context) async {
-    final plain = await ServerSocket.bind(InternetAddress.loopbackIPv4, 0);
-    final server = _FakeImapServer._(plain, null, behavior, context);
-    plain.listen((socket) => server._serve(socket, tls: false));
-    return server;
-  }
-
-  void _serve(Socket socket, {required bool tls}) {
-    connections++;
-    socket.write('* OK [CAPABILITY IMAP4rev1 STARTTLS] fake server ready\r\n');
-    _listen(socket, tls: tls);
-  }
-
-  void _listen(Socket socket, {required bool tls}) {
-    final buffer = StringBuffer();
-    late StreamSubscription<List<int>> sub;
-    sub = socket.listen((data) async {
-      rawReceived.write(latin1.decode(data));
-      buffer.write(latin1.decode(data));
-      var text = buffer.toString();
-      int index;
-      while ((index = text.indexOf('\r\n')) >= 0) {
-        final line = text.substring(0, index);
-        text = text.substring(index + 2);
-        buffer
-          ..clear()
-          ..write(text);
-        (tls ? tlsCommands : plaintextCommands).add(line);
-        final parts = line.split(' ');
-        final tag = parts.first;
-        final command = parts.length > 1 ? parts[1].toUpperCase() : '';
-        switch (command) {
-          case 'STARTTLS':
-            if (tls || _behavior == _StartTlsBehavior.refuse) {
-              socket.write('$tag NO STARTTLS not available\r\n');
-            } else if (_behavior == _StartTlsBehavior.okThenClose) {
-              socket.write('$tag OK Begin TLS negotiation\r\n');
-              await socket.flush();
-              await sub.cancel();
-              socket.destroy();
-            } else {
-              socket.write('$tag OK Begin TLS negotiation\r\n');
-              await socket.flush();
-              sub.pause();
-              try {
-                final secured =
-                    await SecureSocket.secureServer(socket, _context);
-                _listen(secured, tls: true);
-              } on TlsException {
-                // The client rejected our certificate (the name-mismatch
-                // case) and aborted the handshake. That is the point.
-                socket.destroy();
-              }
-            }
-            return;
-          case 'CAPABILITY':
-            socket.write('* CAPABILITY IMAP4rev1 STARTTLS\r\n$tag OK done\r\n');
-          case 'LOGIN':
-            socket.write('$tag OK [CAPABILITY IMAP4rev1] logged in\r\n');
-          case 'LOGOUT':
-            socket.write('* BYE bye\r\n$tag OK logout done\r\n');
-          default:
-            socket.write('$tag OK\r\n');
-        }
-      }
-    }, onError: (_) {}, onDone: () {});
-  }
-
-  Future<void> close() async {
-    await _plain?.close();
-    await _secure?.close();
-  }
-}
+import '../../helpers/fake_imap_server.dart';
 
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
@@ -211,7 +87,7 @@ void main() {
   group('SSL/TLS (implicit)', () {
     test('connects, verifies the certificate against the typed host name, and '
         'logs in with the username', () async {
-      final server = await _FakeImapServer.implicitTls(serverContext);
+      final server = await FakeImapServer.implicitTls(serverContext);
       addTearDown(server.close);
       final adapter = GenericIMAPAdapter.custom();
       addTearDown(adapter.disconnect);
@@ -227,7 +103,7 @@ void main() {
 
     test('a host name that is not on the certificate is refused and the '
         'password is never sent', () async {
-      final server = await _FakeImapServer.implicitTls(serverContext);
+      final server = await FakeImapServer.implicitTls(serverContext);
       addTearDown(server.close);
       final adapter = GenericIMAPAdapter.custom();
 
@@ -244,8 +120,8 @@ void main() {
   group('STARTTLS downgrade protection (Sprint 77 Q3)', () {
     test('server refuses STARTTLS: password never sent, clear message',
         () async {
-      final server = await _FakeImapServer.startTls(
-          _StartTlsBehavior.refuse, serverContext);
+      final server = await FakeImapServer.startTls(
+          StartTlsBehavior.refuse, serverContext);
       addTearDown(server.close);
       final adapter = GenericIMAPAdapter.custom();
 
@@ -270,8 +146,8 @@ void main() {
 
     test('server says OK but the TLS handshake cannot complete: password '
         'never sent', () async {
-      final server = await _FakeImapServer.startTls(
-          _StartTlsBehavior.okThenClose, serverContext);
+      final server = await FakeImapServer.startTls(
+          StartTlsBehavior.okThenClose, serverContext);
       addTearDown(server.close);
       final adapter = GenericIMAPAdapter.custom();
 
@@ -286,8 +162,8 @@ void main() {
 
     test('STARTTLS verifies the certificate against the typed host name: '
         '127.0.0.1 is refused, localhost is accepted', () async {
-      final server = await _FakeImapServer.startTls(
-          _StartTlsBehavior.accept, serverContext);
+      final server = await FakeImapServer.startTls(
+          StartTlsBehavior.accept, serverContext);
       addTearDown(server.close);
 
       final wrongName = GenericIMAPAdapter.custom();
@@ -313,7 +189,7 @@ void main() {
 
   group('settings that are missing or invalid open no socket', () {
     Future<void> expectNoSocket(
-        _FakeImapServer server, Credentials credentials) async {
+        FakeImapServer server, Credentials credentials) async {
       final adapter = GenericIMAPAdapter.custom();
       Object? error;
       try {
@@ -328,22 +204,22 @@ void main() {
     }
 
     test('no additionalParams at all', () async {
-      final server = await _FakeImapServer.implicitTls(serverContext);
+      final server = await FakeImapServer.implicitTls(serverContext);
       addTearDown(server.close);
       await expectNoSocket(
           server, Credentials(email: 'a@b.test', password: password));
     });
 
     test('blank host', () async {
-      final server = await _FakeImapServer.implicitTls(serverContext);
+      final server = await FakeImapServer.implicitTls(serverContext);
       addTearDown(server.close);
       await expectNoSocket(server, credsFor('  ', server.port, ImapEncryption.sslTls));
     });
 
     test('an encryption value that is not a known mode (never plaintext)',
         () async {
-      final server = await _FakeImapServer.startTls(
-          _StartTlsBehavior.accept, serverContext);
+      final server = await FakeImapServer.startTls(
+          StartTlsBehavior.accept, serverContext);
       addTearDown(server.close);
       for (final bad in ['none', 'plaintext', 'false', '', 'SSLTLS']) {
         final params = <String, String>{
@@ -359,7 +235,7 @@ void main() {
     });
 
     test('an out-of-range or non-numeric port', () async {
-      final server = await _FakeImapServer.implicitTls(serverContext);
+      final server = await FakeImapServer.implicitTls(serverContext);
       addTearDown(server.close);
       for (final bad in ['0', '70000', 'abc', '']) {
         final params = <String, String>{
@@ -377,8 +253,8 @@ void main() {
 
   group('one connect path', () {
     test('a reconnect uses the same server, STARTTLS and username', () async {
-      final server = await _FakeImapServer.startTls(
-          _StartTlsBehavior.accept, serverContext);
+      final server = await FakeImapServer.startTls(
+          StartTlsBehavior.accept, serverContext);
       addTearDown(server.close);
       final adapter = GenericIMAPAdapter.custom();
       addTearDown(adapter.disconnect);
@@ -397,8 +273,8 @@ void main() {
     });
 
     test('only the Custom IMAP platform reads the server settings', () async {
-      final real = await _FakeImapServer.implicitTls(serverContext);
-      final decoy = await _FakeImapServer.implicitTls(serverContext);
+      final real = await FakeImapServer.implicitTls(serverContext);
+      final decoy = await FakeImapServer.implicitTls(serverContext);
       addTearDown(real.close);
       addTearDown(decoy.close);
       // A provider with a FIXED host (AOL, Yahoo, ...) must ignore stray
@@ -421,7 +297,7 @@ void main() {
     });
 
     test('a blank username falls back to the email address', () async {
-      final server = await _FakeImapServer.implicitTls(serverContext);
+      final server = await FakeImapServer.implicitTls(serverContext);
       addTearDown(server.close);
       final adapter = GenericIMAPAdapter.custom();
       addTearDown(adapter.disconnect);

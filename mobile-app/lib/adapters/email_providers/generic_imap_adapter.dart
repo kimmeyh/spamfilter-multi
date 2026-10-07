@@ -27,7 +27,9 @@ import '../../core/models/batch_action_result.dart';
 import '../../core/models/email_message.dart';
 import '../../core/models/evaluation_result.dart';
 import '../../core/security/auth_rate_limiter.dart';
+import '../../core/security/imap_certificate_trust.dart';
 import '../../core/storage/database_helper.dart';
+import '../storage/secure_credentials_store.dart';
 import 'custom_imap_settings.dart';
 import 'spam_filter_platform.dart';
 import 'email_provider.dart';
@@ -267,6 +269,51 @@ class GenericIMAPAdapter with BatchOperationsMixin implements SpamFilterPlatform
     _encryption = settings.encryption;
     final username = settings.username.trim();
     _customLoginName = username.isEmpty ? null : username;
+    _trustedCertSha256 = settings.trustedCertificateSha256;
+  }
+
+  /// SEC-8b (ADR-0046): fingerprint of the certificate trusted for this
+  /// Custom IMAP account. Set from the stored settings on every
+  /// [loadCredentials]; refreshed in memory when the device trusts a new
+  /// certificate, so a reconnect in the same session uses the latest one.
+  String? _trustedCertSha256;
+
+  /// SEC-8b: writes a refreshed fingerprint for [accountId]. Defaults to the
+  /// secure store; tests replace it. Called only for a certificate the DEVICE
+  /// trusts (never for a user-accepted one, which the form saves itself).
+  @visibleForTesting
+  static Future<void> Function(String accountId, String sha256Hex)
+      recordTrustedCertificate = (accountId, sha256Hex) =>
+          SecureCredentialsStore()
+              .saveImapTrustedCertificate(accountId, sha256Hex);
+
+  /// SEC-8b: check a Custom IMAP server's certificate WITHOUT signing in.
+  ///
+  /// Used by the setup form's Save, so the "Trust this server?" dialog
+  /// appears before an account is stored. Opens the connection with the same
+  /// [ImapTlsConnector] path as [loadCredentials], reads the certificate,
+  /// and closes. No LOGIN is sent. Returns the certificate the server
+  /// presented when it was accepted (by the device, or because it matches
+  /// the fingerprint in [credentials]); throws
+  /// [ServerCertificateNotTrustedException] when it was not.
+  Future<ServerCertificateInfo> probeServerCertificate(
+      Credentials credentials) async {
+    if (platformId != 'imap') {
+      throw StateError('probeServerCertificate is for Custom IMAP only');
+    }
+    _resolveCustomServer(credentials);
+    final connection = await ImapTlsConnector.connect(
+      host: _imapHost,
+      port: _imapPort,
+      encryption: _encryption,
+      trustedFingerprint: _trustedCertSha256,
+    );
+    try {
+      await connection.client.disconnect();
+    } catch (_) {
+      // The probe is finished; a failed close changes nothing.
+    }
+    return connection.certificate;
   }
 
   /// The login name for [credentials]: the custom account's own username when
@@ -288,20 +335,43 @@ class GenericIMAPAdapter with BatchOperationsMixin implements SpamFilterPlatform
   ///   returning without throwing, NOT on `connectionInfo.isSecure`: after the
   ///   library upgrades the socket it leaves that field `false`.
   ///
-  /// Certificate checking: enough_mail 2.1.7 does verify the certificate with
-  /// dart:io and the OS trust store. `ImapClient` also exposes
-  /// `onBadCertificate`, but this adapter passes none, so an untrusted
-  /// certificate fails the handshake. Pinning and a user-approved certificate
-  /// for custom servers are SEC-8b. For STARTTLS the library calls
-  /// `SecureSocket.secure(socket)` without a host; dart:io then verifies the
-  /// certificate against `socket.address.host`, which for a socket opened by
-  /// name is that name (verified by test, see
-  /// `generic_imap_adapter_custom_server_test.dart`).
+  /// Certificate checking (SEC-8b, ADR-0046):
+  /// - Custom IMAP (platform 'imap'): [ImapTlsConnector] opens the socket
+  ///   itself, for SSL/TLS and for STARTTLS, and applies trust-on-first-use:
+  ///   a certificate the device trusts is accepted (and its fingerprint
+  ///   recorded); one it does not trust is accepted ONLY when it matches the
+  ///   fingerprint the user accepted, otherwise the handshake is aborted with
+  ///   [ServerCertificateNotTrustedException] before any command is sent.
+  ///   (An earlier comment here said enough_mail offered no certificate hook;
+  ///   it does -- `onBadCertificate` and `ClientBase.connect(socket)` -- but
+  ///   its STARTTLS upgrade passes no callback, which is why the connector
+  ///   performs STARTTLS itself.)
+  /// - AOL, Gmail (IMAP), Yahoo, iCloud: enough_mail's `connectToServer`,
+  ///   normal platform validation only, no pin (Q4: leaf certificates
+  ///   rotate). An untrusted certificate fails the handshake.
   Future<void> _connectAndLogin(Credentials credentials) async {
+    _logger.i('[IMAP] Connecting to $_imapHost:$_imapPort (${_encryption.label})');
+
+    if (platformId == 'imap') {
+      final connection = await ImapTlsConnector.connect(
+        host: _imapHost,
+        port: _imapPort,
+        encryption: _encryption,
+        trustedFingerprint: _trustedCertSha256,
+      );
+      _imapClient = connection.client;
+      await _rememberDeviceTrustedCertificate(connection, credentials);
+
+      _logger.i('[IMAP] IMAP login attempt for $displayName');
+      await connection.client.login(
+        _loginNameFor(credentials),
+        credentials.password ?? '',
+      );
+      return;
+    }
+
     final client = ImapClient(isLogEnabled: false);
     _imapClient = client;
-
-    _logger.i('[IMAP] Connecting to $_imapHost:$_imapPort (${_encryption.label})');
 
     await client.connectToServer(
       _imapHost,
@@ -337,6 +407,37 @@ class GenericIMAPAdapter with BatchOperationsMixin implements SpamFilterPlatform
       _loginNameFor(credentials),
       credentials.password ?? '',
     );
+  }
+
+  /// SEC-8b: when the DEVICE trusted the certificate and it differs from the
+  /// stored fingerprint, record the new one, so a later switch to a
+  /// certificate the device does not trust reads as "changed", not "new".
+  ///
+  /// A certificate accepted only by fingerprint is already the stored one.
+  /// Recording is best effort: the connection is already verified, so a
+  /// failed write is logged as a warning and the connection continues; the
+  /// only cost is that a later untrusted certificate is reported as "not
+  /// trusted" instead of "changed" (still blocked either way).
+  Future<void> _rememberDeviceTrustedCertificate(
+      ImapTlsConnection connection, Credentials credentials) async {
+    final presented = connection.certificate.sha256Hex;
+    if (!connection.platformTrusted || presented == _trustedCertSha256) {
+      return;
+    }
+    _trustedCertSha256 = presented;
+    final accountId = credentials.additionalParams?['accountId'];
+    if (accountId == null || accountId.isEmpty) {
+      // An unsaved account (setup form): the form stores it on Save.
+      return;
+    }
+    try {
+      await recordTrustedCertificate(accountId, presented);
+      _logger.i('[IMAP] Recorded device-trusted certificate '
+          '${connection.certificate.shortFingerprint}... for this account');
+    } catch (e) {
+      _logger.w('[IMAP] Could not record the server certificate '
+          'fingerprint (connection unaffected): $e');
+    }
   }
 
   /// F177 (Sprint 62): [onBatch], when provided, receives each
@@ -1592,6 +1693,9 @@ class GenericIMAPAdapter with BatchOperationsMixin implements SpamFilterPlatform
       _logger.i('[IMAP] Reconnected successfully. Resuming operations.');
     } catch (e) {
       _logger.e('[IMAP] Reconnect failed: $e');
+      // SEC-8b: a named reason (certificate changed, STARTTLS refused) must
+      // reach the scan's failure text, not become "check your internet".
+      if (e is UserFacingConnectionException) rethrow;
       throw ConnectionException('IMAP reconnect failed: ${e.toString()}', e);
     }
   }

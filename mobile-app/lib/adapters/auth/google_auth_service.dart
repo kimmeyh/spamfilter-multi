@@ -38,6 +38,8 @@ import 'package:my_email_spam_filter/core/services/diagnostic_logger.dart';
 import 'package:my_email_spam_filter/adapters/auth/token_store.dart';
 import 'package:my_email_spam_filter/adapters/storage/secure_credentials_store.dart';
 import 'package:my_email_spam_filter/adapters/email_providers/gmail_windows_oauth_handler.dart';
+import 'package:my_email_spam_filter/core/security/certificate_pinner.dart'
+    show CertificatePinMismatchException;
 import 'package:my_email_spam_filter/util/redact.dart';
 
 /// Gmail API scopes.
@@ -558,6 +560,12 @@ class GoogleAuthService {
       Redact.logSafe('Desktop token refresh failed: ${e.runtimeType}');
       // Tokens KEPT (Harold Q1, Sprint 74 MV -- see _refreshToken).
       _state = AuthState.unauthenticated;
+      // SEC-8b (Sprint 77): since the pin now runs on every connection, a
+      // refresh can fail because the pin refused the server. Say THAT, not
+      // "session expired" -- signing in again would hit the same refusal.
+      if (e is CertificatePinMismatchException) {
+        return AuthResult.failure(CertificatePinMismatchException.userMessage);
+      }
       return AuthResult.failure('Session expired. Please sign in again.');
     }
   }
@@ -752,6 +760,9 @@ class GoogleAuthService {
     } catch (e) {
       _state = AuthState.error;
       Redact.logError('Desktop sign-in failed', e);
+      if (e is CertificatePinMismatchException) {
+        return AuthResult.failure(CertificatePinMismatchException.userMessage);
+      }
       return AuthResult.failure('Sign-in failed: ${e.toString()}');
     }
   }

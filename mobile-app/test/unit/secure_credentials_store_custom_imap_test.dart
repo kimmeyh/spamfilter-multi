@@ -62,12 +62,14 @@ void main() {
       SecureCredentialsStore(storage: const FlutterSecureStorage());
 
   const account = 'me@example.test';
-  const settings = CustomImapSettings(
+  // SEC-8b: with a trusted certificate, so all five keys are exercised.
+  final trustedFp = 'cd' * 32;
+  final settings = const CustomImapSettings(
     host: 'imap.example.test',
     port: 143,
     encryption: ImapEncryption.startTls,
     username: 'me-login',
-  );
+  ).withTrustedCertificate(trustedFp);
 
   Credentials custom() => Credentials(
         email: account,
@@ -85,6 +87,7 @@ void main() {
     expect(back.port, 143);
     expect(back.encryption, ImapEncryption.startTls);
     expect(back.username, 'me-login');
+    expect(back.trustedCertificateSha256, trustedFp);
     // The existing params are still there beside them.
     expect(loaded.additionalParams!['accountId'], account);
     expect(loaded.additionalParams!['platformId'], 'imap');
@@ -134,5 +137,31 @@ void main() {
             additionalParams: {'somethingElse': 'x', ...settings.toParams()}),
         platformId: 'imap');
     expect(fake.keys.any((k) => k.contains('somethingElse')), isFalse);
+  });
+  group('saveImapTrustedCertificate (SEC-8b)', () {
+    test('replaces the fingerprint of an existing Custom IMAP account', () async {
+      final store = makeStore();
+      await store.saveCredentials(account, custom(), platformId: 'imap');
+      final next = 'ef' * 32;
+      await store.saveImapTrustedCertificate(account, next);
+      final back = CustomImapSettings.tryFromParams(
+          (await store.getCredentials(account))!.additionalParams)!;
+      expect(back.trustedCertificateSha256, next);
+    });
+
+    test('writes nothing for an account without server settings', () async {
+      final store = makeStore();
+      await store.saveCredentials(
+          account, Credentials(email: account, password: 'pw'),
+          platformId: 'aol');
+      await store.saveImapTrustedCertificate(account, 'ef' * 32);
+      expect(fake.keys.any((k) => k.endsWith(CustomImapSettings.keyTrustedCertSha256)),
+          isFalse);
+    });
+
+    test('rejects a value that is not a SHA-256 hex', () async {
+      await expectLater(makeStore().saveImapTrustedCertificate(account, 'nope'),
+          throwsArgumentError);
+    });
   });
 }

@@ -48,6 +48,7 @@ This directory contains Architectural Decision Records for the spamfilter-multi 
 | [0040](0040-two-e2e-test-harnesses.md) | Two E2E Test Harnesses (WinWright + Flutter integration_test) | Accepted | 2026-06-21 |
 | [0041](0041-environment-propagation-single-source.md) | Environment Propagation: APP_ENV Dart-Define Single Source of Truth | Accepted | 2026-07-22 |
 | [0042](0042-cross-platform-parity-and-platform-exceptions.md) | Cross-Platform Parity: Same Everywhere, with Explicit Minimal Platform Exceptions (incl. platform factories) | Accepted | 2026-08-18 |
+| [0046](0046-imap-certificate-trust.md) | IMAP Certificate Trust (TOFU for Custom Servers) and the Google OAuth Issuing-Authority Pin | Proposed | 2026-10-07 |
 
 ## Creating a New ADR
 

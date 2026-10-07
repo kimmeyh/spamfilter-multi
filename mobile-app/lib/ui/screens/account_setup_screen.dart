@@ -4,9 +4,11 @@ import 'package:provider/provider.dart';
 import 'package:url_launcher/url_launcher.dart';
 import '../../adapters/email_providers/custom_imap_settings.dart';
 import '../../adapters/email_providers/email_provider.dart';
+import '../../adapters/email_providers/generic_imap_adapter.dart';
 import '../../adapters/email_providers/platform_registry.dart';
 import '../../adapters/storage/secure_credentials_store.dart';
 import '../../core/providers/email_scan_provider.dart';
+import '../../core/security/imap_certificate_trust.dart';
 import '../../core/security/imap_host_policy.dart';
 import '../../core/storage/settings_store.dart';
 import '../../util/error_messages.dart';
@@ -70,6 +72,16 @@ class _AccountSetupScreenState extends State<AccountSetupScreen> {
   /// for (lower-cased). The warning shows ONCE: Test Connection and Save share
   /// this, so accepting it on the first never asks again for the same host.
   String? _localHostAcknowledged;
+
+  /// SEC-8b (ADR-0046): fingerprint of the server certificate trusted in THIS
+  /// form (the user said Yes in "Trust this server?", or the device trusted
+  /// it during Save). Bound to [_trustedCertTarget] so trust given to one
+  /// server is never carried to a different host, port or encryption.
+  String? _trustedCertSha256;
+  String? _trustedCertTarget;
+
+  static String _certTarget(CustomImapSettings s) =>
+      '${s.host.toLowerCase()}:${s.port}:${s.encryption.wireValue}';
 
   final _logger = Logger();
   bool _isLoading = false;
@@ -252,12 +264,119 @@ class _AccountSetupScreenState extends State<AccountSetupScreen> {
       _localHostAcknowledged = host.toLowerCase();
     }
 
-    return CustomImapSettings(
+    final settings = CustomImapSettings(
       host: host,
       port: port!,
       encryption: _encryption,
       username: _usernameController.text.trim(),
     );
+    // SEC-8b: carry the trusted fingerprint only to the SAME server.
+    return _trustedCertTarget == _certTarget(settings)
+        ? settings.withTrustedCertificate(_trustedCertSha256)
+        : settings;
+  }
+
+  /// SEC-8b (Sprint 77 Q4, ADR-0046): the one-time "Trust this server?"
+  /// question for a certificate the device does not trust. Shows the
+  /// certificate's SHA-256 fingerprint, subject, issuer and validity. On Yes,
+  /// the fingerprint is remembered for THIS server in the form (and stored
+  /// with the account on Save). Returns true when the user trusts it.
+  Future<bool> _confirmServerCertificate(
+      ServerCertificateNotTrustedException e, CustomImapSettings settings) async {
+    final cert = e.certificate;
+    final changed = e.problem == CertificateTrustProblem.changed;
+    String day(DateTime d) => d.toLocal().toString().split(' ').first;
+    final result = await showDialog<bool>(
+      context: context,
+      builder: (dialogContext) => AlertDialog(
+        title: const Text('Trust this server?'),
+        content: SingleChildScrollView(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(changed
+                  ? 'The certificate of ${e.host} is different from the one '
+                      'you trusted before. Your device does not trust the new '
+                      'one, so the app has not sent your password.'
+                  : 'Your device does not trust the certificate of ${e.host} '
+                      '(for example, it is self-signed), so the app has not '
+                      'sent your password.'),
+              const SizedBox(height: 8),
+              const Text('Trust it only if you run this server yourself, or '
+                  'the fingerprint below matches the one your server shows.'),
+              const SizedBox(height: 12),
+              const Text('Fingerprint (SHA-256)',
+                  style: TextStyle(fontWeight: FontWeight.bold)),
+              SelectableText(cert.displayFingerprint,
+                  key: const Key('cert_fingerprint'),
+                  style: const TextStyle(fontFamily: 'monospace', fontSize: 12)),
+              const SizedBox(height: 8),
+              Text('Issued to: ${cert.subject}'),
+              Text('Issued by: ${cert.issuer}'
+                  '${cert.isSelfSigned ? ' (self-signed)' : ''}'),
+              Text('Valid: ${day(cert.validFrom)} to ${day(cert.validTo)}'),
+              Text('Server: ${e.host}:${e.port}'),
+            ],
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(dialogContext).pop(false),
+            child: const Text('Do Not Trust'),
+          ),
+          ElevatedButton(
+            onPressed: () => Navigator.of(dialogContext).pop(true),
+            child: const Text('Trust'),
+          ),
+        ],
+      ),
+    );
+    if (result != true || !mounted) return false;
+    setState(() {
+      _trustedCertSha256 = cert.sha256Hex;
+      _trustedCertTarget = _certTarget(settings);
+    });
+    return true;
+  }
+
+  /// SEC-8b: Save checks the server certificate BEFORE storing the account,
+  /// so the trust question is asked while the user is here (a background
+  /// scan can never ask). No password is sent by this check.
+  ///
+  /// Returns the settings to store (with the fingerprint of a certificate
+  /// the device trusts or the user accepted), or null when the user declined.
+  /// A network failure does not block Save (Save never required a
+  /// connection); the certificate is then checked on the first connection,
+  /// where an untrusted one stops with a message that says how to confirm it.
+  Future<CustomImapSettings?> _checkCertificateBeforeSave(
+      String email, String password, CustomImapSettings settings) async {
+    final platform = PlatformRegistry.getPlatform(_effectivePlatformId);
+    if (platform is! GenericIMAPAdapter) return settings;
+    final credentials = Credentials(
+      email: email,
+      password: password,
+      additionalParams: settings.toParams(),
+    );
+    try {
+      final info = await platform.probeServerCertificate(credentials);
+      return settings.withTrustedCertificate(info.sha256Hex);
+    } on ServerCertificateNotTrustedException catch (e) {
+      if (!mounted) return null;
+      final trusted = await _confirmServerCertificate(e, settings);
+      if (!trusted) {
+        if (mounted) {
+          setState(() => _connectionStatus =
+              '[FAIL] Not saved: the server certificate was not trusted.');
+        }
+        return null;
+      }
+      return settings.withTrustedCertificate(e.certificate.sha256Hex);
+    } catch (e) {
+      _logger.w('Certificate check before Save failed; saving without a '
+          'recorded certificate: $e');
+      return settings;
+    }
   }
 
   /// The one-time local-network warning (Sprint 77 Q2). Text is fixed by
@@ -342,6 +461,16 @@ class _AccountSetupScreenState extends State<AccountSetupScreen> {
 
       // Disconnect after test
       await platform.disconnect();
+    } on ServerCertificateNotTrustedException catch (e) {
+      // SEC-8b: ask "Trust this server?"; on Yes, test again with the
+      // fingerprint (the second attempt connects only to that certificate).
+      setState(() {
+        _isTesting = false;
+        _connectionStatus = '[FAIL] ${e.userMessage}';
+      });
+      if (customServer == null || !mounted) return;
+      final trusted = await _confirmServerCertificate(e, customServer);
+      if (trusted && mounted) await _testConnection();
     } catch (e) {
       // SEC-22 (Sprint 33): surface rate-limit blocks with a clear unlock
       // time instead of a raw toString() that exposes the redacted account
@@ -395,6 +524,13 @@ class _AccountSetupScreenState extends State<AccountSetupScreen> {
     CustomImapSettings? customServer;
     if (_isCustomImap) {
       customServer = await _prepareCustomServer();
+      if (customServer == null || !mounted) {
+        if (mounted) setState(() => _isLoading = false);
+        return;
+      }
+      // SEC-8b: certificate check (and the trust question) before saving.
+      customServer =
+          await _checkCertificateBeforeSave(email, password, customServer);
       if (customServer == null || !mounted) {
         if (mounted) setState(() => _isLoading = false);
         return;
