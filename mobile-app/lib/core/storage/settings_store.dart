@@ -653,6 +653,38 @@ class SettingsStore {
     return int.tryParse(value);
   }
 
+  /// Sprint 77 MV-Q2 = 1: this account's fixed schedule slot, which sets its
+  /// start stagger (`ScanInterval.staggerMinutes`). Allocated ONCE, on the
+  /// first schedule, as the smallest slot no other account holds, and then
+  /// kept. A slot computed from the account list would shift when an account
+  /// that sorts earlier is added, while the existing tasks keep their old
+  /// start, so two accounts would collide again; a saved slot never moves.
+  /// A removed account's slot stays held, which leaves a gap, never a clash.
+  Future<int> getOrAllocateScheduleSlot(String accountId) async {
+    final own = int.tryParse(
+        await _getAccountSetting(accountId, _scheduleSlotKey) ?? '');
+    if (own != null && own >= 0) return own;
+    final db = await _dbHelper.database;
+    final rows = await db.query(
+      'account_settings',
+      columns: ['setting_value'],
+      where: 'setting_key = ? AND account_id != ?',
+      whereArgs: [_scheduleSlotKey, accountId],
+    );
+    final taken = rows
+        .map((r) => int.tryParse(r['setting_value'] as String? ?? ''))
+        .whereType<int>()
+        .toSet();
+    var slot = 0;
+    while (taken.contains(slot)) {
+      slot++;
+    }
+    await _setAccountSetting(accountId, _scheduleSlotKey, '$slot', 'int');
+    return slot;
+  }
+
+  static const String _scheduleSlotKey = 'schedule_slot';
+
   /// Set account-specific background scan frequency (minutes) override.
   /// Pass null to clear the override. (Sprint 42, F98.)
   Future<void> setAccountBackgroundFrequency(String accountId, int? minutes) async {

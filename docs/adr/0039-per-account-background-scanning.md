@@ -639,10 +639,27 @@ it is never after the registration time, and a Windows-only test runs the real
 offset within plus or minus 5 minutes each time the alarm is armed, natively,
 because every re-arm after a firing and after boot comes through
 `DozeAlarmScheduler.schedule`. The two constants are pinned equal by a test.
-**Consequence recorded**: the F98 (Sprint 42) anti-collision delay (interval minus
-one minute) no longer applies at 15 minutes or less, so two accounts on the same
-short interval start together again. The database busy timeout, WAL mode and the
-worker's lock retry (F98) remain the protection.
+**Fixed stagger at 15 minutes or less (amended at Sprint 77 Manual Validation,
+MV-Q2 = 1, Harold).** The F98 (Sprint 42) anti-collision delay (interval minus one
+minute) is gone, and as first built nothing replaced it at 15 minutes or less, so
+every account's task started at midnight and repeated on the same minutes. Windows
+now gives each account a saved schedule SLOT (`SettingsStore.getOrAllocateScheduleSlot`,
+account setting `schedule_slot`): the lowest slot no other account holds, allocated
+on the account's first schedule and never moved. The task's start is that many
+minutes after midnight (`ScanInterval.staggerMinutes`, 1 minute per slot, wrapping
+at the interval), so accounts on the same short interval start 1 minute apart, with
+no randomness. A slot is saved rather than computed from the account list because
+an index would shift when an account that sorts earlier is added, while the
+existing tasks keep their old start. A start still ahead of the registration time
+moves back one calendar day, so the start stays in the past. Over 15 minutes the
+slot is ignored and the Q13 jitter spreads accounts. Every create and update path
+(Settings, startup ensure, path repair, the F264 upgrade re-registration) reads
+the slot in `WindowsTaskSchedulerService`; an unreadable slot registers the task
+unstaggered and logs it. The database busy timeout, WAL mode and the worker's lock
+retry (F98) still absorb anything that overlaps. Android: the Doze alarm is armed
+relative to the moment each account is scheduled (`System.currentTimeMillis() +
+interval`), so accounts are already spread by when they were switched on and
+re-armed; no stagger is added there.
 
 **6. Existing users are converted on upgrade, both platforms (Q11).** A one-time,
 sentinel-guarded migration (`BackgroundIntervalMigration`, same shape as the F98

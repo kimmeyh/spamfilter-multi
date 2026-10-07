@@ -17,12 +17,34 @@ import '../../core/security/imap_host_policy.dart';
 import '../../core/storage/settings_store.dart';
 import '../../util/error_messages.dart';
 import '../../util/redact.dart';
+import '../utils/credential_labels.dart';
 import 'help_screen.dart';
 import 'scan_progress_screen.dart';
 import 'gmail_oauth_screen.dart';
 import '../widgets/standard_app_bar_actions.dart';
 import '../widgets/screen_version_line.dart'; // F229 (Sprint 73)
 import '../widgets/system_inset_wrapper.dart'; // F209 (Sprint 69)
+
+/// Sprint 77 MV-Q4: the text of the "Account already added" question.
+/// [providerName] null = the saved account's provider is unknown.
+@visibleForTesting
+String replaceAccountMessage(String? providerName) {
+  final which = providerName == null ? '' : ' ($providerName)';
+  return 'This email address is already added$which. Replace its saved '
+      'sign-in details with the ones you entered? Its scan history, rules '
+      'and settings are kept.';
+}
+
+/// MV-Q4: the provider's display name for a stored platform id, or null.
+@visibleForTesting
+String? providerNameFor(String? platformId) {
+  if (platformId == null) return null;
+  if (platformId == 'gmail-imap') return 'Gmail, App Password';
+  for (final info in PlatformRegistry.getSupportedPlatforms()) {
+    if (info.id == platformId) return info.displayName;
+  }
+  return null;
+}
 
 /// Gmail authentication method choices
 ///
@@ -136,6 +158,10 @@ class _AccountSetupScreenState extends State<AccountSetupScreen> {
   /// section and Test Connection / Save carry the server settings.
   bool get _isCustomImap => widget.platformId == 'imap';
 
+  /// MV-Q5: "App Password" or "Password", for the provider actually chosen
+  /// (Gmail App Password resolves through 'gmail-imap').
+  String get _credentialLabel => credentialLabelFor(_effectivePlatformId);
+
   @override
   void initState() {
     super.initState();
@@ -184,7 +210,12 @@ class _AccountSetupScreenState extends State<AccountSetupScreen> {
 
   /// Password length warning (SEC-21)
   /// Returns a warning message for short passwords, or null if OK.
+  ///
+  /// MV-Q5: only for an app password, whose length the provider fixes. A
+  /// normal password's length is the user's own choice, so a short one is
+  /// not a sign of a wrong entry.
   String? _passwordLengthWarning(String password) {
+    if (_credentialLabel != 'App Password') return null;
     if (password.isNotEmpty && password.length < 8) {
       return 'App passwords are typically 16 characters. '
           'Short passwords may indicate an incorrect entry.';
@@ -198,7 +229,9 @@ class _AccountSetupScreenState extends State<AccountSetupScreen> {
     if (email.isEmpty || password.isEmpty) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Email and app password are required.')),
+          SnackBar(
+              content: Text(
+                  'Email and ${_credentialLabel.toLowerCase()} are required.')),
         );
       }
       return false;
@@ -535,6 +568,36 @@ class _AccountSetupScreenState extends State<AccountSetupScreen> {
     }
   }
 
+  /// Sprint 77 MV-Q4 (Harold, Q4 = 1): ask before an add replaces a saved
+  /// account. Accounts are keyed by email address alone, so adding an address
+  /// that is already saved (the same address on a second server, or one
+  /// already added as AOL) used to overwrite that account's sign-in with no
+  /// warning. Re-adding is also how a user enters a new app password, so the
+  /// add is confirmed, not blocked. True = go ahead.
+  Future<bool> _confirmReplaceExisting(String accountId) async {
+    if (!await _credStore.credentialsExist(accountId)) return true;
+    final existing = await _credStore.getPlatformId(accountId);
+    if (!mounted) return false;
+    final replace = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('Account already added'),
+        content: Text(replaceAccountMessage(providerNameFor(existing))),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(ctx).pop(false),
+            child: const Text('Cancel'),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.of(ctx).pop(true),
+            child: const Text('Replace'),
+          ),
+        ],
+      ),
+    );
+    return replace == true;
+  }
+
   /// Save credentials and proceed to scan screen
   ///
   /// Multi-account support: Creates unique accountId combining platformId + email
@@ -558,6 +621,14 @@ class _AccountSetupScreenState extends State<AccountSetupScreen> {
 
     if (!_validateInputs(email, password)) {
       setState(() => _isLoading = false);
+      return;
+    }
+
+    // MV-Q4 (Sprint 77): the account id is the email address, so saving an
+    // address that is already saved REPLACES that account's sign-in. Ask
+    // first, before any server or certificate question.
+    if (!await _confirmReplaceExisting(email)) {
+      if (mounted) setState(() => _isLoading = false);
       return;
     }
 
@@ -1015,9 +1086,9 @@ class _AccountSetupScreenState extends State<AccountSetupScreen> {
                 TextField(
                   controller: _passwordController,
                   decoration: InputDecoration(
-                    // A custom server's login may be a normal password, not
-                    // an app password (F192).
-                    labelText: _isCustomImap ? 'Password' : 'App Password',
+                    // MV-Q5: "App Password" only where the provider takes
+                    // one; a Custom IMAP server takes the normal password.
+                    labelText: _credentialLabel,
                     border: const OutlineInputBorder(),
                     prefixIcon: const Icon(Icons.lock),
                   ),

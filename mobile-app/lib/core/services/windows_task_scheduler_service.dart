@@ -6,6 +6,7 @@ import 'package:path/path.dart' as path;
 import 'app_environment.dart';
 import 'scan_interval.dart';
 import 'powershell_script_generator.dart';
+import '../storage/settings_store.dart';
 import '../utils/account_id_sanitizer.dart';
 import '../../util/redact.dart';
 
@@ -77,6 +78,7 @@ class WindowsTaskSchedulerService {
         intervalMinutes: intervalMinutes,
         workingDirectory: workingDirectory,
         accountId: accountId,
+        staggerSlot: await _staggerSlotFor(accountId),
       );
 
       // Execute script
@@ -117,6 +119,7 @@ class WindowsTaskSchedulerService {
       final scriptPath = await PowerShellScriptGenerator.generateUpdateTaskScript(
         taskName: taskNameFor(accountId),
         intervalMinutes: intervalMinutes,
+        staggerSlot: await _staggerSlotFor(accountId),
       );
 
       // Execute script
@@ -134,6 +137,25 @@ class WindowsTaskSchedulerService {
       return false;
     } finally {
       await PowerShellScriptGenerator.cleanupScripts();
+    }
+  }
+
+  /// Sprint 77 MV-Q2 = 1: the account's saved schedule slot, which sets its
+  /// fixed start stagger. Every create and update path (Settings, startup
+  /// ensure, path repair, the F264 upgrade re-registration) comes through
+  /// [createScheduledTask] or [updateScheduledTask], so all of them get it.
+  /// The legacy global task (no account) is slot 0. If the slot cannot be
+  /// read, the task is still registered, unstaggered, and the failure is
+  /// logged: a missing stagger costs contention the F98 lock retry absorbs,
+  /// while a missing task costs every scan.
+  static Future<int> _staggerSlotFor(String? accountId) async {
+    if (accountId == null) return 0;
+    try {
+      return await SettingsStore().getOrAllocateScheduleSlot(accountId);
+    } catch (e) {
+      _logger.w('Could not read the schedule slot for '
+          '${Redact.accountId(accountId)}; registering without a stagger: $e');
+      return 0;
     }
   }
 

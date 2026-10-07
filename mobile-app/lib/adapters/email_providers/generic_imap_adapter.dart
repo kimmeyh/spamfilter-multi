@@ -56,8 +56,14 @@ class GenericIMAPAdapter with BatchOperationsMixin implements SpamFilterPlatform
   @override
   final String displayName;
 
+  /// Sprint 77 MV-Q5 (Harold: a prompt "should state what it actually is - an
+  /// 'App Password' or a regular non-app 'Password'"): AOL, Yahoo, iCloud and
+  /// Gmail IMAP take an app password; a Custom IMAP server takes the
+  /// mailbox's normal password. Must equal the `PlatformRegistry` entry's
+  /// `authMethod` (pinned by `auth_method_label_test.dart`).
   @override
-  AuthMethod get supportedAuthMethod => AuthMethod.appPassword;
+  AuthMethod get supportedAuthMethod =>
+      platformId == 'imap' ? AuthMethod.basicAuth : AuthMethod.appPassword;
 
   ImapClient? _imapClient;
   String? _currentMailbox;

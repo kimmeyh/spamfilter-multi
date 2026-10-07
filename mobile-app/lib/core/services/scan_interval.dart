@@ -49,6 +49,13 @@ const int kJitterThresholdMinutes = 15;
 /// The jitter is up to this many minutes either way.
 const int kJitterMinutes = 5;
 
+/// Fixed start stagger for intervals WITHOUT jitter (Sprint 77 MV-Q2 = 1,
+/// Harold: a fixed, non-random stagger so accounts at 15 minutes or less do
+/// not all start at the same moment). Each account holds a saved slot number
+/// (`SettingsStore.getOrAllocateScheduleSlot`) and starts this many minutes
+/// per slot after slot 0.
+const int kStaggerMinutesPerSlot = 1;
+
 /// The unit a user picks in front of the number box.
 enum ScanIntervalUnit {
   minutes('Minutes', 1),
@@ -147,6 +154,17 @@ class ScanInterval {
 
   /// Whether a run at [minutes] gets start-time jitter (Q13).
   static bool hasJitter(int minutes) => minutes > kJitterThresholdMinutes;
+
+  /// The fixed start offset, in minutes, for an account in [slot] scanning
+  /// every [minutes] (MV-Q2 = 1). Zero when the interval has jitter: the
+  /// random delay already spreads those accounts, and Q13 keeps the two rules
+  /// separate. Wraps at the interval, so two accounts collide only when more
+  /// accounts share one interval than it has minutes (16 at 15 minutes, 6 at
+  /// 5 minutes).
+  static int staggerMinutes(int minutes, int slot) {
+    if (minutes <= 0 || slot <= 0 || hasJitter(minutes)) return 0;
+    return (slot * kStaggerMinutesPerSlot) % minutes;
+  }
 
   /// The interval the Android WorkManager safety net is registered with: the
   /// user's minutes, but never below WorkManager's own documented minimum.

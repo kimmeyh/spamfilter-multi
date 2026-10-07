@@ -204,6 +204,36 @@ All decision questions are answered; execution proceeds without further approval
 ## Manual Validation decisions (asked one at a time, 2026-10-07)
 
 - MV-Q1 = 1: F266 (23 bundled safe-sender patterns that can never match -- a second literal `@`) is FIXED IN THIS SPRINT: shared validator check, seed fix, DB migration v13; dev DB backed up again before v13 runs.
+- MV-Q2 = 1 (Harold "2.1"): Windows accounts at 15 minutes or less get a FIXED, non-random start stagger, 1 minute per
+  saved slot (`schedule_slot` per account, allocated once, never moved; ADR-0039 amended). Mutations S1-S4 KILLED.
+- MV-Q3 = 1: changing the Minutes/Hours dropdown keeps the typed number and saves immediately -- as built, no change.
+  (Harold: "Most input today is automatic - if you change it and then leave, it saves it.")
+- MV-Q4 = 1: adding an email address that is already saved asks "Account already added ... Replace its saved sign-in
+  details?" (Replace / Cancel) before any server or certificate question; not blocked, because re-adding is how a new app
+  password is entered. Mutations R1-R2 KILLED.
+- MV-Q5 = 1, with Harold's rule: *"It should state what it actually is - an 'App Password' or a regulare non-app
+  'Password'"*. One shared label (`lib/ui/utils/credential_labels.dart`) for the setup field, the empty-field message, the
+  short-password warning (now app passwords only) and the account list. Root cause: the adapter reported app password for
+  every IMAP provider while the provider list said Custom IMAP takes a normal password; the demo adapter said OAuth 2.0.
+  Both fixed and pinned (`auth_method_label_test.dart`, mutations L1-L3 KILLED). The Add Account text "we never ask for
+  your main account password" was false since F192 and is corrected.
+- MV-Q6 = 1: ADR-0046 ACCEPTED as written.
+- MV-Q7 = 2 (Harold: "There is no public listing, there is only a closed listing currently; so 2 and then we will
+  validate in the next sprint"): NO Play closed-testing upload this sprint. The 0.18.0 Microsoft Store and Google Play
+  updates wait until the START of Sprint 78, so every Sprint 77 change ships in them. Phone steps 7-11 move to Sprint 78
+  start. (Class-3 scope change, decided by the Scrum Master.)
+- Phone evidence pulled 2026-10-07 (Harold tethered the Fold; rebooted ~08:30, app not opened until after noon):
+  `validation-screenshots/sprint-77/` -- screenshots, `diag_v0.17.5_2026-10-06.log`, `diag_v0.17.5_2026-10-07.log`,
+  `diag_v0.17.6_2026-10-07.log`, scan CSVs. `scripts/pull-phone-screenshots.ps1` fixed (a `$folder` local overwrote the
+  `-Folder` parameter, so every run failed) and tailored per Harold: a plain run copies only `Screenshot_<date>_<time>.png`
+  (no other app's suffix) from DCIM and `diag_*.log` + `*.csv` from Documents.
+- First read of the reboot window (`diag_v0.17.6_2026-10-07.log`, local time): last lines before the gap 08:17, then a
+  burst at 09:14:39 (the reboot; Harold's "around 8:30" was likely about 09:10). Doze-alarm and periodic workers ran for
+  AOL, Yahoo and Gmail at boot and every ~15-20 minutes through the morning with the app unopened; every worker `exit
+  success`; Gmail renewed with the stored refresh token. OPEN: an `app start (foreground)` line (`main.dart:445`, written
+  when `main()` runs) appears at 09:14:39 with no app opened, and none after noon when Harold did open it -- so something
+  ran `main()` at boot. Cause unknown; tracing the boot receiver and the Doze alarm receiver's engine start would settle
+  it. Carried to the Sprint 78 phone steps (MV76-1 step 11).
 
 ## Phase 5 evidence
 
@@ -260,8 +290,15 @@ is the only build that acts on mail.
 11. Fold -- MV76-1 remaining: reboot check (restart, unlock once, leave locked for interval + 60 minutes, then open the app;
     worker lines appear before the app-start line); Google account state screenshot; Scan History errors per account for a day
     (or zero).
-Evidence pull: `powershell -NoProfile -ExecutionPolicy Bypass -File scripts\pull-phone-screenshots.ps1 -Sprint 77` (screenshots);
-logs: `... -Sprint 77 -Folder 'Android/data/com.myemailspamfilter/files' -Recurse -Pattern 'diag_.*\.log$' -Overwrite`.
+12. Windows -- stagger (MV-Q2): with background ON for two accounts at 15 minutes, Claude reads both Task Scheduler
+    triggers: their starts differ by 1 minute (00:00 and 00:01).
+13. Windows -- replace question (MV-Q4): Add Account > AOL with the address already saved. Expect "Account already added
+    (AOL)" with Replace and Cancel; Cancel saves nothing.
+14. Windows -- labels (MV-Q5): Add Account > Custom IMAP Server shows "Password"; Add Account > AOL shows "App Password";
+    the account list shows "Password" for a Custom IMAP account and "App Password" for AOL.
+MV-Q7 = 2: steps 7-11 (Fold) move to the START of Sprint 78, with the final 0.18.0 build.
+Evidence pull (screenshots, diagnostic logs, CSVs in one run):
+`powershell -NoProfile -ExecutionPolicy Bypass -File scripts\pull-phone-screenshots.ps1 -Sprint 77`.
 
 ---
 

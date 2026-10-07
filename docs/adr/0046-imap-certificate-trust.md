@@ -1,6 +1,6 @@
 # ADR-0046: IMAP certificate trust and the Google OAuth issuing-authority pin
 
-**Status**: Proposed (implemented Sprint 77; Accepted when Harold signs off at Manual Validation)
+**Status**: Accepted (Harold, Sprint 77 Manual Validation MV-Q6 = 1, 2026-10-07; implemented Sprint 77)
 **Date**: 2026-10-07
 **Deciders**: Harold (Chief Architect / Product Owner)
 **Sprint**: 77 (SEC-8b, Issue #467; decisions Q4 = 1 and Q5 = 1)

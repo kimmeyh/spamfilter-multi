@@ -10,6 +10,7 @@ import '../../util/redact.dart';
 import '../../adapters/email_providers/platform_registry.dart';
 import '../../adapters/email_providers/spam_filter_platform.dart';
 import '../../main.dart' show routeObserver;
+import '../utils/credential_labels.dart';
 import '../widgets/skeleton_loader.dart';
 import '../widgets/empty_state.dart';
 import '../widgets/error_display.dart';
@@ -355,8 +356,11 @@ class _AccountSelectionScreenState extends State<AccountSelectionScreen> with Wi
         return switch (authMethod) {
           AuthMethod.none => 'None (Demo)',
           AuthMethod.oauth2 => 'OAuth 2.0',
-          AuthMethod.appPassword => 'App Password',
-          AuthMethod.basicAuth => 'Basic Auth',
+          // MV-Q5: one shared word for both, the same one the setup
+          // form's field uses (credential_labels.dart).
+          AuthMethod.appPassword ||
+          AuthMethod.basicAuth =>
+            credentialLabel(authMethod),
           AuthMethod.apiKey => 'API Key',
         };
       }
@@ -372,6 +376,7 @@ class _AccountSelectionScreenState extends State<AccountSelectionScreen> with Wi
       'aol' => 'App Password',
       'yahoo' => 'App Password',
       'icloud' => 'App Password',
+      'imap' => 'Password',
       _ => 'IMAP',
     };
   }

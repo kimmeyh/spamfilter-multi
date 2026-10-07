@@ -335,7 +335,10 @@ class _PlatformSelectionScreenState extends State<PlatformSelectionScreen> {
             ),
             const SizedBox(height: 12),
             Text(
-              'For security, we never ask for your main account password.\n\n- Gmail uses Google Sign-In (OAuth 2.0).\n- AOL/Yahoo/iCloud use app-specific passwords.\n\nTap on your provider to see setup steps.',
+              // MV-Q5 (Sprint 77): "never ask for your main account
+              // password" stopped being true when F192 added Custom IMAP,
+              // which asks for exactly that.
+              'For security, Gmail, AOL, Yahoo and iCloud never need your main account password.\n\n- Gmail uses Google Sign-In (OAuth 2.0).\n- AOL/Yahoo/iCloud use an App Password.\n- A Custom IMAP Server uses your normal Password for that server.\n\nTap on your provider to see setup steps.',
               style: TextStyle(
                 fontSize: 12,
                 color: Colors.blue[900],
