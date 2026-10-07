@@ -1,12 +1,12 @@
 {
     "_description":  "Sprint status file that persists across context compaction. Update after each phase/sub-phase completion.",
-    "_last_updated":  "2026-10-07T04:30:00Z",
+    "_last_updated":  "2026-10-07T07:15:00Z",
     "_usage":  "Read this file after context compaction to restore sprint approval state and progress.",
     "_staleness_note":  "This file had drifted 15 sprints (last updated at Sprint 35, 2026-04-19) before being refreshed at Sprint 50 close-out. It is a Phase 7.7 checklist item -- update it at every sprint close-out, not opportunistically.",
     "current_sprint":  {
                            "number":  77,
                            "branch":  "feature/20261006_Sprint_77",
-                           "status":  "Phase 4 Sprint Execution -- plan APPROVED 2026-10-06 (all 28 answers recorded in SPRINT_77_PLAN.md); cards #461-#468; version 0.18.0+15. Order: T1 MV76-1 tooling, T2 F258, T3 F245, T4 R76-1 baseline arms, T5 F264, T4 remaining arms, T6 F192+SEC-15, T7 SEC-8b (spike first), T8 R76-3 during waits.",
+                           "status":  "Phase 5.3 Manual Validation -- all 8 tasks merged (HEAD 7f9a912+); suite 2,875 passed / 15 skipped; 5.1.2 F-PRECHECK done (9/10 fixed, F276 filed); 5.1.5 WinWright sweep refused by the locked-workstation pre-flight, runs as MV step 0; Windows dev 0.18.0 running (DB v12 upgrade verified 7,904 -\u003e 583 rows); AAB 0.18.0 versionCode 15 at mobile-app\\dist\\android-0.18.0+15\\app-prod-release.aab (not uploaded). MV steps: SPRINT_77_PLAN.md \"Manual Validation steps\".",
                            "plan_approved":  true,
                            "blanket_execution_approved":  true,
                            "pr_number":  460,
@@ -32,12 +32,12 @@
                       },
     "_github_issues_note":  "Sprint 66 cards created at Phase 3.3.1 (2026-09-07): #387 GP-19, #388 GP-4. Close by hand at Post-Merge Cleanup.",
     "test_metrics":  {
-                         "suite":  "2,601 passed / 15 skipped / 0 failed (local Windows)",
-                         "policy_suite":  "release_notes_test 5/5; hook suite 104 passed / 0 failed; JVM MailNotificationPolicyTest 5/5",
-                         "winwright":  "3/3, 85 steps at 18392ad",
+                         "suite":  "2,875 passed / 15 skipped / 0 failed (local Windows, 2026-10-07)",
+                         "policy_suite":  "JVM 21/21; release_notes_test passing; hook suite 121/121 (2026-10-06)",
+                         "winwright":  "NOT RUN -- refused by locked-workstation pre-flight 2026-10-07; MV step 0",
                          "analyzer":  "clean",
-                         "mutations":  "M118-M209 in Sprint 76; M189 mis-specified (recorded), rest KILLED",
-                         "as_of":  "2026-10-06, Sprint 76 Phase 7.7"
+                         "mutations":  "Sprint 77: F258 M1/M2/M4 + L1/L2, F245 21, F192 25, SEC-8b 16, F264 24, R76-1 5, merge M1/M2, F-PRECHECK 15 -- all KILLED",
+                         "as_of":  "2026-10-07, Sprint 77 Phase 5.3"
                      },
     "store_release":  {
                           "status_0_15_3":  "NOT SUBMITTED TO EITHER STORE. Harold, 2026-09-22: \"not pushing to either store this time\". Phase 8.3 explicitly N/A for this cycle.",
@@ -57,8 +57,9 @@
 
                         ],
     "next_actions":  [
-                         "Execute Sprint 77 tasks in plan order without stopping until Manual Validation (Harold, approval 2026-10-06).",
-                         "When either store shows 0.17.6 live: update STORE_VERSION_STATUS Live rows and STORE_SUBMISSION_TIMING Submission 31."
+                         "Harold: Manual Validation per SPRINT_77_PLAN.md \"Manual Validation steps\" (Windows dev running; upload AAB 0.18.0 versionCode 15 to Play closed testing for the Fold steps).",
+                         "Claude: run the WinWright sweep (MV step 0) as soon as the PC is unlocked; record sweep-head.",
+                         "Open MV questions (one at a time): F266 into this sprint?; F264 short-interval start collision; F264 unit-change commit; F192 accountId collision + \"App Password\" label; ADR-0046 acceptance."
                      ],
     "next_sprint_targeted":  {
                                  "number":  77,
