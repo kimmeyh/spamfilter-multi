@@ -6,7 +6,7 @@
     "current_sprint":  {
                            "number":  77,
                            "branch":  "feature/20261006_Sprint_77",
-                           "status":  "Phase 3.7 -- plan drafted (docs/sprints/SPRINT_77_PLAN.md, 3b606a3), draft PR #460 created; awaiting Harold\u0027s approval and answers to 28 decision questions. Scope (Harold, Phase 8.4): MV76-1, F258, F245, R76-1, F264+R76-2, F192(+SEC-15), SEC-8b, R76-3. 0.17.6 submitted to both stores.",
+                           "status":  "Phase 3.7 Plan Approval -- plan drafted (docs/sprints/SPRINT_77_PLAN.md, 3b606a3), draft PR #460 created; awaiting Harold\u0027s approval and answers to 28 decision questions. Scope (Harold, Phase 8.4): MV76-1, F258, F245, R76-1, F264+R76-2, F192(+SEC-15), SEC-8b, R76-3. 0.17.6 submitted to both stores.",
                            "plan_approved":  false,
                            "blanket_execution_approved":  false,
                            "pr_number":  460,
