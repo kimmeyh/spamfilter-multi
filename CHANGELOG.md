@@ -27,6 +27,7 @@ Format: `- **type**: Description (Issue #N)` where type is feat|fix|chore|docs
 ## [Unreleased]
 
 ### 2026-10-07 (Sprint 77)
+- **fix**: Gmail moves and deletes to a label you created now work -- the app sends Gmail the label's ID instead of its name, which Gmail refused with "Invalid label". If the label was renamed or deleted, the email is left where it is and the scan names the missing label so you can choose the folder again in Settings. A move out of a label you created also removes that label, so the email is in one place. (Issue #462)
 - **docs**: research on heuristic, ML and GenAI spam identification, with proposed backlog items (Issue #468)
 
 ### 2026-10-06 (Sprint 76)
