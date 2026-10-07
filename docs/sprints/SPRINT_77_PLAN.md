@@ -135,8 +135,71 @@ The cards below carry the detail and evidence for each. This consolidated list i
 
 ## Phase 3.7 approval
 
-Pending. Approval pre-approves all tasks as planned through Phase 7; any Class-1/2/3 change not answered above is
-surfaced, not decided.
+**APPROVED 2026-10-06 (Harold, verbatim)**: *"Sprint plan approved as amended (with any comments I provided), proceed
+with execution. All Sprint tasks and sub-tasks are approved. Do not stop between tasks as they are all approved, please
+continue to complete all tasks and without addition approvals until Manual Validation, providing your recommendation for
+Manual Validation steps. Do not stop to ask questions unless meeting the criteria in \docs\SPRINT_STOPPING_CRITERIA.md.
+If questions must be asked, ask as late as possible - do everything that can be done (all tasks and parts of takss,
+without the answer to the question(s), then ask the question(s)"*
+
+**Answers given at approval (Harold, 2026-10-06)**:
+- Q11: *"Windows scheduler takes the same minute/hour drop down and 2 digit entry. Existing user take a conversion from
+  current (windows and android)"* -- one interval control on both platforms; schedulers take minutes; existing per-account
+  frequencies are converted on upgrade.
+- Q13: *"if > 15 min then randome +/- 5 minutes"* -- start-time jitter of up to 5 minutes either way, only for intervals
+  over 15 minutes; none at 15 or below.
+- Q18 = 2: No Rule identity = message identifier + folder, no new column. (Execution note: two IMAP accounts can share a
+  UID in the same folder name, so the single upsert helper matches within the row's own account through its scan --
+  `unmatched_emails.scan_result_id -> scan_results.account_id` -- which honors "no new column" without merging two
+  accounts' rows.)
+- Q21 = 2: No Rule Review lists every unprocessed row across scans, not only the latest scan.
+- Q24 = 2: F250 native sign-in to the backlog until a second device reproduces it.
+- Q25 = 1: generalize `scripts/pull-phone-screenshots.ps1` (`-Folder`, `-Pattern`).
+- Q26 = 1: R76-3 time-box 240 minutes.
+- Q27: *"Opus 5.5 instead of Fable unless you are positive it is needed"* -- every Fable/Opus assignment executes on
+  Opus 5.5.
+- Q28 (not answered; settled by `CHANGELOG_POLICY.md`: a `feat` in the release means MINOR): 0.18.0+15.
+
+**Answered one at a time after approval** (Harold: *"only one question at a time ... After I answer, then the next
+question"*; each asked with what / options / pros / cons / recommendation / why, 2026-10-06):
+- Q1 = 1: SEC-15 merged into the F192 card.
+- Q2 = 1: private/loopback server addresses -- warn once and allow. Harold: *"This is a personal email only app - no
+  business usage should be encouraged or used (at this time)"* -- warning text must not mention or suggest business
+  setups ("Continue only if you run this mail server yourself.").
+- Q3 = 1: encryption modes SSL/TLS and STARTTLS, never plaintext; STARTTLS must refuse to send the password unless the
+  upgrade succeeds (downgrade test).
+- Q4 = 1: trust-on-first-use plus a one-time user acceptance of a self-signed / private-CA certificate (fingerprint
+  shown); change detection afterward. NEW ADR-0046.
+- Q5 = 1: fix the inert OAuth pinner inside SEC-8b (check every connection, correct fingerprint kind, pin the issuing
+  authority, keep the kill switch).
+- Q6 = 1: custom-server settings stored as `SecureCredentialsStore` side keys, read by the adapter (no call-site edits).
+- Q7 = 1: Manual Validation uses Harold's Yahoo account entered through the Custom IMAP form, plus a local test IMAP
+  server Claude sets up on the PC (STARTTLS, self-signed prompt, change alert, local-address warning; Fold over Wi-Fi).
+- Q8 = 1: per-account new-mail switch in the app database (with the other per-account background settings); the Android
+  listener keeps one native "any account on" flag; account selection in the shared worker.
+- Q9 = 1: upgrade with the app-wide switch ON turns it on for every account that has background scanning on.
+- Q10 = 1: the per-account new-mail switch is hidden on Windows (ADR-0044 declared exception extended).
+- Q12 = 1: one combined Android note -- "Android runs background scans when the phone allows. While the phone is idle,
+  expect up to about 45 minutes between scans, even with a shorter interval. Opening the app runs any work that was
+  waiting." (replaces the F217 "about an hour" note, `settings_screen.dart:1530`).
+- Q14 = 1: R76-1 interleaved -- arms on today's code first (baseline, all-accounts new-mail, scan range), F264 built
+  with the 5-minute floor as one constant, then the F264-dependent arms; the final floor set from the results.
+- Q15 = 1: emulator notifications from a debug-build-only allowlist entry, with a gate proving release builds never
+  contain it.
+- Q16 = 1: a missing custom Gmail label fails the move with a named error ("Gmail label '<name>' was not found --
+  choose the folder again in Settings"); never auto-create.
+- Q17 = 1 (Harold first answered 2, then *"sorry change q17 to 1"*): a move out of a custom label also removes that
+  label once its ID resolves; if the lookup fails the label stays (never a failed move).
+- Q19 = 1: "listed once" applies to background-scan export files only; manual-scan exports stay complete.
+- Q20 = 2: a dismissed No Rule email comes back when a later scan still finds it with no rule. Harold's reason:
+  *"dismissed is often, 'I don't know. I'll have to check.' this give the user to find and look at the full email and
+  then decide. When they run the next scan they are likely ready to decide."* -- build it as "deferred until the next
+  scan" (the upsert resets `processed` when a scan re-finds the email).
+- Q22 = 1: the 90-day No Rule cleanup counts from the last time a scan saw the email.
+- Q23 = 1: Scan History "No Rule" count unchanged. Harold: *"the user can often see (and can filter by email) to see
+  multiple scan results on the same page and easily see how the no rule numbers are changing."*
+
+All decision questions are answered; execution proceeds without further approval until Manual Validation.
 
 ---
 
