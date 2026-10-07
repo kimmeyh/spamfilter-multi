@@ -196,6 +196,10 @@ Every Item that is implemented gets ONE row here the moment it is picked up -- s
 | MV fixes: log lock file, Gmail labels, safe-sender move, counters, export header, rule-update skip | 76 | DONE | -- | -- | ~150 | ~150 | RECONSTRUCTED. UNPLANNED, five Fold rounds. Largest block; the Android lock rework cost one closed-test build (retro IMP-3). |
 | Task 4 / MV analysis: Fold log, screenshot and CSV pulls | 76 | DONE (remaining checks -> MV76-1) | -- | -- | ~120 | ~120 | RECONSTRUCTED. Claude analysis time across ~6 MTP pulls; Harold's phone time not counted. |
 | Retro IMP-1, 2, 3, 4, 6 | 76 | DONE | -- | -- | ~40 | ~40 | RECONSTRUCTED. 16:17-17:00; hook suite 91 -> 104. |
+| Sprint 77 planning (three Fable card-draft agents + assembly + 28 questions one at a time) | 77 | DONE | -- | -- | ~150 | ~95 | Recorded at completion. Agents ran in parallel (~15-19 min each); the one-question-at-a-time round with full what/options/pros/cons (Harold's request) took the most wall-clock. PLANNING+DOCS. |
+| Task 0: version 0.18.0+15 + Play row + provisional notes | 77 | DONE | 15-25 | 15-25 | ~10 | ~10 | At estimate low end; gates 12/12. DATA+DOCS. |
+| Task 1 (tooling part): pull-phone-screenshots.ps1 -Folder/-Recurse/-Overwrite | 77 | DONE | 10-20 | 10-20 | ~12 | ~12 | Parse-checked; MTP path unverifiable without the phone connected -- verified at MV. SCRIPT. |
+| Task 8: R76-3 research | 77 | DONE | 150-240 | 150-240 | ~30 (agent ~13 + lead verification and filing ~17) | ~30 | FAR under the 240-min time-box (Opus agent). The lead re-verified the one defect claim (23/426 unmatchable safe senders; a naive count said 297 -- the class [^@\s] contains an @) before filing F266-F275. DOCS (research spike). |
 
 ## Can the missing sprints (48-69) be reconstructed from git? -- TESTED 2026-09-19, answer: NO
 
