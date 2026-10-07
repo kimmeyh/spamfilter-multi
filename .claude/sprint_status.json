@@ -1,12 +1,12 @@
 {
     "_description":  "Sprint status file that persists across context compaction. Update after each phase/sub-phase completion.",
-    "_last_updated":  "2026-10-07T01:30:00Z",
+    "_last_updated":  "2026-10-07T01:10:00Z",
     "_usage":  "Read this file after context compaction to restore sprint approval state and progress.",
     "_staleness_note":  "This file had drifted 15 sprints (last updated at Sprint 35, 2026-04-19) before being refreshed at Sprint 50 close-out. It is a Phase 7.7 checklist item -- update it at every sprint close-out, not opportunistically.",
     "current_sprint":  {
                            "number":  77,
                            "branch":  "feature/20261006_Sprint_77",
-                           "status":  "Phase 8 Release Cycle -- 8.1 main merged (31b7135); 8.2 pass 1 completeness sweep DONE 2026-10-06; 8.3 Store release 0.17.6 (MSIX + Play AAB) in progress; then 8.4 pass 2 scope selection (Harold).",
+                           "status":  "Phase 8.3 Store release -- 0.17.6 MSIX + AAB built and verified, awaiting Harold\u0027s Partner Center and Play uploads; 8.2 pass 1 done; next 8.4 pass 2 scope selection (Harold).",
                            "plan_approved":  false,
                            "blanket_execution_approved":  false,
                            "pr_number":  null,
@@ -44,7 +44,8 @@
                           "live_play":  "0.15.2 versionCode 5 -- closed testing, device-verified 2026-09-21 on the S24+.",
                           "consequence":  "F219 AC-1 and F227 remain blocked: they need a Play-INSTALLED build, and 0.15.3 is not going out. They wait for the next release that ships.",
                           "status_0_16_0":  "SUBMITTED / ROLLOUT IN PROCESS on BOTH stores (Harold, 2026-09-24, reported between 12:17am and 8:39am ET). NOT yet observed live on either. Built + verified 2026-09-24: MSIX 0.16.0.0 (prod worktree bf005f3, self-test 6/6 PASS, 17.5 MB) and AAB versionCode 7 / 0.16.0 (67.0 MB). Step 7 records (STORE_VERSION_STATUS.md live rows) wait for a direct console observation.",
-                          "status_0_17_0":  "LIVE 2026-10-04 ~11:20pm ET on BOTH stores (Harold). Microsoft Store: submitted ~10:40pm, installed build shows no [DEV] and Version 0.17.0; public API lagged. Google Play closed testing (Alpha): versionCode 8, device-verified on the Fold (Version 0.17.0). Open: Step 4.2 Gmail sign-in URL on the Store build; CHANGELOG has no release headings since 0.14.0 (not done this release either)."
+                          "status_0_17_0":  "LIVE 2026-10-04 ~11:20pm ET on BOTH stores (Harold). Microsoft Store: submitted ~10:40pm, installed build shows no [DEV] and Version 0.17.0; public API lagged. Google Play closed testing (Alpha): versionCode 8, device-verified on the Fold (Version 0.17.0). Open: Step 4.2 Gmail sign-in URL on the Store build; CHANGELOG has no release headings since 0.14.0 (not done this release either).",
+                          "status_0_17_6":  "BUILT + VERIFIED 2026-10-06, NOT SUBMITTED (awaiting Harold). MSIX 0.17.6.0 from prod worktree at 31b7135 (pulled from 47 behind): release-self-test PASS 6/6, manifest 0.17.6.0, 17.6 MB, D:\\Data\\Harold\\github\\spamfilter-multi-prod\\mobile-app\\build\\windows\\x64\\runner\\Release\\my_email_spam_filter.msix. AAB 0.17.6 versionCode 14 from dev worktree (Sprint 77 branch, includes 7.7.1 fixes): no .dev suffix, OAuth scheme present, F253 listener present, 67.3 MB, D:\\Data\\Harold\\github\\spamfilter-multi\\mobile-app\\dist\\android-0.17.6+14\\app-prod-release.aab (replaces the 4:52 PM pre-fix bundle; versionCode 14 never uploaded per STORE_VERSION_STATUS). Notes: docs/store-assets/RELEASE_NOTES_0.17.6_*.md (re-derived for 7.7.1, gate 5/5)."
                       },
     "environment_notes":  [
                               "RESOLVED 2026-07-29 (verified 07-30): the Store fault was an Acronis file-system filter blocking AppXSvc cleanup, fixed by an Acronis Protection exclusion. 23h uptime with ZERO Id-493 events vs a 176-file/6-min baseline; Store client self-updated 22606.1401.6.0 -\u003e .10.0 (requires a working deployment pipeline). Filter drivers remain loaded -- backup protection was NOT disabled. See ALL_SPRINTS_MASTER_PLAN ENV-1 for the picker gotcha if it recurs.",
