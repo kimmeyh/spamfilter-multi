@@ -526,12 +526,26 @@ Navigate to ResultsDisplayScreen
 Background scanning is **per account** (ADR-0039): there is one Windows Task
 Scheduler task per enabled account, named
 `SpamFilterBackgroundScan_<sanitizedAccountId><envSuffix>`, whose action launches
-the executable with `--background-scan --account-id=<accountId>`. Each task uses a
-`-RandomDelay` (sized to its interval) so multiple accounts' tasks do not fire
-simultaneously and contend for the single SQLite DB. A one-time migration
+the executable with `--background-scan --account-id=<accountId>`. A one-time migration
 (`PerAccountBgMigration`) seeds per-account `background_enabled` / `background_frequency`
 overrides from the legacy global flag on first launch; `main.dart` startup
 reconciles per-account tasks and cleans up the legacy global + orphaned tasks.
+
+**Interval** (F264, Sprint 77; ADR-0039 amendment; both platforms): the per-account
+interval is a number of MINUTES, 5 to 5940 (99 hours), chosen with ONE control
+(Settings > Background > "Scan every": a Minutes/Hours dropdown then a 2-digit
+number). `lib/core/services/scan_interval.dart` owns the range, conversion, label
+and the conversion of stored values; the fixed `ScanFrequency` list is gone.
+Windows emits one trigger shape for every interval: `-Once -At <start>
+-RepetitionInterval (New-TimeSpan -Minutes <n>) -RepetitionDuration (New-TimeSpan
+-Days 365)` (Task Scheduler accepts 1 minute to 31 days). For intervals over 15
+minutes the trigger starts 5 minutes early with `-RandomDelay` 10 minutes (plus
+or minus 5 minutes around the nominal time); at 15 minutes or less there is no
+delay. `verifyAndRepairTaskPath` takes the interval from its caller. A one-time,
+sentinel-guarded migration (`BackgroundIntervalMigration`, run at startup on both
+platforms) converts stored values to the nearest one the control can express and
+re-registers every enabled account's schedule; startup reconciliation uses the
+same conversion (`reconcileAccountInterval`).
 
 ```
 Windows Task Scheduler fires the PER-ACCOUNT task
@@ -558,7 +572,11 @@ BackgroundScanWindowsWorker.executeBackgroundScan(accountId: <id>)
 **Android** (ADR-0039): one WorkManager unique periodic task per enabled account
 (`background_scan_task::<accountId>`) carrying the accountId in `inputData`;
 `callbackDispatcher` routes it to a single-account scan. First-run `initialDelay`
-is randomized (1..N min) for the same anti-collision reason.
+is randomized (1..N min) for the same anti-collision reason. The WorkManager
+registration uses the user's interval but never less than WorkManager's documented
+15-minute minimum (F264); the Doze alarm below is armed with the user's own minutes
+(5 to 5940), with up to 5 minutes of jitter either way applied natively on each arm
+for intervals over 15 minutes (`AlarmJitter`).
 
 **Android in Doze** (F235, Sprint 73; amends ADR-0039): WorkManager runs on
 JobScheduler, which Doze suspends, so the periodic task alone often did not fire
@@ -596,12 +614,19 @@ appends each line as one write under an exclusive OS file lock, best effort
 **Scan when new mail arrives** (F253, Sprint 76, ADR-0044; Android only):
 `MailNotificationListener` (a `NotificationListenerService`) reads only the
 posting package name and time. A notification from an allowlisted mail app
-(`MailNotificationPolicy`) enqueues ONE all-accounts one-off worker
+(`MailNotificationPolicy`) enqueues ONE one-off worker
 (`DozeScanTrigger.enqueueAllAccounts`, unique work + KEEP, network required,
-at most one per 2 minutes); each account's background switch and claim still
-decide. Off by default: the Settings switch (flag in native preferences,
-channel `com.myemailspamfilter/new_mail_trigger`) plus Android Notification
-access.
+at most one per 2 minutes). Per account since F264 (Sprint 77): each account has
+its own switch in the app database (`account_settings` key `new_mail_trigger`);
+the native flag in preferences (channel `com.myemailspamfilter/new_mail_trigger`)
+is now only "any account has it on", kept in step by
+`NewMailTrigger.syncAnyAccountOn`. The listener passes the providers the posting
+app maps to in the payload (`triggerProviders`: Gmail app -> Gmail accounts, AOL
+app -> AOL, Yahoo Mail -> Yahoo, Samsung Email and Outlook -> every account with
+the switch on) and the worker scans an account only when that provider matches
+AND the account's own switch is on AND its background switch is on
+(`accountSelectedByNotification`). Off by default; needs Android Notification
+access. Hidden on Windows (declared ADR-0042 exception, ADR-0044 amendment).
 
 ### Rule Evaluation Flow (ADR-0005)
 

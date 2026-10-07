@@ -89,6 +89,26 @@ void main() {
       }
     });
 
+    test('F264 AC-12: background-scanning Help describes the per-account '
+        'interval and the per-account new-mail switch', () {
+      // What this does NOT catch: the prose being understandable; that is
+      // Manual Validation. It pins the facts a user needs and the one stale
+      // phrase ("4-hourly") the old fixed list left behind.
+      expect(backgroundScanning.contains('5 minutes'), isTrue);
+      expect(backgroundScanning.contains('99 hours'), isTrue);
+      expect(backgroundScanning.contains('Scan every'), isTrue);
+      expect(backgroundScanning.contains('Scan when new mail arrives'), isTrue);
+      expect(backgroundScanning.contains('4-hourly'), isFalse,
+          reason: 'the old fixed list offered 4 hours and then scheduled '
+              'nothing for it; the control is a unit and a number now');
+      // The Android timing note, in the Product Owner's words, once.
+      expect(
+          backgroundScanning.contains('While the phone is idle, expect up to '
+              'about 45 minutes between scans, even with a shorter interval.'),
+          isTrue);
+      expect(backgroundScanning.contains('about an hour'), isFalse);
+    });
+
     test(
         'selection Help scopes its desktop and touch idioms to the right '
         'platforms', () {

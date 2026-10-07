@@ -4,7 +4,7 @@ import 'package:logger/logger.dart';
 import 'package:path/path.dart' as path;
 
 import 'app_environment.dart';
-import 'scan_frequency.dart';
+import 'scan_interval.dart';
 import 'powershell_script_generator.dart';
 import '../utils/account_id_sanitizer.dart';
 import '../../util/redact.dart';
@@ -48,19 +48,19 @@ class WindowsTaskSchedulerService {
   /// Create a scheduled task for background scanning
   ///
   /// Creates a Windows Task Scheduler task that launches the app
-  /// with `--background-scan` flag at the specified frequency.
+  /// with `--background-scan` flag every [intervalMinutes] minutes (F264).
   static Future<bool> createScheduledTask({
-    required ScanFrequency frequency,
+    required int intervalMinutes,
     String? accountId,
   }) async {
-    if (frequency == ScanFrequency.disabled) {
-      _logger.w('Cannot create task with disabled frequency');
+    if (intervalMinutes <= 0) {
+      _logger.w('Cannot create task with a non-positive interval');
       return false;
     }
 
     try {
       final name = taskNameFor(accountId);
-      _logger.i('Creating scheduled task "${_logTaskLabel(accountId)}" with frequency: ${frequency.label}'
+      _logger.i('Creating scheduled task "${_logTaskLabel(accountId)}" every ${ScanInterval.label(intervalMinutes)}'
           '${accountId != null ? ' (account: ${Redact.accountId(accountId)})' : ''}');
 
       // Get executable path (current running app)
@@ -74,7 +74,7 @@ class WindowsTaskSchedulerService {
       final scriptPath = await PowerShellScriptGenerator.generateCreateTaskScript(
         taskName: name,
         executablePath: executablePath,
-        frequency: frequency,
+        intervalMinutes: intervalMinutes,
         workingDirectory: workingDirectory,
         accountId: accountId,
       );
@@ -102,21 +102,21 @@ class WindowsTaskSchedulerService {
   ///
   /// Modifies the trigger of the existing task without recreating it
   static Future<bool> updateScheduledTask({
-    required ScanFrequency frequency,
+    required int intervalMinutes,
     String? accountId,
   }) async {
-    if (frequency == ScanFrequency.disabled) {
-      // Disabled means delete the task
+    if (intervalMinutes <= 0) {
+      // Disabled (zero or less) means delete the task
       return await deleteScheduledTask(accountId: accountId);
     }
 
     try {
-      _logger.i('Updating scheduled task "${_logTaskLabel(accountId)}" frequency to: ${frequency.label}');
+      _logger.i('Updating scheduled task "${_logTaskLabel(accountId)}" interval to: ${ScanInterval.label(intervalMinutes)}');
 
       // Generate PowerShell script
       final scriptPath = await PowerShellScriptGenerator.generateUpdateTaskScript(
         taskName: taskNameFor(accountId),
-        frequency: frequency,
+        intervalMinutes: intervalMinutes,
       );
 
       // Execute script
@@ -256,12 +256,12 @@ class WindowsTaskSchedulerService {
   /// Returns true if the task was recreated, false if it already exists
   /// or recreation is not needed.
   static Future<bool> ensureTaskExists({
-    required ScanFrequency frequency,
+    required int intervalMinutes,
     String? accountId,
   }) async {
     try {
       if (!Platform.isWindows) return false;
-      if (frequency == ScanFrequency.disabled) return false;
+      if (intervalMinutes <= 0) return false;
 
       final status = await getScheduleStatus(accountId: accountId);
       if (status['exists'] == true) {
@@ -269,8 +269,8 @@ class WindowsTaskSchedulerService {
         return false;
       }
 
-      _logger.i('Scheduled task "${_logTaskLabel(accountId)}" is missing - recreating with frequency: ${frequency.label}');
-      final success = await createScheduledTask(frequency: frequency, accountId: accountId);
+      _logger.i('Scheduled task "${_logTaskLabel(accountId)}" is missing - recreating every ${ScanInterval.label(intervalMinutes)}');
+      final success = await createScheduledTask(intervalMinutes: intervalMinutes, accountId: accountId);
 
       if (success) {
         _logger.i('Scheduled task recreated successfully');
@@ -289,7 +289,13 @@ class WindowsTaskSchedulerService {
   ///
   /// Checks if the registered task's executable path matches what a FRESH
   /// registration would use right now. If mismatched, deletes and recreates
-  /// the task with the correct path and same frequency.
+  /// the task with the correct path and the interval the CALLER passes.
+  ///
+  /// F264 (Sprint 77): the interval used to be guessed from the registered
+  /// trigger's text (`contains('15')`, `'PT1H'`, ...), which is wrong for
+  /// arbitrary minutes (115 contains "15"; 90 matched nothing and became one
+  /// hour). The caller already holds the account's effective minutes, so it
+  /// passes them in and nothing here parses a trigger string any more.
   ///
   /// F148 (Sprint 56): compares against `_getExecutablePath()` (the SAME
   /// alias-aware resolver `createScheduledTask` uses), NOT the raw
@@ -304,7 +310,10 @@ class WindowsTaskSchedulerService {
   /// this fix shipped) to the new alias-based one.
   ///
   /// Returns true if repair was needed and performed, false otherwise.
-  static Future<bool> verifyAndRepairTaskPath({String? accountId}) async {
+  static Future<bool> verifyAndRepairTaskPath({
+    String? accountId,
+    required int intervalMinutes,
+  }) async {
     try {
       if (!Platform.isWindows) return false;
 
@@ -332,24 +341,10 @@ class WindowsTaskSchedulerService {
       _logger.i('  Registered: $registeredPath');
       _logger.i('  Current:    $currentPath');
 
-      // Determine current frequency from trigger info
-      final triggerFrequency = status['triggerFrequency'] as String? ?? '';
-      ScanFrequency frequency = ScanFrequency.every1hour; // default fallback
-
-      if (triggerFrequency.contains('15')) {
-        frequency = ScanFrequency.every15min;
-      } else if (triggerFrequency.contains('30')) {
-        frequency = ScanFrequency.every30min;
-      } else if (triggerFrequency.contains('1:00') || triggerFrequency.contains('01:00') || triggerFrequency.contains('PT1H')) {
-        frequency = ScanFrequency.every1hour;
-      } else if (triggerFrequency == 'Once') {
-        frequency = ScanFrequency.daily;
-      }
-
       // Delete old task and recreate with current path
-      _logger.i('Repairing task "${_logTaskLabel(accountId)}" with frequency: ${frequency.label}');
+      _logger.i('Repairing task "${_logTaskLabel(accountId)}" every ${ScanInterval.label(intervalMinutes)}');
       await deleteScheduledTask(accountId: accountId);
-      final success = await createScheduledTask(frequency: frequency, accountId: accountId);
+      final success = await createScheduledTask(intervalMinutes: intervalMinutes, accountId: accountId);
 
       if (success) {
         _logger.i('Task path repaired successfully');

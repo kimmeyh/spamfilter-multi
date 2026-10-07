@@ -7,7 +7,8 @@ import 'package:flutter_test/flutter_test.dart';
 /// notification post` on the emulator) must NEVER be accepted by a release
 /// build.
 ///
-/// SOURCE-TEXT VERIFIED. The behavior of the policy is pinned by the JVM test
+/// SOURCE-TEXT VERIFIED: what would settle the behavior is inspecting a built
+/// RELEASE APK's notification handling on a device. The behavior of the policy is pinned by the JVM test
 /// `MailNotificationPolicyTest` (run: `gradlew :app:testDevDebugUnitTest` from
 /// mobile-app/android). That test cannot see the CALL SITE, so this gate pins
 /// the wiring: the listener hands `BuildConfig.DEBUG` to the policy, never a
@@ -23,16 +24,20 @@ void main() {
   final listener = File('$dir/MailNotificationListener.kt').readAsStringSync();
   final gradle = File('android/app/build.gradle.kts').readAsStringSync();
 
+  // A table is `private val NAME: Map<...> = mapOf(` ... a line holding only
+  // `    )`. Ending at the first ')' (the original form) stops inside the first
+  // `setOf(...)` since F264 turned the lists into package -> provider maps.
   String block(String source, String startMarker) {
     final start = source.indexOf(startMarker);
     expect(start, greaterThanOrEqualTo(0), reason: 'missing "$startMarker"');
-    final end = source.indexOf(')', start);
+    final end = source.indexOf(RegExp(r'\n\s*\)\s*\n'), start);
+    expect(end, greaterThan(start), reason: 'no closing line for "$startMarker"');
     return source.substring(start, end);
   }
 
   test('the release allowlist block does not name any debug-only package', () {
-    final releaseBlock = block(policy, 'val MAIL_APP_PACKAGES');
-    final debugBlock = block(policy, 'val DEBUG_ONLY_PACKAGES');
+    final releaseBlock = block(policy, 'private val MAIL_APPS');
+    final debugBlock = block(policy, 'private val DEBUG_ONLY_APPS');
     final debugPackages = RegExp(r'"([a-z0-9_.]+)"')
         .allMatches(debugBlock)
         .map((m) => m.group(1)!)
@@ -48,6 +53,10 @@ void main() {
       () {
     expect(listener, contains('debugBuild = BuildConfig.DEBUG'));
     expect(listener, isNot(contains('debugBuild = true')));
+    // Lead merge (Sprint 77): the PROVIDER mapping is the second wiring point
+    // -- a literal there would map the debug poster to accounts in release.
+    expect(listener,
+        contains('encodeProviders(pkg, debugBuild = BuildConfig.DEBUG)'));
   });
 
   test('the policy defaults to the RELEASE allowlist', () {

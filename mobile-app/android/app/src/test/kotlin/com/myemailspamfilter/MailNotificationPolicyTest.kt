@@ -1,6 +1,8 @@
 package com.myemailspamfilter
 
+import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
+import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Test
 
@@ -69,5 +71,83 @@ class MailNotificationPolicyTest {
     @Test
     fun aClockMovedBackwardsDoesNotBlockForever() {
         assertTrue(MailNotificationPolicy.shouldTrigger(gmail, true, now, now + 60_000L))
+    }
+
+    // ---- F264 (Sprint 77): which providers' accounts each app can be about ----
+
+    @Test
+    fun theGmailAppMapsToGmailAccounts() {
+        assertEquals(setOf("gmail"), MailNotificationPolicy.providersFor(gmail))
+    }
+
+    @Test
+    fun theAolAndYahooAppsMapToTheirOwnAccounts() {
+        assertEquals(
+            setOf("aol"),
+            MailNotificationPolicy.providersFor("com.aol.mobile.aolapp")
+        )
+        assertEquals(
+            setOf("yahoo"),
+            MailNotificationPolicy.providersFor("com.yahoo.mobile.client.android.mail")
+        )
+    }
+
+    @Test
+    fun samsungEmailAndOutlookMapToEveryProvider() {
+        // null = every provider
+        assertNull(MailNotificationPolicy.providersFor("com.samsung.android.email.provider"))
+        assertNull(MailNotificationPolicy.providersFor("com.microsoft.office.outlook"))
+    }
+
+    @Test
+    fun anUnknownPackageMapsToNoProvider() {
+        assertEquals(emptySet<String>(), MailNotificationPolicy.providersFor("com.whatsapp"))
+        assertEquals(emptySet<String>(), MailNotificationPolicy.providersFor(null))
+    }
+
+    @Test
+    fun theWorkPayloadEncodingIsWhatTheDartWorkerReads() {
+        assertEquals("gmail", MailNotificationPolicy.encodeProviders(gmail))
+        assertEquals("aol", MailNotificationPolicy.encodeProviders("com.aol.mobile.aolapp"))
+        assertEquals(
+            MailNotificationPolicy.ANY_PROVIDER,
+            MailNotificationPolicy.encodeProviders("com.microsoft.office.outlook")
+        )
+        assertEquals("", MailNotificationPolicy.encodeProviders("com.whatsapp"))
+    }
+
+    @Test
+    fun everyAllowlistedPackageHasAMapping() {
+        // The two views of the table cannot drift: a package is a mail app
+        // exactly when it has a mapping entry.
+        for (pkg in MailNotificationPolicy.MAIL_APP_PACKAGES) {
+            val providers = MailNotificationPolicy.providersFor(pkg)
+            assertTrue(providers == null || providers.isNotEmpty())
+        }
+        assertEquals(5, MailNotificationPolicy.MAIL_APP_PACKAGES.size)
+    }
+
+    // Lead merge (Sprint 77): R76-1's debug-only poster must MAP in a debug
+    // build (else F264 accepts its notification and scans no account) and
+    // must map to NOTHING in release. What this does NOT catch: the listener
+    // passing a literal instead of BuildConfig.DEBUG (the Dart source gate does).
+    @Test
+    fun theDebugOnlyPosterMapsOnlyInADebugBuild() {
+        val shell = "com.android.shell"
+        assertEquals(setOf("aol"), MailNotificationPolicy.providersFor(shell, debugBuild = true))
+        assertEquals("aol", MailNotificationPolicy.encodeProviders(shell, debugBuild = true))
+        assertEquals(emptySet<String>(), MailNotificationPolicy.providersFor(shell))
+        assertEquals("", MailNotificationPolicy.encodeProviders(shell, debugBuild = false))
+    }
+
+    @Test
+    fun theTriggerGapAndEnabledRulesAreUnchangedByTheMapping() {
+        assertFalse(MailNotificationPolicy.shouldTrigger(gmail, false, now, 0L))
+        assertFalse(MailNotificationPolicy.shouldTrigger(gmail, true, now + 1_000L, now))
+        assertTrue(
+            MailNotificationPolicy.shouldTrigger(
+                gmail, true, now + MailNotificationPolicy.MIN_GAP_MS, now
+            )
+        )
     }
 }

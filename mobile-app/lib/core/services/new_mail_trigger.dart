@@ -1,11 +1,19 @@
 import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart';
 
+import '../storage/settings_store.dart';
+
 /// F253 (Sprint 76): "Scan when new mail arrives" -- the Dart side of the
 /// Android notification listener (`MailNotificationListener.kt`, ADR-0044).
 ///
-/// The switch's state lives in NATIVE preferences, not the app database,
-/// because the listener runs without a Flutter engine and must read it.
+/// **F264 (Sprint 77): the switch is per ACCOUNT.** Each account's switch lives
+/// in the app database with its other background settings
+/// (`SettingsStore.getAccountNewMailTrigger`). The NATIVE preference this class
+/// reads and writes is now only the "any account has it on" flag, kept because
+/// the listener runs without a Flutter engine and cannot read the database; it
+/// gates the listener cheaply (and enables or disables the component).
+/// [syncAnyAccountOn] keeps the two in step and is called whenever a switch
+/// changes.
 ///
 /// Never throws. Review MEDIUM-1 / HIGH-2 (Sprint 76): a failure is reported
 /// as UNKNOWN (null) or as "not done" (false) -- never collapsed into a
@@ -34,6 +42,26 @@ class NewMailTrigger {
   /// true only when the native side confirmed the change.
   static Future<bool> setEnabled(bool enabled) async =>
       await _call<bool>('setEnabled', {'enabled': enabled}) == true;
+
+  /// F264: set the native "any account on" flag from the per-account
+  /// switches: ON when at least one of [accountIds] has its own new-mail
+  /// switch ON. Returns true only when the native side confirmed the change.
+  ///
+  /// [accountIds] are the SAVED accounts, not every row in the settings table,
+  /// so a removed account's leftover switch cannot keep the listener bound.
+  static Future<bool> syncAnyAccountOn(
+    SettingsStore settings,
+    Iterable<String> accountIds,
+  ) async {
+    var anyOn = false;
+    for (final id in accountIds) {
+      if (await settings.getAccountNewMailTrigger(id) == true) {
+        anyOn = true;
+        break;
+      }
+    }
+    return setEnabled(anyOn);
+  }
 
   /// The most recent trigger attempt, as recorded by the listener:
   /// "<epoch ms>|<outcome>", or null when none / unreadable.

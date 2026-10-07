@@ -20,7 +20,8 @@ import 'core/services/windows_task_scheduler_service.dart';
 import 'core/services/per_account_bg_migration.dart';
 import 'core/services/app_environment.dart';
 import 'core/services/dev_environment_seeder.dart';
-import 'core/services/scan_frequency.dart';
+import 'core/services/background_scan_scheduler.dart';
+import 'core/services/f264_upgrade_migration.dart';
 import 'core/storage/settings_store.dart';
 import 'core/storage/unmatched_email_store.dart';
 import 'core/storage/database_helper.dart';
@@ -312,6 +313,9 @@ void main(List<String> args) async {
     } catch (e) {
       Logger().e('WorkManager initialization failed: $e');
     }
+    // F264 (Sprint 77): after WorkManager is initialized (it re-registers the
+    // schedules), convert stored intervals and the old app-wide new-mail switch.
+    await _runF264UpgradeConversions();
   }
 
   if (Platform.isWindows) {
@@ -361,6 +365,10 @@ void main(List<String> args) async {
           getAccountIds: credStore.getSavedAccounts,
         ).runIfNeeded();
 
+        // 1b) F264 (Sprint 77): convert stored intervals (and re-register the
+        //     schedules), AFTER the F98 migration has seeded them.
+        await _runF264UpgradeConversions();
+
         // 2) For each saved account whose effective enable is true, ensure its
         //    per-account task exists (repair path if present) with its effective
         //    frequency. For accounts that are disabled, ensure no stale task.
@@ -377,16 +385,21 @@ void main(List<String> args) async {
           }
           desiredTaskNames
               .add(WindowsTaskSchedulerService.taskNameFor(accountId));
-          final freqMinutes =
-              await settingsStore.getEffectiveBackgroundFrequency(accountId);
-          final frequency = ScanFrequency.values.firstWhere(
-            (f) => f.minutes == freqMinutes,
-            orElse: () => ScanFrequency.every15min,
+          // F264 (Sprint 77): the stored minutes go straight through. An
+          // out-of-range or untypable value is converted to the nearest valid
+          // one (and logged) -- it used to fall back to every 15 minutes,
+          // which silently rescheduled a 120 or 240 minute account at 15.
+          final intervalMinutes = await reconcileAccountInterval(
+            settingsStore,
+            accountId,
+            log: (m) => Logger().w(m),
           );
           await WindowsTaskSchedulerService.verifyAndRepairTaskPath(
-              accountId: accountId);
+            accountId: accountId,
+            intervalMinutes: intervalMinutes,
+          );
           final recreated = await WindowsTaskSchedulerService.ensureTaskExists(
-            frequency: frequency,
+            intervalMinutes: intervalMinutes,
             accountId: accountId,
           );
           if (recreated) {
@@ -418,6 +431,11 @@ void main(List<String> args) async {
       } else {
         Logger().i('Skipping Task Scheduler management in debug mode');
       }
+      if (!kReleaseMode) {
+        // Debug: convert stored values only; scheduling stays off (the
+        // executable path of a debug run is a temporary runner).
+        await _runF264UpgradeConversions();
+      }
     }
   }
 
@@ -431,6 +449,58 @@ void main(List<String> args) async {
   if (Platform.isAndroid) unawaited(_logNewMailTriggerOutcome());
 
   runApp(const SpamFilterApp());
+}
+
+/// F264 (Sprint 77): the one-time upgrade conversions, on BOTH platforms.
+///
+/// - Interval: every account's stored minutes are converted to the nearest
+///   value the control can show, and every background-enabled account's
+///   schedule is re-registered (accounts saved at 120 or 240 minutes had
+///   nothing scheduled before). Windows re-registers only in a release build
+///   (a debug run's executable path is a temporary runner); Android always.
+/// - New-mail switch (Android only, ADR-0044): an app-wide switch that was ON
+///   becomes ON for every background-enabled account (Q9 = 1), then the native
+///   "any account on" flag is synced from the per-account switches.
+///
+/// Best-effort: a failure is logged and retried at the next launch (each part
+/// has its own sentinel); it never blocks startup.
+Future<void> _runF264UpgradeConversions() async {
+  try {
+    final settingsStore = SettingsStore();
+    final credStore = SecureCredentialsStore();
+    final canSchedule =
+        Platform.isAndroid || (Platform.isWindows && kReleaseMode);
+    await BackgroundIntervalMigration(
+      settingsStore: settingsStore,
+      getAccountIds: credStore.getSavedAccounts,
+      reschedule: canSchedule
+          ? (accountId, minutes) async {
+              await BackgroundScanSchedulerFactory.instance.schedule(
+                accountId: accountId,
+                intervalMinutes: minutes,
+              );
+            }
+          : null,
+    ).runIfNeeded();
+
+    if (Platform.isAndroid) {
+      await NewMailSwitchMigration(
+        settingsStore: settingsStore,
+        getAccountIds: credStore.getSavedAccounts,
+      ).runIfNeeded(nativeFlagWasOn: await NewMailTrigger.isEnabled());
+      // Only once the migration has run: before it, the native flag still
+      // carries the OLD meaning and syncing from empty per-account switches
+      // would turn it off.
+      if (await settingsStore
+              .getRawAppSetting(NewMailSwitchMigration.sentinelKey) ==
+          'true') {
+        await NewMailTrigger.syncAnyAccountOn(
+            settingsStore, await credStore.getSavedAccounts());
+      }
+    }
+  } catch (e) {
+    Logger().w('F264 upgrade conversions failed (retried next launch): $e');
+  }
 }
 
 /// F253 review HIGH-3 (Sprint 76): copy the native listener's last recorded

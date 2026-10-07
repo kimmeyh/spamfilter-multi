@@ -134,6 +134,13 @@ object DozeScanTrigger {
 
     /** Must match `kTriggerAppKey` in `background_scan_trigger.dart`. */
     const val KEY_TRIGGER_APP = "triggerApp"
+
+    /**
+     * F264: the providers the posting app maps to (see
+     * [MailNotificationPolicy.encodeProviders]). Must match
+     * `kTriggerProvidersKey` in `notification_account_filter.dart`.
+     */
+    const val KEY_TRIGGER_PROVIDERS = "triggerProviders"
     private const val UNIQUE_NEW_MAIL = "f253_new_mail_scan"
 
     /**
@@ -151,6 +158,7 @@ object DozeScanTrigger {
         source: String,
         triggerAtMs: Long,
         sourceApp: String,
+        providers: String,
     ) {
         val input = buildTaskInputData(
             dartTask = TASK_NAME,
@@ -158,6 +166,7 @@ object DozeScanTrigger {
                 KEY_TRIGGER_SOURCE to source,
                 KEY_TRIGGER_AT_MS to triggerAtMs,
                 KEY_TRIGGER_APP to sourceApp,
+                KEY_TRIGGER_PROVIDERS to providers,
             ),
             uniqueName = UNIQUE_NEW_MAIL,
         )

@@ -26,8 +26,8 @@ import 'package:workmanager/workmanager.dart';
 import 'package:workmanager_platform_interface/workmanager_platform_interface.dart';
 
 import 'package:my_email_spam_filter/core/services/app_environment.dart';
+import 'package:my_email_spam_filter/core/services/android_doze_alarm.dart';
 import 'package:my_email_spam_filter/core/services/background_scan_scheduler.dart';
-import 'package:my_email_spam_filter/core/services/scan_frequency.dart';
 import 'package:my_email_spam_filter/core/utils/account_id_sanitizer.dart';
 
 /// Fake platform capturing what the adapter sends to WorkManager. Uses the
@@ -117,6 +117,7 @@ void main() {
   // why the suite was green locally and red only on CI. With the singleton
   // already constructed, the per-test instance injection below sticks on
   // every host.
+  TestWidgetsFlutterBinding.ensureInitialized();
   setUpAll(Workmanager.new);
 
   group('AndroidSchedulerAdapter (real adapter, fake platform)', () {
@@ -132,7 +133,7 @@ void main() {
         'schedule registers per-account unique periodic work with the exact '
         'payload the Windows model mirrors (ADR-0039)', () async {
       final ok = await adapter.schedule(
-          accountId: accountId, frequency: ScanFrequency.every1hour);
+          accountId: accountId, intervalMinutes: 60);
 
       expect(ok, isTrue);
       expect(fake.periodicRegistrations, hasLength(1));
@@ -163,10 +164,64 @@ void main() {
               'keep)');
     });
 
-    test('schedule with disabled frequency refuses without touching WorkManager',
-        () async {
+    group('F264: the Doze alarm gets the user\'s minutes, WorkManager its '
+        'documented 15-minute minimum', () {
+      // What this does NOT catch: Android actually honoring a 5-minute alarm
+      // (it limits while-idle alarms to about one per nine minutes) -- that is
+      // phone validation, and the Background note says so to the user.
+      final alarmCalls = <Map<Object?, Object?>>[];
+      final messenger =
+          TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger;
+
+      setUp(() {
+        alarmCalls.clear();
+        messenger.setMockMethodCallHandler(AndroidDozeAlarm.channel,
+            (call) async {
+          if (call.method == 'schedule') {
+            alarmCalls.add(Map<Object?, Object?>.from(call.arguments as Map));
+          }
+          return true;
+        });
+      });
+      tearDown(
+          () => messenger.setMockMethodCallHandler(AndroidDozeAlarm.channel, null));
+
+      test('AC-8: 5 minutes -> alarm 5, WorkManager 15', () async {
+        expect(await adapter.schedule(accountId: accountId, intervalMinutes: 5),
+            isTrue);
+        expect(alarmCalls.single['intervalMinutes'], 5,
+            reason: 'BEFORE F264 the clamp ran above the alarm call, so the '
+                'alarm was armed at 15');
+        expect(fake.periodicRegistrations.single['frequency'],
+            const Duration(minutes: 15));
+      });
+
+      test('AC-8: 30 minutes -> 30 to both', () async {
+        await adapter.schedule(accountId: accountId, intervalMinutes: 30);
+        expect(alarmCalls.single['intervalMinutes'], 30);
+        expect(fake.periodicRegistrations.single['frequency'],
+            const Duration(minutes: 30));
+      });
+
+      test('AC-2 (Android half): 120 and 240 minutes are scheduled, not '
+          'refused', () async {
+        for (final m in [120, 240, 5940]) {
+          alarmCalls.clear();
+          fake.periodicRegistrations.clear();
+          expect(await adapter.schedule(accountId: accountId, intervalMinutes: m),
+              isTrue,
+              reason: 'the old ScanFrequency enum could not represent these');
+          expect(alarmCalls.single['intervalMinutes'], m);
+          expect(fake.periodicRegistrations.single['frequency'],
+              Duration(minutes: m));
+        }
+      });
+    });
+
+    test('schedule with a non-positive interval refuses without touching '
+        'WorkManager', () async {
       final ok = await adapter.schedule(
-          accountId: accountId, frequency: ScanFrequency.disabled);
+          accountId: accountId, intervalMinutes: 0);
       expect(ok, isFalse);
       expect(fake.periodicRegistrations, isEmpty,
           reason: 'disabled means no work registered -- registering a 0-minute '
@@ -178,7 +233,7 @@ void main() {
         () async {
       fake.throwOnRegister = true;
       final ok = await adapter.schedule(
-          accountId: accountId, frequency: ScanFrequency.every1hour);
+          accountId: accountId, intervalMinutes: 60);
       expect(ok, isFalse,
           reason: 'a platform failure must surface as false, never as a '
               'silent success -- the silent-claim failure mode ADR-0042 '
@@ -189,7 +244,7 @@ void main() {
         'cancel removes the per-account periodic work AND any pending test '
         'one-off (F175 R-6)', () async {
       await adapter.schedule(
-          accountId: accountId, frequency: ScanFrequency.every1hour);
+          accountId: accountId, intervalMinutes: 60);
       final ok = await adapter.cancel(accountId);
 
       expect(ok, isTrue);
@@ -206,7 +261,7 @@ void main() {
     test('registrations carry the bounded exponential backoff (F175 R-6)',
         () async {
       await adapter.schedule(
-          accountId: accountId, frequency: ScanFrequency.every1hour);
+          accountId: accountId, intervalMinutes: 60);
       await adapter.runTestScan(accountId);
 
       expect(fake.periodicRegistrations.single['backoffPolicy'],
@@ -222,7 +277,7 @@ void main() {
     test('isScheduled round-trips through the platform query', () async {
       expect(await adapter.isScheduled(accountId), isFalse);
       await adapter.schedule(
-          accountId: accountId, frequency: ScanFrequency.every1hour);
+          accountId: accountId, intervalMinutes: 60);
       expect(await adapter.isScheduled(accountId), isTrue);
       await adapter.cancel(accountId);
       expect(await adapter.isScheduled(accountId), isFalse);
@@ -249,7 +304,7 @@ void main() {
       expect(scheduler.isSupported, isFalse);
       expect(
           await scheduler.schedule(
-              accountId: accountId, frequency: ScanFrequency.every1hour),
+              accountId: accountId, intervalMinutes: 60),
           isFalse,
           reason: 'returning true would let a caller believe work was '
               'scheduled when nothing exists to run it -- the exact silent-'

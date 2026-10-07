@@ -595,6 +595,27 @@ class SettingsStore {
     return value == 'true';
   }
 
+  /// F264 (Sprint 77): this account's "Scan when new mail arrives" switch
+  /// (Android). Null = never set, which reads as OFF. Stored with the other
+  /// per-account background settings (Q8 = 1); the native listener keeps only
+  /// ONE "any account on" flag (`NewMailTriggerSync`), because it runs without
+  /// a Flutter engine and cannot read this database.
+  Future<bool?> getAccountNewMailTrigger(String accountId) async {
+    final value = await _getAccountSetting(accountId, 'new_mail_trigger');
+    if (value == null) return null;
+    return value == 'true';
+  }
+
+  /// F264: see [getAccountNewMailTrigger]. Pass null to clear.
+  Future<void> setAccountNewMailTrigger(String accountId, bool? enabled) async {
+    if (enabled == null) {
+      await _deleteAccountSetting(accountId, 'new_mail_trigger');
+    } else {
+      await _setAccountSetting(
+          accountId, 'new_mail_trigger', enabled.toString(), 'bool');
+    }
+  }
+
   /// F239 (Sprint 75): true when this Gmail account's sign-in could not be
   /// renewed without the user -- the account list then offers "Sign In
   /// Again". Set where renewal fails; cleared when a Gmail credential load

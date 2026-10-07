@@ -585,3 +585,69 @@ with `ScanFetchFailedException` instead of "completed, errors=N", so the worker
 reports a failure and WorkManager retries it (a notification-triggered run does
 not retry; its next notification is the retry). A partial failure still
 completes with its errors counted (F174).
+
+## Amendment -- Sprint 77 (F264, Harold at plan approval 2026-10-06: Q11, Q13, Q14): the interval is minutes
+
+**1. Interval model.** The per-account interval is an integer number of MINUTES
+carried end to end, from **5 to 5940 minutes (99 hours)**. The fixed
+`ScanFrequency` list (15 / 30 / 60 minutes and daily; the Settings list also
+offered 120 and 240) is retired. ONE shared model, `lib/core/services/scan_interval.dart`,
+owns the range (`kMinIntervalMinutes = 5`, `kMaxIntervalMinutes = 99 * 60`), the
+unit-plus-number conversion, the label and the conversion of stored values.
+Storage is unchanged: `background_frequency` (per account) holds minutes.
+
+**2. One control on both platforms (Q11).** Settings > Background > "Scan every":
+a unit dropdown FIRST (Minutes or Hours), then a 2-digit number box (1-99).
+Interval = number x unit. An entry under 5 minutes is flagged inline ("Minimum is
+5 minutes, to limit battery use") and is not saved. The floor is one named
+constant because the R76-1 battery measurements may move it. It is tied by a test
+to `BackgroundScanCore.kMinScanSpacing` (5 minutes): a floor below the spacing
+would make every scan wait.
+
+**3. Schedulers take minutes.** `BackgroundScanScheduler.schedule` takes
+`intervalMinutes`. Windows emits ONE trigger shape for every interval:
+`New-ScheduledTaskTrigger -Once -At <start> -RepetitionInterval (New-TimeSpan
+-Minutes <n>) -RepetitionDuration (New-TimeSpan -Days 365)`. Microsoft documents
+`RepetitionPattern.Interval` as 1 minute to 31 days, so 5 minutes to 99 hours
+(4 days 3 hours) is inside it. The old `-Daily -At 09:00AM` special case is gone;
+a daily scan is 1440 minutes. `verifyAndRepairTaskPath` takes the minutes from its
+caller and no longer guesses the interval from the trigger's text.
+
+**4. Android: the alarm gets the user's minutes, WorkManager its minimum.** The
+Doze alarm (F235) is armed with the UNCLAMPED minutes. WorkManager's documented
+minimum repeat interval is 15 minutes, so only the WorkManager safety-net
+registration is clamped (`ScanInterval.workManagerMinutes`). Before F264 the
+15-minute clamp ran above the alarm call, so a 5-14 minute interval would have
+armed the alarm at 15. Android's own limit on while-idle alarms (about one per
+nine minutes per app, fewer in lower standby buckets) still applies, and the
+Background tab's Android note states the practical result ("expect up to about 45
+minutes between scans, even with a shorter interval").
+
+**5. Start-time jitter (Q13: "if > 15 min then random +/- 5 minutes").** For
+intervals over 15 minutes only; none at 15 or below. Windows: the trigger starts
+5 minutes early (`-At "11:55PM"`) and `-RandomDelay` adds 0 to 10 minutes, which
+nets minus 5 to plus 5 around the nominal time (`-RandomDelay` can only delay, so
+"either way" needs both parts). Android: `AlarmJitter.offsetMs` adds a uniform
+offset within plus or minus 5 minutes each time the alarm is armed, natively,
+because every re-arm after a firing and after boot comes through
+`DozeAlarmScheduler.schedule`. The two constants are pinned equal by a test.
+**Consequence recorded**: the F98 (Sprint 42) anti-collision delay (interval minus
+one minute) no longer applies at 15 minutes or less, so two accounts on the same
+short interval start together again. The database busy timeout, WAL mode and the
+worker's lock retry (F98) remain the protection.
+
+**6. Existing users are converted on upgrade, both platforms (Q11).** A one-time,
+sentinel-guarded migration (`BackgroundIntervalMigration`, same shape as the F98
+`PerAccountBgMigration`) converts every stored value to the nearest one the
+control can express (5-99 minutes, or a whole number of hours; ties go to the
+longer interval) and re-registers the schedule of every account whose background
+scanning is on. The re-registration also repairs a pre-F264 defect: an account
+saved at 120 or 240 minutes had NOTHING scheduled (the Settings gate looked the
+value up in the fixed list and returned), and the Windows startup path rescheduled
+it every 15 minutes. Startup reconciliation uses the same conversion
+(`reconcileAccountInterval`), never a hard-coded 15.
+
+**Windows and Android paths (ADR-0042).** Shared: the model, the control, storage,
+the migration. Windows: the trigger shape and repair path above. Android: the
+alarm and WorkManager split above. The delivery-timing difference (Windows fires on
+the minute; Android as the OS allows) remains the declared exception.

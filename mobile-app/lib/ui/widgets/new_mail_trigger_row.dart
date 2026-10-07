@@ -1,19 +1,30 @@
 import 'package:flutter/material.dart';
 
+import '../../adapters/storage/secure_credentials_store.dart';
 import '../../core/services/new_mail_trigger.dart';
+import '../../core/services/notification_account_filter.dart';
+import '../../core/storage/settings_store.dart';
 
-/// F253 (Sprint 76): Settings > Background > "Scan when new mail arrives".
+/// F253 (Sprint 76), made per ACCOUNT by F264 (Sprint 77): Settings >
+/// Background > "Scan when new mail arrives".
 ///
-/// OFF by default. Turning it on also opens Android's Notification access
-/// screen when access is not yet granted -- access is requested only here,
-/// never at startup. The row shows whether access is granted and the last
-/// trigger's outcome, and is re-read when the user returns from Android
-/// settings.
+/// OFF by default. Each account has its own switch, stored in the app database
+/// with its other background settings ([SettingsStore.getAccountNewMailTrigger]).
+/// The native listener cannot read that database, so every change also syncs
+/// ONE native "any account has it on" flag ([NewMailTrigger.syncAnyAccountOn]).
+/// A new-mail notification then scans only the accounts the posting app can be
+/// about (Gmail app -> Gmail accounts, AOL -> AOL, Yahoo Mail -> Yahoo; Samsung
+/// Email and Outlook -> every account with its switch on) AND whose own
+/// background scanning is on -- see `notification_account_filter.dart`.
 ///
-/// Applies to ALL accounts: a new-mail notification starts one scan of every
-/// account whose background scanning is on. So the row is shown on every
-/// account's Background tab, not only when that account's background scanning
-/// is on (review M-1).
+/// Turning it on also opens Android's Notification access screen when access
+/// is not yet granted -- access is requested only here, never at startup. The
+/// row shows whether access is granted and the last trigger's outcome, and is
+/// re-read when the user returns from Android settings.
+///
+/// Shown on every account's Background tab, not only when that account's
+/// background scanning is on (review M-1, Sprint 76): the switch is its own
+/// setting, and hiding it behind another switch hid the only control.
 ///
 /// Review (Sprint 76): an unreadable state shows as unknown, never as "off"
 /// (MEDIUM-1); a change the phone did not confirm is reverted and reported
@@ -21,9 +32,43 @@ import '../../core/services/new_mail_trigger.dart';
 /// (L-2).
 ///
 /// ADR-0042: Android only (declared exception); the caller shows this row only
-/// on Android. See ADR-0044.
+/// on Android and it is HIDDEN on Windows (Sprint 77 Q10 = 1). See ADR-0044.
 class NewMailTriggerRow extends StatefulWidget {
-  const NewMailTriggerRow({super.key});
+  const NewMailTriggerRow({
+    super.key,
+    required this.accountId,
+    this.platformId,
+    this.settingsStore,
+    this.getSavedAccountIds,
+  });
+
+  /// The account this switch belongs to.
+  final String accountId;
+
+  /// The account's platform id (`gmail`, `aol`, `yahoo`, ...), used only to
+  /// name the mail apps in the status line. Null when unknown.
+  final String? platformId;
+
+  /// Test seam; defaults to the app's [SettingsStore].
+  final SettingsStore? settingsStore;
+
+  /// Test seam; defaults to the saved accounts in the credentials store.
+  final Future<List<String>> Function()? getSavedAccountIds;
+
+  /// The mail apps whose notifications scan an account on [platformId], for
+  /// the status line. Samsung Email and Outlook can show any account, so they
+  /// are always named. Display text only: the authority is the table in
+  /// `MailNotificationPolicy.kt`, and a test pins that the two agree.
+  static String appsFor(String? platformId) {
+    final family = platformId == null ? null : providerFamilyOf(platformId);
+    final own = switch (family) {
+      'gmail' => 'Gmail, ',
+      'aol' => 'AOL, ',
+      'yahoo' => 'Yahoo Mail, ',
+      _ => '',
+    };
+    return '${own}Samsung Email or Outlook';
+  }
 
   @override
   State<NewMailTriggerRow> createState() => _NewMailTriggerRowState();
@@ -31,7 +76,10 @@ class NewMailTriggerRow extends StatefulWidget {
 
 class _NewMailTriggerRowState extends State<NewMailTriggerRow>
     with WidgetsBindingObserver {
-  /// null = not read yet or unreadable.
+  late final SettingsStore _settings =
+      widget.settingsStore ?? SettingsStore();
+
+  /// This account's switch. null = not read yet or unreadable.
   bool? _enabled;
   bool? _granted;
   String? _lastResult;
@@ -40,11 +88,24 @@ class _NewMailTriggerRowState extends State<NewMailTriggerRow>
   /// Bumped by every user change; a refresh that started earlier is dropped.
   int _generation = 0;
 
+  Future<List<String>> _savedAccountIds() =>
+      (widget.getSavedAccountIds ?? SecureCredentialsStore().getSavedAccounts)();
+
   @override
   void initState() {
     super.initState();
     WidgetsBinding.instance.addObserver(this);
     _refresh();
+  }
+
+  @override
+  void didUpdateWidget(NewMailTriggerRow oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.accountId != widget.accountId) {
+      _generation++;
+      _enabled = null;
+      _refresh();
+    }
   }
 
   @override
@@ -60,7 +121,13 @@ class _NewMailTriggerRowState extends State<NewMailTriggerRow>
 
   Future<void> _refresh() async {
     final generation = _generation;
-    final enabled = await NewMailTrigger.isEnabled();
+    bool? enabled;
+    try {
+      enabled = await _settings.getAccountNewMailTrigger(widget.accountId) ??
+          false;
+    } catch (_) {
+      enabled = null; // unreadable is UNKNOWN, never "off"
+    }
     final granted = await NewMailTrigger.isAccessGranted();
     final last = await NewMailTrigger.lastResult();
     if (!mounted || generation != _generation) return;
@@ -71,6 +138,18 @@ class _NewMailTriggerRowState extends State<NewMailTriggerRow>
     });
   }
 
+  /// Writes the account's switch and syncs the native flag. True only when
+  /// both happened.
+  Future<bool> _save(bool value) async {
+    try {
+      await _settings.setAccountNewMailTrigger(widget.accountId, value);
+      return await NewMailTrigger.syncAnyAccountOn(
+          _settings, await _savedAccountIds());
+    } catch (_) {
+      return false;
+    }
+  }
+
   Future<void> _onChanged(bool value) async {
     _generation++;
     final previous = _enabled;
@@ -78,9 +157,13 @@ class _NewMailTriggerRowState extends State<NewMailTriggerRow>
       _enabled = value;
       _problem = null;
     });
-    final saved = await NewMailTrigger.setEnabled(value);
+    final saved = await _save(value);
     if (!mounted) return;
     if (!saved) {
+      // Put the stored value and the native flag back, best effort, so the
+      // two stores do not disagree with what the switch now shows.
+      await _save(previous ?? false);
+      if (!mounted) return;
       setState(() {
         _enabled = previous;
         _problem = 'Could not change the setting. Try again.';
@@ -104,10 +187,10 @@ class _NewMailTriggerRowState extends State<NewMailTriggerRow>
     if (!enabled) return 'Off. Scans run on the background schedule only.';
     switch (_granted) {
       case true:
-        return 'On, for all accounts with background scanning on. When Gmail, '
-            'AOL, Yahoo, Samsung Email or Outlook shows a new-mail '
-            'notification, those accounts are scanned. The app reads only '
-            'which app posted the notification, never its content.';
+        return 'On for this account. When ${NewMailTriggerRow.appsFor(widget.platformId)} '
+            'shows a new-mail notification, this account is scanned (if its '
+            'background scanning is on). The app reads only which app posted '
+            'the notification, never its content.';
       case false:
         return 'Needs Notification access: allow this app in Android '
             'settings, then come back.';
@@ -135,7 +218,7 @@ class _NewMailTriggerRowState extends State<NewMailTriggerRow>
       children: [
         SwitchListTile(
           key: const Key('new_mail_trigger_switch'),
-          title: const Text('Scan when new mail arrives (all accounts)'),
+          title: const Text('Scan when new mail arrives'),
           subtitle: Text(_status(), key: const Key('new_mail_trigger_status')),
           value: _enabled ?? false,
           // Disabled while the state is unknown: a switch drawn OFF when the

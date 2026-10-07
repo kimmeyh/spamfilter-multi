@@ -32,7 +32,7 @@ import '../utils/account_id_sanitizer.dart';
 import 'android_background_scan_worker.dart' show kAndroidScanTaskName, kAndroidScanTestTaskName;
 import 'app_environment.dart';
 import 'android_doze_alarm.dart';
-import 'scan_frequency.dart';
+import 'scan_interval.dart';
 import 'windows_task_scheduler_service.dart';
 
 /// What every platform's background-scan scheduler must be able to do.
@@ -53,14 +53,17 @@ abstract class BackgroundScanScheduler {
   /// Is periodic work currently scheduled for [accountId]?
   Future<bool> isScheduled(String accountId);
 
-  /// Schedule (or reschedule) periodic work for [accountId] at [frequency].
+  /// Schedule (or reschedule) periodic work for [accountId] every
+  /// [intervalMinutes] minutes (F264, Sprint 77: minutes, not a fixed list).
+  /// A value below 1 is refused (false); the range policy (5 to 5940) belongs
+  /// to `ScanInterval`, which every caller consults first.
   ///
   /// Returns true on success. Implementations must be IDEMPOTENT: calling this
   /// when work already exists updates it rather than creating a duplicate --
   /// per-account uniqueness is the ADR-0039 invariant both platforms share.
   Future<bool> schedule({
     required String accountId,
-    required ScanFrequency frequency,
+    required int intervalMinutes,
   });
 
   /// Cancel periodic work for [accountId]. Returns true if it is gone
@@ -98,7 +101,7 @@ class UnsupportedPlatformScheduler implements BackgroundScanScheduler {
   @override
   Future<bool> schedule({
     required String accountId,
-    required ScanFrequency frequency,
+    required int intervalMinutes,
   }) async =>
       false;
 
@@ -157,9 +160,9 @@ class WindowsSchedulerAdapter implements BackgroundScanScheduler {
   @override
   Future<bool> schedule({
     required String accountId,
-    required ScanFrequency frequency,
+    required int intervalMinutes,
   }) async {
-    if (frequency == ScanFrequency.disabled) return false;
+    if (intervalMinutes <= 0) return false;
     // Idempotent per the interface contract: update when a task already
     // exists, create otherwise. This mirrors what settings_screen did inline
     // before F161 moved the decision behind the interface.
@@ -167,9 +170,9 @@ class WindowsSchedulerAdapter implements BackgroundScanScheduler {
         await WindowsTaskSchedulerService.taskExists(accountId: accountId);
     return exists
         ? WindowsTaskSchedulerService.updateScheduledTask(
-            frequency: frequency, accountId: accountId)
+            intervalMinutes: intervalMinutes, accountId: accountId)
         : WindowsTaskSchedulerService.createScheduledTask(
-            frequency: frequency, accountId: accountId);
+            intervalMinutes: intervalMinutes, accountId: accountId);
   }
 
   @override
@@ -182,10 +185,21 @@ class WindowsSchedulerAdapter implements BackgroundScanScheduler {
 /// established the 1:1 mapping).
 ///
 /// Android-specific constraints, DECLARED per ADR-0042:
-///   - **15-minute floor**: WorkManager cannot run periodic work more often
-///     than every 15 minutes. `ScanFrequency.every15min` is the app's own
-///     minimum, so the floor guard below is defensive rather than reachable
-///     through the UI today.
+///   - **15-minute WorkManager floor (F264, Sprint 77: now REACHABLE)**:
+///     WorkManager cannot run periodic work more often than every 15 minutes
+///     ("The minimum repeat interval that can be defined is 15 minutes",
+///     developer.android.com). The user may now choose 5 to 14 minutes, so the
+///     clamp applies to the WorkManager SAFETY NET only
+///     (`ScanInterval.workManagerMinutes`). The Doze alarm is armed with the
+///     user's own minutes: it is the mechanism that actually fires while the
+///     phone is idle, and Android's own limit on while-idle alarms (about once
+///     per nine minutes per app, fewer in lower standby buckets) is stated to
+///     the user in the Background section's note. BEFORE this change the
+///     clamp ran above the alarm call, so a 5-14 minute interval would have
+///     armed the alarm at 15.
+///   - **Start-time jitter (Q13)**: for intervals over 15 minutes the native
+///     alarm adds up to 5 minutes either way each time it arms
+///     (`DozeAlarmScheduler.kt`); none at 15 or below.
 ///   - **Inexact timing -- REWRITTEN F217 (Sprint 70) to match MEASURED
 ///     behaviour.** This declaration previously read: *"a 15 minutes task
 ///     fires approximately, not on the minute ... Accepted difference -- the
@@ -246,15 +260,10 @@ class AndroidSchedulerAdapter implements BackgroundScanScheduler {
   @override
   Future<bool> schedule({
     required String accountId,
-    required ScanFrequency frequency,
+    required int intervalMinutes,
   }) async {
-    if (frequency == ScanFrequency.disabled) return false;
+    if (intervalMinutes <= 0) return false;
     try {
-      // Declared floor guard (see class doc): unreachable via the UI today
-      // because every15min is already the app minimum, but a future frequency
-      // below 15 minutes must clamp rather than let WorkManager reject or
-      // silently reinterpret the request.
-      final minutes = frequency.minutes < 15 ? 15 : frequency.minutes;
 
       // F235 (Sprint 73): arm a Doze-tolerant alarm FIRST.
       //
@@ -273,7 +282,7 @@ class AndroidSchedulerAdapter implements BackgroundScanScheduler {
       // overlap.
       final alarmArmed = await AndroidDozeAlarm.schedule(
         accountId: accountId,
-        intervalMinutes: minutes,
+        intervalMinutes: intervalMinutes,
       );
       if (!alarmArmed) {
         Logger().w('F235: Doze alarm not armed for this account; falling back '
@@ -283,7 +292,10 @@ class AndroidSchedulerAdapter implements BackgroundScanScheduler {
       await Workmanager().registerPeriodicTask(
         uniqueNameFor(accountId),
         kAndroidScanTaskName,
-        frequency: Duration(minutes: minutes),
+        // WorkManager's documented minimum applies HERE, to the safety net
+        // only -- never to the alarm above (F264 latent bug 4).
+        frequency:
+            Duration(minutes: ScanInterval.workManagerMinutes(intervalMinutes)),
         inputData: {'accountId': accountId},
         constraints: Constraints(networkType: NetworkType.connected),
         // Idempotent per the interface contract: re-registering the same
