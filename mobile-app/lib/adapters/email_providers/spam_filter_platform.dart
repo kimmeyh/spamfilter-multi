@@ -458,6 +458,21 @@ class ConnectionException implements Exception {
   String toString() => 'ConnectionException: $message';
 }
 
+/// A [ConnectionException] that carries a sentence safe and useful to show
+/// the user (F192, Sprint 77).
+///
+/// `ErrorMessages.humanize` maps a plain [ConnectionException] to "check your
+/// internet connection", which is wrong for a mistyped server name, a refused
+/// STARTTLS upgrade or a certificate the app could not verify. [userMessage]
+/// never contains an exception class name, a stack trace or a password.
+class UserFacingConnectionException extends ConnectionException {
+  /// Plain-language text for the screen.
+  final String userMessage;
+
+  UserFacingConnectionException(super.message, this.userMessage,
+      [super.originalError]);
+}
+
 /// Exception thrown during message fetching
 class FetchException implements Exception {
   final String message;

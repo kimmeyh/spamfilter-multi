@@ -28,14 +28,24 @@ import '../../core/models/email_message.dart';
 import '../../core/models/evaluation_result.dart';
 import '../../core/security/auth_rate_limiter.dart';
 import '../../core/storage/database_helper.dart';
+import 'custom_imap_settings.dart';
 import 'spam_filter_platform.dart';
 import 'email_provider.dart';
 
 /// Generic IMAP implementation for multiple email providers
 class GenericIMAPAdapter with BatchOperationsMixin implements SpamFilterPlatform {
-  final String _imapHost;
-  final int _imapPort;
-  final bool _isSecure;
+  // Server target. Fixed at construction for AOL, Gmail (IMAP), Yahoo and
+  // iCloud. For the Custom IMAP platform (platformId 'imap') these are replaced
+  // from `Credentials.additionalParams` by [_resolveCustomServer] on every
+  // loadCredentials call (F192, Sprint 77). The other platforms never read
+  // those keys, so a stray key can never redirect AOL or Yahoo elsewhere.
+  String _imapHost;
+  int _imapPort;
+  // The type has no plaintext member: a cleartext IMAP LOGIN cannot be
+  // represented (Sprint 77 Q3).
+  ImapEncryption _encryption;
+  // Login name for a custom server; null means "use the email address".
+  String? _customLoginName;
   final Logger _logger = Logger();
 
   @override
@@ -82,12 +92,12 @@ class GenericIMAPAdapter with BatchOperationsMixin implements SpamFilterPlatform
   GenericIMAPAdapter({
     required String imapHost,
     int imapPort = 993,
-    bool isSecure = true,
+    ImapEncryption encryption = ImapEncryption.sslTls,
     String? displayName,
     String? platformId,
   })  : _imapHost = imapHost,
         _imapPort = imapPort,
-        _isSecure = isSecure,
+        _encryption = encryption,
         displayName = displayName ?? 'IMAP Server',
         platformId = platformId ?? 'imap';
 
@@ -96,7 +106,6 @@ class GenericIMAPAdapter with BatchOperationsMixin implements SpamFilterPlatform
     return GenericIMAPAdapter(
       imapHost: 'imap.aol.com',
       imapPort: 993,
-      isSecure: true,
       displayName: 'AOL Mail',
       platformId: 'aol',
     );
@@ -111,7 +120,6 @@ class GenericIMAPAdapter with BatchOperationsMixin implements SpamFilterPlatform
     return GenericIMAPAdapter(
       imapHost: 'imap.gmail.com',
       imapPort: 993,
-      isSecure: true,
       displayName: 'Gmail (IMAP)',
       platformId: 'gmail-imap',
     );
@@ -122,7 +130,6 @@ class GenericIMAPAdapter with BatchOperationsMixin implements SpamFilterPlatform
     return GenericIMAPAdapter(
       imapHost: 'imap.mail.yahoo.com',
       imapPort: 993,
-      isSecure: true,
       displayName: 'Yahoo Mail',
       platformId: 'yahoo',
     );
@@ -133,7 +140,6 @@ class GenericIMAPAdapter with BatchOperationsMixin implements SpamFilterPlatform
     return GenericIMAPAdapter(
       imapHost: 'imap.mail.me.com',
       imapPort: 993,
-      isSecure: true,
       displayName: 'iCloud Mail',
       platformId: 'icloud',
     );
@@ -143,12 +149,12 @@ class GenericIMAPAdapter with BatchOperationsMixin implements SpamFilterPlatform
   factory GenericIMAPAdapter.custom({
     String imapHost = '',
     int imapPort = 993,
-    bool isSecure = true,
+    ImapEncryption encryption = ImapEncryption.sslTls,
   }) {
     return GenericIMAPAdapter(
       imapHost: imapHost,
       imapPort: imapPort,
-      isSecure: isSecure,
+      encryption: encryption,
       displayName: 'Custom IMAP',
       platformId: 'imap',
     );
@@ -162,6 +168,14 @@ class GenericIMAPAdapter with BatchOperationsMixin implements SpamFilterPlatform
 
   @override
   Future<void> loadCredentials(Credentials credentials) async {
+    // F192 (Sprint 77): a Custom IMAP account carries its server in
+    // `credentials.additionalParams`. Resolve it FIRST, so a missing or
+    // invalid setting fails with a clear message before the rate limiter
+    // touches the database and before any socket is opened.
+    if (platformId == 'imap') {
+      _resolveCustomServer(credentials);
+    }
+
     // SEC-22 (Sprint 33): check rate limiter before attempting sign-in so a
     // blocked account never touches the network.
     final rateLimiter = AuthRateLimiter(DatabaseHelper());
@@ -171,39 +185,9 @@ class GenericIMAPAdapter with BatchOperationsMixin implements SpamFilterPlatform
     try {
       _credentials = credentials;
       _operationCount = 0;
-      _imapClient = ImapClient(isLogEnabled: false);
 
-      _logger.i('[IMAP] Connecting to $_imapHost:$_imapPort (secure: $_isSecure)');
-
-      // NOTE: enough_mail ImapClient.connectToServer() does not support securityContext parameter.
-      // Use default SSL/TLS certificate validation provided by Dart's dart:io.
-      // For standard email providers (AOL, Gmail, Yahoo, Outlook), this is secure and reliable.
-      //
-      // SEC-8 (Sprint 33): Certificate pinning is NOT applied to IMAP because
-      // enough_mail's ImapClient does not expose a SecurityContext or
-      // bad-certificate callback. Pinning HTTPS OAuth endpoints is handled by
-      // PinnedHttpClient (see lib/core/security/certificate_pinner.dart).
-      // IMAP pinning is tracked as a future enhancement; options:
-      // 1. Post-connection socket inspection (not exposed by enough_mail API)
-      // 2. Fork enough_mail to accept a SecurityContext parameter
-      // 3. Replace enough_mail with a secure IMAP library that supports pinning
-      //
-      // REMOVED: SecurityContext creation and custom certificate handling (not supported by enough_mail)
-      // REMOVED: Custom certificate file loading from assets
-      // REMOVED: Bad certificate override handler (dangerous for production)
-
-      await _imapClient!.connectToServer(
-        _imapHost,
-        _imapPort,
-        isSecure: _isSecure,
-      );
-
-      _logger.i('[IMAP] IMAP login attempt for $displayName');
-
-      await _imapClient!.login(
-        credentials.email,
-        credentials.password ?? '',
-      );
+      // The one connect-and-login path (also used by _checkAndReconnect).
+      await _connectAndLogin(credentials);
 
       _logger.i('[IMAP] Successfully authenticated to $displayName');
 
@@ -228,9 +212,28 @@ class GenericIMAPAdapter with BatchOperationsMixin implements SpamFilterPlatform
         rethrow;
       }
 
+      // F192 (Sprint 77): a connection failure that already carries its own
+      // user-facing sentence (STARTTLS refused) passes through unchanged.
+      // Without this it would be re-wrapped below and the sentence lost.
+      if (e is UserFacingConnectionException) {
+        rethrow;
+      }
+
       // Map handshake and network errors to connection failures so the UI
       // reports the real root cause instead of "Authentication failed".
       if (e is HandshakeException) {
+        if (platformId == 'imap') {
+          // A custom server is the one place a certificate failure is
+          // likely to be the user's to understand (self-signed, wrong name),
+          // so say so plainly instead of "check your internet connection".
+          throw UserFacingConnectionException(
+            'TLS certificate validation failed: ${e.toString()}',
+            'The server certificate could not be verified, so the app did not '
+            'connect or send your password. Check the server name and the '
+            'encryption setting.',
+            e,
+          );
+        }
         throw ConnectionException('TLS certificate validation failed: ${e.toString()}', e);
       }
       if (e is SocketException || e is TimeoutException) {
@@ -241,6 +244,99 @@ class GenericIMAPAdapter with BatchOperationsMixin implements SpamFilterPlatform
       // [UPDATED] Include underlying error details in message for better debugging
       throw ConnectionException('IMAP connection failed: ${e.toString()}', e);
     }
+  }
+
+  /// F192 (Sprint 77): replace the server target from the account's stored
+  /// settings. Called only for the Custom IMAP platform.
+  ///
+  /// Fails with a [UserFacingConnectionException] when the host is blank, the
+  /// port is out of range, or the encryption value is missing or unknown. It
+  /// NEVER falls back to a default: a corrupted setting must not become a
+  /// guess about where to send a password, or whether to protect it.
+  void _resolveCustomServer(Credentials credentials) {
+    final settings = CustomImapSettings.tryFromParams(credentials.additionalParams);
+    if (settings == null) {
+      throw UserFacingConnectionException(
+        'Server not configured: custom IMAP settings are missing or invalid',
+        'This account has no valid server settings. Remove the account and add '
+        'it again with the server name, port and encryption.',
+      );
+    }
+    _imapHost = settings.host;
+    _imapPort = settings.port;
+    _encryption = settings.encryption;
+    final username = settings.username.trim();
+    _customLoginName = username.isEmpty ? null : username;
+  }
+
+  /// The login name for [credentials]: the custom account's own username when
+  /// one was entered, otherwise the email address (every other provider).
+  String _loginNameFor(Credentials credentials) =>
+      _customLoginName ?? credentials.email;
+
+  /// THE one place this adapter connects and signs in. [loadCredentials] and
+  /// [_checkAndReconnect] both call it, so a connection rule exists once.
+  ///
+  /// SEC-8b (certificate trust for custom servers) extends THIS method: it is
+  /// the single point where a client is created and a socket is opened.
+  ///
+  /// Encryption (Sprint 77 Q3):
+  /// - [ImapEncryption.sslTls]: TLS from the first byte.
+  /// - [ImapEncryption.startTls]: plain connect, then the library's
+  ///   `startTls()`, then the password. If the upgrade fails for ANY reason
+  ///   the password is never sent. The password is gated on `startTls()`
+  ///   returning without throwing, NOT on `connectionInfo.isSecure`: after the
+  ///   library upgrades the socket it leaves that field `false`.
+  ///
+  /// Certificate checking: enough_mail 2.1.7 does verify the certificate with
+  /// dart:io and the OS trust store. `ImapClient` also exposes
+  /// `onBadCertificate`, but this adapter passes none, so an untrusted
+  /// certificate fails the handshake. Pinning and a user-approved certificate
+  /// for custom servers are SEC-8b. For STARTTLS the library calls
+  /// `SecureSocket.secure(socket)` without a host; dart:io then verifies the
+  /// certificate against `socket.address.host`, which for a socket opened by
+  /// name is that name (verified by test, see
+  /// `generic_imap_adapter_custom_server_test.dart`).
+  Future<void> _connectAndLogin(Credentials credentials) async {
+    final client = ImapClient(isLogEnabled: false);
+    _imapClient = client;
+
+    _logger.i('[IMAP] Connecting to $_imapHost:$_imapPort (${_encryption.label})');
+
+    await client.connectToServer(
+      _imapHost,
+      _imapPort,
+      isSecure: _encryption == ImapEncryption.sslTls,
+    );
+
+    if (_encryption == ImapEncryption.startTls) {
+      try {
+        await client.startTls();
+      } catch (e) {
+        _logger.w('[IMAP] STARTTLS upgrade failed; password not sent: $e');
+        try {
+          await client.disconnect();
+        } catch (_) {
+          // The socket is being abandoned; nothing more to do.
+        }
+        _imapClient = null;
+        if (e is HandshakeException) rethrow;
+        throw UserFacingConnectionException(
+          'STARTTLS upgrade failed: $e',
+          'The server did not accept a secure (STARTTLS) connection, so the '
+          'app did not send your password. Check the encryption setting or '
+          'use SSL/TLS.',
+          e,
+        );
+      }
+    }
+
+    _logger.i('[IMAP] IMAP login attempt for $displayName');
+
+    await client.login(
+      _loginNameFor(credentials),
+      credentials.password ?? '',
+    );
   }
 
   /// F177 (Sprint 62): [onBatch], when provided, receives each
@@ -1413,7 +1509,7 @@ class GenericIMAPAdapter with BatchOperationsMixin implements SpamFilterPlatform
         serverInfo: {
           'host': _imapHost,
           'port': _imapPort,
-          'secure': _isSecure,
+          'encryption': _encryption.wireValue,
           'capabilities': capabilities.map((c) => c.name).toList(),
         },
       );
@@ -1480,16 +1576,10 @@ class GenericIMAPAdapter with BatchOperationsMixin implements SpamFilterPlatform
       }
 
       // Fresh connection
-      _imapClient = ImapClient(isLogEnabled: false);
-      await _imapClient!.connectToServer(
-        _imapHost,
-        _imapPort,
-        isSecure: _isSecure,
-      );
-      await _imapClient!.login(
-        _credentials!.email,
-        _credentials!.password ?? '',
-      );
+      // Same connect-and-login path as loadCredentials (F192): host, port,
+      // encryption (including STARTTLS) and username cannot differ between
+      // the first connection and a reconnect.
+      await _connectAndLogin(_credentials!);
 
       _operationCount = 0;
       _currentMailbox = null;
@@ -1533,6 +1623,15 @@ class GenericIMAPAdapter with BatchOperationsMixin implements SpamFilterPlatform
   void debugSetImapClient(ImapClient client) {
     _imapClient = client;
     _currentMailbox = null;
+  }
+
+  /// F192 (Sprint 77): test seam -- run the proactive reconnect NOW instead of
+  /// after 50 operations, so a test can prove the reconnect uses the same
+  /// server, encryption and username as the first connection.
+  @visibleForTesting
+  Future<void> debugReconnectNow() {
+    _operationCount = _reconnectThreshold;
+    return _checkAndReconnect();
   }
 
   /// F177 (Sprint 62): the universal within-folder fetch batch size.

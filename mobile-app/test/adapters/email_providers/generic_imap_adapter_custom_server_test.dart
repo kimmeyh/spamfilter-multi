@@ -1,0 +1,437 @@
+/// F192 (Sprint 77): the Custom IMAP adapter against REAL sockets.
+///
+/// A fake IMAP server runs inside the test process (loopback only) and records
+/// every byte the adapter sends. That makes the security claims checkable at
+/// the level they are made:
+///
+/// - STARTTLS never sends the password unless the TLS upgrade succeeded
+///   (server refuses, server breaks the handshake, wrong host name).
+/// - STARTTLS verifies the certificate against the host name the user typed.
+/// - A missing, blank or unrecognized setting opens NO socket and never
+///   becomes a plaintext login.
+/// - A reconnect uses the same server, encryption and username.
+/// - Only the Custom IMAP platform reads the server settings.
+///
+/// OS behavior assumed identical on Windows and Android (ADR-0042): dart:io
+/// `Socket` and `SecureSocket` with the OS trust store. This test runs on the
+/// Windows host; the Android path is the same Dart code over the same dart:io
+/// API. The certificate is trusted here through dart:io's default
+/// SecurityContext, which is what both platforms consult.
+///
+/// What these tests do NOT catch: a real provider's certificate chain, a
+/// server that advertises STARTTLS but behaves unusually after it, and the
+/// WorkManager isolate's secure-storage access (only a device proves that).
+library;
+
+import 'dart:async';
+import 'dart:convert';
+import 'dart:io';
+
+import 'package:flutter_test/flutter_test.dart';
+
+import 'package:my_email_spam_filter/adapters/email_providers/custom_imap_settings.dart';
+import 'package:my_email_spam_filter/adapters/email_providers/email_provider.dart';
+import 'package:my_email_spam_filter/adapters/email_providers/generic_imap_adapter.dart';
+import 'package:my_email_spam_filter/adapters/email_providers/spam_filter_platform.dart';
+import 'package:my_email_spam_filter/util/error_messages.dart';
+
+import '../../helpers/database_test_helper.dart';
+
+enum _StartTlsBehavior {
+  /// Reply "NO" to STARTTLS.
+  refuse,
+
+  /// Reply "OK" and then close the socket, so the TLS handshake cannot finish.
+  okThenClose,
+
+  /// Reply "OK" and complete a real TLS handshake with the fixture certificate.
+  accept,
+}
+
+/// An in-process IMAP server that records everything it receives.
+class _FakeImapServer {
+  _FakeImapServer._(this._plain, this._secure, this._behavior, this._context);
+
+  final ServerSocket? _plain;
+  final SecureServerSocket? _secure;
+  final _StartTlsBehavior _behavior;
+  final SecurityContext? _context;
+
+  /// Number of TCP connections accepted.
+  int connections = 0;
+
+  /// Every byte received on any connection, decoded as Latin-1 (so a binary
+  /// TLS ClientHello cannot throw).
+  final StringBuffer rawReceived = StringBuffer();
+
+  /// IMAP command lines received IN CLEARTEXT (before any TLS).
+  final List<String> plaintextCommands = [];
+
+  /// IMAP command lines received over TLS.
+  final List<String> tlsCommands = [];
+
+  int get port => _plain?.port ?? _secure!.port;
+
+  /// All text the server ever saw, to assert a secret never appeared.
+  String get everything => rawReceived.toString();
+
+  /// Server that speaks TLS from the first byte (port-993 style).
+  static Future<_FakeImapServer> implicitTls(SecurityContext context) async {
+    final secure = await SecureServerSocket.bind(
+        InternetAddress.loopbackIPv4, 0, context);
+    final server =
+        _FakeImapServer._(null, secure, _StartTlsBehavior.refuse, context);
+    secure.listen((socket) => server._serve(socket, tls: true));
+    return server;
+  }
+
+  /// Server that starts in cleartext and offers STARTTLS (port-143 style).
+  static Future<_FakeImapServer> startTls(
+      _StartTlsBehavior behavior, SecurityContext context) async {
+    final plain = await ServerSocket.bind(InternetAddress.loopbackIPv4, 0);
+    final server = _FakeImapServer._(plain, null, behavior, context);
+    plain.listen((socket) => server._serve(socket, tls: false));
+    return server;
+  }
+
+  void _serve(Socket socket, {required bool tls}) {
+    connections++;
+    socket.write('* OK [CAPABILITY IMAP4rev1 STARTTLS] fake server ready\r\n');
+    _listen(socket, tls: tls);
+  }
+
+  void _listen(Socket socket, {required bool tls}) {
+    final buffer = StringBuffer();
+    late StreamSubscription<List<int>> sub;
+    sub = socket.listen((data) async {
+      rawReceived.write(latin1.decode(data));
+      buffer.write(latin1.decode(data));
+      var text = buffer.toString();
+      int index;
+      while ((index = text.indexOf('\r\n')) >= 0) {
+        final line = text.substring(0, index);
+        text = text.substring(index + 2);
+        buffer
+          ..clear()
+          ..write(text);
+        (tls ? tlsCommands : plaintextCommands).add(line);
+        final parts = line.split(' ');
+        final tag = parts.first;
+        final command = parts.length > 1 ? parts[1].toUpperCase() : '';
+        switch (command) {
+          case 'STARTTLS':
+            if (tls || _behavior == _StartTlsBehavior.refuse) {
+              socket.write('$tag NO STARTTLS not available\r\n');
+            } else if (_behavior == _StartTlsBehavior.okThenClose) {
+              socket.write('$tag OK Begin TLS negotiation\r\n');
+              await socket.flush();
+              await sub.cancel();
+              socket.destroy();
+            } else {
+              socket.write('$tag OK Begin TLS negotiation\r\n');
+              await socket.flush();
+              sub.pause();
+              try {
+                final secured =
+                    await SecureSocket.secureServer(socket, _context);
+                _listen(secured, tls: true);
+              } on TlsException {
+                // The client rejected our certificate (the name-mismatch
+                // case) and aborted the handshake. That is the point.
+                socket.destroy();
+              }
+            }
+            return;
+          case 'CAPABILITY':
+            socket.write('* CAPABILITY IMAP4rev1 STARTTLS\r\n$tag OK done\r\n');
+          case 'LOGIN':
+            socket.write('$tag OK [CAPABILITY IMAP4rev1] logged in\r\n');
+          case 'LOGOUT':
+            socket.write('* BYE bye\r\n$tag OK logout done\r\n');
+          default:
+            socket.write('$tag OK\r\n');
+        }
+      }
+    }, onError: (_) {}, onDone: () {});
+  }
+
+  Future<void> close() async {
+    await _plain?.close();
+    await _secure?.close();
+  }
+}
+
+void main() {
+  TestWidgetsFlutterBinding.ensureInitialized();
+
+  const fixtureDir = 'test/fixtures/tls';
+  late SecurityContext serverContext;
+  late DatabaseTestHelper db;
+
+  setUpAll(() {
+    DatabaseTestHelper.initializeFfi();
+    serverContext = SecurityContext()
+      ..useCertificateChain('$fixtureDir/cert.pem')
+      ..usePrivateKey('$fixtureDir/key.pem');
+    // The fixture certificate is self-signed. Trust it for THIS test process
+    // only, so the handshake is a real, validating one (hostname included).
+    SecurityContext.defaultContext
+        .setTrustedCertificates('$fixtureDir/cert.pem');
+  });
+
+  setUp(() async {
+    db = DatabaseTestHelper();
+    await db.setUp();
+  });
+
+  tearDown(() async {
+    await db.tearDown();
+  });
+
+  const password = 's3cr3t-pw-xyz';
+
+  Credentials credsFor(
+    String host,
+    int port,
+    ImapEncryption encryption, {
+    String username = 'login-name',
+    String email = 'person@example.test',
+  }) =>
+      Credentials(
+        email: email,
+        password: password,
+        additionalParams: CustomImapSettings(
+          host: host,
+          port: port,
+          encryption: encryption,
+          username: username,
+        ).toParams(),
+      );
+
+  group('SSL/TLS (implicit)', () {
+    test('connects, verifies the certificate against the typed host name, and '
+        'logs in with the username', () async {
+      final server = await _FakeImapServer.implicitTls(serverContext);
+      addTearDown(server.close);
+      final adapter = GenericIMAPAdapter.custom();
+      addTearDown(adapter.disconnect);
+
+      await adapter.loadCredentials(
+          credsFor('localhost', server.port, ImapEncryption.sslTls));
+
+      expect(server.tlsCommands.any((c) => c.contains('LOGIN "login-name"')),
+          isTrue,
+          reason: 'login name must be the Username field, not the email');
+      expect(server.plaintextCommands, isEmpty);
+    });
+
+    test('a host name that is not on the certificate is refused and the '
+        'password is never sent', () async {
+      final server = await _FakeImapServer.implicitTls(serverContext);
+      addTearDown(server.close);
+      final adapter = GenericIMAPAdapter.custom();
+
+      await expectLater(
+        adapter.loadCredentials(
+            credsFor('127.0.0.1', server.port, ImapEncryption.sslTls)),
+        throwsA(isA<UserFacingConnectionException>()),
+      );
+      expect(server.everything, isNot(contains(password)));
+      expect(server.everything, isNot(contains('LOGIN')));
+    });
+  });
+
+  group('STARTTLS downgrade protection (Sprint 77 Q3)', () {
+    test('server refuses STARTTLS: password never sent, clear message',
+        () async {
+      final server = await _FakeImapServer.startTls(
+          _StartTlsBehavior.refuse, serverContext);
+      addTearDown(server.close);
+      final adapter = GenericIMAPAdapter.custom();
+
+      Object? error;
+      try {
+        await adapter.loadCredentials(
+            credsFor('localhost', server.port, ImapEncryption.startTls));
+      } catch (e) {
+        error = e;
+      }
+
+      expect(error, isA<UserFacingConnectionException>());
+      expect(ErrorMessages.humanize(error!), contains('STARTTLS'));
+      expect(ErrorMessages.humanize(error), contains('did not send your password'));
+      expect(server.plaintextCommands.any((c) => c.contains('STARTTLS')),
+          isTrue,
+          reason: 'the adapter must actually ASK for the upgrade');
+      expect(server.everything, isNot(contains('LOGIN')),
+          reason: 'a cleartext LOGIN after a refused upgrade is the downgrade');
+      expect(server.everything, isNot(contains(password)));
+    });
+
+    test('server says OK but the TLS handshake cannot complete: password '
+        'never sent', () async {
+      final server = await _FakeImapServer.startTls(
+          _StartTlsBehavior.okThenClose, serverContext);
+      addTearDown(server.close);
+      final adapter = GenericIMAPAdapter.custom();
+
+      await expectLater(
+        adapter.loadCredentials(
+            credsFor('localhost', server.port, ImapEncryption.startTls)),
+        throwsA(isA<ConnectionException>()),
+      );
+      expect(server.everything, isNot(contains('LOGIN')));
+      expect(server.everything, isNot(contains(password)));
+    });
+
+    test('STARTTLS verifies the certificate against the typed host name: '
+        '127.0.0.1 is refused, localhost is accepted', () async {
+      final server = await _FakeImapServer.startTls(
+          _StartTlsBehavior.accept, serverContext);
+      addTearDown(server.close);
+
+      final wrongName = GenericIMAPAdapter.custom();
+      await expectLater(
+        wrongName.loadCredentials(
+            credsFor('127.0.0.1', server.port, ImapEncryption.startTls)),
+        throwsA(isA<ConnectionException>()),
+      );
+      expect(server.everything, isNot(contains('LOGIN')),
+          reason: 'name mismatch must stop before the password');
+      expect(server.tlsCommands, isEmpty);
+
+      final rightName = GenericIMAPAdapter.custom();
+      addTearDown(rightName.disconnect);
+      await rightName.loadCredentials(
+          credsFor('localhost', server.port, ImapEncryption.startTls));
+      expect(server.tlsCommands.any((c) => c.contains('LOGIN "login-name"')),
+          isTrue);
+      expect(server.plaintextCommands.any((c) => c.contains('LOGIN')), isFalse,
+          reason: 'the password travels only inside the TLS session');
+    });
+  });
+
+  group('settings that are missing or invalid open no socket', () {
+    Future<void> expectNoSocket(
+        _FakeImapServer server, Credentials credentials) async {
+      final adapter = GenericIMAPAdapter.custom();
+      Object? error;
+      try {
+        await adapter.loadCredentials(credentials);
+      } catch (e) {
+        error = e;
+      }
+      expect(error, isA<UserFacingConnectionException>());
+      expect(ErrorMessages.humanize(error!), contains('no valid server settings'));
+      expect(server.connections, 0);
+      expect(server.everything, isEmpty);
+    }
+
+    test('no additionalParams at all', () async {
+      final server = await _FakeImapServer.implicitTls(serverContext);
+      addTearDown(server.close);
+      await expectNoSocket(
+          server, Credentials(email: 'a@b.test', password: password));
+    });
+
+    test('blank host', () async {
+      final server = await _FakeImapServer.implicitTls(serverContext);
+      addTearDown(server.close);
+      await expectNoSocket(server, credsFor('  ', server.port, ImapEncryption.sslTls));
+    });
+
+    test('an encryption value that is not a known mode (never plaintext)',
+        () async {
+      final server = await _FakeImapServer.startTls(
+          _StartTlsBehavior.accept, serverContext);
+      addTearDown(server.close);
+      for (final bad in ['none', 'plaintext', 'false', '', 'SSLTLS']) {
+        final params = <String, String>{
+          ...credsFor('localhost', server.port, ImapEncryption.sslTls)
+              .additionalParams!,
+          CustomImapSettings.keyEncryption: bad,
+        };
+        await expectNoSocket(
+            server,
+            Credentials(
+                email: 'a@b.test', password: password, additionalParams: params));
+      }
+    });
+
+    test('an out-of-range or non-numeric port', () async {
+      final server = await _FakeImapServer.implicitTls(serverContext);
+      addTearDown(server.close);
+      for (final bad in ['0', '70000', 'abc', '']) {
+        final params = <String, String>{
+          ...credsFor('localhost', server.port, ImapEncryption.sslTls)
+              .additionalParams!,
+          CustomImapSettings.keyPort: bad,
+        };
+        await expectNoSocket(
+            server,
+            Credentials(
+                email: 'a@b.test', password: password, additionalParams: params));
+      }
+    });
+  });
+
+  group('one connect path', () {
+    test('a reconnect uses the same server, STARTTLS and username', () async {
+      final server = await _FakeImapServer.startTls(
+          _StartTlsBehavior.accept, serverContext);
+      addTearDown(server.close);
+      final adapter = GenericIMAPAdapter.custom();
+      addTearDown(adapter.disconnect);
+
+      await adapter.loadCredentials(
+          credsFor('localhost', server.port, ImapEncryption.startTls));
+      await adapter.debugReconnectNow();
+
+      expect(server.connections, 2);
+      expect(server.plaintextCommands.where((c) => c.contains('STARTTLS')).length,
+          2,
+          reason: 'the reconnect must upgrade too, not log in in cleartext');
+      expect(server.tlsCommands.where((c) => c.contains('LOGIN "login-name"')).length,
+          2);
+      expect(server.plaintextCommands.any((c) => c.contains('LOGIN')), isFalse);
+    });
+
+    test('only the Custom IMAP platform reads the server settings', () async {
+      final real = await _FakeImapServer.implicitTls(serverContext);
+      final decoy = await _FakeImapServer.implicitTls(serverContext);
+      addTearDown(real.close);
+      addTearDown(decoy.close);
+      // A provider with a FIXED host (AOL, Yahoo, ...) must ignore stray
+      // custom keys, so a stored value can never redirect it.
+      final adapter = GenericIMAPAdapter(
+        imapHost: 'localhost',
+        imapPort: real.port,
+        platformId: 'aol',
+      );
+      addTearDown(adapter.disconnect);
+
+      await adapter.loadCredentials(
+          credsFor('localhost', decoy.port, ImapEncryption.sslTls));
+
+      expect(decoy.connections, 0);
+      expect(real.connections, 1);
+      expect(real.tlsCommands.any((c) => c.contains('LOGIN "person@example.test"')),
+          isTrue,
+          reason: 'fixed-host providers log in with the email address');
+    });
+
+    test('a blank username falls back to the email address', () async {
+      final server = await _FakeImapServer.implicitTls(serverContext);
+      addTearDown(server.close);
+      final adapter = GenericIMAPAdapter.custom();
+      addTearDown(adapter.disconnect);
+
+      await adapter.loadCredentials(credsFor(
+          'localhost', server.port, ImapEncryption.sslTls,
+          username: ''));
+
+      expect(server.tlsCommands.any((c) => c.contains('LOGIN "person@example.test"')),
+          isTrue);
+    });
+  });
+}

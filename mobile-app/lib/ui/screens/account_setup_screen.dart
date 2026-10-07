@@ -2,10 +2,12 @@ import 'package:flutter/material.dart';
 import 'package:logger/logger.dart';
 import 'package:provider/provider.dart';
 import 'package:url_launcher/url_launcher.dart';
+import '../../adapters/email_providers/custom_imap_settings.dart';
 import '../../adapters/email_providers/email_provider.dart';
 import '../../adapters/email_providers/platform_registry.dart';
 import '../../adapters/storage/secure_credentials_store.dart';
 import '../../core/providers/email_scan_provider.dart';
+import '../../core/security/imap_host_policy.dart';
 import '../../core/storage/settings_store.dart';
 import '../../util/error_messages.dart';
 import '../../util/redact.dart';
@@ -49,6 +51,26 @@ class AccountSetupScreen extends StatefulWidget {
 class _AccountSetupScreenState extends State<AccountSetupScreen> {
   final _emailController = TextEditingController();
   final _passwordController = TextEditingController();
+
+  // F192 (Sprint 77): Custom IMAP server fields. Used only when
+  // `widget.platformId == 'imap'`; every other provider ignores them.
+  final _hostController = TextEditingController();
+  final _portController =
+      TextEditingController(text: ImapEncryption.sslTls.defaultPort.toString());
+  final _usernameController = TextEditingController();
+  ImapEncryption _encryption = ImapEncryption.sslTls;
+  String? _hostError;
+  String? _portError;
+
+  /// True once the user typed in the Username field. Until then the field
+  /// follows the email address, because most IMAP logins are the address.
+  bool _usernameEdited = false;
+
+  /// The host the user already accepted the one-time local-network warning
+  /// for (lower-cased). The warning shows ONCE: Test Connection and Save share
+  /// this, so accepting it on the first never asks again for the same host.
+  String? _localHostAcknowledged;
+
   final _logger = Logger();
   bool _isLoading = false;
   bool _isTesting = false;
@@ -81,12 +103,25 @@ class _AccountSetupScreenState extends State<AccountSetupScreen> {
   void dispose() {
     _emailController.dispose();
     _passwordController.dispose();
+    _hostController.dispose();
+    _portController.dispose();
+    _usernameController.dispose();
     super.dispose();
   }
+
+  /// True for the Custom IMAP provider (F192): the form shows the server
+  /// section and Test Connection / Save carry the server settings.
+  bool get _isCustomImap => widget.platformId == 'imap';
 
   @override
   void initState() {
     super.initState();
+    _emailController.addListener(() {
+      // Username follows the email address until the user edits it.
+      if (_isCustomImap && !_usernameEdited) {
+        _usernameController.text = _emailController.text.trim();
+      }
+    });
     _isGmail = widget.platformId.toLowerCase() == 'gmail';
     // For non-Gmail platforms, no auth method choice needed
     if (!_isGmail) {
@@ -176,6 +211,78 @@ class _AccountSetupScreenState extends State<AccountSetupScreen> {
     return true;
   }
 
+  /// F192 / SEC-15 (Sprint 77): validate the Custom IMAP server fields and, for
+  /// a local or private address, show the one-time warning.
+  ///
+  /// Called from BOTH [_testConnection] and [_handleConnect]. The policy
+  /// itself lives in ONE pure function, `ImapHostPolicy.classify`; this method
+  /// only turns its answer into field messages and a dialog.
+  ///
+  /// Returns the settings to use, or null when the form must stop (a field
+  /// message is shown, or the user declined the warning).
+  Future<CustomImapSettings?> _prepareCustomServer() async {
+    final host = _hostController.text.trim();
+    final hostClass = ImapHostPolicy.classify(host);
+    final port = int.tryParse(_portController.text.trim());
+
+    String? hostError;
+    switch (hostClass) {
+      case ImapHostClass.empty:
+        hostError = ImapHostPolicy.emptyMessage;
+      case ImapHostClass.malformed:
+        hostError = ImapHostPolicy.malformedMessage;
+      case ImapHostClass.publicHost:
+      case ImapHostClass.localOrPrivate:
+        hostError = null;
+    }
+    final portError = (port == null || port < 1 || port > 65535)
+        ? 'Enter a port number from 1 to 65535.'
+        : null;
+
+    setState(() {
+      _hostError = hostError;
+      _portError = portError;
+    });
+    if (hostError != null || portError != null) return null;
+
+    if (hostClass == ImapHostClass.localOrPrivate &&
+        _localHostAcknowledged != host.toLowerCase()) {
+      final proceed = await _confirmLocalHost();
+      if (!proceed || !mounted) return null;
+      _localHostAcknowledged = host.toLowerCase();
+    }
+
+    return CustomImapSettings(
+      host: host,
+      port: port!,
+      encryption: _encryption,
+      username: _usernameController.text.trim(),
+    );
+  }
+
+  /// The one-time local-network warning (Sprint 77 Q2). Text is fixed by
+  /// Harold and lives in [ImapHostPolicy.localNetworkWarning].
+  Future<bool> _confirmLocalHost() async {
+    final result = await showDialog<bool>(
+      context: context,
+      builder: (dialogContext) => AlertDialog(
+        title: const Text('Local server'),
+        content: const Text(ImapHostPolicy.localNetworkWarning),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(dialogContext).pop(false),
+            child: const Text('Cancel'),
+          ),
+          ElevatedButton(
+            onPressed: () => Navigator.of(dialogContext).pop(true),
+            child: const Text('Continue'),
+          ),
+        ],
+      ),
+    );
+    return result == true;
+  }
+
   /// Test IMAP connection with provided credentials
   Future<void> _testConnection() async {
     if (_isGmailOAuth) {
@@ -187,6 +294,12 @@ class _AccountSetupScreenState extends State<AccountSetupScreen> {
     final password = _passwordController.text.trim();
 
     if (!_validateInputs(email, password)) return;
+
+    CustomImapSettings? customServer;
+    if (_isCustomImap) {
+      customServer = await _prepareCustomServer();
+      if (customServer == null || !mounted) return;
+    }
 
     setState(() {
       _isTesting = true;
@@ -201,7 +314,11 @@ class _AccountSetupScreenState extends State<AccountSetupScreen> {
       }
 
       // Load credentials
-      final credentials = Credentials(email: email, password: password);
+      final credentials = Credentials(
+        email: email,
+        password: password,
+        additionalParams: customServer?.toParams(),
+      );
       await platform.loadCredentials(credentials);
 
       // Test connection
@@ -273,6 +390,17 @@ class _AccountSetupScreenState extends State<AccountSetupScreen> {
       return;
     }
 
+    // F192 / SEC-15: validate the server fields (and show the one-time
+    // local-network warning) before anything is saved.
+    CustomImapSettings? customServer;
+    if (_isCustomImap) {
+      customServer = await _prepareCustomServer();
+      if (customServer == null || !mounted) {
+        if (mounted) setState(() => _isLoading = false);
+        return;
+      }
+    }
+
     // [NEW] MULTI-ACCOUNT SUPPORT: Use email as primary key
     // Store platformId separately to keep fields independent
     // Email is unique identifier, platformId is stored as metadata
@@ -283,7 +411,11 @@ class _AccountSetupScreenState extends State<AccountSetupScreen> {
     try {
       await _credStore.saveCredentials(
         accountId,
-        Credentials(email: email, password: password),
+        Credentials(
+          email: email,
+          password: password,
+          additionalParams: customServer?.toParams(),
+        ),
         platformId: _effectivePlatformId,
       );
 
@@ -686,6 +818,10 @@ class _AccountSetupScreenState extends State<AccountSetupScreen> {
               ],
 
               const SizedBox(height: 24),
+              if (_isCustomImap) ...[
+                _buildCustomServerSection(),
+                const SizedBox(height: 16),
+              ],
               TextField(
                 controller: _emailController,
                 decoration: const InputDecoration(
@@ -700,10 +836,12 @@ class _AccountSetupScreenState extends State<AccountSetupScreen> {
               if (showPasswordField) ...[
                 TextField(
                   controller: _passwordController,
-                  decoration: const InputDecoration(
-                    labelText: 'App Password',
-                    border: OutlineInputBorder(),
-                    prefixIcon: Icon(Icons.lock),
+                  decoration: InputDecoration(
+                    // A custom server's login may be a normal password, not
+                    // an app password (F192).
+                    labelText: _isCustomImap ? 'Password' : 'App Password',
+                    border: const OutlineInputBorder(),
+                    prefixIcon: const Icon(Icons.lock),
                   ),
                   obscureText: true,
                 ),
@@ -807,6 +945,96 @@ class _AccountSetupScreenState extends State<AccountSetupScreen> {
           ],
         ),
       ),
+    );
+  }
+
+  /// F192 (Sprint 77): the server section of the Custom IMAP form: host, port,
+  /// encryption and username. Shown above the email and password fields.
+  Widget _buildCustomServerSection() {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        TextField(
+          key: const Key('custom_imap_host'),
+          controller: _hostController,
+          decoration: InputDecoration(
+            labelText: 'Server name',
+            hintText: 'imap.example.com',
+            border: const OutlineInputBorder(),
+            prefixIcon: const Icon(Icons.dns),
+            errorText: _hostError,
+          ),
+          keyboardType: TextInputType.url,
+          autocorrect: false,
+          enableSuggestions: false,
+          onChanged: (_) {
+            if (_hostError != null) setState(() => _hostError = null);
+          },
+        ),
+        const SizedBox(height: 16),
+        Text('Encryption', style: Theme.of(context).textTheme.labelMedium),
+        const SizedBox(height: 4),
+        SegmentedButton<ImapEncryption>(
+          key: const Key('custom_imap_encryption'),
+          segments: [
+            for (final mode in ImapEncryption.values)
+              ButtonSegment<ImapEncryption>(
+                value: mode,
+                label: Text(mode.label),
+              ),
+          ],
+          selected: {_encryption},
+          showSelectedIcon: false,
+          onSelectionChanged: (selection) {
+            final next = selection.first;
+            setState(() {
+              // Move the port to the new mode's usual value only when the
+              // user has not typed a different one.
+              final current = int.tryParse(_portController.text.trim());
+              if (current == null || current == _encryption.defaultPort) {
+                _portController.text = next.defaultPort.toString();
+              }
+              _encryption = next;
+              _portError = null;
+            });
+          },
+        ),
+        const SizedBox(height: 16),
+        TextField(
+          key: const Key('custom_imap_port'),
+          controller: _portController,
+          decoration: InputDecoration(
+            labelText: 'Port',
+            border: const OutlineInputBorder(),
+            prefixIcon: const Icon(Icons.numbers),
+            errorText: _portError,
+          ),
+          keyboardType: TextInputType.number,
+          onChanged: (_) {
+            if (_portError != null) setState(() => _portError = null);
+          },
+        ),
+        const SizedBox(height: 16),
+        TextField(
+          key: const Key('custom_imap_username'),
+          controller: _usernameController,
+          decoration: const InputDecoration(
+            labelText: 'Username',
+            helperText: 'Usually your email address. Change it only if your '
+                'server uses a different login name.',
+            border: OutlineInputBorder(),
+            prefixIcon: Icon(Icons.person),
+          ),
+          autocorrect: false,
+          enableSuggestions: false,
+          onChanged: (_) => _usernameEdited = true,
+        ),
+        const SizedBox(height: 8),
+        Text(
+          'To change these server settings later, delete the account on the Accounts screen and add it again.',
+          style: TextStyle(color: Colors.grey.shade600, fontSize: 12),
+        ),
+      ],
     );
   }
 

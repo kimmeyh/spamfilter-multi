@@ -12,6 +12,7 @@ import 'dart:convert';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:logger/logger.dart';
 
+import '../../adapters/email_providers/custom_imap_settings.dart';
 import '../../adapters/email_providers/email_provider.dart';
 import '../../util/redact.dart';
 import '../auth/token_store.dart';
@@ -108,6 +109,25 @@ class SecureCredentialsStore {
         value: credentials.password,
       );
 
+      // F192 (Sprint 77): Custom IMAP server settings, saved as side keys
+      // beside the credentials they authenticate. Only the exact key list in
+      // CustomImapSettings.paramKeys is persisted; any other additionalParams
+      // entry is ignored. A save WITHOUT the settings (any other provider, or
+      // the same address re-added elsewhere) removes stale ones, so an old
+      // custom host can never survive onto a different provider's account.
+      final params = credentials.additionalParams;
+      for (final key in CustomImapSettings.paramKeys) {
+        final value = params?[key];
+        if (value != null) {
+          await _storage.write(
+            key: '$_credentialsPrefix${accountId}_$key',
+            value: value,
+          );
+        } else {
+          await _storage.delete(key: '$_credentialsPrefix${accountId}_$key');
+        }
+      }
+
       // Store access token if provided (for OAuth desktop flows)
       if (credentials.accessToken != null && credentials.accessToken!.isNotEmpty) {
         await _storage.write(
@@ -190,6 +210,18 @@ class SecureCredentialsStore {
         key: '${_credentialsPrefix}${accountId}_platformId',
       );
 
+      // F192 (Sprint 77): Custom IMAP server settings, if this account has
+      // them. Reading them here is what lets every reconnect path (manual
+      // scan, both background workers, folder picker, connection test) reach
+      // the right server with no call-site change.
+      final serverParams = <String, String>{};
+      for (final key in CustomImapSettings.paramKeys) {
+        final value = await _storage.read(
+          key: '$_credentialsPrefix${accountId}_$key',
+        );
+        if (value != null) serverParams[key] = value;
+      }
+
       _logger.d('Retrieved credentials for account: ${Redact.accountId(accountId)}');
       return Credentials(
         email: email,
@@ -199,6 +231,7 @@ class SecureCredentialsStore {
           // Provide accountId so adapters can look up refresh tokens when needed
           'accountId': accountId,
           if (platformId != null) 'platformId': platformId,
+          ...serverParams,
         },
       );
     } catch (e) {
@@ -407,6 +440,11 @@ class SecureCredentialsStore {
       await _storage.delete(
         key: '${_credentialsPrefix}${accountId}_platformId',
       );
+
+      // F192: Custom IMAP server settings (every key in the shared list).
+      for (final key in CustomImapSettings.paramKeys) {
+        await _storage.delete(key: '$_credentialsPrefix${accountId}_$key');
+      }
 
       // Update accounts list
       await _removeAccountFromList(accountId);

@@ -167,15 +167,20 @@ class PlatformRegistry {
         ),
       ),
 
-      // Phase 4 - Custom IMAP
+      // F192 (Sprint 77): phase 4 -> 1. The Custom IMAP form (server name,
+      // port, encryption, username) now exists, so the tile is reachable on
+      // Windows and Android. `imapConfig` stays null on purpose: it is a
+      // static per-PROVIDER struct, and a custom server's settings are per
+      // ACCOUNT (CustomImapSettings, stored beside the credentials).
       PlatformInfo(
         id: 'imap',
         displayName: 'Custom IMAP Server',
-        phase: 4,
+        phase: 1,
         authMethod: AuthMethod.basicAuth,
         icon: 'assets/icons/generic.png',
         description: 'Any email server with IMAP support',
-        setupInstructions: 'Enter your IMAP server details manually',
+        setupInstructions: 'Enter your IMAP server name, port, encryption '
+            'and login',
       ),
     ];
   }

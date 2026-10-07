@@ -57,6 +57,10 @@ class ErrorMessages {
       // (Gmail Google Sign-In) have no password for the user to check.
       return 'Sign-in failed. Please check your sign-in details and try again.';
     }
+    if (error is UserFacingConnectionException) {
+      // F192: the adapter already wrote a safe sentence for this failure.
+      return error.userMessage;
+    }
     if (error is ConnectionException) {
       return 'Unable to connect to the email server. Please check your internet connection and try again.';
     }
