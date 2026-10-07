@@ -204,7 +204,60 @@ All decision questions are answered; execution proceeds without further approval
 ## Phase 5 evidence
 
 - **5.1.2 F-PRECHECK**: 2026-10-07, read-only Opus run over `git diff origin/develop...HEAD` (117 files), all six classes. (1) Mirror-site sync: 1 HIGH -- Windows jitter start "-At 11:55PM" is today's 23:55 (in the future), so any interval over 15 minutes would not fire until tonight; plus a source==target remove-list bug in `_resolvedMoveLabels` (MEDIUM), the single-message delete path not removing SPAM (LOW), live certificate tests that can flake on the ubuntu CI (LOW). (2) Helper wiring: CLEAN, every new helper has a production caller (cited). (3) Doc/text drift: the certificate-changed message points at Test Connection, which never stores trust (MEDIUM); ADR-0045 omits two deletion paths (MEDIUM); several LOW comment fixes. (4) Fragile parsing: CLEAN except an unbounded pre-TLS line reader (LOW). (5) API scope: one per-app throttle and unique work now drop a second provider's notification (MEDIUM). (6) Silent failure: Save proceeds after a STARTTLS/TLS failure (MEDIUM); the F264 migration marks done after a failed reschedule (LOW-MEDIUM). Other: No Rule Review lists mail already deleted in the client (MEDIUM). No path accepts an untrusted certificate. All HIGH/MEDIUM and the cheap LOWs dispatched to a fix agent (prevention first, mutation-checked). RESULT (83a5947): 9 of 10 fixed, 15/15 mutants KILLED, flutter test 2,874 passed / 15 skipped, JVM 21/21, analyzer clean. NOT fixed: No Rule Review listing mail already deleted in the client -- the app never sets `availability_status` (no caller), so there is no reliable "gone" signal; filed as F276 and raised at Manual Validation (a side effect of Q21 = 2).
-- **5.1.5 WinWright sweep**: PENDING (runs on the Windows dev build after the emulator work ends -- builds are serialized).
+- **5.1.5 WinWright sweep**: ATTEMPTED 2026-10-07 ~03:05 on the 0.18.0 dev build (HEAD 4bd05d0) and REFUSED by the runner's locked-workstation pre-flight -- no script ran (the PC was locked; `ww_click` cannot work on a locked session, Sprint 73 IMP-4). It runs as Manual Validation step 0 the moment Harold unlocks the PC; result and `sweep-head` recorded here then.
+- **5.1.6 runtime launch**: 0.18.0 dev Windows build launched 2026-10-07 03:01 (pid 119404); the DB v12 upgrade ran on the real dev data -- 7,904 No Rule rows -> 583 (exactly the distinct identities), schema 11 -> 12, `last_seen_at` present (pre-v12 backup `spam_filter.db.pre_v12_20261007_025839`, hash-verified).
+
+## Manual Validation steps (Sprint 77 -- re-present IN FULL every time Harold is asked to validate)
+
+Builds: Windows dev 0.18.0 (running; `mobile-app\dist\dev\MyEmailSpamFilter-Dev.exe`); Android 0.18.0 versionCode 15 for Play
+closed testing (`mobile-app\dist\android-0.18.0+15\app-prod-release.aab`). 0.18.0 contains everything in 0.17.6, so the MV76-1
+phone checks run on 0.18.0. Test mail servers: `powershell -NoProfile -ExecutionPolicy Bypass -File scripts\start-test-imap-servers.ps1`.
+Windows dev is READ-ONLY with background scanning OFF by default (it never moves or deletes mail); the Fold closed-test build
+is the only build that acts on mail.
+
+0. (Claude, when the PC is unlocked) WinWright sweep on the Windows dev build.
+1. Windows -- interval control (F264). Settings > Background (an account) > turn background scanning ON for this test, set
+   "Scan every" Minutes 7. Expect the field to accept it; type 4 and expect "Minimum is 5 minutes, to limit battery use" and
+   no save. Then Claude reads the Task Scheduler trigger (expect a 7-minute repetition starting in the past) and you wait
+   for two scan rows in Scan History about 7 minutes apart. Switch the unit to Hours and type 2; expect it to save as 2 hours.
+   Turn background scanning back OFF afterward.
+2. Windows -- Custom IMAP through Yahoo (F192). Add Account > Custom IMAP Server: server `imap.mail.yahoo.com`, port 993,
+   encryption SSL/TLS, username = your Yahoo address, password = your existing Yahoo app password > Test Connection (expect
+   success and no certificate question -- Yahoo's certificate is publicly trusted) > Save. Run a manual scan of it; it must
+   reconnect without asking for the server again.
+3. Windows -- local test servers (SEC-15, SEC-8b). With the test servers started:
+   a. Add Account > Custom IMAP Server: server `localhost`, port 3993, SSL/TLS, username `tester@spamfilter.test`, password
+      `testpass`. Expect ONE warning that the server is on your own computer (Continue), then "Trust this server?" showing a
+      fingerprint, issued to, issued by (self-signed). Trust > Save. A manual scan finds the seeded messages (none for
+      GreenMail unless added -- an empty scan with no error is a pass).
+   b. STARTTLS: add `localhost`, port 143, STARTTLS, username `tester`, password `testpass`. Expect the local warning, then the
+      trust question for Dovecot's certificate; Trust > Save; a manual scan finds 3 seeded messages.
+   c. Changed certificate: Claude restarts GreenMail with `-NewCertificate`; run a manual scan of the 3a account. Expect it to
+      STOP with "Server certificate changed" and send no password; re-adding the account (Save) re-asks to trust.
+4. Windows -- Gmail sign-in with the certificate pin (SEC-8b). Settings > the Gmail account > Sign In Again (or add Gmail on
+   the dev build). Expect the browser sign-in to complete. If it fails with a certificate message, note whether Norton (or
+   other HTTPS inspection) is on -- that is the designed behavior of the pin; Settings has the pinning switch.
+5. Windows -- No Rule rows (F245). Open No Rule Review: note the count. Run a manual scan of the same account twice. Expect the
+   count not to grow from re-listing (only genuinely new emails add rows). Dismiss one email ("Remove Current Rule"), scan
+   again: it comes back (Q20).
+6. Windows -- MV76-1 parity: delete today's `scan_exports\*.data.csv`, run a manual scan, open the file: line 1 is the column
+   names; add a safe sender from an Inbox email's popup: no "could not be applied"; disconnect Wi-Fi, start a manual scan:
+   the message says to check the internet connection.
+7. Fold -- install 0.18.0 from Play closed testing (upload the AAB above first). Settings > About shows 0.18.0. Diagnostic
+   logging ON; battery Unrestricted.
+8. Fold -- interval (F264): set an account to Minutes 5; lock the phone for 30 minutes; the diagnostic log shows
+   `trigger=doze-alarm` lines roughly 9 minutes apart (Android's idle limit), and the note in Background reads "expect up to
+   about 45 minutes".
+9. Fold -- per-account new mail (F264): turn "Scan when new mail arrives" ON for the AOL account only; send one email to AOL
+   and one to Gmail from another device. Expect a `trigger=notification` scan of AOL only; Gmail is not scanned by the
+   notification. (Also confirms the AOL package name on the device.)
+10. Fold -- Gmail custom label (F258): set the Gmail account's Deleted Rule folder to a label you created (Settings > Gmail >
+    Deleted Rule folder). Let a delete rule match one email. Expect it to move to that label with no "Invalid label".
+11. Fold -- MV76-1 remaining: reboot check (restart, unlock once, leave locked for interval + 60 minutes, then open the app;
+    worker lines appear before the app-start line); Google account state screenshot; Scan History errors per account for a day
+    (or zero).
+Evidence pull: `powershell -NoProfile -ExecutionPolicy Bypass -File scripts\pull-phone-screenshots.ps1 -Sprint 77` (screenshots);
+logs: `... -Sprint 77 -Folder 'Android/data/com.myemailspamfilter/files' -Recurse -Pattern 'diag_.*\.log$' -Overwrite`.
 
 ---
 
