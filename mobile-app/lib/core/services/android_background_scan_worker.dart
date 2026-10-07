@@ -88,11 +88,18 @@ void androidBackgroundScanDispatcher() {
 /// retry waits in backoff every later notification is dropped -- one account
 /// that always fails would turn "scan when new mail arrives" into "scan every
 /// few hours", with Settings still reading "On". The next notification IS the
-/// retry, so a notification-triggered run never asks for one. Every other
-/// trigger keeps the existing retry behavior (F175 R-6 bounded backoff).
+/// retry, so a notification-triggered run never asks for one.
+///
+/// The Doze one-off is the same trap (Sprint 76 7.7.1 review H-1): it also
+/// uses KEEP since the Manual Validation decision, so a failed alarm run (for
+/// example offline in Doze, which now counts as a failure) would sit in
+/// backoff and swallow every later alarm. The next alarm IS its retry too.
+/// The periodic task keeps the existing retry behavior (F175 R-6).
 @visibleForTesting
-bool retryOnFailureFor(Map<String, dynamic>? inputData) =>
-    inputData?[kTriggerSourceKey] != 'notification';
+bool retryOnFailureFor(Map<String, dynamic>? inputData) {
+  final source = inputData?[kTriggerSourceKey];
+  return source != 'notification' && source != 'doze-alarm';
+}
 
 /// The value handed back to WorkManager: `true` = done, `false` = retry.
 @visibleForTesting
@@ -217,7 +224,7 @@ class AndroidBackgroundScanWorker {
         kind: DiagnosticLogger.kindScan,
         context: 'worker/android',
         detail: 'exit ${allSucceeded ? 'success' : 'with failures'}'
-            '${!allSucceeded && !retryOnFailure ? ' (no retry: the next new-mail notification retries)' : ''}',
+            '${!allSucceeded && !retryOnFailure ? ' (no retry: the next notification or alarm retries)' : ''}',
       );
       return workerResult(
           allSucceeded: allSucceeded, retryOnFailure: retryOnFailure);

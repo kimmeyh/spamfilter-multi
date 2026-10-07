@@ -13,6 +13,8 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:my_email_spam_filter/adapters/email_providers/spam_filter_platform.dart';
 import 'package:my_email_spam_filter/adapters/storage/secure_credentials_store.dart';
 import 'package:my_email_spam_filter/core/security/auth_rate_limiter.dart';
+import 'package:my_email_spam_filter/core/services/email_scanner.dart'
+    show ScanFetchFailedException;
 import 'package:my_email_spam_filter/util/error_messages.dart';
 
 void main() {
@@ -74,6 +76,26 @@ void main() {
 
       expect(message, contains('took too long'));
       expect(message, isNot(contains('TimeoutException')));
+    });
+
+    // Sprint 76 7.7.1 review. What these do NOT catch: whether the manual
+    // scan screen actually passes the scan's exception to humanize.
+    test('ScanFetchFailedException wrapping a SocketException -> connection message',
+        () {
+      final error = ScanFetchFailedException('every folder failed',
+          cause: const SocketException('Failed host lookup'));
+      final message = ErrorMessages.humanize(error);
+      expect(message, contains('Unable to connect'));
+      expect(message, isNot(contains('Failed host lookup')));
+    });
+
+    test('ScanFetchFailedException with an unknown cause -> folder message, not generic',
+        () {
+      final error = ScanFetchFailedException('every folder failed',
+          cause: Exception('odd'));
+      final message = ErrorMessages.humanize(error);
+      expect(message, contains('Could not read any folder'));
+      expect(message, contains('internet connection'));
     });
 
     test('unrecognized exception type -> generic fallback, not raw toString', () {

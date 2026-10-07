@@ -188,11 +188,39 @@ void main() {
   });
 
   group('review H-1: a notification-triggered run never asks for a retry', () {
-    test('the notification trigger opts out of retry; others keep it', () {
+    test('notification and Doze-alarm runs opt out of retry; periodic keeps it',
+        () {
       expect(retryOnFailureFor({kTriggerSourceKey: 'notification'}), isFalse);
-      expect(retryOnFailureFor({kTriggerSourceKey: 'doze-alarm'}), isTrue);
+      // 7.7.1 review H-1: the KEEP Doze one-off had the same trap.
+      expect(retryOnFailureFor({kTriggerSourceKey: 'doze-alarm'}), isFalse);
       expect(retryOnFailureFor({'accountId': 'a'}), isTrue);
       expect(retryOnFailureFor(null), isTrue);
+    });
+
+    // PREVENTION (7.7.1 review H-1, Harold's prevention-first rule): every
+    // trigger the native code declares is a ONE-OFF enqueued with KEEP, and a
+    // KEEP one-off that asks for a retry swallows every later trigger while
+    // it waits in backoff. So EVERY declared source must opt out of retry --
+    // a future trigger added in Kotlin fails here until it does, instead of
+    // being found on a phone. What this does NOT catch: a one-off enqueued
+    // without a `SOURCE_` constant, or a source string built at runtime.
+    test('every native trigger source opts out of retry', () {
+      final sources = <String>{};
+      final kotlinDir =
+          Directory('android/app/src/main/kotlin/com/myemailspamfilter');
+      for (final f in kotlinDir.listSync().whereType<File>()) {
+        if (!f.path.endsWith('.kt')) continue;
+        for (final m in RegExp(r'const val SOURCE_\w+\s*=\s*"([^"]+)"')
+            .allMatches(f.readAsStringSync())) {
+          sources.add(m.group(1)!);
+        }
+      }
+      expect(sources, containsAll(['doze-alarm', 'notification']),
+          reason: 'the gate must see the sources it guards');
+      for (final s in sources) {
+        expect(retryOnFailureFor({kTriggerSourceKey: s}), isFalse,
+            reason: 'trigger "$s" would retry under KEEP and block later triggers');
+      }
     });
 
     test('a failed run returns done when retry is off, retry when on', () {

@@ -27,6 +27,10 @@ Format: `- **type**: Description (Issue #N)` where type is feat|fix|chore|docs
 ## [Unreleased]
 
 ### 2026-10-06 (Sprint 76)
+- **fix**: a background scan started by an Android wake-up alarm that fails (for example with no network) no longer waits in a retry queue that blocked every later alarm for that account for up to hours; the next alarm runs it again. (Issue #453)
+- **fix**: a manual scan that cannot reach any folder now says to check the internet connection instead of "Something went wrong".
+- **fix**: the diagnostic log no longer pauses 2 seconds on every line when its lock file cannot be created, rotates the log only while holding the lock (so a line is not lost when two scans roll it at once), and Settings now says when a line was written without the lock. (Issue #452)
+- **chore**: the 5.1.1 code review before Manual Validation is removed; the only code review is the final 7.7.1 pair, and every review finding is fixed prevention first. The staging guard now also catches `git commit -a`, combined flags, global git options, shell-wrapped commands and a status check whose output is discarded.
 - **chore**: final code reviews moved to Phase 7.7.1 -- Copilot (now requested by hand; the repository ruleset's automatic Copilot review was removed) and the pr-review-toolkit reviews start as soon as the retrospective improvements are complete, even when there are none; the close-out hook requires the recorded result from Sprint 77 on.
 - **chore**: release tooling -- the Android build keeps the finished Play bundle in `mobile-app/dist/android-<version>/` so a later build cannot delete it, and refuses to build a bundle whose versionCode Play has already received; a hook blocks staging every file without checking `git status` first (Sprint 76 retrospective).
 - **fix**: adding a rule from Results no longer reports "could not be applied" for a safe sender's email that is already in the Inbox -- it is counted as done, with nothing to move.

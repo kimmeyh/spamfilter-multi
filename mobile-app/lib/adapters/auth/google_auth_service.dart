@@ -281,6 +281,10 @@ class GoogleAuthService {
             hasRefreshToken: tokens.refreshToken?.isNotEmpty == true)) {
           return await _refreshViaStoredRefreshToken(accountId, tokens);
         }
+        // 7.7.1 review (Sprint 76): the inner catch above stops a native
+        // throw from reaching the outer catch -- the only place that left
+        // `refreshing` -- so with no fallback the state stuck at refreshing.
+        if (!native.success) _state = AuthState.unauthenticated;
         return native;
       } else if (_isDesktop) {
         // Use HTTP token refresh for desktop

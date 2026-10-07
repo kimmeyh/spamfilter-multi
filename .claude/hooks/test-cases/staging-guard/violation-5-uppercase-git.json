@@ -1,0 +1,1 @@
+{"session_id":"sg-violation-5-uppercase-git","cwd":"D:/Data/Harold/github/spamfilter-multi","hook_event_name":"PreToolUse","tool_name":"Bash","tool_input":{"command":"Git add -A; git commit -m x"}}

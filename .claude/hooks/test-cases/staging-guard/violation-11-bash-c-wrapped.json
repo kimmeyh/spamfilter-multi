@@ -1,0 +1,1 @@
+{"session_id":"sg-violation-11-bash-c-wrapped","cwd":"D:/Data/Harold/github/spamfilter-multi","hook_event_name":"PreToolUse","tool_name":"Bash","tool_input":{"command":"bash -c \"git add -A \u0026\u0026 git commit -m x\""}}

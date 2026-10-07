@@ -558,6 +558,9 @@ try {
         New-Item -ItemType Directory -Force -Path $keepDir | Out-Null
         Copy-Item -Force $apkPath $keepDir
         Write-Host "[INFO] IMP-1: bundle kept at $(Join-Path $keepDir (Split-Path $apkPath -Leaf))" -ForegroundColor Green
+    } elseif ($Output -eq 'aab') {
+        # Sprint 76 7.7.1 review: the copy used to be skipped with no message.
+        Write-Host "[WARNING] IMP-1: no bundle at $apkPath -- nothing was kept in dist/. Check the build output above." -ForegroundColor Yellow
     }
     Write-Host ""
 

@@ -1,0 +1,1 @@
+{"session_id":"sg-violation-9-update-flag","cwd":"D:/Data/Harold/github/spamfilter-multi","hook_event_name":"PreToolUse","tool_name":"Bash","tool_input":{"command":"git add -u \u0026\u0026 git commit -m y"}}

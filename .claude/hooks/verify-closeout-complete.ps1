@@ -241,8 +241,9 @@ if ($sprintNum -ge 63 -and $status -and $null -ne $status.current_sprint -and
     $planPath = Join-Path $cwd ("docs/sprints/SPRINT_{0}_PLAN.md" -f $sprintNum)
     if (Test-Path -LiteralPath $planPath) {
         $planText = Get-Content -LiteralPath $planPath -Raw
+        # 5.1.1 removed from this list 2026-10-06 (Harold): the code review now
+        # runs at Phase 7.7.1 and is checked by 3d-2 below.
         $evidence = @(
-            @{ Name = '5.1.1 automated code review record'; Pattern = '(?i)(5\.1\.1|automated code review|code[- ]reviewer)' },
             @{ Name = '5.1.2 F-PRECHECK record';            Pattern = '(?i)F-PRECHECK' },
             @{ Name = '5.1.5 WinWright sweep artifact';     Pattern = '(?i)WinWright[\s\S]{0,200}?sweep|sweep[\s\S]{0,200}?WinWright' }
         )

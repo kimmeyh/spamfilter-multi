@@ -842,6 +842,7 @@ class _SettingsScreenState extends State<SettingsScreen> with SingleTickerProvid
                         ? 'Writing to: (the folder could not be found)'
                         : snapshot.hasData
                             ? 'Writing to: ${snapshot.data}'
+                                '${DiagnosticLogger.lastLockProblem != null ? ' (last line written without the lock: ${DiagnosticLogger.lastLockProblem})' : ''}'
                             : 'Writing to: (finding the folder...)',
                 style: Theme.of(context).textTheme.bodyMedium,
               ),

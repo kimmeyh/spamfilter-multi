@@ -164,10 +164,60 @@ void main() {
       DiagnosticLogger.lockWait = const Duration(milliseconds: 50);
       addTearDown(() => DiagnosticLogger.lockWait = savedWait);
 
-      await DiagnosticLogger.appendLocked(log, 'still written\n');
+      final problem =
+          await DiagnosticLogger.appendLocked(log, 'still written\n');
       expect(log.readAsStringSync(), 'still written\n');
       expect(lock.existsSync(), isTrue,
           reason: 'another writer\'s live lock is not deleted');
+      expect(problem, contains('busy'),
+          reason: 'an unlocked write is reported, not hidden');
+    });
+
+    // 7.7.1 review (Sprint 76). What these do NOT catch: a lock create that
+    // fails for a reason other than "exists" on a real Android filesystem --
+    // a directory in the lock's place is the host-reproducible stand-in.
+    test('a lock that cannot be created is reported at once, not spun on',
+        () async {
+      final dir = await Directory.systemTemp.createTemp('s76_nolock_');
+      addTearDown(() => dir.delete(recursive: true));
+      final log = File('${dir.path}${Platform.pathSeparator}diag.log');
+      Directory('${log.path}.lock').createSync(); // not a file: create fails
+      final savedWait = DiagnosticLogger.lockWait;
+      DiagnosticLogger.lockWait = const Duration(seconds: 5);
+      addTearDown(() => DiagnosticLogger.lockWait = savedWait);
+
+      final sw = Stopwatch()..start();
+      final problem = await DiagnosticLogger.appendLocked(log, 'written\n');
+      expect(sw.elapsed, lessThan(const Duration(seconds: 2)),
+          reason: 'only an existing lock FILE is contention');
+      expect(problem, contains('unavailable'));
+      expect(log.readAsStringSync(), 'written\n');
+    });
+
+    test('rotation runs under the lock and a failed rotation keeps the line',
+        () async {
+      final dir = await Directory.systemTemp.createTemp('s76_rotate_');
+      addTearDown(() => dir.delete(recursive: true));
+      final log = File('${dir.path}${Platform.pathSeparator}diag.log');
+      var lockHeldDuringRotate = false;
+      final problem = await DiagnosticLogger.appendLocked(
+        log,
+        'kept\n',
+        rotate: (f) async {
+          lockHeldDuringRotate = File('${f.path}.lock').existsSync();
+          throw const FileSystemException('rename failed');
+        },
+      );
+      expect(lockHeldDuringRotate, isTrue);
+      expect(problem, contains('rotation failed'));
+      expect(log.readAsStringSync(), 'kept\n');
+    });
+
+    test('a healthy write reports no lock problem', () async {
+      final dir = await Directory.systemTemp.createTemp('s76_ok_');
+      addTearDown(() => dir.delete(recursive: true));
+      final log = File('${dir.path}${Platform.pathSeparator}diag.log');
+      expect(await DiagnosticLogger.appendLocked(log, 'ok\n'), isNull);
     });
   });
 

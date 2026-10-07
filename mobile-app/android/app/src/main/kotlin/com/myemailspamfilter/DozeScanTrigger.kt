@@ -122,7 +122,9 @@ object DozeScanTrigger {
                 ExistingWorkPolicy.KEEP,
                 request,
             )
-            Log.i(TAG, "scan enqueued after Doze wake")
+            // KEEP drops this request when a scan is already queued or running
+            // for the account, so "enqueued" would overstate it (7.7.1 review).
+            Log.i(TAG, "scan requested after Doze wake (KEEP: dropped if one is already queued or running)")
         } catch (t: Throwable) {
             // Never crash the receiver. A failed enqueue means this interval is
             // missed; the alarm has already re-armed, so the next one fires.

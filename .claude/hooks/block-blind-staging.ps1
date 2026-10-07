@@ -21,7 +21,23 @@
 
     Text inside quotes is ignored, so a commit message that MENTIONS
     `git add -A` is not blocked -- a guard that fires on correct work trains
-    people to bypass it.
+    people to bypass it. The one exception is a command handed to a shell in
+    quotes (`bash -c "..."`, `powershell -Command "..."`), which is unwrapped
+    and checked.
+
+    Sprint 76 7.7.1 review widened what counts as "staging everything":
+      - any case (`Git add -A`), `git.exe`, and global options before the
+        subcommand (`git -c k=v add -A`, `git --no-pager add -A`);
+      - combined or extra flags (`-fA`, `-v -A`, `-u`, `--update`) and the
+        whole-tree pathspecs `.`, `./`, `:/`, also after `--`;
+      - `git commit -a` / `-am` / `--all`, which stage every tracked change
+        (a tracked 0* file included) without a separate `git add`.
+    A `git status` whose output is thrown away (`> $null`, `> /dev/null`,
+    `| Out-Null`) does not count as looking.
+
+    An internal error in this hook ALLOWS the command (exit 0 with a note on
+    stderr): a broken guard must not block all work. The test suite is what
+    keeps it from breaking.
 
 .NOTES
     Exit 0 = allow; Exit 2 = block (stderr fed to Claude).
@@ -48,18 +64,51 @@ if ($payload.tool_input -and $payload.tool_input.command) {
 if ([string]::IsNullOrWhiteSpace($cmd)) { exit 0 }
 if ($cmd -match 'allow_blind_staging') { exit 0 }
 
-# Drop quoted text (commit messages, echo strings) so only real commands count.
-$code = [regex]::Replace($cmd, '"[^"]*"|''[^'']*''', '""')
+try {
+    # Unwrap a command handed to a shell in quotes, so `bash -c "git add -A"`
+    # is checked rather than discarded with the other quoted text.
+    $shellWrap = '(?i)\b(?:bash|sh|pwsh|powershell)(?:\.exe)?\b[^"''\r\n;|&]*?\s-(?:c|Command)\s+(?:"([^"]*)"|''([^'']*)'')'
+    $unwrapped = [regex]::Replace($cmd, $shellWrap, { param($m) ' ' + $m.Groups[1].Value + $m.Groups[2].Value + ' ' })
 
-# `git [-C <dir>] add -A|--all|.` -- the "." must be a whole argument.
-$stageAll = [regex]::new('\bgit(?:\s+-C\s+\S+)?\s+add\s+(?:-A\b|--all\b|\.(?=\s|$|;|&|\|))')
-$status = [regex]::new('\bgit(?:\s+-C\s+\S+)?\s+status\b')
+    # Drop quoted text (commit messages, echo strings) so only real commands count.
+    $code = [regex]::Replace($unwrapped, '"[^"]*"|''[^'']*''', '""')
 
-$add = $stageAll.Match($code)
-if (-not $add.Success) { exit 0 }
+    # `git` (any case, optional .exe) plus global options, then the subcommand
+    # and the rest of that command segment (up to ; & | or a line break).
+    $gitPrefix = '(?i)\bgit(?:\.exe)?(?:\s+(?:-[Cc]\s+\S+|--?[A-Za-z][\w-]*(?:=\S+)?))*\s+'
+    $segment = '([^;&|\r\n]*)'
 
-$st = $status.Match($code)
-if ($st.Success -and $st.Index -lt $add.Index) { exit 0 }
+    function Find-StageAll([string]$text) {
+        foreach ($m in [regex]::Matches($text, $gitPrefix + 'add\b' + $segment)) {
+            foreach ($tok in ($m.Groups[1].Value -split '\s+')) {
+                if ($tok -cmatch '^-[A-Za-z]*[Au][A-Za-z]*$' -or
+                    $tok -match '^(?i)--(?:all|update)$' -or
+                    $tok -match '^(?:\.|\./|:/)$') { return $m }
+            }
+        }
+        foreach ($m in [regex]::Matches($text, $gitPrefix + 'commit\b' + $segment)) {
+            foreach ($tok in ($m.Groups[1].Value -split '\s+')) {
+                if ($tok -cmatch '^-[A-Za-z]*a[A-Za-z]*$' -or $tok -match '^(?i)--all$') { return $m }
+            }
+        }
+        return $null
+    }
+
+    $add = Find-StageAll $code
+    if ($null -eq $add) { exit 0 }
+
+    # A `git status` counts only when it runs earlier AND its output is seen.
+    foreach ($st in [regex]::Matches($code, $gitPrefix + 'status\b' + $segment)) {
+        if ($st.Index -ge $add.Index) { break }
+        $rest = $st.Groups[1].Value
+        $tail = $code.Substring($st.Index + $st.Length)
+        if ($rest -match '>\s*(?:\$null|/dev/null|nul)\b' -or $tail -match '^\s*\|\s*Out-Null\b') { continue }
+        exit 0
+    }
+} catch {
+    [Console]::Error.WriteLine("[block-blind-staging] internal error, command allowed: $($_.Exception.Message)")
+    exit 0
+}
 
 [Console]::Error.WriteLine(@"
 [BLOCKED] Staging everything without looking first:

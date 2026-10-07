@@ -50,8 +50,14 @@ bool safeSenderAlreadyInTarget({
 /// Sprint 76 (Harold Q4): every folder that exists on the account failed to
 /// fetch -- typically no network. The scan ends as an error, not "completed".
 class ScanFetchFailedException implements Exception {
-  ScanFetchFailedException(this.message);
+  ScanFetchFailedException(this.message, {this.cause});
   final String message;
+
+  /// The first folder's underlying error, kept as an OBJECT so the user
+  /// message can still tell "no network" from anything else (Sprint 76 7.7.1
+  /// review: only its text was kept, so an offline manual scan read
+  /// "Something went wrong").
+  final Object? cause;
   @override
   String toString() => 'ScanFetchFailedException: $message';
 }
@@ -476,6 +482,7 @@ class EmailScanner {
       var foldersMissing = 0;
       var foldersFailed = 0;
       String? firstFetchError;
+      Object? firstFetchCause;
       for (final folderName in folderNames) {
         // F249 (Sprint 76): a cancel is also honored at each FOLDER start,
         // not only at a batch boundary. Before this, a scan that had fetched
@@ -653,6 +660,7 @@ class EmailScanner {
           }
           foldersFailed++;
           firstFetchError ??= e.toString();
+          firstFetchCause ??= e;
           AppLogger.error('Step 4: EXCEPTION fetching folder "$folderName"', error: e, stackTrace: st);
           if (isLiveScan) {
             await LiveScanLogger.log('Step 4: EXCEPTION fetching folder "$folderName": $e');
@@ -678,7 +686,8 @@ class EmailScanner {
           missing: foldersMissing,
           failed: foldersFailed)) {
         throw ScanFetchFailedException(
-            'every folder failed to fetch: ${firstFetchError ?? 'unknown'}');
+            'every folder failed to fetch: ${firstFetchError ?? 'unknown'}',
+            cause: firstFetchCause);
       }
       AppLogger.scan('Step 4: COMPLETE - Total messages across all folders: $totalFetched');
       if (isLiveScan) {

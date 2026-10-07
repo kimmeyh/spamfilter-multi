@@ -103,7 +103,7 @@ The following activities require the **top available tier -- Claude Code Fable 5
 | **Security Audits / Deep Dives** (e.g., F68) | OWASP Top 10 reasoning, threat modeling, severity calibration |
 | **Research Spikes** (any spike-type sprint) | Exploratory investigation with open-ended scope |
 | **Best Practices Research** (any domain) | Synthesizing industry guidance against project constraints |
-| **Code Review Analysis** (Phase 5.1.1) | Pattern recognition across diff, judgment on convention adherence |
+| **Code Review Analysis** (Phase 7.7.1; was 5.1.1 until 2026-10-06) | Pattern recognition across diff, judgment on convention adherence |
 | **ADR Authoring** | Trade-off analysis, architectural judgment |
 | **Backlog Refinement** | Prioritization across competing concerns, estimation calibration |
 

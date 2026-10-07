@@ -214,6 +214,12 @@ class DiagnosticLogger {
   /// write). Review MEDIUM-3 (Sprint 76): read by Settings.
   static String? lastWriteError;
 
+  /// The most recent LOCK problem in this isolate (null after a write made
+  /// under the mutex): the line WAS written, but without the cross-isolate
+  /// mutex, or its rotation failed. Sprint 76 7.7.1 review: this used to be
+  /// silent, so an unprotected log looked healthy. Read by Settings.
+  static String? lastLockProblem;
+
   /// Sprint 76 (Harold Q4): append [line] to [file] as ONE write, holding a
   /// cross-isolate mutex.
   ///
@@ -235,11 +241,31 @@ class DiagnosticLogger {
   /// Never loses a line: after [lockWait] without the mutex (a writer died
   /// holding it), a lock older than [staleLock] is broken, and failing that
   /// the line is written anyway.
+  ///
+  /// Rotation runs INSIDE the mutex (Sprint 76 7.7.1 review): two writers
+  /// that both saw a full file used to both rename it, and the loser's line
+  /// was lost. A failed rotation no longer costs the line either.
+  ///
+  /// Returns null when the line was written under the mutex, or a short
+  /// description of the lock problem otherwise -- the caller surfaces it in
+  /// Settings, so an unprotected log is no longer reported as healthy.
   @visibleForTesting
-  static Future<void> appendLocked(File file, String line) async {
+  static Future<String?> appendLocked(
+    File file,
+    String line, {
+    Future<void> Function(File file)? rotate,
+  }) async {
     final lockFile = File('${file.path}.lock');
-    final held = await _acquireLock(lockFile);
+    final acquired = await _acquireLock(lockFile);
+    String? problem = acquired.problem;
     try {
+      if (rotate != null) {
+        try {
+          await rotate(file);
+        } catch (e) {
+          problem ??= 'log rotation failed: ${scrub(e.toString())}';
+        }
+      }
       final raf = await file.open(mode: FileMode.append);
       try {
         await raf.setPosition(await raf.length());
@@ -249,12 +275,17 @@ class DiagnosticLogger {
         await raf.close();
       }
     } finally {
-      if (held) {
+      if (acquired.held) {
         try {
           await lockFile.delete();
-        } catch (_) {}
+        } catch (e) {
+          // A lock we cannot remove stalls every writer for [lockWait] until
+          // it goes stale -- report it rather than hide it (7.7.1 review).
+          problem ??= 'log lock could not be released: ${scrub(e.toString())}';
+        }
       }
     }
+    return problem;
   }
 
   /// How long a writer waits for the log mutex before checking for a stale
@@ -266,15 +297,35 @@ class DiagnosticLogger {
   @visibleForTesting
   static Duration staleLock = const Duration(seconds: 10);
 
-  static Future<bool> _acquireLock(File lockFile) async {
+  static Future<({bool held, String? problem})> _acquireLock(
+      File lockFile) async {
     final deadline = DateTime.now().add(lockWait);
     var brokeStale = false;
+    var failedWithoutLock = 0;
     while (true) {
       try {
         await lockFile.create(exclusive: true);
-        return true;
-      } catch (_) {
-        // Held by another writer -- wait briefly and retry.
+        return (held: true, problem: null);
+      } on FileSystemException catch (e) {
+        // Only an EXISTING lock file is contention. Any other failure
+        // (permission, disk full, bad path) will not clear by waiting, so do
+        // not spin [lockWait] on every line: write unlocked and say so
+        // (Sprint 76 7.7.1 review -- this used to be silent).
+        //
+        // ONE miss is not proof: the holder may have deleted the lock between
+        // our failed create and the exists() check (the 4-isolate test lost
+        // 19 of 600 lines when a single miss was trusted). A permanent fault
+        // misses every time; a race clears on the next try.
+        if (await lockFile.exists()) {
+          failedWithoutLock = 0;
+        } else if (++failedWithoutLock >= 3) {
+          return (
+            held: false,
+            problem: 'log lock unavailable: ${scrub(e.message)}',
+          );
+        } else {
+          continue;
+        }
       }
       if (DateTime.now().isAfter(deadline)) {
         if (!brokeStale) {
@@ -282,10 +333,13 @@ class DiagnosticLogger {
           try {
             final age = DateTime.now().difference(await lockFile.lastModified());
             if (age > staleLock) await lockFile.delete();
-          } catch (_) {}
+          } catch (_) {
+            // The lock vanished or changed under us -- just retry the create.
+          }
           continue;
         }
-        return false; // write without the mutex rather than lose the line
+        // Write without the mutex rather than lose the line.
+        return (held: false, problem: 'log lock busy; line written unlocked');
       }
       await Future<void>.delayed(const Duration(milliseconds: 5));
     }
@@ -321,8 +375,8 @@ class DiagnosticLogger {
       final queued = _writeTail.then((_) async {
         final file = await _currentFile();
         await file.parent.create(recursive: true);
-        await _rotateIfNeeded(file);
-        await appendLocked(file, line);
+        lastLockProblem =
+            await appendLocked(file, line, rotate: _rotateIfNeeded);
         lastWriteError = null;
       }).catchError((Object e) {
         // Swallow so the chain survives; the caller already treats logging as
