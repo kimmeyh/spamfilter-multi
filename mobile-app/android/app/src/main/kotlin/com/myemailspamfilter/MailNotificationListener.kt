@@ -48,6 +48,7 @@ class MailNotificationListener : NotificationListenerService() {
                 enabled = prefs.getBoolean(KEY_ENABLED, false),
                 nowMs = now,
                 lastTriggerMs = prefs.getLong(KEY_LAST_TRIGGER_MS, 0L),
+                debugBuild = BuildConfig.DEBUG,
             )
             if (!decide) return
 

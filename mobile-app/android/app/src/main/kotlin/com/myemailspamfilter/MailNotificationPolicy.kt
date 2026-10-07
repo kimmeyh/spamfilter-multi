@@ -24,6 +24,23 @@ object MailNotificationPolicy {
         "com.microsoft.office.outlook",            // Outlook
     )
 
+    /**
+     * DEBUG-BUILD-ONLY posters (Sprint 77 R76-1, Harold Q15 = 1). `adb shell
+     * cmd notification post` posts as the shell package, which lets an
+     * emulator drive the listener with no mail app installed. Accepted ONLY
+     * when [shouldTrigger] is called with debugBuild = true, and the listener
+     * passes BuildConfig.DEBUG, so a release build never accepts it. Never add
+     * an entry to [MAIL_APP_PACKAGES] for testing; add it here. Pinned by
+     * MailNotificationPolicyTest and test/policy/debug_allowlist_gate_test.dart.
+     */
+    val DEBUG_ONLY_PACKAGES: Set<String> = setOf(
+        "com.android.shell",                       // adb shell cmd notification post
+    )
+
+    /** The packages accepted for a build: the release list, plus the debug-only list in a debug build. */
+    fun allowedPackages(debugBuild: Boolean): Set<String> =
+        if (debugBuild) MAIL_APP_PACKAGES + DEBUG_ONLY_PACKAGES else MAIL_APP_PACKAGES
+
     /** At most one triggered scan per this many milliseconds (F253 R-5). */
     const val MIN_GAP_MS: Long = 2 * 60 * 1000L
 
@@ -32,9 +49,10 @@ object MailNotificationPolicy {
         enabled: Boolean,
         nowMs: Long,
         lastTriggerMs: Long,
+        debugBuild: Boolean = false,
     ): Boolean {
         if (!enabled) return false
-        if (packageName == null || packageName !in MAIL_APP_PACKAGES) return false
+        if (packageName == null || packageName !in allowedPackages(debugBuild)) return false
         // A clock that moved backwards must not block triggering forever.
         if (lastTriggerMs > nowMs) return true
         return nowMs - lastTriggerMs >= MIN_GAP_MS

@@ -46,6 +46,26 @@ class MailNotificationPolicyTest {
         )
     }
 
+    // Sprint 77 R76-1 (Issue #464): the debug-only poster must never reach a release build.
+    @Test
+    fun theReleaseAllowlistNeverContainsTheDebugPackages() {
+        assertTrue(MailNotificationPolicy.DEBUG_ONLY_PACKAGES.isNotEmpty())
+        for (p in MailNotificationPolicy.DEBUG_ONLY_PACKAGES) {
+            assertFalse(p in MailNotificationPolicy.MAIL_APP_PACKAGES)
+            assertFalse(p in MailNotificationPolicy.allowedPackages(false))
+            assertFalse(MailNotificationPolicy.shouldTrigger(p, true, now, 0L))
+            assertFalse(MailNotificationPolicy.shouldTrigger(p, true, now, 0L, debugBuild = false))
+        }
+    }
+
+    @Test
+    fun aDebugBuildAcceptsTheDebugPackageAndStillTheReleaseOnes() {
+        for (p in MailNotificationPolicy.DEBUG_ONLY_PACKAGES) {
+            assertTrue(MailNotificationPolicy.shouldTrigger(p, true, now, 0L, debugBuild = true))
+        }
+        assertTrue(MailNotificationPolicy.shouldTrigger(gmail, true, now, 0L, debugBuild = true))
+    }
+
     @Test
     fun aClockMovedBackwardsDoesNotBlockForever() {
         assertTrue(MailNotificationPolicy.shouldTrigger(gmail, true, now, now + 60_000L))

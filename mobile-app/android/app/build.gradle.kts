@@ -12,6 +12,13 @@ android {
     compileSdk = flutter.compileSdkVersion
     ndkVersion = flutter.ndkVersion
 
+    // Sprint 77 R76-1 (Issue #464): AGP 8 no longer generates BuildConfig by
+    // default. MailNotificationListener passes BuildConfig.DEBUG to the policy
+    // so the debug-only test package is never accepted in a release build.
+    buildFeatures {
+        buildConfig = true
+    }
+
     compileOptions {
         sourceCompatibility = JavaVersion.VERSION_17
         targetCompatibility = JavaVersion.VERSION_17
