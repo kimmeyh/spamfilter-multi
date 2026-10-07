@@ -1,16 +1,16 @@
 {
     "_description":  "Sprint status file that persists across context compaction. Update after each phase/sub-phase completion.",
-    "_last_updated":  "2026-10-07T03:30:00Z",
+    "_last_updated":  "2026-10-07T04:30:00Z",
     "_usage":  "Read this file after context compaction to restore sprint approval state and progress.",
     "_staleness_note":  "This file had drifted 15 sprints (last updated at Sprint 35, 2026-04-19) before being refreshed at Sprint 50 close-out. It is a Phase 7.7 checklist item -- update it at every sprint close-out, not opportunistically.",
     "current_sprint":  {
                            "number":  77,
                            "branch":  "feature/20261006_Sprint_77",
-                           "status":  "Phase 3.7 Plan Approval -- plan drafted (docs/sprints/SPRINT_77_PLAN.md, 3b606a3), draft PR #460 created; awaiting Harold\u0027s approval and answers to 28 decision questions. Scope (Harold, Phase 8.4): MV76-1, F258, F245, R76-1, F264+R76-2, F192(+SEC-15), SEC-8b, R76-3. 0.17.6 submitted to both stores.",
-                           "plan_approved":  false,
-                           "blanket_execution_approved":  false,
+                           "status":  "Phase 4 Sprint Execution -- plan APPROVED 2026-10-06 (all 28 answers recorded in SPRINT_77_PLAN.md); cards #461-#468; version 0.18.0+15. Order: T1 MV76-1 tooling, T2 F258, T3 F245, T4 R76-1 baseline arms, T5 F264, T4 remaining arms, T6 F192+SEC-15, T7 SEC-8b (spike first), T8 R76-3 during waits.",
+                           "plan_approved":  true,
+                           "blanket_execution_approved":  true,
                            "pr_number":  460,
-                           "version":  "0.17.6+14 now; 0.18.0+15 proposed at approval (Q28)",
+                           "version":  "0.18.0+15 (bumped at plan approval, Phase 3.7.0b)",
                            "pr_url":  "https://github.com/kimmeyh/spamfilter-multi/pull/460"
                        },
     "previous_sprint":  {
@@ -27,7 +27,8 @@
                           "note":  "Closes #N does NOT auto-fire here.",
                           "sprint_74":  "Closed by hand 2026-10-02: #422 #434 #437 #438 #439. Open, carried: #428 (MV74-1 phone), #433 (F205 phone), #441 (F238), #442 (F239).",
                           "sprint_75":  "Closed by hand 2026-10-04: #441 #442 #444 #445 #446 #447 #449 #450. Open, carried to Sprint 76 phone checks: #428 (MV74-1), #433 (F205).",
-                          "sprint_76":  "Closed by hand 2026-10-06: #452 #453 #454 #456 #457 #458. Open, inside MV76-1: #428 (MV74-1 reboot half), #433 (F205)."
+                          "sprint_76":  "Closed by hand 2026-10-06: #452 #453 #454 #456 #457 #458. Open, inside MV76-1: #428 (MV74-1 reboot half), #433 (F205).",
+                          "sprint_77":  "Cards (open): #461 MV76-1, #462 F258, #463 F245, #464 R76-1, #465 F264+R76-2, #466 F192+SEC-15, #467 SEC-8b, #468 R76-3. Carry-ins open: #428, #433."
                       },
     "_github_issues_note":  "Sprint 66 cards created at Phase 3.3.1 (2026-09-07): #387 GP-19, #388 GP-4. Close by hand at Post-Merge Cleanup.",
     "test_metrics":  {
@@ -56,8 +57,7 @@
 
                         ],
     "next_actions":  [
-                         "Harold: approve the Sprint 77 plan and answer Q1-Q28 (SPRINT_77_PLAN.md \"Decision questions\").",
-                         "On approval: 3.7.0 create issue cards; 3.7.0b version bump with STORE_VERSION_STATUS Last-uploaded row -\u003e 0.17.6 (14) in the same commit; 3.7.1 update PR #460 to the approved plan; then Task 1.",
+                         "Execute Sprint 77 tasks in plan order without stopping until Manual Validation (Harold, approval 2026-10-06).",
                          "When either store shows 0.17.6 live: update STORE_VERSION_STATUS Live rows and STORE_SUBMISSION_TIMING Submission 31."
                      ],
     "next_sprint_targeted":  {
