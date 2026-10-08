@@ -82,6 +82,7 @@ class _EmailDetailViewState extends State<EmailDetailView>
       final success = await widget.unmatchedEmailStore.markAsProcessed(
         widget.email.id!,
         !_isProcessed,
+        reason: NoRuleMarkReason.detailView,
       );
 
       if (success) {

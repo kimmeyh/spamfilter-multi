@@ -10,6 +10,7 @@ library;
 
 import 'package:logger/logger.dart';
 
+import '../services/diagnostic_logger.dart';
 import 'database_helper.dart';
 
 /// Maximum length stored in the `body_preview` column.
@@ -176,6 +177,26 @@ class UnmatchedEmail {
       'UnmatchedEmail(id: $id, from: $fromEmail, subject: $subject, status: $availabilityStatus)';
 }
 
+/// Why a No Rule row was marked addressed (or back to unaddressed).
+///
+/// Sprint 77 MV step 5 (Harold): a row left the list and nothing recorded
+/// why, so the cause could only be guessed from screenshots. Every caller of
+/// [UnmatchedEmailStore.markAsProcessed] must now name one of these, and the
+/// store writes it to the diagnostic log -- a new caller cannot skip it.
+enum NoRuleMarkReason {
+  /// A bulk action on selected rows (safe sender, block rule) succeeded.
+  bulkAction,
+
+  /// "Remove Current Rule": dismissed without creating a rule.
+  dismissed,
+
+  /// The email detail view's mark button.
+  detailView,
+
+  /// The list's load-time cleanup: a current rule or safe sender covers it.
+  coveredByRule,
+}
+
 /// What [UnmatchedEmailStore.upsertUnmatchedEmails] did with one email.
 enum UnmatchedUpsertOutcome {
   /// First sighting: a new row.
@@ -334,6 +355,19 @@ class UnmatchedEmailStore {
         }
       });
 
+      // MV step 5: a dismissed row that a scan found again is logged, so
+      // "it came back" is provable from the log, not only from the screen.
+      for (final r in results) {
+        if (r.outcome == UnmatchedUpsertOutcome.reappeared) {
+          await DiagnosticLogger.log(
+            kind: DiagnosticLogger.kindInfo,
+            context: 'F245/no-rule',
+            detail: 'row ${r.id} reappeared: dismissed earlier, found again '
+                'with no rule',
+          );
+        }
+      }
+
       final inserted = results
           .where((r) => r.outcome == UnmatchedUpsertOutcome.inserted)
           .length;
@@ -468,7 +502,15 @@ class UnmatchedEmailStore {
   /// Mark unmatched email as processed/unprocessed by user
   ///
   /// Returns true on success, false if email not found, throws exception on error
-  Future<bool> markAsProcessed(int emailId, bool processed) async {
+  ///
+  /// [reason] says why, and is written to the diagnostic log with [detail]
+  /// (a rule name or action label -- never an address or message content).
+  Future<bool> markAsProcessed(
+    int emailId,
+    bool processed, {
+    required NoRuleMarkReason reason,
+    String? detail,
+  }) async {
     try {
       final db = await _databaseHelper.database;
       final result = await db.update(
@@ -481,6 +523,13 @@ class UnmatchedEmailStore {
       final success = result > 0;
       if (success) {
         _logger.d('Marked email $emailId as ${processed ? 'processed' : 'unprocessed'}');
+        await DiagnosticLogger.log(
+          kind: DiagnosticLogger.kindInfo,
+          context: 'F245/no-rule',
+          detail: 'row $emailId marked '
+              '${processed ? 'addressed' : 'unaddressed'}: ${reason.name}'
+              '${detail == null || detail.isEmpty ? '' : ' ($detail)'}',
+        );
       }
       return success;
     } catch (e) {

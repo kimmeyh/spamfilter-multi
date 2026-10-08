@@ -174,7 +174,7 @@ void main() {
       final row = (await (await testHelper.dbHelper.database)
               .query('unmatched_emails'))
           .single;
-      await unmatchedStore.markAsProcessed(row['id'] as int, true);
+      await unmatchedStore.markAsProcessed(row['id'] as int, true, reason: NoRuleMarkReason.dismissed);
 
       await export(await runScan([result('uid-1')]));
       expect(listings('uid-1'), 2);

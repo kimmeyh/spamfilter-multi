@@ -20,6 +20,7 @@ import 'dart:io';
 
 import 'package:flutter_test/flutter_test.dart';
 import 'package:sqflite_common_ffi/sqflite_ffi.dart';
+import 'package:my_email_spam_filter/core/services/diagnostic_logger.dart';
 import 'package:my_email_spam_filter/core/storage/database_helper.dart';
 import 'package:my_email_spam_filter/core/storage/unmatched_email_store.dart';
 
@@ -152,7 +153,7 @@ void main() {
       final scan1 = await testHelper.createTestScanResult('acct-a');
       final scan2 = await testHelper.createTestScanResult('acct-a');
       final id = (await store.upsertUnmatchedEmails([email(scan1)])).single.id;
-      await store.markAsProcessed(id, true);
+      await store.markAsProcessed(id, true, reason: NoRuleMarkReason.dismissed);
 
       final r = await store.upsertUnmatchedEmails([email(scan2)]);
       expect(r.single.outcome, UnmatchedUpsertOutcome.reappeared);
@@ -170,7 +171,7 @@ void main() {
       final b1 = await testHelper.createTestScanResult('acct-b');
       await store.upsertUnmatchedEmails([email(a1, uid: '1')]);
       final done = (await store.upsertUnmatchedEmails([email(a1, uid: '2')])).single.id;
-      await store.markAsProcessed(done, true);
+      await store.markAsProcessed(done, true, reason: NoRuleMarkReason.dismissed);
       await store.upsertUnmatchedEmails([email(a2, uid: '3')]);
       await store.upsertUnmatchedEmails([email(b1, uid: '4')]);
 
@@ -337,6 +338,78 @@ void main() {
           reason: 'a migrated row must be matched by the upsert');
       final db = await testHelper.dbHelper.database;
       expect(await db.query('unmatched_emails'), hasLength(3));
+    });
+  });
+
+  // Sprint 77 MV step 5 (Harold): a row left the No Rule list and nothing
+  // recorded why. Every mark now names its reason in the diagnostic log, and
+  // a dismissed row that comes back is logged too. What this does NOT catch:
+  // a caller passing the WRONG reason (the enum makes it explicit and
+  // reviewable, not verified), or the log being off in Settings.
+  group('MV step 5 -- the diagnostic log records why a row left the list', () {
+    late Directory logDir;
+
+    setUp(() async {
+      logDir = await Directory.systemTemp.createTemp('norule_diag');
+      DiagnosticLogger.debugSetDir(logDir.path);
+      DiagnosticLogger.debugSetEnabled(true);
+    });
+
+    tearDown(() async {
+      DiagnosticLogger.debugSetDir(null);
+      DiagnosticLogger.debugSetEnabled(null);
+      await logDir.delete(recursive: true);
+    });
+
+    Future<String> logText() async {
+      final buffer = StringBuffer();
+      await for (final f in logDir.list(recursive: true)) {
+        if (f is File) buffer.write(await f.readAsString());
+      }
+      return buffer.toString();
+    }
+
+    test('each reason is logged with its detail', () async {
+      final scan = await testHelper.createTestScanResult('acct-a');
+      final ids = [
+        for (final uid in ['1', '2', '3', '4'])
+          (await store.upsertUnmatchedEmails([email(scan, uid: uid)]))
+              .single
+              .id,
+      ];
+      await store.markAsProcessed(ids[0], true,
+          reason: NoRuleMarkReason.bulkAction, detail: 'Safe Sender');
+      await store.markAsProcessed(ids[1], true,
+          reason: NoRuleMarkReason.dismissed);
+      await store.markAsProcessed(ids[2], true,
+          reason: NoRuleMarkReason.coveredByRule, detail: 'rule "SpamX"');
+      await store.markAsProcessed(ids[3], false,
+          reason: NoRuleMarkReason.detailView);
+
+      final text = await logText();
+      expect(text, contains('row ${ids[0]} marked addressed: bulkAction (Safe Sender)'));
+      expect(text, contains('row ${ids[1]} marked addressed: dismissed'));
+      expect(text, contains('row ${ids[2]} marked addressed: coveredByRule (rule "SpamX")'));
+      expect(text, contains('row ${ids[3]} marked unaddressed: detailView'));
+    });
+
+    test('a dismissed row found again is logged as reappeared', () async {
+      final scan1 = await testHelper.createTestScanResult('acct-a');
+      final scan2 = await testHelper.createTestScanResult('acct-a');
+      final id = (await store.upsertUnmatchedEmails([email(scan1)])).single.id;
+      await store.markAsProcessed(id, true, reason: NoRuleMarkReason.dismissed);
+      await store.upsertUnmatchedEmails([email(scan2)]);
+
+      expect(await logText(), contains('row $id reappeared'));
+    });
+
+    test('an unchanged re-sighting is not logged as reappeared', () async {
+      final scan1 = await testHelper.createTestScanResult('acct-a');
+      final scan2 = await testHelper.createTestScanResult('acct-a');
+      final id = (await store.upsertUnmatchedEmails([email(scan1)])).single.id;
+      await store.upsertUnmatchedEmails([email(scan2)]);
+
+      expect(await logText(), isNot(contains('row $id reappeared')));
     });
   });
 }

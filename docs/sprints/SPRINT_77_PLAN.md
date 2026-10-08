@@ -250,6 +250,16 @@ All decision questions are answered; execution proceeds without further approval
   step 3c PASS (GreenMail restarted with a new certificate 8C:A1:90:DD...; the scan stopped with "Server certificate
   changed"; Harold, 2026-10-08). Two more test-script defects fixed on the way (d4c376c): keytool's stderr aborted
   `-NewCertificate` under Windows PowerShell 5.1, and the keepalive held the caller's output pipe.
+- MV step 5 (Harold, 2026-10-08): re-listing PASS (the Gmail rescan duplicated nothing; the +2 were two messages that
+  moved from `[Gmail]/Spam` to INBOX -- F276, card extended); safe sender across accounts PASS (parknazcameras cleared on
+  AOL and Gmail). The Google Play INBOX row (id 8001) was also marked addressed, cause UNKNOWN: no current rule or safe
+  sender matches it -- the list's load-time cleanup was re-run on a copy of the dev DB with the app's own evaluator and
+  matched nothing -- and no path that marks a row addressed wrote a log line. MV-Q9 = 1 (Harold): every
+  `markAsProcessed` caller now names a `NoRuleMarkReason` (bulkAction, dismissed, detailView, coveredByRule) and the
+  store writes it to the diagnostic log; a dismissed row that a scan finds again logs "reappeared". Mutations NL1-NL3
+  KILLED. Suite 2,915 passed / 15 skipped.
+- MV step 6 partial: the export header PASSES on the new daily background file (2026-10-07, line 1 = column names).
+  Manual-scan CSVs are written only with Settings > Manual Scan > "Export CSV After Each Scan" ON (off since 09-28).
 - MV step 2 finding (OPEN): the Yahoo Results screen read "No Results Yet. Run a scan." after a completed scan (found 2,
   evaluated 0 -- by inference both already-filed safe senders; unverified). `results_display_screen.dart` sets
   `_hasEverScanned` once at load and never updates it, so a first-ever scan run while the screen is open keeps the

@@ -495,7 +495,7 @@ void main() {
       var retrieved = await emailStore.getUnmatchedEmailById(emailId);
       expect(retrieved!.processed, false);
 
-      final success = await emailStore.markAsProcessed(emailId, true);
+      final success = await emailStore.markAsProcessed(emailId, true, reason: NoRuleMarkReason.dismissed);
       expect(success, true);
 
       retrieved = await emailStore.getUnmatchedEmailById(emailId);
@@ -503,11 +503,11 @@ void main() {
     });
 
     test('markAsProcessed can unmark email', () async {
-      await emailStore.markAsProcessed(emailId, true);
+      await emailStore.markAsProcessed(emailId, true, reason: NoRuleMarkReason.dismissed);
       var retrieved = await emailStore.getUnmatchedEmailById(emailId);
       expect(retrieved!.processed, true);
 
-      final success = await emailStore.markAsProcessed(emailId, false);
+      final success = await emailStore.markAsProcessed(emailId, false, reason: NoRuleMarkReason.dismissed);
       expect(success, true);
 
       retrieved = await emailStore.getUnmatchedEmailById(emailId);
@@ -515,7 +515,7 @@ void main() {
     });
 
     test('markAsProcessed returns false if email not found', () async {
-      final success = await emailStore.markAsProcessed(9999, true);
+      final success = await emailStore.markAsProcessed(9999, true, reason: NoRuleMarkReason.dismissed);
       expect(success, false);
     });
   });

@@ -443,7 +443,8 @@ class _NoRuleReviewScreenState extends State<NoRuleReviewScreen> {
           if (result.alreadyExisted) alreadyCovered++;
           final id = item.email.id;
           if (id != null) {
-            await _unmatchedStore.markAsProcessed(id, true);
+            await _unmatchedStore.markAsProcessed(id, true,
+                reason: NoRuleMarkReason.bulkAction, detail: actionLabel);
           }
         } else {
           failed++;
@@ -563,7 +564,13 @@ class _NoRuleReviewScreenState extends State<NoRuleReviewScreen> {
       try {
         final eval = await evaluator.evaluate(message);
         if (eval.matchedRule.isNotEmpty || eval.isSafeSender) {
-          await _unmatchedStore.markAsProcessed(id, true);
+          // A safe sender's "rule" can be the sender's own address, which
+          // the diagnostic log must not record; a block rule's name is safe.
+          await _unmatchedStore.markAsProcessed(id, true,
+              reason: NoRuleMarkReason.coveredByRule,
+              detail: eval.isSafeSender
+                  ? 'safe sender'
+                  : 'rule "${eval.matchedRule}"');
           _lastSweepCount++;
         } else {
           kept.add(item);
@@ -699,7 +706,8 @@ class _NoRuleReviewScreenState extends State<NoRuleReviewScreen> {
     for (final item in selected) {
       final id = item.email.id;
       if (id == null) continue;
-      final ok = await _unmatchedStore.markAsProcessed(id, true);
+      final ok = await _unmatchedStore.markAsProcessed(id, true,
+          reason: NoRuleMarkReason.dismissed);
       if (ok) succeeded++;
     }
 

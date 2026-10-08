@@ -27,6 +27,7 @@ Format: `- **type**: Description (Issue #N)` where type is feat|fix|chore|docs
 ## [Unreleased]
 
 ### 2026-10-07 (Sprint 77)
+- **feat**: When the diagnostic log is on, it now records why each email left the No Rule review list (a rule or safe sender you added, a dismissal, the detail view, or an existing rule that already covers it) and when a dismissed email comes back after a scan (Sprint 77 Manual Validation)
 - **fix**: A wrong password on an IMAP account (AOL, Yahoo, iCloud, Gmail App Password or a Custom IMAP Server) now says "Sign-in failed. Please check your sign-in details" instead of telling you to check your internet connection, and repeated wrong passwords now count toward the sign-in lockout as intended (Sprint 77 Manual Validation)
 - **fix**: A Custom IMAP Server that is really Yahoo, AOL, Gmail or iCloud now asks for an "App Password", because those servers accept nothing else. Any other server asks for "Password" and notes that some providers require an app password there (Sprint 77 Manual Validation)
 - **feat**: On Windows, accounts that scan every 15 minutes or less no longer all start at the same moment. Each account keeps a fixed position and starts 1 minute after the one before it, with no randomness (Sprint 77 Manual Validation)
