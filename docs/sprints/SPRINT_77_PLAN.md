@@ -369,6 +369,11 @@ All decision questions are answered; execution proceeds without further approval
   is never built. The 09:4x 30/30 PASS ran on the 3856x2128 monitor, so "RESOLVED" above was display-specific. One fix
   attempt (time-boxed): `ww_scroll` direction/page on the provider header reported success but did not move the list. Not
   an app defect. The rewrite is folded into F283, which removes these checkbox steps (MV-Q16 = 2).
+  FINAL SWEEP 2026-10-08 ~19:15 on a fresh dev build at HEAD cdc42f9 (re-run because the 7.7.1 fixes changed lib/ui:
+  account setup, the Gmail sign-in screens, Review No Rule Items, the import screen). `test_f124_rule_labels` PASS
+  (29/29), `test_s75_new_controls` PASS (27/27), `test_mt2c_no_rule_sweep` FAIL at step 9, same display-size cause as
+  above (now F284 b, with F283); DB drift none; seeds removed (status 0).
+  - sweep-head: cdc42f9
 - **5.1.6 runtime launch**: 0.18.0 dev Windows build launched 2026-10-07 03:01 (pid 119404); the DB v12 upgrade ran on the real dev data -- 7,904 No Rule rows -> 583 (exactly the distinct identities), schema 11 -> 12, `last_seen_at` present (pre-v12 backup `spam_filter.db.pre_v12_20261007_025839`, hash-verified).
 
 ## Phase 7 evidence
