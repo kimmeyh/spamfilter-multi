@@ -64,6 +64,20 @@ class FakeImapServer {
   /// password), as a real server does (Sprint 77 MV step 3a).
   bool rejectLogin = false;
 
+  /// When set, LOGIN is answered with `<tag> <loginReply>` instead, for
+  /// example `NO [UNAVAILABLE] try later` (Sprint 77 final review). Takes
+  /// precedence over [rejectLogin].
+  String? loginReply;
+
+  /// Number of LOGIN commands received on any connection.
+  int get loginCount =>
+      [...plaintextCommands, ...tlsCommands].where(_isLogin).length;
+
+  static bool _isLogin(String line) {
+    final parts = line.split(' ');
+    return parts.length > 1 && parts[1].toUpperCase() == 'LOGIN';
+  }
+
   /// Every byte received on any connection, decoded as Latin-1 (so a binary
   /// TLS ClientHello cannot throw).
   final StringBuffer rawReceived = StringBuffer();
@@ -159,13 +173,18 @@ class FakeImapServer {
           case 'CAPABILITY':
             socket.write('* CAPABILITY IMAP4rev1 STARTTLS\r\n$tag OK done\r\n');
           case 'LOGIN':
-            socket.write(rejectLogin
-                ? '$tag NO [AUTHENTICATIONFAILED] Invalid credentials\r\n'
-                : '$tag OK [CAPABILITY IMAP4rev1] logged in\r\n');
+            socket.write(loginReply != null
+                ? '$tag $loginReply\r\n'
+                : rejectLogin
+                    ? '$tag NO [AUTHENTICATIONFAILED] Invalid credentials\r\n'
+                    : '$tag OK [CAPABILITY IMAP4rev1] logged in\r\n');
           case 'LOGOUT':
             socket.write('* BYE bye\r\n$tag OK logout done\r\n');
           default:
-            socket.write('$tag OK\r\n');
+            // "OK" needs text after it: enough_mail treats a bare "<tag> OK"
+            // (no trailing space) as a failed command (Sprint 77 final
+            // review found this when a test first needed SELECT to succeed).
+            socket.write('$tag OK completed\r\n');
         }
       }
     }, onError: (_) {}, onDone: () {});

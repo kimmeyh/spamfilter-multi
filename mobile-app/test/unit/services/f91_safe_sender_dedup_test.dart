@@ -60,9 +60,14 @@ class _FakeImapPlatform extends GenericIMAPAdapter {
   /// Records each batch move (targetFolder -> moved message ids).
   final List<MapEntry<String, List<String>>> moveCalls = [];
 
+  /// When set, searchByMessageId throws exactly this (Sprint 77 final review:
+  /// a sign-in refused at the reconnect inside the search).
+  final Object? searchError;
+
   _FakeImapPlatform({
     this.searchResponses = const {},
     this.throwOnSearch = false,
+    this.searchError,
   }) : super(imapHost: 'fake.imap.test', platformId: 'aol');
 
   @override
@@ -71,6 +76,7 @@ class _FakeImapPlatform extends GenericIMAPAdapter {
     String messageId,
   ) async {
     searchCalls.add('$folderName|$messageId');
+    if (searchError != null) throw searchError!;
     if (throwOnSearch) {
       throw Exception('simulated IMAP search failure');
     }
@@ -428,6 +434,44 @@ void main() {
       expect(kept, containsAll([clean, noMessageId]));
       expect(kept.contains(alreadyThere), isFalse);
       expect(kept.length, 2);
+    });
+  });
+
+  // Sprint 77 final review: both steps above degrade a SEARCH failure to a
+  // no-op, but a sign-in refused at the reconnect inside the search is the
+  // session's failure and must fail the scan (outer handler: "Sign-in
+  // failed"). What this does NOT catch: the four Step 6b batch catches inside
+  // scanInbox (same predicate, no unit seam), and a session failure from
+  // moveToFolderBatch inside the dedup (the fake's move cannot throw).
+  group('session failures are not absorbed', () {
+    test('dedup rethrows a refused sign-in', () async {
+      final platform = _FakeImapPlatform(
+          searchError: AuthenticationException('IMAP login rejected'));
+      await expectLater(
+        scanner.dedupSafeSenderSourceFolder(
+          platform: platform,
+          movedMessages: [_msg(id: '10', messageId: '<a@aol.com>')],
+          safeSenderTarget: 'INBOX',
+          deletedRuleFolder: 'Trash',
+          isLiveScan: false,
+        ),
+        throwsA(isA<AuthenticationException>()),
+      );
+    });
+
+    test('target-folder pre-check does not fail open on a refused sign-in',
+        () async {
+      final platform = _FakeImapPlatform(
+          searchError: AuthenticationException('IMAP login rejected'));
+      await expectLater(
+        scanner.filterAlreadyInTargetFolder(
+          platform: platform,
+          candidates: [_msg(id: '10', messageId: '<a@aol.com>')],
+          safeSenderTarget: 'INBOX',
+          isLiveScan: false,
+        ),
+        throwsA(isA<AuthenticationException>()),
+      );
     });
   });
 }

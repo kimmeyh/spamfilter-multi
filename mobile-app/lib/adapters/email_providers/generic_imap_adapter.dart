@@ -34,6 +34,18 @@ import 'custom_imap_settings.dart';
 import 'spam_filter_platform.dart';
 import 'email_provider.dart';
 
+/// What a refused IMAP LOGIN means (Sprint 77 final review). See
+/// [GenericIMAPAdapter.classifyLoginRefusal].
+enum LoginRefusal {
+  /// The server refused the credentials: a sign-in failure, counted by the
+  /// SEC-22 rate limiter.
+  credentials,
+
+  /// The server could not serve the sign-in now (busy, unavailable, protocol
+  /// error, timeout): a connection failure, NOT counted by the limiter.
+  serverUnavailable,
+}
+
 /// Generic IMAP implementation for multiple email providers
 class GenericIMAPAdapter with BatchOperationsMixin implements SpamFilterPlatform {
   // Server target. Fixed at construction for AOL, Gmail (IMAP), Yahoo and
@@ -383,6 +395,7 @@ class GenericIMAPAdapter with BatchOperationsMixin implements SpamFilterPlatform
   Future<void> _connectAndLogin(Credentials credentials) async {
     _logger.i('[IMAP] Connecting to $_imapHost:$_imapPort (${_encryption.label})');
 
+    final ImapClient client;
     if (platformId == 'imap') {
       final connection = await ImapTlsConnector.connect(
         host: _imapHost,
@@ -390,36 +403,71 @@ class GenericIMAPAdapter with BatchOperationsMixin implements SpamFilterPlatform
         encryption: _encryption,
         trustedFingerprint: _trustedCertSha256,
       );
-      _imapClient = connection.client;
+      client = connection.client;
+      _imapClient = client;
       await _rememberDeviceTrustedCertificate(connection, credentials);
+    } else {
+      client = ImapClient(isLogEnabled: false);
+      _imapClient = client;
 
-      _logger.i('[IMAP] IMAP login attempt for $displayName');
-      await _login(connection.client, credentials);
-      return;
+      // Always SSL/TLS here: the constructor refuses any other encryption for
+      // a platform other than 'imap', and only 'imap' changes it later
+      // (_resolveCustomServer). Never a cleartext connect.
+      await client.connectToServer(_imapHost, _imapPort, isSecure: true);
     }
 
-    final client = ImapClient(isLogEnabled: false);
-    _imapClient = client;
-
-    // Always SSL/TLS here: the constructor refuses any other encryption for
-    // a platform other than 'imap', and only 'imap' changes it later
-    // (_resolveCustomServer). Never a cleartext connect.
-    await client.connectToServer(_imapHost, _imapPort, isSecure: true);
-
     _logger.i('[IMAP] IMAP login attempt for $displayName');
-
-    await _login(client, credentials);
+    try {
+      await _login(client, credentials);
+    } catch (_) {
+      // Sprint 77 final review: no unauthenticated client may survive a
+      // failed LOGIN. Before this, `_imapClient` kept the connected but
+      // signed-out client and `_operationCount` stayed at the reconnect
+      // threshold, so EVERY later operation in the scan went through
+      // `_checkAndReconnect` again and sent LOGIN again -- repeated
+      // wrong-password attempts that the SEC-22 limiter never saw. With no
+      // client, `_checkAndReconnect` returns at its `_imapClient == null`
+      // guard and the operations fail as "not connected" instead.
+      await _discardClient(client);
+      rethrow;
+    }
   }
 
-  /// Sends LOGIN. Sprint 77 MV step 3a: the server REFUSING the login (an
-  /// IMAP `NO`/`BAD` reply, which enough_mail raises as [ImapException]) is a
-  /// sign-in failure, so it becomes [AuthenticationException]. Before this,
-  /// it fell through to the generic "IMAP connection failed" wrapper: every
-  /// IMAP provider told a user with a wrong password to "check your internet
-  /// connection", and the SEC-22 rate limiter, which counts only
-  /// [AuthenticationException], never counted an IMAP failure. A network
-  /// failure during LOGIN is a `SocketException`/`TimeoutException`, not an
-  /// [ImapException], and keeps its connection meaning.
+  /// Sprint 77 final review: drop [client] after a failed LOGIN. The ONE place
+  /// a refused or unfinished sign-in clears the adapter's session; the socket
+  /// close is best effort (the session is unusable whether or not it closes).
+  Future<void> _discardClient(ImapClient client) async {
+    _imapClient = null;
+    _currentMailbox = null;
+    try {
+      await client.disconnect();
+    } catch (e) {
+      _logger.w('[IMAP] Could not close the connection after a failed '
+          'sign-in (the client is discarded either way): $e');
+    }
+  }
+
+  /// Sends LOGIN and maps a refusal to the right exception.
+  ///
+  /// enough_mail raises [ImapException] for ANY non-OK tagged reply to LOGIN,
+  /// and its `message` is the reply text (for a `NO` reply without the
+  /// leading "NO ", for a `BAD` reply including "BAD"). That covers a wrong
+  /// password, and also a server that is busy or unavailable while the
+  /// password is correct. [classifyLoginRefusal] tells them apart:
+  /// - a password refusal becomes [AuthenticationException] ("Sign-in
+  ///   failed", counted by the SEC-22 limiter -- Sprint 77 MV step 3a);
+  /// - a busy or unavailable server becomes [UserFacingConnectionException],
+  ///   which is NOT counted (Sprint 77 final review: a correct password must
+  ///   not move an account toward lockout because the server was busy).
+  ///
+  /// Timeouts: enough_mail turns a response timeout into
+  /// `ImapException('timeout')` ONLY when the client was built with a
+  /// `defaultResponseTimeout`. This app builds its clients without one (the
+  /// `ImapClient` here and `GreetingAwareImapClient` in ImapTlsConnector), so
+  /// that message is not expected today; it is still classified as a
+  /// connection failure in case a timeout is set later. A network failure
+  /// during LOGIN is a `SocketException`, not an [ImapException], and keeps
+  /// its connection meaning in [loadCredentials].
   Future<void> _login(ImapClient client, Credentials credentials) async {
     try {
       await client.login(
@@ -427,8 +475,79 @@ class GenericIMAPAdapter with BatchOperationsMixin implements SpamFilterPlatform
         credentials.password ?? '',
       );
     } on ImapException catch (e) {
-      throw AuthenticationException('IMAP login rejected: ${e.message}', e);
+      switch (classifyLoginRefusal(e.message)) {
+        case LoginRefusal.credentials:
+          throw AuthenticationException('IMAP login rejected: ${e.message}', e);
+        case LoginRefusal.serverUnavailable:
+          throw UserFacingConnectionException(
+            'IMAP login not completed, server busy or unavailable: ${e.message}',
+            loginServerUnavailableMessage,
+            e,
+          );
+      }
     }
+  }
+
+  /// Shown when the server could not complete a sign-in for a reason that is
+  /// not the password (Sprint 77 final review).
+  static const String loginServerUnavailableMessage =
+      'The email server could not complete the sign-in right now. It did not '
+      'say your password was wrong. Try again later.';
+
+  /// RFC 5530 response codes that mean the credentials were refused.
+  static const Set<String> _credentialRefusalCodes = {
+    'AUTHENTICATIONFAILED',
+    'AUTHORIZATIONFAILED',
+    'EXPIRED',
+  };
+
+  /// RFC 5530 response codes that mean the server could not serve the
+  /// sign-in now, whatever the password (busy, overloaded, in use, broken).
+  static const Set<String> _serverUnavailableCodes = {
+    'UNAVAILABLE',
+    'LIMIT',
+    'INUSE',
+    'SERVERBUG',
+  };
+
+  static final RegExp _responseCode = RegExp(r'^\[([A-Z0-9-]+)');
+  static final RegExp _tooManyConnections =
+      RegExp(r'too many\b.*\bconnections', caseSensitive: false);
+
+  /// Sprint 77 final review: classify the text of a refused LOGIN
+  /// ([ImapException.message]). Pure, so the whole table is unit-tested.
+  ///
+  /// Order matters and is part of the contract:
+  /// 1. empty, `timeout`, or a `BAD` reply -> [LoginRefusal.serverUnavailable]
+  ///    (nothing here says the password was wrong);
+  /// 2. a credential code (AUTHENTICATIONFAILED, AUTHORIZATIONFAILED,
+  ///    EXPIRED) -> [LoginRefusal.credentials];
+  /// 3. a server code (UNAVAILABLE, LIMIT, INUSE, SERVERBUG), or text such as
+  ///    "too many connections" / "too many simultaneous connections" ->
+  ///    [LoginRefusal.serverUnavailable];
+  /// 4. a `NO` reply with any OTHER response code (for example `[ALERT]`) ->
+  ///    [LoginRefusal.credentials]. A deliberate choice: the server refused
+  ///    this LOGIN and did not say it was busy, so "check your sign-in
+  ///    details" is the closer message (this keeps the behavior from before
+  ///    this classification);
+  /// 5. a `NO` reply with no response code (the common plain "LOGIN failed")
+  ///    -> [LoginRefusal.credentials].
+  @visibleForTesting
+  static LoginRefusal classifyLoginRefusal(String? serverText) {
+    final text = (serverText ?? '').trim();
+    final upper = text.toUpperCase();
+    if (upper.isEmpty || upper == 'TIMEOUT' || upper.startsWith('BAD')) {
+      return LoginRefusal.serverUnavailable;
+    }
+    final code = _responseCode.firstMatch(upper)?.group(1);
+    if (code != null && _credentialRefusalCodes.contains(code)) {
+      return LoginRefusal.credentials;
+    }
+    if ((code != null && _serverUnavailableCodes.contains(code)) ||
+        _tooManyConnections.hasMatch(text)) {
+      return LoginRefusal.serverUnavailable;
+    }
+    return LoginRefusal.credentials;
   }
 
   /// SEC-8b: when the DEVICE trusted the certificate and it differs from the
@@ -731,9 +850,12 @@ class GenericIMAPAdapter with BatchOperationsMixin implements SpamFilterPlatform
   /// case-insensitive per RFC 3501 (`SEARCH HEADER` does a case-insensitive
   /// substring match on the header value).
   ///
-  /// Returns the matching messages (empty when none). Returns empty on any
+  /// Returns the matching messages (empty when none). Returns empty on a
   /// search error rather than throwing, so the caller's dedup step degrades
-  /// to a no-op instead of failing the scan.
+  /// to a no-op instead of failing the scan -- EXCEPT a session failure
+  /// ([isSessionFatal]: a sign-in refused at the reconnect this method may
+  /// trigger), which is rethrown so the scan fails as a sign-in failure
+  /// (Sprint 77 final review).
   @override
   Future<List<EmailMessage>> searchByMessageId(
     String folderName,
@@ -778,7 +900,10 @@ class GenericIMAPAdapter with BatchOperationsMixin implements SpamFilterPlatform
       return await _fetchMessageDetails(sequence, folderName);
     } catch (e, st) {
       _logger.e('[IMAP] searchByMessageId ERROR in "$folderName": $e\n$st');
-      // Degrade to no-op: dedup must never break the scan.
+      // Sprint 77 final review: the reconnect above can be refused (a changed
+      // password). That is not a search error; no later search can succeed.
+      if (isSessionFatal(e)) rethrow;
+      // Degrade to no-op: a search error must never break the scan.
       return const [];
     }
   }
@@ -845,6 +970,8 @@ class GenericIMAPAdapter with BatchOperationsMixin implements SpamFilterPlatform
       _operationCount++;
     } catch (e) {
       _logger.e('[IMAP] Failed to move message ${message.id} to $targetFolder: $e');
+      // Sprint 77 final review: a refused reconnect keeps its meaning.
+      if (isSessionFatal(e)) rethrow;
       throw ActionException('Move to folder failed', FilterAction.moveToFolder, e);
     }
   }
@@ -887,6 +1014,8 @@ class GenericIMAPAdapter with BatchOperationsMixin implements SpamFilterPlatform
       _operationCount++;
     } catch (e) {
       _logger.e('[IMAP] Failed to mark message ${message.id} as read: $e');
+      // Sprint 77 final review: a refused reconnect keeps its meaning.
+      if (isSessionFatal(e)) rethrow;
       throw ActionException('Mark as read failed', FilterAction.markAsRead, e);
     }
   }
@@ -1039,6 +1168,8 @@ class GenericIMAPAdapter with BatchOperationsMixin implements SpamFilterPlatform
       }
     } catch (e) {
       _logger.e('[IMAP] Failed to perform action $action on message ${message.id}: $e');
+      // Sprint 77 final review: a refused reconnect keeps its meaning.
+      if (isSessionFatal(e)) rethrow;
       throw ActionException('Action failed', action, e);
     }
   }
@@ -1110,6 +1241,9 @@ class GenericIMAPAdapter with BatchOperationsMixin implements SpamFilterPlatform
             await markAsRead(message: message);
             succeeded.add(message.id);
           } catch (e2) {
+            // Sprint 77 final review: markAsRead may reconnect; a refused
+            // sign-in there is the session's failure, not this message's.
+            if (isSessionFatal(e2)) rethrow;
             failed[message.id] = e2.toString();
           }
         }
@@ -1280,7 +1414,8 @@ class GenericIMAPAdapter with BatchOperationsMixin implements SpamFilterPlatform
   /// into the next pass. The folder is swept up to [_moveMaxPasses] times until
   /// no targeted UIDs remain. Returns the UIDs that STILL remain after all
   /// passes (genuine failures). A per-chunk MOVE exception is logged but does
-  /// NOT abort the batch: the same post-move verification re-checks that chunk's
+  /// NOT abort the batch (except a session failure, [isSessionFatal], which
+  /// is rethrown): the same post-move verification re-checks that chunk's
   /// UIDs regardless, so any that did not move are simply carried into the next
   /// pass's survivor set and retried. One failing chunk therefore cannot poison
   /// the rest of the batch.
@@ -1316,6 +1451,12 @@ class GenericIMAPAdapter with BatchOperationsMixin implements SpamFilterPlatform
           );
           _operationCount++;
         } catch (e) {
+          // Sprint 77 final review: the reconnect above can be REFUSED (a
+          // changed password, a changed certificate). That is the session's
+          // failure, not this chunk's: no later chunk can succeed, and
+          // continuing turned a sign-in failure into "completed with move
+          // failures". Rethrown so the scan fails as what it is.
+          if (isSessionFatal(e)) rethrow;
           // A chunk-level MOVE failure must not abort the whole batch.
           // Verification below re-checks the chunk regardless, so a transient
           // failure here simply leaves the chunk's UIDs in the survivor set to
@@ -1551,8 +1692,15 @@ class GenericIMAPAdapter with BatchOperationsMixin implements SpamFilterPlatform
     String folderName,
     List<int> candidateUids,
   ) async {
-    if (candidateUids.isEmpty || _imapClient == null) {
+    if (candidateUids.isEmpty) {
       return const [];
+    }
+    if (_imapClient == null) {
+      // Sprint 77 final review: with no client nothing can be verified, so
+      // every candidate is UNVERIFIED (still present), exactly as a failed
+      // search below. This used to return "none present", which reads as
+      // "all moved" -- reachable once a failed sign-in clears the client.
+      return List<int>.from(candidateUids);
     }
     try {
       await _selectMailbox(folderName);
@@ -1716,10 +1864,10 @@ class GenericIMAPAdapter with BatchOperationsMixin implements SpamFilterPlatform
     } catch (e) {
       _logger.e('[IMAP] Reconnect failed: $e');
       // SEC-8b: a named reason (certificate changed, STARTTLS refused) must
-      // reach the scan's failure text, not become "check your internet".
-      if (e is UserFacingConnectionException) rethrow;
-      // A refused login keeps its meaning (wrong or changed password).
-      if (e is AuthenticationException) rethrow;
+      // reach the scan's failure text, not become "check your internet"; a
+      // refused login keeps its meaning (wrong or changed password). The same
+      // predicate makes every catch above this one rethrow them too.
+      if (isSessionFatal(e)) rethrow;
       throw ConnectionException('IMAP reconnect failed: ${e.toString()}', e);
     }
   }
@@ -1761,6 +1909,19 @@ class GenericIMAPAdapter with BatchOperationsMixin implements SpamFilterPlatform
     _operationCount = _reconnectThreshold;
     return _checkAndReconnect();
   }
+
+  /// Sprint 77 final review: test seam -- make the proactive reconnect happen
+  /// after [operations] more counted operations, so a test can put the
+  /// reconnect INSIDE a chunked move or a search instead of before it.
+  @visibleForTesting
+  void debugReconnectAfter(int operations) {
+    _operationCount = _reconnectThreshold - operations;
+  }
+
+  /// Sprint 77 final review: test seam -- whether the adapter holds a client.
+  /// After a refused sign-in it must not.
+  @visibleForTesting
+  bool get debugHasClient => _imapClient != null;
 
   /// F177 (Sprint 62): the universal within-folder fetch batch size.
   ///

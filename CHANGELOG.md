@@ -34,6 +34,7 @@ Format: `- **type**: Description (Issue #N)` where type is feat|fix|chore|docs
 - **fix**: The upgrade that repairs patterns which can never match now also repairs rules created from the app (including those from a sender's address), and exceptions on safe senders, so editing such a safe sender no longer fails with an error about its exception (Sprint 77 final review)
 - **fix**: Rows the upgrade could not read or repair are now recorded in the log and counted, instead of being skipped silently (Sprint 77 final review)
 - **fix**: Importing rules or safe senders now reports skipped rules and skipped patterns as separate counts, for example "1 rule and 3 patterns", instead of an inflated "unusable entries" number (Sprint 77 final review)
+- **fix**: If an IMAP account's password stops working in the middle of a scan, the scan now ends with "Sign-in failed" instead of finishing with unexplained move failures, and the app no longer retries the wrong password for every remaining batch of emails. A server that is busy or temporarily unavailable at sign-in now says so, instead of reporting a wrong password and counting toward the sign-in lockout (Sprint 77 final review)
 - **fix**: After the first scan of a new account, the Results screen now shows the scan's outcome instead of "No Results Yet. Run a scan." (Sprint 77 Manual Validation)
 
 ### 2026-10-07 (Sprint 77)
