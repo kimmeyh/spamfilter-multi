@@ -53,7 +53,7 @@ function Stop-GreenMail {
 
 if ($Stop) {
     Stop-GreenMail
-    wsl.exe -d Ubuntu -u root -- bash -lc 'pkill -x dovecot || true' | Out-Null
+    wsl.exe -d Ubuntu -u root -- bash -lc 'pkill -x dovecot || true; pkill -f [s]pamfilter-keepalive || true' | Out-Null
     'Stopped Dovecot (WSL).'
     exit 0
 }
@@ -85,6 +85,18 @@ if (-not $up) { throw 'GreenMail did not open port 3993' }
 "GreenMail running (pid $($p.Id)): IMAP SSL/TLS on port 3993, self-signed" + $(if ($NewCertificate) { ' (NEW certificate)' } else { '' })
 
 # --- Dovecot in WSL ----------------------------------------------------------
+# Keep one hidden WSL session open. WSL stops a distribution shortly after its
+# last session closes, and Dovecot (started by the session below) stops with it
+# -- found at Sprint 77 MV step 3b: port 143 refused a minute after this script
+# reported Dovecot running. The session is a `sleep` renamed
+# "spamfilter-keepalive" so it can be found ([s] keeps pgrep from matching its
+# own bash command line); -Stop ends it.
+wsl.exe -d Ubuntu -u root -- bash -lc 'pgrep -f [s]pamfilter-keepalive >/dev/null' | Out-Null
+if ($LASTEXITCODE -ne 0) {
+    Start-Process -FilePath wsl.exe -WindowStyle Hidden -ArgumentList @(
+        '-d', 'Ubuntu', '-u', 'root', '--', 'bash', '-lc',
+        '"exec -a spamfilter-keepalive sleep infinity"') | Out-Null
+}
 $setup = (Resolve-Path (Join-Path $PSScriptRoot 'test-imap\dovecot-wsl-setup.sh')).Path
 $wslPath = '/mnt/' + $setup.Substring(0, 1).ToLower() + ($setup.Substring(2) -replace '\\', '/')
 wsl.exe -d Ubuntu -u root -- bash -lc "tr -d '\r' < '$wslPath' > /tmp/dovecot-wsl-setup.sh && bash /tmp/dovecot-wsl-setup.sh" 2>&1 |

@@ -237,6 +237,19 @@ All decision questions are answered; execution proceeds without further approval
   the reconnect path keeps the sign-in meaning. Callers checked: `ErrorMessages.humanize` ("Sign-in failed ..."), the
   loadCredentials limiter branch, `_checkAndReconnect` (now rethrows it); no other handler distinguishes the two types.
   Mutation LG1 KILLED. Suite 2,912 passed / 15 skipped.
+- MV results 2026-10-07 (Harold): step 1 PASS (trigger PT7M, start in the past; background runs 22:59, 23:06, 23:13
+  all succeeded; minimum message and Hours 2 confirmed by Harold); step 2 PASS (Yahoo via Custom IMAP); step 3a PASS
+  (username `tester`); step 4 N/A (Harold: the Gmail account uses an App Password, so there is no Google sign-in to
+  repeat; the SEC-8b pin stays covered by its automated tests).
+- MV step 3b finding: "Unable to connect" was the TEST SERVER, not the app. WSL stops a distribution shortly after its
+  last session closes, so Dovecot (started by the script's `wsl.exe` call) died about a minute after the script
+  reported it running. Probe against the restarted Dovecot: STARTTLS, "not trusted" (sha256 9b9c2cec...), trust, LOGIN
+  `tester` all succeed. `scripts/start-test-imap-servers.ps1` now holds one hidden keepalive WSL session
+  (`spamfilter-keepalive`); `-Stop` ends it.
+- MV step 2 finding (OPEN): the Yahoo Results screen read "No Results Yet. Run a scan." after a completed scan (found 2,
+  evaluated 0 -- by inference both already-filed safe senders; unverified). `results_display_screen.dart` sets
+  `_hasEverScanned` once at load and never updates it, so a first-ever scan run while the screen is open keeps the
+  never-scanned message. Asked Harold how the screen was reached.
 - Phone evidence pulled 2026-10-07 (Harold tethered the Fold; rebooted ~08:30, app not opened until after noon):
   `validation-screenshots/sprint-77/` -- screenshots, `diag_v0.17.5_2026-10-06.log`, `diag_v0.17.5_2026-10-07.log`,
   `diag_v0.17.6_2026-10-07.log`, scan CSVs. `scripts/pull-phone-screenshots.ps1` fixed (a `$folder` local overwrote the
