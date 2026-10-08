@@ -1,12 +1,12 @@
 {
     "_description": "Sprint status file that persists across context compaction. Update after each phase/sub-phase completion.",
-    "_last_updated": "2026-10-08T20:05:00Z",
+    "_last_updated": "2026-10-08T21:40:00Z",
     "_usage": "Read this file after context compaction to restore sprint approval state and progress.",
     "_staleness_note": "This file had drifted 15 sprints (last updated at Sprint 35, 2026-04-19) before being refreshed at Sprint 50 close-out. It is a Phase 7.7 checklist item -- update it at every sprint close-out, not opportunistically.",
     "current_sprint": {
         "number": 77,
         "branch": "feature/20261006_Sprint_77",
-        "status": "Phase 7.3 Sprint Retrospective -- Manual Validation COMPLETE 2026-10-08 (Windows steps 1, 2, 3a-c, 5-10 PASS, 4 N/A; MV-Q22 step 2 on-screen check skipped by Harold); Phase 6 done (PR #460 description updated, still DRAFT). Retrospective: Harold's feedback received (all Very Good, no carry-ins, no backlog, no questions); Steps 2-6 in progress. Fold steps 7-11 and the 0.18.0 Store/Play updates at the START of Sprint 78 (MV-Q7 = 2).",
+        "status": "Phase 7.7 Sprint Review -- retrospective COMPLETE (Harold all Very Good; IMP-1R applied: 5.1.9 MV rehearsal gated from Sprint 78; IMP-3 applied: close-out check 3d-3; IMP-2 -> backlog F284; IMP-4 waits for a crash recurrence). Summary, release notes (re-derived), master plan and Sprint 78 stub done. PR #460 set READY 2026-10-08; 7.7.1 final reviews (Copilot by hand + code-reviewer + silent-failure-hunter) RUNNING -- disposition every finding with Harold, record the 7.7.1 marker in SPRINT_77_PLAN.md, then 7.7.5 readiness announcement.",
         "plan_approved": true,
         "blanket_execution_approved": true,
         "pr_number": 460,
@@ -33,7 +33,7 @@
     "_github_issues_note": "Sprint 66 cards created at Phase 3.3.1 (2026-09-07): #387 GP-19, #388 GP-4. Close by hand at Post-Merge Cleanup.",
     "test_metrics": {
         "suite": "2,918 passed / 15 skipped / 0 failed (local Windows, 2026-10-08)",
-        "policy_suite": "JVM 21/21; release_notes_test passing; hook suite 121/121 (2026-10-06)",
+        "policy_suite": "JVM 21/21; release_notes_test passing; hook suite 125/125 (2026-10-08)",
         "winwright": "2026-10-08 sweep-head 4a5f2ac: f124 PASS 29/29, s75 PASS 27/27, mt2c FAIL step 9 (display-size dependent: seeds below 11 pinned provider rows at ~1940x1040; passed 30/30 at 3856x2128); rewrite folded into F283; DB drift none",
         "analyzer": "clean",
         "mutations": "Sprint 77: F258 M1/M2/M4 + L1/L2, F245 21, F192 25, SEC-8b 16, F264 24, R76-1 5, merge M1/M2, F-PRECHECK 15 -- all KILLED",
@@ -55,10 +55,9 @@
     ],
     "blocking_issues": [],
     "next_actions": [
-        "Harold: Windows Manual Validation steps 1-6 and 12-14 (SPRINT_77_PLAN.md \"Manual Validation steps\") on the rebuilt dev build.",
-        "Claude: WinWright sweep (MV step 0) when the PC is unlocked; record sweep-head.",
-        "Claude: after Windows steps, back up the dev DB (pre_v13) and verify the F266 v13 repair counts.",
-        "Sprint 78 START: build final 0.18.0, Microsoft Store + Play closed-testing updates, then Fold steps 7-11; trace what runs main() at boot (app start line at 09:14:39 with the app unopened)."
+        "7.7.1: collect Copilot + code-reviewer + silent-failure-hunter findings on PR #460; disposition each with Harold (prevention first); fix, test, push; resolve Copilot threads; record '- **7.7.1 final code reviews**: <evidence>' in SPRINT_77_PLAN.md.",
+        "7.7.5: announce PR #460 ready for final approval (Harold merges; Claude never merges).",
+        "On merge (6.6): branch feature/<date>_Sprint_78 FROM the Sprint 77 branch; then Phase 8 (main merge in parallel, refinement pass 1, 0.18.0 Store + Play builds, Fold steps 7-11 at Sprint 78 start)."
     ],
     "next_sprint_targeted": {
         "number": 77,

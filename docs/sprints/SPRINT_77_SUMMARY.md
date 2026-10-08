@@ -81,7 +81,7 @@ Harold: all 14 categories Very Good; no carry-ins, no backlog items, no question
   the sweep; gated from Sprint 78).
 - IMP-3 applied (`Executed-by` lines filled; close-out check 3d-3).
 - IMP-4 waits for the crash to recur.
-- IMP-2 (WinWright without screen takeover): see the retrospective's Improvement Decisions.
+- IMP-2 (WinWright without screen takeover) to the backlog as F284 (MV-Q23 = 2).
 
 ## Carry-forward
 
