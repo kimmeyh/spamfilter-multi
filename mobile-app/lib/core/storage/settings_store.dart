@@ -661,25 +661,50 @@ class SettingsStore {
   /// start, so two accounts would collide again; a saved slot never moves.
   /// A removed account's slot stays held, which leaves a gap, never a clash.
   Future<int> getOrAllocateScheduleSlot(String accountId) async {
-    final own = int.tryParse(
-        await _getAccountSetting(accountId, _scheduleSlotKey) ?? '');
-    if (own != null && own >= 0) return own;
     final db = await _dbHelper.database;
-    final rows = await db.query(
-      'account_settings',
-      columns: ['setting_value'],
-      where: 'setting_key = ? AND account_id != ?',
-      whereArgs: [_scheduleSlotKey, accountId],
-    );
-    final taken = rows
-        .map((r) => int.tryParse(r['setting_value'] as String? ?? ''))
-        .whereType<int>()
-        .toSet();
-    var slot = 0;
-    while (taken.contains(slot)) {
-      slot++;
-    }
-    await _setAccountSetting(accountId, _scheduleSlotKey, '$slot', 'int');
+    // One transaction for the read and the write: SQLite runs a transaction
+    // on this connection to completion before the next one starts, so two
+    // first allocations cannot both read the same "taken" set and choose the
+    // same slot. (Sprint 77 final review, finding 6.)
+    final slot = await db.transaction<int>((txn) async {
+      final ownRows = await txn.query(
+        'account_settings',
+        columns: ['setting_value'],
+        where: 'account_id = ? AND setting_key = ?',
+        whereArgs: [accountId, _scheduleSlotKey],
+      );
+      final own = ownRows.isEmpty
+          ? null
+          : int.tryParse(ownRows.first['setting_value'] as String? ?? '');
+      if (own != null && own >= 0) return own;
+      final rows = await txn.query(
+        'account_settings',
+        columns: ['setting_value'],
+        where: 'setting_key = ? AND account_id != ?',
+        whereArgs: [_scheduleSlotKey, accountId],
+      );
+      final taken = rows
+          .map((r) => int.tryParse(r['setting_value'] as String? ?? ''))
+          .whereType<int>()
+          .toSet();
+      var next = 0;
+      while (taken.contains(next)) {
+        next++;
+      }
+      await txn.insert(
+        'account_settings',
+        {
+          'account_id': accountId,
+          'setting_key': _scheduleSlotKey,
+          'setting_value': '$next',
+          'value_type': 'int',
+          'date_modified': DateTime.now().millisecondsSinceEpoch,
+        },
+        conflictAlgorithm: ConflictAlgorithm.replace,
+      );
+      return next;
+    });
+    _logger.d('Schedule slot for ${Redact.accountId(accountId)} is $slot');
     return slot;
   }
 

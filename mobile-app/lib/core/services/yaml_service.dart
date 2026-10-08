@@ -79,8 +79,12 @@ class YamlService {
   /// Returns the cleaned list and one human-readable line per skipped entry,
   /// for the import screen to report. The persistence layer rejects the same
   /// patterns, so this filter only turns a hard failure into a reported skip.
-  static ({SafeSenderList list, List<String> skipped}) sanitizeSafeSenders(
-      SafeSenderList imported) {
+  ///
+  /// `droppedPatterns` is the number of entries removed (one per `skipped`
+  /// line here); the import screen words its message from the counts, not
+  /// from `skipped.length` (final review, finding 9).
+  static ({SafeSenderList list, List<String> skipped, int droppedPatterns})
+      sanitizeSafeSenders(SafeSenderList imported) {
     final kept = <String>[];
     final skipped = <String>[];
     for (final pattern in imported.safeSenders) {
@@ -91,45 +95,99 @@ class YamlService {
             'can never match');
       }
     }
-    return (list: SafeSenderList(safeSenders: kept), skipped: skipped);
+    return (
+      list: SafeSenderList(safeSenders: kept),
+      skipped: skipped,
+      droppedPatterns: skipped.length,
+    );
   }
 
-  /// F266 (Sprint 77): rules counterpart of [sanitizeSafeSenders]. Only the
-  /// `from` lists are checked (see [PatternCompiler.detectUnmatchable]).
+  /// The import message for what the sanitizers removed, worded from the
+  /// separate counts: `1 pattern`, `2 rules`, `1 rule and 3 patterns`.
+  /// Empty when nothing was removed. One AND rule with one bad pattern is
+  /// `1 rule`, not "2 entries", even though it writes two detail lines.
+  static String describeDropped(
+      {required int droppedRules, required int droppedPatterns}) {
+    final parts = <String>[
+      if (droppedRules > 0)
+        '$droppedRules ${droppedRules == 1 ? 'rule' : 'rules'}',
+      if (droppedPatterns > 0)
+        '$droppedPatterns ${droppedPatterns == 1 ? 'pattern' : 'patterns'}',
+    ];
+    return parts.join(' and ');
+  }
+
+  /// F266 (Sprint 77): rules counterpart of [sanitizeSafeSenders]. The
+  /// `from` lists get the full check ([PatternCompiler.detectUnmatchable]);
+  /// subject and body are not checked.
   ///
   /// An OR rule loses just the unmatchable `from` pattern (it never matched,
   /// so behavior is unchanged), and the rule is skipped if that leaves it
   /// with no conditions. An AND rule is skipped whole: dropping one of its
   /// conditions would WIDEN what the rule matches. An unmatchable `from`
   /// exception is dropped (it never matched, so behavior is unchanged).
-  static ({RuleSet ruleSet, List<String> skipped}) sanitizeRules(
-      RuleSet imported) {
+  ///
+  /// `header` lists get ONLY the narrow stray-@ check
+  /// ([PatternCompiler.hasStrayAtAfterDomainWildcard]): they hold `key:value`
+  /// text for non-From headers, but the app stores its own From rules there.
+  ///
+  /// `droppedRules` counts rules removed whole; `droppedPatterns` counts bad
+  /// patterns removed from rules that were KEPT. A pattern inside a dropped
+  /// rule is not counted again. `skipped` is the per-line detail (a dropped
+  /// rule writes one line per bad pattern plus a `skipped` line), so its
+  /// length is not a count of anything.
+  static ({
+    RuleSet ruleSet,
+    List<String> skipped,
+    int droppedRules,
+    int droppedPatterns,
+  }) sanitizeRules(RuleSet imported) {
     final kept = <Rule>[];
     final skipped = <String>[];
+    var droppedRules = 0;
+    var droppedPatterns = 0;
     bool bad(String p) => PatternCompiler.detectUnmatchable(p).isNotEmpty;
+    bool badHeader(String p) =>
+        PatternCompiler.hasStrayAtAfterDomainWildcard(p);
 
     for (final rule in imported.rules) {
       final c = rule.conditions;
       final e = rule.exceptions;
       final badFrom = c.from.where(bad).toList();
+      final badHeaders = c.header.where(badHeader).toList();
       final badExceptionFrom = (e?.from ?? const <String>[]).where(bad).toList();
-      if (badFrom.isEmpty && badExceptionFrom.isEmpty) {
+      final badExceptionHeaders =
+          (e?.header ?? const <String>[]).where(badHeader).toList();
+      if (badFrom.isEmpty &&
+          badHeaders.isEmpty &&
+          badExceptionFrom.isEmpty &&
+          badExceptionHeaders.isEmpty) {
         kept.add(rule);
         continue;
       }
-      for (final p in [...badFrom, ...badExceptionFrom]) {
+      final allBad = [
+        ...badFrom,
+        ...badHeaders,
+        ...badExceptionFrom,
+        ...badExceptionHeaders,
+      ];
+      for (final p in allBad) {
         skipped.add('Rule "${rule.name}": pattern "$p" requires more than '
             'one "@", can never match');
       }
       final remainingFrom = c.from.where((p) => !bad(p)).toList();
+      final remainingHeader = c.header.where((p) => !badHeader(p)).toList();
       final noConditionsLeft = remainingFrom.isEmpty &&
-          c.header.isEmpty &&
+          remainingHeader.isEmpty &&
           c.subject.isEmpty &&
           c.body.isEmpty;
-      if (badFrom.isNotEmpty && (c.type == 'AND' || noConditionsLeft)) {
+      if ((badFrom.isNotEmpty || badHeaders.isNotEmpty) &&
+          (c.type == 'AND' || noConditionsLeft)) {
         skipped.add('Rule "${rule.name}": skipped');
+        droppedRules++;
         continue;
       }
+      droppedPatterns += allBad.length;
       kept.add(Rule(
         name: rule.name,
         enabled: rule.enabled,
@@ -138,7 +196,7 @@ class YamlService {
         conditions: RuleConditions(
           type: c.type,
           from: remainingFrom,
-          header: c.header,
+          header: remainingHeader,
           subject: c.subject,
           body: c.body,
         ),
@@ -147,7 +205,7 @@ class YamlService {
             ? null
             : RuleExceptions(
                 from: e.from.where((p) => !bad(p)).toList(),
-                header: e.header,
+                header: e.header.where((p) => !badHeader(p)).toList(),
                 subject: e.subject,
                 body: e.body,
               ),
@@ -164,6 +222,8 @@ class YamlService {
         rules: kept,
       ),
       skipped: skipped,
+      droppedRules: droppedRules,
+      droppedPatterns: droppedPatterns,
     );
   }
 

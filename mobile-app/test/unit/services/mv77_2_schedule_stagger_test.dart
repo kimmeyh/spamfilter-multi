@@ -18,6 +18,7 @@ import 'package:sqflite_common_ffi/sqflite_ffi.dart';
 import 'package:my_email_spam_filter/adapters/storage/app_paths.dart';
 import 'package:my_email_spam_filter/core/services/powershell_script_generator.dart';
 import 'package:my_email_spam_filter/core/services/scan_interval.dart';
+import 'package:my_email_spam_filter/core/services/windows_task_scheduler_service.dart';
 import 'package:my_email_spam_filter/core/storage/database_helper.dart';
 import 'package:my_email_spam_filter/core/storage/settings_store.dart';
 
@@ -114,6 +115,47 @@ void main() {
     });
   });
 
+  group('a slot that cannot be read fails the registration (final review 6)',
+      () {
+    // What this does NOT catch: the real SQLite error path (the seam throws
+    // directly), and the Settings snackbar text (covered by the existing
+    // false-return handling in settings_screen; Manual Validation).
+    final savedReader = WindowsTaskSchedulerService.slotReader;
+    final savedDelay = WindowsTaskSchedulerService.slotReadRetryDelay;
+
+    setUp(() {
+      WindowsTaskSchedulerService.slotReadRetryDelay = Duration.zero;
+    });
+    tearDown(() {
+      WindowsTaskSchedulerService.slotReader = savedReader;
+      WindowsTaskSchedulerService.slotReadRetryDelay = savedDelay;
+    });
+
+    test('create and update report failure after ONE retry, never slot 0',
+        () async {
+      var reads = 0;
+      WindowsTaskSchedulerService.slotReader = (_) async {
+        reads++;
+        throw StateError('database is locked');
+      };
+      expect(
+          await WindowsTaskSchedulerService.createScheduledTask(
+              intervalMinutes: 15, accountId: 'a@x'),
+          isFalse);
+      expect(reads, 2, reason: 'one read plus exactly one retry');
+      reads = 0;
+      expect(
+          await WindowsTaskSchedulerService.updateScheduledTask(
+              intervalMinutes: 15, accountId: 'a@x'),
+          isFalse);
+      expect(reads, 2);
+    });
+
+    // Deliberately no "fails once, then succeeds" case through
+    // createScheduledTask: success would go on to register a REAL task in
+    // the host's Task Scheduler.
+  });
+
   group('SettingsStore.getOrAllocateScheduleSlot', () {
     late DatabaseHelper db;
     late SettingsStore store;
@@ -146,6 +188,25 @@ void main() {
       expect(await store.getOrAllocateScheduleSlot('a@x'), 2);
       expect(await store.getOrAllocateScheduleSlot('b@x'), 0);
       expect(await store.getOrAllocateScheduleSlot('c@x'), 1);
+    });
+
+    test('concurrent first allocations get distinct slots (final review 6)',
+        () async {
+      // Two stores on one database, eight accounts asked for at once. The
+      // read-then-write without a transaction could hand two of them the
+      // same slot; the transaction serializes them.
+      final other = SettingsStore(db);
+      final ids = [for (var i = 0; i < 8; i++) 'acct$i@x'];
+      final slots = await Future.wait([
+        for (var i = 0; i < ids.length; i++)
+          (i.isEven ? store : other).getOrAllocateScheduleSlot(ids[i]),
+      ]);
+      expect(slots.toSet().length, ids.length, reason: 'slots: $slots');
+      expect(slots.toSet(), {for (var i = 0; i < ids.length; i++) i});
+      // And the saved values agree with what each caller was told.
+      for (var i = 0; i < ids.length; i++) {
+        expect(await store.getOrAllocateScheduleSlot(ids[i]), slots[i]);
+      }
     });
 
     test('fills the lowest free slot and never reuses a held one', () async {

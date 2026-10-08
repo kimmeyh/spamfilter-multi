@@ -24,6 +24,7 @@ import 'dart:convert';
 import 'dart:io';
 
 import 'package:flutter_test/flutter_test.dart';
+import 'package:logger/logger.dart';
 import 'package:my_email_spam_filter/core/models/rule_set.dart';
 import 'package:my_email_spam_filter/core/models/safe_sender_list.dart';
 import 'package:my_email_spam_filter/core/services/pattern_compiler.dart';
@@ -224,6 +225,90 @@ void main() {
       expect(byName['subject-two-at']!.conditions.subject, ['a@b and c@d']);
       expect(result.skipped, isNotEmpty);
     });
+
+    test('final review 9: dropped rules and dropped patterns are counted '
+        'separately, not as skipped lines', () {
+      // AND rule with ONE bad from: two detail lines, but one dropped rule.
+      var result = YamlService.sanitizeRules(RuleSet(
+        version: '1.0',
+        settings: {},
+        rules: [rule('and-bad', 'AND', [_broken, '@ok\\.com\$'])],
+      ));
+      expect(result.skipped, hasLength(2), reason: 'pattern line + rule line');
+      expect(result.droppedRules, 1);
+      expect(result.droppedPatterns, 0,
+          reason: 'its pattern is part of the dropped rule, not counted twice');
+      expect(
+          YamlService.describeDropped(
+              droppedRules: result.droppedRules,
+              droppedPatterns: result.droppedPatterns),
+          '1 rule');
+
+      // Kept OR rule that loses one pattern: one pattern, no rule.
+      result = YamlService.sanitizeRules(RuleSet(
+        version: '1.0',
+        settings: {},
+        rules: [rule('or-mixed', 'OR', [_broken, '@ok\\.com\$'])],
+      ));
+      expect(result.droppedRules, 0);
+      expect(result.droppedPatterns, 1);
+      expect(
+          YamlService.describeDropped(
+              droppedRules: result.droppedRules,
+              droppedPatterns: result.droppedPatterns),
+          '1 pattern');
+
+      // Both in one file: 3 detail lines, but 1 rule and 1 pattern.
+      result = YamlService.sanitizeRules(RuleSet(
+        version: '1.0',
+        settings: {},
+        rules: [
+          rule('and-bad', 'AND', [_broken, '@ok\\.com\$']),
+          rule('or-mixed', 'OR', [_broken, '@ok\\.com\$']),
+        ],
+      ));
+      expect(result.skipped, hasLength(3));
+      expect(result.droppedRules, 1);
+      expect(result.droppedPatterns, 1);
+      expect(
+          YamlService.describeDropped(
+              droppedRules: result.droppedRules,
+              droppedPatterns: result.droppedPatterns),
+          '1 rule and 1 pattern');
+
+      expect(
+          YamlService.describeDropped(droppedRules: 2, droppedPatterns: 3),
+          '2 rules and 3 patterns');
+      expect(YamlService.describeDropped(droppedRules: 0, droppedPatterns: 0),
+          '');
+
+      final ss = YamlService.sanitizeSafeSenders(
+          SafeSenderList(safeSenders: [_broken, _fixed]));
+      expect(ss.droppedPatterns, 1);
+    });
+
+    test('final review 7c: header patterns with the shipped defect are '
+        'dropped; key:value header text is not touched', () {
+      final result = YamlService.sanitizeRules(RuleSet(
+        version: '1.0',
+        settings: {},
+        rules: [
+          Rule(
+            name: 'hdr',
+            enabled: true,
+            isLocal: false,
+            executionOrder: 10,
+            conditions: RuleConditions(
+                type: 'OR', header: [_broken, 'x-spam:a@b and c@d']),
+            actions: RuleActions(delete: true),
+          ),
+        ],
+      ));
+      expect(result.ruleSet.rules.single.conditions.header,
+          ['x-spam:a@b and c@d']);
+      expect(result.droppedPatterns, 1);
+      expect(result.droppedRules, 0);
+    });
   });
 
   group('persistence boundaries reject unmatchable patterns', () {
@@ -272,6 +357,30 @@ void main() {
           throwsA(isA<RuleDatabaseStorageException>()));
       await store.addRule(_simpleRule('good', [r'@ok\.com$']));
     });
+
+    test('final review 7c: the rule store also rejects the defect in a '
+        'header pattern (the column the app stores From rules in)', () async {
+      final store = RuleDatabaseStore(helper.dbHelper);
+      final headerRule = Rule(
+        name: 'hdr-bad',
+        enabled: true,
+        isLocal: false,
+        executionOrder: 10,
+        conditions: RuleConditions(type: 'OR', header: [_broken]),
+        actions: RuleActions(delete: true),
+      );
+      await expectLater(
+          store.addRule(headerRule), throwsA(isA<RuleDatabaseStorageException>()));
+      // Non-From header text with two @ is not the shipped shape: accepted.
+      await store.addRule(Rule(
+        name: 'hdr-ok',
+        enabled: true,
+        isLocal: false,
+        executionOrder: 11,
+        conditions: RuleConditions(type: 'OR', header: ['x-spam:a@b and c@d']),
+        actions: RuleActions(delete: true),
+      ));
+    });
   });
 
   group('DB v13: the REAL upgrade repairs a v12 database', () {
@@ -283,7 +392,8 @@ void main() {
     });
     tearDown(() async => helper.tearDown());
 
-    Future<void> buildV12Fixture() async {
+    Future<void> buildV12Fixture(
+        [Future<void> Function(Database db)? extra]) async {
       await helper.dbHelper.close();
       final dbFile = File(helper.testDbPath);
       if (await dbFile.exists()) await dbFile.delete();
@@ -347,6 +457,7 @@ void main() {
                 });
             await rule('broken-rule', [_broken, r'@ok\.com$'], [_broken]);
             await rule('healthy-rule', [r'@ok\.com$'], null);
+            await extra?.call(db);
           },
         ),
       );
@@ -389,6 +500,97 @@ void main() {
           where: 'name = ?', whereArgs: ['healthy-rule']);
       expect(jsonDecode(healthy.single['condition_from'] as String),
           [r'@ok\.com$']);
+    });
+
+    test('final review 7: header columns and exception_patterns are repaired; '
+        'unreadable rows and unrepairable patterns are logged and counted, '
+        'never silent', () async {
+      final logged = <String>[];
+      void listener(LogEvent e) => logged.add(e.message.toString());
+      Logger.addLogListener(listener);
+      addTearDown(() => Logger.removeLogListener(listener));
+
+      await buildV12Fixture((db) async {
+        Future<void> rule(String name, Map<String, Object?> cols) =>
+            db.insert('rules', {
+              'name': name,
+              'execution_order': 10,
+              'condition_type': 'OR',
+              'date_added': 1,
+              ...cols,
+            });
+        // Rules the app creates for a From address live in condition_header.
+        await rule('header-rule', {
+          'condition_header': jsonEncode([_broken, 'x-spam:.*']),
+          'exception_header': jsonEncode([_broken]),
+        });
+        // Three unreadable shapes: not JSON, not a list, a list of non-strings
+        // (the lazy-cast case).
+        await rule('bad-json', {'condition_from': '{not json'});
+        await rule('not-a-list', {'condition_from': '{"a":1}'});
+        await rule('not-strings', {'condition_from': '[1,2]'});
+        // Unmatchable, but not the shipped shape.
+        await rule('other-shape', {'condition_from': jsonEncode([r'^a@b@c\.com$'])});
+        await db.insert('safe_senders', {
+          'pattern': r'^[^@\s]+@(?:[a-z0-9-]+\.)*withexc\.com$',
+          'pattern_type': 'entire_domain',
+          'exception_patterns': jsonEncode([_broken, r'^ok@withexc\.com$']),
+          'date_added': 1,
+        });
+        await db.insert('safe_senders', {
+          'pattern': r'^other-shape@b@c\.com$',
+          'pattern_type': 'exact_email',
+          'date_added': 1,
+        });
+        await db.insert('safe_senders', {
+          'pattern': r'^[^@\s]+@(?:[a-z0-9-]+\.)*badexc\.com$',
+          'pattern_type': 'entire_domain',
+          'exception_patterns': '[1,2]',
+          'date_added': 1,
+        });
+      });
+
+      final db = await helper.dbHelper.database;
+      Future<Map<String, Object?>> ruleRow(String name) async => (await db
+              .query('rules', where: 'name = ?', whereArgs: [name]))
+          .single;
+
+      final hdr = await ruleRow('header-rule');
+      expect(jsonDecode(hdr['condition_header'] as String),
+          [_fixed, 'x-spam:.*'],
+          reason: 'header column repaired, key:value text untouched');
+      expect(jsonDecode(hdr['exception_header'] as String), [_fixed]);
+
+      final exc = (await db.query('safe_senders',
+              where: 'pattern LIKE ?', whereArgs: ['%withexc%']))
+          .single;
+      expect(jsonDecode(exc['exception_patterns'] as String),
+          [_fixed, r'^ok@withexc\.com$']);
+
+      // Unreadable rows stay as they were and are NOT reported as repaired.
+      expect((await ruleRow('bad-json'))['condition_from'], '{not json');
+      expect((await ruleRow('not-strings'))['condition_from'], '[1,2]');
+
+      final text = logged.join('\n');
+      for (final name in ['bad-json', 'not-a-list', 'not-strings']) {
+        final id = (await ruleRow(name))['id'];
+        expect(text, contains('v13: rules id=$id condition_from skipped'),
+            reason: '$name must be logged by row id');
+      }
+      expect(text, contains('FormatException'));
+      expect(text, contains('TypeError'));
+      expect(text, contains('exception_patterns skipped, unreadable'));
+      final summary =
+          logged.lastWhere((l) => l.startsWith('v13 migration complete'));
+      expect(summary, contains('4 row(s) skipped as unreadable'),
+          reason: 'three rule columns plus one exception_patterns row');
+      expect(summary, contains('2 unmatchable pattern(s) left as is'),
+          reason: 'one rule from pattern plus one safe sender pattern');
+      expect(summary, contains('1 safe sender exception list(s) repaired'));
+      // No pattern text or address in any v13 log line.
+      for (final line in logged.where((l) => l.startsWith('v13'))) {
+        expect(line, isNot(contains('@')), reason: line);
+      }
     });
 
     test('the repaired senders match mail after the upgrade (the point of '

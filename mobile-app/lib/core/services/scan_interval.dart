@@ -158,9 +158,11 @@ class ScanInterval {
   /// The fixed start offset, in minutes, for an account in [slot] scanning
   /// every [minutes] (MV-Q2 = 1). Zero when the interval has jitter: the
   /// random delay already spreads those accounts, and Q13 keeps the two rules
-  /// separate. Wraps at the interval, so two accounts collide only when more
-  /// accounts share one interval than it has minutes (16 at 15 minutes, 6 at
-  /// 5 minutes).
+  /// separate. Wraps at the interval. Slots are allocated across ALL accounts
+  /// (never per interval), so two accounts collide whenever their slots are
+  /// equal modulo the interval: at 5 minutes slot 5 starts with slot 0, even
+  /// with only six accounts in total, and an account that changes interval
+  /// keeps its slot.
   static int staggerMinutes(int minutes, int slot) {
     if (minutes <= 0 || slot <= 0 || hasJitter(minutes)) return 0;
     return (slot * kStaggerMinutesPerSlot) % minutes;

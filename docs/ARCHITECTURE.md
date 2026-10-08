@@ -381,7 +381,7 @@ SQLite database schema. See [ADR-0010](adr/0010-normalized-database-schema.md) f
 - v10: data only -- subject rules reclassified `pattern_sub_type` `exact_domain` -> `keyword` (Sprint 74 MV; all three creators now write `keyword`)
 - v11: `scan_results.cancel_requested_at` -- the cross-isolate/process stop request a manual scan writes onto a background scan's row; the scanning isolate reads it on its heartbeat tick (F238, Sprint 75)
 - v12: `unmatched_emails.last_seen_at` plus the non-unique lookup index `idx_unmatched_identity`; the migration dedups existing rows to one per email within an account (F245, Sprint 77, ADR-0045)
-- v13: data only -- repairs stored safe-sender patterns (and rule `from` patterns) that carry a stray second literal `@` after the domain wildcard and so could never match; a repair that would duplicate an existing row deletes the broken row instead (F266, Sprint 77)
+- v13: data only -- repairs stored safe-sender patterns, `safe_senders.exception_patterns`, and rule `condition_from`, `exception_from`, `condition_header` and `exception_header` patterns that carry a stray second literal `@` after the domain wildcard and so could never match (header columns get only this narrow repair, never the general unmatchable check); a repair that would duplicate an existing row deletes the broken row instead. A row with unreadable JSON, and an unmatchable pattern of any other shape, are logged by row id and counted in the summary line, never silently skipped (F266, Sprint 77)
 
 **Indexes**: 10+ targeted indexes for fast lookups (by platform, account, completion time, scan ID, folder, no-rule matches).
 
@@ -546,7 +546,13 @@ random delay; instead each account has a fixed stagger (Sprint 77 MV-Q2,
 ADR-0039 amendment). Its saved schedule slot (`schedule_slot`, from
 `SettingsStore.getOrAllocateScheduleSlot`, allocated once and never moved) sets
 the start to that many minutes after midnight (`ScanInterval.staggerMinutes`),
-so accounts on the same short interval start 1 minute apart. `verifyAndRepairTaskPath` takes the interval from its caller. A one-time,
+so accounts on the same short interval start 1 minute apart. Slots are
+allocated across ALL accounts inside one transaction (two first allocations
+cannot take the same slot), so accounts whose slots are equal modulo the
+interval still share a start minute. A slot read that fails is retried once;
+if it fails again the registration reports failure (the Settings failure
+message shows) and no task is created, never a fallback to slot 0.
+`verifyAndRepairTaskPath` takes the interval from its caller. A one-time,
 sentinel-guarded migration (`BackgroundIntervalMigration`, run at startup on both
 platforms) converts stored values to the nearest one the control can express and
 re-registers every enabled account's schedule; startup reconciliation uses the

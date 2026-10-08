@@ -307,6 +307,14 @@ class PatternCompiler {
     return detectUnmatchable(repaired).isEmpty ? repaired : null;
   }
 
+  /// True when [pattern] is exactly the shipped F266 defect shape that
+  /// [repairStrayAtAfterDomainWildcard] can fix. This is the NARROW check for
+  /// header patterns, which hold `key:value` text where the general
+  /// [detectUnmatchable] could misfire; the import sanitizer, the store
+  /// backstop and the v13 migration all use it so they agree.
+  static bool hasStrayAtAfterDomainWildcard(String pattern) =>
+      repairStrayAtAfterDomainWildcard(pattern) != null;
+
   /// Detect ReDoS-vulnerable patterns (SEC-1).
   ///
   /// Checks for nested quantifiers and overlapping alternation that can

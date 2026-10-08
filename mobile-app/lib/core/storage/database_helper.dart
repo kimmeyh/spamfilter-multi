@@ -702,9 +702,15 @@ class DatabaseHelper implements RuleDatabaseProvider {
   /// ([PatternCompiler.repairStrayAtAfterDomainWildcard]).
   ///
   /// `safe_senders.pattern` is UNIQUE, so a rewrite that would collide with an
-  /// existing row deletes the broken row instead. Block rules are walked too
-  /// (`condition_from`, `exception_from`; the only columns the unmatchable
-  /// check covers); the bundled rules.yaml has none, but a user rule might.
+  /// existing row deletes the broken row instead. Also walked:
+  /// `safe_senders.exception_patterns`, and the rules columns
+  /// `condition_from`, `exception_from`, `condition_header` and
+  /// `exception_header` (rules the app creates for a From address are stored
+  /// in `condition_header`). Header columns get ONLY the narrow stray-@
+  /// repair, never the general check. A row whose JSON cannot be read, and a
+  /// pattern that is unmatchable in a shape this repair does not fix, are
+  /// each logged by row id (never the pattern text) and counted in the
+  /// summary line; neither is rewritten.
   /// Guarded on each TABLE existing (partial test schemas) like v10 to v12.
   Future<void> _migrateV13UnmatchableAtSign(Database db) async {
     _logger.i('Applying v13 migration: repair unmatchable @ patterns');
@@ -715,12 +721,24 @@ class DatabaseHelper implements RuleDatabaseProvider {
         .toSet();
     var ssRepaired = 0;
     var ssDeleted = 0;
+    var ssUnrepairable = 0;
+    var skippedRows = 0;
+    var unrepairable = 0;
     if (ssCols.isNotEmpty) {
       final rows = await db.query('safe_senders', columns: ['id', 'pattern']);
       for (final row in rows) {
         final old = row['pattern'] as String;
         final repaired = PatternCompiler.repairStrayAtAfterDomainWildcard(old);
-        if (repaired == null) continue;
+        if (repaired == null) {
+          // Clean, or unmatchable in a shape this migration does not repair.
+          // The second case must not be silent (final review, finding 7b).
+          if (PatternCompiler.detectUnmatchable(old).isNotEmpty) {
+            ssUnrepairable++;
+            _logger.w('v13: safe_senders id=${row['id']} cannot match but is '
+                'not the repairable shape; left as is');
+          }
+          continue;
+        }
         final clash = await db.query('safe_senders',
             columns: ['id'], where: 'pattern = ?', whereArgs: [repaired]);
         if (clash.isNotEmpty) {
@@ -741,37 +759,80 @@ class DatabaseHelper implements RuleDatabaseProvider {
       }
     }
 
+    // safe_senders.exception_patterns: matched against one address, so the
+    // full unmatchable check applies. SafeSenderDatabaseStore rejects an
+    // unmatchable exception on update, so one left here would block every
+    // edit of its row.
+    var ssExceptionRowsRepaired = 0;
+    if (ssCols.contains('exception_patterns')) {
+      final rows = await db.query('safe_senders',
+          columns: ['id', 'exception_patterns'],
+          where: 'exception_patterns IS NOT NULL');
+      for (final row in rows) {
+        final outcome = _repairPatternListJson(row['exception_patterns'],
+            addressColumn: true);
+        if (outcome.error != null) {
+          skippedRows++;
+          _logger.w('v13: safe_senders id=${row['id']} exception_patterns '
+              'skipped, unreadable: ${outcome.error.runtimeType}');
+          continue;
+        }
+        unrepairable += outcome.unrepairable;
+        if (outcome.unrepairable > 0) {
+          _logger.w('v13: safe_senders id=${row['id']} exception_patterns '
+              'has ${outcome.unrepairable} unmatchable entr(ies) that are '
+              'not the repairable shape; left as is');
+        }
+        if (outcome.repairedJson != null) {
+          await db.update('safe_senders',
+              {'exception_patterns': outcome.repairedJson},
+              where: 'id = ?', whereArgs: [row['id']]);
+          ssExceptionRowsRepaired++;
+        }
+      }
+    }
+
     final ruleCols = (await db.rawQuery('PRAGMA table_info(rules)'))
         .map((r) => r['name'] as String)
         .toSet();
     var rulesRepaired = 0;
-    if (ruleCols.contains('condition_from')) {
-      final fromColumns = [
-        'condition_from',
-        if (ruleCols.contains('exception_from')) 'exception_from',
-      ];
-      final rows = await db.query('rules', columns: ['id', ...fromColumns]);
+    // From columns hold one address pattern per entry, so the full check
+    // applies. Header columns hold `key:value` text for non-From headers, so
+    // only the NARROW stray-@ repair runs on them (detectUnmatchable alone
+    // could misfire there); From rules the app creates itself live in
+    // condition_header (rule_quick_action_service, rule_edit_screen).
+    final ruleColumns = <String, bool>{
+      if (ruleCols.contains('condition_from')) 'condition_from': true,
+      if (ruleCols.contains('exception_from')) 'exception_from': true,
+      if (ruleCols.contains('condition_header')) 'condition_header': false,
+      if (ruleCols.contains('exception_header')) 'exception_header': false,
+    };
+    if (ruleColumns.isNotEmpty) {
+      final rows = await db.query('rules',
+          columns: ['id', ...ruleColumns.keys]);
       for (final row in rows) {
         final updates = <String, Object?>{};
-        for (final column in fromColumns) {
+        ruleColumns.forEach((column, addressColumn) {
           final raw = row[column];
-          if (raw is! String) continue;
-          try {
-            final patterns = (jsonDecode(raw) as List).cast<String>();
-            var changed = false;
-            final fixed = <String>[];
-            for (final p in patterns) {
-              final repaired =
-                  PatternCompiler.repairStrayAtAfterDomainWildcard(p);
-              final next = repaired ?? p;
-              if (repaired != null) changed = true;
-              if (!fixed.contains(next)) fixed.add(next);
-            }
-            if (changed) updates[column] = jsonEncode(fixed);
-          } catch (_) {
-            // Malformed JSON: skip rather than fail the migration.
+          if (raw is! String) return;
+          final outcome =
+              _repairPatternListJson(raw, addressColumn: addressColumn);
+          if (outcome.error != null) {
+            skippedRows++;
+            _logger.w('v13: rules id=${row['id']} $column skipped, '
+                'unreadable: ${outcome.error.runtimeType}');
+            return;
           }
-        }
+          unrepairable += outcome.unrepairable;
+          if (outcome.unrepairable > 0) {
+            _logger.w('v13: rules id=${row['id']} $column has '
+                '${outcome.unrepairable} unmatchable entr(ies) that are not '
+                'the repairable shape; left as is');
+          }
+          if (outcome.repairedJson != null) {
+            updates[column] = outcome.repairedJson;
+          }
+        });
         if (updates.isNotEmpty) {
           await db.update('rules', updates,
               where: 'id = ?', whereArgs: [row['id']]);
@@ -781,8 +842,55 @@ class DatabaseHelper implements RuleDatabaseProvider {
     }
 
     _logger.i('v13 migration complete: $ssRepaired safe sender(s) repaired, '
-        '$ssDeleted broken duplicate(s) deleted, $rulesRepaired rule(s) '
-        'repaired');
+        '$ssDeleted broken duplicate(s) deleted, $ssExceptionRowsRepaired '
+        'safe sender exception list(s) repaired, $rulesRepaired rule(s) '
+        'repaired; $skippedRows row(s) skipped as unreadable, '
+        '${ssUnrepairable + unrepairable} unmatchable pattern(s) left as is '
+        'because they are not the repairable shape');
+  }
+
+  /// Repair one JSON-encoded pattern list for the v13 migration.
+  ///
+  /// Returns the re-encoded list in `repairedJson` only when at least one
+  /// entry changed. `error` is set (and nothing else is meaningful) when the
+  /// column is not a JSON array of strings. `unrepairable` counts entries
+  /// that [PatternCompiler.detectUnmatchable] flags but the narrow repair
+  /// cannot fix; that count is only taken for [addressColumn] lists, because
+  /// header lists hold `key:value` text the general check can misread.
+  static ({String? repairedJson, int unrepairable, Object? error})
+      _repairPatternListJson(Object? raw, {required bool addressColumn}) {
+    try {
+      if (raw is! String) {
+        return (repairedJson: null, unrepairable: 0, error: null);
+      }
+      final decoded = jsonDecode(raw);
+      if (decoded is! List) {
+        throw const FormatException('not a JSON array');
+      }
+      // Eager conversion: a lazy cast would only throw later, outside here.
+      final patterns = decoded.map((e) => e as String).toList();
+      var changed = false;
+      var unrepairable = 0;
+      final fixed = <String>[];
+      for (final p in patterns) {
+        final repaired = PatternCompiler.repairStrayAtAfterDomainWildcard(p);
+        if (repaired == null &&
+            addressColumn &&
+            PatternCompiler.detectUnmatchable(p).isNotEmpty) {
+          unrepairable++;
+        }
+        final next = repaired ?? p;
+        if (repaired != null) changed = true;
+        if (!fixed.contains(next)) fixed.add(next);
+      }
+      return (
+        repairedJson: changed ? jsonEncode(fixed) : null,
+        unrepairable: unrepairable,
+        error: null,
+      );
+    } catch (e) {
+      return (repairedJson: null, unrepairable: 0, error: e);
+    }
   }
 
   /// v12 (F245, Sprint 77, ADR-0045): one No Rule row per email.

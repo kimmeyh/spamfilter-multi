@@ -1,10 +1,12 @@
 import 'dart:io';
 import 'dart:convert';
+import 'package:flutter/foundation.dart' show visibleForTesting;
 import 'package:logger/logger.dart';
 import 'package:path/path.dart' as path;
 
 import 'app_environment.dart';
 import 'scan_interval.dart';
+import 'diagnostic_logger.dart';
 import 'powershell_script_generator.dart';
 import '../storage/settings_store.dart';
 import '../utils/account_id_sanitizer.dart';
@@ -64,6 +66,10 @@ class WindowsTaskSchedulerService {
       _logger.i('Creating scheduled task "${_logTaskLabel(accountId)}" every ${ScanInterval.label(intervalMinutes)}'
           '${accountId != null ? ' (account: ${Redact.accountId(accountId)})' : ''}');
 
+      // Read the slot FIRST: a read that fails twice throws, and nothing
+      // else (no script, no task) must happen after that.
+      final staggerSlot = await _staggerSlotFor(accountId);
+
       // Get executable path (current running app)
       final executablePath = await _getExecutablePath();
       final workingDirectory = await _getWorkingDirectory();
@@ -78,7 +84,7 @@ class WindowsTaskSchedulerService {
         intervalMinutes: intervalMinutes,
         workingDirectory: workingDirectory,
         accountId: accountId,
-        staggerSlot: await _staggerSlotFor(accountId),
+        staggerSlot: staggerSlot,
       );
 
       // Execute script
@@ -144,20 +150,49 @@ class WindowsTaskSchedulerService {
   /// fixed start stagger. Every create and update path (Settings, startup
   /// ensure, path repair, the F264 upgrade re-registration) comes through
   /// [createScheduledTask] or [updateScheduledTask], so all of them get it.
-  /// The legacy global task (no account) is slot 0. If the slot cannot be
-  /// read, the task is still registered, unstaggered, and the failure is
-  /// logged: a missing stagger costs contention the F98 lock retry absorbs,
-  /// while a missing task costs every scan.
+  /// The legacy global task (no account) is slot 0.
+  ///
+  /// A failed read is retried once, after [slotReadRetryDelay]: the same
+  /// shape as the F98 "database is locked" retry (one more attempt after a
+  /// wait). If it fails again this THROWS, so the caller reports the
+  /// registration as failed (the existing Settings failure message shows) and
+  /// no task is registered. A fallback to slot 0 was wrong: slot 0 is the
+  /// first account's own start minute, so it would collide with that account
+  /// while Settings reported the schedule as set and the database still held
+  /// this account's real slot.
   static Future<int> _staggerSlotFor(String? accountId) async {
     if (accountId == null) return 0;
+    Object? firstError;
     try {
-      return await SettingsStore().getOrAllocateScheduleSlot(accountId);
+      return await slotReader(accountId);
     } catch (e) {
-      _logger.w('Could not read the schedule slot for '
-          '${Redact.accountId(accountId)}; registering without a stagger: $e');
-      return 0;
+      firstError = e;
+    }
+    await Future<void>.delayed(slotReadRetryDelay);
+    try {
+      return await slotReader(accountId);
+    } catch (e) {
+      _logger.e('Could not read the schedule slot for '
+          '${Redact.accountId(accountId)} after one retry; the task was not '
+          'registered', error: e);
+      await DiagnosticLogger.failure(
+        context: 'windows-task-scheduler/schedule-slot',
+        kind: DiagnosticLogger.kindException,
+        reason: 'slot read failed twice, task not registered (account '
+            '${Redact.accountId(accountId)}; first error '
+            '${firstError.runtimeType}, second ${DiagnosticLogger.describeError(e)})',
+      );
+      rethrow;
     }
   }
+
+  /// Pause before the single retry of a failed slot read.
+  static Duration slotReadRetryDelay = const Duration(seconds: 2);
+
+  /// Test seam: reads (or allocates) the account's schedule slot.
+  @visibleForTesting
+  static Future<int> Function(String accountId) slotReader =
+      (accountId) => SettingsStore().getOrAllocateScheduleSlot(accountId);
 
   /// Delete the scheduled task
   ///

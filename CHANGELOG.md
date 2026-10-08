@@ -29,6 +29,11 @@ Format: `- **type**: Description (Issue #N)` where type is feat|fix|chore|docs
 ### 2026-10-08 (Sprint 77)
 - **fix**: The diagnostic log no longer records a sender address or subject text when a No Rule email is cleared because an existing rule covers it; it records only the kind of rule (Sprint 77 final review)
 - **fix**: Adding an email address that is already saved now asks "Replace its saved sign-in details?" for every Google sign-in method too, not only the password form, and also asks when the app cannot read its saved accounts (Sprint 77 final review)
+- **fix**: If the app cannot read an account's saved start time while setting up its Windows background scan, it now retries once and then tells you the schedule could not be set, instead of silently starting that account at the same minute as another account (Sprint 77 final review)
+- **fix**: Two accounts set up at the same moment can no longer be given the same background scan start time (Sprint 77 final review)
+- **fix**: The upgrade that repairs patterns which can never match now also repairs rules created from the app (including those from a sender's address), and exceptions on safe senders, so editing such a safe sender no longer fails with an error about its exception (Sprint 77 final review)
+- **fix**: Rows the upgrade could not read or repair are now recorded in the log and counted, instead of being skipped silently (Sprint 77 final review)
+- **fix**: Importing rules or safe senders now reports skipped rules and skipped patterns as separate counts, for example "1 rule and 3 patterns", instead of an inflated "unusable entries" number (Sprint 77 final review)
 - **fix**: After the first scan of a new account, the Results screen now shows the scan's outcome instead of "No Results Yet. Run a scan." (Sprint 77 Manual Validation)
 
 ### 2026-10-07 (Sprint 77)

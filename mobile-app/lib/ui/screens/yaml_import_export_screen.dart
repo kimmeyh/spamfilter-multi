@@ -540,6 +540,10 @@ class _YamlImportExportScreenState extends State<YamlImportExportScreen> {
       for (final line in skipped) {
         _logger.w('Import skipped (unmatchable): $line');
       }
+      // Worded from the separate counts; skipped.length counts detail LINES.
+      final droppedText = YamlService.describeDropped(
+          droppedRules: sanitized.droppedRules,
+          droppedPatterns: sanitized.droppedPatterns);
 
       // Show confirmation dialog
       if (!mounted) return;
@@ -549,6 +553,7 @@ class _YamlImportExportScreenState extends State<YamlImportExportScreen> {
         itemType: 'rules',
         filePath: filePath,
         skipped: skipped,
+        droppedText: droppedText,
       );
 
       if (confirmed != true) {
@@ -565,7 +570,7 @@ class _YamlImportExportScreenState extends State<YamlImportExportScreen> {
 
       _logger.i('Imported ${importedRules.rules.length} rules from $filePath');
       _showStatus('Imported ${importedRules.rules.length} rules successfully'
-          '${_skippedSuffix(skipped)}');
+          '${_skippedSuffix(droppedText)}');
     } catch (e) {
       _logger.e('Failed to import rules', error: e);
       _showStatus('Import failed: $e', isError: true);
@@ -604,6 +609,8 @@ class _YamlImportExportScreenState extends State<YamlImportExportScreen> {
       for (final line in skipped) {
         _logger.w('Import skipped (unmatchable): $line');
       }
+      final droppedText = YamlService.describeDropped(
+          droppedRules: 0, droppedPatterns: sanitized.droppedPatterns);
 
       // Show confirmation dialog
       if (!mounted) return;
@@ -613,6 +620,7 @@ class _YamlImportExportScreenState extends State<YamlImportExportScreen> {
         itemType: 'safe senders',
         filePath: filePath,
         skipped: skipped,
+        droppedText: droppedText,
       );
 
       if (confirmed != true) {
@@ -630,7 +638,7 @@ class _YamlImportExportScreenState extends State<YamlImportExportScreen> {
       _logger.i('Imported ${importedSafeSenders.safeSenders.length} safe senders from $filePath');
       _showStatus(
         'Imported ${importedSafeSenders.safeSenders.length} safe senders '
-        'successfully${_skippedSuffix(skipped)}',
+        'successfully${_skippedSuffix(droppedText)}',
       );
     } catch (e) {
       _logger.e('Failed to import safe senders', error: e);
@@ -648,6 +656,7 @@ class _YamlImportExportScreenState extends State<YamlImportExportScreen> {
     required String itemType,
     required String filePath,
     List<String> skipped = const [],
+    String droppedText = '',
   }) {
     return showDialog<bool>(
       context: context,
@@ -665,10 +674,8 @@ class _YamlImportExportScreenState extends State<YamlImportExportScreen> {
             if (skipped.isNotEmpty) ...[
               const SizedBox(height: 12),
               Text(
-                '${skipped.length} unusable '
-                '${skipped.length == 1 ? 'entry was' : 'entries were'} '
-                'skipped because ${skipped.length == 1 ? 'it' : 'they'} '
-                'can never match an email address:',
+                'Skipped $droppedText because of patterns that can never '
+                'match an email address:',
                 style: TextStyle(color: Colors.orange.shade800, fontSize: 13),
               ),
               const SizedBox(height: 4),
@@ -725,11 +732,10 @@ class _YamlImportExportScreenState extends State<YamlImportExportScreen> {
 
   // --- Helpers ---
 
-  /// F266: status-line suffix naming how many import entries were skipped.
-  String _skippedSuffix(List<String> skipped) => skipped.isEmpty
-      ? ''
-      : ' (${skipped.length} unusable '
-          '${skipped.length == 1 ? 'entry' : 'entries'} skipped)';
+  /// F266: status-line suffix naming what the import skipped, from
+  /// [YamlService.describeDropped] (separate rule and pattern counts).
+  String _skippedSuffix(String droppedText) =>
+      droppedText.isEmpty ? '' : ' ($droppedText skipped)';
 
   String _shortenPath(String path) {
     // Show just the file name if the path is very long

@@ -355,9 +355,12 @@ class RuleDatabaseStore {
   }
 
   /// F266 (Sprint 77): reject a rule whose `from` condition or `from`
-  /// exception can never match an address. Only the `from` lists are
-  /// checked: subject and body patterns can legally contain two `@`, and
-  /// non-From header patterns match `key:value` text, not one address.
+  /// exception can never match an address. The `from` lists get the full
+  /// check. `header` lists get only the NARROW shipped-shape check
+  /// ([PatternCompiler.hasStrayAtAfterDomainWildcard]): the app stores its
+  /// own From rules in `condition_header`, but non-From headers match
+  /// `key:value` text where the general check could misfire. Subject and body
+  /// patterns can legally contain two `@` and are not checked.
   /// Called from [_rejectIfReDoS] (add and update) and from [saveRules]
   /// (import).
   static void _rejectIfUnmatchable(Rule rule) {
@@ -369,6 +372,17 @@ class RuleDatabaseStore {
       if (problems.isNotEmpty) {
         throw RuleDatabaseStorageException(
           'Pattern "$pattern" was rejected: ${problems.first}',
+        );
+      }
+    }
+    for (final pattern in [
+      ...rule.conditions.header,
+      ...?rule.exceptions?.header,
+    ]) {
+      if (PatternCompiler.hasStrayAtAfterDomainWildcard(pattern)) {
+        throw RuleDatabaseStorageException(
+          'Pattern "$pattern" was rejected: it has a stray "@" after the '
+          'subdomain wildcard, so it can never match.',
         );
       }
     }
