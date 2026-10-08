@@ -299,6 +299,17 @@ All decision questions are answered; execution proceeds without further approval
   Not the cleanup sweep by inspection: it yields every 100 ms and catches per row. GPU LiveKernelEvent 141 reports were
   filed at 08:57 but their dumps are dated 2026-09-17 to 10-07, so they are queued old reports, not this event. What would
   settle it: Harold's exact click sequence before the crash, and a local crash dump on the next occurrence.
+  - MV-Q19: the crash came on OPENING Review No Rule Items from its app-bar icon. Five minutes earlier (08:54:54, the
+    last database write) Harold changed Settings > General export folder to `C:\Users\kimme\Documents`; whether that
+    change is related is unverified. MV-Q20 = 1: `scripts/enable-crash-dumps.ps1` (WER LocalDumps, full dump, values
+    checked against Microsoft Learn) so the next crash keeps its dump.
+- MV step 10 PASS (MV-Q21 = 1): wrong password on localhost:3993 reads "Sign-in failed. Please check your sign-in details".
+- MV step 5 logging PASS: `C:\Users\kimme\Documents\diagnostics_Dev\dev_diag_v0.18.0_2026-10-08.log` 09:07:08
+  `row 8002 marked addressed: dismissed` (the INBOX copy; the `[Gmail]/Spam` copy 5211 stays listed -- F276). The
+  re-appearance half is NOT yet shown: the 09:07 manual scan (daysBack=1) fetched only 2 emails. MY STEP WAS WRONG
+  (Sprint 75 retro IMP-5): the email is dated about 09-28, and while a backlog cursor exists the scanner re-scans from
+  that cursor's UID and ignores the day count (`email_scanner.dart:1858`); only "Scan all emails" (daysBack <= 0)
+  bypasses it. Re-presented with that precondition.
 - Phone evidence pulled 2026-10-07 (Harold tethered the Fold; rebooted ~08:30, app not opened until after noon):
   `validation-screenshots/sprint-77/` -- screenshots, `diag_v0.17.5_2026-10-06.log`, `diag_v0.17.5_2026-10-07.log`,
   `diag_v0.17.6_2026-10-07.log`, scan CSVs. `scripts/pull-phone-screenshots.ps1` fixed (a `$folder` local overwrote the
