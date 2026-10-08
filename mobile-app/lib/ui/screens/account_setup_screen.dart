@@ -24,27 +24,12 @@ import 'gmail_oauth_screen.dart';
 import '../widgets/standard_app_bar_actions.dart';
 import '../widgets/screen_version_line.dart'; // F229 (Sprint 73)
 import '../widgets/system_inset_wrapper.dart'; // F209 (Sprint 69)
+import '../utils/confirm_replace_account.dart';
 
-/// Sprint 77 MV-Q4: the text of the "Account already added" question.
-/// [providerName] null = the saved account's provider is unknown.
-@visibleForTesting
-String replaceAccountMessage(String? providerName) {
-  final which = providerName == null ? '' : ' ($providerName)';
-  return 'This email address is already added$which. Replace its saved '
-      'sign-in details with the ones you entered? Its scan history, rules '
-      'and settings are kept.';
-}
-
-/// MV-Q4: the provider's display name for a stored platform id, or null.
-@visibleForTesting
-String? providerNameFor(String? platformId) {
-  if (platformId == null) return null;
-  if (platformId == 'gmail-imap') return 'Gmail, App Password';
-  for (final info in PlatformRegistry.getSupportedPlatforms()) {
-    if (info.id == platformId) return info.displayName;
-  }
-  return null;
-}
+// The question's text helpers moved to the shared helper; re-exported so the
+// existing import of this screen keeps working.
+export '../utils/confirm_replace_account.dart'
+    show replaceAccountMessage, providerNameFor;
 
 /// Gmail authentication method choices
 ///
@@ -577,29 +562,8 @@ class _AccountSetupScreenState extends State<AccountSetupScreen> {
   /// already added as AOL) used to overwrite that account's sign-in with no
   /// warning. Re-adding is also how a user enters a new app password, so the
   /// add is confirmed, not blocked. True = go ahead.
-  Future<bool> _confirmReplaceExisting(String accountId) async {
-    if (!await _credStore.credentialsExist(accountId)) return true;
-    final existing = await _credStore.getPlatformId(accountId);
-    if (!mounted) return false;
-    final replace = await showDialog<bool>(
-      context: context,
-      builder: (ctx) => AlertDialog(
-        title: const Text('Account already added'),
-        content: Text(replaceAccountMessage(providerNameFor(existing))),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.of(ctx).pop(false),
-            child: const Text('Cancel'),
-          ),
-          FilledButton(
-            onPressed: () => Navigator.of(ctx).pop(true),
-            child: const Text('Replace'),
-          ),
-        ],
-      ),
-    );
-    return replace == true;
-  }
+  Future<bool> _confirmReplaceExisting(String accountId) =>
+      confirmReplaceExistingAccount(context, _credStore, accountId);
 
   /// Save credentials and proceed to scan screen
   ///

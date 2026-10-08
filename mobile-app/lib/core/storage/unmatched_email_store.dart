@@ -10,8 +10,20 @@ library;
 
 import 'package:logger/logger.dart';
 
+import '../models/evaluation_result.dart';
 import '../services/diagnostic_logger.dart';
 import 'database_helper.dart';
+
+/// The detail the diagnostic log gets when a current rule or safe sender
+/// covers a No Rule row (Sprint 77 final review).
+///
+/// The rule's TYPE, never its NAME: an exact-sender rule is named
+/// `Block_<address>` and a subject rule `Block_Subject_<subject text>`
+/// (RuleQuickActionService), and [DiagnosticLogger.scrub] redacts addresses
+/// but not subject text.
+String coveredByRuleDetail(EvaluationResult eval) => eval.isSafeSender
+    ? 'safe sender'
+    : 'rule type ${eval.matchedPatternType ?? 'unknown'}';
 
 /// Maximum length stored in the `body_preview` column.
 ///
@@ -504,7 +516,11 @@ class UnmatchedEmailStore {
   /// Returns true on success, false if email not found, throws exception on error
   ///
   /// [reason] says why, and is written to the diagnostic log with [detail]
-  /// (a rule name or action label -- never an address or message content).
+  /// (a short fixed label such as an action name or a rule type). [detail] is
+  /// passed through [DiagnosticLogger.scrub] here, the one sink, so an address
+  /// that reaches it is redacted. The scrub does NOT cover subject text, so a
+  /// caller must never pass a rule name (a subject rule is named from the
+  /// subject).
   Future<bool> markAsProcessed(
     int emailId,
     bool processed, {
@@ -528,7 +544,7 @@ class UnmatchedEmailStore {
           context: 'F245/no-rule',
           detail: 'row $emailId marked '
               '${processed ? 'addressed' : 'unaddressed'}: ${reason.name}'
-              '${detail == null || detail.isEmpty ? '' : ' ($detail)'}',
+              '${detail == null || detail.isEmpty ? '' : ' (${DiagnosticLogger.scrub(detail)})'}',
         );
       }
       return success;

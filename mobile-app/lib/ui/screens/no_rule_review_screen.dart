@@ -564,13 +564,13 @@ class _NoRuleReviewScreenState extends State<NoRuleReviewScreen> {
       try {
         final eval = await evaluator.evaluate(message);
         if (eval.matchedRule.isNotEmpty || eval.isSafeSender) {
-          // A safe sender's "rule" can be the sender's own address, which
-          // the diagnostic log must not record; a block rule's name is safe.
+          // Log the rule's TYPE, never its name: an exact-sender rule is named
+          // Block_<address> and a subject rule Block_Subject_<subject text>
+          // (RuleQuickActionService), and the diagnostic log must hold
+          // neither an address nor subject text.
           await _unmatchedStore.markAsProcessed(id, true,
               reason: NoRuleMarkReason.coveredByRule,
-              detail: eval.isSafeSender
-                  ? 'safe sender'
-                  : 'rule "${eval.matchedRule}"');
+              detail: coveredByRuleDetail(eval));
           _lastSweepCount++;
         } else {
           kept.add(item);

@@ -20,6 +20,7 @@ import 'dart:io';
 
 import 'package:flutter_test/flutter_test.dart';
 import 'package:sqflite_common_ffi/sqflite_ffi.dart';
+import 'package:my_email_spam_filter/core/models/evaluation_result.dart';
 import 'package:my_email_spam_filter/core/services/diagnostic_logger.dart';
 import 'package:my_email_spam_filter/core/storage/database_helper.dart';
 import 'package:my_email_spam_filter/core/storage/unmatched_email_store.dart';
@@ -391,6 +392,61 @@ void main() {
       expect(text, contains('row ${ids[1]} marked addressed: dismissed'));
       expect(text, contains('row ${ids[2]} marked addressed: coveredByRule (rule "SpamX")'));
       expect(text, contains('row ${ids[3]} marked unaddressed: detailView'));
+    });
+
+    // Sprint 77 final review (finding 4): the log must hold no address and
+    // no subject text. What this does NOT catch: a caller that puts SUBJECT
+    // text in detail (scrub redacts addresses only) -- the coveredByRule
+    // caller is pinned to a rule TYPE below, and a new caller is a review item.
+    test('an address in detail never reaches the log file', () async {
+      final scan = await testHelper.createTestScanResult('acct-a');
+      final id = (await store.upsertUnmatchedEmails([email(scan)])).single.id;
+      await store.markAsProcessed(id, true,
+          reason: NoRuleMarkReason.bulkAction,
+          detail: 'rule "Block_john.doe@example.com" for jane+x@mail.example.org');
+
+      final text = await logText();
+      expect(text, contains('row $id marked addressed: bulkAction'));
+      expect(text, isNot(contains('john.doe@example.com')));
+      expect(text, isNot(contains('jane+x@mail.example.org')));
+    });
+
+    test('coveredByRule detail is the rule type, never the rule name', () {
+      EvaluationResult eval(String name, String? type, {bool safe = false}) =>
+          EvaluationResult(
+            shouldDelete: !safe,
+            shouldMove: false,
+            matchedRule: name,
+            matchedPattern: 'x',
+            isSafeSender: safe,
+            matchedPatternType: type,
+          );
+      final sender = coveredByRuleDetail(
+          eval('Block_john.doe@example.com', 'exact_email'));
+      final subject = coveredByRuleDetail(
+          eval('Block_Subject_Win a free prize now', 'subject'));
+      final safe = coveredByRuleDetail(
+          eval('SafeSender', 'exact_email', safe: true));
+      expect(sender, 'rule type exact_email');
+      expect(subject, 'rule type subject');
+      expect(safe, 'safe sender');
+      expect(coveredByRuleDetail(eval('Block_x', null)), 'rule type unknown');
+      for (final d in [sender, subject, safe]) {
+        expect(d, isNot(contains('Block_')));
+        expect(d, isNot(contains('john')));
+        expect(d, isNot(contains('prize')));
+      }
+    });
+
+    test('source gate: the sweep logs coveredByRuleDetail, not the rule name',
+        () {
+      final src =
+          File('lib/ui/screens/no_rule_review_screen.dart').readAsStringSync();
+      final at = src.indexOf('NoRuleMarkReason.coveredByRule');
+      expect(at, greaterThan(0));
+      final call = src.substring(at, at + 200);
+      expect(call, contains('detail: coveredByRuleDetail(eval)'));
+      expect(call, isNot(contains('matchedRule')));
     });
 
     test('a dismissed row found again is logged as reappeared', () async {

@@ -27,6 +27,8 @@ Format: `- **type**: Description (Issue #N)` where type is feat|fix|chore|docs
 ## [Unreleased]
 
 ### 2026-10-08 (Sprint 77)
+- **fix**: The diagnostic log no longer records a sender address or subject text when a No Rule email is cleared because an existing rule covers it; it records only the kind of rule (Sprint 77 final review)
+- **fix**: Adding an email address that is already saved now asks "Replace its saved sign-in details?" for every Google sign-in method too, not only the password form, and also asks when the app cannot read its saved accounts (Sprint 77 final review)
 - **fix**: After the first scan of a new account, the Results screen now shows the scan's outcome instead of "No Results Yet. Run a scan." (Sprint 77 Manual Validation)
 
 ### 2026-10-07 (Sprint 77)

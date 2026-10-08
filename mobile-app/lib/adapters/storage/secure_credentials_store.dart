@@ -28,8 +28,20 @@ class CredentialStorageException implements Exception {
   String toString() => 'CredentialStorageException: $message${originalError != null ? '\nCause: $originalError' : ''}';
 }
 
+/// Result of [SecureCredentialsStore.accountPresence].
+enum AccountPresence {
+  /// The address has saved sign-in details.
+  present,
+
+  /// Storage was read and the address has nothing saved.
+  absent,
+
+  /// Storage could not be read. Callers treat this like [present].
+  unknown,
+}
+
 /// Secure storage for email credentials and authentication tokens
-/// 
+///
 /// This storage implementation:
 /// - Uses flutter_secure_storage for encrypted persistence
 /// - Stores credentials by account identifier (email address)
@@ -421,7 +433,34 @@ class SecureCredentialsStore {
     }
   }
 
-  /// Check if credentials exist for an account
+  /// Whether an account address is already saved, failing CLOSED.
+  ///
+  /// Sprint 77 final review: [credentialsExist] returns false on a storage
+  /// read error, so a caller that asks "may I add this silently?" would say
+  /// yes exactly when it cannot tell. This returns [AccountPresence.unknown]
+  /// instead, and the add flow then ASKS. An account counts as present when
+  /// it has saved sign-in details (password or Google Sign-In record) or a
+  /// saved Gmail token.
+  Future<AccountPresence> accountPresence(String accountId) async {
+    try {
+      final email = await _storage.read(
+        key: '${_credentialsPrefix}${accountId}_email',
+      );
+      if (email != null) return AccountPresence.present;
+      final tokens = await _storage.read(
+        key: '${_tokenPrefix}${accountId}_gmail_tokens',
+      );
+      return tokens != null ? AccountPresence.present : AccountPresence.absent;
+    } catch (e) {
+      _logger.w('Could not check whether an account is saved', error: e);
+      return AccountPresence.unknown;
+    }
+  }
+
+  /// Check if credentials exist for an account.
+  ///
+  /// Returns false on a read error. Do NOT use this to decide whether an add
+  /// may skip a question; use [accountPresence], which fails closed.
   Future<bool> credentialsExist(String accountId) async {
     try {
       final email = await _storage.read(

@@ -10,6 +10,7 @@ import 'gmail_manual_token_screen.dart';
 import '../../util/redact.dart';
 import '../widgets/screen_version_line.dart'; // F229 (Sprint 73)
 import '../widgets/system_inset_wrapper.dart'; // F209 (Sprint 69)
+import '../utils/confirm_replace_account.dart';
 
 /// Gmail OAuth authentication screen
 /// Handles Google Sign-In flow and credential storage
@@ -277,6 +278,13 @@ class _GmailOAuthScreenState extends State<GmailOAuthScreen> {
     );
   }
 
+  /// Sprint 77 final review: the add-account question, asked by
+  /// [GoogleAuthService.signIn] after the address is known and before any
+  /// token is saved. Same question as the password form and the other Gmail
+  /// sign-in screens (one shared helper).
+  Future<bool> _confirmAdd(String email) =>
+      confirmReplaceExistingAccount(context, SecureCredentialsStore(), email);
+
   /// Handle browser-based OAuth (primary method for Windows)
   Future<void> _handleBrowserOAuth() async {
     setState(() {
@@ -288,7 +296,7 @@ class _GmailOAuthScreenState extends State<GmailOAuthScreen> {
       Redact.logSafe('Starting browser-based OAuth via GoogleAuthService');
       
       // Use GoogleAuthService for unified auth flow
-      final result = await _authService.signIn();
+      final result = await _authService.signIn(confirmAdd: _confirmAdd);
 
       if (!mounted) return;
 
@@ -367,7 +375,7 @@ class _GmailOAuthScreenState extends State<GmailOAuthScreen> {
       Redact.logSafe('Starting Gmail OAuth sign-in via GoogleAuthService...');
       
       // Use GoogleAuthService for unified native sign-in
-      final result = await _authService.signIn();
+      final result = await _authService.signIn(confirmAdd: _confirmAdd);
 
       if (!mounted) return;
 
