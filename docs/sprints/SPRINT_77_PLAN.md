@@ -310,6 +310,14 @@ All decision questions are answered; execution proceeds without further approval
   (Sprint 75 retro IMP-5): the email is dated about 09-28, and while a backlog cursor exists the scanner re-scans from
   that cursor's UID and ignores the day count (`email_scanner.dart:1858`); only "Scan all emails" (daysBack <= 0)
   bypasses it. Re-presented with that precondition.
+- MV step 5 PASS (Harold, 09:11, "Scan all emails", found=61): the log reads `row 8001 reappeared` and `row 8002
+  reappeared` (09:11:44); the scan persisted "2 No Rule row(s) (0 new, 2 refreshed)" -- no duplicates. Gmail count 4 -> 6:
+  8002 (dismissed at 09:07) and 8001 (the playpartners INBOX row marked addressed earlier with no recorded cause, before
+  the MV-Q9 logging existed). Its return confirms it was marked addressed, not deleted; the cause of that mark stays
+  unknown, and any repeat is now logged with its reason. Each sender also keeps a stale `[Gmail]/Spam` copy (5211, 5213,
+  last seen 10-03) -- F276. Test servers stopped 09:1x (`-Stop`).
+- Windows Manual Validation: steps 1, 2, 3a-c, 5-10 PASS, 4 N/A; Fold steps 7-11 move to the start of Sprint 78
+  (MV-Q7 = 2). OPEN: the 08:59 crash (cause unknown); the WinWright `test_mt2c_no_rule_sweep` fix.
 - Phone evidence pulled 2026-10-07 (Harold tethered the Fold; rebooted ~08:30, app not opened until after noon):
   `validation-screenshots/sprint-77/` -- screenshots, `diag_v0.17.5_2026-10-06.log`, `diag_v0.17.5_2026-10-07.log`,
   `diag_v0.17.6_2026-10-07.log`, scan CSVs. `scripts/pull-phone-screenshots.ps1` fixed (a `$folder` local overwrote the
