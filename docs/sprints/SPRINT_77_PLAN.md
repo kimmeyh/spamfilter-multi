@@ -246,6 +246,10 @@ All decision questions are answered; execution proceeds without further approval
   reported it running. Probe against the restarted Dovecot: STARTTLS, "not trusted" (sha256 9b9c2cec...), trust, LOGIN
   `tester` all succeed. `scripts/start-test-imap-servers.ps1` now holds one hidden keepalive WSL session
   (`spamfilter-keepalive`); `-Stop` ends it.
+- MV step 3b PASS (STARTTLS, trust question with Dovecot fingerprint 9B:9C:2C:EC..., saved, 3 seeded messages listed) and
+  step 3c PASS (GreenMail restarted with a new certificate 8C:A1:90:DD...; the scan stopped with "Server certificate
+  changed"; Harold, 2026-10-08). Two more test-script defects fixed on the way (d4c376c): keytool's stderr aborted
+  `-NewCertificate` under Windows PowerShell 5.1, and the keepalive held the caller's output pipe.
 - MV step 2 finding (OPEN): the Yahoo Results screen read "No Results Yet. Run a scan." after a completed scan (found 2,
   evaluated 0 -- by inference both already-filed safe senders; unverified). `results_display_screen.dart` sets
   `_hasEverScanned` once at load and never updates it, so a first-ever scan run while the screen is open keeps the
