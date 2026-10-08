@@ -19,7 +19,13 @@
     module "unknown"), whose WER dump was deleted before it could be read.
 
 .PARAMETER Exe
-    The exe file name. Default: MyEmailSpamFilter-Dev.exe.
+    The exe file name. Default: MyEmailSpamFilter-Dev.exe, the name
+    build-windows.ps1 gives the dev build in dist\dev. A Debug run
+    (flutter run) executes MyEmailSpamFilter.exe instead; pass
+    -Exe MyEmailSpamFilter.exe to keep dumps for that.
+
+.PARAMETER Count
+    How many dumps Windows keeps for this exe (DumpCount). Default: 5.
 
 .PARAMETER Folder
     Where dumps are written. Default: %LOCALAPPDATA%\CrashDumps.

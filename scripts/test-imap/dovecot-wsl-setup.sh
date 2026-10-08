@@ -49,5 +49,13 @@ else
   dovecot </dev/null >/dev/null 2>&1
 fi
 sleep 1
+# Verify, do not assume: the start above discards Dovecot's output, so a config
+# error would otherwise exit silently while this script printed "running"
+# (Sprint 77 7.7.1 review).
+if ! pgrep -x dovecot >/dev/null 2>&1; then
+  echo "ERROR: dovecot is not running after start. Config check:" >&2
+  doveconf -n 2>&1 >/dev/null | tail -5 >&2
+  exit 1
+fi
 echo "dovecot $(dovecot --version) running; certificate SHA-256:"
 openssl x509 -in /etc/dovecot/private/dovecot.pem -noout -fingerprint -sha256

@@ -345,17 +345,38 @@ if ($sprintNum -ge 77 -and $status -and $null -ne $status.current_sprint -and
 #     model and actual minutes lived only in CODING_VELOCITY.md and the
 #     retrospective first reported them as missing. A seeded placeholder is not a
 #     record -- the same rule 3d-2 applies to the 7.7.1 marker.
+#
+#     Hardened at 7.7.1 (both final reviewers, 2026-10-08): the first cut stripped
+#     only the literal "(filled at completion)", so the line the AUTHORITATIVE
+#     template actually seeds (SPRINT_PLANNING.md: "**Executed-by** (filled at
+#     completion): <model that actually executed> -- <one line why ...>
+#     <!-- MANDATORY ... -->") counted as filled, as did the older "_(fill at
+#     completion)_" form, and a bullet-form line or a card with NO Executed-by
+#     line was never seen. A gate that passes because nothing matched is the
+#     Sprint 69 F210 class. Now: angle placeholders and HTML comments are
+#     removed before judging, both seed wordings are recognized, a leading
+#     "- " is accepted, and the number of task cards ("## Task X --" /
+#     "### Task X --") must not exceed the number of Executed-by lines.
 if ($sprintNum -ge 77 -and $status -and $null -ne $status.current_sprint -and
     $status.current_sprint.plan_approved -eq $true) {
     $planPathEx = Join-Path $cwd ("docs/sprints/SPRINT_{0}_PLAN.md" -f $sprintNum)
     if (Test-Path -LiteralPath $planPathEx) {
+        $planTextEx = Get-Content -LiteralPath $planPathEx -Raw
         $emptyEx = 0
-        foreach ($exm in [regex]::Matches((Get-Content -LiteralPath $planPathEx -Raw), '(?im)^\s*\*\*Executed-by\*\*(.*)$')) {
-            $v = $exm.Groups[1].Value -replace '\(filled at completion\)', '' -replace '[\s:*_`-]', ''
+        $exMatches = [regex]::Matches($planTextEx, '(?im)^\s*(?:-\s*)?\*\*Executed-by\*\*(.*)$')
+        foreach ($exm in $exMatches) {
+            $v = $exm.Groups[1].Value
+            $v = $v -replace '<!--.*?-->', '' -replace '<[^>]*>', ''
+            $v = $v -replace '(?i)\(fill(ed)? at completion\)', ''
+            $v = $v -replace '[\s:*_`-]', ''
             if ([string]::IsNullOrWhiteSpace($v) -or $v -match '^(?i)(PENDING|TBD|TODO)$') { $emptyEx++ }
         }
+        $cardCountEx = [regex]::Matches($planTextEx, '(?im)^#{2,3}\s+Task\s+\S+\s+--').Count
         if ($emptyEx -gt 0) {
-            $violations += "SPRINT_${sprintNum}_PLAN.md has $emptyEx task card(s) whose '**Executed-by**' line is still empty or '(filled at completion)'. Record the model that executed each task and its actual minutes (from the CODING_VELOCITY.md row) before close-out -- actuals are never left empty (Sprint 77 retro IMP-3)."
+            $violations += "SPRINT_${sprintNum}_PLAN.md has $emptyEx task card(s) whose '**Executed-by**' line is still empty, a template placeholder, or '(filled at completion)'. Record the model that executed each task and its actual minutes (from the CODING_VELOCITY.md row) before close-out -- actuals are never left empty (Sprint 77 retro IMP-3)."
+        }
+        if ($cardCountEx -gt $exMatches.Count) {
+            $violations += "SPRINT_${sprintNum}_PLAN.md has $cardCountEx task card(s) but only $($exMatches.Count) '**Executed-by**' line(s). Every card records the model that executed it and its actual minutes before close-out (Sprint 77 retro IMP-3)."
         }
     }
 }

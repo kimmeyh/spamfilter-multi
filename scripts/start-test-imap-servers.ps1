@@ -33,6 +33,15 @@
 
 .EXAMPLE
   powershell -NoProfile -ExecutionPolicy Bypass -File scripts\start-test-imap-servers.ps1
+
+.NOTES
+  Every server is reported running only after a port probe (3993; 143 and 993),
+  and a failed Dovecot setup in WSL stops the script with its exit code.
+  Run it directly in a terminal. A caller that CAPTURES this script's output
+  (`$x = & ... | Out-String`, or a tool that waits for the pipe to close) waits
+  until the servers are stopped, because the long-running server processes keep
+  the inherited output handle open (seen 2026-10-08). To run it from automation,
+  redirect to files: Start-Process ... -Wait -RedirectStandardOutput <file>.
 #>
 param(
     [switch]$Stop,
@@ -45,6 +54,18 @@ New-Item -ItemType Directory -Force -Path $work | Out-Null
 $jar = Join-Path $work 'greenmail-standalone-2.1.14.jar'
 $jarUrl = 'https://repo1.maven.org/maven2/com/icegreen/greenmail-standalone/2.1.14/greenmail-standalone-2.1.14.jar'
 
+# Waits until a TCP port accepts a connection; returns $true or $false.
+# Used for EVERY server this script starts, so "running" is printed only after a
+# real probe (Sprint 77 7.7.1 review: Dovecot was reported running without one,
+# which is how MV step 3b was handed a dead server).
+function Wait-Port([int]$Port, [int]$Tries = 60) {
+    for ($i = 0; $i -lt $Tries; $i++) {
+        try { $t = New-Object System.Net.Sockets.TcpClient('127.0.0.1', $Port); $t.Close(); return $true }
+        catch { Start-Sleep -Milliseconds 500 }
+    }
+    return $false
+}
+
 function Stop-GreenMail {
     Get-CimInstance Win32_Process -Filter "Name = 'java.exe'" |
         Where-Object { $_.CommandLine -match 'greenmail-standalone' } |
@@ -53,8 +74,7 @@ function Stop-GreenMail {
 
 if ($Stop) {
     Stop-GreenMail
-    wsl.exe -d Ubuntu -u root -- bash -lc 'pkill -x dovecot || true; pkill -f [s]pamfilter-keepalive || true' | Out-Null
-    'Stopped Dovecot (WSL).'
+    wsl.exe -d Ubuntu -u root -- bash -lc 'pkill -f [s]pamfilter-keepalive || true; if pkill -x dovecot; then echo Stopped Dovecot in WSL.; else echo Dovecot in WSL was not running.; fi'
     exit 0
 }
 
@@ -84,11 +104,7 @@ if ($NewCertificate) {
 $javaArgs += @('-jar', "`"$jar`"")
 $p = Start-Process -FilePath java -ArgumentList $javaArgs -WindowStyle Hidden -PassThru `
     -RedirectStandardOutput (Join-Path $work 'greenmail.out.log') -RedirectStandardError (Join-Path $work 'greenmail.err.log')
-$up = $false
-for ($i = 0; $i -lt 60 -and -not $up; $i++) {
-    try { $t = New-Object System.Net.Sockets.TcpClient('127.0.0.1', 3993); $t.Close(); $up = $true } catch { Start-Sleep -Milliseconds 500 }
-}
-if (-not $up) { throw 'GreenMail did not open port 3993' }
+if (-not (Wait-Port 3993)) { throw 'GreenMail did not open port 3993' }
 "GreenMail running (pid $($p.Id)): IMAP SSL/TLS on port 3993, self-signed" + $(if ($NewCertificate) { ' (NEW certificate)' } else { '' })
 
 # --- Dovecot in WSL ----------------------------------------------------------
@@ -111,8 +127,19 @@ if ($LASTEXITCODE -ne 0) {
 }
 $setup = (Resolve-Path (Join-Path $PSScriptRoot 'test-imap\dovecot-wsl-setup.sh')).Path
 $wslPath = '/mnt/' + $setup.Substring(0, 1).ToLower() + ($setup.Substring(2) -replace '\\', '/')
+# Native stderr merged with 2>&1 becomes a terminating error under 'Stop' in
+# Windows PowerShell 5.1 (the d4c376c keytool lesson; an apt-get warning on a
+# first run would trip it), so judge the setup by its EXIT CODE instead.
+$ErrorActionPreference = 'Continue'
 wsl.exe -d Ubuntu -u root -- bash -lc "tr -d '\r' < '$wslPath' > /tmp/dovecot-wsl-setup.sh && bash /tmp/dovecot-wsl-setup.sh" 2>&1 |
-    ForEach-Object { $_ -replace "`0", '' }
+    ForEach-Object { "$_" -replace "`0", '' }
+$setupExit = $LASTEXITCODE
+$ErrorActionPreference = 'Stop'
+if ($setupExit -ne 0) { throw "Dovecot setup in WSL failed (exit $setupExit); see the lines above" }
+foreach ($port in 143, 993) {
+    if (-not (Wait-Port $port 20)) { throw "Dovecot did not open port $port on localhost (WSL localhost forwarding or Dovecot itself)" }
+}
+'Dovecot verified: ports 143 (STARTTLS) and 993 (SSL/TLS) accept connections.'
 
 ''
 'Use in the app (Add Account > Custom IMAP Server), username tester:'

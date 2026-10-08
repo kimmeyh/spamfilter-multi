@@ -17,7 +17,9 @@ A plain run (no -Folder, no -Pattern) collects ONLY (Sprint 77, Harold):
   - Documents and its subfolders: the app's diagnostic logs (diag_*.log) and
     its .csv exports. Local copies of these are refreshed, because they keep
     growing on the phone.
-Company device-management logs and other apps' files are never copied.
+Company device-management logs and other apps' screenshots are never copied.
+Note: the Documents rule copies every .csv under Documents, which can include
+another app's CSV files; the destination is gitignored, so none can be committed.
 
 Uses the Windows Shell.Application COM object to access MTP devices, avoiding
 adb and driver dependencies.
