@@ -17,3 +17,5 @@ are copied into `docs/sprints/SPRINT_77_RETROSPECTIVE.md` beside Harold's verbat
 12. **Architecture Maintenance**: Sound. One identity rule for No Rule entries (ADR-0045) replaced per-scan duplication (7,904 -> 583 rows); one TLS connect path for custom servers; one credential-label helper replaced four inconsistent strings; one login point maps a refused LOGIN for every IMAP provider. Doc drift as noted in 8 is fixed.
 13. **Minor Function Updates for the Next Sprint Plan**: The Sprint 78 start items already recorded: the 0.18.0 Store and Play builds, Fold steps 7-11, and the boot-time `main()` trace. Nothing new.
 14. **Function Updates for the Future Backlog**: A card for the open 0xc0000409 crash, so it does not live only in this sprint's plan (proposed below as an improvement for Harold to decide).
+
+**Correction (Step 6, 2026-10-08)**: item 3 above is wrong -- per-task actuals WERE recorded in CODING_VELOCITY.md (rows carry `| 77 |`, which my grep for "Sprint 77" missed). The corrected line is in SPRINT_77_RETROSPECTIVE.md.

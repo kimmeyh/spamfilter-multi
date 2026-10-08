@@ -24,7 +24,7 @@ verbatim below, counting for all three roles). Claude Code Development Team line
 ### 3. Effort Accuracy
 
 - **Product Owner / Scrum Master / Lead Developer (combined)**: Very Good
-- **Claude Code Development Team**: Cannot be measured this sprint, and that is my miss. Every task card's `Executed-by` line still reads "(filled at completion)", and no per-task actuals were recorded in `CODING_VELOCITY.md` (only the planning row). The plan estimated 917-1,615 minutes plus a 120-minute emulator time-box. The sprint spanned 2026-10-06 20:58 to 10-08 16:37 elapsed (53 commits), which includes Harold's validation time and idle time, so it is not a work actual.
+- **Claude Code Development Team**: Planned work ran far under estimate. `CODING_VELOCITY.md` recorded every planned task at completion: about 500 minutes for the 9 planned task rows against 917-1,615 estimated (595 with planning). The R76-1 emulator work, about 195 minutes, was within its range. Every coding task came in under its low estimate. Unplanned work was about 460 minutes: F-PRECHECK fixes ~60, F266 ~25, and the MV fixes plus the WinWright investigation ~375 (reconstructed from commit times). So unplanned work was close to the planned total, as in Sprint 76. My miss: the nine task cards' `Executed-by` lines still read "(filled at completion)". (CORRECTED at Step 6: my first draft said no per-task actuals were recorded. That was wrong -- my grep searched for "Sprint 77" while the rows carry `| 77 |`.)
 
 ### 4. Planning Quality
 
@@ -34,7 +34,7 @@ verbatim below, counting for all three roles). Claude Code Development Team line
 ### 5. Model Assignments
 
 - **Product Owner / Scrum Master / Lead Developer (combined)**: Very Good
-- **Claude Code Development Team**: One interactive Opus session executed most tasks, under the plan's recorded single-session deviation. Agents were used where they fit: 3 Fable card drafts, a general-purpose agent for F245, a read-only Opus F-PRECHECK pass and a fix agent. No escalation problems. The `Executed-by` lines that would show this per task were never filled (see 3).
+- **Claude Code Development Team**: One interactive Opus session executed most tasks, under the plan's recorded single-session deviation. Agents were used where they fit: 3 Fable card drafts, a general-purpose agent for F245, a read-only Opus F-PRECHECK pass and a fix agent. No escalation problems. Per-task models were in the velocity rows (Haiku F258, Sonnet F245/F192/F264, Opus SEC-8b/R76-3), but the cards' `Executed-by` lines were never filled (see 3); filled at Step 7.
 
 ### 6. Communication
 
@@ -54,7 +54,7 @@ verbatim below, counting for all three roles). Claude Code Development Team line
 ### 9. Process Issues
 
 - **Product Owner / Scrum Master / Lead Developer (combined)**: Very Good
-- **Claude Code Development Team**: (a) Recurring: validation steps written without tracing their preconditions (Sprint 75 IMP-5 restated it; it happened 3 times again). (b) Environment-specific "fixed" claims: the WinWright result was generalized from one monitor. (c) Placeholder lines that no gate reads ("(filled at completion)") let the effort record go empty. (d) The 5.1.5 sweep was first refused by the locked-workstation pre-flight, which worked as designed.
+- **Claude Code Development Team**: (a) Recurring: validation steps written without tracing their preconditions (Sprint 75 IMP-5 restated it; it happened 3 times again). (b) Environment-specific "fixed" claims: the WinWright result was generalized from one monitor. (c) Placeholder lines that no gate reads ("(filled at completion)") let the cards' effort record go empty. (e) I presented a retrospective claim (no actuals recorded) from a grep that could not have found them -- the "reasoning from adjacent evidence" class. (d) The 5.1.5 sweep was first refused by the locked-workstation pre-flight, which worked as designed.
 
 ### 10. Risk Management
 
@@ -101,4 +101,7 @@ PENDING -- written after the Step 6 decisions.
 
 ## Improvement Decisions
 
-PENDING -- Step 6.
+- **IMP-1 Validation steps carry traced preconditions** -- REPLACED (Harold, 2026-10-08): *"it is more important that you have fully tested how it works before manual validation - including the Manual Validation example you would like me to run - they should Never (with very few and infrequent occurances) fail - this is prevention at the earliest possible step. Ok to replace IMP_1 with something else"*. Replacement proposed (rehearse every MV step before handover); decision PENDING.
+- **IMP-2 WinWright results independent of the monitor** -- Harold asked: *"is there any way to do the WinWright tests without using the monitor or taking control of the mouse/keyboard/screen (prevention). Are there any minor changes that would essentially preserve the UI user experience but would remove one or more WinWright tests?"* Findings and revised proposals presented; decision PENDING.
+- **IMP-3 Effort actuals cannot be left empty** -- APPLY NOW (Harold: *"yes, actuals should never be left empty"*). APPLIED: the nine `Executed-by` lines are filled from the CODING_VELOCITY rows; 7 reconstructed velocity rows added for the MV-phase work; `verify-closeout-complete.ps1` check 3d-3 blocks close-out on an empty or "(filled at completion)" `Executed-by` line from Sprint 77 (cases violation-8 / allow-9; hook suite 123/123; the violation fixture differs from a passing fixture only by that line).
+- **IMP-4 Backlog card for the 0xc0000409 crash** -- WAIT (Harold: *"we can wait until it happens again before backlog card"*). The crash stays recorded as OPEN in SPRINT_77_PLAN.md; full local dumps are enabled.

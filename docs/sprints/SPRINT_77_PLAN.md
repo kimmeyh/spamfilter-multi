@@ -663,7 +663,7 @@ cheaper*: none cheaper. Analysis of the (f) error causes and the (e) decision fr
 single interactive session (see the sprint-level note), so the whole card executes on the session model.
 **Delegation checklist included in the sub-agent prompt**: N/A (no coding sub-agent).
 
-**Executed-by**: (filled at completion)
+**Executed-by**: Opus 5.5 session model (single-session deviation, `Tasks` table note). Tooling ~12 min (CODING_VELOCITY Task 1 row); the Fold checks ran on Harold's phone with MV analysis in this session. Steps 7-11 moved to the start of Sprint 78 (MV-Q7 = 2).
 
 **Step-types**: MANUAL (validation), DOCS (recording). R-9 option 2 only: HOOK/tooling (PowerShell script).
 
@@ -966,7 +966,7 @@ storage, provider and export together (multi-file, data-loss risk); Haiku's limi
 answers to Q-3..Q-7 before coding; what remains is implementation against explicit ACs.
 **Delegation checklist included in the sub-agent prompt**: yes (verbatim, SPRINT_PLANNING.md:433-449).
 
-**Executed-by**: (filled at completion)
+**Executed-by**: Sonnet agent ~23 min + Opus lead review/merge ~12 = ~35 min (CODING_VELOCITY Task 3 row). As assigned.
 
 **Step-types**: DB-MIGRATE, SVC-EDIT, TEST-UNIT (x7), DOCS (ADR + ARCHITECTURE + CHANGELOG).
 
@@ -1110,7 +1110,7 @@ for research spikes and best-practices research; this one also carries privacy a
 **Delegation checklist included in the sub-agent prompt**: N/A unless sub-agents are used for source gathering;
 if they are, they gather and quote, and the synthesis stays on the top tier.
 
-**Executed-by**: (filled at completion)
+**Executed-by**: Opus agent ~13 min + lead verification and filing ~17 = ~30 min against a 240-min time-box (CODING_VELOCITY Task 8 row). As assigned.
 
 **Step-types**: DOCS (research document), DOCS (backlog items). There is no RESEARCH step-type in
 `CODING_VELOCITY.md`; record it as DOCS with a "research spike" note so the next recompute can add a type.
@@ -1637,7 +1637,7 @@ left to discover. Sub-tasks T-1, T-4, T-9, T-10 are Haiku-shaped and may be batc
 delegation checklist (SPRINT_PLANNING.md option (b)).
 **Delegation checklist included in the sub-agent prompt** (when delegated): yes
 
-**Executed-by** (filled at completion):
+**Executed-by**: Sonnet agent ~40 min + Opus lead merge, conflict and 4 gate fixes ~45 = ~85 min (CODING_VELOCITY Task 5 row). As assigned.
 
 **Step-types**: SVC-NEW (interval model), SVC-EDIT x6 (scheduler interface + 2 adapters, Windows service,
 PS generator, main.dart, settings gate), UI-NEW (unit+number control), UI-MOVE (section order), NATIVE-ANDROID
@@ -1801,7 +1801,7 @@ judgment on confounds (Doze maintenance windows versus the 5-minute spacing). *W
 protocol is written here; execution is mechanical once the emulator boots.
 **Delegation checklist included in the sub-agent prompt** (when delegated): yes
 
-**Executed-by** (filled at completion):
+**Executed-by**: delegated agent (model not recorded in the velocity row) ~105 min (arms 1-2) + ~90 min (arms 3-5), including ~165 emulator minutes (CODING_VELOCITY Task 4 rows). Arm 6 not run.
 
 **Step-types**: DOCS x3 (protocol, report, backlog items), HOOK/script x2 (scratch collection scripts),
 EMULATOR-DISCOVERY `[no-history]` (time-box, do not estimate -- the WINWRIGHT-DISCOVERY rule applies: the
@@ -1939,7 +1939,7 @@ Sonnet only if interrupt 1 chooses "create the label" (cache invalidation plus t
 visibility defaults need judgment). The delegation checklist is mandatory (Sprint 75 retro IMP-6).
 **Delegation checklist included in the sub-agent prompt** (when delegated): yes
 
-**Executed-by** (filled at completion):
+**Executed-by**: Haiku agent ~18 min + Opus lead review/fix ~20 = ~38 min (CODING_VELOCITY Task 2 row). As assigned.
 
 **Step-types**: SVC-EDIT x4 (sites 1-4), SVC-EDIT (wrapper + remove-side), TEST-UNIT x3 (behavior, gate,
 moveLabels extension), DOCS (CHANGELOG + commit grep record).
@@ -2376,7 +2376,7 @@ form widgets and the two policy/unit test inversions are Haiku-shaped and can be
 the sprint is not a single session.
 **Delegation checklist included in the sub-agent prompt** (when delegated): yes
 
-**Executed-by** (filled at completion): --
+**Executed-by**: Sonnet agent ~33 min + lead merge/verify ~12 = ~45 min, SEC-15 included (CODING_VELOCITY Task 6 row). As assigned.
 
 **Step-types**: UI-NEW, SVC-EDIT (adapter), SVC-EDIT (store), DATA (registry phase), TEST-UNIT x3, TEST-WIDGET x2, CONTENT, DOCS
 
@@ -2474,7 +2474,7 @@ chosen policy and rationale (do not rewrite the audit).
 one-liners inside Task A's already-open files.
 **Delegation checklist included**: yes
 
-**Executed-by** (filled at completion): --
+**Executed-by**: delivered inside F192 (Q1 = 1, one card); its time is in F192's ~45 min.
 
 **Step-types**: SVC-NEW, TEST-UNIT, TEST-WIDGET (extend), DOCS
 
@@ -2614,7 +2614,7 @@ where a confident-looking implementation hides a non-enforcing control, and the 
 assumed.
 **Delegation checklist included**: yes
 
-**Executed-by** (filled at completion): --
+**Executed-by**: Opus agent ~38 min + lead merge/blast-radius check ~12 = ~50 min (CODING_VELOCITY Task 7 row). As assigned (top tier for the trust design).
 
 **Step-types**: SPIKE (time-boxed), SVC-EDIT (pinner fix), SVC-NEW (connector), SVC-EDIT (adapter), UI-NEW (dialog),
 TEST-UNIT, TEST-INTEGRATION, TEST-WIDGET, HOOK-style policy test, DOCS (ADR)

@@ -337,6 +337,29 @@ if ($sprintNum -ge 77 -and $status -and $null -ne $status.current_sprint -and
     }
 }
 
+# 3d-3. Every task card's Executed-by line is filled (Sprint 77 retro IMP-3,
+#     Harold 2026-10-08: "actuals should never be left empty").
+#
+#     The card template seeds "**Executed-by**: (filled at completion)". Sprint 77
+#     closed its retrospective with all nine still reading that, so the per-task
+#     model and actual minutes lived only in CODING_VELOCITY.md and the
+#     retrospective first reported them as missing. A seeded placeholder is not a
+#     record -- the same rule 3d-2 applies to the 7.7.1 marker.
+if ($sprintNum -ge 77 -and $status -and $null -ne $status.current_sprint -and
+    $status.current_sprint.plan_approved -eq $true) {
+    $planPathEx = Join-Path $cwd ("docs/sprints/SPRINT_{0}_PLAN.md" -f $sprintNum)
+    if (Test-Path -LiteralPath $planPathEx) {
+        $emptyEx = 0
+        foreach ($exm in [regex]::Matches((Get-Content -LiteralPath $planPathEx -Raw), '(?im)^\s*\*\*Executed-by\*\*(.*)$')) {
+            $v = $exm.Groups[1].Value -replace '\(filled at completion\)', '' -replace '[\s:*_`-]', ''
+            if ([string]::IsNullOrWhiteSpace($v) -or $v -match '^(?i)(PENDING|TBD|TODO)$') { $emptyEx++ }
+        }
+        if ($emptyEx -gt 0) {
+            $violations += "SPRINT_${sprintNum}_PLAN.md has $emptyEx task card(s) whose '**Executed-by**' line is still empty or '(filled at completion)'. Record the model that executed each task and its actual minutes (from the CODING_VELOCITY.md row) before close-out -- actuals are never left empty (Sprint 77 retro IMP-3)."
+        }
+    }
+}
+
 # 3b. previous sprint summary exists (Phase 3.2.1 background process)
 $prevSprint = $sprintNum - 1
 if ($prevSprint -gt 0) {
