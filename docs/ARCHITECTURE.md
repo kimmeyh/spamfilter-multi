@@ -541,8 +541,12 @@ Windows emits one trigger shape for every interval: `-Once -At <start>
 -RepetitionInterval (New-TimeSpan -Minutes <n>) -RepetitionDuration (New-TimeSpan
 -Days 365)` (Task Scheduler accepts 1 minute to 31 days). For intervals over 15
 minutes the trigger starts 5 minutes early with `-RandomDelay` 10 minutes (plus
-or minus 5 minutes around the nominal time); at 15 minutes or less there is no
-delay. `verifyAndRepairTaskPath` takes the interval from its caller. A one-time,
+or minus 5 minutes around the nominal time). At 15 minutes or less there is no
+random delay; instead each account has a fixed stagger (Sprint 77 MV-Q2,
+ADR-0039 amendment). Its saved schedule slot (`schedule_slot`, from
+`SettingsStore.getOrAllocateScheduleSlot`, allocated once and never moved) sets
+the start to that many minutes after midnight (`ScanInterval.staggerMinutes`),
+so accounts on the same short interval start 1 minute apart. `verifyAndRepairTaskPath` takes the interval from its caller. A one-time,
 sentinel-guarded migration (`BackgroundIntervalMigration`, run at startup on both
 platforms) converts stored values to the nearest one the control can express and
 re-registers every enabled account's schedule; startup reconciliation uses the
