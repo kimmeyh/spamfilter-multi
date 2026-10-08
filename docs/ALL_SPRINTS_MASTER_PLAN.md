@@ -242,6 +242,7 @@ All incomplete items in relative priority order. Priority in increments of 10; i
   - MV-Q17 = 2: the detail popup shows the account email in place of the domain on BOTH screens (Review No Rule Items and Results).
   - MV-Q18: no interim search this sprint; search arrives with this card.
 - Acceptance: from Review No Rule Items, a user finds one email by typing part of its sender or subject; the account drop-down lists every saved account; the detail popup names the account.
+- WinWright: rewrite `test_mt2c_no_rule_sweep.json` for the new screen so it passes on ANY monitor size. Its checkbox steps go away with multi-select. Today's script depends on the screen. The 11 provider-sender rows are pinned first, so the seed rows are built only when about 13 rows fit. It passed at 3856x2128 and failed at about 1940x1040 (Sprint 77 close-out sweep). `ww_scroll` direction/page on a row reported success but did not move the list. Reach the seeds by search, or by an account filter that has no provider rows.
 
 ### Backlog from the Sprint 76 retrospective
 

@@ -9,20 +9,25 @@ Sprint 7n Manual Validation Feedback
 ---------------------------------------------------------------------------------------------------------
 Sprint 77 Manual Validation Feedback 
 
-  Windows Manual Validation steps. The dev build 0.18.0 is running (mobile-app\dist\dev\MyEmailSpamFilter-Dev.exe). It is read-only, and background
-  scanning is off unless a step turns it on. Start the test mail servers with powershell -NoProfile -ExecutionPolicy Bypass -File
-  scripts\start-test-imap-servers.ps1.
+
   1. Interval control (F264). Open Settings > Background for an account.
      - Turn background scanning ON and set "Scan every" to Minutes 7.
+kimmeyharold@aol.com
      - Type 4. Expect "Minimum is 5 minutes, to limit battery use" and no save.
      - I will then read the Task Scheduler trigger. Expect a 7-minute repetition with a start time in the past.
      - Wait for two Scan History rows about 7 minutes apart.
+
      - Switch the unit to Hours and type 2. Expect it to save as 2 hours.
+done
      - Turn background scanning OFF afterward.
   2. Custom IMAP through Yahoo (F192).
      - Add Account > Custom IMAP Server. Server imap.mail.yahoo.com, port 993, SSL/TLS, username your Yahoo address, and your Yahoo app password.
      - Click Test Connection. Expect success and no certificate question.
+worked
      - Save, then run a manual scan. It must reconnect without asking for the server again.
+done
+
+
   3. Local test servers (SEC-15, SEC-8b).
      - a. Add Custom IMAP: localhost, port 3993, SSL/TLS, username tester@spamfilter.test, password testpass. Expect one "server on your own computer"
        warning (click Continue), then "Trust this server?" marked self-signed. Click Trust, then Save. A manual scan with no error is a pass.
@@ -30,6 +35,7 @@ Sprint 77 Manual Validation Feedback
        Trust, then Save. A manual scan finds 3 seeded messages.
      - c. I will restart GreenMail with a new certificate. Then scan the 3a account. Expect it to stop with "Server certificate changed" and send no
        password. Re-adding the account asks you to trust again.
+
   4. Gmail sign-in with the certificate pin (SEC-8b). Use Sign In Again on the Gmail account. Expect it to complete. If a certificate message appears,
      note whether Norton HTTPS scanning is on.
   5. No Rule rows (F245). Note the No Rule Review count. Scan the same account twice; the count must not grow from re-listing. Dismiss one email ("Remove

@@ -361,6 +361,14 @@ All decision questions are answered; execution proceeds without further approval
   RUN: `test_mt2c_no_rule_sweep` PASS 30/30, DB drift none (the identical data failed before the fix). Same latent
   weakness in 4 other scripts (`test_s75_new_controls` x3, `test_f124_rule_labels`, both `test_f56_*`); they pass today
   at 1280x720 and were left unchanged -- the title-bar button TOGGLES, so it is unsafe in a script that maximizes twice.
+  CLOSE-OUT SWEEP 2026-10-08 ~16:00, sweep-head 4a5f2ac (re-run because dec3263, 3a71c5f and 64ae39e changed lib/ui after
+  908f2ad): `test_f124_rule_labels` PASS (29/29), `test_s75_new_controls` PASS (27/27), `test_mt2c_no_rule_sweep` FAIL twice
+  at step 9 (steps 1-8 PASS, including the account drop-down cycle); DB drift none; seeds removed (status 0). Cause, from the
+  runner's screenshots: the window WAS maximized (the title-bar fix works), but this display gives about 1940x1040, so
+  about 8 rows fit. The 11 AOL provider-sender rows are pinned first, and seed-a is on AOL at row 12 or lower, so it
+  is never built. The 09:4x 30/30 PASS ran on the 3856x2128 monitor, so "RESOLVED" above was display-specific. One fix
+  attempt (time-boxed): `ww_scroll` direction/page on the provider header reported success but did not move the list. Not
+  an app defect. The rewrite is folded into F283, which removes these checkbox steps (MV-Q16 = 2).
 - **5.1.6 runtime launch**: 0.18.0 dev Windows build launched 2026-10-07 03:01 (pid 119404); the DB v12 upgrade ran on the real dev data -- 7,904 No Rule rows -> 583 (exactly the distinct identities), schema 11 -> 12, `last_seen_at` present (pre-v12 backup `spam_filter.db.pre_v12_20261007_025839`, hash-verified).
 
 ## Manual Validation steps (Sprint 77 -- re-present IN FULL every time Harold is asked to validate)
