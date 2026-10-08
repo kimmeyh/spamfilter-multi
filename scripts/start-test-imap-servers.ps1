@@ -19,7 +19,8 @@
        localhost:143 through WSL's localhost forwarding.
 
   Test account on both: username "tester", password "testpass". GreenMail's
-  username is "tester@spamfilter.test". Test data only; nothing here touches a
+  email ADDRESS is "tester@spamfilter.test", but it signs in as "tester"
+  (verified 2026-10-07: LOGIN "tester@spamfilter.test" is refused). Test data only; nothing here touches a
   real mailbox. The GreenMail jar (Maven Central 2.1.14, SHA-1 checked) is kept
   in %LOCALAPPDATA%\spamfilter-test-imap, outside the repo.
 
@@ -91,7 +92,7 @@ wsl.exe -d Ubuntu -u root -- bash -lc "tr -d '\r' < '$wslPath' > /tmp/dovecot-ws
 
 ''
 'Use in the app (Add Account > Custom IMAP Server), username tester:'
-'  SSL/TLS : server localhost or 127.0.0.1, port 3993 (GreenMail, user tester@spamfilter.test) or 993 (Dovecot)'
+'  SSL/TLS : server localhost or 127.0.0.1, port 3993 (GreenMail; email tester@spamfilter.test) or 993 (Dovecot)'
 '  STARTTLS: server localhost, port 143 (Dovecot)'
 '  Password: testpass'
 'From the Fold, use this PC''s Wi-Fi address with port 3993 (GreenMail binds all interfaces).'

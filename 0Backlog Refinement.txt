@@ -9,6 +9,64 @@ If questions must be asked, ask as late as possible - do everything that can be 
 Sprint 7n Scope should include the below items. Please complete sprint planning (/docs/sprint_planning.md) for the below items and present for approval.  Note that everything needs to take into account both the Windows App and the Android app and ADR stating that everything should be functionally and UI the same unless it cannot be - and where it cannot be it should be implemented as a platform exception for what is needed -- this applies to all backend code, frontend code, data, architecture, development, security, testing, deployment.
 
 ---------------------------------------------------------------------------------------------------------
+
+I don't have enough information to answer any of these: what, options, pros, cons, your recommendation and why - only one question at a
+  time, provide answer options (as per memory). After I answer, then the next question. [Pasted text #10 +14 lines]   15. Emulator notification source:
+  1. A debug-only allowlist entry (recommended). 2. A real mail app only.   17. A move out of a custom label: 1. Remove the source label too
+  (recommended). 2. Keep the Sprint 76 behavior.   19. "Listed once" for exports: 1. Background exports only (recommended). 2. Manual exports too.
+    20. A dismissed email still found with no rule: 1. Stays dismissed (recommended). 2. Comes back.| 11. Windows scheduler takes the same minute/hour
+  drop down and 2 digit entry. Existing user take a conversion from current (windows and android) 13. if > 15 min then random +/- 5 minutes. 18. 2 21
+  2 24 2 25 1 26. 1 27. Opus 5.5 instead of Fable unless you are positive it is needed |
+
+
+  Decision questions. Reply "all recommended", or give the exceptions, for example "2.2, 18.3".
+
+  Custom IMAP:
+  1. Merge SEC-15 into the F192 card? 1. Yes (recommended). 2. No.
+  2. SEC-15 policy for private and loopback hosts: 1. Warn once and allow (recommended). 2. Reject. 3. Allow silently and close SEC-15. 4. Reject literal
+     private IPs only.
+  3. Encryption modes: 1. SSL/TLS and STARTTLS, never plaintext (recommended). 2. SSL/TLS only. 3. Also "None", loopback only with a warning.
+  4. SEC-8b trust model (new ADR-0046): 1. Trust-on-first-use, plus self-signed certificates the user accepts (recommended). 2. Trust-on-first-use with
+     platform validation required. 3. Keep on HOLD and fix the stale comments only. 4. Also pin the providers' leaf certificates.
+  5. The inert OAuth pinner: 1. Fix it in SEC-8b (recommended). 2. File it as SEC-8c. 3. Accept platform validation and fix the docs.
+  6. Custom-server settings storage: 1. Side keys in the secure credential store (recommended). 2. An account-aware platform registry. 3. New database
+     columns.
+  7. Server for Manual Validation: 1. Fastmail (recommended). 2. Yandex. 3. Other.
+
+  Background scanning:
+  8. Per-account new-mail flag: 1. A per-account setting in the app database, with one Android "any account on" flag (recommended). 2. Per-account
+  Android preferences.
+  9. If the app-wide new-mail switch is ON at upgrade: 1. Turn it on for every account (recommended). 2. Start every account off.
+  10. Per-account new-mail switch on Windows: 1. Hidden, extending the ADR-0044 exception (recommended). 2. Shown disabled with a note.
+  11. Schedulers take a number of minutes instead of the fixed frequency list: 1. Approve (recommended). 2. Keep the list.
+  12. The current "about an hour" help sentence: 1. Replace it with "about 45 minutes" (recommended). 2. Keep both.
+  13. Windows random start delay: 1. Cap it at 59 minutes (recommended). 2. Interval minus 1.
+  14. R76-1 order: 1. Interleaved with F264 (recommended). 2. All before. 3. All after.
+  15. Emulator notification source: 1. A debug-only allowlist entry (recommended). 2. A real mail app only.
+
+  Gmail labels:
+  16. A custom label that does not exist: 1. Fail with a named error (recommended). 2. Create it.
+  17. A move out of a custom label: 1. Remove the source label too (recommended). 2. Keep the Sprint 76 behavior.
+
+  No Rule rows:
+  18. Identity (Class-1, ADR-0045): 1. Account + message identifier + folder, with a new account column (recommended). 2. No account column. 3. Option 1
+  without the folder.
+  19. "Listed once" for exports: 1. Background exports only (recommended). 2. Manual exports too.
+  20. A dismissed email still found with no rule: 1. Stays dismissed (recommended). 2. Comes back.
+  21. No Rule Review reads the latest scan only: 1. Yes (recommended). 2. All unprocessed rows.
+  22. Retention counts from: 1. The last time it was seen (recommended). 2. The first time.
+  23. Scan History "No Rule" count: 1. Unchanged (recommended). 2. Add a "new this scan" number (separate card).
+
+  Phone checks:
+  24. F250 native sign-in: 1. Record the account state and close (recommended). 2. Backlog. 3. Work it now.
+  25. Getting the log and CSV files off the Fold: 1. Extend the pull script with -Folder and -Pattern (recommended). 2. You copy them by hand.
+
+  Research and sprint:
+  26. R76-3 time-box: 1. 240 minutes (recommended). 2. 120 minutes.
+  27. Model assignments: 1. Approve (recommended). 2. Change.
+  28. Version: 1. 0.18.0+15 (recommended). 2. 0.17.7+15.
+
+
 Sprint 77 Scope should include the below items. Please complete sprint planning (/docs/sprint_planning.md) for the below items and present for approval.  Note that everything needs to take into account both the Windows App and the Android app and ADR stating that everything should be functionally and UI the same unless it cannot be - and where it cannot be it should be implemented as a platform exception for what is needed -- this applies to all backend code, frontend code, data, architecture, development, security, testing, deployment.
   - MV76-1 first. It closes the open phone checks on the build you are about to ship. It also covers F205, so F205 does not need its own slot.
   - F264 with R76-2 in the same card. Both rework the same Background section, so designing them together avoids doing that section twice.

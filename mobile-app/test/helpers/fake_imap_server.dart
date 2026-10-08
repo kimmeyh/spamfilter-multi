@@ -60,6 +60,10 @@ class FakeImapServer {
   /// Number of TCP connections accepted.
   int connections = 0;
 
+  /// When true, LOGIN is refused with `NO [AUTHENTICATIONFAILED]` (a wrong
+  /// password), as a real server does (Sprint 77 MV step 3a).
+  bool rejectLogin = false;
+
   /// Every byte received on any connection, decoded as Latin-1 (so a binary
   /// TLS ClientHello cannot throw).
   final StringBuffer rawReceived = StringBuffer();
@@ -155,7 +159,9 @@ class FakeImapServer {
           case 'CAPABILITY':
             socket.write('* CAPABILITY IMAP4rev1 STARTTLS\r\n$tag OK done\r\n');
           case 'LOGIN':
-            socket.write('$tag OK [CAPABILITY IMAP4rev1] logged in\r\n');
+            socket.write(rejectLogin
+                ? '$tag NO [AUTHENTICATIONFAILED] Invalid credentials\r\n'
+                : '$tag OK [CAPABILITY IMAP4rev1] logged in\r\n');
           case 'LOGOUT':
             socket.write('* BYE bye\r\n$tag OK logout done\r\n');
           default:

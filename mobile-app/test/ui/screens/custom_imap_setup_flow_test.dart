@@ -28,6 +28,7 @@ import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:provider/provider.dart';
 
+import 'package:my_email_spam_filter/ui/utils/credential_labels.dart';
 import 'package:my_email_spam_filter/adapters/email_providers/custom_imap_settings.dart';
 import 'package:my_email_spam_filter/adapters/email_providers/email_provider.dart';
 import 'package:my_email_spam_filter/adapters/email_providers/generic_imap_adapter.dart';
@@ -168,7 +169,11 @@ void main() {
   }) async {
     await tester.enterText(find.byKey(const Key('custom_imap_host')), host);
     await tester.enterText(find.widgetWithText(TextField, 'Email Address'), email);
-    await tester.enterText(find.widgetWithText(TextField, 'Password'), password);
+    // By the hidden-text setting, not the label: the label follows the server
+    // name (MV-Q8, "App Password" for imap.mail.yahoo.com).
+    await tester.enterText(
+        find.byWidgetPredicate((w) => w is TextField && w.obscureText),
+        password);
     await tester.pump();
   }
 
@@ -209,6 +214,26 @@ void main() {
     expect(port.controller!.text, '993');
     expect(find.widgetWithText(TextField, 'Password'), findsOneWidget);
     expect(find.widgetWithText(TextField, 'App Password'), findsNothing);
+  });
+
+  // MV-Q8 (Harold, 2026-10-07, option 1): the label follows the server name
+  // as it is typed; an unknown server shows the hint. What this does NOT
+  // catch: the account LIST label (auth_method_label_test.dart source gate).
+  testWidgets('the password label follows the server name (MV-Q8)',
+      (tester) async {
+    await openCustomImapForm(tester);
+    final host = find.byKey(const Key('custom_imap_host'));
+
+    await tester.enterText(host, 'imap.mail.yahoo.com');
+    await tester.pump();
+    expect(find.widgetWithText(TextField, 'App Password'), findsOneWidget);
+    expect(find.text(kCustomImapPasswordHint), findsNothing);
+
+    await tester.enterText(host, 'mail.example.com');
+    await tester.pump();
+    expect(find.widgetWithText(TextField, 'App Password'), findsNothing);
+    expect(find.widgetWithText(TextField, 'Password'), findsOneWidget);
+    expect(find.text(kCustomImapPasswordHint), findsOneWidget);
   });
 
   testWidgets('choosing STARTTLS moves the port to 143 unless the user typed one',

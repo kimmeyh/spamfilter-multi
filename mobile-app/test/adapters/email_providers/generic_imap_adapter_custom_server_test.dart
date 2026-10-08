@@ -33,6 +33,8 @@ import 'package:my_email_spam_filter/adapters/email_providers/email_provider.dar
 import 'package:my_email_spam_filter/adapters/email_providers/generic_imap_adapter.dart';
 import 'package:my_email_spam_filter/adapters/email_providers/spam_filter_platform.dart';
 import 'package:my_email_spam_filter/util/error_messages.dart';
+import 'package:my_email_spam_filter/core/security/auth_rate_limiter.dart';
+import 'package:my_email_spam_filter/core/storage/database_helper.dart';
 
 import '../../helpers/database_test_helper.dart';
 import '../../helpers/fake_imap_server.dart';
@@ -114,6 +116,31 @@ void main() {
       );
       expect(server.everything, isNot(contains(password)));
       expect(server.everything, isNot(contains('LOGIN')));
+    });
+
+    // Sprint 77 MV step 3a: a refused LOGIN was reported as "check your
+    // internet connection" on every IMAP provider, and the SEC-22 limiter
+    // never counted it. What this does NOT catch: a server that refuses with
+    // an untagged BYE and closes (enough_mail may raise a different type).
+    test('a refused login is a sign-in failure, not a connection failure, '
+        'and is counted by the rate limiter', () async {
+      final server = await FakeImapServer.implicitTls(serverContext);
+      server.rejectLogin = true;
+      addTearDown(server.close);
+      final adapter = GenericIMAPAdapter.custom();
+
+      Object? thrown;
+      try {
+        await adapter.loadCredentials(
+            credsFor('localhost', server.port, ImapEncryption.sslTls));
+      } catch (e) {
+        thrown = e;
+      }
+      expect(thrown, isA<AuthenticationException>());
+      expect(ErrorMessages.humanize(thrown!), startsWith('Sign-in failed'));
+      final block = await AuthRateLimiter(DatabaseHelper())
+          .checkBlock('imap-person@example.test');
+      expect(block.attempts, 1);
     });
   });
 

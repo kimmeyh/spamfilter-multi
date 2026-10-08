@@ -160,7 +160,10 @@ class _AccountSetupScreenState extends State<AccountSetupScreen> {
 
   /// MV-Q5: "App Password" or "Password", for the provider actually chosen
   /// (Gmail App Password resolves through 'gmail-imap').
-  String get _credentialLabel => credentialLabelFor(_effectivePlatformId);
+  /// MV-Q8: a Custom IMAP server known to take an app password (Yahoo, AOL,
+  /// Gmail, iCloud) reads "App Password", from the server name as typed.
+  String get _credentialLabel => credentialLabelFor(_effectivePlatformId,
+      imapHost: _isCustomImap ? _hostController.text : null);
 
   @override
   void initState() {
@@ -1089,6 +1092,11 @@ class _AccountSetupScreenState extends State<AccountSetupScreen> {
                     // MV-Q5: "App Password" only where the provider takes
                     // one; a Custom IMAP server takes the normal password.
                     labelText: _credentialLabel,
+                    // MV-Q8: an unknown custom server may still take an app
+                    // password; the app cannot know, so it says so.
+                    helperText: _isCustomImap && _credentialLabel == 'Password'
+                        ? kCustomImapPasswordHint
+                        : null,
                     border: const OutlineInputBorder(),
                     prefixIcon: const Icon(Icons.lock),
                   ),
@@ -1216,9 +1224,8 @@ class _AccountSetupScreenState extends State<AccountSetupScreen> {
           keyboardType: TextInputType.url,
           autocorrect: false,
           enableSuggestions: false,
-          onChanged: (_) {
-            if (_hostError != null) setState(() => _hostError = null);
-          },
+          // Always rebuild: the password label follows the server name (MV-Q8).
+          onChanged: (_) => setState(() => _hostError = null),
         ),
         const SizedBox(height: 16),
         Text('Encryption', style: Theme.of(context).textTheme.labelMedium),

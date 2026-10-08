@@ -222,6 +222,21 @@ All decision questions are answered; execution proceeds without further approval
   validate in the next sprint"): NO Play closed-testing upload this sprint. The 0.18.0 Microsoft Store and Google Play
   updates wait until the START of Sprint 78, so every Sprint 77 change ships in them. Phone steps 7-11 move to Sprint 78
   start. (Class-3 scope change, decided by the Scrum Master.)
+- MV-Q8 = 1 (Harold, 2026-10-07, at MV step 2: Custom IMAP to `imap.mail.yahoo.com` asked for "Password" while Yahoo takes
+  only an App Password): a Custom IMAP server KNOWN to take only an app password (Yahoo, AOL, Gmail, iCloud -- whole-label
+  domain suffix, so a look-alike does not match) shows "App Password", live as the server name is typed, in the form and
+  the account list; any other server shows "Password" with the hint "If your provider requires an app password, enter it
+  here." (`credential_labels.dart`). Mutations Q8a-Q8c KILLED.
+- MV step 3a finding (Harold's screenshots, 2026-10-07): after Trust, Test Connection said "Unable to connect ... check
+  your internet connection". Reproduced against the live GreenMail: the certificate trust WORKED; the server refused
+  LOGIN because GreenMail signs in as `tester`, not `tester@spamfilter.test` (the step and the server script were wrong;
+  both corrected). The app defect it exposed: a server REFUSING LOGIN (enough_mail `ImapException`) fell through to the
+  generic connection wrapper, so on EVERY IMAP provider (AOL, Yahoo, iCloud, Gmail App Password, Custom IMAP) a wrong
+  password read "check your internet connection", and the SEC-22 rate limiter -- which counts only
+  `AuthenticationException` -- never counted an IMAP failure. Fixed at the one login point (`GenericIMAPAdapter._login`);
+  the reconnect path keeps the sign-in meaning. Callers checked: `ErrorMessages.humanize` ("Sign-in failed ..."), the
+  loadCredentials limiter branch, `_checkAndReconnect` (now rethrows it); no other handler distinguishes the two types.
+  Mutation LG1 KILLED. Suite 2,912 passed / 15 skipped.
 - Phone evidence pulled 2026-10-07 (Harold tethered the Fold; rebooted ~08:30, app not opened until after noon):
   `validation-screenshots/sprint-77/` -- screenshots, `diag_v0.17.5_2026-10-06.log`, `diag_v0.17.5_2026-10-07.log`,
   `diag_v0.17.6_2026-10-07.log`, scan CSVs. `scripts/pull-phone-screenshots.ps1` fixed (a `$folder` local overwrote the
@@ -268,8 +283,8 @@ is the only build that acts on mail.
    success and no certificate question -- Yahoo's certificate is publicly trusted) > Save. Run a manual scan of it; it must
    reconnect without asking for the server again.
 3. Windows -- local test servers (SEC-15, SEC-8b). With the test servers started:
-   a. Add Account > Custom IMAP Server: server `localhost`, port 3993, SSL/TLS, username `tester@spamfilter.test`, password
-      `testpass`. Expect ONE warning that the server is on your own computer (Continue), then "Trust this server?" showing a
+   a. Add Account > Custom IMAP Server: server `localhost`, port 3993, SSL/TLS, username `tester` (NOT the email address; GreenMail
+      refuses it), email `tester@spamfilter.test`, password `testpass`. Expect ONE warning that the server is on your own computer (Continue), then "Trust this server?" showing a
       fingerprint, issued to, issued by (self-signed). Trust > Save. A manual scan finds the seeded messages (none for
       GreenMail unless added -- an empty scan with no error is a pass).
    b. STARTTLS: add `localhost`, port 143, STARTTLS, username `tester`, password `testpass`. Expect the local warning, then the

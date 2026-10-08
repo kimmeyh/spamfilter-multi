@@ -27,6 +27,8 @@ Format: `- **type**: Description (Issue #N)` where type is feat|fix|chore|docs
 ## [Unreleased]
 
 ### 2026-10-07 (Sprint 77)
+- **fix**: A wrong password on an IMAP account (AOL, Yahoo, iCloud, Gmail App Password or a Custom IMAP Server) now says "Sign-in failed. Please check your sign-in details" instead of telling you to check your internet connection, and repeated wrong passwords now count toward the sign-in lockout as intended (Sprint 77 Manual Validation)
+- **fix**: A Custom IMAP Server that is really Yahoo, AOL, Gmail or iCloud now asks for an "App Password", because those servers accept nothing else. Any other server asks for "Password" and notes that some providers require an app password there (Sprint 77 Manual Validation)
 - **feat**: On Windows, accounts that scan every 15 minutes or less no longer all start at the same moment. Each account keeps a fixed position and starts 1 minute after the one before it, with no randomness (Sprint 77 Manual Validation)
 - **fix**: Adding an email address that is already saved now asks "Replace its saved sign-in details with the ones you entered?" and names the saved provider. Before, it silently replaced that account's server and password. The scan history, rules and settings are kept either way (Sprint 77 Manual Validation)
 - **fix**: Password prompts now say what to type. AOL, Yahoo, iCloud and Gmail App Password ask for an "App Password"; a Custom IMAP Server asks for its normal "Password", and the account list, the empty-field message and the short-password warning match. The Add Account page no longer says the app never asks for your main password, because a Custom IMAP Server does. The demo account no longer shows "OAuth 2.0" (Sprint 77 Manual Validation)

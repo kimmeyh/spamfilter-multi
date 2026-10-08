@@ -394,10 +394,7 @@ class GenericIMAPAdapter with BatchOperationsMixin implements SpamFilterPlatform
       await _rememberDeviceTrustedCertificate(connection, credentials);
 
       _logger.i('[IMAP] IMAP login attempt for $displayName');
-      await connection.client.login(
-        _loginNameFor(credentials),
-        credentials.password ?? '',
-      );
+      await _login(connection.client, credentials);
       return;
     }
 
@@ -411,10 +408,27 @@ class GenericIMAPAdapter with BatchOperationsMixin implements SpamFilterPlatform
 
     _logger.i('[IMAP] IMAP login attempt for $displayName');
 
-    await client.login(
-      _loginNameFor(credentials),
-      credentials.password ?? '',
-    );
+    await _login(client, credentials);
+  }
+
+  /// Sends LOGIN. Sprint 77 MV step 3a: the server REFUSING the login (an
+  /// IMAP `NO`/`BAD` reply, which enough_mail raises as [ImapException]) is a
+  /// sign-in failure, so it becomes [AuthenticationException]. Before this,
+  /// it fell through to the generic "IMAP connection failed" wrapper: every
+  /// IMAP provider told a user with a wrong password to "check your internet
+  /// connection", and the SEC-22 rate limiter, which counts only
+  /// [AuthenticationException], never counted an IMAP failure. A network
+  /// failure during LOGIN is a `SocketException`/`TimeoutException`, not an
+  /// [ImapException], and keeps its connection meaning.
+  Future<void> _login(ImapClient client, Credentials credentials) async {
+    try {
+      await client.login(
+        _loginNameFor(credentials),
+        credentials.password ?? '',
+      );
+    } on ImapException catch (e) {
+      throw AuthenticationException('IMAP login rejected: ${e.message}', e);
+    }
   }
 
   /// SEC-8b: when the DEVICE trusted the certificate and it differs from the
@@ -1704,6 +1718,8 @@ class GenericIMAPAdapter with BatchOperationsMixin implements SpamFilterPlatform
       // SEC-8b: a named reason (certificate changed, STARTTLS refused) must
       // reach the scan's failure text, not become "check your internet".
       if (e is UserFacingConnectionException) rethrow;
+      // A refused login keeps its meaning (wrong or changed password).
+      if (e is AuthenticationException) rethrow;
       throw ConnectionException('IMAP reconnect failed: ${e.toString()}', e);
     }
   }

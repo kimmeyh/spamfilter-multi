@@ -7,6 +7,48 @@ Manual Validation complete
 Sprint 7n Manual Validation Feedback 
 
 ---------------------------------------------------------------------------------------------------------
+Sprint 77 Manual Validation Feedback 
+
+  Windows Manual Validation steps. The dev build 0.18.0 is running (mobile-app\dist\dev\MyEmailSpamFilter-Dev.exe). It is read-only, and background
+  scanning is off unless a step turns it on. Start the test mail servers with powershell -NoProfile -ExecutionPolicy Bypass -File
+  scripts\start-test-imap-servers.ps1.
+  1. Interval control (F264). Open Settings > Background for an account.
+     - Turn background scanning ON and set "Scan every" to Minutes 7.
+     - Type 4. Expect "Minimum is 5 minutes, to limit battery use" and no save.
+     - I will then read the Task Scheduler trigger. Expect a 7-minute repetition with a start time in the past.
+     - Wait for two Scan History rows about 7 minutes apart.
+     - Switch the unit to Hours and type 2. Expect it to save as 2 hours.
+     - Turn background scanning OFF afterward.
+  2. Custom IMAP through Yahoo (F192).
+     - Add Account > Custom IMAP Server. Server imap.mail.yahoo.com, port 993, SSL/TLS, username your Yahoo address, and your Yahoo app password.
+     - Click Test Connection. Expect success and no certificate question.
+     - Save, then run a manual scan. It must reconnect without asking for the server again.
+  3. Local test servers (SEC-15, SEC-8b).
+     - a. Add Custom IMAP: localhost, port 3993, SSL/TLS, username tester@spamfilter.test, password testpass. Expect one "server on your own computer"
+       warning (click Continue), then "Trust this server?" marked self-signed. Click Trust, then Save. A manual scan with no error is a pass.
+     - b. Add Custom IMAP: localhost, port 143, STARTTLS, username tester, password testpass. Expect the local warning and then the trust question. Click
+       Trust, then Save. A manual scan finds 3 seeded messages.
+     - c. I will restart GreenMail with a new certificate. Then scan the 3a account. Expect it to stop with "Server certificate changed" and send no
+       password. Re-adding the account asks you to trust again.
+  4. Gmail sign-in with the certificate pin (SEC-8b). Use Sign In Again on the Gmail account. Expect it to complete. If a certificate message appears,
+     note whether Norton HTTPS scanning is on.
+  5. No Rule rows (F245). Note the No Rule Review count. Scan the same account twice; the count must not grow from re-listing. Dismiss one email ("Remove
+     Current Rule") and scan again; it comes back.
+  6. MV76-1 parity.
+     - Delete today's scan_exports\*.data.csv and run a manual scan. Line 1 of the new file must be the column names.
+     - Add a safe sender from an Inbox email's popup. Expect no "could not be applied".
+     - Disconnect Wi-Fi and start a manual scan. The message must say to check the internet connection.
+  7. Stagger (Q2). Turn background ON for two accounts at 15 minutes. I will read both Task Scheduler triggers; expect start times 1 minute apart. Turn
+     background OFF afterward.
+  8. Replace question (Q4). Add Account > AOL with the address that is already saved.
+     - Expect "Account already added (AOL)" with Replace and Cancel.
+     - Click Cancel; nothing is saved.
+  9. Labels (Q5).
+     - Add Account > Custom IMAP Server shows "Password".
+     - Add Account > AOL shows "App Password".
+     - The account list shows "Password" for a Custom IMAP account and "App Password" for AOL.
+
+---------------------------------------------------------------------------------------------------------
 Sprint 75 Manual Validation Feedback 
   Manual Validation steps (Windows dev app, already open)
   1. F214: Settings > Manual Scan tab. The Scan Range slider starts at the same left edge as "Scan all emails", with no "1" or "90" beside it. Check the
