@@ -70,8 +70,15 @@ $javaArgs = @('-Dgreenmail.setup.test.all', '-Dgreenmail.users=tester:testpass@s
 if ($NewCertificate) {
     $ks = Join-Path $work 'greenmail-alt.p12'
     if (Test-Path $ks) { Remove-Item $ks }
+    # keytool writes its progress line to stderr; under 'Stop', Windows
+    # PowerShell 5.1 turns that into a terminating error (Sprint 77 MV 3c), so
+    # relax it for this one call and judge success by the exit code.
+    $ErrorActionPreference = 'Continue'
     & keytool -genkeypair -alias greenmail -keyalg RSA -keysize 2048 -validity 30 -dname 'CN=localhost' `
         -storetype PKCS12 -keystore $ks -storepass changeit -keypass changeit 2>&1 | Out-Null
+    $keytoolExit = $LASTEXITCODE
+    $ErrorActionPreference = 'Stop'
+    if ($keytoolExit -ne 0 -or -not (Test-Path $ks)) { throw "keytool failed (exit $keytoolExit)" }
     $javaArgs += @("-Dgreenmail.tls.keystore.file=$ks", '-Dgreenmail.tls.keystore.password=changeit')
 }
 $javaArgs += @('-jar', "`"$jar`"")
@@ -93,9 +100,14 @@ if (-not $up) { throw 'GreenMail did not open port 3993' }
 # own bash command line); -Stop ends it.
 wsl.exe -d Ubuntu -u root -- bash -lc 'pgrep -f [s]pamfilter-keepalive >/dev/null' | Out-Null
 if ($LASTEXITCODE -ne 0) {
+    # Redirected to files so the keepalive does not inherit this script's
+    # output pipe (it never exits, so a caller piping this script's output
+    # would wait forever -- Sprint 77 MV 3c).
     Start-Process -FilePath wsl.exe -WindowStyle Hidden -ArgumentList @(
         '-d', 'Ubuntu', '-u', 'root', '--', 'bash', '-lc',
-        '"exec -a spamfilter-keepalive sleep infinity"') | Out-Null
+        '"exec -a spamfilter-keepalive sleep infinity"') `
+        -RedirectStandardOutput (Join-Path $work 'wsl-keepalive.out.log') `
+        -RedirectStandardError (Join-Path $work 'wsl-keepalive.err.log') | Out-Null
 }
 $setup = (Resolve-Path (Join-Path $PSScriptRoot 'test-imap\dovecot-wsl-setup.sh')).Path
 $wslPath = '/mnt/' + $setup.Substring(0, 1).ToLower() + ($setup.Substring(2) -replace '\\', '/')
