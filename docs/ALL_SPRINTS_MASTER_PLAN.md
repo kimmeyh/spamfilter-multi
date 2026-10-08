@@ -197,6 +197,20 @@ All incomplete items in relative priority order. Priority in increments of 10; i
 - **Input from R76-3 (2026-10-07)**: the recommended fields (what to store, what never to store) are in Section 6 of `docs/research/R76-3_HEURISTICS_ML_GENAI_SPAM_IDENTIFICATION.md`; storing content beyond the 100-character preview is a Class-1 decision with a privacy-policy revision (F273).
 - Probably a database of fields -- design and implement. Fed by the Windows and Android scans (eventually iPhone); no duplicate emails; initially populated from the existing delete and safe-sender rules; Harold has a partial history of deleted emails to run through for more examples.
 
+### Backlog from the Sprint 77 Manual Validation (Harold, 2026-10-07)
+
+**F281. Deep dive: best-practice UI for "run every <interval>" in Background scanning (~90-120m research + implementation card) Priority 6 -- NEXT SPRINT (Harold, Sprint 77 MV step 1)**
+- Harold: *"The UI just seem awkward for the Background Scanning ... deep dive into UI best practices for selecting time (in this case run something every <>)."* The F264 control (unit dropdown + typed number) works but reads awkwardly.
+- Deliverable: at least the 3 best alternatives, each with a mockup, pros, cons, and Windows + Android fit (ADR-0042 parity: one shared control on both platforms), with sources for the practices cited. Recommendation and why. Harold picks one; the pick becomes an implementation card in the same sprint.
+- Requirements for every alternative:
+  - Minimum every 5 minutes (`kMinIntervalMinutes`). Maximum every 24 hours -- **a change**: today `kMaxIntervalMinutes` is 99 hours.
+  - Suggest 15 minutes: the first time the control is shown for an account, it defaults to 15 minutes.
+  - Great flexibility (not only a short fixed preset list).
+  - Shown ONLY when a background mode is on: Android has two (scheduled background scanning, "Scan when new mail arrives"); Windows has one. **A change**: today the control is shown even when background scanning is OFF, deliberately (`settings_screen.dart` F264 R-11 comment, ISSUE #123/#124, so the user could set it first). Name what happens to a saved interval when the control is hidden.
+  - Keeps the save-on-change behavior Harold chose at MV-Q3 (no Save button).
+- Overlaps R76-2 (Background section rework); do them together.
+- Control and screen: Settings > Account tab > Background > "Scan every".
+
 ### Backlog from the Sprint 76 retrospective
 
 **F256. Rename `GmailWindowsOAuthHandler` to reflect both platforms Priority 60 -- backlog (Sprint 76 retro IMP-8a, Harold 2026-10-06)**
