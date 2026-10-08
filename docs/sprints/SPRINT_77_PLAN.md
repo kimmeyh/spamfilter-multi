@@ -343,6 +343,16 @@ All decision questions are answered; execution proceeds without further approval
   never built. Neither of the next-newest real rows is in the tree either. Not an app defect; the test assumed the
   seeds land in the first screenful. OPEN -- fix the test (scroll to the seeds or seed them where they are always built)
   before close-out. Seeds removed afterwards (status 0).
+  CORRECTION 2026-10-08 (09:19-09:40): the "cause VERIFIED" above is WRONG, or at least not the cause. On the large
+  monitor (3856x2128, 11 provider rows) both seeds are on screen and in the UIA tree when I launch the app and query by
+  hand (MCP, same exe `dist\dev\MyEmailSpamFilter-Dev.exe`, same seed script, same drop-down cycle, 5 page scrolls --
+  seed-a resolves every time). Under the RUNNER the same selectors resolve 0 elements: (a) the committed script with no
+  scroll steps fails at the seed click; (b) a probe resolves a REAL row's checkbox (`abhishekdha2003`, row 1) and Clear
+  in 3 s, but neither seed's CheckBox nor its row Group. So in the runner-launched instance the seed rows are not in the
+  tree at all. Cause UNKNOWN; what would settle it: a screenshot from inside the runner's run at the failing step
+  (`captureScreenshots: true`) to see whether the seeds are on screen. Scroll steps were tried (`find_target` reports
+  not-found for a row already in the tree; the runner requires a selector on every `ww_scroll`) and reverted -- they do
+  not address this. Note: F283 (next sprint) removes multi-select, so this script's checkbox steps are rewritten then.
 - **5.1.6 runtime launch**: 0.18.0 dev Windows build launched 2026-10-07 03:01 (pid 119404); the DB v12 upgrade ran on the real dev data -- 7,904 No Rule rows -> 583 (exactly the distinct identities), schema 11 -> 12, `last_seen_at` present (pre-v12 backup `spam_filter.db.pre_v12_20261007_025839`, hash-verified).
 
 ## Manual Validation steps (Sprint 77 -- re-present IN FULL every time Harold is asked to validate)
