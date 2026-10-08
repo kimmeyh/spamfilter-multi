@@ -353,6 +353,14 @@ All decision questions are answered; execution proceeds without further approval
   (`captureScreenshots: true`) to see whether the seeds are on screen. Scroll steps were tried (`find_target` reports
   not-found for a row already in the tree; the runner requires a selector on every `ww_scroll`) and reverted -- they do
   not address this. Note: F283 (next sprint) removes multi-select, so this script's checkbox steps are rewritten then.
+  RESOLVED 09:4x: a probe with `captureScreenshots: true` showed the runner's window at 1280x720 at the failing step --
+  step 1 `ww_window_state maximize` reports success but leaves the visible window unmaximized (the app also owns a
+  hidden `FLUTTER_RUNNER_WIN32_WINDOW_TRAY` window, the likely target -- unverified). So the 10/07 mechanism (seeds below
+  the first screenful) was right; what it missed is that "maximize first" (harness fact 4) never took effect under the
+  runner, while it does when driven by hand. Fix: the script also invokes the title bar's `#Maximize-Restore` button.
+  RUN: `test_mt2c_no_rule_sweep` PASS 30/30, DB drift none (the identical data failed before the fix). Same latent
+  weakness in 4 other scripts (`test_s75_new_controls` x3, `test_f124_rule_labels`, both `test_f56_*`); they pass today
+  at 1280x720 and were left unchanged -- the title-bar button TOGGLES, so it is unsafe in a script that maximizes twice.
 - **5.1.6 runtime launch**: 0.18.0 dev Windows build launched 2026-10-07 03:01 (pid 119404); the DB v12 upgrade ran on the real dev data -- 7,904 No Rule rows -> 583 (exactly the distinct identities), schema 11 -> 12, `last_seen_at` present (pre-v12 backup `spam_filter.db.pre_v12_20261007_025839`, hash-verified).
 
 ## Manual Validation steps (Sprint 77 -- re-present IN FULL every time Harold is asked to validate)
