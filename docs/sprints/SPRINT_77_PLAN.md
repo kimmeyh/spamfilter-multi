@@ -279,6 +279,16 @@ All decision questions are answered; execution proceeds without further approval
   evaluated 0 -- by inference both already-filed safe senders; unverified). `results_display_screen.dart` sets
   `_hasEverScanned` once at load and never updates it, so a first-ever scan run while the screen is open keeps the
   never-scanned message. Asked Harold how the screen was reached.
+  - FIXED 2026-10-08: Harold answered 2 (scan started from the account list; Results opened after it finished). The
+    empty-state chain now also treats a completed live scan of THIS account (`currentAccountId == widget.accountId`) as
+    having scanned. Test `s77_first_scan_empty_state_test.dart` (baseline, first scan, other account); mutations ES1
+    (condition disabled) and ES2 (account check dropped) KILLED.
+- MV re-checks (Harold, 2026-10-08): step 6 CSV PASS -- with "Export CSV After Each Scan" ON, line 1 of
+  `scan_exports\live_scan_acct_d894223c71_2026-10-08_dev_redacted.data.csv` is the column names. Step 7: both Task
+  Scheduler tasks were still registered at 08:31 (background still on; Harold asked to turn it off). MV-Q10 answered:
+  backlog F282 (one `MyEmailSpamFilter` folder). Step 5: Harold could not find the row among 398 with no search; backlog
+  F283 (Review No Rule Items rebuilt on the Results screen layout, with search). The account drop-down already exists
+  on that screen; step 5 re-presented with it.
 - Phone evidence pulled 2026-10-07 (Harold tethered the Fold; rebooted ~08:30, app not opened until after noon):
   `validation-screenshots/sprint-77/` -- screenshots, `diag_v0.17.5_2026-10-06.log`, `diag_v0.17.5_2026-10-07.log`,
   `diag_v0.17.6_2026-10-07.log`, scan CSVs. `scripts/pull-phone-screenshots.ps1` fixed (a `$folder` local overwrote the

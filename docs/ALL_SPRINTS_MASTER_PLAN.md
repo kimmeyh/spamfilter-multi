@@ -211,6 +211,30 @@ All incomplete items in relative priority order. Priority in increments of 10; i
 - Overlaps R76-2 (Background section rework); do them together.
 - Control and screen: Settings > Account tab > Background > "Scan every".
 
+**F282. One "MyEmailSpamFilter" folder for every file the app writes for the user Priority 7 -- NEXT SPRINT (Harold, Sprint 77 MV-Q10, 2026-10-08)**
+- Harold: *"if we are going to add directories to the Documents folder on either platform it should be named MyEmailSpamFilter and then just keep all MyEmailSpamFilter files in that directory (easier for users to find): scan results, manual scan downloads, diagnostics..."*
+- Today (`ExportDirectories.resolve`, default Windows Downloads, Android Documents, or the Settings > General folder):
+  - Export folder ROOT: the Results screen download button (`scan_results_<time>.csv`), Manage Rules export and Manage Safe Senders export.
+  - `scan_exports\`: per-scan background and live CSV/XLSX files.
+  - `diagnostics` (prod) / `diagnostics_Dev` (dev): the diagnostic log.
+- Change: every one of these goes under one `MyEmailSpamFilter` folder, with today's subfolders inside it. ONE resolver change (`ExportDirectories`), so no writer keeps its own copy of the path.
+- Windows + Android parity (ADR-0042): same folder name and layout on both.
+- Open questions (MV-Q11 to MV-Q13, asked 2026-10-08): Windows base folder; dev/prod separation; what happens to existing files.
+- Acceptance: a user opens Documents (or the chosen base) and finds every app file in `MyEmailSpamFilter`; Settings > General names the folder; Help text matches.
+
+**F283. Review No Rule Items looks and works like the Results screen, across all accounts Priority 8 -- NEXT SPRINT (Harold, Sprint 77 MV step 5, 2026-10-08)**
+- Harold: *"change the UI for Review No Rule Items to look like the View Scan Results > Results screen ... but include all emails from all accounts. Will need to add a email account drop-down similar to 'Folders', default to All (drop down should list all email accounts, even if there are no results from those accounts). In the attached detail screen, we can replace the domain that is next to the date/time with the email account name (i.e. kimmeyharold@aol.com) so the user can see where the email came from."* Trigger: step 5 could not find one email among 398 -- *"there is no search to easily find it ... Can we add a search like in the View Results screen."*
+- Already exists (keep): every unaddressed row from every saved account (F245 upsert, one row per email); an account drop-down with "All Accounts (N)" first and every saved account with its count, including zero (shown only when more than one account is saved); the account email on each row when more than one account is saved; multi-select bulk actions.
+- Change:
+  - Layout of `results_display_screen`: summary header, chip row (account drop-down styled like "Folders", then "Folders", then "Sort"), the "Showing X of Y emails" filter bar, and the same row format (folder, date, subject).
+  - Search (the Results screen's search icon and behavior) over sender, subject and folder.
+  - The account drop-down defaults to All and is shown even with one account (open question).
+  - Detail popup: the domain next to the date/time is replaced by the account email (for example `kimmeyharold@aol.com`).
+  - Reuse the Results screen's widgets (chip row, filter bar, row, detail popup) rather than a second copy -- the Sprint 52 IMP-5 rule.
+- Windows + Android parity (ADR-0042): one shared screen.
+- Open questions (MV-Q14 to MV-Q17, asked 2026-10-08).
+- Acceptance: from Review No Rule Items, a user finds one email by typing part of its sender or subject; the account drop-down lists every saved account; the detail popup names the account.
+
 ### Backlog from the Sprint 76 retrospective
 
 **F256. Rename `GmailWindowsOAuthHandler` to reflect both platforms Priority 60 -- backlog (Sprint 76 retro IMP-8a, Harold 2026-10-06)**
