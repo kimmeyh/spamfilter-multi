@@ -144,6 +144,8 @@ void main() {
       expect(adapter.debugHasClient, isFalse,
           reason: 'a signed-out client must not survive a refused LOGIN');
       expect(server.loginCount, 2);
+      expect(await limiterAttempts(), 1,
+          reason: 'a refused reconnect counts toward the SEC-22 lockout');
 
       // A later operation in the same scan must not send LOGIN again.
       final again = await adapter.moveToFolderBatch(inboxMessages(1), 'Trash');
@@ -169,6 +171,7 @@ void main() {
       );
       expect(adapter.debugHasClient, isFalse);
       expect(server.loginCount, 2);
+      expect(await limiterAttempts(), 1);
     });
   });
 

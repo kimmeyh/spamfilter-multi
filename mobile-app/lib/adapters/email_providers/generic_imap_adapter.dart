@@ -231,13 +231,7 @@ class GenericIMAPAdapter with BatchOperationsMixin implements SpamFilterPlatform
       _logger.e('[IMAP] Failed to load credentials: $e');
       if (e is AuthenticationException) {
         // SEC-22: server rejected credentials -> count as a failed attempt.
-        // Swallow any DB error inside the limiter so it never hides the
-        // original auth failure from the caller.
-        try {
-          await rateLimiter.recordFailure(rateLimitAccountId);
-        } catch (limiterError) {
-          _logger.w('Auth rate limiter write failed: $limiterError');
-        }
+        await _recordSignInFailure(credentials);
         // Propagate explicit authentication failures
         rethrow;
       }
@@ -1825,6 +1819,21 @@ class GenericIMAPAdapter with BatchOperationsMixin implements SpamFilterPlatform
   /// This prevents IMAP server disconnects during long scan sessions (e.g., AOL
   /// disconnects after ~100 sequential operations). Reconnects transparently
   /// without losing the scan state since UIDs are persistent.
+  /// SEC-22: count one refused sign-in for [credentials]' account. The ONE
+  /// place a refusal is recorded, used by the first sign-in
+  /// ([loadCredentials]) and by a mid-scan reconnect ([_checkAndReconnect]),
+  /// so a password changed during a scan counts toward the lockout the same
+  /// way (Sprint 77 final review). A database error inside the limiter is
+  /// logged and swallowed so it never hides the sign-in failure itself.
+  Future<void> _recordSignInFailure(Credentials credentials) async {
+    try {
+      await AuthRateLimiter(DatabaseHelper())
+          .recordFailure('$platformId-${credentials.email}');
+    } catch (limiterError) {
+      _logger.w('Auth rate limiter write failed: $limiterError');
+    }
+  }
+
   Future<void> _checkAndReconnect() async {
     if (_operationCount < _reconnectThreshold) {
       return;
@@ -1863,6 +1872,9 @@ class GenericIMAPAdapter with BatchOperationsMixin implements SpamFilterPlatform
       _logger.i('[IMAP] Reconnected successfully. Resuming operations.');
     } catch (e) {
       _logger.e('[IMAP] Reconnect failed: $e');
+      if (e is AuthenticationException && _credentials != null) {
+        await _recordSignInFailure(_credentials!);
+      }
       // SEC-8b: a named reason (certificate changed, STARTTLS refused) must
       // reach the scan's failure text, not become "check your internet"; a
       // refused login keeps its meaning (wrong or changed password). The same
