@@ -260,6 +260,21 @@ All decision questions are answered; execution proceeds without further approval
   KILLED. Suite 2,915 passed / 15 skipped.
 - MV step 6 partial: the export header PASSES on the new daily background file (2026-10-07, line 1 = column names).
   Manual-scan CSVs are written only with Settings > Manual Scan > "Export CSV After Each Scan" ON (off since 09-28).
+- MV steps 6-10 (Harold, 2026-10-08, rebuilt dev app):
+  - Step 6: no-Wi-Fi message PASS ("Unable to connect to the email server. Please check your internet connection";
+    live log 08:11:06 `Failed host lookup: 'imap.aol.com'`). The scan_exports CSV was NOT re-checked: the setting is still
+    off (no "Debug CSV exported" line in `dev_live_scan_v0.18.0.log`). Harold used the Results export button instead; it
+    writes `scan_results_<timestamp>.csv` to the export folder ROOT (`C:\Users\kimme\Downloads`), not `scan_exports`, by
+    design of `results_display_screen.dart` (`ExportDirectories.resolve()` with no subfolder). Its line 1 is a
+    `# MyEmailSpamFilter,0.18.0,exported,...` metadata line and line 2 the column names. MV-Q10 asked.
+  - Step 7 PASS: Task Scheduler `..._kimmeyharold_at_aol_com_Dev` starts 00:00, `..._kimmeyh_at_gmail_com_Dev` 00:01,
+    both PT15M.
+  - Step 8 PASS: "Account already added" with "(AOL Mail)", Cancel and Replace.
+  - Step 9 PASS: Custom IMAP `imap.mail.yahoo.com` shows "App Password"; `mail.example.com` shows "Password" plus the
+    hint; the account list shows "App Password" for AOL, Gmail (IMAP), iCloud and the Yahoo Custom IMAP account, and
+    "Password" for `tester@dovecot.test`.
+  - Step 10: the trust dialog for localhost:3993 appeared (fingerprint 8C:A1:90:DD...); the result after Trust is not yet
+    reported.
 - MV step 2 finding (OPEN): the Yahoo Results screen read "No Results Yet. Run a scan." after a completed scan (found 2,
   evaluated 0 -- by inference both already-filed safe senders; unverified). `results_display_screen.dart` sets
   `_hasEverScanned` once at load and never updates it, so a first-ever scan run while the screen is open keeps the
