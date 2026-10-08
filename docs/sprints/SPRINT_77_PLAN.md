@@ -289,6 +289,16 @@ All decision questions are answered; execution proceeds without further approval
   backlog F282 (one `MyEmailSpamFilter` folder). Step 5: Harold could not find the row among 398 with no search; backlog
   F283 (Review No Rule Items rebuilt on the Results screen layout, with search). The account drop-down already exists
   on that screen; step 5 re-presented with it.
+- MV step 5 CRASH (OPEN, cause unknown), 2026-10-08 08:59:35: the dev app (pid 0x1441C, build of 08:41) closed with
+  "MyEmailSpamFilter has stopped working" on Review No Rule Items, body blank, the "Re-check the last scan" tooltip
+  showing. Windows Application Error 1000: exception 0xc0000409 (fail-fast), faulting module "unknown" (code outside any
+  DLL -- where Dart AOT code runs), exception data 0xa; WER bucket StackHash_1e51; the WER dump was not kept. No
+  diagnostic log line after 08:46 (background scans), and no row was marked addressed (DB copy: the Gmail "Quantum
+  Developer Day" rows 5211, 7938 and 8002 still unaddressed; 411 unaddressed rows). Reproduction attempt 09:0x on the
+  relaunched app: the screen loaded (399 items) and Re-check ran 3 times with no crash (working set 106 -> 223-258 MB).
+  Not the cleanup sweep by inspection: it yields every 100 ms and catches per row. GPU LiveKernelEvent 141 reports were
+  filed at 08:57 but their dumps are dated 2026-09-17 to 10-07, so they are queued old reports, not this event. What would
+  settle it: Harold's exact click sequence before the crash, and a local crash dump on the next occurrence.
 - Phone evidence pulled 2026-10-07 (Harold tethered the Fold; rebooted ~08:30, app not opened until after noon):
   `validation-screenshots/sprint-77/` -- screenshots, `diag_v0.17.5_2026-10-06.log`, `diag_v0.17.5_2026-10-07.log`,
   `diag_v0.17.6_2026-10-07.log`, scan CSVs. `scripts/pull-phone-screenshots.ps1` fixed (a `$folder` local overwrote the

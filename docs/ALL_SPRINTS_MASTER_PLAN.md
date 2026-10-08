@@ -219,8 +219,11 @@ All incomplete items in relative priority order. Priority in increments of 10; i
   - `diagnostics` (prod) / `diagnostics_Dev` (dev): the diagnostic log.
 - Change: every one of these goes under one `MyEmailSpamFilter` folder, with today's subfolders inside it. ONE resolver change (`ExportDirectories`), so no writer keeps its own copy of the path.
 - Windows + Android parity (ADR-0042): same folder name and layout on both.
-- Open questions (MV-Q11 to MV-Q13, asked 2026-10-08): Windows base folder; dev/prod separation; what happens to existing files.
-- Acceptance: a user opens Documents (or the chosen base) and finds every app file in `MyEmailSpamFilter`; Settings > General names the folder; Help text matches.
+- Decisions (Harold, 2026-10-08):
+  - MV-Q11 = 1: the default base is **Documents on both platforms** (Windows moves from Downloads), "consistent and more consistent with Windows applications in general". Harold asked whether it can be built from a standard environment variable such as `%USERPROFILE%\Documents`. Answer for the card: use the Windows Documents KNOWN FOLDER (`SHGetKnownFolderPath(FOLDERID_Documents)`, which `path_provider`'s `getApplicationDocumentsDirectory()` returns on Windows), with `%USERPROFILE%\Documents` only as the fallback -- the same pattern `ExportDirectories` already uses for Downloads. The known folder is the better source because a user (or OneDrive folder backup) can move Documents, and then `%USERPROFILE%\Documents` is the wrong folder; verify against the Microsoft known-folder docs when implementing.
+  - MV-Q12 = 1: two folders, `MyEmailSpamFilter` (prod) and `MyEmailSpamFilter_Dev` (dev).
+  - MV-Q13 = 1: existing files stay where they are. A user who already chose a folder in Settings keeps that folder and its files unchanged; only the DEFAULT changes, for new users and users who never chose a location.
+- Acceptance: a user who never chose a folder opens Documents and finds every app file in `MyEmailSpamFilter`; a user who chose a folder sees no change; Settings > General names the folder; Help text matches.
 
 **F283. Review No Rule Items looks and works like the Results screen, across all accounts Priority 8 -- NEXT SPRINT (Harold, Sprint 77 MV step 5, 2026-10-08)**
 - Harold: *"change the UI for Review No Rule Items to look like the View Scan Results > Results screen ... but include all emails from all accounts. Will need to add a email account drop-down similar to 'Folders', default to All (drop down should list all email accounts, even if there are no results from those accounts). In the attached detail screen, we can replace the domain that is next to the date/time with the email account name (i.e. kimmeyharold@aol.com) so the user can see where the email came from."* Trigger: step 5 could not find one email among 398 -- *"there is no search to easily find it ... Can we add a search like in the View Results screen."*
@@ -232,7 +235,12 @@ All incomplete items in relative priority order. Priority in increments of 10; i
   - Detail popup: the domain next to the date/time is replaced by the account email (for example `kimmeyharold@aol.com`).
   - Reuse the Results screen's widgets (chip row, filter bar, row, detail popup) rather than a second copy -- the Sprint 52 IMP-5 rule.
 - Windows + Android parity (ADR-0042): one shared screen.
-- Open questions (MV-Q14 to MV-Q17, asked 2026-10-08).
+- Decisions (Harold, 2026-10-08):
+  - MV-Q14 = 1: the account drop-down is ALWAYS shown, even with one saved account.
+  - MV-Q15: the "No rule" chip stays and shows the count, but is no longer a drop-down.
+  - MV-Q16 = 2: multi-select and bulk actions are REMOVED ("it was not useful"); one row at a time, as on the Results screen.
+  - MV-Q17 = 2: the detail popup shows the account email in place of the domain on BOTH screens (Review No Rule Items and Results).
+  - MV-Q18: no interim search this sprint; search arrives with this card.
 - Acceptance: from Review No Rule Items, a user finds one email by typing part of its sender or subject; the account drop-down lists every saved account; the detail popup names the account.
 
 ### Backlog from the Sprint 76 retrospective
