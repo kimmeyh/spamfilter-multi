@@ -710,6 +710,35 @@ This change was introduced after Sprint 36 kickoff skipped Phase 1 (prior "OPTIO
     one-line result. A dead pid with zero app log lines is the signature of a runtime config
     parse failure -- read the SYSTEM logcat lines, not the app's.
 
+- [ ] **5.1.9 Manual Validation rehearsal** (MANDATORY from Sprint 78; Sprint 77 retro IMP-1, Harold 2026-10-08:
+  *"it is more important that you have fully tested how it works before manual validation - including the Manual Validation example you would like me to run - they should Never (with very few and infrequent occurances) fail - this is prevention at the earliest possible step."* ... *"UI steps via flutter tests instead of winwright. Winwright if necessary, but should be done in the same set as any other Winwright tests - minimizing the laptop takeover time."*)
+  - **Rule**: before Manual Validation is handed over, Claude runs EVERY Manual Validation step it will give Harold,
+    exactly as written, on the build Harold will use, and confirms the step's expected result. A handed-over step should
+    never fail. A failed step during MV is a rehearsal miss, not a normal validation round.
+  - **How, cheapest first**:
+    1. **UI steps through Flutter tests** (widget tests, or `integration_test` on Windows when a real engine is needed):
+       the test performs the step's taps and entries and asserts what the step tells Harold he will see. These
+       run headless or in-engine, with no mouse, keyboard or screen takeover. Keep the test when it guards a
+       sprint change; otherwise it can live in `test/scratch/`.
+    2. **Data, scanner and IMAP steps** through the local test servers (`scripts/start-test-imap-servers.ps1`),
+       database queries on a COPY of the dev DB, and the diagnostic log.
+    3. **WinWright ONLY when a Flutter test cannot prove the step** (the real Windows window, tray, notifications,
+       native dialogs). Those rehearsal steps run in the SAME session as the 5.1.5 sweep, so the laptop is taken
+       over once.
+  - **Preconditions**: the rehearsal sets up the same preconditions the step states (which setting is on, the scan
+    range, whether a backlog cursor exists, which account, app open or closed). A step whose preconditions cannot be
+    reproduced is rewritten until they can.
+  - **Steps Claude cannot rehearse** (phone-only behavior, a real provider account Claude cannot reach): say so in
+    the step, and name the closest rehearsal that was done (emulator, test server).
+  - **Record**: each MV step in the plan carries `Rehearsed: <date>, <how>, <observed result>`, and the plan's
+    Phase 5 evidence carries `- **5.1.9 MV rehearsal**: <date>, <N> steps rehearsed (<how>), <M> not rehearsable
+    (<why>)`. `sprint-auto-advance.ps1` (F193 evidence gate) refuses to declare Manual Validation from Sprint 78
+    while that marker is missing or PENDING.
+  - **Why**: Sprint 77 handed over three steps that failed in Harold's hands (the GreenMail sign-in user, a 1-day
+    rescan the backlog cursor ignores, an expected count of 5 that was 6), each costing a validation round, and
+    Harold found the "No Results Yet" defect on screen. Each would have failed in a rehearsal. Sprint 75 IMP-5 had
+    already said to trace preconditions; tracing by reading did not prevent it, so the step is now RUN, not read.
+
 - [ ] **5.2 Run Complete Test Suite**
   - Execute full test suite: `flutter test`
   - Verify all tests pass (not just new ones)
