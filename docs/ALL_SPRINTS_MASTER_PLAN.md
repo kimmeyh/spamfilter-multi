@@ -274,6 +274,7 @@ Each item is fixed PREVENTION FIRST (SPRINT_EXECUTION_WORKFLOW.md 7.7.1): name h
 - Phase: Core App Quality
 - Platform: All
 - Since Sprint 77 No Rule Review lists every unprocessed row across scans (Harold Q21 = 2) and retention counts from the last sighting (Q22 = 1), so an email the user deleted in their mail app stays listed up to 90 days and actions on it fail. No status marks it gone: `UnmatchedEmailStore.updateAvailabilityStatus` has no caller in lib/ and `EmailAvailabilityChecker` is never constructed, so every row stays 'unknown'.
+- **Also MOVED mail (Sprint 77 MV step 5, 2026-10-08)**: two Gmail messages listed from `[Gmail]/Spam` on 10-03 were later found in INBOX. Row identity includes the folder and UID, so each is now listed TWICE: the stale Spam row stays unprocessed beside the new INBOX row. The fix must cover a message that moved, not only one that was deleted.
 - Prevention-first fix: set the row's availability to deleted when an action on it fails with "not found" (one place, the shared action path) and filter it in the Review query; optionally run the existing availability checker for rows not seen in the latest scan.
 
 **F265. Android Gmail native one-pick sign-in -- revisit only when a second device reproduces the failure Priority HOLD -- backlog (Sprint 77 plan Q24 = 2, Harold 2026-10-06)**
