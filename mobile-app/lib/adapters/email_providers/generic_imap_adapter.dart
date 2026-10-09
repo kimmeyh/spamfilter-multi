@@ -27,15 +27,39 @@ import '../../core/models/batch_action_result.dart';
 import '../../core/models/email_message.dart';
 import '../../core/models/evaluation_result.dart';
 import '../../core/security/auth_rate_limiter.dart';
+import '../../core/security/imap_certificate_trust.dart';
 import '../../core/storage/database_helper.dart';
+import '../storage/secure_credentials_store.dart';
+import 'custom_imap_settings.dart';
 import 'spam_filter_platform.dart';
 import 'email_provider.dart';
 
+/// What a refused IMAP LOGIN means (Sprint 77 final review). See
+/// [GenericIMAPAdapter.classifyLoginRefusal].
+enum LoginRefusal {
+  /// The server refused the credentials: a sign-in failure, counted by the
+  /// SEC-22 rate limiter.
+  credentials,
+
+  /// The server could not serve the sign-in now (busy, unavailable, protocol
+  /// error, timeout): a connection failure, NOT counted by the limiter.
+  serverUnavailable,
+}
+
 /// Generic IMAP implementation for multiple email providers
 class GenericIMAPAdapter with BatchOperationsMixin implements SpamFilterPlatform {
-  final String _imapHost;
-  final int _imapPort;
-  final bool _isSecure;
+  // Server target. Fixed at construction for AOL, Gmail (IMAP), Yahoo and
+  // iCloud. For the Custom IMAP platform (platformId 'imap') these are replaced
+  // from `Credentials.additionalParams` by [_resolveCustomServer] on every
+  // loadCredentials call (F192, Sprint 77). The other platforms never read
+  // those keys, so a stray key can never redirect AOL or Yahoo elsewhere.
+  String _imapHost;
+  int _imapPort;
+  // The type has no plaintext member: a cleartext IMAP LOGIN cannot be
+  // represented (Sprint 77 Q3).
+  ImapEncryption _encryption;
+  // Login name for a custom server; null means "use the email address".
+  String? _customLoginName;
   final Logger _logger = Logger();
 
   @override
@@ -44,8 +68,14 @@ class GenericIMAPAdapter with BatchOperationsMixin implements SpamFilterPlatform
   @override
   final String displayName;
 
+  /// Sprint 77 MV-Q5 (Harold: a prompt "should state what it actually is - an
+  /// 'App Password' or a regular non-app 'Password'"): AOL, Yahoo, iCloud and
+  /// Gmail IMAP take an app password; a Custom IMAP server takes the
+  /// mailbox's normal password. Must equal the `PlatformRegistry` entry's
+  /// `authMethod` (pinned by `auth_method_label_test.dart`).
   @override
-  AuthMethod get supportedAuthMethod => AuthMethod.appPassword;
+  AuthMethod get supportedAuthMethod =>
+      platformId == 'imap' ? AuthMethod.basicAuth : AuthMethod.appPassword;
 
   ImapClient? _imapClient;
   String? _currentMailbox;
@@ -82,21 +112,30 @@ class GenericIMAPAdapter with BatchOperationsMixin implements SpamFilterPlatform
   GenericIMAPAdapter({
     required String imapHost,
     int imapPort = 993,
-    bool isSecure = true,
+    ImapEncryption encryption = ImapEncryption.sslTls,
     String? displayName,
     String? platformId,
   })  : _imapHost = imapHost,
         _imapPort = imapPort,
-        _isSecure = isSecure,
+        _encryption = encryption,
         displayName = displayName ?? 'IMAP Server',
-        platformId = platformId ?? 'imap';
+        platformId = platformId ?? 'imap' {
+    // STARTTLS exists only for Custom IMAP, through ImapTlsConnector (the
+    // one path that refuses to send the password unless the upgrade
+    // succeeds). A fixed-host provider is SSL/TLS only; refusing any other
+    // combination here is what lets _connectAndLogin have no STARTTLS
+    // branch of its own (Sprint 77 Phase 5.1.2 F-PRECHECK).
+    if (this.platformId != 'imap' && encryption != ImapEncryption.sslTls) {
+      throw ArgumentError.value(encryption, 'encryption',
+          'only Custom IMAP (platform "imap") supports $encryption');
+    }
+  }
 
   /// Factory constructor for AOL Mail (Phase 1 MVP)
   factory GenericIMAPAdapter.aol() {
     return GenericIMAPAdapter(
       imapHost: 'imap.aol.com',
       imapPort: 993,
-      isSecure: true,
       displayName: 'AOL Mail',
       platformId: 'aol',
     );
@@ -111,7 +150,6 @@ class GenericIMAPAdapter with BatchOperationsMixin implements SpamFilterPlatform
     return GenericIMAPAdapter(
       imapHost: 'imap.gmail.com',
       imapPort: 993,
-      isSecure: true,
       displayName: 'Gmail (IMAP)',
       platformId: 'gmail-imap',
     );
@@ -122,7 +160,6 @@ class GenericIMAPAdapter with BatchOperationsMixin implements SpamFilterPlatform
     return GenericIMAPAdapter(
       imapHost: 'imap.mail.yahoo.com',
       imapPort: 993,
-      isSecure: true,
       displayName: 'Yahoo Mail',
       platformId: 'yahoo',
     );
@@ -133,7 +170,6 @@ class GenericIMAPAdapter with BatchOperationsMixin implements SpamFilterPlatform
     return GenericIMAPAdapter(
       imapHost: 'imap.mail.me.com',
       imapPort: 993,
-      isSecure: true,
       displayName: 'iCloud Mail',
       platformId: 'icloud',
     );
@@ -143,12 +179,12 @@ class GenericIMAPAdapter with BatchOperationsMixin implements SpamFilterPlatform
   factory GenericIMAPAdapter.custom({
     String imapHost = '',
     int imapPort = 993,
-    bool isSecure = true,
+    ImapEncryption encryption = ImapEncryption.sslTls,
   }) {
     return GenericIMAPAdapter(
       imapHost: imapHost,
       imapPort: imapPort,
-      isSecure: isSecure,
+      encryption: encryption,
       displayName: 'Custom IMAP',
       platformId: 'imap',
     );
@@ -162,6 +198,14 @@ class GenericIMAPAdapter with BatchOperationsMixin implements SpamFilterPlatform
 
   @override
   Future<void> loadCredentials(Credentials credentials) async {
+    // F192 (Sprint 77): a Custom IMAP account carries its server in
+    // `credentials.additionalParams`. Resolve it FIRST, so a missing or
+    // invalid setting fails with a clear message before the rate limiter
+    // touches the database and before any socket is opened.
+    if (platformId == 'imap') {
+      _resolveCustomServer(credentials);
+    }
+
     // SEC-22 (Sprint 33): check rate limiter before attempting sign-in so a
     // blocked account never touches the network.
     final rateLimiter = AuthRateLimiter(DatabaseHelper());
@@ -171,39 +215,9 @@ class GenericIMAPAdapter with BatchOperationsMixin implements SpamFilterPlatform
     try {
       _credentials = credentials;
       _operationCount = 0;
-      _imapClient = ImapClient(isLogEnabled: false);
 
-      _logger.i('[IMAP] Connecting to $_imapHost:$_imapPort (secure: $_isSecure)');
-
-      // NOTE: enough_mail ImapClient.connectToServer() does not support securityContext parameter.
-      // Use default SSL/TLS certificate validation provided by Dart's dart:io.
-      // For standard email providers (AOL, Gmail, Yahoo, Outlook), this is secure and reliable.
-      //
-      // SEC-8 (Sprint 33): Certificate pinning is NOT applied to IMAP because
-      // enough_mail's ImapClient does not expose a SecurityContext or
-      // bad-certificate callback. Pinning HTTPS OAuth endpoints is handled by
-      // PinnedHttpClient (see lib/core/security/certificate_pinner.dart).
-      // IMAP pinning is tracked as a future enhancement; options:
-      // 1. Post-connection socket inspection (not exposed by enough_mail API)
-      // 2. Fork enough_mail to accept a SecurityContext parameter
-      // 3. Replace enough_mail with a secure IMAP library that supports pinning
-      //
-      // REMOVED: SecurityContext creation and custom certificate handling (not supported by enough_mail)
-      // REMOVED: Custom certificate file loading from assets
-      // REMOVED: Bad certificate override handler (dangerous for production)
-
-      await _imapClient!.connectToServer(
-        _imapHost,
-        _imapPort,
-        isSecure: _isSecure,
-      );
-
-      _logger.i('[IMAP] IMAP login attempt for $displayName');
-
-      await _imapClient!.login(
-        credentials.email,
-        credentials.password ?? '',
-      );
+      // The one connect-and-login path (also used by _checkAndReconnect).
+      await _connectAndLogin(credentials);
 
       _logger.i('[IMAP] Successfully authenticated to $displayName');
 
@@ -217,21 +231,22 @@ class GenericIMAPAdapter with BatchOperationsMixin implements SpamFilterPlatform
       _logger.e('[IMAP] Failed to load credentials: $e');
       if (e is AuthenticationException) {
         // SEC-22: server rejected credentials -> count as a failed attempt.
-        // Swallow any DB error inside the limiter so it never hides the
-        // original auth failure from the caller.
-        try {
-          await rateLimiter.recordFailure(rateLimitAccountId);
-        } catch (limiterError) {
-          _logger.w('Auth rate limiter write failed: $limiterError');
-        }
+        await _recordSignInFailure(credentials);
         // Propagate explicit authentication failures
+        rethrow;
+      }
+
+      // F192 (Sprint 77): a connection failure that already carries its own
+      // user-facing sentence (STARTTLS refused) passes through unchanged.
+      // Without this it would be re-wrapped below and the sentence lost.
+      if (e is UserFacingConnectionException) {
         rethrow;
       }
 
       // Map handshake and network errors to connection failures so the UI
       // reports the real root cause instead of "Authentication failed".
       if (e is HandshakeException) {
-        throw ConnectionException('TLS certificate validation failed: ${e.toString()}', e);
+        throw _handshakeFailure(e);
       }
       if (e is SocketException || e is TimeoutException) {
         throw ConnectionException('Network connection failed: ${e.toString()}', e);
@@ -240,6 +255,323 @@ class GenericIMAPAdapter with BatchOperationsMixin implements SpamFilterPlatform
       // Fallback: treat other errors as connection failures
       // [UPDATED] Include underlying error details in message for better debugging
       throw ConnectionException('IMAP connection failed: ${e.toString()}', e);
+    }
+  }
+
+  /// F192 (Sprint 77): replace the server target from the account's stored
+  /// settings. Called only for the Custom IMAP platform.
+  ///
+  /// Fails with a [UserFacingConnectionException] when the host is blank, the
+  /// port is out of range, or the encryption value is missing or unknown. It
+  /// NEVER falls back to a default: a corrupted setting must not become a
+  /// guess about where to send a password, or whether to protect it.
+  void _resolveCustomServer(Credentials credentials) {
+    final settings = CustomImapSettings.tryFromParams(credentials.additionalParams);
+    if (settings == null) {
+      throw UserFacingConnectionException(
+        'Server not configured: custom IMAP settings are missing or invalid',
+        'This account has no valid server settings. Remove the account and add '
+        'it again with the server name, port and encryption.',
+      );
+    }
+    _imapHost = settings.host;
+    _imapPort = settings.port;
+    _encryption = settings.encryption;
+    final username = settings.username.trim();
+    _customLoginName = username.isEmpty ? null : username;
+    _trustedCertSha256 = settings.trustedCertificateSha256;
+  }
+
+  /// SEC-8b (ADR-0046): fingerprint of the certificate trusted for this
+  /// Custom IMAP account. Set from the stored settings on every
+  /// [loadCredentials]; refreshed in memory when the device trusts a new
+  /// certificate, so a reconnect in the same session uses the latest one.
+  String? _trustedCertSha256;
+
+  /// SEC-8b: writes a refreshed fingerprint for [accountId]. Defaults to the
+  /// secure store; tests replace it. Called only for a certificate the DEVICE
+  /// trusts (never for a user-accepted one, which the form saves itself).
+  @visibleForTesting
+  static Future<void> Function(String accountId, String sha256Hex)
+      recordTrustedCertificate = (accountId, sha256Hex) =>
+          SecureCredentialsStore()
+              .saveImapTrustedCertificate(accountId, sha256Hex);
+
+  /// SEC-8b: check a Custom IMAP server's certificate WITHOUT signing in.
+  ///
+  /// Used by the setup form's Save, so the "Trust this server?" dialog
+  /// appears before an account is stored. Opens the connection with the same
+  /// [ImapTlsConnector] path as [loadCredentials], reads the certificate,
+  /// and closes. No LOGIN is sent. Returns the certificate the server
+  /// presented when it was accepted (by the device, or because it matches
+  /// the fingerprint in [credentials]); throws
+  /// [ServerCertificateNotTrustedException] when it was not.
+  Future<ServerCertificateInfo> probeServerCertificate(
+      Credentials credentials) async {
+    if (platformId != 'imap') {
+      throw StateError('probeServerCertificate is for Custom IMAP only');
+    }
+    _resolveCustomServer(credentials);
+    final ImapTlsConnection connection;
+    try {
+      connection = await ImapTlsConnector.connect(
+        host: _imapHost,
+        port: _imapPort,
+        encryption: _encryption,
+        trustedFingerprint: _trustedCertSha256,
+      );
+    } on HandshakeException catch (e) {
+      // Same sentence as loadCredentials, so Save names the reason too.
+      throw _handshakeFailure(e);
+    }
+    try {
+      await connection.client.disconnect();
+    } catch (_) {
+      // The probe is finished; a failed close changes nothing.
+    }
+    return connection.certificate;
+  }
+
+  /// The exception a TLS handshake failure becomes, for [loadCredentials] and
+  /// for [probeServerCertificate] (Save) alike -- ONE mapping, so Save blocks
+  /// with the same named reason a connection shows (Sprint 77 Phase 5.1.2).
+  /// A custom server is the one place a certificate failure is likely to be
+  /// the user's to understand (self-signed, wrong name), so it gets a plain
+  /// sentence instead of "check your internet connection".
+  ConnectionException _handshakeFailure(HandshakeException e) {
+    if (platformId == 'imap') {
+      return UserFacingConnectionException(
+        'TLS certificate validation failed: ${e.toString()}',
+        'The server certificate could not be verified, so the app did not '
+        'connect or send your password. Check the server name and the '
+        'encryption setting.',
+        e,
+      );
+    }
+    return ConnectionException('TLS certificate validation failed: ${e.toString()}', e);
+  }
+
+  /// The login name for [credentials]: the custom account's own username when
+  /// one was entered, otherwise the email address (every other provider).
+  String _loginNameFor(Credentials credentials) =>
+      _customLoginName ?? credentials.email;
+
+  /// THE one place this adapter connects and signs in. [loadCredentials] and
+  /// [_checkAndReconnect] both call it, so a connection rule exists once.
+  ///
+  /// SEC-8b (certificate trust for custom servers) extends THIS method: it is
+  /// the single point where a client is created and a socket is opened.
+  ///
+  /// Encryption (Sprint 77 Q3):
+  /// - [ImapEncryption.sslTls]: TLS from the first byte.
+  /// - [ImapEncryption.startTls]: Custom IMAP only. [ImapTlsConnector]
+  ///   connects in plain text, sends STARTTLS itself, and refuses (the
+  ///   password is never sent) unless the upgrade succeeds. The constructor
+  ///   refuses STARTTLS for every other platform, so the enough_mail path
+  ///   below is always SSL/TLS. (An earlier STARTTLS branch on that path,
+  ///   using the library's `startTls()`, was unreachable for that reason and
+  ///   was removed at Sprint 77 Phase 5.1.2.)
+  ///
+  /// Certificate checking (SEC-8b, ADR-0046):
+  /// - Custom IMAP (platform 'imap'): [ImapTlsConnector] opens the socket
+  ///   itself, for SSL/TLS and for STARTTLS, and applies trust-on-first-use:
+  ///   a certificate the device trusts is accepted (and its fingerprint
+  ///   recorded); one it does not trust is accepted ONLY when it matches the
+  ///   fingerprint the user accepted, otherwise the handshake is aborted with
+  ///   [ServerCertificateNotTrustedException] before any command is sent.
+  ///   (An earlier comment here said enough_mail offered no certificate hook;
+  ///   it does -- `onBadCertificate` and `ClientBase.connect(socket)` -- but
+  ///   its STARTTLS upgrade passes no callback, which is why the connector
+  ///   performs STARTTLS itself.)
+  /// - AOL, Gmail (IMAP), Yahoo, iCloud: enough_mail's `connectToServer`,
+  ///   normal platform validation only, no pin (Q4: leaf certificates
+  ///   rotate). An untrusted certificate fails the handshake.
+  Future<void> _connectAndLogin(Credentials credentials) async {
+    _logger.i('[IMAP] Connecting to $_imapHost:$_imapPort (${_encryption.label})');
+
+    final ImapClient client;
+    if (platformId == 'imap') {
+      final connection = await ImapTlsConnector.connect(
+        host: _imapHost,
+        port: _imapPort,
+        encryption: _encryption,
+        trustedFingerprint: _trustedCertSha256,
+      );
+      client = connection.client;
+      _imapClient = client;
+      await _rememberDeviceTrustedCertificate(connection, credentials);
+    } else {
+      client = ImapClient(isLogEnabled: false);
+      _imapClient = client;
+
+      // Always SSL/TLS here: the constructor refuses any other encryption for
+      // a platform other than 'imap', and only 'imap' changes it later
+      // (_resolveCustomServer). Never a cleartext connect.
+      await client.connectToServer(_imapHost, _imapPort, isSecure: true);
+    }
+
+    _logger.i('[IMAP] IMAP login attempt for $displayName');
+    try {
+      await _login(client, credentials);
+    } catch (_) {
+      // Sprint 77 final review: no unauthenticated client may survive a
+      // failed LOGIN. Before this, `_imapClient` kept the connected but
+      // signed-out client and `_operationCount` stayed at the reconnect
+      // threshold, so EVERY later operation in the scan went through
+      // `_checkAndReconnect` again and sent LOGIN again -- repeated
+      // wrong-password attempts that the SEC-22 limiter never saw. With no
+      // client, `_checkAndReconnect` returns at its `_imapClient == null`
+      // guard and the operations fail as "not connected" instead.
+      await _discardClient(client);
+      rethrow;
+    }
+  }
+
+  /// Sprint 77 final review: drop [client] after a failed LOGIN. The ONE place
+  /// a refused or unfinished sign-in clears the adapter's session; the socket
+  /// close is best effort (the session is unusable whether or not it closes).
+  Future<void> _discardClient(ImapClient client) async {
+    _imapClient = null;
+    _currentMailbox = null;
+    try {
+      await client.disconnect();
+    } catch (e) {
+      _logger.w('[IMAP] Could not close the connection after a failed '
+          'sign-in (the client is discarded either way): $e');
+    }
+  }
+
+  /// Sends LOGIN and maps a refusal to the right exception.
+  ///
+  /// enough_mail raises [ImapException] for ANY non-OK tagged reply to LOGIN,
+  /// and its `message` is the reply text (for a `NO` reply without the
+  /// leading "NO ", for a `BAD` reply including "BAD"). That covers a wrong
+  /// password, and also a server that is busy or unavailable while the
+  /// password is correct. [classifyLoginRefusal] tells them apart:
+  /// - a password refusal becomes [AuthenticationException] ("Sign-in
+  ///   failed", counted by the SEC-22 limiter -- Sprint 77 MV step 3a);
+  /// - a busy or unavailable server becomes [UserFacingConnectionException],
+  ///   which is NOT counted (Sprint 77 final review: a correct password must
+  ///   not move an account toward lockout because the server was busy).
+  ///
+  /// Timeouts: enough_mail turns a response timeout into
+  /// `ImapException('timeout')` ONLY when the client was built with a
+  /// `defaultResponseTimeout`. This app builds its clients without one (the
+  /// `ImapClient` here and `GreetingAwareImapClient` in ImapTlsConnector), so
+  /// that message is not expected today; it is still classified as a
+  /// connection failure in case a timeout is set later. A network failure
+  /// during LOGIN is a `SocketException`, not an [ImapException], and keeps
+  /// its connection meaning in [loadCredentials].
+  Future<void> _login(ImapClient client, Credentials credentials) async {
+    try {
+      await client.login(
+        _loginNameFor(credentials),
+        credentials.password ?? '',
+      );
+    } on ImapException catch (e) {
+      switch (classifyLoginRefusal(e.message)) {
+        case LoginRefusal.credentials:
+          throw AuthenticationException('IMAP login rejected: ${e.message}', e);
+        case LoginRefusal.serverUnavailable:
+          throw UserFacingConnectionException(
+            'IMAP login not completed, server busy or unavailable: ${e.message}',
+            loginServerUnavailableMessage,
+            e,
+          );
+      }
+    }
+  }
+
+  /// Shown when the server could not complete a sign-in for a reason that is
+  /// not the password (Sprint 77 final review).
+  static const String loginServerUnavailableMessage =
+      'The email server could not complete the sign-in right now. It did not '
+      'say your password was wrong. Try again later.';
+
+  /// RFC 5530 response codes that mean the credentials were refused.
+  static const Set<String> _credentialRefusalCodes = {
+    'AUTHENTICATIONFAILED',
+    'AUTHORIZATIONFAILED',
+    'EXPIRED',
+  };
+
+  /// RFC 5530 response codes that mean the server could not serve the
+  /// sign-in now, whatever the password (busy, overloaded, in use, broken).
+  static const Set<String> _serverUnavailableCodes = {
+    'UNAVAILABLE',
+    'LIMIT',
+    'INUSE',
+    'SERVERBUG',
+  };
+
+  static final RegExp _responseCode = RegExp(r'^\[([A-Z0-9-]+)');
+  static final RegExp _tooManyConnections =
+      RegExp(r'too many\b.*\bconnections', caseSensitive: false);
+
+  /// Sprint 77 final review: classify the text of a refused LOGIN
+  /// ([ImapException.message]). Pure, so the whole table is unit-tested.
+  ///
+  /// Order matters and is part of the contract:
+  /// 1. empty, `timeout`, or a `BAD` reply -> [LoginRefusal.serverUnavailable]
+  ///    (nothing here says the password was wrong);
+  /// 2. a credential code (AUTHENTICATIONFAILED, AUTHORIZATIONFAILED,
+  ///    EXPIRED) -> [LoginRefusal.credentials];
+  /// 3. a server code (UNAVAILABLE, LIMIT, INUSE, SERVERBUG), or text such as
+  ///    "too many connections" / "too many simultaneous connections" ->
+  ///    [LoginRefusal.serverUnavailable];
+  /// 4. a `NO` reply with any OTHER response code (for example `[ALERT]`) ->
+  ///    [LoginRefusal.credentials]. A deliberate choice: the server refused
+  ///    this LOGIN and did not say it was busy, so "check your sign-in
+  ///    details" is the closer message (this keeps the behavior from before
+  ///    this classification);
+  /// 5. a `NO` reply with no response code (the common plain "LOGIN failed")
+  ///    -> [LoginRefusal.credentials].
+  @visibleForTesting
+  static LoginRefusal classifyLoginRefusal(String? serverText) {
+    final text = (serverText ?? '').trim();
+    final upper = text.toUpperCase();
+    if (upper.isEmpty || upper == 'TIMEOUT' || upper.startsWith('BAD')) {
+      return LoginRefusal.serverUnavailable;
+    }
+    final code = _responseCode.firstMatch(upper)?.group(1);
+    if (code != null && _credentialRefusalCodes.contains(code)) {
+      return LoginRefusal.credentials;
+    }
+    if ((code != null && _serverUnavailableCodes.contains(code)) ||
+        _tooManyConnections.hasMatch(text)) {
+      return LoginRefusal.serverUnavailable;
+    }
+    return LoginRefusal.credentials;
+  }
+
+  /// SEC-8b: when the DEVICE trusted the certificate and it differs from the
+  /// stored fingerprint, record the new one, so a later switch to a
+  /// certificate the device does not trust reads as "changed", not "new".
+  ///
+  /// A certificate accepted only by fingerprint is already the stored one.
+  /// Recording is best effort: the connection is already verified, so a
+  /// failed write is logged as a warning and the connection continues; the
+  /// only cost is that a later untrusted certificate is reported as "not
+  /// trusted" instead of "changed" (still blocked either way).
+  Future<void> _rememberDeviceTrustedCertificate(
+      ImapTlsConnection connection, Credentials credentials) async {
+    final presented = connection.certificate.sha256Hex;
+    if (!connection.platformTrusted || presented == _trustedCertSha256) {
+      return;
+    }
+    _trustedCertSha256 = presented;
+    final accountId = credentials.additionalParams?['accountId'];
+    if (accountId == null || accountId.isEmpty) {
+      // An unsaved account (setup form): the form stores it on Save.
+      return;
+    }
+    try {
+      await recordTrustedCertificate(accountId, presented);
+      _logger.i('[IMAP] Recorded device-trusted certificate '
+          '${connection.certificate.shortFingerprint}... for this account');
+    } catch (e) {
+      _logger.w('[IMAP] Could not record the server certificate '
+          'fingerprint (connection unaffected): $e');
     }
   }
 
@@ -512,9 +844,12 @@ class GenericIMAPAdapter with BatchOperationsMixin implements SpamFilterPlatform
   /// case-insensitive per RFC 3501 (`SEARCH HEADER` does a case-insensitive
   /// substring match on the header value).
   ///
-  /// Returns the matching messages (empty when none). Returns empty on any
+  /// Returns the matching messages (empty when none). Returns empty on a
   /// search error rather than throwing, so the caller's dedup step degrades
-  /// to a no-op instead of failing the scan.
+  /// to a no-op instead of failing the scan -- EXCEPT a session failure
+  /// ([isSessionFatal]: a sign-in refused at the reconnect this method may
+  /// trigger), which is rethrown so the scan fails as a sign-in failure
+  /// (Sprint 77 final review).
   @override
   Future<List<EmailMessage>> searchByMessageId(
     String folderName,
@@ -559,7 +894,10 @@ class GenericIMAPAdapter with BatchOperationsMixin implements SpamFilterPlatform
       return await _fetchMessageDetails(sequence, folderName);
     } catch (e, st) {
       _logger.e('[IMAP] searchByMessageId ERROR in "$folderName": $e\n$st');
-      // Degrade to no-op: dedup must never break the scan.
+      // Sprint 77 final review: the reconnect above can be refused (a changed
+      // password). That is not a search error; no later search can succeed.
+      if (isSessionFatal(e)) rethrow;
+      // Degrade to no-op: a search error must never break the scan.
       return const [];
     }
   }
@@ -626,6 +964,8 @@ class GenericIMAPAdapter with BatchOperationsMixin implements SpamFilterPlatform
       _operationCount++;
     } catch (e) {
       _logger.e('[IMAP] Failed to move message ${message.id} to $targetFolder: $e');
+      // Sprint 77 final review: a refused reconnect keeps its meaning.
+      if (isSessionFatal(e)) rethrow;
       throw ActionException('Move to folder failed', FilterAction.moveToFolder, e);
     }
   }
@@ -668,6 +1008,8 @@ class GenericIMAPAdapter with BatchOperationsMixin implements SpamFilterPlatform
       _operationCount++;
     } catch (e) {
       _logger.e('[IMAP] Failed to mark message ${message.id} as read: $e');
+      // Sprint 77 final review: a refused reconnect keeps its meaning.
+      if (isSessionFatal(e)) rethrow;
       throw ActionException('Mark as read failed', FilterAction.markAsRead, e);
     }
   }
@@ -820,6 +1162,8 @@ class GenericIMAPAdapter with BatchOperationsMixin implements SpamFilterPlatform
       }
     } catch (e) {
       _logger.e('[IMAP] Failed to perform action $action on message ${message.id}: $e');
+      // Sprint 77 final review: a refused reconnect keeps its meaning.
+      if (isSessionFatal(e)) rethrow;
       throw ActionException('Action failed', action, e);
     }
   }
@@ -891,6 +1235,9 @@ class GenericIMAPAdapter with BatchOperationsMixin implements SpamFilterPlatform
             await markAsRead(message: message);
             succeeded.add(message.id);
           } catch (e2) {
+            // Sprint 77 final review: markAsRead may reconnect; a refused
+            // sign-in there is the session's failure, not this message's.
+            if (isSessionFatal(e2)) rethrow;
             failed[message.id] = e2.toString();
           }
         }
@@ -1061,7 +1408,8 @@ class GenericIMAPAdapter with BatchOperationsMixin implements SpamFilterPlatform
   /// into the next pass. The folder is swept up to [_moveMaxPasses] times until
   /// no targeted UIDs remain. Returns the UIDs that STILL remain after all
   /// passes (genuine failures). A per-chunk MOVE exception is logged but does
-  /// NOT abort the batch: the same post-move verification re-checks that chunk's
+  /// NOT abort the batch (except a session failure, [isSessionFatal], which
+  /// is rethrown): the same post-move verification re-checks that chunk's
   /// UIDs regardless, so any that did not move are simply carried into the next
   /// pass's survivor set and retried. One failing chunk therefore cannot poison
   /// the rest of the batch.
@@ -1097,6 +1445,12 @@ class GenericIMAPAdapter with BatchOperationsMixin implements SpamFilterPlatform
           );
           _operationCount++;
         } catch (e) {
+          // Sprint 77 final review: the reconnect above can be REFUSED (a
+          // changed password, a changed certificate). That is the session's
+          // failure, not this chunk's: no later chunk can succeed, and
+          // continuing turned a sign-in failure into "completed with move
+          // failures". Rethrown so the scan fails as what it is.
+          if (isSessionFatal(e)) rethrow;
           // A chunk-level MOVE failure must not abort the whole batch.
           // Verification below re-checks the chunk regardless, so a transient
           // failure here simply leaves the chunk's UIDs in the survivor set to
@@ -1332,8 +1686,15 @@ class GenericIMAPAdapter with BatchOperationsMixin implements SpamFilterPlatform
     String folderName,
     List<int> candidateUids,
   ) async {
-    if (candidateUids.isEmpty || _imapClient == null) {
+    if (candidateUids.isEmpty) {
       return const [];
+    }
+    if (_imapClient == null) {
+      // Sprint 77 final review: with no client nothing can be verified, so
+      // every candidate is UNVERIFIED (still present), exactly as a failed
+      // search below. This used to return "none present", which reads as
+      // "all moved" -- reachable once a failed sign-in clears the client.
+      return List<int>.from(candidateUids);
     }
     try {
       await _selectMailbox(folderName);
@@ -1413,7 +1774,7 @@ class GenericIMAPAdapter with BatchOperationsMixin implements SpamFilterPlatform
         serverInfo: {
           'host': _imapHost,
           'port': _imapPort,
-          'secure': _isSecure,
+          'encryption': _encryption.wireValue,
           'capabilities': capabilities.map((c) => c.name).toList(),
         },
       );
@@ -1458,6 +1819,21 @@ class GenericIMAPAdapter with BatchOperationsMixin implements SpamFilterPlatform
   /// This prevents IMAP server disconnects during long scan sessions (e.g., AOL
   /// disconnects after ~100 sequential operations). Reconnects transparently
   /// without losing the scan state since UIDs are persistent.
+  /// SEC-22: count one refused sign-in for [credentials]' account. The ONE
+  /// place a refusal is recorded, used by the first sign-in
+  /// ([loadCredentials]) and by a mid-scan reconnect ([_checkAndReconnect]),
+  /// so a password changed during a scan counts toward the lockout the same
+  /// way (Sprint 77 final review). A database error inside the limiter is
+  /// logged and swallowed so it never hides the sign-in failure itself.
+  Future<void> _recordSignInFailure(Credentials credentials) async {
+    try {
+      await AuthRateLimiter(DatabaseHelper())
+          .recordFailure('$platformId-${credentials.email}');
+    } catch (limiterError) {
+      _logger.w('Auth rate limiter write failed: $limiterError');
+    }
+  }
+
   Future<void> _checkAndReconnect() async {
     if (_operationCount < _reconnectThreshold) {
       return;
@@ -1480,16 +1856,10 @@ class GenericIMAPAdapter with BatchOperationsMixin implements SpamFilterPlatform
       }
 
       // Fresh connection
-      _imapClient = ImapClient(isLogEnabled: false);
-      await _imapClient!.connectToServer(
-        _imapHost,
-        _imapPort,
-        isSecure: _isSecure,
-      );
-      await _imapClient!.login(
-        _credentials!.email,
-        _credentials!.password ?? '',
-      );
+      // Same connect-and-login path as loadCredentials (F192): host, port,
+      // encryption (including STARTTLS) and username cannot differ between
+      // the first connection and a reconnect.
+      await _connectAndLogin(_credentials!);
 
       _operationCount = 0;
       _currentMailbox = null;
@@ -1502,6 +1872,14 @@ class GenericIMAPAdapter with BatchOperationsMixin implements SpamFilterPlatform
       _logger.i('[IMAP] Reconnected successfully. Resuming operations.');
     } catch (e) {
       _logger.e('[IMAP] Reconnect failed: $e');
+      if (e is AuthenticationException && _credentials != null) {
+        await _recordSignInFailure(_credentials!);
+      }
+      // SEC-8b: a named reason (certificate changed, STARTTLS refused) must
+      // reach the scan's failure text, not become "check your internet"; a
+      // refused login keeps its meaning (wrong or changed password). The same
+      // predicate makes every catch above this one rethrow them too.
+      if (isSessionFatal(e)) rethrow;
       throw ConnectionException('IMAP reconnect failed: ${e.toString()}', e);
     }
   }
@@ -1534,6 +1912,28 @@ class GenericIMAPAdapter with BatchOperationsMixin implements SpamFilterPlatform
     _imapClient = client;
     _currentMailbox = null;
   }
+
+  /// F192 (Sprint 77): test seam -- run the proactive reconnect NOW instead of
+  /// after 50 operations, so a test can prove the reconnect uses the same
+  /// server, encryption and username as the first connection.
+  @visibleForTesting
+  Future<void> debugReconnectNow() {
+    _operationCount = _reconnectThreshold;
+    return _checkAndReconnect();
+  }
+
+  /// Sprint 77 final review: test seam -- make the proactive reconnect happen
+  /// after [operations] more counted operations, so a test can put the
+  /// reconnect INSIDE a chunked move or a search instead of before it.
+  @visibleForTesting
+  void debugReconnectAfter(int operations) {
+    _operationCount = _reconnectThreshold - operations;
+  }
+
+  /// Sprint 77 final review: test seam -- whether the adapter holds a client.
+  /// After a refused sign-in it must not.
+  @visibleForTesting
+  bool get debugHasClient => _imapClient != null;
 
   /// F177 (Sprint 62): the universal within-folder fetch batch size.
   ///

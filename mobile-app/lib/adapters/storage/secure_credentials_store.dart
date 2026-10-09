@@ -12,6 +12,7 @@ import 'dart:convert';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:logger/logger.dart';
 
+import '../../adapters/email_providers/custom_imap_settings.dart';
 import '../../adapters/email_providers/email_provider.dart';
 import '../../util/redact.dart';
 import '../auth/token_store.dart';
@@ -27,8 +28,20 @@ class CredentialStorageException implements Exception {
   String toString() => 'CredentialStorageException: $message${originalError != null ? '\nCause: $originalError' : ''}';
 }
 
+/// Result of [SecureCredentialsStore.accountPresence].
+enum AccountPresence {
+  /// The address has saved sign-in details.
+  present,
+
+  /// Storage was read and the address has nothing saved.
+  absent,
+
+  /// Storage could not be read. Callers treat this like [present].
+  unknown,
+}
+
 /// Secure storage for email credentials and authentication tokens
-/// 
+///
 /// This storage implementation:
 /// - Uses flutter_secure_storage for encrypted persistence
 /// - Stores credentials by account identifier (email address)
@@ -108,6 +121,25 @@ class SecureCredentialsStore {
         value: credentials.password,
       );
 
+      // F192 (Sprint 77): Custom IMAP server settings, saved as side keys
+      // beside the credentials they authenticate. Only the exact key list in
+      // CustomImapSettings.paramKeys is persisted; any other additionalParams
+      // entry is ignored. A save WITHOUT the settings (any other provider, or
+      // the same address re-added elsewhere) removes stale ones, so an old
+      // custom host can never survive onto a different provider's account.
+      final params = credentials.additionalParams;
+      for (final key in CustomImapSettings.paramKeys) {
+        final value = params?[key];
+        if (value != null) {
+          await _storage.write(
+            key: '$_credentialsPrefix${accountId}_$key',
+            value: value,
+          );
+        } else {
+          await _storage.delete(key: '$_credentialsPrefix${accountId}_$key');
+        }
+      }
+
       // Store access token if provided (for OAuth desktop flows)
       if (credentials.accessToken != null && credentials.accessToken!.isNotEmpty) {
         await _storage.write(
@@ -127,8 +159,37 @@ class SecureCredentialsStore {
     }
   }
 
+  /// SEC-8b (Sprint 77, ADR-0046): replace the trusted server certificate
+  /// fingerprint of an EXISTING Custom IMAP account. Writes the same side key
+  /// [saveCredentials] writes ([CustomImapSettings.keyTrustedCertSha256]), so
+  /// [getCredentials] returns it and [deleteCredentials] removes it.
+  ///
+  /// Does nothing for an account with no stored server settings (it would
+  /// otherwise create an orphan key for an account that is not Custom IMAP).
+  /// Rejects a value that is not 64 lower-case hex characters.
+  Future<void> saveImapTrustedCertificate(
+      String accountId, String sha256Hex) async {
+    if (!CustomImapSettings.isSha256Hex(sha256Hex)) {
+      throw ArgumentError.value(sha256Hex, 'sha256Hex', 'not a SHA-256 hex');
+    }
+    try {
+      final host = await _storage.read(
+        key: '$_credentialsPrefix${accountId}_${CustomImapSettings.keyHost}',
+      );
+      if (host == null) return;
+      await _storage.write(
+        key: '$_credentialsPrefix${accountId}_'
+            '${CustomImapSettings.keyTrustedCertSha256}',
+        value: sha256Hex,
+      );
+    } catch (e) {
+      throw CredentialStorageException(
+          'Failed to save the trusted server certificate', e);
+    }
+  }
+
   /// Load credentials for an account
-  /// 
+  ///
   /// Returns null if credentials don't exist
   Future<Credentials?> getCredentials(String accountId) async {
     try {
@@ -190,6 +251,18 @@ class SecureCredentialsStore {
         key: '${_credentialsPrefix}${accountId}_platformId',
       );
 
+      // F192 (Sprint 77): Custom IMAP server settings, if this account has
+      // them. Reading them here is what lets every reconnect path (manual
+      // scan, both background workers, folder picker, connection test) reach
+      // the right server with no call-site change.
+      final serverParams = <String, String>{};
+      for (final key in CustomImapSettings.paramKeys) {
+        final value = await _storage.read(
+          key: '$_credentialsPrefix${accountId}_$key',
+        );
+        if (value != null) serverParams[key] = value;
+      }
+
       _logger.d('Retrieved credentials for account: ${Redact.accountId(accountId)}');
       return Credentials(
         email: email,
@@ -199,6 +272,7 @@ class SecureCredentialsStore {
           // Provide accountId so adapters can look up refresh tokens when needed
           'accountId': accountId,
           if (platformId != null) 'platformId': platformId,
+          ...serverParams,
         },
       );
     } catch (e) {
@@ -359,7 +433,34 @@ class SecureCredentialsStore {
     }
   }
 
-  /// Check if credentials exist for an account
+  /// Whether an account address is already saved, failing CLOSED.
+  ///
+  /// Sprint 77 final review: [credentialsExist] returns false on a storage
+  /// read error, so a caller that asks "may I add this silently?" would say
+  /// yes exactly when it cannot tell. This returns [AccountPresence.unknown]
+  /// instead, and the add flow then ASKS. An account counts as present when
+  /// it has saved sign-in details (password or Google Sign-In record) or a
+  /// saved Gmail token.
+  Future<AccountPresence> accountPresence(String accountId) async {
+    try {
+      final email = await _storage.read(
+        key: '${_credentialsPrefix}${accountId}_email',
+      );
+      if (email != null) return AccountPresence.present;
+      final tokens = await _storage.read(
+        key: '${_tokenPrefix}${accountId}_gmail_tokens',
+      );
+      return tokens != null ? AccountPresence.present : AccountPresence.absent;
+    } catch (e) {
+      _logger.w('Could not check whether an account is saved', error: e);
+      return AccountPresence.unknown;
+    }
+  }
+
+  /// Check if credentials exist for an account.
+  ///
+  /// Returns false on a read error. Do NOT use this to decide whether an add
+  /// may skip a question; use [accountPresence], which fails closed.
   Future<bool> credentialsExist(String accountId) async {
     try {
       final email = await _storage.read(
@@ -407,6 +508,11 @@ class SecureCredentialsStore {
       await _storage.delete(
         key: '${_credentialsPrefix}${accountId}_platformId',
       );
+
+      // F192: Custom IMAP server settings (every key in the shared list).
+      for (final key in CustomImapSettings.paramKeys) {
+        await _storage.delete(key: '$_credentialsPrefix${accountId}_$key');
+      }
 
       // Update accounts list
       await _removeAccountFromList(accountId);

@@ -31,8 +31,11 @@ class MockEmailProvider with BatchOperationsMixin implements SpamFilterPlatform 
   @override
   String get displayName => 'Demo Mode';
 
+  /// The demo signs in to nothing. Must equal the `PlatformRegistry` 'demo'
+  /// entry (it said oauth2, so the account list showed "OAuth 2.0" for the
+  /// demo account; found with the Sprint 77 MV-Q5 label check).
   @override
-  AuthMethod get supportedAuthMethod => AuthMethod.oauth2;
+  AuthMethod get supportedAuthMethod => AuthMethod.none;
 
   /// Get log of all actions performed during demo
   List<Map<String, dynamic>> get actionLog => List.unmodifiable(_actionLog);

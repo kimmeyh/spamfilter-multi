@@ -89,7 +89,14 @@ object DozeAlarmScheduler {
     fun schedule(context: Context, accountId: String, intervalMinutes: Int): Boolean {
         return try {
             val am = context.getSystemService(Context.ALARM_SERVICE) as AlarmManager
-            val triggerAt = System.currentTimeMillis() + intervalMinutes * 60_000L
+            // F264 (Sprint 77 Q13): up to 5 minutes either way, only for
+            // intervals over 15 minutes. Applied HERE (not in Dart) because
+            // every re-arm after a firing and after boot comes through this
+            // function, so the jitter holds for the whole alarm chain, not
+            // only the first arm.
+            val triggerAt = System.currentTimeMillis() +
+                intervalMinutes * 60_000L +
+                AlarmJitter.offsetMs(intervalMinutes, java.util.Random())
 
             am.setAndAllowWhileIdle(
                 AlarmManager.RTC_WAKEUP,
@@ -169,6 +176,27 @@ object DozeAlarmScheduler {
             Log.w(TAG, "rescheduled only $armed of $attempted account(s) -- "
                 + "the rest will not scan while idle")
         }
+    }
+}
+
+/**
+ * F264 (Sprint 77 Q13, Harold: "if > 15 min then random +/- 5 minutes"):
+ * start-time jitter for the alarm, as a PURE function so a JVM test pins it.
+ *
+ * Applies ONLY to intervals LONGER than [THRESHOLD_MINUTES]; at 15 minutes or
+ * less the offset is always zero. The constants must match `kJitterThresholdMinutes`
+ * and `kJitterMinutes` in `lib/core/services/scan_interval.dart` (pinned by a
+ * source-parity test), which the Windows trigger also uses.
+ */
+object AlarmJitter {
+    const val THRESHOLD_MINUTES = 15
+    const val JITTER_MINUTES = 5
+
+    /** A uniform offset in milliseconds within plus or minus [JITTER_MINUTES]. */
+    fun offsetMs(intervalMinutes: Int, random: java.util.Random): Long {
+        if (intervalMinutes <= THRESHOLD_MINUTES) return 0L
+        val spanMs = JITTER_MINUTES * 60_000L
+        return ((random.nextDouble() * 2.0 - 1.0) * spanMs).toLong()
     }
 }
 

@@ -1,7 +1,8 @@
 # Release notes -- 0.17.6 -- Microsoft Store
 
 **Final** -- re-derived from the finished Sprint 76 CHANGELOG at Phase 7.7 (2026-10-06, STORE_RELEASE_PROCESS.md
-Step 1b).
+Step 1b), and again at Phase 8.3 for the 7.7.1 review fixes (offline scan message; diagnostic log lock).
+Excluded: the Android-only wake-up alarm retry fix.
 
 **Range**: everything after 0.17.0 (live 2026-10-04). 0.17.1-0.17.5 were never submitted to the Microsoft
 Store.
@@ -17,6 +18,8 @@ A Gmail safe sender found in Spam is now moved to the Inbox, and background scan
 The "No rule emails addressed" count on the Results screen now shows the scan's full total.
 
 Adding a rule from Results no longer reports a failure for a safe sender's email that is already in the Inbox.
+
+A scan that cannot reach any folder on the email server now tells you to check your internet connection.
 
 Scan export files now start with a row of column names.
 

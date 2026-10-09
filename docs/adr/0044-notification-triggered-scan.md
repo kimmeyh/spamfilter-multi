@@ -87,6 +87,58 @@ arrives even while the phone is idle.
 Android only, declared exception. Windows has neither Doze nor a mail-app
 notification to listen to, and its background scans already run on schedule.
 
+## Amendment -- Sprint 77 (F264, Harold Q8 = 1, Q9 = 1, Q10 = 1): the switch is per account
+
+**1. Where it lives (Q8 = 1).** Each account has its own "Scan when new mail
+arrives" switch, stored in the app database with the other per-account background
+settings (`account_settings`, key `new_mail_trigger`; `SettingsStore.getAccountNewMailTrigger`).
+The native listener cannot read that database (it runs without a Flutter engine),
+so it keeps ONE flag, "any account has it on" (preferences `f253_new_mail_trigger`,
+key `enabled`), which `NewMailTrigger.syncAnyAccountOn` recomputes from the saved
+accounts whenever a switch changes and once at app start. That flag still gates
+the listener and enables or disables the component, so a phone with no account on
+binds nothing.
+
+**2. Which accounts a notification scans (mapping).** The posting app decides which
+accounts the notification can be about: the Gmail app -> Gmail accounts (platform
+ids `gmail` and `gmail-imap`); the AOL app -> AOL accounts; Yahoo Mail -> Yahoo
+accounts; Samsung Email and Outlook -> every account with the switch on. The ONE
+table is `MailNotificationPolicy` (`providersFor`, JVM-tested). The listener puts
+the resolved set in the work payload (`triggerProviders`, derived from the package
+name only) and the Dart worker selects accounts with
+`accountSelectedByNotification`: provider matches AND the account's own switch is
+on AND its background scanning is on. The 5-minute `BackgroundScanCore` spacing
+is unchanged. **The 2-minute gap and the unique KEEP work are per provider set**
+(corrected at Sprint 77 Phase 5.1.2): once a run scans only one provider's
+accounts, a single app-wide gap and work name meant an AOL notification within 2
+minutes of a Gmail one, or while the Gmail run was queued, was dropped and the AOL
+account not scanned. `MailNotificationPolicy.decide` keys the throttle timestamp
+(`throttlePrefKey`) and the unique work name (`newMailWorkName`) by the encoded
+provider set ("*" spelled "any"), so different providers never block each other
+and the same provider still waits 2 minutes and keeps KEEP. Every request carries
+the tag `f253_new_mail_scan`; turning the feature off cancels by that tag (all
+sets) plus the pre-fix single name. JVM-tested (`MailNotificationPolicyTest`).
+
+**3. Privacy contract unchanged.** The listener still reads only the package name
+and post time. The provider set is computed from the package name and carries no
+notification content. The source gate that lists the only two permitted reads
+(`packageName`, `postTime`) still passes unchanged.
+
+**4. Upgrade (Q9 = 1).** If the app-wide switch was ON, every account that has
+background scanning on gets its own switch ON (`NewMailSwitchMigration`,
+sentinel-guarded; an account the user already set is left alone). If the native
+flag cannot be read, the migration waits for the next launch rather than assuming
+OFF. A notification-started worker runs the same migration first, so a first
+notification after the update, before the app is opened, does not find every switch
+unset.
+
+**5. Windows (Q10 = 1): hidden, declared exception.** The per-account switch is
+HIDDEN on Windows, extending the exception above: Windows has no mail-app
+notification to listen to, so there is nothing for a Windows switch to control.
+The Android-only rows (this switch and the Android timing note) are gated by one
+seam, `SettingsScreen.showsAndroidBackgroundRows`, so a test drives both branches.
+The Windows interval control is identical to Android's (ADR-0039 amendment, Sprint 77).
+
 ## Alternatives rejected (for this ADR)
 
 - **Gmail push through a server** -- a backend this app does not have; Gmail

@@ -1,67 +1,66 @@
 {
-  "_description": "Sprint status file that persists across context compaction. Update after each phase/sub-phase completion.",
-  "_last_updated": "2026-10-06T23:30:00Z",
-  "_usage": "Read this file after context compaction to restore sprint approval state and progress.",
-  "_staleness_note": "This file had drifted 15 sprints (last updated at Sprint 35, 2026-04-19) before being refreshed at Sprint 50 close-out. It is a Phase 7.7 checklist item -- update it at every sprint close-out, not opportunistically.",
-  "current_sprint": {
-    "number": 76,
-    "branch": "feature/20261004_Sprint_76",
-    "status": "Phase 7.7 complete (2026-10-06) -- PR #455 marked ready for review; awaiting Harold's merge to develop, then Phase 8 Release Cycle. Retrospective complete (all Very Good); IMP-1, 2, 3, 4, 6 applied (556a1ac). SPRINT_76_PLAN/RETROSPECTIVE/SUMMARY present. Manual Validation complete per Harold; remaining Fold checks carried to Sprint 77 (MV76-1). Final builds 0.17.6+14: AAB at mobile-app/dist/android-0.17.6+14/app-prod-release.aab; Windows dev at mobile-app/dist/dev/.",
-    "plan_approved": true,
-    "blanket_execution_approved": true,
-    "pr_number": 455,
-    "version": "0.17.6+14 (six closed-test builds 0.17.1-0.17.6, versionCodes 9-14)",
-    "pr_url": "https://github.com/kimmeyh/spamfilter-multi/pull/455"
-  },
-  "previous_sprint_note": "Sprint 76 stays in current_sprint until its PR merges; Sprint 75 below is the last MERGED sprint.",
-  "previous_sprint": {
-    "number": 75,
-    "branch": "feature/20261002_Sprint_75",
-    "pr": "#448 -> develop (merged, 85c602c), #451 develop -> main (e724faa)",
-    "deliverables": "F238 stop-for-manual (DB v11, release hold satisfied); F239 Sign In Again (Android renewal spike FAILED -> F246); F243 Windows background scans run with the app open; F216, F214, F236, F215; Task 7 WinWright + widget tests; MV fixes (Scan not started, YAML save folder, Gmail add flow, Gmail Setup sentence). Retro IMP-1..6 applied.",
-    "reviews": "PR #448: Copilot no findings; Claude code 0 CRITICAL/IMPORTANT (4 MINOR fixed, 1 -> F247); Claude tests 2 CRITICAL + 3 IMPORTANT fixed, rest -> F247; comment review 8 fixed. CI green on 5449565.",
-    "metrics": "Suite 2,417 -> 2,516 (15 skipped); analyzer clean; hooks 83 -> 93; WinWright 3/3; mutations M71-M126 all KILLED.",
-    "retro": "Harold all Very Good. IMP-1..6 applied."
-  },
-  "github_issues": {
-    "sprint_73": "#428 (open, MV74-1), #422 (open, MV74-3), #430 closed, #434 (open, MV74-2), #431 closed, #432 closed, #433 (open, MV74-3). Also closed in pass 1: #426 (superseded by #428), #427 (leftover captured as F236).",
-    "note": "Closes #N does NOT auto-fire here.",
-    "sprint_74": "Closed by hand 2026-10-02: #422 #434 #437 #438 #439. Open, carried: #428 (MV74-1 phone), #433 (F205 phone), #441 (F238), #442 (F239).",
-    "sprint_75": "Closed by hand 2026-10-04: #441 #442 #444 #445 #446 #447 #449 #450. Open, carried to Sprint 76 phone checks: #428 (MV74-1), #433 (F205).",
-    "sprint_76": "Close by hand after merge: #452 F248, #453 F249, #454 F250, #456 F251, #457 F252, #458 F253. Open, carried to Sprint 77 (MV76-1): #428 MV74-1 (reboot half), #433 F205."
-  },
-  "_github_issues_note": "Sprint 66 cards created at Phase 3.3.1 (2026-09-07): #387 GP-19, #388 GP-4. Close by hand at Post-Merge Cleanup.",
-  "test_metrics": {
-    "suite": "2,601 passed / 15 skipped / 0 failed (local Windows)",
-    "policy_suite": "release_notes_test 5/5; hook suite 104 passed / 0 failed; JVM MailNotificationPolicyTest 5/5",
-    "winwright": "3/3, 85 steps at 18392ad",
-    "analyzer": "clean",
-    "mutations": "M118-M209 in Sprint 76; M189 mis-specified (recorded), rest KILLED",
-    "as_of": "2026-10-06, Sprint 76 Phase 7.7"
-  },
-  "store_release": {
-    "status_0_15_3": "NOT SUBMITTED TO EITHER STORE. Harold, 2026-09-22: \"not pushing to either store this time\". Phase 8.3 explicitly N/A for this cycle.",
-    "live_windows": "0.15.2.0 -- Submission 28, certified 2026-09-21, installed-build verified.",
-    "live_play": "0.15.2 versionCode 5 -- closed testing, device-verified 2026-09-21 on the S24+.",
-    "consequence": "F219 AC-1 and F227 remain blocked: they need a Play-INSTALLED build, and 0.15.3 is not going out. They wait for the next release that ships.",
-    "status_0_16_0": "SUBMITTED / ROLLOUT IN PROCESS on BOTH stores (Harold, 2026-09-24, reported between 12:17am and 8:39am ET). NOT yet observed live on either. Built + verified 2026-09-24: MSIX 0.16.0.0 (prod worktree bf005f3, self-test 6/6 PASS, 17.5 MB) and AAB versionCode 7 / 0.16.0 (67.0 MB). Step 7 records (STORE_VERSION_STATUS.md live rows) wait for a direct console observation.",
-    "status_0_17_0": "LIVE 2026-10-04 ~11:20pm ET on BOTH stores (Harold). Microsoft Store: submitted ~10:40pm, installed build shows no [DEV] and Version 0.17.0; public API lagged. Google Play closed testing (Alpha): versionCode 8, device-verified on the Fold (Version 0.17.0). Open: Step 4.2 Gmail sign-in URL on the Store build; CHANGELOG has no release headings since 0.14.0 (not done this release either)."
-  },
-  "environment_notes": [
-    "RESOLVED 2026-07-29 (verified 07-30): the Store fault was an Acronis file-system filter blocking AppXSvc cleanup, fixed by an Acronis Protection exclusion. 23h uptime with ZERO Id-493 events vs a 176-file/6-min baseline; Store client self-updated 22606.1401.6.0 -> .10.0 (requires a working deployment pipeline). Filter drivers remain loaded -- backup protection was NOT disabled. See ALL_SPRINTS_MASTER_PLAN ENV-1 for the picker gotcha if it recurs.",
-    "Microsoft Store CLIENT bug (observed 2026-07-28, NOT ours, NOT blocking): app DETAIL pages render as skeleton placeholders that never populate, then blank. Search results render fine (12 apps with icons/ratings/screenshots, ours correctly marked Installed), and app icon + title + rating load on the detail page -- only the live-fetched content fails. Reproduces on THIRD-PARTY listings (Spike Email), so it is not our listing or our package. Survived Store restart, full reboot, and wsreset.exe. No action available beyond awaiting a Store client update. Do NOT re-diagnose this as an app or submission defect: the third-party reproduction is the decisive evidence.",
-    "RECURRED 2026-08-03 (0.5.9.0 certification day): the same Store-detail-page skeleton symptom reproduced immediately, PLUS winget's msstore catalog independently lagged (winget show reported Version: Unknown, winget upgrade/install reported 'No available upgrade found' even after `winget source update`). Partner Center's Store-presence section was the only surface confirming the release was actually live. This is now a recurring pattern on certification day specifically -- client-side propagation (Store app cache, winget's msstore catalog mirror) lags Partner Center's own confirmation by some hours. Treat Partner Center as authoritative every time; do not wait for winget/Store client agreement before considering a release live."
-  ],
-  "blocking_issues": [],
-  "next_actions": [
-    "Harold merges PR #455 to develop (Claude never merges).",
-    "On merge: branch feature/<date>_Sprint_77 FROM feature/20261004_Sprint_76; close #452 #453 #454 #456 #457 #458 by hand.",
-    "Phase 8: Harold merges develop -> main in parallel with refinement pass 1; Store release of 0.17.6 is Harold's call (AAB kept in mobile-app/dist/android-0.17.6+14/).",
-    "Phase 8.4 refinement pass 2: select Sprint 77 scope from MV76-1 and R76-1..R76-4."
-  ],
-  "next_sprint_targeted": {
-    "number": 77,
-    "stub": "docs/sprints/SPRINT_77_PLAN.md",
-    "committed": "MV76-1 (Fold checks on 0.17.6) + R76-1..R76-4 (Sprint 76 retro Category 13 carry-ins)"
-  }
+    "_description": "Sprint status file that persists across context compaction. Update after each phase/sub-phase completion.",
+    "_last_updated": "2026-10-08T23:10:00Z",
+    "_usage": "Read this file after context compaction to restore sprint approval state and progress.",
+    "_staleness_note": "This file had drifted 15 sprints (last updated at Sprint 35, 2026-04-19) before being refreshed at Sprint 50 close-out. It is a Phase 7.7 checklist item -- update it at every sprint close-out, not opportunistically.",
+    "current_sprint": {
+        "number": 77,
+        "branch": "feature/20261006_Sprint_77",
+        "status": "Phase 7.7 Sprint Review -- COMPLETE: retrospective done (IMP-1R, IMP-3 applied; IMP-2 -> F284; IMP-4 waits); 7.7.1 final reviews done, all findings fixed (Copilot 0; toolkit 11 merged items, 10 fixed, 1 left as is); PR #460 ready for Harold final approval (7.7.5).",
+        "plan_approved": true,
+        "blanket_execution_approved": true,
+        "pr_number": 460,
+        "version": "0.18.0+15 (bumped at plan approval, Phase 3.7.0b)",
+        "pr_url": "https://github.com/kimmeyh/spamfilter-multi/pull/460"
+    },
+    "previous_sprint": {
+        "number": 76,
+        "branch": "feature/20261004_Sprint_76",
+        "pr": "#455 -> develop (merged, 96a9cfe), #459 develop -> main (31b7135)",
+        "deliverables": "F248 scan diagnostics, F249 stop/KEEP/spacing, F250 Gmail renewal by stored refresh token, F251-F253 (No Rule banner, battery row, notification trigger ADR-0044); nine MV fixes; 7.7.1 review fixes (Doze retry trap, log lock, offline message, staging hook). Unattended Android scanning confirmed overnight on 0.17.4.",
+        "reviews": "7.7.1 (first sprint under the new order): Copilot Findings None; code-reviewer + silent-failure-hunter -> items 1-7, 14 fixed (82c65a4, M210-M218 KILLED), F258-F263 backlog; F264 from Harold item 10.",
+        "metrics": "Suite 2,508 -> 2,607 (15 skipped); analyzer clean; hooks 91 -> 121; WinWright 3/3 at 18392ad; first JVM unit test (5).",
+        "retro": "Harold all Very Good. IMP-1, 2, 3, 4, 6 applied; process: final reviews moved to 7.7.1, 5.1.1 removed, Copilot auto-review ruleset rule removed, prevention-first for review findings."
+    },
+    "github_issues": {
+        "sprint_73": "#428 (open, MV74-1), #422 (open, MV74-3), #430 closed, #434 (open, MV74-2), #431 closed, #432 closed, #433 (open, MV74-3). Also closed in pass 1: #426 (superseded by #428), #427 (leftover captured as F236).",
+        "note": "Closes #N does NOT auto-fire here.",
+        "sprint_74": "Closed by hand 2026-10-02: #422 #434 #437 #438 #439. Open, carried: #428 (MV74-1 phone), #433 (F205 phone), #441 (F238), #442 (F239).",
+        "sprint_75": "Closed by hand 2026-10-04: #441 #442 #444 #445 #446 #447 #449 #450. Open, carried to Sprint 76 phone checks: #428 (MV74-1), #433 (F205).",
+        "sprint_76": "Closed by hand 2026-10-06: #452 #453 #454 #456 #457 #458. Open, inside MV76-1: #428 (MV74-1 reboot half), #433 (F205).",
+        "sprint_77": "Cards (open): #461 MV76-1, #462 F258, #463 F245, #464 R76-1, #465 F264+R76-2, #466 F192+SEC-15, #467 SEC-8b, #468 R76-3. Carry-ins open: #428, #433."
+    },
+    "_github_issues_note": "Sprint 66 cards created at Phase 3.3.1 (2026-09-07): #387 GP-19, #388 GP-4. Close by hand at Post-Merge Cleanup.",
+    "test_metrics": {
+        "suite": "2,957 passed / 15 skipped / 0 failed (local Windows, 2026-10-08, after the 7.7.1 fixes)",
+        "policy_suite": "JVM 21/21; release_notes_test passing; hook suite 128/128 (2026-10-08)",
+        "winwright": "2026-10-08 sweep-head 4a5f2ac: f124 PASS 29/29, s75 PASS 27/27, mt2c FAIL step 9 (display-size dependent: seeds below 11 pinned provider rows at ~1940x1040; passed 30/30 at 3856x2128); rewrite folded into F283; DB drift none",
+        "analyzer": "clean",
+        "mutations": "Sprint 77: F258 M1/M2/M4 + L1/L2, F245 21, F192 25, SEC-8b 16, F264 24, R76-1 5, merge M1/M2, F-PRECHECK 15 -- all KILLED",
+        "as_of": "2026-10-08, Sprint 77 Phase 7"
+    },
+    "store_release": {
+        "status_0_15_3": "NOT SUBMITTED TO EITHER STORE. Harold, 2026-09-22: \"not pushing to either store this time\". Phase 8.3 explicitly N/A for this cycle.",
+        "live_windows": "0.15.2.0 -- Submission 28, certified 2026-09-21, installed-build verified.",
+        "live_play": "0.15.2 versionCode 5 -- closed testing, device-verified 2026-09-21 on the S24+.",
+        "consequence": "F219 AC-1 and F227 remain blocked: they need a Play-INSTALLED build, and 0.15.3 is not going out. They wait for the next release that ships.",
+        "status_0_16_0": "SUBMITTED / ROLLOUT IN PROCESS on BOTH stores (Harold, 2026-09-24, reported between 12:17am and 8:39am ET). NOT yet observed live on either. Built + verified 2026-09-24: MSIX 0.16.0.0 (prod worktree bf005f3, self-test 6/6 PASS, 17.5 MB) and AAB versionCode 7 / 0.16.0 (67.0 MB). Step 7 records (STORE_VERSION_STATUS.md live rows) wait for a direct console observation.",
+        "status_0_17_0": "LIVE 2026-10-04 ~11:20pm ET on BOTH stores (Harold). Microsoft Store: submitted ~10:40pm, installed build shows no [DEV] and Version 0.17.0; public API lagged. Google Play closed testing (Alpha): versionCode 8, device-verified on the Fold (Version 0.17.0). Open: Step 4.2 Gmail sign-in URL on the Store build; CHANGELOG has no release headings since 0.14.0 (not done this release either).",
+        "status_0_17_6": "SUBMITTED to BOTH stores 2026-10-06 (Harold screenshots), NOT yet live. Microsoft Store: Submission 31, \"Update in certification\", stage Pre-processing (last modified 10/07/2026); Store presence still Submission 30 (0.17.0). Google Play: Closed testing - Alpha, \"14 (0.17.6) Start full rollout\" in Changes in review, quick checks running (up to 12 min); managed publishing off. Artifacts: MSIX D:\\Data\\Harold\\github\\spamfilter-multi-prod\\mobile-app\\build\\windows\\x64\\runner\\Release\\my_email_spam_filter.msix (17.6 MB, self-test PASS); AAB D:\\Data\\Harold\\github\\spamfilter-multi\\mobile-app\\dist\\android-0.17.6+14\\app-prod-release.aab (67.3 MB). STORE_VERSION_STATUS Live rows unchanged until observed live; \"Last uploaded to Play\" -> 0.17.6 (14) is updated WITH the Sprint 77 pubspec bump (IMP-2)."
+    },
+    "environment_notes": [
+        "RESOLVED 2026-07-29 (verified 07-30): the Store fault was an Acronis file-system filter blocking AppXSvc cleanup, fixed by an Acronis Protection exclusion. 23h uptime with ZERO Id-493 events vs a 176-file/6-min baseline; Store client self-updated 22606.1401.6.0 -> .10.0 (requires a working deployment pipeline). Filter drivers remain loaded -- backup protection was NOT disabled. See ALL_SPRINTS_MASTER_PLAN ENV-1 for the picker gotcha if it recurs.",
+        "Microsoft Store CLIENT bug (observed 2026-07-28, NOT ours, NOT blocking): app DETAIL pages render as skeleton placeholders that never populate, then blank. Search results render fine (12 apps with icons/ratings/screenshots, ours correctly marked Installed), and app icon + title + rating load on the detail page -- only the live-fetched content fails. Reproduces on THIRD-PARTY listings (Spike Email), so it is not our listing or our package. Survived Store restart, full reboot, and wsreset.exe. No action available beyond awaiting a Store client update. Do NOT re-diagnose this as an app or submission defect: the third-party reproduction is the decisive evidence.",
+        "RECURRED 2026-08-03 (0.5.9.0 certification day): the same Store-detail-page skeleton symptom reproduced immediately, PLUS winget's msstore catalog independently lagged (winget show reported Version: Unknown, winget upgrade/install reported 'No available upgrade found' even after `winget source update`). Partner Center's Store-presence section was the only surface confirming the release was actually live. This is now a recurring pattern on certification day specifically -- client-side propagation (Store app cache, winget's msstore catalog mirror) lags Partner Center's own confirmation by some hours. Treat Partner Center as authoritative every time; do not wait for winget/Store client agreement before considering a release live."
+    ],
+    "blocking_issues": [],
+    "next_actions": [
+        "7.7.5 done: PR #460 announced ready for final approval (Harold merges; Claude never merges).",
+        "On merge (6.6): branch feature/<date>_Sprint_78 FROM the Sprint 77 branch; then Phase 8 (main merge in parallel, refinement pass 1, 0.18.0 Store + Play builds, Fold steps 7-11 at Sprint 78 start)."
+    ],
+    "next_sprint_targeted": {
+        "number": 77,
+        "stub": "docs/sprints/SPRINT_77_PLAN.md",
+        "committed": "MV76-1 + R76-1..R76-4; F264 (Harold, Priority 10)"
+    }
 }

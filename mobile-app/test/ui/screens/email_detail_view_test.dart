@@ -7,11 +7,14 @@ import 'package:my_email_spam_filter/core/storage/unmatched_email_store.dart';
 class FakeUnmatchedEmailStore implements UnmatchedEmailStore {
   bool markProcessedCalled = false;
   bool lastProcessedValue = false;
+  NoRuleMarkReason? lastReason;
 
   @override
-  Future<bool> markAsProcessed(int emailId, bool processed) async {
+  Future<bool> markAsProcessed(int emailId, bool processed,
+      {required NoRuleMarkReason reason, String? detail}) async {
     markProcessedCalled = true;
     lastProcessedValue = processed;
+    lastReason = reason;
     return true;
   }
 
@@ -36,6 +39,16 @@ class FakeUnmatchedEmailStore implements UnmatchedEmailStore {
 
   @override
   Future<List<UnmatchedEmail>> getUnmatchedEmailsByScan(int scanResultId) async =>
+      [];
+
+  @override
+  Future<List<UnmatchedUpsertResult>> upsertUnmatchedEmails(
+          List<UnmatchedEmail> emails) async =>
+      [];
+
+  @override
+  Future<List<UnmatchedEmail>> getUnprocessedForAccount(
+          String accountId) async =>
       [];
 
   @override

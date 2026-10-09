@@ -458,6 +458,39 @@ class ConnectionException implements Exception {
   String toString() => 'ConnectionException: $message';
 }
 
+/// A [ConnectionException] that carries a sentence safe and useful to show
+/// the user (F192, Sprint 77).
+///
+/// `ErrorMessages.humanize` maps a plain [ConnectionException] to "check your
+/// internet connection", which is wrong for a mistyped server name, a refused
+/// STARTTLS upgrade or a certificate the app could not verify. [userMessage]
+/// never contains an exception class name, a stack trace or a password.
+class UserFacingConnectionException extends ConnectionException {
+  /// Plain-language text for the screen.
+  final String userMessage;
+
+  UserFacingConnectionException(super.message, this.userMessage,
+      [super.originalError]);
+}
+
+/// Sprint 77 final review: true for a failure that belongs to the whole
+/// account SESSION, not to one message, folder or chunk.
+///
+/// - [AuthenticationException]: the server refused the sign-in (a wrong or
+///   changed password, found at the first connection or at a reconnect).
+/// - [UserFacingConnectionException]: the connection was refused with a
+///   reason the user must read (certificate changed, STARTTLS refused, the
+///   server busy or unavailable at sign-in).
+///
+/// THE RULE: a catch that exists so one item's failure does not stop the
+/// others ("continue with the next chunk", "dedup must never break the scan")
+/// must rethrow these. No later item can succeed without a session, and
+/// absorbing them turns a sign-in failure into "completed with failures".
+/// This is the same shape as the F224 rule for `ScanCancelledException`; it is
+/// one predicate so every catch on the reconnect path agrees on the list.
+bool isSessionFatal(Object error) =>
+    error is AuthenticationException || error is UserFacingConnectionException;
+
 /// Exception thrown during message fetching
 class FetchException implements Exception {
   final String message;

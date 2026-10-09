@@ -3,6 +3,7 @@ import 'package:logger/logger.dart';
 
 import '../../core/models/email_message.dart';
 import '../../core/services/auth_results_parser.dart';
+import '../../core/services/pattern_compiler.dart';
 import '../../core/storage/rule_database_store.dart';
 import '../../core/storage/safe_sender_database_store.dart';
 import '../../core/utils/pattern_normalization.dart';
@@ -114,6 +115,14 @@ class _SafeSenderQuickAddScreenState extends State<SafeSenderQuickAddScreen> {
   bool _validatePattern(String pattern) {
     if (pattern.isEmpty) {
       _validationError = 'Pattern cannot be empty';
+      return false;
+    }
+
+    // F266: a safe sender is matched against one address, so a pattern that
+    // needs two "@" can never match and would give false protection.
+    final unmatchable = PatternCompiler.detectUnmatchable(pattern);
+    if (unmatchable.isNotEmpty) {
+      _validationError = unmatchable.first;
       return false;
     }
 

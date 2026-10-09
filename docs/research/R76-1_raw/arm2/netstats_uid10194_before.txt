@@ -1,0 +1,3 @@
+  ident=[{type=1, ratType=COMBINED, wifiNetworkKey="AndroidWifi"open, metered=false, defaultNetwork=true, oemManaged=OEM_NONE, subId=-1}] uid=10194 set=FOREGROUND tag=0x0
+    NetworkStatsHistory: bucketDuration=7200
+      st=1791345600 rb=23396 rp=68 tb=4790 tp=72 op=0

@@ -640,6 +640,9 @@ class EmailScanner {
           // Every folder after it would fail the same way.
           rethrow;
         } catch (e, st) {
+          // Sprint 77 final review: the same rule for every session failure
+          // (any refused sign-in, a connection refused with a named reason).
+          if (isSessionFatal(e)) rethrow;
           // F202 R-6 (Sprint 74, Harold's decision 3): a folder that simply
           // does NOT EXIST on this account is not an error -- a provider
           // default can name a folder some accounts lack (AOL "Bulk Mail", an
@@ -847,6 +850,10 @@ class EmailScanner {
           }
           batchErrors.addAll(moveResult.failedIds);
         } catch (e) {
+          // Sprint 77 final review: a sign-in refused at a mid-scan reconnect
+          // fails the SCAN (outer handler: "Sign-in failed"); recording it as
+          // per-email move failures reported a completed scan instead.
+          if (isSessionFatal(e)) rethrow;
           AppLogger.warning('Batch safe sender move failed entirely: $e');
           diag('action-result', 'safe sender move batch FAILED entirely: ${DiagnosticLogger.describeError(e)}');
           if (isLiveScan) {
@@ -936,6 +943,9 @@ class EmailScanner {
           AppLogger.scan('Step 6b-2a: markAsReadBatch DONE: ${markResult.successCount} succeeded, ${markResult.failureCount} failed');
           diag('action-result', 'mark as read: ${markResult.successCount} succeeded, ${markResult.failureCount} failed');
         } catch (e) {
+          // Sprint 77 final review: "enhancement, do not block" covers a failed
+          // mark, not a refused sign-in at the reconnect inside it.
+          if (isSessionFatal(e)) rethrow;
           AppLogger.warning('Step 6b-2a: markAsReadBatch FAILED: $e');
           // Review (Sprint 76): its siblings write a failure line; this did not.
           diag('action-result',
@@ -962,6 +972,8 @@ class EmailScanner {
           }
           batchErrors.addAll(deleteResult.failedIds);
         } catch (e) {
+          // Sprint 77 final review: see Step 6b-1.
+          if (isSessionFatal(e)) rethrow;
           AppLogger.warning('Batch delete failed entirely: $e');
           diag('action-result', 'delete batch FAILED entirely: ${DiagnosticLogger.describeError(e)}');
           if (isLiveScan) {
@@ -1043,6 +1055,8 @@ class EmailScanner {
           }
           batchErrors.addAll(junkResult.failedIds);
         } catch (e) {
+          // Sprint 77 final review: see Step 6b-1.
+          if (isSessionFatal(e)) rethrow;
           AppLogger.warning('Batch moveToJunk failed entirely: $e');
           diag('action-result', 'moveToJunk batch FAILED entirely: ${DiagnosticLogger.describeError(e)}');
           if (isLiveScan) {
@@ -1325,7 +1339,9 @@ class EmailScanner {
   ///     within the same folder; there is nothing to reconcile).
   ///
   /// Failures degrade to a no-op: a search or move error is logged but never
-  /// breaks the scan, because dedup is a reconciliation enhancement.
+  /// breaks the scan, because dedup is a reconciliation enhancement. The one
+  /// exception is a session failure ([isSessionFatal], for example a sign-in
+  /// refused at a reconnect), which is rethrown and fails the scan.
   ///
   /// Exposed (not private) and marked [visibleForTesting] so the dedup logic
   /// can be exercised with a fake [SpamFilterPlatform] and mocked IMAP search
@@ -1414,6 +1430,9 @@ class EmailScanner {
             );
           }
         } catch (e) {
+          // Sprint 77 final review: "never breaks the scan" covers a failed
+          // search or move, not a refused sign-in at a reconnect.
+          if (isSessionFatal(e)) rethrow;
           AppLogger.warning(
             'Step 6b-1b: dedup failed for messageId="$messageId" in '
             '"$sourceFolder": $e',
@@ -1469,7 +1488,9 @@ class EmailScanner {
   /// candidate is kept (move proceeds) rather than silently blocked, matching
   /// F91's own established "degrade to no-op, never break the scan"
   /// philosophy -- a candidate that is not actually a duplicate must not be
-  /// permanently stuck outside Inbox because of a transient IMAP error.
+  /// permanently stuck outside Inbox because of a transient IMAP error. A
+  /// session failure ([isSessionFatal], for example a sign-in refused at a
+  /// reconnect) is NOT failed open: it is rethrown and fails the scan.
   ///
   /// Skips are intentional and per-message / per-platform, mirroring F91:
   ///   - [EmailMessage.messageIdHeader] is null (no stable cross-folder
@@ -1570,6 +1591,9 @@ class EmailScanner {
           }
         }
       } catch (e) {
+        // Sprint 77 final review: fail-open covers a failed search, not a
+        // refused sign-in at the reconnect inside it.
+        if (isSessionFatal(e)) rethrow;
         // Fail open: keep the candidate so a transient search failure never
         // permanently strands a genuine safe-sender message outside Inbox.
         skippedSearchFailed++;

@@ -32,6 +32,8 @@ library;
 import 'dart:io';
 
 import 'package:flutter_test/flutter_test.dart';
+import 'package:my_email_spam_filter/ui/screens/settings_screen.dart'
+    show kAndroidBackgroundNote;
 
 void main() {
   late String source;
@@ -47,12 +49,21 @@ void main() {
     });
 
     test('it is ANDROID-gated, not shown everywhere', () {
+      // F264 (Sprint 77): the gate is now the screen's Android seam
+      // (`showsAndroidBackgroundRows`, `debugIsAndroid ?? Platform.isAndroid`)
+      // so a widget test can drive both branches; the real check is unchanged.
       expect(
-          source.contains('if (Platform.isAndroid && _backgroundScanEnabled)\n'
+          source.contains('if (SettingsScreen.showsAndroidBackgroundRows &&\n'
+              '            _backgroundScanEnabled)\n'
               '          _buildAndroidDozeStatusLine(),'),
           isTrue,
           reason: 'Windows has no Doze equivalent -- showing this there would '
               'be wrong, not merely redundant');
+      expect(
+          source.contains(
+              'debugIsAndroid ?? Platform.isAndroid'),
+          isTrue,
+          reason: 'the seam must fall back to the real platform');
     });
 
     test('it is shown only when background scanning is ON', () {
@@ -63,37 +74,48 @@ void main() {
     });
 
     test('it does NOT promise a fix', () {
-      final idx = source.indexOf('_buildAndroidDozeStatusLine');
-      final body = source.substring(idx, idx + 2600);
       for (final overclaim in [
         'will always run',
         'guaranteed',
         'exactly on time',
       ]) {
-        expect(body.contains(overclaim), isFalse,
+        expect(kAndroidBackgroundNote.contains(overclaim), isFalse,
             reason: 'the remedy is still an open decision; this line must be '
                 'true under every outcome of it');
       }
     });
 
     test('it explains what the user can DO', () {
-      final idx = source.indexOf('_buildAndroidDozeStatusLine');
-      final body = source.substring(idx, idx + 2600);
-      // Matched on an unbroken fragment: F235 reworded this string to name the
-      // ~1 hour window, which re-wrapped it across source lines. The remedy is
-      // still stated; only the line breaks moved.
-      expect(body.contains('Opening the app runs any'), isTrue,
+      expect(kAndroidBackgroundNote.contains('Opening the app runs any work '
+          'that was waiting.'), isTrue,
           reason: 'a caveat with no remedy is just bad news; the '
               'frustration was the uselessness, not the delay');
     });
 
-    test('F235: the caveat now names the ~1 hour window', () {
-      // The window is a real consequence of setAndAllowWhileIdle, and the
-      // caveat must state it rather than stay vaguely honest.
-      final idx = source.indexOf('_buildAndroidDozeStatusLine');
-      final body = source.substring(idx, idx + 2600);
-      expect(body.contains('up to about an hour'), isTrue,
-          reason: 'F235 R-6: the caveat gets MORE accurate, not softer');
+    test('F264 Q12: the note is EXACTLY the Product Owner\'s wording', () {
+      expect(
+          kAndroidBackgroundNote,
+          'Android runs background scans when the phone allows. While the '
+          'phone is idle, expect up to about 45 minutes between scans, even '
+          'with a shorter interval. Opening the app runs any work that was '
+          'waiting.');
+    });
+
+    test('F264 AC-11: the old "about an hour" sentence is gone from lib/ui and '
+        'the note is built once', () {
+      // What this does NOT catch: the claim reworded elsewhere (Help content
+      // is covered by help_platform_claims_test).
+      for (final f in Directory('lib/ui').listSync(recursive: true)) {
+        if (f is! File || !f.path.endsWith('.dart')) continue;
+        final text = f.readAsStringSync();
+        // Doc comments may quote the replaced sentence; code strings must not.
+        final code = text.split('\n').where((l) => !l.trimLeft().startsWith('//'));
+        expect(code.any((l) => l.contains('up to about an hour')), isFalse,
+            reason: '${f.path} still carries the F217 sentence');
+      }
+      expect('_buildAndroidDozeStatusLine(),'.allMatches(source).length, 1,
+          reason: 'one call site -> the note appears once');
+      expect('kAndroidBackgroundNote'.allMatches(source).length, greaterThan(0));
     });
 
     test('F243: the Windows "pause while this app is open" texts are gone',

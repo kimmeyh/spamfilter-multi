@@ -7,7 +7,7 @@ import 'dart:io';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:path/path.dart' as path;
 import 'package:my_email_spam_filter/core/services/powershell_script_generator.dart';
-import 'package:my_email_spam_filter/core/services/scan_frequency.dart';
+import 'package:my_email_spam_filter/core/services/scan_interval.dart';
 
 void main() {
   group('PowerShellScriptGenerator', () {
@@ -26,7 +26,7 @@ void main() {
         final scriptPath = await PowerShellScriptGenerator.generateCreateTaskScript(
           taskName: taskName,
           executablePath: executablePath,
-          frequency: ScanFrequency.every15min,
+          intervalMinutes: 15,
           workingDirectory: workingDirectory,
         );
 
@@ -44,18 +44,28 @@ void main() {
         expect(content, contains('Minutes 15'));
       });
 
-      test('F98: includes -RandomDelay jitter to de-sync per-account tasks',
-          () async {
-        final scriptPath =
-            await PowerShellScriptGenerator.generateCreateTaskScript(
+      test('F264 Q13: an interval over 15 minutes gets -RandomDelay, one at 15 '
+          'or below gets none', () async {
+        final long = await File(
+                await PowerShellScriptGenerator.generateCreateTaskScript(
           taskName: taskName,
           executablePath: executablePath,
-          frequency: ScanFrequency.every15min,
+          intervalMinutes: 16,
           workingDirectory: workingDirectory,
-        );
-        final content = await File(scriptPath).readAsString();
-        expect(content, contains('RandomDelay'),
-            reason: 'per-account tasks must jitter their start to avoid DB lock');
+        ))
+            .readAsString();
+        expect(long, contains('RandomDelay'),
+            reason: 'Q13: jitter applies above 15 minutes');
+        final short = await File(
+                await PowerShellScriptGenerator.generateCreateTaskScript(
+          taskName: taskName,
+          executablePath: executablePath,
+          intervalMinutes: 15,
+          workingDirectory: workingDirectory,
+        ))
+            .readAsString();
+        expect(short, isNot(contains('RandomDelay')),
+            reason: 'Q13: none at 15 minutes or below');
       });
 
       test('F98: injects --account-id when accountId is provided', () async {
@@ -63,7 +73,7 @@ void main() {
             await PowerShellScriptGenerator.generateCreateTaskScript(
           taskName: taskName,
           executablePath: executablePath,
-          frequency: ScanFrequency.every15min,
+          intervalMinutes: 15,
           workingDirectory: workingDirectory,
           accountId: 'aol-a@b.com',
         );
@@ -76,7 +86,7 @@ void main() {
         final scriptPath = await PowerShellScriptGenerator.generateCreateTaskScript(
           taskName: taskName,
           executablePath: executablePath,
-          frequency: ScanFrequency.every30min,
+          intervalMinutes: 30,
           workingDirectory: workingDirectory,
         );
 
@@ -90,36 +100,145 @@ void main() {
         final scriptPath = await PowerShellScriptGenerator.generateCreateTaskScript(
           taskName: taskName,
           executablePath: executablePath,
-          frequency: ScanFrequency.every1hour,
+          intervalMinutes: 60,
           workingDirectory: workingDirectory,
         );
 
         // Assert
         final content = await File(scriptPath).readAsString();
-        expect(content, contains('Hours 1'));
+        expect(content, contains('Minutes 60'));
       });
 
-      test('generates script file for daily frequency', () async {
-        // Act
-        final scriptPath = await PowerShellScriptGenerator.generateCreateTaskScript(
-          taskName: taskName,
-          executablePath: executablePath,
-          frequency: ScanFrequency.daily,
-          workingDirectory: workingDirectory,
-        );
-
-        // Assert
-        final content = await File(scriptPath).readAsString();
-        expect(content, contains('-Daily'));
-        expect(content, contains('09:00AM'));
+      test('F264 AC-6: 5, 90, 1440 and 5940 minutes each get the ONE trigger '
+          'shape, with the Q13 jitter rule and no -Daily', () async {
+        // [interval, expects a RandomDelay of 10 minutes and a start 5 minutes
+        // before today's midnight]
+        final now = DateTime.now();
+        final midnight = DateTime(now.year, now.month, now.day);
+        final early = PowerShellScriptGenerator.powerShellDateTime(
+            midnight.subtract(const Duration(minutes: 5)));
+        final onTime = PowerShellScriptGenerator.powerShellDateTime(midnight);
+        for (final c in [(5, false), (90, true), (1440, true), (5940, true)]) {
+          final minutes = c.$1;
+          for (final content in [
+            await File(await PowerShellScriptGenerator.generateCreateTaskScript(
+              taskName: taskName,
+              executablePath: executablePath,
+              intervalMinutes: minutes,
+              workingDirectory: workingDirectory,
+            )).readAsString(),
+            await File(await PowerShellScriptGenerator.generateUpdateTaskScript(
+              taskName: taskName,
+              intervalMinutes: minutes,
+            )).readAsString(),
+          ]) {
+            expect(content,
+                contains('-RepetitionInterval (New-TimeSpan -Minutes $minutes)'),
+                reason: '$minutes minutes must be the repetition interval');
+            expect(content, isNot(contains('-Daily')),
+                reason: 'a daily scan is just 1440 minutes (F264)');
+            expect(content, isNot(contains('11:55PM')),
+                reason: '"11:55PM" is TONIGHT -- a future start (F-PRECHECK)');
+            if (c.$2) {
+              expect(content, contains("-At ([datetime]'$early')"));
+              expect(content, contains('-RandomDelay (New-TimeSpan -Minutes 10)'),
+                  reason: 'start 5 minutes early plus 0-10 minutes of delay '
+                      'is plus or minus 5 minutes around the nominal time');
+            } else {
+              expect(content, contains("-At ([datetime]'$onTime')"));
+              expect(content, isNot(contains('RandomDelay')));
+            }
+          }
+        }
       });
+
+      test('F264: the jitter constants are the shared ones (Windows trigger '
+          'and Android alarm cannot drift)', () {
+        // The Kotlin copies must equal the Dart constants the trigger uses.
+        final kotlin = File(
+                'android/app/src/main/kotlin/com/myemailspamfilter/DozeAlarmScheduler.kt')
+            .readAsStringSync();
+        expect(
+            RegExp(r'THRESHOLD_MINUTES\s*=\s*(\d+)')
+                .firstMatch(kotlin)
+                ?.group(1),
+            '$kJitterThresholdMinutes');
+        expect(
+            RegExp(r'JITTER_MINUTES\s*=\s*(\d+)').firstMatch(kotlin)?.group(1),
+            '$kJitterMinutes');
+        // The call site: the alarm's trigger time includes the jitter offset
+        // (SOURCE-TEXT VERIFIED; a JVM test pins the function, not this call).
+        expect(
+            kotlin.contains(
+                'AlarmJitter.offsetMs(intervalMinutes, java.util.Random())'),
+            isTrue);
+        // And the trigger text is derived from them, not literals.
+        expect(PowerShellScriptGenerator.triggerForInterval(kJitterThresholdMinutes),
+            isNot(contains('RandomDelay')));
+        expect(
+            PowerShellScriptGenerator.triggerForInterval(kJitterThresholdMinutes + 1),
+            contains('-Minutes ${2 * kJitterMinutes}'));
+      });
+
+      // F-PRECHECK (Sprint 77 Phase 5.1.2, HIGH): "-At 11:55PM" was 23:55
+      // TODAY -- in the future for most of the day -- so the first scan of a
+      // task over 15 minutes waited until that night. The start the script
+      // receives is startBoundary(), so this checks the value Task Scheduler
+      // gets. Runs on every host (no PowerShell).
+      // What this does NOT catch: Task Scheduler reading the literal
+      // differently from Dart (time zone, culture) -- the Windows-only test
+      // below executes the real cmdlet for that.
+      test('the trigger start is never in the future, at any time of day, for '
+          'every interval; jitter starts exactly 5 minutes earlier', () {
+        final days = [DateTime(2026, 10, 7), DateTime(2026, 3, 8), DateTime(2026, 1, 1)];
+        for (final day in days) {
+          for (final minuteOfDay in [0, 1, 4, 5, 6, 600, 1435, 1439]) {
+            final now = day.add(Duration(minutes: minuteOfDay, seconds: 30));
+            for (final interval in [5, 15, 16, 30, 90, 1440, 5940]) {
+              final start = PowerShellScriptGenerator.startBoundary(now, interval);
+              expect(start.isAfter(now), isFalse,
+                  reason: '$interval min registered at $now starts at $start');
+              expect(now.difference(start), lessThan(const Duration(days: 1, minutes: 6)),
+                  reason: 'anchored on today, not an arbitrary past date');
+            }
+            final plain = PowerShellScriptGenerator.startBoundary(now, 15);
+            final jittered = PowerShellScriptGenerator.startBoundary(now, 16);
+            expect(plain, DateTime(now.year, now.month, now.day));
+            expect(plain.difference(jittered), const Duration(minutes: kJitterMinutes));
+          }
+        }
+        // The emitted script carries exactly that start.
+        final now = DateTime(2026, 10, 7, 9, 30);
+        expect(PowerShellScriptGenerator.triggerForInterval(30, now: now),
+            contains("-At ([datetime]'2026-10-06T23:55:00')"));
+        expect(PowerShellScriptGenerator.triggerForInterval(15, now: now),
+            contains("-At ([datetime]'2026-10-07T00:00:00')"));
+      });
+
+      // What this does NOT catch: whether Register-ScheduledTask then runs the
+      // task at the next repetition (Task Scheduler behavior; manual
+      // validation). Skipped on the ubuntu CI host (no Task Scheduler).
+      test('Windows: the real New-ScheduledTaskTrigger gets a StartBoundary in '
+          'the past', () async {
+        for (final interval in [15, 30, 1440]) {
+          final line = PowerShellScriptGenerator.triggerForInterval(interval);
+          final script = '$line\n'
+              r"if ([datetime]$trigger.StartBoundary -le (Get-Date)) { 'PAST' } "
+              r"else { 'FUTURE ' + $trigger.StartBoundary }";
+          final result = await Process.run(
+              'powershell', ['-NoProfile', '-NonInteractive', '-Command', script]);
+          expect(result.exitCode, 0, reason: '${result.stderr}');
+          expect((result.stdout as String).trim(), 'PAST',
+              reason: '$interval minutes: ${result.stdout} ${result.stderr}');
+        }
+      }, skip: !Platform.isWindows ? 'needs Windows Task Scheduler cmdlets' : false);
 
       test('script includes error handling', () async {
         // Act
         final scriptPath = await PowerShellScriptGenerator.generateCreateTaskScript(
           taskName: taskName,
           executablePath: executablePath,
-          frequency: ScanFrequency.every15min,
+          intervalMinutes: 15,
           workingDirectory: workingDirectory,
         );
 
@@ -136,7 +255,7 @@ void main() {
         final scriptPath = await PowerShellScriptGenerator.generateCreateTaskScript(
           taskName: taskName,
           executablePath: executablePath,
-          frequency: ScanFrequency.every15min,
+          intervalMinutes: 15,
           workingDirectory: workingDirectory,
         );
 
@@ -153,7 +272,7 @@ void main() {
         // Act
         final scriptPath = await PowerShellScriptGenerator.generateUpdateTaskScript(
           taskName: taskName,
-          frequency: ScanFrequency.every30min,
+          intervalMinutes: 30,
         );
 
         // Assert
@@ -244,7 +363,7 @@ void main() {
         await PowerShellScriptGenerator.generateCreateTaskScript(
           taskName: taskName,
           executablePath: executablePath,
-          frequency: ScanFrequency.every15min,
+          intervalMinutes: 15,
           workingDirectory: workingDirectory,
         );
 

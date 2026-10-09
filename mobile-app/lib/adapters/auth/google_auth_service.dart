@@ -38,6 +38,8 @@ import 'package:my_email_spam_filter/core/services/diagnostic_logger.dart';
 import 'package:my_email_spam_filter/adapters/auth/token_store.dart';
 import 'package:my_email_spam_filter/adapters/storage/secure_credentials_store.dart';
 import 'package:my_email_spam_filter/adapters/email_providers/gmail_windows_oauth_handler.dart';
+import 'package:my_email_spam_filter/core/security/certificate_pinner.dart'
+    show CertificatePinMismatchException;
 import 'package:my_email_spam_filter/util/redact.dart';
 
 /// Gmail API scopes.
@@ -558,6 +560,12 @@ class GoogleAuthService {
       Redact.logSafe('Desktop token refresh failed: ${e.runtimeType}');
       // Tokens KEPT (Harold Q1, Sprint 74 MV -- see _refreshToken).
       _state = AuthState.unauthenticated;
+      // SEC-8b (Sprint 77): since the pin now runs on every connection, a
+      // refresh can fail because the pin refused the server. Say THAT, not
+      // "session expired" -- signing in again would hit the same refusal.
+      if (e is CertificatePinMismatchException) {
+        return AuthResult.failure(CertificatePinMismatchException.userMessage);
+      }
       return AuthResult.failure('Session expired. Please sign in again.');
     }
   }
@@ -571,17 +579,29 @@ class GoogleAuthService {
   /// account, NOTHING is saved and the failure names both addresses. The check
   /// must come before `saveGmailTokens`, because saving also ADDS the account
   /// to the saved-account list (a stray second account otherwise).
-  Future<AuthResult> signIn({String? expectedAccountId}) async {
+  ///
+  /// Sprint 77 final review: [confirmAdd] is the add-account question. It is
+  /// called with the signed-in address, after the identity is known and
+  /// BEFORE tokens are saved, only when [expectedAccountId] is null (an add,
+  /// not a renewal). Returning false stops with "Sign-in cancelled" and
+  /// saves nothing.
+  Future<AuthResult> signIn({
+    String? expectedAccountId,
+    Future<bool> Function(String email)? confirmAdd,
+  }) async {
     _state = AuthState.authenticating;
 
     try {
       if (_hasNativeSignIn) {
-        return await _signInNative(expectedAccountId: expectedAccountId);
+        return await _signInNative(
+            expectedAccountId: expectedAccountId, confirmAdd: confirmAdd);
       } else if (_isDesktop) {
-        return await _signInDesktop(expectedAccountId: expectedAccountId);
+        return await _signInDesktop(
+            expectedAccountId: expectedAccountId, confirmAdd: confirmAdd);
       } else {
         // Web fallback
-        return await _signInNative(expectedAccountId: expectedAccountId);
+        return await _signInNative(
+            expectedAccountId: expectedAccountId, confirmAdd: confirmAdd);
       }
     } catch (e) {
       _state = AuthState.error;
@@ -607,7 +627,10 @@ class GoogleAuthService {
       AuthResult.failure('You signed in as $signedIn. To fix $expected, sign '
           'in with $expected.');
 
-  Future<AuthResult> _signInNative({String? expectedAccountId}) async {
+  Future<AuthResult> _signInNative({
+    String? expectedAccountId,
+    Future<bool> Function(String email)? confirmAdd,
+  }) async {
     // F248 (Sprint 76): which step was running when it failed. On the Fold
     // (0.17.0) native sign-in failed AFTER the account pick and fell back to
     // the browser (F250); without this nobody can say which call threw.
@@ -642,6 +665,15 @@ class GoogleAuthService {
         _state = AuthState.unauthenticated;
         return _wrongAccount(accountId, expectedAccountId!);
       }
+      // Sprint 77 final review: an ADD (no expected account) of an address
+      // that is already saved asks before anything is saved. Renewal passes
+      // expectedAccountId and is never asked.
+      if (expectedAccountId == null &&
+          confirmAdd != null &&
+          !await confirmAdd(accountId)) {
+        _state = AuthState.unauthenticated;
+        return AuthResult.failure('Sign-in cancelled');
+      }
       _currentAccountId = accountId;
 
       final tokens = GmailTokens(
@@ -667,7 +699,8 @@ class GoogleAuthService {
         Redact.logSafe('[Auth] Trying browser-based OAuth fallback on Android...');
         _signInLog('falling back to the browser sign-in');
         final fallback = await _signInDesktop(
-            expectedAccountId: expectedAccountId); // Desktop method works for Android too
+            expectedAccountId: expectedAccountId,
+            confirmAdd: confirmAdd); // Desktop method works for Android too
         if (fallback.success) {
           // F250 R-3 / F246: whether the browser path stored a refresh token
           // decides if Android background renewal could work on this path.
@@ -703,7 +736,10 @@ class GoogleAuthService {
       ));
 
   /// Desktop browser-based OAuth with PKCE.
-  Future<AuthResult> _signInDesktop({String? expectedAccountId}) async {
+  Future<AuthResult> _signInDesktop({
+    String? expectedAccountId,
+    Future<bool> Function(String email)? confirmAdd,
+  }) async {
     try {
       // Use existing GmailWindowsOAuthHandler for browser-based OAuth
       final tokenResult = await GmailWindowsOAuthHandler.authenticateWithBrowser();
@@ -730,6 +766,15 @@ class GoogleAuthService {
         _state = AuthState.unauthenticated;
         return _wrongAccount(accountId, expectedAccountId!);
       }
+      // Sprint 77 final review: an ADD (no expected account) of an address
+      // that is already saved asks before anything is saved. Renewal passes
+      // expectedAccountId and is never asked.
+      if (expectedAccountId == null &&
+          confirmAdd != null &&
+          !await confirmAdd(accountId)) {
+        _state = AuthState.unauthenticated;
+        return AuthResult.failure('Sign-in cancelled');
+      }
       _currentAccountId = accountId;
 
       // Calculate expiry
@@ -752,6 +797,9 @@ class GoogleAuthService {
     } catch (e) {
       _state = AuthState.error;
       Redact.logError('Desktop sign-in failed', e);
+      if (e is CertificatePinMismatchException) {
+        return AuthResult.failure(CertificatePinMismatchException.userMessage);
+      }
       return AuthResult.failure('Sign-in failed: ${e.toString()}');
     }
   }

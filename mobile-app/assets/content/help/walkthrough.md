@@ -16,7 +16,7 @@ Watch the scan progress. When it completes, the Results screen shows which email
 
 Ready to move beyond Demo Mode? Add a real email account. Tap the Select Account icon to open the Accounts screen, then tap the "+" button to add an account. Gmail (Google Mail) and AOL are the most tested providers; Yahoo, Outlook.com, and ProtonMail are also supported.
 
-For Gmail, an App Password (IMAP) with 2-Step Verification enabled is the recommended sign-in method; Google Sign-In (OAuth) is available as an alternative. For AOL and other IMAP providers, enter your email address and an app password generated from the provider's security settings, not your regular account password.
+For Gmail, an App Password (IMAP) with 2-Step Verification enabled is the recommended sign-in method; Google Sign-In (OAuth) is available as an alternative. For AOL and Yahoo, enter your email address and an app password generated from the provider's security settings, not your regular account password. For any other email server, choose Custom IMAP Server and enter the server name, port, encryption, username and password your provider lists for IMAP.
 
 ## Step 4: Run a Read-Only Manual Scan with Move-Matched Target
 

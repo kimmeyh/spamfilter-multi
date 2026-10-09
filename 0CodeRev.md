@@ -1,3 +1,0 @@
-***BELOW IS ***BELOW IS NOT FOR CLAUDE CODE USE***
-***BELOW IS NOT FOR Github Copilot USE***
-

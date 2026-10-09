@@ -1,6 +1,7 @@
+import 'dart:io';
+
 import 'package:flutter_test/flutter_test.dart';
 import 'package:my_email_spam_filter/core/services/windows_task_scheduler_service.dart';
-import 'package:my_email_spam_filter/core/services/scan_frequency.dart';
 
 void main() {
   group('WindowsTaskSchedulerService', () {
@@ -69,7 +70,7 @@ void main() {
       test('returns false for disabled frequency', () async {
         // Act
         final result = await WindowsTaskSchedulerService.createScheduledTask(
-          frequency: ScanFrequency.disabled,
+          intervalMinutes: 0,
         );
 
         // Assert
@@ -85,7 +86,7 @@ void main() {
       test('calls deleteScheduledTask when frequency is disabled', () async {
         // Act
         final result = await WindowsTaskSchedulerService.updateScheduledTask(
-          frequency: ScanFrequency.disabled,
+          intervalMinutes: 0,
         );
 
         // Assert: Should attempt to delete task
@@ -139,6 +140,40 @@ void main() {
 
         // Assert
         expect(exists, isFalse);
+      });
+    });
+
+    group('F264 AC-7: verifyAndRepairTaskPath uses the minutes it is GIVEN', () {
+      // SOURCE-TEXT VERIFIED: the repair path shells out to Task Scheduler, so
+      // a host test cannot run it; the defect it guards (guessing the interval
+      // from the trigger's text: `contains('15')`, `'PT1H'`) is a property of
+      // the source. What this does NOT catch: the caller passing the wrong
+      // minutes -- main.dart's call is pinned by startup_interval_reconcile_test.
+      late String body;
+      setUpAll(() {
+        final src = File('lib/core/services/windows_task_scheduler_service.dart')
+            .readAsStringSync();
+        final start = src.indexOf('static Future<bool> verifyAndRepairTaskPath(');
+        final end = src.indexOf('static Future<List<String>>', start);
+        expect(start, greaterThan(-1));
+        expect(end, greaterThan(start));
+        body = src.substring(start, end);
+      });
+
+      test('it requires the interval from its caller', () {
+        expect(body.contains('required int intervalMinutes'), isTrue);
+      });
+
+      test('it recreates with that interval and parses no trigger string', () {
+        expect(
+            body.contains(
+                'createScheduledTask(intervalMinutes: intervalMinutes'),
+            isTrue);
+        expect(body.contains('triggerFrequency'), isFalse,
+            reason: 'recovering the interval from the trigger text was latent '
+                'bug 3: 115 contains "15", and 90 matched nothing');
+        expect(body.contains(".contains('15')"), isFalse);
+        expect(body.contains('PT1H'), isFalse);
       });
     });
   });

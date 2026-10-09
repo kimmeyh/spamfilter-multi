@@ -225,6 +225,17 @@ class _ManualRuleCreateScreenState extends State<ManualRuleCreateScreen> {
       }
     }
 
+    // F266: every type except a body phrase is matched against one address.
+    if (pattern.isNotEmpty &&
+        error == null &&
+        _selectedType != ManualRuleType.bodyPhrase) {
+      final unmatchable = PatternCompiler.detectUnmatchable(pattern);
+      if (unmatchable.isNotEmpty) {
+        error = 'Pattern rejected: ${unmatchable.first}';
+        pattern = '';
+      }
+    }
+
     // Try to compile pattern
     if (pattern.isNotEmpty && error == null) {
       try {

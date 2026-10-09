@@ -353,6 +353,14 @@ the surrounding code first, because this page has now been wrong once.
 
 **Guide**: `WINDOWS_GMAIL_OAUTH_SETUP.md`
 
+### Gmail Custom Label: "400 Invalid label"
+
+**Symptom**: A rule targeting a custom Gmail label (e.g., "Unwanted") fails with "Invalid label" and the message is not moved.
+
+**Root Cause**: The custom folder name was being sent instead of its Gmail label ID.
+
+**Fix**: Update to Sprint 77 or later. Custom labels are now resolved to their IDs automatically.
+
 ### Norton Antivirus Blocks IMAP
 
 **Symptom**: "TLS certificate validation failed" when adding AOL/Yahoo accounts.

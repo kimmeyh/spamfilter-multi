@@ -1,0 +1,11 @@
+arm2 start epoch=1791348585 minutes=35 cadence=5
+Now forced in to deep idle mode
+idle epoch=1791348708
+posted 1 at 1791348709
+posted 2 at 1791349009
+posted 3 at 1791349310
+posted 4 at 1791349610
+posted 5 at 1791349911
+posted 6 at 1791350211
+posted 7 at 1791350511
+end epoch=1791350813 notifications_posted=7
