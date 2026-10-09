@@ -6,7 +6,7 @@
     "current_sprint": {
         "number": 78,
         "branch": "feature/20261009_Sprint_78",
-        "status": "Phase 8.3 Store releases: 0.18.0 MSIX and AAB BUILT + VERIFIED 2026-10-09, awaiting Harold's uploads; 8.2 pass 1 complete; next 8.4 pass 2 scope selection.",
+        "status": "Phase 8.3 Microsoft Store Release -- MSIX and AAB for version 0-18-0 built and verified 2026-10-09, awaiting Harold uploads; 8.2 pass 1 complete; next 8.4 pass 2 scope selection",
         "plan_approved": false,
         "blanket_execution_approved": false,
         "pr_number": null,
