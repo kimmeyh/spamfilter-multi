@@ -33,6 +33,8 @@ import 'background_mode_service.dart';
 import 'background_scan_core.dart';
 import 'background_scan_trigger.dart';
 import 'diagnostic_logger.dart';
+import 'f264_upgrade_migration.dart';
+import 'notification_account_filter.dart';
 import 'scan_sheet_export.dart';
 
 /// Prefix for the per-account WorkManager task name, mirroring the Windows
@@ -69,6 +71,7 @@ void androidBackgroundScanDispatcher() {
       accountId: accountId,
       isTest: isTest,
       retryOnFailure: retryOnFailureFor(inputData),
+      notificationProviders: notificationProvidersFor(inputData),
       // F252: computed HERE, at entry, so the delay measures how long Android
       // held the work back -- not the worker's own setup time.
       trigger: describeBackgroundTrigger(
@@ -101,6 +104,17 @@ bool retryOnFailureFor(Map<String, dynamic>? inputData) {
   return source != 'notification' && source != 'doze-alarm';
 }
 
+/// F264 (Sprint 77): the providers a NOTIFICATION-started run may scan, or null
+/// when the run is not a notification run (periodic, Doze alarm, test), which
+/// keeps its own rules. A notification run whose payload carries no provider
+/// set (a build that did not send one) reads as "every provider".
+@visibleForTesting
+String? notificationProvidersFor(Map<String, dynamic>? inputData) {
+  if (inputData?[kTriggerSourceKey] != 'notification') return null;
+  final providers = inputData?[kTriggerProvidersKey];
+  return providers is String ? providers : kAnyProvider;
+}
+
 /// The value handed back to WorkManager: `true` = done, `false` = retry.
 @visibleForTesting
 bool workerResult({required bool allSucceeded, required bool retryOnFailure}) =>
@@ -125,6 +139,7 @@ class AndroidBackgroundScanWorker {
     bool isTest = false,
     String? trigger,
     bool retryOnFailure = true,
+    String? notificationProviders,
   }) async {
     _logger.i('Android background scan started'
         '${accountId != null ? ' for ${Redact.accountId(accountId)}' : ' (all accounts)'}'
@@ -171,22 +186,55 @@ class AndroidBackgroundScanWorker {
         }
       }
 
+      // F264 (Q9 = 1): a notification run proves the native app-wide flag was
+      // ON. If the upgrade conversion has not yet run (the user has not opened
+      // the app since updating), do it here so the first notification does not
+      // find every per-account switch unset and scan nothing.
+      if (notificationProviders != null) {
+        await NewMailSwitchMigration(
+          settingsStore: settingsStore,
+          getAccountIds: credStore.getSavedAccounts,
+        ).runIfNeeded(nativeFlagWasOn: true);
+      }
+
       var allSucceeded = true;
       for (final id in accountIds) {
         // Skip disabled accounts unless this is a test run (same rule as the
         // Windows worker).
+        var backgroundEnabled = true;
         if (!isTest) {
-          final enabled = await settingsStore.getEffectiveBackgroundEnabled(id);
-          if (!enabled) continue;
+          backgroundEnabled =
+              await settingsStore.getEffectiveBackgroundEnabled(id);
+          if (!backgroundEnabled) continue;
         }
+
+        // F264: a notification run scans only accounts whose OWN new-mail
+        // switch is on (checked before the platform lookup so a switched-off
+        // account is never counted as a failure).
+        final newMailSwitch =
+            notificationProviders == null ||
+                await settingsStore.getAccountNewMailTrigger(id) == true;
 
         final platformId =
             await BackgroundScanCore.resolvePlatformId(credStore, id);
 
         if (platformId == null) {
+          if (!newMailSwitch) continue;
           _logger.w('Cannot determine platform for ${Redact.accountId(id)}, '
               'skipping');
           allSucceeded = false;
+          continue;
+        }
+
+        if (notificationProviders != null &&
+            !accountSelectedByNotification(
+              providers: notificationProviders,
+              platformId: platformId,
+              newMailSwitch: newMailSwitch,
+              backgroundEnabled: backgroundEnabled,
+            )) {
+          workerLog('account ${Redact.accountId(id)} not selected by this '
+              'notification (provider or new-mail switch)');
           continue;
         }
 

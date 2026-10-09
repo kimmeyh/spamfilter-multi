@@ -363,5 +363,7 @@ class _FakeScanProvider extends EmailScanProvider {
   final List<List<String>> _rows;
 
   @override
-  List<List<String>> getExcelRows({bool redact = false}) => _rows;
+  List<List<String>> getExcelRows(
+          {bool redact = false, bool omitAlreadyListedNoRule = false}) =>
+      _rows;
 }

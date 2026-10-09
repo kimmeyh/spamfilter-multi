@@ -44,10 +44,14 @@ This directory contains Architectural Decision Records for the spamfilter-multi 
 | [0036](0036-msix-signing-strategy.md) | MSIX Signing Strategy for Windows Store Submission | Accepted | 2026-03-19 |
 | [0037](0037-ui-accessibility-standards.md) | UI/Accessibility Standards and Cross-Platform Compatibility | Accepted | 2026-06-26 |
 | [0038](0038-content-management-for-long-strings.md) | Content Management for Long User-Facing Strings | Accepted | 2026-05-18 |
-| [0039](0039-per-account-background-scanning.md) | Per-Account Background Scanning | Accepted (amended F235, MV74-2) | 2026-09-25 |
+| [0039](0039-per-account-background-scanning.md) | Per-Account Background Scanning | Accepted (amended F235, MV74-2, F264, Sprint 77 MV-Q2) | 2026-10-07 |
 | [0040](0040-two-e2e-test-harnesses.md) | Two E2E Test Harnesses (WinWright + Flutter integration_test) | Accepted | 2026-06-21 |
 | [0041](0041-environment-propagation-single-source.md) | Environment Propagation: APP_ENV Dart-Define Single Source of Truth | Accepted | 2026-07-22 |
 | [0042](0042-cross-platform-parity-and-platform-exceptions.md) | Cross-Platform Parity: Same Everywhere, with Explicit Minimal Platform Exceptions (incl. platform factories) | Accepted | 2026-08-18 |
+| [0043](0043-one-version-across-platforms-per-store-release-notes.md) | One Version Across All Platforms; Release Notes Derived per Store | Accepted | 2026-09-08 |
+| [0044](0044-notification-triggered-scan.md) | Scan When a Mail App Says New Mail Arrived (Android Notification Listener; per account since Sprint 77) | Accepted | 2026-10-05 |
+| [0045](0045-no-rule-entry-identity.md) | Identity and Refresh Semantics of a No Rule Entry | Accepted | 2026-10-06 |
+| [0046](0046-imap-certificate-trust.md) | IMAP Certificate Trust (TOFU for Custom Servers) and the Google OAuth Issuing-Authority Pin | Accepted | 2026-10-07 |
 
 ## Creating a New ADR
 

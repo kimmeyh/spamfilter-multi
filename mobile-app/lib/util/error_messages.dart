@@ -28,6 +28,8 @@ import 'dart:io';
 import '../adapters/email_providers/spam_filter_platform.dart';
 import '../adapters/storage/secure_credentials_store.dart';
 import '../core/security/auth_rate_limiter.dart';
+import '../core/security/certificate_pinner.dart'
+    show CertificatePinMismatchException;
 import '../core/services/email_scanner.dart' show ScanFetchFailedException;
 
 /// Converts common exception types into a short, human-readable sentence.
@@ -57,8 +59,16 @@ class ErrorMessages {
       // (Gmail Google Sign-In) have no password for the user to check.
       return 'Sign-in failed. Please check your sign-in details and try again.';
     }
+    if (error is UserFacingConnectionException) {
+      // F192: the adapter already wrote a safe sentence for this failure.
+      return error.userMessage;
+    }
     if (error is ConnectionException) {
       return 'Unable to connect to the email server. Please check your internet connection and try again.';
+    }
+    if (error is CertificatePinMismatchException) {
+      // SEC-8b: Google sign-in stopped by the issuing-authority pin.
+      return CertificatePinMismatchException.userMessage;
     }
     if (error is CredentialStorageException) {
       return 'Unable to save your account. Please try again.';

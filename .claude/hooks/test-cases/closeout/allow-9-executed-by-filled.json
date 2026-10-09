@@ -1,0 +1,9 @@
+{
+  "cwd": "D:/Data/Harold/github/spamfilter-multi/.claude/hooks/test-cases/fixtures/executed-by-filled-sprint",
+  "branch_override": "feature/20261010_Sprint_77",
+  "hook_event_name": "Stop",
+  "dirty_zero_files_override": "",
+  "skip_git_checks": true,
+  "session_id": "closeout-allow-9",
+  "last_assistant_message": "Sprint 77 is fully closed out. Ready for the next sprint."
+}

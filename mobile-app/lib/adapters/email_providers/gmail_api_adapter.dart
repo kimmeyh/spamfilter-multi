@@ -929,11 +929,19 @@ class GmailApiAdapter with BatchOperationsMixin implements SpamFilterPlatform {
         await _gmailApi!.users.messages.trash('me', message.id);
         Redact.logSafe('Gmail message ${message.id} moved to trash');
       } else {
-        // Use modify API for custom labels
+        // Sprint 77 Phase 5.1.2 F-PRECHECK: the SAME source-aware label
+        // change as the batch path (`takeActionBatch` delete ->
+        // `moveToFolderBatch` -> `_resolvedMoveLabels`). This path used to
+        // remove only INBOX and UNREAD, so a "deleted" message found in Spam
+        // (or in a custom label) kept that label and stayed there. One
+        // helper for both paths is the prevention; a parity test pins it.
+        // Throws GmailLabelNotFoundException for a missing label (F258, Q16).
+        final labels = await _resolvedMoveLabels(
+            sourceFolder: message.folderName, targetFolder: targetLabel);
         await _gmailApi!.users.messages.modify(
           gmail.ModifyMessageRequest(
-            addLabelIds: [targetLabel],
-            removeLabelIds: ['INBOX', 'UNREAD'],
+            addLabelIds: labels.add,
+            removeLabelIds: labels.remove,
           ),
           'me',
           message.id,
@@ -953,8 +961,11 @@ class GmailApiAdapter with BatchOperationsMixin implements SpamFilterPlatform {
     }
 
     try {
-      // Map folder name to Gmail label
-      String labelId = _folderToLabelId(targetFolder);
+      // F258: resolve folder name to Gmail label ID (works for system and custom labels)
+      final labelId = await _labelIdFor(targetFolder);
+      if (labelId == null) {
+        throw GmailLabelNotFoundException(targetFolder);
+      }
 
       // Modify message labels
       await _gmailApi!.users.messages.modify(
@@ -1312,6 +1323,55 @@ class GmailApiAdapter with BatchOperationsMixin implements SpamFilterPlatform {
     return (add: [target], remove: remove.toList());
   }
 
+  /// F258 (Sprint 77): async wrapper that resolves custom label names to IDs.
+  /// Extends moveLabels (which is pure and static) with:
+  /// - Resolution of custom target folder names to their Gmail label IDs
+  /// - Removal of custom source labels when moving between folders (Q17)
+  /// Throws [GmailLabelNotFoundException] if the target label does not exist.
+  /// If the source label cannot be resolved, it is kept (no throw).
+  Future<({List<String> add, List<String> remove})> _resolvedMoveLabels({
+    required String sourceFolder,
+    required String targetFolder,
+  }) async {
+    // Get the base label changes from the pure function
+    final base = moveLabels(sourceFolder: sourceFolder, targetFolder: targetFolder);
+
+    // Resolve custom target label: system labels pass through, custom labels need ID lookup
+    final targetId = await _labelIdFor(targetFolder);
+    if (targetId == null) {
+      throw GmailLabelNotFoundException(targetFolder);
+    }
+
+    // Q17: when moving OUT of a custom source label, remove it by ID.
+    // If sourceId is null, the source label does not exist; keep remove as-is.
+    final sourceId = await _labelIdFor(sourceFolder);
+    return withResolvedIds(base: base, targetId: targetId, sourceId: sourceId);
+  }
+
+  /// The final label change once the IDs are known. Pure, so the invariant
+  /// is tested directly: a label is NEVER both added and removed.
+  ///
+  /// Gmail refuses a request that adds and removes the same label (400
+  /// "Cannot both add and remove the same label") and fails the WHOLE batch
+  /// group. Sprint 77 Phase 5.1.2 F-PRECHECK: scanning the custom Deleted
+  /// Rule label itself, a block rule's "move to that label" resolved source
+  /// and target to the same ID; the source was added to `remove` without
+  /// excluding the target (the pure [moveLabels] always excluded it). The
+  /// target is now removed from `remove` as the last step, whatever produced
+  /// the list.
+  @visibleForTesting
+  static ({List<String> add, List<String> remove}) withResolvedIds({
+    required ({List<String> add, List<String> remove}) base,
+    required String targetId,
+    required String? sourceId,
+  }) {
+    final remove = <String>{
+      ...base.remove,
+      if (sourceId != null && !isSystemLabelId(sourceId)) sourceId,
+    }..remove(targetId);
+    return (add: [targetId], remove: remove.toList());
+  }
+
   /// Sprint 76: label NAME -> label ID for `users.history.list`, cached for
   /// this connection. System labels are their own IDs. null = no such label.
   final Map<String, String?> _labelIds = {};
@@ -1417,8 +1477,9 @@ class GmailApiAdapter with BatchOperationsMixin implements SpamFilterPlatform {
     }
 
     try {
+      // F258: use the resolved wrapper to handle custom label IDs
       // Sprint 76: the source-aware label change (see moveLabels).
-      final labels = moveLabels(
+      final labels = await _resolvedMoveLabels(
           sourceFolder: message.folderName, targetFolder: targetFolder);
       await _gmailApi!.users.messages.modify(
         gmail.ModifyMessageRequest(
@@ -1727,8 +1788,26 @@ class GmailApiAdapter with BatchOperationsMixin implements SpamFilterPlatform {
     }
 
     for (final group in bySource.entries) {
-      final labels =
-          moveLabels(sourceFolder: group.key, targetFolder: targetFolder);
+      // F258: use the resolved wrapper to handle custom label IDs
+      // Sprint 76: one batchModify per source folder -- the labels removed depend
+      // on where each message is (see moveLabels).
+      //
+      // The lookup can now THROW (an unknown label -- Q16 -- or a failed
+      // labels.list), which the pure moveLabels never did. It is caught per
+      // source group so each message gets the named failure and the rest of
+      // the batch continues; an escaping throw would discard every result
+      // already collected (lead review, Sprint 77).
+      final ({List<String> add, List<String> remove}) labels;
+      try {
+        labels = await _resolvedMoveLabels(
+            sourceFolder: group.key, targetFolder: targetFolder);
+      } catch (e) {
+        Redact.logError('Gmail batch moveToFolder "$targetFolder": label lookup failed', e);
+        for (final id in group.value) {
+          failed[id] = e.toString();
+        }
+        continue;
+      }
       final allIds = group.value;
       for (var i = 0; i < allIds.length; i += _gmailBatchLimit) {
         final chunk = allIds.sublist(
@@ -1954,5 +2033,19 @@ class _GoogleAuthClient extends http.BaseClient {
     request.headers.addAll(_headers);
     return _client.send(request);
   }
+}
+
+/// F258 (Sprint 77): Custom exception thrown when a Gmail label cannot be resolved.
+/// This occurs when a rule targets a custom label that does not exist on the account.
+/// Q16: The application fails the action with a named error rather than auto-creating
+/// the label, so the user can correct their Settings.
+class GmailLabelNotFoundException implements Exception {
+  final String labelName;
+
+  GmailLabelNotFoundException(this.labelName);
+
+  @override
+  String toString() =>
+      "Gmail label '$labelName' was not found -- choose the folder again in Settings";
 }
 

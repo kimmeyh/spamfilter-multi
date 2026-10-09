@@ -11,7 +11,8 @@ import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 import '../../core/providers/selected_account_provider.dart';
 import 'package:logger/logger.dart';
-import '../../core/services/scan_frequency.dart';
+import '../../core/services/scan_interval.dart';
+import '../../core/services/f264_upgrade_migration.dart';
 import '../../core/services/background_scan_windows_worker.dart';
 import '../../core/services/background_scan_scheduler.dart';
 import '../../core/storage/database_helper.dart';
@@ -28,6 +29,7 @@ import '../../adapters/email_providers/email_provider.dart' show Credentials;
 import '../widgets/app_bar_with_exit.dart';
 import '../widgets/battery_optimization_row.dart'; // F252 (Sprint 76)
 import '../widgets/new_mail_trigger_row.dart'; // F253 (Sprint 76)
+import '../widgets/scan_interval_control.dart'; // F264 (Sprint 77)
 import '../widgets/standard_app_bar_actions.dart';
 import 'folder_selection_screen.dart';
 import 'help_screen.dart';
@@ -55,6 +57,15 @@ import '../widgets/system_inset_wrapper.dart'; // F209 (Sprint 69)
 ///   MaterialPageRoute(builder: (_) => const SettingsScreen()),
 /// );
 /// ```
+/// F264 Q12 (Sprint 77): the ONE Android timing note on the Background tab.
+/// Harold's wording; replaces the F217 note ("up to about an hour"). Shown only
+/// on Android (the F217 declared ADR-0042 exception: Windows Task Scheduler has
+/// no Doze equivalent).
+const String kAndroidBackgroundNote =
+    'Android runs background scans when the phone allows. While the phone is '
+    'idle, expect up to about 45 minutes between scans, even with a shorter '
+    'interval. Opening the app runs any work that was waiting.';
+
 class SettingsScreen extends StatefulWidget {
   /// F168 (Sprint 61): does this folder scope cover the Inbox?
   ///
@@ -85,6 +96,31 @@ class SettingsScreen extends StatefulWidget {
   /// behavior change -- the field is nullable, not removed.
   final String? accountId;
 
+  /// Test seam (ADR-0042 point 4, F264 Sprint 77): force the Android branch of
+  /// the Background tab's Android-only rows (the new-mail switch and the
+  /// Android timing note) on a Windows test host. Null = the real platform.
+  /// The battery row keeps the real check because it talks to the OS.
+  @visibleForTesting
+  static bool? debugIsAndroid;
+
+  /// Whether the Android-only Background rows show (Windows hides them).
+  static bool get showsAndroidBackgroundRows =>
+      debugIsAndroid ?? Platform.isAndroid;
+
+  /// Subtitle of the "Pin Google OAuth certificates" switch, per platform
+  /// (Sprint 77 Phase 5.1.2 F-PRECHECK). On Windows the switch controls the
+  /// pinned Google sign-in and token renewal calls; on Android sign-in goes
+  /// through the system and the switch does not apply.
+  static String certificatePinningSubtitle({required bool isAndroid}) =>
+      isAndroid
+          ? 'On Android, Google sign-in uses Android\'s own sign-in service '
+              'and the system\'s certificate checks; this switch does not '
+              'change them.'
+          : 'Google sign-in connects only when the server certificate was '
+              'issued by Google Trust Services. Turn off only if Google '
+              'sign-in fails with a certificate message on a network you '
+              'trust.';
+
   const SettingsScreen({super.key, this.accountId});
 
   @override
@@ -107,6 +143,7 @@ class _SettingsScreenState extends State<SettingsScreen> with SingleTickerProvid
   bool _confirmDialogsEnabled = SettingsStore.defaultConfirmDialogsEnabled;
   bool _backgroundScanEnabled = SettingsStore.defaultBackgroundScanEnabled;
   int _backgroundScanFrequency = SettingsStore.defaultBackgroundScanFrequency;
+  String? _accountPlatformId; // F264: names the mail apps in the new-mail row
   ScanMode _backgroundScanMode = SettingsStore.defaultBackgroundScanMode;
   List<String> _backgroundScanFolders = List.from(SettingsStore.defaultBackgroundScanFolders);
   bool _backgroundScanDebugCsv = SettingsStore.defaultBackgroundScanDebugCsv;
@@ -476,8 +513,19 @@ class _SettingsScreenState extends State<SettingsScreen> with SingleTickerProvid
       // per-account effective enable/frequency, not the global flag.
       _backgroundScanEnabled =
           await _settingsStore.getEffectiveBackgroundEnabled(accountId);
-      _backgroundScanFrequency =
-          await _settingsStore.getEffectiveBackgroundFrequency(accountId);
+      // F264 (Sprint 77): converted to a value the control can show, and
+      // written back when it was converted (one shared rule, never a
+      // hard-coded 15).
+      _backgroundScanFrequency = await reconcileAccountInterval(
+        _settingsStore,
+        accountId,
+        log: (m) => _logger.w(m),
+      );
+      try {
+        _accountPlatformId = await _credStore.getPlatformId(accountId);
+      } catch (_) {
+        _accountPlatformId = null; // only used to name mail apps in a status line
+      }
 
       final accountBgMode = await _settingsStore.getAccountBackgroundScanMode(accountId);
       _backgroundScanMode = accountBgMode ?? await _settingsStore.getBackgroundScanMode();
@@ -931,11 +979,17 @@ class _SettingsScreenState extends State<SettingsScreen> with SingleTickerProvid
         SwitchListTile(
           contentPadding: EdgeInsets.zero,
           title: const Text('Pin Google OAuth certificates'),
-          subtitle: const Text(
-            'Rejects TLS connections to Google sign-in endpoints whose '
-            'certificate does not match the pinned hashes. Turn off if you '
-            'start seeing sign-in failures after a Google CA rotation.',
-          ),
+          // SEC-8b (Sprint 77): describes what `PinnedHttpClient` does on every
+          // connection (chain must lead to a Google Trust Services root). It
+          // does not cover Custom IMAP certificate trust. Text per platform
+          // (F-PRECHECK; ADR-0042 declared difference): only the desktop
+          // sign-in, renewal and user-info calls in
+          // `gmail_windows_oauth_handler.dart` use `PinnedHttpClient`; Android
+          // signs in through google_sign_in / flutter_appauth, which use the
+          // system's own certificate checks, so the switch changes nothing
+          // there and the text must not claim it does.
+          subtitle: Text(SettingsScreen.certificatePinningSubtitle(
+              isAndroid: SettingsScreen.showsAndroidBackgroundRows)),
           value: _certificatePinningEnabled,
           onChanged: (value) async {
             await _settingsStore.setCertificatePinningEnabled(value);
@@ -1440,8 +1494,19 @@ class _SettingsScreenState extends State<SettingsScreen> with SingleTickerProvid
 
       bool success;
       if (enabled) {
-        final frequency = ScanFrequency.fromMinutes(_backgroundScanFrequency);
-        if (frequency == ScanFrequency.disabled) return;
+        // F264 (Sprint 77): the gate is the shared range check, not a lookup
+        // in a fixed list. The old `ScanFrequency.fromMinutes(...)` returned
+        // "disabled" for 120 and 240 minutes -- values this screen itself
+        // offered -- so saving them persisted the override, scheduled
+        // NOTHING and showed no message. The control cannot produce a value
+        // that fails this check; it stays as a defensive guard that LOGS.
+        final minutes = _backgroundScanFrequency;
+        final invalid = ScanInterval.validate(minutes);
+        if (invalid != null) {
+          _logger.w('Not scheduling: interval $minutes minutes is invalid '
+              '($invalid)');
+          return;
+        }
 
         // F161 R-2: POST_NOTIFICATIONS is requested HERE, at the moment the
         // user enables the feature whose completion notification needs it --
@@ -1450,16 +1515,17 @@ class _SettingsScreenState extends State<SettingsScreen> with SingleTickerProvid
         await _requestNotificationPermissionIfNeeded();
 
         success = await scheduler.schedule(
-            accountId: accountId, frequency: frequency);
+            accountId: accountId, intervalMinutes: minutes);
 
         if (success) {
-          _logger.i('Scheduled background scan updated: ${frequency.label} '
+          _logger.i('Scheduled background scan updated: '
+              '${ScanInterval.label(minutes)} '
               'via ${scheduler.mechanismLabel}');
           if (mounted) {
             ScaffoldMessenger.of(context).showSnackBar(
               SnackBar(
-                  content: Text(
-                      'Background scan scheduled every ${frequency.label}')),
+                  content: Text('Background scan scheduled every '
+                      '${ScanInterval.label(minutes)}')),
             );
           }
         } else {
@@ -1527,10 +1593,12 @@ class _SettingsScreenState extends State<SettingsScreen> with SingleTickerProvid
           const SizedBox(width: 8),
           Expanded(
             child: Text(
-              'Android may delay background scans by up to about an hour '
-              'while the phone is idle or the screen is off, so a scan can run '
-              'later than the interval you choose. Opening the app runs any '
-              'work that was waiting.',
+              // F264 Q12 (Sprint 77): ONE note, replacing the F217 "up to
+              // about an hour" sentence. 45 minutes is the Product Owner's
+              // figure for an idle phone, and it holds even for a shorter
+              // interval, so it must not sit beside a second number.
+              kAndroidBackgroundNote,
+              key: const Key('android_doze_status_text'),
               style: Theme.of(context).textTheme.bodySmall,
             ),
           ),
@@ -1572,41 +1640,48 @@ class _SettingsScreenState extends State<SettingsScreen> with SingleTickerProvid
             await _updateScheduledScan(enabled: value);
           },
         ),
-        // F217 (Sprint 72): the Android sibling of the line above.
-        if (Platform.isAndroid && _backgroundScanEnabled)
-          _buildAndroidDozeStatusLine(),
-        // F252 (Sprint 76): the fix for what the line above describes --
-        // Battery > Unrestricted. Shown whenever background scanning is on.
+        // F264 R-11 (Sprint 77): "Scan every" sits right under the enable
+        // switch, on BOTH platforms (one control, same UI). Shown even when
+        // background scanning is OFF (ISSUE #123+#124), so the user can set it
+        // first. A change saves the PER-ACCOUNT override (F98, ADR-0039) and
+        // reschedules through the platform factory when enabled.
+        Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+          child: ScanIntervalControl(
+            initialMinutes: _backgroundScanFrequency,
+            onCommit: (minutes) async {
+              setState(() => _backgroundScanFrequency = minutes);
+              await _settingsStore.setAccountBackgroundFrequency(
+                  _requireAccountId, minutes);
+              if (_backgroundScanEnabled) {
+                await _updateScheduledScan(enabled: true);
+              }
+            },
+          ),
+        ),
+        // F253 + F264: event-driven scans from mail-app notifications, per
+        // ACCOUNT. NOT gated on this account's background switch (review M-1,
+        // Sprint 76). Android only; HIDDEN on Windows (Q10 = 1, ADR-0044's
+        // declared exception: Windows has no mail-app notification to listen
+        // to).
+        if (SettingsScreen.showsAndroidBackgroundRows)
+          NewMailTriggerRow(
+            key: ValueKey('new_mail_trigger_${_requireAccountId}'),
+            accountId: _requireAccountId,
+            platformId: _accountPlatformId,
+          ),
+        // F252 (Sprint 76): Battery > Unrestricted. Shown whenever background
+        // scanning is on.
         if (Platform.isAndroid && _backgroundScanEnabled)
           const BatteryOptimizationRow(),
-        // F253 (Sprint 76): event-driven scans from mail-app notifications.
-        // App-wide (it scans every background-enabled account), so it is NOT
-        // gated on this account's background switch -- review M-1: gating it
-        // hid the only control while the feature kept running for others.
-        if (Platform.isAndroid) const NewMailTriggerRow(),
+        // F217 (Sprint 72) / F264 Q12: the ONE Android timing note.
+        if (SettingsScreen.showsAndroidBackgroundRows &&
+            _backgroundScanEnabled)
+          _buildAndroidDozeStatusLine(),
         const Divider(),
-        // [UPDATED] FB-4: Test section moved before Frequency
+        // [UPDATED] FB-4: Test section
         _buildSectionHeader('Test'),
         _buildTestBackgroundScanButton(),
-        const SizedBox(height: 24),
-        // [UPDATED] ISSUE #123+#124: Show UI sections even when Background Scan is OFF
-        _buildSectionHeader('Frequency'),
-        _buildFrequencySelector(
-          value: _backgroundScanFrequency,
-          onChanged: (freq) async {
-            setState(() => _backgroundScanFrequency = freq);
-            // F98 (ADR-0039): write the PER-ACCOUNT frequency override.
-            await _settingsStore
-                .setAccountBackgroundFrequency(_requireAccountId, freq);
-            // Reschedule at the new frequency if enabled -- platform-free
-            // since F161; the factory owns the platform decision (the old
-            // Platform.isWindows gate here starved Android identically to
-            // the enable toggle above).
-            if (_backgroundScanEnabled) {
-              await _updateScheduledScan(enabled: true);
-            }
-          },
-        ),
         const SizedBox(height: 24),
         // [UPDATED] ISSUE #221: Scan Mode moved above Scan Range and Default Folders
         // to match Manual Scan tab section order
@@ -2447,26 +2522,6 @@ class _SettingsScreenState extends State<SettingsScreen> with SingleTickerProvid
           ],
         ),
       ),
-    );
-  }
-
-  Widget _buildFrequencySelector({
-    required int value,
-    required Future<void> Function(int) onChanged,
-  }) {
-    final frequencies = [15, 30, 60, 120, 240];
-
-    return DropdownButtonFormField<int>(
-      value: frequencies.contains(value) ? value : 15,
-      decoration: const InputDecoration(
-        border: OutlineInputBorder(),
-        labelText: 'Scan every',
-      ),
-      items: frequencies.map((freq) {
-        final label = freq < 60 ? '$freq minutes' : '${freq ~/ 60} hour${freq > 60 ? "s" : ""}';
-        return DropdownMenuItem(value: freq, child: Text(label));
-      }).toList(),
-      onChanged: (v) => v != null ? onChanged(v) : null,
     );
   }
 

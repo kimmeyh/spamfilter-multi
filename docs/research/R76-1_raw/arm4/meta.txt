@@ -1,0 +1,4 @@
+arm4 start epoch=1791353281 minutes=20 cadence=0
+Now forced in to deep idle mode
+idle epoch=1791353404
+end epoch=1791354610 notifications_posted=0

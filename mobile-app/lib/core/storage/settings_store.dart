@@ -595,6 +595,27 @@ class SettingsStore {
     return value == 'true';
   }
 
+  /// F264 (Sprint 77): this account's "Scan when new mail arrives" switch
+  /// (Android). Null = never set, which reads as OFF. Stored with the other
+  /// per-account background settings (Q8 = 1); the native listener keeps only
+  /// ONE "any account on" flag (`NewMailTriggerSync`), because it runs without
+  /// a Flutter engine and cannot read this database.
+  Future<bool?> getAccountNewMailTrigger(String accountId) async {
+    final value = await _getAccountSetting(accountId, 'new_mail_trigger');
+    if (value == null) return null;
+    return value == 'true';
+  }
+
+  /// F264: see [getAccountNewMailTrigger]. Pass null to clear.
+  Future<void> setAccountNewMailTrigger(String accountId, bool? enabled) async {
+    if (enabled == null) {
+      await _deleteAccountSetting(accountId, 'new_mail_trigger');
+    } else {
+      await _setAccountSetting(
+          accountId, 'new_mail_trigger', enabled.toString(), 'bool');
+    }
+  }
+
   /// F239 (Sprint 75): true when this Gmail account's sign-in could not be
   /// renewed without the user -- the account list then offers "Sign In
   /// Again". Set where renewal fails; cleared when a Gmail credential load
@@ -631,6 +652,63 @@ class SettingsStore {
     if (value == null) return null;
     return int.tryParse(value);
   }
+
+  /// Sprint 77 MV-Q2 = 1: this account's fixed schedule slot, which sets its
+  /// start stagger (`ScanInterval.staggerMinutes`). Allocated ONCE, on the
+  /// first schedule, as the smallest slot no other account holds, and then
+  /// kept. A slot computed from the account list would shift when an account
+  /// that sorts earlier is added, while the existing tasks keep their old
+  /// start, so two accounts would collide again; a saved slot never moves.
+  /// A removed account's slot stays held, which leaves a gap, never a clash.
+  Future<int> getOrAllocateScheduleSlot(String accountId) async {
+    final db = await _dbHelper.database;
+    // One transaction for the read and the write: SQLite runs a transaction
+    // on this connection to completion before the next one starts, so two
+    // first allocations cannot both read the same "taken" set and choose the
+    // same slot. (Sprint 77 final review, finding 6.)
+    final slot = await db.transaction<int>((txn) async {
+      final ownRows = await txn.query(
+        'account_settings',
+        columns: ['setting_value'],
+        where: 'account_id = ? AND setting_key = ?',
+        whereArgs: [accountId, _scheduleSlotKey],
+      );
+      final own = ownRows.isEmpty
+          ? null
+          : int.tryParse(ownRows.first['setting_value'] as String? ?? '');
+      if (own != null && own >= 0) return own;
+      final rows = await txn.query(
+        'account_settings',
+        columns: ['setting_value'],
+        where: 'setting_key = ? AND account_id != ?',
+        whereArgs: [_scheduleSlotKey, accountId],
+      );
+      final taken = rows
+          .map((r) => int.tryParse(r['setting_value'] as String? ?? ''))
+          .whereType<int>()
+          .toSet();
+      var next = 0;
+      while (taken.contains(next)) {
+        next++;
+      }
+      await txn.insert(
+        'account_settings',
+        {
+          'account_id': accountId,
+          'setting_key': _scheduleSlotKey,
+          'setting_value': '$next',
+          'value_type': 'int',
+          'date_modified': DateTime.now().millisecondsSinceEpoch,
+        },
+        conflictAlgorithm: ConflictAlgorithm.replace,
+      );
+      return next;
+    });
+    _logger.d('Schedule slot for ${Redact.accountId(accountId)} is $slot');
+    return slot;
+  }
+
+  static const String _scheduleSlotKey = 'schedule_slot';
 
   /// Set account-specific background scan frequency (minutes) override.
   /// Pass null to clear the override. (Sprint 42, F98.)

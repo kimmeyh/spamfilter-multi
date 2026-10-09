@@ -3,6 +3,7 @@ import 'package:sqflite/sqflite.dart';
 import 'package:logger/logger.dart';
 
 import '../../adapters/storage/app_paths.dart';
+import '../services/pattern_compiler.dart';
 
 /// Minimal database interface for rule storage operations
 abstract class RuleDatabaseProvider {
@@ -63,7 +64,17 @@ abstract class RuleDatabaseProvider {
 ///      row, and the scanning isolate reads it on its heartbeat tick and
 ///      requests cancel through its own ScanCoordinator. Existing rows stay
 ///      NULL (no request).
-const int databaseVersion = 11;
+/// v12: unmatched_emails gets last_seen_at (nullable INTEGER, epoch ms) and a
+///      non-unique lookup index on (provider_identifier_type,
+///      provider_identifier_value, folder_name) (F245, Sprint 77, ADR-0045).
+///      The migration also DEDUPS existing rows to one per identity within an
+///      account. The 90-day retention cuts on last_seen_at.
+///
+/// v13: Data only -- repairs stored safe-sender (and rule `from`) patterns with
+///      a stray second literal `@` after the domain wildcard, which could never
+///      match any address (F266, Sprint 77). A repair that would duplicate an
+///      existing row deletes the broken row instead.
+const int databaseVersion = 13;
 
 /// SQLite database helper - singleton pattern
 class DatabaseHelper implements RuleDatabaseProvider {
@@ -330,10 +341,12 @@ class DatabaseHelper implements RuleDatabaseProvider {
         processed INTEGER DEFAULT 0,
         created_at INTEGER NOT NULL,
         auth_classification TEXT,
+        last_seen_at INTEGER,
         FOREIGN KEY (scan_result_id) REFERENCES scan_results(id) ON DELETE CASCADE
       );
     ''');
     await db.execute('CREATE INDEX IF NOT EXISTS idx_unmatched_scan ON unmatched_emails(scan_result_id);');
+    await db.execute('CREATE INDEX IF NOT EXISTS idx_unmatched_identity ON unmatched_emails(provider_identifier_type, provider_identifier_value, folder_name);');
     await db.execute('CREATE INDEX IF NOT EXISTS idx_unmatched_processed ON unmatched_emails(processed);');
     await db.execute('CREATE INDEX IF NOT EXISTS idx_unmatched_availability ON unmatched_emails(availability_status);');
 
@@ -665,6 +678,317 @@ class DatabaseHelper implements RuleDatabaseProvider {
       }
       _logger.i('v11 migration complete');
     }
+
+    if (oldVersion < 12) {
+      await _migrateV12UnmatchedIdentity(db);
+    }
+
+    if (oldVersion < 13) {
+      await _migrateV13UnmatchableAtSign(db);
+    }
+  }
+
+  /// v13 (F266, Sprint 77): repair stored patterns that can never match.
+  ///
+  /// 23 bundled safe senders shipped with a stray second literal `@` after
+  /// the domain wildcard (`...)*@banking\.jpmchase\.com$`), so those senders
+  /// were not protected. The fix to the bundled asset only reaches fresh
+  /// installs; this migration repairs existing databases.
+  ///
+  /// Data only, no schema change. Plain SELECT, UPDATE and DELETE by primary
+  /// key inside sqflite's upgrade transaction, the same primitives v7, v10 and
+  /// v12 use: sqflite on Android and sqflite_common_ffi on Windows run the
+  /// identical SQLite statements, and the rewrite logic is shared Dart
+  /// ([PatternCompiler.repairStrayAtAfterDomainWildcard]).
+  ///
+  /// `safe_senders.pattern` is UNIQUE, so a rewrite that would collide with an
+  /// existing row deletes the broken row instead. Also walked:
+  /// `safe_senders.exception_patterns`, and the rules columns
+  /// `condition_from`, `exception_from`, `condition_header` and
+  /// `exception_header` (rules the app creates for a From address are stored
+  /// in `condition_header`). Header columns get ONLY the narrow stray-@
+  /// repair, never the general check. A row whose JSON cannot be read, and a
+  /// pattern that is unmatchable in a shape this repair does not fix, are
+  /// each logged by row id (never the pattern text) and counted in the
+  /// summary line; neither is rewritten.
+  /// Guarded on each TABLE existing (partial test schemas) like v10 to v12.
+  Future<void> _migrateV13UnmatchableAtSign(Database db) async {
+    _logger.i('Applying v13 migration: repair unmatchable @ patterns');
+    final now = DateTime.now().millisecondsSinceEpoch;
+
+    final ssCols = (await db.rawQuery('PRAGMA table_info(safe_senders)'))
+        .map((r) => r['name'] as String)
+        .toSet();
+    var ssRepaired = 0;
+    var ssDeleted = 0;
+    var ssUnrepairable = 0;
+    var skippedRows = 0;
+    var unrepairable = 0;
+    if (ssCols.isNotEmpty) {
+      final rows = await db.query('safe_senders', columns: ['id', 'pattern']);
+      for (final row in rows) {
+        final old = row['pattern'] as String;
+        final repaired = PatternCompiler.repairStrayAtAfterDomainWildcard(old);
+        if (repaired == null) {
+          // Clean, or unmatchable in a shape this migration does not repair.
+          // The second case must not be silent (final review, finding 7b).
+          if (PatternCompiler.detectUnmatchable(old).isNotEmpty) {
+            ssUnrepairable++;
+            _logger.w('v13: safe_senders id=${row['id']} cannot match but is '
+                'not the repairable shape; left as is');
+          }
+          continue;
+        }
+        final clash = await db.query('safe_senders',
+            columns: ['id'], where: 'pattern = ?', whereArgs: [repaired]);
+        if (clash.isNotEmpty) {
+          await db.delete('safe_senders',
+              where: 'id = ?', whereArgs: [row['id']]);
+          ssDeleted++;
+        } else {
+          await db.update(
+              'safe_senders',
+              {
+                'pattern': repaired,
+                if (ssCols.contains('date_modified')) 'date_modified': now,
+              },
+              where: 'id = ?',
+              whereArgs: [row['id']]);
+          ssRepaired++;
+        }
+      }
+    }
+
+    // safe_senders.exception_patterns: matched against one address, so the
+    // full unmatchable check applies. SafeSenderDatabaseStore rejects an
+    // unmatchable exception on update, so one left here would block every
+    // edit of its row.
+    var ssExceptionRowsRepaired = 0;
+    if (ssCols.contains('exception_patterns')) {
+      final rows = await db.query('safe_senders',
+          columns: ['id', 'exception_patterns'],
+          where: 'exception_patterns IS NOT NULL');
+      for (final row in rows) {
+        final outcome = _repairPatternListJson(row['exception_patterns'],
+            addressColumn: true);
+        if (outcome.error != null) {
+          skippedRows++;
+          _logger.w('v13: safe_senders id=${row['id']} exception_patterns '
+              'skipped, unreadable: ${outcome.error.runtimeType}');
+          continue;
+        }
+        unrepairable += outcome.unrepairable;
+        if (outcome.unrepairable > 0) {
+          _logger.w('v13: safe_senders id=${row['id']} exception_patterns '
+              'has ${outcome.unrepairable} unmatchable entr(ies) that are '
+              'not the repairable shape; left as is');
+        }
+        if (outcome.repairedJson != null) {
+          await db.update('safe_senders',
+              {'exception_patterns': outcome.repairedJson},
+              where: 'id = ?', whereArgs: [row['id']]);
+          ssExceptionRowsRepaired++;
+        }
+      }
+    }
+
+    final ruleCols = (await db.rawQuery('PRAGMA table_info(rules)'))
+        .map((r) => r['name'] as String)
+        .toSet();
+    var rulesRepaired = 0;
+    // From columns hold one address pattern per entry, so the full check
+    // applies. Header columns hold `key:value` text for non-From headers, so
+    // only the NARROW stray-@ repair runs on them (detectUnmatchable alone
+    // could misfire there); From rules the app creates itself live in
+    // condition_header (rule_quick_action_service, rule_edit_screen).
+    final ruleColumns = <String, bool>{
+      if (ruleCols.contains('condition_from')) 'condition_from': true,
+      if (ruleCols.contains('exception_from')) 'exception_from': true,
+      if (ruleCols.contains('condition_header')) 'condition_header': false,
+      if (ruleCols.contains('exception_header')) 'exception_header': false,
+    };
+    if (ruleColumns.isNotEmpty) {
+      final rows = await db.query('rules',
+          columns: ['id', ...ruleColumns.keys]);
+      for (final row in rows) {
+        final updates = <String, Object?>{};
+        ruleColumns.forEach((column, addressColumn) {
+          final raw = row[column];
+          if (raw is! String) return;
+          final outcome =
+              _repairPatternListJson(raw, addressColumn: addressColumn);
+          if (outcome.error != null) {
+            skippedRows++;
+            _logger.w('v13: rules id=${row['id']} $column skipped, '
+                'unreadable: ${outcome.error.runtimeType}');
+            return;
+          }
+          unrepairable += outcome.unrepairable;
+          if (outcome.unrepairable > 0) {
+            _logger.w('v13: rules id=${row['id']} $column has '
+                '${outcome.unrepairable} unmatchable entr(ies) that are not '
+                'the repairable shape; left as is');
+          }
+          if (outcome.repairedJson != null) {
+            updates[column] = outcome.repairedJson;
+          }
+        });
+        if (updates.isNotEmpty) {
+          await db.update('rules', updates,
+              where: 'id = ?', whereArgs: [row['id']]);
+          rulesRepaired++;
+        }
+      }
+    }
+
+    _logger.i('v13 migration complete: $ssRepaired safe sender(s) repaired, '
+        '$ssDeleted broken duplicate(s) deleted, $ssExceptionRowsRepaired '
+        'safe sender exception list(s) repaired, $rulesRepaired rule(s) '
+        'repaired; $skippedRows row(s) skipped as unreadable, '
+        '${ssUnrepairable + unrepairable} unmatchable pattern(s) left as is '
+        'because they are not the repairable shape');
+  }
+
+  /// Repair one JSON-encoded pattern list for the v13 migration.
+  ///
+  /// Returns the re-encoded list in `repairedJson` only when at least one
+  /// entry changed. `error` is set (and nothing else is meaningful) when the
+  /// column is not a JSON array of strings. `unrepairable` counts entries
+  /// that [PatternCompiler.detectUnmatchable] flags but the narrow repair
+  /// cannot fix; that count is only taken for [addressColumn] lists, because
+  /// header lists hold `key:value` text the general check can misread.
+  static ({String? repairedJson, int unrepairable, Object? error})
+      _repairPatternListJson(Object? raw, {required bool addressColumn}) {
+    try {
+      if (raw is! String) {
+        return (repairedJson: null, unrepairable: 0, error: null);
+      }
+      final decoded = jsonDecode(raw);
+      if (decoded is! List) {
+        throw const FormatException('not a JSON array');
+      }
+      // Eager conversion: a lazy cast would only throw later, outside here.
+      final patterns = decoded.map((e) => e as String).toList();
+      var changed = false;
+      var unrepairable = 0;
+      final fixed = <String>[];
+      for (final p in patterns) {
+        final repaired = PatternCompiler.repairStrayAtAfterDomainWildcard(p);
+        if (repaired == null &&
+            addressColumn &&
+            PatternCompiler.detectUnmatchable(p).isNotEmpty) {
+          unrepairable++;
+        }
+        final next = repaired ?? p;
+        if (repaired != null) changed = true;
+        if (!fixed.contains(next)) fixed.add(next);
+      }
+      return (
+        repairedJson: changed ? jsonEncode(fixed) : null,
+        unrepairable: unrepairable,
+        error: null,
+      );
+    } catch (e) {
+      return (repairedJson: null, unrepairable: 0, error: e);
+    }
+  }
+
+  /// v12 (F245, Sprint 77, ADR-0045): one No Rule row per email.
+  ///
+  /// Runs inside sqflite's upgrade transaction (sqflite_common
+  /// `openDatabase` wraps onCreate/onUpgrade in `transaction`), so a failure
+  /// leaves the database at v11. Steps: (1) add `last_seen_at`, (2) back-fill
+  /// it from `created_at`, (3) dedup to ONE row per identity within an account
+  /// (account via `scan_results`, never across accounts), (4) add the
+  /// non-unique lookup index.
+  ///
+  /// Dedup rule: the NEWEST row (highest scan_result_id, then id) survives and
+  /// keeps its own `processed` state, which is the state of the latest sighting
+  /// (the Q20 semantics: a later sighting reset the flag, and a dismissal made
+  /// after it is on the newest row). It takes the OLDEST `created_at` of the
+  /// group (first seen) and the newest `last_seen_at`. The survivor is already
+  /// on the newest scan, so No Rule Review still finds it.
+  ///
+  /// Guarded on the TABLE existing (partial test schemas built at an earlier
+  /// version may lack it) like v10/v11.
+  Future<void> _migrateV12UnmatchedIdentity(Database db) async {
+    _logger.i('Applying v12 migration: unmatched_emails last_seen_at + dedup');
+    final cols = (await db.rawQuery('PRAGMA table_info(unmatched_emails)'))
+        .map((r) => r['name'] as String)
+        .toSet();
+    if (cols.isEmpty) {
+      _logger.i('v12 migration skipped: no unmatched_emails table');
+      return;
+    }
+    if (!cols.contains('last_seen_at')) {
+      await db.execute(
+          'ALTER TABLE unmatched_emails ADD COLUMN last_seen_at INTEGER;');
+    }
+    await db.execute(
+        'UPDATE unmatched_emails SET last_seen_at = created_at '
+        'WHERE last_seen_at IS NULL');
+
+    final scanCols = (await db.rawQuery('PRAGMA table_info(scan_results)'))
+        .map((r) => r['name'] as String)
+        .toSet();
+    if (scanCols.contains('account_id')) {
+      final rows = await db.rawQuery(
+          'SELECT u.id AS id, u.scan_result_id AS scan_id, '
+          'u.created_at AS created_at, u.last_seen_at AS last_seen_at, '
+          's.account_id AS account_id, '
+          'u.provider_identifier_type AS t, u.provider_identifier_value AS v, '
+          'u.folder_name AS f '
+          'FROM unmatched_emails u '
+          'LEFT JOIN scan_results s ON s.id = u.scan_result_id '
+          'ORDER BY u.scan_result_id DESC, u.id DESC');
+      // Rows arrive newest first, so the first row of each identity survives.
+      final survivors = <String, Map<String, Object?>>{};
+      final oldestCreated = <String, int>{};
+      final newestSeen = <String, int>{};
+      final losers = <int>[];
+      for (final r in rows) {
+        // Length-prefixed parts cannot collide the way a plain delimiter can.
+        final parts = [r['account_id'] ?? '', r['t'], r['v'], r['f']]
+            .map((p) => '${p.toString().length}:$p')
+            .join('|');
+        final created = (r['created_at'] as int?) ?? 0;
+        final seen = (r['last_seen_at'] as int?) ?? created;
+        if (survivors.containsKey(parts)) {
+          losers.add(r['id'] as int);
+          if (created < oldestCreated[parts]!) oldestCreated[parts] = created;
+          if (seen > newestSeen[parts]!) newestSeen[parts] = seen;
+        } else {
+          survivors[parts] = r;
+          oldestCreated[parts] = created;
+          newestSeen[parts] = seen;
+        }
+      }
+      for (var i = 0; i < losers.length; i += 500) {
+        final chunk = losers.sublist(
+            i, i + 500 > losers.length ? losers.length : i + 500);
+        await db.delete('unmatched_emails',
+            where: 'id IN (${List.filled(chunk.length, '?').join(',')})',
+            whereArgs: chunk);
+      }
+      for (final entry in survivors.entries) {
+        final r = entry.value;
+        final created = oldestCreated[entry.key]!;
+        final seen = newestSeen[entry.key]!;
+        if (created != (r['created_at'] as int?) ||
+            seen != (r['last_seen_at'] as int?)) {
+          await db.update(
+              'unmatched_emails', {'created_at': created, 'last_seen_at': seen},
+              where: 'id = ?', whereArgs: [r['id']]);
+        }
+      }
+      _logger.i('v12 migration: removed ${losers.length} duplicate No Rule '
+          'row(s), kept ${survivors.length}');
+    }
+
+    await db.execute(
+        'CREATE INDEX IF NOT EXISTS idx_unmatched_identity ON unmatched_emails('
+        'provider_identifier_type, provider_identifier_value, folder_name);');
+    _logger.i('v12 migration complete');
   }
 
   // ============================================================================

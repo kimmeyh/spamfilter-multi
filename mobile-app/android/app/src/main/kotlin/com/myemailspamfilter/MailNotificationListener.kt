@@ -12,8 +12,13 @@ import android.util.Log
  * notification -- the mail app's own "new mail" signal.
  *
  * Harold, 2026-10-05: a notification only says mail arrived; the scan it
- * starts covers every selected folder of every background-enabled account
- * (the worker's normal all-accounts path), Bulk included.
+ * starts covers every selected folder (Bulk included) of the accounts it can
+ * be about. F264 (Sprint 77): the switch is per ACCOUNT and lives in the app
+ * database; this listener cannot read it, so it gates on ONE native "any
+ * account has it on" flag ([KEY_ENABLED]) and hands the Dart worker the
+ * providers the posting app maps to ([MailNotificationPolicy.providersFor]);
+ * the worker selects the accounts (provider + the account's own switch + its
+ * background switch).
  *
  * **Privacy (R-3) -- the whole contract of this class**: it reads ONLY
  * [StatusBarNotification.getPackageName] and [StatusBarNotification.getPostTime].
@@ -43,24 +48,32 @@ class MailNotificationListener : NotificationListenerService() {
         val prefs = applicationContext.getSharedPreferences(PREFS, Context.MODE_PRIVATE)
         try {
             val now = System.currentTimeMillis()
-            val decide = MailNotificationPolicy.shouldTrigger(
+            // Per provider set (F-PRECHECK): the throttle key and the work
+            // name both come from the posting app's providers, so a Gmail
+            // trigger never drops an AOL one.
+            val trigger = MailNotificationPolicy.decide(
                 packageName = pkg,
                 enabled = prefs.getBoolean(KEY_ENABLED, false),
                 nowMs = now,
-                lastTriggerMs = prefs.getLong(KEY_LAST_TRIGGER_MS, 0L),
-            )
-            if (!decide) return
+                lastTriggerMsFor = { key -> prefs.getLong(key, 0L) },
+                debugBuild = BuildConfig.DEBUG,
+            ) ?: return
 
             DozeScanTrigger.enqueueAllAccounts(
                 applicationContext,
                 source = SOURCE_NOTIFICATION,
                 triggerAtMs = postedAt,
                 sourceApp = pkg,
+                // F264: which providers' accounts this app can be about; the
+                // Dart worker picks accounts from it. Derived from the package
+                // name only -- never from the notification's content.
+                providers = trigger.providers,
+                uniqueWorkName = trigger.workName,
             )
             // AFTER a successful enqueue (review HIGH-3): a failed enqueue must
             // not use up the 2-minute throttle.
             prefs.edit()
-                .putLong(KEY_LAST_TRIGGER_MS, now)
+                .putLong(trigger.throttlePrefKey, now)
                 .putString(KEY_LAST_RESULT, "$now|requested a scan after a $pkg notification")
                 .apply()
         } catch (t: Throwable) {
@@ -78,7 +91,9 @@ class MailNotificationListener : NotificationListenerService() {
         private const val TAG = "MailNotificationListener"
         const val PREFS = "f253_new_mail_trigger"
         const val KEY_ENABLED = "enabled"
-        const val KEY_LAST_TRIGGER_MS = "last_trigger_ms"
+        // The last-trigger time is kept per provider set under
+        // MailNotificationPolicy.throttlePrefKey(...) (Sprint 77 F-PRECHECK);
+        // the old single "last_trigger_ms" key is no longer read.
         /** "<epoch ms>|<outcome>" of the most recent trigger attempt. */
         const val KEY_LAST_RESULT = "last_result"
         const val SOURCE_NOTIFICATION = "notification"

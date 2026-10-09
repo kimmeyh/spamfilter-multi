@@ -9,7 +9,9 @@ import '../../core/utils/platform_inference.dart';
 import '../../util/redact.dart';
 import '../../adapters/email_providers/platform_registry.dart';
 import '../../adapters/email_providers/spam_filter_platform.dart';
+import '../../adapters/email_providers/custom_imap_settings.dart';
 import '../../main.dart' show routeObserver;
+import '../utils/credential_labels.dart';
 import '../widgets/skeleton_loader.dart';
 import '../widgets/empty_state.dart';
 import '../widgets/error_display.dart';
@@ -33,10 +35,15 @@ class AccountDisplayData {
   /// the user, so the row offers "Sign In Again".
   final bool signInRequired;
 
+  /// MV-Q8 (Sprint 77): the saved server of a Custom IMAP account, so the
+  /// row says "App Password" for a known app-password server. Null otherwise.
+  final String? imapHost;
+
   AccountDisplayData({
     required this.email,
     required this.platformId,
     this.signInRequired = false,
+    this.imapHost,
   });
 
   @override
@@ -46,11 +53,15 @@ class AccountDisplayData {
           runtimeType == other.runtimeType &&
           email == other.email &&
           platformId == other.platformId &&
-          signInRequired == other.signInRequired;
+          signInRequired == other.signInRequired &&
+          imapHost == other.imapHost;
 
   @override
   int get hashCode =>
-      email.hashCode ^ platformId.hashCode ^ signInRequired.hashCode;
+      email.hashCode ^
+      platformId.hashCode ^
+      signInRequired.hashCode ^
+      imapHost.hashCode;
 }
 
 /// Screen to select existing account or add new one
@@ -260,6 +271,7 @@ class _AccountSelectionScreenState extends State<AccountSelectionScreen> with Wi
         email: email,
         platformId: platformId,
         signInRequired: signInRequired,
+        imapHost: _customImapHost(platformId, creds.additionalParams),
       );
     } catch (e) {
       _logger.e('[FAIL] Error loading account display data for ${Redact.accountId(accountId)}: $e');
@@ -347,7 +359,18 @@ class _AccountSelectionScreenState extends State<AccountSelectionScreen> with Wi
   }
 
   /// Get auth method display name for platform
-  String _getAuthMethodDisplay(String platformId) {
+  /// MV-Q8: the saved server of a Custom IMAP account, null otherwise.
+  static String? _customImapHost(
+      String platformId, Map<String, String>? params) {
+    if (platformId != 'imap' || params == null) return null;
+    return params[CustomImapSettings.keyHost];
+  }
+
+  String _getAuthMethodDisplay(String platformId, {String? imapHost}) {
+    // MV-Q8: a Custom IMAP account on a known app-password server.
+    if (platformId == 'imap' && appPasswordProviderForHost(imapHost) != null) {
+      return 'App Password';
+    }
     try {
       final platform = PlatformRegistry.getPlatform(platformId);
       if (platform != null) {
@@ -355,8 +378,11 @@ class _AccountSelectionScreenState extends State<AccountSelectionScreen> with Wi
         return switch (authMethod) {
           AuthMethod.none => 'None (Demo)',
           AuthMethod.oauth2 => 'OAuth 2.0',
-          AuthMethod.appPassword => 'App Password',
-          AuthMethod.basicAuth => 'Basic Auth',
+          // MV-Q5: one shared word for both, the same one the setup
+          // form's field uses (credential_labels.dart).
+          AuthMethod.appPassword ||
+          AuthMethod.basicAuth =>
+            credentialLabel(authMethod),
           AuthMethod.apiKey => 'API Key',
         };
       }
@@ -372,6 +398,7 @@ class _AccountSelectionScreenState extends State<AccountSelectionScreen> with Wi
       'aol' => 'App Password',
       'yahoo' => 'App Password',
       'icloud' => 'App Password',
+      'imap' => 'Password',
       _ => 'IMAP',
     };
   }
@@ -938,7 +965,8 @@ class _AccountSelectionScreenState extends State<AccountSelectionScreen> with Wi
                       final platformName = _getPlatformName(displayData.platformId);
                       final platformIcon = _getPlatformIcon(displayData.platformId);
                       final platformColor = _getPlatformColor(displayData.platformId);
-                      final authMethod = _getAuthMethodDisplay(displayData.platformId);
+                      final authMethod = _getAuthMethodDisplay(displayData.platformId,
+                          imapHost: displayData.imapHost);
 
                       _logger.d(
                         'Account: $accountId, Email: ${displayData.email}, Platform: ${displayData.platformId}, Auth: $authMethod',

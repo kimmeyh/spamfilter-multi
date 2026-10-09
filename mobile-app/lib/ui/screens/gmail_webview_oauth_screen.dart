@@ -11,6 +11,7 @@ import 'package:my_email_spam_filter/ui/screens/folder_selection_screen.dart';
 import 'package:my_email_spam_filter/util/redact.dart';
 import '../widgets/screen_version_line.dart'; // F229 (Sprint 73)
 import '../widgets/system_inset_wrapper.dart'; // F209 (Sprint 69)
+import '../utils/confirm_replace_account.dart';
 
 /// WebView-based Gmail OAuth for Windows (backup approach)
 /// 
@@ -108,6 +109,15 @@ class _GmailWebViewOAuthScreenState extends State<GmailWebViewOAuthScreen> {
       // Calculate expiry
       final expiresIn = int.tryParse(expiresInStr ?? '3600') ?? 3600;
       final expiresAt = DateTime.now().add(Duration(seconds: expiresIn));
+
+      // Sprint 77 final review: adding an address that is already saved asks
+      // before anything is saved (the shared add-account question).
+      if (!mounted) return;
+      if (!await confirmReplaceExistingAccount(
+          context, SecureCredentialsStore(), email)) {
+        if (mounted) setState(() => _isLoading = false);
+        return;
+      }
 
       // Save tokens using SecureTokenStore (new OAuth architecture)
       final accountId = 'gmail-$email';

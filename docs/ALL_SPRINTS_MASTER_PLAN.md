@@ -4,7 +4,7 @@
 
 **Audience**: Claude Code models planning sprints; User prioritizing future work
 
-**Last Updated**: 2026-10-04 (**Sprint 75 COMPLETE** -- PR #448; F238 shipped, so the 0.17.0 release hold is satisfied; F216, F214, F236, F215, Task 7 delivered; F239 delivered Sign In Again, its Android renewal spike FAILED (-> F246); F243 added at Manual Validation; retro IMP-1..6 applied; F244/F245/F246 added.) Earlier 2026-09-29 (**Sprint 74 COMPLETE** -- PR #440; retro IMP-1/2/3/4/6 applied; F240/F241 added from Category 14; 0.17.0 held for F238.) Earlier 2026-09-27 (Sprint 74 Manual Validation: **F238 (Issue #441) added as the Sprint 75 release blocker for 0.17.0**, model Fable 5.1; no AAB until the Sprint 74 and 75 PRs both merge.) Previous: 2026-09-22 (**Sprint 72 COMPLETE** -- PR #420 -> develop. Ran on the Sprint 71 branch; Sprint 71 was never separately executed and its stub is marked SUPERSEDED. Delivered: F233 diagnostic log + the header-only CSV export fix, F232 mechanism A (historical-view rules now act on the mailbox; MECHANISM B REMAINS UNDIAGNOSED and is now instrumented), F228 honest action toast, F230+F231 action-sheet layout and durable outcomes, F217 honest Doze caveat (MECHANISM DELIBERATELY NOT BUILT -- the "is this the only way" search Harold required found it is not, and that the exemption carries a Play policy cost), F229 export half (the screen half was attempted and REVERTED after it overflowed by 18px at phone width). Suite 2,155 -> 2,233; analyzer clean; hooks 75/0; WinWright 2/2 twice; CI all green. **THREE CRITICAL findings across two reviews, all fixed, none deferred** -- and two of them were defects introduced BY this sprint: the F232 fix created an unintended deletion path from screen load (a method three callers share, the third safe only by accident), and the diagnostic logger silently destroyed concurrent records, which is the exact failure it existed to prevent. Manual validation found F233 shipped with NO UI at all -- ten tests passed via the test seam. Retrospective: Harold 12x Very Good; IMP-1..IMP-5 approved and applied. NEW backlog: F234 (read-only as a preview mode) and F235 (Android Doze via setExactAndAllowWhileIdle, TARGETED FOR SPRINT 73). Earlier history in prior revisions of this line (git).)
+**Last Updated**: 2026-10-08 (**Sprint 77 COMPLETE** at Phase 7 -- PR #460; 10 completed cards removed from the candidates; MV76-1 steps 7-11 and the 0.18.0 store updates carried to the start of Sprint 78). Previous: 2026-10-04 (**Sprint 75 COMPLETE** -- PR #448; F238 shipped, so the 0.17.0 release hold is satisfied; F216, F214, F236, F215, Task 7 delivered; F239 delivered Sign In Again, its Android renewal spike FAILED (-> F246); F243 added at Manual Validation; retro IMP-1..6 applied; F244/F245/F246 added.) Earlier 2026-09-29 (**Sprint 74 COMPLETE** -- PR #440; retro IMP-1/2/3/4/6 applied; F240/F241 added from Category 14; 0.17.0 held for F238.) Earlier 2026-09-27 (Sprint 74 Manual Validation: **F238 (Issue #441) added as the Sprint 75 release blocker for 0.17.0**, model Fable 5.1; no AAB until the Sprint 74 and 75 PRs both merge.) Previous: 2026-09-22 (**Sprint 72 COMPLETE** -- PR #420 -> develop. Ran on the Sprint 71 branch; Sprint 71 was never separately executed and its stub is marked SUPERSEDED. Delivered: F233 diagnostic log + the header-only CSV export fix, F232 mechanism A (historical-view rules now act on the mailbox; MECHANISM B REMAINS UNDIAGNOSED and is now instrumented), F228 honest action toast, F230+F231 action-sheet layout and durable outcomes, F217 honest Doze caveat (MECHANISM DELIBERATELY NOT BUILT -- the "is this the only way" search Harold required found it is not, and that the exemption carries a Play policy cost), F229 export half (the screen half was attempted and REVERTED after it overflowed by 18px at phone width). Suite 2,155 -> 2,233; analyzer clean; hooks 75/0; WinWright 2/2 twice; CI all green. **THREE CRITICAL findings across two reviews, all fixed, none deferred** -- and two of them were defects introduced BY this sprint: the F232 fix created an unintended deletion path from screen load (a method three callers share, the third safe only by accident), and the diagnostic logger silently destroyed concurrent records, which is the exact failure it existed to prevent. Manual validation found F233 shipped with NO UI at all -- ten tests passed via the test seam. Retrospective: Harold 12x Very Good; IMP-1..IMP-5 approved and applied. NEW backlog: F234 (read-only as a preview mode) and F235 (Android Doze via setExactAndAllowWhileIdle, TARGETED FOR SPRINT 73). Earlier history in prior revisions of this line (git).)
 
 ## How to Maintain This Document
 
@@ -144,6 +144,7 @@ Historical sprint information lives in individual documents in `docs/sprints/` a
 | 74 | docs/sprints/SPRINT_74_SUMMARY.md | [OK] Complete | Sep 24-29, 2026 (PR #440 -> develop; 0.17.0, HELD for F238. Per-account scan lock (any type, fail closed, dead holders reaped, 2-6 min busy retry), F232 mechanism B fixed, F222 Sort chip + row dates, F202 provider folder defaults, F206 exports + clear history + redaction, Gmail keeps sign-in, subject rules = Keyword (DB v10). Device checks moved to Sprint 75) |
 | 75 | docs/sprints/SPRINT_75_SUMMARY.md | [OK] Complete | Oct 2-4, 2026 (PR #448 -> develop; 0.17.0 kept by exception, hold satisfied. F238 stop a background scan for a manual one (DB v11), F239 Sign In Again (renewal spike FAILED -> F246), F243 Windows background scans run with the app open, F216/F214/F236/F215, Task 7 WinWright + widget tests, four MV fixes. Phone checks moved to Sprint 76) |
 | 76 | docs/sprints/SPRINT_76_SUMMARY.md | [OK] Complete | Oct 4-6, 2026 (PR #455 -> develop; 0.17.6+14, six closed-test builds. Unattended Android background scanning works -- overnight 0.17.4: 95 worker starts, 111/113 completed, 10 spam deletions with the app unopened. F248 scan diagnostics, F249 stop/KEEP/spacing, F250 Gmail renewal by stored refresh token, F251-F253 (battery row, notification trigger, ADR-0044), nine MV fixes. Fold checks carried as MV76-1) |
+| 77 | docs/sprints/SPRINT_77_SUMMARY.md | [OK] Complete | Oct 6-8, 2026 (PR #460 -> develop; 0.18.0+15, no store upload (MV-Q7 = 2). F264 per-account interval + new-mail switch, F245 one No Rule row per email (DB v12), F258 Gmail label IDs, F192 + SEC-15 Custom IMAP, SEC-8b certificate trust (ADR-0046), R76-1 battery A/B, R76-3 research; MV: F266 23 dead safe senders (DB v13), IMAP sign-in failure message, App Password labels, fixed Windows stagger. Fold steps 7-11 carried to Sprint 78) |
 
 **Key Achievements**: See CHANGELOG.md for detailed feature history.
 
@@ -151,30 +152,35 @@ Historical sprint information lives in individual documents in `docs/sprints/` a
 
 ## Last Completed Sprint
 
-**Sprint 76** (2026-10-04 -- 2026-10-06; PR #455 -> develop; version 0.17.6+14; six Play closed-test builds 0.17.1-0.17.6)
-- **Type**: the 0.17.0 field issues (F248-F250), grown at Harold's direction into making unattended Android background scanning work (F251-F253 and nine Manual Validation fixes).
-- **F248 (#452)**: the diagnostic log covers every scan, sign-in and renewal step, worker trigger and delay, stop reason, rule-update failures with reasons; a cross-isolate lock-file mutex (the per-process OS lock did not separate isolates on Android).
-- **F249 (#453)**: cancel checkpoints; Doze enqueue KEEP (REPLACE cancelled running scans); 5-minute spacing, never a skip; a scan where every folder failed is a failure, retried.
-- **F250 (#454)**: native sign-in cause named (`[16] Account reauth failed`); Android renewal falls back to the stored refresh token with the Android client -- confirmed on the Fold, overnight.
-- **F251-F253 (#456-#458)**: No Rule banner total; "Keep background scans running" battery row; "Scan when new mail arrives" notification listener (ADR-0044, package name only, off by default).
-- **MV fixes**: Gmail safe-sender move out of Spam; Gmail custom-label ID in incremental fetch; scan screen no longer zeroes a running scan; rule update skips a safe sender already in the target; export header row.
-- **Field evidence**: overnight 0.17.4 -- 95 worker starts, 111/113 completed, 10 spam deletions with the app unopened; 0.17.5 -- 52 scans all completed, zero broken log lines.
-- **Moved to Sprint 77** (Harold): MV76-1 Fold checks (F253 notification trigger, reboot, export header, rule-update fix, F250 account state, MV74-3).
-- **Results**: suite 2,508 -> 2,601 (15 skipped), analyzer clean, WinWright 3/3 (85 steps), hook suite 91 -> 104, first JVM test; mutations M118-M209. Copilot: Findings None. Retro: Harold all Very Good; IMP-1/2/3/4/6 applied (kept AAB in dist/, versionCode reuse gate, OS-primitive rule, blind-staging hook, "Existing behavior relied on" card line); IMP-5/7/8b skipped; IMP-8a/c to backlog.
+**Sprint 77** (2026-10-06 -- 2026-10-08; PR #460 -> develop; version 0.18.0+15; no store upload this sprint -- MV-Q7 = 2)
+- **Type**: per-account background scanning, the two largest data defects, Custom IMAP with a defined trust model, and content-based spam research; Windows + Android parity on every card (ADR-0042).
+- **F264 + R76-2 (#465)**: per-account "Scan every" (Minutes/Hours, 1-99, minimum 5) and per-account "Scan when new mail arrives"; 2h/4h scheduling, Windows restart reset, task-repair interval and Android alarm rounding fixed; fixed 1-minute Windows stagger per saved slot (MV-Q2, ADR-0039 amended).
+- **F245 (#463)**: one No Rule row per email (ADR-0045, DB v12; dev DB 7,904 -> 583); export lists it once.
+- **F258 (#462)**: Gmail custom-label writes send the label ID.
+- **F192 + SEC-15 (#466)**, **SEC-8b (#467)**: Custom IMAP Server with host validation; trust-on-first-use certificates (ADR-0046); the Google OAuth pin now enforces on every connection.
+- **R76-1 (#464)**: battery A/B arms 1-5 (backlog F277-F280); **R76-3 (#468)**: research, backlog F266-F275.
+- **MV fixes**: F266 23 dead safe senders (DB v13); a refused IMAP LOGIN says "Sign-in failed" on every provider; App Password vs Password labels; replace-account question; No Rule removal logging; first-scan results.
+- **Carried to Sprint 78 start**: the 0.18.0 Store and Play updates, Fold steps 7-11 (MV76-1), the boot-time `main()` trace. OPEN: one 0xc0000409 crash (dumps enabled; card when it recurs).
+- **Results**: suite 2,607 -> 2,918 (15 skipped), analyzer clean, JVM 21/21, WinWright 2/3 at 4a5f2ac (mt2c display-size dependent -> F283), hook suite 121 -> 125. Retro: Harold all Very Good; IMP-1 (5.1.9 MV rehearsal, Flutter tests first) and IMP-3 (Executed-by gate) applied; IMP-4 waits for a recurrence.
 
 ## Next Sprint Candidates
+
+**Sprint 77 scope -- COMPLETE 2026-10-08 (PR #460)**: MV76-1 (#461, steps 7-11 carried to Sprint 78), F258 (#462), F245 (#463), R76-1 (#464), F264 + R76-2 (#465), F192 + SEC-15 (#466), SEC-8b (#467), R76-3 (#468), plus F266 and the Manual Validation fixes. Plan: `docs/sprints/SPRINT_77_PLAN.md`.
+
+**Sprint 76 scope -- COMPLETE 2026-10-06 (PR #455)**: F248 (#452), F249 (#453), F250 (#454), F251 (#456), F252 (#457), F253 (#458), plus nine Manual Validation fixes and the 7.7.1 review fixes. Plan: `docs/sprints/SPRINT_76_PLAN.md`.
 
 **Sprint 75 scope -- COMPLETE 2026-10-04 (PR #448)**: F238 (#441), F216 (#444), F214 (#445), F236 (#446), F239 (#442), F215 (#447), Task 7 (#449), F243 (#450, added at Manual Validation). Plan: `docs/sprints/SPRINT_75_PLAN.md`.
 
 **Sprint 74 scope -- COMPLETE 2026-09-29 (PR #440)** (Phase 8.4 pass 2, selected by Harold 2026-09-24): MV74-1 (#428), MV74-2 (#434), MV74-3 (#422, #433), F202 (#438), F222 (#437), F232 (#422), F206 (#439), F205 (#433). Plan: `docs/sprints/SPRINT_74_PLAN.md`.
 
-**Last Reviewed**: October 4, 2026 (Sprint 75 cycle, Phase 8.2 pass-1 COMPLETENESS SWEEP -- no scope selected: PR #448 merged to develop (85c602c) and main (e724faa); Sprint 76 branch opened from the Sprint 75 branch; #441 #442 #444 #445 #446 #447 #449 #450 closed by hand; #428 #433 stay open as Sprint 76 phone checks; triad present; shipped F238/F239/F216/F214/F236/F215 already pruned at close-out; F247 added from the PR reviews; MV74-1 dependency moved to the 0.17.0 Play build.) Previous: October 2, 2026 (Sprint 74 cycle, Phase 8.2 pass-1 COMPLETENESS SWEEP -- no scope selected: shipped MV74-2, F202, F206, F232, F222 pruned; MV74-1 + MV74-3 (F205) re-labeled as Sprint 75 phone validation; #422 #434 #437 #438 #439 closed by hand; 0.17.0 store release N/A (held for F238).) Previous: September 24, 2026 (Sprint 73 cycle, Phase 8.2 pass-1 COMPLETENESS SWEEP -- no scope selected: 6 Sprint 73 DONE cards cleared (F235 -> MV74-1, F234, F229, F226, F224, F207 -> MV74-2); new F236 (YAML export version, from #427) and F237 (Android build-log noise); issues #426 #430 #431 #432 closed; master plan rolled to Sprint 73.)
+**Last Reviewed**: October 6, 2026 (Sprint 76 cycle, Phase 8.2 pass-1 COMPLETENESS SWEEP -- no scope selected: PR #455 merged to develop (96a9cfe) and main (31b7135); Sprint 77 branch opened from the Sprint 76 branch; #452 #453 #454 #456 #457 #458 closed by hand; #428 #433 stay open inside MV76-1; triad present; shipped F248-F253 already pruned at close-out; MV74-1/MV74-3 folded into MV76-1; F247 relabeled not-delivered; F258-F264 added at 7.7.1.) Previous: October 4, 2026 (Sprint 75 cycle, Phase 8.2 pass-1 COMPLETENESS SWEEP -- no scope selected: PR #448 merged to develop (85c602c) and main (e724faa); Sprint 76 branch opened from the Sprint 75 branch; #441 #442 #444 #445 #446 #447 #449 #450 closed by hand; #428 #433 stay open as Sprint 76 phone checks; triad present; shipped F238/F239/F216/F214/F236/F215 already pruned at close-out; F247 added from the PR reviews; MV74-1 dependency moved to the 0.17.0 Play build.) Previous: October 2, 2026 (Sprint 74 cycle, Phase 8.2 pass-1 COMPLETENESS SWEEP -- no scope selected: shipped MV74-2, F202, F206, F232, F222 pruned; MV74-1 + MV74-3 (F205) re-labeled as Sprint 75 phone validation; #422 #434 #437 #438 #439 closed by hand; 0.17.0 store release N/A (held for F238).) Previous: September 24, 2026 (Sprint 73 cycle, Phase 8.2 pass-1 COMPLETENESS SWEEP -- no scope selected: 6 Sprint 73 DONE cards cleared (F235 -> MV74-1, F234, F229, F226, F224, F207 -> MV74-2); new F236 (YAML export version, from #427) and F237 (Android build-log noise); issues #426 #430 #431 #432 closed; master plan rolled to Sprint 73.)
 
 All incomplete items in relative priority order. Priority in increments of 10; items that can sprint together in increments of 2. HOLD items grouped at bottom. See [Feature and Bug Details](#feature-and-bug-details) for deep-dive specs. See [BACKLOG_REFINEMENT.md](BACKLOG_REFINEMENT.md) for presentation format rules.
 
 ### Sprint 77 carry-in -- Fold validation on 0.17.6 (Harold, Sprint 76 close, 2026-10-06)
 
 **MV76-1. Finish the Sprint 76 Fold checks on 0.17.6 (~validation time) Priority 1 -- CARRY-IN**
+- **Sprint 77 status (2026-10-08)**: reboot-window evidence pulled (unattended workers ran through a reboot with the app unopened); Fold steps 7-11 move to the START of Sprint 78 on the 0.18.0 closed-test build (MV-Q7 = 2), plus tracing the boot-time `app start (foreground)` line (`main()` ran at 09:14:39 with no app opened).
 - F253 AC-5: a scan started by a mail app's new-mail notification (`trigger=notification` in the log); confirm the AOL and Yahoo package names on the device (#458).
 - MV74-1 reboot half: background scans resume after a phone restart without opening the app (#428). The Doze half PASSED on the 0.17.4 overnight run (95 worker starts, 111/113 completed).
 - The scan-export header row on a new daily `.data.csv`.
@@ -182,17 +188,64 @@ All incomplete items in relative priority order. Priority in increments of 10; i
 - F250: the Google account state screenshot on the Fold; decide whether the native sign-in still matters now that refresh-token renewal works (#454).
 - MV74-3: classify every scan error from normal use, or record zero (#433).
 
-**R76-1. Battery deep dive for "Scan when new mail arrives" -- A/B tests on the Android emulator Priority 2 -- CARRY-IN (Sprint 76 retro Cat 13, Harold)**
-- Deep dive on how to minimize battery usage for Android when set to run Background jobs on "scan when new mail arrives" while maintaining functionality; then add potential items to the backlog in priority order based on most likely success, written like A/B tests to be tested on the android simulator. OK to apply to both Windows and Android, primarily targeting Android (split solutions between platforms only if it greatly benefits Android).
-
-**R76-2. Rework the Background section for the per-account new-mail switch and interval control Priority 3 -- CARRY-IN (Sprint 76 retro Cat 13, Harold; UPDATED 2026-10-06 by F264)**
-- Originally "move 'Scan when new mail arrives' to the General tab?". Answered by F264 (Harold, 2026-10-06): the switch becomes PER ACCOUNT, so it stays in each account's Background section. Remaining work: deep dive on how the whole "Background scanning" section and its help text change for the per-account switch and the new interval control.
-
-**R76-3. Deep dive: Heuristics, ML and GenAI spam identification from stored email content Priority 4 -- CARRY-IN (Sprint 76 retro Cat 13, Harold)**
-- Result: one or more backlog items for Heuristic, ML and GenAI pipelines and how they are used -- updates to YAML imports (new delete rules: known bad domains, subject regex, body regex), new tools to find and identify safe senders, on-device Heuristics/ML/GenAI tools.
-
 **R76-4. Store a history of email content for future Heuristics/ML/GenAI identifiers Priority 5 -- CARRY-IN (Sprint 76 retro Cat 13, Harold)**
+- **Input from R76-3 (2026-10-07)**: the recommended fields (what to store, what never to store) are in Section 6 of `docs/research/R76-3_HEURISTICS_ML_GENAI_SPAM_IDENTIFICATION.md`; storing content beyond the 100-character preview is a Class-1 decision with a privacy-policy revision (F273).
 - Probably a database of fields -- design and implement. Fed by the Windows and Android scans (eventually iPhone); no duplicate emails; initially populated from the existing delete and safe-sender rules; Harold has a partial history of deleted emails to run through for more examples.
+
+### Backlog from the Sprint 77 Manual Validation (Harold, 2026-10-07)
+
+**F281. Deep dive: best-practice UI for "run every <interval>" in Background scanning (~90-120m research + implementation card) Priority 6 -- NEXT SPRINT (Harold, Sprint 77 MV step 1)**
+- Harold: *"The UI just seem awkward for the Background Scanning ... deep dive into UI best practices for selecting time (in this case run something every <>)."* The F264 control (unit dropdown + typed number) works but reads awkwardly.
+- Deliverable: at least the 3 best alternatives, each with a mockup, pros, cons, and Windows + Android fit (ADR-0042 parity: one shared control on both platforms), with sources for the practices cited. Recommendation and why. Harold picks one; the pick becomes an implementation card in the same sprint.
+- Requirements for every alternative:
+  - Minimum every 5 minutes (`kMinIntervalMinutes`). Maximum every 24 hours -- **a change**: today `kMaxIntervalMinutes` is 99 hours.
+  - Suggest 15 minutes: the first time the control is shown for an account, it defaults to 15 minutes.
+  - Great flexibility (not only a short fixed preset list).
+  - Shown ONLY when a background mode is on: Android has two (scheduled background scanning, "Scan when new mail arrives"); Windows has one. **A change**: today the control is shown even when background scanning is OFF, deliberately (`settings_screen.dart` F264 R-11 comment, ISSUE #123/#124, so the user could set it first). Name what happens to a saved interval when the control is hidden.
+  - Keeps the save-on-change behavior Harold chose at MV-Q3 (no Save button).
+- Overlaps R76-2 (Background section rework); do them together.
+- Control and screen: Settings > Account tab > Background > "Scan every".
+
+**F282. One "MyEmailSpamFilter" folder for every file the app writes for the user Priority 7 -- NEXT SPRINT (Harold, Sprint 77 MV-Q10, 2026-10-08)**
+- Harold: *"if we are going to add directories to the Documents folder on either platform it should be named MyEmailSpamFilter and then just keep all MyEmailSpamFilter files in that directory (easier for users to find): scan results, manual scan downloads, diagnostics..."*
+- Today (`ExportDirectories.resolve`, default Windows Downloads, Android Documents, or the Settings > General folder):
+  - Export folder ROOT: the Results screen download button (`scan_results_<time>.csv`), Manage Rules export and Manage Safe Senders export.
+  - `scan_exports\`: per-scan background and live CSV/XLSX files.
+  - `diagnostics` (prod) / `diagnostics_Dev` (dev): the diagnostic log.
+- Change: every one of these goes under one `MyEmailSpamFilter` folder, with today's subfolders inside it. ONE resolver change (`ExportDirectories`), so no writer keeps its own copy of the path.
+- Windows + Android parity (ADR-0042): same folder name and layout on both.
+- Decisions (Harold, 2026-10-08):
+  - MV-Q11 = 1: the default base is **Documents on both platforms** (Windows moves from Downloads), "consistent and more consistent with Windows applications in general". Harold asked whether it can be built from a standard environment variable such as `%USERPROFILE%\Documents`. Answer for the card: use the Windows Documents KNOWN FOLDER (`SHGetKnownFolderPath(FOLDERID_Documents)`, which `path_provider`'s `getApplicationDocumentsDirectory()` returns on Windows), with `%USERPROFILE%\Documents` only as the fallback -- the same pattern `ExportDirectories` already uses for Downloads. The known folder is the better source because a user (or OneDrive folder backup) can move Documents, and then `%USERPROFILE%\Documents` is the wrong folder; verify against the Microsoft known-folder docs when implementing.
+  - MV-Q12 = 1: two folders, `MyEmailSpamFilter` (prod) and `MyEmailSpamFilter_Dev` (dev).
+  - MV-Q13 = 1: existing files stay where they are. A user who already chose a folder in Settings keeps that folder and its files unchanged; only the DEFAULT changes, for new users and users who never chose a location.
+- Acceptance: a user who never chose a folder opens Documents and finds every app file in `MyEmailSpamFilter`; a user who chose a folder sees no change; Settings > General names the folder; Help text matches.
+
+**F283. Review No Rule Items looks and works like the Results screen, across all accounts Priority 8 -- NEXT SPRINT (Harold, Sprint 77 MV step 5, 2026-10-08)**
+- Harold: *"change the UI for Review No Rule Items to look like the View Scan Results > Results screen ... but include all emails from all accounts. Will need to add a email account drop-down similar to 'Folders', default to All (drop down should list all email accounts, even if there are no results from those accounts). In the attached detail screen, we can replace the domain that is next to the date/time with the email account name (i.e. kimmeyharold@aol.com) so the user can see where the email came from."* Trigger: step 5 could not find one email among 398 -- *"there is no search to easily find it ... Can we add a search like in the View Results screen."*
+- Already exists (keep): every unaddressed row from every saved account (F245 upsert, one row per email); an account drop-down with "All Accounts (N)" first and every saved account with its count, including zero (shown only when more than one account is saved); the account email on each row when more than one account is saved; multi-select bulk actions.
+- Change:
+  - Layout of `results_display_screen`: summary header, chip row (account drop-down styled like "Folders", then "Folders", then "Sort"), the "Showing X of Y emails" filter bar, and the same row format (folder, date, subject).
+  - Search (the Results screen's search icon and behavior) over sender, subject and folder.
+  - The account drop-down defaults to All and is shown even with one account (open question).
+  - Detail popup: the domain next to the date/time is replaced by the account email (for example `kimmeyharold@aol.com`).
+  - Reuse the Results screen's widgets (chip row, filter bar, row, detail popup) rather than a second copy -- the Sprint 52 IMP-5 rule.
+- Windows + Android parity (ADR-0042): one shared screen.
+- Decisions (Harold, 2026-10-08):
+  - MV-Q14 = 1: the account drop-down is ALWAYS shown, even with one saved account.
+  - MV-Q15: the "No rule" chip stays and shows the count, but is no longer a drop-down.
+  - MV-Q16 = 2: multi-select and bulk actions are REMOVED ("it was not useful"); one row at a time, as on the Results screen.
+  - MV-Q17 = 2: the detail popup shows the account email in place of the domain on BOTH screens (Review No Rule Items and Results).
+  - MV-Q18: no interim search this sprint; search arrives with this card.
+- Acceptance: from Review No Rule Items, a user finds one email by typing part of its sender or subject; the account drop-down lists every saved account; the detail popup names the account.
+- WinWright: rewrite `test_mt2c_no_rule_sweep.json` for the new screen so it passes on ANY monitor size. Its checkbox steps go away with multi-select. Today's script depends on the screen. The 11 provider-sender rows are pinned first, so the seed rows are built only when about 13 rows fit. It passed at 3856x2128 and failed at about 1940x1040 (Sprint 77 close-out sweep). `ww_scroll` direction/page on a row reported success but did not move the list. Reach the seeds by search, or by an account filter that has no provider rows.
+
+**F284. WinWright without taking over the laptop: mouse-free sweep, retire mt2c, fixed window size Priority 20 -- backlog (Sprint 77 retro IMP-2, Harold 2026-10-08: MV-Q23 = 2)**
+- Harold: *"is there any way to do the WinWright tests without using the monitor or taking control of the mouse/keyboard/screen (prevention). Are there any minor changes that would essentially preserve the UI user experience but would remove one or more WinWright tests?"*
+- Findings (2026-10-08, against the running dev app, no mouse used): 89 of the sweep's 115 steps already use UI Automation patterns; 26 move the real mouse (f124 5, mt2c 17, s75 4 + 2 hovers). `ww_set_checked` toggled a row CheckBox with no mouse (TogglePattern). The account drop-down face exposes neither Invoke nor ExpandCollapse: Flutter's `PopupMenuButton` with a custom child has no button semantics (also a screen-reader gap). Sprint 73 logs show pattern steps and tree reads working on a LOCKED workstation; only mouse clicks failed. Windows Sandbox on Windows 11 Home: unverified (Harold can check "Turn Windows features on or off").
+- a. Mouse-free sweep (~60-90m): `Semantics(button: true)` on the account drop-down faces (both screens) and the tab labels the scripts click (no visual change); CheckBox steps -> `ww_set_checked`; hover steps -> tooltip reads if UIA exposes them (probe first); the runner allows pattern-only scripts on a locked PC.
+- b. Retire `test_mt2c_no_rule_sweep.json` (~20m): its core contract (the sweep never drops uncovered rows) is covered by the headless `no_rule_review_screen_test`; it is display-size dependent (seed rows below 11 pinned provider rows at ~1940x1040; passed only at 3856x2128). Coordinate with F283, which removes multi-select.
+- c. Fixed window size set by the runner after launch, so a script passes or fails the same way on every display; record display and window size in the sweep summary. Lower value once mt2c is retired.
+- Acceptance: the sweep runs with no `ww_click` mouse steps, the cursor never moves, and it passes with the PC locked; no script's result depends on the monitor.
 
 ### Backlog from the Sprint 76 retrospective
 
@@ -205,9 +258,6 @@ All incomplete items in relative priority order. Priority in increments of 10; i
 ### Backlog from the Sprint 76 7.7.1 final code reviews (Harold, 2026-10-06: "otherwise as recommended")
 
 Each item is fixed PREVENTION FIRST (SPRINT_EXECUTION_WORKFLOW.md 7.7.1): name how the class is prevented, extending the connected existing control, before the instance fix.
-
-**F258. Gmail moves to a custom label send the label NAME, not its ID Priority 25 -- backlog (7.7.1 code review H-2; predates Sprint 76)**
-- Five write sites pass a stored folder NAME where Gmail expects a label ID: `deleteMessage` (`addLabelIds: [targetLabel]`), `moveMessage` via `_folderToLabelId`, `moveLabels` (`add: [target]`), and delete-to-custom-folder via `moveToFolderBatch`. The folder picker saves `displayName`, so a Deleted-Rule folder or safe-sender target such as "Unwanted" gets 400 "Invalid label" on every move. Prevention: route EVERY label write through the Sprint 76 `_labelIdFor` resolver (the read path already uses it; `_getOrCreateLabel` is the precedent) and add a source gate that no `addLabelIds:` / `removeLabelIds:` receives an unresolved folder name. Needs a Fold or Windows Gmail check with a custom target.
 
 **F259. A missing Gmail label scans as 0 messages with no trace; history cursor is per account Priority 35 -- backlog (7.7.1 review L-3 / silent-failure M-8)**
 - `_labelIdFor` returning null yields an empty fetch with no log line and no F202 "missing folder" classification, cached for the connection (a renamed label scans empty forever; the lookup is case-sensitive). Related, pre-existing: the incremental history cursor is stored per ACCOUNT (`getLastHistoryId(accountId)`), and INBOX saves the current historyId first, so later folders (a custom label, SPAM) read from "now". Prevention: route null through the existing F202 missing-folder path (extends that classifier) and store the cursor per account + folder.
@@ -224,13 +274,143 @@ Each item is fixed PREVENTION FIRST (SPRINT_EXECUTION_WORKFLOW.md 7.7.1): name h
 **F263. Background scan spacing: per-worker budget, Test Background Scan, sign-in skip Priority 40 -- backlog (7.7.1 review M-1, M-2, silent-failure LOW)**
 - (Harold, 2026-10-06: "3. a" -- confirmed as backlog.) The 5-minute spacing and 6-minute busy cap are per ACCOUNT, so one Android worker scanning several accounts in sequence can exceed WorkManager's ~10-minute run limit and leave an `in_progress` row. Test Background Scan also waits out the spacing (up to 5 minutes with nothing visible), and an account that needs sign-in still waits before it is skipped. Prevention: one spacing budget per worker run in `BackgroundScanCore` (extends the existing `cappedBusyWait` cap), the test trigger exempt, and the sign-in check before the wait.
 
-**F264. Per-account background interval (unit + number) and per-account "Scan when new mail arrives" Priority 10 -- backlog (Harold, 2026-10-06, 7.7.1 item 10; read back and confirmed "1. a 2. a")**
-- **Interval control, per account, Windows and Android** (replaces the fixed 15/30/60/120/240 dropdown and the `ScanFrequency` list): a unit dropdown FIRST -- **Minutes | Hours** -- then a number box with room for 2 digits (1-99). The interval is number x unit, stored in minutes through the existing per-account frequency override (F98, ADR-0039). Minimum **5 minutes** (to limit battery use); an entry under 5 minutes is flagged inline ("Minimum is 5 minutes, to limit battery use") and not saved. Maximum **99 hours**.
-- **Helper text** (the honest floor): "Android runs background scans when the phone allows; while it is idle, expect up to about 45 minutes between scans." Basis (verified 2026-10-06): Android docs -- in Doze, `setAndAllowWhileIdle` alarms fire "no more than once per nine minutes, per app"; the Frequent standby bucket allows 2 alarms per hour, Rare 1 per hour, Restricted 1 per day (developer.android.com/topic/performance/power/power-details); the Fold's 0.17.4 overnight run had a longest gap of 41 minutes.
-- **Below 15 minutes on Android**: WorkManager's periodic minimum is 15 minutes ("The minimum repeat interval that can be defined is 15 minutes"), so 5-14 minutes run through the existing F235 Doze alarm chain at the chosen interval; Android limits that to about 9 minutes while idle and to about 6 minutes in the Working set bucket (10 alarms per hour). Windows: Task Scheduler minutes/hours directly; confirm its longest repetition interval at implementation (unverified).
-- **Fixes a latent bug**: the current dropdown offers 2 and 4 hours, but `ScanFrequency.fromMinutes(120|240)` returns `disabled`, so `settings_screen.dart:1443-1444` returns without rescheduling (read from code; not observed on a device).
-- **"Scan when new mail arrives" becomes per account**, in each account's Background section beside the interval. Notification access stays one Android permission for the app. Android reports only WHICH MAIL APP posted, not which account, so: Gmail app -> Gmail accounts with the switch on; AOL app -> AOL accounts; Yahoo Mail -> Yahoo accounts; Samsung Email and Outlook (any provider) -> every account with the switch on. The 5-minute spacing still applies. Replaces the app-wide switch from F253 (#458); R76-2 updated accordingly; R76-1 (battery A/B) should measure the per-account mapping.
-- Prevention first: one shared interval parser/validator (unit + number -> minutes, min/max) used by both platforms' UI and the schedulers, with tests at 4, 5, 99 minutes and 99 hours; the package-to-provider mapping lives in the existing `MailNotificationPolicy` (extend it, JVM-tested).
+**F277. Fold energy check: interval 5 against interval 15 (~45-60m + phone time) Priority 20 -- backlog (Sprint 77 R76-1, was R77-BAT-1)**
+- Phase: Core App Quality
+- Platform: Android
+- The emulator measures counts, not energy. Decision rule for the F264 floor: if an interval-5 account costs more than 3x an interval-15 account on the Fold (Settings > Battery screenshots over MTP), raise `kMinIntervalMinutes` to 10. Protocol: `docs/research/R76-1_BATTERY_AB_RESULTS.md` section R77-BAT-1.
+
+**F278. Notifications that produced no scan, and alarm + WorkManager scans coexisting (~60-90m) Priority 34 -- backlog (Sprint 77 R76-1, was R77-BAT-2)**
+- Phase: Core App Quality
+- Platform: Android
+- In arm 5, 2 of 4 posts left no scan and no log line (cause unknown); alarm and periodic starts also coexisted. Protocol and what would settle it: results doc section R77-BAT-2.
+
+**F279. Listener gap 2 minutes vs 5 minutes (~30-45m) Priority 50 -- backlog (Sprint 77 R76-1, was arm 6 / R77-BAT-3)**
+- Phase: Core App Quality
+- Platform: Android
+- Needs a change to `MailNotificationPolicy.MIN_GAP_MS`; likely redundant with the worker's 5-minute `kMinScanSpacing`. A/B in results doc section R77-BAT-3.
+
+**F280. Doze network availability for alarm scans (~45-60m) Priority 36 -- backlog (Sprint 77 R76-1, was R77-BAT-4)**
+- Phase: Core App Quality
+- Platform: Android
+- In arm 4, 2 of 3 alarm scans failed at DNS rather than login under forced Doze (cause unverified). Results doc section R77-BAT-4.
+
+**F276. No Rule Review lists mail already deleted in the mail client (~60-90m) Priority 30 -- backlog (Sprint 77 5.1.2 F-PRECHECK; consequence of Q21 = 2)**
+- Phase: Core App Quality
+- Platform: All
+- Since Sprint 77 No Rule Review lists every unprocessed row across scans (Harold Q21 = 2) and retention counts from the last sighting (Q22 = 1), so an email the user deleted in their mail app stays listed up to 90 days and actions on it fail. No status marks it gone: `UnmatchedEmailStore.updateAvailabilityStatus` has no caller in lib/ and `EmailAvailabilityChecker` is never constructed, so every row stays 'unknown'.
+- **Also MOVED mail (Sprint 77 MV step 5, 2026-10-08)**: two Gmail messages listed from `[Gmail]/Spam` on 10-03 were later found in INBOX. Row identity includes the folder and UID, so each is now listed TWICE: the stale Spam row stays unprocessed beside the new INBOX row. The fix must cover a message that moved, not only one that was deleted.
+- Prevention-first fix: set the row's availability to deleted when an action on it fails with "not found" (one place, the shared action path) and filter it in the Review query; optionally run the existing availability checker for rows not seen in the latest scan.
+
+**F265. Android Gmail native one-pick sign-in -- revisit only when a second device reproduces the failure Priority HOLD -- backlog (Sprint 77 plan Q24 = 2, Harold 2026-10-06)**
+- Phase: Core App Quality
+- Platform: Android
+- F250 (#454, closed in Sprint 76): the native `authenticate()` fails with `[16] Account reauth failed` on the Fold, and the browser fallback then succeeds; since Sprint 76 Android renews through the stored refresh token, so users stay signed in. The cause is outside the changed code (OAuth clients, package and SHA-1 verified, `SPRINT_76_PLAN.md:783-795`). Harold chose to wait for a SECOND device that reproduces it before spending more time.
+- Trigger to leave HOLD: a reproduction on another device (S24+ or a tester), with the diagnostic log's `gmail/renewal` and sign-in lines.
+
+### Backlog from the R76-3 research (Sprint 77, 2026-10-07)
+
+Source: `docs/research/R76-3_HEURISTICS_ML_GENAI_SPAM_IDENTIFICATION.md` (Issue #468), placeholder ids R77-RS-1..10 renumbered F266-F275. Section 4.7 of that document lists the Class-1 questions (content storage, learned data, off-device lookups, bundling rules derived from Gmail data).
+
+**F267. Rule evaluation harness: score candidate rules against your own history, read only (~150m) Priority 20**
+- Phase: Core App Quality
+- Platform: All (Windows DEV for the dry run)
+- Value: no proposed rule or score acts on mail until measured; the bar is zero safe-sender hits and precision of
+  at least 0.99 (Section 4.8).
+- Scope: a Dart CLI in `scripts/` that loads candidate YAML plus an exported database copy and reports precision,
+  safe-sender false positives and recall; reuses `RuleEvaluator` and `PatternCompiler` unchanged.
+- Control and screen: developer tool (no app UI); results feed F268 to F272.
+- Privacy precondition: none (reads data already on Harold's PC). Parity: N/A (developer tool), engine code shared.
+- Depends on: none.
+
+**F268. PC-side rule miner: deleted-mail history to candidate delete rules (YAML) (~180m) Priority 22**
+- Phase: Core App Quality
+- Platform: N/A (developer tool on Harold's PC); output imported on All
+- Value: closes the corpus gap (zero subject and body rules today) with known bad domains, subject regex and body
+  regex mined from Harold's partial deleted-mail history, without the app storing any new content.
+- Scope: script in `scripts/` reads Harold's exported deleted-mail history, mines recurring domains, subject
+  phrases and body phrases, writes candidate YAML in `docs/RULE_FORMAT.md` shape, validated by F266 and scored by
+  F267 before import.
+- Control and screen: Settings > Import / Export YAML (merge via F269, or export-merge-import until F269 ships).
+- Privacy precondition: content stays on Harold's PC; rules derived from his Gmail data must not be bundled into
+  the shipped seed until the open legal question in Section 4.7 is settled (Class-1 if bundling is proposed).
+- Depends on: F266, F267.
+
+**F269. YAML import merge mode (add without replacing) (~90m) Priority 24**
+- Phase: Core App Quality
+- Platform: All
+- Value: mined or shared rule files can be added without wiping the user's rules (import today replaces all).
+- Scope: a "Merge" choice beside "Replace" on import; duplicates resolved by the existing
+  `manual_rule_duplicate_checker` / `rule_conflict_detector` services; every new pattern passes F266.
+- Control and screen: Settings > Import / Export YAML, import confirmation dialog.
+- Decision class: Class-2 (changes import semantics; replace stays the default).
+- Privacy precondition: none. Parity: shared Dart.
+- Depends on: F266.
+
+**F270. Safe-sender discovery: propose safe senders from history for review (~150m) Priority 30**
+- Phase: Core App Quality
+- Platform: All
+- Value: fewer false positives; senders the user trusts are protected before a broad rule catches them.
+- Scope: v1 uses stored data only -- repeated No Rule senders that pass DMARC and were never deleted; v2 adds
+  Sent-folder recipients (reply pairs). Candidates are listed for accept or reject; nothing is added silently.
+  Device contacts are excluded (new permission, platform exception).
+- Control and screen: a "Suggested safe senders" list on the Safe Senders management screen.
+- Privacy precondition: v1 none; v2 adds the Sent folder to "What the app accesses" in the privacy policy.
+- Parity: shared Dart. Depends on: F266, F267.
+
+**F271. Heuristic reasons and rule suggestions on No Rule Review (~210m) Priority 32**
+- Phase: Core App Quality
+- Platform: All
+- Value: the user sees why an email looks like spam (Reply-To differs from From, auth failed, lookalike domain,
+  bad TLD, bulk mail without unsubscribe) and gets a one-tap candidate rule.
+- Scope: header-only signals computed at scan time from headers already fetched (no body fetch); shown as reason
+  chips; "Create rule" opens the existing quick-add screen prefilled. Signals never act on mail by themselves.
+  Two-header comparisons are computed in Dart, not added to the YAML grammar (a grammar change would be Class-2).
+- Control and screen: No Rule Review screen, per-email reason chips and a "Create rule" action.
+- Privacy precondition: none if signals are computed and shown, not stored; storing them is R76-4.
+- Parity: shared Dart. Depends on: F267.
+
+**F273. Privacy policy and Data safety revision for the content history and learning (~60m) Priority 40**
+- Phase: Core App Quality
+- Platform: All (one policy; Play and Microsoft Store)
+- Value: keeps the published policy true before any build stores more content or learns from it.
+- Scope: the rewrites listed in Section 4.7 "Exactly what would change"; cite the Workspace policy; re-run
+  `data_safety_declarations_test.dart`; Play Data safety stays "No" while nothing leaves the device.
+- Control and screen: N/A (documents and the website).
+- Depends on: Harold's Class-1 decision on R76-4 (and on F272 if it is selected); it is written before
+  either ships.
+
+**F272. Per-user on-device spam classifier (pure Dart) ranking No Rule Review (~300m) Priority 42**
+- Phase: Core App Quality
+- Platform: All
+- Value: learns each user's own spam from their own decisions and sorts likely spam to the top of review.
+- Scope: hashed-token naive Bayes over From domain, subject and header tokens (body optional and off by default);
+  trained incrementally on the device from the user's own actions; about 2 MiB of state; no new dependency
+  (probe: about 161 microseconds per 1.2 kB text on the development laptop; Fold timing to measure first). The
+  score ranks and suggests; it does not delete until it passes the F267 bar and Harold approves acting.
+- Control and screen: Settings > General switch "Learn from my decisions" (off by default) and the No Rule Review
+  sort order.
+- Policy: inside the Workspace policy's "specific user's personalized model" carve-out; never trained on one
+  user's data for another user.
+- Privacy precondition: F273 published before a shipped build carries it. Parity: shared Dart.
+- Depends on: R76-4 (labels), F267, F273. Decision class: Class-1 (new derived data store).
+**HOLD (no viable runtime or contradicts the privacy posture):**
+
+**F274. On-device GenAI rule explanations (~240m) Priority HOLD**
+- Phase: Core App Quality
+- Platform: All (would be two platform exceptions today)
+- Why HOLD: Android ML Kit GenAI is foreground-only, Beta and absent from the Galaxy S24 family; Windows Phi
+  Silica needs a Copilot+ NPU or a Developer Mode GPU path and is removed in January 2027; a bundled LLM costs a
+  100+ MB download (size UNVERIFIED) under the Gemma pass-through terms.
+- Revisit trigger: a GenAI API available to Store users on both platforms that runs in background work, or the
+  Windows successor model (Aion Instruct) reaching retail with a non-Developer-Mode path.
+
+**F275. Cloud GenAI classification (~360m) Priority HOLD**
+- Phase: Core App Quality
+- Platform: All
+- Why HOLD: sends personal mail content to a third party; contradicts four sentences of the privacy policy; flips
+  Play Data safety to "Emails collected and shared"; Gmail data transfer limits; no server for key management.
+  About $0.0002-$0.0006 per email (Section 4.4).
+- Revisit trigger: Harold decides the product posture changes (Class-1), with an explicit per-user opt-in design.
 
 ### Backlog from the Sprint 74-75 retrospectives and Manual Validation
 
@@ -243,17 +423,13 @@ Each item is fixed PREVENTION FIRST (SPRINT_EXECUTION_WORKFLOW.md 7.7.1): name h
 **F244. Tell the user when a Gmail background scan skips for sign-in Priority 45 -- backlog (Sprint 75 5.1.1 review SF-8; Harold at Manual Validation 2026-10-03: "backlog")**
 - F239 records a skip -- no notification, no export -- when Gmail needs the user, and relies on the per-account `gmail_sign_in_required` flag to show "Sign In Again" in the account list. That write is best effort: if it fails (a locked database), background scans of the account skip every cycle and nothing tells the user. Fix: a one-time notification for a needs-sign-in skip, independent of the flag, or a retry of the flag write.
 
-**F245. Background scans must not re-add No Rule rows for emails already listed Priority 35 -- backlog (Sprint 75 Manual Validation, Harold 2026-10-03: "q2 1")**
-- Each read-only background scan of an all-mail range adds its own `unmatched_emails` rows, so the same emails are listed again every run: about 115 rows per AOL run, 2,266 rows in one evening (5,035 -> 7,301). Older behavior, but F243 (Windows background scans run while the app is open) makes it happen every 15 minutes, roughly 11,000 rows a day until the 90-day retention removes them. Decide the identity of a No Rule entry (account + message id / folder + uid) and skip or refresh an existing entry instead of inserting a duplicate; check the No Rule Review counts and the Scan History "No Rule" totals against it.
-- **Export side (folded in by Harold, Sprint 76 Manual Validation 2026-10-06: "for 3 you can fold into F245")**: the per-account scan export (`scan_exports/*.data.csv`) lists an unaddressed No Rule email again on EVERY scan -- the 0.17.4 Fold export listed the same email (UID 232848) 10 times between 06:52 and 08:21. Use the same identity: an email already listed as No Rule is not exported again until it is addressed or changes. Keep the "<no records to process>" row for an empty scan (Harold: keep it).
-
 **F246. Android Gmail background renewal through a server-side token exchange Priority 30 -- backlog (Sprint 75 F239 R-1 spike FAILED; Harold 2026-10-03: "1.3")**
 - From a WorkManager worker, `clientAuthorizationTokensForScopes(email, promptIfUnauthorized: false)` returned NULL for an already-granted Gmail account (emulator, google_sign_in 7.2.0 / android 7.2.7; ADR-0011 known limit). Android stores no refresh token, so a Gmail background scan more than about an hour after the app was last opened skips with "Gmail needs you to sign in again". Google's documented route: request a server auth code at sign-in and exchange it on a server for a refresh token. Needs a backend this app does not have (hosting, secret handling, privacy-policy update, ADR); a Class-1 architecture decision. Before committing to it, a 30-minute scope-matched retry of the spike would rule out a requested-vs-granted scope mismatch. The switched-off `GoogleAuthService.authorizeWithoutActivity` is the code to remove or reuse.
 
 **F254. Home-screen widget: last scan and new No Rule count Priority 45 -- backlog (Harold 2026-10-05, Q3 = 1)**
 - A widget showing the last background scan time and the No Rule emails waiting. Two reasons: users see that unattended scanning runs without opening the app, and Android exempts apps with an active widget from the Restricted standby bucket (developer.android.com/topic/performance/appstandby: exemptions include "Apps with active widgets"), the bucket that limits jobs to once a day after 8 days without interaction. Android first (a declared ADR-0042 exception unless a Windows equivalent is wanted). Context: Sprint 76 unattended-scanning analysis, F252 (#457), F253 (#458).
 
-**F247. Behavior tests for navigation and platform-gated paths (~120-180m) Priority 25 -- TARGETED FOR SPRINT 76 (PR #448 review carry-in, 2026-10-04)**
+**F247. Behavior tests for navigation and platform-gated paths (~120-180m) Priority 25 -- backlog (PR #448 review carry-in, 2026-10-04; targeted for Sprint 76 but NOT delivered -- that sprint was redirected to unattended Android scanning)**
 - From the PR #448 Claude reviews (test analyzer items 5 and 7, code reviewer MINOR 5, plus test MINORs). Each needs a new navigation harness or a production test seam, so one planned card is more effective than piecemeal fixes at merge time.
   1. `scan_progress_screen.dart` `startRealScan` F238 branches as BEHAVIOR, not source gates: OK returns; `requested == false` proceeds; `!closed` shows "did not stop" and returns; plus the end-to-end success case (holder row present, stop chosen, row closed, manual scan claims). Harness: `s75_t7_scan_busy_snackbar_test.dart` already drives the real `startRealScan`.
   2. Gmail add flow as a widget test: push `AccountSetupScreen`, complete a stubbed `GmailOAuthScreen` with an address, assert the route on top -- and settle where Back lands (code review says the provider picker; Harold's MV round 4 saw the account list). Decide the WebView and manual-token fallback screens, which still open the folder step.
@@ -265,46 +441,9 @@ Each item is fixed PREVENTION FIRST (SPRINT_EXECUTION_WORKFLOW.md 7.7.1): name h
 **F241. Remove or wire `ScanResultStore.getActiveBackgroundScan` Priority 60 -- backlog (Sprint 74 retro Category 14b)**
 - No production caller since the manual-scan dialog moved to the per-account `getActiveScanForAccount`; kept with its tests. Delete with its tests, or wire it. F238 shipped without it (Sprint 75).
 
-### Sprint 76 phone validation carry-ins (after 0.17.0 is live -- Harold, Sprint 75 approval Q3)
+### Superseded: Sprint 76 phone validation carry-ins (Phase 8.2 pass 1, 2026-10-06)
 
-**Sprint 75 close-out (2026-10-04)**: still device-blocked; moved to Sprint 76 with F238 stop-for-manual and F239 Sign In Again on the phone. The checklist is in `docs/sprints/SPRINT_76_PLAN.md`.
-
-**Phase 8.2 pass 1 (2026-10-02)**: MV74-2 SHIPPED in Sprint 74 (the per-account scan lock) and is removed; the F232 half of MV74-3 SHIPPED (cause named from the Fold8 log, fixed). What remains below is phone validation only -- the full checklist is in `docs/sprints/SPRINT_75_PLAN.md`.
-
-**Harold, 2026-09-23**: *"1. and 2. add to sprint 74 Manual Validation"*. These three are NOT new
-work -- the code shipped in Sprint 73 and is committed. What is missing is the only evidence that
-can settle them, which is a run on the S24+. They are listed here so Sprint 74 plans the
-VALIDATION, not a re-implementation.
-
-**MV74-1. F235 Doze scheduling -- validate on the S24+ (Issue #428) Priority 2 (CARRY-IN, Sprint 73 MV step 6)**
-- Phase: Core App Quality
-- Platform: **Android only** (declared ADR-0042 exception -- Doze has no Windows equivalent)
-- **What shipped**: `setAndAllowWhileIdle()` via a new MethodChannel, a Kotlin alarm scheduler, an
-  alarm receiver that RE-ARMS BEFORE scanning, and a `BOOT_COMPLETED` receiver. 13 tests,
-  mutation-verified, Android APK builds.
-- **What to validate**: (a) background scans fire while the phone is idle / screen off; (b) the
-  schedule survives a reboot. Both need real elapsed time -- the delivery window is ~1 hour, so
-  this is an over-hours observation, not a five-minute check.
-- **What NO test can supply** (IMP-1): no unit test can prove an alarm fired on a real dozing
-  phone, nor that a reboot restored the schedule. Without `BootReceiver` working this is a
-  REGRESSION against WorkManager, whose work is persisted -- so the reboot case is the one that
-  matters most.
-- Depends on: the 0.17.0 Play build reaching the S24+ (Sprint 76; 0.17.0 release prepared 2026-10-04).
-
-**MV74-3. F205 -- classify the scan errors on a 0.17.0 phone build (Issue #433) Priority 4 (CARRY-IN; the F232 half SHIPPED in Sprint 74, #422 closed)**
-- Phase: Core App Quality
-- Platform: Android (the reproduction is device-side; any fix follows ADR-0042)
-- **Both were blocked on the same missing thing in Sprint 73: data from the phone.** F232
-  mechanism A was fixed in Sprint 72 and mechanism B remains undiagnosed and INSTRUMENTED rather
-  than guessed at. F205 needs the 53 errors in 3,833 scanned classified before anything can be
-  fixed.
-- **The route is already built and needs no adb.** F233 (Sprint 72) added the diagnostic log and
-  its in-app export, which writes to `Android/data/com.myemailspamfilter/files/` -- confirmed
-  reachable over MTP on 2026-09-23. So: enable diagnostic logging in Settings, reproduce, export
-  from within the app, and the file can be pulled without USB debugging (permanently blocked by
-  company policy on both the S24+ and the Fold8 Ultra).
-- **Do NOT plan a fix for either until the log exists.** Sprint 73 deliberately did not guess at
-  mechanism B, and that decision should hold.
+MV74-1 (F235 Doze, #428) and MV74-3 (F205 errors, #433) are folded into **MV76-1** above. The Doze half of MV74-1 PASSED on the 0.17.4 overnight run (95 worker starts, 111/113 completed); the reboot half and the MV74-3 classification remain, on 0.17.6, inside MV76-1. Both issues stay open until MV76-1 runs. The F205 card under Core App Quality remains the place for any fix the classification calls for.
 
 ### Core App Quality
 
@@ -476,16 +615,6 @@ VALIDATION, not a re-implementation.
 - Depends on: nothing. All three checks read the built AAB, which the release process already
   produces.
 - Source: Harold, 2026-09-10 -- *"target is not perfection, but as good as reasonably possible."*
-
-**F192. Custom IMAP Server support -- build the host-entry UI (~120-180m) Priority 32 (planned for Sprint 69 at the Sprint 68 scope selection, then NOT SELECTED -- `SPRINT_69_PLAN.md`; still unbuilt as of 2026-10-04: no `lib/ui` file collects `imapHost`; split from F191)**
-- Phase: Core App Quality
-- Platform: All
-- **Deliberately SEPARATE from F191, because it is not the same kind of work.** Yahoo and iCloud need a gate opened; Custom IMAP needs a feature built. `GenericIMAPAdapter.custom()` defaults `imapHost: ''` -- it expects the host, port and TLS flag to be supplied by a caller, and no caller supplies them: `grep -rn "imapHost" lib/ui/` returns ZERO matches. There is no screen anywhere that collects a server address, so flipping `imap` to phase 1 would ship a provider that cannot connect to anything.
-- Scope: a server-details form (host, port defaulting to 993, TLS toggle, username, password), validation and a "Test Connection" affordance mirroring the existing `AccountSetupScreen` connection test, plus persistence of the per-account server settings so a saved custom account reconnects without re-entry.
-- Cross-platform parity (ADR-0042): the form is shared Flutter UI and must behave identically on Windows and Android; no platform exception is anticipated, and if one is needed it must be declared.
-- Value: this is the item that turns "Gmail and AOL" into "and any IMAP provider" -- the single largest addressable-market claim in the listing copy, and the one most often asked about for self-hosted and workplace mail.
-- Depends on: nothing. Independent of F191, though shipping both together would let the Play listing be rewritten once instead of twice.
-- Source: Sprint 66 GP-19 listing submission, 2026-09-08.
 
 **F165. Cross-device rules-DB sharing -- user cloud storage (iCloud/OneDrive/Box/Google Drive) exploration + hosted-tier option (~half-day exploration) Priority HOLD (MOVED TO HOLD by Harold, 2026-09-09, Sprint 68 scope selection)**
 - Phase: Product direction / architecture exploration
@@ -761,16 +890,6 @@ _(F142 shipped Sprint 57 -- see `docs/sprints/SPRINT_57_PLAN.md` and CHANGELOG.m
 - Original scope: adaptive breakpoints per ARSD AR-7 (phone/tablet/desktop), priority screens scan progress/results display/settings.
 - **Superseded**: the Sprint 54 F141 deep dive (`docs/sprints/SPRINT_54_F141_ANDROID_DEEP_DIVE.md` Section 2) audited all 23 screens directly -- only 2 use `MediaQuery` at all (both incidental, not breakpoint logic), zero `LayoutBuilder`/`OrientationBuilder` anywhere. Concrete per-screen findings now exist: 16 screens work-as-is, 5 need touch-target/density adaptation (`results_display`, `rules_management`, `safe_senders_management`, `account_setup`, `settings`), 2 need a genuine new interaction pattern (`yaml_import_export` -- data-layer, not layout; `no_rule_review` -- see F143). Use that document's Section 2 as the authoritative scope instead of this item's original vague framing.
 - Source: Sprint 30 gap analysis (gap G23); superseded by Sprint 54 F141.
-
-**SEC-15. IMAP host validation for custom servers (~1h) Priority HOLD -- MOVED TO HOLD (Sprint 39 Backlog Refinement, 2026-05-25)**
-- Phase: Security
-- Platform: All
-- Reject internal/private IP ranges when custom IMAP is implemented. Depends on: F37 (custom IMAP). Moved to HOLD per Harold (2026-05-25). Source: Sprint 31 security audit (S19).
-
-**SEC-8b. Certificate pinning for IMAP endpoints (~4-6h) Priority HOLD -- MOVED TO HOLD (Sprint 39 Backlog Refinement, 2026-05-25)**
-- Phase: Security
-- Platform: All
-- OAuth HTTPS pinning shipped Sprint 33; IMAP pinning deferred because `enough_mail.ImapClient.connectToServer` exposes no `SecurityContext`/bad-cert callback. Options: fork enough_mail, wrap socket via `SecureSocket.connect`, or file upstream issue. Moved to HOLD per Harold (2026-05-25). Source: Sprint 33 SEC-8 notes.
 
 **F6. Provider-Specific Optimizations (~10-12h) Priority HOLD -- MOVED TO HOLD (Sprint 39 Backlog Refinement, 2026-05-25)**
 - Phase: Performance

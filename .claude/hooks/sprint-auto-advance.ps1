@@ -360,6 +360,14 @@ if ($branch -match '_Sprint_(\d+)') {
                                 @{ Name = '5.1.5 WinWright sweep';
                                    Pattern = '(?im)^\s*-\s*\**\s*5\.1\.5\b[^:\r\n]*\**\s*:\s*(.*)$' }
                             )
+                            # 5.1.9 MV rehearsal (Sprint 77 retro IMP-1, Harold 2026-10-08):
+                            # every MV step is RUN by Claude on Harold's build before
+                            # handover, so a handed-over step does not fail in his hands.
+                            # Required from Sprint 78; Sprint 77 plans predate it.
+                            if ([int]$sprintNumW -ge 78) {
+                                $evidenceF193 += @{ Name = '5.1.9 MV rehearsal';
+                                   Pattern = '(?im)^\s*-\s*\**\s*5\.1\.9\b[^:\r\n]*\**\s*:\s*(.*)$' }
+                            }
                             foreach ($eF in $evidenceF193) {
                                 $lines = [regex]::Matches($planTextF193, $eF.Pattern)
                                 $recorded = $false
@@ -428,8 +436,9 @@ artifacts are not RECORDED in docs/sprints/SPRINT_${sprintNumW}_PLAN.md:
 
   $names
 
-SPRINT_CHECKLIST.md requires all three BEFORE Manual Validation starts, so that
-Harold never validates unreviewed code. A marker that still reads PENDING/TBD
+SPRINT_CHECKLIST.md requires them BEFORE Manual Validation starts, so that
+Harold never validates unreviewed code (and, from Sprint 78, never runs a
+validation step Claude has not rehearsed -- 5.1.9). A marker that still reads PENDING/TBD
 does not count -- that placeholder exists to say the work is NOT done.
 
 Run the missing step(s), record the evidence in the plan, then declare MV.

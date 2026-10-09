@@ -1,20 +1,35 @@
+import 'dart:async' show TimeoutException;
+import 'dart:io' show SocketException;
+
+import 'package:flutter/foundation.dart' show visibleForTesting;
 import 'package:flutter/material.dart';
 import 'package:logger/logger.dart';
 import 'package:provider/provider.dart';
 import 'package:url_launcher/url_launcher.dart';
+import '../../adapters/email_providers/custom_imap_settings.dart';
 import '../../adapters/email_providers/email_provider.dart';
+import '../../adapters/email_providers/generic_imap_adapter.dart';
 import '../../adapters/email_providers/platform_registry.dart';
 import '../../adapters/storage/secure_credentials_store.dart';
 import '../../core/providers/email_scan_provider.dart';
+import '../../core/security/imap_certificate_trust.dart';
+import '../../core/security/imap_host_policy.dart';
 import '../../core/storage/settings_store.dart';
 import '../../util/error_messages.dart';
 import '../../util/redact.dart';
+import '../utils/credential_labels.dart';
 import 'help_screen.dart';
 import 'scan_progress_screen.dart';
 import 'gmail_oauth_screen.dart';
 import '../widgets/standard_app_bar_actions.dart';
 import '../widgets/screen_version_line.dart'; // F229 (Sprint 73)
 import '../widgets/system_inset_wrapper.dart'; // F209 (Sprint 69)
+import '../utils/confirm_replace_account.dart';
+
+// The question's text helpers moved to the shared helper; re-exported so the
+// existing import of this screen keeps working.
+export '../utils/confirm_replace_account.dart'
+    show replaceAccountMessage, providerNameFor;
 
 /// Gmail authentication method choices
 ///
@@ -42,6 +57,13 @@ class AccountSetupScreen extends StatefulWidget {
     required this.platformDisplayName,
   });
 
+  /// SEC-8b: shown when Save goes ahead because the server could not be
+  /// reached to check its certificate (the only failure that may save).
+  @visibleForTesting
+  static const String savedUncheckedMessage =
+      'The server could not be reached, so its certificate was not checked. '
+      'It is checked the first time the app connects.';
+
   @override
   State<AccountSetupScreen> createState() => _AccountSetupScreenState();
 }
@@ -49,6 +71,36 @@ class AccountSetupScreen extends StatefulWidget {
 class _AccountSetupScreenState extends State<AccountSetupScreen> {
   final _emailController = TextEditingController();
   final _passwordController = TextEditingController();
+
+  // F192 (Sprint 77): Custom IMAP server fields. Used only when
+  // `widget.platformId == 'imap'`; every other provider ignores them.
+  final _hostController = TextEditingController();
+  final _portController =
+      TextEditingController(text: ImapEncryption.sslTls.defaultPort.toString());
+  final _usernameController = TextEditingController();
+  ImapEncryption _encryption = ImapEncryption.sslTls;
+  String? _hostError;
+  String? _portError;
+
+  /// True once the user typed in the Username field. Until then the field
+  /// follows the email address, because most IMAP logins are the address.
+  bool _usernameEdited = false;
+
+  /// The host the user already accepted the one-time local-network warning
+  /// for (lower-cased). The warning shows ONCE: Test Connection and Save share
+  /// this, so accepting it on the first never asks again for the same host.
+  String? _localHostAcknowledged;
+
+  /// SEC-8b (ADR-0046): fingerprint of the server certificate trusted in THIS
+  /// form (the user said Yes in "Trust this server?", or the device trusted
+  /// it during Save). Bound to [_trustedCertTarget] so trust given to one
+  /// server is never carried to a different host, port or encryption.
+  String? _trustedCertSha256;
+  String? _trustedCertTarget;
+
+  static String _certTarget(CustomImapSettings s) =>
+      '${s.host.toLowerCase()}:${s.port}:${s.encryption.wireValue}';
+
   final _logger = Logger();
   bool _isLoading = false;
   bool _isTesting = false;
@@ -81,12 +133,32 @@ class _AccountSetupScreenState extends State<AccountSetupScreen> {
   void dispose() {
     _emailController.dispose();
     _passwordController.dispose();
+    _hostController.dispose();
+    _portController.dispose();
+    _usernameController.dispose();
     super.dispose();
   }
+
+  /// True for the Custom IMAP provider (F192): the form shows the server
+  /// section and Test Connection / Save carry the server settings.
+  bool get _isCustomImap => widget.platformId == 'imap';
+
+  /// MV-Q5: "App Password" or "Password", for the provider actually chosen
+  /// (Gmail App Password resolves through 'gmail-imap').
+  /// MV-Q8: a Custom IMAP server known to take an app password (Yahoo, AOL,
+  /// Gmail, iCloud) reads "App Password", from the server name as typed.
+  String get _credentialLabel => credentialLabelFor(_effectivePlatformId,
+      imapHost: _isCustomImap ? _hostController.text : null);
 
   @override
   void initState() {
     super.initState();
+    _emailController.addListener(() {
+      // Username follows the email address until the user edits it.
+      if (_isCustomImap && !_usernameEdited) {
+        _usernameController.text = _emailController.text.trim();
+      }
+    });
     _isGmail = widget.platformId.toLowerCase() == 'gmail';
     // For non-Gmail platforms, no auth method choice needed
     if (!_isGmail) {
@@ -126,7 +198,12 @@ class _AccountSetupScreenState extends State<AccountSetupScreen> {
 
   /// Password length warning (SEC-21)
   /// Returns a warning message for short passwords, or null if OK.
+  ///
+  /// MV-Q5: only for an app password, whose length the provider fixes. A
+  /// normal password's length is the user's own choice, so a short one is
+  /// not a sign of a wrong entry.
   String? _passwordLengthWarning(String password) {
+    if (_credentialLabel != 'App Password') return null;
     if (password.isNotEmpty && password.length < 8) {
       return 'App passwords are typically 16 characters. '
           'Short passwords may indicate an incorrect entry.';
@@ -140,7 +217,9 @@ class _AccountSetupScreenState extends State<AccountSetupScreen> {
     if (email.isEmpty || password.isEmpty) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Email and app password are required.')),
+          SnackBar(
+              content: Text(
+                  'Email and ${_credentialLabel.toLowerCase()} are required.')),
         );
       }
       return false;
@@ -176,6 +255,216 @@ class _AccountSetupScreenState extends State<AccountSetupScreen> {
     return true;
   }
 
+  /// F192 / SEC-15 (Sprint 77): validate the Custom IMAP server fields and, for
+  /// a local or private address, show the one-time warning.
+  ///
+  /// Called from BOTH [_testConnection] and [_handleConnect]. The policy
+  /// itself lives in ONE pure function, `ImapHostPolicy.classify`; this method
+  /// only turns its answer into field messages and a dialog.
+  ///
+  /// Returns the settings to use, or null when the form must stop (a field
+  /// message is shown, or the user declined the warning).
+  Future<CustomImapSettings?> _prepareCustomServer() async {
+    final host = _hostController.text.trim();
+    final hostClass = ImapHostPolicy.classify(host);
+    final port = int.tryParse(_portController.text.trim());
+
+    String? hostError;
+    switch (hostClass) {
+      case ImapHostClass.empty:
+        hostError = ImapHostPolicy.emptyMessage;
+      case ImapHostClass.malformed:
+        hostError = ImapHostPolicy.malformedMessage;
+      case ImapHostClass.publicHost:
+      case ImapHostClass.localOrPrivate:
+        hostError = null;
+    }
+    final portError = (port == null || port < 1 || port > 65535)
+        ? 'Enter a port number from 1 to 65535.'
+        : null;
+
+    setState(() {
+      _hostError = hostError;
+      _portError = portError;
+    });
+    if (hostError != null || portError != null) return null;
+
+    if (hostClass == ImapHostClass.localOrPrivate &&
+        _localHostAcknowledged != host.toLowerCase()) {
+      final proceed = await _confirmLocalHost();
+      if (!proceed || !mounted) return null;
+      _localHostAcknowledged = host.toLowerCase();
+    }
+
+    final settings = CustomImapSettings(
+      host: host,
+      port: port!,
+      encryption: _encryption,
+      username: _usernameController.text.trim(),
+    );
+    // SEC-8b: carry the trusted fingerprint only to the SAME server.
+    return _trustedCertTarget == _certTarget(settings)
+        ? settings.withTrustedCertificate(_trustedCertSha256)
+        : settings;
+  }
+
+  /// SEC-8b (Sprint 77 Q4, ADR-0046): the one-time "Trust this server?"
+  /// question for a certificate the device does not trust. Shows the
+  /// certificate's SHA-256 fingerprint, subject, issuer and validity. On Yes,
+  /// the fingerprint is remembered for THIS server in the form (and stored
+  /// with the account on Save). Returns true when the user trusts it.
+  Future<bool> _confirmServerCertificate(
+      ServerCertificateNotTrustedException e, CustomImapSettings settings) async {
+    final cert = e.certificate;
+    final changed = e.problem == CertificateTrustProblem.changed;
+    String day(DateTime d) => d.toLocal().toString().split(' ').first;
+    final result = await showDialog<bool>(
+      context: context,
+      builder: (dialogContext) => AlertDialog(
+        title: const Text('Trust this server?'),
+        content: SingleChildScrollView(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(changed
+                  ? 'The certificate of ${e.host} is different from the one '
+                      'you trusted before. Your device does not trust the new '
+                      'one, so the app has not sent your password.'
+                  : 'Your device does not trust the certificate of ${e.host} '
+                      '(for example, it is self-signed), so the app has not '
+                      'sent your password.'),
+              const SizedBox(height: 8),
+              const Text('Trust it only if you run this server yourself, or '
+                  'the fingerprint below matches the one your server shows.'),
+              const SizedBox(height: 12),
+              const Text('Fingerprint (SHA-256)',
+                  style: TextStyle(fontWeight: FontWeight.bold)),
+              SelectableText(cert.displayFingerprint,
+                  key: const Key('cert_fingerprint'),
+                  style: const TextStyle(fontFamily: 'monospace', fontSize: 12)),
+              const SizedBox(height: 8),
+              Text('Issued to: ${cert.subject}'),
+              Text('Issued by: ${cert.issuer}'
+                  '${cert.isSelfSigned ? ' (self-signed)' : ''}'),
+              Text('Valid: ${day(cert.validFrom)} to ${day(cert.validTo)}'),
+              Text('Server: ${e.host}:${e.port}'),
+            ],
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(dialogContext).pop(false),
+            child: const Text('Do Not Trust'),
+          ),
+          ElevatedButton(
+            onPressed: () => Navigator.of(dialogContext).pop(true),
+            child: const Text('Trust'),
+          ),
+        ],
+      ),
+    );
+    if (result != true || !mounted) return false;
+    setState(() {
+      _trustedCertSha256 = cert.sha256Hex;
+      _trustedCertTarget = _certTarget(settings);
+    });
+    return true;
+  }
+
+  /// SEC-8b: Save checks the server certificate BEFORE storing the account,
+  /// so the trust question is asked while the user is here (a background
+  /// scan can never ask). No password is sent by this check.
+  ///
+  /// Returns the settings to store (with the fingerprint of a certificate
+  /// the device trusts or the user accepted), or null when Save must stop.
+  ///
+  /// Only a server that could not be REACHED (`SocketException`,
+  /// `TimeoutException` -- no network, wrong address, port closed) lets Save
+  /// continue, because Save never required a connection; the user is told
+  /// the certificate was not checked, and it is checked on the first
+  /// connection, where an untrusted one stops with a message that says how
+  /// to confirm it. Every other failure means the server WAS reached and the
+  /// secure connection failed (STARTTLS refused, TLS handshake failure, a
+  /// broken exchange): saving would store an account whose every scan fails,
+  /// so Save stops with the named reason (Sprint 77 Phase 5.1.2 F-PRECHECK;
+  /// before, a catch-all saved it anyway and reported "Account saved").
+  Future<CustomImapSettings?> _checkCertificateBeforeSave(
+      String email, String password, CustomImapSettings settings) async {
+    final platform = PlatformRegistry.getPlatform(_effectivePlatformId);
+    if (platform is! GenericIMAPAdapter) return settings;
+    final credentials = Credentials(
+      email: email,
+      password: password,
+      additionalParams: settings.toParams(),
+    );
+    try {
+      final info = await platform.probeServerCertificate(credentials);
+      return settings.withTrustedCertificate(info.sha256Hex);
+    } on ServerCertificateNotTrustedException catch (e) {
+      if (!mounted) return null;
+      final trusted = await _confirmServerCertificate(e, settings);
+      if (!trusted) {
+        if (mounted) {
+          setState(() => _connectionStatus =
+              '[FAIL] Not saved: the server certificate was not trusted.');
+        }
+        return null;
+      }
+      return settings.withTrustedCertificate(e.certificate.sha256Hex);
+    } on SocketException catch (e) {
+      return _saveUnchecked(settings, e);
+    } on TimeoutException catch (e) {
+      return _saveUnchecked(settings, e);
+    } catch (e) {
+      // UserFacingConnectionException (STARTTLS refused), HandshakeException
+      // and anything else: the server answered and the secure connection
+      // failed. Never saved.
+      _logger.w('Certificate check before Save failed; not saved: $e');
+      if (mounted) {
+        setState(() => _connectionStatus =
+            '[FAIL] Not saved: ${ErrorMessages.humanize(e)}');
+      }
+      return null;
+    }
+  }
+
+  /// A network failure only (see [_checkCertificateBeforeSave]): save, and
+  /// say the certificate was not checked.
+  CustomImapSettings _saveUnchecked(CustomImapSettings settings, Object e) {
+    _logger.w('Server not reachable during the certificate check; saving '
+        'without a recorded certificate: $e');
+    if (mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text(AccountSetupScreen.savedUncheckedMessage)),
+      );
+    }
+    return settings;
+  }
+
+  /// The one-time local-network warning (Sprint 77 Q2). Text is fixed by
+  /// Harold and lives in [ImapHostPolicy.localNetworkWarning].
+  Future<bool> _confirmLocalHost() async {
+    final result = await showDialog<bool>(
+      context: context,
+      builder: (dialogContext) => AlertDialog(
+        title: const Text('Local server'),
+        content: const Text(ImapHostPolicy.localNetworkWarning),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(dialogContext).pop(false),
+            child: const Text('Cancel'),
+          ),
+          ElevatedButton(
+            onPressed: () => Navigator.of(dialogContext).pop(true),
+            child: const Text('Continue'),
+          ),
+        ],
+      ),
+    );
+    return result == true;
+  }
+
   /// Test IMAP connection with provided credentials
   Future<void> _testConnection() async {
     if (_isGmailOAuth) {
@@ -187,6 +476,12 @@ class _AccountSetupScreenState extends State<AccountSetupScreen> {
     final password = _passwordController.text.trim();
 
     if (!_validateInputs(email, password)) return;
+
+    CustomImapSettings? customServer;
+    if (_isCustomImap) {
+      customServer = await _prepareCustomServer();
+      if (customServer == null || !mounted) return;
+    }
 
     setState(() {
       _isTesting = true;
@@ -201,7 +496,11 @@ class _AccountSetupScreenState extends State<AccountSetupScreen> {
       }
 
       // Load credentials
-      final credentials = Credentials(email: email, password: password);
+      final credentials = Credentials(
+        email: email,
+        password: password,
+        additionalParams: customServer?.toParams(),
+      );
       await platform.loadCredentials(credentials);
 
       // Test connection
@@ -225,6 +524,16 @@ class _AccountSetupScreenState extends State<AccountSetupScreen> {
 
       // Disconnect after test
       await platform.disconnect();
+    } on ServerCertificateNotTrustedException catch (e) {
+      // SEC-8b: ask "Trust this server?"; on Yes, test again with the
+      // fingerprint (the second attempt connects only to that certificate).
+      setState(() {
+        _isTesting = false;
+        _connectionStatus = '[FAIL] ${e.userMessage}';
+      });
+      if (customServer == null || !mounted) return;
+      final trusted = await _confirmServerCertificate(e, customServer);
+      if (trusted && mounted) await _testConnection();
     } catch (e) {
       // SEC-22 (Sprint 33): surface rate-limit blocks with a clear unlock
       // time instead of a raw toString() that exposes the redacted account
@@ -246,6 +555,15 @@ class _AccountSetupScreenState extends State<AccountSetupScreen> {
       }
     }
   }
+
+  /// Sprint 77 MV-Q4 (Harold, Q4 = 1): ask before an add replaces a saved
+  /// account. Accounts are keyed by email address alone, so adding an address
+  /// that is already saved (the same address on a second server, or one
+  /// already added as AOL) used to overwrite that account's sign-in with no
+  /// warning. Re-adding is also how a user enters a new app password, so the
+  /// add is confirmed, not blocked. True = go ahead.
+  Future<bool> _confirmReplaceExisting(String accountId) =>
+      confirmReplaceExistingAccount(context, _credStore, accountId);
 
   /// Save credentials and proceed to scan screen
   ///
@@ -273,6 +591,32 @@ class _AccountSetupScreenState extends State<AccountSetupScreen> {
       return;
     }
 
+    // MV-Q4 (Sprint 77): the account id is the email address, so saving an
+    // address that is already saved REPLACES that account's sign-in. Ask
+    // first, before any server or certificate question.
+    if (!await _confirmReplaceExisting(email)) {
+      if (mounted) setState(() => _isLoading = false);
+      return;
+    }
+
+    // F192 / SEC-15: validate the server fields (and show the one-time
+    // local-network warning) before anything is saved.
+    CustomImapSettings? customServer;
+    if (_isCustomImap) {
+      customServer = await _prepareCustomServer();
+      if (customServer == null || !mounted) {
+        if (mounted) setState(() => _isLoading = false);
+        return;
+      }
+      // SEC-8b: certificate check (and the trust question) before saving.
+      customServer =
+          await _checkCertificateBeforeSave(email, password, customServer);
+      if (customServer == null || !mounted) {
+        if (mounted) setState(() => _isLoading = false);
+        return;
+      }
+    }
+
     // [NEW] MULTI-ACCOUNT SUPPORT: Use email as primary key
     // Store platformId separately to keep fields independent
     // Email is unique identifier, platformId is stored as metadata
@@ -283,7 +627,11 @@ class _AccountSetupScreenState extends State<AccountSetupScreen> {
     try {
       await _credStore.saveCredentials(
         accountId,
-        Credentials(email: email, password: password),
+        Credentials(
+          email: email,
+          password: password,
+          additionalParams: customServer?.toParams(),
+        ),
         platformId: _effectivePlatformId,
       );
 
@@ -686,6 +1034,10 @@ class _AccountSetupScreenState extends State<AccountSetupScreen> {
               ],
 
               const SizedBox(height: 24),
+              if (_isCustomImap) ...[
+                _buildCustomServerSection(),
+                const SizedBox(height: 16),
+              ],
               TextField(
                 controller: _emailController,
                 decoration: const InputDecoration(
@@ -700,10 +1052,17 @@ class _AccountSetupScreenState extends State<AccountSetupScreen> {
               if (showPasswordField) ...[
                 TextField(
                   controller: _passwordController,
-                  decoration: const InputDecoration(
-                    labelText: 'App Password',
-                    border: OutlineInputBorder(),
-                    prefixIcon: Icon(Icons.lock),
+                  decoration: InputDecoration(
+                    // MV-Q5: "App Password" only where the provider takes
+                    // one; a Custom IMAP server takes the normal password.
+                    labelText: _credentialLabel,
+                    // MV-Q8: an unknown custom server may still take an app
+                    // password; the app cannot know, so it says so.
+                    helperText: _isCustomImap && _credentialLabel == 'Password'
+                        ? kCustomImapPasswordHint
+                        : null,
+                    border: const OutlineInputBorder(),
+                    prefixIcon: const Icon(Icons.lock),
                   ),
                   obscureText: true,
                 ),
@@ -791,7 +1150,7 @@ class _AccountSetupScreenState extends State<AccountSetupScreen> {
                     ? const CircularProgressIndicator()
                     : Text(showOAuthInfo
                         ? 'Sign in with Google (OAuth 2.0)'
-                        : 'Save Credentials & Continue'),
+                        : kSaveAccountButtonLabel),
               ),
 
               const SizedBox(height: 16),
@@ -807,6 +1166,95 @@ class _AccountSetupScreenState extends State<AccountSetupScreen> {
           ],
         ),
       ),
+    );
+  }
+
+  /// F192 (Sprint 77): the server section of the Custom IMAP form: host, port,
+  /// encryption and username. Shown above the email and password fields.
+  Widget _buildCustomServerSection() {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        TextField(
+          key: const Key('custom_imap_host'),
+          controller: _hostController,
+          decoration: InputDecoration(
+            labelText: 'Server name',
+            hintText: 'imap.example.com',
+            border: const OutlineInputBorder(),
+            prefixIcon: const Icon(Icons.dns),
+            errorText: _hostError,
+          ),
+          keyboardType: TextInputType.url,
+          autocorrect: false,
+          enableSuggestions: false,
+          // Always rebuild: the password label follows the server name (MV-Q8).
+          onChanged: (_) => setState(() => _hostError = null),
+        ),
+        const SizedBox(height: 16),
+        Text('Encryption', style: Theme.of(context).textTheme.labelMedium),
+        const SizedBox(height: 4),
+        SegmentedButton<ImapEncryption>(
+          key: const Key('custom_imap_encryption'),
+          segments: [
+            for (final mode in ImapEncryption.values)
+              ButtonSegment<ImapEncryption>(
+                value: mode,
+                label: Text(mode.label),
+              ),
+          ],
+          selected: {_encryption},
+          showSelectedIcon: false,
+          onSelectionChanged: (selection) {
+            final next = selection.first;
+            setState(() {
+              // Move the port to the new mode's usual value only when the
+              // user has not typed a different one.
+              final current = int.tryParse(_portController.text.trim());
+              if (current == null || current == _encryption.defaultPort) {
+                _portController.text = next.defaultPort.toString();
+              }
+              _encryption = next;
+              _portError = null;
+            });
+          },
+        ),
+        const SizedBox(height: 16),
+        TextField(
+          key: const Key('custom_imap_port'),
+          controller: _portController,
+          decoration: InputDecoration(
+            labelText: 'Port',
+            border: const OutlineInputBorder(),
+            prefixIcon: const Icon(Icons.numbers),
+            errorText: _portError,
+          ),
+          keyboardType: TextInputType.number,
+          onChanged: (_) {
+            if (_portError != null) setState(() => _portError = null);
+          },
+        ),
+        const SizedBox(height: 16),
+        TextField(
+          key: const Key('custom_imap_username'),
+          controller: _usernameController,
+          decoration: const InputDecoration(
+            labelText: 'Username',
+            helperText: 'Usually your email address. Change it only if your '
+                'server uses a different login name.',
+            border: OutlineInputBorder(),
+            prefixIcon: Icon(Icons.person),
+          ),
+          autocorrect: false,
+          enableSuggestions: false,
+          onChanged: (_) => _usernameEdited = true,
+        ),
+        const SizedBox(height: 8),
+        Text(
+          'To change these server settings later, delete the account on the Accounts screen and add it again.',
+          style: TextStyle(color: Colors.grey.shade600, fontSize: 12),
+        ),
+      ],
     );
   }
 

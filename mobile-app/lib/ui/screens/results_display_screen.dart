@@ -1161,8 +1161,23 @@ class _ResultsDisplayScreenState extends State<ResultsDisplayScreen> {
                                       ? const ScanStartedEmptyState()
                                       : allResults.isNotEmpty
                                           ? const NoMatchingEmailsEmptyState()
+                                          // Sprint 77 MV step 2: _hasEverScanned
+                                          // is read once, at screen load. A
+                                          // first-ever scan that completes
+                                          // after that read must not show
+                                          // "No Results Yet", so a live scan
+                                          // of THIS account completing also
+                                          // counts as having scanned.
                                           : (_historicalLoaded &&
-                                                  !_hasEverScanned)
+                                                  !_hasEverScanned &&
+                                                  !(widget.historicalScanId ==
+                                                          null &&
+                                                      scanProvider.status ==
+                                                          ScanStatus
+                                                              .completed &&
+                                                      scanProvider
+                                                              .currentAccountId ==
+                                                          widget.accountId))
                                               ? const NoResultsEmptyState()
                                               // F203: pass the skip count so
                                               // the state can distinguish

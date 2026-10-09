@@ -335,7 +335,10 @@ class _PlatformSelectionScreenState extends State<PlatformSelectionScreen> {
             ),
             const SizedBox(height: 12),
             Text(
-              'For security, we never ask for your main account password.\n\n- Gmail uses Google Sign-In (OAuth 2.0).\n- AOL/Yahoo/iCloud use app-specific passwords.\n\nTap on your provider to see setup steps.',
+              // MV-Q5 (Sprint 77): "never ask for your main account
+              // password" stopped being true when F192 added Custom IMAP,
+              // which asks for exactly that.
+              'For security, Gmail, AOL, Yahoo and iCloud never need your main account password.\n\n- Gmail uses Google Sign-In (OAuth 2.0).\n- AOL/Yahoo/iCloud use an App Password.\n- A Custom IMAP Server uses your normal Password for that server.\n\nTap on your provider to see setup steps.',
               style: TextStyle(
                 fontSize: 12,
                 color: Colors.blue[900],
@@ -460,7 +463,11 @@ class _SetupInstructionsDialogState extends State<_SetupInstructionsDialog> {
                 // needed" box below). Same id check as the checkbox.
                 widget.platformInfo.id == 'gmail'
                     ? 'Here is what happens when you connect:'
-                    : 'Before connecting, you\'ll need to generate an app password:',
+                    : widget.platformInfo.id == 'imap'
+                        // F192: a custom server is set up from details your
+                        // email provider publishes, not from an app password.
+                        ? 'Before connecting, find these details from your email provider:'
+                        : 'Before connecting, you\'ll need to generate an app password:',
               style: Theme.of(context).textTheme.bodyMedium,
             ),
             const SizedBox(height: 16),
@@ -471,7 +478,9 @@ class _SetupInstructionsDialogState extends State<_SetupInstructionsDialog> {
                 value: _understood,
                 onChanged: (value) =>
                     setState(() => _understood = value ?? false),
-                title: const Text('I have my app password ready'),
+                title: Text(widget.platformInfo.id == 'imap'
+                    ? 'I have my server details and password ready'
+                    : 'I have my app password ready'),
                 contentPadding: EdgeInsets.zero,
               ),
             if (widget.platformInfo.id == 'gmail')
@@ -519,8 +528,26 @@ class _SetupInstructionsDialogState extends State<_SetupInstructionsDialog> {
       'yahoo' => _buildYahooSteps(),
       'icloud' => _buildICloudSteps(),
       'gmail' => _buildGmailSteps(),
+      'imap' => _buildCustomImapSteps(),
       _ => _buildGenericSteps(),
     };
+  }
+
+  /// F192 (Sprint 77): what to gather before the Custom IMAP form. The words
+  /// "server name", "port" and "encryption" match the form's field labels.
+  Widget _buildCustomImapSteps() {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        _buildStep(1, 'The IMAP server name your provider lists (it often '
+            'starts with "imap")'),
+        _buildStep(2, 'The port and encryption: usually 993 with SSL/TLS, '
+            'or 143 with STARTTLS'),
+        _buildStep(3, 'Your login name (often your email address) and your '
+            'password, or an app password if your provider requires one'),
+        _buildStep(4, 'Passwords are never sent without encryption'),
+      ],
+    );
   }
 
   Widget _buildGmailSteps() {

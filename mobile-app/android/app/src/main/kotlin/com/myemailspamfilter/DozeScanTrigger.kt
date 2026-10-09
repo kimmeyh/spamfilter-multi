@@ -134,23 +134,41 @@ object DozeScanTrigger {
 
     /** Must match `kTriggerAppKey` in `background_scan_trigger.dart`. */
     const val KEY_TRIGGER_APP = "triggerApp"
-    private const val UNIQUE_NEW_MAIL = "f253_new_mail_scan"
 
     /**
-     * F253 (Sprint 76): one scan of EVERY account (no accountId -- the worker's
-     * all-accounts path, where each account's own background switch and the
-     * per-account claim still decide), started by a mail app's notification.
+     * F264: the providers the posting app maps to (see
+     * [MailNotificationPolicy.encodeProviders]). Must match
+     * `kTriggerProvidersKey` in `notification_account_filter.dart`.
+     */
+    const val KEY_TRIGGER_PROVIDERS = "triggerProviders"
+
+    /**
+     * The single unique-work name used before the Sprint 77 F-PRECHECK fix
+     * (work is now named per provider set, see
+     * [MailNotificationPolicy.newMailWorkName]). Still cancelled when the
+     * feature is turned off, for work queued by an older build.
+     */
+    private const val LEGACY_UNIQUE_NEW_MAIL = "f253_new_mail_scan"
+
+    /**
+     * F253 (Sprint 76): one scan started by a mail app's notification (no
+     * accountId -- the worker's all-accounts path, where [providers], each
+     * account's own switches and the per-account claim decide).
      *
      * KEEP, not REPLACE: a notification that arrives while a triggered scan is
-     * queued or running must not cancel it or stack a second (R-5). Requires a
-     * network connection, so a trigger in a no-network moment waits instead of
-     * running a scan that can only fail.
+     * queued or running must not cancel it or stack a second (R-5). KEEP
+     * applies within ONE provider set: [uniqueWorkName] is per set
+     * (F-PRECHECK), so a queued Gmail run never drops an AOL request. Requires
+     * a network connection, so a trigger in a no-network moment waits instead
+     * of running a scan that can only fail.
      */
     fun enqueueAllAccounts(
         context: Context,
         source: String,
         triggerAtMs: Long,
         sourceApp: String,
+        providers: String,
+        uniqueWorkName: String,
     ) {
         val input = buildTaskInputData(
             dartTask = TASK_NAME,
@@ -158,11 +176,13 @@ object DozeScanTrigger {
                 KEY_TRIGGER_SOURCE to source,
                 KEY_TRIGGER_AT_MS to triggerAtMs,
                 KEY_TRIGGER_APP to sourceApp,
+                KEY_TRIGGER_PROVIDERS to providers,
             ),
-            uniqueName = UNIQUE_NEW_MAIL,
+            uniqueName = uniqueWorkName,
         )
         val request = OneTimeWorkRequest.Builder(BackgroundWorker::class.java)
             .setInputData(input)
+            .addTag(MailNotificationPolicy.NEW_MAIL_WORK_TAG)
             .setConstraints(
                 Constraints.Builder()
                     .setRequiredNetworkType(NetworkType.CONNECTED)
@@ -170,17 +190,23 @@ object DozeScanTrigger {
             )
             .build()
         WorkManager.getInstance(context).enqueueUniqueWork(
-            UNIQUE_NEW_MAIL,
+            uniqueWorkName,
             ExistingWorkPolicy.KEEP,
             request,
         )
-        // "requested", not "enqueued": with KEEP an already-queued scan wins
-        // and this request is dropped by design (review H-1).
-        Log.i(TAG, "scan requested after a mail notification")
+        // "requested", not "enqueued": with KEEP an already-queued scan for
+        // the same provider set wins and this request is dropped by design
+        // (review H-1).
+        Log.i(TAG, "scan requested after a mail notification ($providers)")
     }
 
-    /** Turning F253 off cancels a queued or backing-off new-mail scan (review H-1). */
+    /**
+     * Turning F253 off cancels every queued or backing-off new-mail scan
+     * (review H-1): all provider sets, by tag, plus the pre-fix single name.
+     */
     fun cancelNewMailScan(context: Context) {
-        WorkManager.getInstance(context).cancelUniqueWork(UNIQUE_NEW_MAIL)
+        val wm = WorkManager.getInstance(context)
+        wm.cancelAllWorkByTag(MailNotificationPolicy.NEW_MAIL_WORK_TAG)
+        wm.cancelUniqueWork(LEGACY_UNIQUE_NEW_MAIL)
     }
 }

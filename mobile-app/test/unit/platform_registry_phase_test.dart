@@ -63,14 +63,20 @@ void main() {
       expect(phase1, containsAll(<String>['yahoo', 'icloud']));
     });
 
-    test('Custom IMAP stays gated -- it is genuinely unbuilt (F192)', () {
-      // NOT an oversight. `GenericIMAPAdapter.custom()` defaults imapHost to
-      // '' and expects a caller to supply host/port/TLS; no screen collects
-      // them. Opening this gate would ship a provider that cannot connect to
-      // anything. F192 (Sprint 69) builds the host-entry UI first.
-      expect(byId('imap').phase, greaterThan(1),
-          reason: 'Custom IMAP must not become selectable until F192 ships a '
-              'form that collects the server address.');
+    test('Custom IMAP is selectable -- F192 shipped the server form (Sprint 77)',
+        () {
+      // Deliberately INVERTED in Sprint 77. Until then this test pinned the
+      // tile as hidden, because `GenericIMAPAdapter.custom()` defaults
+      // imapHost to '' and no screen collected a server. The form now exists
+      // (account_setup_screen.dart, the Custom IMAP server section), so the
+      // phase must be 1 and the tile must be in the phase-1 query the screen
+      // uses. The widget test custom_imap_setup_flow_test.dart proves the
+      // tile reaches that form through the real picker.
+      expect(byId('imap').phase, 1,
+          reason: 'F192 ships the form that collects the server address, so '
+              'Custom IMAP must be selectable.');
+      expect(PlatformRegistry.getPlatformsByPhase(1).map((p) => p.id),
+          contains('imap'));
     });
   });
 }

@@ -1,11 +1,14 @@
 import 'dart:io';
 import 'dart:convert';
+import 'package:flutter/foundation.dart' show visibleForTesting;
 import 'package:logger/logger.dart';
 import 'package:path/path.dart' as path;
 
 import 'app_environment.dart';
-import 'scan_frequency.dart';
+import 'scan_interval.dart';
+import 'diagnostic_logger.dart';
 import 'powershell_script_generator.dart';
+import '../storage/settings_store.dart';
 import '../utils/account_id_sanitizer.dart';
 import '../../util/redact.dart';
 
@@ -48,20 +51,24 @@ class WindowsTaskSchedulerService {
   /// Create a scheduled task for background scanning
   ///
   /// Creates a Windows Task Scheduler task that launches the app
-  /// with `--background-scan` flag at the specified frequency.
+  /// with `--background-scan` flag every [intervalMinutes] minutes (F264).
   static Future<bool> createScheduledTask({
-    required ScanFrequency frequency,
+    required int intervalMinutes,
     String? accountId,
   }) async {
-    if (frequency == ScanFrequency.disabled) {
-      _logger.w('Cannot create task with disabled frequency');
+    if (intervalMinutes <= 0) {
+      _logger.w('Cannot create task with a non-positive interval');
       return false;
     }
 
     try {
       final name = taskNameFor(accountId);
-      _logger.i('Creating scheduled task "${_logTaskLabel(accountId)}" with frequency: ${frequency.label}'
+      _logger.i('Creating scheduled task "${_logTaskLabel(accountId)}" every ${ScanInterval.label(intervalMinutes)}'
           '${accountId != null ? ' (account: ${Redact.accountId(accountId)})' : ''}');
+
+      // Read the slot FIRST: a read that fails twice throws, and nothing
+      // else (no script, no task) must happen after that.
+      final staggerSlot = await _staggerSlotFor(accountId);
 
       // Get executable path (current running app)
       final executablePath = await _getExecutablePath();
@@ -74,9 +81,10 @@ class WindowsTaskSchedulerService {
       final scriptPath = await PowerShellScriptGenerator.generateCreateTaskScript(
         taskName: name,
         executablePath: executablePath,
-        frequency: frequency,
+        intervalMinutes: intervalMinutes,
         workingDirectory: workingDirectory,
         accountId: accountId,
+        staggerSlot: staggerSlot,
       );
 
       // Execute script
@@ -102,21 +110,22 @@ class WindowsTaskSchedulerService {
   ///
   /// Modifies the trigger of the existing task without recreating it
   static Future<bool> updateScheduledTask({
-    required ScanFrequency frequency,
+    required int intervalMinutes,
     String? accountId,
   }) async {
-    if (frequency == ScanFrequency.disabled) {
-      // Disabled means delete the task
+    if (intervalMinutes <= 0) {
+      // Disabled (zero or less) means delete the task
       return await deleteScheduledTask(accountId: accountId);
     }
 
     try {
-      _logger.i('Updating scheduled task "${_logTaskLabel(accountId)}" frequency to: ${frequency.label}');
+      _logger.i('Updating scheduled task "${_logTaskLabel(accountId)}" interval to: ${ScanInterval.label(intervalMinutes)}');
 
       // Generate PowerShell script
       final scriptPath = await PowerShellScriptGenerator.generateUpdateTaskScript(
         taskName: taskNameFor(accountId),
-        frequency: frequency,
+        intervalMinutes: intervalMinutes,
+        staggerSlot: await _staggerSlotFor(accountId),
       );
 
       // Execute script
@@ -136,6 +145,54 @@ class WindowsTaskSchedulerService {
       await PowerShellScriptGenerator.cleanupScripts();
     }
   }
+
+  /// Sprint 77 MV-Q2 = 1: the account's saved schedule slot, which sets its
+  /// fixed start stagger. Every create and update path (Settings, startup
+  /// ensure, path repair, the F264 upgrade re-registration) comes through
+  /// [createScheduledTask] or [updateScheduledTask], so all of them get it.
+  /// The legacy global task (no account) is slot 0.
+  ///
+  /// A failed read is retried once, after [slotReadRetryDelay]: the same
+  /// shape as the F98 "database is locked" retry (one more attempt after a
+  /// wait). If it fails again this THROWS, so the caller reports the
+  /// registration as failed (the existing Settings failure message shows) and
+  /// no task is registered. A fallback to slot 0 was wrong: slot 0 is the
+  /// first account's own start minute, so it would collide with that account
+  /// while Settings reported the schedule as set and the database still held
+  /// this account's real slot.
+  static Future<int> _staggerSlotFor(String? accountId) async {
+    if (accountId == null) return 0;
+    Object? firstError;
+    try {
+      return await slotReader(accountId);
+    } catch (e) {
+      firstError = e;
+    }
+    await Future<void>.delayed(slotReadRetryDelay);
+    try {
+      return await slotReader(accountId);
+    } catch (e) {
+      _logger.e('Could not read the schedule slot for '
+          '${Redact.accountId(accountId)} after one retry; the task was not '
+          'registered', error: e);
+      await DiagnosticLogger.failure(
+        context: 'windows-task-scheduler/schedule-slot',
+        kind: DiagnosticLogger.kindException,
+        reason: 'slot read failed twice, task not registered (account '
+            '${Redact.accountId(accountId)}; first error '
+            '${firstError.runtimeType}, second ${DiagnosticLogger.describeError(e)})',
+      );
+      rethrow;
+    }
+  }
+
+  /// Pause before the single retry of a failed slot read.
+  static Duration slotReadRetryDelay = const Duration(seconds: 2);
+
+  /// Test seam: reads (or allocates) the account's schedule slot.
+  @visibleForTesting
+  static Future<int> Function(String accountId) slotReader =
+      (accountId) => SettingsStore().getOrAllocateScheduleSlot(accountId);
 
   /// Delete the scheduled task
   ///
@@ -256,12 +313,12 @@ class WindowsTaskSchedulerService {
   /// Returns true if the task was recreated, false if it already exists
   /// or recreation is not needed.
   static Future<bool> ensureTaskExists({
-    required ScanFrequency frequency,
+    required int intervalMinutes,
     String? accountId,
   }) async {
     try {
       if (!Platform.isWindows) return false;
-      if (frequency == ScanFrequency.disabled) return false;
+      if (intervalMinutes <= 0) return false;
 
       final status = await getScheduleStatus(accountId: accountId);
       if (status['exists'] == true) {
@@ -269,8 +326,8 @@ class WindowsTaskSchedulerService {
         return false;
       }
 
-      _logger.i('Scheduled task "${_logTaskLabel(accountId)}" is missing - recreating with frequency: ${frequency.label}');
-      final success = await createScheduledTask(frequency: frequency, accountId: accountId);
+      _logger.i('Scheduled task "${_logTaskLabel(accountId)}" is missing - recreating every ${ScanInterval.label(intervalMinutes)}');
+      final success = await createScheduledTask(intervalMinutes: intervalMinutes, accountId: accountId);
 
       if (success) {
         _logger.i('Scheduled task recreated successfully');
@@ -289,7 +346,13 @@ class WindowsTaskSchedulerService {
   ///
   /// Checks if the registered task's executable path matches what a FRESH
   /// registration would use right now. If mismatched, deletes and recreates
-  /// the task with the correct path and same frequency.
+  /// the task with the correct path and the interval the CALLER passes.
+  ///
+  /// F264 (Sprint 77): the interval used to be guessed from the registered
+  /// trigger's text (`contains('15')`, `'PT1H'`, ...), which is wrong for
+  /// arbitrary minutes (115 contains "15"; 90 matched nothing and became one
+  /// hour). The caller already holds the account's effective minutes, so it
+  /// passes them in and nothing here parses a trigger string any more.
   ///
   /// F148 (Sprint 56): compares against `_getExecutablePath()` (the SAME
   /// alias-aware resolver `createScheduledTask` uses), NOT the raw
@@ -304,7 +367,10 @@ class WindowsTaskSchedulerService {
   /// this fix shipped) to the new alias-based one.
   ///
   /// Returns true if repair was needed and performed, false otherwise.
-  static Future<bool> verifyAndRepairTaskPath({String? accountId}) async {
+  static Future<bool> verifyAndRepairTaskPath({
+    String? accountId,
+    required int intervalMinutes,
+  }) async {
     try {
       if (!Platform.isWindows) return false;
 
@@ -332,24 +398,10 @@ class WindowsTaskSchedulerService {
       _logger.i('  Registered: $registeredPath');
       _logger.i('  Current:    $currentPath');
 
-      // Determine current frequency from trigger info
-      final triggerFrequency = status['triggerFrequency'] as String? ?? '';
-      ScanFrequency frequency = ScanFrequency.every1hour; // default fallback
-
-      if (triggerFrequency.contains('15')) {
-        frequency = ScanFrequency.every15min;
-      } else if (triggerFrequency.contains('30')) {
-        frequency = ScanFrequency.every30min;
-      } else if (triggerFrequency.contains('1:00') || triggerFrequency.contains('01:00') || triggerFrequency.contains('PT1H')) {
-        frequency = ScanFrequency.every1hour;
-      } else if (triggerFrequency == 'Once') {
-        frequency = ScanFrequency.daily;
-      }
-
       // Delete old task and recreate with current path
-      _logger.i('Repairing task "${_logTaskLabel(accountId)}" with frequency: ${frequency.label}');
+      _logger.i('Repairing task "${_logTaskLabel(accountId)}" every ${ScanInterval.label(intervalMinutes)}');
       await deleteScheduledTask(accountId: accountId);
-      final success = await createScheduledTask(frequency: frequency, accountId: accountId);
+      final success = await createScheduledTask(intervalMinutes: intervalMinutes, accountId: accountId);
 
       if (success) {
         _logger.i('Task path repaired successfully');

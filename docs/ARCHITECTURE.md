@@ -250,7 +250,9 @@ New directory introduced in Sprint 33 for security-cross-cutting services.
 | Service | Purpose |
 |---------|---------|
 | **AuthRateLimiter** (SEC-22) | Tracks up to 10 failed IMAP auth attempts in a rolling 1h window per `{platform}-{email}` account ID; blocks further attempts for 1h once the threshold is hit. State persists in the `auth_rate_limit` table (DB schema v3). `GenericIMAPAdapter.loadCredentials` calls `assertNotBlocked` before network I/O and records failures on `AuthenticationException`; success resets the counter |
-| **CertificatePinner** / **PinnedHttpClient** (SEC-8) | SPKI pins for Google OAuth endpoints (`accounts.google.com`, `oauth2.googleapis.com`, `gmail.googleapis.com`, `www.googleapis.com`). `PinnedHttpClient` wraps `dart:io HttpClient` with a bad-cert callback; `GmailWindowsOAuthHandler` token-exchange / refresh / userinfo calls route through the pinned client. Runtime kill switch via `setEnabled` (wired to a Settings toggle). IMAP is NOT pinned (enough_mail does not expose a `SecurityContext`; tracked as future work) |
+| **CertificatePinner** / **PinnedHttpClient** (SEC-8, corrected by SEC-8b Sprint 77, ADR-0046) | Issuing-authority pin for Google OAuth endpoints (`accounts.google.com`, `oauth2.googleapis.com`, `gmail.googleapis.com`, `www.googleapis.com`). A request to a pinned host uses an `HttpClient` whose `SecurityContext(withTrustedRoots: false)` trusts ONLY the five Google Trust Services roots (GTS Root R1-R4, GlobalSign ECC Root CA - R4; PEMs bundled, SHA-256 checked in tests against pki.goog), so EVERY handshake is validated against them on the normal path; a chain outside them (even one the device trusts) throws `CertificatePinMismatchException` and nothing is sent. dart:io exposes only the leaf certificate, so roots (not intermediate SPKI hashes) are what can be enforced. Callers: `GmailWindowsOAuthHandler` token exchange / desktop refresh / userinfo. Kill switch `setEnabled` (Settings > General). Before Sprint 77 the pin layer was inert (callback ran only on device distrust). Does not cover IMAP |
+| **ImapTlsConnector** / custom-server certificate trust (SEC-8b, Sprint 77, ADR-0046) | `lib/core/security/imap_certificate_trust.dart`. Custom IMAP only (known providers keep device validation, no pin). Opens the TLS socket itself for SSL/TLS and STARTTLS (enough_mail's STARTTLS passes no certificate callback), hands it to enough_mail via `ClientBase.connect`, waits for the greeting. Trust-on-first-use: device-trusted certificate -> connect and record its SHA-256; untrusted -> connect only if it equals the stored fingerprint, else abort before any command with `ServerCertificateNotTrustedException` (`notTrusted` / `changed`). Fingerprint stored as the `SecureCredentialsStore` side key `imapTrustedCertSha256` (in `CustomImapSettings.paramKeys`). The setup form asks "Trust this server?" (fingerprint, subject, issuer, validity) on Test Connection and Save; background scans fail with the named reason. STARTTLS refuses plaintext injected after the OK |
+| **ImapHostPolicy** (SEC-15, F192, Sprint 77) | `lib/core/security/imap_host_policy.dart`: ONE pure function, `classify(host)`, with no DNS lookup, that the Custom IMAP form calls from both Test Connection and Save. A local or private address (10/8, 172.16/12, 192.168/16, 127/8, 169.254/16, 0/8, `::1`, `fc00::/7`, `fe80::/10`, `localhost`, `*.localhost`) allows continuing after ONE warning (`localNetworkWarning`, personal-use wording). Empty or malformed values (a port or path in the name, spaces, all-numeric forms such as `127.1`) are refused with a field message. Not an SSRF control: the user types the host for their own device. Table-tested in `test/unit/security/imap_host_policy_test.dart` |
 | **DatabaseEncryptionKeyService** (SEC-11) | Per-device 256-bit key in `flutter_secure_storage`, base64-encoded for SQLCipher's `PRAGMA key`. Infrastructure ships opt-in behind `encrypt_database` setting (default `false`) until dedicated platform QA validates the plaintext→encrypted migration |
 
 ---
@@ -283,7 +285,7 @@ Note: The legacy `EmailProvider` abstract class still exists but is only used fo
 | Adapter | Protocol | Auth | Factory | Key Details |
 |---------|----------|------|---------|-------------|
 | **GmailApiAdapter** | Gmail REST API | OAuth 2.0 | `PlatformRegistry.getPlatform('gmail')` | Uses `googleapis` package, batch operations via `BatchOperationsMixin`, Gmail labels |
-| **GenericIMAPAdapter** | IMAP | Username/password | `.aol()`, `.yahoo()`, `.icloud()`, `.custom()` | Uses `enough_mail` package, UID-based operations (not sequence IDs), reconnects every 50 ops |
+| **GenericIMAPAdapter** | IMAP | Username/password | `.aol()`, `.yahoo()`, `.icloud()`, `.custom()` | Uses `enough_mail` package, UID-based operations (not sequence IDs), reconnects every 50 ops. **Custom IMAP (F192, Sprint 77)**: `.custom()` is a shell; the server comes per ACCOUNT from `Credentials.additionalParams` (`imapHost`, `imapPort`, `imapEncryption`, `imapUsername`, defined once in `custom_imap_settings.dart`). `SecureCredentialsStore` saves them as side keys beside the credentials, returns them from `getCredentials`, and deletes them with the account, so every reconnect path (manual scan, Windows and Android background workers, folder picker, connection test) needs no call-site change. Only `platformId == 'imap'` reads those keys. Encryption is `ImapEncryption.sslTls` or `.startTls`; the type has no plaintext member. `_connectAndLogin` is the single connect path (first connect and the 50-op reconnect); for STARTTLS the password is never sent if the upgrade fails. SEC-8b (Sprint 77, ADR-0046): for `platformId == 'imap'` `_connectAndLogin` connects through `ImapTlsConnector` (trust-on-first-use, `imapTrustedCertSha256` side key); the fixed-host providers keep `connectToServer` with device validation. `probeServerCertificate` checks a custom server's certificate without LOGIN (used by Save) |
 | **MockEmailProvider** | None (in-memory) | None | `PlatformRegistry.getPlatform('demo')` | Synthetic test emails (see [ADR-0020](adr/0020-demo-mode-synthetic-emails.md) for details) |
 
 **PlatformRegistry** (Factory Pattern):
@@ -363,7 +365,7 @@ SQLite database schema. See [ADR-0010](adr/0010-normalized-database-schema.md) f
 | **app_settings** | Global app settings | key-value pairs |
 | **account_settings** | Per-account setting overrides (ADR-0013) | account_id, setting key-value pairs |
 | **background_scan_log** | Background scan execution logs | timestamp, account_id, status, stats |
-| **unmatched_emails** | Emails captured by scans that did not match any rule. Body previews truncated to 100 chars at insert (SEC-14); rows pruned by `UnmatchedEmailStore.deleteOlderThan` on startup + after each scan (default 30d, configurable) | id (PK), scan_result_id (FK), provider_identifier_type/value, from_email, subject, body_preview, folder_name, availability_status, processed, created_at |
+| **unmatched_emails** | Emails captured by scans that did not match any rule. Body previews truncated to 100 chars at insert (SEC-14); rows pruned by `UnmatchedEmailStore.deleteOlderThan` on startup + after each scan (default 90d, configurable; the cut is on `last_seen_at`, F245) | id (PK), scan_result_id (FK), provider_identifier_type/value, from_email, subject, body_preview, folder_name, availability_status, processed, created_at (first seen), last_seen_at (v12, last scan that saw the email). ONE row per email: identity = (account via `scan_results`, provider_identifier_type, provider_identifier_value, folder_name), written only by `UnmatchedEmailStore.upsertUnmatchedEmails` (F245, ADR-0045) |
 | **auth_rate_limit** (DB v3, SEC-22 Sprint 33) | Tracks failed IMAP auth attempts per account for rate limiting | account_id (PK), window_start, attempts, block_until |
 
 **Schema version history**:
@@ -378,6 +380,8 @@ SQLite database schema. See [ADR-0010](adr/0010-normalized-database-schema.md) f
 - v9: `scan_results.last_heartbeat_at` -- cross-isolate/process scan liveness heartbeat (MV74-2, Sprint 74)
 - v10: data only -- subject rules reclassified `pattern_sub_type` `exact_domain` -> `keyword` (Sprint 74 MV; all three creators now write `keyword`)
 - v11: `scan_results.cancel_requested_at` -- the cross-isolate/process stop request a manual scan writes onto a background scan's row; the scanning isolate reads it on its heartbeat tick (F238, Sprint 75)
+- v12: `unmatched_emails.last_seen_at` plus the non-unique lookup index `idx_unmatched_identity`; the migration dedups existing rows to one per email within an account (F245, Sprint 77, ADR-0045)
+- v13: data only -- repairs stored safe-sender patterns, `safe_senders.exception_patterns`, and rule `condition_from`, `exception_from`, `condition_header` and `exception_header` patterns that carry a stray second literal `@` after the domain wildcard and so could never match (header columns get only this narrow repair, never the general unmatchable check); a repair that would duplicate an existing row deletes the broken row instead. A row with unreadable JSON, and an unmatchable pattern of any other shape, are logged by row id and counted in the summary line, never silently skipped (F266, Sprint 77)
 
 **Indexes**: 10+ targeted indexes for fast lookups (by platform, account, completion time, scan ID, folder, no-rule matches).
 
@@ -523,12 +527,36 @@ Navigate to ResultsDisplayScreen
 Background scanning is **per account** (ADR-0039): there is one Windows Task
 Scheduler task per enabled account, named
 `SpamFilterBackgroundScan_<sanitizedAccountId><envSuffix>`, whose action launches
-the executable with `--background-scan --account-id=<accountId>`. Each task uses a
-`-RandomDelay` (sized to its interval) so multiple accounts' tasks do not fire
-simultaneously and contend for the single SQLite DB. A one-time migration
+the executable with `--background-scan --account-id=<accountId>`. A one-time migration
 (`PerAccountBgMigration`) seeds per-account `background_enabled` / `background_frequency`
 overrides from the legacy global flag on first launch; `main.dart` startup
 reconciles per-account tasks and cleans up the legacy global + orphaned tasks.
+
+**Interval** (F264, Sprint 77; ADR-0039 amendment; both platforms): the per-account
+interval is a number of MINUTES, 5 to 5940 (99 hours), chosen with ONE control
+(Settings > Background > "Scan every": a Minutes/Hours dropdown then a 2-digit
+number). `lib/core/services/scan_interval.dart` owns the range, conversion, label
+and the conversion of stored values; the fixed `ScanFrequency` list is gone.
+Windows emits one trigger shape for every interval: `-Once -At <start>
+-RepetitionInterval (New-TimeSpan -Minutes <n>) -RepetitionDuration (New-TimeSpan
+-Days 365)` (Task Scheduler accepts 1 minute to 31 days). For intervals over 15
+minutes the trigger starts 5 minutes early with `-RandomDelay` 10 minutes (plus
+or minus 5 minutes around the nominal time). At 15 minutes or less there is no
+random delay; instead each account has a fixed stagger (Sprint 77 MV-Q2,
+ADR-0039 amendment). Its saved schedule slot (`schedule_slot`, from
+`SettingsStore.getOrAllocateScheduleSlot`, allocated once and never moved) sets
+the start to that many minutes after midnight (`ScanInterval.staggerMinutes`),
+so accounts on the same short interval start 1 minute apart. Slots are
+allocated across ALL accounts inside one transaction (two first allocations
+cannot take the same slot), so accounts whose slots are equal modulo the
+interval still share a start minute. A slot read that fails is retried once;
+if it fails again the registration reports failure (the Settings failure
+message shows) and no task is created, never a fallback to slot 0.
+`verifyAndRepairTaskPath` takes the interval from its caller. A one-time,
+sentinel-guarded migration (`BackgroundIntervalMigration`, run at startup on both
+platforms) converts stored values to the nearest one the control can express and
+re-registers every enabled account's schedule; startup reconciliation uses the
+same conversion (`reconcileAccountInterval`).
 
 ```
 Windows Task Scheduler fires the PER-ACCOUNT task
@@ -555,7 +583,11 @@ BackgroundScanWindowsWorker.executeBackgroundScan(accountId: <id>)
 **Android** (ADR-0039): one WorkManager unique periodic task per enabled account
 (`background_scan_task::<accountId>`) carrying the accountId in `inputData`;
 `callbackDispatcher` routes it to a single-account scan. First-run `initialDelay`
-is randomized (1..N min) for the same anti-collision reason.
+is randomized (1..N min) for the same anti-collision reason. The WorkManager
+registration uses the user's interval but never less than WorkManager's documented
+15-minute minimum (F264); the Doze alarm below is armed with the user's own minutes
+(5 to 5940), with up to 5 minutes of jitter either way applied natively on each arm
+for intervals over 15 minutes (`AlarmJitter`).
 
 **Android in Doze** (F235, Sprint 73; amends ADR-0039): WorkManager runs on
 JobScheduler, which Doze suspends, so the periodic task alone often did not fire
@@ -593,12 +625,23 @@ appends each line as one write under an exclusive OS file lock, best effort
 **Scan when new mail arrives** (F253, Sprint 76, ADR-0044; Android only):
 `MailNotificationListener` (a `NotificationListenerService`) reads only the
 posting package name and time. A notification from an allowlisted mail app
-(`MailNotificationPolicy`) enqueues ONE all-accounts one-off worker
+(`MailNotificationPolicy`) enqueues ONE one-off worker
 (`DozeScanTrigger.enqueueAllAccounts`, unique work + KEEP, network required,
-at most one per 2 minutes); each account's background switch and claim still
-decide. Off by default: the Settings switch (flag in native preferences,
-channel `com.myemailspamfilter/new_mail_trigger`) plus Android Notification
-access.
+at most one per 2 minutes). The 2-minute throttle and the unique work name are
+kept PER PROVIDER SET (`MailNotificationPolicy.decide`, `throttlePrefKey`,
+`newMailWorkName`; Sprint 77 Phase 5.1.2), so a Gmail trigger never drops an
+AOL one; turning the feature off cancels every set by the work tag
+`f253_new_mail_scan`. Per account since F264 (Sprint 77): each account has
+its own switch in the app database (`account_settings` key `new_mail_trigger`);
+the native flag in preferences (channel `com.myemailspamfilter/new_mail_trigger`)
+is now only "any account has it on", kept in step by
+`NewMailTrigger.syncAnyAccountOn`. The listener passes the providers the posting
+app maps to in the payload (`triggerProviders`: Gmail app -> Gmail accounts, AOL
+app -> AOL, Yahoo Mail -> Yahoo, Samsung Email and Outlook -> every account with
+the switch on) and the worker scans an account only when that provider matches
+AND the account's own switch is on AND its background switch is on
+(`accountSelectedByNotification`). Off by default; needs Android Notification
+access. Hidden on Windows (declared ADR-0042 exception, ADR-0044 amendment).
 
 ### Rule Evaluation Flow (ADR-0005)
 
@@ -845,7 +888,7 @@ artifact (GP-8/GP-3 verifies, Sprint 64 chain validation).
 ### Sprint 33 Security Layers
 - **ReDoS protection** (SEC-1/1b): user-supplied regex patterns pass `PatternCompiler.detectReDoS` before persisting to the `rules` / `safe_senders` tables; dangerous patterns are rejected at the storage boundary so the evaluator hot path stays on the fast direct-`hasMatch` route. Bundled patterns in `assets/rules/*.yaml` are trusted and skip the check.
 - **Failed-auth rate limit** (SEC-22): `AuthRateLimiter` blocks an account for 1h after 10 failed IMAP sign-ins in a rolling 1h window; state persists in the `auth_rate_limit` table so blocks survive app restart. UI surfaces a "Try again at HH:MM" message in place of the generic auth error.
-- **Certificate pinning** (SEC-8): `PinnedHttpClient` enforces SPKI pins for Google OAuth endpoints. Runtime kill switch in Settings > General > Privacy & Logging. IMAP is not pinned (enough_mail limitation, tracked as future work).
+- **Certificate pinning** (SEC-8, corrected by SEC-8b Sprint 77, ADR-0046): `PinnedHttpClient` restricts Google OAuth endpoints to the Google Trust Services roots on every connection. Runtime kill switch in Settings > General > Privacy & Logging. Known IMAP providers use device validation only (no leaf pins); Custom IMAP servers use trust-on-first-use with a one-time "Trust this server?" confirmation (`ImapTlsConnector`).
 - **Auth logging suppression** (SEC-19): Settings toggle makes `Redact.logSafe` a no-op even in debug builds.
 - **Logging & Redaction invariant** (F102, narrowed by F110, Sprint 43): never log the **app user's own** account ids / configured-account email / tokens / email content in the clear -- use the `Redact` utility (`Redact.accountId/token`, and `Redact.senderForLog` for sender/recipient addresses). **F110 narrowing**: third-party sender/recipient email addresses ARE logged in the clear (they are the anti-phishing security signal); only the user's own configured-account addresses are masked. Account ids / tokens / secrets stay strict. Applies to `Logger`, the headless `_bgLog`, and generated artifacts (PowerShell scripts, Task Scheduler task names). Enforced by `mobile-app/scripts/check-log-redaction.ps1` + `test/policy/log_redaction_test.dart` (build-failing; post-F110 they flag account ids / tokens / secrets, NOT the email-address family) + a Phase 5 checklist grep. Policy: ADR-0030 §5 "Logging & Redaction".
 - **Unmatched email retention** (SEC-14): rows pruned on startup + after each scan; body previews capped at 100 chars at insert.

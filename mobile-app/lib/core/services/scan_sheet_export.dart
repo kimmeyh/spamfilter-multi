@@ -174,7 +174,11 @@ class BackgroundScanExport {
         accountToken: sanitizeAccountId(accountId),
         sheetName: 'Background Scan',
         headerColor: '#D9E2F3',
-        newRows: scanProvider.getExcelRows(redact: redact),
+        // F245 (Harold Q19): the BACKGROUND export lists an unaddressed No
+        // Rule email once; the manual-scan export (live_scan_logger.dart)
+        // keeps every row.
+        newRows: scanProvider.getExcelRows(
+            redact: redact, omitAlreadyListedNoRule: true),
         redacted: redact,
       );
       await log('Background scan export written (${result.addedRows} new '

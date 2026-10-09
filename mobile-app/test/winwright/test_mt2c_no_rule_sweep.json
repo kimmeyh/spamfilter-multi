@@ -17,8 +17,9 @@
       "id": "MT2C-1",
       "title": "Post-F135 home screen: the sweep produces a coherent list with named rows",
       "steps": [
-        { "_comment": "PRIMING QUERY (fact 3) -- also guarantees a maximized window so nothing is off-screen (fact 4).",
+        { "_comment": "PRIMING QUERY (fact 3) -- also guarantees a maximized window so nothing is off-screen (fact 4). Sprint 77 (2026-10-08): ww_window_state 'maximize' reports success under the runner but the visible window stays 1280x720 (runner screenshot at the failing step) -- the app also owns a hidden FLUTTER_RUNNER_WIN32_WINDOW_TRAY window, which is the likely target (unverified). At 1280x720 the seeds sit below the 11+ provider-sender rows and the lazy list never builds them. So ALSO press the real title bar's Maximize button; the runner launches a fresh, non-maximized instance for every script, so this toggle always maximizes.",
           "tool": "ww_window_state", "state": "maximize" },
+        { "tool": "ww_invoke", "selector": "#Maximize-Restore" },
 
         { "_comment": "Post-F135 the app OPENS on this screen when accounts exist; the account-filter FACE (F169 dropdown, Sprint 61 -- replaced the chips; see the description block) exists only here, so it resolving is the reachability proof. Reaching this point means _loadItems -- and therefore _sweepCoveredItems -- has already run once against the full rule/safe-sender set. The face carries the POST-sweep total in its accessible name; prefix-matched because counts are data-dependent. Face = Text node, needs a physical mouse click (no InvokePattern), and clicking OPENS the menu -- the following menu-entry clicks (Buttons) prove the menu opened, exercise both accounts, and end back on All Accounts.",
           "tool": "ww_click", "selector": "type=Text[name*='All Accounts (']", "useInvokePattern": false },

@@ -331,7 +331,6 @@ void main() {
       final adapter = GenericIMAPAdapter.custom(
         imapHost: 'mail.example.com',
         imapPort: 993,
-        isSecure: true,
       );
 
       expect(adapter.platformId, equals('imap'));

@@ -232,7 +232,7 @@ void main() {
       final custom = GenericIMAPAdapter.custom(
         imapHost: 'mail.example.com',
         imapPort: 993,
-        isSecure: true,
+        // F192: encryption is a closed set; there is no plaintext option.
       );
 
       expect(custom.platformId, equals('imap'));

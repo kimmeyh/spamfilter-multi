@@ -710,6 +710,35 @@ This change was introduced after Sprint 36 kickoff skipped Phase 1 (prior "OPTIO
     one-line result. A dead pid with zero app log lines is the signature of a runtime config
     parse failure -- read the SYSTEM logcat lines, not the app's.
 
+- [ ] **5.1.9 Manual Validation rehearsal** (MANDATORY from Sprint 78; Sprint 77 retro IMP-1, Harold 2026-10-08:
+  *"it is more important that you have fully tested how it works before manual validation - including the Manual Validation example you would like me to run - they should Never (with very few and infrequent occurances) fail - this is prevention at the earliest possible step."* ... *"UI steps via flutter tests instead of winwright. Winwright if necessary, but should be done in the same set as any other Winwright tests - minimizing the laptop takeover time."*)
+  - **Rule**: before Manual Validation is handed over, Claude runs EVERY Manual Validation step it will give Harold,
+    exactly as written, on the build Harold will use, and confirms the step's expected result. A handed-over step should
+    never fail. A failed step during MV is a rehearsal miss, not a normal validation round.
+  - **How, cheapest first**:
+    1. **UI steps through Flutter tests** (widget tests, or `integration_test` on Windows when a real engine is needed):
+       the test performs the step's taps and entries and asserts what the step tells Harold he will see. These
+       run headless or in-engine, with no mouse, keyboard or screen takeover. Keep the test when it guards a
+       sprint change; otherwise it can live in `test/scratch/`.
+    2. **Data, scanner and IMAP steps** through the local test servers (`scripts/start-test-imap-servers.ps1`),
+       database queries on a COPY of the dev DB, and the diagnostic log.
+    3. **WinWright ONLY when a Flutter test cannot prove the step** (the real Windows window, tray, notifications,
+       native dialogs). Those rehearsal steps run in the SAME session as the 5.1.5 sweep, so the laptop is taken
+       over once.
+  - **Preconditions**: the rehearsal sets up the same preconditions the step states (which setting is on, the scan
+    range, whether a backlog cursor exists, which account, app open or closed). A step whose preconditions cannot be
+    reproduced is rewritten until they can.
+  - **Steps Claude cannot rehearse** (phone-only behavior, a real provider account Claude cannot reach): say so in
+    the step, and name the closest rehearsal that was done (emulator, test server).
+  - **Record**: each MV step in the plan carries `Rehearsed: <date>, <how>, <observed result>`, and the plan's
+    Phase 5 evidence carries `- **5.1.9 MV rehearsal**: <date>, <N> steps rehearsed (<how>), <M> not rehearsable
+    (<why>)`. `sprint-auto-advance.ps1` (F193 evidence gate) refuses to declare Manual Validation from Sprint 78
+    while that marker is missing or PENDING.
+  - **Why**: Sprint 77 handed over three steps that failed in Harold's hands (the GreenMail sign-in user, a 1-day
+    rescan the backlog cursor ignores, an expected count of 5 that was 6), each costing a validation round, and
+    Harold found the "No Results Yet" defect on screen. Each would have failed in a rehearsal. Sprint 75 IMP-5 had
+    already said to trace preconditions; tracing by reading did not prevent it, so the step is now RUN, not read.
+
 - [ ] **5.2 Run Complete Test Suite**
   - Execute full test suite: `flutter test`
   - Verify all tests pass (not just new ones)
@@ -1270,7 +1299,12 @@ Before conducting sprint review, build and test the Windows desktop app:
     2. **`pr-review-toolkit:code-reviewer`** on the FULL sprint diff (`origin/develop...HEAD`), with the related-patterns / sibling grep and, for any new exception type, the catch-chain walk (CLAUDE.md, Sprint 73/75 rules).
     3. **`pr-review-toolkit:silent-failure-hunter`** on the same diff.
     Run the two toolkit agents in the background. Name all three launches in the next message to Harold.
-  - **Disposition every finding** (all three sources) with these fields: **What** (quoted or summarized), **Why** (context), **Impact** (what changes if addressed), **Recommendation** -- `Fix now` (with proposed change), `Add to backlog` (title + rationale), or `Not applicable` (reasoning). Present them to Harold as a numbered list he can answer by digit; this is Phase 7, so asking is correct.
+  - **Disposition every finding** (all three sources) with these fields: **What** (quoted or summarized), **Why** (context), **Impact** (what changes if addressed), **Recommendation** -- `Fix now` (with proposed change), `Add to backlog` (title + rationale), or `Not applicable` (reasoning). **Fix review findings WITHOUT asking** (Harold, 2026-10-08, Sprint 77: *"I asked for a numbered list for alternatives ... as the Question and Answer format - I did not realize I had asked for that to be applied to all PR review identified fixes - that is not needed. None of these needed approval from the Chief Architect or Chief Developer."*). Ask Harold -- as a numbered list he can answer by digit -- ONLY for a finding whose fix is a decision-class change (architecture, a prior development decision, or sprint scope; CLAUDE.md "Decision-Class Taxonomy") or that you recommend sending to the backlog or marking not applicable (both are scope decisions). Everything else is fixed, tested, pushed and REPORTED afterwards with its What / Why / prevention / fix, in the 7.7.1 evidence line and the readiness message.
+  - **SIZE LIMIT on fixing without asking** (Harold, 2026-10-09): fix a finding without asking ONLY when it can be resolved effectively by changing **fewer than 4 code files AND fewer than 600 lines of code**. If the effective fix needs **4 or more code files, OR 600 or more lines**, STOP and ask Harold before writing it -- as a numbered list: the finding, the proposed fix, its file count and line estimate, and the alternatives (for example, a smaller instance fix now plus a backlog card for the prevention).
+    - **Counting**: per finding (findings resolved by one shared change count together). Code files are production, script and hook source (`mobile-app/lib/`, `mobile-app/android/`, `mobile-app/windows/`, `scripts/`, `.claude/hooks/*.ps1`). Tests, test helpers, hook test cases and fixtures, and docs do NOT count. Lines are added plus removed in the counted files (`git diff --numstat`).
+    - **When**: estimate BEFORE writing the fix. The prevention-first extension below counts toward the limit. If a fix grows past the limit while it is being written, stop and ask then; do not finish it first.
+    - **Record** each fix's code-file and line count in the 7.7.1 evidence line, so the limit can be checked afterwards.
+    - (Sprint 77 calibration: finding 5, the Replace question on every add path, changed 7 code files / ~280 lines and would have been asked; the IMAP sign-in fix, 3 code files / ~300 lines, would not.)
   - **PREVENTION FIRST -- applies to EVERY PR reviewer comment and suggestion** (Copilot, pr-review-toolkit, Harold's own review; Harold, 2026-10-06, verbatim): *"Ensure that all fixes first attempt to prevent the problem from happening, then revert to fixing (as you have been for the last 70+ sprints) or implementing additional controls if absolutely necessary. Look for ways of extending current method of preventions 'connected' to the current comment/issue when it makes more sense than creating a new method."* In practice, each `Fix now` states, in this order:
     1. **Prevention**: how the defect CLASS is made impossible or caught automatically next time -- a type, a single shared helper the call sites must use, a test or policy gate, a hook. Name it, or say plainly why none fits.
     2. **Extend before adding**: the EXISTING prevention connected to this finding (the gate, hook, helper or test that already guards the neighbouring case) and how it is extended. Create a new mechanism only when extending the existing one makes less sense, and say why.
@@ -1280,7 +1314,7 @@ Before conducting sprint review, build and test the Windows desktop app:
   - **Apply** approved `Fix now` items as commits on the sprint branch, each with a mutation check when it guards a bug (`scripts/mutation-test.ps1`), then analyzer + full suite green and push. File approved `Add to backlog` items in ALL_SPRINTS_MASTER_PLAN.md. Reply to and resolve every Copilot thread.
   - **No automatic re-review.** A fix commit does not trigger Copilot again. If the fixes change behavior substantially, say so to Harold and offer one more 7.7.1 round; do not run it unasked.
   - **Record the evidence** in `SPRINT_N_PLAN.md` as ONE canonical bullet (the close-out hook `verify-closeout-complete.ps1` check 3d-2 blocks a close-out claim from Sprint 77 on if it is missing, empty, or `PENDING`):
-    `- **7.7.1 final code reviews**: <date>, Copilot <result>; code-reviewer <counts>; silent-failure-hunter <counts>; <Fix now / backlog / N/A dispositions>; commits <hashes>`
+    `- **7.7.1 final code reviews**: <date>, Copilot <result>; code-reviewer <counts>; silent-failure-hunter <counts>; <Fix now / backlog / N/A dispositions, each Fix now with its code-file / line count>; commits <hashes>`
   - **Skip condition**: none for the toolkit reviews. If Copilot genuinely cannot be attached (the request returns an error), record that on the marker line and continue with the toolkit reviews.
   - **Model**: top tier (Fable/Opus) for the disposition analysis.
 
@@ -1392,6 +1426,7 @@ Before conducting sprint review, build and test the Windows desktop app:
     - [ ] Retrospective improvements complete (all "apply now" IMPs implemented + committed per 7.7; "backlog" IMPs filed)
     - [ ] 7.7.1 final code reviews complete -- Copilot (requested by hand) AND pr-review-toolkit code-reviewer + silent-failure-hunter -- and the `7.7.1 final code reviews` marker recorded in SPRINT_N_PLAN.md
     - [ ] Every 7.7.1 finding dispositioned (Fix now committed + green, backlog filed, N/A reasoned; Copilot threads replied to and resolved)
+    - [ ] Every 7.7.1 fix over the size limit (4+ code files or 600+ lines) was asked of Harold BEFORE it was written, and his answer applied
   - **Action**: give the PR a **final update IF anything needs updating** (description reflects final scope/IMPs/review fixes). **If nothing changed since the last update, NO update is required** -- do not churn the PR for its own sake.
   - **Verify the PR is already "Ready for Review"** -- it was converted draft -> ready at the end of Phase 7.7 (when the "apply now" retro improvements completed). Confirm `gh pr view <PR#> --json isDraft,mergeable` shows `isDraft:false`, `mergeable:MERGEABLE`. (If for any reason it is still draft -- e.g. there were no "apply now" IMPs and 7.7 was skipped -- `gh pr ready <PR#>` now.)
   - **THEN notify the Product Owner / Scrum Master that the PR is ready for FINAL APPROVAL.** This is the ONE readiness announcement of the sprint -- it does not happen earlier (not at 6.5, not at "Phase 6 done"). NOTE: setting the PR to "Ready for Review" (the GitHub state) happens at end-of-7.7; this PO/SM notification (the human signal) happens here after the full gate passes.
