@@ -6,7 +6,7 @@
     "current_sprint": {
         "number": 78,
         "branch": "feature/20261009_Sprint_78",
-        "status": "Phase 3 Sprint Kickoff and Planning -- scope selected by Harold 2026-10-09 (8.4 pass 2); SPRINT_78_PLAN drafted, awaiting 3.7 approval and decisions R1-R8, F1-F7, Q-S1..3; 0-18-0 store uploads still with Harold",
+        "status": "Phase 3.7 Plan Approval -- scope selected by Harold 2026-10-09 (8.4 pass 2); SPRINT_78_PLAN drafted, awaiting 3.7 approval and decisions R1-R8, F1-F7, Q-S1..3; 0-18-0 store uploads still with Harold",
         "plan_approved": false,
         "blanket_execution_approved": false,
         "pr_number": 470,
