@@ -9,9 +9,9 @@
         "status": "Phase 3 Sprint Kickoff and Planning -- scope selected by Harold 2026-10-09 (8.4 pass 2); SPRINT_78_PLAN drafted, awaiting 3.7 approval and decisions R1-R8, F1-F7, Q-S1..3; 0-18-0 store uploads still with Harold",
         "plan_approved": false,
         "blanket_execution_approved": false,
-        "pr_number": null,
+        "pr_number": 470,
         "version": "0.18.0+15 (bumped at plan approval, Phase 3.7.0b)",
-        "pr_url": null
+        "pr_url": "https://github.com/kimmeyh/spamfilter-multi/pull/470"
     },
     "previous_sprint": {
         "number": 77,
