@@ -1,26 +1,23 @@
 {
     "_description": "Sprint status file that persists across context compaction. Update after each phase/sub-phase completion.",
-    "_last_updated": "2026-10-08T23:10:00Z",
+    "_last_updated": "2026-10-09T13:40:00Z",
     "_usage": "Read this file after context compaction to restore sprint approval state and progress.",
     "_staleness_note": "This file had drifted 15 sprints (last updated at Sprint 35, 2026-04-19) before being refreshed at Sprint 50 close-out. It is a Phase 7.7 checklist item -- update it at every sprint close-out, not opportunistically.",
     "current_sprint": {
-        "number": 77,
-        "branch": "feature/20261006_Sprint_77",
-        "status": "Phase 7.7 Sprint Review -- COMPLETE: retrospective done (IMP-1R, IMP-3 applied; IMP-2 -> F284; IMP-4 waits); 7.7.1 final reviews done, all findings fixed (Copilot 0; toolkit 11 merged items, 10 fixed, 1 left as is); PR #460 ready for Harold final approval (7.7.5).",
-        "plan_approved": true,
-        "blanket_execution_approved": true,
-        "pr_number": 460,
+        "number": 78,
+        "branch": "feature/20261009_Sprint_78",
+        "status": "Phase 8.2 Backlog Refinement pass 1 (completeness sweep) COMPLETE 2026-10-09; next: Phase 8.3 Microsoft Store 0.18.0 build + Google Play 0.18.0 AAB, then 8.4 pass 2 scope selection.",
+        "plan_approved": false,
+        "blanket_execution_approved": false,
+        "pr_number": null,
         "version": "0.18.0+15 (bumped at plan approval, Phase 3.7.0b)",
-        "pr_url": "https://github.com/kimmeyh/spamfilter-multi/pull/460"
+        "pr_url": null
     },
     "previous_sprint": {
-        "number": 76,
-        "branch": "feature/20261004_Sprint_76",
-        "pr": "#455 -> develop (merged, 96a9cfe), #459 develop -> main (31b7135)",
-        "deliverables": "F248 scan diagnostics, F249 stop/KEEP/spacing, F250 Gmail renewal by stored refresh token, F251-F253 (No Rule banner, battery row, notification trigger ADR-0044); nine MV fixes; 7.7.1 review fixes (Doze retry trap, log lock, offline message, staging hook). Unattended Android scanning confirmed overnight on 0.17.4.",
-        "reviews": "7.7.1 (first sprint under the new order): Copilot Findings None; code-reviewer + silent-failure-hunter -> items 1-7, 14 fixed (82c65a4, M210-M218 KILLED), F258-F263 backlog; F264 from Harold item 10.",
-        "metrics": "Suite 2,508 -> 2,607 (15 skipped); analyzer clean; hooks 91 -> 121; WinWright 3/3 at 18392ad; first JVM unit test (5).",
-        "retro": "Harold all Very Good. IMP-1, 2, 3, 4, 6 applied; process: final reviews moved to 7.7.1, 5.1.1 removed, Copilot auto-review ruleset rule removed, prevention-first for review findings."
+        "number": 77,
+        "branch": "feature/20261006_Sprint_77",
+        "pr": "#460 -> develop (merged 2026-10-09, 764380b), #469 develop -> main (b8d2aa2)",
+        "deliverables": "MV76-1 Windows half, F258, F245, R76-1, F264+R76-2, F192+SEC-15, SEC-8b, R76-3, F266 and the MV fixes; 7.7.1 review fixes (10 of 11). Version 0.18.0+15."
     },
     "github_issues": {
         "sprint_73": "#428 (open, MV74-1), #422 (open, MV74-3), #430 closed, #434 (open, MV74-2), #431 closed, #432 closed, #433 (open, MV74-3). Also closed in pass 1: #426 (superseded by #428), #427 (leftover captured as F236).",
@@ -28,7 +25,7 @@
         "sprint_74": "Closed by hand 2026-10-02: #422 #434 #437 #438 #439. Open, carried: #428 (MV74-1 phone), #433 (F205 phone), #441 (F238), #442 (F239).",
         "sprint_75": "Closed by hand 2026-10-04: #441 #442 #444 #445 #446 #447 #449 #450. Open, carried to Sprint 76 phone checks: #428 (MV74-1), #433 (F205).",
         "sprint_76": "Closed by hand 2026-10-06: #452 #453 #454 #456 #457 #458. Open, inside MV76-1: #428 (MV74-1 reboot half), #433 (F205).",
-        "sprint_77": "Cards (open): #461 MV76-1, #462 F258, #463 F245, #464 R76-1, #465 F264+R76-2, #466 F192+SEC-15, #467 SEC-8b, #468 R76-3. Carry-ins open: #428, #433."
+        "sprint_77": "Closed by hand 2026-10-09: #461 (Fold steps 7-11 carried to the Sprint 78 start) #462 #463 #464 #465 #466 #467 #468. Open, inside MV76-1: #428 (MV74-1 reboot half), #433 (F205)."
     },
     "_github_issues_note": "Sprint 66 cards created at Phase 3.3.1 (2026-09-07): #387 GP-19, #388 GP-4. Close by hand at Post-Merge Cleanup.",
     "test_metrics": {
@@ -55,8 +52,9 @@
     ],
     "blocking_issues": [],
     "next_actions": [
-        "7.7.5 done: PR #460 announced ready for final approval (Harold merges; Claude never merges).",
-        "On merge (6.6): branch feature/<date>_Sprint_78 FROM the Sprint 77 branch; then Phase 8 (main merge in parallel, refinement pass 1, 0.18.0 Store + Play builds, Fold steps 7-11 at Sprint 78 start)."
+        "8.3: Microsoft Store 0.18.0.0 MSIX from the prod worktree pulled to main b8d2aa2 (STORE_RELEASE_PROCESS.md), verify, hand to Harold for upload.",
+        "8.3 (Android): Google Play 0.18.0 AAB (GOOGLE_PLAY_RELEASE_PROCESS.md), hand to Harold for closed-testing upload.",
+        "8.4: Backlog Refinement pass 2 -- Harold selects Sprint 78 scope; then Phase 3 planning. Sprint 78 start items: Fold steps 7-11 on 0.18.0, boot main() trace."
     ],
     "next_sprint_targeted": {
         "number": 77,
