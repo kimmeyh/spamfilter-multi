@@ -789,6 +789,11 @@ _(No active Core App candidates -- F96 shipped in Sprint 43.)_
   - The notification ID comes from a deterministic helper (FNV-1a of the account id, 31 bits), not `String.hashCode`.
   - Today's ID is `accountId.hashCode` (`:323`). A probe on 2026-10-10 showed it stable across separate Windows
     processes, but Dart does not promise that.
+  - **Observed on the Fold, 2026-10-10**: replacement ALREADY works. The shade showed three notifications, at 9:13,
+    9:51 and 9:54. The log maps them to Gmail (9:13), AOL (9:51; its 9:07, 9:22, 9:28 and 9:37 runs left no extra
+    entries) and Yahoo (9:54, which replaced Yahoo's 9:31 between two screenshots 19 seconds apart). There was one per
+    account, but nothing said which account each was, which is why they read as repeats. The fix that matters is the
+    account in the title; the deterministic ID only removes the reliance on `hashCode`.
   - A newer notification for the same account replaces the older one.
   - The helper's value is pinned by a test.
 - **Read-only and partial modes (Harold asked for a recommendation, 2026-10-10)**. The scan modes are `readOnly`,
