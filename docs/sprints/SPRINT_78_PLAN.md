@@ -1,6 +1,7 @@
 # Sprint 78 Plan
 
 **Status**: DRAFT -- awaiting Phase 3.7 approval (Harold). Scope selected by Harold at Phase 8.4 pass 2 (2026-10-09).
+Harold's decision answers recorded 2026-10-10 (R76-4 reshaped to dev-only; F199-b to HOLD; Task 9 notifications added).
 **Branch**: `feature/20261009_Sprint_78` | **PR**: draft, created at Phase 3.3.1
 **Planner**: Opus 5.5 (top tier, `SPRINT_PLANNING.md:94-110`). Phase 3.2.2.1 branch-state audits by four read-only
 agents (2026-10-09); the file:line evidence in each card comes from them and from spot reads this turn.
@@ -26,9 +27,17 @@ personal email accounts: kimmeyharold@aol.com, kimmeyh@gmail.com, kimmeyh@yahoo.
 this is my Class 1 approval of an exception for this purpose (and F273) - settle this before plan is approved."* The
 shape of the exception is settled by decision questions R1-R8 below.
 
+**R76-4 reshaped (Harold, 2026-10-10, verbatim)**: *"Can we limit to only running in Windows dev or only dev - no need
+at this time to run anywhere else as Windows dev can capture the entire list. on/off button on the Settings> General tab
+only for dev."* This replaces R1 and R2 (no secrets key, no hash list): the feature exists only in dev builds
+(`AppEnvironment.isDev`, `app_environment.dart:29`), so no Store or Play build can ever capture. In practice it runs on
+Harold's Windows DEV install, which holds his four accounts.
+
 ## Carry-ins from the Sprint 78 stub (kept)
 
-- 0.18.0 store updates: MSIX and AAB BUILT + VERIFIED 2026-10-09 (Phase 8.3); Harold's uploads pending.
+- 0.18.0 store updates: MSIX and AAB BUILT + VERIFIED 2026-10-09 (Phase 8.3). Harold 2026-10-10: both updated. Fold
+  diagnostic log: `app start (foreground) -- v0.18.0 env=prod platform=android` at 2026-10-09 13:33. Windows: Harold's
+  screenshot shows a prod (no `[DEV]`) window at Version 0.18.0; Partner Center submission status not observed.
 - MV76-1 Fold steps 7-11 on 0.18.0, and the boot-time `main()` trace (`app start (foreground)` at 09:14:39 on
   2026-10-07 with no app opened) -- Task 1.
 - First sprint under Sprint 77 IMP-1: every MV step is rehearsed before handover; the F193 gate requires
@@ -39,7 +48,7 @@ shape of the exception is settled by decision questions R1-R8 below.
 ## Tasks, order, models and estimates
 
 - **Task 0 -- Version bump 0.19.0+16** (Phase 3.7.0b; MINOR because F282, F283 and R76-4 are `feat`). Haiku. 10-20m.
-  "Last uploaded to Play" moves to 0.18.0 (versionCode 15) only after Harold confirms the upload.
+  "Last uploaded to Play" moves to 0.18.0 (versionCode 15) in this bump (Harold confirmed the update 2026-10-10).
 - **Task 1 -- MV76-1 + F205 + boot trace**: Fold steps 7-11 on 0.18.0. Haiku transcription / session model. 40-70m +
   Harold's phone time.
 - **Task 2 -- F277**: Fold energy check, interval 5 against 15 (three 8-hour arms). Haiku analysis. 45-60m + three
@@ -52,16 +61,20 @@ shape of the exception is settled by decision questions R1-R8 below.
   WINWRIGHT-DISCOVERY time-box.
 - **Task 6 -- F283**: Review No Rule Items rebuilt on shared Results widgets. Sonnet (extraction), Haiku (test rewrites).
   300-420m (re-estimated from 150-210m, see the card).
-- **Task 7 -- R76-4**: content history for Harold's four accounts. ADR-0047 on Fable/Opus (mandatory for ADR authoring),
-  implementation Sonnet, tests Haiku. 330-505m (+30m if R7 = 1).
-- **Task 8 -- F199-b**: disposition (see the decision). Haiku. 10-15m.
+- **Task 7 -- R76-4**: content history, dev builds only (Harold's Windows DEV install). ADR-0047 on Fable/Opus
+  (mandatory for ADR authoring), implementation Sonnet, tests Haiku. 315-470m including R7 (was 330-505m +30m: the
+  secrets gate, the export and the per-account controls are gone).
+- **Task 8 -- F199-b**: repo records synced to Partner Center (`Kimmey Consulting - Ohio`), card moved to HOLD. Haiku.
+  10-15m.
+- **Task 9 -- N78-1**: background-scan notification -- "No rule" first, and one notification per account that names
+  the account. Haiku. 30-50m.
 
-**Total**: about 1,025-1,580 minutes plus Harold's phone time. Calibration: Sprint 77 planned items ran under estimate,
+**Total**: about 1,040-1,595 minutes plus Harold's phone time. Calibration: Sprint 77 planned items ran under estimate,
 but each recent sprint added 40-55% unplanned work (MV fixes, review fixes). F283 and R76-4 carry most of the risk.
 
 **Order**: Task 0; Task 1 and Task 2 start at once on the phone once 0.18.0 is installed from Play (their waits are
-filled by the rest); Task 7 ADR-0047 first (it fixes the design before code); Task 3 (R76-4 export writes into its
-folder); Task 4 research, then Harold's pick -- asked as a numbered question while work continues on Tasks 5-7, the one
+filled by the rest); Task 9 early (small, and the Fold shows it within a day); Task 7 ADR-0047 first (it fixes the
+design before code); Task 3; Task 4 research, then Harold's pick -- asked as a numbered question while work continues on Tasks 5-7, the one
 planned mid-sprint decision (approve it in Q-S2); Tasks 5 and 6 together (F284 b retires mt2c as F283 removes
 multi-select); Task 7 implementation; Task 8 any time.
 
@@ -100,8 +113,9 @@ Each card carries its audit. Findings that changed scope or estimate:
 
 ## Phase 3.6.1 Architecture Impact Check
 
-- **NEW ADR-0047** (R76-4): content history -- the Class-1 exception (four accounts, build-time gate), fields, identity
-  hash, storage file, retention, deletion, export, what must happen before it could ever apply to other users (F273).
+- **NEW ADR-0047** (R76-4): content history as DEV-ONLY tooling -- the Class-1 exception (dev builds only, so only the
+  developer's own accounts), fields, identity hash, storage file, retention, deletion, and what must happen before it
+  could ever ship in a customer build (F273 first).
 - **ADR-0042 amendment** (F282): the "Default export folder (F206)" deliberate non-parity bullet (`:99`) is RETIRED --
   both platforms default to Documents.
 - **ADR-0039 amendment** (F281): interval range 5 minutes to 24 hours; the control shown only when a background mode is
@@ -110,94 +124,61 @@ Each card carries its audit. Findings that changed scope or estimate:
   content-history component row and its storage for R76-4; the Review No Rule Items screen description for F283.
 - No other ADR conflicts found.
 
-## Decision questions -- answer before approval (reply by number, e.g. "all recommended" or "R2.3, F5.2")
+## Decision questions -- answers (Harold, 2026-10-10)
 
-**R76-4 content history (Class-1 shape -- settle before approval)**
+The original options are kept in git history (commit 9acbb01). Answers as given, with what each means for the cards.
 
-- R1. How the "only my four accounts" limit is enforced:
-  1. A build-time list of SHA-256 hashes of the four addresses in the secrets file, read with `String.fromEnvironment`;
-     with no list the feature does not exist at run time; nothing in the public repo names the accounts (recommended).
-  2. A hidden per-account switch, off by default, in every build (this makes it a product feature for all users).
-  3. The four addresses written in the source code (public repo).
-- R2. Which builds carry the list (Android always reads `secrets.dev.json`; the Store MSIX reads `secrets.prod.json`):
-  1. Both files -- capture on the Fold closed test, Windows DEV and your Windows Store install (recommended; you add
-     one key to each, since Claude does not edit secrets files).
-  2. `secrets.dev.json` only -- the Fold and Windows DEV; Store MSIX binaries carry nothing.
-- R3. What is stored per email:
-  1. The R76-3 Section 6 header fields and outcome label, PLUS the plain-text body (HTML converted to text), capped at
-     64 KB, no attachments or images (recommended -- "content" is what you asked for).
-  2. Section 6 fields only, no body.
-  3. Section 6 fields plus hashed body-token counts (no readable text).
-  4. The full raw message source (largest; includes HTML and tracking URLs).
-- R4. Where it is stored:
-  1. A separate database file `content_history.db` beside `spam_filter.db` -- no change to the main schema, deleted as
-     one file, size kept apart (recommended).
-  2. A new table in `spam_filter.db` (DB v14).
-- R5. Retention:
-  1. Kept until you delete it (it is a training corpus); "Delete content history" control (recommended).
-  2. Rolling 365 days from the last time a scan saw the email (the R76-3 proposal).
-- R6. Getting it to the PC and combining devices (each device has its own database):
-  1. "Export content history" writes JSON Lines into the `MyEmailSpamFilter` folder (F282); each row carries the
-     identity hash, so a later PC-side merge removes duplicates; the merge tool itself is F267/F268 work (recommended).
-  2. Export plus a merge script in `scripts/` this sprint (+45-60m).
-- R7. The audit found pre-existing gaps in data deletion: "Remove an account" does not delete `account_folder_cursors`
-  or `background_scan_log`; "delete all data" misses `unmatched_emails`, `background_scan_log`, `account_folder_cursors`
-  and `auth_rate_limit` (`data_deletion_service.dart:57-140`, `database_helper.dart:1527-1538`). The published policy
-  promises deletion:
-  1. Fix them inside R76-4 with a policy test that every table holding account data is in both deletion paths
-     (recommended; prevention first; +30m).
-  2. File as a separate backlog card.
-- R8. F273 (privacy policy and Data safety) under R1 = 1:
-  1. No customer-facing text change: for every customer nothing beyond today is stored, so the policy stays true;
-     ADR-0047 records that F273 must ship before the gate could ever apply to anyone else, and a policy test asserts the
-     feature defaults to off with an empty list (recommended).
-  2. Add one sentence to the policy disclosing a developer-only history limited to the developer's own accounts.
-  3. Full F273 rewrite now.
+**R76-4 content history**
+
+- R1 / R2 (gate and builds): REPLACED by Harold's reshape -- *"limit to only running in Windows dev or only dev ... on/off
+  button on the Settings> General tab only for dev."* Gate = dev build (`AppEnvironment.isDev`) AND the Settings >
+  General switch, off by default. No secrets key, no hash list. Prod builds (Store MSIX, Play AAB) contain the code but
+  can never turn it on: the switch is not shown and capture checks the environment first.
+- R3 = 1: header fields, outcome label and the plain-text body (HTML converted), capped at 64 KB, no attachments.
+- R4 = 1: separate `content_history.db` beside `spam_filter.db` in the dev data folder
+  (`%APPDATA%\MyEmailSpamFilter\MyEmailSpamFilter_Dev\`).
+- R5 = 1: kept until deleted; a "Delete content history" control.
+- R6: Harold asked *"if only in Windows Dev can it write to the DB directly?"* -- Yes. Capture writes straight into
+  `content_history.db` on the PC, so no export or merge is needed. The export (R-8) is dropped from this sprint; a later
+  F267/F268 item adds one if a tool needs it.
+- R7 = 1: the pre-existing deletion gaps are fixed inside R76-4 with a policy test that every table holding account data
+  is in both deletion paths (+30m, now inside the estimate).
+- R8 (not answered; follows from dev-only): option 1. No customer build can capture, so the privacy policy and Data
+  safety stay true with no text change; ADR-0047 records that F273 must ship before this could ever reach a customer
+  build; a policy test asserts capture is impossible when `APP_ENV` is not `dev`.
 
 **F281 "Scan every"**
 
-- F1. A saved interval above 24 hours when the maximum drops to 24 hours:
-  1. Becomes 24 hours, through the existing `nearestValid` at the next start or settings load (recommended).
-  2. Becomes 15 minutes (the default).
-- F2. A saved interval while the control is hidden (no background mode on):
-  1. Kept, and shown again when a background mode is turned on (recommended).
-  2. Reset to 15 minutes when shown again.
+- F1 (not answered): taking option 1 -- a saved interval above 24 hours becomes 24 hours through the existing
+  `nearestValid`, unless Harold says otherwise.
+- F2 = 1: a saved interval is kept while the control is hidden and shown again when a background mode is turned on.
 
 **F282 one folder**
 
-- F3. Folder names inside the new folder:
-  1. `MyEmailSpamFilter\scan_exports` and `MyEmailSpamFilter\diagnostics` (prod), `MyEmailSpamFilter_Dev\scan_exports`
-     and `MyEmailSpamFilter_Dev\diagnostics` (dev) -- the parent already tells dev from prod; a folder you chose keeps
-     today's `diagnostics_Dev` naming (recommended).
-  2. Keep `diagnostics_Dev` inside `MyEmailSpamFilter_Dev` too.
+- F3 = 1: `scan_exports` and `diagnostics` inside `MyEmailSpamFilter` / `MyEmailSpamFilter_Dev`; a folder the user chose
+  keeps today's `diagnostics_Dev` naming.
 
 **F283 Review No Rule Items**
 
-- F4. MV-Q15 "the No rule chip stays and shows the count, but is no longer a drop-down" -- the Review screen has no such
-  chip today (it is on Results). My reading:
-  1. On Review, the first chip reads "No rule (N)", fixed, not a drop-down; Results keeps its filter drop-down
-     (recommended).
-  2. Something else (describe).
-- F5. `lib/ui/screens/email_detail_view.dart` (1,005 lines) has no caller anywhere in `lib/`:
-  1. Delete it in F283 (recommended; dead code beside the popup being extracted).
-  2. Keep it.
-- F6. Actions in the shared detail popup when opened from Review (Results offers safe sender, block rule, skip/next):
-  1. The same actions, applied through the Review screen's existing single-row action path, then advance to the next
-     row (recommended -- "looks and works like Results").
-  2. View only, no actions in the popup.
+- F4 = 1 (Harold: "pretty sure"): the first screenshot of the new Review chip row goes to Harold before the rest of the
+  screen is built (Task 6 R-8).
+- F5: KEEP `email_detail_view.dart` -- *"keep it for 5 sprints then ask again"*; re-ask at Sprint 83 planning (F285,
+  HOLD, in the master plan).
+- F6 = 1: the same popup actions as Results, through Review's single-row action path, then advance to the next row.
 
-**F199-b** -- see the overview in the chat reply; options:
-
-- F7. 1. Close: keep `Kimmey Consulting - Ohio` as the permanent Partner Center publisher name; record the reasoning in
-  `LEGAL_ENTITY.md` (and fix its stale line 43); remove the card (recommended). 2. Move to HOLD with a trigger (a
-  Microsoft notice about the name, or a decision to change account type). 3. Keep it open; you file the support ticket.
+**F199-b** (Harold, 2026-10-10, verbatim): *"update the repo Windows store section to match what the Microsoft Partner
+Center says for now. Then close and state that no real business is being done by either entity and will resolve later.
+Can you push F199-b to HOLD and update it's backlog."* Task 8 does exactly that: repo records synced to
+`Kimmey Consulting - Ohio`, the sprint task closed, the backlog card moved to HOLD with that reason.
 
 **Sprint**
 
-- Q-S1. Model assignments above: 1. Approve (recommended). 2. Change (name which).
-- Q-S2. F281's pick is the one planned mid-sprint question, asked while other tasks continue: 1. Approve (recommended).
-  2. Pick from the research before approval instead (delays approval by the research time).
-- Q-S3. Version: 1. 0.19.0+16 -- MINOR, F282/F283/R76-4 are features (recommended). 2. 0.18.1+16.
+- Q-S1 = 1 (models approved), Q-S2 = 1 (F281's pick asked mid-sprint while work continues), Q-S3 = 1 (0.19.0+16).
+
+**New scope (Harold, 2026-10-10)**: two notification fixes from the 0.18.0 phone -- Task 9.
+
+**Still open at approval**: N1 (Task 9 placement), N2 (were two notifications seen for ONE account) and N3 (Windows
+background-scan toast) -- see Task 9.
 
 ---
 
@@ -422,7 +403,11 @@ they already know.
   (`:1060`, `:1133-1182`).
 - R-6: Detail popup on BOTH screens shows the account email in place of the domain next to the date/time (MV-Q17;
   today `:2440-2466`); actions per F6.
-- R-7: `email_detail_view.dart` per F5; help `review_no_rule_items.md:5-11` rewritten (it describes multi-select).
+- R-7: `email_detail_view.dart` is KEPT (F5, Harold 2026-10-10: "keep it for 5 sprints then ask again"; re-ask at
+  Sprint 83 planning, F285 HOLD in the master plan); help `review_no_rule_items.md:5-11` rewritten (it describes
+  multi-select).
+- R-8: F4 = 1 with Harold "pretty sure": the first screenshot of the new Review chip row ("No rule (N)" fixed, then
+  account, Folders, Sort) goes to Harold before the rest of the screen is built; work continues while he looks.
 
 **Affected components / files**: `results_display_screen.dart` (4,632 lines), `no_rule_review_screen.dart` (1,183
 lines), new shared widgets under `lib/ui/widgets/`, help, tests.
@@ -473,105 +458,221 @@ the row types differ).
 _**Risk & rollback**_: regression on the Results screen; mitigated by AC-5 (existing Results suite unchanged) and the
 5.1.5 WinWright sweep; rollback is one revert of the extraction commit, kept separate from the Review rewrite commit.
 
-## Task 7 -- R76-4: Content history of Harold's four accounts (Priority 5; Class-1 exception approved 2026-10-09)
+## Task 7 -- R76-4: Content history in dev builds only (Priority 5; Class-1 exception approved 2026-10-09, reshaped 2026-10-10)
 
-**Value**: This builds the labeled history every later heuristic, rule-mining and ML item needs (F267-F272), from
-Harold's own mail only, without changing what the app stores for anyone else.
+**Value**: This builds the labeled history that later heuristic, rule-mining and ML items need (F267-F272). It uses
+Harold's own mail only, on his Windows DEV install, and no customer build can ever capture.
 
-**Requirements** (final shape per R1-R8; recommended answers shown):
-- R-1: ADR-0047 written FIRST: the exception and its limit, fields, identity, storage, retention, deletion, export, the
-  gate, and the F273 precondition for any wider use.
-- R-2: Gate: the secrets key `CONTENT_HISTORY_ACCOUNT_HASHES` (SHA-256 of each lowercased address), read with
-  `String.fromEnvironment`; an empty or absent key means the feature is inert -- no capture, no controls, no file
-  created. Reaches both platforms through `--dart-define-from-file` (`build-with-secrets.ps1:511`,
-  `build-windows.ps1:234-241`). Harold adds the key to the files chosen in R2.
+**Requirements** (shape per Harold's 2026-10-10 answers):
+- R-1: ADR-0047 is written FIRST, as dev-only tooling. It covers the exception and its limit (dev builds only), the
+  fields, identity, storage, retention and deletion, and the F273 precondition for any customer build.
+- R-2: Gate: capture runs only when `AppEnvironment.isDev` (`app_environment.dart:29`) is true AND the Settings > General
+  "Content history" switch is on. The switch defaults to off. It is a dev-environment check in shared code, not a
+  platform branch, so a dev Android build behaves the same way (ADR-0042 parity). Today it runs on Harold's Windows DEV
+  install only.
 - R-3: Capture at the one shared choke point (`email_scanner.dart` `evaluateBatch`, `:384-470`), placed BEFORE the
-  safe-sender `continue` at `:438` so no outcome is missed; manual, background, Windows and Android all pass there.
-- R-4: Identity: SHA-256 of the RFC 5322 Message-ID (`email_message.dart:22,104`) plus the account; fallback provider id
-  + folder. A message already in the history is not fetched again (bounds body fetches to once per email per device).
-- R-5: Fields per R3. For a body: one fetch per new message for gated accounts only, through a new content method on
-  the provider interface (`spam_filter_platform.dart:57`) implemented by IMAP (`generic_imap_adapter.dart:2043-2123`)
-  and Gmail (`gmail_api_adapter.dart:1155-1207`), with HTML-to-text when no text part exists and nested multipart walked
-  (today IMAP drops HTML-only bodies and Gmail misses nested parts). The existing `fetchFullBody` used by body rules is
-  NOT changed (no change to rule matching). Demo/mock adapters get an explicit, named no-op.
-- R-6: Outcome label: the scan outcome at capture, then the user's final decision from the existing action paths
-  (Results actions, Review actions) with its date.
-- R-7: Storage per R4; retention per R5; "Remove an account" and "delete all data" delete that account's rows / the file
-  (`data_deletion_service.dart:57-140`, `database_helper.dart:1527-1538`); R7 decides the pre-existing gaps.
-- R-8: Export per R6 into `MyEmailSpamFilter\content_history\` (Task 3), JSON Lines, one row per email with its
-  identity hash.
-- R-9: Controls (only when the gate is active for that account): Settings > Account tab > a "Content history" row
-  showing the stored count, "Export content history" and "Delete content history".
-- R-10: Policy per R8; `data_safety_declarations_test.dart` stays green; a new policy test asserts the gate defaults to
-  inert.
+  safe-sender `continue` at `:438`, so no outcome is missed.
+- R-4: Identity: SHA-256 of the RFC 5322 Message-ID (`email_message.dart:22,104`) plus the account. The fallback is the
+  provider id plus the folder. A message already in the history is not fetched again.
+- R-5: Fields per R3 = 1: header fields, outcome label, and plain-text body (HTML converted), capped at 64 KB. One body
+  fetch per new message, through a new content method on the provider interface (`spam_filter_platform.dart:57`).
+  - IMAP (`generic_imap_adapter.dart:2043-2123`) and Gmail (`gmail_api_adapter.dart:1155-1207`) both implement it.
+  - When there is no text part, HTML is converted to text. Nested multipart is walked.
+  - The existing `fetchFullBody` used by body rules does NOT change.
+  - Demo and mock adapters get a named no-op.
+- R-6: Outcome label: the scan outcome at capture, then the user's final decision from the existing Results and Review
+  action paths, with its date.
+- R-7: Storage per R4 = 1: `content_history.db` beside `spam_filter.db` in the dev data folder, so capture writes
+  straight to the PC (R6 answer; no export this sprint). Retention per R5 = 1: kept until deleted.
+- R-8: Deletion:
+  - "Remove an account" deletes that account's rows; "delete all data" deletes the file (`data_deletion_service.dart:57-140`,
+    `database_helper.dart:1527-1538`).
+  - R7 = 1: also fix the pre-existing gaps. "Remove an account" misses `account_folder_cursors` and
+    `background_scan_log`. "Delete all data" misses `unmatched_emails`, `background_scan_log`,
+    `account_folder_cursors` and `auth_rate_limit`.
+  - Prevention: a policy test asserts that every table holding account data is in both paths.
+- R-9: Control (dev builds only): Settings > General > "Content history" switch, with the stored count and a "Delete
+  content history" button beside it.
+- R-10: Policy per R8 = 1: no customer-facing text changes. `data_safety_declarations_test.dart` stays green. A new
+  policy test asserts that capture cannot run and the switch is not shown when `APP_ENV` is not `dev`.
 
 **Affected components / files**: `email_scanner.dart`, `spam_filter_platform.dart`, `generic_imap_adapter.dart`,
 `gmail_api_adapter.dart`, new `content_history_store.dart` (+ gate), `data_deletion_service.dart`, `database_helper.dart`
-(only if R4 = 2), `settings_screen.dart` (one row), ADR-0047, ARCHITECTURE.md, CHANGELOG.
+(deletion gaps only), `settings_screen.dart` (General tab, one row), ADR-0047, ARCHITECTURE.md, CHANGELOG.
 
-**Existing abstraction checked**: `EmailScanner` choke point; `ExportDirectories` (export path); `ScanSheetExport`
-SHA-256 helper (`scan_sheet_export.dart:68-69`) reused for hashing; `DataDeletionService` (extended, not copied).
+**Existing abstraction checked**:
+- `AppEnvironment.isDev` is reused as the gate. It already gates the dev seeder (`dev_environment_seeder.dart:30`) and the
+  `_dev` export suffix (`scan_sheet_export.dart:81`).
+- `EmailScanner` choke point.
+- The `ScanSheetExport` SHA-256 helper (`scan_sheet_export.dart:68-69`) is reused for hashing.
+- `DataDeletionService` is extended, not copied.
 
-**Existing behavior relied on**: headers fetched without bodies on both providers (`generic_imap_adapter.dart:2003-2006`,
-`gmail_api_adapter.dart:581,688`); `allowBackup="false"` (`AndroidManifest.xml:37`).
+**Existing behavior relied on**:
+- Both providers fetch headers without bodies (`generic_imap_adapter.dart:2003-2006`, `gmail_api_adapter.dart:581,688`).
+- The Store MSIX and the Play AAB are built with `APP_ENV=prod`; the Fold log reads `env=prod platform=android`
+  (2026-10-09 13:33).
+- Windows DEV runs read-only with background scans off (project memory), so capture follows Harold's manual scans there.
 
-**Callers of any guard being changed**: the new gate is consulted only by the capture call and the Settings row; with it
-inert, `evaluateBatch` behavior is byte-for-byte today's (pinned by a test).
+**Callers of any guard being changed**: the new gate is consulted only by the capture call and the Settings row. With
+the gate off, `evaluateBatch` behavior is byte-for-byte today's (pinned by a test).
 
-**User-reachable control**: Settings > Account tab > "Content history" (gated accounts only).
+**User-reachable control**: Settings > General > "Content history" (dev builds only).
 
-**Observable behavior -- before / after**: BEFORE: nothing beyond a 100-character preview is kept. AFTER: for Harold's
-four accounts only, each scanned email is kept once with its fields, body text and outcome; Settings shows the count with
-Export and Delete. Every other account and every customer sees no change.
+**Observable behavior -- before / after**:
+- BEFORE: nothing beyond a 100-character preview is kept.
+- AFTER, in a dev build with the switch on: each scanned email is kept once, with its fields, body text and outcome.
+  Settings > General shows the count and a Delete button.
+- Prod builds and every customer see no change.
 
-**Dependencies / blockers**: R1-R8 answers; Harold adds the secrets key (Claude does not edit secrets files); Task 3 for
-the export folder; `kimmeyharold@icloud.com` must be added in the app (iCloud provider, app-specific password) if it is
-not already.
+**Dependencies / blockers**: none from Harold (no secrets key needed). Coverage note: the Fold closed test acts on mail
+every 15 minutes, so a manual Windows DEV scan of Inbox and Bulk sees spam only before the Fold deletes it. Adding each
+account's trash folder to the Windows DEV manual-scan folders also captures what the Fold already deleted. That is a
+setting Harold chooses, not code. Where deleted mail lands depends on each account's deleted-rule folder (not verified
+per account).
 
-**Non-functional requirements**: Security: the history file is plaintext SQLite like the main DB (SEC-11b on HOLD) --
-recorded in ADR-0047; app sandbox on Android, user profile on Windows. Platform: shared Dart on both; no exception.
-Performance: one extra body fetch per NEW email for gated accounts only; F177/F180 memory limits respected (one message
-at a time).
+**Non-functional requirements**:
+- Security: the history file is plaintext SQLite like the main DB (SEC-11b on HOLD); ADR-0047 records this.
+- Platform: shared Dart, gated by environment, not platform; no ADR-0042 exception.
+- Performance: one extra body fetch per NEW email while the switch is on. The F177/F180 memory limits are respected (one
+  message at a time).
 
 **Acceptance criteria**:
-- AC-1: With the gate empty, no file is created and no extra fetch happens (test).
-- AC-2: With the gate holding an account's hash, a scan of N new emails stores N rows; a second scan stores 0 more and
-  fetches 0 bodies.
+- AC-1: In a prod build, the switch is absent, no file is created, and no extra fetch happens (test).
+- AC-2: In a dev build with the switch on, a scan of N new emails stores N rows. A second scan stores 0 more and fetches
+  0 bodies.
 - AC-3: An HTML-only message stores readable text; a nested multipart Gmail message stores its text part.
 - AC-4: A user action on a stored email updates its outcome label.
-- AC-5: "Remove an account" deletes that account's rows (and R7 tables); "Delete content history" empties it.
-- AC-6: Export writes one JSON Lines row per stored email with its identity hash.
-- AC-7: `data_safety_declarations_test` and the new inert-gate policy test pass.
+- AC-5: "Remove an account" deletes that account's rows and the R7 tables. "Delete content history" empties the history.
+- AC-6: `data_safety_declarations_test`, the prod-inert policy test and the deletion-coverage policy test pass.
 
-**Tests to write**: T-1 (AC-1) TEST-UNIT gate inert; T-2 (AC-2) TEST-UNIT capture + dedup with a mock adapter counting
-fetches; T-3 (AC-3) TEST-UNIT both adapters' content extraction on fixture MIME and Gmail payloads; T-4 (AC-4)
-TEST-UNIT outcome update; T-5 (AC-5) TEST-UNIT deletion paths (and the R7 table-coverage policy test); T-6 (AC-6)
-TEST-UNIT export; T-7 (AC-7) policy test. Mutation-check T-1 and T-2.
+**Tests to write**:
+- T-1 (AC-1): TEST-UNIT, prod-inert gate.
+- T-2 (AC-2): TEST-UNIT, capture and dedup, with a mock adapter that counts fetches.
+- T-3 (AC-3): TEST-UNIT, content extraction for both adapters on fixture MIME and Gmail payloads.
+- T-4 (AC-4): TEST-UNIT, outcome update.
+- T-5 (AC-5): TEST-UNIT, deletion paths plus the table-coverage policy test.
+- T-6 (AC-6): policy tests.
+- T-1 and T-2 are mutation-checked.
 
-**Definition of Done**: default DoD plus ADR-0047 accepted by Harold before the capture code merges; a real scan on the
-Fold and on Windows shows a non-zero count for a gated account.
+**Definition of Done**: the default DoD, plus:
+- Harold accepts ADR-0047 before the capture code merges.
+- A manual scan on Windows DEV with the switch on shows a non-zero count.
 
-**Model**: ADR-0047 Fable/Opus (mandatory); implementation Sonnet -- why not Haiku: a new store, a provider-interface
-member on two adapters and deletion paths across 6+ files; tests Haiku.
-**Step-types**: DOCS (ADR), SVC-NEW, SVC-EDIT, IMAP, UI-NEW (one row), TEST-UNIT. **Est-Effort**: 330-505m (ADR 60-90,
-gate 20-30, store 30-45, capture and content fetch 60-100, outcome 30-45, controls 40-60, deletion 15-25, tests 60-90,
-docs 15-20) +30m if R7 = 1.
+**Model**: ADR-0047 Fable/Opus (mandatory). Implementation Sonnet; why not Haiku: a new store, a provider-interface
+member on two adapters, and deletion paths across 6+ files. Tests Haiku.
+**Step-types**: DOCS (ADR), SVC-NEW, SVC-EDIT, IMAP, UI-NEW (one row), TEST-UNIT.
+**Est-Effort**: 315-470m.
+- ADR 45-70; gate and switch 10-15; store 30-45; capture and content fetch 60-100; outcome 30-45.
+- Control row 30-45; deletion 15-25 plus R7 gaps 30; tests 50-75; docs 15-20.
+- Was 330-505m +30m. The secrets gate, the export and the per-account controls are gone.
 
-_**Risk & rollback**_: the capture path runs inside every scan; mitigated by AC-1 (inert gate = no change) and placing
-capture in a try/catch that logs and never fails the scan; rollback = empty the secrets key (feature inert) or revert.
+_**Risk & rollback**_: the capture path runs inside every scan. Mitigations:
+- AC-1: gate off means no change.
+- Capture runs in a try/catch that logs and never fails the scan.
+- Rollback: turn the switch off, or revert.
 
-_**Decision-class interrupts**_: Class-1 shape settled by R1-R8 before approval; any later change to stored fields or to
-who is gated is a new Class-1 question.
+_**Decision-class interrupts**_: any change to the stored fields, or to which builds can capture, is a new Class-1
+question.
 
-## Task 8 -- F199-b: Partner Center publisher display name (Priority 12)
+## Task 8 -- F199-b: Partner Center publisher display name -> repo synced, card to HOLD (Priority 12)
 
-**Value**: Removes a card that cannot move without an outside answer, and corrects a stale record.
+**Value**: This makes every repo record say what Partner Center actually holds, and parks a card that has no business
+reason to move now.
 
-**Requirements**: per F7. Under option 1: `LEGAL_ENTITY.md` records the decision and its reasons; line 43 corrected to
-`Kimmey Consulting - Ohio` (`pubspec.yaml:140`); the card removed from the master plan; the `pubspec.yaml:132-139`
-comment changed from "blocked on Microsoft support" to the closed decision. `msix_config.publisher` and `identity_name`
-are never touched.
+**Requirements** (Harold, 2026-10-10; verbatim in the decisions section):
+- R-1: Every repo record of the Windows Store publisher name matches Partner Center: `Kimmey Consulting - Ohio`.
+  - `LEGAL_ENTITY.md:43`, which wrongly says the repo holds `Kimmey Consulting LLC`.
+  - Its "ask support" text at `:77-80` and `:155-157`.
+  - `STORE_LISTING_ASSETS.md:7`.
+  - The `pubspec.yaml:132-139` comment. The value at `:140` is already correct.
+- R-2: The sprint task is closed. The master-plan card moves to HOLD with Harold's reason: *"no real business is being
+  done by either entity and will resolve later."* Trigger: Harold reopens it (business activity starts, or Microsoft
+  raises the name).
+- R-3: `msix_config.publisher` and `identity_name` are never touched.
 
-**Acceptance criteria**: AC-1: `LEGAL_ENTITY.md` and `pubspec.yaml` agree; AC-2: the master plan reflects F7.
+**Affected components / files**: `docs/LEGAL_ENTITY.md`, `docs/STORE_LISTING_ASSETS.md`, `mobile-app/pubspec.yaml`
+(comment only), `docs/ALL_SPRINTS_MASTER_PLAN.md`.
+
+**Acceptance criteria**:
+- AC-1: A grep of `docs/` and `pubspec.yaml` finds no record saying the Windows Store publisher name is `Kimmey Consulting
+  LLC`.
+- AC-2: F199-b sits in the master plan HOLD section with the reason and the trigger.
+
 **Tests to write**: none (docs); `msix_config_test.dart` stays green.
 **Definition of Done**: None -- default DoD only. **Model**: Haiku. **Step-types**: DOCS. **Est-Effort**: 10-15m.
+
+**Status**: R-1 and R-2 DONE 2026-10-10, before approval, at Harold's direct instruction (docs only; `pubspec.yaml`
+change is a comment). **Executed-by**: Opus 5.5 (session model) -- done in the planning turn because Harold asked for it
+directly.
+
+## Task 9 -- N78-1: Background-scan notification -- "No rule" first, one per account, naming the account (new scope, Harold 2026-10-10)
+
+**Value**: This makes each notification readable at a glance and tells the user which account it is about. The newest
+result per account replaces the older one.
+
+**Requirements**:
+- R-1: Notification text order, with labels matching the Scan History chips:
+  - Body: `No rule: 9, Deleted: 1, Safe: 0`.
+  - `, Errors: N` is appended only when N > 0.
+  - Example: `No rule: 9, Deleted: 1, Safe: 0`.
+- R-2: Each notification names its account in the title, in the ADR-0030 masked form used in the diagnostic log.
+  - Example title: `Background scan: k***@aol.com`.
+  - Today neither the title nor the body names the account (`android_background_scan_worker.dart:324-328`).
+- R-3: One notification per account. The ID comes from a deterministic helper (FNV-1a of the account id, masked to 31
+  bits), not `String.hashCode`. A newer notification for the same account REPLACES the older one, if it is still shown.
+- R-4: Prevention: the helper has a test pinning its value for a fixed account id, so a later change cannot silently
+  break replacement.
+
+**Affected components / files**: `android_background_scan_worker.dart:300-334`, a small notification-text helper
+(shared Dart), tests.
+
+**Existing abstraction checked**:
+- `Redact` (`Redact.accountId`, used at `:261`) is reused for the masked title.
+- No notification-ID helper exists.
+
+**Existing behavior relied on**:
+- Android already posts with ID `accountId.hashCode` (`:323`), and a post with the same ID replaces the shown
+  notification.
+- A probe on 2026-10-10 printed the same `hashCode` for the same string across separate Dart processes, in JIT and in
+  AOT on Windows x64. So replacement probably works today.
+- Dart does not promise `hashCode` stability across runs, and Android arm64 was not probed; R-3 removes that dependency.
+- What Harold saw: the notification screenshot was NOT among the files pulled from the Fold on 2026-10-10. Four app
+  screenshots and the logs arrived; no notification capture did. With no account named, four accounts' notifications
+  look like duplicates, so R-2 may be the real fix. N2 settles it.
+
+**Callers of any guard being changed**: none; text and ID only.
+
+**User-reachable control**: N/A (existing notification; Settings permission flow unchanged).
+
+**Observable behavior -- before / after**:
+- BEFORE: `Background scan complete` / `Processed 10: 1 deleted, 0 safe, 9 no rule`, with no account named.
+- AFTER: `Background scan: k***@aol.com` / `No rule: 9, Deleted: 1, Safe: 0`, one per account, the newest replacing the
+  older.
+
+**Dependencies / blockers**: N1 (placement), N2 (observation). Phone check on the next 0.19.0 closed-test build.
+
+**Non-functional requirements**: Platform: ADR-0042 exception, declared.
+- Windows background scans show NO completion notification today. `WindowsNotificationService.showBackgroundScanComplete`
+  (`windows_notification_service.dart:62`) has no caller.
+- The plugin is pinned at `flutter_local_notifications: ^17.2.1` (`pubspec.yaml:58`). Its changelog lists Windows
+  support first in 19.0.0 ("[Windows] Added support for Windows."; latest 22.3.1, pub.dev, read 2026-10-10).
+- `ADR-0042:61` names notifications as a mechanism difference, not an absence. This card therefore records the Windows
+  absence as a declared exception, with a backlog card (N3) for the Windows toast and the plugin upgrade.
+- The shared text and ID helper is written so that Windows uses it unchanged when that card lands.
+
+**Acceptance criteria**:
+- AC-1: The body for (no rule 9, deleted 1, safe 0, errors 0) is exactly `No rule: 9, Deleted: 1, Safe: 0`; with
+  errors 2 it ends `, Errors: 2`.
+- AC-2: The title holds the masked account and never the full address.
+- AC-3: The ID helper returns the same pinned value for a fixed id, and different values for two account ids.
+- AC-4 (phone): Given two background runs for one account with the first notification still shown, Then one
+  notification shows for that account, carrying the second run's counts.
+
+**Tests to write**:
+- T-1 (AC-1, AC-2): TEST-UNIT, text helper.
+- T-2 (AC-3): TEST-UNIT, ID helper with a pinned value.
+- Both are mutation-checked. AC-4 is a Manual Validation step on the Fold, rehearsed per 5.1.9 as far as a host can.
+
+**Definition of Done**: the default DoD, plus a Fold screenshot of the shade showing one notification per account.
+
+**Model**: Haiku. **Step-types**: SVC-EDIT, TEST-UNIT. **Est-Effort**: 30-50m.

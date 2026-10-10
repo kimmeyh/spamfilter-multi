@@ -735,11 +735,17 @@ _(No active Core App candidates -- F96 shipped in Sprint 43.)_
 
 ### Process
 
-**F199-b. Partner Center publisher display name -- the last surface of the LLC rename (~15m once unblocked) Priority 12**
+**F199-b. Partner Center publisher display name -- the last surface of the LLC rename (~15m once reopened) Priority HOLD**
 - Phase: Release Readiness
 - Platform: Windows Desktop
 - Origin: Sprint 68 remnant; EXTERNALLY BLOCKED (Microsoft Store account surface).
-- Depends on: Harold's Microsoft support ticket.
+- **HOLD (Harold, 2026-10-10, Sprint 78 planning)**: *"update the repo Windows store section to match what the
+  Microsoft Partner Center says for now. Then close and state that no real business is being done by either entity and
+  will resolve later."* Done in Sprint 78 Task 8: `LEGAL_ENTITY.md`, `STORE_LISTING_ASSETS.md` and the `pubspec.yaml`
+  comment now record `Kimmey Consulting - Ohio` as the Partner Center name, which `pubspec.yaml:140` mirrors.
+- **Trigger to reopen**: Harold reopens it (business activity starts under either name, or Microsoft raises the
+  publisher name). Then: support ticket, console first, repo second.
+- Depends on: Harold's Microsoft support ticket (only once reopened).
 - Sprint 68 delivered every other surface: the repo (10 replacements, 7 files), the Play
   developer name, and the Partner Center listing fields (Copyright / Developed by), the latter
   folded into Submission 25 rather than paying a separate listing-only certification pass.
@@ -757,6 +763,14 @@ _(No active Core App candidates -- F96 shipped in Sprint 43.)_
   upgrade path.
 - Account type is CLOSED: both stores stay Personal/Individual (`docs/LEGAL_ENTITY.md`).
 - Depends on: a Microsoft support answer. Nothing in the repo blocks it.
+
+**F285. Re-ask: keep or delete `email_detail_view.dart` (~5m) Priority HOLD**
+- Phase: Core App (code hygiene)
+- Platform: Windows Desktop + Android (shared Dart)
+- Origin: Sprint 78 planning decision F5. `lib/ui/screens/email_detail_view.dart` (1,005 lines) has no caller in `lib/`.
+  Harold, 2026-10-10: *"keep it for 5 sprints then ask again"*.
+- **Trigger**: Sprint 83 planning -- ask Harold again as a numbered question (1. Delete 2. Keep).
+- Depends on: None.
 
 **F111. Periodic Windows App Store upload readiness verification (~110-175m per review) Priority HOLD**
 - Phase: Release Readiness (reusable template)

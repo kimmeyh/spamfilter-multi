@@ -1,12 +1,12 @@
 {
     "_description": "Sprint status file that persists across context compaction. Update after each phase/sub-phase completion.",
-    "_last_updated": "2026-10-09T15:30:00Z",
+    "_last_updated": "2026-10-10T12:00:00Z",
     "_usage": "Read this file after context compaction to restore sprint approval state and progress.",
     "_staleness_note": "This file had drifted 15 sprints (last updated at Sprint 35, 2026-04-19) before being refreshed at Sprint 50 close-out. It is a Phase 7.7 checklist item -- update it at every sprint close-out, not opportunistically.",
     "current_sprint": {
         "number": 78,
         "branch": "feature/20261009_Sprint_78",
-        "status": "Phase 3.7 Plan Approval -- scope selected by Harold 2026-10-09 (8.4 pass 2); SPRINT_78_PLAN drafted, awaiting 3.7 approval and decisions R1-R8, F1-F7, Q-S1..3; 0-18-0 store uploads still with Harold",
+        "status": "Phase 3.7 Plan Approval -- Harold's decision answers recorded 2026-10-10 (R76-4 dev-only, F199-b HOLD, Task 9 notifications added); awaiting approval plus N1-N3",
         "plan_approved": false,
         "blanket_execution_approved": false,
         "pr_number": 470,
@@ -44,7 +44,7 @@
         "status_0_16_0": "SUBMITTED / ROLLOUT IN PROCESS on BOTH stores (Harold, 2026-09-24, reported between 12:17am and 8:39am ET). NOT yet observed live on either. Built + verified 2026-09-24: MSIX 0.16.0.0 (prod worktree bf005f3, self-test 6/6 PASS, 17.5 MB) and AAB versionCode 7 / 0.16.0 (67.0 MB). Step 7 records (STORE_VERSION_STATUS.md live rows) wait for a direct console observation.",
         "status_0_17_0": "LIVE 2026-10-04 ~11:20pm ET on BOTH stores (Harold). Microsoft Store: submitted ~10:40pm, installed build shows no [DEV] and Version 0.17.0; public API lagged. Google Play closed testing (Alpha): versionCode 8, device-verified on the Fold (Version 0.17.0). Open: Step 4.2 Gmail sign-in URL on the Store build; CHANGELOG has no release headings since 0.14.0 (not done this release either).",
         "status_0_17_6": "SUBMITTED to BOTH stores 2026-10-06 (Harold screenshots), NOT yet live. Microsoft Store: Submission 31, \"Update in certification\", stage Pre-processing (last modified 10/07/2026); Store presence still Submission 30 (0.17.0). Google Play: Closed testing - Alpha, \"14 (0.17.6) Start full rollout\" in Changes in review, quick checks running (up to 12 min); managed publishing off. Artifacts: MSIX D:\\Data\\Harold\\github\\spamfilter-multi-prod\\mobile-app\\build\\windows\\x64\\runner\\Release\\my_email_spam_filter.msix (17.6 MB, self-test PASS); AAB D:\\Data\\Harold\\github\\spamfilter-multi\\mobile-app\\dist\\android-0.17.6+14\\app-prod-release.aab (67.3 MB). STORE_VERSION_STATUS Live rows unchanged until observed live; \"Last uploaded to Play\" -> 0.17.6 (14) is updated WITH the Sprint 77 pubspec bump (IMP-2).",
-        "status_0_18_0": "BUILT + VERIFIED 2026-10-09, NOT SUBMITTED. MSIX 0.18.0.0 from prod worktree b8d2aa2 (was 71 behind), self-test 6/6 PASS, 17.6 MB. AAB 0.18.0 versionCode 15, 67.6 MB, dist/android-0.18.0+15. Waiting on Harold's uploads; Windows upload needs Submission 31 (0.17.6.0) out of certification."
+        "status_0_18_0": "UPDATED on BOTH (Harold, 2026-10-10). Fold: diagnostic log 'app start (foreground) -- v0.18.0 env=prod platform=android' 2026-10-09 13:33; logs clean (0 failed actions, no crash). Windows: Harold screenshot of a prod window at Version 0.18.0; Partner Center submission status not observed. STORE_VERSION_STATUS 'Last uploaded to Play' -> 0.18.0 (15) with the Sprint 78 bump (IMP-2)."
     },
     "environment_notes": [
         "RESOLVED 2026-07-29 (verified 07-30): the Store fault was an Acronis file-system filter blocking AppXSvc cleanup, fixed by an Acronis Protection exclusion. 23h uptime with ZERO Id-493 events vs a 176-file/6-min baseline; Store client self-updated 22606.1401.6.0 -> .10.0 (requires a working deployment pipeline). Filter drivers remain loaded -- backup protection was NOT disabled. See ALL_SPRINTS_MASTER_PLAN ENV-1 for the picker gotcha if it recurs.",
@@ -53,9 +53,9 @@
     ],
     "blocking_issues": [],
     "next_actions": [
-        "8.3: Microsoft Store 0.18.0.0 MSIX from the prod worktree pulled to main b8d2aa2 (STORE_RELEASE_PROCESS.md), verify, hand to Harold for upload.",
-        "8.3 (Android): Google Play 0.18.0 AAB (GOOGLE_PLAY_RELEASE_PROCESS.md), hand to Harold for closed-testing upload.",
-        "8.4: Backlog Refinement pass 2 -- Harold selects Sprint 78 scope; then Phase 3 planning. Sprint 78 start items: Fold steps 7-11 on 0.18.0, boot main() trace."
+        "3.7: Harold approves the plan and answers N1-N3 (Task 9).",
+        "3.7.0: create GitHub cards for Tasks 1-9; 3.7.0b: bump to 0.19.0+16 and STORE_VERSION_STATUS Last uploaded to Play = 0.18.0 (15).",
+        "Then execute in plan order: Task 0, phone Tasks 1-2, Task 9, ADR-0047, Task 3, F281 research, Tasks 5-6, Task 7."
     ],
     "next_sprint_targeted": {
         "number": 77,
