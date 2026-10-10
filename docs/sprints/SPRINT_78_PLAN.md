@@ -303,6 +303,16 @@ app-folder fallback (`:165-176`) stay.
 **Step-types**: SVC-EDIT, TEST-UNIT, CONTENT, DOCS. **Est-Effort**: 50-80m (Phase 3.2.2.2: 60-90m -> 50-80m; Android
 default and single resolver already exist).
 
+**Status (2026-10-10)**: code, tests, help, ADR-0042, ARCHITECTURE.md and CHANGELOG DONE; Manual Validation on both
+platforms pending. Evidence: 100/100 in the seven export and log test files; mutations F282-M1..M4 all KILLED (chosen
+folder wrapped, default without the app folder, default diagnostics suffixed, fallback without the app folder);
+policy 146/146; analyzer clean. Windows Documents source verified: `path_provider_windows` 2.3.0
+`path_provider_windows_real.dart:123-124` (`WindowsKnownFolder.Documents`). Found on the way: the unwritable-default
+fallback on Windows is Documents itself, shared by DEV and PROD, so it now also gets the app folder (M4).
+**Executed-by**: Opus 5.5 (session model) -- single interactive session, deviation note (a).
+**What the tests do NOT catch**: that the real Documents folder is writable on a device (scoped storage on Android, a
+OneDrive-redirected Documents on Windows); the resolver runs on a test override. Manual Validation checks both.
+
 ## Task 4 -- F281: Best-practice UI for "run every <interval>", then the chosen implementation (Priority 6)
 
 **Value**: The interval control reads naturally and offers only intervals that make sense.

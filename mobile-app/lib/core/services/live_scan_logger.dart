@@ -25,8 +25,8 @@ import '../../util/redact.dart';
 ///   - Per-account CSV: `{export}/scan_exports/live_scan_{safe_email}_{date}{_dev}.data.csv`
 ///   - Per-account XLSX: `{export}/scan_exports/live_scan_{safe_email}_{date}{_dev}.xlsx`
 ///
-/// `{export}` is the Settings > General folder, else the platform default
-/// (Android Documents, Windows Downloads) -- see `ExportDirectories`. The
+/// `{export}` is the Settings > General folder, else the default
+/// `Documents/MyEmailSpamFilter[_Dev]` (F282) -- see `ExportDirectories`. The
 /// exports moved out of `{logs}` in F206: on Android that folder is
 /// app-private and the user could not retrieve them.
 ///

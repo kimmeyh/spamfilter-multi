@@ -22,6 +22,7 @@ import 'dart:typed_data';
 
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:path/path.dart' as p;
 import 'package:my_email_spam_filter/core/services/export_directories.dart';
 import 'package:my_email_spam_filter/core/storage/settings_store.dart';
 import 'package:my_email_spam_filter/ui/screens/yaml_import_export_screen.dart';
@@ -173,7 +174,7 @@ void main() {
       final start = await ExportDirectories.saveDialogStart(
           settingsStore: _BrokenSettings());
       // The test host is Windows or Linux (CI): a filesystem path.
-      expect(start, dir.path);
+      expect(start, p.join(dir.path, ExportDirectories.appFolderName));
     });
 
     test('both export buttons pass the export folder (source gate)', () {

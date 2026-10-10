@@ -5,4 +5,4 @@ The Manual Scan tab sets defaults for manual (on-demand) scans. Per-account over
 - Scan Range: how many days back to read from each folder. 1-3 days is typical for daily use; 7-30 days for occasional cleanup.
 - Default Folders: which folders to scan by default (INBOX almost always, spam folders optional). The folder picker reads the account's IMAP namespace.
 - Confirmation: whether to show a "proceed?" dialog before destructive scans. Off = faster loop, on = safer when testing rules.
-- Export Settings: where CSV exports are saved when you tap the Download icon on a Results screen. Leaving the path blank uses the OS Downloads folder.
+- Export Settings: where CSV exports are saved when you tap the Download icon on a Results screen. Leaving the path blank uses the MyEmailSpamFilter folder in Documents.

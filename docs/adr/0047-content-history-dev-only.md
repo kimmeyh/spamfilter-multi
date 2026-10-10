@@ -33,6 +33,13 @@ are expected.
    build can capture. A policy test asserts that capture cannot run, and the
    switch is not built, when `APP_ENV` is not `dev`. There is no account
    allow-list: a dev install holds only its developer's accounts.
+   **The default environment is `dev`** (`app_environment.dart:20`): a build
+   that omits `APP_ENV` is a dev build. The gate is therefore only as safe as
+   the release build paths. A policy test pins that every release path (the
+   MSIX `windows_build_args` and the `build-with-secrets.ps1` release/AAB path)
+   passes `APP_ENV=prod`. A release build without it would be a dev build in
+   every other respect too (title suffix, data folder), which the existing
+   release self-test catches.
 2. **Where it runs.** The check is an environment check in shared code, not a
    platform branch. It runs today on Harold's Windows DEV install. A dev
    Android build behaves the same way.

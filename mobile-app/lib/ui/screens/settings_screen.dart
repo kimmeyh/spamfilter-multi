@@ -1391,8 +1391,8 @@ class _SettingsScreenState extends State<SettingsScreen> with SingleTickerProvid
   }
 
   Widget _buildCsvExportDirectorySelector() {
-    // F206 (Sprint 74): the real per-platform default -- this label used to say
-    // "Downloads folder (default)" on every platform, which was true on none.
+    // F206 (Sprint 74) / F282 (Sprint 78): the real default, now the same on
+    // every platform (Documents/MyEmailSpamFilter[_Dev]).
     final displayPath =
         _csvExportDirectory ?? ExportDirectories.defaultLabel;
 

@@ -26,6 +26,9 @@ Format: `- **type**: Description (Issue #N)` where type is feat|fix|chore|docs
 
 ## [Unreleased]
 
+### 2026-10-10 (Sprint 78)
+- **feat**: Every file the app writes for you now goes to one folder, MyEmailSpamFilter in Documents, on both Windows and Android (scan exports in scan_exports, the diagnostic log in diagnostics). A folder you chose in Settings > General is still used exactly as chosen, and existing files are not moved (Issue #473)
+
 ### 2026-10-08 (Sprint 77)
 - **fix**: The diagnostic log no longer records a sender address or subject text when a No Rule email is cleared because an existing rule covers it; it records only the kind of rule (Sprint 77 final review)
 - **fix**: Adding an email address that is already saved now asks "Replace its saved sign-in details?" for every Google sign-in method too, not only the password form, and also asks when the app cannot read its saved accounts (Sprint 77 final review)

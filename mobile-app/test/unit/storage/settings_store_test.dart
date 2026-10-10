@@ -341,7 +341,7 @@ void main() {
     // F90 (Sprint 39): live-scan debug CSV setting parity with
     // background-scan debug CSV setting
     // Harold Q2 (Sprint 74) reversed F113: exports are OFF by default now
-    // that they land in Downloads/Documents rather than hidden app storage.
+    // that they land in a folder the user sees rather than hidden app storage.
     test('per-scan exports are OFF by default (Harold Q2, Sprint 74)',
         () async {
       expect(await settingsStore.getLiveScanDebugCsv(), isFalse);

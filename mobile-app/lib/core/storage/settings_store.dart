@@ -81,10 +81,10 @@ class SettingsStore {
   static const List<String> defaultBackgroundScanFolders = ['INBOX'];
   /// F202: overall default Safe Senders folder when no account or provider value.
   static const String defaultSafeSenderFolder = 'INBOX';
-  static const String? defaultCsvExportDirectory = null; // null = platform default (ExportDirectories: Android Documents, Windows Downloads)
+  static const String? defaultCsvExportDirectory = null; // null = the default, Documents/MyEmailSpamFilter[_Dev] on every platform (ExportDirectories, F282)
   // Harold Q2 (Sprint 74) REVERSES F113 (Sprint 47): per-scan exports are
   // OFF by default. F113 turned them on while they were written to hidden
-  // app storage; F206 moved them to Downloads/Documents, so a default of ON
+  // app storage; F206 moved them to a folder the user sees, so a default of ON
   // would drop new files there after every scan with no warning.
   static const bool defaultBackgroundScanDebugCsv = false;
 
@@ -208,8 +208,8 @@ class SettingsStore {
     return List.from(scan ?? defaultManualScanFolders);
   }
   /// F90 (Sprint 39): live-scan debug CSV export. OFF by default (Harold Q2,
-  /// Sprint 74, reversing F113's ON): exports now land in the user's
-  /// Downloads/Documents, so they must be asked for (matches
+  /// Sprint 74, reversing F113's ON): exports now land in a folder the user
+  /// sees (Documents/MyEmailSpamFilter by default), so they must be asked for (matches
   /// `defaultBackgroundScanDebugCsv`, also `false`). The Settings > Manual Scan
   /// tab Debug section exposes a toggle so a user can opt OUT without a code
   /// change. The runtime log file (`{logs}/{prefix}live_scan_v<version>.log`) is
@@ -513,8 +513,8 @@ class SettingsStore {
   // ============================================================
 
   /// Get the user-chosen export directory.
-  /// Returns null if not set -- the platform default applies (F206: Android
-  /// Documents, Windows Downloads; see ExportDirectories).
+  /// Returns null if not set -- the default applies (F282:
+  /// Documents/MyEmailSpamFilter[_Dev] on every platform; see ExportDirectories).
   Future<String?> getCsvExportDirectory() async {
     return await _getAppSetting(keyCsvExportDirectory);
   }
