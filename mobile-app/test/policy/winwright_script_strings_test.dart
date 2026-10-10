@@ -95,9 +95,27 @@ void main() {
   // as a cursor-free read needs the F284 live probe (45-minute time-box).
   // Remove this entry when the hovers are converted. The exact count is pinned
   // so a THIRD cursor step in that script still fails.
+  //
+  // test_f124: its four label probes resolve STATIC Text nodes. The live sweep
+  // (2026-10-10) showed there is no cursor-free step the script runner replays
+  // for them: a Text node has no InvokePattern, and ww_get_value is skipped by
+  // the runner. They stay ww_click until WinWright replays a read step.
   const knownPending = <String, Map<String, int>>{
     'test_s75_new_controls.json': {'ww_hover': 2},
+    'test_f124_rule_labels.json': {'ww_click': 4},
   };
+
+  // Tools the script runner does NOT replay: it skips ww_get_value and ww_wait
+  // and rejects ww_assert* / ww_get_attribute -- so a "check" written with them
+  // never runs, and the script still reports PASSED (found live, 2026-10-10).
+  const notReplayed = <String>[
+    'ww_get_value',
+    'ww_wait',
+    'ww_assert',
+    'ww_assert_value',
+    'ww_assert_snapshot',
+    'ww_get_attribute',
+  ];
 
   test('default-sweep WinWright scripts contain no cursor-driven steps', () {
     // The runner owns the sweep membership: read its exclusion list rather
@@ -150,15 +168,37 @@ void main() {
 
     expect(offenses, isEmpty,
         reason: 'Default-sweep WinWright scripts must use UIA pattern steps '
-            '(ww_invoke, ww_set_checked, ww_get_value, ...) so the sweep '
+            '(ww_invoke, ww_set_checked, ...) so the sweep '
             'runs with the PC locked or in use. Convert the step, or if it '
             'truly needs the cursor, move the script out of the default '
             'sweep:\n${offenses.join('\n')}');
   });
 
+  test('default-sweep WinWright scripts use only steps the runner replays',
+      () {
+    final offenses = <String>[];
+    for (final file in Directory('test/winwright').listSync().whereType<File>()) {
+      final name = file.uri.pathSegments.last;
+      if (!name.startsWith('test_') || !name.endsWith('.json')) continue;
+      final doc = jsonDecode(file.readAsStringSync()) as Map<String, dynamic>;
+      for (final tc in (doc['testCases'] as List)) {
+        for (final step in ((tc as Map)['steps'] as List)) {
+          final tool = (step as Map)['tool'];
+          if (tool is String && notReplayed.contains(tool)) {
+            offenses.add('$name: $tool');
+          }
+        }
+      }
+    }
+    expect(offenses, isEmpty,
+        reason: 'The script runner skips or rejects these tools, so the check '
+            'never runs and the script still reports PASSED:\n'
+            '${offenses.join('\n')}');
+  });
+
   // WHAT THIS DOES NOT CATCH: it reads step "tool" names only. It cannot tell
   // that a ww_invoke selector still resolves (a live sweep does), that
-  // ww_set_checked / ww_get_value are replayed by the installed runner, or
+  // ww_set_checked is replayed by the installed runner, or
   // that a pattern tool silently falls back to a cursor click (ww_invoke on a
   // control without InvokePattern errors rather than clicking, but a future
   // WinWright build could change that). It also trusts the runner's

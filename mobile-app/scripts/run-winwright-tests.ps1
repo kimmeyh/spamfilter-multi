@@ -529,6 +529,23 @@ try {
 # Stop) cannot leave the user's background scans silently disabled.
 try {
 
+# F284 (Sprint 78, live sweep): the script runner SKIPS a step whose tool it
+# cannot replay ("Replay of 'ww_get_value' is not supported by the script
+# runner") and still reports the script PASSED -- so f124's four label checks
+# silently never ran. A skipped check must never read as a pass: run the script,
+# echo its output, and turn any such skip into a failure (exit code 3).
+function Invoke-WinWrightScript {
+    param([string]$Path)
+    $out = & $winwrightExe run $Path 2>&1 | ForEach-Object { Write-Host $_; $_ }
+    $code = $LASTEXITCODE
+    $skipped = @($out | Where-Object { "$_" -match 'is not supported by the script runner' })
+    if ($code -eq 0 -and $skipped.Count -gt 0) {
+        Write-Host "[FAIL] $($skipped.Count) step(s) were SKIPPED as not replayable -- a skipped check is not a pass." -ForegroundColor Red
+        return 3
+    }
+    return $code
+}
+
 $passed = 0
 $failed  = 0
 $results = @()
@@ -548,8 +565,7 @@ foreach ($test in $tests) {
     }
 
     $startTime = Get-Date
-    & $winwrightExe run $test.FullName
-    $exitCode = $LASTEXITCODE
+    $exitCode = Invoke-WinWrightScript -Path $test.FullName
     $duration = (Get-Date) - $startTime
 
     if ($exitCode -eq 0) {
@@ -570,8 +586,7 @@ foreach ($test in $tests) {
 
         if (Ensure-FreshAppAtHome) {
             $retryStart = Get-Date
-            & $winwrightExe run $test.FullName
-            $exitCode = $LASTEXITCODE
+            $exitCode = Invoke-WinWrightScript -Path $test.FullName
             $duration = (Get-Date) - $retryStart
         }
 

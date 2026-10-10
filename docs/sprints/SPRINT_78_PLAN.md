@@ -407,6 +407,17 @@ default-sweep script; T-2 (R-1) -- TEST-WIDGET asserting the account face expose
 
 **Definition of Done**: default DoD. **Model**: Sonnet -- why not Haiku: harness constraints are found only by failing
 runs (CODING_VELOCITY WINWRIGHT-DISCOVERY).
+
+**Status (2026-10-10)**: tooling half by a Sonnet sub-agent in a worktree (delegation checklist), reviewed and applied
+(32bd6fa): R-3 locked-run rule, R-4 mt2c and seed script retired, R-5 fixed 1600x1000 window (verified live: "Window:
+1600x1000"), R-6, T-1 (two mutants killed). WINWRIGHT-DISCOVERY (live, same day): (1) the sub-agent's priming-step
+change `maximize` -> `restore` broke WinWright's main-window lookup in EVERY script ("No main window found" at step
+2); a 2-step probe with `maximize` passed, so all scripts are back to `maximize` (mechanism not established). (2)
+Flutter Settings tabs project to UIA as Text with no invoke pattern, so `ww_invoke` on them resolved 0 elements; R-1
+done as carded: each tab label carries a button node with a tap action, and the Review account face is ONE button
+node whose action opens its menu (b1e5d7b; T-2 tests perform both actions; mutations F284-M1/M2 killed).
+**Executed-by**: Sonnet sub-agent (tooling) + Opus 5.5 session (review, discovery, R-1) -- R-1 depended on F283's
+rebuilt screen, so it could not be delegated in parallel.
 **Step-types**: WINWRIGHT-SCRIPT, WINWRIGHT-DISCOVERY (time-box), HOOK (runner), UI-MOVE. **Est-Effort**: 90-140m.
 
 ## Task 6 -- F283: Review No Rule Items looks and works like the Results screen, across all accounts (Priority 8)
@@ -669,6 +680,18 @@ directly.
 
 - **5.1.2 F-PRECHECK**: 2026-10-10, all six classes against `git diff origin/develop...HEAD`. (1) Mirror sites: Results and Review share one copy of the list pieces and the pop-up; capture sits in the shared scanner (manual and both background workers); the F230 source test follows the moved pop-up; no new `Platform.is` gate in the tested widgets. (2) Production wiring: `ContentHistory.isActive` in `EmailScanner`, `fetchContentText` through the capture, `recordDecision` from both quick-action paths, the export default for every writer, `ContentHistoryStore.deleteAccount` in `DataDeletionService` -- all have runtime callers. (3) Doc drift: export, interval, settings and diagnostics comments updated with the code; ADR-0042 and ADR-0039 amended. (4) Fragile parsing: From display name (`<`) and Return-Path domain (last `@`), both fail soft to null. (5) API scope: content fetch per message in the scanned folder (same rule as `fetchFullBody`); lookups and deletes per account; delete-all per file. (6) Silent failure: 1 finding FIXED (a30902c) -- `ContentHistory.isActive` swallowed an unreadable switch with no log, and capture failures logged only through the diagnostic logger; both now also `Logger.w`.
 - **5.1.6 runtime launch**: N/A -- no Android config touched (no manifest, gradle, res/xml or R8 change this sprint).
+- **5.1.5 WinWright sweep**: 2026-10-10 ~13:00, on the 0.19.0 DEV build of b1e5d7b (lib/ui unchanged after it),
+  unlocked PC: `test_f124_rule_labels` PASS 29/29, `test_s75_new_controls` PASS 27/27, no step skipped, DB drift
+  none, window 1600x1000 (R-5). Two earlier runs that day failed and were diagnosed live (WINWRIGHT-DISCOVERY, about
+  40 of the 45 minutes): the `restore` priming step broke main-window lookup (back to `maximize`), and the tab
+  selectors needed the real UIA names (`Tab 1 of 4\nGeneral`, `Tab 2 of 4\nAccount`; R-1 made the tabs buttons). A
+  third run passed while SKIPPING f124's four label checks (`ww_get_value` is not replayed, and WinWright still
+  reports PASSED) -- prevention: the runner now fails a script with any skipped step (verified with a probe: exit 3),
+  and a policy test refuses non-replayed tools in sweep scripts (mutation F284-M3 killed).
+  FINDING for Harold (F284 AC-1): "zero ww_click in the default sweep" is not reachable with this WinWright build --
+  f124's four probes read STATIC Text labels, which have no InvokePattern and no replayed read step, so they stay
+  ww_click (f124 needs the unlocked PC); s75's two hovers likewise. The policy test pins exactly those six.
+  - sweep-head: b1e5d7b
 
 ## Manual Validation steps (Sprint 78 -- re-present IN FULL every time Harold is asked to validate)
 

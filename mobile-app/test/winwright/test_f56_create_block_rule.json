@@ -24,7 +24,7 @@
           "tool": "ww_invoke", "selector": "type=Button[name='Settings']" },
 
         { "_comment": "PROOF OF ARRIVAL: the General tab exists only once Settings is open. Tabs project as Text nodes, so they need the physical-mouse path.",
-          "tool": "ww_invoke", "selector": "type=Button[name^='General']" },
+          "tool": "ww_invoke", "selector": "type=Button[name='Tab 1 of 4\nGeneral']" },
 
         { "tool": "ww_invoke", "selector": "type=Button[name='Manage Rules']" },
         { "tool": "ww_invoke", "selector": "type=Button[name='Add block rule']" },

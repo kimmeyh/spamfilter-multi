@@ -1,12 +1,12 @@
 {
     "_description": "Sprint status file that persists across context compaction. Update after each phase/sub-phase completion.",
-    "_last_updated": "2026-10-10T15:30:00Z",
+    "_last_updated": "2026-10-10T17:30:00Z",
     "_usage": "Read this file after context compaction to restore sprint approval state and progress.",
     "_staleness_note": "This file had drifted 15 sprints (last updated at Sprint 35, 2026-04-19) before being refreshed at Sprint 50 close-out. It is a Phase 7.7 checklist item -- update it at every sprint close-out, not opportunistically.",
     "current_sprint": {
         "number": 78,
         "branch": "feature/20261009_Sprint_78",
-        "status": "Phase 4 Sprint Execution -- plan approved by Harold 2026-10-10 (3.7); cards #471-#478 created (3.7.0); version 0.19.0+16 (3.7.0b)",
+        "status": "Phase 5.1 Code Review & Testing -- Tasks 0,3,4,6,7,8 code-complete; Task 5 tooling done, live WinWright sweep in progress; Tasks 1-2 wait on Harold's Fold steps; F4 chip-row check and ADR-0047 acceptance asked",
         "plan_approved": true,
         "blanket_execution_approved": true,
         "pr_number": 470,
@@ -30,12 +30,12 @@
     },
     "_github_issues_note": "Sprint 66 cards created at Phase 3.3.1 (2026-09-07): #387 GP-19, #388 GP-4. Close by hand at Post-Merge Cleanup.",
     "test_metrics": {
-        "suite": "2,957 passed / 15 skipped / 0 failed (local Windows, 2026-10-08, after the 7.7.1 fixes)",
+        "suite": "2,983 passed / 15 skipped / 0 failed (local Windows, 2026-10-10, after R76-4) + new tests since",
         "policy_suite": "JVM 21/21; release_notes_test passing; hook suite 128/128 (2026-10-08)",
         "winwright": "2026-10-08 sweep-head 4a5f2ac: f124 PASS 29/29, s75 PASS 27/27, mt2c FAIL step 9 (display-size dependent: seeds below 11 pinned provider rows at ~1940x1040; passed 30/30 at 3856x2128); rewrite folded into F283; DB drift none",
         "analyzer": "clean",
         "mutations": "Sprint 77: F258 M1/M2/M4 + L1/L2, F245 21, F192 25, SEC-8b 16, F264 24, R76-1 5, merge M1/M2, F-PRECHECK 15 -- all KILLED",
-        "as_of": "2026-10-08, Sprint 77 Phase 7"
+        "as_of": "2026-10-10, Sprint 78 Phase 5"
     },
     "store_release": {
         "status_0_15_3": "NOT SUBMITTED TO EITHER STORE. Harold, 2026-09-22: \"not pushing to either store this time\". Phase 8.3 explicitly N/A for this cycle.",
@@ -54,8 +54,9 @@
     ],
     "blocking_issues": [],
     "next_actions": [
-        "Task 0 done with 3.7.0b (0.19.0+16). Next: Task 1/2 phone checks (Harold's Fold time) in parallel with ADR-0047 (Task 7).",
-        "Then Task 3 F282, Task 4 F281 research (Harold's pick asked mid-sprint), Tasks 5-6 F284+F283, Task 7 R76-4 code."
+        "5.1.5: finish the WinWright sweep (sweep-head recorded in the plan); hover steps probe (F284 R-2).",
+        "5.1.9: MV rehearsal marker in the plan, then 5.2 full suite, 5.3 hand Harold W1-W4 (re-presented in full).",
+        "Harold: Fold steps (Task 1 MV76-1 8-11 + iCloud; Task 2 F277 three overnight runs); F4 chip-row 1/2; ADR-0047 acceptance."
     ],
     "next_sprint_targeted": {
         "number": 77,

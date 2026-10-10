@@ -24,7 +24,7 @@
           "tool": "ww_invoke", "selector": "type=Button[name='Settings']" },
 
         { "_comment": "PROOF OF ARRIVAL: the General tab exists only once Settings is actually open. F284: the tab label becomes a button node once R-1 adds Semantics(button) to the Settings tabs, so ww_invoke replaces the mouse press (UNVERIFIED until the live sweep).",
-          "tool": "ww_invoke", "selector": "type=Button[name^='General']" },
+          "tool": "ww_invoke", "selector": "type=Button[name='Tab 1 of 4\nGeneral']" },
 
         { "_comment": "F124 entry point. Manage Rules projects as a correctly-named Button.",
           "tool": "ww_invoke", "selector": "type=Button[name='Manage Rules']" },
@@ -61,13 +61,13 @@
         { "_comment": "F124 CORE -- with the TLD filter active, each visible row exposes an accessible name stating BOTH its category and its sub-type. Resolving this exact string IS the F124 row-display contract, and proves the filter selected matching rows.",
           "tool": "ww_invoke", "selector": "type=Button[name='Header / From category, Top-Level Domain sub-type. View rule details']" },
 
-        { "_comment": "F124 STRONGEST EVIDENCE: the details dialog renders Category and Sub-Type as explicitly LABELLED fields. Resolving both labels proves the dialog opened AND that the classification is presented as named fields rather than free text. NOTE: static Text nodes do NOT support InvokePattern ('Element does not support InvokePattern. ControlType: Text' -- observed 2026-07-28). F284: these label probes only need the selector to RESOLVE, so they now use ww_get_value (ValuePattern, then Name fallback; no cursor) instead of a mouse click. UNVERIFIED that the script runner replays ww_get_value -- confirm in the live sweep.",
-          "tool": "ww_get_value", "selector": "type=Text[name='Sub-Type']" },
-        { "tool": "ww_get_value", "selector": "type=Text[name='Category']" },
+        { "_comment": "F124 STRONGEST EVIDENCE: the details dialog renders Category and Sub-Type as explicitly LABELLED fields. Resolving both labels proves the dialog opened AND that the classification is presented as named fields rather than free text. NOTE: static Text nodes do NOT support InvokePattern ('Element does not support InvokePattern. ControlType: Text' -- observed 2026-07-28). F284 live sweep (2026-10-10): ww_get_value is NOT replayed by the script runner (the step is skipped and the script still reports PASSED), and a static Text node has no InvokePattern, so these four probes stay ww_click (the runner fails a script with any skipped step).",
+          "tool": "ww_click", "selector": "type=Text[name='Sub-Type']", "useInvokePattern": false },
+        { "tool": "ww_click", "selector": "type=Text[name='Category']", "useInvokePattern": false },
 
         { "_comment": "The classification VALUES, not just the field labels -- this rule is a Top-Level Domain rule in the Header / From category, so both values must be present in the dialog.",
-          "tool": "ww_get_value", "selector": "type=Text[name='Top-Level Domain']" },
-        { "tool": "ww_get_value", "selector": "type=Text[name='Header / From']" },
+          "tool": "ww_click", "selector": "type=Text[name='Top-Level Domain']", "useInvokePattern": false },
+        { "tool": "ww_click", "selector": "type=Text[name='Header / From']", "useInvokePattern": false },
 
         { "_comment": "Close the dialog WITHOUT editing -- read-only. WARNING: name='Close' also matches the window titlebar Close (#Close); a stray match would exit the app. Safe here ONLY because the dialog is known open and its Close resolves first (verified live -- app still alive afterwards). Do not reuse this selector when no dialog is open.",
           "tool": "ww_invoke", "selector": "type=Button[name='Close']" },
