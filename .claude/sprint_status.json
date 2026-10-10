@@ -1,16 +1,16 @@
 {
     "_description": "Sprint status file that persists across context compaction. Update after each phase/sub-phase completion.",
-    "_last_updated": "2026-10-10T14:30:00Z",
+    "_last_updated": "2026-10-10T15:30:00Z",
     "_usage": "Read this file after context compaction to restore sprint approval state and progress.",
     "_staleness_note": "This file had drifted 15 sprints (last updated at Sprint 35, 2026-04-19) before being refreshed at Sprint 50 close-out. It is a Phase 7.7 checklist item -- update it at every sprint close-out, not opportunistically.",
     "current_sprint": {
         "number": 78,
         "branch": "feature/20261009_Sprint_78",
-        "status": "Phase 3.7 Plan Approval -- all decisions answered 2026-10-10 (R76-4 dev-only with header-only dedup; F199-b HOLD; notifications to backlog F286/F287); awaiting the approval itself",
-        "plan_approved": false,
-        "blanket_execution_approved": false,
+        "status": "Phase 4 Sprint Execution -- plan approved by Harold 2026-10-10 (3.7); cards #471-#478 created (3.7.0); version 0.19.0+16 (3.7.0b)",
+        "plan_approved": true,
+        "blanket_execution_approved": true,
         "pr_number": 470,
-        "version": "0.18.0+15 (bumped at plan approval, Phase 3.7.0b)",
+        "version": "0.19.0+16 (bumped at plan approval, Phase 3.7.0b)",
         "pr_url": "https://github.com/kimmeyh/spamfilter-multi/pull/470"
     },
     "previous_sprint": {
@@ -25,7 +25,8 @@
         "sprint_74": "Closed by hand 2026-10-02: #422 #434 #437 #438 #439. Open, carried: #428 (MV74-1 phone), #433 (F205 phone), #441 (F238), #442 (F239).",
         "sprint_75": "Closed by hand 2026-10-04: #441 #442 #444 #445 #446 #447 #449 #450. Open, carried to Sprint 76 phone checks: #428 (MV74-1), #433 (F205).",
         "sprint_76": "Closed by hand 2026-10-06: #452 #453 #454 #456 #457 #458. Open, inside MV76-1: #428 (MV74-1 reboot half), #433 (F205).",
-        "sprint_77": "Closed by hand 2026-10-09: #461 (Fold steps 7-11 carried to the Sprint 78 start) #462 #463 #464 #465 #466 #467 #468. Open, inside MV76-1: #428 (MV74-1 reboot half), #433 (F205)."
+        "sprint_77": "Closed by hand 2026-10-09: #461 (Fold steps 7-11 carried to the Sprint 78 start) #462 #463 #464 #465 #466 #467 #468. Open, inside MV76-1: #428 (MV74-1 reboot half), #433 (F205).",
+        "sprint_78": "Created 2026-10-10 at 3.7.0: #471 Task 1 MV76-1 (absorbs #428, #433), #472 Task 2 F277, #473 Task 3 F282, #478 Task 4 F281, #474 Task 5 F284, #475 Task 6 F283, #476 Task 7 R76-4, #477 Task 8 F199-b (closed 2026-10-10, done at Harold's instruction)."
     },
     "_github_issues_note": "Sprint 66 cards created at Phase 3.3.1 (2026-09-07): #387 GP-19, #388 GP-4. Close by hand at Post-Merge Cleanup.",
     "test_metrics": {
@@ -44,7 +45,7 @@
         "status_0_16_0": "SUBMITTED / ROLLOUT IN PROCESS on BOTH stores (Harold, 2026-09-24, reported between 12:17am and 8:39am ET). NOT yet observed live on either. Built + verified 2026-09-24: MSIX 0.16.0.0 (prod worktree bf005f3, self-test 6/6 PASS, 17.5 MB) and AAB versionCode 7 / 0.16.0 (67.0 MB). Step 7 records (STORE_VERSION_STATUS.md live rows) wait for a direct console observation.",
         "status_0_17_0": "LIVE 2026-10-04 ~11:20pm ET on BOTH stores (Harold). Microsoft Store: submitted ~10:40pm, installed build shows no [DEV] and Version 0.17.0; public API lagged. Google Play closed testing (Alpha): versionCode 8, device-verified on the Fold (Version 0.17.0). Open: Step 4.2 Gmail sign-in URL on the Store build; CHANGELOG has no release headings since 0.14.0 (not done this release either).",
         "status_0_17_6": "SUBMITTED to BOTH stores 2026-10-06 (Harold screenshots), NOT yet live. Microsoft Store: Submission 31, \"Update in certification\", stage Pre-processing (last modified 10/07/2026); Store presence still Submission 30 (0.17.0). Google Play: Closed testing - Alpha, \"14 (0.17.6) Start full rollout\" in Changes in review, quick checks running (up to 12 min); managed publishing off. Artifacts: MSIX D:\\Data\\Harold\\github\\spamfilter-multi-prod\\mobile-app\\build\\windows\\x64\\runner\\Release\\my_email_spam_filter.msix (17.6 MB, self-test PASS); AAB D:\\Data\\Harold\\github\\spamfilter-multi\\mobile-app\\dist\\android-0.17.6+14\\app-prod-release.aab (67.3 MB). STORE_VERSION_STATUS Live rows unchanged until observed live; \"Last uploaded to Play\" -> 0.17.6 (14) is updated WITH the Sprint 77 pubspec bump (IMP-2).",
-        "status_0_18_0": "UPDATED on BOTH (Harold, 2026-10-10). Fold: diagnostic log 'app start (foreground) -- v0.18.0 env=prod platform=android' 2026-10-09 13:33; logs clean (0 failed actions, no crash). Windows: Harold screenshot of a prod window at Version 0.18.0; Partner Center submission status not observed. STORE_VERSION_STATUS 'Last uploaded to Play' -> 0.18.0 (15) with the Sprint 78 bump (IMP-2)."
+        "status_0_18_0": "LIVE on BOTH (Harold, 2026-10-10). Fold device-verified (Version 0.18.0 screenshots, log env=prod v0.18.0). Windows: installed Store build shows Version 0.18.0, no [DEV]; Partner Center page not observed. STORE_VERSION_STATUS updated with the 0.19.0+16 bump."
     },
     "environment_notes": [
         "RESOLVED 2026-07-29 (verified 07-30): the Store fault was an Acronis file-system filter blocking AppXSvc cleanup, fixed by an Acronis Protection exclusion. 23h uptime with ZERO Id-493 events vs a 176-file/6-min baseline; Store client self-updated 22606.1401.6.0 -> .10.0 (requires a working deployment pipeline). Filter drivers remain loaded -- backup protection was NOT disabled. See ALL_SPRINTS_MASTER_PLAN ENV-1 for the picker gotcha if it recurs.",
@@ -53,9 +54,8 @@
     ],
     "blocking_issues": [],
     "next_actions": [
-        "3.7: Harold approves the plan (all decisions answered 2026-10-10).",
-        "3.7.0: create GitHub cards for Tasks 1-8; 3.7.0b: bump to 0.19.0+16 and STORE_VERSION_STATUS Last uploaded to Play = 0.18.0 (15).",
-        "Then execute in plan order: Task 0, phone Tasks 1-2, ADR-0047, Task 3, F281 research, Tasks 5-6, Task 7."
+        "Task 0 done with 3.7.0b (0.19.0+16). Next: Task 1/2 phone checks (Harold's Fold time) in parallel with ADR-0047 (Task 7).",
+        "Then Task 3 F282, Task 4 F281 research (Harold's pick asked mid-sprint), Tasks 5-6 F284+F283, Task 7 R76-4 code."
     ],
     "next_sprint_targeted": {
         "number": 77,
