@@ -12,6 +12,7 @@
 /// dialog; the service itself does not prompt.
 library;
 
+import '../storage/content_history_store.dart';
 import 'package:logger/logger.dart';
 
 import '../../adapters/storage/secure_credentials_store.dart';
@@ -124,12 +125,35 @@ class DataDeletionService {
         // Table may not exist pre-v3; ignore.
       }
 
+      // R76-4 R7 (Sprint 78, prevention: `f283_r7_deletion_coverage_test`
+      // fails when a table holding account data is missing from this path):
+      // the per-folder scan cursors and the background-scan run log are this
+      // account's data too, and were left behind.
+      for (final table in ['account_folder_cursors', 'background_scan_log']) {
+        try {
+          await txn.delete(table,
+              where: 'account_id = ?', whereArgs: [accountId]);
+        } catch (_) {
+          // Table may not exist on an old schema; nothing to delete.
+        }
+      }
+
       await txn.delete(
         'accounts',
         where: 'account_id = ?',
         whereArgs: [accountId],
       );
     });
+
+    // R76-4 (ADR-0047 item 9): the dev-only content history keeps its own
+    // file; drop this account's rows when one exists. Best effort.
+    try {
+      final history = ContentHistoryStore.instance;
+      if (history.fileExists()) await history.deleteAccount(accountId);
+    } catch (e) {
+      _logger.w('Content history delete for ${Redact.accountId(accountId)} '
+          'failed: $e');
+    }
 
     // Credentials live outside the DB, in flutter_secure_storage.
     try {

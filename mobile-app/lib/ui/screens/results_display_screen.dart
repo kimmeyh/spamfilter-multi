@@ -24,6 +24,7 @@ import '../../core/models/evaluation_result.dart';
 import '../../core/models/rule_set.dart' show Rule, RuleSet;
 import '../../core/models/safe_sender_list.dart' show SafeSenderList;
 import '../../core/services/auth_results_parser.dart';
+import '../../core/services/content_history.dart';
 import '../../core/services/diagnostic_logger.dart';
 import '../../core/services/email_scanner.dart' show safeSenderAlreadyInTarget;
 import '../../core/services/app_version.dart';
@@ -3245,6 +3246,17 @@ class _ResultsDisplayScreenState extends State<ResultsDisplayScreen> {
       return;
     }
 
+    // R76-4 (ADR-0047, R-6): the user's decision on the stored email, when
+    // the dev-only content history is on. Best effort, never throws.
+    if (email != null) {
+      unawaited(ContentHistory.recordDecision(
+        settings: SettingsStore(),
+        accountId: widget.accountId,
+        email: email,
+        decision: 'safe_sender:$type',
+      ));
+    }
+
     // F21: Re-evaluate email against updated rules and refresh list
     if (email != null) {
       await _reEvaluateEmail(email);
@@ -3338,6 +3350,16 @@ class _ResultsDisplayScreenState extends State<ResultsDisplayScreen> {
         );
       }
       return;
+    }
+
+    // R76-4 (ADR-0047, R-6): see _addSafeSender.
+    if (email != null) {
+      unawaited(ContentHistory.recordDecision(
+        settings: SettingsStore(),
+        accountId: widget.accountId,
+        email: email,
+        decision: 'block:$type',
+      ));
     }
 
     // F21: Re-evaluate email against updated rules and refresh list

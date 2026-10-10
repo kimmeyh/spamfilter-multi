@@ -30,6 +30,7 @@ import '../widgets/app_bar_with_exit.dart';
 import '../widgets/battery_optimization_row.dart'; // F252 (Sprint 76)
 import '../widgets/new_mail_trigger_row.dart'; // F253 (Sprint 76)
 import '../widgets/scan_interval_control.dart'; // F264 (Sprint 77)
+import '../widgets/content_history_row.dart';
 import '../widgets/standard_app_bar_actions.dart';
 import 'folder_selection_screen.dart';
 import 'help_screen.dart';
@@ -753,6 +754,9 @@ class _SettingsScreenState extends State<SettingsScreen> with SingleTickerProvid
           },
         ),
         const SizedBox(height: 8),
+        // R76-4 (Sprint 78, ADR-0047): the dev-only content history switch,
+        // count and delete. Builds NOTHING in a prod build.
+        const ContentHistoryRow(),
 
         OutlinedButton.icon(
           icon: const Icon(Icons.swap_vert_outlined),

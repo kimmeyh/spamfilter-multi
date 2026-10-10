@@ -613,6 +613,16 @@ member on two adapters, and deletion paths across 6+ files. Tests Haiku.
 - Control row 30-45; deletion 15-25 plus R7 gaps 30; tests 50-75; docs 15-20.
 - Was 330-505m +30m. The secrets gate, the export and the per-account controls are gone.
 
+**Status (2026-10-10)**: code, tests and docs DONE; pending Harold's ADR-0047 acceptance (DoD, before merge) and the
+Windows DEV check (switch on, manual scan, non-zero count). ADR-0047 committed beb3508, amended to the as-built design
+(single atomic `INSERT OR IGNORE` on the UNIQUE index instead of a transaction; Review decisions matched by provider
+id). Evidence: `r76_4_content_history_test.dart` 12/12, `r76_4_content_history_policy_test.dart` 7/7 (R7 coverage:
+every table with an `account_id` in "Remove an account", every table in "delete all data", plus a behavior test);
+mutations R764-M1..M4 KILLED; full suite 2,983 passed / 15 skipped / 0 failed (one meta-gate fix: the policy file
+declares `SOURCE-TEXT VERIFIED:`); analyzer clean. R7 found while fixing: `background_scan_log` has a foreign key to
+`accounts`, so its rows are now deleted BEFORE the account row in both paths. **Executed-by**: Opus 5.5 (session
+model), deviation note (a); ADR-0047 on the top tier as assigned.
+
 _**Risk & rollback**_: the capture path runs inside every scan. Mitigations:
 - AC-1: gate off means no change.
 - Capture runs in a try/catch that logs and never fails the scan.

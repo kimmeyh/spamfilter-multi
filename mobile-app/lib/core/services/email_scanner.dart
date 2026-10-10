@@ -2,6 +2,7 @@
 library;
 
 import 'dart:async' show unawaited;
+import 'dart:io' show Platform;
 
 import 'package:flutter/foundation.dart' show visibleForTesting;
 
@@ -20,6 +21,7 @@ import '../storage/settings_store.dart';
 import '../storage/unmatched_email_store.dart';
 import '../utils/app_logger.dart';
 import '../../util/redact.dart';
+import 'content_history.dart';
 import 'diagnostic_logger.dart';
 import 'live_scan_logger.dart';
 import 'scan_coordinator.dart';
@@ -381,7 +383,23 @@ class EmailScanner {
       var f180HeaderDecided = 0;
       var f180BodyFetches = 0;
 
+      // R76-4 (Sprint 78, ADR-0047): the dev-only content history. Null --
+      // and every call below a no-op -- unless this is a DEV build with the
+      // Settings > General switch on. Demo scans are never captured.
+      final contentCapture = (platformId != 'demo' &&
+              await ContentHistory.isActive(_settingsStore))
+          ? ContentHistoryCapture(
+              accountId: accountId,
+              scanType: scanType,
+              platform: Platform.isAndroid ? 'android' : 'windows',
+              fetchText: (m) => platform!.fetchContentText(m),
+            )
+          : null;
+
       Future<void> evaluateBatch(List<EmailMessage> batch) async {
+        // ADR-0047 item 4: ONE lookup of which emails are already stored,
+        // from the headers this batch already has.
+        await contentCapture?.beginBatch(batch);
         for (var message in batch) {
           // Sprint 38 F86 mid-scan evaluator rebuild was removed in
           // Sprint 38 Round 1 (post-retro 2026-05-16). Per Harold's clarified
@@ -411,6 +429,10 @@ class EmailScanner {
           } else {
             f180HeaderDecided++;
           }
+          // R76-4: captured BEFORE the safe-sender skip below, so every
+          // outcome is recorded. A known email is a sighting (no body fetch);
+          // a new one fetches its text once. Never throws.
+          await contentCapture?.record(message, result);
           EmailActionType action = EmailActionType.none;
 
           if (result.matchedRule.isNotEmpty) {

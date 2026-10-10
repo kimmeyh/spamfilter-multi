@@ -60,7 +60,10 @@ are expected.
    Message-ID, from address and display name, Reply-To, Return-Path domain,
    subject, received date, folder at first sight, last-seen date and folder,
    authentication class (F96), `List-Unsubscribe` presence, scan outcome
-   (matched rule, pattern, action), the user's final decision with its date,
+   (matched rule, pattern, action), the user's final decision with its date
+   (recorded from the Results and Review quick actions; a Review row carries
+   no Message-ID, so its decision is matched by the provider id in the
+   account),
    scan type and platform, and the plain-text body. When an email has no text
    part, HTML is converted to text. The body is capped at 64 KB. No
    attachments, images or raw HTML.
@@ -76,7 +79,8 @@ are expected.
    the prod `spam_filter.db` into dev, does not copy this file (prod never has
    one).
 8. **Retention** (R5 = 1). Kept until deleted. Settings > General shows the
-   stored count and a "Delete content history" button.
+   switch, the stored count and a "Delete content history" button
+   (`ContentHistoryRow`, which builds nothing in a prod build).
 9. **Deletion.** "Remove an account" deletes that account's rows. "Delete all
    data" closes the history database and deletes the file. The pre-existing
    gaps in both paths (R7 = 1: `account_folder_cursors`, `background_scan_log`,
@@ -109,11 +113,12 @@ the control. Removing it is a Class-1 change.
 
 - **Concurrent writers.** On Windows the background scan runs as a separate
   process (Task Scheduler). On Android it runs in a WorkManager isolate of the
-  same process. Every write runs inside one sqflite transaction, which begins
-  with `BEGIN IMMEDIATE` (same mechanism as ADR-0045), so the UI and a
-  background scan cannot both miss the lookup and both insert. The unique index
-  on `(account, identity_hash)` is the backstop. The second writer waits on
-  `busy_timeout`.
+  same process. Every write is ONE atomic statement: a new email is
+  `INSERT OR IGNORE` against the UNIQUE index on `(account_id, identity_hash)`,
+  and a repeat sighting is one `UPDATE`. Two writers that both miss the lookup
+  cannot both insert: the second insert is ignored and that writer records a
+  sighting instead. A blocked writer waits on `busy_timeout` (30 s, as the main
+  database). As built, no multi-statement transaction is needed.
 - **Deleting an open file.** On Windows a file with an open handle cannot be
   deleted, so "Delete all data" closes the history database before deleting
   the file. On Android an open file can be unlinked, but the same close-first

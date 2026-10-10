@@ -51,6 +51,9 @@ class SettingsStore {
   static const String keyLiveScanDebugCsv = 'live_scan_debug_csv';
   /// F206 (Sprint 74): mask sender, subject and message id in every export.
   static const String keyExportRedacted = 'export_redacted';
+  /// R76-4 (Sprint 78, ADR-0047): the dev-only content history switch.
+  /// Off by default; only a dev build shows it or reads it as on.
+  static const String keyContentHistoryEnabled = 'content_history_enabled';
   static const String keyManualScanDaysBack = 'manual_scan_days_back';
   static const String keyBackgroundScanDaysBack = 'background_scan_days_back';
   static const String keyScanHistoryRetentionDays = 'scan_history_retention_days';
@@ -351,6 +354,20 @@ class SettingsStore {
   /// live scans.
   Future<void> setLiveScanDebugCsv(bool enabled) async {
     await _setAppSetting(keyLiveScanDebugCsv, enabled.toString(), 'bool');
+  }
+
+  /// R76-4 (Sprint 78, ADR-0047): the stored "Content history" switch
+  /// (Settings > General, dev builds only). Off unless set. The capture gate
+  /// is [ContentHistory.isActive], which ALSO requires a dev build -- this
+  /// value alone never turns capture on.
+  Future<bool> getContentHistoryEnabled() async {
+    final value = await _getAppSetting(keyContentHistoryEnabled);
+    return value == 'true';
+  }
+
+  /// R76-4: see [getContentHistoryEnabled].
+  Future<void> setContentHistoryEnabled(bool enabled) async {
+    await _setAppSetting(keyContentHistoryEnabled, enabled.toString(), 'bool');
   }
 
   /// F206 (Sprint 74, Part C): whether exports REDACT sender, subject and

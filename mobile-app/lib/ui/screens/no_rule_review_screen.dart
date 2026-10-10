@@ -12,11 +12,13 @@ import '../../core/providers/email_scan_provider.dart';
 import '../../core/providers/rule_set_provider.dart';
 import '../../core/providers/selected_account_provider.dart';
 import '../../core/services/auth_results_parser.dart';
+import '../../core/services/content_history.dart';
 import '../../core/services/email_body_parser.dart';
 import '../../core/services/pattern_compiler.dart';
 import '../../core/services/rule_evaluator.dart';
 import '../../core/services/rule_quick_action_service.dart';
 import '../../core/storage/database_helper.dart';
+import '../../core/storage/settings_store.dart';
 import '../../core/storage/unmatched_email_store.dart';
 import '../../core/utils/pattern_normalization.dart';
 import '../../core/utils/provider_sender_grouping.dart';
@@ -548,6 +550,19 @@ class _NoRuleReviewScreenState extends State<NoRuleReviewScreen> {
       }
       return;
     }
+
+    // R76-4 (ADR-0047, R-6): the user's decision on the stored email, when
+    // the dev-only content history is on. A stored No Rule row has no
+    // Message-ID, so the provider id finds it. Best effort, never throws.
+    unawaited(ContentHistory.recordDecision(
+      settings: SettingsStore(),
+      accountId: item.accountId,
+      email: item.result.email,
+      providerId: item.email.providerIdentifierValue,
+      decision: request.kind == QuickActionKind.safeSender
+          ? 'safe_sender:${request.type}'
+          : 'block:${request.type}',
+    ));
 
     final id = item.email.id;
     if (id != null) {
