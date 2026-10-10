@@ -772,6 +772,52 @@ _(No active Core App candidates -- F96 shipped in Sprint 43.)_
 - **Trigger**: Sprint 83 planning -- ask Harold again as a numbered question (1. Delete 2. Keep).
 - Depends on: None.
 
+**F286. Background-scan notification: "No rule" first, names the account, one per account (~40-60m) Priority 2 -- TARGET SPRINT 79**
+- Phase: Core App
+- Platform: Android (shared Dart text helper; Windows gets it with F287)
+- Origin: Harold's 0.18.0 Fold feedback, 2026-10-10, planned as Sprint 78 Task 9, then moved here (N1 = 2, target next
+  sprint). N2 = 2: the notifications did not say which account they were for.
+- **Text (Harold, 2026-10-10)**:
+  - Title: `Back. scan k*@aol completed`. The account is masked as the first letter, `*`, `@`, and the domain without
+    its suffix.
+  - Body: `No rule 9 Deleted 1 Safe 0`, with ` Errors N` appended only when N > 0. No colons or commas.
+  - Today: title `Background scan complete`, body `Processed 10: 1 deleted, 0 safe, 9 no rule`
+    (`android_background_scan_worker.dart:324-328`), and no account named.
+  - Mask limit: two accounts on the same domain with the same first letter would look alike. Harold's four accounts are
+    on four different domains.
+- **One per account**:
+  - The notification ID comes from a deterministic helper (FNV-1a of the account id, 31 bits), not `String.hashCode`.
+  - Today's ID is `accountId.hashCode` (`:323`). A probe on 2026-10-10 showed it stable across separate Windows
+    processes, but Dart does not promise that.
+  - A newer notification for the same account replaces the older one.
+  - The helper's value is pinned by a test.
+- **Read-only and partial modes (Harold asked for a recommendation, 2026-10-10)**. The scan modes are `readOnly`,
+  `rulesOnly` (safe-sender moves skipped), `safeSendersOnly` (deletes skipped) and `safeSendersAndRules`
+  (`email_scan_provider.dart:32-37`). Options, decided at Sprint 79 planning:
+  1. Strikethrough on each count the mode did NOT act on (for example, Deleted in `readOnly`), and the title says the
+     mode when it is not live: `Back. scan k*@aol read-only completed`. Recommended: the strikethrough is what was asked
+     for, and the title word keeps it true for screen readers. TalkBack does not announce strikethrough, so "Deleted 1"
+     alone would be read as a real deletion.
+  2. Strikethrough only.
+  3. Title word only.
+  - Mechanism: HTML-formatted notification text through the plugin. Strikethrough rendering on the Fold must be checked
+    on the device before relying on it (unverified).
+- Depends on: None. Phone check on the next closed-test build.
+
+**F287. Windows background-scan completion notification (toast) (~90-150m) Priority 15**
+- Phase: Core App
+- Platform: Windows Desktop (parity with Android)
+- Origin: Sprint 78 planning, 2026-10-10 (N3 = 1). Windows background scans show NO completion notification today.
+  `WindowsNotificationService.showBackgroundScanComplete` (`windows_notification_service.dart:62`) has no caller, and
+  its fixed IDs (0 and 1) would collapse every account into one.
+- **Blocker inside the card**: `flutter_local_notifications: ^17.2.1` (`pubspec.yaml:58`). The plugin changelog lists
+  Windows support first in 19.0.0 ("[Windows] Added support for Windows."; latest 22.3.1, pub.dev, read 2026-10-10).
+  This needs a major-version upgrade. Read every breaking change between 17 and the target version first; the Android
+  call sites are `android_background_scan_worker.dart:300-334` and the Settings permission flow.
+- Scope: upgrade the plugin, wire the Windows background worker's notify step to the F286 shared text and ID helper,
+  remove the fixed IDs, and close the ADR-0042 exception recorded in the Sprint 78 plan.
+- Depends on: F286 (shared text and ID helper).
+
 **F111. Periodic Windows App Store upload readiness verification (~110-175m per review) Priority HOLD**
 - Phase: Release Readiness (reusable template)
 - Platform: Windows Desktop

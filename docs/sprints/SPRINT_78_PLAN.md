@@ -66,14 +66,13 @@ Harold's Windows DEV install, which holds his four accounts.
   secrets gate, the export and the per-account controls are gone).
 - **Task 8 -- F199-b**: repo records synced to Partner Center (`Kimmey Consulting - Ohio`), card moved to HOLD. Haiku.
   10-15m.
-- **Task 9 -- N78-1**: background-scan notification -- "No rule" first, and one notification per account that names
-  the account. Haiku. 30-50m.
+- **Task 9 -- N78-1**: MOVED to the backlog as F286, target Sprint 79 (Harold 2026-10-10, N1 = 2).
 
-**Total**: about 1,040-1,595 minutes plus Harold's phone time. Calibration: Sprint 77 planned items ran under estimate,
+**Total**: about 1,010-1,545 minutes plus Harold's phone time. Calibration: Sprint 77 planned items ran under estimate,
 but each recent sprint added 40-55% unplanned work (MV fixes, review fixes). F283 and R76-4 carry most of the risk.
 
 **Order**: Task 0; Task 1 and Task 2 start at once on the phone once 0.18.0 is installed from Play (their waits are
-filled by the rest); Task 9 early (small, and the Fold shows it within a day); Task 7 ADR-0047 first (it fixes the
+filled by the rest); Task 7 ADR-0047 first (it fixes the
 design before code); Task 3; Task 4 research, then Harold's pick -- asked as a numbered question while work continues on Tasks 5-7, the one
 planned mid-sprint decision (approve it in Q-S2); Tasks 5 and 6 together (F284 b retires mt2c as F283 removes
 multi-select); Task 7 implementation; Task 8 any time.
@@ -175,10 +174,10 @@ Can you push F199-b to HOLD and update it's backlog."* Task 8 does exactly that:
 
 - Q-S1 = 1 (models approved), Q-S2 = 1 (F281's pick asked mid-sprint while work continues), Q-S3 = 1 (0.19.0+16).
 
-**New scope (Harold, 2026-10-10)**: two notification fixes from the 0.18.0 phone -- Task 9.
-
-**Still open at approval**: N1 (Task 9 placement), N2 (were two notifications seen for ONE account) and N3 (Windows
-background-scan toast) -- see Task 9.
+**Notifications (Harold, 2026-10-10)**: two fixes from the 0.18.0 phone, first planned as Task 9. N1 = 2 (backlog,
+target Sprint 79: F286), N2 = 2 (the notifications did not say which account they were for), N3 = 1 (Windows toast
+as backlog card F287). Text set by Harold: body `No rule 9 Deleted 1 Safe 0` (` Errors N` only when N > 0), title
+`Back. scan k*@aol completed`. Not in Sprint 78.
 
 ---
 
@@ -198,6 +197,10 @@ background-scan toast) -- see Task 9.
   (boot receiver or Doze alarm receiver), from the 0.18.0 diagnostic log; name the receiver and whether the
   `app start (foreground)` label is wrong for that path.
 - R-5: F250: record the Google account state screenshot; decision already taken (F265 HOLD).
+- R-6: iCloud on the Fold: the 0.18.0 logs pulled 2026-10-10 (through 09:56) name only `k***@aol.com` (1,121 lines),
+  `k***@gmail.com` (153) and `k***@yahoo.com` (84); the iCloud account has a 2026-10-09 manual-scan CSV but no
+  background scan line. Cause unknown: either its per-account background setting is off, or the worker skips it. Settle
+  from the account's Settings screen first, then the worker's account selection.
 
 **Affected components / files**: evidence only; a code change only if R-4 finds a mislabeled start (then a one-line
 label fix in the start path, both platforms checked).
@@ -472,8 +475,16 @@ Harold's own mail only, on his Windows DEV install, and no customer build can ev
   install only.
 - R-3: Capture at the one shared choke point (`email_scanner.dart` `evaluateBatch`, `:384-470`), placed BEFORE the
   safe-sender `continue` at `:438`, so no outcome is missed.
-- R-4: Identity: SHA-256 of the RFC 5322 Message-ID (`email_message.dart:22,104`) plus the account. The fallback is the
-  provider id plus the folder. A message already in the history is not fetched again.
+- R-4: Unique emails only, decided from headers (Harold, 2026-10-10: *"ensuring it only writes unique emails as it will
+  see many, many duplicates ... if it can see duplicates without pulling the full email then that is preferrable - only
+  pull full email if not in DB"*).
+  - Identity: SHA-256 of the RFC 5322 Message-ID plus the account. The Message-ID already arrives with the headers the
+    scan fetches today (IMAP `generic_imap_adapter.dart:2107-2114`, Gmail `gmail_api_adapter.dart:1217-1221`), so the
+    duplicate check costs no extra fetch. The fallback when a message has no Message-ID is the provider id plus folder.
+  - Order per email: compute the identity from headers, look it up in `content_history.db` (one indexed lookup per
+    batch), and fetch the body ONLY when the identity is absent.
+  - A repeat sighting writes no new row and fetches nothing. It only updates "last seen" (date and folder) and the
+    outcome when that changed, for example the same email seen in Inbox and later in Trash after the Fold deleted it.
 - R-5: Fields per R3 = 1: header fields, outcome label, and plain-text body (HTML converted), capped at 64 KB. One body
   fetch per new message, through a new content method on the provider interface (`spam_filter_platform.dart:57`).
   - IMAP (`generic_imap_adapter.dart:2043-2123`) and Gmail (`gmail_api_adapter.dart:1155-1207`) both implement it.
@@ -511,7 +522,9 @@ Harold's own mail only, on his Windows DEV install, and no customer build can ev
 - Both providers fetch headers without bodies (`generic_imap_adapter.dart:2003-2006`, `gmail_api_adapter.dart:581,688`).
 - The Store MSIX and the Play AAB are built with `APP_ENV=prod`; the Fold log reads `env=prod platform=android`
   (2026-10-09 13:33).
-- Windows DEV runs read-only with background scans off (project memory), so capture follows Harold's manual scans there.
+- Windows DEV stays read-only. Harold will turn its background scans ON, read-only, every 15 or 5 minutes for all four
+  accounts (2026-10-10), so capture runs on those background scans as well as manual ones. Both pass through
+  `evaluateBatch`.
 
 **Callers of any guard being changed**: the new gate is consulted only by the capture call and the Settings row. With
 the gate off, `evaluateBatch` behavior is byte-for-byte today's (pinned by a test).
@@ -524,11 +537,9 @@ the gate off, `evaluateBatch` behavior is byte-for-byte today's (pinned by a tes
   Settings > General shows the count and a Delete button.
 - Prod builds and every customer see no change.
 
-**Dependencies / blockers**: none from Harold (no secrets key needed). Coverage note: the Fold closed test acts on mail
-every 15 minutes, so a manual Windows DEV scan of Inbox and Bulk sees spam only before the Fold deletes it. Adding each
-account's trash folder to the Windows DEV manual-scan folders also captures what the Fold already deleted. That is a
-setting Harold chooses, not code. Where deleted mail lands depends on each account's deleted-rule folder (not verified
-per account).
+**Dependencies / blockers**: none from Harold (no secrets key needed). Coverage: the Fold acts on mail every 15 minutes.
+Harold closes that gap by running Windows DEV background scans read-only at 15 or 5 minutes for each of the four
+accounts (2026-10-10). Expect many repeat sightings; R-4 makes them header-only.
 
 **Non-functional requirements**:
 - Security: the history file is plaintext SQLite like the main DB (SEC-11b on HOLD); ADR-0047 records this.
@@ -538,8 +549,9 @@ per account).
 
 **Acceptance criteria**:
 - AC-1: In a prod build, the switch is absent, no file is created, and no extra fetch happens (test).
-- AC-2: In a dev build with the switch on, a scan of N new emails stores N rows. A second scan stores 0 more and fetches
-  0 bodies.
+- AC-2: In a dev build with the switch on, a scan of N new emails stores N rows and fetches N bodies. A second scan of
+  the same emails stores 0 rows and fetches 0 bodies. The same email seen in another folder (Inbox, then Trash) stores
+  0 rows, fetches 0 bodies, and updates its last-seen folder.
 - AC-3: An HTML-only message stores readable text; a nested multipart Gmail message stores its text part.
 - AC-4: A user action on a stored email updates its outcome label.
 - AC-5: "Remove an account" deletes that account's rows and the R7 tables. "Delete content history" empties the history.
@@ -605,74 +617,3 @@ reason to move now.
 change is a comment). **Executed-by**: Opus 5.5 (session model) -- done in the planning turn because Harold asked for it
 directly.
 
-## Task 9 -- N78-1: Background-scan notification -- "No rule" first, one per account, naming the account (new scope, Harold 2026-10-10)
-
-**Value**: This makes each notification readable at a glance and tells the user which account it is about. The newest
-result per account replaces the older one.
-
-**Requirements**:
-- R-1: Notification text order, with labels matching the Scan History chips:
-  - Body: `No rule: 9, Deleted: 1, Safe: 0`.
-  - `, Errors: N` is appended only when N > 0.
-  - Example: `No rule: 9, Deleted: 1, Safe: 0`.
-- R-2: Each notification names its account in the title, in the ADR-0030 masked form used in the diagnostic log.
-  - Example title: `Background scan: k***@aol.com`.
-  - Today neither the title nor the body names the account (`android_background_scan_worker.dart:324-328`).
-- R-3: One notification per account. The ID comes from a deterministic helper (FNV-1a of the account id, masked to 31
-  bits), not `String.hashCode`. A newer notification for the same account REPLACES the older one, if it is still shown.
-- R-4: Prevention: the helper has a test pinning its value for a fixed account id, so a later change cannot silently
-  break replacement.
-
-**Affected components / files**: `android_background_scan_worker.dart:300-334`, a small notification-text helper
-(shared Dart), tests.
-
-**Existing abstraction checked**:
-- `Redact` (`Redact.accountId`, used at `:261`) is reused for the masked title.
-- No notification-ID helper exists.
-
-**Existing behavior relied on**:
-- Android already posts with ID `accountId.hashCode` (`:323`), and a post with the same ID replaces the shown
-  notification.
-- A probe on 2026-10-10 printed the same `hashCode` for the same string across separate Dart processes, in JIT and in
-  AOT on Windows x64. So replacement probably works today.
-- Dart does not promise `hashCode` stability across runs, and Android arm64 was not probed; R-3 removes that dependency.
-- What Harold saw: the notification screenshot was NOT among the files pulled from the Fold on 2026-10-10. Four app
-  screenshots and the logs arrived; no notification capture did. With no account named, four accounts' notifications
-  look like duplicates, so R-2 may be the real fix. N2 settles it.
-
-**Callers of any guard being changed**: none; text and ID only.
-
-**User-reachable control**: N/A (existing notification; Settings permission flow unchanged).
-
-**Observable behavior -- before / after**:
-- BEFORE: `Background scan complete` / `Processed 10: 1 deleted, 0 safe, 9 no rule`, with no account named.
-- AFTER: `Background scan: k***@aol.com` / `No rule: 9, Deleted: 1, Safe: 0`, one per account, the newest replacing the
-  older.
-
-**Dependencies / blockers**: N1 (placement), N2 (observation). Phone check on the next 0.19.0 closed-test build.
-
-**Non-functional requirements**: Platform: ADR-0042 exception, declared.
-- Windows background scans show NO completion notification today. `WindowsNotificationService.showBackgroundScanComplete`
-  (`windows_notification_service.dart:62`) has no caller.
-- The plugin is pinned at `flutter_local_notifications: ^17.2.1` (`pubspec.yaml:58`). Its changelog lists Windows
-  support first in 19.0.0 ("[Windows] Added support for Windows."; latest 22.3.1, pub.dev, read 2026-10-10).
-- `ADR-0042:61` names notifications as a mechanism difference, not an absence. This card therefore records the Windows
-  absence as a declared exception, with a backlog card (N3) for the Windows toast and the plugin upgrade.
-- The shared text and ID helper is written so that Windows uses it unchanged when that card lands.
-
-**Acceptance criteria**:
-- AC-1: The body for (no rule 9, deleted 1, safe 0, errors 0) is exactly `No rule: 9, Deleted: 1, Safe: 0`; with
-  errors 2 it ends `, Errors: 2`.
-- AC-2: The title holds the masked account and never the full address.
-- AC-3: The ID helper returns the same pinned value for a fixed id, and different values for two account ids.
-- AC-4 (phone): Given two background runs for one account with the first notification still shown, Then one
-  notification shows for that account, carrying the second run's counts.
-
-**Tests to write**:
-- T-1 (AC-1, AC-2): TEST-UNIT, text helper.
-- T-2 (AC-3): TEST-UNIT, ID helper with a pinned value.
-- Both are mutation-checked. AC-4 is a Manual Validation step on the Fold, rehearsed per 5.1.9 as far as a host can.
-
-**Definition of Done**: the default DoD, plus a Fold screenshot of the shade showing one notification per account.
-
-**Model**: Haiku. **Step-types**: SVC-EDIT, TEST-UNIT. **Est-Effort**: 30-50m.
