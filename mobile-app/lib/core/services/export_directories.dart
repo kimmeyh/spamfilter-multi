@@ -10,13 +10,17 @@
 ///
 /// **Deliberately NOT a platform factory.** ADR-0042 names "an export-directory
 /// choice" as a two-value difference that is clearer as one conditional
-/// expression than behind a factory's class hierarchy -- so the platform
-/// difference is the single conditional in [platformDefault], recorded in
-/// ADR-0042 "Deliberate non-parity".
+/// expression than behind a factory's class hierarchy. Since F282 the only
+/// platform difference left is how Documents is FOUND ([_documentsFolder]);
+/// the folder itself is the same on both.
 ///
-/// **The defaults are Harold's decision (Sprint 74 planning, 2026-09-25):**
-/// "Android - Documents / Windows - %USERPROFILE%\Downloads". A folder the user
-/// chose in Settings > General always wins.
+/// **The default (F282, Sprint 78, Harold):** one named folder in Documents on
+/// BOTH platforms -- `Documents\MyEmailSpamFilter` (prod) or
+/// `Documents\MyEmailSpamFilter_Dev` (dev) -- so every file the app writes for
+/// the user is in one place. It replaced the Sprint 74 split (Android
+/// Documents, Windows Downloads) and retired that ADR-0042 non-parity entry.
+/// The app folder is added to the DEFAULT only: a folder the user chose in
+/// Settings > General always wins and is used exactly as chosen.
 library;
 
 import 'dart:io';
@@ -27,6 +31,7 @@ import 'package:path/path.dart' as path;
 import 'package:path_provider/path_provider.dart';
 
 import '../storage/settings_store.dart';
+import 'app_environment.dart';
 
 class ExportDirectories {
   ExportDirectories._();
@@ -35,23 +40,28 @@ class ExportDirectories {
 
   static String? _defaultOverride;
 
-  /// Test seam: fix the platform default, so a test never mocks `dart:io`.
+  /// Test seam: fix the platform's DOCUMENTS folder (the app folder is still
+  /// added beneath it), so a test never mocks `dart:io`.
   @visibleForTesting
   static void overrideDefaultForTest(String? dir) => _defaultOverride = dir;
 
-  /// How the platform default is described to the user in Settings.
-  static String get defaultLabel => Platform.isAndroid
-      ? 'Documents folder (default)'
-      : Platform.isWindows
-          ? 'Downloads folder (default)'
-          : 'App documents folder (default)';
+  /// The app's own folder inside Documents, environment-suffixed (ADR-0035),
+  /// so DEV and PROD never write into -- or delete from -- each other's files.
+  static String get appFolderName =>
+      'MyEmailSpamFilter${AppEnvironment.dataDirSuffix}';
 
-  /// The platform's default export folder -- the ONE platform conditional.
+  /// How the default is described to the user in Settings. The same on every
+  /// platform, because the default is the same.
+  static String get defaultLabel => 'Documents/$appFolderName (default)';
+
+  /// The default export folder: `<Documents>/<appFolderName>`.
   ///
-  /// - **Windows**: `getDownloadsDirectory()`, the Downloads KNOWN FOLDER --
-  ///   `%USERPROFILE%\Downloads` unless the user moved it, in which case the
-  ///   moved location is the one they know as "Downloads". The literal path is
-  ///   the fallback.
+  /// Finding Documents is the one platform conditional:
+  /// - **Windows**: `getApplicationDocumentsDirectory()`, which
+  ///   `path_provider_windows` 2.3.0 resolves to the Documents KNOWN FOLDER
+  ///   (`path_provider_windows_real.dart:123-124`, `WindowsKnownFolder.Documents`)
+  ///   -- the user's Documents even when they moved it (OneDrive, another
+  ///   drive). `%USERPROFILE%\Documents` is the fallback.
   /// - **Android**: the public Documents folder, derived from
   ///   `getExternalStorageDirectory()` by [publicDocumentsFrom]. Not a native
   ///   call: a method channel is registered only in the UI's FlutterEngine, and
@@ -59,21 +69,26 @@ class ExportDirectories {
   ///   native call would fail. `path_provider` works in both.
   /// - **iOS/macOS/Linux** (not shipped): the app's documents folder.
   static Future<String?> platformDefault() async {
+    final documents = await _documentsFolder();
+    if (documents == null || documents.isEmpty) return null;
+    return path.join(documents, appFolderName);
+  }
+
+  static Future<String?> _documentsFolder() async {
     final override = _defaultOverride;
     if (override != null) return override;
 
     if (Platform.isWindows) {
       try {
-        final downloads = await getDownloadsDirectory();
-        if (downloads != null) return downloads.path;
+        return (await getApplicationDocumentsDirectory()).path;
       } catch (e) {
-        _logger.w('Downloads known folder unavailable; using '
-            '%USERPROFILE%\\Downloads: $e');
+        _logger.w('Documents known folder unavailable; using '
+            '%USERPROFILE%\\Documents: $e');
       }
       final profile = Platform.environment['USERPROFILE'];
       return (profile == null || profile.isEmpty)
           ? null
-          : path.join(profile, 'Downloads');
+          : path.join(profile, 'Documents');
     }
     if (Platform.isAndroid) {
       final appExternal = await getExternalStorageDirectory();
@@ -137,9 +152,9 @@ class ExportDirectories {
 
   /// The folder to write an export to, created if missing.
   ///
-  /// The user's configured folder (Settings > General) wins; otherwise the
-  /// platform default. [subfolder] keeps generated files (diagnostic logs,
-  /// per-scan exports) from cluttering the top of Downloads/Documents.
+  /// The user's configured folder (Settings > General) wins, used exactly as
+  /// chosen; otherwise [platformDefault]. [subfolder] keeps generated files
+  /// (diagnostic logs, per-scan exports) in their own folders.
   static Future<String> resolve({
     String? subfolder,
     SettingsStore? settingsStore,
@@ -168,7 +183,9 @@ class ExportDirectories {
       // Android 11+ can refuse a folder left by an earlier install. Fall back
       // to the app's OWN folder, which is always writable (and on Android
       // still reachable over MTP), rather than failing every export.
-      final fallbackBase = await _appOwnFolder();
+      // The app folder name is added here too: on Windows the app's own
+      // folder is Documents itself, shared by DEV and PROD.
+      final fallbackBase = path.join(await _appOwnFolder(), appFolderName);
       _logger.w('Default export folder "$dir" is not writable; using '
           '"$fallbackBase" instead');
       final fb = subfolder == null ? fallbackBase : path.join(fallbackBase, subfolder);

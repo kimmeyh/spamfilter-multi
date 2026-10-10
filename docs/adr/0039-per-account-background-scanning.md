@@ -676,3 +676,26 @@ it every 15 minutes. Startup reconciliation uses the same conversion
 the migration. Windows: the trigger shape and repair path above. Android: the
 alarm and WorkManager split above. The delivery-timing difference (Windows fires on
 the minute; Android as the OS allows) remains the declared exception.
+
+## Amendment -- Sprint 78 (F281, Harold at Sprint 78 plan approval 2026-10-10): 24-hour maximum; shown only with background on
+
+**1. Range.** The interval is **5 minutes to 24 hours** (`kMaxIntervalMinutes = 24 * 60`;
+was 99 hours). An entry above 24 hours shows "Maximum is 24 hours" and is not saved.
+A stored value above 24 hours becomes 24 hours through the existing `nearestValid`
+at the next settings load or Windows startup (`reconcileAccountInterval`; plan F1 = 1).
+Both schedulers already accept every value in range (Windows `RepetitionPattern.Interval`
+up to 31 days; the Android alarm takes minutes).
+
+**2. Visibility.** "Scan every" is shown only while the account's background scanning
+is on, on both platforms. This reverses F264's "shown even when off" (ISSUE #123+#124).
+The new-mail switch (Android) needs no rule of its own: the Android worker skips an
+account whose background scanning is off, notification runs included
+(`android_background_scan_worker.dart:205-216`). Hiding never changes the saved value
+(plan F2 = 1).
+
+**3. The control (Harold picked Alternative D, 2026-10-10,** from
+`docs/research/F281_SCAN_INTERVAL_CONTROL.md`): a drop-down of presets (`kIntervalPresets`:
+5, 10, 15, 30 minutes; 1, 2, 4, 12, 24 hours) plus "Custom...", which opens a dialog with a
+number box and a unit. A preset saves at once; the dialog saves on Save, which stays disabled
+until the value is in range, so the row can never hold an invalid value. A saved non-preset value
+reads "45 minutes (custom)". It replaces F264's unit drop-down and number box in the row.

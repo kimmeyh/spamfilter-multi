@@ -108,7 +108,8 @@ void main() {
 
   /// Data lines (header and blanks removed) of the single daily file.
   List<String> exportedLines() {
-    final dir = Directory(p.join(tmp.path, 'default', 'scan_exports'));
+    final dir = Directory(p.join(
+        tmp.path, 'default', ExportDirectories.appFolderName, 'scan_exports'));
     final files = dir
         .listSync()
         .whereType<File>()

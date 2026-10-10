@@ -4,7 +4,7 @@
 /// minutes carried end to end -- UI, storage, startup reconciliation, the
 /// Windows trigger and the Android alarm all speak minutes, and this file is
 /// the only place that knows how minutes relate to what the user types
-/// (a unit and a 1-99 number) and which values are allowed.
+/// (a unit and a number) and which values are allowed.
 ///
 /// **Prevention (Harold's prevention-first rule).** The old design had FIVE
 /// copies of the vocabulary (the enum, the Settings list `[15, 30, 60, 120,
@@ -30,10 +30,14 @@ library;
 /// scan wait. The floor is the smallest value that never does.
 const int kMinIntervalMinutes = 5;
 
-/// The largest interval a user may choose: 99 hours (a 2-digit number of hours).
-const int kMaxIntervalMinutes = 99 * 60;
+/// The largest interval a user may choose: 24 hours (F281, Sprint 78, Harold;
+/// was 99 hours in F264). A stored value above it becomes 24 hours through
+/// [ScanInterval.nearestValid] at the next settings load or Windows startup
+/// (plan decision F1 = 1).
+const int kMaxIntervalMinutes = 24 * 60;
 
-/// The largest NUMBER the 2-digit box accepts, in either unit.
+/// The largest NUMBER the 2-digit box accepts. In minutes that is 99 minutes;
+/// in hours the range check ([kMaxIntervalMinutes]) stops it at 24.
 const int kMaxIntervalNumber = 99;
 
 /// Android's WorkManager cannot run periodic work more often than this
@@ -56,6 +60,12 @@ const int kJitterMinutes = 5;
 /// per slot after slot 0.
 const int kStaggerMinutesPerSlot = 1;
 
+/// F281 (Sprint 78, Harold picked Alternative D from
+/// `docs/research/F281_SCAN_INTERVAL_CONTROL.md`): the "Scan every" drop-down
+/// offers these intervals, in minutes, then "Custom..." for any other value
+/// in range. Every preset is in range and representable (a test pins it).
+const List<int> kIntervalPresets = [5, 10, 15, 30, 60, 120, 240, 720, 1440];
+
 /// The unit a user picks in front of the number box.
 enum ScanIntervalUnit {
   minutes('Minutes', 1),
@@ -76,7 +86,7 @@ const String kIntervalTooShortMessage =
     'Minimum is 5 minutes, to limit battery use';
 
 /// The message for an entry above the ceiling.
-const String kIntervalTooLongMessage = 'Maximum is 99 hours';
+const String kIntervalTooLongMessage = 'Maximum is 24 hours';
 
 /// Pure helpers for the interval model. No I/O, no platform branch.
 class ScanInterval {
@@ -98,7 +108,7 @@ class ScanInterval {
   }
 
   /// Whether the unit + number control can express [minutes] exactly:
-  /// 5-99 minutes, or a whole number of hours from 1 to 99.
+  /// 5-99 minutes, or a whole number of hours from 1 to 24.
   static bool isRepresentable(int minutes) {
     if (validate(minutes) != null) return false;
     if (minutes <= kMaxIntervalNumber) return true;
@@ -117,8 +127,8 @@ class ScanInterval {
     if (minutes >= kMaxIntervalMinutes) return kMaxIntervalMinutes;
     if (isRepresentable(minutes)) return minutes;
 
-    // Between 100 and 5939 minutes and not a whole number of hours: the
-    // candidates are 99 minutes and the whole hours on either side.
+    // Between 100 minutes and the maximum and not a whole number of hours:
+    // the candidates are 99 minutes and the whole hours on either side.
     final lowerHours = minutes ~/ 60;
     final candidates = <int>{
       if (minutes > kMaxIntervalNumber && lowerHours >= 2) lowerHours * 60,

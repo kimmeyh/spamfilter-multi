@@ -4,7 +4,7 @@
 
 **Audience**: Claude Code models planning sprints; User prioritizing future work
 
-**Last Updated**: 2026-10-08 (**Sprint 77 COMPLETE** at Phase 7 -- PR #460; 10 completed cards removed from the candidates; MV76-1 steps 7-11 and the 0.18.0 store updates carried to the start of Sprint 78). Previous: 2026-10-04 (**Sprint 75 COMPLETE** -- PR #448; F238 shipped, so the 0.17.0 release hold is satisfied; F216, F214, F236, F215, Task 7 delivered; F239 delivered Sign In Again, its Android renewal spike FAILED (-> F246); F243 added at Manual Validation; retro IMP-1..6 applied; F244/F245/F246 added.) Earlier 2026-09-29 (**Sprint 74 COMPLETE** -- PR #440; retro IMP-1/2/3/4/6 applied; F240/F241 added from Category 14; 0.17.0 held for F238.) Earlier 2026-09-27 (Sprint 74 Manual Validation: **F238 (Issue #441) added as the Sprint 75 release blocker for 0.17.0**, model Fable 5.1; no AAB until the Sprint 74 and 75 PRs both merge.) Previous: 2026-09-22 (**Sprint 72 COMPLETE** -- PR #420 -> develop. Ran on the Sprint 71 branch; Sprint 71 was never separately executed and its stub is marked SUPERSEDED. Delivered: F233 diagnostic log + the header-only CSV export fix, F232 mechanism A (historical-view rules now act on the mailbox; MECHANISM B REMAINS UNDIAGNOSED and is now instrumented), F228 honest action toast, F230+F231 action-sheet layout and durable outcomes, F217 honest Doze caveat (MECHANISM DELIBERATELY NOT BUILT -- the "is this the only way" search Harold required found it is not, and that the exemption carries a Play policy cost), F229 export half (the screen half was attempted and REVERTED after it overflowed by 18px at phone width). Suite 2,155 -> 2,233; analyzer clean; hooks 75/0; WinWright 2/2 twice; CI all green. **THREE CRITICAL findings across two reviews, all fixed, none deferred** -- and two of them were defects introduced BY this sprint: the F232 fix created an unintended deletion path from screen load (a method three callers share, the third safe only by accident), and the diagnostic logger silently destroyed concurrent records, which is the exact failure it existed to prevent. Manual validation found F233 shipped with NO UI at all -- ten tests passed via the test seam. Retrospective: Harold 12x Very Good; IMP-1..IMP-5 approved and applied. NEW backlog: F234 (read-only as a preview mode) and F235 (Android Doze via setExactAndAllowWhileIdle, TARGETED FOR SPRINT 73). Earlier history in prior revisions of this line (git).)
+**Last Updated**: 2026-10-09 (Sprint 77 cycle Phase 8.2 pass 1: completeness sweep recorded; no scope selected)
 
 ## How to Maintain This Document
 
@@ -173,13 +173,17 @@ Historical sprint information lives in individual documents in `docs/sprints/` a
 
 **Sprint 74 scope -- COMPLETE 2026-09-29 (PR #440)** (Phase 8.4 pass 2, selected by Harold 2026-09-24): MV74-1 (#428), MV74-2 (#434), MV74-3 (#422, #433), F202 (#438), F222 (#437), F232 (#422), F206 (#439), F205 (#433). Plan: `docs/sprints/SPRINT_74_PLAN.md`.
 
-**Last Reviewed**: October 6, 2026 (Sprint 76 cycle, Phase 8.2 pass-1 COMPLETENESS SWEEP -- no scope selected: PR #455 merged to develop (96a9cfe) and main (31b7135); Sprint 77 branch opened from the Sprint 76 branch; #452 #453 #454 #456 #457 #458 closed by hand; #428 #433 stay open inside MV76-1; triad present; shipped F248-F253 already pruned at close-out; MV74-1/MV74-3 folded into MV76-1; F247 relabeled not-delivered; F258-F264 added at 7.7.1.) Previous: October 4, 2026 (Sprint 75 cycle, Phase 8.2 pass-1 COMPLETENESS SWEEP -- no scope selected: PR #448 merged to develop (85c602c) and main (e724faa); Sprint 76 branch opened from the Sprint 75 branch; #441 #442 #444 #445 #446 #447 #449 #450 closed by hand; #428 #433 stay open as Sprint 76 phone checks; triad present; shipped F238/F239/F216/F214/F236/F215 already pruned at close-out; F247 added from the PR reviews; MV74-1 dependency moved to the 0.17.0 Play build.) Previous: October 2, 2026 (Sprint 74 cycle, Phase 8.2 pass-1 COMPLETENESS SWEEP -- no scope selected: shipped MV74-2, F202, F206, F232, F222 pruned; MV74-1 + MV74-3 (F205) re-labeled as Sprint 75 phone validation; #422 #434 #437 #438 #439 closed by hand; 0.17.0 store release N/A (held for F238).) Previous: September 24, 2026 (Sprint 73 cycle, Phase 8.2 pass-1 COMPLETENESS SWEEP -- no scope selected: 6 Sprint 73 DONE cards cleared (F235 -> MV74-1, F234, F229, F226, F224, F207 -> MV74-2); new F236 (YAML export version, from #427) and F237 (Android build-log noise); issues #426 #430 #431 #432 closed; master plan rolled to Sprint 73.)
+**Last Reviewed**: October 9, 2026 (Sprint 77 cycle, Phase 8.2 pass-1 COMPLETENESS SWEEP -- no scope selected: PR #460 merged to develop (764380b) and main (#469, b8d2aa2); Sprint 78 branch opened from the Sprint 77 branch; #461-#468 closed by hand (#428 and #433 stay open inside MV76-1); Sprint 77 plan, retrospective and summary present; Sprint 78 stub present; shipped cards confirmed pruned from the candidates; sprint_status.json moved to Sprint 78 Phase 8.)
 
 All incomplete items in relative priority order. Priority in increments of 10; items that can sprint together in increments of 2. HOLD items grouped at bottom. See [Feature and Bug Details](#feature-and-bug-details) for deep-dive specs. See [BACKLOG_REFINEMENT.md](BACKLOG_REFINEMENT.md) for presentation format rules.
 
 ### Sprint 77 carry-in -- Fold validation on 0.17.6 (Harold, Sprint 76 close, 2026-10-06)
 
-**MV76-1. Finish the Sprint 76 Fold checks on 0.17.6 (~validation time) Priority 1 -- CARRY-IN**
+**MV76-1. Finish the Sprint 76 Fold checks, now on the 0.18.0 closed-test build (~40-70m + phone time) Priority 1**
+- Phase: Android / Google Play Store Readiness
+- Platform: Android
+- Origin: CARRY-IN from Sprint 76 close (Harold, 2026-10-06). Estimate from the Sprint 77 plan (40-70m transcription and evidence, plus Harold's phone time).
+- Depends on: the 0.18.0 Google Play closed-testing upload.
 - **Sprint 77 status (2026-10-08)**: reboot-window evidence pulled (unattended workers ran through a reboot with the app unopened); Fold steps 7-11 move to the START of Sprint 78 on the 0.18.0 closed-test build (MV-Q7 = 2), plus tracing the boot-time `app start (foreground)` line (`main()` ran at 09:14:39 with no app opened).
 - F253 AC-5: a scan started by a mail app's new-mail notification (`trigger=notification` in the log); confirm the AOL and Yahoo package names on the device (#458).
 - MV74-1 reboot half: background scans resume after a phone restart without opening the app (#428). The Doze half PASSED on the 0.17.4 overnight run (95 worker starts, 111/113 completed).
@@ -188,13 +192,20 @@ All incomplete items in relative priority order. Priority in increments of 10; i
 - F250: the Google account state screenshot on the Fold; decide whether the native sign-in still matters now that refresh-token renewal works (#454).
 - MV74-3: classify every scan error from normal use, or record zero (#433).
 
-**R76-4. Store a history of email content for future Heuristics/ML/GenAI identifiers Priority 5 -- CARRY-IN (Sprint 76 retro Cat 13, Harold)**
+**R76-4. Store a history of email content for future Heuristics/ML/GenAI identifiers (~[no-history], time-box 90m design) Priority 5**
+- Phase: Core App Quality
+- Platform: All
+- Origin: CARRY-IN from the Sprint 76 retrospective, Category 13 (Harold).
+- Depends on: a Class-1 decision on storing content beyond the 100-character preview; F273 (privacy policy and Data safety revision).
 - **Input from R76-3 (2026-10-07)**: the recommended fields (what to store, what never to store) are in Section 6 of `docs/research/R76-3_HEURISTICS_ML_GENAI_SPAM_IDENTIFICATION.md`; storing content beyond the 100-character preview is a Class-1 decision with a privacy-policy revision (F273).
 - Probably a database of fields -- design and implement. Fed by the Windows and Android scans (eventually iPhone); no duplicate emails; initially populated from the existing delete and safe-sender rules; Harold has a partial history of deleted emails to run through for more examples.
 
 ### Backlog from the Sprint 77 Manual Validation (Harold, 2026-10-07)
 
-**F281. Deep dive: best-practice UI for "run every <interval>" in Background scanning (~90-120m research + implementation card) Priority 6 -- NEXT SPRINT (Harold, Sprint 77 MV step 1)**
+**F281. Deep dive: best-practice UI for "run every <interval>" in Background scanning (~90-120m research + implementation card) Priority 6**
+- Phase: Core App Quality
+- Platform: All
+- Origin: NEXT SPRINT (Harold, Sprint 77 Manual Validation step 1).
 - Harold: *"The UI just seem awkward for the Background Scanning ... deep dive into UI best practices for selecting time (in this case run something every <>)."* The F264 control (unit dropdown + typed number) works but reads awkwardly.
 - Deliverable: at least the 3 best alternatives, each with a mockup, pros, cons, and Windows + Android fit (ADR-0042 parity: one shared control on both platforms), with sources for the practices cited. Recommendation and why. Harold picks one; the pick becomes an implementation card in the same sprint.
 - Requirements for every alternative:
@@ -206,7 +217,10 @@ All incomplete items in relative priority order. Priority in increments of 10; i
 - Overlaps R76-2 (Background section rework); do them together.
 - Control and screen: Settings > Account tab > Background > "Scan every".
 
-**F282. One "MyEmailSpamFilter" folder for every file the app writes for the user Priority 7 -- NEXT SPRINT (Harold, Sprint 77 MV-Q10, 2026-10-08)**
+**F282. One "MyEmailSpamFilter" folder for every file the app writes for the user (~60-90m) Priority 7**
+- Phase: Core App Quality
+- Platform: All
+- Origin: NEXT SPRINT (Harold, Sprint 77 MV-Q10, 2026-10-08). Estimate (Phase 8.2, 2026-10-09): one resolver change, Settings and Help text, tests.
 - Harold: *"if we are going to add directories to the Documents folder on either platform it should be named MyEmailSpamFilter and then just keep all MyEmailSpamFilter files in that directory (easier for users to find): scan results, manual scan downloads, diagnostics..."*
 - Today (`ExportDirectories.resolve`, default Windows Downloads, Android Documents, or the Settings > General folder):
   - Export folder ROOT: the Results screen download button (`scan_results_<time>.csv`), Manage Rules export and Manage Safe Senders export.
@@ -220,7 +234,11 @@ All incomplete items in relative priority order. Priority in increments of 10; i
   - MV-Q13 = 1: existing files stay where they are. A user who already chose a folder in Settings keeps that folder and its files unchanged; only the DEFAULT changes, for new users and users who never chose a location.
 - Acceptance: a user who never chose a folder opens Documents and finds every app file in `MyEmailSpamFilter`; a user who chose a folder sees no change; Settings > General names the folder; Help text matches.
 
-**F283. Review No Rule Items looks and works like the Results screen, across all accounts Priority 8 -- NEXT SPRINT (Harold, Sprint 77 MV step 5, 2026-10-08)**
+**F283. Review No Rule Items looks and works like the Results screen, across all accounts (~150-210m) Priority 8**
+- Phase: Core App Quality
+- Platform: All
+- Origin: NEXT SPRINT (Harold, Sprint 77 Manual Validation step 5, 2026-10-08). Estimate (Phase 8.2, 2026-10-09): screen rework reusing the Results widgets, search, account drop-down, detail popup on both screens, tests.
+- Depends on: F284 b (retire `test_mt2c_no_rule_sweep` instead of rewriting it).
 - Harold: *"change the UI for Review No Rule Items to look like the View Scan Results > Results screen ... but include all emails from all accounts. Will need to add a email account drop-down similar to 'Folders', default to All (drop down should list all email accounts, even if there are no results from those accounts). In the attached detail screen, we can replace the domain that is next to the date/time with the email account name (i.e. kimmeyharold@aol.com) so the user can see where the email came from."* Trigger: step 5 could not find one email among 398 -- *"there is no search to easily find it ... Can we add a search like in the View Results screen."*
 - Already exists (keep): every unaddressed row from every saved account (F245 upsert, one row per email); an account drop-down with "All Accounts (N)" first and every saved account with its count, including zero (shown only when more than one account is saved); the account email on each row when more than one account is saved; multi-select bulk actions.
 - Change:
@@ -239,7 +257,10 @@ All incomplete items in relative priority order. Priority in increments of 10; i
 - Acceptance: from Review No Rule Items, a user finds one email by typing part of its sender or subject; the account drop-down lists every saved account; the detail popup names the account.
 - WinWright: rewrite `test_mt2c_no_rule_sweep.json` for the new screen so it passes on ANY monitor size. Its checkbox steps go away with multi-select. Today's script depends on the screen. The 11 provider-sender rows are pinned first, so the seed rows are built only when about 13 rows fit. It passed at 3856x2128 and failed at about 1940x1040 (Sprint 77 close-out sweep). `ww_scroll` direction/page on a row reported success but did not move the list. Reach the seeds by search, or by an account filter that has no provider rows.
 
-**F284. WinWright without taking over the laptop: mouse-free sweep, retire mt2c, fixed window size Priority 20 -- backlog (Sprint 77 retro IMP-2, Harold 2026-10-08: MV-Q23 = 2)**
+**F284. WinWright without taking over the laptop: mouse-free sweep, retire mt2c, fixed window size (~100-130m) Priority 20**
+- Phase: Core App Quality
+- Platform: Windows Desktop
+- Origin: backlog (Sprint 77 retro IMP-2, Harold 2026-10-08: MV-Q23 = 2). Estimate is the sum of parts a (60-90m), b (~20m) and c (~20m).
 - Harold: *"is there any way to do the WinWright tests without using the monitor or taking control of the mouse/keyboard/screen (prevention). Are there any minor changes that would essentially preserve the UI user experience but would remove one or more WinWright tests?"*
 - Findings (2026-10-08, against the running dev app, no mouse used): 89 of the sweep's 115 steps already use UI Automation patterns; 26 move the real mouse (f124 5, mt2c 17, s75 4 + 2 hovers). `ww_set_checked` toggled a row CheckBox with no mouse (TogglePattern). The account drop-down face exposes neither Invoke nor ExpandCollapse: Flutter's `PopupMenuButton` with a custom child has no button semantics (also a screen-reader gap). Sprint 73 logs show pattern steps and tree reads working on a LOCKED workstation; only mouse clicks failed. Windows Sandbox on Windows 11 Home: unverified (Harold can check "Turn Windows features on or off").
 - a. Mouse-free sweep (~60-90m): `Semantics(button: true)` on the account drop-down faces (both screens) and the tab labels the scripts click (no visual change); CheckBox steps -> `ww_set_checked`; hover steps -> tooltip reads if UIA exposes them (probe first); the runner allows pattern-only scripts on a locked PC.
@@ -274,9 +295,10 @@ Each item is fixed PREVENTION FIRST (SPRINT_EXECUTION_WORKFLOW.md 7.7.1): name h
 **F263. Background scan spacing: per-worker budget, Test Background Scan, sign-in skip Priority 40 -- backlog (7.7.1 review M-1, M-2, silent-failure LOW)**
 - (Harold, 2026-10-06: "3. a" -- confirmed as backlog.) The 5-minute spacing and 6-minute busy cap are per ACCOUNT, so one Android worker scanning several accounts in sequence can exceed WorkManager's ~10-minute run limit and leave an `in_progress` row. Test Background Scan also waits out the spacing (up to 5 minutes with nothing visible), and an account that needs sign-in still waits before it is skipped. Prevention: one spacing budget per worker run in `BackgroundScanCore` (extends the existing `cappedBusyWait` cap), the test trigger exempt, and the sign-in check before the wait.
 
-**F277. Fold energy check: interval 5 against interval 15 (~45-60m + phone time) Priority 20 -- backlog (Sprint 77 R76-1, was R77-BAT-1)**
+**F277. Fold energy check: interval 5 against interval 15 (~45-60m + phone time) Priority 20**
 - Phase: Core App Quality
 - Platform: Android
+- Origin: backlog (Sprint 77 R76-1, was R77-BAT-1).
 - The emulator measures counts, not energy. Decision rule for the F264 floor: if an interval-5 account costs more than 3x an interval-15 account on the Fold (Settings > Battery screenshots over MTP), raise `kMinIntervalMinutes` to 10. Protocol: `docs/research/R76-1_BATTERY_AB_RESULTS.md` section R77-BAT-1.
 
 **F278. Notifications that produced no scan, and alarm + WorkManager scans coexisting (~60-90m) Priority 34 -- backlog (Sprint 77 R76-1, was R77-BAT-2)**
@@ -313,7 +335,8 @@ Source: `docs/research/R76-3_HEURISTICS_ML_GENAI_SPAM_IDENTIFICATION.md` (Issue 
 
 **F267. Rule evaluation harness: score candidate rules against your own history, read only (~150m) Priority 20**
 - Phase: Core App Quality
-- Platform: All (Windows DEV for the dry run)
+- Platform: All
+- Dry run on the Windows DEV build.
 - Value: no proposed rule or score acts on mail until measured; the bar is zero safe-sender hits and precision of
   at least 0.99 (Section 4.8).
 - Scope: a Dart CLI in `scripts/` that loads candidate YAML plus an exported database copy and reports precision,
@@ -486,9 +509,10 @@ MV74-1 (F235 Doze, #428) and MV74-3 (F205 errors, #433) are folded into **MV76-1
   developers.googleblog.com "Improving user safety in OAuth flows through new OAuth Custom URI
   scheme restrictions"; developers.google.com/identity/protocols/oauth2/native-app.
 
-**F205. Closed-test error rate: 53 errors in 3,833 scanned on the S24+ -- find out what they ARE (~30-60m) Priority 18 (NEW, 2026-09-10 -- observed on the closed-test device)**
+**F205. Closed-test error rate: 53 errors in 3,833 scanned on the S24+ -- find out what they ARE (~30-60m) Priority 18**
 - Phase: Core App Quality
-- Platform: Android (closed test); check Windows for the same class
+- Platform: Android
+- Origin: NEW 2026-09-10, observed on the closed-test device; check Windows for the same class. Answered by MV76-1's error-classification step (#433).
 - **NARROWED 2026-09-10 by Harold's per-account sweep, and this is the useful half**: he
   filtered Scan History by account and scan type. **kimmeyharold@aol.com: NO rows with Errors > 0**,
   background or manual. **kimmeyh@gmail.com background: 21 errors, ALL on a PRIOR VERSION.**
@@ -711,9 +735,17 @@ _(No active Core App candidates -- F96 shipped in Sprint 43.)_
 
 ### Process
 
-**F199-b. Partner Center publisher display name -- the last surface of the LLC rename (~15m once unblocked) Priority 12 (Sprint 68 remnant; EXTERNALLY BLOCKED)**
+**F199-b. Partner Center publisher display name -- the last surface of the LLC rename (~15m once reopened) Priority HOLD**
 - Phase: Release Readiness
-- Platform: Windows Desktop (Microsoft Store account surface)
+- Platform: Windows Desktop
+- Origin: Sprint 68 remnant; EXTERNALLY BLOCKED (Microsoft Store account surface).
+- **HOLD (Harold, 2026-10-10, Sprint 78 planning)**: *"update the repo Windows store section to match what the
+  Microsoft Partner Center says for now. Then close and state that no real business is being done by either entity and
+  will resolve later."* Done in Sprint 78 Task 8: `LEGAL_ENTITY.md`, `STORE_LISTING_ASSETS.md` and the `pubspec.yaml`
+  comment now record `Kimmey Consulting - Ohio` as the Partner Center name, which `pubspec.yaml:140` mirrors.
+- **Trigger to reopen**: Harold reopens it (business activity starts under either name, or Microsoft raises the
+  publisher name). Then: support ticket, console first, repo second.
+- Depends on: Harold's Microsoft support ticket (only once reopened).
 - Sprint 68 delivered every other surface: the repo (10 replacements, 7 files), the Play
   developer name, and the Partner Center listing fields (Copyright / Developed by), the latter
   folded into Submission 25 rather than paying a separate listing-only certification pass.
@@ -731,6 +763,124 @@ _(No active Core App candidates -- F96 shipped in Sprint 43.)_
   upgrade path.
 - Account type is CLOSED: both stores stay Personal/Individual (`docs/LEGAL_ENTITY.md`).
 - Depends on: a Microsoft support answer. Nothing in the repo blocks it.
+
+**F285. Re-ask: keep or delete `email_detail_view.dart` (~5m) Priority HOLD**
+- Phase: Core App (code hygiene)
+- Platform: Windows Desktop + Android (shared Dart)
+- Origin: Sprint 78 planning decision F5. `lib/ui/screens/email_detail_view.dart` (1,005 lines) has no caller in `lib/`.
+  Harold, 2026-10-10: *"keep it for 5 sprints then ask again"*.
+- **Trigger**: Sprint 83 planning -- ask Harold again as a numbered question (1. Delete 2. Keep).
+- Depends on: None.
+
+**F286. Background-scan notification: "No rule" first, names the account, one per account (~40-60m) Priority 2 -- TARGET SPRINT 79**
+- Phase: Core App
+- Platform: Android (shared Dart text helper; Windows gets it with F287)
+- Origin: Harold's 0.18.0 Fold feedback, 2026-10-10, planned as Sprint 78 Task 9, then moved here (N1 = 2, target next
+  sprint). N2 = 2: the notifications did not say which account they were for.
+- **Text (Harold, 2026-10-10)**:
+  - Title: `Back. scan k*@aol completed`. The account is masked as the first letter, `*`, `@`, and the domain without
+    its suffix.
+  - Body: `No rule 9 Deleted 1 Safe 0`, with ` Errors N` appended only when N > 0. No colons or commas.
+  - Today: title `Background scan complete`, body `Processed 10: 1 deleted, 0 safe, 9 no rule`
+    (`android_background_scan_worker.dart:324-328`), and no account named.
+  - Mask limit: two accounts on the same domain with the same first letter would look alike. Harold's four accounts are
+    on four different domains.
+- **One per account**:
+  - The notification ID comes from a deterministic helper (FNV-1a of the account id, 31 bits), not `String.hashCode`.
+  - Today's ID is `accountId.hashCode` (`:323`). A probe on 2026-10-10 showed it stable across separate Windows
+    processes, but Dart does not promise that.
+  - **Observed on the Fold, 2026-10-10**: replacement ALREADY works. The shade showed three notifications, at 9:13,
+    9:51 and 9:54. The log maps them to Gmail (9:13), AOL (9:51; its 9:07, 9:22, 9:28 and 9:37 runs left no extra
+    entries) and Yahoo (9:54, which replaced Yahoo's 9:31 between two screenshots 19 seconds apart). There was one per
+    account, but nothing said which account each was, which is why they read as repeats. The fix that matters is the
+    account in the title; the deterministic ID only removes the reliance on `hashCode`.
+  - A newer notification for the same account replaces the older one.
+  - The helper's value is pinned by a test.
+- **Read-only and partial modes (Harold asked for a recommendation, 2026-10-10)**. The scan modes are `readOnly`,
+  `rulesOnly` (safe-sender moves skipped), `safeSendersOnly` (deletes skipped) and `safeSendersAndRules`
+  (`email_scan_provider.dart:32-37`). Options, decided at Sprint 79 planning:
+  1. Strikethrough on each count the mode did NOT act on (for example, Deleted in `readOnly`), and the title says the
+     mode when it is not live: `Back. scan k*@aol read-only completed`. Recommended: the strikethrough is what was asked
+     for, and the title word keeps it true for screen readers. TalkBack does not announce strikethrough, so "Deleted 1"
+     alone would be read as a real deletion.
+  2. Strikethrough only.
+  3. Title word only.
+  - Mechanism: HTML-formatted notification text through the plugin. Strikethrough rendering on the Fold must be checked
+    on the device before relying on it (unverified).
+- Depends on: None. Phone check on the next closed-test build.
+
+**F287. Windows background-scan completion notification (toast) (~90-150m) Priority 15**
+- Phase: Core App
+- Platform: Windows Desktop (parity with Android)
+- Origin: Sprint 78 planning, 2026-10-10 (N3 = 1). Windows background scans show NO completion notification today.
+  `WindowsNotificationService.showBackgroundScanComplete` (`windows_notification_service.dart:62`) has no caller, and
+  its fixed IDs (0 and 1) would collapse every account into one.
+- **Blocker inside the card**: `flutter_local_notifications: ^17.2.1` (`pubspec.yaml:58`). The plugin changelog lists
+  Windows support first in 19.0.0 ("[Windows] Added support for Windows."; latest 22.3.1, pub.dev, read 2026-10-10).
+  This needs a major-version upgrade. Read every breaking change between 17 and the target version first; the Android
+  call sites are `android_background_scan_worker.dart:300-334` and the Settings permission flow.
+- Scope: upgrade the plugin, wire the Windows background worker's notify step to the F286 shared text and ID helper,
+  remove the fixed IDs, and close the ADR-0042 exception recorded in the Sprint 78 plan.
+- Depends on: F286 (shared text and ID helper).
+
+**F288. Git-flow branch model: make `develop` the GitHub default branch (~60-120m) Priority 3 -- TARGET SPRINT 79**
+- Phase: DevOps
+- Platform: Repository (both platforms' builds unaffected; CI and docs change)
+- Origin: Harold, 2026-10-10 (Sprint 78 execution): "add to backlog and target for next sprint - switch the default
+  branch from main to develop".
+- Why it matters here: `main` is the default today, so `Closes #N` in a sprint PR into `develop` never closes the
+  issue (`.claude/sprint_status.json` `github_issues.note`: "Closes #N does NOT auto-fire here"); every sprint closes
+  cards by hand. GitHub reads closing keywords only on PRs into the default branch.
+- **Harold's instructions (verbatim, 2026-10-10)**:
+  > Switch this repository to a git-flow branch model:
+  > - develop = the GitHub default branch, where feature work is integrated. Feature/sprint branches open PRs into
+  >   develop.
+  > - main = the release branch. It changes only by a PR from develop to main, which I merge. Each release merge is
+  >   tagged.
+  >
+  > Work in this order. Do not merge any PR. Do not delete any branch. Ask every decision as a plain numbered list I
+  > can answer with one digit.
+  >
+  > PHASE A - INSPECT AND REPORT (change nothing)
+  > 1. Report: current default branch; whether develop exists locally and on origin; commits on main not in develop
+  >    and the reverse (git rev-list --count both ways); whether the commits on main that develop lacks change any files
+  >    (git diff --stat <merge-base> origin/main).
+  > 2. List open PRs and their base branches (gh pr list --state open).
+  > 3. List CI workflows and their triggers (.github/workflows/*.yml: on.push / on.pull_request branches). Note any
+  >    that would stop running or start running when the default changes.
+  > 4. Check .github/dependabot.yml (target-branch), branch protection or rulesets (gh api; a 403 on a private free
+  >    repo means none), and CODEOWNERS.
+  > 5. Search the repository for branch names in scripts, hooks, docs and tests: grep for "main", "master",
+  >    "develop", "default branch", "--base", "origin/HEAD". Classify each hit: must change, fine as is, or history
+  >    (never edit history records such as changelogs of past events or sprint records).
+  > 6. Show the findings as bullets, then a numbered list of proposed changes. Stop and wait for my approval.
+  >
+  > PHASE B - APPROVED CHANGES ONLY
+  > - If develop does not exist: create it from main and push it.
+  > - If main has commits with real file changes that develop lacks: stop and ask me. Do not merge main into develop
+  >   without approval.
+  > - Set the default: gh repo edit --default-branch develop, then git remote set-head origin -a. Verify with gh repo
+  >   view.
+  > - CI: run on pull_request into develop AND main, so release PRs are tested.
+  > - Dependabot (if present): target-branch: develop.
+  > - Open PRs that target main but are feature work: list them; retarget only the ones I approve (gh pr edit N
+  >   --base develop).
+  > - Docs and scripts: fix the "must change" hits. Write down the release step: "PR develop -> main, merged by the
+  >   owner, then tag the merge."
+  > - Make these edits on a feature branch, with a PR into develop. Run the test suite before committing. Do not
+  >   state test results in commit messages.
+  >
+  > PHASE C - VERIFY AND REPORT
+  > - Default branch is develop (gh repo view --json defaultBranchRef).
+  > - A new "gh pr create" with no --base would target develop.
+  > - CI triggers include develop and main.
+  > - Note for the owner: "Closes #N" keywords now close issues when a PR merges into develop, because GitHub reads
+  >   them only on PRs into the default branch.
+  > - Report as bullets: what changed, what was left alone and why, and any decision still open.
+- Note for Sprint 79 planning: Harold's "Do not state test results in commit messages" conflicts with the current
+  habit of naming pass counts in commit bodies; ask whether it applies to this card only or to all commits.
+- Depends on: None. The PHASE B default-branch switch is an outward-facing repository setting; it runs only after
+  Harold approves the PHASE A list.
 
 **F111. Periodic Windows App Store upload readiness verification (~110-175m per review) Priority HOLD**
 - Phase: Release Readiness (reusable template)

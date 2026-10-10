@@ -24,6 +24,7 @@ import '../../core/models/evaluation_result.dart';
 import '../../core/models/rule_set.dart' show Rule, RuleSet;
 import '../../core/models/safe_sender_list.dart' show SafeSenderList;
 import '../../core/services/auth_results_parser.dart';
+import '../../core/services/content_history.dart';
 import '../../core/services/diagnostic_logger.dart';
 import '../../core/services/email_scanner.dart' show safeSenderAlreadyInTarget;
 import '../../core/services/app_version.dart';
@@ -39,7 +40,6 @@ import '../../core/storage/settings_store.dart';
 import '../../core/utils/pattern_normalization.dart';
 import '../../core/utils/provider_sender_grouping.dart';
 import '../../core/utils/result_ordering.dart';
-import '../../core/data/common_email_providers.dart';
 import '../widgets/provider_group_markers.dart';
 import '../../adapters/email_providers/platform_registry.dart';
 import '../../adapters/email_providers/spam_filter_platform.dart'
@@ -48,59 +48,22 @@ import '../../adapters/storage/secure_credentials_store.dart';
 import '../widgets/empty_state.dart';
 import '../widgets/screen_version_line.dart'; // F229 (Sprint 73)
 import '../widgets/system_inset_wrapper.dart'; // F209 (Sprint 69)
+import '../widgets/result_list_pieces.dart';
+import '../widgets/email_detail_popup.dart';
+export '../widgets/result_list_pieces.dart'
+    show
+        orderResultsForDisplay,
+        formatReceivedDateForDisplay,
+        formatReceivedDayForRow;
 import '../../core/services/export_directories.dart';
 
 /// Displays summary of scan results bound to EmailScanProvider.
-/// F222 (Sprint 74, reworked at Manual Validation): the display order,
-/// extracted so the WIRING is testable (a test of the pure orders alone would
-/// pass with the call site still sorting some other way -- the Sprint 73
-/// "correct abstraction, wrong wiring" defect class).
 ///
-/// [order] defaults to [ResultSortOrder.folderDomainAddress], the
-/// pre-Sprint-74 order Harold asked to keep as the default. The folder,
-/// domain and address keys are the ones the old in-place sort used
-/// (`EmailBodyParser`), so the default is unchanged, not re-derived.
-@visibleForTesting
-List<EmailActionResult> orderResultsForDisplay(
-  List<EmailActionResult> results, {
-  ResultSortOrder order = ResultSortOrder.folderDomainAddress,
-}) {
-  final parser = EmailBodyParser();
-  String tieBreak(EmailActionResult r) =>
-      '${r.email.from}\u0000${r.email.subject}';
-  switch (order) {
-    case ResultSortOrder.folderDomainAddress:
-      return orderByFolderDomainAddress<EmailActionResult>(
-        results,
-        folderOf: (r) => r.email.folderName,
-        domainOf: (r) => parser.extractDomainFromEmail(r.email.from) ?? '',
-        addressOf: (r) => parser.extractEmailAddress(r.email.from),
-        tieBreak: tieBreak,
-      );
-    case ResultSortOrder.newestFirst:
-      return orderNewestFirst<EmailActionResult>(
-        results,
-        receivedAt: (r) => r.email.receivedDate,
-        tieBreak: tieBreak,
-      );
-  }
-}
-
-/// F222 (Sprint 74 MV, Harold): the received date and time on the
-/// assign-a-rule pop-up. Local time, to the minute ("2026-09-26 22:05").
-@visibleForTesting
-String formatReceivedDateForDisplay(DateTime receivedDate) =>
-    receivedDate.toLocal().toString().substring(0, 16);
-
-/// F222 (Sprint 74 MV round 2, Harold): the Scan Results ROW shows the date
-/// only -- *"do not need time displayed on the results screen, only date is
-/// needed (Ok to keep time on the assign rule pop-up)"*. Derived from
-/// [formatReceivedDateForDisplay], so the row's date is always the pop-up's
-/// date ("2026-09-26").
-@visibleForTesting
-String formatReceivedDayForRow(DateTime receivedDate) =>
-    formatReceivedDateForDisplay(receivedDate).substring(0, 10);
-
+/// F283 (Sprint 78): the display order, the date formats and the list
+/// pieces this screen shares with Review No Rule Items live in
+/// `../widgets/result_list_pieces.dart`, re-exported below so existing
+/// imports of [orderResultsForDisplay], [formatReceivedDateForDisplay] and
+/// [formatReceivedDayForRow] from this file keep resolving.
 class ResultsDisplayScreen extends StatefulWidget {
   final String platformId;
   final String platformDisplayName;
@@ -846,18 +809,11 @@ class _ResultsDisplayScreenState extends State<ResultsDisplayScreen> {
     // Apply search filter (Item 8: Ctrl-F search)
     if (_searchQuery.isNotEmpty) {
       final query = _searchQuery.toLowerCase();
-      results = results.where((result) {
-        final from = result.email.from.toLowerCase();
-        final subject = result.email.subject.toLowerCase();
-        final folder = result.email.folderName.toLowerCase();
-        // F21: Use effective evaluation for search
-        final effectiveEval = _getEffectiveEvaluation(result);
-        final rule = (effectiveEval?.matchedRule ?? '').toLowerCase();
-        return from.contains(query) ||
-            subject.contains(query) ||
-            folder.contains(query) ||
-            rule.contains(query);
-      }).toList();
+      // F21: the effective evaluation supplies the rule name searched.
+      results = results
+          .where((result) => resultMatchesSearch(result,
+              _getEffectiveEvaluation(result)?.matchedRule ?? '', query))
+          .toList();
     }
 
     // Apply folder filter (Item 6: folder dropdown)
@@ -1312,40 +1268,12 @@ class _ResultsDisplayScreenState extends State<ResultsDisplayScreen> {
     );
   }
 
-  Widget _buildFilterStatus(int filteredCount, int totalCount) {
-    return Container(
-      padding: const EdgeInsets.all(8),
-      decoration: BoxDecoration(
-        color: Colors.blue.shade50,
-        borderRadius: BorderRadius.circular(8),
-      ),
-      child: Row(
-        children: [
-          Icon(Icons.filter_list, color: Colors.blue.shade700, size: 20),
-          const SizedBox(width: 8),
-          Expanded(
-            child: Text(
-              // PR #335 cowork review: the old "Tap chip again" instruction
-              // described the removed stat chips; the dropdown has no
-              // toggle-off, so the X is the clear affordance.
-              'Showing $filteredCount of $totalCount emails • Tap X to clear filters',
-              style: TextStyle(
-                fontSize: 12,
-                color: Colors.blue.shade900,
-              ),
-            ),
-          ),
-          IconButton(
-            icon: const Icon(Icons.clear, size: 16),
-            onPressed: _clearAllFilters,
-            tooltip: 'Clear filter',
-            padding: EdgeInsets.zero,
-            constraints: const BoxConstraints(),
-          ),
-        ],
-      ),
-    );
-  }
+  Widget _buildFilterStatus(int filteredCount, int totalCount) =>
+      ResultFilterStatusBar(
+        filteredCount: filteredCount,
+        totalCount: totalCount,
+        onClear: _clearAllFilters,
+      );
 
   /// Build the Summary title including scan mode and folder names
   String _buildSummaryTitle(
@@ -1887,48 +1815,9 @@ class _ResultsDisplayScreenState extends State<ResultsDisplayScreen> {
     );
   }
 
-  /// F222 (Sprint 74 MV, Harold): switches the list between the default
-  /// order (folder, domain, address) and newest first. Built like the
-  /// Folders chip beside it; one tap toggles. The "from email providers"
-  /// group stays at the top in both orders.
-  Widget _buildSortChip() {
-    final isNewest = _sortOrder == ResultSortOrder.newestFirst;
-    final label = isNewest ? 'Sort: Newest first' : 'Sort: Folder';
-    return Semantics(
-      container: true,
-      button: true,
-      excludeSemantics: true,
-      label: label,
-      hint: isNewest
-          ? 'Switch to folder, domain and address order'
-          : 'Switch to newest first',
-      onTap: _toggleSortOrder,
-      child: Tooltip(
-        message: isNewest
-            ? 'Newest first. Tap for folder, domain, address.'
-            : 'Folder, then domain, then address. Tap for newest first.',
-        child: GestureDetector(
-          onTap: _toggleSortOrder,
-          child: Chip(
-            key: const Key('results_sort_chip'),
-            label: Text(label),
-            avatar: const Icon(Icons.sort, size: 18),
-            backgroundColor: isNewest
-                ? Colors.indigo.withValues(alpha: 0.7)
-                : Colors.indigo,
-            labelStyle: TextStyle(
-              color: Colors.white,
-              fontWeight: isNewest ? FontWeight.w900 : FontWeight.bold,
-            ),
-            side: isNewest
-                ? const BorderSide(color: Colors.black, width: 2)
-                : BorderSide.none,
-            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-          ),
-        ),
-      ),
-    );
-  }
+  /// F222 (Sprint 74 MV, Harold): the Sort chip (shared with Review, F283).
+  Widget _buildSortChip() =>
+      ResultSortChip(order: _sortOrder, onToggle: _toggleSortOrder);
 
   void _toggleSortOrder() {
     setState(() {
@@ -1938,102 +1827,14 @@ class _ResultsDisplayScreenState extends State<ResultsDisplayScreen> {
     });
   }
 
-  Widget _buildFolderFilterChip(List<EmailActionResult> allResults) {
-    // Issue 3: Use cached folders for performance
-    final folders = _cachedFolders ?? [];
-    final isActive = _selectedFolders.isNotEmpty;
-
-    return GestureDetector(
-      onTap: () async {
-        // Show folder selection dialog
-        final selected = await showDialog<Set<String>>(
-          context: context,
-          builder: (ctx) => _buildFolderSelectionDialog(folders),
-        );
-
-        if (selected != null) {
-          setState(() {
-            _selectedFolders = selected;
-          });
-        }
-      },
-      child: Chip(
-        label: Text(_selectedFolders.isEmpty
-            ? 'Folders: All'
-            : 'Folders: ${_selectedFolders.length}'),
-        avatar: const Icon(Icons.folder, size: 18),
-        backgroundColor:
-            isActive ? Colors.indigo.withValues(alpha: 0.7) : Colors.indigo,
-        labelStyle: TextStyle(
-          color: Colors.white,
-          fontWeight: isActive ? FontWeight.w900 : FontWeight.bold,
-        ),
-        side: isActive
-            ? const BorderSide(color: Colors.black, width: 2)
-            : BorderSide.none,
-        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-      ),
-    );
-  }
-
-  /// Build folder selection dialog
-  Widget _buildFolderSelectionDialog(List<String> folders) {
-    final tempSelected = Set<String>.from(_selectedFolders);
-
-    return StatefulBuilder(
-      builder: (context, setDialogState) {
-        return AlertDialog(
-          title: const Text('Select Folders'),
-          content: SizedBox(
-            width: double.maxFinite,
-            child: ListView(
-              shrinkWrap: true,
-              children: [
-                CheckboxListTile(
-                  title: const Text('All Folders',
-                      style: TextStyle(fontWeight: FontWeight.bold)),
-                  value: tempSelected.isEmpty,
-                  onChanged: (bool? value) {
-                    setDialogState(() {
-                      if (value == true) {
-                        tempSelected.clear();
-                      }
-                    });
-                  },
-                ),
-                const Divider(),
-                ...folders.map((folder) {
-                  return CheckboxListTile(
-                    title: Text(folder),
-                    value: tempSelected.contains(folder),
-                    onChanged: (bool? value) {
-                      setDialogState(() {
-                        if (value == true) {
-                          tempSelected.add(folder);
-                        } else {
-                          tempSelected.remove(folder);
-                        }
-                      });
-                    },
-                  );
-                }),
-              ],
-            ),
-          ),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.pop(context),
-              child: const Text('Cancel'),
-            ),
-            FilledButton(
-              onPressed: () => Navigator.pop(context, tempSelected),
-              child: const Text('Apply'),
-            ),
-          ],
-        );
-      },
-    );
-  }
+  /// Item 6: the Folders chip (shared with Review, F283). Issue 3: the folder
+  /// list is cached for performance.
+  Widget _buildFolderFilterChip(List<EmailActionResult> allResults) =>
+      FolderFilterChip(
+        folders: _cachedFolders ?? [],
+        selected: _selectedFolders,
+        onChanged: (selected) => setState(() => _selectedFolders = selected),
+      );
 
   /// IMP-1 (Sprint 46 retro): maps ListView indices to rows, inserting the
   /// provider-group heading before and the end indicator after the first
@@ -2048,45 +1849,13 @@ class _ResultsDisplayScreenState extends State<ResultsDisplayScreen> {
     return _buildResultTile(results[index - 2]);
   }
 
-  Widget _buildResultTile(EmailActionResult result) {
-    // Issue #47: Title shows sender email, subtitle shows folder • subject • rule
-    // Decode Punycode domains for display
-    final rawFrom = result.email.from;
-    final decodedFrom = PatternNormalization.normalizeAndDecodeEmail(rawFrom);
-    final title = decodedFrom.isNotEmpty ? decodedFrom : 'Unknown sender';
-    final folder = result.email.folderName;
-    // Clean subject for display (remove tabs, extra spaces, repeated punctuation)
-    final rawSubject = result.email.subject;
-    final cleanedSubject =
-        PatternNormalization.cleanSubjectForDisplay(rawSubject);
-    final subject = cleanedSubject.isNotEmpty ? cleanedSubject : 'No subject';
-    // Issue #51: Display matched rule name or "No rule" if empty/null
-    // F21: Use effective evaluation (includes inline assignment overrides)
-    final effectiveEval = _getEffectiveEvaluation(result);
-    final matchedRule = effectiveEval?.matchedRule ?? '';
-    final rule = matchedRule.isNotEmpty ? matchedRule : 'No rule';
-    // F222 (Sprint 74 MV, Harold): the received date, before the subject so a
-    // long subject cannot push it off the line.
-    final date = formatReceivedDayForRow(result.email.receivedDate);
-    final subtitle = '$folder • $date • $subject • $rule';
-    final trailing = result.success
-        ? const Icon(Icons.check, color: Colors.green)
-        : const Icon(Icons.error, color: Colors.red);
-
-    // Issue 6: Wrap with Container to capture position for popup
-    final tileKey = GlobalKey();
-
-    return Container(
-      key: tileKey,
-      child: ListTile(
-        leading: _actionIcon(result.action),
-        title: Text(title),
-        subtitle: Text(subtitle),
-        trailing: trailing,
-        onTap: () => _showEmailDetailSheet(result, itemKey: tileKey),
-      ),
-    );
-  }
+  /// Issue #47: one row (shared with Review, F283). F21: the rule shown is
+  /// the effective evaluation (includes inline assignment overrides).
+  Widget _buildResultTile(EmailActionResult result) => EmailResultTile(
+        result: result,
+        ruleName: _getEffectiveEvaluation(result)?.matchedRule ?? '',
+        onTap: (tileKey) => _showEmailDetailSheet(result, itemKey: tileKey),
+      );
 
   /// Show positioned popup with email details and inline quick actions
   /// Issue 6: CSS-like positioning - show popup below/above email item
@@ -2098,968 +1867,39 @@ class _ResultsDisplayScreenState extends State<ResultsDisplayScreen> {
   /// the next item's own key is not addressable from here).
   void _showEmailDetailSheet(EmailActionResult result,
       {GlobalKey? itemKey, Offset? anchorPosition, Size? anchorSize}) {
+    // F283 (Sprint 78): the pop-up itself is shared with Review No Rule Items
+    // (`email_detail_popup.dart`). It only reports the choice; this screen's
+    // pipeline -- add the rule, re-evaluate, re-process, auto-advance -- is
+    // unchanged and runs through the same _quickActionThenAdvance as before.
     final email = result.email;
-    final bodyParser = EmailBodyParser();
-    // Extract raw email and domain (Punycode format) - used for block rule creation
-    final rawSenderEmail = bodyParser.extractEmailAddress(email.from);
-    final rawSenderDomain = bodyParser.extractDomainFromEmail(email.from);
-    // Normalized email (plus-sign stripped) - used for safe sender pattern creation
-    // This matches how SafeSenderList.findMatch() normalizes emails during evaluation
-    final normalizedSenderEmail =
-        PatternNormalization.normalizeFromHeader(email.from);
-    // Decode for display only
-    final displaySenderEmail =
-        PatternNormalization.normalizeAndDecodeEmail(rawSenderEmail);
-    final displaySenderDomain = rawSenderDomain != null
-        ? PatternNormalization.decodePunycodeDomain(rawSenderDomain)
-        : null;
-    // Extract root domain from RAW domain (for rule creation)
-    final rawRootDomain =
-        PatternNormalization.extractRootDomain(rawSenderDomain);
-    // Decode root domain for display
-    final displayRootDomain = rawRootDomain != null
-        ? PatternNormalization.decodePunycodeDomain(rawRootDomain)
-        : null;
-    // F21: Use effective evaluation (re-evaluated after inline rule assignment)
-    final effectiveEval = _getEffectiveEvaluation(result);
-    final matchedRule = effectiveEval?.matchedRule ?? '';
-    final isDeleted = effectiveEval?.shouldDelete == true;
-    final isSafeSender = effectiveEval?.isSafeSender == true;
-
-    // Clean subject for display
-    final cleanedSubject =
-        PatternNormalization.cleanSubjectForDisplay(email.subject);
-    final displaySubject =
-        cleanedSubject.isNotEmpty ? cleanedSubject : '(No subject)';
-
-    // Format date/time
-    final dateStr = formatReceivedDateForDisplay(email.receivedDate);
-
-    // Sprint 46 (Harold speed follow-up): predicates predicting which OTHER
-    // "No rule" items the quick action about to be taken will ALSO address,
-    // so the auto-advance skips them up front instead of popping up an email
-    // that is about to be resolved by the same rule.
-    bool coversSameEmail(EmailActionResult o) =>
-        bodyParser.extractEmailAddress(o.email.from).toLowerCase().trim() ==
-        rawSenderEmail.toLowerCase().trim();
-    bool coversExactDomain(EmailActionResult o) =>
-        rawSenderDomain != null &&
-        bodyParser.extractDomainFromEmail(o.email.from) == rawSenderDomain;
-    bool coversEntireDomain(EmailActionResult o) {
-      final target = rawRootDomain ?? rawSenderDomain;
-      if (target == null) return false;
-      final otherDomain = bodyParser.extractDomainFromEmail(o.email.from);
-      return PatternNormalization.extractRootDomain(otherDomain) == target;
-    }
-
-    bool coversSubject(EmailActionResult o) =>
-        PatternNormalization.cleanSubjectForDisplay(o.email.subject)
-            .toLowerCase()
-            .contains(cleanedSubject.toLowerCase());
-
-    // Issue 6: Calculate position for CSS-like popup positioning
-    Offset? itemPosition = anchorPosition;
-    Size? itemSize = anchorSize;
-    if (itemKey != null) {
-      final RenderBox? renderBox =
-          itemKey.currentContext?.findRenderObject() as RenderBox?;
-      if (renderBox != null) {
-        itemPosition = renderBox.localToGlobal(Offset.zero);
-        itemSize = renderBox.size;
-      }
-    }
-
-    showDialog(
-      context: context,
-      barrierColor: Colors.black54,
-      // F178 round 2: control the safe area OURSELVES. showDialog's default
-      // useSafeArea:true wraps the Stack in a SafeArea whose size and
-      // clipping do not match the GLOBAL anchor coordinates the position
-      // math uses -- the popup overflowed the SafeArea'd Stack and was
-      // flush-CLIPPED at its bottom edge (Harold's first-row screenshot:
-      // "Block Subject" simply cut off). With useSafeArea:false the Stack
-      // spans the full screen (matching the anchors), and the inset math
-      // below keeps the popup inside the safe area explicitly.
-      useSafeArea: false,
-      builder: (dialogContext) {
-        // Get screen dimensions.
-        // F178 round 2 (Sprint 62 MV, Harold's first-row screenshot): read
-        // the insets from the ROOT VIEW, not an inherited MediaQuery. Both
-        // the screen's context (Scaffold body) and the dialog's context
-        // (inside showDialog's SafeArea, when enabled) see CONSUMED padding
-        // -- zeros -- which silently degenerated round 1's safe-area math to
-        // the old full-screen math on a real phone, while the flat
-        // widget-test harness kept the padding and stayed green.
-        // MediaQueryData.fromView cannot be consumed by anything.
-        final mediaQuery = MediaQueryData.fromView(View.of(context));
-        final screenSize = mediaQuery.size;
-        final screenHeight = screenSize.height;
-        // F178 (Sprint 62, found by Harold with screenshots): on a phone,
-        // `size.height` includes the system status/navigation bar areas, so
-        // the Sprint 60 clamp below let the popup's BOTTOM sit under the
-        // Android navigation bar -- "Block Subject" and the rows below it
-        // were unreachable even at full scroll. All height/position math now
-        // works within the SAFE area. On desktop the insets are zero, so
-        // this is a no-op there (ADR-0042: parity by construction).
-        final safeTop = mediaQuery.padding.top;
-        final safeBottom = mediaQuery.padding.bottom;
-        final safeScreenBottom = screenHeight - safeBottom;
-        final safeHeight = screenHeight - safeTop - safeBottom;
-        // F178 round 2 (Harold, Sprint 62 MV): on COMPACT widths the popup
-        // is TIED TO THE BOTTOM of the safe area and grows upward as large
-        // as its content needs -- the same pattern the Windows app uses at
-        // very small window sizes. Anchor-relative placement is a desktop
-        // affordance (it keeps the source row and the NEXT row visible
-        // beside the popup); on a phone the popup covers the list anyway,
-        // and bottom-anchoring guarantees the bottom actions ("Block
-        // Subject") are always at a fixed, reachable place.
-        final isCompactWidth = screenSize.width < 600;
-        final popupHeight = isCompactWidth
-            ? safeHeight - 24 // grow toward the top, small breathing gap
-            : safeHeight * 0.6; // desktop: within safe area (Sprint 60 cap)
-
-        // Calculate position
-        double? top;
-        double? bottom;
-
-        // Sprint 60 MV (Harold): the popup must FIT fully inside the window
-        // for EVERY visible row. `popupHeight` is an estimate the real
-        // content can exceed, and the branches below never clamped `top` --
-        // so for rows near the TOP of the list the popup started low enough
-        // that its bottom rows ("Block Subject") were clipped off-window.
-        // Two-part fix: (1) every `top` is clamped so top + popupHeight stays
-        // on-screen; (2) the popup itself is hard-capped at `popupHeight`
-        // (see the ConstrainedBox below), so the clamp is against the REAL
-        // maximum height, with the existing inner SingleChildScrollView as
-        // the graceful fallback if content ever exceeds the cap.
-        // F178: clamp against the SAFE bottom, and never above the safe top.
-        final maxTop = (safeScreenBottom - popupHeight - 8)
-            .clamp(safeTop + 8.0, screenHeight);
-
-        if (isCompactWidth) {
-          // Bottom-anchored: Positioned(bottom:) measures from the STACK's
-          // bottom (the full screen with useSafeArea: false), so the system
-          // inset is added explicitly. The ConstrainedBox cap lets content
-          // grow upward to popupHeight; shorter content hugs the bottom.
-          bottom = safeBottom;
-        } else if (itemPosition != null && itemSize != null) {
-          final itemBottom = itemPosition.dy + itemSize.height;
-          final spaceBelow = safeScreenBottom - itemBottom;
-          final spaceAbove = itemPosition.dy;
-          // Sprint 46 manual-testing feedback (Harold 2026-07-11): when the
-          // screen has room, drop the popup one additional email-height lower
-          // (the clicked tile's own height is the best available estimate of
-          // one list item) so the NEXT item in the list stays visible above
-          // the popup -- after acting on this email the user can immediately
-          // click the next one instead of it being covered.
-          final oneItemGap = itemSize.height;
-
-          if (spaceBelow >= popupHeight + oneItemGap) {
-            // Show one email lower, keeping the next list item clickable
-            top = (itemBottom + oneItemGap + 8).clamp(0.0, maxTop);
-          } else if (spaceBelow >= popupHeight) {
-            // Show directly below email (no room to also expose the next item)
-            top = (itemBottom + 8).clamp(0.0, maxTop);
-          } else if (spaceAbove - safeTop >= popupHeight + 8) {
-            // Show above email. PR #335 cowork review: the +8 belongs in the
-            // guard too -- with spaceAbove in [popupHeight, popupHeight+8)
-            // the 8px gap pushed the popup's top edge up to 8px off-window.
-            // Sprint 62 code review (M-1): spaceAbove measures from y=0, but
-            // only the space below safeTop is usable -- without subtracting
-            // it, a top inset (large-screen Android/foldable; zero on
-            // desktop) let the popup's top edge extend into the status bar.
-            bottom = screenHeight - itemPosition.dy + 8; // 8px gap
-          } else {
-            // Not enough room above or below -- as high as needed to fit.
-            top = itemPosition.dy.clamp(0.0, maxTop);
-          }
-        }
-
-        return Stack(
-          children: [
-            Positioned(
-              top: top,
-              bottom: bottom,
-              left: 16,
-              right: 16,
-              // F151e (Sprint 58): the popup previously stretched edge-to-edge
-              // minus 16px margins on both sides -- at the default 1600px
-              // window width that meant a ~1568px-wide popup. First fix
-              // (centered, maxWidth 480) was REVISED per Manual Validation
-              // (Harold, 2026-08-15): 480 was too squashed for long email
-              // addresses/domains and forced scrolling. Revised layout: the
-              // popup's LEFT edge stays around where the centered version
-              // started (~35% of the available width) and the popup extends
-              // to the FAR RIGHT edge -- this leaves the list rows' sender +
-              // subject visible on the left (so the user can match the popup
-              // against the row it came from) while giving the popup's
-              // content roughly double the width. FractionallySizedBox
-              // scales with the window, so narrow windows keep a usable
-              // proportional popup instead of a fixed-width overflow.
-              // Sprint 60 MV round 3 (Harold, Android): the desktop layout
-              // (right-65% + minWidth 400) forced onto a phone width produced
-              // a letter-wrapped, right-overflowing popup. On compact widths
-              // the popup takes the FULL width (the left-column-visible
-              // rationale does not apply when the popup covers the row list
-              // anyway); desktop keeps the F151e/MV-8 right-65% layout.
-              child: FractionallySizedBox(
-                alignment: Alignment.centerRight,
-                // Sprint 62 code review (M-2): reuse the fromView-based
-                // isCompactWidth so position math and width factor cannot
-                // disagree when the inherited MediaQuery diverges from the
-                // raw view size.
-                widthFactor: isCompactWidth ? 1.0 : 0.65,
-                child: ConstrainedBox(
-                  // maxHeight (Sprint 60 MV): the hard cap that makes the
-                  // clamped `top` a real fit guarantee -- content beyond the
-                  // cap scrolls inside the popup instead of clipping off the
-                  // window's bottom edge. (PR #335 cowork review: the old
-                  // minWidth: 400 here was inert -- FractionallySizedBox
-                  // hands down a TIGHT width, so the min could never apply;
-                  // width is governed by widthFactor alone.)
-                  constraints: BoxConstraints(maxHeight: popupHeight),
-                  child: Material(
-                    elevation: 8,
-                    borderRadius: BorderRadius.circular(12),
-                    child: SelectionArea(
-                      child: SingleChildScrollView(
-                        child: Padding(
-                          padding: const EdgeInsets.all(16),
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              // Handle bar
-                              Center(
-                                child: Container(
-                                  width: 40,
-                                  height: 4,
-                                  margin: const EdgeInsets.only(bottom: 12),
-                                  decoration: BoxDecoration(
-                                    color: Colors.grey[300],
-                                    borderRadius: BorderRadius.circular(2),
-                                  ),
-                                ),
-                              ),
-                              // One-line summary matching Results screen format
-                              Row(
-                                children: [
-                                  _actionIcon(result.action),
-                                  const SizedBox(width: 8),
-                                  Expanded(
-                                    child: Text(
-                                      displaySenderEmail,
-                                      style: const TextStyle(
-                                        fontSize: 14,
-                                        fontWeight: FontWeight.bold,
-                                      ),
-                                      overflow: TextOverflow.ellipsis,
-                                    ),
-                                  ),
-                                  // F136 (Sprint 52): SKIP -- leaves this item
-                                  // completely unaffected and moves to the next
-                                  // unaddressed one. Harold: "add a 'Skip' button
-                                  // in the header ... button should be about the
-                                  // same size as the safe sender and rules
-                                  // buttons", and (steering) reuse an existing
-                                  // button rather than building a new control.
-                                  //
-                                  // It reuses `_quickActionThenAdvance` -- the SAME
-                                  // navigation the quick actions use -- with a
-                                  // no-op action and a covers-NOTHING predicate.
-                                  // That is what makes "next unaddressed item" mean
-                                  // exactly what it means for every other button
-                                  // here, instead of a second, subtly-different
-                                  // traversal that could drift.
-                                  //
-                                  // Only shown under the "No rule" filter: outside
-                                  // it there is no unaddressed-item sequence to
-                                  // advance through, and `_quickActionThenAdvance`
-                                  // itself no-ops on navigation in that case.
-                                  // F230 (Sprint 72): Skip MOVED OUT of this
-                                  // row -- see the date/domain row below.
-                                  // Harold, on the 0.15.2 Play build: Skip
-                                  // "often overlays the domain on this same
-                                  // page". The sender above is Expanded with
-                                  // ellipsis, so every pixel Skip took came out
-                                  // of the address: at 411px it rendered
-                                  // "kimmeyharold@help.ramirezo...", while the
-                                  // IDENTICAL code on Windows at ~993px showed
-                                  // it in full. A WIDTH problem, not a font
-                                  // problem -- which is why the remedy is
-                                  // placement, not truncation tuning.
-                                  const SizedBox(width: 8),
-                                  result.success
-                                      ? const Icon(Icons.check,
-                                          color: Colors.green, size: 18)
-                                      : const Icon(Icons.error,
-                                          color: Colors.red, size: 18),
-                                ],
-                              ),
-                              const SizedBox(height: 4),
-                              // Subtitle line: folder • subject • rule
-                              Text(
-                                '${email.folderName} • $displaySubject • ${matchedRule.isNotEmpty ? matchedRule : "No rule"}',
-                                // F230 (Sprint 72): was `fontSize: 12`.
-                                // Theme styles honour the OS font-size
-                                // accessibility setting, which a hardcoded
-                                // number cannot (ADR-0037). Harold accepted the
-                                // same increase on Windows rather than branch:
-                                // "It would be OK if it was bigger on Windows
-                                // in order to match Android and not cause an
-                                // unnecessary exception." So this stays ONE
-                                // shared change with no platform exception.
-                                style: Theme.of(context)
-                                    .textTheme
-                                    .bodyMedium
-                                    ?.copyWith(color: Colors.grey[700]),
-                                maxLines: 2,
-                                overflow: TextOverflow.ellipsis,
-                              ),
-                              const SizedBox(height: 8),
-                              // Date/time
-                              Row(
-                                children: [
-                                  Icon(Icons.schedule,
-                                      size: 14, color: Colors.grey[500]),
-                                  const SizedBox(width: 4),
-                                  Text(
-                                    dateStr,
-                                    // F216 (Sprint 75): was `bodySmall`
-                                    // (12sp, originally `fontSize: 11`
-                                    // under F230). Harold, 2026-09-12,
-                                    // answer "2. a": the date/domain row
-                                    // must match the folder/subject/rule
-                                    // line above it, which F230 already
-                                    // promoted to bodyMedium. The sender
-                                    // line is unchanged.
-                                    style: Theme.of(context)
-                                        .textTheme
-                                        .bodyMedium
-                                        ?.copyWith(color: Colors.grey.shade700),
-                                  ),
-                                  if (displaySenderDomain != null) ...[
-                                    const SizedBox(width: 12),
-                                    Icon(Icons.domain,
-                                        size: 14, color: Colors.grey[500]),
-                                    const SizedBox(width: 4),
-                                    // F230: BOUNDED. This Text had no Expanded,
-                                    // so simply dropping Skip into this row
-                                    // would MOVE the overflow here rather than
-                                    // fix it -- a long domain plus a button is
-                                    // the same ~81px AppBar overflow shape F172
-                                    // hit at 411px. Flexible + ellipsis makes
-                                    // the domain yield instead of the row
-                                    // breaking.
-                                    Flexible(
-                                      child: Text(
-                                        displaySenderDomain,
-                                        overflow: TextOverflow.ellipsis,
-                                        // F216 (Sprint 75): was `bodySmall`
-                                        // -- see the date Text above for
-                                        // the same reasoning.
-                                        style: Theme.of(context)
-                                            .textTheme
-                                            .bodyMedium
-                                            ?.copyWith(
-                                                color: Colors.grey.shade700),
-                                      ),
-                                    ),
-                                  ],
-                                  // F230 (Sprint 72): SKIP LIVES HERE NOW --
-                                  // bottom right of the same section, which is
-                                  // where Harold pointed: "can it be moved to
-                                  // align with the bottom right of the same
-                                  // section instead of the top right as there
-                                  // appears to be more space there." The
-                                  // screenshot showed that space, and moving it
-                                  // hands the sender row its full width back.
-                                  //
-                                  // BEHAVIOUR IS UNCHANGED -- the widget moved,
-                                  // it was not reimplemented. It still reuses
-                                  // `_quickActionThenAdvance` with a no-op
-                                  // action and a covers-NOTHING predicate, so
-                                  // "next unaddressed item" means exactly what
-                                  // it means for every other button here
-                                  // (F136, Sprint 52). Still shown only under
-                                  // the "No rule" filter, where an unaddressed
-                                  // sequence exists to advance through.
-                                  if (_filter == EmailActionType.none) ...[
-                                    const Spacer(),
-                                    _buildSkipButton(
-                                      result: result,
-                                      dialogContext: dialogContext,
-                                      anchorPosition: itemPosition,
-                                      anchorSize: itemSize,
-                                    ),
-                                  ],
-                                ],
-                              ),
-                              const SizedBox(height: 8),
-                              // Action result badge
-                              Container(
-                                padding: const EdgeInsets.symmetric(
-                                    horizontal: 8, vertical: 4),
-                                decoration: BoxDecoration(
-                                  color: _getActionColor(result.action)
-                                      .withValues(alpha: 0.15),
-                                  borderRadius: BorderRadius.circular(4),
-                                ),
-                                child: Text(
-                                  _getActionDescription(result),
-                                  style: TextStyle(
-                                    fontSize: 11,
-                                    fontWeight: FontWeight.w500,
-                                    color: _getActionColor(result.action),
-                                  ),
-                                ),
-                              ),
-                              const Divider(height: 20),
-
-                              // === SHARED PROVIDER HINT ===
-                              if (rawSenderDomain != null &&
-                                  CommonEmailProviders.isCommonProvider(
-                                      rawSenderDomain)) ...[
-                                Builder(builder: (_) {
-                                  final providerName =
-                                      CommonEmailProviders.getProviderName(
-                                              rawSenderDomain) ??
-                                          'Unknown';
-                                  return Container(
-                                    padding: const EdgeInsets.all(10),
-                                    decoration: BoxDecoration(
-                                      color:
-                                          Colors.amber.withValues(alpha: 0.12),
-                                      borderRadius: BorderRadius.circular(6),
-                                      border: Border.all(
-                                          color: Colors.amber
-                                              .withValues(alpha: 0.4)),
-                                    ),
-                                    child: Row(
-                                      crossAxisAlignment:
-                                          CrossAxisAlignment.start,
-                                      children: [
-                                        Icon(Icons.info_outline,
-                                            size: 16, color: Colors.amber[800]),
-                                        const SizedBox(width: 8),
-                                        Expanded(
-                                          child: Text(
-                                            '$providerName is a shared email provider. '
-                                            'Use "Exact Email" when adding rules for this sender.',
-                                            style: TextStyle(
-                                                fontSize: 11,
-                                                color: Colors.amber[900]),
-                                          ),
-                                        ),
-                                      ],
-                                    ),
-                                  );
-                                }),
-                                const SizedBox(height: 12),
-                              ],
-
-                              // === SAFE SENDER SECTION ===
-                              // Issue 5: Always show Safe Sender options for all emails
-                              Text(
-                                isSafeSender
-                                    ? 'Update Safe Sender'
-                                    : 'Add to Safe Senders',
-                                style: const TextStyle(
-                                    fontSize: 13, fontWeight: FontWeight.bold),
-                              ),
-                              const SizedBox(height: 8),
-                              // MT-1 (Sprint 50, Harold): FIXED 3-column grid -- the
-                              // Email | Exact Domain | Entire Domain actions keep the
-                              // SAME position for every item (equal-width cells,
-                              // ellipsized subtitles, disabled placeholder when a domain
-                              // action is unavailable) so muscle memory works across
-                              // items. Replaces the flowing Wrap whose button positions
-                              // shifted with address length.
-                              IntrinsicHeight(
-                                child: Row(
-                                  crossAxisAlignment:
-                                      CrossAxisAlignment.stretch,
-                                  children: [
-                                    Expanded(
-                                      child: _buildInlineActionButton(
-                                        icon: Icons.person,
-                                        label: 'Exact Email',
-                                        subtitle: displaySenderEmail,
-                                        color: Colors.green,
-                                        isMatched: isSafeSender &&
-                                            effectiveEval?.matchedPatternType ==
-                                                'exact_email',
-                                        onTap: () {
-                                          Navigator.pop(dialogContext);
-                                          // Use normalized email (plus-signs stripped) to match SafeSenderList evaluation
-                                          _quickActionThenAdvance(
-                                            current: result,
-                                            anchorPosition: itemPosition,
-                                            anchorSize: itemSize,
-                                            action: () => _addSafeSender(
-                                                normalizedSenderEmail, 'exact',
-                                                email: email),
-                                            coveredByAction: coversSameEmail,
-                                          );
-                                        },
-                                      ),
-                                    ),
-                                    const SizedBox(width: 8),
-                                    Expanded(
-                                      child: rawSenderDomain == null
-                                          ? _buildInlineActionButton(
-                                              icon: Icons.domain,
-                                              label: 'Exact Domain',
-                                              subtitle: 'Not available',
-                                              color: Colors.green,
-                                              onTap: null,
-                                            )
-                                          : _buildInlineActionButton(
-                                              icon: Icons.domain,
-                                              label: 'Exact Domain',
-                                              subtitle: '@$displaySenderDomain',
-                                              color: Colors.green,
-                                              isMatched: isSafeSender &&
-                                                  effectiveEval
-                                                          ?.matchedPatternType ==
-                                                      'exact_domain',
-                                              onTap: () async {
-                                                Navigator.pop(dialogContext);
-                                                // F47: Check for email provider domain
-                                                if (!await _checkProviderDomainWarning(
-                                                    domain: rawSenderDomain,
-                                                    isBlockRule: false)) {
-                                                  return;
-                                                }
-                                                _quickActionThenAdvance(
-                                                  current: result,
-                                                  anchorPosition: itemPosition,
-                                                  anchorSize: itemSize,
-                                                  action: () => _addSafeSender(
-                                                      '@$rawSenderDomain',
-                                                      'exactDomain',
-                                                      email: email),
-                                                  coveredByAction:
-                                                      coversExactDomain,
-                                                );
-                                              },
-                                            ),
-                                    ),
-                                    const SizedBox(width: 8),
-                                    Expanded(
-                                      child: rawSenderDomain == null
-                                          ? _buildInlineActionButton(
-                                              icon: Icons.public,
-                                              label: 'Entire Domain',
-                                              subtitle: 'Not available',
-                                              color: Colors.green,
-                                              onTap: null,
-                                            )
-                                          : _buildInlineActionButton(
-                                              icon: Icons.public,
-                                              label: 'Entire Domain',
-                                              subtitle:
-                                                  '@*.${displayRootDomain ?? displaySenderDomain}',
-                                              color: Colors.green,
-                                              isMatched: isSafeSender &&
-                                                  effectiveEval
-                                                          ?.matchedPatternType ==
-                                                      'entire_domain',
-                                              onTap: () async {
-                                                Navigator.pop(dialogContext);
-                                                // F47: Check for email provider domain
-                                                if (!await _checkProviderDomainWarning(
-                                                    domain: rawRootDomain ??
-                                                        rawSenderDomain,
-                                                    isBlockRule: false)) {
-                                                  return;
-                                                }
-                                                _quickActionThenAdvance(
-                                                  current: result,
-                                                  anchorPosition: itemPosition,
-                                                  anchorSize: itemSize,
-                                                  action: () => _addSafeSender(
-                                                      rawRootDomain ??
-                                                          rawSenderDomain,
-                                                      'entireDomain',
-                                                      email: email),
-                                                  coveredByAction:
-                                                      coversEntireDomain,
-                                                );
-                                              },
-                                            ),
-                                    ),
-                                  ],
-                                ),
-                              ),
-                              const SizedBox(height: 12),
-
-                              // === BLOCK RULE SECTION ===
-                              // Issue 5: Always show Block Rule options for all emails
-                              const Text(
-                                'Create Block Rule',
-                                style: TextStyle(
-                                    fontSize: 13, fontWeight: FontWeight.bold),
-                              ),
-                              const SizedBox(height: 8),
-                              // MT-1 (Sprint 50, Harold): same fixed 3-column grid as the
-                              // Safe row -- Block Entire Domain is ALWAYS the right-most
-                              // cell. Block Subject gets its own full-width row below so
-                              // its presence/absence never shifts the grid.
-                              IntrinsicHeight(
-                                child: Row(
-                                  crossAxisAlignment:
-                                      CrossAxisAlignment.stretch,
-                                  children: [
-                                    Expanded(
-                                      child: _buildInlineActionButton(
-                                        icon: Icons.person_off,
-                                        label: 'Block Email',
-                                        subtitle: displaySenderEmail,
-                                        color: Colors.red,
-                                        isMatched: isDeleted &&
-                                            effectiveEval?.matchedPatternType ==
-                                                'exact_email',
-                                        onTap: () {
-                                          Navigator.pop(dialogContext);
-                                          _quickActionThenAdvance(
-                                            current: result,
-                                            anchorPosition: itemPosition,
-                                            anchorSize: itemSize,
-                                            action: () => _createBlockRule(
-                                                'from', rawSenderEmail,
-                                                email: email),
-                                            coveredByAction: coversSameEmail,
-                                          );
-                                        },
-                                      ),
-                                    ),
-                                    const SizedBox(width: 8),
-                                    Expanded(
-                                      child: rawSenderDomain == null
-                                          ? _buildInlineActionButton(
-                                              icon: Icons.domain_disabled,
-                                              label: 'Block Exact Domain',
-                                              subtitle: 'Not available',
-                                              color: Colors.red,
-                                              onTap: null,
-                                            )
-                                          : _buildInlineActionButton(
-                                              icon: Icons.domain_disabled,
-                                              label: 'Block Exact Domain',
-                                              subtitle: '@$displaySenderDomain',
-                                              color: Colors.red,
-                                              isMatched: isDeleted &&
-                                                  effectiveEval
-                                                          ?.matchedPatternType ==
-                                                      'exact_domain',
-                                              onTap: () async {
-                                                Navigator.pop(dialogContext);
-                                                // F47: Check for email provider domain
-                                                if (!await _checkProviderDomainWarning(
-                                                    domain: rawSenderDomain,
-                                                    isBlockRule: true)) {
-                                                  return;
-                                                }
-                                                _quickActionThenAdvance(
-                                                  current: result,
-                                                  anchorPosition: itemPosition,
-                                                  anchorSize: itemSize,
-                                                  action: () =>
-                                                      _createBlockRule(
-                                                          'exactDomain',
-                                                          '@$rawSenderDomain',
-                                                          email: email),
-                                                  coveredByAction:
-                                                      coversExactDomain,
-                                                );
-                                              },
-                                            ),
-                                    ),
-                                    const SizedBox(width: 8),
-                                    Expanded(
-                                      child: rawSenderDomain == null
-                                          ? _buildInlineActionButton(
-                                              icon: Icons.public_off,
-                                              label: 'Block Entire Domain',
-                                              subtitle: 'Not available',
-                                              color: Colors.red,
-                                              onTap: null,
-                                            )
-                                          : _buildInlineActionButton(
-                                              icon: Icons.public_off,
-                                              label: 'Block Entire Domain',
-                                              subtitle:
-                                                  '@*.${displayRootDomain ?? displaySenderDomain}',
-                                              color: Colors.red,
-                                              isMatched: isDeleted &&
-                                                  effectiveEval
-                                                          ?.matchedPatternType ==
-                                                      'entire_domain',
-                                              onTap: () async {
-                                                Navigator.pop(dialogContext);
-                                                // F47: Check for email provider domain
-                                                if (!await _checkProviderDomainWarning(
-                                                    domain: rawRootDomain ??
-                                                        rawSenderDomain,
-                                                    isBlockRule: true)) {
-                                                  return;
-                                                }
-                                                _quickActionThenAdvance(
-                                                  current: result,
-                                                  anchorPosition: itemPosition,
-                                                  anchorSize: itemSize,
-                                                  action: () =>
-                                                      _createBlockRule(
-                                                          'entireDomain',
-                                                          rawRootDomain ??
-                                                              rawSenderDomain,
-                                                          email: email),
-                                                  coveredByAction:
-                                                      coversEntireDomain,
-                                                );
-                                              },
-                                            ),
-                                    ),
-                                  ],
-                                ),
-                              ),
-                              if (cleanedSubject.isNotEmpty &&
-                                  cleanedSubject != '(No subject)') ...[
-                                const SizedBox(height: 8),
-                                SizedBox(
-                                  width: double.infinity,
-                                  child: _buildInlineActionButton(
-                                    icon: Icons.subject,
-                                    label: 'Block Subject',
-                                    subtitle: cleanedSubject.length > 20
-                                        ? '${cleanedSubject.substring(0, 20)}...'
-                                        : cleanedSubject,
-                                    color: Colors.orange,
-                                    isMatched: isDeleted &&
-                                        effectiveEval?.matchedPatternType ==
-                                            'subject',
-                                    onTap: () {
-                                      Navigator.pop(dialogContext);
-                                      _quickActionThenAdvance(
-                                        current: result,
-                                        anchorPosition: itemPosition,
-                                        anchorSize: itemSize,
-                                        action: () => _createBlockRule(
-                                            'subject', cleanedSubject,
-                                            email: email),
-                                        coveredByAction: coversSubject,
-                                      );
-                                    },
-                                  ),
-                                ),
-                              ],
-                            ],
-                          ),
-                        ),
-                      ),
-                    ), // Close SelectionArea
-                  ), // Close Material
-                ), // Close ConstrainedBox
-              ), // Close FractionallySizedBox
-            ), // Close Positioned
-          ],
-        );
-      },
-    );
-  }
-
-  /// F47: Show warning when adding domain-level rule for a known email provider.
-  ///
-  /// Returns true if the user confirms they want to proceed, false to cancel.
-  /// Returns true immediately (no warning) if the domain is not a known provider.
-  Future<bool> _checkProviderDomainWarning({
-    required String domain,
-    required bool isBlockRule,
-  }) async {
-    // Extract bare domain (remove leading @ and subdomain wildcard patterns)
-    final bareDomain =
-        domain.replaceAll('@', '').replaceAll('*.', '').toLowerCase().trim();
-
-    final providerName = CommonEmailProviders.getProviderName(bareDomain);
-    if (providerName == null) return true; // Not a provider domain, proceed
-
-    final ruleType = isBlockRule ? 'Block Rule' : 'Safe Sender';
-
-    final content = isBlockRule
-        ? 'The domain "$bareDomain" belongs to $providerName, a major email '
-            'provider used by millions of individual and business accounts.\n\n'
-            'Blocking this entire domain would prevent all emails from '
-            '$providerName users from reaching your inbox.\n\n'
-            'Recommendation: Use "Exact Email" to block a specific sender '
-            'instead. If you do block the domain, you can add individual Safe '
-            'Sender exceptions, but those emails would need to be rescued after '
-            'being deleted.'
-        : 'The domain "$bareDomain" belongs to $providerName, a major email '
-            'provider used by millions of individual and business accounts.\n\n'
-            'Adding this domain as a Safe Sender means all emails from any '
-            '$providerName user will bypass your spam rules. Since Safe Sender '
-            'rules override Block Rules, you would not be able to block specific '
-            'senders from this domain.\n\n'
-            'Recommendation: Use "Exact Email" to add specific trusted senders '
-            'instead.';
-
-    final confirmed = await showDialog<bool>(
-      context: context,
-      builder: (ctx) => AlertDialog(
-        title: Row(
-          children: [
-            Icon(Icons.warning_amber_rounded, color: Colors.orange.shade700),
-            const SizedBox(width: 8),
-            Flexible(child: Text('$ruleType for Email Provider')),
-          ],
-        ),
-        content: Text(content),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(ctx, false),
-            child: const Text('Cancel'),
-          ),
-          FilledButton(
-            onPressed: () => Navigator.pop(ctx, true),
-            style: FilledButton.styleFrom(
-              backgroundColor: isBlockRule ? Colors.red : Colors.green,
-            ),
-            child: const Text('Proceed Anyway'),
-          ),
-        ],
+    showEmailDetailPopup(
+      context,
+      result: result,
+      // F21: effective evaluation (re-evaluated after inline rule assignment)
+      effectiveEval: _getEffectiveEvaluation(result),
+      // F283 R-6 (MV-Q17): the date row names the account.
+      accountEmail: widget.accountEmail,
+      // F136/F230: Skip only under the "No rule" filter, where an unaddressed
+      // sequence exists to advance through.
+      showSkip: _filter == EmailActionType.none,
+      itemKey: itemKey,
+      anchorPosition: anchorPosition,
+      anchorSize: anchorSize,
+      onQuickAction: (request, position, size) => _quickActionThenAdvance(
+        current: result,
+        anchorPosition: position,
+        anchorSize: size,
+        action: () => request.kind == QuickActionKind.safeSender
+            ? _addSafeSender(request.value, request.type, email: email)
+            : _createBlockRule(request.type, request.value, email: email),
+        coveredByAction: (other) => request.covers(other.email),
+      ),
+      onSkip: (position, size) => _skipToNext(
+        result: result,
+        anchorPosition: position,
+        anchorSize: size,
       ),
     );
-
-    return confirmed == true;
-  }
-
-  /// MT-1 (Sprint 50): [onTap] is nullable -- a null handler renders the
-  /// button as a DISABLED placeholder (grey, non-tappable) so the fixed
-  /// action grid keeps every cell in place even when an action does not
-  /// apply to the current item.
-  Widget _buildInlineActionButton({
-    required IconData icon,
-    required String label,
-    required String subtitle,
-    required Color color,
-    required VoidCallback? onTap,
-    bool isMatched = false, // Item 2: Visual indicator for current rule match
-  }) {
-    final bool enabled = onTap != null;
-    final Color effectiveColor = enabled ? color : Colors.grey.shade400;
-    // F129 (Sprint 51): these quick-action cells were built from a bare InkWell
-    // wrapping loose Text, so each one surfaced as an UNNAMED node with its
-    // label floating alongside as separate Text -- a screen reader announced
-    // nothing actionable, and name-based automation could not address the grid
-    // at all (the MT-1 blocker). The wrapper order below is the one proven on
-    // the No-Rule checkbox and the account picker: Semantics OUTSIDE (supplies
-    // the assistive-technology label), Tooltip INSIDE (what actually reaches
-    // the Windows UIA projection), real control innermost. `excludeSemantics`
-    // merges the label/subtitle Text into ONE named node instead of leaving
-    // them as loose siblings, and `onTap` is carried on the Semantics node
-    // itself so the merged node stays actionable -- omitting it names the cell
-    // but makes it unclickable (the account-picker regression, same sprint).
-    // `enabled: false` cells deliberately keep the label but take no onTap, so
-    // a disabled placeholder announces as present-but-inactive.
-    return Semantics(
-      container: true,
-      button: true,
-      enabled: enabled,
-      excludeSemantics: true,
-      label: label,
-      hint: subtitle,
-      onTap: onTap,
-      child: Tooltip(
-        message: enabled ? '$label. $subtitle' : '$label (unavailable)',
-        child: InkWell(
-          onTap: onTap,
-          borderRadius: BorderRadius.circular(8),
-          child: Container(
-            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
-            decoration: BoxDecoration(
-              border: Border.all(
-                color: isMatched
-                    ? effectiveColor
-                    : effectiveColor.withValues(alpha: 0.3),
-                width: isMatched ? 2 : 1, // Thicker border for matched rule
-              ),
-              borderRadius: BorderRadius.circular(8),
-              color: isMatched
-                  ? effectiveColor.withValues(
-                      alpha: 0.15) // Darker shade for matched
-                  : effectiveColor.withValues(alpha: 0.05),
-            ),
-            child: Stack(
-              children: [
-                Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        Icon(icon, size: 16, color: effectiveColor),
-                        const SizedBox(width: 6),
-                        Flexible(
-                          child: Text(
-                            label,
-                            style: TextStyle(
-                              fontSize: 12,
-                              fontWeight: FontWeight.w600,
-                              color: effectiveColor,
-                            ),
-                          ),
-                        ),
-                      ],
-                    ),
-                    const SizedBox(height: 2),
-                    Text(
-                      subtitle,
-                      style: TextStyle(fontSize: 10, color: Colors.grey[600]),
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                    ),
-                  ],
-                ),
-                // Item 2: Green checkmark in top-right corner for matched rule
-                if (isMatched)
-                  Positioned(
-                    top: -4,
-                    right: -4,
-                    child: Container(
-                      padding: const EdgeInsets.all(2),
-                      decoration: BoxDecoration(
-                        color: color,
-                        shape: BoxShape.circle,
-                      ),
-                      child: const Icon(
-                        Icons.check,
-                        size: 12,
-                        color: Colors.white,
-                      ),
-                    ),
-                  ),
-              ],
-            ),
-          ),
-        ),
-      ),
-    );
-  }
-
-  Color _getActionColor(EmailActionType action) {
-    switch (action) {
-      case EmailActionType.delete:
-        return Colors.red;
-      case EmailActionType.moveToJunk:
-        return Colors.orange;
-      case EmailActionType.safeSender:
-        return Colors.green;
-      case EmailActionType.markAsRead:
-        return Colors.blueGrey;
-      case EmailActionType.none:
-        return Colors.grey;
-    }
   }
 
   /// Generate a stable key for an email to track evaluation overrides.
@@ -3140,74 +1980,13 @@ class _ResultsDisplayScreenState extends State<ResultsDisplayScreen> {
   ///   - it is navigation, not a state change
   /// It therefore passes a no-op `action` and a `coveredByAction` that always
   /// returns false, so nothing is treated as resolved by skipping.
-  Widget _buildSkipButton({
-    required EmailActionResult result,
-    required BuildContext dialogContext,
-    required Offset? anchorPosition,
-    required Size? anchorSize,
-  }) {
-    return Semantics(
-      container: true,
-      button: true,
-      excludeSemantics: true,
-      label: 'Skip',
-      hint: 'Leave this email unchanged and go to the next unaddressed item',
-      onTap: () => _skipToNext(
-        result: result,
-        dialogContext: dialogContext,
-        anchorPosition: anchorPosition,
-        anchorSize: anchorSize,
-      ),
-      child: Tooltip(
-        message: 'Skip -- leave unchanged, go to the next unaddressed item',
-        child: InkWell(
-          onTap: () => _skipToNext(
-            result: result,
-            dialogContext: dialogContext,
-            anchorPosition: anchorPosition,
-            anchorSize: anchorSize,
-          ),
-          borderRadius: BorderRadius.circular(8),
-          child: Container(
-            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
-            decoration: BoxDecoration(
-              border: Border.all(
-                color: Colors.blueGrey.withValues(alpha: 0.3),
-              ),
-              borderRadius: BorderRadius.circular(8),
-              color: Colors.blueGrey.withValues(alpha: 0.05),
-            ),
-            child: Row(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Icon(Icons.skip_next,
-                    size: 16, color: Colors.blueGrey.shade700),
-                const SizedBox(width: 6),
-                Text(
-                  'Skip',
-                  style: TextStyle(
-                    fontSize: 12,
-                    fontWeight: FontWeight.w600,
-                    color: Colors.blueGrey.shade700,
-                  ),
-                ),
-              ],
-            ),
-          ),
-        ),
-      ),
-    );
-  }
-
-  /// Close this popup and open the next unaddressed item's popup, changing
-  /// nothing about the current one (F136).
+  /// Open the next unaddressed item's popup, changing nothing about the
+  /// current one (F136). The shared pop-up has already closed itself.
   void _skipToNext({
     required EmailActionResult result,
-    required BuildContext dialogContext,
     required Offset? anchorPosition,
     required Size? anchorSize,
   }) {
-    Navigator.pop(dialogContext);
     _quickActionThenAdvance(
       current: result,
       anchorPosition: anchorPosition,
@@ -4467,6 +3246,17 @@ class _ResultsDisplayScreenState extends State<ResultsDisplayScreen> {
       return;
     }
 
+    // R76-4 (ADR-0047, R-6): the user's decision on the stored email, when
+    // the dev-only content history is on. Best effort, never throws.
+    if (email != null) {
+      unawaited(ContentHistory.recordDecision(
+        settings: SettingsStore(),
+        accountId: widget.accountId,
+        email: email,
+        decision: 'safe_sender:$type',
+      ));
+    }
+
     // F21: Re-evaluate email against updated rules and refresh list
     if (email != null) {
       await _reEvaluateEmail(email);
@@ -4562,6 +3352,16 @@ class _ResultsDisplayScreenState extends State<ResultsDisplayScreen> {
       return;
     }
 
+    // R76-4 (ADR-0047, R-6): see _addSafeSender.
+    if (email != null) {
+      unawaited(ContentHistory.recordDecision(
+        settings: SettingsStore(),
+        accountId: widget.accountId,
+        email: email,
+        decision: 'block:$type',
+      ));
+    }
+
     // F21: Re-evaluate email against updated rules and refresh list
     if (email != null) {
       await _reEvaluateEmail(email);
@@ -4600,33 +3400,4 @@ class _ResultsDisplayScreenState extends State<ResultsDisplayScreen> {
     }
   }
 
-  String _getActionDescription(EmailActionResult result) {
-    switch (result.action) {
-      case EmailActionType.delete:
-        return result.success ? 'Deleted' : 'Delete failed';
-      case EmailActionType.moveToJunk:
-        return result.success ? 'Moved to junk' : 'Move failed';
-      case EmailActionType.safeSender:
-        return 'Safe sender - no action';
-      case EmailActionType.markAsRead:
-        return result.success ? 'Marked as read' : 'Mark as read failed';
-      case EmailActionType.none:
-        return 'No matching rule';
-    }
-  }
-
-  Widget _actionIcon(EmailActionType action) {
-    switch (action) {
-      case EmailActionType.delete:
-        return const Icon(Icons.delete, color: Colors.red);
-      case EmailActionType.moveToJunk:
-        return const Icon(Icons.archive, color: Colors.orange);
-      case EmailActionType.safeSender:
-        return const Icon(Icons.check_circle, color: Colors.green);
-      case EmailActionType.markAsRead:
-        return const Icon(Icons.mark_email_read, color: Colors.blueGrey);
-      case EmailActionType.none:
-        return const Icon(Icons.mail_outline, color: Colors.grey);
-    }
-  }
 }

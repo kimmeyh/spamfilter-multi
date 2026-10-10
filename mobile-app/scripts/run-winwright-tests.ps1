@@ -31,6 +31,18 @@
 #   FIX: unlock the workstation and re-run. Do NOT retry harder and do NOT record it as
 #   flakiness -- retrying a locked session only fails slower.
 #
+#   F284 (Sprint 78): the refusal now applies ONLY when a selected script contains a
+#   cursor-driven step (see $cursorTools below). A pattern-only selection (ww_invoke,
+#   ww_set_checked, ww_get_value, ww_window_state, ...) needs no input desktop and is
+#   allowed to run on a locked workstation. The default sweep is meant to be pattern-only.
+#   Windows-only tooling by design (ADR-0042): Android UI coverage is widget tests plus
+#   Fold Manual Validation; there is no WinWright equivalent there.
+#
+# Window size (F284 R-5): after every launch the runner forces the app window to a fixed
+# size ($fixedWindowWidth x $fixedWindowHeight) so a script passes or fails the same way on
+# every display. The display resolution and the achieved window size are printed in the
+# summary. Scripts no longer maximize; their priming step is ww_window_state "restore".
+#
 # Usage:
 #   .\run-winwright-tests.ps1                          # Run all tests with DB snapshot guard
 #   .\run-winwright-tests.ps1 -TestName f56            # Run tests matching pattern
@@ -143,6 +155,50 @@ $appWindowTitle = "MyEmailSpamFilter"   # matches the scripts' attachTitle
 # it at end-of-run. Cost ~6s/script x 7 ~= 45s, well within the <10 min target.
 # ---------------------------------------------------------------------------
 
+# ---------------------------------------------------------------------------
+# F284 R-5: fixed window size. Win32 SetWindowPos is used (not a WinWright step) so the
+# size is applied the same way regardless of script content and needs no cursor or input
+# desktop. SetProcessDPIAware makes every number below PHYSICAL pixels, so the recorded
+# display resolution and window size are comparable across machines.
+# ---------------------------------------------------------------------------
+$fixedWindowWidth  = 1600
+$fixedWindowHeight = 1000
+$script:lastWindowSize = "not set"
+$script:displaySize    = "unknown"
+
+if (-not ("WinWrightWin" -as [type])) {
+    Add-Type -TypeDefinition @'
+using System;
+using System.Runtime.InteropServices;
+public class WinWrightWin {
+  [StructLayout(LayoutKind.Sequential)]
+  public struct RECT { public int Left, Top, Right, Bottom; }
+  [DllImport("user32.dll")] public static extern bool SetProcessDPIAware();
+  [DllImport("user32.dll")] public static extern bool ShowWindow(IntPtr h, int cmd);
+  [DllImport("user32.dll")] public static extern bool SetWindowPos(IntPtr h, IntPtr after, int x, int y, int cx, int cy, uint flags);
+  [DllImport("user32.dll")] public static extern bool GetWindowRect(IntPtr h, out RECT r);
+  [DllImport("user32.dll")] public static extern int GetSystemMetrics(int index);
+}
+'@
+}
+[void][WinWrightWin]::SetProcessDPIAware()
+$script:displaySize = "$([WinWrightWin]::GetSystemMetrics(0))x$([WinWrightWin]::GetSystemMetrics(1))"
+
+function Set-FixedWindowSize {
+    param([IntPtr]$Handle)
+    [void][WinWrightWin]::ShowWindow($Handle, 9)                       # SW_RESTORE: leave maximized state
+    # SWP_NOZORDER (0x4) | SWP_NOACTIVATE (0x10); fixed origin keeps the window on the primary display.
+    [void][WinWrightWin]::SetWindowPos($Handle, [IntPtr]::Zero, 20, 20, $fixedWindowWidth, $fixedWindowHeight, 0x14)
+    Start-Sleep -Milliseconds 800
+    $r = New-Object WinWrightWin+RECT
+    if ([WinWrightWin]::GetWindowRect($Handle, [ref]$r)) {
+        $script:lastWindowSize = "$($r.Right - $r.Left)x$($r.Bottom - $r.Top)"
+    }
+    if ($script:lastWindowSize -ne "${fixedWindowWidth}x${fixedWindowHeight}") {
+        Write-Warning "Window size is $($script:lastWindowSize), wanted ${fixedWindowWidth}x${fixedWindowHeight} (display $($script:displaySize) may be too small)."
+    }
+}
+
 function Ensure-FreshAppAtHome {
     param([int]$WaitForWindowSec = 30)
 
@@ -169,7 +225,14 @@ function Ensure-FreshAppAtHome {
     while ((Get-Date) -lt $deadline) {
         $p = Get-Process $appProcName -ErrorAction SilentlyContinue |
              Where-Object { $_.MainWindowTitle -like "*$appWindowTitle*" }
-        if ($p) { Start-Sleep -Seconds 8; return $true }   # settle: let the home-screen sweep finish
+        if ($p) {
+            Start-Sleep -Seconds 8                          # settle: let the home-screen sweep finish
+            # F284 R-5: force the fixed window size, then let Flutter re-layout.
+            $handle = @($p)[0].MainWindowHandle
+            if ($handle -ne [IntPtr]::Zero) { Set-FixedWindowSize -Handle $handle; Start-Sleep -Seconds 1 }
+            else { Write-Warning "No main window handle; window size NOT fixed." }
+            return $true
+        }
         Start-Sleep -Milliseconds 500
     }
     Write-Warning "Dev app window '$appWindowTitle' did not appear within ${WaitForWindowSec}s."
@@ -242,25 +305,16 @@ public class WinWrightDesk {
 '@
     }
     $desk = [WinWrightDesk]::OpenInputDesktop(0, $false, 0x0100)  # DESKTOP_SWITCHDESKTOP
-    if ($desk -eq [IntPtr]::Zero) {
-        Write-Host ""
-        Write-Error @"
-THE WORKSTATION IS LOCKED -- unlock it and run this again.
-
-Not a test failure and not flakiness. WinWright's ww_click synthesizes cursor
-input, which Windows refuses off the input desktop; locking switches that to
-the Winlogon secure desktop. These scripts MUST use ww_click for Text nodes,
-CheckBoxes and the F169 dropdown face, because none of those support
-InvokePattern -- so a locked session blocks exactly the primitive they cannot
-avoid, while ww_invoke and tree reads keep working and make it look selective.
-
-Stopping here deliberately: running anyway produces script failures that read
-as UI regressions. (Sprint 73 retro IMP-6.)
-"@
-        exit 1
+    # F284 R-3: only RECORD the state here. The refusal itself runs after the scripts are
+    # selected (see "Locked-workstation gate" below), because a pattern-only selection
+    # does not need the input desktop.
+    $script:inputDesktopAvailable = ($desk -ne [IntPtr]::Zero)
+    if ($script:inputDesktopAvailable) {
+        [void][WinWrightDesk]::CloseDesktop($desk)
+        Write-Host "[Setup] Workstation is unlocked -- input desktop available." -ForegroundColor Green
+    } else {
+        Write-Host "[Setup] Workstation is LOCKED -- only cursor-free (pattern-only) scripts can run." -ForegroundColor Yellow
     }
-    [void][WinWrightDesk]::CloseDesktop($desk)
-    Write-Host "[Setup] Workstation is unlocked -- input desktop available." -ForegroundColor Green
 
     # Verify winwright doctor
     Write-Host "[Setup] Running winwright doctor..." -ForegroundColor Cyan
@@ -354,6 +408,64 @@ if (@($tests).Count -eq 0) {
     exit 0
 }
 
+# ---------------------------------------------------------------------------
+# Locked-workstation gate (Sprint 73 retro IMP-6, narrowed by F284 R-3).
+#
+# $cursorTools are the tools that SYNTHESIZE cursor or keyboard input and therefore
+# need the input desktop (SetCursorPos / SendInput are refused on the Winlogon secure
+# desktop of a locked session):
+#   ww_click, ww_hover, ww_drag_drop, ww_scroll  -- move the real cursor
+#   ww_keyboard, ww_type, ww_select_text         -- synthesize key events / selection drags
+# ww_type and ww_keyboard are included CONSERVATIVELY: whether ww_type uses ValuePattern
+# or key events is not documented for this build, and a wrong "allow" produces false
+# regression signals while a wrong "refuse" only costs an unlock. Narrow the list only
+# after a locked live probe proves a tool works (ww_type is the likely candidate).
+# Pattern-only tools (ww_invoke, ww_set_checked, ww_set_value, ww_select, ww_expand,
+# ww_get_value, ww_window_state, ww_focus, ww_count, ...) go through UI Automation
+# patterns and need no input desktop.
+# ---------------------------------------------------------------------------
+$cursorTools = @('ww_click', 'ww_hover', 'ww_drag_drop', 'ww_scroll', 'ww_keyboard', 'ww_type', 'ww_select_text')
+
+function Get-CursorToolsUsed {
+    param([string]$Path, [string[]]$Tools)
+    $found = @()
+    $doc = Get-Content -LiteralPath $Path -Raw -Encoding UTF8 | ConvertFrom-Json
+    foreach ($tc in @($doc.testCases)) {
+        foreach ($step in @($tc.steps)) {
+            if ($step.tool -and ($Tools -contains $step.tool)) { $found += $step.tool }
+        }
+    }
+    return @($found | Sort-Object -Unique)
+}
+
+$cursorFree = @()
+$cursorDriven = @()
+foreach ($t in $tests) {
+    $used = Get-CursorToolsUsed -Path $t.FullName -Tools $cursorTools
+    if ($used.Count -gt 0) { $cursorDriven += "$($t.Name) [$($used -join ', ')]" }
+    else { $cursorFree += $t.Name }
+}
+
+if (-not $script:inputDesktopAvailable) {
+    if ($cursorDriven.Count -gt 0) {
+        Write-Host ""
+        Write-Error @"
+THE WORKSTATION IS LOCKED -- unlock it and run this again.
+
+Not a test failure and not flakiness. WinWright's ww_click synthesizes cursor
+input, which Windows refuses off the input desktop; locking switches that to
+the Winlogon secure desktop. These selected scripts use cursor-driven steps:
+  $($cursorDriven -join "`n  ")
+
+Stopping here deliberately: running anyway produces script failures that read
+as UI regressions. (Sprint 73 retro IMP-6.) Scripts that use only UI Automation
+pattern steps (ww_invoke, ww_set_checked, ...) do run on a locked workstation.
+"@
+        exit 1
+    }
+    Write-Host "[Setup] Workstation is locked, but every selected script is cursor-free, so the run is allowed: $($cursorFree -join ', ')" -ForegroundColor Green
+}
+
 Write-Host ""
 # F226 (Sprint 73): warn BEFORE driving the app.
 #
@@ -384,13 +496,10 @@ Write-Host "Running $($tests.Count) WinWright test(s)..." -ForegroundColor Green
 Write-Host ""
 
 # ---------------------------------------------------------------------------
-# F182 (Sprint 63): deterministic no-rule seeding. mt2c's baseline rows are
-# synthetic reserved-domain rows seeded here and removed after the sweep
-# (also on failure paths), ending the live-data baseline rot of Sprints
-# 59/60/62. The seeded tables (scan_results, unmatched_emails) are NOT
-# drift-guard tables, and unseed restores them regardless.
-# ---------------------------------------------------------------------------
-# ---------------------------------------------------------------------------
+# F284 (Sprint 78): the F182 synthetic no-rule seed/unseed hooks were removed with
+# test_mt2c_no_rule_sweep.json (its contract is covered by the headless
+# no_rule_review_screen_test).
+#
 # F243 (Sprint 75): pause this environment's scheduled background scans for the
 # whole sweep. Since F243 a background scan RUNS while the app is open (it used
 # to defer), so during a sweep it could (a) change the No Rule list under a
@@ -420,21 +529,24 @@ try {
 # Stop) cannot leave the user's background scans silently disabled.
 try {
 
-$seedScript = Join-Path $PSScriptRoot "winwright-seed-no-rule.ps1"
-$didSeed = $false
-$needsSeed = @($tests | Where-Object { $_.Name -like "*mt2c*" }).Count -gt 0
-if (-not $needsSeed) {
-    # Only mt2c consumes the synthetic baseline rows -- do not touch the DB
-    # for runs that do not include it (Copilot review, PR #366).
-} elseif (Test-Path $seedScript) {
-    & $seedScript seed
-    if ($LASTEXITCODE -eq 0) { $didSeed = $true }
-    else { Write-Warning "[WW-SEED] Seeding failed -- mt2c may hit its data precondition." }
-} else {
-    Write-Warning "[WW-SEED] winwright-seed-no-rule.ps1 not found -- mt2c relies on live data."
+# F284 (Sprint 78, live sweep): the script runner SKIPS a step whose tool it
+# cannot replay ("Replay of 'ww_get_value' is not supported by the script
+# runner") and still reports the script PASSED -- so f124's four label checks
+# silently never ran. A skipped check must never read as a pass: run the script,
+# echo its output, and turn any such skip into a failure (exit code 3).
+function Invoke-WinWrightScript {
+    param([string]$Path)
+    $out = & $winwrightExe run $Path 2>&1 | ForEach-Object { Write-Host $_; $_ }
+    $code = $LASTEXITCODE
+    $skipped = @($out | Where-Object { "$_" -match 'is not supported by the script runner' })
+    if ($code -eq 0 -and $skipped.Count -gt 0) {
+        Write-Host "[FAIL] $($skipped.Count) step(s) were SKIPPED as not replayable -- a skipped check is not a pass." -ForegroundColor Red
+        return 3
+    }
+    return $code
 }
 
-$passed  = 0
+$passed = 0
 $failed  = 0
 $results = @()
 
@@ -453,8 +565,7 @@ foreach ($test in $tests) {
     }
 
     $startTime = Get-Date
-    & $winwrightExe run $test.FullName
-    $exitCode = $LASTEXITCODE
+    $exitCode = Invoke-WinWrightScript -Path $test.FullName
     $duration = (Get-Date) - $startTime
 
     if ($exitCode -eq 0) {
@@ -475,8 +586,7 @@ foreach ($test in $tests) {
 
         if (Ensure-FreshAppAtHome) {
             $retryStart = Get-Date
-            & $winwrightExe run $test.FullName
-            $exitCode = $LASTEXITCODE
+            $exitCode = Invoke-WinWrightScript -Path $test.FullName
             $duration = (Get-Date) - $retryStart
         }
 
@@ -511,13 +621,6 @@ foreach ($t in $pausedBgTasks) {
 if ($pausedBgTasks.Count -gt 0) {
     Write-Host "[WW-BG] Re-enabled $($pausedBgTasks.Count) dev background-scan task(s)." -ForegroundColor DarkCyan
 }
-}
-
-# F182: remove the synthetic no-rule rows -- runs whether the sweep passed or
-# failed (the loop above never throws), restoring the seeded tables.
-if ($didSeed) {
-    & $seedScript unseed
-    if ($LASTEXITCODE -ne 0) { Write-Warning "[WW-SEED] Unseed FAILED -- run '.\winwright-seed-no-rule.ps1 unseed' manually." }
 }
 
 # ---------------------------------------------------------------------------
@@ -561,6 +664,9 @@ Write-Host "==========================================" -ForegroundColor Cyan
 Write-Host "Total:  $($tests.Count)"
 Write-Host "Passed: $passed" -ForegroundColor Green
 Write-Host "Failed: $failed" -ForegroundColor $(if ($failed -gt 0) { "Red" } else { "Green" })
+# F284 R-5: record the environment so a pass/fail is comparable across displays.
+Write-Host "Display: $($script:displaySize) (physical px)  |  Window: $($script:lastWindowSize) (wanted ${fixedWindowWidth}x${fixedWindowHeight})"
+Write-Host "Input desktop: $(if ($script:inputDesktopAvailable) { 'available (unlocked)' } else { 'LOCKED -- cursor-free scripts only' })"
 
 if ($driftDetected) {
     Write-Host "DB Drift: DETECTED -- see [LEAK] lines above" -ForegroundColor Red

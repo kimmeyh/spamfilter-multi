@@ -52,6 +52,7 @@ This directory contains Architectural Decision Records for the spamfilter-multi 
 | [0044](0044-notification-triggered-scan.md) | Scan When a Mail App Says New Mail Arrived (Android Notification Listener; per account since Sprint 77) | Accepted | 2026-10-05 |
 | [0045](0045-no-rule-entry-identity.md) | Identity and Refresh Semantics of a No Rule Entry | Accepted | 2026-10-06 |
 | [0046](0046-imap-certificate-trust.md) | IMAP Certificate Trust (TOFU for Custom Servers) and the Google OAuth Issuing-Authority Pin | Accepted | 2026-10-07 |
+| [0047](0047-content-history-dev-only.md) | Content History -- a Dev-Only Record of the Developer's Own Mail | Proposed | 2026-10-10 |
 
 ## Creating a New ADR
 

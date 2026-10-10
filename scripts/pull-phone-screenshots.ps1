@@ -13,7 +13,8 @@ Manual Validation evidence by sprint.
 A plain run (no -Folder, no -Pattern) collects ONLY (Sprint 77, Harold):
   - DCIM: Screenshot_<yyyyMMdd>_<HHmmss>.png with no suffix. Screenshots of
     other apps carry the app's name (Screenshot_..._Instagram.png) and are
-    skipped.
+    skipped. Exception: Screenshot_..._One UI Home.png IS collected -- that is
+    how Samsung names a notification-shade capture (Sprint 78).
   - Documents and its subfolders: the app's diagnostic logs (diag_*.log) and
     its .csv exports. Local copies of these are refreshed, because they keep
     growing on the phone.
@@ -135,10 +136,16 @@ if (-not $store) { 'ERROR: "Internal storage" not found on the phone (is it unlo
 #                 appends the foreground app's name to other screenshots
 #                 (Screenshot_..._Instagram.png, _Chrome.png); this app's own
 #                 have none (201 of 222 earlier validation files).
+#                 EXCEPTION (Sprint 78, 2026-10-10): a screenshot of the
+#                 notification shade is named for the launcher underneath it
+#                 (Screenshot_..._One UI Home.png), so the no-suffix rule
+#                 silently skipped Harold's notification evidence for a whole
+#                 morning. Those are collected too. They can show other apps'
+#                 notifications; the destination is gitignored.
 #   2. Documents (and its subfolders, where the app writes): the diagnostic
 #                 logs diag_*.log and the .csv exports.
 # Passing -Folder or -Pattern runs ONE custom source instead (the old shape).
-$exactScreenshot = '^Screenshot_\d{8}_\d{6}\.png$'
+$exactScreenshot = '^Screenshot_\d{8}_\d{6}(_One UI Home)?\.png$'
 if ($Folder -or $Pattern) {
     $sources = @(@{
         Folder    = $(if ($Folder) { $Folder } else { 'DCIM' })

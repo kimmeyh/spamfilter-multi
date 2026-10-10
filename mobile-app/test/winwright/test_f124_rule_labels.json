@@ -23,8 +23,8 @@
         { "_comment": "F135 (Sprint 52) made Settings resolve its account LAZILY -- the 'Select Account' picker overlay this script used to click through is GONE (same change the f56 scripts already documented). Settings now opens directly onto the General tab. (Stale picker step removed 2026-08-15, Sprint 59 sweep repair.)",
           "tool": "ww_invoke", "selector": "type=Button[name='Settings']" },
 
-        { "_comment": "PROOF OF ARRIVAL: the General tab exists only once Settings is actually open. Tabs project as Text nodes; useInvokePattern:false forces the physical mouse press they need.",
-          "tool": "ww_click", "selector": "type=Text[name^='General']", "useInvokePattern": false },
+        { "_comment": "PROOF OF ARRIVAL: the General tab exists only once Settings is actually open. F284: the tab label becomes a button node once R-1 adds Semantics(button) to the Settings tabs, so ww_invoke replaces the mouse press (UNVERIFIED until the live sweep).",
+          "tool": "ww_invoke", "selector": "type=Button[name='Tab 1 of 4\nGeneral']" },
 
         { "_comment": "F124 entry point. Manage Rules projects as a correctly-named Button.",
           "tool": "ww_invoke", "selector": "type=Button[name='Manage Rules']" },
@@ -61,7 +61,7 @@
         { "_comment": "F124 CORE -- with the TLD filter active, each visible row exposes an accessible name stating BOTH its category and its sub-type. Resolving this exact string IS the F124 row-display contract, and proves the filter selected matching rows.",
           "tool": "ww_invoke", "selector": "type=Button[name='Header / From category, Top-Level Domain sub-type. View rule details']" },
 
-        { "_comment": "F124 STRONGEST EVIDENCE: the details dialog renders Category and Sub-Type as explicitly LABELLED fields. Resolving both labels proves the dialog opened AND that the classification is presented as named fields rather than free text. NOTE: static Text nodes do NOT support InvokePattern ('Element does not support InvokePattern. ControlType: Text' -- observed 2026-07-28), so these two steps must use ww_click with useInvokePattern:false. The click is harmless on a label; the point is that the selector RESOLVES.",
+        { "_comment": "F124 STRONGEST EVIDENCE: the details dialog renders Category and Sub-Type as explicitly LABELLED fields. Resolving both labels proves the dialog opened AND that the classification is presented as named fields rather than free text. NOTE: static Text nodes do NOT support InvokePattern ('Element does not support InvokePattern. ControlType: Text' -- observed 2026-07-28). F284 live sweep (2026-10-10): ww_get_value is NOT replayed by the script runner (the step is skipped and the script still reports PASSED), and a static Text node has no InvokePattern, so these four probes stay ww_click (the runner fails a script with any skipped step).",
           "tool": "ww_click", "selector": "type=Text[name='Sub-Type']", "useInvokePattern": false },
         { "tool": "ww_click", "selector": "type=Text[name='Category']", "useInvokePattern": false },
 

@@ -1,6 +1,6 @@
 name: my_email_spam_filter
 description: Cross-platform email spam filter app
-version: 0.18.0+15
+version: 0.19.0+16
 publish_to: 'none'
 
 environment:
@@ -135,12 +135,13 @@ msix_config:
   #    publisher display name: Kimmey Consulting - Ohio"
   # F199 (Sprint 68) changed this to "Kimmey Consulting LLC" ahead of the console and
   # Submission 26 was REJECTED at package validation. The console still holds the
-  # hyphenated name; changing it is F199-b and is blocked on Microsoft support.
+  # hyphenated name; F199-b is on HOLD (Harold, 2026-10-10: no real business is
+  # being done by either entity; resolve later).
   # DO NOT change this until the CONSOLE changes first. Console leads, repo follows.
   publisher_display_name: Kimmey Consulting - Ohio
   identity_name: KimmeyConsulting-Ohio.MyEmailSpamFilter
   publisher: CN=84EA8722-0CA5-4EC0-9B10-07EE79B66062
-  msix_version: 0.18.0.0
+  msix_version: 0.19.0.0
   logo_path: assets/icon/icon.png
   capabilities: internetClient, internetClientServer, privateNetworkClientServer
   # F148 (Sprint 56): stable App Execution Alias so background-scan scheduled

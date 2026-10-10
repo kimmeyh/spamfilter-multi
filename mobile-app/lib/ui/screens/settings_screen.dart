@@ -30,6 +30,7 @@ import '../widgets/app_bar_with_exit.dart';
 import '../widgets/battery_optimization_row.dart'; // F252 (Sprint 76)
 import '../widgets/new_mail_trigger_row.dart'; // F253 (Sprint 76)
 import '../widgets/scan_interval_control.dart'; // F264 (Sprint 77)
+import '../widgets/content_history_row.dart';
 import '../widgets/standard_app_bar_actions.dart';
 import 'folder_selection_screen.dart';
 import 'help_screen.dart';
@@ -632,11 +633,29 @@ class _SettingsScreenState extends State<SettingsScreen> with SingleTickerProvid
           ),
           bottom: TabBar(
             controller: _tabController,
-            tabs: const [
-              Tab(text: 'General'),
-              Tab(text: 'Account'),
-              Tab(text: 'Manual Scan'),
-              Tab(text: 'Background'),
+            // F284 R-1 (Sprint 78): each tab label also carries a BUTTON node
+            // with a tap action (the Sort chip pattern), so UI Automation can
+            // invoke it without the mouse -- Flutter tabs otherwise project
+            // to Windows UIA as plain Text with no invoke pattern. The tab's
+            // own semantics (selected, "tab N of 4") are kept; the action
+            // selects the same tab a tap would. No visual change.
+            tabs: [
+              for (final (i, label) in const [
+                'General',
+                'Account',
+                'Manual Scan',
+                'Background',
+              ].indexed)
+                Tab(
+                  child: Semantics(
+                    container: true,
+                    button: true,
+                    excludeSemantics: true,
+                    label: label,
+                    onTap: () => _tabController.animateTo(i),
+                    child: Text(label),
+                  ),
+                ),
             ],
           ),
         ),
@@ -753,6 +772,9 @@ class _SettingsScreenState extends State<SettingsScreen> with SingleTickerProvid
           },
         ),
         const SizedBox(height: 8),
+        // R76-4 (Sprint 78, ADR-0047): the dev-only content history switch,
+        // count and delete. Builds NOTHING in a prod build.
+        const ContentHistoryRow(),
 
         OutlinedButton.icon(
           icon: const Icon(Icons.swap_vert_outlined),
@@ -1391,8 +1413,8 @@ class _SettingsScreenState extends State<SettingsScreen> with SingleTickerProvid
   }
 
   Widget _buildCsvExportDirectorySelector() {
-    // F206 (Sprint 74): the real per-platform default -- this label used to say
-    // "Downloads folder (default)" on every platform, which was true on none.
+    // F206 (Sprint 74) / F282 (Sprint 78): the real default, now the same on
+    // every platform (Documents/MyEmailSpamFilter[_Dev]).
     final displayPath =
         _csvExportDirectory ?? ExportDirectories.defaultLabel;
 
@@ -1640,25 +1662,32 @@ class _SettingsScreenState extends State<SettingsScreen> with SingleTickerProvid
             await _updateScheduledScan(enabled: value);
           },
         ),
-        // F264 R-11 (Sprint 77): "Scan every" sits right under the enable
-        // switch, on BOTH platforms (one control, same UI). Shown even when
-        // background scanning is OFF (ISSUE #123+#124), so the user can set it
-        // first. A change saves the PER-ACCOUNT override (F98, ADR-0039) and
-        // reschedules through the platform factory when enabled.
-        Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-          child: ScanIntervalControl(
-            initialMinutes: _backgroundScanFrequency,
-            onCommit: (minutes) async {
-              setState(() => _backgroundScanFrequency = minutes);
-              await _settingsStore.setAccountBackgroundFrequency(
-                  _requireAccountId, minutes);
-              if (_backgroundScanEnabled) {
-                await _updateScheduledScan(enabled: true);
-              }
-            },
+        // F264 R-11 (Sprint 77) / F281 (Sprint 78, Harold): "Scan every" sits
+        // right under the enable switch, on BOTH platforms (one control, same
+        // UI), and is shown ONLY while this account's background scanning is
+        // on -- this reverses F264's "shown even when off". It is the complete
+        // rule on Android too: the new-mail switch scans nothing for an
+        // account whose background scanning is off (the worker skips it,
+        // `android_background_scan_worker.dart:205-216`), so it needs no rule
+        // of its own. Hiding never changes the saved value (plan F2 = 1); it
+        // shows again when background scanning is turned back on. A change
+        // saves the PER-ACCOUNT override (F98, ADR-0039) and reschedules
+        // through the platform factory.
+        if (_backgroundScanEnabled)
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+            child: ScanIntervalControl(
+              initialMinutes: _backgroundScanFrequency,
+              onCommit: (minutes) async {
+                setState(() => _backgroundScanFrequency = minutes);
+                await _settingsStore.setAccountBackgroundFrequency(
+                    _requireAccountId, minutes);
+                if (_backgroundScanEnabled) {
+                  await _updateScheduledScan(enabled: true);
+                }
+              },
+            ),
           ),
-        ),
         // F253 + F264: event-driven scans from mail-app notifications, per
         // ACCOUNT. NOT gated on this account's background switch (review M-1,
         // Sprint 76). Android only; HIDDEN on Windows (Q10 = 1, ADR-0044's

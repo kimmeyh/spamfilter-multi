@@ -56,6 +56,14 @@ abstract class SpamFilterPlatform {
   /// (returns the message unchanged).
   Future<EmailMessage> fetchFullBody(EmailMessage message);
 
+  /// R76-4 (Sprint 78, ADR-0047 item 6): the plain text of ONE message, for
+  /// the dev-only content history. Unlike [fetchFullBody] (used by body rules
+  /// and NOT changed), an HTML-only body is converted to text and a nested
+  /// multipart tree is walked. Null when there is no text or the fetch fails;
+  /// never throws. Providers without a real implementation inherit the mixin's
+  /// named no-op.
+  Future<String?> fetchContentText(EmailMessage message);
+
   /// Apply compiled rules with platform-native filtering when available
   ///
   /// Some platforms (Gmail, Outlook) support server-side filtering which
@@ -203,6 +211,11 @@ mixin BatchOperationsMixin implements SpamFilterPlatform {
   /// (IMAP, Gmail) override this with a real per-message body fetch.
   @override
   Future<EmailMessage> fetchFullBody(EmailMessage message) async => message;
+
+  /// R76-4 default: a NAMED no-op (ADR-0047 item 6) -- demo, mock and Outlook
+  /// providers store no body text. IMAP and Gmail override it.
+  @override
+  Future<String?> fetchContentText(EmailMessage message) async => null;
 
   @override
   Future<BatchActionResult> markAsReadBatch(List<EmailMessage> messages) async {

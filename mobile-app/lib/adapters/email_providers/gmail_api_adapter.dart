@@ -9,6 +9,7 @@ import '../../adapters/auth/google_auth_service.dart';
 import '../../core/models/batch_action_result.dart';
 import '../../core/services/background_mode_service.dart';
 import '../../core/services/diagnostic_logger.dart';
+import '../../core/services/content_text_extractor.dart';
 import '../../core/storage/settings_store.dart';
 import '../../core/utils/app_logger.dart';
 import '../../util/redact.dart';
@@ -1168,6 +1169,27 @@ class GmailApiAdapter with BatchOperationsMixin implements SpamFilterPlatform {
           'evaluating without body',
           e);
       return message;
+    }
+  }
+
+  /// R76-4 (Sprint 78, ADR-0047): the message's plain text for the dev-only
+  /// content history, walking the NESTED multipart tree and converting an
+  /// HTML-only body ([gmailPartText]). The rule path ([fetchFullBody]) is
+  /// unchanged.
+  @override
+  Future<String?> fetchContentText(EmailMessage message) async {
+    if (_gmailApi == null || message.id.isEmpty) return null;
+    try {
+      final full = await _gmailApi!.users.messages.get(
+        'me',
+        message.id,
+        format: 'full',
+      );
+      return gmailPartText(full.payload);
+    } catch (e) {
+      Redact.logError(
+          'R76-4 fetchContentText failed for Gmail message ${message.id}', e);
+      return null;
     }
   }
 

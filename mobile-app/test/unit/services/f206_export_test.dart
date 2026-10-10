@@ -1,7 +1,8 @@
 /// F206 (Sprint 74): export as a platform capability.
 ///
 ///   - ONE resolver decides where exports go: the user's folder if set, else
-///     the platform default (Harold: Android Documents, Windows Downloads).
+///     the default `Documents/MyEmailSpamFilter[_Dev]` on every platform
+///     (F282, Sprint 78; was Android Documents / Windows Downloads).
 ///   - Clear history deletes FINISHED scans only, scoped to the filters.
 ///   - Changing the export folder reaches the diagnostic log's cache through
 ///     the SETTER (it used to keep writing to the old folder all session).
@@ -66,26 +67,29 @@ void main() {
       expect(ExportDirectories.publicDocumentsFrom('/weird/path'), isNull);
     });
 
-    test('the Settings label names THIS platform\'s real default', () {
-      // The suite runs on Windows (dev) and Linux (CI); the label must match
-      // what platformDefault() actually returns there.
-      final label = ExportDirectories.defaultLabel;
-      if (Platform.isWindows) {
-        expect(label, contains('Downloads'));
-      } else if (Platform.isAndroid) {
-        expect(label, contains('Documents'));
-      } else {
-        expect(label, contains('App documents'));
-      }
+    test('F282: the Settings label names the one default folder', () {
+      expect(ExportDirectories.defaultLabel,
+          'Documents/${ExportDirectories.appFolderName} (default)');
+      expect(ExportDirectories.appFolderName,
+          'MyEmailSpamFilter${AppEnvironment.dataDirSuffix}',
+          reason: 'DEV and PROD get separate folders (ADR-0035)');
     });
 
-    test('no folder configured -> the platform default, subfolder created',
-        () async {
+    test('F282 AC-1: no folder configured -> Documents/MyEmailSpamFilter[_Dev], '
+        'subfolder created', () async {
       final dir = await ExportDirectories.resolve(
           subfolder: 'scan_exports',
           settingsStore: SettingsStore(testHelper.dbHelper));
-      expect(dir, p.join(tmp.path, 'default', 'scan_exports'));
+      expect(dir, p.join(tmp.path, 'default', ExportDirectories.appFolderName,
+          'scan_exports'));
       expect(await Directory(dir).exists(), isTrue);
+    });
+
+    test('F282 AC-1: root exports (no subfolder) land in the app folder, '
+        'not loose in Documents', () async {
+      final dir = await ExportDirectories.resolve(
+          settingsStore: SettingsStore(testHelper.dbHelper));
+      expect(dir, p.join(tmp.path, 'default', ExportDirectories.appFolderName));
     });
 
     test('review I-4: an UNWRITABLE default falls back to the app\'s own '
@@ -99,14 +103,22 @@ void main() {
       final dir = await ExportDirectories.resolve(
           subfolder: 'scan_exports',
           settingsStore: SettingsStore(testHelper.dbHelper));
-      expect(dir, p.join(tmp.path, 'own', 'scan_exports'));
+      expect(dir, p.join(tmp.path, 'own', ExportDirectories.appFolderName,
+          'scan_exports'),
+          reason: 'on Windows the app\'s own folder is Documents itself, '
+              'shared by DEV and PROD, so the app folder is added there too');
     });
 
-    test('a folder the user chose wins over the default', () async {
+    test('F282 AC-2: a folder the user chose wins and is used EXACTLY as '
+        'chosen -- no MyEmailSpamFilter added', () async {
       final store = SettingsStore(testHelper.dbHelper);
       final chosen = p.join(tmp.path, 'chosen');
       await store.setCsvExportDirectory(chosen);
       expect(await ExportDirectories.resolve(settingsStore: store), chosen);
+      expect(
+          await ExportDirectories.resolve(
+              subfolder: 'scan_exports', settingsStore: store),
+          p.join(chosen, 'scan_exports'));
     });
   });
 
@@ -124,10 +136,12 @@ void main() {
           reason: 'the store setter must invalidate the logger cache');
     });
 
-    test('review I-1: the diagnostics folder is environment-suffixed, so DEV '
-        'and PROD never share (and delete) each other\'s logs', () async {
+    test('F282 AC-3 / review I-1: in the DEFAULT folder the log goes to '
+        'MyEmailSpamFilter[_Dev]/diagnostics -- the parent already keeps DEV '
+        'and PROD apart', () async {
       final dir = await DiagnosticLogger.resolveLogDir();
-      expect(p.basename(dir), 'diagnostics${AppEnvironment.dataDirSuffix}');
+      expect(dir, p.join(tmp.path, 'default', ExportDirectories.appFolderName,
+          'diagnostics'));
     });
   });
 

@@ -3,10 +3,15 @@
 /// database -- the path a user takes (Settings > Background), not a seam.
 ///
 /// Covers AC-2 (240 -> 120 schedules; the old fixed-list gate refused it), AC-4
-/// (4 minutes: inline message, nothing stored, no schedule call), AC-5 (Hours +
-/// 99 -> 5940 stored and scheduled once), AC-11 (the one Android note, exactly
-/// once), AC-14 (the per-account new-mail switch is reachable on Android and
-/// hidden on Windows, both branches).
+/// (4 minutes: inline message, nothing stored, no schedule call), AC-11 (the
+/// one Android note, exactly once), AC-14 (the per-account new-mail switch is
+/// reachable on Android and hidden on Windows, both branches).
+///
+/// F281 (Sprint 78, Alternative D): the row is a preset drop-down plus
+/// "Custom..."; the Custom dialog validates 5 minutes to 24 hours with Save
+/// disabled until valid (25 hours refused; 24 stores and schedules 1440), and
+/// the control is HIDDEN while the account's background scanning is off, on
+/// both platforms, with the saved value kept for when it is turned on (F2 = 1).
 ///
 /// What these do NOT catch: Task Scheduler or WorkManager accepting the value
 /// (phone and Windows validation), the keyboard's own Done key on a device (the
@@ -14,6 +19,7 @@
 library;
 
 import 'package:flutter/material.dart';
+import 'package:flutter/semantics.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 
@@ -94,6 +100,8 @@ void main() {
 
   final numberField = find.byKey(const Key('scan_interval_number'));
   final message = find.byKey(const Key('scan_interval_message'));
+  final dropdown = find.byKey(const Key('scan_interval_dropdown'));
+  final saveButton = find.byKey(const Key('scan_interval_custom_save'));
 
   /// Seeds the account, opens Settings > Background and returns once loaded.
   Future<void> openBackgroundTab(
@@ -120,109 +128,222 @@ void main() {
     });
   }
 
-  /// Types [text] into the number box and presses Done, with real-time waits
-  /// so the database write behind the commit finishes.
-  Future<void> typeAndSubmit(WidgetTester tester, String text) async {
+  /// The interval the drop-down shows, in minutes.
+  int shownMinutes(WidgetTester tester) =>
+      tester.widget<DropdownButton<int>>(dropdown).value!;
+
+  /// Opens the drop-down and picks the entry labelled [label], with real-time
+  /// waits so the database write behind the commit finishes.
+  Future<void> pick(WidgetTester tester, String label) async {
+    // The menu route animates in; its frames are pumped OUTSIDE runAsync.
+    await tester.ensureVisible(dropdown);
+    await tester.pump();
+    await tester.tap(dropdown);
+    await tester.pump();
+    await tester.pump(const Duration(seconds: 1));
+    await tester.tap(find.text(label).last);
+    await tester.pump();
+    await tester.pump(const Duration(seconds: 1));
+    // The commit's database write needs the real event loop.
     await tester.runAsync(() async {
-      await tester.enterText(numberField, text);
-      await tester.pump();
-      await tester.testTextInput.receiveAction(TextInputAction.done);
+      await Future<void>.delayed(const Duration(milliseconds: 400));
+    });
+    await tester.pump(const Duration(milliseconds: 100));
+  }
+
+  /// Opens "Custom..." and types [text] into its number box.
+  Future<void> openCustomAndType(WidgetTester tester, String text) async {
+    await pick(tester, 'Custom...');
+    expect(find.byKey(const Key('scan_interval_custom_dialog')), findsOneWidget);
+    await tester.enterText(numberField, text);
+    await tester.pump();
+  }
+
+  bool saveEnabled(WidgetTester tester) =>
+      tester.widget<FilledButton>(saveButton).onPressed != null;
+
+  Future<void> tapSave(WidgetTester tester) async {
+    await tester.runAsync(() async {
+      await tester.tap(saveButton);
+      await tester.pump(const Duration(milliseconds: 400));
       await Future<void>.delayed(const Duration(milliseconds: 400));
       await tester.pump(const Duration(milliseconds: 100));
     });
   }
 
-  String numberText(WidgetTester tester) =>
-      tester.widget<TextField>(numberField).controller!.text;
+  Future<int?> stored(WidgetTester tester) => tester.runAsync<int?>(
+      () => SettingsStore().getAccountBackgroundFrequency(acct));
 
-  testWidgets('AC-2: 240 minutes shown as 4 Hours; typing 2 saves AND '
+  testWidgets('F281 D: the presets are 5, 10, 15, 30 minutes and 1, 2, 4, 12, '
+      '24 hours, then Custom...', (tester) async {
+    await openBackgroundTab(tester, storedMinutes: 15);
+    final items = tester
+        .widget<DropdownButton<int>>(dropdown)
+        .items!
+        .map((i) => i.value)
+        .toList();
+    expect(items, [5, 10, 15, 30, 60, 120, 240, 720, 1440, -1]);
+  });
+
+  testWidgets('AC-2: 240 minutes shows as 4 hours; picking 2 hours saves AND '
       'schedules 120 (the old fixed-list gate refused it)', (tester) async {
     await openBackgroundTab(tester, storedMinutes: 240);
     expect(find.byKey(const Key('scan_interval_control')), findsOneWidget);
-    expect(numberText(tester), '4');
-    expect(find.text('Hours'), findsOneWidget,
-        reason: '240 minutes is a whole number of hours and shows as hours');
+    expect(shownMinutes(tester), 240);
 
-    await typeAndSubmit(tester, '2');
+    await pick(tester, '2 hours');
 
     expect(scheduler.scheduled, [(accountId: acct, minutes: 120)],
         reason: 'before F264 this saved the override and returned without '
             'scheduling, because ScanFrequency.fromMinutes(120) was "disabled"');
-    final stored = await tester
-        .runAsync(() => SettingsStore().getAccountBackgroundFrequency(acct));
-    expect(stored, 120);
+    expect(await stored(tester), 120);
     expect(find.text('Background scan scheduled every 2 hours'), findsOneWidget);
   });
 
-  testWidgets('AC-4: 4 minutes shows the floor message, stores nothing and '
-      'schedules nothing', (tester) async {
+  testWidgets('AC-4: Custom 4 minutes shows the floor message, Save stays '
+      'disabled, nothing is stored or scheduled', (tester) async {
     await openBackgroundTab(tester, storedMinutes: 15);
-    expect(find.text('Minutes'), findsOneWidget);
-
-    await typeAndSubmit(tester, '4');
+    await openCustomAndType(tester, '4');
 
     expect(message, findsOneWidget);
     expect(tester.widget<Text>(message).data,
         'Minimum is 5 minutes, to limit battery use');
+    expect(saveEnabled(tester), isFalse);
     expect(scheduler.scheduled, isEmpty);
-    final stored = await tester
-        .runAsync(() => SettingsStore().getAccountBackgroundFrequency(acct));
-    expect(stored, 15, reason: 'the stored value stays what it was');
+    expect(await stored(tester), 15, reason: 'the stored value stays what it was');
   });
 
-  testWidgets('the message clears when the entry becomes valid and 5 is '
-      'accepted', (tester) async {
+  testWidgets('the message clears when the entry becomes valid; Custom 45 '
+      'saves, schedules once and reads "45 minutes (custom)"', (tester) async {
     await openBackgroundTab(tester, storedMinutes: 15);
-    await typeAndSubmit(tester, '4');
+    await openCustomAndType(tester, '4');
     expect(message, findsOneWidget);
-    await typeAndSubmit(tester, '5');
+    await tester.enterText(numberField, '45');
+    await tester.pump();
     expect(message, findsNothing);
-    expect(scheduler.scheduled, [(accountId: acct, minutes: 5)]);
+    expect(saveEnabled(tester), isTrue);
+
+    await tapSave(tester);
+
+    expect(scheduler.scheduled, [(accountId: acct, minutes: 45)]);
+    expect(await stored(tester), 45);
+    expect(shownMinutes(tester), 45);
+    expect(find.text('45 minutes (custom)'), findsWidgets);
   });
 
-  testWidgets('AC-5: at 2 hours, typing 99 stores and schedules 5940 once',
-      (tester) async {
+  testWidgets('F281 AC-2: Custom at 2 hours, 25 shows "Maximum is 24 hours" '
+      'with Save disabled; 24 stores and schedules 1440 once', (tester) async {
     await openBackgroundTab(tester, storedMinutes: 120);
-    expect(numberText(tester), '2');
+    await openCustomAndType(tester, '25');
+    expect(tester.widget<Text>(message).data, 'Maximum is 24 hours');
+    expect(saveEnabled(tester), isFalse);
 
-    await typeAndSubmit(tester, '99');
+    await tester.enterText(numberField, '24');
+    await tester.pump();
+    await tapSave(tester);
 
-    expect(scheduler.scheduled, [(accountId: acct, minutes: 5940)]);
-    final stored = await tester
-        .runAsync(() => SettingsStore().getAccountBackgroundFrequency(acct));
-    expect(stored, 5940);
+    expect(scheduler.scheduled, [(accountId: acct, minutes: 1440)]);
+    expect(await stored(tester), 1440);
   });
 
-  testWidgets('background scanning OFF: a valid change is stored but nothing '
-      'is scheduled', (tester) async {
-    await openBackgroundTab(tester, storedMinutes: 15, backgroundEnabled: false);
-    await typeAndSubmit(tester, '30');
+  testWidgets('Cancel in Custom changes nothing', (tester) async {
+    await openBackgroundTab(tester, storedMinutes: 15);
+    await openCustomAndType(tester, '45');
+    await tester.runAsync(() async {
+      await tester.tap(find.text('Cancel'));
+      await tester.pump(const Duration(milliseconds: 400));
+    });
     expect(scheduler.scheduled, isEmpty);
-    final stored = await tester
-        .runAsync(() => SettingsStore().getAccountBackgroundFrequency(acct));
-    expect(stored, 30);
+    expect(await stored(tester), 15);
+    expect(shownMinutes(tester), 15);
   });
 
-  testWidgets('an untypable stored value (125 minutes) opens as 2 Hours and is '
+  testWidgets('an untypable stored value (125 minutes) opens as 2 hours and is '
       'converted in storage', (tester) async {
     await openBackgroundTab(tester, storedMinutes: 125);
-    expect(numberText(tester), '2');
-    expect(find.text('Hours'), findsOneWidget);
-    final stored = await tester
-        .runAsync(() => SettingsStore().getAccountBackgroundFrequency(acct));
-    expect(stored, 120);
+    expect(shownMinutes(tester), 120);
+    expect(await stored(tester), 120);
   });
 
-  testWidgets('the control holds only 2 digits', (tester) async {
+  testWidgets('the Custom number box holds only 2 digits', (tester) async {
     await openBackgroundTab(tester, storedMinutes: 15);
-    await tester.runAsync(() async {
-      await tester.enterText(numberField, '12');
-      await tester.pump();
-      // A third digit is refused by the formatter (the edit is rejected).
-      await tester.enterText(numberField, '123');
-      await tester.pump();
+    await openCustomAndType(tester, '12');
+    // A third digit is refused by the formatter (the edit is rejected).
+    await tester.enterText(numberField, '123');
+    await tester.pump();
+    expect(tester.widget<TextField>(numberField).controller!.text, '12');
+  });
+
+  for (final android in [false, true]) {
+    final platform = android ? 'Android' : 'Windows';
+    testWidgets('F281 AC-3 ($platform): background scanning OFF hides "Scan '
+        'every"; the saved value is kept and shown when it is on (F2 = 1)',
+        (tester) async {
+      SettingsScreen.debugIsAndroid = android;
+      await openBackgroundTab(tester,
+          storedMinutes: 30, backgroundEnabled: false);
+      expect(find.byKey(const Key('scan_interval_control')), findsNothing);
+
+      await openBackgroundTab(tester, storedMinutes: 30);
+      expect(find.byKey(const Key('scan_interval_control')), findsOneWidget);
+      expect(shownMinutes(tester), 30);
+      expect(scheduler.scheduled, isEmpty,
+          reason: 'opening the screen schedules nothing');
     });
-    expect(numberText(tester), '12');
+  }
+
+  // F284 R-1 / T-2 (Sprint 78): each Settings tab label is a BUTTON node with
+  // a tap action, so UI Automation can invoke it without the mouse. A named
+  // node is not enough -- only performing the action proves it works
+  // (docs/ACCESSIBILITY_STANDARDS.md section 1).
+  //
+  // What this does NOT catch: how Windows UIA projects the node (the
+  // WinWright sweep's ww_invoke on the tab is that check).
+  testWidgets('F284 R-1: the Background tab node is a button whose action '
+      'opens the Background tab', (tester) async {
+    final handle = tester.ensureSemantics();
+    tester.view.physicalSize = const Size(1200, 2600);
+    tester.view.devicePixelRatio = 1.0;
+    addTearDown(tester.view.resetPhysicalSize);
+    addTearDown(tester.view.resetDevicePixelRatio);
+    await tester.runAsync(() async {
+      final store = SettingsStore();
+      await store.setAccountBackgroundEnabled(acct, true);
+      await store.setAccountBackgroundFrequency(acct, 15);
+      await mountAndLoadDbWidget(tester,
+          MaterialApp(home: SettingsScreen(key: UniqueKey(), accountId: acct)));
+    });
+    expect(find.byKey(const Key('scan_interval_control')), findsNothing,
+        reason: 'precondition: Settings opens on the General tab');
+
+    SemanticsNode? tabNode;
+    void visit(SemanticsNode n) {
+      final d = n.getSemanticsData();
+      if (d.label == 'Background' &&
+          d.hasFlag(SemanticsFlag.isButton) &&
+          d.hasAction(SemanticsAction.tap)) {
+        tabNode = n;
+      }
+      n.visitChildren((c) {
+        visit(c);
+        return true;
+      });
+    }
+
+    visit(tester.binding.pipelineOwner.semanticsOwner!.rootSemanticsNode!);
+    expect(tabNode, isNotNull,
+        reason: 'the Background tab must expose a button node with a tap action');
+
+    await tester.runAsync(() async {
+      tester.binding.pipelineOwner.semanticsOwner!
+          .performAction(tabNode!.id, SemanticsAction.tap);
+      await tester.pump(const Duration(milliseconds: 400));
+      await Future<void>.delayed(const Duration(milliseconds: 300));
+      await tester.pump(const Duration(milliseconds: 400));
+    });
+    expect(find.byKey(const Key('scan_interval_control')), findsOneWidget,
+        reason: 'performing the node\'s action must open the Background tab');
+    handle.dispose();
   });
 
   group('AC-14 / Q10 / AC-11: the Android-only Background rows', () {

@@ -4,9 +4,296 @@ Sprint plan approved as amended (with any comments I provided), proceed with exe
 All Sprint tasks and sub-tasks are approved.  
 Do not stop between tasks as they are all approved, please continue to complete all tasks and without addition approvals until Manual Validation, providing your recommendation for Manual Validation steps.
 Do not stop to ask questions unless meeting the criteria in \docs\SPRINT_STOPPING_CRITERIA.md
-If questions must be asked, ask as late as possible - do everything that can be done (all tasks and parts of takss, without the answer to the question(s), then ask the question(s)
+If questions must be asked, ask as late as possible - do everything that can be done (all tasks and parts of tasks, without the answer to the question(s), then ask the question(s)
 ---------------------------------------------------------------------------------------------------------
 Sprint 7n Scope should include the below items. Please complete sprint planning (/docs/sprint_planning.md) for the below items and present for approval.  Note that everything needs to take into account both the Windows App and the Android app and ADR stating that everything should be functionally and UI the same unless it cannot be - and where it cannot be it should be implemented as a platform exception for what is needed -- this applies to all backend code, frontend code, data, architecture, development, security, testing, deployment.
+
+---------------------------------------------------------------------------------------------------------
+Sprint 78 Scope should include the below items. Please complete sprint planning (/docs/sprint_planning.md) for the below items and present for approval.  Note that everything needs to take into account both the Windows App and the Android app and ADR stating that everything should be functionally and UI the same unless it cannot be - and where it cannot be it should be implemented as a platform exception for what is needed -- this applies to all backend code, frontend code, data, architecture, development, security, testing, deployment.
+  - MV76-1, together with F205 and F277 in the same Fold session.
+  - F281, F282 and F283, the three you marked NEXT SPRINT.
+  - F284 alongside F283, so mt2c is retired instead of rewritten.
+  - R76-4. Store a history of email content for future Heuristics/ML/GenAI identifiers (~[no-history], time-box 90m design) Priority 5
+Noting this is for storing, from me and only for me, my 4 personal email accounts:  kimmeyharold@aol.com, kimmeyh@gmail.com, kimmeyh@yahoo.com and kimmeyharold@icloud.com and this is my Class 1 approval of an exception for this purpose (and F273) - settle this before plan is approved.
+  - F199-b: it is blocked on your Microsoft support ticket.
+I think this can be closed, but provide me a full overview, pro's, con's and recommendation with options for approval
+
+
+  Recommendation (Sprint 78)
+
+  Total about 485-680m plus your phone time:
+  - MV76-1, together with F205 and F277 in the same Fold session.
+  - F281, F282 and F283, the three you marked NEXT SPRINT.
+  - F284 alongside F283, so mt2c is retired instead of rewritten.
+
+  Not now:
+  - R76-4: it needs your Class-1 decision on storing content beyond the 100-character preview, plus F273. I suggest settling that question in pass 2, so
+    R76-4 and F267 can start in Sprint 79.
+  - F199-b: it is blocked on your Microsoft support ticket.
+
+  Candidates at a glance
+
+  - MV76-1. Finish the Sprint 76 Fold checks, now on the 0.18.0 closed-test build (~40-70m + phone time) Priority 1
+  - R76-4. Store a history of email content for future Heuristics/ML/GenAI identifiers (~[no-history], time-box 90m design) Priority 5
+  - F281. Deep dive: best-practice UI for "run every <interval>" in Background scanning (~90-120m research + implementation card) Priority 6
+  - F282. One "MyEmailSpamFilter" folder for every file the app writes for the user (~60-90m) Priority 7
+  - F283. Review No Rule Items looks and works like the Results screen, across all accounts (~150-210m) Priority 8
+  - F205. Closed-test error rate: 53 errors in 3,833 scanned on the S24+ -- find out what they ARE (~30-60m) Priority 18
+  - F284. WinWright without taking over the laptop: mouse-free sweep, retire mt2c, fixed window size (~100-130m) Priority 20
+  - F277. Fold energy check: interval 5 against interval 15 (~45-60m + phone time) Priority 20
+  - F267. Rule evaluation harness: score candidate rules against your own history, read only (~150m) Priority 20
+  - F199-b. Partner Center publisher display name -- the last surface of the LLC rename (~15m once unblocked) Priority 12
+  - HOLD items follow, ONE LINE EACH:
+  - F265. Android Gmail native one-pick sign-in -- revisit only when a second device reproduces the failure Priority HOLD
+  - F274. On-device GenAI rule explanations (~240m) Priority HOLD
+  - F275. Cloud GenAI classification (~360m) Priority HOLD
+  - F165. Cross-device rules-DB sharing -- user cloud storage (iCloud/OneDrive/Box/Google Drive) exploration + hosted-tier option (~half-day exploration)
+    Priority HOLD
+  - F173. Periodic "Test Coverage and Appropriate Testing" Deep Dive (~4-8h per review) Priority HOLD
+  - F183. Upstream civyk-winwright request: script-runner replay support for ww_wait (~15m to file, then external) Priority HOLD
+  - F179. Subject-blocking phrase picker -- user selects (or GenAI recommends) the blocking SUBSET of a subject (~3-5h) Priority HOLD
+  - F152. Periodic User-Centric First-Run Evaluation (~2-3h per review, plus fix-item time if findings warrant) Priority HOLD
+  - F189. Periodic Skills Audit -- what tooling would make sprints, development, recovery and prevention measurably better (~4-8h per review,
+    research-led) Priority HOLD
+  - GP-4. Gmail API OAuth Verification / CASA -- THE SUBMISSION ITSELF (~40-80h) Priority HOLD
+  - F111. Periodic Windows App Store upload readiness verification (~110-175m per review) Priority HOLD
+  - F139. Local-install smoke test for a release-candidate MSIX (~30-50m per review) Priority HOLD
+  - F70. Periodic Security Deep Dive (~4-8h per review) Priority HOLD
+  - F130. Periodic Process-Docs Consistency Deep Dive ([no-history] -- unbounded discovery; see estimating note) Priority HOLD
+  - F71. Periodic Architecture Deep Dive (~4-8h per review) Priority HOLD
+  - F201. Periodic Web Property Accuracy Re-Review -- myemailspamfilter.com + GitHub Pages (~1-2h per review, plus fix time if findings warrant) Priority
+    HOLD
+  - F95. iOS variants + cross-store hardening (~10-16h) Priority HOLD
+  - F63. Responsive design framework -- [SUPERSEDED 2026-08-03 by Sprint 54 F141's per-screen findings] Priority HOLD
+  - F6. Provider-Specific Optimizations (~10-12h) Priority HOLD
+  - F67. Platform validation - iOS, Linux, macOS (~4-6h per platform) Priority HOLD
+  - SEC-11b. Database-at-rest encryption via SQLite3MultipleCiphers (sqlite3mc) + plaintext-to-encrypted migration (~8-12h) Priority HOLD
+  - F106. SEC-11b verification-window cleanup (~30m) Priority HOLD
+  - H1. GenAI Pattern Suggestions - Crowdsourced Spam Intelligence (TBD) Priority HOLD
+  - H2. Rule Pattern Consistency - Domain Matching Standards (~4-6h) Priority HOLD
+  - H3. Requirements Documentation System (TBD) Priority HOLD
+  - H4. Sent Messages Scan for Safe Senders (~12-16h) Priority HOLD
+  - H5. Outlook.com / Office 365 email provider adapter (~16-20h) Priority HOLD
+
+  Android / Google Play Store Readiness
+
+  MV76-1. Finish the Sprint 76 Fold checks, now on the 0.18.0 closed-test build (~40-70m + phone time) Priority 1
+  - Phase: Android / Google Play Store Readiness
+  - Platform: Android
+  - Fold steps 7-11:
+    - a scan started by a new-mail notification;
+    - scans resume after a reboot without opening the app (#428);
+    - the export header row;
+    - a Results rule update for an Inbox safe sender;
+    - the Google account state;
+    - scan errors classified (#433).
+  - Plus the boot-time app start (foreground) trace.
+  - Depends on: the 0.18.0 Google Play closed-testing upload.
+
+  Core App Quality
+
+  R76-4. Store a history of email content for future Heuristics/ML/GenAI identifiers (~[no-history], time-box 90m design) Priority 5
+  - Phase: Core App Quality
+  - Platform: All
+  - A database of fields fed by the Windows and Android scans, with no duplicate emails, seeded from the existing delete and safe-sender rules and your
+    deleted-mail history.
+  - The recommended fields are in R76-3 Section 6.
+  - Depends on: a Class-1 decision on storing content beyond the 100-character preview; F273 (privacy policy and Data safety revision).
+
+  F281. Deep dive: best-practice UI for "run every <interval>" in Background scanning (~90-120m research + implementation card) Priority 6
+  - Phase: Core App Quality
+  - Platform: All
+  - At least 3 alternatives, each with a mockup and pros and cons, plus a recommendation; you pick one.
+  - Range 5 minutes to 24 hours (a change from 99 hours); default 15 minutes; shown only when a background mode is on; saves on change.
+
+  F282. One "MyEmailSpamFilter" folder for every file the app writes for the user (~60-90m) Priority 7
+  - Phase: Core App Quality
+  - Platform: All
+  - Exports, scan exports and the diagnostic log all go under Documents\MyEmailSpamFilter (dev: MyEmailSpamFilter_Dev), through one ExportDirectories
+    change.
+  - Existing files, and folders you chose yourself, are unchanged (MV-Q11/12/13).
+
+  F283. Review No Rule Items looks and works like the Results screen, across all accounts (~150-210m) Priority 8
+  - Phase: Core App Quality
+  - Platform: All
+  - Results-screen layout and search, reusing its widgets; the account drop-down is always shown; multi-select is removed; the detail popup shows the
+    account email.
+  - Depends on: F284 b (retire test_mt2c_no_rule_sweep instead of rewriting it).
+
+  F205. Closed-test error rate: 53 errors in 3,833 scanned on the S24+ -- find out what they ARE (~30-60m) Priority 18
+  - Phase: Core App Quality
+  - Platform: Android
+  - Narrowed to Gmail errors from before 0.15.0. It is answered by MV76-1's error-classification step (#433).
+
+  F284. WinWright without taking over the laptop: mouse-free sweep, retire mt2c, fixed window size (~100-130m) Priority 20
+  - Phase: Core App Quality
+  - Platform: Windows Desktop
+  - 26 of the sweep's 115 steps move the real mouse; replace them with UI Automation patterns and ww_set_checked.
+  - Retire mt2c (its contract is covered headlessly); the runner sets a fixed window size.
+
+  F277. Fold energy check: interval 5 against interval 15 (~45-60m + phone time) Priority 20
+  - Phase: Core App Quality
+  - Platform: Android
+  - If interval 5 costs more than 3 times interval 15 in battery, raise the minimum interval to 10 minutes.
+
+  F267. Rule evaluation harness: score candidate rules against your own history, read only (~150m) Priority 20
+  - Phase: Core App Quality
+  - Platform: All
+  - A Dart command-line tool scoring candidate rules for precision and safe-sender hits, reusing RuleEvaluator; it feeds F268-F272. Dry run on the
+    Windows DEV build.
+
+  Release Readiness
+
+  F199-b. Partner Center publisher display name -- the last surface of the LLC rename (~15m once unblocked) Priority 12
+  - Phase: Release Readiness
+  - Platform: Windows Desktop
+  - Partner Center still shows Kimmey Consulting - Ohio. Never touch msix_config.publisher.
+  - Depends on: your Microsoft support ticket.
+
+  HOLD Items (released only by a stated trigger or by you)
+
+  F265. Android Gmail native one-pick sign-in -- revisit only when a second device reproduces the failure Priority HOLD
+  - Phase: Core App Quality
+  - Platform: Android
+  - Trigger: a reproduction on another device, with the diagnostic log's sign-in lines.
+
+  F274. On-device GenAI rule explanations (~240m) Priority HOLD
+  - Phase: Core App Quality
+  - Platform: All (would be two platform exceptions today)
+  - ML Kit GenAI is foreground-only, in Beta, and absent on the Galaxy S24 family.
+
+  F275. Cloud GenAI classification (~360m) Priority HOLD
+  - Phase: Core App Quality
+  - Platform: All
+  - Sends personal mail content to a third party, which contradicts the privacy policy.
+
+  F165. Cross-device rules-DB sharing -- user cloud storage (iCloud/OneDrive/Box/Google Drive) exploration + hosted-tier option (~half-day exploration)
+  Priority HOLD
+  - Phase: Product direction / architecture exploration
+  - Platform: All
+  - Long-term deployment direction: a phone runs the background scans.
+
+  F173. Periodic "Test Coverage and Appropriate Testing" Deep Dive (~4-8h per review) Priority HOLD
+  - Phase: Testing / periodic review
+  - Platform: All -- backend, frontend/UI, data layer, Windows app, Android app
+  - Coverage, plus whether the tests prove what they claim.
+
+  F183. Upstream civyk-winwright request: script-runner replay support for ww_wait (~15m to file, then external) Priority HOLD
+  - Phase: Testing / E2E tooling (external)
+  - Platform: Windows Desktop (WinWright harness)
+  - The runner skips ww_wait steps; an external project owns the fix.
+
+  F179. Subject-blocking phrase picker -- user selects (or GenAI recommends) the blocking SUBSET of a subject (~3-5h) Priority HOLD
+  - Phase: Core App Quality / rules UX
+  - Platform: All (shared review popup)
+  - Sequenced after the GenAI integration (H1).
+
+  F152. Periodic User-Centric First-Run Evaluation (~2-3h per review, plus fix-item time if findings warrant) Priority HOLD
+  - Phase: UX Spike (reusable template)
+  - Platform: Windows Desktop (this run); extend per-platform when other platforms are release-ready
+  - Re-runs the first-run checklist (7 sections) for a gap analysis.
+
+  F189. Periodic Skills Audit -- what tooling would make sprints, development, recovery and prevention measurably better (~4-8h per review, research-led)
+  Priority HOLD
+  - Phase: Process / tooling (repo instruction surface)
+  - Platform: N/A (repository tooling, harness configuration, agent definitions)
+  - Looks for skills that would prevent classes of mistakes, not single instances.
+
+  GP-4. Gmail API OAuth Verification / CASA -- THE SUBMISSION ITSELF (~40-80h) Priority HOLD
+  - Phase: Android Google Play Store Readiness
+  - Platform: Android
+  - Trigger: 2,500+ users or $5K/yr revenue. Do not set the consent screen to "In production" first.
+
+  F111. Periodic Windows App Store upload readiness verification (~110-175m per review) Priority HOLD
+  - Phase: Release Readiness (reusable template)
+  - Platform: Windows Desktop
+  - Template; duplicate it for a planned Store release.
+
+  F139. Local-install smoke test for a release-candidate MSIX (~30-50m per review) Priority HOLD
+  - Phase: Release Readiness (reusable template)
+  - Platform: Windows Desktop
+  - A manual smoke pass of the release-candidate MSIX on this machine.
+
+  F70. Periodic Security Deep Dive (~4-8h per review) Priority HOLD
+  - Phase: Security Spike (reusable template)
+  - Platform: All
+  - OWASP Mobile Top 10 based review.
+
+  F130. Periodic Process-Docs Consistency Deep Dive ([no-history] -- unbounded discovery; see estimating note) Priority HOLD
+  - Phase: Process Spike (reusable template)
+  - Platform: N/A (repo documentation + harness configuration)
+  - Checks that the sprint instructions are consistent for every model tier.
+
+  F71. Periodic Architecture Deep Dive (~4-8h per review) Priority HOLD
+  - Phase: Architecture Spike (reusable template)
+  - Platform: All
+  - Architecture review against best practices.
+
+  F201. Periodic Web Property Accuracy Re-Review -- myemailspamfilter.com + GitHub Pages (~1-2h per review, plus fix time if findings warrant) Priority
+  HOLD
+  - Phase: Web Property (reusable template)
+  - Platform: All (the site represents every shipped platform)
+  - Re-review of everything served on the site.
+
+  F95. iOS variants + cross-store hardening (~10-16h) Priority HOLD
+  - Phase: Build and Release Infrastructure
+  - Moved to HOLD by you, 2026-05-25.
+
+  F67. Platform validation - iOS, Linux, macOS (~4-6h per platform) Priority HOLD
+  - Phase: Multi-Platform Readiness
+  - Platform: iOS, Linux, macOS
+  - Validation build, smoke test, IMAP scan, storage paths and sign-in on each platform.
+  - Moved to HOLD by you, 2026-05-25.
+
+  F67. Platform validation - iOS, Linux, macOS (~4-6h per platform) Priority HOLD
+  - Phase: Multi-Platform Readiness
+  - Platform: iOS, Linux, macOS
+  - Validation build, smoke test, IMAP scan, storage paths and sign-in on each platform.
+  - Moved to HOLD by you, 2026-05-25.
+
+  F67. Platform validation - iOS, Linux, macOS (~4-6h per platform) Priority HOLD
+  - Moved to HOLD by you, 2026-05-25.
+
+  F67. Platform validation - iOS, Linux, macOS (~4-6h per platform) Priority HOLD
+  - Phase: Multi-Platform Readiness
+  - Platform: iOS, Linux, macOS
+  - Validation build, smoke test, IMAP scan, storage paths and sign-in on each platform.
+
+  SEC-11b. Database-at-rest encryption via SQLite3MultipleCiphers (sqlite3mc) + plaintext-to-encrypted migration (~8-12h) Priority HOLD
+  - Phase: Security
+  - Platform: All (Windows desktop + Android + iOS)
+  - Post-MVP; the cipher is sqlite3mc, not SQLCipher.
+
+  F106. SEC-11b verification-window cleanup (~30m) Priority HOLD
+  - Phase: Security / cleanup
+  - Platform: All
+  - Removes the dev plaintext mirror.
+  - Depends on: SEC-11b shipped, plus about 2 sprints of verified encrypted-DB operation.
+
+  H1. GenAI Pattern Suggestions - Crowdsourced Spam Intelligence (TBD) Priority HOLD
+  - Phase: Post-MVP
+  - Platform: All
+  - Issue #142.
+
+  H2. Rule Pattern Consistency - Domain Matching Standards (~4-6h) Priority HOLD
+  - Phase: Post-MVP
+  - Platform: All
+  - Issue #140; partly done for newly created rules.
+
+  H3. Requirements Documentation System (TBD) Priority HOLD
+  - Phase: Post-MVP
+  - Platform: N/A
+  - Issue #137.
+
+  H4. Sent Messages Scan for Safe Senders (~12-16h) Priority HOLD
+  - Phase: Post-MVP
+  - Platform: All
+  - Issue #49; not started.
+
+  H5. Outlook.com / Office 365 email provider adapter (~16-20h) Priority HOLD
+  - Phase: Post-MVP
+  - Platform: All
+  - From Issue #44; the adapter is a stub today.
 
 ---------------------------------------------------------------------------------------------------------
 
