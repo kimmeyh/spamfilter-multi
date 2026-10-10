@@ -19,6 +19,7 @@ import 'dart:convert';
 
 import 'package:crypto/crypto.dart';
 import 'package:flutter/foundation.dart' show visibleForTesting;
+import 'package:logger/logger.dart';
 
 import '../models/email_message.dart';
 import '../models/evaluation_result.dart';
@@ -31,6 +32,8 @@ import 'diagnostic_logger.dart';
 
 class ContentHistory {
   ContentHistory._();
+
+  static final Logger _logger = Logger();
 
   /// Test seam: force the environment answer (the real one is a compile-time
   /// constant).
@@ -45,7 +48,10 @@ class ContentHistory {
     if (!isAvailable) return false;
     try {
       return await settings.getContentHistoryEnabled();
-    } catch (_) {
+    } catch (e) {
+      // Unreadable switch = off (never capture on a guess), but say so.
+      _logger.w('Content history switch could not be read; treating as off: '
+          '$e');
       return false;
     }
   }
@@ -96,12 +102,16 @@ class ContentHistory {
     }
   }
 
-  static Future<void> _logFailure(String what, Object e) =>
-      DiagnosticLogger.failure(
-        context: 'content-history',
-        kind: DiagnosticLogger.kindException,
-        reason: '$what failed: ${e.runtimeType}',
-      );
+  /// F-PRECHECK class 6: always a console warning, plus the user-shareable
+  /// diagnostic log (which writes only while diagnostic logging is on).
+  static Future<void> _logFailure(String what, Object e) {
+    _logger.w('Content history $what failed: $e');
+    return DiagnosticLogger.failure(
+      context: 'content-history',
+      kind: DiagnosticLogger.kindException,
+      reason: '$what failed: ${e.runtimeType}',
+    );
+  }
 }
 
 /// Capture for ONE scan. Created only when [ContentHistory.isActive] is true.
