@@ -1,10 +1,14 @@
+import 'dart:async' show unawaited;
+
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart' show HardwareKeyboard;
+import 'package:flutter/services.dart';
 import 'package:logger/logger.dart';
 import 'package:provider/provider.dart';
 
 import '../../adapters/storage/secure_credentials_store.dart';
 import '../../core/models/email_message.dart';
+import '../../core/models/evaluation_result.dart';
+import '../../core/providers/email_scan_provider.dart';
 import '../../core/providers/rule_set_provider.dart';
 import '../../core/providers/selected_account_provider.dart';
 import '../../core/services/auth_results_parser.dart';
@@ -16,25 +20,34 @@ import '../../core/storage/database_helper.dart';
 import '../../core/storage/unmatched_email_store.dart';
 import '../../core/utils/pattern_normalization.dart';
 import '../../core/utils/provider_sender_grouping.dart';
+import '../../core/utils/result_ordering.dart';
 import '../../util/redact.dart';
 import '../widgets/app_bar_with_exit.dart';
-import '../widgets/standard_app_bar_actions.dart';
-import 'help_screen.dart' show HelpSection;
-import '../widgets/provider_group_markers.dart';
 import '../widgets/auth_warning_dialog.dart';
+import '../widgets/email_detail_popup.dart';
 import '../widgets/empty_state.dart';
+import '../widgets/provider_group_markers.dart';
+import '../widgets/result_list_pieces.dart';
 import '../widgets/screen_version_line.dart'; // F229 (Sprint 73)
+import '../widgets/standard_app_bar_actions.dart';
 import '../widgets/system_inset_wrapper.dart'; // F209 (Sprint 69)
+import 'help_screen.dart' show HelpSection;
 
 /// F39 (Sprint 46): cross-account "No rule" review screen.
 ///
-/// Aggregates unprocessed "No rule" items from each configured account's
-/// LATEST completed scan (not full history -- a user reviewing weekly
-/// wants this week's unaddressed items, not a re-scan of history) into one
-/// list, filterable down to a single account. Supports multi-select
-/// (Ctrl+click, Shift+click on Windows desktop) and bulk rule application
-/// across the selection, batching the summary notification once per bulk
-/// operation rather than once per item.
+/// Lists every unprocessed "No rule" email of every saved account (F245), one
+/// row per email, filterable down to one account.
+///
+/// **F283 (Sprint 78): looks and works like the Results screen.** It is built
+/// from the SAME pieces (`result_list_pieces.dart`, `email_detail_popup.dart`):
+/// a summary card with a fixed "No rule (N)" chip, then the account, Folders
+/// and Sort chips; Ctrl+F / the search icon; the "Showing X of Y" bar; the
+/// Results row; and a tap opens the Results pop-up, naming the row's account.
+/// A quick action creates the rule or safe sender, marks the row handled, and
+/// opens the next row the new rule does not cover (Results' auto-advance).
+/// Multi-select and the bulk-action menu were removed (MV-Q16).
+///
+/// ADR-0042: one shared screen, identical on Windows and Android.
 class NoRuleReviewScreen extends StatefulWidget {
   const NoRuleReviewScreen({super.key});
 
@@ -42,19 +55,46 @@ class NoRuleReviewScreen extends StatefulWidget {
   State<NoRuleReviewScreen> createState() => _NoRuleReviewScreenState();
 }
 
-/// A "No rule" item paired with the account it came from, for display and
-/// bulk-action purposes in the aggregated cross-account list.
+/// A "No rule" row paired with the account it came from. [result] is the
+/// shared row model (F283): the row converted to an [EmailActionResult] with
+/// no action and no match, so the shared tile, sort, search and pop-up take it
+/// unchanged.
 class _NoRuleItem {
   final UnmatchedEmail email;
   final String accountId;
   final String accountEmail;
+  final EmailActionResult result;
 
-  const _NoRuleItem({
+  _NoRuleItem({
     required this.email,
     required this.accountId,
     required this.accountEmail,
-  });
+  }) : result = EmailActionResult(
+          email: noRuleRowToMessage(email),
+          evaluationResult: EvaluationResult.noMatch(),
+          action: EmailActionType.none,
+          success: true,
+        );
 }
+
+/// F283: a stored No Rule row as an [EmailMessage] -- the same shape the
+/// covered-item sweep has always evaluated (id `unmatched-<row id>`, From and
+/// Subject headers, the received date or, without one, the first-seen date),
+/// plus the F96 authentication class for the RED safe-sender warning.
+@visibleForTesting
+EmailMessage noRuleRowToMessage(UnmatchedEmail email) => EmailMessage(
+      id: 'unmatched-${email.id}',
+      from: email.fromEmail,
+      subject: email.subject ?? '',
+      body: email.bodyPreview ?? '',
+      headers: {
+        'from': email.fromEmail,
+        'subject': email.subject ?? '',
+      },
+      receivedDate: email.emailDate ?? email.createdAt,
+      folderName: email.folderName,
+      authClassificationOverride: email.authClassification,
+    );
 
 class _NoRuleReviewScreenState extends State<NoRuleReviewScreen> {
   final Logger _logger = Logger();
@@ -63,19 +103,23 @@ class _NoRuleReviewScreenState extends State<NoRuleReviewScreen> {
 
   bool _isLoading = true;
   List<_NoRuleItem> _allItems = [];
-  List<_NoRuleItem> _filteredItems = [];
   String _accountFilter = 'all';
   List<String> _distinctAccounts = [];
   Map<String, String> _accountEmails = {};
 
-  // Multi-select state. Keyed by unmatched_emails row id (stable across
-  // reloads within a session; ids are non-null once persisted).
-  final Set<int> _selectedIds = {};
-  int? _lastClickedIndex;
+  // F283: the Results filters.
+  Set<String> _selectedFolders = {};
+  ResultSortOrder _sortOrder = ResultSortOrder.folderDomainAddress;
+  final TextEditingController _searchController = TextEditingController();
+  final FocusNode _searchFocusNode = FocusNode();
+  String _searchQuery = '';
+  bool _showSearch = false;
+
+  /// Provider-sender group size within the visible list (Sprint 46 IMP-1).
+  int _providerGroupCount = 0;
 
   /// MT-2b (Sprint 50): how many already-covered items the most recent
-  /// [_loadItems] sweep resolved (see [_sweepCoveredItems]); surfaced in the
-  /// bulk-action summary SnackBar.
+  /// [_loadItems] sweep resolved (see [_sweepCoveredItems]).
   int _lastSweepCount = 0;
 
   @override
@@ -85,34 +129,30 @@ class _NoRuleReviewScreenState extends State<NoRuleReviewScreen> {
     _loadItems();
   }
 
+  @override
+  void dispose() {
+    _searchController.dispose();
+    _searchFocusNode.dispose();
+    super.dispose();
+  }
+
   /// F135 (Sprint 52): resolve an account for the account-scoped Settings
   /// destination that F134 adds to this screen's AppBar.
   ///
-  /// This screen is CROSS-ACCOUNT by design -- it aggregates the unprocessed No Rule rows
-  /// of every configured account -- so it must never PROMPT (Harold's rule
-  /// lists only the 3 account-specific Settings tabs and Manual Live Scan as
-  /// prompting surfaces). It only resolves:
-  ///   1. the session selection, if that account still appears here, else
-  ///   2. the account whose filter chip is currently active, else
-  ///   3. the first known account.
-  /// Returns null when no account is known, which correctly DISABLES the
-  /// Settings icon rather than pushing Settings with a bogus id.
+  /// This screen is CROSS-ACCOUNT by design, so it must never PROMPT. It only
+  /// resolves: 1. the session selection, if that account still appears here,
+  /// else 2. the account currently filtered to, else 3. the first known
+  /// account. Returns null when no account is known, which correctly DISABLES
+  /// the Settings icon rather than pushing Settings with a bogus id.
   String? _resolveAccountIdForSettings() {
-    // The session selection is an OPTIONAL input, not a requirement: this
-    // screen works perfectly well without one (it falls through to the active
-    // filter chip, then the first known account). Reading it defensively keeps
-    // the screen constructible in any widget-test harness that has not
-    // registered the provider -- 12 pre-existing tests pump this screen
-    // directly, and a hard `context.read` turned all 12 red with
-    // ProviderNotFoundException. A screen should not require a provider it can
-    // do without.
+    // The session selection is an OPTIONAL input: reading it defensively
+    // keeps the screen constructible in any widget-test harness that has not
+    // registered the provider.
     String? selected;
     try {
       selected = context.read<SelectedAccountProvider>().accountId;
     } on ProviderNotFoundException {
-      // Missing provider is the ONLY tolerated case (Copilot, PR #292): a bare
-      // catch here would also swallow a real error thrown by a present
-      // provider, hiding a genuine misconfiguration behind the fallback chain.
+      // Missing provider is the ONLY tolerated case (Copilot, PR #292).
       selected = null;
     }
     if (selected != null && _distinctAccounts.contains(selected)) {
@@ -125,27 +165,15 @@ class _NoRuleReviewScreenState extends State<NoRuleReviewScreen> {
     return null;
   }
 
-  /// Opens the Manual Scan screen for the resolved account.
-  ///
-  /// Harold, 2026-07-31 (MV-1): *"the Account screen is also, currently, the
-  /// only way to get to the Live Scan/Manual Scan screen -- but an icon for the
-  /// Manual Scan Screen would be advisable."* This screen is the desktop
-  /// DEFAULT since F135, so requiring a detour through Accounts to start a scan
-  /// was a real dead end.
-  ///
-  /// The platform lookup and the push itself live in [StandardAppBarActions],
-  /// so this screen only adds what is specific to IT: a reload on return,
-  /// because a scan can resolve items currently displayed here.
-  ///
-  /// The account comes from [_resolveAccountIdForSettings] -- the same
-  /// session-selection / active-filter / first-known precedence the Settings
-  /// icon uses, so both icons always agree on which account they mean.
+  /// Opens the Manual Scan screen for the resolved account (Harold,
+  /// 2026-07-31, MV-1), then reloads, because a scan can resolve items shown
+  /// here. The account comes from [_resolveAccountIdForSettings], so the
+  /// Settings and Manual Scan icons always mean the same account.
   Future<void> _openManualScan() async {
     final accountId = _resolveAccountIdForSettings();
     if (accountId == null) {
-      // Report rather than silently return (PR #292 re-review): this handler
-      // is always wired, so the icon is VISIBLE even with zero accounts -- a
-      // silent return here is a dead icon, the exact MV-1 shape.
+      // Report rather than silently return (PR #292 re-review): the icon is
+      // visible even with zero accounts.
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
           content: Text('Add an email account first -- there is no account to '
@@ -164,31 +192,17 @@ class _NoRuleReviewScreenState extends State<NoRuleReviewScreen> {
     if (mounted) await _loadItems();
   }
 
-  /// The AppBar Refresh action.
-  ///
-  /// Harold, 2026-07-31 (manual validation): *"what does the refresh icon do -
-  /// as it appears to do nothing"*. It was doing its job and saying nothing.
-  /// [_loadItems] re-reads every unprocessed row and re-runs the coverage
-  /// sweep, but all of that is local-DB work that finishes in milliseconds, so
-  /// the loading spinner never paints a perceptible frame. With nothing newly
-  /// covered the list is identical afterwards and the press is indistinguishable
-  /// from a dead button.
-  ///
-  /// Deliberately SEPARATE from [_loadItems] rather than putting the SnackBar
-  /// inside it: `_loadItems` also runs on init, after a scan returns, and after
-  /// bulk actions (which show their OWN summary SnackBar). A confirmation
-  /// belongs only on the press the user made on purpose.
+  /// The AppBar Refresh action (Harold, 2026-07-31: "what does the refresh
+  /// icon do"): re-reads the stored rows and re-runs the coverage sweep, then
+  /// SAYS what changed, because the local work finishes too fast to see.
   Future<void> _refreshFromUserAction() async {
     final before = _allItems.length;
     final ok = await _loadItems();
     if (!mounted) return;
 
-    // Load failed and already showed its error -- do not overwrite it with a
-    // delta computed over state we never refreshed.
+    // Load failed and already showed its error.
     if (!ok) return;
 
-    // _lastSweepCount is set by the sweep inside _loadItems: items that the
-    // CURRENT rules / safe senders now cover, marked processed and dropped.
     final swept = _lastSweepCount;
     final removed = before - _allItems.length;
 
@@ -198,9 +212,8 @@ class _NoRuleReviewScreenState extends State<NoRuleReviewScreen> {
           ? '1 item is now covered by rules -- removed'
           : '$swept items are now covered by rules -- removed';
     } else if (removed > 0) {
-      // Defensive: the list shrank for a reason other than the sweep (e.g. a
-      // newer scan superseded the one being displayed). Report honestly rather
-      // than claiming rules covered them.
+      // Defensive: the list shrank for a reason other than the sweep. Report
+      // honestly rather than claiming rules covered them.
       message = removed == 1
           ? '1 item no longer applies -- removed'
           : '$removed items no longer apply -- removed';
@@ -216,13 +229,11 @@ class _NoRuleReviewScreenState extends State<NoRuleReviewScreen> {
       ));
   }
 
-  /// Returns true when the load SUCCEEDED, false when it failed -- see the note
-  /// on `rules_management_screen._loadRules` (PR #292 review). This screen's
-  /// own comment already said "report honestly rather than claiming rules
-  /// covered them", but that honesty check only distinguished sweep from other
-  /// shrinkage; it never considered "the load did not happen at all".
-  Future<bool> _loadItems() async {
-    setState(() => _isLoading = true);
+  /// Returns true when the load SUCCEEDED, false when it failed (PR #292
+  /// review). [showSpinner] is false for the reload after a quick action, so
+  /// the list does not blank while the next pop-up is open.
+  Future<bool> _loadItems({bool showSpinner = true}) async {
+    if (showSpinner) setState(() => _isLoading = true);
     var ok = true;
 
     try {
@@ -241,9 +252,7 @@ class _NoRuleReviewScreenState extends State<NoRuleReviewScreen> {
       final items = <_NoRuleItem>[];
       for (final accountId in sortedAccounts) {
         // F245 (Sprint 77, Harold Q21): every UNPROCESSED row for the account,
-        // across scans. The scan-by-scan snapshot this replaced is no longer
-        // needed: the upsert keeps ONE row per email (ADR-0045), so nothing
-        // is listed twice, and a row an older scan owns is still unaddressed.
+        // across scans; the upsert keeps ONE row per email (ADR-0045).
         final unmatched = await _unmatchedStore.getUnprocessedForAccount(accountId);
 
         for (final email in unmatched) {
@@ -257,27 +266,20 @@ class _NoRuleReviewScreenState extends State<NoRuleReviewScreen> {
 
       // MT-2b (Sprint 50, Harold): sweep EVERY load -- items already covered
       // by the CURRENT rules / safe senders are marked processed and dropped
-      // before display ("re-checking the list for other items still in the
-      // list that are now covered by rules"). This is what removes rows
-      // re-populated by a scan that ran before their covering rules existed
-      // (Harold's 6-item repro: 5 of 6 senders had Block rules yet re-listed
-      // after a newer scan).
+      // before display.
       final kept = await _sweepCoveredItems(items);
-
-      // Newest first, matching the existing scan-history/results ordering
-      // convention (getUnmatchedEmailsByScan already orders by created_at
-      // DESC per-scan; sort again here since we merged across accounts).
-      kept.sort((a, b) => b.email.createdAt.compareTo(a.email.createdAt));
 
       if (mounted) {
         setState(() {
           _allItems = kept;
           _distinctAccounts = sortedAccounts;
           _accountEmails = emailMap;
-          _applyFilter();
+          // An account that is gone falls back to All.
+          if (_accountFilter != 'all' &&
+              !sortedAccounts.contains(_accountFilter)) {
+            _accountFilter = 'all';
+          }
           _isLoading = false;
-          _selectedIds.clear();
-          _lastClickedIndex = null;
         });
       }
     } catch (e, s) {
@@ -297,225 +299,18 @@ class _NoRuleReviewScreenState extends State<NoRuleReviewScreen> {
     return ok;
   }
 
-  void _applyFilter() {
-    final filtered = _accountFilter == 'all'
-        ? List<_NoRuleItem>.from(_allItems)
-        : _allItems.where((i) => i.accountId == _accountFilter).toList();
-    // Sprint 46 retro IMP-1 (Harold): email-provider senders group at the
-    // top (stable partition -- newest-first order kept within both groups);
-    // heading/end indicator rendered by _buildList when non-empty.
-    final partitioned = ProviderSenderGrouping.partitionProviderFirst(
-        filtered, (i) => i.email.fromEmail);
-    _filteredItems = partitioned.items;
-    _providerGroupCount = partitioned.providerCount;
-  }
-
-  /// Provider-sender group size within the current filtered list (IMP-1).
-  int _providerGroupCount = 0;
-
-  // --- Selection ---
-
-  /// F143 (Sprint 60): touch platforms get long-press-to-select plus
-  /// tap-to-toggle while a selection is active. Reads `Theme.of(context)
-  /// .platform` (which defaults to `defaultTargetPlatform`) rather than
-  /// dart:io Platform, so widget tests can drive both models per-tree via
-  /// `ThemeData(platform: ...)` -- the global
-  /// `debugDefaultTargetPlatformOverride` trips the foundation-vars test
-  /// invariant in this Flutter version even when reset via addTearDown.
-  bool get _isTouchPlatform {
-    final platform = Theme.of(context).platform;
-    return platform == TargetPlatform.android ||
-        platform == TargetPlatform.iOS;
-  }
-
-  /// F143 (Sprint 60): long-press ADDS the row to the selection (entering
-  /// selection mode if none exists) -- the Android idiom for starting a
-  /// multi-select. Wired on every platform: on desktop it is a harmless
-  /// additional way to add to a selection, and keeping it unconditional means
-  /// one code path instead of a platform fork (the plan's NFR: the selection
-  /// MODEL is input-driven; only the tap semantics below are platform-scoped).
-  void _handleItemLongPress(int index) {
-    final id = _filteredItems[index].email.id;
-    if (id == null) return;
-    setState(() {
-      _selectedIds.add(id);
-      _lastClickedIndex = index;
-    });
-  }
-
-  void _handleItemTap(int index, {required bool ctrlPressed, required bool shiftPressed}) {
-    final id = _filteredItems[index].email.id;
-    if (id == null) return;
-
-    setState(() {
-      if (shiftPressed && _lastClickedIndex != null) {
-        final start = _lastClickedIndex!.clamp(0, _filteredItems.length - 1);
-        final lo = start < index ? start : index;
-        final hi = start < index ? index : start;
-        for (var i = lo; i <= hi; i++) {
-          final rowId = _filteredItems[i].email.id;
-          if (rowId != null) _selectedIds.add(rowId);
-        }
-      } else if (ctrlPressed) {
-        if (_selectedIds.contains(id)) {
-          _selectedIds.remove(id);
-        } else {
-          _selectedIds.add(id);
-        }
-        _lastClickedIndex = index;
-      } else if (_isTouchPlatform && _selectedIds.isNotEmpty) {
-        // F143 (Sprint 60): TOUCH selection mode. Once a selection exists
-        // (entered via long-press or checkbox), a plain tap TOGGLES the row --
-        // the touch equivalent of Ctrl+click, since touch has no modifier
-        // keys. Touch-platform-scoped so desktop keeps its established
-        // replace-single semantics below (F143 R-2: desktop unchanged).
-        if (_selectedIds.contains(id)) {
-          _selectedIds.remove(id);
-        } else {
-          _selectedIds.add(id);
-        }
-        _lastClickedIndex = index;
-      } else {
-        // Plain click: toggle single selection (this screen's list is
-        // triage-only -- there is no "open detail" navigation target,
-        // so a plain click behaves as select/unselect for consistency
-        // with the checkbox).
-        if (_selectedIds.length == 1 && _selectedIds.contains(id)) {
-          _selectedIds.clear();
-        } else {
-          _selectedIds
-            ..clear()
-            ..add(id);
-        }
-        _lastClickedIndex = index;
-      }
-    });
-  }
-
-  void _toggleSelection(int id) {
-    setState(() {
-      if (_selectedIds.contains(id)) {
-        _selectedIds.remove(id);
-      } else {
-        _selectedIds.add(id);
-      }
-    });
-  }
-
-  void _clearSelection() {
-    setState(() {
-      _selectedIds.clear();
-      _lastClickedIndex = null;
-    });
-  }
-
-  List<_NoRuleItem> get _selectedItems =>
-      _filteredItems.where((i) => i.email.id != null && _selectedIds.contains(i.email.id)).toList();
-
-  // --- Bulk actions ---
-
-  /// Runs [action] once per selected item, then shows ONE summary
-  /// notification for the whole batch (F39 batching decision, Sprint 46 --
-  /// realistic weekly volume is <50 items, so this is about avoiding N
-  /// stacked SnackBars, not raw performance). Marks successfully-actioned
-  /// items as processed so they drop out of the "No rule" pool on reload.
-  Future<void> _runBulkAction(
-    String actionLabel,
-    Future<RuleQuickActionResult> Function(_NoRuleItem item) action,
-  ) async {
-    final selected = _selectedItems;
-    if (selected.isEmpty) return;
-
-    int succeeded = 0;
-    int failed = 0;
-    int conflictsRemoved = 0;
-    int alreadyCovered = 0;
-
-    for (final item in selected) {
-      // Copilot round 5: one throwing item must not abort the whole batch
-      // (which would skip the summary SnackBar and leave the selection in a
-      // confusing partial state) -- count it failed and continue.
-      try {
-        final result = await action(item);
-        if (result.success) {
-          succeeded++;
-          conflictsRemoved += result.conflictsRemoved;
-          if (result.alreadyExisted) alreadyCovered++;
-          final id = item.email.id;
-          if (id != null) {
-            await _unmatchedStore.markAsProcessed(id, true,
-                reason: NoRuleMarkReason.bulkAction, detail: actionLabel);
-          }
-        } else {
-          failed++;
-          // F110: mask the sender when it is the user's own account address
-          // (self-addressed spam); third-party senders log in clear per
-          // policy.
-          _logger.w('Bulk action "$actionLabel" failed for '
-              '${Redact.senderForLog(item.email.fromEmail, {item.accountId})}: '
-              '${result.error}');
-        }
-      } catch (e, s) {
-        failed++;
-        _logger.e('Bulk action "$actionLabel" threw for an item',
-            error: e, stackTrace: s);
-      }
-    }
-
-    if (!mounted) return;
-    _clearSelection();
-    // MT-2b: _loadItems runs the covered-item sweep over the freshly
-    // reloaded pool (see _sweepCoveredItems), so rows re-populated by a
-    // newer scan -- or covered by the rules this batch just created -- are
-    // resolved before display. _lastSweepCount carries the count for the
-    // summary below.
-    final reloaded = await _loadItems();
-
-    if (!mounted) return;
-
-    // The batch counts above are real regardless of the reload outcome, so
-    // the summary still shows -- but the sweep segment is gated on the reload
-    // SUCCEEDING (PR #292 re-review): on a failed reload the sweep never ran,
-    // and _lastSweepCount still holds the PREVIOUS load's count, so appending
-    // it would be a false claim painted over the load-failure SnackBar.
-    final parts = <String>['$actionLabel: $succeeded succeeded'];
-    if (alreadyCovered > 0) parts.add('$alreadyCovered already covered');
-    if (reloaded && _lastSweepCount > 0) {
-      parts.add('$_lastSweepCount more auto-resolved');
-    }
-    if (failed > 0) parts.add('$failed failed');
-    if (conflictsRemoved > 0) {
-      parts.add('$conflictsRemoved conflicting rule/sender${conflictsRemoved > 1 ? "s" : ""} removed');
-    }
-
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text(parts.join(' -- ')),
-        backgroundColor: failed > 0 ? Colors.orange : Colors.green,
-        duration: const Duration(seconds: 4),
-        behavior: SnackBarBehavior.floating,
-      ),
-    );
-  }
-
   /// MT-2/MT-2b (Sprint 50, Harold): evaluates every loaded item against the
   /// FULL current rule set + safe senders; covered items are marked
   /// processed (their covering rule addresses them -- Live Scan parity) and
   /// dropped from the returned list. Runs on EVERY load so covered rows can
-  /// never (re)surface -- including rows written by a scan that ran before
-  /// their covering rules existed. Time-based event-loop yields per the
-  /// F120 pattern keep the UI responsive on large rule sets. The count of
-  /// swept items lands in [_lastSweepCount] for the bulk-action SnackBar.
+  /// never (re)surface. Time-based event-loop yields per the F120 pattern keep
+  /// the UI responsive on large rule sets.
   Future<List<_NoRuleItem>> _sweepCoveredItems(
       List<_NoRuleItem> items) async {
     _lastSweepCount = 0;
     if (items.isEmpty || !mounted) return items;
     final ruleProvider = Provider.of<RuleSetProvider>(context, listen: false);
-    // F128 (Copilot review, PR #278): use the explicit loaded-state getters
-    // rather than inferring "unloaded" from an empty read -- an unloaded
-    // cache and a genuinely empty rule set look identical through
-    // `rules`/`safeSenders`. This screen can be the first rules consumer, so
-    // the sweep must load before deciding there is nothing to match.
+    // F128 (Copilot review, PR #278): use the explicit loaded-state getters.
     if (!ruleProvider.isRulesLoaded) {
       await ruleProvider.loadRules();
     }
@@ -530,10 +325,7 @@ class _NoRuleReviewScreenState extends State<NoRuleReviewScreen> {
       ruleSet: ruleProvider.rules,
       safeSenderList: ruleProvider.safeSenders,
       compiler: PatternCompiler(),
-      // Copilot review (PR #278): this sweep runs on EVERY load over the whole
-      // pool, so per-item eval logging would flood the log and pay the
-      // interpolation cost for each. The sweep's own summary line below
-      // reports what it resolved.
+      // Copilot review (PR #278): no per-item eval logging on the sweep.
       silent: true,
     );
 
@@ -549,25 +341,11 @@ class _NoRuleReviewScreenState extends State<NoRuleReviewScreen> {
         kept.add(item);
         continue;
       }
-      final message = EmailMessage(
-        id: 'unmatched-$id',
-        from: item.email.fromEmail,
-        subject: item.email.subject ?? '',
-        body: item.email.bodyPreview ?? '',
-        headers: {
-          'from': item.email.fromEmail,
-          'subject': item.email.subject ?? '',
-        },
-        receivedDate: item.email.emailDate ?? item.email.createdAt,
-        folderName: item.email.folderName,
-      );
       try {
-        final eval = await evaluator.evaluate(message);
+        final eval = await evaluator.evaluate(item.result.email);
         if (eval.matchedRule.isNotEmpty || eval.isSafeSender) {
           // Log the rule's TYPE, never its name: an exact-sender rule is named
-          // Block_<address> and a subject rule Block_Subject_<subject text>
-          // (RuleQuickActionService), and the diagnostic log must hold
-          // neither an address nor subject text.
+          // Block_<address> and a subject rule Block_Subject_<subject text>.
           await _unmatchedStore.markAsProcessed(id, true,
               reason: NoRuleMarkReason.coveredByRule,
               detail: coveredByRuleDetail(eval));
@@ -589,140 +367,210 @@ class _NoRuleReviewScreenState extends State<NoRuleReviewScreen> {
     return kept;
   }
 
-  Future<void> _bulkAddSafeSender(String type) async {
-    final ruleProvider = Provider.of<RuleSetProvider>(context, listen: false);
-    final service = RuleQuickActionService(ruleProvider: ruleProvider);
+  // --- Filters (F283: the Results filters) ---
 
-    // F96-style RED-sender gate (mirrors ResultsDisplayScreen._addSafeSender):
-    // if ANY selected item has a RED auth classification, confirm once
-    // before whitelisting the whole batch rather than gating per-item.
-    final hasRed = _selectedItems.any((i) =>
-        AuthResultsParser.classificationFromName(i.email.authClassification) ==
-        AuthClassification.red);
-    if (hasRed) {
-      final proceed = await AuthWarningDialog.showSafeSenderWarning(
-        context,
-        senderEmail: 'one or more selected senders',
-        authResult: AuthResultsParser.syntheticResultFor(AuthClassification.red),
-      );
-      if (!proceed || !mounted) return;
+  /// Rows in the current ACCOUNT scope -- what the fixed "No rule (N)" chip
+  /// counts and the "of Y" in the filter bar.
+  List<_NoRuleItem> get _scopedItems => _accountFilter == 'all'
+      ? _allItems
+      : _allItems.where((i) => i.accountId == _accountFilter).toList();
+
+  /// The rows shown: account scope, then search and folders, then the Sort
+  /// chip's order, with email-provider senders grouped at the top (Sprint 46
+  /// retro IMP-1).
+  List<_NoRuleItem> _visibleItems() {
+    var items = _scopedItems;
+    if (_searchQuery.isNotEmpty) {
+      final query = _searchQuery.toLowerCase();
+      // Every row is "No rule", so there is no rule name to search.
+      items = items.where((i) => resultMatchesSearch(i.result, '', query)).toList();
     }
+    if (_selectedFolders.isNotEmpty) {
+      items = items
+          .where((i) => _selectedFolders.contains(i.email.folderName))
+          .toList();
+    }
+    final byResult = {for (final i in items) i.result: i};
+    final ordered = orderResultsForDisplay(
+      items.map((i) => i.result).toList(),
+      order: _sortOrder,
+    ).map((r) => byResult[r]!).toList();
+    final partitioned = ProviderSenderGrouping.partitionProviderFirst(
+        ordered, (i) => i.email.fromEmail);
+    _providerGroupCount = partitioned.providerCount;
+    return partitioned.items;
+  }
 
-    final label = switch (type) {
-      'exact' => 'Add Safe Sender (Exact Email)',
-      'exactDomain' => 'Add Safe Sender (Exact Domain)',
-      'entireDomain' => 'Add Safe Sender (Entire Domain)',
-      _ => 'Add Safe Sender',
-    };
+  bool get _filtersActive =>
+      _searchQuery.isNotEmpty || _selectedFolders.isNotEmpty;
 
-    await _runBulkAction(label, (item) {
-      final bodyParser = EmailBodyParser();
-      final rawSenderEmail = bodyParser.extractEmailAddress(item.email.fromEmail);
-      final rawSenderDomain = bodyParser.extractDomainFromEmail(item.email.fromEmail);
-      final rootDomain = PatternNormalization.extractRootDomain(rawSenderDomain);
-      final normalizedEmail = PatternNormalization.normalizeFromHeader(item.email.fromEmail);
-
-      // Copilot review (Sprint 46): a malformed From header can leave the
-      // domain null/empty -- the domain-based actions must fail this item
-      // (counted in the batch summary) rather than pass ''/@null through,
-      // which would generate a match-everything safe-sender pattern.
-      if ((type == 'exactDomain' || type == 'entireDomain') &&
-          (rawSenderDomain == null || rawSenderDomain.isEmpty)) {
-        return Future.value(RuleQuickActionResult(
-          success: false,
-          displayMessage: 'No sender domain available',
-          error: 'malformed From header',
-        ));
-      }
-
-      final value = switch (type) {
-        'exact' => normalizedEmail,
-        'exactDomain' => '@$rawSenderDomain',
-        'entireDomain' => rootDomain ?? rawSenderDomain!,
-        _ => '',
-      };
-
-      return service.addSafeSender(
-        value: value,
-        type: type,
-        senderEmailForConflictCheck: rawSenderEmail,
-      );
+  void _clearFilters() {
+    setState(() {
+      _selectedFolders = {};
+      _searchQuery = '';
+      _searchController.clear();
     });
   }
 
-  Future<void> _bulkCreateBlockRule(String type) async {
-    final ruleProvider = Provider.of<RuleSetProvider>(context, listen: false);
-    final service = RuleQuickActionService(ruleProvider: ruleProvider);
-
-    final label = switch (type) {
-      'from' => 'Add Block Rule (Exact Email)',
-      'exactDomain' => 'Add Block Rule (Exact Domain)',
-      'entireDomain' => 'Add Block Rule (Entire Domain)',
-      _ => 'Add Block Rule',
-    };
-
-    await _runBulkAction(label, (item) {
-      final bodyParser = EmailBodyParser();
-      final rawSenderEmail = bodyParser.extractEmailAddress(item.email.fromEmail);
-      final rawSenderDomain = bodyParser.extractDomainFromEmail(item.email.fromEmail);
-      final rootDomain = PatternNormalization.extractRootDomain(rawSenderDomain);
-
-      // Copilot review (Sprint 46): fail the item on a missing domain
-      // rather than passing ''/'@null' into rule creation.
-      if ((type == 'exactDomain' || type == 'entireDomain') &&
-          (rawSenderDomain == null || rawSenderDomain.isEmpty)) {
-        return Future.value(RuleQuickActionResult(
-          success: false,
-          displayMessage: 'No sender domain available',
-          error: 'malformed From header',
-        ));
-      }
-
-      final value = switch (type) {
-        'from' => rawSenderEmail,
-        'exactDomain' => '@$rawSenderDomain',
-        'entireDomain' => rootDomain ?? rawSenderDomain!,
-        _ => '',
-      };
-
-      return service.createBlockRule(
-        type: type,
-        value: value,
-        senderEmailForConflictCheck: rawSenderEmail,
-        sourceDescription: 'No Rule Review screen',
-      );
+  void _openSearch() {
+    setState(() => _showSearch = true);
+    // MV-1 (Sprint 58): an explicit post-frame focus request on every open
+    // path (the TextField's own autofocus loses to the outer Focus).
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _searchFocusNode.requestFocus();
     });
   }
 
-  /// "Remove Current Rule" (7th bulk action): simply marks the selected
-  /// items as processed without creating any new rule/safe-sender -- the
-  /// user has reviewed them and chosen to dismiss them from the "No rule"
-  /// pool without further action.
-  Future<void> _bulkMarkReviewed() async {
-    final selected = _selectedItems;
-    if (selected.isEmpty) return;
+  void _closeSearch() {
+    setState(() {
+      _showSearch = false;
+      _searchQuery = '';
+      _searchController.clear();
+    });
+  }
 
-    var succeeded = 0;
-    for (final item in selected) {
-      final id = item.email.id;
-      if (id == null) continue;
-      final ok = await _unmatchedStore.markAsProcessed(id, true,
-          reason: NoRuleMarkReason.dismissed);
-      if (ok) succeeded++;
-    }
+  void _onAccountFilterChanged(String value) {
+    setState(() => _accountFilter = value);
+  }
 
-    if (!mounted) return;
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text('Marked $succeeded item${succeeded == 1 ? "" : "s"} as reviewed'),
-        backgroundColor: Colors.blueGrey,
-        duration: const Duration(seconds: 3),
-        behavior: SnackBarBehavior.floating,
+  // --- Pop-up and quick actions (F283) ---
+
+  void _openPopup(_NoRuleItem item,
+      {GlobalKey? itemKey, Offset? anchorPosition, Size? anchorSize}) {
+    showEmailDetailPopup(
+      context,
+      result: item.result,
+      effectiveEval: item.result.evaluationResult,
+      accountEmail: item.accountEmail,
+      // Every row here is unaddressed, so Skip always applies.
+      showSkip: true,
+      itemKey: itemKey,
+      anchorPosition: anchorPosition,
+      anchorSize: anchorSize,
+      onQuickAction: (request, position, size) => _actThenAdvance(
+        item,
+        request: request,
+        anchorPosition: position,
+        anchorSize: size,
+      ),
+      onSkip: (position, size) => _actThenAdvance(
+        item,
+        anchorPosition: position,
+        anchorSize: size,
       ),
     );
+  }
 
-    _clearSelection();
-    await _loadItems();
+  /// Results' auto-advance, on this screen: choose the next row the action
+  /// does NOT cover BEFORE running it, run the action in the background, and
+  /// open the next row's pop-up at once in the same place. [request] null is
+  /// Skip: nothing is changed and nothing counts as covered.
+  void _actThenAdvance(
+    _NoRuleItem current, {
+    QuickActionRequest? request,
+    Offset? anchorPosition,
+    Size? anchorSize,
+  }) {
+    final visible = _visibleItems();
+    final idx = visible.indexWhere((i) => i.email.id == current.email.id);
+    _NoRuleItem? next;
+    if (idx >= 0) {
+      for (final candidate in visible.skip(idx + 1)) {
+        if (request == null || !request.covers(candidate.result.email)) {
+          next = candidate;
+          break;
+        }
+      }
+    }
+
+    if (request != null) {
+      unawaited(_applyQuickAction(current, request).catchError((Object e, StackTrace s) {
+        _logger.e('Review quick action failed', error: e, stackTrace: s);
+      }));
+    }
+
+    if (next != null && mounted) {
+      _openPopup(next, anchorPosition: anchorPosition, anchorSize: anchorSize);
+    }
+  }
+
+  /// Creates the rule or safe sender for [item], marks its row handled, and
+  /// reloads (the reload's sweep marks every other row the new rule covers).
+  Future<void> _applyQuickAction(
+      _NoRuleItem item, QuickActionRequest request) async {
+    final ruleProvider = Provider.of<RuleSetProvider>(context, listen: false);
+    final service = RuleQuickActionService(ruleProvider: ruleProvider);
+    final senderEmail =
+        EmailBodyParser().extractEmailAddress(item.email.fromEmail);
+
+    final RuleQuickActionResult result;
+    if (request.kind == QuickActionKind.safeSender) {
+      // F96: a RED authentication result warns before whitelisting
+      // (mirrors ResultsDisplayScreen._addSafeSender).
+      if (AuthResultsParser.classificationFromName(
+              item.email.authClassification) ==
+          AuthClassification.red) {
+        final proceed = await AuthWarningDialog.showSafeSenderWarning(
+          context,
+          senderEmail: PatternNormalization.normalizeFromHeader(
+              item.email.fromEmail),
+          authResult:
+              AuthResultsParser.syntheticResultFor(AuthClassification.red),
+        );
+        if (!proceed || !mounted) return;
+      }
+      result = await service.addSafeSender(
+        value: request.value,
+        type: request.type,
+        senderEmailForConflictCheck: senderEmail,
+      );
+    } else {
+      result = await service.createBlockRule(
+        type: request.type,
+        value: request.value,
+        senderEmailForConflictCheck:
+            request.type == 'subject' ? null : senderEmail,
+        sourceDescription: 'No Rule Review screen',
+      );
+    }
+
+    if (!result.success) {
+      // F110: mask the sender when it is the user's own address.
+      _logger.w('Review quick action failed for '
+          '${Redact.senderForLog(item.email.fromEmail, {item.accountId})}: '
+          '${result.error}');
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+          content: Text(result.displayMessage),
+          backgroundColor: Colors.red,
+          behavior: SnackBarBehavior.floating,
+        ));
+      }
+      return;
+    }
+
+    final id = item.email.id;
+    if (id != null) {
+      await _unmatchedStore.markAsProcessed(id, true,
+          reason: NoRuleMarkReason.popupAction,
+          detail: '${request.kind.name} ${request.type}');
+    }
+    if (!mounted) return;
+    final reloaded = await _loadItems(showSpinner: false);
+    if (!mounted) return;
+    final parts = <String>[result.displayMessage];
+    // Gated on the reload succeeding (PR #292 re-review): a failed reload
+    // never ran the sweep, so its count would be stale.
+    if (reloaded && _lastSweepCount > 0) {
+      parts.add('$_lastSweepCount more covered by it');
+    }
+    ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+      content: Text(parts.join(' -- ')),
+      backgroundColor:
+          request.kind == QuickActionKind.safeSender ? Colors.green : Colors.blue,
+      duration: const Duration(seconds: 3),
+      behavior: SnackBarBehavior.floating,
+    ));
   }
 
   // --- UI ---
@@ -730,99 +578,189 @@ class _NoRuleReviewScreenState extends State<NoRuleReviewScreen> {
   @override
   Widget build(BuildContext context) {
     return SystemInsetWrapper(
-      child: Scaffold(
-        appBar: AppBarWithExit(
-          title: const Text('Review No Rule Items'),
-          // F134 (Sprint 52): canonical order from the ONE shared builder --
-          // Refresh (screen-specific, first), then View Scan History, Accounts,
-          // Settings, Help, then the auto-appended Exit. Harold specified this
-          // screen explicitly: "Need to add the following icons ... so they
-          // appear in this order: Refresh, View Scan History, Accounts,
-          // Settings, Help".
-          //
-          // includeNoRuleReview: false -- this IS the Review No Rule Items screen; a
-          // self-referential entry point would be noise.
-          // Settings is account-scoped while this screen is cross-account, so the
-          // accountId comes from the F135 resolver (which never prompts here);
-          // when it returns null the builder omits the Settings icon rather than
-          // pushing a bogus id.
-          actions: StandardAppBarActions.build(
-            context: context,
-            // F154 (Sprint 59): this screen finally has its own Help section
-            // (previously deep-linked to resultsDisplay as a nearest-match
-            // stand-in, a gap filed in the F133-S52 findings).
-            helpSection: HelpSection.reviewNoRuleItems,
-            accountId: _resolveAccountIdForSettings(),
-            includeNoRuleReview: false,
-            // Own handler (not the builder's default) purely so this screen can
-            // RELOAD when the scan returns -- a scan can resolve items shown
-            // here. The account/platform resolution itself still lives in the
-            // shared builder.
-            //
-            // NOTE (corrected, PR #292 re-review): because this handler is
-            // non-null, the builder's `onManualScan != null || accountId != null`
-            // guard shows the icon EVEN WITH ZERO ACCOUNTS -- an earlier comment
-            // here claimed the opposite. The zero-account press is handled inside
-            // _openManualScan with an explicit "add an account first" message
-            // rather than a silent return.
-            onManualScan: _openManualScan,
-            leading: [
-              IconButton(
-                icon: const Icon(Icons.refresh),
-                // Harold 2026-07-31: "Refresh" alone reads as "go check for new
-                // mail", which this does NOT do -- it re-reads the scan already
-                // stored locally. Only a Manual Scan contacts the mail server.
-                tooltip: 'Re-check the last scan (does not fetch new mail)',
-                onPressed: _refreshFromUserAction,
+      child: Focus(
+        autofocus: true,
+        // Ctrl+F opens search; Escape closes it (Results, Sprint 58 MV-3).
+        onKeyEvent: (node, event) {
+          if (event is KeyDownEvent) {
+            if ((HardwareKeyboard.instance.isControlPressed ||
+                    HardwareKeyboard.instance.isMetaPressed) &&
+                event.logicalKey == LogicalKeyboardKey.keyF) {
+              _openSearch();
+              return KeyEventResult.handled;
+            }
+            if (_showSearch && event.logicalKey == LogicalKeyboardKey.escape) {
+              _closeSearch();
+              return KeyEventResult.handled;
+            }
+          }
+          return KeyEventResult.ignored;
+        },
+        child: Scaffold(
+          appBar: AppBarWithExit(
+            title: _showSearch
+                ? TextField(
+                    key: const Key('review_search_field'),
+                    controller: _searchController,
+                    focusNode: _searchFocusNode,
+                    autofocus: true,
+                    style: const TextStyle(color: Colors.black),
+                    decoration: const InputDecoration(
+                      hintText: 'Search emails...',
+                      hintStyle: TextStyle(color: Colors.black54),
+                      border: InputBorder.none,
+                    ),
+                    onChanged: (value) => setState(() => _searchQuery = value),
+                  )
+                : const Text('Review No Rule Items'),
+            leading: _showSearch
+                ? IconButton(
+                    icon: const Icon(Icons.arrow_back),
+                    tooltip: 'Close Search',
+                    onPressed: _closeSearch,
+                  )
+                : null,
+            // F134 (Sprint 52): canonical order from the ONE shared builder --
+            // Refresh and Search (screen-specific, first), then View Scan
+            // History, Accounts, Settings, Help, then the auto-appended Exit.
+            // includeNoRuleReview: false -- this IS the Review screen.
+            // Hidden while the search field takes over the AppBar (Results).
+            actions: _showSearch
+                ? const []
+                : StandardAppBarActions.build(
+                    context: context,
+                    helpSection: HelpSection.reviewNoRuleItems,
+                    accountId: _resolveAccountIdForSettings(),
+                    includeNoRuleReview: false,
+                    // Own handler so this screen can RELOAD when the scan
+                    // returns; zero accounts get an explicit message.
+                    onManualScan: _openManualScan,
+                    leading: [
+                      IconButton(
+                        icon: const Icon(Icons.refresh),
+                        // Harold 2026-07-31: this re-reads the stored list;
+                        // only a Manual Scan contacts the mail server.
+                        tooltip: 'Re-check the last scan (does not fetch new mail)',
+                        onPressed: _refreshFromUserAction,
+                      ),
+                      IconButton(
+                        tooltip: 'Search (Ctrl+F)',
+                        icon: const Icon(Icons.search),
+                        onPressed: _openSearch,
+                      ),
+                    ],
+                  ),
+          ),
+          body: Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            mainAxisSize: MainAxisSize.max,
+            children: [
+              const ScreenVersionLine(),
+              Expanded(
+                child: _isLoading
+                    ? const Center(child: CircularProgressIndicator())
+                    : SelectionArea(child: _buildBody()),
               ),
             ],
           ),
         ),
-        body: Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        mainAxisSize: MainAxisSize.max,
-        children: [
-          const ScreenVersionLine(),
-          Expanded(child: _isLoading
-            ? const Center(child: CircularProgressIndicator())
-            : SelectionArea(child: _buildBody())),
-        ],
-      ),
       ),
     );
   }
 
   Widget _buildBody() {
-    return Column(
-      children: [
-        if (_distinctAccounts.length > 1) _buildAccountFilter(),
-        _buildSelectionBar(),
-        const Divider(height: 1),
-        Expanded(
-          child: _filteredItems.isEmpty ? _buildEmptyState() : _buildList(),
-        ),
-      ],
+    final scoped = _scopedItems;
+    final visible = _visibleItems();
+    final folders = scoped.map((i) => i.email.folderName).toSet().toList()
+      ..sort();
+    return Padding(
+      padding: const EdgeInsets.all(8),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          _buildSummary(scoped.length, folders),
+          if (_filtersActive) ...[
+            const SizedBox(height: 8),
+            ResultFilterStatusBar(
+              filteredCount: visible.length,
+              totalCount: scoped.length,
+              onClear: _clearFilters,
+            ),
+          ],
+          const SizedBox(height: 4),
+          Expanded(
+            child: visible.isEmpty ? _buildEmptyState() : _buildList(visible),
+          ),
+        ],
+      ),
     );
   }
 
-  /// F169 (Sprint 61): single-select account DROPDOWN, replacing the
-  /// horizontally scrolling chip Row.
-  ///
-  /// The chips were laid out in a `SingleChildScrollView(Axis.horizontal)`
-  /// with NO scroll affordance, so on a phone the second chip clipped at the
-  /// window edge and any third account was off-screen entirely -- an account
-  /// the user could not reach at all (Harold, 2026-08-16: "All account must be
-  /// viewable"). A dropdown is width-independent by construction, so it cannot
-  /// clip at any window size.
-  ///
-  /// Mirrors the F166 pattern on `results_display_screen` (PopupMenuButton
-  /// whose face shows the active selection with its live count) rather than
-  /// inventing a second account-selection idiom. Shared widget: identical on
-  /// Windows and Android per the Sprint 61 parity rule.
+  /// The Results summary card: title, then the chip row -- the fixed
+  /// "No rule (N)" chip (F4 = 1: it shows the count and is not a drop-down),
+  /// the account drop-down (always shown, MV-Q14), Folders, then Sort.
+  Widget _buildSummary(int scopedCount, List<String> folders) {
+    return Card(
+      child: Padding(
+        padding: const EdgeInsets.all(12),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const Text(
+              'Unaddressed "No rule" emails',
+              style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+            ),
+            const SizedBox(height: 8),
+            Wrap(
+              spacing: 12,
+              runSpacing: 12,
+              crossAxisAlignment: WrapCrossAlignment.center,
+              children: [
+                Semantics(
+                  container: true,
+                  label: 'No rule: $scopedCount emails',
+                  excludeSemantics: true,
+                  child: Chip(
+                    key: const Key('review_no_rule_chip'),
+                    label: Text('No rule ($scopedCount)'),
+                    backgroundColor: const Color(0xFF757575),
+                    labelStyle: const TextStyle(
+                      color: Colors.white,
+                      fontWeight: FontWeight.bold,
+                    ),
+                    side: BorderSide.none,
+                    padding:
+                        const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                  ),
+                ),
+                _buildAccountFilter(),
+                FolderFilterChip(
+                  folders: folders,
+                  selected: _selectedFolders,
+                  onChanged: (s) => setState(() => _selectedFolders = s),
+                ),
+                ResultSortChip(
+                  order: _sortOrder,
+                  onToggle: () => setState(() {
+                    _sortOrder = _sortOrder == ResultSortOrder.newestFirst
+                        ? ResultSortOrder.folderDomainAddress
+                        : ResultSortOrder.newestFirst;
+                  }),
+                ),
+              ],
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  /// F169 (Sprint 61) / F283: the single-select account drop-down, styled like
+  /// the Folders chip and ALWAYS shown (MV-Q14), with each account's count.
+  /// A drop-down is width-independent, so no account can clip off a phone
+  /// screen (Harold, 2026-08-16: "All account must be viewable"). Carries
+  /// button semantics (F284 R-1).
   Widget _buildAccountFilter() {
-    // PR #347 review (Copilot): count per account in ONE pass over _allItems
-    // instead of a where().length scan per account (O(accounts x items) per
-    // rebuild on a screen that rebuilds per selection tap).
     final countsByAccount = <String, int>{};
     for (final item in _allItems) {
       countsByAccount.update(item.accountId, (c) => c + 1, ifAbsent: () => 1);
@@ -840,169 +778,77 @@ class _NoRuleReviewScreenState extends State<NoRuleReviewScreen> {
     ];
 
     final activeLabel = options
-        .firstWhere((o) => o.$2 == _accountFilter,
-            orElse: () => options.first)
+        .firstWhere((o) => o.$2 == _accountFilter, orElse: () => options.first)
         .$1;
+    final isFiltered = _accountFilter != 'all';
 
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-      child: Align(
-        alignment: Alignment.centerLeft,
-        child: PopupMenuButton<String>(
-          tooltip: 'Filter by account',
-          onSelected: _onAccountFilterChanged,
-          itemBuilder: (context) => [
-            for (final option in options)
-              PopupMenuItem<String>(
-                value: option.$2,
-                child: Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    // Check the active entry so the current selection is
-                    // obvious inside the menu, not only on the face.
-                    SizedBox(
-                      width: 24,
-                      child: option.$2 == _accountFilter
-                          ? const Icon(Icons.check, size: 18)
-                          : null,
-                    ),
-                    // Flexible + ellipsis: a long account label must not
-                    // overflow the menu at phone width -- caught by the F169
-                    // test at 411px, which is the exact width the old chip row
-                    // failed at.
-                    Flexible(
-                      child: Text(option.$1, overflow: TextOverflow.ellipsis),
-                    ),
-                  ],
-                ),
+    return Semantics(
+      container: true,
+      button: true,
+      label: activeLabel,
+      hint: 'Filter by account',
+      child: PopupMenuButton<String>(
+        tooltip: 'Filter by account',
+        onSelected: _onAccountFilterChanged,
+        itemBuilder: (context) => [
+          for (final option in options)
+            PopupMenuItem<String>(
+              value: option.$2,
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  // Check the active entry so the current selection is
+                  // obvious inside the menu, not only on the face.
+                  SizedBox(
+                    width: 24,
+                    child: option.$2 == _accountFilter
+                        ? const Icon(Icons.check, size: 18)
+                        : null,
+                  ),
+                  // Flexible + ellipsis: a long account label must not
+                  // overflow the menu at phone width (F169, 411px).
+                  Flexible(
+                    child: Text(option.$1, overflow: TextOverflow.ellipsis),
+                  ),
+                ],
               ),
-          ],
-          child: Chip(
-            label: Row(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Flexible(
-                  child: Text(activeLabel, overflow: TextOverflow.ellipsis),
-                ),
-                const Icon(Icons.arrow_drop_down, size: 20),
-              ],
             ),
+        ],
+        child: Chip(
+          key: const Key('review_account_chip'),
+          avatar: const Icon(Icons.account_circle, size: 18),
+          label: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Flexible(
+                child: Text(activeLabel, overflow: TextOverflow.ellipsis),
+              ),
+              const Icon(Icons.arrow_drop_down, size: 20, color: Colors.white),
+            ],
           ),
+          backgroundColor:
+              isFiltered ? Colors.indigo.withValues(alpha: 0.7) : Colors.indigo,
+          labelStyle: TextStyle(
+            color: Colors.white,
+            fontWeight: isFiltered ? FontWeight.w900 : FontWeight.bold,
+          ),
+          side: isFiltered
+              ? const BorderSide(color: Colors.black, width: 2)
+              : BorderSide.none,
+          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
         ),
       ),
     );
   }
 
-  /// Applies an account-filter change. Extracted from the old chip handler so
-  /// the behavior is IDENTICAL: set the filter, re-apply it, and CLEAR THE
-  /// SELECTION -- dropping that last step would let a hidden selection from
-  /// one account carry over into another.
-  void _onAccountFilterChanged(String value) {
-    setState(() {
-      _accountFilter = value;
-      _applyFilter();
-      _clearSelection();
-    });
-  }
-
-  Widget _buildSelectionBar() {
-    final count = _selectedIds.length;
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-      // F115 (Sprint 47): when items are selected, order is
-      // `Apply Rule` (left) -> `N selected` -> ~5 spaces -> `Clear`.
-      // With nothing selected, just show the item count.
-      // F171/F169 (Sprint 61): this Row overflowed by ~105px at 411px width --
-      // a PRE-EXISTING narrow-width defect (the selection bar is untouched by
-      // F169; the new dropdown test simply rendered at a phone width for the
-      // first time and exposed it). The fixed 40px gap plus three intrinsic
-      // children exceeded a phone's width whenever a selection was active.
-      // Fixed by letting the label flex and shrink instead of forcing its
-      // natural size, and by replacing the fixed gap + Spacer with a single
-      // flexible gap.
-      child: Row(
-        children: [
-          if (count > 0) ...[
-            _buildBulkActionMenu(),
-            const SizedBox(width: 12),
-            Flexible(
-              child: Text(
-                '$count selected',
-                overflow: TextOverflow.ellipsis,
-                style: Theme.of(context).textTheme.bodyMedium,
-              ),
-            ),
-            // Was SizedBox(width: 40) + Spacer(): the fixed gap is what tipped
-            // narrow widths over. A flexible spacer keeps the same visual
-            // separation on desktop while collapsing on a phone.
-            const Spacer(),
-            TextButton(onPressed: _clearSelection, child: const Text('Clear')),
-          ] else ...[
-            Flexible(
-              child: Text(
-                '${_filteredItems.length} item${_filteredItems.length == 1 ? "" : "s"}',
-                overflow: TextOverflow.ellipsis,
-                style: Theme.of(context).textTheme.bodyMedium,
-              ),
-            ),
-            const Spacer(),
-          ],
-        ],
-      ),
-    );
-  }
-
-  /// 7 bulk actions per F39 acceptance criteria, in a right-click-style
-  /// menu (PopupMenuButton -- Flutter's cross-platform equivalent that also
-  /// responds to a primary click, satisfying the "right-click context menu"
-  /// requirement on Windows desktop via secondary-click launch below).
-  Widget _buildBulkActionMenu() {
-    return PopupMenuButton<String>(
-      tooltip: 'Bulk Actions',
-      child: const Chip(
-        avatar: Icon(Icons.rule_folder, size: 18),
-        label: Text('Apply Rule'),
-      ),
-      onSelected: (value) {
-        switch (value) {
-          case 'safe_exact':
-            _bulkAddSafeSender('exact');
-            break;
-          case 'safe_exactDomain':
-            _bulkAddSafeSender('exactDomain');
-            break;
-          case 'safe_entireDomain':
-            _bulkAddSafeSender('entireDomain');
-            break;
-          case 'block_from':
-            _bulkCreateBlockRule('from');
-            break;
-          case 'block_exactDomain':
-            _bulkCreateBlockRule('exactDomain');
-            break;
-          case 'block_entireDomain':
-            _bulkCreateBlockRule('entireDomain');
-            break;
-          case 'remove_rule':
-            _bulkMarkReviewed();
-            break;
-        }
-      },
-      itemBuilder: (context) => const [
-        PopupMenuItem(value: 'safe_exact', child: Text('Add Safe Sender - Exact Email')),
-        PopupMenuItem(value: 'safe_exactDomain', child: Text('Add Safe Sender - Exact Domain')),
-        PopupMenuItem(value: 'safe_entireDomain', child: Text('Add Safe Sender - Entire Domain')),
-        PopupMenuDivider(),
-        PopupMenuItem(value: 'block_from', child: Text('Add Block Rule - Exact Email')),
-        PopupMenuItem(value: 'block_exactDomain', child: Text('Add Block Rule - Exact Domain')),
-        PopupMenuItem(value: 'block_entireDomain', child: Text('Add Block Rule - Entire Domain')),
-        PopupMenuDivider(),
-        PopupMenuItem(value: 'remove_rule', child: Text('Remove Current Rule')),
-      ],
-    );
-  }
-
   Widget _buildEmptyState() {
+    if (_allItems.isNotEmpty) {
+      return const EmptyState(
+        icon: Icons.filter_list_off,
+        title: 'No matching items',
+        message: 'No "No rule" email matches the current filters.',
+      );
+    }
     return const EmptyState(
       icon: Icons.check_circle_outline,
       title: 'No unaddressed items',
@@ -1010,174 +856,28 @@ class _NoRuleReviewScreenState extends State<NoRuleReviewScreen> {
     );
   }
 
-  Widget _buildList() {
+  Widget _buildList(List<_NoRuleItem> visible) {
     final n = _providerGroupCount;
-    return ListView.separated(
-      padding: const EdgeInsets.all(8),
-      itemCount: _filteredItems.length + (n > 0 ? 2 : 0),
-      separatorBuilder: (_, __) => const SizedBox(height: 2),
+    final showAccount = _distinctAccounts.length > 1;
+    Widget tile(_NoRuleItem item) => EmailResultTile(
+          key: ValueKey('review_row_${item.email.id}'),
+          result: item.result,
+          ruleName: '',
+          accountLabel: showAccount ? item.accountEmail : null,
+          onTap: (tileKey) => _openPopup(item, itemKey: tileKey),
+        );
+    return ListView.builder(
+      itemCount: visible.length + (n > 0 ? 2 : 0),
       itemBuilder: (context, index) {
         // IMP-1 (Sprint 46 retro): provider-group heading + end indicator
-        // wrap the first n tiles; without provider senders the list renders
-        // exactly as before.
-        if (n <= 0) return _buildItemTile(index);
+        // wrap the first n rows; without provider senders the list renders
+        // plainly.
+        if (n <= 0) return tile(visible[index]);
         if (index == 0) return ProviderGroupHeader(count: n);
-        if (index <= n) return _buildItemTile(index - 1);
+        if (index <= n) return tile(visible[index - 1]);
         if (index == n + 1) return const ProviderGroupEnd();
-        return _buildItemTile(index - 2);
+        return tile(visible[index - 2]);
       },
     );
-  }
-
-  Widget _buildItemTile(int index) {
-    final item = _filteredItems[index];
-    final id = item.email.id;
-    final isSelected = id != null && _selectedIds.contains(id);
-    final decodedFrom = PatternNormalization.normalizeAndDecodeEmail(item.email.fromEmail);
-    final subject = item.email.subject?.isNotEmpty == true ? item.email.subject! : 'No subject';
-
-    // F129 (Sprint 51): the row carries an accessible name so the sender and
-    // subject are announced together as one selectable unit.
-    //
-    // NOTE (verified by test, not assumed): `explicitChildNodes: true` here
-    // SUPPRESSED the checkbox's own semantics node, so its "Select <sender>"
-    // label disappeared from the tree. The row is a plain container instead --
-    // the checkbox keeps its own node and its own label.
-    return Semantics(
-      container: true,
-      selected: isSelected,
-      label: '$decodedFrom - $subject',
-      child: Card(
-      elevation: isSelected ? 3 : 1,
-      color: isSelected ? Theme.of(context).colorScheme.primaryContainer.withOpacity(0.4) : null,
-      child: InkWell(
-        onTap: () => _handleItemTap(
-          index,
-          ctrlPressed: HardwareKeyboard.instance.isControlPressed,
-          shiftPressed: HardwareKeyboard.instance.isShiftPressed,
-        ),
-        onLongPress: () => _handleItemLongPress(index),
-        onSecondaryTapDown: (details) {
-          if (id != null && !_selectedIds.contains(id)) {
-            setState(() {
-              _selectedIds
-                ..clear()
-                ..add(id);
-              _lastClickedIndex = index;
-            });
-          }
-          _showContextMenu(context, details.globalPosition);
-        },
-        child: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-          child: Row(
-            children: [
-              // F129 (Sprint 51): a bare Checkbox announces only "checkbox"
-              // -- it does not say WHICH email it selects, so 18 rows produced
-              // 18 indistinguishable controls. The tooltip is what actually
-              // reaches the Windows UIA projection (Semantics(label:) on a
-              // merged container does not -- Sprint 51 finding), so the
-              // sender name is carried BOTH ways: a semantics label for
-              // screen readers and a tooltip for UI automation.
-              // Both wrappers ARE needed, and the order matters -- verified by
-              // test, not assumed:
-              //   * Tooltip alone -> no semantics label (the widget test for
-              //     'Select <sender>' fails), so screen readers announce only
-              //     "checkbox".
-              //   * Semantics alone -> the label never reaches the Windows UIA
-              //     projection (Sprint 51 finding), so automation cannot see it.
-              // Semantics OUTSIDE keeps the Checkbox as the innermost hit
-              // target, avoiding the stacked-node click problem seen on the
-              // account picker.
-              Semantics(
-                label: 'Select $decodedFrom',
-                checked: isSelected,
-                child: Tooltip(
-                  message: 'Select $decodedFrom',
-                  child: Checkbox(
-                    value: isSelected,
-                    onChanged: (_) => id != null ? _toggleSelection(id) : null,
-                  ),
-                ),
-              ),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    if (_distinctAccounts.length > 1)
-                      Text(
-                        item.accountEmail,
-                        style: TextStyle(
-                          fontSize: 11,
-                          fontWeight: FontWeight.w600,
-                          color: Theme.of(context).colorScheme.primary,
-                        ),
-                      ),
-                    Text(decodedFrom, style: const TextStyle(fontWeight: FontWeight.w600)),
-                    Text(
-                      subject,
-                      style: TextStyle(fontSize: 12, color: Colors.grey.shade700),
-                      overflow: TextOverflow.ellipsis,
-                    ),
-                  ],
-                ),
-              ),
-            ],
-          ),
-        ),
-      ),
-      ),
-    );
-  }
-
-  void _showContextMenu(BuildContext context, Offset position) {
-    // Copilot round 5: anchor against the overlay so the menu is placed at
-    // the click point without being clipped near the right/bottom edges
-    // (fromLTRB with mirrored dx/dy over-constrained the available rect).
-    final overlay =
-        Overlay.of(context).context.findRenderObject() as RenderBox;
-    showMenu<String>(
-      context: context,
-      position: RelativeRect.fromRect(
-        Rect.fromLTWH(position.dx, position.dy, 0, 0),
-        Offset.zero & overlay.size,
-      ),
-      items: const [
-        PopupMenuItem(value: 'safe_exact', child: Text('Add Safe Sender - Exact Email')),
-        PopupMenuItem(value: 'safe_exactDomain', child: Text('Add Safe Sender - Exact Domain')),
-        PopupMenuItem(value: 'safe_entireDomain', child: Text('Add Safe Sender - Entire Domain')),
-        PopupMenuDivider(),
-        PopupMenuItem(value: 'block_from', child: Text('Add Block Rule - Exact Email')),
-        PopupMenuItem(value: 'block_exactDomain', child: Text('Add Block Rule - Exact Domain')),
-        PopupMenuItem(value: 'block_entireDomain', child: Text('Add Block Rule - Entire Domain')),
-        PopupMenuDivider(),
-        PopupMenuItem(value: 'remove_rule', child: Text('Remove Current Rule')),
-      ],
-    ).then((value) {
-      if (value == null) return;
-      switch (value) {
-        case 'safe_exact':
-          _bulkAddSafeSender('exact');
-          break;
-        case 'safe_exactDomain':
-          _bulkAddSafeSender('exactDomain');
-          break;
-        case 'safe_entireDomain':
-          _bulkAddSafeSender('entireDomain');
-          break;
-        case 'block_from':
-          _bulkCreateBlockRule('from');
-          break;
-        case 'block_exactDomain':
-          _bulkCreateBlockRule('exactDomain');
-          break;
-        case 'block_entireDomain':
-          _bulkCreateBlockRule('entireDomain');
-          break;
-        case 'remove_rule':
-          _bulkMarkReviewed();
-          break;
-      }
-    });
   }
 }

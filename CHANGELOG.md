@@ -27,6 +27,8 @@ Format: `- **type**: Description (Issue #N)` where type is feat|fix|chore|docs
 ## [Unreleased]
 
 ### 2026-10-10 (Sprint 78)
+- **feat**: Review No Rule Items now looks and works like the Results screen: search (Ctrl+F), account, Folders and Sort choices, and tapping an email opens the same details as Results, with the same Safe Sender, Block Rule and Skip actions; the next email opens automatically. The checkboxes and bulk menu were removed (Issue #475)
+- **feat**: The email details on Results and Review No Rule Items now name the account the email belongs to, next to the date (Issue #475)
 - **feat**: "Scan every" is now a list of intervals (5 minutes to 24 hours) with a Custom... choice for any other value in that range; a saved longer interval becomes 24 hours, and the setting appears only while background scanning is on for the account (Issue #478)
 - **feat**: Every file the app writes for you now goes to one folder, MyEmailSpamFilter in Documents, on both Windows and Android (scan exports in scan_exports, the diagnostic log in diagnostics). A folder you chose in Settings > General is still used exactly as chosen, and existing files are not moved (Issue #473)
 

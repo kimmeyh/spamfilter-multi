@@ -19,6 +19,13 @@ import '../../helpers/db_widget_test_harness.dart';
 /// F39 (Sprint 46): widget tests for the cross-account "No rule" review
 /// screen.
 ///
+/// F283 (Sprint 78): the screen was rebuilt on the Results pieces -- the count
+/// is the fixed "No rule (N)" chip, a row tap opens the shared pop-up, and a
+/// quick action there replaces the removed multi-select bulk menu (MV-Q16).
+/// The bulk-action tests were rewritten to drive the pop-up; their contracts
+/// (covered rows swept, stale sweep count never claimed, the MT-2b race) are
+/// unchanged.
+///
 /// Two known hazards from prior sprints' test infrastructure, both
 /// documented in results_display_no_rule_reload_test.dart:
 /// (1) sqflite_common_ffi issues real FFI calls that never resolve in the
@@ -152,6 +159,35 @@ void main() {
       tester, buildTestWidget(),
       settleDelay: const Duration(milliseconds: 500));
 
+  Finder noRuleChip(int n) => find.text('No rule ($n)');
+
+  /// Opens [sender]'s pop-up and taps [action] in it, letting the background
+  /// rule write, mark and reload finish (all real I/O -> runAsync).
+  Future<void> popupAction(
+      WidgetTester tester, String sender, String action) async {
+    await tester.runAsync(() async {
+      await tester.tap(find.text(sender).first);
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 300));
+      await tester.tap(find.text(action));
+      await tester.pump();
+      await Future<void>.delayed(const Duration(milliseconds: 800));
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 300));
+    });
+  }
+
+  /// Closes any open pop-up (the auto-advance opens the next one).
+  Future<void> closePopups(WidgetTester tester) async {
+    for (var i = 0;
+        i < 5 && find.text('Create Block Rule').evaluate().isNotEmpty;
+        i++) {
+      await tester.tapAt(const Offset(5, 5));
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 300));
+    }
+  }
+
   testWidgets('shows empty state when no accounts have No rule items',
       (tester) async {
     await tester.runAsync(() async {
@@ -208,7 +244,7 @@ void main() {
       await mountAndLoad(tester);
     });
 
-    expect(find.text('5 items'), findsOneWidget);
+    expect(noRuleChip(5), findsOneWidget);
     expect(find.text('All Accounts (5)'), findsOneWidget);
   });
 
@@ -236,8 +272,11 @@ void main() {
       await mountAndLoad(tester);
     });
 
-    expect(find.text('2 items'), findsOneWidget,
+    expect(noRuleChip(2), findsOneWidget,
         reason: 'precondition: the list loaded');
+    expect(find.byTooltip('Filter by account'), findsOneWidget,
+        reason: 'F283 MV-Q14: the account drop-down shows even with ONE saved '
+            'account (it used to hide)');
 
     // No rules were added between load and refresh, so nothing can become
     // covered -- the exact case Harold hit.
@@ -254,7 +293,7 @@ void main() {
             'made this look broken');
 
     // The list itself must be unchanged: this is feedback, not behavior.
-    expect(find.text('2 items'), findsOneWidget);
+    expect(noRuleChip(2), findsOneWidget);
   });
 
   testWidgets('account filter dropdown narrows the list to one account',
@@ -286,11 +325,15 @@ void main() {
     await tester.tap(find.textContaining('a@example.com (2)').last);
     await tester.pumpAndSettle();
 
-    expect(find.text('2 items'), findsOneWidget);
+    expect(noRuleChip(2), findsOneWidget);
   });
 
-  testWidgets('checkbox tap selects an item and shows the bulk action menu',
-      (tester) async {
+  // F283 AC-3 (MV-Q16): multi-select and bulk actions are gone.
+  //
+  // What this does NOT catch: a selection reached by a gesture this test does
+  // not try (only tap and long-press on a row).
+  testWidgets('F283 AC-3: no checkbox, selection bar or bulk menu; tap and '
+      'long-press select nothing', (tester) async {
     tester.view.physicalSize = const Size(1200, 2400);
     tester.view.devicePixelRatio = 1.0;
     addTearDown(tester.view.resetPhysicalSize);
@@ -301,16 +344,82 @@ void main() {
       registerSavedAccount('gmail-a@example.com');
       await insertCompletedScan('gmail-a@example.com',
           completedAtMs: 1000, noRuleCount: 1);
-
       await mountAndLoad(tester);
     });
 
-    expect(find.byType(Checkbox), findsOneWidget);
-    await tester.tap(find.byType(Checkbox));
+    expect(find.byType(Checkbox), findsNothing);
+    expect(find.text('Apply Rule'), findsNothing);
+    expect(find.byTooltip('Bulk Actions'), findsNothing);
+    await tester.longPress(find.text('sender0@spam.example'));
+    await tester.pump();
+    expect(find.textContaining('selected'), findsNothing);
+  });
+
+  // F283 AC-4 (MV-Q17): a row tap opens the Results pop-up, and its date row
+  // names the ACCOUNT the email belongs to.
+  //
+  // What this does NOT catch: the pop-up's placement on a phone (the compact
+  // width path), which keeps its own Results tests.
+  testWidgets('F283 AC-4: tapping a row opens the Results pop-up naming the '
+      'account', (tester) async {
+    tester.view.physicalSize = const Size(1200, 2400);
+    tester.view.devicePixelRatio = 1.0;
+    addTearDown(tester.view.resetPhysicalSize);
+    addTearDown(tester.view.resetDevicePixelRatio);
+
+    await tester.runAsync(() async {
+      await testHelper.createTestAccount('gmail-a@example.com');
+      registerSavedAccount('gmail-a@example.com');
+      await insertCompletedScan('gmail-a@example.com',
+          completedAtMs: 1000, noRuleCount: 1);
+      await mountAndLoad(tester);
+    });
+
+    await tester.tap(find.text('sender0@spam.example'));
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 300));
+    expect(find.text('Create Block Rule'), findsOneWidget);
+    expect(find.text('Skip'), findsOneWidget,
+        reason: 'every Review row is unaddressed, so Skip always applies');
+    expect(find.text('a@example.com'), findsOneWidget,
+        reason: 'the pop-up date row names the account email');
+  });
+
+  // F283 AC-1 (T-1): search over sender, subject and folder, with the
+  // Results "Showing X of Y" bar; closing search restores the list.
+  //
+  // What this does NOT catch: Ctrl+F on a real keyboard focus chain (the test
+  // opens search with the icon).
+  testWidgets('F283 AC-1: typing part of a subject shows only matching rows '
+      'and "Showing 1 of 3 emails"', (tester) async {
+    tester.view.physicalSize = const Size(1200, 2400);
+    tester.view.devicePixelRatio = 1.0;
+    addTearDown(tester.view.resetPhysicalSize);
+    addTearDown(tester.view.resetDevicePixelRatio);
+
+    await tester.runAsync(() async {
+      await testHelper.createTestAccount('gmail-a@example.com');
+      registerSavedAccount('gmail-a@example.com');
+      await insertCompletedScan('gmail-a@example.com',
+          completedAtMs: 1000, noRuleCount: 3);
+      await mountAndLoad(tester);
+    });
+
+    await tester.tap(find.byTooltip('Search (Ctrl+F)'));
+    await tester.pump();
+    await tester.enterText(
+        find.byKey(const Key('review_search_field')), 'subject 1');
     await tester.pump();
 
-    expect(find.text('1 selected'), findsOneWidget);
-    expect(find.text('Apply Rule'), findsOneWidget);
+    expect(find.text('sender1@spam.example'), findsOneWidget);
+    expect(find.text('sender0@spam.example'), findsNothing);
+    expect(find.text('sender2@spam.example'), findsNothing);
+    expect(find.textContaining('Showing 1 of 3 emails'), findsOneWidget);
+
+    await tester.tap(find.byTooltip('Close Search'));
+    await tester.pump();
+    expect(find.text('sender0@spam.example'), findsOneWidget);
+    expect(find.textContaining('Showing'), findsNothing);
   });
 
   // MT-2 (Sprint 50, Harold manual validation): a bulk block action must
@@ -318,8 +427,8 @@ void main() {
   // no 'failed to add block rule'), and (b) auto-resolve UNSELECTED items
   // the new rule covers -- Live Scan parity.
   testWidgets(
-      'bulk Block Entire Domain resolves selected items AND auto-resolves '
-      'unselected items the rule covers (MT-2)', (tester) async {
+      'pop-up Block Entire Domain resolves the row AND auto-resolves the '
+      'other rows the rule covers (MT-2)', (tester) async {
     tester.view.physicalSize = const Size(1200, 2400);
     tester.view.devicePixelRatio = 1.0;
     addTearDown(tester.view.resetPhysicalSize);
@@ -353,37 +462,30 @@ void main() {
       await mountAndLoad(tester);
     });
 
-    expect(find.text('3 items'), findsOneWidget);
+    expect(noRuleChip(3), findsOneWidget);
 
-    // Select ONLY the first dupdomain item.
-    await tester.tap(find.byType(Checkbox).first);
-    await tester.pump();
-    expect(find.text('1 selected'), findsOneWidget);
+    // F283: the pop-up's Block Entire Domain on the first dupdomain row.
+    await popupAction(tester, 'first@dupdomain.example', 'Block Entire Domain');
+    // Auto-advance skipped the row the new rule covers (second@dupdomain) and
+    // opened the next uncovered one (Results' F136 / Sprint 46 behavior).
+    expect(find.text('Create Block Rule'), findsOneWidget,
+        reason: 'the next pop-up opens at once');
+    expect(find.text('second@dupdomain.example'), findsNothing,
+        reason: 'the advance must skip a row the new rule covers');
+    expect(find.text('other@keepme.example'), findsAtLeastNWidgets(2),
+        reason: 'the advanced pop-up shows the next uncovered sender');
+    await closePopups(tester);
 
-    // Run the bulk action (menu tap handlers hit the DB -> runAsync).
-    await tester.runAsync(() async {
-      await tester.tap(find.text('Apply Rule'));
-      // Pump the popup-menu open ANIMATION frames before tapping the item --
-      // an un-pumped menu is still at its origin and the tap misses.
-      await tester.pump();
-      await tester.pump(const Duration(milliseconds: 300));
-      await tester.tap(find.text('Add Block Rule - Entire Domain'));
-      await tester.pump();
-      await Future<void>.delayed(const Duration(milliseconds: 800));
-      await tester.pump();
-      await tester.pump(const Duration(milliseconds: 300));
-    });
-
-    // Selected item resolved AND the unselected same-domain item
-    // auto-resolved; only the other-domain item remains.
-    expect(find.text('1 item'), findsOneWidget);
+    // The acted row resolved AND the other same-domain row was swept; only
+    // the other-domain row remains.
+    expect(noRuleChip(1), findsOneWidget);
     expect(find.text('other@keepme.example'), findsOneWidget);
     expect(find.text('first@dupdomain.example'), findsNothing);
     expect(find.text('second@dupdomain.example'), findsNothing);
   });
 
   testWidgets(
-      'bulk summary omits the STALE sweep count when the post-action reload '
+      'action summary omits the STALE sweep count when the post-action reload '
       'fails (PR #292 re-review)', (tester) async {
     // _lastSweepCount is only reset inside _sweepCoveredItems, which a FAILED
     // reload never reaches -- so an ungated summary would append the PREVIOUS
@@ -422,25 +524,15 @@ void main() {
       await mountAndLoad(tester);
     });
 
-    // FIRST bulk action: blocking dupdomain sweeps the unselected sibling,
-    // leaving _lastSweepCount == 1 (the stale value the gate must suppress).
-    await tester.tap(find.byType(Checkbox).first);
-    await tester.pump();
-    await tester.runAsync(() async {
-      await tester.tap(find.text('Apply Rule'));
-      await tester.pump();
-      await tester.pump(const Duration(milliseconds: 300));
-      await tester.tap(find.text('Add Block Rule - Entire Domain'));
-      await tester.pump();
-      await Future<void>.delayed(const Duration(milliseconds: 800));
-      await tester.pump();
-      await tester.pump(const Duration(milliseconds: 300));
-    });
-    expect(find.text('1 item'), findsOneWidget,
-        reason: 'precondition: the first bulk action resolved the pair, '
-            'sweeping the unselected sibling');
+    // FIRST action: blocking dupdomain sweeps the sibling, leaving
+    // _lastSweepCount == 1 (the stale value the gate must suppress).
+    await popupAction(tester, 'first@dupdomain.example', 'Block Entire Domain');
+    await closePopups(tester);
+    expect(noRuleChip(1), findsOneWidget,
+        reason: 'precondition: the first action resolved the pair, sweeping '
+            'the sibling');
 
-    // The FIRST action's summary legitimately says "1 more auto-resolved" --
+    // The FIRST action's summary legitimately says "1 more covered by it" --
     // clear the whole SnackBar queue so the loop below can only be failed by a
     // SECOND-round (stale) claim.
     final messenger =
@@ -448,7 +540,7 @@ void main() {
     messenger.clearSnackBars();
     await tester.pump();
     await tester.pump(const Duration(seconds: 1));
-    expect(find.textContaining('auto-resolved'), findsNothing,
+    expect(find.textContaining('more covered by it'), findsNothing,
         reason: 'precondition: the first-round summary must have been cleared');
 
     // Break the reload path only: the second batch itself (rule insert +
@@ -459,19 +551,9 @@ void main() {
       await db.execute('DROP TABLE IF EXISTS scan_results');
     });
 
-    // SECOND bulk action: batch succeeds, reload fails.
-    await tester.tap(find.byType(Checkbox).first);
-    await tester.pump();
-    await tester.runAsync(() async {
-      await tester.tap(find.text('Apply Rule'));
-      await tester.pump();
-      await tester.pump(const Duration(milliseconds: 300));
-      await tester.tap(find.text('Add Block Rule - Entire Domain'));
-      await tester.pump();
-      await Future<void>.delayed(const Duration(milliseconds: 800));
-      await tester.pump();
-      await tester.pump(const Duration(milliseconds: 300));
-    });
+    // SECOND action: the rule write succeeds, the reload fails.
+    await popupAction(tester, 'other@keepme.example', 'Block Entire Domain');
+    await closePopups(tester);
 
     // The load-failure SnackBar shows FIRST, and the batch summary queues
     // behind it. Its auto-dismiss uses a real-time Timer that `pump(duration)`
@@ -484,20 +566,32 @@ void main() {
         reason: 'the reload failure must be the FIRST thing the user sees');
 
     messenger.hideCurrentSnackBar();
-    Finder summary = find.textContaining('succeeded');
-    for (var i = 0; i < 20 && summary.evaluate().isEmpty; i++) {
+    // Advance the queue until the action's own summary SnackBar is showing
+    // (the load-failure one was just dismissed). Read THAT SnackBar's text,
+    // never a list row: a first version matched the row and passed against
+    // the ungated mutation (RM4).
+    Finder summary = find.descendant(
+        of: find.byType(SnackBar), matching: find.byType(Text));
+    for (var i = 0; i < 20; i++) {
       await tester.pump(const Duration(milliseconds: 250));
-      summary = find.textContaining('succeeded');
+      summary = find.descendant(
+          of: find.byType(SnackBar), matching: find.byType(Text));
+      final texts = tester.widgetList<Text>(summary).map((t) => t.data ?? '');
+      if (texts.isNotEmpty && !texts.any((t) => t.contains('Could not load'))) {
+        break;
+      }
     }
-    expect(summary, findsOneWidget,
-        reason: 'the batch summary must still appear once the error is '
-            'dismissed -- the batch itself succeeded; only the sweep claim '
-            'is gated');
-
-    final summaryText = tester.widget<Text>(summary.first).data ?? '';
-    expect(summaryText.contains('auto-resolved'), isFalse,
+    final summaryText = tester
+        .widgetList<Text>(summary)
+        .map((t) => t.data ?? '')
+        .join(' | ');
+    expect(summaryText, isNotEmpty,
+        reason: 'the action summary must still appear once the error is '
+            'dismissed -- the rule was created; only the sweep claim is gated');
+    expect(summaryText.contains('Could not load'), isFalse);
+    expect(summaryText.contains('more covered by it'), isFalse,
         reason: 'the reload FAILED, so the sweep never ran this round -- '
-            'appending the previous round\'s count ("1 more auto-resolved") '
+            'appending the previous round\'s count ("1 more covered by it") '
             'would be a false claim about state never observed');
   });
 
@@ -508,8 +602,8 @@ void main() {
   // rows, so the list looked completely unchanged. The auto-resolve sweep
   // must therefore run AFTER the reload, over the fresh pool.
   testWidgets(
-      'bulk block resolves rows re-populated by a scan that completed while '
-      'the screen was open (MT-2b race)', (tester) async {
+      'a block action resolves rows re-populated by a scan that completed '
+      'while the screen was open (MT-2b race)', (tester) async {
     tester.view.physicalSize = const Size(1200, 2400);
     tester.view.devicePixelRatio = 1.0;
     addTearDown(tester.view.resetPhysicalSize);
@@ -534,7 +628,7 @@ void main() {
       await mountAndLoad(tester);
     });
 
-    expect(find.text('1 item'), findsOneWidget);
+    expect(noRuleChip(1), findsOneWidget);
 
     // A NEWER scan completes behind the screen's back, re-writing the same
     // sender (plus one uncovered sender) as fresh unprocessed rows.
@@ -558,24 +652,14 @@ void main() {
       }
     });
 
-    // Select the (stale, scan-A) victim item and apply Block Entire Domain.
-    await tester.tap(find.byType(Checkbox).first);
-    await tester.pump();
-    await tester.runAsync(() async {
-      await tester.tap(find.text('Apply Rule'));
-      await tester.pump();
-      await tester.pump(const Duration(milliseconds: 300));
-      await tester.tap(find.text('Add Block Rule - Entire Domain'));
-      await tester.pump();
-      await Future<void>.delayed(const Duration(milliseconds: 800));
-      await tester.pump();
-      await tester.pump(const Duration(milliseconds: 300));
-    });
+    // Act on the (stale, scan-A) victim row: Block Entire Domain.
+    await popupAction(tester, 'victim@racedomain.example', 'Block Entire Domain');
+    await closePopups(tester);
 
     // The reload lands on scan B; its covered victim row must have been
     // auto-resolved by the post-reload sweep -- only the uncovered sender
     // remains, and the count chip reflects it.
-    expect(find.text('1 item'), findsOneWidget,
+    expect(noRuleChip(1), findsOneWidget,
         reason: 'scan B\'s covered row must not re-surface after the bulk '
             'action');
     expect(find.text('other@keepme.example'), findsOneWidget);
@@ -676,7 +760,7 @@ void main() {
       await mountAndLoad(tester);
     });
 
-    expect(find.text('7 items'), findsOneWidget);
+    expect(noRuleChip(7), findsOneWidget);
   });
 
   // MT-2c (Sprint 51, F129): the sweep runs on EVERY load, so an item whose
@@ -744,7 +828,7 @@ void main() {
     });
 
     // 5 seeded - 3 covered = 2 displayed, on the FIRST load with no user action.
-    expect(find.text('2 items'), findsOneWidget,
+    expect(noRuleChip(2), findsOneWidget,
         reason: 'all three items from the covered sender must be swept before '
             'display; a count of 5 means the on-load sweep did not run');
     expect(find.textContaining('homelivingcares'), findsNothing,
@@ -753,14 +837,14 @@ void main() {
     expect(find.text('sales@falgunarmy.example'), findsOneWidget);
   });
 
-  // F129 R-6 (Sprint 51, Harold: "add all semantic tree elements as needed
-  // for accessibility"): each row's checkbox must say WHICH email it selects.
-  // A bare Checkbox announces only "checkbox", so 18 rows produced 18
-  // indistinguishable controls -- unusable with a screen reader, and the
-  // checkboxes were absent from the Windows UIA tree entirely.
+  // F129 R-6 (Sprint 51) / F283: each row announces the email it represents
+  // and can be activated. The checkbox is gone (MV-Q16); the row is the shared
+  // Results ListTile, whose title and subtitle merge into one node.
+  //
+  // What this does NOT catch: what Windows UIA projects (the WinWright sweep).
   testWidgets(
-      'each item row and its checkbox expose accessible names identifying the '
-      'email (F129 R-6)', (tester) async {
+      'each row exposes an accessible name identifying the email and a tap '
+      'action (F129 R-6, F283)', (tester) async {
     tester.view.physicalSize = const Size(1200, 2400);
     tester.view.devicePixelRatio = 1.0;
     addTearDown(tester.view.resetPhysicalSize);
@@ -787,75 +871,27 @@ void main() {
       await mountAndLoad(tester);
     });
 
-    // Assert against the SEMANTICS TREE, not the widget finder.
-    // find.bySemanticsLabel maps labels back to widgets, which fails for a
-    // label that lives on a merged node (the Checkbox's label is real and
-    // present -- verified -- but has no distinct widget to map to). Walking
-    // the tree is the honest check and is what a screen reader actually sees.
-    final labels = <String>[];
+    // "A tree dump proves a name exists; only an interaction proves the node
+    // still works." -- docs/ACCESSIBILITY_STANDARDS.md §1
+    final matches = <SemanticsNode>[];
     void collect(SemanticsNode n) {
-      if (n.label.isNotEmpty) labels.add(n.label);
+      if (n.label.contains('infoinfo@prohomeprotectplus.example') &&
+          n.label.contains('Reviewing your solar billing?') &&
+          n.getSemanticsData().hasAction(SemanticsAction.tap)) {
+        matches.add(n);
+      }
       n.visitChildren((c) {
         collect(c);
         return true;
       });
     }
+
     collect(tester.binding.pipelineOwner.semanticsOwner!.rootSemanticsNode!);
-
-    // The checkbox names the sender, so 18 checkboxes are distinguishable.
-    // Flutter merges the checkbox's label with the row text onto ONE node
-    // (a single string joining "Select SENDER", the sender, and the subject
-    // with newlines) -- precisely how a screen reader announces a merged
-    // control. So match on substring rather than exact equality.
-    expect(
-      labels.any((l) => l.contains('Select infoinfo@prohomeprotectplus.example')),
-      isTrue,
-      reason: 'a bare Checkbox announces only "checkbox" -- it must say which '
-          'email it selects. Labels found: $labels',
-    );
-
-    // The row announces sender + subject as one unit.
-    expect(
-      labels.any((l) => l.contains(
-          'infoinfo@prohomeprotectplus.example - Reviewing your solar billing?')),
-      isTrue,
-      reason: 'the row must announce the email it represents. '
-          'Labels found: $labels',
-    );
-
-    // F133-S52 R-6 (Sprint 52): being NAMED is only half the contract -- the
-    // node must also be ACTIVATABLE. Sprint 51 shipped a fix twice that named
-    // a node correctly while leaving it unclickable (`excludeSemantics` drops
-    // the child's gesture node unless `onTap` is supplied on the Semantics
-    // widget). Labelling assertions SURVIVE that defect, which is exactly why
-    // Copilot flagged the account-selection tests on PR #285.
-    //
-    // "A tree dump proves a name exists; only an interaction proves the node
-    // still works." -- docs/ACCESSIBILITY_STANDARDS.md §1
-    final actionableNodes = <SemanticsNode>[];
-    void collectTappable(SemanticsNode n) {
-      if (n.label.contains('Select infoinfo@prohomeprotectplus.example') &&
-          n.getSemanticsData().hasAction(SemanticsAction.tap)) {
-        actionableNodes.add(n);
-      }
-      n.visitChildren((c) {
-        collectTappable(c);
-        return true;
-      });
-    }
-
-    collectTappable(
-        tester.binding.pipelineOwner.semanticsOwner!.rootSemanticsNode!);
-
-    expect(
-      actionableNodes,
-      isNotEmpty,
-      reason: 'the named checkbox node must expose a TAP action. A labelled '
-          'node with no action announces as a control that assistive '
-          'technology cannot activate -- the exact defect shipped twice in '
-          'Sprint 51.',
-    );
+    expect(matches, isNotEmpty,
+        reason: 'the row must announce its sender and subject together and '
+            'expose a TAP action');
 
     handle.dispose();
   });
+
 }

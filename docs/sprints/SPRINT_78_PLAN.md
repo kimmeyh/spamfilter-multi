@@ -483,6 +483,16 @@ state-bound callbacks; Haiku for the test rewrites once the widgets exist.
 3.2.2.2: 150-210m -> 300-420m; the popup and every Results piece are private and state-bound, Review has no popup, and
 the row types differ).
 
+**Status (2026-10-10)**: code, tests, help, ARCHITECTURE.md and CHANGELOG DONE; Windows/Android screenshots, the F4
+chip-row check with Harold and Manual Validation pending. Commits: step 1 21de960 (list pieces shared), step 2 35f9ecd
+(pop-up shared, R-6), step 3 (Review rebuilt). Evidence: Results/Review test files 389/389 after the rebuild plus the
+new search/advance tests (Review file 16/16 + 2); policy 147/147; mutations F283-M1..M3 and F283-RM1..RM4 all KILLED
+(RM4 first SURVIVED: the rewritten stale-summary test matched a list row instead of the SnackBar; fixed to read the
+SnackBar). AC-5 note: `f230_f231_action_sheet_test.dart` (source-text) was retargeted at the shared pop-up file -- its
+guarantees are unchanged; every other Results test passes unchanged. `no_rule_review_touch_selection_test.dart` deleted
+(multi-select removed); `NoRuleMarkReason.popupAction` added. Decision recorded: the Review default sort is the Results
+default (Folder), not the old newest-first. **Executed-by**: Opus 5.5 (session model), deviation note (a).
+
 _**Risk & rollback**_: regression on the Results screen; mitigated by AC-5 (existing Results suite unchanged) and the
 5.1.5 WinWright sweep; rollback is one revert of the extraction commit, kept separate from the Review rewrite commit.
 

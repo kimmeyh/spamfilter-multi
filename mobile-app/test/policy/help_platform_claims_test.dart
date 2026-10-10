@@ -118,21 +118,30 @@ void main() {
     });
 
     test(
-        'selection Help scopes its desktop and touch idioms to the right '
-        'platforms', () {
+        'F283: Review Help describes search and the pop-up, and no longer '
+        'describes multi-select', () {
       final review =
           File('assets/content/help/review_no_rule_items.md').readAsStringSync();
 
-      // F143 established both idioms; F169/F172 did not change them. The risk
-      // is a future edit describing one idiom as universal.
-      expect(RegExp(r'On Windows desktop').hasMatch(review), isTrue,
-          reason: 'Ctrl+click / Shift+click / right-click are desktop idioms '
-              'and must be scoped, not stated as universal');
-      expect(RegExp(r'On Android and iOS').hasMatch(review), isTrue,
-          reason: 'long-press-then-tap is the touch idiom and must be scoped '
-              'to the platforms where the code actually enables it -- the '
-              'wording was corrected in the PR #335 review after it claimed '
-              '"on a touch screen", which is wrong on Windows touchscreens');
+      // MV-Q16 removed multi-select and the bulk menu; Help that still taught
+      // Ctrl+click, checkboxes or long-press would describe controls that do
+      // not exist.
+      for (final gone in [
+        'Ctrl+click',
+        'Shift+click',
+        'checkbox',
+        'long-press',
+        'Apply Rule',
+        'Remove Current Rule',
+      ]) {
+        expect(review.contains(gone), isFalse,
+            reason: '"$gone" describes the removed multi-select');
+      }
+      expect(review.contains('Ctrl+F'), isTrue, reason: 'search (AC-1)');
+      expect(review.contains('Showing X of Y emails'), isTrue);
+      expect(review.contains('Skip'), isTrue, reason: 'the pop-up (F6)');
+      expect(review.contains('the account the email belongs to'), isTrue,
+          reason: 'MV-Q17: the pop-up names the account');
     });
   });
 }

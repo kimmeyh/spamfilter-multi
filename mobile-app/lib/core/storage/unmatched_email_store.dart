@@ -207,6 +207,10 @@ enum NoRuleMarkReason {
 
   /// The list's load-time cleanup: a current rule or safe sender covers it.
   coveredByRule,
+
+  /// F283 (Sprint 78): a quick action (safe sender or block rule) chosen in
+  /// the shared email detail pop-up on Review No Rule Items succeeded.
+  popupAction,
 }
 
 /// What [UnmatchedEmailStore.upsertUnmatchedEmails] did with one email.
