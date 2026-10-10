@@ -17,6 +17,7 @@
 /// the scripts never reference a string the app has explicitly renamed away.
 /// Add an entry here every time a user-facing string that scripts rely on is
 /// renamed.
+import 'dart:convert';
 import 'dart:io';
 
 import 'package:flutter_test/flutter_test.dart';
@@ -72,4 +73,94 @@ void main() {
             'until a live sweep fails with a misleading signal:\n'
             '${offenses.join('\n')}');
   });
+
+  // F284 (Sprint 78) T-1: the default sweep must be CURSOR-FREE so it can run
+  // while Harold uses the PC or with the workstation locked (a locked session
+  // refuses SetCursorPos / SendInput; UIA pattern steps are unaffected).
+  //
+  // Keep this list in step with `$cursorTools` in
+  // scripts/run-winwright-tests.ps1 (the runner's locked-PC gate).
+  const cursorTools = <String>[
+    'ww_click',
+    'ww_hover',
+    'ww_drag_drop',
+    'ww_scroll',
+    'ww_keyboard',
+    'ww_type',
+    'ww_select_text',
+  ];
+
+  // KNOWN PENDING, not a waiver: test_s75 still hovers two Settings > Account
+  // rows to prove their resolved-folder subtitles. Whether UIA exposes those
+  // as a cursor-free read needs the F284 live probe (45-minute time-box).
+  // Remove this entry when the hovers are converted. The exact count is pinned
+  // so a THIRD cursor step in that script still fails.
+  const knownPending = <String, Map<String, int>>{
+    'test_s75_new_controls.json': {'ww_hover': 2},
+  };
+
+  test('default-sweep WinWright scripts contain no cursor-driven steps', () {
+    // The runner owns the sweep membership: read its exclusion list rather
+    // than duplicating it (a duplicate would drift silently).
+    final runner = File('scripts/run-winwright-tests.ps1');
+    expect(runner.existsSync(), isTrue,
+        reason: 'scripts/run-winwright-tests.ps1 moved? Update this gate.');
+    final match = RegExp(r'\$excludedFromSweep\s*=\s*@\(([^)]*)\)')
+        .firstMatch(runner.readAsStringSync());
+    expect(match, isNotNull,
+        reason: r'Could not find $excludedFromSweep in the runner.');
+    final excluded = RegExp(r'"([^"]+)"')
+        .allMatches(match!.group(1)!)
+        .map((m) => m.group(1)!)
+        .toList();
+    expect(excluded, isNotEmpty);
+
+    final sweep = Directory('test/winwright')
+        .listSync()
+        .whereType<File>()
+        .where((f) {
+      final name = f.uri.pathSegments.last;
+      return name.startsWith('test_') &&
+          name.endsWith('.json') &&
+          !excluded.any((e) => name.contains(e));
+    }).toList();
+    expect(sweep, isNotEmpty, reason: 'Default sweep is empty -- glob broken?');
+
+    final offenses = <String>[];
+    for (final file in sweep) {
+      final name = file.uri.pathSegments.last;
+      final doc = jsonDecode(file.readAsStringSync()) as Map<String, dynamic>;
+      final counts = <String, int>{};
+      for (final tc in (doc['testCases'] as List)) {
+        for (final step in ((tc as Map)['steps'] as List)) {
+          final tool = (step as Map)['tool'];
+          if (tool is String && cursorTools.contains(tool)) {
+            counts[tool] = (counts[tool] ?? 0) + 1;
+          }
+        }
+      }
+      final allowed = knownPending[name] ?? const <String, int>{};
+      for (final e in counts.entries) {
+        if (e.value != (allowed[e.key] ?? 0)) {
+          offenses.add('$name: ${e.value} x ${e.key} step(s) '
+              '(allowed: ${allowed[e.key] ?? 0})');
+        }
+      }
+    }
+
+    expect(offenses, isEmpty,
+        reason: 'Default-sweep WinWright scripts must use UIA pattern steps '
+            '(ww_invoke, ww_set_checked, ww_get_value, ...) so the sweep '
+            'runs with the PC locked or in use. Convert the step, or if it '
+            'truly needs the cursor, move the script out of the default '
+            'sweep:\n${offenses.join('\n')}');
+  });
+
+  // WHAT THIS DOES NOT CATCH: it reads step "tool" names only. It cannot tell
+  // that a ww_invoke selector still resolves (a live sweep does), that
+  // ww_set_checked / ww_get_value are replayed by the installed runner, or
+  // that a pattern tool silently falls back to a cursor click (ww_invoke on a
+  // control without InvokePattern errors rather than clicking, but a future
+  // WinWright build could change that). It also trusts the runner's
+  // $excludedFromSweep line and the cursorTools list above to be right.
 }

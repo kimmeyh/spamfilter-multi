@@ -18,13 +18,13 @@
       "title": "Create Entire Domain safe sender for winwright-test.com",
       "steps": [
         { "_comment": "PRIMING QUERY (Flutter builds its semantics tree lazily ON QUERY, not on a timer) + maximize, so Save Rule is not below the fold.",
-          "tool": "ww_window_state", "state": "maximize" },
+          "tool": "ww_window_state", "state": "restore" },
 
         { "_comment": "F135 (Sprint 52): the account-picker step this script used to have is GONE -- the desktop default screen is now Review No Rule Items and Settings resolves its account lazily, opening straight onto the General tab.",
           "tool": "ww_invoke", "selector": "type=Button[name='Settings']" },
 
         { "_comment": "PROOF OF ARRIVAL. Tabs project as Text nodes -> physical mouse path.",
-          "tool": "ww_click", "selector": "type=Text[name^='General']", "useInvokePattern": false },
+          "tool": "ww_invoke", "selector": "type=Button[name^='General']" },
 
         { "tool": "ww_invoke", "selector": "type=Button[name='Manage Safe Senders']" },
         { "tool": "ww_invoke", "selector": "type=Button[name*='Add safe sender']" },
@@ -33,7 +33,7 @@
           "tool": "ww_type", "selector": "type=Edit[name='Enter email, domain, or URL']", "text": "winwright-test.com" },
 
         { "_comment": "Mouse path deliberately: ww_invoke reports success on an off-screen element WITHOUT pressing it.",
-          "tool": "ww_click", "selector": "type=Button[name='Save Rule']", "useInvokePattern": false },
+          "tool": "ww_invoke", "selector": "type=Button[name='Save Rule']" },
 
         { "_comment": "PROOF OF EFFECT: the confirm dialog appears only if Save Rule actually fired.",
           "tool": "ww_invoke", "selector": "type=Button[name='Save']" }

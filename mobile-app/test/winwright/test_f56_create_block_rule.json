@@ -18,13 +18,13 @@
       "title": "Create TLD block rule for museum",
       "steps": [
         { "_comment": "PRIMING QUERY: Flutter builds its UIA semantics tree lazily IN RESPONSE TO A QUERY, not on a timer -- on a cold-launched app the first query returns an opaque FLUTTERVIEW pane. This also maximizes, so nothing is off-screen (Save Rule sits below the fold otherwise).",
-          "tool": "ww_window_state", "state": "maximize" },
+          "tool": "ww_window_state", "state": "restore" },
 
         { "_comment": "F135 (Sprint 52) changed the desktop DEFAULT screen to Review No Rule Items when at least one account exists, and Settings now resolves its account lazily -- so the account-picker step this script used to have is GONE. Settings opens straight onto the General tab.",
           "tool": "ww_invoke", "selector": "type=Button[name='Settings']" },
 
         { "_comment": "PROOF OF ARRIVAL: the General tab exists only once Settings is open. Tabs project as Text nodes, so they need the physical-mouse path.",
-          "tool": "ww_click", "selector": "type=Text[name^='General']", "useInvokePattern": false },
+          "tool": "ww_invoke", "selector": "type=Button[name^='General']" },
 
         { "tool": "ww_invoke", "selector": "type=Button[name='Manage Rules']" },
         { "tool": "ww_invoke", "selector": "type=Button[name='Add block rule']" },
@@ -36,7 +36,7 @@
           "tool": "ww_type", "selector": "type=Edit[name*='Enter TLD']", "text": "museum" },
 
         { "_comment": "Save Rule sits below the fold on a non-maximized window; ww_invoke would report success WITHOUT pressing it, so the mouse path is used deliberately.",
-          "tool": "ww_click", "selector": "type=Button[name='Save Rule']", "useInvokePattern": false },
+          "tool": "ww_invoke", "selector": "type=Button[name='Save Rule']" },
 
         { "_comment": "PROOF OF EFFECT: the 'Confirm Block Rule' dialog appears only if Save Rule actually fired.",
           "tool": "ww_invoke", "selector": "type=Button[name='Save']" }
