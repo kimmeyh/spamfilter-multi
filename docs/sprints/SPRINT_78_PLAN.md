@@ -692,6 +692,17 @@ directly.
   f124's four probes read STATIC Text labels, which have no InvokePattern and no replayed read step, so they stay
   ww_click (f124 needs the unlocked PC); s75's two hovers likewise. The policy test pins exactly those six.
   - sweep-head: b1e5d7b
+- **5.1.9 MV rehearsal**: 2026-10-10, 4 Windows steps rehearsed (W1 on the real 0.19.0 DEV build -- chosen-folder
+  log path observed -- plus the Documents known folder read on this PC and `f206_export_test`; W2 by
+  `f264_interval_control_test` 13/13 on the real SettingsScreen, both platform branches; W3 by the real DEV window
+  (WinWright screenshot) plus `no_rule_review_screen_test` 18/18; W4 through the real scan pipeline,
+  `r76_4_scanner_capture_test` 4/4, and the DEV window shows the "Content history ... 0 stored." row in the UIA tree).
+  Preconditions read from a DEV-database copy (chosen export folder; background OFF on both configured accounts) and
+  written into W1/W2. 1 part not rehearsable: W4's real AOL scan (no mailbox access for Claude) -- closest rehearsal is
+  the scanner-level test with a fake provider. Fold steps (Tasks 1, 2) are phone-only.
+- **5.2 full suite**: 2026-10-10 at 2c5e98e: 2,990 passed / 15 skipped / 0 failed; analyzer clean.
+- **5.2.3 architecture docs**: ARCHITECTURE.md (ExportDirectories, Review screen, shared pieces, ContentHistory rows),
+  ADR-0042 (export split retired), ADR-0039 (F281 amendment), ADR-0047 (new, Proposed) -- all in this PR.
 
 ## Manual Validation steps (Sprint 78 -- re-present IN FULL every time Harold is asked to validate)
 
