@@ -17,8 +17,8 @@ import 'package:sqflite/sqflite.dart';
 import 'database_helper.dart';
 
 /// One stored email (the fields of ADR-0047 item 5).
-class ContentHistoryRow {
-  const ContentHistoryRow({
+class ContentHistoryRecord {
+  const ContentHistoryRecord({
     required this.accountId,
     required this.identityHash,
     this.messageId,
@@ -189,7 +189,7 @@ class ContentHistoryStore {
 
   /// Stores a NEW email. Returns false when the row already existed (another
   /// writer got there first) -- the caller then records a sighting.
-  Future<bool> insertNew(ContentHistoryRow row) async {
+  Future<bool> insertNew(ContentHistoryRecord row) async {
     final db = await database;
     final id = await db.insert(_table, row.toMap(),
         conflictAlgorithm: ConflictAlgorithm.ignore);

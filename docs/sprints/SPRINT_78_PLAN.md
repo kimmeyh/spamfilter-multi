@@ -662,3 +662,36 @@ reason to move now.
 change is a comment). **Executed-by**: Opus 5.5 (session model) -- done in the planning turn because Harold asked for it
 directly.
 
+
+---
+
+# Phase 5 evidence
+
+- **5.1.2 F-PRECHECK**: 2026-10-10, all six classes against `git diff origin/develop...HEAD`. (1) Mirror sites: Results and Review share one copy of the list pieces and the pop-up; capture sits in the shared scanner (manual and both background workers); the F230 source test follows the moved pop-up; no new `Platform.is` gate in the tested widgets. (2) Production wiring: `ContentHistory.isActive` in `EmailScanner`, `fetchContentText` through the capture, `recordDecision` from both quick-action paths, the export default for every writer, `ContentHistoryStore.deleteAccount` in `DataDeletionService` -- all have runtime callers. (3) Doc drift: export, interval, settings and diagnostics comments updated with the code; ADR-0042 and ADR-0039 amended. (4) Fragile parsing: From display name (`<`) and Return-Path domain (last `@`), both fail soft to null. (5) API scope: content fetch per message in the scanned folder (same rule as `fetchFullBody`); lookups and deletes per account; delete-all per file. (6) Silent failure: 1 finding FIXED (a30902c) -- `ContentHistory.isActive` swallowed an unreadable switch with no log, and capture failures logged only through the diagnostic logger; both now also `Logger.w`.
+- **5.1.6 runtime launch**: N/A -- no Android config touched (no manifest, gradle, res/xml or R8 change this sprint).
+
+## Manual Validation steps (Sprint 78 -- re-present IN FULL every time Harold is asked to validate)
+
+Windows DEV build (0.19.0 [DEV]); every step read-only for mail. Android parity of F281/F282/F283 is checked on the
+0.19.0 closed-test build at Phase 8 (no adb; a Fold build comes only through Play).
+
+- **W1 -- F282 one folder.** Precondition: your DEV app has a CHOSEN export folder (`C:\Users\kimme\Documents`, read
+  from a copy of the DEV database), which F282 keeps exactly as chosen. Settings > General > Export folder shows that
+  path. Tap **Reset to default**: the row reads `Documents/MyEmailSpamFilter_Dev (default)`. Open any Results screen
+  and tap the Download icon: the CSV lands in `Documents\MyEmailSpamFilter_Dev`. (If you prefer files directly in
+  Documents, choose that folder again afterwards; it stays exactly as chosen.)
+- **W2 -- F281 Scan every.** Settings > Account (kimmeyharold@aol.com) > Background. Background scanning is OFF, so
+  "Scan every" is not shown. Turn background scanning ON: "Scan every" appears with 15 minutes. Open it: 5, 10, 15, 30
+  minutes; 1, 2, 4, 12, 24 hours; Custom... Pick Custom..., type 25 with Hours: "Maximum is 24 hours", Save disabled;
+  type 45 with Minutes, Save: the row reads "45 minutes (custom)". Pick 15 minutes again (your R76-4 setting). Leave
+  background ON, read-only, for all four accounts (R76-4 coverage plan).
+- **W3 -- F283 Review No Rule Items.** The chip row reads `No rule (N)`, account drop-down (`All Accounts (N)`),
+  `Folders: All`, `Sort: Folder`. Tap the search icon (or Ctrl+F), type `order`: only matching rows, and "Showing X of
+  N emails". Press Escape: all rows return. Tap a row: the Results pop-up opens; next to the date it names the
+  account email; Skip is at the bottom right of that row. Tap Skip: the next row's pop-up opens. Close it (click
+  outside). Use only Skip here unless you want a real rule.
+- **W4 -- R76-4 content history.** Settings > General: "Content history (development build only)", off. Turn it ON.
+  Run a Manual Scan of kimmeyharold@aol.com (read-only). Back on Settings > General the row reads "<N> stored." with N
+  greater than 0, and "Delete content history" is enabled. Run the same scan again: N does not grow (repeat sightings
+  are header-only). Leave it ON.
+- **Fold (Tasks 1, 2)**: the steps handed over at 2026-10-10 (MV76-1 steps 8-11 + iCloud, F277 three overnight runs).

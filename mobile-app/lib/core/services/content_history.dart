@@ -181,7 +181,7 @@ class ContentHistoryCapture {
       final rawText = await fetchText(message);
       final capped = rawText == null ? null : capContentText(rawText);
       final headers = _lowerKeys(message.headers);
-      final inserted = await _store.insertNew(ContentHistoryRow(
+      final inserted = await _store.insertNew(ContentHistoryRecord(
         accountId: accountId,
         identityHash: hash,
         messageId: message.messageIdHeader,
