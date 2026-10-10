@@ -353,7 +353,22 @@ platforms; AC-4: a stored 99-hour value reads as F1 decides; AC-5: help matches.
 (AC-3) -- TEST-WIDGET `f264_interval_control_test.dart` (rewrite :196 "background OFF" and :244-252 both platforms);
 T-3 (AC-4) -- TEST-UNIT `f264_upgrade_migration_test.dart`; T-4 (AC-5) -- policy test update.
 
-**Definition of Done**: default DoD plus ADR-0039 amendment. **Model**: research Fable/Opus (mandatory,
+**Definition of Done**: default DoD plus ADR-0039 amendment. **Decision (Q-S2, Harold 2026-10-10)**: Alternative D -- preset drop-down (5, 10, 15, 30 minutes; 1, 2, 4, 12, 24
+hours) plus "Custom..." (number + unit dialog, Save disabled until 5 minutes to 24 hours). Harold: *"Adopt any other
+sprint Tasks around this decision"* -- checked: F277 arms (5 and 15 minutes) and the R76-4 Windows DEV background
+interval (15 or 5 minutes) are both presets, so neither task changes; no WinWright script touches the interval control
+(grep of `test/winwright/` for "interval" and "Scan every": none), so F284 does not change; help text and ADR-0039
+amendment item 3 updated.
+
+**Status (2026-10-10)**: DONE except Manual Validation. Research b6b2a55; part 1 (24-hour maximum, shown only with
+background on) e5495c5; part 2 (control D). Evidence: interval widget tests 13/13, interval unit tests pass;
+mutations F281-M1..M3 and F281D-M1..M4 all KILLED. Visibility rule: "this account's background scanning is on" is the
+complete rule on Android too -- the worker skips an account whose background is off, notification runs included
+(`android_background_scan_worker.dart:205-216`), so the new-mail switch needs no rule of its own (R-3 simplified;
+same user-visible behavior). **Executed-by**: Opus 5.5 (session model) for research and implementation --
+single-session deviation note (a).
+
+**Model**: research Fable/Opus (mandatory,
 `SPRINT_PLANNING.md:94-110`); implementation Sonnet -- why not Haiku: control design depends on the pick and touches
 visibility logic on two platforms.
 **Step-types**: DOCS (research), UI-NEW, TEST-WIDGET, TEST-UNIT. **Est-Effort**: 150-270m (research 90-120, implementation

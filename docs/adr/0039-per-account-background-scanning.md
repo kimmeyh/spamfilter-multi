@@ -693,5 +693,9 @@ account whose background scanning is off, notification runs included
 (`android_background_scan_worker.dart:205-216`). Hiding never changes the saved value
 (plan F2 = 1).
 
-**3. The control itself** is chosen by Harold from `docs/research/F281_SCAN_INTERVAL_CONTROL.md`
-(plan Q-S2) and recorded here when it lands.
+**3. The control (Harold picked Alternative D, 2026-10-10,** from
+`docs/research/F281_SCAN_INTERVAL_CONTROL.md`): a drop-down of presets (`kIntervalPresets`:
+5, 10, 15, 30 minutes; 1, 2, 4, 12, 24 hours) plus "Custom...", which opens a dialog with a
+number box and a unit. A preset saves at once; the dialog saves on Save, which stays disabled
+until the value is in range, so the row can never hold an invalid value. A saved non-preset value
+reads "45 minutes (custom)". It replaces F264's unit drop-down and number box in the row.

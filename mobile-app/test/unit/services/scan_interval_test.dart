@@ -117,6 +117,20 @@ void main() {
     });
   });
 
+  group('F281 D: the presets', () {
+    test('every preset is in range, representable and ascending', () {
+      expect(kIntervalPresets.first, kMinIntervalMinutes);
+      expect(kIntervalPresets.last, kMaxIntervalMinutes);
+      for (final m in kIntervalPresets) {
+        expect(ScanInterval.validate(m), isNull, reason: '$m');
+        expect(ScanInterval.isRepresentable(m), isTrue, reason: '$m');
+      }
+      for (var i = 1; i < kIntervalPresets.length; i++) {
+        expect(kIntervalPresets[i], greaterThan(kIntervalPresets[i - 1]));
+      }
+    });
+  });
+
   group('the floor and the jitter rule', () {
     test('AC-13: the floor is not below the scan spacing', () {
       expect(kMinIntervalMinutes * 60,

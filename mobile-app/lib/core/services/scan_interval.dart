@@ -60,6 +60,12 @@ const int kJitterMinutes = 5;
 /// per slot after slot 0.
 const int kStaggerMinutesPerSlot = 1;
 
+/// F281 (Sprint 78, Harold picked Alternative D from
+/// `docs/research/F281_SCAN_INTERVAL_CONTROL.md`): the "Scan every" drop-down
+/// offers these intervals, in minutes, then "Custom..." for any other value
+/// in range. Every preset is in range and representable (a test pins it).
+const List<int> kIntervalPresets = [5, 10, 15, 30, 60, 120, 240, 720, 1440];
+
 /// The unit a user picks in front of the number box.
 enum ScanIntervalUnit {
   minutes('Minutes', 1),
