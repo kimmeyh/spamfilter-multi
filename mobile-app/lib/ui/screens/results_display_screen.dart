@@ -48,59 +48,21 @@ import '../../adapters/storage/secure_credentials_store.dart';
 import '../widgets/empty_state.dart';
 import '../widgets/screen_version_line.dart'; // F229 (Sprint 73)
 import '../widgets/system_inset_wrapper.dart'; // F209 (Sprint 69)
+import '../widgets/result_list_pieces.dart';
+export '../widgets/result_list_pieces.dart'
+    show
+        orderResultsForDisplay,
+        formatReceivedDateForDisplay,
+        formatReceivedDayForRow;
 import '../../core/services/export_directories.dart';
 
 /// Displays summary of scan results bound to EmailScanProvider.
-/// F222 (Sprint 74, reworked at Manual Validation): the display order,
-/// extracted so the WIRING is testable (a test of the pure orders alone would
-/// pass with the call site still sorting some other way -- the Sprint 73
-/// "correct abstraction, wrong wiring" defect class).
 ///
-/// [order] defaults to [ResultSortOrder.folderDomainAddress], the
-/// pre-Sprint-74 order Harold asked to keep as the default. The folder,
-/// domain and address keys are the ones the old in-place sort used
-/// (`EmailBodyParser`), so the default is unchanged, not re-derived.
-@visibleForTesting
-List<EmailActionResult> orderResultsForDisplay(
-  List<EmailActionResult> results, {
-  ResultSortOrder order = ResultSortOrder.folderDomainAddress,
-}) {
-  final parser = EmailBodyParser();
-  String tieBreak(EmailActionResult r) =>
-      '${r.email.from}\u0000${r.email.subject}';
-  switch (order) {
-    case ResultSortOrder.folderDomainAddress:
-      return orderByFolderDomainAddress<EmailActionResult>(
-        results,
-        folderOf: (r) => r.email.folderName,
-        domainOf: (r) => parser.extractDomainFromEmail(r.email.from) ?? '',
-        addressOf: (r) => parser.extractEmailAddress(r.email.from),
-        tieBreak: tieBreak,
-      );
-    case ResultSortOrder.newestFirst:
-      return orderNewestFirst<EmailActionResult>(
-        results,
-        receivedAt: (r) => r.email.receivedDate,
-        tieBreak: tieBreak,
-      );
-  }
-}
-
-/// F222 (Sprint 74 MV, Harold): the received date and time on the
-/// assign-a-rule pop-up. Local time, to the minute ("2026-09-26 22:05").
-@visibleForTesting
-String formatReceivedDateForDisplay(DateTime receivedDate) =>
-    receivedDate.toLocal().toString().substring(0, 16);
-
-/// F222 (Sprint 74 MV round 2, Harold): the Scan Results ROW shows the date
-/// only -- *"do not need time displayed on the results screen, only date is
-/// needed (Ok to keep time on the assign rule pop-up)"*. Derived from
-/// [formatReceivedDateForDisplay], so the row's date is always the pop-up's
-/// date ("2026-09-26").
-@visibleForTesting
-String formatReceivedDayForRow(DateTime receivedDate) =>
-    formatReceivedDateForDisplay(receivedDate).substring(0, 10);
-
+/// F283 (Sprint 78): the display order, the date formats and the list
+/// pieces this screen shares with Review No Rule Items live in
+/// `../widgets/result_list_pieces.dart`, re-exported below so existing
+/// imports of [orderResultsForDisplay], [formatReceivedDateForDisplay] and
+/// [formatReceivedDayForRow] from this file keep resolving.
 class ResultsDisplayScreen extends StatefulWidget {
   final String platformId;
   final String platformDisplayName;
@@ -846,18 +808,11 @@ class _ResultsDisplayScreenState extends State<ResultsDisplayScreen> {
     // Apply search filter (Item 8: Ctrl-F search)
     if (_searchQuery.isNotEmpty) {
       final query = _searchQuery.toLowerCase();
-      results = results.where((result) {
-        final from = result.email.from.toLowerCase();
-        final subject = result.email.subject.toLowerCase();
-        final folder = result.email.folderName.toLowerCase();
-        // F21: Use effective evaluation for search
-        final effectiveEval = _getEffectiveEvaluation(result);
-        final rule = (effectiveEval?.matchedRule ?? '').toLowerCase();
-        return from.contains(query) ||
-            subject.contains(query) ||
-            folder.contains(query) ||
-            rule.contains(query);
-      }).toList();
+      // F21: the effective evaluation supplies the rule name searched.
+      results = results
+          .where((result) => resultMatchesSearch(result,
+              _getEffectiveEvaluation(result)?.matchedRule ?? '', query))
+          .toList();
     }
 
     // Apply folder filter (Item 6: folder dropdown)
@@ -1312,40 +1267,12 @@ class _ResultsDisplayScreenState extends State<ResultsDisplayScreen> {
     );
   }
 
-  Widget _buildFilterStatus(int filteredCount, int totalCount) {
-    return Container(
-      padding: const EdgeInsets.all(8),
-      decoration: BoxDecoration(
-        color: Colors.blue.shade50,
-        borderRadius: BorderRadius.circular(8),
-      ),
-      child: Row(
-        children: [
-          Icon(Icons.filter_list, color: Colors.blue.shade700, size: 20),
-          const SizedBox(width: 8),
-          Expanded(
-            child: Text(
-              // PR #335 cowork review: the old "Tap chip again" instruction
-              // described the removed stat chips; the dropdown has no
-              // toggle-off, so the X is the clear affordance.
-              'Showing $filteredCount of $totalCount emails • Tap X to clear filters',
-              style: TextStyle(
-                fontSize: 12,
-                color: Colors.blue.shade900,
-              ),
-            ),
-          ),
-          IconButton(
-            icon: const Icon(Icons.clear, size: 16),
-            onPressed: _clearAllFilters,
-            tooltip: 'Clear filter',
-            padding: EdgeInsets.zero,
-            constraints: const BoxConstraints(),
-          ),
-        ],
-      ),
-    );
-  }
+  Widget _buildFilterStatus(int filteredCount, int totalCount) =>
+      ResultFilterStatusBar(
+        filteredCount: filteredCount,
+        totalCount: totalCount,
+        onClear: _clearAllFilters,
+      );
 
   /// Build the Summary title including scan mode and folder names
   String _buildSummaryTitle(
@@ -1887,48 +1814,9 @@ class _ResultsDisplayScreenState extends State<ResultsDisplayScreen> {
     );
   }
 
-  /// F222 (Sprint 74 MV, Harold): switches the list between the default
-  /// order (folder, domain, address) and newest first. Built like the
-  /// Folders chip beside it; one tap toggles. The "from email providers"
-  /// group stays at the top in both orders.
-  Widget _buildSortChip() {
-    final isNewest = _sortOrder == ResultSortOrder.newestFirst;
-    final label = isNewest ? 'Sort: Newest first' : 'Sort: Folder';
-    return Semantics(
-      container: true,
-      button: true,
-      excludeSemantics: true,
-      label: label,
-      hint: isNewest
-          ? 'Switch to folder, domain and address order'
-          : 'Switch to newest first',
-      onTap: _toggleSortOrder,
-      child: Tooltip(
-        message: isNewest
-            ? 'Newest first. Tap for folder, domain, address.'
-            : 'Folder, then domain, then address. Tap for newest first.',
-        child: GestureDetector(
-          onTap: _toggleSortOrder,
-          child: Chip(
-            key: const Key('results_sort_chip'),
-            label: Text(label),
-            avatar: const Icon(Icons.sort, size: 18),
-            backgroundColor: isNewest
-                ? Colors.indigo.withValues(alpha: 0.7)
-                : Colors.indigo,
-            labelStyle: TextStyle(
-              color: Colors.white,
-              fontWeight: isNewest ? FontWeight.w900 : FontWeight.bold,
-            ),
-            side: isNewest
-                ? const BorderSide(color: Colors.black, width: 2)
-                : BorderSide.none,
-            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-          ),
-        ),
-      ),
-    );
-  }
+  /// F222 (Sprint 74 MV, Harold): the Sort chip (shared with Review, F283).
+  Widget _buildSortChip() =>
+      ResultSortChip(order: _sortOrder, onToggle: _toggleSortOrder);
 
   void _toggleSortOrder() {
     setState(() {
@@ -1938,102 +1826,14 @@ class _ResultsDisplayScreenState extends State<ResultsDisplayScreen> {
     });
   }
 
-  Widget _buildFolderFilterChip(List<EmailActionResult> allResults) {
-    // Issue 3: Use cached folders for performance
-    final folders = _cachedFolders ?? [];
-    final isActive = _selectedFolders.isNotEmpty;
-
-    return GestureDetector(
-      onTap: () async {
-        // Show folder selection dialog
-        final selected = await showDialog<Set<String>>(
-          context: context,
-          builder: (ctx) => _buildFolderSelectionDialog(folders),
-        );
-
-        if (selected != null) {
-          setState(() {
-            _selectedFolders = selected;
-          });
-        }
-      },
-      child: Chip(
-        label: Text(_selectedFolders.isEmpty
-            ? 'Folders: All'
-            : 'Folders: ${_selectedFolders.length}'),
-        avatar: const Icon(Icons.folder, size: 18),
-        backgroundColor:
-            isActive ? Colors.indigo.withValues(alpha: 0.7) : Colors.indigo,
-        labelStyle: TextStyle(
-          color: Colors.white,
-          fontWeight: isActive ? FontWeight.w900 : FontWeight.bold,
-        ),
-        side: isActive
-            ? const BorderSide(color: Colors.black, width: 2)
-            : BorderSide.none,
-        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-      ),
-    );
-  }
-
-  /// Build folder selection dialog
-  Widget _buildFolderSelectionDialog(List<String> folders) {
-    final tempSelected = Set<String>.from(_selectedFolders);
-
-    return StatefulBuilder(
-      builder: (context, setDialogState) {
-        return AlertDialog(
-          title: const Text('Select Folders'),
-          content: SizedBox(
-            width: double.maxFinite,
-            child: ListView(
-              shrinkWrap: true,
-              children: [
-                CheckboxListTile(
-                  title: const Text('All Folders',
-                      style: TextStyle(fontWeight: FontWeight.bold)),
-                  value: tempSelected.isEmpty,
-                  onChanged: (bool? value) {
-                    setDialogState(() {
-                      if (value == true) {
-                        tempSelected.clear();
-                      }
-                    });
-                  },
-                ),
-                const Divider(),
-                ...folders.map((folder) {
-                  return CheckboxListTile(
-                    title: Text(folder),
-                    value: tempSelected.contains(folder),
-                    onChanged: (bool? value) {
-                      setDialogState(() {
-                        if (value == true) {
-                          tempSelected.add(folder);
-                        } else {
-                          tempSelected.remove(folder);
-                        }
-                      });
-                    },
-                  );
-                }),
-              ],
-            ),
-          ),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.pop(context),
-              child: const Text('Cancel'),
-            ),
-            FilledButton(
-              onPressed: () => Navigator.pop(context, tempSelected),
-              child: const Text('Apply'),
-            ),
-          ],
-        );
-      },
-    );
-  }
+  /// Item 6: the Folders chip (shared with Review, F283). Issue 3: the folder
+  /// list is cached for performance.
+  Widget _buildFolderFilterChip(List<EmailActionResult> allResults) =>
+      FolderFilterChip(
+        folders: _cachedFolders ?? [],
+        selected: _selectedFolders,
+        onChanged: (selected) => setState(() => _selectedFolders = selected),
+      );
 
   /// IMP-1 (Sprint 46 retro): maps ListView indices to rows, inserting the
   /// provider-group heading before and the end indicator after the first
@@ -2048,45 +1848,13 @@ class _ResultsDisplayScreenState extends State<ResultsDisplayScreen> {
     return _buildResultTile(results[index - 2]);
   }
 
-  Widget _buildResultTile(EmailActionResult result) {
-    // Issue #47: Title shows sender email, subtitle shows folder • subject • rule
-    // Decode Punycode domains for display
-    final rawFrom = result.email.from;
-    final decodedFrom = PatternNormalization.normalizeAndDecodeEmail(rawFrom);
-    final title = decodedFrom.isNotEmpty ? decodedFrom : 'Unknown sender';
-    final folder = result.email.folderName;
-    // Clean subject for display (remove tabs, extra spaces, repeated punctuation)
-    final rawSubject = result.email.subject;
-    final cleanedSubject =
-        PatternNormalization.cleanSubjectForDisplay(rawSubject);
-    final subject = cleanedSubject.isNotEmpty ? cleanedSubject : 'No subject';
-    // Issue #51: Display matched rule name or "No rule" if empty/null
-    // F21: Use effective evaluation (includes inline assignment overrides)
-    final effectiveEval = _getEffectiveEvaluation(result);
-    final matchedRule = effectiveEval?.matchedRule ?? '';
-    final rule = matchedRule.isNotEmpty ? matchedRule : 'No rule';
-    // F222 (Sprint 74 MV, Harold): the received date, before the subject so a
-    // long subject cannot push it off the line.
-    final date = formatReceivedDayForRow(result.email.receivedDate);
-    final subtitle = '$folder • $date • $subject • $rule';
-    final trailing = result.success
-        ? const Icon(Icons.check, color: Colors.green)
-        : const Icon(Icons.error, color: Colors.red);
-
-    // Issue 6: Wrap with Container to capture position for popup
-    final tileKey = GlobalKey();
-
-    return Container(
-      key: tileKey,
-      child: ListTile(
-        leading: _actionIcon(result.action),
-        title: Text(title),
-        subtitle: Text(subtitle),
-        trailing: trailing,
-        onTap: () => _showEmailDetailSheet(result, itemKey: tileKey),
-      ),
-    );
-  }
+  /// Issue #47: one row (shared with Review, F283). F21: the rule shown is
+  /// the effective evaluation (includes inline assignment overrides).
+  Widget _buildResultTile(EmailActionResult result) => EmailResultTile(
+        result: result,
+        ruleName: _getEffectiveEvaluation(result)?.matchedRule ?? '',
+        onTap: (tileKey) => _showEmailDetailSheet(result, itemKey: tileKey),
+      );
 
   /// Show positioned popup with email details and inline quick actions
   /// Issue 6: CSS-like positioning - show popup below/above email item
@@ -3047,20 +2815,7 @@ class _ResultsDisplayScreenState extends State<ResultsDisplayScreen> {
     );
   }
 
-  Color _getActionColor(EmailActionType action) {
-    switch (action) {
-      case EmailActionType.delete:
-        return Colors.red;
-      case EmailActionType.moveToJunk:
-        return Colors.orange;
-      case EmailActionType.safeSender:
-        return Colors.green;
-      case EmailActionType.markAsRead:
-        return Colors.blueGrey;
-      case EmailActionType.none:
-        return Colors.grey;
-    }
-  }
+  Color _getActionColor(EmailActionType action) => resultActionColor(action);
 
   /// Generate a stable key for an email to track evaluation overrides.
   String _getEmailKey(EmailMessage email) {
@@ -4600,33 +4355,8 @@ class _ResultsDisplayScreenState extends State<ResultsDisplayScreen> {
     }
   }
 
-  String _getActionDescription(EmailActionResult result) {
-    switch (result.action) {
-      case EmailActionType.delete:
-        return result.success ? 'Deleted' : 'Delete failed';
-      case EmailActionType.moveToJunk:
-        return result.success ? 'Moved to junk' : 'Move failed';
-      case EmailActionType.safeSender:
-        return 'Safe sender - no action';
-      case EmailActionType.markAsRead:
-        return result.success ? 'Marked as read' : 'Mark as read failed';
-      case EmailActionType.none:
-        return 'No matching rule';
-    }
-  }
+  String _getActionDescription(EmailActionResult result) =>
+      resultActionDescription(result);
 
-  Widget _actionIcon(EmailActionType action) {
-    switch (action) {
-      case EmailActionType.delete:
-        return const Icon(Icons.delete, color: Colors.red);
-      case EmailActionType.moveToJunk:
-        return const Icon(Icons.archive, color: Colors.orange);
-      case EmailActionType.safeSender:
-        return const Icon(Icons.check_circle, color: Colors.green);
-      case EmailActionType.markAsRead:
-        return const Icon(Icons.mark_email_read, color: Colors.blueGrey);
-      case EmailActionType.none:
-        return const Icon(Icons.mail_outline, color: Colors.grey);
-    }
-  }
+  Widget _actionIcon(EmailActionType action) => resultActionIcon(action);
 }
