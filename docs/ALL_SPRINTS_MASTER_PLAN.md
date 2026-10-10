@@ -823,6 +823,65 @@ _(No active Core App candidates -- F96 shipped in Sprint 43.)_
   remove the fixed IDs, and close the ADR-0042 exception recorded in the Sprint 78 plan.
 - Depends on: F286 (shared text and ID helper).
 
+**F288. Git-flow branch model: make `develop` the GitHub default branch (~60-120m) Priority 3 -- TARGET SPRINT 79**
+- Phase: DevOps
+- Platform: Repository (both platforms' builds unaffected; CI and docs change)
+- Origin: Harold, 2026-10-10 (Sprint 78 execution): "add to backlog and target for next sprint - switch the default
+  branch from main to develop".
+- Why it matters here: `main` is the default today, so `Closes #N` in a sprint PR into `develop` never closes the
+  issue (`.claude/sprint_status.json` `github_issues.note`: "Closes #N does NOT auto-fire here"); every sprint closes
+  cards by hand. GitHub reads closing keywords only on PRs into the default branch.
+- **Harold's instructions (verbatim, 2026-10-10)**:
+  > Switch this repository to a git-flow branch model:
+  > - develop = the GitHub default branch, where feature work is integrated. Feature/sprint branches open PRs into
+  >   develop.
+  > - main = the release branch. It changes only by a PR from develop to main, which I merge. Each release merge is
+  >   tagged.
+  >
+  > Work in this order. Do not merge any PR. Do not delete any branch. Ask every decision as a plain numbered list I
+  > can answer with one digit.
+  >
+  > PHASE A - INSPECT AND REPORT (change nothing)
+  > 1. Report: current default branch; whether develop exists locally and on origin; commits on main not in develop
+  >    and the reverse (git rev-list --count both ways); whether the commits on main that develop lacks change any files
+  >    (git diff --stat <merge-base> origin/main).
+  > 2. List open PRs and their base branches (gh pr list --state open).
+  > 3. List CI workflows and their triggers (.github/workflows/*.yml: on.push / on.pull_request branches). Note any
+  >    that would stop running or start running when the default changes.
+  > 4. Check .github/dependabot.yml (target-branch), branch protection or rulesets (gh api; a 403 on a private free
+  >    repo means none), and CODEOWNERS.
+  > 5. Search the repository for branch names in scripts, hooks, docs and tests: grep for "main", "master",
+  >    "develop", "default branch", "--base", "origin/HEAD". Classify each hit: must change, fine as is, or history
+  >    (never edit history records such as changelogs of past events or sprint records).
+  > 6. Show the findings as bullets, then a numbered list of proposed changes. Stop and wait for my approval.
+  >
+  > PHASE B - APPROVED CHANGES ONLY
+  > - If develop does not exist: create it from main and push it.
+  > - If main has commits with real file changes that develop lacks: stop and ask me. Do not merge main into develop
+  >   without approval.
+  > - Set the default: gh repo edit --default-branch develop, then git remote set-head origin -a. Verify with gh repo
+  >   view.
+  > - CI: run on pull_request into develop AND main, so release PRs are tested.
+  > - Dependabot (if present): target-branch: develop.
+  > - Open PRs that target main but are feature work: list them; retarget only the ones I approve (gh pr edit N
+  >   --base develop).
+  > - Docs and scripts: fix the "must change" hits. Write down the release step: "PR develop -> main, merged by the
+  >   owner, then tag the merge."
+  > - Make these edits on a feature branch, with a PR into develop. Run the test suite before committing. Do not
+  >   state test results in commit messages.
+  >
+  > PHASE C - VERIFY AND REPORT
+  > - Default branch is develop (gh repo view --json defaultBranchRef).
+  > - A new "gh pr create" with no --base would target develop.
+  > - CI triggers include develop and main.
+  > - Note for the owner: "Closes #N" keywords now close issues when a PR merges into develop, because GitHub reads
+  >   them only on PRs into the default branch.
+  > - Report as bullets: what changed, what was left alone and why, and any decision still open.
+- Note for Sprint 79 planning: Harold's "Do not state test results in commit messages" conflicts with the current
+  habit of naming pass counts in commit bodies; ask whether it applies to this card only or to all commits.
+- Depends on: None. The PHASE B default-branch switch is an outward-facing repository setting; it runs only after
+  Harold approves the PHASE A list.
+
 **F111. Periodic Windows App Store upload readiness verification (~110-175m per review) Priority HOLD**
 - Phase: Release Readiness (reusable template)
 - Platform: Windows Desktop
