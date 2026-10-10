@@ -633,11 +633,29 @@ class _SettingsScreenState extends State<SettingsScreen> with SingleTickerProvid
           ),
           bottom: TabBar(
             controller: _tabController,
-            tabs: const [
-              Tab(text: 'General'),
-              Tab(text: 'Account'),
-              Tab(text: 'Manual Scan'),
-              Tab(text: 'Background'),
+            // F284 R-1 (Sprint 78): each tab label also carries a BUTTON node
+            // with a tap action (the Sort chip pattern), so UI Automation can
+            // invoke it without the mouse -- Flutter tabs otherwise project
+            // to Windows UIA as plain Text with no invoke pattern. The tab's
+            // own semantics (selected, "tab N of 4") are kept; the action
+            // selects the same tab a tap would. No visual change.
+            tabs: [
+              for (final (i, label) in const [
+                'General',
+                'Account',
+                'Manual Scan',
+                'Background',
+              ].indexed)
+                Tab(
+                  child: Semantics(
+                    container: true,
+                    button: true,
+                    excludeSemantics: true,
+                    label: label,
+                    onTap: () => _tabController.animateTo(i),
+                    child: Text(label),
+                  ),
+                ),
             ],
           ),
         ),

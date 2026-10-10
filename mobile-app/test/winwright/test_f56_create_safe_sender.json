@@ -18,7 +18,7 @@
       "title": "Create Entire Domain safe sender for winwright-test.com",
       "steps": [
         { "_comment": "PRIMING QUERY (Flutter builds its semantics tree lazily ON QUERY, not on a timer) + maximize, so Save Rule is not below the fold.",
-          "tool": "ww_window_state", "state": "restore" },
+          "tool": "ww_window_state", "state": "maximize" },
 
         { "_comment": "F135 (Sprint 52): the account-picker step this script used to have is GONE -- the desktop default screen is now Review No Rule Items and Settings resolves its account lazily, opening straight onto the General tab.",
           "tool": "ww_invoke", "selector": "type=Button[name='Settings']" },

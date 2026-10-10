@@ -19,6 +19,7 @@
 library;
 
 import 'package:flutter/material.dart';
+import 'package:flutter/semantics.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 
@@ -290,6 +291,60 @@ void main() {
           reason: 'opening the screen schedules nothing');
     });
   }
+
+  // F284 R-1 / T-2 (Sprint 78): each Settings tab label is a BUTTON node with
+  // a tap action, so UI Automation can invoke it without the mouse. A named
+  // node is not enough -- only performing the action proves it works
+  // (docs/ACCESSIBILITY_STANDARDS.md section 1).
+  //
+  // What this does NOT catch: how Windows UIA projects the node (the
+  // WinWright sweep's ww_invoke on the tab is that check).
+  testWidgets('F284 R-1: the Background tab node is a button whose action '
+      'opens the Background tab', (tester) async {
+    final handle = tester.ensureSemantics();
+    tester.view.physicalSize = const Size(1200, 2600);
+    tester.view.devicePixelRatio = 1.0;
+    addTearDown(tester.view.resetPhysicalSize);
+    addTearDown(tester.view.resetDevicePixelRatio);
+    await tester.runAsync(() async {
+      final store = SettingsStore();
+      await store.setAccountBackgroundEnabled(acct, true);
+      await store.setAccountBackgroundFrequency(acct, 15);
+      await mountAndLoadDbWidget(tester,
+          MaterialApp(home: SettingsScreen(key: UniqueKey(), accountId: acct)));
+    });
+    expect(find.byKey(const Key('scan_interval_control')), findsNothing,
+        reason: 'precondition: Settings opens on the General tab');
+
+    SemanticsNode? tabNode;
+    void visit(SemanticsNode n) {
+      final d = n.getSemanticsData();
+      if (d.label == 'Background' &&
+          d.hasFlag(SemanticsFlag.isButton) &&
+          d.hasAction(SemanticsAction.tap)) {
+        tabNode = n;
+      }
+      n.visitChildren((c) {
+        visit(c);
+        return true;
+      });
+    }
+
+    visit(tester.binding.pipelineOwner.semanticsOwner!.rootSemanticsNode!);
+    expect(tabNode, isNotNull,
+        reason: 'the Background tab must expose a button node with a tap action');
+
+    await tester.runAsync(() async {
+      tester.binding.pipelineOwner.semanticsOwner!
+          .performAction(tabNode!.id, SemanticsAction.tap);
+      await tester.pump(const Duration(milliseconds: 400));
+      await Future<void>.delayed(const Duration(milliseconds: 300));
+      await tester.pump(const Duration(milliseconds: 400));
+    });
+    expect(find.byKey(const Key('scan_interval_control')), findsOneWidget,
+        reason: 'performing the node\'s action must open the Background tab');
+    handle.dispose();
+  });
 
   group('AC-14 / Q10 / AC-11: the Android-only Background rows', () {
     testWidgets('Android: the per-account new-mail switch and the ONE timing '

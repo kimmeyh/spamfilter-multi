@@ -18,7 +18,7 @@
       "title": "Rule rows expose category + sub-type; details dialog labels them; chips narrow and restore",
       "steps": [
         { "_comment": "PRIMING QUERY (fact 3): forces Flutter to build its semantics subtree. Without this the first control lookup on a cold app resolves 0 elements.",
-          "tool": "ww_window_state", "state": "restore" },
+          "tool": "ww_window_state", "state": "maximize" },
 
         { "_comment": "F135 (Sprint 52) made Settings resolve its account LAZILY -- the 'Select Account' picker overlay this script used to click through is GONE (same change the f56 scripts already documented). Settings now opens directly onto the General tab. (Stale picker step removed 2026-08-15, Sprint 59 sweep repair.)",
           "tool": "ww_invoke", "selector": "type=Button[name='Settings']" },

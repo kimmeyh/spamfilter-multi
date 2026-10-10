@@ -120,6 +120,9 @@ class _NoRuleReviewScreenState extends State<NoRuleReviewScreen> {
   /// Provider-sender group size within the visible list (Sprint 46 IMP-1).
   int _providerGroupCount = 0;
 
+  /// F284 R-1: lets the account face's semantics action open its menu.
+  final GlobalKey<PopupMenuButtonState<String>> _accountMenuKey = GlobalKey();
+
   /// MT-2b (Sprint 50): how many already-covered items the most recent
   /// [_loadItems] sweep resolved (see [_sweepCoveredItems]).
   int _lastSweepCount = 0;
@@ -797,12 +800,18 @@ class _NoRuleReviewScreenState extends State<NoRuleReviewScreen> {
         .$1;
     final isFiltered = _accountFilter != 'all';
 
+    // F284 R-1: ONE button node with its own tap action (the Sort chip
+    // pattern), so a screen reader and UI Automation can open the menu
+    // without the mouse.
     return Semantics(
       container: true,
       button: true,
+      excludeSemantics: true,
       label: activeLabel,
       hint: 'Filter by account',
+      onTap: () => _accountMenuKey.currentState?.showButtonMenu(),
       child: PopupMenuButton<String>(
+        key: _accountMenuKey,
         tooltip: 'Filter by account',
         onSelected: _onAccountFilterChanged,
         itemBuilder: (context) => [

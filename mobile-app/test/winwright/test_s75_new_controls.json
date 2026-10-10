@@ -18,7 +18,7 @@
       "title": "Scan History: Clear history opens its confirmation and Cancel closes it (no data change)",
       "steps": [
         { "_comment": "PRIMING QUERY: builds the Flutter semantics tree.",
-          "tool": "ww_window_state", "state": "restore" },
+          "tool": "ww_window_state", "state": "maximize" },
         { "tool": "ww_invoke", "selector": "type=Button[name='View Scan History']" },
         { "_comment": "PROOF OF ARRIVAL + the control under test.",
           "tool": "ww_invoke", "selector": "type=Button[name='Clear scan history']" },
@@ -35,7 +35,7 @@
       "id": "S75-SORT-1",
       "title": "Scan Results: the Sort chip toggles Folder -> Newest first -> Folder",
       "steps": [
-        { "tool": "ww_window_state", "state": "restore" },
+        { "tool": "ww_window_state", "state": "maximize" },
         { "tool": "ww_invoke", "selector": "type=Button[name='View Scan History']" },
         { "_comment": "Open a saved scan (data-dependent; the first matching row).",
           "tool": "ww_invoke", "selector": "type=Button[name^='Manual scan - ']" },
@@ -56,7 +56,7 @@
       "id": "S75-SET-1",
       "title": "Settings: Hide sender details in exports toggles and is restored; Account tab shows the resolved folder rows",
       "steps": [
-        { "tool": "ww_window_state", "state": "restore" },
+        { "tool": "ww_window_state", "state": "maximize" },
         { "tool": "ww_invoke", "selector": "type=Button[name='Settings']" },
         { "_comment": "PROOF OF ARRIVAL. F284: ww_invoke on the tab label, which becomes a button node once F284 R-1 adds Semantics(button) to the Settings tabs (UNVERIFIED until the live sweep).",
           "tool": "ww_invoke", "selector": "type=Button[name^='General']" },

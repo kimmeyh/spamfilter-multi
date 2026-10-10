@@ -385,6 +385,55 @@ void main() {
         reason: 'the pop-up date row names the account email');
   });
 
+  // F284 R-1 / T-2: the account drop-down face is ONE button node whose tap
+  // action opens the menu (UI Automation can invoke it without the mouse).
+  //
+  // What this does NOT catch: how Windows UIA projects it (the WinWright
+  // sweep).
+  testWidgets('F284 R-1: the account face is a button whose action opens the '
+      'account menu', (tester) async {
+    tester.view.physicalSize = const Size(1200, 2400);
+    tester.view.devicePixelRatio = 1.0;
+    addTearDown(tester.view.resetPhysicalSize);
+    addTearDown(tester.view.resetDevicePixelRatio);
+    final handle = tester.ensureSemantics();
+
+    await tester.runAsync(() async {
+      await testHelper.createTestAccount('gmail-a@example.com');
+      registerSavedAccount('gmail-a@example.com');
+      await insertCompletedScan('gmail-a@example.com',
+          completedAtMs: 1000, noRuleCount: 2);
+      await mountAndLoad(tester);
+    });
+
+    SemanticsNode? face;
+    void visit(SemanticsNode n) {
+      final d = n.getSemanticsData();
+      if (d.label == 'All Accounts (2)' &&
+          d.hasFlag(SemanticsFlag.isButton) &&
+          d.hasAction(SemanticsAction.tap)) {
+        face = n;
+      }
+      n.visitChildren((c) {
+        visit(c);
+        return true;
+      });
+    }
+
+    visit(tester.binding.pipelineOwner.semanticsOwner!.rootSemanticsNode!);
+    expect(face, isNotNull);
+    expect(find.text('a@example.com (2)'), findsNothing,
+        reason: 'precondition: the menu is closed');
+
+    tester.binding.pipelineOwner.semanticsOwner!
+        .performAction(face!.id, SemanticsAction.tap);
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 400));
+    expect(find.text('a@example.com (2)'), findsOneWidget,
+        reason: 'the action must open the account menu');
+    handle.dispose();
+  });
+
   // F283 AC-1 (T-1): search over sender, subject and folder, with the
   // Results "Showing X of Y" bar; closing search restores the list.
   //

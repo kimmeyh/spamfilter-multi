@@ -678,20 +678,39 @@ Windows DEV build (0.19.0 [DEV]); every step read-only for mail. Android parity 
 - **W1 -- F282 one folder.** Precondition: your DEV app has a CHOSEN export folder (`C:\Users\kimme\Documents`, read
   from a copy of the DEV database), which F282 keeps exactly as chosen. Settings > General > Export folder shows that
   path. Tap **Reset to default**: the row reads `Documents/MyEmailSpamFilter_Dev (default)`. Open any Results screen
-  and tap the Download icon: the CSV lands in `Documents\MyEmailSpamFilter_Dev`. (If you prefer files directly in
-  Documents, choose that folder again afterwards; it stays exactly as chosen.)
+  and tap the Download icon: the CSV lands in your Documents known folder, which on this PC is redirected to OneDrive:
+  `C:\Users\kimme\OneDrive\0Documents\MyEmailSpamFilter_Dev`. (If you prefer `C:\Users\kimme\Documents`, choose it
+  again afterwards; a chosen folder stays exactly as chosen.)
+  Rehearsed: 2026-10-10. Chosen-folder half on the real 0.19.0 DEV build: today's log
+  `C:\Users\kimme\Documents\diagnostics_Dev\dev_diag_v0.19.0_2026-10-10.log` (12:15). Default half: the Documents
+  known folder on this PC (`[Environment]::GetFolderPath('MyDocuments')`, the same FOLDERID_Documents path_provider
+  uses) is `C:\Users\kimme\OneDrive\0Documents`; resolver behavior by `f206_export_test` (AC-1/AC-2). Your setting
+  was NOT changed by the rehearsal.
 - **W2 -- F281 Scan every.** Settings > Account (kimmeyharold@aol.com) > Background. Background scanning is OFF, so
   "Scan every" is not shown. Turn background scanning ON: "Scan every" appears with 15 minutes. Open it: 5, 10, 15, 30
   minutes; 1, 2, 4, 12, 24 hours; Custom... Pick Custom..., type 25 with Hours: "Maximum is 24 hours", Save disabled;
   type 45 with Minutes, Save: the row reads "45 minutes (custom)". Pick 15 minutes again (your R76-4 setting). Leave
   background ON, read-only, for all four accounts (R76-4 coverage plan).
+  Rehearsed: 2026-10-10, Flutter widget tests on the real SettingsScreen (`f264_interval_control_test`, 13/13):
+  hidden with background off and shown when on (Windows and Android branches), the preset list exactly as above, Custom
+  25 Hours -> "Maximum is 24 hours" with Save disabled, Custom 45 -> saved, scheduled once, row "45 minutes (custom)",
+  Cancel changes nothing. Precondition read from a DEV-database copy: background is OFF on both configured accounts.
 - **W3 -- F283 Review No Rule Items.** The chip row reads `No rule (N)`, account drop-down (`All Accounts (N)`),
   `Folders: All`, `Sort: Folder`. Tap the search icon (or Ctrl+F), type `order`: only matching rows, and "Showing X of
   N emails". Press Escape: all rows return. Tap a row: the Results pop-up opens; next to the date it names the
   account email; Skip is at the bottom right of that row. Tap Skip: the next row's pop-up opens. Close it (click
   outside). Use only Skip here unless you want a real rule.
+  Rehearsed: 2026-10-10. The real 0.19.0 DEV window (WinWright screenshot, read-only): chip row exactly as above with
+  `No rule (396)` / `All Accounts (396)`, Results-format rows naming the account. Widget tests
+  (`no_rule_review_screen_test`, 18/18): search "Showing 1 of 3 emails" and restore on close, pop-up names the
+  account, Skip present, auto-advance past covered rows.
 - **W4 -- R76-4 content history.** Settings > General: "Content history (development build only)", off. Turn it ON.
   Run a Manual Scan of kimmeyharold@aol.com (read-only). Back on Settings > General the row reads "<N> stored." with N
   greater than 0, and "Delete content history" is enabled. Run the same scan again: N does not grow (repeat sightings
   are header-only). Leave it ON.
+  Rehearsed: 2026-10-10 through the REAL scan pipeline (`r76_4_scanner_capture_test`, 4/4: `EmailScanner.scanInbox`
+  via the registry seam, a fake provider counting text fetches): first scan stores 2 rows with outcomes and fetches 2
+  bodies; the repeat stores 0 and fetches 0; Settings row shows the switch on, "2 stored.", Delete enabled. Not
+  rehearsable here: a real AOL account (Claude has no mailbox access); the provider's text fetch is covered by
+  fixtures (`r76_4_content_history_test`).
 - **Fold (Tasks 1, 2)**: the steps handed over at 2026-10-10 (MV76-1 steps 8-11 + iCloud, F277 three overnight runs).
