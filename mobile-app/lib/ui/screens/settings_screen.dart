@@ -1640,25 +1640,32 @@ class _SettingsScreenState extends State<SettingsScreen> with SingleTickerProvid
             await _updateScheduledScan(enabled: value);
           },
         ),
-        // F264 R-11 (Sprint 77): "Scan every" sits right under the enable
-        // switch, on BOTH platforms (one control, same UI). Shown even when
-        // background scanning is OFF (ISSUE #123+#124), so the user can set it
-        // first. A change saves the PER-ACCOUNT override (F98, ADR-0039) and
-        // reschedules through the platform factory when enabled.
-        Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-          child: ScanIntervalControl(
-            initialMinutes: _backgroundScanFrequency,
-            onCommit: (minutes) async {
-              setState(() => _backgroundScanFrequency = minutes);
-              await _settingsStore.setAccountBackgroundFrequency(
-                  _requireAccountId, minutes);
-              if (_backgroundScanEnabled) {
-                await _updateScheduledScan(enabled: true);
-              }
-            },
+        // F264 R-11 (Sprint 77) / F281 (Sprint 78, Harold): "Scan every" sits
+        // right under the enable switch, on BOTH platforms (one control, same
+        // UI), and is shown ONLY while this account's background scanning is
+        // on -- this reverses F264's "shown even when off". It is the complete
+        // rule on Android too: the new-mail switch scans nothing for an
+        // account whose background scanning is off (the worker skips it,
+        // `android_background_scan_worker.dart:205-216`), so it needs no rule
+        // of its own. Hiding never changes the saved value (plan F2 = 1); it
+        // shows again when background scanning is turned back on. A change
+        // saves the PER-ACCOUNT override (F98, ADR-0039) and reschedules
+        // through the platform factory.
+        if (_backgroundScanEnabled)
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+            child: ScanIntervalControl(
+              initialMinutes: _backgroundScanFrequency,
+              onCommit: (minutes) async {
+                setState(() => _backgroundScanFrequency = minutes);
+                await _settingsStore.setAccountBackgroundFrequency(
+                    _requireAccountId, minutes);
+                if (_backgroundScanEnabled) {
+                  await _updateScheduledScan(enabled: true);
+                }
+              },
+            ),
           ),
-        ),
         // F253 + F264: event-driven scans from mail-app notifications, per
         // ACCOUNT. NOT gated on this account's background switch (review M-1,
         // Sprint 76). Android only; HIDDEN on Windows (Q10 = 1, ADR-0044's

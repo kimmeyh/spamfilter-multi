@@ -3,10 +3,14 @@
 /// database -- the path a user takes (Settings > Background), not a seam.
 ///
 /// Covers AC-2 (240 -> 120 schedules; the old fixed-list gate refused it), AC-4
-/// (4 minutes: inline message, nothing stored, no schedule call), AC-5 (Hours +
-/// 99 -> 5940 stored and scheduled once), AC-11 (the one Android note, exactly
-/// once), AC-14 (the per-account new-mail switch is reachable on Android and
-/// hidden on Windows, both branches).
+/// (4 minutes: inline message, nothing stored, no schedule call), AC-11 (the
+/// one Android note, exactly once), AC-14 (the per-account new-mail switch is
+/// reachable on Android and hidden on Windows, both branches).
+///
+/// F281 (Sprint 78): the maximum is 24 hours (25 hours is refused with the
+/// inline message; 24 stores and schedules 1440), and the control is HIDDEN
+/// while the account's background scanning is off, on both platforms, with the
+/// saved value kept for when it is turned on (plan F2 = 1).
 ///
 /// What these do NOT catch: Task Scheduler or WorkManager accepting the value
 /// (phone and Windows validation), the keyboard's own Done key on a device (the
@@ -180,28 +184,46 @@ void main() {
     expect(scheduler.scheduled, [(accountId: acct, minutes: 5)]);
   });
 
-  testWidgets('AC-5: at 2 hours, typing 99 stores and schedules 5940 once',
-      (tester) async {
+  testWidgets('F281 AC-2: at 2 hours, typing 25 shows "Maximum is 24 hours" and '
+      'saves nothing; 24 stores and schedules 1440 once', (tester) async {
     await openBackgroundTab(tester, storedMinutes: 120);
     expect(numberText(tester), '2');
 
-    await typeAndSubmit(tester, '99');
-
-    expect(scheduler.scheduled, [(accountId: acct, minutes: 5940)]);
-    final stored = await tester
-        .runAsync(() => SettingsStore().getAccountBackgroundFrequency(acct));
-    expect(stored, 5940);
-  });
-
-  testWidgets('background scanning OFF: a valid change is stored but nothing '
-      'is scheduled', (tester) async {
-    await openBackgroundTab(tester, storedMinutes: 15, backgroundEnabled: false);
-    await typeAndSubmit(tester, '30');
+    await typeAndSubmit(tester, '25');
+    expect(tester.widget<Text>(message).data, 'Maximum is 24 hours');
     expect(scheduler.scheduled, isEmpty);
-    final stored = await tester
-        .runAsync(() => SettingsStore().getAccountBackgroundFrequency(acct));
-    expect(stored, 30);
+    expect(
+        await tester
+            .runAsync(() => SettingsStore().getAccountBackgroundFrequency(acct)),
+        120,
+        reason: 'the stored value stays what it was');
+
+    await typeAndSubmit(tester, '24');
+    expect(message, findsNothing);
+    expect(scheduler.scheduled, [(accountId: acct, minutes: 1440)]);
+    expect(
+        await tester
+            .runAsync(() => SettingsStore().getAccountBackgroundFrequency(acct)),
+        1440);
   });
+
+  for (final android in [false, true]) {
+    final platform = android ? 'Android' : 'Windows';
+    testWidgets('F281 AC-3 ($platform): background scanning OFF hides "Scan '
+        'every"; the saved value is kept and shown when it is on (F2 = 1)',
+        (tester) async {
+      SettingsScreen.debugIsAndroid = android;
+      await openBackgroundTab(tester,
+          storedMinutes: 30, backgroundEnabled: false);
+      expect(find.byKey(const Key('scan_interval_control')), findsNothing);
+
+      await openBackgroundTab(tester, storedMinutes: 30);
+      expect(find.byKey(const Key('scan_interval_control')), findsOneWidget);
+      expect(numberText(tester), '30');
+      expect(scheduler.scheduled, isEmpty,
+          reason: 'opening the screen schedules nothing');
+    });
+  }
 
   testWidgets('an untypable stored value (125 minutes) opens as 2 Hours and is '
       'converted in storage', (tester) async {

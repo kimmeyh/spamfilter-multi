@@ -95,7 +95,15 @@ void main() {
       // Manual Validation. It pins the facts a user needs and the one stale
       // phrase ("4-hourly") the old fixed list left behind.
       expect(backgroundScanning.contains('5 minutes'), isTrue);
-      expect(backgroundScanning.contains('99 hours'), isTrue);
+      // F281 (Sprint 78): the maximum is 24 hours, and the control shows
+      // only while background scanning is on.
+      expect(backgroundScanning.contains('24 hours'), isTrue);
+      expect(backgroundScanning.contains('99 hours'), isFalse,
+          reason: 'the F264 maximum is gone');
+      expect(
+          backgroundScanning
+              .contains('appears only while background scanning is on'),
+          isTrue);
       expect(backgroundScanning.contains('Scan every'), isTrue);
       expect(backgroundScanning.contains('Scan when new mail arrives'), isTrue);
       expect(backgroundScanning.contains('4-hourly'), isFalse,
