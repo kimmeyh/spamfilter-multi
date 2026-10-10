@@ -1,12 +1,12 @@
 {
     "_description": "Sprint status file that persists across context compaction. Update after each phase/sub-phase completion.",
-    "_last_updated": "2026-10-10T12:00:00Z",
+    "_last_updated": "2026-10-10T14:30:00Z",
     "_usage": "Read this file after context compaction to restore sprint approval state and progress.",
     "_staleness_note": "This file had drifted 15 sprints (last updated at Sprint 35, 2026-04-19) before being refreshed at Sprint 50 close-out. It is a Phase 7.7 checklist item -- update it at every sprint close-out, not opportunistically.",
     "current_sprint": {
         "number": 78,
         "branch": "feature/20261009_Sprint_78",
-        "status": "Phase 3.7 Plan Approval -- Harold's decision answers recorded 2026-10-10 (R76-4 dev-only, F199-b HOLD, Task 9 notifications added); awaiting approval plus N1-N3",
+        "status": "Phase 3.7 Plan Approval -- all decisions answered 2026-10-10 (R76-4 dev-only with header-only dedup; F199-b HOLD; notifications to backlog F286/F287); awaiting the approval itself",
         "plan_approved": false,
         "blanket_execution_approved": false,
         "pr_number": 470,
@@ -53,9 +53,9 @@
     ],
     "blocking_issues": [],
     "next_actions": [
-        "3.7: Harold approves the plan and answers N1-N3 (Task 9).",
-        "3.7.0: create GitHub cards for Tasks 1-9; 3.7.0b: bump to 0.19.0+16 and STORE_VERSION_STATUS Last uploaded to Play = 0.18.0 (15).",
-        "Then execute in plan order: Task 0, phone Tasks 1-2, Task 9, ADR-0047, Task 3, F281 research, Tasks 5-6, Task 7."
+        "3.7: Harold approves the plan (all decisions answered 2026-10-10).",
+        "3.7.0: create GitHub cards for Tasks 1-8; 3.7.0b: bump to 0.19.0+16 and STORE_VERSION_STATUS Last uploaded to Play = 0.18.0 (15).",
+        "Then execute in plan order: Task 0, phone Tasks 1-2, ADR-0047, Task 3, F281 research, Tasks 5-6, Task 7."
     ],
     "next_sprint_targeted": {
         "number": 77,
