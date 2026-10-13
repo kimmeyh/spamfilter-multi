@@ -231,7 +231,9 @@ class ScanResultStore {
       }
 
       if (completedOnly == true) {
-        where += ' AND completed_at IS NOT NULL';
+        // By STATUS, not completed_at: since Sprint 78 MV-6 a failed scan has
+        // completed_at too (7.7.1 code-review L-3).
+        where += " AND status = 'completed'";
       }
 
       final maps = await db.query(
@@ -270,6 +272,20 @@ class ScanResultStore {
       _logger.e('Failed to get scan result $scanResultId: $e');
       rethrow;
     }
+  }
+
+  /// Sprint 78 MV-7: when the most recent scan of ANY type (manual or
+  /// background, any status) started for [accountId], or null if none has.
+  /// Read by the Android Doze alarm to skip a scan that would repeat one
+  /// that just ran.
+  Future<DateTime?> getLatestScanStart(String accountId) async {
+    final db = await _databaseHelper.database;
+    final rows = await db.rawQuery(
+      'SELECT MAX(started_at) AS started FROM scan_results WHERE account_id = ?',
+      [accountId],
+    );
+    final ms = rows.isEmpty ? null : rows.first['started'] as int?;
+    return ms == null ? null : DateTime.fromMillisecondsSinceEpoch(ms);
   }
 
   /// Get the most recent scan for a specific account and type
@@ -416,11 +432,21 @@ class ScanResultStore {
     try {
       final db = await _databaseHelper.database;
 
+      // Sprint 78 MV-6: record WHEN the scan ended. Without completed_at,
+      // Scan History printed "In progress" under every failed scan (the Fold's
+      // Gmail sign-in skips, 2026-10-12). Effect on the other readers of
+      // completed_at: the latest-completed and duration queries filter on
+      // status = 'completed'; `completedOnly` now filters on status too; the
+      // two "ORDER BY completed_at DESC" lists (DatabaseHelper.queryScanResults,
+      // getLatestCompletedScan) now place a failed scan by its end time instead
+      // of with the NULLs; the retention purge only moves this row from its
+      // started_at clause to its completed_at one.
       final result = await db.update(
         'scan_results',
         {
           'status': 'error',
           'error_message': errorMessage,
+          'completed_at': DateTime.now().millisecondsSinceEpoch,
         },
         where: 'id = ?',
         whereArgs: [scanResultId],

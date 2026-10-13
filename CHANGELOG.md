@@ -26,6 +26,34 @@ Format: `- **type**: Description (Issue #N)` where type is feat|fix|chore|docs
 
 ## [Unreleased]
 
+### 2026-10-13 (Sprint 78 final code reviews, PR #470)
+- **fix**: If the spam filter rules fail to reload after a change, a banner with Retry now says so and the rules loaded earlier stay in use; before, the failure was invisible
+- **fix**: Review No Rule Items drops rows that a rule made elsewhere (a saved Results screen, Settings > Rules) now covers, without tapping Refresh
+- **fix**: The "Sender failed authentication" warning for a safe sender now appears before the next email's pop-up opens, on Review No Rule Items and Results; it was hidden under the next pop-up
+- **fix**: On Windows, when the default export folder cannot be written (for example under Controlled Folder Access), exports fall back to the app's own AppData folder instead of failing again in Documents
+- **fix**: A background interval saved above 24 hours is converted to 24 hours and its schedule re-registered once on upgrade (Android kept the old schedule)
+- **fix**: Deleting an account or all data no longer hides a failed table delete
+- **chore**: Dev-only content history: a failed body fetch is retried on the next scan instead of stored as "no body"; a failed lookup stops capture for the rest of the scan
+- **test**: A policy gate fails when a code comment cites a test file that does not exist
+
+### 2026-10-13 (Sprint 78 Manual Validation)
+- **fix**: The matched-text highlight on the Rule Test screen is readable in dark mode; its amber background is now opaque, so the dark text no longer sits on dark brown (Sprint 78 retro IMP-4)
+- **test**: The text-contrast policy gate now fails on hardcoded black text that has no opaque background of its own, the class of the Sprint 78 dark search text (Sprint 78 retro IMP-4)
+- **fix**: Android background scanning no longer scans an account about twice per interval; the Doze wake-up alarm now skips an account that was scanned recently (Issue #472)
+- **fix**: Scan History no longer shows "In progress" under a scan that failed (for example a Gmail account that needs to sign in again); a failed scan now records when it ended and shows its duration (Issue #471)
+- **fix**: Creating a rule or safe sender from Review No Rule Items no longer blanks the screen for several seconds; the app's "Loading spam filter rules" screen now appears only at startup, so a rule reload keeps the home screen in place (Issue #475)
+- **fix**: The search text on the Results and Review No Rule Items screens is readable on the dark theme; it used fixed black text (Issue #475)
+- **feat**: In the email pop-up, the subject line, the date and account row and the Skip button use the same color as the sender line (Issue #475)
+- **feat**: For a sender on a shared email provider (gmail.com and the like), the four domain buttons in the email pop-up are dimmed; they still work, and still show the provider warning first (Issue #475)
+
+### 2026-10-10 (Sprint 78)
+- **feat**: Development builds only: a "Content history" switch on Settings > General keeps one copy of each scanned email (sender, subject, outcome and plain text) in a file on the computer, for building better spam detection; a repeat sighting downloads nothing (Issue #476)
+- **fix**: Removing an account now also deletes its folder scan positions and its background scan log, and "delete all data" now deletes every table (Issue #476)
+- **feat**: Review No Rule Items now looks and works like the Results screen: search (Ctrl+F), account, Folders and Sort choices, and tapping an email opens the same details as Results, with the same Safe Sender, Block Rule and Skip actions; the next email opens automatically. The checkboxes and bulk menu were removed (Issue #475)
+- **feat**: The email details on Results and Review No Rule Items now name the account the email belongs to, next to the date (Issue #475)
+- **feat**: "Scan every" is now a list of intervals (5 minutes to 24 hours) with a Custom... choice for any other value in that range; a saved longer interval becomes 24 hours, and the setting appears only while background scanning is on for the account (Issue #478)
+- **feat**: Every file the app writes for you now goes to one folder, MyEmailSpamFilter in Documents, on both Windows and Android (scan exports in scan_exports, the diagnostic log in diagnostics). A folder you chose in Settings > General is still used exactly as chosen, and existing files are not moved (Issue #473)
+
 ### 2026-10-08 (Sprint 77)
 - **fix**: The diagnostic log no longer records a sender address or subject text when a No Rule email is cleared because an existing rule covers it; it records only the kind of rule (Sprint 77 final review)
 - **fix**: Adding an email address that is already saved now asks "Replace its saved sign-in details?" for every Google sign-in method too, not only the password form, and also asks when the app cannot read its saved accounts (Sprint 77 final review)

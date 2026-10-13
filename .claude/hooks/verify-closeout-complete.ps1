@@ -363,13 +363,24 @@ if ($sprintNum -ge 77 -and $status -and $null -ne $status.current_sprint -and
     if (Test-Path -LiteralPath $planPathEx) {
         $planTextEx = Get-Content -LiteralPath $planPathEx -Raw
         $emptyEx = 0
+        $noMinutesEx = 0
         $exMatches = [regex]::Matches($planTextEx, '(?im)^\s*(?:-\s*)?\*\*Executed-by\*\*(.*)$')
         foreach ($exm in $exMatches) {
             $v = $exm.Groups[1].Value
             $v = $v -replace '<!--.*?-->', '' -replace '<[^>]*>', ''
             $v = $v -replace '(?i)\(fill(ed)? at completion\)', ''
+            # Sprint 78 retro IMP-1 (Harold 2026-10-13): a model name alone passed
+            # this check, and Sprint 78 closed its tasks with no minutes anywhere.
+            # The line must carry an actual-minutes figure (~35m, 35 min, 35 minutes),
+            # judged BEFORE the whitespace strip below removes the separators.
+            # 7.7.1 silent-failure L-2: a bare "\d+m" also matched model text such
+            # as "Opus 4.6 (1M context)". A bare m counts only after "~" (~35m).
+            if ($sprintNum -ge 78 -and $v -notmatch '(?i)(~\s*\d+\s*m\b|\d+\s*(min|mins|minutes)\b)') { $noMinutesEx++ }
             $v = $v -replace '[\s:*_`-]', ''
             if ([string]::IsNullOrWhiteSpace($v) -or $v -match '^(?i)(PENDING|TBD|TODO)$') { $emptyEx++ }
+        }
+        if ($noMinutesEx -gt 0) {
+            $violations += "SPRINT_${sprintNum}_PLAN.md has $noMinutesEx '**Executed-by**' line(s) with no actual minutes. Each line records the model AND its actual minutes (e.g. 'Sonnet agent ~23 min + lead ~12 = ~35 min'), copied from the CODING_VELOCITY.md row written at task completion (Sprint 78 retro IMP-1)."
         }
         $cardCountEx = [regex]::Matches($planTextEx, '(?im)^#{2,3}\s+Task\s+\S+\s+--').Count
         if ($emptyEx -gt 0) {

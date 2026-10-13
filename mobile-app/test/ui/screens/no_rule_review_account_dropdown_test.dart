@@ -9,8 +9,8 @@
 ///
 /// What these tests pin, in the order that matters:
 ///   AC-1  every configured account is REACHABLE at phone width (the failure);
-///   AC-2  switching accounts CLEARS the selection (the behavior the old chip
-///         handler had, which a rewrite could silently drop);
+///   AC-2  picking an account narrows the list and the No rule (N) chip (F283;
+///         the selection it used to clear is gone with multi-select);
 ///   AC-3  the default face reads All Accounts with the total count.
 ///
 /// Harness mirrors no_rule_review_touch_selection_test.dart: real sqflite_ffi
@@ -155,27 +155,29 @@ void main() {
     }
   });
 
+  // F283 (Sprint 78): multi-select is gone (MV-Q16), so the old AC-2
+  // (switching accounts clears the selection) has nothing left to guard. What
+  // the account filter must do now is narrow the list and its count.
   testWidgets(
-      'AC-2: switching accounts CLEARS the active selection', (tester) async {
+      'AC-2 (F283): picking an account narrows the list and the No rule (N) '
+      'chip; All Accounts restores them', (tester) async {
     await pumpScreen(tester);
+    expect(find.text('No rule (3)'), findsOneWidget);
 
-    // Select a row (plain tap selects on this triage-only screen).
-    await tester.tap(find.textContaining('sender-0@example.com').first);
-    await tester.pump();
-    expect(find.text('1 selected'), findsOneWidget,
-        reason: 'precondition: a selection is active');
-
-    // Switch to a specific account.
     await tester.tap(find.byTooltip('Filter by account'));
     await tester.pumpAndSettle();
     await tester.tap(find.textContaining('second@gmail.com').last);
     await tester.pumpAndSettle();
 
-    expect(find.text('1 selected'), findsNothing,
-        reason: 'the selection must be cleared on account change -- carrying a '
-            'hidden selection across accounts is exactly what _clearSelection() '
-            'in the old chip handler prevented, and a rewrite could silently '
-            'drop it');
+    expect(find.text('No rule (1)'), findsOneWidget);
+    expect(find.text('sender-1@example.com'), findsOneWidget);
+    expect(find.text('sender-0@example.com'), findsNothing);
+
+    await tester.tap(find.byTooltip('Filter by account'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.textContaining('All Accounts').last);
+    await tester.pumpAndSettle();
+    expect(find.text('No rule (3)'), findsOneWidget);
   });
 
   testWidgets('AC-3: the default face reads All Accounts with the total count',

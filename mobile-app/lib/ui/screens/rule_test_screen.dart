@@ -629,8 +629,13 @@ class _RuleTestScreenState extends State<RuleTestScreen> {
             TextSpan(text: fullText.substring(0, matchIndex)),
           TextSpan(
             text: fullText.substring(matchIndex, matchIndex + matchedText.length),
+            // Sprint 78 retro IMP-4: OPAQUE highlight. The old 25% amber
+            // (0x40FFC107) blended with the theme surface, so in dark mode the
+            // pinned black87 text sat on dark brown. 0xFFFFEFC1 is that same
+            // blend over white, so light mode looks unchanged and the pair holds
+            // in every theme.
             style: const TextStyle(
-              backgroundColor: Color(0x40FFC107),
+              backgroundColor: Color(0xFFFFEFC1),
               fontWeight: FontWeight.bold,
               color: Colors.black87,
             ),

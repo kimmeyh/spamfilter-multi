@@ -1,0 +1,9 @@
+{
+  "cwd": "D:/Data/Harold/github/spamfilter-multi/.claude/hooks/test-cases/fixtures/executed-by-1m-context-sprint78",
+  "branch_override": "feature/20261010_Sprint_78",
+  "hook_event_name": "Stop",
+  "dirty_zero_files_override": "",
+  "skip_git_checks": true,
+  "session_id": "closeout-violation-13-executed-by-1m-context",
+  "last_assistant_message": "Sprint 78 is fully closed out. Ready for the next sprint."
+}

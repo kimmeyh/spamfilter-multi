@@ -7,6 +7,44 @@ Manual Validation complete
 Sprint 7n Manual Validation Feedback 
 
 ---------------------------------------------------------------------------------------------------------
+Sprint 78 Manual Validation Feedback 
+
+  Still open from Manual Validation:
+  - W1, one export folder (F282).
+    - Settings > General > Export folder shows C:\Users\kimme\Documents.
+    - Tap Reset to default: the row reads Documents/MyEmailSpamFilter_Dev (default).
+    - On any Results screen, tap the Download icon. The CSV lands in C:\Users\kimme\OneDrive\0Documents\MyEmailSpamFilter_Dev.
+    - Choose C:\Users\kimme\Documents again afterwards if you prefer it.
+  - W2, "Scan every" (F281).
+    - Settings > Account (kimmeyharold@aol.com) > Background. While background scanning is off, "Scan every" is hidden.
+    - Turn background scanning on: "Scan every" appears, set to 15 minutes.
+    - The list shows 5, 10, 15, 30 minutes; 1, 2, 4, 12, 24 hours; and Custom...
+    - Custom with 25 Hours shows "Maximum is 24 hours", and Save stays disabled.
+    - Custom with 45 Minutes, then Save, shows "45 minutes (custom)".
+    - Set it back to 15 minutes and leave background on (read-only) for all four accounts.
+  - W3, Review No Rule Items (F283).
+    - The chips read No rule (N), All Accounts (N), Folders: All and Sort: Folder.
+    - Press Ctrl+F and type order: only matching rows remain, with "Showing X of N emails". Press Escape: all rows return.
+    - Tap a row: the pop-up names the account. Tap Skip: the next row's pop-up opens.
+    - From your screenshot, this part works as expected.
+  - W4, content history (R76-4).
+    - Settings > General: turn on "Content history (development build only)".
+    - Run a Manual Scan of kimmeyharold@aol.com. The row then reads "N stored." with N above 0.
+    - Run the same scan again: N does not grow. Leave the history on.
+
+  Open decisions:
+  - F4, Review chip row (validation-screenshots\sprint-78\f283_review_chip_row_windows.png):
+    a. As expected.
+    b. Change (describe).
+  - ADR-0047, dev-only content history:
+    a. Accept.
+    b. Change (describe).
+  - F284 finding: six mouse steps remain in the WinWright sweep, so the PC must stay unlocked while it runs.
+    a. Accept them. I file a backlog card to remove them when WinWright can read a label without the mouse. (recommended)
+    b. Take f124 out of the default sweep. The sweep then needs no mouse, but the rule-label checks stop running.
+
+
+---------------------------------------------------------------------------------------------------------
 Sprint 77 Manual Validation Feedback 
 
 

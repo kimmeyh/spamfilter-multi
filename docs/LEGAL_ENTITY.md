@@ -40,7 +40,7 @@ These are NOT typos. Each is what the named system actually holds today, and the
 |---|---|---|
 | Microsoft Partner Center (publisher name) | `Kimmey Consulting - Ohio` | hyphen; account type **Individual** |
 | Google Play (developer name, public) | `Kimmey Consulting LLC` | **DONE 2026-09-09** (F199) |
-| `pubspec.yaml` `publisher_display_name` | `Kimmey Consulting LLC` | F199; used for the MSIX package |
+| `pubspec.yaml` `publisher_display_name` | `Kimmey Consulting - Ohio` | MUST mirror Partner Center (Submission 26 was rejected when it did not); used for the MSIX package |
 | `pubspec.yaml` `identity_name` | `KimmeyConsulting-Ohio.MyEmailSpamFilter` | **Store-assigned. NEVER change.** |
 | `pubspec.yaml` `publisher` | `CN=84EA8722-...` | **Partner Center GUID, not a name. NEVER change.** |
 
@@ -74,10 +74,12 @@ not be treated as blockers by any future reader:
 - domain ownership records or purchase invoices
 - the Microsoft support ticket about Individual -> Company conversion
 
-The one Microsoft question still worth asking, and it is unrelated to account type: **can
-this Individual account's publisher display name be changed** from `Kimmey Consulting - Ohio`
-to `Kimmey Consulting LLC`? The vendor docs contradict each other on that point (below), and
-it is the last open piece of F199.
+The one Microsoft question still open, and it is unrelated to account type: **can this
+Individual account's publisher display name be changed** from `Kimmey Consulting - Ohio` to
+`Kimmey Consulting LLC`? The vendor docs contradict each other on that point (below). It is
+F199-b, **on HOLD** (Harold, 2026-10-10): *"no real business is being done by either entity
+and will resolve later."* Until then the Partner Center name stays as is, and the repo
+mirrors it.
 
 ### Google Play
 
@@ -152,9 +154,11 @@ document"; a D-U-N-S number avoids a 2-5 day manual review there.
    review, and nothing about the in-flight release or the closed test was disturbed. Google
    reviews the name before it shows publicly, so the Play LISTING may lag the console.
 2. ~~Partner Center listing fields (Copyright, Developed by)~~ **DONE 2026-09-09.**
-3. Partner Center publisher display name -- the ONLY F199 item still open. Ask support
-   whether an Individual account can change it; the docs contradict each other. This is a
-   NAME question, not an account-type question: the account-type decision is closed.
+3. Partner Center publisher display name -- the ONLY F199 item still open, now **F199-b on
+   HOLD** (Harold, 2026-10-10: no real business is being done by either entity; resolve
+   later). When reopened: ask support whether an Individual account can change it (the docs
+   contradict each other), change the CONSOLE first, then `pubspec.yaml`. This is a NAME
+   question, not an account-type question: the account-type decision is closed.
 
 **Account type: CLOSED, 2026-09-09.** Both stores stay Personal/Individual. Conversion was
 never going to accelerate this launch anyway -- the Play account is ~12 days old and D-U-N-S

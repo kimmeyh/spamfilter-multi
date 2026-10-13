@@ -213,7 +213,9 @@ void main() {
     // folder -- which on Android the user could not reach. The runtime log
     // (above) still lives in getLogDir().
     String exportRoot() => p.join(appSupport.path, 'exports');
-    String logDirPath() => p.join(exportRoot(), 'scan_exports');
+    // F282: the override stands in for Documents; the app folder is added.
+    String logDirPath() =>
+        p.join(exportRoot(), ExportDirectories.appFolderName, 'scan_exports');
 
     String dataCsvPath(String accountId) {
       final safe = accountId.replaceAll('@', '_at_').replaceAll('.', '_');

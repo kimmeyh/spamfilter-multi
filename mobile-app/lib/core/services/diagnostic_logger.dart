@@ -143,8 +143,8 @@ class DiagnosticLogger {
   /// Resolve the directory the log is written to.
   ///
   /// The export folder's `diagnostics` subfolder (F206, Sprint 74): the
-  /// user-chosen folder when set, else the platform default (Android
-  /// Documents, Windows Downloads) -- a location the user can reach from a
+  /// user-chosen folder when set, else the default
+  /// `Documents/MyEmailSpamFilter[_Dev]` (F282) -- a location the user can reach from a
   /// file manager, which on Android is what makes the files deletable without
   /// the app, a condition Harold set for keeping them. Before F206 the
   /// no-folder case fell back to app-private storage, unreachable on Android.
@@ -157,28 +157,33 @@ class DiagnosticLogger {
     if (_cachedDir != null) return _cachedDir!;
 
     // F206 (Sprint 74): the export folder's `diagnostics` subfolder -- the
-    // user's chosen folder if set, else the platform default (Android
-    // Documents, Windows Downloads). It used to fall back to app-private
+    // user's chosen folder if set, else the default
+    // Documents/MyEmailSpamFilter[_Dev] (F282). It used to fall back to app-private
     // storage, which on Android meant the log could not be retrieved at all
     // unless a folder had been configured first. A resolution failure still
     // falls back to app support, so logging never stops.
     try {
-      // Environment-suffixed (review I-1, ADR-0035): DEV and PROD resolve
-      // the SAME export folder, and "Delete logs" / rotation in one must
-      // never touch the other's files.
-      final sub = 'diagnostics${AppEnvironment.dataDirSuffix}';
-      // F248 R-8: a user who picks the diagnostics folder ITSELF as the
-      // export folder (found on the Fold, 2026-10-04: the log landed in
-      // Documents/diagnostics/diagnostics) gets the log in that folder, not
-      // one level deeper.
       String? chosen;
       try {
         chosen = await SettingsStore().getCsvExportDirectory();
       } catch (_) {
         chosen = null;
       }
-      final alreadyThere =
-          chosen != null && chosen.isNotEmpty && path.basename(chosen) == sub;
+      // F282 (F3 = 1): the DEFAULT folder is already per environment
+      // (MyEmailSpamFilter vs MyEmailSpamFilter_Dev), so its subfolder is
+      // plain `diagnostics`. A folder the USER chose can be shared by DEV and
+      // PROD, so there the subfolder stays environment-suffixed (review I-1,
+      // ADR-0035): "Delete logs" / rotation in one must never touch the
+      // other's files.
+      final userChose = chosen != null && chosen.isNotEmpty;
+      final sub = userChose
+          ? 'diagnostics${AppEnvironment.dataDirSuffix}'
+          : 'diagnostics';
+      // F248 R-8: a user who picks the diagnostics folder ITSELF as the
+      // export folder (found on the Fold, 2026-10-04: the log landed in
+      // Documents/diagnostics/diagnostics) gets the log in that folder, not
+      // one level deeper.
+      final alreadyThere = userChose && path.basename(chosen) == sub;
       _cachedDir = await ExportDirectories.resolve(
           subfolder: alreadyThere ? null : sub);
       return _cachedDir!;
