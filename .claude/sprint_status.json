@@ -1,15 +1,15 @@
 {
     "_description": "Sprint status file that persists across context compaction. Update after each phase/sub-phase completion.",
-    "_last_updated": "2026-10-13T20:40:00Z",
+    "_last_updated": "2026-10-13T21:00:00Z",
     "_usage": "Read this file after context compaction to restore sprint approval state and progress.",
     "_staleness_note": "This file had drifted 15 sprints (last updated at Sprint 35, 2026-04-19) before being refreshed at Sprint 50 close-out. It is a Phase 7.7 checklist item -- update it at every sprint close-out, not opportunistically.",
     "current_sprint": {
         "number": 79,
         "branch": "feature/20261013_Sprint_79",
-        "status": "Phase 3.7 Plan Approval -- Sprint 79 plan drafted (docs/sprints/SPRINT_79_PLAN.md), draft PR open; awaiting Harold's approval and decision answers Q1-Q9, Q-S1..Q-S3",
-        "plan_approved": false,
-        "pr_number": null,
-        "version": "0.19.0+16 (Sprint 78); the Sprint 79 bump happens at its plan approval"
+        "status": "Phase 4 Execution -- Sprint 79 plan APPROVED 2026-10-13 (Q1 1, Q2 2, Q3 1, Q4 1, Q5 1, Q6 1, Q7 1, Q8 2, Q9 2, Q-S1..3 approved); cards #481-#487 created, #471 #472 #433 #428 reused",
+        "plan_approved": true,
+        "pr_number": 480,
+        "version": "0.20.0+17 (Sprint 79, bumped at 3.7.0b)"
     },
     "previous_sprint": {
         "number": 78,
@@ -24,7 +24,8 @@
         "sprint_75": "Closed by hand 2026-10-04: #441 #442 #444 #445 #446 #447 #449 #450. Open, carried to Sprint 76 phone checks: #428 (MV74-1), #433 (F205).",
         "sprint_76": "Closed by hand 2026-10-06: #452 #453 #454 #456 #457 #458. Open, inside MV76-1: #428 (MV74-1 reboot half), #433 (F205).",
         "sprint_77": "Closed by hand 2026-10-09: #461 (Fold steps 7-11 carried to the Sprint 78 start) #462 #463 #464 #465 #466 #467 #468. Open, inside MV76-1: #428 (MV74-1 reboot half), #433 (F205).",
-        "sprint_78": "Closed by hand 2026-10-13: #473 #474 #475 #476 #478 (#477 closed earlier). Open, moved to Sprint 79: #471 (MV76-1, with #428 and #433), #472 (F277)."
+        "sprint_78": "Closed by hand 2026-10-13: #473 #474 #475 #476 #478 (#477 closed earlier). Open, moved to Sprint 79: #471 (MV76-1, with #428 and #433), #472 (F277).",
+        "sprint_79": "Task 0 #481 (version), Task 1 #471 (MV76-1; inside it #433 F205, #428 MV74-1), Task 2 #472 (F277), Task 3 #482 (F286), Task 4 #483 (F287), Task 5 #484 (F288), Task 6 #485 (F291), Task 7 #486 (F292), Task 8 #487 (F293)"
     },
     "_github_issues_note": "Sprint 66 cards created at Phase 3.3.1 (2026-09-07): #387 GP-19, #388 GP-4. Close by hand at Post-Merge Cleanup.",
     "test_metrics": {
@@ -53,9 +54,9 @@
     ],
     "blocking_issues": [],
     "next_actions": [
-        "3.7: Harold approves the Sprint 79 plan and answers Q1-Q9 and Q-S1..Q-S3.",
-        "3.7.0: create cards (reuse #471, #472, #433, #428); 3.7.0b: bump to 0.20.0+17 and move 'Last uploaded to Play' to 16.",
-        "Then hand over Fold steps 8-11 and the F277 night arms IN FULL.",
+        "Phase 4: Task 1 phone work (Harold has Fold steps 8-11 in full), R-8/R-9 log analysis; F277 nights with AOL only.",
+        "Task 5 F288 Phase A report to Harold mid-sprint (approved pause), then Phase B on his answer.",
+        "Task 3 F286, then Task 4 F287 (route 2: plugin 22.3.2 + desugar 2.1.4); Tasks 6, 8, 7 fill waits (Task 7 after the page-file reboot).",
         "After certification: confirm 0.19.0 live on both stores and update the Live rows in STORE_VERSION_STATUS.md."
     ],
     "next_sprint_targeted": {

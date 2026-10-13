@@ -1,7 +1,8 @@
 # Sprint 79 Plan
 
-**Status**: DRAFT for Phase 3.7 approval. Scope selected by Harold at Phase 8.4 pass 2 (2026-10-13).
-**Branch**: `feature/20261013_Sprint_79` | **PR**: draft, created at Phase 3.3.1
+**Status**: APPROVED at Phase 3.7 by Harold, 2026-10-13 (answers recorded under "Decision questions"). Scope selected
+by Harold at Phase 8.4 pass 2 (2026-10-13).
+**Branch**: `feature/20261013_Sprint_79` | **PR**: #480 (draft until the end of 7.7)
 **Planner**: Opus 5.5 (top tier, `SPRINT_PLANNING.md:94-110`). Phase 3.2.2.1 audits by spot reads this turn, plus one
 read-only research agent for the notification plugin (F287); file:line evidence is in each card.
 
@@ -160,6 +161,21 @@ route; F277 and F286 set at the low end per the Sprint 78 calibration.
 - Q-S1. Models as assigned: 1 approve. Q-S2. F288 Phase A asked mid-sprint while work continues: 1 approve.
   Q-S3. Version 0.20.0+17: 1 approve.
 
+**Answers (Harold, 2026-10-13, verbatim)**: *"q1. 1 q2 2 q3 1 q4 1 q5 1 q6 1 q7 1 q8 2 q9 2 q-s1 1 q-s2 1 q-s3 1"*
+
+- Q1 = 1: strikethrough for the counts not acted on, plus a title word naming the mode.
+- Q2 = 2: route 2 -- `flutter_local_notifications` 22.3.2 plus `desugar_jdk_libs` 2.1.4; ADR-0018 SUPERSEDED (Class 1,
+  approved); `WindowsToastNotificationService` deleted.
+- Q3 = 1: "Do not state test results in commit messages" applies to the F288 card only.
+- Q4 = 1: the six mouse steps run on an unlocked PC once per Store release (F291 guard).
+- Q5 = 1: F293 changes the presentation only; the master plan stays grouped by phase.
+- Q6 = 1: AOL stays on for the F277 nights; Yahoo, Gmail and iCloud background OFF those nights.
+- Q7 = 1: Gmail on the Fold stays on Google sign-in for Sprint 79 (so the `invalid_grant` cause can be found).
+- Q8 = 2: Harold did NOT turn Gmail background off. The stop after 14:27 is a defect -- added to Task 1 as R-9.
+- Q9 = 2: the F286 phone check (and strikethrough rendering on the Fold) happens after the Sprint 79 release;
+  in-sprint evidence is the emulator rehearsal.
+- Q-S1, Q-S2, Q-S3 = approved.
+
 ---
 
 # Cards
@@ -192,6 +208,10 @@ AOL scans that stop mid-run.
   stopping a running worker) from Android's own WorkManager documentation for `ExistingPeriodicWorkPolicy.UPDATE`,
   quoted. A named mechanism gets a prevention-first fix (in `BackgroundScanCore` or the scheduler) and a test; "cause
   unknown" gets what would settle it.
+- R-9 (Q8 = 2): Gmail background scans stopped after 14:27 on 0.19.0 with the setting still on (no start or skip line
+  14:29-15:14; the 14:29 manual scan completed). Read the worker's per-account eligibility path for what drops an
+  account with no log line, name the mechanism or write "cause unknown" plus what would settle it, and add the missing
+  skip-reason log line in any case (prevention first: an account that is not scanned must say why).
 
 **Affected components / files**: evidence only, unless R-3 finds a wrong label (one-line fix in the start path, both
 platforms checked) or R-8 names a mechanism (fix in `background_scan_scheduler.dart` or `background_scan_core.dart`).
@@ -219,10 +239,12 @@ class (Task Scheduler launches one process per run, so a re-enqueue cannot stop 
 - AC-6: F281, F282, F283 on Android each PASS / FAIL with a screenshot.
 - AC-7: Every unfinished AOL scan listed with time-to-death and last step; a named mechanism with a fix and a test, or
   "cause unknown" plus what would settle it.
+- AC-8: The Gmail 14:27 stop has a named mechanism or "cause unknown" plus what would settle it, and a skipped account
+  always writes a reason line (test T-3).
 
 **Tests to write**: T-1 (AC-4, only if a label fix is made) -- TEST-UNIT on the start-reason label. T-2 (AC-7, only if
 a mechanism is fixed) -- TEST-UNIT in the scheduler or core test file proving the fixed path, with its "what this
-does NOT catch" line.
+does NOT catch" line. T-3 (AC-8) -- TEST-UNIT: an account the worker does not scan writes a skip-reason log line.
 
 **Definition of Done**: default DoD; evidence lines in this plan's Phase 5 evidence section.
 
@@ -317,7 +339,7 @@ each test has its "what this does NOT catch" line.
 - R-1: Audit first (done in 3.2.2.1): neither Windows service has a caller; Windows has never shown a scan notification.
 - R-2: The Windows background scan (Task Scheduler launch, ADR-0014) posts one toast per account after each scan, with
   F286's text and ID helper; a newer toast for the same account replaces the older one.
-- R-3: Route per Q2. Route 1: wire `WindowsToastNotificationService` (ADR-0018), using the toast Tag (from the F286 ID)
+- R-3: Route per Q2 -- **Q2 = 2, route 2 selected (Harold, 2026-10-13)**. Route 1 (not taken): wire `WindowsToastNotificationService` (ADR-0018), using the toast Tag (from the F286 ID)
   and a Group to replace per account, and the app ID the installed app is registered under (MSIX package app ID for
   the Store build; the DEV build's registration to be found, not assumed). Route 2: upgrade `flutter_local_notifications`
   to the version named after research (see the research note below) and use its Windows support; ADR-0018 superseded.

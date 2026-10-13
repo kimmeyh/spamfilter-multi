@@ -7,11 +7,63 @@ Do not stop to ask questions unless meeting the criteria in \docs\SPRINT_STOPPIN
 If questions must be asked, ask as late as possible - do everything that can be done (all tasks and parts of tasks, without the answer to the question(s), then ask the question(s)
 ---------------------------------------------------------------------------------------------------------
 Sprint 7n Scope should include the below items. Please complete sprint planning (/docs/sprint_planning.md) for the below items and present for approval.  Note that everything needs to take into account both the Windows App and the Android app and ADR stating that everything should be functionally and UI the same unless it cannot be - and where it cannot be it should be implemented as a platform exception for what is needed -- this applies to all backend code, frontend code, data, architecture, development, security, testing, deployment.
+
+---------------------------------------------------------------------------------------------------------
+  Decisions (answer like "Q1 1, Q2 2, ...")
+q1. 1 q2 2 q3 1 q4 1 q5 1 q6 1 q7 1 q8 2 q9 2 q-s1 1 q-s2 1 q-s3 1
+  Q1. F286, how a read-only or partial scan shows on the notification:
+  1. Counts the scan did not act on are struck through, and the title says the mode (recommended; screen readers do not read strikethrough).
+  2. Strikethrough only.
+  3. Title word only.
+
+  Q2. F287 route:
+  1. Use the existing PowerShell notification code, with no package change.
+  2. Upgrade the notification plugin to 22.3.2. This replaces ADR-0018 (recommended).
+
+  Q3. F288, your rule "Do not state test results in commit messages":
+  1. For this card only.
+  2. For all commits from now on.
+
+  Q4. F291, also run the six mouse steps on an unlocked PC once per Store release:
+  1. Yes.
+  2. No.
+
+  Q5. F293:
+  1. Change the presentation only. The master plan stays grouped by phase.
+  2. Reorder the master plan too.
+
+  Q6. F277, which account stays on overnight:
+  1. AOL.
+  2. Yahoo.
+  3. Gmail.
+
+  Q7. Gmail on the Fold during Sprint 79:
+  1. Keep Google sign-in (recommended).
+  2. Switch to IMAP with an App Password now.
+
+  Q8. Gmail background scans stopped after 14:27:
+  1. You turned them off.
+  2. You did not.
+
+  Q9. Phone check for the new notifications:
+  1. Upload a 0.20.0 closed-test build mid-sprint.
+  2. Check after the Sprint 79 release.
+
+  Q-S1. Model assignments as planned:
+  1. Approve.
+
+  Q-S2. I ask you about the F288 changes mid-sprint and keep working while you decide:
+  1. Approve.
+
+  Q-S3. Version 0.20.0+17:
+  1. Approve.
+
+Sprint 79 Scope should include the below items. Please complete sprint planning (/docs/sprint_planning.md) for the below items and present for approval.  Note that everything needs to take into account both the Windows App and the Android app and ADR stating that everything should be functionally and UI the same unless it cannot be - and where it cannot be it should be implemented as a platform exception for what is needed -- this applies to all backend code, frontend code, data, architecture, development, security, testing, deployment.
   - MV76-1, with F205 inside it as its error-classification step.
   - F286, F288, F291 and F292.
   - F277 on 0.19.0 with one account on.
   - The MV-7 phone check, the Gmail invalid_grant cause, Android parity of F281, F282 and F283, and the 10 AOL scans that died mid-scan.
-
+  - F293 and F287
 
   Recommendation for Sprint 79
 
