@@ -216,6 +216,19 @@ Every Item that is implemented gets ONE row here the moment it is picked up -- s
 | MV step 2 first-scan empty state fix | 77 | DONE | -- | -- | ~30 | ~30 | RECONSTRUCTED at the retrospective from commit times. UNPLANNED (Manual Validation). 64ae39e; mutations ES1-ES2 KILLED. |
 | Crash 0xc0000409 investigation + enable-crash-dumps.ps1 | 77 | DONE | -- | -- | ~30 | ~30 | RECONSTRUCTED at the retrospective from commit times. UNPLANNED (Manual Validation). 42dae26; cause still unknown. |
 | WinWright mt2c investigation (3 rounds) + close-out sweep | 77 | DONE | -- | -- | ~120 | ~120 | RECONSTRUCTED at the retrospective from commit times. UNPLANNED (Manual Validation). 9528aa9, 1797f74, 4a5f2ac, 4de32d8; ended display-dependent, rewrite folded into F283. Mostly avoidable: the runner screenshot that settled it was available from the first round. |
+| Sprint 78 planning (four read-only audit agents + plan + decision questions) | 78 | DONE | -- | -- | ~180 | ~180 | RECONSTRUCTED at the retrospective from commit times (Sprint 78 retro IMP-1: no row was written at completion). 2026-10-09 09:28-13:07 and 2026-10-10 09:43-10:16; idle time between commits is not separable, so this is approximate. |
+| Task 0: version 0.19.0+16 + provisional notes | 78 | DONE | 10-20 | 10-20 | ~10 | ~10 | RECONSTRUCTED from commit times. 1d1795b, a867b6f. |
+| Task 1: MV76-1 Fold steps 8-11 + boot trace | 78 | MOVED | 40-70 | 40-70 | ~40 (log pulls and analysis) | ~40 | RECONSTRUCTED. Steps not run on the phone; moved to Sprint 79 by Harold 2026-10-13 ("push any further testing to next sprint"). |
+| Task 2: F277 Fold energy check | 78 | MOVED | 45-60 | 45-60 | ~20 (overnight log analysis) | ~20 | RECONSTRUCTED. The 0.18.0 overnight run had three accounts on (not one), so it is not a valid measurement; all three runs move to Sprint 79 on 0.19.0. |
+| Task 3: F282 one MyEmailSpamFilter folder (#473) | 78 | DONE | 50-80 | 50-80 | ~15 | ~15 | RECONSTRUCTED from commit times (a79ea81, 10:18-10:26). FAR under. |
+| Task 4: F281 research + Scan every preset control (#478) | 78 | DONE | 150-270 | 150-270 | ~45 | ~45 | RECONSTRUCTED (b6b2a55, e5495c5, d63ed5e; interleaved with Task 6). FAR under. |
+| Task 5: F284 mouse-free WinWright (#474) | 78 | DONE | 90-140 | 90-140 | ~100 (Sonnet agent ~40 + lead R-1 ~20 + live discovery ~40) | ~60 | RECONSTRUCTED (32bd6fa, b1e5d7b, 2c5e98e). Within estimate; the agent ran in parallel with Task 6. |
+| Task 6: F283 Review No Rule Items on the Results pieces (#475) | 78 | DONE | 300-420 | 300-420 | ~80 | ~80 | RECONSTRUCTED (21de960, 35f9ecd, 39ea8bf; 10:35-11:55). FAR under. |
+| Task 7: R76-4 dev-only content history + ADR-0047 (#476) | 78 | DONE | 315-470 | 315-470 | ~50 | ~50 | RECONSTRUCTED (beb3508, 41366d7, a30902c, 8227be0). FAR under. |
+| Task 8: F199-b Partner Center name, card to HOLD (#477) | 78 | DONE | 10-15 | 10-15 | ~10 | ~10 | RECONSTRUCTED; done in the planning turn. |
+| Phase 5.1.2 / 5.1.9 / 5.2 evidence | 78 | DONE | -- | -- | ~35 | ~35 | RECONSTRUCTED (12:11-12:53 on 2026-10-10). |
+| Manual Validation fixes MV-1..MV-7 (MV-5 withdrawn) + audit + Fold pulls + rebuild | 78 | DONE | -- | -- | ~150 | ~150 | RECONSTRUCTED (2026-10-12 ~22:30 to 2026-10-13 01:08; fac4c68, b980f3d, dc9d214, ae35879). UNPLANNED. |
+| Re-sweep + s75 history selector fix | 78 | DONE | -- | -- | ~20 | ~20 | Recorded at completion (2026-10-13). UNPLANNED: background rows pushed every manual row off screen. |
 
 ## Can the missing sprints (48-69) be reconstructed from git? -- TESTED 2026-09-19, answer: NO
 

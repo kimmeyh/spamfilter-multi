@@ -221,6 +221,8 @@ label fix in the start path, both platforms checked).
 
 **Model**: Haiku -- transcription and log reading; session model per the deviation note.
 **Step-types**: DOCS (evidence). **Est-Effort**: 40-70m + phone time.
+**Executed-by**: Opus 5.5 (session model), deviation note (a) -- ~40 min of log pulls and analysis (reconstructed);
+the phone steps were MOVED to Sprint 79 by Harold (2026-10-13).
 
 ## Task 2 -- F277: Fold energy check, interval 5 against interval 15 (Priority 20)
 
@@ -245,6 +247,8 @@ and recorded in the results doc; AC-3: if the floor changes, `scan_interval_test
 
 **Definition of Done**: default DoD. **Model**: Haiku -- protocol already written; reading screenshots.
 **Step-types**: DOCS, SVC-EDIT (conditional). **Est-Effort**: 45-60m + three nights.
+**Executed-by**: Opus 5.5 (session model), deviation note (a) -- ~20 min of overnight log analysis (reconstructed);
+the 0.18.0 run had three accounts on, so all three runs MOVED to Sprint 79 on 0.19.0 (Harold, 2026-10-13).
 
 ## Task 3 -- F282: One "MyEmailSpamFilter" folder for every file the app writes for the user (Priority 7)
 
@@ -309,7 +313,7 @@ folder wrapped, default without the app folder, default diagnostics suffixed, fa
 policy 146/146; analyzer clean. Windows Documents source verified: `path_provider_windows` 2.3.0
 `path_provider_windows_real.dart:123-124` (`WindowsKnownFolder.Documents`). Found on the way: the unwritable-default
 fallback on Windows is Documents itself, shared by DEV and PROD, so it now also gets the app folder (M4).
-**Executed-by**: Opus 5.5 (session model) -- single interactive session, deviation note (a).
+**Executed-by**: Opus 5.5 (session model), ~15 min (reconstructed from commit times) -- deviation note (a).
 **What the tests do NOT catch**: that the real Documents folder is writable on a device (scoped storage on Android, a
 OneDrive-redirected Documents on Windows); the resolver runs on a test override. Manual Validation checks both.
 
@@ -365,8 +369,9 @@ background on) e5495c5; part 2 (control D). Evidence: interval widget tests 13/1
 mutations F281-M1..M3 and F281D-M1..M4 all KILLED. Visibility rule: "this account's background scanning is on" is the
 complete rule on Android too -- the worker skips an account whose background is off, notification runs included
 (`android_background_scan_worker.dart:205-216`), so the new-mail switch needs no rule of its own (R-3 simplified;
-same user-visible behavior). **Executed-by**: Opus 5.5 (session model) for research and implementation --
-single-session deviation note (a).
+same user-visible behavior).
+**Executed-by**: Opus 5.5 (session model), research and implementation, ~45 min (reconstructed from commit times) --
+deviation note (a).
 
 **Model**: research Fable/Opus (mandatory,
 `SPRINT_PLANNING.md:94-110`); implementation Sonnet -- why not Haiku: control design depends on the pick and touches
@@ -416,7 +421,8 @@ change `maximize` -> `restore` broke WinWright's main-window lookup in EVERY scr
 Flutter Settings tabs project to UIA as Text with no invoke pattern, so `ww_invoke` on them resolved 0 elements; R-1
 done as carded: each tab label carries a button node with a tap action, and the Review account face is ONE button
 node whose action opens its menu (b1e5d7b; T-2 tests perform both actions; mutations F284-M1/M2 killed).
-**Executed-by**: Sonnet sub-agent (tooling) + Opus 5.5 session (review, discovery, R-1) -- R-1 depended on F283's
+**Executed-by**: Sonnet sub-agent (tooling, ~40 min) + Opus 5.5 session (review, discovery, R-1, ~60 min) = ~100 min
+(reconstructed from commit times) -- R-1 depended on F283's
 rebuilt screen, so it could not be delegated in parallel.
 **Step-types**: WINWRIGHT-SCRIPT, WINWRIGHT-DISCOVERY (time-box), HOOK (runner), UI-MOVE. **Est-Effort**: 90-140m.
 
@@ -502,7 +508,8 @@ new search/advance tests (Review file 16/16 + 2); policy 147/147; mutations F283
 SnackBar). AC-5 note: `f230_f231_action_sheet_test.dart` (source-text) was retargeted at the shared pop-up file -- its
 guarantees are unchanged; every other Results test passes unchanged. `no_rule_review_touch_selection_test.dart` deleted
 (multi-select removed); `NoRuleMarkReason.popupAction` added. Decision recorded: the Review default sort is the Results
-default (Folder), not the old newest-first. **Executed-by**: Opus 5.5 (session model), deviation note (a).
+default (Folder), not the old newest-first.
+**Executed-by**: Opus 5.5 (session model), ~80 min (reconstructed from commit times) -- deviation note (a).
 
 _**Risk & rollback**_: regression on the Results screen; mitigated by AC-5 (existing Results suite unchanged) and the
 5.1.5 WinWright sweep; rollback is one revert of the extraction commit, kept separate from the Review rewrite commit.
@@ -631,8 +638,9 @@ id). Evidence: `r76_4_content_history_test.dart` 12/12, `r76_4_content_history_p
 every table with an `account_id` in "Remove an account", every table in "delete all data", plus a behavior test);
 mutations R764-M1..M4 KILLED; full suite 2,983 passed / 15 skipped / 0 failed (one meta-gate fix: the policy file
 declares `SOURCE-TEXT VERIFIED:`); analyzer clean. R7 found while fixing: `background_scan_log` has a foreign key to
-`accounts`, so its rows are now deleted BEFORE the account row in both paths. **Executed-by**: Opus 5.5 (session
-model), deviation note (a); ADR-0047 on the top tier as assigned.
+`accounts`, so its rows are now deleted BEFORE the account row in both paths.
+**Executed-by**: Opus 5.5 (session model), ~50 min (reconstructed from commit times) -- deviation note (a); ADR-0047
+on the top tier as assigned.
 
 _**Risk & rollback**_: the capture path runs inside every scan. Mitigations:
 - AC-1: gate off means no change.
@@ -670,8 +678,9 @@ reason to move now.
 **Definition of Done**: None -- default DoD only. **Model**: Haiku. **Step-types**: DOCS. **Est-Effort**: 10-15m.
 
 **Status**: R-1 and R-2 DONE 2026-10-10, before approval, at Harold's direct instruction (docs only; `pubspec.yaml`
-change is a comment). **Executed-by**: Opus 5.5 (session model) -- done in the planning turn because Harold asked for it
-directly.
+change is a comment).
+**Executed-by**: Opus 5.5 (session model), ~10 min (reconstructed) -- done in the planning turn because Harold asked
+for it directly.
 
 
 ---
