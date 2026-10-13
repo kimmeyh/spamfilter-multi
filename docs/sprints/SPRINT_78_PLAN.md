@@ -710,6 +710,10 @@ for it directly.
   FINAL SWEEP 2026-10-13 after the IMP-4 lib/ui fix (rule_test_screen highlight), DEV rebuilt at 82a35db (first
   build attempt failed on a `dist\dev` DLL lock, most likely a background scan launched mid-build; the retry built):
   `test_f124_rule_labels` PASS 29/29, `test_s75_new_controls` PASS 27/27, DB drift none, window 1600x1000.
+  NOT RE-RUN after the 7.7.1 fixes (b7e62d6 changed `rules_ready_gate.dart`, `no_rule_review_screen.dart`,
+  `results_display_screen.dart`, a `settings_screen.dart` comment): Harold, 2026-10-13, Q1 = 2 -- "skip it this
+  sprint", after stopping the DEV rebuild; the locked-PC sweep policy is backlog F291 (Sprint 79). Check 3e will report
+  the lib/ui commit after this sweep-head; that report is accurate and is waived by Harold, not by the gate.
   - sweep-head: 82a35db
 - **5.1.9 MV rehearsal**: 2026-10-10, 4 Windows steps rehearsed (W1 on the real 0.19.0 DEV build -- chosen-folder
   log path observed -- plus the Documents known folder read on this PC and `f206_export_test`; W2 by

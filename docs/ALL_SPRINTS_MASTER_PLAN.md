@@ -842,6 +842,23 @@ _(No active Core App candidates -- F96 shipped in Sprint 43.)_
   checks are not silently retired.
 - Related: F289 removes the mouse steps entirely when WinWright allows it.
 
+**F292. Full test suite: test processes die or hang intermittently (~60-120m investigation) Priority 5 -- TARGET SPRINT 79**
+- Phase: Testing
+- Platform: Windows Desktop (local `flutter test` on Harold's PC)
+- Origin: Sprint 78 7.7.1 (Harold, 2026-10-13, Q2 = 2). Cause UNKNOWN.
+- Evidence (logs in the Sprint 78 session scratchpad, `suite78r.log`, `suite78s.log`, `suite78t.log`):
+  - Run 1 (fix tree): `f239_sign_in_again_test.dart` "Failed to load ... Connection closed before test suite loaded",
+    then the whole run stopped writing at 00:54 (+604) for 17 minutes; stopped by hand.
+  - Run 2 (fix tree): `results_display_compact_and_filter_test.dart` failed to load; all of
+    `f232_scan_history_platform_test.dart` "did not complete"; the run ended at 3,012 passed.
+  - Run 3 (fix tree): green, 3,019 passed. Baseline at 3619e48 (HEAD before the fixes): green once, 3,010 passed.
+  - Each failing file passes alone (f239 6/6; f232 + results_display_compact 6/6). None runs the 7.7.1-changed code.
+- Conditions during the failures: the Windows DEV app running, four DEV accounts scanning in the background every 5
+  minutes (Task Scheduler launches of `dist\dev`), the Dart analysis server running.
+- Scope: reproduce (N full runs on HEAD and on HEAD~ under the same load, then with DEV background scanning off),
+  name the mechanism (a flutter_tester crash, a timeout, a shared temp/DB file, memory), fix or contain it. Not
+  "flaky" -- a mechanism or "cause unknown" plus what would settle it.
+
 **F290. Tell the user when content-history rows could not be deleted (~30-45m) Priority 45**
 - Phase: Core App Quality
 - Platform: All (dev builds only -- the content history exists only there, ADR-0047)
