@@ -1,12 +1,12 @@
 {
     "_description": "Sprint status file that persists across context compaction. Update after each phase/sub-phase completion.",
-    "_last_updated": "2026-10-13T18:35:00Z",
+    "_last_updated": "2026-10-13T20:40:00Z",
     "_usage": "Read this file after context compaction to restore sprint approval state and progress.",
     "_staleness_note": "This file had drifted 15 sprints (last updated at Sprint 35, 2026-04-19) before being refreshed at Sprint 50 close-out. It is a Phase 7.7 checklist item -- update it at every sprint close-out, not opportunistically.",
     "current_sprint": {
         "number": 79,
         "branch": "feature/20261013_Sprint_79",
-        "status": "Phase 8.4 Backlog Refinement pass 2 -- Sprint 78 cycle: 0.19.0 submitted to the Microsoft Store and Google Play closed testing, certification in process (Harold 2026-10-13); awaiting Harold's scope selection (Q2) and the pre-iOS cards decision (Q3)",
+        "status": "Phase 3.7 Plan Approval -- Sprint 79 plan drafted (docs/sprints/SPRINT_79_PLAN.md), draft PR open; awaiting Harold's approval and decision answers Q1-Q9, Q-S1..Q-S3",
         "plan_approved": false,
         "pr_number": null,
         "version": "0.19.0+16 (Sprint 78); the Sprint 79 bump happens at its plan approval"
@@ -53,8 +53,9 @@
     ],
     "blocking_issues": [],
     "next_actions": [
-        "8.4: Harold selects Sprint 79 scope (Q2) and decides the two proposed pre-iOS cards (Q3).",
-        "8.5: Phase 3 planning for Sprint 79; at plan approval bump to 0.20.0 (or 0.19.1) and move 'Last uploaded to Play' to versionCode 16.",
+        "3.7: Harold approves the Sprint 79 plan and answers Q1-Q9 and Q-S1..Q-S3.",
+        "3.7.0: create cards (reuse #471, #472, #433, #428); 3.7.0b: bump to 0.20.0+17 and move 'Last uploaded to Play' to 16.",
+        "Then hand over Fold steps 8-11 and the F277 night arms IN FULL.",
         "After certification: confirm 0.19.0 live on both stores and update the Live rows in STORE_VERSION_STATUS.md."
     ],
     "next_sprint_targeted": {

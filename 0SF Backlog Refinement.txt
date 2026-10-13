@@ -7,7 +7,133 @@ Do not stop to ask questions unless meeting the criteria in \docs\SPRINT_STOPPIN
 If questions must be asked, ask as late as possible - do everything that can be done (all tasks and parts of tasks, without the answer to the question(s), then ask the question(s)
 ---------------------------------------------------------------------------------------------------------
 Sprint 7n Scope should include the below items. Please complete sprint planning (/docs/sprint_planning.md) for the below items and present for approval.  Note that everything needs to take into account both the Windows App and the Android app and ADR stating that everything should be functionally and UI the same unless it cannot be - and where it cannot be it should be implemented as a platform exception for what is needed -- this applies to all backend code, frontend code, data, architecture, development, security, testing, deployment.
+  - MV76-1, with F205 inside it as its error-classification step.
+  - F286, F288, F291 and F292.
+  - F277 on 0.19.0 with one account on.
+  - The MV-7 phone check, the Gmail invalid_grant cause, Android parity of F281, F282 and F283, and the 10 AOL scans that died mid-scan.
 
+
+  Recommendation for Sprint 79
+
+  Take the five Sprint 79-targeted items:
+  - MV76-1, with F205 inside it as its error-classification step.
+  - F286, F288, F291 and F292.
+
+  Add the phone work that moved from Sprint 78:
+  - F277 on 0.19.0 with one account on.
+  - The MV-7 phone check, the Gmail invalid_grant cause, Android parity of F281, F282 and F283, and the 10 AOL scans that died mid-scan.
+
+  Effort: about 290-505 minutes by the cards' estimates, plus phone time. Sprint 78's planned work ran at about a quarter of estimate, but unplanned work
+  exceeded the planned work.
+
+  Why this set:
+  - 0.19.0 has to reach the Fold before the phone checks mean anything.
+  - F292 may share a cause with today's build failure.
+  - F291 and F288 remove friction you hit this sprint.
+  - F287: I'd leave it out unless you want Windows notification parity now. It needs a major-version upgrade of flutter_local_notifications, and it
+    depends on F286.
+
+  Candidates at a glance
+
+  - MV76-1. Finish the Fold checks, now on the 0.19.0 closed-test build (~40-70m + phone time) Priority 1
+  - F286. Background-scan notification: "No rule" first, names the account, one per account (~40-60m) Priority 2
+  - F288. Git-flow branch model: make develop the GitHub default branch (~60-120m) Priority 3
+  - F291. WinWright sweep on a locked PC counts as complete (~45-75m) Priority 4
+  - F292. Full test suite: test processes die or hang intermittently (~60-120m investigation) Priority 5
+  - F287. Windows background-scan completion notification (toast) (~90-150m) Priority 15
+  - F205. Closed-test error rate: 53 errors in 3,833 scanned on the S24+ -- find out what they ARE (~30-60m) Priority 18
+  - F267. Rule evaluation harness: score candidate rules against your own history, read only (~150m) Priority 20
+  - F277. Fold energy check: interval 5 against interval 15 (~45-60m + phone time) Priority 20
+  - F268. PC-side rule miner: deleted-mail history to candidate delete rules (YAML) (~180m) Priority 22
+
+  Android / Google Play Store Readiness
+
+  MV76-1. Finish the Fold checks, now on the 0.19.0 closed-test build (~40-70m + phone time) Priority 1
+  - Phase: Android / Google Play Store Readiness
+  - Platform: Android
+  - Steps 8-11. Step 9 needs Notification access for AOL; the 0.18.0 logs show no new-mail scan.
+  - iCloud background scanning is off on the Fold; turn it on if iCloud should be covered.
+  - Includes the boot-time main() trace, F205's error classification (#433) and MV74-1's reboot half (#428).
+  - Depends on: the 0.19.0 closed-test upload.
+
+  Core App
+
+  F286. Background-scan notification: "No rule" first, names the account, one per account (~40-60m) Priority 2
+  - Phase: Core App
+  - Platform: Android (the shared Dart text helper; Windows gets it with F287)
+  - Title such as Back. scan k*@aol completed. Body No rule 9 Deleted 1 Safe 0, with  Errors N added only when N > 0.
+  - One notification per account, through a deterministic ID helper (FNV-1a) instead of String.hashCode.
+
+  F287. Windows background-scan completion notification (toast) (~90-150m) Priority 15
+  - Phase: Core App
+  - Platform: Windows Desktop (parity with Android)
+  - Windows background scans show no completion notification today. The existing service has no caller, and its fixed IDs would merge every account into
+    one notification.
+  - Needs flutter_local_notifications 17 -> 19+ (Windows support starts in 19.0.0); read every breaking change first.
+  - Depends on: F286.
+
+  DevOps
+
+  F288. Git-flow branch model: make develop the GitHub default branch (~60-120m) Priority 3
+  - Phase: DevOps
+  - Platform: Repository (CI and docs; app builds unaffected)
+  - Closes #N never fires today, because sprint PRs go into develop, which is not the default branch. Every sprint closes its cards by hand.
+  - Your verbatim instructions are on the card. No PR is merged and no branch is deleted.
+
+  Testing
+
+  F291. WinWright sweep on a locked PC counts as complete (~45-75m) Priority 4
+  - Phase: Testing
+  - Platform: Windows Desktop (test tooling and sprint gates)
+  - On a locked PC, the sweep runs every step that does not need the screen, skips the six mouse steps and names them, and counts as complete. Close-out
+    check 3e and the F193 gate accept that record.
+  - Proposed guard for you to confirm: run the six mouse steps unlocked once per Store release.
+
+  F292. Full test suite: test processes die or hang intermittently (~60-120m investigation) Priority 5
+  - Phase: Testing
+  - Platform: Windows Desktop (local flutter test)
+  - In 2 of 3 runs, tests died at load or hung in f239, f232 and results_display_compact_and_filter. Each passes alone, and the run on the code before
+    the fixes passed.
+  - New lead: today's out-of-memory crash, with commit charge at 86 of 94 GB. Settle it by watching commit charge during a full run.
+
+  Core App Quality
+
+  F205. Closed-test error rate: 53 errors in 3,833 scanned on the S24+ -- find out what they ARE (~30-60m) Priority 18
+  - Phase: Core App Quality
+  - Platform: Android
+  - Narrowed already: the errors were Gmail-only and from versions before 0.15.0. Confirm no new errors accrue on the current build.
+  - Answered by MV76-1's error-classification step (#433).
+
+  F267. Rule evaluation harness: score candidate rules against your own history, read only (~150m) Priority 20
+  - Phase: Core App Quality
+  - Platform: All (a developer tool; dry run on the Windows DEV build)
+  - A Dart command-line tool scores candidate YAML against an exported database copy: precision, safe-sender false positives, recall. Bar: zero
+    safe-sender hits and precision of at least 0.99.
+  - Depends on: none. It feeds F268 to F272.
+
+  F277. Fold energy check: interval 5 against interval 15 (~45-60m + phone time) Priority 20
+  - Phase: Core App Quality
+  - Platform: Android
+  - Three 8-hour runs on 0.19.0 with one account on. Confirm each run with phone-log-health.ps1 -SingleAccount before reading the battery screenshot.
+  - If interval 5 costs more than 3 times interval 15, the minimum interval rises to 10.
+
+  F268. PC-side rule miner: deleted-mail history to candidate delete rules (YAML) (~180m) Priority 22
+  - Phase: Core App Quality
+  - Platform: N/A (a developer tool on your PC); the output is imported on all platforms
+  - Mines recurring domains and subject and body phrases from your deleted-mail history into candidate YAML, which F266 validates and F267 scores.
+  - Depends on: F266, F267.
+
+  Decisions:
+
+  Q1. The Google Play bundle needs memory. What should I do?
+  1. You close older Claude sessions or Chrome windows and tell me, then I retry the build and verify it.
+  2. Retry now as is (likely to fail again).
+  3. Skip the Play upload for 0.19.0.
+
+  Q2. Sprint 79 scope:
+  1. My recommendation (MV76-1 with F205, F286, F288, F291, F292, F277 and the phone carry-ins).
+  2. My recommendation plus F287.
+  3. Something else. Tell me which items.
 ---------------------------------------------------------------------------------------------------------
 Sprint 78 Scope should include the below items. Please complete sprint planning (/docs/sprint_planning.md) for the below items and present for approval.  Note that everything needs to take into account both the Windows App and the Android app and ADR stating that everything should be functionally and UI the same unless it cannot be - and where it cannot be it should be implemented as a platform exception for what is needed -- this applies to all backend code, frontend code, data, architecture, development, security, testing, deployment.
   - MV76-1, together with F205 and F277 in the same Fold session.

@@ -712,7 +712,7 @@ _(No active Core App candidates -- F96 shipped in Sprint 43.)_
     its suffix.
   - Body: `No rule 9 Deleted 1 Safe 0`, with ` Errors N` appended only when N > 0. No colons or commas.
   - Today: title `Background scan complete`, body `Processed 10: 1 deleted, 0 safe, 9 no rule`
-    (`android_background_scan_worker.dart:324-328`), and no account named.
+    (`android_background_scan_worker.dart:378-382` as of Sprint 79 planning), and no account named.
   - Mask limit: two accounts on the same domain with the same first letter would look alike. Harold's four accounts are
     on four different domains.
 - **One per account**:
@@ -752,6 +752,11 @@ _(No active Core App candidates -- F96 shipped in Sprint 43.)_
 - Scope: upgrade the plugin, wire the Windows background worker's notify step to the F286 shared text and ID helper,
   remove the fixed IDs, and close the ADR-0042 exception recorded in the Sprint 78 plan.
 - Depends on: F286 (shared text and ID helper).
+- **Sprint 79 planning audit (2026-10-13)**: a second, PowerShell-based Windows toast service also exists
+  (`windows_toast_notification_service.dart`, ADR-0018) and has never had a caller either, so Windows has never shown a
+  scan notification. The route (wire ADR-0018, or upgrade the plugin to 22.3.2 and supersede it) is Sprint 79 plan Q2.
+  Research sources: https://pub.dev/packages/flutter_local_notifications/changelog and
+  https://github.com/MaikuB/flutter_local_notifications/tree/master/flutter_local_notifications_windows/src.
 
 **F288. Git-flow branch model: make `develop` the GitHub default branch (~60-120m) Priority 3 -- TARGET SPRINT 79**
 - Phase: DevOps
@@ -887,6 +892,32 @@ _(No active Core App candidates -- F96 shipped in Sprint 43.)_
   "Deleted <email>" or "All app data deleted".
 - Scope: `DeletionReport.contentHistoryDeleteFailed`; `deleteAllData` / `wipeAllData` return whether the history was
   removed; both snackbars name the leftover. Tests on both paths.
+
+**F294. One platform-capability seam instead of scattered platform checks (~120-180m) Priority 7 -- TARGET SPRINT 80**
+- Phase: Architecture
+- Platform: All
+- Origin: proposed at Sprint 78 cycle Phase 8.4 as a pre-iPhone item; Harold, 2026-10-13 (Q3): *"add to backlog and
+  target for next sprint"*.
+- `lib/` has 68 `Platform.isAndroid`, `Platform.isWindows` or `Platform.isIOS` checks (count from 2026-10-13). Each is a
+  place where iOS must be decided by hand, and a missed one fails silently.
+- Scope: one `PlatformCapabilities` that answers questions such as "background mechanism", "new-mail trigger
+  available", "export folder" and "OAuth flow"; the existing checks move behind it; a policy test fails on any new bare
+  `Platform.is` check outside the seam.
+- Why before the iPhone: adding iOS then means one table entry plus its implementations, and ADR-0042's declared
+  exceptions live in one place.
+- Decision class: Class 1 (architecture) -- surface at Sprint 80 planning.
+
+**F295. iPhone readiness research and parity ADR, time-boxed (~90-120m) Priority 8 -- TARGET SPRINT 80**
+- Phase: Multi-Platform Readiness
+- Platform: iOS
+- Origin: proposed at Sprint 78 cycle Phase 8.4; Harold, 2026-10-13 (Q3): *"add to backlog and target for next sprint"*.
+- Settle from Apple's and Google's own documentation before any iOS code (all UNVERIFIED today): how iOS schedules
+  background work and whether a near-15-minute interval is possible; whether any equivalent of Android's notification
+  listener exists for "Scan when new mail arrives"; Gmail OAuth on iOS (client and redirect); Keychain credential
+  storage; App Store privacy details and review rules for a mail-reading app; the Mac and Xcode build requirement and
+  the Apple Developer account.
+- Output: an ADR listing each iOS parity exception, and the set of cards F67 and F95 (iOS variants and validation, both
+  HOLD) actually need.
 
 **F111. Periodic Windows App Store upload readiness verification (~110-175m per review) Priority HOLD**
 - Phase: Release Readiness (reusable template)
