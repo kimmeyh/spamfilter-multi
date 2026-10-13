@@ -27,6 +27,7 @@ Format: `- **type**: Description (Issue #N)` where type is feat|fix|chore|docs
 ## [Unreleased]
 
 ### 2026-10-13 (Sprint 78 Manual Validation)
+- **fix**: Creating a rule or safe sender from Review No Rule Items no longer blanks the screen for several seconds; the app's "Loading spam filter rules" screen now appears only at startup, so a rule reload keeps the home screen in place (Issue #475)
 - **fix**: The search text on the Results and Review No Rule Items screens is readable on the dark theme; it used fixed black text (Issue #475)
 - **feat**: In the email pop-up, the subject line, the date and account row and the Skip button use the same color as the sender line (Issue #475)
 - **feat**: For a sender on a shared email provider (gmail.com and the like), the four domain buttons in the email pop-up are dimmed; they still work, and still show the provider warning first (Issue #475)

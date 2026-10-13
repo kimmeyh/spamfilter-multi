@@ -36,6 +36,7 @@ import 'core/storage/scan_result_store.dart'; // F175 (Sprint 62)
 import 'util/redact.dart';
 // import 'ui/screens/platform_selection_screen.dart'; // OLD: Direct to platform selection.
 import 'ui/screens/main_navigation_screen.dart'; // NEW: Main navigation with bottom nav (Android)
+import 'ui/widgets/rules_ready_gate.dart'; // Sprint 78 MV-3
 import 'ui/theme/app_theme.dart';
 import 'package:workmanager/workmanager.dart';
 import 'core/services/android_background_scan_worker.dart';
@@ -736,51 +737,9 @@ class _AppInitializerState extends State<_AppInitializer>
 
   @override
   Widget build(BuildContext context) {
-    // Show loading while initializing
-    final ruleProvider = context.watch<RuleSetProvider>();
-    
-    if (ruleProvider.isLoading) {
-      return const Scaffold(
-        body: Center(
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              CircularProgressIndicator(),
-              SizedBox(height: 16),
-              Text('Loading spam filter rules...'),
-            ],
-          ),
-        ),
-      );
-    }
-
-    if (ruleProvider.isError) {
-      return Scaffold(
-        body: Center(
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              Icon(Icons.error_outline, size: 64, color: Colors.red),
-              SizedBox(height: 16),
-              Text('Error: ${ruleProvider.error}'),
-              SizedBox(height: 16),
-              ElevatedButton(
-                onPressed: () {
-                  final provider = context.read<RuleSetProvider>();
-                  provider.initialize();
-                },
-                child: Text('Retry'),
-              ),
-            ],
-          ),
-        ),
-      );
-    }
-
-    // [NEW] NEW: Once rules are loaded, show main navigation screen
-    // On Android: Shows bottom navigation with Accounts/Rules/Settings tabs
-    // On other platforms: Shows account selection screen directly
-    return const MainNavigationScreen();
+    // Loading and error screens for the FIRST rules load only; after that the
+    // home screen stays mounted through rule reloads (Sprint 78 MV-3).
+    return const RulesReadyGate(child: MainNavigationScreen());
   }
 }
 
