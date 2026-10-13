@@ -36,6 +36,7 @@ import 'background_scan_trigger.dart';
 import 'diagnostic_logger.dart';
 import 'f264_upgrade_migration.dart';
 import 'notification_account_filter.dart';
+import 'scan_notification_text.dart';
 import 'scan_sheet_export.dart';
 
 /// Prefix for the per-account WorkManager task name, mirroring the Windows
@@ -364,6 +365,21 @@ class AndroidBackgroundScanWorker {
       );
       await plugin.initialize(initSettings);
 
+      // F286 (Sprint 79): one shared builder for the title, body and ID (the
+      // Windows toast uses the same one, F287). The body is HTML so a count
+      // the scan mode did not act on renders struck through; the title names
+      // the mode for screen readers. The user's OWN address is masked
+      // (ADR-0030); the ID is per account, so a newer notification replaces
+      // the older one.
+      final text = ScanNotificationText.build(
+        accountId: accountId,
+        mode: outcome.scanProvider.scanMode,
+        noRule: outcome.unmatchedCount,
+        deleted: outcome.deletedCount,
+        safe: outcome.safeCount,
+        errors: outcome.errorCount,
+      );
+
       const androidDetails = AndroidNotificationDetails(
         'background_scan_channel',
         'Background Scans',
@@ -371,17 +387,13 @@ class AndroidBackgroundScanWorker {
         importance: Importance.low,
         priority: Priority.low,
         showWhen: true,
+        styleInformation: DefaultStyleInformation(true, false),
       );
 
-      // The user's OWN address is masked per the ADR-0030 redaction rule; the
-      // counts are the useful signal.
       await plugin.show(
-        accountId.hashCode,
-        'Background scan complete',
-        'Processed ${outcome.emailsProcessed}: '
-            '${outcome.deletedCount} deleted, ${outcome.safeCount} safe, '
-            '${outcome.unmatchedCount} no rule'
-            '${outcome.errorCount > 0 ? ', ${outcome.errorCount} errors' : ''}',
+        ScanNotificationText.notificationId(accountId),
+        text.title,
+        text.htmlBody,
         const NotificationDetails(android: androidDetails),
       );
     } catch (e) {

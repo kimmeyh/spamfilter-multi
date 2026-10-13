@@ -26,6 +26,9 @@ Format: `- **type**: Description (Issue #N)` where type is feat|fix|chore|docs
 
 ## [Unreleased]
 
+### 2026-10-13 (Sprint 79)
+- **feat**: Android background-scan notifications name the account (`Back. scan k*@aol completed`) and list "No rule" first (`No rule 9 Deleted 1 Safe 0`); one notification per account, the newest replacing the older one; a read-only or partial scan names its mode in the title and strikes through the counts it did not act on (Issue #482)
+
 ### 2026-10-13 (Sprint 78 final code reviews, PR #470)
 - **fix**: If the spam filter rules fail to reload after a change, a banner with Retry now says so and the rules loaded earlier stay in use; before, the failure was invisible
 - **fix**: Review No Rule Items drops rows that a rule made elsewhere (a saved Results screen, Settings > Rules) now covers, without tapping Refresh

@@ -448,6 +448,31 @@ this sprint's PR body uses `Closes #N` and the cards close on merge (observed at
 
 **Definition of Done**: default DoD PLUS no branch deleted, no PR merged.
 
+**Phase A report (2026-10-13, read-only, nothing changed)**:
+- Default branch `main`; `origin/HEAD` -> `origin/main`. `develop` exists locally and on origin.
+- `origin/main` has 49 commits `develop` lacks, all "Merge pull request #N from kimmeyh/develop"; `git diff --stat
+  <merge-base 7d3b71a> origin/main` is EMPTY, so they change no files. `develop` has 0 commits `main` lacks. No merge
+  of main into develop is needed.
+- Open PRs: only #480 (feature/20261013_Sprint_79 -> develop, draft). Nothing to retarget.
+- CI: one workflow, `.github/workflows/ci.yml`, `on.pull_request.branches: [develop]` -- release PRs into `main` run no
+  CI today. No `push` trigger, so the default-branch change starts or stops nothing by itself. (Side note: CI pins
+  Flutter 3.38.5; local is 3.47.4.)
+- Dependabot: none. CODEOWNERS: `* @kimmeyh`, no branch names. Branch protection: none on main or develop (404).
+  Ruleset 15061270 "PR Rules (All Branches)": rules deletion, pull_request, code_scanning; `ref_name.include` is EMPTY
+  -- which branches GitHub applies it to is UNVERIFIED this session; not changed by this card.
+- Tags: one tag (`v0.5.0`); ADR-0015:84 already says "Tag the release", so releases 0.6.0-0.19.0 were never tagged.
+- Branch-name grep (scripts, hooks, skills, docs, tests, lib; history files excluded), 111 lines:
+  - MUST CHANGE (they state `Closes #N` does not fire): `require-sprint-cards.ps1:163-165`,
+    `verify-closeout-complete.ps1:471` (message), `.claude/skills/phase-check/SKILL.md:37`,
+    `SPRINT_CHECKLIST.md:166-167`, `.claude/sprint_status.json` `github_issues.note`; plus the release step (tag the
+    merge) in CLAUDE.md branch policy, `AGENTS.md` (mirror), `STORE_RELEASE_PROCESS.md` Step 5, and an ADR-0015 note
+    that `develop` is the default branch.
+  - FINE AS IS: every explicit `--base develop` (still correct), "main is the release branch" statements, the prod
+    worktree's `git checkout main` steps, `CHANGELOG_POLICY.md` (already GitFlow).
+  - HISTORY (never edited): `docs/sprints/*`, CHANGELOG, master-plan sprint records, `SPRINT_EXECUTION_WORKFLOW.md:83`
+    (Sprint 50 failure record), `sprint_status.json` per-sprint "Closed by hand" lines.
+  - FALSE MATCHES: "master plan", "maintain", "main rules file", `main.cpp`.
+
 **Model**: Haiku for Phase A and the doc edits -- the steps are fully specified; session model per the deviation note.
 **Step-types**: DOCS, HOOK (conditional). **Est-Effort**: 45-90m.
 **Risk & rollback**: the default-branch switch is reversible (`gh repo edit --default-branch main`); CI edit reverted by
