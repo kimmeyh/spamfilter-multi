@@ -794,3 +794,17 @@ Windows DEV build (0.19.0 [DEV]); every step read-only for mail. Android parity 
 - **Fold evidence 0.18.0 (Oct 9-13 logs)**: steps 8, 9, 10, 11 and F277 not yet done; iCloud has no background
   scans (one manual scan Oct 9); Gmail `invalid_grant` since 2026-10-12 17:27 (needs Sign In Again); errors/day:
   AOL 0/5/0/2 (DNS, server busy, timeouts), Gmail 8 on Oct 12 (sign-in), Yahoo 0.
+- **W3 re-check PASS (Harold, 2026-10-13 morning)**: "colors good, dimmed good, search text good" on the rebuilt DEV
+  app (MV-1, MV-2, MV-4). MV-3 is covered by `rules_ready_gate_test` (5 tests, mutation KILLED).
+- **Fold (2026-10-13 08:24 pull)**: iCloud Background tab shows "Enable Background Scanning" OFF (every 4 hours, new
+  mail off), which is why no scheduled iCloud scans ran -- correct behavior, not a defect. The notification-shade
+  screenshot shows "Background scan complete" notifications at 08:13, 08:19 and 08:22 from scheduled scans; the log
+  has no new-mail trigger (`trigger=doze-alarm` 245, `periodic` 195, `test` 1 on Oct 12-13), so Step 9 is still not
+  exercised. The overnight F277 run had THREE accounts scanning in the background (01:00-08:00 completed: AOL 75,
+  Gmail 76, Yahoo 50), not one, so it is not a valid single-account measurement; it does confirm the pre-MV-7 double
+  scan rate. The battery screenshot was not on the phone at the pull (only the two 08:24 screenshots were new).
+- **Manual Validation COMPLETE (Harold, 2026-10-13)**: "Manual Validation complete". **Further testing moved to
+  Sprint 79 (Harold, 2026-10-13: "push any further testing to next sprint")**: Task 1 Fold steps 8-11 (Step 9 needs
+  Notification access; iCloud background on if it should be covered); Task 2 F277 all three runs on the 0.19.0
+  closed-test build with one account on; MV-7 on the phone; the Gmail `invalid_grant` cause (Google "Testing"
+  refresh-token expiry, unverified); Android parity of F281, F282 and F283 on 0.19.0.

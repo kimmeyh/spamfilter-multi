@@ -1,12 +1,12 @@
 {
     "_description": "Sprint status file that persists across context compaction. Update after each phase/sub-phase completion.",
-    "_last_updated": "2026-10-13T04:55:00Z",
+    "_last_updated": "2026-10-13T12:45:00Z",
     "_usage": "Read this file after context compaction to restore sprint approval state and progress.",
     "_staleness_note": "This file had drifted 15 sprints (last updated at Sprint 35, 2026-04-19) before being refreshed at Sprint 50 close-out. It is a Phase 7.7 checklist item -- update it at every sprint close-out, not opportunistically.",
     "current_sprint": {
         "number": 78,
         "branch": "feature/20261009_Sprint_78",
-        "status": "Phase 5.3 Manual Validation -- W1-W4 PASS; MV fixes MV-1/2/3/4/6/7 done (MV-5 withdrawn), DEV app rebuilt 2026-10-13 00:54 for Harold's W3 re-check; Fold Tasks 1-2 queued with Harold; F277 timing open",
+        "status": "Phase 7 Sprint Review and Retrospective -- Manual Validation complete (Harold 2026-10-13); phone testing moved to Sprint 79; retrospective drafted, improvements IMP-1..IMP-4 awaiting Harold's decision",
         "plan_approved": true,
         "blanket_execution_approved": true,
         "pr_number": 470,
@@ -54,10 +54,10 @@
     ],
     "blocking_issues": [],
     "next_actions": [
-        "5.3: Harold re-checks W3 on the rebuilt DEV app (pop-up colors, dimmed provider buttons, search text, no blank list).",
-        "5.1.5 WinWright sweep again (lib/ui changed after b1e5d7b) when Harold frees the PC.",
-        "Fold: Task 1 steps 8-11 + iCloud background check; Task 2 F277 (timing decision open: 0.18.0 vs 0.19.0).",
-        "Then Phase 6 PR update, Phase 7 retrospective (14 categories x 4 roles), 7.7 + 7.7.1 reviews."
+        "7.5: Harold decides IMP-1..IMP-4 (docs/sprints/SPRINT_78_RETROSPECTIVE.md); apply the approved ones.",
+        "5.1.5 WinWright sweep again before close-out (lib/ui changed after sweep-head b1e5d7b; close-out gate).",
+        "7.7: CODING_VELOCITY rows, plan header, master plan, status; gh pr ready + 7.7.1 reviews (Copilot by hand + code-reviewer + silent-failure-hunter).",
+        "Sprint 79 carry-ins: Fold steps 8-11, F277 on 0.19.0 (one account), MV-7 on phone, Gmail invalid_grant cause, Android parity F281/F282/F283."
     ],
     "next_sprint_targeted": {
         "number": 77,
