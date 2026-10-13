@@ -357,7 +357,7 @@ SQLite database schema. See [ADR-0010](adr/0010-normalized-database-schema.md) f
 | Table | Purpose | Key Fields |
 |-------|---------|------------|
 | **accounts** | Account metadata tracking | account_id (PK), platform_id, email, display_name, date_added, last_scanned |
-| **scan_results** | Aggregate scan results per scan | id (PK), account_id (FK), scan_type, scan_mode, started_at, completed_at, total_emails, processed/deleted/moved/safe/no_rule/error counts, status, folders_scanned, last_heartbeat_at (v9, nullable -- cross-isolate liveness, MV74-2), cancel_requested_at (v11, nullable -- cross-isolate stop request, F238) |
+| **scan_results** | Aggregate scan results per scan | id (PK), account_id (FK), scan_type, scan_mode, started_at, completed_at (also set when a scan ends in `error`, Sprint 78 MV-6, so Scan History never shows a failed scan as "In progress"), total_emails, processed/deleted/moved/safe/no_rule/error counts, status, folders_scanned, last_heartbeat_at (v9, nullable -- cross-isolate liveness, MV74-2), cancel_requested_at (v11, nullable -- cross-isolate stop request, F238) |
 | **email_actions** | Individual email results within a scan | id (PK), scan_result_id (FK), email_id, email_from, email_subject, email_folder, action_type, matched_rule_name, matched_pattern, is_safe_sender, success, **rfc5322_message_id (DB v6, F91)** |
 | **rules** | Imported rules (dual-write from YAML) | name (UNIQUE), enabled, execution_order, condition_type, condition_from/header/subject/body, action_delete, action_move_to_folder, exception fields, metadata, **created_with_auth_state (DB v6, F89)** |
 | **safe_senders** | Whitelist patterns (dual-write from YAML) | pattern (UNIQUE), added_date, source, enabled, **created_with_auth_state (DB v6, F89)** |
@@ -438,6 +438,10 @@ Reactive state using Provider pattern (ADR-0009).
 - `ruleSet`: Current loaded RuleSet
 - `safeSenderList`: Current Safe Sender List
 - `loadingState`: RuleLoadingState (loading, success, error)
+- App root (`RulesReadyGate`, `lib/ui/widgets/rules_ready_gate.dart`, Sprint 78 MV-3): the loading or error screen
+  shows only until the FIRST successful load. Later reloads (every quick-action rule calls `loadRules()`) keep the
+  current screen, so the home screen is never rebuilt and its list never blanks; a later reload error is logged, not
+  shown full-screen. Same on both platforms (ADR-0042, no exception).
 - Stores: `RuleDatabaseStore` (primary), `SafeSenderDatabaseStore`, `LocalRuleStore` (secondary YAML), `PatternCompiler`
 
 **Methods**:

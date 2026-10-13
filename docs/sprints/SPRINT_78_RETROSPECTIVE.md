@@ -135,6 +135,15 @@ number assigned during Phase 7.7 documentation updates.)
 
 - **Product Owner / Scrum Master / Lead Developer (combined)**: none
 
+## 7.4.1 Architecture Compliance Check
+
+- Sprint code against `ARCHITECTURE.md`: export folders (F282), "Scan every" (F281), the shared Results/Review pieces
+  (F283), content history (R76-4) and the MV-7 Doze rule were already described. Two gaps, fixed now: the app-root
+  `RulesReadyGate` (MV-3) was not described anywhere, and the `scan_results.completed_at` note did not say a failed
+  scan sets it (MV-6).
+- `docs/ARSD.md`: no statement about these features, so nothing became wrong. ADRs: ADR-0047 Accepted; ADR-0039 and
+  ADR-0042 amended in this PR; ADR-0045 unchanged (MV-5 withdrawn). No change diverged from approved architecture.
+
 ## Summary
 
 Harold rated all 14 categories Very Good, with no carry-ins, backlog items or questions. The rehearsal rule from Sprint
