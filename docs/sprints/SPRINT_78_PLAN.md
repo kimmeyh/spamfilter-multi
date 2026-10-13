@@ -1,6 +1,7 @@
 # Sprint 78 Plan
 
-**Status**: DRAFT -- awaiting Phase 3.7 approval (Harold). Scope selected by Harold at Phase 8.4 pass 2 (2026-10-09).
+**Status**: APPROVED 2026-10-10 (Phase 3.7); Manual Validation complete 2026-10-13; Phase 7.7 close-out. Scope
+selected by Harold at Phase 8.4 pass 2 (2026-10-09).
 Harold's decision answers recorded 2026-10-10 (R76-4 reshaped to dev-only; F199-b to HOLD; Task 9 notifications added).
 **Branch**: `feature/20261009_Sprint_78` | **PR**: draft, created at Phase 3.3.1
 **Planner**: Opus 5.5 (top tier, `SPRINT_PLANNING.md:94-110`). Phase 3.2.2.1 branch-state audits by four read-only

@@ -4,7 +4,7 @@
 
 **Audience**: Claude Code models planning sprints; User prioritizing future work
 
-**Last Updated**: 2026-10-09 (Sprint 77 cycle Phase 8.2 pass 1: completeness sweep recorded; no scope selected)
+**Last Updated**: 2026-10-13 (Sprint 78 Phase 7.7: Last Completed Sprint, Past Sprint Summary row, completed cards removed, Sprint 79 carry-ins)
 
 ## How to Maintain This Document
 
@@ -145,6 +145,7 @@ Historical sprint information lives in individual documents in `docs/sprints/` a
 | 75 | docs/sprints/SPRINT_75_SUMMARY.md | [OK] Complete | Oct 2-4, 2026 (PR #448 -> develop; 0.17.0 kept by exception, hold satisfied. F238 stop a background scan for a manual one (DB v11), F239 Sign In Again (renewal spike FAILED -> F246), F243 Windows background scans run with the app open, F216/F214/F236/F215, Task 7 WinWright + widget tests, four MV fixes. Phone checks moved to Sprint 76) |
 | 76 | docs/sprints/SPRINT_76_SUMMARY.md | [OK] Complete | Oct 4-6, 2026 (PR #455 -> develop; 0.17.6+14, six closed-test builds. Unattended Android background scanning works -- overnight 0.17.4: 95 worker starts, 111/113 completed, 10 spam deletions with the app unopened. F248 scan diagnostics, F249 stop/KEEP/spacing, F250 Gmail renewal by stored refresh token, F251-F253 (battery row, notification trigger, ADR-0044), nine MV fixes. Fold checks carried as MV76-1) |
 | 77 | docs/sprints/SPRINT_77_SUMMARY.md | [OK] Complete | Oct 6-8, 2026 (PR #460 -> develop; 0.18.0+15, no store upload (MV-Q7 = 2). F264 per-account interval + new-mail switch, F245 one No Rule row per email (DB v12), F258 Gmail label IDs, F192 + SEC-15 Custom IMAP, SEC-8b certificate trust (ADR-0046), R76-1 battery A/B, R76-3 research; MV: F266 23 dead safe senders (DB v13), IMAP sign-in failure message, App Password labels, fixed Windows stagger. Fold steps 7-11 carried to Sprint 78) |
+| 78 | docs/sprints/SPRINT_78_SUMMARY.md | [OK] Complete | Oct 9-13, 2026 (PR #470 -> develop; 0.19.0+16. F282 one MyEmailSpamFilter folder, F281 Scan every presets + Custom, F283 Review No Rule Items on the Results pieces, F284 mouse-light WinWright, R76-4 dev-only content history (ADR-0047), F199-b to HOLD; MV: pop-up colors, dimmed provider actions, search text, no blank list after a rule, failed scans close, Doze alarm double scans. Phone testing moved to Sprint 79) |
 
 **Key Achievements**: See CHANGELOG.md for detailed feature history.
 
@@ -152,18 +153,20 @@ Historical sprint information lives in individual documents in `docs/sprints/` a
 
 ## Last Completed Sprint
 
-**Sprint 77** (2026-10-06 -- 2026-10-08; PR #460 -> develop; version 0.18.0+15; no store upload this sprint -- MV-Q7 = 2)
-- **Type**: per-account background scanning, the two largest data defects, Custom IMAP with a defined trust model, and content-based spam research; Windows + Android parity on every card (ADR-0042).
-- **F264 + R76-2 (#465)**: per-account "Scan every" (Minutes/Hours, 1-99, minimum 5) and per-account "Scan when new mail arrives"; 2h/4h scheduling, Windows restart reset, task-repair interval and Android alarm rounding fixed; fixed 1-minute Windows stagger per saved slot (MV-Q2, ADR-0039 amended).
-- **F245 (#463)**: one No Rule row per email (ADR-0045, DB v12; dev DB 7,904 -> 583); export lists it once.
-- **F258 (#462)**: Gmail custom-label writes send the label ID.
-- **F192 + SEC-15 (#466)**, **SEC-8b (#467)**: Custom IMAP Server with host validation; trust-on-first-use certificates (ADR-0046); the Google OAuth pin now enforces on every connection.
-- **R76-1 (#464)**: battery A/B arms 1-5 (backlog F277-F280); **R76-3 (#468)**: research, backlog F266-F275.
-- **MV fixes**: F266 23 dead safe senders (DB v13); a refused IMAP LOGIN says "Sign-in failed" on every provider; App Password vs Password labels; replace-account question; No Rule removal logging; first-scan results.
-- **Carried to Sprint 78 start**: the 0.18.0 Store and Play updates, Fold steps 7-11 (MV76-1), the boot-time `main()` trace. OPEN: one 0xc0000409 crash (dumps enabled; card when it recurs).
-- **Results**: suite 2,607 -> 2,918 (15 skipped), analyzer clean, JVM 21/21, WinWright 2/3 at 4a5f2ac (mt2c display-size dependent -> F283), hook suite 121 -> 125. Retro: Harold all Very Good; IMP-1 (5.1.9 MV rehearsal, Flutter tests first) and IMP-3 (Executed-by gate) applied; IMP-4 waits for a recurrence.
+**Sprint 78** (2026-10-09 -- 2026-10-13; PR #470 -> develop; version 0.19.0+16)
+- **Type**: one export folder, a researched "Scan every" control, Review No Rule Items rebuilt on the Results screen's pieces, a mouse-light WinWright sweep, and a dev-only content history; Windows + Android parity on every card (ADR-0042).
+- **F282 (#473)**: every file the app writes for the user goes to one `MyEmailSpamFilter` folder in Documents on both platforms; a chosen folder stays as chosen.
+- **F281 (#478)**: "Scan every" is a preset drop-down (5 minutes to 24 hours) plus Custom, shown only with background scanning on.
+- **F283 (#475)**: Review No Rule Items uses the Results list pieces and pop-up: search, sort, account drop-down, account named in the pop-up; multi-select removed.
+- **F284 (#474)**: tabs and the account face are invokable buttons; mt2c retired; fixed window size; the runner fails a script with a skipped step. Six mouse steps remain (F289).
+- **R76-4 (#476)**: content history of Harold's own mailboxes, dev builds only (ADR-0047 Accepted); **F199-b (#477)**: repo records match Partner Center, card to HOLD.
+- **MV fixes**: pop-up detail color, dimmed provider-domain actions, readable search text, no blank list after a rule (`RulesReadyGate`), failed scans record `completed_at`, the Android Doze alarm skips an account scanned within two-thirds of its interval (ADR-0039 amended). MV-5 withdrawn (retention alone).
+- **Moved to Sprint 79** (Harold): Fold steps 8-11, F277 battery runs, MV-7 on the phone, the Gmail `invalid_grant` cause, Android parity of F281/F282/F283, and 10 AOL scans that died mid-scan.
+- **Results**: suite 2,918 -> 3,011 (15 skipped), analyzer clean, WinWright 2/2 at 82a35db, hook suite 125 -> 132. Retro: Harold all Very Good; IMP-1 (actuals gates), IMP-2 (`phone-log-health.ps1`), IMP-4 (black-text contrast gate) applied; IMP-3 skipped.
 
 ## Next Sprint Candidates
+
+**Sprint 78 scope -- COMPLETE 2026-10-13 (PR #470)**: F282 (#473), F281 (#478), F284 (#474), F283 (#475), R76-4 (#476), F199-b (#477, to HOLD), plus the Manual Validation fixes MV-1..MV-7 (MV-5 withdrawn). MV76-1 (#471) and F277 (#472) moved to Sprint 79 by Harold. Plan: `docs/sprints/SPRINT_78_PLAN.md`.
 
 **Sprint 77 scope -- COMPLETE 2026-10-08 (PR #460)**: MV76-1 (#461, steps 7-11 carried to Sprint 78), F258 (#462), F245 (#463), R76-1 (#464), F264 + R76-2 (#465), F192 + SEC-15 (#466), SEC-8b (#467), R76-3 (#468), plus F266 and the Manual Validation fixes. Plan: `docs/sprints/SPRINT_77_PLAN.md`.
 
@@ -177,96 +180,22 @@ Historical sprint information lives in individual documents in `docs/sprints/` a
 
 All incomplete items in relative priority order. Priority in increments of 10; items that can sprint together in increments of 2. HOLD items grouped at bottom. See [Feature and Bug Details](#feature-and-bug-details) for deep-dive specs. See [BACKLOG_REFINEMENT.md](BACKLOG_REFINEMENT.md) for presentation format rules.
 
-### Sprint 77 carry-in -- Fold validation on 0.17.6 (Harold, Sprint 76 close, 2026-10-06)
+### Sprint 79 carry-in -- phone testing moved from Sprint 78 (Harold, 2026-10-13)
 
-**MV76-1. Finish the Sprint 76 Fold checks, now on the 0.18.0 closed-test build (~40-70m + phone time) Priority 1**
+**MV76-1. Finish the Fold checks, now on the 0.19.0 closed-test build (~40-70m + phone time) Priority 1**
 - Phase: Android / Google Play Store Readiness
 - Platform: Android
 - Origin: CARRY-IN from Sprint 76 close (Harold, 2026-10-06). Estimate from the Sprint 77 plan (40-70m transcription and evidence, plus Harold's phone time).
 - Depends on: the 0.18.0 Google Play closed-testing upload.
 - **Sprint 77 status (2026-10-08)**: reboot-window evidence pulled (unattended workers ran through a reboot with the app unopened); Fold steps 7-11 move to the START of Sprint 78 on the 0.18.0 closed-test build (MV-Q7 = 2), plus tracing the boot-time `app start (foreground)` line (`main()` ran at 09:14:39 with no app opened).
+- **Sprint 78 status (2026-10-13)**: Harold moved all further phone testing to Sprint 79 ("push any further testing to next sprint"). Still open: steps 8-11 (Step 9 needs Notification access for AOL; no `trigger=notification` scan in the 0.18.0 logs); iCloud background is OFF on the Fold (turn it on if iCloud should be covered).
+- **Added from Sprint 78**: MV-7 (the Doze alarm skips an account scanned within two-thirds of its interval) seen on the phone -- `phone-log-health.ps1` should show no double-scheduling FLAG; the Gmail `invalid_grant` on the Fold (2026-10-12 17:27; possibly the Google "Testing" refresh-token expiry, UNVERIFIED -- check the OAuth consent screen publishing status); Android parity of F281, F282 and F283 on 0.19.0; 10 AOL background scans on Oct 10-12 that died mid-scan and were reaped later (found by IMP-2; e.g. row 1900 stopped after its rules step; cause unknown -- one candidate is the WorkManager run limit described in F263, unverified).
 - F253 AC-5: a scan started by a mail app's new-mail notification (`trigger=notification` in the log); confirm the AOL and Yahoo package names on the device (#458).
 - MV74-1 reboot half: background scans resume after a phone restart without opening the app (#428). The Doze half PASSED on the 0.17.4 overnight run (95 worker starts, 111/113 completed).
 - The scan-export header row on a new daily `.data.csv`.
 - A Results rule update for an Inbox safe sender reports no failure (the 0.17.6 re-process fix).
 - F250: the Google account state screenshot on the Fold; decide whether the native sign-in still matters now that refresh-token renewal works (#454).
 - MV74-3: classify every scan error from normal use, or record zero (#433).
-
-**R76-4. Store a history of email content for future Heuristics/ML/GenAI identifiers (~[no-history], time-box 90m design) Priority 5**
-- Phase: Core App Quality
-- Platform: All
-- Origin: CARRY-IN from the Sprint 76 retrospective, Category 13 (Harold).
-- Depends on: a Class-1 decision on storing content beyond the 100-character preview; F273 (privacy policy and Data safety revision).
-- **Input from R76-3 (2026-10-07)**: the recommended fields (what to store, what never to store) are in Section 6 of `docs/research/R76-3_HEURISTICS_ML_GENAI_SPAM_IDENTIFICATION.md`; storing content beyond the 100-character preview is a Class-1 decision with a privacy-policy revision (F273).
-- Probably a database of fields -- design and implement. Fed by the Windows and Android scans (eventually iPhone); no duplicate emails; initially populated from the existing delete and safe-sender rules; Harold has a partial history of deleted emails to run through for more examples.
-
-### Backlog from the Sprint 77 Manual Validation (Harold, 2026-10-07)
-
-**F281. Deep dive: best-practice UI for "run every <interval>" in Background scanning (~90-120m research + implementation card) Priority 6**
-- Phase: Core App Quality
-- Platform: All
-- Origin: NEXT SPRINT (Harold, Sprint 77 Manual Validation step 1).
-- Harold: *"The UI just seem awkward for the Background Scanning ... deep dive into UI best practices for selecting time (in this case run something every <>)."* The F264 control (unit dropdown + typed number) works but reads awkwardly.
-- Deliverable: at least the 3 best alternatives, each with a mockup, pros, cons, and Windows + Android fit (ADR-0042 parity: one shared control on both platforms), with sources for the practices cited. Recommendation and why. Harold picks one; the pick becomes an implementation card in the same sprint.
-- Requirements for every alternative:
-  - Minimum every 5 minutes (`kMinIntervalMinutes`). Maximum every 24 hours -- **a change**: today `kMaxIntervalMinutes` is 99 hours.
-  - Suggest 15 minutes: the first time the control is shown for an account, it defaults to 15 minutes.
-  - Great flexibility (not only a short fixed preset list).
-  - Shown ONLY when a background mode is on: Android has two (scheduled background scanning, "Scan when new mail arrives"); Windows has one. **A change**: today the control is shown even when background scanning is OFF, deliberately (`settings_screen.dart` F264 R-11 comment, ISSUE #123/#124, so the user could set it first). Name what happens to a saved interval when the control is hidden.
-  - Keeps the save-on-change behavior Harold chose at MV-Q3 (no Save button).
-- Overlaps R76-2 (Background section rework); do them together.
-- Control and screen: Settings > Account tab > Background > "Scan every".
-
-**F282. One "MyEmailSpamFilter" folder for every file the app writes for the user (~60-90m) Priority 7**
-- Phase: Core App Quality
-- Platform: All
-- Origin: NEXT SPRINT (Harold, Sprint 77 MV-Q10, 2026-10-08). Estimate (Phase 8.2, 2026-10-09): one resolver change, Settings and Help text, tests.
-- Harold: *"if we are going to add directories to the Documents folder on either platform it should be named MyEmailSpamFilter and then just keep all MyEmailSpamFilter files in that directory (easier for users to find): scan results, manual scan downloads, diagnostics..."*
-- Today (`ExportDirectories.resolve`, default Windows Downloads, Android Documents, or the Settings > General folder):
-  - Export folder ROOT: the Results screen download button (`scan_results_<time>.csv`), Manage Rules export and Manage Safe Senders export.
-  - `scan_exports\`: per-scan background and live CSV/XLSX files.
-  - `diagnostics` (prod) / `diagnostics_Dev` (dev): the diagnostic log.
-- Change: every one of these goes under one `MyEmailSpamFilter` folder, with today's subfolders inside it. ONE resolver change (`ExportDirectories`), so no writer keeps its own copy of the path.
-- Windows + Android parity (ADR-0042): same folder name and layout on both.
-- Decisions (Harold, 2026-10-08):
-  - MV-Q11 = 1: the default base is **Documents on both platforms** (Windows moves from Downloads), "consistent and more consistent with Windows applications in general". Harold asked whether it can be built from a standard environment variable such as `%USERPROFILE%\Documents`. Answer for the card: use the Windows Documents KNOWN FOLDER (`SHGetKnownFolderPath(FOLDERID_Documents)`, which `path_provider`'s `getApplicationDocumentsDirectory()` returns on Windows), with `%USERPROFILE%\Documents` only as the fallback -- the same pattern `ExportDirectories` already uses for Downloads. The known folder is the better source because a user (or OneDrive folder backup) can move Documents, and then `%USERPROFILE%\Documents` is the wrong folder; verify against the Microsoft known-folder docs when implementing.
-  - MV-Q12 = 1: two folders, `MyEmailSpamFilter` (prod) and `MyEmailSpamFilter_Dev` (dev).
-  - MV-Q13 = 1: existing files stay where they are. A user who already chose a folder in Settings keeps that folder and its files unchanged; only the DEFAULT changes, for new users and users who never chose a location.
-- Acceptance: a user who never chose a folder opens Documents and finds every app file in `MyEmailSpamFilter`; a user who chose a folder sees no change; Settings > General names the folder; Help text matches.
-
-**F283. Review No Rule Items looks and works like the Results screen, across all accounts (~150-210m) Priority 8**
-- Phase: Core App Quality
-- Platform: All
-- Origin: NEXT SPRINT (Harold, Sprint 77 Manual Validation step 5, 2026-10-08). Estimate (Phase 8.2, 2026-10-09): screen rework reusing the Results widgets, search, account drop-down, detail popup on both screens, tests.
-- Depends on: F284 b (retire `test_mt2c_no_rule_sweep` instead of rewriting it).
-- Harold: *"change the UI for Review No Rule Items to look like the View Scan Results > Results screen ... but include all emails from all accounts. Will need to add a email account drop-down similar to 'Folders', default to All (drop down should list all email accounts, even if there are no results from those accounts). In the attached detail screen, we can replace the domain that is next to the date/time with the email account name (i.e. kimmeyharold@aol.com) so the user can see where the email came from."* Trigger: step 5 could not find one email among 398 -- *"there is no search to easily find it ... Can we add a search like in the View Results screen."*
-- Already exists (keep): every unaddressed row from every saved account (F245 upsert, one row per email); an account drop-down with "All Accounts (N)" first and every saved account with its count, including zero (shown only when more than one account is saved); the account email on each row when more than one account is saved; multi-select bulk actions.
-- Change:
-  - Layout of `results_display_screen`: summary header, chip row (account drop-down styled like "Folders", then "Folders", then "Sort"), the "Showing X of Y emails" filter bar, and the same row format (folder, date, subject).
-  - Search (the Results screen's search icon and behavior) over sender, subject and folder.
-  - The account drop-down defaults to All and is shown even with one account (open question).
-  - Detail popup: the domain next to the date/time is replaced by the account email (for example `kimmeyharold@aol.com`).
-  - Reuse the Results screen's widgets (chip row, filter bar, row, detail popup) rather than a second copy -- the Sprint 52 IMP-5 rule.
-- Windows + Android parity (ADR-0042): one shared screen.
-- Decisions (Harold, 2026-10-08):
-  - MV-Q14 = 1: the account drop-down is ALWAYS shown, even with one saved account.
-  - MV-Q15: the "No rule" chip stays and shows the count, but is no longer a drop-down.
-  - MV-Q16 = 2: multi-select and bulk actions are REMOVED ("it was not useful"); one row at a time, as on the Results screen.
-  - MV-Q17 = 2: the detail popup shows the account email in place of the domain on BOTH screens (Review No Rule Items and Results).
-  - MV-Q18: no interim search this sprint; search arrives with this card.
-- Acceptance: from Review No Rule Items, a user finds one email by typing part of its sender or subject; the account drop-down lists every saved account; the detail popup names the account.
-- WinWright: rewrite `test_mt2c_no_rule_sweep.json` for the new screen so it passes on ANY monitor size. Its checkbox steps go away with multi-select. Today's script depends on the screen. The 11 provider-sender rows are pinned first, so the seed rows are built only when about 13 rows fit. It passed at 3856x2128 and failed at about 1940x1040 (Sprint 77 close-out sweep). `ww_scroll` direction/page on a row reported success but did not move the list. Reach the seeds by search, or by an account filter that has no provider rows.
-
-**F284. WinWright without taking over the laptop: mouse-free sweep, retire mt2c, fixed window size (~100-130m) Priority 20**
-- Phase: Core App Quality
-- Platform: Windows Desktop
-- Origin: backlog (Sprint 77 retro IMP-2, Harold 2026-10-08: MV-Q23 = 2). Estimate is the sum of parts a (60-90m), b (~20m) and c (~20m).
-- Harold: *"is there any way to do the WinWright tests without using the monitor or taking control of the mouse/keyboard/screen (prevention). Are there any minor changes that would essentially preserve the UI user experience but would remove one or more WinWright tests?"*
-- Findings (2026-10-08, against the running dev app, no mouse used): 89 of the sweep's 115 steps already use UI Automation patterns; 26 move the real mouse (f124 5, mt2c 17, s75 4 + 2 hovers). `ww_set_checked` toggled a row CheckBox with no mouse (TogglePattern). The account drop-down face exposes neither Invoke nor ExpandCollapse: Flutter's `PopupMenuButton` with a custom child has no button semantics (also a screen-reader gap). Sprint 73 logs show pattern steps and tree reads working on a LOCKED workstation; only mouse clicks failed. Windows Sandbox on Windows 11 Home: unverified (Harold can check "Turn Windows features on or off").
-- a. Mouse-free sweep (~60-90m): `Semantics(button: true)` on the account drop-down faces (both screens) and the tab labels the scripts click (no visual change); CheckBox steps -> `ww_set_checked`; hover steps -> tooltip reads if UIA exposes them (probe first); the runner allows pattern-only scripts on a locked PC.
-- b. Retire `test_mt2c_no_rule_sweep.json` (~20m): its core contract (the sweep never drops uncovered rows) is covered by the headless `no_rule_review_screen_test`; it is display-size dependent (seed rows below 11 pinned provider rows at ~1940x1040; passed only at 3856x2128). Coordinate with F283, which removes multi-select.
-- c. Fixed window size set by the runner after launch, so a script passes or fails the same way on every display; record display and window size in the sweep summary. Lower value once mt2c is retired.
-- Acceptance: the sweep runs with no `ww_click` mouse steps, the cursor never moves, and it passes with the PC locked; no script's result depends on the monitor.
 
 ### Backlog from the Sprint 76 retrospective
 
@@ -299,6 +228,7 @@ Each item is fixed PREVENTION FIRST (SPRINT_EXECUTION_WORKFLOW.md 7.7.1): name h
 - Phase: Core App Quality
 - Platform: Android
 - Origin: backlog (Sprint 77 R76-1, was R77-BAT-1).
+- **Sprint 78 status (2026-10-13)**: the 0.18.0 overnight run had three accounts on, so it does not count; all three runs move to Sprint 79 on 0.19.0 with ONE account on. Check with `scripts/phone-log-health.ps1 -Path <log> -Since <start> -IntervalMinutes <n> -SingleAccount` before reading the battery screenshot.
 - The emulator measures counts, not energy. Decision rule for the F264 floor: if an interval-5 account costs more than 3x an interval-15 account on the Fold (Settings > Battery screenshots over MTP), raise `kMinIntervalMinutes` to 10. Protocol: `docs/research/R76-1_BATTERY_AB_RESULTS.md` section R77-BAT-1.
 
 **F278. Notifications that produced no scan, and alarm + WorkManager scans coexisting (~60-90m) Priority 34 -- backlog (Sprint 77 R76-1, was R77-BAT-2)**
