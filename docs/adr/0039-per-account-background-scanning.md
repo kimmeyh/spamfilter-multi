@@ -337,6 +337,17 @@ of about an hour. Alarms are re-armed after each firing and restored after a
 reboot by `BootReceiver`. See `DozeAlarmScheduler.kt` and ARCHITECTURE.md
 "Android in Doze".
 
+**Sprint 78 MV-7 (Harold, Manual Validation 2026-10-13).** Outside Doze the alarm
+was ALSO scanning on its own schedule, so each account was scanned about twice per
+interval (Fold, 0.18.0: 558 AOL scans in 3.4 days at 15 minutes, about 320
+expected). A Doze-alarm run now skips an account whose most recent scan (manual or
+background, any outcome) started within two-thirds of its interval
+(`dozeAlarmShouldSkip`, `android_background_scan_worker.dart`). Two-thirds, not the
+full interval: the alarm re-arms when it fires and its scan starts about a second
+later, so in Doze the previous alarm scan is slightly less than one interval old
+and a full-interval rule would skip every second alarm. Android only; Windows has
+no Doze alarm (ADR-0042: no shared code path differs).
+
 ## Amendment -- Sprint 74 (MV74-2, Harold Q3): cross-isolate exclusion
 
 **What was assumed, and was false.** The F175 `ScanCoordinator` lease was

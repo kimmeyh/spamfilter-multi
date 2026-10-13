@@ -597,6 +597,9 @@ firing it re-arms itself and enqueues a one-off WorkManager task for that accoun
 so the scan itself still runs in the same worker as above. `BootReceiver` re-arms
 all alarms after a reboot, because alarms (unlike WorkManager work) are not
 persisted. The periodic WorkManager task remains registered as a safety net.
+Sprint 78 MV-7: a Doze-alarm run skips an account whose most recent scan started
+within two-thirds of its interval (`dozeAlarmShouldSkip`), so outside Doze the
+alarm no longer doubles the periodic scans.
 
 **Measuring and enabling unattended scans** (F252, Sprint 76; Android only, a
 declared ADR-0042 exception): the alarm passes its fire time and source

@@ -27,6 +27,7 @@ Format: `- **type**: Description (Issue #N)` where type is feat|fix|chore|docs
 ## [Unreleased]
 
 ### 2026-10-13 (Sprint 78 Manual Validation)
+- **fix**: Android background scanning no longer scans an account about twice per interval; the Doze wake-up alarm now skips an account that was scanned recently (Issue #472)
 - **fix**: Scan History no longer shows "In progress" under a scan that failed (for example a Gmail account that needs to sign in again); a failed scan now records when it ended and shows its duration (Issue #471)
 - **fix**: Creating a rule or safe sender from Review No Rule Items no longer blanks the screen for several seconds; the app's "Loading spam filter rules" screen now appears only at startup, so a rule reload keeps the home screen in place (Issue #475)
 - **fix**: The search text on the Results and Review No Rule Items screens is readable on the dark theme; it used fixed black text (Issue #475)

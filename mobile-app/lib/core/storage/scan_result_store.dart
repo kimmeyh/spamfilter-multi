@@ -272,6 +272,20 @@ class ScanResultStore {
     }
   }
 
+  /// Sprint 78 MV-7: when the most recent scan of ANY type (manual or
+  /// background, any status) started for [accountId], or null if none has.
+  /// Read by the Android Doze alarm to skip a scan that would repeat one
+  /// that just ran.
+  Future<DateTime?> getLatestScanStart(String accountId) async {
+    final db = await _databaseHelper.database;
+    final rows = await db.rawQuery(
+      'SELECT MAX(started_at) AS started FROM scan_results WHERE account_id = ?',
+      [accountId],
+    );
+    final ms = rows.isEmpty ? null : rows.first['started'] as int?;
+    return ms == null ? null : DateTime.fromMillisecondsSinceEpoch(ms);
+  }
+
   /// Get the most recent scan for a specific account and type
   ///
   /// Returns scan if found, null if no scans exist
