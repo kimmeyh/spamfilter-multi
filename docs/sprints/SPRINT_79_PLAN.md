@@ -218,6 +218,21 @@ AOL scans that stop mid-run.
   14:29-15:14; the 14:29 manual scan completed). Read the worker's per-account eligibility path for what drops an
   account with no log line, name the mechanism or write "cause unknown" plus what would settle it, and add the missing
   skip-reason log line in any case (prevention first: an account that is not scanned must say why).
+  - **Status 2026-10-13**: the 14:27 Gmail scan COMPLETED (`exit success` 14:27:51); from 14:29 Gmail has no line of
+    any kind on EITHER trigger while AOL and Yahoo continue on both. Read-only trace (Sonnet agent): the only code that
+    removes the periodic task, the Doze alarm and its native `interval_` pref together is
+    `AndroidSchedulerAdapter.cancel` (`background_scan_scheduler.dart`), reached only from the Settings Background
+    switch's off path (`settings_screen.dart:1564`), and it logged to logcat only. Doze-only and periodic-only
+    candidates cannot explain both stopping; worker eligibility checks run after the `start` line, so they do not fit.
+    **Cause unknown**; settled by Harold reading Settings > Gmail > Background "Enable Background Scanning" (asked).
+  - **Prevention (done)**: both platform adapters now write `[scheduler/<platform>] schedule|cancel <masked account>
+    [every Nm] ok|FAILED (from <file:line>)` to the diagnostic log on every call; tests in
+    `background_scan_scheduler_test.dart` (format, caller label, source gate), two mutations KILLED. Native-side
+    candidates (receiver re-arm with a missing pref, KEEP dropping a Doze one-off) still log to logcat only -- recorded
+    as a remaining gap, not fixed here.
+  - **Row 2434 (R-8)**: WorkManager's `ExistingPeriodicWorkPolicy.UPDATE` KDoc (androidx source,
+    `work/work-runtime/.../ExistingPeriodicWorkPolicy.kt`): *"If the work being updated is currently running, the
+    current run won't be interrupted"*. The re-enqueue candidate is excluded; process death remains (UNVERIFIED).
 
 **Affected components / files**: evidence only, unless R-3 finds a wrong label (one-line fix in the start path, both
 platforms checked) or R-8 names a mechanism (fix in `background_scan_scheduler.dart` or `background_scan_core.dart`).
