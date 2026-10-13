@@ -1,12 +1,12 @@
 {
     "_description": "Sprint status file that persists across context compaction. Update after each phase/sub-phase completion.",
-    "_last_updated": "2026-10-13T12:45:00Z",
+    "_last_updated": "2026-10-13T14:40:00Z",
     "_usage": "Read this file after context compaction to restore sprint approval state and progress.",
     "_staleness_note": "This file had drifted 15 sprints (last updated at Sprint 35, 2026-04-19) before being refreshed at Sprint 50 close-out. It is a Phase 7.7 checklist item -- update it at every sprint close-out, not opportunistically.",
     "current_sprint": {
         "number": 78,
         "branch": "feature/20261009_Sprint_78",
-        "status": "Phase 7.6 Harold Decides --Manual Validation complete (Harold 2026-10-13); phone testing moved to Sprint 79; retrospective drafted, improvements IMP-1..IMP-4 awaiting Harold's decision",
+        "status": "Phase 7.7 Apply Approved Improvements -- IMP-1, IMP-2, IMP-4 applied (IMP-3 skipped by Harold); final WinWright sweep PASS at 82a35db; remaining: 7.7 documentation, then gh pr ready + 7.7.1 reviews",
         "plan_approved": true,
         "blanket_execution_approved": true,
         "pr_number": 470,
@@ -30,7 +30,7 @@
     },
     "_github_issues_note": "Sprint 66 cards created at Phase 3.3.1 (2026-09-07): #387 GP-19, #388 GP-4. Close by hand at Post-Merge Cleanup.",
     "test_metrics": {
-        "suite": "3,009 passed / 15 skipped / 0 failed (local Windows, 2026-10-13, daaa656)",
+        "suite": "3,011 passed / 15 skipped / 0 failed (local Windows, 2026-10-13, 82a35db)",
         "policy_suite": "JVM 21/21; release_notes_test passing; hook suite 128/128 (2026-10-08)",
         "winwright": "2026-10-10 sweep-head b1e5d7b: f124 PASS 29/29, s75 PASS 27/27, no skipped steps, DB drift none; mt2c retired (F284)",
         "analyzer": "clean",
@@ -54,10 +54,9 @@
     ],
     "blocking_issues": [],
     "next_actions": [
-        "7.5: Harold decides IMP-1..IMP-4 (docs/sprints/SPRINT_78_RETROSPECTIVE.md); apply the approved ones.",
-        "5.1.5 WinWright sweep again before close-out (lib/ui changed after sweep-head b1e5d7b; close-out gate).",
-        "7.7: CODING_VELOCITY rows, plan header, master plan, status; gh pr ready + 7.7.1 reviews (Copilot by hand + code-reviewer + silent-failure-hunter).",
-        "Sprint 79 carry-ins: Fold steps 8-11, F277 on 0.19.0 (one account), MV-7 on phone, Gmail invalid_grant cause, Android parity F281/F282/F283."
+        "7.7: master plan (Last Completed Sprint, F289 present, Sprint 79 carry-ins), ADR/arch already current, PR description, SPRINT_78_SUMMARY.md, status.",
+        "7.7.1: gh pr ready, then Copilot (by hand) + pr-review-toolkit code-reviewer + silent-failure-hunter in the same turn.",
+        "Sprint 79 carry-ins: Fold steps 8-11; F277 on 0.19.0 (one account); MV-7 on the phone; Gmail invalid_grant cause; Android parity F281/F282/F283; 10 AOL scans that died mid-scan (Oct 10-12)."
     ],
     "next_sprint_targeted": {
         "number": 77,

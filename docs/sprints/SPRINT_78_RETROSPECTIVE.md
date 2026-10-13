@@ -121,7 +121,8 @@ counting for all three roles). The Claude Code Development Team lines are Claude
 - **Product Owner / Scrum Master / Lead Developer (combined)**: none
 - **Claude Code Development Team**: Harold's move of further testing to Sprint 79: Fold steps 8-11 (Step 9 needs
   Notification access; iCloud background on if it should be covered); F277 three runs on 0.19.0 with one account on;
-  MV-7 on the phone; the Gmail `invalid_grant` cause; Android parity of F281, F282 and F283 on 0.19.0.
+  MV-7 on the phone; the Gmail `invalid_grant` cause; Android parity of F281, F282 and F283 on 0.19.0. Added at
+  Step 7: 10 AOL background scans died mid-scan on Oct 10-12 (found by IMP-2; cause unknown).
 
 ### 14. Function Updates for the Future Backlog
 
@@ -208,3 +209,28 @@ could not see. Testing on the phone moves to Sprint 79.
 ### Low Priority (Future)
 
 None.
+
+## Improvement Decisions
+
+Harold, 2026-10-13: *"imp-1, 2, 4 now - do not do imp-3. Run the sweep already"*.
+
+- **IMP-1 Actuals written at task completion** -- APPLIED. `sprint-auto-advance.ps1` F193 gate requires a
+  `CODING_VELOCITY.md` row (`| <task> | N | DONE |`) at the Manual Validation boundary from Sprint 79 (cases
+  violation-32 / allow-32); `verify-closeout-complete.ps1` check 3d-3 requires a minutes figure on every
+  `Executed-by` line from Sprint 78 (closeout violation-12 / allow-10). Each pair differs by one line; hook suite
+  132/132. Instance: 13 Sprint 78 velocity rows (reconstructed from commit times, marked so) and minutes on all
+  eight `Executed-by` lines (two lines added for Tasks 1 and 2; five reflowed so the gate can read them).
+- **IMP-2 Scan-health summary on every phone pull** -- APPLIED. New `scripts/phone-log-health.ps1` (`-SelfTest` 8/8);
+  `pull-phone-screenshots.ps1` runs it after every copy. On the pulled 0.18.0 logs it flags the MV-7 AOL rate (6.2
+  scans/hour at a 15-minute interval), the three-account F277 run (with `-SingleAccount`), and a NEW finding: 10 AOL
+  background scans on Oct 10-12 died mid-scan (spot-checked: row 1900 stopped after its rules step and was reaped
+  576 s later; cause unknown, carried to Sprint 79). Not yet run end to end inside a real pull (the phone was
+  disconnected when it was added).
+- **IMP-3 Phone-run preconditions checked before the run** -- SKIPPED (Harold).
+- **IMP-4 Contrast gate catches pinned black text** -- APPLIED. `text_contrast_test.dart` fails on `Colors.black*`
+  text without an opaque `backgroundColor` in the same TextStyle; mutations IMP4-M1 (translucent highlight) and
+  IMP4-M2 (MV-4 black search text) KILLED. Correction to the proposal: the one remaining site was NOT exemptible --
+  `rule_test_screen.dart`'s highlight was 25% amber over the theme surface, dark-on-dark in dark mode -- so it was
+  fixed (opaque `0xFFFFEFC1`, the same color over white), not exempted.
+- **Sweep** -- run: the first re-sweep failed on a data-state selector (fixed), and the final sweep passed at 82a35db.
+- **Carry-in added (Category 13)**: the 10 AOL scans that died mid-scan on the Fold (0.18.0) -- find the cause.
