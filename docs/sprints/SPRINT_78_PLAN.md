@@ -748,3 +748,39 @@ Windows DEV build (0.19.0 [DEV]); every step read-only for mail. Android parity 
   rehearsable here: a real AOL account (Claude has no mailbox access); the provider's text fetch is covered by
   fixtures (`r76_4_content_history_test`).
 - **Fold (Tasks 1, 2)**: the steps handed over at 2026-10-10 (MV76-1 steps 8-11 + iCloud, F277 three overnight runs).
+
+### Manual Validation results and findings (Harold, 2026-10-12/13)
+
+- **W1 PASS** (screenshots): chosen `C:\Users\kimme\Documents`; Reset -> `Documents/MyEmailSpamFilter_Dev (default)`;
+  export to `C:\Users\kimme\OneDrive\0Documents\MyEmailSpamFilter_Dev\scan_results_2026-10-12T23-53-02.csv`.
+- **W2 PASS** (screenshots): hidden when off; 3 Minutes -> "Minimum is 5 minutes, to limit battery use"; 25 Hours ->
+  "Maximum is 24 hours", Save disabled; "3 hours (custom)" and "45 minutes (custom)" saved. Open: AOL back to 15 and
+  background on for the other three accounts.
+- **W3 PASS with changes** (below). **W4 PASS**: `content_history.db` read read-only: 223 rows (220 safe_sender + 3
+  no_rule, matching the Results screen), all first stored 23:58-00:03; the repeat scan added none and moved
+  `last_seen_at` of all 223 to 00:05. 12 Inbox safe-sender rows have empty text (fetched, nothing extracted; cause
+  unverified, check during the fixes).
+- **Decisions**: F4 chip row = as expected; ADR-0047 = ACCEPTED; F284 = accept the six mouse steps + backlog card;
+  account menu / Select Folders screenshots = no change.
+- **Changes approved (Harold: hold until his feedback is complete)**:
+  - MV-1 pop-up text: subject line, date/account row (icons included) and the whole Skip button take the sender
+    line's color (theme onSurface); weights unchanged. Shared pop-up, so Results too (ADR-0042, no exception).
+  - MV-2 provider sender: Exact Domain, Entire Domain, Block Exact Domain, Block Entire Domain DIMMED (about half
+    strength) but still tappable; the F47 "Proceed Anyway" warning stays. Exact Email / Block Email full color.
+  - MV-3 blank list after a rule: the old list stays until the new list replaces it in one step. Cause unknown
+    (`_loadItems(showSpinner: false)` should not blank; the screenshot also lacked the Settings gear); reproduce
+    with a 392-item list first.
+  - MV-4 search text too dark: both search fields (Review `no_rule_review_screen.dart:625-628`, Results
+    `results_display_screen.dart:940-945`, "Issue 2b" black text) take the theme text color.
+  - MV-5 extra Review rows (introduced 0.18.0 by F245 c91bcd9; ADR-0045 item 7): 353 of 356 AOL rows are emails no
+    longer in Inbox/Bulk/Bulk Mail (the 00:05 manual scan had `daysBack=0` = whole folders and found 223). Harold:
+    the list is "all unaddressed emails AND that do not have current rules". Fix = option 1: when a scan covers a
+    folder, retire every unaddressed row in that folder whose email date is inside the scan's range but which the
+    scan did not find. ADR-0045 amendment (Class 1, approved). When: not yet answered.
+  - MV-6 Gmail sign-in skip leaves the scan row "In progress" (Fold screenshot 2026-10-13 00:12) although
+    `background_scan_core.dart:435` says the row closes as `error`; cause unknown. Fix in Sprint 78 (Harold).
+- **Open**: MV-5 timing; Fold finding "AOL scanned about twice per interval" (periodic ~16 min and doze-alarm ~18
+  min both scan: 558 scans in 3.4 days) -- fix / backlog / no change; start-now vs wait.
+- **Fold evidence 0.18.0 (Oct 9-13 logs)**: steps 8, 9, 10, 11 and F277 not yet done; iCloud has no background
+  scans (one manual scan Oct 9); Gmail `invalid_grant` since 2026-10-12 17:27 (needs Sign In Again); errors/day:
+  AOL 0/5/0/2 (DNS, server busy, timeouts), Gmail 8 on Oct 12 (sign-in), Yahoo 0.
