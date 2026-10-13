@@ -933,18 +933,9 @@ class _ResultsDisplayScreenState extends State<ResultsDisplayScreen> {
         child: Scaffold(
           appBar: AppBarWithExit(
             title: _showSearch
-                ? TextField(
+                ? ResultSearchField(
                     controller: _searchController,
                     focusNode: _searchFocusNode, // Issue 2a: Connect focus node
-                    autofocus: true,
-                    style: const TextStyle(
-                        color: Colors.black), // Issue 2b: Black text
-                    decoration: const InputDecoration(
-                      hintText: 'Search emails...',
-                      hintStyle: TextStyle(
-                          color: Colors.black54), // Issue 2b: Dark gray hint
-                      border: InputBorder.none,
-                    ),
                     onChanged: (value) {
                       setState(() {
                         _searchQuery = value;

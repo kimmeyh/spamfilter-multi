@@ -77,6 +77,44 @@ bool resultMatchesSearch(
       ruleName.toLowerCase().contains(query);
 }
 
+/// Item 8 (Ctrl-F search): the search field that takes over the AppBar title
+/// on the Results and Review screens.
+///
+/// Sprint 78 MV (Harold, "search box characters too dark"): the text and hint
+/// colors come from the THEME. They used to be fixed black and black54
+/// ("Issue 2b"), chosen for a light AppBar; on the dark theme the field's fill
+/// is dark gray, so black text could not be read. `onSurface` is the color
+/// the theme pairs with that fill in both brightnesses.
+class ResultSearchField extends StatelessWidget {
+  final TextEditingController controller;
+  final FocusNode? focusNode;
+  final ValueChanged<String> onChanged;
+
+  const ResultSearchField({
+    super.key,
+    required this.controller,
+    required this.onChanged,
+    this.focusNode,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final scheme = Theme.of(context).colorScheme;
+    return TextField(
+      controller: controller,
+      focusNode: focusNode,
+      autofocus: true,
+      style: TextStyle(color: scheme.onSurface),
+      decoration: InputDecoration(
+        hintText: 'Search emails...',
+        hintStyle: TextStyle(color: scheme.onSurfaceVariant),
+        border: InputBorder.none,
+      ),
+      onChanged: onChanged,
+    );
+  }
+}
+
 /// The icon for an action type, on the row and in the pop-up.
 Widget resultActionIcon(EmailActionType action) {
   switch (action) {

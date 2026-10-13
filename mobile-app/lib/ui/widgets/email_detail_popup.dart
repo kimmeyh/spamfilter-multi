@@ -132,9 +132,18 @@ Widget buildInlineActionButton({
   required Color color,
   required VoidCallback? onTap,
   bool isMatched = false, // Item 2: Visual indicator for current rule match
+  // Sprint 78 MV-2 (Harold): a DOMAIN action for a shared email-provider
+  // sender (gmail.com and the like) is shown at about half strength. It stays
+  // TAPPABLE -- the F47 "Proceed Anyway" warning still guards it -- the dim
+  // only says "Exact Email is the better choice here".
+  bool dimmed = false,
 }) {
   final bool enabled = onTap != null;
-  final Color effectiveColor = enabled ? color : Colors.grey.shade400;
+  final Color effectiveColor = !enabled
+      ? Colors.grey.shade400
+      : dimmed
+          ? color.withValues(alpha: 0.5)
+          : color;
   // F129 (Sprint 51): these quick-action cells were built from a bare InkWell
   // wrapping loose Text, so each one surfaced as an UNNAMED node with its
   // label floating alongside as separate Text -- a screen reader announced
@@ -158,7 +167,12 @@ Widget buildInlineActionButton({
     hint: subtitle,
     onTap: onTap,
     child: Tooltip(
-      message: enabled ? '$label. $subtitle' : '$label (unavailable)',
+      message: !enabled
+          ? '$label (unavailable)'
+          : dimmed
+              ? '$label. $subtitle. Shared email provider: Exact Email is '
+                  'recommended'
+              : '$label. $subtitle',
       child: InkWell(
         onTap: onTap,
         borderRadius: BorderRadius.circular(8),
@@ -203,7 +217,11 @@ Widget buildInlineActionButton({
                   const SizedBox(height: 2),
                   Text(
                     subtitle,
-                    style: TextStyle(fontSize: 10, color: Colors.grey[600]),
+                    style: TextStyle(
+                        fontSize: 10,
+                        color: dimmed
+                            ? Colors.grey[600]!.withValues(alpha: 0.5)
+                            : Colors.grey[600]),
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
                   ),
@@ -238,7 +256,10 @@ Widget buildInlineActionButton({
 /// F136 (Sprint 52): Skip -- leaves this email unchanged and moves to the next
 /// unaddressed one. Harold: about the same size as the safe sender and rule
 /// buttons.
-Widget _buildSkipButton(VoidCallback onSkip) {
+///
+/// Sprint 78 MV-1 (Harold): the whole button -- icon, label and border -- takes
+/// [color], the sender line's color (the theme's `onSurface`).
+Widget _buildSkipButton(Color color, VoidCallback onSkip) {
   return Semantics(
     container: true,
     button: true,
@@ -255,22 +276,22 @@ Widget _buildSkipButton(VoidCallback onSkip) {
           padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
           decoration: BoxDecoration(
             border: Border.all(
-              color: Colors.blueGrey.withValues(alpha: 0.3),
+              color: color.withValues(alpha: 0.3),
             ),
             borderRadius: BorderRadius.circular(8),
-            color: Colors.blueGrey.withValues(alpha: 0.05),
+            color: color.withValues(alpha: 0.05),
           ),
           child: Row(
             mainAxisSize: MainAxisSize.min,
             children: [
-              Icon(Icons.skip_next, size: 16, color: Colors.blueGrey.shade700),
+              Icon(Icons.skip_next, size: 16, color: color),
               const SizedBox(width: 6),
               Text(
                 'Skip',
                 style: TextStyle(
                   fontSize: 12,
                   fontWeight: FontWeight.w600,
-                  color: Colors.blueGrey.shade700,
+                  color: color,
                 ),
               ),
             ],
@@ -328,6 +349,10 @@ void showEmailDetailPopup(
   final displayRootDomain = rawRootDomain != null
       ? PatternNormalization.decodePunycodeDomain(rawRootDomain)
       : null;
+  // Sprint 78 MV-2: a shared email provider (gmail.com, ...) -- its domain
+  // actions are dimmed, and the amber hint below says why.
+  final isProviderSender = rawSenderDomain != null &&
+      CommonEmailProviders.isCommonProvider(rawSenderDomain);
   // F21: the effective evaluation (re-evaluated after inline rule assignment)
   final matchedRule = effectiveEval?.matchedRule ?? '';
   final isDeleted = effectiveEval?.shouldDelete == true;
@@ -387,6 +412,11 @@ void showEmailDetailPopup(
     // below keeps the popup inside the safe area explicitly.
     useSafeArea: false,
     builder: (dialogContext) {
+      // Sprint 78 MV-1 (Harold): the sender line has no explicit color, so it
+      // takes the theme's onSurface; the subject line, the date/account row
+      // and Skip use the same color.
+      final detailColor = Theme.of(dialogContext).colorScheme.onSurface;
+
       // Closes the pop-up, then reports the choice with the anchor used.
       void choose(QuickActionRequest request) {
         Navigator.pop(dialogContext);
@@ -580,10 +610,12 @@ void showEmailDetailPopup(
                               // size -- theme styles honour the OS font-size
                               // accessibility setting (ADR-0037). One shared
                               // change, no platform exception (Harold).
+                              // Sprint 78 MV-1 (Harold): the sender line's
+                              // color (theme onSurface), regular weight.
                               style: Theme.of(context)
                                   .textTheme
                                   .bodyMedium
-                                  ?.copyWith(color: Colors.grey[700]),
+                                  ?.copyWith(color: detailColor),
                               maxLines: 2,
                               overflow: TextOverflow.ellipsis,
                             ),
@@ -592,7 +624,7 @@ void showEmailDetailPopup(
                             Row(
                               children: [
                                 Icon(Icons.schedule,
-                                    size: 14, color: Colors.grey[500]),
+                                    size: 14, color: detailColor),
                                 const SizedBox(width: 4),
                                 Text(
                                   dateStr,
@@ -601,12 +633,12 @@ void showEmailDetailPopup(
                                   style: Theme.of(context)
                                       .textTheme
                                       .bodyMedium
-                                      ?.copyWith(color: Colors.grey.shade700),
+                                      ?.copyWith(color: detailColor),
                                 ),
                                 if (accountEmail.isNotEmpty) ...[
                                   const SizedBox(width: 12),
                                   Icon(Icons.account_circle_outlined,
-                                      size: 14, color: Colors.grey[500]),
+                                      size: 14, color: detailColor),
                                   const SizedBox(width: 4),
                                   // F230: BOUNDED. Flexible + ellipsis makes a
                                   // long account email yield instead of the row
@@ -618,8 +650,7 @@ void showEmailDetailPopup(
                                       style: Theme.of(context)
                                           .textTheme
                                           .bodyMedium
-                                          ?.copyWith(
-                                              color: Colors.grey.shade700),
+                                          ?.copyWith(color: detailColor),
                                     ),
                                   ),
                                 ],
@@ -629,7 +660,7 @@ void showEmailDetailPopup(
                                 // exists to advance through ([showSkip]).
                                 if (showSkip) ...[
                                   const Spacer(),
-                                  _buildSkipButton(() {
+                                  _buildSkipButton(detailColor, () {
                                     Navigator.pop(dialogContext);
                                     onSkip(itemPosition, itemSize);
                                   }),
@@ -658,9 +689,7 @@ void showEmailDetailPopup(
                             const Divider(height: 20),
 
                             // === SHARED PROVIDER HINT ===
-                            if (rawSenderDomain != null &&
-                                CommonEmailProviders.isCommonProvider(
-                                    rawSenderDomain)) ...[
+                            if (isProviderSender) ...[
                               Builder(builder: (_) {
                                 final providerName =
                                     CommonEmailProviders.getProviderName(
@@ -750,6 +779,7 @@ void showEmailDetailPopup(
                                         : buildInlineActionButton(
                                             icon: Icons.domain,
                                             label: 'Exact Domain',
+                                            dimmed: isProviderSender,
                                             subtitle: '@$displaySenderDomain',
                                             color: Colors.green,
                                             isMatched: isSafeSender &&
@@ -781,6 +811,7 @@ void showEmailDetailPopup(
                                         : buildInlineActionButton(
                                             icon: Icons.public,
                                             label: 'Entire Domain',
+                                            dimmed: isProviderSender,
                                             subtitle:
                                                 '@*.${displayRootDomain ?? displaySenderDomain}',
                                             color: Colors.green,
@@ -853,6 +884,7 @@ void showEmailDetailPopup(
                                         : buildInlineActionButton(
                                             icon: Icons.domain_disabled,
                                             label: 'Block Exact Domain',
+                                            dimmed: isProviderSender,
                                             subtitle: '@$displaySenderDomain',
                                             color: Colors.red,
                                             isMatched: isDeleted &&
@@ -884,6 +916,7 @@ void showEmailDetailPopup(
                                         : buildInlineActionButton(
                                             icon: Icons.public_off,
                                             label: 'Block Entire Domain',
+                                            dimmed: isProviderSender,
                                             subtitle:
                                                 '@*.${displayRootDomain ?? displaySenderDomain}',
                                             color: Colors.red,

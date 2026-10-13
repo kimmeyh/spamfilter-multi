@@ -617,17 +617,10 @@ class _NoRuleReviewScreenState extends State<NoRuleReviewScreen> {
         child: Scaffold(
           appBar: AppBarWithExit(
             title: _showSearch
-                ? TextField(
+                ? ResultSearchField(
                     key: const Key('review_search_field'),
                     controller: _searchController,
                     focusNode: _searchFocusNode,
-                    autofocus: true,
-                    style: const TextStyle(color: Colors.black),
-                    decoration: const InputDecoration(
-                      hintText: 'Search emails...',
-                      hintStyle: TextStyle(color: Colors.black54),
-                      border: InputBorder.none,
-                    ),
                     onChanged: (value) => setState(() => _searchQuery = value),
                   )
                 : const Text('Review No Rule Items'),
