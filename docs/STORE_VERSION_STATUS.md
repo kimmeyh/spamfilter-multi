@@ -37,10 +37,18 @@ Record a submission only after seeing it in each console.
   manifest Identity `Version="0.19.0.0"`; 17.7 MB.
   `D:\Data\Harold\github\spamfilter-multi-prod\mobile-app\build\windows\x64\runner\Release\my_email_spam_filter.msix`.
   Open: Step 4.2 Gmail sign-in URL check on an installed build.
-- **AAB 0.19.0 (versionCode 16) -- BUILD FAILED, not built**: `build-with-secrets.ps1 -BuildType release -Output aab`
-  at 12:43 -- the Gradle daemon died: `hs_err_pid86688.log` "insufficient memory for the Java Runtime Environment"
-  (native malloc of ~2 MB failed). System commit charge 86 of 94 GB (57 claude processes ~27 GB, 70 chrome ~12 GB,
-  88 node ~5.5 GB); Gradle asks for `-Xmx8G` + metaspace up to 4G. Retry after memory is freed.
+- **AAB 0.19.0 (versionCode 16) -- BUILT + VERIFIED, not yet uploaded** (third attempt, 2026-10-13 ~13:20):
+  read FROM THE ARTIFACT: versionName 0.19.0, no `.dev` package, Gmail OAuth scheme present, `AD_ID` absent;
+  67.7 MB; the script's IMP-2 check: "versionCode 16 is above the last uploaded (15)". App code identical to `main`
+  757d6a0. `D:\Data\Harold\github\spamfilter-multi\mobile-app\dist\android-0.19.0+16\app-prod-release.aab`.
+  After upload, update "Last uploaded to Play (any track)" to 0.19.0 (versionCode 16).
+  - Attempt 1 (12:43): the Gradle daemon died -- `hs_err_pid86688.log` "insufficient memory" (a native malloc of
+    ~2 MB refused). Cause: the COMMIT limit, not RAM -- commit 86 of 94 GB while 13.7 GB of RAM was free (Gradle
+    reserves `-Xmx8G` + metaspace). Harold closed Claude sessions and windows (commit 77.6 GB) and enlarged the page
+    file (effective after a reboot).
+  - Attempt 2: `Target build_hooks failed` -- the sqlite3 native-asset hook could not write
+    `.dart_tool\hooks_runner\sqlite3\608d99f9ad\hook.dill` ("Unable to open file ... for writing snapshot"). Cause
+    unknown (candidates: Norton scanning the new file; concurrent hook builds); it did not recur on attempt 3.
 - Release notes: `docs/store-assets/RELEASE_NOTES_0.19.0_windows.md` (1,246 / 1,500) and `_play.md` (448 / 500);
   `release_notes_test.dart` passes.
 
