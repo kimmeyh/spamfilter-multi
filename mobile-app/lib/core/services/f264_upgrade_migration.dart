@@ -76,8 +76,13 @@ class BackgroundIntervalMigration {
       _reschedule;
   final Logger _logger;
 
-  /// Sentinel key marking the migration complete so it never re-runs.
+  /// Sentinel key marking the migration complete for the CURRENT interval
+  /// rules. Its value is [kIntervalRulesVersion] (older installs hold
+  /// `'true'`, which is version 1), so the migration re-runs once whenever
+  /// the rules change (7.7.1 code-review M-4).
   static const String sentinelKey = 'f264_interval_migration_done';
+
+  static String get _doneValue => '$kIntervalRulesVersion';
 
   /// Returns true when it ran this call, false when it was already done.
   ///
@@ -87,7 +92,9 @@ class BackgroundIntervalMigration {
   /// stored (and now valid) minutes gives those accounts the schedule they
   /// were told they had. `schedule` is idempotent by contract.
   Future<bool> runIfNeeded() async {
-    if (await _settings.getRawAppSetting(sentinelKey) == 'true') return false;
+    if (await _settings.getRawAppSetting(sentinelKey) == _doneValue) {
+      return false;
+    }
     try {
       final globalMinutes = await _settings.getBackgroundScanFrequency();
       final globalFixed = ScanInterval.nearestValid(globalMinutes);
@@ -126,7 +133,7 @@ class BackgroundIntervalMigration {
             'registered; will retry next launch');
         return false;
       }
-      await _settings.setRawAppSetting(sentinelKey, 'true', 'bool');
+      await _settings.setRawAppSetting(sentinelKey, _doneValue, 'int');
       return true;
     } catch (e) {
       _logger.w('F264 interval migration failed (will retry next launch): $e');

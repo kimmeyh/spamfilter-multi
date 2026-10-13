@@ -51,6 +51,9 @@ class SettingsStore {
   static const String keyLiveScanDebugCsv = 'live_scan_debug_csv';
   /// F206 (Sprint 74): mask sender, subject and message id in every export.
   static const String keyExportRedacted = 'export_redacted';
+  /// R76-4 (Sprint 78, ADR-0047): the dev-only content history switch.
+  /// Off by default; only a dev build shows it or reads it as on.
+  static const String keyContentHistoryEnabled = 'content_history_enabled';
   static const String keyManualScanDaysBack = 'manual_scan_days_back';
   static const String keyBackgroundScanDaysBack = 'background_scan_days_back';
   static const String keyScanHistoryRetentionDays = 'scan_history_retention_days';
@@ -81,10 +84,10 @@ class SettingsStore {
   static const List<String> defaultBackgroundScanFolders = ['INBOX'];
   /// F202: overall default Safe Senders folder when no account or provider value.
   static const String defaultSafeSenderFolder = 'INBOX';
-  static const String? defaultCsvExportDirectory = null; // null = platform default (ExportDirectories: Android Documents, Windows Downloads)
+  static const String? defaultCsvExportDirectory = null; // null = the default, Documents/MyEmailSpamFilter[_Dev] on every platform (ExportDirectories, F282)
   // Harold Q2 (Sprint 74) REVERSES F113 (Sprint 47): per-scan exports are
   // OFF by default. F113 turned them on while they were written to hidden
-  // app storage; F206 moved them to Downloads/Documents, so a default of ON
+  // app storage; F206 moved them to a folder the user sees, so a default of ON
   // would drop new files there after every scan with no warning.
   static const bool defaultBackgroundScanDebugCsv = false;
 
@@ -208,8 +211,8 @@ class SettingsStore {
     return List.from(scan ?? defaultManualScanFolders);
   }
   /// F90 (Sprint 39): live-scan debug CSV export. OFF by default (Harold Q2,
-  /// Sprint 74, reversing F113's ON): exports now land in the user's
-  /// Downloads/Documents, so they must be asked for (matches
+  /// Sprint 74, reversing F113's ON): exports now land in a folder the user
+  /// sees (Documents/MyEmailSpamFilter by default), so they must be asked for (matches
   /// `defaultBackgroundScanDebugCsv`, also `false`). The Settings > Manual Scan
   /// tab Debug section exposes a toggle so a user can opt OUT without a code
   /// change. The runtime log file (`{logs}/{prefix}live_scan_v<version>.log`) is
@@ -351,6 +354,20 @@ class SettingsStore {
   /// live scans.
   Future<void> setLiveScanDebugCsv(bool enabled) async {
     await _setAppSetting(keyLiveScanDebugCsv, enabled.toString(), 'bool');
+  }
+
+  /// R76-4 (Sprint 78, ADR-0047): the stored "Content history" switch
+  /// (Settings > General, dev builds only). Off unless set. The capture gate
+  /// is [ContentHistory.isActive], which ALSO requires a dev build -- this
+  /// value alone never turns capture on.
+  Future<bool> getContentHistoryEnabled() async {
+    final value = await _getAppSetting(keyContentHistoryEnabled);
+    return value == 'true';
+  }
+
+  /// R76-4: see [getContentHistoryEnabled].
+  Future<void> setContentHistoryEnabled(bool enabled) async {
+    await _setAppSetting(keyContentHistoryEnabled, enabled.toString(), 'bool');
   }
 
   /// F206 (Sprint 74, Part C): whether exports REDACT sender, subject and
@@ -513,8 +530,8 @@ class SettingsStore {
   // ============================================================
 
   /// Get the user-chosen export directory.
-  /// Returns null if not set -- the platform default applies (F206: Android
-  /// Documents, Windows Downloads; see ExportDirectories).
+  /// Returns null if not set -- the default applies (F282:
+  /// Documents/MyEmailSpamFilter[_Dev] on every platform; see ExportDirectories).
   Future<String?> getCsvExportDirectory() async {
     return await _getAppSetting(keyCsvExportDirectory);
   }

@@ -461,6 +461,66 @@ void main() {
       });
     });
 
+    // F283 (Sprint 78): the pop-up is now SHARED and only reports the choice;
+    // Results maps it to its own pipeline. This pins that mapping end to end
+    // through the real screen: "Exact Email" saves a SAFE SENDER (and no rule),
+    // "Block Email" saves a BLOCK RULE.
+    //
+    // What this does NOT catch: the mailbox side of the pipeline (re-process
+    // returns early in readOnly), or the values of the domain actions (the
+    // F47 provider warning paths) -- those keep their own tests.
+    testWidgets(
+        'F283: a pop-up choice runs the matching pipeline (Exact Email -> safe '
+        'sender, Block Email -> block rule)', (tester) async {
+      tester.view.physicalSize = const Size(1200, 2400);
+      tester.view.devicePixelRatio = 1.0;
+      addTearDown(tester.view.resetPhysicalSize);
+      addTearDown(tester.view.resetDevicePixelRatio);
+
+      late RuleSetProvider ruleProvider;
+      await tester.runAsync(() async {
+        ruleProvider = await buildRuleProvider();
+        await mountAndLoadDbWidget(
+            tester,
+            wrapScreen(ruleProvider, EmailScanProvider(),
+                instanceKey: const ValueKey('f283Mount')));
+        final rulesBefore = ruleProvider.rules.rules.length;
+
+        await tester.tap(find.text('friend@trusted.com'));
+        await tester.pump(const Duration(milliseconds: 300));
+        await tester.tap(find.text('Exact Email'));
+        await tester.pump(const Duration(milliseconds: 300));
+        await Future<void>.delayed(const Duration(milliseconds: 800));
+        await tester.pump();
+        expect(
+            ruleProvider.safeSenders.safeSenders
+                .any((p) => p.contains('friend')),
+            isTrue,
+            reason: 'Exact Email must add a safe sender');
+        expect(ruleProvider.rules.rules.length, rulesBefore,
+            reason: 'a safe-sender choice must not create a block rule');
+
+        // The pop-up auto-advanced (No rule filter) or closed; open the
+        // spam row directly.
+        if (find.text('Create Block Rule').evaluate().isNotEmpty) {
+          await tester.tapAt(const Offset(5, 5));
+          await tester.pump(const Duration(milliseconds: 300));
+        }
+        await tester.tap(find.text('bad@spam.com').first);
+        await tester.pump(const Duration(milliseconds: 300));
+        await tester.tap(find.text('Block Email'));
+        await tester.pump(const Duration(milliseconds: 300));
+        await Future<void>.delayed(const Duration(milliseconds: 800));
+        await tester.pump();
+        expect(ruleProvider.rules.rules.length, rulesBefore + 1,
+            reason: 'Block Email must add a block rule');
+        expect(
+            ruleProvider.safeSenders.safeSenders.any((p) => p.contains('spam')),
+            isFalse,
+            reason: 'a block choice must not add a safe sender');
+      });
+    });
+
     // MT-1 (Sprint 50, Harold manual validation): the quick-action popup uses a
     // FIXED 3-column grid so every action -- Block Entire Domain above all --
     // sits in the SAME position for every item. This pins the geometry:

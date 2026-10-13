@@ -92,18 +92,34 @@ title and closes it at end-of-run. Consequences for script authors:
 > `test_text_selection`, `test_f25_rule_test_tool`, and `test_f35_rule_edit`. See ALL_SPRINTS_MASTER_PLAN.md
 > F100 and docs/TESTING_STRATEGY.md (two-harness section).
 
-Sprint 51 (F129) added 3 read-only scripts covering the Sprint-50-touched surfaces; the default sweep
-runs the 2 below and passes green with zero DB drift. `test_f129_no_rule_review.json` was RETIRED
-2026-08-23 (Sprint 62 retro IMP-5, Harold-approved): post-F135 (the Review No Rule screen IS home)
-and post-F169 (the account chips became one dropdown), its coverage had become a strict subset of
-`test_mt2c_no_rule_sweep.json`'s three cases, and keeping it only doubled the settle-buffer-sensitive
-dropdown surface (the runner replays no ww_wait -- re-confirmed 2026-08-23). The absorption is
-recorded in mt2c's own description block.
+The default sweep runs the 2 scripts below and must stay CURSOR-FREE (F284, Sprint 78): no `ww_click`,
+`ww_hover`, `ww_drag_drop`, `ww_scroll`, `ww_keyboard`, `ww_type` or `ww_select_text` step, so it can run
+while the PC is in use or locked. `test/policy/winwright_script_strings_test.dart` fails on any such step
+(one KNOWN PENDING exception: the two `ww_hover` steps in `test_s75_new_controls.json`, awaiting the F284
+live UIA probe). The runner refuses a locked workstation ONLY when a selected script has a cursor-driven
+step; a pattern-only selection runs, and the runner names the cursor-free scripts when it allows the run.
+
+**`test_mt2c_no_rule_sweep.json` and `scripts/winwright-seed-no-rule.ps1` were RETIRED in Sprint 78
+(F284 R-4).** The script passed or failed with the display size (the result list scrolled differently at
+different window sizes: F283), drove the real mouse for its checkboxes and dropdown, and needed a seed
+script plus runner hooks to fake its baseline. Its contract -- the No Rule covered-item sweep never drops
+uncovered rows -- stays covered deterministically by `test/ui/screens/no_rule_review_screen_test.dart`
+(being rewritten with the screen by F283). `test_f129_no_rule_review.json` was retired earlier
+(2026-08-23, Sprint 62 retro IMP-5).
+
+**Fixed window size (F284 R-5).** After every launch the runner sets the app window to 1600x1000
+(Win32 `SetWindowPos`, physical pixels) so a script passes or fails the same way on every display. Scripts
+no longer maximize: their priming step is `ww_window_state` with `restore`. The summary prints the display
+resolution and the achieved window size. A display smaller than 1600x1000 produces a warning.
+
+**ADR-0042 declaration (F284 R-6).** WinWright is Windows-only tooling. It has no Android equivalent;
+Android UI coverage is widget tests plus Fold Manual Validation. This is a declared exception in the
+testing layer, not a parity gap.
 
 | Script | Purpose | Origin |
 |--------|--------|--------|
 | `test_f124_rule_labels.json` | F124: Manage Rules category/sub-type display -- row accessible names, the details dialog's labelled `Category`/`Sub-Type` fields and their values, and all 7 filter chips (each paired with the `Clear` button that exists only while a filter is active) | S51 F129 (new) |
-| `test_mt2c_no_rule_sweep.json` | MT-2c: the covered-item sweep is idempotent across an in-place Refresh AND a full screen re-entry -- named rows must SURVIVE (guards over-collection, the Sprint 50 bug shape). Also carries the F169 account-filter dropdown coverage and the MT-3 reachability proof (absorbed from the retired f129 script) | S51 F129 (new); F169 repair + f129 absorption S62; F182 synthetic self-seeded baselines S63 (runner seeds/unseeds reserved-domain rows -- baselines never rot with live data again) |
+| `test_s75_new_controls.json` | Sprint 75 controls: Sort chip, Scan History Clear history (cancel only), Settings export toggle (`ww_set_checked`, restored), Account tab folder rows | S75 Task 7 |
 
 The create/lifecycle flows below are kept as the F99 reference and remain EXCLUDED from any default
 sweep -- their reliable unattended execution lives in `integration_test`:
@@ -131,9 +147,9 @@ sweep -- their reliable unattended execution lives in `integration_test`:
 > selector resolves 0 elements (observed 2026-07-31 at `Button[name='Save']` and `Edit[name*='Enter TLD']`).
 > That is a **runner limitation, not an app defect** -- do not read a failure of these scripts as a
 > regression. Reliable execution of the lifecycle belongs in `integration_test` (F99), which has
-> `pumpAndSettle`. `test_mt2c_no_rule_sweep.json` still asserts sweep *stability* against the existing
-> rule set, and the sweep-with-a-new-rule contract stays covered deterministically in
-> `test/ui/screens/no_rule_review_screen_test.dart`.
+> `pumpAndSettle`. The sweep-with-a-new-rule contract stays covered deterministically in
+> `test/ui/screens/no_rule_review_screen_test.dart` (the former `test_mt2c_no_rule_sweep.json` was
+> retired in Sprint 78, F284).
 
 The 2 F56 scripts **write then delete**: each testCase creates one row and a second testCase deletes it,
 leaving net DB drift of zero. They are EXCLUDED from the default sweep and run explicitly via
@@ -187,8 +203,14 @@ this wrong is the single biggest cause of "the selector resolved but nothing hap
 | `Button` (incl. `OutlinedButton`, `IconButton`, FAB, dialog buttons) | **`ww_invoke`** | `ww_click` reported success WITHOUT activating controls on a cold-launched app |
 | TabBar tab (projects as `Text`) | `ww_click` + `useInvokePattern: false` | tabs need a real mouse press |
 | Static `Text` label | `ww_click` + `useInvokePattern: false` | `Element does not support InvokePattern. ControlType: Text` |
-| `CheckBox` | `ww_click` + `useInvokePattern: false` | exposes TogglePattern, not InvokePattern |
+| `CheckBox` | **`ww_set_checked`** (F284; was `ww_click` + `useInvokePattern: false`) | exposes TogglePattern, not InvokePattern; `ww_set_checked` drives it with no cursor. It sets an ABSOLUTE state, so the script must know the starting value to restore it |
+| Static `Text` label probe (selector must only resolve) | **`ww_get_value`** (F284; UNVERIFIED in the script runner until the live sweep) | no cursor needed |
+| Tab / filter-chip face (was `Text`) | **`ww_invoke`** after F284 R-1 adds `Semantics(button: true)` | the node becomes a Button; UNVERIFIED until the live sweep |
 | `RadioButton` | `ww_click` + `useInvokePattern: false` **on the RadioButton itself** | exposes `SelectionItemPattern`, not `InvokePattern`, so `ww_invoke` correctly fails. Do **not** target the parent `Group` -- a Group is a container with no selection behavior (corrected Sprint 52 F131) |
+
+(F284 note: the `ww_click` rows above that remain are the legacy mouse paths. The default sweep may not
+use them; see the cursor-free rule near the script table. The RadioButton step in the excluded
+`test_f56_create_block_rule.json` has no pattern alternative yet.)
 
 **A mid-sprint claim that `useInvokePattern: true` "reports success without activating the widget" was
 tested and NOT reproduced as stated, and is withdrawn** -- with the default flag, `Manage Rules` opened,
@@ -225,8 +247,7 @@ the mouse path only for the control types that cannot accept InvokePattern.
   reach the Flutter field. Type into it at most **once** per screen visit; leaving and re-entering the
   screen resets it.
 - Both of these are why the two `test_f56_*` create/delete scripts stay EXCLUDED from the default
-  sweep, and why `test_mt2c_no_rule_sweep.json` deliberately asserts sweep *stability* using the
-  existing rule set instead of creating a rule first.
+  sweep (the retired `test_mt2c_no_rule_sweep.json` also avoided creating a rule for the same reason).
 
 ### Semantics required for name-based selection (F129)
 

@@ -1,14 +1,16 @@
-Collects the emails that no rule matched, from every account's most recent scan, in one list. This is where you teach the filter: each item is an email the scanner saw but had no instruction for, and each action you take here becomes a rule for future scans.
+Collects the emails that no rule matched, from every account, in one list. This is where you teach the filter: each item is an email the scanner saw but had no instruction for, and each action you take here becomes a rule for future scans.
 
-When more than one account is configured, chips above the list filter by account. "All Accounts" shows everything; each chip shows that account's item count.
+The screen looks and works like the Results screen. The first chip shows how many "No rule" emails are listed. The account chip filters by account: "All Accounts" shows everything, and each account shows its count. The Folders chip limits the list to the folders you pick, and the Sort chip switches between folder order and newest first.
 
-**Selecting items**: click a row to select it, or use its checkbox (the checkbox always toggles just that one row). On Windows desktop, Ctrl+click on a row adds or removes that row from the selection, and Shift+click on a row selects the range from your last click. Right-click a row to open the action menu directly. On Android and iOS, long-press a row to start a selection, then tap other rows to add or remove them.
+**Finding an email**: tap the search icon, or press Ctrl+F on a keyboard, and type part of the sender, subject or folder. "Showing X of Y emails" appears while a search or folder filter is active; tap X to clear it.
 
-**Acting on a selection** (via the "Apply Rule" menu or right-click):
+**Acting on an email**: tap a row to open its details. The details name the account the email belongs to, and offer the same actions as the Results screen:
 
-- **Add Safe Sender - Exact Email / Exact Domain / Entire Domain**: trust the sender so future scans leave their mail alone.
-- **Add Block Rule - Exact Email / Exact Domain / Entire Domain**: treat matching mail as spam on future scans.
-- **Remove Current Rule**: dismiss the selection as reviewed without creating any rule. The items leave the list.
+- **Add to Safe Senders - Exact Email / Exact Domain / Entire Domain**: trust the sender so future scans leave their mail alone.
+- **Create Block Rule - Block Email / Block Exact Domain / Block Entire Domain / Block Subject**: treat matching mail as spam on future scans.
+- **Skip**: leave this email as it is and go to the next one.
+
+After an action, the next email the new rule does not cover opens at once, so you can work down the list.
 
 Items also leave the list automatically once a rule covers them -- including rules you add elsewhere in the app. The screen re-checks this on every reload.
 

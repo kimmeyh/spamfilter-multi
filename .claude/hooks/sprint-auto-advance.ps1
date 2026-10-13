@@ -420,6 +420,36 @@ if ($branch -match '_Sprint_(\d+)') {
                                 if (-not $recorded) { $missingF193 += $eF.Name }
                             }
 
+                            # Effort actuals (Sprint 78 retro IMP-1, Harold 2026-10-13).
+                            # CODING_VELOCITY.md Rule 4 says each task's row is written AT
+                            # TASK COMPLETION. The only check was close-out 3b-2, the latest
+                            # possible point, so Sprint 78 reached its retrospective with no
+                            # row at all and its actuals had to be rebuilt from commit
+                            # times. Every planned task is done before Manual Validation, so
+                            # the rows must exist here. Same row shape 3b-2 matches. From
+                            # Sprint 79; Sprint 78 predates it.
+                            if ([int]$sprintNumW -ge 79) {
+                                $velPathF193 = Join-Path $cwd 'docs/CODING_VELOCITY.md'
+                                # 7.7.1 silent-failure H-2: ONE row is not enough -- the
+                                # planning row is written before any task, so "any DONE
+                                # row" passed with zero task rows. Count task rows
+                                # (DONE or MOVED, planning rows excluded) and require at
+                                # least one per task card in the plan (the card pattern
+                                # close-out 3d-3 uses), and at least one in all.
+                                $velRows = 0
+                                if (Test-Path -LiteralPath $velPathF193) {
+                                    $rowRx = '(?im)^\|([^|\r\n]*)\|\s*{0}\s*\|\s*(DONE|MOVED)\s*\|' -f $sprintNumW
+                                    foreach ($vm in [regex]::Matches((Get-Content -LiteralPath $velPathF193 -Raw), $rowRx)) {
+                                        if ($vm.Groups[1].Value -notmatch '(?i)planning') { $velRows++ }
+                                    }
+                                }
+                                $cardsF193 = [regex]::Matches($planTextF193, '(?im)^#{2,3}\s+Task\s+\S+\s+--').Count
+                                $needF193 = [math]::Max(1, $cardsF193)
+                                if ($velRows -lt $needF193) {
+                                    $missingF193 += ("CODING_VELOCITY.md task actuals rows ({0} found for Sprint {1}, {2} needed: one per task card; planning rows do not count)" -f $velRows, $sprintNumW, $needF193)
+                                }
+                            }
+
                             if ($missingF193.Count -gt 0) {
                                 $names = $missingF193 -join ', '
                                 # STDERR, not stdout -- the hook contract in this
@@ -438,7 +468,8 @@ artifacts are not RECORDED in docs/sprints/SPRINT_${sprintNumW}_PLAN.md:
 
 SPRINT_CHECKLIST.md requires them BEFORE Manual Validation starts, so that
 Harold never validates unreviewed code (and, from Sprint 78, never runs a
-validation step Claude has not rehearsed -- 5.1.9). A marker that still reads PENDING/TBD
+validation step Claude has not rehearsed -- 5.1.9; from Sprint 79, never without
+the tasks' CODING_VELOCITY.md actuals rows). A marker that still reads PENDING/TBD
 does not count -- that placeholder exists to say the work is NOT done.
 
 Run the missing step(s), record the evidence in the plan, then declare MV.

@@ -1,6 +1,6 @@
 /// F264 (Sprint 77) T-1: the interval model -- conversion, validation, label,
 /// the upgrade conversion ([ScanInterval.nearestValid]) and the floor's tie to
-/// the scan spacing.
+/// the scan spacing. F281 (Sprint 78): the maximum is 24 hours (was 99).
 ///
 /// What these do NOT catch: a scheduler (Task Scheduler, WorkManager, the Doze
 /// alarm) accepting the value, or a UI that fails to call these helpers -- the
@@ -23,11 +23,14 @@ void main() {
     test('the limits themselves pass', () {
       expect(ScanInterval.validate(5), isNull);
       expect(ScanInterval.validate(99), isNull);
-      expect(ScanInterval.validate(99 * 60), isNull);
+      expect(ScanInterval.validate(24 * 60), isNull);
     });
 
-    test('99 hours plus one minute fails', () {
-      expect(ScanInterval.validate(99 * 60 + 1), kIntervalTooLongMessage);
+    test('F281 AC-2: 24 hours plus one minute fails with the exact message', () {
+      expect(ScanInterval.validate(24 * 60 + 1), 'Maximum is 24 hours');
+      expect(ScanInterval.validate(25 * 60), kIntervalTooLongMessage);
+      expect(ScanInterval.validate(99 * 60), kIntervalTooLongMessage,
+          reason: 'the F264 maximum is no longer allowed');
     });
   });
 
@@ -35,7 +38,7 @@ void main() {
     test('toMinutes is number x unit', () {
       expect(ScanInterval.toMinutes(ScanIntervalUnit.hours, 2), 120);
       expect(ScanInterval.toMinutes(ScanIntervalUnit.minutes, 45), 45);
-      expect(ScanInterval.toMinutes(ScanIntervalUnit.hours, 99), 5940);
+      expect(ScanInterval.toMinutes(ScanIntervalUnit.hours, 24), 1440);
     });
 
     test('label', () {
@@ -43,7 +46,7 @@ void main() {
       expect(ScanInterval.label(5), '5 minutes');
       expect(ScanInterval.label(60), '1 hour');
       expect(ScanInterval.label(90), '90 minutes');
-      expect(ScanInterval.label(5940), '99 hours');
+      expect(ScanInterval.label(1440), '24 hours');
     });
 
     test('split shows whole hours as hours and everything else as minutes', () {
@@ -76,7 +79,15 @@ void main() {
       expect(ScanInterval.nearestValid(0), 5);
       expect(ScanInterval.nearestValid(-10), 5);
       expect(ScanInterval.nearestValid(3), 5);
-      expect(ScanInterval.nearestValid(6000), 5940);
+      expect(ScanInterval.nearestValid(1441), 1440);
+    });
+
+    test('F281 AC-4 (F1 = 1): a stored F264 value above 24 hours becomes 24 hours',
+        () {
+      expect(ScanInterval.nearestValid(5940), 1440, reason: '99 hours');
+      expect(ScanInterval.nearestValid(25 * 60), 1440);
+      expect(ScanInterval.reconcileStored(5940),
+          (minutes: 1440, converted: true));
     });
 
     test('a value the control cannot type maps to the nearest one it can', () {
@@ -84,7 +95,7 @@ void main() {
       expect(ScanInterval.nearestValid(125), 120);
       expect(ScanInterval.nearestValid(119), 120);
       expect(ScanInterval.nearestValid(179), 180);
-      expect(ScanInterval.nearestValid(5939), 5940);
+      expect(ScanInterval.nearestValid(1439), 1440);
     });
 
     test('a tie goes to the LONGER interval (less battery)', () {
@@ -106,6 +117,20 @@ void main() {
     });
   });
 
+  group('F281 D: the presets', () {
+    test('every preset is in range, representable and ascending', () {
+      expect(kIntervalPresets.first, kMinIntervalMinutes);
+      expect(kIntervalPresets.last, kMaxIntervalMinutes);
+      for (final m in kIntervalPresets) {
+        expect(ScanInterval.validate(m), isNull, reason: '$m');
+        expect(ScanInterval.isRepresentable(m), isTrue, reason: '$m');
+      }
+      for (var i = 1; i < kIntervalPresets.length; i++) {
+        expect(kIntervalPresets[i], greaterThan(kIntervalPresets[i - 1]));
+      }
+    });
+  });
+
   group('the floor and the jitter rule', () {
     test('AC-13: the floor is not below the scan spacing', () {
       expect(kMinIntervalMinutes * 60,
@@ -118,7 +143,7 @@ void main() {
       expect(ScanInterval.hasJitter(5), isFalse);
       expect(ScanInterval.hasJitter(15), isFalse);
       expect(ScanInterval.hasJitter(16), isTrue);
-      expect(ScanInterval.hasJitter(5940), isTrue);
+      expect(ScanInterval.hasJitter(1440), isTrue);
     });
 
     test('the jitter cannot pull a firing inside the scan spacing', () {

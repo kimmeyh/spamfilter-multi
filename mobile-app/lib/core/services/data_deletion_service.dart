@@ -12,6 +12,7 @@
 /// dialog; the service itself does not prompt.
 library;
 
+import '../storage/content_history_store.dart';
 import 'package:logger/logger.dart';
 
 import '../../adapters/storage/secure_credentials_store.dart';
@@ -102,26 +103,31 @@ class DataDeletionService {
       );
 
       // Drop any future background-scan schedule rows for this account.
-      // Table might not exist on fresh installs; guard against that.
-      try {
-        scheduleEntries = await txn.delete(
-          'background_scan_schedule',
-          where: 'account_id = ?',
-          whereArgs: [accountId],
-        );
-      } catch (_) {
-        scheduleEntries = 0;
-      }
+      scheduleEntries = await txn.delete(
+        'background_scan_schedule',
+        where: 'account_id = ?',
+        whereArgs: [accountId],
+      );
 
-      // Rate-limit state (SEC-22) keyed by accountId too.
-      try {
-        await txn.delete(
-          'auth_rate_limit',
-          where: 'account_id = ?',
-          whereArgs: [accountId],
-        );
-      } catch (_) {
-        // Table may not exist pre-v3; ignore.
+      // Rate-limit state (SEC-22) keyed by accountId too. No catch here or
+      // above (7.7.1 silent-failure M-4, the whole class): every table is
+      // created by `_createTables` or its migration, so a failure is real.
+      await txn.delete(
+        'auth_rate_limit',
+        where: 'account_id = ?',
+        whereArgs: [accountId],
+      );
+
+      // R76-4 R7 (Sprint 78, prevention: `r76_4_content_history_policy_test`,
+      // group "R7", fails when a table holding account data is missing from
+      // this path):
+      // the per-folder scan cursors and the background-scan run log are this
+      // account's data too, and were left behind.
+      // No catch (7.7.1 silent-failure M-4): both tables are always created
+      // (`_createTables` / the v5 migration), so a failure here is real
+      // (SQLITE_BUSY, disk I/O) and must abort the deletion, not be hidden.
+      for (final table in ['account_folder_cursors', 'background_scan_log']) {
+        await txn.delete(table, where: 'account_id = ?', whereArgs: [accountId]);
       }
 
       await txn.delete(
@@ -130,6 +136,18 @@ class DataDeletionService {
         whereArgs: [accountId],
       );
     });
+
+    // R76-4 (ADR-0047 item 9): the dev-only content history keeps its own
+    // file; drop this account's rows when one exists. Best effort, logged;
+    // showing the failure to the user is backlog (7.7.1 silent-failure M-4,
+    // UI half -- a 4-file fix, asked first by the size rule).
+    try {
+      final history = ContentHistoryStore.instance;
+      if (history.fileExists()) await history.deleteAccount(accountId);
+    } catch (e) {
+      _logger.w('Content history delete for ${Redact.accountId(accountId)} '
+          'failed: $e');
+    }
 
     // Credentials live outside the DB, in flutter_secure_storage.
     try {

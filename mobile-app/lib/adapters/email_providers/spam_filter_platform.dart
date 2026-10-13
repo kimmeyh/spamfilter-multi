@@ -56,6 +56,16 @@ abstract class SpamFilterPlatform {
   /// (returns the message unchanged).
   Future<EmailMessage> fetchFullBody(EmailMessage message);
 
+  /// R76-4 (Sprint 78, ADR-0047 item 6): the plain text of ONE message, for
+  /// the dev-only content history. Unlike [fetchFullBody] (used by body rules
+  /// and NOT changed), an HTML-only body is converted to text and a nested
+  /// multipart tree is walked. Null ONLY when the message has no text; a
+  /// failed fetch THROWS [ContentFetchException] (7.7.1 silent-failure M-3: a
+  /// null for both stored a failed fetch permanently as "no body", and later
+  /// sightings never fetch again). Providers without a real implementation
+  /// inherit the mixin's named no-op.
+  Future<String?> fetchContentText(EmailMessage message);
+
   /// Apply compiled rules with platform-native filtering when available
   ///
   /// Some platforms (Gmail, Outlook) support server-side filtering which
@@ -203,6 +213,11 @@ mixin BatchOperationsMixin implements SpamFilterPlatform {
   /// (IMAP, Gmail) override this with a real per-message body fetch.
   @override
   Future<EmailMessage> fetchFullBody(EmailMessage message) async => message;
+
+  /// R76-4 default: a NAMED no-op (ADR-0047 item 6) -- demo, mock and Outlook
+  /// providers store no body text. IMAP and Gmail override it.
+  @override
+  Future<String?> fetchContentText(EmailMessage message) async => null;
 
   @override
   Future<BatchActionResult> markAsReadBatch(List<EmailMessage> messages) async {
@@ -500,6 +515,19 @@ class FetchException implements Exception {
 
   @override
   String toString() => 'FetchException: $message';
+}
+
+/// R76-4: one message's content text could not be fetched (network, token,
+/// message gone). Distinct from "the message has no text", which is null.
+/// The dev-only content history skips the email so the next scan retries it.
+class ContentFetchException implements Exception {
+  final String message;
+  final Object? originalError;
+
+  ContentFetchException(this.message, [this.originalError]);
+
+  @override
+  String toString() => 'ContentFetchException: $message';
 }
 
 /// Exception thrown during action execution

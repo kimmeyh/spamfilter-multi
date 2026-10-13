@@ -28,6 +28,7 @@ import '../../adapters/storage/secure_credentials_store.dart';
 import '../../util/redact.dart';
 import '../providers/rule_set_provider.dart';
 import '../storage/database_helper.dart';
+import '../storage/scan_result_store.dart';
 import '../storage/settings_store.dart';
 import 'background_mode_service.dart';
 import 'background_scan_core.dart';
@@ -72,6 +73,7 @@ void androidBackgroundScanDispatcher() {
       isTest: isTest,
       retryOnFailure: retryOnFailureFor(inputData),
       notificationProviders: notificationProvidersFor(inputData),
+      dozeAlarm: inputData?[kTriggerSourceKey] == 'doze-alarm',
       // F252: computed HERE, at entry, so the delay measures how long Android
       // held the work back -- not the worker's own setup time.
       trigger: describeBackgroundTrigger(
@@ -115,6 +117,33 @@ String? notificationProvidersFor(Map<String, dynamic>? inputData) {
   return providers is String ? providers : kAnyProvider;
 }
 
+/// Sprint 78 MV-7 (Harold, Fold logs 2026-10-09..13): whether a DOZE-ALARM
+/// run skips an account because a scan of it started recently.
+///
+/// The F235 alarm exists to wake the phone when Doze holds WorkManager back
+/// (ADR-0039 amendment, Sprint 73). It was scanning on its own schedule even
+/// when the periodic job was running fine, so each account was scanned about
+/// twice per interval: 558 AOL scans in 3.4 days at 15 minutes, against about
+/// 320 expected.
+///
+/// Skips when a scan of the account (manual or background, any outcome)
+/// started less than two-thirds of [interval] before [now]. Not the full
+/// interval: the alarm re-arms when it fires and its scan starts about a
+/// second later, so in Doze the next alarm finds the previous ALARM scan
+/// slightly LESS than one interval old -- a full-interval rule would skip
+/// every second alarm in exactly the state the alarm is for.
+@visibleForTesting
+bool dozeAlarmShouldSkip({
+  required DateTime now,
+  required DateTime? lastScanStart,
+  required Duration interval,
+}) {
+  if (lastScanStart == null) return false;
+  final window = interval * 2 ~/ 3;
+  final age = now.difference(lastScanStart);
+  return !age.isNegative && age < window;
+}
+
 /// The value handed back to WorkManager: `true` = done, `false` = retry.
 @visibleForTesting
 bool workerResult({required bool allSucceeded, required bool retryOnFailure}) =>
@@ -140,6 +169,7 @@ class AndroidBackgroundScanWorker {
     String? trigger,
     bool retryOnFailure = true,
     String? notificationProviders,
+    bool dozeAlarm = false,
   }) async {
     _logger.i('Android background scan started'
         '${accountId != null ? ' for ${Redact.accountId(accountId)}' : ' (all accounts)'}'
@@ -206,6 +236,32 @@ class AndroidBackgroundScanWorker {
           backgroundEnabled =
               await settingsStore.getEffectiveBackgroundEnabled(id);
           if (!backgroundEnabled) continue;
+        }
+
+        // Sprint 78 MV-7: a Doze-alarm run skips an account scanned recently
+        // (see dozeAlarmShouldSkip). A failed check never skips: the alarm's
+        // job is to make sure a scan happens.
+        if (dozeAlarm && !isTest) {
+          try {
+            final last =
+                await ScanResultStore(dbHelper).getLatestScanStart(id);
+            final minutes =
+                await settingsStore.getEffectiveBackgroundFrequency(id);
+            final now = DateTime.now();
+            if (dozeAlarmShouldSkip(
+                now: now,
+                lastScanStart: last,
+                interval: Duration(minutes: minutes))) {
+              workerLog('account ${Redact.accountId(id)} skipped: a scan '
+                  'started ${now.difference(last!).inSeconds}s ago '
+                  '(interval ${minutes}m; doze alarm)');
+              continue;
+            }
+          } catch (e) {
+            workerLog('account ${Redact.accountId(id)} doze-alarm recent-scan '
+                'check failed, scanning anyway: '
+                '${DiagnosticLogger.describeError(e)}');
+          }
         }
 
         // F264: a notification run scans only accounts whose OWN new-mail

@@ -38,80 +38,87 @@ import 'package:flutter_test/flutter_test.dart';
 
 void main() {
   late String source;
+  // F283 (Sprint 78): the action sheet moved to a SHARED pop-up used by Results
+  // and Review No Rule Items (`email_detail_popup.dart`). The F230 structure
+  // guarantees below now read that file; the Results wiring (Skip gate, the
+  // shared auto-advance, F231's session record) still reads the screen.
+  late String popup;
 
   setUpAll(() {
     source =
         File('lib/ui/screens/results_display_screen.dart').readAsStringSync();
+    popup = File('lib/ui/widgets/email_detail_popup.dart').readAsStringSync();
   });
 
   group('F230: Skip no longer eats the sender', () {
     test('THE BUG: Skip is out of the sender Row', () {
       // The sender Text is Expanded + ellipsis. Anything sharing that Row takes
       // width directly from the address.
-      final senderRowStart = source.indexOf('displaySenderEmail,');
+      final senderRowStart = popup.indexOf('displaySenderEmail,');
       expect(senderRowStart, greaterThan(-1));
-      // Look at the window right after the sender widget, where Skip used to
-      // sit; it must not be there any more.
-      final window = source.substring(
-          senderRowStart, senderRowStart + 1400);
+      // The sender Row ends at the subtitle line; Skip must not be before it.
+      final subtitleIdx = popup.indexOf("'\${email.folderName}", senderRowStart);
+      expect(subtitleIdx, greaterThan(senderRowStart));
+      final window = popup.substring(senderRowStart, subtitleIdx);
       expect(window.contains('_buildSkipButton('), isFalse,
           reason: 'THE ASSERTION THAT WAS MISSING: Skip immediately after the '
               'Expanded sender is what truncated the address at 411px');
     });
 
     test('Skip is still present, just relocated', () {
-      expect(source.contains('_buildSkipButton('), isTrue,
-          reason: 'moved, not removed');
       expect(
-          RegExp(r'_buildSkipButton\(').allMatches(source).length,
-          greaterThanOrEqualTo(1));
+          RegExp(r'_buildSkipButton\(').allMatches(popup).length,
+          greaterThanOrEqualTo(2),
+          reason: 'moved, not removed: one definition, one use');
     });
 
     test('Skip keeps its filter gate and its existing behavior', () {
-      expect(source.contains('if (_filter == EmailActionType.none) ...['),
+      expect(popup.contains('if (showSkip) ...['), isTrue);
+      expect(source.contains('showSkip: _filter == EmailActionType.none'),
           isTrue,
-          reason: 'still only under the No-rule filter, where an unaddressed '
-              'sequence exists to advance through');
+          reason: 'on Results, still only under the No-rule filter, where an '
+              'unaddressed sequence exists to advance through');
       expect(source.contains('_quickActionThenAdvance'), isTrue,
           reason: 'the widget MOVED; it must not be reimplemented, or "next '
               'unaddressed item" drifts from every other button (F136)');
+      expect(source.contains('onSkip: (position, size) => _skipToNext('),
+          isTrue,
+          reason: 'Skip still routes through the shared auto-advance');
     });
 
-    test('the domain is BOUNDED so the overflow did not just relocate', () {
-      // The date/domain row had no Expanded. Dropping a button into it
-      // unbounded would move the overflow rather than fix it -- the same shape
-      // as the ~81px AppBar overflow F172 hit at 411px.
-      final domainIdx = source.indexOf('displaySenderDomain,');
-      expect(domainIdx, greaterThan(-1));
-      final before = source.substring(domainIdx - 400, domainIdx);
-      expect(before.contains('Flexible('), isTrue,
-          reason: 'a long domain must yield rather than break the row');
+    test('the second item of the date row is BOUNDED', () {
+      // The date row had no Expanded. Dropping a button into it unbounded
+      // would move the overflow rather than fix it -- the same shape as the
+      // ~81px AppBar overflow F172 hit at 411px. F283 R-6: the item is now the
+      // account email (it was the sender domain).
+      expect(
+          RegExp(r'Flexible\(\s*child: Text\(\s*accountEmail,').hasMatch(popup),
+          isTrue,
+          reason: 'a long account email must yield rather than break the row');
     });
   });
 
   group('F230: sizes come from the theme, not from literals', () {
     test('the subtitle no longer hardcodes fontSize 12', () {
       expect(
-          source.contains('style: TextStyle(\n'
-              '                                    fontSize: 12, color: Colors.grey[600]),'),
+          RegExp(r'fontSize: 12,\s*color: Colors\.grey\[600\]\)').hasMatch(popup),
           isFalse);
-      expect(source.contains('.textTheme\n'
-              '                                    .bodyMedium'), isTrue,
+      expect(RegExp(r'\.textTheme\s*\.bodyMedium').hasMatch(popup), isTrue,
           reason: 'theme styles honour the OS font-size accessibility setting, '
               'which a hardcoded number cannot (ADR-0037)');
     });
 
-    test('the date and domain no longer hardcode fontSize 11', () {
+    test('the date and the account no longer hardcode fontSize 11', () {
       expect(
-          source.contains('fontSize: 11,\n'
-              '                                        color: Colors.grey.shade600'),
+          RegExp(r'fontSize: 11,\s*color: Colors\.grey\.shade600')
+              .hasMatch(popup),
           isFalse,
           reason: 'this was the smallest text on the sheet');
       // F230 moved them to the theme (bodySmall); F216 (Sprint 75) then
       // matched them to the subtitle line beside them (bodyMedium). What
       // F230 guards is "a theme style, not a literal"; the rendered size is
       // pinned by f216_supporting_text_size_test.
-      expect(source.contains('textTheme.bodyMedium'), isTrue);
+      expect(popup.contains('bodyMedium'), isTrue);
     });
 
     test('the change is UNCONDITIONAL -- no platform branch', () {
@@ -119,11 +126,9 @@ void main() {
       // "It would be OK if it was bigger on Windows in order to match Android
       // and not cause an unnecessary exception." One shared change, no
       // ADR-0042 exception to maintain.
-      final subtitleIdx = source.indexOf('bodyMedium');
-      final window = source.substring(subtitleIdx - 600, subtitleIdx);
-      expect(window.contains('Platform.isAndroid'), isFalse,
-          reason: 'a platform branch here would be exactly the unnecessary '
-              'exception Harold declined');
+      expect(popup.contains('Platform.isAndroid'), isFalse,
+          reason: 'a platform branch in the shared pop-up would be exactly '
+              'the unnecessary exception Harold declined');
     });
   });
 

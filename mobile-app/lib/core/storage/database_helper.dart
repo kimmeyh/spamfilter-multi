@@ -1,9 +1,11 @@
 import 'dart:convert';
 import 'package:sqflite/sqflite.dart';
 import 'package:logger/logger.dart';
+import 'package:path/path.dart' as p;
 
 import '../../adapters/storage/app_paths.dart';
 import '../services/pattern_compiler.dart';
+import 'content_history_store.dart';
 
 /// Minimal database interface for rule storage operations
 abstract class RuleDatabaseProvider {
@@ -92,6 +94,17 @@ class DatabaseHelper implements RuleDatabaseProvider {
   /// Set AppPaths instance (must call before first database access)
   void setAppPaths(AppPaths appPaths) {
     _appPaths = appPaths;
+  }
+
+  /// R76-4 (Sprint 78, ADR-0047 item 7): the dev-only content history's own
+  /// database file, beside `spam_filter.db` in the same app data folder (so
+  /// DEV and PROD stay apart, ADR-0035). Null until [setAppPaths] has run --
+  /// every entry point that opens this database (UI start, both background
+  /// workers) sets the paths first, so the history needs no setup of its own.
+  String? get contentHistoryDatabasePath {
+    final paths = _appPaths;
+    if (paths == null) return null;
+    return p.join(p.dirname(paths.databaseFilePath), 'content_history.db');
   }
 
   /// Get or initialize the database
@@ -1523,9 +1536,14 @@ class DatabaseHelper implements RuleDatabaseProvider {
     }
   }
 
-  /// Clear all data (for testing)
+  /// Clear all data (Settings > Delete All Data, and tests).
   Future<void> deleteAllData() async {
     final db = await database;
+    // R76-4 R7 (Sprint 78): every table holding user or account data, so
+    // nothing is left behind (prevention: `r76_4_content_history_policy_test`,
+    // group "R7", fails when a table is added and not listed here or
+    // allow-listed there).
+    await db.delete('unmatched_emails');
     await db.delete('email_actions');
     await db.delete('scan_results');
     await db.delete('rules');
@@ -1533,7 +1551,24 @@ class DatabaseHelper implements RuleDatabaseProvider {
     await db.delete('app_settings');
     await db.delete('account_settings');
     await db.delete('background_scan_schedule');
+    // No catch (7.7.1 silent-failure M-4): these tables are always created
+    // (`_createTables` and its migrations), so a failure is real and must
+    // reach the caller instead of reporting "all data deleted".
+    for (final table in [
+      'background_scan_log',
+      'account_folder_cursors',
+      'auth_rate_limit',
+    ]) {
+      await db.delete(table);
+    }
     await db.delete('accounts');
+    // R76-4 (ADR-0047 item 9): the dev-only content history's own file.
+    // Logged; telling the user is backlog (7.7.1 silent-failure M-4, UI half).
+    try {
+      await ContentHistoryStore.instance.deleteAll();
+    } catch (e) {
+      _logger.w('Content history delete failed: $e');
+    }
     _logger.w('All database data deleted');
   }
 
