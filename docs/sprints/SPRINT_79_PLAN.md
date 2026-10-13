@@ -186,10 +186,16 @@ route; F277 and F286 set at the low end per the Sprint 78 calibration.
 AOL scans that stop mid-run.
 
 **Requirements**:
-- R-1: Fold steps 8-11 (re-presented in full at Manual Validation, never by reference): F253 AC-5 (a scan with
-  `trigger=notification`; needs Notification access for the AOL app), the MV74-1 reboot half (worker lines before the
-  app-start line after a restart with the app unopened), the export header row on a new daily `.data.csv`, and a
-  Results rule update for an Inbox safe sender reporting no failure.
+- R-1: Fold steps 8-11 (re-presented in full, never by reference). Authoritative source: `SPRINT_77_PLAN.md:421-431`
+  (step 8 interval note and Doze lines, step 9 per-account new mail = F253 AC-5 `trigger=notification`, step 10 Gmail
+  custom label F258, step 11 reboot half #428 + Google account state F250 + errors per day) PLUS the master-plan
+  MV76-1 bullets (export header row on a new daily `.data.csv`; a Results rule update for an Inbox safe sender reports
+  no failure). Corrected at approval: the draft listed only part of this union.
+  - Export header row: **PASS (2026-10-13)** -- `background_scan_kimmeyharold_at_icloud_com_2026-10-13.data.csv`,
+    first written 00:40:07 as a new daily file, line 1 is the column names (`Scan Date and Time ... Phishing
+    SPF/DKIM/DMARC`); same for `live_scan_kimmeyharold_at_aol_com_2026-10-13.data.csv` (first row 14:29:40, 0.19.0).
+  - Step 8 Doze lines: evidenced on 0.19.0 (`trigger=doze-alarm` and MV-7 skip lines, health check "No flags"); the
+    Background note screenshot is still needed.
 - R-2: F205 / MV74-3 (#433): classify every scan error from one day of normal use per account, or record zero. 0.19.0
   so far: zero errors in 18 background scans (14:16-15:14).
 - R-3: Boot-time `main()` trace: name what started the engine at 09:14:39 on 2026-10-07 with no app opened, and whether
