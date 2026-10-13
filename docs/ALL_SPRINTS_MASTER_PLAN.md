@@ -825,6 +825,23 @@ _(No active Core App candidates -- F96 shipped in Sprint 43.)_
 - Scope: replace the six steps, empty `knownPending`, and let the runner's locked-PC gate pass on a locked PC.
 - Depends on: an upstream WinWright change.
 
+**F291. WinWright sweep on a locked PC counts as complete (~45-75m) Priority 4 -- TARGET SPRINT 79**
+- Phase: Testing
+- Platform: Windows Desktop (test tooling and sprint gates only)
+- Origin: Harold, Sprint 78 7.7.1 (2026-10-13): *"if the Windows screen is locked, run all tests except those needing
+  the screen to be unlocked and consider all of the winwright test sweep complete as it is more of a verification
+  against regression and the mouse clicks are not required every time the winwright tests are completed."*
+- Today: the runner refuses to start on a locked workstation (Sprint 73), and since F284 skipped steps fail a script;
+  close-out check 3e then blocks until an unlocked sweep at the latest `lib/ui` commit.
+- Scope: on a locked PC the runner runs every cursor-free step, SKIPS the steps that need the input desktop (today the
+  six F289 steps: four `ww_click` label probes in `test_f124_rule_labels.json`, two `ww_hover` in
+  `test_s75_new_controls.json`), names them in the summary, and reports the sweep complete; the plan's sweep record
+  says "locked: N mouse steps skipped"; check 3e and the F193 gate accept that record. A skipped step for any OTHER
+  reason still fails the script (the F284 rule).
+- Guard (proposed, Harold to confirm): run the mouse steps unlocked at least once per Store release, so the six
+  checks are not silently retired.
+- Related: F289 removes the mouse steps entirely when WinWright allows it.
+
 **F290. Tell the user when content-history rows could not be deleted (~30-45m) Priority 45**
 - Phase: Core App Quality
 - Platform: All (dev builds only -- the content history exists only there, ADR-0047)
