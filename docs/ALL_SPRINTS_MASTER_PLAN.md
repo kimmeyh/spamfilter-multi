@@ -855,6 +855,10 @@ _(No active Core App candidates -- F96 shipped in Sprint 43.)_
   - Each failing file passes alone (f239 6/6; f232 + results_display_compact 6/6). None runs the 7.7.1-changed code.
 - Conditions during the failures: the Windows DEV app running, four DEV accounts scanning in the background every 5
   minutes (Task Scheduler launches of `dist\dev`), the Dart analysis server running.
+- **Lead (2026-10-13 12:45, unverified for the suite)**: the 0.19.0 AAB build an hour later died of NATIVE memory
+  exhaustion (`hs_err_pid86688.log`), with system commit at 86 of 94 GB (57 claude processes ~27 GB, 70 chrome
+  ~12 GB, 88 node ~5.5 GB). A test process that cannot allocate would also die at load ("Connection closed before
+  test suite loaded") or mid-run. Settle by watching commit charge during a full run.
 - Scope: reproduce (N full runs on HEAD and on HEAD~ under the same load, then with DEV background scanning off),
   name the mechanism (a flutter_tester crash, a timeout, a shared temp/DB file, memory), fix or contain it. Not
   "flaky" -- a mechanism or "cause unknown" plus what would settle it.

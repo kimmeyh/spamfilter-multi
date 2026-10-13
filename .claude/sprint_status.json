@@ -1,12 +1,12 @@
 {
     "_description": "Sprint status file that persists across context compaction. Update after each phase/sub-phase completion.",
-    "_last_updated": "2026-10-13T17:10:00Z",
+    "_last_updated": "2026-10-13T17:55:00Z",
     "_usage": "Read this file after context compaction to restore sprint approval state and progress.",
     "_staleness_note": "This file had drifted 15 sprints (last updated at Sprint 35, 2026-04-19) before being refreshed at Sprint 50 close-out. It is a Phase 7.7 checklist item -- update it at every sprint close-out, not opportunistically.",
     "current_sprint": {
         "number": 79,
         "branch": "feature/20261013_Sprint_79",
-        "status": "Phase 8.2 Backlog Refinement pass 1 -- Sprint 78 cycle: PR #470 merged to develop and main (#479); Sprint 79 branch opened; next 8.3 store builds (0.19.0+16 MSIX and AAB), then 8.4 scope selection",
+        "status": "Phase 8.3 Microsoft Store release -- Sprint 78 cycle: pass 1 done; 0.19.0.0 MSIX BUILT + VERIFIED (self-test PASS, awaiting Harold's upload); 0.19.0+16 AAB build FAILED on system memory (commit 86/94 GB), retry after memory is freed; 8.4 scope-selection slate presented",
         "plan_approved": false,
         "pr_number": null,
         "version": "0.19.0+16 (Sprint 78); the Sprint 79 bump happens at its plan approval"
@@ -43,7 +43,8 @@
         "status_0_16_0": "SUBMITTED / ROLLOUT IN PROCESS on BOTH stores (Harold, 2026-09-24, reported between 12:17am and 8:39am ET). NOT yet observed live on either. Built + verified 2026-09-24: MSIX 0.16.0.0 (prod worktree bf005f3, self-test 6/6 PASS, 17.5 MB) and AAB versionCode 7 / 0.16.0 (67.0 MB). Step 7 records (STORE_VERSION_STATUS.md live rows) wait for a direct console observation.",
         "status_0_17_0": "LIVE 2026-10-04 ~11:20pm ET on BOTH stores (Harold). Microsoft Store: submitted ~10:40pm, installed build shows no [DEV] and Version 0.17.0; public API lagged. Google Play closed testing (Alpha): versionCode 8, device-verified on the Fold (Version 0.17.0). Open: Step 4.2 Gmail sign-in URL on the Store build; CHANGELOG has no release headings since 0.14.0 (not done this release either).",
         "status_0_17_6": "SUBMITTED to BOTH stores 2026-10-06 (Harold screenshots), NOT yet live. Microsoft Store: Submission 31, \"Update in certification\", stage Pre-processing (last modified 10/07/2026); Store presence still Submission 30 (0.17.0). Google Play: Closed testing - Alpha, \"14 (0.17.6) Start full rollout\" in Changes in review, quick checks running (up to 12 min); managed publishing off. Artifacts: MSIX D:\\Data\\Harold\\github\\spamfilter-multi-prod\\mobile-app\\build\\windows\\x64\\runner\\Release\\my_email_spam_filter.msix (17.6 MB, self-test PASS); AAB D:\\Data\\Harold\\github\\spamfilter-multi\\mobile-app\\dist\\android-0.17.6+14\\app-prod-release.aab (67.3 MB). STORE_VERSION_STATUS Live rows unchanged until observed live; \"Last uploaded to Play\" -> 0.17.6 (14) is updated WITH the Sprint 77 pubspec bump (IMP-2).",
-        "status_0_18_0": "LIVE on BOTH (Harold, 2026-10-10). Fold device-verified (Version 0.18.0 screenshots, log env=prod v0.18.0). Windows: installed Store build shows Version 0.18.0, no [DEV]; Partner Center page not observed. STORE_VERSION_STATUS updated with the 0.19.0+16 bump."
+        "status_0_18_0": "LIVE on BOTH (Harold, 2026-10-10). Fold device-verified (Version 0.18.0 screenshots, log env=prod v0.18.0). Windows: installed Store build shows Version 0.18.0, no [DEV]; Partner Center page not observed. STORE_VERSION_STATUS updated with the 0.19.0+16 bump.",
+        "status_0_19_0": "MSIX 0.19.0.0 built + verified 2026-10-13 from prod worktree main 757d6a0 (self-test PASS 6/6, manifest 0.19.0.0, 17.7 MB), not uploaded. AAB 0.19.0+16 not built: Gradle daemon native OOM (hs_err_pid86688.log). See docs/STORE_VERSION_STATUS.md."
     },
     "environment_notes": [
         "RESOLVED 2026-07-29 (verified 07-30): the Store fault was an Acronis file-system filter blocking AppXSvc cleanup, fixed by an Acronis Protection exclusion. 23h uptime with ZERO Id-493 events vs a 176-file/6-min baseline; Store client self-updated 22606.1401.6.0 -> .10.0 (requires a working deployment pipeline). Filter drivers remain loaded -- backup protection was NOT disabled. See ALL_SPRINTS_MASTER_PLAN ENV-1 for the picker gotcha if it recurs.",
@@ -52,9 +53,9 @@
     ],
     "blocking_issues": [],
     "next_actions": [
-        "8.3: Microsoft Store 0.19.0 MSIX from the prod worktree (pull main first, STORE_RELEASE_PROCESS.md) and the Google Play AAB; Harold uploads.",
-        "8.4: Backlog Refinement pass 2 -- Harold selects Sprint 79 scope (presentation per BACKLOG_REFINEMENT.md).",
-        "8.5: Phase 3 planning for Sprint 79."
+        "Harold: upload the 0.19.0.0 MSIX (path in STORE_VERSION_STATUS.md) with RELEASE_NOTES_0.19.0_windows.md; Step 4.2 Gmail sign-in check.",
+        "AAB 0.19.0+16: retry build-with-secrets.ps1 -BuildType release -Output aab once system commit has headroom; verify; Harold uploads to closed testing.",
+        "8.4: Harold selects Sprint 79 scope from the presented slate; then Phase 3 planning."
     ],
     "next_sprint_targeted": {
         "number": 79,
