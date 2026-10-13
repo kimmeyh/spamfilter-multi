@@ -416,11 +416,17 @@ class ScanResultStore {
     try {
       final db = await _databaseHelper.database;
 
+      // Sprint 78 MV-6: record WHEN the scan ended. Without completed_at,
+      // Scan History printed "In progress" under every failed scan (the Fold's
+      // Gmail sign-in skips, 2026-10-12). Every other reader of completed_at
+      // also filters on status = 'completed', and the retention purge only
+      // switches this row from its started_at clause to its completed_at one.
       final result = await db.update(
         'scan_results',
         {
           'status': 'error',
           'error_message': errorMessage,
+          'completed_at': DateTime.now().millisecondsSinceEpoch,
         },
         where: 'id = ?',
         whereArgs: [scanResultId],

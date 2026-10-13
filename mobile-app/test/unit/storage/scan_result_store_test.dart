@@ -493,6 +493,11 @@ void main() {
       final retrieved = await scanResultStore.getScanResultById(scanId);
       expect(retrieved!.status, 'error');
       expect(retrieved.errorMessage, errorMsg);
+      // Sprint 78 MV-6: a failed scan has ended, so it carries an end time;
+      // without one Scan History showed "In progress" under it.
+      // NOT caught here: the card text itself (scan_history_screen.dart reads
+      // completedAt; that logic is unchanged).
+      expect(retrieved.completedAt, isNotNull);
     });
   });
 
