@@ -779,6 +779,8 @@ Windows DEV build (0.19.0 [DEV]); every step read-only for mail. Android parity 
     scan did not find. ADR-0045 amendment (Class 1, approved). When: not yet answered.
   - MV-6 Gmail sign-in skip leaves the scan row "In progress" (Fold screenshot 2026-10-13 00:12) although
     `background_scan_core.dart:435` says the row closes as `error`; cause unknown. Fix in Sprint 78 (Harold).
+- **F277 started on 0.18.0 (Harold, 2026-10-13 ~00:55: "setup and in process")**: these runs predate the MV-7
+  double-scan fix, so they are the before-the-fix baseline; Runs A and B repeat on the 0.19.0 closed-test build.
 - **MV-5 WITHDRAWN (Harold, 2026-10-13: "Retention alone")**: stale Review rows stay until the Settings > General
   "Unmatched Emails Retention" (90 days after last seen) removes them. No code change; ADR-0045 unchanged.
 - **MV-7 (Harold: fix in Sprint 78)**: the Doze alarm skips an account scanned within two-thirds of its interval
