@@ -779,8 +779,16 @@ Windows DEV build (0.19.0 [DEV]); every step read-only for mail. Android parity 
     scan did not find. ADR-0045 amendment (Class 1, approved). When: not yet answered.
   - MV-6 Gmail sign-in skip leaves the scan row "In progress" (Fold screenshot 2026-10-13 00:12) although
     `background_scan_core.dart:435` says the row closes as `error`; cause unknown. Fix in Sprint 78 (Harold).
-- **Open**: MV-5 timing; Fold finding "AOL scanned about twice per interval" (periodic ~16 min and doze-alarm ~18
-  min both scan: 558 scans in 3.4 days) -- fix / backlog / no change; start-now vs wait.
+- **MV-5 WITHDRAWN (Harold, 2026-10-13: "Retention alone")**: stale Review rows stay until the Settings > General
+  "Unmatched Emails Retention" (90 days after last seen) removes them. No code change; ADR-0045 unchanged.
+- **MV-7 (Harold: fix in Sprint 78)**: the Doze alarm skips an account scanned within two-thirds of its interval
+  (ae35879). Same overlap R77-BAT-2 asked about.
+- **Done**: records c23d2d5; MV-1/2/4 fac4c68; MV-3 b980f3d (cause: every quick action reloads the rules and the app
+  root replaced the home screen while loading); MV-6 dc9d214 (failed scans had no completed_at); MV-7 ae35879. Each
+  with tests, all mutations KILLED. Harold: run the full suite and rebuild only once all fixes are complete.
+- **Fold (2026-10-13 00:44 pull)**: Gmail signed in again 00:34 (browser fallback); iCloud Test Background Scan
+  00:40 completed, INBOX only, 0 found; no scheduled iCloud scans yet. AOL "Scan when new mail arrives" is on but
+  shows "Needs Notification access" (Step 9 blocked until granted).
 - **Fold evidence 0.18.0 (Oct 9-13 logs)**: steps 8, 9, 10, 11 and F277 not yet done; iCloud has no background
   scans (one manual scan Oct 9); Gmail `invalid_grant` since 2026-10-12 17:27 (needs Sign In Again); errors/day:
   AOL 0/5/0/2 (DNS, server busy, timeouts), Gmail 8 on Oct 12 (sign-in), Yahoo 0.
