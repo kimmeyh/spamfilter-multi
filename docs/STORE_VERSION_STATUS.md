@@ -31,6 +31,11 @@ Partner Center before saying anything about the Store version.
 
 Record a submission only after seeing it in each console.
 
+**SUBMITTED to BOTH stores, certification in process (Harold, 2026-10-13 ~13:30: "both uploads and re-certifications
+in process")** -- Harold's report; the consoles were not observed by Claude, and neither build is yet seen live.
+Leave the Live rows and "Last uploaded to Play" unchanged until then; the latter moves to versionCode 16 in the same
+commit as the Sprint 79 version bump.
+
 - **MSIX 0.19.0.0 -- BUILT + VERIFIED, not yet uploaded**: prod worktree pulled to `main` 757d6a0 (it was 51 commits
   behind); `msix_config_test` 12/12; `msix:create` log shows `--dart-define=APP_ENV=prod
   --dart-define-from-file=secrets.prod.json`; `--release-self-test --expected-version=0.19.0` RESULT: PASS (6/6);

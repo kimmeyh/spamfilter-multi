@@ -1,12 +1,12 @@
 {
     "_description": "Sprint status file that persists across context compaction. Update after each phase/sub-phase completion.",
-    "_last_updated": "2026-10-13T18:25:00Z",
+    "_last_updated": "2026-10-13T18:35:00Z",
     "_usage": "Read this file after context compaction to restore sprint approval state and progress.",
     "_staleness_note": "This file had drifted 15 sprints (last updated at Sprint 35, 2026-04-19) before being refreshed at Sprint 50 close-out. It is a Phase 7.7 checklist item -- update it at every sprint close-out, not opportunistically.",
     "current_sprint": {
         "number": 79,
         "branch": "feature/20261013_Sprint_79",
-        "status": "Phase 8.3 Microsoft Store release -- Sprint 78 cycle: 0.19.0.0 MSIX and 0.19.0+16 AAB BUILT + VERIFIED, awaiting Harold's uploads; 8.4 scope selection (Q2 Sprint 79 scope, Q3 pre-iOS cards) open",
+        "status": "Phase 8.4 Backlog Refinement pass 2 -- Sprint 78 cycle: 0.19.0 submitted to the Microsoft Store and Google Play closed testing, certification in process (Harold 2026-10-13); awaiting Harold's scope selection (Q2) and the pre-iOS cards decision (Q3)",
         "plan_approved": false,
         "pr_number": null,
         "version": "0.19.0+16 (Sprint 78); the Sprint 79 bump happens at its plan approval"
@@ -44,7 +44,7 @@
         "status_0_17_0": "LIVE 2026-10-04 ~11:20pm ET on BOTH stores (Harold). Microsoft Store: submitted ~10:40pm, installed build shows no [DEV] and Version 0.17.0; public API lagged. Google Play closed testing (Alpha): versionCode 8, device-verified on the Fold (Version 0.17.0). Open: Step 4.2 Gmail sign-in URL on the Store build; CHANGELOG has no release headings since 0.14.0 (not done this release either).",
         "status_0_17_6": "SUBMITTED to BOTH stores 2026-10-06 (Harold screenshots), NOT yet live. Microsoft Store: Submission 31, \"Update in certification\", stage Pre-processing (last modified 10/07/2026); Store presence still Submission 30 (0.17.0). Google Play: Closed testing - Alpha, \"14 (0.17.6) Start full rollout\" in Changes in review, quick checks running (up to 12 min); managed publishing off. Artifacts: MSIX D:\\Data\\Harold\\github\\spamfilter-multi-prod\\mobile-app\\build\\windows\\x64\\runner\\Release\\my_email_spam_filter.msix (17.6 MB, self-test PASS); AAB D:\\Data\\Harold\\github\\spamfilter-multi\\mobile-app\\dist\\android-0.17.6+14\\app-prod-release.aab (67.3 MB). STORE_VERSION_STATUS Live rows unchanged until observed live; \"Last uploaded to Play\" -> 0.17.6 (14) is updated WITH the Sprint 77 pubspec bump (IMP-2).",
         "status_0_18_0": "LIVE on BOTH (Harold, 2026-10-10). Fold device-verified (Version 0.18.0 screenshots, log env=prod v0.18.0). Windows: installed Store build shows Version 0.18.0, no [DEV]; Partner Center page not observed. STORE_VERSION_STATUS updated with the 0.19.0+16 bump.",
-        "status_0_19_0": "MSIX 0.19.0.0 and AAB 0.19.0 (versionCode 16) built + verified 2026-10-13, not uploaded. See docs/STORE_VERSION_STATUS.md."
+        "status_0_19_0": "MSIX 0.19.0.0 and AAB 0.19.0 (versionCode 16) SUBMITTED 2026-10-13, certification in process (Harold's report; not observed live). See docs/STORE_VERSION_STATUS.md."
     },
     "environment_notes": [
         "RESOLVED 2026-07-29 (verified 07-30): the Store fault was an Acronis file-system filter blocking AppXSvc cleanup, fixed by an Acronis Protection exclusion. 23h uptime with ZERO Id-493 events vs a 176-file/6-min baseline; Store client self-updated 22606.1401.6.0 -> .10.0 (requires a working deployment pipeline). Filter drivers remain loaded -- backup protection was NOT disabled. See ALL_SPRINTS_MASTER_PLAN ENV-1 for the picker gotcha if it recurs.",
@@ -53,9 +53,9 @@
     ],
     "blocking_issues": [],
     "next_actions": [
-        "Harold: upload the 0.19.0.0 MSIX (path in STORE_VERSION_STATUS.md) with RELEASE_NOTES_0.19.0_windows.md; Step 4.2 Gmail sign-in check.",
-        "Harold: upload the 0.19.0+16 AAB to Play closed testing with RELEASE_NOTES_0.19.0_play.md; then update 'Last uploaded to Play' to 16.",
-        "8.4: Harold selects Sprint 79 scope from the presented slate; then Phase 3 planning."
+        "8.4: Harold selects Sprint 79 scope (Q2) and decides the two proposed pre-iOS cards (Q3).",
+        "8.5: Phase 3 planning for Sprint 79; at plan approval bump to 0.20.0 (or 0.19.1) and move 'Last uploaded to Play' to versionCode 16.",
+        "After certification: confirm 0.19.0 live on both stores and update the Live rows in STORE_VERSION_STATUS.md."
     ],
     "next_sprint_targeted": {
         "number": 79,
