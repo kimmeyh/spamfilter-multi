@@ -1,6 +1,6 @@
 # ADR-0047: Content history -- a dev-only record of the developer's own mail
 
-**Status**: Proposed (Harold accepts before the capture code merges -- Sprint 78 Task 7 DoD)
+**Status**: Accepted (Harold, Sprint 78 Manual Validation, 2026-10-13)
 **Date**: 2026-10-10
 **Deciders**: Harold (Chief Architect / Product Owner)
 **Sprint**: 78 (R76-4, Issue #476)

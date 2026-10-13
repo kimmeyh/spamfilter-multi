@@ -882,6 +882,19 @@ _(No active Core App candidates -- F96 shipped in Sprint 43.)_
 - Depends on: None. The PHASE B default-branch switch is an outward-facing repository setting; it runs only after
   Harold approves the PHASE A list.
 
+**F289. WinWright default sweep with no mouse steps (~30-60m) Priority 25**
+- Phase: Testing
+- Platform: Windows Desktop (test tooling only)
+- Origin: Sprint 78 F284 AC-1 finding, accepted by Harold at Manual Validation 2026-10-13. Six steps in the default
+  sweep still use the mouse, so the PC must stay unlocked while it runs: `test_f124_rule_labels.json` has four
+  `ww_click` label probes (static Text nodes have no InvokePattern, and the script runner skips `ww_get_value`), and
+  `test_s75_new_controls.json` has two `ww_hover` steps. `test/policy/winwright_script_strings_test.dart` pins them
+  exactly (`knownPending`).
+- Trigger: a WinWright release whose script runner replays a cursor-free read step (for example `ww_get_value` or
+  `ww_assert`). Check the WinWright changelog at each sprint's 5.1.5 sweep.
+- Scope: replace the six steps, empty `knownPending`, and let the runner's locked-PC gate pass on a locked PC.
+- Depends on: an upstream WinWright change.
+
 **F111. Periodic Windows App Store upload readiness verification (~110-175m per review) Priority HOLD**
 - Phase: Release Readiness (reusable template)
 - Platform: Windows Desktop
