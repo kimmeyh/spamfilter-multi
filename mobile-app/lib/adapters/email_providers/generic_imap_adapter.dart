@@ -2053,7 +2053,9 @@ class GenericIMAPAdapter with BatchOperationsMixin implements SpamFilterPlatform
   /// ([fetchFullBody]) is unchanged.
   @override
   Future<String?> fetchContentText(EmailMessage message) async {
-    final mime = await _fetchMimeMessage(message, 'fetchContentText');
+    // A failed fetch THROWS (7.7.1 silent-failure M-3): it is not "no text".
+    final mime = await _fetchMimeMessage(message, 'fetchContentText',
+        throwOnFailure: true);
     if (mime == null) return null;
     final plain = mime.decodeTextPlainPart();
     if (plain != null && plain.trim().isNotEmpty) return plain;
@@ -2063,15 +2065,27 @@ class GenericIMAPAdapter with BatchOperationsMixin implements SpamFilterPlatform
   }
 
   /// One message's full MIME source, or null (logged) when it cannot be
-  /// fetched. Shared by [fetchFullBody] and [fetchContentText].
-  Future<MimeMessage?> _fetchMimeMessage(
-      EmailMessage message, String caller) async {
-    if (_imapClient == null || message.id.isEmpty) return null;
+  /// fetched. Shared by [fetchFullBody] and [fetchContentText]. With
+  /// [throwOnFailure] every failure throws [ContentFetchException] instead of
+  /// returning null (the content history must not store a failure as "no
+  /// text"); the rule path keeps the null fallback.
+  Future<MimeMessage?> _fetchMimeMessage(EmailMessage message, String caller,
+      {bool throwOnFailure = false}) async {
+    MimeMessage? fail(String why, [Object? e]) {
+      if (throwOnFailure) {
+        throw ContentFetchException('$caller uid ${message.id}: $why', e);
+      }
+      return null;
+    }
+
+    if (_imapClient == null || message.id.isEmpty) {
+      return fail('no IMAP session or empty id');
+    }
     final uid = int.tryParse(message.id);
     if (uid == null) {
       _logger.w('[IMAP] $caller: non-UID id "${message.id}" -- '
-          'returning header-only message');
-      return null;
+          'no body fetched');
+      return fail('non-UID id');
     }
     try {
       // Sprint 63 code review (M-1): this runs from evaluateBatch INSIDE the
@@ -2084,7 +2098,7 @@ class GenericIMAPAdapter with BatchOperationsMixin implements SpamFilterPlatform
       final selectedBefore = _currentMailbox;
       await _selectMailbox(message.folderName);
       if (selectedBefore != null && selectedBefore != _currentMailbox) {
-        _logger.w('[IMAP] fetchFullBody SWITCHED mailbox '
+        _logger.w('[IMAP] $caller SWITCHED mailbox '
             '"$selectedBefore" -> "$_currentMailbox" mid-batch -- '
             'the enclosing chunk loop\'s UID sequence may now be invalid '
             '(caller invariant broken; investigate before trusting results)');
@@ -2095,17 +2109,19 @@ class GenericIMAPAdapter with BatchOperationsMixin implements SpamFilterPlatform
       );
       if (fetchResult.messages.isEmpty) {
         _logger.w('[IMAP] $caller: uid $uid not found in '
-            '"${message.folderName}" -- returning header-only message');
-        return null;
+            '"${message.folderName}" -- no body fetched');
+        return fail('uid not found');
       }
       return fetchResult.messages.first;
+    } on ContentFetchException {
+      rethrow;
     } catch (e) {
-      // A failed body fetch must not fail the whole scan: evaluation falls
-      // back to the header-only record (its body rules simply cannot match),
-      // and the miss is visible in the log.
+      // A failed body fetch must not fail the whole scan: rule evaluation
+      // falls back to the header-only record (its body rules simply cannot
+      // match); the content history skips the email (caught by its caller).
       _logger.w('[IMAP] $caller FAILED for uid $uid in '
-          '"${message.folderName}": $e -- evaluating without body');
-      return null;
+          '"${message.folderName}": $e -- no body fetched');
+      return fail('fetch failed', e);
     }
   }
 

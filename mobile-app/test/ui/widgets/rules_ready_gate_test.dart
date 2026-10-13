@@ -35,6 +35,11 @@ class _FakeRules extends RuleSetProvider {
     _state = s;
     notifyListeners();
   }
+
+  int retries = 0;
+
+  @override
+  Future<void> initialize() async => retries++;
 }
 
 /// A home screen that counts how often it is created.
@@ -100,15 +105,33 @@ void main() {
         reason: 'the home screen must not be disposed and rebuilt');
   });
 
-  testWidgets('a later reload ERROR does not replace the home screen',
-      (tester) async {
+  testWidgets(
+      'a later reload ERROR keeps the SAME home screen and shows a banner '
+      'with Retry (7.7.1 H-1)', (tester) async {
     final rules = await _mount(tester);
     rules.set(RuleLoadingState.success);
     await tester.pump();
+    final createdAfterLoad = _Home.created;
+    expect(find.byKey(const Key('rules_reload_error_banner')), findsNothing);
+
     rules.set(RuleLoadingState.error);
     await tester.pump();
     expect(find.text('home'), findsOneWidget);
-    expect(find.text('Retry'), findsNothing);
+    expect(find.text('Loading spam filter rules...'), findsNothing);
+    expect(find.byKey(const Key('rules_reload_error_banner')), findsOneWidget,
+        reason: 'loadRules() swallows its error; without the banner a '
+            'failed reload is invisible and the old rules stay in use');
+
+    await tester.tap(find.text('Retry'));
+    await tester.pump();
+    expect(rules.retries, 1);
+
+    rules.set(RuleLoadingState.success);
+    await tester.pump();
+    expect(find.byKey(const Key('rules_reload_error_banner')), findsNothing);
+    expect(_Home.created, createdAfterLoad,
+        reason: 'showing and hiding the banner must not rebuild the home '
+            'screen (the MV-3 defect)');
   });
 
   testWidgets('a FIRST-load error still shows Retry', (tester) async {

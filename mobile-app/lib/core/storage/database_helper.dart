@@ -1536,12 +1536,13 @@ class DatabaseHelper implements RuleDatabaseProvider {
     }
   }
 
-  /// Clear all data (for testing)
+  /// Clear all data (Settings > Delete All Data, and tests).
   Future<void> deleteAllData() async {
     final db = await database;
     // R76-4 R7 (Sprint 78): every table holding user or account data, so
-    // nothing is left behind (prevention: `f283_r7_deletion_coverage_test`
-    // fails when a table is added and not listed here or allow-listed there).
+    // nothing is left behind (prevention: `r76_4_content_history_policy_test`,
+    // group "R7", fails when a table is added and not listed here or
+    // allow-listed there).
     await db.delete('unmatched_emails');
     await db.delete('email_actions');
     await db.delete('scan_results');
@@ -1550,19 +1551,19 @@ class DatabaseHelper implements RuleDatabaseProvider {
     await db.delete('app_settings');
     await db.delete('account_settings');
     await db.delete('background_scan_schedule');
+    // No catch (7.7.1 silent-failure M-4): these tables are always created
+    // (`_createTables` and its migrations), so a failure is real and must
+    // reach the caller instead of reporting "all data deleted".
     for (final table in [
       'background_scan_log',
       'account_folder_cursors',
       'auth_rate_limit',
     ]) {
-      try {
-        await db.delete(table);
-      } catch (_) {
-        // Table may not exist on an old schema; nothing to delete.
-      }
+      await db.delete(table);
     }
     await db.delete('accounts');
     // R76-4 (ADR-0047 item 9): the dev-only content history's own file.
+    // Logged; telling the user is backlog (7.7.1 silent-failure M-4, UI half).
     try {
       await ContentHistoryStore.instance.deleteAll();
     } catch (e) {

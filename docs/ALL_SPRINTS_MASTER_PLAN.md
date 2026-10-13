@@ -825,6 +825,18 @@ _(No active Core App candidates -- F96 shipped in Sprint 43.)_
 - Scope: replace the six steps, empty `knownPending`, and let the runner's locked-PC gate pass on a locked PC.
 - Depends on: an upstream WinWright change.
 
+**F290. Tell the user when content-history rows could not be deleted (~30-45m) Priority 45**
+- Phase: Core App Quality
+- Platform: All (dev builds only -- the content history exists only there, ADR-0047)
+- Origin: Sprint 78 7.7.1 silent-failure review M-4, UI half. The 7.7.1 fix removed the `catch (_)` blocks that hid
+  real table-delete failures (2 files). Reporting a failed content-history delete to the user needs 4 code files
+  (`data_deletion_service.dart`, `database_helper.dart`, `account_selection_screen.dart`, `settings_screen.dart`), over
+  the 7.7.1 size limit, so it is carded rather than done without asking.
+- Today: `deleteAccount` / `deleteAll` of the content history failing is logged only; the snackbar still reads
+  "Deleted <email>" or "All app data deleted".
+- Scope: `DeletionReport.contentHistoryDeleteFailed`; `deleteAllData` / `wipeAllData` return whether the history was
+  removed; both snackbars name the leftover. Tests on both paths.
+
 **F111. Periodic Windows App Store upload readiness verification (~110-175m per review) Priority HOLD**
 - Phase: Release Readiness (reusable template)
 - Platform: Windows Desktop

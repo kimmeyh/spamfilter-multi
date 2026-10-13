@@ -125,6 +125,8 @@ void main() {
       final src =
           File('lib/core/storage/database_helper.dart').readAsStringSync();
       final start = src.indexOf('Future<void> deleteAllData() async {');
+      expect(start, greaterThanOrEqualTo(0),
+          reason: 'deleteAllData signature moved -- update this anchor');
       final body = src.substring(start, src.indexOf('\n  }\n', start));
       final missing = <String>[];
       for (final t in await tables()) {

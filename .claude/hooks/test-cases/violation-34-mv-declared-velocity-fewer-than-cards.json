@@ -1,0 +1,1 @@
+{"session_id": "violation-34-mv-declared-velocity-fewer-than-cards", "cwd": "D:/Data/Harold/github/spamfilter-multi/.claude/hooks/test-cases/fixtures/s78h2-fewer-rows-than-cards", "hook_event_name": "Stop", "last_assistant_message": "All sprint tasks are complete and the build is green. Ready for Manual Validation.", "branch_override": "feature/20261014_Sprint_79"}

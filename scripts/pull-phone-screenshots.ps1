@@ -252,4 +252,7 @@ $diagLogs = @(Get-ChildItem -LiteralPath $Dest -Filter 'diag_*.log' -File -Error
 if ($diagLogs.Count -gt 0) {
     & (Join-Path $PSScriptRoot 'phone-log-health.ps1') -Path ($diagLogs | ForEach-Object { $_.FullName })
     'For one run: phone-log-health.ps1 -Path <log> -Since <start> -IntervalMinutes <n> -SingleAccount'
+} else {
+    # 7.7.1 silent-failure L-3: say so, or a skipped check reads as a clean one.
+    "--- background scan health: NOT checked -- no diag_*.log in the last $Days day(s) in $Dest ---"
 }

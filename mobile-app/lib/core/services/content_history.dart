@@ -149,18 +149,31 @@ class ContentHistoryCapture {
   /// Call once per batch BEFORE its messages are evaluated: one lookup of
   /// which identities are already stored.
   Future<void> beginBatch(List<EmailMessage> batch) async {
+    if (disabled) return;
     try {
       _known = await _store.knownIdentities(
           accountId, batch.map((m) => ContentHistory.identityHash(accountId, m)));
     } catch (e) {
+      // 7.7.1 silent-failure M-2: with the lookup broken (store locked,
+      // corrupt, path unset) every message would look NEW, pay a network body
+      // fetch, and then fail its insert on the same broken store. Stop
+      // capturing for the rest of this scan; logged once, here.
       _known = {};
-      await ContentHistory._logFailure('lookup', e);
+      disabled = true;
+      await ContentHistory._logFailure('lookup (capture off for this scan)', e);
     }
   }
 
+  /// True after a failed lookup: [record] does nothing for the rest of the
+  /// scan (the next scan tries again).
+  bool disabled = false;
+
   /// Records [message] with its evaluation [result]: a repeat sighting is an
-  /// update; a new email fetches its body once and is stored.
+  /// update; a new email fetches its body once and is stored. A body fetch
+  /// that FAILS ([ContentFetchException]) stores nothing, so the next scan
+  /// retries the email (7.7.1 silent-failure M-3).
   Future<void> record(EmailMessage message, EvaluationResult result) async {
+    if (disabled) return;
     try {
       final hash = ContentHistory.identityHash(accountId, message);
       final outcome = ContentHistory.outcomeLabel(result);

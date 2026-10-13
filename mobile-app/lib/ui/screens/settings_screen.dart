@@ -1667,8 +1667,9 @@ class _SettingsScreenState extends State<SettingsScreen> with SingleTickerProvid
         // UI), and is shown ONLY while this account's background scanning is
         // on -- this reverses F264's "shown even when off". It is the complete
         // rule on Android too: the new-mail switch scans nothing for an
-        // account whose background scanning is off (the worker skips it,
-        // `android_background_scan_worker.dart:205-216`), so it needs no rule
+        // account whose background scanning is off (the worker's
+        // `backgroundEnabled` check in `executeScan`,
+        // `android_background_scan_worker.dart`), so it needs no rule
         // of its own. Hiding never changes the saved value (plan F2 = 1); it
         // shows again when background scanning is turned back on. A change
         // saves the PER-ACCOUNT override (F98, ADR-0039) and reschedules

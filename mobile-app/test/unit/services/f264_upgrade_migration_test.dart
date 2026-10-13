@@ -16,6 +16,7 @@ import 'package:sqflite_common_ffi/sqflite_ffi.dart';
 
 import 'package:my_email_spam_filter/adapters/storage/app_paths.dart';
 import 'package:my_email_spam_filter/core/services/f264_upgrade_migration.dart';
+import 'package:my_email_spam_filter/core/services/scan_interval.dart';
 import 'package:my_email_spam_filter/core/storage/database_helper.dart';
 import 'package:my_email_spam_filter/core/storage/settings_store.dart';
 
@@ -199,7 +200,32 @@ void main() {
       expect(await m().runIfNeeded(), isTrue, reason: 'retried next start');
       expect(tried, ['a', 'b']);
       expect(await store.getRawAppSetting(BackgroundIntervalMigration.sentinelKey),
-          'true');
+          '$kIntervalRulesVersion');
+    });
+
+    // 7.7.1 code-review M-4. What this does NOT catch: a future rule change
+    // made WITHOUT bumping kIntervalRulesVersion.
+    test('a 0.18.0 install (marker "true") re-runs once for the 24-hour cap: '
+        '48 hours becomes 24 and is re-registered; then it is done', () async {
+      await store.setRawAppSetting(
+          BackgroundIntervalMigration.sentinelKey, 'true', 'bool');
+      await store.setAccountBackgroundEnabled('a', true);
+      await store.setAccountBackgroundFrequency('a', 48 * 60);
+      final registered = <String, int>{};
+      BackgroundIntervalMigration m() => BackgroundIntervalMigration(
+            settingsStore: store,
+            getAccountIds: () async => ['a'],
+            reschedule: (id, minutes) async {
+              registered[id] = minutes;
+              return true;
+            },
+          );
+      expect(await m().runIfNeeded(), isTrue);
+      expect(registered, {'a': 24 * 60});
+      expect(await store.getAccountBackgroundFrequency('a'), 24 * 60);
+      registered.clear();
+      expect(await m().runIfNeeded(), isFalse, reason: 'once per version');
+      expect(registered, isEmpty);
     });
   });
 

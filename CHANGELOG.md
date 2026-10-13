@@ -26,6 +26,16 @@ Format: `- **type**: Description (Issue #N)` where type is feat|fix|chore|docs
 
 ## [Unreleased]
 
+### 2026-10-13 (Sprint 78 final code reviews, PR #470)
+- **fix**: If the spam filter rules fail to reload after a change, a banner with Retry now says so and the rules loaded earlier stay in use; before, the failure was invisible
+- **fix**: Review No Rule Items drops rows that a rule made elsewhere (a saved Results screen, Settings > Rules) now covers, without tapping Refresh
+- **fix**: The "Sender failed authentication" warning for a safe sender now appears before the next email's pop-up opens, on Review No Rule Items and Results; it was hidden under the next pop-up
+- **fix**: On Windows, when the default export folder cannot be written (for example under Controlled Folder Access), exports fall back to the app's own AppData folder instead of failing again in Documents
+- **fix**: A background interval saved above 24 hours is converted to 24 hours and its schedule re-registered once on upgrade (Android kept the old schedule)
+- **fix**: Deleting an account or all data no longer hides a failed table delete
+- **chore**: Dev-only content history: a failed body fetch is retried on the next scan instead of stored as "no body"; a failed lookup stops capture for the rest of the scan
+- **test**: A policy gate fails when a code comment cites a test file that does not exist
+
 ### 2026-10-13 (Sprint 78 Manual Validation)
 - **fix**: The matched-text highlight on the Rule Test screen is readable in dark mode; its amber background is now opaque, so the dark text no longer sits on dark brown (Sprint 78 retro IMP-4)
 - **test**: The text-contrast policy gate now fails on hardcoded black text that has no opaque background of its own, the class of the Sprint 78 dark search text (Sprint 78 retro IMP-4)

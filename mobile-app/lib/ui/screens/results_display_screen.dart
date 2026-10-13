@@ -1876,15 +1876,27 @@ class _ResultsDisplayScreenState extends State<ResultsDisplayScreen> {
       itemKey: itemKey,
       anchorPosition: anchorPosition,
       anchorSize: anchorSize,
-      onQuickAction: (request, position, size) => _quickActionThenAdvance(
-        current: result,
-        anchorPosition: position,
-        anchorSize: size,
-        action: () => request.kind == QuickActionKind.safeSender
-            ? _addSafeSender(request.value, request.type, email: email)
-            : _createBlockRule(request.type, request.value, email: email),
-        coveredByAction: (other) => request.covers(other.email),
-      ),
+      onQuickAction: (request, position, size) async {
+        // 7.7.1 code-review M-5: the F96 RED warning is answered BEFORE the
+        // next pop-up opens. Inside the unawaited action it was pushed first
+        // and the next pop-up landed on top of it. Declined = nothing applied
+        // and nothing covered; the sequence moves on as before.
+        final isSafe = request.kind == QuickActionKind.safeSender;
+        final confirmed = !isSafe || await _confirmRedSafeSender(email);
+        if (!mounted) return;
+        _quickActionThenAdvance(
+          current: result,
+          anchorPosition: position,
+          anchorSize: size,
+          action: () => isSafe
+              ? (confirmed
+                  ? _addSafeSender(request.value, request.type,
+                      email: email, redChecked: true)
+                  : Future<void>.value())
+              : _createBlockRule(request.type, request.value, email: email),
+          coveredByAction: (other) => confirmed && request.covers(other.email),
+        );
+      },
       onSkip: (position, size) => _skipToNext(
         result: result,
         anchorPosition: position,
@@ -3172,39 +3184,37 @@ class _ResultsDisplayScreenState extends State<ResultsDisplayScreen> {
     );
   }
 
+  /// F96 (Sprint 43): on the Scan History reload path the source email is
+  /// reconstructed from the database, so we re-hydrate the SPF/DKIM/DMARC
+  /// classification captured at scan time (authClassificationOverride) rather
+  /// than parsing the now-absent Authentication-Results headers. When that
+  /// snapshot is RED (a confident spoof signal), warn before whitelisting --
+  /// matching the quick-add screen's behavior. This closes the F89 gap where
+  /// historical adds could never surface the warning. Older rows (pre-v8) and
+  /// GREEN/YELLOW/GREY snapshots do not gate the add. Returns false when the
+  /// user cancels (do not whitelist).
+  Future<bool> _confirmRedSafeSender(EmailMessage? email) async {
+    if (email == null) return true;
+    final classification = AuthResultsParser.classificationFromName(
+        email.authClassificationOverride);
+    if (classification != AuthClassification.red) return true;
+    return AuthWarningDialog.showSafeSenderWarning(
+      context,
+      senderEmail: PatternNormalization.normalizeFromHeader(email.from),
+      authResult: AuthResultsParser.syntheticResultFor(AuthClassification.red),
+    );
+  }
+
   /// Add sender to safe senders list
   /// Types: 'exact' (email), 'exactDomain' (@subdomain.domain.com), 'entireDomain' (@*.domain.com)
   Future<void> _addSafeSender(String value, String type,
-      {EmailMessage? email}) async {
+      {EmailMessage? email, bool redChecked = false}) async {
     final ruleProvider = Provider.of<RuleSetProvider>(context, listen: false);
     final logger = Logger();
 
-    // F96 (Sprint 43): on the Scan History reload path the source email is
-    // reconstructed from the database, so we re-hydrate the SPF/DKIM/DMARC
-    // classification captured at scan time (authClassificationOverride) rather
-    // than parsing the now-absent Authentication-Results headers. When that
-    // snapshot is RED (a confident spoof signal), warn before whitelisting --
-    // matching the quick-add screen's behavior. This closes the F89 gap where
-    // historical adds could never surface the warning. Older rows (pre-v8) and
-    // GREEN/YELLOW/GREY snapshots do not gate the add.
-    if (email != null) {
-      final classification = AuthResultsParser.classificationFromName(
-          email.authClassificationOverride);
-      if (classification == AuthClassification.red) {
-        final senderEmail =
-            PatternNormalization.normalizeFromHeader(email.from);
-        final proceed = await AuthWarningDialog.showSafeSenderWarning(
-          context,
-          senderEmail: senderEmail,
-          authResult:
-              AuthResultsParser.syntheticResultFor(AuthClassification.red),
-        );
-        if (!proceed) {
-          // User chose Cancel -- do not whitelist.
-          return;
-        }
-        if (!mounted) return;
-      }
+    if (!redChecked) {
+      if (!await _confirmRedSafeSender(email)) return;
+      if (!mounted) return;
     }
 
     // F39 (Sprint 46): rule-persistence core is shared with the

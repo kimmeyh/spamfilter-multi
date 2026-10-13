@@ -430,12 +430,24 @@ if ($branch -match '_Sprint_(\d+)') {
                             # Sprint 79; Sprint 78 predates it.
                             if ([int]$sprintNumW -ge 79) {
                                 $velPathF193 = Join-Path $cwd 'docs/CODING_VELOCITY.md'
-                                $velOk = $false
+                                # 7.7.1 silent-failure H-2: ONE row is not enough -- the
+                                # planning row is written before any task, so "any DONE
+                                # row" passed with zero task rows. Count task rows
+                                # (DONE or MOVED, planning rows excluded) and require at
+                                # least one per task card in the plan (the card pattern
+                                # close-out 3d-3 uses), and at least one in all.
+                                $velRows = 0
                                 if (Test-Path -LiteralPath $velPathF193) {
-                                    $velTextF193 = Get-Content -LiteralPath $velPathF193 -Raw
-                                    $velOk = $velTextF193 -match ("\|\s*{0}\s*\|\s*DONE\s*\|" -f $sprintNumW)
+                                    $rowRx = '(?im)^\|([^|\r\n]*)\|\s*{0}\s*\|\s*(DONE|MOVED)\s*\|' -f $sprintNumW
+                                    foreach ($vm in [regex]::Matches((Get-Content -LiteralPath $velPathF193 -Raw), $rowRx)) {
+                                        if ($vm.Groups[1].Value -notmatch '(?i)planning') { $velRows++ }
+                                    }
                                 }
-                                if (-not $velOk) { $missingF193 += 'CODING_VELOCITY.md actuals rows (| <task> | N | DONE | ...)' }
+                                $cardsF193 = [regex]::Matches($planTextF193, '(?im)^#{2,3}\s+Task\s+\S+\s+--').Count
+                                $needF193 = [math]::Max(1, $cardsF193)
+                                if ($velRows -lt $needF193) {
+                                    $missingF193 += ("CODING_VELOCITY.md task actuals rows ({0} found for Sprint {1}, {2} needed: one per task card; planning rows do not count)" -f $velRows, $sprintNumW, $needF193)
+                                }
                             }
 
                             if ($missingF193.Count -gt 0) {

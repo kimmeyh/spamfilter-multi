@@ -231,7 +231,9 @@ class ScanResultStore {
       }
 
       if (completedOnly == true) {
-        where += ' AND completed_at IS NOT NULL';
+        // By STATUS, not completed_at: since Sprint 78 MV-6 a failed scan has
+        // completed_at too (7.7.1 code-review L-3).
+        where += " AND status = 'completed'";
       }
 
       final maps = await db.query(
@@ -432,9 +434,13 @@ class ScanResultStore {
 
       // Sprint 78 MV-6: record WHEN the scan ended. Without completed_at,
       // Scan History printed "In progress" under every failed scan (the Fold's
-      // Gmail sign-in skips, 2026-10-12). Every other reader of completed_at
-      // also filters on status = 'completed', and the retention purge only
-      // switches this row from its started_at clause to its completed_at one.
+      // Gmail sign-in skips, 2026-10-12). Effect on the other readers of
+      // completed_at: the latest-completed and duration queries filter on
+      // status = 'completed'; `completedOnly` now filters on status too; the
+      // two "ORDER BY completed_at DESC" lists (DatabaseHelper.queryScanResults,
+      // getLatestCompletedScan) now place a failed scan by its end time instead
+      // of with the NULLs; the retention purge only moves this row from its
+      // started_at clause to its completed_at one.
       final result = await db.update(
         'scan_results',
         {

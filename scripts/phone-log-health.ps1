@@ -55,10 +55,12 @@ $triggerRx = '^\[(?<ts>[0-9T:.\-]+)\] \[SCAN\] \[worker/android\] start (?<acct>
 function Get-Health {
     param([string[]]$Lines, [int]$Interval, $From, [switch]$OneAccount)
     $acc = @{}
+    $recognized = 0
     foreach ($line in $Lines) {
         $m = [regex]::Match($line, $scanRx)
         $t = [regex]::Match($line, $triggerRx)
         if (-not $m.Success -and -not $t.Success) { continue }
+        $recognized++
         $hit = if ($m.Success) { $m } else { $t }
         $ts = [datetime]::Parse($hit.Groups['ts'].Value, [Globalization.CultureInfo]::InvariantCulture)
         if ($From -and $ts -lt $From) { continue }
@@ -136,7 +138,7 @@ function Get-Health {
     if ($OneAccount -and $scanning -gt 1) {
         [void]$flags.Add("FLAG: $scanning accounts scanned in the background; a single-account run needs exactly one.")
     }
-    [pscustomobject]@{ Lines = $out; Flags = $flags; Accounts = $scanning }
+    [pscustomobject]@{ Lines = $out; Flags = $flags; Accounts = $scanning; Recognized = $recognized }
 }
 
 if ($SelfTest) {
@@ -179,7 +181,11 @@ if ($SelfTest) {
            '[2026-10-13T03:00:05.000000] [SCAN] [scan/background] o***@x.com outcome -- completed found=0')
     $h3 = Get-Health -Lines $o -Interval 15
     if (($h3.Flags -join "`n") -match 'never reached') { $failures += 'overlapping refused scan counted as unfinished' }
-    if ($failures.Count -eq 0) { 'SELFTEST PASS (8 checks)'; exit 0 }
+    # Unparseable input is counted, so the caller can refuse to say "No flags.".
+    $h4 = Get-Health -Lines @('garbage line', '[2026-10-13T02:00:00.000000] [SCAN] [scan/renamed] x start -- a') -Interval 15
+    if ($h4.Recognized -ne 0) { $failures += "unparseable lines counted as recognized ($($h4.Recognized))" }
+    if ($h.Recognized -lt 1) { $failures += 'sample scan lines not counted as recognized' }
+    if ($failures.Count -eq 0) { 'SELFTEST PASS (10 checks)'; exit 0 }
     'SELFTEST FAIL:'; $failures | ForEach-Object { "  - $_" }; exit 1
 }
 
@@ -190,4 +196,11 @@ $all = foreach ($fi in $files) { Get-Content -LiteralPath $fi.FullName }
 $res = Get-Health -Lines $all -Interval $IntervalMinutes -From $Since -OneAccount:$SingleAccount
 "--- background scan health ($($files.Count) log(s), interval $IntervalMinutes min$(if ($Since) { ", since $Since" })) ---"
 $res.Lines
+# 7.7.1 silent-failure M-1: unparseable input must never read as healthy. If
+# the logs have lines but none is a scan line, the format changed (a renamed
+# tag) or no background scan ran -- either way "No flags." would be a lie.
+if (@($all).Count -gt 0 -and $res.Recognized -eq 0) {
+    "WARNING: 0 scan lines recognized in $($files.Count) log(s) -- log format changed, or no background scan ran. Health NOT checked."
+    exit 3
+}
 if ($res.Flags.Count -eq 0) { 'No flags.' } else { $res.Flags }

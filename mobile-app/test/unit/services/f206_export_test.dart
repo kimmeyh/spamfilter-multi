@@ -105,8 +105,33 @@ void main() {
           settingsStore: SettingsStore(testHelper.dbHelper));
       expect(dir, p.join(tmp.path, 'own', ExportDirectories.appFolderName,
           'scan_exports'),
-          reason: 'on Windows the app\'s own folder is Documents itself, '
-              'shared by DEV and PROD, so the app folder is added there too');
+          reason: 'the app folder is added to the fallback too, so DEV and '
+              'PROD never share it');
+    });
+
+    // 7.7.1 code-review M-3. What this does NOT catch: what
+    // path_provider_windows actually returns for the support folder (vendor
+    // contract: %APPDATA%\<company>\<product>).
+    test('7.7.1 M-3: off Android the fallback is the app-SUPPORT folder, '
+        'never Documents (the F282 default)', () async {
+      var supportAsked = false;
+      final own = await ExportDirectories.appOwnFolderFor(
+        isAndroid: false,
+        externalStorage: () async => fail('not used off Android'),
+        appSupport: () async {
+          supportAsked = true;
+          return r'C:\Users\u\AppData\Roaming\Co\App';
+        },
+      );
+      expect(supportAsked, isTrue);
+      expect(own, r'C:\Users\u\AppData\Roaming\Co\App');
+
+      final android = await ExportDirectories.appOwnFolderFor(
+        isAndroid: true,
+        externalStorage: () async => '/storage/emulated/0/Android/data/x/files',
+        appSupport: () async => fail('Android uses its external folder'),
+      );
+      expect(android, '/storage/emulated/0/Android/data/x/files');
     });
 
     test('F282 AC-2: a folder the user chose wins and is used EXACTLY as '

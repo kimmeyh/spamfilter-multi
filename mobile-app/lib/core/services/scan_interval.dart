@@ -32,9 +32,18 @@ const int kMinIntervalMinutes = 5;
 
 /// The largest interval a user may choose: 24 hours (F281, Sprint 78, Harold;
 /// was 99 hours in F264). A stored value above it becomes 24 hours through
-/// [ScanInterval.nearestValid] at the next settings load or Windows startup
-/// (plan decision F1 = 1).
+/// [ScanInterval.nearestValid] (plan decision F1 = 1), and the upgrade
+/// migration re-registers its schedule once ([kIntervalRulesVersion]).
 const int kMaxIntervalMinutes = 24 * 60;
+
+/// The version of the interval RULES above. Bump it whenever a rule changes
+/// which stored values are valid (the floor, the maximum, the typeable
+/// values): the upgrade migration (`BackgroundIntervalMigration`) re-runs once
+/// per version, converting stored values AND re-registering their schedules.
+/// 1 = F264 (Sprint 77); 2 = F281's 24-hour maximum (Sprint 78). Without it,
+/// an Android account saved at 48 hours on 0.18.0 kept its 48-hour WorkManager
+/// job while Settings showed 24 hours (7.7.1 code-review M-4).
+const int kIntervalRulesVersion = 2;
 
 /// The largest NUMBER the 2-digit box accepts. In minutes that is 99 minutes;
 /// in hours the range check ([kMaxIntervalMinutes]) stops it at 24.

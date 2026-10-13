@@ -1189,7 +1189,9 @@ class GmailApiAdapter with BatchOperationsMixin implements SpamFilterPlatform {
     } catch (e) {
       Redact.logError(
           'R76-4 fetchContentText failed for Gmail message ${message.id}', e);
-      return null;
+      // A failure is NOT "no text" (7.7.1 silent-failure M-3): throw, so the
+      // content history skips the email and the next scan retries it.
+      throw ContentFetchException('Gmail message ${message.id}', e);
     }
   }
 

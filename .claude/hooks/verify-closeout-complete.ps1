@@ -373,7 +373,9 @@ if ($sprintNum -ge 77 -and $status -and $null -ne $status.current_sprint -and
             # this check, and Sprint 78 closed its tasks with no minutes anywhere.
             # The line must carry an actual-minutes figure (~35m, 35 min, 35 minutes),
             # judged BEFORE the whitespace strip below removes the separators.
-            if ($sprintNum -ge 78 -and $v -notmatch '(?i)\d+\s*(m|min|mins|minutes)\b') { $noMinutesEx++ }
+            # 7.7.1 silent-failure L-2: a bare "\d+m" also matched model text such
+            # as "Opus 4.6 (1M context)". A bare m counts only after "~" (~35m).
+            if ($sprintNum -ge 78 -and $v -notmatch '(?i)(~\s*\d+\s*m\b|\d+\s*(min|mins|minutes)\b)') { $noMinutesEx++ }
             $v = $v -replace '[\s:*_`-]', ''
             if ([string]::IsNullOrWhiteSpace($v) -or $v -match '^(?i)(PENDING|TBD|TODO)$') { $emptyEx++ }
         }

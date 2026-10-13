@@ -127,15 +127,52 @@ class _NoRuleReviewScreenState extends State<NoRuleReviewScreen> {
   /// [_loadItems] sweep resolved (see [_sweepCoveredItems]).
   int _lastSweepCount = 0;
 
+  /// 7.7.1 code-review M-1: before MV-3, every rule reload remounted this
+  /// screen (the app root swapped it out while loading), which re-ran the
+  /// covered-row sweep -- correct only by accident. [RulesReadyGate] now
+  /// keeps the screen mounted, so a rule made ELSEWHERE (a saved Results
+  /// screen pushed over this one, Settings > Rules) would leave covered rows
+  /// listed until Refresh. Listening for a finished reload restores that.
+  ///
+  /// The signal is a NEW rule set or safe-sender list object: every reload
+  /// assigns one, while the provider's loading state changes WITHOUT a
+  /// notification (`_setLoadingState` does not notify), so a state
+  /// transition is never observable from here.
+  RuleSetProvider? _rules;
+  Object? _seenRuleSet;
+  Object? _seenSafeSenders;
+
   @override
   void initState() {
     super.initState();
     _unmatchedStore = UnmatchedEmailStore(_dbHelper);
     _loadItems();
+    try {
+      _rules = context.read<RuleSetProvider>();
+      _seenRuleSet = _rules!.rules;
+      _seenSafeSenders = _rules!.safeSenders;
+      _rules!.addListener(_onRulesChanged);
+    } on ProviderNotFoundException {
+      // Widget-test harnesses without the provider: nothing to follow.
+    }
+  }
+
+  void _onRulesChanged() {
+    final p = _rules!;
+    // Before the first load the getters build a fresh empty object per call.
+    if (p.loadingState != RuleLoadingState.success) return;
+    final changed = !identical(p.rules, _seenRuleSet) ||
+        !identical(p.safeSenders, _seenSafeSenders);
+    _seenRuleSet = p.rules;
+    _seenSafeSenders = p.safeSenders;
+    if (changed && mounted && _ownActionsInFlight == 0) {
+      _loadItems(showSpinner: false);
+    }
   }
 
   @override
   void dispose() {
+    _rules?.removeListener(_onRulesChanged);
     _searchController.dispose();
     _searchFocusNode.dispose();
     super.dispose();
@@ -470,12 +507,32 @@ class _NoRuleReviewScreenState extends State<NoRuleReviewScreen> {
   /// does NOT cover BEFORE running it, run the action in the background, and
   /// open the next row's pop-up at once in the same place. [request] null is
   /// Skip: nothing is changed and nothing counts as covered.
-  void _actThenAdvance(
+  Future<void> _actThenAdvance(
     _NoRuleItem current, {
     QuickActionRequest? request,
     Offset? anchorPosition,
     Size? anchorSize,
-  }) {
+  }) async {
+    // F96: a RED authentication result warns before whitelisting (mirrors
+    // ResultsDisplayScreen._addSafeSender). Resolved HERE, before the next
+    // pop-up opens (7.7.1 code-review M-5): inside the unawaited action the
+    // warning was pushed first and the next pop-up landed on top of it,
+    // hiding it. Declined = nothing applied; the screen moves on as Skip does.
+    if (request != null &&
+        request.kind == QuickActionKind.safeSender &&
+        AuthResultsParser.classificationFromName(
+                current.email.authClassification) ==
+            AuthClassification.red) {
+      final proceed = await AuthWarningDialog.showSafeSenderWarning(
+        context,
+        senderEmail:
+            PatternNormalization.normalizeFromHeader(current.email.fromEmail),
+        authResult: AuthResultsParser.syntheticResultFor(AuthClassification.red),
+      );
+      if (!mounted) return;
+      if (!proceed) request = null;
+    }
+
     final visible = _visibleItems();
     final idx = visible.indexWhere((i) => i.email.id == current.email.id);
     _NoRuleItem? next;
@@ -499,9 +556,23 @@ class _NoRuleReviewScreenState extends State<NoRuleReviewScreen> {
     }
   }
 
+  /// While this screen's own quick action runs, [_onRulesChanged] stands
+  /// down: the action reloads the list itself and reports its sweep count.
+  int _ownActionsInFlight = 0;
+
   /// Creates the rule or safe sender for [item], marks its row handled, and
   /// reloads (the reload's sweep marks every other row the new rule covers).
   Future<void> _applyQuickAction(
+      _NoRuleItem item, QuickActionRequest request) async {
+    _ownActionsInFlight++;
+    try {
+      await _applyQuickActionInner(item, request);
+    } finally {
+      _ownActionsInFlight--;
+    }
+  }
+
+  Future<void> _applyQuickActionInner(
       _NoRuleItem item, QuickActionRequest request) async {
     final ruleProvider = Provider.of<RuleSetProvider>(context, listen: false);
     final service = RuleQuickActionService(ruleProvider: ruleProvider);
@@ -510,20 +581,7 @@ class _NoRuleReviewScreenState extends State<NoRuleReviewScreen> {
 
     final RuleQuickActionResult result;
     if (request.kind == QuickActionKind.safeSender) {
-      // F96: a RED authentication result warns before whitelisting
-      // (mirrors ResultsDisplayScreen._addSafeSender).
-      if (AuthResultsParser.classificationFromName(
-              item.email.authClassification) ==
-          AuthClassification.red) {
-        final proceed = await AuthWarningDialog.showSafeSenderWarning(
-          context,
-          senderEmail: PatternNormalization.normalizeFromHeader(
-              item.email.fromEmail),
-          authResult:
-              AuthResultsParser.syntheticResultFor(AuthClassification.red),
-        );
-        if (!proceed || !mounted) return;
-      }
+      // The F96 RED warning was already answered in _actThenAdvance.
       result = await service.addSafeSender(
         value: request.value,
         type: request.type,

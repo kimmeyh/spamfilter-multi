@@ -886,6 +886,148 @@ void main() {
     expect(find.text('sales@falgunarmy.example'), findsOneWidget);
   });
 
+  // Sprint 78 7.7.1 code-review M-1: a rule made ELSEWHERE while this screen
+  // stays mounted (MV-3 keeps it mounted) must still sweep the covered rows
+  // when the rules finish reloading.
+  //
+  // What this does NOT catch: a rule change that never reloads the provider
+  // (every path that writes rules today calls loadRules()).
+  testWidgets(
+      '7.7.1 M-1: a rule added elsewhere sweeps covered rows when the rules '
+      'finish reloading, with no Refresh', (tester) async {
+    tester.view.physicalSize = const Size(1200, 2400);
+    tester.view.devicePixelRatio = 1.0;
+    addTearDown(tester.view.resetPhysicalSize);
+    addTearDown(tester.view.resetDevicePixelRatio);
+
+    await tester.runAsync(() async {
+      const accountId = 'gmail-a@example.com';
+      await testHelper.createTestAccount(accountId);
+      registerSavedAccount(accountId);
+      final scanId = await insertCompletedScan(accountId,
+          completedAtMs: 1000, noRuleCount: 0);
+      final unmatchedStore = UnmatchedEmailStore(testHelper.dbHelper);
+      for (final (uid, sender) in [
+        ('m-1', 'darngoodyarn@homelivingcares.example'),
+        ('m-2', 'darngoodyarn@homelivingcares.example'),
+        ('u-1', 'thegamer@bestbuyingpoint.example'),
+      ]) {
+        await unmatchedStore.addUnmatchedEmail(UnmatchedEmail(
+          scanResultId: scanId,
+          providerIdentifierType: 'imap_uid',
+          providerIdentifierValue: uid,
+          fromEmail: sender,
+          folderName: 'Bulk Mail',
+          createdAt: DateTime.fromMillisecondsSinceEpoch(2000),
+        ));
+      }
+      await mountAndLoad(tester);
+    });
+    expect(noRuleChip(3), findsOneWidget);
+
+    await tester.runAsync(() async {
+      // Another screen adds the rule and reloads, as RuleQuickActionService does.
+      await ruleProvider.addRule(Rule(
+        name: 'Block_EntireDomain_homelivingcares.example',
+        enabled: true,
+        isLocal: true,
+        executionOrder: 20,
+        conditions: RuleConditions(
+            type: 'OR', header: [r'@(?:[a-z0-9-]+\.)*homelivingcares\.example$']),
+        actions: RuleActions(delete: true),
+        patternCategory: 'header_from',
+        patternSubType: 'entire_domain',
+        sourceDomain: 'homelivingcares.example',
+      ));
+      await ruleProvider.loadRules();
+      await tester.pump();
+      await Future<void>.delayed(const Duration(milliseconds: 800));
+      await tester.pump();
+    });
+
+    expect(noRuleChip(1), findsOneWidget,
+        reason: 'the finished reload must re-run the covered-row sweep');
+    expect(find.textContaining('homelivingcares'), findsNothing);
+  });
+
+  // Sprint 78 7.7.1 code-review M-5: the F96 RED-sender warning must be
+  // answered BEFORE the next pop-up opens; inside the unawaited action it was
+  // pushed first and the next pop-up covered it.
+  //
+  // What this does NOT catch: the same race on the Results screen (same fix,
+  // `_confirmRedSafeSender`; no widget test there).
+  testWidgets(
+      '7.7.1 M-5: a RED sender\'s safe-sender warning shows first; Cancel adds '
+      'nothing and then advances', (tester) async {
+    tester.view.physicalSize = const Size(1200, 2400);
+    tester.view.devicePixelRatio = 1.0;
+    addTearDown(tester.view.resetPhysicalSize);
+    addTearDown(tester.view.resetDevicePixelRatio);
+
+    await tester.runAsync(() async {
+      const accountId = 'gmail-a@example.com';
+      await testHelper.createTestAccount(accountId);
+      registerSavedAccount(accountId);
+      final scanId = await insertCompletedScan(accountId,
+          completedAtMs: 1000, noRuleCount: 0);
+      final unmatchedStore = UnmatchedEmailStore(testHelper.dbHelper);
+      for (final (uid, sender, auth, at) in [
+        ('r-1', 'spoof@aaa-redsender.example', 'red', 3000),
+        ('n-1', 'next@zzz-othersender.example', null, 2000),
+      ]) {
+        await unmatchedStore.addUnmatchedEmail(UnmatchedEmail(
+          scanResultId: scanId,
+          providerIdentifierType: 'imap_uid',
+          providerIdentifierValue: uid,
+          fromEmail: sender,
+          folderName: 'Bulk Mail',
+          authClassification: auth,
+          createdAt: DateTime.fromMillisecondsSinceEpoch(at),
+        ));
+      }
+      await mountAndLoad(tester);
+    });
+    // Precondition: the RED row is listed ABOVE the row it advances to.
+    expect(
+        tester.getTopLeft(find.text('spoof@aaa-redsender.example').first).dy,
+        lessThan(tester
+            .getTopLeft(find.text('next@zzz-othersender.example').first)
+            .dy),
+        reason: 'test setup: the RED row must come first in the list');
+    final safeBefore = ruleProvider.safeSenders.safeSenders.length;
+
+    await tester.runAsync(() async {
+      await tester.tap(find.text('spoof@aaa-redsender.example').first);
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 300));
+      await tester.tap(find.text('Exact Email'));
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 300));
+    });
+
+    expect(find.byKey(const Key('safe_sender_auth_warning_dialog')),
+        findsOneWidget);
+    expect(find.text('Create Block Rule'), findsNothing,
+        reason: 'no pop-up over the warning: the next one must wait for '
+            'the answer');
+
+    await tester.runAsync(() async {
+      await tester.tap(find.text('Cancel'));
+      await tester.pump();
+      await Future<void>.delayed(const Duration(milliseconds: 800));
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 300));
+    });
+
+    expect(find.byKey(const Key('safe_sender_auth_warning_dialog')),
+        findsNothing);
+    expect(find.text('Create Block Rule'), findsOneWidget,
+        reason: 'after Cancel the sequence advances to the next pop-up');
+    expect(find.text('next@zzz-othersender.example'), findsAtLeastNWidgets(2));
+    expect(ruleProvider.safeSenders.safeSenders.length, safeBefore,
+        reason: 'Cancel adds no safe sender');
+  });
+
   // F129 R-6 (Sprint 51) / F283: each row announces the email it represents
   // and can be activated. The checkbox is gone (MV-Q16); the row is the shared
   // Results ListTile, whose title and subtitle merge into one node.

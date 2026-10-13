@@ -21,6 +21,7 @@ import 'package:googleapis/gmail/v1.dart' as gmail;
 import 'package:path/path.dart' as p;
 import 'dart:convert';
 
+import 'package:my_email_spam_filter/adapters/email_providers/spam_filter_platform.dart';
 import 'package:my_email_spam_filter/core/models/email_message.dart';
 import 'package:my_email_spam_filter/core/models/evaluation_result.dart';
 import 'package:my_email_spam_filter/core/services/content_history.dart';
@@ -190,6 +191,64 @@ void main() {
       final m = msg('1', mid: '<m1@x>');
       await c.beginBatch([m]);
       await c.record(m, EvaluationResult.noMatch());
+    });
+
+    // 7.7.1 silent-failure M-3. What this does NOT catch: an adapter that
+    // returns null for a failure instead of throwing (the adapters' own
+    // contract; fetchContentText doc in spam_filter_platform.dart).
+    test('a FAILED body fetch stores nothing, so the next scan retries it',
+        () async {
+      final m = msg('1', mid: '<m1@x>');
+      final failing = ContentHistoryCapture(
+        accountId: 'acct',
+        scanType: 'background',
+        platform: 'android',
+        store: store,
+        fetchText: (_) async =>
+            throw ContentFetchException('uid 1: fetch failed'),
+      );
+      await failing.beginBatch([m]);
+      await failing.record(m, EvaluationResult.noMatch());
+      expect(await store.count(), 0,
+          reason: 'a failure must not be stored as "no body"');
+
+      final fetched = <String>[];
+      final retry = capture(fetched);
+      await retry.beginBatch([m]);
+      await retry.record(m, EvaluationResult.noMatch());
+      expect(fetched, ['1'], reason: 'the next scan fetches the body again');
+      final db = await store.database;
+      expect((await db.query('content_history')).single['body_text'],
+          'Body of 1');
+    });
+
+    // 7.7.1 silent-failure M-2. What this does NOT catch: a store that fails
+    // only on insert (then each new email still pays one fetch).
+    test('a failed lookup turns capture off for the scan: no body fetches',
+        () async {
+      // A store path under a FILE cannot be opened.
+      final blocker = File(p.join(tmp.path, 'not_a_dir'))..writeAsStringSync('x');
+      final broken =
+          ContentHistoryStore(path: p.join(blocker.path, 'sub', 'h.db'));
+      final fetched = <String>[];
+      final c = ContentHistoryCapture(
+        accountId: 'acct',
+        scanType: 'background',
+        platform: 'android',
+        store: broken,
+        fetchText: (m) async {
+          fetched.add(m.id);
+          return 'x';
+        },
+      );
+      final batch = [msg('1', mid: '<m1@x>'), msg('2', mid: '<m2@x>')];
+      await c.beginBatch(batch);
+      for (final m in batch) {
+        await c.record(m, EvaluationResult.noMatch());
+      }
+      expect(c.disabled, isTrue);
+      expect(fetched, isEmpty,
+          reason: 'with the lookup broken, no network body fetch is paid');
     });
   });
 

@@ -720,6 +720,29 @@ for it directly.
   written into W1/W2. 1 part not rehearsable: W4's real AOL scan (no mailbox access for Claude) -- closest rehearsal is
   the scanner-level test with a fake provider. Fold steps (Tasks 1, 2) are phone-only.
 - **5.2 full suite**: 2026-10-10 at 2c5e98e: 2,990 passed / 15 skipped / 0 failed; analyzer clean.
+
+# Phase 7 evidence
+
+- **7.7.1 final code reviews**: 2026-10-13. Copilot (requested by hand, GraphQL, bot BOT_kgDOCnlnWA) -- 2 LOW
+  comments, both the same wrong test citation (`f283_r7_deletion_coverage_test`) -> FIXED with prevention: new policy
+  gate `cited_test_names_test` (every backticked `*_test` in a lib/ comment must exist); both threads replied and
+  resolved. pr-review-toolkit silent-failure-hunter (2 HIGH, 4 MEDIUM, 3 LOW) and code-reviewer (5 MEDIUM, 3 LOW; its
+  M-2 and L-1 duplicate SF H-1 and H-2). Dispositions: SF H-1 / CR M-2 FIXED (reload-error banner with Retry in
+  `RulesReadyGate`, home screen kept mounted); SF H-2 / CR L-1 FIXED (velocity gate counts task rows, planning
+  excluded, one per task card; hook cases violation-33/34); SF M-1 FIXED (`phone-log-health.ps1` warns and exits 3
+  when no scan line is recognized); SF M-2 FIXED (failed lookup disables capture for the scan); SF M-3 FIXED (a failed
+  content fetch throws `ContentFetchException`; catch walk: `fetchContentText` -> the scanner's `fetchText` lambda ->
+  `ContentHistoryCapture.record`'s own catch, nothing between, the scan never sees it); SF M-4 FIXED in part (the
+  `catch (_)` blocks on always-created tables removed in both deletion paths, the pre-existing ones of the same class
+  too) and the UI half to BACKLOG as F290 (4 code files, over the size limit -- I first wrote it, saw the count, and
+  reverted to the 2-file core); SF L-1 = Copilot's comments; SF L-2 FIXED (`~Nm` or `N min`; closeout violation-13);
+  SF L-3 FIXED (pull prints "NOT checked" when no log is in the window); CR M-1 FIXED (Review No Rule Items reloads
+  when the rule set object changes -- the loading state never notifies -- except during its own action); CR M-3 FIXED
+  (Windows fallback is the app-support folder, `appOwnFolderFor` seam); CR M-4 FIXED with prevention (the interval
+  migration's marker carries `kIntervalRulesVersion` = 2, so any rule change re-runs it once); CR M-5 FIXED on Review
+  AND Results (RED warning answered before the next pop-up); CR L-2 FIXED (IMAP log lines name the caller); CR L-3
+  FIXED (stale line citation; `completedOnly` filters on status; the MV-6 comment lists every completed_at reader).
+  Mutations SF-H1, CR-M1, CR-M5, SF-M2, CR-M3, CR-M4, citation gate: 7/7 KILLED. Hook suite 135/135.
 - **5.2.3 architecture docs**: ARCHITECTURE.md (ExportDirectories, Review screen, shared pieces, ContentHistory rows),
   ADR-0042 (export split retired), ADR-0039 (F281 amendment), ADR-0047 (new, Proposed) -- all in this PR.
 

@@ -183,8 +183,8 @@ class ExportDirectories {
       // Android 11+ can refuse a folder left by an earlier install. Fall back
       // to the app's OWN folder, which is always writable (and on Android
       // still reachable over MTP), rather than failing every export.
-      // The app folder name is added here too: on Windows the app's own
-      // folder is Documents itself, shared by DEV and PROD.
+      // The app folder name is added here too, so DEV and PROD never share
+      // the fallback folder.
       final fallbackBase = path.join(await _appOwnFolder(), appFolderName);
       _logger.w('Default export folder "$dir" is not writable; using '
           '"$fallbackBase" instead');
@@ -222,14 +222,36 @@ class ExportDirectories {
   }
 
   /// The app's own, always-writable folder: app external storage on Android,
-  /// app documents elsewhere.
+  /// the app-SUPPORT folder elsewhere.
   static Future<String> _appOwnFolder() async {
     final forced = debugAppOwnFolderOverride;
     if (forced != null) return forced;
-    if (Platform.isAndroid) {
-      final ext = await getExternalStorageDirectory();
-      if (ext != null) return ext.path;
+    return appOwnFolderFor(
+      isAndroid: Platform.isAndroid,
+      externalStorage: () async => (await getExternalStorageDirectory())?.path,
+      appSupport: () async => (await getApplicationSupportDirectory()).path,
+    );
+  }
+
+  /// 7.7.1 code-review M-3: NOT the app documents folder. Since F282 the
+  /// default IS Documents/MyEmailSpamFilter[_Dev], and on Windows
+  /// `getApplicationDocumentsDirectory()` is Documents itself -- so the
+  /// fallback was the very folder that just failed its probe (for example
+  /// under Windows Controlled Folder Access, which protects Documents). The
+  /// app-support folder (`%APPDATA%\<company>\<app>` on Windows, per
+  /// path_provider_windows) is the app's own and never the default. Android
+  /// keeps its app external folder (writable, reachable over MTP) -- a
+  /// declared platform difference in the fallback only (ADR-0042).
+  @visibleForTesting
+  static Future<String> appOwnFolderFor({
+    required bool isAndroid,
+    required Future<String?> Function() externalStorage,
+    required Future<String> Function() appSupport,
+  }) async {
+    if (isAndroid) {
+      final ext = await externalStorage();
+      if (ext != null) return ext;
     }
-    return (await getApplicationDocumentsDirectory()).path;
+    return appSupport();
   }
 }
