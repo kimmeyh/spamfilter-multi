@@ -37,8 +37,8 @@
       "steps": [
         { "tool": "ww_window_state", "state": "maximize" },
         { "tool": "ww_invoke", "selector": "type=Button[name='View Scan History']" },
-        { "_comment": "Open a saved scan (data-dependent; the first matching row).",
-          "tool": "ww_invoke", "selector": "type=Button[name^='Manual scan - ']" },
+        { "_comment": "Open a saved scan: the first COMPLETED row of ANY type (only completed rows are buttons; the name starts 'Manual', 'Background' or 'Demo' + ' scan - '). Sprint 78: 'Manual scan - ' resolved 0 once Windows background scans filled the visible list (470 background rows vs 2 manual since midnight), because Flutter builds only on-screen rows.",
+          "tool": "ww_invoke", "selector": "type=Button[name*=' scan - ']" },
         { "_comment": "Default order. Resolving it is proof the results screen opened.",
           "tool": "ww_invoke", "selector": "type=Button[name='Sort: Folder']" },
         { "_comment": "PROOF OF EFFECT: this label exists only after the toggle. Invoking it restores the default.",

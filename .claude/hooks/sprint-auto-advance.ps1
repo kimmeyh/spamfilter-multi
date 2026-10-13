@@ -420,6 +420,24 @@ if ($branch -match '_Sprint_(\d+)') {
                                 if (-not $recorded) { $missingF193 += $eF.Name }
                             }
 
+                            # Effort actuals (Sprint 78 retro IMP-1, Harold 2026-10-13).
+                            # CODING_VELOCITY.md Rule 4 says each task's row is written AT
+                            # TASK COMPLETION. The only check was close-out 3b-2, the latest
+                            # possible point, so Sprint 78 reached its retrospective with no
+                            # row at all and its actuals had to be rebuilt from commit
+                            # times. Every planned task is done before Manual Validation, so
+                            # the rows must exist here. Same row shape 3b-2 matches. From
+                            # Sprint 79; Sprint 78 predates it.
+                            if ([int]$sprintNumW -ge 79) {
+                                $velPathF193 = Join-Path $cwd 'docs/CODING_VELOCITY.md'
+                                $velOk = $false
+                                if (Test-Path -LiteralPath $velPathF193) {
+                                    $velTextF193 = Get-Content -LiteralPath $velPathF193 -Raw
+                                    $velOk = $velTextF193 -match ("\|\s*{0}\s*\|\s*DONE\s*\|" -f $sprintNumW)
+                                }
+                                if (-not $velOk) { $missingF193 += 'CODING_VELOCITY.md actuals rows (| <task> | N | DONE | ...)' }
+                            }
+
                             if ($missingF193.Count -gt 0) {
                                 $names = $missingF193 -join ', '
                                 # STDERR, not stdout -- the hook contract in this
@@ -438,7 +456,8 @@ artifacts are not RECORDED in docs/sprints/SPRINT_${sprintNumW}_PLAN.md:
 
 SPRINT_CHECKLIST.md requires them BEFORE Manual Validation starts, so that
 Harold never validates unreviewed code (and, from Sprint 78, never runs a
-validation step Claude has not rehearsed -- 5.1.9). A marker that still reads PENDING/TBD
+validation step Claude has not rehearsed -- 5.1.9; from Sprint 79, never without
+the tasks' CODING_VELOCITY.md actuals rows). A marker that still reads PENDING/TBD
 does not count -- that placeholder exists to say the work is NOT done.
 
 Run the missing step(s), record the evidence in the plan, then declare MV.

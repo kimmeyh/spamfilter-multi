@@ -691,7 +691,13 @@ directly.
   FINDING for Harold (F284 AC-1): "zero ww_click in the default sweep" is not reachable with this WinWright build --
   f124's four probes read STATIC Text labels, which have no InvokePattern and no replayed read step, so they stay
   ww_click (f124 needs the unlocked PC); s75's two hovers likewise. The policy test pins exactly those six.
-  - sweep-head: b1e5d7b
+  RE-SWEEP 2026-10-13 ~10:10 (Phase 7, after the MV-1..MV-4 lib/ui fixes; last lib/ui commit b980f3d), DEV build of
+  282d56f, unlocked PC, window 1600x1000: `test_f124_rule_labels` PASS; `test_s75_new_controls` FAILED twice at
+  S75-SORT-1 step 3 -- `Button[name^='Manual scan - ']` resolved 0 elements. Cause (DEV DB copy): 470 background
+  rows vs 2 manual since midnight (all four accounts on at 5 minutes, Harold's setting), and Flutter builds only
+  on-screen rows, so no manual row was in the UIA tree. Not a sprint regression. Fix: the step opens the first
+  COMPLETED scan of any type (`name*=' scan - '`; only completed rows are buttons). Re-run: PASS 27/27, DB drift none.
+  - sweep-head: 73aafb0
 - **5.1.9 MV rehearsal**: 2026-10-10, 4 Windows steps rehearsed (W1 on the real 0.19.0 DEV build -- chosen-folder
   log path observed -- plus the Documents known folder read on this PC and `f206_export_test`; W2 by
   `f264_interval_control_test` 13/13 on the real SettingsScreen, both platform branches; W3 by the real DEV window
