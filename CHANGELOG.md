@@ -27,6 +27,8 @@ Format: `- **type**: Description (Issue #N)` where type is feat|fix|chore|docs
 ## [Unreleased]
 
 ### 2026-10-13 (Sprint 78 Manual Validation)
+- **fix**: The matched-text highlight on the Rule Test screen is readable in dark mode; its amber background is now opaque, so the dark text no longer sits on dark brown (Sprint 78 retro IMP-4)
+- **test**: The text-contrast policy gate now fails on hardcoded black text that has no opaque background of its own, the class of the Sprint 78 dark search text (Sprint 78 retro IMP-4)
 - **fix**: Android background scanning no longer scans an account about twice per interval; the Doze wake-up alarm now skips an account that was scanned recently (Issue #472)
 - **fix**: Scan History no longer shows "In progress" under a scan that failed (for example a Gmail account that needs to sign in again); a failed scan now records when it ended and shows its duration (Issue #471)
 - **fix**: Creating a rule or safe sender from Review No Rule Items no longer blanks the screen for several seconds; the app's "Loading spam filter rules" screen now appears only at startup, so a rule reload keeps the home screen in place (Issue #475)

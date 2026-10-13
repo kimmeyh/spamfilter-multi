@@ -111,6 +111,68 @@ void main() {
             '${violations.join('\n\n')}',
       );
     });
+
+    /// Sprint 78 retro IMP-4: theme-blind BLACK text.
+    ///
+    /// The grey check above measures against WHITE, so pinned black text
+    /// always passes it -- and in dark mode it sits on a dark surface. Sprint
+    /// 78 MV-4: both search fields used `TextStyle(color: Colors.black)`
+    /// ("Issue 2b") and Harold found the typed text unreadable on the dark
+    /// AppBar. The gate was green the whole time.
+    ///
+    /// Black text is correct ONLY on a background that is pinned and opaque
+    /// in the same TextStyle (`backgroundColor: Color(0xFF...)`), because
+    /// then neither half follows the theme. A translucent background
+    /// (`Color(0x40...)`) does NOT count: it blends with the theme surface,
+    /// which is exactly how the rule-test highlight was dark-on-dark until
+    /// this gate found it.
+    ///
+    /// What this does NOT catch: black text whose background is pinned by an
+    /// ENCLOSING widget (a Container color) rather than the TextStyle -- the
+    /// F197 invariant below covers the opposite mix; and colors written as
+    /// `Color(0xFF000000)` rather than `Colors.black*`.
+    final pinnedBlack = RegExp(r'\bcolor:\s*(const\s+)?Colors\.black(\d+)?(?![A-Za-z])');
+
+    test('the black-text matcher self-checks', () {
+      expect(pinnedBlack.hasMatch('style: const TextStyle(color: Colors.black),'), isTrue);
+      expect(pinnedBlack.hasMatch('  color: Colors.black87,'), isTrue);
+      expect(pinnedBlack.hasMatch('backgroundColor: Colors.black,'), isFalse,
+          reason: 'a background color is not a text color');
+      expect(pinnedBlack.hasMatch('color: Colors.blackAccent'), isFalse);
+    });
+
+    test('no TextStyle pins black text without a pinned opaque background', () {
+      final uiDir = Directory('lib/ui');
+      expect(uiDir.existsSync(), isTrue,
+          reason: 'run this test from the mobile-app/ directory');
+      final opaqueBackground = RegExp(r'backgroundColor:\s*(const\s+)?Color\(0xFF');
+      final violations = <String>[];
+
+      for (final entity in uiDir.listSync(recursive: true)) {
+        if (entity is! File || !entity.path.endsWith('.dart')) continue;
+        final fileName = entity.uri.pathSegments.last;
+        final lines = entity.readAsLinesSync();
+        for (var i = 0; i < lines.length; i++) {
+          if (!pinnedBlack.hasMatch(lines[i])) continue;
+          // Only TEXT colors: the enclosing TextStyle opens within 4 lines.
+          final from = i - 4 < 0 ? 0 : i - 4;
+          final to = i + 4 >= lines.length ? lines.length - 1 : i + 4;
+          final before = lines.sublist(from, i + 1).join(' ');
+          if (!before.contains('TextStyle')) continue;
+          final style = lines.sublist(from, to + 1).join(' ');
+          if (opaqueBackground.hasMatch(style)) continue;
+          violations.add(
+            '$fileName:${i + 1} -- ${lines[i].trim()}\n'
+            '    Pinned black text is unreadable on a dark-theme surface. Use '
+            'Theme.of(context).colorScheme.onSurface (or the matching on* '
+            'color), or pin an OPAQUE backgroundColor in the same TextStyle.',
+          );
+        }
+      }
+
+      expect(violations, isEmpty,
+          reason: 'Sprint 78 MV-4 class (ADR-0037).\n\n${violations.join('\n\n')}');
+    });
   });
 
   /// F197 (Sprint 68): the MIXED pattern -- a hardcoded container surface

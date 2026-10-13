@@ -22,6 +22,11 @@ Company device-management logs and other apps' screenshots are never copied.
 Note: the Documents rule copies every .csv under Documents, which can include
 another app's CSV files; the destination is gitignored, so none can be committed.
 
+After copying, it prints a background-scan health summary of the diagnostic
+logs in the -Days window (phone-log-health.ps1, Sprint 78 retro IMP-2): per
+account scans per hour, errors, scans that never finished, triggers, and a
+FLAG for each problem. Read the FLAG lines on every pull.
+
 Uses the Windows Shell.Application COM object to access MTP devices, avoiding
 adb and driver dependencies.
 
@@ -237,4 +242,14 @@ for ($i = 0; $i -lt 120 -and $copied -gt 0; $i++) {
 $names | Sort-Object -Unique | ForEach-Object {
     $f = Get-Item -LiteralPath (Join-Path $Dest $_) -ErrorAction SilentlyContinue
     '{0,-56} {1,11:N0} bytes' -f $_, $(if ($f) { $f.Length } else { 0 })
+}
+
+# Sprint 78 retro IMP-2: read the pulled diagnostic logs for scan health every
+# time, so a double-scheduled account or a dying worker is seen at the pull
+# (MV-7 sat in pulled logs for days). Logs dated inside the -Days window only.
+$diagLogs = @(Get-ChildItem -LiteralPath $Dest -Filter 'diag_*.log' -File -ErrorAction SilentlyContinue |
+    Where-Object { $d = Get-NameDate $_.Name; -not $d -or $d -ge (Get-Date).Date.AddDays(-$Days) })
+if ($diagLogs.Count -gt 0) {
+    & (Join-Path $PSScriptRoot 'phone-log-health.ps1') -Path ($diagLogs | ForEach-Object { $_.FullName })
+    'For one run: phone-log-health.ps1 -Path <log> -Since <start> -IntervalMinutes <n> -SingleAccount'
 }
