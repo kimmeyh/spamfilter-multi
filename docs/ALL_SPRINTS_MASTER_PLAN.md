@@ -842,6 +842,19 @@ _(No active Core App candidates -- F96 shipped in Sprint 43.)_
   checks are not silently retired.
 - Related: F289 removes the mouse steps entirely when WinWright allows it.
 
+**F293. Backlog refinement shows the next 20, details in the same order (~20-40m) Priority 6 -- TARGET SPRINT 79**
+- Phase: Process
+- Platform: N/A (sprint process documents)
+- Origin: Harold, 2026-10-13 (Sprint 78 cycle, Phase 8.4): *"for backlog refinement update so that the 'candidates at
+  a glance' includes the next 20 (currently 10) and details of the 20 in the same order (not separated by type -
+  while this was a good idea, it makes them harder for me to find)."*
+- Scope: `docs/BACKLOG_REFINEMENT.md` "Backlog Presentation Format": the Summary Index lists the next 20 active
+  candidates by priority; the detail sections follow in that SAME order, one after another, with no phase-group
+  headers (each card keeps its `Phase:` bullet). HOLD items stay one line each in the index. Update the example and
+  any other place that restates the format (`SPRINT_EXECUTION_WORKFLOW.md`, `SPRINT_CHECKLIST.md`).
+- Note: this conflicts with the rule "Group items under section headers by phase"; the presentation changes, while the
+  master plan's own storage layout may stay grouped (decide in the card).
+
 **F292. Full test suite: test processes die or hang intermittently (~60-120m investigation) Priority 5 -- TARGET SPRINT 79**
 - Phase: Testing
 - Platform: Windows Desktop (local `flutter test` on Harold's PC)
