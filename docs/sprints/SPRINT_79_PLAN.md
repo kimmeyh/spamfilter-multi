@@ -230,6 +230,29 @@ AOL scans that stop mid-run.
     `background_scan_scheduler_test.dart` (format, caller label, source gate), two mutations KILLED. Native-side
     candidates (receiver re-arm with a missing pref, KEEP dropping a Doze one-off) still log to logcat only -- recorded
     as a remaining gap, not fixed here.
+  - **R-8 every reaped row (2026-10-13, all pulled logs Oct 7-13, script-derived)**: 17 rows (15 AOL, 2 Yahoo). Each
+    row's OWN last line (other workers' skip/busy lines excluded):
+    - **Class A, alive and stuck (6)**: 1627 (+7 s `fetch "Bulk Mail" begin`, heartbeat to about +1050 s), 1900 (+28 s
+      `IMAP full fetch`, to +30 s), 1968 Yahoo (+0 s `IMAP full fetch`, to +900 s), 2017 (+310 s `IMAP full fetch "Bulk
+      Mail"`, to +1170 s), 2078 (+2 s `IMAP full fetch`, to +900 s), 2147 (+11 s `actions`, to +690 s). The heartbeat (every
+      30 s, `scan_coordinator.dart:133`) kept running minutes after the last line, so the process was ALIVE and the
+      scan was waiting. **Mechanism (named, verified in source)**: every IMAP client was built WITHOUT a response
+      timeout (`generic_imap_adapter.dart:405`, `GreetingAwareImapClient`; the adapter's own comment said so), so a
+      command whose reply never came waited forever. **Fix (prevention first, at the one shared seam)**:
+      `kImapResponseTimeout` 120 s and `kImapWriteTimeout` 60 s on both constructors; enough_mail applies it per
+      command and fails it with `ImapException('timeout')`, which the login classifier treats as "server
+      unavailable" (`:541-542`). 120 s vs the slowest whole-folder fetch in 6,484 logged (37.9 s); fetches are 20
+      messages per command; no IMAP IDLE in `lib/`. Test `imap_response_timeout_test.dart` (a real silent loopback
+      server: the command ends with `timeout` in under 5 s instead of hanging; both constructors; no bare client
+      in `lib/`); two mutations KILLED; the 14 IMAP test files pass (211).
+    - **Class B, no heartbeat ever (11)**: 912, 1455, 1634, 1930, 1953, 1969, 1980, 2031, 2270, 2434, 2499 -- last line at
+      +0 to +30 s (three at `connect -- begin`, which already HAS timeouts in `imap_certificate_trust.dart`), and the
+      first 30 s heartbeat never ran. The isolate stopped running within 30 s: the process was killed or frozen.
+      **Cause unknown**; what would settle it: Android's exit reason for the process
+      (`ActivityManager.getHistoricalProcessExitReasons`, API 30+) read at the next start and written to the
+      diagnostic log -- filed as a follow-up, not built in this sprint.
+    - Another worker started within 10 s of the dead row's start in 13 of 17 rows (often a doze-alarm and a periodic
+      run together). The MV-7 fix (0.19.0) removes most of those overlaps; the 0.19.0 log so far has no reaped row.
   - **Row 2434 (R-8)**: WorkManager's `ExistingPeriodicWorkPolicy.UPDATE` KDoc (androidx source,
     `work/work-runtime/.../ExistingPeriodicWorkPolicy.kt`): *"If the work being updated is currently running, the
     current run won't be interrupted"*. The re-enqueue candidate is excluded; process death remains (UNVERIFIED).

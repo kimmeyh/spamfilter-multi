@@ -402,7 +402,13 @@ class GenericIMAPAdapter with BatchOperationsMixin implements SpamFilterPlatform
       _imapClient = client;
       await _rememberDeviceTrustedCertificate(connection, credentials);
     } else {
-      client = ImapClient(isLogEnabled: false);
+      // Sprint 79 R-8: a stalled command fails after kImapResponseTimeout
+      // instead of hanging the scan (see the constant).
+      client = ImapClient(
+        isLogEnabled: false,
+        defaultResponseTimeout: kImapResponseTimeout,
+        defaultWriteTimeout: kImapWriteTimeout,
+      );
       _imapClient = client;
 
       // Always SSL/TLS here: the constructor refuses any other encryption for
@@ -457,10 +463,11 @@ class GenericIMAPAdapter with BatchOperationsMixin implements SpamFilterPlatform
   ///
   /// Timeouts: enough_mail turns a response timeout into
   /// `ImapException('timeout')` ONLY when the client was built with a
-  /// `defaultResponseTimeout`. This app builds its clients without one (the
-  /// `ImapClient` here and `GreetingAwareImapClient` in ImapTlsConnector), so
-  /// that message is not expected today; it is still classified as a
-  /// connection failure in case a timeout is set later. A network failure
+  /// `defaultResponseTimeout`. Since Sprint 79 (R-8) both clients are
+  /// (`kImapResponseTimeout`, the `ImapClient` here and
+  /// `GreetingAwareImapClient` in ImapTlsConnector), so a login that stalls
+  /// ends with that message -- classified as a connection failure, never as a
+  /// wrong password. A network failure
   /// during LOGIN is a `SocketException`, not an [ImapException], and keeps
   /// its connection meaning in [loadCredentials].
   Future<void> _login(ImapClient client, Credentials credentials) async {

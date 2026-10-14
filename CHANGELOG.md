@@ -27,6 +27,7 @@ Format: `- **type**: Description (Issue #N)` where type is feat|fix|chore|docs
 ## [Unreleased]
 
 ### 2026-10-13 (Sprint 79)
+- **fix**: A scan whose email server stops answering mid-scan now ends that step after 2 minutes with a connection error, instead of waiting forever and being cleaned up as dead much later (Issue #471)
 - **test**: A WinWright sweep on a locked PC runs every step except the mouse steps, names those, and counts as complete; the mouse steps run unlocked once per Store release (Issue #485)
 - **feat**: Windows shows a notification when a background scan of an account completes, with the same title and counts as Android, one per account (Issue #483)
 - **chore**: flutter_local_notifications 17.2.4 -> 22.3.2 and desugar_jdk_libs 2.0.4 -> 2.1.4; the unused PowerShell toast service and the unused Windows notification placeholder are removed (ADR-0048 supersedes ADR-0018) (Issue #483)
