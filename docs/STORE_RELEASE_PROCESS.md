@@ -49,6 +49,7 @@ Before starting a store release, confirm all of these:
 - [ ] **Check `docs/STORE_VERSION_STATUS.md`, then re-verify its Live/certified row against Partner Center directly** (it is a cache, not authoritative -- see the file's own header). Confirms the actual live version before deciding the target.
 - [ ] Target version is chosen. By convention we release from production worktree at `X.Y.Z.0` and dev is always `X.Y.(Z+1).0` (per ADR-0035 patch+1). Cross-check against `mobile-app/pubspec.yaml`'s current `version:` -- if dev has not been bumped since the last release, the target is dev's CURRENT version, not current+1.
 - [ ] `docs/ALL_SPRINTS_MASTER_PLAN.md` "Last Completed Sprint" is up to date.
+- [ ] **One UNLOCKED WinWright sweep since the last Store release** (F291 guard, Sprint 79 Q4 = 1): a sprint sweep run on a locked PC skips the mouse steps (`locked: N mouse steps skipped`), so at least one sweep in this release's sprints must read `Mouse steps skipped: 0`. If none did, run `mobile-app\scripts\run-winwright-tests.ps1` on an unlocked PC before building.
 - [ ] CHANGELOG.md entries for the version are assembled under `## [Unreleased]` ready to move under a versioned heading.
 - [ ] **The PROD WORKTREE has been pulled to current `main`** (Step 3.0). It is a separate checkout that nothing in the sprint updates, so it is stale by default at every release. Behind by 33 / 52 / 47 commits in Sprints 60 / 66 / 68 -- a stale worktree builds successfully and silently packages the PREVIOUS sprint's code under the new version number.
 

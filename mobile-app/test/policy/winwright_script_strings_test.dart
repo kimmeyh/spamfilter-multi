@@ -196,11 +196,50 @@ void main() {
             '${offenses.join('\n')}');
   });
 
+  // F291 (Sprint 79): the list above is a COPY of the runner's $cursorTools;
+  // "keep in step" was a comment, not a check. Now it is a check.
+  test('cursorTools matches the runner\'s \$cursorTools exactly', () {
+    final runner = File('scripts/run-winwright-tests.ps1').readAsStringSync();
+    final m = RegExp(r'^\$cursorTools\s*=\s*@\(([^)]*)\)', multiLine: true)
+        .firstMatch(runner);
+    expect(m, isNotNull, reason: r'$cursorTools not found in the runner');
+    final runnerTools = RegExp(r"'([^']+)'")
+        .allMatches(m!.group(1)!)
+        .map((x) => x.group(1)!)
+        .toList();
+    expect(runnerTools, cursorTools);
+  });
+
+  // F291: on a locked PC the runner skips ONLY cursor steps and still counts
+  // the sweep. What this does NOT catch: whether the copy actually replays
+  // (the runner's own `-TestLockedSkipOnly` self-test checks the removal on
+  // every script; a live locked sweep proves the replay).
+  test('locked PC: the runner skips and names cursor steps, never refuses', () {
+    final runner = File('scripts/run-winwright-tests.ps1').readAsStringSync();
+    expect(runner, contains('function New-CursorFreeCopy'));
+    expect(runner, contains(r'New-CursorFreeCopy -Path $test.FullName -Tools $cursorTools'));
+    expect(runner, contains(r'"locked: $($script:lockedSkipped.Count) mouse steps skipped"'));
+    expect(runner, isNot(contains('THE WORKSTATION IS LOCKED -- unlock it')));
+    // The F284 rule is untouched: a runner skip for any OTHER reason fails.
+    expect(runner, contains("is not supported by the script runner"));
+    expect(runner, contains('return 3'));
+  });
+
+  test('the default sweep skips exactly the pinned mouse steps when locked',
+      () {
+    final total = knownPending.values
+        .expand((m) => m.values)
+        .fold<int>(0, (a, b) => a + b);
+    expect(total, 6,
+        reason: 'F291 record reads "locked: 6 mouse steps skipped" today; a '
+            'change here must be deliberate (and update the plan record)');
+  });
+
   // WHAT THIS DOES NOT CATCH: it reads step "tool" names only. It cannot tell
   // that a ww_invoke selector still resolves (a live sweep does), that
   // ww_set_checked is replayed by the installed runner, or
   // that a pattern tool silently falls back to a cursor click (ww_invoke on a
   // control without InvokePattern errors rather than clicking, but a future
   // WinWright build could change that). It also trusts the runner's
-  // $excludedFromSweep line and the cursorTools list above to be right.
+  // $excludedFromSweep line to be right.
 }

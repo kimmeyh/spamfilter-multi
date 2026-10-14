@@ -27,6 +27,7 @@ Format: `- **type**: Description (Issue #N)` where type is feat|fix|chore|docs
 ## [Unreleased]
 
 ### 2026-10-13 (Sprint 79)
+- **test**: A WinWright sweep on a locked PC runs every step except the mouse steps, names those, and counts as complete; the mouse steps run unlocked once per Store release (Issue #485)
 - **feat**: Windows shows a notification when a background scan of an account completes, with the same title and counts as Android, one per account (Issue #483)
 - **chore**: flutter_local_notifications 17.2.4 -> 22.3.2 and desugar_jdk_libs 2.0.4 -> 2.1.4; the unused PowerShell toast service and the unused Windows notification placeholder are removed (ADR-0048 supersedes ADR-0018) (Issue #483)
 - **docs**: Backlog refinement presents the next 20 candidates in one priority order, with the details in the same order and no phase-group headers; the master plan stays grouped by phase (Issue #487)
