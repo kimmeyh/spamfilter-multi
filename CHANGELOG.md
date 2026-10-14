@@ -27,6 +27,8 @@ Format: `- **type**: Description (Issue #N)` where type is feat|fix|chore|docs
 ## [Unreleased]
 
 ### 2026-10-13 (Sprint 79)
+- **feat**: Windows shows a notification when a background scan of an account completes, with the same title and counts as Android, one per account (Issue #483)
+- **chore**: flutter_local_notifications 17.2.4 -> 22.3.2 and desugar_jdk_libs 2.0.4 -> 2.1.4; the unused PowerShell toast service and the unused Windows notification placeholder are removed (ADR-0048 supersedes ADR-0018) (Issue #483)
 - **docs**: Backlog refinement presents the next 20 candidates in one priority order, with the details in the same order and no phase-group headers; the master plan stays grouped by phase (Issue #487)
 - **fix**: Every change to an account's background schedule (scheduled or cancelled, on Windows and Android) is now written to the diagnostic log with the screen or step that made it, so an account that stops being scanned always shows why (Issue #471)
 - **feat**: Android background-scan notifications name the account (`Back. scan k*@aol completed`) and list "No rule" first (`No rule 9 Deleted 1 Safe 0`); one notification per account, the newest replacing the older one; a read-only or partial scan names its mode in the title and strikes through the counts it did not act on (Issue #482)

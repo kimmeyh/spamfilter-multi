@@ -109,13 +109,18 @@ void main() {
     });
   });
 
-  test('source gate: the Android worker posts through the shared builder', () {
-    final src = File('lib/core/services/android_background_scan_worker.dart')
-        .readAsStringSync();
-    expect(src, contains('ScanNotificationText.build('));
-    expect(src, contains('ScanNotificationText.notificationId(accountId)'));
-    expect(src, contains('DefaultStyleInformation(true, false)'));
-    expect(src, isNot(contains('accountId.hashCode')));
-    expect(src, isNot(contains("'Background scan complete'")));
+  test('source gate: both workers post through the shared notifier', () {
+    // F287 moved the plugin call into ScanCompleteNotifier; its behavior is
+    // tested in scan_complete_notifier_test.dart.
+    for (final worker in [
+      'lib/core/services/android_background_scan_worker.dart',
+      'lib/core/services/background_scan_windows_worker.dart',
+    ]) {
+      final src = File(worker).readAsStringSync();
+      expect(src, contains('ScanCompleteNotifier.post('), reason: worker);
+      expect(src, isNot(contains('accountId.hashCode')), reason: worker);
+      expect(src, isNot(contains("'Background scan complete'")),
+          reason: worker);
+    }
   });
 }

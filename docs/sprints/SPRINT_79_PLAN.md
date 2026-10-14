@@ -365,7 +365,12 @@ each test has its "what this does NOT catch" line.
   the Store build; the DEV build's registration to be found, not assumed). Route 2: upgrade `flutter_local_notifications`
   to the version named after research (see the research note below) and use its Windows support; ADR-0018 superseded.
 - R-4: The unused path is deleted (the other service), not left beside the chosen one.
-- R-5: The per-account notification setting applies on Windows exactly as on Android.
+- R-5: The per-account notification setting applies on Windows exactly as on Android. **Corrected at execution
+  (2026-10-13)**: no such setting exists on either platform (`settings_store.dart` has none; Android posts for every
+  COMPLETED scan and nothing for a stopped or skipped one, `BackgroundScanCore.completeAccount`,
+  `background_scan_core.dart:106-128`). The parity rule implemented is that one: Windows posts only after a completed
+  scan (the skip path `continue`s first). Turning notifications off is the OS's per-app setting on each platform.
+  AC-2 reads accordingly: a skipped account posts nothing.
 
 **Research note (read-only agent, 2026-10-13; sources pub.dev changelog and the plugin's native source, URLs in the
 F287 backlog card)**:

@@ -19,7 +19,6 @@ import 'dart:ui' show DartPluginRegistrant;
 
 import 'package:flutter/foundation.dart' show visibleForTesting;
 import 'package:flutter/widgets.dart' show WidgetsFlutterBinding;
-import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:logger/logger.dart';
 import 'package:workmanager/workmanager.dart';
 
@@ -36,7 +35,7 @@ import 'background_scan_trigger.dart';
 import 'diagnostic_logger.dart';
 import 'f264_upgrade_migration.dart';
 import 'notification_account_filter.dart';
-import 'scan_notification_text.dart';
+import 'scan_complete_notifier.dart';
 import 'scan_sheet_export.dart';
 
 /// Prefix for the per-account WorkManager task name, mirroring the Windows
@@ -354,24 +353,16 @@ class AndroidBackgroundScanWorker {
   /// Best-effort by design: a notification failure (permission denied, channel
   /// unavailable) must never fail the scan itself -- the scan's persistence is
   /// the record; the notification is a courtesy.
+  ///
+  /// F286/F287 (Sprint 79): posted through the shared [ScanCompleteNotifier]
+  /// (the Windows worker uses the same one): the title names the account, the
+  /// body lists "No rule" first, the ID is per account, and a count the scan
+  /// mode did not act on is struck through.
   static Future<void> _notifyScanComplete({
     required String accountId,
     required AccountScanOutcome outcome,
-  }) async {
-    try {
-      final plugin = FlutterLocalNotificationsPlugin();
-      const initSettings = InitializationSettings(
-        android: AndroidInitializationSettings('@mipmap/ic_launcher'),
-      );
-      await plugin.initialize(initSettings);
-
-      // F286 (Sprint 79): one shared builder for the title, body and ID (the
-      // Windows toast uses the same one, F287). The body is HTML so a count
-      // the scan mode did not act on renders struck through; the title names
-      // the mode for screen readers. The user's OWN address is masked
-      // (ADR-0030); the ID is per account, so a newer notification replaces
-      // the older one.
-      final text = ScanNotificationText.build(
+  }) =>
+      ScanCompleteNotifier.post(
         accountId: accountId,
         mode: outcome.scanProvider.scanMode,
         noRule: outcome.unmatchedCount,
@@ -379,25 +370,4 @@ class AndroidBackgroundScanWorker {
         safe: outcome.safeCount,
         errors: outcome.errorCount,
       );
-
-      const androidDetails = AndroidNotificationDetails(
-        'background_scan_channel',
-        'Background Scans',
-        channelDescription: 'Results of scheduled background email scans',
-        importance: Importance.low,
-        priority: Priority.low,
-        showWhen: true,
-        styleInformation: DefaultStyleInformation(true, false),
-      );
-
-      await plugin.show(
-        ScanNotificationText.notificationId(accountId),
-        text.title,
-        text.htmlBody,
-        const NotificationDetails(android: androidDetails),
-      );
-    } catch (e) {
-      _logger.w('Completion notification failed (scan itself succeeded): $e');
-    }
-  }
 }
