@@ -198,11 +198,29 @@ AOL scans that stop mid-run.
     Background note screenshot is still needed.
 - R-2: F205 / MV74-3 (#433): classify every scan error from one day of normal use per account, or record zero. 0.19.0
   so far: zero errors in 18 background scans (14:16-15:14).
+  - 2026-10-13 14:16 to 2026-10-14 08:11 (0.19.0, all accounts): **zero `error` outcomes**; 3 AOL `refused` (another
+    scan held the account: 10-13 15:57:53, 10-14 04:56:08, 07:13:19) -- the claim lock working, not a fault. Gmail
+    renewals on Android: 4 of 4 `renewed with the stored refresh token` after `native silent sign-in returned no
+    account`, no `invalid_grant`. (The 8 Gmail and 2 AOL errors in the pull summary are all 0.18.0.)
 - R-3: Boot-time `main()` trace: name what started the engine at 09:14:39 on 2026-10-07 with no app opened, and whether
   `app start (foreground)` is the wrong label for that path.
 - R-4: iCloud background ON on the Fold if iCloud should be covered (0.18.0 logs: 4 iCloud starts at a 240-minute gap,
   so it is on at 4 hours); record one completed iCloud background scan.
 - R-5: MV-7: DONE pre-plan (3.2.2.1); confirm once more on an overnight log (no double-scheduling FLAG).
+  - **Overnight 2026-10-14 00:00-08:11: FAILS for a 15-minute account.** Yahoo (15m) completed 52 scans, 6.25/hour
+    against about 4. AOL (5m, 9.44/hour), Gmail (240m) and iCloud (720m) are within their intervals. **Mechanism
+    (verified in source and log)**: the recent-scan skip runs only on a Doze-alarm run (`if (dozeAlarm && !isTest)`,
+    `android_background_scan_worker.dart:244`) with a window of two-thirds of the interval (`dozeAlarmShouldSkip`,
+    `:142`, 10 minutes at 15). The alarm fires 10-13 minutes after a periodic scan, past the window, so it scans; the
+    periodic run about 5 minutes later never checks, so it scans too. Example: periodic 00:05:58, alarm 00:16:21
+    (622 s, ran), periodic 00:21:25 (ran); the one alarm at 582 s (01:56:56) skipped. A 5-minute account is not
+    affected because WorkManager's periodic minimum is 15 minutes, so the alarm carries its cadence.
+  - **Why the health check did not flag it before**: `phone-log-health.ps1` applied ONE interval to every account.
+    Fixed (prevention): it now reads each account's interval from its own skip lines (`(interval 15m; doze alarm)`),
+    counts N-1 gaps for the rate (two scans 240 minutes apart had read as a double), and accepts `-Path a,b` through
+    `-File`; self-test 13 checks, both new behaviors mutation-verified (each mutant fails the self-test).
+  - **App fix NOT made**: applying the skip to periodic runs changes the Sprint 78 MV-7 design (periodic always
+    scans). Surfaced to Harold as a development decision.
 - R-6: Gmail `invalid_grant` (Fold, 2026-10-12 17:27): Harold opens Google Cloud Console > APIs & Services > OAuth
   consent screen and reports the publishing status. Until he does, the cause stays UNVERIFIED; no claim about what
   that status does to refresh tokens is written unless Google's page is fetched and quoted in the same turn.
@@ -225,6 +243,11 @@ AOL scans that stop mid-run.
     switch's off path (`settings_screen.dart:1564`), and it logged to logcat only. Doze-only and periodic-only
     candidates cannot explain both stopping; worker eligibility checks run after the `start` line, so they do not fit.
     **Cause unknown**; settled by Harold reading Settings > Gmail > Background "Enable Background Scanning" (asked).
+  - **RESOLVED 2026-10-14 from the overnight log: Gmail did not stop; its interval is 240 minutes.** Periodic Gmail
+    scans at 18:17, 22:17, 02:19 and 06:19, each followed by a Doze-alarm skip line `(interval 240m; doze alarm)`
+    (first at 18:31). Gmail ran every 5 minutes up to 14:27, so the interval changed between 14:27 and 18:17; the
+    14:29-15:14 silence is the first 240-minute wait. Who changed it is not in the log (0.19.0 has no scheduler line;
+    the 399fb52 prevention adds one). iCloud is at 720 minutes, which also explains its 0.18.0 gaps (R-4).
   - **Prevention (done)**: both platform adapters now write `[scheduler/<platform>] schedule|cancel <masked account>
     [every Nm] ok|FAILED (from <file:line>)` to the diagnostic log on every call; tests in
     `background_scan_scheduler_test.dart` (format, caller label, source gate), two mutations KILLED. Native-side
@@ -314,6 +337,14 @@ R-8 added with a real lead).
   Windows arm; any constant change is shared Dart and applies to both platforms.
 
 **Dependencies / blockers**: three overnight windows (Harold); not on the same nights as Task 1's multi-account steps.
+
+**Night log**:
+- 2026-10-13/14 (00:00-08:11, 0.19.0): **NOT A VALID ARM.** The Battery activity graph shows the phone CHARGING
+  from about 01:30 to 08:00 (24% at 01:05, 94% by 08:00) and "Screen off time: 0 m", so no screen-off discharge was
+  measured. All four accounts scanned (AOL 5m: 78 completed; Yahoo 15m: 52; Gmail 240m: 2; iCloud 720m: 1). Kept as
+  scheduling evidence (Task 1 R-5, R-9). App battery 0.2% (01:06 and 08:09), background time 9 m -> 14 m, Wi-Fi
+  4,686 -> 7,048 packets. Screenshots: `validation-screenshots/sprint-79/Screenshot_20261014_0{10542,10601,10610,
+  80914,80922,80931}_Device care.png`.
 
 **Acceptance criteria**: AC-1: three arms recorded with battery percent, scan count and a clean health check; AC-2: the
 decision rule applied and recorded in the results doc; AC-3: if the floor changes, `scan_interval_test.dart` and the
