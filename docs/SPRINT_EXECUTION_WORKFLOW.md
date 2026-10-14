@@ -741,7 +741,7 @@ This change was introduced after Sprint 36 kickoff skipped Phase 1 (prior "OPTIO
     already said to trace preconditions; tracing by reading did not prevent it, so the step is now RUN, not read.
 
 - [ ] **5.2 Run Complete Test Suite**
-  - Execute full test suite: `flutter test`
+  - Execute full test suite through the evidence runner (F292, Sprint 79): `powershell -NoProfile -ExecutionPolicy Bypass -File scripts\run-full-suite.ps1 -Label <sprint>-5.2`. It runs `flutter test --concurrency=4` and records boot time, page file, DEV app state, commit charge every 30 s, TEST-RUNNER load failures, and STALLED after 10 minutes without output. Record its RESULT line in the plan's 5.2 entry. A run that loses test files or stalls is a finding with its machine state attached, never "flaky".
   - Verify all tests pass (not just new ones)
   - Check code analysis: `flutter analyze`
   - Ensure zero errors introduced

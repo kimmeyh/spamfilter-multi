@@ -583,6 +583,24 @@ mechanism or "cause unknown" with what would settle it; AC-3: a fix or containme
 
 **Tests to write**: T-1 (AC-3) -- the containment's own self-test (for example the runner flags a failed-to-load file).
 
+**Runs (2026-10-13, all BEFORE the page-file reboot: boot 2026-10-08 16:07, page file 30,840 MB)**:
+- Run 1 (`flutter test --concurrency=4`, DEV app state not recorded): 3,028 passed, 15 skipped, 1 failed
+  (`release_notes_test`: the Task 0 notes gap, fixed in 15a243a); 0 test-load failures; 2 min 33 s.
+- Run 2 (DEV app closed): exit 0, 3,037 passed, 0 test-load failures, peak commit 56.6 of 93.8 GB, 2 min 29 s.
+- Run 3 (DEV app OPEN, all four DEV accounts scanning every 5 minutes -- the Sprint 78 conditions; Yahoo and AOL
+  scans ran during it): exit 0, 3,037 passed, 0 test-load failures, peak commit 56.2 of 93.8 GB, 2 min 37 s.
+- **Mechanism: cause unknown** -- not reproduced in three runs, one under the Sprint 78 conditions. Leading hypothesis
+  (UNVERIFIED): commit-charge pressure from other processes; on the Sprint 78 failure day the AAB build died at 86
+  of 94 GB committed, while these runs peak at about 56 GB. Nothing recorded commit charge during the Sprint 78
+  failing runs, which is why the question cannot be settled from them. What settles it: the next failing run, with
+  its commit charge recorded.
+- **Containment (prevention first, done)**: `scripts/run-full-suite.ps1` (promoted from the Sprint 79 scratch helper
+  used for runs 2-3): records boot time, page file, DEV app state, commit charge every 30 s, test-RUNNER load
+  failures only (the first draft counted 63 false hits from the app's own "Failed to load credentials" log lines),
+  and STALLED after `-StallMinutes` (default 10) without output, stopping only the testers it started. Failure
+  path proven: `-SelfTestStall -StallMinutes 1` reported `STALLED(1m)` and exit 2. Phase 5.2 now runs the suite
+  through it (`SPRINT_EXECUTION_WORKFLOW.md` 5.2). Post-reboot runs are labeled when Harold reboots.
+
 **Definition of Done**: default DoD.
 
 **Model**: Sonnet -- *why not Haiku*: diagnosis across process, memory and test-runner layers; escalate to Fable/Opus
@@ -620,7 +638,18 @@ example in `BACKLOG_REFINEMENT.md` shows 20-item order with matching detail orde
 
 - **5.1.2 F-PRECHECK**: PENDING
 - **5.1.5 WinWright sweep**: PENDING
-- **5.1.9 MV rehearsal**: PENDING
+- **5.1.9 MV rehearsal**: PENDING (partial evidence below; Android emulator rehearsal of F286 still to run)
+  - F287 Windows toast, REAL Task Scheduler path (2026-10-13, DEV release build at b0e8ca5+, Windows DEV background
+    ON at 5 minutes for all four accounts): the Gmail task launched `--background-scan --account-id=...` at 20:21:01;
+    its log says "Completion notification step done" at 20:21:20 and 20:26:25. Proof from Windows' own notification
+    store (`wpndatabase.db`, read from a copy): handler `MyEmailSpamFilter.Dev` (app:desktop); one toast per
+    account, tags = the pinned FNV-1a IDs (AOL 772562602, Yahoo 663563768, Gmail 1988489478, iCloud 2019592444);
+    text "Back. scan k*@gmail read-only completed" / "No rule 0 Deleted 0 Safe 0". After the second Gmail run the
+    store holds ONE Gmail toast (id 129153 replaced 129149): replacement per account proven. The read-only title
+    word shows on Windows (Q1 parity).
+  - Side finding: the store also held many "MyEmailSpamFilter Background Scan Complete / Found 10 unmatched emails
+    in 5 accounts" toasts under the ADR-0018 app ID `MyEmailSpamFilter.BackgroundScan` -- posted by the deleted
+    `windows_toast_notification_service_test.dart` on every full test run. Deleting that test ends it.
 - **5.2 full suite**: PENDING
 
 # Phase 7 evidence
