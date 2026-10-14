@@ -374,6 +374,7 @@ each test has its "what this does NOT catch" line.
 
 **Model**: Haiku -- a pure function plus one call-site swap. **Delegation checklist included**: yes.
 **Step-types**: SVC-NEW, TEST-UNIT. **Est-Effort**: 30-50m.
+**Executed-by**: Opus 5.5 (session model), deviation note (a) -- ~25 min (42ba161); emulator rehearsal at 5.1.9.
 
 ## Task 4 -- F287: Windows background-scan completion toast (Priority 15)
 
@@ -453,6 +454,8 @@ amended (route 1) or superseded (route 2).
 **Model**: Sonnet -- *why not Haiku*: OS registration (app ID, MSIX identity) and, in route 2, a major dependency
 upgrade across both platforms.
 **Step-types**: SVC-EDIT, NATIVE-WIN, TEST-UNIT. **Est-Effort**: route 1 60-90m; route 2 90-150m.
+**Executed-by**: Opus 5.5 (session model), deviation note (a) -- ~60 min (b4cbef5), route 2; Task Scheduler toast at
+5.1.9.
 **Risk & rollback**: an unregistered app ID makes Windows drop the toast with no error (UNVERIFIED this session; the
 5.1.9 rehearsal on this PC settles it before Harold sees it); rollback = revert the commit, Windows returns to no toast.
 **Decision-class interrupts**: route 2 supersedes ADR-0018 (Class 1) -- asked as Q2.
@@ -555,6 +558,7 @@ and the F193 gate accept a "locked: 6 mouse steps skipped" record and still reje
 
 **Model**: Sonnet -- *why not Haiku*: gate edits have regressed their own allow-cases before (Sprint 67 IMP-2).
 **Step-types**: HOOK, DOCS. **Est-Effort**: 40-70m.
+**Executed-by**: Opus 5.5 (session model), deviation note (a) -- ~35 min (7dbf56c); hook suite 136/136.
 
 ## Task 7 -- F292: Full test suite, test processes die or hang (Priority 5)
 
@@ -608,6 +612,7 @@ example in `BACKLOG_REFINEMENT.md` shows 20-item order with matching detail orde
 **Definition of Done**: None -- default DoD only (CHANGELOG `chore`/`docs` entry).
 
 **Model**: Haiku -- doc edit fully specified. **Step-types**: DOCS. **Est-Effort**: 15-25m.
+**Executed-by**: Opus 5.5 (session model), deviation note (a) -- ~15 min (360008e).
 
 ---
 

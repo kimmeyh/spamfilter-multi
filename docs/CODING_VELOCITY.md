@@ -231,6 +231,12 @@ Every Item that is implemented gets ONE row here the moment it is picked up -- s
 | Re-sweep + s75 history selector fix | 78 | DONE | -- | -- | ~20 | ~20 | Recorded at completion (2026-10-13). UNPLANNED: background rows pushed every manual row off screen. |
 | Retro IMP-1, IMP-2, IMP-4 + final sweep at 82a35db | 78 | DONE | 40 + 45 + 25 | 110 | ~95 | ~95 | Recorded at completion (2026-10-13 ~08:45-10:30). Within estimate. IMP-4 found a real dark-mode defect (Rule Test highlight) where the proposal had assumed an exemption. |
 | 7.7.1 final review fixes (Copilot 2, silent-failure 9, code-reviewer 8) | 78 | DONE | -- | -- | ~120 | ~120 | Recorded at completion (2026-10-13 ~10:40-12:40). UNPLANNED. Plus ~25 min on two full-suite runs whose test processes died or hung (F292). |
+| Task 0: version 0.20.0+17 + provisional notes (#481) | 79 | DONE | 10-15 | 10-15 | ~15 | ~15 | Recorded at completion (2026-10-13). The notes were missed at 3.7.0b and added after the first full suite (15a243a); the 3.7.0b step now names them. |
+| Task 3: F286 notification text + per-account ID (#482) | 79 | DONE (rehearsal pending) | 30-50 | 30-50 | ~25 | ~25 | Approximate, from commit times (42ba161); includes the plugin HTML read and six mutations. Emulator rehearsal at 5.1.9. |
+| Task 4: F287 Windows toast, plugin 17 -> 22 (#483) | 79 | DONE (rehearsal pending) | 90-150 (route 2) | 90-150 | ~60 | ~60 | Approximate (b4cbef5); the advisor pre-flight, plugin source reads, ADR-0048 and five mutations. Real Task Scheduler toast at 5.1.9. |
+| Task 6: F291 locked-PC sweep counts (#485) | 79 | DONE | 40-70 | 40-70 | ~35 | ~35 | Approximate (7dbf56c); interleaved with the first full suite. Live locked sweep at 5.1.5. |
+| Task 8: F293 backlog presentation (#487) | 79 | DONE | 15-25 | 15-25 | ~15 | ~15 | Approximate (360008e). Five places, not four (the skill also restated the format). |
+| Task 1 (part): R-9 scheduler log lines + R-8 IMAP response limit (#471) | 79 | DONE (phone steps open) | (inside 60-110) | -- | ~70 | ~70 | Approximate (399fb52, b0e8ca5); includes one Sonnet trace agent (~3 min wall) and the 17-row reaped analysis. |
 
 ## Can the missing sprints (48-69) be reconstructed from git? -- TESTED 2026-09-19, answer: NO
 
