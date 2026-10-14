@@ -233,13 +233,53 @@ AOL scans that stop mid-run.
 - R-8 follow-up (2026-10-14): **two more class-B rows on 0.19.0** (2862 at 10-13 16:48:44, 2886 at 18:29:31). In both,
   and in 2270 (0.18.0), the SAME Doze request ran again exactly 30 s later (`trigger=doze-alarm delay=30s`, the alarm
   time unchanged) and skipped on the dead row. A Doze run never asks for a retry (`retryOnFailureFor`), so a 30 s
-  re-run of the same request is consistent with WorkManager re-running a STOPPED worker (UNVERIFIED). **Prevention
-  (done)**: the dispatcher registers the plugin's `onTaskStopped` (workmanager 0.10.7), which writes `stopped by
+  re-run of the same request is consistent with WorkManager re-running a STOPPED worker (UNVERIFIED). **Attempted
+  prevention -- DOES NOT WORK ON THE DEVICE (see the emulator result below)**: the dispatcher registers the plugin's
+  `onTaskStopped` (workmanager 0.10.7), meant to write `stopped by
   WorkManager before it finished: reason=<timeout|preempt|deviceIdle|...> (<account> <trigger>)` (bounded to 2 s).
   Tests: `onWorkerStopped` writes one line; a hanging or throwing write does not hold teardown; wiring. Mutations M4a
   (no write), M4b (no bound), M4c (not registered) KILLED (M4 against the first, source-only test SURVIVED, which
   is why the handler became a testable function). If a dead row appears with no stop line, the process died
   instead -- that also settles it.
+  - **Reproduced on the emulator (2026-10-14 09:41, 0.20.0 debug built before the handler)**: a Settings > Test
+    Background Scan of AOL (read-only) was stopped 30 s in -- logcat `WM-GreedyScheduler: Constraints not met:
+    Cancelling work ID ...`, `WorkerStoppedException`, `rescheduling for later execution` -- while the emulator's
+    network callbacks fired (`onCapabilitiesChanged`). The diagnostic log's last line was `fetch-path -- folder
+    "Inbox"`: the class-B shape exactly. Named mechanism for THIS case: the Test and periodic requests carry
+    `NetworkType.connected` (`background_scan_scheduler.dart:395`, `:477`); a connectivity flap makes WorkManager
+    stop the RUNNING worker. The Doze one-off has no constraint (`DozeScanTrigger.kt:107-110`), so the phone's
+    Doze-run deaths (2862, 2886) need the stop line to name their reason.
+  - **F282 on the emulator: `csv_export_directory = /storage/emulated/0/Documents`** saved (app_settings,
+    date_modified 1791073363700, about 2026-10-04), and its log is in `Documents/diagnostics` -- the saved folder
+    wins, VERIFIED here; the phone is still inferred until Harold's Settings check.
+  - Emulator Gmail: `stored refresh token failed ... invalid_grant` (09:39:19) -- a second device with the R-6
+    symptom; the cause stays UNVERIFIED until the OAuth consent publishing status is read (R-6).
+  - **Stop handler on the emulator (0.20.0 debug WITH the handler and a logcat-first line, 10:01 and 10:25)**: two
+    forced stops (network cut during a Test run and a periodic run; logcat `Constraints not met: Cancelling`,
+    `WorkerStoppedException`) produced NO `stopped by WorkManager` line in logcat or the diagnostic log, and the Dart
+    scan kept logging for seconds after `WorkerWrapper interrupted`. **The handler does not fire. Cause unknown**;
+    unverified candidate: the plugin's `onStopped` makes the Pigeon call off the platform thread and its default
+    (no-op) `WorkmanagerDebug` handler swallows the error. Settled by a `Log.w` at the top of `onStopped` and in its
+    `catch` (needs a pub-cache edit -- not done). Alternative that does not depend on the plugin: read
+    `WorkInfo.getStopReason()` at the next worker start through a platform channel (asked as a question).
+    The code stays registered with a [WARNING] comment; it changes nothing when it does not fire.
+  - **Q1 gap found on the emulator (10:21)**: a periodic run that arrives WHILE another scan of the account is
+    running passes the entry check (the running scan is not `completed`), waits in `BackgroundScanCore`'s busy-retry
+    (254 s), then scans anyway -- 10:25:37, 3.5 minutes after the 10:22:01 completion, inside the window. The entry
+    check is not repeated after the wait. Not covered by the Q1 fix as built.
+  - **Test Background Scan can do nothing silently**: `runTestScan` uses a unique name with WorkManager's default
+    KEEP (`background_scan_scheduler.dart:473`); while an earlier test request is queued or in its 10-minute backoff
+    (after a stop), a new tap is dropped with no message. Seen 10:08 (tap, no run until 10:20:58).
+  - **R-9 prevention VERIFIED on a device**: `[scheduler/android] schedule k***@aol.com every 15m ok (from
+    settings_screen.dart:1539)` at 10:21:04 and `cancel k***@aol.com ok (from settings_screen.dart:1564)` at 10:31:48.
+  - **F286 rehearsal (5.1.9) PASS on the emulator**: read-only AOL Test run completed 10:22:01; the shade shows
+    title `Back. scan k*@aol read-only com...` and body `No rule 111 ~~Deleted 0 Safe 0~~` (strikethrough renders;
+    dumpsys `android.text=SpannableString`); notification id 772562602 = the Windows toast tag for AOL (F287), so
+    both platforms key the same account the same way. Screenshot
+    `validation-screenshots/sprint-79/emulator_F286_readonly_strikethrough_20261014_1023.png`.
+  - Emulator housekeeping: AOL background was turned ON for this test and OFF again (10:31:48); the emulator was
+    rebooted once (09:57) after memory compaction starved it (load 13.78, `kcompactd0` 83%); the other app build
+    `com.myemailspamfilter.dev` was force-stopped to free memory.
 - R-6: Gmail `invalid_grant` (Fold, 2026-10-12 17:27): Harold opens Google Cloud Console > APIs & Services > OAuth
   consent screen and reports the publishing status. Until he does, the cause stays UNVERIFIED; no claim about what
   that status does to refresh tokens is written unless Google's page is fetched and quoted in the same turn.

@@ -96,6 +96,14 @@ void androidBackgroundScanDispatcher() {
 /// (Android 12+; `unknown` before). Bounded: the plugin tears the engine down
 /// when this returns, so a slow write must not hold it. [write] is the test
 /// seam; production writes to the diagnostic log.
+///
+/// [WARNING] NOT OBSERVED FIRING ON A DEVICE. On the emulator (2026-10-14,
+/// 0.20.0 debug) two forced stops (`Constraints not met` ->
+/// `WorkerStoppedException`) produced neither this line nor the logcat line
+/// below. Cause unknown (unverified candidate: the plugin's `onStopped` sends
+/// the Pigeon call off the platform thread and its no-op debug handler
+/// swallows the error). Do not read the absence of a stop line in a phone log
+/// as "the worker was not stopped".
 @visibleForTesting
 Future<void> onWorkerStopped(
   String taskName,
@@ -103,6 +111,9 @@ Future<void> onWorkerStopped(
   Future<void> Function(String detail)? write,
 }) async {
   final detail = describeWorkerStop(running: _runningWork, reason: reason);
+  // Logcat first: it needs no database or file lock, so it shows the handler
+  // ran even when the diagnostic-log write below cannot finish in time.
+  AndroidBackgroundScanWorker._logger.w('[worker/android] $detail');
   try {
     await (write ??
             (d) => DiagnosticLogger.log(

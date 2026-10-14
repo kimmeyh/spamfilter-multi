@@ -28,7 +28,7 @@ Format: `- **type**: Description (Issue #N)` where type is feat|fix|chore|docs
 
 ### 2026-10-14 (Sprint 79)
 - **fix**: Android no longer scans an account on a 15-minute (or longer) schedule about twice per interval: the scheduled run now skips an account whose last completed scan started within two-thirds of its interval, as the idle-wake alarm already did (Issue #471)
-- **fix**: When Android stops a background scan before it finishes, the diagnostic log now says so and gives Android's reason (Issue #471)
+- **chore**: The Android worker registers a handler meant to log why Android stopped a scan before it finished; on the emulator it did not fire, so it is not yet a working diagnostic (Issue #471)
 - **chore**: `develop` is the GitHub default branch, so `Closes #N` in a sprint PR closes its cards on merge; releases are tagged `vX.Y.Z` on main, and 22 past releases were tagged (Issue #484)
 
 ### 2026-10-13 (Sprint 79)
