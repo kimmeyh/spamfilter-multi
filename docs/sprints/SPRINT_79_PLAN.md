@@ -221,11 +221,46 @@ AOL scans that stop mid-run.
     `-File`; self-test 13 checks, both new behaviors mutation-verified (each mutant fails the self-test).
   - **App fix NOT made**: applying the skip to periodic runs changes the Sprint 78 MV-7 design (periodic always
     scans). Surfaced to Harold as a development decision.
+  - **Harold Q1 = 1 (2026-10-14): fixed.** A periodic run now skips an account whose last COMPLETED scan started
+    within two-thirds of its interval (`checksRecentScan`, `recentScanShouldSkip`, `getLatestScanStart(completedOnly:)`).
+    Callers: periodic -- changes (skips after a recent completed scan; its retry after a failed, killed or running
+    scan still scans, because only `completed` rows count); Doze alarm -- unchanged (any status); new-mail
+    notification and Test -- never check. Log line `skipped: a completed scan started Ns ago (interval Nm; periodic)`
+    keeps the `(interval Nm` shape `phone-log-health.ps1` reads. ADR-0042: Android-only by nature (Windows Task
+    Scheduler has one trigger per account, no second schedule to collide with). Tests: `mv7_doze_alarm_skip_test.dart`
+    17 pass; mutations M1 (periodic does not check), M2 (status filter dropped), M3 (notification run checks), M5
+    (periodic counts any status) KILLED. What the tests do NOT catch: delivery timing on the phone (overnight log).
+- R-8 follow-up (2026-10-14): **two more class-B rows on 0.19.0** (2862 at 10-13 16:48:44, 2886 at 18:29:31). In both,
+  and in 2270 (0.18.0), the SAME Doze request ran again exactly 30 s later (`trigger=doze-alarm delay=30s`, the alarm
+  time unchanged) and skipped on the dead row. A Doze run never asks for a retry (`retryOnFailureFor`), so a 30 s
+  re-run of the same request is consistent with WorkManager re-running a STOPPED worker (UNVERIFIED). **Prevention
+  (done)**: the dispatcher registers the plugin's `onTaskStopped` (workmanager 0.10.7), which writes `stopped by
+  WorkManager before it finished: reason=<timeout|preempt|deviceIdle|...> (<account> <trigger>)` (bounded to 2 s).
+  Tests: `onWorkerStopped` writes one line; a hanging or throwing write does not hold teardown; wiring. Mutations M4a
+  (no write), M4b (no bound), M4c (not registered) KILLED (M4 against the first, source-only test SURVIVED, which
+  is why the handler became a testable function). If a dead row appears with no stop line, the process died
+  instead -- that also settles it.
 - R-6: Gmail `invalid_grant` (Fold, 2026-10-12 17:27): Harold opens Google Cloud Console > APIs & Services > OAuth
   consent screen and reports the publishing status. Until he does, the cause stays UNVERIFIED; no claim about what
   that status does to refresh tokens is written unless Google's page is fetched and quoted in the same turn.
 - R-7: Android parity of F281 (Scan every presets and Custom, hidden when background is off), F282 (files in
   `Documents/MyEmailSpamFilter`) and F283 (Review No Rule Items, partly evidenced in 3.2.2.1): one screenshot each.
+  - **Phone steps, Harold 2026-10-14 ("1 done, 2 mark done, 3, 4, 5, 6 done")**: step 1 interval note -- screenshot
+    `Screenshot_20261014_091117.png` (AOL, 5 minutes, idle note shown). Step 2 new-mail trigger -- marked done by Harold
+    without a run; the 0.19.0 logs (10-13 14:16 to 10-14 09:31) have **zero** `trigger=notification` lines and the AOL
+    screen reads "Needs Notification access", so access is not granted (affects Night C). Step 3 Gmail custom label --
+    PASS: Gmail background scans fetch `"Unwanted"` beside INBOX and SPAM (16 each). Steps 4 and 5 -- done per Harold;
+    no rule-update failure line in the log. Step 6 parity: F281 PASS (`091310`: 5/10/15/30 minutes, 1/2/4/12/24
+    hours, Custom); background OFF hides "Scan every" PASS (`091337`, iCloud); F282 see below; F283 partly evidenced
+    (F245 `marked addressed` lines 09:08-09:09).
+  - **F282 on the phone: files are in `Documents/diagnostics`, `Documents/scan_exports` and the Documents root, no
+    `MyEmailSpamFilter` folder** (`091640`-`091703`, `091815` "Writing to: /storage/emulated/0/Documents/diagnostics").
+    Code trace (0.19.0 contains F282, a79ea81 is an ancestor of 757d6a0): the `MyEmailSpamFilter` segment is added
+    only to the DEFAULT (`export_directories.dart:71-75`); a saved `csv_export_directory` is used exactly as chosen
+    (`:164-179`, F282 AC-2), and no migration rewrites it. **Inferred, not verified**: the phone has
+    `/storage/emulated/0/Documents` saved from before 0.19.0. Settles it: Settings > General > Export folder shows that
+    path and a "Reset to default" button (shown only when a folder is saved, `settings_screen.dart:1443`). Gap noted:
+    no F282 test runs the Android default path (the default is overridden in `f206_export_test.dart:44`).
 - R-8: The AOL scans that stopped mid-run: read every unfinished case in the 0.18.0 and 0.19.0 logs (the first
   is 2026-10-12 08:08:09); for each, record the seconds from start to the last line, the last step reached, and
   whether another worker started within 10 seconds. Settle the two candidates (process kill, periodic re-enqueue
@@ -549,6 +584,20 @@ this sprint's PR body uses `Closes #N` and the cards close on merge (observed at
   - HISTORY (never edited): `docs/sprints/*`, CHANGELOG, master-plan sprint records, `SPRINT_EXECUTION_WORKFLOW.md:83`
     (Sprint 50 failure record), `sprint_status.json` per-sprint "Closed by hand" lines.
   - FALSE MATCHES: "master plan", "maintain", "main rules file", `main.cpp`.
+
+**Phase B (Harold QF1 = 2, QF2 = 1 and 2, QF3 = 1, 2026-10-14)**:
+- Default branch: `gh repo edit --default-branch develop`; `git remote set-head origin -a` -> `origin/HEAD` =
+  `origin/develop`; `gh repo view --json defaultBranchRef` = `develop` (AC-2).
+- CI on PRs into main: NOT done (Harold: "DO NOT"); AC-3 withdrawn by Harold -- CI stays develop-only.
+- Must-change texts fixed (no hook logic changed): `require-sprint-cards.ps1:163-166`,
+  `verify-closeout-complete.ps1:471`, `phase-check/SKILL.md:37`, `SPRINT_CHECKLIST.md:166-167`,
+  `sprint_status.json` `github_issues.note`, plus `SPRINT_EXECUTION_WORKFLOW.md:83` (made past tense) and `:1686`.
+  Hook suite 136/136.
+- Release step written: CLAUDE.md and AGENTS.md (new "Default branch and the release step" subsection),
+  `STORE_RELEASE_PROCESS.md` Step 5 (tag commands), ADR-0015 amendment.
+- Tags: 22 annotated tags pushed (list and evidence rule in the ADR-0015 amendment); remote now has 23 with v0.5.0.
+  Map built from the prod worktree reflog, STORE_VERSION_STATUS and sprint_status history.
+- QF3: F296 added to the master plan (CI Flutter version kept in sync with local; TARGET SPRINT 80).
 
 **Model**: Haiku for Phase A and the doc edits -- the steps are fully specified; session model per the deviation note.
 **Step-types**: DOCS, HOOK (conditional). **Est-Effort**: 45-90m.

@@ -68,22 +68,65 @@ void androidBackgroundScanDispatcher() {
 
     final accountId = inputData?['accountId'] as String?;
     final isTest = taskName == kAndroidScanTestTaskName;
+    // F252: computed HERE, at entry, so the delay measures how long Android
+    // held the work back -- not the worker's own setup time.
+    final trigger = describeBackgroundTrigger(
+      isTest: isTest,
+      inputData: inputData,
+      now: DateTime.now(),
+    );
+    _runningWork =
+        '${accountId != null ? Redact.accountId(accountId) : '(all accounts)'} '
+        '$trigger';
     return AndroidBackgroundScanWorker.executeScan(
       accountId: accountId,
       isTest: isTest,
       retryOnFailure: retryOnFailureFor(inputData),
       notificationProviders: notificationProvidersFor(inputData),
       dozeAlarm: inputData?[kTriggerSourceKey] == 'doze-alarm',
-      // F252: computed HERE, at entry, so the delay measures how long Android
-      // held the work back -- not the worker's own setup time.
-      trigger: describeBackgroundTrigger(
-        isTest: isTest,
-        inputData: inputData,
-        now: DateTime.now(),
-      ),
+      trigger: trigger,
     );
-  });
+  }, onTaskStopped: onWorkerStopped);
 }
+
+/// Sprint 79 Task 1 R-8 (class B): 11 scans stopped within 30 s of their
+/// start with no heartbeat and no outcome line, and in three of them the same
+/// Doze request ran again exactly 30 s later -- so something STOPPED the
+/// worker, and the log could not say what. WorkManager tells the worker why
+/// (Android 12+; `unknown` before). Bounded: the plugin tears the engine down
+/// when this returns, so a slow write must not hold it. [write] is the test
+/// seam; production writes to the diagnostic log.
+@visibleForTesting
+Future<void> onWorkerStopped(
+  String taskName,
+  StopReason reason, {
+  Future<void> Function(String detail)? write,
+}) async {
+  final detail = describeWorkerStop(running: _runningWork, reason: reason);
+  try {
+    await (write ??
+            (d) => DiagnosticLogger.log(
+                  kind: DiagnosticLogger.kindScan,
+                  context: 'worker/android',
+                  detail: d,
+                ))(detail)
+        .timeout(const Duration(seconds: 2));
+  } catch (_) {
+    // Nothing to report to: the log write itself is what failed.
+  }
+}
+
+/// What this isolate's worker is running, for the stop line. One worker per
+/// isolate, so a single value is enough.
+String? _runningWork;
+
+/// Sprint 79 Task 1 R-8: the diagnostic line for a worker WorkManager stopped
+/// before it finished, e.g. `stopped by WorkManager before it finished:
+/// reason=deviceIdle (k***@aol.com trigger=doze-alarm delay=0s)`.
+@visibleForTesting
+String describeWorkerStop({required String? running, required StopReason reason}) =>
+    'stopped by WorkManager before it finished: reason=${reason.name}'
+    '${running != null ? ' ($running)' : ''}';
 
 /// Sprint 76 review H-1: whether a failed run may ask WorkManager to RETRY.
 ///
@@ -118,7 +161,17 @@ String? notificationProvidersFor(Map<String, dynamic>? inputData) {
 }
 
 /// Sprint 78 MV-7 (Harold, Fold logs 2026-10-09..13): whether a DOZE-ALARM
-/// run skips an account because a scan of it started recently.
+/// or (Sprint 79) PERIODIC run skips an account because a scan of it started
+/// recently.
+///
+/// Sprint 79 (Task 1 R-5, Harold Q1 = 1): the periodic run now applies the
+/// same rule. With the skip on the alarm side only, a 15-minute account was
+/// still scanned about twice per interval (Yahoo 6.25/hour overnight
+/// 2026-10-14): the alarm fired 10-13 minutes after a periodic scan -- past
+/// this window -- and scanned, and the periodic run about 5 minutes later
+/// never checked. The periodic run counts only COMPLETED scans
+/// (`getLatestScanStart(completedOnly: true)`), so its retry after a failure
+/// still scans; see [checksRecentScan].
 ///
 /// The F235 alarm exists to wake the phone when Doze holds WorkManager back
 /// (ADR-0039 amendment, Sprint 73). It was scanning on its own schedule even
@@ -133,7 +186,7 @@ String? notificationProvidersFor(Map<String, dynamic>? inputData) {
 /// slightly LESS than one interval old -- a full-interval rule would skip
 /// every second alarm in exactly the state the alarm is for.
 @visibleForTesting
-bool dozeAlarmShouldSkip({
+bool recentScanShouldSkip({
   required DateTime now,
   required DateTime? lastScanStart,
   required Duration interval,
@@ -143,6 +196,17 @@ bool dozeAlarmShouldSkip({
   final age = now.difference(lastScanStart);
   return !age.isNegative && age < window;
 }
+
+/// Sprint 79: which runs check for a recent scan. The Doze alarm and the
+/// periodic schedule do; a Test run never does (the user asked for a scan
+/// now), and neither does a new-mail notification run (new mail arrived, so
+/// the last scan cannot have seen it).
+@visibleForTesting
+bool checksRecentScan({
+  required bool isTest,
+  required String? notificationProviders,
+}) =>
+    !isTest && notificationProviders == null;
 
 /// The value handed back to WorkManager: `true` = done, `false` = retry.
 @visibleForTesting
@@ -238,27 +302,31 @@ class AndroidBackgroundScanWorker {
           if (!backgroundEnabled) continue;
         }
 
-        // Sprint 78 MV-7: a Doze-alarm run skips an account scanned recently
-        // (see dozeAlarmShouldSkip). A failed check never skips: the alarm's
-        // job is to make sure a scan happens.
-        if (dozeAlarm && !isTest) {
+        // Sprint 78 MV-7 + Sprint 79: a Doze-alarm or periodic run skips an
+        // account scanned recently (see recentScanShouldSkip). The periodic
+        // run counts only COMPLETED scans, so its retry after a failure still
+        // scans. A failed check never skips: making sure a scan happens wins.
+        if (checksRecentScan(
+            isTest: isTest, notificationProviders: notificationProviders)) {
+          final runKind = dozeAlarm ? 'doze alarm' : 'periodic';
           try {
-            final last =
-                await ScanResultStore(dbHelper).getLatestScanStart(id);
+            final last = await ScanResultStore(dbHelper)
+                .getLatestScanStart(id, completedOnly: !dozeAlarm);
             final minutes =
                 await settingsStore.getEffectiveBackgroundFrequency(id);
             final now = DateTime.now();
-            if (dozeAlarmShouldSkip(
+            if (recentScanShouldSkip(
                 now: now,
                 lastScanStart: last,
                 interval: Duration(minutes: minutes))) {
-              workerLog('account ${Redact.accountId(id)} skipped: a scan '
-                  'started ${now.difference(last!).inSeconds}s ago '
-                  '(interval ${minutes}m; doze alarm)');
+              workerLog('account ${Redact.accountId(id)} skipped: a '
+                  '${dozeAlarm ? '' : 'completed '}scan started '
+                  '${now.difference(last!).inSeconds}s ago '
+                  '(interval ${minutes}m; $runKind)');
               continue;
             }
           } catch (e) {
-            workerLog('account ${Redact.accountId(id)} doze-alarm recent-scan '
+            workerLog('account ${Redact.accountId(id)} $runKind recent-scan '
                 'check failed, scanning anyway: '
                 '${DiagnosticLogger.describeError(e)}');
           }

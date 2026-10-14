@@ -448,6 +448,14 @@ git push origin main
 git checkout develop
 ```
 
+The `develop` -> `main` merge can also be a PR merged by Harold on GitHub (the owner merges; Claude never does). Either way, **tag the merge commit on `main` as soon as it exists** (Sprint 79, F288, 2026-10-14). The tag is `vX.Y.Z`, annotated, and names the release version (for example `v0.19.0`; the existing tag `v0.5.0` follows the same form). Use the merge commit SHA from `git log origin/main -1`:
+
+```powershell
+git fetch origin
+git tag -a vX.Y.Z <merge-commit> -m "Release X.Y.Z"
+git push origin vX.Y.Z
+```
+
 **Before pulling into the prod worktree, discard its stale local-only leftovers.** Every release build leaves exactly 2 kinds of local-only, uncommitted change in the prod worktree by design (per Step 1's convention: the prod worktree's own `msix_version` bump is never committed there, and `flutter clean`/`flutter pub get` regenerate the 3 Windows plugin-registrant files with machine-local paths):
 - `mobile-app/pubspec.yaml` (stale `msix_version` from the LAST release build)
 - `mobile-app/windows/flutter/generated_plugin_registrant.cc` / `.h` / `generated_plugins.cmake`

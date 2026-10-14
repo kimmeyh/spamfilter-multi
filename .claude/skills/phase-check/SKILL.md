@@ -34,7 +34,7 @@ Verify the current sprint phase is complete and review the next phase requiremen
 
 6. **Check machine-verifiable close-out state** (Sprint 50 escape -- these are the items that drifted silently because nobody looked):
    - **`.claude/sprint_status.json`**: READ it. Does `current_sprint.number` match the sprint number in the branch name? Is `_last_updated` recent? A stale file misleads the next session after context compaction. Report `[MISSING]` if it disagrees with the branch.
-   - **Open GitHub issues**: `gh issue list --label sprint --state open`. In Phase 7 / post-merge this must be empty. **`Closes #N` does NOT auto-fire** in this repo -- PRs merge `feature -> develop`, and GitHub only auto-closes on merge to the default branch.
+   - **Open GitHub issues**: `gh issue list --label sprint --state open`. In Phase 7 / post-merge this must be empty. Since 2026-10-14 (Sprint 79, F288) `develop` is the default branch, so `Closes #N` in the sprint PR body closes the card when the PR merges into develop. VERIFY they closed, and close any that did not by hand.
    - **Past Sprint Summary table** in `ALL_SPRINTS_MASTER_PLAN.md`: does it have a row for the sprint just completed?
 
 ## Output Format

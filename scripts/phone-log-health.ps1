@@ -63,7 +63,11 @@ function Get-Health {
     $recognized = 0
     foreach ($line in $Lines) {
         $iv = [regex]::Match($line, $intervalRx)
-        if ($iv.Success) { $intervals[$iv.Groups['acct'].Value] = [int]$iv.Groups['min'].Value }
+        if ($iv.Success) {
+            $ia = $iv.Groups['acct'].Value
+            if (-not $intervals.ContainsKey($ia)) { $intervals[$ia] = New-Object System.Collections.Generic.SortedSet[int] }
+            [void]$intervals[$ia].Add([int]$iv.Groups['min'].Value)
+        }
         $m = [regex]::Match($line, $scanRx)
         $t = [regex]::Match($line, $triggerRx)
         if (-not $m.Success -and -not $t.Success) { continue }
@@ -130,9 +134,14 @@ function Get-Health {
         $outText = ($r.Outcomes.Keys | Sort-Object | ForEach-Object { "$_=$($r.Outcomes[$_])" }) -join ' '
         $trigText = ($r.Triggers.Keys | Sort-Object | ForEach-Object { "$_=$($r.Triggers[$_])" }) -join ' '
         # The account's own interval (from its skip lines) wins over the fallback.
+        # When the interval changed inside the window (Gmail 5m -> 240m on
+        # 2026-10-13), the SHORTEST one is used: the rate check must not flag a
+        # window that was legitimately faster for part of its length.
         $own = $intervals.ContainsKey($a)
-        $iv = if ($own) { $intervals[$a] } else { $Interval }
-        $ivText = if ($own) { "interval ${iv}m (log)" } else { "interval ${iv}m (assumed)" }
+        $iv = if ($own) { $intervals[$a].Min } else { $Interval }
+        $ivText = if (-not $own) { "interval ${iv}m (assumed)" }
+                  elseif ($intervals[$a].Count -gt 1) { "interval $($intervals[$a] -join '/')m (log, changed; checked at ${iv}m)" }
+                  else { "interval ${iv}m (log)" }
         [void]$out.Add(('{0}: starts={1} {2} unfinished={3} skips={4} | triggers {5} | {6}/hour, median gap {7} min | {8}' -f
             $a, $n, $outText, $r.Unfinished, $r.Skips, $(if ($trigText) { $trigText } else { 'none' }),
             $(if ($null -ne $perHour) { $perHour } else { '-' }),
@@ -218,7 +227,16 @@ if ($SelfTest) {
     [void]$g.Add('[2026-10-13T01:15:00.000000] [SCAN] [worker/android] account g***@x.com skipped: a scan started 900s ago (interval 240m; doze alarm)')
     $f7 = (Get-Health -Lines ($g | Sort-Object) -Interval 15).Flags -join "`n"
     if ($f7 -match 'g\*\*\*@x\.com completed') { $failures += 'two scans one 240m interval apart flagged as double' }
-    if ($failures.Count -eq 0) { 'SELFTEST PASS (13 checks)'; exit 0 }
+    # h@x: every 5 minutes for 2 hours (log says 5m), then the interval became
+    # 240m. One window holds both: no flag.
+    $hh = New-Object System.Collections.ArrayList
+    for ($i = 0; $i -lt 24; $i++) { Add-Scan $hh $base.AddMinutes($i * 5) 'h***@x.com' 'doze-alarm' 'completed' }
+    Add-Scan $hh $base.AddMinutes(360) 'h***@x.com' 'periodic' 'completed'
+    [void]$hh.Add('[2026-10-13T01:01:00.000000] [SCAN] [worker/android] account h***@x.com skipped: a scan started 60s ago (interval 5m; doze alarm)')
+    [void]$hh.Add('[2026-10-13T07:15:00.000000] [SCAN] [worker/android] account h***@x.com skipped: a scan started 900s ago (interval 240m; doze alarm)')
+    $f8 = (Get-Health -Lines ($hh | Sort-Object) -Interval 15).Flags -join "`n"
+    if ($f8 -match 'h\*\*\*@x\.com completed') { $failures += 'interval changed 5m -> 240m inside the window flagged as double' }
+    if ($failures.Count -eq 0) { 'SELFTEST PASS (14 checks)'; exit 0 }
     'SELFTEST FAIL:'; $failures | ForEach-Object { "  - $_" }; exit 1
 }
 

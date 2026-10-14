@@ -4,7 +4,7 @@
 
 **Audience**: Claude Code models planning sprints; User prioritizing future work
 
-**Last Updated**: 2026-10-13 (Sprint 78 Phase 7.7: Last Completed Sprint, Past Sprint Summary row, completed cards removed, Sprint 79 carry-ins)
+**Last Updated**: 2026-10-14 (added F296; earlier: Sprint 78 Phase 7.7: Last Completed Sprint, Past Sprint Summary row, completed cards removed, Sprint 79 carry-ins)
 
 ## How to Maintain This Document
 
@@ -918,6 +918,18 @@ _(No active Core App candidates -- F96 shipped in Sprint 43.)_
   the Apple Developer account.
 - Output: an ADR listing each iOS parity exception, and the set of cards F67 and F95 (iOS variants and validation, both
   HOLD) actually need.
+
+**F296. CI Flutter version in sync with local (~30-60m) Priority 9 -- TARGET SPRINT 80**
+- Phase: DevOps
+- Platform: All (CI)
+- Origin: Sprint 79 quick-fix review; Harold, 2026-10-14 (QF3): upgrade CI to match local, and keep them in sync in
+  the future.
+- Today: `.github/workflows/ci.yml` pins Flutter 3.38.5. Local development uses 3.47.4.
+- Rule going forward: an upgrade in the repo (the Flutter SDK, or any package used and tested in CI) triggers the
+  matching CI update.
+- Proposed acceptance: CI `flutter-version` equals the version the repo records as current (one source, for example a
+  `.flutter-version` file or the pubspec environment constraint), and a policy test or hook fails when they differ.
+  CI is green on the new version.
 
 **F111. Periodic Windows App Store upload readiness verification (~110-175m per review) Priority HOLD**
 - Phase: Release Readiness (reusable template)

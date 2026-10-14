@@ -80,7 +80,7 @@ One-line-per-phase quick reference. Use this at the start of a sprint and at eve
   2. For EACH line, state its status explicitly: `DONE (<evidence>)`, `N/A (<why>)`, or `NOT DONE -> doing it now`. Evidence means a command output, a file path, or an artifact -- not a recollection.
   3. Only after every line has a status may you report the section complete.
 
-  **The failure this closes (Sprint 50 close-out)**: three Post-Merge items were skipped while the turn reported close-out complete -- five GitHub issues still open (`Closes #N` does not fire on a `feature -> develop` merge), `.claude/sprint_status.json` stale by 15 sprints, and no next-sprint plan stub. None were noticed because the checklist was never opened; the report was assembled from what the turn remembered doing. Enforced by the `verify-closeout-complete` Stop hook, which blocks a completion claim contradicted by the artifacts.
+  **The failure this closes (Sprint 50 close-out)**: three Post-Merge items were skipped while the turn reported close-out complete -- five GitHub issues still open (`Closes #N` did not fire then, because `main` was the default branch; since 2026-10-14 `develop` is the default and it does fire), `.claude/sprint_status.json` stale by 15 sprints, and no next-sprint plan stub. None were noticed because the checklist was never opened; the report was assembled from what the turn remembered doing. Enforced by the `verify-closeout-complete` Stop hook, which blocks a completion claim contradicted by the artifacts.
 
 - **[WARNING] MANDATORY -- USER-REQUEST INVENTORY (Sprint 50 retro, Harold 2026-07-27)**: a user message containing multiple asks is a CHECKLIST, not a theme. When a request contains more than one instruction (including a compound sentence, a list, or "do X ... until Y"):
   1. **Enumerate every discrete ask** before starting work -- ideally as harness tasks (TaskCreate), otherwise written out explicitly in your first response.
@@ -1683,7 +1683,7 @@ Once user approves PR:
    - Find all sprint card issues referenced in PR (e.g., #60, #61)
    - Close each issue: `gh issue close #N --reason "completed"`
    - Verify all sprint cards show "Closed" status on GitHub
-   - **Note**: GitHub auto-closes issues when PR is merged if PR mentions "Closes #N", but verify all are closed
+   - **Note**: since 2026-10-14 (Sprint 79, F288) `develop` is the default branch, so GitHub closes issues when the PR merges into `develop` if the PR body mentions "Closes #N". Still verify all are closed
    - **Review ALL open issues**: Run `gh issue list --state open` and close any that were resolved by this sprint or prior work but not yet closed
 
 3. **Update Sprint Completion Documentation** (MANDATORY)

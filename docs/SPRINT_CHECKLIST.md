@@ -163,8 +163,8 @@ These documents MUST be created/updated during each sprint:
 
 - [ ] PR merged to develop
 - [ ] **6.6 NEXT sprint branch opened FROM THE CURRENT FEATURE BRANCH IMMEDIATELY on merge** (see Phase 6.6 -- before any post-merge commits; NOT from develop, never via stash)
-- [ ] **Review and close all resolved GitHub issues** -- run `gh issue list --state open` and close each one this sprint resolved. **`Closes #N` does NOT auto-fire in this repo**: PRs merge `feature -> develop`, and GitHub only auto-closes on merge to the DEFAULT branch. Assuming auto-close is the Sprint 50 escape (five issues left open). Verify with `gh issue list --label sprint --state open` returning empty.
-- [ ] GitHub issues auto-closed (verify Closes #N references worked)
+- [ ] **Review and close all resolved GitHub issues** -- run `gh issue list --state open` and close each one this sprint resolved. Since 2026-10-14 (Sprint 79, F288) `develop` is the GitHub default branch, so `Closes #N` in the sprint PR body closes the card when the PR merges into develop. Still VERIFY: assuming auto-close without checking is the Sprint 50 escape (five issues left open). Close any card that did not close by hand. Verify with `gh issue list --label sprint --state open` returning empty.
+- [ ] GitHub issues auto-closed (verify Closes #N references worked; close any that did not by hand)
 - [ ] **Feature branch NEVER deleted** (sprint branches are retained permanently, local + remote -- see SPRINT_EXECUTION_WORKFLOW.md "Feature branch retention"; do not offer to clean up)
 
 ## Phase 8: The Release Cycle (MANDATORY after every merge to `develop`)

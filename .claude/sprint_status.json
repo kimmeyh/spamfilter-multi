@@ -1,12 +1,12 @@
 {
     "_description": "Sprint status file that persists across context compaction. Update after each phase/sub-phase completion.",
-    "_last_updated": "2026-10-13T21:00:00Z",
+    "_last_updated": "2026-10-14T13:30:00Z",
     "_usage": "Read this file after context compaction to restore sprint approval state and progress.",
     "_staleness_note": "This file had drifted 15 sprints (last updated at Sprint 35, 2026-04-19) before being refreshed at Sprint 50 close-out. It is a Phase 7.7 checklist item -- update it at every sprint close-out, not opportunistically.",
     "current_sprint": {
         "number": 79,
         "branch": "feature/20261013_Sprint_79",
-        "status": "Phase 4 Execution -- Sprint 79 plan APPROVED 2026-10-13 (Q1 1, Q2 2, Q3 1, Q4 1, Q5 1, Q6 1, Q7 1, Q8 2, Q9 2, Q-S1..3 approved); cards #481-#487 created, #471 #472 #433 #428 reused",
+        "status": "Phase 4 Sprint Execution -- Tasks 0, 3, 4, 6, 8 done; Task 1 phone steps 1-6 done (Harold 2026-10-14), MV-7 periodic-skip fix approved (Q1=1); Task 2 night C tonight; Task 5 Phase B approved (QF1=2, QF2=1+2, QF3=1); Task 7 waits on the PC restart. Sprint 79 plan APPROVED 2026-10-13 (Q1 1, Q2 2, Q3 1, Q4 1, Q5 1, Q6 1, Q7 1, Q8 2, Q9 2, Q-S1..3 approved); cards #481-#487 created, #471 #472 #433 #428 reused",
         "plan_approved": true,
         "pr_number": 480,
         "version": "0.20.0+17 (Sprint 79, bumped at 3.7.0b)"
@@ -19,7 +19,7 @@
     },
     "github_issues": {
         "sprint_73": "#428 (open, MV74-1), #422 (open, MV74-3), #430 closed, #434 (open, MV74-2), #431 closed, #432 closed, #433 (open, MV74-3). Also closed in pass 1: #426 (superseded by #428), #427 (leftover captured as F236).",
-        "note": "Closes #N does NOT auto-fire here.",
+        "note": "Since 2026-10-14 (Sprint 79, F288) develop is the default branch, so Closes #N in a sprint PR body closes the card when the PR merges into develop. Close-out VERIFIES the cards closed and closes any that did not by hand. Sprints 73-78 below closed cards by hand.",
         "sprint_74": "Closed by hand 2026-10-02: #422 #434 #437 #438 #439. Open, carried: #428 (MV74-1 phone), #433 (F205 phone), #441 (F238), #442 (F239).",
         "sprint_75": "Closed by hand 2026-10-04: #441 #442 #444 #445 #446 #447 #449 #450. Open, carried to Sprint 76 phone checks: #428 (MV74-1), #433 (F205).",
         "sprint_76": "Closed by hand 2026-10-06: #452 #453 #454 #456 #457 #458. Open, inside MV76-1: #428 (MV74-1 reboot half), #433 (F205).",
