@@ -27,7 +27,8 @@
 .EXAMPLE
   powershell -NoProfile -ExecutionPolicy Bypass -File scripts\run-full-suite.ps1 -Label postreboot-1
 .NOTES
-  Exit code: flutter test's exit code, or 2 when STALLED. One line is appended
+  Exit code: flutter test's exit code, 2 when STALLED, 3 when the self-test
+  branch ran without -SelfTestStall (a runner defect). One line is appended
   to <OutDir>\results.txt per run.
 #>
 param(
@@ -61,7 +62,11 @@ $job = Start-Job -ScriptBlock {
     Set-Location $appDir
     flutter test "--concurrency=$conc" *> $log
     $LASTEXITCODE
-} -ArgumentList $appDir, $log, $Concurrency, [bool]$SelfTestStall
+} -ArgumentList @($appDir, $log, $Concurrency, $SelfTestStall.IsPresent)
+# Sprint 79: the argument above was `[bool]$SelfTestStall`, which in argument
+# mode is the STRING "[bool]False" -- non-empty, so truthy -- and every real
+# run silently executed the self-test hang instead of flutter test. Guard:
+# a run that did not ask for the self-test must never write the self-test line.
 
 $start = Get-Date
 $lastSize = -1
@@ -85,6 +90,10 @@ while ($job.State -eq 'Running') {
     }
 }
 $code = if ($stalled) { 2 } else { [int](Receive-Job $job | Select-Object -Last 1) }
+if (-not $SelfTestStall -and (Select-String -Path $log -Pattern 'self-test, now hanging' -Quiet)) {
+    Write-Output "RUNNER DEFECT: the self-test branch ran without -SelfTestStall; no tests were run."
+    $code = 3
+}
 Remove-Job $job -Force
 
 $mins = [int]((Get-Date) - $start).TotalMinutes

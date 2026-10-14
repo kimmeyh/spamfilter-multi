@@ -709,6 +709,16 @@ mechanism or "cause unknown" with what would settle it; AC-3: a fix or containme
 - Run 2 (DEV app closed): exit 0, 3,037 passed, 0 test-load failures, peak commit 56.6 of 93.8 GB, 2 min 29 s.
 - Run 3 (DEV app OPEN, all four DEV accounts scanning every 5 minutes -- the Sprint 78 conditions; Yahoo and AOL
   scans ran during it): exit 0, 3,037 passed, 0 test-load failures, peak commit 56.2 of 93.8 GB, 2 min 37 s.
+- Run 4 (2026-10-14 10:34, `prereboot-4-q1fix`): **no tests ran -- a RUNNER defect.** `run-full-suite.ps1:64` passed
+  `[bool]$SelfTestStall` in argument mode, which is the string "[bool]False" (truthy), so the job took the
+  self-test hang and the watchdog reported STALLED after 10 minutes. The promoted script's NORMAL path had never been
+  run (only `-SelfTestStall` was proven). Fixed: `-ArgumentList @(..., $SelfTestStall.IsPresent)`, plus a guard
+  that prints `RUNNER DEFECT` and exits 3 if the self-test line appears in a run that did not ask for it; the guard
+  was proven by restoring the exact old line under a mutation lock (`RUNNER DEFECT`, exit 3; file restored).
+  `results.txt` keeps the misleading STALLED line for this run.
+- Run 5 (2026-10-14 10:46, runner fixed, `guardcheck`): exit 0, **3,046 passed, 15 skipped, 0 failed**, 0
+  test-load failures, peak commit 73.5 GB (higher than runs 2-3: two DEV app processes and the Android emulator
+  were running), 3 minutes.
 - **Mechanism: cause unknown** -- not reproduced in three runs, one under the Sprint 78 conditions. Leading hypothesis
   (UNVERIFIED): commit-charge pressure from other processes; on the Sprint 78 failure day the AAB build died at 86
   of 94 GB committed, while these runs peak at about 56 GB. Nothing recorded commit charge during the Sprint 78
