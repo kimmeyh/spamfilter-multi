@@ -27,6 +27,7 @@ Format: `- **type**: Description (Issue #N)` where type is feat|fix|chore|docs
 ## [Unreleased]
 
 ### 2026-10-14 (Sprint 79)
+- **fix**: Importing a rules or safe senders file now takes effect at once; before, Review No Rule Items and the next manual scan kept the old rules until the app restarted. A failed reload after an import is now reported instead of "imported successfully" (Issue #488)
 - **fix**: Android no longer scans an account on a 15-minute (or longer) schedule about twice per interval: the scheduled run now skips an account whose last completed scan started within two-thirds of its interval, as the idle-wake alarm already did (Issue #471)
 - **chore**: The Android worker registers a handler meant to log why Android stopped a scan before it finished; on the emulator it did not fire, so it is not yet a working diagnostic (Issue #471)
 - **chore**: `develop` is the GitHub default branch, so `Closes #N` in a sprint PR closes its cards on merge; releases are tagged `vX.Y.Z` on main, and 22 past releases were tagged (Issue #484)

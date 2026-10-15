@@ -61,6 +61,8 @@ Not in Sprint 79 scope.
 - **Task 7 -- F292**: full-suite test processes die or hang. Sonnet, escalate to Fable/Opus if the mechanism is not
   named after two reproduction rounds. 60-120m (mostly wall-clock test runs).
 - **Task 8 -- F293**: backlog refinement shows the next 20 in one order. Haiku. 15-25m.
+- **Task 9 -- F297** (#488, added 2026-10-14 by Harold): reload rules and safe senders after a YAML import, through one
+  shared provider reload. Sonnet. 30-45m.
 - **Unplanned allowance (named, not padded into cards)**: Manual Validation fixes, phone rounds and 7.7.1 review fixes,
   150-250m. Sprints 70, 76 and 78 each spent as much or more on this as on planned cards (CODING_VELOCITY.md trend
   rows); it is a predictable line item.
@@ -761,6 +763,82 @@ example in `BACKLOG_REFINEMENT.md` shows 20-item order with matching detail orde
 
 **Model**: Haiku -- doc edit fully specified. **Step-types**: DOCS. **Est-Effort**: 15-25m.
 **Executed-by**: Opus 5.5 (session model), deviation note (a) -- ~15 min (360008e).
+
+## Task 9 -- F297: Reload rules and safe senders after a YAML import (#488) (added mid-sprint, Harold 2026-10-14)
+
+**Value**: This makes an imported rules or safe senders file take effect at once, without restarting the app.
+
+**Origin**: Harold, 2026-10-14, Windows 0.20.0 [DEV]: *"Please add to for this sprint: backlog item to reload/refresh
+all rules after rule upload and safe sender rules upload. Sprint Card, testing..."* and *"Wouldn't it seem that the
+reload after a manual scan would be the same thing needed here? Could that be re-used"*. Scope addition by the Scrum
+Master (stopping criterion 3, approved in the request).
+
+**Finding (evidence)**: Review No Rule Items read 386 before and after importing the Fold's exports. A copy of the DEV
+database after the import held 2,074 rules and 405 open No Rule rows, so the import landed. The screen checks rows
+against `RuleSetProvider` (`no_rule_review_screen.dart:350-365`), which loads only when it has never loaded; the import
+wrote the stores (`yaml_import_export_screen.dart:566,633` before the fix) and never reloaded it. aglimertoe.com and
+brarpy.net have imported block rules and were still listed. A manual scan reads the same provider at its start
+(`email_scanner.dart:353`), so the first scan after an import also used the old rules. Replaying the imported patterns
+over the database copy (Python approximation of the Dart matcher): about 165 of the 405 rows would clear and about 240
+would remain, so the count does not drop to 0 after the fix. Why the Fold shows 0 is not established (its pool holds
+the Fold's own scans; unverified).
+
+**Requirements**:
+- R-1: After a successful rules or safe senders import, the in-memory rules AND safe senders reload from the database.
+- R-2: Re-use (Harold): one `RuleSetProvider.reloadFromDatabase()` replaces the identical `loadRules()` +
+  `loadSafeSenders()` pair at the four existing sites (post-scan, Scan History load, quick-action safe sender,
+  quick-action block rule).
+- R-3: `reloadFromDatabase()` returns false when a load failed; the import then says so instead of "successfully".
+
+**Affected components / files**:
+- `mobile-app/lib/core/providers/rule_set_provider.dart` -- `reloadFromDatabase()`.
+- `mobile-app/lib/ui/screens/yaml_import_export_screen.dart` -- `commitRulesImport` / `commitSafeSendersImport`
+  (save, YAML copy, reload); both handlers call them; a failed reload shows an error status.
+- `mobile-app/lib/core/services/email_scanner.dart` -- post-scan reload uses it and logs failure from its result (the
+  old `catch` could never run: both loads swallow their errors, so "reloaded" was logged even on failure).
+- `mobile-app/lib/ui/screens/results_display_screen.dart`, `mobile-app/lib/core/services/rule_quick_action_service.dart`
+  -- the pair replaced.
+
+**Existing abstraction checked**: `RuleSetProvider.loadRules` / `loadSafeSenders` (the four call sites above) and the
+load-if-missing guards `_ensureRulesLoaded` / `_ensureSafeSendersLoaded` (`rule_quick_action_service.dart`) and
+`no_rule_review_screen.dart:356-361`. The guards serve a different purpose and are unchanged.
+
+**Existing behavior relied on**: `loadRules()` clears `_error` when it starts -- verified at
+`rule_set_provider.dart` `_setLoadingState` (a non-error state sets `_error = null`).
+
+**Callers of any guard being changed**: none changed. The four replaced sites behave the same except the scanner,
+which now logs a failed reload as a warning.
+
+**Observable behavior -- before / after**: BEFORE: after an import, Review No Rule Items and the next manual scan use
+the pre-import rules until the app restarts or a scan completes. AFTER: they use the imported rules at once; a failed
+reload shows "Imported N rules, but they could not be loaded. Restart the app to use them."
+
+**Platform (ADR-0042)**: shared code, no exception. The import screen, provider and scanner run identically on Windows
+and Android; the Android background worker builds its own provider per run and is unaffected.
+
+**Acceptance criteria**:
+- AC-1: Given rules and safe senders saved behind the provider, When `reloadFromDatabase()` runs, Then it holds them
+  and returns true.
+- AC-2: Given a rules or safe senders load that throws, Then it returns false; a later good reload returns true.
+- AC-3: An import committed through `commitRulesImport` / `commitSafeSendersImport` is visible in the provider with no
+  restart.
+- AC-4: No inline `loadRules();` + `loadSafeSenders();` pair remains in `lib/` outside the provider.
+
+**Tests**: T-1..T-3 (AC-1..AC-3) TEST-UNIT `test/unit/providers/rule_set_provider_reload_test.dart`, real ffi
+database, 6 tests. T-4 (AC-4) grep, zero hits. What the tests do NOT catch: a screen that writes the stores itself
+(see the follow-up below), and the screen's call into the commit functions (no file picker fake; covered by review).
+
+**Evidence**: 6/6 pass; mutations M1-M6 KILLED (reload skips rules, skips safe senders, always true; rules commit and
+safe senders commit without reload; rules commit skips the YAML copy); `flutter analyze` clean; full suite 3,052
+passed, 15 skipped, 0 failed (run-full-suite.ps1 label f297, 3 minutes).
+
+**Follow-up (not in scope; question to Harold)**: the Rules and Safe Senders management screens (edit, delete, remove)
+and the quick-add screens also write the stores directly and do not reload the provider.
+
+**Definition of Done**: default DoD, plus Harold re-checks Review No Rule Items after an import on the rebuilt DEV app.
+
+**Model**: Sonnet -- 5 files and a shared provider method. **Executed-by**: Opus 5.5 (session model), deviation
+note (a). **Step-types**: SVC-EDIT, TEST-UNIT. **Est-Effort**: 30-45m.
 
 ---
 

@@ -20,10 +20,12 @@ import 'package:flutter/foundation.dart' show visibleForTesting;
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
 import 'package:logger/logger.dart';
+import 'package:provider/provider.dart';
 import '../../adapters/storage/app_paths.dart';
 import '../../adapters/storage/local_rule_store.dart';
 import '../../core/models/rule_set.dart';
 import '../../core/models/safe_sender_list.dart';
+import '../../core/providers/rule_set_provider.dart';
 import '../../core/services/app_version.dart';
 import '../../core/services/export_directories.dart';
 import '../../core/services/yaml_service.dart';
@@ -83,6 +85,42 @@ Future<String?> saveYamlExport({
   );
   if (path != null) await writeDesktopFile(path);
   return path;
+}
+
+/// F297 (Sprint 79, #488): commit an imported rules file -- replace the rules
+/// in the database, write the YAML copy, then reload the in-memory set.
+///
+/// Before F297 the import stopped after the two writes. [RuleSetProvider]
+/// still held the pre-import rules, so Review No Rule Items (which checks
+/// items against it) and the next manual scan ignored the import until the
+/// app restarted. The provider is a required argument so the screen cannot
+/// commit without reloading.
+///
+/// Returns false when the reload failed (see
+/// [RuleSetProvider.reloadFromDatabase]); the import is saved either way.
+@visibleForTesting
+Future<bool> commitRulesImport({
+  required RuleSet rules,
+  required RuleDatabaseStore dbStore,
+  required Future<void> Function(RuleSet rules) writeYaml,
+  required RuleSetProvider provider,
+}) async {
+  await dbStore.saveRules(rules);
+  await writeYaml(rules);
+  return provider.reloadFromDatabase();
+}
+
+/// F297: the safe senders twin of [commitRulesImport].
+@visibleForTesting
+Future<bool> commitSafeSendersImport({
+  required SafeSenderList safeSenders,
+  required RuleDatabaseStore dbStore,
+  required Future<void> Function(SafeSenderList safeSenders) writeYaml,
+  required RuleSetProvider provider,
+}) async {
+  await dbStore.saveSafeSenders(safeSenders);
+  await writeYaml(safeSenders);
+  return provider.reloadFromDatabase();
 }
 
 /// Screen for importing and exporting YAML rule files
@@ -507,6 +545,8 @@ class _YamlImportExportScreenState extends State<YamlImportExportScreen> {
   }
 
   Future<void> _importRules() async {
+    // F297: read before any await (no BuildContext across async gaps).
+    final ruleProvider = context.read<RuleSetProvider>();
     setState(() => _isProcessing = true);
     try {
       _logger.i('Starting rules import');
@@ -562,13 +602,24 @@ class _YamlImportExportScreenState extends State<YamlImportExportScreen> {
         return;
       }
 
-      // Save to database (atomic replace)
-      await _ruleDbStore.saveRules(importedRules);
-
-      // Also update YAML file in app storage (dual-write)
-      await _localRuleStore.saveRules(importedRules);
+      // Save to database (atomic replace), write the YAML copy, and reload
+      // the in-memory rules (F297).
+      final reloaded = await commitRulesImport(
+        rules: importedRules,
+        dbStore: _ruleDbStore,
+        writeYaml: _localRuleStore.saveRules,
+        provider: ruleProvider,
+      );
 
       _logger.i('Imported ${importedRules.rules.length} rules from $filePath');
+      if (!reloaded) {
+        _logger.w('Rules imported but the reload failed: ${ruleProvider.error}');
+        _showStatus(
+            'Imported ${importedRules.rules.length} rules, but they could not '
+            'be loaded. Restart the app to use them.',
+            isError: true);
+        return;
+      }
       _showStatus('Imported ${importedRules.rules.length} rules successfully'
           '${_skippedSuffix(droppedText)}');
     } catch (e) {
@@ -580,6 +631,8 @@ class _YamlImportExportScreenState extends State<YamlImportExportScreen> {
   }
 
   Future<void> _importSafeSenders() async {
+    // F297: read before any await (no BuildContext across async gaps).
+    final ruleProvider = context.read<RuleSetProvider>();
     setState(() => _isProcessing = true);
     try {
       _logger.i('Starting safe senders import');
@@ -629,13 +682,25 @@ class _YamlImportExportScreenState extends State<YamlImportExportScreen> {
         return;
       }
 
-      // Save to database (atomic replace)
-      await _ruleDbStore.saveSafeSenders(importedSafeSenders);
-
-      // Also update YAML file in app storage (dual-write)
-      await _localRuleStore.saveSafeSenders(importedSafeSenders);
+      // Save to database (atomic replace), write the YAML copy, and reload
+      // the in-memory safe senders (F297).
+      final reloaded = await commitSafeSendersImport(
+        safeSenders: importedSafeSenders,
+        dbStore: _ruleDbStore,
+        writeYaml: _localRuleStore.saveSafeSenders,
+        provider: ruleProvider,
+      );
 
       _logger.i('Imported ${importedSafeSenders.safeSenders.length} safe senders from $filePath');
+      if (!reloaded) {
+        _logger.w(
+            'Safe senders imported but the reload failed: ${ruleProvider.error}');
+        _showStatus(
+            'Imported ${importedSafeSenders.safeSenders.length} safe senders, '
+            'but they could not be loaded. Restart the app to use them.',
+            isError: true);
+        return;
+      }
       _showStatus(
         'Imported ${importedSafeSenders.safeSenders.length} safe senders '
         'successfully${_skippedSuffix(droppedText)}',

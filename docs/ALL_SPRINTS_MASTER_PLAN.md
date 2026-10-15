@@ -4,7 +4,7 @@
 
 **Audience**: Claude Code models planning sprints; User prioritizing future work
 
-**Last Updated**: 2026-10-14 (added F296; earlier: Sprint 78 Phase 7.7: Last Completed Sprint, Past Sprint Summary row, completed cards removed, Sprint 79 carry-ins)
+**Last Updated**: 2026-10-14 (added F296 and F297; earlier: Sprint 78 Phase 7.7: Last Completed Sprint, Past Sprint Summary row, completed cards removed, Sprint 79 carry-ins)
 
 ## How to Maintain This Document
 
@@ -930,6 +930,14 @@ _(No active Core App candidates -- F96 shipped in Sprint 43.)_
 - Proposed acceptance: CI `flutter-version` equals the version the repo records as current (one source, for example a
   `.flutter-version` file or the pubspec environment constraint), and a policy test or hook fails when they differ.
   CI is green on the new version.
+
+**F297. Reload rules and safe senders after a YAML import (~30-45m) -- IN SPRINT 79 (Task 9, #488)**
+- Phase: Bug fix
+- Platform: All (shared code)
+- Origin: Harold, 2026-10-14, Windows 0.20.0 [DEV]: after importing the Fold's rules, Review No Rule Items still showed
+  386; the import never reloaded the in-memory rules. Added to Sprint 79 the same day.
+- Done in Sprint 79: one `RuleSetProvider.reloadFromDatabase()` used by the import and the four existing reload sites.
+  Remove this entry at Sprint 79 close-out.
 
 **F111. Periodic Windows App Store upload readiness verification (~110-175m per review) Priority HOLD**
 - Phase: Release Readiness (reusable template)
