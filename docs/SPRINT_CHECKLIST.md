@@ -27,7 +27,7 @@ These documents MUST be created/updated during each sprint:
 
 ## Phase 1: Backlog Refinement (MANDATORY -- every sprint, no PO request needed)
 
-- [ ] **1.2 FORMAT GATE (Sprint 50)**: READ `BACKLOG_REFINEMENT.md` section "Backlog Presentation Format" in the SAME TURN before presenting candidates; mirror the template exactly (`**<ID>. <Title> (~effort) Priority <N>**` + Phase/Platform bullets, phase-group headers, HOLD section; real F#/WS/GP ids only)
+- [ ] **1.2 FORMAT GATE (Sprint 50)**: READ `BACKLOG_REFINEMENT.md` section "Backlog Presentation Format" in the SAME TURN before presenting candidates; mirror the template exactly (`**<ID>. <Title> (~effort) Priority <N>**` + Phase/Platform bullets; the NEXT 20 in one priority order in the index and the details, NO phase-group headers, HOLD items one line each in the index (F293); real F#/WS/GP ids only)
 
 **Sprint 36 policy change (2026-04-20)**: Phase 1 is MANDATORY on every sprint. Do NOT ask the user "should we do backlog refinement?" -- just run it. Skipping or asking is a process violation.
 
@@ -37,7 +37,7 @@ These documents MUST be created/updated during each sprint:
 - [ ] Update estimates with velocity from recent sprints
 - [ ] Capture newly identified work items
 - [ ] Remove obsolete items
-- [ ] **[CRITICAL -- Sprint 45 retro IMP-1] Read `BACKLOG_REFINEMENT.md` "Backlog Presentation Format" section RIGHT BEFORE presenting candidates -- do not paraphrase from memory.** Required format verbatim: `**<ID>. <Title> (~<effort>) Priority <N>**` with `- Phase:` / `- Platform:` / bullet details per item, grouped under phase-name section headers, HOLD items in a separate `### HOLD Items (<reason>)` section, NOT grid tables, no invented separators/editorializing. Sprint 45 lost a round-trip generating this from memory instead of reading the doc first.
+- [ ] **[CRITICAL -- Sprint 45 retro IMP-1] Read `BACKLOG_REFINEMENT.md` "Backlog Presentation Format" section RIGHT BEFORE presenting candidates -- do not paraphrase from memory.** Required format verbatim: `**<ID>. <Title> (~<effort>) Priority <N>**` with `- Phase:` / `- Platform:` / bullet details per item, the next 20 active candidates in ONE priority order (index and details in the same order, no phase-group headers -- F293, Sprint 79), HOLD items one line each in the index, NOT grid tables, no invented separators/editorializing. Sprint 45 lost a round-trip generating this from memory instead of reading the doc first.
 - [ ] User selects items for Sprint N; record selection for Phase 3 plan doc
 - [ ] Commit refinement changes if ALL_SPRINTS_MASTER_PLAN.md was updated: `git commit -m "docs: Backlog refinement - [date] - [summary]"`
 
@@ -163,8 +163,8 @@ These documents MUST be created/updated during each sprint:
 
 - [ ] PR merged to develop
 - [ ] **6.6 NEXT sprint branch opened FROM THE CURRENT FEATURE BRANCH IMMEDIATELY on merge** (see Phase 6.6 -- before any post-merge commits; NOT from develop, never via stash)
-- [ ] **Review and close all resolved GitHub issues** -- run `gh issue list --state open` and close each one this sprint resolved. **`Closes #N` does NOT auto-fire in this repo**: PRs merge `feature -> develop`, and GitHub only auto-closes on merge to the DEFAULT branch. Assuming auto-close is the Sprint 50 escape (five issues left open). Verify with `gh issue list --label sprint --state open` returning empty.
-- [ ] GitHub issues auto-closed (verify Closes #N references worked)
+- [ ] **Review and close all resolved GitHub issues** -- run `gh issue list --state open` and close each one this sprint resolved. Since 2026-10-14 (Sprint 79, F288) `develop` is the GitHub default branch, so `Closes #N` in the sprint PR body closes the card when the PR merges into develop. Still VERIFY: assuming auto-close without checking is the Sprint 50 escape (five issues left open). Close any card that did not close by hand. Verify with `gh issue list --label sprint --state open` returning empty.
+- [ ] GitHub issues auto-closed (verify Closes #N references worked; close any that did not by hand)
 - [ ] **Feature branch NEVER deleted** (sprint branches are retained permanently, local + remote -- see SPRINT_EXECUTION_WORKFLOW.md "Feature branch retention"; do not offer to clean up)
 
 ## Phase 8: The Release Cycle (MANDATORY after every merge to `develop`)

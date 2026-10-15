@@ -172,8 +172,7 @@ class RuleQuickActionService {
       }
 
       await ruleProvider.addSafeSender(pattern);
-      await ruleProvider.loadSafeSenders();
-      await ruleProvider.loadRules();
+      await ruleProvider.reloadFromDatabase(); // F297: the shared reload
 
       if (conflicts.conflictsRemoved > 0) {
         displayMessage +=
@@ -379,8 +378,7 @@ class RuleQuickActionService {
       );
 
       await ruleProvider.addRule(rule);
-      await ruleProvider.loadRules();
-      await ruleProvider.loadSafeSenders();
+      await ruleProvider.reloadFromDatabase(); // F297: the shared reload
 
       if (conflicts.conflictsRemoved > 0) {
         displayMessage +=

@@ -205,6 +205,30 @@ class ServerCertificateNotTrustedException
       'The app did not send your password. $_howToConfirm';
 }
 
+/// Sprint 79 Task 1 R-8: the longest any ONE IMAP command may wait for its
+/// complete response. Every `ImapClient` the app builds passes it as
+/// `defaultResponseTimeout` (enough_mail applies it per command, from the write
+/// until the tagged reply: `imap_client.dart` `_processTask`); on expiry the
+/// command fails with `ImapException('timeout')`, which the login classifier
+/// already treats as "server unavailable", never as a wrong password.
+///
+/// **Why.** Clients were built with NO response timeout, so a socket that
+/// stalled after login (a network change while the phone idles) left the scan
+/// awaiting forever. Six background scans on the Fold (Oct 9-11, 2026) kept
+/// their heartbeat for 10-20 minutes after their last log line, each a
+/// fetch/search step, and were reaped as dead.
+///
+/// **Why 120 seconds.** Fetches go out 20 messages per command
+/// (`GenericIMAPAdapter.fetchBatchSize`); the slowest WHOLE-folder fetch in
+/// 6,484 logged on the Fold took 37.9 s. 120 s is over three times that, and a
+/// tenth of the shortest observed hang. The app uses no IMAP IDLE (which waits
+/// by design and would need its own limit).
+const Duration kImapResponseTimeout = Duration(seconds: 120);
+
+/// The longest an IMAP command write may take (enough_mail
+/// `defaultWriteTimeout`); same reasoning as [kImapResponseTimeout].
+const Duration kImapWriteTimeout = Duration(seconds: 60);
+
 /// An `ImapClient` whose greeting can be awaited.
 ///
 /// `ClientBase.connect(socket, ...)` returns nothing to await, and a command
@@ -212,7 +236,12 @@ class ServerCertificateNotTrustedException
 /// library has processed the greeting, or with an error if the connection
 /// drops first.
 class GreetingAwareImapClient extends ImapClient {
-  GreetingAwareImapClient() : super(isLogEnabled: false);
+  GreetingAwareImapClient()
+      : super(
+          isLogEnabled: false,
+          defaultResponseTimeout: kImapResponseTimeout,
+          defaultWriteTimeout: kImapWriteTimeout,
+        );
 
   final Completer<void> _greeting = Completer<void>();
 

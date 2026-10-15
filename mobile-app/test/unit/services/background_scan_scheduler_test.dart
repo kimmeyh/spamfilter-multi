@@ -20,6 +20,8 @@
 ///     background-scan cycle on the dev machine.
 library;
 
+import 'dart:io';
+
 import 'package:flutter_test/flutter_test.dart';
 import 'package:plugin_platform_interface/plugin_platform_interface.dart';
 import 'package:workmanager/workmanager.dart';
@@ -329,6 +331,58 @@ void main() {
           reason: 'the override is the seam behavior tests inject fakes '
               'through; if platform resolution ever won over it, those tests '
               'would silently exercise the real platform');
+    });
+  });
+
+  // Sprint 79 Task 1 R-9: every schedule/cancel leaves a diagnostic line.
+  // What this does NOT catch: a cancel made outside these two adapters (none
+  // exists in Dart today; native code cannot write this log), or a release
+  // build whose stack trace is obfuscated (the caller then reads "unknown").
+  group('scheduler change log line (R-9)', () {
+    test('names the masked account, interval, result and caller', () {
+      expect(
+          schedulerChangeLine(
+              action: 'schedule',
+              accountId: 'kimmeyh@gmail.com',
+              intervalMinutes: 5,
+              ok: true,
+              caller: 'settings_screen.dart:1539'),
+          'schedule k***@gmail.com every 5m ok (from settings_screen.dart:1539)');
+      expect(
+          schedulerChangeLine(
+              action: 'cancel',
+              accountId: 'kimmeyh@gmail.com',
+              ok: false,
+              caller: 'unknown'),
+          'cancel k***@gmail.com FAILED (from unknown)');
+    });
+
+    test('caller is the first app frame outside the scheduler file', () {
+      const frames = [
+        '#0 _logSchedulerChange (package:my_email_spam_filter/core/services/background_scan_scheduler.dart:120:5)',
+        '#1 AndroidSchedulerAdapter.cancel (package:my_email_spam_filter/core/services/background_scan_scheduler.dart:390:11)',
+        '#2 _SettingsScreenState._updateScheduledScan (package:my_email_spam_filter/ui/screens/settings_screen.dart:1564:33)',
+        '#3 main (package:my_email_spam_filter/main.dart:479:9)',
+      ];
+      expect(schedulerCallerFrom(StackTrace.fromString(frames.join('\n'))),
+          'settings_screen.dart:1564');
+      expect(schedulerCallerFrom(StackTrace.fromString('')), 'unknown');
+      expect(schedulerCallerFrom(StackTrace.fromString(frames[3])),
+          'main.dart:479');
+    });
+
+    test('source gate: both adapters log schedule AND cancel', () {
+      final src = File('lib/core/services/background_scan_scheduler.dart')
+          .readAsStringSync();
+      for (final p in ['windows', 'android']) {
+        for (final action in ['schedule', 'cancel']) {
+          expect(
+              RegExp("_logSchedulerChange\\('$p',\\s*action: '$action'")
+                  .hasMatch(src),
+              isTrue,
+              reason: '$p $action');
+        }
+      }
     });
   });
 }

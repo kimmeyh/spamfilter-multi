@@ -468,7 +468,7 @@ try {
             $openIssues = $ghOut | ConvertFrom-Json
             if ($openIssues.Count -gt 0) {
                 $nums = ($openIssues | ForEach-Object { "#$($_.number)" }) -join ', '
-                $violations += "The sprint PR has MERGED but GitHub issues labeled 'sprint' are still OPEN: $nums. 'Closes #N' does NOT auto-fire on a feature->develop merge in this GitFlow repo -- the Post-Merge Cleanup step 'Review and close all resolved GitHub issues' exists for exactly this. Verify with ``gh issue list --label sprint --state open`` returning empty."
+                $violations += "The sprint PR has MERGED but GitHub issues labeled 'sprint' are still OPEN: $nums. Since 2026-10-14 (Sprint 79, F288) develop is the default branch, so 'Closes #N' in the sprint PR body should have closed these cards on merge. Either a card was missing from the PR body or the keyword did not match. Close the remaining cards by hand (Post-Merge Cleanup step 'Review and close all resolved GitHub issues'). Verify with ``gh issue list --label sprint --state open`` returning empty."
             }
         }
     }

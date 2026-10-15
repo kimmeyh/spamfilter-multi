@@ -95,6 +95,14 @@ Supporting decisions:
   (Sprint 42 retro IMP-3, backlog).
 - A headless CI runner for the `integration_test` lane (ties to F64, HOLD).
 
+## Amendment -- Sprint 79 (F291, Harold 2026-10-13): a sweep on a locked PC counts
+
+The WinWright harness needs the input desktop only for its cursor-tool steps. On a locked workstation the runner now
+runs every script with those steps removed and named (`locked: N mouse steps skipped`), and the sweep counts as
+complete for the sprint's 5.1.5 evidence; it no longer refuses to start. A step skipped for any other reason still
+fails (F284). The removed steps run on an unlocked PC at least once per Store release (Q4 = 1). Windows-only tooling
+by design (ADR-0042); Android UI coverage is unchanged (widget tests plus Fold Manual Validation).
+
 ## References
 - `docs/TESTING_STRATEGY.md` -- "Two E2E Harnesses" section (when to use which,
   per-file execution model, test seams).

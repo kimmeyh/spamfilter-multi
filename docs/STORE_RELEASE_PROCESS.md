@@ -49,6 +49,7 @@ Before starting a store release, confirm all of these:
 - [ ] **Check `docs/STORE_VERSION_STATUS.md`, then re-verify its Live/certified row against Partner Center directly** (it is a cache, not authoritative -- see the file's own header). Confirms the actual live version before deciding the target.
 - [ ] Target version is chosen. By convention we release from production worktree at `X.Y.Z.0` and dev is always `X.Y.(Z+1).0` (per ADR-0035 patch+1). Cross-check against `mobile-app/pubspec.yaml`'s current `version:` -- if dev has not been bumped since the last release, the target is dev's CURRENT version, not current+1.
 - [ ] `docs/ALL_SPRINTS_MASTER_PLAN.md` "Last Completed Sprint" is up to date.
+- [ ] **One UNLOCKED WinWright sweep since the last Store release** (F291 guard, Sprint 79 Q4 = 1): a sprint sweep run on a locked PC skips the mouse steps (`locked: N mouse steps skipped`), so at least one sweep in this release's sprints must read `Mouse steps skipped: 0`. If none did, run `mobile-app\scripts\run-winwright-tests.ps1` on an unlocked PC before building.
 - [ ] CHANGELOG.md entries for the version are assembled under `## [Unreleased]` ready to move under a versioned heading.
 - [ ] **The PROD WORKTREE has been pulled to current `main`** (Step 3.0). It is a separate checkout that nothing in the sprint updates, so it is stale by default at every release. Behind by 33 / 52 / 47 commits in Sprints 60 / 66 / 68 -- a stale worktree builds successfully and silently packages the PREVIOUS sprint's code under the new version number.
 
@@ -445,6 +446,14 @@ git pull origin main
 git merge develop --no-ff -m "chore: release X.Y.Z.0"
 git push origin main
 git checkout develop
+```
+
+The `develop` -> `main` merge can also be a PR merged by Harold on GitHub (the owner merges; Claude never does). Either way, **tag the merge commit on `main` as soon as it exists** (Sprint 79, F288, 2026-10-14). The tag is `vX.Y.Z`, annotated, and names the release version (for example `v0.19.0`; the existing tag `v0.5.0` follows the same form). Use the merge commit SHA from `git log origin/main -1`:
+
+```powershell
+git fetch origin
+git tag -a vX.Y.Z <merge-commit> -m "Release X.Y.Z"
+git push origin vX.Y.Z
 ```
 
 **Before pulling into the prod worktree, discard its stale local-only leftovers.** Every release build leaves exactly 2 kinds of local-only, uncommitted change in the prod worktree by design (per Step 1's convention: the prod worktree's own `msix_version` bump is never committed there, and `flutter clean`/`flutter pub get` regenerate the 3 Windows plugin-registrant files with machine-local paths):

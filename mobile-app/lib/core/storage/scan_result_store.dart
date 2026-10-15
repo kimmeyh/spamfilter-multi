@@ -278,10 +278,17 @@ class ScanResultStore {
   /// background, any status) started for [accountId], or null if none has.
   /// Read by the Android Doze alarm to skip a scan that would repeat one
   /// that just ran.
-  Future<DateTime?> getLatestScanStart(String accountId) async {
+  ///
+  /// [completedOnly] (Sprint 79, Harold Q1 = 1): count only scans that
+  /// COMPLETED. The periodic run uses it, so a WorkManager retry after a
+  /// failed or killed scan (F175 R-6) still scans instead of skipping on the
+  /// failed scan's own start time.
+  Future<DateTime?> getLatestScanStart(String accountId,
+      {bool completedOnly = false}) async {
     final db = await _databaseHelper.database;
     final rows = await db.rawQuery(
-      'SELECT MAX(started_at) AS started FROM scan_results WHERE account_id = ?',
+      'SELECT MAX(started_at) AS started FROM scan_results WHERE account_id = ?'
+      '${completedOnly ? " AND status = 'completed'" : ''}',
       [accountId],
     );
     final ms = rows.isEmpty ? null : rows.first['started'] as int?;

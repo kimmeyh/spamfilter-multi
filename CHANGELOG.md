@@ -26,6 +26,24 @@ Format: `- **type**: Description (Issue #N)` where type is feat|fix|chore|docs
 
 ## [Unreleased]
 
+### 2026-10-15 (Sprint 79)
+- **fix**: On Android, a scheduled background scan that had to wait for another scan of the same account no longer scans that account again right after the other scan finishes; it checks again after the wait (Issue #471)
+
+### 2026-10-14 (Sprint 79)
+- **fix**: Importing a rules or safe senders file now takes effect at once; before, Review No Rule Items and the next manual scan kept the old rules until the app restarted. A failed reload after an import is now reported instead of "imported successfully" (Issue #488)
+- **fix**: Android no longer scans an account on a 15-minute (or longer) schedule about twice per interval: the scheduled run now skips an account whose last completed scan started within two-thirds of its interval, as the idle-wake alarm already did (Issue #471)
+- **chore**: The Android worker registers a handler meant to log why Android stopped a scan before it finished; on the emulator it did not fire, so it is not yet a working diagnostic (Issue #471)
+- **chore**: `develop` is the GitHub default branch, so `Closes #N` in a sprint PR closes its cards on merge; releases are tagged `vX.Y.Z` on main, and 22 past releases were tagged (Issue #484)
+
+### 2026-10-13 (Sprint 79)
+- **fix**: A scan whose email server stops answering mid-scan now ends that step after 2 minutes with a connection error, instead of waiting forever and being cleaned up as dead much later (Issue #471)
+- **test**: A WinWright sweep on a locked PC runs every step except the mouse steps, names those, and counts as complete; the mouse steps run unlocked once per Store release (Issue #485)
+- **feat**: Windows shows a notification when a background scan of an account completes, with the same title and counts as Android, one per account (Issue #483)
+- **chore**: flutter_local_notifications 17.2.4 -> 22.3.2 and desugar_jdk_libs 2.0.4 -> 2.1.4; the unused PowerShell toast service and the unused Windows notification placeholder are removed (ADR-0048 supersedes ADR-0018) (Issue #483)
+- **docs**: Backlog refinement presents the next 20 candidates in one priority order, with the details in the same order and no phase-group headers; the master plan stays grouped by phase (Issue #487)
+- **fix**: Every change to an account's background schedule (scheduled or cancelled, on Windows and Android) is now written to the diagnostic log with the screen or step that made it, so an account that stops being scanned always shows why (Issue #471)
+- **feat**: Android background-scan notifications name the account (`Back. scan k*@aol completed`) and list "No rule" first (`No rule 9 Deleted 1 Safe 0`); one notification per account, the newest replacing the older one; a read-only or partial scan names its mode in the title and strikes through the counts it did not act on (Issue #482)
+
 ### 2026-10-13 (Sprint 78 final code reviews, PR #470)
 - **fix**: If the spam filter rules fail to reload after a change, a banner with Retry now says so and the rules loaded earlier stay in use; before, the failure was invisible
 - **fix**: Review No Rule Items drops rows that a rule made elsewhere (a saved Results screen, Settings > Rules) now covers, without tapping Refresh

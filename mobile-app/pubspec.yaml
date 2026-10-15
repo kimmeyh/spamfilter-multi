@@ -1,6 +1,6 @@
 name: my_email_spam_filter
 description: Cross-platform email spam filter app
-version: 0.19.0+16
+version: 0.20.0+17
 publish_to: 'none'
 
 environment:
@@ -55,7 +55,7 @@ dependencies:
   # factory in background_scan_scheduler.dart + the WorkManager dispatcher in
   # android_background_scan_worker.dart). Android SHIPMENT PREREQUISITE for
   # the Play track.
-  flutter_local_notifications: ^17.2.1  # Local notifications (F150, Sprint 59: 16->17; v16 does not compile against Android SDK 34 -- upstream bigLargeIcon ambiguity. NOTE: 17.0.0 only SURFACES the ambiguity (it bumps compileSdk to 34); the actual fix is upstream issue #2329, first released in 17.2.1 -- hence the floor here (Claude cowork review, 2026-08-15). We use only initialize/show/AndroidNotificationDetails; the v17 breaking changes are in scheduling APIs we do not call.)
+  flutter_local_notifications: ^22.3.2  # Local notifications (F287, Sprint 79: 17->22 for Windows toast support, ADR-0018 superseded; 20.0.0 made initialize/show parameters named; 19.0.0 needs desugar_jdk_libs 2.1.4. Earlier: F150, Sprint 59: 16->17; v16 does not compile against Android SDK 34 -- upstream bigLargeIcon ambiguity. NOTE: 17.0.0 only SURFACES the ambiguity (it bumps compileSdk to 34); the actual fix is upstream issue #2329, first released in 17.2.1 -- hence the floor here (Claude cowork review, 2026-08-15). We use only initialize/show/AndroidNotificationDetails; the v17 breaking changes are in scheduling APIs we do not call.)
   connectivity_plus: ^5.0.0  # Network connectivity detection
   battery_plus: ^5.0.0  # Battery level detection
 
@@ -141,7 +141,7 @@ msix_config:
   publisher_display_name: Kimmey Consulting - Ohio
   identity_name: KimmeyConsulting-Ohio.MyEmailSpamFilter
   publisher: CN=84EA8722-0CA5-4EC0-9B10-07EE79B66062
-  msix_version: 0.19.0.0
+  msix_version: 0.20.0.0
   logo_path: assets/icon/icon.png
   capabilities: internetClient, internetClientServer, privateNetworkClientServer
   # F148 (Sprint 56): stable App Execution Alias so background-scan scheduled

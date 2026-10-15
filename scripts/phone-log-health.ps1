@@ -24,8 +24,11 @@ It reads files only; it changes nothing.
 One or more diag_*.log files (wildcards allowed).
 
 .PARAMETER IntervalMinutes
-The background interval the accounts are set to (default 15, the closed-test
-setting). The log does not record the interval, so the rate check needs it.
+The FALLBACK background interval (default 15, the closed-test setting). Each
+account's own interval is read from its worker skip lines
+("skipped: ... (interval 240m; doze alarm)") when the log has one, and that
+wins. (Sprint 79: one interval for all accounts missed Yahoo at 6.2 scans/hour
+on 15 minutes while AOL was on 5, and raised a false flag on AOL at 15.)
 
 .PARAMETER Since
 Only lines at or after this time (for one overnight run, for example).
@@ -51,12 +54,20 @@ param(
 
 $scanRx    = '^\[(?<ts>[0-9T:.\-]+)\] \[SCAN\] \[scan/background\] (?<acct>\S+) (?<ev>start|outcome|skip) --\s*(?<rest>.*)$'
 $triggerRx = '^\[(?<ts>[0-9T:.\-]+)\] \[SCAN\] \[worker/android\] start (?<acct>\S+) trigger=(?<trig>[a-z-]+)'
+$intervalRx = '\[worker/android\] account (?<acct>\S+) skipped: .*\(interval (?<min>\d+)m'
 
 function Get-Health {
     param([string[]]$Lines, [int]$Interval, $From, [switch]$OneAccount)
     $acc = @{}
+    $intervals = @{}
     $recognized = 0
     foreach ($line in $Lines) {
+        $iv = [regex]::Match($line, $intervalRx)
+        if ($iv.Success) {
+            $ia = $iv.Groups['acct'].Value
+            if (-not $intervals.ContainsKey($ia)) { $intervals[$ia] = New-Object System.Collections.Generic.SortedSet[int] }
+            [void]$intervals[$ia].Add([int]$iv.Groups['min'].Value)
+        }
         $m = [regex]::Match($line, $scanRx)
         $t = [regex]::Match($line, $triggerRx)
         if (-not $m.Success -and -not $t.Success) { continue }
@@ -117,17 +128,28 @@ function Get-Health {
             $gaps = @(for ($i = 1; $i -lt $n; $i++) { ($r.Starts[$i] - $r.Starts[$i - 1]).TotalMinutes }) | Sort-Object
             $median = $gaps[[int][math]::Floor($gaps.Count / 2)]
         }
-        $perHour = if ($hours -ge 1) { [math]::Round($completed / $hours, 1) } else { $null }
+        # N scans across a span hold N-1 intervals: two scans 240 minutes apart are
+        # 0.25/hour, not 0.5 (Sprint 79 false flag on a 240-minute account).
+        $perHour = if ($hours -ge 1 -and $completed -ge 2) { [math]::Round(($completed - 1) / $hours, 2) } else { $null }
         $outText = ($r.Outcomes.Keys | Sort-Object | ForEach-Object { "$_=$($r.Outcomes[$_])" }) -join ' '
         $trigText = ($r.Triggers.Keys | Sort-Object | ForEach-Object { "$_=$($r.Triggers[$_])" }) -join ' '
-        [void]$out.Add(('{0}: starts={1} {2} unfinished={3} skips={4} | triggers {5} | {6}/hour, median gap {7} min' -f
+        # The account's own interval (from its skip lines) wins over the fallback.
+        # When the interval changed inside the window (Gmail 5m -> 240m on
+        # 2026-10-13), the SHORTEST one is used: the rate check must not flag a
+        # window that was legitimately faster for part of its length.
+        $own = $intervals.ContainsKey($a)
+        $iv = if ($own) { $intervals[$a].Min } else { $Interval }
+        $ivText = if (-not $own) { "interval ${iv}m (assumed)" }
+                  elseif ($intervals[$a].Count -gt 1) { "interval $($intervals[$a] -join '/')m (log, changed; checked at ${iv}m)" }
+                  else { "interval ${iv}m (log)" }
+        [void]$out.Add(('{0}: starts={1} {2} unfinished={3} skips={4} | triggers {5} | {6}/hour, median gap {7} min | {8}' -f
             $a, $n, $outText, $r.Unfinished, $r.Skips, $(if ($trigText) { $trigText } else { 'none' }),
             $(if ($null -ne $perHour) { $perHour } else { '-' }),
-            $(if ($null -ne $median) { [math]::Round($median, 1) } else { '-' })))
-        $allowed = 1.5 * 60 / $Interval
+            $(if ($null -ne $median) { [math]::Round($median, 1) } else { '-' }), $ivText))
+        $allowed = 1.5 * 60 / $iv
         if ($null -ne $perHour -and $perHour -gt $allowed) {
             [void]$flags.Add(('FLAG: {0} completed {1} scans/hour; a {2}-minute interval allows about {3}. Double scheduling? (MV-7 class)' -f
-                $a, $perHour, $Interval, [math]::Round(60 / $Interval, 1)))
+                $a, $perHour, $iv, [math]::Round(60 / $iv, 1)))
         }
         if ($r.Unfinished -gt 0) {
             $at = ($r.UnfinishedAt | Sort-Object | Select-Object -First 3 | ForEach-Object { $_.ToString('MM-dd HH:mm:ss') }) -join ', '
@@ -185,12 +207,42 @@ if ($SelfTest) {
     $h4 = Get-Health -Lines @('garbage line', '[2026-10-13T02:00:00.000000] [SCAN] [scan/renamed] x start -- a') -Interval 15
     if ($h4.Recognized -ne 0) { $failures += "unparseable lines counted as recognized ($($h4.Recognized))" }
     if ($h.Recognized -lt 1) { $failures += 'sample scan lines not counted as recognized' }
-    if ($failures.Count -eq 0) { 'SELFTEST PASS (10 checks)'; exit 0 }
+    # Per-account interval from skip lines (Sprint 79). f@x runs every 6 minutes
+    # and its log says 5m: healthy, even with a 15-minute fallback. y@x runs every
+    # 7.5 minutes and its log says 15m: double, even with a 5-minute fallback.
+    $pa = New-Object System.Collections.ArrayList
+    for ($i = 0; $i -lt 30; $i++) { Add-Scan $pa $base.AddMinutes($i * 6) 'f***@x.com' 'doze-alarm' 'completed' }
+    for ($i = 0; $i -lt 24; $i++) { Add-Scan $pa $base.AddMinutes($i * 7.5) 'y***@x.com' 'periodic' 'completed' }
+    [void]$pa.Add('[2026-10-13T01:01:00.000000] [SCAN] [worker/android] account f***@x.com skipped: a scan started 60s ago (interval 5m; doze alarm)')
+    [void]$pa.Add('[2026-10-13T01:02:00.000000] [SCAN] [worker/android] account y***@x.com skipped: a scan started 120s ago (interval 15m; doze alarm)')
+    $pl = $pa | Sort-Object
+    $f5 = (Get-Health -Lines $pl -Interval 15).Flags -join "`n"
+    if ($f5 -match 'f\*\*\*@x\.com completed') { $failures += 'account logged at 5m flagged against the 15m fallback' }
+    $f6 = (Get-Health -Lines $pl -Interval 5).Flags -join "`n"
+    if ($f6 -notmatch 'y\*\*\*@x\.com completed [0-9.]+ scans/hour; a 15-minute') { $failures += 'account logged at 15m not flagged under a 5m fallback' }
+    # g@x: exactly two scans, one 240-minute interval apart, its log says 240m.
+    $g = New-Object System.Collections.ArrayList
+    Add-Scan $g $base 'g***@x.com' 'periodic' 'completed'
+    Add-Scan $g $base.AddMinutes(240) 'g***@x.com' 'periodic' 'completed'
+    [void]$g.Add('[2026-10-13T01:15:00.000000] [SCAN] [worker/android] account g***@x.com skipped: a scan started 900s ago (interval 240m; doze alarm)')
+    $f7 = (Get-Health -Lines ($g | Sort-Object) -Interval 15).Flags -join "`n"
+    if ($f7 -match 'g\*\*\*@x\.com completed') { $failures += 'two scans one 240m interval apart flagged as double' }
+    # h@x: every 5 minutes for 2 hours (log says 5m), then the interval became
+    # 240m. One window holds both: no flag.
+    $hh = New-Object System.Collections.ArrayList
+    for ($i = 0; $i -lt 24; $i++) { Add-Scan $hh $base.AddMinutes($i * 5) 'h***@x.com' 'doze-alarm' 'completed' }
+    Add-Scan $hh $base.AddMinutes(360) 'h***@x.com' 'periodic' 'completed'
+    [void]$hh.Add('[2026-10-13T01:01:00.000000] [SCAN] [worker/android] account h***@x.com skipped: a scan started 60s ago (interval 5m; doze alarm)')
+    [void]$hh.Add('[2026-10-13T07:15:00.000000] [SCAN] [worker/android] account h***@x.com skipped: a scan started 900s ago (interval 240m; doze alarm)')
+    $f8 = (Get-Health -Lines ($hh | Sort-Object) -Interval 15).Flags -join "`n"
+    if ($f8 -match 'h\*\*\*@x\.com completed') { $failures += 'interval changed 5m -> 240m inside the window flagged as double' }
+    if ($failures.Count -eq 0) { 'SELFTEST PASS (14 checks)'; exit 0 }
     'SELFTEST FAIL:'; $failures | ForEach-Object { "  - $_" }; exit 1
 }
 
 if (-not $Path) { 'Give -Path <diag_*.log> or -SelfTest.'; exit 2 }
-$files = @($Path | ForEach-Object { Get-ChildItem -Path $_ -File -ErrorAction SilentlyContinue }) | Sort-Object Name -Unique
+# "-Path a,b" through powershell -File arrives as ONE string "a,b"; split it.
+$files = @($Path | ForEach-Object { $_ -split ',' } | Where-Object { $_ } | ForEach-Object { Get-ChildItem -Path $_ -File -ErrorAction SilentlyContinue }) | Sort-Object Name -Unique
 if ($files.Count -eq 0) { 'No diagnostic logs found.'; exit 0 }
 $all = foreach ($fi in $files) { Get-Content -LiteralPath $fi.FullName }
 $res = Get-Health -Lines $all -Interval $IntervalMinutes -From $Since -OneAccount:$SingleAccount

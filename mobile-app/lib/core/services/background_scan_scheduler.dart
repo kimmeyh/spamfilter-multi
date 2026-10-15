@@ -32,6 +32,8 @@ import '../utils/account_id_sanitizer.dart';
 import 'android_background_scan_worker.dart' show kAndroidScanTaskName, kAndroidScanTestTaskName;
 import 'app_environment.dart';
 import 'android_doze_alarm.dart';
+import 'diagnostic_logger.dart';
+import '../../util/redact.dart';
 import 'scan_interval.dart';
 import 'windows_task_scheduler_service.dart';
 
@@ -140,6 +142,65 @@ class BackgroundScanSchedulerFactory {
   }
 }
 
+/// Sprint 79 Task 1 R-9: every schedule and cancel, on BOTH platforms, writes
+/// one diagnostic-log line naming the account (masked), the result, and the
+/// call site that asked for it.
+///
+/// **Why.** On the Fold (0.19.0, 2026-10-13) Gmail's periodic task AND its
+/// Doze alarm both stopped after 14:27 with no line of any kind; the only
+/// code that removes both at once is [AndroidSchedulerAdapter.cancel], which
+/// logged to logcat only -- and logcat is unreachable (no adb). An account that
+/// stops being scanned must say why in the file the user can read.
+///
+/// Logged inside each adapter rather than by wrapping the factory's result:
+/// `settings_screen.dart` tests `scheduler is AndroidSchedulerAdapter` to
+/// decide whether a test scan is queued, and a wrapper would silently turn that
+/// false.
+@visibleForTesting
+String schedulerChangeLine({
+  required String action,
+  required String accountId,
+  int? intervalMinutes,
+  required bool ok,
+  required String caller,
+}) =>
+    '$action ${Redact.accountId(accountId)}'
+    '${intervalMinutes == null ? '' : ' every ${intervalMinutes}m'}'
+    ' ${ok ? 'ok' : 'FAILED'} (from $caller)';
+
+/// The first app frame outside this file in [trace], as `file.dart:line`, or
+/// `unknown` (an obfuscated or empty trace). Best-effort: it only labels a log
+/// line.
+@visibleForTesting
+String schedulerCallerFrom(StackTrace trace) {
+  final frame = RegExp(r'package:[^/\s]+/(?:[^\s:]*/)?([^/\s:]+\.dart):(\d+)');
+  for (final m in frame.allMatches(trace.toString())) {
+    if (m.group(1) == 'background_scan_scheduler.dart') continue;
+    return '${m.group(1)}:${m.group(2)}';
+  }
+  return 'unknown';
+}
+
+Future<void> _logSchedulerChange(
+  String platform, {
+  required String action,
+  required String accountId,
+  int? intervalMinutes,
+  required bool ok,
+  required StackTrace trace,
+}) =>
+    DiagnosticLogger.log(
+      kind: DiagnosticLogger.kindScan,
+      context: 'scheduler/$platform',
+      detail: schedulerChangeLine(
+        action: action,
+        accountId: accountId,
+        intervalMinutes: intervalMinutes,
+        ok: ok,
+        caller: schedulerCallerFrom(trace),
+      ),
+    );
+
 /// Windows implementation -- delegates to the existing per-account Task
 /// Scheduler service (ADR-0039). Deliberately a thin adapter: the Windows
 /// service keeps its richer Windows-only API (path repair, orphan enumeration),
@@ -162,22 +223,44 @@ class WindowsSchedulerAdapter implements BackgroundScanScheduler {
     required String accountId,
     required int intervalMinutes,
   }) async {
-    if (intervalMinutes <= 0) return false;
-    // Idempotent per the interface contract: update when a task already
-    // exists, create otherwise. This mirrors what settings_screen did inline
-    // before F161 moved the decision behind the interface.
-    final exists =
-        await WindowsTaskSchedulerService.taskExists(accountId: accountId);
-    return exists
-        ? WindowsTaskSchedulerService.updateScheduledTask(
-            intervalMinutes: intervalMinutes, accountId: accountId)
-        : WindowsTaskSchedulerService.createScheduledTask(
-            intervalMinutes: intervalMinutes, accountId: accountId);
+    final trace = StackTrace.current;
+    var ok = false;
+    try {
+      if (intervalMinutes <= 0) return false;
+      // Idempotent per the interface contract: update when a task already
+      // exists, create otherwise. This mirrors what settings_screen did inline
+      // before F161 moved the decision behind the interface.
+      final exists =
+          await WindowsTaskSchedulerService.taskExists(accountId: accountId);
+      ok = exists
+          ? await WindowsTaskSchedulerService.updateScheduledTask(
+              intervalMinutes: intervalMinutes, accountId: accountId)
+          : await WindowsTaskSchedulerService.createScheduledTask(
+              intervalMinutes: intervalMinutes, accountId: accountId);
+      return ok;
+    } finally {
+      await _logSchedulerChange('windows',
+          action: 'schedule',
+          accountId: accountId,
+          intervalMinutes: intervalMinutes,
+          ok: ok,
+          trace: trace);
+    }
   }
 
   @override
-  Future<bool> cancel(String accountId) =>
-      WindowsTaskSchedulerService.deleteScheduledTask(accountId: accountId);
+  Future<bool> cancel(String accountId) async {
+    final trace = StackTrace.current;
+    var ok = false;
+    try {
+      ok = await WindowsTaskSchedulerService.deleteScheduledTask(
+          accountId: accountId);
+      return ok;
+    } finally {
+      await _logSchedulerChange('windows',
+          action: 'cancel', accountId: accountId, ok: ok, trace: trace);
+    }
+  }
 }
 
 /// Android implementation -- WorkManager per-account unique periodic work,
@@ -262,6 +345,18 @@ class AndroidSchedulerAdapter implements BackgroundScanScheduler {
     required String accountId,
     required int intervalMinutes,
   }) async {
+    final trace = StackTrace.current;
+    final ok = await _scheduleUnlogged(accountId, intervalMinutes);
+    await _logSchedulerChange('android',
+        action: 'schedule',
+        accountId: accountId,
+        intervalMinutes: intervalMinutes,
+        ok: ok,
+        trace: trace);
+    return ok;
+  }
+
+  Future<bool> _scheduleUnlogged(String accountId, int intervalMinutes) async {
     if (intervalMinutes <= 0) return false;
     try {
 
@@ -320,6 +415,14 @@ class AndroidSchedulerAdapter implements BackgroundScanScheduler {
 
   @override
   Future<bool> cancel(String accountId) async {
+    final trace = StackTrace.current;
+    final ok = await _cancelUnlogged(accountId);
+    await _logSchedulerChange('android',
+        action: 'cancel', accountId: accountId, ok: ok, trace: trace);
+    return ok;
+  }
+
+  Future<bool> _cancelUnlogged(String accountId) async {
     try {
       await Workmanager().cancelByUniqueName(uniqueNameFor(accountId));
       // F175 R-6 (Sprint 62): also cancel any pending TEST one-off.

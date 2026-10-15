@@ -190,12 +190,24 @@ class BackgroundScanCore {
   ///
   /// Android caveat: a WorkManager worker has about 10 minutes without a
   /// foreground service, so a 6-minute wait leaves about 4 for the scan.
+  ///
+  /// [skipAfterWait] (Sprint 79, Harold A = 1): asked once, AFTER the busy
+  /// wait and before the retry. A non-null result is the skip reason: the
+  /// account is no longer due, usually because the scan that made this one
+  /// wait has just completed it. Without it a periodic run that arrived
+  /// during a scan waited, then scanned the account again minutes after that
+  /// scan finished (emulator, 2026-10-14 10:21: 254 s wait, rescan 3.5
+  /// minutes after completion). Android passes its entry check
+  /// (`recentScanShouldSkip`); Windows passes null -- it has one scheduler
+  /// per account and no recent-scan rule, so its behavior is unchanged. A
+  /// check that throws does not skip: making sure a scan happens wins.
   static Future<AccountScanOutcome> scanAccount({
     required String accountId,
     required String platformId,
     required RuleSetProvider ruleSetProvider,
     required SettingsStore settingsStore,
     ScanResultStore? scanResultStore,
+    Future<String?> Function()? skipAfterWait,
   }) async {
     Future<AccountScanOutcome> attempt() => _scanAccountOnce(
           accountId: accountId,
@@ -245,6 +257,25 @@ class BackgroundScanCore {
       detail: 'waiting ${wait.inSeconds}s (${DiagnosticLogger.scrub(busyBecause)})',
     ));
     await busyWait(wait);
+    if (skipAfterWait != null) {
+      String? reason;
+      try {
+        reason = await skipAfterWait();
+      } catch (e) {
+        _logger.w('Post-wait recent-scan check failed, scanning anyway: $e');
+      }
+      if (reason != null) {
+        _logger.i('Background scan of ${Redact.accountId(accountId)} '
+            'SKIPPED after the wait: $reason');
+        unawaited(DiagnosticLogger.scanEvent(
+          scanType: 'background',
+          accountId: accountId,
+          stage: 'skip',
+          detail: 'after the wait: ${DiagnosticLogger.scrub(reason)}',
+        ));
+        return AccountScanOutcome.skipped(reason, EmailScanProvider());
+      }
+    }
     return attempt();
   }
 

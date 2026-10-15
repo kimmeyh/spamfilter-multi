@@ -112,7 +112,10 @@ if (-not $sprintNum -or -not $phaseText) {
                 # Validation" inside a sentence describing an approval scope.
                 $m = [regex]::Match(
                     [string]$cs.status,
-                    '(?i)^\s*(?:sprint\s+\d+\s+)?phase\s+(\d+\.\d+)\s+([^.\-(]+)')
+                    # "n" or "n.n": a top-level phase ("Phase 4 Execution",
+                    # "Phase 7 Sprint Review") used to be dropped SILENTLY, so
+                    # the footer read "Sprint 79" with no phase (2026-10-14).
+                    '(?i)^\s*(?:sprint\s+\d+\s+)?phase\s+(\d+(?:\.\d+)?)\s+([^.\-(]+)')
                 if ($m.Success) {
                     $num  = $m.Groups[1].Value
                     $name = ($m.Groups[2].Value).Trim()
@@ -126,12 +129,17 @@ if (-not $sprintNum -or -not $phaseText) {
                     $phaseText = "$num $name"
                 }
                 elseif (($m2 = [regex]::Match([string]$cs.status,
-                        '(?i)^\s*(?:sprint\s+\d+\s+)?phase\s+(\d+\.\d+)')).Success) {
+                        '(?i)^\s*(?:sprint\s+\d+\s+)?phase\s+(\d+(?:\.\d+)?)')).Success) {
                     # A phase NUMBER with no NAME after it ("Phase 7.7 -- ...").
                     # This used to drop the phase SILENTLY, so the footer read
                     # "Sprint 73" and looked complete (2026-09-24). Emit the
                     # number and say what is wrong, so the gap is visible.
                     $phaseText = "$($m2.Groups[1].Value) [name missing -- start sprint_status.json status with 'Phase n.n <Name>']"
+                }
+                else {
+                    # No leading phase at all: say so instead of printing a
+                    # footer that LOOKS complete.
+                    $phaseText = "unknown [start sprint_status.json status with 'Phase n.n <Name>']"
                 }
             }
         } catch {
