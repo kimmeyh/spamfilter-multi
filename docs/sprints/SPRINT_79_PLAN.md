@@ -286,6 +286,13 @@ AOL scans that stop mid-run.
     a free account never asks); the `mv7_doze_alarm_skip_test.dart` wiring gate pins the worker passing the check.
     Mutations A1-A5 KILLED (never asks, ignores the reason, a throw skips, asked before the wait, worker passes
     null). What the tests do NOT catch: delivery timing on the phone (the device log line "SKIPPED after the wait").
+    **Phone evidence (0.19.0 logs 10-14 and 10-15, pulled 2026-10-15 06:23)**: 18 busy waits. 11 retried on time;
+    7 retried 14 to 44 minutes LATE (10-15: 02:19:34 wait 156 s -> 02:54:25; 03:11:08 wait 184 s -> 03:38:30, 65 s
+    after the 03:37:25 Doze scan; 03:54:56 -> 04:17:28; 04:38:44 -> 04:54:36; 10-14: 14:40, 14:50, 15:15). Every late
+    retry scanned again shortly after a completed scan, the case fix A skips. Probable mechanism, UNVERIFIED: the Dart
+    timer behind the wait runs on a clock that stops while the phone sleeps in Doze, so a 3-minute wait ends only
+    after about 3 minutes of awake time. Settles it: a log line with wall-clock and uptime at the wait start and end.
+    No change needed for fix A; the late retry already meets the after-wait check.
   - **Test Background Scan can do nothing silently**: `runTestScan` uses a unique name with WorkManager's default
     KEEP (`background_scan_scheduler.dart:473`); while an earlier test request is queued or in its 10-minute backoff
     (after a stop), a new tap is dropped with no message. Seen 10:08 (tap, no run until 10:20:58).
@@ -445,6 +452,15 @@ R-8 added with a real lead).
   scheduling evidence (Task 1 R-5, R-9). App battery 0.2% (01:06 and 08:09), background time 9 m -> 14 m, Wi-Fi
   4,686 -> 7,048 packets. Screenshots: `validation-screenshots/sprint-79/Screenshot_20261014_0{10542,10601,10610,
   80914,80922,80931}_Device care.png`.
+- 2026-10-14/15 (planned Night C, 0.19.0): **RAN AS ARM B, NOT C.** Only AOL scanned (interval 5). No new-mail scan
+  ran: every worker start reads `trigger=doze-alarm` or `trigger=periodic`, and neither log has a listener line, so
+  Notification access was probably still off (that step was not confirmed). The Battery activity graph shows charging
+  until about 01:00 (read from the graph; Harold to confirm the unplug time), then 91% to 84% by 05:52; screen on
+  29 m, screen off 5 h 3 m. **MyEmailSpamFilter 0.3%** of the battery for 10-15 to 05:52 (rank 5; Telegram 1.8%,
+  Alarmy 1.4%). Health check 01:00-06:23 (`-IntervalMinutes 5 -SingleAccount`): 44 completed, 1 refused, 6 skips,
+  0 unfinished, no flags; 8.06 scans/hour, median gap 8.6 min; 0 errors; 3 spam deleted. About 4.9 hours on battery,
+  short of the 8-hour protocol. Screenshots: `Screenshot_20261015_0552{33,47}_Device care.png` (the MyEmailSpamFilter
+  detail screen was not captured).
 
 **Acceptance criteria**: AC-1: three arms recorded with battery percent, scan count and a clean health check; AC-2: the
 decision rule applied and recorded in the results doc; AC-3: if the floor changes, `scan_interval_test.dart` and the
