@@ -273,6 +273,23 @@ AOL scans that stop mid-run.
     only between the stop and the re-run (30 s for the Doze one-off). Sources fetched 2026-10-15 from
     `androidx/androidx` `androidx-main` (`work/work-runtime/src/main/java/androidx/work/WorkInfo.kt`,
     `impl/WorkerWrapper.kt`); the app ships `work-runtime:2.11.2` (`build.gradle.kts:231`).
+    **Harold B = 2 (2026-10-15)**: one diagnostic build first -- `Log.w` (tag `WMDIAG`) added in the pub cache to
+    `workmanager_android-0.10.6` `BackgroundWorker.onStopped` (entry with thread name, the `catch`, and the reply
+    callback), emulator only, then the file restored byte for byte (SHA-256 checked against a scratchpad backup).
+    **RESULT -- cause VERIFIED (emulator, 2026-10-15 15:40)**: the diagnostic build also held each run 60 s before
+    `executeTask` (a network cut did not stop these runs; they have no network requirement), and
+    `cmd jobscheduler timeout -n androidx.work.systemjobscheduler com.myemailspamfilter.dev` stopped two held runs.
+    Logcat: `onStopped enter thread=WM.task-3 main=false reason=3 task=spamfilter_background_scan apiInit=true
+    engine=true`, then `onTaskStopped threw java.lang.RuntimeException: Methods marked with @UiThread must be executed
+    on the main thread. Current thread: WM.task-3` at `FlutterJNI.ensureRunningOnMainThread` <- `BackgroundWorker.
+    onStopped(BackgroundWorker.kt:211)`. WorkManager calls `onStopped` on its own thread; the plugin sends the Pigeon
+    message from there; Flutter refuses; the plugin's `catch` hands the error to the default no-op
+    `WorkmanagerDebug`, then tears the engine down. So the app's Dart handler can NEVER run: a plugin defect, not ours.
+    Not fixed in 0.10.7-0.10.9 (pub.dev changelog, fetched 2026-10-15). Second plugin defect seen in the same read:
+    `StopReasonUtils` treats 3 as "cancelled by app", but AndroidX 3 is TIMEOUT. Related, UNVERIFIED: 0.10.9 fixes
+    "background tasks no longer fail ~30 seconds after start on Android 16 when the Dart isolate boots slowly"
+    (#738), which matches R-8's 11 phone scans stopped within 30 s of start. Emulator restored to a clean dev build;
+    pub-cache file hash re-checked after each of the three builds.
   - **Q1 gap found on the emulator (10:21)**: a periodic run that arrives WHILE another scan of the account is
     running passes the entry check (the running scan is not `completed`), waits in `BackgroundScanCore`'s busy-retry
     (254 s), then scans anyway -- 10:25:37, 3.5 minutes after the 10:22:01 completion, inside the window. The entry
@@ -460,7 +477,10 @@ R-8 added with a real lead).
   Alarmy 1.4%). Health check 01:00-06:23 (`-IntervalMinutes 5 -SingleAccount`): 44 completed, 1 refused, 6 skips,
   0 unfinished, no flags; 8.06 scans/hour, median gap 8.6 min; 0 errors; 3 spam deleted. About 4.9 hours on battery,
   short of the 8-hour protocol. Screenshots: `Screenshot_20261015_0552{33,47}_Device care.png` (the MyEmailSpamFilter
-  detail screen was not captured).
+  detail screen was not captured). **Harold Night = 1 (2026-10-15): counted as arm B** despite 4.9 hours. Harold
+  reports Notification access was ALREADY allowed, so "no new-mail scan" is not explained by missing access; open
+  question for arm C (did the AOL app post any notification overnight?).
+- 2026-10-15/16 (arm A): AOL only, every 15 minutes, new mail off -- set up by Harold.
 
 **Acceptance criteria**: AC-1: three arms recorded with battery percent, scan count and a clean health check; AC-2: the
 decision rule applied and recorded in the results doc; AC-3: if the floor changes, `scan_interval_test.dart` and the
