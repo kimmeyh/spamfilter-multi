@@ -656,6 +656,73 @@ void main() {
       expect(waits, isEmpty);
     });
 
+    // Sprint 79 (Harold A = 1): skipAfterWait is asked AFTER the wait, before
+    // the retry. Emulator 2026-10-14 10:21: a periodic run that arrived during
+    // a scan waited 254 s, then rescanned 3.5 minutes after that scan ended.
+    //
+    // What these do NOT catch: the Android worker passing the wrong check (or
+    // none) -- executeScan needs a full platform; the worker passes the SAME
+    // closure it runs at entry, covered by review and by the device log line
+    // "SKIPPED after the wait".
+    group('skipAfterWait (Sprint 79, Harold A = 1)', () {
+      Future<AccountScanOutcome> scanWith(Future<String?> Function() check) =>
+          BackgroundScanCore.scanAccount(
+            accountId: 'acct-a',
+            platformId: 'test-platform',
+            ruleSetProvider: RuleSetProvider(),
+            settingsStore: SettingsStore(testHelper.dbHelper),
+            scanResultStore: store,
+            skipAfterWait: check,
+          );
+
+      Future<void> busyThenFree() async {
+        final holder = await insertRow(
+            accountId: 'acct-a', scanType: 'manual',
+            startedAt: ago(const Duration(seconds: 10)));
+        onWait = () async {
+          final db = await testHelper.dbHelper.database;
+          await db.update('scan_results', {'status': 'completed'},
+              where: 'id = ?', whereArgs: [holder]);
+        };
+      }
+
+      test('a reason after the wait SKIPS the retry, and is asked only after '
+          'the wait', () async {
+        await busyThenFree();
+        var waitsWhenAsked = -1;
+        final outcome = await scanWith(() async {
+          waitsWhenAsked = waits.length;
+          return 'a completed scan started 30s ago (interval 15m; periodic)';
+        });
+        expect(waitsWhenAsked, 1, reason: 'asked after the one wait');
+        expect(outcome.skipped, isTrue);
+        expect(outcome.skippedReason, contains('completed scan started'));
+      });
+
+      test('no reason: the retry RUNS as before', () async {
+        await busyThenFree();
+        await expectLater(scanWith(() async => null),
+            throwsA(predicate((e) => '$e'.contains('not supported'))));
+        expect(waits, hasLength(1));
+      });
+
+      test('a check that throws does not skip: the retry RUNS', () async {
+        await busyThenFree();
+        await expectLater(
+            scanWith(() async => throw StateError('db unreadable')),
+            throwsA(predicate((e) => '$e'.contains('not supported'))));
+      });
+
+      test('a free account never asks (no wait happened)', () async {
+        var asked = false;
+        await expectLater(scanWith(() async {
+          asked = true;
+          return 'should not be asked';
+        }), throwsA(anything));
+        expect(asked, isFalse);
+      });
+    });
+
     test('the delay is random, from 2:00 to 6:00 inclusive', () {
       final samples = List.generate(
           2000, (_) => BackgroundScanCore.randomBusyRetryDelay().inSeconds);

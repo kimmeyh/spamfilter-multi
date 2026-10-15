@@ -26,6 +26,9 @@ Format: `- **type**: Description (Issue #N)` where type is feat|fix|chore|docs
 
 ## [Unreleased]
 
+### 2026-10-15 (Sprint 79)
+- **fix**: On Android, a scheduled background scan that had to wait for another scan of the same account no longer scans that account again right after the other scan finishes; it checks again after the wait (Issue #471)
+
 ### 2026-10-14 (Sprint 79)
 - **fix**: Importing a rules or safe senders file now takes effect at once; before, Review No Rule Items and the next manual scan kept the old rules until the app restarted. A failed reload after an import is now reported instead of "imported successfully" (Issue #488)
 - **fix**: Android no longer scans an account on a 15-minute (or longer) schedule about twice per interval: the scheduled run now skips an account whose last completed scan started within two-thirds of its interval, as the idle-wake alarm already did (Issue #471)

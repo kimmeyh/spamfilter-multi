@@ -317,23 +317,34 @@ class AndroidBackgroundScanWorker {
         // account scanned recently (see recentScanShouldSkip). The periodic
         // run counts only COMPLETED scans, so its retry after a failure still
         // scans. A failed check never skips: making sure a scan happens wins.
-        if (checksRecentScan(
-            isTest: isTest, notificationProviders: notificationProviders)) {
-          final runKind = dozeAlarm ? 'doze alarm' : 'periodic';
+        // Sprint 79 (Harold A = 1): the same check runs again after a busy
+        // wait (BackgroundScanCore.scanAccount skipAfterWait), so a run that
+        // arrived during another scan does not rescan right after it.
+        final checkRecent = checksRecentScan(
+            isTest: isTest, notificationProviders: notificationProviders);
+        final runKind = dozeAlarm ? 'doze alarm' : 'periodic';
+        Future<String?> recentScanReason() async {
+          final last = await ScanResultStore(dbHelper)
+              .getLatestScanStart(id, completedOnly: !dozeAlarm);
+          final minutes =
+              await settingsStore.getEffectiveBackgroundFrequency(id);
+          final now = DateTime.now();
+          if (!recentScanShouldSkip(
+              now: now,
+              lastScanStart: last,
+              interval: Duration(minutes: minutes))) {
+            return null;
+          }
+          return 'a ${dozeAlarm ? '' : 'completed '}scan started '
+              '${now.difference(last!).inSeconds}s ago '
+              '(interval ${minutes}m; $runKind)';
+        }
+
+        if (checkRecent) {
           try {
-            final last = await ScanResultStore(dbHelper)
-                .getLatestScanStart(id, completedOnly: !dozeAlarm);
-            final minutes =
-                await settingsStore.getEffectiveBackgroundFrequency(id);
-            final now = DateTime.now();
-            if (recentScanShouldSkip(
-                now: now,
-                lastScanStart: last,
-                interval: Duration(minutes: minutes))) {
-              workerLog('account ${Redact.accountId(id)} skipped: a '
-                  '${dozeAlarm ? '' : 'completed '}scan started '
-                  '${now.difference(last!).inSeconds}s ago '
-                  '(interval ${minutes}m; $runKind)');
+            final reason = await recentScanReason();
+            if (reason != null) {
+              workerLog('account ${Redact.accountId(id)} skipped: $reason');
               continue;
             }
           } catch (e) {
@@ -379,6 +390,7 @@ class AndroidBackgroundScanWorker {
             platformId: platformId,
             ruleSetProvider: ruleSetProvider,
             settingsStore: settingsStore,
+            skipAfterWait: checkRecent ? recentScanReason : null,
           );
           // MV74-2 + F206: skip -> nothing; scan -> export, then notify.
           // Branches tested through BackgroundScanCore.completeAccount.

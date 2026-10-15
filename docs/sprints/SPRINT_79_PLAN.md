@@ -265,10 +265,27 @@ AOL scans that stop mid-run.
     `catch` (needs a pub-cache edit -- not done). Alternative that does not depend on the plugin: read
     `WorkInfo.getStopReason()` at the next worker start through a platform channel (asked as a question).
     The code stays registered with a [WARNING] comment; it changes nothing when it does not fire.
+    **Harold B = 1 (2026-10-15), then re-asked from the primary source**: AndroidX `WorkInfo.kt:100-112` --
+    `stopReason` is "the reason why this worker was stopped on the previous run attempt", `@RequiresApi(31)`, and reads
+    `STOP_REASON_NOT_STOPPED` (-256) otherwise. But `WorkerWrapper.kt:478-481` sets `state = RUNNING` AND
+    `setStopReason(workSpecId, STOP_REASON_NOT_STOPPED)` when the next attempt starts, before any Dart code runs. So
+    "read it when the next scan starts" always reads -256: option 1 as worded cannot work. The reason is readable
+    only between the stop and the re-run (30 s for the Doze one-off). Sources fetched 2026-10-15 from
+    `androidx/androidx` `androidx-main` (`work/work-runtime/src/main/java/androidx/work/WorkInfo.kt`,
+    `impl/WorkerWrapper.kt`); the app ships `work-runtime:2.11.2` (`build.gradle.kts:231`).
   - **Q1 gap found on the emulator (10:21)**: a periodic run that arrives WHILE another scan of the account is
     running passes the entry check (the running scan is not `completed`), waits in `BackgroundScanCore`'s busy-retry
     (254 s), then scans anyway -- 10:25:37, 3.5 minutes after the 10:22:01 completion, inside the window. The entry
     check is not repeated after the wait. Not covered by the Q1 fix as built.
+    **FIXED (Harold A = 1, 2026-10-15)**: `BackgroundScanCore.scanAccount` takes `skipAfterWait`, asked once after
+    the busy wait and before the retry; a reason skips (`stage: skip`, "after the wait: ..."), a throwing check does
+    not. The Android worker passes the SAME closure it runs at entry (`recentScanReason`), only for runs that check
+    (`checkRecent`). Windows passes null: one Task Scheduler trigger per account and no recent-scan rule, so its
+    behavior is unchanged (ADR-0042: declared, follows the existing Android-only entry rule). Tests: 4 new in
+    `mv74_2_scan_heartbeat_test.dart` (skips after the wait and is asked only after it; null retries; throw retries;
+    a free account never asks); the `mv7_doze_alarm_skip_test.dart` wiring gate pins the worker passing the check.
+    Mutations A1-A5 KILLED (never asks, ignores the reason, a throw skips, asked before the wait, worker passes
+    null). What the tests do NOT catch: delivery timing on the phone (the device log line "SKIPPED after the wait").
   - **Test Background Scan can do nothing silently**: `runTestScan` uses a unique name with WorkManager's default
     KEEP (`background_scan_scheduler.dart:473`); while an earlier test request is queued or in its 10-minute backoff
     (after a stop), a new tap is dropped with no message. Seen 10:08 (tap, no run until 10:20:58).
@@ -285,6 +302,9 @@ AOL scans that stop mid-run.
 - R-6: Gmail `invalid_grant` (Fold, 2026-10-12 17:27): Harold opens Google Cloud Console > APIs & Services > OAuth
   consent screen and reports the publishing status. Until he does, the cause stays UNVERIFIED; no claim about what
   that status does to refresh tokens is written unless Google's page is fetched and quoted in the same turn.
+  **Closed by Harold, 2026-10-15**: *"this is not needed as proven by phone screenshot showing version 0.19.0"* (Gmail
+  renewals on the phone's 0.19.0 were 4/4 via the refresh token). The cause of the 10-12 phone and 10-14 emulator
+  `invalid_grant` stays UNVERIFIED; no screenshot will be requested.
 - R-7: Android parity of F281 (Scan every presets and Custom, hidden when background is off), F282 (files in
   `Documents/MyEmailSpamFilter`) and F283 (Review No Rule Items, partly evidenced in 3.2.2.1): one screenshot each.
   - **Phone steps, Harold 2026-10-14 ("1 done, 2 mark done, 3, 4, 5, 6 done")**: step 1 interval note -- screenshot
@@ -303,6 +323,9 @@ AOL scans that stop mid-run.
     `/storage/emulated/0/Documents` saved from before 0.19.0. Settles it: Settings > General > Export folder shows that
     path and a "Reset to default" button (shown only when a folder is saved, `settings_screen.dart:1443`). Gap noted:
     no F282 test runs the Android default path (the default is overridden in `f206_export_test.dart:44`).
+  - **F282 phone check, Harold 2026-10-15: "as expected"** -- the saved `/storage/emulated/0/Documents` was shown with
+    Reset to default; after the reset the folder is `Documents/MyEmailSpamFilter`. F282 Android: PASS; the inference
+    above is confirmed (the saved folder, not a defect, put the files in Documents).
 - R-8: The AOL scans that stopped mid-run: read every unfinished case in the 0.18.0 and 0.19.0 logs (the first
   is 2026-10-12 08:08:09); for each, record the seconds from start to the last line, the last step reached, and
   whether another worker started within 10 seconds. Settle the two candidates (process kill, periodic re-enqueue
@@ -832,8 +855,10 @@ database, 6 tests. T-4 (AC-4) grep, zero hits. What the tests do NOT catch: a sc
 safe senders commit without reload; rules commit skips the YAML copy); `flutter analyze` clean; full suite 3,052
 passed, 15 skipped, 0 failed (run-full-suite.ps1 label f297, 3 minutes).
 
-**Follow-up (not in scope; question to Harold)**: the Rules and Safe Senders management screens (edit, delete, remove)
-and the quick-add screens also write the stores directly and do not reload the provider.
+**Follow-up (not in scope)**: the Rules and Safe Senders management screens (edit, delete, remove) and the quick-add
+screens also write the stores directly and do not reload the provider. Harold, 2026-10-15 (C = 2): backlog, F298
+(TARGET SPRINT 80). Windows DEV background scans stay ON (D = 2: they collect data on all mail for spam analysis);
+the 2026-10-14 DEV build was run with the four `*_Dev` tasks disabled for the build and re-enabled after.
 
 **Definition of Done**: default DoD, plus Harold re-checks Review No Rule Items after an import on the rebuilt DEV app.
 

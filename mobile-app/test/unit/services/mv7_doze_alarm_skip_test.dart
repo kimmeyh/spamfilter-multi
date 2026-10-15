@@ -168,10 +168,13 @@ void main() {
         File('lib/core/services/android_background_scan_worker.dart')
             .readAsStringSync();
     expect(src, contains("dozeAlarm: inputData?[kTriggerSourceKey] == 'doze-alarm'"));
-    expect(src, contains('if (checksRecentScan('));
-    expect(src, contains('isTest: isTest, notificationProviders: notificationProviders)) {'));
+    expect(src, contains('final checkRecent = checksRecentScan('));
+    expect(src, contains('isTest: isTest, notificationProviders: notificationProviders);'));
+    expect(src, contains('if (checkRecent) {'));
     expect(src, contains('getLatestScanStart(id, completedOnly: !dozeAlarm)'));
-    expect(src, contains('if (recentScanShouldSkip('));
+    expect(src, contains('if (!recentScanShouldSkip('));
+    // Sprint 79 (Harold A = 1): the SAME check runs again after a busy wait.
+    expect(src, contains('skipAfterWait: checkRecent ? recentScanReason : null'));
     expect(src, contains('}, onTaskStopped: onWorkerStopped);'));
   });
 }

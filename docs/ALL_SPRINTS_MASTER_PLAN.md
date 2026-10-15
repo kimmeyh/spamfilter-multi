@@ -4,7 +4,7 @@
 
 **Audience**: Claude Code models planning sprints; User prioritizing future work
 
-**Last Updated**: 2026-10-14 (added F296 and F297; earlier: Sprint 78 Phase 7.7: Last Completed Sprint, Past Sprint Summary row, completed cards removed, Sprint 79 carry-ins)
+**Last Updated**: 2026-10-15 (added F296, F297 and F298; earlier: Sprint 78 Phase 7.7: Last Completed Sprint, Past Sprint Summary row, completed cards removed, Sprint 79 carry-ins)
 
 ## How to Maintain This Document
 
@@ -938,6 +938,18 @@ _(No active Core App candidates -- F96 shipped in Sprint 43.)_
   386; the import never reloaded the in-memory rules. Added to Sprint 79 the same day.
 - Done in Sprint 79: one `RuleSetProvider.reloadFromDatabase()` used by the import and the four existing reload sites.
   Remove this entry at Sprint 79 close-out.
+
+**F298. Rule and safe sender edits reload the in-memory rules (~45-75m) Priority 10 -- TARGET SPRINT 80**
+- Phase: Bug fix
+- Platform: All (shared code)
+- Origin: found with F297 (Sprint 79, #488); Harold, 2026-10-15 (C = 2): backlog.
+- Today: the Rules and Safe Senders management screens (edit, delete, remove) and the rule and safe sender quick-add
+  screens write the stores directly (`rules_management_screen.dart:253,315`, `rule_edit_screen.dart:509`,
+  `safe_senders_management_screen.dart:255`, `rule_quick_add_screen.dart:149,158`,
+  `safe_sender_quick_add_screen.dart:198,265`, `email_detail_view.dart:184`) and never reload `RuleSetProvider`, so
+  Review No Rule Items and the next manual scan use the old rules until a scan completes or the app restarts.
+- Proposed: each write path ends with `RuleSetProvider.reloadFromDatabase()` (F297), or writes through the provider.
+  A test per screen family proves the provider sees the change.
 
 **F111. Periodic Windows App Store upload readiness verification (~110-175m per review) Priority HOLD**
 - Phase: Release Readiness (reusable template)
