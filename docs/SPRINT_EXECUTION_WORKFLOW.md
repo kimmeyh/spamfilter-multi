@@ -729,6 +729,11 @@ This change was introduced after Sprint 36 kickoff skipped Phase 1 (prior "OPTIO
   - **Preconditions**: the rehearsal sets up the same preconditions the step states (which setting is on, the scan
     range, whether a backlog cursor exists, which account, app open or closed). A step whose preconditions cannot be
     reproduced is rewritten until they can.
+  - **Facts in a step** (Sprint 79 retro IMP-1): every number, interval, path, name or count a step STATES is read
+    from the live system during the rehearsal, not from memory, the plan or an earlier message, and the `Rehearsed:`
+    line names where each was read (for example `interval PT5M: Get-ScheduledTask`, `count 119: dev-DB copy`).
+    Rehearsing the behavior does not check the text around it. (Sprint 79: the MV-1 step said the DEV tasks run
+    every 20 minutes; their trigger had read PT5M since 10-12, and the toast rehearsal passed without reading it.)
   - **Steps Claude cannot rehearse** (phone-only behavior, a real provider account Claude cannot reach): say so in
     the step, and name the closest rehearsal that was done (emulator, test server).
   - **Record**: each MV step in the plan carries `Rehearsed: <date>, <how>, <observed result>`, and the plan's

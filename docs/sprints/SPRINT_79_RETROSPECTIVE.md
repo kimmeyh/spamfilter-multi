@@ -194,4 +194,17 @@ F277 nights noted in 4; it stays Harold's call.
 
 ## Improvement Decisions
 
-Pending (Step 6).
+Harold, 2026-10-18: *"1"* (apply IMP-1, IMP-2 and IMP-3 now; skip IMP-4).
+
+- **IMP-1 MV step facts read from the live system** -- APPLIED. `SPRINT_EXECUTION_WORKFLOW.md` 5.1.9 gains a
+  "Facts in a step" rule (each stated number, interval, path, name or count is read live and its source named on the
+  `Rehearsed:` line); `SPRINT_CHECKLIST.md` 5.1.9 line carries the same sentence.
+- **IMP-2 Phone pull collects Samsung Settings screenshots** -- APPLIED. `pull-phone-screenshots.ps1`: the default
+  pattern adds `_Device care` and `_Settings` to the `_One UI Home` exception (other apps stay skipped); the pattern
+  moved above `param()`-dependent code, and a new `-SelfTest` checks 4 names collected and 4 skipped. Self-test PASS;
+  mutations KILLED: the old pattern (drops the two Settings names) and an any-suffix pattern (admits `_Instagram`,
+  `_Chrome`, `_Settings_extra`). File restored byte for byte under a mutation lock.
+- **IMP-3 Dependency claims cite the source at the resolved version** -- APPLIED. `CLAUDE.md` "Before claiming what an
+  EXTERNAL system contains" gains the Sprint 79 instance and the `file:line`-in-pub-cache rule.
+- **IMP-4 Velocity row in each task's final commit** -- SKIPPED (Harold; Claude's recommendation). Reconsider if it
+  recurs in Sprint 80.

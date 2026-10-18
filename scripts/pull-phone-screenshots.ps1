@@ -14,7 +14,9 @@ A plain run (no -Folder, no -Pattern) collects ONLY (Sprint 77, Harold):
   - DCIM: Screenshot_<yyyyMMdd>_<HHmmss>.png with no suffix. Screenshots of
     other apps carry the app's name (Screenshot_..._Instagram.png) and are
     skipped. Exception: Screenshot_..._One UI Home.png IS collected -- that is
-    how Samsung names a notification-shade capture (Sprint 78).
+    how Samsung names a notification-shade capture (Sprint 78). So are
+    _Device care.png and _Settings.png, Samsung's names for Battery and App
+    info captures (Sprint 79).
   - Documents and its subfolders: the app's diagnostic logs (diag_*.log) and
     its .csv exports. Local copies of these are refreshed, because they keep
     growing on the phone.
@@ -70,6 +72,11 @@ A file with no date in its name is always copied.
 .PARAMETER ListOnly
 If specified, only list the destination and exit without copying files.
 
+.PARAMETER SelfTest
+Check the default screenshot pattern against sample names (the four kinds
+collected, other apps' names skipped) and exit 0 on pass, 1 on fail. No phone
+is needed.
+
 .EXAMPLE
 # Collect screenshots, logs and CSVs into validation-screenshots/sprint-77/:
 .\pull-phone-screenshots.ps1 -Sprint 77
@@ -96,8 +103,24 @@ param(
     [switch]$Overwrite,
     [string]$DeviceName = "S24|Fold|Galaxy|Harold",
     [int]$Days = 2,
-    [switch]$ListOnly
+    [switch]$ListOnly,
+    [switch]$SelfTest
 )
+
+# The default DCIM screenshot pattern (the rules are in the comment block above
+# $sources below). Defined here so -SelfTest can check it without a phone.
+$exactScreenshot = '^Screenshot_\d{8}_\d{6}(_One UI Home|_Device care|_Settings)?\.png$'
+
+if ($SelfTest) {
+    $in  = @('Screenshot_20261018_064629.png', 'Screenshot_20261018_064629_One UI Home.png',
+             'Screenshot_20261018_064629_Device care.png', 'Screenshot_20261018_064845_Settings.png')
+    $out = @('Screenshot_20261018_064629_Instagram.png', 'Screenshot_20261018_064629_Chrome.png',
+             'Screenshot_20261018_064629_Settings_extra.png', '20261017_141733.jpg')
+    $fail = @($in | Where-Object { $_ -notmatch $exactScreenshot }) + @($out | Where-Object { $_ -match $exactScreenshot })
+    if ($fail.Count) { "SELF-TEST FAIL: $($fail -join '; ')"; exit 1 }
+    "SELF-TEST PASS: $($in.Count) collected, $($out.Count) skipped"
+    exit 0
+}
 
 # Resolve destination: Sprint parameter sets Dest if not already provided
 if ($Sprint -and -not $Dest) {
@@ -147,10 +170,15 @@ if (-not $store) { 'ERROR: "Internal storage" not found on the phone (is it unlo
 #                 silently skipped Harold's notification evidence for a whole
 #                 morning. Those are collected too. They can show other apps'
 #                 notifications; the destination is gitignored.
+#                 ALSO (Sprint 79 retro IMP-2): Samsung names a Settings
+#                 capture for the screen (_Device care for Battery, _Settings
+#                 for App info), which holds the F277 battery evidence. Only
+#                 these system names are added; other apps stay skipped.
+#                 -SelfTest asserts the list both ways.
 #   2. Documents (and its subfolders, where the app writes): the diagnostic
 #                 logs diag_*.log and the .csv exports.
 # Passing -Folder or -Pattern runs ONE custom source instead (the old shape).
-$exactScreenshot = '^Screenshot_\d{8}_\d{6}(_One UI Home)?\.png$'
+# $exactScreenshot is defined after param() (so -SelfTest can read it).
 if ($Folder -or $Pattern) {
     $sources = @(@{
         Folder    = $(if ($Folder) { $Folder } else { 'DCIM' })
