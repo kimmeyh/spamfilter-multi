@@ -4,7 +4,7 @@
 
 **Audience**: Claude Code models planning sprints; User prioritizing future work
 
-**Last Updated**: 2026-10-15 (added F296, F297 and F298; earlier: Sprint 78 Phase 7.7: Last Completed Sprint, Past Sprint Summary row, completed cards removed, Sprint 79 carry-ins)
+**Last Updated**: 2026-10-16 (Sprint 79 remainders moved to Sprint 80: MV76-1, F277, F292; added F299; earlier 2026-10-15: added F296, F297 and F298; earlier: Sprint 78 Phase 7.7: Last Completed Sprint, Past Sprint Summary row, completed cards removed, Sprint 79 carry-ins)
 
 ## How to Maintain This Document
 
@@ -196,6 +196,14 @@ All incomplete items in relative priority order. Priority in increments of 10; i
 - A Results rule update for an Inbox safe sender reports no failure (the 0.17.6 re-process fix).
 - F250: the Google account state screenshot on the Fold; decide whether the native sign-in still matters now that refresh-token renewal works (#454).
 - MV74-3: classify every scan error from normal use, or record zero (#433).
+- **Sprint 79 status (2026-10-16) -- remainder TARGET SPRINT 80** (Harold: *"move any other tasks for execution to
+  the backlog for next sprint and move on to manual validation"*). Done in Sprint 79: export header row, step 8 Doze
+  lines, Gmail custom label, F281/F282 Android PASS, MV-7 overnight (fixed: periodic skip + skip after the busy wait),
+  the stuck-IMAP class (response timeout), the worker stop line (workmanager 0.10.9), zero scan errors on 0.19.0, R-6
+  closed by Harold. Moved to Sprint 80: the step 8 Background note screenshot; step 9 / F253 AC-5 new-mail trigger
+  (no `trigger=notification` scan yet although Notification access is allowed); step 11 reboot half (#428) and the
+  F250 Google account screenshot; R-3 boot-time `main()` trace; R-4 one completed iCloud background scan; F283
+  Android screenshot; the class-B cause (see F299). Plan detail: `docs/sprints/SPRINT_79_PLAN.md` Task 1.
 
 ### Backlog from the Sprint 76 retrospective
 
@@ -224,10 +232,17 @@ Each item is fixed PREVENTION FIRST (SPRINT_EXECUTION_WORKFLOW.md 7.7.1): name h
 **F263. Background scan spacing: per-worker budget, Test Background Scan, sign-in skip Priority 40 -- backlog (7.7.1 review M-1, M-2, silent-failure LOW)**
 - (Harold, 2026-10-06: "3. a" -- confirmed as backlog.) The 5-minute spacing and 6-minute busy cap are per ACCOUNT, so one Android worker scanning several accounts in sequence can exceed WorkManager's ~10-minute run limit and leave an `in_progress` row. Test Background Scan also waits out the spacing (up to 5 minutes with nothing visible), and an account that needs sign-in still waits before it is skipped. Prevention: one spacing budget per worker run in `BackgroundScanCore` (extends the existing `cappedBusyWait` cap), the test trigger exempt, and the sign-in check before the wait.
 
-**F277. Fold energy check: interval 5 against interval 15 (~45-60m + phone time) Priority 20**
+**F277. Fold energy check: interval 5 against interval 15 (~45-60m + phone time) Priority 20 -- TARGET SPRINT 80**
 - Phase: Core App Quality
 - Platform: Android
 - Origin: backlog (Sprint 77 R76-1, was R77-BAT-1).
+- **Sprint 79 status (2026-10-16), moved to Sprint 80 by Harold**: arm B recorded (night 10-14/15, AOL every 5
+  minutes, 4.9 h on battery, app 0.3%, 44 completed scans, clean health check; Harold counted it as arm B). A
+  second B night (10-16/17, AOL every 5 minutes, about 6 h on battery) read 1.5% for the app, 5x the first: the
+  night-to-night spread is unexplained and must be understood before the 3x rule is applied. Arm A has NOT run yet
+  (AOL stayed at 5 minutes until 08:13-08:29 on 10-17; set to 15 since). Arm A, arm C (new mail on) and the decision
+  rule remain. Open question for arm C: no new-mail scan ran on
+  10-14/15 although Notification access was allowed.
 - **Sprint 78 status (2026-10-13)**: the 0.18.0 overnight run had three accounts on, so it does not count; all three runs move to Sprint 79 on 0.19.0 with ONE account on. Check with `scripts/phone-log-health.ps1 -Path <log> -Since <start> -IntervalMinutes <n> -SingleAccount` before reading the battery screenshot.
 - The emulator measures counts, not energy. Decision rule for the F264 floor: if an interval-5 account costs more than 3x an interval-15 account on the Fold (Settings > Battery screenshots over MTP), raise `kMinIntervalMinutes` to 10. Protocol: `docs/research/R76-1_BATTERY_AB_RESULTS.md` section R77-BAT-1.
 
@@ -860,10 +875,14 @@ _(No active Core App candidates -- F96 shipped in Sprint 43.)_
 - Note: this conflicts with the rule "Group items under section headers by phase"; the presentation changes, while the
   master plan's own storage layout may stay grouped (decide in the card).
 
-**F292. Full test suite: test processes die or hang intermittently (~60-120m investigation) Priority 5 -- TARGET SPRINT 79**
+**F292. Full test suite: test processes die or hang intermittently (~60-120m investigation) Priority 5 -- remainder TARGET SPRINT 80**
 - Phase: Testing
 - Platform: Windows Desktop (local `flutter test` on Harold's PC)
 - Origin: Sprint 78 7.7.1 (Harold, 2026-10-13, Q2 = 2). Cause UNKNOWN.
+- **Sprint 79 status (2026-10-16)**: five pre-reboot runs recorded (not reproduced; one runner defect found and
+  fixed); containment `scripts/run-full-suite.ps1` (commit charge every 30 s, load failures, STALLED watchdog) is the
+  Phase 5.2 runner. Moved to Sprint 80 by Harold: the post-reboot runs (larger page file), labeled as such, and the
+  mechanism from the next failing run's commit charge.
 - Evidence (logs in the Sprint 78 session scratchpad, `suite78r.log`, `suite78s.log`, `suite78t.log`):
   - Run 1 (fix tree): `f239_sign_in_again_test.dart` "Failed to load ... Connection closed before test suite loaded",
     then the whole run stopped writing at 00:54 (+604) for 17 minutes; stopped by hand.
@@ -950,6 +969,16 @@ _(No active Core App candidates -- F96 shipped in Sprint 43.)_
   Review No Rule Items and the next manual scan use the old rules until a scan completes or the app restarts.
 - Proposed: each write path ends with `RuleSetProvider.reloadFromDatabase()` (F297), or writes through the provider.
   A test per screen family proves the provider sees the change.
+
+**F299. Android background scans that die within 30 s: record the process exit reason (~45-75m) Priority 25 -- backlog**
+- Phase: Core App Quality
+- Platform: Android (ADR-0042: Windows Task Scheduler runs one process per scan and reports its exit code already)
+- Origin: Sprint 79 Task 1 R-8 class B (11 reaped rows with no heartbeat; follow-up named in the plan, filed
+  2026-10-16). The worker stop line (workmanager 0.10.9) now names a WorkManager STOP; a scan that dies with no stop
+  line means the process died, and the log cannot say why.
+- Proposed: at each app and worker start, read `ActivityManager.getHistoricalProcessExitReasons` (API 30+) through a
+  platform channel and write any exit since the last read (reason, importance, time) to the diagnostic log.
+- Also check whether 0.10.9's 30 s Dart start watchdog (`DART_INITIALIZATION_TIMEOUT_MILLIS`) fails slow starts in Doze.
 
 **F111. Periodic Windows App Store upload readiness verification (~110-175m per review) Priority HOLD**
 - Phase: Release Readiness (reusable template)

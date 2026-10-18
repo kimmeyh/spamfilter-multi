@@ -26,6 +26,9 @@ Format: `- **type**: Description (Issue #N)` where type is feat|fix|chore|docs
 
 ## [Unreleased]
 
+### 2026-10-17 (Sprint 79)
+- **fix**: Android background scans use workmanager 0.10.10 (workmanager_android 0.10.9). When Android stops a scan before it finishes, the diagnostic log now says so with Android's own reason name and number (for example `reason=timeout raw=3`); the earlier plugin never delivered the stop, and its reason names did not match Android's numbering. The update also fixes background tasks that failed about 30 seconds after start on Android 16 (Issue #471)
+
 ### 2026-10-15 (Sprint 79)
 - **fix**: On Android, a scheduled background scan that had to wait for another scan of the same account no longer scans that account again right after the other scan finishes; it checks again after the wait (Issue #471)
 

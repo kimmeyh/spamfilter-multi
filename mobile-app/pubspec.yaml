@@ -72,7 +72,11 @@ dependencies:
   punycode: ^1.0.0
   syncfusion_flutter_xlsio: ^33.1.44
   package_info_plus: ^9.0.1
-  workmanager: ^0.10.7
+  # Sprint 79 (Harold Upgrade = 1): 0.10.10 pulls workmanager_android 0.10.9,
+  # whose onStopped posts the stop call to the main thread (0.10.6 sent it from
+  # WorkManager's thread, so the app's onTaskStopped handler never ran) and
+  # whose Dart readiness handshake fixes "tasks fail ~30 s after start" (#738).
+  workmanager: ^0.10.10
 
   # Phase 2+ - UI Enhancement
   # flutter_svg: ^2.0.9
@@ -86,7 +90,7 @@ dev_dependencies:
   flutter_launcher_icons: ^0.14.4
   msix: ^3.16.8
   plugin_platform_interface: ^2.1.8
-  workmanager_platform_interface: ^0.10.4
+  workmanager_platform_interface: ^0.10.5
 
 flutter:
   uses-material-design: true

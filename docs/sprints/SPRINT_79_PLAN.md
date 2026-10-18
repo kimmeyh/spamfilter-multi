@@ -285,11 +285,44 @@ AOL scans that stop mid-run.
     onStopped(BackgroundWorker.kt:211)`. WorkManager calls `onStopped` on its own thread; the plugin sends the Pigeon
     message from there; Flutter refuses; the plugin's `catch` hands the error to the default no-op
     `WorkmanagerDebug`, then tears the engine down. So the app's Dart handler can NEVER run: a plugin defect, not ours.
-    Not fixed in 0.10.7-0.10.9 (pub.dev changelog, fetched 2026-10-15). Second plugin defect seen in the same read:
+    ~~Not fixed in 0.10.7-0.10.9 (pub.dev changelog, fetched 2026-10-15).~~ **CORRECTED 2026-10-16: WRONG.** That
+    claim came from the changelog only; the 0.10.9 SOURCE fixes it (`BackgroundWorker.kt:260-295`: `onStopped` now
+    does `mainHandler.post { ... flutterApi.onTaskStopped(...) }`, with a comment naming this exact @UiThread
+    failure). Second plugin defect seen in the same read:
     `StopReasonUtils` treats 3 as "cancelled by app", but AndroidX 3 is TIMEOUT. Related, UNVERIFIED: 0.10.9 fixes
     "background tasks no longer fail ~30 seconds after start on Android 16 when the Dart isolate boots slowly"
     (#738), which matches R-8's 11 phone scans stopped within 30 s of start. Emulator restored to a clean dev build;
     pub-cache file hash re-checked after each of the three builds.
+    **Harold, 2026-10-16 (verbatim)**: Fix = *"2. Use the plugin's built-in error-report hook"*; Upgrade = *"1. Yes,
+    this sprint, with the full test suite and an emulator check ... this one"*. **Done**: `workmanager` 0.10.7 ->
+    0.10.10 (pulls `workmanager_android` 0.10.6 -> 0.10.9, `workmanager_platform_interface` 0.10.4 -> 0.10.5,
+    `workmanager_apple` 0.9.10 -> 0.9.11); `pubspec.yaml` floors raised to match; no workmanager pin in `ci.yml`.
+    Reading the 0.10.9 source showed the thread defect FIXED (correction above), which moves the premise of Fix = 2:
+    the app's existing Dart stop handler should now run and receives the raw AndroidX reason, which the debug hook
+    would not. So Fix 2 (a native Application class) is NOT built yet; the emulator check comes first and the choice
+    goes back to Harold with its result. **Reason naming fixed (defect in our code)**: the plugin's Dart `StopReason`
+    enum (`workmanager_platform_interface-0.10.5/lib/src/stop_reason.dart`: timeout 1, preempt 2, cancelledByApp 3,
+    ..., deviceIdle 9) does not match AndroidX `WorkInfo.STOP_REASON_*` (androidx-main `WorkInfo.kt`, read
+    2026-10-16: CANCELLED_BY_APP 1, PREEMPT 2, TIMEOUT 3, DEVICE_STATE 4, CONSTRAINT_BATTERY_NOT_LOW 5, CHARGING 6,
+    CONNECTIVITY 7, DEVICE_IDLE 8, STORAGE_NOT_LOW 9, QUOTA 10 ... 15; NOT_STOPPED -256, UNKNOWN -512), and
+    `fromRawValue` turns every unlisted value into its `unknown` (0). The 0.10.9 worker forwards the raw AndroidX int
+    (`BackgroundWorker.kt:394-399`). `describeWorkerStop` printed `reason.name`, so a timeout would have logged
+    `reason=cancelledByApp`. Now `reason=<AndroidX name> raw=<n>` from `androidStopReasonName(reason.rawValue)`;
+    the `stopped by WorkManager before it finished:` prefix is kept. Tests in `mv7_doze_alarm_skip_test.dart`
+    (every raw 1-9, the plugin name never used, 0 and unlisted); mutations S1 (back to `reason.name`) and S2
+    (3 mapped to cancelledByApp) KILLED. What the tests do NOT catch: a future plugin that stops forwarding the raw
+    value unchanged (the emulator check below is the only proof of the forwarding).
+    **Emulator check PASS (2026-10-17 22:53, dev debug 0.20.0 on 0.10.9, with a temporary 60 s hold before
+    `executeBackgroundTask` in the pub cache)**: `cmd jobscheduler timeout -n androidx.work.systemjobscheduler
+    com.myemailspamfilter.dev` stopped two held jobs (854, 855); logcat `WorkerWrapper interrupted` at 22:53:41.013
+    and .029, then from the app's Dart handler `[worker/android] stopped by WorkManager before it finished:
+    reason=timeout raw=3` at 22:53:41.241 and .650, then `WorkerStoppedException`. So 0.10.9 delivers the stop on
+    the main thread and forwards AndroidX 3 (TIMEOUT) unchanged, and the new naming is right. No `(account trigger)`
+    part, because the hold sits before the Dart task sets it -- expected for this test only. Pub-cache file restored
+    and SHA-256 checked (3F63B6C0...7330C2 = the pre-edit hash). The emulator dev app still holds the 60 s hold until
+    the next dev build. One "isn't responding" dialog at app launch: Android `ANR ... Reason: Timed out while trying
+    to bind` at 22:44:51 while `lowmemorykiller` killed about 15 apps (emulator memory pressure; same as 10-15).
+    **Fix 2 (native Application class) is therefore NOT needed for the stop reason** -- asked back to Harold.
   - **Q1 gap found on the emulator (10:21)**: a periodic run that arrives WHILE another scan of the account is
     running passes the entry check (the running scan is not `completed`), waits in `BackgroundScanCore`'s busy-retry
     (254 s), then scans anyway -- 10:25:37, 3.5 minutes after the 10:22:01 completion, inside the window. The entry
@@ -480,7 +513,20 @@ R-8 added with a real lead).
   detail screen was not captured). **Harold Night = 1 (2026-10-15): counted as arm B** despite 4.9 hours. Harold
   reports Notification access was ALREADY allowed, so "no new-mail scan" is not explained by missing access; open
   question for arm C (did the AOL app post any notification overnight?).
-- 2026-10-15/16 (arm A): AOL only, every 15 minutes, new mail off -- set up by Harold.
+- 2026-10-15/16 (planned arm A): **did not run as arm A.** Every AOL skip line on 10-15 and 10-16 reads
+  `(interval 5m`; no Battery screenshots for that night.
+- 2026-10-16/17 (pulled 2026-10-17 22:5x): **a second arm-B night**, AOL only (no Yahoo, Gmail or iCloud start on
+  10-17), interval 5 (last `(interval 5m` skip 08:12:57). Battery activity: charging until about 00:25 at 94%; 86% at
+  06:28. **MyEmailSpamFilter 1.5%** (rank 2; Telegram 4.2%, Libre 0.7%), against 0.3% on the 10-14/15 B night. 55
+  AOL starts 00:25-06:28; health check from 00:25 "No flags" (133 completed, 2 refused, 0 unfinished). The 5x
+  difference between two B nights is unexplained and matters for the 3x decision rule. Screenshots
+  `Screenshot_20261017_0025{36,47}_Device care.png`, `_0628{43,51}_`, `_0629{09,15}_`.
+- AOL moved to 15 minutes between 08:13 and 08:29 on 10-17 (first `(interval 15m` skip 08:29:28), so arm A can run
+  from the night of 10-17/18.
+- Errors (Task 1 R-2): 18 AOL errors, ALL on 10-15 09:20-11:42 (15 `TimeoutException after 0:00:20`, 2 `Connection
+  reset by peer`, 1 `Connection refused`): one network episode, class "network". Zero errors 10-16 and 10-17.
+- **Moved to Sprint 80 (Harold, 2026-10-16: "move any other tasks for execution to the backlog for next sprint")**:
+  the arm A analysis, arm C and the decision rule. #472 stays open; master-plan F277 is TARGET SPRINT 80.
 
 **Acceptance criteria**: AC-1: three arms recorded with battery percent, scan count and a clean health check; AC-2: the
 decision rule applied and recorded in the results doc; AC-3: if the floor changes, `scan_interval_test.dart` and the
@@ -791,6 +837,8 @@ mechanism or "cause unknown" with what would settle it; AC-3: a fix or containme
   and STALLED after `-StallMinutes` (default 10) without output, stopping only the testers it started. Failure
   path proven: `-SelfTestStall -StallMinutes 1` reported `STALLED(1m)` and exit 2. Phase 5.2 now runs the suite
   through it (`SPRINT_EXECUTION_WORKFLOW.md` 5.2). Post-reboot runs are labeled when Harold reboots.
+- **Moved to Sprint 80 (Harold, 2026-10-16)**: the post-reboot runs. AC-1 (3+ runs), AC-2 (cause unknown plus what
+  settles it) and AC-3 (containment with its self-check) are met; master-plan F292 carries the remainder.
 
 **Definition of Done**: default DoD.
 

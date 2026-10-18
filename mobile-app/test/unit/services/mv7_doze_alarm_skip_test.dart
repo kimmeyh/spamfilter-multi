@@ -134,13 +134,39 @@ void main() {
       expect(
           describeWorkerStop(
               running: 'k***@aol.com trigger=doze-alarm delay=0s',
-              reason: StopReason.deviceIdle),
-          'stopped by WorkManager before it finished: reason=deviceIdle '
+              reason: StopReason.cancelledByApp),
+          'stopped by WorkManager before it finished: reason=timeout raw=3 '
           '(k***@aol.com trigger=doze-alarm delay=0s)');
     });
     test('no run recorded yet: reason only', () {
       expect(describeWorkerStop(running: null, reason: StopReason.unknown),
-          'stopped by WorkManager before it finished: reason=unknown');
+          'stopped by WorkManager before it finished: reason=unknown raw=0');
+    });
+  });
+
+  // The plugin's enum numbers reasons differently from AndroidX, so the name
+  // must come from the raw value. What this does NOT catch: a future plugin
+  // that stops forwarding the raw AndroidX value unchanged.
+  group('androidStopReasonName (AndroidX WorkInfo.STOP_REASON_*)', () {
+    test('every value 1-9 the plugin can pass maps to its AndroidX name', () {
+      final names = {
+        1: 'cancelledByApp', 2: 'preempt', 3: 'timeout', 4: 'deviceState',
+        5: 'constraintBatteryNotLow', 6: 'constraintCharging',
+        7: 'constraintConnectivity', 8: 'constraintDeviceIdle',
+        9: 'constraintStorageNotLow',
+      };
+      for (final e in names.entries) {
+        expect(androidStopReasonName(e.key), e.value, reason: 'raw ${e.key}');
+      }
+    });
+    test('the plugin enum name is never used', () {
+      // Plugin 3 is cancelledByApp, plugin 9 is deviceIdle; AndroidX differs.
+      expect(describeWorkerStop(running: null, reason: StopReason.deviceIdle),
+          contains('reason=constraintStorageNotLow raw=9'));
+    });
+    test('0 is unknown; anything else is unlisted', () {
+      expect(androidStopReasonName(0), 'unknown');
+      expect(androidStopReasonName(42), 'unlisted');
     });
   });
 
@@ -151,7 +177,8 @@ void main() {
           write: (d) async => lines.add(d));
       expect(lines, hasLength(1));
       expect(lines.single,
-          startsWith('stopped by WorkManager before it finished: reason=timeout'));
+          startsWith('stopped by WorkManager before it finished: '
+              'reason=cancelledByApp raw=1'));
     });
     test('a write that hangs or throws does not hold the teardown', () async {
       final sw = Stopwatch()..start();

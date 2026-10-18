@@ -97,13 +97,12 @@ void androidBackgroundScanDispatcher() {
 /// when this returns, so a slow write must not hold it. [write] is the test
 /// seam; production writes to the diagnostic log.
 ///
-/// [WARNING] NOT OBSERVED FIRING ON A DEVICE. On the emulator (2026-10-14,
-/// 0.20.0 debug) two forced stops (`Constraints not met` ->
-/// `WorkerStoppedException`) produced neither this line nor the logcat line
-/// below. Cause unknown (unverified candidate: the plugin's `onStopped` sends
-/// the Pigeon call off the platform thread and its no-op debug handler
-/// swallows the error). Do not read the absence of a stop line in a phone log
-/// as "the worker was not stopped".
+/// Needs workmanager_android 0.10.9 or later. Up to 0.10.6 the plugin's
+/// `onStopped` sent this call from WorkManager's own thread (`WM.task-N`);
+/// Flutter refused it ("Methods marked with @UiThread must be executed on the
+/// main thread") and the plugin's no-op debug handler swallowed the error, so
+/// this handler never ran (verified on the emulator, 2026-10-15). 0.10.9 posts
+/// the call to the main looper (`BackgroundWorker.kt:260-295`).
 @visibleForTesting
 Future<void> onWorkerStopped(
   String taskName,
@@ -133,11 +132,38 @@ String? _runningWork;
 
 /// Sprint 79 Task 1 R-8: the diagnostic line for a worker WorkManager stopped
 /// before it finished, e.g. `stopped by WorkManager before it finished:
-/// reason=deviceIdle (k***@aol.com trigger=doze-alarm delay=0s)`.
+/// reason=timeout raw=3 (k***@aol.com trigger=doze-alarm delay=0s)`.
+///
+/// The name comes from [androidStopReasonName], NOT `reason.name`: the
+/// plugin's [StopReason] enum numbers its values differently from AndroidX
+/// (its 3 is `cancelledByApp`; AndroidX 3 is TIMEOUT), so `reason.name` would
+/// name the wrong cause. Only `rawValue` is trusted.
 @visibleForTesting
 String describeWorkerStop({required String? running, required StopReason reason}) =>
-    'stopped by WorkManager before it finished: reason=${reason.name}'
+    'stopped by WorkManager before it finished: '
+    'reason=${androidStopReasonName(reason.rawValue)} raw=${reason.rawValue}'
     '${running != null ? ' ($running)' : ''}';
+
+/// The AndroidX `WorkInfo.STOP_REASON_*` name for [raw] (androidx-main
+/// `work/work-runtime/src/main/java/androidx/work/WorkInfo.kt`, read
+/// 2026-10-16). The plugin's `StopReason.fromRawValue` turns every value it
+/// does not list (above 9, and AndroidX's negative values) into its own
+/// `unknown` (0), so raw 0 means: Android below 12, or a reason the plugin
+/// dropped (quota, background restriction, app standby, user, ...).
+@visibleForTesting
+String androidStopReasonName(int raw) => switch (raw) {
+      1 => 'cancelledByApp',
+      2 => 'preempt',
+      3 => 'timeout',
+      4 => 'deviceState',
+      5 => 'constraintBatteryNotLow',
+      6 => 'constraintCharging',
+      7 => 'constraintConnectivity',
+      8 => 'constraintDeviceIdle',
+      9 => 'constraintStorageNotLow',
+      0 => 'unknown',
+      _ => 'unlisted',
+    };
 
 /// Sprint 76 review H-1: whether a failed run may ask WorkManager to RETRY.
 ///
