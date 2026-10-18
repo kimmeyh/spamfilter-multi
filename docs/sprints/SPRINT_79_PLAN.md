@@ -525,6 +525,15 @@ R-8 added with a real lead).
   `Screenshot_20261017_0025{36,47}_Device care.png`, `_0628{43,51}_`, `_0629{09,15}_`.
 - AOL moved to 15 minutes between 08:13 and 08:29 on 10-17 (first `(interval 15m` skip 08:29:28), so arm A can run
   from the night of 10-17/18.
+- 2026-10-17/18 (pulled 2026-10-18 07:06): **the first arm-A night**, AOL only, interval 15, new mail off. Battery
+  activity: charging until about 02:30 at 94% (93% charging at 02:30); 83% at 06:46; screen on 0 m, screen off
+  4 h 13 m; daily usage 10%. **MyEmailSpamFilter not in the visible usage list** (lowest row shown 0.1%; Telegram
+  6.5%, Link to Windows 1.3%, Google Play services 0.6%); the app info screen (Version 0.19.0, from Google Play) reads
+  "Battery 0% used since last fully charged". The detail screen captured is Telegram's, not this app's. Health check
+  from 02:31 (`-SingleAccount`): 20 starts, 20 completed, 0 unfinished, 0 errors, no flags; 4.35 scans/hour, median
+  gap 15.1 min; two 5-minute gaps (04:22-04:27, 05:41-05:46) where a doze alarm and a periodic run both fired. About
+  4.2 hours on battery, short of the 8-hour protocol. Screenshots `Screenshot_20261018_023058_Device care.png`,
+  `_0646{29,55}_`, `_0647{09,20}_`, `Screenshot_20261018_064845_Settings.png`.
 - Errors (Task 1 R-2): 18 AOL errors, ALL on 10-15 09:20-11:42 (15 `TimeoutException after 0:00:20`, 2 `Connection
   reset by peer`, 1 `Connection refused`): one network episode, class "network". Zero errors 10-16 and 10-17.
 - **Moved to Sprint 80 (Harold, 2026-10-16: "move any other tasks for execution to the backlog for next sprint")**:
