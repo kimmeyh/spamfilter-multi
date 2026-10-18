@@ -42,13 +42,15 @@ class _RecordingScheduler implements BackgroundScanScheduler {
   Future<bool> isScheduled(String accountId) async => false;
   @override
   Future<bool> schedule(
-      {required String accountId, required int intervalMinutes}) async {
+      {required String accountId,
+      required int intervalMinutes,
+      required String caller}) async {
     scheduled.add((accountId: accountId, minutes: intervalMinutes));
     return true;
   }
 
   @override
-  Future<bool> cancel(String accountId) async {
+  Future<bool> cancel(String accountId, {required String caller}) async {
     cancelled.add(accountId);
     return true;
   }

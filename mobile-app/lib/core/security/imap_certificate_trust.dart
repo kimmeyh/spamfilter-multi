@@ -218,7 +218,10 @@ class ServerCertificateNotTrustedException
 /// `:1887-1900`), so `GenericIMAPAdapter` passes this constant per call
 /// through `_uidSearch` / `_uidFetch` (gated by
 /// `imap_response_timeout_test.dart`). UID MOVE sets no response timeout at
-/// all (`_copyOrMove`, `:597-600`) and is NOT covered.
+/// all (`_copyOrMove`, `:597-600`) and is NOT covered. In the adapter, the
+/// first timeout ends the whole session and the scan
+/// (`GenericIMAPAdapter._endSessionOnTimeout`, Sprint 79 7.7.1 Q2), so no
+/// later command waits its own limit on the dead connection.
 ///
 /// **Why.** Clients were built with NO response timeout, so a socket that
 /// stalled after login (a network change while the phone idles) left the scan

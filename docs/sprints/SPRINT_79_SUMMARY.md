@@ -3,7 +3,7 @@
 **Dates**: 2026-10-13 to 2026-10-18
 **Branch**: `feature/20261013_Sprint_79` | **PR**: #480 -> develop
 **Version**: 0.20.0+17 (bumped at plan approval)
-**Suite**: 3,011 -> 3,061 passed (15 skipped, 0 failed, `run-full-suite.ps1`) | Analyzer clean | WinWright 2/2 at
+**Suite**: 3,011 -> 3,088 passed (15 skipped, 0 failed, `run-full-suite.ps1`) | Analyzer clean | WinWright 2/2 at
 `80d92c6`
 
 ## What this sprint was for
@@ -27,8 +27,9 @@ declared an ADR-0042 exception.
 - **F297 (#488, added 2026-10-14)** -- rules and safe senders reload after a YAML import, through one shared reload.
 - **F292 (#486)** -- `scripts/run-full-suite.ps1` (stall watchdog, containment); cause still unknown.
 - **Task 1 (#471), in-sprint part** -- MV-7: the periodic Android run skips a recently scanned account, and a run
-  that waited for another scan checks again; IMAP commands get a 120 s response limit; every schedule change is
-  logged on both platforms (with a note when the Doze alarm did not arm or cancel); workmanager 0.10.10, so the
+  that waited for another scan checks again; IMAP commands get a 120 s response limit, and one timeout ends the
+  session and the scan (7.7.1 Q2); every schedule change is logged on both platforms with the step that asked for
+  it (with a note when the Doze alarm did not arm or cancel); workmanager 0.10.10, so the
   worker stop line fires with AndroidX reason names (`reason=timeout raw=3` on the emulator).
 
 ## Not delivered, and why

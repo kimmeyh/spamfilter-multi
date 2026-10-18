@@ -29,7 +29,7 @@
     },
     "_github_issues_note": "Sprint 66 cards created at Phase 3.3.1 (2026-09-07): #387 GP-19, #388 GP-4. Close by hand at Post-Merge Cleanup.",
     "test_metrics": {
-        "suite": "3,075 passed / 15 skipped / 0 failed (run-full-suite.ps1 79-771, 2026-10-18, after the 7.7.1 fixes; 0 load failures, peak commit 50.2 GB)",
+        "suite": "3,088 passed / 15 skipped / 0 failed (run-full-suite.ps1 79-771b, 2026-10-18, after Harold's 7.7.1 decisions Q2/Q3; 0 load failures, peak commit 51.6 GB)",
         "policy_suite": "JVM 21/21; release_notes_test passing; hook suite 128/128 (2026-10-08)",
         "winwright": "2026-10-17 sweep-head 80d92c6: f124 PASS 29/29, s75 PASS 27/27 (re-run alone; first launch in the full sweep failed, cause unknown), no skipped steps, DB drift none",
         "analyzer": "clean",
@@ -54,7 +54,7 @@
     ],
     "blocking_issues": [],
     "next_actions": [
-        "7.7.1: disposition every finding from Copilot, code-reviewer and silent-failure-hunter (fix without asking unless decision-class, backlog/N-A, or 4+ code files / 600+ lines); push; resolve Copilot threads; record '- **7.7.1 final code reviews**: <evidence>' in SPRINT_79_PLAN.md.",
+        "7.7.1: findings fixed; Harold answered Q2=1 (timeout ends session, DONE), Q3=1 (caller label, DONE), Q4=2 (no sweep), Q5=1 (keep M-4). Q1 (UID MOVE limit: 1 wrap at 2 min + close, 2 longer limit, 3 backlog Sprint 80) STILL OPEN -- ask again.",
         "7.7.5: notify Harold PR #480 is ready for final approval.",
         "On merge: open the Sprint 80 branch from feature/20261013_Sprint_79; verify Closes #481-#488 closed the cards; keep #471, #472, #433, #428 open.",
         "Confirm 0.19.0 live on both stores and update the Live rows in STORE_VERSION_STATUS.md."

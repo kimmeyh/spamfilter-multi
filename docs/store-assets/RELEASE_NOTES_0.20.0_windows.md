@@ -16,4 +16,4 @@ the new notification); process and repository changes (backlog presentation, def
 
 When a background scan of an account finishes, Windows now shows a notification naming the account and what the scan found, for example "Back. scan k*@aol completed" and "No rule 9 Deleted 1 Safe 0". Each account has one notification, replaced by the next scan. A read-only scan says so in the title.
 
-Fixes: importing a rules or safe senders file now takes effect at once, without restarting the app, and the app says so if the rules fail to reload. A scan whose email server stops answering now ends that step after 2 minutes with a connection error, instead of waiting indefinitely.
+Fixes: importing a rules or safe senders file now takes effect at once, without restarting the app, and the app says so if the rules fail to reload. A scan whose email server stops answering while the app reads mail now stops after 2 minutes and says the server stopped responding, instead of waiting indefinitely.

@@ -63,15 +63,23 @@ abstract class BackgroundScanScheduler {
   /// Returns true on success. Implementations must be IDEMPOTENT: calling this
   /// when work already exists updates it rather than creating a duplicate --
   /// per-account uniqueness is the ADR-0039 invariant both platforms share.
+  ///
+  /// [caller] names the job that asked (for example
+  /// `settings: background switch`) and is written to the diagnostic log line
+  /// (R-9). Sprint 79 7.7.1 Q3 (Harold, "q3 1"): REQUIRED, so a new call site
+  /// cannot be added without saying who it is. It replaced a stack-trace
+  /// guess that read "unknown" on every obfuscated release build.
   Future<bool> schedule({
     required String accountId,
     required int intervalMinutes,
+    required String caller,
   });
 
   /// Cancel periodic work for [accountId]. Returns true if it is gone
   /// afterwards, INCLUDING when nothing was scheduled to begin with -- cancel
   /// is idempotent by design, so a caller does not have to check first.
-  Future<bool> cancel(String accountId);
+  /// [caller] as on [schedule].
+  Future<bool> cancel(String accountId, {required String caller});
 }
 
 /// The explicit no-op used on platforms with no scheduling mechanism.
@@ -104,13 +112,15 @@ class UnsupportedPlatformScheduler implements BackgroundScanScheduler {
   Future<bool> schedule({
     required String accountId,
     required int intervalMinutes,
+    required String caller,
   }) async =>
       false;
 
   /// True: there is nothing scheduled, so the post-condition "not scheduled"
   /// already holds. Cancel is idempotent.
   @override
-  Future<bool> cancel(String accountId) async => true;
+  Future<bool> cancel(String accountId, {required String caller}) async =>
+      true;
 }
 
 /// Resolves the scheduler for the current platform.
@@ -144,7 +154,7 @@ class BackgroundScanSchedulerFactory {
 
 /// Sprint 79 Task 1 R-9: every schedule and cancel, on BOTH platforms, writes
 /// one diagnostic-log line naming the account (masked), the result, and the
-/// call site that asked for it.
+/// job that asked for it (the required `caller` label, 7.7.1 Q3).
 ///
 /// **Why.** On the Fold (0.19.0, 2026-10-13) Gmail's periodic task AND its
 /// Doze alarm both stopped after 14:27 with no line of any kind; the only
@@ -173,33 +183,13 @@ String schedulerChangeLine({
     '${intervalMinutes == null ? '' : ' every ${intervalMinutes}m'}'
     ' ${ok ? 'ok' : 'FAILED'}${note == null ? '' : ' ($note)'} (from $caller)';
 
-/// The first app frame outside this file in [trace], as `file.dart:line`, or
-/// `unknown` (an obfuscated or empty trace). Best-effort: it only labels a log
-/// line.
-///
-/// [WARNING] Sprint 79 7.7.1 review M-1: every Android RELEASE build is built
-/// with `--obfuscate --split-debug-info` (`build-with-secrets.ps1:488-504`),
-/// and AOT then prints non-symbolic frames with no `package:` path, so on the
-/// closed-test and Play builds this returns `unknown` for every call. Debug
-/// builds and the JIT unit tests name the caller. Whether the Windows MSIX
-/// (`msix:create`) is obfuscated is not verified here.
-@visibleForTesting
-String schedulerCallerFrom(StackTrace trace) {
-  final frame = RegExp(r'package:[^/\s]+/(?:[^\s:]*/)?([^/\s:]+\.dart):(\d+)');
-  for (final m in frame.allMatches(trace.toString())) {
-    if (m.group(1) == 'background_scan_scheduler.dart') continue;
-    return '${m.group(1)}:${m.group(2)}';
-  }
-  return 'unknown';
-}
-
 Future<void> _logSchedulerChange(
   String platform, {
   required String action,
   required String accountId,
   int? intervalMinutes,
   required bool ok,
-  required StackTrace trace,
+  required String caller,
   String? note,
 }) =>
     DiagnosticLogger.log(
@@ -210,7 +200,7 @@ Future<void> _logSchedulerChange(
         accountId: accountId,
         intervalMinutes: intervalMinutes,
         ok: ok,
-        caller: schedulerCallerFrom(trace),
+        caller: caller,
         note: note,
       ),
     );
@@ -236,8 +226,8 @@ class WindowsSchedulerAdapter implements BackgroundScanScheduler {
   Future<bool> schedule({
     required String accountId,
     required int intervalMinutes,
+    required String caller,
   }) async {
-    final trace = StackTrace.current;
     var ok = false;
     // Sprint 79 7.7.1 H-2: a FAILED line names its reason (parity with the
     // Android adapter's notes).
@@ -267,14 +257,13 @@ class WindowsSchedulerAdapter implements BackgroundScanScheduler {
           accountId: accountId,
           intervalMinutes: intervalMinutes,
           ok: ok,
-          trace: trace,
+          caller: caller,
           note: note);
     }
   }
 
   @override
-  Future<bool> cancel(String accountId) async {
-    final trace = StackTrace.current;
+  Future<bool> cancel(String accountId, {required String caller}) async {
     var ok = false;
     String? note;
     try {
@@ -289,7 +278,7 @@ class WindowsSchedulerAdapter implements BackgroundScanScheduler {
           action: 'cancel',
           accountId: accountId,
           ok: ok,
-          trace: trace,
+          caller: caller,
           note: note);
     }
   }
@@ -376,15 +365,15 @@ class AndroidSchedulerAdapter implements BackgroundScanScheduler {
   Future<bool> schedule({
     required String accountId,
     required int intervalMinutes,
+    required String caller,
   }) async {
-    final trace = StackTrace.current;
     final (:ok, :note) = await scheduleDetailed(accountId, intervalMinutes);
     await _logSchedulerChange('android',
         action: 'schedule',
         accountId: accountId,
         intervalMinutes: intervalMinutes,
         ok: ok,
-        trace: trace,
+        caller: caller,
         note: note);
     return ok;
   }
@@ -465,14 +454,13 @@ class AndroidSchedulerAdapter implements BackgroundScanScheduler {
   }
 
   @override
-  Future<bool> cancel(String accountId) async {
-    final trace = StackTrace.current;
+  Future<bool> cancel(String accountId, {required String caller}) async {
     final (:ok, :note) = await cancelDetailed(accountId);
     await _logSchedulerChange('android',
         action: 'cancel',
         accountId: accountId,
         ok: ok,
-        trace: trace,
+        caller: caller,
         note: note);
     return ok;
   }

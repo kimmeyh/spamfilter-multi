@@ -18,5 +18,5 @@ Paste the en-US block below into the Play Console release-notes field, tags incl
 <en-US>
 Background scan notifications now name the account and list "No rule" first, one per account. A read-only scan says so in the title and crosses out what it did not do.
 
-Fixes: an account is no longer scanned twice per interval; an imported rules file takes effect at once; a server that stops answering ends the scan step after 2 minutes.
+Fixes: an account is no longer scanned twice per interval; an imported rules file takes effect at once; a scan whose server stops answering while reading mail stops after 2 minutes and says so.
 </en-US>

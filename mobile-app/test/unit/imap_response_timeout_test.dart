@@ -12,34 +12,84 @@
 // something else), a process the OS freezes or kills (the Fold rows whose
 // heartbeat never ran), a server that trickles bytes slowly enough to keep
 // one command alive past the limit in pieces, and a stalled UID MOVE (no
-// per-call limit exists in the library; decision pending, Sprint 79 7.7.1).
+// per-call limit exists in the library; Sprint 79 7.7.1 Q1).
 // It proves the library behavior the fix relies on, with a real socket, that
 // both client constructors pass the default, and that the adapter passes the
 // limit to every SEARCH and FETCH and lets a timeout through.
+import 'dart:async';
 import 'dart:io';
 
 import 'package:enough_mail/enough_mail.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:my_email_spam_filter/adapters/email_providers/generic_imap_adapter.dart';
+import 'package:my_email_spam_filter/adapters/email_providers/spam_filter_platform.dart';
+import 'package:my_email_spam_filter/core/models/email_message.dart';
 import 'package:my_email_spam_filter/core/security/imap_certificate_trust.dart';
 
 /// Records the per-call `responseTimeout` the adapter passes; can be told to
-/// fail SEARCH the way a stalled server does.
+/// fail SELECT, SEARCH, FETCH or STORE the way a stalled server does.
 class _RecordingImapClient extends ImapClient {
-  _RecordingImapClient({this.searchError}) : super(isLogEnabled: false);
+  _RecordingImapClient(
+      {this.searchError,
+      this.selectError,
+      this.fetchError,
+      this.storeError,
+      this.listError})
+      : super(isLogEnabled: false);
 
+  final Object? listError;
   final Object? searchError;
+  final Object? selectError;
+  final Object? fetchError;
+  final Object? storeError;
   final List<Duration?> searchTimeouts = [];
   final List<Duration?> fetchTimeouts = [];
+  int disconnects = 0;
 
   @override
   Future<Mailbox> selectMailboxByPath(
     String path, {
     bool enableCondStore = false,
     QResyncParameters? qresync,
-  }) async =>
-      Mailbox(
-          encodedName: path, encodedPath: path, pathSeparator: '/', flags: []);
+  }) async {
+    if (selectError != null) throw selectError!;
+    return Mailbox(
+        encodedName: path, encodedPath: path, pathSeparator: '/', flags: []);
+  }
+
+  @override
+  Future<StoreImapResult> uidStore(
+    MessageSequence sequence,
+    List<String> flags, {
+    StoreAction? action,
+    bool? silent,
+    int? unchangedSinceModSequence,
+  }) async {
+    if (storeError != null) throw storeError!;
+    return StoreImapResult();
+  }
+
+  @override
+  Future<List<Mailbox>> listMailboxes({
+    String path = '""',
+    bool recursive = false,
+    List<String>? mailboxPatterns,
+    List<String>? selectionOptions,
+    List<ReturnOption>? returnOptions,
+  }) async {
+    if (listError != null) throw listError!;
+    return [];
+  }
+
+  /// When true, closing the socket never finishes (a peer that stopped
+  /// answering).
+  bool hangOnDisconnect = false;
+
+  @override
+  Future<void> disconnect() {
+    disconnects++;
+    return hangOnDisconnect ? Completer<void>().future : Future.value();
+  }
 
   @override
   Future<SearchImapResult> uidSearchMessages({
@@ -61,6 +111,7 @@ class _RecordingImapClient extends ImapClient {
     Duration? responseTimeout,
   }) async {
     fetchTimeouts.add(responseTimeout);
+    if (fetchError != null) throw fetchError!;
     return FetchImapResult([
       for (final uid in sequence.toList())
         MimeMessage()
@@ -293,8 +344,189 @@ void main() {
     } catch (e) {
       error = e;
     }
-    expect(error, isA<ImapException>(),
+    expect(error, isA<ImapServerNotRespondingException>(),
         reason: 'the adapter swallowed the timeout and returned a list');
+  });
+
+  // Sprint 79 7.7.1 Q2 (Harold, "q2 1"): ONE timeout ends the session, so no
+  // later command waits its own full limit on the same dead connection.
+  //
+  // What this does NOT catch: a real 2-minute stall (the library test above
+  // proves the exception type with a real socket; these use a scripted
+  // client), a stalled UID MOVE (no limit exists; 7.7.1 Q1), and the
+  // scanner's own handling (it rethrows every `isSessionFatal` error and
+  // fails the scan at its outer catch -- pinned by its own tests).
+  group('7.7.1 Q2: a timeout ends the session', () {
+    ImapException timeout() =>
+        ImapException(ImapClient(isLogEnabled: false), 'timeout');
+
+    test('SEARCH timeout: session-fatal, client dropped, no later command sent',
+        () async {
+      final client = _RecordingImapClient(searchError: timeout());
+      final adapter = _adapterWith(client);
+      Object? first;
+      try {
+        await adapter.fetchMessages(daysBack: 0, folderNames: ['Inbox']);
+      } catch (e) {
+        first = e;
+      }
+      expect(first, isA<ImapServerNotRespondingException>());
+      expect(isSessionFatal(first!), isTrue,
+          reason: 'every per-item catch rethrows only session-fatal errors');
+      expect(adapter.debugHasClient, isFalse);
+      expect(client.disconnects, 1, reason: 'the socket is closed');
+
+      // The next folder fails at once: nothing is sent to the dead client.
+      await expectLater(
+          adapter.fetchMessages(daysBack: 0, folderNames: ['Spam']),
+          throwsA(isA<ConnectionException>()));
+      expect(client.searchTimeouts, hasLength(1),
+          reason: 'a second SEARCH would wait another full limit');
+    });
+
+    test('a socket close that never finishes does not hang the scan',
+        () async {
+      final client = _RecordingImapClient(searchError: timeout())
+        ..hangOnDisconnect = true;
+      final sw = Stopwatch()..start();
+      await expectLater(
+          _adapterWith(client)
+              .fetchMessages(daysBack: 0, folderNames: ['Inbox'])
+              .timeout(const Duration(seconds: 30)),
+          throwsA(isA<ImapServerNotRespondingException>()));
+      expect(sw.elapsed, lessThan(const Duration(seconds: 20)),
+          reason: 'the close is bounded at 10 s');
+    });
+
+    test('SELECT timeout keeps its type (not wrapped as FetchException)',
+        () async {
+      final client = _RecordingImapClient(selectError: timeout());
+      final adapter = _adapterWith(client);
+      await expectLater(
+          adapter.fetchMessages(daysBack: 0, folderNames: ['Inbox']),
+          throwsA(isA<ImapServerNotRespondingException>()));
+      expect(adapter.debugHasClient, isFalse);
+    });
+
+    test('FETCH timeout keeps its type through the batch fetch', () async {
+      final client = _RecordingImapClient(fetchError: timeout());
+      await expectLater(
+          _adapterWith(client)
+              .fetchMessages(daysBack: 0, folderNames: ['Inbox']),
+          throwsA(isA<ImapServerNotRespondingException>()));
+    });
+
+    test('a body fetch timeout ends the scan, not a header-only fallback',
+        () async {
+      final client = _RecordingImapClient(fetchError: timeout());
+      final message = EmailMessage(
+        id: '7',
+        from: 'a@example.com',
+        subject: 's',
+        body: '',
+        headers: const {},
+        receivedDate: DateTime(2026, 10, 18),
+        folderName: 'Inbox',
+      );
+      await expectLater(_adapterWith(client).fetchFullBody(message),
+          throwsA(isA<ImapServerNotRespondingException>()));
+    });
+
+    test('cursor lookups rethrow it instead of answering null', () async {
+      await expectLater(
+          _adapterWith(_RecordingImapClient(searchError: timeout()))
+              .getCurrentMaxUid('Inbox'),
+          throwsA(isA<ImapServerNotRespondingException>()));
+      await expectLater(
+          _adapterWith(_RecordingImapClient(searchError: timeout()))
+              .firstUidSince('Inbox', DateTime(2026, 10, 1)),
+          throwsA(isA<ImapServerNotRespondingException>()));
+    });
+
+    test('a STORE timeout is not reported as flagged', () async {
+      final client = _RecordingImapClient(storeError: timeout());
+      final message = EmailMessage(
+        id: '7',
+        from: 'a@example.com',
+        subject: 's',
+        body: '',
+        headers: const {},
+        receivedDate: DateTime(2026, 10, 18),
+        folderName: 'Inbox',
+      );
+      await expectLater(
+          _adapterWith(client).applyFlagBatch([message], 'Rule'),
+          throwsA(isA<ImapServerNotRespondingException>()),
+          reason: 'this catch used to mark the batch succeeded');
+    });
+
+    test('the other action paths rethrow it too (no per-message fallback)',
+        () async {
+      final message = EmailMessage(
+        id: '7',
+        from: 'a@example.com',
+        subject: 's',
+        body: '',
+        headers: const {},
+        receivedDate: DateTime(2026, 10, 18),
+        folderName: 'Inbox',
+      );
+      final notResponding = throwsA(isA<ImapServerNotRespondingException>());
+      await expectLater(
+          _adapterWith(_RecordingImapClient(storeError: timeout()))
+              .applyFlag(message: message, flagName: 'Rule'),
+          notResponding,
+          reason: 'applyFlag swallowed every error');
+      await expectLater(
+          _adapterWith(_RecordingImapClient(storeError: timeout()))
+              .markAsReadBatch([message]),
+          notResponding,
+          reason: 'the per-message fallback would send more commands');
+      await expectLater(
+          _adapterWith(_RecordingImapClient(storeError: timeout()))
+              .takeActionBatch([message], FilterAction.markAsSpam),
+          notResponding);
+      await expectLater(
+          _adapterWith(_RecordingImapClient(listError: timeout()))
+              .listFolders(),
+          notResponding);
+    });
+
+    test('a write timeout counts as no response; other errors do not', () {
+      expect(GenericIMAPAdapter.isNoResponse(timeout()), isTrue);
+      expect(GenericIMAPAdapter.isNoResponse(TimeoutException('flush')),
+          isTrue);
+      expect(
+          GenericIMAPAdapter.isNoResponse(
+              ImapException(ImapClient(isLogEnabled: false), 'NO denied')),
+          isFalse);
+      expect(GenericIMAPAdapter.isNoResponse(const SocketException('x')),
+          isFalse);
+    });
+
+    test('the user sentence names what happened and what happens next', () {
+      final e = ImapServerNotRespondingException('UID SEARCH');
+      expect(e.userMessage, ImapServerNotRespondingException.userText);
+      expect(e.userMessage, contains('stopped responding'));
+      expect(e.message, contains('UID SEARCH'));
+    });
+
+    test('source gate: every timed command goes through the session check',
+        () {
+      final adapter =
+          File('lib/adapters/email_providers/generic_imap_adapter.dart')
+              .readAsStringSync();
+      for (final direct in [
+        '_imapClient!.uidStore(',
+        '_imapClient!.selectMailboxByPath(',
+        '_imapClient!.listMailboxes(',
+        '_imapClient!.uidSearchMessages(',
+        '_imapClient!.uidFetchMessages(',
+      ]) {
+        expect(adapter.contains(direct), isFalse, reason: direct);
+      }
+      expect('client.uidStore('.allMatchesIn(adapter), 1);
+    });
   });
 }
 

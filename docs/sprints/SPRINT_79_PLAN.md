@@ -1060,6 +1060,27 @@ note (a). **Step-types**: SVC-EDIT, TEST-UNIT. **Est-Effort**: 30-45m.
     last='03:07 +3075 ~15: All tests passed!'`; `flutter analyze` no issues.
   - Decisions asked of Harold: UID MOVE limit; treating a timeout as session-fatal; the scheduler caller label;
     a WinWright re-sweep (`lib/ui` changed); keep or revert M-4.
+  - **Harold's answers (2026-10-18, "q2 1 q3 1 q4 2 q5 1")**: Q1 (UID MOVE) NOT answered, asked again.
+    - **Q2 = 1 DONE (one timeout ends the session)**: every timed command (SELECT, UID SEARCH, UID FETCH, UID STORE,
+      LIST) goes through `_endSessionOnTimeout`; `ImapException('timeout')` (`client_base.dart:312-317`,
+      `imap_client.dart:2790`) or a write `TimeoutException` (`client_base.dart:260`) discards the client (close
+      bounded at 10 s) and throws `ImapServerNotRespondingException` (a `UserFacingConnectionException`, so
+      `isSessionFatal`). Prevention: the existing session-fatal predicate, not a new one; a source gate refuses a
+      direct timed call. Catch walk (Sprint 75 IMP-3), each now rethrows: `_selectMailbox`, `_fetchMessageDetails`,
+      `_fetchMimeMessage`, `getCurrentMaxUid`, `firstUidSince`, `applyFlag` (2), `markAsReadBatch`,
+      `applyFlagBatch` (it marked the batch succeeded), batch markAsSpam, `listFolders`,
+      `ContentHistoryCapture.record`; already rethrowing: `searchByMessageId`, the move/action catches, the scanner's
+      per-folder and per-batch handlers; the scanner's outer catch fails the scan with the user sentence
+      (`error_messages.dart:62-65`). UID MOVE is not covered (Q1).
+    - **Q3 = 1 DONE (class-2 interface change, approved)**: `schedule` and `cancel` take a REQUIRED `caller` label
+      (`settings: background on`, `settings: background off`, `startup: F264 interval migration`);
+      `schedulerCallerFrom` and the stack-trace capture are removed.
+    - **Q4 = 2**: no WinWright re-sweep. Q3 later touched `settings_screen.dart` again, call-site label only.
+    - **Q5 = 1**: M-4 kept.
+    - Mutations: 18 run, 18 KILLED (Q2-M1..M16, Q3-M1b, Q3-M2; Q3-M1's first anchor matched twice and was not run,
+      then re-aimed).
+    - Full suite after: `RESULT label=79-771b exit=0 minutes=4 loadFailures=0 peakCommittedGB=51.58
+      last='03:17 +3088 ~15: All tests passed!'`; `flutter analyze` no issues.
 - **5.2.3 architecture docs**: 2026-10-17 -- ARCHITECTURE.md updated (IMAP command timeouts,
   `RuleSetProvider.reloadFromDatabase`, the Sprint 79 skip rules, the worker stop line, the scheduler line; the F287
   notifier rows at `:219-220` and ADR-0048 were done with Task 4); ADR-0039 Sprint 78 MV-7 amendment updated.

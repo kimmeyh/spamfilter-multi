@@ -476,7 +476,10 @@ Future<void> _runF264UpgradeConversions() async {
       getAccountIds: credStore.getSavedAccounts,
       reschedule: canSchedule
           ? (accountId, minutes) => BackgroundScanSchedulerFactory.instance
-              .schedule(accountId: accountId, intervalMinutes: minutes)
+              .schedule(
+                  accountId: accountId,
+                  intervalMinutes: minutes,
+                  caller: 'startup: F264 interval migration')
           : null,
     ).runIfNeeded();
 

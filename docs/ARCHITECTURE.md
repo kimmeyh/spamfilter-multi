@@ -327,8 +327,16 @@ so a command whose reply never comes fails with `ImapException('timeout')` (clas
 instead of waiting forever. enough_mail 2.1.7 applies the default only to LOGIN, SELECT, LIST, STORE, NOOP and
 EXPUNGE; UID SEARCH and UID FETCH get the limit per call through `GenericIMAPAdapter._uidSearch` / `_uidFetch`
 (7.7.1 review C-1, source-gated). **UID MOVE has no response limit** (the library has no parameter for it). A failure
-in the full-fetch path reaches the scanner's per-folder handler, which counts it as a folder error (7.7.1 H-1). Same
-on both platforms.
+in the full-fetch path reaches the scanner's per-folder handler, which counts it as a folder error (7.7.1 H-1).
+
+**One timeout ends the session** (7.7.1 Q2, Harold): every command with a limit (SELECT, UID SEARCH, UID FETCH, UID
+STORE, LIST) goes through `GenericIMAPAdapter._endSessionOnTimeout`. A response timeout (`ImapException('timeout')`)
+or a write timeout (`TimeoutException`) discards the client (`_discardClient`, socket close bounded at 10 s) and
+throws `ImapServerNotRespondingException`, a `UserFacingConnectionException`. `isSessionFatal` is therefore true, so
+every per-item catch on the path rethrows it (the adapter's batch and cursor helpers, the scanner's per-folder and
+per-batch handlers, and the content-history capture) and the scan fails once, with "The email server stopped
+responding, so this scan stopped. The next scan will try again." Before this, the scan moved on to the next folder or
+message on the same dead connection, and each later command waited its own 2 minutes. Same on both platforms.
 
 #### Auth Adapters
 

@@ -143,7 +143,7 @@ void main() {
         'schedule registers per-account unique periodic work with the exact '
         'payload the Windows model mirrors (ADR-0039)', () async {
       final ok = await adapter.schedule(
-          accountId: accountId, intervalMinutes: 60);
+          accountId: accountId, intervalMinutes: 60, caller: 'test');
 
       expect(ok, isTrue);
       expect(fake.periodicRegistrations, hasLength(1));
@@ -197,7 +197,8 @@ void main() {
           () => messenger.setMockMethodCallHandler(AndroidDozeAlarm.channel, null));
 
       test('AC-8: 5 minutes -> alarm 5, WorkManager 15', () async {
-        expect(await adapter.schedule(accountId: accountId, intervalMinutes: 5),
+        expect(await adapter.schedule(
+          accountId: accountId, intervalMinutes: 5, caller: 'test'),
             isTrue);
         expect(alarmCalls.single['intervalMinutes'], 5,
             reason: 'BEFORE F264 the clamp ran above the alarm call, so the '
@@ -207,7 +208,8 @@ void main() {
       });
 
       test('AC-8: 30 minutes -> 30 to both', () async {
-        await adapter.schedule(accountId: accountId, intervalMinutes: 30);
+        await adapter.schedule(
+          accountId: accountId, intervalMinutes: 30, caller: 'test');
         expect(alarmCalls.single['intervalMinutes'], 30);
         expect(fake.periodicRegistrations.single['frequency'],
             const Duration(minutes: 30));
@@ -218,7 +220,8 @@ void main() {
         for (final m in [120, 240, 5940]) {
           alarmCalls.clear();
           fake.periodicRegistrations.clear();
-          expect(await adapter.schedule(accountId: accountId, intervalMinutes: m),
+          expect(await adapter.schedule(
+          accountId: accountId, intervalMinutes: m, caller: 'test'),
               isTrue,
               reason: 'the old ScanFrequency enum could not represent these');
           expect(alarmCalls.single['intervalMinutes'], m);
@@ -231,7 +234,7 @@ void main() {
     test('schedule with a non-positive interval refuses without touching '
         'WorkManager', () async {
       final ok = await adapter.schedule(
-          accountId: accountId, intervalMinutes: 0);
+          accountId: accountId, intervalMinutes: 0, caller: 'test');
       expect(ok, isFalse);
       expect(fake.periodicRegistrations, isEmpty,
           reason: 'disabled means no work registered -- registering a 0-minute '
@@ -243,7 +246,7 @@ void main() {
         () async {
       fake.throwOnRegister = true;
       final ok = await adapter.schedule(
-          accountId: accountId, intervalMinutes: 60);
+          accountId: accountId, intervalMinutes: 60, caller: 'test');
       expect(ok, isFalse,
           reason: 'a platform failure must surface as false, never as a '
               'silent success -- the silent-claim failure mode ADR-0042 '
@@ -287,8 +290,8 @@ void main() {
         'cancel removes the per-account periodic work AND any pending test '
         'one-off (F175 R-6)', () async {
       await adapter.schedule(
-          accountId: accountId, intervalMinutes: 60);
-      final ok = await adapter.cancel(accountId);
+          accountId: accountId, intervalMinutes: 60, caller: 'test');
+      final ok = await adapter.cancel(accountId, caller: 'test');
 
       expect(ok, isTrue);
       expect(fake.cancelledUniqueNames, [
@@ -304,7 +307,7 @@ void main() {
     test('registrations carry the bounded exponential backoff (F175 R-6)',
         () async {
       await adapter.schedule(
-          accountId: accountId, intervalMinutes: 60);
+          accountId: accountId, intervalMinutes: 60, caller: 'test');
       await adapter.runTestScan(accountId);
 
       expect(fake.periodicRegistrations.single['backoffPolicy'],
@@ -320,9 +323,9 @@ void main() {
     test('isScheduled round-trips through the platform query', () async {
       expect(await adapter.isScheduled(accountId), isFalse);
       await adapter.schedule(
-          accountId: accountId, intervalMinutes: 60);
+          accountId: accountId, intervalMinutes: 60, caller: 'test');
       expect(await adapter.isScheduled(accountId), isTrue);
-      await adapter.cancel(accountId);
+      await adapter.cancel(accountId, caller: 'test');
       expect(await adapter.isScheduled(accountId), isFalse);
     });
 
@@ -347,7 +350,7 @@ void main() {
       expect(scheduler.isSupported, isFalse);
       expect(
           await scheduler.schedule(
-              accountId: accountId, intervalMinutes: 60),
+          accountId: accountId, intervalMinutes: 60, caller: 'test'),
           isFalse,
           reason: 'returning true would let a caller believe work was '
               'scheduled when nothing exists to run it -- the exact silent-'
@@ -357,7 +360,7 @@ void main() {
 
     test('cancel is idempotently true (the post-condition already holds)',
         () async {
-      expect(await scheduler.cancel(accountId), isTrue);
+      expect(await scheduler.cancel(accountId, caller: 'test'), isTrue);
     });
   });
 
@@ -377,8 +380,7 @@ void main() {
 
   // Sprint 79 Task 1 R-9: every schedule/cancel leaves a diagnostic line.
   // What this does NOT catch: a cancel made outside these two adapters (none
-  // exists in Dart today; native code cannot write this log), or a release
-  // build whose stack trace is obfuscated (the caller then reads "unknown").
+  // exists in Dart today; native code cannot write this log).
   group('scheduler change log line (R-9)', () {
     test('names the masked account, interval, result and caller', () {
       expect(
@@ -387,8 +389,8 @@ void main() {
               accountId: 'kimmeyh@gmail.com',
               intervalMinutes: 5,
               ok: true,
-              caller: 'settings_screen.dart:1539'),
-          'schedule k***@gmail.com every 5m ok (from settings_screen.dart:1539)');
+              caller: 'settings: background on'),
+          'schedule k***@gmail.com every 5m ok (from settings: background on)');
       expect(
           schedulerChangeLine(
               action: 'cancel',
@@ -398,18 +400,42 @@ void main() {
           'cancel k***@gmail.com FAILED (from unknown)');
     });
 
-    test('caller is the first app frame outside the scheduler file', () {
-      const frames = [
-        '#0 _logSchedulerChange (package:my_email_spam_filter/core/services/background_scan_scheduler.dart:120:5)',
-        '#1 AndroidSchedulerAdapter.cancel (package:my_email_spam_filter/core/services/background_scan_scheduler.dart:390:11)',
-        '#2 _SettingsScreenState._updateScheduledScan (package:my_email_spam_filter/ui/screens/settings_screen.dart:1564:33)',
-        '#3 main (package:my_email_spam_filter/main.dart:479:9)',
-      ];
-      expect(schedulerCallerFrom(StackTrace.fromString(frames.join('\n'))),
-          'settings_screen.dart:1564');
-      expect(schedulerCallerFrom(StackTrace.fromString('')), 'unknown');
-      expect(schedulerCallerFrom(StackTrace.fromString(frames[3])),
-          'main.dart:479');
+    // 7.7.1 Q3 (Harold, "q3 1"): the caller is a required label, not a
+    // stack-trace guess. What this does NOT catch: a label that names the
+    // wrong job (only review catches that).
+    test('the caller label reaches the line; no stack-trace guess remains', () {
+      expect(
+          schedulerChangeLine(
+              action: 'schedule',
+              accountId: 'kimmeyh@gmail.com',
+              intervalMinutes: 15,
+              ok: true,
+              caller: 'settings: background on'),
+          'schedule k***@gmail.com every 15m ok (from settings: background on)');
+      final src = File('lib/core/services/background_scan_scheduler.dart')
+          .readAsStringSync();
+      expect(src.contains('StackTrace.current'), isFalse);
+      expect(src.contains('schedulerCallerFrom'), isFalse);
+      expect(
+          RegExp(r"_logSchedulerChange\('\w+',[^;]*caller: caller,")
+              .allMatches(src)
+              .length,
+          4,
+          reason: 'all four adapter calls pass their own label through');
+    });
+
+    test('the production call sites carry job labels', () {
+      // `required` makes a missing label a compile error; this pins the
+      // "<where>: <job>" form so the log stays readable.
+      final label = RegExp(r"caller: '[a-z]+: [^']+'");
+      expect(label.allMatches(File('lib/main.dart').readAsStringSync()).length,
+          1);
+      expect(
+          label
+              .allMatches(
+                  File('lib/ui/screens/settings_screen.dart').readAsStringSync())
+              .length,
+          2);
     });
 
     // F-PRECHECK (Sprint 79): a Doze alarm that failed to arm or cancel while
@@ -422,10 +448,10 @@ void main() {
               action: 'cancel',
               accountId: 'kimmeyh@gmail.com',
               ok: true,
-              caller: 'settings_screen.dart:1564',
+              caller: 'settings: background off',
               note: 'Doze alarm NOT cancelled'),
           'cancel k***@gmail.com ok (Doze alarm NOT cancelled) '
-          '(from settings_screen.dart:1564)');
+          '(from settings: background off)');
     });
 
     test('source gate: the Android adapter passes the alarm note through', () {

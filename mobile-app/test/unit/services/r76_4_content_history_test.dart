@@ -193,6 +193,25 @@ void main() {
       await c.record(m, EvaluationResult.noMatch());
     });
 
+    // Sprint 79 7.7.1 Q2: the one thing capture DOES rethrow -- the mail
+    // session is gone, so the scan must stop rather than continue on a closed
+    // connection. What this does NOT catch: the scanner call site (the
+    // adapter-side tests in imap_response_timeout_test.dart cover the throw).
+    test('a session failure is rethrown, not swallowed', () async {
+      final c = ContentHistoryCapture(
+        accountId: 'acct',
+        scanType: 'manual',
+        platform: 'windows',
+        store: store,
+        fetchText: (m) async =>
+            throw UserFacingConnectionException('session lost', 'stopped'),
+      );
+      final m = msg('1', mid: '<m1@x>');
+      await c.beginBatch([m]);
+      await expectLater(c.record(m, EvaluationResult.noMatch()),
+          throwsA(isA<UserFacingConnectionException>()));
+    });
+
     // 7.7.1 silent-failure M-3. What this does NOT catch: an adapter that
     // returns null for a failure instead of throwing (the adapters' own
     // contract; fetchContentText doc in spam_filter_platform.dart).

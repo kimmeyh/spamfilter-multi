@@ -1537,7 +1537,9 @@ class _SettingsScreenState extends State<SettingsScreen> with SingleTickerProvid
         await _requestNotificationPermissionIfNeeded();
 
         success = await scheduler.schedule(
-            accountId: accountId, intervalMinutes: minutes);
+            accountId: accountId,
+            intervalMinutes: minutes,
+            caller: 'settings: background on');
 
         if (success) {
           _logger.i('Scheduled background scan updated: '
@@ -1561,7 +1563,8 @@ class _SettingsScreenState extends State<SettingsScreen> with SingleTickerProvid
           }
         }
       } else {
-        success = await scheduler.cancel(accountId);
+        success = await scheduler.cancel(accountId,
+            caller: 'settings: background off');
         if (success) {
           _logger.i('Scheduled background scan cancelled for this account');
         }

@@ -431,7 +431,8 @@ class EmailScanner {
           }
           // R76-4: captured BEFORE the safe-sender skip below, so every
           // outcome is recorded. A known email is a sighting (no body fetch);
-          // a new one fetches its text once. Never throws.
+          // a new one fetches its text once. Throws only a session failure
+          // (7.7.1 Q2), which ends the scan.
           await contentCapture?.record(message, result);
           EmailActionType action = EmailActionType.none;
 
