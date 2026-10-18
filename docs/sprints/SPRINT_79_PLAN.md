@@ -1038,6 +1038,13 @@ DEV is read-only (scan mode), so no step changes mail.
     handler 912 `MyEmailSpamFilter.Dev`, `s:toast` = 0) -- hence the first precondition. Display, text and per-account
     replacement were proven from the same store on 2026-10-13 (b0e8ca5); the text, notifier and Windows worker files
     are unchanged since b0e8ca5 (`git log b0e8ca5..HEAD` empty for all three).
+  - **Result 2026-10-18: PASS.** Harold: "notification occurred", then "3 notifications so far" (07:24). Store
+    (copy of `wpndatabase.db`): `s:toast` = 1 for handler 912 (Harold turned it on); at 07:27:48 four toast rows, one
+    per account, each with its own tag (aol 772562602, gmail 1988489478, icloud 2019592444, yahoo 663563768, the
+    `notificationId` FNV-1a of each address). Replacement: Gmail's 07:22 row 132975 was gone at 07:27, replaced by
+    row 132981 with the same tag. AOL's 07:20 run posted before the setting was on, so it first showed at 07:26.
+    Zero "notification FAILED" lines. **Step correction**: the DEV tasks run every **5 minutes** per account
+    (Task Scheduler NextRunTime 5 minutes after LastRunTime; worker log lines 5 minutes apart), not 20 as the step said.
 - **MV-2 (your 10-14 check; F297 / F283 coverage sweep)**.
   - Preconditions: none beyond the DEV app.
   - Steps: open the DEV app; it opens on Review No Rule Items. Read the count on the "No rule (N)" chip.
@@ -1049,6 +1056,7 @@ DEV is read-only (scan mode), so no step changes mail.
     triggers). The F297 import path itself is proven by its tests (AC-1 to AC-4); an import step is not handed over
     because an import replaces ALL rules and the only on-disk rules YAML (10-14) no longer matches the 2,154 rules
     in the database.
+  - **Result 2026-10-18: PASS.** Harold: "no rules 116" (expected 119 or fewer; 386 on 10-14).
 - **Not validatable in this sprint (Q9 = 2: after the Sprint 79 release, on the Fold)**: F286 notification text and
   strikethrough; the worker stop line `stopped by WorkManager before it finished: reason=... raw=...` on a release
   build (then decide Fix 2, Harold 2026-10-17); the Sprint 80 phone items (MV76-1 remainder, F277 arms A and C).
