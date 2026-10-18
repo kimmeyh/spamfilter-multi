@@ -1,41 +1,40 @@
 {
     "_description": "Sprint status file that persists across context compaction. Update after each phase/sub-phase completion.",
-    "_last_updated": "2026-10-13T14:40:00Z",
+    "_last_updated": "2026-10-18T17:45:00Z",
     "_usage": "Read this file after context compaction to restore sprint approval state and progress.",
     "_staleness_note": "This file had drifted 15 sprints (last updated at Sprint 35, 2026-04-19) before being refreshed at Sprint 50 close-out. It is a Phase 7.7 checklist item -- update it at every sprint close-out, not opportunistically.",
     "current_sprint": {
-        "number": 78,
-        "branch": "feature/20261009_Sprint_78",
-        "status": "Phase 7.7 Apply Approved Improvements -- IMP-1, IMP-2, IMP-4 applied (IMP-3 skipped by Harold); final WinWright sweep PASS at 82a35db; remaining: 7.7 documentation, then gh pr ready + 7.7.1 reviews",
+        "number": 79,
+        "branch": "feature/20261013_Sprint_79",
+        "status": "Phase 7.7 Sprint Completion -- 7.7.1 final code reviews running (Copilot requested 2026-10-18 15:23Z, code-reviewer, silent-failure-hunter); PR #480 READY for review. Retro done (Harold all Very Good; IMP-1/2/3 applied, IMP-4 skipped); 7.7 docs done (CHANGELOG, 0.20.0 release notes re-derived, master plan, SPRINT_79_SUMMARY.md, SPRINT_80_PLAN.md stub). Manual Validation PASSED 2026-10-18 (MV-1 four toasts one per account + replacement; MV-2 count 116). Phase 6 PR #480 updated, still DRAFT. Phase 5 markers recorded (5.1.2, 5.1.5 sweep-head 80d92c6, 5.1.9, 5.2). Tasks 0-9 done in-sprint; remainders of MV76-1, F277 and F292 moved to Sprint 80 by Harold 2026-10-16; workmanager 0.10.10 (Upgrade=1), Fix 2 decided after the phone test (Fix=1). Sprint 79 plan APPROVED 2026-10-13 (Q1 1, Q2 2, Q3 1, Q4 1, Q5 1, Q6 1, Q7 1, Q8 2, Q9 2, Q-S1..3 approved); cards #481-#487 created, #471 #472 #433 #428 reused",
         "plan_approved": true,
-        "blanket_execution_approved": true,
-        "pr_number": 470,
-        "version": "0.19.0+16 (bumped at plan approval, Phase 3.7.0b)",
-        "pr_url": "https://github.com/kimmeyh/spamfilter-multi/pull/470"
+        "pr_number": 480,
+        "version": "0.20.0+17 (Sprint 79, bumped at 3.7.0b)"
     },
     "previous_sprint": {
-        "number": 77,
-        "branch": "feature/20261006_Sprint_77",
-        "pr": "#460 -> develop (merged 2026-10-09, 764380b), #469 develop -> main (b8d2aa2)",
-        "deliverables": "MV76-1 Windows half, F258, F245, R76-1, F264+R76-2, F192+SEC-15, SEC-8b, R76-3, F266 and the MV fixes; 7.7.1 review fixes (10 of 11). Version 0.18.0+15."
+        "number": 78,
+        "branch": "feature/20261009_Sprint_78",
+        "pr": "#470 -> develop (merged 2026-10-13, 7d3b71a), #479 develop -> main (757d6a0)",
+        "deliverables": "F282, F281, F283, F284, R76-4 (ADR-0047), F199-b to HOLD; MV fixes MV-1..MV-7 (MV-5 withdrawn); retro IMP-1/2/4; 7.7.1 review fixes (all but F290). Version 0.19.0+16. Phone testing moved to Sprint 79."
     },
     "github_issues": {
         "sprint_73": "#428 (open, MV74-1), #422 (open, MV74-3), #430 closed, #434 (open, MV74-2), #431 closed, #432 closed, #433 (open, MV74-3). Also closed in pass 1: #426 (superseded by #428), #427 (leftover captured as F236).",
-        "note": "Closes #N does NOT auto-fire here.",
+        "note": "Since 2026-10-14 (Sprint 79, F288) develop is the default branch, so Closes #N in a sprint PR body closes the card when the PR merges into develop. Close-out VERIFIES the cards closed and closes any that did not by hand. Sprints 73-78 below closed cards by hand.",
         "sprint_74": "Closed by hand 2026-10-02: #422 #434 #437 #438 #439. Open, carried: #428 (MV74-1 phone), #433 (F205 phone), #441 (F238), #442 (F239).",
         "sprint_75": "Closed by hand 2026-10-04: #441 #442 #444 #445 #446 #447 #449 #450. Open, carried to Sprint 76 phone checks: #428 (MV74-1), #433 (F205).",
         "sprint_76": "Closed by hand 2026-10-06: #452 #453 #454 #456 #457 #458. Open, inside MV76-1: #428 (MV74-1 reboot half), #433 (F205).",
         "sprint_77": "Closed by hand 2026-10-09: #461 (Fold steps 7-11 carried to the Sprint 78 start) #462 #463 #464 #465 #466 #467 #468. Open, inside MV76-1: #428 (MV74-1 reboot half), #433 (F205).",
-        "sprint_78": "Created 2026-10-10 at 3.7.0: #471 Task 1 MV76-1 (absorbs #428, #433), #472 Task 2 F277, #473 Task 3 F282, #478 Task 4 F281, #474 Task 5 F284, #475 Task 6 F283, #476 Task 7 R76-4, #477 Task 8 F199-b (closed 2026-10-10, done at Harold's instruction)."
+        "sprint_78": "Closed by hand 2026-10-13: #473 #474 #475 #476 #478 (#477 closed earlier). Open, moved to Sprint 79: #471 (MV76-1, with #428 and #433), #472 (F277).",
+        "sprint_79": "Task 0 #481 (version), Task 1 #471 (MV76-1; inside it #433 F205, #428 MV74-1), Task 2 #472 (F277), Task 3 #482 (F286), Task 4 #483 (F287), Task 5 #484 (F288), Task 6 #485 (F291), Task 7 #486 (F292), Task 8 #487 (F293)"
     },
     "_github_issues_note": "Sprint 66 cards created at Phase 3.3.1 (2026-09-07): #387 GP-19, #388 GP-4. Close by hand at Post-Merge Cleanup.",
     "test_metrics": {
-        "suite": "3,011 passed / 15 skipped / 0 failed (local Windows, 2026-10-13, 82a35db)",
+        "suite": "3,092 passed / 15 skipped / 0 failed (run-full-suite.ps1 79-771c, 2026-10-18, after Harold's 7.7.1 decisions Q1/Q2/Q3; 0 load failures, peak commit 52.2 GB)",
         "policy_suite": "JVM 21/21; release_notes_test passing; hook suite 128/128 (2026-10-08)",
-        "winwright": "2026-10-10 sweep-head b1e5d7b: f124 PASS 29/29, s75 PASS 27/27, no skipped steps, DB drift none; mt2c retired (F284)",
+        "winwright": "2026-10-17 sweep-head 80d92c6: f124 PASS 29/29, s75 PASS 27/27 (re-run alone; first launch in the full sweep failed, cause unknown), no skipped steps, DB drift none",
         "analyzer": "clean",
         "mutations": "Sprint 77: F258 M1/M2/M4 + L1/L2, F245 21, F192 25, SEC-8b 16, F264 24, R76-1 5, merge M1/M2, F-PRECHECK 15 -- all KILLED",
-        "as_of": "2026-10-10, Sprint 78 Phase 5"
+        "as_of": "2026-10-17, Sprint 79 Phase 5"
     },
     "store_release": {
         "status_0_15_3": "NOT SUBMITTED TO EITHER STORE. Harold, 2026-09-22: \"not pushing to either store this time\". Phase 8.3 explicitly N/A for this cycle.",
@@ -45,7 +44,8 @@
         "status_0_16_0": "SUBMITTED / ROLLOUT IN PROCESS on BOTH stores (Harold, 2026-09-24, reported between 12:17am and 8:39am ET). NOT yet observed live on either. Built + verified 2026-09-24: MSIX 0.16.0.0 (prod worktree bf005f3, self-test 6/6 PASS, 17.5 MB) and AAB versionCode 7 / 0.16.0 (67.0 MB). Step 7 records (STORE_VERSION_STATUS.md live rows) wait for a direct console observation.",
         "status_0_17_0": "LIVE 2026-10-04 ~11:20pm ET on BOTH stores (Harold). Microsoft Store: submitted ~10:40pm, installed build shows no [DEV] and Version 0.17.0; public API lagged. Google Play closed testing (Alpha): versionCode 8, device-verified on the Fold (Version 0.17.0). Open: Step 4.2 Gmail sign-in URL on the Store build; CHANGELOG has no release headings since 0.14.0 (not done this release either).",
         "status_0_17_6": "SUBMITTED to BOTH stores 2026-10-06 (Harold screenshots), NOT yet live. Microsoft Store: Submission 31, \"Update in certification\", stage Pre-processing (last modified 10/07/2026); Store presence still Submission 30 (0.17.0). Google Play: Closed testing - Alpha, \"14 (0.17.6) Start full rollout\" in Changes in review, quick checks running (up to 12 min); managed publishing off. Artifacts: MSIX D:\\Data\\Harold\\github\\spamfilter-multi-prod\\mobile-app\\build\\windows\\x64\\runner\\Release\\my_email_spam_filter.msix (17.6 MB, self-test PASS); AAB D:\\Data\\Harold\\github\\spamfilter-multi\\mobile-app\\dist\\android-0.17.6+14\\app-prod-release.aab (67.3 MB). STORE_VERSION_STATUS Live rows unchanged until observed live; \"Last uploaded to Play\" -> 0.17.6 (14) is updated WITH the Sprint 77 pubspec bump (IMP-2).",
-        "status_0_18_0": "LIVE on BOTH (Harold, 2026-10-10). Fold device-verified (Version 0.18.0 screenshots, log env=prod v0.18.0). Windows: installed Store build shows Version 0.18.0, no [DEV]; Partner Center page not observed. STORE_VERSION_STATUS updated with the 0.19.0+16 bump."
+        "status_0_18_0": "LIVE on BOTH (Harold, 2026-10-10). Fold device-verified (Version 0.18.0 screenshots, log env=prod v0.18.0). Windows: installed Store build shows Version 0.18.0, no [DEV]; Partner Center page not observed. STORE_VERSION_STATUS updated with the 0.19.0+16 bump.",
+        "status_0_19_0": "MSIX 0.19.0.0 and AAB 0.19.0 (versionCode 16) SUBMITTED 2026-10-13, certification in process (Harold's report; not observed live). See docs/STORE_VERSION_STATUS.md."
     },
     "environment_notes": [
         "RESOLVED 2026-07-29 (verified 07-30): the Store fault was an Acronis file-system filter blocking AppXSvc cleanup, fixed by an Acronis Protection exclusion. 23h uptime with ZERO Id-493 events vs a 176-file/6-min baseline; Store client self-updated 22606.1401.6.0 -> .10.0 (requires a working deployment pipeline). Filter drivers remain loaded -- backup protection was NOT disabled. See ALL_SPRINTS_MASTER_PLAN ENV-1 for the picker gotcha if it recurs.",
@@ -54,13 +54,14 @@
     ],
     "blocking_issues": [],
     "next_actions": [
-        "7.7: master plan (Last Completed Sprint, F289 present, Sprint 79 carry-ins), ADR/arch already current, PR description, SPRINT_78_SUMMARY.md, status.",
-        "7.7.1: gh pr ready, then Copilot (by hand) + pr-review-toolkit code-reviewer + silent-failure-hunter in the same turn.",
-        "Sprint 79 carry-ins: Fold steps 8-11; F277 on 0.19.0 (one account); MV-7 on the phone; Gmail invalid_grant cause; Android parity F281/F282/F283; 10 AOL scans that died mid-scan (Oct 10-12)."
+        "7.7.1 DONE: findings fixed; Harold answered Q1=1 (UID MOVE 2-min limit + session end, DONE), Q2=1 (timeout ends session, DONE), Q3=1 (caller label, DONE), Q4=2 (no sweep), Q5=1 (keep M-4). Mutations 22 of 22 KILLED.",
+        "7.7.5 DONE 2026-10-18: Harold notified PR #480 is ready for final approval; waiting on his merge.",
+        "On merge: open the Sprint 80 branch from feature/20261013_Sprint_79; verify Closes #481-#488 closed the cards; keep #471, #472, #433, #428 open.",
+        "Confirm 0.19.0 live on both stores and update the Live rows in STORE_VERSION_STATUS.md."
     ],
     "next_sprint_targeted": {
-        "number": 77,
-        "stub": "docs/sprints/SPRINT_77_PLAN.md",
-        "committed": "MV76-1 + R76-1..R76-4; F264 (Harold, Priority 10)"
+        "number": 80,
+        "stub": "docs/sprints/SPRINT_80_PLAN.md",
+        "committed": "0.20.0 store builds; Fix 2 decision after the phone stop line; MV76-1 phone remainder; F277 arm A (second night) and arm C + decision rule; F292 post-reboot runs; backlog targets F294, F295, F296, F298"
     }
 }

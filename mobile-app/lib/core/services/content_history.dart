@@ -12,7 +12,10 @@
 /// A repeat sighting updates last-seen date, folder and outcome only.
 ///
 /// **Never fails a scan (item 11).** Every capture call catches, logs through
-/// [DiagnosticLogger], and returns.
+/// [DiagnosticLogger], and returns. The one exception is a session failure
+/// (`isSessionFatal`, Sprint 79 7.7.1 Q2): the scan has already lost its mail
+/// server session, so [ContentHistoryCapture.record] rethrows it rather than
+/// letting the scan continue on a closed connection.
 library;
 
 import 'dart:convert';
@@ -21,6 +24,8 @@ import 'package:crypto/crypto.dart';
 import 'package:flutter/foundation.dart' show visibleForTesting;
 import 'package:logger/logger.dart';
 
+import '../../adapters/email_providers/spam_filter_platform.dart'
+    show isSessionFatal;
 import '../models/email_message.dart';
 import '../models/evaluation_result.dart';
 import '../storage/content_history_store.dart';
@@ -235,6 +240,9 @@ class ContentHistoryCapture {
       }
     } catch (e) {
       await ContentHistory._logFailure('capture', e);
+      // 7.7.1 Q2: the content fetch found the session gone; the scan must
+      // stop, not carry on into a closed connection.
+      if (isSessionFatal(e)) rethrow;
     }
   }
 

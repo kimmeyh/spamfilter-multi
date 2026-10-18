@@ -442,9 +442,19 @@ gh issue close #N --reason "not planned" --comment "Removed during backlog refin
 
 ### Backlog Presentation Format
 
-All backlog items in ALL_SPRINTS_MASTER_PLAN.md MUST use this format. This is the **authoritative format** for sprint refinement output -- **including the in-chat candidate presentation to the Product Owner (Phase 1.2)**, which mirrors this template exactly: same headers, same `Priority <N>` numbers, same `Phase`/`Platform` bullets, phase-group sections, HOLD at the bottom. The presentation IS the refinement output; producing it in any other shape (ad-hoc tiers, selection numbering, unregistered ids) is a process violation (Sprint 50 correction, Harold 2026-07-24). READ this section in the same turn immediately before producing the presentation -- deterministic process, zero improvisation.
+All backlog items in ALL_SPRINTS_MASTER_PLAN.md MUST use this format. This is the **authoritative format** for sprint refinement output -- **including the in-chat candidate presentation to the Product Owner (Phase 1.2)**, which mirrors this template exactly: same headers, same `Priority <N>` numbers, same `Phase`/`Platform` bullets. **The presentation is NOT grouped by phase (F293, Harold 2026-10-13)**: it shows the NEXT 20 active candidates in one priority order, in the index and in the details alike (see "Presentation order" below); the master plan's own storage stays grouped by phase (Sprint 79 Q5 = 1). The presentation IS the refinement output; producing it in any other shape (ad-hoc tiers, selection numbering, unregistered ids) is a process violation (Sprint 50 correction, Harold 2026-07-24). READ this section in the same turn immediately before producing the presentation -- deterministic process, zero improvisation.
 
-**Summary Index (REQUIRED at the top of every presentation -- Harold, Sprint 50)**: before the detailed sections, list every item's header line only (no bullets), in presentation order, so the Product Owner can scan the full slate at a glance:
+**Presentation order (F293, Harold 2026-10-13)**: *"the 'candidates at a glance' includes the next 20 (currently 10)
+and details of the 20 in the same order (not separated by type - while this was a good idea, it makes them harder for
+me to find)."*
+- The index lists the **next 20 active candidates**, sorted by `Priority <N>` (lowest number first; ties keep
+  master-plan order), whatever their phase. Then the HOLD items, one line each.
+- The details follow for **the same 20, in the same order**, one after another, with **no phase-group headers**. Each
+  card keeps its own `- Phase:` bullet, so the phase is still shown.
+- HOLD items appear in the index only; their details stay in the master plan.
+- Active candidates beyond the 20th are not presented; they stay in the master plan.
+
+**Summary Index (REQUIRED at the top of every presentation -- Harold, Sprint 50)**: before the detailed cards, list the header line only (no bullets) of each of the next 20 active candidates, in presentation order, then the HOLD items, so the Product Owner can scan the slate at a glance:
 
 ```markdown
 ## Candidates at a glance
@@ -457,6 +467,23 @@ All backlog items in ALL_SPRINTS_MASTER_PLAN.md MUST use this format. This is th
 - F70. Periodic Security Deep Dive (~4-8h per review) Priority HOLD
 - F111. Periodic Windows App Store upload readiness verification (~110-175m per review) Priority HOLD
 - ...
+```
+
+**Details in the same order (F293)**: the cards follow the index top to bottom, with no `###` phase headers between
+them, even when consecutive cards are in different phases:
+
+```markdown
+**F126. Remove the 4 ambiguous legacy TLD-block body rules (~15m) Priority 10**
+- Phase: Core App
+- Platform: All
+- ...
+
+**F122. Review-No-Rule screen load-error polish (~30m) Priority 12**
+- Phase: UI
+- Platform: All
+- ...
+
+(... through the 20th card ...)
 ```
 
 **HOLD item display (Harold, 2026-08-17)**: HOLD items are listed **one line each**, carrying the
@@ -495,13 +522,13 @@ different and worse estimate, because hours invite rounding up to the nearest ha
 **Rules**:
 - **ID**: Use F#, WS-*, GP-#, or Issue #N (see Step 5.3 for prefixes)
 - **Priority**: Numeric, generally in increments of 10; items that can sprint together use increments of 2
-- **Phase**: Group items under section headers by phase (e.g., "Windows Store Readiness", "Core App")
+- **Phase**: In the MASTER PLAN's storage, group items under section headers by phase (e.g., "Windows Store Readiness", "Core App"). In the PRESENTATION, do NOT group: the next 20 follow one priority order, each with its `- Phase:` bullet (F293, Sprint 79 Q5 = 1)
 - **Platform**: Windows Desktop, Android, All, or N/A
 - **HOLD items**: Use `Priority HOLD` instead of a number; grouped in a separate HOLD section. In the SUMMARY INDEX they appear **one line each** in full `<ID>. <Title> (~<effort>) Priority HOLD` form -- never squashed to a comma-separated id list (Harold, 2026-08-17). In the DETAIL sections they keep the standard Phase/Platform/description bullets like any other item.
 - **No separate sections** for bugs or tech debt -- they are interleaved by priority within their phase group
 - **Completed items**: Remove from the backlog (history lives in sprint docs and CHANGELOG.md)
 
-**Section structure**:
+**Section structure** (the MASTER PLAN's storage only -- the presentation has no `###` phase headers, F293):
 ```markdown
 ### <Phase Name>
 
@@ -582,6 +609,7 @@ Request refinement if:
 **Status**: Active
 
 **Updates**:
+- 1.5 (2026-10-13): The presentation shows the NEXT 20 active candidates in one priority order, index and details in the same order, no phase-group headers; HOLD items in the index only; the master plan's storage stays grouped by phase (F293, Harold; Sprint 79 Q5 = 1)
 - 1.4 (2026-08-17): HOLD items in the Summary Index display one line each in full `<ID>. <Title> (~<effort>) Priority HOLD` form, never a bare id list -- Harold
 - 1.3 (2026-07-24): Summary Index required at the top of every presentation (header lines only, then details) -- Harold, Sprint 50
 - 1.2 (2026-07-24): Presentation-format scope clarified -- the in-chat Phase 1.2 candidate presentation mirrors the Backlog Presentation Format exactly (Sprint 50 correction)

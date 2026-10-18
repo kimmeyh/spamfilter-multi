@@ -587,8 +587,15 @@ class _ResultsDisplayScreenState extends State<ResultsDisplayScreen> {
         try {
           final ruleProvider =
               Provider.of<RuleSetProvider>(context, listen: false);
-          await ruleProvider.loadRules();
-          await ruleProvider.loadSafeSenders();
+          // F297: the shared reload. Sprint 79 7.7.1 M-1: the result is
+          // recorded; the user already sees a failure through the rules
+          // banner with Retry (Sprint 78), and the re-evaluation below runs
+          // against the rules loaded earlier, which stay in use.
+          final reloaded = await ruleProvider.reloadFromDatabase();
+          if (!reloaded) {
+            Logger().w('Saved-scan open: rules reload failed; re-evaluating '
+                'with the rules loaded earlier');
+          }
           await _reEvaluateNoRuleEmails();
           await _updateOldestNoRuleCursorsFromResults();
           // C-1 (Phase 5.1.1 review, Sprint 72): NEVER act on the mailbox

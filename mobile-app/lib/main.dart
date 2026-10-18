@@ -15,7 +15,6 @@ import 'core/services/app_version.dart';
 import 'core/services/background_mode_service.dart';
 import 'core/services/background_scan_windows_worker.dart';
 import 'core/services/windows_system_tray_service.dart';
-import 'core/services/windows_notification_service.dart';
 import 'core/services/windows_task_scheduler_service.dart';
 import 'core/services/per_account_bg_migration.dart';
 import 'core/services/app_environment.dart';
@@ -336,9 +335,10 @@ void main(List<String> args) async {
     await _windowsSystemTrayService!.initialize();
     Logger().i('Windows system tray initialized');
 
-    final notificationService = WindowsNotificationService();
-    await notificationService.initialize();
-    Logger().i('Windows notifications initialized');
+    // F287 (Sprint 79): no notification start-up step. The background-scan
+    // toast is posted (and the plugin initialized) by ScanCompleteNotifier in
+    // the background-scan process itself; the former WindowsNotificationService
+    // initialized here was never called afterwards.
 
     // Only manage Task Scheduler in release mode.
     // In debug mode: Platform.resolvedExecutable points to a temporary runner path
@@ -476,7 +476,10 @@ Future<void> _runF264UpgradeConversions() async {
       getAccountIds: credStore.getSavedAccounts,
       reschedule: canSchedule
           ? (accountId, minutes) => BackgroundScanSchedulerFactory.instance
-              .schedule(accountId: accountId, intervalMinutes: minutes)
+              .schedule(
+                  accountId: accountId,
+                  intervalMinutes: minutes,
+                  caller: 'startup: F264 interval migration')
           : null,
     ).runIfNeeded();
 

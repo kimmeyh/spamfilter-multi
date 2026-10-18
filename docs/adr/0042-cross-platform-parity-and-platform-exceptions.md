@@ -58,7 +58,7 @@ contract:
 - Background-scan scheduling: Windows Task Scheduler (ADR-0039) vs Android WorkManager (F161). The
   canonical case -- same contract (schedule/cancel per-account periodic work), entirely different
   mechanisms.
-- Notifications: Win32 toast vs Android notification channels.
+- Notifications: until Sprint 79 a Win32 PowerShell toast vs Android notification channels. Since ADR-0048 ONE plugin and ONE notifier serve both platforms; only the delivery details differ (Android HTML body with strikethrough, Windows plain toast), which is a conditional at the point of use, not a factory.
 - OAuth handling: loopback-redirect desktop flow vs the Android intent flow.
 
 **Do NOT use a factory for a two-value difference.** A path separator, a dialog corner radius, an

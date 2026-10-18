@@ -32,6 +32,8 @@ import '../utils/account_id_sanitizer.dart';
 import 'android_background_scan_worker.dart' show kAndroidScanTaskName, kAndroidScanTestTaskName;
 import 'app_environment.dart';
 import 'android_doze_alarm.dart';
+import 'diagnostic_logger.dart';
+import '../../util/redact.dart';
 import 'scan_interval.dart';
 import 'windows_task_scheduler_service.dart';
 
@@ -61,15 +63,23 @@ abstract class BackgroundScanScheduler {
   /// Returns true on success. Implementations must be IDEMPOTENT: calling this
   /// when work already exists updates it rather than creating a duplicate --
   /// per-account uniqueness is the ADR-0039 invariant both platforms share.
+  ///
+  /// [caller] names the job that asked (for example
+  /// `settings: background switch`) and is written to the diagnostic log line
+  /// (R-9). Sprint 79 7.7.1 Q3 (Harold, "q3 1"): REQUIRED, so a new call site
+  /// cannot be added without saying who it is. It replaced a stack-trace
+  /// guess that read "unknown" on every obfuscated release build.
   Future<bool> schedule({
     required String accountId,
     required int intervalMinutes,
+    required String caller,
   });
 
   /// Cancel periodic work for [accountId]. Returns true if it is gone
   /// afterwards, INCLUDING when nothing was scheduled to begin with -- cancel
   /// is idempotent by design, so a caller does not have to check first.
-  Future<bool> cancel(String accountId);
+  /// [caller] as on [schedule].
+  Future<bool> cancel(String accountId, {required String caller});
 }
 
 /// The explicit no-op used on platforms with no scheduling mechanism.
@@ -102,13 +112,15 @@ class UnsupportedPlatformScheduler implements BackgroundScanScheduler {
   Future<bool> schedule({
     required String accountId,
     required int intervalMinutes,
+    required String caller,
   }) async =>
       false;
 
   /// True: there is nothing scheduled, so the post-condition "not scheduled"
   /// already holds. Cancel is idempotent.
   @override
-  Future<bool> cancel(String accountId) async => true;
+  Future<bool> cancel(String accountId, {required String caller}) async =>
+      true;
 }
 
 /// Resolves the scheduler for the current platform.
@@ -140,6 +152,59 @@ class BackgroundScanSchedulerFactory {
   }
 }
 
+/// Sprint 79 Task 1 R-9: every schedule and cancel, on BOTH platforms, writes
+/// one diagnostic-log line naming the account (masked), the result, and the
+/// job that asked for it (the required `caller` label, 7.7.1 Q3).
+///
+/// **Why.** On the Fold (0.19.0, 2026-10-13) Gmail's periodic task AND its
+/// Doze alarm both stopped after 14:27 with no line of any kind; the only
+/// code that removes both at once is [AndroidSchedulerAdapter.cancel], which
+/// logged to logcat only -- and logcat is unreachable (no adb). An account that
+/// stops being scanned must say why in the file the user can read.
+///
+/// Logged inside each adapter rather than by wrapping the factory's result:
+/// `settings_screen.dart` tests `scheduler is AndroidSchedulerAdapter` to
+/// decide whether a test scan is queued, and a wrapper would silently turn that
+/// false.
+///
+/// [note] names a part that failed while the call as a whole succeeded (F-PRECHECK,
+/// Sprint 79): on Android the Doze alarm can fail to arm or cancel while the
+/// WorkManager half succeeds, and that failure otherwise reached logcat only.
+@visibleForTesting
+String schedulerChangeLine({
+  required String action,
+  required String accountId,
+  int? intervalMinutes,
+  required bool ok,
+  required String caller,
+  String? note,
+}) =>
+    '$action ${Redact.accountId(accountId)}'
+    '${intervalMinutes == null ? '' : ' every ${intervalMinutes}m'}'
+    ' ${ok ? 'ok' : 'FAILED'}${note == null ? '' : ' ($note)'} (from $caller)';
+
+Future<void> _logSchedulerChange(
+  String platform, {
+  required String action,
+  required String accountId,
+  int? intervalMinutes,
+  required bool ok,
+  required String caller,
+  String? note,
+}) =>
+    DiagnosticLogger.log(
+      kind: DiagnosticLogger.kindScan,
+      context: 'scheduler/$platform',
+      detail: schedulerChangeLine(
+        action: action,
+        accountId: accountId,
+        intervalMinutes: intervalMinutes,
+        ok: ok,
+        caller: caller,
+        note: note,
+      ),
+    );
+
 /// Windows implementation -- delegates to the existing per-account Task
 /// Scheduler service (ADR-0039). Deliberately a thin adapter: the Windows
 /// service keeps its richer Windows-only API (path repair, orphan enumeration),
@@ -161,23 +226,62 @@ class WindowsSchedulerAdapter implements BackgroundScanScheduler {
   Future<bool> schedule({
     required String accountId,
     required int intervalMinutes,
+    required String caller,
   }) async {
-    if (intervalMinutes <= 0) return false;
-    // Idempotent per the interface contract: update when a task already
-    // exists, create otherwise. This mirrors what settings_screen did inline
-    // before F161 moved the decision behind the interface.
-    final exists =
-        await WindowsTaskSchedulerService.taskExists(accountId: accountId);
-    return exists
-        ? WindowsTaskSchedulerService.updateScheduledTask(
-            intervalMinutes: intervalMinutes, accountId: accountId)
-        : WindowsTaskSchedulerService.createScheduledTask(
-            intervalMinutes: intervalMinutes, accountId: accountId);
+    var ok = false;
+    // Sprint 79 7.7.1 H-2: a FAILED line names its reason (parity with the
+    // Android adapter's notes).
+    String? note;
+    try {
+      if (intervalMinutes <= 0) {
+        note = 'invalid interval ${intervalMinutes}m';
+        return false;
+      }
+      // Idempotent per the interface contract: update when a task already
+      // exists, create otherwise. This mirrors what settings_screen did inline
+      // before F161 moved the decision behind the interface.
+      final exists =
+          await WindowsTaskSchedulerService.taskExists(accountId: accountId);
+      ok = exists
+          ? await WindowsTaskSchedulerService.updateScheduledTask(
+              intervalMinutes: intervalMinutes, accountId: accountId)
+          : await WindowsTaskSchedulerService.createScheduledTask(
+              intervalMinutes: intervalMinutes, accountId: accountId);
+      return ok;
+    } catch (e) {
+      note = DiagnosticLogger.describeError(e);
+      rethrow;
+    } finally {
+      await _logSchedulerChange('windows',
+          action: 'schedule',
+          accountId: accountId,
+          intervalMinutes: intervalMinutes,
+          ok: ok,
+          caller: caller,
+          note: note);
+    }
   }
 
   @override
-  Future<bool> cancel(String accountId) =>
-      WindowsTaskSchedulerService.deleteScheduledTask(accountId: accountId);
+  Future<bool> cancel(String accountId, {required String caller}) async {
+    var ok = false;
+    String? note;
+    try {
+      ok = await WindowsTaskSchedulerService.deleteScheduledTask(
+          accountId: accountId);
+      return ok;
+    } catch (e) {
+      note = DiagnosticLogger.describeError(e);
+      rethrow;
+    } finally {
+      await _logSchedulerChange('windows',
+          action: 'cancel',
+          accountId: accountId,
+          ok: ok,
+          caller: caller,
+          note: note);
+    }
+  }
 }
 
 /// Android implementation -- WorkManager per-account unique periodic work,
@@ -261,8 +365,31 @@ class AndroidSchedulerAdapter implements BackgroundScanScheduler {
   Future<bool> schedule({
     required String accountId,
     required int intervalMinutes,
+    required String caller,
   }) async {
-    if (intervalMinutes <= 0) return false;
+    final (:ok, :note) = await scheduleDetailed(accountId, intervalMinutes);
+    await _logSchedulerChange('android',
+        action: 'schedule',
+        accountId: accountId,
+        intervalMinutes: intervalMinutes,
+        ok: ok,
+        caller: caller,
+        note: note);
+    return ok;
+  }
+
+  /// [note] is set when the Doze alarm was not armed although WorkManager was
+  /// registered, so the diagnostic line can say so (logcat is unreachable).
+  /// Sprint 79 7.7.1 H-2: a failure always carries a note too -- the reason,
+  /// and whether the Doze alarm was already armed when WorkManager failed --
+  /// so a FAILED line in the diagnostic log is never a bare FAILED.
+  @visibleForTesting
+  Future<({bool ok, String? note})> scheduleDetailed(
+      String accountId, int intervalMinutes) async {
+    if (intervalMinutes <= 0) {
+      return (ok: false, note: 'invalid interval ${intervalMinutes}m');
+    }
+    bool? alarmArmed;
     try {
 
       // F235 (Sprint 73): arm a Doze-tolerant alarm FIRST.
@@ -280,7 +407,7 @@ class AndroidSchedulerAdapter implements BackgroundScanScheduler {
       // rather than to nothing. Scheduling twice is safe: the worker is
       // idempotent per account and the ScanCoordinator lease serialises any
       // overlap.
-      final alarmArmed = await AndroidDozeAlarm.schedule(
+      alarmArmed = await AndroidDozeAlarm.schedule(
         accountId: accountId,
         intervalMinutes: intervalMinutes,
       );
@@ -311,17 +438,42 @@ class AndroidSchedulerAdapter implements BackgroundScanScheduler {
         backoffPolicy: BackoffPolicy.exponential,
         backoffPolicyDelay: const Duration(minutes: 10),
       );
-      return true;
+      return (ok: true, note: alarmArmed ? null : 'Doze alarm NOT armed');
     } catch (e) {
       Logger().e('WorkManager schedule failed for account: $e');
-      return false;
+      final reason = DiagnosticLogger.describeError(e);
+      return (
+        ok: false,
+        note: switch (alarmArmed) {
+          true => 'Doze alarm armed; WorkManager failed: $reason',
+          false => 'Doze alarm NOT armed; WorkManager failed: $reason',
+          null => 'Doze alarm failed: $reason',
+        },
+      );
     }
   }
 
   @override
-  Future<bool> cancel(String accountId) async {
+  Future<bool> cancel(String accountId, {required String caller}) async {
+    final (:ok, :note) = await cancelDetailed(accountId);
+    await _logSchedulerChange('android',
+        action: 'cancel',
+        accountId: accountId,
+        ok: ok,
+        caller: caller,
+        note: note);
+    return ok;
+  }
+
+  /// [note] is set when WorkManager was cancelled but the Doze alarm was not.
+  /// Sprint 79 7.7.1 H-2: a failure names the step that threw and its reason;
+  /// a throw before the alarm step also says the alarm was NOT cancelled.
+  @visibleForTesting
+  Future<({bool ok, String? note})> cancelDetailed(String accountId) async {
+    var step = 'WorkManager cancel';
     try {
       await Workmanager().cancelByUniqueName(uniqueNameFor(accountId));
+      step = 'test-task cancel';
       // F175 R-6 (Sprint 62): also cancel any pending TEST one-off.
       // Disabling background scanning used to cancel only the periodic
       // work, leaving a failed test task to retry at every app launch
@@ -349,16 +501,22 @@ class AndroidSchedulerAdapter implements BackgroundScanScheduler {
       // lie. A reconcile-on-start that compares native prefs against Dart
       // settings is the real fix -- nothing does that today -- and is filed as
       // backlog rather than improvised here.
+      step = 'Doze alarm cancel';
       final alarmCancelled = await AndroidDozeAlarm.cancel(accountId);
       if (!alarmCancelled) {
         Logger().w('F235: Doze alarm NOT cancelled for this account; it may '
             're-arm at the next reboot via rescheduleAll. WorkManager was '
             'cancelled, so no scan runs while the app is alive.');
       }
-      return true;
+      return (ok: true, note: alarmCancelled ? null : 'Doze alarm NOT cancelled');
     } catch (e) {
       Logger().e('WorkManager cancel failed: $e');
-      return false;
+      return (
+        ok: false,
+        note: '$step failed'
+            '${step == 'Doze alarm cancel' ? '' : '; Doze alarm NOT cancelled'}'
+            ': ${DiagnosticLogger.describeError(e)}',
+      );
     }
   }
 

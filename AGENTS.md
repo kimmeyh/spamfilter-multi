@@ -106,6 +106,14 @@ git merge develop
 # Then create PR for release notes if needed
 ```
 
+### Default branch and the release step (Sprint 79, F288, 2026-10-14)
+
+`develop` is the GitHub default branch since 2026-10-14. A sprint PR merged into `develop` therefore fires its
+`Closes #N` keywords and closes the cards; close-out VERIFIES this and closes any card that did not close.
+The release step is: PR `develop` -> `main`, merged by Harold (the owner), then tag the merge commit on `main`
+`vX.Y.Z` (annotated) and push the tag. See `docs/STORE_RELEASE_PROCESS.md` Step 5 for the commands. CI runs on PRs
+into `develop` only.
+
 ### Reference
 
 - See `docs/SPRINT_EXECUTION_WORKFLOW.md` Phase 6.3 for PR creation instructions

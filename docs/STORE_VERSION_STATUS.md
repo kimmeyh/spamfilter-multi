@@ -23,9 +23,41 @@ Partner Center before saying anything about the Store version.
 | | Version | Last verified | Notes |
 |---|---|---|---|
 | **Live/certified on Store** (cache) | 0.18.0.0 | 2026-10-10 (Harold: "Windows app update" with a screenshot of the installed build -- title "MyEmailSpamFilter", NO [DEV], header "Version 0.18.0"; Partner Center submission page NOT observed) | Built from the prod worktree at `main` b8d2aa2; self-test PASS 6/6. Previous: 0.17.0.0 (2026-10-04); 0.17.6.0 was Submission 31. Step 4.2 Gmail sign-in URL check on the installed build not yet reported. |
-| **Live on Google Play** (cache) | 0.18.0 (versionCode 15) | 2026-10-10 (**DEVICE-VERIFIED**: Fold screenshots 2026-10-09 14:35 read "Version 0.18.0"; diagnostic log `app start (foreground) -- v0.18.0 env=prod platform=android` at 13:33; Harold: "phone app is updated") | **Closed testing (Alpha) only -- NOT production.** Previous: 0.17.6 (versionCode 14), 0.17.0 (versionCode 8). |
-| **Last uploaded to Play (any track)** | 0.18.0 (versionCode 15) | 2026-10-10 | Closed testing (Alpha), installed on the Fold from Play (see the Live row). Previous: 0.17.6 (versionCode 14). Sprint 76 retro IMP-2: Play refuses a versionCode it has already received on ANY track, so this row -- not the Live row -- is what the next build must exceed. UPDATE IT in the same commit that bumps `pubspec.yaml` after Harold reports an upload (never before the bump, or the suite goes red on the current build). Enforced by `dev_version_ahead_test` and by `build-with-secrets.ps1 -Output aab`. |
-| **Dev worktree** (authoritative -- mirrors `pubspec.yaml`) | 0.19.0+16 | 2026-10-10 | Bumped at Sprint 78 plan approval (Phase 3.7.0b). MINOR: F282, F283 and R76-4 are `feat`. versionCode 16 (0.18.0 / 15 is on Play closed testing). Gates: `version_consistency_test`, `dev_version_ahead_test`. |
+| **Live on Google Play** (cache) | 0.19.0 (versionCode 16) | 2026-10-13 (**DEVICE-VERIFIED**: Fold diagnostic log `diag_v0.19.0_2026-10-13.log` `app start (foreground) -- v0.19.0 env=prod platform=android` at 14:16:49, pulled over MTP; Play Console not observed) | **Closed testing (Alpha) only -- NOT production.** Previous: 0.18.0 (versionCode 15), 0.17.6 (versionCode 14). |
+| **Last uploaded to Play (any track)** | 0.19.0 (versionCode 16) | 2026-10-13 | Closed testing (Alpha), installed on the Fold from Play (see the Live row). Previous: 0.18.0 (versionCode 15). Sprint 76 retro IMP-2: Play refuses a versionCode it has already received on ANY track, so this row -- not the Live row -- is what the next build must exceed. UPDATE IT in the same commit that bumps `pubspec.yaml` after Harold reports an upload (never before the bump, or the suite goes red on the current build). Enforced by `dev_version_ahead_test` and by `build-with-secrets.ps1 -Output aab`. |
+| **Dev worktree** (authoritative -- mirrors `pubspec.yaml`) | 0.20.0+17 | 2026-10-13 | Bumped at Sprint 79 plan approval (Phase 3.7.0b). MINOR: F286 and F287 are `feat`. versionCode 17 (0.19.0 / 16 is on Play closed testing). Gates: `version_consistency_test`, `dev_version_ahead_test`. |
+
+## 0.19.0 -- Sprint 78 cycle Phase 8.3 (2026-10-13)
+
+Record a submission only after seeing it in each console.
+
+**SUBMITTED to BOTH stores, certification in process (Harold, 2026-10-13 ~13:30: "both uploads and re-certifications
+in process")** -- Harold's report; the consoles were not observed by Claude, and neither build is yet seen live.
+Leave the Live rows and "Last uploaded to Play" unchanged until then; the latter moves to versionCode 16 in the same
+commit as the Sprint 79 version bump. **Update 2026-10-13 (Sprint 79 3.7.0b)**: Play side DONE -- the Fold runs 0.19.0
+from Play (device log, 14:16:49), so the Play Live row and "Last uploaded" read 0.19.0 / 16. Microsoft Store side still
+OPEN: the Store row stays 0.18.0.0 until Partner Center or an installed Store build shows 0.19.0.0.
+
+- **MSIX 0.19.0.0 -- BUILT + VERIFIED, not yet uploaded**: prod worktree pulled to `main` 757d6a0 (it was 51 commits
+  behind); `msix_config_test` 12/12; `msix:create` log shows `--dart-define=APP_ENV=prod
+  --dart-define-from-file=secrets.prod.json`; `--release-self-test --expected-version=0.19.0` RESULT: PASS (6/6);
+  manifest Identity `Version="0.19.0.0"`; 17.7 MB.
+  `D:\Data\Harold\github\spamfilter-multi-prod\mobile-app\build\windows\x64\runner\Release\my_email_spam_filter.msix`.
+  Open: Step 4.2 Gmail sign-in URL check on an installed build.
+- **AAB 0.19.0 (versionCode 16) -- BUILT + VERIFIED, not yet uploaded** (third attempt, 2026-10-13 ~13:20):
+  read FROM THE ARTIFACT: versionName 0.19.0, no `.dev` package, Gmail OAuth scheme present, `AD_ID` absent;
+  67.7 MB; the script's IMP-2 check: "versionCode 16 is above the last uploaded (15)". App code identical to `main`
+  757d6a0. `D:\Data\Harold\github\spamfilter-multi\mobile-app\dist\android-0.19.0+16\app-prod-release.aab`.
+  After upload, update "Last uploaded to Play (any track)" to 0.19.0 (versionCode 16).
+  - Attempt 1 (12:43): the Gradle daemon died -- `hs_err_pid86688.log` "insufficient memory" (a native malloc of
+    ~2 MB refused). Cause: the COMMIT limit, not RAM -- commit 86 of 94 GB while 13.7 GB of RAM was free (Gradle
+    reserves `-Xmx8G` + metaspace). Harold closed Claude sessions and windows (commit 77.6 GB) and enlarged the page
+    file (effective after a reboot).
+  - Attempt 2: `Target build_hooks failed` -- the sqlite3 native-asset hook could not write
+    `.dart_tool\hooks_runner\sqlite3\608d99f9ad\hook.dill` ("Unable to open file ... for writing snapshot"). Cause
+    unknown (candidates: Norton scanning the new file; concurrent hook builds); it did not recur on attempt 3.
+- Release notes: `docs/store-assets/RELEASE_NOTES_0.19.0_windows.md` (1,246 / 1,500) and `_play.md` (448 / 500);
+  `release_notes_test.dart` passes.
 
 ## 0.18.0 -- LIVE on both (Harold, 2026-10-10); built + verified 2026-10-09 (Sprint 77 cycle Phase 8.3)
 

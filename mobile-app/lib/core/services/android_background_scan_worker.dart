@@ -19,7 +19,6 @@ import 'dart:ui' show DartPluginRegistrant;
 
 import 'package:flutter/foundation.dart' show visibleForTesting;
 import 'package:flutter/widgets.dart' show WidgetsFlutterBinding;
-import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:logger/logger.dart';
 import 'package:workmanager/workmanager.dart';
 
@@ -36,6 +35,7 @@ import 'background_scan_trigger.dart';
 import 'diagnostic_logger.dart';
 import 'f264_upgrade_migration.dart';
 import 'notification_account_filter.dart';
+import 'scan_complete_notifier.dart';
 import 'scan_sheet_export.dart';
 
 /// Prefix for the per-account WorkManager task name, mirroring the Windows
@@ -68,22 +68,106 @@ void androidBackgroundScanDispatcher() {
 
     final accountId = inputData?['accountId'] as String?;
     final isTest = taskName == kAndroidScanTestTaskName;
+    // F252: computed HERE, at entry, so the delay measures how long Android
+    // held the work back -- not the worker's own setup time.
+    final trigger = describeBackgroundTrigger(
+      isTest: isTest,
+      inputData: inputData,
+      now: DateTime.now(),
+    );
+    _runningWork =
+        '${accountId != null ? Redact.accountId(accountId) : '(all accounts)'} '
+        '$trigger';
     return AndroidBackgroundScanWorker.executeScan(
       accountId: accountId,
       isTest: isTest,
       retryOnFailure: retryOnFailureFor(inputData),
       notificationProviders: notificationProvidersFor(inputData),
       dozeAlarm: inputData?[kTriggerSourceKey] == 'doze-alarm',
-      // F252: computed HERE, at entry, so the delay measures how long Android
-      // held the work back -- not the worker's own setup time.
-      trigger: describeBackgroundTrigger(
-        isTest: isTest,
-        inputData: inputData,
-        now: DateTime.now(),
-      ),
+      trigger: trigger,
     );
-  });
+  }, onTaskStopped: onWorkerStopped);
 }
+
+/// Sprint 79 Task 1 R-8 (class B): 11 scans stopped within 30 s of their
+/// start with no heartbeat and no outcome line, and in three of them the same
+/// Doze request ran again exactly 30 s later -- so something STOPPED the
+/// worker, and the log could not say what. WorkManager tells the worker why
+/// (Android 12+; `unknown` before). Bounded: the plugin tears the engine down
+/// when this returns, so a slow write must not hold it. [write] is the test
+/// seam; production writes to the diagnostic log.
+///
+/// Needs workmanager_android 0.10.9 or later. Up to 0.10.6 the plugin's
+/// `onStopped` sent this call from WorkManager's own thread (`WM.task-N`);
+/// Flutter refused it ("Methods marked with @UiThread must be executed on the
+/// main thread") and the plugin's no-op debug handler swallowed the error, so
+/// this handler never ran (verified on the emulator, 2026-10-15). 0.10.9 posts
+/// the call to the main looper (`BackgroundWorker.kt:260-295`).
+@visibleForTesting
+Future<void> onWorkerStopped(
+  String taskName,
+  StopReason reason, {
+  Future<void> Function(String detail)? write,
+}) async {
+  final detail = describeWorkerStop(running: _runningWork, reason: reason);
+  // Logcat first: it needs no database or file lock, so it shows the handler
+  // ran even when the diagnostic-log write below cannot finish in time.
+  AndroidBackgroundScanWorker._logger.w('[worker/android] $detail');
+  try {
+    await (write ??
+            (d) => DiagnosticLogger.log(
+                  kind: DiagnosticLogger.kindScan,
+                  context: 'worker/android',
+                  detail: d,
+                ))(detail)
+        .timeout(const Duration(seconds: 2));
+  } catch (_) {
+    // Nothing to report to: the log write itself is what failed. In practice
+    // only the 2 s TimeoutException lands here -- `DiagnosticLogger.log`
+    // catches its own errors -- and the logcat line above already shows the
+    // stop. The timed-out write keeps running and may still hold the log lock
+    // when the engine is torn down (Sprint 79 7.7.1 review L-1).
+  }
+}
+
+/// What this isolate's worker is running, for the stop line. One worker per
+/// isolate, so a single value is enough.
+String? _runningWork;
+
+/// Sprint 79 Task 1 R-8: the diagnostic line for a worker WorkManager stopped
+/// before it finished, e.g. `stopped by WorkManager before it finished:
+/// reason=timeout raw=3 (k***@aol.com trigger=doze-alarm delay=0s)`.
+///
+/// The name comes from [androidStopReasonName], NOT `reason.name`: the
+/// plugin's [StopReason] enum numbers its values differently from AndroidX
+/// (its 3 is `cancelledByApp`; AndroidX 3 is TIMEOUT), so `reason.name` would
+/// name the wrong cause. Only `rawValue` is trusted.
+@visibleForTesting
+String describeWorkerStop({required String? running, required StopReason reason}) =>
+    'stopped by WorkManager before it finished: '
+    'reason=${androidStopReasonName(reason.rawValue)} raw=${reason.rawValue}'
+    '${running != null ? ' ($running)' : ''}';
+
+/// The AndroidX `WorkInfo.STOP_REASON_*` name for [raw] (androidx-main
+/// `work/work-runtime/src/main/java/androidx/work/WorkInfo.kt`, read
+/// 2026-10-16). The plugin's `StopReason.fromRawValue` turns every value it
+/// does not list (above 9, and AndroidX's negative values) into its own
+/// `unknown` (0), so raw 0 means: Android below 12, or a reason the plugin
+/// dropped (quota, background restriction, app standby, user, ...).
+@visibleForTesting
+String androidStopReasonName(int raw) => switch (raw) {
+      1 => 'cancelledByApp',
+      2 => 'preempt',
+      3 => 'timeout',
+      4 => 'deviceState',
+      5 => 'constraintBatteryNotLow',
+      6 => 'constraintCharging',
+      7 => 'constraintConnectivity',
+      8 => 'constraintDeviceIdle',
+      9 => 'constraintStorageNotLow',
+      0 => 'unknown',
+      _ => 'unlisted',
+    };
 
 /// Sprint 76 review H-1: whether a failed run may ask WorkManager to RETRY.
 ///
@@ -118,7 +202,17 @@ String? notificationProvidersFor(Map<String, dynamic>? inputData) {
 }
 
 /// Sprint 78 MV-7 (Harold, Fold logs 2026-10-09..13): whether a DOZE-ALARM
-/// run skips an account because a scan of it started recently.
+/// or (Sprint 79) PERIODIC run skips an account because a scan of it started
+/// recently.
+///
+/// Sprint 79 (Task 1 R-5, Harold Q1 = 1): the periodic run now applies the
+/// same rule. With the skip on the alarm side only, a 15-minute account was
+/// still scanned about twice per interval (Yahoo 6.25/hour overnight
+/// 2026-10-14): the alarm fired 10-13 minutes after a periodic scan -- past
+/// this window -- and scanned, and the periodic run about 5 minutes later
+/// never checked. The periodic run counts only COMPLETED scans
+/// (`getLatestScanStart(completedOnly: true)`), so its retry after a failure
+/// still scans; see [checksRecentScan].
 ///
 /// The F235 alarm exists to wake the phone when Doze holds WorkManager back
 /// (ADR-0039 amendment, Sprint 73). It was scanning on its own schedule even
@@ -133,7 +227,7 @@ String? notificationProvidersFor(Map<String, dynamic>? inputData) {
 /// slightly LESS than one interval old -- a full-interval rule would skip
 /// every second alarm in exactly the state the alarm is for.
 @visibleForTesting
-bool dozeAlarmShouldSkip({
+bool recentScanShouldSkip({
   required DateTime now,
   required DateTime? lastScanStart,
   required Duration interval,
@@ -143,6 +237,17 @@ bool dozeAlarmShouldSkip({
   final age = now.difference(lastScanStart);
   return !age.isNegative && age < window;
 }
+
+/// Sprint 79: which runs check for a recent scan. The Doze alarm and the
+/// periodic schedule do; a Test run never does (the user asked for a scan
+/// now), and neither does a new-mail notification run (new mail arrived, so
+/// the last scan cannot have seen it).
+@visibleForTesting
+bool checksRecentScan({
+  required bool isTest,
+  required String? notificationProviders,
+}) =>
+    !isTest && notificationProviders == null;
 
 /// The value handed back to WorkManager: `true` = done, `false` = retry.
 @visibleForTesting
@@ -238,27 +343,42 @@ class AndroidBackgroundScanWorker {
           if (!backgroundEnabled) continue;
         }
 
-        // Sprint 78 MV-7: a Doze-alarm run skips an account scanned recently
-        // (see dozeAlarmShouldSkip). A failed check never skips: the alarm's
-        // job is to make sure a scan happens.
-        if (dozeAlarm && !isTest) {
+        // Sprint 78 MV-7 + Sprint 79: a Doze-alarm or periodic run skips an
+        // account scanned recently (see recentScanShouldSkip). The periodic
+        // run counts only COMPLETED scans, so its retry after a failure still
+        // scans. A failed check never skips: making sure a scan happens wins.
+        // Sprint 79 (Harold A = 1): the same check runs again after a busy
+        // wait (BackgroundScanCore.scanAccount skipAfterWait), so a run that
+        // arrived during another scan does not rescan right after it.
+        final checkRecent = checksRecentScan(
+            isTest: isTest, notificationProviders: notificationProviders);
+        final runKind = dozeAlarm ? 'doze alarm' : 'periodic';
+        Future<String?> recentScanReason() async {
+          final last = await ScanResultStore(dbHelper)
+              .getLatestScanStart(id, completedOnly: !dozeAlarm);
+          final minutes =
+              await settingsStore.getEffectiveBackgroundFrequency(id);
+          final now = DateTime.now();
+          if (!recentScanShouldSkip(
+              now: now,
+              lastScanStart: last,
+              interval: Duration(minutes: minutes))) {
+            return null;
+          }
+          return 'a ${dozeAlarm ? '' : 'completed '}scan started '
+              '${now.difference(last!).inSeconds}s ago '
+              '(interval ${minutes}m; $runKind)';
+        }
+
+        if (checkRecent) {
           try {
-            final last =
-                await ScanResultStore(dbHelper).getLatestScanStart(id);
-            final minutes =
-                await settingsStore.getEffectiveBackgroundFrequency(id);
-            final now = DateTime.now();
-            if (dozeAlarmShouldSkip(
-                now: now,
-                lastScanStart: last,
-                interval: Duration(minutes: minutes))) {
-              workerLog('account ${Redact.accountId(id)} skipped: a scan '
-                  'started ${now.difference(last!).inSeconds}s ago '
-                  '(interval ${minutes}m; doze alarm)');
+            final reason = await recentScanReason();
+            if (reason != null) {
+              workerLog('account ${Redact.accountId(id)} skipped: $reason');
               continue;
             }
           } catch (e) {
-            workerLog('account ${Redact.accountId(id)} doze-alarm recent-scan '
+            workerLog('account ${Redact.accountId(id)} $runKind recent-scan '
                 'check failed, scanning anyway: '
                 '${DiagnosticLogger.describeError(e)}');
           }
@@ -300,6 +420,7 @@ class AndroidBackgroundScanWorker {
             platformId: platformId,
             ruleSetProvider: ruleSetProvider,
             settingsStore: settingsStore,
+            skipAfterWait: checkRecent ? recentScanReason : null,
           );
           // MV74-2 + F206: skip -> nothing; scan -> export, then notify.
           // Branches tested through BackgroundScanCore.completeAccount.
@@ -353,39 +474,21 @@ class AndroidBackgroundScanWorker {
   /// Best-effort by design: a notification failure (permission denied, channel
   /// unavailable) must never fail the scan itself -- the scan's persistence is
   /// the record; the notification is a courtesy.
-  static Future<void> _notifyScanComplete({
+  ///
+  /// F286/F287 (Sprint 79): posted through the shared [ScanCompleteNotifier]
+  /// (the Windows worker uses the same one): the title names the account, the
+  /// body lists "No rule" first, the ID is per account, and a count the scan
+  /// mode did not act on is struck through.
+  static Future<bool> _notifyScanComplete({
     required String accountId,
     required AccountScanOutcome outcome,
-  }) async {
-    try {
-      final plugin = FlutterLocalNotificationsPlugin();
-      const initSettings = InitializationSettings(
-        android: AndroidInitializationSettings('@mipmap/ic_launcher'),
+  }) =>
+      ScanCompleteNotifier.post(
+        accountId: accountId,
+        mode: outcome.scanProvider.scanMode,
+        noRule: outcome.unmatchedCount,
+        deleted: outcome.deletedCount,
+        safe: outcome.safeCount,
+        errors: outcome.errorCount,
       );
-      await plugin.initialize(initSettings);
-
-      const androidDetails = AndroidNotificationDetails(
-        'background_scan_channel',
-        'Background Scans',
-        channelDescription: 'Results of scheduled background email scans',
-        importance: Importance.low,
-        priority: Priority.low,
-        showWhen: true,
-      );
-
-      // The user's OWN address is masked per the ADR-0030 redaction rule; the
-      // counts are the useful signal.
-      await plugin.show(
-        accountId.hashCode,
-        'Background scan complete',
-        'Processed ${outcome.emailsProcessed}: '
-            '${outcome.deletedCount} deleted, ${outcome.safeCount} safe, '
-            '${outcome.unmatchedCount} no rule'
-            '${outcome.errorCount > 0 ? ', ${outcome.errorCount} errors' : ''}',
-        const NotificationDetails(android: androidDetails),
-      );
-    } catch (e) {
-      _logger.w('Completion notification failed (scan itself succeeded): $e');
-    }
-  }
 }

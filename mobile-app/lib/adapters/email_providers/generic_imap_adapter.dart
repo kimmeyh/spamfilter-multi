@@ -47,6 +47,24 @@ enum LoginRefusal {
   serverUnavailable,
 }
 
+/// Sprint 79 7.7.1 Q2: the server did not answer a command within its time
+/// limit, and the adapter closed the session (see
+/// `GenericIMAPAdapter._endSessionOnTimeout`). A [UserFacingConnectionException],
+/// so `isSessionFatal` is true: the scan stops at once instead of sending
+/// more commands into a connection that has stopped answering.
+class ImapServerNotRespondingException extends UserFacingConnectionException {
+  ImapServerNotRespondingException(this.command, [Object? cause])
+      : super('IMAP $command: no response within the time limit; session '
+            'closed', userText, cause);
+
+  /// The IMAP command that got no answer, for the log.
+  final String command;
+
+  /// Shown on the scan result and in the background scan log.
+  static const String userText = 'The email server stopped responding, so '
+      'this scan stopped. The next scan will try again.';
+}
+
 /// Generic IMAP implementation for multiple email providers
 class GenericIMAPAdapter with BatchOperationsMixin implements SpamFilterPlatform {
   // Server target. Fixed at construction for AOL, Gmail (IMAP), Yahoo and
@@ -402,7 +420,13 @@ class GenericIMAPAdapter with BatchOperationsMixin implements SpamFilterPlatform
       _imapClient = client;
       await _rememberDeviceTrustedCertificate(connection, credentials);
     } else {
-      client = ImapClient(isLogEnabled: false);
+      // Sprint 79 R-8: a stalled command fails after kImapResponseTimeout
+      // instead of hanging the scan (see the constant).
+      client = ImapClient(
+        isLogEnabled: false,
+        defaultResponseTimeout: kImapResponseTimeout,
+        defaultWriteTimeout: kImapWriteTimeout,
+      );
       _imapClient = client;
 
       // Always SSL/TLS here: the constructor refuses any other encryption for
@@ -428,19 +452,24 @@ class GenericIMAPAdapter with BatchOperationsMixin implements SpamFilterPlatform
     }
   }
 
-  /// Sprint 77 final review: drop [client] after a failed LOGIN. The ONE place
-  /// a refused or unfinished sign-in clears the adapter's session; the socket
-  /// close is best effort (the session is unusable whether or not it closes).
+  /// Sprint 77 final review: drop [client] once its session is lost -- a
+  /// refused or unfinished sign-in, or (Sprint 79 7.7.1 Q2) a command the
+  /// server did not answer in time. The ONE place the adapter's session is
+  /// cleared that way; the socket close is best effort (the session is
+  /// unusable whether or not it closes) and bounded, because closing a socket
+  /// whose peer has stopped answering must not become the next hang.
   Future<void> _discardClient(ImapClient client) async {
     _imapClient = null;
     _currentMailbox = null;
     try {
-      await client.disconnect();
+      await client.disconnect().timeout(_discardCloseLimit);
     } catch (e) {
-      _logger.w('[IMAP] Could not close the connection after a failed '
-          'sign-in (the client is discarded either way): $e');
+      _logger.w('[IMAP] Could not close the lost connection (the client is '
+          'discarded either way): $e');
     }
   }
+
+  static const Duration _discardCloseLimit = Duration(seconds: 10);
 
   /// Sends LOGIN and maps a refusal to the right exception.
   ///
@@ -457,12 +486,14 @@ class GenericIMAPAdapter with BatchOperationsMixin implements SpamFilterPlatform
   ///
   /// Timeouts: enough_mail turns a response timeout into
   /// `ImapException('timeout')` ONLY when the client was built with a
-  /// `defaultResponseTimeout`. This app builds its clients without one (the
-  /// `ImapClient` here and `GreetingAwareImapClient` in ImapTlsConnector), so
-  /// that message is not expected today; it is still classified as a
-  /// connection failure in case a timeout is set later. A network failure
+  /// `defaultResponseTimeout`. Since Sprint 79 (R-8) both clients are
+  /// (`kImapResponseTimeout`, the `ImapClient` here and
+  /// `GreetingAwareImapClient` in ImapTlsConnector), so a login that stalls
+  /// ends with that message -- classified as a connection failure, never as a
+  /// wrong password. A network failure
   /// during LOGIN is a `SocketException`, not an [ImapException], and keeps
-  /// its connection meaning in [loadCredentials].
+  /// its connection meaning in [loadCredentials]. A timeout on any LATER
+  /// command ends the session ([_endSessionOnTimeout], 7.7.1 Q2).
   Future<void> _login(ImapClient client, Credentials credentials) async {
     try {
       await client.login(
@@ -618,11 +649,11 @@ class GenericIMAPAdapter with BatchOperationsMixin implements SpamFilterPlatform
             : 'ALL';
         _logger.i('[IMAP] fetchMessages: UID SEARCH criteria="$searchCriteria" in "$folderName"');
 
-        final searchResult = await _imapClient!.uidSearchMessages(
+        final searchResult = await _uidSearch(
           searchCriteria: searchCriteria,
         );
 
-        _logger.i('[IMAP] fetchMessages: Search result: matchingSequence=${searchResult.matchingSequence}, isEmpty=${searchResult.matchingSequence?.isEmpty}');
+        _logger.i('[IMAP] fetchMessages: Search result: ${_describeSequence(searchResult.matchingSequence)}');
 
         if (searchResult.matchingSequence == null ||
             searchResult.matchingSequence!.isEmpty) {
@@ -630,7 +661,7 @@ class GenericIMAPAdapter with BatchOperationsMixin implements SpamFilterPlatform
           continue;
         }
 
-        _logger.i('[IMAP] fetchMessages: Found ${searchResult.matchingSequence!.length} UIDs in "$folderName"');
+        _logger.i('[IMAP] fetchMessages: Found ${_describeSequence(searchResult.matchingSequence)} in "$folderName"');
 
         // [ISSUE #145] Fetch message details using UID FETCH
         // (F177: internally batched; streams to onBatch when provided)
@@ -663,8 +694,18 @@ class GenericIMAPAdapter with BatchOperationsMixin implements SpamFilterPlatform
         // path that matters.
         rethrow;
       } catch (e, st) {
+        // Sprint 79 7.7.1 H-1: log and RETHROW. This catch used to continue
+        // to the next folder, but every production caller passes ONE folder
+        // (`EmailScanner._fetchFolderMessagesImap` and the generic full-fetch
+        // path), so "continue" returned an empty list: a SEARCH or FETCH that
+        // timed out (R-8), or a dropped connection, read as a clean empty
+        // folder with errors=0, and the scan completed and notified. The
+        // scanner's per-folder handler owns continue-on-error: it rethrows
+        // session failures, skips a folder that does not exist (F202), and
+        // records any other failure (F174). The incremental path below
+        // already rethrows; both paths now behave the same.
         _logger.e('[IMAP] fetchMessages: ERROR fetching from "$folderName": $e\n$st');
-        // Continue with other folders even if one fails
+        rethrow;
       }
     }
 
@@ -715,7 +756,7 @@ class GenericIMAPAdapter with BatchOperationsMixin implements SpamFilterPlatform
       final searchCriteria = 'UID $lowerBound:*';
       _logger.i('[IMAP] fetchMessagesIncremental: UID SEARCH criteria="$searchCriteria"');
 
-      final searchResult = await _imapClient!.uidSearchMessages(
+      final searchResult = await _uidSearch(
         searchCriteria: searchCriteria,
       );
 
@@ -762,7 +803,7 @@ class GenericIMAPAdapter with BatchOperationsMixin implements SpamFilterPlatform
     try {
       await _selectMailbox(folderName);
       // UID 1:* matches every existing UID; we then take the max.
-      final searchResult = await _imapClient!.uidSearchMessages(
+      final searchResult = await _uidSearch(
         searchCriteria: 'UID 1:*',
       );
       final seq = searchResult.matchingSequence;
@@ -778,6 +819,8 @@ class GenericIMAPAdapter with BatchOperationsMixin implements SpamFilterPlatform
       return maxUid;
     } catch (e) {
       _logger.e('[IMAP] getCurrentMaxUid ERROR for $folderName: $e');
+      // 7.7.1 Q2: a session failure is not "no cursor".
+      if (isSessionFatal(e)) rethrow;
       return null;
     }
   }
@@ -810,7 +853,7 @@ class GenericIMAPAdapter with BatchOperationsMixin implements SpamFilterPlatform
       await _selectMailbox(folderName);
       final searchCriteria = 'SINCE ${_formatImapDate(since)}';
       _logger.i('[IMAP] firstUidSince: UID SEARCH criteria="$searchCriteria" in "$folderName"');
-      final searchResult = await _imapClient!.uidSearchMessages(
+      final searchResult = await _uidSearch(
         searchCriteria: searchCriteria,
       );
       final seq = searchResult.matchingSequence;
@@ -826,6 +869,8 @@ class GenericIMAPAdapter with BatchOperationsMixin implements SpamFilterPlatform
       return minUid;
     } catch (e) {
       _logger.e('[IMAP] firstUidSince ERROR for $folderName: $e');
+      // 7.7.1 Q2: a session failure is not "no floor".
+      if (isSessionFatal(e)) rethrow;
       return null;
     }
   }
@@ -876,7 +921,7 @@ class GenericIMAPAdapter with BatchOperationsMixin implements SpamFilterPlatform
       final searchCriteria = 'HEADER "Message-ID" "$escaped"';
       _logger.i('[IMAP] searchByMessageId: UID SEARCH $searchCriteria in "$folderName"');
 
-      final searchResult = await _imapClient!.uidSearchMessages(
+      final searchResult = await _uidSearch(
         searchCriteria: searchCriteria,
       );
       _operationCount++;
@@ -958,7 +1003,7 @@ class GenericIMAPAdapter with BatchOperationsMixin implements SpamFilterPlatform
       final sequence = MessageSequence.fromId(messageUid, isUid: true);
 
       _logger.i('[IMAP] UID MOVE message ${message.id} to $targetFolder (op #$_operationCount)');
-      await _imapClient!.uidMove(
+      await _uidMove(
         sequence,
         targetMailboxPath: targetFolder,
       );
@@ -1001,7 +1046,7 @@ class GenericIMAPAdapter with BatchOperationsMixin implements SpamFilterPlatform
       final sequence = MessageSequence.fromId(messageUid, isUid: true);
 
       _logger.i('[IMAP] UID STORE +Seen on message ${message.id} (op #$_operationCount)');
-      await _imapClient!.uidStore(
+      await _uidStore(
         sequence,
         [MessageFlags.seen],
         action: StoreAction.add,
@@ -1048,7 +1093,7 @@ class GenericIMAPAdapter with BatchOperationsMixin implements SpamFilterPlatform
 
       _logger.i('[IMAP] UID STORE +keyword "$keyword" on message ${message.id} (op #$_operationCount)');
       try {
-        await _imapClient!.uidStore(
+        await _uidStore(
           sequence,
           [keyword],
           action: StoreAction.add,
@@ -1057,11 +1102,14 @@ class GenericIMAPAdapter with BatchOperationsMixin implements SpamFilterPlatform
         _operationCount++;
         _logger.i('Successfully applied keyword: $keyword');
       } catch (e) {
+        // 7.7.1 Q2: a session failure is not "keywords unsupported".
+        if (isSessionFatal(e)) rethrow;
         // Server may not support custom keywords - log warning but continue
         _logger.w('Failed to apply keyword (server may not support custom keywords): $e');
         // Do not throw - flagging is enhancement, not critical
       }
     } catch (e) {
+      if (isSessionFatal(e)) rethrow;
       _logger.e('Error applying IMAP keyword: $e');
       // Do not throw - flagging is enhancement, not critical
     }
@@ -1113,7 +1161,7 @@ class GenericIMAPAdapter with BatchOperationsMixin implements SpamFilterPlatform
           // This allows recovery if spam filter makes a mistake
           final targetFolder = _deletedRuleFolder ?? 'Trash';
           _logger.i('[IMAP] UID MOVE message ${message.id} to $targetFolder (op #$_operationCount)');
-          await _imapClient!.uidMove(
+          await _uidMove(
             sequence,
             targetMailboxPath: targetFolder,
           );
@@ -1122,7 +1170,7 @@ class GenericIMAPAdapter with BatchOperationsMixin implements SpamFilterPlatform
 
         case FilterAction.moveToJunk:
           _logger.i('[IMAP] UID MOVE message ${message.id} to Junk (op #$_operationCount)');
-          await _imapClient!.uidMove(
+          await _uidMove(
             sequence,
             targetMailboxPath: 'Junk',
           );
@@ -1133,7 +1181,7 @@ class GenericIMAPAdapter with BatchOperationsMixin implements SpamFilterPlatform
           // Requires additional parameter for target folder
           // For now, default to Junk
           _logger.i('[IMAP] UID MOVE message ${message.id} to Junk (default) (op #$_operationCount)');
-          await _imapClient!.uidMove(
+          await _uidMove(
             sequence,
             targetMailboxPath: 'Junk',
           );
@@ -1142,7 +1190,7 @@ class GenericIMAPAdapter with BatchOperationsMixin implements SpamFilterPlatform
 
         case FilterAction.markAsRead:
           _logger.i('[IMAP] UID STORE +Seen on message ${message.id} (op #$_operationCount)');
-          await _imapClient!.uidStore(
+          await _uidStore(
             sequence,
             [MessageFlags.seen],
             action: StoreAction.add,
@@ -1153,7 +1201,7 @@ class GenericIMAPAdapter with BatchOperationsMixin implements SpamFilterPlatform
         case FilterAction.markAsSpam:
           // Some servers support custom flags
           _logger.i('[IMAP] UID STORE +Junk on message ${message.id} (op #$_operationCount)');
-          await _imapClient!.uidStore(
+          await _uidStore(
             sequence,
             [r'$Junk'],
             action: StoreAction.add,
@@ -1221,7 +1269,7 @@ class GenericIMAPAdapter with BatchOperationsMixin implements SpamFilterPlatform
 
         final sequence = MessageSequence.fromIds(uids, isUid: true);
         _logger.i('[IMAP] BATCH UID STORE +Seen on ${uids.length} messages (op #$_operationCount)');
-        await _imapClient!.uidStore(
+        await _uidStore(
           sequence,
           [MessageFlags.seen],
           action: StoreAction.add,
@@ -1230,6 +1278,8 @@ class GenericIMAPAdapter with BatchOperationsMixin implements SpamFilterPlatform
         succeeded.addAll(entry.value.map((m) => m.id));
       } catch (e) {
         _logger.e('[IMAP] Batch markAsRead failed for folder ${entry.key}: $e');
+        // 7.7.1 Q2: no per-message fallback can work without a session.
+        if (isSessionFatal(e)) rethrow;
         // Fall back to single-message processing for this folder
         for (final message in entry.value) {
           try {
@@ -1297,7 +1347,7 @@ class GenericIMAPAdapter with BatchOperationsMixin implements SpamFilterPlatform
 
         final sequence = MessageSequence.fromIds(uids, isUid: true);
         _logger.i('[IMAP] BATCH UID STORE +keyword "$keyword" on ${uids.length} messages (op #$_operationCount)');
-        await _imapClient!.uidStore(
+        await _uidStore(
           sequence,
           [keyword],
           action: StoreAction.add,
@@ -1306,6 +1356,8 @@ class GenericIMAPAdapter with BatchOperationsMixin implements SpamFilterPlatform
         _operationCount++;
         succeeded.addAll(entry.value.map((m) => m.id));
       } catch (e) {
+        // 7.7.1 Q2: a session failure must not be reported as flagged.
+        if (isSessionFatal(e)) rethrow;
         // Server may not support custom keywords — log warning but do not fail the batch
         // AOL and some other IMAP servers do not support custom keywords (no \* in PERMANENTFLAGS)
         _logger.w('[IMAP] Batch applyFlag failed for folder ${entry.key} (server may not support custom keywords): $e');
@@ -1440,7 +1492,7 @@ class GenericIMAPAdapter with BatchOperationsMixin implements SpamFilterPlatform
             '[IMAP] UID MOVE chunk ${chunk.length} UIDs from "$sourceFolder" '
             '-> "$targetFolder" (pass $pass, op #$_operationCount)',
           );
-          await _imapClient!.uidMove(
+          await _uidMove(
             MessageSequence.fromIds(chunk, isUid: true),
             targetMailboxPath: targetFolder,
           );
@@ -1568,7 +1620,7 @@ class GenericIMAPAdapter with BatchOperationsMixin implements SpamFilterPlatform
             final uids = _parseUids(entry.value);
             if (uids.isEmpty) continue;
             final sequence = MessageSequence.fromIds(uids, isUid: true);
-            await _imapClient!.uidStore(
+            await _uidStore(
               sequence,
               [r'$Junk'],
               action: StoreAction.add,
@@ -1576,6 +1628,8 @@ class GenericIMAPAdapter with BatchOperationsMixin implements SpamFilterPlatform
             _operationCount++;
             succeeded.addAll(entry.value.map((m) => m.id));
           } catch (e) {
+            // 7.7.1 Q2: the session is gone; later folders cannot succeed.
+            if (isSessionFatal(e)) rethrow;
             for (final message in entry.value) {
               failed[message.id] = e.toString();
             }
@@ -1702,7 +1756,7 @@ class GenericIMAPAdapter with BatchOperationsMixin implements SpamFilterPlatform
       // Build an explicit UID set (e.g. "143312,143313,143315") rather than
       // relying on MessageSequence.toString() formatting inside the criterion.
       final uidSet = candidateUids.join(',');
-      final searchResult = await _imapClient!.uidSearchMessages(
+      final searchResult = await _uidSearch(
         searchCriteria: 'UID $uidSet',
       );
       _operationCount++;
@@ -1731,7 +1785,8 @@ class GenericIMAPAdapter with BatchOperationsMixin implements SpamFilterPlatform
     try {
       _logger.i('Listing mailboxes');
       // Use recursive: true to include child mailboxes like [Gmail]/Trash
-      final allMailboxes = await _imapClient!.listMailboxes(recursive: true);
+      final allMailboxes = await _endSessionOnTimeout(
+          'LIST', (client) => client.listMailboxes(recursive: true));
 
       // Filter out non-selectable parent folders (e.g., [Gmail] virtual container)
       final mailboxes = allMailboxes.where((m) => !m.isNotSelectable).toList();
@@ -1755,6 +1810,7 @@ class GenericIMAPAdapter with BatchOperationsMixin implements SpamFilterPlatform
       }).toList();
     } catch (e) {
       _logger.e('Failed to list folders: $e');
+      if (isSessionFatal(e)) rethrow; // 7.7.1 Q2
       throw FetchException('Failed to list folders', e);
     }
   }
@@ -1893,12 +1949,136 @@ class GenericIMAPAdapter with BatchOperationsMixin implements SpamFilterPlatform
 
     try {
       _logger.i('[IMAP] _selectMailbox: Selecting "$mailboxName" (was: "$_currentMailbox")');
-      final mailbox = await _imapClient!.selectMailboxByPath(mailboxName);
+      final mailbox = await _endSessionOnTimeout(
+          'SELECT', (client) => client.selectMailboxByPath(mailboxName));
       _currentMailbox = mailboxName;
       _logger.i('[IMAP] _selectMailbox: Selected "$mailboxName" - messagesExists=${mailbox.messagesExists}, messagesRecent=${mailbox.messagesRecent}, uidValidity=${mailbox.uidValidity}');
     } catch (e) {
       _logger.e('[IMAP] _selectMailbox: FAILED to select "$mailboxName": $e');
+      // 7.7.1 Q2: a timed-out SELECT ends the session; wrapping it would hide
+      // that from every catch above.
+      if (isSessionFatal(e)) rethrow;
       throw FetchException('Failed to select mailbox: $mailboxName', e);
+    }
+  }
+
+  /// A log-safe description of a search result. Sprint 79 7.7.1 H-1: the log
+  /// line used to interpolate the sequence itself, and enough_mail's
+  /// `MessageSequence.toString` THROWS for an empty sequence ("no ID added to
+  /// sequence"). The per-folder catch below swallowed that, so every empty
+  /// folder "worked" by accident; once the catch rethrows, a log line must
+  /// never be what fails a folder.
+  static String _describeSequence(MessageSequence? s) {
+    if (s == null) return 'no sequence';
+    try {
+      return s.isEmpty ? 'empty' : '${s.length} UIDs';
+    } catch (_) {
+      return 'unlistable sequence';
+    }
+  }
+
+  /// Sprint 79 7.7.1 C-1: every UID SEARCH and UID FETCH goes through these
+  /// two wrappers. enough_mail 2.1.7 does NOT apply the client's
+  /// `defaultResponseTimeout` to `uidSearchMessages` or `uidFetchMessages`
+  /// (`imap_client.dart:1669-1697`, `:1887-1900`: each takes its own
+  /// `responseTimeout`, default null), so without this a server that stops
+  /// answering mid-scan hangs the scan in SEARCH or FETCH -- the R-8 Fold
+  /// case. A source gate in `imap_response_timeout_test.dart` fails on a
+  /// direct call outside these wrappers.
+  Future<SearchImapResult> _uidSearch({required String searchCriteria}) =>
+      _endSessionOnTimeout(
+        'UID SEARCH',
+        (client) => client.uidSearchMessages(
+          searchCriteria: searchCriteria,
+          responseTimeout: kImapResponseTimeout,
+        ),
+      );
+
+  Future<FetchImapResult> _uidFetch(
+    MessageSequence sequence,
+    String fetchContentDefinition,
+  ) =>
+      _endSessionOnTimeout(
+        'UID FETCH',
+        (client) => client.uidFetchMessages(
+          sequence,
+          fetchContentDefinition,
+          responseTimeout: kImapResponseTimeout,
+        ),
+      );
+
+  /// 7.7.1 Q2: UID STORE has the client's default time limit; this routes it
+  /// through [_endSessionOnTimeout] like SEARCH and FETCH.
+  Future<StoreImapResult> _uidStore(
+    MessageSequence sequence,
+    List<String> flags, {
+    StoreAction? action,
+    bool? silent,
+  }) =>
+      _endSessionOnTimeout(
+        'UID STORE',
+        (client) =>
+            client.uidStore(sequence, flags, action: action, silent: silent),
+      );
+
+  /// 7.7.1 Q1 (Harold, "q1 1"): UID MOVE gets the same 2-minute limit and
+  /// the same session end. enough_mail 2.1.7 sends MOVE with NO response
+  /// limit and offers no parameter for one (`_copyOrMove`,
+  /// `imap_client.dart:597-600`), so the limit is a Dart `.timeout` on the
+  /// returned future; its [TimeoutException] is a no-response error to
+  /// [isNoResponse]. The server may still finish a MOVE after the app stops
+  /// waiting; the chunked mover's verification and the next scan read where
+  /// the message actually is.
+  Future<GenericImapResult> _uidMove(
+    MessageSequence sequence, {
+    required String targetMailboxPath,
+  }) =>
+      _endSessionOnTimeout(
+        'UID MOVE',
+        (client) => client
+            .uidMove(sequence, targetMailboxPath: targetMailboxPath)
+            .timeout(kImapResponseTimeout),
+      );
+
+  /// True when [error] means the server did not answer in time: enough_mail's
+  /// response timeout (`ImapException('timeout')`, `client_base.dart:312-317`
+  /// via `imap_client.dart:2790`) or its write timeout (a `dart:async`
+  /// [TimeoutException] from the socket flush, `client_base.dart:260`).
+  @visibleForTesting
+  static bool isNoResponse(Object error) =>
+      (error is ImapException && error.message == 'timeout') ||
+      error is TimeoutException;
+
+  /// Sprint 79 7.7.1 Q2 (Harold, "q2 1"): ONE timeout ends the session.
+  ///
+  /// Every command that has a time limit (SELECT, UID SEARCH, UID FETCH, UID
+  /// STORE, LIST, and UID MOVE since 7.7.1 Q1) is sent through here. Before this, a timed-out command
+  /// failed alone and the scan went on to the next folder or message on the
+  /// SAME dead connection, where each command waited its own full limit -- a
+  /// server that stopped answering cost 2 minutes per remaining step. Now the
+  /// client is discarded and [ImapServerNotRespondingException] is thrown. It
+  /// is a [UserFacingConnectionException], so `isSessionFatal` is true and
+  /// every per-item catch on the path rethrows it; the scan fails once, with a
+  /// sentence the user can read.
+  ///
+  /// UID MOVE has no library limit, so [_uidMove] adds one before it comes
+  /// here (7.7.1 Q1).
+  Future<T> _endSessionOnTimeout<T>(
+    String command,
+    Future<T> Function(ImapClient client) send,
+  ) async {
+    final client = _imapClient;
+    if (client == null) {
+      throw ConnectionException('Not connected - call loadCredentials first');
+    }
+    try {
+      return await send(client);
+    } catch (e) {
+      if (!isNoResponse(e)) rethrow;
+      _logger.e('[IMAP] $command: the server did not respond in time ($e); '
+          'closing the session so no later command waits on it');
+      await _discardClient(client);
+      throw ImapServerNotRespondingException(command, e);
     }
   }
 
@@ -2001,7 +2181,7 @@ class GenericIMAPAdapter with BatchOperationsMixin implements SpamFilterPlatform
         // when) body-rule evaluation requires one, so at most ONE full body
         // is in flight instead of a whole chunk of 20 (the residual ~1.0GB
         // peak after F177). PEEK keeps the message unread.
-        final fetchResult = await _imapClient!.uidFetchMessages(
+        final fetchResult = await _uidFetch(
           chunk,
           'BODY.PEEK[HEADER]',
         );
@@ -2015,6 +2195,8 @@ class GenericIMAPAdapter with BatchOperationsMixin implements SpamFilterPlatform
           }
         }
       } catch (e) {
+        // 7.7.1 Q2: a session failure keeps its type (see _selectMailbox).
+        if (isSessionFatal(e)) rethrow;
         throw FetchException('Failed to fetch message details', e);
       }
 
@@ -2103,7 +2285,7 @@ class GenericIMAPAdapter with BatchOperationsMixin implements SpamFilterPlatform
             'the enclosing chunk loop\'s UID sequence may now be invalid '
             '(caller invariant broken; investigate before trusting results)');
       }
-      final fetchResult = await _imapClient!.uidFetchMessages(
+      final fetchResult = await _uidFetch(
         MessageSequence.fromIds([uid], isUid: true),
         'BODY.PEEK[]',
       );
@@ -2116,6 +2298,9 @@ class GenericIMAPAdapter with BatchOperationsMixin implements SpamFilterPlatform
     } on ContentFetchException {
       rethrow;
     } catch (e) {
+      // 7.7.1 Q2: except a session failure -- the session is gone, so no
+      // later fetch can succeed and the scan must stop now.
+      if (isSessionFatal(e)) rethrow;
       // A failed body fetch must not fail the whole scan: rule evaluation
       // falls back to the header-only record (its body rules simply cannot
       // match); the content history skips the email (caught by its caller).

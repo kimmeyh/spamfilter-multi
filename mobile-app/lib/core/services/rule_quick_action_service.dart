@@ -4,6 +4,12 @@ import '../models/rule_set.dart' show Rule, RuleConditions, RuleActions;
 import '../providers/rule_set_provider.dart';
 import 'rule_conflict_resolver.dart';
 
+/// Sprint 79 7.7.1 M-1: appended to a quick action's message when the entry
+/// was saved but [RuleSetProvider.reloadFromDatabase] failed, so the rules in
+/// use (Review No Rule Items, the next scan) do not include it yet.
+const String kReloadFailedSuffix =
+    ' -- saved, but the rules in use could not be reloaded; restart the app';
+
 /// Result of a single quick-action rule/safe-sender creation, for callers
 /// that need to summarize outcomes across a batch (F39) or show a single
 /// SnackBar (the existing per-email quick-add flow).
@@ -172,13 +178,16 @@ class RuleQuickActionService {
       }
 
       await ruleProvider.addSafeSender(pattern);
-      await ruleProvider.loadSafeSenders();
-      await ruleProvider.loadRules();
+      // F297: the shared reload. Sprint 79 7.7.1 M-1: its result is checked,
+      // so a saved entry the in-memory set did not pick up is not reported as
+      // a plain success.
+      final reloaded = await ruleProvider.reloadFromDatabase();
 
       if (conflicts.conflictsRemoved > 0) {
         displayMessage +=
             ' (removed ${conflicts.conflictsRemoved} conflicting rule${conflicts.conflictsRemoved > 1 ? "s" : ""})';
       }
+      if (!reloaded) displayMessage += kReloadFailedSuffix;
 
       // Copilot review (Sprint 46): do not log the raw pattern -- it embeds
       // email addresses/domains. The type + length are enough for debugging.
@@ -379,13 +388,14 @@ class RuleQuickActionService {
       );
 
       await ruleProvider.addRule(rule);
-      await ruleProvider.loadRules();
-      await ruleProvider.loadSafeSenders();
+      // F297: the shared reload; Sprint 79 7.7.1 M-1: result checked.
+      final reloaded = await ruleProvider.reloadFromDatabase();
 
       if (conflicts.conflictsRemoved > 0) {
         displayMessage +=
             ' (removed ${conflicts.conflictsRemoved} conflicting safe sender${conflicts.conflictsRemoved > 1 ? "s" : ""})';
       }
+      if (!reloaded) displayMessage += kReloadFailedSuffix;
 
       // Copilot review (Sprint 46): do not log the rule name or raw pattern
       // -- both embed user-entered email addresses/domains.

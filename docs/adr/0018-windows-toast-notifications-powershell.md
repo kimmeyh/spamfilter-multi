@@ -2,7 +2,7 @@
 
 ## Status
 
-Accepted
+Superseded by ADR-0048 (Sprint 79, 2026-10-13: flutter_local_notifications 22.x posts the toast on Windows; this PowerShell route was never called from the app and is removed)
 
 ## Date
 

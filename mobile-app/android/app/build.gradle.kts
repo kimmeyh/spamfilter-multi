@@ -214,7 +214,7 @@ dependencies {
     // implementation notes; do not remove them with any future cleanup).
 
     // Core library desugaring for Java 8+ compatibility (required by flutter_local_notifications)
-    coreLibraryDesugaring("com.android.tools:desugar_jdk_libs:2.0.4")
+    coreLibraryDesugaring("com.android.tools:desugar_jdk_libs:2.1.4")
 
     // F235 (Sprint 73): androidx.work on the APP module's classpath.
     //

@@ -23,7 +23,7 @@ This directory contains Architectural Decision Records for the spamfilter-multi 
 | [0015](0015-gitflow-branching-strategy.md) | GitFlow Branching Strategy | Accepted | ~2026-01 |
 | [0016](0016-sprint-model-tiering-haiku-sonnet-opus.md) | Sprint Model Tiering (Haiku/Sonnet/Opus) | Accepted | ~2026-01 |
 | [0017](0017-powershell-build-automation.md) | PowerShell as Primary Build and Automation Shell | Accepted | ~2025-10 |
-| [0018](0018-windows-toast-notifications-powershell.md) | Windows Toast Notifications via PowerShell | Accepted | ~2026-02 |
+| [0018](0018-windows-toast-notifications-powershell.md) | Windows Toast Notifications via PowerShell | Superseded by ADR-0048 | ~2026-02 |
 | [0019](0019-windows-system-tray-integration.md) | Windows System Tray Integration | Accepted | ~2026-02 |
 | [0020](0020-demo-mode-synthetic-emails.md) | Demo Mode with Synthetic Emails | Accepted | ~2025-10 |
 | [0021](0021-yaml-to-database-one-time-migration.md) | YAML-to-Database One-Time Migration | Accepted | ~2026-01 |
@@ -53,6 +53,7 @@ This directory contains Architectural Decision Records for the spamfilter-multi 
 | [0045](0045-no-rule-entry-identity.md) | Identity and Refresh Semantics of a No Rule Entry | Accepted | 2026-10-06 |
 | [0046](0046-imap-certificate-trust.md) | IMAP Certificate Trust (TOFU for Custom Servers) and the Google OAuth Issuing-Authority Pin | Accepted | 2026-10-07 |
 | [0047](0047-content-history-dev-only.md) | Content History -- a Dev-Only Record of the Developer's Own Mail | Accepted | 2026-10-10 |
+| [0048](0048-background-scan-notifications-one-plugin.md) | Background-Scan Completion Notifications Through One Plugin on Both Platforms | Accepted | 2026-10-13 |
 
 ## Creating a New ADR
 

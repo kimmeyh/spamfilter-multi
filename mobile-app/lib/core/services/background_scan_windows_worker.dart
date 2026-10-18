@@ -16,6 +16,7 @@ import '../../adapters/storage/secure_credentials_store.dart';
 import '../../util/redact.dart';
 import 'background_scan_core.dart';
 import 'diagnostic_logger.dart';
+import 'scan_complete_notifier.dart';
 import 'scan_sheet_export.dart';
 
 /// Windows-specific background scan worker
@@ -278,6 +279,25 @@ class BackgroundScanWindowsWorker {
               settingsStore: settingsStore,
               log: _bgLog,
             );
+
+            // F287 (Sprint 79): the completion toast, from the SAME notifier
+            // and text as Android's notification. A skipped account never gets
+            // here (the `continue` above), matching Android's completeAccount.
+            final posted = await ScanCompleteNotifier.post(
+              accountId: accountId,
+              mode: result.scanProvider.scanMode,
+              noRule: result.unmatchedCount,
+              deleted: result.deletedCount,
+              safe: result.safeCount,
+              errors: result.errorCount,
+            );
+            // Sprint 79 7.7.1 M-4: the always-on log states the outcome. The
+            // failure's reason goes to the opt-in diagnostic log, so without
+            // this line a failed toast read "done" here.
+            await _bgLog(posted
+                ? 'Completion notification posted'
+                : 'Completion notification NOT posted (see the diagnostic '
+                    'log for the reason)');
 
             successCount++;
           } catch (e, stackTrace) {

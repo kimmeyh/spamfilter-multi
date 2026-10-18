@@ -160,9 +160,10 @@ Then re-run the commit. Reference the card in the CHANGELOG entry: (Issue #N)
 Notes:
   - Keep the PR a DRAFT until the END of Phase 7.7, then start the 7.7.1
     final code reviews (Copilot by hand + pr-review-toolkit) in the same turn.
-  - `Closes #N` does NOT auto-fire in this GitFlow repo -- PRs merge
-    feature -> develop, and GitHub only auto-closes on merge to the DEFAULT
-    branch. Close cards by hand at Post-Merge Cleanup.
+  - Since 2026-10-14 (Sprint 79, F288) `develop` is the GitHub default
+    branch, so `Closes #N` in the sprint PR body closes the card when the PR
+    merges into develop. At Post-Merge Cleanup, VERIFY the cards closed and
+    close any that did not by hand.
 
 Deliberate exception (rare): add the literal token `allow_no_cards` to the
 command.

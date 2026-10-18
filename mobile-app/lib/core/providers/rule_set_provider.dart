@@ -213,6 +213,26 @@ class RuleSetProvider extends ChangeNotifier {
     }
   }
 
+  /// Reload rules AND safe senders from the database.
+  ///
+  /// F297 (Sprint 79, #488): the one way to refresh the in-memory set after
+  /// the database changed -- after a scan, a quick action, opening a saved
+  /// scan, and a YAML import (which before F297 never reloaded, so Review No
+  /// Rule Items and the next manual scan kept the pre-import rules until the
+  /// app restarted). Replaces the `loadRules()` + `loadSafeSenders()` pair
+  /// those sites each repeated.
+  ///
+  /// Returns false when either load failed. Both loads catch their own
+  /// errors, so callers that need to know -- the import, which would
+  /// otherwise report success over a stale set -- check this result.
+  /// `loadRules()` clears [error] when it starts, so a non-null [error]
+  /// afterwards came from this reload, not from an earlier failure.
+  Future<bool> reloadFromDatabase() async {
+    await loadRules();
+    await loadSafeSenders();
+    return _error == null;
+  }
+
   /// Add a new rule
   ///
   /// Saves to database first, then exports to YAML for version control.

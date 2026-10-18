@@ -43,10 +43,8 @@
         "webassets",
         "workmanager"
     ],
-    // Ensure VS Code uses the local venv interpreter for this workspace
-    "python.defaultInterpreterPath": "${workspaceFolder}\\.venv\\Scripts\\python.exe",
-    // Terminal integration - auto-activate venv in new terminals
-    "python.terminal.activateEnvironment": true,
+    // Python interpreter: no workspace venv exists (the Python desktop app is archived),
+    // so the user-level python.defaultInterpreterPath applies.
     // Testing configuration
     "python.testing.pytestEnabled": true,
     "python.testing.cwd": "${workspaceFolder}",

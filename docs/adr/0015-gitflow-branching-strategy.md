@@ -121,6 +121,19 @@ When the user decides to release:
 - **No CI/CD automation**: The project does not currently have GitHub Actions workflows for automated testing on PR. Build verification is manual (PowerShell scripts on the developer machine). This works for the current team size but would need automation as the team grows
 - **Draft PR convention**: Creating draft PRs at sprint start is recommended but not enforced. Some sprints may not create PRs until completion
 
+## Amendment -- Sprint 79 (F288, 2026-10-14): default branch and release tags
+
+`develop` is now the GitHub default branch. A sprint PR merged into `develop` fires its `Closes #N` keywords, so
+cards close on merge; close-out verifies this. The release step is: PR `develop` -> `main`, merged by the owner,
+then tag the merge commit on `main` `vX.Y.Z` (annotated) and push the tag. Releases 0.6.0 through 0.19.0 were never
+tagged; 22 were backfilled on 2026-10-14 (v0.6.0-v0.6.2, v0.7.0, v0.8.0-v0.14.0, v0.14.1, v0.14.2, v0.15.0-v0.15.2,
+v0.16.0, v0.17.0, v0.17.4, v0.17.6, v0.18.0, v0.19.0), each on the main commit the build came from and each tag
+message naming its evidence (VERIFIED from a build record, or INFERRED from a tree-identical prod build). The Play
+closed-test builds 0.17.1, 0.17.2, 0.17.3 and 0.17.5 are NOT tagged: their build commits are not recorded and are
+not on main's first-parent line. For many backfilled tags the pubspec at the tagged commit reads an older version
+than the tag; the release version was set locally in the prod worktree at the time. See
+`docs/STORE_RELEASE_PROCESS.md` Step 5 for the commands.
+
 ## References
 
 - `CLAUDE.md` - PR Branch Policy section (defines the three-tier hierarchy and role-based policies)
