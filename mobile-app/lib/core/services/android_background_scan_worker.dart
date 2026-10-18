@@ -122,7 +122,11 @@ Future<void> onWorkerStopped(
                 ))(detail)
         .timeout(const Duration(seconds: 2));
   } catch (_) {
-    // Nothing to report to: the log write itself is what failed.
+    // Nothing to report to: the log write itself is what failed. In practice
+    // only the 2 s TimeoutException lands here -- `DiagnosticLogger.log`
+    // catches its own errors -- and the logcat line above already shows the
+    // stop. The timed-out write keeps running and may still hold the log lock
+    // when the engine is torn down (Sprint 79 7.7.1 review L-1).
   }
 }
 
@@ -475,7 +479,7 @@ class AndroidBackgroundScanWorker {
   /// (the Windows worker uses the same one): the title names the account, the
   /// body lists "No rule" first, the ID is per account, and a count the scan
   /// mode did not act on is struck through.
-  static Future<void> _notifyScanComplete({
+  static Future<bool> _notifyScanComplete({
     required String accountId,
     required AccountScanOutcome outcome,
   }) =>

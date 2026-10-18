@@ -29,7 +29,7 @@
     },
     "_github_issues_note": "Sprint 66 cards created at Phase 3.3.1 (2026-09-07): #387 GP-19, #388 GP-4. Close by hand at Post-Merge Cleanup.",
     "test_metrics": {
-        "suite": "3,061 passed / 15 skipped / 0 failed (run-full-suite.ps1 79-5.2, 2026-10-17, 80d92c6; 0 load failures, peak commit 52.2 GB)",
+        "suite": "3,075 passed / 15 skipped / 0 failed (run-full-suite.ps1 79-771, 2026-10-18, after the 7.7.1 fixes; 0 load failures, peak commit 50.2 GB)",
         "policy_suite": "JVM 21/21; release_notes_test passing; hook suite 128/128 (2026-10-08)",
         "winwright": "2026-10-17 sweep-head 80d92c6: f124 PASS 29/29, s75 PASS 27/27 (re-run alone; first launch in the full sweep failed, cause unknown), no skipped steps, DB drift none",
         "analyzer": "clean",

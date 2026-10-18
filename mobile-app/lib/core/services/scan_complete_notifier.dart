@@ -88,7 +88,11 @@ class ScanCompleteNotifier {
   );
 
   /// Posts the notification for one account's completed background scan.
-  static Future<void> post({
+  ///
+  /// Returns whether it was posted (Sprint 79 7.7.1 M-4): the worker's step
+  /// line reports the real outcome instead of an unconditional "done". A
+  /// failure never escapes -- the scan itself has already succeeded.
+  static Future<bool> post({
     required String accountId,
     required ScanMode mode,
     required int noRule,
@@ -113,13 +117,16 @@ class ScanCompleteNotifier {
     try {
       final show = showOverride ?? _pluginShow;
       await show(id: id, title: text.title, body: body, details: details);
+      return true;
     } catch (e) {
       _logger.w('Completion notification failed (scan itself succeeded): $e');
       await DiagnosticLogger.log(
         kind: DiagnosticLogger.kindScan,
         context: 'scan/post',
-        detail: 'notification FAILED: ${DiagnosticLogger.describeError(e)}',
+        detail: 'notification FAILED (scan unaffected): '
+            '${DiagnosticLogger.describeError(e)}',
       );
+      return false;
     }
   }
 
@@ -140,6 +147,20 @@ class ScanCompleteNotifier {
         ),
       ),
     );
+    // Sprint 79 7.7.1 M-5: on Android `show` returns normally when the user
+    // denied POST_NOTIFICATIONS (Android 13+) or turned the app's
+    // notifications off, and nothing appears. Ask first, and report it as a
+    // failure so the log does not read "posted" (flutter_local_notifications
+    // 22.3.2, `platform_flutter_local_notifications.dart:624`). Null on
+    // Windows, where `show` itself throws when it cannot post.
+    final enabled = await plugin
+        .resolvePlatformSpecificImplementation<
+            AndroidFlutterLocalNotificationsPlugin>()
+        ?.areNotificationsEnabled();
+    if (enabled == false) {
+      throw StateError('notifications are turned off for this app '
+          '(Android notification permission or app setting)');
+    }
     await plugin.show(
       id: id,
       title: title,

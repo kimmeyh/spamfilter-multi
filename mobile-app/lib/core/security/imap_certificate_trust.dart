@@ -206,11 +206,19 @@ class ServerCertificateNotTrustedException
 }
 
 /// Sprint 79 Task 1 R-8: the longest any ONE IMAP command may wait for its
-/// complete response. Every `ImapClient` the app builds passes it as
-/// `defaultResponseTimeout` (enough_mail applies it per command, from the write
-/// until the tagged reply: `imap_client.dart` `_processTask`); on expiry the
-/// command fails with `ImapException('timeout')`, which the login classifier
-/// already treats as "server unavailable", never as a wrong password.
+/// complete response; on expiry the command fails with
+/// `ImapException('timeout')`, which the login classifier already treats as
+/// "server unavailable", never as a wrong password.
+///
+/// **Where it applies (corrected at Sprint 79 7.7.1, review C-1).** Every
+/// `ImapClient` the app builds passes it as `defaultResponseTimeout`, but
+/// enough_mail 2.1.7 applies that default ONLY to commands that read it --
+/// LOGIN, SELECT, LIST, STORE, NOOP, EXPUNGE. UID SEARCH and UID FETCH take
+/// their own `responseTimeout` (default null, `imap_client.dart:1669-1697`,
+/// `:1887-1900`), so `GenericIMAPAdapter` passes this constant per call
+/// through `_uidSearch` / `_uidFetch` (gated by
+/// `imap_response_timeout_test.dart`). UID MOVE sets no response timeout at
+/// all (`_copyOrMove`, `:597-600`) and is NOT covered.
 ///
 /// **Why.** Clients were built with NO response timeout, so a socket that
 /// stalled after login (a network change while the phone idles) left the scan

@@ -98,6 +98,12 @@ Future<String?> saveYamlExport({
 ///
 /// Returns false when the reload failed (see
 /// [RuleSetProvider.reloadFromDatabase]); the import is saved either way.
+///
+/// Sprint 79 7.7.1 M-2: the reload runs right after the database write and
+/// BEFORE the YAML copy, so the rules in use always match the database. A
+/// failed YAML copy (disk full, file locked) throws [YamlCopyNotWrittenException],
+/// which says the import itself succeeded -- before, it read "Import failed"
+/// while the database already held the new rules and memory the old ones.
 @visibleForTesting
 Future<bool> commitRulesImport({
   required RuleSet rules,
@@ -106,8 +112,34 @@ Future<bool> commitRulesImport({
   required RuleSetProvider provider,
 }) async {
   await dbStore.saveRules(rules);
-  await writeYaml(rules);
-  return provider.reloadFromDatabase();
+  final reloaded = await provider.reloadFromDatabase();
+  await _writeYamlCopy(() => writeYaml(rules), reloaded: reloaded);
+  return reloaded;
+}
+
+/// Sprint 79 7.7.1 M-2: the import reached the database, but the YAML copy
+/// beside it could not be written. [reloaded] says whether the rules in use
+/// picked the import up, so the message never claims more than happened.
+class YamlCopyNotWrittenException implements Exception {
+  YamlCopyNotWrittenException(this.cause, {required this.reloaded});
+  final Object cause;
+  final bool reloaded;
+  @override
+  String toString() => reloaded
+      ? 'Imported into the app, but the YAML backup copy could not be '
+          'written: $cause'
+      : 'Imported into the database, but it could not be loaded (restart '
+          'the app to use it) and the YAML backup copy could not be '
+          'written: $cause';
+}
+
+Future<void> _writeYamlCopy(Future<void> Function() write,
+    {required bool reloaded}) async {
+  try {
+    await write();
+  } catch (e) {
+    throw YamlCopyNotWrittenException(e, reloaded: reloaded);
+  }
 }
 
 /// F297: the safe senders twin of [commitRulesImport].
@@ -119,8 +151,9 @@ Future<bool> commitSafeSendersImport({
   required RuleSetProvider provider,
 }) async {
   await dbStore.saveSafeSenders(safeSenders);
-  await writeYaml(safeSenders);
-  return provider.reloadFromDatabase();
+  final reloaded = await provider.reloadFromDatabase(); // M-2: before YAML
+  await _writeYamlCopy(() => writeYaml(safeSenders), reloaded: reloaded);
+  return reloaded;
 }
 
 /// Screen for importing and exporting YAML rule files
@@ -622,6 +655,9 @@ class _YamlImportExportScreenState extends State<YamlImportExportScreen> {
       }
       _showStatus('Imported ${importedRules.rules.length} rules successfully'
           '${_skippedSuffix(droppedText)}');
+    } on YamlCopyNotWrittenException catch (e) {
+      _logger.e('Rules imported; YAML copy not written', error: e.cause);
+      _showStatus('$e', isError: true);
     } catch (e) {
       _logger.e('Failed to import rules', error: e);
       _showStatus('Import failed: $e', isError: true);
@@ -705,6 +741,9 @@ class _YamlImportExportScreenState extends State<YamlImportExportScreen> {
         'Imported ${importedSafeSenders.safeSenders.length} safe senders '
         'successfully${_skippedSuffix(droppedText)}',
       );
+    } on YamlCopyNotWrittenException catch (e) {
+      _logger.e('Safe senders imported; YAML copy not written', error: e.cause);
+      _showStatus('$e', isError: true);
     } catch (e) {
       _logger.e('Failed to import safe senders', error: e);
       _showStatus('Import failed: $e', isError: true);

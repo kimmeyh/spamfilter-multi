@@ -28,7 +28,8 @@
   powershell -NoProfile -ExecutionPolicy Bypass -File scripts\run-full-suite.ps1 -Label postreboot-1
 .NOTES
   Exit code: flutter test's exit code, 2 when STALLED, 3 when the self-test
-  branch ran without -SelfTestStall (a runner defect). One line is appended
+  branch ran without -SelfTestStall (a runner defect), 4 when the job gave no
+  exit code or no test progress line was written (no tests ran). One line is appended
   to <OutDir>\results.txt per run.
 #>
 param(
@@ -74,10 +75,16 @@ $lastGrowth = Get-Date
 $stalled = $false
 while ($job.State -eq 'Running') {
     Start-Sleep -Seconds 30
-    $c = (Get-Counter '\Memory\Committed Bytes', '\Memory\Commit Limit').CounterSamples
+    # 7.7.1 review L-4: a failed counter read (for example localized counter
+    # names) is written as n/a, never as a silent 0.00.
+    $commit = 'n/a'; $limit = 'n/a'
+    try {
+        $c = (Get-Counter '\Memory\Committed Bytes', '\Memory\Commit Limit' -ErrorAction Stop).CounterSamples
+        $commit = '{0:F2}' -f ($c[0].CookedValue / 1GB); $limit = '{0:F2}' -f ($c[1].CookedValue / 1GB)
+    } catch { }
     $n = @(Get-Process flutter_tester -ErrorAction SilentlyContinue).Count
     $size = if (Test-Path $log) { (Get-Item $log).Length } else { 0 }
-    '{0},{1:F2},{2:F2},{3},{4}' -f (Get-Date -Format 'HH:mm:ss'), ($c[0].CookedValue / 1GB), ($c[1].CookedValue / 1GB), $n, [int]($size / 1KB) |
+    '{0},{1},{2},{3},{4}' -f (Get-Date -Format 'HH:mm:ss'), $commit, $limit, $n, [int]($size / 1KB) |
         Add-Content -Encoding UTF8 $csv
     if ($size -ne $lastSize) { $lastSize = $size; $lastGrowth = Get-Date }
     elseif (((Get-Date) - $lastGrowth).TotalMinutes -ge $StallMinutes) {
@@ -89,18 +96,33 @@ while ($job.State -eq 'Running') {
         break
     }
 }
-$code = if ($stalled) { 2 } else { [int](Receive-Job $job | Select-Object -Last 1) }
-if (-not $SelfTestStall -and (Select-String -Path $log -Pattern 'self-test, now hanging' -Quiet)) {
+$jobState = $job.State
+# A job that never started flutter writes no log; the reads below need one.
+if (-not (Test-Path -LiteralPath $log)) { New-Item -ItemType File -Path $log | Out-Null }
+$raw = if ($stalled) { $null } else { Receive-Job $job | Select-Object -Last 1 }
+$code = if ($stalled) { 2 } elseif ("$raw" -match '^-?\d+$') { [int]"$raw" } else { 4 }
+if (-not $SelfTestStall -and (Select-String -Path $log -Pattern 'self-test, now hanging' -Quiet -ErrorAction SilentlyContinue)) {
     Write-Output "RUNNER DEFECT: the self-test branch ran without -SelfTestStall; no tests were run."
     $code = 3
 }
 Remove-Job $job -Force
 
 $mins = [int]((Get-Date) - $start).TotalMinutes
-$summary = (Get-Content $log -Tail 400 | Select-String -Pattern '^\d\d:\d\d \+\d+' | Select-Object -Last 1).Line
+$summary = (Get-Content $log -Tail 400 -ErrorAction SilentlyContinue | Select-String -Pattern '^\d\d:\d\d \+\d+' | Select-Object -Last 1).Line
 if (-not $summary) { $summary = '(no test progress line)' }
-$loadFail = @(Select-String -Path $log -Pattern '^\d\d:\d\d .*: loading .*\[E\]|Failed to load "|did not complete|Connection closed before test suite loaded').Count
-$peak = (Get-Content $csv | Select-Object -Skip 2 | ForEach-Object { [double]($_.Split(',')[1]) } | Measure-Object -Maximum).Maximum
+# Sprint 79 7.7.1 H-3: `[int]$null` is 0, so a job that never ran flutter
+# (not on the job's PATH, a Failed/Stopped job, no output) read as exit=0 --
+# a pass with no tests run. A real run has a job exit code AND a progress line.
+if (-not $stalled -and $code -ne 3 -and
+    ($jobState -ne 'Completed' -or $null -eq $raw -or "$raw" -notmatch '^-?\d+$' -or
+     $summary -eq '(no test progress line)')) {
+    Write-Output "RUNNER DEFECT: no exit code or no tests ran (job=$jobState, exit='$raw'); see $log"
+    $code = 4
+}
+$loadFail = @(Select-String -Path $log -Pattern '^\d\d:\d\d .*: loading .*\[E\]|Failed to load "|did not complete|Connection closed before test suite loaded' -ErrorAction SilentlyContinue).Count
+$peak = (Get-Content $csv | Select-Object -Skip 2 | ForEach-Object { $_.Split(',')[1] } |
+    Where-Object { $_ -match '^\d+(\.\d+)?$' } | ForEach-Object { [double]$_ } | Measure-Object -Maximum).Maximum
+if ($null -eq $peak) { $peak = 'n/a' }
 $state = if ($stalled) { "STALLED(${StallMinutes}m)" } else { "exit=$code" }
 $line = "RESULT label=$Label $state minutes=$mins loadFailures=$loadFail peakCommittedGB=$peak devAppProcs=$dev last='$($summary.Substring(0, [Math]::Min(80, $summary.Length)))'"
 Write-Output $line

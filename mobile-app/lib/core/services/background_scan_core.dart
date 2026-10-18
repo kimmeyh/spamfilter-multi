@@ -106,7 +106,7 @@ class BackgroundScanCore {
   static Future<void> completeAccount(
     AccountScanOutcome outcome, {
     required Future<void> Function() export,
-    required Future<void> Function() notify,
+    required Future<bool> Function() notify,
   }) async {
     void postLog(String detail) => unawaited(DiagnosticLogger.log(
           kind: DiagnosticLogger.kindScan,
@@ -123,8 +123,10 @@ class BackgroundScanCore {
     }
     await export();
     postLog('export step done');
-    await notify();
-    postLog('notification step done');
+    // Sprint 79 7.7.1 M-4: the real outcome, not an unconditional "done".
+    postLog((await notify())
+        ? 'notification posted'
+        : 'notification NOT posted (reason on the line above)');
   }
 
   static final Logger _logger = Logger();
@@ -263,6 +265,15 @@ class BackgroundScanCore {
         reason = await skipAfterWait();
       } catch (e) {
         _logger.w('Post-wait recent-scan check failed, scanning anyway: $e');
+        // Sprint 79 7.7.1 M-3: also to the diagnostic file, like the entry
+        // check's failure -- on Android logcat is unreachable.
+        unawaited(DiagnosticLogger.scanEvent(
+          scanType: 'background',
+          accountId: accountId,
+          stage: 'skip-check',
+          detail: 'post-wait check failed, scanning anyway: '
+              '${DiagnosticLogger.describeError(e)}',
+        ));
       }
       if (reason != null) {
         _logger.i('Background scan of ${Redact.accountId(accountId)} '

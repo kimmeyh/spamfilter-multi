@@ -322,9 +322,13 @@ Uses IMAP UID sequence sets to reduce round-trips from 3N to ~3 batch operations
 - `firstUidSince(folder, since)` (S38-CI-4): `UID SEARCH SINCE <date>` returning the smallest UID newer than `now - daysBack`; used to cap the `oldest_no_rule_uid` cursor at the retention window (cached once per folder per scan).
 
 **Sprint 79 IMAP command timeouts**: both `ImapClient` constructions (`generic_imap_adapter.dart`,
-`imap_certificate_trust.dart`) set `kImapResponseTimeout` (120 s) and `kImapWriteTimeout` (60 s), so a command whose
-reply never comes fails with `ImapException('timeout')` (classified as "server unavailable") instead of waiting
-forever. Same on both platforms.
+`imap_certificate_trust.dart`) set `kImapResponseTimeout` (120 s) and `kImapWriteTimeout` (60 s) as client defaults,
+so a command whose reply never comes fails with `ImapException('timeout')` (classified as "server unavailable")
+instead of waiting forever. enough_mail 2.1.7 applies the default only to LOGIN, SELECT, LIST, STORE, NOOP and
+EXPUNGE; UID SEARCH and UID FETCH get the limit per call through `GenericIMAPAdapter._uidSearch` / `_uidFetch`
+(7.7.1 review C-1, source-gated). **UID MOVE has no response limit** (the library has no parameter for it). A failure
+in the full-fetch path reaches the scanner's per-folder handler, which counts it as a folder error (7.7.1 H-1). Same
+on both platforms.
 
 #### Auth Adapters
 

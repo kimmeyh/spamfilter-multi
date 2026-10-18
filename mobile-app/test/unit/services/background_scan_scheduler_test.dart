@@ -95,8 +95,16 @@ class _FakeWorkmanagerPlatform extends WorkmanagerPlatform
     });
   }
 
+  /// 7.7.1 H-2: throw on the Nth cancel call (1 = the periodic work, 2 = the
+  /// test one-off), to drive the failure notes.
+  int? throwOnCancelCall;
+  int _cancelCalls = 0;
+
   @override
   Future<void> cancelByUniqueName(String uniqueName) async {
+    if (++_cancelCalls == throwOnCancelCall) {
+      throw StateError('platform rejected cancel');
+    }
     cancelledUniqueNames.add(uniqueName);
     scheduledNames.remove(uniqueName);
   }
@@ -240,6 +248,39 @@ void main() {
           reason: 'a platform failure must surface as false, never as a '
               'silent success -- the silent-claim failure mode ADR-0042 '
               'warns factories can hide');
+    });
+
+    // Sprint 79 7.7.1 H-2: a FAILED scheduler line names its reason, and
+    // whether the Doze alarm was left armed. What this does NOT catch: the
+    // Windows adapter's notes (its calls shell out to schtasks.exe; covered by
+    // the source gate below), or a Doze alarm call that throws (the host has
+    // no native side, so the alarm half reports false here).
+    group('7.7.1 H-2: failure notes', () {
+      test('an invalid interval says so', () async {
+        final r = await adapter.scheduleDetailed(accountId, 0);
+        expect(r.ok, isFalse);
+        expect(r.note, 'invalid interval 0m');
+      });
+
+      test('a WorkManager registration failure carries the reason', () async {
+        fake.throwOnRegister = true;
+        final r = await adapter.scheduleDetailed(accountId, 60);
+        expect(r.ok, isFalse);
+        expect(r.note, contains('WorkManager failed:'));
+        expect(r.note, contains('platform rejected registration'));
+        expect(r.note, startsWith('Doze alarm'),
+            reason: 'the note says what state the alarm half was left in');
+      });
+
+      test('a cancel failure names the step and that the alarm stays armed',
+          () async {
+        fake.throwOnCancelCall = 2; // the test one-off
+        final r = await adapter.cancelDetailed(accountId);
+        expect(r.ok, isFalse);
+        expect(r.note, startsWith('test-task cancel failed; Doze alarm NOT '
+            'cancelled: '));
+        expect(r.note, contains('platform rejected cancel'));
+      });
     });
 
     test(
@@ -401,6 +442,24 @@ void main() {
       // ...and the one log helper hands it to the line builder.
       expect(RegExp(r'detail: schedulerChangeLine\([^;]*note: note,').hasMatch(src),
           isTrue);
+    });
+
+    test('source gate (7.7.1 H-2): the Windows adapter logs a reason too', () {
+      final src = File('lib/core/services/background_scan_scheduler.dart')
+          .readAsStringSync();
+      // Both Windows calls record the exception before rethrowing it, and
+      // pass the note to the log.
+      expect(
+          RegExp(r'catch \(e\) \{\s*note = DiagnosticLogger\.describeError\(e\);\s*rethrow;')
+              .allMatches(src)
+              .length,
+          2);
+      expect(
+          RegExp(r"_logSchedulerChange\('windows',[^;]*note: note\)")
+              .allMatches(src)
+              .length,
+          2);
+      expect(src, contains("note = 'invalid interval \${intervalMinutes}m'"));
     });
 
     test('source gate: both adapters log schedule AND cancel', () {

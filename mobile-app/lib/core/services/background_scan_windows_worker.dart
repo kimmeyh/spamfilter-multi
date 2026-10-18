@@ -283,7 +283,7 @@ class BackgroundScanWindowsWorker {
             // F287 (Sprint 79): the completion toast, from the SAME notifier
             // and text as Android's notification. A skipped account never gets
             // here (the `continue` above), matching Android's completeAccount.
-            await ScanCompleteNotifier.post(
+            final posted = await ScanCompleteNotifier.post(
               accountId: accountId,
               mode: result.scanProvider.scanMode,
               noRule: result.unmatchedCount,
@@ -291,7 +291,13 @@ class BackgroundScanWindowsWorker {
               safe: result.safeCount,
               errors: result.errorCount,
             );
-            await _bgLog('Completion notification step done');
+            // Sprint 79 7.7.1 M-4: the always-on log states the outcome. The
+            // failure's reason goes to the opt-in diagnostic log, so without
+            // this line a failed toast read "done" here.
+            await _bgLog(posted
+                ? 'Completion notification posted'
+                : 'Completion notification NOT posted (see the diagnostic '
+                    'log for the reason)');
 
             successCount++;
           } catch (e, stackTrace) {

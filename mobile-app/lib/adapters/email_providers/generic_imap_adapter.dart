@@ -625,11 +625,11 @@ class GenericIMAPAdapter with BatchOperationsMixin implements SpamFilterPlatform
             : 'ALL';
         _logger.i('[IMAP] fetchMessages: UID SEARCH criteria="$searchCriteria" in "$folderName"');
 
-        final searchResult = await _imapClient!.uidSearchMessages(
+        final searchResult = await _uidSearch(
           searchCriteria: searchCriteria,
         );
 
-        _logger.i('[IMAP] fetchMessages: Search result: matchingSequence=${searchResult.matchingSequence}, isEmpty=${searchResult.matchingSequence?.isEmpty}');
+        _logger.i('[IMAP] fetchMessages: Search result: ${_describeSequence(searchResult.matchingSequence)}');
 
         if (searchResult.matchingSequence == null ||
             searchResult.matchingSequence!.isEmpty) {
@@ -637,7 +637,7 @@ class GenericIMAPAdapter with BatchOperationsMixin implements SpamFilterPlatform
           continue;
         }
 
-        _logger.i('[IMAP] fetchMessages: Found ${searchResult.matchingSequence!.length} UIDs in "$folderName"');
+        _logger.i('[IMAP] fetchMessages: Found ${_describeSequence(searchResult.matchingSequence)} in "$folderName"');
 
         // [ISSUE #145] Fetch message details using UID FETCH
         // (F177: internally batched; streams to onBatch when provided)
@@ -670,8 +670,18 @@ class GenericIMAPAdapter with BatchOperationsMixin implements SpamFilterPlatform
         // path that matters.
         rethrow;
       } catch (e, st) {
+        // Sprint 79 7.7.1 H-1: log and RETHROW. This catch used to continue
+        // to the next folder, but every production caller passes ONE folder
+        // (`EmailScanner._fetchFolderMessagesImap` and the generic full-fetch
+        // path), so "continue" returned an empty list: a SEARCH or FETCH that
+        // timed out (R-8), or a dropped connection, read as a clean empty
+        // folder with errors=0, and the scan completed and notified. The
+        // scanner's per-folder handler owns continue-on-error: it rethrows
+        // session failures, skips a folder that does not exist (F202), and
+        // records any other failure (F174). The incremental path below
+        // already rethrows; both paths now behave the same.
         _logger.e('[IMAP] fetchMessages: ERROR fetching from "$folderName": $e\n$st');
-        // Continue with other folders even if one fails
+        rethrow;
       }
     }
 
@@ -722,7 +732,7 @@ class GenericIMAPAdapter with BatchOperationsMixin implements SpamFilterPlatform
       final searchCriteria = 'UID $lowerBound:*';
       _logger.i('[IMAP] fetchMessagesIncremental: UID SEARCH criteria="$searchCriteria"');
 
-      final searchResult = await _imapClient!.uidSearchMessages(
+      final searchResult = await _uidSearch(
         searchCriteria: searchCriteria,
       );
 
@@ -769,7 +779,7 @@ class GenericIMAPAdapter with BatchOperationsMixin implements SpamFilterPlatform
     try {
       await _selectMailbox(folderName);
       // UID 1:* matches every existing UID; we then take the max.
-      final searchResult = await _imapClient!.uidSearchMessages(
+      final searchResult = await _uidSearch(
         searchCriteria: 'UID 1:*',
       );
       final seq = searchResult.matchingSequence;
@@ -817,7 +827,7 @@ class GenericIMAPAdapter with BatchOperationsMixin implements SpamFilterPlatform
       await _selectMailbox(folderName);
       final searchCriteria = 'SINCE ${_formatImapDate(since)}';
       _logger.i('[IMAP] firstUidSince: UID SEARCH criteria="$searchCriteria" in "$folderName"');
-      final searchResult = await _imapClient!.uidSearchMessages(
+      final searchResult = await _uidSearch(
         searchCriteria: searchCriteria,
       );
       final seq = searchResult.matchingSequence;
@@ -883,7 +893,7 @@ class GenericIMAPAdapter with BatchOperationsMixin implements SpamFilterPlatform
       final searchCriteria = 'HEADER "Message-ID" "$escaped"';
       _logger.i('[IMAP] searchByMessageId: UID SEARCH $searchCriteria in "$folderName"');
 
-      final searchResult = await _imapClient!.uidSearchMessages(
+      final searchResult = await _uidSearch(
         searchCriteria: searchCriteria,
       );
       _operationCount++;
@@ -1709,7 +1719,7 @@ class GenericIMAPAdapter with BatchOperationsMixin implements SpamFilterPlatform
       // Build an explicit UID set (e.g. "143312,143313,143315") rather than
       // relying on MessageSequence.toString() formatting inside the criterion.
       final uidSet = candidateUids.join(',');
-      final searchResult = await _imapClient!.uidSearchMessages(
+      final searchResult = await _uidSearch(
         searchCriteria: 'UID $uidSet',
       );
       _operationCount++;
@@ -1909,6 +1919,45 @@ class GenericIMAPAdapter with BatchOperationsMixin implements SpamFilterPlatform
     }
   }
 
+  /// A log-safe description of a search result. Sprint 79 7.7.1 H-1: the log
+  /// line used to interpolate the sequence itself, and enough_mail's
+  /// `MessageSequence.toString` THROWS for an empty sequence ("no ID added to
+  /// sequence"). The per-folder catch below swallowed that, so every empty
+  /// folder "worked" by accident; once the catch rethrows, a log line must
+  /// never be what fails a folder.
+  static String _describeSequence(MessageSequence? s) {
+    if (s == null) return 'no sequence';
+    try {
+      return s.isEmpty ? 'empty' : '${s.length} UIDs';
+    } catch (_) {
+      return 'unlistable sequence';
+    }
+  }
+
+  /// Sprint 79 7.7.1 C-1: every UID SEARCH and UID FETCH goes through these
+  /// two wrappers. enough_mail 2.1.7 does NOT apply the client's
+  /// `defaultResponseTimeout` to `uidSearchMessages` or `uidFetchMessages`
+  /// (`imap_client.dart:1669-1697`, `:1887-1900`: each takes its own
+  /// `responseTimeout`, default null), so without this a server that stops
+  /// answering mid-scan hangs the scan in SEARCH or FETCH -- the R-8 Fold
+  /// case. A source gate in `imap_response_timeout_test.dart` fails on a
+  /// direct call outside these wrappers.
+  Future<SearchImapResult> _uidSearch({required String searchCriteria}) =>
+      _imapClient!.uidSearchMessages(
+        searchCriteria: searchCriteria,
+        responseTimeout: kImapResponseTimeout,
+      );
+
+  Future<FetchImapResult> _uidFetch(
+    MessageSequence sequence,
+    String fetchContentDefinition,
+  ) =>
+      _imapClient!.uidFetchMessages(
+        sequence,
+        fetchContentDefinition,
+        responseTimeout: kImapResponseTimeout,
+      );
+
   /// [ISSUE #145] Fetch message details using UID FETCH for stable identifiers
   /// F177 (Sprint 62): test-only injection of a fake [ImapClient] so the
   /// batched fetch path is unit-testable against scripted SEARCH/FETCH
@@ -2008,7 +2057,7 @@ class GenericIMAPAdapter with BatchOperationsMixin implements SpamFilterPlatform
         // when) body-rule evaluation requires one, so at most ONE full body
         // is in flight instead of a whole chunk of 20 (the residual ~1.0GB
         // peak after F177). PEEK keeps the message unread.
-        final fetchResult = await _imapClient!.uidFetchMessages(
+        final fetchResult = await _uidFetch(
           chunk,
           'BODY.PEEK[HEADER]',
         );
@@ -2110,7 +2159,7 @@ class GenericIMAPAdapter with BatchOperationsMixin implements SpamFilterPlatform
             'the enclosing chunk loop\'s UID sequence may now be invalid '
             '(caller invariant broken; investigate before trusting results)');
       }
-      final fetchResult = await _imapClient!.uidFetchMessages(
+      final fetchResult = await _uidFetch(
         MessageSequence.fromIds([uid], isUid: true),
         'BODY.PEEK[]',
       );

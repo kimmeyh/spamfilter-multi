@@ -242,8 +242,17 @@ if ($SelfTest) {
 
 if (-not $Path) { 'Give -Path <diag_*.log> or -SelfTest.'; exit 2 }
 # "-Path a,b" through powershell -File arrives as ONE string "a,b"; split it.
-$files = @($Path | ForEach-Object { $_ -split ',' } | Where-Object { $_ } | ForEach-Object { Get-ChildItem -Path $_ -File -ErrorAction SilentlyContinue }) | Sort-Object Name -Unique
-if ($files.Count -eq 0) { 'No diagnostic logs found.'; exit 0 }
+# Sprint 79 7.7.1 L-2: a -Path entry that matches nothing is named, and no
+# match at all is an error, never "No flags" over half the data or none.
+$files = @($Path | ForEach-Object { $_ -split ',' } | Where-Object { $_ } | ForEach-Object {
+    $hit = @(Get-ChildItem -Path $_ -File -ErrorAction SilentlyContinue)
+    if ($hit.Count -eq 0) { "WARNING: -Path '$_' matched no file; it is NOT in this check." }
+    $hit
+}) | Sort-Object Name -Unique
+$missing = @($files | Where-Object { $_ -is [string] })
+$missing
+$files = @($files | Where-Object { $_ -isnot [string] })
+if ($files.Count -eq 0) { 'No diagnostic logs found. Health NOT checked.'; exit 4 }
 $all = foreach ($fi in $files) { Get-Content -LiteralPath $fi.FullName }
 $res = Get-Health -Lines $all -Interval $IntervalMinutes -From $Since -OneAccount:$SingleAccount
 "--- background scan health ($($files.Count) log(s), interval $IntervalMinutes min$(if ($Since) { ", since $Since" })) ---"

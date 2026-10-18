@@ -41,7 +41,7 @@ void main() {
     ScanCompleteNotifier.isAndroidOverride = null;
   });
 
-  Future<void> postReadOnly() => ScanCompleteNotifier.post(
+  Future<bool> postReadOnly() => ScanCompleteNotifier.post(
         accountId: 'kimmeyharold@aol.com',
         mode: ScanMode.readOnly,
         noRule: 9,
@@ -106,7 +106,37 @@ void main() {
       required NotificationDetails details,
     }) async =>
         throw StateError('no notifier');
-    await expectLater(postReadOnly(), completes);
+    // Sprint 79 7.7.1 M-4: completes, AND reports that nothing was posted, so
+    // the worker's step line cannot read "posted".
+    expect(await postReadOnly(), isFalse);
+  });
+
+  test('7.7.1 M-4: a posted notification reports true', () async {
+    ScanCompleteNotifier.isAndroidOverride = true;
+    expect(await postReadOnly(), isTrue);
+  });
+
+  // 7.7.1 M-5 / M-4 wiring. What these do NOT catch: whether
+  // `areNotificationsEnabled` returns false on a real device with the
+  // permission denied (a plugin call; a phone check), and the always-on
+  // Windows log text (no host Windows worker run).
+  test('source gate: Android asks whether notifications are enabled', () {
+    final src = File('lib/core/services/scan_complete_notifier.dart')
+        .readAsStringSync();
+    expect(src, contains('AndroidFlutterLocalNotificationsPlugin>()'));
+    expect(src, contains('?.areNotificationsEnabled()'));
+    expect(RegExp(r'if \(enabled == false\) \{\s*throw').hasMatch(src), isTrue);
+  });
+
+  test('source gate: both workers log the real outcome, not "done"', () {
+    final core =
+        File('lib/core/services/background_scan_core.dart').readAsStringSync();
+    expect(core, contains("? 'notification posted'"));
+    expect(core, isNot(contains("'notification step done'")));
+    final win = File('lib/core/services/background_scan_windows_worker.dart')
+        .readAsStringSync();
+    expect(win, contains('final posted = await ScanCompleteNotifier.post('));
+    expect(win, isNot(contains("'Completion notification step done'")));
   });
 
   test('DEV and PROD never share a Windows app ID or activation GUID', () {

@@ -26,6 +26,15 @@ Format: `- **type**: Description (Issue #N)` where type is feat|fix|chore|docs
 
 ## [Unreleased]
 
+### 2026-10-18 (Sprint 79 final code reviews, PR #480)
+- **fix**: The 2-minute limit on a server that stops answering now also covers searching and downloading messages; before, enough_mail applied it only to sign-in and folder selection, so a stall mid-scan still hung (Issue #471)
+- **fix**: A folder that fails to download (including the 2-minute limit) now counts as a scan error; before, it read as an empty folder and the scan reported success with 0 errors (Issue #471)
+- **fix**: A failed background schedule or cancel names its reason in the diagnostic log, and whether the Doze alarm was left armed
+- **fix**: Adding a safe sender or block rule says so when the saved entry could not be reloaded into the rules in use
+- **fix**: A YAML import whose backup copy cannot be written now says the import itself succeeded, and the rules in use match the database
+- **fix**: The background-scan log says whether the completion notification was posted; on Android, notifications turned off for the app are reported instead of logged as done
+- **chore**: `run-full-suite.ps1` reports a run that executed no tests as a runner defect (exit 4), never as a pass; `phone-log-health.ps1` names a `-Path` that matched nothing
+
 ### 2026-10-18 (Sprint 79 retrospective)
 - **chore**: `pull-phone-screenshots.ps1` also collects Samsung Battery and App info screenshots (`_Device care`, `_Settings`); other apps' screenshots stay skipped, and a new `-SelfTest` checks the list both ways (Sprint 79 retro IMP-2)
 - **docs**: Manual Validation rehearsal reads every number, interval, path or count in a step from the live system and names the source; a claim about a package's behavior cites its source at the resolved version (Sprint 79 retro IMP-1, IMP-3)

@@ -14,6 +14,8 @@
 /// into the commit functions is covered by review, not by a test.
 library;
 
+import 'dart:io';
+
 import 'package:flutter_test/flutter_test.dart';
 
 import 'package:my_email_spam_filter/core/models/rule_set.dart';
@@ -162,5 +164,70 @@ void main() {
       expect(yamlWritten, isNotNull);
       expect(provider.safeSenders.safeSenders, [_safePattern]);
     });
+
+    // Sprint 79 7.7.1 M-2: the reload runs BEFORE the YAML copy, so a failed
+    // copy leaves the rules in use matching the database, and the error says
+    // the import succeeded. What this does NOT catch: the screen's wording
+    // around the exception (the screen is not pumped; see the header).
+    test('a failed YAML copy: the import is still loaded, and says so',
+        () async {
+      Object? error;
+      try {
+        await commitRulesImport(
+          rules: RuleSet(
+              version: '1.0', settings: {}, rules: [_blockRule('copyfail.com')]),
+          dbStore: ruleStore,
+          writeYaml: (_) async => throw const FileSystemException('disk full'),
+          provider: provider,
+        );
+      } catch (e) {
+        error = e;
+      }
+      expect(error, isA<YamlCopyNotWrittenException>());
+      expect((error as YamlCopyNotWrittenException).reloaded, isTrue);
+      expect('$error', startsWith('Imported into the app, but the YAML'));
+      expect(provider.rules.rules.map((r) => r.name),
+          ['Block_EntireDomain_copyfail.com'],
+          reason: 'memory must match the database even when the copy fails');
+    });
+
+    test('a failed YAML copy after a failed reload does not claim "in the app"',
+        () async {
+      final p = RuleSetProvider()
+        ..initializeForTesting(
+          databaseStore: ruleStore,
+          safeSenderStore: _ThrowingSafeSenderStore(db.dbHelper),
+        );
+      Object? error;
+      try {
+        await commitSafeSendersImport(
+          safeSenders: SafeSenderList(safeSenders: [_safePattern]),
+          dbStore: ruleStore,
+          writeYaml: (_) async => throw const FileSystemException('locked'),
+          provider: p,
+        );
+      } catch (e) {
+        error = e;
+      }
+      expect(error, isA<YamlCopyNotWrittenException>());
+      expect('$error', startsWith('Imported into the database, but it could '
+          'not be loaded'));
+    });
+  });
+
+  // Sprint 79 7.7.1 M-1: a caller that discards the reload's result reports
+  // success over a stale in-memory set -- the F297 defect class in another
+  // caller. `@useResult` would need a new `meta` dependency, so this gate is
+  // the prevention. What it does NOT catch: a result assigned and then
+  // ignored.
+  test('source gate: no lib/ statement discards reloadFromDatabase()', () {
+    final discard = RegExp(r'^\s*await\s+[\w.!]+\.reloadFromDatabase\(\);',
+        multiLine: true);
+    for (final f in Directory('lib')
+        .listSync(recursive: true)
+        .whereType<File>()
+        .where((f) => f.path.endsWith('.dart'))) {
+      expect(discard.hasMatch(f.readAsStringSync()), isFalse, reason: f.path);
+    }
   });
 }

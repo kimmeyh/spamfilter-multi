@@ -519,7 +519,10 @@ void main() {
         AccountScanOutcome.skipped('a manual scan is in progress',
             EmailScanProvider()),
         export: () async => calls.add('export'),
-        notify: () async => calls.add('notify'),
+        notify: () async {
+          calls.add('notify');
+          return true;
+        },
       );
       expect(calls, isEmpty);
     });
@@ -532,7 +535,10 @@ void main() {
           emailsProcessed: 3, deletedCount: 0, movedCount: 0, safeCount: 0,
           unmatchedCount: 3, errorCount: 0, scanProvider: EmailScanProvider()),
         export: () async => calls.add('export'),
-        notify: () async => calls.add('notify'),
+        notify: () async {
+          calls.add('notify');
+          return true;
+        },
       );
       expect(calls, ['export', 'notify']);
     });

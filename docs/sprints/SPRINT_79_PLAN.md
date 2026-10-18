@@ -427,6 +427,11 @@ AOL scans that stop mid-run.
       messages per command; no IMAP IDLE in `lib/`. Test `imap_response_timeout_test.dart` (a real silent loopback
       server: the command ends with `timeout` in under 5 s instead of hanging; both constructors; no bare client
       in `lib/`); two mutations KILLED; the 14 IMAP test files pass (211).
+      **[CORRECTION, 7.7.1 review C-1, 2026-10-18]**: "enough_mail applies it per command" was FALSE for the commands
+      the Fold rows hung in. The client default reaches LOGIN, SELECT, LIST, STORE, NOOP and EXPUNGE only; UID SEARCH
+      and UID FETCH take their own `responseTimeout` (default null) and UID MOVE has none. The test proved LOGIN,
+      the one family where the default works. Fixed in 7.7.1 (per-call wrappers, the per-folder swallow removed);
+      see the 7.7.1 evidence below.
     - **Class B, no heartbeat ever (11)**: 912, 1455, 1634, 1930, 1953, 1969, 1980, 2031, 2270, 2434, 2499 -- last line at
       +0 to +30 s (three at `connect -- begin`, which already HAS timeouts in `imap_certificate_trust.dart`), and the
       first 30 s heartbeat never ran. The isolate stopped running within 30 s: the process was killed or frozen.
@@ -1011,7 +1016,50 @@ note (a). **Step-types**: SVC-EDIT, TEST-UNIT. **Est-Effort**: 30-45m.
 
 # Phase 7 evidence
 
-- **7.7.1 final code reviews**: PENDING
+- **7.7.1 final code reviews**: 2026-10-18, PR #480 set ready at 0ca5714 and all three started in that turn.
+  **Copilot** (requested by hand via GraphQL 15:23Z; reviewed 0ca5714 at 15:29Z): "No open issues", no inline
+  comments. **pr-review-toolkit code-reviewer**: 1 HIGH (= silent-failure H-1), 1 MEDIUM (scheduler caller reads
+  "unknown" on obfuscated Android release builds). **silent-failure-hunter**: 1 CRITICAL, 3 HIGH, 5 MEDIUM, 6 LOW.
+  Dispositions (prevention named first):
+  - **C-1 FIXED** (UID SEARCH / FETCH had no response limit; enough_mail applies the client default only to
+    LOGIN, SELECT, LIST, STORE, NOOP, EXPUNGE -- verified at `imap_client.dart:1669-1697`, `:1887-1900`,
+    `:597-600`). Prevention: every SEARCH/FETCH goes through `_uidSearch` / `_uidFetch` (pass
+    `kImapResponseTimeout`), and a source gate fails on a direct call anywhere in `lib/`. A real-socket test pins
+    the library behavior (default does not limit SEARCH; per call does). The false mechanism comment
+    (`imap_certificate_trust.dart`), `ARCHITECTURE.md` and the R-8 record are corrected. UID MOVE: decision asked.
+  - **H-1 FIXED** (both reviewers): `fetchMessages`' per-folder catch rethrows, so the scanner's handler counts a
+    failed folder (F174) instead of an empty one. Caller walk: every `lib` caller passes one folder
+    (`email_scanner.dart:1787, 1918`); the scanner's handler rethrows session failures, skips a missing folder
+    (F202), records the rest. Found while fixing: a LOG LINE (`matchingSequence=${...}`) threw on every empty
+    folder and the swallow hid it; replaced by `_describeSequence`, which never throws.
+  - **H-2 FIXED**: every FAILED scheduler line carries a reason (Android catches, both invalid-interval returns,
+    Windows catch-and-rethrow), and Android names the alarm state. Methods exposed as `scheduleDetailed` /
+    `cancelDetailed` (`@visibleForTesting`) for behavior tests.
+  - **H-3 FIXED**: `run-full-suite.ps1` exit 4 "RUNNER DEFECT" when the job gives no exit code or no test line.
+    Proven both ways with `flutter` off PATH: the old logic printed `exit=0`, the new `exit=4`.
+  - **M-1 FIXED**: the three callers that discarded `reloadFromDatabase()` check it (quick actions append
+    `kReloadFailedSuffix`; Results logs, the Sprint 78 banner already shows the user). Prevention: a source gate
+    in `rule_set_provider_reload_test.dart` (`@useResult` would need a new `meta` dependency).
+  - **M-2 FIXED**: the import reloads BEFORE the YAML copy; a failed copy throws `YamlCopyNotWrittenException`,
+    whose text depends on whether the reload succeeded.
+  - **M-3 FIXED**: the post-wait check failure also goes to the diagnostic file.
+  - **M-4 FIXED, over the size limit without asking**: `ScanCompleteNotifier.post` returns whether it posted; both
+    workers log "posted" / "NOT posted". It touched 4 code files (notifier, core, Windows worker, a one-word
+    return type in the Android worker), the threshold at which Harold is asked first. Reported; revert offered.
+  - **M-5 FIXED**: Android asks `areNotificationsEnabled()` (22.3.2, `platform_flutter_local_notifications.dart:624`)
+    and reports a blocked notification as a failure.
+  - **L-1 FIXED** (comment, mechanism verified at `diagnostic_logger.dart:364-398`); **L-2 FIXED** (unmatched
+    `-Path` named, none matched = exit 4); **L-3 NO CHANGE** (documented design choice); **L-4 half FIXED**
+    (counter failure writes n/a; the orphaned tool process on a stall is left, LOW); **L-5 FIXED** by the tests
+    above; **L-6** none.
+  - **code-reviewer M-1**: doc comment corrected (caller "unknown" on Android release builds); the explicit
+    caller label is an interface change -- decision asked.
+  - Mutations: 15 run, 15 KILLED (C1a, C1b, H1, H1b, H2a-d, M1, M2, M2b, M4, M4b, M5; H1b's first form SURVIVED
+    because it mutated inside the helper's own catch, and was re-aimed at the call site).
+  - Full suite after the fixes: `RESULT label=79-771 exit=0 minutes=4 loadFailures=0 peakCommittedGB=50.22
+    last='03:07 +3075 ~15: All tests passed!'`; `flutter analyze` no issues.
+  - Decisions asked of Harold: UID MOVE limit; treating a timeout as session-fatal; the scheduler caller label;
+    a WinWright re-sweep (`lib/ui` changed); keep or revert M-4.
 - **5.2.3 architecture docs**: 2026-10-17 -- ARCHITECTURE.md updated (IMAP command timeouts,
   `RuleSetProvider.reloadFromDatabase`, the Sprint 79 skip rules, the worker stop line, the scheduler line; the F287
   notifier rows at `:219-220` and ADR-0048 were done with Task 4); ADR-0039 Sprint 78 MV-7 amendment updated.
