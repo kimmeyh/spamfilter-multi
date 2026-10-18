@@ -967,8 +967,24 @@ note (a). **Step-types**: SVC-EDIT, TEST-UNIT. **Est-Effort**: 30-45m.
   `generic_imap_adapter.dart.bak` builds a client without timeouts; master-plan F287 text describes the deleted
   services (card removed at close-out). Clean: helper wiring (every new helper has a runtime caller), API scope,
   platform-gated tests.
-- **5.1.5 WinWright sweep**: PENDING
-- **5.1.9 MV rehearsal**: PENDING (partial evidence below; Android emulator rehearsal of F286 still to run)
+- **5.1.5 WinWright sweep**: 2026-10-17 23:23-23:38, DEV build at 80d92c6, 2 scripts (the default sweep), unlocked
+  PC (mouse steps skipped: 0), DB drift none. `test_f124_rule_labels.json` PASS 29/29 (6 m 53 s).
+  `test_s75_new_controls.json` FAILED TO START in the full sweep -- "Dev app window 'MyEmailSpamFilter' did not appear
+  within 30s" (`Ensure-FreshAppAtHome`) -- then PASS 27/27 run alone (`-TestName s75`, 23:32-23:38, no drift). Launch
+  failure: **cause unknown**. Candidate (UNVERIFIED): the f124 instance was still exiting when s75 launched, and a
+  second DEV launch that finds the single-instance mutex held exits silently with no window (`main.cpp:118-133`;
+  background-scan launches never take the mutex, and the DEV tasks were paused). Settles it: the runner logging the
+  app PIDs alive at launch and the new process's exit code. DEV tasks back to Ready after both runs.
+  sweep-head: 80d92c6
+- **5.1.9 MV rehearsal**: 2026-10-17, 2 Windows steps rehearsed on the DEV build at 80d92c6 (MV-1 by real Task
+  Scheduler runs plus the Windows notification store; MV-2 by a dev-DB copy plus the screen trace), each with its
+  `Rehearsed:` line in the Manual Validation section; 0 not rehearsable among the handed-over steps; the phone checks
+  are not handed over in this sprint (Q9 = 2, after the release). F286 emulator rehearsal PASS 2026-10-14 (below).
+- **Android JVM unit tests**: N/A -- `mobile-app/android/app/src/` untouched this sprint (only `build.gradle.kts`).
+- **5.1.6 Runtime Launch Gate**: N/A -- the `build.gradle.kts` change is a dependency (`desugar_jdk_libs` 2.1.4 for
+  F287), not buildTypes, signing or minify; supporting evidence: the dev debug build launched on the emulator
+  2026-10-17 22:44 and ran WorkManager jobs. (The emulator dev app still carries the 60 s diagnostic hold until the
+  next dev build.)
   - F287 Windows toast, REAL Task Scheduler path (2026-10-13, DEV release build at b0e8ca5+, Windows DEV background
     ON at 5 minutes for all four accounts): the Gmail task launched `--background-scan --account-id=...` at 20:21:01;
     its log says "Completion notification step done" at 20:21:20 and 20:26:25. Proof from Windows' own notification
@@ -980,14 +996,50 @@ note (a). **Step-types**: SVC-EDIT, TEST-UNIT. **Est-Effort**: 30-45m.
   - Side finding: the store also held many "MyEmailSpamFilter Background Scan Complete / Found 10 unmatched emails
     in 5 accounts" toasts under the ADR-0018 app ID `MyEmailSpamFilter.BackgroundScan` -- posted by the deleted
     `windows_toast_notification_service_test.dart` on every full test run. Deleting that test ends it.
-- **5.2 full suite**: PENDING
+- **5.2 full suite**: `RESULT label=79-5.2 exit=0 minutes=4 loadFailures=0 peakCommittedGB=52.16 devAppProcs=0
+  last='03:23 +3061 ~15: All tests passed!'` (2026-10-17 23:44, HEAD 80d92c6; AFTER the 2026-10-16 12:02 reboot, page
+  file unchanged at 30,840 MB, so the larger page file did not apply). `flutter analyze`: no issues.
 
 # Phase 7 evidence
 
 - **7.7.1 final code reviews**: PENDING
-- **5.2.3 architecture docs**: PENDING
+- **5.2.3 architecture docs**: 2026-10-17 -- ARCHITECTURE.md updated (IMAP command timeouts,
+  `RuleSetProvider.reloadFromDatabase`, the Sprint 79 skip rules, the worker stop line, the scheduler line; the F287
+  notifier rows at `:219-220` and ADR-0048 were done with Task 4); ADR-0039 Sprint 78 MV-7 amendment updated.
 
 ## Manual Validation steps (Sprint 79 -- re-present IN FULL every time Harold is asked to validate)
 
 Written at Phase 5 after the 5.1.9 rehearsal. Fold steps 8-11 (Task 1) and the three F277 nights (Task 2) are handed
 over in full right after plan approval, since they run on the installed 0.19.0 and do not wait for sprint code.
+Build: Windows DEV 0.20.0 at 80d92c6 (`mobile-app\dist\dev\MyEmailSpamFilter-Dev.exe`, built 2026-10-17 23:22; the
+same exe the DEV tasks launch; title `MyEmailSpamFilter [DEV]`).
+DEV is read-only (scan mode), so no step changes mail.
+
+- **MV-1 (F287, Windows background-scan toast, one per account)**.
+  - Preconditions: Windows Settings > System > Notifications: Notifications On, and the app entry "MyEmailSpamFilter"
+    (the DEV build) On; Do not disturb Off. The DEV app CLOSED (a background launch defers while the app is open).
+    The four DEV background tasks enabled (Task Scheduler Library, `SpamFilterBackgroundScan_*_Dev`, every 20 minutes).
+  - Steps: close the DEV app; wait for the next scheduled run (Task Scheduler "Next Run Time", at most 20 minutes).
+  - Expected: a toast per account titled `Back. scan k*@aol read-only completed` (likewise `k*@yahoo`, `k*@gmail`,
+    `k*@icloud`), body `No rule N Deleted N Safe N` (` Errors N` only when errors occurred). Open Notification Center
+    (Windows+N): ONE MyEmailSpamFilter entry per account. After the following run it is still one per account (the
+    new toast replaces the old one).
+  - Rehearsed: 2026-10-17 23:40-23:43 on 80d92c6 -- four Task Scheduler runs each logged "Completion notification
+    step done"; the Windows store held NO toast because the DEV app's toast setting is off (`HandlerSettings`
+    handler 912 `MyEmailSpamFilter.Dev`, `s:toast` = 0) -- hence the first precondition. Display, text and per-account
+    replacement were proven from the same store on 2026-10-13 (b0e8ca5); the text, notifier and Windows worker files
+    are unchanged since b0e8ca5 (`git log b0e8ca5..HEAD` empty for all three).
+- **MV-2 (your 10-14 check; F297 / F283 coverage sweep)**.
+  - Preconditions: none beyond the DEV app.
+  - Steps: open the DEV app; it opens on Review No Rule Items. Read the count on the "No rule (N)" chip.
+  - Expected: 119 or fewer (it read 386 on 10-14 before the Fold rules import took effect). The screen re-checks
+    every row against the current rules on each load and removes covered rows, so the number can be lower than 119.
+  - Rehearsed: 2026-10-17 on a COPY of the DEV database -- 119 rows with `processed = 0` across all accounts; screen
+    trace `no_rule_review_screen.dart:277-410` (loads every unprocessed row per configured account, then sweeps
+    covered rows) and `:160-171` (re-sweeps when the rules provider changes, which is what F297's import reload
+    triggers). The F297 import path itself is proven by its tests (AC-1 to AC-4); an import step is not handed over
+    because an import replaces ALL rules and the only on-disk rules YAML (10-14) no longer matches the 2,154 rules
+    in the database.
+- **Not validatable in this sprint (Q9 = 2: after the Sprint 79 release, on the Fold)**: F286 notification text and
+  strikethrough; the worker stop line `stopped by WorkManager before it finished: reason=... raw=...` on a release
+  build (then decide Fix 2, Harold 2026-10-17); the Sprint 80 phone items (MV76-1 remainder, F277 arms A and C).

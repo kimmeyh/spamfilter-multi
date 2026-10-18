@@ -1,12 +1,12 @@
 {
     "_description": "Sprint status file that persists across context compaction. Update after each phase/sub-phase completion.",
-    "_last_updated": "2026-10-14T13:30:00Z",
+    "_last_updated": "2026-10-18T04:00:00Z",
     "_usage": "Read this file after context compaction to restore sprint approval state and progress.",
     "_staleness_note": "This file had drifted 15 sprints (last updated at Sprint 35, 2026-04-19) before being refreshed at Sprint 50 close-out. It is a Phase 7.7 checklist item -- update it at every sprint close-out, not opportunistically.",
     "current_sprint": {
         "number": 79,
         "branch": "feature/20261013_Sprint_79",
-        "status": "Phase 4 Sprint Execution -- Tasks 0, 3, 4, 6, 8 done; Task 1 phone steps 1-6 done (Harold 2026-10-14), MV-7 periodic-skip fix approved (Q1=1); Task 2 night C tonight; Task 5 Phase B approved (QF1=2, QF2=1+2, QF3=1); Task 7 waits on the PC restart. Sprint 79 plan APPROVED 2026-10-13 (Q1 1, Q2 2, Q3 1, Q4 1, Q5 1, Q6 1, Q7 1, Q8 2, Q9 2, Q-S1..3 approved); cards #481-#487 created, #471 #472 #433 #428 reused",
+        "status": "Phase 5.3 Manual Validation -- handed over 2026-10-17 (MV-1 Windows toast, MV-2 Review No Rule count; phone checks after the release, Q9=2). Phase 5 markers recorded (5.1.2, 5.1.5 sweep-head 80d92c6, 5.1.9, 5.2). Tasks 0-9 done in-sprint; remainders of MV76-1, F277 and F292 moved to Sprint 80 by Harold 2026-10-16; workmanager 0.10.10 (Upgrade=1), Fix 2 decided after the phone test (Fix=1). Sprint 79 plan APPROVED 2026-10-13 (Q1 1, Q2 2, Q3 1, Q4 1, Q5 1, Q6 1, Q7 1, Q8 2, Q9 2, Q-S1..3 approved); cards #481-#487 created, #471 #472 #433 #428 reused",
         "plan_approved": true,
         "pr_number": 480,
         "version": "0.20.0+17 (Sprint 79, bumped at 3.7.0b)"
@@ -29,12 +29,12 @@
     },
     "_github_issues_note": "Sprint 66 cards created at Phase 3.3.1 (2026-09-07): #387 GP-19, #388 GP-4. Close by hand at Post-Merge Cleanup.",
     "test_metrics": {
-        "suite": "3,019 passed / 15 skipped / 0 failed (local Windows, 2026-10-13, b7e62d6 tree; two earlier runs hit F292)",
+        "suite": "3,061 passed / 15 skipped / 0 failed (run-full-suite.ps1 79-5.2, 2026-10-17, 80d92c6; 0 load failures, peak commit 52.2 GB)",
         "policy_suite": "JVM 21/21; release_notes_test passing; hook suite 128/128 (2026-10-08)",
-        "winwright": "2026-10-10 sweep-head b1e5d7b: f124 PASS 29/29, s75 PASS 27/27, no skipped steps, DB drift none; mt2c retired (F284)",
+        "winwright": "2026-10-17 sweep-head 80d92c6: f124 PASS 29/29, s75 PASS 27/27 (re-run alone; first launch in the full sweep failed, cause unknown), no skipped steps, DB drift none",
         "analyzer": "clean",
         "mutations": "Sprint 77: F258 M1/M2/M4 + L1/L2, F245 21, F192 25, SEC-8b 16, F264 24, R76-1 5, merge M1/M2, F-PRECHECK 15 -- all KILLED",
-        "as_of": "2026-10-10, Sprint 78 Phase 5"
+        "as_of": "2026-10-17, Sprint 79 Phase 5"
     },
     "store_release": {
         "status_0_15_3": "NOT SUBMITTED TO EITHER STORE. Harold, 2026-09-22: \"not pushing to either store this time\". Phase 8.3 explicitly N/A for this cycle.",
