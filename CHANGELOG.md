@@ -30,6 +30,7 @@ Format: `- **type**: Description (Issue #N)` where type is feat|fix|chore|docs
 - **fix**: The 2-minute limit on a server that stops answering now also covers searching and downloading messages; before, enough_mail applied it only to sign-in and folder selection, so a stall mid-scan still hung (Issue #471)
 - **fix**: A folder that fails to download (including the 2-minute limit) now counts as a scan error; before, it read as an empty folder and the scan reported success with 0 errors (Issue #471)
 - **fix**: When the email server stops responding, the scan now stops at the first timeout and says "The email server stopped responding"; before, it went on to the next folder or message on the same dead connection, and each step waited its own 2 minutes (Issue #471)
+- **fix**: Moving a message (delete to the deleted-items folder, move to Junk, safe sender move) now has the same 2-minute limit and the same stop; before, a move the server never answered waited forever, because enough_mail gives the move command no time limit (Issue #471)
 - **fix**: Every background schedule or cancel line in the diagnostic log names the step that asked for it (for example "settings: background off"); on Android release builds it used to read "from unknown" (Issue #471)
 - **fix**: A failed background schedule or cancel names its reason in the diagnostic log, and whether the Doze alarm was left armed
 - **fix**: Adding a safe sender or block rule says so when the saved entry could not be reloaded into the rules in use

@@ -1071,7 +1071,7 @@ note (a). **Step-types**: SVC-EDIT, TEST-UNIT. **Est-Effort**: 30-45m.
       `applyFlagBatch` (it marked the batch succeeded), batch markAsSpam, `listFolders`,
       `ContentHistoryCapture.record`; already rethrowing: `searchByMessageId`, the move/action catches, the scanner's
       per-folder and per-batch handlers; the scanner's outer catch fails the scan with the user sentence
-      (`error_messages.dart:62-65`). UID MOVE is not covered (Q1).
+      (`error_messages.dart:62-65`). UID MOVE was not covered until Q1 below.
     - **Q3 = 1 DONE (class-2 interface change, approved)**: `schedule` and `cancel` take a REQUIRED `caller` label
       (`settings: background on`, `settings: background off`, `startup: F264 interval migration`);
       `schedulerCallerFrom` and the stack-trace capture are removed.
@@ -1081,6 +1081,23 @@ note (a). **Step-types**: SVC-EDIT, TEST-UNIT. **Est-Effort**: 30-45m.
       then re-aimed).
     - Full suite after: `RESULT label=79-771b exit=0 minutes=4 loadFailures=0 peakCommittedGB=51.58
       last='03:17 +3088 ~15: All tests passed!'`; `flutter analyze` no issues.
+  - **Harold's answer (2026-10-18, "q1 1")**: Q1 = 1 DONE (UID MOVE gets the 2-minute limit and ends the session).
+    enough_mail 2.1.7 sends MOVE with no response limit and no parameter for one (`_copyOrMove`,
+    `imap_client.dart:597-600`), so `_uidMove` adds `.timeout(kImapResponseTimeout)` and goes through
+    `_endSessionOnTimeout`; all 5 `uidMove` sites use it (`moveToFolder`, `takeAction` delete / moveToJunk /
+    moveToFolder, the chunked batch mover). Prevention: the Q2 wrapper and its source gate extended (no
+    `_imapClient!.uidMove(`; `.uidMove(` once). Catch walk: `moveToFolder`, `takeAction` and the chunk catch in
+    `_moveFolderChunkedWithRetry` already rethrow `isSessionFatal`; `moveToFolderBatch` and `takeActionBatch` have no
+    catch; the scanner's Steps 6b-1, 6b-1b, 6b-2b and 6b-3 rethrow; the Results screen re-process catches record the
+    batch as failed (user action, not a scan); a later batch in the SAME re-process gets "Not connected", and the
+    next re-process builds a new adapter and signs in again (`platform_registry.dart:59-61` factory call,
+    `results_display_screen.dart:2943`, `:2956`). Tests: a fake-clock test
+    (`testWidgets`, hung MOVE: not done at 119 s, `ImapServerNotRespondingException` at 121 s, client dropped), the
+    batch path (1 MOVE, no retry passes), the single-message paths, and a refused MOVE that does not end the session.
+    Mutations: Q1-M1..M4, 4 of 4 KILLED (limit removed, limit halved, chunk mover bypass, moveToJunk bypass).
+    Full suite after: `RESULT label=79-771c exit=0 minutes=4 loadFailures=0 peakCommittedGB=52.22
+    last='03:03 +3092 ~15: All tests passed!'`; the 4 policy tests that read the edited docs re-run alone after the
+    doc edits: 18 of 18 passed; `flutter analyze` no issues.
 - **5.2.3 architecture docs**: 2026-10-17 -- ARCHITECTURE.md updated (IMAP command timeouts,
   `RuleSetProvider.reloadFromDatabase`, the Sprint 79 skip rules, the worker stop line, the scheduler line; the F287
   notifier rows at `:219-220` and ADR-0048 were done with Task 4); ADR-0039 Sprint 78 MV-7 amendment updated.

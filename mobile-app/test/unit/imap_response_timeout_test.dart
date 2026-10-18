@@ -11,8 +11,8 @@
 // What this does NOT catch: a hang OUTSIDE an IMAP command (a Dart await on
 // something else), a process the OS freezes or kills (the Fold rows whose
 // heartbeat never ran), a server that trickles bytes slowly enough to keep
-// one command alive past the limit in pieces, and a stalled UID MOVE (no
-// per-call limit exists in the library; Sprint 79 7.7.1 Q1).
+// one command alive past the limit in pieces. UID MOVE has no limit in the
+// library; the adapter adds one (7.7.1 Q1), tested on a fake clock below.
 // It proves the library behavior the fix relies on, with a real socket, that
 // both client constructors pass the default, and that the adapter passes the
 // limit to every SEARCH and FETCH and lets a timeout through.
@@ -34,10 +34,28 @@ class _RecordingImapClient extends ImapClient {
       this.selectError,
       this.fetchError,
       this.storeError,
-      this.listError})
+      this.listError,
+      this.moveError})
       : super(isLogEnabled: false);
 
   final Object? listError;
+  final Object? moveError;
+
+  /// When true, UID MOVE never answers (enough_mail sends it with no limit).
+  bool hangOnMove = false;
+  int moves = 0;
+
+  @override
+  Future<GenericImapResult> uidMove(
+    MessageSequence sequence, {
+    Mailbox? targetMailbox,
+    String? targetMailboxPath,
+  }) async {
+    moves++;
+    if (moveError != null) throw moveError!;
+    if (hangOnMove) return Completer<GenericImapResult>().future;
+    return GenericImapResult();
+  }
   final Object? searchError;
   final Object? selectError;
   final Object? fetchError;
@@ -353,8 +371,7 @@ void main() {
   //
   // What this does NOT catch: a real 2-minute stall (the library test above
   // proves the exception type with a real socket; these use a scripted
-  // client), a stalled UID MOVE (no limit exists; 7.7.1 Q1), and the
-  // scanner's own handling (it rethrows every `isSessionFatal` error and
+  // client), and the scanner's own handling (it rethrows every `isSessionFatal` error and
   // fails the scan at its outer catch -- pinned by its own tests).
   group('7.7.1 Q2: a timeout ends the session', () {
     ImapException timeout() =>
@@ -522,10 +539,100 @@ void main() {
         '_imapClient!.listMailboxes(',
         '_imapClient!.uidSearchMessages(',
         '_imapClient!.uidFetchMessages(',
+        '_imapClient!.uidMove(',
       ]) {
         expect(adapter.contains(direct), isFalse, reason: direct);
       }
       expect('client.uidStore('.allMatchesIn(adapter), 1);
+      expect('.uidMove('.allMatchesIn(adapter), 1,
+          reason: 'only _uidMove may send UID MOVE');
+    });
+  });
+
+  // Sprint 79 7.7.1 Q1 (Harold, "q1 1"): UID MOVE gets the 2-minute limit and
+  // the same session end. enough_mail sends MOVE with no limit, so the
+  // adapter adds a Dart `.timeout`.
+  //
+  // What this does NOT catch: a server that finishes the MOVE after the app
+  // stopped waiting (the message is moved but counted failed; the next scan
+  // sees it in its new folder), and a MOVE sent by a path that does not use
+  // GenericIMAPAdapter (Gmail uses its own API).
+  group('7.7.1 Q1: a UID MOVE that never answers ends the session', () {
+    EmailMessage message() => EmailMessage(
+          id: '7',
+          from: 'a@example.com',
+          subject: 's',
+          body: '',
+          headers: const {},
+          receivedDate: DateTime(2026, 10, 18),
+          folderName: 'Inbox',
+        );
+
+    // testWidgets runs on a fake clock, so the 120 s limit elapses in pump().
+    testWidgets('a hung MOVE waits the full limit, then closes the session',
+        (tester) async {
+      final client = _RecordingImapClient()..hangOnMove = true;
+      final adapter = _adapterWith(client);
+      Object? error;
+      var done = false;
+      unawaited(adapter
+          .moveToFolder(message: message(), targetFolder: 'Trash')
+          .then((_) => done = true, onError: (Object e) {
+        error = e;
+        done = true;
+      }));
+      await tester.pump(kImapResponseTimeout - const Duration(seconds: 1));
+      expect(done, isFalse, reason: 'it must not give up before the limit');
+      await tester.pump(const Duration(seconds: 2));
+      expect(done, isTrue, reason: 'a hung MOVE used to wait forever');
+      expect(error, isA<ImapServerNotRespondingException>());
+      expect((error! as ImapServerNotRespondingException).command, 'UID MOVE');
+      expect(adapter.debugHasClient, isFalse);
+      expect(client.disconnects, 1);
+    });
+
+    test('a MOVE timeout in the batch path stops the batch, not one chunk',
+        () async {
+      final client = _RecordingImapClient(moveError: TimeoutException('move'));
+      final adapter = _adapterWith(client);
+      await expectLater(
+          adapter.takeActionBatch([message()], FilterAction.delete),
+          throwsA(isA<ImapServerNotRespondingException>()),
+          reason: 'the chunk catch would retry it for 6 passes');
+      expect(client.moves, 1, reason: 'no second MOVE on the dead session');
+      expect(adapter.debugHasClient, isFalse);
+    });
+
+    test('the single-message paths rethrow it too', () async {
+      final notResponding = throwsA(isA<ImapServerNotRespondingException>());
+      for (final action in [
+        FilterAction.delete,
+        FilterAction.moveToJunk,
+        FilterAction.moveToFolder,
+      ]) {
+        await expectLater(
+            _adapterWith(
+                    _RecordingImapClient(moveError: TimeoutException('move')))
+                .takeAction(message: message(), action: action),
+            notResponding,
+            reason: '$action');
+      }
+      await expectLater(
+          _adapterWith(_RecordingImapClient(moveError: TimeoutException('m')))
+              .moveToFolder(message: message(), targetFolder: 'Trash'),
+          notResponding);
+    });
+
+    test('a MOVE refused by the server is not a session end', () async {
+      final client = _RecordingImapClient(
+          moveError:
+              ImapException(ImapClient(isLogEnabled: false), 'NO no such box'));
+      final adapter = _adapterWith(client);
+      await expectLater(
+          adapter.moveToFolder(message: message(), targetFolder: 'Nowhere'),
+          throwsA(isA<ActionException>()));
+      expect(adapter.debugHasClient, isTrue);
+      expect(client.disconnects, 0);
     });
   });
 }

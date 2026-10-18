@@ -218,7 +218,8 @@ class ServerCertificateNotTrustedException
 /// `:1887-1900`), so `GenericIMAPAdapter` passes this constant per call
 /// through `_uidSearch` / `_uidFetch` (gated by
 /// `imap_response_timeout_test.dart`). UID MOVE sets no response timeout at
-/// all (`_copyOrMove`, `:597-600`) and is NOT covered. In the adapter, the
+/// all (`_copyOrMove`, `:597-600`), so `_uidMove` applies this constant as a
+/// Dart `.timeout` on the call (7.7.1 Q1). In the adapter, the
 /// first timeout ends the whole session and the scan
 /// (`GenericIMAPAdapter._endSessionOnTimeout`, Sprint 79 7.7.1 Q2), so no
 /// later command waits its own limit on the dead connection.

@@ -326,11 +326,12 @@ Uses IMAP UID sequence sets to reduce round-trips from 3N to ~3 batch operations
 so a command whose reply never comes fails with `ImapException('timeout')` (classified as "server unavailable")
 instead of waiting forever. enough_mail 2.1.7 applies the default only to LOGIN, SELECT, LIST, STORE, NOOP and
 EXPUNGE; UID SEARCH and UID FETCH get the limit per call through `GenericIMAPAdapter._uidSearch` / `_uidFetch`
-(7.7.1 review C-1, source-gated). **UID MOVE has no response limit** (the library has no parameter for it). A failure
+(7.7.1 review C-1, source-gated). **UID MOVE has no response limit in the library** (no parameter for it), so
+`GenericIMAPAdapter._uidMove` applies `kImapResponseTimeout` as a Dart `.timeout` on the call (7.7.1 Q1). A failure
 in the full-fetch path reaches the scanner's per-folder handler, which counts it as a folder error (7.7.1 H-1).
 
-**One timeout ends the session** (7.7.1 Q2, Harold): every command with a limit (SELECT, UID SEARCH, UID FETCH, UID
-STORE, LIST) goes through `GenericIMAPAdapter._endSessionOnTimeout`. A response timeout (`ImapException('timeout')`)
+**One timeout ends the session** (7.7.1 Q2 and Q1, Harold): every command with a limit (SELECT, UID SEARCH, UID
+FETCH, UID STORE, LIST, UID MOVE) goes through `GenericIMAPAdapter._endSessionOnTimeout`. A response timeout (`ImapException('timeout')`)
 or a write timeout (`TimeoutException`) discards the client (`_discardClient`, socket close bounded at 10 s) and
 throws `ImapServerNotRespondingException`, a `UserFacingConnectionException`. `isSessionFatal` is therefore true, so
 every per-item catch on the path rethrows it (the adapter's batch and cursor helpers, the scanner's per-folder and

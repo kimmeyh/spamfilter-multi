@@ -1,6 +1,6 @@
 {
     "_description": "Sprint status file that persists across context compaction. Update after each phase/sub-phase completion.",
-    "_last_updated": "2026-10-18T15:45:00Z",
+    "_last_updated": "2026-10-18T17:45:00Z",
     "_usage": "Read this file after context compaction to restore sprint approval state and progress.",
     "_staleness_note": "This file had drifted 15 sprints (last updated at Sprint 35, 2026-04-19) before being refreshed at Sprint 50 close-out. It is a Phase 7.7 checklist item -- update it at every sprint close-out, not opportunistically.",
     "current_sprint": {
@@ -29,7 +29,7 @@
     },
     "_github_issues_note": "Sprint 66 cards created at Phase 3.3.1 (2026-09-07): #387 GP-19, #388 GP-4. Close by hand at Post-Merge Cleanup.",
     "test_metrics": {
-        "suite": "3,088 passed / 15 skipped / 0 failed (run-full-suite.ps1 79-771b, 2026-10-18, after Harold's 7.7.1 decisions Q2/Q3; 0 load failures, peak commit 51.6 GB)",
+        "suite": "3,092 passed / 15 skipped / 0 failed (run-full-suite.ps1 79-771c, 2026-10-18, after Harold's 7.7.1 decisions Q1/Q2/Q3; 0 load failures, peak commit 52.2 GB)",
         "policy_suite": "JVM 21/21; release_notes_test passing; hook suite 128/128 (2026-10-08)",
         "winwright": "2026-10-17 sweep-head 80d92c6: f124 PASS 29/29, s75 PASS 27/27 (re-run alone; first launch in the full sweep failed, cause unknown), no skipped steps, DB drift none",
         "analyzer": "clean",
@@ -54,8 +54,8 @@
     ],
     "blocking_issues": [],
     "next_actions": [
-        "7.7.1: findings fixed; Harold answered Q2=1 (timeout ends session, DONE), Q3=1 (caller label, DONE), Q4=2 (no sweep), Q5=1 (keep M-4). Q1 (UID MOVE limit: 1 wrap at 2 min + close, 2 longer limit, 3 backlog Sprint 80) STILL OPEN -- ask again.",
-        "7.7.5: notify Harold PR #480 is ready for final approval.",
+        "7.7.1 DONE: findings fixed; Harold answered Q1=1 (UID MOVE 2-min limit + session end, DONE), Q2=1 (timeout ends session, DONE), Q3=1 (caller label, DONE), Q4=2 (no sweep), Q5=1 (keep M-4). Mutations 22 of 22 KILLED.",
+        "7.7.5 DONE 2026-10-18: Harold notified PR #480 is ready for final approval; waiting on his merge.",
         "On merge: open the Sprint 80 branch from feature/20261013_Sprint_79; verify Closes #481-#488 closed the cards; keep #471, #472, #433, #428 open.",
         "Confirm 0.19.0 live on both stores and update the Live rows in STORE_VERSION_STATUS.md."
     ],

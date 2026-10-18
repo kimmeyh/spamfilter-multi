@@ -1003,7 +1003,7 @@ class GenericIMAPAdapter with BatchOperationsMixin implements SpamFilterPlatform
       final sequence = MessageSequence.fromId(messageUid, isUid: true);
 
       _logger.i('[IMAP] UID MOVE message ${message.id} to $targetFolder (op #$_operationCount)');
-      await _imapClient!.uidMove(
+      await _uidMove(
         sequence,
         targetMailboxPath: targetFolder,
       );
@@ -1161,7 +1161,7 @@ class GenericIMAPAdapter with BatchOperationsMixin implements SpamFilterPlatform
           // This allows recovery if spam filter makes a mistake
           final targetFolder = _deletedRuleFolder ?? 'Trash';
           _logger.i('[IMAP] UID MOVE message ${message.id} to $targetFolder (op #$_operationCount)');
-          await _imapClient!.uidMove(
+          await _uidMove(
             sequence,
             targetMailboxPath: targetFolder,
           );
@@ -1170,7 +1170,7 @@ class GenericIMAPAdapter with BatchOperationsMixin implements SpamFilterPlatform
 
         case FilterAction.moveToJunk:
           _logger.i('[IMAP] UID MOVE message ${message.id} to Junk (op #$_operationCount)');
-          await _imapClient!.uidMove(
+          await _uidMove(
             sequence,
             targetMailboxPath: 'Junk',
           );
@@ -1181,7 +1181,7 @@ class GenericIMAPAdapter with BatchOperationsMixin implements SpamFilterPlatform
           // Requires additional parameter for target folder
           // For now, default to Junk
           _logger.i('[IMAP] UID MOVE message ${message.id} to Junk (default) (op #$_operationCount)');
-          await _imapClient!.uidMove(
+          await _uidMove(
             sequence,
             targetMailboxPath: 'Junk',
           );
@@ -1492,7 +1492,7 @@ class GenericIMAPAdapter with BatchOperationsMixin implements SpamFilterPlatform
             '[IMAP] UID MOVE chunk ${chunk.length} UIDs from "$sourceFolder" '
             '-> "$targetFolder" (pass $pass, op #$_operationCount)',
           );
-          await _imapClient!.uidMove(
+          await _uidMove(
             MessageSequence.fromIds(chunk, isUid: true),
             targetMailboxPath: targetFolder,
           );
@@ -2021,6 +2021,25 @@ class GenericIMAPAdapter with BatchOperationsMixin implements SpamFilterPlatform
             client.uidStore(sequence, flags, action: action, silent: silent),
       );
 
+  /// 7.7.1 Q1 (Harold, "q1 1"): UID MOVE gets the same 2-minute limit and
+  /// the same session end. enough_mail 2.1.7 sends MOVE with NO response
+  /// limit and offers no parameter for one (`_copyOrMove`,
+  /// `imap_client.dart:597-600`), so the limit is a Dart `.timeout` on the
+  /// returned future; its [TimeoutException] is a no-response error to
+  /// [isNoResponse]. The server may still finish a MOVE after the app stops
+  /// waiting; the chunked mover's verification and the next scan read where
+  /// the message actually is.
+  Future<GenericImapResult> _uidMove(
+    MessageSequence sequence, {
+    required String targetMailboxPath,
+  }) =>
+      _endSessionOnTimeout(
+        'UID MOVE',
+        (client) => client
+            .uidMove(sequence, targetMailboxPath: targetMailboxPath)
+            .timeout(kImapResponseTimeout),
+      );
+
   /// True when [error] means the server did not answer in time: enough_mail's
   /// response timeout (`ImapException('timeout')`, `client_base.dart:312-317`
   /// via `imap_client.dart:2790`) or its write timeout (a `dart:async`
@@ -2033,7 +2052,7 @@ class GenericIMAPAdapter with BatchOperationsMixin implements SpamFilterPlatform
   /// Sprint 79 7.7.1 Q2 (Harold, "q2 1"): ONE timeout ends the session.
   ///
   /// Every command that has a time limit (SELECT, UID SEARCH, UID FETCH, UID
-  /// STORE, LIST) is sent through here. Before this, a timed-out command
+  /// STORE, LIST, and UID MOVE since 7.7.1 Q1) is sent through here. Before this, a timed-out command
   /// failed alone and the scan went on to the next folder or message on the
   /// SAME dead connection, where each command waited its own full limit -- a
   /// server that stopped answering cost 2 minutes per remaining step. Now the
@@ -2042,9 +2061,8 @@ class GenericIMAPAdapter with BatchOperationsMixin implements SpamFilterPlatform
   /// every per-item catch on the path rethrows it; the scan fails once, with a
   /// sentence the user can read.
   ///
-  /// UID MOVE is NOT covered: enough_mail gives it no time limit at all
-  /// (`imap_client.dart:597-600`), so it can never time out (open question to
-  /// Harold, 7.7.1 Q1).
+  /// UID MOVE has no library limit, so [_uidMove] adds one before it comes
+  /// here (7.7.1 Q1).
   Future<T> _endSessionOnTimeout<T>(
     String command,
     Future<T> Function(ImapClient client) send,
