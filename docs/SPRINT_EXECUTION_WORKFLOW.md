@@ -80,7 +80,7 @@ One-line-per-phase quick reference. Use this at the start of a sprint and at eve
   2. For EACH line, state its status explicitly: `DONE (<evidence>)`, `N/A (<why>)`, or `NOT DONE -> doing it now`. Evidence means a command output, a file path, or an artifact -- not a recollection.
   3. Only after every line has a status may you report the section complete.
 
-  **The failure this closes (Sprint 50 close-out)**: three Post-Merge items were skipped while the turn reported close-out complete -- five GitHub issues still open (`Closes #N` does not fire on a `feature -> develop` merge), `.claude/sprint_status.json` stale by 15 sprints, and no next-sprint plan stub. None were noticed because the checklist was never opened; the report was assembled from what the turn remembered doing. Enforced by the `verify-closeout-complete` Stop hook, which blocks a completion claim contradicted by the artifacts.
+  **The failure this closes (Sprint 50 close-out)**: three Post-Merge items were skipped while the turn reported close-out complete -- five GitHub issues still open (`Closes #N` did not fire then, because `main` was the default branch; since 2026-10-14 `develop` is the default and it does fire), `.claude/sprint_status.json` stale by 15 sprints, and no next-sprint plan stub. None were noticed because the checklist was never opened; the report was assembled from what the turn remembered doing. Enforced by the `verify-closeout-complete` Stop hook, which blocks a completion claim contradicted by the artifacts.
 
 - **[WARNING] MANDATORY -- USER-REQUEST INVENTORY (Sprint 50 retro, Harold 2026-07-27)**: a user message containing multiple asks is a CHECKLIST, not a theme. When a request contains more than one instruction (including a compound sentence, a list, or "do X ... until Y"):
   1. **Enumerate every discrete ask** before starting work -- ideally as harness tasks (TaskCreate), otherwise written out explicitly in your first response.
@@ -158,7 +158,7 @@ This change was introduced after Sprint 36 kickoff skipped Phase 1 (prior "OPTIO
 
 - [ ] **1.2 Present Candidates to User in BACKLOG_REFINEMENT.md Format**
   - **MANDATORY FIRST ACTION (Sprint 50, Harold): READ `BACKLOG_REFINEMENT.md` section "Backlog Presentation Format" IN THE SAME TURN, immediately before producing the presentation.** This is a deterministic deliverable -- mirror the template EXACTLY; do not produce it from memory. (This rule exists because the format drifted twice, Sprints 49-50, despite the Sprint 45 read-format-doc-first memory.)
-  - **Summary Index first**: open with a "Candidates at a glance" list of every item's header line only (Harold, Sprint 50), then the detailed phase sections
+  - **Summary Index first**: open with a "Candidates at a glance" list of the header lines of the NEXT 20 active candidates in priority order, then the HOLD items one line each (Harold, Sprint 50; F293, Sprint 79), then the details of the same 20 in the same order, with NO phase-group headers (each card keeps its `- Phase:` bullet)
   - Required per-item format (verbatim from the spec): `**<ID>. <Title> (~<effort>) Priority <N>**` header, then bullets `- Phase:`, `- Platform:`, description bullets, `- Depends on:` (if any)
   - Section structure: `### <Phase Name>` group headers; HOLD items use `Priority HOLD` in a separate `### HOLD Items (<reason>)` section at the bottom
   - Priorities are NUMERIC (increments of 10; sprint-together items use increments of 2). NEVER invent ad-hoc groupings (tiers, selection numbers) in place of phase headers + priorities
@@ -497,6 +497,7 @@ This change was introduced after Sprint 36 kickoff skipped Phase 1 (prior "OPTIO
   - **Why this exists (Harold, 2026-09-07)**: if production is at n.n.n and the dev build contains changes, a tester has NO WAY to tell the two apart unless the version moves. The bump used to happen at Store-release Step 1 -- the very END -- so for an entire sprint the dev build reported the SAME version as production. That is backwards: the window where the distinction matters most is while the changes are being tested. Sprint 66 MV produced the symptom -- Harold saw "0.13.0 [DEV] while production is showing 0.14.0" and reasonably asked whether the repo was wrong.
   - **Which digit**: if the approved plan contains a `feat`, bump MINOR (reset PATCH to 0). Otherwise bump PATCH. **When in doubt, take PATCH** -- a bump later found to be the wrong KIND is cheap to correct at 7.7; a MISSING bump is invisible until a tester is already confused.
   - **Action**: update BOTH `version:` and `msix_config.msix_version` in `mobile-app/pubspec.yaml`, then run `flutter test test/policy/version_consistency_test.dart` -- that gate asserts every version literal in `lib/`, `windows/runner/` and `scripts/` matches pubspec, so it is what proves the bump was complete rather than partial.
+  - **Action (same commit)**: write PROVISIONAL per-store notes `docs/store-assets/RELEASE_NOTES_<new version>_windows.md` and `_play.md` (shape: the previous version's files; re-derived at Phase 8.3 per `STORE_RELEASE_PROCESS.md` Step 1b), and move "Last uploaded to Play" in `STORE_VERSION_STATUS.md` if an upload was reported. Then run `flutter test test/policy/version_consistency_test.dart test/policy/dev_version_ahead_test.dart test/policy/release_notes_test.dart` -- all three are version-bump gates. (Sprint 79: the notes were skipped because this step did not name them, and `release_notes_test` fired only in the full suite, an hour later.)
   - **Verified by**: `test/policy/dev_version_ahead_test.dart` (F190) asserts the dev version is STRICTLY GREATER than the last released version in CHANGELOG.md -- the invariant "a tester can tell", expressed mechanically instead of remembered.
   - Re-verified at **7.7** (below) once retrospective improvements have landed, and again at Store-release Step 1 as a last cheap check.
 
@@ -728,6 +729,11 @@ This change was introduced after Sprint 36 kickoff skipped Phase 1 (prior "OPTIO
   - **Preconditions**: the rehearsal sets up the same preconditions the step states (which setting is on, the scan
     range, whether a backlog cursor exists, which account, app open or closed). A step whose preconditions cannot be
     reproduced is rewritten until they can.
+  - **Facts in a step** (Sprint 79 retro IMP-1): every number, interval, path, name or count a step STATES is read
+    from the live system during the rehearsal, not from memory, the plan or an earlier message, and the `Rehearsed:`
+    line names where each was read (for example `interval PT5M: Get-ScheduledTask`, `count 119: dev-DB copy`).
+    Rehearsing the behavior does not check the text around it. (Sprint 79: the MV-1 step said the DEV tasks run
+    every 20 minutes; their trigger had read PT5M since 10-12, and the toast rehearsal passed without reading it.)
   - **Steps Claude cannot rehearse** (phone-only behavior, a real provider account Claude cannot reach): say so in
     the step, and name the closest rehearsal that was done (emulator, test server).
   - **Record**: each MV step in the plan carries `Rehearsed: <date>, <how>, <observed result>`, and the plan's
@@ -740,7 +746,7 @@ This change was introduced after Sprint 36 kickoff skipped Phase 1 (prior "OPTIO
     already said to trace preconditions; tracing by reading did not prevent it, so the step is now RUN, not read.
 
 - [ ] **5.2 Run Complete Test Suite**
-  - Execute full test suite: `flutter test`
+  - Execute full test suite through the evidence runner (F292, Sprint 79): `powershell -NoProfile -ExecutionPolicy Bypass -File scripts\run-full-suite.ps1 -Label <sprint>-5.2`. It runs `flutter test --concurrency=4` and records boot time, page file, DEV app state, commit charge every 30 s, TEST-RUNNER load failures, and STALLED after 10 minutes without output. Record its RESULT line in the plan's 5.2 entry. A run that loses test files or stalls is a finding with its machine state attached, never "flaky".
   - Verify all tests pass (not just new ones)
   - Check code analysis: `flutter analyze`
   - Ensure zero errors introduced
@@ -1682,7 +1688,7 @@ Once user approves PR:
    - Find all sprint card issues referenced in PR (e.g., #60, #61)
    - Close each issue: `gh issue close #N --reason "completed"`
    - Verify all sprint cards show "Closed" status on GitHub
-   - **Note**: GitHub auto-closes issues when PR is merged if PR mentions "Closes #N", but verify all are closed
+   - **Note**: since 2026-10-14 (Sprint 79, F288) `develop` is the default branch, so GitHub closes issues when the PR merges into `develop` if the PR body mentions "Closes #N". Still verify all are closed
    - **Review ALL open issues**: Run `gh issue list --state open` and close any that were resolved by this sprint or prior work but not yet closed
 
 3. **Update Sprint Completion Documentation** (MANDATORY)

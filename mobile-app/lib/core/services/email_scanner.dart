@@ -431,7 +431,8 @@ class EmailScanner {
           }
           // R76-4: captured BEFORE the safe-sender skip below, so every
           // outcome is recorded. A known email is a sighting (no body fetch);
-          // a new one fetches its text once. Never throws.
+          // a new one fetches its text once. Throws only a session failure
+          // (7.7.1 Q2), which ends the scan.
           await contentCapture?.record(message, result);
           EmailActionType action = EmailActionType.none;
 
@@ -1167,12 +1168,19 @@ class EmailScanner {
       // results. Demo platform exempt (uses MockEmailData, not DB).
       if (platformId != 'demo') {
         try {
-          await ruleSetProvider.loadRules();
-          await ruleSetProvider.loadSafeSenders();
-          AppLogger.scan(
-              'F86: reloaded rules + safe senders after scan complete '
-              '(rules=${ruleSetProvider.rules.rules.length}, '
-              'safe=${ruleSetProvider.safeSenders.safeSenders.length})');
+          // F297: the shared reload. It reports failure instead of throwing
+          // (both loads catch their own errors), so the outcome is logged
+          // from its result.
+          final ok = await ruleSetProvider.reloadFromDatabase();
+          if (ok) {
+            AppLogger.scan(
+                'F86: reloaded rules + safe senders after scan complete '
+                '(rules=${ruleSetProvider.rules.rules.length}, '
+                'safe=${ruleSetProvider.safeSenders.safeSenders.length})');
+          } else {
+            AppLogger.warning('F86: post-scan rule reload failed (non-fatal): '
+                '${ruleSetProvider.error}');
+          }
         } catch (e) {
           AppLogger.warning('F86: post-scan rule reload failed (non-fatal): $e');
         }

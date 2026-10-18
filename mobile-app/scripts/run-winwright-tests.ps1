@@ -4,7 +4,10 @@
 # Prerequisites:
 # - Windows desktop dev build running (build-windows.ps1)
 # - civyk-winwright installed at C:\Tools\WinWright\
-# - *** THE WORKSTATION MUST BE UNLOCKED AND THE SESSION ACTIVE ***
+# - An UNLOCKED workstation runs every step. A LOCKED one runs every step except the
+#   cursor-tool steps, which are removed, named and counted ("locked: N mouse steps
+#   skipped"); the sweep still counts (F291, Sprint 79). See the F291 note at the
+#   locked-workstation gate below.
 #
 # KNOWN FAILURE -- "SetCursorPos failed (Win32 error 0)" MEANS THE SCREEN IS LOCKED.
 # (Sprint 73. Root cause found by Harold after I twice misdiagnosed it: first as an
@@ -29,7 +32,9 @@
 #   blocks precisely the primitive they cannot avoid.
 #
 #   FIX: unlock the workstation and re-run. Do NOT retry harder and do NOT record it as
-#   flakiness -- retrying a locked session only fails slower.
+#   flakiness -- retrying a locked session only fails slower. (Since F291 the runner
+#   removes cursor steps itself on a locked PC, so this symptom means a cursor tool is
+#   missing from $cursorTools -- add it there.)
 #
 #   F284 (Sprint 78): the refusal now applies ONLY when a selected script contains a
 #   cursor-driven step (see $cursorTools below). A pattern-only selection (ww_invoke,
@@ -79,7 +84,8 @@ param(
 
     # Execution modes (Sprint 40, F79)
     [switch]$DryRun,                # Skip the actual WinWright sweep; do preflight + snapshot only
-    [switch]$TestSnapshotOnly       # Run winwright-db-snapshot.ps1 -SelfTest and exit (no app needed)
+    [switch]$TestSnapshotOnly,      # Run winwright-db-snapshot.ps1 -SelfTest and exit (no app needed)
+    [switch]$TestLockedSkipOnly     # F291: self-test the locked-PC step removal on every script and exit (no app needed)
 )
 
 $ErrorActionPreference = "Stop"
@@ -237,6 +243,69 @@ function Ensure-FreshAppAtHome {
     }
     Write-Warning "Dev app window '$appWindowTitle' did not appear within ${WaitForWindowSec}s."
     return $false
+}
+
+# Cursor-driven tools -- see the "Locked-workstation gate" comment further down
+# for why each is on this list. Defined here so the F291 self-test can run
+# before the preflight (it needs no app and no WinWright).
+$cursorTools = @('ww_click', 'ww_hover', 'ww_drag_drop', 'ww_scroll', 'ww_keyboard', 'ww_type', 'ww_select_text')
+
+# F291: write a copy of the script at $Path with every step whose tool is in
+# $Tools removed, to a temp file. Returns the copy's path and the removed steps
+# ("<script> case <n> step <m> (<tool>)"), or the original path and nothing when
+# no step matched.
+function New-CursorFreeCopy {
+    param([string]$Path, [string[]]$Tools)
+    $doc = Get-Content -LiteralPath $Path -Raw -Encoding UTF8 | ConvertFrom-Json
+    $name = Split-Path -Leaf $Path
+    $removed = @()
+    $ci = 0
+    foreach ($tc in @($doc.testCases)) {
+        $ci++
+        $kept = @()
+        $si = 0
+        foreach ($step in @($tc.steps)) {
+            $si++
+            if ($step.tool -and ($Tools -contains $step.tool)) {
+                $removed += "$name case $ci step $si ($($step.tool))"
+            } else {
+                $kept += $step
+            }
+        }
+        $tc.steps = $kept
+    }
+    if ($removed.Count -eq 0) { return @{ Path = $Path; Removed = @() } }
+    $copy = Join-Path ([IO.Path]::GetTempPath()) ("ww_locked_" + $name)
+    [IO.File]::WriteAllText($copy, ($doc | ConvertTo-Json -Depth 50),
+        (New-Object System.Text.UTF8Encoding($false)))
+    return @{ Path = $copy; Removed = $removed }
+}
+
+# F291 self-test: for EVERY script in the folder, the copy keeps every step that
+# is not a cursor tool, removes every one that is, and contains no cursor tool.
+# Prints the total removed (the Dart policy test pins today's six). No app needed.
+if ($TestLockedSkipOnly) {
+    $bad = 0
+    $total = 0
+    foreach ($f in (Get-ChildItem -Path $testDir -Filter 'test_*.json' | Sort-Object Name)) {
+        $orig = Get-Content -LiteralPath $f.FullName -Raw -Encoding UTF8 | ConvertFrom-Json
+        $origSteps = @($orig.testCases | ForEach-Object { @($_.steps) })
+        $cursorCount = @($origSteps | Where-Object { $_.tool -and ($cursorTools -contains $_.tool) }).Count
+        $copy = New-CursorFreeCopy -Path $f.FullName -Tools $cursorTools
+        $after = Get-Content -LiteralPath $copy.Path -Raw -Encoding UTF8 | ConvertFrom-Json
+        $afterSteps = @($after.testCases | ForEach-Object { @($_.steps) })
+        $leftCursor = @($afterSteps | Where-Object { $_.tool -and ($cursorTools -contains $_.tool) }).Count
+        $ok = ($copy.Removed.Count -eq $cursorCount) -and ($leftCursor -eq 0) -and
+              ($afterSteps.Count -eq ($origSteps.Count - $cursorCount))
+        if ($copy.Path -ne $f.FullName) { Remove-Item -LiteralPath $copy.Path -ErrorAction SilentlyContinue }
+        $total += $copy.Removed.Count
+        Write-Host ("[{0}] {1}: {2} steps, {3} removed, {4} kept" -f $(if ($ok) { 'OK' } else { 'FAIL' }),
+            $f.Name, $origSteps.Count, $copy.Removed.Count, $afterSteps.Count)
+        if (-not $ok) { $bad++ }
+    }
+    Write-Host "locked: $total mouse steps would be skipped across all scripts"
+    if ($bad -gt 0) { exit 1 }
+    exit 0
 }
 
 # ---------------------------------------------------------------------------
@@ -424,7 +493,7 @@ if (@($tests).Count -eq 0) {
 # ww_get_value, ww_window_state, ww_focus, ww_count, ...) go through UI Automation
 # patterns and need no input desktop.
 # ---------------------------------------------------------------------------
-$cursorTools = @('ww_click', 'ww_hover', 'ww_drag_drop', 'ww_scroll', 'ww_keyboard', 'ww_type', 'ww_select_text')
+# ($cursorTools is defined above the preflight, so the F291 self-test can use it.)
 
 function Get-CursorToolsUsed {
     param([string]$Path, [string[]]$Tools)
@@ -446,24 +515,23 @@ foreach ($t in $tests) {
     else { $cursorFree += $t.Name }
 }
 
+# F291 (Sprint 79, Harold 2026-10-13): *"if the Windows screen is locked, run all
+# tests except those needing the screen to be unlocked and consider all of the
+# winwright test sweep complete"*. On a locked workstation every script still
+# runs, from a temporary copy with ONLY its cursor-tool steps removed; each
+# removed step is named in the summary as "locked: N mouse steps skipped". The
+# sweep counts as complete. Nothing else changes: a step the script runner skips
+# for any OTHER reason still fails its script (F284, Invoke-WinWrightScript),
+# and a removed click that a later step depended on fails that later step
+# visibly rather than passing. The six mouse steps run unlocked at least once
+# per Store release (Q4 = 1; STORE_RELEASE_PROCESS.md pre-build checklist).
+$script:lockedSkipped = @()
 if (-not $script:inputDesktopAvailable) {
     if ($cursorDriven.Count -gt 0) {
-        Write-Host ""
-        Write-Error @"
-THE WORKSTATION IS LOCKED -- unlock it and run this again.
-
-Not a test failure and not flakiness. WinWright's ww_click synthesizes cursor
-input, which Windows refuses off the input desktop; locking switches that to
-the Winlogon secure desktop. These selected scripts use cursor-driven steps:
-  $($cursorDriven -join "`n  ")
-
-Stopping here deliberately: running anyway produces script failures that read
-as UI regressions. (Sprint 73 retro IMP-6.) Scripts that use only UI Automation
-pattern steps (ww_invoke, ww_set_checked, ...) do run on a locked workstation.
-"@
-        exit 1
+        Write-Host "[Setup] Workstation is LOCKED: cursor steps will be SKIPPED (named in the summary), every other step runs: $($cursorDriven -join '; ')" -ForegroundColor Yellow
+    } else {
+        Write-Host "[Setup] Workstation is locked, but every selected script is cursor-free, so the run is unchanged: $($cursorFree -join ', ')" -ForegroundColor Green
     }
-    Write-Host "[Setup] Workstation is locked, but every selected script is cursor-free, so the run is allowed: $($cursorFree -join ', ')" -ForegroundColor Green
 }
 
 Write-Host ""
@@ -564,8 +632,19 @@ foreach ($test in $tests) {
         continue
     }
 
+    # F291: on a locked workstation run a copy without the cursor steps.
+    $runPath = $test.FullName
+    if (-not $script:inputDesktopAvailable) {
+        $copy = New-CursorFreeCopy -Path $test.FullName -Tools $cursorTools
+        $runPath = $copy.Path
+        if ($copy.Removed.Count -gt 0) {
+            $script:lockedSkipped += $copy.Removed
+            Write-Host "  [locked] skipping $($copy.Removed.Count) mouse step(s): $($copy.Removed -join '; ')" -ForegroundColor DarkYellow
+        }
+    }
+
     $startTime = Get-Date
-    $exitCode = Invoke-WinWrightScript -Path $test.FullName
+    $exitCode = Invoke-WinWrightScript -Path $runPath
     $duration = (Get-Date) - $startTime
 
     if ($exitCode -eq 0) {
@@ -586,7 +665,7 @@ foreach ($test in $tests) {
 
         if (Ensure-FreshAppAtHome) {
             $retryStart = Get-Date
-            $exitCode = Invoke-WinWrightScript -Path $test.FullName
+            $exitCode = Invoke-WinWrightScript -Path $runPath
             $duration = (Get-Date) - $retryStart
         }
 
@@ -601,6 +680,9 @@ foreach ($test in $tests) {
         }
     }
 
+    if ($runPath -ne $test.FullName) {
+        Remove-Item -LiteralPath $runPath -ErrorAction SilentlyContinue
+    }
     Write-Host ""
 }
 
@@ -666,7 +748,14 @@ Write-Host "Passed: $passed" -ForegroundColor Green
 Write-Host "Failed: $failed" -ForegroundColor $(if ($failed -gt 0) { "Red" } else { "Green" })
 # F284 R-5: record the environment so a pass/fail is comparable across displays.
 Write-Host "Display: $($script:displaySize) (physical px)  |  Window: $($script:lastWindowSize) (wanted ${fixedWindowWidth}x${fixedWindowHeight})"
-Write-Host "Input desktop: $(if ($script:inputDesktopAvailable) { 'available (unlocked)' } else { 'LOCKED -- cursor-free scripts only' })"
+Write-Host "Input desktop: $(if ($script:inputDesktopAvailable) { 'available (unlocked)' } else { 'LOCKED -- cursor steps skipped' })"
+# F291: the record line for the plan's 5.1.5 entry. Unlocked runs skip nothing.
+if ($script:lockedSkipped.Count -gt 0) {
+    Write-Host "locked: $($script:lockedSkipped.Count) mouse steps skipped" -ForegroundColor Yellow
+    foreach ($s in $script:lockedSkipped) { Write-Host "  - $s" -ForegroundColor DarkYellow }
+} else {
+    Write-Host "Mouse steps skipped: 0"
+}
 
 if ($driftDetected) {
     Write-Host "DB Drift: DETECTED -- see [LEAK] lines above" -ForegroundColor Red

@@ -44,8 +44,10 @@ If you cannot tell which pass you are in, read `.claude/sprint_status.json`
    Sprint 50 violation).
 
 4. **Present in the EXACT template** -- opening with the REQUIRED Summary Index
-   ("## Candidates at a glance": every item's header line only, in order, plus a
-   one-line HOLD ids row), then the detailed sections. Per item:
+   ("## Candidates at a glance": the header line only of the NEXT 20 active
+   candidates in priority order, then each HOLD item one line in full
+   `<ID>. <Title> (~<effort>) Priority HOLD` form), then the details of THE SAME
+   20 IN THE SAME ORDER (F293, Sprint 79). Per item:
 
    ```markdown
    **<ID>. <Title> (~<effort>) Priority <N>**
@@ -55,11 +57,12 @@ If you cannot tell which pass you are in, read `.claude/sprint_status.json`
    - Depends on: <dependencies, if any>
    ```
 
-   - Items grouped under `### <Phase Name>` section headers (real phase names,
-     never invented "tiers")
+   - NO phase-group headers in the presentation: one priority order, each card
+     keeps its `- Phase:` bullet (the master plan's storage stays grouped by
+     phase, Sprint 79 Q5 = 1)
    - Priorities NUMERIC: increments of 10; sprint-together items increments of 2
-   - HOLD items: `Priority HOLD`, grouped in `### HOLD Items (<reason>)` at the
-     bottom
+   - HOLD items: `Priority HOLD`, one line each in the index only; their details
+     stay in the master plan
    - NO grid tables, NO selection-numbering prefixes, NO ad-hoc groupings
    - Include observations / alternative sprint compositions AFTER the formatted
      list, not woven into it

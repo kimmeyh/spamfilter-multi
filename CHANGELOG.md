@@ -26,6 +26,43 @@ Format: `- **type**: Description (Issue #N)` where type is feat|fix|chore|docs
 
 ## [Unreleased]
 
+### 2026-10-18 (Sprint 79 final code reviews, PR #480)
+- **fix**: The 2-minute limit on a server that stops answering now also covers searching and downloading messages; before, enough_mail applied it only to sign-in and folder selection, so a stall mid-scan still hung (Issue #471)
+- **fix**: A folder that fails to download (including the 2-minute limit) now counts as a scan error; before, it read as an empty folder and the scan reported success with 0 errors (Issue #471)
+- **fix**: When the email server stops responding, the scan now stops at the first timeout and says "The email server stopped responding"; before, it went on to the next folder or message on the same dead connection, and each step waited its own 2 minutes (Issue #471)
+- **fix**: Moving a message (delete to the deleted-items folder, move to Junk, safe sender move) now has the same 2-minute limit and the same stop; before, a move the server never answered waited forever, because enough_mail gives the move command no time limit (Issue #471)
+- **fix**: Every background schedule or cancel line in the diagnostic log names the step that asked for it (for example "settings: background off"); on Android release builds it used to read "from unknown" (Issue #471)
+- **fix**: A failed background schedule or cancel names its reason in the diagnostic log, and whether the Doze alarm was left armed
+- **fix**: Adding a safe sender or block rule says so when the saved entry could not be reloaded into the rules in use
+- **fix**: A YAML import whose backup copy cannot be written now says the import itself succeeded, and the rules in use match the database
+- **fix**: The background-scan log says whether the completion notification was posted; on Android, notifications turned off for the app are reported instead of logged as done
+- **chore**: `run-full-suite.ps1` reports a run that executed no tests as a runner defect (exit 4), never as a pass; `phone-log-health.ps1` names a `-Path` that matched nothing
+
+### 2026-10-18 (Sprint 79 retrospective)
+- **chore**: `pull-phone-screenshots.ps1` also collects Samsung Battery and App info screenshots (`_Device care`, `_Settings`); other apps' screenshots stay skipped, and a new `-SelfTest` checks the list both ways (Sprint 79 retro IMP-2)
+- **docs**: Manual Validation rehearsal reads every number, interval, path or count in a step from the live system and names the source; a claim about a package's behavior cites its source at the resolved version (Sprint 79 retro IMP-1, IMP-3)
+
+### 2026-10-17 (Sprint 79)
+- **fix**: Android background scans use workmanager 0.10.10 (workmanager_android 0.10.9). When Android stops a scan before it finishes, the diagnostic log now says so with Android's own reason name and number (for example `reason=timeout raw=3`); the earlier plugin never delivered the stop, and its reason names did not match Android's numbering. The update also fixes background tasks that failed about 30 seconds after start on Android 16 (Issue #471)
+
+### 2026-10-15 (Sprint 79)
+- **fix**: On Android, a scheduled background scan that had to wait for another scan of the same account no longer scans that account again right after the other scan finishes; it checks again after the wait (Issue #471)
+
+### 2026-10-14 (Sprint 79)
+- **fix**: Importing a rules or safe senders file now takes effect at once; before, Review No Rule Items and the next manual scan kept the old rules until the app restarted. A failed reload after an import is now reported instead of "imported successfully" (Issue #488)
+- **fix**: Android no longer scans an account on a 15-minute (or longer) schedule about twice per interval: the scheduled run now skips an account whose last completed scan started within two-thirds of its interval, as the idle-wake alarm already did (Issue #471)
+- **chore**: The Android worker registers a handler meant to log why Android stopped a scan before it finished; on the emulator it did not fire, so it is not yet a working diagnostic (Issue #471)
+- **chore**: `develop` is the GitHub default branch, so `Closes #N` in a sprint PR closes its cards on merge; releases are tagged `vX.Y.Z` on main, and 22 past releases were tagged (Issue #484)
+
+### 2026-10-13 (Sprint 79)
+- **fix**: A scan whose email server stops answering mid-scan now ends that step after 2 minutes with a connection error, instead of waiting forever and being cleaned up as dead much later (Issue #471)
+- **test**: A WinWright sweep on a locked PC runs every step except the mouse steps, names those, and counts as complete; the mouse steps run unlocked once per Store release (Issue #485)
+- **feat**: Windows shows a notification when a background scan of an account completes, with the same title and counts as Android, one per account (Issue #483)
+- **chore**: flutter_local_notifications 17.2.4 -> 22.3.2 and desugar_jdk_libs 2.0.4 -> 2.1.4; the unused PowerShell toast service and the unused Windows notification placeholder are removed (ADR-0048 supersedes ADR-0018) (Issue #483)
+- **docs**: Backlog refinement presents the next 20 candidates in one priority order, with the details in the same order and no phase-group headers; the master plan stays grouped by phase (Issue #487)
+- **fix**: Every change to an account's background schedule (scheduled or cancelled, on Windows and Android) is now written to the diagnostic log with the screen or step that made it, so an account that stops being scanned always shows why (Issue #471)
+- **feat**: Android background-scan notifications name the account (`Back. scan k*@aol completed`) and list "No rule" first (`No rule 9 Deleted 1 Safe 0`); one notification per account, the newest replacing the older one; a read-only or partial scan names its mode in the title and strikes through the counts it did not act on (Issue #482)
+
 ### 2026-10-13 (Sprint 78 final code reviews, PR #470)
 - **fix**: If the spam filter rules fail to reload after a change, a banner with Retry now says so and the rules loaded earlier stay in use; before, the failure was invisible
 - **fix**: Review No Rule Items drops rows that a rule made elsewhere (a saved Results screen, Settings > Rules) now covers, without tapping Refresh

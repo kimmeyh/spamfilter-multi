@@ -216,9 +216,10 @@ namespace).
 | **BackgroundScanWindowsWorker** | Headless worker for Windows Task Scheduler scans (delegates the per-account scan to BackgroundScanCore since F161) |
 | **ScanFrequency** (`scan_frequency.dart`, F144 Sprint 60) | Shared frequency enum for scheduling UI + both schedulers (extracted when the unwired Android WorkManager code -- BackgroundScanManager/Service/Worker/NotificationService -- was removed; the working Android scheduler landed as F161, Sprint 61) |
 | **WindowsTaskSchedulerService** | Create/manage Windows Task Scheduler tasks; per-account tasks (ADR-0014, ADR-0039 F98) -- `taskNameFor(accountId)`, enumerate/orphan cleanup |
-| **WindowsNotificationService** | Windows toast notifications via PowerShell WinRT (ADR-0018) |
+| **ScanNotificationText** (`scan_notification_text.dart`, F286 Sprint 79) | Shared title, body and per-account notification ID (FNV-1a) for the background-scan completion notification; mode word in the title, struck counts in the HTML body (ADR-0048) |
+| **ScanCompleteNotifier** (`scan_complete_notifier.dart`, F287 Sprint 79) | Posts that notification on BOTH platforms through flutter_local_notifications 22.x: Android channel with HTML body, Windows toast with plain body (declared exception, ADR-0048; supersedes ADR-0018) |
 | **WindowsSystemTrayService** | System tray icon with context menu (ADR-0019) |
-| **PowershellScriptGenerator** | Generates PowerShell scripts for Task Scheduler and notifications |
+| **PowershellScriptGenerator** | Generates PowerShell scripts for Task Scheduler |
 
 #### Other Services
 
@@ -319,6 +320,24 @@ Uses IMAP UID sequence sets to reduce round-trips from 3N to ~3 batch operations
 **Sprint 39 IMAP capability additions** (`GenericIMAPAdapter`, default no-op on non-IMAP platforms via `SpamFilterPlatform`):
 - `searchByMessageId(folder, messageId)` (F91): `UID SEARCH HEADER Message-ID <id>` in a folder; used by the post-safe-sender-move source-folder dedup to find AOL re-injected copies.
 - `firstUidSince(folder, since)` (S38-CI-4): `UID SEARCH SINCE <date>` returning the smallest UID newer than `now - daysBack`; used to cap the `oldest_no_rule_uid` cursor at the retention window (cached once per folder per scan).
+
+**Sprint 79 IMAP command timeouts**: both `ImapClient` constructions (`generic_imap_adapter.dart`,
+`imap_certificate_trust.dart`) set `kImapResponseTimeout` (120 s) and `kImapWriteTimeout` (60 s) as client defaults,
+so a command whose reply never comes fails with `ImapException('timeout')` (classified as "server unavailable")
+instead of waiting forever. enough_mail 2.1.7 applies the default only to LOGIN, SELECT, LIST, STORE, NOOP and
+EXPUNGE; UID SEARCH and UID FETCH get the limit per call through `GenericIMAPAdapter._uidSearch` / `_uidFetch`
+(7.7.1 review C-1, source-gated). **UID MOVE has no response limit in the library** (no parameter for it), so
+`GenericIMAPAdapter._uidMove` applies `kImapResponseTimeout` as a Dart `.timeout` on the call (7.7.1 Q1). A failure
+in the full-fetch path reaches the scanner's per-folder handler, which counts it as a folder error (7.7.1 H-1).
+
+**One timeout ends the session** (7.7.1 Q2 and Q1, Harold): every command with a limit (SELECT, UID SEARCH, UID
+FETCH, UID STORE, LIST, UID MOVE) goes through `GenericIMAPAdapter._endSessionOnTimeout`. A response timeout (`ImapException('timeout')`)
+or a write timeout (`TimeoutException`) discards the client (`_discardClient`, socket close bounded at 10 s) and
+throws `ImapServerNotRespondingException`, a `UserFacingConnectionException`. `isSessionFatal` is therefore true, so
+every per-item catch on the path rethrows it (the adapter's batch and cursor helpers, the scanner's per-folder and
+per-batch handlers, and the content-history capture) and the scan fails once, with "The email server stopped
+responding, so this scan stopped. The next scan will try again." Before this, the scan moved on to the next folder or
+message on the same dead connection, and each later command waited its own 2 minutes. Same on both platforms.
 
 #### Auth Adapters
 
@@ -443,6 +462,10 @@ Reactive state using Provider pattern (ADR-0009).
   current screen, so the home screen is never rebuilt and its list never blanks; a later reload error is logged, not
   shown full-screen. Same on both platforms (ADR-0042, no exception).
 - Stores: `RuleDatabaseStore` (primary), `SafeSenderDatabaseStore`, `LocalRuleStore` (secondary YAML), `PatternCompiler`
+- `reloadFromDatabase()` (Sprint 79, F297): the ONE reload used after anything writes rules or safe senders outside
+  the provider -- YAML import, scan completion, quick actions, Results rule updates. Returns false when either load
+  failed (each load catches its own error), so a caller can report it. Shared code, both platforms (ADR-0042, no exception). Management
+  and quick-add screens do not call it yet (F298, Sprint 80).
 
 **Methods**:
 - `initialize()`: Load rules from database + run YAML-to-DB migration if needed
@@ -488,7 +511,7 @@ main.dart
        -> exit(0)
   5. SecureCredentialsStore.migrateFromLegacyTokenStore()
   6. WindowsSystemTrayService.initialize() [Windows only]
-  7. WindowsNotificationService.initialize() [Windows only]
+  7. (removed Sprint 79: no notification start-up step; ScanCompleteNotifier initializes the plugin when it posts, ADR-0048)
   8. WindowsTaskSchedulerService.verifyAndRepairTaskPath() [Windows release only, incl. MSIX -- F148, Sprint 56]
   9. WindowsTaskSchedulerService.ensureTaskExists() [Windows release only, incl. MSIX -- F148, Sprint 56]
   10. MultiProvider
@@ -580,7 +603,7 @@ BackgroundScanWindowsWorker.executeBackgroundScan(accountId: <id>)
   |    |- scanInbox(daysBack, folders, scanType='background')
   |    |- Log results to BackgroundScanLogStore + per-account log file
   |       ({prefix}background_scan_<sanitizedAccountId>_v{VERSION}.log)
-  |    |- Send Windows toast notification
+  |    |- Post the completion toast via ScanCompleteNotifier (completed scans only; ADR-0048)
   |- Exit with code 0 (success) or 1 (failure)
 ```
 
@@ -602,8 +625,14 @@ so the scan itself still runs in the same worker as above. `BootReceiver` re-arm
 all alarms after a reboot, because alarms (unlike WorkManager work) are not
 persisted. The periodic WorkManager task remains registered as a safety net.
 Sprint 78 MV-7: a Doze-alarm run skips an account whose most recent scan started
-within two-thirds of its interval (`dozeAlarmShouldSkip`), so outside Doze the
-alarm no longer doubles the periodic scans.
+within two-thirds of its interval (`recentScanShouldSkip`), so outside Doze the
+alarm no longer doubles the periodic scans. Sprint 79: the periodic run applies the
+same rule to COMPLETED scans, and a run that waited for another scan of the account
+asks again after the wait (`skipAfterWait`). When WorkManager stops a running worker,
+the worker logs `stopped by WorkManager before it finished: reason=<AndroidX name>
+raw=<n>` (needs workmanager_android 0.10.9+, which delivers the stop on the main
+thread). Every schedule and cancel writes a `[scheduler/<platform>]` line, naming a
+Doze alarm that failed to arm or cancel.
 
 **Measuring and enabling unattended scans** (F252, Sprint 76; Android only, a
 declared ADR-0042 exception): the alarm passes its fire time and source
@@ -863,7 +892,7 @@ artifact (GP-8/GP-3 verifies, Sprint 64 chain validation).
 - Requires Desktop OAuth client credentials in `secrets.dev.json`
 - Build via `build-windows.ps1` script (injects secrets via `--dart-define-from-file`)
 - System tray integration with context menu (ADR-0019)
-- Toast notifications via PowerShell WinRT (ADR-0018)
+- Background-scan completion toast via flutter_local_notifications 22.x, shared with Android (ADR-0048; supersedes ADR-0018)
 - Background scanning via Windows Task Scheduler (ADR-0014)
 - Task registration uses a stable MSIX App Execution Alias for Store installs (F148, Sprint 56) -- Windows resolves `%LOCALAPPDATA%\Microsoft\WindowsApps\myemailspamfilter.exe` to whichever version is CURRENTLY installed, so tasks survive Store version updates without repair. Non-MSIX (dev) builds still use `Platform.resolvedExecutable` directly.
 - Task Scheduler auto-repair on app startup (`verifyAndRepairTaskPath()`): for MSIX installs, its main remaining purpose is one-time migration of a stale VERSIONED-path task (from before F148 shipped) to the new alias-based registration; for dev builds it still fixes the executable path after a rebuild.
