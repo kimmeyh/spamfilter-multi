@@ -4,18 +4,18 @@
     "_usage": "Read this file after context compaction to restore sprint approval state and progress.",
     "_staleness_note": "This file had drifted 15 sprints (last updated at Sprint 35, 2026-04-19) before being refreshed at Sprint 50 close-out. It is a Phase 7.7 checklist item -- update it at every sprint close-out, not opportunistically.",
     "current_sprint": {
-        "number": 79,
-        "branch": "feature/20261013_Sprint_79",
-        "status": "Phase 7.7 Sprint Completion -- 7.7.1 final code reviews running (Copilot requested 2026-10-18 15:23Z, code-reviewer, silent-failure-hunter); PR #480 READY for review. Retro done (Harold all Very Good; IMP-1/2/3 applied, IMP-4 skipped); 7.7 docs done (CHANGELOG, 0.20.0 release notes re-derived, master plan, SPRINT_79_SUMMARY.md, SPRINT_80_PLAN.md stub). Manual Validation PASSED 2026-10-18 (MV-1 four toasts one per account + replacement; MV-2 count 116). Phase 6 PR #480 updated, still DRAFT. Phase 5 markers recorded (5.1.2, 5.1.5 sweep-head 80d92c6, 5.1.9, 5.2). Tasks 0-9 done in-sprint; remainders of MV76-1, F277 and F292 moved to Sprint 80 by Harold 2026-10-16; workmanager 0.10.10 (Upgrade=1), Fix 2 decided after the phone test (Fix=1). Sprint 79 plan APPROVED 2026-10-13 (Q1 1, Q2 2, Q3 1, Q4 1, Q5 1, Q6 1, Q7 1, Q8 2, Q9 2, Q-S1..3 approved); cards #481-#487 created, #471 #472 #433 #428 reused",
-        "plan_approved": true,
-        "pr_number": 480,
-        "version": "0.20.0+17 (Sprint 79, bumped at 3.7.0b)"
+        "number": 80,
+        "branch": "feature/20261018_Sprint_80",
+        "status": "Phase 8 Release Cycle -- 8.1 main merge DONE (#489, ff58da3); 8.2 refinement pass 1 DONE 2026-10-18; 8.3 Microsoft Store 0.20.0 release + Google Play 0.20.0 AAB in progress (Claude builds, Harold uploads); then 8.4 refinement pass 2 (scope selection) and Phase 3 planning. Sprint 80 plan NOT approved (stub only).",
+        "plan_approved": false,
+        "pr_number": null,
+        "version": "0.20.0+17 (unchanged; Sprint 80 bumps at 3.7.0b)"
     },
     "previous_sprint": {
-        "number": 78,
-        "branch": "feature/20261009_Sprint_78",
-        "pr": "#470 -> develop (merged 2026-10-13, 7d3b71a), #479 develop -> main (757d6a0)",
-        "deliverables": "F282, F281, F283, F284, R76-4 (ADR-0047), F199-b to HOLD; MV fixes MV-1..MV-7 (MV-5 withdrawn); retro IMP-1/2/4; 7.7.1 review fixes (all but F290). Version 0.19.0+16. Phone testing moved to Sprint 79."
+        "number": 79,
+        "branch": "feature/20261013_Sprint_79",
+        "pr": "#480 -> develop (merged 2026-10-18, dd04c4c), #489 develop -> main (ff58da3)",
+        "deliverables": "F286, F287 (ADR-0048), F288, F291, F292 (runner; cause unknown), F293, F297; MV76-1 in-sprint part (MV-7 skip, IMAP 120 s limit, schedule logging, workmanager 0.10.10); 7.7.1 fixes incl. Harold Q1-Q3 (one IMAP timeout ends the session, UID MOVE included; scheduler caller label). Version 0.20.0+17. Phone remainder, F277, F292 post-reboot runs moved to Sprint 80."
     },
     "github_issues": {
         "sprint_73": "#428 (open, MV74-1), #422 (open, MV74-3), #430 closed, #434 (open, MV74-2), #431 closed, #432 closed, #433 (open, MV74-3). Also closed in pass 1: #426 (superseded by #428), #427 (leftover captured as F236).",
@@ -25,6 +25,7 @@
         "sprint_76": "Closed by hand 2026-10-06: #452 #453 #454 #456 #457 #458. Open, inside MV76-1: #428 (MV74-1 reboot half), #433 (F205).",
         "sprint_77": "Closed by hand 2026-10-09: #461 (Fold steps 7-11 carried to the Sprint 78 start) #462 #463 #464 #465 #466 #467 #468. Open, inside MV76-1: #428 (MV74-1 reboot half), #433 (F205).",
         "sprint_78": "Closed by hand 2026-10-13: #473 #474 #475 #476 #478 (#477 closed earlier). Open, moved to Sprint 79: #471 (MV76-1, with #428 and #433), #472 (F277).",
+        "sprint_79_closed": "Closed by the PR #480 merge (Closes keywords, develop default branch) 2026-10-18: #481 #482 #483 #484 #485 #486 #487 #488. Open for Sprint 80: #471 (with #433, #428), #472.",
         "sprint_79": "Task 0 #481 (version), Task 1 #471 (MV76-1; inside it #433 F205, #428 MV74-1), Task 2 #472 (F277), Task 3 #482 (F286), Task 4 #483 (F287), Task 5 #484 (F288), Task 6 #485 (F291), Task 7 #486 (F292), Task 8 #487 (F293)"
     },
     "_github_issues_note": "Sprint 66 cards created at Phase 3.3.1 (2026-09-07): #387 GP-19, #388 GP-4. Close by hand at Post-Merge Cleanup.",
@@ -54,9 +55,9 @@
     ],
     "blocking_issues": [],
     "next_actions": [
-        "7.7.1 DONE: findings fixed; Harold answered Q1=1 (UID MOVE 2-min limit + session end, DONE), Q2=1 (timeout ends session, DONE), Q3=1 (caller label, DONE), Q4=2 (no sweep), Q5=1 (keep M-4). Mutations 22 of 22 KILLED.",
-        "7.7.5 DONE 2026-10-18: Harold notified PR #480 is ready for final approval; waiting on his merge.",
-        "On merge: open the Sprint 80 branch from feature/20261013_Sprint_79; verify Closes #481-#488 closed the cards; keep #471, #472, #433, #428 open.",
+        "8.3: build and verify MSIX 0.20.0.0 from the prod worktree on main (STORE_RELEASE_PROCESS.md), then the Play AAB 0.20.0 versionCode 17; give Harold the full paths; tag v0.20.0 on main per Step 5.",
+        "8.4: present the next 20 (index + details, one order) with a recommendation first; Harold selects Sprint 80 scope.",
+        "Sprint 80 planning: new card for the F292 post-reboot runs (#486 closed on merge).",
         "Confirm 0.19.0 live on both stores and update the Live rows in STORE_VERSION_STATUS.md."
     ],
     "next_sprint_targeted": {
