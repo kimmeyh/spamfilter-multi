@@ -4,7 +4,8 @@ Re-derived 2026-10-18 at Sprint 79 Phase 7.7 from the finished CHANGELOG (STORE_
 GOOGLE_PLAY_RELEASE_PROCESS.md Step 2). Check again at Phase 8.3 if anything lands after this date.
 
 **Range**: everything after 0.19.0 (versionCode 16, closed testing). This build is versionCode 17. CHANGELOG
-`[Unreleased]` entries dated 2026-10-13 to 2026-10-17 under "Sprint 79".
+`[Unreleased]` entries dated 2026-10-13 to 2026-10-18 under "Sprint 79" (re-checked at Phase 8.3, 2026-10-18: the
+7.7.1 review fixes of 2026-10-18 are in; the failed-folder line was added then).
 
 **Excluded from this file**: Windows-only changes (the new Windows notification); diagnostic-log-only lines (schedule
 changes, the WorkManager stop reason); the claim that workmanager 0.10.10 fixes tasks failing about 30 seconds after
@@ -18,5 +19,5 @@ Paste the en-US block below into the Play Console release-notes field, tags incl
 <en-US>
 Background scan notifications now name the account and list "No rule" first, one per account. A read-only scan says so in the title and crosses out what it did not do.
 
-Fixes: an account is no longer scanned twice per interval; an imported rules file takes effect at once; a scan whose server stops answering while reading or moving mail stops after 2 minutes and says so.
+Fixes: an account is no longer scanned twice per interval; an imported rules file takes effect at once; a scan whose server stops answering while reading or moving mail stops after 2 minutes and says so; a folder that fails to load counts as an error, not as empty.
 </en-US>

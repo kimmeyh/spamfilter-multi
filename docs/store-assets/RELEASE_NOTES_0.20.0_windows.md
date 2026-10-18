@@ -4,7 +4,8 @@ Re-derived 2026-10-18 at Sprint 79 Phase 7.7 from the finished CHANGELOG (STORE_
 again at Phase 8.3 if anything lands after this date.
 
 **Range**: everything after 0.19.0 (submitted to the Store 2026-10-13): CHANGELOG `[Unreleased]` entries dated
-2026-10-13 to 2026-10-17 under "Sprint 79". No entry carries a platform tag, so each was judged by what it changes
+2026-10-13 to 2026-10-18 under "Sprint 79" (re-checked at Phase 8.3, 2026-10-18: the 7.7.1 review fixes of
+2026-10-18 are in; the failed-folder sentence was added then). No entry carries a platform tag, so each was judged by what it changes
 for a Windows user.
 
 **Excluded from this file**: Android-only changes (notification text on Android, the twice-per-interval and
@@ -16,4 +17,4 @@ the new notification); process and repository changes (backlog presentation, def
 
 When a background scan of an account finishes, Windows now shows a notification naming the account and what the scan found, for example "Back. scan k*@aol completed" and "No rule 9 Deleted 1 Safe 0". Each account has one notification, replaced by the next scan. A read-only scan says so in the title.
 
-Fixes: importing a rules or safe senders file now takes effect at once, without restarting the app, and the app says so if the rules fail to reload. A scan whose email server stops answering while the app reads or moves mail now stops after 2 minutes and says the server stopped responding, instead of waiting indefinitely.
+Fixes: importing a rules or safe senders file now takes effect at once, without restarting the app, and the app says so if the rules fail to reload. A scan whose email server stops answering while the app reads or moves mail now stops after 2 minutes and says the server stopped responding, instead of waiting indefinitely. A folder that fails to load is now counted as a scan error instead of looking empty.
