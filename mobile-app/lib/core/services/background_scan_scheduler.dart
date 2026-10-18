@@ -156,6 +156,10 @@ class BackgroundScanSchedulerFactory {
 /// `settings_screen.dart` tests `scheduler is AndroidSchedulerAdapter` to
 /// decide whether a test scan is queued, and a wrapper would silently turn that
 /// false.
+///
+/// [note] names a part that failed while the call as a whole succeeded (F-PRECHECK,
+/// Sprint 79): on Android the Doze alarm can fail to arm or cancel while the
+/// WorkManager half succeeds, and that failure otherwise reached logcat only.
 @visibleForTesting
 String schedulerChangeLine({
   required String action,
@@ -163,10 +167,11 @@ String schedulerChangeLine({
   int? intervalMinutes,
   required bool ok,
   required String caller,
+  String? note,
 }) =>
     '$action ${Redact.accountId(accountId)}'
     '${intervalMinutes == null ? '' : ' every ${intervalMinutes}m'}'
-    ' ${ok ? 'ok' : 'FAILED'} (from $caller)';
+    ' ${ok ? 'ok' : 'FAILED'}${note == null ? '' : ' ($note)'} (from $caller)';
 
 /// The first app frame outside this file in [trace], as `file.dart:line`, or
 /// `unknown` (an obfuscated or empty trace). Best-effort: it only labels a log
@@ -188,6 +193,7 @@ Future<void> _logSchedulerChange(
   int? intervalMinutes,
   required bool ok,
   required StackTrace trace,
+  String? note,
 }) =>
     DiagnosticLogger.log(
       kind: DiagnosticLogger.kindScan,
@@ -198,6 +204,7 @@ Future<void> _logSchedulerChange(
         intervalMinutes: intervalMinutes,
         ok: ok,
         caller: schedulerCallerFrom(trace),
+        note: note,
       ),
     );
 
@@ -346,18 +353,22 @@ class AndroidSchedulerAdapter implements BackgroundScanScheduler {
     required int intervalMinutes,
   }) async {
     final trace = StackTrace.current;
-    final ok = await _scheduleUnlogged(accountId, intervalMinutes);
+    final (:ok, :note) = await _scheduleUnlogged(accountId, intervalMinutes);
     await _logSchedulerChange('android',
         action: 'schedule',
         accountId: accountId,
         intervalMinutes: intervalMinutes,
         ok: ok,
-        trace: trace);
+        trace: trace,
+        note: note);
     return ok;
   }
 
-  Future<bool> _scheduleUnlogged(String accountId, int intervalMinutes) async {
-    if (intervalMinutes <= 0) return false;
+  /// [note] is set when the Doze alarm was not armed although WorkManager was
+  /// registered, so the diagnostic line can say so (logcat is unreachable).
+  Future<({bool ok, String? note})> _scheduleUnlogged(
+      String accountId, int intervalMinutes) async {
+    if (intervalMinutes <= 0) return (ok: false, note: null);
     try {
 
       // F235 (Sprint 73): arm a Doze-tolerant alarm FIRST.
@@ -406,23 +417,28 @@ class AndroidSchedulerAdapter implements BackgroundScanScheduler {
         backoffPolicy: BackoffPolicy.exponential,
         backoffPolicyDelay: const Duration(minutes: 10),
       );
-      return true;
+      return (ok: true, note: alarmArmed ? null : 'Doze alarm NOT armed');
     } catch (e) {
       Logger().e('WorkManager schedule failed for account: $e');
-      return false;
+      return (ok: false, note: null);
     }
   }
 
   @override
   Future<bool> cancel(String accountId) async {
     final trace = StackTrace.current;
-    final ok = await _cancelUnlogged(accountId);
+    final (:ok, :note) = await _cancelUnlogged(accountId);
     await _logSchedulerChange('android',
-        action: 'cancel', accountId: accountId, ok: ok, trace: trace);
+        action: 'cancel',
+        accountId: accountId,
+        ok: ok,
+        trace: trace,
+        note: note);
     return ok;
   }
 
-  Future<bool> _cancelUnlogged(String accountId) async {
+  /// [note] is set when WorkManager was cancelled but the Doze alarm was not.
+  Future<({bool ok, String? note})> _cancelUnlogged(String accountId) async {
     try {
       await Workmanager().cancelByUniqueName(uniqueNameFor(accountId));
       // F175 R-6 (Sprint 62): also cancel any pending TEST one-off.
@@ -458,10 +474,10 @@ class AndroidSchedulerAdapter implements BackgroundScanScheduler {
             're-arm at the next reboot via rescheduleAll. WorkManager was '
             'cancelled, so no scan runs while the app is alive.');
       }
-      return true;
+      return (ok: true, note: alarmCancelled ? null : 'Doze alarm NOT cancelled');
     } catch (e) {
       Logger().e('WorkManager cancel failed: $e');
-      return false;
+      return (ok: false, note: null);
     }
   }
 

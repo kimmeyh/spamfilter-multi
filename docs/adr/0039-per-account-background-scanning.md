@@ -342,7 +342,11 @@ was ALSO scanning on its own schedule, so each account was scanned about twice p
 interval (Fold, 0.18.0: 558 AOL scans in 3.4 days at 15 minutes, about 320
 expected). A Doze-alarm run now skips an account whose most recent scan (manual or
 background, any outcome) started within two-thirds of its interval
-(`dozeAlarmShouldSkip`, `android_background_scan_worker.dart`). Two-thirds, not the
+(`recentScanShouldSkip`, formerly `dozeAlarmShouldSkip`, `android_background_scan_worker.dart`).
+**Sprint 79 (Harold Q1 = 1, A = 1)**: a periodic run now applies the same rule, counting only
+COMPLETED scans (so its retry after a failed or killed scan still runs), and a run that waited
+for another scan of the account asks again after the wait (`skipAfterWait` on
+`BackgroundScanCore.scanAccount`). New-mail and Test runs never skip. Two-thirds, not the
 full interval: the alarm re-arms when it fires and its scan starts about a second
 later, so in Doze the previous alarm scan is slightly less than one interval old
 and a full-interval rule would skip every second alarm. Android only; Windows has

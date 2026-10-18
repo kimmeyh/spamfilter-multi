@@ -321,6 +321,11 @@ Uses IMAP UID sequence sets to reduce round-trips from 3N to ~3 batch operations
 - `searchByMessageId(folder, messageId)` (F91): `UID SEARCH HEADER Message-ID <id>` in a folder; used by the post-safe-sender-move source-folder dedup to find AOL re-injected copies.
 - `firstUidSince(folder, since)` (S38-CI-4): `UID SEARCH SINCE <date>` returning the smallest UID newer than `now - daysBack`; used to cap the `oldest_no_rule_uid` cursor at the retention window (cached once per folder per scan).
 
+**Sprint 79 IMAP command timeouts**: both `ImapClient` constructions (`generic_imap_adapter.dart`,
+`imap_certificate_trust.dart`) set `kImapResponseTimeout` (120 s) and `kImapWriteTimeout` (60 s), so a command whose
+reply never comes fails with `ImapException('timeout')` (classified as "server unavailable") instead of waiting
+forever. Same on both platforms.
+
 #### Auth Adapters
 
 **GoogleAuthService** (ADR-0011):
@@ -444,6 +449,10 @@ Reactive state using Provider pattern (ADR-0009).
   current screen, so the home screen is never rebuilt and its list never blanks; a later reload error is logged, not
   shown full-screen. Same on both platforms (ADR-0042, no exception).
 - Stores: `RuleDatabaseStore` (primary), `SafeSenderDatabaseStore`, `LocalRuleStore` (secondary YAML), `PatternCompiler`
+- `reloadFromDatabase()` (Sprint 79, F297): the ONE reload used after anything writes rules or safe senders outside
+  the provider -- YAML import, scan completion, quick actions, Results rule updates. Returns false when either load
+  failed (each load catches its own error), so a caller can report it. Shared code, both platforms (ADR-0042, no exception). Management
+  and quick-add screens do not call it yet (F298, Sprint 80).
 
 **Methods**:
 - `initialize()`: Load rules from database + run YAML-to-DB migration if needed
@@ -603,8 +612,14 @@ so the scan itself still runs in the same worker as above. `BootReceiver` re-arm
 all alarms after a reboot, because alarms (unlike WorkManager work) are not
 persisted. The periodic WorkManager task remains registered as a safety net.
 Sprint 78 MV-7: a Doze-alarm run skips an account whose most recent scan started
-within two-thirds of its interval (`dozeAlarmShouldSkip`), so outside Doze the
-alarm no longer doubles the periodic scans.
+within two-thirds of its interval (`recentScanShouldSkip`), so outside Doze the
+alarm no longer doubles the periodic scans. Sprint 79: the periodic run applies the
+same rule to COMPLETED scans, and a run that waited for another scan of the account
+asks again after the wait (`skipAfterWait`). When WorkManager stops a running worker,
+the worker logs `stopped by WorkManager before it finished: reason=<AndroidX name>
+raw=<n>` (needs workmanager_android 0.10.9+, which delivers the stop on the main
+thread). Every schedule and cancel writes a `[scheduler/<platform>]` line, naming a
+Doze alarm that failed to arm or cancel.
 
 **Measuring and enabling unattended scans** (F252, Sprint 76; Android only, a
 declared ADR-0042 exception): the alarm passes its fire time and source

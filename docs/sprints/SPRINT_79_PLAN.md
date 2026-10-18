@@ -323,6 +323,8 @@ AOL scans that stop mid-run.
     the next dev build. One "isn't responding" dialog at app launch: Android `ANR ... Reason: Timed out while trying
     to bind` at 22:44:51 while `lowmemorykiller` killed about 15 apps (emulator memory pressure; same as 10-15).
     **Fix 2 (native Application class) is therefore NOT needed for the stop reason** -- asked back to Harold.
+    **Harold, 2026-10-17 (verbatim)**: *"Fix 1 - after testing on the phone can decide if fix 2 is needed. continue
+    with next steps"* -- Fix 2 not built; decided after the phone shows the stop line on a release build.
   - **Q1 gap found on the emulator (10:21)**: a periodic run that arrives WHILE another scan of the account is
     running passes the entry check (the running scan is not `completed`), waits in `BackgroundScanCore`'s busy-retry
     (254 s), then scans anyway -- 10:25:37, 3.5 minutes after the 10:22:01 completion, inside the window. The entry
@@ -953,7 +955,18 @@ note (a). **Step-types**: SVC-EDIT, TEST-UNIT. **Est-Effort**: 30-45m.
 
 # Phase 5 evidence
 
-- **5.1.2 F-PRECHECK**: PENDING
+- **5.1.2 F-PRECHECK**: 2026-10-17, six classes run against `origin/develop...HEAD` (lib, android, scripts) by a
+  read-only Sonnet agent, findings checked here. No HIGH. Fixed: (M) ADR-0039:345 and ARCHITECTURE.md:606 named
+  the renamed `dozeAlarmShouldSkip` and said only the Doze alarm skips -- updated, with the Sprint 79 periodic skip,
+  `skipAfterWait`, the stop line and the scheduler line; (M, silent failure) the Android scheduler line said `ok`
+  when the Doze alarm failed to arm or cancel (that failure reached logcat only) -- `schedulerChangeLine` now takes a
+  `note` (`ok (Doze alarm NOT armed|NOT cancelled)`), tests in `background_scan_scheduler_test.dart`, mutations N1-N3
+  KILLED (N3 survived first; the source gate was extended). Recorded, not changed (LOW): `maskAccount` would show
+  the platform letter for a legacy `{platform}-{email}` id (ids are stored as plain emails); `phone-log-health.ps1`
+  self-test has no periodic-wording skip line; `hasStruckCounts` is test-only; an untracked, uncompiled
+  `generic_imap_adapter.dart.bak` builds a client without timeouts; master-plan F287 text describes the deleted
+  services (card removed at close-out). Clean: helper wiring (every new helper has a runtime caller), API scope,
+  platform-gated tests.
 - **5.1.5 WinWright sweep**: PENDING
 - **5.1.9 MV rehearsal**: PENDING (partial evidence below; Android emulator rehearsal of F286 still to run)
   - F287 Windows toast, REAL Task Scheduler path (2026-10-13, DEV release build at b0e8ca5+, Windows DEV background

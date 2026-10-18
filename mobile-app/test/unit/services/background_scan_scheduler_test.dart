@@ -371,6 +371,38 @@ void main() {
           'main.dart:479');
     });
 
+    // F-PRECHECK (Sprint 79): a Doze alarm that failed to arm or cancel while
+    // WorkManager succeeded reached logcat only, so the log read a bare "ok".
+    // What this does NOT catch: the native alarm reporting success for an
+    // alarm it did not set (only a device log can show that).
+    test('a failed Doze-alarm half is named beside ok', () {
+      expect(
+          schedulerChangeLine(
+              action: 'cancel',
+              accountId: 'kimmeyh@gmail.com',
+              ok: true,
+              caller: 'settings_screen.dart:1564',
+              note: 'Doze alarm NOT cancelled'),
+          'cancel k***@gmail.com ok (Doze alarm NOT cancelled) '
+          '(from settings_screen.dart:1564)');
+    });
+
+    test('source gate: the Android adapter passes the alarm note through', () {
+      final src = File('lib/core/services/background_scan_scheduler.dart')
+          .readAsStringSync();
+      expect(src, contains("note: alarmArmed ? null : 'Doze alarm NOT armed'"));
+      expect(src,
+          contains("note: alarmCancelled ? null : 'Doze alarm NOT cancelled'"));
+      expect(
+          RegExp(r"_logSchedulerChange\('android',[^;]*note: note\)")
+              .allMatches(src)
+              .length,
+          2);
+      // ...and the one log helper hands it to the line builder.
+      expect(RegExp(r'detail: schedulerChangeLine\([^;]*note: note,').hasMatch(src),
+          isTrue);
+    });
+
     test('source gate: both adapters log schedule AND cancel', () {
       final src = File('lib/core/services/background_scan_scheduler.dart')
           .readAsStringSync();
