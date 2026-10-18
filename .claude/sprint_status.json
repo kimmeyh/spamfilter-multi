@@ -1,12 +1,12 @@
 {
     "_description": "Sprint status file that persists across context compaction. Update after each phase/sub-phase completion.",
-    "_last_updated": "2026-10-18T11:40:00Z",
+    "_last_updated": "2026-10-18T15:45:00Z",
     "_usage": "Read this file after context compaction to restore sprint approval state and progress.",
     "_staleness_note": "This file had drifted 15 sprints (last updated at Sprint 35, 2026-04-19) before being refreshed at Sprint 50 close-out. It is a Phase 7.7 checklist item -- update it at every sprint close-out, not opportunistically.",
     "current_sprint": {
         "number": 79,
         "branch": "feature/20261013_Sprint_79",
-        "status": "Phase 7.3 Sprint Retrospective -- prompt sent 2026-10-18; Claude draft at docs/sprints/drafts/SPRINT_79_RETROSPECTIVE_claude_draft.md; waiting for Harold's 14-category feedback. Manual Validation PASSED 2026-10-18 (MV-1 four toasts one per account + replacement; MV-2 count 116). Phase 6 PR #480 updated, still DRAFT. Phase 5 markers recorded (5.1.2, 5.1.5 sweep-head 80d92c6, 5.1.9, 5.2). Tasks 0-9 done in-sprint; remainders of MV76-1, F277 and F292 moved to Sprint 80 by Harold 2026-10-16; workmanager 0.10.10 (Upgrade=1), Fix 2 decided after the phone test (Fix=1). Sprint 79 plan APPROVED 2026-10-13 (Q1 1, Q2 2, Q3 1, Q4 1, Q5 1, Q6 1, Q7 1, Q8 2, Q9 2, Q-S1..3 approved); cards #481-#487 created, #471 #472 #433 #428 reused",
+        "status": "Phase 7.7 Sprint Completion -- 7.7.1 final code reviews running (Copilot requested 2026-10-18 15:23Z, code-reviewer, silent-failure-hunter); PR #480 READY for review. Retro done (Harold all Very Good; IMP-1/2/3 applied, IMP-4 skipped); 7.7 docs done (CHANGELOG, 0.20.0 release notes re-derived, master plan, SPRINT_79_SUMMARY.md, SPRINT_80_PLAN.md stub). Manual Validation PASSED 2026-10-18 (MV-1 four toasts one per account + replacement; MV-2 count 116). Phase 6 PR #480 updated, still DRAFT. Phase 5 markers recorded (5.1.2, 5.1.5 sweep-head 80d92c6, 5.1.9, 5.2). Tasks 0-9 done in-sprint; remainders of MV76-1, F277 and F292 moved to Sprint 80 by Harold 2026-10-16; workmanager 0.10.10 (Upgrade=1), Fix 2 decided after the phone test (Fix=1). Sprint 79 plan APPROVED 2026-10-13 (Q1 1, Q2 2, Q3 1, Q4 1, Q5 1, Q6 1, Q7 1, Q8 2, Q9 2, Q-S1..3 approved); cards #481-#487 created, #471 #472 #433 #428 reused",
         "plan_approved": true,
         "pr_number": 480,
         "version": "0.20.0+17 (Sprint 79, bumped at 3.7.0b)"
@@ -54,14 +54,14 @@
     ],
     "blocking_issues": [],
     "next_actions": [
-        "Phase 4: Task 1 phone work (Harold has Fold steps 8-11 in full), R-8/R-9 log analysis; F277 nights with AOL only.",
-        "Task 5 F288 Phase A report to Harold mid-sprint (approved pause), then Phase B on his answer.",
-        "Task 3 F286, then Task 4 F287 (route 2: plugin 22.3.2 + desugar 2.1.4); Tasks 6, 8, 7 fill waits (Task 7 after the page-file reboot).",
-        "After certification: confirm 0.19.0 live on both stores and update the Live rows in STORE_VERSION_STATUS.md."
+        "7.7.1: disposition every finding from Copilot, code-reviewer and silent-failure-hunter (fix without asking unless decision-class, backlog/N-A, or 4+ code files / 600+ lines); push; resolve Copilot threads; record '- **7.7.1 final code reviews**: <evidence>' in SPRINT_79_PLAN.md.",
+        "7.7.5: notify Harold PR #480 is ready for final approval.",
+        "On merge: open the Sprint 80 branch from feature/20261013_Sprint_79; verify Closes #481-#488 closed the cards; keep #471, #472, #433, #428 open.",
+        "Confirm 0.19.0 live on both stores and update the Live rows in STORE_VERSION_STATUS.md."
     ],
     "next_sprint_targeted": {
-        "number": 79,
-        "stub": "docs/sprints/SPRINT_79_PLAN.md",
-        "committed": "Phone testing moved from Sprint 78 (MV76-1, F277, MV-7, Gmail invalid_grant, Android parity, dying AOL scans); backlog targets F286, F288, F291, F292"
+        "number": 80,
+        "stub": "docs/sprints/SPRINT_80_PLAN.md",
+        "committed": "0.20.0 store builds; Fix 2 decision after the phone stop line; MV76-1 phone remainder; F277 arm A (second night) and arm C + decision rule; F292 post-reboot runs; backlog targets F294, F295, F296, F298"
     }
 }

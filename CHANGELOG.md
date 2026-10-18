@@ -26,6 +26,10 @@ Format: `- **type**: Description (Issue #N)` where type is feat|fix|chore|docs
 
 ## [Unreleased]
 
+### 2026-10-18 (Sprint 79 retrospective)
+- **chore**: `pull-phone-screenshots.ps1` also collects Samsung Battery and App info screenshots (`_Device care`, `_Settings`); other apps' screenshots stay skipped, and a new `-SelfTest` checks the list both ways (Sprint 79 retro IMP-2)
+- **docs**: Manual Validation rehearsal reads every number, interval, path or count in a step from the live system and names the source; a claim about a package's behavior cites its source at the resolved version (Sprint 79 retro IMP-1, IMP-3)
+
 ### 2026-10-17 (Sprint 79)
 - **fix**: Android background scans use workmanager 0.10.10 (workmanager_android 0.10.9). When Android stops a scan before it finishes, the diagnostic log now says so with Android's own reason name and number (for example `reason=timeout raw=3`); the earlier plugin never delivered the stop, and its reason names did not match Android's numbering. The update also fixes background tasks that failed about 30 seconds after start on Android 16 (Issue #471)
 
