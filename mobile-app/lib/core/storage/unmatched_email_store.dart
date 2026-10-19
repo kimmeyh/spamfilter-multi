@@ -343,7 +343,14 @@ class UnmatchedEmailStore {
                   ],
                 );
 
-          final values = email.toMap();
+          // F276 (Sprint 80): a sighting proves the message is in the folder
+          // now. Record that, or toMap's default ('unknown', never checked)
+          // would make the presence reconciler re-check every row the scan
+          // just saw -- on every scan, not once per kNoRulePresenceRecheck.
+          final values = email.toMap()
+            ..['availability_status'] = availabilityAvailable
+            ..['availability_checked_at'] =
+                DateTime.now().millisecondsSinceEpoch;
           if (existing.isEmpty) {
             final id = await txn.insert('unmatched_emails', values);
             results.add(UnmatchedUpsertResult(id, UnmatchedUpsertOutcome.inserted));

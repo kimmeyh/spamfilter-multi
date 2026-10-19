@@ -206,11 +206,23 @@ function Set-FixedWindowSize {
 }
 
 function Ensure-FreshAppAtHome {
-    param([int]$WaitForWindowSec = 30)
+    # Sprint 80: 60 s, not 30 s. In a RELEASE build the app reconciles the
+    # Task Scheduler tasks BEFORE runApp (main.dart, F98 block): one
+    # get_status.ps1 per verifyAndRepairTaskPath and per ensureTaskExists for
+    # each enabled account, then adhoc_query.ps1 -- serial PowerShell launches
+    # of about 3 s each. Measured 2026-10-19 with 4 enabled DEV accounts:
+    # 9 children, window at 30.9 s, the app process idle in between. The
+    # Sprint 79 "did not appear within 30s" (cause unknown then) is this.
+    param([int]$WaitForWindowSec = 60)
 
     # (1) Defensive teardown of any existing dev-app instance.
     Get-Process $appProcName -ErrorAction SilentlyContinue | Stop-Process -Force -ErrorAction SilentlyContinue
     Start-Sleep -Seconds 1
+    # Sprint 79 named this instrument: the PIDs still alive at launch.
+    $alive = @(Get-Process $appProcName -ErrorAction SilentlyContinue)
+    if ($alive.Count -gt 0) {
+        Write-Warning "Still alive after teardown: PID(s) $(($alive | ForEach-Object Id) -join ', ')"
+    }
 
     if (-not (Test-Path $devAppExe)) {
         Write-Error "Dev app exe not found at $devAppExe. Build a dev build first (build-windows.ps1)."
@@ -226,9 +238,15 @@ function Ensure-FreshAppAtHome {
     # 'No main window found' failures on step 2 of every script. Wait longer,
     # and settle for 8s after the title appears so the first script step meets
     # a genuinely idle app.
-    Start-Process -FilePath $devAppExe | Out-Null
+    $launched = Start-Process -FilePath $devAppExe -PassThru
     $deadline = (Get-Date).AddSeconds($WaitForWindowSec)
     while ((Get-Date) -lt $deadline) {
+        # A launch that finds the single-instance mutex held exits at once
+        # with no window (main.cpp:118-133); say so instead of timing out.
+        if ($launched.HasExited) {
+            Write-Warning "Dev app PID $($launched.Id) exited before showing a window (exit code $($launched.ExitCode))."
+            return $false
+        }
         $p = Get-Process $appProcName -ErrorAction SilentlyContinue |
              Where-Object { $_.MainWindowTitle -like "*$appWindowTitle*" }
         if ($p) {

@@ -91,6 +91,13 @@ void main() {
         createdAt: DateTime.now(),
       );
 
+  // A sighting stamps the row checked (upsertUnmatchedEmails). Clearing the
+  // stamp makes the rows due, as rows written before F276 are.
+  Future<void> makeDue() async {
+    final db = await testHelper.dbHelper.database;
+    await db.update('unmatched_emails', {'availability_checked_at': null});
+  }
+
   Future<Set<String>> listed(String accountId) async =>
       (await store.getUnprocessedForAccount(accountId))
           .map((e) => e.providerIdentifierValue)
@@ -102,6 +109,7 @@ void main() {
       final scan = await testHelper.createTestScanResult(account);
       await store.upsertUnmatchedEmails(
           [row(scan, '1'), row(scan, '2'), row(scan, '3')]);
+      await makeDue();
       final checker = _FakeChecker({
         '1': MessagePresence.present,
         '2': MessagePresence.absent,
@@ -127,6 +135,7 @@ void main() {
     test('a later sighting lists a hidden row again', () async {
       final scan = await testHelper.createTestScanResult(account);
       await store.upsertUnmatchedEmails([row(scan, '7')]);
+      await makeDue();
       await reconcileNoRulePresence(
           checker: _FakeChecker({'7': MessagePresence.absent}),
           store: store,
@@ -144,6 +153,7 @@ void main() {
         'earlier is', () async {
       final scan = await testHelper.createTestScanResult(account);
       await store.upsertUnmatchedEmails([row(scan, '9')]);
+      await makeDue();
       final checker = _FakeChecker({'9': MessagePresence.present});
       await reconcileNoRulePresence(
           checker: checker,
@@ -169,6 +179,39 @@ void main() {
       expect(checker.asked, hasLength(2));
     });
 
+    // Found in the 5.1.9 rehearsal on the DEV database: a re-sighting wrote
+    // toMap's 'unknown' / never-checked, so every scan re-asked every row it
+    // had just seen. What this does NOT catch: a scan that fetches a folder
+    // but does not upsert a seen row (rule-matched mail is not a No Rule row
+    // and never reaches this table).
+    test('a re-sighting records the row present and checked: the next scan '
+        'does not ask about it', () async {
+      final scan = await testHelper.createTestScanResult(account);
+      await store.upsertUnmatchedEmails([row(scan, '5')]);
+      await makeDue();
+      final checker = _FakeChecker({'5': MessagePresence.present});
+      await reconcileNoRulePresence(
+          checker: checker,
+          store: store,
+          accountId: account,
+          folderName: 'INBOX',
+          limit: 500);
+      expect(checker.asked, hasLength(1));
+
+      final scan2 = await testHelper.createTestScanResult(account);
+      await store.upsertUnmatchedEmails([row(scan2, '5')]);
+      await reconcileNoRulePresence(
+          checker: checker,
+          store: store,
+          accountId: account,
+          folderName: 'INBOX',
+          limit: 500);
+      expect(checker.asked, hasLength(1));
+      final kept = (await store.getUnprocessedForAccount(account)).single;
+      expect(kept.availabilityStatus, UnmatchedEmailStore.availabilityAvailable);
+      expect(kept.availabilityCheckedAt, isNotNull);
+    });
+
     test('only this account and folder are asked; the limit is honored',
         () async {
       final scanA = await testHelper.createTestScanResult(account);
@@ -180,6 +223,7 @@ void main() {
         row(scanA, 's1', folder: 'Bulk'),
         row(scanB, 'b1'),
       ]);
+      await makeDue();
       final checker = _FakeChecker({});
       await reconcileNoRulePresence(
           checker: checker,
@@ -194,6 +238,7 @@ void main() {
     test('a checker failure propagates and leaves every row listed', () async {
       final scan = await testHelper.createTestScanResult(account);
       await store.upsertUnmatchedEmails([row(scan, '1')]);
+      await makeDue();
       await expectLater(
           reconcileNoRulePresence(
               checker: _FakeChecker({}, error: StateError('network')),
@@ -290,6 +335,7 @@ void main() {
         () async {
       final scan = await testHelper.createTestScanResult(scanAccount);
       await store.upsertUnmatchedEmails([row(scan, 'gone1')]);
+      await makeDue();
       expect(await listed(scanAccount), {'gone1'});
 
       final platform =
@@ -304,6 +350,7 @@ void main() {
         'completes', () async {
       final scan = await testHelper.createTestScanResult(scanAccount);
       await store.upsertUnmatchedEmails([row(scan, 'keep1')]);
+      await makeDue();
 
       final platform = _PresencePlatform({}, error: StateError('boom'));
       await scanWith(platform);
@@ -319,6 +366,7 @@ void main() {
         () async {
       final scan = await testHelper.createTestScanResult(scanAccount);
       await store.upsertUnmatchedEmails([row(scan, 'x1')]);
+      await makeDue();
 
       final platform = _PresencePlatform({},
           error: AuthenticationException('refused'));
