@@ -40,6 +40,7 @@ import 'ui/theme/app_theme.dart';
 import 'package:workmanager/workmanager.dart';
 import 'core/services/android_background_scan_worker.dart';
 import 'core/services/new_mail_trigger.dart';
+import 'core/platform/platform_capabilities.dart';
 
 /// Global RouteObserver for tracking navigation events
 final RouteObserver<ModalRoute<void>> routeObserver = RouteObserver<ModalRoute<void>>();
@@ -143,7 +144,7 @@ void main(List<String> args) async {
   }
 
   // Initialize sqflite FFI for desktop platforms (Windows, Linux, macOS)
-  if (Platform.isWindows || Platform.isLinux || Platform.isMacOS) {
+  if (PlatformCapabilities.current.usesFfiSqlite) {
     sqfliteFfiInit();
     databaseFactory = databaseFactoryFfi;
     Logger().i('Initialized sqflite FFI for desktop platform');
@@ -212,14 +213,14 @@ void main(List<String> args) async {
 
   // DEV ENVIRONMENT SEEDING: Copy production data to dev directory on first launch
   // Must run BEFORE AppPaths initialization (ADR-0035)
-  if (Platform.isWindows && AppEnvironment.isDev) {
+  if (PlatformCapabilities.current.canBeMsixPackaged && AppEnvironment.isDev) {
     await DevEnvironmentSeeder.seedIfNeeded();
   }
 
   // APP IDENTITY MIGRATION: Migrate data from old com.example directory to new
   // MyEmailSpamFilter directory after Sprint 19 identity change (Issue #182)
   // Must run BEFORE credential migration and rule loading
-  if (Platform.isWindows) {
+  if (PlatformCapabilities.current.canBeMsixPackaged) {
     try {
       final migrated = await AppIdentityMigration.migrateIfNeeded();
       if (migrated) {
@@ -299,7 +300,8 @@ void main(List<String> args) async {
   }
 
   // Initialize Windows system tray and notifications (Windows only)
-  if (Platform.isAndroid) {
+  if (PlatformCapabilities.current.backgroundScanMechanism ==
+      BackgroundScanMechanism.workManager) {
     // F161 (Sprint 61): register the WorkManager dispatcher so scheduled
     // per-account background scans can fire (ADR-0039 mirrored per ADR-0042;
     // the Windows counterpart is the Task Scheduler block below). One-time
@@ -318,7 +320,8 @@ void main(List<String> args) async {
     await _runF264UpgradeConversions();
   }
 
-  if (Platform.isWindows) {
+  if (PlatformCapabilities.current.backgroundScanMechanism ==
+      BackgroundScanMechanism.taskScheduler) {
     // F109c (Sprint 44), legacy since F243 (Sprint 75): drain a deferral
     // handoff file written by a pre-F243 native runner into
     // background_scan_log (status='deferred'). The runner no longer writes it,
@@ -447,7 +450,9 @@ void main(List<String> args) async {
   // F253 review HIGH-3 (Sprint 76): the new-mail listener is native and cannot
   // write this log, so copy its last recorded outcome here. Android only
   // (ADR-0044); once per foreground start.
-  if (Platform.isAndroid) unawaited(_logNewMailTriggerOutcome());
+  if (PlatformCapabilities.current.hasNewMailNotificationTrigger) {
+    unawaited(_logNewMailTriggerOutcome());
+  }
 
   runApp(const SpamFilterApp());
 }
@@ -469,8 +474,9 @@ Future<void> _runF264UpgradeConversions() async {
   try {
     final settingsStore = SettingsStore();
     final credStore = SecureCredentialsStore();
-    final canSchedule =
-        Platform.isAndroid || (Platform.isWindows && kReleaseMode);
+    final mechanism = PlatformCapabilities.current.backgroundScanMechanism;
+    final canSchedule = mechanism == BackgroundScanMechanism.workManager ||
+        (mechanism == BackgroundScanMechanism.taskScheduler && kReleaseMode);
     await BackgroundIntervalMigration(
       settingsStore: settingsStore,
       getAccountIds: credStore.getSavedAccounts,
@@ -483,7 +489,7 @@ Future<void> _runF264UpgradeConversions() async {
           : null,
     ).runIfNeeded();
 
-    if (Platform.isAndroid) {
+    if (PlatformCapabilities.current.hasNewMailNotificationTrigger) {
       await NewMailSwitchMigration(
         settingsStore: settingsStore,
         getAccountIds: credStore.getSavedAccounts,
@@ -542,7 +548,7 @@ class SpamFilterApp extends StatelessWidget {
       child: Shortcuts(
         shortcuts: <LogicalKeySet, Intent>{
           // Desktop keyboard shortcuts (Windows/Linux/macOS)
-          if (Platform.isWindows || Platform.isLinux || Platform.isMacOS) ...{
+          if (PlatformCapabilities.current.hasDesktopWindow) ...{
             // Ctrl+Q: Quit application
             LogicalKeySet(LogicalKeyboardKey.control, LogicalKeyboardKey.keyQ):
                 const _QuitIntent(),
@@ -598,15 +604,15 @@ class SpamFilterApp extends StatelessWidget {
 /// no test, because it reports coverage it does not provide. Moving the body
 /// here makes the harness signature the production signature.
 ///
-/// [isAndroid] is passed in rather than read from `Platform` so BOTH ADR-0042
-/// branches are reachable from a test. Android tears down an app's sockets when
-/// it is backgrounded, so the scan is genuinely dead; Windows minimise does not,
-/// and failing a healthy scan there would be a regression.
+/// The decision is `PlatformCapabilities.current.socketsCloseWhenBackgrounded`
+/// (ADR-0049) so BOTH ADR-0042 branches are reachable from a test through
+/// `PlatformCapabilities.debugOverride`. Android tears down an app's sockets
+/// when it is backgrounded, so the scan is genuinely dead; Windows minimize
+/// does not, and failing a healthy scan there would be a regression.
 void failScanInterruptedByBackgrounding({
   required EmailScanProvider scanProvider,
-  required bool isAndroid,
 }) {
-  if (!isAndroid) return;
+  if (!PlatformCapabilities.current.socketsCloseWhenBackgrounded) return;
   if (scanProvider.status != ScanStatus.scanning) return;
 
   final accountId = scanProvider.currentAccountId;
@@ -706,9 +712,8 @@ class _AppInitializerState extends State<_AppInitializer>
   /// **ADR-0042 platform exception, same as the scan screen's**: Android tears
   /// down sockets for a backgrounded app, so the scan is genuinely dead.
   /// Windows minimise does not, and killing a healthy scan there would be a
-  /// regression. [debugIsAndroid] is the test seam.
-  @visibleForTesting
-  static bool? debugIsAndroid;
+  /// regression. The test seam is `PlatformCapabilities.debugOverride`
+  /// (ADR-0049).
 
   void _failScanInterruptedByBackgrounding() {
     if (!mounted) return;
@@ -718,7 +723,6 @@ class _AppInitializerState extends State<_AppInitializer>
     // below so it can be tested against the real code.
     failScanInterruptedByBackgrounding(
       scanProvider: context.read<EmailScanProvider>(),
-      isAndroid: debugIsAndroid ?? Platform.isAndroid,
     );
   }
 
@@ -756,7 +760,7 @@ class _QuitAction extends Action<_QuitIntent> {
   @override
   Object? invoke(_QuitIntent intent) {
     // Exit the application gracefully
-    if (Platform.isWindows || Platform.isLinux || Platform.isMacOS) {
+    if (PlatformCapabilities.current.hasDesktopWindow) {
       SystemNavigator.pop();
     }
     return null;

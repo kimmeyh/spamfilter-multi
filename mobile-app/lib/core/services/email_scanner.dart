@@ -2,11 +2,11 @@
 library;
 
 import 'dart:async' show unawaited;
-import 'dart:io' show Platform;
 
 import 'package:flutter/foundation.dart' show visibleForTesting;
 
 import '../models/email_message.dart';
+import '../platform/platform_capabilities.dart';
 import '../models/rule_set.dart';
 import '../models/safe_sender_list.dart';
 import 'mock_email_data.dart';
@@ -391,7 +391,7 @@ class EmailScanner {
           ? ContentHistoryCapture(
               accountId: accountId,
               scanType: scanType,
-              platform: Platform.isAndroid ? 'android' : 'windows',
+              platform: PlatformCapabilities.current.hostName,
               fetchText: (m) => platform!.fetchContentText(m),
             )
           : null;

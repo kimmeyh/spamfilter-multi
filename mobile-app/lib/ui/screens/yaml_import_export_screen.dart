@@ -22,6 +22,7 @@ import 'package:flutter/material.dart';
 import 'package:logger/logger.dart';
 import 'package:provider/provider.dart';
 import '../../adapters/storage/app_paths.dart';
+import '../../core/platform/platform_capabilities.dart';
 import '../../adapters/storage/local_rule_store.dart';
 import '../../core/models/rule_set.dart';
 import '../../core/models/safe_sender_list.dart';
@@ -426,7 +427,7 @@ class _YamlImportExportScreenState extends State<YamlImportExportScreen> {
       // passed. Fixed in [saveYamlExport].
       final outputPath = await saveYamlExport(
         picker: FilePicker.platform,
-        isMobile: Platform.isAndroid || Platform.isIOS,
+        isMobile: PlatformCapabilities.current.usesSystemFileSheet,
         dialogTitle: 'Export Rules YAML',
         fileName: 'rules.yaml',
         initialDirectory: await ExportDirectories.saveDialogStart(),
@@ -476,7 +477,7 @@ class _YamlImportExportScreenState extends State<YamlImportExportScreen> {
       // difference).
       final outputPath = await saveYamlExport(
         picker: FilePicker.platform,
-        isMobile: Platform.isAndroid || Platform.isIOS,
+        isMobile: PlatformCapabilities.current.usesSystemFileSheet,
         dialogTitle: 'Export Safe Senders YAML',
         fileName: 'rules_safe_senders.yaml',
         initialDirectory: await ExportDirectories.saveDialogStart(),
@@ -843,7 +844,7 @@ class _YamlImportExportScreenState extends State<YamlImportExportScreen> {
 
   String _shortenPath(String path) {
     // Show just the file name if the path is very long
-    final separator = Platform.isWindows ? '\\' : '/';
+    final separator = PlatformCapabilities.current.pathSeparator;
     final parts = path.split(separator);
     if (parts.length > 3) {
       return '...${separator}${parts.sublist(parts.length - 2).join(separator)}';

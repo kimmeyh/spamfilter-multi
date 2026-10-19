@@ -247,7 +247,7 @@ Every Item that is implemented gets ONE row here the moment it is picked up -- s
 | Task 1: MV76-1 + F205 + Fix 2 (#471, #433, #428) | 80 | PLANNED | 40-70 | 40-70 | | | Waits for 0.20.0 from Play on the Fold. |
 | Task 2: F277 energy arms (#472) | 80 | PLANNED | 30-45 | 30-45 | | | Nights. |
 | Task 3: F292 close-out (#492) | 80 | DONE | 10 | 10 | ~10 | ~10 | Recorded at completion (2026-10-19 00:50). Nine runs listed in the master-plan card; page file unchanged. |
-| Task 4: F294 capabilities + policy seam (#493) | 80 | PLANNED | 110-190 | 110-190 | | | |
+| Task 4: F294 capabilities + policy seam (#493) | 80 | DONE (ADR at MV) | 110-190 | 110-190 | ~35 (4a Opus: ADR + seam) + ~55 (4b/4c Sonnet agent) + ~10 review | ~100 | Recorded at completion (2026-10-19 02:10). 62 code sites moved, 4 ad hoc seams removed, 9 mutants KILLED, suite 3,129 green (80-f294b). ADR-0049 Proposed for Harold at Manual Validation. |
 | Task 5: F295 iPhone research + ADR-0050 (#494) | 80 | DONE | 90-120 | 90-120 | ~16 (Opus agent) + ~10 review and card merge | ~26 | Recorded at completion (2026-10-19 01:45). 7 questions answered from vendor sources; ADR-0050 Proposed; 6 replacement cards (F67a-d, F95 revised, F95b) in the master plan. Device-only items UNVERIFIED by design. |
 | Task 6: F296 CI Flutter version (#495) | 80 | DONE (CI run pending) | 20-45 | 20-45 | ~5 (Haiku agent) + ~5 review | ~10 | Recorded at completion (2026-10-19 01:05). 3/3 tests, 8 mutants KILLED. CI green on 3.47.4 still to be observed on PR #490. |
 | Task 7: F298 edits reload rules (#496) | 80 | PLANNED | 30-60 | 30-60 | | | |

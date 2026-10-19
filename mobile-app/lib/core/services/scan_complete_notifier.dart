@@ -25,13 +25,12 @@
 /// failure is written to the diagnostic log so it is not silent.
 library;
 
-import 'dart:io' show Platform;
-
 import 'package:flutter/foundation.dart' show visibleForTesting;
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:logger/logger.dart';
 
 import '../providers/email_scan_provider.dart' show ScanMode;
+import '../platform/platform_capabilities.dart';
 import 'app_environment.dart';
 import 'diagnostic_logger.dart';
 import 'scan_notification_text.dart';
@@ -53,11 +52,11 @@ class ScanCompleteNotifier {
   @visibleForTesting
   static ScanNotificationShow? showOverride;
 
-  /// Test seam: force the Android (true) or Windows (false) branch.
-  @visibleForTesting
-  static bool? isAndroidOverride;
-
-  static bool get _isAndroid => isAndroidOverride ?? Platform.isAndroid;
+  /// Android channel and HTML body, or Windows toast and plain body. The test
+  /// seam is `PlatformCapabilities.debugOverride` (ADR-0049).
+  static bool get _isAndroid =>
+      PlatformCapabilities.current.notificationDelivery ==
+      NotificationDelivery.androidChannel;
 
   /// The toast's app name on Windows.
   static const String windowsAppName = 'MyEmailSpamFilter';

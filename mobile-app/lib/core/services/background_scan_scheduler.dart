@@ -28,6 +28,7 @@ import 'package:flutter/foundation.dart' show visibleForTesting;
 import 'package:logger/logger.dart';
 import 'package:workmanager/workmanager.dart';
 
+import '../platform/platform_capabilities.dart';
 import '../utils/account_id_sanitizer.dart';
 import 'android_background_scan_worker.dart' show kAndroidScanTaskName, kAndroidScanTestTaskName;
 import 'app_environment.dart';
@@ -142,8 +143,14 @@ class BackgroundScanSchedulerFactory {
     final override = _override;
     if (override != null) return override;
 
-    if (Platform.isWindows) return const WindowsSchedulerAdapter();
-    if (Platform.isAndroid) return const AndroidSchedulerAdapter();
+    switch (PlatformCapabilities.current.backgroundScanMechanism) {
+      case BackgroundScanMechanism.taskScheduler:
+        return const WindowsSchedulerAdapter();
+      case BackgroundScanMechanism.workManager:
+        return const AndroidSchedulerAdapter();
+      case BackgroundScanMechanism.none:
+        break;
+    }
 
     // iOS/macOS/Linux are architecturally supported but have no scheduling
     // implementation. An explicit unsupported scheduler beats a crash or a

@@ -457,13 +457,14 @@ void main() {
       expect(NewMailTriggerRow.appsFor('yahoo'), startsWith('Yahoo Mail, '));
     });
 
-    test('review M-1 / F264 Q10: the switch is gated by the Android seam, '
+    test('review M-1 / F264 Q10: the switch is gated by a platform capability, '
         'not on the account\'s background switch, and hidden on Windows', () {
       // SOURCE-TEXT VERIFIED: behind a platform seam; the widget test on the
       // real Settings path (f264_interval_control_test) drives both branches.
       final src = File('lib/ui/screens/settings_screen.dart').readAsStringSync();
       expect(
-          src.contains('if (SettingsScreen.showsAndroidBackgroundRows)\n'
+          src.contains(
+              'if (PlatformCapabilities.current.hasNewMailNotificationTrigger)\n'
               '          NewMailTriggerRow('),
           isTrue);
     });

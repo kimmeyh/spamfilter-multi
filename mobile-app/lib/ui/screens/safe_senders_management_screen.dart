@@ -15,6 +15,7 @@ library;
 import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:logger/logger.dart';
+import '../../core/platform/platform_capabilities.dart';
 import '../../core/storage/database_helper.dart';
 import '../../core/storage/safe_sender_database_store.dart';
 import '../widgets/copy_all_shortcut.dart';
@@ -780,7 +781,7 @@ class _SafeSendersManagementScreenState
       while (normalizedPath.endsWith('/') || normalizedPath.endsWith('\\')) {
         normalizedPath = normalizedPath.substring(0, normalizedPath.length - 1);
       }
-      final separator = Platform.isWindows ? '\\' : '/';
+      final separator = PlatformCapabilities.current.pathSeparator;
       final timestamp =
           DateTime.now().toIso8601String().replaceAll(':', '-').split('.')[0];
       final filename = 'manage_safe_senders_filtered_$timestamp.csv';

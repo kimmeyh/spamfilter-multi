@@ -14,6 +14,8 @@ library;
 
 import 'dart:io' show Platform;
 
+import '../platform/platform_capabilities.dart';
+
 /// Application environment singleton
 class AppEnvironment {
   static const String _envKey = 'APP_ENV';
@@ -78,7 +80,7 @@ class AppEnvironment {
   /// `isMsixInstall` is used to select that resolution branch -- not to
   /// skip Task Scheduler integration.
   static bool get isMsixInstall {
-    if (!Platform.isWindows) return false;
+    if (!PlatformCapabilities.current.canBeMsixPackaged) return false;
     final exe = Platform.resolvedExecutable.toLowerCase();
     return exe.contains('windowsapps') || exe.contains('program files\\windowsapps');
   }

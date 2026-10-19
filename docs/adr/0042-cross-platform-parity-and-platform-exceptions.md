@@ -121,3 +121,7 @@ exactly that reason, and the hook's own comments record the principle.
 Second, the factory guidance above moves whole-capability forks OUT of scattered call sites, so the
 population a comment-gate would police is shrinking by design. Revisit only if undocumented forks
 start accumulating in review.
+
+## Amended by ADR-0049 (Sprint 80)
+
+Amended by ADR-0049 (Sprint 80): a declared platform exception is a `PlatformCapabilities` or `PlatformPolicy` getter plus a test of each answer.

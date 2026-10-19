@@ -17,6 +17,8 @@ import 'package:logger/logger.dart';
 import 'package:path/path.dart' as p;
 import 'package:path_provider/path_provider.dart';
 
+import '../platform/platform_capabilities.dart';
+
 /// Migrates app data from the old identity directory to the new one.
 ///
 /// This is a one-time migration that runs on Windows only.
@@ -55,7 +57,7 @@ class AppIdentityMigration {
   ///
   /// Returns true if migration was performed, false if skipped.
   static Future<bool> migrateIfNeeded() async {
-    if (!Platform.isWindows) return false;
+    if (!PlatformCapabilities.current.canBeMsixPackaged) return false;
 
     final oldDirPath = await _getOldDirPath();
     final newDirPath = await _getNewDirPath();

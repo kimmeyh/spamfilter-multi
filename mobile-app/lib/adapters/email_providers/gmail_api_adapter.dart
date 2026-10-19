@@ -7,6 +7,7 @@ import 'package:googleapis/gmail/v1.dart' as gmail;
 import 'package:http/http.dart' as http;
 import '../../adapters/auth/google_auth_service.dart';
 import '../../core/models/batch_action_result.dart';
+import '../../core/platform/platform_capabilities.dart';
 import '../../core/services/background_mode_service.dart';
 import '../../core/services/diagnostic_logger.dart';
 import '../../core/services/content_text_extractor.dart';
@@ -187,7 +188,8 @@ class GmailApiAdapter with BatchOperationsMixin implements SpamFilterPlatform {
     _signInFlagAccountId =
         credentials.additionalParams?['accountId'] ?? credentials.email;
     // Windows desktop path: reuse stored access token from prior browser OAuth
-    if (Platform.isWindows && (credentials.accessToken?.isNotEmpty ?? false)) {
+    if (PlatformCapabilities.current.reusesStoredGmailAccessToken &&
+        (credentials.accessToken?.isNotEmpty ?? false)) {
       Redact.logSafe('Using stored access token for Windows Gmail session');
       final headers = {
         'Authorization': 'Bearer ${credentials.accessToken}',
@@ -398,7 +400,8 @@ class GmailApiAdapter with BatchOperationsMixin implements SpamFilterPlatform {
         } on gmail.DetailedApiRequestError catch (apiErr) {
           final msg = apiErr.message ?? '';
           final insufficientScopes = apiErr.status == 403 && msg.toLowerCase().contains('insufficient authentication scopes');
-          if (Platform.isWindows && insufficientScopes) {
+          if (PlatformCapabilities.current.canUpgradeGmailScopesInteractively &&
+              insufficientScopes) {
             Redact.logSafe('Insufficient Gmail scopes detected. Attempting re-auth via GoogleAuthService...');
             // Attempt to upgrade scopes via GoogleAuthService and retry once
             try {

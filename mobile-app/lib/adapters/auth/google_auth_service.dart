@@ -33,6 +33,7 @@ import 'package:http/http.dart' as http;
 import 'package:google_sign_in/google_sign_in.dart';
 import 'package:google_sign_in_platform_interface/google_sign_in_platform_interface.dart'
     as gsi_platform;
+import 'package:my_email_spam_filter/core/platform/platform_capabilities.dart';
 import 'package:my_email_spam_filter/core/services/background_mode_service.dart';
 import 'package:my_email_spam_filter/core/services/diagnostic_logger.dart';
 import 'package:my_email_spam_filter/adapters/auth/token_store.dart';
@@ -181,10 +182,19 @@ class GoogleAuthService {
   String? get currentUserEmail => _currentUser?.email;
 
   /// Check if running on a platform with native Google Sign-In support.
-  bool get _hasNativeSignIn => !kIsWeb && (Platform.isAndroid || Platform.isIOS);
+  bool get _hasNativeSignIn =>
+      !kIsWeb && PlatformCapabilities.current.hasNativeGoogleSignIn;
 
   /// Check if running on desktop platform.
-  bool get _isDesktop => !kIsWeb && (Platform.isWindows || Platform.isMacOS || Platform.isLinux);
+  bool get _isDesktop =>
+      !kIsWeb &&
+      PlatformCapabilities.current.googleSignInFlow ==
+          GoogleSignInFlow.browserLoopback;
+
+  /// Native sign-in first, the browser flow when it fails (Android).
+  bool get _signsInNativelyWithBrowserFallback =>
+      PlatformCapabilities.current.googleSignInFlow ==
+      GoogleSignInFlow.nativeWithBrowserFallback;
 
   /// Initialize the service and attempt silent sign-in.
   ///
@@ -217,7 +227,7 @@ class GoogleAuthService {
     final result = await _attemptSilentSignIn(targetAccountId);
 
     // If silent sign-in failed and we're on Android, try native refresh
-    if (!result.success && Platform.isAndroid) {
+    if (!result.success && _signsInNativelyWithBrowserFallback) {
       Redact.logSafe('[Auth] Silent sign-in failed, attempting native refresh...');
 
       // Get tokens for native refresh (even if expired)
@@ -279,7 +289,8 @@ class GoogleAuthService {
         // background worker.
         if (shouldTryStoredRefreshToken(
             nativeSucceeded: native.success,
-            isAndroid: Platform.isAndroid,
+            renewsWithStoredRefreshToken:
+                PlatformCapabilities.current.renewsGmailWithStoredRefreshToken,
             hasRefreshToken: tokens.refreshToken?.isNotEmpty == true)) {
           return await _refreshViaStoredRefreshToken(accountId, tokens);
         }
@@ -488,10 +499,10 @@ class GoogleAuthService {
   @visibleForTesting
   static bool shouldTryStoredRefreshToken({
     required bool nativeSucceeded,
-    required bool isAndroid,
+    required bool renewsWithStoredRefreshToken,
     required bool hasRefreshToken,
   }) =>
-      !nativeSucceeded && isAndroid && hasRefreshToken;
+      !nativeSucceeded && renewsWithStoredRefreshToken && hasRefreshToken;
 
   /// Test seam for [_refreshViaStoredRefreshToken]'s token call.
   @visibleForTesting
@@ -695,7 +706,7 @@ class GoogleAuthService {
       _signInLog('native $step FAILED: ${DiagnosticLogger.describeError(e)}');
 
       // On Android, fall back to browser-based OAuth if native fails
-      if (Platform.isAndroid) {
+      if (_signsInNativelyWithBrowserFallback) {
         Redact.logSafe('[Auth] Trying browser-based OAuth fallback on Android...');
         _signInLog('falling back to the browser sign-in');
         final fallback = await _signInDesktop(

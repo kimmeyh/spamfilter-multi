@@ -1,5 +1,6 @@
 import 'dart:io';
 import 'package:system_tray/system_tray.dart';
+import '../platform/platform_capabilities.dart';
 import 'package:window_manager/window_manager.dart';
 import 'package:path/path.dart' as path;
 import 'package:logger/logger.dart';
@@ -28,7 +29,7 @@ class WindowsSystemTrayService with WindowListener {
   ///
   /// Call this during app startup on Windows platform
   Future<void> initialize() async {
-    if (!Platform.isWindows) {
+    if (!PlatformCapabilities.current.hasSystemTray) {
       return; // Only initialize on Windows
     }
 

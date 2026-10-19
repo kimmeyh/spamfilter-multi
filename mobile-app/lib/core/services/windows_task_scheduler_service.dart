@@ -4,6 +4,7 @@ import 'package:flutter/foundation.dart' show visibleForTesting;
 import 'package:logger/logger.dart';
 import 'package:path/path.dart' as path;
 
+import '../platform/platform_capabilities.dart';
 import 'app_environment.dart';
 import 'scan_interval.dart';
 import 'diagnostic_logger.dart';
@@ -25,6 +26,11 @@ import '../../util/redact.dart';
 /// legacy global task name for backward compatibility during migration.
 class WindowsTaskSchedulerService {
   static final Logger _logger = Logger();
+
+  /// This host schedules background scans through Task Scheduler (Windows).
+  static bool get _usesTaskScheduler =>
+      PlatformCapabilities.current.backgroundScanMechanism ==
+      BackgroundScanMechanism.taskScheduler;
 
   /// Base task name prefix (without the per-account token).
   static const String _taskNameBase = 'SpamFilterBackgroundScan';
@@ -317,7 +323,7 @@ class WindowsTaskSchedulerService {
     String? accountId,
   }) async {
     try {
-      if (!Platform.isWindows) return false;
+      if (!_usesTaskScheduler) return false;
       if (intervalMinutes <= 0) return false;
 
       final status = await getScheduleStatus(accountId: accountId);
@@ -372,7 +378,7 @@ class WindowsTaskSchedulerService {
     required int intervalMinutes,
   }) async {
     try {
-      if (!Platform.isWindows) return false;
+      if (!_usesTaskScheduler) return false;
 
       final status = await getScheduleStatus(accountId: accountId);
       if (status['exists'] != true) {
@@ -424,7 +430,7 @@ class WindowsTaskSchedulerService {
   /// Returns the list of task names matching `SpamFilterBackgroundScan*<suffix>`.
   static Future<List<String>> enumerateAccountTasks() async {
     try {
-      if (!Platform.isWindows) return const [];
+      if (!_usesTaskScheduler) return const [];
       final suffix = AppEnvironment.taskNameSuffix;
       // Match the base prefix; the suffix (if any) is environment-specific so a
       // dev build never enumerates prod tasks and vice-versa.

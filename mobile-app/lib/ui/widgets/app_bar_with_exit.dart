@@ -1,6 +1,8 @@
 import 'dart:io';
 import 'package:flutter/material.dart';
 
+import '../../core/platform/platform_policy.dart';
+
 /// Custom AppBar with optional Exit button for Windows Desktop
 ///
 /// Issue: Windows 11 X button and window controls not working
@@ -32,7 +34,7 @@ class AppBarWithExit extends StatelessWidget implements PreferredSizeWidget {
     // Combine user-provided actions with Exit button (Windows only)
     final List<Widget> allActions = [
       ...(actions ?? []),
-      if (Platform.isWindows)
+      if (PlatformPolicy.current.showsExitButton)
         IconButton(
           icon: const Icon(Icons.close),
           tooltip: 'Exit Application',

@@ -11,6 +11,7 @@ import '../widgets/auth_warning_dialog.dart';
 import 'help_screen.dart';
 import 'scan_progress_screen.dart';
 
+import '../../core/platform/platform_capabilities.dart';
 import '../../core/providers/email_scan_provider.dart'
     show
         EmailScanProvider,
@@ -702,7 +703,7 @@ class _ResultsDisplayScreenState extends State<ResultsDisplayScreen> {
         normalizedPath = normalizedPath.substring(0, normalizedPath.length - 1);
       }
       // Use platform-appropriate path separator
-      final pathSeparator = Platform.isWindows ? '\\' : '/';
+      final pathSeparator = PlatformCapabilities.current.pathSeparator;
       final filePath = '$normalizedPath$pathSeparator$filename';
 
       // Write CSV to file

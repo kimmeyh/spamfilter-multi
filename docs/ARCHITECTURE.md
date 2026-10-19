@@ -244,6 +244,16 @@ namespace).
 
 ---
 
+### Platform Seam (`lib/core/platform/`, F294 Sprint 80, ADR-0049)
+
+Every Windows / Android (and later iOS) difference is a getter, not a scattered `Platform.isX` check.
+
+- **`PlatformCapabilities`** (`platform_capabilities.dart`): what the code CAN do on this host (SQLite via FFI, system tray, background scan mechanism, Gmail sign-in flow, export location, notification delivery, sockets closing when backgrounded, and so on). Read as `PlatformCapabilities.current.<getter>`.
+- **`PlatformPolicy`** (`platform_policy.dart`): what the app SHOULD do on this host (flat Fluent-style surfaces, the Exit button). Read as `PlatformPolicy.current.<getter>`.
+- **`detectHostPlatform()`** (`host_platform.dart`) is the ONLY place in `lib/` that reads `Platform.isX`. `test/policy/platform_check_seam_test.dart` fails on any other.
+- **One test seam**: set `PlatformCapabilities.debugOverride` / `PlatformPolicy.debugOverride` (a fixed `HostPlatform`, or a subclass that changes one answer) and reset it to null in `tearDown`. It replaced the four ad hoc `debugIsAndroid` / `isAndroidOverride` seams.
+- Each getter's doc comment states its answer on Windows, Android and iOS. The per-site mapping is in `docs/adr/0049-platform-capabilities-and-policy.md`.
+
 ### Security Services (`lib/core/security/`)
 
 New directory introduced in Sprint 33 for security-cross-cutting services.

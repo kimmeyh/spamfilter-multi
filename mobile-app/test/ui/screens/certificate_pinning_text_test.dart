@@ -18,18 +18,19 @@ import 'package:my_email_spam_filter/ui/screens/settings_screen.dart';
 void main() {
   test('Windows text describes the pin; Android text says the switch does not '
       'apply', () {
-    final windows = SettingsScreen.certificatePinningSubtitle(isAndroid: false);
-    final android = SettingsScreen.certificatePinningSubtitle(isAndroid: true);
+    final windows = SettingsScreen.certificatePinningSubtitle(usesNativeSignIn: false);
+    final android = SettingsScreen.certificatePinningSubtitle(usesNativeSignIn: true);
     expect(windows, contains('Google Trust Services'));
     expect(android, isNot(contains('Google Trust Services')));
     expect(android, contains('does not'));
   });
 
-  test('the switch uses the per-platform text through the Android seam', () {
+  test('the switch uses the per-platform text through the platform capability', () {
     final src = File('lib/ui/screens/settings_screen.dart').readAsStringSync();
     expect(
         src.contains('subtitle: Text(SettingsScreen.certificatePinningSubtitle(\n'
-            '              isAndroid: SettingsScreen.showsAndroidBackgroundRows)),'),
+            '              usesNativeSignIn:\n'
+            '                  PlatformCapabilities.current.hasNativeGoogleSignIn)),'),
         isTrue);
   });
 

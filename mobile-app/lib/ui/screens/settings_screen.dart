@@ -1,6 +1,7 @@
 import 'dart:io';
 
 import 'package:file_picker/file_picker.dart';
+import '../../core/platform/platform_capabilities.dart';
 import '../../core/services/app_environment.dart';
 import '../../core/services/app_version.dart';
 import '../../core/services/data_deletion_service.dart';
@@ -97,23 +98,13 @@ class SettingsScreen extends StatefulWidget {
   /// behavior change -- the field is nullable, not removed.
   final String? accountId;
 
-  /// Test seam (ADR-0042 point 4, F264 Sprint 77): force the Android branch of
-  /// the Background tab's Android-only rows (the new-mail switch and the
-  /// Android timing note) on a Windows test host. Null = the real platform.
-  /// The battery row keeps the real check because it talks to the OS.
-  @visibleForTesting
-  static bool? debugIsAndroid;
-
-  /// Whether the Android-only Background rows show (Windows hides them).
-  static bool get showsAndroidBackgroundRows =>
-      debugIsAndroid ?? Platform.isAndroid;
-
   /// Subtitle of the "Pin Google OAuth certificates" switch, per platform
   /// (Sprint 77 Phase 5.1.2 F-PRECHECK). On Windows the switch controls the
   /// pinned Google sign-in and token renewal calls; on Android sign-in goes
   /// through the system and the switch does not apply.
-  static String certificatePinningSubtitle({required bool isAndroid}) =>
-      isAndroid
+  static String certificatePinningSubtitle(
+          {required bool usesNativeSignIn}) =>
+      usesNativeSignIn
           ? 'On Android, Google sign-in uses Android\'s own sign-in service '
               'and the system\'s certificate checks; this switch does not '
               'change them.'
@@ -1011,7 +1002,8 @@ class _SettingsScreenState extends State<SettingsScreen> with SingleTickerProvid
           // system's own certificate checks, so the switch changes nothing
           // there and the text must not claim it does.
           subtitle: Text(SettingsScreen.certificatePinningSubtitle(
-              isAndroid: SettingsScreen.showsAndroidBackgroundRows)),
+              usesNativeSignIn:
+                  PlatformCapabilities.current.hasNativeGoogleSignIn)),
           value: _certificatePinningEnabled,
           onChanged: (value) async {
             await _settingsStore.setCertificatePinningEnabled(value);
@@ -1656,7 +1648,7 @@ class _SettingsScreenState extends State<SettingsScreen> with SingleTickerProvid
             await _settingsStore
                 .setAccountBackgroundEnabled(_requireAccountId, value);
             // F161 (Sprint 61, found live on-device): this call was still
-            // gated behind Platform.isWindows AFTER the factory reroute, so
+            // gated behind a Windows-only check AFTER the factory reroute, so
             // on Android the setting persisted but no work was ever
             // scheduled -- the setting LIED, exactly the ADR-0042 failure
             // shape (a platform-local gate starving shared behavior). The
@@ -1697,7 +1689,7 @@ class _SettingsScreenState extends State<SettingsScreen> with SingleTickerProvid
         // Sprint 76). Android only; HIDDEN on Windows (Q10 = 1, ADR-0044's
         // declared exception: Windows has no mail-app notification to listen
         // to).
-        if (SettingsScreen.showsAndroidBackgroundRows)
+        if (PlatformCapabilities.current.hasNewMailNotificationTrigger)
           NewMailTriggerRow(
             key: ValueKey('new_mail_trigger_${_requireAccountId}'),
             accountId: _requireAccountId,
@@ -1705,10 +1697,11 @@ class _SettingsScreenState extends State<SettingsScreen> with SingleTickerProvid
           ),
         // F252 (Sprint 76): Battery > Unrestricted. Shown whenever background
         // scanning is on.
-        if (Platform.isAndroid && _backgroundScanEnabled)
+        if (PlatformCapabilities.current.hasBatteryOptimizationSetting &&
+            _backgroundScanEnabled)
           const BatteryOptimizationRow(),
         // F217 (Sprint 72) / F264 Q12: the ONE Android timing note.
-        if (SettingsScreen.showsAndroidBackgroundRows &&
+        if (PlatformCapabilities.current.hasBatteryOptimizationSetting &&
             _backgroundScanEnabled)
           _buildAndroidDozeStatusLine(),
         const Divider(),
@@ -1810,7 +1803,9 @@ class _SettingsScreenState extends State<SettingsScreen> with SingleTickerProvid
   /// Best-effort: a denied permission degrades to no notification; the scan
   /// and its persistence are unaffected.
   Future<void> _requestNotificationPermissionIfNeeded() async {
-    if (!Platform.isAndroid) return;
+    if (!PlatformCapabilities.current.requestsNotificationPermissionAtRuntime) {
+      return;
+    }
     try {
       await FlutterLocalNotificationsPlugin()
           .resolvePlatformSpecificImplementation<
@@ -1825,7 +1820,8 @@ class _SettingsScreenState extends State<SettingsScreen> with SingleTickerProvid
     setState(() => _isTestingScan = true);
 
     try {
-      if (Platform.isWindows) {
+      final mechanism = PlatformCapabilities.current.backgroundScanMechanism;
+      if (mechanism == BackgroundScanMechanism.taskScheduler) {
         // F98 (ADR-0039): scope the Test scan to THIS account (the Background
         // tab is account-specific). Without accountId it fell through to the
         // legacy all-accounts path and scanned every account + wrote the shared
@@ -1846,7 +1842,7 @@ class _SettingsScreenState extends State<SettingsScreen> with SingleTickerProvid
             ),
           );
         }
-      } else if (Platform.isAndroid) {
+      } else if (mechanism == BackgroundScanMechanism.workManager) {
         // F161: Android test path -- runs the WorkManager pipeline once,
         // immediately, through the same dispatcher a scheduled run uses, so
         // it genuinely tests the scheduled path rather than a lookalike.

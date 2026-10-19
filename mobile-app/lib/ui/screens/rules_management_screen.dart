@@ -16,6 +16,7 @@ import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:logger/logger.dart';
 import '../../core/models/rule_set.dart';
+import '../../core/platform/platform_capabilities.dart';
 import '../../core/storage/database_helper.dart';
 import '../widgets/copy_all_shortcut.dart';
 import '../widgets/list_selection_controller.dart';
@@ -1122,7 +1123,7 @@ class _RulesManagementScreenState extends State<RulesManagementScreen>
       while (normalizedPath.endsWith('/') || normalizedPath.endsWith('\\')) {
         normalizedPath = normalizedPath.substring(0, normalizedPath.length - 1);
       }
-      final separator = Platform.isWindows ? '\\' : '/';
+      final separator = PlatformCapabilities.current.pathSeparator;
       final timestamp =
           DateTime.now().toIso8601String().replaceAll(':', '-').split('.')[0];
       final filename = 'manage_rules_filtered_$timestamp.csv';

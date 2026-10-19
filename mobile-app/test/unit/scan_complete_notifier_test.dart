@@ -10,6 +10,7 @@ import 'dart:io';
 
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:my_email_spam_filter/core/platform/platform_capabilities.dart';
 import 'package:my_email_spam_filter/core/providers/email_scan_provider.dart';
 import 'package:my_email_spam_filter/core/services/scan_complete_notifier.dart';
 import 'package:my_email_spam_filter/core/services/scan_notification_text.dart';
@@ -38,7 +39,7 @@ void main() {
 
   tearDown(() {
     ScanCompleteNotifier.showOverride = null;
-    ScanCompleteNotifier.isAndroidOverride = null;
+    PlatformCapabilities.debugOverride = null;
   });
 
   Future<bool> postReadOnly() => ScanCompleteNotifier.post(
@@ -52,7 +53,8 @@ void main() {
 
   test('Android: HTML body with struck counts on the Android channel',
       () async {
-    ScanCompleteNotifier.isAndroidOverride = true;
+    PlatformCapabilities.debugOverride =
+        const PlatformCapabilities(HostPlatform.android);
     await postReadOnly();
     expect(shown, hasLength(1));
     final s = shown.single;
@@ -67,7 +69,8 @@ void main() {
   });
 
   test('Windows: plain body (no markup), same title and same id', () async {
-    ScanCompleteNotifier.isAndroidOverride = false;
+    PlatformCapabilities.debugOverride =
+        const PlatformCapabilities(HostPlatform.windows);
     await postReadOnly();
     final s = shown.single;
     expect(s.title, 'Back. scan k*@aol read-only completed');
@@ -81,7 +84,8 @@ void main() {
   test('parity: both platforms post the same id and title per account',
       () async {
     for (final android in [true, false]) {
-      ScanCompleteNotifier.isAndroidOverride = android;
+      PlatformCapabilities.debugOverride = PlatformCapabilities(
+          android ? HostPlatform.android : HostPlatform.windows);
       await ScanCompleteNotifier.post(
         accountId: 'kimmeyh@gmail.com',
         mode: ScanMode.safeSendersAndRules,
@@ -98,7 +102,8 @@ void main() {
   });
 
   test('a plugin failure never escapes (the scan must not fail)', () async {
-    ScanCompleteNotifier.isAndroidOverride = false;
+    PlatformCapabilities.debugOverride =
+        const PlatformCapabilities(HostPlatform.windows);
     ScanCompleteNotifier.showOverride = ({
       required int id,
       required String title,
@@ -112,7 +117,8 @@ void main() {
   });
 
   test('7.7.1 M-4: a posted notification reports true', () async {
-    ScanCompleteNotifier.isAndroidOverride = true;
+    PlatformCapabilities.debugOverride =
+        const PlatformCapabilities(HostPlatform.android);
     expect(await postReadOnly(), isTrue);
   });
 

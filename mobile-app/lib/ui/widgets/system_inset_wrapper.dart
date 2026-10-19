@@ -1,6 +1,7 @@
-import 'dart:io';
 
 import 'package:flutter/material.dart';
+
+import '../../core/platform/platform_capabilities.dart';
 
 /// F209 (Sprint 69): keeps screen content clear of the Android system
 /// navigation bar.
@@ -66,7 +67,7 @@ import 'package:flutter/material.dart';
 ///
 /// **DECLARED PLATFORM EXCEPTION (ADR-0042).** Windows has no system
 /// navigation bar, so this is a no-op there and desktop layout is unchanged.
-/// The fork is `Platform.isAndroid` at the narrowest possible point -- one
+/// The fork is `PlatformCapabilities.drawsUnderSystemBars` at the narrowest possible point -- one
 /// widget, one condition -- rather than a forked layout per screen. The
 /// exception is necessary, not chosen: there is no cross-platform way to
 /// express "inset for a thing that only one platform has".
@@ -74,30 +75,17 @@ class SystemInsetWrapper extends StatelessWidget {
   const SystemInsetWrapper({
     super.key,
     required this.child,
-    this.debugIsAndroid,
   });
 
   final Widget child;
 
-  /// Overrides the platform check. Tests only.
-  ///
-  /// Flutter widget tests run on the HOST, so [Platform.isAndroid] is false in
-  /// CI and on this machine -- which would leave the Android branch, the one
-  /// that actually ships, never rendered by any test. This seam lets both
-  /// branches be exercised for real instead of asserted by proxy.
-  @visibleForTesting
-  final bool? debugIsAndroid;
-
-  /// Is the system navigation inset ours to handle?
-  ///
-  /// Android only. Exposed so the ADR-0042 both-branches test can assert the
-  /// desktop branch is a genuine no-op rather than inferring it.
-  @visibleForTesting
-  static bool appliesTo({required bool isAndroid}) => isAndroid;
+  // The test seam is `PlatformCapabilities.debugOverride` (ADR-0049). Flutter
+  // widget tests run on the HOST, so without it the Android branch, the one
+  // that actually ships, would never be rendered by any test.
 
   @override
   Widget build(BuildContext context) {
-    if (!appliesTo(isAndroid: debugIsAndroid ?? Platform.isAndroid)) {
+    if (!PlatformCapabilities.current.drawsUnderSystemBars) {
       return child;
     }
 

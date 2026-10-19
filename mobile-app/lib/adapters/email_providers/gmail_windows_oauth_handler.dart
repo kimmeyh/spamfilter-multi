@@ -8,6 +8,7 @@ import 'package:url_launcher/url_launcher.dart';
 import 'package:logger/logger.dart';
 import 'package:flutter_appauth/flutter_appauth.dart';
 
+import '../../core/platform/platform_capabilities.dart';
 import '../../core/security/certificate_pinner.dart';
 
 /// Handles Gmail OAuth for Windows platform using browser-based flow
@@ -77,7 +78,8 @@ class GmailWindowsOAuthHandler {
       _logger.w('  Client Secret: ${_clientSecret.isEmpty ? "(not set)" : "(set, ${_clientSecret.length} chars)"}');
       _logger.w('  Redirect URI: $_redirectUri');
       // Explicitly log which client ID is being used and why
-      if (Platform.isWindows) {
+      if (PlatformCapabilities.current.gmailOAuthClient ==
+          GmailOAuthClient.desktop) {
         if (_clientId.isEmpty) {
           _logger.e('  ERROR: WINDOWS_GMAIL_DESKTOP_CLIENT_ID is not set! Gmail OAuth will fail. '
               'Build with --dart-define-from-file=secrets.dev.json to inject credentials.');
@@ -89,7 +91,8 @@ class GmailWindowsOAuthHandler {
         _logger.w('  WARNING: OAuth client ID is empty! Build with --dart-define or --dart-define-from-file to inject real credentials.');
       }
       // SEC-9 (Sprint 64): Android client ID is a separate injected value.
-      if (Platform.isAndroid) {
+      if (PlatformCapabilities.current.gmailOAuthClient ==
+          GmailOAuthClient.android) {
         if (_androidClientId.isEmpty) {
           _logger.e('  ERROR: ANDROID_GMAIL_CLIENT_ID is not set! Gmail OAuth will fail on Android. '
               'Build with --dart-define-from-file=secrets.dev.json to inject credentials.');
@@ -107,7 +110,7 @@ class GmailWindowsOAuthHandler {
   /// Throws [StateError] if OAuth client ID is not configured.
   static Future<Map<String, String>?> authenticateWithBrowser() async {
     // Check if we're on mobile (Android/iOS)
-    final isMobile = Platform.isAndroid || Platform.isIOS;
+    final isMobile = PlatformCapabilities.current.usesCustomSchemeOAuthRedirect;
 
     // SEC-13/SEC-9: Fail fast if the client ID used on this platform is not
     // configured. Mobile consumes _androidClientId (flutter_appauth custom
