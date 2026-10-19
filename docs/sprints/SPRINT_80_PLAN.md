@@ -192,6 +192,10 @@ write site; Task 11 marked blocked; all estimates set at the low end per the Spr
 
 ## Decision questions (answer by number, for example "q1 1 q2 1 ...")
 
+- Q0. Each of your four notes applies to the item ABOVE it (F299, F276, F247, F204), so F247 is the one marked closed.
+  1. Correct.
+  2. No -- tell me which item each note belongs to (I then move the closure).
+
 - Q1. F294 (Class 1). This would change a prior architectural decision: 65 `Platform.isX` checks in 21 files, each
   deciding a platform difference where it stands, are replaced by one `PlatformCapabilities` seam (ADR-0049), and a
   policy test refuses any new bare check outside it. Should I proceed?
@@ -247,6 +251,10 @@ write site; Task 11 marked blocked; all estimates set at the low end per the Spr
 - R-2: Same commit: `STORE_VERSION_STATUS.md` "Last uploaded to Play" -> 0.20.0 (versionCode 17) and the Dev row ->
   0.21.0+18; CHANGELOG: the `[Unreleased]` entries dated 2026-10-13 to 2026-10-18 go under `## [0.20.0] - 2026-10-18`;
   provisional `RELEASE_NOTES_0.21.0_windows.md` and `_play.md`.
+- R-3: `[Unreleased]` holds every entry since 0.14.0 (the last release heading, CHANGELOG line 266). Either backfill
+  headings for 0.15.0-0.19.0 from the dates in `STORE_VERSION_STATUS.md` and the submission timing table, or note
+  under the 0.20.0 heading that it also holds the 0.15.0-0.19.0 entries. Decided and recorded at execution;
+  `dev_version_ahead_test` reads only the first heading, so either passes at 0.21.0.
 
 **Affected components / files**: `mobile-app/pubspec.yaml`, `docs/STORE_VERSION_STATUS.md`, `CHANGELOG.md`,
 `docs/store-assets/`.
@@ -646,7 +654,9 @@ died.
 
 **Requirements**:
 - R-1 (Q5 = 1): read every background scan in the 0.20.0 logs pulled during Task 1 for class-B rows (reaped, no
-  heartbeat, no stop line); record the count and the period covered.
+  heartbeat, no stop line); record the count, the period covered, and the Fold's Android version (from the
+  `_Settings` pull). The #738 fix is described as Android 16 specific: if the Fold is not on Android 16, a zero count
+  still closes F299 on evidence, but "fixed by the upgrade" is then not supported.
 - R-2: zero over the MV76-1 period closes F299 as fixed by workmanager 0.10.10 (cite `BackgroundWorker.kt:195-209`);
   any row starts R-3.
 - R-3: at each app and worker start, read `ActivityManager.getHistoricalProcessExitReasons` (API 30+) through a
