@@ -19,7 +19,7 @@ legacy `{name, steps:[{action,...}]}` format the original Sprint 34 scripts used
   "attachTitle": "MyEmailSpamFilter",
   "runConfig": { "captureScreenshots": false, "screenshotFormat": "png",
     "screenshotOnFailureOnly": false, "continueOnFailure": false,
-    "stepTimeoutMs": 15000, "maxFailures": 0 },
+    "stepTimeoutMs": 60000, "maxFailures": 0 },
   "testCases": [
     { "id": "NAV-1", "title": "...",
       "steps": [
@@ -224,6 +224,12 @@ the mouse path only for the control types that cannot accept InvokePattern.
    freshly launched app the first tree query returns an opaque single `FLUTTERVIEW` pane with no
    children; the second returns the full tree. **A 10-second wait does not help**, because waiting is
    not the trigger. Start every script with `ww_window_state` -- it doubles as the priming query.
+   **Sprint 80 (2026-10-19): the tree can take longer than 15 s AFTER the priming query.** Measured on
+   the 0.21.0 DEV build: `type=Button[name='Settings']` counted 0 about 10 s after priming and 1 at
+   about 41 s, with the app idle (CPU flat) the whole time; both default-sweep scripts then failed
+   step 2 at the old 15 s `stepTimeoutMs`. Cause of the delay: unknown (settled by timing the first
+   non-empty tree against the priming query from WinWright, foreground versus background window).
+   Scripts use `stepTimeoutMs: 60000`; a missing element still fails, only later.
 2. **`ww_invoke` does not verify visibility.** It happily reports success on an **off-screen** element
    without pressing it (observed on `Save Rule` below the fold). `ww_click` correctly errors
    `element_offscreen`. Always `maximize` first.
