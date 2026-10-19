@@ -101,8 +101,8 @@ row (Sprint 78) is 0.23, so planned cards ran about 4x under. `[no-history]` mar
 - **Unplanned allowance (named, not padded into cards)**: Manual Validation fixes, phone rounds and 7.7.1 review
   fixes, 150-250m. Sprints 70, 76 and 78 each spent as much or more on this as on planned cards.
 
-**Total**: Tasks 0-12 about 525-1,020 minutes, plus 65-100 if Q6 and Q7 add Tasks 13 and 14, plus the 150-250
-unplanned allowance, plus Harold's phone time and nights. This is about double the slate recommended at 8.4; the
+**Total (after Harold's answers, 2026-10-19)**: Tasks 0-10 and 12-14 about 540-990 minutes (Task 3 at 10m, Task 11
+removed, Tasks 13 and 14 added), plus the 150-250 unplanned allowance, plus Harold's phone time and nights. This is about double the slate recommended at 8.4; the
 number is stated so the size is visible, not to de-scope.
 
 **When can Harold come back (first Manual Validation handoff)**: about 6-9 hours of wall-clock after approval if run
@@ -237,6 +237,38 @@ write site; Task 11 marked blocked; all estimates set at the low end per the Spr
   1. Yes, the Store-installed app showed Version 0.19.0.
   2. No, or not checked.
 - Q-S1. Models as assigned: 1 approve. Q-S2. Version 0.21.0+18: 1 approve.
+
+**Answers (Harold, 2026-10-19, verbatim)**: *"q0 1 q1 is PlatformCapabilities an architectual best practice for large
+code-bases targeting multiple platforms? q2 1 but "merge" gets the default q3 a q4 a q4b b q5 a q6 a q7 a q8 a q-s1 1
+q-s2 1"* (letters read as option numbers: a = 1, b = 2).
+
+- Q0 = 1: each note applies to the item above it; F247 stays closed.
+- Q1: OPEN -- Harold asked whether the pattern is a best practice. Answer (Flutter's own guidance) and the re-asked
+  question below.
+- Q2 = 1, with a change: **Merge is the DEFAULT** choice in the import dialog; Replace stays available (Class 2,
+  approved by Harold). Task 10 updated.
+- Q3 = 1: `.fvmrc` at the repo root, read by CI, plus a policy test that the local SDK matches it.
+- Q4 = 1: F292 investigation closed as "cause unknown, not reproduced in nine runs"; `run-full-suite.ps1` stays the
+  Phase 5.2 runner. Task 3 is 10m.
+- Q4b = 2: F289 REMOVED from Sprint 80 until a WinWright release replays a read step. Task 11 dropped.
+- Q5 = 1: F299 verify first (Task 12).
+- Q6 = 1: F276 IN scope (Task 13).
+- Q7 = 1: F204 gaps 1 and 2 IN scope (Task 14).
+- Q8 = 1: 0.19.0 went live on the Microsoft Store (Harold's report; `STORE_VERSION_STATUS.md` Store row updated).
+- Q-S1 = 1, Q-S2 = 1: models and version 0.21.0+18 approved.
+
+**Q1 answer -- is a capability seam a best practice?** Yes; it is Flutter's own published guidance.
+`docs.flutter.dev/ui/adaptive-responsive/capabilities` (Flutter 3.47 docs, page updated 2026-05-05, read 2026-10-19):
+*"Avoid using `Platform.isAndroid` and similar functions to make layout decisions or assumptions about what a device can
+do. Instead, describe what you want to branch on in a method."* It splits the branches into two classes: *"A
+capability defines what the code can do"* (an API exists, OS-enforced restrictions, hardware) and *"A policy defines
+what the code should do"* (app store guidelines, design preferences, copy that refers to the host device). Reason
+given: *"The Flutter team has found with productionized apps that making a logical distinction between what apps can
+do and what they should do helps larger products respond to changes in what platforms can do or require"*, and *"Test
+the branching code by mocking capabilities and policies so the widget tests don't need to change"*. The companion page
+`/ui/adaptive-responsive/best-practices` (updated 2026-07-31) points to the same idea for business logic. **Change to
+the card from this**: two classes, `PlatformCapabilities` and `PlatformPolicy`, each method named for what it
+branches on, not one class. Re-asked as Q1 in the approval message.
 
 ---
 
@@ -380,9 +412,12 @@ mechanism or "cause unknown" with what settles it. Never "flaky".
 decision fails a test instead of failing silently.
 
 **Requirements**:
-- R-1: ADR-0049 first: the seam's shape (one `PlatformCapabilities` with named questions, for example background
-  mechanism, new-mail trigger available, export folder, OAuth flow, notification delivery, window chrome, tray), how a
-  test overrides it, and how it amends ADR-0042 (a declared exception = a capability entry + its test).
+- R-1: ADR-0049 first: the seam's shape, following Flutter's published capabilities-and-policies guidance
+  (`docs.flutter.dev/ui/adaptive-responsive/capabilities`): `PlatformCapabilities` for what the code CAN do (for
+  example background mechanism, new-mail trigger available, OAuth flow, notification delivery, tray) and
+  `PlatformPolicy` for what it SHOULD do (store rules, design preferences, copy naming the device); each method named
+  for what it branches on, never for the device; how a test overrides both; and how it amends ADR-0042 (a declared
+  exception = a capability or policy entry + its test).
 - R-2: Audit first: classify each of the 65 checks as a capability question or a true platform-API guard (for example
   calling a Windows-only plugin); list both in the ADR.
 - R-3: Every check moves behind the seam (Q1 = 1) or onto a shrinking allow-list (Q1 = 2). Behavior unchanged on
@@ -593,7 +628,8 @@ PASS candidates.
 **Value**: This lets mined or shared rule files be added without wiping the user's rules.
 
 **Requirements**:
-- R-1: The import confirmation dialog offers "Replace" (default, unchanged) and "Merge".
+- R-1: The import confirmation dialog offers "Merge" (the DEFAULT, Harold Q2 2026-10-19) and "Replace" (today's
+  behavior, still available).
 - R-2: Merge adds only new rules and safe senders; duplicates resolved by `manual_rule_duplicate_checker` /
   `rule_conflict_detector`; patterns failing F266 are skipped and counted.
 - R-3: The result message states added, skipped as duplicate, and skipped as invalid; then the provider reloads (F297).
@@ -605,7 +641,8 @@ PASS candidates.
 **User-reachable control**: Settings > Import / Export YAML > Import > confirmation dialog > "Merge".
 
 **Observable behavior -- before / after**: BEFORE: importing a file replaces all rules and safe senders. AFTER: the
-dialog asks Replace or Merge; Merge keeps everything and adds what is new, then says how many were added and skipped.
+dialog offers Merge (selected by default) or Replace; Merge keeps everything and adds what is new, then says how many
+were added and skipped. A user who wants the old behavior picks Replace.
 
 **Parity (ADR-0042)**: shared Dart and the same dialog on both; the file picker differs by platform already (existing
 exception, unchanged).
@@ -614,7 +651,7 @@ exception, unchanged).
 
 **Acceptance criteria**: AC-1 (Given a DB with rule A and a file with A and B, When Merge, Then the DB has A once and
 B, and the message says 1 added, 1 duplicate); AC-2: Replace behaves exactly as before; AC-3: an invalid pattern is
-skipped and counted.
+skipped and counted; AC-4: Merge is the pre-selected choice when the dialog opens.
 
 **Tests to write**: T-1..T-3 TEST-WIDGET and TEST-UNIT, mutation-checked.
 
@@ -623,7 +660,7 @@ skipped and counted.
 **Model**: Sonnet -- *why not Haiku*: Class-2 semantics plus dialog and service. **Delegation checklist**: yes.
 **Step-types**: UI-NEW, SVC-EDIT, TEST-WIDGET. **Est-Effort**: 45-75m.
 
-## Task 11 -- F289: WinWright default sweep with no mouse steps (Priority 25; blocked upstream, Q4b)
+## Task 11 -- F289: REMOVED from Sprint 80 (Harold Q4b = 2, 2026-10-19); stays in the backlog until a WinWright release replays a read step. Card text kept for that sprint.
 
 **Value**: This lets the WinWright sweep run on a locked PC.
 
@@ -681,7 +718,7 @@ side.
 **Model**: R-1/R-2 session model; R-3 Sonnet -- *why not Haiku*: native platform channel. **Step-types**: DOCS;
 SVC-NEW + native. **Est-Effort**: 10m; R-3 45-75m.
 
-## Task 13 -- F276: No Rule Review lists mail already deleted or moved (Priority 30; pending Q6)
+## Task 13 -- F276: No Rule Review lists mail already deleted or moved (Priority 30; IN scope, Q6 = 1)
 
 **Value**: This stops No Rule Review listing mail that is gone, and stops actions on it failing.
 
@@ -712,7 +749,7 @@ message is listed once.
 **Model**: Sonnet -- *why not Haiku*: error classification across two adapters. **Step-types**: SVC-EDIT, TEST-UNIT.
 **Est-Effort**: 40-60m.
 
-## Task 14 -- F204 gaps 1 and 2: assert target SDK and no AD_ID from the built AAB (Priority 24; pending Q7)
+## Task 14 -- F204 gaps 1 and 2: assert target SDK and no AD_ID from the built AAB (Priority 24; IN scope, Q7 = 1)
 
 **Value**: This makes a Flutter downgrade or a transitive ads dependency fail the build instead of failing at Play or
 making the Data safety answer false.
