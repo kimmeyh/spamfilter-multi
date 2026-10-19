@@ -835,6 +835,22 @@ making the Data safety answer false.
   17**, One UI 9.0 (Settings > About phone > Software information). F299 class-B rows on 0.20.0: **0** over
   06:00-08:57 (`phone-log-health.ps1`: AOL 14 starts, 12 completed, 2 refused, 0 unfinished; Gmail, iCloud, Yahoo 1
   each, completed). R-5 candidate: iCloud background scan 07:54:55 completed (found 0, errors 0).
+- **Task 2 R-3 (F277, the 0.3% versus 1.5% spread between the two arm-B nights) -- cause unknown, desk analysis of
+  the Sprint 79 night log (`SPRINT_79_PLAN.md` "Night log")**:
+  - Night 10-14/15: on battery about 01:00-05:52 (91% to 84%, 7 points), screen on 29 m, **44** completed AOL scans
+    (8.06 an hour), app **0.3%** (Telegram 1.8%).
+  - Night 10-16/17: on battery about 00:25-06:28 (94% to 86%, 8 points), screen-on time not recorded, **55** AOL
+    starts (about 9.1 an hour), app **1.5%** (Telegram 4.2%).
+  - Scan count explains at most 1.25x (55 / 44) of the 5x; the phone's total drop barely differs (7 against 8
+    points). So the per-scan cost would have to differ about 4x, which nothing in the logs shows (same account, same
+    interval, 0 errors both nights).
+  - Leading candidate, unverified: the two figures do not cover the same window. The app info screen on 10-18 reads
+    "Battery 0% used since last fully charged", and neither night started from a full charge (91% and 94%), so each
+    reading may include a different stretch of the day before. Telegram also rose 2.3x between the two readings,
+    which fits a longer window on the second night better than a costlier app.
+  - What would settle it: charge to 100% immediately before unplugging, screenshot the app's own battery detail at
+    unplug and again in the morning, and record screen-on time. Added to the F277 Manual Validation step below, so
+    arm A night 2 and arm C are measured on the same window. The 3x decision rule (R-4) waits for those two nights.
 - **Windows startup cost (pre-existing, NOT a Sprint 80 change; asked at Manual Validation)**: a release build runs
   one PowerShell script per Task Scheduler call before `runApp` (`main.dart:360-431`). Measured on DEV with 4
   enabled accounts: 8 `get_status.ps1` plus 1 `adhoc_query.ps1`, about 3.1 s each, window at 30.9 s, app idle in
@@ -896,5 +912,8 @@ mode), so no step changes mail except the one you make yourself in MV-3. The win
   - R-7: one day of normal use on 0.20.0 for the F205 error classification (or zero).
   - R-8: the `stopped by WorkManager before it finished: reason=... raw=...` line, then your Fix 2 decision.
   - F277: arm A second night (AOL every 15 minutes, ONE account on, about 8 hours on battery) and arm C (new-mail
-    scanning on, one account, one night); screenshots of Settings > Battery app usage the next morning.
+    scanning on, one account, one night). For each night: charge to 100% and unplug at bedtime; at unplug, take a
+    screenshot of the app's battery detail (Settings > Apps > MyEmailSpamFilter > Battery); in the morning, take the
+    same screenshot plus Settings > Battery app usage, and note the screen-on time. (Task 2 R-3: the two arm-B
+    readings may cover different windows; a full charge at unplug makes both nights start from the same point.)
   - F299: nothing to do beyond R-7's day of use; recorded so far: 0 class-B rows on Android 17.
