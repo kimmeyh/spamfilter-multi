@@ -614,39 +614,9 @@ class EmailScanner {
             await LiveScanLogger.log('Step 4: Folder "$folderName" returned $folderCount messages');
           }
 
-          // F276 (Sprint 80): in this open session, mark listed No Rule rows
-          // of this folder that are gone (deleted, or moved) so Review stops
-          // showing them. Read-only, so it runs in every scan mode. A
-          // session-fatal error is rethrown like every per-item catch here
-          // (Sprint 75 IMP-3); anything else leaves the rows unchanged.
-          final checker = platform;
-          if (checker is MessagePresenceChecker) {
-            try {
-              final outcome = await reconcileNoRulePresence(
-                checker: checker as MessagePresenceChecker,
-                store: UnmatchedEmailStore(DatabaseHelper()),
-                accountId: accountId,
-                folderName: folderName,
-                // Gmail checks one message per request; IMAP one SEARCH per
-                // 200 UIDs.
-                limit: checker is GmailApiAdapter ? 50 : 500,
-              );
-              if (outcome.deleted + outcome.moved > 0) {
-                unawaited(DiagnosticLogger.log(
-                  kind: DiagnosticLogger.kindScan,
-                  context: 'F276/no-rule',
-                  detail: 'folder "$folderName": ${outcome.checked} listed '
-                      'rows checked, ${outcome.deleted} gone, '
-                      '${outcome.moved} moved',
-                ));
-              }
-            } catch (e, st) {
-              if (isSessionFatal(e)) rethrow;
-              AppLogger.error('F276: No Rule presence check failed for '
-                  'folder "$folderName"; rows left unchanged',
-                  error: e, stackTrace: st);
-            }
-          }
+          // F276 (Sprint 80): mark this folder's listed No Rule rows that are
+          // gone, in this open session ([_checkNoRulePresence]).
+          await _checkNoRulePresence(platform, folderName);
 
           // [NEW] ISSUE #128: Report folder completion
           if (folderCount > 0) {
@@ -2065,6 +2035,46 @@ class EmailScanner {
   @visibleForTesting
   void resetDaysBackUidFloorCacheForTesting() =>
       _daysBackUidFloorCache.clear();
+
+  /// F276 (Sprint 80): after [folderName] was fetched, ask [platform] -- in
+  /// the same open session -- which of the folder's listed No Rule rows still
+  /// exist, and record the answer so Review hides the ones that are gone
+  /// ([reconcileNoRulePresence]). Read-only, so it runs in every scan mode.
+  ///
+  /// Sprint 75 IMP-3 walk for this new catch: a cancel and a session-fatal
+  /// error ([isSessionFatal]) are rethrown, so they reach the per-folder
+  /// handlers in [scanInbox] exactly as a fetch failure would; anything else
+  /// is logged and the rows are left unchanged. A platform that is not a
+  /// [MessagePresenceChecker] (demo, mock) is not checked.
+  Future<void> _checkNoRulePresence(
+      SpamFilterPlatform? platform, String folderName) async {
+    if (platform is! MessagePresenceChecker) return;
+    try {
+      final outcome = await reconcileNoRulePresence(
+        checker: platform as MessagePresenceChecker,
+        store: UnmatchedEmailStore(DatabaseHelper()),
+        accountId: accountId,
+        folderName: folderName,
+        // Gmail checks one message per request; IMAP one SEARCH per 200 UIDs.
+        limit: platform is GmailApiAdapter ? 50 : 500,
+      );
+      if (outcome.deleted + outcome.moved > 0) {
+        unawaited(DiagnosticLogger.log(
+          kind: DiagnosticLogger.kindScan,
+          context: 'F276/no-rule',
+          detail: 'folder "$folderName": ${outcome.checked} listed rows '
+              'checked, ${outcome.deleted} gone, ${outcome.moved} moved',
+        ));
+      }
+    } on ScanCancelledException {
+      rethrow;
+    } catch (e, st) {
+      if (isSessionFatal(e)) rethrow;
+      AppLogger.error('F276: No Rule presence check failed for folder '
+          '"$folderName"; rows left unchanged',
+          error: e, stackTrace: st);
+    }
+  }
 
   /// Sprint 38 Round 4 (2026-05-17): compute the oldest unaddressed
   /// no-rule UID per scanned folder from the just-completed scan results,

@@ -28,6 +28,9 @@ Format: `- **type**: Description (Issue #N)` where type is feat|fix|chore|docs
 
 ### 2026-10-19 (Sprint 80)
 
+- **fix**: Editing, deleting or quick-adding a rule or safe sender now takes effect at once in No Rule Review and the next manual scan, without a restart; if the reload fails, the app says the change is saved but not yet in effect (Issue #496)
+- **fix**: Review No Rule Items no longer lists email you already deleted or moved in your mail app: each scan checks the listed emails of the folders it scans and hides the ones that are gone; an email that comes back is listed again. A Gmail message moved from Spam to the Inbox is now listed once (Issue #501)
+- **feat**: Importing a rules or safe senders file now adds to your existing rules by default (Merge), skipping duplicates and invalid patterns and saying how many; Replace is still available (Issue #499)
 - **chore**: CI now uses the same Flutter version as local development (3.47.4), read from one .fvmrc file; a test fails if they drift (Issue #495)
 - **chore**: The Play bundle build now fails if the bundle targets an Android version below 36 or requests the advertising ID permission (Issue #502)
 - **chore**: Developer tool that scores candidate rules against the developer's own scan history before any rule can act on mail (Issue #497)
