@@ -1,7 +1,10 @@
 # Sprint 80 Plan
 
-**Status**: DRAFT, awaiting Phase 3.7 approval and the decision questions below. Scope selected by Harold at Phase
-8.4 pass 2 (2026-10-18).
+**Status**: APPROVED at Phase 3.7 by Harold, 2026-10-19 (*"q1 a - and do any adr approval at Manual Validation"*, then
+*"Sprint plan approved as amended (with any comments I provided), proceed with execution"*). Q1 = 1: all 65 checks
+move this sprint; ADR-0049 and ADR-0050 are approved at Manual Validation. Cards: Task 0 #491, Task 1 #471 (with #433,
+#428), Task 2 #472, Task 3 #492, Task 4 #493, Task 5 #494, Task 6 #495, Task 7 #496, Task 8 #497, Task 9 #498,
+Task 10 #499, Task 12 #500, Task 13 #501, Task 14 #502. Scope selected by Harold at Phase 8.4 pass 2 (2026-10-18).
 **Branch**: `feature/20261018_Sprint_80` | **PR**: #490 (draft until the end of 7.7)
 **Planner**: Opus 5.5 (top tier, `SPRINT_PLANNING.md:94-110`). Phase 3.2.2.1 audits by spot reads this turn; file:line
 evidence is in each card.
