@@ -799,7 +799,11 @@ making the Data safety answer false.
   launch and the exit code of a launch that exits (82adc6b9; this closes the Sprint 79 "cause unknown" launch
   failure). (2) 09:20 -- step 2 "resolved 0 elements": the accessibility tree appeared 10-41 s after the priming
   query, past the 15 s `stepTimeoutMs`; now 60000 (833f7cee); the cause of that delay is unknown (README entry
-  names what would settle it). Duration note: about 16 s per step, as in Sprint 79 (f124 6 m 53 s then).
+  names what would settle it). Duration note: about 16 s per step, as in Sprint 79 (f124 6 m 53 s then). After
+  the sweep, 6dc572c5 changed only `lib/core` (`email_scan_provider.dart`, the store and a doc comment); `lib/ui`
+  is unchanged since the swept build, so the sweep stands for the 10:07 MV build.
+- **5.2 full suite**: 2026-10-19 10:01, `run-full-suite.ps1 -Label 80-5.2c` at 6dc572c5: 3170 passed, 15 skipped,
+  0 failed (4 minutes); `flutter analyze` clean. (80-5.2b at 82adc6b9 failed 1 -- see the F276 finding.)
   sweep-head: 4d42c8dd
 - **5.1.9 MV rehearsal**: 2026-10-19, every Windows step handed over below was rehearsed on its real path before
   handover; each step carries its own `Rehearsed:` line. F269 by the screen's parse path plus the merge on a test
@@ -839,8 +843,8 @@ making the Data safety answer false.
 
 ## Manual Validation steps (Sprint 80 -- re-present IN FULL every time Harold is asked to validate)
 
-Build: Windows DEV 0.21.0 (`D:\Data\Harold\github\spamfilter-multi\mobile-app\dist\dev\MyEmailSpamFilter-Dev.exe`,
-title `MyEmailSpamFilter [DEV]`, the same exe the four DEV background tasks run every 5 minutes). DEV is read-only (scan
+Build: Windows DEV 0.21.0 from 6dc572c5, built 2026-10-19 10:07
+(`D:\Data\Harold\github\spamfilter-multi\mobile-app\dist\dev\MyEmailSpamFilter-Dev.exe`, title `MyEmailSpamFilter [DEV]`, the same exe the four DEV background tasks run every 5 minutes). DEV is read-only (scan
 mode), so no step changes mail except the one you make yourself in MV-3. The window takes about 30 seconds to appear
 (see the startup finding; not new).
 
