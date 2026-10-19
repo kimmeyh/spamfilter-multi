@@ -773,3 +773,111 @@ making the Data safety answer false.
 **Tests to write**: T-1 self-test of the check on a crafted manifest (mutation style).
 
 **Model**: Haiku. **Delegation checklist**: yes. **Step-types**: HOOK. **Est-Effort**: 25-40m.
+
+---
+
+# Phase 5 evidence
+
+- **5.1.2 F-PRECHECK**: 2026-10-19, six classes run against the sprint diff (`lib`, `scripts`, `tool`, `test`), then
+  again on the three Phase 5 commits (32e9f78, 82adc6b9, 833f7cee). Clean on all six for Tasks 0-14. Notes: (1)
+  mirror sites -- the F276 presence check is in BOTH adapters (IMAP `UID SEARCH`, Gmail `messages.get`) and the
+  scanner calls it for any `MessagePresenceChecker`; the F269 merge has a rules and a safe-senders twin, both
+  wired; `.fvmrc` is read by all three CI jobs and by `flutter_version_sync_test`. (2) helper wiring -- every new
+  helper has a runtime caller (`reconcileNoRulePresence` from `email_scanner.dart`, `reloadRulesAfterWrite` from 5
+  screens, `YamlImportMerge` from the import screen, `PlatformCapabilities` at the 62 moved sites). (3) doc drift --
+  the 82adc6b9 change updated the reconciler doc comment and the ARCHITECTURE.md unmatched_emails row. (4) parsing
+  -- the IMAP check leaves out ids that are not integer UIDs (tested). (5) API scope -- `UID SEARCH` runs on the
+  selected folder only; Gmail `messages.get` reads one message with `format: minimal` and `$fields: id,labelIds`.
+  (6) silent failure -- the presence check rethrows cancellation and session-fatal errors and logs the rest at
+  error level (tests include the session-fatal case); the F267/F268 tools take the app-data path as a parameter.
+- **5.1.5 WinWright sweep**: NOT YET RUN on the final build -- recorded when it completes.
+- **5.1.9 MV rehearsal**: 2026-10-19, every Windows step handed over below was rehearsed on its real path before
+  handover; each step carries its own `Rehearsed:` line. F269 by the screen's parse path plus the merge on a test
+  database seeded with the same existing rule as the DEV database (`mv80_f269_rehearsal_test.dart`, scratch, PASS:
+  "Merged rules: 1 added, 1 skipped as duplicate, 0 skipped as invalid."); F276 against the local GreenMail server
+  (UIDs [1,2,3], middle one expunged: present / absent / present) AND on the live DEV database (below); F298 and
+  F294 by their tests and a screenshot of the running DEV build. Phone steps are re-presented from the Task 1, 2
+  and 12 cards; they run on the installed 0.20.0 and cannot be rehearsed on this PC.
+- **5.1.6 Runtime Launch Gate / F294 AC-5 (Android)**: 2026-10-19 08:5x, `build-with-secrets.ps1 -BuildType debug
+  -Env dev -InstallToEmulator -SkipUninstall` on emulator-5554: "APK installed", "[OK] App launched successfully";
+  app pid 25828 alive afterwards, `logcat -b crash` 0 lines.
+- **Phase 5 findings fixed in-sprint**:
+  - F276 re-sighting (82adc6b9): a re-sighting wrote `unknown` / never checked, so every scan re-asked the rows it had
+    just seen (every 5 minutes on DEV, up to 50 Gmail requests per scan). Found by reading the live DEV database in
+    the rehearsal. Now a sighting records `available` with its time. New test; mutations R1 and R2 KILLED.
+  - `build-windows.ps1` (32e9f78): a background-scan task that started from `dist\dev` during the 2-minute compile
+    held the exe and dll files; the variant swap deleted `data\` and then failed, leaving a DEV build that could not
+    start. The script now stops processes running from the variant folder right before the swap.
+  - WinWright runner and scripts (82adc6b9, 833f7cee): see 5.1.5.
+- **F276 live evidence (DEV database, read-only, 2026-10-19)**: the first 0.21.0 AOL background scan,
+  09:00:20-09:00:23, marked 10 unprocessed AOL rows `deleted` -- 7 Bulk spam rows from 10-18, 2 Inbox newsletters
+  last seen 07:48 and 07:59 (Harold worked the Fold's No Rule list to 0 by 08:38), 1 August row. The one AOL row
+  still in the mailbox (Speedpay, re-sighted 09:10:36) stayed listed: DEV Review shows "No rule (1)".
+- **Phone evidence so far (pulled 2026-10-19 09:0x, `validation-screenshots/sprint-80/`)**: 0.20.0 installed from
+  Play between 05:45:10 (last 0.19.0 line) and 06:00:24 (first 0.20.0 line). Fold: Galaxy Z Fold8 Ultra, **Android
+  17**, One UI 9.0 (Settings > About phone > Software information). F299 class-B rows on 0.20.0: **0** over
+  06:00-08:57 (`phone-log-health.ps1`: AOL 14 starts, 12 completed, 2 refused, 0 unfinished; Gmail, iCloud, Yahoo 1
+  each, completed). R-5 candidate: iCloud background scan 07:54:55 completed (found 0, errors 0).
+- **Windows startup cost (pre-existing, NOT a Sprint 80 change; asked at Manual Validation)**: a release build runs
+  one PowerShell script per Task Scheduler call before `runApp` (`main.dart:360-431`). Measured on DEV with 4
+  enabled accounts: 8 `get_status.ps1` plus 1 `adhoc_query.ps1`, about 3.1 s each, window at 30.9 s, app idle in
+  between. With background off (Harold's prod), one delete script per account plus the enumerate, about 15 s.
+  Unchanged since 80d92c6 except the `Platform.isWindows` to capability swap.
+
+## Manual Validation steps (Sprint 80 -- re-present IN FULL every time Harold is asked to validate)
+
+Build: Windows DEV 0.21.0 (`D:\Data\Harold\github\spamfilter-multi\mobile-app\dist\dev\MyEmailSpamFilter-Dev.exe`,
+title `MyEmailSpamFilter [DEV]`, the same exe the four DEV background tasks run every 5 minutes). DEV is read-only (scan
+mode), so no step changes mail except the one you make yourself in MV-3. The window takes about 30 seconds to appear
+(see the startup finding; not new).
+
+- **MV-1 (F269, YAML import Merge, the default)**.
+  - Preconditions: the DEV app open. The file `C:\Users\kimme\Documents\Sprint80_MV\rules_merge_test.yaml` holds 2
+    rules: `Block_EntireDomain_18pluseislandphotos.info` (already in the DEV database, id 6883) and the new
+    `MV80_F269_MergeTest` (blocks `@...f269-mv-test.invalid`).
+  - Steps: Settings (gear) > General tab > Import / Export YAML > Import Rules > pick the file above. In the dialog,
+    leave **Merge** selected (it is pre-selected) and press **Merge 2 rules**.
+  - Expected: the dialog text says nothing you have is changed or removed; after the press the status message reads
+    `Merged rules: 1 added, 1 skipped as duplicate, 0 skipped as invalid.` Settings > General > Manage Rules: the
+    rule count is one higher than before (2202 before, read 2026-10-19) and searching `MV80` finds the new rule.
+  - Rehearsed: 2026-10-19, the same file through the screen's parse path and `YamlImportMerge.mergeRules` on a test
+    database seeded with the existing rule: exactly that message.
+- **MV-2 (F298, a rule delete reloads the rules in use)**.
+  - Preconditions: MV-1 done.
+  - Steps: Settings > General > Manage Rules > search `MV80` > select the rule > **Delete** > **Delete** in the
+    confirmation.
+  - Expected: a snackbar `Deleted: <the rule's name or domain>` with NO "-- saved, but the rules in use could not be
+    reloaded; restart the app" ending. Searching `MV80` again finds nothing; the count is back to 2202.
+  - Rehearsed: `f298_*` tests drive the same delete path with a provider whose reload succeeds and one whose reload
+    fails (the second shows the suffix).
+- **MV-3 (F276, Review hides mail that is gone)**.
+  - Preconditions: the DEV background tasks enabled (Task Scheduler Library, `SpamFilterBackgroundScan_*_Dev`, every
+    5 minutes). DEV Review lists at least one row you are willing to move (today: 1 row, `noreply@speedpay.com`,
+    AOL Inbox, "AutoPay Payment Processed").
+  - Steps: in AOL (web or the mail app), move that email to another folder (or delete it). Wait up to 65 minutes. In
+    the DEV app press the Refresh icon (Re-check the last scan) on Review No Rule Items.
+  - Expected: the row is gone and "No rule (N)" is 1 lower. Why up to 65 minutes: every scan that still sees a row
+    stamps it present, and a row is re-checked at most once an hour after its last sighting; the tasks run every 5
+    minutes. Optional: move it back to the Inbox; the next scan lists it again.
+  - Rehearsed: 2026-10-19, GreenMail (an expunged UID reads absent, the others present) and the live DEV database
+    (the first 0.21.0 AOL scan hid 10 rows whose mail was gone and kept the one still in the Inbox).
+- **MV-4 (F294, Windows looks and behaves the same)**.
+  - Steps: look at the DEV app.
+  - Expected: the Exit (X) button at the right of the toolbar, flat dark surfaces as before, the tray icon present.
+  - Rehearsed: screenshot of the running DEV build 2026-10-19 09:2x (Exit button, flat surfaces); the tray icon is
+    not visible to a window screenshot -- its code path is covered by `platform_capabilities_test` (`hasSystemTray`
+    true on Windows) and the `main.dart` tray block is unchanged apart from the capability check.
+- **Phone (Fold, 0.20.0 from Play) -- Task 1 MV76-1, Task 2 F277, Task 12 F299**: the full remainder, re-presented:
+  - R-1: Settings > Background screenshot (the Background note).
+  - R-2: a scan started by a mail app's new-mail notification (`trigger=notification` in the diagnostic log);
+    Notification access is already allowed. None seen yet in today's 0.20.0 log.
+  - R-3: restart the phone and do not open the app; background scans must resume (#428). Plus a screenshot of the
+    F250 Google account state.
+  - R-4: the boot-time trace -- read from the log after R-3.
+  - R-5: one completed iCloud background scan (candidate already: 07:54:55 today, found 0, errors 0).
+  - R-6: the F283 Android screenshot.
+  - R-7: one day of normal use on 0.20.0 for the F205 error classification (or zero).
+  - R-8: the `stopped by WorkManager before it finished: reason=... raw=...` line, then your Fix 2 decision.
+  - F277: arm A second night (AOL every 15 minutes, ONE account on, about 8 hours on battery) and arm C (new-mail
+    scanning on, one account, one night); screenshots of Settings > Battery app usage the next morning.
+  - F299: nothing to do beyond R-7's day of use; recorded so far: 0 class-B rows on Android 17.
