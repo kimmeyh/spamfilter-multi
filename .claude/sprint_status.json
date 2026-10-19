@@ -8,7 +8,7 @@
         "branch": "feature/20261018_Sprint_80",
         "status": "Phase 3 Sprint Planning -- scope selected by Harold 2026-10-18 (Phase 8.4 done); 8.3 both 0.20.0 uploads in process (Harold); SPRINT_80_PLAN.md drafted, draft PR open, awaiting Phase 3.7 approval and the plan decision questions.",
         "plan_approved": false,
-        "pr_number": null,
+        "pr_number": 490,
         "version": "0.20.0+17 (unchanged; Sprint 80 bumps at 3.7.0b)"
     },
     "previous_sprint": {

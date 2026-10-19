@@ -2,7 +2,7 @@
 
 **Status**: DRAFT, awaiting Phase 3.7 approval and the decision questions below. Scope selected by Harold at Phase
 8.4 pass 2 (2026-10-18).
-**Branch**: `feature/20261018_Sprint_80` | **PR**: draft, created at 3.3.1 (number recorded below once created)
+**Branch**: `feature/20261018_Sprint_80` | **PR**: #490 (draft until the end of 7.7)
 **Planner**: Opus 5.5 (top tier, `SPRINT_PLANNING.md:94-110`). Phase 3.2.2.1 audits by spot reads this turn; file:line
 evidence is in each card.
 
