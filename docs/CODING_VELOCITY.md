@@ -251,7 +251,7 @@ Every Item that is implemented gets ONE row here the moment it is picked up -- s
 | Task 5: F295 iPhone research + ADR-0050 (#494) | 80 | PLANNED | 90-120 | 90-120 | | | |
 | Task 6: F296 CI Flutter version (#495) | 80 | DONE (CI run pending) | 20-45 | 20-45 | ~5 (Haiku agent) + ~5 review | ~10 | Recorded at completion (2026-10-19 01:05). 3/3 tests, 8 mutants KILLED. CI green on 3.47.4 still to be observed on PR #490. |
 | Task 7: F298 edits reload rules (#496) | 80 | PLANNED | 30-60 | 30-60 | | | |
-| Task 8: F267 rule evaluation harness (#497) | 80 | PLANNED | 60-100 | 60-100 | | | |
+| Task 8: F267 rule evaluation harness (#497) | 80 | DONE | 60-100 | 60-100 | ~60 (Sonnet agent) + ~5 review | ~65 | Recorded at completion (2026-10-19 01:30). 7/7 tests, 12 mutants KILLED. Engine imports Flutter, so the CLI runs under flutter test (tool/rule_eval). Finding: most delete labels on Windows DEV are rule verdicts, so a .info catch-all passes the bar. |
 | Task 9: F268 rule miner (#498) | 80 | PLANNED | 60-120 | 60-120 | | | |
 | Task 10: F269 import Merge default (#499) | 80 | PLANNED | 45-75 | 45-75 | | | |
 | Task 12: F299 verify first (#500) | 80 | PLANNED | 10 (+45-75) | 10 | | | |
