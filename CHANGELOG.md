@@ -26,6 +26,10 @@ Format: `- **type**: Description (Issue #N)` where type is feat|fix|chore|docs
 
 ## [Unreleased]
 
+## [0.20.0] - 2026-10-18
+
+Released to the Microsoft Store and Google Play closed testing (submitted 2026-10-18). Sprint 79.
+
 ### 2026-10-18 (Sprint 79 final code reviews, PR #480)
 - **fix**: The 2-minute limit on a server that stops answering now also covers searching and downloading messages; before, enough_mail applied it only to sign-in and folder selection, so a stall mid-scan still hung (Issue #471)
 - **fix**: A folder that fails to download (including the 2-minute limit) now counts as a scan error; before, it read as an empty folder and the scan reported success with 0 errors (Issue #471)
@@ -62,6 +66,10 @@ Format: `- **type**: Description (Issue #N)` where type is feat|fix|chore|docs
 - **docs**: Backlog refinement presents the next 20 candidates in one priority order, with the details in the same order and no phase-group headers; the master plan stays grouped by phase (Issue #487)
 - **fix**: Every change to an account's background schedule (scheduled or cancelled, on Windows and Android) is now written to the diagnostic log with the screen or step that made it, so an account that stops being scanned always shows why (Issue #471)
 - **feat**: Android background-scan notifications name the account (`Back. scan k*@aol completed`) and list "No rule" first (`No rule 9 Deleted 1 Safe 0`); one notification per account, the newest replacing the older one; a read-only or partial scan names its mode in the title and strikes through the counts it did not act on (Issue #482)
+
+## Released in 0.15.0 to 0.19.0
+
+Release headings were not kept for these versions. Each sprint's entries shipped in the next store release; see `docs/STORE_VERSION_STATUS.md` for the dates.
 
 ### 2026-10-13 (Sprint 78 final code reviews, PR #470)
 - **fix**: If the spam filter rules fail to reload after a change, a banner with Retry now says so and the rules loaded earlier stay in use; before, the failure was invisible

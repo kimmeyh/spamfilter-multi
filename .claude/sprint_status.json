@@ -1,15 +1,15 @@
 {
     "_description": "Sprint status file that persists across context compaction. Update after each phase/sub-phase completion.",
-    "_last_updated": "2026-10-18T23:45:00-04:00",
+    "_last_updated": "2026-10-19T00:30:00-04:00",
     "_usage": "Read this file after context compaction to restore sprint approval state and progress.",
     "_staleness_note": "This file had drifted 15 sprints (last updated at Sprint 35, 2026-04-19) before being refreshed at Sprint 50 close-out. It is a Phase 7.7 checklist item -- update it at every sprint close-out, not opportunistically.",
     "current_sprint": {
         "number": 80,
         "branch": "feature/20261018_Sprint_80",
-        "status": "Phase 3 Sprint Planning -- scope selected by Harold 2026-10-18 (Phase 8.4 done); 8.3 both 0.20.0 uploads in process (Harold); SPRINT_80_PLAN.md drafted, draft PR open, awaiting Phase 3.7 approval and the plan decision questions.",
-        "plan_approved": false,
+        "status": "Phase 4 Sprint Execution -- plan APPROVED by Harold 2026-10-19 00:2x (Q1 = 1, ADR approval at Manual Validation); cards #491-#502 created; executing tasks to Manual Validation.",
+        "plan_approved": true,
         "pr_number": 490,
-        "version": "0.20.0+17 (unchanged; Sprint 80 bumps at 3.7.0b)"
+        "version": "0.21.0+18 (bumped at 3.7.0b)"
     },
     "previous_sprint": {
         "number": 79,
@@ -26,7 +26,8 @@
         "sprint_77": "Closed by hand 2026-10-09: #461 (Fold steps 7-11 carried to the Sprint 78 start) #462 #463 #464 #465 #466 #467 #468. Open, inside MV76-1: #428 (MV74-1 reboot half), #433 (F205).",
         "sprint_78": "Closed by hand 2026-10-13: #473 #474 #475 #476 #478 (#477 closed earlier). Open, moved to Sprint 79: #471 (MV76-1, with #428 and #433), #472 (F277).",
         "sprint_79_closed": "Closed by the PR #480 merge (Closes keywords, develop default branch) 2026-10-18: #481 #482 #483 #484 #485 #486 #487 #488. Open for Sprint 80: #471 (with #433, #428), #472.",
-        "sprint_79": "Task 0 #481 (version), Task 1 #471 (MV76-1; inside it #433 F205, #428 MV74-1), Task 2 #472 (F277), Task 3 #482 (F286), Task 4 #483 (F287), Task 5 #484 (F288), Task 6 #485 (F291), Task 7 #486 (F292), Task 8 #487 (F293)"
+        "sprint_79": "Task 0 #481 (version), Task 1 #471 (MV76-1; inside it #433 F205, #428 MV74-1), Task 2 #472 (F277), Task 3 #482 (F286), Task 4 #483 (F287), Task 5 #484 (F288), Task 6 #485 (F291), Task 7 #486 (F292), Task 8 #487 (F293)",
+        "sprint_80": "Task 0 #491, Task 1 #471 (with #433 F205, #428 MV74-1), Task 2 #472 (F277), Task 3 #492 (F292), Task 4 #493 (F294), Task 5 #494 (F295), Task 6 #495 (F296), Task 7 #496 (F298), Task 8 #497 (F267), Task 9 #498 (F268), Task 10 #499 (F269), Task 12 #500 (F299), Task 13 #501 (F276), Task 14 #502 (F204). F289 removed (Q4b = 2)."
     },
     "_github_issues_note": "Sprint 66 cards created at Phase 3.3.1 (2026-09-07): #387 GP-19, #388 GP-4. Close by hand at Post-Merge Cleanup.",
     "test_metrics": {
@@ -56,9 +57,8 @@
     ],
     "blocking_issues": [],
     "next_actions": [
-        "Phase 3.7: Harold answers the SPRINT_80_PLAN.md decision questions and approves the plan.",
-        "On approval: 3.7.0 cards (new: F292 post-reboot, F294, F295, F296, F298, F267, F268, F269, F299, plus F276/F204 if included; reuse #471 #433 #428 #472), 3.7.0b bump 0.21.0+18 with Play Last uploaded -> 0.20.0 (17) and the CHANGELOG [0.20.0] heading in the same commit, 3.7.1 PR body.",
-        "Confirm 0.19.0 and 0.20.0 live on the Microsoft Store and 0.20.0 on Play; update STORE_VERSION_STATUS Live rows only from an observation."
+        "Execute Tasks 0-14 (no 11) to Manual Validation; ADR-0049 and ADR-0050 approved by Harold at Manual Validation.",
+        "Phone tasks (1, 2, 12) start when Play shows 0.20.0 on the Fold."
     ],
     "next_sprint_targeted": {
         "number": 80,

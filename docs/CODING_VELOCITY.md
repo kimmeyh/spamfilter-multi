@@ -243,6 +243,20 @@ Every Item that is implemented gets ONE row here the moment it is picked up -- s
 | Task 7: F292 full-suite deaths and hangs (#486) | 79 | DONE | 60-120 | 60-120 | ~70 (mostly wall-clock runs) | ~70 | Approximate (runs 1-5, run-full-suite.ps1, 5b80650 runner fix). Cause unknown; post-reboot runs moved to Sprint 80. |
 | Task 9: F297 reload after YAML import (#488) | 79 | DONE | 30-45 | 30-45 | ~45 | ~45 | Approximate (25e363d). Within estimate; F298 split out to Sprint 80. |
 | Phase 5.1.2 / 5.1.5 / 5.1.9 / 5.2 evidence + F-PRECHECK fixes | 79 | DONE | -- | -- | ~60 | ~60 | Recorded at completion (2026-10-17 23:00-23:50; 80d92c6, a724efb). Includes an s75 launch failure re-run. |
+| Task 0: version bump 0.21.0+18 (#491) | 80 | DONE | 10-15 | 10-15 | ~10 | ~10 | Recorded at completion (2026-10-19 00:35). CHANGELOG 0.20.0 heading + "Released in 0.15.0 to 0.19.0" note; 3 version gates 12/12. |
+| Task 1: MV76-1 + F205 + Fix 2 (#471, #433, #428) | 80 | PLANNED | 40-70 | 40-70 | | | Waits for 0.20.0 from Play on the Fold. |
+| Task 2: F277 energy arms (#472) | 80 | PLANNED | 30-45 | 30-45 | | | Nights. |
+| Task 3: F292 close-out (#492) | 80 | PLANNED | 10 | 10 | | | |
+| Task 4: F294 capabilities + policy seam (#493) | 80 | PLANNED | 110-190 | 110-190 | | | |
+| Task 5: F295 iPhone research + ADR-0050 (#494) | 80 | PLANNED | 90-120 | 90-120 | | | |
+| Task 6: F296 CI Flutter version (#495) | 80 | PLANNED | 20-45 | 20-45 | | | |
+| Task 7: F298 edits reload rules (#496) | 80 | PLANNED | 30-60 | 30-60 | | | |
+| Task 8: F267 rule evaluation harness (#497) | 80 | PLANNED | 60-100 | 60-100 | | | |
+| Task 9: F268 rule miner (#498) | 80 | PLANNED | 60-120 | 60-120 | | | |
+| Task 10: F269 import Merge default (#499) | 80 | PLANNED | 45-75 | 45-75 | | | |
+| Task 12: F299 verify first (#500) | 80 | PLANNED | 10 (+45-75) | 10 | | | |
+| Task 13: F276 deleted/moved rows (#501) | 80 | PLANNED | 40-60 | 40-60 | | | |
+| Task 14: F204 AAB checks (#502) | 80 | PLANNED | 25-40 | 25-40 | | | |
 
 ## Can the missing sprints (48-69) be reconstructed from git? -- TESTED 2026-09-19, answer: NO
 
