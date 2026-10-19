@@ -562,6 +562,21 @@ try {
         # Sprint 76 7.7.1 review: the copy used to be skipped with no message.
         Write-Host "[WARNING] IMP-1: no bundle at $apkPath -- nothing was kept in dist/. Check the build output above." -ForegroundColor Yellow
     }
+
+    # Sprint 80 Task 14 (F204 gaps 1 and 2): read the BUILT bundle's manifest and fail the
+    # build if it targets an Android version below 36 or requests the advertising ID
+    # permission. Reads the artifact, not gradle config. Android-only (Play requirements).
+    if ($Output -eq 'aab') {
+        if (-not (Test-Path $apkPath)) {
+            Write-Host "[ERROR] F204: no bundle at $apkPath to verify against Google Play requirements." -ForegroundColor Red
+            exit 1
+        }
+        & powershell -NoProfile -ExecutionPolicy Bypass -File (Join-Path $PSScriptRoot 'verify-aab-play-requirements.ps1') -AabPath $apkPath
+        if ($LASTEXITCODE -ne 0) {
+            Write-Host "[ERROR] F204: the built bundle does not meet Google Play requirements (targetSdkVersion >= 36, no AD_ID). Do NOT upload it." -ForegroundColor Red
+            exit 1
+        }
+    }
     Write-Host ""
 
     # Install to emulator if requested

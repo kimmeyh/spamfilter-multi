@@ -256,7 +256,7 @@ Every Item that is implemented gets ONE row here the moment it is picked up -- s
 | Task 10: F269 import Merge default (#499) | 80 | PLANNED | 45-75 | 45-75 | | | |
 | Task 12: F299 verify first (#500) | 80 | PLANNED | 10 (+45-75) | 10 | | | |
 | Task 13: F276 deleted/moved rows (#501) | 80 | PLANNED | 40-60 | 40-60 | | | |
-| Task 14: F204 AAB checks (#502) | 80 | PLANNED | 25-40 | 25-40 | | | |
+| Task 14: F204 AAB checks (#502) | 80 | DONE | 25-40 | 25-40 | ~20 (Sonnet agent) + ~5 review | ~25 | Recorded at completion (2026-10-19 01:00). No installed tool reads an AAB proto manifest (aapt2 34/35 refuse; no runnable bundletool), so the helper decodes it; -SelfTest 7/7; 5 mutants KILLED. Executed-by Sonnet, not Haiku: proto-manifest tooling discovery. Wiring into build-with-secrets is parse-checked only. |
 
 ## Can the missing sprints (48-69) be reconstructed from git? -- TESTED 2026-09-19, answer: NO
 

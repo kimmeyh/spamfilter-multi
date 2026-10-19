@@ -174,6 +174,12 @@ next build of either platform.)
 already received on any track. After every upload, update that row in the same commit as the next
 `pubspec.yaml` bump.
 
+**After building (Sprint 80, F204 gaps 1 and 2)**: the script now asserts, from the BUILT bundle's manifest
+(`scripts\verify-aab-play-requirements.ps1`), that `targetSdkVersion` is at least 36 and that the
+`com.google.android.gms.permission.AD_ID` permission is absent, and exits non-zero if either fails. Gap 3
+(16 KB alignment, due 2027-02-01) stays in the backlog. Re-run the helper's own proof with
+`verify-aab-play-requirements.ps1 -SelfTest`.
+
 Approx 67 MB (0.15.2: 66.9 MB; 0.16.0: 67.0 MB -- the older "53 MB" figure was Sprint 66's
 bundle and is stale). **Note this is the DEV worktree** -- unlike the Windows MSIX, the Play bundle is
 built from `spamfilter-multi\`, not `spamfilter-multi-prod\`. The two releases build from
