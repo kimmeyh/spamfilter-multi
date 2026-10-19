@@ -249,6 +249,26 @@ void main() {
     expect(r3.failReasons.single, contains('safe sender'));
   });
 
+  // F268 found that the scored message carried no From header, so every
+  // `header` domain rule (the app's own style, all 2,202 current rules) scored
+  // 0 matches. What this does NOT catch: other headers the app's rules read
+  // that the history does not store (raw headers are not kept).
+  test('the scored message carries the From header that header rules read', () {
+    final sample = HistorySample(
+      source: 'content_history',
+      accountId: 'aol-a@b.com',
+      from: 'news@spam.example.com',
+      subject: 's',
+      body: '',
+      headers: const {'reply-to': 'x@y.com'},
+      label: HistoryLabel.deleted,
+      noRuleLaterDeleted: false,
+    );
+    final headers = sample.toMessage().headers;
+    expect(headers['from'], 'news@spam.example.com');
+    expect(headers['reply-to'], 'x@y.com');
+  });
+
   // What this does NOT catch: unmatchable shapes the F266 check does not
   // know, and the header-pattern case where F266 is deliberately not applied.
   test('a dead from pattern and a non-delete rule FAIL with a named reason', () {

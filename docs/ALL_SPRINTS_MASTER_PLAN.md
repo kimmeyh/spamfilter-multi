@@ -979,6 +979,71 @@ _(F142 shipped Sprint 57 -- see `docs/sprints/SPRINT_57_PLAN.md` and CHANGELOG.m
   alongside F70 (Security), F71 (Architecture), F130 (Process-Docs), F152 (First-Run), F173
   (Test Coverage) and F189 (Skills).
 
+### iOS readiness cards from F295 (Sprint 80, ADR-0050 Proposed -- accept or reject at Sprint 80 Manual Validation)
+
+Source: `docs/research/F295_IOS_READINESS.md`. These replace the iOS parts of F67 and F95 once ADR-0050 is accepted; Linux and macOS stay on F67, and the Windows/Android multi-variant polish stays on F95.
+
+**F67a. iOS prerequisites: Apple Developer enrollment, Mac, iOS OAuth client (~3-6h plus Apple and D-U-N-S lead time) Priority HOLD**
+- Phase: Multi-Platform Readiness
+- Platform: iOS
+- Scope: decide the enrollment path for the LLC (organization: D-U-N-S Number, domain website, domain email); enroll
+  (99 USD per year); get a Mac on macOS Tahoe 26.2 or later with Xcode 26 (owned or cloud); create the iOS OAuth
+  client in Google Cloud Console (bundle ID per ADR-0026) and check the verification status of the restricted Gmail
+  scope for it.
+- Settles UNVERIFIED items: LLC enrollment path, cloud Mac acceptability, Gmail verification for the iOS client.
+- Depends on: Harold's go decision for iOS; ADR-0050 accepted.
+
+**F67b. iOS first build and foreground parity validation (~6-10h) Priority HOLD**
+- Phase: Multi-Platform Readiness
+- Platform: iOS
+- Scope: `flutter build ios` on Xcode 26 with Swift Package Manager; deployment target iOS 14 (plugin floor);
+  Info.plist (`GIDClientID`, reversed-client-ID URL scheme, background modes `fetch`, `BGTaskSchedulerPermittedIdentifiers`,
+  `UIFileSharingEnabled`, `LSSupportsOpeningDocumentsInPlace`); AppDelegate lines for notifications and workmanager;
+  fill every `PlatformCapabilities` iOS answer from ADR-0050; smoke test, IMAP scan, Gmail sign-in, rules, review
+  screens, export to Files, notification permission.
+- Settles UNVERIFIED items: custom-scheme browser fallback, Files app visibility, `drawsUnderSystemBars`.
+- Depends on: F67a; F294 seam merged.
+
+**F67c. iOS background scan spike on a real iPhone (~6-10h plus a 7-day observation window) Priority HOLD**
+- Phase: Multi-Platform Readiness
+- Platform: iOS
+- Scope: `BGAppRefreshTask` per the ADR-0050 exception (interval is a floor; a time-boxed scan slice that resumes
+  from the cursor; confirm the `workmanager_apple` `frequency` finding and pass the interval as the earliest start);
+  locked-phone run with two Gmail accounts and one IMAP account; log every background launch for 7 days; completion
+  notification from the background engine; Background App Refresh "off" warning in Settings; decide whether
+  `BGContinuedProcessingTask` keeps a manual scan alive (iOS 26).
+- Settles UNVERIFIED items: real refresh frequency, multi-account Gmail renewal while locked, Google Sign-In SDK
+  keychain accessibility, background notification.
+- Depends on: F67b. Outcome may change the Gmail renewal design (a Class 2 decision to surface).
+
+**F67d. iOS store readiness: privacy manifest, App Privacy, TestFlight (~4-6h) Priority HOLD**
+- Phase: Build and Release Infrastructure
+- Platform: iOS
+- Scope: Xcode privacy report on an archive; app `PrivacyInfo.xcprivacy` with the required-reason entries the report
+  finds; App Store Connect App Privacy answers (expected "Data Not Collected", ADR-0030); privacy policy link in app
+  and metadata; release notes per ADR-0043; TestFlight internal group, then an external group (first build goes
+  through App Review); help and store text that describe background scanning as best effort on iOS without a
+  platform caveat (ADR-0042 rule on caveats).
+- Settles UNVERIFIED items: required-reason API set, plugin manifests.
+- Depends on: F67c.
+
+**F95 (revised). iOS variants: dev and prod side by side on one iPhone (~3-5h) Priority HOLD**
+- Phase: Build and Release Infrastructure
+- Platform: iOS
+- Scope: separate bundle IDs for dev and prod (ADR-0035 on iOS), so both install on one device; separate OAuth iOS
+  clients or URL schemes per variant; separate keychain items and app data by construction (separate bundle IDs);
+  TestFlight as the "store" channel. The cross-store multi-variant polish for Windows and Android stays on the
+  existing F95.
+- Depends on: F67b.
+
+**F95b. Gmail new-mail push through a server (~16-30h) Priority HOLD -- needs a new ADR first**
+- Phase: Architecture
+- Platform: iOS (Gmail accounts only)
+- Scope: only if Harold wants "Scan when new mail arrives" on iPhone. Gmail `users.watch` to Cloud Pub/Sub, a relay
+  that sends an APNs background push, renewal of the watch at least every 7 days. Background pushes are rate
+  limited above three per hour. Requires an ADR superseding ADR-0030's "No backend server".
+- Depends on: F67c; a Class 1 decision by Harold.
+
 **F95. iOS variants + cross-store hardening (~10-16h) Priority HOLD -- RENUMBERED from "F52 Phase 3+" + MOVED TO HOLD (Sprint 39 Backlog Refinement, 2026-05-25)**
 - Phase: Build and Release Infrastructure
 - Platform: iOS, plus polish across all 9 variants (3 stores x 3 channels: dev, production, store)

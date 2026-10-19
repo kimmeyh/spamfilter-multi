@@ -73,7 +73,10 @@ class HistorySample {
         from: from,
         subject: subject,
         body: body,
-        headers: headers,
+        // The app's own domain rules are `header` conditions on From, and the
+        // evaluator only tests a header that exists on the message, so the
+        // From header must be present (F268 found header rules never matched).
+        headers: {...headers, 'from': from},
         receivedDate: DateTime.fromMillisecondsSinceEpoch(0),
         folderName: 'INBOX',
       );

@@ -31,6 +31,8 @@ Format: `- **type**: Description (Issue #N)` where type is feat|fix|chore|docs
 - **chore**: CI now uses the same Flutter version as local development (3.47.4), read from one .fvmrc file; a test fails if they drift (Issue #495)
 - **chore**: The Play bundle build now fails if the bundle targets an Android version below 36 or requests the advertising ID permission (Issue #502)
 - **chore**: Developer tool that scores candidate rules against the developer's own scan history before any rule can act on mail (Issue #497)
+- **chore**: Developer tool that proposes delete rules from mail the current rules miss, scored by the rule evaluation harness before anything is imported (Issue #498)
+- **chore**: Every Windows and Android difference now lives in one place (PlatformCapabilities and PlatformPolicy, ADR-0049); a test refuses new scattered platform checks. No visible change (Issue #493)
 
 ## [0.20.0] - 2026-10-18
 
