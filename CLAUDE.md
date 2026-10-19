@@ -76,6 +76,8 @@ If any check fails, **STOP and resolve with user before accepting work**.
 
 **CI_* repo secrets: DELIBERATELY UNSET (F127 decision, Harold 2026-07-24)**: empty-string dart-defines fully exercise everything the Windows build job verifies (values are runtime-read; CI never runs the app). Populate the 5 `CI_*` secrets ONLY when CI gains a runtime step that would use credentials -- tracked as a HOLD item with that trigger. The `secrets.ci.json` key names were corrected to the current `WINDOWS_GMAIL_*` runtime keys in Sprint 50 (the original wrote pre-Sprint-36 legacy names).
 
+**Flutter SDK version: one source (F296, Sprint 80)**: the repo-root `.fvmrc` (`{"flutter": "3.47.4"}`) is the only place the CI Flutter version is recorded. CI reads it via `flutter-version-file: .fvmrc`. An upgrade of the Flutter SDK updates `.fvmrc` in the same commit. `flutter_version_sync_test` fails on drift between `.fvmrc`, the CI workflow and the local SDK.
+
 ## [WARNING] CRITICAL: Pull Request Branch Policy
 
 **RULE: All Claude Code PRs must target the `develop` branch, NEVER `main`.**

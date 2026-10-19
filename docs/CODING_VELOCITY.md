@@ -249,7 +249,7 @@ Every Item that is implemented gets ONE row here the moment it is picked up -- s
 | Task 3: F292 close-out (#492) | 80 | DONE | 10 | 10 | ~10 | ~10 | Recorded at completion (2026-10-19 00:50). Nine runs listed in the master-plan card; page file unchanged. |
 | Task 4: F294 capabilities + policy seam (#493) | 80 | PLANNED | 110-190 | 110-190 | | | |
 | Task 5: F295 iPhone research + ADR-0050 (#494) | 80 | PLANNED | 90-120 | 90-120 | | | |
-| Task 6: F296 CI Flutter version (#495) | 80 | PLANNED | 20-45 | 20-45 | | | |
+| Task 6: F296 CI Flutter version (#495) | 80 | DONE (CI run pending) | 20-45 | 20-45 | ~5 (Haiku agent) + ~5 review | ~10 | Recorded at completion (2026-10-19 01:05). 3/3 tests, 8 mutants KILLED. CI green on 3.47.4 still to be observed on PR #490. |
 | Task 7: F298 edits reload rules (#496) | 80 | PLANNED | 30-60 | 30-60 | | | |
 | Task 8: F267 rule evaluation harness (#497) | 80 | PLANNED | 60-100 | 60-100 | | | |
 | Task 9: F268 rule miner (#498) | 80 | PLANNED | 60-120 | 60-120 | | | |

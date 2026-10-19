@@ -26,6 +26,11 @@ Format: `- **type**: Description (Issue #N)` where type is feat|fix|chore|docs
 
 ## [Unreleased]
 
+### 2026-10-19 (Sprint 80)
+
+- **chore**: CI now uses the same Flutter version as local development (3.47.4), read from one .fvmrc file; a test fails if they drift (Issue #495)
+- **chore**: The Play bundle build now fails if the bundle targets an Android version below 36 or requests the advertising ID permission (Issue #502)
+
 ## [0.20.0] - 2026-10-18
 
 Released to the Microsoft Store and Google Play closed testing (submitted 2026-10-18). Sprint 79.
