@@ -246,7 +246,7 @@ Every Item that is implemented gets ONE row here the moment it is picked up -- s
 | Task 0: version bump 0.21.0+18 (#491) | 80 | DONE | 10-15 | 10-15 | ~10 | ~10 | Recorded at completion (2026-10-19 00:35). CHANGELOG 0.20.0 heading + "Released in 0.15.0 to 0.19.0" note; 3 version gates 12/12. |
 | Task 1: MV76-1 + F205 + Fix 2 (#471, #433, #428) | 80 | PLANNED | 40-70 | 40-70 | | | Waits for 0.20.0 from Play on the Fold. |
 | Task 2: F277 energy arms (#472) | 80 | PLANNED | 30-45 | 30-45 | | | Nights. |
-| Task 3: F292 close-out (#492) | 80 | PLANNED | 10 | 10 | | | |
+| Task 3: F292 close-out (#492) | 80 | DONE | 10 | 10 | ~10 | ~10 | Recorded at completion (2026-10-19 00:50). Nine runs listed in the master-plan card; page file unchanged. |
 | Task 4: F294 capabilities + policy seam (#493) | 80 | PLANNED | 110-190 | 110-190 | | | |
 | Task 5: F295 iPhone research + ADR-0050 (#494) | 80 | PLANNED | 90-120 | 90-120 | | | |
 | Task 6: F296 CI Flutter version (#495) | 80 | PLANNED | 20-45 | 20-45 | | | |

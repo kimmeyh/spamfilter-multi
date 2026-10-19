@@ -732,7 +732,13 @@ _(No active Core App candidates -- F96 shipped in Sprint 43.)_
 - Scope: replace the six steps, empty `knownPending`, and let the runner's locked-PC gate pass on a locked PC.
 - Depends on: an upstream WinWright change.
 
-**F292. Full test suite: test processes die or hang intermittently (~60-120m investigation) Priority 5 -- remainder TARGET SPRINT 80**
+**F292. Full test suite: test processes die or hang intermittently -- CLOSED Sprint 80 (#492; Harold Q4 = 1, 2026-10-19)**
+- **Close-out (2026-10-19)**: cause UNKNOWN, not reproduced in nine `run-full-suite.ps1` runs: five before the
+  2026-10-16 12:02 reboot (Sprint 79 runs 1-5) and four after it, all green with 0 load failures -- `79-5.2` (3,061
+  passed, peak commit 52.16 GB), `79-771` (3,075, 50.22 GB), `79-771b` (3,088, 51.58 GB), `79-771c` (3,092, 52.22 GB).
+  The page file never grew (still 30,840 MB, `Win32_PageFileUsage`), so "larger page file" was never tested. What
+  settles it: the commit-charge trace of the next failing run. `scripts/run-full-suite.ps1` stays the Phase 5.2
+  runner so that trace is recorded automatically. Re-open on the next failing run.
 - Phase: Testing
 - Platform: Windows Desktop (local `flutter test` on Harold's PC)
 - Origin: Sprint 78 7.7.1 (Harold, 2026-10-13, Q2 = 2). Cause UNKNOWN.
