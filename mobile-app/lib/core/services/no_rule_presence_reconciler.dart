@@ -10,8 +10,8 @@
 /// fetched a folder, it asks the adapter which listed rows of that folder still
 /// exist ([MessagePresenceChecker]) and records the answer. Review hides rows
 /// marked gone ([UnmatchedEmailStore.getUnprocessedForAccount]); a later
-/// sighting records `available` with the sighting time
-/// ([UnmatchedEmailStore.upsertUnmatchedEmails]), so a message that comes back
+/// sighting records `available` with the sighting time (the scan's No Rule
+/// writer, `EmailScanProvider.completeScan`), so a message that comes back
 /// is listed again and is not re-checked within [kNoRulePresenceRecheck].
 /// The check only reads the mailbox, so it runs in every scan mode, read-only
 /// included, on Windows and Android alike (ADR-0042 parity: shared Dart, both

@@ -790,7 +790,17 @@ making the Data safety answer false.
   selected folder only; Gmail `messages.get` reads one message with `format: minimal` and `$fields: id,labelIds`.
   (6) silent failure -- the presence check rethrows cancellation and session-fatal errors and logs the rest at
   error level (tests include the session-fatal case); the F267/F268 tools take the app-data path as a parameter.
-- **5.1.5 WinWright sweep**: NOT YET RUN on the final build -- recorded when it completes.
+- **5.1.5 WinWright sweep**: 2026-10-19 09:36-09:53, DEV build started at 833f7cee (lib/ unchanged since 82adc6b9;
+  4d42c8dd, docs only, landed during the build), 2 scripts (the default sweep), unlocked PC (mouse steps skipped: 0), DB drift none, DEV tasks
+  re-enabled. `test_f124_rule_labels.json` PASS 29/29 (471 s); `test_s75_new_controls.json` PASS 27/27 (463 s; cases
+  HIST-1, SORT-1, SET-1). Two earlier runs the same morning failed before any step under test, each fixed at its
+  cause: (1) 09:03 -- "Dev app window did not appear within 30s": the release app runs 9 serial PowerShell Task
+  Scheduler calls before `runApp` (window at 30.9 s, measured); the runner now waits 60 s and logs PIDs alive at
+  launch and the exit code of a launch that exits (82adc6b9; this closes the Sprint 79 "cause unknown" launch
+  failure). (2) 09:20 -- step 2 "resolved 0 elements": the accessibility tree appeared 10-41 s after the priming
+  query, past the 15 s `stepTimeoutMs`; now 60000 (833f7cee); the cause of that delay is unknown (README entry
+  names what would settle it). Duration note: about 16 s per step, as in Sprint 79 (f124 6 m 53 s then).
+  sweep-head: 4d42c8dd
 - **5.1.9 MV rehearsal**: 2026-10-19, every Windows step handed over below was rehearsed on its real path before
   handover; each step carries its own `Rehearsed:` line. F269 by the screen's parse path plus the merge on a test
   database seeded with the same existing rule as the DEV database (`mv80_f269_rehearsal_test.dart`, scratch, PASS:
@@ -804,7 +814,10 @@ making the Data safety answer false.
 - **Phase 5 findings fixed in-sprint**:
   - F276 re-sighting (82adc6b9): a re-sighting wrote `unknown` / never checked, so every scan re-asked the rows it had
     just seen (every 5 minutes on DEV, up to 50 Gmail requests per scan). Found by reading the live DEV database in
-    the rehearsal. Now a sighting records `available` with its time. New test; mutations R1 and R2 KILLED.
+    the rehearsal. Now a sighting records `available` with its time. First placed in the store's upsert (82adc6b9);
+    the full suite then failed `unmatched_email_store_test.dart:416` because that overwrote a caller's explicit
+    status, so the stamp moved to the one production writer, `EmailScanProvider.completeScan`, and the store keeps
+    caller values again. The test drives two real scan completions; mutations R1 and R2 KILLED at the new place.
   - `build-windows.ps1` (32e9f78): a background-scan task that started from `dist\dev` during the 2-minute compile
     held the exe and dll files; the variant swap deleted `data\` and then failed, leaving a DEV build that could not
     start. The script now stops processes running from the variant folder right before the swap.
