@@ -27,6 +27,24 @@ Partner Center before saying anything about the Store version.
 | **Last uploaded to Play (any track)** | 0.19.0 (versionCode 16) | 2026-10-13 | Closed testing (Alpha), installed on the Fold from Play (see the Live row). Previous: 0.18.0 (versionCode 15). Sprint 76 retro IMP-2: Play refuses a versionCode it has already received on ANY track, so this row -- not the Live row -- is what the next build must exceed. UPDATE IT in the same commit that bumps `pubspec.yaml` after Harold reports an upload (never before the bump, or the suite goes red on the current build). Enforced by `dev_version_ahead_test` and by `build-with-secrets.ps1 -Output aab`. |
 | **Dev worktree** (authoritative -- mirrors `pubspec.yaml`) | 0.20.0+17 | 2026-10-13 | Bumped at Sprint 79 plan approval (Phase 3.7.0b). MINOR: F286 and F287 are `feat`. versionCode 17 (0.19.0 / 16 is on Play closed testing). Gates: `version_consistency_test`, `dev_version_ahead_test`. |
 
+## 0.20.0 -- Sprint 79 cycle Phase 8.3 (2026-10-18)
+
+**SUBMITTED to BOTH stores, in process (Harold, 2026-10-18 ~11:39pm ET: "both store updates are in process")** --
+Harold's report; the consoles were not observed by Claude, and neither build is yet seen live. The Live rows stay
+unchanged until observed. "Last uploaded to Play" moves to 0.20.0 (versionCode 17) in the same commit as the Sprint 80
+version bump (Phase 3.7.0b), never before it.
+
+- **MSIX 0.20.0.0 -- BUILT + VERIFIED**: prod worktree pulled to `main` ff58da3 (tag `v0.20.0`); build log shows
+  `APP_ENV=prod` and `secrets.prod.json`; `--release-self-test --expected-version=0.20.0` RESULT: PASS (6/6); manifest
+  Identity `Version="0.20.0.0"`; 17.7 MB.
+  `D:\Data\Harold\github\spamfilter-multi-prod\mobile-app\build\windows\x64\runner\Release\my_email_spam_filter.msix`.
+  Open: Step 4.2 Gmail sign-in URL check on the installed Store build.
+- **AAB 0.20.0 (versionCode 17) -- BUILT + VERIFIED**: read from the artifact: versionName 0.20.0, no `.dev` package,
+  Gmail OAuth scheme present, `AD_ID` absent; 67.8 MB.
+  `D:\Data\Harold\github\spamfilter-multi\mobile-app\dist\android-0.20.0+17\app-prod-release.aab`.
+- Release notes: `docs/store-assets/RELEASE_NOTES_0.20.0_windows.md` and `_play.md`; `release_notes_test.dart` passes.
+- Still open from 0.19.0: whether 0.19.0.0 went live on the Microsoft Store (the Store row above still reads 0.18.0.0).
+
 ## 0.19.0 -- Sprint 78 cycle Phase 8.3 (2026-10-13)
 
 Record a submission only after seeing it in each console.
