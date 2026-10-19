@@ -25,7 +25,8 @@ import 'email_provider.dart';
 /// Phase 2 Sprint 4 Implementation
 ///
 /// Uses [GoogleAuthService] for unified authentication across platforms.
-class GmailApiAdapter with BatchOperationsMixin implements SpamFilterPlatform {
+class GmailApiAdapter with BatchOperationsMixin
+    implements SpamFilterPlatform, MessagePresenceChecker {
   final GoogleAuthService _authService = GoogleAuthService();
 
   gmail.GmailApi? _gmailApi;
@@ -1173,6 +1174,49 @@ class GmailApiAdapter with BatchOperationsMixin implements SpamFilterPlatform {
           e);
       return message;
     }
+  }
+
+  /// F276 (Sprint 80): which of [ids] are still in [folderName]. A Gmail
+  /// message id is the same in every label, so `messages.get` (format
+  /// minimal, labels only) answers it: 404 is [MessagePresence.absent]; the
+  /// message without the folder's label is [MessagePresence.moved] (another
+  /// label, or Trash); with it, [MessagePresence.present]. Any other error on
+  /// one id leaves that id out (no answer); a 401 / 403 throws so the caller
+  /// stops checking with this session.
+  @override
+  Future<Map<String, MessagePresence>> checkMessagesPresent({
+    required String folderName,
+    required List<String> ids,
+  }) async {
+    final result = <String, MessagePresence>{};
+    if (_gmailApi == null || ids.isEmpty) return result;
+    final labelId = await _labelIdFor(folderName);
+    if (labelId == null) return result; // the label is gone: no answer
+    for (final id in ids) {
+      if (id.isEmpty) continue;
+      try {
+        final msg = await _gmailApi!.users.messages.get(
+          'me',
+          id,
+          format: 'minimal',
+          $fields: 'id,labelIds',
+        );
+        final labels = msg.labelIds ?? const <String>[];
+        result[id] = labels.contains(labelId)
+            ? MessagePresence.present
+            : MessagePresence.moved;
+      } on gmail.DetailedApiRequestError catch (e) {
+        if (e.status == 404) {
+          result[id] = MessagePresence.absent;
+        } else if (e.status == 401 || e.status == 403) {
+          rethrow;
+        } else {
+          Redact.logSafe('F276 presence check: no answer for one Gmail '
+              'message (status ${e.status})');
+        }
+      }
+    }
+    return result;
   }
 
   /// R76-4 (Sprint 78, ADR-0047): the message's plain text for the dev-only

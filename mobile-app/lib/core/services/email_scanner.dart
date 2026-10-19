@@ -10,6 +10,7 @@ import '../platform/platform_capabilities.dart';
 import '../models/rule_set.dart';
 import '../models/safe_sender_list.dart';
 import 'mock_email_data.dart';
+import 'no_rule_presence_reconciler.dart';
 import '../models/evaluation_result.dart';
 import '../providers/email_scan_provider.dart';
 import '../providers/rule_set_provider.dart';
@@ -611,6 +612,40 @@ class EmailScanner {
           AppLogger.scan('Step 4: Folder "$folderName" returned $folderCount messages');
           if (isLiveScan) {
             await LiveScanLogger.log('Step 4: Folder "$folderName" returned $folderCount messages');
+          }
+
+          // F276 (Sprint 80): in this open session, mark listed No Rule rows
+          // of this folder that are gone (deleted, or moved) so Review stops
+          // showing them. Read-only, so it runs in every scan mode. A
+          // session-fatal error is rethrown like every per-item catch here
+          // (Sprint 75 IMP-3); anything else leaves the rows unchanged.
+          final checker = platform;
+          if (checker is MessagePresenceChecker) {
+            try {
+              final outcome = await reconcileNoRulePresence(
+                checker: checker as MessagePresenceChecker,
+                store: UnmatchedEmailStore(DatabaseHelper()),
+                accountId: accountId,
+                folderName: folderName,
+                // Gmail checks one message per request; IMAP one SEARCH per
+                // 200 UIDs.
+                limit: checker is GmailApiAdapter ? 50 : 500,
+              );
+              if (outcome.deleted + outcome.moved > 0) {
+                unawaited(DiagnosticLogger.log(
+                  kind: DiagnosticLogger.kindScan,
+                  context: 'F276/no-rule',
+                  detail: 'folder "$folderName": ${outcome.checked} listed '
+                      'rows checked, ${outcome.deleted} gone, '
+                      '${outcome.moved} moved',
+                ));
+              }
+            } catch (e, st) {
+              if (isSessionFatal(e)) rethrow;
+              AppLogger.error('F276: No Rule presence check failed for '
+                  'folder "$folderName"; rows left unchanged',
+                  error: e, stackTrace: st);
+            }
           }
 
           // [NEW] ISSUE #128: Report folder completion

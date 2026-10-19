@@ -255,7 +255,7 @@ Every Item that is implemented gets ONE row here the moment it is picked up -- s
 | Task 9: F268 rule miner (#498) | 80 | DONE | 60-120 | 60-120 | ~50 (Sonnet agent) + ~10 review | ~60 | Recorded at completion (2026-10-19 02:00). 11 tests, 12 mutants KILLED. Found the F267 harness never set the From header (header rules scored 0); fixed + test, mutant KILLED. Real copy: 0 PASS, 39 near misses (none reaches 20 labeled matches). |
 | Task 10: F269 import Merge default (#499) | 80 | PLANNED | 45-75 | 45-75 | | | |
 | Task 12: F299 verify first (#500) | 80 | PLANNED | 10 (+45-75) | 10 | | | |
-| Task 13: F276 deleted/moved rows (#501) | 80 | PLANNED | 40-60 | 40-60 | | | |
+| Task 13: F276 deleted/moved rows (#501) | 80 | DONE | 40-60 | 40-60 | ~55 | ~55 | Recorded at completion (2026-10-19 02:40). Card premise was false (Review actions never touch the message, so no not-found failure exists); redesigned: the scan checks presence in its open session (IMAP UID SEARCH, Gmail labels). 10 tests, 9 mutants KILLED. |
 | Task 14: F204 AAB checks (#502) | 80 | DONE | 25-40 | 25-40 | ~20 (Sonnet agent) + ~5 review | ~25 | Recorded at completion (2026-10-19 01:00). No installed tool reads an AAB proto manifest (aapt2 34/35 refuse; no runnable bundletool), so the helper decodes it; -SelfTest 7/7; 5 mutants KILLED. Executed-by Sonnet, not Haiku: proto-manifest tooling discovery. Wiring into build-with-secrets is parse-checked only. |
 
 ## Can the missing sprints (48-69) be reconstructed from git? -- TESTED 2026-09-19, answer: NO

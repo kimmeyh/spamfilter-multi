@@ -66,7 +66,8 @@ class ImapServerNotRespondingException extends UserFacingConnectionException {
 }
 
 /// Generic IMAP implementation for multiple email providers
-class GenericIMAPAdapter with BatchOperationsMixin implements SpamFilterPlatform {
+class GenericIMAPAdapter with BatchOperationsMixin
+    implements SpamFilterPlatform, MessagePresenceChecker {
   // Server target. Fixed at construction for AOL, Gmail (IMAP), Yahoo and
   // iCloud. For the Custom IMAP platform (platformId 'imap') these are replaced
   // from `Credentials.additionalParams` by [_resolveCustomServer] on every
@@ -823,6 +824,43 @@ class GenericIMAPAdapter with BatchOperationsMixin implements SpamFilterPlatform
       if (isSessionFatal(e)) rethrow;
       return null;
     }
+  }
+
+  /// F276 (Sprint 80): which of [ids] (UIDs) still exist in [folderName], with
+  /// one `UID SEARCH UID a,b,c` per chunk in the open session. A UID belongs to
+  /// one folder, so a message moved elsewhere reads as absent. Ids that are not
+  /// integer UIDs are left out of the result (no answer). SEARCH goes through
+  /// [_uidSearch], so a server that stops answering ends the session as
+  /// everywhere else (session-fatal, rethrown by the caller).
+  @override
+  Future<Map<String, MessagePresence>> checkMessagesPresent({
+    required String folderName,
+    required List<String> ids,
+  }) async {
+    if (_imapClient == null) {
+      throw ConnectionException('Not connected - call loadCredentials first');
+    }
+    final uids = <int>[];
+    for (final id in ids) {
+      final uid = int.tryParse(id);
+      if (uid != null && uid > 0) uids.add(uid);
+    }
+    final result = <String, MessagePresence>{};
+    if (uids.isEmpty) return result;
+    await _selectMailbox(folderName);
+    const chunkSize = 200;
+    for (var i = 0; i < uids.length; i += chunkSize) {
+      final chunk = uids.sublist(
+          i, i + chunkSize < uids.length ? i + chunkSize : uids.length);
+      final searchResult =
+          await _uidSearch(searchCriteria: 'UID ${chunk.join(',')}');
+      final found = searchResult.matchingSequence?.toList().toSet() ?? <int>{};
+      for (final uid in chunk) {
+        result['$uid'] =
+            found.contains(uid) ? MessagePresence.present : MessagePresence.absent;
+      }
+    }
+    return result;
   }
 
   /// S38-CI-4 (Sprint 39): return the SMALLEST UID in [folderName] whose

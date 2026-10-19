@@ -399,6 +399,11 @@ class UnmatchedEmailStore {
   /// F245 (Sprint 77, Harold Q21): every UNPROCESSED No Rule row for one
   /// account, across scans. With one row per email there are no duplicates.
   /// The account comes from `scan_results.account_id` (no account column).
+  ///
+  /// F276 (Sprint 80): rows a scan found gone from their folder
+  /// ([availabilityGone]) are left out; a later sighting resets the status
+  /// (the upsert writes `unknown`), so a message that comes back is listed
+  /// again.
   Future<List<UnmatchedEmail>> getUnprocessedForAccount(String accountId) async {
     try {
       final db = await _databaseHelper.database;
@@ -406,14 +411,80 @@ class UnmatchedEmailStore {
         'SELECT u.* FROM unmatched_emails u '
         'JOIN scan_results s ON s.id = u.scan_result_id '
         'WHERE s.account_id = ? AND u.processed = 0 '
+        'AND u.availability_status NOT IN (?, ?) '
         'ORDER BY u.created_at DESC, u.id ASC',
-        [accountId],
+        [accountId, availabilityDeleted, availabilityMoved],
       );
       return maps.map(UnmatchedEmail.fromMap).toList();
     } catch (e) {
       _logger.e('Failed to get unprocessed unmatched emails for account: $e');
       rethrow;
     }
+  }
+
+  /// F276 (Sprint 80): the availability values a presence check writes.
+  static const String availabilityAvailable = 'available';
+  static const String availabilityDeleted = 'deleted';
+  static const String availabilityMoved = 'moved';
+
+  /// F276: the statuses that hide a row from No Rule Review.
+  static const List<String> availabilityGone = [
+    availabilityDeleted,
+    availabilityMoved,
+  ];
+
+  /// F276 (Sprint 80): unprocessed rows of [accountId] in [folderName] that a
+  /// scan should check for presence: not already marked gone, and not checked
+  /// since [checkedBefore]. Oldest check first, at most [limit].
+  Future<List<UnmatchedEmail>> getRowsToVerify(
+    String accountId,
+    String folderName, {
+    required DateTime checkedBefore,
+    int limit = 500,
+  }) async {
+    final db = await _databaseHelper.database;
+    final maps = await db.rawQuery(
+      'SELECT u.* FROM unmatched_emails u '
+      'JOIN scan_results s ON s.id = u.scan_result_id '
+      'WHERE s.account_id = ? AND u.folder_name = ? AND u.processed = 0 '
+      'AND u.availability_status NOT IN (?, ?) '
+      'AND (u.availability_checked_at IS NULL OR u.availability_checked_at < ?) '
+      'ORDER BY u.availability_checked_at IS NOT NULL, u.availability_checked_at, u.id '
+      'LIMIT ?',
+      [
+        accountId,
+        folderName,
+        availabilityDeleted,
+        availabilityMoved,
+        checkedBefore.millisecondsSinceEpoch,
+        limit,
+      ],
+    );
+    return maps.map(UnmatchedEmail.fromMap).toList();
+  }
+
+  /// F276 (Sprint 80): writes each row's presence status (and the check
+  /// time) in one transaction. Returns how many rows were marked gone.
+  Future<int> applyPresence(Map<int, String> statusByRowId) async {
+    if (statusByRowId.isEmpty) return 0;
+    final db = await _databaseHelper.database;
+    final now = DateTime.now().millisecondsSinceEpoch;
+    var gone = 0;
+    await db.transaction((txn) async {
+      for (final entry in statusByRowId.entries) {
+        await txn.update(
+          'unmatched_emails',
+          {
+            'availability_status': entry.value,
+            'availability_checked_at': now,
+          },
+          where: 'id = ?',
+          whereArgs: [entry.key],
+        );
+        if (availabilityGone.contains(entry.value)) gone++;
+      }
+    });
+    return gone;
   }
 
   /// Get all unmatched emails for a specific scan result
