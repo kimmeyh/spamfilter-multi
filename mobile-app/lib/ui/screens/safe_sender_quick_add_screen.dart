@@ -1,9 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:logger/logger.dart';
+import 'package:provider/provider.dart';
 
 import '../../core/models/email_message.dart';
+import '../../core/providers/rule_set_provider.dart';
 import '../../core/services/auth_results_parser.dart';
 import '../../core/services/pattern_compiler.dart';
+import '../../core/services/rule_quick_action_service.dart'
+    show reloadRulesAfterWrite;
 import '../../core/storage/rule_database_store.dart';
 import '../../core/storage/safe_sender_database_store.dart';
 import '../../core/utils/pattern_normalization.dart';
@@ -248,6 +252,8 @@ class _SafeSenderQuickAddScreenState extends State<SafeSenderQuickAddScreen> {
       if (!mounted) return;
     }
 
+    // F298: taken before any await so the reload does not depend on context.
+    final provider = Provider.of<RuleSetProvider>(context, listen: false);
     setState(() => _isSaving = true);
 
     try {
@@ -272,14 +278,19 @@ class _SafeSenderQuickAddScreenState extends State<SafeSenderQuickAddScreen> {
         removedRules = await _removeConflictingRules();
       }
 
+      // F298: one reload covers the new safe sender AND the rules removed
+      // above (_removeConflictingRules never throws, so it always runs).
+      final reloadNote = await reloadRulesAfterWrite(provider);
+
       if (mounted) {
         final message = removedRules > 0
-            ? 'Safe sender added. Removed $removedRules conflicting rule(s).'
-            : 'Safe sender added successfully';
+            ? 'Safe sender added. Removed $removedRules conflicting rule(s).$reloadNote'
+            : 'Safe sender added successfully$reloadNote';
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text(message),
-            backgroundColor: Colors.green,
+            backgroundColor:
+                reloadNote.isEmpty ? Colors.green : Colors.orange,
           ),
         );
 

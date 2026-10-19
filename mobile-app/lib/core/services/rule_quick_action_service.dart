@@ -10,6 +10,26 @@ import 'rule_conflict_resolver.dart';
 const String kReloadFailedSuffix =
     ' -- saved, but the rules in use could not be reloaded; restart the app';
 
+/// F298 (Sprint 80, #496): the ONE reload every screen that writes a rule or
+/// safe sender straight to its store calls after the write. Before F298 those
+/// screens (Manage Rules, Edit Rule, Manage Safe Senders, both quick-add
+/// screens) saved to the database and left [RuleSetProvider] holding the old
+/// set, so Review No Rule Items and the next manual scan used the old rules
+/// until a scan completed or the app restarted.
+///
+/// Returns '' when the in-memory set now matches the database, else
+/// [kReloadFailedSuffix] for the caller to append to its own message ("saved,
+/// but not yet in effect"). Never throws: [RuleSetProvider.reloadFromDatabase]
+/// reports failure through its result, and the write has already succeeded, so
+/// a reload problem must not be shown as a failed save.
+Future<String> reloadRulesAfterWrite(RuleSetProvider provider) async {
+  final reloaded = await provider.reloadFromDatabase();
+  if (reloaded) return '';
+  Logger().w('F298: change saved but the rules reload failed: '
+      '${provider.error}');
+  return kReloadFailedSuffix;
+}
+
 /// Result of a single quick-action rule/safe-sender creation, for callers
 /// that need to summarize outcomes across a batch (F39) or show a single
 /// SnackBar (the existing per-email quick-add flow).

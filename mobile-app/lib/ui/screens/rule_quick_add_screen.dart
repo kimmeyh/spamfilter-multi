@@ -1,11 +1,15 @@
 import 'package:flutter/material.dart';
 import 'package:logger/logger.dart';
+import 'package:provider/provider.dart';
 
 import '../../core/models/email_message.dart';
 import '../../core/models/rule_set.dart';
 import '../../core/models/safe_sender_list.dart';
+import '../../core/providers/rule_set_provider.dart';
 import '../../core/services/auth_results_parser.dart';
 import '../../core/services/rule_conflict_detector.dart';
+import '../../core/services/rule_quick_action_service.dart'
+    show reloadRulesAfterWrite;
 import '../../core/storage/rule_database_store.dart';
 import '../../core/storage/safe_sender_database_store.dart';
 import '../../core/utils/pattern_normalization.dart';
@@ -378,7 +382,10 @@ class _RuleQuickAddScreenState extends State<RuleQuickAddScreen> {
       return;
     }
 
+    // F298: taken before any await so the reload does not depend on context.
+    final provider = Provider.of<RuleSetProvider>(context, listen: false);
     setState(() => _isSaving = true);
+    var removalAttempted = false;
 
     try {
       final rule = await _buildRuleFromForm();
@@ -397,23 +404,34 @@ class _RuleQuickAddScreenState extends State<RuleQuickAddScreen> {
       // This ensures the new block rule will take effect
       int removedSafeSenders = 0;
       if (widget.safeSenderStore != null) {
+        removalAttempted = true;
         removedSafeSenders = await _removeConflictingSafeSenders();
       }
 
       await widget.ruleStore.addRule(rule);
       _logger.i('Added rule: ${rule.name}');
 
+      // F298: one reload covers the new rule AND the safe senders removed
+      // above, so the in-memory set matches the database.
+      final reloadNote = await reloadRulesAfterWrite(provider);
+
       if (mounted) {
         final message = removedSafeSenders > 0
-            ? 'Rule added. Removed $removedSafeSenders conflicting safe sender(s).'
-            : 'Rule added successfully';
+            ? 'Rule added. Removed $removedSafeSenders conflicting safe sender(s).$reloadNote'
+            : 'Rule added successfully$reloadNote';
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text(message), backgroundColor: Colors.green),
+          SnackBar(
+              content: Text(message),
+              backgroundColor:
+                  reloadNote.isEmpty ? Colors.green : Colors.orange),
         );
         Navigator.pop(context, true);
       }
     } catch (e) {
       _logger.e('Failed to add rule: $e');
+      // F298: the conflicting-safe-sender removals are already committed even
+      // though the rule was not added; the in-memory set must reflect them.
+      if (removalAttempted) await reloadRulesAfterWrite(provider);
       if (mounted) {
         setState(() => _isSaving = false);
         ScaffoldMessenger.of(context).showSnackBar(

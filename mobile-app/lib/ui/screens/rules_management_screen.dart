@@ -15,7 +15,11 @@ library;
 import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:logger/logger.dart';
+import 'package:provider/provider.dart';
 import '../../core/models/rule_set.dart';
+import '../../core/providers/rule_set_provider.dart';
+import '../../core/services/rule_quick_action_service.dart'
+    show reloadRulesAfterWrite;
 import '../../core/platform/platform_capabilities.dart';
 import '../../core/storage/database_helper.dart';
 import '../widgets/copy_all_shortcut.dart';
@@ -237,6 +241,8 @@ class _RulesManagementScreenState extends State<RulesManagementScreen>
   }
 
   Future<void> _toggleRule(Rule rule) async {
+    // F298: taken before any await so the reload does not depend on context.
+    final provider = Provider.of<RuleSetProvider>(context, listen: false);
     try {
       final updatedRule = Rule(
         name: rule.name,
@@ -253,6 +259,13 @@ class _RulesManagementScreenState extends State<RulesManagementScreen>
       );
       await _store.updateRule(updatedRule);
       _logger.i('${rule.enabled ? "Disabled" : "Enabled"} rule: ${rule.name}');
+      // F298: the in-memory rules must follow the database.
+      final reloadNote = await reloadRulesAfterWrite(provider);
+      if (reloadNote.isNotEmpty && mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Rule updated$reloadNote')),
+        );
+      }
       await _loadRules();
     } catch (e) {
       _logger.e('Failed to toggle rule', error: e);
@@ -265,6 +278,7 @@ class _RulesManagementScreenState extends State<RulesManagementScreen>
   }
 
   Future<void> _deleteRule(Rule rule) async {
+    final provider = Provider.of<RuleSetProvider>(context, listen: false); // F298
     final displayName = rule.sourceDomain ?? rule.name;
     final confirmed = await showDialog<bool>(
       context: context,
@@ -315,9 +329,11 @@ class _RulesManagementScreenState extends State<RulesManagementScreen>
       try {
         await _store.deleteRule(rule.name);
         _logger.i('Deleted rule: ${rule.name}');
+        // F298: the in-memory rules must follow the database.
+        final reloadNote = await reloadRulesAfterWrite(provider);
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text('Deleted: $displayName')),
+            SnackBar(content: Text('Deleted: $displayName$reloadNote')),
           );
         }
         await _loadRules();

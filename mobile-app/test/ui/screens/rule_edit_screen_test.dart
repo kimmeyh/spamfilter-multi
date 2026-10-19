@@ -15,9 +15,11 @@ library;
 
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:provider/provider.dart';
 import 'package:sqflite_common_ffi/sqflite_ffi.dart' show Database;
 
 import 'package:my_email_spam_filter/core/models/rule_set.dart';
+import 'package:my_email_spam_filter/core/providers/rule_set_provider.dart';
 import 'package:my_email_spam_filter/core/storage/database_helper.dart';
 import 'package:my_email_spam_filter/core/storage/rule_database_store.dart';
 import 'package:my_email_spam_filter/ui/screens/manual_rule_create_screen.dart'
@@ -120,10 +122,16 @@ Rule _makeHeaderRule({
 }
 
 Widget _buildScreen(Rule rule, {_StubRuleDatabaseStore? store}) {
-  return MaterialApp(
-    home: RuleEditScreen(
-      rule: rule,
-      store: store ?? _StubRuleDatabaseStore(),
+  // F298: Save reloads RuleSetProvider, so the screen needs one in scope. A
+  // bare provider fails its reload (no stores), which these stub-store tests
+  // do not look at; f298_rule_edit_test.dart covers the reload itself.
+  return ChangeNotifierProvider<RuleSetProvider>.value(
+    value: RuleSetProvider(),
+    child: MaterialApp(
+      home: RuleEditScreen(
+        rule: rule,
+        store: store ?? _StubRuleDatabaseStore(),
+      ),
     ),
   );
 }
