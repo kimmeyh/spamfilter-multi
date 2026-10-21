@@ -896,6 +896,40 @@ reentrant), Q4-M3 (error keeps the lock), Q4-M4 (adapter bypasses the lock) all 
   17**, One UI 9.0 (Settings > About phone > Software information). F299 class-B rows on 0.20.0: **0** over
   06:00-08:57 (`phone-log-health.ps1`: AOL 14 starts, 12 completed, 2 refused, 0 unfinished; Gmail, iCloud, Yahoo 1
   each, completed). R-5 candidate: iCloud background scan 07:54:55 completed (found 0, errors 0).
+- **Phone evidence, second pull (2026-10-21 13:3x, `validation-screenshots/sprint-80/`, logs 10-19 to 10-21 13:1x,
+  0.20.0)**:
+  - **R-1 DONE**: `Screenshot_20261021_131359.png` -- AOL Background: on, Scan every 10 minutes, "Scan when new mail
+    arrives" on, Battery Unrestricted, the idle note ("up to about 45 minutes").
+  - **R-3 account screenshot (F250) DONE**: `Screenshot_20261021_131441.png` -- Gmail shows "Gmail needs you to sign in
+    again" with Sign In Again; AOL, Yahoo, iCloud normal. Matches the log: `gmail/renewal stored refresh token failed:
+    ... invalid_grant, Token has been expired or revoked` at 10-20 11:16, 10-20 23:16, 10-21 11:16, each followed by
+    `GmailSignInRequiredException`. The restart half of R-3 and R-4: NOT DONE (no restart in the logs).
+  - **R-8 DONE (stop line seen on the release build)**: `stopped by WorkManager before it finished: reason=deviceState
+    raw=4` at 10-19 12:38:17 (AOL, doze-alarm) and 10-19 23:15:41 (AOL, periodic) -- the health check's only 2
+    unfinished scans. AndroidX 4 = STOP_REASON_DEVICE_STATE. The existing Dart handler delivers the name and number,
+    which was Fix 2's purpose; Fix 2 decision asked of Harold at Manual Validation.
+  - **R-7 DONE (F205 classification, 0.20.0, 10-19 06:00 to 10-21 13:1x)**: AOL 22 errors -- 19 network in one
+    episode 10-19 18:11-21:08 (16 `Connection reset by peer` every ~10 min, then 2 `Failed host lookup`), plus 1
+    `Connection refused` 10-19 11:46; 1 server (`[SERVERBUG] LOGIN Server error`, 10-20 05:10); 2 server stalls ended
+    by the 120 s limit (`IMAP SELECT` 10-20 15:56, `IMAP UID FETCH` 10-21 09:46). Gmail 3 -- sign-in required
+    (invalid_grant, above). Yahoo and iCloud 0. The failed host lookups point at the phone's network in that
+    episode, not AOL; cause of the resets unknown (would settle: Wi-Fi state at 18:11).
+  - **R-2 NOT MET -- the new-mail trigger has never fired on a real phone**: no `trigger=notification` worker line and
+    no `new-mail-trigger` outcome line in ANY Fold log pulled since Sprint 77 (0.16.0 to 0.20.0, 39 files, about 25
+    days); proven only on the emulator with the debug-only shell poster (R76-1). The listener writes its outcome only
+    when it ACCEPTS a notification (`MailNotificationListener.kt:54-78`; `decide` returns null otherwise), and the
+    app logs it only if one exists (`main.dart` `_logNewMailTriggerOutcome`), so the log cannot say which of these
+    holds: (a) the listener is not bound (Notification access), (b) the native "any account on" flag is off although
+    the AOL switch shows on, (c) the app that shows AOL new-mail notifications is not in `MAIL_APPS` (the AOL and
+    Yahoo package names are marked "Unverified until the Fold validation", `MailNotificationPolicy.kt:34`), (d) no
+    accepted app posted a notification. Cause unknown; settled by Harold's three on-phone checks (handoff) and, if
+    those are all fine, a log line at foreground start that records (a) to (c).
+  - **F299 (Task 12) CLOSED on evidence**: class-B rows 0 over 10-19 06:00 to 10-21 13:1x (about 55 hours; AOL 420
+    starts, Gmail 5, iCloud 3, Yahoo 3); both unfinished scans carry a WorkManager stop line, so neither is class B.
+    The Fold runs Android 17, not 16, so "fixed by the workmanager 0.10.10 upgrade" is NOT supported (R-1); R-3 not
+    built.
+  - Not yet done: R-3 restart, R-4 boot trace, R-6 F283 screenshot, F277 nights (AOL is at 10 minutes, new mail on;
+    arm A needs 15 minutes and new mail off).
 - **Task 2 R-3 (F277, the 0.3% versus 1.5% spread between the two arm-B nights) -- cause unknown, desk analysis of
   the Sprint 79 night log (`SPRINT_79_PLAN.md` "Night log")**:
   - Night 10-14/15: on battery about 01:00-05:52 (91% to 84%, 7 points), screen on 29 m, **44** completed AOL scans
@@ -974,8 +1008,11 @@ window appears in about 2 seconds.
     from 2.2 s to 25.5 s; 4 DEV tasks Ready.
 - **Phone (Fold, 0.20.0 from Play) -- Task 1 MV76-1, Task 2 F277, Task 12 F299**: the full remainder, re-presented:
   - R-1: Settings > Background screenshot (the Background note).
-  - R-2: a scan started by a mail app's new-mail notification (`trigger=notification` in the diagnostic log);
-    Notification access is already allowed. None seen yet in today's 0.20.0 log.
+  - R-2: a scan started by a mail app's new-mail notification (`trigger=notification` in the diagnostic log).
+    NEVER seen on a real phone (2026-10-21 finding). Three on-phone checks first: (1) Android Settings > search
+    "Notification access" (Samsung: Device and app notifications): is MyEmailSpamFilter ON? (2) Which app shows a
+    notification when AOL mail arrives (AOL app, Samsung Email, Outlook, Gmail app, or none)? (3) For that app, Play
+    Store > the app's page > Share > Copy link; paste the link (its `id=` is the package name).
   - R-3: restart the phone and do not open the app; background scans must resume (#428). Plus a screenshot of the
     F250 Google account state.
   - R-4: the boot-time trace -- read from the log after R-3.
