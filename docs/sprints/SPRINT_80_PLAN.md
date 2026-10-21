@@ -774,6 +774,67 @@ making the Data safety answer false.
 
 **Model**: Haiku. **Delegation checklist**: yes. **Step-types**: HOOK. **Est-Effort**: 25-40m.
 
+## Task 15 -- Windows startup: Task Scheduler reconciliation after the window appears (ADDED at Manual Validation, Harold Q4 = 2, 2026-10-21; #503)
+
+**Value**: This makes the Windows window appear in about 2 seconds instead of 15-30.
+
+**Requirements**:
+- R-1: A Windows release build shows its window without waiting for the per-account Task Scheduler reconciliation
+  (F98 migration, F264 conversions, verify/repair/ensure per account, orphan cleanup).
+- R-2: The reconciliation still runs on every foreground start, in full, after `runApp`.
+- R-3: A Settings schedule or cancel made while the reconciliation runs is not undone by it.
+
+**Affected components / files**:
+- `mobile-app/lib/main.dart` -- the block moves into `_reconcileWindowsBackgroundTasks()`, started unawaited after
+  `runApp`.
+- `mobile-app/lib/core/services/windows_task_scheduler_service.dart` -- new `runExclusive` (reentrant, in-process).
+- `mobile-app/lib/core/services/background_scan_scheduler.dart` -- `WindowsSchedulerAdapter.schedule` and `cancel`
+  run inside `runExclusive`.
+
+**Existing abstraction checked**: no lock or mutex in `lib/core/services` (grep `Mutex|_serial|synchronized|_lock`);
+only the single-instance mutex name in `app_environment.dart`, which is cross-process and unrelated.
+
+**Callers of any guard being changed** (the change alters WHEN the reconciliation runs):
+- `main()` foreground start -- now after `runApp`, not awaited.
+- Background-scan launch (`--background-scan`) -- exits at `main.dart:206`, before the block; unchanged.
+- Settings (`settings_screen.dart:1501`, `:1850`) through `BackgroundScanSchedulerFactory.instance` ->
+  `WindowsSchedulerAdapter` -- now waits for a running reconciliation (up to about 30 s on the first seconds after
+  start); no other `lib/` caller changes tasks directly (grep of `WindowsTaskSchedulerService.`).
+- Tooling that launches or kills the exe: the WinWright runner and `build-windows.ps1` may stop the app while the
+  reconciliation runs; the PowerShell child finishes or the next start redoes the (idempotent) reconciliation. Their
+  60 s launch waits are now larger than needed (not changed here; see F300).
+
+**Observable behavior -- before / after**: BEFORE: after a double-click, nothing is visible for 15-30 s. AFTER: the
+window appears in about 2 s; the background tasks are checked during the next half minute with no visible sign. A
+background change SAVED in Settings during that half minute waits for the check, so its confirmation can appear up
+to about 25 s late (before, the window was not up yet, so no change could be made then). Opening Settings only reads
+state and does not wait.
+
+**Parity (ADR-0042)**: Windows-only by mechanism (Task Scheduler). Android's WorkManager registration before
+`runApp` is one in-process call and was never slow; unchanged.
+
+**Acceptance criteria**:
+- AC-1: on the DEV release build, the window appears in under 5 s (measured with `Start-Process` and the window
+  handle).
+- AC-2: all 9 scheduled-task calls of the 4-account DEV install still run after the window, and the 4 DEV tasks stay
+  `Ready`.
+- AC-3: a Settings schedule waits while a reconciliation holds the lock; a nested call does not deadlock; an error
+  releases the lock.
+
+**Tests to write**: T-1 (AC-3) TEST-UNIT `test/unit/services/windows_task_scheduler_exclusive_test.dart`: order,
+reentrancy, release after an error, adapter takes the lock. What it does NOT catch: whether `main.dart` wraps the
+reconciliation in the lock and starts it after `runApp` (AC-1/AC-2 measurement covers that).
+
+**Definition of Done**: default DoD plus the AC-1/AC-2 measurement recorded below.
+
+**Model**: Opus (executed in the main session at Manual Validation) -- *why not the cheaper tier*: ordering change
+on the startup path with a concurrency lock; the callers had to be traced first. **Est-Effort**: 45-60m.
+
+**Result (2026-10-21)**: window at **1.8 s** (was 30.9 s); child processes 9 (8 `get_status.ps1` from 2.2 s to 22.1 s,
+1 `adhoc_query.ps1` at 25.5 s); 4 DEV tasks `Ready`. T-1 4/4 pass; mutations Q4-M1 (no queue), Q4-M2 (not
+reentrant), Q4-M3 (error keeps the lock), Q4-M4 (adapter bypasses the lock) all KILLED. Full suite `80-q4`:
+3174 passed, 15 skipped, 0 failed, 0 load failures; `flutter analyze` clean on the changed files.
+
 ---
 
 # Phase 5 evidence
@@ -851,7 +912,8 @@ making the Data safety answer false.
   - What would settle it: charge to 100% immediately before unplugging, screenshot the app's own battery detail at
     unplug and again in the morning, and record screen-on time. Added to the F277 Manual Validation step below, so
     arm A night 2 and arm C are measured on the same window. The 3x decision rule (R-4) waits for those two nights.
-- **Windows startup cost (pre-existing, NOT a Sprint 80 change; asked at Manual Validation)**: a release build runs
+- **Windows startup cost (pre-existing, NOT a Sprint 80 change; asked at Manual Validation; Harold Q4 = 2, FIXED by
+  Task 15 on 2026-10-21, window 1.8 s)**: a release build runs
   one PowerShell script per Task Scheduler call before `runApp` (`main.dart:360-431`). Measured on DEV with 4
   enabled accounts: 8 `get_status.ps1` plus 1 `adhoc_query.ps1`, about 3.1 s each, window at 30.9 s, app idle in
   between. With background off (Harold's prod), one delete script per account plus the enumerate, about 15 s.
@@ -861,8 +923,8 @@ making the Data safety answer false.
 
 Build: Windows DEV 0.21.0 from 6dc572c5, built 2026-10-19 10:07
 (`D:\Data\Harold\github\spamfilter-multi\mobile-app\dist\dev\MyEmailSpamFilter-Dev.exe`, title `MyEmailSpamFilter [DEV]`, the same exe the four DEV background tasks run every 5 minutes). DEV is read-only (scan
-mode), so no step changes mail except the one you make yourself in MV-3. The window takes about 30 seconds to appear
-(see the startup finding; not new).
+mode), so no step changes mail except the one you make yourself in MV-3. Since Task 15 (2026-10-21 build) the
+window appears in about 2 seconds.
 
 - **MV-1 (F269, YAML import Merge, the default)**.
   - Preconditions: the DEV app open. The file `C:\Users\kimme\Documents\Sprint80_MV\rules_merge_test.yaml` holds 2
@@ -900,6 +962,15 @@ mode), so no step changes mail except the one you make yourself in MV-3. The win
   - Rehearsed: screenshot of the running DEV build 2026-10-19 09:2x (Exit button, flat surfaces); the tray icon is
     not visible to a window screenshot -- its code path is covered by `platform_capabilities_test` (`hasSystemTray`
     true on Windows) and the `main.dart` tray block is unchanged apart from the capability check.
+- **MV-5 (Task 15, the window appears at once)**.
+  - Preconditions: the DEV app built 2026-10-21 or later (Task 15). Close the DEV app first (tray icon > Exit, or the
+    Exit button).
+  - Steps: start `D:\Data\Harold\github\spamfilter-multi\mobile-app\dist\dev\MyEmailSpamFilter-Dev.exe`. Within the
+    first 30 seconds, open Settings > Background and look at an account's background setting (do not change it).
+  - Expected: the window appears within about 2 seconds (it took about 30 before). Settings opens normally. After a
+    minute, Task Scheduler Library still lists the four `SpamFilterBackgroundScan_*_Dev` tasks as Ready.
+  - Rehearsed: 2026-10-21, `Start-Process` plus the window handle: window at 1.8 s; 9 PowerShell task checks seen
+    from 2.2 s to 25.5 s; 4 DEV tasks Ready.
 - **Phone (Fold, 0.20.0 from Play) -- Task 1 MV76-1, Task 2 F277, Task 12 F299**: the full remainder, re-presented:
   - R-1: Settings > Background screenshot (the Background note).
   - R-2: a scan started by a mail app's new-mail notification (`trigger=notification` in the diagnostic log);

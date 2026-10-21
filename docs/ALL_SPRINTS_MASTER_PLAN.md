@@ -835,6 +835,21 @@ _(No active Core App candidates -- F96 shipped in Sprint 43.)_
   platform channel and write any exit since the last read (reason, importance, time) to the diagnostic log.
 - Also check whether 0.10.9's 30 s Dart start watchdog (`DART_INITIALIZATION_TIMEOUT_MILLIS`) fails slow starts in Doze.
 
+**F300. WinWright default sweep: about 15 minutes, about 16 s per step (~60-90m) Priority 30 -- backlog (Harold Q5 = 1, 2026-10-21)**
+- Phase: Developer Tooling
+- Platform: Windows (test harness only)
+- Origin: Sprint 80 Manual Validation. The 2-script default sweep (56 steps) takes about 15 minutes, the same as
+  Sprint 79 (23:23-23:38). Harold: "I have seen it run in < 30 seconds". Per-step time is about 16 s; the cause is
+  unknown (the runner skips `ww_wait`, so it is not an explicit wait in the scripts).
+- Already removed by Sprint 80 Task 15 (#503): about 30 s of window wait per script launch (the window now appears at
+  about 2 s), so the launch half of the 60 s waits added in Sprint 80 (`run-winwright-tests.ps1`
+  `WaitForWindowSec`, `stepTimeoutMs`) can be lowered once measured.
+- What would settle the per-step cost: time each `ww_*` call in one script run (the WinWright run report or a
+  stopwatch around each step), then compare with the semantics-tree build delay seen in Sprint 80 (10-41 s after the
+  window, cause unknown).
+- AC: the default sweep finishes in under 5 minutes with 0 skipped steps and no DB drift, or the per-step cost is
+  named with its mechanism and a vendor or source citation.
+
 **F111. Periodic Windows App Store upload readiness verification (~110-175m per review) Priority HOLD**
 - Phase: Release Readiness (reusable template)
 - Platform: Windows Desktop

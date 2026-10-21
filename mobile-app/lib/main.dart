@@ -320,6 +320,8 @@ void main(List<String> args) async {
     await _runF264UpgradeConversions();
   }
 
+  // Sprint 80 (Harold Q4 = 2): set below, acted on after runApp.
+  var reconcileTasksAfterStart = false;
   if (PlatformCapabilities.current.backgroundScanMechanism ==
       BackgroundScanMechanism.taskScheduler) {
     // F109c (Sprint 44), legacy since F243 (Sprint 75): drain a deferral
@@ -358,7 +360,55 @@ void main(List<String> args) async {
     // shipped) self-heal to the new alias-based one via
     // verifyAndRepairTaskPath, on the very next app launch.
     if (kReleaseMode) {
-      // F98 (ADR-0039): per-account background-scan startup reconciliation.
+      // Sprint 80 (Harold Q4 = 2): the reconciliation now starts AFTER
+      // runApp (below). Each Task Scheduler call is one PowerShell process of
+      // about 3 s, so awaiting it here kept the window hidden for 15-30 s.
+      reconcileTasksAfterStart = true;
+    } else {
+      if (AppEnvironment.isMsixInstall) {
+        Logger().i('Skipping Task Scheduler management in MSIX install');
+      } else {
+        Logger().i('Skipping Task Scheduler management in debug mode');
+      }
+      if (!kReleaseMode) {
+        // Debug: convert stored values only; scheduling stays off (the
+        // executable path of a debug run is a temporary runner).
+        await _runF264UpgradeConversions();
+      }
+    }
+  }
+
+  // F248 (Sprint 76): one line per foreground start while diagnostic logging
+  // is on -- the file exists as soon as logging is on, and it names the
+  // build that wrote everything after it.
+  unawaited(DiagnosticLogger.appEvent('app start (foreground)'));
+  // F253 review HIGH-3 (Sprint 76): the new-mail listener is native and cannot
+  // write this log, so copy its last recorded outcome here. Android only
+  // (ADR-0044); once per foreground start.
+  if (PlatformCapabilities.current.hasNewMailNotificationTrigger) {
+    unawaited(_logNewMailTriggerOutcome());
+  }
+
+  runApp(const SpamFilterApp());
+
+  if (reconcileTasksAfterStart) {
+    unawaited(_reconcileWindowsBackgroundTasks());
+  }
+}
+
+/// F98 (ADR-0039): per-account background-scan reconciliation at foreground
+/// start (Windows release builds; MSIX included since F148).
+///
+/// Sprint 80 (Harold Q4 = 2): runs after `runApp`, not before it, so the window
+/// appears at once. The whole run holds [WindowsTaskSchedulerService.runExclusive],
+/// the same lock as Settings' schedule and cancel, so a change made in Settings
+/// while this runs lands before or after it, never between its steps (step 3
+/// would otherwise delete a task Settings created after step 2 as an orphan).
+/// Background-mode launches exit before this point (they never change tasks).
+/// Best-effort: a failure is logged and retried at the next launch.
+Future<void> _reconcileWindowsBackgroundTasks() =>
+    WindowsTaskSchedulerService.runExclusive(() async {
+      final stopwatch = Stopwatch()..start();
       try {
         final settingsStore = SettingsStore();
         final credStore = SecureCredentialsStore();
@@ -426,36 +476,12 @@ void main(List<String> args) async {
             await WindowsTaskSchedulerService.deleteScheduledTaskByName(taskName);
           }
         }
+        Logger().i('Background task reconciliation finished after the window '
+            'appeared (${stopwatch.elapsedMilliseconds} ms)');
       } catch (e) {
         Logger().w('Per-account background scan startup reconciliation failed: $e');
       }
-    } else {
-      if (AppEnvironment.isMsixInstall) {
-        Logger().i('Skipping Task Scheduler management in MSIX install');
-      } else {
-        Logger().i('Skipping Task Scheduler management in debug mode');
-      }
-      if (!kReleaseMode) {
-        // Debug: convert stored values only; scheduling stays off (the
-        // executable path of a debug run is a temporary runner).
-        await _runF264UpgradeConversions();
-      }
-    }
-  }
-
-  // F248 (Sprint 76): one line per foreground start while diagnostic logging
-  // is on -- the file exists as soon as logging is on, and it names the
-  // build that wrote everything after it.
-  unawaited(DiagnosticLogger.appEvent('app start (foreground)'));
-  // F253 review HIGH-3 (Sprint 76): the new-mail listener is native and cannot
-  // write this log, so copy its last recorded outcome here. Android only
-  // (ADR-0044); once per foreground start.
-  if (PlatformCapabilities.current.hasNewMailNotificationTrigger) {
-    unawaited(_logNewMailTriggerOutcome());
-  }
-
-  runApp(const SpamFilterApp());
-}
+    });
 
 /// F264 (Sprint 77): the one-time upgrade conversions, on BOTH platforms.
 ///

@@ -522,14 +522,28 @@ main.dart
   5. SecureCredentialsStore.migrateFromLegacyTokenStore()
   6. WindowsSystemTrayService.initialize() [Windows only]
   7. (removed Sprint 79: no notification start-up step; ScanCompleteNotifier initializes the plugin when it posts, ADR-0048)
-  8. WindowsTaskSchedulerService.verifyAndRepairTaskPath() [Windows release only, incl. MSIX -- F148, Sprint 56]
-  9. WindowsTaskSchedulerService.ensureTaskExists() [Windows release only, incl. MSIX -- F148, Sprint 56]
-  10. MultiProvider
+  8. MultiProvider
         |- RuleSetProvider
         |- EmailScanProvider
-  11. runApp(SpamFilterApp)
+  9. runApp(SpamFilterApp)
         -> MainNavigationScreen [Entry point]
+  10. _reconcileWindowsBackgroundTasks() [Windows release only, incl. MSIX -- F148; AFTER runApp since Sprint 80, not awaited]
+        -> holds WindowsTaskSchedulerService.runExclusive for the whole run
+        -> F98 migration, F264 conversions, then per account:
+           verifyAndRepairTaskPath() + ensureTaskExists() (or delete if disabled)
+        -> enumerateAccountTasks(): delete the legacy global task and orphans
 ```
+
+**Why step 10 runs after `runApp` (Sprint 80, Harold Q4 = 2)**: each Task Scheduler call is
+one PowerShell process of about 3 s. Awaited before `runApp`, the 9 calls of a 4-account DEV
+install kept the window hidden for 30.9 s; after the move the window appears at 1.8 s and the
+same 9 calls finish about 26 s later. Settings' `schedule` and `cancel` (through
+`WindowsSchedulerAdapter`) take the same in-process lock, `runExclusive`, so a change made in
+Settings during those seconds lands wholly before or after the reconciliation. Without the lock,
+step 3 could delete a task Settings created after step 2 had read the account's setting. The
+lock is reentrant (the F264 conversion schedules through the adapter from inside the
+reconciliation). It is in-process only: the background-scan process exits at step 4 and never
+changes tasks.
 
 ### Email Scanning Flow
 

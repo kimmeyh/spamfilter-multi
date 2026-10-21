@@ -229,8 +229,21 @@ class WindowsSchedulerAdapter implements BackgroundScanScheduler {
   Future<bool> isScheduled(String accountId) =>
       WindowsTaskSchedulerService.taskExists(accountId: accountId);
 
+  // Sprint 80 (Harold Q4 = 2): schedule and cancel run inside
+  // WindowsTaskSchedulerService.runExclusive, the same lock as the startup
+  // reconciliation, which now runs after the window appears.
   @override
   Future<bool> schedule({
+    required String accountId,
+    required int intervalMinutes,
+    required String caller,
+  }) =>
+      WindowsTaskSchedulerService.runExclusive(() => _schedule(
+          accountId: accountId,
+          intervalMinutes: intervalMinutes,
+          caller: caller));
+
+  Future<bool> _schedule({
     required String accountId,
     required int intervalMinutes,
     required String caller,
@@ -270,7 +283,11 @@ class WindowsSchedulerAdapter implements BackgroundScanScheduler {
   }
 
   @override
-  Future<bool> cancel(String accountId, {required String caller}) async {
+  Future<bool> cancel(String accountId, {required String caller}) =>
+      WindowsTaskSchedulerService.runExclusive(
+          () => _cancel(accountId, caller: caller));
+
+  Future<bool> _cancel(String accountId, {required String caller}) async {
     var ok = false;
     String? note;
     try {

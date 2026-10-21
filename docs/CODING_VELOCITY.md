@@ -261,6 +261,7 @@ Every Item that is implemented gets ONE row here the moment it is picked up -- s
 | Task 12 (pre-MV part): class-B count on the 0.20.0 log (#500) | 80 | DONE | (inside 10) | -- | ~5 | ~5 | Approximate (2026-10-19 09:0x). `phone-log-health.ps1` over 06:00-08:57: 0 class-B rows on Android 17. |
 | Task 13: F276 deleted/moved rows (#501) | 80 | DONE | 40-60 | 40-60 | ~55 | ~55 | Recorded at completion (2026-10-19 02:40). Card premise was false (Review actions never touch the message, so no not-found failure exists); redesigned: the scan checks presence in its open session (IMAP UID SEARCH, Gmail labels). 10 tests, 9 mutants KILLED. |
 | Task 14: F204 AAB checks (#502) | 80 | DONE | 25-40 | 25-40 | ~20 (Sonnet agent) + ~5 review | ~25 | Recorded at completion (2026-10-19 01:00). No installed tool reads an AAB proto manifest (aapt2 34/35 refuse; no runnable bundletool), so the helper decodes it; -SelfTest 7/7; 5 mutants KILLED. Executed-by Sonnet, not Haiku: proto-manifest tooling discovery. Wiring into build-with-secrets is parse-checked only. |
+| Task 15: Windows startup reconciliation after the window (#503) | 80 | DONE | 45-60 | 45-60 | ~50 | ~50 | Recorded at completion (2026-10-21). Added at Manual Validation (Harold Q4 = 2). Window 30.9 s -> 1.8 s, all 9 task calls still run after it; lock tests 4/4, 4 mutants KILLED. |
 
 ## Can the missing sprints (48-69) be reconstructed from git? -- TESTED 2026-09-19, answer: NO
 

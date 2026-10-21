@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:io';
 import 'dart:convert';
 import 'package:flutter/foundation.dart' show visibleForTesting;
@@ -52,6 +53,39 @@ class WindowsTaskSchedulerService {
   static String _logTaskLabel(String? accountId) {
     if (accountId == null) return taskName;
     return '${_taskNameBase}_${Redact.accountId(accountId)}${AppEnvironment.taskNameSuffix}';
+  }
+
+  /// Tail of the in-process queue of exclusive sections ([runExclusive]).
+  static Future<void> _exclusiveTail = Future<void>.value();
+
+  /// Zone key that marks code already running inside [runExclusive].
+  static final Object _exclusiveZoneKey = Object();
+
+  /// Runs [body] after every earlier [runExclusive] section in this process
+  /// has finished, and holds later ones until [body] finishes.
+  ///
+  /// Sprint 80 (Harold Q4 = 2): the startup reconciliation runs after the
+  /// window appears, so a Settings change (schedule or cancel) can arrive
+  /// while it is in progress. The reconciliation reads each account's
+  /// setting, then creates, repairs and deletes tasks; without this lock a
+  /// task created by Settings between those steps could be deleted as an
+  /// orphan. Both sides run inside this lock, so a Settings change lands
+  /// wholly before or wholly after a reconciliation.
+  ///
+  /// Reentrant: a nested call from inside a section (the reconciliation calls
+  /// the F264 conversion, which schedules through the adapter) runs at once
+  /// instead of waiting for itself. An error in [body] is returned to the
+  /// caller and does not block later sections. In-process only: the
+  /// background-scan process never changes tasks.
+  static Future<T> runExclusive<T>(Future<T> Function() body) {
+    if (Zone.current[_exclusiveZoneKey] == true) return body();
+    final previous = _exclusiveTail;
+    final done = Completer<void>();
+    _exclusiveTail = done.future;
+    return previous.then((_) => runZoned(
+          body,
+          zoneValues: {_exclusiveZoneKey: true},
+        )).whenComplete(done.complete);
   }
 
   /// Create a scheduled task for background scanning

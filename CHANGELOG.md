@@ -26,6 +26,11 @@ Format: `- **type**: Description (Issue #N)` where type is feat|fix|chore|docs
 
 ## [Unreleased]
 
+### 2026-10-21 (Sprint 80 Manual Validation)
+
+- **fix**: On Windows the app window now appears in about 2 seconds instead of 15-30. The check of the background-scan tasks in Task Scheduler (one PowerShell call of about 3 seconds per check) now runs after the window is shown; a background-scan change made in Settings during that check waits for it, so the check cannot undo it (Issue #503)
+- **docs**: Backlog card F300, WinWright default sweep takes about 15 minutes (Harold Q5 = 1)
+
 ### 2026-10-19 (Sprint 80)
 
 - **fix**: Editing, deleting or quick-adding a rule or safe sender now takes effect at once in No Rule Review and the next manual scan, without a restart; if the reload fails, the app says the change is saved but not yet in effect (Issue #496)
