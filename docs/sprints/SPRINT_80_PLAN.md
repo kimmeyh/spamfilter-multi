@@ -921,7 +921,8 @@ reentrant), Q4-M3 (error keeps the lock), Q4-M4 (adapter bypasses the lock) all 
 
 ## Manual Validation steps (Sprint 80 -- re-present IN FULL every time Harold is asked to validate)
 
-Build: Windows DEV 0.21.0 from 6dc572c5, built 2026-10-19 10:07
+Build: Windows DEV 0.21.0 with Task 15 (lib/ identical to 0f0148c8; built 2026-10-21 from the working tree before
+that commit, docs-only changes after)
 (`D:\Data\Harold\github\spamfilter-multi\mobile-app\dist\dev\MyEmailSpamFilter-Dev.exe`, title `MyEmailSpamFilter [DEV]`, the same exe the four DEV background tasks run every 5 minutes). DEV is read-only (scan
 mode), so no step changes mail except the one you make yourself in MV-3. Since Task 15 (2026-10-21 build) the
 window appears in about 2 seconds.
