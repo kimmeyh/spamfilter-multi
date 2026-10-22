@@ -218,7 +218,7 @@ namespace).
 | **WindowsTaskSchedulerService** | Create/manage Windows Task Scheduler tasks; per-account tasks (ADR-0014, ADR-0039 F98) -- `taskNameFor(accountId)`, enumerate/orphan cleanup |
 | **ScanNotificationText** (`scan_notification_text.dart`, F286 Sprint 79) | Shared title, body and per-account notification ID (FNV-1a) for the background-scan completion notification; mode word in the title, struck counts in the HTML body (ADR-0048) |
 | **ScanCompleteNotifier** (`scan_complete_notifier.dart`, F287 Sprint 79) | Posts that notification on BOTH platforms through flutter_local_notifications 22.x: Android channel with HTML body, Windows toast with plain body (declared exception, ADR-0048; supersedes ADR-0018) |
-| **WindowsSystemTrayService** | System tray icon with context menu (ADR-0019) |
+| **WindowsSystemTrayService** | System tray icon with context menu (ADR-0019). The icon file resolves from the exe folder (`trayIconPath(Platform.resolvedExecutable)` -> `data\flutter_assets\windows\runner\resources\app_icon.ico`), never from the working directory, and a right-click calls `popUpContextMenu()` (Sprint 80 Task 16) |
 | **PowershellScriptGenerator** | Generates PowerShell scripts for Task Scheduler |
 
 #### Other Services
@@ -702,6 +702,14 @@ the switch on) and the worker scans an account only when that provider matches
 AND the account's own switch is on AND its background switch is on
 (`accountSelectedByNotification`). Off by default; needs Android Notification
 access. Hidden on Windows (declared ADR-0042 exception, ADR-0044 amendment).
+Diagnostics (Sprint 80 Task 17): at every foreground start `main.dart` writes
+one `new-mail-diagnostics` line (channel method `diagnostics`, formatted by
+`NewMailTrigger.formatDiagnostics`): notification access, the native flag, the
+listener component state, the last listener connect and disconnect, the last
+ignored notification and its reason (`MailNotificationPolicy.ignoredReason`),
+the installed mail apps, and the launch reason. The installed-app check needs
+the five `MAIL_APPS` packages declared in the manifest `<queries>` block
+(Android 11+ package visibility); a policy test keeps the two lists equal.
 
 ### Rule Evaluation Flow (ADR-0005)
 

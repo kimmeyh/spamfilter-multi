@@ -2,7 +2,8 @@
 
 ------------------------------------
 Manual Validation complete
-Sprint 7n Review/Retrospective - Combined Product Owner, Scrum Master and Lead Developer feedback
+Sprint 8n Review/Retrospective - Combined Product Owner, Scrum Master and Lead Developer feedback
+Note: The overall goals of the Retrospective is for the entire team (Coding Agents and Non-Coding agents) to be long-term (many sprints) more effective while as efficient as reasonably possible in the context of long-term support of the repository and keeping in mind the Architecture, Software Engineering, Security, DevOps, Six Sigma (heavily weighting improvement that can prevent any current and future issues instead of responding to them), Agile standards and best practices.  To accomplish this we must base what we do on facts supported by references, honesty, objectivity while treating each other in a "tactfully honest way" (as opposed to "brutally honest").
 - Effective while as Efficient as Reasonably Possible
   - Very Good
 - Testing Approach
