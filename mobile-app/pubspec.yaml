@@ -98,6 +98,11 @@ flutter:
     - assets/rules/rules.yaml
     - assets/rules/rules_safe_senders.yaml
 
+    # Sprint 80 Task 16 (#504): the Windows tray icon. The runner's own icon
+    # file is the one source; listing it here ships it in data\flutter_assets
+    # so WindowsSystemTrayService can find it next to the exe.
+    - windows/runner/resources/app_icon.ico
+
     # AOL IMAP CA certificate for custom SecurityContext
     - assets/certs/aol_ca.pem
 

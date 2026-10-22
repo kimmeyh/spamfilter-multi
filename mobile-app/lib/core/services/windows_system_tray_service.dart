@@ -1,4 +1,5 @@
 import 'dart:io';
+import 'package:flutter/foundation.dart' show visibleForTesting;
 import 'package:system_tray/system_tray.dart';
 import '../platform/platform_capabilities.dart';
 import 'package:window_manager/window_manager.dart';
@@ -24,6 +25,24 @@ class WindowsSystemTrayService with WindowListener {
   static final Logger _logger = Logger();
   final SystemTray _systemTray = SystemTray();
   bool _isInitialized = false;
+
+  /// Flutter asset key of the tray icon (pubspec.yaml); the same file the
+  /// runner embeds as the window icon (windows/runner/Runner.rc).
+  static const String trayIconAssetKey = 'windows/runner/resources/app_icon.ico';
+
+  /// The tray icon file for an app whose exe is [resolvedExecutable].
+  ///
+  /// Sprint 80 Task 16 (#504): resolved from the exe folder, never from the
+  /// working directory. The old code joined `Directory.current`, which is the
+  /// mobile-app source folder only when build-windows.ps1 starts the app; a
+  /// start from Explorer, the Start menu, an MSIX install or another folder got
+  /// an empty path and no tray icon.
+  static String trayIconPath(String resolvedExecutable) => path.joinAll([
+        File(resolvedExecutable).parent.path,
+        'data',
+        'flutter_assets',
+        ...trayIconAssetKey.split('/'),
+      ]);
 
   /// Initialize system tray (Windows only)
   ///
@@ -64,56 +83,50 @@ class WindowsSystemTrayService with WindowListener {
       // whose onWindowClose calls hideWindow() (NOT destroy()); the mixin and
       // onWindowClose stub below are retained for that, but are not wired up.
 
-      // Get icon path from Windows runner resources
-      // This is the same icon used for the application window
-      final String iconPath = path.join(
-        Directory.current.path,
-        'data',
-        'flutter_assets',
-        'assets',
-        'app_icon.ico',
-      );
+      final String iconPath = trayIconPath(Platform.resolvedExecutable);
+      if (!File(iconPath).existsSync()) {
+        _logger.w('System tray icon file not found: $iconPath');
+      }
 
-      // Fallback to runner resources if flutter assets not available
-      final String fallbackIconPath = path.join(
-        Directory.current.path,
-        'windows',
-        'runner',
-        'resources',
-        'app_icon.ico',
-      );
-
-      // Determine which icon path exists
-      final String finalIconPath = File(iconPath).existsSync()
-          ? iconPath
-          : (File(fallbackIconPath).existsSync() ? fallbackIconPath : '');
-
-      // Initialize system tray
-      await _systemTray.initSystemTray(
+      // system_tray 2.0.3 returns false when it cannot load the icon: it
+      // skips Shell_NotifyIcon (windows/tray.cpp:288-291), so no icon exists.
+      final added = await _systemTray.initSystemTray(
         title: 'MyEmailSpamFilter',
-        iconPath: finalIconPath,
+        iconPath: iconPath,
         toolTip: 'MyEmailSpamFilter - Click to show',
       );
+      if (!added) {
+        _logger.w('System tray icon was not added (icon: $iconPath)');
+        return;
+      }
 
       // Set up tray menu
       await _setupTrayMenu();
 
-      // Register click handler
-      _systemTray.registerSystemTrayEventHandler((eventName) {
-        if (eventName == kSystemTrayEventClick) {
-          // Single click: Show window
-          _showWindow();
-        } else if (eventName == kSystemTrayEventRightClick) {
-          // Right click: Rebuild menu to ensure callbacks work
-          _setupTrayMenu();
-        }
-      });
+      _systemTray.registerSystemTrayEventHandler(handleTrayEvent);
 
       _isInitialized = true;
     } catch (e) {
       // Initialization failed - log but don't crash
       // App will continue without system tray
       _logger.w('Failed to initialize system tray: $e');
+    }
+  }
+
+  /// Handles a click on the tray icon.
+  ///
+  /// Sprint 80 Task 16 (#504): system_tray 2.0.3 on Windows only REPORTS a
+  /// right-click (`windows/tray.cpp:377-378`); the menu appears only when the
+  /// app calls `popUpContextMenu()`. The handler used to rebuild the menu and
+  /// stop there, so the tray menu (and its Exit item) never opened.
+  @visibleForTesting
+  Future<void> handleTrayEvent(String eventName) async {
+    if (eventName == kSystemTrayEventClick) {
+      await _showWindow();
+    } else if (eventName == kSystemTrayEventRightClick) {
+      // Rebuild first so the item callbacks are current, then show it.
+      await _setupTrayMenu();
+      await _systemTray.popUpContextMenu();
     }
   }
 

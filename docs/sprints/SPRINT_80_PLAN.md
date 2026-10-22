@@ -835,6 +835,71 @@ on the startup path with a concurrency lock; the callers had to be traced first.
 reentrant), Q4-M3 (error keeps the lock), Q4-M4 (adapter bypasses the lock) all KILLED. Full suite `80-q4`:
 3174 passed, 15 skipped, 0 failed, 0 load failures; `flutter analyze` clean on the changed files.
 
+## Task 16 -- Windows tray icon missing unless the app starts from the source folder (FOUND at Manual Validation MV-4, 2026-10-21; #504)
+
+**Value**: This puts the tray icon (and its Exit item) on every Windows start, including the Store install.
+
+**Requirements**:
+- R-1: The tray icon file is found from the exe folder, whatever the working directory.
+- R-2: The icon file ships in every build (DEV, prod, MSIX), from one source file.
+- R-3: When the plugin cannot add the icon, a warning is logged (it was silent).
+- R-4 (second defect, found in the rehearsal): a right-click on the tray icon opens the tray menu (Show Window, Run
+  Scan Now, View Results, Settings, Exit). system_tray 2.0.3 only reports the right-click (`windows/tray.cpp:377-378`);
+  the menu appears only when the app calls `popUpContextMenu()`. The handler (unchanged since a39a1146, 2026-01-31)
+  rebuilt the menu and never showed it, so the tray menu never opened, even when the icon was present.
+
+**Cause (read from source, 2026-10-21)**: `WindowsSystemTrayService.initialize` joined `Directory.current` with
+`data\flutter_assets\assets\app_icon.ico` (never in a build: the .ico was not a pubspec asset) and, as a fallback,
+`windows\runner\resources\app_icon.ico` (exists only when the working directory is `mobile-app`, which is how
+`build-windows.ps1` starts the app). Any other start passed `''`; system_tray 2.0.3 `windows/tray.cpp:288-291` then
+fails `LoadImage` and returns before `Shell_NotifyIcon`, and `initSystemTray` returns false, which the app ignored
+while `main.dart` logged "Windows system tray initialized". MV-4 failed because Harold's DEV app was started by
+`Start-Process` from the repo root (Task 15 measurement). The earlier MV-4 rehearsal reasoned from
+`platform_capabilities_test` and the unchanged `main.dart` block instead of looking at the notification area.
+
+**Affected components / files**:
+- `mobile-app/pubspec.yaml` -- `windows/runner/resources/app_icon.ico` listed as an asset (the runner's own icon, so
+  one source).
+- `mobile-app/lib/core/services/windows_system_tray_service.dart` -- `trayIconPath(resolvedExecutable)`, the warning
+  on a missing file and on a false return.
+
+**Existing abstraction checked**: `AppPaths` resolves data folders, not install files; no exe-relative helper exists
+(grep `resolvedExecutable` in `lib/`: Task Scheduler path code only). The Issue #108 fix (59e205fc) added the
+working-directory fallback that this replaces.
+
+**Callers**: `main.dart:339-341` only (Windows foreground start). Background launches exit before it. MSIX: the
+package contains `data\flutter_assets`, and `Platform.resolvedExecutable` is the package exe.
+
+**Observable behavior -- before / after**: BEFORE: the tray icon appears only when the app is started by
+`build-windows.ps1`. AFTER: it appears on every start; if it cannot be added, the log says so.
+
+**Parity (ADR-0042)**: Windows-only by mechanism (`hasSystemTray`); Android has no tray.
+
+**Acceptance criteria**:
+- AC-1: the DEV build started from a folder other than `mobile-app` shows the tray icon (notification area read by
+  UI Automation for the tooltip `MyEmailSpamFilter - Click to show`).
+- AC-2: the built `dist\dev\data\flutter_assets\windows\runner\resources\app_icon.ico` exists.
+
+**Tests to write**: T-1 TEST-UNIT `test/unit/services/windows_tray_icon_path_test.dart`: path from the exe folder,
+the working directory does not change it, the pubspec lists the asset and the file exists, the asset is the icon
+`Runner.rc` embeds. What it does NOT catch: whether Windows shows the icon (AC-1 covers that).
+
+**Definition of Done**: default DoD plus AC-1/AC-2 recorded below.
+
+**Model**: Opus (main session at Manual Validation) -- *why not the cheaper tier*: root cause had to be traced through
+the plugin's native source first. **Est-Effort**: 30-45m.
+
+**Result (2026-10-21)**: T-1 6/6 pass (adds: right-click builds AND shows the menu; an unknown event does nothing);
+mutations T16-M1 (path from the working directory), T16-M2 (asset dropped from pubspec), T16-M3 (old asset key),
+T16-M4 (right-click without `popUpContextMenu`, the old handler) all KILLED; `flutter analyze` clean on the changed files. AC-2 PASS: the DEV build
+(2026-10-21 22:5x) has `dist\dev\data\flutter_assets\windows\runner\resources\app_icon.ico`. AC-1 PASS: started with
+`Start-Process -WorkingDirectory C:\Users\kimme` at 22:55:31; UI Automation on `Shell_TrayWnd` finds
+`MyEmailSpamFilter - Click to show` as `SystemTray.NormalButton` (the visible tray area). Before the fix, the same
+kind of start showed no icon (Harold's images 14-16). R-4 PASS on the rebuilt DEV build (23:1x): a right-click
+opens one popup menu (`#32768`; 0 before the fix), captured as Show Window / Run Scan Now / View Results / Settings /
+Exit; clicking Exit ended the DEV process (1 -> 0); a new start showed its window at 1.7 s (MV-5 rehearsed). Full
+suite `80-t16`: 3180 passed, 15 skipped, 0 failed, 0 load failures.
+
 ---
 
 # Phase 5 evidence
@@ -930,6 +995,47 @@ reentrant), Q4-M3 (error keeps the lock), Q4-M4 (adapter bypasses the lock) all 
     built.
   - Not yet done: R-3 restart, R-4 boot trace, R-6 F283 screenshot, F277 nights (AOL is at 10 minutes, new mail on;
     arm A needs 15 minutes and new mail off).
+- **Harold's dispositions and Windows results (2026-10-21 evening)**:
+  - Harold, verbatim: *"r-2 checks: Stop asing it is on and will remain on | r-3 has been tested before and works |
+    R-4 you can look for it in the logs | this is not enough information to answer this question ... R-6 | F277 Arm A
+    - consider complete Arm C done and consider complete"*.
+  - **R-2**: Notification access is ON (Harold). Cause (a) is ruled out; (b) to (d) remain. Not asked again.
+  - **R-3 DONE** on Harold's statement plus the 10-07 log: doze-alarm and periodic workers ran from 09:14:39 on, every
+    `exit success`, with the app not opened.
+  - **R-4 (boot-time `main()` trace), from `validation-screenshots/sprint-78/diag_v0.17.6_2026-10-07.log`**: two
+    bursts, 09:14:39 and 09:15:06, each with 4 `background worker start` lines and 1 `app start (foreground)` 60-100 ms
+    after them; no foreground line when Harold opened the app after noon, so the engine that ran `main()` at boot stayed
+    alive. The workers cannot be the source: workmanager_android 0.10.6 (the 0.17.6 lock) `BackgroundWorker.kt:147`
+    runs the dispatcher callback, not `main`. The app's native code starts no activity or engine (no
+    `getActivity`/`FlutterEngine` in `DozeAlarmScheduler.kt`, `DozeScanTrigger.kt`, `MailNotificationListener.kt`;
+    `BootReceiver` only reschedules alarms); no plugin in pubspec runs `main` in the background. Only `MainActivity`
+    runs `main()`, so `MainActivity` was created at boot twice without Harold. What created it: **cause unknown**
+    (candidates, unverified: a One UI restore of the last app, or a launch from the lock screen). The label: `main()`
+    did run from the Activity's engine, so "app start" is right; "foreground" is unverified (the screen may not have
+    shown). Would settle it: a native line in `MainActivity.onCreate` with the launch intent action and
+    `isTaskRoot`, read after the next reboot.
+  - **R-6**: the step was not enough to act on (Harold). Re-written in the phone steps below: with accounts set up,
+    the app's first screen on Android IS Review No Rule Items (`main_navigation_screen.dart:92-94`).
+  - **F277 (Task 2) closed by Harold**: arm A and arm C complete. Decision rule on the data held: arm A read below the
+    0.1% display floor ("Battery 0% used since last fully charged", 10-17/18), arm B 0.3% and 1.5% (10-14/15,
+    10-16/17), so B/A has no finite value; the rule cannot decide. No arm-C night shows a `trigger=notification` scan
+    (R-2), so arm C measured the same work as arm B. Floor stays at 5 (`kMinIntervalMinutes`), unchanged.
+  - **MV-1 PASS** (image 8): `Merged rules: 1 added, 1 skipped as duplicate, 0 skipped as invalid.` Base count 2204,
+    not the 2202 read 10-19: Harold added `Block_EntireDomain_heyrecipe.com` and `Block_EntireDomain_kountabe.org` at
+    22:24 tonight (DEV DB `rules.date_added`). 2204 -> 2205 with `MV80_F269_MergeTest` found. It shows as
+    Uncategorized (legacy) because the test file I wrote has no `patternCategory` key; the category is read from that
+    key when the file is parsed (`rule_set.dart:80`), before Merge or Replace is chosen, so not an F269 defect.
+  - **MV-2 PASS** (images 9-12): `Deleted: MV80_F269_MergeTest`, no restart suffix, `MV80` finds nothing, 2205 -> 2204.
+  - **MV-3 NOT SHOWN by the step (my precondition was stale)**: the Speedpay row (DEV `unmatched_emails` id 8154) left
+    Review on **10-19 12:33:13**, when the safe sender `^noreply@speedpay\.com$` was added through the app; it reads
+    `processed=1`, `availability_status=unknown`, last seen 10-19 12:30:16. The step handed over on 10-21 still said
+    "today: 1 row" from 10-19. Review now lists 0 because the other 44 unaddressed rows are 32 marked `deleted` by
+    F276 (hidden as gone) and 12 demo-account rows (Review lists only saved accounts, `no_rule_review_screen.dart:282-298`).
+    F276 live evidence stands: 32 rows hidden as gone since 0.21.0 went live. No live row exists to repeat the
+    hands-on step today.
+  - **MV-4 FAIL -> Task 16 (#504)**: the tray icon is missing (images 14-16; Windows Settings lists MyEmailSpamFilter
+    as On from earlier starts). Cause and fix in the Task 16 card.
+  - **MV-5**: blocked at step 1 by MV-4 (no tray Exit); it can use the toolbar Exit (X). Re-run on the Task 16 build.
 - **Task 2 R-3 (F277, the 0.3% versus 1.5% spread between the two arm-B nights) -- cause unknown, desk analysis of
   the Sprint 79 night log (`SPRINT_79_PLAN.md` "Night log")**:
   - Night 10-14/15: on battery about 01:00-05:52 (91% to 84%, 7 points), screen on 29 m, **44** completed AOL scans
@@ -955,8 +1061,7 @@ reentrant), Q4-M3 (error keeps the lock), Q4-M4 (adapter bypasses the lock) all 
 
 ## Manual Validation steps (Sprint 80 -- re-present IN FULL every time Harold is asked to validate)
 
-Build: Windows DEV 0.21.0 with Task 15 (lib/ identical to 0f0148c8; built 2026-10-21 from the working tree before
-that commit, docs-only changes after)
+Build: Windows DEV 0.21.0 with Tasks 15 and 16 (built 2026-10-21 23:1x from the working tree of the Task 16 commit)
 (`D:\Data\Harold\github\spamfilter-multi\mobile-app\dist\dev\MyEmailSpamFilter-Dev.exe`, title `MyEmailSpamFilter [DEV]`, the same exe the four DEV background tasks run every 5 minutes). DEV is read-only (scan
 mode), so no step changes mail except the one you make yourself in MV-3. Since Task 15 (2026-10-21 build) the
 window appears in about 2 seconds.
@@ -994,9 +1099,11 @@ window appears in about 2 seconds.
 - **MV-4 (F294, Windows looks and behaves the same)**.
   - Steps: look at the DEV app.
   - Expected: the Exit (X) button at the right of the toolbar, flat dark surfaces as before, the tray icon present.
-  - Rehearsed: screenshot of the running DEV build 2026-10-19 09:2x (Exit button, flat surfaces); the tray icon is
-    not visible to a window screenshot -- its code path is covered by `platform_capabilities_test` (`hasSystemTray`
-    true on Windows) and the `main.dart` tray block is unchanged apart from the capability check.
+  - 2026-10-21: Exit button and flat surfaces PASS (earlier images); tray icon FAIL (images 14-16) -> Task 16 (#504).
+    Re-check the tray icon only, on the Task 16 build.
+  - Rehearsed (Task 16 build): tray button `MyEmailSpamFilter - Click to show` read by UI Automation after a start
+    from `C:\Users\kimme`. (The first rehearsal reasoned from tests and an unchanged code block instead of looking at
+    the notification area; that is how the miss got through.)
 - **MV-5 (Task 15, the window appears at once)**.
   - Preconditions: the DEV app built 2026-10-21 or later (Task 15). Close the DEV app first (tray icon > Exit, or the
     Exit button).
@@ -1005,24 +1112,23 @@ window appears in about 2 seconds.
   - Expected: the window appears within about 2 seconds (it took about 30 before). Settings opens normally. After a
     minute, Task Scheduler Library still lists the four `SpamFilterBackgroundScan_*_Dev` tasks as Ready.
   - Rehearsed: 2026-10-21, `Start-Process` plus the window handle: window at 1.8 s; 9 PowerShell task checks seen
-    from 2.2 s to 25.5 s; 4 DEV tasks Ready.
+    from 2.2 s to 25.5 s; 4 DEV tasks Ready. Again on the Task 16 build (23:1x): tray right-click > Exit ended the
+    process, and a new start showed the window at 1.7 s.
 - **Phone (Fold, 0.20.0 from Play) -- Task 1 MV76-1, Task 2 F277, Task 12 F299**: the full remainder, re-presented:
   - R-1: Settings > Background screenshot (the Background note).
   - R-2: a scan started by a mail app's new-mail notification (`trigger=notification` in the diagnostic log).
-    NEVER seen on a real phone (2026-10-21 finding). Three on-phone checks first: (1) Android Settings > search
-    "Notification access" (Samsung: Device and app notifications): is MyEmailSpamFilter ON? (2) Which app shows a
-    notification when AOL mail arrives (AOL app, Samsung Email, Outlook, Gmail app, or none)? (3) For that app, Play
-    Store > the app's page > Share > Copy link; paste the link (its `id=` is the package name).
-  - R-3: restart the phone and do not open the app; background scans must resume (#428). Plus a screenshot of the
-    F250 Google account state.
-  - R-4: the boot-time trace -- read from the log after R-3.
+    NEVER seen on a real phone (2026-10-21 finding). Notification access is ON (Harold, 2026-10-21; do not ask
+    again). No further phone check is asked; the next step is Harold's Q5 decision (a diagnostic line).
+  - R-3: DONE (Harold: tested before and works; 10-07 log).
+  - R-4: DONE as far as the log goes (Phase 5 evidence, "Harold's dispositions"): `MainActivity` ran `main()` at boot;
+    what created it is unknown.
   - R-5: one completed iCloud background scan (candidate already: 07:54:55 today, found 0, errors 0).
-  - R-6: the F283 Android screenshot.
+  - R-6 (F283, Review No Rule Items on the shared Results pieces): on the Fold, open MyEmailSpamFilter. With
+    accounts set up, the first screen is Review No Rule Items (`main_navigation_screen.dart:92-94`). Take ONE
+    screenshot of that screen as it is (an empty list is fine). It must show: the title "Review No Rule Items", the
+    "Unaddressed "No rule" emails" header, and the chips "No rule (N)", the account chip, "Folders: ..." and "Sort:
+    ..." -- the same pieces as Windows image 13. If the list has rows, the screenshot also shows the row format.
   - R-7: one day of normal use on 0.20.0 for the F205 error classification (or zero).
   - R-8: the `stopped by WorkManager before it finished: reason=... raw=...` line, then your Fix 2 decision.
-  - F277: arm A second night (AOL every 15 minutes, ONE account on, about 8 hours on battery) and arm C (new-mail
-    scanning on, one account, one night). For each night: charge to 100% and unplug at bedtime; at unplug, take a
-    screenshot of the app's battery detail (Settings > Apps > MyEmailSpamFilter > Battery); in the morning, take the
-    same screenshot plus Settings > Battery app usage, and note the screen-on time. (Task 2 R-3: the two arm-B
-    readings may cover different windows; a full charge at unplug makes both nights start from the same point.)
+  - F277: CLOSED by Harold 2026-10-21 (arm A and arm C complete); floor stays at 5.
   - F299: nothing to do beyond R-7's day of use; recorded so far: 0 class-B rows on Android 17.
