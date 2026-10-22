@@ -204,4 +204,22 @@ class MailNotificationPolicyTest {
             )
         )
     }
+
+    // Sprint 80 Task 17 (#505): why a mail app's notification started no scan.
+    // What this does NOT catch: whether the listener writes the reason (source
+    // gate in f253_new_mail_switch_test) or whether Android delivers anything.
+    @Test
+    fun anIgnoredMailAppNotificationSaysWhy() {
+        assertEquals("switch off",
+            MailNotificationPolicy.ignoredReason(gmail, false, now, { 0L }))
+        assertEquals("within 2 minutes of the last scan",
+            MailNotificationPolicy.ignoredReason(gmail, true, now, { now - 1_000L }))
+    }
+
+    @Test
+    fun aTriggeringOrNonMailNotificationHasNoReason() {
+        assertNull(MailNotificationPolicy.ignoredReason(gmail, true, now, { 0L }))
+        assertNull(MailNotificationPolicy.ignoredReason("com.whatsapp", false, now, { 0L }))
+        assertNull(MailNotificationPolicy.ignoredReason(null, true, now, { 0L }))
+    }
 }

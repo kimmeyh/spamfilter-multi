@@ -30,6 +30,7 @@ Format: `- **type**: Description (Issue #N)` where type is feat|fix|chore|docs
 
 - **fix**: On Windows the app window now appears in about 2 seconds instead of 15-30. The check of the background-scan tasks in Task Scheduler (one PowerShell call of about 3 seconds per check) now runs after the window is shown; a background-scan change made in Settings during that check waits for it, so the check cannot undo it (Issue #503)
 - **fix**: The Windows tray icon now appears however the app is started (Start menu, Explorer, Store install); before, it appeared only when the app was started from the development folder. A right-click on it now opens its menu (Show Window, Settings, Exit); before, the menu never opened (Issue #504)
+- **chore**: Android diagnostic log: at each app start, one line records why "Scan when new mail arrives" has not started a scan (Notification access, the switch, whether the listener is connected, the last mail-app notification it ignored and why, which mail apps are installed) and how the app's screen was started. Only package names and times are recorded, never notification content (Issue #505)
 - **docs**: Backlog card F300, WinWright default sweep takes about 15 minutes (Harold Q5 = 1)
 
 ### 2026-10-19 (Sprint 80)

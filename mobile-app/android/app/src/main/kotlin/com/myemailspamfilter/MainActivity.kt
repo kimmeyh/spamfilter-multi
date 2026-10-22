@@ -1,8 +1,11 @@
 package com.myemailspamfilter
 
+import android.content.ComponentName
 import android.content.Context
 import android.content.Intent
+import android.content.pm.PackageManager
 import android.net.Uri
+import android.os.Bundle
 import android.os.PowerManager
 import android.provider.Settings
 import android.util.Log
@@ -31,6 +34,34 @@ class MainActivity : FlutterActivity() {
         const val BATTERY_CHANNEL = "com.myemailspamfilter/battery"
         const val NEW_MAIL_CHANNEL = "com.myemailspamfilter/new_mail_trigger"
     }
+
+    /**
+     * Sprint 80 Task 17 (#505), R-4: how this screen was started, captured
+     * before the engine runs `main()`. On 2026-10-07 the screen was created
+     * twice at boot with no user action; this names the starter next time.
+     */
+    private var launchInfo: String = "unknown"
+
+    override fun onCreate(savedInstanceState: Bundle?) {
+        launchInfo = try {
+            "action=${intent?.action} referrer=${referrer} taskRoot=$isTaskRoot " +
+                "restored=${savedInstanceState != null}"
+        } catch (t: Throwable) {
+            "unreadable (${t.javaClass.simpleName})"
+        }
+        super.onCreate(savedInstanceState)
+    }
+
+    /** Installed apps among the accepted mail apps (declared in the manifest's <queries>). */
+    private fun installedMailApps(): List<String> =
+        MailNotificationPolicy.MAIL_APP_PACKAGES.filter { pkg ->
+            try {
+                packageManager.getPackageInfo(pkg, 0)
+                true
+            } catch (e: PackageManager.NameNotFoundException) {
+                false
+            }
+        }.sorted()
 
     override fun configureFlutterEngine(flutterEngine: FlutterEngine) {
         super.configureFlutterEngine(flutterEngine)
@@ -165,6 +196,26 @@ class MainActivity : FlutterActivity() {
                     "lastResult" -> result.success(
                         prefs.getString(MailNotificationListener.KEY_LAST_RESULT, null),
                     )
+
+                    // Sprint 80 Task 17 (#505): one start-up snapshot for the
+                    // diagnostic log -- why the trigger has not fired (R-2)
+                    // and how this screen was started (R-4).
+                    "diagnostics" -> {
+                        val component = ComponentName(this, MailNotificationListener::class.java)
+                        result.success(
+                            mapOf(
+                                "accessGranted" to NotificationManagerCompat
+                                    .getEnabledListenerPackages(this).contains(packageName),
+                                "enabled" to prefs.getBoolean(MailNotificationListener.KEY_ENABLED, false),
+                                "componentState" to packageManager.getComponentEnabledSetting(component),
+                                "connectedMs" to prefs.getLong(MailNotificationListener.KEY_CONNECTED_MS, 0L),
+                                "disconnectedMs" to prefs.getLong(MailNotificationListener.KEY_DISCONNECTED_MS, 0L),
+                                "lastIgnored" to prefs.getString(MailNotificationListener.KEY_LAST_IGNORED, null),
+                                "installedMailApps" to installedMailApps(),
+                                "launch" to launchInfo,
+                            ),
+                        )
+                    }
 
                     else -> result.notImplemented()
                 }

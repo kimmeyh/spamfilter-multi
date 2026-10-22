@@ -80,6 +80,50 @@ class NewMailTrigger {
     );
   }
 
+  /// Sprint 80 Task 17 (#505): the native start-up snapshot (Notification
+  /// access, flag, listener component and bind times, the last ignored
+  /// mail-app notification, installed mail apps, how the screen was started);
+  /// null when unreadable.
+  static Future<Map<Object?, Object?>?> diagnostics() =>
+      _call<Map<Object?, Object?>>('diagnostics');
+
+  /// One diagnostic-log line from [diagnostics]. Pure, so the wording is
+  /// tested without a device.
+  static String formatDiagnostics(Map<Object?, Object?>? d) {
+    if (d == null) return 'diagnostics unavailable';
+    String onOff(Object? v) => v == true ? 'on' : (v == false ? 'off' : 'unknown');
+    String at(Object? ms) => ms is int && ms > 0
+        ? DateTime.fromMillisecondsSinceEpoch(ms).toIso8601String()
+        : 'never';
+    // PackageManager.COMPONENT_ENABLED_STATE_DEFAULT / _ENABLED / _DISABLED.
+    const states = {0: 'default', 1: 'enabled', 2: 'disabled'};
+    final state = d['componentState'];
+    final ignored = parseLastIgnored(d['lastIgnored'] as String?);
+    final apps = (d['installedMailApps'] as List?)?.join(',') ?? 'unknown';
+    return 'access=${onOff(d['accessGranted'])} flag=${onOff(d['enabled'])} '
+        'component=${states[state] ?? state} '
+        'listenerConnected=${at(d['connectedMs'])} '
+        'listenerDisconnected=${at(d['disconnectedMs'])} '
+        'lastIgnored=${ignored == null ? 'none' : '${ignored.at.toIso8601String()} ${ignored.app} (${ignored.reason})'} '
+        'mailApps=${apps.isEmpty ? 'none' : apps} '
+        'launch: ${d['launch'] ?? 'unknown'}';
+  }
+
+  /// Parses the listener's "<epoch ms>|<package>|<reason>"; null when malformed.
+  static ({DateTime at, String app, String reason})? parseLastIgnored(
+      String? raw) {
+    if (raw == null) return null;
+    final parts = raw.split('|');
+    if (parts.length != 3) return null;
+    final ms = int.tryParse(parts[0]);
+    if (ms == null) return null;
+    return (
+      at: DateTime.fromMillisecondsSinceEpoch(ms),
+      app: parts[1],
+      reason: parts[2],
+    );
+  }
+
   static Future<T?> _call<T>(String method, [Object? args]) async {
     try {
       return await _channel.invokeMethod<T>(method, args);

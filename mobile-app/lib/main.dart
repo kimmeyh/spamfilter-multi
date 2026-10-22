@@ -539,6 +539,14 @@ Future<void> _runF264UpgradeConversions() async {
 /// trigger outcome into the diagnostic log. Nothing when the feature never
 /// fired or the record cannot be read.
 Future<void> _logNewMailTriggerOutcome() async {
+  // Sprint 80 Task 17 (#505): one snapshot line at every foreground start,
+  // so the log can say why the trigger did not fire and how the screen was
+  // started -- not only the outcome of a trigger that did fire.
+  await DiagnosticLogger.log(
+    kind: DiagnosticLogger.kindApp,
+    context: 'new-mail-diagnostics',
+    detail: NewMailTrigger.formatDiagnostics(await NewMailTrigger.diagnostics()),
+  );
   final parsed = NewMailTrigger.parseLastResult(await NewMailTrigger.lastResult());
   if (parsed == null) return;
   await DiagnosticLogger.log(

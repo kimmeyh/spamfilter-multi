@@ -994,7 +994,7 @@ _(F142 shipped Sprint 57 -- see `docs/sprints/SPRINT_57_PLAN.md` and CHANGELOG.m
   alongside F70 (Security), F71 (Architecture), F130 (Process-Docs), F152 (First-Run), F173
   (Test Coverage) and F189 (Skills).
 
-### iOS readiness cards from F295 (Sprint 80, ADR-0050 Proposed -- accept or reject at Sprint 80 Manual Validation)
+### iOS readiness cards from F295 (Sprint 80; cards ACCEPTED into the backlog by Harold 2026-10-21, Q3 = 1; ADR-0050 decision pending)
 
 Source: `docs/research/F295_IOS_READINESS.md`. These replace the iOS parts of F67 and F95 once ADR-0050 is accepted; Linux and macOS stay on F67, and the Windows/Android multi-variant polish stays on F95.
 

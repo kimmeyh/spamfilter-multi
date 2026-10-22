@@ -900,6 +900,70 @@ opens one popup menu (`#32768`; 0 before the fix), captured as Show Window / Run
 Exit; clicking Exit ended the DEV process (1 -> 0); a new start showed its window at 1.7 s (MV-5 rehearsed). Full
 suite `80-t16`: 3180 passed, 15 skipped, 0 failed, 0 load failures.
 
+## Task 17 -- Android start-up diagnostic line: why the new-mail trigger is silent, and how the main screen started (ADDED at Manual Validation, Harold Q5 = 1, 2026-10-21; #505)
+
+**Value**: The next Fold log answers R-2 (the trigger never fired) and R-4 (the main screen created at boot) without
+another phone check by Harold.
+
+**Requirements**:
+- R-1: At each Android foreground start, one diagnostic-log line `new-mail-diagnostics` records: Notification access,
+  the native "any account on" flag, the listener component state, the last listener connect and disconnect times,
+  the last mail-app notification that started no scan (time, package, reason), the installed accepted mail apps,
+  and how `MainActivity` was started (intent action, referrer, task root, restored).
+- R-2: The listener keeps its privacy contract: package name and post time only; nothing recorded for non-mail apps.
+- R-3: The installed-app check sees the apps (Android 11+ package visibility).
+
+**Affected components / files**: `MailNotificationPolicy.kt` (`ignoredReason`, pure); `MailNotificationListener.kt`
+(records the ignored mail-app notification; `onListenerConnected` / `onListenerDisconnected` stamps);
+`MainActivity.kt` (`onCreate` launch capture before `super.onCreate`; channel method `diagnostics`);
+`AndroidManifest.xml` (`<queries>` `<package>` for the five mail apps); `new_mail_trigger.dart` (`diagnostics`,
+`formatDiagnostics`, `parseLastIgnored`); `main.dart` (`_logNewMailTriggerOutcome` logs the snapshot first).
+
+**Existing abstraction checked**: `NewMailTrigger` and its channel (`com.myemailspamfilter/new_mail_trigger`) already
+carry `isAccessGranted` / `isEnabled` / `lastResult`; the new method joins that channel. `parseLastResult` is the model
+for `parseLastIgnored`.
+
+**Callers**: `_logNewMailTriggerOutcome` runs only when `hasNewMailNotificationTrigger` (Android foreground start,
+`main.dart:388`). The listener change runs on every posted notification; for non-mail apps it does nothing new.
+
+**Package visibility (Android docs, https://developer.android.com/training/package-visibility/declaring, read
+2026-10-21)**: *"If your app targets Android 11 (API level 30) or higher, the system makes some apps visible to your app
+automatically, but it filters out other apps by default."* Specific apps are declared as `<package android:name=...>`
+inside `<queries>`. Without them every mail app would read as absent.
+
+**Parity (ADR-0042)**: Android-only by mechanism: the listener is the ADR-0044 declared exception (Windows has none),
+and an Activity launch intent has no Windows counterpart (a Windows foreground start is a process start, logged
+already).
+
+**Acceptance criteria**:
+- AC-1: on the emulator (dev debug build), a foreground start writes one `new-mail-diagnostics` line with every part.
+- AC-2: the five `<queries>` packages equal `MAIL_APPS` (policy test).
+- AC-3: the Fold line is read from the first log after 0.21.0 reaches the phone (Phase 8 release), not in this sprint.
+
+**Tests to write**: T-1 TEST-UNIT `test/unit/services/new_mail_diagnostics_test.dart` (format, unknown and malformed
+input, channel failure, source gates for the listener records, the launch capture order, `<queries>` = `MAIL_APPS`,
+the `main.dart` call). T-2 JVM `MailNotificationPolicyTest` +2 (`ignoredReason`). What they do NOT catch: whether
+Android binds the listener or reports the referrer on a real phone.
+
+**Definition of Done**: default DoD plus AC-1 recorded below.
+
+**Model**: Opus (main session at Manual Validation) -- *why not the cheaper tier*: native plus Dart across a privacy
+contract and Android package visibility. **Est-Effort**: 60-90m.
+
+**Result (2026-10-21)**: T-1 10/10 pass; f253 and allow-list gates pass (the F-PRECHECK gate now pins the named
+`lastTriggerMsFor` value); T-2 19/19 (`gradlew :app:testDevDebugUnitTest`). Mutations T17-M1 (a mail app missing from
+`<queries>`), T17-M2 (ignored notification not recorded), T17-M3 (access always "on"), T17-M4 (snapshot not logged),
+T17-K1 (throttle reason dropped) all KILLED. **AC-1: PASS (2026-10-22, emulator `pixel34_updated`, dev debug APK
+built 10-21)**: the foreground start at 11:06:35.721 wrote `app start (foreground)`, and 13 ms later one line with
+every part: `[new-mail-diagnostics] access=on flag=on component=enabled listenerConnected=2026-10-22T11:05:51.724
+listenerDisconnected=never lastIgnored=none mailApps=com.google.android.gm launch: action=null
+referrer=android-app://com.android.shell taskRoot=true restored=false` (action is null because `am start -n` sends
+no action). The native prefs file also holds the new `listener_connected_ms` stamp. Not settled: an earlier start at
+11:04 (monkey launch right after install) wrote NO line at all, not even the generic `app start` line, so the gap is
+not in the Task 17 code; cause unknown, and the Fold line after the 0.21.0 release settles whether it occurs on a
+phone. The build script's emulator step auto-selected the old `Nexus_5X_API_29_x86` AVD, which did not boot in its
+60 s wait; `pixel34_updated` was started by hand and the APK installed with `adb install -r`.
+
 ---
 
 # Phase 5 evidence
@@ -1036,6 +1100,36 @@ suite `80-t16`: 3180 passed, 15 skipped, 0 failed, 0 load failures.
   - **MV-4 FAIL -> Task 16 (#504)**: the tray icon is missing (images 14-16; Windows Settings lists MyEmailSpamFilter
     as On from earlier starts). Cause and fix in the Task 16 card.
   - **MV-5**: blocked at step 1 by MV-4 (no tray Exit); it can use the toolbar Exit (X). Re-run on the Task 16 build.
+- **Harold's answers on the Task 16 build (2026-10-21 23:2x)**, verbatim: *"mv-4 [Image #18] mv-5 closed successfully
+  from the tray, started, [Image #19], opened in about 2 seconds | phone - see screenshots |gmail - re-signed in
+  earlier today - let me know when I can switch back to gmail via IMAP | 3. 1 4. 1 5. 1 6. 2 (should have happened -
+  please check logs) | need details on the adr's"*.
+  - **MV-4 PASS** (image 18: the tray menu Show Window / Run Scan Now / View Results / Settings / Exit).
+  - **MV-5 PASS**: Exit from the tray, window in about 2 s; image 19 shows the Gmail DEV task Running (a scan in
+    progress at that moment) and the other three Ready.
+  - **R-6 PASS** (`Screenshot_20261021_232306.png` unfolded, `Screenshot_20261021_232325.png` folded): Review No Rule
+    Items on the Fold (0.20.0) with the "No rule (2)", account, Folders and Sort chips and two rows (account, sender,
+    folder, date, subject, "No rule") -- the same pieces as Windows image 13.
+  - **MV-3 PASS on field evidence (Q6 = 2, "should have happened - please check logs")**: DEV `unmatched_emails`,
+    25 no-rule rows created 10-19 12:55 to 10-21 21:48. 21 left the mailbox and were marked `deleted` (hidden) within
+    one re-check of their last sighting, e.g. id 8166 ACM TechNews seen 11:12:32, hidden 12:14:47; id 8169 seen
+    17:18:47, hidden 18:20:50; id 8160 seen 13:01:19, hidden 14:06:19. 4 rows (8158, 8159, 8181, 8182) read
+    `available` at their last check and were then addressed by Harold (`processed=1`). Both halves of F276 shown on live
+    mail.
+  - **Q3 = 1**: iPhone cards F67a-d, F95 (revised), F95b accepted into the backlog (master plan heading updated).
+  - **Q4 = 1 (Task 1 R-8 / AC-2, Fix 2 decision)**: not needed; the release build already logs the stop reason
+    (`reason=deviceState raw=4`). Decision closed.
+  - **Q5 = 1**: the diagnostic line, Task 17 (#505).
+  - **R-2/R-4 package names**: all five `MAIL_APPS` ids are live Play listings (HTTP 200 each, 2026-10-21; an invented
+    id returns 404). Cause (c) remains only if AOL notifications come from an app outside the list.
+  - **Gmail `invalid_grant` timing (Sprint 79 R-6, cause previously UNVERIFIED)**: Fold sign-ins 10-05 16:09 and
+    10-13 00:34 (`browser sign-in succeeded (refresh token stored)`); first `invalid_grant` 10-12 17:27 and 10-20
+    11:16 -- each the first 12-hour renewal after the 7-day mark. Google, "Refresh token expiration"
+    (https://developers.google.com/identity/protocols/oauth2, read 2026-10-21): a project with an external user type
+    "and a publishing status of "Testing" is issued a refresh token expiring in 7 days", unless the only scopes are
+    name, email and profile. Consistent twice; the project's publishing status is still UNVERIFIED (Google Cloud
+    Console > OAuth consent screen would settle it). Harold may move the Fold's Gmail back to IMAP now: nothing in
+    Sprint 80 still needs Google sign-in on the phone.
 - **Task 2 R-3 (F277, the 0.3% versus 1.5% spread between the two arm-B nights) -- cause unknown, desk analysis of
   the Sprint 79 night log (`SPRINT_79_PLAN.md` "Night log")**:
   - Night 10-14/15: on battery about 01:00-05:52 (91% to 84%, 7 points), screen on 29 m, **44** completed AOL scans
@@ -1065,6 +1159,9 @@ Build: Windows DEV 0.21.0 with Tasks 15 and 16 (built 2026-10-21 23:1x from the 
 (`D:\Data\Harold\github\spamfilter-multi\mobile-app\dist\dev\MyEmailSpamFilter-Dev.exe`, title `MyEmailSpamFilter [DEV]`, the same exe the four DEV background tasks run every 5 minutes). DEV is read-only (scan
 mode), so no step changes mail except the one you make yourself in MV-3. Since Task 15 (2026-10-21 build) the
 window appears in about 2 seconds.
+
+**Status 2026-10-22: MV-1 to MV-5 all PASS** (MV-3 on field evidence; MV-4 tray and MV-5 on the Task 16 build, Harold
+images 18-19). No Windows step remains. Open at Manual Validation: the ADR-0049 and ADR-0050 decisions.
 
 - **MV-1 (F269, YAML import Merge, the default)**.
   - Preconditions: the DEV app open. The file `C:\Users\kimme\Documents\Sprint80_MV\rules_merge_test.yaml` holds 2
@@ -1115,20 +1212,24 @@ window appears in about 2 seconds.
     from 2.2 s to 25.5 s; 4 DEV tasks Ready. Again on the Task 16 build (23:1x): tray right-click > Exit ended the
     process, and a new start showed the window at 1.7 s.
 - **Phone (Fold, 0.20.0 from Play) -- Task 1 MV76-1, Task 2 F277, Task 12 F299**: the full remainder, re-presented:
-  - R-1: Settings > Background screenshot (the Background note).
+  - Status 2026-10-22: NO phone step remains. Every R-item below has a result.
+  - R-1: DONE (`Screenshot_20261021_131359.png`).
   - R-2: a scan started by a mail app's new-mail notification (`trigger=notification` in the diagnostic log).
     NEVER seen on a real phone (2026-10-21 finding). Notification access is ON (Harold, 2026-10-21; do not ask
-    again). No further phone check is asked; the next step is Harold's Q5 decision (a diagnostic line).
+    again). Harold Q5 = 1: Task 17 (#505) adds the `new-mail-diagnostics` line (emulator AC-1 PASS 2026-10-22). The
+    cause is read from the first Fold log after the 0.21.0 Play release (Phase 8); no phone step now.
   - R-3: DONE (Harold: tested before and works; 10-07 log).
   - R-4: DONE as far as the log goes (Phase 5 evidence, "Harold's dispositions"): `MainActivity` ran `main()` at boot;
     what created it is unknown.
-  - R-5: one completed iCloud background scan (candidate already: 07:54:55 today, found 0, errors 0).
-  - R-6 (F283, Review No Rule Items on the shared Results pieces): on the Fold, open MyEmailSpamFilter. With
+  - R-5: DONE (iCloud background scan 2026-10-21 07:54:55 completed, found 0, errors 0).
+  - R-6: DONE 2026-10-21 (Harold's two screenshots, 23:23). The step as handed over:
+  - (R-6 step) (F283, Review No Rule Items on the shared Results pieces): on the Fold, open MyEmailSpamFilter. With
     accounts set up, the first screen is Review No Rule Items (`main_navigation_screen.dart:92-94`). Take ONE
     screenshot of that screen as it is (an empty list is fine). It must show: the title "Review No Rule Items", the
     "Unaddressed "No rule" emails" header, and the chips "No rule (N)", the account chip, "Folders: ..." and "Sort:
     ..." -- the same pieces as Windows image 13. If the list has rows, the screenshot also shows the row format.
-  - R-7: one day of normal use on 0.20.0 for the F205 error classification (or zero).
-  - R-8: the `stopped by WorkManager before it finished: reason=... raw=...` line, then your Fix 2 decision.
+  - R-7: DONE (F205 classification, 0.20.0, 10-19 06:00 to 10-21 13:1x).
+  - R-8: DONE (stop line seen on the release build); Harold Q4 = 1: Fix 2 not needed.
+  - Gmail on the Fold: Harold may switch it back to IMAP now; nothing left in Sprint 80 needs Google sign-in.
   - F277: CLOSED by Harold 2026-10-21 (arm A and arm C complete); floor stays at 5.
   - F299: nothing to do beyond R-7's day of use; recorded so far: 0 class-B rows on Android 17.

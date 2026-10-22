@@ -5,6 +5,32 @@ can you write a effective but compact /compact string I can use to compact where
 Manual Validation complete
 ---------------------------------------------------------------------------------------------------------
 Sprint 7n Manual Validation Feedback 
+---------------------------------------------------------------------------------------------------------
+Sprint 80 Manual Validation Feedback 
+  Windows steps (DEV app, D:\Data\Harold\github\spamfilter-multi\mobile-app\dist\dev\MyEmailSpamFilter-Dev.exe)
+  - MV-1 (F269): Settings > General > Import / Export YAML > Import Rules, then pick C:\Users\kimme\Documents\Sprint80_MV\rules_merge_test.yaml. Keep
+    Merge and press Merge 2 rules.
+    - Expected: Merged rules: 1 added, 1 skipped as duplicate, 0 skipped as invalid.
+    - Expected: the count goes from 2,202 to 2,203, and MV80 is found.
+see image 8
+  - MV-2 (F298): Manage Rules, search MV80, press Delete, then Delete again.
+    - Expected: Deleted: ... with no "restart the app" ending, and the count back to 2,202.
+see image 9-12
+  - MV-3 (F276): in AOL, move or delete the Speedpay "AutoPay Payment Processed" email. Wait up to 65 minutes, then press Refresh on Review No Rule
+    Items.
+    - Expected: the row is gone.
+see image 13
+  - MV-4 (F294): Expected: the Exit (X) button on the toolbar, flat dark surfaces, and the tray icon present.
+see prior images
+  - MV-5 (Task 15):
+    a. Exit the DEV app (tray > Exit).
+Not in the tray see image 14
+Turned on see image 15
+Still not in the tray see image 16
+    b. Start it again.
+    c. Within 30 s, open Settings > Background, without changing anything.
+    - Expected: the window appears in about 2 s, and Settings opens normally.
+    - Expected: a minute later, Task Scheduler lists the four SpamFilterBackgroundScan_*_Dev tasks as Ready.
 
 ---------------------------------------------------------------------------------------------------------
 Sprint 78 Manual Validation Feedback 
