@@ -1130,6 +1130,13 @@ phone. The build script's emulator step auto-selected the old `Nexus_5X_API_29_x
     name, email and profile. Consistent twice; the project's publishing status is still UNVERIFIED (Google Cloud
     Console > OAuth consent screen would settle it). Harold may move the Fold's Gmail back to IMAP now: nothing in
     Sprint 80 still needs Google sign-in on the phone.
+- **Harold's ADR and Gmail decisions (2026-10-22)**, verbatim: *"q1 1 q2 1 q3 1"*.
+  - **Q1 = 1: ADR-0049 ACCEPTED** (status line and `docs/adr/README.md` updated).
+  - **Q2 = 1: ADR-0050 ACCEPTED** (status line, README, `F295_IOS_READINESS.md` and the master-plan iOS heading
+    updated).
+  - **Q3 = 1: backlog card F301** (Gmail sign-in expires every 7 days for every closed tester) added to the master plan.
+    ADR-0029 already accepts the weekly sign-in for its Phase 1; F301 picks the path out of it.
+  - **Manual Validation complete**: MV-1 to MV-5 PASS, every phone item has a result, no decision is open.
 - **Task 2 R-3 (F277, the 0.3% versus 1.5% spread between the two arm-B nights) -- cause unknown, desk analysis of
   the Sprint 79 night log (`SPRINT_79_PLAN.md` "Night log")**:
   - Night 10-14/15: on battery about 01:00-05:52 (91% to 84%, 7 points), screen on 29 m, **44** completed AOL scans
@@ -1161,7 +1168,7 @@ mode), so no step changes mail except the one you make yourself in MV-3. Since T
 window appears in about 2 seconds.
 
 **Status 2026-10-22: MV-1 to MV-5 all PASS** (MV-3 on field evidence; MV-4 tray and MV-5 on the Task 16 build, Harold
-images 18-19). No Windows step remains. Open at Manual Validation: the ADR-0049 and ADR-0050 decisions.
+images 18-19). No Windows step remains. ADR-0049 and ADR-0050 ACCEPTED 2026-10-22 (Q1 = 1, Q2 = 1); Manual Validation complete.
 
 - **MV-1 (F269, YAML import Merge, the default)**.
   - Preconditions: the DEV app open. The file `C:\Users\kimme\Documents\Sprint80_MV\rules_merge_test.yaml` holds 2

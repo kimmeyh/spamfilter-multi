@@ -2,7 +2,7 @@
 
 ## Status
 
-Proposed (Sprint 80, F295, GitHub #494). Harold approves or amends at Manual Validation.
+Accepted (Harold, Sprint 80 Manual Validation, 2026-10-22, Q2 = 1). Proposed in Sprint 80, F295, GitHub #494.
 
 ## Date
 

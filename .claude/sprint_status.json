@@ -1,12 +1,12 @@
 {
     "_description": "Sprint status file that persists across context compaction. Update after each phase/sub-phase completion.",
-    "_last_updated": "2026-10-19T10:15:00-04:00",
+    "_last_updated": "2026-10-22T11:30:00-04:00",
     "_usage": "Read this file after context compaction to restore sprint approval state and progress.",
     "_staleness_note": "This file had drifted 15 sprints (last updated at Sprint 35, 2026-04-19) before being refreshed at Sprint 50 close-out. It is a Phase 7.7 checklist item -- update it at every sprint close-out, not opportunistically.",
     "current_sprint": {
         "number": 80,
         "branch": "feature/20261018_Sprint_80",
-        "status": "Phase 5.3 Manual Validation -- handed over 2026-10-19 10:1x on the DEV build of 6dc572c5 (MV-1 to MV-4 Windows, phone remainder for Tasks 1, 2, 12); 5.1.2, 5.1.5 and 5.1.9 recorded in SPRINT_80_PLAN.md; full suite 3170 passed / 15 skipped / 0 failed.",
+        "status": "Phase 7.3 Sprint Retrospective -- Manual Validation complete 2026-10-22 (MV-1 to MV-5 PASS, every phone item has a result, ADR-0049 and ADR-0050 ACCEPTED, F301 backlogged). Tasks 0-17 (no 11) done; Tasks 15-17 added at MV (#503 #504 #505). Full suite 3189 passed / 15 skipped / 0 failed (80-t17). PR #490 still DRAFT.",
         "plan_approved": true,
         "pr_number": 490,
         "version": "0.21.0+18 (bumped at 3.7.0b)"
@@ -27,16 +27,16 @@
         "sprint_78": "Closed by hand 2026-10-13: #473 #474 #475 #476 #478 (#477 closed earlier). Open, moved to Sprint 79: #471 (MV76-1, with #428 and #433), #472 (F277).",
         "sprint_79_closed": "Closed by the PR #480 merge (Closes keywords, develop default branch) 2026-10-18: #481 #482 #483 #484 #485 #486 #487 #488. Open for Sprint 80: #471 (with #433, #428), #472.",
         "sprint_79": "Task 0 #481 (version), Task 1 #471 (MV76-1; inside it #433 F205, #428 MV74-1), Task 2 #472 (F277), Task 3 #482 (F286), Task 4 #483 (F287), Task 5 #484 (F288), Task 6 #485 (F291), Task 7 #486 (F292), Task 8 #487 (F293)",
-        "sprint_80": "Task 0 #491, Task 1 #471 (with #433 F205, #428 MV74-1), Task 2 #472 (F277), Task 3 #492 (F292), Task 4 #493 (F294), Task 5 #494 (F295), Task 6 #495 (F296), Task 7 #496 (F298), Task 8 #497 (F267), Task 9 #498 (F268), Task 10 #499 (F269), Task 12 #500 (F299), Task 13 #501 (F276), Task 14 #502 (F204). F289 removed (Q4b = 2)."
+        "sprint_80": "Task 0 #491, Task 1 #471 (with #433 F205, #428 MV74-1), Task 2 #472 (F277), Task 3 #492 (F292), Task 4 #493 (F294), Task 5 #494 (F295), Task 6 #495 (F296), Task 7 #496 (F298), Task 8 #497 (F267), Task 9 #498 (F268), Task 10 #499 (F269), Task 12 #500 (F299), Task 13 #501 (F276), Task 14 #502 (F204), Task 15 #503, Task 16 #504, Task 17 #505. F289 removed (Q4b = 2)."
     },
     "_github_issues_note": "Sprint 66 cards created at Phase 3.3.1 (2026-09-07): #387 GP-19, #388 GP-4. Close by hand at Post-Merge Cleanup.",
     "test_metrics": {
-        "suite": "3,092 passed / 15 skipped / 0 failed (run-full-suite.ps1 79-771c, 2026-10-18, after Harold's 7.7.1 decisions Q1/Q2/Q3; 0 load failures, peak commit 52.2 GB)",
+        "suite": "3,189 passed / 15 skipped / 0 failed (run-full-suite.ps1 80-t17, 2026-10-22, after Task 17; 0 load failures, peak commit 57.1 GB)",
         "policy_suite": "JVM 21/21; release_notes_test passing; hook suite 128/128 (2026-10-08)",
         "winwright": "2026-10-17 sweep-head 80d92c6: f124 PASS 29/29, s75 PASS 27/27 (re-run alone; first launch in the full sweep failed, cause unknown), no skipped steps, DB drift none",
         "analyzer": "clean",
         "mutations": "Sprint 77: F258 M1/M2/M4 + L1/L2, F245 21, F192 25, SEC-8b 16, F264 24, R76-1 5, merge M1/M2, F-PRECHECK 15 -- all KILLED",
-        "as_of": "2026-10-17, Sprint 79 Phase 5"
+        "as_of": "2026-10-22, Sprint 80 Phase 7 (suite); other lines as dated"
     },
     "store_release": {
         "status_0_15_3": "NOT SUBMITTED TO EITHER STORE. Harold, 2026-09-22: \"not pushing to either store this time\". Phase 8.3 explicitly N/A for this cycle.",
@@ -57,8 +57,8 @@
     ],
     "blocking_issues": [],
     "next_actions": [
-        "Execute Tasks 0-14 (no 11) to Manual Validation; ADR-0049 and ADR-0050 approved by Harold at Manual Validation.",
-        "Phone tasks (1, 2, 12) start when Play shows 0.20.0 on the Fold."
+        "Phase 7: 7.1 Windows build of HEAD, 7.3 retrospective prompt to Harold, Claude draft, then Steps 3-7; gh pr ready + 7.7.1 final reviews at the end of 7.7.",
+        "Phase 8: read the Fold new-mail-diagnostics line (Task 17) from the first 0.21.0 Play log to settle R-2."
     ],
     "next_sprint_targeted": {
         "number": 80,

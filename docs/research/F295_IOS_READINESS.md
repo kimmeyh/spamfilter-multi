@@ -2,7 +2,7 @@
 
 **Sprint**: 80, Task 5 (GitHub #494). **Type**: time-boxed research spike. No app code changed.
 **Date of research**: 2026-10-19. Every source below was read on 2026-10-19 unless a different date is given.
-**Companion ADR**: `docs/adr/0050-ios-parity-exceptions.md` (Status: Proposed).
+**Companion ADR**: `docs/adr/0050-ios-parity-exceptions.md` (Status: Accepted by Harold 2026-10-22, Sprint 80 Manual Validation).
 
 **Quotation convention**: quotations are verbatim. The only normalization is punctuation: a curly apostrophe is
 written as `'` and an em dash inside a quotation is written as ` -- `. Nothing else is changed. Apple developer

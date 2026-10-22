@@ -2,8 +2,8 @@
 
 ## Status
 
-Proposed (Harold approves at Sprint 80 Manual Validation; the Class-1 change itself was approved at Sprint 80 plan
-approval, 2026-10-19, Q1 = 1: *"q1 a - and do any adr approval at Manual Validation"*)
+Accepted (Harold, Sprint 80 Manual Validation, 2026-10-22, Q1 = 1). The Class-1 change itself was approved at Sprint
+80 plan approval, 2026-10-19, Q1 = 1: *"q1 a - and do any adr approval at Manual Validation"*.
 
 ## Date
 

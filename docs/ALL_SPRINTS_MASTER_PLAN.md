@@ -847,6 +847,23 @@ _(No active Core App candidates -- F96 shipped in Sprint 43.)_
 - What would settle the per-step cost: time each `ww_*` call in one script run (the WinWright run report or a
   stopwatch around each step), then compare with the semantics-tree build delay seen in Sprint 80 (10-41 s after the
   window, cause unknown).
+
+**F301. Gmail sign-in expires every 7 days for every closed tester (~30-60m decision, then per path) Priority 20 -- backlog (Harold Q3 = 1, 2026-10-22)**
+- Phase: Google Play Readiness
+- Platform: Android and Windows (both use Google OAuth for Gmail; ADR-0042 parity, no exception)
+- Origin: Sprint 80 Manual Validation. The Fold's Gmail sign-ins on 10-05 16:09 and 10-13 00:34 each failed at the
+  first 12-hour renewal after day 7 (10-12 17:27 and 10-20 11:16). The OAuth consent screen is still in "Testing" with
+  an external user type, and the project is unverified. ADR-0029 already accepts this as the cost of its Phase 1
+  ("Alpha/beta testers must re-authenticate weekly").
+- What the app does today (F239, Sprint 75): `GmailSignInRequiredException` flags the account "Sign In Again", keeps
+  its tokens, and a background scan records a SKIP. So no scan errors pile up, but Gmail is not scanned until the
+  tester signs in again.
+- Decide the path (ADR-0029 names them): (a) keep Phase 1 and tell testers about the weekly sign-in (tester
+  instructions, and check that a background skip notifies the user); (b) ADR-0029 Phase 2, Gmail by app password
+  over IMAP (the path Harold uses on the Fold); (c) ADR-0029 Phase 3, CASA verification for long-lived tokens (2-6
+  months lead time, yearly cost; trigger thresholds in ADR-0029).
+- Unverified, settle first: what Google does to refresh tokens if the consent screen moves to "In production" without
+  verification. Read Google's own OAuth documentation before proposing that route.
 - AC: the default sweep finishes in under 5 minutes with 0 skipped steps and no DB drift, or the per-step cost is
   named with its mechanism and a vendor or source citation.
 
@@ -994,9 +1011,9 @@ _(F142 shipped Sprint 57 -- see `docs/sprints/SPRINT_57_PLAN.md` and CHANGELOG.m
   alongside F70 (Security), F71 (Architecture), F130 (Process-Docs), F152 (First-Run), F173
   (Test Coverage) and F189 (Skills).
 
-### iOS readiness cards from F295 (Sprint 80; cards ACCEPTED into the backlog by Harold 2026-10-21, Q3 = 1; ADR-0050 decision pending)
+### iOS readiness cards from F295 (Sprint 80; cards ACCEPTED into the backlog by Harold 2026-10-21, Q3 = 1; ADR-0050 ACCEPTED 2026-10-22)
 
-Source: `docs/research/F295_IOS_READINESS.md`. These replace the iOS parts of F67 and F95 once ADR-0050 is accepted; Linux and macOS stay on F67, and the Windows/Android multi-variant polish stays on F95.
+Source: `docs/research/F295_IOS_READINESS.md`. These replace the iOS parts of F67 and F95 (ADR-0050 accepted 2026-10-22); Linux and macOS stay on F67, and the Windows/Android multi-variant polish stays on F95.
 
 **F67a. iOS prerequisites: Apple Developer enrollment, Mac, iOS OAuth client (~3-6h plus Apple and D-U-N-S lead time) Priority HOLD**
 - Phase: Multi-Platform Readiness
