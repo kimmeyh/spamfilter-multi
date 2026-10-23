@@ -51,13 +51,27 @@ class MailNotificationListener : NotificationListenerService() {
             // Per provider set (F-PRECHECK): the throttle key and the work
             // name both come from the posting app's providers, so a Gmail
             // trigger never drops an AOL one.
+            val enabled = prefs.getBoolean(KEY_ENABLED, false)
+            val lastTriggerMsFor = { key: String -> prefs.getLong(key, 0L) }
             val trigger = MailNotificationPolicy.decide(
                 packageName = pkg,
-                enabled = prefs.getBoolean(KEY_ENABLED, false),
+                enabled = enabled,
                 nowMs = now,
-                lastTriggerMsFor = { key -> prefs.getLong(key, 0L) },
+                lastTriggerMsFor = lastTriggerMsFor,
                 debugBuild = BuildConfig.DEBUG,
-            ) ?: return
+            )
+            if (trigger == null) {
+                // Sprint 80 Task 17 (#505): a mail app's notification that
+                // started no scan is recorded (package name, time, reason --
+                // nothing from the notification). Other apps are not recorded.
+                val reason = MailNotificationPolicy.ignoredReason(
+                    pkg, enabled, now, lastTriggerMsFor, BuildConfig.DEBUG,
+                )
+                if (reason != null) {
+                    prefs.edit().putString(KEY_LAST_IGNORED, "$now|$pkg|$reason").apply()
+                }
+                return
+            }
 
             DozeScanTrigger.enqueueAllAccounts(
                 applicationContext,
@@ -87,9 +101,33 @@ class MailNotificationListener : NotificationListenerService() {
         }
     }
 
+    // Sprint 80 Task 17 (#505): when Android last bound and unbound this
+    // listener. A connect time is the only direct proof that the listener runs
+    // (Notification access ON in Settings does not prove it is bound).
+    override fun onListenerConnected() {
+        stamp(KEY_CONNECTED_MS)
+    }
+
+    override fun onListenerDisconnected() {
+        stamp(KEY_DISCONNECTED_MS)
+    }
+
+    private fun stamp(key: String) {
+        try {
+            applicationContext.getSharedPreferences(PREFS, Context.MODE_PRIVATE)
+                .edit().putLong(key, System.currentTimeMillis()).apply()
+        } catch (t: Throwable) {
+            Log.e(TAG, "stamp $key failed: ${t.javaClass.simpleName}: ${t.message}")
+        }
+    }
+
     companion object {
         private const val TAG = "MailNotificationListener"
         const val PREFS = "f253_new_mail_trigger"
+        /** "<epoch ms>|<package>|<reason>" of the last mail-app notification that started no scan. */
+        const val KEY_LAST_IGNORED = "last_ignored"
+        const val KEY_CONNECTED_MS = "listener_connected_ms"
+        const val KEY_DISCONNECTED_MS = "listener_disconnected_ms"
         const val KEY_ENABLED = "enabled"
         // The last-trigger time is kept per provider set under
         // MailNotificationPolicy.throttlePrefKey(...) (Sprint 77 F-PRECHECK);

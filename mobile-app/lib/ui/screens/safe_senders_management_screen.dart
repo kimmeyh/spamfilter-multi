@@ -15,6 +15,11 @@ library;
 import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:logger/logger.dart';
+import 'package:provider/provider.dart';
+import '../../core/platform/platform_capabilities.dart';
+import '../../core/providers/rule_set_provider.dart';
+import '../../core/services/rule_quick_action_service.dart'
+    show reloadRulesAfterWrite;
 import '../../core/storage/database_helper.dart';
 import '../../core/storage/safe_sender_database_store.dart';
 import '../widgets/copy_all_shortcut.dart';
@@ -203,6 +208,7 @@ class _SafeSendersManagementScreenState
   }
 
   Future<void> _deleteSafeSender(SafeSenderPattern sender) async {
+    final provider = Provider.of<RuleSetProvider>(context, listen: false); // F298
     final confirmed = await showDialog<bool>(
       context: context,
       builder: (ctx) => AlertDialog(
@@ -254,9 +260,11 @@ class _SafeSendersManagementScreenState
       try {
         await _store.removeSafeSender(sender.pattern);
         _logger.i('Deleted safe sender: ${sender.pattern}');
+        // F298: the in-memory safe senders must follow the database.
+        final reloadNote = await reloadRulesAfterWrite(provider);
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text('Safe sender deleted')),
+            SnackBar(content: Text('Safe sender deleted$reloadNote')),
           );
         }
         await _loadSafeSenders();
@@ -780,7 +788,7 @@ class _SafeSendersManagementScreenState
       while (normalizedPath.endsWith('/') || normalizedPath.endsWith('\\')) {
         normalizedPath = normalizedPath.substring(0, normalizedPath.length - 1);
       }
-      final separator = Platform.isWindows ? '\\' : '/';
+      final separator = PlatformCapabilities.current.pathSeparator;
       final timestamp =
           DateTime.now().toIso8601String().replaceAll(':', '-').split('.')[0];
       final filename = 'manage_safe_senders_filtered_$timestamp.csv';

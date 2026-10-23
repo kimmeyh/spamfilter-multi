@@ -31,8 +31,9 @@ object MailNotificationPolicy {
      * extend here only -- the Dart side reads the resolved set from the work
      * payload and keeps no copy of this table.
      *
-     * Unverified until the Fold validation: the AOL and Yahoo package names
-     * (from their Play listings, not checked on a device this sprint).
+     * All five verified as live Google Play listings on 2026-10-21 (HTTP 200
+     * for each `details?id=`; an invented id returns 404). Sprint 80 Task 17:
+     * each is also declared in the manifest's <queries> -- keep both in step.
      */
     private val MAIL_APPS: Map<String, Set<String>?> = mapOf(
         "com.google.android.gm" to setOf(GMAIL),                  // Gmail
@@ -167,5 +168,24 @@ object MailNotificationPolicy {
         )
         if (!ok || providers.isEmpty()) return null
         return NewMailTrigger(providers, key, newMailWorkName(providers))
+    }
+
+    /**
+     * Sprint 80 Task 17 (#505): why a MAIL APP's notification started no scan,
+     * for the diagnostic line; null when it would start one, and null for any
+     * app that is not an accepted mail app (those are never recorded). Same
+     * inputs as [decide].
+     */
+    fun ignoredReason(
+        packageName: String?,
+        enabled: Boolean,
+        nowMs: Long,
+        lastTriggerMsFor: (String) -> Long,
+        debugBuild: Boolean = false,
+    ): String? {
+        if (packageName == null || packageName !in allowedPackages(debugBuild)) return null
+        if (!enabled) return "switch off"
+        if (decide(packageName, enabled, nowMs, lastTriggerMsFor, debugBuild) != null) return null
+        return "within 2 minutes of the last scan"
     }
 }

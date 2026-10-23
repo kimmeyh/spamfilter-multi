@@ -218,7 +218,7 @@ namespace).
 | **WindowsTaskSchedulerService** | Create/manage Windows Task Scheduler tasks; per-account tasks (ADR-0014, ADR-0039 F98) -- `taskNameFor(accountId)`, enumerate/orphan cleanup |
 | **ScanNotificationText** (`scan_notification_text.dart`, F286 Sprint 79) | Shared title, body and per-account notification ID (FNV-1a) for the background-scan completion notification; mode word in the title, struck counts in the HTML body (ADR-0048) |
 | **ScanCompleteNotifier** (`scan_complete_notifier.dart`, F287 Sprint 79) | Posts that notification on BOTH platforms through flutter_local_notifications 22.x: Android channel with HTML body, Windows toast with plain body (declared exception, ADR-0048; supersedes ADR-0018) |
-| **WindowsSystemTrayService** | System tray icon with context menu (ADR-0019) |
+| **WindowsSystemTrayService** | System tray icon with context menu (ADR-0019). The icon file resolves from the exe folder (`trayIconPath(Platform.resolvedExecutable)` -> `data\flutter_assets\windows\runner\resources\app_icon.ico`), never from the working directory, and a right-click calls `popUpContextMenu()` (Sprint 80 Task 16) |
 | **PowershellScriptGenerator** | Generates PowerShell scripts for Task Scheduler |
 
 #### Other Services
@@ -243,6 +243,16 @@ namespace).
 | **RuleQuickActionService** (F39, Sprint 46) | Screen-agnostic core of the "quick add safe sender" / "quick add block rule" actions (`addSafeSender`, `createBlockRule` -- pattern generation, Issue #154 conflict resolution via `RuleConflictResolver`, DB persist + provider reload, BUG-S39-1 rule-name sanitization). Extracted from `ResultsDisplayScreen`'s previously-inline `_addSafeSender`/`_createBlockRule` so the per-email detail-sheet flow and the F39 cross-account bulk actions share one implementation. Deliberately excludes the re-evaluate/re-process/notify tail, which stays screen-owned (it depends on per-screen in-memory scan state). Companion extraction: `PatternNormalization.extractRootDomain` (subdomain -> registrable-domain heuristic) |
 
 ---
+
+### Platform Seam (`lib/core/platform/`, F294 Sprint 80, ADR-0049)
+
+Every Windows / Android (and later iOS) difference is a getter, not a scattered `Platform.isX` check.
+
+- **`PlatformCapabilities`** (`platform_capabilities.dart`): what the code CAN do on this host (SQLite via FFI, system tray, background scan mechanism, Gmail sign-in flow, export location, notification delivery, sockets closing when backgrounded, and so on). Read as `PlatformCapabilities.current.<getter>`.
+- **`PlatformPolicy`** (`platform_policy.dart`): what the app SHOULD do on this host (flat Fluent-style surfaces, the Exit button). Read as `PlatformPolicy.current.<getter>`.
+- **`detectHostPlatform()`** (`host_platform.dart`) is the ONLY place in `lib/` that reads `Platform.isX`. `test/policy/platform_check_seam_test.dart` fails on any other.
+- **One test seam**: set `PlatformCapabilities.debugOverride` / `PlatformPolicy.debugOverride` (a fixed `HostPlatform`, or a subclass that changes one answer) and reset it to null in `tearDown`. It replaced the four ad hoc `debugIsAndroid` / `isAndroidOverride` seams.
+- Each getter's doc comment states its answer on Windows, Android and iOS. The per-site mapping is in `docs/adr/0049-platform-capabilities-and-policy.md`.
 
 ### Security Services (`lib/core/security/`)
 
@@ -384,7 +394,7 @@ SQLite database schema. See [ADR-0010](adr/0010-normalized-database-schema.md) f
 | **app_settings** | Global app settings | key-value pairs |
 | **account_settings** | Per-account setting overrides (ADR-0013) | account_id, setting key-value pairs |
 | **background_scan_log** | Background scan execution logs | timestamp, account_id, status, stats |
-| **unmatched_emails** | Emails captured by scans that did not match any rule. Body previews truncated to 100 chars at insert (SEC-14); rows pruned by `UnmatchedEmailStore.deleteOlderThan` on startup + after each scan (default 90d, configurable; the cut is on `last_seen_at`, F245) | id (PK), scan_result_id (FK), provider_identifier_type/value, from_email, subject, body_preview, folder_name, availability_status, processed, created_at (first seen), last_seen_at (v12, last scan that saw the email). ONE row per email: identity = (account via `scan_results`, provider_identifier_type, provider_identifier_value, folder_name), written only by `UnmatchedEmailStore.upsertUnmatchedEmails` (F245, ADR-0045) |
+| **unmatched_emails** | Emails captured by scans that did not match any rule. Body previews truncated to 100 chars at insert (SEC-14); rows pruned by `UnmatchedEmailStore.deleteOlderThan` on startup + after each scan (default 90d, configurable; the cut is on `last_seen_at`, F245) | id (PK), scan_result_id (FK), provider_identifier_type/value, from_email, subject, body_preview, folder_name, availability_status, processed, created_at (first seen), last_seen_at (v12, last scan that saw the email). ONE row per email: identity = (account via `scan_results`, provider_identifier_type, provider_identifier_value, folder_name), written only by `UnmatchedEmailStore.upsertUnmatchedEmails` (F245, ADR-0045). `availability_status` (F276, Sprint 80): after each folder fetch the scanner asks the adapter (`MessagePresenceChecker`: IMAP `UID SEARCH UID ...`, Gmail `messages.get` labels) whether the folder's listed rows still exist (`no_rule_presence_reconciler.dart`, at most once an hour per row) and writes `available` / `deleted` / `moved`; Review hides `deleted` and `moved`; every sighting (insert or re-sighting) writes `available` with the sighting time, so a row that comes back is listed again and a row the scan just saw is not re-checked within the hour |
 | **auth_rate_limit** (DB v3, SEC-22 Sprint 33) | Tracks failed IMAP auth attempts per account for rate limiting | account_id (PK), window_start, attempts, block_until |
 
 **Schema version history**:
@@ -464,8 +474,12 @@ Reactive state using Provider pattern (ADR-0009).
 - Stores: `RuleDatabaseStore` (primary), `SafeSenderDatabaseStore`, `LocalRuleStore` (secondary YAML), `PatternCompiler`
 - `reloadFromDatabase()` (Sprint 79, F297): the ONE reload used after anything writes rules or safe senders outside
   the provider -- YAML import, scan completion, quick actions, Results rule updates. Returns false when either load
-  failed (each load catches its own error), so a caller can report it. Shared code, both platforms (ADR-0042, no exception). Management
-  and quick-add screens do not call it yet (F298, Sprint 80).
+  failed (each load catches its own error), so a caller can report it. Shared code, both platforms (ADR-0042, no exception). Since
+  F298 (Sprint 80) every screen that writes straight to storage -- Manage Rules, Edit Rule, Manage Safe Senders, both
+  quick-add screens, Manual Rule Create, Settings > Reset to Defaults -- calls it through `reloadRulesAfterWrite`
+  (`rule_quick_action_service.dart`), which appends "saved, but not yet in effect" when the reload fails. The gate
+  `test/policy/f298_rule_write_reload_gate_test.dart` fails any `lib/ui/` file that writes rules without reloading.
+  A Merge import stopped part-way reloads what it added before the error (`ImportMergeInterruptedException`).
 
 **Methods**:
 - `initialize()`: Load rules from database + run YAML-to-DB migration if needed
@@ -510,16 +524,33 @@ main.dart
        -> BackgroundScanWindowsWorker.executeBackgroundScan()
        -> exit(0)
   5. SecureCredentialsStore.migrateFromLegacyTokenStore()
-  6. WindowsSystemTrayService.initialize() [Windows only]
+  6. WindowsSystemTrayService.initialize() [Windows only; returns whether the icon was added and
+     writes "[tray] icon added" or "icon NOT added -- <reason>" to the diagnostic log]
   7. (removed Sprint 79: no notification start-up step; ScanCompleteNotifier initializes the plugin when it posts, ADR-0048)
-  8. WindowsTaskSchedulerService.verifyAndRepairTaskPath() [Windows release only, incl. MSIX -- F148, Sprint 56]
-  9. WindowsTaskSchedulerService.ensureTaskExists() [Windows release only, incl. MSIX -- F148, Sprint 56]
-  10. MultiProvider
+  8. MultiProvider
         |- RuleSetProvider
         |- EmailScanProvider
-  11. runApp(SpamFilterApp)
+  9. runApp(SpamFilterApp)
         -> MainNavigationScreen [Entry point]
+  10. _reconcileWindowsBackgroundTasks() [Windows release only, incl. MSIX -- F148; AFTER runApp since Sprint 80, not awaited]
+        -> holds WindowsTaskSchedulerService.runExclusive for the whole run
+        -> F98 migration, F264 conversions, then per account:
+           verifyAndRepairTaskPath() + ensureTaskExists() (or delete if disabled)
+        -> enumerateAccountTasks(): delete the legacy global task and orphans
 ```
+
+**Why step 10 runs after `runApp` (Sprint 80, Harold Q4 = 2)**: each Task Scheduler call is
+one PowerShell process of about 3 s. Awaited before `runApp`, the 9 calls of a 4-account DEV
+install kept the window hidden for 30.9 s; after the move the window appears at 1.8 s and the
+same 9 calls finish about 26 s later. Settings' `schedule` and `cancel` (through
+`WindowsSchedulerAdapter`) take the same in-process lock, `runExclusive`, and since PR #490 7.7.1
+so does the Background tab's stored value (enable switch and Scan every, written and rescheduled
+in one locked section), so a change made in Settings during those seconds lands wholly before or
+after the reconciliation, and the F264 conversion cannot write back over it. Without the lock,
+step 3 could delete a task Settings created after step 2 had read the account's setting. The
+lock is reentrant (the F264 conversion schedules through the adapter from inside the
+reconciliation). It is in-process only: the background-scan process exits at step 4 and never
+changes tasks.
 
 ### Email Scanning Flow
 
@@ -678,6 +709,14 @@ the switch on) and the worker scans an account only when that provider matches
 AND the account's own switch is on AND its background switch is on
 (`accountSelectedByNotification`). Off by default; needs Android Notification
 access. Hidden on Windows (declared ADR-0042 exception, ADR-0044 amendment).
+Diagnostics (Sprint 80 Task 17): at every foreground start `main.dart` writes
+one `new-mail-diagnostics` line (channel method `diagnostics`, formatted by
+`NewMailTrigger.formatDiagnostics`): notification access, the native flag, the
+listener component state, the last listener connect and disconnect, the last
+ignored notification and its reason (`MailNotificationPolicy.ignoredReason`),
+the installed mail apps, and the launch reason. The installed-app check needs
+the five `MAIL_APPS` packages declared in the manifest `<queries>` block
+(Android 11+ package visibility); a policy test keeps the two lists equal.
 
 ### Rule Evaluation Flow (ADR-0005)
 

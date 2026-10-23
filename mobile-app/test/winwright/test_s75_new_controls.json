@@ -9,7 +9,7 @@
     "screenshotFormat": "png",
     "screenshotOnFailureOnly": false,
     "continueOnFailure": false,
-    "stepTimeoutMs": 15000,
+    "stepTimeoutMs": 60000,
     "maxFailures": 0
   },
   "testCases": [

@@ -1,6 +1,6 @@
 name: my_email_spam_filter
 description: Cross-platform email spam filter app
-version: 0.20.0+17
+version: 0.21.0+18
 publish_to: 'none'
 
 environment:
@@ -98,6 +98,11 @@ flutter:
     - assets/rules/rules.yaml
     - assets/rules/rules_safe_senders.yaml
 
+    # Sprint 80 Task 16 (#504): the Windows tray icon. The runner's own icon
+    # file is the one source; listing it here ships it in data\flutter_assets
+    # so WindowsSystemTrayService can find it next to the exe.
+    - windows/runner/resources/app_icon.ico
+
     # AOL IMAP CA certificate for custom SecurityContext
     - assets/certs/aol_ca.pem
 
@@ -145,7 +150,7 @@ msix_config:
   publisher_display_name: Kimmey Consulting - Ohio
   identity_name: KimmeyConsulting-Ohio.MyEmailSpamFilter
   publisher: CN=84EA8722-0CA5-4EC0-9B10-07EE79B66062
-  msix_version: 0.20.0.0
+  msix_version: 0.21.0.0
   logo_path: assets/icon/icon.png
   capabilities: internetClient, internetClientServer, privateNetworkClientServer
   # F148 (Sprint 56): stable App Execution Alias so background-scan scheduled

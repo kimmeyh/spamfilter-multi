@@ -28,6 +28,7 @@ import 'package:flutter/foundation.dart' show visibleForTesting;
 import 'package:logger/logger.dart';
 import 'package:workmanager/workmanager.dart';
 
+import '../platform/platform_capabilities.dart';
 import '../utils/account_id_sanitizer.dart';
 import 'android_background_scan_worker.dart' show kAndroidScanTaskName, kAndroidScanTestTaskName;
 import 'app_environment.dart';
@@ -142,8 +143,14 @@ class BackgroundScanSchedulerFactory {
     final override = _override;
     if (override != null) return override;
 
-    if (Platform.isWindows) return const WindowsSchedulerAdapter();
-    if (Platform.isAndroid) return const AndroidSchedulerAdapter();
+    switch (PlatformCapabilities.current.backgroundScanMechanism) {
+      case BackgroundScanMechanism.taskScheduler:
+        return const WindowsSchedulerAdapter();
+      case BackgroundScanMechanism.workManager:
+        return const AndroidSchedulerAdapter();
+      case BackgroundScanMechanism.none:
+        break;
+    }
 
     // iOS/macOS/Linux are architecturally supported but have no scheduling
     // implementation. An explicit unsupported scheduler beats a crash or a
@@ -222,8 +229,21 @@ class WindowsSchedulerAdapter implements BackgroundScanScheduler {
   Future<bool> isScheduled(String accountId) =>
       WindowsTaskSchedulerService.taskExists(accountId: accountId);
 
+  // Sprint 80 (Harold Q4 = 2): schedule and cancel run inside
+  // WindowsTaskSchedulerService.runExclusive, the same lock as the startup
+  // reconciliation, which now runs after the window appears.
   @override
   Future<bool> schedule({
+    required String accountId,
+    required int intervalMinutes,
+    required String caller,
+  }) =>
+      WindowsTaskSchedulerService.runExclusive(() => _schedule(
+          accountId: accountId,
+          intervalMinutes: intervalMinutes,
+          caller: caller));
+
+  Future<bool> _schedule({
     required String accountId,
     required int intervalMinutes,
     required String caller,
@@ -263,7 +283,11 @@ class WindowsSchedulerAdapter implements BackgroundScanScheduler {
   }
 
   @override
-  Future<bool> cancel(String accountId, {required String caller}) async {
+  Future<bool> cancel(String accountId, {required String caller}) =>
+      WindowsTaskSchedulerService.runExclusive(
+          () => _cancel(accountId, caller: caller));
+
+  Future<bool> _cancel(String accountId, {required String caller}) async {
     var ok = false;
     String? note;
     try {

@@ -718,8 +718,16 @@ class EmailScanProvider extends ChangeNotifier {
       if (_unmatchedEmailStore != null) {
         final noRuleResults =
             _results.where((r) => r.action == EmailActionType.none).toList();
+        // F276 (Sprint 80): this scan just fetched each message, so it is in
+        // its folder now. Record that, or the row keeps the defaults
+        // ('unknown', never checked) and the presence reconciler re-asks every
+        // row the scan just saw on every scan, not once per
+        // kNoRulePresenceRecheck.
+        final seenAt = DateTime.now();
         final unmatched = noRuleResults
             .map((r) => UnmatchedEmail(
+                  availabilityStatus: UnmatchedEmailStore.availabilityAvailable,
+                  availabilityCheckedAt: seenAt,
                   scanResultId: _currentScanResultId!,
                   providerIdentifierType: 'email_id',
                   providerIdentifierValue: r.email.id,

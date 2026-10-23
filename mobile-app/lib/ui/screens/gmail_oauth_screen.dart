@@ -1,9 +1,9 @@
-import 'dart:io' show Platform;
 import 'package:flutter/foundation.dart' show visibleForTesting;
 import 'package:flutter/material.dart';
 import 'package:logger/logger.dart';
 
 import '../../adapters/auth/google_auth_service.dart';
+import '../../core/platform/platform_capabilities.dart';
 import '../../adapters/storage/secure_credentials_store.dart';
 import 'gmail_webview_oauth_screen.dart';
 import 'gmail_manual_token_screen.dart';
@@ -82,12 +82,22 @@ class _GmailOAuthScreenState extends State<GmailOAuthScreen> {
   bool _isSigningIn = false;
   String? _errorMessage;
 
+  /// Windows sign-in: the browser with a loopback redirect (ADR-0049).
+  bool get _usesBrowserLoopback =>
+      PlatformCapabilities.current.googleSignInFlow ==
+      GoogleSignInFlow.browserLoopback;
+
+  /// Android sign-in: native first, the browser as the fallback (ADR-0049).
+  bool get _signsInNativelyWithBrowserFallback =>
+      PlatformCapabilities.current.googleSignInFlow ==
+      GoogleSignInFlow.nativeWithBrowserFallback;
+
   @override
   void initState() {
     super.initState();
     // Check if running on Windows - show OAuth options dialog
     // On Android, let user choose from buttons (no auto-launch)
-    if (Platform.isWindows) {
+    if (_usesBrowserLoopback) {
       WidgetsBinding.instance.addPostFrameCallback((_) {
         _showWindowsOAuthOptions();
       });
@@ -164,7 +174,7 @@ class _GmailOAuthScreenState extends State<GmailOAuthScreen> {
   /// Show alternate OAuth methods on non-Windows platforms
   void _showAlternateOAuthOptions() {
     // On Windows, reuse the existing three-option dialog
-    if (Platform.isWindows) {
+    if (_usesBrowserLoopback) {
       _showWindowsOAuthOptions();
       return;
     }
@@ -494,7 +504,7 @@ class _GmailOAuthScreenState extends State<GmailOAuthScreen> {
                       ],
                     ),
                   )
-                else if (Platform.isAndroid)
+                else if (_signsInNativelyWithBrowserFallback)
                   // On Android, show OAuth methods - native with appauth fallback is primary
                   Column(
                     crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -533,7 +543,7 @@ class _GmailOAuthScreenState extends State<GmailOAuthScreen> {
                   ),
 
                 // Alternate methods helper (Windows/other platforms)
-                if (!Platform.isAndroid) ...[
+                if (!_signsInNativelyWithBrowserFallback) ...[
                   const SizedBox(height: 12),
                   TextButton.icon(
                     onPressed: _showAlternateOAuthOptions,

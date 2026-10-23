@@ -1,6 +1,7 @@
 import 'dart:io';
 
 import 'package:file_picker/file_picker.dart';
+import '../../core/platform/platform_capabilities.dart';
 import '../../core/services/app_environment.dart';
 import '../../core/services/app_version.dart';
 import '../../core/services/data_deletion_service.dart';
@@ -15,6 +16,8 @@ import '../../core/services/scan_interval.dart';
 import '../../core/services/f264_upgrade_migration.dart';
 import '../../core/services/background_scan_windows_worker.dart';
 import '../../core/services/background_scan_scheduler.dart';
+import '../../core/services/windows_task_scheduler_service.dart'
+    show WindowsTaskSchedulerService;
 import '../../core/storage/database_helper.dart';
 import '../../core/storage/settings_store.dart';
 import '../../core/services/export_directories.dart';
@@ -22,6 +25,9 @@ import '../../core/services/diagnostic_logger.dart';
 import '../../core/storage/unmatched_email_store.dart'
     show kBodyPreviewMaxLength;
 import '../../core/providers/email_scan_provider.dart';
+import '../../core/providers/rule_set_provider.dart';
+import '../../core/services/rule_quick_action_service.dart'
+    show reloadRulesAfterWrite;
 import '../../adapters/storage/secure_credentials_store.dart';
 import '../../core/security/certificate_pinner.dart';
 import '../../util/redact.dart';
@@ -97,23 +103,13 @@ class SettingsScreen extends StatefulWidget {
   /// behavior change -- the field is nullable, not removed.
   final String? accountId;
 
-  /// Test seam (ADR-0042 point 4, F264 Sprint 77): force the Android branch of
-  /// the Background tab's Android-only rows (the new-mail switch and the
-  /// Android timing note) on a Windows test host. Null = the real platform.
-  /// The battery row keeps the real check because it talks to the OS.
-  @visibleForTesting
-  static bool? debugIsAndroid;
-
-  /// Whether the Android-only Background rows show (Windows hides them).
-  static bool get showsAndroidBackgroundRows =>
-      debugIsAndroid ?? Platform.isAndroid;
-
   /// Subtitle of the "Pin Google OAuth certificates" switch, per platform
   /// (Sprint 77 Phase 5.1.2 F-PRECHECK). On Windows the switch controls the
   /// pinned Google sign-in and token renewal calls; on Android sign-in goes
   /// through the system and the switch does not apply.
-  static String certificatePinningSubtitle({required bool isAndroid}) =>
-      isAndroid
+  static String certificatePinningSubtitle(
+          {required bool usesNativeSignIn}) =>
+      usesNativeSignIn
           ? 'On Android, Google sign-in uses Android\'s own sign-in service '
               'and the system\'s certificate checks; this switch does not '
               'change them.'
@@ -1011,7 +1007,8 @@ class _SettingsScreenState extends State<SettingsScreen> with SingleTickerProvid
           // system's own certificate checks, so the switch changes nothing
           // there and the text must not claim it does.
           subtitle: Text(SettingsScreen.certificatePinningSubtitle(
-              isAndroid: SettingsScreen.showsAndroidBackgroundRows)),
+              usesNativeSignIn:
+                  PlatformCapabilities.current.hasNativeGoogleSignIn)),
           value: _certificatePinningEnabled,
           onChanged: (value) async {
             await _settingsStore.setCertificatePinningEnabled(value);
@@ -1652,17 +1649,20 @@ class _SettingsScreenState extends State<SettingsScreen> with SingleTickerProvid
           value: _backgroundScanEnabled,
           onChanged: (value) async {
             setState(() => _backgroundScanEnabled = value);
-            // F98 (ADR-0039): write the PER-ACCOUNT override, not the global flag.
-            await _settingsStore
-                .setAccountBackgroundEnabled(_requireAccountId, value);
-            // F161 (Sprint 61, found live on-device): this call was still
-            // gated behind Platform.isWindows AFTER the factory reroute, so
-            // on Android the setting persisted but no work was ever
-            // scheduled -- the setting LIED, exactly the ADR-0042 failure
-            // shape (a platform-local gate starving shared behavior). The
-            // factory + isSupported now own the platform decision; the call
-            // site is unconditional.
-            await _updateScheduledScan(enabled: value);
+            await _changeBackgroundSettingExclusive(() async {
+              // F98 (ADR-0039): write the PER-ACCOUNT override, not the global
+              // flag.
+              await _settingsStore
+                  .setAccountBackgroundEnabled(_requireAccountId, value);
+              // F161 (Sprint 61, found live on-device): this call was still
+              // gated behind a Windows-only check AFTER the factory reroute,
+              // so on Android the setting persisted but no work was ever
+              // scheduled -- the setting LIED, exactly the ADR-0042 failure
+              // shape (a platform-local gate starving shared behavior). The
+              // factory + isSupported now own the platform decision; the call
+              // site is unconditional.
+              await _updateScheduledScan(enabled: value);
+            });
           },
         ),
         // F264 R-11 (Sprint 77) / F281 (Sprint 78, Harold): "Scan every" sits
@@ -1684,11 +1684,13 @@ class _SettingsScreenState extends State<SettingsScreen> with SingleTickerProvid
               initialMinutes: _backgroundScanFrequency,
               onCommit: (minutes) async {
                 setState(() => _backgroundScanFrequency = minutes);
-                await _settingsStore.setAccountBackgroundFrequency(
-                    _requireAccountId, minutes);
-                if (_backgroundScanEnabled) {
-                  await _updateScheduledScan(enabled: true);
-                }
+                await _changeBackgroundSettingExclusive(() async {
+                  await _settingsStore.setAccountBackgroundFrequency(
+                      _requireAccountId, minutes);
+                  if (_backgroundScanEnabled) {
+                    await _updateScheduledScan(enabled: true);
+                  }
+                });
               },
             ),
           ),
@@ -1697,7 +1699,7 @@ class _SettingsScreenState extends State<SettingsScreen> with SingleTickerProvid
         // Sprint 76). Android only; HIDDEN on Windows (Q10 = 1, ADR-0044's
         // declared exception: Windows has no mail-app notification to listen
         // to).
-        if (SettingsScreen.showsAndroidBackgroundRows)
+        if (PlatformCapabilities.current.hasNewMailNotificationTrigger)
           NewMailTriggerRow(
             key: ValueKey('new_mail_trigger_${_requireAccountId}'),
             accountId: _requireAccountId,
@@ -1705,10 +1707,11 @@ class _SettingsScreenState extends State<SettingsScreen> with SingleTickerProvid
           ),
         // F252 (Sprint 76): Battery > Unrestricted. Shown whenever background
         // scanning is on.
-        if (Platform.isAndroid && _backgroundScanEnabled)
+        if (PlatformCapabilities.current.hasBatteryOptimizationSetting &&
+            _backgroundScanEnabled)
           const BatteryOptimizationRow(),
         // F217 (Sprint 72) / F264 Q12: the ONE Android timing note.
-        if (SettingsScreen.showsAndroidBackgroundRows &&
+        if (PlatformCapabilities.current.hasBatteryOptimizationSetting &&
             _backgroundScanEnabled)
           _buildAndroidDozeStatusLine(),
         const Divider(),
@@ -1810,7 +1813,9 @@ class _SettingsScreenState extends State<SettingsScreen> with SingleTickerProvid
   /// Best-effort: a denied permission degrades to no notification; the scan
   /// and its persistence are unaffected.
   Future<void> _requestNotificationPermissionIfNeeded() async {
-    if (!Platform.isAndroid) return;
+    if (!PlatformCapabilities.current.requestsNotificationPermissionAtRuntime) {
+      return;
+    }
     try {
       await FlutterLocalNotificationsPlugin()
           .resolvePlatformSpecificImplementation<
@@ -1825,7 +1830,8 @@ class _SettingsScreenState extends State<SettingsScreen> with SingleTickerProvid
     setState(() => _isTestingScan = true);
 
     try {
-      if (Platform.isWindows) {
+      final mechanism = PlatformCapabilities.current.backgroundScanMechanism;
+      if (mechanism == BackgroundScanMechanism.taskScheduler) {
         // F98 (ADR-0039): scope the Test scan to THIS account (the Background
         // tab is account-specific). Without accountId it fell through to the
         // legacy all-accounts path and scanned every account + wrote the shared
@@ -1846,7 +1852,7 @@ class _SettingsScreenState extends State<SettingsScreen> with SingleTickerProvid
             ),
           );
         }
-      } else if (Platform.isAndroid) {
+      } else if (mechanism == BackgroundScanMechanism.workManager) {
         // F161: Android test path -- runs the WorkManager pipeline once,
         // immediately, through the same dispatcher a scheduled run uses, so
         // it genuinely tests the scheduled path rather than a lookalike.
@@ -2273,6 +2279,18 @@ class _SettingsScreenState extends State<SettingsScreen> with SingleTickerProvid
     );
   }
 
+  /// PR #490 7.7.1 (code-reviewer finding 6): a Background-tab change (its
+  /// stored value AND the reschedule) runs under the same lock as the Windows
+  /// start-up reconciliation, which since Sprint 80 (Harold Q4 = 2) runs after
+  /// the window appears. Before, only the reschedule took the lock, so the
+  /// reconciliation's interval conversion could write its value back over a
+  /// change made in its first seconds. The lock is in-process Dart (no
+  /// platform call) and re-entrant, so the nested schedule inside is safe; on
+  /// Android nothing else holds it and it adds no wait.
+  Future<void> _changeBackgroundSettingExclusive(
+          Future<void> Function() change) =>
+      WindowsTaskSchedulerService.runExclusive(change);
+
   /// Reset rules and safe senders to bundled defaults
   Future<void> _resetRulesToDefaults() async {
     final confirmed = await showDialog<bool>(
@@ -2299,17 +2317,23 @@ class _SettingsScreenState extends State<SettingsScreen> with SingleTickerProvid
     );
 
     if (confirmed != true || !mounted) return;
+    // F298 (PR #490 7.7.1): read before the next await.
+    final provider = Provider.of<RuleSetProvider>(context, listen: false);
 
     try {
       final dbHelper = DatabaseHelper();
       final service = DefaultRuleSetService(dbHelper);
       final result = await service.resetToDefaults();
+      // F298: the reset replaces both tables outside RuleSetProvider; without
+      // a reload the old rules stay in use until a restart.
+      final reloadNote = await reloadRulesAfterWrite(provider);
 
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text(
-              'Reset complete: ${result.rules} rules, ${result.safeSenders} safe senders restored',
+              'Reset complete: ${result.rules} rules, ${result.safeSenders} '
+              'safe senders restored$reloadNote',
             ),
           ),
         );

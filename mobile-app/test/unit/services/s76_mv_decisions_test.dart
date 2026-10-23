@@ -251,20 +251,20 @@ void main() {
     test('only after native renewal failed, on Android, with a token', () {
       expect(
           GoogleAuthService.shouldTryStoredRefreshToken(
-              nativeSucceeded: false, isAndroid: true, hasRefreshToken: true),
+              nativeSucceeded: false, renewsWithStoredRefreshToken: true, hasRefreshToken: true),
           isTrue);
       expect(
           GoogleAuthService.shouldTryStoredRefreshToken(
-              nativeSucceeded: true, isAndroid: true, hasRefreshToken: true),
+              nativeSucceeded: true, renewsWithStoredRefreshToken: true, hasRefreshToken: true),
           isFalse);
       expect(
           GoogleAuthService.shouldTryStoredRefreshToken(
-              nativeSucceeded: false, isAndroid: false, hasRefreshToken: true),
+              nativeSucceeded: false, renewsWithStoredRefreshToken: false, hasRefreshToken: true),
           isFalse,
           reason: 'desktop has its own HTTP refresh path');
       expect(
           GoogleAuthService.shouldTryStoredRefreshToken(
-              nativeSucceeded: false, isAndroid: true, hasRefreshToken: false),
+              nativeSucceeded: false, renewsWithStoredRefreshToken: true, hasRefreshToken: false),
           isFalse);
     });
 

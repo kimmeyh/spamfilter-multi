@@ -7,6 +7,7 @@ import 'package:googleapis/gmail/v1.dart' as gmail;
 import 'package:http/http.dart' as http;
 import '../../adapters/auth/google_auth_service.dart';
 import '../../core/models/batch_action_result.dart';
+import '../../core/platform/platform_capabilities.dart';
 import '../../core/services/background_mode_service.dart';
 import '../../core/services/diagnostic_logger.dart';
 import '../../core/services/content_text_extractor.dart';
@@ -24,7 +25,8 @@ import 'email_provider.dart';
 /// Phase 2 Sprint 4 Implementation
 ///
 /// Uses [GoogleAuthService] for unified authentication across platforms.
-class GmailApiAdapter with BatchOperationsMixin implements SpamFilterPlatform {
+class GmailApiAdapter with BatchOperationsMixin
+    implements SpamFilterPlatform, MessagePresenceChecker {
   final GoogleAuthService _authService = GoogleAuthService();
 
   gmail.GmailApi? _gmailApi;
@@ -187,7 +189,8 @@ class GmailApiAdapter with BatchOperationsMixin implements SpamFilterPlatform {
     _signInFlagAccountId =
         credentials.additionalParams?['accountId'] ?? credentials.email;
     // Windows desktop path: reuse stored access token from prior browser OAuth
-    if (Platform.isWindows && (credentials.accessToken?.isNotEmpty ?? false)) {
+    if (PlatformCapabilities.current.reusesStoredGmailAccessToken &&
+        (credentials.accessToken?.isNotEmpty ?? false)) {
       Redact.logSafe('Using stored access token for Windows Gmail session');
       final headers = {
         'Authorization': 'Bearer ${credentials.accessToken}',
@@ -398,7 +401,8 @@ class GmailApiAdapter with BatchOperationsMixin implements SpamFilterPlatform {
         } on gmail.DetailedApiRequestError catch (apiErr) {
           final msg = apiErr.message ?? '';
           final insufficientScopes = apiErr.status == 403 && msg.toLowerCase().contains('insufficient authentication scopes');
-          if (Platform.isWindows && insufficientScopes) {
+          if (PlatformCapabilities.current.canUpgradeGmailScopesInteractively &&
+              insufficientScopes) {
             Redact.logSafe('Insufficient Gmail scopes detected. Attempting re-auth via GoogleAuthService...');
             // Attempt to upgrade scopes via GoogleAuthService and retry once
             try {
@@ -1170,6 +1174,53 @@ class GmailApiAdapter with BatchOperationsMixin implements SpamFilterPlatform {
           e);
       return message;
     }
+  }
+
+  /// F276 (Sprint 80): which of [ids] are still in [folderName]. A Gmail
+  /// message id is the same in every label, so `messages.get` (format
+  /// minimal, labels only) answers it: 404 is [MessagePresence.absent]; the
+  /// message without the folder's label is [MessagePresence.moved] (another
+  /// label, or Trash); with it, [MessagePresence.present]. Any other error on
+  /// one id leaves that id out (no answer). A 401 / 403 throws, which ends
+  /// THIS folder's check: it is not session-fatal ([isSessionFatal]), so the
+  /// scanner logs it (console and diagnostic log) and the next folder checks
+  /// again. That is deliberate: Gmail also answers 403 for rate and quota
+  /// limits, and a real sign-in failure is already caught by the folder's own
+  /// fetch, which ran first in the same session (PR #490 7.7.1).
+  @override
+  Future<Map<String, MessagePresence>> checkMessagesPresent({
+    required String folderName,
+    required List<String> ids,
+  }) async {
+    final result = <String, MessagePresence>{};
+    if (_gmailApi == null || ids.isEmpty) return result;
+    final labelId = await _labelIdFor(folderName);
+    if (labelId == null) return result; // the label is gone: no answer
+    for (final id in ids) {
+      if (id.isEmpty) continue;
+      try {
+        final msg = await _gmailApi!.users.messages.get(
+          'me',
+          id,
+          format: 'minimal',
+          $fields: 'id,labelIds',
+        );
+        final labels = msg.labelIds ?? const <String>[];
+        result[id] = labels.contains(labelId)
+            ? MessagePresence.present
+            : MessagePresence.moved;
+      } on gmail.DetailedApiRequestError catch (e) {
+        if (e.status == 404) {
+          result[id] = MessagePresence.absent;
+        } else if (e.status == 401 || e.status == 403) {
+          rethrow;
+        } else {
+          Redact.logSafe('F276 presence check: no answer for one Gmail '
+              'message (status ${e.status})');
+        }
+      }
+    }
+    return result;
   }
 
   /// R76-4 (Sprint 78, ADR-0047): the message's plain text for the dev-only

@@ -293,6 +293,26 @@ if (Test-Path $buildTarget) {
             New-Item -ItemType Directory -Path $variantParent -Force | Out-Null
         }
 
+        # Sprint 80: a background-scan task (every 5 minutes) can start from
+        # the variant dir DURING the compile, after step 1 stopped the old
+        # instances. Its open exe/dll handles made Remove-Item delete data\
+        # and then fail, leaving a variant dir that cannot start. Stop every
+        # process running from the variant dir immediately before the swap.
+        $variantFull = (Join-Path (Get-Location).Path $variantDir).TrimEnd('\') + '\'
+        $holders = Get-CimInstance Win32_Process -ErrorAction SilentlyContinue |
+            Where-Object { $_.ExecutablePath -and $_.ExecutablePath.StartsWith($variantFull, [System.StringComparison]::OrdinalIgnoreCase) }
+        if ($holders) {
+            Write-Host "       Stopping $(@($holders).Count) process(es) running from $variantDir" -ForegroundColor Yellow
+            # PR #490 7.7.1: name each one, so a background scan stopped part-way
+            # can be told from the app window in the build output.
+            foreach ($h in @($holders)) {
+                $role = if ($h.CommandLine -match '--background-scan') { 'background scan' } else { 'app window' }
+                Write-Host "         PID $($h.ProcessId) ($role)" -ForegroundColor Yellow
+            }
+            $holders | ForEach-Object { Stop-Process -Id $_.ProcessId -Force -ErrorAction SilentlyContinue }
+            Start-Sleep -Milliseconds 1000
+        }
+
         # Recreate variant dir cleanly so resources/dlls match the latest build.
         if (Test-Path $variantDir) {
             Remove-Item -Path $variantDir -Recurse -Force

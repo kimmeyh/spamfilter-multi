@@ -1,21 +1,21 @@
 {
     "_description": "Sprint status file that persists across context compaction. Update after each phase/sub-phase completion.",
-    "_last_updated": "2026-10-18T17:45:00Z",
+    "_last_updated": "2026-10-23T12:30:00-04:00",
     "_usage": "Read this file after context compaction to restore sprint approval state and progress.",
     "_staleness_note": "This file had drifted 15 sprints (last updated at Sprint 35, 2026-04-19) before being refreshed at Sprint 50 close-out. It is a Phase 7.7 checklist item -- update it at every sprint close-out, not opportunistically.",
     "current_sprint": {
-        "number": 79,
-        "branch": "feature/20261013_Sprint_79",
-        "status": "Phase 7.7 Sprint Completion -- 7.7.1 final code reviews running (Copilot requested 2026-10-18 15:23Z, code-reviewer, silent-failure-hunter); PR #480 READY for review. Retro done (Harold all Very Good; IMP-1/2/3 applied, IMP-4 skipped); 7.7 docs done (CHANGELOG, 0.20.0 release notes re-derived, master plan, SPRINT_79_SUMMARY.md, SPRINT_80_PLAN.md stub). Manual Validation PASSED 2026-10-18 (MV-1 four toasts one per account + replacement; MV-2 count 116). Phase 6 PR #480 updated, still DRAFT. Phase 5 markers recorded (5.1.2, 5.1.5 sweep-head 80d92c6, 5.1.9, 5.2). Tasks 0-9 done in-sprint; remainders of MV76-1, F277 and F292 moved to Sprint 80 by Harold 2026-10-16; workmanager 0.10.10 (Upgrade=1), Fix 2 decided after the phone test (Fix=1). Sprint 79 plan APPROVED 2026-10-13 (Q1 1, Q2 2, Q3 1, Q4 1, Q5 1, Q6 1, Q7 1, Q8 2, Q9 2, Q-S1..3 approved); cards #481-#487 created, #471 #472 #433 #428 reused",
+        "number": 80,
+        "branch": "feature/20261018_Sprint_80",
+        "status": "Phase 7.7 Final Code Reviews (7.7.1) -- COMPLETE. PR #490 READY for Harold's review and merge; CI green. Harold 2026-10-23: hunter 16 -> F302, hunter 9 Android half -> F303 (both Sprint 81); Q3 = 1: from Sprint 81 the 7.7.1 reviews run BEFORE the retrospective (workflow, checklist, CLAUDE.md, close-out check 3d-2 updated). Q4 = 1, Q5 = 2: the PR stays draft until 7.7.5, one bounded improvement review, then gh pr ready + CI green + announce. Q6: CI runs twice (by hand on the draft with the improvement review; on ready_for_review). AGENTS.md points to the sprint execution docs.",
         "plan_approved": true,
-        "pr_number": 480,
-        "version": "0.20.0+17 (Sprint 79, bumped at 3.7.0b)"
+        "pr_number": 490,
+        "version": "0.21.0+18 (bumped at 3.7.0b)"
     },
     "previous_sprint": {
-        "number": 78,
-        "branch": "feature/20261009_Sprint_78",
-        "pr": "#470 -> develop (merged 2026-10-13, 7d3b71a), #479 develop -> main (757d6a0)",
-        "deliverables": "F282, F281, F283, F284, R76-4 (ADR-0047), F199-b to HOLD; MV fixes MV-1..MV-7 (MV-5 withdrawn); retro IMP-1/2/4; 7.7.1 review fixes (all but F290). Version 0.19.0+16. Phone testing moved to Sprint 79."
+        "number": 79,
+        "branch": "feature/20261013_Sprint_79",
+        "pr": "#480 -> develop (merged 2026-10-18, dd04c4c), #489 develop -> main (ff58da3)",
+        "deliverables": "F286, F287 (ADR-0048), F288, F291, F292 (runner; cause unknown), F293, F297; MV76-1 in-sprint part (MV-7 skip, IMAP 120 s limit, schedule logging, workmanager 0.10.10); 7.7.1 fixes incl. Harold Q1-Q3 (one IMAP timeout ends the session, UID MOVE included; scheduler caller label). Version 0.20.0+17. Phone remainder, F277, F292 post-reboot runs moved to Sprint 80."
     },
     "github_issues": {
         "sprint_73": "#428 (open, MV74-1), #422 (open, MV74-3), #430 closed, #434 (open, MV74-2), #431 closed, #432 closed, #433 (open, MV74-3). Also closed in pass 1: #426 (superseded by #428), #427 (leftover captured as F236).",
@@ -25,16 +25,18 @@
         "sprint_76": "Closed by hand 2026-10-06: #452 #453 #454 #456 #457 #458. Open, inside MV76-1: #428 (MV74-1 reboot half), #433 (F205).",
         "sprint_77": "Closed by hand 2026-10-09: #461 (Fold steps 7-11 carried to the Sprint 78 start) #462 #463 #464 #465 #466 #467 #468. Open, inside MV76-1: #428 (MV74-1 reboot half), #433 (F205).",
         "sprint_78": "Closed by hand 2026-10-13: #473 #474 #475 #476 #478 (#477 closed earlier). Open, moved to Sprint 79: #471 (MV76-1, with #428 and #433), #472 (F277).",
-        "sprint_79": "Task 0 #481 (version), Task 1 #471 (MV76-1; inside it #433 F205, #428 MV74-1), Task 2 #472 (F277), Task 3 #482 (F286), Task 4 #483 (F287), Task 5 #484 (F288), Task 6 #485 (F291), Task 7 #486 (F292), Task 8 #487 (F293)"
+        "sprint_79_closed": "Closed by the PR #480 merge (Closes keywords, develop default branch) 2026-10-18: #481 #482 #483 #484 #485 #486 #487 #488. Open for Sprint 80: #471 (with #433, #428), #472.",
+        "sprint_79": "Task 0 #481 (version), Task 1 #471 (MV76-1; inside it #433 F205, #428 MV74-1), Task 2 #472 (F277), Task 3 #482 (F286), Task 4 #483 (F287), Task 5 #484 (F288), Task 6 #485 (F291), Task 7 #486 (F292), Task 8 #487 (F293)",
+        "sprint_80": "Task 0 #491, Task 1 #471 (with #433 F205, #428 MV74-1), Task 2 #472 (F277), Task 3 #492 (F292), Task 4 #493 (F294), Task 5 #494 (F295), Task 6 #495 (F296), Task 7 #496 (F298), Task 8 #497 (F267), Task 9 #498 (F268), Task 10 #499 (F269), Task 12 #500 (F299), Task 13 #501 (F276), Task 14 #502 (F204), Task 15 #503, Task 16 #504, Task 17 #505. F289 removed (Q4b = 2)."
     },
     "_github_issues_note": "Sprint 66 cards created at Phase 3.3.1 (2026-09-07): #387 GP-19, #388 GP-4. Close by hand at Post-Merge Cleanup.",
     "test_metrics": {
-        "suite": "3,092 passed / 15 skipped / 0 failed (run-full-suite.ps1 79-771c, 2026-10-18, after Harold's 7.7.1 decisions Q1/Q2/Q3; 0 load failures, peak commit 52.2 GB)",
+        "suite": "3,189 passed / 15 skipped / 0 failed (run-full-suite.ps1 80-t17, 2026-10-22, after Task 17; 0 load failures, peak commit 57.1 GB)",
         "policy_suite": "JVM 21/21; release_notes_test passing; hook suite 128/128 (2026-10-08)",
         "winwright": "2026-10-17 sweep-head 80d92c6: f124 PASS 29/29, s75 PASS 27/27 (re-run alone; first launch in the full sweep failed, cause unknown), no skipped steps, DB drift none",
         "analyzer": "clean",
         "mutations": "Sprint 77: F258 M1/M2/M4 + L1/L2, F245 21, F192 25, SEC-8b 16, F264 24, R76-1 5, merge M1/M2, F-PRECHECK 15 -- all KILLED",
-        "as_of": "2026-10-17, Sprint 79 Phase 5"
+        "as_of": "2026-10-22, Sprint 80 Phase 7 (suite); other lines as dated"
     },
     "store_release": {
         "status_0_15_3": "NOT SUBMITTED TO EITHER STORE. Harold, 2026-09-22: \"not pushing to either store this time\". Phase 8.3 explicitly N/A for this cycle.",
@@ -45,6 +47,7 @@
         "status_0_17_0": "LIVE 2026-10-04 ~11:20pm ET on BOTH stores (Harold). Microsoft Store: submitted ~10:40pm, installed build shows no [DEV] and Version 0.17.0; public API lagged. Google Play closed testing (Alpha): versionCode 8, device-verified on the Fold (Version 0.17.0). Open: Step 4.2 Gmail sign-in URL on the Store build; CHANGELOG has no release headings since 0.14.0 (not done this release either).",
         "status_0_17_6": "SUBMITTED to BOTH stores 2026-10-06 (Harold screenshots), NOT yet live. Microsoft Store: Submission 31, \"Update in certification\", stage Pre-processing (last modified 10/07/2026); Store presence still Submission 30 (0.17.0). Google Play: Closed testing - Alpha, \"14 (0.17.6) Start full rollout\" in Changes in review, quick checks running (up to 12 min); managed publishing off. Artifacts: MSIX D:\\Data\\Harold\\github\\spamfilter-multi-prod\\mobile-app\\build\\windows\\x64\\runner\\Release\\my_email_spam_filter.msix (17.6 MB, self-test PASS); AAB D:\\Data\\Harold\\github\\spamfilter-multi\\mobile-app\\dist\\android-0.17.6+14\\app-prod-release.aab (67.3 MB). STORE_VERSION_STATUS Live rows unchanged until observed live; \"Last uploaded to Play\" -> 0.17.6 (14) is updated WITH the Sprint 77 pubspec bump (IMP-2).",
         "status_0_18_0": "LIVE on BOTH (Harold, 2026-10-10). Fold device-verified (Version 0.18.0 screenshots, log env=prod v0.18.0). Windows: installed Store build shows Version 0.18.0, no [DEV]; Partner Center page not observed. STORE_VERSION_STATUS updated with the 0.19.0+16 bump.",
+        "status_0_20_0": "BUILT + VERIFIED 2026-10-18, SUBMITTED to BOTH stores, in process (Harold, 2026-10-18 ~11:39pm ET; consoles not observed by Claude; not seen live). MSIX 0.20.0.0 from the prod worktree at main ff58da3 (tag v0.20.0): D:\\Data\\Harold\\github\\spamfilter-multi-prod\\mobile-app\\build\\windows\\x64\\runner\\Release\\my_email_spam_filter.msix (17.7 MB, release self-test 6/6 PASS, manifest Identity 0.20.0.0). AAB 0.20.0 versionCode 17: D:\\Data\\Harold\\github\\spamfilter-multi\\mobile-app\\dist\\android-0.20.0+17\\app-prod-release.aab (67.8 MB, versionName 0.20.0, no .dev, OAuth scheme present, no AD_ID). Notes: docs/store-assets/RELEASE_NOTES_0.20.0_windows.md and _play.md (gate passed).",
         "status_0_19_0": "MSIX 0.19.0.0 and AAB 0.19.0 (versionCode 16) SUBMITTED 2026-10-13, certification in process (Harold's report; not observed live). See docs/STORE_VERSION_STATUS.md."
     },
     "environment_notes": [
@@ -54,10 +57,8 @@
     ],
     "blocking_issues": [],
     "next_actions": [
-        "7.7.1 DONE: findings fixed; Harold answered Q1=1 (UID MOVE 2-min limit + session end, DONE), Q2=1 (timeout ends session, DONE), Q3=1 (caller label, DONE), Q4=2 (no sweep), Q5=1 (keep M-4). Mutations 22 of 22 KILLED.",
-        "7.7.5 DONE 2026-10-18: Harold notified PR #480 is ready for final approval; waiting on his merge.",
-        "On merge: open the Sprint 80 branch from feature/20261013_Sprint_79; verify Closes #481-#488 closed the cards; keep #471, #472, #433, #428 open.",
-        "Confirm 0.19.0 live on both stores and update the Live rows in STORE_VERSION_STATUS.md."
+        "Harold reviews and merges PR #490 into develop; then Phase 8 (release cycle).",
+        "Sprint 81 Phase 7: PR stays DRAFT; at Manual Validation complete, in ONE turn: both 7.7.1 reviews on the draft + retro prompt; recurring classes (2+ this sprint or seen before) get prevention proposals; ONE improvement review (fix under 4 code files / 600 lines, else next Phase 1) + CI run 1 by hand on the draft (gh workflow run ci.yml --ref <branch>); then 7.7.5: gh pr ready, CI run 2 green, announce."
     ],
     "next_sprint_targeted": {
         "number": 80,

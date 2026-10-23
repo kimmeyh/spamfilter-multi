@@ -1,5 +1,6 @@
-import 'dart:io';
 import 'package:flutter/material.dart';
+
+import '../../core/platform/platform_policy.dart';
 
 /// Application theme configuration
 ///
@@ -22,7 +23,7 @@ class AppTheme {
 
       // Card styling (platform-aware)
       cardTheme: CardThemeData(
-        elevation: Platform.isWindows ? 0 : 1, // Fluent uses flat cards
+        elevation: PlatformPolicy.current.prefersFlatSurfaces ? 0 : 1, // Fluent uses flat cards
         margin: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(12),
@@ -42,16 +43,16 @@ class AppTheme {
 
       // Dialog styling (platform-aware)
       dialogTheme: DialogThemeData(
-        elevation: Platform.isWindows ? 2 : 4,
+        elevation: PlatformPolicy.current.prefersFlatSurfaces ? 2 : 4,
         shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(Platform.isWindows ? 4 : 28),
+          borderRadius: BorderRadius.circular(PlatformPolicy.current.prefersFlatSurfaces ? 4 : 28),
         ),
       ),
 
       // Button styling
       elevatedButtonTheme: ElevatedButtonThemeData(
         style: ElevatedButton.styleFrom(
-          elevation: Platform.isWindows ? 1 : 2,
+          elevation: PlatformPolicy.current.prefersFlatSurfaces ? 1 : 2,
           padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(8),
@@ -69,7 +70,7 @@ class AppTheme {
 
       // Chip styling (for filter chips in results screen)
       chipTheme: ChipThemeData(
-        elevation: Platform.isWindows ? 0 : 1,
+        elevation: PlatformPolicy.current.prefersFlatSurfaces ? 0 : 1,
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(16),
         ),
@@ -90,7 +91,7 @@ class AppTheme {
 
       // Card styling (platform-aware)
       cardTheme: CardThemeData(
-        elevation: Platform.isWindows ? 0 : 1,
+        elevation: PlatformPolicy.current.prefersFlatSurfaces ? 0 : 1,
         margin: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(12),
@@ -110,16 +111,16 @@ class AppTheme {
 
       // Dialog styling (platform-aware)
       dialogTheme: DialogThemeData(
-        elevation: Platform.isWindows ? 2 : 4,
+        elevation: PlatformPolicy.current.prefersFlatSurfaces ? 2 : 4,
         shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(Platform.isWindows ? 4 : 28),
+          borderRadius: BorderRadius.circular(PlatformPolicy.current.prefersFlatSurfaces ? 4 : 28),
         ),
       ),
 
       // Button styling
       elevatedButtonTheme: ElevatedButtonThemeData(
         style: ElevatedButton.styleFrom(
-          elevation: Platform.isWindows ? 1 : 2,
+          elevation: PlatformPolicy.current.prefersFlatSurfaces ? 1 : 2,
           padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(8),
@@ -137,7 +138,7 @@ class AppTheme {
 
       // Chip styling
       chipTheme: ChipThemeData(
-        elevation: Platform.isWindows ? 0 : 1,
+        elevation: PlatformPolicy.current.prefersFlatSurfaces ? 0 : 1,
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(16),
         ),

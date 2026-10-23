@@ -229,6 +229,10 @@ wakelock line.
 **Decision rule**: If B is at most 3 times A, keep the floor at 5. If B exceeds 3 times A, raise `kMinIntervalMinutes`
 to 10 and re-run B. If C exceeds B by more than 50 percent, raise the new-mail minimum spacing.
 **Notes**: Also explains the unexplained 6 m 22 s wakelock in arm 5 (see above).
+**Sprint 80 (Task 2 R-3)**: the two Fold arm-B nights read 0.3% (44 scans) and 1.5% (55 scans). Scan count explains at
+most 1.25x of that spread; the cause is unknown. Leading candidate, unverified: the per-app figure covers "since last
+fully charged" and neither night started full. Remaining nights start from 100% with the app's battery detail captured
+at unplug and in the morning (`docs/sprints/SPRINT_80_PLAN.md` Phase 5 evidence).
 
 ### R77-BAT-2: Why two notifications in arm 5 produced no scan, and why alarm and WorkManager scans coexist
 **Status**: [CHECKLIST] NEW (2026-10-07, Sprint 77 R76-1)

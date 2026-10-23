@@ -54,6 +54,8 @@ This directory contains Architectural Decision Records for the spamfilter-multi 
 | [0046](0046-imap-certificate-trust.md) | IMAP Certificate Trust (TOFU for Custom Servers) and the Google OAuth Issuing-Authority Pin | Accepted | 2026-10-07 |
 | [0047](0047-content-history-dev-only.md) | Content History -- a Dev-Only Record of the Developer's Own Mail | Accepted | 2026-10-10 |
 | [0048](0048-background-scan-notifications-one-plugin.md) | Background-Scan Completion Notifications Through One Plugin on Both Platforms | Accepted | 2026-10-13 |
+| [0049](0049-platform-capabilities-and-policy.md) | Platform Capabilities and Platform Policy -- One Seam for Every Platform Difference | Accepted | 2026-10-19 |
+| [0050](0050-ios-parity-exceptions.md) | iOS Parity Exceptions Against ADR-0042 (Best-Effort Background Scans; No New-Mail Trigger) | Accepted | 2026-10-19 |
 
 ## Creating a New ADR
 

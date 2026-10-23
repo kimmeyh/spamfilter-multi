@@ -22,6 +22,7 @@ library;
 
 import 'package:flutter_test/flutter_test.dart';
 
+import 'package:my_email_spam_filter/core/platform/platform_capabilities.dart';
 import 'package:my_email_spam_filter/core/providers/email_scan_provider.dart';
 import 'package:my_email_spam_filter/core/services/scan_coordinator.dart';
 import 'package:my_email_spam_filter/main.dart';
@@ -41,8 +42,17 @@ import 'package:my_email_spam_filter/main.dart';
 void main() {
   const accountId = 'aol-test@example.com';
 
-  setUp(ScanCoordinator.resetForTest);
-  tearDown(ScanCoordinator.resetForTest);
+  // ADR-0049: the handler reads PlatformCapabilities.socketsCloseWhenBackgrounded,
+  // so the default host for these tests is Android; the Windows test overrides it.
+  setUp(() {
+    ScanCoordinator.resetForTest();
+    PlatformCapabilities.debugOverride =
+        const PlatformCapabilities(HostPlatform.android);
+  });
+  tearDown(() {
+    ScanCoordinator.resetForTest();
+    PlatformCapabilities.debugOverride = null;
+  });
 
   Future<EmailScanProvider> scanningProvider() async {
     final provider = EmailScanProvider();
@@ -58,8 +68,7 @@ void main() {
           await coordinator.acquire(scanType: 'manual', accountId: accountId);
       final provider = await scanningProvider();
 
-      failScanInterruptedByBackgrounding(
-          isAndroid: true, scanProvider: provider);
+      failScanInterruptedByBackgrounding(scanProvider: provider);
 
       // Sprint 76: the diagnostic "stopped" line reads this.
       expect(lease.info.stopReason, 'app moved to the background (F220)');
@@ -78,8 +87,7 @@ void main() {
       await coordinator.acquire(scanType: 'manual', accountId: accountId);
       final provider = await scanningProvider();
 
-      failScanInterruptedByBackgrounding(
-          isAndroid: true, scanProvider: provider);
+      failScanInterruptedByBackgrounding(scanProvider: provider);
 
       final next = await coordinator
           .acquire(scanType: 'manual', accountId: accountId)
@@ -97,8 +105,9 @@ void main() {
       await coordinator.acquire(scanType: 'manual', accountId: accountId);
       final provider = await scanningProvider();
 
-      failScanInterruptedByBackgrounding(
-          isAndroid: false, scanProvider: provider);
+      PlatformCapabilities.debugOverride =
+          const PlatformCapabilities(HostPlatform.windows);
+      failScanInterruptedByBackgrounding(scanProvider: provider);
 
       expect(provider.status, ScanStatus.scanning,
           reason: 'a minimised Windows window has a live socket and a live '
@@ -111,8 +120,7 @@ void main() {
       await coordinator.acquire(scanType: 'manual', accountId: accountId);
       final provider = await scanningProvider();
 
-      failScanInterruptedByBackgrounding(
-          isAndroid: true, scanProvider: provider);
+      failScanInterruptedByBackgrounding(scanProvider: provider);
 
       expect(provider.status, ScanStatus.error);
       expect(coordinator.active, isNull);
@@ -127,8 +135,7 @@ void main() {
       provider.setCurrentAccountId(accountId);
       // never started -- status is idle
 
-      failScanInterruptedByBackgrounding(
-          isAndroid: true, scanProvider: provider);
+      failScanInterruptedByBackgrounding(scanProvider: provider);
 
       expect(coordinator.active, isNotNull,
           reason: 'backgrounding with no live scan must not disturb a '
@@ -143,8 +150,7 @@ void main() {
       await coordinator.acquire(scanType: 'background', accountId: accountId);
       final provider = await scanningProvider();
 
-      failScanInterruptedByBackgrounding(
-          isAndroid: true, scanProvider: provider);
+      failScanInterruptedByBackgrounding(scanProvider: provider);
 
       expect(coordinator.active, isNotNull,
           reason: 'the active holder is a BACKGROUND scan; releasing it from '

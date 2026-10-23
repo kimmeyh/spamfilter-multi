@@ -40,6 +40,7 @@ import 'ui/theme/app_theme.dart';
 import 'package:workmanager/workmanager.dart';
 import 'core/services/android_background_scan_worker.dart';
 import 'core/services/new_mail_trigger.dart';
+import 'core/platform/platform_capabilities.dart';
 
 /// Global RouteObserver for tracking navigation events
 final RouteObserver<ModalRoute<void>> routeObserver = RouteObserver<ModalRoute<void>>();
@@ -143,7 +144,7 @@ void main(List<String> args) async {
   }
 
   // Initialize sqflite FFI for desktop platforms (Windows, Linux, macOS)
-  if (Platform.isWindows || Platform.isLinux || Platform.isMacOS) {
+  if (PlatformCapabilities.current.usesFfiSqlite) {
     sqfliteFfiInit();
     databaseFactory = databaseFactoryFfi;
     Logger().i('Initialized sqflite FFI for desktop platform');
@@ -212,14 +213,14 @@ void main(List<String> args) async {
 
   // DEV ENVIRONMENT SEEDING: Copy production data to dev directory on first launch
   // Must run BEFORE AppPaths initialization (ADR-0035)
-  if (Platform.isWindows && AppEnvironment.isDev) {
+  if (PlatformCapabilities.current.canBeMsixPackaged && AppEnvironment.isDev) {
     await DevEnvironmentSeeder.seedIfNeeded();
   }
 
   // APP IDENTITY MIGRATION: Migrate data from old com.example directory to new
   // MyEmailSpamFilter directory after Sprint 19 identity change (Issue #182)
   // Must run BEFORE credential migration and rule loading
-  if (Platform.isWindows) {
+  if (PlatformCapabilities.current.canBeMsixPackaged) {
     try {
       final migrated = await AppIdentityMigration.migrateIfNeeded();
       if (migrated) {
@@ -299,7 +300,8 @@ void main(List<String> args) async {
   }
 
   // Initialize Windows system tray and notifications (Windows only)
-  if (Platform.isAndroid) {
+  if (PlatformCapabilities.current.backgroundScanMechanism ==
+      BackgroundScanMechanism.workManager) {
     // F161 (Sprint 61): register the WorkManager dispatcher so scheduled
     // per-account background scans can fire (ADR-0039 mirrored per ADR-0042;
     // the Windows counterpart is the Task Scheduler block below). One-time
@@ -318,7 +320,10 @@ void main(List<String> args) async {
     await _runF264UpgradeConversions();
   }
 
-  if (Platform.isWindows) {
+  // Sprint 80 (Harold Q4 = 2): set below, acted on after runApp.
+  var reconcileTasksAfterStart = false;
+  if (PlatformCapabilities.current.backgroundScanMechanism ==
+      BackgroundScanMechanism.taskScheduler) {
     // F109c (Sprint 44), legacy since F243 (Sprint 75): drain a deferral
     // handoff file written by a pre-F243 native runner into
     // background_scan_log (status='deferred'). The runner no longer writes it,
@@ -332,8 +337,14 @@ void main(List<String> args) async {
     }
 
     _windowsSystemTrayService = WindowsSystemTrayService();
-    await _windowsSystemTrayService!.initialize();
-    Logger().i('Windows system tray initialized');
+    // PR #490 7.7.1: say what happened (the service writes the reason to the
+    // diagnostic log); this line used to claim success either way.
+    if (await _windowsSystemTrayService!.initialize()) {
+      Logger().i('Windows system tray initialized');
+    } else {
+      Logger().w('Windows system tray icon was NOT added (see the "tray" '
+          'line in the diagnostic log)');
+    }
 
     // F287 (Sprint 79): no notification start-up step. The background-scan
     // toast is posted (and the plugin initialized) by ScanCompleteNotifier in
@@ -355,7 +366,55 @@ void main(List<String> args) async {
     // shipped) self-heal to the new alias-based one via
     // verifyAndRepairTaskPath, on the very next app launch.
     if (kReleaseMode) {
-      // F98 (ADR-0039): per-account background-scan startup reconciliation.
+      // Sprint 80 (Harold Q4 = 2): the reconciliation now starts AFTER
+      // runApp (below). Each Task Scheduler call is one PowerShell process of
+      // about 3 s, so awaiting it here kept the window hidden for 15-30 s.
+      reconcileTasksAfterStart = true;
+    } else {
+      if (AppEnvironment.isMsixInstall) {
+        Logger().i('Skipping Task Scheduler management in MSIX install');
+      } else {
+        Logger().i('Skipping Task Scheduler management in debug mode');
+      }
+      if (!kReleaseMode) {
+        // Debug: convert stored values only; scheduling stays off (the
+        // executable path of a debug run is a temporary runner).
+        await _runF264UpgradeConversions();
+      }
+    }
+  }
+
+  // F248 (Sprint 76): one line per foreground start while diagnostic logging
+  // is on -- the file exists as soon as logging is on, and it names the
+  // build that wrote everything after it.
+  unawaited(DiagnosticLogger.appEvent('app start (foreground)'));
+  // F253 review HIGH-3 (Sprint 76): the new-mail listener is native and cannot
+  // write this log, so copy its last recorded outcome here. Android only
+  // (ADR-0044); once per foreground start.
+  if (PlatformCapabilities.current.hasNewMailNotificationTrigger) {
+    unawaited(_logNewMailTriggerOutcome());
+  }
+
+  runApp(const SpamFilterApp());
+
+  if (reconcileTasksAfterStart) {
+    unawaited(_reconcileWindowsBackgroundTasks());
+  }
+}
+
+/// F98 (ADR-0039): per-account background-scan reconciliation at foreground
+/// start (Windows release builds; MSIX included since F148).
+///
+/// Sprint 80 (Harold Q4 = 2): runs after `runApp`, not before it, so the window
+/// appears at once. The whole run holds [WindowsTaskSchedulerService.runExclusive],
+/// the same lock as Settings' schedule and cancel, so a change made in Settings
+/// while this runs lands before or after it, never between its steps (step 3
+/// would otherwise delete a task Settings created after step 2 as an orphan).
+/// Background-mode launches exit before this point (they never change tasks).
+/// Best-effort: a failure is logged and retried at the next launch.
+Future<void> _reconcileWindowsBackgroundTasks() =>
+    WindowsTaskSchedulerService.runExclusive(() async {
+      final stopwatch = Stopwatch()..start();
       try {
         final settingsStore = SettingsStore();
         final credStore = SecureCredentialsStore();
@@ -423,34 +482,26 @@ void main(List<String> args) async {
             await WindowsTaskSchedulerService.deleteScheduledTaskByName(taskName);
           }
         }
+        Logger().i('Background task reconciliation finished after the window '
+            'appeared (${stopwatch.elapsedMilliseconds} ms)');
+        // PR #490 7.7.1 (silent-failure review finding 10): a release build
+        // keeps no console log, so the outcome goes to the diagnostic log.
+        await DiagnosticLogger.log(
+          kind: DiagnosticLogger.kindApp,
+          context: 'task-scheduler',
+          detail: 'start-up reconciliation done: ${desiredTaskNames.length} '
+              'task(s) wanted (${stopwatch.elapsedMilliseconds} ms)',
+        );
       } catch (e) {
         Logger().w('Per-account background scan startup reconciliation failed: $e');
+        await DiagnosticLogger.log(
+          kind: DiagnosticLogger.kindException,
+          context: 'task-scheduler',
+          detail: 'start-up reconciliation failed; retried at the next start '
+              '-- ${DiagnosticLogger.describeError(e)}',
+        );
       }
-    } else {
-      if (AppEnvironment.isMsixInstall) {
-        Logger().i('Skipping Task Scheduler management in MSIX install');
-      } else {
-        Logger().i('Skipping Task Scheduler management in debug mode');
-      }
-      if (!kReleaseMode) {
-        // Debug: convert stored values only; scheduling stays off (the
-        // executable path of a debug run is a temporary runner).
-        await _runF264UpgradeConversions();
-      }
-    }
-  }
-
-  // F248 (Sprint 76): one line per foreground start while diagnostic logging
-  // is on -- the file exists as soon as logging is on, and it names the
-  // build that wrote everything after it.
-  unawaited(DiagnosticLogger.appEvent('app start (foreground)'));
-  // F253 review HIGH-3 (Sprint 76): the new-mail listener is native and cannot
-  // write this log, so copy its last recorded outcome here. Android only
-  // (ADR-0044); once per foreground start.
-  if (Platform.isAndroid) unawaited(_logNewMailTriggerOutcome());
-
-  runApp(const SpamFilterApp());
-}
+    });
 
 /// F264 (Sprint 77): the one-time upgrade conversions, on BOTH platforms.
 ///
@@ -469,8 +520,9 @@ Future<void> _runF264UpgradeConversions() async {
   try {
     final settingsStore = SettingsStore();
     final credStore = SecureCredentialsStore();
-    final canSchedule =
-        Platform.isAndroid || (Platform.isWindows && kReleaseMode);
+    final mechanism = PlatformCapabilities.current.backgroundScanMechanism;
+    final canSchedule = mechanism == BackgroundScanMechanism.workManager ||
+        (mechanism == BackgroundScanMechanism.taskScheduler && kReleaseMode);
     await BackgroundIntervalMigration(
       settingsStore: settingsStore,
       getAccountIds: credStore.getSavedAccounts,
@@ -483,7 +535,7 @@ Future<void> _runF264UpgradeConversions() async {
           : null,
     ).runIfNeeded();
 
-    if (Platform.isAndroid) {
+    if (PlatformCapabilities.current.hasNewMailNotificationTrigger) {
       await NewMailSwitchMigration(
         settingsStore: settingsStore,
         getAccountIds: credStore.getSavedAccounts,
@@ -507,6 +559,15 @@ Future<void> _runF264UpgradeConversions() async {
 /// trigger outcome into the diagnostic log. Nothing when the feature never
 /// fired or the record cannot be read.
 Future<void> _logNewMailTriggerOutcome() async {
+  // Sprint 80 Task 17 (#505): one snapshot line at every foreground start,
+  // so the log can say why the trigger did not fire and how the screen was
+  // started -- not only the outcome of a trigger that did fire.
+  await DiagnosticLogger.log(
+    kind: DiagnosticLogger.kindApp,
+    context: 'new-mail-diagnostics',
+    detail: NewMailTrigger.formatDiagnostics(await NewMailTrigger.diagnostics(),
+        error: NewMailTrigger.lastDiagnosticsError),
+  );
   final parsed = NewMailTrigger.parseLastResult(await NewMailTrigger.lastResult());
   if (parsed == null) return;
   await DiagnosticLogger.log(
@@ -542,7 +603,7 @@ class SpamFilterApp extends StatelessWidget {
       child: Shortcuts(
         shortcuts: <LogicalKeySet, Intent>{
           // Desktop keyboard shortcuts (Windows/Linux/macOS)
-          if (Platform.isWindows || Platform.isLinux || Platform.isMacOS) ...{
+          if (PlatformCapabilities.current.hasDesktopWindow) ...{
             // Ctrl+Q: Quit application
             LogicalKeySet(LogicalKeyboardKey.control, LogicalKeyboardKey.keyQ):
                 const _QuitIntent(),
@@ -598,15 +659,15 @@ class SpamFilterApp extends StatelessWidget {
 /// no test, because it reports coverage it does not provide. Moving the body
 /// here makes the harness signature the production signature.
 ///
-/// [isAndroid] is passed in rather than read from `Platform` so BOTH ADR-0042
-/// branches are reachable from a test. Android tears down an app's sockets when
-/// it is backgrounded, so the scan is genuinely dead; Windows minimise does not,
-/// and failing a healthy scan there would be a regression.
+/// The decision is `PlatformCapabilities.current.socketsCloseWhenBackgrounded`
+/// (ADR-0049) so BOTH ADR-0042 branches are reachable from a test through
+/// `PlatformCapabilities.debugOverride`. Android tears down an app's sockets
+/// when it is backgrounded, so the scan is genuinely dead; Windows minimize
+/// does not, and failing a healthy scan there would be a regression.
 void failScanInterruptedByBackgrounding({
   required EmailScanProvider scanProvider,
-  required bool isAndroid,
 }) {
-  if (!isAndroid) return;
+  if (!PlatformCapabilities.current.socketsCloseWhenBackgrounded) return;
   if (scanProvider.status != ScanStatus.scanning) return;
 
   final accountId = scanProvider.currentAccountId;
@@ -706,9 +767,8 @@ class _AppInitializerState extends State<_AppInitializer>
   /// **ADR-0042 platform exception, same as the scan screen's**: Android tears
   /// down sockets for a backgrounded app, so the scan is genuinely dead.
   /// Windows minimise does not, and killing a healthy scan there would be a
-  /// regression. [debugIsAndroid] is the test seam.
-  @visibleForTesting
-  static bool? debugIsAndroid;
+  /// regression. The test seam is `PlatformCapabilities.debugOverride`
+  /// (ADR-0049).
 
   void _failScanInterruptedByBackgrounding() {
     if (!mounted) return;
@@ -718,7 +778,6 @@ class _AppInitializerState extends State<_AppInitializer>
     // below so it can be tested against the real code.
     failScanInterruptedByBackgrounding(
       scanProvider: context.read<EmailScanProvider>(),
-      isAndroid: debugIsAndroid ?? Platform.isAndroid,
     );
   }
 
@@ -756,7 +815,7 @@ class _QuitAction extends Action<_QuitIntent> {
   @override
   Object? invoke(_QuitIntent intent) {
     // Exit the application gracefully
-    if (Platform.isWindows || Platform.isLinux || Platform.isMacOS) {
+    if (PlatformCapabilities.current.hasDesktopWindow) {
       SystemNavigator.pop();
     }
     return null;

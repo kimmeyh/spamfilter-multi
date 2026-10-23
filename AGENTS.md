@@ -2,53 +2,38 @@
 
 This file provides guidance to Codex (Codex.ai/code) when working with code in this repository.
 
-## FIRST: Run Startup Check
+## FIRST: How to run a sprint -- the SPRINT EXECUTION docs
 
-**BEFORE doing any work**, you MUST run `/startup-check` to verify the environment and restore any saved context.
+**This file does not describe the sprint process. The sprint execution docs do, and they are authoritative.**
+Read them; do not work from a summary. Where this file and a sprint doc differ, the sprint doc wins.
+(Harold, 2026-10-23: AGENTS.md refers to the sprint execution docs for how to run a sprint. Copies of the process
+in this file drifted out of date -- for example the PR draft rule -- so they were replaced with this list.)
 
-This skill will:
-1. Verify git status and branch
-2. Verify GitHub CLI is working
-3. Check for saved memory from previous session and restore it
-4. Report readiness status
+Read in this order:
+1. `.claude/sprint_status.json` -- the current sprint, phase, PR and next actions. Check that its branch matches
+   `git branch --show-current` before trusting it.
+2. `docs/SPRINT_RESUME_GUIDE.md` -- how to resume mid-sprint: phase definitions, decision classes, stopping
+   criteria, the resume sequence.
+3. `docs/ALL_SPRINTS_MASTER_PLAN.md` -- the master plan: backlog, priorities, last completed sprint. Read it
+   before every sprint.
+4. `docs/SPRINT_CHECKLIST.md` -- the one-page checklist. Open it at every phase boundary and walk it line by line.
+5. `docs/SPRINT_EXECUTION_WORKFLOW.md` -- the step-by-step workflow, Phases 1-8: backlog refinement, planning,
+   cards and the draft PR, execution, Manual Validation, the final code reviews, the retrospective, close-out,
+   the release cycle. It also holds the Decision-Class Checkpoint Protocol, the Phase Auto-Advance rule and its
+   enforcement window, and the Standing Approval Inventory.
+6. `docs/SPRINT_PLANNING.md` -- planning method, card template, model assignment (cheapest tier first).
+7. `docs/BACKLOG_REFINEMENT.md` -- the Phase 1 presentation format.
+8. `docs/SPRINT_STOPPING_CRITERIA.md` -- the only 9 reasons to stop work mid-sprint.
+9. `docs/SPRINT_RETROSPECTIVE.md` -- the retrospective template (4 roles x 14 categories).
 
-If any check fails, **STOP and resolve with user before accepting work**.
+Supporting docs: `docs/TESTING_STRATEGY.md`, `docs/QUALITY_STANDARDS.md`, `docs/TROUBLESHOOTING.md`,
+`docs/ARCHITECTURE.md`, `docs/CHANGELOG_POLICY.md`, `docs/STORE_RELEASE_PROCESS.md`.
 
-**Note on Firebase MCP**: This project uses Firebase only for Android Gmail OAuth registration (not backend services like Firestore/Auth/Storage). The Firebase MCP server is not needed for current development workflows. It can be added later if Firebase backend services are integrated.
+**Hooks do not run for you.** The process gates in `.claude/hooks/` (cards and draft PR, close-out, blind staging,
+mutation lock, auto-advance) are Claude Code hooks. When you work in this repository they do not fire, so follow
+the checklist steps they enforce by hand.
 
-## CRITICAL: Master Sprint Plan Location
-
-**DO NOT LOSE THIS REFERENCE** - The master plan for all sprints is stored in:
-
-**Repository File**: `docs/ALL_SPRINTS_MASTER_PLAN.md`
-**Full Path**: `D:\Data\Harold\github\spamfilter-multi\docs\ALL_SPRINTS_MASTER_PLAN.md`
-**GitHub URL**: `https://github.com/kimmeyh/spamfilter-multi/blob/develop/docs/ALL_SPRINTS_MASTER_PLAN.md`
-
-**Contents**:
-- Maintenance Guide (how/when to update the document)
-- Past Sprint Summary (table with links to per-sprint docs)
-- Last Completed Sprint details
-- Next Sprint Candidates (unified prioritized table of features, bugs, tasks)
-- Feature and Bug Details (incomplete items only)
-- Google Play Store Readiness (HOLD section)
-
-**When You Need This**:
-- Starting a new sprint (review "Next Sprint Candidates" table)
-- Selecting sprint scope (check priorities and dependencies)
-- Understanding feature details (read "Feature and Bug Details" section)
-- Reviewing past sprint history (follow links in "Past Sprint Summary" table)
-- Planning Google Play Store work (review "Google Play Store Readiness" section)
-
-**Important**:
-1. This document is IN THE REPOSITORY (not in Codex's plan storage)
-2. It persists across conversations (unlike `.Codex/plans/`)
-3. Update it after each sprint per the Maintenance Guide at the top of the document
-4. **BEFORE EVERY SPRINT**: Reference this document as very first step
-   - Read this document before starting Phase 2: Sprint Pre-Kickoff
-   - Review "Next Sprint Candidates" table for prioritized work items
-   - Verify "Last Completed Sprint" section is current
-   - Then proceed to SPRINT_EXECUTION_WORKFLOW.md Phase 2
-5. If you cannot find it, search: `find . -name "ALL_SPRINTS_MASTER_PLAN.md"` or `grep -r "sprint" docs/ALL_SPRINTS_MASTER_PLAN.md`
+**Note on Firebase MCP**: This project uses Firebase only for Android Gmail OAuth registration (not backend services like Firestore/Auth/Storage). The Firebase MCP server is not needed for current development workflows.
 
 ## Developer information
 1. Using Windows 11 HP Omen with all current Windows Updates installed
@@ -132,41 +117,12 @@ into `develop` only.
 - **Don't report a checklist section, phase, or close-out as complete without OPENING the checklist and walking it line by line in that same turn.** "I believe I did that" is not verification. Every line gets an explicit `DONE (<evidence>)` / `N/A (<why>)` / `NOT DONE -> doing it now`. (Sprint 50 escape: close-out reported complete with 5 issues open, `sprint_status.json` 15 sprints stale, and no next-sprint stub. Enforced by the `verify-closeout-complete` Stop hook.)
 - **Don't treat a multi-part user request as a theme.** Enumerate every discrete ask before starting, and restate each ask with its status before ending the turn. A request with a terminal condition ("continue until X") is not satisfied by doing the first part well.
 
-### [CRITICAL] Decision-Class Taxonomy: STOP, Surface, Wait
+### Decision classes: STOP, surface, wait
 
-_(F130-S51, Sprint 51: this section was present in CLAUDE.md but entirely ABSENT from AGENTS.md -- so an agent reading only AGENTS.md had no instruction to surface architecture / development / sprint-scope decisions. Kept in sync with CLAUDE.md; if one is edited, edit both.)_
-
-**Source**: Sprint 38 retrospective, 2026-05-18 (Harold's PO/SM/LD feedback).
-
-Harold wears three distinct roles -- Chief Architect, Chief Developer, and Scrum Master. Codex is **not** authorized to make unilateral decisions in any of the three classes below. Sprint-plan approval at Phase 3 is durable authorization for tasks AS PLANNED -- it is NOT authorization to change architecture, change prior development decisions, or change the approved sprint scope.
-
-When a candidate change falls into one of these three classes, STOP, surface the decision to the user with the explicit phrasing pattern below, and WAIT for approval before implementing:
-
-**1. Architecture decisions (Chief Architect)**
-- Any change that downgrades, inverts, or replaces a prior architectural decision.
-- Examples: data-model changes, control-flow inversions, persistence semantic shifts, removal of an ADR-documented pattern, changes to the meaning of a stored value (e.g., Sprint 38 Round 4 inverted IMAP cursor from "max UID seen" to "oldest unaddressed UID").
-- Surface phrasing: "This would change a prior architectural decision: [describe the prior decision and the proposed change]. Should I proceed?"
-
-**2. Development decisions (Chief Developer)**
-- Any change to prior development decisions or established patterns.
-- Examples: function signature changes that affect callers, removed abstractions, ordering changes that affect downstream callers, semantic shifts in a field's meaning at runtime (e.g., Sprint 38 Round 8 changed `_initialNoRuleCount` from "snapshot at scan-completion" to "snapshot at re-entry").
-- Surface phrasing: "This would change a prior development decision: [describe the prior decision and the proposed change]. Should I proceed?"
-
-**3. Sprint execution decisions (Scrum Master)**
-- Any decision to shorten the sprint, de-scope an approved task, or defer an approved task to a future sprint -- UNLESS a `SPRINT_STOPPING_CRITERIA.md` criterion (1-9) is genuinely met AND the Scrum Master has approved.
-- Examples: marking a task "deferred to Sprint N+1" without SM approval, drafting "Next Steps" / "ready for retrospective" while approved tasks remain incomplete and no stopping criterion applies.
-- Surface phrasing: "This would change the approved sprint scope: [describe what is being deferred / de-scoped]. Should I proceed?"
-
-**When to surface**: at the next natural break in the interaction. Natural breaks are:
-- Backlog Refinement to Sprint Plan approval (Phase 1 → Phase 3)
-- Manual Validation (Phase 5.3)
-- Sprint Retrospective (Phase 7)
-
-Do NOT bury the decision inside a multi-task code change. Do NOT proceed and "ask in the retrospective." Surface it AT the natural break or BEFORE it if implementation is blocked.
-
-**If you catch yourself thinking** "this is just a small change, the user will be fine with it" -- that is the signal to STOP and surface. Sprint 38 had 10 rounds of fixes; multiple of those rounds contained class-1, class-2, or class-3 decisions that were not surfaced. The 400-hour stopping-criterion clarification in `docs/SPRINT_STOPPING_CRITERIA.md` Criterion 9 specifically addresses class-3 violations.
-
-**Touchpoint**: See `docs/SPRINT_EXECUTION_WORKFLOW.md` "Decision-Class Checkpoint Protocol" for the full surfacing template and the per-phase application matrix.
+Architecture, development and sprint-scope decisions are Harold's (Chief Architect, Chief Developer, Scrum Master).
+Plan approval does not authorize them. Surface each one at the next natural break and wait. The rule, its
+examples and the surfacing template are in `docs/SPRINT_EXECUTION_WORKFLOW.md` "Decision-Class Checkpoint
+Protocol" and `docs/SPRINT_STOPPING_CRITERIA.md`.
 
 ## Windows Tool Restrictions
 
@@ -226,36 +182,10 @@ Do NOT bury the decision inside a multi-task code change. Do NOT proceed and "as
    - Use "Let me check..." or "I'm investigating..." instead of silent tool usage
    - Share intermediate findings, not just final conclusions
 
-6. **Execution Autonomy During Sprints**: Sprint plan approval authorizes all task execution
-   - **CRITICAL**: When user approves sprint plan (Phase 3), this pre-approves ALL tasks through Phase 7 (Sprint Review)
-   - **DO NOT** ask for approval on individual tasks during execution
-   - **DO NOT** ask before starting each task (learned in Sprint 6, reinforced in Sprint 13)
-   - **DO NOT** stop for implementation decisions - make best engineering judgment and document
-   - Work continuously and autonomously until: blocked/escalated, all tasks complete, or sprint review requested
-   - This autonomy is core to sprint efficiency - per-task approvals add overhead without benefit
-   - If mid-sprint changes needed: Document scope change, get re-approval, adjust plan and resume
-   - See `docs/SPRINT_STOPPING_CRITERIA.md` for EXACT criteria when to stop working and why
-   - **Sprint Stopping Criteria**: ONLY stop for these reasons:
-     1. All tasks complete (Criterion 1)
-     2. Blocked on external dependency (Criterion 2)
-     3. User requests scope change (Criterion 3)
-     4. Critical bug found (Criterion 4)
-     5. User requests early review (Criterion 5)
-     6. Sprint review complete (Criterion 6)
-     7. Fundamental design failure (Criterion 7)
-     8. Context limit approaching (Criterion 8)
-     9. Time limit reached (Criterion 9)
-   - **NOT valid stopping reasons**: Implementation choices, approach uncertainty, minor code style, single test failure
-   - **Reference**: SPRINT_EXECUTION_WORKFLOW.md Phase 3.7 and SPRINT_STOPPING_CRITERIA.md
-
-7. **Phase Auto-Advance Rule (Sprint 35+)**: When the work for the current phase completes (tests pass / build succeeds / PR pushed / docs updated / etc.), proceed *immediately* to the next phase's first action. **DO NOT** ask "want me to proceed to Phase N+1?" -- sprint-plan approval at Phase 3 is durable authorization. The only acceptable mid-sprint pauses are the 9 SPRINT_STOPPING_CRITERIA listed above. "Confirming the next step" is not on that list.
-   - **ENFORCEMENT WINDOW (Harold, 2026-07-30, Sprint 51 retro IMP-7)**: this rule applies **ONLY between Phase 3.7 plan approval and the beginning of Manual Validation (Phase 5.3)**. Harold's rationale: *"all questions for the sprint should have been asked by then."* BEFORE approval, asking is required (Phase 1 refinement; the 3.7 approval request itself). FROM Manual Validation onward, the work is Harold-driven -- validation feedback, retrospective input, improvement dispositions -- so asking is CORRECT, not a violation. Outside the window a question is never an auto-advance violation.
-   - Enforced by `.claude/hooks/sprint-auto-advance.ps1` (Gate 1b = lower bound, Gate 1c = upper bound). The upper bound is read from `.claude/sprint_status.json` `current_sprint.status`, so **keep that field current at phase transitions** -- it is what tells the hook which side of the window you are on.
-   - State the next action in one sentence, then execute it. Example:
-     - **WRONG**: "Phase 5.2 tests pass. Want me to proceed to Phase 5.3 (build app)?"
-     - **RIGHT**: "Phase 5.2 tests pass. Building Windows desktop app for Phase 5.3 manual validation now." [executes build]
-   - Same rule applies to commit/push/PR-update boundaries when the sprint plan covers them: do NOT ask permission to commit Phase 5 work, push to the sprint feature branch, or update the sprint PR description -- those are within standing approval (see SPRINT_EXECUTION_WORKFLOW.md Phase 3.7 "Standing Approval Inventory")
-   - Established Sprint 35 retro after Opus 4.7 cost ~4 wall-clock hours across Sprints 34-35 by repeatedly asking permission at phase boundaries that prior models (Opus 4.6) crossed automatically
+6. **Sprint execution autonomy, phase auto-advance and stopping**: follow `docs/SPRINT_EXECUTION_WORKFLOW.md`
+   (Phase 3.7, the Standing Approval Inventory, the Phase Auto-Advance rule and its enforcement window) and
+   `docs/SPRINT_STOPPING_CRITERIA.md`. In short: after plan approval, execute the approved tasks without asking;
+   stop only for the 9 stopping criteria.
 
 **Example of Good Co-Lead Collaboration**:
 ```
@@ -267,81 +197,6 @@ search for 'lib/' in there... Found it! Line 81 has a broad 'lib/' exclusion tha
 catching both Python lib directories AND our Flutter source code. This is a mixed-repo
 issue. Should I make it more specific to only exclude 'Archive/desktop-python/lib/'?"
 ```
-
-### Sprint Execution Autonomy - Common Mistakes
-
-**LEARN FROM PAST MISTAKES**: Do NOT stop for these reasons:SPRINT_CHECKLIST
-
-| Situation | WRONG Behavior | CORRECT Behavior |
-|-----------|---------------|------------------|
-| Implementation choice | Stop and ask: "Should I use method A or B?" | Make best judgment, document, continue |
-| Approach uncertainty | Stop and ask: "Is this the right approach?" | Implement, test, iterate if needed |
-| Method signature change | Stop and ask: "Should I add parameter X?" | Add if needed for acceptance criteria, continue |
-| Refactor vs extend | Stop and ask: "Should I refactor or extend?" | Choose based on code smell, document, continue |
-| Single test failure | Stop and report | Fix the test, continue |
-| Code style issue | Stop and ask | Fix it or note as tech debt, continue |
-| Feature seems incomplete | Stop and verify | Complete acceptance criteria, continue |
-
-**Remember**: Sprint plan approval = blanket approval for ALL implementation decisions needed to meet acceptance criteria. Only stop for the 9 criteria in SPRINT_STOPPING_CRITERIA.md.
-
-## Sprint Planning and Development Workflow
-
-**CRITICAL**: All development follows sprint-based planning with model-tiered task execution.
-
-### Sprint Execution Documentation
-
-All sprint work references the **SPRINT EXECUTION docs** - the authoritative set of sprint process documentation:
-
-| Document | Purpose | When to Use |
-|----------|---------|-------------|
-| **ALL_SPRINTS_MASTER_PLAN.md** | Master plan for all sprints | Before starting any sprint, after completing a sprint |
-| **SPRINT_PLANNING.md** | Sprint planning methodology | When planning a new sprint |
-| **SPRINT_EXECUTION_WORKFLOW.md** | Step-by-step execution checklist | During sprint execution (Phases 1-7) |
-| **SPRINT_STOPPING_CRITERIA.md** | When/why to stop working | When uncertain if blocked or should continue |
-| **SPRINT_RETROSPECTIVE.md** | Sprint review and retrospective guide | After PR submission (Phase 7) |
-| **TESTING_STRATEGY.md** | Testing approach and requirements | When writing or reviewing tests |
-| **QUALITY_STANDARDS.md** | Quality standards for code and documentation | When writing code or documentation |
-| **TROUBLESHOOTING.md** | Common issues and solutions | When encountering errors or debugging |
-| **PERFORMANCE_BENCHMARKS.md** | Performance metrics and tracking | When measuring performance or comparing to baseline |
-| **ARCHITECTURE.md** | System architecture and design | When making architectural decisions or understanding codebase |
-| **CHANGELOG.md** | Project change history | When documenting sprint changes (mandatory sprint completion) |
-
-**Quick Reference**: These 11 documents form the complete sprint execution knowledge base. Reference them frequently during sprint work.
-
-### [CRITICAL] Phase 7 Retrospective Completeness Rule
-
-**A Sprint Retrospective is NEVER complete unless ALL 14 categories are addressed by ALL 4 roles. Missing roles or categories = retrospective is INCOMPLETE = sprint is NOT complete. DO NOT declare a sprint complete until this rule is satisfied.**
-
-The 4 mandatory roles (Harold wears 3 of the 4 hats; Codex provides the 4th):
-1. **Product Owner** -- business value, scope, backlog implications
-2. **Scrum Master** -- process adherence, ceremony quality, blockers
-3. **Lead Developer** -- technical quality, architecture, engineering decisions
-4. **Codex Development Team** -- execution-side observations, prompt/tooling friction
-
-The 14 mandatory categories: (1) Effective while as Efficient as Reasonably Possible, (2) Testing Approach, (3) Effort Accuracy, (4) Planning Quality, (5) Model Assignments, (6) Communication, (7) Requirements Clarity, (8) Documentation, (9) Process Issues, (10) Risk Management, (11) Next Sprint Readiness, (12) Architecture Maintenance, (13) Minor Function Updates for the Next Sprint Plan, (14) Function Updates for the Future Backlog.
-
-Empty/silent role-feedback lines are NOT acceptable. If a role has nothing to say, that role must explicitly write `No issues -- expectations met.` -- but the role MUST be addressed.
-
-**See**: `docs/SPRINT_RETROSPECTIVE.md` for the verbatim feedback template, full category definitions, and per-role example feedback.
-
-### Sprint Structure
-- **Sprints**: Time-boxed iterations focusing on one key enhancement
-- **Cards**: GitHub issues representing sprint work items
-- **Tasks**: Sub-tasks within cards, assigned by model capability
-
-### Model Tiering Strategy
-Work flows through models by complexity:
-- **Haiku**: Straightforward implementation, bug fixes, tests, documentation
-- **Sonnet**: Architectural decisions, complex refactoring, multi-file changes
-- **Opus**: Deep debugging, performance optimization, critical path features
-
-Codex determines model assignment using the `/plan-sprint` skill (see below).
-
-### Detailed Process
-See `docs/SPRINT_PLANNING.md` for complete sprint planning methodology, ceremonies, and GitHub issue workflows.
-
-### Important: Sprints Replace Phases
-As of January 24, 2026, **sprints replace the previous phase-based development model**. Historical references to "Phase 3.1", "Phase 3.2", etc., remain as archived milestones. All current and future work is organized into numbered sprints (Sprint 1, Sprint 2, etc.) following the methodology documented in `docs/SPRINT_PLANNING.md`. GitHub issues are labeled with `sprint` and numbered sequentially.
 
 ## Coding Style Guidelines
 
@@ -730,24 +585,10 @@ When `develop` is merged to `main`, create a versioned release:
 - **Do not delete**: Never remove entries; move them to versioned sections
 - **PR description**: Use CHANGELOG entries as basis for PR descriptions
 
-## Model-Version Pitfalls (Living Appendix)
+## Process lessons
 
-A short list of behaviors observed in specific Codex model versions that cost wall-clock time during sprint execution. Each entry: what to avoid, what to do instead, when surfaced. Update this list during retros. Useful for self-correction within a session and for measuring whether new model versions still exhibit the same issues.
-
-**Opus 4.7 (added Sprint 35 retro, 2026-04-19)**:
-
-- **Asking permission to cross phase boundaries.** When Phase N work completes and Phase N+1 begins, do not ask "want me to proceed to Phase N+1?". Sprint plan approval at Phase 3 covers Phases 4-7. State the next action and execute it. See AGENTS.md §"Phase Auto-Advance Rule" (item 7 under "Development Philosophy") and SPRINT_EXECUTION_WORKFLOW.md Phase 3.7 "Standing Approval Inventory".
-- **Re-reading SPRINT_CHECKLIST.md / SPRINT_EXECUTION_WORKFLOW.md per phase.** These docs total >1500 lines. Re-loading them every phase costs context tokens and wall-clock seconds. Hold a compact mental model of the current phase from a single read at sprint start; re-read only on actual uncertainty (not as a routine checkpoint). The 1-page Phase Cheat Sheet (P3 backlog item, Sprint 36) will reduce the cost of those rare re-reads.
-- **Asking before committing/pushing/PR-updating during sprint execution.** All three are in the Phase 3.7 Standing Approval Inventory [OK] list. Do not ask -- execute, then report what shipped. The only exceptions are the [FAIL] list items (force-push, reset --hard, etc.).
-- **Calling things "critical bug" before checking the source.** Sprint 35: I called the Settings header dialog a critical bug; it was intended behavior documented in `_openSettings()`. Verify intent against source before alarming framing -- a 30-second source check beats a 90-second retraction.
-- **Asking "want me to proceed to Phase 7?" after Phase 6 completes.** Phase 7 (Sprint Review) is mandatory per AGENTS.md §"Phase 7 Sprint Review (4 ROLES x 14 CATEGORIES)". Always-execute, never-ask. Send the retro prompt, draft Codex feedback in parallel, follow the 7-Step Protocol verbatim.
-- **Leaving the sprint PR in draft state through close-out.** Sprint 35 escape: PR #238 was created as draft per Phase 3.3.1 (correct -- early visibility) but stayed draft through Phase 6 and Phase 7 because no enumerated step required flipping it. Harold had to surface the issue manually, blocking merge. Phase 6.4.5 now mandates `gh pr ready <PR-number>` after Copilot review and before user notification. Verify with `gh pr view <PR-number> --json isDraft,mergeable` showing `isDraft: false`, `mergeable: MERGEABLE`.
-- **Skipping Phase 1 Backlog Refinement.** Sprint 36 escape: I jumped from Phase 2 (dependency check) straight to Phase 3 plan drafting without presenting the candidate list to Harold in BACKLOG_REFINEMENT.md format. The prior "OPTIONAL - On-Demand" language in SPRINT_EXECUTION_WORKFLOW.md was the loophole. Harold caught it post-facto, and Phase 1 is now MANDATORY every sprint with no PO request needed (Sprint 36 policy change, 2026-04-20). Do NOT ask "should we do backlog refinement?" -- just run Phase 1.1 / 1.2 / 1.3 as the first step of every sprint. Present candidates in bullet-list format (NOT grid tables) grouped by priority tier, with HOLD items at bottom.
-- **Improvising around the Sprint Execution docs when following them would feel slower in the moment.** Sprint 36 retro Category 9 (PO/SM/LD): "general unwillingness to follow the Sprint Execution Docs, /docs, checklist... and just try to wing it when winging it is costly to the overall process". Concrete failure modes I exhibited across Sprints 34-36: (a) reading SPRINT_N_PLAN.md from scratch on session resume instead of running `/startup-check` first; (b) starting Task 1 without checking TaskList; (c) starting Task 1 without verifying Phase 3.7 approval evidence; (d) writing SPRINT_N_PLAN.md without running the Phase 3.2.2.1 plan-to-branch-state verification gate; (e) skipping the Phase 5.1.1 sibling-test sweep when the data change "obviously" did not affect siblings; (f) running `flutter` commands directly when the project standard is the PowerShell scripts in `mobile-app/scripts/`. The pattern: each individual skip "feels faster" by 30-60 seconds, but the resulting escapes (stale plan tasks, wrong file paths, unapproved Phase 4 starts, missed UX widget tests, broken siblings) cost minutes-to-hours per incident plus interaction overhead with Harold. **Corrective behavior**: at every phase boundary, do the listed checklist step BEFORE the productive work. The checklist is the cheap, fast path; "winging it" is the expensive path that feels cheap. If you catch yourself thinking "I know what to do, the checklist is just overhead," that is the signal to run the checklist step.
-
-**How to use this list at the start of a session**: When AGENTS.md is auto-loaded, scan this section. If the current task involves any pattern listed here, treat the listed corrective behavior as a hard constraint, not a suggestion.
-
-**How to maintain**: At each sprint retro, add new entries observed during that sprint (Category 9 Process Issues output). Remove entries when a model version known to exhibit the issue is retired. Keep the list short -- if entries become too numerous, reorganize by category (autonomy, communication, documentation, etc.).
+Lessons from past sprints live in the sprint docs and in `docs/sprints/SPRINT_N_RETROSPECTIVE.md`. They are
+applied to the sprint execution docs when Harold approves them, so the docs above are the current version.
 
 ## Known Limitations
 
