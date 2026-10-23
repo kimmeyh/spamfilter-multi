@@ -275,3 +275,25 @@ this happened, what is the long-term benefit"*
   this problem again in a future sprint"*. Trigger to re-propose: a step fact that changed between rehearsal and
   Harold's run costs a question or a round again.
 - **IMP-5 Phase 8 checks the first and a later start** -- APPLIED. `sprint_status.json` Phase 8 next action.
+
+### After the 7.7.1 final code reviews (Harold, 2026-10-23)
+
+Harold, verbatim: *"Based on the increasing number of PR review findings, it would seem that retrospectives and
+suggested improvements should come after the PR reviews are completed - in order to find suggested improvements
+that would prevent them from occurring (improved sprint cards, checklist gates...)"*. Claude's check of the record:
+the 7.7.1 lines show 19, 17 and 24 findings in Sprints 78-80 (high every sprint rather than rising fast), most from
+silent-failure-hunter (9, 15, 16) and most of one class, and the 5.1.2 F-PRECHECK silent-failure class reported
+"clean" in Sprint 80 before the hunter found 16.
+
+- **Q3 Final code reviews before the retrospective** -- APPLIED (Harold "q3 1", from Sprint 81).
+  `SPRINT_EXECUTION_WORKFLOW.md` gains the "Phase 7 order" block, and 3.3.1, 6.x, 7.7, 7.7.1 and 7.7.5 now set the
+  PR ready when Manual Validation completes; `SPRINT_CHECKLIST.md` and `CLAUDE.md` match. The findings feed the
+  retrospective by class (every recurring class gets a 7.5 prevention proposal), and a 7.7.1 improvement review
+  covers the retrospective's own commits. Prevention: `verify-closeout-complete.ps1` check 3d-2 now requires the
+  7.7.1 line to record the improvement review from Sprint 81 (hook cases allow-11 and violation-14; suite 138/138).
+- **Finding 16 (IMAP UID fallback)** -- BACKLOG F302, Sprint 81 (Harold "q1 2 OK to add a seperate field for
+  sequence number and if no UID mark the UID field with a standard value to indicate there is no valid UID for the
+  amil record").
+- **Finding 9, Android half (Kotlin diagnostics)** -- BACKLOG F303, Sprint 81 (Harold "q2 1"). Correction: the Q2
+  option 2 text said the cause "now reaches the log"; it does not -- a Kotlin failure returns null and the cause goes
+  to logcat only, which adb policy blocks on the phones. F303 records this.

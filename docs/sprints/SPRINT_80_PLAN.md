@@ -1015,9 +1015,11 @@ phone. The build script's emulator step auto-selected the old `Nexus_5X_API_29_x
   session-fatal, since Gmail returns 403 for rate limits; comment corrected); code-reviewer 6 fixed in 166ad533
   (Background-tab writes take the start-up lock; 2/2 KILLED). The full suite then failed 2 f264 tests: the lock
   chained on a start-up future whose callbacks ran in another zone; fixed in b00669e4 (an idle lock starts at once;
-  1 file, about 15 lines; 2/2 KILLED). Full suite 80-771b: 3204 passed, 15 skipped, 0 failed. Asked of Harold:
-  hunter 16 (IMAP sequence-number fallback; N/A recommended per RFC 3501 6.4.8) and hunter 9 Android half (Kotlin
-  per-field diagnostics; Sprint 81 backlog recommended).
+  1 file, about 15 lines; 2/2 KILLED). Full suite 80-771b: 3204 passed, 15 skipped, 0 failed; CI green on 287d0e37.
+  Harold 2026-10-23: hunter 16 (IMAP sequence-number fallback) -> backlog F302, Sprint 81 (Q1 = 2: a separate
+  sequence-number field and a standard "no valid UID" value); hunter 9 Android half (Kotlin per-field diagnostics)
+  -> backlog F303, Sprint 81 (Q2 = 1). Improvement review: N/A for Sprint 80 (the old order ran the retrospective
+  improvements first, so this review covered them); from Sprint 81 the reviews run before the retrospective (Q3 = 1).
 - **Phase 5 findings fixed in-sprint**:
   - F276 re-sighting (82adc6b9): a re-sighting wrote `unknown` / never checked, so every scan re-asked the rows it had
     just seen (every 5 minutes on DEV, up to 50 Gmail requests per scan). Found by reading the live DEV database in

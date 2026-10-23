@@ -1,12 +1,12 @@
 {
     "_description": "Sprint status file that persists across context compaction. Update after each phase/sub-phase completion.",
-    "_last_updated": "2026-10-23T10:00:00-04:00",
+    "_last_updated": "2026-10-23T10:40:00-04:00",
     "_usage": "Read this file after context compaction to restore sprint approval state and progress.",
     "_staleness_note": "This file had drifted 15 sprints (last updated at Sprint 35, 2026-04-19) before being refreshed at Sprint 50 close-out. It is a Phase 7.7 checklist item -- update it at every sprint close-out, not opportunistically.",
     "current_sprint": {
         "number": 80,
         "branch": "feature/20261018_Sprint_80",
-        "status": "Phase 7.7 Final Code Reviews (7.7.1) -- COMPLETE. PR #490 READY for Harold's review and merge. Copilot 1 Low fixed (299172c4); code-reviewer + silent-failure-hunter fixed in 32059a86, 01428322, 166ad533, b00669e4. Full suite 3204/15/0. Asked of Harold: hunter 16 (N/A recommended) and hunter 9 Android half (Sprint 81 backlog recommended).",
+        "status": "Phase 7.7 Final Code Reviews (7.7.1) -- COMPLETE. PR #490 READY for Harold's review and merge; CI green. Harold 2026-10-23: hunter 16 -> F302, hunter 9 Android half -> F303 (both Sprint 81); Q3 = 1: from Sprint 81 the 7.7.1 reviews run BEFORE the retrospective (workflow, checklist, CLAUDE.md, close-out check 3d-2 updated).",
         "plan_approved": true,
         "pr_number": 490,
         "version": "0.21.0+18 (bumped at 3.7.0b)"
@@ -57,8 +57,8 @@
     ],
     "blocking_issues": [],
     "next_actions": [
-        "Record Harold's answers to Q1 (hunter 16) and Q2 (hunter 9 Android half); add any backlog card to ALL_SPRINTS_MASTER_PLAN.md targeted at Sprint 81.",
-        "Harold reviews and merges PR #490 into develop; then Phase 8 (release cycle)."
+        "Harold reviews and merges PR #490 into develop; then Phase 8 (release cycle).",
+        "Sprint 81 Phase 7: at Manual Validation complete, in ONE turn: gh pr ready + both 7.7.1 reviews + retro prompt; 7.7.1 improvement review after the retro IMPs."
     ],
     "next_sprint_targeted": {
         "number": 80,

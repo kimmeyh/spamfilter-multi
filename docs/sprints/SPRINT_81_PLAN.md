@@ -25,6 +25,14 @@ Phase 3; this stub only records what Sprint 80 carried in.
 - **IMP-3 (live)**: each question states what it decides; standing facts are recorded and not asked again.
 - **Standing fact (Harold)**: Fold notification access for the app is ON and stays on.
 
+## Carry-ins from the Sprint 80 7.7.1 final code reviews (Harold, 2026-10-23)
+
+- **F302** IMAP: a separate sequence-number field; a missing UID gets a standard "no valid UID" value (Q1 = 2).
+- **F303** Android new-mail diagnostics: each field reported on its own, errors into the diagnostic log (Q2 = 1).
+- **Process (Q3 = 1, live from this sprint)**: at Manual Validation complete, in ONE turn: `gh pr ready`, both 7.7.1
+  final code reviews, and the retrospective prompt. Findings feed the retrospective by class; the retrospective's
+  commits get the 7.7.1 improvement review, recorded on the 7.7.1 line (close-out check 3d-2).
+
 ## Open items carried
 
 - IMP-2b: a background task that stays open after its script prints an error -- capture its process tree

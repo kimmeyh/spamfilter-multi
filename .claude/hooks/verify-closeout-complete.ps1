@@ -188,7 +188,7 @@ if ($status -and $null -ne $status.current_sprint -and
     $status.current_sprint.plan_approved -eq $true) {
     $prNum = $status.current_sprint.pr_number
     if ($null -eq $prNum -or [string]$prNum -eq '') {
-        $violations += "No pull request recorded for Sprint $sprintNum (.claude/sprint_status.json current_sprint.pr_number is null) even though plan_approved is true. Phase 3.3.1 requires a DRAFT PR created at plan approval, in parallel with the first execution task. Create it (gh pr create --draft --base develop) and record pr_number / pr_url. Keep it a DRAFT until the end of Phase 7.7."
+        $violations += "No pull request recorded for Sprint $sprintNum (.claude/sprint_status.json current_sprint.pr_number is null) even though plan_approved is true. Phase 3.3.1 requires a DRAFT PR created at plan approval, in parallel with the first execution task. Create it (gh pr create --draft --base develop) and record pr_number / pr_url. Keep it a DRAFT until Manual Validation is complete."
     }
 }
 
@@ -305,8 +305,12 @@ if ($sprintNum -ge 63 -and $status -and $null -ne $status.current_sprint -and
 # 3d-2. Final code reviews recorded (Harold, 2026-10-06, Sprint 76 close-out).
 #
 #     The final PR review pair -- Copilot AND pr-review-toolkit -- runs at
-#     Phase 7.7.1, the moment the retrospective improvements are complete
-#     (or immediately after the retrospective when there are none). Before
+#     Phase 7.7.1. Since 2026-10-23 (Harold, Sprint 80 Q3 = 1) that is the
+#     moment Manual Validation completes, BEFORE the retrospective, so the
+#     retrospective can turn recurring finding classes into prevention; the
+#     retrospective's own commits then get the 7.7.1 improvement review, which
+#     the line must record from Sprint 81 on. (2026-10-06 to 2026-10-23 the
+#     reviews ran after the retrospective improvements.) Before
 #     this, Copilot reviewed automatically through a repository ruleset at
 #     "Ready for Review" / on push, so its review saw code BEFORE the retro
 #     improvements landed, and Claude's 5.1.1 review never saw the Manual
@@ -327,11 +331,17 @@ if ($sprintNum -ge 77 -and $status -and $null -ne $status.current_sprint -and
         $planText77 = Get-Content -LiteralPath $planPath77 -Raw
         $m = [regex]::Match($planText77, '(?im)^\s*-\s*\**\s*7\.7\.1\b[^:\r\n]*\**\s*:\s*(.*)$')
         if (-not $m.Success) {
-            $violations += "SPRINT_${sprintNum}_PLAN.md has no '- **7.7.1 final code reviews**: <evidence>' line. Phase 7.7.1 runs BOTH final reviews (Copilot requested by hand + pr-review-toolkit code-reviewer and silent-failure-hunter) as soon as the retrospective improvements are complete -- even when there were none -- and their findings must be dispositioned before the PR is announced ready (SPRINT_EXECUTION_WORKFLOW.md 7.7.1)."
+            $violations += "SPRINT_${sprintNum}_PLAN.md has no '- **7.7.1 final code reviews**: <evidence>' line. Phase 7.7.1 runs BOTH final reviews (Copilot requested by hand + pr-review-toolkit code-reviewer and silent-failure-hunter) as soon as Manual Validation is complete, before the retrospective -- and their findings must be dispositioned before the PR is announced ready (SPRINT_EXECUTION_WORKFLOW.md 7.7.1)."
         } else {
             $value = $m.Groups[1].Value.Trim()
             if ([string]::IsNullOrWhiteSpace($value) -or $value -match '^(?i)[\s*_`]*PENDING') {
                 $violations += "SPRINT_${sprintNum}_PLAN.md's 7.7.1 final code reviews marker reads '$value'. Run both final reviews (Copilot + pr-review-toolkit) now, disposition every finding, and record the evidence on that line (SPRINT_EXECUTION_WORKFLOW.md 7.7.1)."
+            } elseif ($sprintNum -ge 81 -and $value -notmatch '(?i)improvement review') {
+                # Harold, 2026-10-23 (Sprint 80 Q3 = 1): the reviews now run
+                # BEFORE the retrospective, so the retrospective's own commits
+                # get a separate review. The line must say how it went (or
+                # "improvement review: no improvement commits").
+                $violations += "SPRINT_${sprintNum}_PLAN.md's 7.7.1 final code reviews line does not record the improvement review. After the retrospective improvements are pushed, run pr-review-toolkit code-reviewer + silent-failure-hunter on ONLY those commits and add 'improvement review <result>' (or 'improvement review: no improvement commits') to that line (SPRINT_EXECUTION_WORKFLOW.md 7.7.1)."
             }
         }
     }

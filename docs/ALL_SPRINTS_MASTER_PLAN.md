@@ -162,7 +162,7 @@ Historical sprint information lives in individual documents in `docs/sprints/` a
 - **F296 (#495)** CI Flutter version from `.fvmrc`. **F298 (#496)** rule and safe sender edits reload at once. **F276 (#501)** Review hides mail deleted or moved in the mail app. **F269 (#499)** YAML import Merge by default. **F267 (#497)**, **F268 (#498)** evaluation harness and rule miner. **F204 (#502)** AAB target SDK and AD_ID gates. **F292 (#492)** closed. **F299 (#500)** closed on evidence.
 - **Manual Validation tasks**: Task 15 (#503) Windows window at once (30.9 s -> 1.8 s); Task 16 (#504) tray icon on every start and its menu opens; Task 17 (#505) Android new-mail diagnostic line at each start.
 - **Phone**: MV76-1 (#471, #433, #428) done except R-2 (new-mail trigger on a real phone), which moves to the Phase 8 Fold log; F277 (#472) closed by Harold (floor stays 5). F289 removed from scope (Q4b = 2), stays in the backlog. F301 (Gmail 7-day sign-in) added.
-- **7.7.1 final code reviews**: 2026-10-23. Copilot 1 Low (fixed, 299172c4); code-reviewer 0 C / 0 H / 1 M / 6 L and silent-failure-hunter 16 findings, fixed in 32059a86, 01428322, 166ad533 and b00669e4 (an idle scheduler lock starts at once; found by the full suite). Full suite 3204 passed, 15 skipped, 0 failed. Two dispositions asked of Harold: hunter 16 (IMAP sequence-number fallback) and hunter 9 Android half (Kotlin per-field diagnostics).
+- **7.7.1 final code reviews**: 2026-10-23. Copilot 1 Low (fixed, 299172c4); code-reviewer 0 C / 0 H / 1 M / 6 L and silent-failure-hunter 16 findings, fixed in 32059a86, 01428322, 166ad533 and b00669e4 (an idle scheduler lock starts at once; found by the full suite). Full suite 3204 passed, 15 skipped, 0 failed. Harold 2026-10-23: hunter 16 -> F302 (separate sequence-number field, standard "no valid UID" value; Q1 = 2) and hunter 9 Android half -> F303 (Q2 = 1), both targeted at Sprint 81. Process change (Q3 = 1, from Sprint 81): the 7.7.1 reviews run BEFORE the retrospective, findings feed it by class, and the retrospective commits get a 7.7.1 improvement review (SPRINT_EXECUTION_WORKFLOW.md "Phase 7 order"; close-out check 3d-2 extended).
 - **Results**: suite 3,189 passed / 15 skipped / 0 failed at Task 17, analyzer clean; MV-1 to MV-5 PASS (MV-4 after Task 16; MV-3 on field evidence). Retro: Harold all Very Good; IMP-1, IMP-1.1, IMP-2a, IMP-3, IMP-5 applied; IMP-2b not reproduced; IMP-4 skipped.
 
 ## Next Sprint Candidates
@@ -184,6 +184,30 @@ Historical sprint information lives in individual documents in `docs/sprints/` a
 **Last Reviewed**: October 18, 2026 (Sprint 79 cycle, Phase 8.2 pass-1 COMPLETENESS SWEEP -- no scope selected: PR #480 merged to develop (dd04c4c) and main (#489, ff58da3); Sprint 80 branch opened from the Sprint 79 branch; #481-#488 closed by the merge's `Closes` keywords (first sprint on the F288 default branch), #471, #472, #433 and #428 open for Sprint 80; Sprint 79 plan, retrospective and summary present; Sprint 80 stub present; shipped cards (F286, F287, F288, F291, F293, F297) confirmed pruned; Last Completed Sprint corrected to the final suite count and the 7.7.1 fixes; sprint_status.json moved to Sprint 80 Phase 8.)
 
 All incomplete items in relative priority order. Priority in increments of 10; items that can sprint together in increments of 2. HOLD items grouped at bottom. See [Feature and Bug Details](#feature-and-bug-details) for deep-dive specs. See [BACKLOG_REFINEMENT.md](BACKLOG_REFINEMENT.md) for presentation format rules.
+
+### Backlog from the Sprint 80 7.7.1 final code reviews (Harold, 2026-10-23: Q1 = 2, Q2 = 1) -- TARGET SPRINT 81
+
+Each item is fixed PREVENTION FIRST (SPRINT_EXECUTION_WORKFLOW.md 7.7.1).
+
+**F302. IMAP: store the sequence number in its own field; a missing UID gets a standard "no valid UID" value (~60-120m) Priority 16 -- target Sprint 81 (Sprint 80 7.7.1 silent-failure finding 16; Harold Q1 = 2, 2026-10-23)**
+- Phase: Core App Quality
+- Platform: Windows and Android (shared IMAP adapter; ADR-0042 / ADR-0049 parity, no exception)
+- Origin: `GenericImapAdapter._convertMimeMessage` (`generic_imap_adapter.dart:2362-2367`) sets the message id to `mimeMessage.uid ?? mimeMessage.sequenceId ?? ''`. When a server answers a UID command without a UID, a sequence number is stored as if it were a UID, and every later UID operation reads it as one: the F276 presence check, move, delete and the re-sighting. Sequence numbers shift when mail is deleted, so that id can name a different message. RFC 3501 section 6.4.8 says servers "MUST implicitly include the UID message data item as part of any FETCH response caused by a UID command", so this needs a non-compliant server; it is a latent defect, not a seen one.
+- Harold's design (2026-10-23): "add a seperate field for sequence number and if no UID mark the UID field with a standard value to indicate there is no valid UID for the mail record".
+- R-1: `EmailMessage` (and the stored rows that carry the IMAP id) gain a separate sequence-number field, set from `mimeMessage.sequenceId`.
+- R-2: when `mimeMessage.uid` is null, the UID field holds ONE named constant (for example `kNoValidImapUid`), never the sequence number and never an empty string.
+- R-3 (prevention): every UID consumer (presence check, move, delete, re-sighting, the No Rule store) refuses the constant through one shared helper, and the skip writes a `DiagnosticLogger` line naming the folder. A policy test fails any new UID consumer in `lib/` that does not go through the helper (extends the existing policy-test pattern; check the F298 reload gate for shape).
+- R-4: the existing `[IMAP] Message has no UID` warning stays, and also reaches the diagnostic log.
+- Existing abstraction check (CLAUDE.md IMP-5) and caller enumeration (IMP-1) at card time: grep every reader of the IMAP message id before changing its meaning; a DB schema change needs a migration and a dev-DB backup first (no sqlite downgrade).
+- AC: a unit test with a fake FETCH response that has no UID shows the UID field holds the constant, the sequence field holds the number, and the presence check, move and delete skip that message and log it. Mutation-verified. Decision-class note: changing what the stored id means is a prior development decision; Harold's Q1 = 2 answer is that approval.
+
+**F303. Android new-mail diagnostics: each field reported on its own (~45-90m) Priority 18 -- target Sprint 81 (Sprint 80 7.7.1 silent-failure finding 9, Android half; Harold Q2 = 1, 2026-10-23)**
+- Phase: Android / Google Play Readiness
+- Platform: Android only (the new-mail trigger exists only on Android; declared platform behavior per ADR-0049)
+- Origin: `MainActivity.kt` `"diagnostics"` (about lines 203-218) builds the whole map in one expression. If any one field throws (package manager, prefs, `installedMailApps()`), the catch at about line 222 returns `result.success(null)` and writes the cause to logcat only. adb is blocked on both phones by company policy, so on a real phone the cause is never seen; the Dart side logs only "diagnostics unavailable". (Correction to the Sprint 80 Q2 wording: the cause does NOT reach the diagnostic log today.)
+- R-1: each field is read in its own guard; a failing field is reported as `"<field>": "error: <Type>: <message>"` and the other fields are still returned.
+- R-2 (prevention): the Dart `NewMailTrigger.formatDiagnostics` writes those per-field errors into the diagnostic-log line, so a Kotlin failure is visible in the log Harold pulls over MTP.
+- AC: an Android JVM unit test (`gradlew.bat :app:testDevDebugUnitTest`) with one field forced to throw returns the other fields plus that field's error; a Dart test shows the error text in the formatted diagnostic line. Phone check: the 0.21.x+ diagnostic line on the Fold shows every field.
 
 ### Backlog from the Sprint 76 retrospective
 

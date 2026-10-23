@@ -125,7 +125,7 @@ $cardFix = @"
     -> record the numbers in .claude/sprint_status.json "github_issues": [<n>, ...]
 "@
 $prFix = @"
-  Draft PR (MUST be --draft; it stays draft until the end of Phase 7.7):
+  Draft PR (MUST be --draft; it stays draft until Manual Validation is complete):
     git push -u origin <sprint-branch>
     gh pr create --draft --base develop --title "Sprint ${number}: <title>" --body "<approved plan>"
     -> record pr_number / pr_url in .claude/sprint_status.json
@@ -158,8 +158,9 @@ $fixText
 Then re-run the commit. Reference the card in the CHANGELOG entry: (Issue #N)
 
 Notes:
-  - Keep the PR a DRAFT until the END of Phase 7.7, then start the 7.7.1
-    final code reviews (Copilot by hand + pr-review-toolkit) in the same turn.
+  - Keep the PR a DRAFT until Manual Validation is complete, then mark it
+    ready and start the 7.7.1 final code reviews (Copilot by hand +
+    pr-review-toolkit) in the same turn, BEFORE the retrospective.
   - Since 2026-10-14 (Sprint 79, F288) `develop` is the GitHub default
     branch, so `Closes #N` in the sprint PR body closes the card when the PR
     merges into develop. At Post-Merge Cleanup, VERIFY the cards closed and
