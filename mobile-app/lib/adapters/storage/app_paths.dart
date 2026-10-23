@@ -106,7 +106,10 @@ class AppPaths {
   /// - Windows prod: C:\Users\{username}\AppData\Roaming\MyEmailSpamFilter\MyEmailSpamFilter
   /// - Windows dev:  C:\Users\{username}\AppData\Roaming\MyEmailSpamFilter\MyEmailSpamFilter_Dev
   /// - Android: /data/user/0/com.myemailspamfilter/files
-  /// - iOS: /Library/Application Support/MyEmailSpamFilter
+  /// - iOS: <app container>/Library/Application Support (internal data only;
+  ///   the user-visible export folder is the app's Documents folder, resolved
+  ///   by `ExportDirectories`, ADR-0050 Q7b. The database is deliberately NOT in
+  ///   Documents, which `UIFileSharingEnabled` exposes in the Files app.)
   /// - Linux: ~/.local/share/MyEmailSpamFilter
   /// - macOS: ~/Library/Application Support/MyEmailSpamFilter
   Directory get appSupportDirectory {

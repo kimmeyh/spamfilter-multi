@@ -12,8 +12,10 @@ import 'package:my_email_spam_filter/core/platform/platform_policy.dart';
 /// call site asks the right getter: a site wired to the wrong getter still
 /// passes here, and is caught only by the behavior tests of that site (for
 /// example the F220 lifecycle, F209 inset and scan-complete notifier tests,
-/// which run both branches through `debugOverride`). The iOS answers are
-/// assumptions until ADR-0050 and are pinned here so a change is deliberate.
+/// which run both branches through `debugOverride`). The iOS answers are the
+/// ADR-0050 answers (Sprint 81 F67b) and are pinned here so a change is
+/// deliberate; `test/core/platform/platform_capabilities_ios_test.dart` also
+/// proves every iOS member is decided.
 /// It does not exercise `detectHostPlatform()` on a real Android or iOS device.
 void main() {
   const windows = PlatformCapabilities(HostPlatform.windows);
@@ -82,14 +84,14 @@ void main() {
     });
   });
 
-  group('PlatformCapabilities: iOS (assumed until ADR-0050)', () {
+  group('PlatformCapabilities: iOS (ADR-0050)', () {
     test('answers', () {
       expect(ios.hostName, 'ios');
       expect(ios.usesFfiSqlite, isFalse);
       expect(ios.hasDesktopWindow, isFalse);
       expect(ios.hasSystemTray, isFalse);
       expect(ios.canBeMsixPackaged, isFalse);
-      expect(ios.backgroundScanMechanism, BackgroundScanMechanism.none);
+      expect(ios.backgroundScanMechanism, BackgroundScanMechanism.bgAppRefresh);
       expect(ios.hasNewMailNotificationTrigger, isFalse);
       expect(ios.socketsCloseWhenBackgrounded, isTrue);
       expect(ios.drawsUnderSystemBars, isFalse);
@@ -101,10 +103,10 @@ void main() {
       expect(ios.reusesStoredGmailAccessToken, isFalse);
       expect(ios.canUpgradeGmailScopesInteractively, isFalse);
       expect(ios.usesSystemFileSheet, isTrue);
-      expect(ios.exportLocation, ExportLocation.undecided);
+      expect(ios.exportLocation, ExportLocation.appDocumentsInFilesApp);
       expect(ios.hasBatteryOptimizationSetting, isFalse);
       expect(ios.requestsNotificationPermissionAtRuntime, isTrue);
-      expect(ios.notificationDelivery, NotificationDelivery.undecided);
+      expect(ios.notificationDelivery, NotificationDelivery.iosAlert);
       expect(ios.pathSeparator, '/');
     });
   });

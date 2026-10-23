@@ -68,7 +68,11 @@ class ExportDirectories {
   ///   call: a method channel is registered only in the UI's FlutterEngine, and
   ///   the WorkManager background scan runs in its OWN engine (MV74-2), where a
   ///   native call would fail. `path_provider` works in both.
-  /// - **iOS/macOS/Linux** (not shipped): the app's documents folder.
+  /// - **iOS** (ADR-0050 Q7b): `getApplicationDocumentsDirectory()`, the app's
+  ///   own Documents folder, shown in the Files app. Same
+  ///   `MyEmailSpamFilter` folder name beneath it as on the other platforms
+  ///   (F282). Files app visibility is unverified until the first device build.
+  /// - **macOS/Linux** (not shipped): the app's documents folder.
   static Future<String?> platformDefault() async {
     final documents = await _documentsFolder();
     if (documents == null || documents.isEmpty) return null;
@@ -97,6 +101,9 @@ class ExportDirectories {
       if (appExternal == null) return null;
       return publicDocumentsFrom(appExternal.path) ?? appExternal.path;
     }
+    // iOS (ADR-0050 Q7b, Sprint 81 F67b): the app's own Documents folder, which
+    // `UIFileSharingEnabled` shows in the Files app. macOS and Linux (not
+    // shipped) take the same call.
     return (await getApplicationDocumentsDirectory()).path;
   }
 

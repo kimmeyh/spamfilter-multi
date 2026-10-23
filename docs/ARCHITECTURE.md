@@ -936,7 +936,27 @@ artifact (GP-8/GP-3 verifies, Sprint 64 chain validation).
 - Task registration uses a stable MSIX App Execution Alias for Store installs (F148, Sprint 56) -- Windows resolves `%LOCALAPPDATA%\Microsoft\WindowsApps\myemailspamfilter.exe` to whichever version is CURRENTLY installed, so tasks survive Store version updates without repair. Non-MSIX (dev) builds still use `Platform.resolvedExecutable` directly.
 - Task Scheduler auto-repair on app startup (`verifyAndRepairTaskPath()`): for MSIX installs, its main remaining purpose is one-time migration of a stale VERSIONED-path task (from before F148 shipped) to the new alias-based registration; for dev builds it still fixes the executable path after a rebuild.
 
-### iOS/macOS
+### iOS (Sprint 81, F67b code; ADR-0050)
+- **Project**: `mobile-app/ios/` (generated from the Flutter 3.47.4 template, Sprint 81). Bundle ID
+  `com.myemailspamfilter` (mirrors the Android applicationId, ADR-0026); deployment target iOS 15.0.
+- **Platform answers**: every iOS answer lives in `PlatformCapabilities` / `PlatformPolicy` (ADR-0049) and cites its
+  ADR-0050 section; `platform_capabilities_ios_test.dart` fails on any undecided iOS answer. Members that need a device
+  (`renewsGmailWithStoredRefreshToken`, `drawsUnderSystemBars`) keep the safe answer until F67c.
+- **Gmail sign-in**: native `google_sign_in` with an iOS OAuth client. `GIDClientID` and the reversed-client-ID URL
+  scheme in `Info.plist` come from the gitignored `ios/Flutter/Secrets.xcconfig` (`#include?`, template in
+  `Secrets.xcconfig.example`), never from the tree.
+- **Background**: one BGAppRefresh identifier (`com.myemailspamfilter.backgroundscan`) is registered in `Info.plist`
+  and `AppDelegate.swift`; the scan task itself is F67c (Sprint 82). Best effort only (ADR-0050 exception 1); no
+  new-mail trigger (exception 2, as Windows).
+- **Storage**: the database stays in Application Support (not visible in the Files app); exports go to the app
+  Documents folder, shown in the Files app (`UIFileSharingEnabled`, ADR-0050 Q7b), folder `MyEmailSpamFilter`.
+- **Build path**: `.github/workflows/ios.yml` on a GitHub `macos-26` runner (no project Mac). First increment: unsigned
+  compile (`flutter build ios --no-codesign`); signing with an App Store Connect API key and TestFlight upload follow
+  (F304, `docs/IOS_SETUP.md`). Its Flutter version comes from `.fvmrc` (F296 gate covers it). It reads its own
+  repository secrets; `ci.yml` stays secret-free (F127).
+- Keychain for secure storage.
+
+### macOS
 - Not yet validated but architecture supports
 - OAuth flow via native browser
 - Keychain for secure storage

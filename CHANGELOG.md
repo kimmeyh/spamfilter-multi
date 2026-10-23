@@ -30,6 +30,7 @@ Format: `- **type**: Description (Issue #N)` where type is feat|fix|chore|docs
 
 - **feat**: When a Gmail account needs you to sign in again, the app now tells you with a notification (at most once a day per account) that the account will not be scanned until you sign in again in the app (Issue #515)
 - **fix**: The Android new-mail diagnostic log line now keeps every field when one of them cannot be read, and shows the error for the field that failed instead of losing the whole line (Issue #513)
+- **feat**: iPhone app project: iOS project settings, the iPhone answers for every platform difference (ADR-0050), exports in the app's Documents folder shown in the Files app, and a GitHub workflow that compiles the iOS app (Issue #511)
 - **chore**: Version 0.22.0+19 for Sprint 81 (Issue #508)
 
 ## [0.21.0] - 2026-10-23
