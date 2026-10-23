@@ -8,7 +8,7 @@
         "branch": "feature/20261023_Sprint_81",
         "status": "Phase 3 Sprint Kickoff & Planning: 8.4 scope selected by Harold 2026-10-23 (IMP-2b, F302, F303, F301, F300, F259, F271, F278, F67a, F304, F67b code; F289 and F246 to HOLD); SPRINT_81_PLAN.md drafted, draft PR created at 3.3.1; awaiting Phase 3.7 approval (Q1 F301 path, Q2 F271 reason codes, Q3 F259 cursor, Q-S1 models, Q-S2 version 0.22.0+19, Q-S3 iPhone model). 0.21.0 uploads and close80.ps1 still Harold's.",
         "plan_approved": false,
-        "pr_number": null,
+        "pr_number": 507,
         "version": "0.21.0+18 (Sprint 81 bump happens at 3.7.0b)"
     },
     "previous_sprint": {
