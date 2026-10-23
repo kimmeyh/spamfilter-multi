@@ -37,7 +37,8 @@
 /// touch existing rows (unlike `saveRules`, which deletes the table first).
 /// Those two methods also run the stricter ReDoS / unmatchable checks; a
 /// pattern they reject is counted as invalid, and any OTHER failure (a database
-/// error) is rethrown so it is never miscounted as "invalid".
+/// error) stops the merge with [ImportMergeInterruptedException], so it is never
+/// miscounted as "invalid" and the items added before it are still reported.
 library;
 
 import '../models/rule_set.dart';
@@ -60,6 +61,38 @@ class ImportMergeResult {
   String describe(String itemType) =>
       'Merged $itemType: $added added, $skippedDuplicate skipped as '
       'duplicate, $skippedInvalid skipped as invalid.';
+}
+
+/// PR #490 7.7.1: a merge that a real storage failure stopped part-way. The
+/// items added before the failure stay stored (no transaction); [partial]
+/// counts them. [reloaded] is set by the commit step once it has reloaded the
+/// rules in use (null when nothing has tried yet), so the message never
+/// claims more than happened.
+class ImportMergeInterruptedException implements Exception {
+  ImportMergeInterruptedException(this.itemType, this.partial, this.cause,
+      {this.reloaded});
+
+  final String itemType;
+  final ImportMergeResult partial;
+  final Object cause;
+  final bool? reloaded;
+
+  ImportMergeInterruptedException withReload(bool value) =>
+      ImportMergeInterruptedException(itemType, partial, cause,
+          reloaded: value);
+
+  @override
+  String toString() {
+    final head = 'Import stopped by an error after ${partial.added} '
+        '$itemType were added: $cause.';
+    if (partial.added == 0) return head;
+    if (reloaded == true) return '$head The $itemType added are in use.';
+    if (reloaded == false) {
+      return '$head The $itemType added could not be loaded. Restart the app '
+          'to use them.';
+    }
+    return head;
+  }
 }
 
 class YamlImportMerge {
@@ -110,12 +143,23 @@ class YamlImportMerge {
       }
       try {
         await dbStore.addRule(rule);
-      } on RuleDatabaseStorageException catch (e) {
-        if (e.originalError is RuleDatabaseStorageException) {
+      } catch (e, st) {
+        if (e is RuleDatabaseStorageException &&
+            e.originalError is RuleDatabaseStorageException) {
           invalid++; // rejected by the ReDoS / unmatchable check
           continue;
         }
-        rethrow; // a real storage failure is not "invalid"
+        // A real storage failure is not "invalid". The rules added before it
+        // stay stored (no transaction), so the error carries their count.
+        Error.throwWithStackTrace(
+            ImportMergeInterruptedException(
+                'rules',
+                ImportMergeResult(
+                    added: added,
+                    skippedDuplicate: duplicates,
+                    skippedInvalid: invalid),
+                e),
+            st);
       }
       names.add(nameKey);
       signatures.add(signature);
@@ -144,12 +188,21 @@ class YamlImportMerge {
       }
       try {
         await dbStore.addSafeSender(pattern);
-      } on RuleDatabaseStorageException catch (e) {
-        if (e.originalError is RuleDatabaseStorageException) {
+      } catch (e, st) {
+        if (e is RuleDatabaseStorageException &&
+            e.originalError is RuleDatabaseStorageException) {
           invalid++;
           continue;
         }
-        rethrow;
+        Error.throwWithStackTrace(
+            ImportMergeInterruptedException(
+                'safe senders',
+                ImportMergeResult(
+                    added: added,
+                    skippedDuplicate: duplicates,
+                    skippedInvalid: invalid),
+                e),
+            st);
       }
       keys.add(key);
       added++;

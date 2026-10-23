@@ -7,7 +7,7 @@ import '../../core/providers/rule_set_provider.dart';
 import '../../core/services/auth_results_parser.dart';
 import '../../core/services/pattern_compiler.dart';
 import '../../core/services/rule_quick_action_service.dart'
-    show reloadRulesAfterWrite;
+    show reloadRulesAfterWrite, kConflictingRuleCheckFailedSuffix;
 import '../../core/storage/rule_database_store.dart';
 import '../../core/storage/safe_sender_database_store.dart';
 import '../../core/utils/pattern_normalization.dart';
@@ -167,14 +167,15 @@ class _SafeSenderQuickAddScreenState extends State<SafeSenderQuickAddScreen> {
     });
   }
 
-  /// Remove rules that conflict with the new safe sender pattern
-  /// Returns the number of rules removed
-  Future<int> _removeConflictingRules() async {
-    if (widget.ruleStore == null) return 0;
+  /// Remove rules that conflict with the new safe sender pattern.
+  /// Returns the number removed, and whether the check failed part-way
+  /// (PR #490 7.7.1: a failure used to return 0 and say nothing).
+  Future<({int removed, bool checkFailed})> _removeConflictingRules() async {
+    if (widget.ruleStore == null) return (removed: 0, checkFailed: false);
 
+    int removedCount = 0;
     try {
       final ruleSet = await widget.ruleStore!.loadRules();
-      int removedCount = 0;
 
       for (final rule in ruleSet.rules) {
         // Check if the rule has from-header conditions matching this email
@@ -208,10 +209,10 @@ class _SafeSenderQuickAddScreenState extends State<SafeSenderQuickAddScreen> {
         _logger.i('Removed $removedCount conflicting rule(s)');
       }
 
-      return removedCount;
+      return (removed: removedCount, checkFailed: false);
     } catch (e) {
       _logger.w('Failed to check/remove conflicting rules: $e');
-      return 0;
+      return (removed: removedCount, checkFailed: true);
     }
   }
 
@@ -274,23 +275,29 @@ class _SafeSenderQuickAddScreenState extends State<SafeSenderQuickAddScreen> {
 
       // Remove conflicting rules that would block this now-safe sender
       int removedRules = 0;
+      var conflictCheckFailed = false;
       if (widget.ruleStore != null) {
-        removedRules = await _removeConflictingRules();
+        final removal = await _removeConflictingRules();
+        removedRules = removal.removed;
+        conflictCheckFailed = removal.checkFailed;
       }
 
       // F298: one reload covers the new safe sender AND the rules removed
       // above (_removeConflictingRules never throws, so it always runs).
       final reloadNote = await reloadRulesAfterWrite(provider);
+      final conflictNote =
+          conflictCheckFailed ? kConflictingRuleCheckFailedSuffix : '';
 
       if (mounted) {
         final message = removedRules > 0
-            ? 'Safe sender added. Removed $removedRules conflicting rule(s).$reloadNote'
-            : 'Safe sender added successfully$reloadNote';
+            ? 'Safe sender added. Removed $removedRules conflicting rule(s).$conflictNote$reloadNote'
+            : 'Safe sender added successfully$conflictNote$reloadNote';
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text(message),
-            backgroundColor:
-                reloadNote.isEmpty ? Colors.green : Colors.orange,
+            backgroundColor: reloadNote.isEmpty && conflictNote.isEmpty
+                ? Colors.green
+                : Colors.orange,
           ),
         );
 

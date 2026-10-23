@@ -9,7 +9,7 @@ import '../../core/providers/rule_set_provider.dart';
 import '../../core/services/auth_results_parser.dart';
 import '../../core/services/rule_conflict_detector.dart';
 import '../../core/services/rule_quick_action_service.dart'
-    show reloadRulesAfterWrite;
+    show reloadRulesAfterWrite, kConflictingSafeSenderCheckFailedSuffix;
 import '../../core/storage/rule_database_store.dart';
 import '../../core/storage/safe_sender_database_store.dart';
 import '../../core/utils/pattern_normalization.dart';
@@ -135,33 +135,41 @@ class _RuleQuickAddScreenState extends State<RuleQuickAddScreen> {
     }
   }
 
-  /// Remove safe senders that would conflict with the new block rule
-  /// Returns the number of safe senders removed
-  Future<int> _removeConflictingSafeSenders() async {
-    if (widget.safeSenderStore == null) return 0;
+  /// Remove safe senders that would conflict with the new block rule.
+  /// Returns the number removed, and whether the check failed part-way.
+  ///
+  /// PR #490 7.7.1 (silent-failure review finding 3): a failure used to
+  /// return 0 and the screen said "Rule added successfully". A safe sender
+  /// left behind outranks every rule, so the new rule would never act on this
+  /// sender; [checkFailed] lets the screen say so.
+  Future<({int removed, bool checkFailed})>
+      _removeConflictingSafeSenders() async {
+    if (widget.safeSenderStore == null) return (removed: 0, checkFailed: false);
 
+    int removedCount = 0;
     try {
       final safeSenders = await widget.safeSenderStore!.loadSafeSenders();
-      int removedCount = 0;
 
       for (final safeSender in safeSenders) {
-        // Check if the safe sender pattern matches the email being blocked
+        // Check if the safe sender pattern matches the email being blocked.
+        // PR #490 7.7.1: only the regex is inside this try. The removal used
+        // to be inside it too, so a failed removal was taken for an invalid
+        // regex and dropped without a word.
+        bool matches;
         try {
-          final regex = RegExp(safeSender.pattern, caseSensitive: false);
-          if (regex.hasMatch(_normalizedEmail)) {
-            _logger.i('Removing conflicting safe sender: ${safeSender.pattern}');
-            await widget.safeSenderStore!.removeSafeSender(safeSender.pattern);
-            removedCount++;
-          }
+          matches = RegExp(safeSender.pattern, caseSensitive: false)
+              .hasMatch(_normalizedEmail);
         } catch (e) {
           // SEC-18: Log warning for invalid regex pattern instead of silent fallback
           _logger.w('Invalid regex in safe sender pattern "${safeSender.pattern}", '
               'falling back to exact match: $e');
-          if (safeSender.pattern.toLowerCase() == _normalizedEmail.toLowerCase()) {
-            _logger.i('Removing conflicting safe sender (exact match): ${safeSender.pattern}');
-            await widget.safeSenderStore!.removeSafeSender(safeSender.pattern);
-            removedCount++;
-          }
+          matches =
+              safeSender.pattern.toLowerCase() == _normalizedEmail.toLowerCase();
+        }
+        if (matches) {
+          _logger.i('Removing conflicting safe sender: ${safeSender.pattern}');
+          await widget.safeSenderStore!.removeSafeSender(safeSender.pattern);
+          removedCount++;
         }
       }
 
@@ -169,10 +177,10 @@ class _RuleQuickAddScreenState extends State<RuleQuickAddScreen> {
         _logger.i('Removed $removedCount conflicting safe sender(s)');
       }
 
-      return removedCount;
+      return (removed: removedCount, checkFailed: false);
     } catch (e) {
       _logger.w('Failed to check/remove conflicting safe senders: $e');
-      return 0;
+      return (removed: removedCount, checkFailed: true);
     }
   }
 
@@ -403,9 +411,12 @@ class _RuleQuickAddScreenState extends State<RuleQuickAddScreen> {
       // Remove conflicting safe senders that match this email
       // This ensures the new block rule will take effect
       int removedSafeSenders = 0;
+      var conflictCheckFailed = false;
       if (widget.safeSenderStore != null) {
         removalAttempted = true;
-        removedSafeSenders = await _removeConflictingSafeSenders();
+        final removal = await _removeConflictingSafeSenders();
+        removedSafeSenders = removal.removed;
+        conflictCheckFailed = removal.checkFailed;
       }
 
       await widget.ruleStore.addRule(rule);
@@ -414,16 +425,19 @@ class _RuleQuickAddScreenState extends State<RuleQuickAddScreen> {
       // F298: one reload covers the new rule AND the safe senders removed
       // above, so the in-memory set matches the database.
       final reloadNote = await reloadRulesAfterWrite(provider);
+      final conflictNote =
+          conflictCheckFailed ? kConflictingSafeSenderCheckFailedSuffix : '';
 
       if (mounted) {
         final message = removedSafeSenders > 0
-            ? 'Rule added. Removed $removedSafeSenders conflicting safe sender(s).$reloadNote'
-            : 'Rule added successfully$reloadNote';
+            ? 'Rule added. Removed $removedSafeSenders conflicting safe sender(s).$conflictNote$reloadNote'
+            : 'Rule added successfully$conflictNote$reloadNote';
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
               content: Text(message),
-              backgroundColor:
-                  reloadNote.isEmpty ? Colors.green : Colors.orange),
+              backgroundColor: reloadNote.isEmpty && conflictNote.isEmpty
+                  ? Colors.green
+                  : Colors.orange),
         );
         Navigator.pop(context, true);
       }

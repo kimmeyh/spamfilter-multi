@@ -8,7 +8,10 @@
 /// ManualRuleDuplicateChecker on every exotic pattern: the normalization is
 /// mirrored in memory, and only case, whitespace and the `\ ` escape are tested.
 /// A database failure in the middle of a merge leaves the rules added so far
-/// (no transaction); that is rethrown, not counted, and is not tested.
+/// (no transaction). PR #490 7.7.1 group "a failure part-way" proves the error
+/// carries their count and the rules in use are reloaded; it does NOT prove the
+/// screen shows that message (the screen is not pumped, see above), nor a
+/// failure inside the provider's own reload at that point.
 library;
 
 import 'dart:io';
@@ -41,7 +44,33 @@ Rule _rule(String domain, {String? name, List<String>? header}) => Rule(
 RuleSet _set(List<Rule> rules) =>
     RuleSet(version: '1.0', settings: {}, rules: rules);
 
-const _safeA = r'^[^@\s]+@(?:[a-z0-9-]+\.)*trusted\.com$';
+/// Adds the first rule, then fails like a database error (not a validator
+/// rejection).
+class _AddFailsOnSecondStore extends RuleDatabaseStore {
+  _AddFailsOnSecondStore(super.provider);
+  int _adds = 0;
+
+  @override
+  Future<void> addRule(Rule rule) async {
+    if (++_adds == 2) throw StateError('simulated disk I/O error');
+    await super.addRule(rule);
+  }
+}
+
+/// The merge's own read works; the second read (the full set for the YAML
+/// copy) fails.
+class _SecondLoadFailsStore extends RuleDatabaseStore {
+  _SecondLoadFailsStore(super.provider);
+  int _loads = 0;
+
+  @override
+  Future<RuleSet> loadRules() async {
+    if (++_loads == 2) throw StateError('simulated read failure');
+    return super.loadRules();
+  }
+}
+
+const _safeA =r'^[^@\s]+@(?:[a-z0-9-]+\.)*trusted\.com$';
 const _safeB = r'^[^@\s]+@(?:[a-z0-9-]+\.)*friends\.org$';
 // F266: two "@" after the local part can never match an address.
 const _badSafe = r'^[^@\s]+@[^@\s]+@bad\.com$';
@@ -186,7 +215,7 @@ void main() {
 
       final out = await commitRulesMerge(
         imported: sanitized.ruleSet,
-        alreadyInvalid: sanitized.droppedRules + sanitized.droppedPatterns,
+        alreadyInvalid: sanitized.droppedRules, // as the screen passes it
         dbStore: store,
         writeYaml: (_) async {},
         provider: provider,
@@ -250,6 +279,68 @@ void main() {
       );
       expect(r.skippedInvalid, 2);
       expect(r.added, 1);
+    });
+  });
+
+  group('PR #490 7.7.1: a failure part-way', () {
+    test('a storage error after one rule was added reports that rule and '
+        'reloads it into the rules in use', () async {
+      final failing = _AddFailsOnSecondStore(db.dbHelper);
+
+      final error = await commitRulesMerge(
+        imported: _set([_rule('one.com'), _rule('two.com')]),
+        alreadyInvalid: 0,
+        dbStore: failing,
+        writeYaml: (_) async => fail('no YAML copy after a failed merge'),
+        provider: provider,
+      ).then<Object?>((_) => null, onError: (Object e) => e);
+
+      expect(error, isA<ImportMergeInterruptedException>());
+      final e = error as ImportMergeInterruptedException;
+      expect(e.partial.added, 1);
+      expect(e.reloaded, isTrue);
+      expect(e.toString(), contains('after 1 rules were added'));
+      expect(e.toString(), contains('are in use'));
+      expect(provider.rules.rules.map((r) => r.name),
+          ['Block_EntireDomain_one.com'],
+          reason: 'the rule stored before the failure must be in use');
+    });
+
+    test('a failed YAML copy still reports the merge counts', () async {
+      final error = await commitRulesMerge(
+        imported: _set([_rule('one.com')]),
+        alreadyInvalid: 0,
+        dbStore: store,
+        writeYaml: (_) async => throw const FileSystemException('disk full'),
+        provider: provider,
+      ).then<Object?>((_) => null, onError: (Object e) => e);
+
+      expect(error, isA<YamlCopyNotWrittenException>());
+      expect(error.toString(),
+          startsWith('Merged rules: 1 added, 0 skipped as duplicate'));
+    });
+
+    test('a failed read of the full set for the YAML copy is a copy problem, '
+        'not "Import failed"', () async {
+      final failing = _SecondLoadFailsStore(db.dbHelper);
+
+      final error = await commitRulesMerge(
+        imported: _set([_rule('one.com')]),
+        alreadyInvalid: 0,
+        dbStore: failing,
+        writeYaml: (_) async {},
+        provider: provider,
+      ).then<Object?>((_) => null, onError: (Object e) => e);
+
+      expect(error, isA<YamlCopyNotWrittenException>());
+      expect(error.toString(), contains('Merged rules: 1 added'));
+    });
+
+    test('patterns stripped from kept rules are named apart from skipped '
+        'rules', () {
+      expect(mergeStrippedPatternsNote(0), '');
+      expect(mergeStrippedPatternsNote(2),
+          ' 2 patterns that can never match removed from the imported rules.');
     });
   });
 

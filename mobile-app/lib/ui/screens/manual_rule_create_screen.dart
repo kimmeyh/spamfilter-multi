@@ -23,9 +23,13 @@ import 'dart:convert';
 
 import 'package:flutter/material.dart';
 import 'package:logger/logger.dart';
+import 'package:provider/provider.dart';
 import 'package:sqflite/sqflite.dart';
 
+import '../../core/providers/rule_set_provider.dart';
 import '../../core/services/manual_rule_duplicate_checker.dart';
+import '../../core/services/rule_quick_action_service.dart'
+    show reloadRulesAfterWrite;
 import '../../core/services/pattern_compiler.dart';
 import '../../core/storage/database_helper.dart';
 import '../../core/utils/manual_rule_pattern_generator.dart';
@@ -257,6 +261,9 @@ class _ManualRuleCreateScreenState extends State<ManualRuleCreateScreen> {
   Future<void> _saveRule() async {
     if (_generatedPattern.isEmpty || _patternError != null) return;
 
+    // F298 (PR #490 7.7.1): taken before any await so the reload does not
+    // depend on context, as in the other screens that write rules directly.
+    final provider = Provider.of<RuleSetProvider>(context, listen: false);
     setState(() => _isSaving = true);
 
     try {
@@ -268,12 +275,16 @@ class _ManualRuleCreateScreenState extends State<ManualRuleCreateScreen> {
         await _saveSafeSender(dbHelper);
       }
 
+      // F298: the insert above bypasses RuleSetProvider, so reload it or
+      // Review No Rule Items and the next manual scan miss the new entry.
+      final reloadNote = await reloadRulesAfterWrite(provider);
+
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text(widget.mode == ManualRuleMode.blockRule
+            content: Text('${widget.mode == ManualRuleMode.blockRule
                 ? 'Block rule created'
-                : 'Safe sender added'),
+                : 'Safe sender added'}$reloadNote'),
           ),
         );
         Navigator.of(context).pop(true); // Return true to indicate success

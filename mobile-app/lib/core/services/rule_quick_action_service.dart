@@ -10,12 +10,29 @@ import 'rule_conflict_resolver.dart';
 const String kReloadFailedSuffix =
     ' -- saved, but the rules in use could not be reloaded; restart the app';
 
+/// PR #490 7.7.1: appended when Rule Quick Add could not finish removing the
+/// safe senders that match the sender. A safe sender outranks every rule, so
+/// one left behind stops the new rule from acting on this sender.
+const String kConflictingSafeSenderCheckFailedSuffix =
+    ' -- but matching safe senders could not all be checked; if this sender '
+    'is still in Manage Safe Senders, the rule will not act on it';
+
+/// PR #490 7.7.1: the Safe Sender Quick Add twin. A rule left behind is
+/// harmless to this sender (safe senders are checked first), but the user was
+/// told nothing about it.
+const String kConflictingRuleCheckFailedSuffix =
+    ' -- but matching rules could not all be checked; some may remain in '
+    'Manage Rules';
+
 /// F298 (Sprint 80, #496): the ONE reload every screen that writes a rule or
 /// safe sender straight to its store calls after the write. Before F298 those
 /// screens (Manage Rules, Edit Rule, Manage Safe Senders, both quick-add
 /// screens) saved to the database and left [RuleSetProvider] holding the old
 /// set, so Review No Rule Items and the next manual scan used the old rules
-/// until a scan completed or the app restarted.
+/// until a scan completed or the app restarted. PR #490 7.7.1 added Manual
+/// Rule Create and Settings > Reset to Defaults; the source gate
+/// test/policy/f298_rule_write_reload_gate_test.dart now finds every such
+/// screen instead of a hand-kept list.
 ///
 /// Returns '' when the in-memory set now matches the database, else
 /// [kReloadFailedSuffix] for the caller to append to its own message ("saved,

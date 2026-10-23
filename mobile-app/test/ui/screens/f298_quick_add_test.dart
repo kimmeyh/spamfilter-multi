@@ -3,7 +3,10 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:my_email_spam_filter/core/models/email_message.dart';
 import 'package:my_email_spam_filter/core/models/rule_set.dart' show Rule;
 import 'package:my_email_spam_filter/core/services/rule_quick_action_service.dart'
-    show kReloadFailedSuffix;
+    show
+        kReloadFailedSuffix,
+        kConflictingSafeSenderCheckFailedSuffix,
+        kConflictingRuleCheckFailedSuffix;
 import 'package:my_email_spam_filter/core/storage/database_helper.dart'
     show RuleDatabaseProvider;
 import 'package:my_email_spam_filter/core/storage/rule_database_store.dart';
@@ -24,6 +27,8 @@ import '../../helpers/f298_reload_harness.dart';
 /// a save whose pop is ignored by the caller, a safe sender save that fails
 /// after it (nothing is removed then, so nothing needs reloading), or a
 /// reload after SEVERAL removals (each test uses one conflicting entry).
+/// T-3a/T-3b (PR #490 7.7.1) fail the REMOVAL; they do not fail the initial
+/// load of the conflict candidates (same catch, same warning).
 
 /// A rule store whose addRule always fails, to reach the catch path after the
 /// conflicting safe senders were already removed.
@@ -33,6 +38,24 @@ class _AddFailsRuleStore extends RuleDatabaseStore {
   @override
   Future<void> addRule(Rule rule) async =>
       throw StateError('F298 test: simulated addRule failure');
+}
+
+/// PR #490 7.7.1: removing a conflicting safe sender fails.
+class _RemoveFailsSafeSenderStore extends SafeSenderDatabaseStore {
+  _RemoveFailsSafeSenderStore(RuleDatabaseProvider provider) : super(provider);
+
+  @override
+  Future<void> removeSafeSender(String pattern) async =>
+      throw StateError('simulated removeSafeSender failure');
+}
+
+/// PR #490 7.7.1: removing a conflicting rule fails.
+class _DeleteFailsRuleStore extends RuleDatabaseStore {
+  _DeleteFailsRuleStore(RuleDatabaseProvider provider) : super(provider);
+
+  @override
+  Future<void> deleteRule(String ruleName) async =>
+      throw StateError('simulated deleteRule failure');
 }
 
 void main() {
@@ -170,6 +193,67 @@ void main() {
       check(provider);
     });
   }
+
+  testWidgets('T-3a (PR #490 7.7.1): rule quick add whose conflicting safe '
+      'sender cannot be removed says so, and the rule is still added',
+      (tester) async {
+    useTallView(tester);
+    await tester.runAsync(() async {
+      await h.insertSafeSender(safePattern);
+      final provider = await h.loadedProvider();
+      await tester.pumpWidget(h.wrapPushed(
+          provider,
+          () => RuleQuickAddScreen(
+              email: email(),
+              ruleStore: ruleStore(),
+              safeSenderStore:
+                  _RemoveFailsSafeSenderStore(h.testHelper.dbHelper))));
+      await h.openPushed(tester);
+      await tester.pump(const Duration(milliseconds: 300));
+
+      final save = find.text('Save Rule');
+      await tester.ensureVisible(save);
+      await tester.pump();
+      await tapAndLetDbRun(tester, save,
+          until: () => shown('Rule Conflict Detected'));
+      await tapAndLetDbRun(tester, find.text('Save Anyway'),
+          until: () => shown('Rule added') || shown('Failed to add rule'));
+
+      expect(
+          find.textContaining(kConflictingSafeSenderCheckFailedSuffix.trim()),
+          findsOneWidget);
+      expect(find.textContaining('Rule added successfully'), findsOneWidget);
+      expect(provider.rules.rules.map((r) => r.name), ['AutoDeleteSpamCom']);
+    });
+  });
+
+  testWidgets('T-3b (PR #490 7.7.1): safe sender quick add whose conflicting '
+      'rule cannot be removed says so', (tester) async {
+    useTallView(tester);
+    await tester.runAsync(() async {
+      await h.insertRule('AutoDeleteSpamCom',
+          fromPattern: safePattern, column: 'condition_from');
+      final provider = await h.loadedProvider();
+      await tester.pumpWidget(h.wrapPushed(
+          provider,
+          () => SafeSenderQuickAddScreen(
+              email: email(),
+              safeSenderStore: safeStore(),
+              ruleStore: _DeleteFailsRuleStore(h.testHelper.dbHelper))));
+      await h.openPushed(tester);
+      await tester.pump(const Duration(milliseconds: 300));
+
+      final save = find.text('Save Safe Sender');
+      await tester.ensureVisible(save);
+      await tester.pump();
+      await tapAndLetDbRun(tester, save,
+          until: () => shown('Safe sender added'));
+
+      expect(find.textContaining(kConflictingRuleCheckFailedSuffix.trim()),
+          findsOneWidget);
+      expect(provider.safeSenders.safeSenders, [safePattern]);
+    });
+  });
 
   testWidgets('T-1b: safe sender quick add reaches the provider (sender '
       'added and conflicting rule removed)', (tester) async {

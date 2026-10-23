@@ -23,6 +23,9 @@ import '../../core/services/diagnostic_logger.dart';
 import '../../core/storage/unmatched_email_store.dart'
     show kBodyPreviewMaxLength;
 import '../../core/providers/email_scan_provider.dart';
+import '../../core/providers/rule_set_provider.dart';
+import '../../core/services/rule_quick_action_service.dart'
+    show reloadRulesAfterWrite;
 import '../../adapters/storage/secure_credentials_store.dart';
 import '../../core/security/certificate_pinner.dart';
 import '../../util/redact.dart';
@@ -2295,17 +2298,23 @@ class _SettingsScreenState extends State<SettingsScreen> with SingleTickerProvid
     );
 
     if (confirmed != true || !mounted) return;
+    // F298 (PR #490 7.7.1): read before the next await.
+    final provider = Provider.of<RuleSetProvider>(context, listen: false);
 
     try {
       final dbHelper = DatabaseHelper();
       final service = DefaultRuleSetService(dbHelper);
       final result = await service.resetToDefaults();
+      // F298: the reset replaces both tables outside RuleSetProvider; without
+      // a reload the old rules stay in use until a restart.
+      final reloadNote = await reloadRulesAfterWrite(provider);
 
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text(
-              'Reset complete: ${result.rules} rules, ${result.safeSenders} safe senders restored',
+              'Reset complete: ${result.rules} rules, ${result.safeSenders} '
+              'safe senders restored$reloadNote',
             ),
           ),
         );

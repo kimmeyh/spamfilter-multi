@@ -122,25 +122,49 @@ Future<bool> commitRulesImport({
 /// Sprint 79 7.7.1 M-2: the import reached the database, but the YAML copy
 /// beside it could not be written. [reloaded] says whether the rules in use
 /// picked the import up, so the message never claims more than happened.
+///
+/// PR #490 7.7.1: [summary] is a Merge's result line ("Merged rules: 3 added,
+/// ..."), so the counts reach the user on this path too.
 class YamlCopyNotWrittenException implements Exception {
-  YamlCopyNotWrittenException(this.cause, {required this.reloaded});
+  YamlCopyNotWrittenException(this.cause,
+      {required this.reloaded, this.summary = ''});
   final Object cause;
   final bool reloaded;
+  final String summary;
   @override
-  String toString() => reloaded
-      ? 'Imported into the app, but the YAML backup copy could not be '
-          'written: $cause'
-      : 'Imported into the database, but it could not be loaded (restart '
-          'the app to use it) and the YAML backup copy could not be '
-          'written: $cause';
+  String toString() {
+    final message = reloaded
+        ? 'Imported into the app, but the YAML backup copy could not be '
+            'written: $cause'
+        : 'Imported into the database, but it could not be loaded (restart '
+            'the app to use it) and the YAML backup copy could not be '
+            'written: $cause';
+    return summary.isEmpty ? message : '$summary $message';
+  }
 }
 
+/// [write] includes reading the set it writes (a Merge reads the FULL stored
+/// set), so a failed read is reported as a YAML copy problem: the import
+/// itself has already succeeded.
 Future<void> _writeYamlCopy(Future<void> Function() write,
-    {required bool reloaded}) async {
+    {required bool reloaded, String summary = ''}) async {
   try {
     await write();
   } catch (e) {
-    throw YamlCopyNotWrittenException(e, reloaded: reloaded);
+    throw YamlCopyNotWrittenException(e, reloaded: reloaded, summary: summary);
+  }
+}
+
+/// PR #490 7.7.1: a Merge stopped part-way still stored what it added before
+/// the failure, so the rules in use are reloaded before the error goes on.
+Future<ImportMergeResult> _mergeThenReloadOnFailure(
+    Future<ImportMergeResult> Function() merge,
+    RuleSetProvider provider) async {
+  try {
+    return await merge();
+  } on ImportMergeInterruptedException catch (e, st) {
+    final reloaded = await provider.reloadFromDatabase();
+    Error.throwWithStackTrace(e.withReload(reloaded), st);
   }
 }
 
@@ -174,11 +198,13 @@ Future<({ImportMergeResult result, bool reloaded})> commitRulesMerge({
   required Future<void> Function(RuleSet rules) writeYaml,
   required RuleSetProvider provider,
 }) async {
-  final result = await YamlImportMerge.mergeRules(
-      dbStore: dbStore, imported: imported, alreadyInvalid: alreadyInvalid);
+  final result = await _mergeThenReloadOnFailure(
+      () => YamlImportMerge.mergeRules(
+          dbStore: dbStore, imported: imported, alreadyInvalid: alreadyInvalid),
+      provider);
   final reloaded = await provider.reloadFromDatabase();
-  final all = await dbStore.loadRules();
-  await _writeYamlCopy(() => writeYaml(all), reloaded: reloaded);
+  await _writeYamlCopy(() async => writeYaml(await dbStore.loadRules()),
+      reloaded: reloaded, summary: result.describe('rules'));
   return (result: result, reloaded: reloaded);
 }
 
@@ -191,13 +217,24 @@ Future<({ImportMergeResult result, bool reloaded})> commitSafeSendersMerge({
   required Future<void> Function(SafeSenderList safeSenders) writeYaml,
   required RuleSetProvider provider,
 }) async {
-  final result = await YamlImportMerge.mergeSafeSenders(
-      dbStore: dbStore, imported: imported, alreadyInvalid: alreadyInvalid);
+  final result = await _mergeThenReloadOnFailure(
+      () => YamlImportMerge.mergeSafeSenders(
+          dbStore: dbStore, imported: imported, alreadyInvalid: alreadyInvalid),
+      provider);
   final reloaded = await provider.reloadFromDatabase();
-  final all = await dbStore.loadSafeSenders();
-  await _writeYamlCopy(() => writeYaml(all), reloaded: reloaded);
+  await _writeYamlCopy(() async => writeYaml(await dbStore.loadSafeSenders()),
+      reloaded: reloaded, summary: result.describe('safe senders'));
   return (result: result, reloaded: reloaded);
 }
+
+/// PR #490 7.7.1: the Merge result line counts whole RULES. A bad pattern the
+/// F266 sanitizer stripped from a rule that was KEPT is not a skipped rule
+/// (the rule is still added), so it is named on its own.
+@visibleForTesting
+String mergeStrippedPatternsNote(int droppedPatterns) => droppedPatterns == 0
+    ? ''
+    : ' ${YamlService.describeDropped(droppedRules: 0, droppedPatterns: droppedPatterns)} '
+        'that can never match removed from the imported rules.';
 
 /// F269: the import confirmation dialog. Merge is pre-selected; Replace is the
 /// pre-Sprint-80 behavior. Pops a [YamlImportMode], or null on Cancel. The same
@@ -809,21 +846,25 @@ class _YamlImportExportScreenState extends State<YamlImportExportScreen> {
         // F269: add only what is new; nothing existing is touched.
         final merged = await commitRulesMerge(
           imported: importedRules,
-          alreadyInvalid: sanitized.droppedRules + sanitized.droppedPatterns,
+          // Only WHOLE rules dropped are "skipped as invalid"; patterns
+          // stripped from rules that were kept are reported separately.
+          alreadyInvalid: sanitized.droppedRules,
           dbStore: _ruleDbStore,
           writeYaml: _localRuleStore.saveRules,
           provider: ruleProvider,
         );
-        _logger.i('Merged rules from $filePath: ${merged.result.describe('rules')}');
+        final stripped = mergeStrippedPatternsNote(sanitized.droppedPatterns);
+        _logger.i('Merged rules from $filePath: '
+            '${merged.result.describe('rules')}$stripped');
         if (!merged.reloaded) {
           _logger.w('Rules merged but the reload failed: ${ruleProvider.error}');
           _showStatus(
-              '${merged.result.describe('rules')} They could not be loaded. '
-              'Restart the app to use them.',
+              '${merged.result.describe('rules')}$stripped They could not be '
+              'loaded. Restart the app to use them.',
               isError: true);
           return;
         }
-        _showStatus(merged.result.describe('rules'));
+        _showStatus('${merged.result.describe('rules')}$stripped');
         return;
       }
 
@@ -849,6 +890,9 @@ class _YamlImportExportScreenState extends State<YamlImportExportScreen> {
           '${_skippedSuffix(droppedText)}');
     } on YamlCopyNotWrittenException catch (e) {
       _logger.e('Rules imported; YAML copy not written', error: e.cause);
+      _showStatus('$e', isError: true);
+    } on ImportMergeInterruptedException catch (e) {
+      _logger.e('Rules merge stopped part-way', error: e.cause);
       _showStatus('$e', isError: true);
     } catch (e) {
       _logger.e('Failed to import rules', error: e);
@@ -959,6 +1003,9 @@ class _YamlImportExportScreenState extends State<YamlImportExportScreen> {
       );
     } on YamlCopyNotWrittenException catch (e) {
       _logger.e('Safe senders imported; YAML copy not written', error: e.cause);
+      _showStatus('$e', isError: true);
+    } on ImportMergeInterruptedException catch (e) {
+      _logger.e('Safe senders merge stopped part-way', error: e.cause);
       _showStatus('$e', isError: true);
     } catch (e) {
       _logger.e('Failed to import safe senders', error: e);
