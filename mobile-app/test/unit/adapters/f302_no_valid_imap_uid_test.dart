@@ -155,8 +155,11 @@ void main() {
       .join('\n');
 
   /// The log writes are queued behind unawaited calls; wait for [text].
+  /// Up to 10 s: each write waits on the static write chain and a lock file
+  /// (DiagnosticLogger.lockWait is 2 s), and a 3 s limit failed once under a
+  /// loaded parallel run (Sprint 81 merge check). Returns as soon as it shows.
   Future<String> diagWith(String text) async {
-    for (var i = 0; i < 60 && !diag().contains(text); i++) {
+    for (var i = 0; i < 200 && !diag().contains(text); i++) {
       await Future<void>.delayed(const Duration(milliseconds: 50));
     }
     return diag();

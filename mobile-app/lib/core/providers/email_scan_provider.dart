@@ -18,6 +18,7 @@ import '../../core/storage/settings_store.dart';
 import '../../core/storage/unmatched_email_store.dart';
 import '../services/background_scan_core.dart' show BackgroundScanCore;
 import '../services/diagnostic_logger.dart';
+import '../services/heuristic_signals.dart';
 import '../services/imap_uid.dart';
 import '../services/scan_coordinator.dart';
 import '../../core/utils/pattern_normalization.dart';
@@ -741,6 +742,23 @@ class EmailScanProvider extends ChangeNotifier {
         // row the scan just saw on every scan, not once per
         // kNoRulePresenceRecheck.
         final seenAt = DateTime.now();
+        // F271 (Sprint 81): the user's safe sender domains and TLD block
+        // rules, read ONCE per scan. A failed read costs the chips for this
+        // scan only (the signals that need no context still compute), so it
+        // is logged and never blocks the No Rule rows themselves.
+        var heuristicContext = HeuristicContext.empty;
+        if (noRuleResults.isNotEmpty) {
+          try {
+            heuristicContext = HeuristicContext.fromRows(
+              safeSenderRows: await _databaseHelper!.querySafeSenders(),
+              ruleRows: await _databaseHelper!.queryRules(),
+            );
+          } catch (e) {
+            _logger.w('F271: could not read safe senders or rules for the '
+                'heuristic signals; lookalike and blocked-TLD chips are '
+                'skipped for this scan: $e');
+          }
+        }
         final unmatched = noRuleResults
             .map((r) => UnmatchedEmail(
                   availabilityStatus: UnmatchedEmailStore.availabilityAvailable,
@@ -760,6 +778,18 @@ class EmailScanProvider extends ChangeNotifier {
                   // bulk action can fire the RED anti-phishing warning.
                   authClassification:
                       AuthResultsParser.classifyHeaders(r.email.headers).name,
+                  // F271: reason CODES only (never header text); a reason is
+                  // shown on the review row and never acts on the email.
+                  heuristicSignals: HeuristicSignal.encode(
+                    HeuristicSignals.compute(
+                      headers: r.email.headers,
+                      from: r.email.from,
+                      authClassificationName:
+                          AuthResultsParser.classifyHeaders(r.email.headers)
+                              .name,
+                      context: heuristicContext,
+                    ),
+                  ),
                 ))
             .toList();
         if (unmatched.isNotEmpty) {

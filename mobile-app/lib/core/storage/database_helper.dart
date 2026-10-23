@@ -86,7 +86,12 @@ abstract class RuleDatabaseProvider {
 ///      to a `gmail_history_id` row for INBOX in `account_folder_cursors`;
 ///      other folders start with no cursor (one full fetch). The old column
 ///      stays and is no longer read.
-const int databaseVersion = 15;
+///
+/// v16: Add heuristic_signals (nullable TEXT) to unmatched_emails (F271,
+///      Sprint 81). Comma-joined short reason CODES (for example
+///      `reply_to_differs,auth_failed`) computed at scan time from headers;
+///      no header text is stored. Existing rows stay NULL (no chips).
+const int databaseVersion = 16;
 
 /// SQLite database helper - singleton pattern
 class DatabaseHelper implements RuleDatabaseProvider {
@@ -366,6 +371,7 @@ class DatabaseHelper implements RuleDatabaseProvider {
         created_at INTEGER NOT NULL,
         auth_classification TEXT,
         last_seen_at INTEGER,
+        heuristic_signals TEXT,
         FOREIGN KEY (scan_result_id) REFERENCES scan_results(id) ON DELETE CASCADE
       );
     ''');
@@ -729,6 +735,26 @@ class DatabaseHelper implements RuleDatabaseProvider {
 
     if (oldVersion < 15) {
       await _migrateV15GmailHistoryPerFolder(db);
+    }
+
+    if (oldVersion < 16) {
+      // v16: F271 (Sprint 81) -- reason codes on No Rule rows. Nullable and
+      // additive; guarded like v11 (the table must exist: partial test schemas
+      // built at an earlier version may lack it, and PRAGMA table_info on a
+      // missing table returns no rows) and so a fresh-install table, which
+      // already has the column from _createTables, is not re-altered.
+      _logger.i('Applying v16 migration: adding '
+          'unmatched_emails.heuristic_signals');
+      final unmatchedInfo =
+          await db.rawQuery('PRAGMA table_info(unmatched_emails)');
+      final unmatchedColumns =
+          unmatchedInfo.map((r) => r['name'] as String).toSet();
+      if (unmatchedColumns.isNotEmpty &&
+          !unmatchedColumns.contains('heuristic_signals')) {
+        await db.execute(
+            'ALTER TABLE unmatched_emails ADD COLUMN heuristic_signals TEXT;');
+      }
+      _logger.i('v16 migration complete');
     }
   }
 

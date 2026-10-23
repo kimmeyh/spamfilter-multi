@@ -189,8 +189,10 @@ void main() {
       .map((f) => f.readAsStringSync())
       .join('\n');
 
+  /// Up to 10 s (see f302_no_valid_imap_uid_test: a 3 s limit failed once
+  /// under a loaded parallel run). Returns as soon as [text] shows.
   Future<String> diagWith(String text) async {
-    for (var i = 0; i < 60 && !diag().contains(text); i++) {
+    for (var i = 0; i < 200 && !diag().contains(text); i++) {
       await Future<void>.delayed(const Duration(milliseconds: 50));
     }
     return diag();

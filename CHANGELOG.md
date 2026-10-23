@@ -33,6 +33,7 @@ Format: `- **type**: Description (Issue #N)` where type is feat|fix|chore|docs
 - **feat**: iPhone app project: iOS project settings, the iPhone answers for every platform difference (ADR-0050), exports in the app's Documents folder shown in the Files app, and a GitHub workflow that compiles the iOS app (Issue #511)
 - **fix**: A mail server that does not send a message's ID can no longer cause the wrong message to be moved or deleted; such messages are skipped and noted in the diagnostic log (Issue #512)
 - **fix**: A Gmail label that was renamed or deleted is now reported as missing instead of silently scanning zero messages, and Gmail scanning remembers its place separately for each folder, so Spam and custom labels no longer skip waiting mail (Issue #514)
+- **feat**: Review No Rule Items now shows why an email looks suspicious (Reply-To differs, sign-in check failed, lookalike domain, blocked TLD, no unsubscribe link) and adds a "Create rule" button that opens the rule screen for that sender (Issue #516)
 - **chore**: Version 0.22.0+19 for Sprint 81 (Issue #508)
 
 ## [0.21.0] - 2026-10-23
