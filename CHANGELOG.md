@@ -26,6 +26,43 @@ Format: `- **type**: Description (Issue #N)` where type is feat|fix|chore|docs
 
 ## [Unreleased]
 
+### 2026-10-23 (Sprint 80 final code reviews, PR #490)
+
+- **fix**: A rule or safe sender made in Manual Rule Create, and Settings > Reset to Defaults, take effect at once without a restart; a source gate now finds every screen that writes rules without reloading them (PR #490 review)
+- **fix**: A Merge import stopped by an error part-way reports how many were added and loads them; a failed backup copy keeps the Merge counts; patterns removed from imported rules are no longer counted as skipped rules (PR #490 review)
+- **fix**: Quick add of a rule or safe sender says so when matching entries could not all be removed, instead of reporting plain success (PR #490 review)
+- **fix**: Changing Background scanning or its interval in the first seconds after start is no longer overwritten by the start-up check on Windows (PR #490 review)
+- **fix**: The diagnostic log records whether the Windows tray icon was added (and why not), a failed No Rule presence check, a failed new-mail diagnostics read with its cause, and the Windows background task check at start (PR #490 review)
+- **chore**: `verify-aab-play-requirements.ps1` fails when no permission list was read instead of passing the advertising-ID rule on nothing, and resolves a relative bundle path; AVD names, stopped build processes and the rule tool output paths are handled correctly (PR #490 review)
+
+### 2026-10-22 (Sprint 80 retrospective, PR #490)
+
+- **chore**: The WinWright sweep first checks that a fresh DEV start puts its icon in the Windows tray (`run-winwright-tests.ps1 -TrayCheckOnly` runs the check alone); it passes only on a new tray button, so a production instance or a stale icon cannot pass it (Sprint 80 retro IMP-1.1)
+- **chore**: `build-with-secrets.ps1 -StartEmulator` launches the emulator with the highest Android API level instead of the first in the list, and runs the emulator through `ANDROID_HOME`; `-SelfTest` checks the choice (Sprint 80 retro IMP-2)
+- **docs**: Manual Validation rehearsal of a tray, window, notification or dialog step must name what was seen; decision questions state what they decide; standing facts are recorded and not asked again (Sprint 80 retro IMP-1, IMP-3)
+
+### 2026-10-21 (Sprint 80 Manual Validation)
+
+- **fix**: On Windows the app window now appears in about 2 seconds instead of 15-30. The check of the background-scan tasks in Task Scheduler (one PowerShell call of about 3 seconds per check) now runs after the window is shown; a background-scan change made in Settings during that check waits for it, so the check cannot undo it (Issue #503)
+- **fix**: The Windows tray icon now appears however the app is started (Start menu, Explorer, Store install); before, it appeared only when the app was started from the development folder. A right-click on it now opens its menu (Show Window, Settings, Exit); before, the menu never opened (Issue #504)
+- **chore**: Android diagnostic log: at each app start, one line records why "Scan when new mail arrives" has not started a scan (Notification access, the switch, whether the listener is connected, the last mail-app notification it ignored and why, which mail apps are installed) and how the app's screen was started. Only package names and times are recorded, never notification content (Issue #505)
+- **docs**: Backlog card F300, WinWright default sweep takes about 15 minutes (Harold Q5 = 1)
+
+### 2026-10-19 (Sprint 80)
+
+- **fix**: Editing, deleting or quick-adding a rule or safe sender now takes effect at once in No Rule Review and the next manual scan, without a restart; if the reload fails, the app says the change is saved but not yet in effect (Issue #496)
+- **fix**: Review No Rule Items no longer lists email you already deleted or moved in your mail app: each scan checks the listed emails of the folders it scans and hides the ones that are gone; an email that comes back is listed again. A Gmail message moved from Spam to the Inbox is now listed once (Issue #501)
+- **feat**: Importing a rules or safe senders file now adds to your existing rules by default (Merge), skipping duplicates and invalid patterns and saying how many; Replace is still available (Issue #499)
+- **chore**: CI now uses the same Flutter version as local development (3.47.4), read from one .fvmrc file; a test fails if they drift (Issue #495)
+- **chore**: The Play bundle build now fails if the bundle targets an Android version below 36 or requests the advertising ID permission (Issue #502)
+- **chore**: Developer tool that scores candidate rules against the developer's own scan history before any rule can act on mail (Issue #497)
+- **chore**: Developer tool that proposes delete rules from mail the current rules miss, scored by the rule evaluation harness before anything is imported (Issue #498)
+- **chore**: Every Windows and Android difference now lives in one place (PlatformCapabilities and PlatformPolicy, ADR-0049); a test refuses new scattered platform checks. No visible change (Issue #493)
+
+## [0.20.0] - 2026-10-18
+
+Released to the Microsoft Store and Google Play closed testing (submitted 2026-10-18). Sprint 79.
+
 ### 2026-10-18 (Sprint 79 final code reviews, PR #480)
 - **fix**: The 2-minute limit on a server that stops answering now also covers searching and downloading messages; before, enough_mail applied it only to sign-in and folder selection, so a stall mid-scan still hung (Issue #471)
 - **fix**: A folder that fails to download (including the 2-minute limit) now counts as a scan error; before, it read as an empty folder and the scan reported success with 0 errors (Issue #471)
@@ -62,6 +99,10 @@ Format: `- **type**: Description (Issue #N)` where type is feat|fix|chore|docs
 - **docs**: Backlog refinement presents the next 20 candidates in one priority order, with the details in the same order and no phase-group headers; the master plan stays grouped by phase (Issue #487)
 - **fix**: Every change to an account's background schedule (scheduled or cancelled, on Windows and Android) is now written to the diagnostic log with the screen or step that made it, so an account that stops being scanned always shows why (Issue #471)
 - **feat**: Android background-scan notifications name the account (`Back. scan k*@aol completed`) and list "No rule" first (`No rule 9 Deleted 1 Safe 0`); one notification per account, the newest replacing the older one; a read-only or partial scan names its mode in the title and strikes through the counts it did not act on (Issue #482)
+
+## Released in 0.15.0 to 0.19.0
+
+Release headings were not kept for these versions. Each sprint's entries shipped in the next store release; see `docs/STORE_VERSION_STATUS.md` for the dates.
 
 ### 2026-10-13 (Sprint 78 final code reviews, PR #470)
 - **fix**: If the spam filter rules fail to reload after a change, a banner with Retry now says so and the rules loaded earlier stay in use; before, the failure was invisible

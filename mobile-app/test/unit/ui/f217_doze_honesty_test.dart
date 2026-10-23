@@ -49,21 +49,19 @@ void main() {
     });
 
     test('it is ANDROID-gated, not shown everywhere', () {
-      // F264 (Sprint 77): the gate is now the screen's Android seam
-      // (`showsAndroidBackgroundRows`, `debugIsAndroid ?? Platform.isAndroid`)
-      // so a widget test can drive both branches; the real check is unchanged.
+      // ADR-0049 (Sprint 80): the gate is the battery-optimization capability
+      // (Doze is the OS rule behind the note), so a widget test can drive both
+      // branches through `PlatformCapabilities.debugOverride`.
       expect(
-          source.contains('if (SettingsScreen.showsAndroidBackgroundRows &&\n'
+          source.contains(
+              'if (PlatformCapabilities.current.hasBatteryOptimizationSetting &&\n'
               '            _backgroundScanEnabled)\n'
               '          _buildAndroidDozeStatusLine(),'),
           isTrue,
           reason: 'Windows has no Doze equivalent -- showing this there would '
               'be wrong, not merely redundant');
-      expect(
-          source.contains(
-              'debugIsAndroid ?? Platform.isAndroid'),
-          isTrue,
-          reason: 'the seam must fall back to the real platform');
+      expect(source.contains('Platform.isAndroid'), isFalse,
+          reason: 'no bare platform check; the capability seam decides');
     });
 
     test('it is shown only when background scanning is ON', () {

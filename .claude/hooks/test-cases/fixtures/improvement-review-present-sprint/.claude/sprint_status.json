@@ -1,0 +1,12 @@
+{
+  "_description": "Test fixture: Sprint 81 at close-out, plan approved with PR recorded, Phase 5 evidence present -- isolates check 3d-2's Sprint 81+ rule (the 7.7.1 line records the improvement review).",
+  "_last_updated": "2026-10-30T20:00:00Z",
+  "current_sprint": {
+    "number": 81,
+    "branch": "feature/20261030_Sprint_81",
+    "status": "Phase 7.7 close-out",
+    "plan_approved": true,
+    "pr_number": 510,
+    "pr_url": "https://github.com/kimmeyh/spamfilter-multi/pull/510"
+  }
+}

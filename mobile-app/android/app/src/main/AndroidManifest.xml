@@ -189,5 +189,15 @@
             <action android:name="android.intent.action.PROCESS_TEXT"/>
             <data android:mimeType="text/plain"/>
         </intent>
+        <!-- Sprint 80 Task 17 (#505): the accepted mail apps
+             (MailNotificationPolicy.MAIL_APPS), so the start-up diagnostic line
+             can say which are installed. Android 11+ hides other apps unless
+             they are declared here; without these every app reads as absent.
+             Keep in step with MAIL_APPS (pinned by a policy test). -->
+        <package android:name="com.google.android.gm"/>
+        <package android:name="com.aol.mobile.aolapp"/>
+        <package android:name="com.yahoo.mobile.client.android.mail"/>
+        <package android:name="com.samsung.android.email.provider"/>
+        <package android:name="com.microsoft.office.outlook"/>
     </queries>
 </manifest>

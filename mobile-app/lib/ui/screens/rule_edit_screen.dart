@@ -22,9 +22,13 @@ library;
 
 import 'package:flutter/material.dart';
 import 'package:logger/logger.dart';
+import 'package:provider/provider.dart';
 
 import '../../core/models/rule_set.dart';
+import '../../core/providers/rule_set_provider.dart';
 import '../../core/services/pattern_compiler.dart';
+import '../../core/services/rule_quick_action_service.dart'
+    show reloadRulesAfterWrite;
 import '../../core/storage/rule_database_store.dart';
 import '../../core/utils/manual_rule_pattern_generator.dart';
 import '../utils/accessibility_helper.dart';
@@ -503,14 +507,18 @@ class _RuleEditScreenState extends State<RuleEditScreen> {
       sourceDomain: sourceDomain,
     );
 
+    // F298: taken before any await so the reload does not depend on context.
+    final provider = Provider.of<RuleSetProvider>(context, listen: false);
     setState(() => _isSaving = true);
 
     try {
       await widget.store.updateRule(updatedRule);
       _logger.i('Updated rule: ${widget.rule.name}');
+      // F298: the in-memory rules must follow the database.
+      final reloadNote = await reloadRulesAfterWrite(provider);
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Rule updated')),
+          SnackBar(content: Text('Rule updated$reloadNote')),
         );
         Navigator.of(context).pop(true); // true = caller should refresh
       }

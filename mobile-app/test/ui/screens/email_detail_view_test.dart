@@ -69,6 +69,19 @@ class FakeUnmatchedEmailStore implements UnmatchedEmailStore {
 
   @override
   Future<int> deleteOlderThan(int retentionDays) async => 0;
+
+  // F276 (Sprint 80): presence check members, unused by this screen.
+  @override
+  Future<List<UnmatchedEmail>> getRowsToVerify(
+    String accountId,
+    String folderName, {
+    required DateTime checkedBefore,
+    int limit = 500,
+  }) async =>
+      [];
+
+  @override
+  Future<int> applyPresence(Map<int, String> statusByRowId) async => 0;
 }
 
 void main() {

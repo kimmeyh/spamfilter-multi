@@ -6,7 +6,253 @@ Do not stop between tasks as they are all approved, please continue to complete 
 Do not stop to ask questions unless meeting the criteria in \docs\SPRINT_STOPPING_CRITERIA.md
 If questions must be asked, ask as late as possible - do everything that can be done (all tasks and parts of tasks, without the answer to the question(s), then ask the question(s)
 ---------------------------------------------------------------------------------------------------------
-Sprint 7n Scope should include the below items. Please complete sprint planning (/docs/sprint_planning.md) for the below items and present for approval.  Note that everything needs to take into account both the Windows App and the Android app and ADR stating that everything should be functionally and UI the same unless it cannot be - and where it cannot be it should be implemented as a platform exception for what is needed -- this applies to all backend code, frontend code, data, architecture, development, security, testing, deployment.
+Sprint 8n Scope should include the below items. Please complete sprint planning (/docs/sprint_planning.md) for the below items and present for approval.  Note that everything needs to take into account both the Windows App and the Android app and ADR stating that everything should be functionally and UI the same unless it cannot be - and where it cannot be it should be implemented as a platform exception for what is needed -- this applies to all backend code, frontend code, data, architecture, development, security, testing, deployment.
+
+---------------------------------------------------------------------------------------------------------
+Sprint 80 Scope should include the below items. Please complete sprint planning (/docs/sprint_planning.md) for the below items and present for approval.  Note that everything needs to take into account both the Windows App and the Android app and ADR stating that everything should be functionally and UI the same unless it cannot be - and where it cannot be it should be implemented as a platform exception for what is needed -- this applies to all backend code, frontend code, data, architecture, development, security, testing, deployment.
+
+  - MV76-1. Finish the Fold checks, now on the 0.19.0 closed-test build (~40-70m + phone time) Priority 1
+  - F292. Full test suite: test processes die or hang intermittently (~60-120m investigation) Priority 5
+  - F294. One platform-capability seam instead of scattered platform checks (~120-180m) Priority 7
+  - F295. iPhone readiness research and parity ADR, time-boxed (~90-120m) Priority 8
+  - F296. CI Flutter version in sync with local (~30-60m) Priority 9
+  - F298. Rule and safe sender edits reload the in-memory rules (~45-75m) Priority 10
+  - F205. Closed-test error rate: 53 errors in 3,833 scanned on the S24+ (~30-60m) Priority 18
+  - F277. Fold energy check: interval 5 against interval 15 (~45-60m + phone time) Priority 20
+  - F267. Rule evaluation harness: score candidate rules against your own history, read only (~150m) Priority 20
+  - F268. PC-side rule miner: deleted-mail history to candidate delete rules (YAML) (~180m) Priority 22
+  - F269. YAML import merge mode (add without replacing) (~90m) Priority 24
+  - F289. WinWright default sweep with no mouse steps (~30-60m) Priority 25
+  - F299. Android background scans that die within 30 s: record the process exit reason (~45-75m) Priority 25
+Hasn't this been resolved
+  - F276. No Rule Review lists mail already deleted in the mail client (~60-90m) Priority 30
+Hasn't this been resolved?
+  - F247. Behavior tests for navigation and platform-gated paths (~120-180m) Priority 25
+Close - will re-open if they re-occur
+  - F204. Gate the three Play requirements that are documented but not asserted (~60-90m) Priority 24
+Hasn't this been resolved
+
+
+
+  Recommendation for Sprint 80
+  Take the Sprint 79 carry-ins, the four cards you already targeted at Sprint 80, and F299. That is MV76-1 (with F205), F292 (post-reboot
+  runs), F277, F294, F295, F296, F298 and F299, plus the Fix 2 decision.
+  - Size: about 475 to 760 minutes plus your phone time.
+  - Why F299: it finds why some Android background scans die with no stop line. That is the one MV76-1 cause still unexplained, and the 0.20.0
+    phone test is where it shows.
+  - Decision at planning: F294 changes the architecture, so I will ask before starting it.
+  - Not recommended yet:
+    - F267 to F271 (the rule-learning set): they depend on each other and fit a sprint of their own.
+    - F289: it waits on a WinWright release.
+
+  Candidates at a glance (the doc sets the list at 20, so the first 10 are the 10 you asked for)
+
+  - MV76-1. Finish the Fold checks, now on the 0.19.0 closed-test build (~40-70m + phone time) Priority 1
+  - F292. Full test suite: test processes die or hang intermittently (~60-120m investigation) Priority 5
+  - F294. One platform-capability seam instead of scattered platform checks (~120-180m) Priority 7
+  - F295. iPhone readiness research and parity ADR, time-boxed (~90-120m) Priority 8
+  - F296. CI Flutter version in sync with local (~30-60m) Priority 9
+  - F298. Rule and safe sender edits reload the in-memory rules (~45-75m) Priority 10
+  - F205. Closed-test error rate: 53 errors in 3,833 scanned on the S24+ (~30-60m) Priority 18
+  - F277. Fold energy check: interval 5 against interval 15 (~45-60m + phone time) Priority 20
+  - F267. Rule evaluation harness: score candidate rules against your own history, read only (~150m) Priority 20
+  - F268. PC-side rule miner: deleted-mail history to candidate delete rules (YAML) (~180m) Priority 22
+  - F269. YAML import merge mode (add without replacing) (~90m) Priority 24
+  - F204. Gate the three Play requirements that are documented but not asserted (~60-90m) Priority 24
+  - F247. Behavior tests for navigation and platform-gated paths (~120-180m) Priority 25
+  - F289. WinWright default sweep with no mouse steps (~30-60m) Priority 25
+  - F299. Android background scans that die within 30 s: record the process exit reason (~45-75m) Priority 25
+  - F276. No Rule Review lists mail already deleted in the mail client (~60-90m) Priority 30
+  - F270. Safe-sender discovery: propose safe senders from history for review (~150m) Priority 30
+  - F246. Android Gmail background renewal through a server-side token exchange (effort not set) Priority 30
+  - F271. Heuristic reasons and rule suggestions on No Rule Review (~210m) Priority 32
+  - F278. Notifications that produced no scan, and alarm + WorkManager scans coexisting (~60-90m) Priority 34
+  - HOLD items, one line each:
+  - F265. Android Gmail native one-pick sign-in, revisit when a second device reproduces the failure (effort not set) Priority HOLD
+  - F274. On-device GenAI rule explanations (~240m) Priority HOLD
+  - F275. Cloud GenAI classification (~360m) Priority HOLD
+  - F165. Cross-device rules-DB sharing, user cloud storage + hosted-tier option (~half-day exploration) Priority HOLD
+  - F173. Periodic "Test Coverage and Appropriate Testing" Deep Dive (~4-8h per review) Priority HOLD
+  - F183. Upstream civyk-winwright request: script-runner replay support for ww_wait (~15m to file, then external) Priority HOLD
+  - F179. Subject-blocking phrase picker (~3-5h) Priority HOLD
+  - F152. Periodic User-Centric First-Run Evaluation (~2-3h per review) Priority HOLD
+  - F189. Periodic Skills Audit (~4-8h per review) Priority HOLD
+  - GP-4. Gmail API OAuth Verification / CASA, the submission itself (~40-80h) Priority HOLD
+  - F199-b. Partner Center publisher display name, the last surface of the LLC rename (~15m once reopened) Priority HOLD
+  - F285. Re-ask: keep or delete email_detail_view.dart (~5m) Priority HOLD
+  - F111. Periodic Windows App Store upload readiness verification (~110-175m per review) Priority HOLD
+  - F139. Local-install smoke test for a release-candidate MSIX (~30-50m per review) Priority HOLD
+  - F70. Periodic Security Deep Dive (~4-8h per review) Priority HOLD
+  - F130. Periodic Process-Docs Consistency Deep Dive (unbounded discovery) Priority HOLD
+  - F71. Periodic Architecture Deep Dive (~4-8h per review) Priority HOLD
+  - F201. Periodic Web Property Accuracy Re-Review (~1-2h per review) Priority HOLD
+  - F95. iOS variants + cross-store hardening (~10-16h) Priority HOLD
+  - F63. Responsive design framework, superseded by F141 (effort not set) Priority HOLD
+  - F6. Provider-Specific Optimizations (~10-12h) Priority HOLD
+  - F67. Platform validation: iOS, Linux, macOS (~4-6h per platform) Priority HOLD
+  - SEC-11b. Database-at-rest encryption via sqlite3mc + migration (~8-12h) Priority HOLD
+  - F106. SEC-11b verification-window cleanup (~30m) Priority HOLD
+  - H1. GenAI Pattern Suggestions, crowdsourced spam intelligence (TBD) Priority HOLD
+  - H2. Rule Pattern Consistency, domain matching standards (~4-6h) Priority HOLD
+  - H3. Requirements Documentation System (TBD) Priority HOLD
+  - H4. Sent Messages Scan for Safe Senders (~12-16h) Priority HOLD
+  - H5. Outlook.com / Office 365 email provider adapter (~16-20h) Priority HOLD
+
+  MV76-1. Finish the Fold checks, now on the 0.19.0 closed-test build (~40-70m + phone time) Priority 1
+  - Phase: Android / Google Play Store Readiness
+  - Platform: Android
+  - The remainder runs on the 0.20.0 closed-test build:
+    - the step 8 Background note screenshot
+    - step 9: a scan started by a new-mail notification (no trigger=notification scan yet)
+    - step 11: scans resume after a reboot (#428), plus the Google account screenshot
+    - the boot-time main() trace
+    - one completed iCloud background scan
+    - the F283 Android screenshot
+    - the cause of the scans that die early (see F299)
+  - Done in Sprint 79: the export header, the step 8 Doze lines, the Gmail custom label, F281 and F282 on Android, MV-7, the IMAP timeout, the
+    stop line, and zero scan errors on 0.19.0.
+  - Includes F205 (#433).
+
+  F292. Full test suite: test processes die or hang intermittently (~60-120m investigation) Priority 5
+  - Phase: Testing
+  - Platform: Windows Desktop (local flutter test on your PC)
+  - Cause unknown. Five runs before a reboot did not reproduce it. scripts/run-full-suite.ps1 contains it: it logs memory use every 30 s and
+    flags a stalled run.
+  - Remainder: three or more runs after a reboot, labeled as such, and the cause read from the next failing run's memory figures.
+  - Its card (#486) closed on merge; a new card is needed.
+
+  F294. One platform-capability seam instead of scattered platform checks (~120-180m) Priority 7
+  - Phase: Architecture
+  - Platform: All
+  - lib/ has 68 bare Platform.isX checks. Each one must be decided by hand for iOS, and a missed one fails silently.
+  - One PlatformCapabilities would answer questions such as the background mechanism, the new-mail trigger, the export folder and the OAuth
+    flow. A policy test would fail on any new bare check.
+  - Changes the architecture: asked at planning.
+
+  F295. iPhone readiness research and parity ADR, time-boxed (~90-120m) Priority 8
+  - Phase: Multi-Platform Readiness
+  - Platform: iOS
+  - Settle these from Apple's and Google's own documentation:
+    - iOS background scheduling, and whether a near-15-minute interval is possible
+    - whether a new-mail trigger exists on iOS
+    - Gmail OAuth on iOS
+    - Keychain credential storage
+    - App Store privacy and review rules for a mail-reading app
+    - the Mac, Xcode and Apple Developer account requirements
+  - Output: an ADR listing each iOS parity exception, plus the cards F67 and F95 actually need.
+
+  F296. CI Flutter version in sync with local (~30-60m) Priority 9
+  - Phase: DevOps
+  - Platform: All (CI)
+  - CI pins Flutter 3.38.5; local development uses 3.47.4.
+  - One recorded version, with a test or hook that fails when CI differs from it. CI must be green on the new version.
+
+  F298. Rule and safe sender edits reload the in-memory rules (~45-75m) Priority 10
+  - Phase: Bug fix
+  - Platform: All (shared code)
+  - The rule and safe sender edit and quick-add screens write the database but never reload the rules held in memory. Review No Rule Items and
+    the next manual scan use the old rules until a restart.
+  - Each write path ends with the F297 reload. A test per screen family proves the change is seen.
+
+  F205. Closed-test error rate: 53 errors in 3,833 scanned on the S24+ (~30-60m) Priority 18
+  - Phase: Core App Quality
+  - Platform: Android
+  - The errors were narrowed to Gmail on versions before 0.15.0. Sprint 79 recorded zero scan errors on 0.19.0.
+  - Answered by MV76-1's error-classification step (#433).
+
+  F277. Fold energy check: interval 5 against interval 15 (~45-60m + phone time) Priority 20
+  - Phase: Core App Quality
+  - Platform: Android
+  - Arm B has two nights, with the app at 0.3% one night and 1.5% the other. That 5x spread is unexplained.
+  - Arm A has one 4.2 h night. Still to run: a second, 8-hour arm A night, arm C (new mail on), and the decision rule. If an interval of 5
+    costs more than 3x an interval of 15, raise the minimum interval to 10.
+
+  F267. Rule evaluation harness: score candidate rules against your own history, read only (~150m) Priority 20
+  - Phase: Core App Quality
+  - Platform: All
+  - A Dart command-line tool that scores candidate rules against an exported database copy. It reports precision, safe-sender false positives
+    and recall, using the app's existing rule engine.
+  - The bar for any proposed rule: zero safe-sender hits and precision of at least 0.99. Feeds F268 to F272.
+
+  F268. PC-side rule miner: deleted-mail history to candidate delete rules (YAML) (~180m) Priority 22
+  - Phase: Core App Quality
+  - Platform: N/A (developer tool); output imported on All
+  - Mines recurring domains, subject phrases and body phrases from your deleted-mail history into candidate YAML. Each candidate is checked by
+    F266 and scored by F267 before import.
+  - Content stays on your PC. Bundling the rules into the shipped app would need a decision first.
+  - Depends on: F266, F267.
+
+  F269. YAML import merge mode (add without replacing) (~90m) Priority 24
+  - Phase: Core App Quality
+  - Platform: All
+  - A "Merge" choice beside "Replace" on import. Duplicates are resolved by the existing checkers, and Replace stays the default.
+  - Changes import behavior, so it needs your decision. Depends on: F266.
+
+  F204. Gate the three Play requirements that are documented but not asserted (~60-90m) Priority 24
+  - Phase: Android / Google Play Store Readiness
+  - Platform: Android
+  - Assert from the built bundle:
+    - target SDK of at least 36
+    - no advertising-ID permission
+    - 16 KB page alignment, which Google enforces from 2027-02-01
+  - Today's bundle passes the first two; this card makes them fail loudly if they regress.
+
+  F247. Behavior tests for navigation and platform-gated paths (~120-180m) Priority 25
+  - Phase: Testing
+  - Platform: All
+  - Six test gaps from the PR #448 review:
+    - the scan-busy branches tested as behavior, not source text
+    - the Gmail add flow as a widget test
+    - the Windows token-path tests on CI (needs a production seam: your decision)
+    - the Android sign-in exception path
+    - the Sign In Again edge cases
+    - a self-test for the mutation script
+
+  F289. WinWright default sweep with no mouse steps (~30-60m) Priority 25
+  - Phase: Testing
+  - Platform: Windows Desktop (test tooling)
+  - Six sweep steps still use the mouse, so the PC must stay unlocked while the sweep runs.
+  - Depends on: a WinWright release that can replay a step without the mouse.
+
+  F299. Android background scans that die within 30 s: record the process exit reason (~45-75m) Priority 25
+  - Phase: Core App Quality
+  - Platform: Android
+  - At each app and worker start, read Android's record of why the process last exited (getHistoricalProcessExitReasons) and write it to the
+    diagnostic log.
+  - Also check whether the plugin's 30 s start watchdog fails slow starts in Doze.
+  - Explains the MV76-1 scans that died with no stop line.
+
+  F276. No Rule Review lists mail already deleted in the mail client (~60-90m) Priority 30
+  - Phase: Core App Quality
+  - Platform: All
+  - Mail deleted or moved in the mail app stays listed for up to 90 days, and actions on it fail. A moved message is listed twice.
+  - Fix: mark the row gone when an action fails with "not found", and filter it out.
+
+  F270. Safe-sender discovery: propose safe senders from history for review (~150m) Priority 30
+  - Phase: Core App Quality
+  - Platform: All
+  - Version 1 proposes repeated No Rule senders that pass DMARC and were never deleted; nothing is added without your approval. Version 2 adds
+    Sent-folder recipients, which needs a privacy policy update.
+  - Depends on: F266, F267.
+
+  F246. Android Gmail background renewal through a server-side token exchange (effort not set) Priority 30
+  - Phase: Core App Quality
+  - Platform: Android
+  - Android keeps no Gmail refresh token, so a background Gmail scan more than about an hour after the app was last opened asks you to sign in
+    again.
+  - Google's route needs a server this app does not have, which is an architecture decision. A 30-minute retry of the failed spike comes first.
+
+  F271. Heuristic reasons and rule suggestions on No Rule Review (~210m) Priority 32
+  - Phase: Core App Quality
+  - Platform: All
+  - Reason chips on No Rule Review, from header-only signals:
+    - Reply-To differs from From
+  F278. Notifications that produced no scan, and alarm + WorkManager scans coexisting (~60-90m) Priority 34
+  - Phase: Core App Quality
+  - Platform: Android
+  - In battery arm 5, 2 of 4 new-mail notifications left no scan and no log line, cause unknown. Alarm and periodic scans also overlapped.
+
+
 
 ---------------------------------------------------------------------------------------------------------
   Decisions (answer like "Q1 1, Q2 2, ...")

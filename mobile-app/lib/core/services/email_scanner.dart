@@ -2,14 +2,15 @@
 library;
 
 import 'dart:async' show unawaited;
-import 'dart:io' show Platform;
 
 import 'package:flutter/foundation.dart' show visibleForTesting;
 
 import '../models/email_message.dart';
+import '../platform/platform_capabilities.dart';
 import '../models/rule_set.dart';
 import '../models/safe_sender_list.dart';
 import 'mock_email_data.dart';
+import 'no_rule_presence_reconciler.dart';
 import '../models/evaluation_result.dart';
 import '../providers/email_scan_provider.dart';
 import '../providers/rule_set_provider.dart';
@@ -391,7 +392,7 @@ class EmailScanner {
           ? ContentHistoryCapture(
               accountId: accountId,
               scanType: scanType,
-              platform: Platform.isAndroid ? 'android' : 'windows',
+              platform: PlatformCapabilities.current.hostName,
               fetchText: (m) => platform!.fetchContentText(m),
             )
           : null;
@@ -612,6 +613,10 @@ class EmailScanner {
           if (isLiveScan) {
             await LiveScanLogger.log('Step 4: Folder "$folderName" returned $folderCount messages');
           }
+
+          // F276 (Sprint 80): mark this folder's listed No Rule rows that are
+          // gone, in this open session ([_checkNoRulePresence]).
+          await _checkNoRulePresence(platform, folderName);
 
           // [NEW] ISSUE #128: Report folder completion
           if (folderCount > 0) {
@@ -2030,6 +2035,54 @@ class EmailScanner {
   @visibleForTesting
   void resetDaysBackUidFloorCacheForTesting() =>
       _daysBackUidFloorCache.clear();
+
+  /// F276 (Sprint 80): after [folderName] was fetched, ask [platform] -- in
+  /// the same open session -- which of the folder's listed No Rule rows still
+  /// exist, and record the answer so Review hides the ones that are gone
+  /// ([reconcileNoRulePresence]). Read-only, so it runs in every scan mode.
+  ///
+  /// Sprint 75 IMP-3 walk for this new catch: a cancel and a session-fatal
+  /// error ([isSessionFatal]) are rethrown, so they reach the per-folder
+  /// handlers in [scanInbox] exactly as a fetch failure would; anything else
+  /// is logged and the rows are left unchanged. A platform that is not a
+  /// [MessagePresenceChecker] (demo, mock) is not checked.
+  Future<void> _checkNoRulePresence(
+      SpamFilterPlatform? platform, String folderName) async {
+    if (platform is! MessagePresenceChecker) return;
+    try {
+      final outcome = await reconcileNoRulePresence(
+        checker: platform as MessagePresenceChecker,
+        store: UnmatchedEmailStore(DatabaseHelper()),
+        accountId: accountId,
+        folderName: folderName,
+        // Gmail checks one message per request; IMAP one SEARCH per 200 UIDs.
+        limit: platform is GmailApiAdapter ? 50 : 500,
+      );
+      if (outcome.deleted + outcome.moved > 0) {
+        unawaited(DiagnosticLogger.log(
+          kind: DiagnosticLogger.kindScan,
+          context: 'F276/no-rule',
+          detail: 'folder "$folderName": ${outcome.checked} listed rows '
+              'checked, ${outcome.deleted} gone, ${outcome.moved} moved',
+        ));
+      }
+    } on ScanCancelledException {
+      rethrow;
+    } catch (e, st) {
+      if (isSessionFatal(e)) rethrow;
+      AppLogger.error('F276: No Rule presence check failed for folder '
+          '"$folderName"; rows left unchanged',
+          error: e, stackTrace: st);
+      // PR #490 7.7.1: the console log is not kept in a release build; the
+      // diagnostic log is what a user can send.
+      unawaited(DiagnosticLogger.failure(
+        context: 'F276/no-rule',
+        kind: DiagnosticLogger.kindException,
+        reason: 'presence check failed for folder "$folderName"; rows left '
+            'unchanged -- ${DiagnosticLogger.describeError(e)}',
+      ));
+    }
+  }
 
   /// Sprint 38 Round 4 (2026-05-17): compute the oldest unaddressed
   /// no-rule UID per scanned folder from the just-completed scan results,

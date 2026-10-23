@@ -457,13 +457,14 @@ void main() {
       expect(NewMailTriggerRow.appsFor('yahoo'), startsWith('Yahoo Mail, '));
     });
 
-    test('review M-1 / F264 Q10: the switch is gated by the Android seam, '
+    test('review M-1 / F264 Q10: the switch is gated by a platform capability, '
         'not on the account\'s background switch, and hidden on Windows', () {
       // SOURCE-TEXT VERIFIED: behind a platform seam; the widget test on the
       // real Settings path (f264_interval_control_test) drives both branches.
       final src = File('lib/ui/screens/settings_screen.dart').readAsStringSync();
       expect(
-          src.contains('if (SettingsScreen.showsAndroidBackgroundRows)\n'
+          src.contains(
+              'if (PlatformCapabilities.current.hasNewMailNotificationTrigger)\n'
               '          NewMailTriggerRow('),
           isTrue);
     });
@@ -489,8 +490,13 @@ void main() {
       // MailNotificationPolicyTest drives decide() itself. What this does NOT
       // catch: WorkManager's own KEEP behavior per unique name.
       expect(listener.contains('MailNotificationPolicy.decide('), isTrue);
-      expect(listener.contains('lastTriggerMsFor = { key -> prefs.getLong(key, 0L) }'),
+      // Sprint 80 Task 17: the lambda is a named value shared with
+      // ignoredReason(); it must still read the per-provider key.
+      expect(
+          listener.contains(
+              'val lastTriggerMsFor = { key: String -> prefs.getLong(key, 0L) }'),
           isTrue);
+      expect(listener.contains('lastTriggerMsFor = lastTriggerMsFor,'), isTrue);
       expect(listener.contains('uniqueWorkName = trigger.workName'), isTrue);
       final trigger = File(
               'android/app/src/main/kotlin/com/myemailspamfilter/DozeScanTrigger.kt')

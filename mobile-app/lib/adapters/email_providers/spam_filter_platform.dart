@@ -506,6 +506,36 @@ class UserFacingConnectionException extends ConnectionException {
 bool isSessionFatal(Object error) =>
     error is AuthenticationException || error is UserFacingConnectionException;
 
+/// F276 (Sprint 80): whether a listed No Rule email is still in its folder.
+enum MessagePresence {
+  /// Still in the folder.
+  present,
+
+  /// Not found in the folder: deleted, or (IMAP) moved -- IMAP cannot tell
+  /// the two apart, because a UID belongs to one folder.
+  absent,
+
+  /// Gmail: the message exists but no longer carries the folder's label
+  /// (moved to another label, or to Trash).
+  moved,
+}
+
+/// F276 (Sprint 80): an adapter that can say, in its open session, which of
+/// a folder's message ids still exist. Optional: a platform that does not
+/// implement it is simply not checked (its rows stay as they are). A separate
+/// interface rather than a [SpamFilterPlatform] member, so the many test
+/// fakes of [SpamFilterPlatform] need no change.
+abstract class MessagePresenceChecker {
+  /// The presence of each id in [ids] in [folderName]. Ids the provider could
+  /// not answer for are left out of the map. Session-fatal errors
+  /// ([isSessionFatal]) propagate; other failures throw too, and the caller
+  /// leaves the rows unchanged.
+  Future<Map<String, MessagePresence>> checkMessagesPresent({
+    required String folderName,
+    required List<String> ids,
+  });
+}
+
 /// Exception thrown during message fetching
 class FetchException implements Exception {
   final String message;

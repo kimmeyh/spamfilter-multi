@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 
+import 'package:my_email_spam_filter/core/platform/platform_capabilities.dart';
 import 'package:my_email_spam_filter/ui/widgets/system_inset_wrapper.dart';
 
 /// F209 (Sprint 69): content was hidden behind the Android navigation bar on
@@ -46,13 +47,18 @@ void main() {
   double screenHeight(WidgetTester tester) =>
       tester.view.physicalSize.height / tester.view.devicePixelRatio;
 
-  Widget screen({required bool isAndroid, required Widget body, Widget? bar}) =>
-      MaterialApp(
-        home: SystemInsetWrapper(
-          debugIsAndroid: isAndroid,
-          child: Scaffold(appBar: bar as PreferredSizeWidget?, body: body),
-        ),
-      );
+  // ADR-0049: the platform is chosen through the central override, reset in
+  // a per-test teardown.
+  Widget screen({required bool isAndroid, required Widget body, Widget? bar}) {
+    PlatformCapabilities.debugOverride = PlatformCapabilities(
+        isAndroid ? HostPlatform.android : HostPlatform.windows);
+    addTearDown(() => PlatformCapabilities.debugOverride = null);
+    return MaterialApp(
+      home: SystemInsetWrapper(
+        child: Scaffold(appBar: bar as PreferredSizeWidget?, body: body),
+      ),
+    );
+  }
 
   const bottomContent = Align(
     alignment: Alignment.bottomCenter,
@@ -61,12 +67,29 @@ void main() {
 
   group('F209 system navigation inset', () {
     group('the platform decision', () {
-      test('applies on Android', () {
-        expect(SystemInsetWrapper.appliesTo(isAndroid: true), isTrue);
+      testWidgets('applies on Android: the wrapper adds a SafeArea',
+          (tester) async {
+        await tester.pumpWidget(
+          screen(isAndroid: true, body: const SizedBox()),
+        );
+        expect(
+            find.descendant(
+                of: find.byType(SystemInsetWrapper),
+                matching: find.byType(SafeArea)),
+            findsOneWidget);
       });
 
-      test('does NOT apply off Android -- Windows has no system nav bar', () {
-        expect(SystemInsetWrapper.appliesTo(isAndroid: false), isFalse);
+      testWidgets(
+          'does NOT apply off Android -- Windows has no system nav bar',
+          (tester) async {
+        await tester.pumpWidget(
+          screen(isAndroid: false, body: const SizedBox()),
+        );
+        expect(
+            find.descendant(
+                of: find.byType(SystemInsetWrapper),
+                matching: find.byType(SafeArea)),
+            findsNothing);
       });
     });
 

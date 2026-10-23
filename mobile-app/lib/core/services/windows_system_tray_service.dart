@@ -1,5 +1,8 @@
 import 'dart:io';
+import 'package:flutter/foundation.dart' show visibleForTesting;
 import 'package:system_tray/system_tray.dart';
+import '../platform/platform_capabilities.dart';
+import 'diagnostic_logger.dart';
 import 'package:window_manager/window_manager.dart';
 import 'package:path/path.dart' as path;
 import 'package:logger/logger.dart';
@@ -24,16 +27,44 @@ class WindowsSystemTrayService with WindowListener {
   final SystemTray _systemTray = SystemTray();
   bool _isInitialized = false;
 
+  /// Flutter asset key of the tray icon (pubspec.yaml); the same file the
+  /// runner embeds as the window icon (windows/runner/Runner.rc).
+  static const String trayIconAssetKey = 'windows/runner/resources/app_icon.ico';
+
+  /// The tray icon file for an app whose exe is [resolvedExecutable].
+  ///
+  /// Sprint 80 Task 16 (#504): resolved from the exe folder, never from the
+  /// working directory. The old code joined `Directory.current`, which is the
+  /// mobile-app source folder only when build-windows.ps1 starts the app; a
+  /// start from Explorer, the Start menu, an MSIX install or another folder got
+  /// an empty path and no tray icon.
+  static String trayIconPath(String resolvedExecutable) => path.joinAll([
+        File(resolvedExecutable).parent.path,
+        'data',
+        'flutter_assets',
+        ...trayIconAssetKey.split('/'),
+      ]);
+
+  /// Diagnostic-log context of the tray lines ([recordTrayOutcome]).
+  static const String diagnosticContext = 'tray';
+
   /// Initialize system tray (Windows only)
   ///
-  /// Call this during app startup on Windows platform
-  Future<void> initialize() async {
-    if (!Platform.isWindows) {
-      return; // Only initialize on Windows
+  /// Call this during app startup on Windows platform. Returns true when the
+  /// icon is in the notification area.
+  ///
+  /// PR #490 7.7.1 (silent-failure review finding 4): this used to return
+  /// nothing, and main.dart logged "Windows system tray initialized" whatever
+  /// happened. Each outcome now writes one diagnostic-log line
+  /// (`tray: icon added` or `tray: icon NOT added -- <reason>`), so a missing
+  /// icon on a user's PC can be explained from the log.
+  Future<bool> initialize() async {
+    if (!PlatformCapabilities.current.hasSystemTray) {
+      return false; // Only initialize on Windows
     }
 
     if (_isInitialized) {
-      return; // Already initialized
+      return true; // Already initialized
     }
 
     try {
@@ -63,56 +94,84 @@ class WindowsSystemTrayService with WindowListener {
       // whose onWindowClose calls hideWindow() (NOT destroy()); the mixin and
       // onWindowClose stub below are retained for that, but are not wired up.
 
-      // Get icon path from Windows runner resources
-      // This is the same icon used for the application window
-      final String iconPath = path.join(
-        Directory.current.path,
-        'data',
-        'flutter_assets',
-        'assets',
-        'app_icon.ico',
-      );
+      final String iconPath = trayIconPath(Platform.resolvedExecutable);
+      final iconFileExists = File(iconPath).existsSync();
+      if (!iconFileExists) {
+        _logger.w('System tray icon file not found: $iconPath');
+      }
 
-      // Fallback to runner resources if flutter assets not available
-      final String fallbackIconPath = path.join(
-        Directory.current.path,
-        'windows',
-        'runner',
-        'resources',
-        'app_icon.ico',
-      );
-
-      // Determine which icon path exists
-      final String finalIconPath = File(iconPath).existsSync()
-          ? iconPath
-          : (File(fallbackIconPath).existsSync() ? fallbackIconPath : '');
-
-      // Initialize system tray
-      await _systemTray.initSystemTray(
+      // system_tray 2.0.3 returns false when it cannot load the icon: it
+      // skips Shell_NotifyIcon (windows/tray.cpp:288-291), so no icon exists.
+      final added = await _systemTray.initSystemTray(
         title: 'MyEmailSpamFilter',
-        iconPath: finalIconPath,
+        iconPath: iconPath,
         toolTip: 'MyEmailSpamFilter - Click to show',
       );
+      if (!added) {
+        _logger.w('System tray icon was not added (icon: $iconPath)');
+        await recordTrayOutcome(
+            added: false,
+            reason: iconFileExists
+                ? 'the tray plugin could not load the icon file'
+                : 'icon file not found next to the exe');
+        return false;
+      }
 
       // Set up tray menu
       await _setupTrayMenu();
 
-      // Register click handler
-      _systemTray.registerSystemTrayEventHandler((eventName) {
-        if (eventName == kSystemTrayEventClick) {
-          // Single click: Show window
-          _showWindow();
-        } else if (eventName == kSystemTrayEventRightClick) {
-          // Right click: Rebuild menu to ensure callbacks work
-          _setupTrayMenu();
-        }
-      });
+      _systemTray.registerSystemTrayEventHandler(handleTrayEvent);
 
       _isInitialized = true;
+      await recordTrayOutcome(added: true);
+      return true;
     } catch (e) {
       // Initialization failed - log but don't crash
       // App will continue without system tray
       _logger.w('Failed to initialize system tray: $e');
+      await recordTrayOutcome(
+          added: false, reason: DiagnosticLogger.describeError(e));
+      return false;
+    }
+  }
+
+  /// One diagnostic-log line per start: whether the tray icon was added.
+  /// No path is written (it holds the Windows user name).
+  @visibleForTesting
+  static Future<void> recordTrayOutcome({required bool added, String? reason}) =>
+      DiagnosticLogger.log(
+        kind: added ? DiagnosticLogger.kindApp : DiagnosticLogger.kindException,
+        context: diagnosticContext,
+        detail: added ? 'icon added' : 'icon NOT added -- $reason',
+      );
+
+  /// Handles a click on the tray icon.
+  ///
+  /// Sprint 80 Task 16 (#504): system_tray 2.0.3 on Windows only REPORTS a
+  /// right-click (`windows/tray.cpp:377-378`); the menu appears only when the
+  /// app calls `popUpContextMenu()`. The handler used to rebuild the menu and
+  /// stop there, so the tray menu (and its Exit item) never opened.
+  ///
+  /// PR #490 7.7.1 (silent-failure review finding 12): the plugin calls this
+  /// without awaiting it, so an error used to escape as an unhandled zone
+  /// error with no record. It is now logged, and the click does nothing.
+  @visibleForTesting
+  Future<void> handleTrayEvent(String eventName) async {
+    try {
+      if (eventName == kSystemTrayEventClick) {
+        await _showWindow();
+      } else if (eventName == kSystemTrayEventRightClick) {
+        // Rebuild first so the item callbacks are current, then show it.
+        await _setupTrayMenu();
+        await _systemTray.popUpContextMenu();
+      }
+    } catch (e) {
+      _logger.w('Tray $eventName failed: $e');
+      await DiagnosticLogger.log(
+        kind: DiagnosticLogger.kindException,
+        context: diagnosticContext,
+        detail: '$eventName failed -- ${DiagnosticLogger.describeError(e)}',
+      );
     }
   }
 

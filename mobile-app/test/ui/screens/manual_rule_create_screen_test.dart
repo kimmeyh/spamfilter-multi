@@ -2,9 +2,11 @@ import 'dart:convert';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:provider/provider.dart';
 import 'package:sqflite_common_ffi/sqflite_ffi.dart' show Database;
 
 import 'package:my_email_spam_filter/core/models/rule_set.dart';
+import 'package:my_email_spam_filter/core/providers/rule_set_provider.dart';
 import 'package:my_email_spam_filter/core/services/pattern_compiler.dart';
 import 'package:my_email_spam_filter/core/storage/database_helper.dart';
 import 'package:my_email_spam_filter/core/storage/rule_database_store.dart';
@@ -677,8 +679,12 @@ void main() {
       addTearDown(tester.view.resetPhysicalSize);
       addTearDown(tester.view.resetDevicePixelRatio);
 
-      await tester.pumpWidget(MaterialApp(
-        home: RuleEditScreen(rule: rule, store: stubStore),
+      // F298: Save reloads RuleSetProvider, so the screen needs one in scope.
+      await tester.pumpWidget(ChangeNotifierProvider<RuleSetProvider>.value(
+        value: RuleSetProvider(),
+        child: MaterialApp(
+          home: RuleEditScreen(rule: rule, store: stubStore),
+        ),
       ));
       await tester.pumpAndSettle();
 

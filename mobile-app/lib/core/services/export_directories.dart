@@ -30,6 +30,7 @@ import 'package:logger/logger.dart';
 import 'package:path/path.dart' as path;
 import 'package:path_provider/path_provider.dart';
 
+import '../platform/platform_capabilities.dart';
 import '../storage/settings_store.dart';
 import 'app_environment.dart';
 
@@ -78,7 +79,8 @@ class ExportDirectories {
     final override = _defaultOverride;
     if (override != null) return override;
 
-    if (Platform.isWindows) {
+    final location = PlatformCapabilities.current.exportLocation;
+    if (location == ExportLocation.documentsFolder) {
       try {
         return (await getApplicationDocumentsDirectory()).path;
       } catch (e) {
@@ -90,7 +92,7 @@ class ExportDirectories {
           ? null
           : path.join(profile, 'Documents');
     }
-    if (Platform.isAndroid) {
+    if (location == ExportLocation.sharedStorageDocumentUri) {
       final appExternal = await getExternalStorageDirectory();
       if (appExternal == null) return null;
       return publicDocumentsFrom(appExternal.path) ?? appExternal.path;
@@ -125,7 +127,10 @@ class ExportDirectories {
   static Future<String?> saveDialogStart({SettingsStore? settingsStore}) async {
     try {
       final dir = await resolve(settingsStore: settingsStore);
-      if (Platform.isAndroid) return androidDocumentUri(dir);
+      if (PlatformCapabilities.current.exportLocation ==
+          ExportLocation.sharedStorageDocumentUri) {
+        return androidDocumentUri(dir);
+      }
       return dir;
     } catch (e) {
       _logger.w('No starting folder for the save dialog: $e');
@@ -227,7 +232,8 @@ class ExportDirectories {
     final forced = debugAppOwnFolderOverride;
     if (forced != null) return forced;
     return appOwnFolderFor(
-      isAndroid: Platform.isAndroid,
+      isAndroid: PlatformCapabilities.current.exportLocation ==
+          ExportLocation.sharedStorageDocumentUri,
       externalStorage: () async => (await getExternalStorageDirectory())?.path,
       appSupport: () async => (await getApplicationSupportDirectory()).path,
     );

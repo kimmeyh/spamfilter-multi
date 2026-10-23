@@ -3,7 +3,8 @@
 /// What this does NOT catch: whether Android's App info page really offers
 /// Battery > Unrestricted on a given phone, or Samsung's menu names (checked on
 /// the Fold at Manual Validation); and the row's PLACEMENT in Settings, which
-/// is behind `Platform.isAndroid` and is pinned by a source gate below.
+/// is behind `PlatformCapabilities.hasBatteryOptimizationSetting` and is pinned
+/// by a source gate below.
 library;
 
 import 'dart:io';
@@ -94,11 +95,13 @@ void main() {
   });
 
   test('placement: Settings shows the row on Android with background on', () {
-    // SOURCE-TEXT VERIFIED: the row sits behind Platform.isAndroid, which a
-    // host widget test cannot reach; the gate pins the guard and the widget.
+    // SOURCE-TEXT VERIFIED: the row sits behind the battery-optimization
+    // capability (ADR-0049); the gate pins the guard and the widget.
     final src = File('lib/ui/screens/settings_screen.dart').readAsStringSync();
     expect(
-        src.contains('if (Platform.isAndroid && _backgroundScanEnabled)\n'
+        src.contains(
+            'if (PlatformCapabilities.current.hasBatteryOptimizationSetting &&\n'
+            '            _backgroundScanEnabled)\n'
             '          const BatteryOptimizationRow(),'),
         isTrue);
   });

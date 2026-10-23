@@ -6,10 +6,10 @@
 /// Features:
 /// - Export rules to user-selected file location
 /// - Export safe senders to user-selected file location
-/// - Import rules from user-selected YAML file (replaces existing)
-/// - Import safe senders from user-selected YAML file (replaces existing)
+/// - Import rules from user-selected YAML file (Merge by default, or Replace)
+/// - Import safe senders from user-selected YAML file (Merge by default, or Replace)
 /// - Validation and error reporting for malformed YAML
-/// - Confirmation dialog before destructive import operations
+/// - Confirmation dialog (Merge or Replace) before any import changes data
 library;
 
 import 'dart:convert';
@@ -22,12 +22,14 @@ import 'package:flutter/material.dart';
 import 'package:logger/logger.dart';
 import 'package:provider/provider.dart';
 import '../../adapters/storage/app_paths.dart';
+import '../../core/platform/platform_capabilities.dart';
 import '../../adapters/storage/local_rule_store.dart';
 import '../../core/models/rule_set.dart';
 import '../../core/models/safe_sender_list.dart';
 import '../../core/providers/rule_set_provider.dart';
 import '../../core/services/app_version.dart';
 import '../../core/services/export_directories.dart';
+import '../../core/services/yaml_import_merge.dart';
 import '../../core/services/yaml_service.dart';
 import '../../core/storage/database_helper.dart';
 import '../../core/storage/rule_database_store.dart';
@@ -120,25 +122,49 @@ Future<bool> commitRulesImport({
 /// Sprint 79 7.7.1 M-2: the import reached the database, but the YAML copy
 /// beside it could not be written. [reloaded] says whether the rules in use
 /// picked the import up, so the message never claims more than happened.
+///
+/// PR #490 7.7.1: [summary] is a Merge's result line ("Merged rules: 3 added,
+/// ..."), so the counts reach the user on this path too.
 class YamlCopyNotWrittenException implements Exception {
-  YamlCopyNotWrittenException(this.cause, {required this.reloaded});
+  YamlCopyNotWrittenException(this.cause,
+      {required this.reloaded, this.summary = ''});
   final Object cause;
   final bool reloaded;
+  final String summary;
   @override
-  String toString() => reloaded
-      ? 'Imported into the app, but the YAML backup copy could not be '
-          'written: $cause'
-      : 'Imported into the database, but it could not be loaded (restart '
-          'the app to use it) and the YAML backup copy could not be '
-          'written: $cause';
+  String toString() {
+    final message = reloaded
+        ? 'Imported into the app, but the YAML backup copy could not be '
+            'written: $cause'
+        : 'Imported into the database, but it could not be loaded (restart '
+            'the app to use it) and the YAML backup copy could not be '
+            'written: $cause';
+    return summary.isEmpty ? message : '$summary $message';
+  }
 }
 
+/// [write] includes reading the set it writes (a Merge reads the FULL stored
+/// set), so a failed read is reported as a YAML copy problem: the import
+/// itself has already succeeded.
 Future<void> _writeYamlCopy(Future<void> Function() write,
-    {required bool reloaded}) async {
+    {required bool reloaded, String summary = ''}) async {
   try {
     await write();
   } catch (e) {
-    throw YamlCopyNotWrittenException(e, reloaded: reloaded);
+    throw YamlCopyNotWrittenException(e, reloaded: reloaded, summary: summary);
+  }
+}
+
+/// PR #490 7.7.1: a Merge stopped part-way still stored what it added before
+/// the failure, so the rules in use are reloaded before the error goes on.
+Future<ImportMergeResult> _mergeThenReloadOnFailure(
+    Future<ImportMergeResult> Function() merge,
+    RuleSetProvider provider) async {
+  try {
+    return await merge();
+  } on ImportMergeInterruptedException catch (e, st) {
+    final reloaded = await provider.reloadFromDatabase();
+    Error.throwWithStackTrace(e.withReload(reloaded), st);
   }
 }
 
@@ -154,6 +180,185 @@ Future<bool> commitSafeSendersImport({
   final reloaded = await provider.reloadFromDatabase(); // M-2: before YAML
   await _writeYamlCopy(() => writeYaml(safeSenders), reloaded: reloaded);
   return reloaded;
+}
+
+/// F269 (Sprint 80): how an import treats what already exists.
+enum YamlImportMode { merge, replace }
+
+/// F269: commit a MERGE of an imported rules file. Adds only the rules that are
+/// new (see [YamlImportMerge]), reloads the in-memory set (F297), then writes
+/// the YAML copy of the FULL stored set (not just the added rules).
+///
+/// Returns what was added and skipped, and whether the reload worked.
+@visibleForTesting
+Future<({ImportMergeResult result, bool reloaded})> commitRulesMerge({
+  required RuleSet imported,
+  required int alreadyInvalid,
+  required RuleDatabaseStore dbStore,
+  required Future<void> Function(RuleSet rules) writeYaml,
+  required RuleSetProvider provider,
+}) async {
+  final result = await _mergeThenReloadOnFailure(
+      () => YamlImportMerge.mergeRules(
+          dbStore: dbStore, imported: imported, alreadyInvalid: alreadyInvalid),
+      provider);
+  final reloaded = await provider.reloadFromDatabase();
+  await _writeYamlCopy(() async => writeYaml(await dbStore.loadRules()),
+      reloaded: reloaded, summary: result.describe('rules'));
+  return (result: result, reloaded: reloaded);
+}
+
+/// F269: the safe senders twin of [commitRulesMerge].
+@visibleForTesting
+Future<({ImportMergeResult result, bool reloaded})> commitSafeSendersMerge({
+  required SafeSenderList imported,
+  required int alreadyInvalid,
+  required RuleDatabaseStore dbStore,
+  required Future<void> Function(SafeSenderList safeSenders) writeYaml,
+  required RuleSetProvider provider,
+}) async {
+  final result = await _mergeThenReloadOnFailure(
+      () => YamlImportMerge.mergeSafeSenders(
+          dbStore: dbStore, imported: imported, alreadyInvalid: alreadyInvalid),
+      provider);
+  final reloaded = await provider.reloadFromDatabase();
+  await _writeYamlCopy(() async => writeYaml(await dbStore.loadSafeSenders()),
+      reloaded: reloaded, summary: result.describe('safe senders'));
+  return (result: result, reloaded: reloaded);
+}
+
+/// PR #490 7.7.1: the Merge result line counts whole RULES. A bad pattern the
+/// F266 sanitizer stripped from a rule that was KEPT is not a skipped rule
+/// (the rule is still added), so it is named on its own.
+@visibleForTesting
+String mergeStrippedPatternsNote(int droppedPatterns) => droppedPatterns == 0
+    ? ''
+    : ' ${YamlService.describeDropped(droppedRules: 0, droppedPatterns: droppedPatterns)} '
+        'that can never match removed from the imported rules.';
+
+/// F269: the import confirmation dialog. Merge is pre-selected; Replace is the
+/// pre-Sprint-80 behavior. Pops a [YamlImportMode], or null on Cancel. The same
+/// dialog is shown on every platform (ADR-0042).
+@visibleForTesting
+class YamlImportConfirmDialog extends StatefulWidget {
+  const YamlImportConfirmDialog({
+    super.key,
+    required this.title,
+    required this.itemCount,
+    required this.itemType,
+    required this.displayPath,
+    this.skipped = const [],
+    this.droppedText = '',
+  });
+
+  final String title;
+  final int itemCount;
+  final String itemType;
+  final String displayPath;
+  final List<String> skipped;
+  final String droppedText;
+
+  @override
+  State<YamlImportConfirmDialog> createState() =>
+      _YamlImportConfirmDialogState();
+}
+
+class _YamlImportConfirmDialogState extends State<YamlImportConfirmDialog> {
+  YamlImportMode _mode = YamlImportMode.merge; // F269: Merge is the default
+
+  @override
+  Widget build(BuildContext context) {
+    final itemType = widget.itemType;
+    final itemCount = widget.itemCount;
+    final skipped = widget.skipped;
+    final merge = _mode == YamlImportMode.merge;
+    return AlertDialog(
+      title: Text(widget.title),
+      content: SingleChildScrollView(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            SegmentedButton<YamlImportMode>(
+              segments: const [
+                ButtonSegment(value: YamlImportMode.merge, label: Text('Merge')),
+                ButtonSegment(
+                    value: YamlImportMode.replace, label: Text('Replace')),
+              ],
+              selected: {_mode},
+              onSelectionChanged: (s) => setState(() => _mode = s.first),
+            ),
+            const SizedBox(height: 12),
+            Text(
+              merge
+                  ? 'This will add the $itemType from the selected file that '
+                      'you do not already have ($itemCount $itemType in the '
+                      'file). Duplicates and invalid patterns are skipped and '
+                      'counted. Nothing you have now is changed or removed.'
+                  : 'This will replace ALL existing $itemType with '
+                      '$itemCount $itemType from the selected file.',
+            ),
+            if (skipped.isNotEmpty) ...[
+              const SizedBox(height: 12),
+              Text(
+                'Skipped ${widget.droppedText} because of patterns that can '
+                'never match an email address:',
+                style: TextStyle(color: Colors.orange.shade800, fontSize: 13),
+              ),
+              const SizedBox(height: 4),
+              for (final line in skipped.take(5))
+                Text(line, style: const TextStyle(fontSize: 12)),
+              if (skipped.length > 5)
+                Text('...and ${skipped.length - 5} more',
+                    style: const TextStyle(fontSize: 12)),
+            ],
+            const SizedBox(height: 12),
+            Container(
+              padding: const EdgeInsets.all(8),
+              decoration: BoxDecoration(
+                // F210: was Colors.grey.shade100 under a colourless
+                // TextStyle -- the file path being imported was unreadable in
+                // dark mode, in the dialog that asks you to confirm it.
+                color: Theme.of(context).colorScheme.surfaceContainerHighest,
+                borderRadius: BorderRadius.circular(4),
+              ),
+              child: Text(
+                widget.displayPath,
+                style: const TextStyle(fontFamily: 'monospace', fontSize: 12),
+              ),
+            ),
+            if (!merge) ...[
+              const SizedBox(height: 12),
+              Text(
+                'A backup of the current data will be created automatically.',
+                style: TextStyle(color: Colors.grey.shade600, fontSize: 13),
+              ),
+              const SizedBox(height: 8),
+              Text(
+                'This action cannot be undone (except by re-importing).',
+                style: TextStyle(color: Colors.red.shade700, fontSize: 13),
+              ),
+            ],
+          ],
+        ),
+      ),
+      actions: [
+        TextButton(
+          onPressed: () => Navigator.pop(context),
+          child: const Text('Cancel'),
+        ),
+        FilledButton(
+          onPressed: () => Navigator.pop(context, _mode),
+          style: FilledButton.styleFrom(
+            backgroundColor: merge ? null : Colors.orange,
+          ),
+          child: Text(merge
+              ? 'Merge $itemCount $itemType'
+              : 'Replace with $itemCount $itemType'),
+        ),
+      ],
+    );
+  }
 }
 
 /// Screen for importing and exporting YAML rule files
@@ -263,7 +468,8 @@ class _YamlImportExportScreenState extends State<YamlImportExportScreen> {
                     Expanded(
                       child: Text(
                         'Export your rules and safe senders as YAML files for backup '
-                        'or version control. Import YAML files to replace current data.',
+                        'or version control. Import YAML files to add to your '
+                        'current data (Merge) or replace it (Replace).',
                         style: TextStyle(color: Colors.blue.shade900, fontSize: 13),
                       ),
                     ),
@@ -315,7 +521,8 @@ class _YamlImportExportScreenState extends State<YamlImportExportScreen> {
             const SizedBox(height: 8),
             Text(
               'Load rules or safe senders from a YAML file. '
-              'This will replace all existing data of that type.',
+              'You choose to Merge (add only what is new) or Replace (all '
+              'existing data of that type) before anything changes.',
               style: TextStyle(color: Colors.grey.shade600, fontSize: 13),
             ),
             const SizedBox(height: 16),
@@ -324,7 +531,7 @@ class _YamlImportExportScreenState extends State<YamlImportExportScreen> {
               icon: Icons.download,
               iconColor: Colors.orange.shade700,
               title: 'Import Rules',
-              subtitle: 'Replace all block rules from a YAML file',
+              subtitle: 'Add or replace block rules from a YAML file',
               onPressed: _isProcessing || !_isInitialized ? null : _importRules,
             ),
             const SizedBox(height: 8),
@@ -332,7 +539,7 @@ class _YamlImportExportScreenState extends State<YamlImportExportScreen> {
               icon: Icons.download,
               iconColor: Colors.orange.shade700,
               title: 'Import Safe Senders',
-              subtitle: 'Replace all safe sender patterns from a YAML file',
+              subtitle: 'Add or replace safe sender patterns from a YAML file',
               onPressed: _isProcessing || !_isInitialized ? null : _importSafeSenders,
             ),
 
@@ -426,7 +633,7 @@ class _YamlImportExportScreenState extends State<YamlImportExportScreen> {
       // passed. Fixed in [saveYamlExport].
       final outputPath = await saveYamlExport(
         picker: FilePicker.platform,
-        isMobile: Platform.isAndroid || Platform.isIOS,
+        isMobile: PlatformCapabilities.current.usesSystemFileSheet,
         dialogTitle: 'Export Rules YAML',
         fileName: 'rules.yaml',
         initialDirectory: await ExportDirectories.saveDialogStart(),
@@ -476,7 +683,7 @@ class _YamlImportExportScreenState extends State<YamlImportExportScreen> {
       // difference).
       final outputPath = await saveYamlExport(
         picker: FilePicker.platform,
-        isMobile: Platform.isAndroid || Platform.isIOS,
+        isMobile: PlatformCapabilities.current.usesSystemFileSheet,
         dialogTitle: 'Export Safe Senders YAML',
         fileName: 'rules_safe_senders.yaml',
         initialDirectory: await ExportDirectories.saveDialogStart(),
@@ -620,7 +827,7 @@ class _YamlImportExportScreenState extends State<YamlImportExportScreen> {
 
       // Show confirmation dialog
       if (!mounted) return;
-      final confirmed = await _showImportConfirmation(
+      final mode = await _showImportConfirmation(
         title: 'Import Rules',
         itemCount: importedRules.rules.length,
         itemType: 'rules',
@@ -629,9 +836,35 @@ class _YamlImportExportScreenState extends State<YamlImportExportScreen> {
         droppedText: droppedText,
       );
 
-      if (confirmed != true) {
+      if (mode == null) {
         _showStatus('Import cancelled');
         setState(() => _isProcessing = false);
+        return;
+      }
+
+      if (mode == YamlImportMode.merge) {
+        // F269: add only what is new; nothing existing is touched.
+        final merged = await commitRulesMerge(
+          imported: importedRules,
+          // Only WHOLE rules dropped are "skipped as invalid"; patterns
+          // stripped from rules that were kept are reported separately.
+          alreadyInvalid: sanitized.droppedRules,
+          dbStore: _ruleDbStore,
+          writeYaml: _localRuleStore.saveRules,
+          provider: ruleProvider,
+        );
+        final stripped = mergeStrippedPatternsNote(sanitized.droppedPatterns);
+        _logger.i('Merged rules from $filePath: '
+            '${merged.result.describe('rules')}$stripped');
+        if (!merged.reloaded) {
+          _logger.w('Rules merged but the reload failed: ${ruleProvider.error}');
+          _showStatus(
+              '${merged.result.describe('rules')}$stripped They could not be '
+              'loaded. Restart the app to use them.',
+              isError: true);
+          return;
+        }
+        _showStatus('${merged.result.describe('rules')}$stripped');
         return;
       }
 
@@ -657,6 +890,9 @@ class _YamlImportExportScreenState extends State<YamlImportExportScreen> {
           '${_skippedSuffix(droppedText)}');
     } on YamlCopyNotWrittenException catch (e) {
       _logger.e('Rules imported; YAML copy not written', error: e.cause);
+      _showStatus('$e', isError: true);
+    } on ImportMergeInterruptedException catch (e) {
+      _logger.e('Rules merge stopped part-way', error: e.cause);
       _showStatus('$e', isError: true);
     } catch (e) {
       _logger.e('Failed to import rules', error: e);
@@ -703,7 +939,7 @@ class _YamlImportExportScreenState extends State<YamlImportExportScreen> {
 
       // Show confirmation dialog
       if (!mounted) return;
-      final confirmed = await _showImportConfirmation(
+      final mode = await _showImportConfirmation(
         title: 'Import Safe Senders',
         itemCount: importedSafeSenders.safeSenders.length,
         itemType: 'safe senders',
@@ -712,9 +948,33 @@ class _YamlImportExportScreenState extends State<YamlImportExportScreen> {
         droppedText: droppedText,
       );
 
-      if (confirmed != true) {
+      if (mode == null) {
         _showStatus('Import cancelled');
         setState(() => _isProcessing = false);
+        return;
+      }
+
+      if (mode == YamlImportMode.merge) {
+        // F269: add only what is new; nothing existing is touched.
+        final merged = await commitSafeSendersMerge(
+          imported: importedSafeSenders,
+          alreadyInvalid: sanitized.droppedPatterns,
+          dbStore: _ruleDbStore,
+          writeYaml: _localRuleStore.saveSafeSenders,
+          provider: ruleProvider,
+        );
+        _logger.i('Merged safe senders from $filePath: '
+            '${merged.result.describe('safe senders')}');
+        if (!merged.reloaded) {
+          _logger.w(
+              'Safe senders merged but the reload failed: ${ruleProvider.error}');
+          _showStatus(
+              '${merged.result.describe('safe senders')} They could not be '
+              'loaded. Restart the app to use them.',
+              isError: true);
+          return;
+        }
+        _showStatus(merged.result.describe('safe senders'));
         return;
       }
 
@@ -744,6 +1004,9 @@ class _YamlImportExportScreenState extends State<YamlImportExportScreen> {
     } on YamlCopyNotWrittenException catch (e) {
       _logger.e('Safe senders imported; YAML copy not written', error: e.cause);
       _showStatus('$e', isError: true);
+    } on ImportMergeInterruptedException catch (e) {
+      _logger.e('Safe senders merge stopped part-way', error: e.cause);
+      _showStatus('$e', isError: true);
     } catch (e) {
       _logger.e('Failed to import safe senders', error: e);
       _showStatus('Import failed: $e', isError: true);
@@ -754,7 +1017,8 @@ class _YamlImportExportScreenState extends State<YamlImportExportScreen> {
 
   // --- Dialogs ---
 
-  Future<bool?> _showImportConfirmation({
+  /// F269: returns the mode the user chose, or null when they cancelled.
+  Future<YamlImportMode?> _showImportConfirmation({
     required String title,
     required int itemCount,
     required String itemType,
@@ -762,74 +1026,15 @@ class _YamlImportExportScreenState extends State<YamlImportExportScreen> {
     List<String> skipped = const [],
     String droppedText = '',
   }) {
-    return showDialog<bool>(
+    return showDialog<YamlImportMode>(
       context: context,
-      builder: (ctx) => AlertDialog(
-        title: Text(title),
-        content: SingleChildScrollView(
-         child: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              'This will replace ALL existing $itemType with '
-              '$itemCount $itemType from the selected file.',
-            ),
-            if (skipped.isNotEmpty) ...[
-              const SizedBox(height: 12),
-              Text(
-                'Skipped $droppedText because of patterns that can never '
-                'match an email address:',
-                style: TextStyle(color: Colors.orange.shade800, fontSize: 13),
-              ),
-              const SizedBox(height: 4),
-              for (final line in skipped.take(5))
-                Text(line, style: const TextStyle(fontSize: 12)),
-              if (skipped.length > 5)
-                Text('...and ${skipped.length - 5} more',
-                    style: const TextStyle(fontSize: 12)),
-            ],
-            const SizedBox(height: 12),
-            Container(
-              padding: const EdgeInsets.all(8),
-              decoration: BoxDecoration(
-                // F210: was Colors.grey.shade100 under a colourless
-                // TextStyle -- the file path being imported was unreadable in
-                // dark mode, in the dialog that asks you to confirm it.
-                color: Theme.of(context).colorScheme.surfaceContainerHighest,
-                borderRadius: BorderRadius.circular(4),
-              ),
-              child: Text(
-                _shortenPath(filePath),
-                style: const TextStyle(fontFamily: 'monospace', fontSize: 12),
-              ),
-            ),
-            const SizedBox(height: 12),
-            Text(
-              'A backup of the current data will be created automatically.',
-              style: TextStyle(color: Colors.grey.shade600, fontSize: 13),
-            ),
-            const SizedBox(height: 8),
-            Text(
-              'This action cannot be undone (except by re-importing).',
-              style: TextStyle(color: Colors.red.shade700, fontSize: 13),
-            ),
-          ],
-         ),
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(ctx, false),
-            child: const Text('Cancel'),
-          ),
-          FilledButton(
-            onPressed: () => Navigator.pop(ctx, true),
-            style: FilledButton.styleFrom(
-              backgroundColor: Colors.orange,
-            ),
-            child: Text('Import $itemCount $itemType'),
-          ),
-        ],
+      builder: (ctx) => YamlImportConfirmDialog(
+        title: title,
+        itemCount: itemCount,
+        itemType: itemType,
+        displayPath: _shortenPath(filePath),
+        skipped: skipped,
+        droppedText: droppedText,
       ),
     );
   }
@@ -843,7 +1048,7 @@ class _YamlImportExportScreenState extends State<YamlImportExportScreen> {
 
   String _shortenPath(String path) {
     // Show just the file name if the path is very long
-    final separator = Platform.isWindows ? '\\' : '/';
+    final separator = PlatformCapabilities.current.pathSeparator;
     final parts = path.split(separator);
     if (parts.length > 3) {
       return '...${separator}${parts.sublist(parts.length - 2).join(separator)}';

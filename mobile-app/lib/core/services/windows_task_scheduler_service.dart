@@ -1,9 +1,11 @@
+import 'dart:async';
 import 'dart:io';
 import 'dart:convert';
 import 'package:flutter/foundation.dart' show visibleForTesting;
 import 'package:logger/logger.dart';
 import 'package:path/path.dart' as path;
 
+import '../platform/platform_capabilities.dart';
 import 'app_environment.dart';
 import 'scan_interval.dart';
 import 'diagnostic_logger.dart';
@@ -26,6 +28,11 @@ import '../../util/redact.dart';
 class WindowsTaskSchedulerService {
   static final Logger _logger = Logger();
 
+  /// This host schedules background scans through Task Scheduler (Windows).
+  static bool get _usesTaskScheduler =>
+      PlatformCapabilities.current.backgroundScanMechanism ==
+      BackgroundScanMechanism.taskScheduler;
+
   /// Base task name prefix (without the per-account token).
   static const String _taskNameBase = 'SpamFilterBackgroundScan';
 
@@ -46,6 +53,48 @@ class WindowsTaskSchedulerService {
   static String _logTaskLabel(String? accountId) {
     if (accountId == null) return taskName;
     return '${_taskNameBase}_${Redact.accountId(accountId)}${AppEnvironment.taskNameSuffix}';
+  }
+
+  /// Tail of the in-process queue of exclusive sections ([runExclusive]);
+  /// null while no section is queued or running.
+  static Future<void>? _exclusiveTail;
+
+  /// Zone key that marks code already running inside [runExclusive].
+  static final Object _exclusiveZoneKey = Object();
+
+  /// Runs [body] after every earlier [runExclusive] section in this process
+  /// has finished, and holds later ones until [body] finishes.
+  ///
+  /// Sprint 80 (Harold Q4 = 2): the startup reconciliation runs after the
+  /// window appears, so a Settings change (schedule or cancel) can arrive
+  /// while it is in progress. The reconciliation reads each account's
+  /// setting, then creates, repairs and deletes tasks; without this lock a
+  /// task created by Settings between those steps could be deleted as an
+  /// orphan. Both sides run inside this lock, so a Settings change lands
+  /// wholly before or wholly after a reconciliation.
+  ///
+  /// Reentrant: a nested call from inside a section (the reconciliation calls
+  /// the F264 conversion, which schedules through the adapter) runs at once
+  /// instead of waiting for itself. An error in [body] is returned to the
+  /// caller and does not block later sections. In-process only: the
+  /// background-scan process never changes tasks.
+  ///
+  /// When the lock is idle, [body] starts at once. It does not wait on a
+  /// stored, already-completed future: a callback on such a future is
+  /// scheduled in the zone that created it, which is not the caller's zone
+  /// (PR #490 7.7.1: under a widget test's fake clock the Settings write never
+  /// ran).
+  static Future<T> runExclusive<T>(Future<T> Function() body) {
+    if (Zone.current[_exclusiveZoneKey] == true) return body();
+    final previous = _exclusiveTail;
+    final done = Completer<void>();
+    _exclusiveTail = done.future;
+    Future<T> run() => runZoned(body, zoneValues: {_exclusiveZoneKey: true});
+    final result = previous == null ? run() : previous.then((_) => run());
+    return result.whenComplete(() {
+      if (identical(_exclusiveTail, done.future)) _exclusiveTail = null;
+      done.complete();
+    });
   }
 
   /// Create a scheduled task for background scanning
@@ -317,7 +366,7 @@ class WindowsTaskSchedulerService {
     String? accountId,
   }) async {
     try {
-      if (!Platform.isWindows) return false;
+      if (!_usesTaskScheduler) return false;
       if (intervalMinutes <= 0) return false;
 
       final status = await getScheduleStatus(accountId: accountId);
@@ -372,7 +421,7 @@ class WindowsTaskSchedulerService {
     required int intervalMinutes,
   }) async {
     try {
-      if (!Platform.isWindows) return false;
+      if (!_usesTaskScheduler) return false;
 
       final status = await getScheduleStatus(accountId: accountId);
       if (status['exists'] != true) {
@@ -424,7 +473,7 @@ class WindowsTaskSchedulerService {
   /// Returns the list of task names matching `SpamFilterBackgroundScan*<suffix>`.
   static Future<List<String>> enumerateAccountTasks() async {
     try {
-      if (!Platform.isWindows) return const [];
+      if (!_usesTaskScheduler) return const [];
       final suffix = AppEnvironment.taskNameSuffix;
       // Match the base prefix; the suffix (if any) is environment-specific so a
       // dev build never enumerates prod tasks and vice-versa.

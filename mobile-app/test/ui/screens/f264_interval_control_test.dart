@@ -23,6 +23,7 @@ import 'package:flutter/semantics.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 
+import 'package:my_email_spam_filter/core/platform/platform_capabilities.dart';
 import 'package:my_email_spam_filter/core/services/background_scan_scheduler.dart';
 import 'package:my_email_spam_filter/core/storage/settings_store.dart';
 import 'package:my_email_spam_filter/ui/screens/settings_screen.dart';
@@ -94,7 +95,7 @@ void main() {
 
   tearDown(() async {
     BackgroundScanSchedulerFactory.overrideForTest(null);
-    SettingsScreen.debugIsAndroid = null;
+    PlatformCapabilities.debugOverride = null;
     TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
         .setMockMethodCallHandler(secureStorageChannel, null);
     await testHelper.tearDown();
@@ -281,7 +282,8 @@ void main() {
     testWidgets('F281 AC-3 ($platform): background scanning OFF hides "Scan '
         'every"; the saved value is kept and shown when it is on (F2 = 1)',
         (tester) async {
-      SettingsScreen.debugIsAndroid = android;
+      PlatformCapabilities.debugOverride = PlatformCapabilities(
+          android ? HostPlatform.android : HostPlatform.windows);
       await openBackgroundTab(tester,
           storedMinutes: 30, backgroundEnabled: false);
       expect(find.byKey(const Key('scan_interval_control')), findsNothing);
@@ -351,7 +353,8 @@ void main() {
   group('AC-14 / Q10 / AC-11: the Android-only Background rows', () {
     testWidgets('Android: the per-account new-mail switch and the ONE timing '
         'note are shown, the note exactly once', (tester) async {
-      SettingsScreen.debugIsAndroid = true;
+      PlatformCapabilities.debugOverride =
+          const PlatformCapabilities(HostPlatform.android);
       await openBackgroundTab(tester, storedMinutes: 15);
 
       expect(find.byKey(const Key('new_mail_trigger_row')), findsOneWidget);
@@ -366,7 +369,8 @@ void main() {
 
     testWidgets('Windows: the new-mail switch and the Android note are '
         'hidden, the interval control is the same', (tester) async {
-      SettingsScreen.debugIsAndroid = false;
+      PlatformCapabilities.debugOverride =
+          const PlatformCapabilities(HostPlatform.windows);
       await openBackgroundTab(tester, storedMinutes: 15);
 
       expect(find.byKey(const Key('new_mail_trigger_row')), findsNothing);
@@ -377,7 +381,8 @@ void main() {
 
     testWidgets('Android with background scanning off: the switch shows, the '
         'timing note does not', (tester) async {
-      SettingsScreen.debugIsAndroid = true;
+      PlatformCapabilities.debugOverride =
+          const PlatformCapabilities(HostPlatform.android);
       await openBackgroundTab(tester, storedMinutes: 15, backgroundEnabled: false);
       expect(find.byKey(const Key('new_mail_trigger_row')), findsOneWidget,
           reason: 'review M-1: the switch is not gated on the background switch');

@@ -2,6 +2,7 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart';
 
 import '../storage/settings_store.dart';
+import 'diagnostic_logger.dart';
 
 /// F253 (Sprint 76): "Scan when new mail arrives" -- the Dart side of the
 /// Android notification listener (`MailNotificationListener.kt`, ADR-0044).
@@ -77,6 +78,68 @@ class NewMailTrigger {
     return (
       at: DateTime.fromMillisecondsSinceEpoch(ms),
       outcome: raw.substring(bar + 1),
+    );
+  }
+
+  /// Sprint 80 Task 17 (#505): the native start-up snapshot (Notification
+  /// access, flag, listener component and bind times, the last ignored
+  /// mail-app notification, installed mail apps, how the screen was started);
+  /// null when unreadable.
+  ///
+  /// PR #490 7.7.1 (silent-failure review finding 9): when the call fails,
+  /// [lastDiagnosticsError] keeps why (the native exception's type and
+  /// message), so the log line names a cause instead of only "unavailable".
+  static Future<Map<Object?, Object?>?> diagnostics() async {
+    lastDiagnosticsError = null;
+    try {
+      return await _channel.invokeMethod<Map<Object?, Object?>>('diagnostics');
+    } catch (e) {
+      lastDiagnosticsError = DiagnosticLogger.describeError(e);
+      return null;
+    }
+  }
+
+  /// Why the last [diagnostics] call returned null; null after a success.
+  static String? lastDiagnosticsError;
+
+  /// One diagnostic-log line from [diagnostics]. Pure, so the wording is
+  /// tested without a device. [error] is [lastDiagnosticsError].
+  static String formatDiagnostics(Map<Object?, Object?>? d, {String? error}) {
+    if (d == null) {
+      return error == null
+          ? 'diagnostics unavailable'
+          : 'diagnostics unavailable -- $error';
+    }
+    String onOff(Object? v) => v == true ? 'on' : (v == false ? 'off' : 'unknown');
+    String at(Object? ms) => ms is int && ms > 0
+        ? DateTime.fromMillisecondsSinceEpoch(ms).toIso8601String()
+        : 'never';
+    // PackageManager.COMPONENT_ENABLED_STATE_DEFAULT / _ENABLED / _DISABLED.
+    const states = {0: 'default', 1: 'enabled', 2: 'disabled'};
+    final state = d['componentState'];
+    final ignored = parseLastIgnored(d['lastIgnored'] as String?);
+    final apps = (d['installedMailApps'] as List?)?.join(',') ?? 'unknown';
+    return 'access=${onOff(d['accessGranted'])} flag=${onOff(d['enabled'])} '
+        'component=${states[state] ?? state} '
+        'listenerConnected=${at(d['connectedMs'])} '
+        'listenerDisconnected=${at(d['disconnectedMs'])} '
+        'lastIgnored=${ignored == null ? 'none' : '${ignored.at.toIso8601String()} ${ignored.app} (${ignored.reason})'} '
+        'mailApps=${apps.isEmpty ? 'none' : apps} '
+        'launch: ${d['launch'] ?? 'unknown'}';
+  }
+
+  /// Parses the listener's "<epoch ms>|<package>|<reason>"; null when malformed.
+  static ({DateTime at, String app, String reason})? parseLastIgnored(
+      String? raw) {
+    if (raw == null) return null;
+    final parts = raw.split('|');
+    if (parts.length != 3) return null;
+    final ms = int.tryParse(parts[0]);
+    if (ms == null) return null;
+    return (
+      at: DateTime.fromMillisecondsSinceEpoch(ms),
+      app: parts[1],
+      reason: parts[2],
     );
   }
 
