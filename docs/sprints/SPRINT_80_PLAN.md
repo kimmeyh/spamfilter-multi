@@ -1005,6 +1005,19 @@ phone. The build script's emulator step auto-selected the old `Nexus_5X_API_29_x
 - **5.1.6 Runtime Launch Gate / F294 AC-5 (Android)**: 2026-10-19 08:5x, `build-with-secrets.ps1 -BuildType debug
   -Env dev -InstallToEmulator -SkipUninstall` on emulator-5554: "APK installed", "[OK] App launched successfully";
   app pid 25828 alive afterwards, `logcat -b crash` 0 lines.
+- **7.7.1 final code reviews**: 2026-10-23, both started with `gh pr ready 490`. Copilot (requested by hand,
+  GraphQL): 1 Low, a doc comment in `unmatched_email_store.dart` naming the wrong status; fixed in 299172c4, replied
+  and resolved. pr-review-toolkit code-reviewer: 0 Critical / 0 High / 1 Medium / 6 Low; silent-failure-hunter: 16
+  findings. Dispositions: code-reviewer 4 duplicated the Copilot point (closed on that thread); hunter 1, 2, 3, 6, 7
+  and code-reviewer 3 fixed in 32059a86 (new gate `f298_rule_write_reload_gate_test.dart`; 4 code files at most per
+  fix, about 190 lines in all; 7/7 mutations KILLED); hunter 4, 5, 8, 9 (Dart half), 10-15 and code-reviewer 1, 2,
+  5, 7 fixed in 01428322 (each fix 1-2 files, under 40 lines; 5/5 KILLED; Gmail 401/403 deliberately NOT made
+  session-fatal, since Gmail returns 403 for rate limits; comment corrected); code-reviewer 6 fixed in 166ad533
+  (Background-tab writes take the start-up lock; 2/2 KILLED). The full suite then failed 2 f264 tests: the lock
+  chained on a start-up future whose callbacks ran in another zone; fixed in b00669e4 (an idle lock starts at once;
+  1 file, about 15 lines; 2/2 KILLED). Full suite 80-771b: 3204 passed, 15 skipped, 0 failed. Asked of Harold:
+  hunter 16 (IMAP sequence-number fallback; N/A recommended per RFC 3501 6.4.8) and hunter 9 Android half (Kotlin
+  per-field diagnostics; Sprint 81 backlog recommended).
 - **Phase 5 findings fixed in-sprint**:
   - F276 re-sighting (82adc6b9): a re-sighting wrote `unknown` / never checked, so every scan re-asked the rows it had
     just seen (every 5 minutes on DEV, up to 50 Gmail requests per scan). Found by reading the live DEV database in

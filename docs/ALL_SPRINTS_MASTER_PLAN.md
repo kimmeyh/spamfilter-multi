@@ -162,7 +162,7 @@ Historical sprint information lives in individual documents in `docs/sprints/` a
 - **F296 (#495)** CI Flutter version from `.fvmrc`. **F298 (#496)** rule and safe sender edits reload at once. **F276 (#501)** Review hides mail deleted or moved in the mail app. **F269 (#499)** YAML import Merge by default. **F267 (#497)**, **F268 (#498)** evaluation harness and rule miner. **F204 (#502)** AAB target SDK and AD_ID gates. **F292 (#492)** closed. **F299 (#500)** closed on evidence.
 - **Manual Validation tasks**: Task 15 (#503) Windows window at once (30.9 s -> 1.8 s); Task 16 (#504) tray icon on every start and its menu opens; Task 17 (#505) Android new-mail diagnostic line at each start.
 - **Phone**: MV76-1 (#471, #433, #428) done except R-2 (new-mail trigger on a real phone), which moves to the Phase 8 Fold log; F277 (#472) closed by Harold (floor stays 5). F289 removed from scope (Q4b = 2), stays in the backlog. F301 (Gmail 7-day sign-in) added.
-- **7.7.1 final code reviews**: in progress (Copilot + pr-review-toolkit).
+- **7.7.1 final code reviews**: 2026-10-23. Copilot 1 Low (fixed, 299172c4); code-reviewer 0 C / 0 H / 1 M / 6 L and silent-failure-hunter 16 findings, fixed in 32059a86, 01428322, 166ad533 and b00669e4 (an idle scheduler lock starts at once; found by the full suite). Full suite 3204 passed, 15 skipped, 0 failed. Two dispositions asked of Harold: hunter 16 (IMAP sequence-number fallback) and hunter 9 Android half (Kotlin per-field diagnostics).
 - **Results**: suite 3,189 passed / 15 skipped / 0 failed at Task 17, analyzer clean; MV-1 to MV-5 PASS (MV-4 after Task 16; MV-3 on field evidence). Retro: Harold all Very Good; IMP-1, IMP-1.1, IMP-2a, IMP-3, IMP-5 applied; IMP-2b not reproduced; IMP-4 skipped.
 
 ## Next Sprint Candidates
