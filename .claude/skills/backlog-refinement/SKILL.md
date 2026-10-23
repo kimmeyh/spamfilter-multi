@@ -45,8 +45,9 @@ If you cannot tell which pass you are in, read `.claude/sprint_status.json`
 
 4. **Present in the EXACT template** -- opening with the REQUIRED Summary Index
    ("## Candidates at a glance": the header line only of the NEXT 20 active
-   candidates in priority order, then each HOLD item one line in full
-   `<ID>. <Title> (~<effort>) Priority HOLD` form), then the details of THE SAME
+   candidates in priority order), then a SEPARATE list "## ON HOLD Candidates"
+   with each HOLD item one line in full `<ID>. <Title> (~<effort>) Priority HOLD`
+   form (Harold, 2026-10-23), then the details of THE SAME
    20 IN THE SAME ORDER (F293, Sprint 79). Per item:
 
    ```markdown

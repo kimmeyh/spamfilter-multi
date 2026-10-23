@@ -577,7 +577,7 @@ _(No active Core App candidates -- F96 shipped in Sprint 43.)_
 - AC: the default sweep finishes in under 5 minutes with 0 skipped steps and no DB drift, or the per-step cost is
   named with its mechanism and a vendor or source citation.
 
-**F301. Gmail sign-in expires every 7 days for every closed tester (~30-60m decision, then per path) Priority 20 -- backlog (Harold Q3 = 1, 2026-10-22)**
+**F301. Gmail sign-in expires every 7 days for every closed tester (~30-60m decision, then per path) Priority 10 -- target Sprint 82 (moved from 20 on 2026-10-23: the same 7-day expiry hits iOS testers and App Review) (Harold Q3 = 1, 2026-10-22)**
 - Phase: Google Play Readiness
 - Platform: Android and Windows (both use Google OAuth for Gmail; ADR-0042 parity, no exception)
 - Origin: Sprint 80 Manual Validation. The Fold's Gmail sign-ins on 10-05 16:09 and 10-13 00:34 each failed at the
@@ -740,32 +740,61 @@ _(F142 shipped Sprint 57 -- see `docs/sprints/SPRINT_57_PLAN.md` and CHANGELOG.m
   alongside F70 (Security), F71 (Architecture), F130 (Process-Docs), F152 (First-Run), F173
   (Test Coverage) and F189 (Skills).
 
-### iOS readiness cards from F295 (Sprint 80; cards ACCEPTED into the backlog by Harold 2026-10-21, Q3 = 1; ADR-0050 ACCEPTED 2026-10-22)
+### iOS readiness cards from F295 (Sprint 80; cards ACCEPTED into the backlog by Harold 2026-10-21, Q3 = 1; ADR-0050 ACCEPTED 2026-10-22; ALL OFF HOLD 2026-10-23)
+
+**3-sprint plan to an App Store upload (Harold, 2026-10-23)**: *"next step it to implement on the ios/iphone. If we were to
+implement in the next week, we need to move them all towards the top of the priority list so that in 3 sprint we are
+ready to upload to the ios app store."* and *"all backlogs with IOS come off hold"*. Sequence: Sprint 81 = F67a, F304,
+F67b code; Sprint 82 = F67b device check, F67c (its 7-day window must start early in Sprint 82), F301; Sprint 83 =
+F67c result, F67d, upload. The critical path is Harold's actions: Apple Developer enrollment, a test iPhone, and the
+iOS OAuth client. Finding 2026-10-23: `mobile-app/ios/` holds NO Xcode project (only gitignored generated files), so
+F67b starts by generating the iOS project.
 
 Source: `docs/research/F295_IOS_READINESS.md`. These replace the iOS parts of F67 and F95 (ADR-0050 accepted 2026-10-22); Linux and macOS stay on F67, and the Windows/Android multi-variant polish stays on F95.
 
-**F67a. iOS prerequisites: Apple Developer enrollment, Mac, iOS OAuth client (~3-6h plus Apple and D-U-N-S lead time) Priority HOLD**
+**F67a. iOS prerequisites: Apple Developer enrollment, build machine, test iPhone, iOS OAuth client (~45-90m plus Apple lead time) Priority 2 -- target Sprint 81 (OFF HOLD 2026-10-23)**
 - Phase: Multi-Platform Readiness
 - Platform: iOS
-- Scope: decide the enrollment path for the LLC (organization: D-U-N-S Number, domain website, domain email); enroll
-  (99 USD per year); get a Mac on macOS Tahoe 26.2 or later with Xcode 26 (owned or cloud); create the iOS OAuth
-  client in Google Cloud Console (bundle ID per ADR-0026) and check the verification status of the restricted Gmail
-  scope for it.
-- Settles UNVERIFIED items: LLC enrollment path, cloud Mac acceptability, Gmail verification for the iOS client.
-- Depends on: Harold's go decision for iOS; ADR-0050 accepted.
+- Scope: enroll in the Apple Developer Program (99 USD per year) on the account type Harold chooses. Individual needs
+  no D-U-N-S Number. Organization needs one: D&B "allow up to 5 business days", then "allow up to 2 business days"
+  for Apple (developer.apple.com/help/account/membership/D-U-N-S/, read 2026-10-23), plus a domain website and
+  domain email the LLC does not have (`docs/LEGAL_ENTITY.md`). Choose the build machine (F304). Confirm a test
+  iPhone on iOS 26. Create the iOS OAuth client in Google Cloud Console with bundle ID `com.myemailspamfilter`
+  (mirrors the Android applicationId; ADR-0026) and record the restricted Gmail scope verification status for it.
+- Claude writes the console walkthroughs and records the results; Harold performs the console steps.
+- Settles UNVERIFIED items: enrollment processing time, seller name shown for the chosen account type, Gmail
+  verification for the iOS client.
+- Depends on: none (Harold's go decision 2026-10-23; ADR-0050 accepted 2026-10-22).
 
-**F67b. iOS first build and foreground parity validation (~6-10h) Priority HOLD**
+**F304. iOS build machine and signed build pipeline to TestFlight (~90-180m plus a 120m time-boxed signing setup) Priority 4 -- target Sprint 81 (NEW 2026-10-23)**
+- Phase: Build and Release Infrastructure
+- Platform: iOS (build tooling)
+- Value: the project has no Mac. Without a build machine nothing in F67b-F67d can run.
+- Scope, by Harold's build-machine answer: (a) a GitHub Actions `macos-26` runner (the runner-images README, read
+  2026-10-23, lists macOS 26.6.2 with Xcode 26.6 as default) with a `workflow_dispatch` job that builds, signs with
+  an App Store Connect API key, and uploads to TestFlight; certificate, provisioning profile and API key live in
+  repository secrets, never in the tree; or (b) an owned or rented Mac with interactive Xcode.
+- UNVERIFIED: whether macOS runner minutes are free on this public repository. GitHub's billing page says Actions is
+  free "for public repositories that use standard GitHub-hosted runners" and does not say whether macOS is one.
+- Signing setup is discovery: time-box it at 120m; do not estimate it.
+- AC: one command produces a signed build that installs on Harold's iPhone through TestFlight internal testing.
+- Depends on: F67a (enrollment and account type).
+
+**F67b. iOS first build and foreground parity validation (~180-300m) Priority 6 -- target Sprint 81 (code), Sprint 82 (device check) (OFF HOLD 2026-10-23)**
 - Phase: Multi-Platform Readiness
 - Platform: iOS
-- Scope: `flutter build ios` on Xcode 26 with Swift Package Manager; deployment target iOS 14 (plugin floor);
+- Scope: generate the iOS project first (`flutter create --platforms=ios`; whether this runs on Windows is
+  UNVERIFIED), bundle ID `com.myemailspamfilter`. The plist, AppDelegate and `PlatformCapabilities` work below needs
+  no Mac to write, only to compile, so it lands in Sprint 81.
+- `flutter build ios` on Xcode 26 with Swift Package Manager; deployment target iOS 14 (plugin floor);
   Info.plist (`GIDClientID`, reversed-client-ID URL scheme, background modes `fetch`, `BGTaskSchedulerPermittedIdentifiers`,
   `UIFileSharingEnabled`, `LSSupportsOpeningDocumentsInPlace`); AppDelegate lines for notifications and workmanager;
   fill every `PlatformCapabilities` iOS answer from ADR-0050; smoke test, IMAP scan, Gmail sign-in, rules, review
   screens, export to Files, notification permission.
 - Settles UNVERIFIED items: custom-scheme browser fallback, Files app visibility, `drawsUnderSystemBars`.
-- Depends on: F67a; F294 seam merged.
+- Depends on: F67a; F304 for the device check; F294 seam (merged Sprint 80).
 
-**F67c. iOS background scan spike on a real iPhone (~6-10h plus a 7-day observation window) Priority HOLD**
+**F67c. iOS background scan spike on a real iPhone (~120-240m plus a 7-day observation window) Priority 8 -- target Sprint 82, result Sprint 83 (OFF HOLD 2026-10-23)**
 - Phase: Multi-Platform Readiness
 - Platform: iOS
 - Scope: `BGAppRefreshTask` per the ADR-0050 exception (interval is a floor; a time-boxed scan slice that resumes
@@ -775,9 +804,9 @@ Source: `docs/research/F295_IOS_READINESS.md`. These replace the iOS parts of F6
   `BGContinuedProcessingTask` keeps a manual scan alive (iOS 26).
 - Settles UNVERIFIED items: real refresh frequency, multi-account Gmail renewal while locked, Google Sign-In SDK
   keychain accessibility, background notification.
-- Depends on: F67b. Outcome may change the Gmail renewal design (a Class 2 decision to surface).
+- Depends on: F67b; a test iPhone. Start the 7-day window early in Sprint 82. Outcome may change the Gmail renewal design (a Class 2 decision to surface).
 
-**F67d. iOS store readiness: privacy manifest, App Privacy, TestFlight (~4-6h) Priority HOLD**
+**F67d. iOS store readiness: privacy manifest, App Privacy, listing, TestFlight, upload (~150-240m plus App Review time) Priority 12 -- target Sprint 83 (OFF HOLD 2026-10-23)**
 - Phase: Build and Release Infrastructure
 - Platform: iOS
 - Scope: Xcode privacy report on an archive; app `PrivacyInfo.xcprivacy` with the required-reason entries the report
@@ -785,19 +814,25 @@ Source: `docs/research/F295_IOS_READINESS.md`. These replace the iOS parts of F6
   and metadata; release notes per ADR-0043; TestFlight internal group, then an external group (first build goes
   through App Review); help and store text that describe background scanning as best effort on iOS without a
   platform caveat (ADR-0042 rule on caveats).
+- App Store Connect listing: iPhone screenshots at the required sizes, description, age rating, review notes.
+- App Review sign-in path: the Gmail consent screen is in Testing and unverified (F301, ADR-0029), so a reviewer
+  cannot sign in with Gmail unless listed as a test user. Give the reviewer an IMAP (AOL) demo account. Whether
+  App Review requires demo credentials is UNVERIFIED; read guideline 2.1 at submission.
 - Settles UNVERIFIED items: required-reason API set, plugin manifests.
-- Depends on: F67c.
+- Depends on: F67b. (Relaxed from F67c on 2026-10-23: F67c's result changes only the help and store text that
+  describe background scanning, so it does not block the upload.)
 
-**F95 (revised). iOS variants: dev and prod side by side on one iPhone (~3-5h) Priority HOLD**
+**F95 (revised). iOS variants: dev and prod side by side on one iPhone (~60-120m) Priority 24 -- after the first upload (OFF HOLD 2026-10-23)**
 - Phase: Build and Release Infrastructure
 - Platform: iOS
 - Scope: separate bundle IDs for dev and prod (ADR-0035 on iOS), so both install on one device; separate OAuth iOS
   clients or URL schemes per variant; separate keychain items and app data by construction (separate bundle IDs);
   TestFlight as the "store" channel. The cross-store multi-variant polish for Windows and Android stays on the
   existing F95.
+- Shipping iOS prod-only first departs from ADR-0035 side-by-side for a short period; that is Harold's call.
 - Depends on: F67b.
 
-**F95b. Gmail new-mail push through a server (~16-30h) Priority HOLD -- needs a new ADR first**
+**F95b. Gmail new-mail push through a server (not estimated until the ADR exists) Priority 60 -- OFF HOLD 2026-10-23; needs a new ADR first**
 - Phase: Architecture
 - Platform: iOS (Gmail accounts only)
 - Scope: only if Harold wants "Scan when new mail arrives" on iPhone. Gmail `users.watch` to Cloud Pub/Sub, a relay
@@ -805,7 +840,7 @@ Source: `docs/research/F295_IOS_READINESS.md`. These replace the iOS parts of F6
   limited above three per hour. Requires an ADR superseding ADR-0030's "No backend server".
 - Depends on: F67c; a Class 1 decision by Harold.
 
-**F95. iOS variants + cross-store hardening (~10-16h) Priority HOLD -- RENUMBERED from "F52 Phase 3+" + MOVED TO HOLD (Sprint 39 Backlog Refinement, 2026-05-25)**
+**F95. iOS variants + cross-store hardening (not re-estimated; iOS part moved to F95 (revised)) Priority 62 -- OFF HOLD 2026-10-23 (Harold: all iOS backlog items); RENUMBERED from "F52 Phase 3+" (Sprint 39)**
 - Phase: Build and Release Infrastructure
 - Platform: iOS, plus polish across all 9 variants (3 stores x 3 channels: dev, production, store)
 - Renumbered from the ambiguous "F52 Phase 3+" to a distinct F# (was sharing F52 with the Android phase, now F94). Moved to HOLD with the multi-variant track per Harold (2026-05-25) -- blocked until iOS development begins (requires macOS + Apple Developer account).
@@ -827,9 +862,9 @@ Source: `docs/research/F295_IOS_READINESS.md`. These replace the iOS parts of F6
 
 **GP-11. Account and Data Deletion Feature** -- Moved to F66 (off HOLD, all platforms including Windows Store). See F66 in Core App section above.
 
-### HOLD Items (Multi-Platform)
+### Multi-Platform (OFF HOLD 2026-10-23)
 
-**F67. Platform validation - iOS, Linux, macOS (~4-6h per platform) Priority HOLD**
+**F67. Platform validation - iOS, Linux, macOS (~120-240m per platform) Priority 70 -- OFF HOLD 2026-10-23; iOS part replaced by F67a-F67d, Linux and macOS remain**
 - Phase: Multi-Platform Readiness
 - Platform: iOS, Linux, macOS
 - Shared tasks (all 3): validation build, smoke test, IMAP scan test, storage path verification, auth flow testing

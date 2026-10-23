@@ -448,7 +448,10 @@ All backlog items in ALL_SPRINTS_MASTER_PLAN.md MUST use this format. This is th
 and details of the 20 in the same order (not separated by type - while this was a good idea, it makes them harder for
 me to find)."*
 - The index lists the **next 20 active candidates**, sorted by `Priority <N>` (lowest number first; ties keep
-  master-plan order), whatever their phase. Then the HOLD items, one line each.
+  master-plan order), whatever their phase, under `## Candidates at a glance`.
+- The HOLD items follow in a SEPARATE list under its own heading, `## ON HOLD Candidates`, one line each (Harold,
+  2026-10-23: *"HOLD items should be a separate list in the Candidates at a glance "Candidates at a glance" and "ON
+  HOLD Candidates""*).
 - The details follow for **the same 20, in the same order**, one after another, with **no phase-group headers**. Each
   card keeps its own `- Phase:` bullet, so the phase is still shown.
 - HOLD items appear in the index only; their details stay in the master plan.
@@ -463,7 +466,9 @@ me to find)."*
 - **F122. Review-No-Rule screen load-error polish (~30m) Priority 12**
 - ...
 - **F94. Android dev/prod/store flavors + applicationId diagnosis (~6-8h) Priority 50**
-- HOLD items follow, ONE LINE EACH in the same shape (id, title, effort, Priority HOLD):
+
+## ON HOLD Candidates
+
 - F70. Periodic Security Deep Dive (~4-8h per review) Priority HOLD
 - F111. Periodic Windows App Store upload readiness verification (~110-175m per review) Priority HOLD
 - ...
