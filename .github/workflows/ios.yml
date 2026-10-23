@@ -5,13 +5,21 @@ name: iOS
 # Info.plist build settings can be checked, because the development machine is
 # Windows. Task 2 adds signing and TestFlight upload to this file later.
 #
-# Manual start only (`gh workflow run ios.yml --ref <branch>`); GitHub offers
-# workflow_dispatch once this file is on the default branch (develop). No
-# secrets: the Flutter SDK version comes from .fvmrc (F296, one source), and the
-# Google client IDs are left empty because the build is never run
-# (same reasoning as the F127 decision for the CI_* secrets in ci.yml).
+# Starts: by hand (`gh workflow run ios.yml --ref <branch>`), which GitHub
+# allows only once this file is on the default branch (develop) -- verified
+# 2026-10-23: "HTTP 404: workflow ios.yml not found on the default branch" --
+# and on a push to a feature branch that changes the iOS project or this file
+# (a push runs the workflow file from the pushed commit, so it works before the
+# first merge). No secrets: the Flutter SDK version comes from .fvmrc (F296,
+# one source), and the Google client IDs are left empty because the build is
+# never run (same reasoning as the F127 decision for the CI_* secrets in ci.yml).
 on:
   workflow_dispatch:
+  push:
+    branches: ['feature/**']
+    paths:
+      - 'mobile-app/ios/**'
+      - '.github/workflows/ios.yml'
 
 jobs:
   ios-build:
