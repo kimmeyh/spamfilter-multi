@@ -6,7 +6,7 @@
     "current_sprint": {
         "number": 81,
         "branch": "feature/20261023_Sprint_81",
-        "status": "Phase 8 Release Cycle (Sprint 80 cycle): 8.1 main merge DONE (#506, tag v0.21.0); 8.2 pass-1 sweep DONE; 8.3 Microsoft Store 0.21.0 MSIX + Play 0.21.0 (versionCode 18) AAB build and verify in progress; 8.4 pass-2 scope selection next (Harold). Plan not approved; no PR yet.",
+        "status": "Phase 8 Release Cycle (Sprint 80 cycle): 8.1 DONE (#506, tag v0.21.0); 8.2 pass-1 sweep DONE; 8.3 MSIX 0.21.0.0 and AAB 0.21.0 (versionCode 18) BUILT + VERIFIED, awaiting Harold uploads; 8.4 pass-2 slate presented, awaiting Harold selection. Plan not approved; no PR yet.",
         "plan_approved": false,
         "pr_number": null,
         "version": "0.21.0+18 (Sprint 81 bump happens at 3.7.0b)"
@@ -48,7 +48,8 @@
         "status_0_17_6": "SUBMITTED to BOTH stores 2026-10-06 (Harold screenshots), NOT yet live. Microsoft Store: Submission 31, \"Update in certification\", stage Pre-processing (last modified 10/07/2026); Store presence still Submission 30 (0.17.0). Google Play: Closed testing - Alpha, \"14 (0.17.6) Start full rollout\" in Changes in review, quick checks running (up to 12 min); managed publishing off. Artifacts: MSIX D:\\Data\\Harold\\github\\spamfilter-multi-prod\\mobile-app\\build\\windows\\x64\\runner\\Release\\my_email_spam_filter.msix (17.6 MB, self-test PASS); AAB D:\\Data\\Harold\\github\\spamfilter-multi\\mobile-app\\dist\\android-0.17.6+14\\app-prod-release.aab (67.3 MB). STORE_VERSION_STATUS Live rows unchanged until observed live; \"Last uploaded to Play\" -> 0.17.6 (14) is updated WITH the Sprint 77 pubspec bump (IMP-2).",
         "status_0_18_0": "LIVE on BOTH (Harold, 2026-10-10). Fold device-verified (Version 0.18.0 screenshots, log env=prod v0.18.0). Windows: installed Store build shows Version 0.18.0, no [DEV]; Partner Center page not observed. STORE_VERSION_STATUS updated with the 0.19.0+16 bump.",
         "status_0_20_0": "BUILT + VERIFIED 2026-10-18, SUBMITTED to BOTH stores, in process (Harold, 2026-10-18 ~11:39pm ET; consoles not observed by Claude; not seen live). MSIX 0.20.0.0 from the prod worktree at main ff58da3 (tag v0.20.0): D:\\Data\\Harold\\github\\spamfilter-multi-prod\\mobile-app\\build\\windows\\x64\\runner\\Release\\my_email_spam_filter.msix (17.7 MB, release self-test 6/6 PASS, manifest Identity 0.20.0.0). AAB 0.20.0 versionCode 17: D:\\Data\\Harold\\github\\spamfilter-multi\\mobile-app\\dist\\android-0.20.0+17\\app-prod-release.aab (67.8 MB, versionName 0.20.0, no .dev, OAuth scheme present, no AD_ID). Notes: docs/store-assets/RELEASE_NOTES_0.20.0_windows.md and _play.md (gate passed).",
-        "status_0_19_0": "MSIX 0.19.0.0 and AAB 0.19.0 (versionCode 16) SUBMITTED 2026-10-13, certification in process (Harold's report; not observed live). See docs/STORE_VERSION_STATUS.md."
+        "status_0_19_0": "MSIX 0.19.0.0 and AAB 0.19.0 (versionCode 16) SUBMITTED 2026-10-13, certification in process (Harold's report; not observed live). See docs/STORE_VERSION_STATUS.md.",
+        "status_0_21_0": "BUILT + VERIFIED 2026-10-23, NOT YET SUBMITTED. MSIX 0.21.0.0 (main 2d81264a, self-test 6/6, 17.8 MB) and AAB versionCode 18 (68.0 MB). See docs/STORE_VERSION_STATUS.md."
     },
     "environment_notes": [
         "RESOLVED 2026-07-29 (verified 07-30): the Store fault was an Acronis file-system filter blocking AppXSvc cleanup, fixed by an Acronis Protection exclusion. 23h uptime with ZERO Id-493 events vs a 176-file/6-min baseline; Store client self-updated 22606.1401.6.0 -> .10.0 (requires a working deployment pipeline). Filter drivers remain loaded -- backup protection was NOT disabled. See ALL_SPRINTS_MASTER_PLAN ENV-1 for the picker gotcha if it recurs.",

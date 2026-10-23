@@ -27,6 +27,25 @@ Partner Center before saying anything about the Store version.
 | **Last uploaded to Play (any track)** | 0.20.0 (versionCode 17) | 2026-10-18 | Closed testing (Alpha), uploaded by Harold ("both store updates are in process"); not yet seen on the Fold. Previous: 0.19.0 (versionCode 16). Sprint 76 retro IMP-2: Play refuses a versionCode it has already received on ANY track, so this row -- not the Live row -- is what the next build must exceed. UPDATE IT in the same commit that bumps `pubspec.yaml` after Harold reports an upload (never before the bump, or the suite goes red on the current build). Enforced by `dev_version_ahead_test` and by `build-with-secrets.ps1 -Output aab`. |
 | **Dev worktree** (authoritative -- mirrors `pubspec.yaml`) | 0.21.0+18 | 2026-10-19 | Bumped at Sprint 80 plan approval (Phase 3.7.0b). MINOR: F269 (import Merge) is `feat`. versionCode 18 (0.20.0 / 17 is the last Play upload). Gates: `version_consistency_test`, `dev_version_ahead_test`. |
 
+## 0.21.0 -- Sprint 80 cycle Phase 8.3 (2026-10-23)
+
+**BUILT + VERIFIED, NOT YET SUBMITTED** (waiting for Harold's uploads). The Live rows and "Last uploaded to Play" stay
+unchanged until Harold reports each upload; "Last uploaded to Play" moves to 0.21.0 (versionCode 18) in the same
+commit as the Sprint 81 version bump (Phase 3.7.0b), never before it.
+
+- **MSIX 0.21.0.0 -- BUILT + VERIFIED**: prod worktree pulled from ff58da3 (48 commits behind) to `main` 2d81264a (tag
+  `v0.21.0`); release gates 24/24; build log shows `APP_ENV=prod` and `secrets.prod.json`;
+  `--release-self-test --expected-version=0.21.0` RESULT: PASS (6/6); manifest Identity `Version="0.21.0.0"`,
+  publisher display name `Kimmey Consulting - Ohio`; 17.8 MB.
+  `D:\Data\Harold\github\spamfilter-multi-prod\mobile-app\build\windows\x64\runner\Release\my_email_spam_filter.msix`.
+  Open: Step 4.2 Gmail sign-in URL check on the installed Store build.
+- **AAB 0.21.0 (versionCode 18) -- BUILT + VERIFIED**: dev worktree at eb9f0b82 (app code identical to `main`
+  2d81264a); the script's IMP-2 check "versionCode 18 is above the last uploaded (17)"; F204 checks targetSdkVersion 36
+  and `AD_ID` absent; read from the artifact: versionName 0.21.0, no `.dev` package, Gmail OAuth scheme present;
+  68.0 MB. `D:\Data\Harold\github\spamfilter-multi\mobile-app\dist\android-0.21.0+18\app-prod-release.aab`.
+- Release notes: `docs/store-assets/RELEASE_NOTES_0.21.0_windows.md` and `_play.md`; `release_notes_test.dart` passes.
+- Still open from 0.20.0: whether 0.20.0 went live on either store (submitted 2026-10-18, not observed).
+
 ## 0.20.0 -- Sprint 79 cycle Phase 8.3 (2026-10-18)
 
 **SUBMITTED to BOTH stores, in process (Harold, 2026-10-18 ~11:39pm ET: "both store updates are in process")** --
