@@ -28,6 +28,7 @@ Format: `- **type**: Description (Issue #N)` where type is feat|fix|chore|docs
 
 ### 2026-10-23 (Sprint 81)
 
+- **fix**: On Android, when two background scans started at the same moment, one of them could write its diagnostic-log lines to a second, hidden folder, so the log in Documents was missing lines; all lines now go to the one log folder (Issue #517)
 - **feat**: When a Gmail account needs you to sign in again, the app now tells you with a notification (at most once a day per account) that the account will not be scanned until you sign in again in the app (Issue #515)
 - **fix**: The Android new-mail diagnostic log line now keeps every field when one of them cannot be read, and shows the error for the field that failed instead of losing the whole line (Issue #513)
 - **feat**: iPhone app project: iOS project settings, the iPhone answers for every platform difference (ADR-0050), exports in the app's Documents folder shown in the Files app, and a GitHub workflow that compiles the iOS app (Issue #511)

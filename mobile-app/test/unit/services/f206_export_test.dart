@@ -109,6 +109,22 @@ void main() {
               'PROD never share it');
     });
 
+    // Sprint 81 Task 9: two WorkManager workers probed the diagnostics folder
+    // at once with ONE probe file name; the loser's delete threw and its log
+    // lines went to the fallback folder. What this does NOT catch: two
+    // ISOLATES racing (this runs the futures in one isolate, which interleaves
+    // the same file operations at each await) -- the emulator arm is the
+    // two-isolate evidence.
+    test('Task 9: concurrent probes of ONE folder all succeed and leave no '
+        'probe file behind', () async {
+      final dir = p.join(tmp.path, 'shared');
+      final results = await Future.wait(List.generate(
+          20, (_) => ExportDirectories.debugProbeWritable(dir)));
+      expect(results, everyElement(isTrue),
+          reason: 'a probe must never see another probe\'s delete');
+      expect(Directory(dir).listSync(), isEmpty);
+    });
+
     // 7.7.1 code-review M-3. What this does NOT catch: what
     // path_provider_windows actually returns for the support folder (vendor
     // contract: %APPDATA%\<company>\<product>).

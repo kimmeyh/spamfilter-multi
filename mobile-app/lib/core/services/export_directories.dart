@@ -24,6 +24,7 @@
 library;
 
 import 'dart:io';
+import 'dart:math' show Random;
 
 import 'package:flutter/foundation.dart' show visibleForTesting;
 import 'package:logger/logger.dart';
@@ -217,13 +218,30 @@ class ExportDirectories {
   @visibleForTesting
   static String? debugAppOwnFolderOverride;
 
+  /// The real probe, for tests (ignores [debugWritableOverride]).
+  @visibleForTesting
+  static Future<bool> debugProbeWritable(String dir) => _probe(dir);
+
+  static final _probeRandom = Random();
+
   /// Creates [dir] and writes/deletes a probe file. False on any failure.
   static Future<bool> _writable(String dir) async {
     final forced = debugWritableOverride;
     if (forced != null) return forced;
+    return _probe(dir);
+  }
+
+  static Future<bool> _probe(String dir) async {
     try {
       await Directory(dir).create(recursive: true);
-      final probe = File(path.join(dir, '.write_probe'));
+      // Sprint 81 Task 9: the probe name is unique per call. With one fixed
+      // name, two WorkManager workers (two isolates, one process) probing the
+      // same folder at once deleted each other's probe; the loser's delete
+      // threw PathNotFoundException, it judged the folder unwritable, and its
+      // diagnostic lines went to the fallback folder -- the log was split
+      // across two folders from 0.20.0 to 0.22.0 (emulator, 2026-10-23).
+      final probe = File(path.join(dir,
+          '.write_probe_${DateTime.now().microsecondsSinceEpoch}_${_probeRandom.nextInt(1 << 32)}'));
       await probe.writeAsString('ok');
       await probe.delete();
       return true;
