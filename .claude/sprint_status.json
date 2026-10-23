@@ -1,21 +1,21 @@
 {
     "_description": "Sprint status file that persists across context compaction. Update after each phase/sub-phase completion.",
-    "_last_updated": "2026-10-23T12:30:00-04:00",
+    "_last_updated": "2026-10-23T13:30:00-04:00",
     "_usage": "Read this file after context compaction to restore sprint approval state and progress.",
     "_staleness_note": "This file had drifted 15 sprints (last updated at Sprint 35, 2026-04-19) before being refreshed at Sprint 50 close-out. It is a Phase 7.7 checklist item -- update it at every sprint close-out, not opportunistically.",
     "current_sprint": {
-        "number": 80,
-        "branch": "feature/20261018_Sprint_80",
-        "status": "Phase 7.7 Final Code Reviews (7.7.1) -- COMPLETE. PR #490 READY for Harold's review and merge; CI green. Harold 2026-10-23: hunter 16 -> F302, hunter 9 Android half -> F303 (both Sprint 81); Q3 = 1: from Sprint 81 the 7.7.1 reviews run BEFORE the retrospective (workflow, checklist, CLAUDE.md, close-out check 3d-2 updated). Q4 = 1, Q5 = 2: the PR stays draft until 7.7.5, one bounded improvement review, then gh pr ready + CI green + announce. Q6: CI runs twice (by hand on the draft with the improvement review; on ready_for_review). AGENTS.md points to the sprint execution docs.",
-        "plan_approved": true,
-        "pr_number": 490,
-        "version": "0.21.0+18 (bumped at 3.7.0b)"
+        "number": 81,
+        "branch": "feature/20261023_Sprint_81",
+        "status": "Phase 8 Release Cycle (Sprint 80 cycle): 8.1 main merge DONE (#506, tag v0.21.0); 8.2 pass-1 sweep DONE; 8.3 Microsoft Store 0.21.0 MSIX + Play 0.21.0 (versionCode 18) AAB build and verify in progress; 8.4 pass-2 scope selection next (Harold). Plan not approved; no PR yet.",
+        "plan_approved": false,
+        "pr_number": null,
+        "version": "0.21.0+18 (Sprint 81 bump happens at 3.7.0b)"
     },
     "previous_sprint": {
-        "number": 79,
-        "branch": "feature/20261013_Sprint_79",
-        "pr": "#480 -> develop (merged 2026-10-18, dd04c4c), #489 develop -> main (ff58da3)",
-        "deliverables": "F286, F287 (ADR-0048), F288, F291, F292 (runner; cause unknown), F293, F297; MV76-1 in-sprint part (MV-7 skip, IMAP 120 s limit, schedule logging, workmanager 0.10.10); 7.7.1 fixes incl. Harold Q1-Q3 (one IMAP timeout ends the session, UID MOVE included; scheduler caller label). Version 0.20.0+17. Phone remainder, F277, F292 post-reboot runs moved to Sprint 80."
+        "number": 80,
+        "branch": "feature/20261018_Sprint_80",
+        "pr": "#490 -> develop (merged 2026-10-23, f301cdee), #506 develop -> main (2d81264a), tag v0.21.0",
+        "deliverables": "F294 (ADR-0049), F295 (ADR-0050, iOS cards), F296, F298, F276, F269, F267, F268, F204, F292 closed, F299 closed; MV Tasks 15-17; MV76-1 done except R-2 (Fold log); F277 closed. 7.7.1 fixes; F302, F303 to Sprint 81. Process: reviews before the retro, PR draft to 7.7.5, one improvement review, CI twice. Version 0.21.0+18. Only #491 auto-closed (comma list in 'Closes'); 18 cards to close by hand."
     },
     "github_issues": {
         "sprint_73": "#428 (open, MV74-1), #422 (open, MV74-3), #430 closed, #434 (open, MV74-2), #431 closed, #432 closed, #433 (open, MV74-3). Also closed in pass 1: #426 (superseded by #428), #427 (leftover captured as F236).",
@@ -57,8 +57,10 @@
     ],
     "blocking_issues": [],
     "next_actions": [
-        "Harold reviews and merges PR #490 into develop; then Phase 8 (release cycle).",
-        "Sprint 81 Phase 7: PR stays DRAFT; at Manual Validation complete, in ONE turn: both 7.7.1 reviews on the draft + retro prompt; recurring classes (2+ this sprint or seen before) get prevention proposals; ONE improvement review (fix under 4 code files / 600 lines, else next Phase 1) + CI run 1 by hand on the draft (gh workflow run ci.yml --ref <branch>); then 7.7.5: gh pr ready, CI run 2 green, announce."
+        "Harold: run the close script for the 18 Sprint 80 cards (auto-mode blocked the bulk close).",
+        "Harold: upload the 0.21.0 MSIX to Partner Center and the 0.21.0 AAB (versionCode 18) to Play closed testing.",
+        "Phase 8.4: Harold selects Sprint 81 scope from the pass-2 slate; then Phase 3 planning (3.7.0b bump, cards, draft PR).",
+        "Sprint 81 Phase 7: PR stays DRAFT; at Manual Validation complete, in ONE turn: both 7.7.1 reviews on the draft + retro prompt; recurring classes get prevention proposals; ONE improvement review + CI run 1 by hand on the draft; then 7.7.5: gh pr ready, CI run 2 green, announce."
     ],
     "next_sprint_targeted": {
         "number": 80,
