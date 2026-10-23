@@ -1,6 +1,6 @@
 # Sprint 81 Plan
 
-**Status**: DRAFT, awaiting Phase 3.7 approval. Scope selected by Harold at Phase 8.4 pass 2 (2026-10-23).
+**Status**: APPROVED 2026-10-23 (Harold: *"Sprint plan approved as amended (with any comments I provided), proceed with execution. All Sprint tasks and sub-tasks are approved."*). Scope selected by Harold at Phase 8.4 pass 2 (2026-10-23).
 **Branch**: `feature/20261023_Sprint_81` | **PR**: draft, created at 3.3.1 (stays draft until 7.7.5)
 **Planner**: Opus 5.5 (top tier, `SPRINT_PLANNING.md:94-110`). Phase 3.2.2.1 audits by spot reads on 2026-10-23;
 file:line evidence is in each card.
@@ -41,10 +41,10 @@ existing control, then the instance fix.
 
 - 2.1 Master plan read; Last Completed Sprint is Sprint 80 (current).
 - 2.2 Sprint 80 merged: PR #490 -> develop (f301cdee); develop -> main PR #506 (2d81264a), tag `v0.21.0`.
-- 2.3 **NOT DONE (Harold action)**: 18 Sprint 80 cards are still open (`gh issue list --label sprint --state open`
-  = 18), because the PR body listed them after one "Closes" keyword. The auto-mode classifier denied a bulk close by
-  Claude. Closed by Harold's script `$env:TEMP\close80.ps1`. Prevention already applied: one "Closes" per card in the
-  PR template (eb9f0b82).
+- 2.3 DONE 2026-10-23: the 18 Sprint 80 cards the PR body missed (#492-#505, #471, #433, #428, #472) closed by
+  Claude with a comment naming the cause; `gh issue list --label sprint --state open` is empty. Harold: *"close...
+  - always and there is no reason to ask me about these unless it is a very unusual situation"*. Prevention already
+  applied: one "Closes" per card in the PR template (eb9f0b82).
 - 2.4 Working tree clean before this plan.
 - 2.5 Branch `feature/20261023_Sprint_81` was cut from the Sprint 80 branch (carry-forward rule), pushed.
 - 2.6 `dart pub outdated` (2026-10-23): 68 locked-older and 14 constrained-older packages; no security advisory shown.
@@ -146,7 +146,21 @@ and Q2; F67a's estimate falls (Individual: no D-U-N-S, no domain work).
   Rule rows (Class 2, Q2).
 - No other ADR conflicts found.
 
-## Decision questions (answer by number, for example "q1 1 q2 1 ...")
+## Phase 3.7 answers (Harold, 2026-10-23: *"q1 1 q2 1 q3 1 q-s3 it is running ios 27.1 as of yesterday"*)
+
+- **Q1 = 1**: F301 keeps ADR-0029 Phase 1 and makes it visible (tester instructions + a notification on a Gmail
+  background skip for sign-in).
+- **Q2 = 1**: F271 stores reason CODES in one new column on the No Rule row (Class 2, approved).
+- **Q3 = 1**: F259 history cursor per account and folder, migration copies the current cursor to INBOX (Class 2,
+  approved).
+- **Q-S1, Q-S2**: covered by the plan approval (models as assigned; version 0.22.0+19).
+- **Q-S3**: Harold's iPhone runs **iOS 27.1** (updated 2026-10-22); model not stated and not needed. The deployment
+  target stays at the plugin floor (iOS 14, ADR-0050 Q6) so older test devices still install; iOS 27.1 is the
+  first test device.
+- **DB schema versions assigned** (three migrations this sprint, current v13): Task 4 F302 = v14, Task 6 F259 = v15,
+  Task 8 F271 = v16.
+
+## Decision questions as asked (answered above)
 
 - **Q1. F301: which path for the Gmail 7-day sign-in expiry?** Today every tester's Gmail sign-in dies after 7 days
   because the consent screen is in "Testing" and the app is unverified.

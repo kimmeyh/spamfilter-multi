@@ -26,6 +26,14 @@ Format: `- **type**: Description (Issue #N)` where type is feat|fix|chore|docs
 
 ## [Unreleased]
 
+### 2026-10-23 (Sprint 81)
+
+- **chore**: Version 0.22.0+19 for Sprint 81 (Issue #508)
+
+## [0.21.0] - 2026-10-23
+
+Built for the Microsoft Store and Google Play closed testing (Sprint 80 cycle Phase 8.3, 2026-10-23). Sprint 80.
+
 ### 2026-10-23 (Sprint 80 final code reviews, PR #490)
 
 - **fix**: A rule or safe sender made in Manual Rule Create, and Settings > Reset to Defaults, take effect at once without a restart; a source gate now finds every screen that writes rules without reloading them (PR #490 review)
