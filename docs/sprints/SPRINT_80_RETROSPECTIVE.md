@@ -297,3 +297,21 @@ silent-failure-hunter (9, 15, 16) and most of one class, and the 5.1.2 F-PRECHEC
 - **Finding 9, Android half (Kotlin diagnostics)** -- BACKLOG F303, Sprint 81 (Harold "q2 1"). Correction: the Q2
   option 2 text said the cause "now reaches the log"; it does not -- a Kotlin failure returns null and the cause goes
   to logcat only, which adb policy blocks on the phones. F303 records this.
+- **Q4 Four suggestions from the hsbc repository's agent** -- APPLIED (Harold "q4 1", from Sprint 81), with Claude's
+  additions:
+  1. The PR stays DRAFT until the 7.7.5 gate. The 7.7.1 reviews run on the draft. Standing fact (Harold): Copilot
+     reviews can be requested by hand on a draft PR.
+  2. "Recurring" is defined: two or more findings in the sprint share a class, or the class appears in an earlier
+     sprint's 7.7.1 line. A single finding of a new class gets its root cause written down; an improvement is
+     optional.
+  3. The 7.7.1 improvement review is ONE pass. Its findings are fixed if small enough (Q5); otherwise they go to the
+     next sprint's Phase 1 refinement. Its fixes are not reviewed again.
+  4. At 7.7.5: `gh pr ready`, then CI green on that HEAD, then the readiness announcement. This order is required
+     because `ci.yml` skips draft PRs (Sprint 62). Toolkit review prompts name the excluded files (`0*` at the repo
+     root, `archive/`).
+  Updated: `SPRINT_EXECUTION_WORKFLOW.md` (Phase 7 order, 3.3.1, 6.x, 7.7, 7.7.1, 7.7.5), `SPRINT_CHECKLIST.md`,
+  `CLAUDE.md`, the hook messages in `verify-closeout-complete.ps1` and `require-sprint-cards.ps1`.
+- **Q5 Improvement-review fix limit** -- under 4 code files AND under 600 lines, the same as the 7.7.1 limit
+  (Harold "q5 2").
+- **Q6 CI on draft PRs** -- OPEN. Harold said CI runs on drafts; `ci.yml` lines 20, 45 and 88 skip them
+  (`if: github.event.pull_request.draft == false`) and 5 Sprint 80 runs show "skipped".

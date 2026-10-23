@@ -188,7 +188,7 @@ if ($status -and $null -ne $status.current_sprint -and
     $status.current_sprint.plan_approved -eq $true) {
     $prNum = $status.current_sprint.pr_number
     if ($null -eq $prNum -or [string]$prNum -eq '') {
-        $violations += "No pull request recorded for Sprint $sprintNum (.claude/sprint_status.json current_sprint.pr_number is null) even though plan_approved is true. Phase 3.3.1 requires a DRAFT PR created at plan approval, in parallel with the first execution task. Create it (gh pr create --draft --base develop) and record pr_number / pr_url. Keep it a DRAFT until Manual Validation is complete."
+        $violations += "No pull request recorded for Sprint $sprintNum (.claude/sprint_status.json current_sprint.pr_number is null) even though plan_approved is true. Phase 3.3.1 requires a DRAFT PR created at plan approval, in parallel with the first execution task. Create it (gh pr create --draft --base develop) and record pr_number / pr_url. Keep it a DRAFT until the 7.7.5 final gate (after the 7.7.1 reviews, the retrospective and the improvement review)."
     }
 }
 
@@ -341,7 +341,7 @@ if ($sprintNum -ge 77 -and $status -and $null -ne $status.current_sprint -and
                 # BEFORE the retrospective, so the retrospective's own commits
                 # get a separate review. The line must say how it went (or
                 # "improvement review: no improvement commits").
-                $violations += "SPRINT_${sprintNum}_PLAN.md's 7.7.1 final code reviews line does not record the improvement review. After the retrospective improvements are pushed, run pr-review-toolkit code-reviewer + silent-failure-hunter on ONLY those commits and add 'improvement review <result>' (or 'improvement review: no improvement commits') to that line (SPRINT_EXECUTION_WORKFLOW.md 7.7.1)."
+                $violations += "SPRINT_${sprintNum}_PLAN.md's 7.7.1 final code reviews line does not record the improvement review. After the retrospective improvements are pushed, run pr-review-toolkit code-reviewer + silent-failure-hunter on ONLY those commits and add 'improvement review <result>' (or 'improvement review: no improvement commits') to that line. One pass only: fix findings under 4 code files and 600 lines, file larger ones for the next sprint (SPRINT_EXECUTION_WORKFLOW.md 7.7.1)."
             }
         }
     }

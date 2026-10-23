@@ -29,9 +29,13 @@ Phase 3; this stub only records what Sprint 80 carried in.
 
 - **F302** IMAP: a separate sequence-number field; a missing UID gets a standard "no valid UID" value (Q1 = 2).
 - **F303** Android new-mail diagnostics: each field reported on its own, errors into the diagnostic log (Q2 = 1).
-- **Process (Q3 = 1, live from this sprint)**: at Manual Validation complete, in ONE turn: `gh pr ready`, both 7.7.1
-  final code reviews, and the retrospective prompt. Findings feed the retrospective by class; the retrospective's
-  commits get the 7.7.1 improvement review, recorded on the 7.7.1 line (close-out check 3d-2).
+- **Process (Q3 = 1, Q4 = 1, Q5 = 2, live from this sprint)**: the PR stays DRAFT until 7.7.5. At Manual Validation
+  complete, in ONE turn: both 7.7.1 final code reviews on the draft (Copilot by hand works on a draft) and the
+  retrospective prompt. Findings feed the retrospective by class; a recurring class (2+ findings this sprint, or seen
+  in an earlier sprint) gets a prevention proposal. The retrospective's commits get ONE 7.7.1 improvement review:
+  fixes under 4 code files and 600 lines are made, larger ones come to the next Phase 1 refinement. Then
+  `gh pr ready`, CI green on that HEAD, and the readiness announcement. Toolkit prompts name the excluded files
+  (`0*`, `archive/`). Recorded on the 7.7.1 line (close-out check 3d-2).
 
 ## Open items carried
 
