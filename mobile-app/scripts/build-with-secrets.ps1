@@ -746,8 +746,12 @@ try {
                 # Detect available AVDs
                 $availableAvds = @()
                 try {
-                    $avdList = & $emulatorExe -list-avds 2>&1
-                    $availableAvds = $avdList | Where-Object { $_ -and $_.Trim() -ne "" }
+                    # PR #490 7.7.1: stdout only, and only lines shaped like an
+                    # AVD name. With 2>&1 an emulator warning line (stderr) could
+                    # be taken for an AVD and chosen to launch.
+                    $avdList = & $emulatorExe -list-avds 2>$null
+                    $availableAvds = @($avdList | Where-Object { $_ -is [string] -and $_.Trim() -match '^[A-Za-z0-9._-]+$' } |
+                        ForEach-Object { $_.Trim() })
                 } catch {
                     Write-Host "[WARNING]: Could not list AVDs. Make sure Android SDK emulator is in PATH." -ForegroundColor Yellow
                 }

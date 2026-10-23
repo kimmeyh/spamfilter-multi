@@ -1181,8 +1181,12 @@ class GmailApiAdapter with BatchOperationsMixin
   /// minimal, labels only) answers it: 404 is [MessagePresence.absent]; the
   /// message without the folder's label is [MessagePresence.moved] (another
   /// label, or Trash); with it, [MessagePresence.present]. Any other error on
-  /// one id leaves that id out (no answer); a 401 / 403 throws so the caller
-  /// stops checking with this session.
+  /// one id leaves that id out (no answer). A 401 / 403 throws, which ends
+  /// THIS folder's check: it is not session-fatal ([isSessionFatal]), so the
+  /// scanner logs it (console and diagnostic log) and the next folder checks
+  /// again. That is deliberate: Gmail also answers 403 for rate and quota
+  /// limits, and a real sign-in failure is already caught by the folder's own
+  /// fetch, which ran first in the same session (PR #490 7.7.1).
   @override
   Future<Map<String, MessagePresence>> checkMessagesPresent({
     required String folderName,

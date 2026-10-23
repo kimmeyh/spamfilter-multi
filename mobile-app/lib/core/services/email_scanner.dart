@@ -2073,6 +2073,14 @@ class EmailScanner {
       AppLogger.error('F276: No Rule presence check failed for folder '
           '"$folderName"; rows left unchanged',
           error: e, stackTrace: st);
+      // PR #490 7.7.1: the console log is not kept in a release build; the
+      // diagnostic log is what a user can send.
+      unawaited(DiagnosticLogger.failure(
+        context: 'F276/no-rule',
+        kind: DiagnosticLogger.kindException,
+        reason: 'presence check failed for folder "$folderName"; rows left '
+            'unchanged -- ${DiagnosticLogger.describeError(e)}',
+      ));
     }
   }
 

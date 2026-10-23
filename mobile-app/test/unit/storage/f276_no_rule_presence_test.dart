@@ -18,6 +18,8 @@
 ///     the full-fetch fake is driven here.
 library;
 
+import 'dart:io';
+
 import 'package:enough_mail/enough_mail.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:googleapis/gmail/v1.dart' as gmail;
@@ -31,6 +33,7 @@ import 'package:my_email_spam_filter/core/models/email_message.dart';
 import 'package:my_email_spam_filter/core/models/evaluation_result.dart';
 import 'package:my_email_spam_filter/core/providers/email_scan_provider.dart';
 import 'package:my_email_spam_filter/core/providers/rule_set_provider.dart';
+import 'package:my_email_spam_filter/core/services/diagnostic_logger.dart';
 import 'package:my_email_spam_filter/core/services/email_scanner.dart';
 import 'package:my_email_spam_filter/core/services/no_rule_presence_reconciler.dart';
 import 'package:my_email_spam_filter/core/storage/rule_database_store.dart';
@@ -365,11 +368,35 @@ void main() {
       final scan = await testHelper.createTestScanResult(scanAccount);
       await store.upsertUnmatchedEmails([row(scan, 'keep1')]);
 
+      // PR #490 7.7.1: the failure also reaches the diagnostic log (the
+      // console log is not kept in a release build).
+      final diagDir = Directory.systemTemp.createTempSync('f276_diag_');
+      DiagnosticLogger.debugSetEnabled(true);
+      DiagnosticLogger.debugSetDir(diagDir.path);
+      addTearDown(() {
+        DiagnosticLogger.debugSetEnabled(null);
+        DiagnosticLogger.debugSetDir(null);
+        // Other scan-stage lines may still hold the file open (unawaited
+        // writes); a temp folder left behind is harmless.
+        try {
+          diagDir.deleteSync(recursive: true);
+        } on FileSystemException catch (_) {}
+      });
+
       final platform = _PresencePlatform({}, error: StateError('boom'));
       await scanWith(platform);
 
       expect(platform.asked, isNotEmpty);
       expect(await listed(scanAccount), {'keep1'});
+      String diag() => diagDir
+          .listSync(recursive: true)
+          .whereType<File>()
+          .map((f) => f.readAsStringSync())
+          .join('\n');
+      for (var i = 0; i < 40 && !diag().contains('presence check failed'); i++) {
+        await Future<void>.delayed(const Duration(milliseconds: 50));
+      }
+      expect(diag(), contains('[F276/no-rule] presence check failed'));
     });
 
     // Sprint 75 IMP-3 walk: the check's catch must not swallow a session

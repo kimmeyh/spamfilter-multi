@@ -8,7 +8,9 @@
       - targetSdkVersion is below -MinTargetSdk (default 36), or is not declared, or
       - the permission com.google.android.gms.permission.AD_ID is present (the app declares
         "no advertising ID" in Play Console Data safety; a transitive ads dependency would make
-        that answer false).
+        that answer false), or
+      - android.permission.INTERNET is not found: then the permission list was not read and the
+        AD_ID answer would rest on nothing (PR #490 7.7.1).
 
     Why a built-in protobuf reader: inside an AAB the manifest is Android resource XML encoded as
     PROTOBUF (aapt2 XmlNode), so a text regex cannot read an integer attribute. Tools were tested
@@ -50,6 +52,7 @@ Add-Type -AssemblyName System.IO.Compression
 Add-Type -AssemblyName System.IO.Compression.FileSystem
 
 $script:AdIdPermission = 'com.google.android.gms.permission.AD_ID'
+$script:InternetPermission = 'android.permission.INTERNET'
 
 # ---- protobuf wire reader ---------------------------------------------------
 
@@ -187,7 +190,12 @@ function Test-PlayFacts {
     } else {
         $msgs += "[OK] targetSdkVersion = $($Facts.TargetSdk) (minimum $Min)."
     }
-    if ($Facts.Permissions -contains $script:AdIdPermission) {
+    # PR #490 7.7.1: "AD_ID absent" is only evidence if the permission list was
+    # actually read. The app cannot work without INTERNET, so a list without it
+    # means the reader missed the permissions -- fail, never pass on nothing.
+    if ($Facts.Permissions -notcontains $script:InternetPermission) {
+        $ok = $false; $msgs += "[FAIL] $script:InternetPermission not found ($(@($Facts.Permissions).Count) permissions read): the permission list was not read, so AD_ID cannot be checked."
+    } elseif ($Facts.Permissions -contains $script:AdIdPermission) {
         $ok = $false; $msgs += "[FAIL] $script:AdIdPermission is present (advertising ID requested)."
     } else {
         $msgs += "[OK] $script:AdIdPermission absent ($(@($Facts.Permissions).Count) permissions read)."
@@ -198,6 +206,9 @@ function Test-PlayFacts {
 function Invoke-AabCheck {
     param([string]$Path, [int]$Min)
     if (-not (Test-Path -LiteralPath $Path)) { throw "Bundle not found: $Path" }
+    # PR #490 7.7.1: .NET (ZipFile.OpenRead) resolves a relative path against the
+    # PROCESS folder, PowerShell against the current location; resolve once here.
+    $Path = (Resolve-Path -LiteralPath $Path).ProviderPath
     $facts = Get-ManifestFacts -ManifestBytes (Read-AabManifest -Path $Path)
     return Test-PlayFacts -Facts $facts -Min $Min
 }
@@ -267,7 +278,8 @@ if ($SelfTest) {
         @{ N = 'crafted old target (35) fails';        T = 35;    P = @('android.permission.INTERNET'); Ok = $false },
         @{ N = 'crafted AD_ID present fails';          T = 36;    P = @('android.permission.INTERNET', $script:AdIdPermission); Ok = $false },
         @{ N = 'crafted missing uses-sdk target fails'; T = $null; P = @('android.permission.INTERNET'); Ok = $false },
-        @{ N = 'crafted target 37 passes';             T = 37;    P = @(); Ok = $true }
+        @{ N = 'crafted target 37 passes';             T = 37;    P = @('android.permission.INTERNET'); Ok = $true },
+        @{ N = 'crafted NO permissions read fails';    T = 36;    P = @(); Ok = $false }
     )
     foreach ($c in $cases) {
         $facts = Get-ManifestFacts -ManifestBytes ([byte[]](New-Manifest $c.T $c.P))

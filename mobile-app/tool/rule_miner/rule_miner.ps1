@@ -24,8 +24,12 @@ param(
 $ErrorActionPreference = 'Stop'
 $app = Split-Path -Parent (Split-Path -Parent $PSScriptRoot)
 $env:RULE_MINER_DB_DIR = (Resolve-Path -LiteralPath $DbDir).Path
-$env:RULE_MINER_OUT_YAML = [System.IO.Path]::GetFullPath($OutYaml)
-$env:RULE_MINER_OUT_REPORT = if ($OutReport) { [System.IO.Path]::GetFullPath($OutReport) } else { '' }
+# PR #490 7.7.1: resolved against the CURRENT PowerShell location. The .NET
+# GetFullPath used before resolves against the PROCESS folder, which stays where
+# the session started, so a relative path could land in the repository.
+$resolve = { param($p) $ExecutionContext.SessionState.Path.GetUnresolvedProviderPathFromPSPath($p) }
+$env:RULE_MINER_OUT_YAML = & $resolve $OutYaml
+$env:RULE_MINER_OUT_REPORT = if ($OutReport) { & $resolve $OutReport } else { '' }
 Push-Location $app
 try {
     flutter test tool/rule_miner/rule_miner.dart --reporter expanded

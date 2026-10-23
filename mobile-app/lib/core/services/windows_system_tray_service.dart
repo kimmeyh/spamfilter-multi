@@ -2,6 +2,7 @@ import 'dart:io';
 import 'package:flutter/foundation.dart' show visibleForTesting;
 import 'package:system_tray/system_tray.dart';
 import '../platform/platform_capabilities.dart';
+import 'diagnostic_logger.dart';
 import 'package:window_manager/window_manager.dart';
 import 'package:path/path.dart' as path;
 import 'package:logger/logger.dart';
@@ -44,16 +45,26 @@ class WindowsSystemTrayService with WindowListener {
         ...trayIconAssetKey.split('/'),
       ]);
 
+  /// Diagnostic-log context of the tray lines ([recordTrayOutcome]).
+  static const String diagnosticContext = 'tray';
+
   /// Initialize system tray (Windows only)
   ///
-  /// Call this during app startup on Windows platform
-  Future<void> initialize() async {
+  /// Call this during app startup on Windows platform. Returns true when the
+  /// icon is in the notification area.
+  ///
+  /// PR #490 7.7.1 (silent-failure review finding 4): this used to return
+  /// nothing, and main.dart logged "Windows system tray initialized" whatever
+  /// happened. Each outcome now writes one diagnostic-log line
+  /// (`tray: icon added` or `tray: icon NOT added -- <reason>`), so a missing
+  /// icon on a user's PC can be explained from the log.
+  Future<bool> initialize() async {
     if (!PlatformCapabilities.current.hasSystemTray) {
-      return; // Only initialize on Windows
+      return false; // Only initialize on Windows
     }
 
     if (_isInitialized) {
-      return; // Already initialized
+      return true; // Already initialized
     }
 
     try {
@@ -84,7 +95,8 @@ class WindowsSystemTrayService with WindowListener {
       // onWindowClose stub below are retained for that, but are not wired up.
 
       final String iconPath = trayIconPath(Platform.resolvedExecutable);
-      if (!File(iconPath).existsSync()) {
+      final iconFileExists = File(iconPath).existsSync();
+      if (!iconFileExists) {
         _logger.w('System tray icon file not found: $iconPath');
       }
 
@@ -97,7 +109,12 @@ class WindowsSystemTrayService with WindowListener {
       );
       if (!added) {
         _logger.w('System tray icon was not added (icon: $iconPath)');
-        return;
+        await recordTrayOutcome(
+            added: false,
+            reason: iconFileExists
+                ? 'the tray plugin could not load the icon file'
+                : 'icon file not found next to the exe');
+        return false;
       }
 
       // Set up tray menu
@@ -106,12 +123,27 @@ class WindowsSystemTrayService with WindowListener {
       _systemTray.registerSystemTrayEventHandler(handleTrayEvent);
 
       _isInitialized = true;
+      await recordTrayOutcome(added: true);
+      return true;
     } catch (e) {
       // Initialization failed - log but don't crash
       // App will continue without system tray
       _logger.w('Failed to initialize system tray: $e');
+      await recordTrayOutcome(
+          added: false, reason: DiagnosticLogger.describeError(e));
+      return false;
     }
   }
+
+  /// One diagnostic-log line per start: whether the tray icon was added.
+  /// No path is written (it holds the Windows user name).
+  @visibleForTesting
+  static Future<void> recordTrayOutcome({required bool added, String? reason}) =>
+      DiagnosticLogger.log(
+        kind: added ? DiagnosticLogger.kindApp : DiagnosticLogger.kindException,
+        context: diagnosticContext,
+        detail: added ? 'icon added' : 'icon NOT added -- $reason',
+      );
 
   /// Handles a click on the tray icon.
   ///
@@ -119,14 +151,27 @@ class WindowsSystemTrayService with WindowListener {
   /// right-click (`windows/tray.cpp:377-378`); the menu appears only when the
   /// app calls `popUpContextMenu()`. The handler used to rebuild the menu and
   /// stop there, so the tray menu (and its Exit item) never opened.
+  ///
+  /// PR #490 7.7.1 (silent-failure review finding 12): the plugin calls this
+  /// without awaiting it, so an error used to escape as an unhandled zone
+  /// error with no record. It is now logged, and the click does nothing.
   @visibleForTesting
   Future<void> handleTrayEvent(String eventName) async {
-    if (eventName == kSystemTrayEventClick) {
-      await _showWindow();
-    } else if (eventName == kSystemTrayEventRightClick) {
-      // Rebuild first so the item callbacks are current, then show it.
-      await _setupTrayMenu();
-      await _systemTray.popUpContextMenu();
+    try {
+      if (eventName == kSystemTrayEventClick) {
+        await _showWindow();
+      } else if (eventName == kSystemTrayEventRightClick) {
+        // Rebuild first so the item callbacks are current, then show it.
+        await _setupTrayMenu();
+        await _systemTray.popUpContextMenu();
+      }
+    } catch (e) {
+      _logger.w('Tray $eventName failed: $e');
+      await DiagnosticLogger.log(
+        kind: DiagnosticLogger.kindException,
+        context: diagnosticContext,
+        detail: '$eventName failed -- ${DiagnosticLogger.describeError(e)}',
+      );
     }
   }
 

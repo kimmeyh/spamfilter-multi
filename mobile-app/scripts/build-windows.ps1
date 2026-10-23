@@ -303,6 +303,12 @@ if (Test-Path $buildTarget) {
             Where-Object { $_.ExecutablePath -and $_.ExecutablePath.StartsWith($variantFull, [System.StringComparison]::OrdinalIgnoreCase) }
         if ($holders) {
             Write-Host "       Stopping $(@($holders).Count) process(es) running from $variantDir" -ForegroundColor Yellow
+            # PR #490 7.7.1: name each one, so a background scan stopped part-way
+            # can be told from the app window in the build output.
+            foreach ($h in @($holders)) {
+                $role = if ($h.CommandLine -match '--background-scan') { 'background scan' } else { 'app window' }
+                Write-Host "         PID $($h.ProcessId) ($role)" -ForegroundColor Yellow
+            }
             $holders | ForEach-Object { Stop-Process -Id $_.ProcessId -Force -ErrorAction SilentlyContinue }
             Start-Sleep -Milliseconds 1000
         }

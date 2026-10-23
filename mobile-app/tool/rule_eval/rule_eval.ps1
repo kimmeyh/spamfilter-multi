@@ -24,7 +24,10 @@ $ErrorActionPreference = 'Stop'
 $app = Split-Path -Parent (Split-Path -Parent $PSScriptRoot)
 $env:RULE_EVAL_CANDIDATE = (Resolve-Path -LiteralPath $Candidate).Path
 $env:RULE_EVAL_DB_DIR = (Resolve-Path -LiteralPath $DbDir).Path
-$env:RULE_EVAL_OUT = $Out
+# PR #490 7.7.1: resolved against the CURRENT location before Push-Location;
+# passed as given, Dart resolved a relative -Out against mobile-app/ and the
+# report landed inside the repository.
+$env:RULE_EVAL_OUT = if ($Out) { $ExecutionContext.SessionState.Path.GetUnresolvedProviderPathFromPSPath($Out) } else { '' }
 Push-Location $app
 try {
     flutter test tool/rule_eval/rule_eval.dart --reporter expanded

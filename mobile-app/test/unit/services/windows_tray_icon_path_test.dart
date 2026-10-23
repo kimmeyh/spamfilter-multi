@@ -16,6 +16,8 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:system_tray/system_tray.dart'
     show kSystemTrayEventRightClick;
 import 'package:path/path.dart' as p;
+import 'package:my_email_spam_filter/core/platform/platform_capabilities.dart';
+import 'package:my_email_spam_filter/core/services/diagnostic_logger.dart';
 import 'package:my_email_spam_filter/core/services/windows_system_tray_service.dart';
 import 'package:yaml/yaml.dart';
 
@@ -76,6 +78,68 @@ void main() {
     test('an unknown event does nothing', () async {
       await WindowsSystemTrayService().handleTrayEvent('unknown-event');
       expect(calls, isEmpty);
+    });
+  });
+
+  // PR #490 7.7.1 (silent-failure review findings 4 and 12). What these do
+  // NOT catch: the real Shell_NotifyIcon failure (the plugin answer is
+  // mocked), and the text main.dart logs to the console.
+  group('tray outcome reaches the diagnostic log', () {
+    late Directory dir;
+    final messenger =
+        TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger;
+
+    setUp(() {
+      dir = Directory.systemTemp.createTempSync('tray_diag_');
+      DiagnosticLogger.debugSetEnabled(true);
+      DiagnosticLogger.debugSetDir(dir.path);
+    });
+
+    tearDown(() {
+      DiagnosticLogger.debugSetEnabled(null);
+      DiagnosticLogger.debugSetDir(null);
+      PlatformCapabilities.debugOverride = null;
+      for (final name in [
+        'window_manager',
+        'flutter/system_tray/tray',
+        'flutter/system_tray/menu_manager',
+      ]) {
+        messenger.setMockMethodCallHandler(MethodChannel(name), null);
+      }
+      dir.deleteSync(recursive: true);
+    });
+
+    String logText() => dir
+        .listSync(recursive: true)
+        .whereType<File>()
+        .map((f) => f.readAsStringSync())
+        .join('\n');
+
+    test('initialize returns false and logs why when the plugin adds no icon',
+        () async {
+      PlatformCapabilities.debugOverride =
+          const PlatformCapabilities(HostPlatform.windows);
+      messenger.setMockMethodCallHandler(
+          const MethodChannel('window_manager'), (call) async => null);
+      messenger.setMockMethodCallHandler(
+          const MethodChannel('flutter/system_tray/tray'),
+          (call) async => call.method == 'InitSystemTray' ? false : true);
+
+      final added = await WindowsSystemTrayService().initialize();
+
+      expect(added, isFalse);
+      expect(logText(), contains('icon NOT added'));
+    });
+
+    test('a click whose handling fails is logged, not thrown', () async {
+      messenger.setMockMethodCallHandler(
+          const MethodChannel('flutter/system_tray/menu_manager'),
+          (call) async => throw PlatformException(code: 'boom'));
+
+      await WindowsSystemTrayService()
+          .handleTrayEvent(kSystemTrayEventRightClick);
+
+      expect(logText(), contains('[tray] right-click failed --'));
     });
   });
 

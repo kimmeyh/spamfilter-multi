@@ -2,6 +2,7 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart';
 
 import '../storage/settings_store.dart';
+import 'diagnostic_logger.dart';
 
 /// F253 (Sprint 76): "Scan when new mail arrives" -- the Dart side of the
 /// Android notification listener (`MailNotificationListener.kt`, ADR-0044).
@@ -84,13 +85,31 @@ class NewMailTrigger {
   /// access, flag, listener component and bind times, the last ignored
   /// mail-app notification, installed mail apps, how the screen was started);
   /// null when unreadable.
-  static Future<Map<Object?, Object?>?> diagnostics() =>
-      _call<Map<Object?, Object?>>('diagnostics');
+  ///
+  /// PR #490 7.7.1 (silent-failure review finding 9): when the call fails,
+  /// [lastDiagnosticsError] keeps why (the native exception's type and
+  /// message), so the log line names a cause instead of only "unavailable".
+  static Future<Map<Object?, Object?>?> diagnostics() async {
+    lastDiagnosticsError = null;
+    try {
+      return await _channel.invokeMethod<Map<Object?, Object?>>('diagnostics');
+    } catch (e) {
+      lastDiagnosticsError = DiagnosticLogger.describeError(e);
+      return null;
+    }
+  }
+
+  /// Why the last [diagnostics] call returned null; null after a success.
+  static String? lastDiagnosticsError;
 
   /// One diagnostic-log line from [diagnostics]. Pure, so the wording is
-  /// tested without a device.
-  static String formatDiagnostics(Map<Object?, Object?>? d) {
-    if (d == null) return 'diagnostics unavailable';
+  /// tested without a device. [error] is [lastDiagnosticsError].
+  static String formatDiagnostics(Map<Object?, Object?>? d, {String? error}) {
+    if (d == null) {
+      return error == null
+          ? 'diagnostics unavailable'
+          : 'diagnostics unavailable -- $error';
+    }
     String onOff(Object? v) => v == true ? 'on' : (v == false ? 'off' : 'unknown');
     String at(Object? ms) => ms is int && ms > 0
         ? DateTime.fromMillisecondsSinceEpoch(ms).toIso8601String()

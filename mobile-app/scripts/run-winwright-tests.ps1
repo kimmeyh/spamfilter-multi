@@ -211,13 +211,15 @@ function Set-FixedWindowSize {
 }
 
 function Ensure-FreshAppAtHome {
-    # Sprint 80: 60 s, not 30 s. In a RELEASE build the app reconciles the
-    # Task Scheduler tasks BEFORE runApp (main.dart, F98 block): one
+    # Sprint 80: 60 s, not 30 s. HISTORY: until Sprint 80 Task 15 a RELEASE
+    # build reconciled the Task Scheduler tasks BEFORE runApp: one
     # get_status.ps1 per verifyAndRepairTaskPath and per ensureTaskExists for
     # each enabled account, then adhoc_query.ps1 -- serial PowerShell launches
     # of about 3 s each. Measured 2026-10-19 with 4 enabled DEV accounts:
-    # 9 children, window at 30.9 s, the app process idle in between. The
-    # Sprint 79 "did not appear within 30s" (cause unknown then) is this.
+    # 9 children, window at 30.9 s. That was the Sprint 79 "did not appear
+    # within 30s". Task 15 moved the reconciliation after runApp
+    # (main.dart _reconcileWindowsBackgroundTasks), so the window now appears
+    # first; 60 s is kept only as margin.
     param([int]$WaitForWindowSec = 60)
 
     # (1) Defensive teardown of any existing dev-app instance.
@@ -318,9 +320,20 @@ function Get-TrayButtonIds {
 function Test-TrayIconAppears {
     param([int]$WaitForWindowSec = 60, [int]$WaitForIconSec = 20)
     # (1) Stop the window instance only (see the header: background scans keep running).
-    Get-CimInstance Win32_Process -Filter "Name='$appProcName.exe'" -ErrorAction SilentlyContinue |
-        Where-Object { $_.CommandLine -notmatch '--background-scan' } |
-        ForEach-Object { Stop-Process -Id $_.ProcessId -Force -ErrorAction SilentlyContinue }
+    # PR #490 7.7.1: a process whose command line cannot be read (null: another
+    # user, or elevated) is NOT stopped -- it may be a background scan. If it is
+    # the window instance, the start below exits on the single-instance mutex and
+    # the check says so.
+    $procs = @(Get-CimInstance Win32_Process -Filter "Name='$appProcName.exe'" -ErrorAction SilentlyContinue)
+    foreach ($proc in $procs) {
+        if ($null -eq $proc.CommandLine) {
+            Write-Warning "PID $($proc.ProcessId): command line unreadable; not stopped."
+            continue
+        }
+        if ($proc.CommandLine -notmatch '--background-scan') {
+            Stop-Process -Id $proc.ProcessId -Force -ErrorAction SilentlyContinue
+        }
+    }
     Start-Sleep -Seconds 1
     $before = Get-TrayButtonIds
     if ($null -eq $before) {
@@ -330,6 +343,7 @@ function Test-TrayIconAppears {
         return [PSCustomObject]@{ Status = 'FAIL'; Detail = "dev app exe not found at $devAppExe" }
     }
     # (2) Start the app and wait for its window.
+    $checkStart = Get-Date
     $launched = Start-Process -FilePath $devAppExe -PassThru
     $deadline = (Get-Date).AddSeconds($WaitForWindowSec)
     $window = $null
@@ -354,11 +368,18 @@ function Test-TrayIconAppears {
         $new = @()
         if ($null -ne $now) { $new = @($now | Where-Object { $before -notcontains $_ }) }
         if ($new.Count -gt 0) {
+            # PR #490 7.7.1: the PRODUCTION app shows the same tooltip. If it
+            # started during this check, the new button may be ITS icon.
+            $prodStarted = @(Get-Process 'MyEmailSpamFilter' -ErrorAction SilentlyContinue |
+                Where-Object { $_.StartTime -gt $checkStart })
+            if ($prodStarted.Count -gt 0) {
+                return [PSCustomObject]@{ Status = 'SKIPPED'; Detail = "a production instance (PID $($prodStarted[0].Id)) started during the check, so the new tray button cannot be told apart; run again with production closed" }
+            }
             return [PSCustomObject]@{ Status = 'PASS'; Detail = "new tray button '$trayIconName' (runtime ID $($new[0])); $($before.Count) matching button(s) existed before the start" }
         }
         Start-Sleep -Milliseconds 500
     } while ((Get-Date) -lt $deadline)
-    return [PSCustomObject]@{ Status = 'FAIL'; Detail = "no new '$trayIconName' tray button within ${WaitForIconSec}s of the window; $($before.Count) matching button(s) existed before the start. Check the app log for 'System tray icon file not found'." }
+    return [PSCustomObject]@{ Status = 'FAIL'; Detail = "no new '$trayIconName' tray button within ${WaitForIconSec}s of the window; $($before.Count) matching button(s) existed before the start. The app writes why to the diagnostic log (line '[tray] icon NOT added -- <reason>'; Settings > Diagnostic log must be on)." }
 }
 
 if ($TrayCheckOnly) {

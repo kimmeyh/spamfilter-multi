@@ -77,10 +77,17 @@ void main() {
       throw PlatformException(code: 'x');
     });
     expect((await NewMailTrigger.diagnostics())!['accessGranted'], isTrue);
+    expect(NewMailTrigger.lastDiagnosticsError, isNull);
     messenger.setMockMethodCallHandler(NewMailTrigger.channel, (call) async {
-      throw PlatformException(code: 'x');
+      throw PlatformException(code: 'x', message: 'SecurityException: denied');
     });
     expect(await NewMailTrigger.diagnostics(), isNull);
+    // PR #490 7.7.1: the cause is kept and reaches the line.
+    expect(NewMailTrigger.lastDiagnosticsError, contains('SecurityException'));
+    expect(
+        NewMailTrigger.formatDiagnostics(null,
+            error: NewMailTrigger.lastDiagnosticsError),
+        startsWith('diagnostics unavailable -- PlatformException'));
     messenger.setMockMethodCallHandler(NewMailTrigger.channel, null);
   });
 
@@ -126,7 +133,9 @@ void main() {
     test('main.dart logs the snapshot at foreground start', () {
       final main = File('lib/main.dart').readAsStringSync();
       expect(main, contains("context: 'new-mail-diagnostics'"));
-      expect(main, contains('NewMailTrigger.formatDiagnostics(await NewMailTrigger.diagnostics())'));
+      expect(main, contains('NewMailTrigger.formatDiagnostics(await NewMailTrigger.diagnostics(),'));
+      expect(main, contains('error: NewMailTrigger.lastDiagnosticsError'),
+          reason: 'PR #490 7.7.1: the cause of a failed read reaches the log');
     });
   });
 }

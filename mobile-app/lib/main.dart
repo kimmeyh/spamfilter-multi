@@ -337,8 +337,14 @@ void main(List<String> args) async {
     }
 
     _windowsSystemTrayService = WindowsSystemTrayService();
-    await _windowsSystemTrayService!.initialize();
-    Logger().i('Windows system tray initialized');
+    // PR #490 7.7.1: say what happened (the service writes the reason to the
+    // diagnostic log); this line used to claim success either way.
+    if (await _windowsSystemTrayService!.initialize()) {
+      Logger().i('Windows system tray initialized');
+    } else {
+      Logger().w('Windows system tray icon was NOT added (see the "tray" '
+          'line in the diagnostic log)');
+    }
 
     // F287 (Sprint 79): no notification start-up step. The background-scan
     // toast is posted (and the plugin initialized) by ScanCompleteNotifier in
@@ -478,8 +484,22 @@ Future<void> _reconcileWindowsBackgroundTasks() =>
         }
         Logger().i('Background task reconciliation finished after the window '
             'appeared (${stopwatch.elapsedMilliseconds} ms)');
+        // PR #490 7.7.1 (silent-failure review finding 10): a release build
+        // keeps no console log, so the outcome goes to the diagnostic log.
+        await DiagnosticLogger.log(
+          kind: DiagnosticLogger.kindApp,
+          context: 'task-scheduler',
+          detail: 'start-up reconciliation done: ${desiredTaskNames.length} '
+              'task(s) wanted (${stopwatch.elapsedMilliseconds} ms)',
+        );
       } catch (e) {
         Logger().w('Per-account background scan startup reconciliation failed: $e');
+        await DiagnosticLogger.log(
+          kind: DiagnosticLogger.kindException,
+          context: 'task-scheduler',
+          detail: 'start-up reconciliation failed; retried at the next start '
+              '-- ${DiagnosticLogger.describeError(e)}',
+        );
       }
     });
 
@@ -545,7 +565,8 @@ Future<void> _logNewMailTriggerOutcome() async {
   await DiagnosticLogger.log(
     kind: DiagnosticLogger.kindApp,
     context: 'new-mail-diagnostics',
-    detail: NewMailTrigger.formatDiagnostics(await NewMailTrigger.diagnostics()),
+    detail: NewMailTrigger.formatDiagnostics(await NewMailTrigger.diagnostics(),
+        error: NewMailTrigger.lastDiagnosticsError),
   );
   final parsed = NewMailTrigger.parseLastResult(await NewMailTrigger.lastResult());
   if (parsed == null) return;
