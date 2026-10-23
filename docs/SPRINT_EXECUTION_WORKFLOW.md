@@ -736,6 +736,14 @@ This change was introduced after Sprint 36 kickoff skipped Phase 1 (prior "OPTIO
     every 20 minutes; their trigger had read PT5M since 10-12, and the toast rehearsal passed without reading it.)
   - **Steps Claude cannot rehearse** (phone-only behavior, a real provider account Claude cannot reach): say so in
     the step, and name the closest rehearsal that was done (emulator, test server).
+  - **Native OS surfaces are rehearsed by looking** (Sprint 80 retro IMP-1): for a step whose expected result is a
+    tray icon or menu, a window, a notification or toast, or a native dialog, the `Rehearsed:` line names the
+    OBSERVATION: the UI Automation element found, or the screenshot path. A test, an unchanged code block or a
+    reasoned argument is not accepted for that step. Tray icon: `run-winwright-tests.ps1 -TrayCheckOnly` (also run
+    first in every 5.1.5 sweep); tray menu: a synthesized right-click and a screenshot of the open menu. (Sprint 80:
+    the MV-4 rehearsal said the tray icon was present from tests and an unchanged code block; Harold's screenshots
+    showed it missing, which cost one validation round and Task 16. Item 3 above already named the tray as a
+    WinWright case; the record line accepted any "how", so a reasoned rehearsal read the same as an observed one.)
   - **Record**: each MV step in the plan carries `Rehearsed: <date>, <how>, <observed result>`, and the plan's
     Phase 5 evidence carries `- **5.1.9 MV rehearsal**: <date>, <N> steps rehearsed (<how>), <M> not rehearsable
     (<why>)`. `sprint-auto-advance.ps1` (F193 evidence gate) refuses to declare Manual Validation from Sprint 78

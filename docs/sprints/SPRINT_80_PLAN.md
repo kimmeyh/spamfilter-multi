@@ -1135,6 +1135,9 @@ phone. The build script's emulator step auto-selected the old `Nexus_5X_API_29_x
   - **Q2 = 1: ADR-0050 ACCEPTED** (status line, README, `F295_IOS_READINESS.md` and the master-plan iOS heading
     updated).
   - **Q3 = 1: backlog card F301** (Gmail sign-in expires every 7 days for every closed tester) added to the master plan.
+- **Standing facts (Harold)** (Sprint 80 retro IMP-3; a re-presented list drops any check these answer):
+  - **Fold notification access for the app is ON and stays on** (R-2). Harold, at Manual Validation: *"Stop asing it
+    is on and will remain on"*.
     ADR-0029 already accepts the weekly sign-in for its Phase 1; F301 picks the path out of it.
   - **Manual Validation complete**: MV-1 to MV-5 PASS, every phone item has a result, no decision is open.
 - **Task 2 R-3 (F277, the 0.3% versus 1.5% spread between the two arm-B nights) -- cause unknown, desk analysis of

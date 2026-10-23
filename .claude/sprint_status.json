@@ -58,7 +58,7 @@
     "blocking_issues": [],
     "next_actions": [
         "Phase 7: 7.1 Windows build of HEAD, 7.3 retrospective prompt to Harold, Claude draft, then Steps 3-7; gh pr ready + 7.7.1 final reviews at the end of 7.7.",
-        "Phase 8: read the Fold new-mail-diagnostics line (Task 17) from the first 0.21.0 Play log to settle R-2."
+        "Phase 8: read the Fold new-mail-diagnostics line (Task 17) from the first 0.21.0 Play log to settle R-2. Check the FIRST start after the update AND a later start (Sprint 80 retro IMP-5): on the emulator the first start after install wrote no log lines (cause unknown), so a missing first-start line is not by itself a Task 17 failure. If the Fold's first start is also missing, open a backlog card with that evidence."
     ],
     "next_sprint_targeted": {
         "number": 80,

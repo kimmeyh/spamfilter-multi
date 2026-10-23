@@ -28,12 +28,19 @@
 
 .PARAMETER StartEmulator
     If set, automatically start an emulator if none is running. Detects available
-    AVDs and launches the first one found. If a specific emulator is already running,
-    uses that instead.
+    AVDs and launches the one with the HIGHEST Android API level (see EmulatorName).
+    If a specific emulator is already running, uses that instead.
 
 .PARAMETER EmulatorName
-    Specify which emulator to launch (optional). If not provided, uses the first
-    available AVD from 'emulator -list-avds'. Ignored if an emulator is already running.
+    Specify which emulator to launch (optional). If not provided, uses the AVD with
+    the highest API level, read from each AVD's config.ini (image.sysdir.1) or, failing
+    that, its <name>.ini (target). Sprint 80 retro IMP-2: the old rule took the FIRST
+    name in 'emulator -list-avds', which on this machine is Nexus_5X_API_29_x86, an
+    AVD that does not boot. Ignored if an emulator is already running.
+
+.PARAMETER SelfTest
+    Run the AVD-choice self-test on sample AVD files and exit (0 PASS, 1 FAIL).
+    Builds nothing and needs no SDK.
 
 .EXAMPLE
     .\build-with-secrets.ps1
@@ -80,10 +87,86 @@ param(
     
     [switch]$StartEmulator,
     
-    [string]$EmulatorName = ""
+    [string]$EmulatorName = "",
+
+    [switch]$SelfTest
 )
 
 $ErrorActionPreference = 'Stop'
+
+# ---------------------------------------------------------------------------
+# AVD choice (Sprint 80 retro IMP-2). With no -EmulatorName, launch the AVD with
+# the highest API level. The level is read from <avdHome>\<name>.avd\config.ini
+# (image.sysdir.1 = system-images\android-34-ext12\...) or, failing that, from
+# <avdHome>\<name>.ini (target=android-34-ext12). An AVD whose level cannot be
+# read ranks below every AVD whose level can; ties keep the list order.
+# ---------------------------------------------------------------------------
+function Get-AvdHome {
+    if ($env:ANDROID_AVD_HOME) { return $env:ANDROID_AVD_HOME }
+    if ($env:ANDROID_EMULATOR_HOME) { return (Join-Path $env:ANDROID_EMULATOR_HOME 'avd') }
+    return (Join-Path $env:USERPROFILE '.android\avd')
+}
+
+function Get-AvdApiLevel {
+    param([string]$Name, [string]$AvdHome)
+    $sources = @(
+        @{ File = (Join-Path $AvdHome "$Name.avd\config.ini"); Key = 'image\.sysdir\.1' },
+        @{ File = (Join-Path $AvdHome "$Name.ini"); Key = 'target' }
+    )
+    foreach ($s in $sources) {
+        if (-not (Test-Path -LiteralPath $s.File)) { continue }
+        foreach ($line in (Get-Content -LiteralPath $s.File)) {
+            if ($line -match "^\s*$($s.Key)\s*=\s*.*android-(\d+)") { return [int]$Matches[1] }
+        }
+    }
+    return -1
+}
+
+function Select-PreferredAvd {
+    param([string[]]$Names, [string]$AvdHome)
+    $best = $null
+    $bestLevel = -2
+    foreach ($n in $Names) {
+        $level = Get-AvdApiLevel -Name $n -AvdHome $AvdHome
+        if ($level -gt $bestLevel) { $best = $n; $bestLevel = $level }
+    }
+    return $best
+}
+
+if ($SelfTest) {
+    $tmp = Join-Path ([IO.Path]::GetTempPath()) ("avd-selftest-" + [guid]::NewGuid().ToString('N'))
+    $failures = 0
+    try {
+        New-Item -ItemType Directory -Path (Join-Path $tmp 'Old_API_29.avd') -Force | Out-Null
+        New-Item -ItemType Directory -Path (Join-Path $tmp 'pixel34.avd') -Force | Out-Null
+        Set-Content -LiteralPath (Join-Path $tmp 'Old_API_29.avd\config.ini') -Value 'image.sysdir.1=system-images\android-29\google_apis\x86\'
+        Set-Content -LiteralPath (Join-Path $tmp 'pixel34.avd\config.ini') -Value 'image.sysdir.1 = system-images\android-34-ext12\google_apis_playstore\x86_64\'
+        Set-Content -LiteralPath (Join-Path $tmp 'IniOnly_33.ini') -Value 'target=android-33'
+        $cases = @(
+            @{ Names = @('Old_API_29', 'pixel34', 'IniOnly_33'); Want = 'pixel34'; Why = 'highest level wins over list order (config.ini with spaces)' },
+            @{ Names = @('Old_API_29', 'IniOnly_33'); Want = 'IniOnly_33'; Why = '<name>.ini target is the fallback' },
+            @{ Names = @('Unknown_A', 'Old_API_29'); Want = 'Old_API_29'; Why = 'an unreadable level ranks below a readable one' },
+            @{ Names = @('Unknown_A', 'Unknown_B'); Want = 'Unknown_A'; Why = 'no readable level keeps the list order' }
+        )
+        foreach ($c in $cases) {
+            $got = Select-PreferredAvd -Names $c.Names -AvdHome $tmp
+            if ($got -eq $c.Want) { Write-Host "[PASS] $($c.Why): $got" -ForegroundColor Green }
+            else { Write-Host "[FAIL] $($c.Why): got '$got', want '$($c.Want)'" -ForegroundColor Red; $failures++ }
+        }
+    } finally {
+        Remove-Item -LiteralPath $tmp -Recurse -Force -ErrorAction SilentlyContinue
+    }
+    if ($failures -gt 0) { exit 1 }
+    exit 0
+}
+
+# The emulator binary through ANDROID_HOME (CLAUDE.md: resolve a tool through its
+# configured environment variable). PATH on this machine finds the 2017 launcher in
+# the deprecated tools\ folder first.
+$emulatorExe = 'emulator'
+if ($env:ANDROID_HOME -and (Test-Path (Join-Path $env:ANDROID_HOME 'emulator\emulator.exe'))) {
+    $emulatorExe = Join-Path $env:ANDROID_HOME 'emulator\emulator.exe'
+}
 
 # Reject flag combinations that cannot work, BEFORE any long build runs.
 # Both were found by the Sprint 64 Phase 5.1.1 review of the release chain.
@@ -663,7 +746,7 @@ try {
                 # Detect available AVDs
                 $availableAvds = @()
                 try {
-                    $avdList = & emulator -list-avds 2>&1
+                    $avdList = & $emulatorExe -list-avds 2>&1
                     $availableAvds = $avdList | Where-Object { $_ -and $_.Trim() -ne "" }
                 } catch {
                     Write-Host "[WARNING]: Could not list AVDs. Make sure Android SDK emulator is in PATH." -ForegroundColor Yellow
@@ -679,19 +762,20 @@ try {
                         Write-Host "[WARNING]: Emulator '$EmulatorName' not found. Available AVDs:" -ForegroundColor Yellow
                         $availableAvds | ForEach-Object { Write-Host "  - $_" -ForegroundColor Gray }
                         if ($availableAvds.Count -gt 0) {
-                            $avdToLaunch = $availableAvds[0]
-                            Write-Host "[INFO]: Using first available AVD: $avdToLaunch" -ForegroundColor Cyan
+                            $avdToLaunch = Select-PreferredAvd -Names @($availableAvds) -AvdHome (Get-AvdHome)
+                            Write-Host "[INFO]: Using the highest-API AVD instead: $avdToLaunch" -ForegroundColor Cyan
                         }
                     }
                 } elseif ($availableAvds.Count -gt 0) {
-                    # Auto-select first available
-                    $avdToLaunch = $availableAvds[0]
-                    Write-Host "[INFO]: Auto-selected AVD: $avdToLaunch" -ForegroundColor Cyan
+                    # Sprint 80 retro IMP-2: highest API level, not the first name in the list.
+                    $avdHome = Get-AvdHome
+                    $avdToLaunch = Select-PreferredAvd -Names @($availableAvds) -AvdHome $avdHome
+                    Write-Host "[INFO]: Auto-selected AVD: $avdToLaunch (API $(Get-AvdApiLevel -Name $avdToLaunch -AvdHome $avdHome), highest of $($availableAvds.Count))" -ForegroundColor Cyan
                 }
                 
                 if ($avdToLaunch) {
                     Write-Host "[INFO]: Launching emulator '$avdToLaunch'..." -ForegroundColor Cyan
-                    Start-Process -FilePath "emulator" -ArgumentList @("-avd", $avdToLaunch) -WindowStyle Minimized
+                    Start-Process -FilePath $emulatorExe -ArgumentList @("-avd", $avdToLaunch) -WindowStyle Minimized
                     
                     # Wait for emulator to appear in adb devices (max 60 seconds)
                     Write-Host "[INFO]: Waiting for emulator to start (this may take 30-60 seconds)..." -ForegroundColor Gray

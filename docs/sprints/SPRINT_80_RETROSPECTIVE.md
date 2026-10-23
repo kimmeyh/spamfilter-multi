@@ -12,7 +12,8 @@ accepted, "q1 1 q2 1 q3 1")
 Harold provided combined Product Owner / Scrum Master / Lead Developer feedback per category (recorded verbatim below,
 counting for all three roles). The Claude Code Development Team lines are Claude's own (Step 2 draft, with one
 correction found while writing this file: the background Android build did not hang in the script. It printed its error
-and reached `exit 1` at 23:46; the task stayed open until the adb server was restarted the next morning).
+and reached `exit 1` at 23:46; the task stayed open until the adb server was restarted the next morning, cause
+unknown).
 
 ## Sprint 80 Retrospective Feedback
 
@@ -99,8 +100,8 @@ and reached `exit 1` at 23:46; the task stayed open until the adb server was res
   already names the tray as a WinWright case, so the rule existed and I did not follow it. (b) The background Android
   build task stayed open for about 11 hours. `build-with-secrets.ps1 -StartEmulator` auto-selected the first AVD in
   the list, `Nexus_5X_API_29_x86`, which does not boot. The script printed its error and reached `exit 1` at 23:46.
-  The task did not end until I restarted the adb server the next morning. The likely cause, not proven, is that the
-  adb server started by the script's first `adb` call keeps the task's output pipe open. (c) I asked questions again
+  The task did not end until I restarted the adb server the next morning. The cause is unknown: my first guess (the
+  adb server holding the task's output pipe) did not reproduce (IMP-2b below). (c) I asked questions again
   after Harold had answered them (see 6a).
 
 ### 10. Risk Management
@@ -238,3 +239,34 @@ and reached `exit 1` at 23:46; the task stayed open until the adb server was res
    - **Effort**: about 5 minutes.
    - **Impact**: a missing first-start line is not taken as a Task 17 failure, and the cause gets phone evidence.
    - **Files to Update**: `.claude/sprint_status.json` (Phase 8 next action).
+
+## Improvement Decisions
+
+Harold, 2026-10-22, verbatim: *"do now imp-1 and 1.1, imp-2a and b, imp-3, imp-5 - why imp-4? How many times has
+this happened, what is the long-term benefit"*
+
+- **IMP-1 Native UI steps rehearsed by looking** -- APPLIED. `SPRINT_EXECUTION_WORKFLOW.md` 5.1.9 gains the "Native
+  OS surfaces are rehearsed by looking" bullet; the `SPRINT_CHECKLIST.md` 5.1.9 line carries the same rule.
+- **IMP-1.1 Tray check in the sweep** -- APPLIED. `run-winwright-tests.ps1`: `Test-TrayIconAppears` runs first in every
+  sweep (a FAIL fails the sweep) and alone with `-TrayCheckOnly`. It passes only when a tray button with a NEW UI
+  Automation runtime ID appears after a fresh start, so a production instance or a stale icon cannot pass it; it
+  stops only the window instance, never a running background scan. Evidence: live PASS (0 buttons before, new
+  button after); `mutation-test.ps1` IMP11-M1 (wrong name) and IMP11-M2 (no window) KILLED. M1 first SURVIVED: the
+  ID list was piped as one item and always read as "new"; fixed and re-run. Not caught: the right-click menu (the
+  Task 16 second defect), which needs cursor input; the README and 5.1.9 name the screenshot rehearsal for it. Not
+  run: a full sweep (it takes over the laptop); the sweep calls the same function. README updated.
+- **IMP-2a Bootable AVD choice** -- APPLIED. `build-with-secrets.ps1`: with no `-EmulatorName`, the AVD with the
+  highest API level (`config.ini` `image.sysdir.1`, else `<name>.ini` `target`); the emulator binary is resolved
+  through `ANDROID_HOME` (PATH found the 2017 launcher in `tools\` first). Evidence: `-SelfTest` 4/4 PASS; on this
+  machine it now picks `pixel34_updated` (API 34) over `Nexus_5X_API_29_x86`; IMP2-M1 and IMP2-M2 KILLED.
+- **IMP-2b adb pipe** -- REPRODUCED, NOT CONFIRMED; no change, as the proposal stated. Two background repros on
+  2026-10-22 both ended at their `exit 1` at once: (1) `adb kill-server`, `adb devices` (a new server), `exit 1`;
+  (2) the script's own `Start-Process emulator -avd Nexus_5X_API_29_x86`, `adb devices`, `exit 1`. The cause of the
+  11-hour open task is **unknown**. What would settle it: the process tree of the next background task that stays
+  open after its script prints an error (`Get-CimInstance Win32_Process` with ParentProcessId). With IMP-2a the
+  script no longer starts the AVD that failed.
+- **IMP-3 Questions carry what they decide; standing facts are not asked again** -- APPLIED. `CLAUDE.md`: two
+  sub-bullets under the numbered-list rule (3.1, 3.2) and one under the re-present rule (3.3). `SPRINT_80_PLAN.md`
+  gains "Standing facts (Harold)" with the R-2 statement.
+- **IMP-4 Changeable step facts written as changes** -- QUESTIONED by Harold; decision pending.
+- **IMP-5 Phase 8 checks the first and a later start** -- APPLIED. `sprint_status.json` Phase 8 next action.

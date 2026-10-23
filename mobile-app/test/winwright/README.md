@@ -316,7 +316,17 @@ cd mobile-app/scripts
 
 # DryRun: preflight + snapshot only, no sweep
 .\run-winwright-tests.ps1 -DryRun
+
+# Tray icon check only (Sprint 80 retro IMP-1.1); the full sweep also runs it first.
+# Restarts the DEV window (not a running background scan) and passes only when a NEW
+# 'MyEmailSpamFilter - Click to show' button appears in the taskbar. Exit 0 PASS, 1 FAIL,
+# 2 SKIPPED. This is also the 5.1.9 rehearsal for any tray MV step.
+.\run-winwright-tests.ps1 -TrayCheckOnly
 ```
+
+The tray check does NOT prove the right-click menu opens (the Task 16 second defect): that
+needs a synthesized right-click (cursor input, so an unlocked PC), so a tray MENU step is
+rehearsed with one and recorded with a screenshot of the open menu.
 
 The runner exits non-zero if any script fails OR if any row drifts in the `rules`,
 `safe_senders`, or `app_settings` tables of the dev DB (enforces the state-restore rule).

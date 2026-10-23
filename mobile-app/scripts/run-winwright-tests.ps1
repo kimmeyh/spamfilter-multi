@@ -53,6 +53,10 @@
 #   .\run-winwright-tests.ps1 -TestName f56            # Run tests matching pattern
 #   .\run-winwright-tests.ps1 -DryRun                  # Preflight + snapshot only, no sweep
 #   .\run-winwright-tests.ps1 -DryRun -TestSnapshotOnly # Snapshot self-test only (no WinWright needed)
+#   .\run-winwright-tests.ps1 -TrayCheckOnly           # Tray icon check only (also the 5.1.9 rehearsal for a tray step)
+#
+# Tray icon check (Sprint 80 retro IMP-1.1): every sweep first checks that a fresh DEV
+# start puts its icon in the taskbar notification area. See Test-TrayIconAppears.
 #
 # DB snapshot guard (-SnapshotDb, default true):
 #   Captures a snapshot of the dev DB (rules, safe_senders, settings tables) before the
@@ -85,7 +89,8 @@ param(
     # Execution modes (Sprint 40, F79)
     [switch]$DryRun,                # Skip the actual WinWright sweep; do preflight + snapshot only
     [switch]$TestSnapshotOnly,      # Run winwright-db-snapshot.ps1 -SelfTest and exit (no app needed)
-    [switch]$TestLockedSkipOnly     # F291: self-test the locked-PC step removal on every script and exit (no app needed)
+    [switch]$TestLockedSkipOnly,    # F291: self-test the locked-PC step removal on every script and exit (no app needed)
+    [switch]$TrayCheckOnly          # Sprint 80 IMP-1.1: run only the tray icon check and exit (0 PASS, 1 FAIL, 2 SKIPPED)
 )
 
 $ErrorActionPreference = "Stop"
@@ -261,6 +266,107 @@ function Ensure-FreshAppAtHome {
     }
     Write-Warning "Dev app window '$appWindowTitle' did not appear within ${WaitForWindowSec}s."
     return $false
+}
+
+# ---------------------------------------------------------------------------
+# Tray icon check (Sprint 80 retro IMP-1.1, Harold 2026-10-22).
+#
+# Sprint 80 MV-4: the tray icon was missing on every start not made by
+# build-windows.ps1 (the icon path came from the working directory; Task 16),
+# and the 5.1.9 rehearsal said it was present because it reasoned from tests
+# instead of looking. No WinWright script can see the tray: a script attaches
+# to the app window by title, and the tray belongs to Explorer. So the runner
+# looks itself, through UI Automation, with no cursor.
+#
+# A name match alone is not proof. A production instance shows the same name,
+# and a force-killed instance leaves a stale icon until the mouse passes over
+# it. So the check records the runtime IDs of the matching buttons with the DEV
+# window closed, starts the app, and passes only when a button with a NEW
+# runtime ID appears. Only the window instance is stopped: a --background-scan
+# process keeps running (it never creates a tray icon; main.dart returns from
+# its background branch before the tray set-up).
+#
+# Limits: (1) an icon that Windows keeps in the hidden "^" overflow is not in
+# the UIA tree while the flyout is closed, so on a machine where the icon is
+# not shown on the taskbar the check FAILS; turn the icon on in Settings >
+# Personalization > Taskbar > Other system tray icons. (2) If the taskbar
+# cannot be read at all, the result is SKIPPED and named, never PASS.
+# ---------------------------------------------------------------------------
+$trayIconName = 'MyEmailSpamFilter - Click to show'   # toolTip in windows_system_tray_service.dart
+
+function Get-TrayButtonIds {
+    # $null when the taskbar cannot be read; otherwise the runtime IDs (possibly none).
+    Add-Type -AssemblyName UIAutomationClient, UIAutomationTypes
+    $root = [System.Windows.Automation.AutomationElement]::RootElement
+    $classProp = [System.Windows.Automation.AutomationElement]::ClassNameProperty
+    $nameCond = New-Object System.Windows.Automation.PropertyCondition(
+        [System.Windows.Automation.AutomationElement]::NameProperty, $trayIconName)
+    $taskbar = $root.FindFirst([System.Windows.Automation.TreeScope]::Children,
+        (New-Object System.Windows.Automation.PropertyCondition($classProp, 'Shell_TrayWnd')))
+    if (-not $taskbar) { return $null }
+    $ids = @()
+    $containers = @($taskbar) + @($root.FindAll([System.Windows.Automation.TreeScope]::Children,
+        (New-Object System.Windows.Automation.PropertyCondition($classProp, 'TopLevelWindowForOverflowXamlIsland'))))
+    foreach ($c in $containers) {
+        foreach ($e in $c.FindAll([System.Windows.Automation.TreeScope]::Descendants, $nameCond)) {
+            $ids += ($e.GetRuntimeId() -join '.')
+        }
+    }
+    return ,$ids
+}
+
+function Test-TrayIconAppears {
+    param([int]$WaitForWindowSec = 60, [int]$WaitForIconSec = 20)
+    # (1) Stop the window instance only (see the header: background scans keep running).
+    Get-CimInstance Win32_Process -Filter "Name='$appProcName.exe'" -ErrorAction SilentlyContinue |
+        Where-Object { $_.CommandLine -notmatch '--background-scan' } |
+        ForEach-Object { Stop-Process -Id $_.ProcessId -Force -ErrorAction SilentlyContinue }
+    Start-Sleep -Seconds 1
+    $before = Get-TrayButtonIds
+    if ($null -eq $before) {
+        return [PSCustomObject]@{ Status = 'SKIPPED'; Detail = 'the taskbar (Shell_TrayWnd) cannot be read through UI Automation' }
+    }
+    if (-not (Test-Path $devAppExe)) {
+        return [PSCustomObject]@{ Status = 'FAIL'; Detail = "dev app exe not found at $devAppExe" }
+    }
+    # (2) Start the app and wait for its window.
+    $launched = Start-Process -FilePath $devAppExe -PassThru
+    $deadline = (Get-Date).AddSeconds($WaitForWindowSec)
+    $window = $null
+    while (-not $window -and (Get-Date) -lt $deadline) {
+        if ($launched.HasExited) {
+            return [PSCustomObject]@{ Status = 'FAIL'; Detail = "dev app exited before showing a window (exit code $($launched.ExitCode))" }
+        }
+        $launched.Refresh()
+        if ($launched.MainWindowTitle -like "*$appWindowTitle*") { $window = $launched.MainWindowTitle }
+        else { Start-Sleep -Milliseconds 500 }
+    }
+    if (-not $window) {
+        return [PSCustomObject]@{ Status = 'FAIL'; Detail = "dev app window did not appear within ${WaitForWindowSec}s" }
+    }
+    # (3) Wait for a tray button that was not there before the start.
+    $deadline = (Get-Date).AddSeconds($WaitForIconSec)
+    do {
+        # Assign first: piping the call directly passes the whole ID list as ONE
+        # item (the leading comma in Get-TrayButtonIds), which always reads as
+        # "new" -- a PASS with no icon (IMP11-M1 SURVIVED until this was fixed).
+        $now = Get-TrayButtonIds
+        $new = @()
+        if ($null -ne $now) { $new = @($now | Where-Object { $before -notcontains $_ }) }
+        if ($new.Count -gt 0) {
+            return [PSCustomObject]@{ Status = 'PASS'; Detail = "new tray button '$trayIconName' (runtime ID $($new[0])); $($before.Count) matching button(s) existed before the start" }
+        }
+        Start-Sleep -Milliseconds 500
+    } while ((Get-Date) -lt $deadline)
+    return [PSCustomObject]@{ Status = 'FAIL'; Detail = "no new '$trayIconName' tray button within ${WaitForIconSec}s of the window; $($before.Count) matching button(s) existed before the start. Check the app log for 'System tray icon file not found'." }
+}
+
+if ($TrayCheckOnly) {
+    $tray = Test-TrayIconAppears
+    $color = @{ PASS = 'Green'; FAIL = 'Red'; SKIPPED = 'Yellow' }[$tray.Status]
+    Write-Host "Tray icon: $($tray.Status) -- $($tray.Detail)" -ForegroundColor $color
+    Write-Host "(The DEV app is left running.)" -ForegroundColor DarkGray
+    exit @{ PASS = 0; FAIL = 1; SKIPPED = 2 }[$tray.Status]
 }
 
 # Cursor-driven tools -- see the "Locked-workstation gate" comment further down
@@ -636,6 +742,12 @@ $passed = 0
 $failed  = 0
 $results = @()
 
+# Sprint 80 IMP-1.1: the tray icon check runs first; a FAIL fails the sweep.
+$trayResult = Test-TrayIconAppears
+Write-Host "[TRAY] $($trayResult.Status) -- $($trayResult.Detail)" -ForegroundColor $(@{ PASS = 'Green'; FAIL = 'Red'; SKIPPED = 'Yellow' }[$trayResult.Status])
+if ($trayResult.Status -eq 'FAIL') { $failed++ }
+Write-Host ""
+
 foreach ($test in $tests) {
     Write-Host "[TEST] $($test.Name)" -ForegroundColor Yellow
 
@@ -764,6 +876,8 @@ Write-Host "==========================================" -ForegroundColor Cyan
 Write-Host "Total:  $($tests.Count)"
 Write-Host "Passed: $passed" -ForegroundColor Green
 Write-Host "Failed: $failed" -ForegroundColor $(if ($failed -gt 0) { "Red" } else { "Green" })
+# Sprint 80 IMP-1.1: the record line for the plan's 5.1.5 entry (a FAIL is counted in Failed).
+Write-Host "Tray icon: $($trayResult.Status) -- $($trayResult.Detail)"
 # F284 R-5: record the environment so a pass/fail is comparable across displays.
 Write-Host "Display: $($script:displaySize) (physical px)  |  Window: $($script:lastWindowSize) (wanted ${fixedWindowWidth}x${fixedWindowHeight})"
 Write-Host "Input desktop: $(if ($script:inputDesktopAvailable) { 'available (unlocked)' } else { 'LOCKED -- cursor steps skipped' })"
