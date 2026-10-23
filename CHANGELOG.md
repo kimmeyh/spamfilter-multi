@@ -26,6 +26,15 @@ Format: `- **type**: Description (Issue #N)` where type is feat|fix|chore|docs
 
 ## [Unreleased]
 
+### 2026-10-23 (Sprint 80 final code reviews, PR #490)
+
+- **fix**: A rule or safe sender made in Manual Rule Create, and Settings > Reset to Defaults, take effect at once without a restart; a source gate now finds every screen that writes rules without reloading them (PR #490 review)
+- **fix**: A Merge import stopped by an error part-way reports how many were added and loads them; a failed backup copy keeps the Merge counts; patterns removed from imported rules are no longer counted as skipped rules (PR #490 review)
+- **fix**: Quick add of a rule or safe sender says so when matching entries could not all be removed, instead of reporting plain success (PR #490 review)
+- **fix**: Changing Background scanning or its interval in the first seconds after start is no longer overwritten by the start-up check on Windows (PR #490 review)
+- **fix**: The diagnostic log records whether the Windows tray icon was added (and why not), a failed No Rule presence check, a failed new-mail diagnostics read with its cause, and the Windows background task check at start (PR #490 review)
+- **chore**: `verify-aab-play-requirements.ps1` fails when no permission list was read instead of passing the advertising-ID rule on nothing, and resolves a relative bundle path; AVD names, stopped build processes and the rule tool output paths are handled correctly (PR #490 review)
+
 ### 2026-10-22 (Sprint 80 retrospective, PR #490)
 
 - **chore**: The WinWright sweep first checks that a fresh DEV start puts its icon in the Windows tray (`run-winwright-tests.ps1 -TrayCheckOnly` runs the check alone); it passes only on a new tray button, so a production instance or a stale icon cannot pass it (Sprint 80 retro IMP-1.1)

@@ -55,8 +55,9 @@ class WindowsTaskSchedulerService {
     return '${_taskNameBase}_${Redact.accountId(accountId)}${AppEnvironment.taskNameSuffix}';
   }
 
-  /// Tail of the in-process queue of exclusive sections ([runExclusive]).
-  static Future<void> _exclusiveTail = Future<void>.value();
+  /// Tail of the in-process queue of exclusive sections ([runExclusive]);
+  /// null while no section is queued or running.
+  static Future<void>? _exclusiveTail;
 
   /// Zone key that marks code already running inside [runExclusive].
   static final Object _exclusiveZoneKey = Object();
@@ -77,15 +78,23 @@ class WindowsTaskSchedulerService {
   /// instead of waiting for itself. An error in [body] is returned to the
   /// caller and does not block later sections. In-process only: the
   /// background-scan process never changes tasks.
+  ///
+  /// When the lock is idle, [body] starts at once. It does not wait on a
+  /// stored, already-completed future: a callback on such a future is
+  /// scheduled in the zone that created it, which is not the caller's zone
+  /// (PR #490 7.7.1: under a widget test's fake clock the Settings write never
+  /// ran).
   static Future<T> runExclusive<T>(Future<T> Function() body) {
     if (Zone.current[_exclusiveZoneKey] == true) return body();
     final previous = _exclusiveTail;
     final done = Completer<void>();
     _exclusiveTail = done.future;
-    return previous.then((_) => runZoned(
-          body,
-          zoneValues: {_exclusiveZoneKey: true},
-        )).whenComplete(done.complete);
+    Future<T> run() => runZoned(body, zoneValues: {_exclusiveZoneKey: true});
+    final result = previous == null ? run() : previous.then((_) => run());
+    return result.whenComplete(() {
+      if (identical(_exclusiveTail, done.future)) _exclusiveTail = null;
+      done.complete();
+    });
   }
 
   /// Create a scheduled task for background scanning

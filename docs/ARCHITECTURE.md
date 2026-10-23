@@ -474,8 +474,12 @@ Reactive state using Provider pattern (ADR-0009).
 - Stores: `RuleDatabaseStore` (primary), `SafeSenderDatabaseStore`, `LocalRuleStore` (secondary YAML), `PatternCompiler`
 - `reloadFromDatabase()` (Sprint 79, F297): the ONE reload used after anything writes rules or safe senders outside
   the provider -- YAML import, scan completion, quick actions, Results rule updates. Returns false when either load
-  failed (each load catches its own error), so a caller can report it. Shared code, both platforms (ADR-0042, no exception). Management
-  and quick-add screens do not call it yet (F298, Sprint 80).
+  failed (each load catches its own error), so a caller can report it. Shared code, both platforms (ADR-0042, no exception). Since
+  F298 (Sprint 80) every screen that writes straight to storage -- Manage Rules, Edit Rule, Manage Safe Senders, both
+  quick-add screens, Manual Rule Create, Settings > Reset to Defaults -- calls it through `reloadRulesAfterWrite`
+  (`rule_quick_action_service.dart`), which appends "saved, but not yet in effect" when the reload fails. The gate
+  `test/policy/f298_rule_write_reload_gate_test.dart` fails any `lib/ui/` file that writes rules without reloading.
+  A Merge import stopped part-way reloads what it added before the error (`ImportMergeInterruptedException`).
 
 **Methods**:
 - `initialize()`: Load rules from database + run YAML-to-DB migration if needed
@@ -520,7 +524,8 @@ main.dart
        -> BackgroundScanWindowsWorker.executeBackgroundScan()
        -> exit(0)
   5. SecureCredentialsStore.migrateFromLegacyTokenStore()
-  6. WindowsSystemTrayService.initialize() [Windows only]
+  6. WindowsSystemTrayService.initialize() [Windows only; returns whether the icon was added and
+     writes "[tray] icon added" or "icon NOT added -- <reason>" to the diagnostic log]
   7. (removed Sprint 79: no notification start-up step; ScanCompleteNotifier initializes the plugin when it posts, ADR-0048)
   8. MultiProvider
         |- RuleSetProvider
@@ -538,8 +543,10 @@ main.dart
 one PowerShell process of about 3 s. Awaited before `runApp`, the 9 calls of a 4-account DEV
 install kept the window hidden for 30.9 s; after the move the window appears at 1.8 s and the
 same 9 calls finish about 26 s later. Settings' `schedule` and `cancel` (through
-`WindowsSchedulerAdapter`) take the same in-process lock, `runExclusive`, so a change made in
-Settings during those seconds lands wholly before or after the reconciliation. Without the lock,
+`WindowsSchedulerAdapter`) take the same in-process lock, `runExclusive`, and since PR #490 7.7.1
+so does the Background tab's stored value (enable switch and Scan every, written and rescheduled
+in one locked section), so a change made in Settings during those seconds lands wholly before or
+after the reconciliation, and the F264 conversion cannot write back over it. Without the lock,
 step 3 could delete a task Settings created after step 2 had read the account's setting. The
 lock is reentrant (the F264 conversion schedules through the adapter from inside the
 reconciliation). It is in-process only: the background-scan process exits at step 4 and never

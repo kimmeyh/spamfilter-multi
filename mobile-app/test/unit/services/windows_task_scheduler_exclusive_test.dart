@@ -57,6 +57,27 @@ void main() {
           () async => 'ran').timeout(const Duration(seconds: 2));
       expect(after, 'ran');
     });
+
+    // PR #490 7.7.1: the old idle lock chained on a stored completed future,
+    // so the body ran in a microtask of the zone that created that future;
+    // under a widget test's fake clock it never ran. What this does NOT
+    // catch: a queued (non-idle) section, which still chains on the tail.
+    test('on an idle lock the body starts before runExclusive returns',
+        () async {
+      final events = <String>[];
+      final section = WindowsTaskSchedulerService.runExclusive(() async {
+        events.add('ran');
+      });
+      expect(events, ['ran']);
+      await section;
+
+      // The tail is cleared again, so the next idle call also starts at once.
+      final again = WindowsTaskSchedulerService.runExclusive(() async {
+        events.add('again');
+      });
+      expect(events, ['ran', 'again']);
+      await again;
+    });
   });
 
   // PR #490 7.7.1 (code-reviewer finding 6). SOURCE-TEXT check: the Settings
