@@ -9,15 +9,25 @@ name: CI
 # checks at the moment the draft flips. Draft pushes show the jobs as
 # "skipped" (a no-cost no-op), so branch-protection style expectations still
 # resolve once the PR is ready.
+#
+# Harold, 2026-10-23 (Sprint 80 Q6): CI runs TWICE per sprint. Run 1 is started
+# by hand on the still-draft branch while the 7.7.1 improvement review runs, so
+# failures are found and fixed before the PR is set ready:
+#   gh workflow run ci.yml --ref <sprint-branch>
+# Run 2 fires on `ready_for_review` at the 7.7.5 gate. The `workflow_dispatch`
+# trigger below makes run 1 possible; GitHub only offers it once this file is on
+# the default branch (develop). A dispatched run has no pull_request payload,
+# so each job's `if` admits it by event name.
 on:
   pull_request:
     branches: [develop]
     types: [opened, synchronize, reopened, ready_for_review]
+  workflow_dispatch:
 
 jobs:
   analyze-and-test:
     name: Analyze and Test
-    if: github.event.pull_request.draft == false
+    if: github.event_name == 'workflow_dispatch' || github.event.pull_request.draft == false
     runs-on: ubuntu-latest
     defaults:
       run:
@@ -42,7 +52,7 @@ jobs:
 
   android-build:
     name: Android Build Verification
-    if: github.event.pull_request.draft == false
+    if: github.event_name == 'workflow_dispatch' || github.event.pull_request.draft == false
     runs-on: ubuntu-latest
     defaults:
       run:
@@ -85,7 +95,7 @@ jobs:
 
   windows-build:
     name: Windows Build Verification
-    if: github.event.pull_request.draft == false
+    if: github.event_name == 'workflow_dispatch' || github.event.pull_request.draft == false
     runs-on: windows-latest
     defaults:
       run:

@@ -313,5 +313,14 @@ silent-failure-hunter (9, 15, 16) and most of one class, and the 5.1.2 F-PRECHEC
   `CLAUDE.md`, the hook messages in `verify-closeout-complete.ps1` and `require-sprint-cards.ps1`.
 - **Q5 Improvement-review fix limit** -- under 4 code files AND under 600 lines, the same as the 7.7.1 limit
   (Harold "q5 2").
-- **Q6 CI on draft PRs** -- OPEN. Harold said CI runs on drafts; `ci.yml` lines 20, 45 and 88 skip them
-  (`if: github.event.pull_request.draft == false`) and 5 Sprint 80 runs show "skipped".
+- **Q6 CI runs twice per sprint** -- APPLIED (Harold: *"ci should run twice in a sprint - once to see if there are
+  failures that needs to be resolved (while the post improvement completed review is being done and a final time
+  after marked ready for review)"*). Draft pushes still skip CI (Sprint 62 setting kept). `ci.yml` gains a
+  `workflow_dispatch` trigger, and each job's condition admits a hand-started run. Run 1:
+  `gh workflow run ci.yml --ref <sprint-branch>` with the improvement review. Run 2: on `ready_for_review` at 7.7.5.
+  GitHub offers the hand-started run only once the workflow is on the default branch (develop), so run 1 first
+  works in Sprint 81, after PR #490 merges.
+- **AGENTS.md** (Harold: *"Primarily, AGENTS.md should refer to the "sprint execution docs" for its instructions on
+  how to run a sprint"*) -- APPLIED. Its copies of the sprint process (startup check, decision classes, autonomy
+  and auto-advance, the sprint docs section, model-version pitfalls) were replaced with an ordered list of the
+  sprint execution docs, which are authoritative. Every replaced rule was checked to exist in those docs first.

@@ -34,7 +34,9 @@ Phase 3; this stub only records what Sprint 80 carried in.
   retrospective prompt. Findings feed the retrospective by class; a recurring class (2+ findings this sprint, or seen
   in an earlier sprint) gets a prevention proposal. The retrospective's commits get ONE 7.7.1 improvement review:
   fixes under 4 code files and 600 lines are made, larger ones come to the next Phase 1 refinement. Then
-  `gh pr ready`, CI green on that HEAD, and the readiness announcement. Toolkit prompts name the excluded files
+  `gh pr ready`, CI green on that HEAD, and the readiness announcement. **CI runs twice (Q6)**: run 1 by hand on
+  the draft with the improvement review (`gh workflow run ci.yml --ref <branch>`; first possible this sprint, once
+  PR #490 is on develop), run 2 on `ready_for_review`. Toolkit prompts name the excluded files
   (`0*`, `archive/`). Recorded on the 7.7.1 line (close-out check 3d-2).
 
 ## Open items carried

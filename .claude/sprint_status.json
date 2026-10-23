@@ -1,12 +1,12 @@
 {
     "_description": "Sprint status file that persists across context compaction. Update after each phase/sub-phase completion.",
-    "_last_updated": "2026-10-23T11:30:00-04:00",
+    "_last_updated": "2026-10-23T12:30:00-04:00",
     "_usage": "Read this file after context compaction to restore sprint approval state and progress.",
     "_staleness_note": "This file had drifted 15 sprints (last updated at Sprint 35, 2026-04-19) before being refreshed at Sprint 50 close-out. It is a Phase 7.7 checklist item -- update it at every sprint close-out, not opportunistically.",
     "current_sprint": {
         "number": 80,
         "branch": "feature/20261018_Sprint_80",
-        "status": "Phase 7.7 Final Code Reviews (7.7.1) -- COMPLETE. PR #490 READY for Harold's review and merge; CI green. Harold 2026-10-23: hunter 16 -> F302, hunter 9 Android half -> F303 (both Sprint 81); Q3 = 1: from Sprint 81 the 7.7.1 reviews run BEFORE the retrospective (workflow, checklist, CLAUDE.md, close-out check 3d-2 updated). Q4 = 1, Q5 = 2: the PR stays draft until 7.7.5, one bounded improvement review, then gh pr ready + CI green + announce. Q6 (CI on drafts) open.",
+        "status": "Phase 7.7 Final Code Reviews (7.7.1) -- COMPLETE. PR #490 READY for Harold's review and merge; CI green. Harold 2026-10-23: hunter 16 -> F302, hunter 9 Android half -> F303 (both Sprint 81); Q3 = 1: from Sprint 81 the 7.7.1 reviews run BEFORE the retrospective (workflow, checklist, CLAUDE.md, close-out check 3d-2 updated). Q4 = 1, Q5 = 2: the PR stays draft until 7.7.5, one bounded improvement review, then gh pr ready + CI green + announce. Q6: CI runs twice (by hand on the draft with the improvement review; on ready_for_review). AGENTS.md points to the sprint execution docs.",
         "plan_approved": true,
         "pr_number": 490,
         "version": "0.21.0+18 (bumped at 3.7.0b)"
@@ -58,7 +58,7 @@
     "blocking_issues": [],
     "next_actions": [
         "Harold reviews and merges PR #490 into develop; then Phase 8 (release cycle).",
-        "Sprint 81 Phase 7: PR stays DRAFT; at Manual Validation complete, in ONE turn: both 7.7.1 reviews on the draft + retro prompt; recurring classes (2+ this sprint or seen before) get prevention proposals; ONE improvement review (fix under 4 code files / 600 lines, else next Phase 1); then 7.7.5: gh pr ready, CI green, announce."
+        "Sprint 81 Phase 7: PR stays DRAFT; at Manual Validation complete, in ONE turn: both 7.7.1 reviews on the draft + retro prompt; recurring classes (2+ this sprint or seen before) get prevention proposals; ONE improvement review (fix under 4 code files / 600 lines, else next Phase 1) + CI run 1 by hand on the draft (gh workflow run ci.yml --ref <branch>); then 7.7.5: gh pr ready, CI run 2 green, announce."
     ],
     "next_sprint_targeted": {
         "number": 80,
