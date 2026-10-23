@@ -32,6 +32,7 @@ import '../storage/scan_result_store.dart';
 import '../storage/settings_store.dart';
 import 'diagnostic_logger.dart';
 import 'email_scanner.dart';
+import 'gmail_sign_in_notifier.dart';
 import 'scan_coordinator.dart';
 
 /// Result of scanning a single account in the background.
@@ -485,6 +486,13 @@ class BackgroundScanCore {
           accountId: accountId,
           stage: 'skip',
           detail: 'needs sign-in: ${GmailSignInRequiredException.reason}'));
+      // F301 / F244 (Sprint 81): tell the user. Awaited, because the Windows
+      // worker process exits right after the run. Never throws (best effort,
+      // at most one per account per day) and does not read the account's
+      // sign-in flag, so a failed flag write cannot hide it. Every caller of
+      // this method is a background scan, so this never fires for a manual one.
+      await GmailSignInNotifier.notifyIfDue(
+          accountId: accountId, settingsStore: settingsStore);
       return AccountScanOutcome.skipped(
           GmailSignInRequiredException.reason, scanProvider,
           needsSignIn: true);
