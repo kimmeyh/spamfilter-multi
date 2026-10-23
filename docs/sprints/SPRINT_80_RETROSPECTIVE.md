@@ -268,5 +268,8 @@ this happened, what is the long-term benefit"*
 - **IMP-3 Questions carry what they decide; standing facts are not asked again** -- APPLIED. `CLAUDE.md`: two
   sub-bullets under the numbered-list rule (3.1, 3.2) and one under the re-present rule (3.3). `SPRINT_80_PLAN.md`
   gains "Standing facts (Harold)" with the R-2 statement.
-- **IMP-4 Changeable step facts written as changes** -- QUESTIONED by Harold; decision pending.
+- **IMP-4 Changeable step facts written as changes** -- SKIPPED (Harold, "d1 1"). CORRECTION to the answer that
+  decision was based on: Claude said both steps still passed with no round lost. MV-1 did pass. MV-3 did NOT run as
+  written: its named Review row was gone (plan "MV-3 NOT SHOWN by the step"), which cost one question to Harold (Q6)
+  and a log check before it passed on field evidence. Harold was told and asked to confirm or change the decision.
 - **IMP-5 Phase 8 checks the first and a later start** -- APPLIED. `sprint_status.json` Phase 8 next action.
