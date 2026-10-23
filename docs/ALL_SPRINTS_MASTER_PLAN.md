@@ -340,7 +340,7 @@ Source: `docs/research/R76-3_HEURISTICS_ML_GENAI_SPAM_IDENTIFICATION.md` (Issue 
 **F244. Tell the user when a Gmail background scan skips for sign-in Priority 45 -- backlog (Sprint 75 5.1.1 review SF-8; Harold at Manual Validation 2026-10-03: "backlog")**
 - F239 records a skip -- no notification, no export -- when Gmail needs the user, and relies on the per-account `gmail_sign_in_required` flag to show "Sign In Again" in the account list. That write is best effort: if it fails (a locked database), background scans of the account skip every cycle and nothing tells the user. Fix: a one-time notification for a needs-sign-in skip, independent of the flag, or a retry of the flag write.
 
-**F246. Android Gmail background renewal through a server-side token exchange (~30m scope-matched spike retry; the server path is a Class-1 decision, not estimated) Priority 30 -- backlog (Sprint 75 F239 R-1 spike FAILED; Harold 2026-10-03: "1.3")**
+**F246. Android Gmail background renewal through a server-side token exchange (~30m scope-matched spike retry; the server path is a Class-1 decision, not estimated) Priority HOLD -- MOVED TO HOLD by Harold 2026-10-23 (Sprint 81 scope selection); was Priority 30 (Sprint 75 F239 R-1 spike FAILED; Harold 2026-10-03: "1.3")**
 - Phase: Google Play Readiness
 - Platform: Android
 - From a WorkManager worker, `clientAuthorizationTokensForScopes(email, promptIfUnauthorized: false)` returned NULL for an already-granted Gmail account (emulator, google_sign_in 7.2.0 / android 7.2.7; ADR-0011 known limit). Android stores no refresh token, so a Gmail background scan more than about an hour after the app was last opened skips with "Gmail needs you to sign in again". Google's documented route: request a server auth code at sign-in and exchange it on a server for a refresh token. Needs a backend this app does not have (hosting, secret handling, privacy-policy update, ADR); a Class-1 architecture decision. Before committing to it, a 30-minute scope-matched retry of the spike would rule out a requested-vs-granted scope mismatch. The switched-off `GoogleAuthService.authorizeWithoutActivity` is the code to remove or reuse.
@@ -537,7 +537,7 @@ _(No active Core App candidates -- F96 shipped in Sprint 43.)_
 - **Trigger**: Sprint 83 planning -- ask Harold again as a numbered question (1. Delete 2. Keep).
 - Depends on: None.
 
-**F289. WinWright default sweep with no mouse steps (~30-60m) Priority 25**
+**F289. WinWright default sweep with no mouse steps (~30-60m) Priority HOLD -- MOVED TO HOLD by Harold 2026-10-23 (Sprint 81 scope selection)**
 - Phase: Testing
 - Platform: Windows Desktop (test tooling only)
 - Origin: Sprint 78 F284 AC-1 finding, accepted by Harold at Manual Validation 2026-10-13. Six steps in the default
@@ -755,6 +755,7 @@ Source: `docs/research/F295_IOS_READINESS.md`. These replace the iOS parts of F6
 **F67a. iOS prerequisites: Apple Developer enrollment, build machine, test iPhone, iOS OAuth client (~45-90m plus Apple lead time) Priority 2 -- target Sprint 81 (OFF HOLD 2026-10-23)**
 - Phase: Multi-Platform Readiness
 - Platform: iOS
+- **Harold 2026-10-23**: Individual (Q1 = 1); build machine = GitHub `macos-26` runner (Q2 = 1); he has an iPhone on iOS 26 (Q3 = 1). Selected for Sprint 81 with F304 and the F67b code.
 - Scope: enroll in the Apple Developer Program (99 USD per year) on the account type Harold chooses. Individual needs
   no D-U-N-S Number. Organization needs one: D&B "allow up to 5 business days", then "allow up to 2 business days"
   for Apple (developer.apple.com/help/account/membership/D-U-N-S/, read 2026-10-23), plus a domain website and

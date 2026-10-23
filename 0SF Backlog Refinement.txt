@@ -6,7 +6,260 @@ Do not stop between tasks as they are all approved, please continue to complete 
 Do not stop to ask questions unless meeting the criteria in \docs\SPRINT_STOPPING_CRITERIA.md
 If questions must be asked, ask as late as possible - do everything that can be done (all tasks and parts of tasks, without the answer to the question(s), then ask the question(s)
 ---------------------------------------------------------------------------------------------------------
-Sprint 8n Scope should include the below items. Please complete sprint planning (/docs/sprint_planning.md) for the below items and present for approval.  Note that everything needs to take into account both the Windows App and the Android app and ADR stating that everything should be functionally and UI the same unless it cannot be - and where it cannot be it should be implemented as a platform exception for what is needed -- this applies to all backend code, frontend code, data, architecture, development, security, testing, deployment.
+Sprint 81 Scope should include the below items. Please complete sprint planning (/docs/sprint_planning.md) for the below items and present for approval.  Note that everything needs to take into account the Windows App, Android app and the iPhone app with the ADR stating that everything should be functionally and UI the same unless it cannot be - and where it cannot be it should be implemented as a platform exception for what is needed -- this applies to all backend code, frontend code, data, architecture, development, security, testing, deployment.
+  - IMP-2b, F302, F303, F301, F300, F259
+  - F271. Heuristic reasons and rule suggestions on No Rule Review (~210m) Priority 32
+  - F278. Notifications that produced no scan, and alarm + WorkManager scans coexisting (~60-90m) Priority 34
+  - F67a, F304, the F67b code
+move to HOLD F289, F246
+
+  Recommendation
+  - Sprint 81: F67a, F304, the F67b code, F302 and F303, plus the carry-ins (confirm 0.20.0 and 0.21.0 are live, the R-2 Fold log, IMP-2b).
+  - Sprint 82: the F67b device check and F67c, whose 7-day window must start early in this sprint, plus F301.
+  - Sprint 83: the F67c result, F67d and the upload.
+  - This decides the 3-sprint target: your actions this week.
+    - Apple Developer enrollment.
+    - A test iPhone.
+    - The iOS OAuth client in Google Cloud Console.
+
+    The code is not the limiting factor.
+
+  Candidates at a glance
+
+  - F67a. iOS prerequisites: Apple Developer enrollment, build machine, test iPhone, iOS OAuth client (~45-90m plus Apple lead time) Priority 2
+  - F304. iOS build machine and signed build pipeline to TestFlight (~90-180m plus a 120m time-boxed signing setup) Priority 4
+  - F67b. iOS first build and foreground parity validation (~180-300m) Priority 6
+  - F67c. iOS background scan spike on a real iPhone (~120-240m plus a 7-day observation window) Priority 8
+  - F301. Gmail sign-in expires every 7 days for every closed tester (~30-60m decision, then per path) Priority 10
+  - F67d. iOS store readiness: privacy manifest, App Privacy, listing, TestFlight, upload (~150-240m plus App Review time) Priority 12
+  - F302. IMAP: store the sequence number in its own field; a missing UID gets a standard "no valid UID" value (~60-120m) Priority 16
+  - F303. Android new-mail diagnostics: each field reported on its own (~45-90m) Priority 18
+  - F95 (revised). iOS variants: dev and prod side by side on one iPhone (~60-120m) Priority 24
+  - F289. WinWright default sweep with no mouse steps (~30-60m) Priority 25
+  - F270. Safe-sender discovery: propose safe senders from history for review (~150m) Priority 30
+  - F246. Android Gmail background renewal through a server-side token exchange (~30m spike retry; server path not estimated) Priority 30
+  - F300. WinWright default sweep: about 15 minutes, about 16 s per step (~60-90m) Priority 30
+  - F271. Heuristic reasons and rule suggestions on No Rule Review (~210m) Priority 32
+  - F278. Notifications that produced no scan, and alarm + WorkManager scans coexisting (~60-90m) Priority 34
+  - F259. A missing Gmail label scans as 0 messages with no trace; history cursor is per account (~90-150m) Priority 35
+  - F280. Doze network availability for alarm scans (~45-60m) Priority 36
+  - F237. Quiet the non-fatal Kotlin "Daemon compilation failed" traces in the Android build (~20-40m) Priority 38
+  - F263. Background scan spacing: per-worker budget, Test Background Scan, sign-in skip Priority 40
+  - F273. Privacy policy and Data safety revision for the content history and learning (~60m) Priority 40
+
+  ON HOLD Candidates
+
+  - F265. Android Gmail native one-pick sign-in, revisit only when a second device reproduces the failure Priority HOLD
+  - F274. On-device GenAI rule explanations (~240m) Priority HOLD
+  - F275. Cloud GenAI classification (~360m) Priority HOLD
+  - F165. Cross-device rules-DB sharing, user cloud storage exploration + hosted-tier option (~half-day exploration) Priority HOLD
+  - F173. Periodic "Test Coverage and Appropriate Testing" Deep Dive (~4-8h per review) Priority HOLD
+  - F183. Upstream civyk-winwright request: script-runner replay support for ww_wait (~15m to file, then external) Priority HOLD
+  - F179. Subject-blocking phrase picker (~3-5h) Priority HOLD
+  - F152. Periodic User-Centric First-Run Evaluation (~2-3h per review) Priority HOLD
+  - F189. Periodic Skills Audit (~4-8h per review) Priority HOLD
+  - GP-4. Gmail API OAuth Verification / CASA, the submission itself (~40-80h) Priority HOLD
+  - F199-b. Partner Center publisher display name (~15m once reopened) Priority HOLD
+  - F285. Re-ask: keep or delete email_detail_view.dart (~5m) Priority HOLD
+  - F111. Periodic Windows App Store upload readiness verification (~110-175m per review) Priority HOLD
+  - F139. Local-install smoke test for a release-candidate MSIX (~30-50m per review) Priority HOLD
+  - F70. Periodic Security Deep Dive (~4-8h per review) Priority HOLD
+  - F130. Periodic Process-Docs Consistency Deep Dive (unbounded discovery) Priority HOLD
+  - F71. Periodic Architecture Deep Dive (~4-8h per review) Priority HOLD
+  - F201. Periodic Web Property Accuracy Re-Review (~1-2h per review) Priority HOLD
+  - F6. Provider-Specific Optimizations (~10-12h) Priority HOLD
+  - SEC-11b. Database-at-rest encryption via sqlite3mc + migration (~8-12h) Priority HOLD
+  - F106. SEC-11b verification-window cleanup (~30m) Priority HOLD
+  - H1. GenAI Pattern Suggestions (TBD) Priority HOLD
+  - H2. Rule Pattern Consistency, domain matching standards (~4-6h) Priority HOLD
+  - H3. Requirements Documentation System (TBD) Priority HOLD
+  - H4. Sent Messages Scan for Safe Senders (~12-16h) Priority HOLD
+  - H5. Outlook.com / Office 365 email provider adapter (~16-20h) Priority HOLD
+
+  (Off HOLD now but outside the top 20: F95b Priority 60, F95 Priority 62, F67 Priority 70.)
+
+  F67a. iOS prerequisites: Apple Developer enrollment, build machine, test iPhone, iOS OAuth client (~45-90m plus Apple lead time) Priority 2
+  - Phase: Multi-Platform Readiness
+  - Platform: iOS
+  - Enroll in the Apple Developer Program, which costs 99 USD per year.
+    - An individual account needs no D-U-N-S Number.
+    - An organization account needs one. Apple's page (read 2026-10-23) says to allow "up to 5 business days" for D&B to issue it, then "up to 2
+      business days" for Apple to receive it.
+    - An organization account also needs a domain website and a domain email. The LLC has neither.
+  - Choose the build machine (F304) and confirm a test iPhone on iOS 26.
+  - Create the iOS OAuth client with bundle ID com.myemailspamfilter, the same ID Android uses.
+  - Claude writes the console walkthroughs. You do the console steps.
+  - UNVERIFIED:
+    - The App Store seller name for an individual account. My fetch of Apple's page was stopped.
+    - Apple's processing time for enrollment.
+  - Depends on: none.
+
+  F304. iOS build machine and signed build pipeline to TestFlight (~90-180m plus a 120m time-boxed signing setup) Priority 4
+  - Phase: Build and Release Infrastructure
+  - Platform: iOS (build tooling)
+  - There are two paths:
+    - (a) GitHub macos-26 runner. GitHub's runner-images README (read 2026-10-23) lists macOS 26.6.2 with Xcode 26.6. A hand-started job builds the app,
+      signs it with an App Store Connect API key and uploads it to TestFlight. The certificate, profile and key go in repository secrets, never in the
+      tree.
+    - (b) A Mac with interactive Xcode, owned or rented.
+  - UNVERIFIED: whether macOS runner minutes are free on this public repo. GitHub's billing page says public repos are free on "standard GitHub-hosted
+    runners" but does not say whether macOS counts.
+  - Acceptance: one command produces a signed build that installs on your iPhone through TestFlight.
+  - Depends on: F67a.
+
+  F67b. iOS first build and foreground parity validation (~180-300m) Priority 6
+  - Phase: Multi-Platform Readiness
+  - Platform: iOS
+  - Generate the iOS project first with flutter create --platforms=ios. Whether that command runs on Windows is unverified.
+  - Info.plist (GIDClientID, URL scheme, background modes, BGTask IDs, Files sharing), the AppDelegate lines and the iOS answers in PlatformCapabilities
+    from ADR-0050. All of this can be written on Windows in Sprint 81; only compiling it needs the Mac.
+  - Device check in Sprint 82: smoke test, IMAP scan, Gmail sign-in, rules, review screens, export to Files, notification permission.
+  - Depends on: F67a; F304 for the device check.
+
+  F67c. iOS background scan spike on a real iPhone (~120-240m plus a 7-day observation window) Priority 8
+  - Phase: Multi-Platform Readiness
+  - Platform: iOS
+  - BGAppRefreshTask per the ADR-0050 exception, with a time-boxed scan that resumes from the cursor.
+  - Run it on a locked phone with 2 Gmail accounts and 1 IMAP account, and log every background launch for 7 days.
+  - Also covered: the completion notification, and a warning when Background App Refresh is off.
+  - The outcome can change the Gmail renewal design. That is a Class 2 decision, and it will be put to you.
+  - Depends on: F67b and a test iPhone. Start the 7-day window early in Sprint 82.
+
+  F301. Gmail sign-in expires every 7 days for every closed tester (~30-60m decision, then per path) Priority 10
+  - Phase: Google Play Readiness
+  - Platform: Android and Windows (iOS is affected in the same way)
+  - The OAuth consent screen is in "Testing" and the app is unverified, so refresh tokens die after 7 days.
+  - Choose one path from ADR-0029:
+    - (a) Keep Phase 1 and tell testers to sign in again each week.
+    - (b) Gmail by app password over IMAP.
+    - (c) CASA verification, which takes 2-6 months.
+  - Acceptance: the chosen path is recorded in ADR-0029.
+
+  F67d. iOS store readiness: privacy manifest, App Privacy, listing, TestFlight, upload (~150-240m plus App Review time) Priority 12
+  - Phase: Build and Release Infrastructure
+  - Platform: iOS
+  - Run the Xcode privacy report and write PrivacyInfo.xcprivacy.
+  - Answer App Privacy. The expected answer is "Data Not Collected", but App Review decides.
+  - Add the privacy policy link in the app and in the listing.
+  - Prepare the listing: iPhone screenshots at the required sizes, description, age rating and review notes.
+  - Run TestFlight internal testing, then external. Apple's TestFlight page (read 2026-10-19) says the first external build goes through App Review.
+  - App Review cannot sign in with Gmail while the consent screen is in Testing. Give the reviewer an IMAP (AOL) demo account. Whether App Review
+    requires demo credentials is UNVERIFIED; read guideline 2.1 at submission.
+  - Depends on: F67b.
+
+  F302. IMAP: store the sequence number in its own field; a missing UID gets a standard "no valid UID" value (~60-120m) Priority 16
+  - Phase: Core App Quality
+  - Platform: Windows and Android
+  - Today, a message with no UID stores its sequence number as if it were a UID.
+  - The fix adds a separate sequence field. A missing UID gets one named constant. Every UID consumer refuses that constant through one helper, and a
+    policy test enforces it.
+  - Acceptance: a unit test with no-UID FETCH data, mutation-verified. A DB migration needs a backup first.
+
+  F303. Android new-mail diagnostics: each field reported on its own (~45-90m) Priority 18
+  - Phase: Android / Google Play Readiness
+  - Platform: Android only
+  - Today, one failing field in MainActivity.kt diagnostics returns null and the cause goes only to logcat, which you cannot read because adb is
+    blocked.
+  - The fix guards each field on its own and puts each field's error in the diagnostic log.
+  - Acceptance: a JVM unit test, a Dart test, and the diagnostic line on the Fold.
+
+  F95 (revised). iOS variants: dev and prod side by side on one iPhone (~60-120m) Priority 24
+  - Phase: Build and Release Infrastructure
+  - Platform: iOS
+  - Separate bundle IDs and OAuth clients for dev and prod (ADR-0035 on iOS).
+  - Placed after the first upload. Shipping iOS as prod-only for a short time departs from ADR-0035; that is your call.
+  - Depends on: F67b.
+
+  F289. WinWright default sweep with no mouse steps (~30-60m) Priority 25
+  - Phase: Testing
+  - Platform: Windows Desktop (test tooling only)
+  - Six mouse steps keep the PC unlocked during the sweep. The fix waits on a WinWright release that replays a cursor-free read step.
+  - Depends on: an upstream WinWright change.
+
+  F270. Safe-sender discovery: propose safe senders from history for review (~150m) Priority 30
+  - Phase: Core App Quality
+  - Platform: All
+  - v1 suggests repeated No Rule senders that pass DMARC and were never deleted. They appear in a "Suggested safe senders" list on the Safe Senders
+    screen.
+  - Nothing is added without your approval.
+  - Depends on: F266, F267.
+
+  F246. Android Gmail background renewal through a server-side token exchange (~30m spike retry; server path not estimated) Priority 30
+  - Phase: Google Play Readiness
+  - Platform: Android
+  - From a background worker, the token call returns null. A Gmail background scan more than about an hour after the app was last opened is skipped. The
+    server path is a Class 1 decision.
+
+  F300. WinWright default sweep: about 15 minutes, about 16 s per step (~60-90m) Priority 30
+  - Phase: Developer Tooling
+  - Platform: Windows (test harness only)
+  - Time each ww_* call and find the per-step cost.
+  - Acceptance: the sweep runs in under 5 minutes, or the cost is named with its mechanism.
+
+  F271. Heuristic reasons and rule suggestions on No Rule Review (~210m) Priority 32
+  - Phase: Core App Quality
+  - Platform: All
+  - Header-only reason chips (for example, Reply-To differs from From, or authentication failed) on the No Rule Review screen, with a "Create rule"
+    action that pre-fills quick-add.
+  - Depends on: F267.
+
+  F278. Notifications that produced no scan, and alarm + WorkManager scans coexisting (~60-90m) Priority 34
+  - Phase: Core App Quality
+  - Platform: Android
+  - In arm 5 of the Sprint 77 battery tests, 2 of 4 posts left no scan and no log line; the cause is unknown. The test protocol is in results doc
+    section R77-BAT-2.
+
+  F259. A missing Gmail label scans as 0 messages with no trace; history cursor is per account (~90-150m) Priority 35
+  - Phase: Core App Quality
+  - Platform: All
+  - A label that cannot be found returns an empty fetch with no log line. The history cursor is stored per account, not per folder.
+
+  F280. Doze network availability for alarm scans (~45-60m) Priority 36
+  - Phase: Core App Quality
+  - Platform: Android
+  - In arm 4 of the Sprint 77 battery tests, 2 of 3 alarm scans failed at DNS under forced Doze. The cause is unverified. Details are in R77-BAT-4.
+
+  F237. Quiet the non-fatal Kotlin "Daemon compilation failed" traces in the Android build (~20-40m) Priority 38
+  - Phase: Core App Quality
+  - Platform: Android
+  - Two options: set kotlin.incremental=false, or move the pub cache to D:. This is preventive only.
+
+  F263. Background scan spacing: per-worker budget, Test Background Scan, sign-in skip Priority 40
+  - Phase: Core App Quality
+  - Platform: Android and Windows
+  - The per-account spacing can push one Android worker past WorkManager's run limit of about 10 minutes.
+
+  F273. Privacy policy and Data safety revision for the content history and learning (~60m) Priority 40
+  - Phase: Core App Quality
+  - Platform: All
+  - Keeps the published policy accurate before any build stores more content.
+  - Depends on: your Class 1 decision on R76-4.
+
+  Questions (these replace the earlier Sprint 81 scope question)
+
+  Q1. Apple account type. This decides whether F67a needs a D-U-N-S Number and a domain. On 2026-09-09 you chose Individual for Google Play and
+  Microsoft. That decision did not cover Apple.
+  1. Individual (recommended). No D-U-N-S, so you can enroll this week. The seller name shown on the App Store is unverified.
+  2. Organization. Needs a D-U-N-S Number (up to about 7 business days), plus a domain website and domain email the LLC does not have.
+
+  Q2. Build machine. This decides what F304 builds.
+  1. GitHub macos-26 runner (recommended). No hardware to buy. Signing is fully automated. Each build attempt is a CI cycle of roughly 20-40 minutes (my
+     estimate). Whether the minutes are free is unverified.
+  2. Rent a cloud Mac with interactive Xcode. Faster debugging, but a monthly cost.
+  3. Buy a Mac.
+
+  Q3. Test iPhone. F67b's device check and F67c's 7-day test cannot run without one.
+  1. Yes, I have an iPhone on iOS 26 (reply with the model).
+  2. No.
+
+  Q4. Sprint 81 scope.
+  1. F67a, F304, the F67b code, F302 and F303, plus the carry-ins (recommended).
+  2. iOS only: F67a, F304, the F67b code, plus the carry-ins.
+  3. A different set: type the IDs.
+
+  Q5. SEC-11b. It names iOS only as one of "All" platforms; it is database encryption, not iOS work. I left it on HOLD.
+  1. It stays on HOLD (recommended).
+  2. Take it off HOLD too.
 
 ---------------------------------------------------------------------------------------------------------
 Sprint 80 Scope should include the below items. Please complete sprint planning (/docs/sprint_planning.md) for the below items and present for approval.  Note that everything needs to take into account both the Windows App and the Android app and ADR stating that everything should be functionally and UI the same unless it cannot be - and where it cannot be it should be implemented as a platform exception for what is needed -- this applies to all backend code, frontend code, data, architecture, development, security, testing, deployment.

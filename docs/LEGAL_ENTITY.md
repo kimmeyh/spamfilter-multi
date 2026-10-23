@@ -160,6 +160,11 @@ document"; a D-U-N-S number avoids a 2-5 day manual review there.
    contradict each other), change the CONSOLE first, then `pubspec.yaml`. This is a NAME
    question, not an account-type question: the account-type decision is closed.
 
+**Apple App Store: Individual (Harold, 2026-10-23, Sprint 81 Q1 = 1).** The 2026-09-09 decision is extended to the
+Apple Developer Program. Apple: *"If you're enrolling as an individual, you don't need a D-U-N-S Number"*
+(developer.apple.com/help/account/membership/D-U-N-S/, read 2026-10-23). The seller name Apple shows for an
+individual account is UNVERIFIED until it is read from the enrollment screen (Sprint 81 Task 1, F67a).
+
 **Account type: CLOSED, 2026-09-09.** Both stores stay Personal/Individual. Conversion was
 never going to accelerate this launch anyway -- the Play account is ~12 days old and D-U-N-S
 alone can take 30 days -- but the decision is on the merits, not the timing, and it is not
