@@ -16,6 +16,8 @@ import '../../core/services/scan_interval.dart';
 import '../../core/services/f264_upgrade_migration.dart';
 import '../../core/services/background_scan_windows_worker.dart';
 import '../../core/services/background_scan_scheduler.dart';
+import '../../core/services/windows_task_scheduler_service.dart'
+    show WindowsTaskSchedulerService;
 import '../../core/storage/database_helper.dart';
 import '../../core/storage/settings_store.dart';
 import '../../core/services/export_directories.dart';
@@ -1647,17 +1649,20 @@ class _SettingsScreenState extends State<SettingsScreen> with SingleTickerProvid
           value: _backgroundScanEnabled,
           onChanged: (value) async {
             setState(() => _backgroundScanEnabled = value);
-            // F98 (ADR-0039): write the PER-ACCOUNT override, not the global flag.
-            await _settingsStore
-                .setAccountBackgroundEnabled(_requireAccountId, value);
-            // F161 (Sprint 61, found live on-device): this call was still
-            // gated behind a Windows-only check AFTER the factory reroute, so
-            // on Android the setting persisted but no work was ever
-            // scheduled -- the setting LIED, exactly the ADR-0042 failure
-            // shape (a platform-local gate starving shared behavior). The
-            // factory + isSupported now own the platform decision; the call
-            // site is unconditional.
-            await _updateScheduledScan(enabled: value);
+            await _changeBackgroundSettingExclusive(() async {
+              // F98 (ADR-0039): write the PER-ACCOUNT override, not the global
+              // flag.
+              await _settingsStore
+                  .setAccountBackgroundEnabled(_requireAccountId, value);
+              // F161 (Sprint 61, found live on-device): this call was still
+              // gated behind a Windows-only check AFTER the factory reroute,
+              // so on Android the setting persisted but no work was ever
+              // scheduled -- the setting LIED, exactly the ADR-0042 failure
+              // shape (a platform-local gate starving shared behavior). The
+              // factory + isSupported now own the platform decision; the call
+              // site is unconditional.
+              await _updateScheduledScan(enabled: value);
+            });
           },
         ),
         // F264 R-11 (Sprint 77) / F281 (Sprint 78, Harold): "Scan every" sits
@@ -1679,11 +1684,13 @@ class _SettingsScreenState extends State<SettingsScreen> with SingleTickerProvid
               initialMinutes: _backgroundScanFrequency,
               onCommit: (minutes) async {
                 setState(() => _backgroundScanFrequency = minutes);
-                await _settingsStore.setAccountBackgroundFrequency(
-                    _requireAccountId, minutes);
-                if (_backgroundScanEnabled) {
-                  await _updateScheduledScan(enabled: true);
-                }
+                await _changeBackgroundSettingExclusive(() async {
+                  await _settingsStore.setAccountBackgroundFrequency(
+                      _requireAccountId, minutes);
+                  if (_backgroundScanEnabled) {
+                    await _updateScheduledScan(enabled: true);
+                  }
+                });
               },
             ),
           ),
@@ -2271,6 +2278,18 @@ class _SettingsScreenState extends State<SettingsScreen> with SingleTickerProvid
       ),
     );
   }
+
+  /// PR #490 7.7.1 (code-reviewer finding 6): a Background-tab change (its
+  /// stored value AND the reschedule) runs under the same lock as the Windows
+  /// start-up reconciliation, which since Sprint 80 (Harold Q4 = 2) runs after
+  /// the window appears. Before, only the reschedule took the lock, so the
+  /// reconciliation's interval conversion could write its value back over a
+  /// change made in its first seconds. The lock is in-process Dart (no
+  /// platform call) and re-entrant, so the nested schedule inside is safe; on
+  /// Android nothing else holds it and it adds no wait.
+  Future<void> _changeBackgroundSettingExclusive(
+          Future<void> Function() change) =>
+      WindowsTaskSchedulerService.runExclusive(change);
 
   /// Reset rules and safe senders to bundled defaults
   Future<void> _resetRulesToDefaults() async {

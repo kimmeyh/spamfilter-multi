@@ -10,6 +10,7 @@
 // background-scan process never changes tasks).
 
 import 'dart:async';
+import 'dart:io';
 
 import 'package:flutter_test/flutter_test.dart';
 import 'package:my_email_spam_filter/core/services/background_scan_scheduler.dart';
@@ -56,6 +57,30 @@ void main() {
           () async => 'ran').timeout(const Duration(seconds: 2));
       expect(after, 'ran');
     });
+  });
+
+  // PR #490 7.7.1 (code-reviewer finding 6). SOURCE-TEXT check: the Settings
+  // screen needs a database and an account to pump. What this does NOT catch:
+  // a third Background-tab control added later that writes outside the helper.
+  test('Settings writes each Background-tab value under the lock', () {
+    final src =
+        File('lib/ui/screens/settings_screen.dart').readAsStringSync();
+    expect(src,
+        contains('WindowsTaskSchedulerService.runExclusive(change)'));
+    for (final write in [
+      'setAccountBackgroundEnabled(_requireAccountId, value)',
+      'setAccountBackgroundFrequency(\n                      _requireAccountId, minutes)',
+    ]) {
+      final at = src.replaceAll('\r\n', '\n').indexOf(write);
+      expect(at, greaterThan(0), reason: write);
+      final helper = src
+          .replaceAll('\r\n', '\n')
+          .lastIndexOf('await _changeBackgroundSettingExclusive(() async {', at);
+      expect(helper, greaterThan(0),
+          reason: '$write must sit inside _changeBackgroundSettingExclusive');
+      expect(at - helper, lessThan(400),
+          reason: '$write must be the helper\'s own body, not a later one');
+    }
   });
 
   group('WindowsSchedulerAdapter takes the lock', () {
