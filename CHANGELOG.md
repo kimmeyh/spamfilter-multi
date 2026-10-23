@@ -26,6 +26,12 @@ Format: `- **type**: Description (Issue #N)` where type is feat|fix|chore|docs
 
 ## [Unreleased]
 
+### 2026-10-22 (Sprint 80 retrospective, PR #490)
+
+- **chore**: The WinWright sweep first checks that a fresh DEV start puts its icon in the Windows tray (`run-winwright-tests.ps1 -TrayCheckOnly` runs the check alone); it passes only on a new tray button, so a production instance or a stale icon cannot pass it (Sprint 80 retro IMP-1.1)
+- **chore**: `build-with-secrets.ps1 -StartEmulator` launches the emulator with the highest Android API level instead of the first in the list, and runs the emulator through `ANDROID_HOME`; `-SelfTest` checks the choice (Sprint 80 retro IMP-2)
+- **docs**: Manual Validation rehearsal of a tray, window, notification or dialog step must name what was seen; decision questions state what they decide; standing facts are recorded and not asked again (Sprint 80 retro IMP-1, IMP-3)
+
 ### 2026-10-21 (Sprint 80 Manual Validation)
 
 - **fix**: On Windows the app window now appears in about 2 seconds instead of 15-30. The check of the background-scan tasks in Task Scheduler (one PowerShell call of about 3 seconds per check) now runs after the window is shown; a background-scan change made in Settings during that check waits for it, so the check cannot undo it (Issue #503)

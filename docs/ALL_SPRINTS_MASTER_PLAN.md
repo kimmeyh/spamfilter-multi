@@ -4,7 +4,7 @@
 
 **Audience**: Claude Code models planning sprints; User prioritizing future work
 
-**Last Updated**: 2026-10-18 (Sprint 79 Phase 7.7: Past Sprint Summary row, Last Completed Sprint, F286/F287/F288/F291/F293/F297 removed (done), carry-in heading to Sprint 80; earlier 2026-10-16: Sprint 79 remainders moved to Sprint 80: MV76-1, F277, F292; added F299; earlier 2026-10-15: added F296, F297 and F298; earlier: Sprint 78 Phase 7.7: Last Completed Sprint, Past Sprint Summary row, completed cards removed, Sprint 79 carry-ins)
+**Last Updated**: 2026-10-23 (Sprint 80 Phase 7.7: Past Sprint Summary row, Last Completed Sprint, Sprint 80 scope line; MV76-1, F277, F276, F267, F268, F269, F204, F292, F294, F295, F296, F298, F299 removed (done or closed); F289 kept in the backlog; earlier 2026-10-22: F301 added, ADR-0050 accepted; earlier 2026-10-18 (Sprint 79 Phase 7.7: Past Sprint Summary row, Last Completed Sprint, F286/F287/F288/F291/F293/F297 removed (done), carry-in heading to Sprint 80; earlier 2026-10-16: Sprint 79 remainders moved to Sprint 80: MV76-1, F277, F292; added F299; earlier 2026-10-15: added F296, F297 and F298; earlier: Sprint 78 Phase 7.7: Last Completed Sprint, Past Sprint Summary row, completed cards removed, Sprint 79 carry-ins)
 
 ## How to Maintain This Document
 
@@ -147,6 +147,7 @@ Historical sprint information lives in individual documents in `docs/sprints/` a
 | 77 | docs/sprints/SPRINT_77_SUMMARY.md | [OK] Complete | Oct 6-8, 2026 (PR #460 -> develop; 0.18.0+15, no store upload (MV-Q7 = 2). F264 per-account interval + new-mail switch, F245 one No Rule row per email (DB v12), F258 Gmail label IDs, F192 + SEC-15 Custom IMAP, SEC-8b certificate trust (ADR-0046), R76-1 battery A/B, R76-3 research; MV: F266 23 dead safe senders (DB v13), IMAP sign-in failure message, App Password labels, fixed Windows stagger. Fold steps 7-11 carried to Sprint 78) |
 | 78 | docs/sprints/SPRINT_78_SUMMARY.md | [OK] Complete | Oct 9-13, 2026 (PR #470 -> develop; 0.19.0+16. F282 one MyEmailSpamFilter folder, F281 Scan every presets + Custom, F283 Review No Rule Items on the Results pieces, F284 mouse-light WinWright, R76-4 dev-only content history (ADR-0047), F199-b to HOLD; MV: pop-up colors, dimmed provider actions, search text, no blank list after a rule, failed scans close, Doze alarm double scans. Phone testing moved to Sprint 79) |
 | 79 | docs/sprints/SPRINT_79_SUMMARY.md | [OK] Complete | Oct 13-18, 2026 (PR #480 -> develop; 0.20.0+17. F286 per-account Android notification, F287 Windows toast (ADR-0048), F288 develop default branch, F291 locked-PC sweep, F293, F297 reload after import, F292 runner; Task 1: MV-7 periodic skip + skip after the wait, IMAP 120 s response limit, scheduler log lines, workmanager 0.10.10 stop line. Phone remainders (MV76-1, F277, F292) moved to Sprint 80) |
+| 80 | docs/sprints/SPRINT_80_SUMMARY.md | [OK] Complete | Oct 18-23, 2026 (PR #490 -> develop; 0.21.0+18. F294 platform seam (ADR-0049), F295 iPhone readiness (ADR-0050), F296 CI Flutter version, F298 reload after edits, F276 Review hides gone mail, F269 import Merge, F267/F268 rule tools, F204 AAB gates; MV: Task 15 window at once, Task 16 tray icon and menu, Task 17 Android new-mail diagnostics; F277 and MV76-1 closed, R-2 to the Phase 8 Fold log) |
 
 **Key Achievements**: See CHANGELOG.md for detailed feature history.
 
@@ -154,17 +155,19 @@ Historical sprint information lives in individual documents in `docs/sprints/` a
 
 ## Last Completed Sprint
 
-**Sprint 79** (2026-10-13 -- 2026-10-18; PR #480 -> develop; version 0.20.0+17)
-- **Type**: phone checks on 0.19.0, per-account background-scan notifications on both platforms, git-flow, locked-PC sweep, full-suite runner; Windows + Android parity on every card (ADR-0042).
-- **F286 (#482)**: the Android notification names the account, lists "No rule" first, one per account; a non-live mode strikes through what it did not do.
-- **F287 (#483)**: Windows toast on background-scan completion through the same notifier and text as Android (flutter_local_notifications 22.3.2, ADR-0048 supersedes ADR-0018).
-- **F288 (#484)**: `develop` is the GitHub default branch; releases tagged on main. **F291 (#485)**: a locked-PC WinWright sweep counts as complete. **F293 (#487)**: refinement shows the next 20 in one order. **F297 (#488)**: rules and safe senders reload after a YAML import.
-- **Task 1 (#471, in-sprint part)**: MV-7 periodic skip and skip after the busy wait, IMAP 120 s response limit, every schedule change logged on both platforms, workmanager 0.10.10 so the worker stop line fires with AndroidX reason names. **F292 (#486)**: `run-full-suite.ps1`; cause still unknown.
-- **Moved to Sprint 80** (Harold, 2026-10-16): the MV76-1 phone remainder, F277 arms A and C plus the decision rule, F292 post-reboot runs; Fix 2 (native debug hook) is decided after the 0.20.0 phone test.
-- **7.7.1 final code reviews**: SEARCH/FETCH get the response limit; a failed folder is an error, not empty; one IMAP timeout ends the session and the scan, UID MOVE included (Harold Q1 = 1, Q2 = 1); scheduler calls name their caller (Q3 = 1).
-- **Results**: suite 3,092 passed / 15 skipped / 0 failed after the 7.7.1 fixes (3,061 at Manual Validation), analyzer clean, WinWright 2/2 at 80d92c6; MV-1 and MV-2 PASS first round. Retro: Harold all Very Good; IMP-1 (MV step facts read live), IMP-2 (Settings screenshots pulled), IMP-3 (dependency claims cite source) applied; IMP-4 skipped.
+**Sprint 80** (2026-10-18 -- 2026-10-23; PR #490 -> develop; version 0.21.0+18)
+- **Type**: Fold checks on 0.20.0, platform capabilities and policy seam, iPhone readiness, rule-learning tools; Windows + Android parity on every card (ADR-0042, ADR-0049).
+- **F294 (#493)**: every Windows and Android difference behind `PlatformCapabilities` / `PlatformPolicy` (62 call sites; ADR-0049 ACCEPTED, amends ADR-0042); a policy test refuses new bare platform checks.
+- **F295 (#494)**: iPhone readiness research; ADR-0050 ACCEPTED (two declared iOS exceptions); iOS cards F67a-d, F95, F95b in the backlog.
+- **F296 (#495)** CI Flutter version from `.fvmrc`. **F298 (#496)** rule and safe sender edits reload at once. **F276 (#501)** Review hides mail deleted or moved in the mail app. **F269 (#499)** YAML import Merge by default. **F267 (#497)**, **F268 (#498)** evaluation harness and rule miner. **F204 (#502)** AAB target SDK and AD_ID gates. **F292 (#492)** closed. **F299 (#500)** closed on evidence.
+- **Manual Validation tasks**: Task 15 (#503) Windows window at once (30.9 s -> 1.8 s); Task 16 (#504) tray icon on every start and its menu opens; Task 17 (#505) Android new-mail diagnostic line at each start.
+- **Phone**: MV76-1 (#471, #433, #428) done except R-2 (new-mail trigger on a real phone), which moves to the Phase 8 Fold log; F277 (#472) closed by Harold (floor stays 5). F289 removed from scope (Q4b = 2), stays in the backlog. F301 (Gmail 7-day sign-in) added.
+- **7.7.1 final code reviews**: in progress (Copilot + pr-review-toolkit).
+- **Results**: suite 3,189 passed / 15 skipped / 0 failed at Task 17, analyzer clean; MV-1 to MV-5 PASS (MV-4 after Task 16; MV-3 on field evidence). Retro: Harold all Very Good; IMP-1, IMP-1.1, IMP-2a, IMP-3, IMP-5 applied; IMP-2b not reproduced; IMP-4 skipped.
 
 ## Next Sprint Candidates
+
+**Sprint 80 scope -- COMPLETE 2026-10-23 (PR #490)**: version (#491), MV76-1 (#471, #433, #428), F277 (#472), F292 (#492), F294 (#493), F295 (#494), F296 (#495), F298 (#496), F267 (#497), F268 (#498), F269 (#499), F299 (#500), F276 (#501), F204 (#502), plus Tasks 15-17 from Manual Validation (#503, #504, #505). F289 removed from scope (stays in the backlog). Plan: `docs/sprints/SPRINT_80_PLAN.md`.
 
 **Sprint 79 scope -- COMPLETE 2026-10-18 (PR #480)**: version (#481), F286 (#482), F287 (#483), F288 (#484), F291 (#485), F292 (#486, post-reboot runs to Sprint 80), F293 (#487), F297 (#488), and the in-sprint part of MV76-1 (#471). MV76-1 phone remainder (#471, #433, #428) and F277 (#472) moved to Sprint 80 by Harold. Merged to develop (dd04c4c) and main (#489, ff58da3) 2026-10-18; #481-#488 closed by the merge. #486 (F292) closed with it, so the F292 post-reboot runs need a new card at Sprint 80 planning. Plan: `docs/sprints/SPRINT_79_PLAN.md`.
 
@@ -181,31 +184,6 @@ Historical sprint information lives in individual documents in `docs/sprints/` a
 **Last Reviewed**: October 18, 2026 (Sprint 79 cycle, Phase 8.2 pass-1 COMPLETENESS SWEEP -- no scope selected: PR #480 merged to develop (dd04c4c) and main (#489, ff58da3); Sprint 80 branch opened from the Sprint 79 branch; #481-#488 closed by the merge's `Closes` keywords (first sprint on the F288 default branch), #471, #472, #433 and #428 open for Sprint 80; Sprint 79 plan, retrospective and summary present; Sprint 80 stub present; shipped cards (F286, F287, F288, F291, F293, F297) confirmed pruned; Last Completed Sprint corrected to the final suite count and the 7.7.1 fixes; sprint_status.json moved to Sprint 80 Phase 8.)
 
 All incomplete items in relative priority order. Priority in increments of 10; items that can sprint together in increments of 2. HOLD items grouped at bottom. See [Feature and Bug Details](#feature-and-bug-details) for deep-dive specs. See [BACKLOG_REFINEMENT.md](BACKLOG_REFINEMENT.md) for presentation format rules.
-
-### Sprint 80 carry-in -- phone testing moved from Sprint 79 (Harold, 2026-10-16; first moved from Sprint 78)
-
-**MV76-1. Finish the Fold checks, now on the 0.19.0 closed-test build (~40-70m + phone time) Priority 1**
-- Phase: Android / Google Play Store Readiness
-- Platform: Android
-- Origin: CARRY-IN from Sprint 76 close (Harold, 2026-10-06). Estimate from the Sprint 77 plan (40-70m transcription and evidence, plus Harold's phone time).
-- Depends on: the 0.18.0 Google Play closed-testing upload.
-- **Sprint 77 status (2026-10-08)**: reboot-window evidence pulled (unattended workers ran through a reboot with the app unopened); Fold steps 7-11 move to the START of Sprint 78 on the 0.18.0 closed-test build (MV-Q7 = 2), plus tracing the boot-time `app start (foreground)` line (`main()` ran at 09:14:39 with no app opened).
-- **Sprint 78 status (2026-10-13)**: Harold moved all further phone testing to Sprint 79 ("push any further testing to next sprint"). Still open: steps 8-11 (Step 9 needs Notification access for AOL; no `trigger=notification` scan in the 0.18.0 logs); iCloud background is OFF on the Fold (turn it on if iCloud should be covered).
-- **Added from Sprint 78**: MV-7 (the Doze alarm skips an account scanned within two-thirds of its interval) seen on the phone -- `phone-log-health.ps1` should show no double-scheduling FLAG; the Gmail `invalid_grant` on the Fold (2026-10-12 17:27; possibly the Google "Testing" refresh-token expiry, UNVERIFIED -- check the OAuth consent screen publishing status); Android parity of F281, F282 and F283 on 0.19.0; 10 AOL background scans on Oct 10-12 that died mid-scan and were reaped later (found by IMP-2; e.g. row 1900 stopped after its rules step; cause unknown -- one candidate is the WorkManager run limit described in F263, unverified).
-- F253 AC-5: a scan started by a mail app's new-mail notification (`trigger=notification` in the log); confirm the AOL and Yahoo package names on the device (#458).
-- MV74-1 reboot half: background scans resume after a phone restart without opening the app (#428). The Doze half PASSED on the 0.17.4 overnight run (95 worker starts, 111/113 completed).
-- The scan-export header row on a new daily `.data.csv`.
-- A Results rule update for an Inbox safe sender reports no failure (the 0.17.6 re-process fix).
-- F250: the Google account state screenshot on the Fold; decide whether the native sign-in still matters now that refresh-token renewal works (#454).
-- MV74-3: classify every scan error from normal use, or record zero (#433).
-- **Sprint 79 status (2026-10-16) -- remainder TARGET SPRINT 80** (Harold: *"move any other tasks for execution to
-  the backlog for next sprint and move on to manual validation"*). Done in Sprint 79: export header row, step 8 Doze
-  lines, Gmail custom label, F281/F282 Android PASS, MV-7 overnight (fixed: periodic skip + skip after the busy wait),
-  the stuck-IMAP class (response timeout), the worker stop line (workmanager 0.10.9), zero scan errors on 0.19.0, R-6
-  closed by Harold. Moved to Sprint 80: the step 8 Background note screenshot; step 9 / F253 AC-5 new-mail trigger
-  (no `trigger=notification` scan yet although Notification access is allowed); step 11 reboot half (#428) and the
-  F250 Google account screenshot; R-3 boot-time `main()` trace; R-4 one completed iCloud background scan; F283
-  Android screenshot; the class-B cause (see F299). Plan detail: `docs/sprints/SPRINT_79_PLAN.md` Task 1.
 
 ### Backlog from the Sprint 76 retrospective
 
@@ -234,20 +212,6 @@ Each item is fixed PREVENTION FIRST (SPRINT_EXECUTION_WORKFLOW.md 7.7.1): name h
 **F263. Background scan spacing: per-worker budget, Test Background Scan, sign-in skip Priority 40 -- backlog (7.7.1 review M-1, M-2, silent-failure LOW)**
 - (Harold, 2026-10-06: "3. a" -- confirmed as backlog.) The 5-minute spacing and 6-minute busy cap are per ACCOUNT, so one Android worker scanning several accounts in sequence can exceed WorkManager's ~10-minute run limit and leave an `in_progress` row. Test Background Scan also waits out the spacing (up to 5 minutes with nothing visible), and an account that needs sign-in still waits before it is skipped. Prevention: one spacing budget per worker run in `BackgroundScanCore` (extends the existing `cappedBusyWait` cap), the test trigger exempt, and the sign-in check before the wait.
 
-**F277. Fold energy check: interval 5 against interval 15 (~45-60m + phone time) Priority 20 -- TARGET SPRINT 80**
-- Phase: Core App Quality
-- Platform: Android
-- Origin: backlog (Sprint 77 R76-1, was R77-BAT-1).
-- **Sprint 79 status (2026-10-16), moved to Sprint 80 by Harold**: arm B recorded (night 10-14/15, AOL every 5
-  minutes, 4.9 h on battery, app 0.3%, 44 completed scans, clean health check; Harold counted it as arm B). A
-  second B night (10-16/17, AOL every 5 minutes, about 6 h on battery) read 1.5% for the app, 5x the first: the
-  night-to-night spread is unexplained and must be understood before the 3x rule is applied. Arm A has NOT run yet
-  (AOL stayed at 5 minutes until 08:13-08:29 on 10-17; set to 15 since). Arm A, arm C (new mail on) and the decision
-  rule remain. Open question for arm C: no new-mail scan ran on
-  10-14/15 although Notification access was allowed.
-- **Sprint 78 status (2026-10-13)**: the 0.18.0 overnight run had three accounts on, so it does not count; all three runs move to Sprint 79 on 0.19.0 with ONE account on. Check with `scripts/phone-log-health.ps1 -Path <log> -Since <start> -IntervalMinutes <n> -SingleAccount` before reading the battery screenshot.
-- The emulator measures counts, not energy. Decision rule for the F264 floor: if an interval-5 account costs more than 3x an interval-15 account on the Fold (Settings > Battery screenshots over MTP), raise `kMinIntervalMinutes` to 10. Protocol: `docs/research/R76-1_BATTERY_AB_RESULTS.md` section R77-BAT-1.
-
 **F278. Notifications that produced no scan, and alarm + WorkManager scans coexisting (~60-90m) Priority 34 -- backlog (Sprint 77 R76-1, was R77-BAT-2)**
 - Phase: Core App Quality
 - Platform: Android
@@ -263,13 +227,6 @@ Each item is fixed PREVENTION FIRST (SPRINT_EXECUTION_WORKFLOW.md 7.7.1): name h
 - Platform: Android
 - In arm 4, 2 of 3 alarm scans failed at DNS rather than login under forced Doze (cause unverified). Results doc section R77-BAT-4.
 
-**F276. No Rule Review lists mail already deleted in the mail client (~60-90m) Priority 30 -- backlog (Sprint 77 5.1.2 F-PRECHECK; consequence of Q21 = 2)**
-- Phase: Core App Quality
-- Platform: All
-- Since Sprint 77 No Rule Review lists every unprocessed row across scans (Harold Q21 = 2) and retention counts from the last sighting (Q22 = 1), so an email the user deleted in their mail app stays listed up to 90 days and actions on it fail. No status marks it gone: `UnmatchedEmailStore.updateAvailabilityStatus` has no caller in lib/ and `EmailAvailabilityChecker` is never constructed, so every row stays 'unknown'.
-- **Also MOVED mail (Sprint 77 MV step 5, 2026-10-08)**: two Gmail messages listed from `[Gmail]/Spam` on 10-03 were later found in INBOX. Row identity includes the folder and UID, so each is now listed TWICE: the stale Spam row stays unprocessed beside the new INBOX row. The fix must cover a message that moved, not only one that was deleted.
-- Prevention-first fix: set the row's availability to deleted when an action on it fails with "not found" (one place, the shared action path) and filter it in the Review query; optionally run the existing availability checker for rows not seen in the latest scan.
-
 **F265. Android Gmail native one-pick sign-in -- revisit only when a second device reproduces the failure Priority HOLD -- backlog (Sprint 77 plan Q24 = 2, Harold 2026-10-06)**
 - Phase: Core App Quality
 - Platform: Android
@@ -279,42 +236,6 @@ Each item is fixed PREVENTION FIRST (SPRINT_EXECUTION_WORKFLOW.md 7.7.1): name h
 ### Backlog from the R76-3 research (Sprint 77, 2026-10-07)
 
 Source: `docs/research/R76-3_HEURISTICS_ML_GENAI_SPAM_IDENTIFICATION.md` (Issue #468), placeholder ids R77-RS-1..10 renumbered F266-F275. Section 4.7 of that document lists the Class-1 questions (content storage, learned data, off-device lookups, bundling rules derived from Gmail data).
-
-**F267. Rule evaluation harness: score candidate rules against your own history, read only (~150m) Priority 20**
-- Phase: Core App Quality
-- Platform: All
-- Dry run on the Windows DEV build.
-- Value: no proposed rule or score acts on mail until measured; the bar is zero safe-sender hits and precision of
-  at least 0.99 (Section 4.8).
-- Scope: a Dart CLI in `scripts/` that loads candidate YAML plus an exported database copy and reports precision,
-  safe-sender false positives and recall; reuses `RuleEvaluator` and `PatternCompiler` unchanged.
-- Control and screen: developer tool (no app UI); results feed F268 to F272.
-- Privacy precondition: none (reads data already on Harold's PC). Parity: N/A (developer tool), engine code shared.
-- Depends on: none.
-
-**F268. PC-side rule miner: deleted-mail history to candidate delete rules (YAML) (~180m) Priority 22**
-- Phase: Core App Quality
-- Platform: N/A (developer tool on Harold's PC); output imported on All
-- Value: closes the corpus gap (zero subject and body rules today) with known bad domains, subject regex and body
-  regex mined from Harold's partial deleted-mail history, without the app storing any new content.
-- Scope: script in `scripts/` reads Harold's exported deleted-mail history, mines recurring domains, subject
-  phrases and body phrases, writes candidate YAML in `docs/RULE_FORMAT.md` shape, validated by F266 and scored by
-  F267 before import.
-- Control and screen: Settings > Import / Export YAML (merge via F269, or export-merge-import until F269 ships).
-- Privacy precondition: content stays on Harold's PC; rules derived from his Gmail data must not be bundled into
-  the shipped seed until the open legal question in Section 4.7 is settled (Class-1 if bundling is proposed).
-- Depends on: F266, F267.
-
-**F269. YAML import merge mode (add without replacing) (~90m) Priority 24**
-- Phase: Core App Quality
-- Platform: All
-- Value: mined or shared rule files can be added without wiping the user's rules (import today replaces all).
-- Scope: a "Merge" choice beside "Replace" on import; duplicates resolved by the existing
-  `manual_rule_duplicate_checker` / `rule_conflict_detector` services; every new pattern passes F266.
-- Control and screen: Settings > Import / Export YAML, import confirmation dialog.
-- Decision class: Class-2 (changes import semantics; replace stays the default).
-- Privacy precondition: none. Parity: shared Dart.
-- Depends on: F266.
 
 **F270. Safe-sender discovery: propose safe senders from history for review (~150m) Priority 30**
 - Phase: Core App Quality
@@ -516,77 +437,6 @@ MV74-1 (F235 Doze, #428) and MV74-3 (F205 errors, #433) are folded into **MV76-1
 - Depends on: access to the device log. No code change is implied until the cause is known.
 - Source: observed by Claude in Harold's 2026-09-10 S24+ screenshots.
 
-**F204. Gate the three Play requirements that are documented but not asserted (~60-90m) Priority 24 (NEW, 2026-09-10 -- Harold, from the pre-review-checks research)**
-- Phase: Android / Google Play Store Readiness
-- Platform: Android
-- **Origin**: Harold asked whether Play's "quick checks" could be replicated locally so a
-  submission would "nearly guarantee" a clean pass. The honest answer split in two, and the
-  split is the card:
-  - **The checks themselves CANNOT be replicated.** Google publishes a page for the feature
-    ([pre-review checks](https://support.google.com/googleplay/android-developer/answer/14807773))
-    and explicitly declines to enumerate them: its own FAQ "What pre-review checks does Play
-    Console run?" answers with **two examples and no list**. One of the two is **aggregate crash
-    rates by device/Android version** -- telemetry that lives on Google's side and cannot be
-    checked locally by anyone. Google also states plainly that passing pre-review checks does
-    NOT guarantee passing review.
-  - **The documented REQUIREMENTS can be, and three are not.** That is this card.
-- **DO NOT build a gate that claims to predict pre-review checks.** It would assert something
-  Google has never published, and would give false confidence -- the same shape as the Sprint 66
-  provider gate that passed mutation while catching nothing.
-
-- **Gap 1: `targetSdk` is INHERITED, never asserted (~30m).** `android/app/build.gradle.kts:38`
-  reads `targetSdk = flutter.targetSdkVersion`, so the value comes from the pinned Flutter SDK
-  rather than from this repo. It is CORRECT today -- the 0.15.0 AAB declares
-  `targetSdkVersion 36`, verified 2026-09-10 by reading the built bundle's manifest -- but
-  nothing would catch a regression. Google's deadline is LIVE: from **2026-08-31**, new apps and
-  updates must target API 36 ([doc](https://support.google.com/googleplay/android-developer/answer/11926878)),
-  extension available to 2026-11-01. A Flutter downgrade would silently drop below it and the
-  first symptom would be a rejected upload.
-  **Check**: assert the built AAB's manifest declares `targetSdkVersion >= 36`, or assert the
-  resolved gradle value. Prefer reading the ARTIFACT over the config -- the config is a pointer.
-
-- **Gap 2: no NEGATIVE gate on `AD_ID` (~20m).** Targeting Android 13+ requires declaring
-  `com.google.android.gms.permission.AD_ID` if the ad ID is used
-  ([doc](https://support.google.com/googleplay/android-developer/answer/6048248)). Verified
-  ABSENT from the 0.15.0 AAB on 2026-09-10, and this app has no ads and no analytics (Firebase
-  Analytics removed under GP-12/ADR-0030).
-  **Why gate an absence**: this repo has ALREADY been bitten by transitive manifest injection --
-  GP-3 had to strip NFC and biometric permissions an SDK pulled in via manifest merge. An
-  analytics or ads dependency arriving transitively would inject `AD_ID` and silently turn the
-  "no ads / no analytics" Data safety declaration into a FALSE one. That is a policy problem,
-  not a build problem, and `data_safety_declarations_test` cannot see it because it reads
-  documents, not the merged manifest.
-  **Check**: assert `AD_ID` never appears in the built AAB's merged manifest.
-
-- **Gap 3: 16 KB page-size alignment (~1-2h).** Flutter ships native `.so` libraries, so this
-  applies -- a pure Java/Kotlin app would be exempt.
-  **CORRECTION worth recording, because the wrong date is everywhere**: multiple community
-  sources say enforcement began 2025-11-01. Google's own page says **2027-02-01**:
-  "Starting February 1, 2027, if your app updates don't support 16 KB memory page sizes, you
-  won't be able to release these updates" ([doc](https://developer.android.com/guide/practices/page-sizes)).
-  Not urgent; do it before that date, not this sprint.
-  **Check**: `apkanalyzer` or Android Studio's alignment detection over the bundle's `.so` files.
-
-- **What is NOT applicable, verified rather than assumed** (2026-09-10, by enumerating the built
-  AAB's manifest): no sensitive permissions -- no `QUERY_ALL_PACKAGES`, `MANAGE_EXTERNAL_STORAGE`,
-  SMS/Call Log, or `SCHEDULE_EXACT_ALARM` -- so no Permissions Declaration Form. No ads, no IAP,
-  no location, no camera, no analytics. Bundle is 53 MB against a 500 MB limit. The shipped set
-  is 11 permissions, all mundane (INTERNET, WAKE_LOCK, POST_NOTIFICATIONS,
-  FOREGROUND_SERVICE_SHORT_SERVICE, etc.).
-- **Already covered, do NOT rebuild**: this repo has **56 tests across 13 Play-relevant policy
-  gates**. Notably `app_content_declarations_test` (7 tests) covers App content declarations --
-  which is the ONE check family Google explicitly names as mandatory. Of the two checks Google
-  actually identifies, the coverable one is already covered.
-- **Community evidence, labelled**: aggregator blogs converge on "Data safety form drift" as a
-  common rejection cause -- the form describing an older SDK set than the shipped binary. MEDIUM
-  confidence (multiple independent sources, and it matches Google's documented emphasis), and
-  already gated here by `data_safety_declarations_test`. Deliberately NOT reproducing those
-  sources' longer rejection lists: they are mutually copied and several repeat the 16 KB date
-  error corrected above.
-- Depends on: nothing. All three checks read the built AAB, which the release process already
-  produces.
-- Source: Harold, 2026-09-10 -- *"target is not perfection, but as good as reasonably possible."*
-
 **F165. Cross-device rules-DB sharing -- user cloud storage (iCloud/OneDrive/Box/Google Drive) exploration + hosted-tier option (~half-day exploration) Priority HOLD (MOVED TO HOLD by Harold, 2026-09-09, Sprint 68 scope selection)**
 - Phase: Product direction / architecture exploration
 - Platform: All
@@ -732,37 +582,6 @@ _(No active Core App candidates -- F96 shipped in Sprint 43.)_
 - Scope: replace the six steps, empty `knownPending`, and let the runner's locked-PC gate pass on a locked PC.
 - Depends on: an upstream WinWright change.
 
-**F292. Full test suite: test processes die or hang intermittently -- CLOSED Sprint 80 (#492; Harold Q4 = 1, 2026-10-19)**
-- **Close-out (2026-10-19)**: cause UNKNOWN, not reproduced in nine `run-full-suite.ps1` runs: five before the
-  2026-10-16 12:02 reboot (Sprint 79 runs 1-5) and four after it, all green with 0 load failures -- `79-5.2` (3,061
-  passed, peak commit 52.16 GB), `79-771` (3,075, 50.22 GB), `79-771b` (3,088, 51.58 GB), `79-771c` (3,092, 52.22 GB).
-  The page file never grew (still 30,840 MB, `Win32_PageFileUsage`), so "larger page file" was never tested. What
-  settles it: the commit-charge trace of the next failing run. `scripts/run-full-suite.ps1` stays the Phase 5.2
-  runner so that trace is recorded automatically. Re-open on the next failing run.
-- Phase: Testing
-- Platform: Windows Desktop (local `flutter test` on Harold's PC)
-- Origin: Sprint 78 7.7.1 (Harold, 2026-10-13, Q2 = 2). Cause UNKNOWN.
-- **Sprint 79 status (2026-10-16)**: five pre-reboot runs recorded (not reproduced; one runner defect found and
-  fixed); containment `scripts/run-full-suite.ps1` (commit charge every 30 s, load failures, STALLED watchdog) is the
-  Phase 5.2 runner. Moved to Sprint 80 by Harold: the post-reboot runs (larger page file), labeled as such, and the
-  mechanism from the next failing run's commit charge.
-- Evidence (logs in the Sprint 78 session scratchpad, `suite78r.log`, `suite78s.log`, `suite78t.log`):
-  - Run 1 (fix tree): `f239_sign_in_again_test.dart` "Failed to load ... Connection closed before test suite loaded",
-    then the whole run stopped writing at 00:54 (+604) for 17 minutes; stopped by hand.
-  - Run 2 (fix tree): `results_display_compact_and_filter_test.dart` failed to load; all of
-    `f232_scan_history_platform_test.dart` "did not complete"; the run ended at 3,012 passed.
-  - Run 3 (fix tree): green, 3,019 passed. Baseline at 3619e48 (HEAD before the fixes): green once, 3,010 passed.
-  - Each failing file passes alone (f239 6/6; f232 + results_display_compact 6/6). None runs the 7.7.1-changed code.
-- Conditions during the failures: the Windows DEV app running, four DEV accounts scanning in the background every 5
-  minutes (Task Scheduler launches of `dist\dev`), the Dart analysis server running.
-- **Lead (2026-10-13 12:45, unverified for the suite)**: the 0.19.0 AAB build an hour later died of NATIVE memory
-  exhaustion (`hs_err_pid86688.log`), with system commit at 86 of 94 GB (57 claude processes ~27 GB, 70 chrome
-  ~12 GB, 88 node ~5.5 GB). A test process that cannot allocate would also die at load ("Connection closed before
-  test suite loaded") or mid-run. Settle by watching commit charge during a full run.
-- Scope: reproduce (N full runs on HEAD and on HEAD~ under the same load, then with DEV background scanning off),
-  name the mechanism (a flutter_tester crash, a timeout, a shared temp/DB file, memory), fix or contain it. Not
-  "flaky" -- a mechanism or "cause unknown" plus what would settle it.
-
 **F290. Tell the user when content-history rows could not be deleted (~30-45m) Priority 45**
 - Phase: Core App Quality
 - Platform: All (dev builds only -- the content history exists only there, ADR-0047)
@@ -774,66 +593,6 @@ _(No active Core App candidates -- F96 shipped in Sprint 43.)_
   "Deleted <email>" or "All app data deleted".
 - Scope: `DeletionReport.contentHistoryDeleteFailed`; `deleteAllData` / `wipeAllData` return whether the history was
   removed; both snackbars name the leftover. Tests on both paths.
-
-**F294. One platform-capability seam instead of scattered platform checks (~120-180m) Priority 7 -- TARGET SPRINT 80**
-- Phase: Architecture
-- Platform: All
-- Origin: proposed at Sprint 78 cycle Phase 8.4 as a pre-iPhone item; Harold, 2026-10-13 (Q3): *"add to backlog and
-  target for next sprint"*.
-- `lib/` has 68 `Platform.isAndroid`, `Platform.isWindows` or `Platform.isIOS` checks (count from 2026-10-13). Each is a
-  place where iOS must be decided by hand, and a missed one fails silently.
-- Scope: one `PlatformCapabilities` that answers questions such as "background mechanism", "new-mail trigger
-  available", "export folder" and "OAuth flow"; the existing checks move behind it; a policy test fails on any new bare
-  `Platform.is` check outside the seam.
-- Why before the iPhone: adding iOS then means one table entry plus its implementations, and ADR-0042's declared
-  exceptions live in one place.
-- Decision class: Class 1 (architecture) -- surface at Sprint 80 planning.
-
-**F295. iPhone readiness research and parity ADR, time-boxed (~90-120m) Priority 8 -- TARGET SPRINT 80**
-- Phase: Multi-Platform Readiness
-- Platform: iOS
-- Origin: proposed at Sprint 78 cycle Phase 8.4; Harold, 2026-10-13 (Q3): *"add to backlog and target for next sprint"*.
-- Settle from Apple's and Google's own documentation before any iOS code (all UNVERIFIED today): how iOS schedules
-  background work and whether a near-15-minute interval is possible; whether any equivalent of Android's notification
-  listener exists for "Scan when new mail arrives"; Gmail OAuth on iOS (client and redirect); Keychain credential
-  storage; App Store privacy details and review rules for a mail-reading app; the Mac and Xcode build requirement and
-  the Apple Developer account.
-- Output: an ADR listing each iOS parity exception, and the set of cards F67 and F95 (iOS variants and validation, both
-  HOLD) actually need.
-
-**F296. CI Flutter version in sync with local (~30-60m) Priority 9 -- TARGET SPRINT 80**
-- Phase: DevOps
-- Platform: All (CI)
-- Origin: Sprint 79 quick-fix review; Harold, 2026-10-14 (QF3): upgrade CI to match local, and keep them in sync in
-  the future.
-- Today: `.github/workflows/ci.yml` pins Flutter 3.38.5. Local development uses 3.47.4.
-- Rule going forward: an upgrade in the repo (the Flutter SDK, or any package used and tested in CI) triggers the
-  matching CI update.
-- Proposed acceptance: CI `flutter-version` equals the version the repo records as current (one source, for example a
-  `.flutter-version` file or the pubspec environment constraint), and a policy test or hook fails when they differ.
-  CI is green on the new version.
-
-**F298. Rule and safe sender edits reload the in-memory rules (~45-75m) Priority 10 -- TARGET SPRINT 80**
-- Phase: Bug fix
-- Platform: All (shared code)
-- Origin: found with F297 (Sprint 79, #488); Harold, 2026-10-15 (C = 2): backlog.
-- Today: the Rules and Safe Senders management screens (edit, delete, remove) and the rule and safe sender quick-add
-  screens write the stores directly (`rules_management_screen.dart:253,315`, `rule_edit_screen.dart:509`,
-  `safe_senders_management_screen.dart:255`, `rule_quick_add_screen.dart:149,158`,
-  `safe_sender_quick_add_screen.dart:198,265`, `email_detail_view.dart:184`) and never reload `RuleSetProvider`, so
-  Review No Rule Items and the next manual scan use the old rules until a scan completes or the app restarts.
-- Proposed: each write path ends with `RuleSetProvider.reloadFromDatabase()` (F297), or writes through the provider.
-  A test per screen family proves the provider sees the change.
-
-**F299. Android background scans that die within 30 s: record the process exit reason (~45-75m) Priority 25 -- backlog**
-- Phase: Core App Quality
-- Platform: Android (ADR-0042: Windows Task Scheduler runs one process per scan and reports its exit code already)
-- Origin: Sprint 79 Task 1 R-8 class B (11 reaped rows with no heartbeat; follow-up named in the plan, filed
-  2026-10-16). The worker stop line (workmanager 0.10.9) now names a WorkManager STOP; a scan that dies with no stop
-  line means the process died, and the log cannot say why.
-- Proposed: at each app and worker start, read `ActivityManager.getHistoricalProcessExitReasons` (API 30+) through a
-  platform channel and write any exit since the last read (reason, importance, time) to the diagnostic log.
-- Also check whether 0.10.9's 30 s Dart start watchdog (`DART_INITIALIZATION_TIMEOUT_MILLIS`) fails slow starts in Doze.
 
 **F300. WinWright default sweep: about 15 minutes, about 16 s per step (~60-90m) Priority 30 -- backlog (Harold Q5 = 1, 2026-10-21)**
 - Phase: Developer Tooling
