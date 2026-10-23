@@ -401,9 +401,11 @@ class UnmatchedEmailStore {
   /// The account comes from `scan_results.account_id` (no account column).
   ///
   /// F276 (Sprint 80): rows a scan found gone from their folder
-  /// ([availabilityGone]) are left out; a later sighting resets the status
-  /// (the upsert writes `unknown`), so a message that comes back is listed
-  /// again.
+  /// ([availabilityGone]) are left out. A later sighting goes through
+  /// [upsertUnmatchedEmails], which updates the existing row with the
+  /// sighting's status (`available` when a scan completes, see
+  /// `EmailScanProvider.completeScan`; the model default `unknown`
+  /// otherwise), so a message that comes back is listed again.
   Future<List<UnmatchedEmail>> getUnprocessedForAccount(String accountId) async {
     try {
       final db = await _databaseHelper.database;
