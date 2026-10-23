@@ -749,18 +749,15 @@ try {
 # echo its output, and turn any such skip into a failure (exit code 3).
 function Invoke-WinWrightScript {
     param([string]$Path)
-    # F300 (Sprint 81): stamp each output line with the seconds since the line
-    # before it, so the summary can name the slowest steps. The gap BEFORE a
-    # line is the cost of the step that line reports.
-    $script:lineClock = [Diagnostics.Stopwatch]::StartNew()
+    # F300 (Sprint 81): time the whole script run. NOT per output line:
+    # `winwright run` prints its step lines only when the script ends (measured
+    # 2026-10-23: every step line arrived 0.0 s after the one before, the first
+    # line carried the whole run), so a per-line stamp would name no step.
+    $scriptClock = [Diagnostics.Stopwatch]::StartNew()
     $scriptName = Split-Path $Path -Leaf
-    $out = & $winwrightExe run $Path 2>&1 | ForEach-Object {
-        $gap = $script:lineClock.Elapsed.TotalSeconds
-        $script:lineClock.Restart()
-        $script:stepTimings.Add([PSCustomObject]@{ Script = $scriptName; Kind = 'step'; Seconds = [math]::Round($gap, 2); Line = "$_" })
-        Write-Host $_
-        $_
-    }
+    $out = & $winwrightExe run $Path 2>&1 | ForEach-Object { Write-Host $_; $_ }
+    $stepCount = @($out | Where-Object { "$_" -match '^\s*\[(pass|fail|skip)' }).Count
+    $script:stepTimings.Add([PSCustomObject]@{ Script = $scriptName; Kind = 'script'; Seconds = [math]::Round($scriptClock.Elapsed.TotalSeconds, 2); Line = "$stepCount step(s)" })
     $code = $LASTEXITCODE
     $skipped = @($out | Where-Object { "$_" -match 'is not supported by the script runner' })
     if ($code -eq 0 -and $skipped.Count -gt 0) {
@@ -940,12 +937,14 @@ if ($driftDetected) {
 Write-Host ""
 
 # F300 (Sprint 81): where the sweep time goes. Launch = the fresh app start
-# before each script; step = the gap before each WinWright output line.
+# before each script; script = one whole `winwright run` (its step count in the
+# last column). Baseline 2026-10-23 on 0.22.0: launches 13 s each, scripts
+# 10.6 s (27 steps) and 12.7 s, whole sweep about 70 s (Sprint 80: ~15 min).
 if ($script:stepTimings.Count -gt 0) {
     $launchSec = ($script:stepTimings | Where-Object Kind -eq 'launch' | Measure-Object Seconds -Sum).Sum
-    $stepSec   = ($script:stepTimings | Where-Object Kind -eq 'step'   | Measure-Object Seconds -Sum).Sum
-    Write-Host "Timing: app launches $([int]$launchSec)s, WinWright steps $([int]$stepSec)s"
-    Write-Host "Slowest 10 (seconds before the line):"
+    $scriptSec = ($script:stepTimings | Where-Object Kind -eq 'script' | Measure-Object Seconds -Sum).Sum
+    Write-Host "Timing: app launches $([int]$launchSec)s, WinWright scripts $([int]$scriptSec)s"
+    Write-Host "Slowest 10:"
     $script:stepTimings | Sort-Object Seconds -Descending | Select-Object -First 10 | ForEach-Object {
         $l = if ($_.Line.Length -gt 90) { $_.Line.Substring(0, 90) } else { $_.Line }
         Write-Host ("  {0,7:N1}s  {1,-6} {2}  {3}" -f $_.Seconds, $_.Kind, $_.Script, $l)

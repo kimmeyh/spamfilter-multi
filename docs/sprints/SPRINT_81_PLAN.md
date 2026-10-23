@@ -626,6 +626,44 @@ is named with its mechanism and a vendor or source citation.
 
 **Model**: Haiku. **Step-types**: DOCS. **Est-Effort**: 15-30m.
 
+## Execution record (Phase 4)
+
+Delegation: Tasks 3, 4+6, 5 and 7 ran as Sonnet sub-agents in the shared tree (no git; the main session staged by
+name and committed); Task 8 ran as a Sonnet sub-agent in its own git worktree and was cherry-picked. Every prompt
+carried the delegation checklist verbatim. The main session (Opus 5.5) did the planning, Tasks 0, 1, the ADR-0029
+record, the merges and every verification re-run.
+
+- **Task 0 (#508)**: DONE 3e27e5d5. Version gates 12 passed. Executed-by: Opus 5.5 main session -- 10-minute
+  bookkeeping bundled with the approval commit (single-session note above).
+- **Task 1 (#509)**: walkthroughs DONE b726683e (`docs/IOS_SETUP.md`); AC-2/AC-3 wait on Harold's console steps.
+  Executed-by: Opus 5.5 main session (single-session note).
+- **Task 2 (#510)**: unsigned compile job DONE (7eadfe2e); run 40012148625 on `macos-26` GREEN (`flutter build ios
+  --release --no-codesign`). Signing and TestFlight BLOCKED on Harold (enrollment + API key; stopping criterion 2).
+  Finding: `workflow_dispatch` needs the file on the default branch (gh: "HTTP 404: workflow ios.yml not found on
+  the default branch"), so a feature-branch `push` trigger limited to `mobile-app/ios/**` was added.
+- **Task 3 (#511)**: DONE 506a789a (project generated on Windows -- settles the R-1 unverified line), 508cb8e4
+  (plist, AppDelegate, capabilities). 57 tests; 9 of 9 mutants killed; AC-3 met by run 40012148625. Judgment: the
+  database stays in Application Support (only exports in Documents); deployment target iOS 15.0 (template floor).
+  Known gap for F67c: no iOS notification initialization yet (failures are caught). Executed-by: Sonnet sub-agent.
+- **Task 4 (#512) + Task 6 (#514)**: DONE fd12e065 (one commit: both edit the same database_helper and
+  email_scanner regions). Schema v14 and v15. 26 of 26 mutants killed; dev-DB copy migrated v13 -> v15 with 13,584
+  email_actions rows kept. Executed-by: Sonnet sub-agent.
+- **Task 5 (#513)**: DONE 5b87e362. JVM 3 + Dart 10 tests; 7 mutants killed (Kotlin mutants' compile judged by
+  reading -- mutation-test.ps1 does not parse Kotlin errors). AC-3 (Fold log) at Manual Validation. Executed-by:
+  Sonnet sub-agent.
+- **Task 7 (#515)**: ADR-0029 amended b726683e; code DONE cad811f4. 7 new tests, 7 of 7 mutants killed. Executed-by:
+  Opus 5.5 for the ADR record (as assigned), Sonnet sub-agent for the code.
+- **Task 8 (#516)**: DONE d7ee2c2f (cherry-pick of worktree 2ba7514e, schema v16). 17 of 17 mutants killed. Full
+  suite on the merged tree: 3,275 passed, 15 skipped, 0 failed; flutter analyze clean. Executed-by: Sonnet sub-agent.
+- **Task 9 (#517)**: emulator arms after the Task 10 sweep (builds serialized).
+- **Task 10 (#518)**: runner timing DONE 27b99ad4; timed sweep running on the 0.22.0 dev build.
+- **Task 11 (#519)**: one occurrence-like event: a `flutter_tester` (PID 57940, started 15:40) stayed alive after its
+  agent was stopped and held `build\native_assets\windows\sqlite3.x64.windows.dll`, failing the next `flutter test`
+  ("Flutter failed to delete file"). Parent was the stopped Task 3 agent's test run; not the Sprint 80 shape (a
+  script that printed an error), so R-1 stays open.
+- **Dev DB**: `spam_filter.db.pre_v16_20261023_154626` (+ -shm, -wal) taken with the dev app stopped, before the first
+  0.22.0 launch migrates v13 -> v16.
+
 ## Carry-ins (kept from the stub)
 
 - **0.21.0 store updates** (Harold): MSIX to Partner Center, AAB to Play closed testing; confirm 0.20.0 and 0.21.0 are
