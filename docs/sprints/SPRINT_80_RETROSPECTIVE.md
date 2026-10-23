@@ -271,5 +271,7 @@ this happened, what is the long-term benefit"*
 - **IMP-4 Changeable step facts written as changes** -- SKIPPED (Harold, "d1 1"). CORRECTION to the answer that
   decision was based on: Claude said both steps still passed with no round lost. MV-1 did pass. MV-3 did NOT run as
   written: its named Review row was gone (plan "MV-3 NOT SHOWN by the step"), which cost one question to Harold (Q6)
-  and a log check before it passed on field evidence. Harold was told and asked to confirm or change the decision.
+  and a log check before it passed on field evidence. Harold was told and confirmed, verbatim: *"1. skip until we see
+  this problem again in a future sprint"*. Trigger to re-propose: a step fact that changed between rehearsal and
+  Harold's run costs a question or a round again.
 - **IMP-5 Phase 8 checks the first and a later start** -- APPLIED. `sprint_status.json` Phase 8 next action.
