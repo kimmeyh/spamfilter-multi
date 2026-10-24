@@ -270,6 +270,16 @@ scan.
   as a recent start). No periodic start in the window. **Two-isolate proof of the fix**: both Doze wakes ran two
   workers at once and every line of both is in the Documents log; the fallback folder gained 0 lines after the
   fixed build (its 0.22.0 file ends 2026-10-23 18:58:50, before the 19:03 install).
+- **Arm C** (interval 15, a post every 5 minutes, 20 minutes, fixed build, 2026-10-24 01:42-02:04, forced deep idle):
+  4 of 4 posts logged "scan requested after a mail notification (aol)" (logcat, `DozeScanTrigger`), started a
+  worker within 1 s (01:44:07, 01:49:07, 01:54:08, 01:59:08) and attempted AOL; Yahoo "not selected" each time.
+  Posts with no log line: 0. No Doze-alarm wake and no periodic start in the window: the app's Doze alarm for
+  01:55:56 was still pending at 02:04 (`dumpsys alarm`, deferred by deep idle). The fallback folder gained 0 lines.
+- **Result (all arms)**: 10 of 10 posts produced a request line and a worker within 1 s; 0 posts without a log
+  line, so no log line was added (R-2). Alarm and WorkManager starts coexist on 0.22.0 at interval 5 (arm A: 2 Doze
+  wakes and 2 periodic starts; arm B: 2 Doze wakes, 0 periodic), and the recent-scan skip keeps them from running
+  the same account twice; at interval 15 under deep idle neither fired in 20 minutes (arm C). The arm 5 drop did not
+  reproduce; the one defect found was the split diagnostic log (fixed, 545fbcc8).
 - **Defect found (fixed, 545fbcc8)**: at each Doze wake two workers probed the diagnostics folder with ONE probe
   file name; the loser judged the folder unwritable and wrote its whole run to the hidden fallback folder
   (`Android/data/<pkg>/files/...`). That folder held 452 (0.20.0), 490 (0.21.0) and 8 (0.22.0) lines missing from

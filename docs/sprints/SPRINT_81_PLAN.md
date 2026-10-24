@@ -655,7 +655,11 @@ record, the merges and every verification re-run.
   Opus 5.5 for the ADR record (as assigned), Sonnet sub-agent for the code.
 - **Task 8 (#516)**: DONE d7ee2c2f (cherry-pick of worktree 2ba7514e, schema v16). 17 of 17 mutants killed. Full
   suite on the merged tree: 3,275 passed, 15 skipped, 0 failed; flutter analyze clean. Executed-by: Sonnet sub-agent.
-- **Task 9 (#517)**: emulator arms after the Task 10 sweep (builds serialized).
+- **Task 9 (#517)**: DONE. AC-1: arms A, B and C recorded with counts in `R76-1_BATTERY_AB_RESULTS.md` R77-BAT-2.
+  AC-2: 10 of 10 posts have a request line and a worker within 1 s; no log line added (R-2). R-3: alarm and
+  WorkManager starts coexist at interval 5, bounded by the recent-scan skip. Defect found and fixed: two isolates
+  split the diagnostic log into the fallback folder (545fbcc8). Executed-by: Opus 5.5 main session -- the emulator
+  arms ran between serialized builds on the same machine, so no sub-agent could own them.
 - **Task 10 (#518)**: runner timing DONE 27b99ad4; sweep measured about 62 s on the 0.22.0 dev build (bc4676de). AC
   met.
 - **Task 11 (#519)**: DONE. AC-1 met: holding process named, the adb server (`adb -L tcp:5037 fork-server server`).
