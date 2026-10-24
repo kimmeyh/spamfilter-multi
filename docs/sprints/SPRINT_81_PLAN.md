@@ -656,18 +656,28 @@ record, the merges and every verification re-run.
 - **Task 8 (#516)**: DONE d7ee2c2f (cherry-pick of worktree 2ba7514e, schema v16). 17 of 17 mutants killed. Full
   suite on the merged tree: 3,275 passed, 15 skipped, 0 failed; flutter analyze clean. Executed-by: Sonnet sub-agent.
 - **Task 9 (#517)**: emulator arms after the Task 10 sweep (builds serialized).
-- **Task 10 (#518)**: runner timing DONE 27b99ad4; timed sweep running on the 0.22.0 dev build.
-- **Task 11 (#519)**: one occurrence-like event: a `flutter_tester` (PID 57940, started 15:40) stayed alive after its
-  agent was stopped and held `build\native_assets\windows\sqlite3.x64.windows.dll`, failing the next `flutter test`
-  ("Flutter failed to delete file"). Parent was the stopped Task 3 agent's test run; not the Sprint 80 shape (a
-  script that printed an error), so R-1 stays open.
+- **Task 10 (#518)**: runner timing DONE 27b99ad4; sweep measured about 62 s on the 0.22.0 dev build (bc4676de). AC
+  met.
+- **Task 11 (#519)**: DONE. AC-1 met: holding process named, the adb server (`adb -L tcp:5037 fork-server server`).
+  Occurrences: two Task 9 background builds (2026-10-23 6:25 PM and 7:03 PM) printed "Done!" and stayed open;
+  `gradlew --stop` did not release the first; `adb kill-server` released both within 6 s. Mechanism, by probe
+  (2026-10-24, `scratchpad\t11\probe.ps1`): the build script kills every adb process and the next inline
+  `& adb devices 2>&1` auto-starts a server that inherits the script's handles; the task hangs only when the caller
+  redirects the script (`*> build.log`) -- inline start and capture alone closed normally. Prevention (scope
+  addition, developer tooling, 1 file): `build-with-secrets.ps1` `Start-AdbServerDetached` at all 3 start points;
+  the probe under the redirect closed in the same second, and the real background build (2026-10-24) closed at
+  01:15:52, the second its log ended "Done!", with the server it started at 1:15:48 still running.
+  `Start-Process -Wait` was tried first and hangs too (waits for the process tree). Guide: `SPRINT_RESUME_GUIDE.md`
+  section 10a. Earlier event (not this shape): a `flutter_tester` (PID 57940) held `sqlite3.x64.windows.dll` after
+  its agent was stopped.
 - **Dev DB**: `spam_filter.db.pre_v16_20261023_154626` (+ -shm, -wal) taken with the dev app stopped, before the first
   0.22.0 launch migrates v13 -> v16.
 
 ## Carry-ins (kept from the stub)
 
-- **0.21.0 store updates** (Harold): MSIX to Partner Center, AAB to Play closed testing; confirm 0.20.0 and 0.21.0 are
-  live on both stores.
+- **0.21.0 store updates** (Harold): DONE 2026-10-24. Harold's screenshot shows the prod Windows app (no [DEV]) on
+  Review No Rule Items at "Version 0.21.0", and Harold: *"phone app updated to 0.21.0 with phone tethered for
+  download"*.
 - **R-2: the new-mail trigger on the Fold** (#471 remainder): read the `new-mail-diagnostics` line from the first
   0.21.0 Fold log, the first start after the update AND a later start (Sprint 80 retro IMP-5).
 - **Sprint 80 retro IMPs live**: IMP-1 (native OS surfaces rehearsed by looking), IMP-1.1 (tray icon first),
