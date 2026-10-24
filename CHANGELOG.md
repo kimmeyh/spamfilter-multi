@@ -26,6 +26,21 @@ Format: `- **type**: Description (Issue #N)` where type is feat|fix|chore|docs
 
 ## [Unreleased]
 
+### 2026-10-23 (Sprint 81)
+
+- **fix**: On Android, when two background scans started at the same moment, one of them could write its diagnostic-log lines to a second, hidden folder, so the log in Documents was missing lines; all lines now go to the one log folder (Issue #517)
+- **feat**: When a Gmail account needs you to sign in again, the app now tells you with a notification (at most once a day per account) that the account will not be scanned until you sign in again in the app (Issue #515)
+- **fix**: The Android new-mail diagnostic log line now keeps every field when one of them cannot be read, and shows the error for the field that failed instead of losing the whole line (Issue #513)
+- **feat**: iPhone app project: iOS project settings, the iPhone answers for every platform difference (ADR-0050), exports in the app's Documents folder shown in the Files app, and a GitHub workflow that compiles the iOS app (Issue #511)
+- **fix**: A mail server that does not send a message's ID can no longer cause the wrong message to be moved or deleted; such messages are skipped and noted in the diagnostic log (Issue #512)
+- **fix**: A Gmail label that was renamed or deleted is now reported as missing instead of silently scanning zero messages, and Gmail scanning remembers its place separately for each folder, so Spam and custom labels no longer skip waiting mail (Issue #514)
+- **feat**: Review No Rule Items now shows why an email looks suspicious (Reply-To differs, sign-in check failed, lookalike domain, blocked TLD, no unsubscribe link) and adds a "Create rule" button that opens the rule screen for that sender (Issue #516)
+- **chore**: Version 0.22.0+19 for Sprint 81 (Issue #508)
+
+## [0.21.0] - 2026-10-23
+
+Built for the Microsoft Store and Google Play closed testing (Sprint 80 cycle Phase 8.3, 2026-10-23). Sprint 80.
+
 ### 2026-10-23 (Sprint 80 final code reviews, PR #490)
 
 - **fix**: A rule or safe sender made in Manual Rule Create, and Settings > Reset to Defaults, take effect at once without a restart; a source gate now finds every screen that writes rules without reloading them (PR #490 review)

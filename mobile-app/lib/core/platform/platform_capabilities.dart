@@ -20,7 +20,13 @@ enum BackgroundScanMechanism {
   /// Android WorkManager periodic work plus the Doze alarm (F161, ADR-0042).
   workManager,
 
-  /// No mechanism on this host (iOS until ADR-0050; macOS, Linux).
+  /// iOS: BGTaskScheduler `BGAppRefreshTask`, best effort. The user's interval
+  /// is the EARLIEST start; the system picks the real time (ADR-0050
+  /// Exception 1). The scheduler itself is F67c; until then the factory
+  /// returns the unsupported scheduler for this value.
+  bgAppRefresh,
+
+  /// No mechanism on this host (macOS, Linux; not shipped).
   none,
 }
 
@@ -29,7 +35,9 @@ enum GoogleSignInFlow {
   /// Android: native google_sign_in first, the browser flow if it fails.
   nativeWithBrowserFallback,
 
-  /// iOS: native google_sign_in (unverified until ADR-0050).
+  /// iOS: native google_sign_in (ADR-0050, mechanism differences). Google
+  /// requires an iOS client type, and the loopback redirect is deprecated for
+  /// iOS clients.
   native,
 
   /// Windows, macOS, Linux: the browser with a loopback redirect and PKCE.
@@ -47,7 +55,13 @@ enum ExportLocation {
   /// Android: shared storage through a document URI.
   sharedStorageDocumentUri,
 
-  /// Not decided for this host (iOS until ADR-0050).
+  /// iOS: the app's own Documents folder, shown in the Files app through
+  /// `UIFileSharingEnabled` and `LSSupportsOpeningDocumentsInPlace`
+  /// (ADR-0050, `exportLocation`; Sprint 81 F67b). Files app visibility is
+  /// unverified until the first device build.
+  appDocumentsInFilesApp,
+
+  /// Not decided for this host (macOS, Linux; not shipped).
   undecided,
 }
 
@@ -59,7 +73,11 @@ enum NotificationDelivery {
   /// Windows: the shared plugin as a toast with a plain body.
   windowsToast,
 
-  /// Not decided for this host (iOS until ADR-0050).
+  /// iOS: the shared plugin with the Darwin settings, the same completion
+  /// notification as the other platforms (ADR-0050 Exception 1, ADR-0048).
+  iosAlert,
+
+  /// Not decided for this host (macOS, Linux; not shipped).
   undecided,
 }
 
@@ -110,7 +128,8 @@ class PlatformCapabilities {
   bool get canBeMsixPackaged => host == HostPlatform.windows;
 
   /// How background scans start. Windows: [BackgroundScanMechanism.taskScheduler].
-  /// Android: [BackgroundScanMechanism.workManager]. iOS: none until ADR-0050.
+  /// Android: [BackgroundScanMechanism.workManager]. iOS:
+  /// [BackgroundScanMechanism.bgAppRefresh], best effort (ADR-0050 Exception 1).
   BackgroundScanMechanism get backgroundScanMechanism {
     switch (host) {
       case HostPlatform.windows:
@@ -118,6 +137,7 @@ class PlatformCapabilities {
       case HostPlatform.android:
         return BackgroundScanMechanism.workManager;
       case HostPlatform.ios:
+        return BackgroundScanMechanism.bgAppRefresh;
       case HostPlatform.macos:
       case HostPlatform.linux:
       case HostPlatform.other:
@@ -127,18 +147,20 @@ class PlatformCapabilities {
 
   /// A mail app's new-mail notification can start a scan (notification
   /// listener, F253 / ADR-0044). Android: true. Windows: false (declared
-  /// exception). iOS: false until ADR-0050.
+  /// exception). iOS: false (declared exception, ADR-0050 Exception 2: no
+  /// background mode reads another app's notifications; same answer as Windows).
   bool get hasNewMailNotificationTrigger => host == HostPlatform.android;
 
   /// Open network connections are closed when the app goes to the background,
   /// so a running foreground scan must be failed (ADR-0042 Sprint 70
   /// exception). Android: true. Windows: false (minimizing closes nothing).
-  /// iOS: true (assumed; ADR-0050).
+  /// iOS: true (ADR-0050, mechanism differences: confirmed, Apple TN2277).
   bool get socketsCloseWhenBackgrounded => _isMobile;
 
   /// The app draws under the status and navigation bars (edge-to-edge), so
   /// content needs the system insets. Android: true. Windows: false.
-  /// iOS: false until ADR-0050 (SafeArea handles it differently).
+  /// iOS: false, unverified until the first iOS build (ADR-0050 says research
+  /// did not settle it; it is checked at that build).
   bool get drawsUnderSystemBars => host == HostPlatform.android;
 
   /// How Gmail sign-in runs. Android: native, then the browser.
@@ -183,7 +205,10 @@ class PlatformCapabilities {
 
   /// Gmail access is renewed from the stored refresh token without UI
   /// (Sprint 76). Android: true. Windows: false (Windows reuses the stored
-  /// access token and its own refresh path). iOS: unknown until ADR-0050.
+  /// access token and its own refresh path). iOS: false, unverified until
+  /// F67c (ADR-0050, mechanism differences: an iOS client refreshes without a
+  /// client secret, but whether the native SDK alone renews several accounts
+  /// in a locked-phone background task is open; F67c settles it).
   bool get renewsGmailWithStoredRefreshToken => host == HostPlatform.android;
 
   /// A Gmail session starts from the stored access token of a prior browser
@@ -200,7 +225,8 @@ class PlatformCapabilities {
   bool get usesSystemFileSheet => _isMobile;
 
   /// Where exports are written. Windows: Documents. Android: shared storage
-  /// through a document URI. iOS: undecided (ADR-0050).
+  /// through a document URI. iOS: [ExportLocation.appDocumentsInFilesApp]
+  /// (ADR-0050, `exportLocation`).
   ExportLocation get exportLocation {
     switch (host) {
       case HostPlatform.windows:
@@ -208,6 +234,7 @@ class PlatformCapabilities {
       case HostPlatform.android:
         return ExportLocation.sharedStorageDocumentUri;
       case HostPlatform.ios:
+        return ExportLocation.appDocumentsInFilesApp;
       case HostPlatform.macos:
       case HostPlatform.linux:
       case HostPlatform.other:
@@ -222,13 +249,18 @@ class PlatformCapabilities {
   bool get hasBatteryOptimizationSetting => host == HostPlatform.android;
 
   /// Notifications need a runtime permission request before the first one is
-  /// shown. Android: true (Android 13+). Windows: false. iOS: true (assumed;
-  /// ADR-0050).
+  /// shown. Android: true (Android 13+). Windows: false. iOS: true (ADR-0050,
+  /// mechanism differences: confirmed, Apple, "you must obtain permission to
+  /// use them").
   bool get requestsNotificationPermissionAtRuntime => _isMobile;
 
   /// How a scan-complete notification is shown. Windows:
   /// [NotificationDelivery.windowsToast]. Android:
-  /// [NotificationDelivery.androidChannel]. iOS: undecided (ADR-0050).
+  /// [NotificationDelivery.androidChannel]. iOS: [NotificationDelivery.iosAlert]
+  /// (ADR-0050 Exception 1: a completion notification as on the other
+  /// platforms). The iOS answer is DECLARED, not yet delivered:
+  /// `ScanCompleteNotifier` initializes no Darwin settings, so an iOS post
+  /// fails and is logged until F67c (Sprint 82) wires it.
   NotificationDelivery get notificationDelivery {
     switch (host) {
       case HostPlatform.windows:
@@ -236,6 +268,7 @@ class PlatformCapabilities {
       case HostPlatform.android:
         return NotificationDelivery.androidChannel;
       case HostPlatform.ios:
+        return NotificationDelivery.iosAlert;
       case HostPlatform.macos:
       case HostPlatform.linux:
       case HostPlatform.other:

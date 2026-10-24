@@ -18,6 +18,8 @@ import '../../core/storage/settings_store.dart';
 import '../../core/storage/unmatched_email_store.dart';
 import '../services/background_scan_core.dart' show BackgroundScanCore;
 import '../services/diagnostic_logger.dart';
+import '../services/heuristic_signals.dart';
+import '../services/imap_uid.dart';
 import '../services/scan_coordinator.dart';
 import '../../core/utils/pattern_normalization.dart';
 import '../../util/redact.dart';
@@ -681,6 +683,10 @@ class EmailScanProvider extends ChangeNotifier {
       final actions = _results.map((r) => <String, dynamic>{
         'scan_result_id': _currentScanResultId!,
         'email_id': r.email.id,
+        // F302 (Sprint 81): the IMAP sequence number, apart from the id. For
+        // a message with no UID, email_id is kNoValidImapUid and this is the
+        // only trace of which message it was. Null for Gmail.
+        'imap_sequence_number': r.email.imapSequenceNumber,
         'email_from': r.email.from,
         'email_subject': r.email.subject,
         'email_received_date': r.email.receivedDate.millisecondsSinceEpoch,
@@ -716,14 +722,43 @@ class EmailScanProvider extends ChangeNotifier {
       // Task D") only logged, so the review screen always showed 0 items
       // while scan_results.no_rule_count said otherwise.
       if (_unmatchedEmailStore != null) {
-        final noRuleResults =
-            _results.where((r) => r.action == EmailActionType.none).toList();
+        // F302 R-3: a message with no valid IMAP UID is NOT listed. Every No
+        // Rule row is identified by (type, value, folder); with one shared
+        // marker as the value, all such messages in a folder would collapse
+        // into one row, and any later action on that row (presence check,
+        // move, delete) would be refused anyway. The email_actions row above
+        // keeps it for history; the helper writes the skip to the diagnostic
+        // log, naming the folder.
+        final noRuleResults = _results
+            .where((r) =>
+                r.action == EmailActionType.none &&
+                hasValidImapUid(r.email.id,
+                    folderName: r.email.folderName,
+                    context: 'scan/persist-no-rule'))
+            .toList();
         // F276 (Sprint 80): this scan just fetched each message, so it is in
         // its folder now. Record that, or the row keeps the defaults
         // ('unknown', never checked) and the presence reconciler re-asks every
         // row the scan just saw on every scan, not once per
         // kNoRulePresenceRecheck.
         final seenAt = DateTime.now();
+        // F271 (Sprint 81): the user's safe sender domains and TLD block
+        // rules, read ONCE per scan. A failed read costs the chips for this
+        // scan only (the signals that need no context still compute), so it
+        // is logged and never blocks the No Rule rows themselves.
+        var heuristicContext = HeuristicContext.empty;
+        if (noRuleResults.isNotEmpty) {
+          try {
+            heuristicContext = HeuristicContext.fromRows(
+              safeSenderRows: await _databaseHelper!.querySafeSenders(),
+              ruleRows: await _databaseHelper!.queryRules(),
+            );
+          } catch (e) {
+            _logger.w('F271: could not read safe senders or rules for the '
+                'heuristic signals; lookalike and blocked-TLD chips are '
+                'skipped for this scan: $e');
+          }
+        }
         final unmatched = noRuleResults
             .map((r) => UnmatchedEmail(
                   availabilityStatus: UnmatchedEmailStore.availabilityAvailable,
@@ -743,6 +778,18 @@ class EmailScanProvider extends ChangeNotifier {
                   // bulk action can fire the RED anti-phishing warning.
                   authClassification:
                       AuthResultsParser.classifyHeaders(r.email.headers).name,
+                  // F271: reason CODES only (never header text); a reason is
+                  // shown on the review row and never acts on the email.
+                  heuristicSignals: HeuristicSignal.encode(
+                    HeuristicSignals.compute(
+                      headers: r.email.headers,
+                      from: r.email.from,
+                      authClassificationName:
+                          AuthResultsParser.classifyHeaders(r.email.headers)
+                              .name,
+                      context: heuristicContext,
+                    ),
+                  ),
                 ))
             .toList();
         if (unmatched.isNotEmpty) {

@@ -679,6 +679,23 @@ try {
         # 2026-10-03). The Sprint 66 fix reordered the success/failure checks
         # but never reached them. Native adb output is judged by its TEXT
         # here, so this section runs under 'Continue'; restored at Step 2.
+        #
+        # Start the adb server DETACHED, never as a side effect of `& adb ...`
+        # (Sprint 81 Task 11, IMP-2b). A server started inline inherits this
+        # script's output handles and runs until killed. When the caller
+        # redirects the script (`powershell ... *> build.log`, how a background
+        # build is run), that caller waits for the redirect to close and never
+        # returns: Sprint 80 open 11 hours, Sprint 81 twice; reproduced
+        # 2026-10-24 with a 10-line probe, and `adb kill-server` released it
+        # each time. Start-Process opens it without our handles. Not `-Wait`:
+        # on Windows PowerShell 5.1 that waits for the whole process tree,
+        # which includes the server, so it never returns either.
+        function Start-AdbServerDetached {
+            $adbExe = (Get-Command adb -ErrorAction SilentlyContinue).Source
+            if (-not $adbExe) { return }
+            $p = Start-Process -FilePath $adbExe -ArgumentList 'start-server' -WindowStyle Hidden -PassThru
+            $p.WaitForExit()
+        }
         $savedErrorAction = $ErrorActionPreference
         $ErrorActionPreference = 'Continue'
         $adbStarted = $false
@@ -693,6 +710,7 @@ try {
                 $adbProcs | ForEach-Object { try { Stop-Process -Id $_.Id -Force -ErrorAction SilentlyContinue } catch {} }
                 Start-Sleep -Seconds 2
             }
+            Start-AdbServerDetached
             $adbDevices = & adb devices 2>&1
             # Check SUCCESS first. `adb devices` prints BOTH "daemon not running;
             # starting now" AND "List of devices attached" in the same output when
@@ -709,7 +727,7 @@ try {
                 Write-Host "[ADB] Daemon not running or connection refused. Restarting..." -ForegroundColor Yellow
                 & adb kill-server
                 Start-Sleep -Seconds 2
-                & adb start-server
+                Start-AdbServerDetached
                 Start-Sleep -Seconds 2
                 $adbDevices = & adb devices 2>&1
             }
@@ -888,7 +906,7 @@ try {
                 Write-Host "[WARNING]: APK install failed (attempt $i/$maxInstallTries). Restarting ADB and retrying..." -ForegroundColor Yellow
                 & adb kill-server
                 Start-Sleep -Seconds 2
-                & adb start-server
+                Start-AdbServerDetached
                 Start-Sleep -Seconds 4
             }
         }

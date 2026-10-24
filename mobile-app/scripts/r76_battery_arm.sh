@@ -66,6 +66,12 @@ snap after
 "$ADB" shell dumpsys battery reset
 "$ADB" shell dumpsys batterystats "$PKG" > "$OUT/after_batterystats_full_pkg.txt"
 "$ADB" shell dumpsys batterystats --checkin "$PKG" > "$OUT/after_batterystats_checkin.txt" 2>&1
-rm -rf "$OUT/diag"; "$ADB" pull /sdcard/Documents/diagnostics_Dev "$OUT/diag" > /dev/null 2>&1
+# F282 (0.20.0+): the default log folder is <export folder>/diagnostics, and the
+# DEV export folder is Documents/MyEmailSpamFilter_Dev. Pre-0.20.0 builds wrote
+# Documents/diagnostics_Dev. Pull fails loudly so a moved folder is not missed.
+DIAG_DIR="${DIAG_DIR:-/sdcard/Documents/MyEmailSpamFilter_Dev/diagnostics}"
+rm -rf "$OUT/diag"
+"$ADB" pull "$DIAG_DIR" "$OUT/diag" > /dev/null 2>&1 \
+  || echo "WARNING: no diagnostic log pulled from $DIAG_DIR" | tee -a "$OUT/meta.txt"
 echo "end epoch=$("$ADB" shell date +%s | tr -d '\r') notifications_posted=$N" >> "$OUT/meta.txt"
 "$ADB" shell input keyevent KEYCODE_WAKEUP

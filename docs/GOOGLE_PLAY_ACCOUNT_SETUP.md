@@ -501,6 +501,11 @@ password is a first-class path in the app.
 > 5. Enter your email address and the app password you created (not your normal password).
 > 6. Run a scan and see what it finds.
 >
+> **If you use Google Sign-In anyway**: Google makes this app sign you in again about every
+> 7 days while it is in testing. When that happens the app shows a notification, "Gmail
+> sign-in needed for ...", and it does not scan that account until you open the app and tap
+> **Sign In Again** on the account. This is expected, not a bug.
+>
 > **Please stay opted in for at least 14 days.** If you leave and rejoin, the clock restarts
 > for you, which delays the whole launch.
 >
@@ -513,6 +518,18 @@ password is a first-class path in the app.
 Creating an app password requires 2-Step Verification to be enabled first. If a tester says the
 app password option is missing from their account settings, that is why. Say it up front rather
 than debugging it later.
+
+### The weekly Gmail sign-in (F301, Sprint 81, Harold Q1 = 1)
+
+ADR-0029 Phase 1 stays: while the Google consent screen is in Testing, a Gmail account signed
+in with Google Sign-In must sign in again about every 7 days. Sprint 81 made this visible
+instead of silent. When a background scan skips a Gmail account for this reason, the app posts
+one notification per account per day (Android notification, Windows toast, iOS notification
+from Sprint 82): "Gmail sign-in needed for <masked address>. This account will not be scanned
+until you sign in again in the app." The tester then opens the app and taps **Sign In Again**
+on the account. Tell every tester who uses Google Sign-In about this before the first week
+ends. If the tester turned app notifications off in the phone or Windows settings, no
+notification appears; the account list still shows **Sign In Again** (the app records that separately, best effort).
 
 ### What counts, and what does not
 

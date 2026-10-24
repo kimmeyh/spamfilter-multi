@@ -27,6 +27,7 @@ import '../../core/models/safe_sender_list.dart' show SafeSenderList;
 import '../../core/services/auth_results_parser.dart';
 import '../../core/services/content_history.dart';
 import '../../core/services/diagnostic_logger.dart';
+import '../../core/services/imap_uid.dart';
 import '../../core/services/email_scanner.dart' show safeSenderAlreadyInTarget;
 import '../../core/services/app_version.dart';
 import '../../util/redact.dart';
@@ -516,6 +517,9 @@ class _ResultsDisplayScreenState extends State<ResultsDisplayScreen> {
             // F91 (Sprint 39): carry the persisted RFC 5322 Message-ID
             // (nullable; older rows predating the v6 migration are null).
             messageIdHeader: map['rfc5322_message_id'] as String?,
+            // F302 (Sprint 81): the IMAP sequence number stored apart from
+            // the id (null for Gmail and for rows saved before v14).
+            imapSequenceNumber: map['imap_sequence_number'] as int?,
             // F96 (Sprint 43): re-hydrate the SPF/DKIM/DMARC classification
             // captured at scan time. The reconstructed headers above carry only
             // From/Subject, so a fresh parse would always classify GREY; this
@@ -2161,8 +2165,10 @@ class _ResultsDisplayScreenState extends State<ResultsDisplayScreen> {
     for (final result in allResults) {
       foldersTouched.add(result.email.folderName);
       if (_getEffectiveAction(result) != EmailActionType.none) continue;
-      final uid = int.tryParse(result.email.id);
-      if (uid == null) continue; // non-IMAP id (Gmail OAuth opaque)
+      final uid = parseImapUid(result.email.id,
+          folderName: result.email.folderName,
+          context: 'results/oldest-no-rule-cursor');
+      if (uid == null) continue; // non-IMAP id (Gmail OAuth opaque) or no UID
       final current = oldestPerFolder[result.email.folderName];
       if (current == null || uid < current) {
         oldestPerFolder[result.email.folderName] = uid;

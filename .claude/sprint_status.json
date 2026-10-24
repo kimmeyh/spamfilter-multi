@@ -1,21 +1,22 @@
 {
     "_description": "Sprint status file that persists across context compaction. Update after each phase/sub-phase completion.",
-    "_last_updated": "2026-10-23T12:30:00-04:00",
+    "_last_updated": "2026-10-24T02:10:00-04:00",
     "_usage": "Read this file after context compaction to restore sprint approval state and progress.",
     "_staleness_note": "This file had drifted 15 sprints (last updated at Sprint 35, 2026-04-19) before being refreshed at Sprint 50 close-out. It is a Phase 7.7 checklist item -- update it at every sprint close-out, not opportunistically.",
     "current_sprint": {
-        "number": 80,
-        "branch": "feature/20261018_Sprint_80",
-        "status": "Phase 7.7 Final Code Reviews (7.7.1) -- COMPLETE. PR #490 READY for Harold's review and merge; CI green. Harold 2026-10-23: hunter 16 -> F302, hunter 9 Android half -> F303 (both Sprint 81); Q3 = 1: from Sprint 81 the 7.7.1 reviews run BEFORE the retrospective (workflow, checklist, CLAUDE.md, close-out check 3d-2 updated). Q4 = 1, Q5 = 2: the PR stays draft until 7.7.5, one bounded improvement review, then gh pr ready + CI green + announce. Q6: CI runs twice (by hand on the draft with the improvement review; on ready_for_review). AGENTS.md points to the sprint execution docs.",
+        "number": 81,
+        "branch": "feature/20261023_Sprint_81",
+        "status": "Phase 5.3 Manual Validation",
+        "status_detail": "Handed over 2026-10-24. Tasks 0, 3-11 DONE; Task 1 AC-2/AC-3 and Task 2 signing + TestFlight BLOCKED on Harold's IOS_SETUP.md Parts A-D (stopping criterion 2). MV steps in SPRINT_81_PLAN.md 'Manual Validation (Phase 5.3)'.",
         "plan_approved": true,
-        "pr_number": 490,
-        "version": "0.21.0+18 (bumped at 3.7.0b)"
+        "pr_number": 507,
+        "version": "0.21.0+18 (Sprint 81 bump happens at 3.7.0b)"
     },
     "previous_sprint": {
-        "number": 79,
-        "branch": "feature/20261013_Sprint_79",
-        "pr": "#480 -> develop (merged 2026-10-18, dd04c4c), #489 develop -> main (ff58da3)",
-        "deliverables": "F286, F287 (ADR-0048), F288, F291, F292 (runner; cause unknown), F293, F297; MV76-1 in-sprint part (MV-7 skip, IMAP 120 s limit, schedule logging, workmanager 0.10.10); 7.7.1 fixes incl. Harold Q1-Q3 (one IMAP timeout ends the session, UID MOVE included; scheduler caller label). Version 0.20.0+17. Phone remainder, F277, F292 post-reboot runs moved to Sprint 80."
+        "number": 80,
+        "branch": "feature/20261018_Sprint_80",
+        "pr": "#490 -> develop (merged 2026-10-23, f301cdee), #506 develop -> main (2d81264a), tag v0.21.0",
+        "deliverables": "F294 (ADR-0049), F295 (ADR-0050, iOS cards), F296, F298, F276, F269, F267, F268, F204, F292 closed, F299 closed; MV Tasks 15-17; MV76-1 done except R-2 (Fold log); F277 closed. 7.7.1 fixes; F302, F303 to Sprint 81. Process: reviews before the retro, PR draft to 7.7.5, one improvement review, CI twice. Version 0.21.0+18. Only #491 auto-closed (comma list in 'Closes'); 18 cards to close by hand."
     },
     "github_issues": {
         "sprint_73": "#428 (open, MV74-1), #422 (open, MV74-3), #430 closed, #434 (open, MV74-2), #431 closed, #432 closed, #433 (open, MV74-3). Also closed in pass 1: #426 (superseded by #428), #427 (leftover captured as F236).",
@@ -48,7 +49,8 @@
         "status_0_17_6": "SUBMITTED to BOTH stores 2026-10-06 (Harold screenshots), NOT yet live. Microsoft Store: Submission 31, \"Update in certification\", stage Pre-processing (last modified 10/07/2026); Store presence still Submission 30 (0.17.0). Google Play: Closed testing - Alpha, \"14 (0.17.6) Start full rollout\" in Changes in review, quick checks running (up to 12 min); managed publishing off. Artifacts: MSIX D:\\Data\\Harold\\github\\spamfilter-multi-prod\\mobile-app\\build\\windows\\x64\\runner\\Release\\my_email_spam_filter.msix (17.6 MB, self-test PASS); AAB D:\\Data\\Harold\\github\\spamfilter-multi\\mobile-app\\dist\\android-0.17.6+14\\app-prod-release.aab (67.3 MB). STORE_VERSION_STATUS Live rows unchanged until observed live; \"Last uploaded to Play\" -> 0.17.6 (14) is updated WITH the Sprint 77 pubspec bump (IMP-2).",
         "status_0_18_0": "LIVE on BOTH (Harold, 2026-10-10). Fold device-verified (Version 0.18.0 screenshots, log env=prod v0.18.0). Windows: installed Store build shows Version 0.18.0, no [DEV]; Partner Center page not observed. STORE_VERSION_STATUS updated with the 0.19.0+16 bump.",
         "status_0_20_0": "BUILT + VERIFIED 2026-10-18, SUBMITTED to BOTH stores, in process (Harold, 2026-10-18 ~11:39pm ET; consoles not observed by Claude; not seen live). MSIX 0.20.0.0 from the prod worktree at main ff58da3 (tag v0.20.0): D:\\Data\\Harold\\github\\spamfilter-multi-prod\\mobile-app\\build\\windows\\x64\\runner\\Release\\my_email_spam_filter.msix (17.7 MB, release self-test 6/6 PASS, manifest Identity 0.20.0.0). AAB 0.20.0 versionCode 17: D:\\Data\\Harold\\github\\spamfilter-multi\\mobile-app\\dist\\android-0.20.0+17\\app-prod-release.aab (67.8 MB, versionName 0.20.0, no .dev, OAuth scheme present, no AD_ID). Notes: docs/store-assets/RELEASE_NOTES_0.20.0_windows.md and _play.md (gate passed).",
-        "status_0_19_0": "MSIX 0.19.0.0 and AAB 0.19.0 (versionCode 16) SUBMITTED 2026-10-13, certification in process (Harold's report; not observed live). See docs/STORE_VERSION_STATUS.md."
+        "status_0_19_0": "MSIX 0.19.0.0 and AAB 0.19.0 (versionCode 16) SUBMITTED 2026-10-13, certification in process (Harold's report; not observed live). See docs/STORE_VERSION_STATUS.md.",
+        "status_0_21_0": "INSTALLED from both stores 2026-10-24 (Harold: prod Windows shows Version 0.21.0, no [DEV]; \"phone app updated to 0.21.0\"). Built + verified 2026-10-23. MSIX 0.21.0.0 (main 2d81264a, self-test 6/6, 17.8 MB) and AAB versionCode 18 (68.0 MB). See docs/STORE_VERSION_STATUS.md."
     },
     "environment_notes": [
         "RESOLVED 2026-07-29 (verified 07-30): the Store fault was an Acronis file-system filter blocking AppXSvc cleanup, fixed by an Acronis Protection exclusion. 23h uptime with ZERO Id-493 events vs a 176-file/6-min baseline; Store client self-updated 22606.1401.6.0 -> .10.0 (requires a working deployment pipeline). Filter drivers remain loaded -- backup protection was NOT disabled. See ALL_SPRINTS_MASTER_PLAN ENV-1 for the picker gotcha if it recurs.",
@@ -57,8 +59,10 @@
     ],
     "blocking_issues": [],
     "next_actions": [
-        "Harold reviews and merges PR #490 into develop; then Phase 8 (release cycle).",
-        "Sprint 81 Phase 7: PR stays DRAFT; at Manual Validation complete, in ONE turn: both 7.7.1 reviews on the draft + retro prompt; recurring classes (2+ this sprint or seen before) get prevention proposals; ONE improvement review (fix under 4 code files / 600 lines, else next Phase 1) + CI run 1 by hand on the draft (gh workflow run ci.yml --ref <branch>); then 7.7.5: gh pr ready, CI run 2 green, announce."
+        "Harold: run the close script for the 18 Sprint 80 cards (auto-mode blocked the bulk close).",
+        "Harold: upload the 0.21.0 MSIX to Partner Center and the 0.21.0 AAB (versionCode 18) to Play closed testing.",
+        "Phase 8.4: Harold selects Sprint 81 scope from the pass-2 slate; then Phase 3 planning (3.7.0b bump, cards, draft PR).",
+        "Sprint 81 Phase 7: PR stays DRAFT; at Manual Validation complete, in ONE turn: both 7.7.1 reviews on the draft + retro prompt; recurring classes get prevention proposals; ONE improvement review + CI run 1 by hand on the draft; then 7.7.5: gh pr ready, CI run 2 green, announce."
     ],
     "next_sprint_targeted": {
         "number": 80,

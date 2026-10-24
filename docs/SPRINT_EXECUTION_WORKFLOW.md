@@ -64,7 +64,7 @@ One-line-per-phase quick reference. Use this at the start of a sprint and at eve
 | [**3. Sprint Kickoff & Planning**](#phase-3-sprint-kickoff--planning) | Draft `docs/sprints/SPRINT_N_PLAN.md`; open Issue #N + create draft PR (3.3.1); **get explicit Phase 3.7 approval** | User says "plan approved" (or equivalent) -- this authorizes Phases 4-7 (durable) |
 | [**4. Sprint Execution (Development)**](#phase-4-sprint-execution-development) | Implement tasks in plan order; run tests + analyze after each; commit with issue number | All acceptance criteria in plan met; test suite green |
 | [**5. Code Review & Testing**](#phase-5-code-review--testing) | F-PRECHECK (5.1.2); full test suite; WinWright sweep (5.1.5); build + launch Windows app for manual test | Manual test golden-path + edge cases verified; no regressions |
-| [**6. Push to Remote & Finalize PR**](#phase-6-push-to-remote--create-pr) | Push branch; **UPDATE** the existing sprint PR (created 3.3.1, kept DRAFT); interim status to user -- NOT "ready" (6.5); **on merge, immediately open the NEXT sprint branch FROM THE CURRENT FEATURE BRANCH -- not from develop (6.6)**. The draft->ready conversion happens when Manual Validation is complete, at the start of Phase 7, in the same turn as the 7.7.1 final code reviews (Harold, 2026-10-23); the PO/SM readiness announcement happens at 7.7.5. | PR updated + still DRAFT; NO Copilot review here (it runs at 7.7.1); next sprint branch created FROM the current feature branch as soon as the PR merges (no post-merge commits stranded, no uncommitted work lost) |
+| [**6. Push to Remote & Finalize PR**](#phase-6-push-to-remote--create-pr) | Push branch; **UPDATE** the existing sprint PR (created 3.3.1, kept DRAFT); interim status to user -- NOT "ready" (6.5); **on merge, immediately open the NEXT sprint branch FROM THE CURRENT FEATURE BRANCH -- not from develop (6.6)**. The draft->ready conversion and the PO/SM readiness announcement both happen at the 7.7.5 final gate (Harold, 2026-10-23, Q4 = 1); the 7.7.1 reviews run on the draft. | PR updated + still DRAFT; NO Copilot review here (it runs at 7.7.1); next sprint branch created FROM the current feature branch as soon as the PR merges (no post-merge commits stranded, no uncommitted work lost) |
 | [**7. Sprint Review & Retrospective**](#phase-7-sprint-review--retrospective-after-pr-submitted---mandatory-for-all-sprints) | **FIRST (Harold, 2026-10-23): Manual Validation complete -> IMMEDIATELY start BOTH final code reviews on the DRAFT PR -- Copilot + pr-review-toolkit (7.7.1)**, and send the retro prompt in the same turn; fix the findings (prevention first) while Harold writes his feedback; draft Claude feedback; combine, with the 7.7.1 findings as retro input (every RECURRING finding class gets an improvement proposal); apply now-vs-backlog decisions; **review the improvement commits ONCE (7.7.1 improvement review)**; with **CI run 1 started by hand on the draft**; **FINAL GATE (7.7.5)** -> `gh pr ready` -> CI run 2 green on that HEAD -> final PR update if needed -> notify PO/SM ready for final approval | Retrospective doc committed (4 roles x 14 categories); Cat 13 -> Sprint N+1 plan; Cat 14 -> backlog; **PR set Ready-for-Review at 7.7.5, after the improvement review; PO/SM notified for final approval once CI is green on that HEAD (the one readiness announcement)** |
 
 **Invariants** (apply to all phases):
@@ -158,7 +158,7 @@ This change was introduced after Sprint 36 kickoff skipped Phase 1 (prior "OPTIO
 
 - [ ] **1.2 Present Candidates to User in BACKLOG_REFINEMENT.md Format**
   - **MANDATORY FIRST ACTION (Sprint 50, Harold): READ `BACKLOG_REFINEMENT.md` section "Backlog Presentation Format" IN THE SAME TURN, immediately before producing the presentation.** This is a deterministic deliverable -- mirror the template EXACTLY; do not produce it from memory. (This rule exists because the format drifted twice, Sprints 49-50, despite the Sprint 45 read-format-doc-first memory.)
-  - **Summary Index first**: open with a "Candidates at a glance" list of the header lines of the NEXT 20 active candidates in priority order, then the HOLD items one line each (Harold, Sprint 50; F293, Sprint 79), then the details of the same 20 in the same order, with NO phase-group headers (each card keeps its `- Phase:` bullet)
+  - **Summary Index first**: open with a "Candidates at a glance" list of the header lines of the NEXT 20 active candidates in priority order, then a SEPARATE "ON HOLD Candidates" list with the HOLD items one line each (Harold, Sprint 50; F293, Sprint 79; separate list Harold 2026-10-23), then the details of the same 20 in the same order, with NO phase-group headers (each card keeps its `- Phase:` bullet)
   - Required per-item format (verbatim from the spec): `**<ID>. <Title> (~<effort>) Priority <N>**` header, then bullets `- Phase:`, `- Platform:`, description bullets, `- Depends on:` (if any)
   - Section structure: `### <Phase Name>` group headers; HOLD items use `Priority HOLD` in a separate `### HOLD Items (<reason>)` section at the bottom
   - Priorities are NUMERIC (increments of 10; sprint-together items use increments of 2). NEVER invent ad-hoc groupings (tiers, selection numbers) in place of phase headers + priorities
@@ -357,7 +357,12 @@ This change was introduced after Sprint 36 kickoff skipped Phase 1 (prior "OPTIO
     - [ ] Task C: [description]
 
     ### GitHub Issues
-    - Closes #XX, #YY, #ZZ
+    - Closes #XX
+    - Closes #YY
+    - Closes #ZZ
+
+    <!-- ONE keyword per issue. GitHub: "Use full syntax for each issue". "Closes #XX, #YY" closes only #XX (Sprint 80: 18 of 19 cards stayed open after the merge). -->
+
 
     ---
     *Draft until the 7.7.5 final gate: final code reviews (Copilot + pr-review-toolkit) and the retrospective run on the draft; then marked ready, CI checked, and the PR announced ready for final approval.*
@@ -1055,7 +1060,7 @@ After Phase 5.2 all tests pass, context can be compacted for efficiency:
     - Related GitHub issues closed
     - Files modified/created
     - Any blockers or concerns
-  - Reference all sprint cards: `Closes #XX, #YY, #ZZ`
+  - Reference all sprint cards with ONE keyword per card: `Closes #XX`, `Closes #YY`, `Closes #ZZ` (never `Closes #XX, #YY` -- GitHub closes only the first; Sprint 80 left 18 of 19 cards open)
 
 - [ ] **6.4 Assign Code Review**
   - **@kimmeyh** is auto-assigned via `.github/CODEOWNERS`.
@@ -1685,7 +1690,7 @@ dart format --set-exit-if-changed lib/
 - [OK] All commits pushed to remote
 - [OK] PR created to `develop` branch (NOT main - critical requirement)
 - [OK] PR fully documented (see GitHub PR template)
-- [OK] Sprint card issues referenced in PR description (Closes #XX, #YY, #ZZ)
+- [OK] Sprint card issues referenced in PR description, one keyword per card (Closes #XX, Closes #YY, Closes #ZZ)
 - [OK] User notified and ready for review
 
 ### When PR Approved (Phase 7 Complete)

@@ -470,7 +470,7 @@ void main() {
 
       final db = await helper.dbHelper.database;
       expect(await db.getVersion(), databaseVersion);
-      expect(databaseVersion, 13);
+      expect(databaseVersion, greaterThanOrEqualTo(13));
 
       final patterns = (await db.query('safe_senders', orderBy: 'pattern'))
           .map((r) => r['pattern'] as String)

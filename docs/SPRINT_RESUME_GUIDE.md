@@ -132,6 +132,27 @@ These memory entries collectively govern sprint execution -- consult on uncertai
 - Dev DB: `{dev app data}\spam_filter.db`
 - Background scan log: `{dev app data}\logs\dev_background_scan_v{VERSION}.log`
 
+### 10a. A Background Android Build That Never Finishes (Sprint 81 Task 11, IMP-2b)
+
+**Cause, proven 2026-10-24**: the build is run with a redirect (`powershell ... *> build.log`), and the script starts
+the adb server as a side effect of an inline call (`$x = & adb devices 2>&1` after it kills every adb process). The
+server (`adb -L tcp:5037 fork-server server`) inherits the script's redirected output and runs until killed, so the
+caller waits for the redirect to close and never returns (Sprint 80: about 11 hours; Sprint 81: twice). Evidence: two
+builds ended "Done!" and stayed open; `gradlew --stop` did not close one; `adb kill-server` closed both within 6
+seconds. A 10-line probe reproduced it only WITH the redirect (inline start and capture alone closed normally).
+
+- **Prevented in the script (Sprint 81)**: `build-with-secrets.ps1` starts the server with `Start-AdbServerDetached`
+  (`Start-Process -PassThru` + `WaitForExit()`; NOT `-Wait`, which on Windows PowerShell 5.1 waits for the whole
+  process tree, server included). Running `adb devices` before the build does NOT help: the script kills that
+  server and starts its own.
+- **Not covered**: the failure path that runs `flutter emulators --launch` (flutter may start adb inline), and any
+  other tool that starts adb under a redirect.
+- **If one is already stuck**: `adb kill-server` closes it. Do not do this while an emulator arm or a logcat capture
+  depends on the server.
+- **If a stuck task is NOT explained by this**: capture
+  `Get-CimInstance Win32_Process | Select ProcessId,ParentProcessId,Name,CreationDate,CommandLine` and look for a
+  process created during the task whose parent is gone.
+
 ### 11. What `/sprint-compact` Does NOT Carry (So You Look Them Up Here)
 
 The compact-string skill explicitly omits these because they live here permanently:

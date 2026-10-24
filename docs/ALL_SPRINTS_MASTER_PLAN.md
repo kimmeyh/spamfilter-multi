@@ -181,7 +181,7 @@ Historical sprint information lives in individual documents in `docs/sprints/` a
 
 **Sprint 74 scope -- COMPLETE 2026-09-29 (PR #440)** (Phase 8.4 pass 2, selected by Harold 2026-09-24): MV74-1 (#428), MV74-2 (#434), MV74-3 (#422, #433), F202 (#438), F222 (#437), F232 (#422), F206 (#439), F205 (#433). Plan: `docs/sprints/SPRINT_74_PLAN.md`.
 
-**Last Reviewed**: October 18, 2026 (Sprint 79 cycle, Phase 8.2 pass-1 COMPLETENESS SWEEP -- no scope selected: PR #480 merged to develop (dd04c4c) and main (#489, ff58da3); Sprint 80 branch opened from the Sprint 79 branch; #481-#488 closed by the merge's `Closes` keywords (first sprint on the F288 default branch), #471, #472, #433 and #428 open for Sprint 80; Sprint 79 plan, retrospective and summary present; Sprint 80 stub present; shipped cards (F286, F287, F288, F291, F293, F297) confirmed pruned; Last Completed Sprint corrected to the final suite count and the 7.7.1 fixes; sprint_status.json moved to Sprint 80 Phase 8.)
+**Last Reviewed**: October 23, 2026 (Sprint 80 cycle, Phase 8.2 pass-1 COMPLETENESS SWEEP -- no scope selected: PR #490 merged to develop (f301cdee) and main (#506, 2d81264a), tagged v0.21.0; Sprint 81 branch opened from the Sprint 80 branch; only #491 closed on merge -- the PR body used 'Closes #491, #492, ...', and GitHub applies the keyword to the first issue only, so the template now uses one keyword per card and the other 18 are closed by hand; Sprint 80 plan, retrospective and summary present; Sprint 81 stub present; F205 pruned (classified in Sprint 80 Task 1 R-7); F300's acceptance criterion moved back from F301; F246 and F259 given effort, Phase and Platform.)
 
 All incomplete items in relative priority order. Priority in increments of 10; items that can sprint together in increments of 2. HOLD items grouped at bottom. See [Feature and Bug Details](#feature-and-bug-details) for deep-dive specs. See [BACKLOG_REFINEMENT.md](BACKLOG_REFINEMENT.md) for presentation format rules.
 
@@ -221,7 +221,9 @@ Each item is fixed PREVENTION FIRST (SPRINT_EXECUTION_WORKFLOW.md 7.7.1).
 
 Each item is fixed PREVENTION FIRST (SPRINT_EXECUTION_WORKFLOW.md 7.7.1): name how the class is prevented, extending the connected existing control, before the instance fix.
 
-**F259. A missing Gmail label scans as 0 messages with no trace; history cursor is per account Priority 35 -- backlog (7.7.1 review L-3 / silent-failure M-8)**
+**F259. A missing Gmail label scans as 0 messages with no trace; history cursor is per account (~90-150m) Priority 35 -- backlog (7.7.1 review L-3 / silent-failure M-8)**
+- Phase: Core App Quality
+- Platform: All (shared Gmail API adapter; Windows and Android)
 - `_labelIdFor` returning null yields an empty fetch with no log line and no F202 "missing folder" classification, cached for the connection (a renamed label scans empty forever; the lookup is case-sensitive). Related, pre-existing: the incremental history cursor is stored per ACCOUNT (`getLastHistoryId(accountId)`), and INBOX saves the current historyId first, so later folders (a custom label, SPAM) read from "now". Prevention: route null through the existing F202 missing-folder path (extends that classifier) and store the cursor per account + folder.
 
 **F260. Stale log-lock takeover by atomic rename Priority 50 -- backlog (7.7.1 silent-failure M-7; Harold Q11 "can a semaphore-type technique be used")**
@@ -338,7 +340,9 @@ Source: `docs/research/R76-3_HEURISTICS_ML_GENAI_SPAM_IDENTIFICATION.md` (Issue 
 **F244. Tell the user when a Gmail background scan skips for sign-in Priority 45 -- backlog (Sprint 75 5.1.1 review SF-8; Harold at Manual Validation 2026-10-03: "backlog")**
 - F239 records a skip -- no notification, no export -- when Gmail needs the user, and relies on the per-account `gmail_sign_in_required` flag to show "Sign In Again" in the account list. That write is best effort: if it fails (a locked database), background scans of the account skip every cycle and nothing tells the user. Fix: a one-time notification for a needs-sign-in skip, independent of the flag, or a retry of the flag write.
 
-**F246. Android Gmail background renewal through a server-side token exchange Priority 30 -- backlog (Sprint 75 F239 R-1 spike FAILED; Harold 2026-10-03: "1.3")**
+**F246. Android Gmail background renewal through a server-side token exchange (~30m scope-matched spike retry; the server path is a Class-1 decision, not estimated) Priority HOLD -- MOVED TO HOLD by Harold 2026-10-23 (Sprint 81 scope selection); was Priority 30 (Sprint 75 F239 R-1 spike FAILED; Harold 2026-10-03: "1.3")**
+- Phase: Google Play Readiness
+- Platform: Android
 - From a WorkManager worker, `clientAuthorizationTokensForScopes(email, promptIfUnauthorized: false)` returned NULL for an already-granted Gmail account (emulator, google_sign_in 7.2.0 / android 7.2.7; ADR-0011 known limit). Android stores no refresh token, so a Gmail background scan more than about an hour after the app was last opened skips with "Gmail needs you to sign in again". Google's documented route: request a server auth code at sign-in and exchange it on a server for a refresh token. Needs a backend this app does not have (hosting, secret handling, privacy-policy update, ADR); a Class-1 architecture decision. Before committing to it, a 30-minute scope-matched retry of the spike would rule out a requested-vs-granted scope mismatch. The switched-off `GoogleAuthService.authorizeWithoutActivity` is the code to remove or reuse.
 
 **F254. Home-screen widget: last scan and new No Rule count Priority 45 -- backlog (Harold 2026-10-05, Q3 = 1)**
@@ -400,66 +404,6 @@ MV74-1 (F235 Doze, #428) and MV74-3 (F205 errors, #433) are folded into **MV76-1
 - Source: found 2026-09-11 while verifying Google's current wording for F211 R-2. Sources:
   developers.googleblog.com "Improving user safety in OAuth flows through new OAuth Custom URI
   scheme restrictions"; developers.google.com/identity/protocols/oauth2/native-app.
-
-**F205. Closed-test error rate: 53 errors in 3,833 scanned on the S24+ -- find out what they ARE (~30-60m) Priority 18**
-- Phase: Core App Quality
-- Platform: Android
-- Origin: NEW 2026-09-10, observed on the closed-test device; check Windows for the same class. Answered by MV76-1's error-classification step (#433).
-- **NARROWED 2026-09-10 by Harold's per-account sweep, and this is the useful half**: he
-  filtered Scan History by account and scan type. **kimmeyharold@aol.com: NO rows with Errors > 0**,
-  background or manual. **kimmeyh@gmail.com background: 21 errors, ALL on a PRIOR VERSION.**
-  Gmail manual: also all prior-version.
-  So the errors are **Gmail-only and pre-0.15.0** -- not spread across accounts, and not
-  occurring on the current build. That is a substantially smaller and colder problem than the
-  raw total suggested, and it may already be fixed. **Confirm no NEW errors accrue on 0.15.0
-  before spending time on the historical ones.**
-- **Observation, from the S24+ Scan History 90-day totals on 2026-09-10**: Total 3,833,
-  Processed 892, Deleted 374, Moved 0, Safe 43, No Rule 475, **Errors 53**. That is ~1.4% of
-  scanned mail, and it is the only number on that screen that is not self-explanatory.
-- **The per-scan rows all read `Errors: 0`.** The three visible background runs (AOL 6:34 PM
-  Deleted 19, Gmail 6:34 PM, AOL 4:06 PM Deleted 6) each report zero. So the 53 are concentrated
-  in runs not visible without scrolling, which makes them a cluster rather than background noise
-  -- worth finding, because a cluster usually has ONE cause.
-- **What was ruled out rather than assumed** (2026-09-10): the obvious hypothesis was F202's
-  missing-folder finding -- a folder that does not exist routes through `recordFolderFetchError`
-  into `errorCount`, so a wrong Gmail folder name would produce exactly this shape. **Checked and
-  it does not hold**: `junk_folder_config.dart:70` correctly uses the bracketed `[Gmail]/Spam`
-  form, and the Windows dev log has **zero** `EXCEPTION fetching folder` entries. The Scan
-  History screen displays `Gmail/Spam` without brackets, but that is a DISPLAY string, not the
-  IMAP name.
-- **UNBLOCKED 2026-09-10 -- data IS retrievable after all, and I was wrong to say otherwise.**
-  Harold changed the CSV export folder to Documents and ran a MANUAL scan; the file written and
-  pulled over MTP:
-  `/storage/emulated/0/Documents/scan_results_2026-09-10T20-32-31.csv`. So **manual-scan export
-  works on Android**; it is the BACKGROUND path (`background_scan_windows_worker.dart`) that does
-  not. My earlier "nothing landed" was checked BEFORE he changed the folder and re-scanned -- a
-  moment-in-time observation reported as a conclusion.
-  The CSV carries exactly what a diagnosis needs: `Scan Date, Received Date, From, Folder,
-  Subject, Rule, Match Condition, Action, Status, Email ID` -- including the **matched rule and
-  its regex**, which is more than the Windows CSV header shows.
-  **So F205 is only PARTLY blocked**: manual scans can be exported today. If a Gmail manual scan
-  reproduces an error row, the cause is diagnosable now rather than after F206.
-- **CORRECTION (2026-09-10, same day)**: this card originally said to "get the device log off
-  the S24+ ... `background_scan_v0.15.0.log`". **That file does not exist on Android.**
-  `main.dart:152` gates the whole file-logging block on
-  `BackgroundModeService.isBackgroundMode`, which is the WINDOWS Task Scheduler path; Android
-  background scans run through WorkManager and never reach it. The path is even built with a
-  hardcoded `\\` separator. I assumed a file rather than checking -- the same shape as retro
-  IMP-1, one level up: assuming an ARTIFACT exists rather than assuming what one means.
-- **So there is currently NO way to diagnose this.** The counters are visible on-device and the
-  underlying detail is not retrievable at all. That is what F206 is for, and F205 is BLOCKED on
-  it: without per-error detail, any diagnosis from the totals alone is guesswork.
-- **Method when picked up (after F206 ships)**: export the scan history, group the error entries
-  by cause, then fix. Do NOT start from a hypothesis; read the data first.
-- **Why this matters more here than elsewhere**: the closed test is the ONLY build that acts on
-  real mail (see `GOOGLE_PLAY_ACCOUNT_SETUP.md` "Scan mode by environment"). An error rate that
-  is benign in read-only could be a failed delete or a half-applied action here. It is also the
-  build 8 testers are about to be watching.
-- **Not urgent, and not a launch blocker**: scans complete, the green check appears, and 3,780 of
-  3,833 messages were handled without error. But an unexplained 1.4% on the build that touches
-  real mail is worth an hour before the tester count reaches 12.
-- Depends on: access to the device log. No code change is implied until the cause is known.
-- Source: observed by Claude in Harold's 2026-09-10 S24+ screenshots.
 
 **F165. Cross-device rules-DB sharing -- user cloud storage (iCloud/OneDrive/Box/Google Drive) exploration + hosted-tier option (~half-day exploration) Priority HOLD (MOVED TO HOLD by Harold, 2026-09-09, Sprint 68 scope selection)**
 - Phase: Product direction / architecture exploration
@@ -593,7 +537,7 @@ _(No active Core App candidates -- F96 shipped in Sprint 43.)_
 - **Trigger**: Sprint 83 planning -- ask Harold again as a numbered question (1. Delete 2. Keep).
 - Depends on: None.
 
-**F289. WinWright default sweep with no mouse steps (~30-60m) Priority 25**
+**F289. WinWright default sweep with no mouse steps (~30-60m) Priority HOLD -- MOVED TO HOLD by Harold 2026-10-23 (Sprint 81 scope selection)**
 - Phase: Testing
 - Platform: Windows Desktop (test tooling only)
 - Origin: Sprint 78 F284 AC-1 finding, accepted by Harold at Manual Validation 2026-10-13. Six steps in the default
@@ -630,8 +574,13 @@ _(No active Core App candidates -- F96 shipped in Sprint 43.)_
 - What would settle the per-step cost: time each `ww_*` call in one script run (the WinWright run report or a
   stopwatch around each step), then compare with the semantics-tree build delay seen in Sprint 80 (10-41 s after the
   window, cause unknown).
+- AC: the default sweep finishes in under 5 minutes with 0 skipped steps and no DB drift, or the per-step cost is
+  named with its mechanism and a vendor or source citation.
+- **Sprint 81 Task 10 (#518), AC MET (bc4676de)**: two timed sweeps on 0.22.0 took 70 s and 62 s, 2 of 2 passed, 0
+  skipped steps, no DB drift. The likely cause of the drop from 15 minutes is Sprint 80 Task 15 (#503) --
+  unverified, no before-run on the old build. Close with Sprint 81.
 
-**F301. Gmail sign-in expires every 7 days for every closed tester (~30-60m decision, then per path) Priority 20 -- backlog (Harold Q3 = 1, 2026-10-22)**
+**F301. Gmail sign-in expires every 7 days for every closed tester (~30-60m decision, then per path) Priority 10 -- target Sprint 82 (moved from 20 on 2026-10-23: the same 7-day expiry hits iOS testers and App Review) (Harold Q3 = 1, 2026-10-22)**
 - Phase: Google Play Readiness
 - Platform: Android and Windows (both use Google OAuth for Gmail; ADR-0042 parity, no exception)
 - Origin: Sprint 80 Manual Validation. The Fold's Gmail sign-ins on 10-05 16:09 and 10-13 00:34 each failed at the
@@ -647,8 +596,8 @@ _(No active Core App candidates -- F96 shipped in Sprint 43.)_
   months lead time, yearly cost; trigger thresholds in ADR-0029).
 - Unverified, settle first: what Google does to refresh tokens if the consent screen moves to "In production" without
   verification. Read Google's own OAuth documentation before proposing that route.
-- AC: the default sweep finishes in under 5 minutes with 0 skipped steps and no DB drift, or the per-step cost is
-  named with its mechanism and a vendor or source citation.
+- AC: a path is chosen by Harold and recorded in ADR-0029; for path (a), the tester instructions name the weekly
+  sign-in and a Gmail background skip for sign-in reaches the user.
 
 **F111. Periodic Windows App Store upload readiness verification (~110-175m per review) Priority HOLD**
 - Phase: Release Readiness (reusable template)
@@ -794,32 +743,62 @@ _(F142 shipped Sprint 57 -- see `docs/sprints/SPRINT_57_PLAN.md` and CHANGELOG.m
   alongside F70 (Security), F71 (Architecture), F130 (Process-Docs), F152 (First-Run), F173
   (Test Coverage) and F189 (Skills).
 
-### iOS readiness cards from F295 (Sprint 80; cards ACCEPTED into the backlog by Harold 2026-10-21, Q3 = 1; ADR-0050 ACCEPTED 2026-10-22)
+### iOS readiness cards from F295 (Sprint 80; cards ACCEPTED into the backlog by Harold 2026-10-21, Q3 = 1; ADR-0050 ACCEPTED 2026-10-22; ALL OFF HOLD 2026-10-23)
+
+**3-sprint plan to an App Store upload (Harold, 2026-10-23)**: *"next step it to implement on the ios/iphone. If we were to
+implement in the next week, we need to move them all towards the top of the priority list so that in 3 sprint we are
+ready to upload to the ios app store."* and *"all backlogs with IOS come off hold"*. Sequence: Sprint 81 = F67a, F304,
+F67b code; Sprint 82 = F67b device check, F67c (its 7-day window must start early in Sprint 82), F301; Sprint 83 =
+F67c result, F67d, upload. The critical path is Harold's actions: Apple Developer enrollment, a test iPhone, and the
+iOS OAuth client. Finding 2026-10-23: `mobile-app/ios/` holds NO Xcode project (only gitignored generated files), so
+F67b starts by generating the iOS project.
 
 Source: `docs/research/F295_IOS_READINESS.md`. These replace the iOS parts of F67 and F95 (ADR-0050 accepted 2026-10-22); Linux and macOS stay on F67, and the Windows/Android multi-variant polish stays on F95.
 
-**F67a. iOS prerequisites: Apple Developer enrollment, Mac, iOS OAuth client (~3-6h plus Apple and D-U-N-S lead time) Priority HOLD**
+**F67a. iOS prerequisites: Apple Developer enrollment, build machine, test iPhone, iOS OAuth client (~45-90m plus Apple lead time) Priority 2 -- target Sprint 81 (OFF HOLD 2026-10-23)**
 - Phase: Multi-Platform Readiness
 - Platform: iOS
-- Scope: decide the enrollment path for the LLC (organization: D-U-N-S Number, domain website, domain email); enroll
-  (99 USD per year); get a Mac on macOS Tahoe 26.2 or later with Xcode 26 (owned or cloud); create the iOS OAuth
-  client in Google Cloud Console (bundle ID per ADR-0026) and check the verification status of the restricted Gmail
-  scope for it.
-- Settles UNVERIFIED items: LLC enrollment path, cloud Mac acceptability, Gmail verification for the iOS client.
-- Depends on: Harold's go decision for iOS; ADR-0050 accepted.
+- **Harold 2026-10-23**: Individual (Q1 = 1); build machine = GitHub `macos-26` runner (Q2 = 1); he has an iPhone on iOS 26 (Q3 = 1). Selected for Sprint 81 with F304 and the F67b code.
+- Scope: enroll in the Apple Developer Program (99 USD per year) on the account type Harold chooses. Individual needs
+  no D-U-N-S Number. Organization needs one: D&B "allow up to 5 business days", then "allow up to 2 business days"
+  for Apple (developer.apple.com/help/account/membership/D-U-N-S/, read 2026-10-23), plus a domain website and
+  domain email the LLC does not have (`docs/LEGAL_ENTITY.md`). Choose the build machine (F304). Confirm a test
+  iPhone on iOS 26. Create the iOS OAuth client in Google Cloud Console with bundle ID `com.myemailspamfilter`
+  (mirrors the Android applicationId; ADR-0026) and record the restricted Gmail scope verification status for it.
+- Claude writes the console walkthroughs and records the results; Harold performs the console steps.
+- Settles UNVERIFIED items: enrollment processing time, seller name shown for the chosen account type, Gmail
+  verification for the iOS client.
+- Depends on: none (Harold's go decision 2026-10-23; ADR-0050 accepted 2026-10-22).
 
-**F67b. iOS first build and foreground parity validation (~6-10h) Priority HOLD**
+**F304. iOS build machine and signed build pipeline to TestFlight (~90-180m plus a 120m time-boxed signing setup) Priority 4 -- target Sprint 81 (NEW 2026-10-23)**
+- Phase: Build and Release Infrastructure
+- Platform: iOS (build tooling)
+- Value: the project has no Mac. Without a build machine nothing in F67b-F67d can run.
+- Scope, by Harold's build-machine answer: (a) a GitHub Actions `macos-26` runner (the runner-images README, read
+  2026-10-23, lists macOS 26.6.2 with Xcode 26.6 as default) with a `workflow_dispatch` job that builds, signs with
+  an App Store Connect API key, and uploads to TestFlight; certificate, provisioning profile and API key live in
+  repository secrets, never in the tree; or (b) an owned or rented Mac with interactive Xcode.
+- UNVERIFIED: whether macOS runner minutes are free on this public repository. GitHub's billing page says Actions is
+  free "for public repositories that use standard GitHub-hosted runners" and does not say whether macOS is one.
+- Signing setup is discovery: time-box it at 120m; do not estimate it.
+- AC: one command produces a signed build that installs on Harold's iPhone through TestFlight internal testing.
+- Depends on: F67a (enrollment and account type).
+
+**F67b. iOS first build and foreground parity validation (~180-300m) Priority 6 -- target Sprint 81 (code), Sprint 82 (device check) (OFF HOLD 2026-10-23)**
 - Phase: Multi-Platform Readiness
 - Platform: iOS
-- Scope: `flutter build ios` on Xcode 26 with Swift Package Manager; deployment target iOS 14 (plugin floor);
+- Scope: generate the iOS project first (`flutter create --platforms=ios`; whether this runs on Windows is
+  UNVERIFIED), bundle ID `com.myemailspamfilter`. The plist, AppDelegate and `PlatformCapabilities` work below needs
+  no Mac to write, only to compile, so it lands in Sprint 81.
+- `flutter build ios` on Xcode 26 with Swift Package Manager; deployment target iOS 14 (plugin floor);
   Info.plist (`GIDClientID`, reversed-client-ID URL scheme, background modes `fetch`, `BGTaskSchedulerPermittedIdentifiers`,
   `UIFileSharingEnabled`, `LSSupportsOpeningDocumentsInPlace`); AppDelegate lines for notifications and workmanager;
   fill every `PlatformCapabilities` iOS answer from ADR-0050; smoke test, IMAP scan, Gmail sign-in, rules, review
   screens, export to Files, notification permission.
 - Settles UNVERIFIED items: custom-scheme browser fallback, Files app visibility, `drawsUnderSystemBars`.
-- Depends on: F67a; F294 seam merged.
+- Depends on: F67a; F304 for the device check; F294 seam (merged Sprint 80).
 
-**F67c. iOS background scan spike on a real iPhone (~6-10h plus a 7-day observation window) Priority HOLD**
+**F67c. iOS background scan spike on a real iPhone (~120-240m plus a 7-day observation window) Priority 8 -- target Sprint 82, result Sprint 83 (OFF HOLD 2026-10-23)**
 - Phase: Multi-Platform Readiness
 - Platform: iOS
 - Scope: `BGAppRefreshTask` per the ADR-0050 exception (interval is a floor; a time-boxed scan slice that resumes
@@ -829,9 +808,9 @@ Source: `docs/research/F295_IOS_READINESS.md`. These replace the iOS parts of F6
   `BGContinuedProcessingTask` keeps a manual scan alive (iOS 26).
 - Settles UNVERIFIED items: real refresh frequency, multi-account Gmail renewal while locked, Google Sign-In SDK
   keychain accessibility, background notification.
-- Depends on: F67b. Outcome may change the Gmail renewal design (a Class 2 decision to surface).
+- Depends on: F67b; a test iPhone. Start the 7-day window early in Sprint 82. Outcome may change the Gmail renewal design (a Class 2 decision to surface).
 
-**F67d. iOS store readiness: privacy manifest, App Privacy, TestFlight (~4-6h) Priority HOLD**
+**F67d. iOS store readiness: privacy manifest, App Privacy, listing, TestFlight, upload (~150-240m plus App Review time) Priority 12 -- target Sprint 83 (OFF HOLD 2026-10-23)**
 - Phase: Build and Release Infrastructure
 - Platform: iOS
 - Scope: Xcode privacy report on an archive; app `PrivacyInfo.xcprivacy` with the required-reason entries the report
@@ -839,19 +818,25 @@ Source: `docs/research/F295_IOS_READINESS.md`. These replace the iOS parts of F6
   and metadata; release notes per ADR-0043; TestFlight internal group, then an external group (first build goes
   through App Review); help and store text that describe background scanning as best effort on iOS without a
   platform caveat (ADR-0042 rule on caveats).
+- App Store Connect listing: iPhone screenshots at the required sizes, description, age rating, review notes.
+- App Review sign-in path: the Gmail consent screen is in Testing and unverified (F301, ADR-0029), so a reviewer
+  cannot sign in with Gmail unless listed as a test user. Give the reviewer an IMAP (AOL) demo account. Whether
+  App Review requires demo credentials is UNVERIFIED; read guideline 2.1 at submission.
 - Settles UNVERIFIED items: required-reason API set, plugin manifests.
-- Depends on: F67c.
+- Depends on: F67b. (Relaxed from F67c on 2026-10-23: F67c's result changes only the help and store text that
+  describe background scanning, so it does not block the upload.)
 
-**F95 (revised). iOS variants: dev and prod side by side on one iPhone (~3-5h) Priority HOLD**
+**F95 (revised). iOS variants: dev and prod side by side on one iPhone (~60-120m) Priority 24 -- after the first upload (OFF HOLD 2026-10-23)**
 - Phase: Build and Release Infrastructure
 - Platform: iOS
 - Scope: separate bundle IDs for dev and prod (ADR-0035 on iOS), so both install on one device; separate OAuth iOS
   clients or URL schemes per variant; separate keychain items and app data by construction (separate bundle IDs);
   TestFlight as the "store" channel. The cross-store multi-variant polish for Windows and Android stays on the
   existing F95.
+- Shipping iOS prod-only first departs from ADR-0035 side-by-side for a short period; that is Harold's call.
 - Depends on: F67b.
 
-**F95b. Gmail new-mail push through a server (~16-30h) Priority HOLD -- needs a new ADR first**
+**F95b. Gmail new-mail push through a server (not estimated until the ADR exists) Priority 60 -- OFF HOLD 2026-10-23; needs a new ADR first**
 - Phase: Architecture
 - Platform: iOS (Gmail accounts only)
 - Scope: only if Harold wants "Scan when new mail arrives" on iPhone. Gmail `users.watch` to Cloud Pub/Sub, a relay
@@ -859,7 +844,7 @@ Source: `docs/research/F295_IOS_READINESS.md`. These replace the iOS parts of F6
   limited above three per hour. Requires an ADR superseding ADR-0030's "No backend server".
 - Depends on: F67c; a Class 1 decision by Harold.
 
-**F95. iOS variants + cross-store hardening (~10-16h) Priority HOLD -- RENUMBERED from "F52 Phase 3+" + MOVED TO HOLD (Sprint 39 Backlog Refinement, 2026-05-25)**
+**F95. iOS variants + cross-store hardening (not re-estimated; iOS part moved to F95 (revised)) Priority 62 -- OFF HOLD 2026-10-23 (Harold: all iOS backlog items); RENUMBERED from "F52 Phase 3+" (Sprint 39)**
 - Phase: Build and Release Infrastructure
 - Platform: iOS, plus polish across all 9 variants (3 stores x 3 channels: dev, production, store)
 - Renumbered from the ambiguous "F52 Phase 3+" to a distinct F# (was sharing F52 with the Android phase, now F94). Moved to HOLD with the multi-variant track per Harold (2026-05-25) -- blocked until iOS development begins (requires macOS + Apple Developer account).
@@ -881,9 +866,9 @@ Source: `docs/research/F295_IOS_READINESS.md`. These replace the iOS parts of F6
 
 **GP-11. Account and Data Deletion Feature** -- Moved to F66 (off HOLD, all platforms including Windows Store). See F66 in Core App section above.
 
-### HOLD Items (Multi-Platform)
+### Multi-Platform (OFF HOLD 2026-10-23)
 
-**F67. Platform validation - iOS, Linux, macOS (~4-6h per platform) Priority HOLD**
+**F67. Platform validation - iOS, Linux, macOS (~120-240m per platform) Priority 70 -- OFF HOLD 2026-10-23; iOS part replaced by F67a-F67d, Linux and macOS remain**
 - Phase: Multi-Platform Readiness
 - Platform: iOS, Linux, macOS
 - Shared tasks (all 3): validation build, smoke test, IMAP scan test, storage path verification, auth flow testing

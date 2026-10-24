@@ -1,0 +1,44 @@
+name: iOS
+
+# Sprint 81 Task 3 (F67b), first increment: an UNSIGNED compile check of the
+# iOS project on a hosted macOS runner. The Mac is the only place Swift and the
+# Info.plist build settings can be checked, because the development machine is
+# Windows. Task 2 adds signing and TestFlight upload to this file later.
+#
+# Starts: by hand (`gh workflow run ios.yml --ref <branch>`), which GitHub
+# allows only once this file is on the default branch (develop) -- verified
+# 2026-10-23: "HTTP 404: workflow ios.yml not found on the default branch" --
+# and on a push to a feature branch that changes the iOS project or this file
+# (a push runs the workflow file from the pushed commit, so it works before the
+# first merge). No secrets: the Flutter SDK version comes from .fvmrc (F296,
+# one source), and the Google client IDs are left empty because the build is
+# never run (same reasoning as the F127 decision for the CI_* secrets in ci.yml).
+on:
+  workflow_dispatch:
+  push:
+    branches: ['feature/**']
+    paths:
+      - 'mobile-app/ios/**'
+      - '.github/workflows/ios.yml'
+
+jobs:
+  ios-build:
+    name: iOS Build Verification (unsigned)
+    runs-on: macos-26
+    defaults:
+      run:
+        working-directory: mobile-app
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: subosito/flutter-action@v2
+        with:
+          flutter-version-file: .fvmrc
+          channel: 'stable'
+          cache: true
+
+      - name: flutter pub get
+        run: flutter pub get
+
+      - name: flutter build ios (release, no codesign)
+        run: flutter build ios --release --no-codesign

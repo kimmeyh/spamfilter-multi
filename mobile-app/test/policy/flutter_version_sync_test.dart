@@ -11,9 +11,10 @@
 //
 // Checks:
 //   (a) .fvmrc exists, is JSON, and its `flutter` key is an exact X.Y.Z.
-//   (b) ci.yml has no literal `flutter-version:` key, and every
-//       subosito/flutter-action step uses `flutter-version-file: .fvmrc`
-//       (the two counts must be equal and at least 1).
+//   (b) ci.yml AND ios.yml (Sprint 81) have no literal `flutter-version:` key,
+//       and every subosito/flutter-action step uses
+//       `flutter-version-file: .fvmrc` (the two counts must be equal and at
+//       least 1 per file).
 //   (c) the SDK running this test (FLUTTER_ROOT) reports the same version as
 //       .fvmrc. A missing FLUTTER_ROOT FAILS (it does not skip silently).
 //
@@ -25,6 +26,8 @@
 //   - A stale FLUTTER_ROOT from a different install that a developer runs
 //     `flutter test` from. Check (c) compares against the SDK that is actually
 //     running, which is the intended target.
+//   - A NEW workflow file that sets up Flutter but is not listed in
+//     `_workflowPaths`. Add it there when it is created.
 
 import 'dart:convert';
 import 'dart:io';
@@ -33,7 +36,12 @@ import 'package:flutter_test/flutter_test.dart';
 
 /// Repo root, relative to mobile-app/ (the working directory for `flutter test`).
 const _fvmrcPath = '../.fvmrc';
-const _ciWorkflowPath = '../.github/workflows/ci.yml';
+
+/// Every workflow that sets up Flutter. ios.yml joined in Sprint 81 (F67b).
+const _workflowPaths = [
+  '../.github/workflows/ci.yml',
+  '../.github/workflows/ios.yml',
+];
 
 final _exactVersion = RegExp(r'^\d+\.\d+\.\d+$');
 
@@ -96,11 +104,13 @@ void main() {
       expect(_exactVersion.hasMatch(version), isTrue);
     });
 
-    test('(b) ci.yml has no literal flutter-version key and every '
+    for (final workflowPath in _workflowPaths) {
+    final name = workflowPath.split('/').last;
+    test('(b) $name has no literal flutter-version key and every '
         'flutter-action step reads .fvmrc', () {
-      final ci = File(_ciWorkflowPath);
+      final ci = File(workflowPath);
       expect(ci.existsSync(), isTrue,
-          reason: 'ci.yml is missing at $_ciWorkflowPath');
+          reason: '$name is missing at $workflowPath');
       final lines = ci.readAsLinesSync();
 
       // A literal pin: `flutter-version: 3.38.5` or `flutter-version: '3.38.5'`.
@@ -112,7 +122,7 @@ void main() {
           if (literalPin.hasMatch(lines[i])) '${i + 1}: ${lines[i].trim()}',
       ];
       expect(pins, isEmpty,
-          reason: 'ci.yml pins a literal Flutter version. Replace it with '
+          reason: '$name pins a literal Flutter version. Replace it with '
               '`flutter-version-file: .fvmrc` (F296): $pins');
 
       final actionUses = RegExp(r'uses:\s*subosito/flutter-action@');
@@ -127,7 +137,7 @@ void main() {
       ];
 
       expect(actionSteps, greaterThanOrEqualTo(1),
-          reason: 'No subosito/flutter-action step found in ci.yml. This test '
+          reason: 'No subosito/flutter-action step found in $name. This test '
               'would be vacuous without one.');
       expect(fileValues.length, actionSteps,
           reason: 'Every subosito/flutter-action step must set '
@@ -137,6 +147,7 @@ void main() {
           reason: 'Every flutter-version-file must be `.fvmrc`, found: '
               '$fileValues');
     });
+    }
 
     test('(c) the local SDK running this test matches .fvmrc', () {
       final recorded = _fvmrcVersion();
