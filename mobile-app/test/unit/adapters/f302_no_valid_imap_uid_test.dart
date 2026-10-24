@@ -42,10 +42,12 @@ class _Client extends ImapClient {
   _Client(
       {this.searchFound = const [],
       this.noUidFor = const {},
-      this.storeThrows = false})
+      this.storeThrows = false,
+      this.selectThrows = false})
       : super(isLogEnabled: false);
 
   final bool storeThrows;
+  final bool selectThrows;
   final List<int> searchFound;
   final Set<int> noUidFor;
   final List<String> searches = [];
@@ -58,9 +60,11 @@ class _Client extends ImapClient {
     String path, {
     bool enableCondStore = false,
     QResyncParameters? qresync,
-  }) async =>
-      Mailbox(
-          encodedName: path, encodedPath: path, pathSeparator: '/', flags: []);
+  }) async {
+    if (selectThrows) throw Exception('SELECT refused');
+    return Mailbox(
+        encodedName: path, encodedPath: path, pathSeparator: '/', flags: []);
+  }
 
   @override
   Future<SearchImapResult> uidSearchMessages({
@@ -302,6 +306,28 @@ void main() {
           .applyFlagBatch([_msg(kNoValidImapUid), _msg('5')], 'Rule One');
       expect(flag.succeededIds, ['5']);
       expect(flag.failedIds.keys, [kNoValidImapUid]);
+    });
+
+    // F-PRECHECK (Sprint 81): the no-UID check ran AFTER the SELECT, so a
+    // SELECT that threw left the no-UID message in neither list.
+    test('every batch whose SELECT throws still fails the no-UID message by '
+        'name', () async {
+      final client = _Client(selectThrows: true);
+      final adapter = adapterFor(client);
+      final both = [_msg(kNoValidImapUid), _msg('5')];
+
+      final flag = await adapter.applyFlagBatch(both, 'Rule One');
+      expect(flag.failedIds.keys, contains(kNoValidImapUid));
+      expect(flag.succeededIds, isNot(contains(kNoValidImapUid)));
+
+      final read = await adapter.markAsReadBatch(both);
+      expect(read.failedIds.keys, contains(kNoValidImapUid));
+      expect(read.succeededIds, isNot(contains(kNoValidImapUid)));
+
+      final spam = await adapter.takeActionBatch(both, FilterAction.markAsSpam);
+      expect(spam.failedIds.keys, contains(kNoValidImapUid));
+      expect(spam.succeededIds, isNot(contains(kNoValidImapUid)));
+      expect(client.stores, isEmpty);
     });
 
     test('body fetch: no FETCH is sent for the constant', () async {

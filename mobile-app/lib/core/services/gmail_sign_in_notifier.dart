@@ -23,7 +23,11 @@
 /// ADR-0042: one code path for Windows, Android and iOS. Delivery goes through
 /// [ScanCompleteNotifier.postSignInNeeded] (Windows toast, Android channel);
 /// the only platform difference is inside that class and is chosen by
-/// `PlatformCapabilities`.
+/// `PlatformCapabilities`. iOS: `NotificationDelivery.iosAlert` is declared
+/// but NOT wired yet -- `ScanCompleteNotifier` has no Darwin settings, so on
+/// iOS `initialize` throws ArgumentError (flutter_local_notifications 22.3.2,
+/// `flutter_local_notifications_plugin.dart:143`) and `_deliver` logs it (not
+/// silent). Wiring is F67c (Sprint 82).
 library;
 
 import 'package:flutter/foundation.dart' show visibleForTesting;
@@ -61,6 +65,15 @@ class GmailSignInNotifier {
       } catch (e) {
         _logger.w('F301: could not read the last sign-in notification time '
             'for $label; notifying anyway: $e');
+        // A release build keeps no console log, so the diagnostic log is the
+        // only place this failure (which can mean more than one notification
+        // a day) is seen (F-PRECHECK, Sprint 81).
+        await DiagnosticLogger.log(
+          kind: DiagnosticLogger.kindScan,
+          context: 'scan/post',
+          detail: 'sign-in notification time unreadable; notifying anyway -- '
+              '${DiagnosticLogger.describeError(e)}',
+        );
       }
       // A last time in the future (clock moved back) counts as due; otherwise
       // the account would stay silent until the clock caught up.
@@ -77,6 +90,12 @@ class GmailSignInNotifier {
       } catch (e) {
         _logger.w('F301: could not save the sign-in notification time for '
             '$label: $e');
+        await DiagnosticLogger.log(
+          kind: DiagnosticLogger.kindScan,
+          context: 'scan/post',
+          detail: 'sign-in notification time not saved -- '
+              '${DiagnosticLogger.describeError(e)}',
+        );
       }
       final posted =
           await ScanCompleteNotifier.postSignInNeeded(accountId: accountId);
@@ -93,6 +112,12 @@ class GmailSignInNotifier {
       // Nothing above should throw; this keeps a notification problem from
       // ever turning a skipped scan into a failed one.
       _logger.w('F301: sign-in notification failed for $label: $e');
+      await DiagnosticLogger.log(
+        kind: DiagnosticLogger.kindScan,
+        context: 'scan/post',
+        detail: 'sign-in notification failed -- '
+            '${DiagnosticLogger.describeError(e)}',
+      );
       return false;
     }
   }

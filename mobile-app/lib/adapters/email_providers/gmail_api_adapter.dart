@@ -1471,8 +1471,19 @@ class GmailApiAdapter with BatchOperationsMixin
   /// without regard to case), and a label that was not found is NEVER stored:
   /// before, "no such label" was cached as null for the whole connection, so a
   /// label renamed or created after the first lookup stayed "missing" until
-  /// the app reconnected.
+  /// the app reconnected. Misses are kept apart, in [_labelMisses], and only
+  /// for [labelMissTtl].
   final Map<String, String> _labelIds = {};
+
+  /// When each lowercase label name was last looked up and NOT found.
+  final Map<String, DateTime> _labelMisses = {};
+
+  /// How long a miss is trusted before Gmail is asked again.
+  static const Duration labelMissTtl = Duration(seconds: 60);
+
+  /// Test seam: the clock for [_labelMisses].
+  @visibleForTesting
+  static DateTime Function() debugClock = DateTime.now;
 
   /// Gmail's system label IDs (they are their own IDs); everything else is a
   /// user label whose ID must be looked up.
@@ -1487,10 +1498,14 @@ class GmailApiAdapter with BatchOperationsMixin
   /// The Gmail label ID for [folder], or null when the account has no such
   /// label.
   ///
-  /// F259 (Sprint 81): the name match is case-insensitive; a miss is NOT
-  /// cached (the next call asks Gmail again, so a renamed or newly created
-  /// label is found); and EVERY miss writes a diagnostic line naming the
-  /// label, because this is the one place all callers share. What a caller does
+  /// F259 (Sprint 81): the name match is case-insensitive; a miss is cached
+  /// for only [labelMissTtl] (after that the next call asks Gmail again, so a
+  /// renamed or newly created label is found); and each miss that asks Gmail
+  /// writes a diagnostic line naming the label, because this is the one place
+  /// all callers share. The short miss cache exists because the per-message
+  /// move paths call this once per message: without it, a delete run whose
+  /// target label is missing made one account-wide `labels.list` call (and
+  /// one log line) per message (F-PRECHECK, Sprint 81). What a caller does
   /// with null:
   ///   - `fetchMessagesIncremental`, `fetchMessages`, `moveMessage`,
   ///     `_resolvedMoveLabels` (target): throw [GmailLabelNotFoundException].
@@ -1505,20 +1520,29 @@ class GmailApiAdapter with BatchOperationsMixin
     final key = folder.toLowerCase();
     final cached = _labelIds[key];
     if (cached != null) return cached;
+    final missAt = _labelMisses[key];
+    if (missAt != null) {
+      final age = debugClock().difference(missAt);
+      if (!age.isNegative && age < labelMissTtl) return null;
+    }
     final labels = (await _gmailApi!.users.labels.list('me')).labels ?? const [];
     for (final l in labels) {
       if (l.name != null && l.id != null) _labelIds[l.name!.toLowerCase()] = l.id!;
     }
     final found = _labelIds[key];
     if (found == null) {
+      _labelMisses[key] = debugClock();
       Redact.logSafe('Gmail label "$folder" was not found among '
           '${labels.length} labels');
       unawaited(DiagnosticLogger.log(
         kind: DiagnosticLogger.kindSkipped,
         context: 'Gmail/labelIdFor',
         detail: 'label "$folder" not found among ${labels.length} labels '
-            '(case-insensitive); not cached, the next lookup asks Gmail again',
+            '(case-insensitive); asked again after '
+            '${labelMissTtl.inSeconds} s',
       ));
+    } else {
+      _labelMisses.remove(key);
     }
     return found;
   }

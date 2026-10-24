@@ -152,7 +152,14 @@ class HeuristicSignals {
 
     // reply_to_differs: compared by registrable domain, so
     // `mail.example.com` against `example.com` is NOT a hit.
-    final replyTo = PatternNormalization.normalizeFromHeader(h['reply-to']);
+    // A Reply-To may list several addresses. normalizeFromHeader takes the
+    // first `<...>`, but with bare addresses (`a@x.com, b@y.com`) it would
+    // strip the comma and join them, so cut at the first comma first.
+    var rawReplyTo = h['reply-to'];
+    if (rawReplyTo != null && !rawReplyTo.contains('<')) {
+      rawReplyTo = rawReplyTo.split(',').first;
+    }
+    final replyTo = PatternNormalization.normalizeFromHeader(rawReplyTo);
     final replyDomain = _domainOf(replyTo);
     if (senderDomain != null && replyDomain != null) {
       if (PatternNormalization.extractRootDomain(senderDomain) !=
@@ -218,9 +225,11 @@ class HeuristicSignals {
   }
 
   /// The domain a stored safe sender regex trusts, or null when the pattern is
-  /// an exact email, an unrecognized shape or has no domain. Handles the shapes
-  /// the app writes: `^[^@\s]+@(?:[a-z0-9-]+\.)*example\.com$` and
-  /// `@example\.com$` (and the same without the anchors).
+  /// an unrecognized shape or has no domain. Handles the shapes the app
+  /// writes: `^[^@\s]+@(?:[a-z0-9-]+\.)*example\.com$`, `@example\.com$` and
+  /// an exact email `^user@example\.com$` (and the same without the anchors).
+  /// An exact safe email also yields its domain: for the lookalike check, a
+  /// trusted address at `paypal.com` makes `paypa1.com` suspicious too.
   static String? domainFromSafeSenderPattern(String? pattern) {
     if (pattern == null) return null;
     final at = pattern.lastIndexOf('@');

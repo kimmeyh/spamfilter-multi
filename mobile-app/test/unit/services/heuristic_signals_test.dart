@@ -48,6 +48,20 @@ void main() {
     test('does not fire without a Reply-To header', () {
       expect(run({}), isEmpty);
     });
+
+    // F-PRECHECK (Sprint 81): bare addresses used to be joined into one
+    // ("a@shop.example.comb@evil.test") and judged by the LAST domain.
+    test('judges only the first of several bare Reply-To addresses', () {
+      expect(run({'Reply-To': 'support@shop.example.com, b@evil.test'}),
+          isEmpty);
+      expect(run({'Reply-To': 'a@evil.test, support@shop.example.com'}),
+          [HeuristicSignal.replyToDiffers]);
+    });
+
+    test('a quoted display name with a comma is not cut', () {
+      expect(run({'Reply-To': '"Shop, Support" <support@shop.example.com>'}),
+          isEmpty);
+    });
   });
 
   group('auth_failed', () {

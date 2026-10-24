@@ -258,7 +258,9 @@ class PlatformCapabilities {
   /// [NotificationDelivery.windowsToast]. Android:
   /// [NotificationDelivery.androidChannel]. iOS: [NotificationDelivery.iosAlert]
   /// (ADR-0050 Exception 1: a completion notification as on the other
-  /// platforms).
+  /// platforms). The iOS answer is DECLARED, not yet delivered:
+  /// `ScanCompleteNotifier` initializes no Darwin settings, so an iOS post
+  /// fails and is logged until F67c (Sprint 82) wires it.
   NotificationDelivery get notificationDelivery {
     switch (host) {
       case HostPlatform.windows:

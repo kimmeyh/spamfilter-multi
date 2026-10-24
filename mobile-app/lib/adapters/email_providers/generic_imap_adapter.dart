@@ -1306,10 +1306,12 @@ class GenericIMAPAdapter with BatchOperationsMixin
     final failed = <String, String>{};
 
     for (final entry in byFolder.entries) {
+      // F302: decided BEFORE the try, as in moveToFolderBatch, so a message
+      // with no valid UID is in [failed] even when the SELECT throws.
+      final usable =
+          _usableForUidBatch(entry.value, failed, 'IMAP/markAsReadBatch');
       try {
         await _selectMailbox(entry.key);
-        final usable = _usableForUidBatch(
-            entry.value, failed, 'IMAP/markAsReadBatch');
         final uids = _parseUids(usable);
         if (uids.isEmpty) continue;
 
@@ -1386,10 +1388,14 @@ class GenericIMAPAdapter with BatchOperationsMixin
     final failed = <String, String>{};
 
     for (final entry in byFolder.entries) {
+      // F302: decided BEFORE the try (F-PRECHECK, Sprint 81). Inside it, a
+      // SELECT that threw left a no-UID message in neither list: the catch
+      // below leaves those out of [succeeded] on the assumption they are
+      // already in [failed].
+      final usable =
+          _usableForUidBatch(entry.value, failed, 'IMAP/applyFlagBatch');
       try {
         await _selectMailbox(entry.key);
-        final usable = _usableForUidBatch(
-            entry.value, failed, 'IMAP/applyFlagBatch');
         final uids = _parseUids(usable);
         if (uids.isEmpty) continue;
 
@@ -1671,10 +1677,11 @@ class GenericIMAPAdapter with BatchOperationsMixin
         final succeeded = <String>[];
         final failed = <String, String>{};
         for (final entry in byFolder.entries) {
+          // F302: decided BEFORE the try, as in moveToFolderBatch.
+          final usable =
+              _usableForUidBatch(entry.value, failed, 'IMAP/takeActionBatch');
           try {
             await _selectMailbox(entry.key);
-            final usable = _usableForUidBatch(
-                entry.value, failed, 'IMAP/takeActionBatch');
             final uids = _parseUids(usable);
             if (uids.isEmpty) continue;
             final sequence = MessageSequence.fromIds(uids, isUid: true);

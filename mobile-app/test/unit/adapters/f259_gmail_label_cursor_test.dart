@@ -214,8 +214,11 @@ void main() {
       expect(log, contains('label "Gone" not found'));
     });
 
-    test('the miss is NOT cached: a label added later is found on retry, then '
-        'the hit IS cached', () async {
+    test('a miss is trusted for labelMissTtl only: a label added later is '
+        'found on retry after it, then the hit IS cached', () async {
+      var now = DateTime(2026, 10, 24, 1, 0);
+      GmailApiAdapter.debugClock = () => now;
+      addTearDown(() => GmailApiAdapter.debugClock = DateTime.now);
       final api = _FakeGmail();
       final adapter = GmailApiAdapter()..debugSetGmailApi(api);
 
@@ -227,6 +230,16 @@ void main() {
 
       // The user renames a label to the configured name (different case).
       api.labels.add(gmail.Label(name: 'RENAMED', id: 'Label_9'));
+
+      // F-PRECHECK (Sprint 81): inside the window the miss is answered from
+      // the cache -- no second account-wide labels.list call.
+      await expectLater(
+          adapter.fetchMessagesIncremental(
+              startHistoryId: '90', folderForLabel: 'Renamed'),
+          throwsA(isA<GmailLabelNotFoundException>()));
+      expect(api.labelsListCalls, 1, reason: 'a fresh miss is cached');
+
+      now = now.add(GmailApiAdapter.labelMissTtl);
 
       final result = await adapter.fetchMessagesIncremental(
           startHistoryId: '90', folderForLabel: 'Renamed');
