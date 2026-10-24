@@ -685,3 +685,62 @@ record, the merges and every verification re-run.
 - **Standing facts (Harold)**: Fold notification access for the app is ON and stays on.
 - **Process (Sprint 80 Q3-Q6, live)**: PR draft until 7.7.5; 7.7.1 reviews on the draft with the retrospective prompt;
   one improvement review; CI run 1 by hand on the draft, run 2 at `gh pr ready`.
+
+---
+
+# Phase 5 evidence
+
+- **5.1.2 F-PRECHECK**: 2026-10-24 01:2x, six classes run by a Sonnet sub-agent over the sprint diff (`lib`,
+  `android/app/src`, `ios/Runner`, `scripts`, `.github`; every catch block read): 0 High, 3 Medium, 6 Low. Fixed in
+  2eb935cb: (1) Gmail `_labelIdFor` cached no miss, so the per-message move paths made one account-wide
+  `labels.list` per message when the target label was missing -- a miss is now trusted 60 s; (2) the three
+  `GmailSignInNotifier` catches logged to the console only -- now diagnostic lines; (3) the iOS delivery docs said
+  delivery works -- declared, not wired (plugin 22.3.2 throws ArgumentError without Darwin settings, line 143),
+  F67c; (4) a bare multi-address Reply-To was joined and judged by its last domain; (5) three IMAP batches decided
+  no-UID messages after the SELECT, inside the try; (6) a doc comment on `domainFromSafeSenderPattern`. Mutations 4
+  of 4 KILLED. Kept with reason: the export-folder probe catch (the logger resolves its folder through it),
+  `Start-AdbServerDetached` with no adb (the next text check reports it), the Kotlin `Throwable` catch (written into
+  the field's slot). Clean classes: helper wiring (every new helper has a runtime caller), API scope apart from (1).
+- **5.1.5 WinWright sweep**: 2026-10-23, Task 10 (bc4676de): two timed default sweeps (2 scripts) on the 0.22.0 DEV
+  build, 70 s and 62 s, 2 of 2 passed, mouse steps skipped 0, DB drift none, tray check PASS. No `lib/ui` commit
+  after it. Gap: the default scripts do not open No Rule Review (the F271 screen; only the excluded `test_f56_*`
+  scripts reach it), so the F271 chips are observed in the 5.1.9 rehearsal and WinWright coverage of No Rule Review
+  is a Sprint 82 carry-in (5.1.5 step 5).
+  sweep-head: bc4676de
+- **5.2 full suite**: 2026-10-24 01:30, `run-full-suite.ps1 -Label 81-5.2` at 2eb935cb: 3279 passed, 15 skipped, 0
+  failed, load failures 0 (3 minutes); `flutter analyze` clean.
+- **5.1.6 Runtime Launch Gate**: N/A -- no Android config touched this sprint (`git diff origin/develop..HEAD` on
+  `AndroidManifest.xml`, `res/xml`, `build.gradle.kts`, ProGuard rules: empty); the 0.22.0 debug build launched on
+  the emulator three times for Task 9 ("[OK] App launched successfully").
+- **5.1.9 MV rehearsal**: 2026-10-24, 3 steps rehearsed (MV-1 by `no_rule_review_heuristics_test` 3 PASS plus a
+  read-only dev-DB query; MV-2 by the emulator 0.22.0 diagnostic line; MV-3 by the 7 Task 7 tests), 0 rehearsed on
+  the live Windows window (the PC was locked, LogonUI running at 01:34, so the DEV window rendered white and WinWright
+  cannot click), 2 not rehearsable (MV-2 on the Fold needs 0.22.0 there; MV-3 cannot be triggered on demand).
+
+# Manual Validation (Phase 5.3)
+
+- **Standing facts (Harold)**: Fold notification access for the app is ON and stays on. Both 0.21.0 store updates
+  are installed (2026-10-24, prod Windows at "Version 0.21.0"; *"phone app updated to 0.21.0"*). Never asked again.
+
+- **MV-1 (Windows DEV, F271 Task 8)**: open the DEV app (title shows [DEV]) > the AOL account > Review No Rule Items.
+  Each row shows a "Create rule" text button, left of the row's existing trailing icon. Tap it on any row: the
+  "Create Auto-Delete Rule" screen opens with the rule name and From pattern filled from that sender's domain. Do not
+  save; leave with Back. Expected chips: none on the current rows (see the F271 finding). Do not run a manual scan;
+  never a manual scan of Yahoo on DEV (manual mode resolves to fullScan there).
+  Rehearsed: 2026-10-24, `no_rule_review_heuristics_test.dart` 3 PASS (chips per code; wrap at narrow width; Create
+  rule opens `RuleQuickAddScreen` with 'AutoDeleteSpamExample' for spam.example); title 'Create Auto-Delete Rule' read
+  from `result_list_pieces.dart` `_openCreateRule`; row facts from the dev DB (read-only): 14 AOL rows written or
+  re-found since the 0.22.0 install, all `heuristic_signals` NULL. Live window not observed (PC locked).
+- **F271 finding (cause by elimination, not proven)**: 0 of 14 rows carry a reason code. The writer is wired (one
+  builder, `email_scan_provider.dart:779`, and the upsert writes the column). Per signal: auth is green on 13 and
+  yellow on 1 (only red fires); no sender TLD is blocked (452 TLD rules, none for .com/.net/.info here), and a sender
+  on a blocked TLD would match that rule and never be a No Rule row; lookalike needs a near-match to a safe sender;
+  Reply-To and the bulk-without-unsubscribe signal depend on headers the app does not store, so they are unverified.
+  Implication: on real mail the chips will be rare.
+- **MV-2 (Fold, Task 5 AC-3)**: after the 0.22.0 closed-test update on the Fold, pull the diagnostic log; its
+  `[new-mail-diagnostics]` line lists every field with no `error:` text. Not rehearsable now (the Fold has 0.21.0).
+  Closest rehearsal: emulator 0.22.0 line 2026-10-24 01:16:00, `access=on flag=on component=enabled
+  listenerConnected=... listenerDisconnected=never lastIgnored=none mailApps=com.google.android.gm launch: ...`, no
+  error field.
+- **MV-3 (Task 7 sign-in notification)**: not on demand (needs Google's 7-day expiry on a Gmail account). Rehearsed
+  by the 7 Task 7 tests (one notification per account per day). Watch for it on the Fold; no action needed now.

@@ -251,14 +251,25 @@ unobservable to users and to us). If every dropped post is explained by `kMinSca
 
 **Results (Sprint 81 Task 9, #517, emulator `pixel34_updated`, dev 0.22.0)**: script
 `r76_battery_arm.sh` under a wrapper that clears logcat and keeps the tags `MailNotificationListener`,
-`DozeScanTrigger`, `flutter`, `WM-*` and `BackgroundWorker`. AOL new-mail ON, Yahoo OFF.
+`DozeScanTrigger`, `flutter`, `WM-*` and `BackgroundWorker`. AOL new-mail ON, Yahoo OFF. Accounts are the R76-1
+test accounts (`r761test1@aol.com`, `r761test2@yahoo.com`); their saved credentials are rejected by the servers
+(`AUTHENTICATIONFAILED`) in every arm, so "attempted" below means the worker started the scan and it failed at login.
+That does not change what is measured (post -> request -> worker -> scan or not-selected), but no arm proves a full
+scan.
 
 - **Arm A** (interval 5, a post every 5 minutes, 20 minutes, before the Task 9 fix): 4 of 4 posts logged
-  "scan requested after a mail notification", started a worker within 1 s and scanned AOL; Yahoo logged "not
+  "scan requested after a mail notification", started a worker within 1 s and attempted AOL; Yahoo logged "not
   selected by this notification" each time. Posts with no log line: 0. **The arm 5 drop did not reproduce.**
   Coexistence in the same window: 2 Doze-alarm wakes (each started AOL and Yahoo workers; AOL skipped once as "a
   scan started 29s ago", Yahoo skipped both times by the recent-scan check) and 2 Yahoo periodic starts (RETRY:
   auth failed). Overlap is bounded by the recent-scan skip, so no duplicate scan ran.
+- **Arm B** (interval 5, a post every 10 minutes, 20 minutes, on the fixed build, 2026-10-24 01:16-01:38): 2 of 2
+  posts logged "scan requested", started a worker within 1 s (01:18:15, 01:28:15) and attempted AOL; Yahoo "not
+  selected" both times. Posts with no log line: 0. 2 Doze-alarm wakes (01:22:05, 01:30:50), each starting AOL and
+  Yahoo workers at the same moment; AOL skipped at 01:30:52 as "a scan started 155s ago" (a FAILED scan also counts
+  as a recent start). No periodic start in the window. **Two-isolate proof of the fix**: both Doze wakes ran two
+  workers at once and every line of both is in the Documents log; the fallback folder gained 0 lines after the
+  fixed build (its 0.22.0 file ends 2026-10-23 18:58:50, before the 19:03 install).
 - **Defect found (fixed, 545fbcc8)**: at each Doze wake two workers probed the diagnostics folder with ONE probe
   file name; the loser judged the folder unwritable and wrote its whole run to the hidden fallback folder
   (`Android/data/<pkg>/files/...`). That folder held 452 (0.20.0), 490 (0.21.0) and 8 (0.22.0) lines missing from
