@@ -6,7 +6,8 @@
     "current_sprint": {
         "number": 81,
         "branch": "feature/20261023_Sprint_81",
-        "status": "Phase 5.3 Manual Validation: handed over 2026-10-24. Tasks 0, 3-11 DONE; Task 1 AC-2/AC-3 and Task 2 signing + TestFlight BLOCKED on Harold's IOS_SETUP.md Parts A-D (stopping criterion 2). MV steps in SPRINT_81_PLAN.md 'Manual Validation (Phase 5.3)'.",
+        "status": "Phase 5.3 Manual Validation",
+        "status_detail": "Handed over 2026-10-24. Tasks 0, 3-11 DONE; Task 1 AC-2/AC-3 and Task 2 signing + TestFlight BLOCKED on Harold's IOS_SETUP.md Parts A-D (stopping criterion 2). MV steps in SPRINT_81_PLAN.md 'Manual Validation (Phase 5.3)'.",
         "plan_approved": true,
         "pr_number": 507,
         "version": "0.21.0+18 (Sprint 81 bump happens at 3.7.0b)"
