@@ -10,5 +10,5 @@ Paste the en-US block below into the Play Console release-notes field, tags incl
 ---
 
 <en-US>
-Review No Rule Items now shows why an email may be spam and offers a one-tap rule. Bug fixes and reliability improvements.
+Review No Rule Items now shows why an email may be spam and offers a one-tap rule. Gmail testers: Google asks you to sign in again about once a week while the app is in testing; the app now notifies you when a background scan needs that sign-in. Bug fixes and reliability improvements.
 </en-US>

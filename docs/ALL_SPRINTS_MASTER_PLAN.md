@@ -576,6 +576,9 @@ _(No active Core App candidates -- F96 shipped in Sprint 43.)_
   window, cause unknown).
 - AC: the default sweep finishes in under 5 minutes with 0 skipped steps and no DB drift, or the per-step cost is
   named with its mechanism and a vendor or source citation.
+- **Sprint 81 Task 10 (#518), AC MET (bc4676de)**: two timed sweeps on 0.22.0 took 70 s and 62 s, 2 of 2 passed, 0
+  skipped steps, no DB drift. The likely cause of the drop from 15 minutes is Sprint 80 Task 15 (#503) --
+  unverified, no before-run on the old build. Close with Sprint 81.
 
 **F301. Gmail sign-in expires every 7 days for every closed tester (~30-60m decision, then per path) Priority 10 -- target Sprint 82 (moved from 20 on 2026-10-23: the same 7-day expiry hits iOS testers and App Review) (Harold Q3 = 1, 2026-10-22)**
 - Phase: Google Play Readiness

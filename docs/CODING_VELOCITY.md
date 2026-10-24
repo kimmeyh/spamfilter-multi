@@ -264,6 +264,17 @@ Every Item that is implemented gets ONE row here the moment it is picked up -- s
 | Task 15: Windows startup reconciliation after the window (#503) | 80 | DONE | 45-60 | 45-60 | ~50 | ~50 | Recorded at completion (2026-10-21). Added at Manual Validation (Harold Q4 = 2). Window 30.9 s -> 1.8 s, all 9 task calls still run after it; lock tests 4/4, 4 mutants KILLED. |
 | Task 16: Windows tray icon from the exe folder (#504) | 80 | DONE | 30-45 | 30-45 | ~55 | ~55 | Recorded at completion (2026-10-21). Found at Manual Validation (MV-4). Cause traced into system_tray tray.cpp; icon shipped as an asset; second defect (right-click never showed the menu) fixed in the rehearsal; tests 6/6, 4 mutants KILLED. |
 | Task 17: Android new-mail and launch diagnostic line (#505) | 80 | DONE | 60-90 | 60-90 | ~70 | ~70 | Recorded at completion (2026-10-21). Added at Manual Validation (Harold Q5 = 1). Native + Dart; Dart 10/10, JVM 19/19, 5 mutants KILLED; emulator rehearsal. |
+| Task 0: version 0.22.0+19 (#508) | 81 | DONE | 10-15 | 10-15 | ~10 | ~10 | Approximate (3e27e5d5), bundled with the approval commit; version gates 12 passed. |
+| Task 1 (part): F67a iOS walkthroughs (#509) | 81 | DONE | 30-60 | 30-60 | ~25 | ~25 | Approximate (b726683e). `docs/IOS_SETUP.md` Parts A-D; AC-2/AC-3 wait on Harold's Apple console steps. |
+| Task 2 (part): F304 unsigned iOS compile job (#510) | 81 | DONE | 90-180 | 90-180 | ~40 | ~60 | Approximate (7eadfe2e); run 40012148625 on `macos-26` GREEN. Signing and TestFlight BLOCKED on Harold (stopping criterion 2). |
+| Task 3: F67b iOS project and PlatformCapabilities (#511) | 81 | DONE | 120-200 | 120-200 | ~45 (Sonnet agent) + ~10 review | ~35 | Approximate, from commit times (506a789a, 508cb8e4), parallel with Tasks 4-8. 57 tests, 9 mutants KILLED. Far under the band: the template generated most of the project. |
+| Task 4: F302 IMAP no-UID constant (#512) | 81 | DONE | 60-120 | 60-120 | ~30 (Sonnet agent, shared with Task 6) | ~35 | Approximate (fd12e065), one commit with Task 6. Schema v14. |
+| Task 5: F303 Android diagnostics field by field (#513) | 81 | DONE | 45-90 | 45-90 | ~15 (Sonnet agent) + ~5 review | ~15 | Approximate (5b87e362). JVM 3 + Dart 10 tests, 7 mutants KILLED. |
+| Task 6: F259 missing Gmail label + history cursor per folder (#514) | 81 | DONE | 90-150 | 90-150 | ~35 (Sonnet agent, shared with Task 4) | ~35 | Approximate (fd12e065). Schema v15; 26 of 26 mutants KILLED (Tasks 4 + 6); dev-DB copy migrated. |
+| Task 7: F301 ADR-0029 Phase 1 visible (#515) | 81 | DONE | 30-90 | 30-90 | ~10 ADR + ~15 (Sonnet agent) | ~15 | Approximate (b726683e, cad811f4). 7 tests, 7 mutants KILLED. |
+| Task 8: F271 reason chips and Create rule (#516) | 81 | DONE | 150-210 | 150-210 | ~50 (Sonnet agent, own worktree) + ~10 merge | ~50 | Approximate (d7ee2c2f, cherry-pick of 2ba7514e). Schema v16; 17 of 17 mutants KILLED. |
+| Task 10: F300 WinWright sweep per-step cost (#518) | 81 | DONE | 60-90 | 60-90 | ~40 | ~60 | Approximate (27b99ad4, bc4676de). Sweep 62-70 s; AC met. The first per-step stamps named no step (the tool prints at script end) -- corrected to per-script timing. |
+| Task 11: IMP-2b background task that stays open (#519) | 81 | DONE | 15-30 | 15-30 | ~35 | ~35 | Recorded at completion (2026-10-24 01:16, 57f66cba). Over the band: the card asked only for the tree; the cause was reproduced by probe and fixed in the build script (scope addition, 1 file). |
 
 ## Can the missing sprints (48-69) be reconstructed from git? -- TESTED 2026-09-19, answer: NO
 

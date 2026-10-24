@@ -249,6 +249,21 @@ kept; (B) same with the notification cadence at 10 minutes; (C) same with interv
 unobservable to users and to us). If every dropped post is explained by `kMinScanSpacing`, record that and close.
 **Notes**: Arm 3 showed 4 of 4 posts producing a scan at a 5-minute cadence; arm 5 only 2 of 4.
 
+**Results (Sprint 81 Task 9, #517, emulator `pixel34_updated`, dev 0.22.0)**: script
+`r76_battery_arm.sh` under a wrapper that clears logcat and keeps the tags `MailNotificationListener`,
+`DozeScanTrigger`, `flutter`, `WM-*` and `BackgroundWorker`. AOL new-mail ON, Yahoo OFF.
+
+- **Arm A** (interval 5, a post every 5 minutes, 20 minutes, before the Task 9 fix): 4 of 4 posts logged
+  "scan requested after a mail notification", started a worker within 1 s and scanned AOL; Yahoo logged "not
+  selected by this notification" each time. Posts with no log line: 0. **The arm 5 drop did not reproduce.**
+  Coexistence in the same window: 2 Doze-alarm wakes (each started AOL and Yahoo workers; AOL skipped once as "a
+  scan started 29s ago", Yahoo skipped both times by the recent-scan check) and 2 Yahoo periodic starts (RETRY:
+  auth failed). Overlap is bounded by the recent-scan skip, so no duplicate scan ran.
+- **Defect found (fixed, 545fbcc8)**: at each Doze wake two workers probed the diagnostics folder with ONE probe
+  file name; the loser judged the folder unwritable and wrote its whole run to the hidden fallback folder
+  (`Android/data/<pkg>/files/...`). That folder held 452 (0.20.0), 490 (0.21.0) and 8 (0.22.0) lines missing from
+  the shared log. The probe name is now unique per call.
+
 ### R77-BAT-3: Listener gap 2 minutes against 5 minutes (was arm 6)
 **Status**: [CHECKLIST] NEW (2026-10-07, Sprint 77 R76-1)
 **Priority**: Low

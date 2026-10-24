@@ -7,4 +7,4 @@ PROVISIONAL (Sprint 81 Phase 3.7.0b, 2026-10-23). Re-derive at Sprint 81 Phase 7
 
 ---
 
-Review No Rule Items now shows why an email may be spam and offers a one-tap rule. Bug fixes and reliability improvements.
+Review No Rule Items now shows why an email may be spam and offers a one-tap rule. Gmail accounts: Google asks you to sign in again about once a week while the app is in testing; the app now notifies you when a background scan needs that sign-in. Bug fixes and reliability improvements.
