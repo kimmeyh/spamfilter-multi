@@ -757,3 +757,8 @@ through them in detail, one at a time"* -> walk through one part at a time, wait
 - **MV-1 correction**: my step said "the AOL account > Review No Rule Items". Review No Rule Items is the app's
   default screen and lists every account (`main_navigation_screen.dart:93`, `selected_account_provider.dart:30`);
   there is no per-account path to it.
+- **MV-1 result (Harold, 2026-10-25, screenshot of Review No Rule Items on 0.22.0 DEV)**: the "Create rule" button
+  shows on the row, and the existing No Rule Item pop-up is unchanged. Harold's direction: the analysis should produce
+  ONE suggested safe-sender or block rule, highlighted in that pop-up with its regex and reason -> F306. Keep the
+  Create rule page for now as a reference; remove it in Sprint 86 -> F307. Where F306 goes (this sprint or the
+  backlog): asked 2026-10-25.

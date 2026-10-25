@@ -300,6 +300,42 @@ Source: `docs/research/R76-3_HEURISTICS_ML_GENAI_SPAM_IDENTIFICATION.md` (Issue 
 - AC: a test shows the line is written on a DEV build and not on a prod build; the line holds no address or header text.
 - Parity: shared Dart, no platform branch. Depends on: F271 (done Sprint 81).
 
+**F306. Suggested rule in the No Rule Item pop-up: one highlighted safe-sender or block suggestion with its regex and reason (~180-300m, estimate unverified) Priority 34 -- NEW 2026-10-25 (Sprint 81 Manual Validation, Harold's design)**
+- Phase: Core App Quality
+- Platform: All (shared Dart; the pop-up is `email_detail_popup.dart`)
+- Harold's design (2026-10-25, verbatim): *"the hueuristics/genai/ai analyis of a no rules should result in a user
+  suggestion: 1a) a safe sender rule 1b) what type of rule (exact email, exact domain, entire domain 1c) the rule
+  format 1d) why to do as suggested OR 2a) a delete rule 2b) what type of rule (exact email, exact domain, entire
+  domain, subject, body 2c) the rule to be added with exact regex (including if for subject, body or body URL) 2d) why
+  to do as suggested. Plan is to use the same Safe Sender Folder and Deleted Rule Folder. Hoping to integrate new rules
+  into the current No Rule Item pop-up - possibly by highlighting the suggestion with a colored/shaded/bolded border -
+  noting that Block Body would split the current space used by Block Subject."*
+- R-1: the analysis yields at most ONE suggestion per No Rule email: either a safe sender (Exact Email, Exact Domain,
+  Entire Domain) or a block rule (Block Email, Block Exact Domain, Block Entire Domain, Block Subject, Block Body or
+  body URL).
+- R-2: the pop-up highlights the suggested button (colored, shaded or bold border) and shows the exact regex and a
+  one-sentence reason next to it. The user still taps to apply; a suggestion never acts on mail.
+- R-3: a new Block Body button shares the row Block Subject uses today (two half-width cells).
+- R-4: the rule is saved through the existing quick actions, so the same Safe Sender Folder and Deleted Rule Folder
+  apply.
+- Open design points (to settle at card time, before code):
+  - The basis for a suggestion. F271's signals fired on 0 of 14 real rows (see F305), so header signals alone would
+    leave most emails with no suggestion. ML (F272) and GenAI depend on the R76-4 Class-1 decisions.
+  - Body and body-URL suggestions need the body. No Rule rows do not store it (SEC-14), so it is fetched when the
+    pop-up opens, or only the suggested pattern is computed at scan time and stored.
+- Parity: shared Dart, no platform branch. Depends on: F305 (signal evidence); F272 or GenAI for anything past header
+  signals.
+
+**F307. Remove the "Create rule" page (RuleQuickAddScreen) -- target Sprint 86 (~30-60m) Priority 36 -- NEW 2026-10-25 (Harold)**
+- Phase: Core App Quality
+- Platform: All
+- Harold (2026-10-25): *"I don't think that the Create rule page will be needed, but keep it for now as reference but
+  backlog to remove it in 5 sprints from now."*
+- Scope: remove `rule_quick_add_screen.dart` and its two callers: the F271 "Create rule" button on Review No Rule
+  Items (`no_rule_review_screen.dart:520`) and `email_detail_view.dart:551`. First confirm F306 covers what the page
+  did (its four condition buckets: From header, subject, body, body URL).
+- Target: Sprint 86 (Sprint 81 + 5). Depends on: F306.
+
 **F273. Privacy policy and Data safety revision for the content history and learning (~60m) Priority 40**
 - Phase: Core App Quality
 - Platform: All (one policy; Play and Microsoft Store)
