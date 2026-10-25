@@ -328,6 +328,10 @@ Source: `docs/research/R76-3_HEURISTICS_ML_GENAI_SPAM_IDENTIFICATION.md` (Issue 
     leave most emails with no suggestion. ML (F272) and GenAI depend on the R76-4 Class-1 decisions.
   - Body and body-URL suggestions need the body. No Rule rows do not store it (SEC-14), so it is fetched when the
     pop-up opens, or only the suggested pattern is computed at scan time and stored.
+- DMARC input (Harold asked 2026-10-25 which providers do not check it): every suggestion reads the receiving
+  provider's DMARC result itself, on every provider. Large providers check DMARC, but a failure can still be DELIVERED:
+  to the Junk folder (DEV content history 2026-10-25: both RED emails were in AOL Bulk), or when the sending domain
+  publishes `p=none` or no record. Generic IMAP hosts are unverified.
 - Parity: shared Dart, no platform branch. Depends on: F305 (signal evidence); F272 or GenAI for anything past header
   signals.
 
