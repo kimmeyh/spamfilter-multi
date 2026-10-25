@@ -362,8 +362,16 @@ Source: `docs/research/R76-3_HEURISTICS_ML_GENAI_SPAM_IDENTIFICATION.md` (Issue 
   (`docs/RULE_FORMAT.md` lines 75-89). Comparing two headers with each other (Reply-To domain against From domain) is
   not expressible in the grammar; that stays a Dart signal (F271 R-5, Class 2 to change).
 - R-4: output is a report and candidate YAML for Harold to review; nothing is imported or applied by the tool.
-- Known limit (F267 finding, Sprint 80): an item deleted BY A RULE is the rule's own verdict, not a human label. Items
-  Harold deleted by hand are the real labels; the report says which kind each source item is, where it can be told.
+- R-5 (Harold 2026-10-25: *"duduplicate the collection of data (only one copy of an email needed)"*): one record per
+  email. The content history already keys each row on SHA-256 of account + Message-ID (`content_history.dart:64-70`,
+  UNIQUE index), so an email seen in the Inbox and later in Trash2 is one row. Two gaps the tool closes: the same email
+  in two accounts is two rows (dedup on Message-ID across accounts), and an email with no Message-ID is keyed on
+  provider id + folder, so a folder move makes a second row (dedup on From + Date + Subject).
+- Known limit (F267 finding, Sprint 80): an item deleted BY A RULE is the rule's own verdict, not a human label.
+- Hand-deleted items (Harold 2026-10-25: *"items I deleted by hand may be safe senders, but I don't need them any
+  more (don't over-read it)"*): a hand delete means "no longer wanted", NOT "spam". The tool must not treat Trash2
+  hand-deletes as delete-rule evidence. They are reported as their own group and weigh neither for nor against a
+  candidate.
 - Privacy: DEV-only data under ADR-0047; nothing leaves the PC; the candidate file holds patterns, not mail text.
 - Feeds: F306 (scan-time suggestions). Depends on: F267, F268 (done Sprint 80).
 
@@ -383,6 +391,85 @@ Source: `docs/research/R76-3_HEURISTICS_ML_GENAI_SPAM_IDENTIFICATION.md` (Issue 
 - Question to answer: which source, combined with a DMARC pass in the received headers, gives a safe-sender
   SUGGESTION (never an automatic safe sender), and what each costs (bundled list size, update cadence, licence).
 - Decision class: a bundled third-party list is a new data source; Class 1 if it is fetched from the network.
+- The From domain is NOT proof of the sender by itself (answered 2026-10-25, Harold asked). Any sender can write any
+  From address. DMARC "authenticates use of the RFC5322.From domain by requiring that it match (be aligned with) an
+  Authenticated Identifier" (RFC 7489 section 3.1), so a trusted-domain match counts only with `dmarc=pass` from the
+  RECEIVING provider. DMARC does not cover display-name abuse or "visually similar domain names ('cousin domains')"
+  (RFC 7489 sections 2.2, 2.4), so `irs-gov-refund.com` and a display name of "IRS" stay unprotected. Checked
+  2026-10-25: irs.gov, ssa.gov and costco.com all publish `p=reject`, so a receiver that enforces DMARC refuses exact-
+  domain spoofs of them. Depends on F312 (the app must read the receiver's own Authentication-Results header).
+
+**F310. Mine safe-sender mail for patterns that suggest a safe-sender rule for No Rule mail (~120-240m, estimate unverified) Priority 38 -- NEW 2026-10-25 (Harold)**
+- Phase: Core App Quality
+- Platform: Windows DEV (developer analysis; the results feed F270 and F306 on all platforms)
+- Harold (2026-10-25, verbatim): *"Also open to "safe sender" content - is there some combination of email address,
+  subject and body content that are so common in known safe senders that we could develop a hueristic, ai or genai for
+  it so that we could recommend a safe sender rule to the user?"*
+- The mirror of F308. Source: content-history rows whose outcome is safe sender (534 of 1,027 on 2026-10-25).
+- R-1: learn what safe-sender mail has in common that No Rule spam does not. Candidates: DMARC pass from the receiving
+  provider, an aligned DKIM domain, a sender seen over many weeks, a reply thread (In-Reply-To or References naming
+  mail Harold sent), transactional subjects (order, receipt, statement, appointment), personal greetings, and few or
+  no tracking links.
+- R-2: score each candidate with F267 against delete-rule mail. Report it only when it almost never matches spam.
+- R-3: a safe-sender suggestion always requires DMARC pass (F312). Content alone never suggests a safe sender, because
+  phishing copies the subject and body of real transactional mail.
+- R-4: output is a report only, as in F308 R-4.
+- Feeds: F270 (safe-sender discovery), F306. Depends on: F267, F312.
+
+**F311. Research: known spam and phishing sender sources for delete-rule suggestions (~60-90m research) Priority 39 -- NEW 2026-10-25 (Harold)**
+- Phase: Core App Quality (research only)
+- Platform: All (the result would feed F306)
+- Harold (2026-10-25): *"should we add an item to the backlog for a compliment to F309 for known spam/phishing
+  senders - do some research?"*
+- Leads found 2026-10-25 (search results only; verify terms on each vendor's own page at card time):
+  - Spamhaus DBL (domain blocklist, DNS query): free only under fair use for non-commercial use; the official page
+    sets no number; commercial use needs the paid Data Query Service. Whether a Store app counts as commercial use is
+    the first question.
+  - abuse.ch URLhaus (malicious URLs): free under fair use (terms effective 2025-11-04); whether the API needs a key
+    is reported both ways.
+  - OpenPhish community feed (phishing URLs, updated about every 12 hours) and PhishTank (Cisco Talos; free with
+    registration): from secondary sources only.
+- Questions: coverage of the senders and body URLs in the content history, licence for a shipped app, and privacy.
+- Decision class: a lookup sends the sender domain or a body URL off the device. That is Class 1 and a privacy-policy
+  change. A downloaded list checked on the device avoids the per-email disclosure but needs a licence for
+  redistribution.
+
+**F312. BUG: the auth parser can read a sender-planted Authentication-Results header instead of the receiver's (~60-120m) Priority 31 -- NEW 2026-10-25 (found while answering Harold's spoofing question)**
+- Phase: Core App Quality (security)
+- Platform: All (shared Dart)
+- Defect: both adapters build the header map with last-wins assignment (`generic_imap_adapter.dart:2418-2419`,
+  `gmail_client.dart:282-285`). enough_mail 2.1.7 keeps headers in message order, top first
+  (`parser_helper.dart:143-176`). The receiving provider PREPENDS its Authentication-Results header (RFC 8601 sections
+  2.1 and 4.1), so with two or more of them the map keeps the BOTTOM one: an earlier hop's, or one the sender wrote.
+  RFC 8601 section 7.1: a forged field that is not stripped means "the MUA could inappropriately trust it".
+- Effect: a phishing email that carries a forged `dmarc=pass` lower in its headers can read GREEN and skip the RED
+  warning before the user makes it a safe sender. F309 and F310 rest on this check.
+- Unverified: the Gmail API header order (assumed to be message order), and how often real mail carries two or more
+  Authentication-Results headers. Settle both with a test fixture and a DEV content-history count.
+- Fix direction: read the TOP-MOST Authentication-Results header, and accept it only when its authserv-id is the
+  account's own provider (for example AOL, Yahoo or Google). If the authserv-id is not the provider's, show grey, not
+  green. The Development decision is how the provider id list is kept.
+- AC: a fixture with a forged `dmarc=pass` below a real `dmarc=fail` classifies RED. Mutation-verify it.
+- Recommended for Sprint 82, with F306 (Harold to decide).
+
+**F313. Evaluate the No Rule recommender: hide the rules, recommend, compare (~90-150m) Priority 40 -- NEW 2026-10-25 (Harold)**
+- Phase: Core App Quality
+- Platform: Windows DEV (developer tool, extends F267)
+- Harold (2026-10-25, verbatim): *"we are trying to build a "best in class"/"World's finest" recommendation system for
+  emails marked "no rule" so that the user has a very good idea (still they decide) if the no rule is likely to be a
+  safe sender, delete rule and specifically what rule we are recommending they apply. To some extent we can test
+  using the kimmeyharold.com emails by assuming no rules on any emails and use the recommendation system to recommend
+  and then compare to known rules."*
+- R-1: run every content-history email through the recommender as though no rule matched. Compare the suggestion with
+  the rule that actually matched: right class (safe or delete), right type (email, domain, entire domain, subject,
+  body), and the regex covers the same mail.
+- R-2: prevent a self-graded score. Patterns mined (F308, F310) from the same emails they are tested on score too
+  high, so train on older mail and test on newer mail (a time split), or hold out one rule at a time.
+- R-3: report agreement per class and per type, and list each disagreement. Agreement with the current rules means
+  the recommender REPRODUCES them, not that it is right. Harold's own decisions in the content history (69 rows on
+  2026-10-25) are the stronger check, and they are reported apart.
+- R-4: rerun after each recommender change; record the scores in the sprint plan.
+- Depends on: F267, F306; the miners F308, F310.
 
 **F273. Privacy policy and Data safety revision for the content history and learning (~60m) Priority 40**
 - Phase: Core App Quality
