@@ -298,9 +298,14 @@ Source: `docs/research/R76-3_HEURISTICS_ML_GENAI_SPAM_IDENTIFICATION.md` (Issue 
 - R-2: after a few days of DEV background scans, count which signals would fire and propose widened signals
   (for example bulk mail without `List-Id`) as a numbered decision for Harold before changing them.
 - AC: a test shows the line is written on a DEV build and not on a prod build; the line holds no address or header text.
+- Note (2026-10-25): the DEV content history (ADR-0047) already stores Reply-To, List-Unsubscribe and the auth class
+  for every scanned email, and settled the Sprint 81 finding (see SPRINT_81_PLAN.md "F271 finding"). At card time,
+  check whether R-1 is still needed or R-2 can run on the content history alone.
 - Parity: shared Dart, no platform branch. Depends on: F271 (done Sprint 81).
 
-**F306. Suggested rule in the No Rule Item pop-up: one highlighted safe-sender or block suggestion with its regex and reason (~180-300m, estimate unverified) Priority 34 -- NEW 2026-10-25 (Sprint 81 Manual Validation, Harold's design)**
+**F306. Suggested rule in the No Rule Item pop-up: one highlighted safe-sender or block suggestion with its regex and reason (~180-300m, estimate unverified) Priority 34 -- TARGET SPRINT 82 (Harold 2026-10-25) -- NEW 2026-10-25 (Sprint 81 Manual Validation, Harold's design)**
+- Harold (2026-10-25): the suggestion is created at the time the No Rule outcome is decided, as part of the
+  background and manual scans (not when the pop-up opens).
 - Phase: Core App Quality
 - Platform: All (shared Dart; the pop-up is `email_detail_popup.dart`)
 - Harold's design (2026-10-25, verbatim): *"the hueuristics/genai/ai analyis of a no rules should result in a user

@@ -741,6 +741,12 @@ record, the merges and every verification re-run.
   on a blocked TLD would match that rule and never be a No Rule row; lookalike needs a near-match to a safe sender;
   Reply-To and the bulk-without-unsubscribe signal depend on headers the app does not store, so they are unverified.
   Implication: on real mail the chips will be rare.
+  **Settled 2026-10-25 from the DEV content history** (`content_history.db`, ADR-0047, read-only): the 20 No Rule
+  emails seen since the install all have a Reply-To on the sender's own domain or none, and 14 of them carry
+  List-Unsubscribe. The signals were correct not to fire. Over all 1,027 stored emails, Reply-To on a different domain
+  appears in 180 of 343 delete outcomes, 15 of 534 safe senders and 24 of 150 No Rule (domain compared on its last two
+  labels, an approximation); auth red appears once; a missing List-Unsubscribe does not separate spam from safe mail
+  (208 of 343 against 377 of 534).
 - **MV-2 (Fold, Task 5 AC-3)**: after the 0.22.0 closed-test update on the Fold, pull the diagnostic log; its
   `[new-mail-diagnostics]` line lists every field with no `error:` text. Not rehearsable now (the Fold has 0.21.0).
   Closest rehearsal: emulator 0.22.0 line 2026-10-24 01:16:00, `access=on flag=on component=enabled
@@ -761,4 +767,5 @@ through them in detail, one at a time"* -> walk through one part at a time, wait
   shows on the row, and the existing No Rule Item pop-up is unchanged. Harold's direction: the analysis should produce
   ONE suggested safe-sender or block rule, highlighted in that pop-up with its regex and reason -> F306. Keep the
   Create rule page for now as a reference; remove it in Sprint 86 -> F307. Where F306 goes (this sprint or the
-  backlog): asked 2026-10-25.
+  backlog): Harold 2026-10-25, *"F306 goest to sprint 28"*, recorded as Sprint 82 (the next sprint; 28 is read as a
+  typo). Harold: the suggestion is created when the No Rule outcome is decided, in the background and manual scans.
