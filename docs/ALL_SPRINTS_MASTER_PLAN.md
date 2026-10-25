@@ -207,7 +207,7 @@ Each item is fixed PREVENTION FIRST (SPRINT_EXECUTION_WORKFLOW.md 7.7.1).
 - Origin: `MainActivity.kt` `"diagnostics"` (about lines 203-218) builds the whole map in one expression. If any one field throws (package manager, prefs, `installedMailApps()`), the catch at about line 222 returns `result.success(null)` and writes the cause to logcat only. adb is blocked on both phones by company policy, so on a real phone the cause is never seen; the Dart side logs only "diagnostics unavailable". (Correction to the Sprint 80 Q2 wording: the cause does NOT reach the diagnostic log today.)
 - R-1: each field is read in its own guard; a failing field is reported as `"<field>": "error: <Type>: <message>"` and the other fields are still returned.
 - R-2 (prevention): the Dart `NewMailTrigger.formatDiagnostics` writes those per-field errors into the diagnostic-log line, so a Kotlin failure is visible in the log Harold pulls over MTP.
-- AC: an Android JVM unit test (`gradlew.bat :app:testDevDebugUnitTest`) with one field forced to throw returns the other fields plus that field's error; a Dart test shows the error text in the formatted diagnostic line. Phone check: the 0.21.x+ diagnostic line on the Fold shows every field.
+- AC: an Android JVM unit test (`gradlew.bat :app:testDevDebugUnitTest`) with one field forced to throw returns the other fields plus that field's error; a Dart test shows the error text in the formatted diagnostic line. Phone check: the 0.21.x+ diagnostic line on the Fold shows every field. **Code DONE Sprint 81 (5b87e362); the Fold check is a Sprint 82 carry-in (Harold, 2026-10-25: "bring this back up in the next sprint").**
 
 ### Backlog from the Sprint 76 retrospective
 
@@ -285,6 +285,20 @@ Source: `docs/research/R76-3_HEURISTICS_ML_GENAI_SPAM_IDENTIFICATION.md` (Issue 
 - Control and screen: No Rule Review screen, per-email reason chips and a "Create rule" action.
 - Privacy precondition: none if signals are computed and shown, not stored; storing them is R76-4.
 - Parity: shared Dart. Depends on: F267.
+
+**F305. DEV-only diagnostic: which signal headers each No Rule email had, then widen the F271 signals (~60-90m) Priority 33 -- NEW 2026-10-25 (Sprint 81 Manual Validation, Harold: "do this")**
+- Phase: Core App Quality
+- Platform: All (shared Dart; DEV builds only)
+- Origin: Sprint 81 F271 shipped the reason chips, and 0 of 14 AOL No Rule rows written by background scans since the
+  0.22.0 install carry a code. The writer is wired; auth was green on 13 and yellow on 1 (only red fires); a blocked-TLD
+  sender already matches its rule. Reply-To and bulk-without-unsubscribe cannot be checked, because no headers are stored.
+- R-1: on DEV builds only (`APP_ENV` not prod), each No Rule email writes one diagnostic-log line naming WHICH of
+  `Reply-To`, `Precedence`, `List-Id`, `List-Unsubscribe`, `Authentication-Results` are present (presence and the
+  registrable domain only, never header text or addresses; SEC-14).
+- R-2: after a few days of DEV background scans, count which signals would fire and propose widened signals
+  (for example bulk mail without `List-Id`) as a numbered decision for Harold before changing them.
+- AC: a test shows the line is written on a DEV build and not on a prod build; the line holds no address or header text.
+- Parity: shared Dart, no platform branch. Depends on: F271 (done Sprint 81).
 
 **F273. Privacy policy and Data safety revision for the content history and learning (~60m) Priority 40**
 - Phase: Core App Quality

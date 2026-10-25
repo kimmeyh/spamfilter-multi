@@ -748,3 +748,12 @@ record, the merges and every verification re-run.
   error field.
 - **MV-3 (Task 7 sign-in notification)**: not on demand (needs Google's 7-day expiry on a Gmail account). Rehearsed
   by the 7 Task 7 tests (one notification per account per day). Watch for it on the Fold; no action needed now.
+
+**Harold's answers (2026-10-25)**: *"do this"* (F271 finding option a) -> F305 added to the master plan. MV-1:
+*"this is completely different from the current review no rules screen - did I request this new feature from an old
+backlog item?"* -> open, see below. MV-2: *"bring this back up in the next sprint"* -> Sprint 82 carry-in (recorded on
+the F303 card). MV-3: *"OK"*. IOS_SETUP.md Parts A-D: *"we will do these tomorrow and will need you to walk me
+through them in detail, one at a time"* -> walk through one part at a time, waiting for each to finish.
+- **MV-1 correction**: my step said "the AOL account > Review No Rule Items". Review No Rule Items is the app's
+  default screen and lists every account (`main_navigation_screen.dart:93`, `selected_account_provider.dart:30`);
+  there is no per-account path to it.
