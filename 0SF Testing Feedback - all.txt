@@ -4,7 +4,54 @@ can you write a effective but compact /compact string I can use to compact where
 
 Manual Validation complete
 ---------------------------------------------------------------------------------------------------------
-Sprint 7n Manual Validation Feedback 
+Sprint 8n Manual Validation Feedback 
+
+---------------------------------------------------------------------------------------------------------
+Sprint 81 Manual Validation Feedback 
+
+HK:
+MV1 - the heuristics/genai/ai analysis of a no rules should result in a user suggestion: 1a) a safe sender rule 1b) what type of rule (exact email,
+  exact domain, entire domain 1c) the rule format 1d) why to do as suggested OR 2a) a delete rule 2b) what type of rule (exact email, exact domain,
+  entire domain, subject, body 2c) the rule to be added with exact regex (including if for subject, body or body URL) 2d) why to do as suggested. Plan
+  is to use the same Safe Sender Folder and Deleted Rule Folder.  Hoping to integrate new rules into the current No Rule Item pop-up - possibly by
+  highlighting the suggestion with a colored/shaded/bolded border [Image #1] - noting that Block Body would split the current space used by Block
+  Subject. I don't think that the Create rule page will be needed, but keep it for now as reference but backlog to remove it in 5 sprints from now.
+
+Claude
+  Where F271 came from
+
+  - 2026-10-07 (Sprint 77): you scoped the R76-3 research ("heuristics, ML and GenAI spam identification, research only", 240-minute time-box). It
+    produced backlog cards F266 to F275 (commit f13232c7). F271 is one of them: "Heuristic reasons and rule suggestions on No Rule Review."
+  - 2026-10-23 (Sprint 81 scope): you selected it by name: "F271. Heuristic reasons and rule suggestions on No Rule Review".
+
+  What F271 changed on the screen
+
+  It is the same Review No Rule Items screen, which is the app's default screen. Task 8 added two things to each row:
+  - a "Create rule" text button, placed left of the row's existing icon on the right;
+  - reason labels under the subtitle. None show on your current rows.
+
+  Nothing else on that screen changed. I also got the navigation in MV-1 wrong: there is no "AOL account > Review No Rule Items" path. The screen opens
+  by default and lists every account. I recorded that correction in the plan.
+
+  If more than those two things look different to you, my description is missing something. I need to know what you see.
+
+
+HK: mv-1 this is completely different from the current review no rules screen - did I request this
+  new feature from an old backlog item? 
+
+  3. Manual Validation steps
+
+  - MV-1 (Windows DEV, No Rule review):
+    a. Open the DEV app (the title shows [DEV]).
+    b. Open the AOL account, then Review No Rule Items.
+    c. Each row shows a "Create rule" button, left of the row's existing icon on the right.
+    d. Tap "Create rule" on any row. The "Create Auto-Delete Rule" screen opens with the rule name and From pattern filled in from that sender's domain.
+    e. Do not save. Leave with Back.
+    f. Expect no reason labels on the current rows (Part 2).
+    g. Do not run a manual scan. Never run a manual scan of Yahoo on DEV, because it runs as a full scan there.
+    - Rehearsal: done by 3 passing widget tests and a read-only query of the dev database. I could not see the live window, because the PC was locked
+      and the window showed blank white.
+
 ---------------------------------------------------------------------------------------------------------
 Sprint 80 Manual Validation Feedback 
   Windows steps (DEV app, D:\Data\Harold\github\spamfilter-multi\mobile-app\dist\dev\MyEmailSpamFilter-Dev.exe)
