@@ -438,7 +438,13 @@ Source: `docs/research/R76-3_HEURISTICS_ML_GENAI_SPAM_IDENTIFICATION.md` (Issue 
   change. A downloaded list checked on the device avoids the per-email disclosure but needs a licence for
   redistribution.
 
-**F312. BUG: the auth parser can read a sender-planted Authentication-Results header instead of the receiver's (~60-120m) Priority 31 -- NEW 2026-10-25 (found while answering Harold's spoofing question)**
+**F312. BUG: the auth parser can read a sender-planted Authentication-Results header instead of the receiver's (~60-120m) Priority 31 -- TARGET SPRINT 82, with F306 (Harold 2026-10-25) -- NEW 2026-10-25 (found while answering Harold's spoofing question)**
+- Harold (2026-10-25): Sprint 82 with F306, *"starting with a count of how many emails have more than one
+  Authentication-Results header, and fixed only if the count shows the problem occurs"*.
+- Step 1 (always): count, on DEV, the emails with two or more Authentication-Results headers, per provider and folder,
+  and how many of those have a lower header whose verdict differs from the top one. Record the counts in the sprint plan.
+- Step 2 (only if Step 1 finds emails whose lower header differs from the top one): apply the fix direction and AC below.
+  If the count is zero, close the card with the counts as evidence.
 - Phase: Core App Quality (security)
 - Platform: All (shared Dart)
 - Defect: both adapters build the header map with last-wins assignment (`generic_imap_adapter.dart:2418-2419`,
@@ -454,7 +460,6 @@ Source: `docs/research/R76-3_HEURISTICS_ML_GENAI_SPAM_IDENTIFICATION.md` (Issue 
   account's own provider (for example AOL, Yahoo or Google). If the authserv-id is not the provider's, show grey, not
   green. The Development decision is how the provider id list is kept.
 - AC: a fixture with a forged `dmarc=pass` below a real `dmarc=fail` classifies RED. Mutation-verify it.
-- Recommended for Sprint 82, with F306 (Harold to decide).
 
 **F313. Evaluate the No Rule recommender: hide the rules, recommend, compare (~90-150m) Priority 40 -- NEW 2026-10-25 (Harold)**
 - Phase: Core App Quality

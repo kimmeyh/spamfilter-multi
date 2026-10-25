@@ -769,3 +769,6 @@ through them in detail, one at a time"* -> walk through one part at a time, wait
   Create rule page for now as a reference; remove it in Sprint 86 -> F307. Where F306 goes (this sprint or the
   backlog): Harold 2026-10-25, *"F306 goest to sprint 28"*, recorded as Sprint 82 (the next sprint; 28 is read as a
   typo). Harold: the suggestion is created when the No Rule outcome is decided, in the background and manual scans.
+- **F312 to Sprint 82 (Harold, 2026-10-25)**: with F306, starting with a DEV count of emails that carry two or more
+  Authentication-Results headers; the parser fix is made only if the count shows a lower header that differs from the
+  top one. Backlog cards added the same day from the MV-1 discussion: F308-F313 (master plan).
