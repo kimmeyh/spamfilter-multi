@@ -1328,8 +1328,10 @@ class GenericIMAPAdapter with BatchOperationsMixin
         _logger.e('[IMAP] Batch markAsRead failed for folder ${entry.key}: $e');
         // 7.7.1 Q2: no per-message fallback can work without a session.
         if (isSessionFatal(e)) rethrow;
-        // Fall back to single-message processing for this folder
-        for (final message in entry.value) {
+        // Fall back to single-message processing for this folder. Only the
+        // usable messages: a no-UID message already has its reason
+        // (7.7.1 silent-failure L-1).
+        for (final message in usable) {
           try {
             await markAsRead(message: message);
             succeeded.add(message.id);
@@ -1695,7 +1697,9 @@ class GenericIMAPAdapter with BatchOperationsMixin
           } catch (e) {
             // 7.7.1 Q2: the session is gone; later folders cannot succeed.
             if (isSessionFatal(e)) rethrow;
-            for (final message in entry.value) {
+            // Only the usable messages: a no-UID message keeps its own reason
+            // (7.7.1 silent-failure L-1).
+            for (final message in usable) {
               failed[message.id] = e.toString();
             }
           }
@@ -1726,13 +1730,22 @@ class GenericIMAPAdapter with BatchOperationsMixin
     String context,
   ) {
     final usable = <EmailMessage>[];
+    var noUid = 0;
     for (final message in messages) {
       if (hasValidImapUid(message.id,
           folderName: message.folderName, context: context)) {
         usable.add(message);
       } else {
-        failed[message.id] = noValidUidReason;
+        noUid++;
       }
+    }
+    // Every no-UID message shares the one marker id, so they share one
+    // `failed` entry; its text carries the count, or a log reading
+    // `failed.length` would count k messages as one (7.7.1 silent-failure
+    // L-2).
+    if (noUid > 0) {
+      failed[kNoValidImapUid] =
+          noUid == 1 ? noValidUidReason : '$noValidUidReason ($noUid messages)';
     }
     return usable;
   }

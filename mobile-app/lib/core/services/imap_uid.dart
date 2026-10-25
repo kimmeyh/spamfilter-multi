@@ -34,19 +34,50 @@ bool isNoValidImapUid(String id) => id == kNoValidImapUid;
 /// Enforced by `test/policy/f302_imap_uid_helper_test.dart`: an
 /// `int.tryParse` / `int.parse` of a message id anywhere else in `lib/` fails
 /// the build.
+///
+/// 7.7.1 L-3: the line is written at most once per [context] and folder per
+/// [kNoValidImapUidLogWindow]. One message passes several gates in a scan
+/// (convert, persist, cursor, each batch), so a server that sends no UIDs for
+/// a large folder would otherwise write thousands of lines and rotate real
+/// events out of the log. The next line after a window names how many were
+/// skipped without a line.
 bool hasValidImapUid(
   String id, {
   required String folderName,
   required String context,
 }) {
   if (!isNoValidImapUid(id)) return true;
+  final key = '$context\u0000$folderName';
+  final now = DateTime.now();
+  final last = _lastLogAt[key];
+  if (last != null && now.difference(last) < kNoValidImapUidLogWindow) {
+    _suppressed[key] = (_suppressed[key] ?? 0) + 1;
+    return false;
+  }
+  final suppressed = _suppressed.remove(key) ?? 0;
+  _lastLogAt[key] = now;
   unawaited(DiagnosticLogger.log(
     kind: DiagnosticLogger.kindSkipped,
     context: context,
     detail: 'message has no valid IMAP UID (the server sent none); skipped '
-        'so no other message is touched. folder "$folderName"',
+        'so no other message is touched. folder "$folderName"'
+        '${suppressed > 0 ? '; $suppressed more skipped here since the '
+            'last line' : ''}',
   ));
   return false;
+}
+
+/// How long [hasValidImapUid] waits before it writes another line for the
+/// same context and folder.
+const Duration kNoValidImapUidLogWindow = Duration(minutes: 10);
+
+final Map<String, DateTime> _lastLogAt = {};
+final Map<String, int> _suppressed = {};
+
+/// Test seam: forget the log windows so each test starts fresh.
+void debugResetNoValidImapUidLog() {
+  _lastLogAt.clear();
+  _suppressed.clear();
 }
 
 /// The integer UID in [id], or null when there is none to use: the

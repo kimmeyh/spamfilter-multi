@@ -142,6 +142,9 @@ void main() {
     diagDir = Directory.systemTemp.createTempSync('f302_diag_');
     DiagnosticLogger.debugSetEnabled(true);
     DiagnosticLogger.debugSetDir(diagDir.path);
+    // 7.7.1 L-3: each test reads its own fresh log, so forget the
+    // once-per-window memory from earlier tests.
+    debugResetNoValidImapUidLog();
   });
 
   tearDown(() {
@@ -323,10 +326,16 @@ void main() {
       final read = await adapter.markAsReadBatch(both);
       expect(read.failedIds.keys, contains(kNoValidImapUid));
       expect(read.succeededIds, isNot(contains(kNoValidImapUid)));
+      // 7.7.1 silent-failure L-1: the fallback must not overwrite the
+      // no-UID reason with the SELECT error.
+      expect(read.failedIds[kNoValidImapUid],
+          GenericIMAPAdapter.noValidUidReason);
 
       final spam = await adapter.takeActionBatch(both, FilterAction.markAsSpam);
       expect(spam.failedIds.keys, contains(kNoValidImapUid));
       expect(spam.succeededIds, isNot(contains(kNoValidImapUid)));
+      expect(spam.failedIds[kNoValidImapUid],
+          GenericIMAPAdapter.noValidUidReason);
       expect(client.stores, isEmpty);
     });
 

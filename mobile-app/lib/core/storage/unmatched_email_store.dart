@@ -313,8 +313,15 @@ class UnmatchedEmailStore {
   /// Returns one [UnmatchedUpsertResult] per input, in order. The outcome says
   /// whether the email was new, changed, came back after being dismissed, or
   /// was already listed and unchanged (the background export omits those).
+  ///
+  /// [keepStoredHeuristicSignals] (Sprint 81 7.7.1 silent-failure M-3): when
+  /// the scan could not read the user's safe senders or rules, its reason
+  /// codes are incomplete, so a refreshed row keeps the codes it already has
+  /// instead of losing them until the next good scan. New rows still store
+  /// what was computed.
   Future<List<UnmatchedUpsertResult>> upsertUnmatchedEmails(
-      List<UnmatchedEmail> emails) async {
+      List<UnmatchedEmail> emails,
+      {bool keepStoredHeuristicSignals = false}) async {
     if (emails.isEmpty) return [];
 
     try {
@@ -370,6 +377,7 @@ class UnmatchedEmailStore {
             ..remove('id')
             ..remove('created_at')
             ..['processed'] = 0;
+          if (keepStoredHeuristicSignals) values.remove('heuristic_signals');
           await txn.update('unmatched_emails', values,
               where: 'id = ?', whereArgs: [id]);
           results.add(UnmatchedUpsertResult(

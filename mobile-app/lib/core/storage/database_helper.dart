@@ -781,19 +781,28 @@ class DatabaseHelper implements RuleDatabaseProvider {
             .map((r) => r['name'] as String)
             .toSet();
     if (!accountCols.contains('last_history_id') || cursorCols.isEmpty) {
-      _logger.i('v15 migration skipped: no accounts.last_history_id or no '
+      // 7.7.1 silent-failure M-5: warning level. A migration cannot reach the
+      // diagnostic log (it needs this database open), so this is the record.
+      _logger.w('v15 migration skipped: no accounts.last_history_id or no '
           'account_folder_cursors table');
       return;
     }
-    final copied = await db.rawInsert(
+    await db.rawInsert(
       'INSERT OR IGNORE INTO account_folder_cursors '
       '(account_id, folder_name, cursor_type, cursor_value, updated_at) '
       "SELECT account_id, 'inbox', ?, last_history_id, ? FROM accounts "
       "WHERE last_history_id IS NOT NULL AND last_history_id != ''",
       [cursorTypeGmailHistoryId, DateTime.now().millisecondsSinceEpoch],
     );
-    _logger.i('v15 migration complete: $copied account cursor(s) copied to '
-        'INBOX');
+    // rawInsert returns the last row id, not a count (sqflite_common
+    // sqlite_api.dart `rawInsert`), so count the INBOX history rows instead.
+    final count = Sqflite.firstIntValue(await db.rawQuery(
+            'SELECT COUNT(*) FROM account_folder_cursors '
+            "WHERE cursor_type = ? AND folder_name = 'inbox'",
+            [cursorTypeGmailHistoryId])) ??
+        0;
+    _logger.i('v15 migration complete: $count INBOX history cursor(s) now '
+        'stored per folder');
   }
 
   /// v13 (F266, Sprint 77): repair stored patterns that can never match.
@@ -1525,8 +1534,11 @@ class DatabaseHelper implements RuleDatabaseProvider {
   /// read changes "since now" and never saw the mail that arrived before.
   static const String cursorTypeGmailHistoryId = 'gmail_history_id';
 
-  /// Gmail label names match without regard to case, so the folder part of the
-  /// key is lowercased: "Inbox" and "INBOX" are one cursor.
+  /// The folder part of the key is lowercased: "Inbox" and "INBOX" are one
+  /// cursor. Known limit: whether Gmail allows two labels that differ only in
+  /// case is UNVERIFIED. If it does and both are scanned, they share one
+  /// cursor, and one folder saving it could make the other skip mail (the
+  /// F259 defect, for that pair only).
   static String _gmailCursorFolder(String folderName) =>
       folderName.toLowerCase();
 

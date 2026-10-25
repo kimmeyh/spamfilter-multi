@@ -28,7 +28,7 @@ import 'package:flutter_test/flutter_test.dart';
 
 /// `int.tryParse(<id expression>)` or `int.parse(<id expression>)`.
 final RegExp _idParse = RegExp(
-    r'int\.(?:tryParse|parse)\(\s*(?:[A-Za-z_][\w]*[?!]?\.)*(?:id|uid|[A-Za-z]*Id)\s*\)');
+    r'int\.(?:tryParse|parse)\(\s*(?:[A-Za-z_][\w]*[?!]?\.)*(?:id|uid|[A-Za-z]*Id|identifierValue)\s*\)');
 
 /// path (forward slashes) -> reason. Empty: every hit in lib/ is a message id.
 const Map<String, String> _allowed = {};
@@ -61,6 +61,7 @@ void main() {
         'int.parse( m.id )',
         'int.tryParse(messageId)',
         'int.tryParse(widget.email.id)',
+        'int.parse(identifierValue)', // 7.7.1 POTENTIAL_MISS
       ]) {
         expect(_idParse.hasMatch(bad), isTrue, reason: bad);
       }

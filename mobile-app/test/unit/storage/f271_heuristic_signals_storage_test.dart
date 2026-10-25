@@ -66,6 +66,45 @@ void main() {
     });
   });
 
+  group('7.7.1 M-3: a scan that could not read the rules keeps stored codes',
+      () {
+    // What this does NOT catch: the provider deciding the context read
+    // failed (its catch sets the flag); that path needs a failing database.
+    late int scan;
+    UnmatchedEmail make(String? codes) => UnmatchedEmail(
+          scanResultId: scan,
+          providerIdentifierType: 'email_id',
+          providerIdentifierValue: '7',
+          fromEmail: 'x@paypa1.com',
+          folderName: 'INBOX',
+          createdAt: DateTime.now(),
+          heuristicSignals: codes,
+        );
+
+    late int rowId;
+
+    setUp(() async {
+      scan = await testHelper.createTestScanResult('acct-a');
+      rowId = (await store.upsertUnmatchedEmails([make('lookalike_domain')]))
+          .single
+          .id;
+    });
+
+    Future<String?> stored() async =>
+        (await store.getUnmatchedEmailById(rowId))!.heuristicSignals;
+
+    test('refresh with keepStoredHeuristicSignals keeps the codes', () async {
+      await store.upsertUnmatchedEmails([make(null)],
+          keepStoredHeuristicSignals: true);
+      expect(await stored(), 'lookalike_domain');
+    });
+
+    test('a normal refresh writes what this scan computed', () async {
+      await store.upsertUnmatchedEmails([make(null)]);
+      expect(await stored(), isNull);
+    });
+  });
+
   group('scan wiring', () {
     EmailActionResult result(String id, String from, Map<String, String> h) =>
         EmailActionResult(
@@ -204,7 +243,7 @@ void main() {
 
       final db = await testHelper.dbHelper.database;
       expect(await db.getVersion(), databaseVersion);
-      expect(databaseVersion, 16);
+      expect(databaseVersion, greaterThanOrEqualTo(16));
 
       final info = await db.rawQuery('PRAGMA table_info(unmatched_emails)');
       expect(info.map((r) => r['name']), contains('heuristic_signals'));

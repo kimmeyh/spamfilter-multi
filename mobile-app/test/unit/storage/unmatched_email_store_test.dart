@@ -1,6 +1,7 @@
 import 'package:flutter_test/flutter_test.dart';
 
 import 'package:my_email_spam_filter/core/models/provider_email_identifier.dart';
+import 'package:my_email_spam_filter/core/services/imap_uid.dart';
 import 'package:my_email_spam_filter/core/storage/database_helper.dart';
 import 'package:my_email_spam_filter/core/storage/scan_result_store.dart';
 import 'package:my_email_spam_filter/core/storage/unmatched_email_store.dart';
@@ -75,6 +76,14 @@ void main() {
     test('IMAP UID getter converts string to int', () {
       final id = ProviderEmailIdentifier.imap('yahoo', 67890);
       expect(id.imapUid, 67890);
+    });
+
+    test('IMAP UID getter refuses the F302 no-valid-UID marker (7.7.1)', () {
+      final id = ProviderEmailIdentifier(
+          providerType: 'aol',
+          identifierType: 'imap_uid',
+          identifierValue: kNoValidImapUid);
+      expect(() => id.imapUid, throwsStateError);
     });
 
     test('IMAP UID getter throws on non-IMAP identifier', () {

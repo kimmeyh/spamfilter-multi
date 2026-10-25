@@ -264,6 +264,26 @@ void main() {
       expect(api.labelsListCalls, 1);
     });
 
+    test('7.7.1: two labels that differ only in case -- the exact name wins, '
+        'and a case-only match is not guessed', () async {
+      // Whether Gmail allows this is unverified; the lookup must not pick
+      // the wrong one if it does.
+      final api = _FakeGmail(labels: [
+        gmail.Label(name: 'Foo', id: 'Label_1'),
+        gmail.Label(name: 'foo', id: 'Label_2'),
+      ]);
+      final adapter = GmailApiAdapter()..debugSetGmailApi(api);
+      await adapter.fetchMessagesIncremental(
+          startHistoryId: '1', folderForLabel: 'foo');
+      await adapter.fetchMessagesIncremental(
+          startHistoryId: '1', folderForLabel: 'Foo');
+      expect(api.historyLabelIds, ['Label_2', 'Label_1']);
+      await expectLater(
+          adapter.fetchMessagesIncremental(
+              startHistoryId: '1', folderForLabel: 'FOO'),
+          throwsA(isA<GmailLabelNotFoundException>()));
+    });
+
     test('the full fetch of a missing custom label throws before any query',
         () async {
       final api = _FakeGmail();

@@ -490,7 +490,11 @@ class BackgroundScanCore {
       // worker process exits right after the run. Never throws (best effort,
       // at most one per account per day) and does not read the account's
       // sign-in flag, so a failed flag write cannot hide it. Every caller of
-      // this method is a background scan, so this never fires for a manual one.
+      // this method runs the background scan path, so a manual scan never
+      // reaches it. One caller runs inside the open app: Windows Settings >
+      // Test Background Scan (`executeBackgroundScan(isTest: true)`), which
+      // can post this notice while the user is in the app and uses that
+      // account's once-a-day slot.
       await GmailSignInNotifier.notifyIfDue(
           accountId: accountId, settingsStore: settingsStore);
       return AccountScanOutcome.skipped(

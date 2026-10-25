@@ -26,6 +26,10 @@ Format: `- **type**: Description (Issue #N)` where type is feat|fix|chore|docs
 
 ## [Unreleased]
 
+### 2026-10-25 (Sprint 81, final code review fixes)
+- **fix**: A Gmail account scanning only a custom label now gets "Sign In Again" when its sign-in lacks Gmail access, instead of a folder error; an exact-case label name wins over a case-only match (Issue #514)
+- **fix**: A scan that cannot read the rules keeps a No Rule row's stored reason chips; a message the mail server sent without a UID is logged once per folder per 10 minutes, with a count (Issues #512, #516)
+
 ### 2026-10-23 (Sprint 81)
 
 - **fix**: On Android, when two background scans started at the same moment, one of them could write its diagnostic-log lines to a second, hidden folder, so the log in Documents was missing lines; all lines now go to the one log folder (Issue #517)

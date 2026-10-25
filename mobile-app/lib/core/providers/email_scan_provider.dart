@@ -736,6 +736,23 @@ class EmailScanProvider extends ChangeNotifier {
                     folderName: r.email.folderName,
                     context: 'scan/persist-no-rule'))
             .toList();
+        // 7.7.1 code-reviewer L-7: the scan summary's No Rule count includes
+        // these messages and the review list does not (R-3, by design). Say
+        // so once per scan, so the difference is not read as the F245 defect.
+        final noUidNoRule = _results
+                .where((r) => r.action == EmailActionType.none)
+                .length -
+            noRuleResults.length;
+        if (noUidNoRule > 0) {
+          unawaited(DiagnosticLogger.log(
+            kind: DiagnosticLogger.kindSkipped,
+            context: 'scan/persist-no-rule',
+            detail: '${Redact.accountId(_currentAccountId)} row '
+                '$_currentScanResultId: $noUidNoRule No Rule message(s) had '
+                'no valid IMAP UID and are not listed on Review No Rule '
+                'Items (they are in the scan summary count)',
+          ));
+        }
         // F276 (Sprint 80): this scan just fetched each message, so it is in
         // its folder now. Record that, or the row keeps the defaults
         // ('unknown', never checked) and the presence reconciler re-asks every
@@ -747,6 +764,7 @@ class EmailScanProvider extends ChangeNotifier {
         // scan only (the signals that need no context still compute), so it
         // is logged and never blocks the No Rule rows themselves.
         var heuristicContext = HeuristicContext.empty;
+        var heuristicContextRead = true;
         if (noRuleResults.isNotEmpty) {
           try {
             heuristicContext = HeuristicContext.fromRows(
@@ -754,9 +772,18 @@ class EmailScanProvider extends ChangeNotifier {
               ruleRows: await _databaseHelper!.queryRules(),
             );
           } catch (e) {
+            heuristicContextRead = false;
             _logger.w('F271: could not read safe senders or rules for the '
                 'heuristic signals; lookalike and blocked-TLD chips are '
                 'skipped for this scan: $e');
+            // 7.7.1 L-8: the console log is not kept in a release build.
+            await DiagnosticLogger.log(
+              kind: DiagnosticLogger.kindScan,
+              context: 'F271/context',
+              detail: 'safe senders or rules unreadable; lookalike and '
+                  'blocked-TLD chips skipped for this scan -- '
+                  '${DiagnosticLogger.describeError(e)}',
+            );
           }
         }
         final unmatched = noRuleResults
@@ -796,8 +823,9 @@ class EmailScanProvider extends ChangeNotifier {
           // F245 (Sprint 77, ADR-0045): ONE row per email -- a re-found
           // email refreshes its row instead of adding a copy. The outcomes
           // also tell the background export which rows are already listed.
-          final upserts =
-              await _unmatchedEmailStore!.upsertUnmatchedEmails(unmatched);
+          final upserts = await _unmatchedEmailStore!.upsertUnmatchedEmails(
+              unmatched,
+              keepStoredHeuristicSignals: !heuristicContextRead);
           _alreadyListedNoRule.clear();
           var added = 0;
           for (var i = 0; i < upserts.length; i++) {

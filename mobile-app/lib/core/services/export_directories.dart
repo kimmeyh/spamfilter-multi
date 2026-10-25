@@ -243,7 +243,15 @@ class ExportDirectories {
       final probe = File(path.join(dir,
           '.write_probe_${DateTime.now().microsecondsSinceEpoch}_${_probeRandom.nextInt(1 << 32)}'));
       await probe.writeAsString('ok');
-      await probe.delete();
+      // 7.7.1 silent-failure L-6: the write proves the folder is writable.
+      // The delete is best effort; a lock on the probe (an indexer or
+      // antivirus) must not send the logs to the fallback folder.
+      try {
+        await probe.delete();
+      } catch (e) {
+        _logger.w('Export folder probe "${probe.path}" written but not '
+            'deleted: $e');
+      }
       return true;
     } catch (e) {
       _logger.w('Export folder probe failed for "$dir": $e');
