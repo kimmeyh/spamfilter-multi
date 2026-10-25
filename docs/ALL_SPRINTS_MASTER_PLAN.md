@@ -341,6 +341,49 @@ Source: `docs/research/R76-3_HEURISTICS_ML_GENAI_SPAM_IDENTIFICATION.md` (Issue 
   did (its four condition buckets: From header, subject, body, body URL).
 - Target: Sprint 86 (Sprint 81 + 5). Depends on: F306.
 
+**F308. Mine the AOL Trash2 history for delete-rule patterns that generalize to No Rule mail (~180-300m, estimate unverified) Priority 35 -- NEW 2026-10-25 (Harold, Sprint 81 Manual Validation)**
+- Phase: Core App Quality
+- Platform: Windows DEV (developer analysis; the results feed F306 on all platforms)
+- Harold (2026-10-25, verbatim): *"run a check on kimmeyharold@aol.com Trash2 folder - it has a history of deleted
+  items and many rules should match. I think an analysis of the body content, subjects of items with delete rules
+  should find commonality where some subject content (regex) or bondy content (regex) can idintify items that should
+  be suggested for delete rules of no rule items. There are also a few email address clues such as
+  "news_*@*.*.*..." that almost always indicate a delete entire domain rule is suggested. Also open to combinations of
+  subject, body, email, domain and header content that almost always indicate a delete rule is needed (suggest if we
+  need to add rules that take into account multiple parts of an email in combination to make a suggested rule)."*
+- R-1: a DEV read-only scan of the AOL Trash2 folder records every item in the content history (ADR-0047). AOL's
+  manual mode is readOnly on DEV (verified 2026-10-24); confirm again before the scan, and do not scan Yahoo.
+- R-2: extend the F267 / F268 tools with a second mode. F268 today mines only mail the current rules MISS; this mode
+  learns what the delete-rule matches have IN COMMON (subject regex, body regex, body-URL domains, sender local-part
+  shapes such as `news_*@`, header values), then scores each candidate against No Rule and safe-sender mail with F267.
+  A candidate is reported only when it almost never hits a safe sender.
+- R-3: report candidates by kind: single-part (subject, body, sender shape) and combinations. Combinations need NO
+  grammar change: rules already support `type: "AND"` across from, subject, body and header lists
+  (`docs/RULE_FORMAT.md` lines 75-89). Comparing two headers with each other (Reply-To domain against From domain) is
+  not expressible in the grammar; that stays a Dart signal (F271 R-5, Class 2 to change).
+- R-4: output is a report and candidate YAML for Harold to review; nothing is imported or applied by the tool.
+- Known limit (F267 finding, Sprint 80): an item deleted BY A RULE is the rule's own verdict, not a human label. Items
+  Harold deleted by hand are the real labels; the report says which kind each source item is, where it can be told.
+- Privacy: DEV-only data under ADR-0047; nothing leaves the PC; the candidate file holds patterns, not mail text.
+- Feeds: F306 (scan-time suggestions). Depends on: F267, F268 (done Sprint 80).
+
+**F309. Research: a global "trusted sender" source for safe-sender suggestions (~60-90m research) Priority 37 -- NEW 2026-10-25 (Harold)**
+- Phase: Core App Quality (research only)
+- Platform: All (the result would feed F270 and F306)
+- Harold (2026-10-25): *"is there a global list of safe-sender domains (costo.com, irs.gov...) that the code,
+  heuristic or AI could be built for?"*
+- Leads found 2026-10-25 (to verify at card time, primary sources only):
+  - `.gov`: only verified U.S. government organizations can register it; CISA verifies requesters (get.gov
+    eligibility page). A strong structural signal, but scammers impersonate `.gov` in the display name, so it must be
+    paired with an authentication pass (DMARC).
+  - Tranco: a research top-sites ranking hardened against manipulation (NDSS 2019). Popularity is not trust: large
+    sites also send bulk mail and are spoofed, so it can only rank, never auto-approve.
+  - BIMI with a Verified Mark Certificate: requires DMARC at enforcement and a registered trademark logo. Present only
+    for larger brands; whether the app can read a BIMI result from received headers is unverified.
+- Question to answer: which source, combined with a DMARC pass in the received headers, gives a safe-sender
+  SUGGESTION (never an automatic safe sender), and what each costs (bundled list size, update cadence, licence).
+- Decision class: a bundled third-party list is a new data source; Class 1 if it is fetched from the network.
+
 **F273. Privacy policy and Data safety revision for the content history and learning (~60m) Priority 40**
 - Phase: Core App Quality
 - Platform: All (one policy; Play and Microsoft Store)
