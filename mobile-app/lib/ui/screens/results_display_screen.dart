@@ -1523,6 +1523,34 @@ class _ResultsDisplayScreenState extends State<ResultsDisplayScreen> {
                         ),
                       ),
                     ),
+                  // 7.7.1 silent-failure M-2 (F259 / F202): a folder or Gmail
+                  // label the scan skipped because it does not exist on this
+                  // account. Information, not an error: neutral colors, and
+                  // not counted in Errors. Live scan only, like the F203 chip
+                  // above (historical rows carry no missing-folder list).
+                  if (!showingHistorical)
+                    for (final folder in scanProvider.missingFolders)
+                      Tooltip(
+                        message: 'This folder or label does not exist on this '
+                            'account, so the scan skipped it. It is not '
+                            'counted as an error.',
+                        child: Chip(
+                          key: ValueKey('missing_folder_$folder'),
+                          avatar: Icon(Icons.info_outline,
+                              size: 16,
+                              color: Theme.of(context)
+                                  .colorScheme
+                                  .onSecondaryContainer),
+                          label: Text('Folder not found: $folder'),
+                          backgroundColor:
+                              Theme.of(context).colorScheme.secondaryContainer,
+                          labelStyle: TextStyle(
+                            color: Theme.of(context)
+                                .colorScheme
+                                .onSecondaryContainer,
+                          ),
+                        ),
+                      ),
                   if (scanProvider.safeSenderDedupCount > 0)
                     Tooltip(
                       message:

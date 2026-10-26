@@ -480,6 +480,22 @@ Source: `docs/research/R76-3_HEURISTICS_ML_GENAI_SPAM_IDENTIFICATION.md` (Issue 
 - R-4: rerun after each recommender change; record the scores in the sprint plan.
 - Depends on: F267, F306; the miners F308, F310.
 
+**F314. BUG: the Gmail history cursor is saved before the fetched mail is evaluated (~90-150m) Priority 30 -- TARGET SPRINT 82 (Harold Q3 = 1, 2026-10-26) -- NEW 2026-10-26 (Sprint 81 7.7.1 silent-failure M-6, pre-existing)**
+- Phase: Core App Quality
+- Platform: All (shared Dart, `email_scanner.dart`)
+- Defect: the scanner persists the new historyId inside the Gmail fetch step (Step 4) (`email_scanner.dart:1846`, `:1876`,
+  `:1884`), before the messages are evaluated and acted on. If the scan is cancelled, fails, or the app is killed after
+  the fetch, the next scan starts after those messages and they are never evaluated.
+- Design first (Class 2 development decision, written into the card before code): hold the new historyId per folder
+  in memory and persist it only after that folder's messages are evaluated (and actions applied in a live mode).
+  Decide what a partial folder (cancelled mid-evaluation) does: keep the old cursor and re-evaluate the whole delta
+  next time) is the proposed default; verify at design time that re-evaluating is safe (the F203 already-filed check
+  and the No Rule upsert are expected to make it so -- unverified).
+- Callers to enumerate (CLAUDE.md IMP-1): every `setGmailHistoryCursor` call and every reader of the
+  `gmail_history_id` cursor, including the background scan path.
+- AC: a scan cancelled after the fetch and before evaluation leaves the stored historyId unchanged; the next scan
+  evaluates the same messages. Mutation-verified.
+
 **F273. Privacy policy and Data safety revision for the content history and learning (~60m) Priority 40**
 - Phase: Core App Quality
 - Platform: All (one policy; Play and Microsoft Store)

@@ -232,6 +232,22 @@ class EmailScanProvider extends ChangeNotifier {
   void recordSkippedAlreadyFiled() {
     _skippedAlreadyFiledCount++;
   }
+
+  /// 7.7.1 silent-failure M-2 (F259 / F202): folders the scan skipped because
+  /// they do not exist on this account (an IMAP folder or a Gmail label).
+  /// DISCLOSED, not counted: a missing folder is not an error (F202 R-6), so
+  /// it never touches [errorCount]. Before this, the skip reached only the
+  /// opt-in diagnostic log, and a scan of a mistyped label completed with 0
+  /// messages and nothing on screen to say why.
+  List<String> get missingFolders => List.unmodifiable(_missingFolders);
+  final List<String> _missingFolders = [];
+
+  /// 7.7.1 silent-failure M-2: record one folder skipped as missing.
+  void recordFolderMissing(String folderName) {
+    if (_missingFolders.contains(folderName)) return;
+    _missingFolders.add(folderName);
+    notifyListeners();
+  }
   int get errorCount => _errorCount;
 
   /// F91 (Sprint 39): count of source-folder duplicates removed during
@@ -464,6 +480,7 @@ class EmailScanProvider extends ChangeNotifier {
     _safeSendersCount = 0;
     _noRuleCount = 0;  // [NEW] FIX: Reset no-rule count on new scan
     _skippedAlreadyFiledCount = 0;  // F203
+    _missingFolders.clear();  // 7.7.1 silent-failure M-2
     _errorCount = 0;
     _safeSenderDedupCount = 0;  // F91 (Sprint 39): reset dedup count on new scan
     _currentEmail = null;
@@ -1028,6 +1045,7 @@ class EmailScanProvider extends ChangeNotifier {
     _safeSendersCount = 0;
     _noRuleCount = 0;  // [NEW] PHASE 3.1: Reset no-rule count
     _skippedAlreadyFiledCount = 0;  // F203
+    _missingFolders.clear();  // 7.7.1 silent-failure M-2
     _errorCount = 0;
     _safeSenderDedupCount = 0;  // F91 (Sprint 39): reset dedup count
 

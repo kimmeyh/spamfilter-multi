@@ -697,6 +697,10 @@ class EmailScanner {
                   'exist -- skipped (F202)');
             }
             foldersMissing++;
+            // 7.7.1 silent-failure M-2: and on the Results screen, as
+            // information (not an error), so the user sees why the folder
+            // contributed nothing.
+            scanProvider.recordFolderMissing(folderName);
             continue;
           }
           foldersFailed++;
