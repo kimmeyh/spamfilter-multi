@@ -648,6 +648,8 @@ record, the merges and every verification re-run.
 - **Task 4 (#512) + Task 6 (#514)**: DONE fd12e065 (one commit: both edit the same database_helper and
   email_scanner regions). Schema v14 and v15. 26 of 26 mutants killed; dev-DB copy migrated v13 -> v15 with 13,584
   email_actions rows kept. Executed-by: Sonnet sub-agent.
+  Known limit (7.7.1 silent-failure L-4): rows written before v14 may hold an IMAP sequence number in the UID field;
+  the v14 migration cannot tell the two apart. How long such rows remain is not verified.
 - **Task 5 (#513)**: DONE 5b87e362. JVM 3 + Dart 10 tests; 7 mutants killed (Kotlin mutants' compile judged by
   reading -- mutation-test.ps1 does not parse Kotlin errors). AC-3 (Fold log) at Manual Validation. Executed-by:
   Sonnet sub-agent.
