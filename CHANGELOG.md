@@ -32,6 +32,8 @@ Format: `- **type**: Description (Issue #N)` where type is feat|fix|chore|docs
 - **fix**: The Results screen shows "Folder not found: <name>" when a scan skips a folder or Gmail label that does not exist on the account; it is information, not counted as an error (Issue #514)
 - **fix**: The "Blocked TLD" reason chip is removed from No Rule rows: an enabled TLD block rule already blocks that mail, so the chip could show only for a rule that was turned off (Issue #516)
 - **fix**: A "Gmail sign-in needed" notification that fails to post is retried after 1 hour instead of 24 (Issue #515)
+- **test**: The F302 policy gate counts every `int.parse` / `int.tryParse` in `lib/` against a reviewed list, so a message-id parse cannot bypass the UID helper under any name (Sprint 81 retro IMP-4, Issue #512)
+- **docs**: Sprint 81 retrospective improvements: failures the user should see name a screen; new signals state what makes them fire; the catch walk is a card line; a test must be able to fail; finding questions carry evidence and every option (Sprint 81 retro IMP-1, 2, 3, 5, 7)
 
 ### 2026-10-23 (Sprint 81)
 

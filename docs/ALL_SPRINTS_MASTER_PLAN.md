@@ -573,6 +573,16 @@ Source: `docs/research/R76-3_HEURISTICS_ML_GENAI_SPAM_IDENTIFICATION.md` (Issue 
 - Records: `SPRINT_EXECUTION_WORKFLOW.md` (where agents are launched), CHANGELOG, the sprint card, dated, with the
   request quoted. Echo the requirement back in one sentence and confirm with Harold before touching more than one file.
 
+**F318. The 7.7.1 toolkit review prompt lists every changed file (~15m) Priority 30 -- TARGET SPRINT 82 (Harold, Sprint 81 retro IMP-6 "backlog for next sprint", 2026-10-26) -- NEW 2026-10-26**
+- Phase: Process
+- Platform: Development process (`docs/SPRINT_EXECUTION_WORKFLOW.md` 7.7.1)
+- Defect: the Sprint 81 code-reviewer prompt named directories, so `mobile-app/scripts/build-with-secrets.ps1`
+  (Task 11, `Start-AdbServerDetached`) was reviewed by Copilot only.
+- R-1: the 7.7.1 toolkit prompt (code-reviewer and silent-failure-hunter, and the improvement review) includes the
+  output of `git diff --name-only origin/develop...HEAD`, minus `0*` files at the repo root and `archive/`.
+- R-2: each reviewer's report confirms every listed file was read, or names the files it skipped and why.
+- AC: the Sprint 82 7.7.1 evidence line records the file count given and the count confirmed read.
+
 **F273. Privacy policy and Data safety revision for the content history and learning (~60m) Priority 40**
 - Phase: Core App Quality
 - Platform: All (one policy; Play and Microsoft Store)

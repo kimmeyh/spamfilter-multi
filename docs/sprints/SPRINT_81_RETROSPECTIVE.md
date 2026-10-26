@@ -251,3 +251,25 @@ in an earlier sprint's 7.7.1 line.
 ### Low Priority (Future)
 
 None.
+
+## Improvement Decisions
+
+Harold, 2026-10-26, verbatim: *"do now 1, 2, 3, 4, 5, 7 - 6 backlog for next sprint"*
+
+- **IMP-1 "The user sees it" means a screen** -- APPLIED. `CLAUDE.md` (sub-bullet under Sprint 72 IMP-2);
+  `SPRINT_EXECUTION_WORKFLOW.md` 5.1.2 class 6 and the `SPRINT_CHECKLIST.md` 5.1.2 line ask "where does the USER
+  learn of this?" for every catch and skip; the `SPRINT_PLANNING.md` "User-reachable control" note covers failures.
+- **IMP-2 A signal states what makes it fire, counted on DEV data** -- APPLIED. `SPRINT_PLANNING.md` card template
+  gains the "Signal fires on" line; `CLAUDE.md` sub-bullet under Sprint 74 IMP-2.
+- **IMP-3 The catch walk is a card line** -- APPLIED. `SPRINT_PLANNING.md`: a "Catches between any NEW throw ..." line
+  under "Callers of any guard being changed", and delegation checklist item 7.
+- **IMP-4 The F302 gate matches the operation** -- APPLIED. `f302_imap_uid_helper_test.dart` now counts every
+  `int.parse(` / `int.tryParse(` in `lib/` per file against a reviewed list (31 sites in 16 files plus the helper, each
+  with a reason), so a new parse fails whatever its argument is named, including an id copied into a local first (a
+  gap the old header named). Probes: direct, renamed (`identifierValue`), via a local, and an extra parse in a
+  reviewed file -- all caught. Mutations IMP4-M1 (raw `int.tryParse(identifierValue)`) and IMP4-M2 (an extra parse in
+  `email_scanner.dart`) KILLED.
+- **IMP-5 A test must be able to fail** -- APPLIED. `TESTING_STRATEGY.md` section "A test must be able to fail".
+- **IMP-6 The toolkit prompt lists the changed files** -- BACKLOG, Sprint 82: F318.
+- **IMP-7 A finding's question carries evidence and every option** -- APPLIED. `CLAUDE.md` sub-bullet under the
+  numbered-list rule.
