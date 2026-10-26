@@ -149,8 +149,8 @@ in an earlier sprint's 7.7.1 line.
 
 - **Product Owner / Scrum Master / Lead Developer (combined)**: none
 - **Claude Code Development Team**: MV-2 Fold `new-mail-diagnostics` line (Harold: *"bring this back up in the next
-  sprint"*); WinWright coverage of No Rule Review; iOS Task 1 AC-2/AC-3 and Task 2 signing/TestFlight (blocked on
-  Apple).
+  sprint"*); WinWright coverage of No Rule Review; iOS Task 1 AC-2/AC-3 (IOS_SETUP Parts A-D, starting with Part A)
+  and Task 2 signing/TestFlight (Harold 2026-10-26: *"move to next sprint"*).
 
 ### 14. Function Updates for the Future Backlog
 

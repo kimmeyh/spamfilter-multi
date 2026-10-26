@@ -636,6 +636,8 @@ record, the merges and every verification re-run.
 - **Task 0 (#508)**: DONE 3e27e5d5. Version gates 12 passed. Executed-by: Opus 5.5 main session -- 10-minute
   bookkeeping bundled with the approval commit (single-session note above).
 - **Task 1 (#509)**: walkthroughs DONE b726683e (`docs/IOS_SETUP.md`); AC-2/AC-3 wait on Harold's console steps.
+  MOVED to Sprint 82 (Harold 2026-10-26, scope decision: *"move to next sprint"*), with Task 2's signing and
+  TestFlight; the first Apple Account attempt failed 2026-10-26.
   Executed-by: Opus 5.5 main session (single-session note).
 - **Task 2 (#510)**: unsigned compile job DONE (7eadfe2e); run 40012148625 on `macos-26` GREEN (`flutter build ios
   --release --no-codesign`). Signing and TestFlight BLOCKED on Harold (enrollment + API key; stopping criterion 2).

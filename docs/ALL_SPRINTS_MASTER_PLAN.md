@@ -1052,7 +1052,10 @@ F67b starts by generating the iOS project.
 
 Source: `docs/research/F295_IOS_READINESS.md`. These replace the iOS parts of F67 and F95 (ADR-0050 accepted 2026-10-22); Linux and macOS stay on F67, and the Windows/Android multi-variant polish stays on F95.
 
-**F67a. iOS prerequisites: Apple Developer enrollment, build machine, test iPhone, iOS OAuth client (~45-90m plus Apple lead time) Priority 2 -- target Sprint 81 (OFF HOLD 2026-10-23)**
+**F67a. iOS prerequisites: Apple Developer enrollment, build machine, test iPhone, iOS OAuth client (~45-90m plus Apple lead time) Priority 2 -- target Sprint 81 (OFF HOLD 2026-10-23) -- REMAINDER TO SPRINT 82 (Harold 2026-10-26)**
+- Sprint 81 status: walkthroughs DONE (`docs/IOS_SETUP.md` Parts A-D). AC-2/AC-3 (enrollment, iOS OAuth client, App
+  Store Connect API key) moved to Sprint 82 by Harold, 2026-10-26: *"move to next sprint"*. The first Apple Account
+  creation attempt failed 2026-10-26 (cause unknown). Sprint 82 starts with Part A.
 - Phase: Multi-Platform Readiness
 - Platform: iOS
 - **Harold 2026-10-23**: Individual (Q1 = 1); build machine = GitHub `macos-26` runner (Q2 = 1); he has an iPhone on iOS 26 (Q3 = 1). Selected for Sprint 81 with F304 and the F67b code.
@@ -1067,7 +1070,9 @@ Source: `docs/research/F295_IOS_READINESS.md`. These replace the iOS parts of F6
   verification for the iOS client.
 - Depends on: none (Harold's go decision 2026-10-23; ADR-0050 accepted 2026-10-22).
 
-**F304. iOS build machine and signed build pipeline to TestFlight (~90-180m plus a 120m time-boxed signing setup) Priority 4 -- target Sprint 81 (NEW 2026-10-23)**
+**F304. iOS build machine and signed build pipeline to TestFlight (~90-180m plus a 120m time-boxed signing setup) Priority 4 -- target Sprint 81 (NEW 2026-10-23) -- REMAINDER TO SPRINT 82 (Harold 2026-10-26)**
+- Sprint 81 status: the unsigned `macos-26` compile job is DONE (run 40012148625 green). Signing and the first
+  TestFlight build moved to Sprint 82 with F67a (they need the Apple account and API key).
 - Phase: Build and Release Infrastructure
 - Platform: iOS (build tooling)
 - Value: the project has no Mac. Without a build machine nothing in F67b-F67d can run.
