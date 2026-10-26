@@ -178,9 +178,12 @@ void main() {
       await mount(tester);
     });
 
-    expect(reasonChips, findsNWidgets(5));
+    // Four, not five: the stored blocked_tld code (written by Sprint 81
+    // builds before the chip was removed, 7.7.1 Q1 = 1) has no label and is
+    // dropped on read.
+    expect(reasonChips, findsNWidgets(4));
     expect(tester.takeException(), isNull);
-    // Wrapped: the five chips do not all sit on one line.
+    // Wrapped: the chips do not all sit on one line.
     final tops = {
       for (final e in reasonChips.evaluate())
         tester.getTopLeft(find.byWidget(e.widget)).dy

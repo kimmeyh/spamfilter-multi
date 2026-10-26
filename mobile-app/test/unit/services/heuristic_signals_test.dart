@@ -121,17 +121,14 @@ void main() {
     });
   });
 
-  group('blocked_tld', () {
-    const ctx = HeuristicContext(blockedTlds: {'xyz'});
-
-    test('fires when the sender TLD has a TLD block rule', () {
-      expect(run({}, from: 'a@deals.xyz', context: ctx),
-          [HeuristicSignal.blockedTld]);
-    });
-
-    test('does not fire for another TLD or an empty context', () {
-      expect(run({}, from: 'a@deals.com', context: ctx), isEmpty);
-      expect(run({}, from: 'a@deals.xyz'), isEmpty);
+  // 7.7.1 CR M-1 / SF M-4, Harold Q1 = 1 (2026-10-26): the blocked_tld chip
+  // was removed. What this does NOT catch: a new signal that reuses the code.
+  group('blocked_tld (removed)', () {
+    test('a stored blocked_tld code from a Sprint 81 build is dropped on read',
+        () {
+      expect(HeuristicSignal.decode('blocked_tld,auth_failed'),
+          [HeuristicSignal.authFailed]);
+      expect(HeuristicSignal.labelFor('blocked_tld'), isNull);
     });
   });
 
@@ -191,8 +188,7 @@ void main() {
   });
 
   group('HeuristicContext.fromRows', () {
-    test('reads domains from the safe sender shapes the app writes and TLDs '
-        'from TLD rules only', () {
+    test('reads domains from the safe sender shapes the app writes', () {
       final ctx = HeuristicContext.fromRows(
         safeSenderRows: [
           {'pattern': r'^[^@\s]+@(?:[a-z0-9-]+\.)*paypal\.com$'},
@@ -201,14 +197,9 @@ void main() {
           {'pattern': r'^[^@\s]+@(?:[a-z0-9-]+\.)*shop\.co\.uk$'},
           {'pattern': 'not a pattern'},
         ],
-        ruleRows: [
-          {'pattern_sub_type': 'top_level_domain', 'source_domain': '.*.xyz'},
-          {'pattern_sub_type': 'entire_domain', 'source_domain': 'spam.com'},
-        ],
       );
       expect(ctx.safeSenderRootDomains,
           {'paypal.com', 'chase.com', 'example.org', 'shop.co.uk'});
-      expect(ctx.blockedTlds, {'xyz'});
     });
   });
 }

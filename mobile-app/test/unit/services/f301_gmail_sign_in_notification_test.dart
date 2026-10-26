@@ -166,8 +166,11 @@ void main() {
     expect(shown, hasLength(1));
   });
 
+  // 7.7.1 silent-failure L-7, Harold Q6 = 3: a failed post is retried after
+  // 1 hour, not 24. What this does NOT catch: whether the OS reports a post
+  // as failed when the user turned notifications off (plugin behavior).
   test('a notification that cannot be shown does not fail the skip, and is '
-      'not retried within the day', () async {
+      'retried after 1 hour, not on the next scan', () async {
     usePlatform(_NeedsSignInPlatform.new);
     var attempts = 0;
     ScanCompleteNotifier.showOverride = ({
@@ -182,7 +185,13 @@ void main() {
     final outcome = await scan('acct-a@gmail.com');
     expect(outcome.needsSignIn, isTrue);
     await scan('acct-a@gmail.com');
-    expect(attempts, 1);
+    clock = clock.add(const Duration(minutes: 59));
+    await scan('acct-a@gmail.com');
+    expect(attempts, 1, reason: 'within 1 hour of the failed post');
+
+    clock = clock.add(const Duration(minutes: 2));
+    await scan('acct-a@gmail.com');
+    expect(attempts, 2, reason: 'more than 1 hour after the failed post');
   });
 
   test('the notifier on its own: a clock that moved back counts as due',

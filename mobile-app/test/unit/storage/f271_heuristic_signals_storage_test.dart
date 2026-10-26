@@ -171,7 +171,9 @@ void main() {
       };
       expect(rows['lookalike'], contains('lookalike_domain'));
       expect(rows['lookalike'], contains('reply_to_differs'));
-      expect(rows['tld'], 'blocked_tld');
+      // 7.7.1 CR M-1 / SF M-4, Harold Q1 = 1: the blocked_tld chip was
+      // removed, so a sender under a TLD rule gets no chip.
+      expect(rows['tld'], isNull);
       expect(rows['clean'], isNull);
     });
   });

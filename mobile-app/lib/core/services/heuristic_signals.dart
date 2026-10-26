@@ -23,15 +23,21 @@ class HeuristicSignal {
   static const String replyToDiffers = 'reply_to_differs';
   static const String authFailed = 'auth_failed';
   static const String lookalikeDomain = 'lookalike_domain';
-  static const String blockedTld = 'blocked_tld';
   static const String bulkNoUnsubscribe = 'bulk_no_unsubscribe';
+
+  // REMOVED (7.7.1 review CR M-1 / SF M-4, Harold Q1 = 1, 2026-10-26):
+  // 'blocked_tld'. An enabled TLD block rule already blocks the mail, so the
+  // chip could appear only for a rule the user turned off, while its text
+  // said the rule was active. Do not reuse the code: rows written by Sprint 81
+  // builds may still hold it, and [decode] drops it because it has no label.
+  // Replacement ideas (an often-abused TLD list; a TLD none of the user's
+  // safe senders use) are on F306 / F311.
 
   /// Display order on a row (strongest evidence first).
   static const List<String> all = [
     authFailed,
     replyToDiffers,
     lookalikeDomain,
-    blockedTld,
     bulkNoUnsubscribe,
   ];
 
@@ -41,7 +47,6 @@ class HeuristicSignal {
     replyToDiffers: 'Reply-To differs',
     authFailed: 'Sign-in check failed',
     lookalikeDomain: 'Lookalike domain',
-    blockedTld: 'Blocked TLD',
     bulkNoUnsubscribe: 'No unsubscribe link',
   };
 
@@ -54,8 +59,6 @@ class HeuristicSignal {
     lookalikeDomain:
         'The sender domain is almost the same as one of your safe sender '
         'domains.',
-    blockedTld:
-        'The sender ends in a top-level domain that you have a block rule for.',
     bulkNoUnsubscribe:
         'This looks like bulk mail but has no unsubscribe header.',
   };
@@ -85,21 +88,16 @@ class HeuristicContext {
   /// Registrable domains the user trusts (from safe sender patterns).
   final Set<String> safeSenderRootDomains;
 
-  /// Top-level domains (lowercase, no dot) the user has a TLD block rule for.
-  final Set<String> blockedTlds;
-
   const HeuristicContext({
     this.safeSenderRootDomains = const {},
-    this.blockedTlds = const {},
   });
 
   static const HeuristicContext empty = HeuristicContext();
 
-  /// Builds the context from stored safe sender patterns and rules rows
-  /// (the maps `DatabaseHelper.querySafeSenders` / `queryRules` return).
+  /// Builds the context from stored safe sender patterns (the maps
+  /// `DatabaseHelper.querySafeSenders` returns).
   factory HeuristicContext.fromRows({
     required Iterable<Map<String, dynamic>> safeSenderRows,
-    required Iterable<Map<String, dynamic>> ruleRows,
   }) {
     final domains = <String>{};
     for (final row in safeSenderRows) {
@@ -109,15 +107,7 @@ class HeuristicContext {
       final root = PatternNormalization.extractRootDomain(domain);
       if (root != null) domains.add(root);
     }
-    final tlds = <String>{};
-    for (final row in ruleRows) {
-      if (row['pattern_sub_type'] != 'top_level_domain') continue;
-      final tld = HeuristicSignals.tldFromRuleSourceDomain(
-          row['source_domain'] as String?);
-      if (tld != null) tlds.add(tld);
-    }
-    return HeuristicContext(
-        safeSenderRootDomains: domains, blockedTlds: tlds);
+    return HeuristicContext(safeSenderRootDomains: domains);
   }
 }
 
@@ -171,11 +161,6 @@ class HeuristicSignals {
     if (senderDomain != null) {
       if (isLookalike(senderDomain, context.safeSenderRootDomains)) {
         found.add(HeuristicSignal.lookalikeDomain);
-      }
-      final dot = senderDomain.lastIndexOf('.');
-      if (dot >= 0 &&
-          context.blockedTlds.contains(senderDomain.substring(dot + 1))) {
-        found.add(HeuristicSignal.blockedTld);
       }
     }
 
@@ -242,14 +227,6 @@ class HeuristicSignals {
     return RegExp(r'^[a-z0-9-]+(\.[a-z0-9-]+)+$').hasMatch(domain)
         ? domain
         : null;
-  }
-
-  /// The TLD of a TLD block rule's `source_domain` (`.*.xyz` -> `xyz`).
-  static String? tldFromRuleSourceDomain(String? sourceDomain) {
-    if (sourceDomain == null) return null;
-    final m = RegExp(r'^\.\*\.([a-z0-9-]+)$', caseSensitive: false)
-        .firstMatch(sourceDomain.trim());
-    return m?.group(1)!.toLowerCase();
   }
 
   static String? _domainOf(String address) {

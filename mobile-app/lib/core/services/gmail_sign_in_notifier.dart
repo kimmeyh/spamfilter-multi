@@ -17,8 +17,13 @@
 ///   anyway (the user is told, at worst more than once a day); a failure to
 ///   save it is logged.
 /// - The attempt time is saved BEFORE posting, so a notification that cannot be
-///   shown (the user turned notifications off in the OS) is attempted once a
-///   day, not on every 15-minute scan.
+///   shown (the user turned notifications off in the OS) is not attempted on
+///   every 15-minute scan.
+/// - A post that FAILS is retried after [retryAfterFailedPost] (1 hour), not
+///   [minInterval] (7.7.1 silent-failure L-7, Harold Q6 = 3, 2026-10-26): a
+///   temporary failure gets a quick retry, and a lasting one (notifications
+///   off) costs one attempt an hour. The saved time is moved back so the
+///   existing [minInterval] check comes due one hour from now.
 ///
 /// ADR-0042: one code path for Windows, Android and iOS. Delivery goes through
 /// [ScanCompleteNotifier.postSignInNeeded] (Windows toast, Android channel);
@@ -45,6 +50,9 @@ class GmailSignInNotifier {
 
   /// The shortest time between two notifications for one account.
   static const Duration minInterval = Duration(hours: 24);
+
+  /// The time before a FAILED post is tried again.
+  static const Duration retryAfterFailedPost = Duration(hours: 1);
 
   /// Test seam: the clock.
   @visibleForTesting
@@ -99,13 +107,22 @@ class GmailSignInNotifier {
       }
       final posted =
           await ScanCompleteNotifier.postSignInNeeded(accountId: accountId);
+      if (!posted) {
+        try {
+          await settingsStore.setGmailSignInNotifiedAt(
+              accountId, at.subtract(minInterval - retryAfterFailedPost));
+        } catch (e) {
+          _logger.w('F301: could not schedule the sign-in notification '
+              'retry for $label: $e');
+        }
+      }
       await DiagnosticLogger.log(
         kind: DiagnosticLogger.kindScan,
         context: 'scan/post',
         detail: posted
             ? 'sign-in-needed notification posted'
             : 'sign-in-needed notification NOT posted (reason on the line '
-                'above)',
+                'above); retry in ${retryAfterFailedPost.inMinutes} minutes',
       );
       return posted;
     } catch (e) {

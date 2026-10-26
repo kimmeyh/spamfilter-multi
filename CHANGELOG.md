@@ -30,6 +30,8 @@ Format: `- **type**: Description (Issue #N)` where type is feat|fix|chore|docs
 - **fix**: A Gmail account scanning only a custom label now gets "Sign In Again" when its sign-in lacks Gmail access, instead of a folder error; an exact-case label name wins over a case-only match (Issue #514)
 - **fix**: A scan that cannot read the rules keeps a No Rule row's stored reason chips; a message the mail server sent without a UID is logged once per folder per 10 minutes, with a count (Issues #512, #516)
 - **fix**: The Results screen shows "Folder not found: <name>" when a scan skips a folder or Gmail label that does not exist on the account; it is information, not counted as an error (Issue #514)
+- **fix**: The "Blocked TLD" reason chip is removed from No Rule rows: an enabled TLD block rule already blocks that mail, so the chip could show only for a rule that was turned off (Issue #516)
+- **fix**: A "Gmail sign-in needed" notification that fails to post is retried after 1 hour instead of 24 (Issue #515)
 
 ### 2026-10-23 (Sprint 81)
 

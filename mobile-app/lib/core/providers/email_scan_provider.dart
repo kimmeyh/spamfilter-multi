@@ -776,8 +776,8 @@ class EmailScanProvider extends ChangeNotifier {
         // row the scan just saw on every scan, not once per
         // kNoRulePresenceRecheck.
         final seenAt = DateTime.now();
-        // F271 (Sprint 81): the user's safe sender domains and TLD block
-        // rules, read ONCE per scan. A failed read costs the chips for this
+        // F271 (Sprint 81): the user's safe sender domains, read ONCE per
+        // scan. A failed read costs the chips for this
         // scan only (the signals that need no context still compute), so it
         // is logged and never blocks the No Rule rows themselves.
         var heuristicContext = HeuristicContext.empty;
@@ -786,19 +786,17 @@ class EmailScanProvider extends ChangeNotifier {
           try {
             heuristicContext = HeuristicContext.fromRows(
               safeSenderRows: await _databaseHelper!.querySafeSenders(),
-              ruleRows: await _databaseHelper!.queryRules(),
             );
           } catch (e) {
             heuristicContextRead = false;
-            _logger.w('F271: could not read safe senders or rules for the '
-                'heuristic signals; lookalike and blocked-TLD chips are '
-                'skipped for this scan: $e');
+            _logger.w('F271: could not read safe senders for the heuristic '
+                'signals; lookalike chips are skipped for this scan: $e');
             // 7.7.1 L-8: the console log is not kept in a release build.
             await DiagnosticLogger.log(
               kind: DiagnosticLogger.kindScan,
               context: 'F271/context',
-              detail: 'safe senders or rules unreadable; lookalike and '
-                  'blocked-TLD chips skipped for this scan -- '
+              detail: 'safe senders unreadable; lookalike chips skipped '
+                  'for this scan -- '
                   '${DiagnosticLogger.describeError(e)}',
             );
           }

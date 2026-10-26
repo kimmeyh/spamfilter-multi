@@ -117,4 +117,6 @@ signing. `ci.yml` does not read them.
 - Part B: iOS client created: _(date)_; restricted-scope status shown: _(text)_.
 - Part C: API key created: _(date)_; role: _(App Manager / Admin)_.
 - Part D: six secrets set: _(date)_.
-- Deviations from this guide: _(none yet)_.
+- Deviations from this guide:
+  - 2026-10-26, Part A step 1: the request to open a new Apple Account failed. Harold: *"could be due to PHP issue
+    or other"*; cause unknown. Retry planned 2026-10-27.

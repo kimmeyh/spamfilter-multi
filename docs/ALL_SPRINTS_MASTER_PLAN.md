@@ -332,6 +332,11 @@ Source: `docs/research/R76-3_HEURISTICS_ML_GENAI_SPAM_IDENTIFICATION.md` (Issue 
   provider's DMARC result itself, on every provider. Large providers check DMARC, but a failure can still be DELIVERED:
   to the Junk folder (DEV content history 2026-10-25: both RED emails were in AOL Bulk), or when the sending domain
   publishes `p=none` or no record. Generic IMAP hosts are unverified.
+- TLD signal ideas (Harold Q1 = 1, 2026-10-26, when the Sprint 81 "Blocked TLD" chip was removed because an enabled
+  TLD rule already blocks the mail -- DEV had 443 TLD rules, all enabled): (a) "Often-abused TLD": the sender's TLD is
+  on a published most-abused-TLD list (source and licence chosen in F311); (b) "TLD your safe senders never use":
+  none of the user's safe senders uses the sender's TLD (own data only, no network). Either can feed a block
+  suggestion. Do NOT reuse the stored code `blocked_tld` (old rows hold it; `decode` drops it).
 - Parity: shared Dart, no platform branch. Depends on: F305 (signal evidence); F272 or GenAI for anything past header
   signals.
 
@@ -433,6 +438,8 @@ Source: `docs/research/R76-3_HEURISTICS_ML_GENAI_SPAM_IDENTIFICATION.md` (Issue 
     is reported both ways.
   - OpenPhish community feed (phishing URLs, updated about every 12 hours) and PhishTank (Cisco Talos; free with
     registration): from secondary sources only.
+- Also research a most-abused TOP-LEVEL-DOMAIN list (for F306 TLD idea (a), Harold Q1 = 1, 2026-10-26): candidate
+  sources, update cadence, licence for a shipped app. A static list shipped in the app sends nothing off the device.
 - Questions: coverage of the senders and body URLs in the content history, licence for a shipped app, and privacy.
 - Decision class: a lookup sends the sender domain or a body URL off the device. That is Class 1 and a privacy-policy
   change. A downloaded list checked on the device avoids the per-email disclosure but needs a licence for
@@ -495,6 +502,76 @@ Source: `docs/research/R76-3_HEURISTICS_ML_GENAI_SPAM_IDENTIFICATION.md` (Issue 
   `gmail_history_id` cursor, including the background scan path.
 - AC: a scan cancelled after the fetch and before evaluation leaves the stored historyId unchanged; the next scan
   evaluates the same messages. Mutation-verified.
+
+**F315. Count IMAP messages that arrive with no UID; design a date cursor only if any occur (~30m count, design TBD) Priority 32 -- TARGET SPRINT 82 (Harold Q4 = 1, 2026-10-26) -- NEW 2026-10-26 (Sprint 81 7.7.1 code-review L-6)**
+- Phase: Core App Quality
+- Platform: All (shared IMAP adapter)
+- Background: the oldest-no-rule cursor (`account_folder_cursors`, type `oldest_no_rule_uid`) holds a UID. A No Rule
+  message the server sends with no UID (F302 marker `no-valid-uid`) cannot be the cursor, cannot be moved or deleted,
+  and is not listed on Review No Rule Items. Sprint 81 added one diagnostic line per scan with the count. How often
+  this happens on real accounts is unknown (F302 came from a code read, not an observed message).
+- Step 1 (always): read the per-scan count line from the DEV and phone diagnostic logs across the sprint, per account
+  and folder. Record the totals in the sprint plan.
+- Step 2 (only if Step 1 is above zero): design a date-based cursor (store the oldest No Rule message's date beside
+  the UID; search SINCE that date). Changing what the stored cursor means is a Class 1 architecture decision -- ask
+  Harold before code. If the count is zero, close the card with the counts as evidence.
+- Code-review L-6's requested test was marked Not applicable (Harold Q4 = 1): `int.tryParse` and `parseImapUid` both
+  return null for the marker, so the test could not distinguish the fix.
+
+**F316. Make the fallback export folder visible (~45-90m) Priority 41 -- NEW 2026-10-26 (Sprint 81 7.7.1 silent-failure L-6b, Harold Q5 = 3)**
+- Phase: Core App Quality
+- Platform: All (shared Dart, `export_directories.dart`; Settings > General)
+- Defect: when the DEFAULT export folder (`Documents\MyEmailSpamFilter[_Dev]` on Windows,
+  `/storage/emulated/0/Documents/MyEmailSpamFilter[_Dev]` on Android) fails its write probe, `ExportDirectories.resolve`
+  switches to the app's own folder (Windows: the app-support folder, for DEV
+  `%APPDATA%\MyEmailSpamFilter\MyEmailSpamFilter\MyEmailSpamFilter_Dev`; Android:
+  `/storage/emulated/0/Android/data/com.myemailspamfilter[.dev]/files/MyEmailSpamFilter[_Dev]`) and logs it to the
+  console only, which a release build does not keep. The diagnostic log and per-scan exports then go somewhere the
+  user does not look, with no message. A folder the user chose in Settings is never replaced.
+- Causes: Windows Controlled Folder Access on Documents; Android 7-10 (no storage permission requested); Android 11+
+  refusing a folder left by an earlier install. Sprint 81 Task 9 fixed the one observed cause (probe race).
+- R-1: write a `DiagnosticLogger` line when the fallback is used, naming both folders.
+- R-2: Settings > General, export folder line: when the fallback is in use, show "Writing to <fallback> (the default
+  folder cannot be written)".
+- AC: with the probe forced to fail (`debugWritableOverride = false`), the diagnostic line is written and the Settings
+  line shows the fallback path. Mutation-verified. Paths above are from the code; confirm on disk at card time.
+
+**F317. Keep delegated agent work safe across usage limits; restart where it stopped (~120-240m, estimate unverified) Priority 30 -- TARGET SPRINT 82 (Harold 2026-10-26) -- NEW 2026-10-26**
+- Phase: Process / tooling
+- Platform: Development environment (Claude Code on Windows)
+- Harold (2026-10-26, verbatim request quoted in his prompt): *"can we make future agent runs setup to not loose
+  anything if we cross current or weekly session limits and can re-start them so that they know what was done and
+  what was not done and can pickup with minimal interruption"*. Source prompt: written 2026-10-26 in an
+  EvidenceBasedDB session (Sprint 13, Task G); its general form is `AGENT_RESTART_PROMPT_general.md` in that repo.
+- Claims to verify at card time (UNVERIFIED here, from the source prompt): interactive sessions (Claude Code v2.1.234+)
+  wait for a usage limit and continue when the reset is under 24 hours away (`autoContinueAtUsageLimit`, on by
+  default, re-armed at most twice); background sessions and `-p` runs do not wait; the weekly limit usually resets
+  more than 24 hours ahead; subagents stop with the session and keep context only for a SendMessage resume in the same
+  session. Sources: code.claude.com/docs/en/interactive-mode#wait-for-a-usage-limit-to-reset,
+  /settings-reference#autocontinueatusagelimit, /scheduled-tasks. Record `claude --version` and both settings files.
+- R-1: a "Progress and restart" section in every subagent launch prompt the repo keeps (7.7.1 toolkit reviews, the
+  improvement review, the background CI-fix agent, delegated mechanical tasks). The agent reads its progress files in
+  its own scratch folder (session scratchpad or gitignored `test/scratch/`, never the tree) and skips finished units;
+  a reviewer saves each file reviewed and each finding as found; an edit task saves which files are done; files are
+  written with the Write tool; the final reply says what was resumed and from where.
+- R-2: mutation locks across a stop: on start, an agent holding a lock restores the file first (from `git diff` or
+  the saved original), verifies it, then calls `Remove-MutationLock`. The wake-up prompt reports any lock older than
+  one hour and does not commit while one is held.
+- R-3: `scripts/agent-work-status.ps1` (named for the job, `.SYNOPSIS` header): from files only, each agent task's state
+  (not started / started with nothing saved / in progress and how far / finished), held mutation locks, and the sprint
+  phase from `.claude/sprint_status.json`. Stores nothing.
+- R-4: a wake-up prompt in the coordinating session (CronCreate, hourly at an off-minute such as :53): nothing if a
+  turn is running; resume each agent that stopped without its final report (SendMessage: "Continue where you
+  stopped. Read your progress files first; do not redo finished work."); continue the phase's next action per the
+  auto-advance rule; one line when nothing stalled. Replies end with the status footer script and keep the closing
+  convention `sprint-auto-advance.ps1` matches (Sprint 70 IMP-3). Report its expiry (7 days).
+- R-5: never repeat a published or release action on resume: Phase 8 (develop merge, Store release, MSIX build from
+  `spamfilter-multi-prod`) and anything sent to Google Play or the Microsoft Store is checked for "already done"
+  first; a resumed agent never re-uploads, re-submits or re-tags.
+- R-6: a hook test case or test that fails if a launch prompt loses its restart section; proven red by cutting the
+  section, then restored. Any hook change runs `.claude\hooks\run-test-cases.ps1`.
+- Records: `SPRINT_EXECUTION_WORKFLOW.md` (where agents are launched), CHANGELOG, the sprint card, dated, with the
+  request quoted. Echo the requirement back in one sentence and confirm with Harold before touching more than one file.
 
 **F273. Privacy policy and Data safety revision for the content history and learning (~60m) Priority 40**
 - Phase: Core App Quality
