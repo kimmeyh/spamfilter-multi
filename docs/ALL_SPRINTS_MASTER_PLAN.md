@@ -334,7 +334,7 @@ Source: `docs/research/R76-3_HEURISTICS_ML_GENAI_SPAM_IDENTIFICATION.md` (Issue 
   publishes `p=none` or no record. Generic IMAP hosts are unverified.
 - TLD signal ideas (Harold Q1 = 1, 2026-10-26, when the Sprint 81 "Blocked TLD" chip was removed because an enabled
   TLD rule already blocks the mail -- DEV had 443 TLD rules, all enabled): (a) "Often-abused TLD": the sender's TLD is
-  on a published most-abused-TLD list (source and licence chosen in F311); (b) "TLD your safe senders never use":
+  on a published most-abused-TLD list (source and license chosen in F311); (b) "TLD your safe senders never use":
   none of the user's safe senders uses the sender's TLD (own data only, no network). Either can feed a block
   suggestion. Do NOT reuse the stored code `blocked_tld` (old rows hold it; `decode` drops it).
 - Parity: shared Dart, no platform branch. Depends on: F305 (signal evidence); F272 or GenAI for anything past header
@@ -439,7 +439,7 @@ Source: `docs/research/R76-3_HEURISTICS_ML_GENAI_SPAM_IDENTIFICATION.md` (Issue 
   - OpenPhish community feed (phishing URLs, updated about every 12 hours) and PhishTank (Cisco Talos; free with
     registration): from secondary sources only.
 - Also research a most-abused TOP-LEVEL-DOMAIN list (for F306 TLD idea (a), Harold Q1 = 1, 2026-10-26): candidate
-  sources, update cadence, licence for a shipped app. A static list shipped in the app sends nothing off the device.
+  sources, update cadence, license for a shipped app. A static list shipped in the app sends nothing off the device.
 - Questions: coverage of the senders and body URLs in the content history, licence for a shipped app, and privacy.
 - Decision class: a lookup sends the sender domain or a body URL off the device. That is Class 1 and a privacy-policy
   change. A downloaded list checked on the device avoids the per-email disclosure but needs a licence for
@@ -495,8 +495,8 @@ Source: `docs/research/R76-3_HEURISTICS_ML_GENAI_SPAM_IDENTIFICATION.md` (Issue 
   the fetch, the next scan starts after those messages and they are never evaluated.
 - Design first (Class 2 development decision, written into the card before code): hold the new historyId per folder
   in memory and persist it only after that folder's messages are evaluated (and actions applied in a live mode).
-  Decide what a partial folder (cancelled mid-evaluation) does: keep the old cursor and re-evaluate the whole delta
-  next time) is the proposed default; verify at design time that re-evaluating is safe (the F203 already-filed check
+  Decide what a partial folder (cancelled mid-evaluation) does. Proposed default: keep the old cursor and
+  re-evaluate the whole delta next time; verify at design time that re-evaluating is safe (the F203 already-filed check
   and the No Rule upsert are expected to make it so -- unverified).
 - Callers to enumerate (CLAUDE.md IMP-1): every `setGmailHistoryCursor` call and every reader of the
   `gmail_history_id` cursor, including the background scan path.

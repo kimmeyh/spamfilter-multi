@@ -107,6 +107,10 @@ class GmailSignInNotifier {
       }
       final posted =
           await ScanCompleteNotifier.postSignInNeeded(accountId: accountId);
+      // 7.7.1 improvement review M-1: the log line states the retry that is
+      // actually scheduled, and a failed retry write reaches the diagnostic
+      // log (a release build keeps no console log).
+      var retry = 'retry in ${retryAfterFailedPost.inMinutes} minutes';
       if (!posted) {
         try {
           await settingsStore.setGmailSignInNotifiedAt(
@@ -114,6 +118,8 @@ class GmailSignInNotifier {
         } catch (e) {
           _logger.w('F301: could not schedule the sign-in notification '
               'retry for $label: $e');
+          retry = 'retry time NOT saved, so the next attempt follows the last '
+              'saved time -- ${DiagnosticLogger.describeError(e)}';
         }
       }
       await DiagnosticLogger.log(
@@ -122,7 +128,7 @@ class GmailSignInNotifier {
         detail: posted
             ? 'sign-in-needed notification posted'
             : 'sign-in-needed notification NOT posted (reason on the line '
-                'above); retry in ${retryAfterFailedPost.inMinutes} minutes',
+                'above); $retry',
       );
       return posted;
     } catch (e) {

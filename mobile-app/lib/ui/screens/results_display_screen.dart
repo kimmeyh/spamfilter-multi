@@ -1502,8 +1502,14 @@ class _ResultsDisplayScreenState extends State<ResultsDisplayScreen> {
                   // Shown only when non-zero and only for a LIVE scan:
                   // historical rows carry no skip count, and rendering a
                   // hard zero would read like a bug (the F151c lesson that
-                  // removed the always-zero "Moved" chip).
-                  if (!showingHistorical &&
+                  // removed the always-zero "Moved" chip). Gated on
+                  // isViewingHistory, NOT showingHistorical (7.7.1
+                  // improvement review, same defect as HIGH-1): when every
+                  // message was already filed the live list is empty, the
+                  // screen falls back to the last saved scan, and the chip
+                  // was hidden in exactly the case it exists for. The
+                  // provider clears the count at every startScan and reset.
+                  if (!isViewingHistory &&
                       scanProvider.skippedAlreadyFiledCount > 0)
                     Tooltip(
                       message:
@@ -1526,9 +1532,14 @@ class _ResultsDisplayScreenState extends State<ResultsDisplayScreen> {
                   // 7.7.1 silent-failure M-2 (F259 / F202): a folder or Gmail
                   // label the scan skipped because it does not exist on this
                   // account. Information, not an error: neutral colors, and
-                  // not counted in Errors. Live scan only, like the F203 chip
-                  // above (historical rows carry no missing-folder list).
-                  if (!showingHistorical)
+                  // not counted in Errors. Hidden only for a scan opened from
+                  // Scan History (no missing-folder list is stored). NOT gated
+                  // on showingHistorical (7.7.1 improvement review HIGH-1): a
+                  // scan of only a missing label COMPLETES with zero messages,
+                  // the screen then falls back to the last saved scan, and the
+                  // line was hidden in exactly the case it exists for. The
+                  // provider clears the list at every startScan and reset.
+                  if (!isViewingHistory)
                     for (final folder in scanProvider.missingFolders)
                       Tooltip(
                         message: 'This folder or label does not exist on this '

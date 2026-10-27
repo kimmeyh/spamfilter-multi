@@ -263,12 +263,14 @@ Harold, 2026-10-26, verbatim: *"do now 1, 2, 3, 4, 5, 7 - 6 backlog for next spr
   gains the "Signal fires on" line; `CLAUDE.md` sub-bullet under Sprint 74 IMP-2.
 - **IMP-3 The catch walk is a card line** -- APPLIED. `SPRINT_PLANNING.md`: a "Catches between any NEW throw ..." line
   under "Callers of any guard being changed", and delegation checklist item 7.
-- **IMP-4 The F302 gate matches the operation** -- APPLIED. `f302_imap_uid_helper_test.dart` now counts every
-  `int.parse(` / `int.tryParse(` in `lib/` per file against a reviewed list (31 sites in 16 files plus the helper, each
-  with a reason), so a new parse fails whatever its argument is named, including an id copied into a local first (a
-  gap the old header named). Probes: direct, renamed (`identifierValue`), via a local, and an extra parse in a
-  reviewed file -- all caught. Mutations IMP4-M1 (raw `int.tryParse(identifierValue)`) and IMP4-M2 (an extra parse in
-  `email_scanner.dart`) KILLED.
+- **IMP-4 The F302 gate matches the operation** -- APPLIED. `f302_imap_uid_helper_test.dart` compares every
+  `int.parse` / `int.tryParse` in `lib/` (calls and tear-offs) with a reviewed list keyed by exact call text and count
+  (30 sites in 16 files plus the helper, each file with a reason), so a new parse fails whatever its argument is
+  named, including an id copied into a local first (a gap the old header named). The improvement review found the
+  first cut (a per-file count) passed a swap of one call for another, and missed tear-offs; both fixed (M-2, L-1).
+  Probes: direct, renamed (`identifierValue`), via a local, tear-off, an extra call, and a swap -- all caught.
+  Mutations IMP4-M1 (raw `int.tryParse(identifierValue)`) and IMP4-M2 (an extra parse in `email_scanner.dart`)
+  KILLED.
 - **IMP-5 A test must be able to fail** -- APPLIED. `TESTING_STRATEGY.md` section "A test must be able to fail".
 - **IMP-6 The toolkit prompt lists the changed files** -- BACKLOG, Sprint 82: F318.
 - **IMP-7 A finding's question carries evidence and every option** -- APPLIED. `CLAUDE.md` sub-bullet under the

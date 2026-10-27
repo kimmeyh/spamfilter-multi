@@ -18,6 +18,8 @@
 /// covers.
 library;
 
+import 'dart:io';
+
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:my_email_spam_filter/adapters/email_providers/mock_email_provider.dart';
@@ -26,6 +28,7 @@ import 'package:my_email_spam_filter/adapters/email_providers/spam_filter_platfo
 import 'package:my_email_spam_filter/core/platform/platform_capabilities.dart';
 import 'package:my_email_spam_filter/core/providers/rule_set_provider.dart';
 import 'package:my_email_spam_filter/core/services/background_scan_core.dart';
+import 'package:my_email_spam_filter/core/services/diagnostic_logger.dart';
 import 'package:my_email_spam_filter/core/services/gmail_sign_in_notifier.dart';
 import 'package:my_email_spam_filter/core/services/scan_complete_notifier.dart';
 import 'package:my_email_spam_filter/core/storage/database_helper.dart';
@@ -52,6 +55,19 @@ class _FlagBrokenStore extends SettingsStore {
   @override
   Future<bool> getGmailSignInRequired(String accountId) =>
       throw StateError('flag read failed');
+}
+
+/// The first save (the attempt time) works; the retry save after a failed post
+/// throws (7.7.1 improvement review M-1).
+class _RetryWriteBrokenStore extends SettingsStore {
+  _RetryWriteBrokenStore(DatabaseHelper db, this.attemptAt) : super(db);
+  final DateTime attemptAt;
+
+  @override
+  Future<void> setGmailSignInNotifiedAt(String accountId, DateTime at) {
+    if (at != attemptAt) throw StateError('retry write failed');
+    return super.setGmailSignInNotifiedAt(accountId, at);
+  }
 }
 
 class _Shown {
@@ -192,6 +208,38 @@ void main() {
     clock = clock.add(const Duration(minutes: 2));
     await scan('acct-a@gmail.com');
     expect(attempts, 2, reason: 'more than 1 hour after the failed post');
+  });
+
+  // 7.7.1 improvement review M-1. What this does NOT catch: a diagnostic log
+  // that is itself unwritable (the logger's own failure path).
+  test('a failed retry write is recorded in the diagnostic log, and the line '
+      'does not claim a 1-hour retry', () async {
+    final logDir = Directory.systemTemp.createTempSync('f301_diag_');
+    DiagnosticLogger.debugSetEnabled(true);
+    DiagnosticLogger.debugSetDir(logDir.path);
+    addTearDown(() {
+      DiagnosticLogger.debugSetEnabled(null);
+      DiagnosticLogger.debugSetDir(null);
+      logDir.deleteSync(recursive: true);
+    });
+    ScanCompleteNotifier.showOverride = ({
+      required int id,
+      required String title,
+      required String body,
+      required NotificationDetails details,
+    }) async =>
+        throw StateError('notifications are turned off for this app');
+    final store = _RetryWriteBrokenStore(testHelper.dbHelper, clock);
+    final posted = await GmailSignInNotifier.notifyIfDue(
+        accountId: 'acct-a@gmail.com', settingsStore: store);
+    expect(posted, isFalse);
+    final log = logDir
+        .listSync(recursive: true)
+        .whereType<File>()
+        .map((f) => f.readAsStringSync())
+        .join('\n');
+    expect(log, contains('retry time NOT saved'));
+    expect(log, isNot(contains('retry in 60 minutes')));
   });
 
   test('the notifier on its own: a clock that moved back counts as due',
