@@ -388,6 +388,12 @@ void main() {
         reason: 'a provider default can name a folder some accounts lack; '
             'that must not produce a phantom error on every scan');
     expect(scanProvider.totalEmails, 2);
+    // 7.7.1 silent-failure M-2: the skip is DISCLOSED for the Results screen
+    // ("Folder not found: <name>"), not hidden in the opt-in diagnostic log.
+    // Does NOT catch: the Results screen failing to render the list (the
+    // widget test in results_display_missing_folder_test.dart covers that).
+    expect(scanProvider.missingFolders,
+        [_FailingFolderMockProvider.badFolder]);
   });
 
   test(
@@ -395,5 +401,8 @@ void main() {
       'still counted (F174 is not undone)', () async {
     final scanProvider = await scanWith(() => _UnlistableFolderMockProvider());
     expect(scanProvider.errorCount, 1);
+    // A folder that could not be proven missing is an error, never a
+    // "Folder not found" line.
+    expect(scanProvider.missingFolders, isEmpty);
   });
 }

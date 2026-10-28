@@ -148,13 +148,17 @@ class BackgroundScanSchedulerFactory {
         return const WindowsSchedulerAdapter();
       case BackgroundScanMechanism.workManager:
         return const AndroidSchedulerAdapter();
+      case BackgroundScanMechanism.bgAppRefresh:
+        // ADR-0050 Exception 1 declares the iOS mechanism, and the app registers
+        // the BGTaskScheduler identifier (Sprint 81 Task 3), but no iOS
+        // scheduler exists until F67c (Sprint 82). Until then it is the
+        // explicit unsupported scheduler below, never a false success.
       case BackgroundScanMechanism.none:
         break;
     }
 
-    // iOS/macOS/Linux are architecturally supported but have no scheduling
-    // implementation. An explicit unsupported scheduler beats a crash or a
-    // silent success.
+    // iOS (until F67c), macOS and Linux have no scheduling implementation. An
+    // explicit unsupported scheduler beats a crash or a silent success.
     return UnsupportedPlatformScheduler(Platform.operatingSystem);
   }
 }

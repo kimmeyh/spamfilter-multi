@@ -24,6 +24,7 @@
 library;
 
 import 'dart:io';
+import 'dart:math' show Random;
 
 import 'package:flutter/foundation.dart' show visibleForTesting;
 import 'package:logger/logger.dart';
@@ -68,7 +69,11 @@ class ExportDirectories {
   ///   call: a method channel is registered only in the UI's FlutterEngine, and
   ///   the WorkManager background scan runs in its OWN engine (MV74-2), where a
   ///   native call would fail. `path_provider` works in both.
-  /// - **iOS/macOS/Linux** (not shipped): the app's documents folder.
+  /// - **iOS** (ADR-0050 Q7b): `getApplicationDocumentsDirectory()`, the app's
+  ///   own Documents folder, shown in the Files app. Same
+  ///   `MyEmailSpamFilter` folder name beneath it as on the other platforms
+  ///   (F282). Files app visibility is unverified until the first device build.
+  /// - **macOS/Linux** (not shipped): the app's documents folder.
   static Future<String?> platformDefault() async {
     final documents = await _documentsFolder();
     if (documents == null || documents.isEmpty) return null;
@@ -97,6 +102,9 @@ class ExportDirectories {
       if (appExternal == null) return null;
       return publicDocumentsFrom(appExternal.path) ?? appExternal.path;
     }
+    // iOS (ADR-0050 Q7b, Sprint 81 F67b): the app's own Documents folder, which
+    // `UIFileSharingEnabled` shows in the Files app. macOS and Linux (not
+    // shipped) take the same call.
     return (await getApplicationDocumentsDirectory()).path;
   }
 
@@ -210,15 +218,40 @@ class ExportDirectories {
   @visibleForTesting
   static String? debugAppOwnFolderOverride;
 
+  /// The real probe, for tests (ignores [debugWritableOverride]).
+  @visibleForTesting
+  static Future<bool> debugProbeWritable(String dir) => _probe(dir);
+
+  static final _probeRandom = Random();
+
   /// Creates [dir] and writes/deletes a probe file. False on any failure.
   static Future<bool> _writable(String dir) async {
     final forced = debugWritableOverride;
     if (forced != null) return forced;
+    return _probe(dir);
+  }
+
+  static Future<bool> _probe(String dir) async {
     try {
       await Directory(dir).create(recursive: true);
-      final probe = File(path.join(dir, '.write_probe'));
+      // Sprint 81 Task 9: the probe name is unique per call. With one fixed
+      // name, two WorkManager workers (two isolates, one process) probing the
+      // same folder at once deleted each other's probe; the loser's delete
+      // threw PathNotFoundException, it judged the folder unwritable, and its
+      // diagnostic lines went to the fallback folder -- the log was split
+      // across two folders from 0.20.0 to 0.22.0 (emulator, 2026-10-23).
+      final probe = File(path.join(dir,
+          '.write_probe_${DateTime.now().microsecondsSinceEpoch}_${_probeRandom.nextInt(1 << 32)}'));
       await probe.writeAsString('ok');
-      await probe.delete();
+      // 7.7.1 silent-failure L-6: the write proves the folder is writable.
+      // The delete is best effort; a lock on the probe (an indexer or
+      // antivirus) must not send the logs to the fallback folder.
+      try {
+        await probe.delete();
+      } catch (e) {
+        _logger.w('Export folder probe "${probe.path}" written but not '
+            'deleted: $e');
+      }
       return true;
     } catch (e) {
       _logger.w('Export folder probe failed for "$dir": $e');

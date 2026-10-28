@@ -110,23 +110,55 @@ class NewMailTrigger {
           ? 'diagnostics unavailable'
           : 'diagnostics unavailable -- $error';
     }
-    String onOff(Object? v) => v == true ? 'on' : (v == false ? 'off' : 'unknown');
-    String at(Object? ms) => ms is int && ms > 0
-        ? DateTime.fromMillisecondsSinceEpoch(ms).toIso8601String()
-        : 'never';
+    // Sprint 81 F303 R-2: the native side reports a field it could not read as
+    // "error: <Type>: <message>". Show that text in the field's own slot (never
+    // 'never' or 'none', which would read as a real answer) and list it again
+    // at the end, so no failed read is lost.
+    bool isErr(Object? v) => v is String && v.startsWith(nativeErrorPrefix);
+    String? err(String key) {
+      final v = d[key];
+      return isErr(v) ? v as String : null;
+    }
+
+    String onOff(String key) =>
+        err(key) ?? (d[key] == true ? 'on' : (d[key] == false ? 'off' : 'unknown'));
+    String at(String key) {
+      final e = err(key);
+      if (e != null) return e;
+      final ms = d[key];
+      return ms is int && ms > 0
+          ? DateTime.fromMillisecondsSinceEpoch(ms).toIso8601String()
+          : 'never';
+    }
+
     // PackageManager.COMPONENT_ENABLED_STATE_DEFAULT / _ENABLED / _DISABLED.
     const states = {0: 'default', 1: 'enabled', 2: 'disabled'};
     final state = d['componentState'];
-    final ignored = parseLastIgnored(d['lastIgnored'] as String?);
-    final apps = (d['installedMailApps'] as List?)?.join(',') ?? 'unknown';
-    return 'access=${onOff(d['accessGranted'])} flag=${onOff(d['enabled'])} '
-        'component=${states[state] ?? state} '
-        'listenerConnected=${at(d['connectedMs'])} '
-        'listenerDisconnected=${at(d['disconnectedMs'])} '
-        'lastIgnored=${ignored == null ? 'none' : '${ignored.at.toIso8601String()} ${ignored.app} (${ignored.reason})'} '
+    final ignoredRaw = d['lastIgnored'];
+    final ignored = ignoredRaw is String && !isErr(ignoredRaw)
+        ? parseLastIgnored(ignoredRaw)
+        : null;
+    final appsRaw = d['installedMailApps'];
+    final apps = err('installedMailApps') ??
+        (appsRaw is List ? appsRaw.join(',') : 'unknown');
+    final errors = [
+      for (final e in d.entries)
+        if (isErr(e.value)) '${e.key}: ${e.value}',
+    ];
+    final line = 'access=${onOff('accessGranted')} flag=${onOff('enabled')} '
+        'component=${err('componentState') ?? states[state] ?? state} '
+        'listenerConnected=${at('connectedMs')} '
+        'listenerDisconnected=${at('disconnectedMs')} '
+        'lastIgnored=${err('lastIgnored') ?? (ignored == null ? 'none' : '${ignored.at.toIso8601String()} ${ignored.app} (${ignored.reason})')} '
         'mailApps=${apps.isEmpty ? 'none' : apps} '
         'launch: ${d['launch'] ?? 'unknown'}';
+    return errors.isEmpty
+        ? line
+        : '$line fieldErrors=${errors.length} [${errors.join('; ')}]';
   }
+
+  /// Prefix the native `DiagnosticsSnapshot` puts on a field it could not read.
+  static const String nativeErrorPrefix = 'error: ';
 
   /// Parses the listener's "<epoch ms>|<package>|<reason>"; null when malformed.
   static ({DateTime at, String app, String reason})? parseLastIgnored(

@@ -74,6 +74,12 @@ class UnmatchedEmail {
   /// Null for rows written before v8.
   final String? authClassification;
 
+  /// F271 (Sprint 81): comma-joined heuristic reason CODES computed at scan
+  /// time (see `HeuristicSignal`), for example `reply_to_differs,auth_failed`.
+  /// Codes only: no header text is stored. Null for rows written before v16
+  /// and for rows with no signal.
+  final String? heuristicSignals;
+
   UnmatchedEmail({
     this.id,
     required this.scanResultId,
@@ -91,6 +97,7 @@ class UnmatchedEmail {
     required this.createdAt,
     this.lastSeenAt,
     this.authClassification,
+    this.heuristicSignals,
   });
 
   /// Convert model to database map
@@ -113,6 +120,7 @@ class UnmatchedEmail {
         'created_at': createdAt.millisecondsSinceEpoch,
         'last_seen_at': (lastSeenAt ?? createdAt).millisecondsSinceEpoch,
         'auth_classification': authClassification,
+        'heuristic_signals': heuristicSignals,
       };
 
   /// Create model from database map
@@ -141,6 +149,7 @@ class UnmatchedEmail {
             ? DateTime.fromMillisecondsSinceEpoch(map['last_seen_at'] as int)
             : null,
         authClassification: map['auth_classification'] as String?,
+        heuristicSignals: map['heuristic_signals'] as String?,
       );
 
   /// Create copy with optional field updates
@@ -161,6 +170,7 @@ class UnmatchedEmail {
     DateTime? createdAt,
     DateTime? lastSeenAt,
     String? authClassification,
+    String? heuristicSignals,
   }) =>
       UnmatchedEmail(
         id: id ?? this.id,
@@ -182,6 +192,7 @@ class UnmatchedEmail {
         createdAt: createdAt ?? this.createdAt,
         lastSeenAt: lastSeenAt ?? this.lastSeenAt,
         authClassification: authClassification ?? this.authClassification,
+        heuristicSignals: heuristicSignals ?? this.heuristicSignals,
       );
 
   @override
@@ -302,8 +313,15 @@ class UnmatchedEmailStore {
   /// Returns one [UnmatchedUpsertResult] per input, in order. The outcome says
   /// whether the email was new, changed, came back after being dismissed, or
   /// was already listed and unchanged (the background export omits those).
+  ///
+  /// [keepStoredHeuristicSignals] (Sprint 81 7.7.1 silent-failure M-3): when
+  /// the scan could not read the user's safe senders or rules, its reason
+  /// codes are incomplete, so a refreshed row keeps the codes it already has
+  /// instead of losing them until the next good scan. New rows still store
+  /// what was computed.
   Future<List<UnmatchedUpsertResult>> upsertUnmatchedEmails(
-      List<UnmatchedEmail> emails) async {
+      List<UnmatchedEmail> emails,
+      {bool keepStoredHeuristicSignals = false}) async {
     if (emails.isEmpty) return [];
 
     try {
@@ -359,6 +377,7 @@ class UnmatchedEmailStore {
             ..remove('id')
             ..remove('created_at')
             ..['processed'] = 0;
+          if (keepStoredHeuristicSignals) values.remove('heuristic_signals');
           await txn.update('unmatched_emails', values,
               where: 'id = ?', whereArgs: [id]);
           results.add(UnmatchedUpsertResult(

@@ -113,16 +113,59 @@ class ScanCompleteNotifier {
         : const NotificationDetails(windows: WindowsNotificationDetails());
     final body = android ? text.htmlBody : text.plainBody;
     final id = ScanNotificationText.notificationId(accountId);
+    return _deliver(
+        id: id, title: text.title, body: body, details: details, what: 'scan');
+  }
+
+  /// F301 (Sprint 81): tells the user a Gmail background scan was skipped
+  /// because the account needs a new sign-in. Same plugin, same delivery and
+  /// same best-effort rule as [post]; plain text on both platforms (the body
+  /// has no markup). Its ID differs from the completion ID, so it never
+  /// replaces or is replaced by a completion notification.
+  ///
+  /// Returns whether it was posted. A failure (including notifications turned
+  /// off in the OS) never escapes and is written to the diagnostic log.
+  static Future<bool> postSignInNeeded({required String accountId}) {
+    final details = _isAndroid
+        ? const NotificationDetails(android: _signInAndroidDetails)
+        : const NotificationDetails(windows: WindowsNotificationDetails());
+    return _deliver(
+      id: ScanNotificationText.signInNeededId(accountId),
+      title: ScanNotificationText.signInNeededTitle(accountId),
+      body: ScanNotificationText.signInNeededBody,
+      details: details,
+      what: 'sign-in-needed',
+    );
+  }
+
+  static const AndroidNotificationDetails _signInAndroidDetails =
+      AndroidNotificationDetails(
+    'sign_in_needed_channel',
+    'Sign-in needed',
+    channelDescription:
+        'Tells you when an account must be signed in again to be scanned',
+    importance: Importance.defaultImportance,
+    priority: Priority.defaultPriority,
+    showWhen: true,
+  );
+
+  static Future<bool> _deliver({
+    required int id,
+    required String title,
+    required String body,
+    required NotificationDetails details,
+    required String what,
+  }) async {
     try {
       final show = showOverride ?? _pluginShow;
-      await show(id: id, title: text.title, body: body, details: details);
+      await show(id: id, title: title, body: body, details: details);
       return true;
     } catch (e) {
-      _logger.w('Completion notification failed (scan itself succeeded): $e');
+      _logger.w('Notification ($what) failed (scan itself unaffected): $e');
       await DiagnosticLogger.log(
         kind: DiagnosticLogger.kindScan,
         context: 'scan/post',
-        detail: 'notification FAILED (scan unaffected): '
+        detail: 'notification ($what) FAILED (scan unaffected): '
             '${DiagnosticLogger.describeError(e)}',
       );
       return false;

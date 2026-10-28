@@ -201,18 +201,28 @@ class MainActivity : FlutterActivity() {
                     // diagnostic log -- why the trigger has not fired (R-2)
                     // and how this screen was started (R-4).
                     "diagnostics" -> {
-                        val component = ComponentName(this, MailNotificationListener::class.java)
+                        // Sprint 81 F303: each field in its own guard, so one
+                        // failing read reports "error: <Type>: <message>" and
+                        // the others still return.
                         result.success(
-                            mapOf(
-                                "accessGranted" to NotificationManagerCompat
-                                    .getEnabledListenerPackages(this).contains(packageName),
-                                "enabled" to prefs.getBoolean(MailNotificationListener.KEY_ENABLED, false),
-                                "componentState" to packageManager.getComponentEnabledSetting(component),
-                                "connectedMs" to prefs.getLong(MailNotificationListener.KEY_CONNECTED_MS, 0L),
-                                "disconnectedMs" to prefs.getLong(MailNotificationListener.KEY_DISCONNECTED_MS, 0L),
-                                "lastIgnored" to prefs.getString(MailNotificationListener.KEY_LAST_IGNORED, null),
-                                "installedMailApps" to installedMailApps(),
-                                "launch" to launchInfo,
+                            DiagnosticsSnapshot.collect(
+                                listOf(
+                                    "accessGranted" to {
+                                        NotificationManagerCompat
+                                            .getEnabledListenerPackages(this).contains(packageName)
+                                    },
+                                    "enabled" to { prefs.getBoolean(MailNotificationListener.KEY_ENABLED, false) },
+                                    "componentState" to {
+                                        packageManager.getComponentEnabledSetting(
+                                            ComponentName(this, MailNotificationListener::class.java),
+                                        )
+                                    },
+                                    "connectedMs" to { prefs.getLong(MailNotificationListener.KEY_CONNECTED_MS, 0L) },
+                                    "disconnectedMs" to { prefs.getLong(MailNotificationListener.KEY_DISCONNECTED_MS, 0L) },
+                                    "lastIgnored" to { prefs.getString(MailNotificationListener.KEY_LAST_IGNORED, null) },
+                                    "installedMailApps" to { installedMailApps() },
+                                    "launch" to { launchInfo },
+                                ),
                             ),
                         )
                     }

@@ -399,8 +399,11 @@ This does not replace Check C (the visual/interactive About-screen and Gmail sig
 ```powershell
 cd D:\Data\Harold\github\spamfilter-multi-prod\mobile-app\build\windows\x64\runner\Release
 
-# Extract the AppxManifest.xml from the MSIX
-Expand-Archive -Path my_email_spam_filter.msix -DestinationPath .\msix_unpack -Force
+# Extract the AppxManifest.xml from the MSIX. Copy it to a .zip name first:
+# Windows PowerShell 5.1 Expand-Archive refuses any extension but .zip
+# (".msix is not a supported archive file format" -- hit at the 0.21.0 release).
+Copy-Item my_email_spam_filter.msix $env:TEMP\msix_check.zip -Force
+Expand-Archive -Path $env:TEMP\msix_check.zip -DestinationPath .\msix_unpack -Force
 
 # Grep the version
 Select-String -Path .\msix_unpack\AppxManifest.xml -Pattern 'Version="'

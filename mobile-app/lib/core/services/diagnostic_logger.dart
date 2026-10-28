@@ -320,15 +320,23 @@ class DiagnosticLogger {
         // ONE miss is not proof: the holder may have deleted the lock between
         // our failed create and the exists() check (the 4-isolate test lost
         // 19 of 600 lines when a single miss was trusted). A permanent fault
-        // misses every time; a race clears on the next try.
+        // misses every time; a race clears on a later try.
+        //
+        // The retries WAIT between tries (Sprint 81 7.7.1 full suite): three
+        // back-to-back retries all landed inside the same window -- under load
+        // the create failed with "Cannot create file" while exists() said no
+        // lock, all three missed within microseconds, and a 30-round probe lost
+        // 2 of 600 lines to unlocked writes. 20 tries 5 ms apart bound a
+        // permanent fault to about 100 ms per line, far under [lockWait].
         if (await lockFile.exists()) {
           failedWithoutLock = 0;
-        } else if (++failedWithoutLock >= 3) {
+        } else if (++failedWithoutLock >= 20) {
           return (
             held: false,
             problem: 'log lock unavailable: ${scrub(e.message)}',
           );
         } else {
+          await Future<void>.delayed(const Duration(milliseconds: 5));
           continue;
         }
       }

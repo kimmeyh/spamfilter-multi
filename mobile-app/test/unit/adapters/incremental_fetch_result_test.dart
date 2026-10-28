@@ -25,8 +25,9 @@ void main() {
       final result = IncrementalFetchResult.expired();
 
       expect(result.isExpired, isTrue,
-          reason: 'Scanner branches on isExpired to clear last_history_id '
-              'and fall back to a full scan.');
+          reason: 'Scanner branches on isExpired to clear the folder\'s '
+              'history cursor (account_folder_cursors, F259) and fall back '
+              'to a full scan.');
       expect(result.emails, isEmpty,
           reason: 'No emails should be returned when history has expired -- '
               'caller takes the full-fetch path next.');

@@ -27,6 +27,7 @@ import '../../core/models/safe_sender_list.dart' show SafeSenderList;
 import '../../core/services/auth_results_parser.dart';
 import '../../core/services/content_history.dart';
 import '../../core/services/diagnostic_logger.dart';
+import '../../core/services/imap_uid.dart';
 import '../../core/services/email_scanner.dart' show safeSenderAlreadyInTarget;
 import '../../core/services/app_version.dart';
 import '../../util/redact.dart';
@@ -516,6 +517,9 @@ class _ResultsDisplayScreenState extends State<ResultsDisplayScreen> {
             // F91 (Sprint 39): carry the persisted RFC 5322 Message-ID
             // (nullable; older rows predating the v6 migration are null).
             messageIdHeader: map['rfc5322_message_id'] as String?,
+            // F302 (Sprint 81): the IMAP sequence number stored apart from
+            // the id (null for Gmail and for rows saved before v14).
+            imapSequenceNumber: map['imap_sequence_number'] as int?,
             // F96 (Sprint 43): re-hydrate the SPF/DKIM/DMARC classification
             // captured at scan time. The reconstructed headers above carry only
             // From/Subject, so a fresh parse would always classify GREY; this
@@ -1498,8 +1502,14 @@ class _ResultsDisplayScreenState extends State<ResultsDisplayScreen> {
                   // Shown only when non-zero and only for a LIVE scan:
                   // historical rows carry no skip count, and rendering a
                   // hard zero would read like a bug (the F151c lesson that
-                  // removed the always-zero "Moved" chip).
-                  if (!showingHistorical &&
+                  // removed the always-zero "Moved" chip). Gated on
+                  // isViewingHistory, NOT showingHistorical (7.7.1
+                  // improvement review, same defect as HIGH-1): when every
+                  // message was already filed the live list is empty, the
+                  // screen falls back to the last saved scan, and the chip
+                  // was hidden in exactly the case it exists for. The
+                  // provider clears the count at every startScan and reset.
+                  if (!isViewingHistory &&
                       scanProvider.skippedAlreadyFiledCount > 0)
                     Tooltip(
                       message:
@@ -1519,6 +1529,39 @@ class _ResultsDisplayScreenState extends State<ResultsDisplayScreen> {
                         ),
                       ),
                     ),
+                  // 7.7.1 silent-failure M-2 (F259 / F202): a folder or Gmail
+                  // label the scan skipped because it does not exist on this
+                  // account. Information, not an error: neutral colors, and
+                  // not counted in Errors. Hidden only for a scan opened from
+                  // Scan History (no missing-folder list is stored). NOT gated
+                  // on showingHistorical (7.7.1 improvement review HIGH-1): a
+                  // scan of only a missing label COMPLETES with zero messages,
+                  // the screen then falls back to the last saved scan, and the
+                  // line was hidden in exactly the case it exists for. The
+                  // provider clears the list at every startScan and reset.
+                  if (!isViewingHistory)
+                    for (final folder in scanProvider.missingFolders)
+                      Tooltip(
+                        message: 'This folder or label does not exist on this '
+                            'account, so the scan skipped it. It is not '
+                            'counted as an error.',
+                        child: Chip(
+                          key: ValueKey('missing_folder_$folder'),
+                          avatar: Icon(Icons.info_outline,
+                              size: 16,
+                              color: Theme.of(context)
+                                  .colorScheme
+                                  .onSecondaryContainer),
+                          label: Text('Folder not found: $folder'),
+                          backgroundColor:
+                              Theme.of(context).colorScheme.secondaryContainer,
+                          labelStyle: TextStyle(
+                            color: Theme.of(context)
+                                .colorScheme
+                                .onSecondaryContainer,
+                          ),
+                        ),
+                      ),
                   if (scanProvider.safeSenderDedupCount > 0)
                     Tooltip(
                       message:
@@ -2161,8 +2204,10 @@ class _ResultsDisplayScreenState extends State<ResultsDisplayScreen> {
     for (final result in allResults) {
       foldersTouched.add(result.email.folderName);
       if (_getEffectiveAction(result) != EmailActionType.none) continue;
-      final uid = int.tryParse(result.email.id);
-      if (uid == null) continue; // non-IMAP id (Gmail OAuth opaque)
+      final uid = parseImapUid(result.email.id,
+          folderName: result.email.folderName,
+          context: 'results/oldest-no-rule-cursor');
+      if (uid == null) continue; // non-IMAP id (Gmail OAuth opaque) or no UID
       final current = oldestPerFolder[result.email.folderName];
       if (current == null || uid < current) {
         oldestPerFolder[result.email.folderName] = uid;

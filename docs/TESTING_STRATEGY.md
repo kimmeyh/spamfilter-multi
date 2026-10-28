@@ -1056,6 +1056,21 @@ correct work trains bypass, which is worse than no gate.
 are inside DECIDE. Presence of a token anywhere in a window proves nothing about nesting.
 
 
+## A test must be able to fail (Sprint 81 retro IMP-5)
+
+Three Sprint 81 7.7.1 findings were tests that could not do their job: one tested a field the
+sprint had removed (CR L-4), one asserted a version unlike its sibling tests (CR L-5), and one
+review-requested test could not fail at all (CR L-6: `int.tryParse` and `parseImapUid` both
+return null for the no-UID marker, so the test passed with or without the fix).
+
+- **Before writing a test a reviewer asked for, name the mutation it would catch.** If no
+  change to the code under review makes it fail, answer the finding "Not applicable" with that
+  reason instead of writing it.
+- **When a value, field or name is renamed or removed, grep `test/` for the old literal in the
+  same commit**, and update or delete each hit. A test of something that no longer exists passes
+  for the wrong reason.
+
+
 ## Mutation-test locks (Sprint 65)
 
 Mutation verification requires deliberately breaking a tracked file to prove a test goes

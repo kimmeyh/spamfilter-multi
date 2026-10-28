@@ -62,6 +62,32 @@ void main() {
           contains('access=unknown flag=unknown'));
     });
 
+    // Sprint 81 F303 T-2 (AC-2). What this does NOT catch: whether the native
+    // side really sends "error: ..." for a failing read on a phone (the Kotlin
+    // JVM test covers the map, the Fold log covers the device).
+    test('a field the phone could not read shows its error text', () {
+      final line = NewMailTrigger.formatDiagnostics({
+        'accessGranted': 'error: SecurityException: denied',
+        'enabled': true,
+        'componentState': 1,
+        'connectedMs': 0,
+        'disconnectedMs': 0,
+        'lastIgnored': 'error: IllegalStateException: bad prefs',
+        'installedMailApps': 'error: RuntimeException: pm died',
+        'launch': 'action=MAIN',
+      });
+      expect(line, contains('access=error: SecurityException: denied'));
+      expect(line, contains('flag=on component=enabled'));
+      expect(line, contains('lastIgnored=error: IllegalStateException: bad prefs'));
+      expect(line, contains('mailApps=error: RuntimeException: pm died'));
+      expect(line, contains('launch: action=MAIN'));
+      expect(line, contains('fieldErrors=3 ['));
+      expect(line, contains('accessGranted: error: SecurityException: denied'));
+      // A clean snapshot adds no error section.
+      expect(NewMailTrigger.formatDiagnostics({'enabled': true}),
+          isNot(contains('fieldErrors')));
+    });
+
     test('a malformed ignored record is not invented', () {
       expect(NewMailTrigger.parseLastIgnored('nonsense'), isNull);
       expect(NewMailTrigger.parseLastIgnored('x|a|b'), isNull);
@@ -122,7 +148,9 @@ void main() {
 
     test('the channel answers "diagnostics" and the activity captures its launch', () {
       expect(activity, contains('"diagnostics" ->'));
-      expect(activity, contains('"launch" to launchInfo'));
+      expect(activity, contains('"launch" to { launchInfo }'));
+      expect(activity, contains('DiagnosticsSnapshot.collect('),
+          reason: 'F303: each field is read in its own guard');
       expect(activity, contains('override fun onCreate(savedInstanceState: Bundle?)'));
       final create = activity.indexOf('override fun onCreate');
       expect(activity.indexOf('launchInfo = try', create),

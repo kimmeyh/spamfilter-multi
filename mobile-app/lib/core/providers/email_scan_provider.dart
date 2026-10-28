@@ -18,6 +18,8 @@ import '../../core/storage/settings_store.dart';
 import '../../core/storage/unmatched_email_store.dart';
 import '../services/background_scan_core.dart' show BackgroundScanCore;
 import '../services/diagnostic_logger.dart';
+import '../services/heuristic_signals.dart';
+import '../services/imap_uid.dart';
 import '../services/scan_coordinator.dart';
 import '../../core/utils/pattern_normalization.dart';
 import '../../util/redact.dart';
@@ -229,6 +231,22 @@ class EmailScanProvider extends ChangeNotifier {
   /// whole point.
   void recordSkippedAlreadyFiled() {
     _skippedAlreadyFiledCount++;
+  }
+
+  /// 7.7.1 silent-failure M-2 (F259 / F202): folders the scan skipped because
+  /// they do not exist on this account (an IMAP folder or a Gmail label).
+  /// DISCLOSED, not counted: a missing folder is not an error (F202 R-6), so
+  /// it never touches [errorCount]. Before this, the skip reached only the
+  /// opt-in diagnostic log, and a scan of a mistyped label completed with 0
+  /// messages and nothing on screen to say why.
+  List<String> get missingFolders => List.unmodifiable(_missingFolders);
+  final List<String> _missingFolders = [];
+
+  /// 7.7.1 silent-failure M-2: record one folder skipped as missing.
+  void recordFolderMissing(String folderName) {
+    if (_missingFolders.contains(folderName)) return;
+    _missingFolders.add(folderName);
+    notifyListeners();
   }
   int get errorCount => _errorCount;
 
@@ -462,6 +480,7 @@ class EmailScanProvider extends ChangeNotifier {
     _safeSendersCount = 0;
     _noRuleCount = 0;  // [NEW] FIX: Reset no-rule count on new scan
     _skippedAlreadyFiledCount = 0;  // F203
+    _missingFolders.clear();  // 7.7.1 silent-failure M-2
     _errorCount = 0;
     _safeSenderDedupCount = 0;  // F91 (Sprint 39): reset dedup count on new scan
     _currentEmail = null;
@@ -681,6 +700,10 @@ class EmailScanProvider extends ChangeNotifier {
       final actions = _results.map((r) => <String, dynamic>{
         'scan_result_id': _currentScanResultId!,
         'email_id': r.email.id,
+        // F302 (Sprint 81): the IMAP sequence number, apart from the id. For
+        // a message with no UID, email_id is kNoValidImapUid and this is the
+        // only trace of which message it was. Null for Gmail.
+        'imap_sequence_number': r.email.imapSequenceNumber,
         'email_from': r.email.from,
         'email_subject': r.email.subject,
         'email_received_date': r.email.receivedDate.millisecondsSinceEpoch,
@@ -716,14 +739,68 @@ class EmailScanProvider extends ChangeNotifier {
       // Task D") only logged, so the review screen always showed 0 items
       // while scan_results.no_rule_count said otherwise.
       if (_unmatchedEmailStore != null) {
-        final noRuleResults =
-            _results.where((r) => r.action == EmailActionType.none).toList();
+        // F302 R-3: a message with no valid IMAP UID is NOT listed. Every No
+        // Rule row is identified by (type, value, folder); with one shared
+        // marker as the value, all such messages in a folder would collapse
+        // into one row, and any later action on that row (presence check,
+        // move, delete) would be refused anyway. The email_actions row above
+        // keeps it for history; the helper writes the skip to the diagnostic
+        // log, naming the folder.
+        final noRuleResults = _results
+            .where((r) =>
+                r.action == EmailActionType.none &&
+                hasValidImapUid(r.email.id,
+                    folderName: r.email.folderName,
+                    context: 'scan/persist-no-rule'))
+            .toList();
+        // 7.7.1 code-reviewer L-7: the scan summary's No Rule count includes
+        // these messages and the review list does not (R-3, by design). Say
+        // so once per scan, so the difference is not read as the F245 defect.
+        final noUidNoRule = _results
+                .where((r) => r.action == EmailActionType.none)
+                .length -
+            noRuleResults.length;
+        if (noUidNoRule > 0) {
+          unawaited(DiagnosticLogger.log(
+            kind: DiagnosticLogger.kindSkipped,
+            context: 'scan/persist-no-rule',
+            detail: '${Redact.accountId(_currentAccountId)} row '
+                '$_currentScanResultId: $noUidNoRule No Rule message(s) had '
+                'no valid IMAP UID and are not listed on Review No Rule '
+                'Items (they are in the scan summary count)',
+          ));
+        }
         // F276 (Sprint 80): this scan just fetched each message, so it is in
         // its folder now. Record that, or the row keeps the defaults
         // ('unknown', never checked) and the presence reconciler re-asks every
         // row the scan just saw on every scan, not once per
         // kNoRulePresenceRecheck.
         final seenAt = DateTime.now();
+        // F271 (Sprint 81): the user's safe sender domains, read ONCE per
+        // scan. A failed read costs the chips for this
+        // scan only (the signals that need no context still compute), so it
+        // is logged and never blocks the No Rule rows themselves.
+        var heuristicContext = HeuristicContext.empty;
+        var heuristicContextRead = true;
+        if (noRuleResults.isNotEmpty) {
+          try {
+            heuristicContext = HeuristicContext.fromRows(
+              safeSenderRows: await _databaseHelper!.querySafeSenders(),
+            );
+          } catch (e) {
+            heuristicContextRead = false;
+            _logger.w('F271: could not read safe senders for the heuristic '
+                'signals; lookalike chips are skipped for this scan: $e');
+            // 7.7.1 L-8: the console log is not kept in a release build.
+            await DiagnosticLogger.log(
+              kind: DiagnosticLogger.kindScan,
+              context: 'F271/context',
+              detail: 'safe senders unreadable; lookalike chips skipped '
+                  'for this scan -- '
+                  '${DiagnosticLogger.describeError(e)}',
+            );
+          }
+        }
         final unmatched = noRuleResults
             .map((r) => UnmatchedEmail(
                   availabilityStatus: UnmatchedEmailStore.availabilityAvailable,
@@ -743,14 +820,27 @@ class EmailScanProvider extends ChangeNotifier {
                   // bulk action can fire the RED anti-phishing warning.
                   authClassification:
                       AuthResultsParser.classifyHeaders(r.email.headers).name,
+                  // F271: reason CODES only (never header text); a reason is
+                  // shown on the review row and never acts on the email.
+                  heuristicSignals: HeuristicSignal.encode(
+                    HeuristicSignals.compute(
+                      headers: r.email.headers,
+                      from: r.email.from,
+                      authClassificationName:
+                          AuthResultsParser.classifyHeaders(r.email.headers)
+                              .name,
+                      context: heuristicContext,
+                    ),
+                  ),
                 ))
             .toList();
         if (unmatched.isNotEmpty) {
           // F245 (Sprint 77, ADR-0045): ONE row per email -- a re-found
           // email refreshes its row instead of adding a copy. The outcomes
           // also tell the background export which rows are already listed.
-          final upserts =
-              await _unmatchedEmailStore!.upsertUnmatchedEmails(unmatched);
+          final upserts = await _unmatchedEmailStore!.upsertUnmatchedEmails(
+              unmatched,
+              keepStoredHeuristicSignals: !heuristicContextRead);
           _alreadyListedNoRule.clear();
           var added = 0;
           for (var i = 0; i < upserts.length; i++) {
@@ -953,6 +1043,7 @@ class EmailScanProvider extends ChangeNotifier {
     _safeSendersCount = 0;
     _noRuleCount = 0;  // [NEW] PHASE 3.1: Reset no-rule count
     _skippedAlreadyFiledCount = 0;  // F203
+    _missingFolders.clear();  // 7.7.1 silent-failure M-2
     _errorCount = 0;
     _safeSenderDedupCount = 0;  // F91 (Sprint 39): reset dedup count
 

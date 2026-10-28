@@ -307,11 +307,12 @@ void main() {
       db.setAppPaths(_TestAppPaths('${tempDir.path}/t.db'));
       await db.deleteAllData();
 
-      // Gmail's cursor (lastHistoryId) lives on the accounts row itself
-      // (not account_folder_cursors, which is IMAP-only) -- seed a real
-      // account row so getLastHistoryId/setLastHistoryId round-trip through
-      // an actual DB write, matching the IMAP group's real-cursor approach
-      // rather than asserting only the already-correct no-cursor case.
+      // F259 (Sprint 81): Gmail's history cursor lives in
+      // account_folder_cursors, one row per account AND folder. Seed a real
+      // account row so setGmailHistoryCursor/getGmailHistoryCursor round-trip
+      // through an actual DB write, matching the IMAP group's real-cursor
+      // approach rather than asserting only the already-correct no-cursor
+      // case.
       await db.insertAccount({
         'account_id': accountId,
         'platform_id': 'gmail',
@@ -338,7 +339,7 @@ void main() {
         () async {
       // Seed a real historyId cursor, simulating an account that has
       // already completed at least one prior scan.
-      await db.setLastHistoryId(accountId, '500');
+      await db.setGmailHistoryCursor(accountId, 'INBOX', '500');
       final gmail = _RecordingGmailAdapter();
 
       final result = await scanner.fetchFolderMessagesGmailForTesting(
@@ -358,7 +359,7 @@ void main() {
     test(
         'non-regression: a specific N-day window with an existing historyId '
         'cursor still uses the incremental delta path', () async {
-      await db.setLastHistoryId(accountId, '500');
+      await db.setGmailHistoryCursor(accountId, 'INBOX', '500');
       final gmail = _RecordingGmailAdapter();
 
       final result = await scanner.fetchFolderMessagesGmailForTesting(
@@ -375,7 +376,7 @@ void main() {
 
     test('no cursor at all (first-ever Gmail scan) -- unaffected either way',
         () async {
-      // No setLastHistoryId call: lastHistoryId is genuinely null.
+      // No setGmailHistoryCursor call: the INBOX cursor is genuinely null.
       final gmail = _RecordingGmailAdapter();
 
       final result = await scanner.fetchFolderMessagesGmailForTesting(

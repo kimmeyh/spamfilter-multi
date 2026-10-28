@@ -379,6 +379,17 @@ class GmailApiAdapter with BatchOperationsMixin
       List<EmailMessage> emails = [];
 
       for (String folder in folderNames) {
+        // F259 (Sprint 81): the full fetch queries `label:<name>`, which
+        // answers a label that does not exist with ZERO messages and no
+        // error. Check a custom label first (system folders are their own
+        // IDs and cost nothing); a miss throws, and the scanner's F202
+        // missing-folder classification takes it from there. The lookup is
+        // cached for the connection, so this is one `labels.list` per scan.
+        // 7.7.1 (code-reviewer L-1, silent-failure M-1): the check runs
+        // INSIDE listMessages, so a 403 "insufficient authentication
+        // scopes" from `labels.list` reaches the same scope-upgrade /
+        // sign-in-required handler as the message list, and is retried with
+        // it after a re-auth.
         // Build Gmail query (Sprint 37 F6b: include configured label exclusions)
         String query = _buildGmailQuery(
           folder: folder,
@@ -387,7 +398,11 @@ class GmailApiAdapter with BatchOperationsMixin
         );
         Redact.logSafe('Gmail query for $folder: $query');
         gmail.ListMessagesResponse messagesResponse;
-        Future<gmail.ListMessagesResponse> listMessages() {
+        Future<gmail.ListMessagesResponse> listMessages() async {
+          if (!isSystemLabelId(_folderToLabelId(folder)) &&
+              await _labelIdFor(folder) == null) {
+            throw GmailLabelNotFoundException(folder);
+          }
           return _gmailApi!.users.messages.list(
             'me',
             q: query,
@@ -462,6 +477,10 @@ class GmailApiAdapter with BatchOperationsMixin
 
       Redact.logSafe('Successfully fetched ${emails.length} Gmail messages');
       return emails;
+    } on GmailLabelNotFoundException {
+      // 7.7.1 silent-failure L-5: an expected skip (F259), already written
+      // to the diagnostic log by _labelIdFor; not an error-level event.
+      rethrow;
     } catch (e) {
       Redact.logError('Error fetching Gmail messages', e);
       rethrow;
@@ -802,9 +821,9 @@ class GmailApiAdapter with BatchOperationsMixin
 
   /// Sprint 37 F6c: Read the current Gmail account's `historyId` from
   /// `users.getProfile`. The caller (EmailScanProvider) persists this to
-  /// `accounts.last_history_id` after the first full scan so subsequent
-  /// scans can use `fetchMessagesIncremental` instead of full-folder
-  /// fetches.
+  /// the per-account-and-folder `gmail_history_id` cursor (F259) after a
+  /// folder's full fetch so subsequent scans of that folder can use
+  /// `fetchMessagesIncremental` instead of full-folder fetches.
   ///
   /// Returns null if not connected or the API call fails.
   Future<String?> getCurrentHistoryId() async {
@@ -859,8 +878,15 @@ class GmailApiAdapter with BatchOperationsMixin
       // incremental path hit it: the full fetch queries `label:<name>`.
       final labelId = await _labelIdFor(folderForLabel);
       if (labelId == null) {
-        // The label does not exist on this account: nothing to fetch.
-        return IncrementalFetchResult.empty(newHistoryId: startHistoryId);
+        // F259 (Sprint 81): this used to return an EMPTY result and keep the
+        // old cursor -- a renamed or deleted label scanned as "0 messages"
+        // with no trace, forever. Now it throws, so the scanner's per-folder
+        // catch runs the existing F202 missing-folder classification
+        // (EmailScanner._folderIsMissing): absent from the account's label
+        // list = skipped, counted as missing, logged; present after all = an
+        // F174 fetch error. The throw is before any cursor write, so the
+        // cursor does not move.
+        throw GmailLabelNotFoundException(folderForLabel);
       }
       final historyResponse = await _gmailApi!.users.history.list(
         'me',
@@ -1448,8 +1474,31 @@ class GmailApiAdapter with BatchOperationsMixin
   }
 
   /// Sprint 76: label NAME -> label ID for `users.history.list`, cached for
-  /// this connection. System labels are their own IDs. null = no such label.
-  final Map<String, String?> _labelIds = {};
+  /// this connection. System labels are their own IDs.
+  ///
+  /// F259 (Sprint 81): keys are LOWERCASE, holding only names that are unique
+  /// ignoring case; [_labelIdsExact] is checked first. (Whether Gmail treats
+  /// label names without regard to case is UNVERIFIED -- settle it with a
+  /// `labels.create` of "foo" while "Foo" exists.) A label that was not found
+  /// is NEVER stored:
+  /// before, "no such label" was cached as null for the whole connection, so a
+  /// label renamed or created after the first lookup stayed "missing" until
+  /// the app reconnected. Misses are kept apart, in [_labelMisses], and only
+  /// for [labelMissTtl].
+  final Map<String, String> _labelIds = {};
+
+  /// Exact label NAME -> label ID, checked before [_labelIds].
+  final Map<String, String> _labelIdsExact = {};
+
+  /// When each lowercase label name was last looked up and NOT found.
+  final Map<String, DateTime> _labelMisses = {};
+
+  /// How long a miss is trusted before Gmail is asked again.
+  static const Duration labelMissTtl = Duration(seconds: 60);
+
+  /// Test seam: the clock for [_labelMisses].
+  @visibleForTesting
+  static DateTime Function() debugClock = DateTime.now;
 
   /// Gmail's system label IDs (they are their own IDs); everything else is a
   /// user label whose ID must be looked up.
@@ -1461,15 +1510,70 @@ class GmailApiAdapter with BatchOperationsMixin
       }.contains(id) ||
       id.startsWith('CATEGORY_');
 
+  /// The Gmail label ID for [folder], or null when the account has no such
+  /// label.
+  ///
+  /// F259 (Sprint 81): the name match is case-insensitive; a miss is cached
+  /// for only [labelMissTtl] (after that the next call asks Gmail again, so a
+  /// renamed or newly created label is found); and each miss that asks Gmail
+  /// writes a diagnostic line naming the label, because this is the one place
+  /// all callers share. The short miss cache exists because the per-message
+  /// move paths call this once per message: without it, a delete run whose
+  /// target label is missing made one account-wide `labels.list` call (and
+  /// one log line) per message (F-PRECHECK, Sprint 81). What a caller does
+  /// with null:
+  ///   - `fetchMessagesIncremental`, `fetchMessages`, `moveMessage`,
+  ///     `_resolvedMoveLabels` (target): throw [GmailLabelNotFoundException].
+  ///     The scanner's per-folder catch then runs the existing F202
+  ///     missing-folder classification (`EmailScanner._folderIsMissing`);
+  ///   - `_resolvedMoveLabels` (source): keeps the label change as is (the
+  ///     source label is gone, so there is nothing to remove);
+  ///   - `checkMessagesPresent`: no answer for the folder's rows.
   Future<String?> _labelIdFor(String folder) async {
     final mapped = _folderToLabelId(folder);
     if (isSystemLabelId(mapped)) return mapped;
-    if (_labelIds.containsKey(folder)) return _labelIds[folder];
-    final labels = (await _gmailApi!.users.labels.list('me')).labels ?? const [];
-    for (final l in labels) {
-      if (l.name != null && l.id != null) _labelIds[l.name!] = l.id;
+    final key = folder.toLowerCase();
+    final cached = _labelIdsExact[folder] ?? _labelIds[key];
+    if (cached != null) return cached;
+    final missAt = _labelMisses[key];
+    if (missAt != null) {
+      final age = debugClock().difference(missAt);
+      if (!age.isNegative && age < labelMissTtl) return null;
     }
-    return _labelIds.putIfAbsent(folder, () => null);
+    final labels = (await _gmailApi!.users.labels.list('me')).labels ?? const [];
+    final byLower = <String, List<String>>{};
+    for (final l in labels) {
+      if (l.name == null || l.id == null) continue;
+      _labelIdsExact[l.name!] = l.id!;
+      byLower.putIfAbsent(l.name!.toLowerCase(), () => []).add(l.id!);
+    }
+    // 7.7.1 (code-reviewer, unverified claim): whether Gmail allows two
+    // labels that differ only in case is not confirmed from Google's docs.
+    // So an exact-case match wins, and a case-insensitive match is used only
+    // when exactly one label has that name ignoring case.
+    byLower.forEach((lower, ids) {
+      if (ids.length == 1) {
+        _labelIds[lower] = ids.single;
+      } else {
+        _labelIds.remove(lower);
+      }
+    });
+    final found = _labelIdsExact[folder] ?? _labelIds[key];
+    if (found == null) {
+      _labelMisses[key] = debugClock();
+      Redact.logSafe('Gmail label "$folder" was not found among '
+          '${labels.length} labels');
+      unawaited(DiagnosticLogger.log(
+        kind: DiagnosticLogger.kindSkipped,
+        context: 'Gmail/labelIdFor',
+        detail: 'label "$folder" not found among ${labels.length} labels '
+            '(case-insensitive); asked again after '
+            '${labelMissTtl.inSeconds} s',
+      ));
+    } else {
+      _labelMisses.remove(key);
+    }
+    return found;
   }
 
   static String _systemLabelOrSelf(String folder) {

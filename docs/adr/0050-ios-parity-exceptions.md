@@ -4,6 +4,10 @@
 
 Accepted (Harold, Sprint 80 Manual Validation, 2026-10-22, Q2 = 1). Proposed in Sprint 80, F295, GitHub #494.
 
+**Implemented by**: Sprint 81 Task 3 (F67b code, GitHub #511): every iOS answer in `PlatformCapabilities` now cites
+this ADR, and `platform_capabilities_ios_test.dart` refuses an undecided one. The background task (F67c) and iOS
+notification set-up are Sprint 82.
+
 ## Date
 
 2026-10-19

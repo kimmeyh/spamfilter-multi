@@ -43,7 +43,8 @@ class FakeUnmatchedEmailStore implements UnmatchedEmailStore {
 
   @override
   Future<List<UnmatchedUpsertResult>> upsertUnmatchedEmails(
-          List<UnmatchedEmail> emails) async =>
+          List<UnmatchedEmail> emails,
+          {bool keepStoredHeuristicSignals = false}) async =>
       [];
 
   @override

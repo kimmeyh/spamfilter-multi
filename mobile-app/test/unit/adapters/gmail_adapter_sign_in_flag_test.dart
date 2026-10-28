@@ -194,5 +194,26 @@ void main() {
           throwsA(isA<GmailSignInRequiredException>()));
       expect(await flagged(), isTrue);
     });
+
+    test('Sprint 81 7.7.1: insufficient scopes on the F259 label lookup of a '
+        'CUSTOM label reaches the same handler (flagged, typed exception)',
+        () async {
+      // A custom label makes fetchMessages call labels.list before the
+      // message list. Before the fix that 403 was outside the scope handler
+      // and surfaced as a plain folder error: no flag, no Sign In Again.
+      GmailApiAdapter.debugHttpClientFactory = () => MockClient((req) async {
+            if (req.url.path.endsWith('/profile')) {
+              return json(200, '{"emailAddress":"$_gmail"}');
+            }
+            return json(403,
+                '{"error":{"code":403,"message":"Request had insufficient authentication scopes."}}');
+          });
+      final adapter = GmailApiAdapter();
+      await adapter.loadCredentials(_creds());
+      await expectLater(
+          adapter.fetchMessages(daysBack: 1, folderNames: ['Archive']),
+          throwsA(isA<GmailSignInRequiredException>()));
+      expect(await flagged(), isTrue);
+    });
   }, skip: !Platform.isWindows);
 }

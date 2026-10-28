@@ -24,6 +24,7 @@ import '../utils/app_logger.dart';
 import '../../util/redact.dart';
 import 'content_history.dart';
 import 'diagnostic_logger.dart';
+import 'imap_uid.dart';
 import 'live_scan_logger.dart';
 import 'scan_coordinator.dart';
 import '../../adapters/email_providers/generic_imap_adapter.dart';
@@ -676,17 +677,30 @@ class EmailScanner {
           // default can name a folder some accounts lack (AOL "Bulk Mail", an
           // iCloud junk folder not yet created). Decided HERE, only after a
           // fetch has failed, so a successful fetch never pays for a folder
-          // listing, and a Gmail API label (which returns zero results
-          // rather than throwing) is never second-guessed. A folder that DOES
-          // exist and failed stays an F174 error below.
+          // listing. F259 (Sprint 81): a Gmail label that does not exist now
+          // THROWS GmailLabelNotFoundException from the adapter (it used to
+          // scan as zero messages), so it reaches this same classification.
+          // A folder that DOES exist and failed stays an F174 error below.
           if (await _folderIsMissing(platform, folderName, folderListCache)) {
             AppLogger.scan('Step 4: folder "$folderName" does not exist on '
                 'this account -- skipped, not an error (F202)');
+            // F259 R-1: also to the diagnostic file, so a skipped folder is
+            // visible in the log Harold pulls (the console log is not kept).
+            unawaited(DiagnosticLogger.log(
+              kind: DiagnosticLogger.kindSkipped,
+              context: 'F202/missing-folder',
+              detail: 'folder "$folderName" is not on this account; skipped, '
+                  'not counted as an error (${e.runtimeType})',
+            ));
             if (isLiveScan) {
               await LiveScanLogger.log('Step 4: folder "$folderName" does not '
                   'exist -- skipped (F202)');
             }
             foldersMissing++;
+            // 7.7.1 silent-failure M-2: and on the Results screen, as
+            // information (not an error), so the user sees why the folder
+            // contributed nothing.
+            scanProvider.recordFolderMissing(folderName);
             continue;
           }
           foldersFailed++;
@@ -1750,8 +1764,9 @@ class EmailScanner {
   /// Three paths:
   ///
   ///   1. **Gmail OAuth** (`GmailApiAdapter`, platformId='gmail'):
-  ///      account-wide historyId cursor stored in `accounts.last_history_id`.
-  ///      First scan -> full fetch + capture historyId. Subsequent scans ->
+  ///      historyId cursor per account AND folder, stored in
+  ///      `account_folder_cursors` (type `gmail_history_id`, F259).
+  ///      First scan of a folder -> full fetch + capture historyId. Subsequent scans ->
   ///      `users.history.list` from cursor. On expiry -> fall back to full
   ///      fetch + re-capture.
   ///
@@ -1802,11 +1817,16 @@ class EmailScanner {
     int daysBack,
   ) async {
     final dbHelper = DatabaseHelper();
-    final lastHistoryId = await dbHelper.getLastHistoryId(accountId);
+    // F259 (Sprint 81): the cursor is per account AND folder. It used to be
+    // per account, so the first folder scanned (INBOX) saved the account's
+    // current historyId and every later folder (SPAM, a custom label) then
+    // read changes "since now" and never saw the mail already waiting there.
+    final lastHistoryId =
+        await dbHelper.getGmailHistoryCursor(accountId, folderName);
 
     // F147 (Sprint 55): daysBack<=0 is the established "scan all emails"
     // sentinel (matches the IMAP path's _fetchFolderMessagesImap bypass).
-    // The account-wide historyId cursor must not override an explicit
+    // The historyId cursor must not override an explicit
     // "scan all" request either -- otherwise the incremental delta-only
     // fetch below silently returns far less than the full mailbox,
     // contradicting the setting's own UI text. Re-capture historyId
@@ -1823,8 +1843,9 @@ class EmailScanner {
       );
       final newHistoryId = await gmail.getCurrentHistoryId();
       if (newHistoryId != null) {
-        await dbHelper.setLastHistoryId(accountId, newHistoryId);
-        AppLogger.scan('Step 4: Persisted historyId=$newHistoryId for $accountId');
+        await dbHelper.setGmailHistoryCursor(accountId, folderName, newHistoryId);
+        AppLogger.scan('Step 4: Persisted historyId=$newHistoryId for $accountId '
+            'folder "$folderName"');
       }
       return messages;
     }
@@ -1845,14 +1866,14 @@ class EmailScanner {
       AppLogger.scan('Step 4: Gmail historyId expired -- falling back to full scan');
       _diag('fetch-path',
           'folder "$folderName" history cursor EXPIRED -- falling back to full fetch');
-      await dbHelper.setLastHistoryId(accountId, null);
+      await dbHelper.setGmailHistoryCursor(accountId, folderName, null);
       final messages = await gmail.fetchMessages(
         daysBack: daysBack,
         folderNames: [folderName],
       );
       final newHistoryId = await gmail.getCurrentHistoryId();
       if (newHistoryId != null) {
-        await dbHelper.setLastHistoryId(accountId, newHistoryId);
+        await dbHelper.setGmailHistoryCursor(accountId, folderName, newHistoryId);
         AppLogger.scan('Step 4: Re-captured historyId=$newHistoryId after expiry');
       }
       return messages;
@@ -1860,7 +1881,8 @@ class EmailScanner {
 
     // Incremental scan succeeded. Persist the new historyId for next time.
     if (result.newHistoryId != null) {
-      await dbHelper.setLastHistoryId(accountId, result.newHistoryId);
+      await dbHelper.setGmailHistoryCursor(
+          accountId, folderName, result.newHistoryId);
       AppLogger.scan(
           'Step 4: Persisted new historyId=${result.newHistoryId} after incremental scan');
     }
@@ -2117,7 +2139,9 @@ class EmailScanner {
     for (final ev in evaluatedEmails) {
       foldersTouched.add(ev.message.folderName);
       if (ev.action != EmailActionType.none) continue;
-      final uid = int.tryParse(ev.message.id);
+      final uid = parseImapUid(ev.message.id,
+          folderName: ev.message.folderName,
+          context: 'scan/oldest-no-rule-cursor');
       if (uid == null) continue;
       final current = oldestPerFolder[ev.message.folderName];
       if (current == null || uid < current) {
