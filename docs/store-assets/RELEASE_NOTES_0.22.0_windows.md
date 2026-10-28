@@ -1,6 +1,6 @@
 # Release notes -- 0.22.0 -- Microsoft Store
 
-DERIVED 2026-10-28 (Sprint 81 cycle Phase 8.3, STORE_RELEASE_PROCESS.md Step 1b) from the finished CHANGELOG. The
+DERIVED 2026-10-27 (Sprint 81 cycle Phase 8.3, STORE_RELEASE_PROCESS.md Step 1b) from the finished CHANGELOG. The
 provisional text written at Phase 3.7.0b was not re-derived at Phase 7.7 as it said; it is replaced here.
 
 **Range**: everything after 0.21.0 (installed from the Store 2026-10-24): CHANGELOG `[Unreleased]` entries under
