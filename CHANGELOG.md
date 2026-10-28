@@ -26,6 +26,12 @@ Format: `- **type**: Description (Issue #N)` where type is feat|fix|chore|docs
 
 ## [Unreleased]
 
+### 2026-10-27 (Sprint 81, improvement review fixes)
+- **fix**: The "Folder not found: <name>" line and the "N already filed" chip now show after a scan that completes with no listed messages, where the screen falls back to the last saved scan; before, both were hidden in exactly that case (Issue #514)
+- **fix**: The diagnostic log no longer loses lines when several background tasks write at once: a missed log lock is retried 5 ms apart instead of three times back to back (found by the full test suite; 100 of 100 probe rounds clean under load after the fix)
+- **fix**: A "Gmail sign-in needed" retry time that fails to save is recorded in the diagnostic log, and the log no longer claims a 1-hour retry (Issue #515)
+- **test**: The F302 gate matches each reviewed `int.parse` / `int.tryParse` by its exact call text and catches tear-offs (Issue #512)
+
 ### 2026-10-25 (Sprint 81, final code review fixes)
 - **fix**: A Gmail account scanning only a custom label now gets "Sign In Again" when its sign-in lacks Gmail access, instead of a folder error; an exact-case label name wins over a case-only match (Issue #514)
 - **fix**: A scan that cannot read the rules keeps a No Rule row's stored reason chips; a message the mail server sent without a UID is logged once per folder per 10 minutes, with a count (Issues #512, #516)

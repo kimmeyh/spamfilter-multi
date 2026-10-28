@@ -776,3 +776,27 @@ through them in detail, one at a time"* -> walk through one part at a time, wait
 - **F312 to Sprint 82 (Harold, 2026-10-25)**: with F306, starting with a DEV count of emails that carry two or more
   Authentication-Results headers; the parser fix is made only if the count shows a lower header that differs from the
   top one. Backlog cards added the same day from the MV-1 discussion: F308-F313 (master plan).
+
+# Phase 7 evidence
+
+- **7.7.1 final code reviews**: 2026-10-25 to 2026-10-27; Copilot 0 comments; toolkit 1M/8L + 6M/7L; improvement review 1H/2M/8L, fixed in 2ae82a26; full suite green; CI run 1 green.
+  Both reviews ran on the DRAFT PR #507 after Manual Validation, before the retrospective. Copilot (requested by hand) reviewed 2026-10-25: 0 inline comments (checked on GitHub
+  2026-10-27). code-reviewer 1 Medium / 8 Low + silent-failure-hunter 6 Medium / 7 Low. Dispositions: fixed without
+  asking in f80ede27; Harold's decisions Q1 = 1 (Blocked TLD chip removed, TLD ideas to F306/F311), Q2 = 1 ("Folder
+  not found: <name>" shown), Q3 = 1 (Gmail cursor bug -> F314), Q4 = 1 (CR L-6 N/A -> F315), Q5 = 3 (-> F316),
+  Q6 = 3 (1-hour retry), Q7 (iOS walk-through, later moved to Sprint 82); applied in 3f3a2a7a and 7199bba8; the
+  agent-restart prompt -> F317. Findings fed the retrospective by class (A-G); IMP-1, 2, 3, 4, 5 and 7 applied in
+  b5268a50, IMP-6 -> F318; iOS remainder moved to Sprint 82 in f523eb4c. **Improvement review** (b5268a50 range):
+  silent-failure-hunter 1 High / 2 Medium / 3 Low, code-reviewer 1 Medium-High (same as the High) / 5 Low. Fixed in
+  2ae82a26: HIGH-1 (the "Folder not found" line hidden after a completed zero-message scan), M-1 (a failed retry-time
+  write unlogged and the log line false), M-2 + L-1 (F302 gate keyed by call text, tear-offs matched), the three doc
+  Lows, and the F203 "already filed" chip (same gate defect, fixed the same way). Accepted: L-2 (hourly failed retries
+  when notifications are off; Harold Q6 = 3, the log rotates). Not fixed: L-3 (the missing-folder list on another
+  account's Results; pre-existing, unverified, named in the test header). Mutations IR HIGH-1, IR F203 chip, IR M-1:
+  3 of 3 KILLED. Full suite at 2ae82a26 (`81-771-ir`): 1 failure, the S76 Q4.3 four-isolate log append (599 of 600
+  lines). Cause measured by a probe under suite load: 1 of 30 rounds lost 2 lines, every problem "log lock
+  unavailable: Cannot create file" -- three no-lock retries ran back to back and all missed, so lines were written
+  unlocked (the OS reason for the failed create was not recorded). Fixed in `diagnostic_logger.dart`: 20 retries 5 ms
+  apart; after the fix 100 of 100 probe rounds under load were clean (race, so evidence, not proof). Full suite
+  `81-771-ir-fix`: 3287 passed, 15 skipped, 0 failed, load failures 0; `flutter analyze` clean. CI run 1
+  (`workflow_dispatch`, run 40372756431 on b5268a50): success.
