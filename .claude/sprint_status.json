@@ -6,8 +6,8 @@
     "current_sprint": {
         "number": 82,
         "branch": "feature/20261027_Sprint_82",
-        "status": "Phase 8.2 Backlog Refinement pass 1",
-        "status_detail": "Phase 8 Release Cycle for Sprint 81. Pass 1 (completeness sweep) 2026-10-28: shipped cards pruned, F303/F67a/F67b trimmed, Sprint 82 stub present. Next: 8.3 store release (0.22.0 MSIX from the prod worktree on main 763753be; AAB versionCode 19), then 8.4 pass 2 (scope selection by Harold), then Phase 3. Sprint 82 version bump at 3.7.0b.",
+        "status": "Phase 8.4 Backlog Refinement pass 2",
+        "status_detail": "Phase 8 Release Cycle for Sprint 81. Pass 1 (completeness sweep) 2026-10-28: shipped cards pruned, F303/F67a/F67b trimmed, Sprint 82 stub present. 8.3 started 2026-10-28: release notes re-derived (317e1f90), tag v0.22.0 on main 763753be pushed, prod worktree pulled to 763753be; MSIX 0.22.0.0 and AAB 0.22.0 (versionCode 19) BUILT + VERIFIED, uploads are Harold's; STORE_VERSION_STATUS.md updated. 8.4 pass 2 slate presented 2026-10-28, waiting for Harold's scope selection. Earlier plan: 8.3 store release (0.22.0 MSIX from the prod worktree on main 763753be; AAB versionCode 19), then 8.4 pass 2 (scope selection by Harold), then Phase 3. Sprint 82 version bump at 3.7.0b.",
         "plan_approved": false,
         "pr_number": null,
         "version": "0.22.0+19 (Sprint 82 bump happens at 3.7.0b)"
