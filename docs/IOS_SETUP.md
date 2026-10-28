@@ -127,3 +127,7 @@ signing. `ci.yml` does not read them.
     email account -- instead of a new dedicated one. No new Apple Account is needed. The address is not written
     here (this file is public); it is the iCloud test account. Two-factor authentication on that account is still
     to be confirmed at enrollment.
+  - 2026-10-27: the Apple Developer Program License Agreement was saved as a PDF, kept OUTSIDE the repo (the repo is
+    public and the text is Apple's): `D:\Data\Harold\spamfilter-multi\Apple_Developer_Program_License_Agreement_LC644S5URF 20261027.pdf`.
+    UNVERIFIED: whether `LC644S5URF` in the file name is the Apple Team ID; read it from the Membership page in Part A
+    and record it here (F304 signing needs it; it is not a secret).

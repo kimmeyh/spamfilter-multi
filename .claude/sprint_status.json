@@ -1,22 +1,22 @@
 {
     "_description": "Sprint status file that persists across context compaction. Update after each phase/sub-phase completion.",
-    "_last_updated": "2026-10-27T23:45:00-04:00",
+    "_last_updated": "2026-10-28T00:10:00-04:00",
     "_usage": "Read this file after context compaction to restore sprint approval state and progress.",
     "_staleness_note": "This file had drifted 15 sprints (last updated at Sprint 35, 2026-04-19) before being refreshed at Sprint 50 close-out. It is a Phase 7.7 checklist item -- update it at every sprint close-out, not opportunistically.",
     "current_sprint": {
-        "number": 81,
-        "branch": "feature/20261023_Sprint_81",
-        "status": "Phase 7.7 Final Code Reviews",
-        "status_detail": "7.7.5 gate passed 2026-10-27: PR #507 set ready (gh pr ready), CI run 2 on c262b0ee. 7.7.1 reviews, retrospective (Harold 1-12 Very Good), IMP-1/2/3/4/5/7 applied (IMP-6 -> F318), improvement review fixed (2ae82a26), log-lock race fixed (c262b0ee). Task 1 AC-2/AC-3 (#509) and Task 2 signing + TestFlight (#510) MOVED to Sprint 82 (Harold 2026-10-26); the PR body says 'Part of' for both, so the merge leaves them open (closingIssuesReferences verified: 508, 511-519).",
-        "plan_approved": true,
-        "pr_number": 507,
-        "version": "0.22.0+19"
+        "number": 82,
+        "branch": "feature/20261027_Sprint_82",
+        "status": "Phase 8.2 Backlog Refinement pass 1",
+        "status_detail": "Phase 8 Release Cycle for Sprint 81. Pass 1 (completeness sweep) 2026-10-28: shipped cards pruned, F303/F67a/F67b trimmed, Sprint 82 stub present. Next: 8.3 store release (0.22.0 MSIX from the prod worktree on main 763753be; AAB versionCode 19), then 8.4 pass 2 (scope selection by Harold), then Phase 3. Sprint 82 version bump at 3.7.0b.",
+        "plan_approved": false,
+        "pr_number": null,
+        "version": "0.22.0+19 (Sprint 82 bump happens at 3.7.0b)"
     },
     "previous_sprint": {
-        "number": 80,
-        "branch": "feature/20261018_Sprint_80",
-        "pr": "#490 -> develop (merged 2026-10-23, f301cdee), #506 develop -> main (2d81264a), tag v0.21.0",
-        "deliverables": "F294 (ADR-0049), F295 (ADR-0050, iOS cards), F296, F298, F276, F269, F267, F268, F204, F292 closed, F299 closed; MV Tasks 15-17; MV76-1 done except R-2 (Fold log); F277 closed. 7.7.1 fixes; F302, F303 to Sprint 81. Process: reviews before the retro, PR draft to 7.7.5, one improvement review, CI twice. Version 0.21.0+18. Only #491 auto-closed (comma list in 'Closes'); 18 cards to close by hand."
+        "number": 81,
+        "branch": "feature/20261023_Sprint_81",
+        "pr": "#507 -> develop (merged 2026-10-27, b79fa361), #520 develop -> main (763753be)",
+        "deliverables": "F67b code, F302, F303 code, F259, F301, F271, F278, F300, IMP-2b; version 0.22.0+19. 7.7.1 reviews before the retro (first time); improvement review fixes; diagnostic-log lock race fixed. #508 and #511-#519 closed by the merge; #509 (F67a) and #510 (F304 signing + TestFlight) open, moved to Sprint 82. CI run 2 green on 65518ba4 (run 40627456689)."
     },
     "github_issues": {
         "sprint_73": "#428 (open, MV74-1), #422 (open, MV74-3), #430 closed, #434 (open, MV74-2), #431 closed, #432 closed, #433 (open, MV74-3). Also closed in pass 1: #426 (superseded by #428), #427 (leftover captured as F236).",
