@@ -16,6 +16,7 @@ library;
 
 import 'dart:async';
 import '../../core/services/diagnostic_logger.dart';
+import '../../core/services/imap_uid.dart';
 import '../../core/services/content_text_extractor.dart';
 import '../../core/services/scan_coordinator.dart';
 import 'dart:io';
@@ -842,7 +843,8 @@ class GenericIMAPAdapter with BatchOperationsMixin
     }
     final uids = <int>[];
     for (final id in ids) {
-      final uid = int.tryParse(id);
+      final uid = parseImapUid(id,
+          folderName: folderName, context: 'IMAP/checkMessagesPresent');
       if (uid != null && uid > 0) uids.add(uid);
     }
     final result = <String, MessagePresence>{};
@@ -1029,7 +1031,8 @@ class GenericIMAPAdapter with BatchOperationsMixin
         await _selectMailbox(message.folderName);
       }
 
-      final messageUid = int.tryParse(message.id);
+      final messageUid = parseImapUid(message.id,
+          folderName: message.folderName, context: 'IMAP/moveToFolder');
       if (messageUid == null) {
         throw ActionException(
           'Invalid message UID: ${message.id}',
@@ -1072,7 +1075,8 @@ class GenericIMAPAdapter with BatchOperationsMixin
         await _selectMailbox(message.folderName);
       }
 
-      final messageUid = int.tryParse(message.id);
+      final messageUid = parseImapUid(message.id,
+          folderName: message.folderName, context: 'IMAP/markAsRead');
       if (messageUid == null) {
         throw ActionException(
           'Invalid message UID: ${message.id}',
@@ -1114,7 +1118,8 @@ class GenericIMAPAdapter with BatchOperationsMixin
         await _selectMailbox(message.folderName);
       }
 
-      final messageUid = int.tryParse(message.id);
+      final messageUid = parseImapUid(message.id,
+          folderName: message.folderName, context: 'IMAP/applyFlag');
       if (messageUid == null) {
         throw ActionException(
           'Invalid message UID: ${message.id}',
@@ -1182,7 +1187,8 @@ class GenericIMAPAdapter with BatchOperationsMixin
         await _selectMailbox(message.folderName);
       }
 
-      final messageUid = int.tryParse(message.id);
+      final messageUid = parseImapUid(message.id,
+          folderName: message.folderName, context: 'IMAP/takeAction');
       if (messageUid == null) {
         throw ActionException(
           'Invalid message UID: ${message.id}',
@@ -1300,9 +1306,13 @@ class GenericIMAPAdapter with BatchOperationsMixin
     final failed = <String, String>{};
 
     for (final entry in byFolder.entries) {
+      // F302: decided BEFORE the try, as in moveToFolderBatch, so a message
+      // with no valid UID is in [failed] even when the SELECT throws.
+      final usable =
+          _usableForUidBatch(entry.value, failed, 'IMAP/markAsReadBatch');
       try {
         await _selectMailbox(entry.key);
-        final uids = _parseUids(entry.value);
+        final uids = _parseUids(usable);
         if (uids.isEmpty) continue;
 
         final sequence = MessageSequence.fromIds(uids, isUid: true);
@@ -1313,13 +1323,15 @@ class GenericIMAPAdapter with BatchOperationsMixin
           action: StoreAction.add,
         );
         _operationCount++;
-        succeeded.addAll(entry.value.map((m) => m.id));
+        succeeded.addAll(usable.map((m) => m.id));
       } catch (e) {
         _logger.e('[IMAP] Batch markAsRead failed for folder ${entry.key}: $e');
         // 7.7.1 Q2: no per-message fallback can work without a session.
         if (isSessionFatal(e)) rethrow;
-        // Fall back to single-message processing for this folder
-        for (final message in entry.value) {
+        // Fall back to single-message processing for this folder. Only the
+        // usable messages: a no-UID message already has its reason
+        // (7.7.1 silent-failure L-1).
+        for (final message in usable) {
           try {
             await markAsRead(message: message);
             succeeded.add(message.id);
@@ -1378,9 +1390,15 @@ class GenericIMAPAdapter with BatchOperationsMixin
     final failed = <String, String>{};
 
     for (final entry in byFolder.entries) {
+      // F302: decided BEFORE the try (F-PRECHECK, Sprint 81). Inside it, a
+      // SELECT that threw left a no-UID message in neither list: the catch
+      // below leaves those out of [succeeded] on the assumption they are
+      // already in [failed].
+      final usable =
+          _usableForUidBatch(entry.value, failed, 'IMAP/applyFlagBatch');
       try {
         await _selectMailbox(entry.key);
-        final uids = _parseUids(entry.value);
+        final uids = _parseUids(usable);
         if (uids.isEmpty) continue;
 
         final sequence = MessageSequence.fromIds(uids, isUid: true);
@@ -1392,14 +1410,18 @@ class GenericIMAPAdapter with BatchOperationsMixin
           silent: false,
         );
         _operationCount++;
-        succeeded.addAll(entry.value.map((m) => m.id));
+        succeeded.addAll(usable.map((m) => m.id));
       } catch (e) {
         // 7.7.1 Q2: a session failure must not be reported as flagged.
         if (isSessionFatal(e)) rethrow;
         // Server may not support custom keywords — log warning but do not fail the batch
         // AOL and some other IMAP servers do not support custom keywords (no \* in PERMANENTFLAGS)
         _logger.w('[IMAP] Batch applyFlag failed for folder ${entry.key} (server may not support custom keywords): $e');
-        succeeded.addAll(entry.value.map((m) => m.id));
+        // F302: a message with no valid UID was never flagged and is already
+        // in [failed]; it must not also be reported as succeeded.
+        succeeded.addAll(entry.value
+            .where((m) => !isNoValidImapUid(m.id))
+            .map((m) => m.id));
       }
     }
 
@@ -1449,7 +1471,11 @@ class GenericIMAPAdapter with BatchOperationsMixin
     final failed = <String, String>{};
 
     for (final entry in byFolder.entries) {
-      final uids = _parseUids(entry.value);
+      // F302: a message with no valid UID is failed here, by name, and never
+      // reaches the UID MOVE (which would otherwise report it moved).
+      final usable =
+          _usableForUidBatch(entry.value, failed, 'IMAP/moveToFolderBatch');
+      final uids = _parseUids(usable);
       if (uids.isEmpty) {
         _logger.w('[IMAP] moveToFolderBatch: no valid UIDs parsed for "${entry.key}", skipping');
         // F233: this `continue` produces "0 succeeded / N failed" with a
@@ -1477,7 +1503,7 @@ class GenericIMAPAdapter with BatchOperationsMixin
       );
 
       partitionByMoveSurvival(
-        messages: entry.value,
+        messages: usable,
         survivingUids: survivingUids,
         sourceFolder: entry.key,
         targetFolder: targetFolder,
@@ -1653,9 +1679,12 @@ class GenericIMAPAdapter with BatchOperationsMixin
         final succeeded = <String>[];
         final failed = <String, String>{};
         for (final entry in byFolder.entries) {
+          // F302: decided BEFORE the try, as in moveToFolderBatch.
+          final usable =
+              _usableForUidBatch(entry.value, failed, 'IMAP/takeActionBatch');
           try {
             await _selectMailbox(entry.key);
-            final uids = _parseUids(entry.value);
+            final uids = _parseUids(usable);
             if (uids.isEmpty) continue;
             final sequence = MessageSequence.fromIds(uids, isUid: true);
             await _uidStore(
@@ -1664,11 +1693,13 @@ class GenericIMAPAdapter with BatchOperationsMixin
               action: StoreAction.add,
             );
             _operationCount++;
-            succeeded.addAll(entry.value.map((m) => m.id));
+            succeeded.addAll(usable.map((m) => m.id));
           } catch (e) {
             // 7.7.1 Q2: the session is gone; later folders cannot succeed.
             if (isSessionFatal(e)) rethrow;
-            for (final message in entry.value) {
+            // Only the usable messages: a no-UID message keeps its own reason
+            // (7.7.1 silent-failure L-1).
+            for (final message in usable) {
               failed[message.id] = e.toString();
             }
           }
@@ -1686,13 +1717,49 @@ class GenericIMAPAdapter with BatchOperationsMixin
     return grouped;
   }
 
+  /// F302: the reason recorded for a message that has no valid IMAP UID.
+  static const String noValidUidReason =
+      'the server sent no UID for this message, so no UID action was run on it';
+
+  /// F302: the messages of [messages] that have a valid UID. Each one without
+  /// one is written to [failed] under its id (with [noValidUidReason]) and to
+  /// the diagnostic log (naming the folder), so a batch never reports it done.
+  List<EmailMessage> _usableForUidBatch(
+    List<EmailMessage> messages,
+    Map<String, String> failed,
+    String context,
+  ) {
+    final usable = <EmailMessage>[];
+    var noUid = 0;
+    for (final message in messages) {
+      if (hasValidImapUid(message.id,
+          folderName: message.folderName, context: context)) {
+        usable.add(message);
+      } else {
+        noUid++;
+      }
+    }
+    // Every no-UID message shares the one marker id, so they share one
+    // `failed` entry; its text carries the count, or a log reading
+    // `failed.length` would count k messages as one (7.7.1 silent-failure
+    // L-2).
+    if (noUid > 0) {
+      failed[kNoValidImapUid] =
+          noUid == 1 ? noValidUidReason : '$noValidUidReason ($noUid messages)';
+    }
+    return usable;
+  }
+
   /// Parse UIDs from message IDs, skipping invalid ones
   List<int> _parseUids(List<EmailMessage> messages) {
     final uids = <int>[];
     for (final message in messages) {
-      final uid = int.tryParse(message.id);
+      final uid = parseImapUid(message.id,
+          folderName: message.folderName, context: 'IMAP/_parseUids');
       if (uid != null) {
         uids.add(uid);
+      } else if (isNoValidImapUid(message.id)) {
+        // Already logged by parseImapUid (names the folder).
       } else {
         _logger.w('[IMAP] Invalid message UID: ${message.id}');
         // F233: a dropped UID silently shrinks the batch. Sprint 71 spent real
@@ -1752,7 +1819,16 @@ class GenericIMAPAdapter with BatchOperationsMixin
   }) {
     final survivorSet = survivingUids.toSet();
     for (final message in messages) {
-      final uid = int.tryParse(message.id);
+      // F302: a message with no valid UID was never in the UID MOVE, so it
+      // cannot be reported moved. (Any OTHER unparseable id keeps the legacy
+      // "treated as success" behavior below; changing that is a separate
+      // decision.)
+      if (isNoValidImapUid(message.id)) {
+        onFailed(message.id, noValidUidReason);
+        continue;
+      }
+      final uid = parseImapUid(message.id,
+          folderName: sourceFolder, context: 'IMAP/partitionByMoveSurvival');
       if (uid != null && survivorSet.contains(uid)) {
         onFailed(
           message.id,
@@ -2301,7 +2377,8 @@ class GenericIMAPAdapter with BatchOperationsMixin
     if (_imapClient == null || message.id.isEmpty) {
       return fail('no IMAP session or empty id');
     }
-    final uid = int.tryParse(message.id);
+    final uid = parseImapUid(message.id,
+        folderName: message.folderName, context: 'IMAP/$caller');
     if (uid == null) {
       _logger.w('[IMAP] $caller: non-UID id "${message.id}" -- '
           'no body fetched');
@@ -2358,12 +2435,24 @@ class GenericIMAPAdapter with BatchOperationsMixin
 
     // [ISSUE #145] Use UID instead of sequence ID for stable message identification.
     // UIDs persist across mailbox operations (move, delete) while sequence IDs shift.
-    // Fall back to sequence ID only if UID is unavailable (should not happen with UID FETCH).
-    final messageId = mimeMessage.uid?.toString()
-        ?? mimeMessage.sequenceId?.toString()
-        ?? '';
+    // F302 (Sprint 81): when the server sends no UID (it should always, RFC 3501
+    // 6.4.8, so this needs a non-compliant server), the id holds the ONE
+    // constant kNoValidImapUid -- never the sequence number, which would be read
+    // as a UID later and could name a different message after any delete. The
+    // sequence number is kept in its own field for diagnosis only.
+    final messageId = mimeMessage.uid?.toString() ?? kNoValidImapUid;
     if (mimeMessage.uid == null) {
-      _logger.w('[IMAP] Message has no UID, falling back to sequenceId: ${mimeMessage.sequenceId}');
+      _logger.w('[IMAP] Message has no UID in folder "$folderName" '
+          '(sequenceId: ${mimeMessage.sequenceId}); it is marked as having '
+          'no valid UID and no UID action will touch it');
+      // F302 R-4: also to the diagnostic file (the console log is not kept in
+      // a release build).
+      unawaited(DiagnosticLogger.log(
+        kind: DiagnosticLogger.kindSkipped,
+        context: 'IMAP/convert',
+        detail: 'FETCH answer had no UID; id set to the no-valid-UID marker, '
+            'sequence ${mimeMessage.sequenceId}. folder "$folderName"',
+      ));
     }
 
     // F91 (Sprint 39): capture the RFC 5322 Message-ID header for
@@ -2387,6 +2476,7 @@ class GenericIMAPAdapter with BatchOperationsMixin
       receivedDate: mimeMessage.decodeDate() ?? DateTime.now(),
       folderName: folderName,
       messageIdHeader: messageIdHeader,
+      imapSequenceNumber: mimeMessage.sequenceId,
     );
   }
 

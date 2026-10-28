@@ -16,6 +16,7 @@ import 'package:flutter/material.dart';
 import '../../core/models/email_message.dart';
 import '../../core/providers/email_scan_provider.dart';
 import '../../core/services/email_body_parser.dart';
+import '../../core/services/heuristic_signals.dart';
 import '../../core/utils/pattern_normalization.dart';
 import '../../core/utils/result_ordering.dart';
 
@@ -413,6 +414,8 @@ class EmailResultTile extends StatelessWidget {
     required this.ruleName,
     required this.onTap,
     this.accountLabel,
+    this.heuristicCodes = const [],
+    this.onCreateRule,
   });
 
   final EmailActionResult result;
@@ -421,6 +424,15 @@ class EmailResultTile extends StatelessWidget {
   final String ruleName;
   final void Function(GlobalKey tileKey) onTap;
   final String? accountLabel;
+
+  /// F271 (Sprint 81): heuristic reason codes (see `HeuristicSignal`) shown as
+  /// chips under the subtitle. Empty (the default, and every Results row)
+  /// renders the row exactly as before.
+  final List<String> heuristicCodes;
+
+  /// F271: when set, the row shows a "Create rule" button that calls this.
+  /// Only the No Rule Review screen passes it.
+  final VoidCallback? onCreateRule;
 
   @override
   Widget build(BuildContext context) {
@@ -467,9 +479,78 @@ class EmailResultTile extends StatelessWidget {
                   Text(title),
                 ],
               ),
-        subtitle: Text(subtitle),
-        trailing: trailing,
+        subtitle: heuristicCodes.isEmpty
+            ? Text(subtitle)
+            : Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(subtitle),
+                  const SizedBox(height: 4),
+                  // Wrap, not Row: chips flow to a second line on a narrow
+                  // phone screen instead of overflowing.
+                  Wrap(
+                    spacing: 6,
+                    runSpacing: 4,
+                    children: [
+                      for (final code in heuristicCodes)
+                        if (HeuristicSignal.labelFor(code) != null)
+                          _HeuristicChip(code: code),
+                    ],
+                  ),
+                ],
+              ),
+        trailing: onCreateRule == null
+            ? trailing
+            : Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Semantics(
+                    button: true,
+                    label: 'Create rule for ${_senderDomain(title)}',
+                    excludeSemantics: true,
+                    child: TextButton(
+                      key: const ValueKey('create_rule_button'),
+                      onPressed: onCreateRule,
+                      child: const Text('Create rule'),
+                    ),
+                  ),
+                  trailing,
+                ],
+              ),
         onTap: () => onTap(tileKey),
+      ),
+    );
+  }
+}
+
+/// The domain part of a displayed sender, for a screen-reader label.
+String _senderDomain(String sender) {
+  final at = sender.lastIndexOf('@');
+  return at >= 0 && at < sender.length - 1 ? sender.substring(at + 1) : sender;
+}
+
+/// F271 (Sprint 81): one reason chip. The visible text is the plain-English
+/// label; the Semantics label adds the one-sentence explanation (ADR-0037).
+class _HeuristicChip extends StatelessWidget {
+  const _HeuristicChip({required this.code});
+
+  final String code;
+
+  @override
+  Widget build(BuildContext context) {
+    final label = HeuristicSignal.labels[code]!;
+    final explanation = HeuristicSignal.explanations[code] ?? '';
+    return Semantics(
+      label: 'Reason: $label. $explanation',
+      excludeSemantics: true,
+      child: Tooltip(
+        message: explanation,
+        child: Chip(
+          key: ValueKey('heuristic_chip_$code'),
+          label: Text(label, style: const TextStyle(fontSize: 12)),
+          visualDensity: VisualDensity.compact,
+          materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
+        ),
       ),
     );
   }

@@ -652,6 +652,22 @@ class SettingsStore {
     }
   }
 
+  /// F301 (Sprint 81): when the "Gmail sign-in needed" notification was last
+  /// posted (or attempted) for this account, or null if never. Independent of
+  /// [getGmailSignInRequired]: that flag write is best effort and may fail,
+  /// and the notification must not depend on it.
+  Future<DateTime?> getGmailSignInNotifiedAt(String accountId) async {
+    final value =
+        await _getAccountSetting(accountId, 'gmail_sign_in_notified_at');
+    final millis = value == null ? null : int.tryParse(value);
+    return millis == null ? null : DateTime.fromMillisecondsSinceEpoch(millis);
+  }
+
+  /// F301: see [getGmailSignInNotifiedAt].
+  Future<void> setGmailSignInNotifiedAt(String accountId, DateTime at) =>
+      _setAccountSetting(accountId, 'gmail_sign_in_notified_at',
+          at.millisecondsSinceEpoch.toString(), 'int');
+
   /// Set account-specific background scan enabled override
   /// Pass null to clear the override
   Future<void> setAccountBackgroundEnabled(String accountId, bool? enabled) async {

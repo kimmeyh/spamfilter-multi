@@ -4,6 +4,13 @@
 
 Accepted
 
+**Amended 2026-10-23 (Sprint 81 Task 7, F301): Phase 1 stays, and is made visible.** Harold, Sprint 81 Phase 3.7,
+Q1 = 1: *"Keep ADR-0029 Phase 1 and make it visible: tester instructions name the weekly sign-in, and a Gmail
+background skip for sign-in shows a notification."* Evidence that drove it: the Fold's Gmail sign-ins on
+2026-10-05 and 2026-10-13 each failed at the first renewal after day 7 (Sprint 80 Manual Validation). The same
+expiry applies to iPhone testers from Sprint 82 (ADR-0050). Phase 2 (app passwords over IMAP) and Phase 3 (CASA)
+are unchanged and not started. See "Phase 1 visibility (2026-10-23)" below.
+
 ## Date
 
 2026-02-15 (proposed), 2026-02-22 (accepted)
@@ -99,6 +106,16 @@ Keep `gmail.modify` scope with unverified OAuth. Suitable for alpha/beta testing
 - Refresh tokens expire after 7 days in Testing mode (testers must re-authenticate weekly)
 - Consent screen shows "unverified app" warning (acceptable for testers)
 - Existing `GmailApiAdapter` and `GoogleAuthService` infrastructure works as-is
+
+**Phase 1 visibility (2026-10-23, F301; absorbs F244).** The weekly expiry is a known cost, so the app must never
+hide it:
+- A background scan that skips a Gmail account because sign-in is required shows the user a notification (a toast
+  on Windows, a notification on Android and iPhone, through the one notification service, ADR-0048), at most once
+  per account per day. It does not depend on the per-account `gmail_sign_in_required` flag write, which is best
+  effort (F244).
+- The tester instructions name the weekly Gmail sign-in.
+- Parity: the same on Windows, Android and iPhone; all three use Google OAuth for Gmail (ADR-0042, no exception).
+- Revisit when a Phase 3 trigger is met, or when Phase 2 is scheduled.
 
 ### Phase 2: Gmail App Passwords via IMAP for General Users
 

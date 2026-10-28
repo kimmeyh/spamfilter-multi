@@ -21,6 +21,10 @@
 /// // Deserialize from database
 /// final restored = ProviderEmailIdentifier.fromJson(json);
 /// ```
+library;
+
+import '../services/imap_uid.dart';
+
 class ProviderEmailIdentifier {
   /// Provider type (e.g., 'gmail', 'aol', 'yahoo', 'outlook', 'protonmail')
   final String providerType;
@@ -107,11 +111,20 @@ class ProviderEmailIdentifier {
 
   /// Get IMAP UID as integer (only valid for IMAP identifiers)
   ///
-  /// Throws StateError if called on non-IMAP identifier.
+  /// Throws StateError if called on non-IMAP identifier, or when the value is
+  /// not a usable UID (the F302 "no valid UID" marker, or not an integer).
   int get imapUid {
     if (!isImap) {
       throw StateError('Cannot get IMAP UID from non-IMAP identifier: $identifierType');
     }
-    return int.parse(identifierValue);
+    // Sprint 81 7.7.1 POTENTIAL_MISS: through the F302 gate, like every
+    // other message-id parse in lib/.
+    final uid = parseImapUid(identifierValue,
+        folderName: '(not known here)',
+        context: 'ProviderEmailIdentifier.imapUid');
+    if (uid == null) {
+      throw StateError('No usable IMAP UID in identifier: $identifierValue');
+    }
+    return uid;
   }
 }

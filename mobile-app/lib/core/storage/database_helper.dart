@@ -76,7 +76,22 @@ abstract class RuleDatabaseProvider {
 ///      a stray second literal `@` after the domain wildcard, which could never
 ///      match any address (F266, Sprint 77). A repair that would duplicate an
 ///      existing row deletes the broken row instead.
-const int databaseVersion = 13;
+/// v14: Add imap_sequence_number (nullable INTEGER) to email_actions (F302,
+///      Sprint 81). The IMAP message SEQUENCE number, kept apart from the
+///      message id so it is never read as a UID. Additive; existing rows stay
+///      NULL. Rolling back means ignoring the column.
+///
+/// v15: Data only -- the Gmail history cursor is kept per account AND folder
+///      (F259, Sprint 81). Each account's `accounts.last_history_id` is copied
+///      to a `gmail_history_id` row for INBOX in `account_folder_cursors`;
+///      other folders start with no cursor (one full fetch). The old column
+///      stays and is no longer read.
+///
+/// v16: Add heuristic_signals (nullable TEXT) to unmatched_emails (F271,
+///      Sprint 81). Comma-joined short reason CODES (for example
+///      `reply_to_differs,auth_failed`) computed at scan time from headers;
+///      no header text is stored. Existing rows stay NULL (no chips).
+const int databaseVersion = 16;
 
 /// SQLite database helper - singleton pattern
 class DatabaseHelper implements RuleDatabaseProvider {
@@ -243,6 +258,7 @@ class DatabaseHelper implements RuleDatabaseProvider {
         email_still_exists INTEGER DEFAULT 1,
         rfc5322_message_id TEXT,
         auth_classification TEXT,
+        imap_sequence_number INTEGER,
         FOREIGN KEY (scan_result_id) REFERENCES scan_results(id) ON DELETE CASCADE
       );
     ''');
@@ -355,6 +371,7 @@ class DatabaseHelper implements RuleDatabaseProvider {
         created_at INTEGER NOT NULL,
         auth_classification TEXT,
         last_seen_at INTEGER,
+        heuristic_signals TEXT,
         FOREIGN KEY (scan_result_id) REFERENCES scan_results(id) ON DELETE CASCADE
       );
     ''');
@@ -699,6 +716,93 @@ class DatabaseHelper implements RuleDatabaseProvider {
     if (oldVersion < 13) {
       await _migrateV13UnmatchableAtSign(db);
     }
+
+    if (oldVersion < 14) {
+      // v14: F302 (Sprint 81) -- IMAP sequence number apart from the id.
+      // Nullable and additive. Guarded like v11: skipped when the table is
+      // missing (partial test schemas) and when a fresh-install table already
+      // has the column from _createTables.
+      _logger.i('Applying v14 migration: adding email_actions.imap_sequence_number');
+      final actionInfo = await db.rawQuery('PRAGMA table_info(email_actions)');
+      final actionColumns = actionInfo.map((r) => r['name'] as String).toSet();
+      if (actionColumns.isNotEmpty &&
+          !actionColumns.contains('imap_sequence_number')) {
+        await db.execute(
+            'ALTER TABLE email_actions ADD COLUMN imap_sequence_number INTEGER;');
+      }
+      _logger.i('v14 migration complete');
+    }
+
+    if (oldVersion < 15) {
+      await _migrateV15GmailHistoryPerFolder(db);
+    }
+
+    if (oldVersion < 16) {
+      // v16: F271 (Sprint 81) -- reason codes on No Rule rows. Nullable and
+      // additive; guarded like v11 (the table must exist: partial test schemas
+      // built at an earlier version may lack it, and PRAGMA table_info on a
+      // missing table returns no rows) and so a fresh-install table, which
+      // already has the column from _createTables, is not re-altered.
+      _logger.i('Applying v16 migration: adding '
+          'unmatched_emails.heuristic_signals');
+      final unmatchedInfo =
+          await db.rawQuery('PRAGMA table_info(unmatched_emails)');
+      final unmatchedColumns =
+          unmatchedInfo.map((r) => r['name'] as String).toSet();
+      if (unmatchedColumns.isNotEmpty &&
+          !unmatchedColumns.contains('heuristic_signals')) {
+        await db.execute(
+            'ALTER TABLE unmatched_emails ADD COLUMN heuristic_signals TEXT;');
+      }
+      _logger.i('v16 migration complete');
+    }
+  }
+
+  /// v15 (F259, Sprint 81, Harold Q3 = 1): the Gmail history cursor is kept
+  /// per account AND folder.
+  ///
+  /// Copies each account's current cursor (`accounts.last_history_id`) to a
+  /// `gmail_history_id` row for the INBOX folder in `account_folder_cursors`
+  /// (folder key `inbox`, lowercase, as `DatabaseHelper._gmailCursorFolder`
+  /// writes it). Every other folder starts with no cursor, so its next scan
+  /// is one full fetch, which is the safe direction.
+  ///
+  /// Data only, no schema change. `INSERT OR IGNORE` so a second run changes
+  /// nothing. The old column is left in place and no longer read. Guarded on
+  /// both tables (and the column) existing, like v10 to v14, for partial test
+  /// schemas.
+  Future<void> _migrateV15GmailHistoryPerFolder(Database db) async {
+    _logger.i('Applying v15 migration: Gmail history cursor per folder');
+    final accountCols = (await db.rawQuery('PRAGMA table_info(accounts)'))
+        .map((r) => r['name'] as String)
+        .toSet();
+    final cursorCols =
+        (await db.rawQuery('PRAGMA table_info(account_folder_cursors)'))
+            .map((r) => r['name'] as String)
+            .toSet();
+    if (!accountCols.contains('last_history_id') || cursorCols.isEmpty) {
+      // 7.7.1 silent-failure M-5: warning level. A migration cannot reach the
+      // diagnostic log (it needs this database open), so this is the record.
+      _logger.w('v15 migration skipped: no accounts.last_history_id or no '
+          'account_folder_cursors table');
+      return;
+    }
+    await db.rawInsert(
+      'INSERT OR IGNORE INTO account_folder_cursors '
+      '(account_id, folder_name, cursor_type, cursor_value, updated_at) '
+      "SELECT account_id, 'inbox', ?, last_history_id, ? FROM accounts "
+      "WHERE last_history_id IS NOT NULL AND last_history_id != ''",
+      [cursorTypeGmailHistoryId, DateTime.now().millisecondsSinceEpoch],
+    );
+    // rawInsert returns the last row id, not a count (sqflite_common
+    // sqlite_api.dart `rawInsert`), so count the INBOX history rows instead.
+    final count = Sqflite.firstIntValue(await db.rawQuery(
+            'SELECT COUNT(*) FROM account_folder_cursors '
+            "WHERE cursor_type = ? AND folder_name = 'inbox'",
+            [cursorTypeGmailHistoryId])) ??
+        0;
+    _logger.i('v15 migration complete: $count INBOX history cursor(s) now '
+        'stored per folder');
   }
 
   /// v13 (F266, Sprint 77): repair stored patterns that can never match.
@@ -1417,24 +1521,45 @@ class DatabaseHelper implements RuleDatabaseProvider {
   // Gmail Incremental Scan (Sprint 37 F6c + Sprint 38 F6c Phase 2)
   // ============================================================================
 
-  /// Returns the persisted Gmail historyId for [accountId], or null if no
-  /// previous scan has persisted one yet. Used by EmailScanner to decide
-  /// between a full scan (null) and an incremental scan (non-null) via
-  /// GmailApiAdapter.fetchMessagesIncremental.
-  Future<String?> getLastHistoryId(String accountId) async {
-    final account = await getAccount(accountId);
-    if (account == null) return null;
-    final value = account['last_history_id'];
-    return value is String ? value : null;
-  }
+  /// F259 (Sprint 81): cursor type for the Gmail history cursor, one row per
+  /// (account, folder) in `account_folder_cursors`.
+  ///
+  /// Why this table and not a new one: it is already keyed exactly
+  /// (account_id, folder_name, cursor_type), `deleteAllData` already clears
+  /// it, and the IMAP cursors set the precedent of one cursor store per
+  /// folder. The older per-ACCOUNT cursor, `accounts.last_history_id`, is no
+  /// longer read or written (v15 copied it to INBOX); the column stays so a
+  /// rollback is just "ignore the new rows". It was the defect: INBOX saved
+  /// the account's current historyId first, so a later folder (SPAM, a label)
+  /// read changes "since now" and never saw the mail that arrived before.
+  static const String cursorTypeGmailHistoryId = 'gmail_history_id';
 
-  /// Persists the Gmail historyId returned by GmailApiAdapter.getCurrentHistoryId
-  /// or .fetchMessagesIncremental for [accountId]. Pass null to clear (used
-  /// when an incremental scan returns IncrementalFetchResult.expired and the
-  /// caller has to fall back to a full scan and re-capture the historyId).
-  Future<void> setLastHistoryId(String accountId, String? historyId) async {
-    await updateAccount(accountId, {'last_history_id': historyId});
-  }
+  /// The folder part of the key is lowercased: "Inbox" and "INBOX" are one
+  /// cursor. Known limit: whether Gmail allows two labels that differ only in
+  /// case is UNVERIFIED. If it does and both are scanned, they share one
+  /// cursor, and one folder saving it could make the other skip mail (the
+  /// F259 defect, for that pair only).
+  static String _gmailCursorFolder(String folderName) =>
+      folderName.toLowerCase();
+
+  /// Returns the persisted Gmail historyId for [accountId] and [folderName],
+  /// or null if this folder has no cursor yet. Used by EmailScanner to decide
+  /// between a full fetch (null) and an incremental fetch (non-null) via
+  /// GmailApiAdapter.fetchMessagesIncremental.
+  Future<String?> getGmailHistoryCursor(
+          String accountId, String folderName) =>
+      getFolderCursor(accountId, _gmailCursorFolder(folderName),
+          cursorType: cursorTypeGmailHistoryId);
+
+  /// Persists the Gmail historyId for [accountId] and [folderName] ONLY: one
+  /// folder's save never moves another folder's cursor. Pass null to clear
+  /// (used when an incremental fetch returns IncrementalFetchResult.expired
+  /// and the caller has to fall back to a full fetch for this folder and
+  /// re-capture the historyId).
+  Future<void> setGmailHistoryCursor(
+          String accountId, String folderName, String? historyId) =>
+      setFolderCursor(accountId, _gmailCursorFolder(folderName), historyId,
+          cursorType: cursorTypeGmailHistoryId);
 
   // ============================================================================
   // IMAP Per-Folder Cursors (Sprint 38 Round 1, extending F6c Phase 2 to IMAP)

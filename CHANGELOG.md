@@ -26,6 +26,36 @@ Format: `- **type**: Description (Issue #N)` where type is feat|fix|chore|docs
 
 ## [Unreleased]
 
+### 2026-10-27 (Sprint 81, improvement review fixes)
+- **fix**: The "Folder not found: <name>" line and the "N already filed" chip now show after a scan that completes with no listed messages, where the screen falls back to the last saved scan; before, both were hidden in exactly that case (Issue #514)
+- **fix**: The diagnostic log no longer loses lines when several background tasks write at once: a missed log lock is retried 5 ms apart instead of three times back to back (found by the full test suite; 100 of 100 probe rounds clean under load after the fix)
+- **fix**: A "Gmail sign-in needed" retry time that fails to save is recorded in the diagnostic log, and the log no longer claims a 1-hour retry (Issue #515)
+- **test**: The F302 gate matches each reviewed `int.parse` / `int.tryParse` by its exact call text and catches tear-offs (Issue #512)
+
+### 2026-10-25 (Sprint 81, final code review fixes)
+- **fix**: A Gmail account scanning only a custom label now gets "Sign In Again" when its sign-in lacks Gmail access, instead of a folder error; an exact-case label name wins over a case-only match (Issue #514)
+- **fix**: A scan that cannot read the rules keeps a No Rule row's stored reason chips; a message the mail server sent without a UID is logged once per folder per 10 minutes, with a count (Issues #512, #516)
+- **fix**: The Results screen shows "Folder not found: <name>" when a scan skips a folder or Gmail label that does not exist on the account; it is information, not counted as an error (Issue #514)
+- **fix**: The "Blocked TLD" reason chip is removed from No Rule rows: an enabled TLD block rule already blocks that mail, so the chip could show only for a rule that was turned off (Issue #516)
+- **fix**: A "Gmail sign-in needed" notification that fails to post is retried after 1 hour instead of 24 (Issue #515)
+- **test**: The F302 policy gate counts every `int.parse` / `int.tryParse` in `lib/` against a reviewed list, so a message-id parse cannot bypass the UID helper under any name (Sprint 81 retro IMP-4, Issue #512)
+- **docs**: Sprint 81 retrospective improvements: failures the user should see name a screen; new signals state what makes them fire; the catch walk is a card line; a test must be able to fail; finding questions carry evidence and every option (Sprint 81 retro IMP-1, 2, 3, 5, 7)
+
+### 2026-10-23 (Sprint 81)
+
+- **fix**: On Android, when two background scans started at the same moment, one of them could write its diagnostic-log lines to a second, hidden folder, so the log in Documents was missing lines; all lines now go to the one log folder (Issue #517)
+- **feat**: When a Gmail account needs you to sign in again, the app now tells you with a notification (at most once a day per account) that the account will not be scanned until you sign in again in the app (Issue #515)
+- **fix**: The Android new-mail diagnostic log line now keeps every field when one of them cannot be read, and shows the error for the field that failed instead of losing the whole line (Issue #513)
+- **feat**: iPhone app project: iOS project settings, the iPhone answers for every platform difference (ADR-0050), exports in the app's Documents folder shown in the Files app, and a GitHub workflow that compiles the iOS app (Issue #511)
+- **fix**: A mail server that does not send a message's ID can no longer cause the wrong message to be moved or deleted; such messages are skipped and noted in the diagnostic log (Issue #512)
+- **fix**: A Gmail label that was renamed or deleted is now reported as missing instead of silently scanning zero messages, and Gmail scanning remembers its place separately for each folder, so Spam and custom labels no longer skip waiting mail (Issue #514)
+- **feat**: Review No Rule Items now shows why an email looks suspicious (Reply-To differs, sign-in check failed, lookalike domain, blocked TLD, no unsubscribe link) and adds a "Create rule" button that opens the rule screen for that sender (Issue #516)
+- **chore**: Version 0.22.0+19 for Sprint 81 (Issue #508)
+
+## [0.21.0] - 2026-10-23
+
+Built for the Microsoft Store and Google Play closed testing (Sprint 80 cycle Phase 8.3, 2026-10-23). Sprint 80.
+
 ### 2026-10-23 (Sprint 80 final code reviews, PR #490)
 
 - **fix**: A rule or safe sender made in Manual Rule Create, and Settings > Reset to Defaults, take effect at once without a restart; a source gate now finds every screen that writes rules without reloading them (PR #490 review)

@@ -117,6 +117,24 @@ class ScanNotificationText {
     return '$first*@$host';
   }
 
+  /// F301 (Sprint 81): title of the "Gmail sign-in needed" notification. The
+  /// account is masked like the completion title, so a lock screen does not
+  /// show the full address.
+  static String signInNeededTitle(String accountId) =>
+      'Gmail sign-in needed for ${maskAccount(accountId)}';
+
+  /// F301: body of the sign-in notification. It promises exactly two things the
+  /// app does: this account is skipped by background scans while it needs
+  /// sign-in (`BackgroundScanCore` returns a skip before any mail is read), and
+  /// signing in again in the app clears it (Sign In Again, F239).
+  static const String signInNeededBody =
+      'This account will not be scanned until you sign in again in the app.';
+
+  /// F301: notification ID of the sign-in notification, distinct from
+  /// [notificationId] for the same account.
+  static int signInNeededId(String accountId) =>
+      notificationId('sign-in-needed:$accountId');
+
   /// The notification ID for [accountId]: FNV-1a (32-bit) of its UTF-16 code
   /// units, masked to 31 bits so it is a non-negative platform int.
   ///

@@ -749,7 +749,15 @@ try {
 # echo its output, and turn any such skip into a failure (exit code 3).
 function Invoke-WinWrightScript {
     param([string]$Path)
+    # F300 (Sprint 81): time the whole script run. NOT per output line:
+    # `winwright run` prints its step lines only when the script ends (measured
+    # 2026-10-23: every step line arrived 0.0 s after the one before, the first
+    # line carried the whole run), so a per-line stamp would name no step.
+    $scriptClock = [Diagnostics.Stopwatch]::StartNew()
+    $scriptName = Split-Path $Path -Leaf
     $out = & $winwrightExe run $Path 2>&1 | ForEach-Object { Write-Host $_; $_ }
+    $stepCount = @($out | Where-Object { "$_" -match '^\s*\[(pass|fail|skip)' }).Count
+    $script:stepTimings.Add([PSCustomObject]@{ Script = $scriptName; Kind = 'script'; Seconds = [math]::Round($scriptClock.Elapsed.TotalSeconds, 2); Line = "$stepCount step(s)" })
     $code = $LASTEXITCODE
     $skipped = @($out | Where-Object { "$_" -match 'is not supported by the script runner' })
     if ($code -eq 0 -and $skipped.Count -gt 0) {
@@ -762,6 +770,16 @@ function Invoke-WinWrightScript {
 $passed = 0
 $failed  = 0
 $results = @()
+# F300 (Sprint 81): per-step and per-launch timings for the summary.
+$script:stepTimings = [System.Collections.Generic.List[object]]::new()
+
+function Invoke-TimedFreshApp {
+    param([string]$ScriptName)
+    $sw = [Diagnostics.Stopwatch]::StartNew()
+    $ok = Ensure-FreshAppAtHome
+    $script:stepTimings.Add([PSCustomObject]@{ Script = $ScriptName; Kind = 'launch'; Seconds = [math]::Round($sw.Elapsed.TotalSeconds, 2); Line = "Ensure-FreshAppAtHome ok=$ok" })
+    return $ok
+}
 
 # Sprint 80 IMP-1.1: the tray icon check runs first; a FAIL fails the sweep.
 $trayResult = Test-TrayIconAppears
@@ -775,7 +793,7 @@ foreach ($test in $tests) {
     # Launch a fresh app instance at the home screen for THIS script.
     # (winwright run closes the app at end-of-run, so every script needs its own.)
     Write-Host "  [app] Launching fresh dev instance..." -ForegroundColor DarkGray
-    if (-not (Ensure-FreshAppAtHome)) {
+    if (-not (Invoke-TimedFreshApp -ScriptName $test.Name)) {
         Write-Host "[FAIL] $($test.Name) (could not launch dev app at home)" -ForegroundColor Red
         $failed++
         $results += [PSCustomObject]@{Name=$test.Name; Status="FAIL"; Duration=([TimeSpan]::Zero)}
@@ -814,7 +832,7 @@ foreach ($test in $tests) {
         Write-Host "        Most often this is interference: something else was" -ForegroundColor DarkYellow
         Write-Host "        driving the app. Leave it alone for this run." -ForegroundColor DarkYellow
 
-        if (Ensure-FreshAppAtHome) {
+        if (Invoke-TimedFreshApp -ScriptName "$($test.Name) (retry)") {
             $retryStart = Get-Date
             $exitCode = Invoke-WinWrightScript -Path $runPath
             $duration = (Get-Date) - $retryStart
@@ -917,6 +935,25 @@ if ($driftDetected) {
 }
 
 Write-Host ""
+
+# F300 (Sprint 81): where the sweep time goes. Launch = the fresh app start
+# before each script; script = one whole `winwright run` (its step count in the
+# last column). Baseline 2026-10-23 on 0.22.0: launches 13 s each, scripts
+# 10.6 s (27 steps) and 12.7 s, whole sweep about 70 s (Sprint 80: ~15 min).
+if ($script:stepTimings.Count -gt 0) {
+    $launchSec = ($script:stepTimings | Where-Object Kind -eq 'launch' | Measure-Object Seconds -Sum).Sum
+    $scriptSec = ($script:stepTimings | Where-Object Kind -eq 'script' | Measure-Object Seconds -Sum).Sum
+    Write-Host "Timing: app launches $([int]$launchSec)s, WinWright scripts $([int]$scriptSec)s"
+    Write-Host "Slowest 10:"
+    $script:stepTimings | Sort-Object Seconds -Descending | Select-Object -First 10 | ForEach-Object {
+        $l = if ($_.Line.Length -gt 90) { $_.Line.Substring(0, 90) } else { $_.Line }
+        Write-Host ("  {0,7:N1}s  {1,-6} {2}  {3}" -f $_.Seconds, $_.Kind, $_.Script, $l)
+    }
+    $timingCsv = Join-Path $env:TEMP 'winwright-step-timings.csv'
+    $script:stepTimings | Export-Csv -LiteralPath $timingCsv -NoTypeInformation -Encoding UTF8
+    Write-Host "All timings: $timingCsv"
+    Write-Host ""
+}
 
 $results | Format-Table -AutoSize
 

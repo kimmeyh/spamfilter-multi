@@ -38,6 +38,14 @@ class EmailMessage {
   /// per-protocol breakdown.
   final String? authClassificationOverride;
 
+  /// F302 (Sprint 81): the IMAP message SEQUENCE number from the FETCH answer,
+  /// kept apart from [id]. A sequence number shifts when mail is deleted, so
+  /// it is never a message identity; it is recorded only for diagnosis. Null
+  /// for Gmail and for any message that did not come from an IMAP FETCH.
+  /// When the server sent no UID, [id] is `kNoValidImapUid` and this field
+  /// holds the number that used to be stored in [id].
+  final int? imapSequenceNumber;
+
   EmailMessage({
     required this.id,
     required this.from,
@@ -48,6 +56,7 @@ class EmailMessage {
     required this.folderName,
     this.messageIdHeader,
     this.authClassificationOverride,
+    this.imapSequenceNumber,
   });
 
   /// F177 (Sprint 62): a copy of this message whose [body] is truncated to
@@ -70,6 +79,7 @@ class EmailMessage {
       folderName: folderName,
       messageIdHeader: messageIdHeader,
       authClassificationOverride: authClassificationOverride,
+      imapSequenceNumber: imapSequenceNumber,
     );
   }
 
