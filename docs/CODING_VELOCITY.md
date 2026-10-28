@@ -276,6 +276,7 @@ Every Item that is implemented gets ONE row here the moment it is picked up -- s
 | Task 9: F278 notifications that produced no scan (#517) | 81 | DONE | 45-90 + emulator | 45-90 + emulator | ~60 + 3 x 20 emulator | ~60 | Recorded at completion (2026-10-24 02:10). 10 of 10 posts logged; the drop did not reproduce. Found and fixed the split diagnostic log (545fbcc8). |
 | Task 10: F300 WinWright sweep per-step cost (#518) | 81 | DONE | 60-90 | 60-90 | ~40 | ~60 | Approximate (27b99ad4, bc4676de). Sweep 62-70 s; AC met. The first per-step stamps named no step (the tool prints at script end) -- corrected to per-script timing. |
 | Task 11: IMP-2b background task that stays open (#519) | 81 | DONE | 15-30 | 15-30 | ~35 | ~35 | Recorded at completion (2026-10-24 01:16, 57f66cba). Over the band: the card asked only for the tree; the cause was reproduced by probe and fixed in the build script (scope addition, 1 file). |
+| 7.7.1 final review fixes, decisions, retro IMPs, improvement review fixes, log-lock race | 81 | DONE | -- | -- | ~300 (estimated) | ~300 | UNPLANNED. ESTIMATED, not measured: active time was not recorded; commits f80ede27 (10-25 14:30) to c262b0ee (10-27 23:28) span Harold waits. Rough split: initial fixes ~90, Q1-Q7 fixes ~60, retro + IMPs ~60, improvement review fixes ~60. Measured: the log-lock race (full suite failure -> probe -> fix -> suite) 23:10-23:28 plus ~10 close, ~30. |
 
 ## Can the missing sprints (48-69) be reconstructed from git? -- TESTED 2026-09-19, answer: NO
 

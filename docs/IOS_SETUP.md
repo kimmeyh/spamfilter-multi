@@ -120,3 +120,10 @@ signing. `ci.yml` does not read them.
 - Deviations from this guide:
   - 2026-10-26, Part A step 1: the request to open a new Apple Account failed. Harold: *"could be due to PHP issue
     or other"*; cause unknown. Retry planned 2026-10-27.
+  - 2026-10-26/27: about six web attempts over 2 days with `myemailspamfilter.dev@gmail.com` all ended in Apple's
+    generic refusal "Your account cannot be created at this time" (Apple support article 120636 lists another
+    device, another network, or later; no form error).
+  - 2026-10-27, Part A step 1 decision (Harold): use his EXISTING Apple ID -- the same account as the iCloud test
+    email account -- instead of a new dedicated one. No new Apple Account is needed. The address is not written
+    here (this file is public); it is the iCloud test account. Two-factor authentication on that account is still
+    to be confirmed at enrollment.
