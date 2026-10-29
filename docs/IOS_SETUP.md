@@ -138,3 +138,7 @@ signing. `ci.yml` does not read them.
     public and the text is Apple's): `D:\Data\Harold\spamfilter-multi\Apple_Developer_Program_License_Agreement_LC644S5URF 20261027.pdf`.
     UNVERIFIED: whether `LC644S5URF` in the file name is the Apple Team ID; read it from the Membership page in Part A
     and record it here (F304 signing needs it; it is not a secret).
+  - 2026-10-28: in the Apple Developer app (iPad), sign-in with the iCloud address showed the account's AOL address
+    (inference: the same Apple Account, two addresses), and **Enroll Now** was greyed out. Cause: the web enrollment
+    from 2026-10-27 already exists, Enrollment ID `R6QG2A9SHS` (a support reference, not a secret). Continue on the
+    web, not in the app. `LC644S5URF` is therefore not the Enrollment ID.
