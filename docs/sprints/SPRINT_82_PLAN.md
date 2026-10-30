@@ -483,6 +483,15 @@ on three entry paths. **Delegation checklist included**: yes.
 
 _**Decision-class interrupts**_: Class 2 (Q1).
 
+**Result (Phase 4)**: done (Sonnet). The new historyId is held per folder and saved after `completeScan` stores the
+scan's results, not right after the folder's evaluation: actions run after all folders and the No Rule rows are
+written only inside `completeScan`, so an earlier save would still lose a folder's results if the app died before
+it. This keeps Q1 = 1 (a folder cancelled part way keeps its old cursor) and is stricter. The expiry clear stays
+immediate. Tests: `f259_gmail_label_cursor_test.dart` group F314, 15 of 15; mutation 5 of 5 KILLED (save in the
+incremental fetch, save in the full fetch, save before `completeScan`, folder marked before evaluation, never
+saved). Not caught: a kill between `completeScan` and the save (the next scan re-reads, by design); a
+`completeScan` whose own persistence failed silently (`email_scan_provider.dart:664`, unchanged, cursor still moves).
+
 ## Task 6 -- Evidence probe: F312 Step 1 and F305 counts
 
 **Value**: This decides two cards from data: whether the auth parser can be fooled on real mail (F312), and which
@@ -529,6 +538,36 @@ measures is shared Dart on all three platforms.
 _**Risk & rollback**_: a wrong IMAP command could set the Seen flag; EXAMINE and BODY.PEEK prevent that, and the
 probe asserts EXAMINE before the first fetch.
 
+### Task 6 results (2026-10-30)
+
+**F305 counts (DEV content history, read-only; script `scratchpad/task6/f305_signals.py`)**: 1,551 rows; 254 No
+Rule; 69 decisions by Harold (safe 42: exact 34, exact domain 8; block 27: entire domain 24, email 3). History signals
+use only rows seen earlier (time split, F313 R-2).
+
+- auth yellow -> block: fires on 35 of 254 No Rule rows (14%); agrees with 5 of 6 decisions (83%). **PASS**.
+- auth green -> safe: 217 (85%); 41 of 63 (65%). fail (agreement).
+- auth red -> block: 2 (1%); 0 decisions. fail (rate). (A RED email is never suggested safe regardless, R-5.)
+- Reply-To differs -> block: 26 (10%); 7 of 9 (78%). fail (agreement, near miss).
+- unsubscribe present -> block: 145 (57%); 11 of 19 (58%). fail.
+- unsubscribe absent -> safe: 109 (43%); 34 of 50 (68%). fail.
+- free-mail sender -> safe: 7 (3%); 8 of 10 (80%). fail (rate).
+- domain made safe before -> safe: 24 (9%); 12 of 12 (100%). fail (rate, near miss).
+- sender made safe before -> safe: 18 (7%); 11 of 11 (100%). fail (rate).
+- domain deleted before -> block: 21 (8%); 2 of 3 (67%). fail.
+
+**Q4 = 2 result**: one signal passes, auth yellow -> block. It gives a suggestion on 35 of 254 No Rule rows (14%),
+with no conflicts. The rule type follows Harold's decisions: block -> Block Entire Domain (24 of 27), or Block Email
+for a free-mail domain (`gmail.com`, `aol.com` and similar, where blocking the domain blocks everyone). Caveats:
+5 of 6 is a small sample; the history signals use the content history, which exists only in DEV builds (ADR-0047),
+so a shipped build could not use them even if they passed. Signal "Signal fires on" line for Task 8: **fires on 35
+of 254 No Rule rows; agrees with 5 of 6 decisions.** The basis is a list in code, so a change of basis is a one-line
+change (reported at Manual Validation, per "try this and see how it goes").
+
+**F312 Step 1**: NOT RUN. The approved probe method (Q3 = 1) assumed AOL credentials in `secrets.dev.json`; that file
+holds only the Gmail client IDs, and the AOL app password is only in the DEV app's encrypted Windows secure store.
+Reading it from a script would extract a stored password, which was not approved. Asked at the end of execution
+(late question).
+
 ## Task 7 -- F315 Step 1: count IMAP messages with no UID (Priority 32)
 
 **Value**: This decides from data whether a date cursor is needed.
@@ -554,6 +593,15 @@ DEV and the Android phones (iOS has no build yet).
 **Definition of Done**: None -- default DoD only.
 
 **Model**: Haiku. **Step-types**: DATA. **Est-Effort**: ~30m.
+
+### Task 7 results (interim, 2026-10-30)
+
+- DEV diagnostic logs `Documents\MyEmailSpamFilter_Dev\diagnostics_Dev\` (5 files, 2026-10-26 00:00 to 2026-10-30
+  09:22, with gaps where a file rotated to `.bak` and was not kept): 1,171 `scan/persist` lines (AOL IMAP 680, Gmail
+  491). Lines "message has no valid IMAP UID" (`imap_uid.dart:62`) or "FETCH answer had no UID"
+  (`generic_imap_adapter.dart:2453`): **0**.
+- Phone logs (Fold, S24+) over MTP: pulled at Manual Validation and added here. If they also show 0, F315 closes
+  with these counts.
 
 ## Task 8 -- F306: suggested rule in the No Rule Item pop-up (Priority 34)
 
@@ -582,8 +630,9 @@ written; `lib/core/services/heuristic_signals.dart` (basis); `docs/ARCHITECTURE.
 **User-reachable control**: Review No Rule Items > tap an email > the pop-up shows the highlighted button with the
 regex and reason; tapping it saves the rule.
 
-**Signal fires on**: filled from Task 6 before code: "fires on N of 252 No Rule rows; agrees with M of 69 decisions".
-F306 code that depends on the basis does not start until this line has numbers. Zero needs a written reason.
+**Signal fires on**: auth YELLOW -> block: fires on 35 of 254 No Rule rows (14 percent); agrees with 5 of 6 of the
+69 decisions that touched it (83 percent). The only signal that meets the Q4 rule (Task 6 results). The card's 252
+was the planning-time count; Task 6 counted 254.
 
 **Observable behavior -- before / after**: BEFORE: the pop-up shows the buttons with no hint which one fits; there
 is no Block Body button. AFTER: one button carries a highlighted border, and under it the exact rule and one

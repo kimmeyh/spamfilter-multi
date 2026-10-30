@@ -1085,4 +1085,67 @@ void main() {
     handle.dispose();
   });
 
+  // F319 (Sprint 82): a background scan writes rows from another process or
+  // isolate; coming back to the foreground must show them without Refresh.
+  //
+  // What this does NOT catch: whether the OS delivers `resumed` when the user
+  // taps the scan-complete notification (manual validation covers that).
+  testWidgets(
+      'F319 T-1: app resume reloads rows written from outside the screen, '
+      'with no SnackBar', (tester) async {
+    tester.view.physicalSize = const Size(1200, 2400);
+    tester.view.devicePixelRatio = 1.0;
+    addTearDown(tester.view.resetPhysicalSize);
+    addTearDown(tester.view.resetDevicePixelRatio);
+
+    await tester.runAsync(() async {
+      await testHelper.createTestAccount('gmail-a@example.com');
+      registerSavedAccount('gmail-a@example.com');
+      await insertCompletedScan('gmail-a@example.com',
+          completedAtMs: 1000, noRuleCount: 0);
+      await mountAndLoad(tester);
+    });
+    expect(find.text('No unaddressed items'), findsOneWidget,
+        reason: 'precondition: the screen shows 0 rows');
+
+    await tester.runAsync(() async {
+      // Written behind the screen's back, like the background worker does.
+      await insertCompletedScan('gmail-a@example.com',
+          completedAtMs: 2000, noRuleCount: 3);
+      tester.binding.handleAppLifecycleStateChanged(AppLifecycleState.paused);
+      tester.binding.handleAppLifecycleStateChanged(AppLifecycleState.resumed);
+      await Future<void>.delayed(const Duration(milliseconds: 800));
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 300));
+    });
+
+    expect(noRuleChip(3), findsOneWidget,
+        reason: 'the 3 outside rows are listed after resume, no Refresh');
+    expect(find.byType(SnackBar), findsNothing,
+        reason: 'the resume reload is quiet');
+  });
+
+  // What this does NOT catch: whether the OS delivers `resumed` on a
+  // notification tap (manual validation covers that), and it tests the guard
+  // as a pure rule: the State passes its real _ownActionsInFlight to it, but
+  // a mutant that passes a constant 0 there is not killed by this test.
+  test('F319 T-2: resume does not reload while an own action is in flight '
+      'or the screen is unmounted; only resumed reloads', () {
+    bool reload(AppLifecycleState s, {bool mounted = true, int inFlight = 0}) =>
+        shouldReloadOnLifecycle(
+            state: s, mounted: mounted, ownActionsInFlight: inFlight);
+
+    expect(reload(AppLifecycleState.resumed), isTrue);
+    expect(reload(AppLifecycleState.resumed, inFlight: 1), isFalse,
+        reason: 'the in-flight action reloads and reports its own count');
+    expect(reload(AppLifecycleState.resumed, mounted: false), isFalse);
+    for (final s in [
+      AppLifecycleState.paused,
+      AppLifecycleState.inactive,
+      AppLifecycleState.hidden,
+      AppLifecycleState.detached,
+    ]) {
+      expect(reload(s), isFalse, reason: '$s must not reload');
+    }
+  });
 }

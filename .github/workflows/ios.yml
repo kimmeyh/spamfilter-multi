@@ -3,18 +3,30 @@ name: iOS
 # Sprint 81 Task 3 (F67b), first increment: an UNSIGNED compile check of the
 # iOS project on a hosted macOS runner. The Mac is the only place Swift and the
 # Info.plist build settings can be checked, because the development machine is
-# Windows. Task 2 adds signing and TestFlight upload to this file later.
+# Windows.
+#
+# Sprint 82 Task 2 (F304): a SIGNED build uploaded to TestFlight, in a second
+# job that runs only when started by hand with `testflight: true`:
+#   gh workflow run ios.yml --ref <branch> -f testflight=true
+# It reads six repository secrets Harold creates (docs/IOS_SETUP.md Part D);
+# none of them is ever written to the tree or printed.
 #
 # Starts: by hand (`gh workflow run ios.yml --ref <branch>`), which GitHub
 # allows only once this file is on the default branch (develop) -- verified
 # 2026-10-23: "HTTP 404: workflow ios.yml not found on the default branch" --
 # and on a push to a feature branch that changes the iOS project or this file
 # (a push runs the workflow file from the pushed commit, so it works before the
-# first merge). No secrets: the Flutter SDK version comes from .fvmrc (F296,
-# one source), and the Google client IDs are left empty because the build is
-# never run (same reasoning as the F127 decision for the CI_* secrets in ci.yml).
+# first merge). The unsigned job needs no secrets: the Flutter SDK version
+# comes from .fvmrc (F296, one source), and the Google client IDs are left
+# empty because that build is never run (same reasoning as the F127 decision
+# for the CI_* secrets in ci.yml).
 on:
   workflow_dispatch:
+    inputs:
+      testflight:
+        description: 'Also build a signed app and upload it to TestFlight'
+        type: boolean
+        default: false
   push:
     branches: ['feature/**']
     paths:
@@ -42,3 +54,120 @@ jobs:
 
       - name: flutter build ios (release, no codesign)
         run: flutter build ios --release --no-codesign
+
+  ios-testflight:
+    name: iOS signed build and TestFlight upload
+    needs: ios-build
+    if: github.event_name == 'workflow_dispatch' && inputs.testflight
+    runs-on: macos-26
+    defaults:
+      run:
+        working-directory: mobile-app
+    env:
+      APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
+      ASC_KEY_ID: ${{ secrets.ASC_KEY_ID }}
+      ASC_ISSUER_ID: ${{ secrets.ASC_ISSUER_ID }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: subosito/flutter-action@v2
+        with:
+          flutter-version-file: .fvmrc
+          channel: 'stable'
+          cache: true
+
+      # Fail early, by name, when a secret is missing: an empty Team ID or key
+      # otherwise surfaces as an unrelated xcodebuild signing error.
+      - name: Check the six signing and sign-in secrets exist
+        env:
+          ASC_KEY_P8: ${{ secrets.ASC_KEY_P8 }}
+          IOS_GMAIL_CLIENT_ID: ${{ secrets.IOS_GMAIL_CLIENT_ID }}
+          IOS_GMAIL_REVERSED_CLIENT_ID: ${{ secrets.IOS_GMAIL_REVERSED_CLIENT_ID }}
+        run: |
+          missing=0
+          for name in APPLE_TEAM_ID ASC_KEY_ID ASC_ISSUER_ID ASC_KEY_P8 IOS_GMAIL_CLIENT_ID IOS_GMAIL_REVERSED_CLIENT_ID; do
+            if [ -z "${!name}" ]; then echo "::error::repository secret $name is not set (docs/IOS_SETUP.md Part D)"; missing=1; fi
+          done
+          exit $missing
+
+      # Info.plist reads the Gmail client IDs from Secrets.xcconfig
+      # (ios/Flutter/Secrets.xcconfig.example; gitignored), the same file a
+      # developer writes by hand. The App Store Connect key goes where
+      # xcodebuild looks for it. Both are deleted in the last step.
+      - name: Write Secrets.xcconfig and the API key file
+        env:
+          ASC_KEY_P8: ${{ secrets.ASC_KEY_P8 }}
+          IOS_GMAIL_CLIENT_ID: ${{ secrets.IOS_GMAIL_CLIENT_ID }}
+          IOS_GMAIL_REVERSED_CLIENT_ID: ${{ secrets.IOS_GMAIL_REVERSED_CLIENT_ID }}
+        run: |
+          printf 'IOS_GMAIL_CLIENT_ID = %s\nIOS_GMAIL_REVERSED_CLIENT_ID = %s\n' \
+            "$IOS_GMAIL_CLIENT_ID" "$IOS_GMAIL_REVERSED_CLIENT_ID" > ios/Flutter/Secrets.xcconfig
+          mkdir -p "$RUNNER_TEMP/asc"
+          printf '%s\n' "$ASC_KEY_P8" > "$RUNNER_TEMP/asc/AuthKey_${ASC_KEY_ID}.p8"
+          chmod 600 "$RUNNER_TEMP/asc/AuthKey_${ASC_KEY_ID}.p8"
+
+      - name: flutter pub get
+        run: flutter pub get
+
+      # Builds the Flutter part and the Xcode project settings (version and
+      # build number come from pubspec.yaml, ADR-0043). APP_ENV=prod matches
+      # the store builds on Windows and Android.
+      - name: flutter build ios (release, prepare for archive)
+        run: flutter build ios --release --no-codesign --dart-define=APP_ENV=prod
+
+      # Automatic signing with the API key: Apple creates the distribution
+      # certificate and the App Store profile in the cloud; nothing is stored
+      # in the repository.
+      - name: xcodebuild archive (signed)
+        working-directory: mobile-app/ios
+        run: |
+          xcodebuild archive \
+            -workspace Runner.xcworkspace -scheme Runner -configuration Release \
+            -destination 'generic/platform=iOS' \
+            -archivePath "$RUNNER_TEMP/Runner.xcarchive" \
+            -allowProvisioningUpdates \
+            -authenticationKeyPath "$RUNNER_TEMP/asc/AuthKey_${ASC_KEY_ID}.p8" \
+            -authenticationKeyID "$ASC_KEY_ID" \
+            -authenticationKeyIssuerID "$ASC_ISSUER_ID" \
+            DEVELOPMENT_TEAM="$APPLE_TEAM_ID" CODE_SIGN_STYLE=Automatic
+
+      # destination=upload sends the build straight to App Store Connect, where
+      # it appears in TestFlight after Apple's processing.
+      - name: xcodebuild -exportArchive (upload to TestFlight)
+        working-directory: mobile-app/ios
+        run: |
+          cat > "$RUNNER_TEMP/ExportOptions.plist" <<PLIST
+          <?xml version="1.0" encoding="UTF-8"?>
+          <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+          <plist version="1.0"><dict>
+            <key>method</key><string>app-store-connect</string>
+            <key>destination</key><string>upload</string>
+            <key>signingStyle</key><string>automatic</string>
+            <key>teamID</key><string>${APPLE_TEAM_ID}</string>
+          </dict></plist>
+          PLIST
+          xcodebuild -exportArchive \
+            -archivePath "$RUNNER_TEMP/Runner.xcarchive" \
+            -exportOptionsPlist "$RUNNER_TEMP/ExportOptions.plist" \
+            -exportPath "$RUNNER_TEMP/export" \
+            -allowProvisioningUpdates \
+            -authenticationKeyPath "$RUNNER_TEMP/asc/AuthKey_${ASC_KEY_ID}.p8" \
+            -authenticationKeyID "$ASC_KEY_ID" \
+            -authenticationKeyIssuerID "$ASC_ISSUER_ID"
+
+      - name: Print the version and build number uploaded
+        run: |
+          grep -E '^version:' pubspec.yaml
+
+      - name: Keep the archive for 7 days
+        uses: actions/upload-artifact@v4
+        with:
+          name: ios-archive
+          path: ${{ runner.temp }}/Runner.xcarchive
+          retention-days: 7
+
+      - name: Delete Secrets.xcconfig and the API key file
+        if: always()
+        run: |
+          rm -f ios/Flutter/Secrets.xcconfig
+          rm -rf "$RUNNER_TEMP/asc"

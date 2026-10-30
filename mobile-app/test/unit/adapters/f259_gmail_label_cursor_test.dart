@@ -33,6 +33,8 @@ import 'package:my_email_spam_filter/core/providers/email_scan_provider.dart';
 import 'package:my_email_spam_filter/core/providers/rule_set_provider.dart';
 import 'package:my_email_spam_filter/core/services/diagnostic_logger.dart';
 import 'package:my_email_spam_filter/core/services/email_scanner.dart';
+import 'package:my_email_spam_filter/core/services/scan_coordinator.dart';
+import 'package:my_email_spam_filter/core/storage/database_helper.dart';
 import 'package:my_email_spam_filter/core/storage/rule_database_store.dart';
 import 'package:my_email_spam_filter/core/storage/safe_sender_database_store.dart';
 
@@ -463,4 +465,198 @@ void main() {
           contains('folder "Gone" is not on this account'));
     });
   });
+
+  // F314 (Sprint 82): the new historyId is saved only after the scan's results
+  // are durable (after completeScan), never inside the fetch.
+  //
+  // What these tests do NOT catch: a process KILL between completeScan and the
+  // cursor save (the next scan re-reads the delta, which is the designed
+  // outcome and is safe because the No Rule upsert keeps one row per email);
+  // a completeScan whose own persistence silently failed (it logs and
+  // continues, so the cursor still moves); and the real Gmail answer (the
+  // adapter's fetch is faked here, so history.list itself is not exercised).
+  group('F314: the Gmail history cursor moves only after evaluation', () {
+    late DatabaseTestHelper testHelper;
+    late RuleSetProvider ruleProvider;
+    const account = 'gmail-test@test.com';
+
+    setUp(() async {
+      testHelper = DatabaseTestHelper();
+      await testHelper.setUp();
+      ruleProvider = RuleSetProvider();
+      ruleProvider.initializeForTesting(
+        databaseStore: RuleDatabaseStore(testHelper.dbHelper),
+        safeSenderStore: SafeSenderDatabaseStore(testHelper.dbHelper),
+      );
+      await ruleProvider.loadRules();
+      await ruleProvider.loadSafeSenders();
+    });
+    tearDown(() async => testHelper.tearDown());
+
+    Future<_SpyScanProvider> scanWith(
+        _DeltaGmailAdapter adapter, List<String> folders,
+        {String? failEvaluationIn}) async {
+      final previous =
+          PlatformRegistry.overrideFactoryForTest('test', () => adapter);
+      addTearDown(
+          () => PlatformRegistry.overrideFactoryForTest('test', previous));
+      final provider = _SpyScanProvider(testHelper.dbHelper, account)
+        ..failEvaluationIn = failEvaluationIn
+        ..initializeScanMode(mode: ScanMode.readOnly);
+      await EmailScanner(
+        platformId: 'test',
+        accountId: account,
+        ruleSetProvider: ruleProvider,
+        scanProvider: provider,
+        credStore: _FakeCredStore(),
+      )
+          .scanInbox(daysBack: 7, folderNames: folders)
+          .catchError((Object _) {});
+      await Future.wait(provider.reads);
+      return provider;
+    }
+
+    test('T-1: a scan cancelled after the fetch and before evaluation leaves '
+        'the cursor unchanged; the next scan re-reads and evaluates the same '
+        'messages', () async {
+      final db = testHelper.dbHelper;
+      await db.setGmailHistoryCursor(account, 'INBOX', '100');
+      final adapter = _DeltaGmailAdapter()
+        ..afterIncrementalFetch = () => ScanCoordinator.instance
+            .requestCancel(accountId: account, reason: 'test cancel');
+
+      final first = await scanWith(adapter, ['INBOX']);
+
+      expect(first.evaluated, isEmpty,
+          reason: 'the cancel was observed at the first batch boundary, '
+              'before any message was evaluated');
+      expect(await db.getGmailHistoryCursor(account, 'INBOX'), '100',
+          reason: 'the fetch returned historyId 300 but the scan never '
+              'evaluated those messages, so the cursor must not move');
+
+      adapter.afterIncrementalFetch = null;
+      final second = await scanWith(adapter, ['INBOX']);
+
+      expect(adapter.incrementalStarts, ['INBOX:100', 'INBOX:100'],
+          reason: 'the second scan starts from the OLD cursor again');
+      expect(second.evaluated, ['m1', 'm2'],
+          reason: 'the same two messages are offered and evaluated');
+      expect(await db.getGmailHistoryCursor(account, 'INBOX'), '300');
+    });
+
+    test('T-2: a completed scan saves each folder after evaluation; a folder '
+        'that fails keeps its old cursor', () async {
+      final db = testHelper.dbHelper;
+      await db.setGmailHistoryCursor(account, 'INBOX', '100');
+      await db.setGmailHistoryCursor(account, 'SPAM', '90');
+      await db.setGmailHistoryCursor(account, 'Unwanted', '80');
+      final adapter = _DeltaGmailAdapter()..failFolder = 'SPAM';
+
+      final provider = await scanWith(adapter, ['INBOX', 'SPAM', 'Unwanted'],
+          failEvaluationIn: 'Unwanted');
+
+      expect(provider.evaluated, ['m1', 'm2'],
+          reason: 'only INBOX was evaluated; SPAM failed its fetch and '
+              'Unwanted failed while evaluating');
+      expect(await db.getGmailHistoryCursor(account, 'INBOX'), '300');
+      expect(await db.getGmailHistoryCursor(account, 'SPAM'), '90',
+          reason: 'a folder whose fetch threw keeps its old cursor');
+      expect(await db.getGmailHistoryCursor(account, 'Unwanted'), '80',
+          reason: 'a folder fetched but not fully evaluated keeps its old '
+              'cursor');
+    });
+
+    test('R-4: no cursor write happens before evaluation or before the '
+        'results are durable (completeScan)', () async {
+      final db = testHelper.dbHelper;
+      await db.setGmailHistoryCursor(account, 'INBOX', '100');
+      // SPAM has no cursor, so it takes the full-fetch branch (profile id 500).
+      final adapter = _DeltaGmailAdapter();
+
+      final provider = await scanWith(adapter, ['INBOX', 'SPAM']);
+
+      expect(provider.cursorSeenAtEvaluation, isNotEmpty);
+      expect(provider.cursorSeenAtEvaluation, everyElement('100'),
+          reason: 'INBOX still held its old cursor at every evaluation, even '
+              'after SPAM was fetched');
+      expect(provider.cursorsSeenAtCompleteScan,
+          {'INBOX': '100', 'SPAM': null},
+          reason: 'no cursor moved before completeScan stored the results');
+      expect(await db.getGmailHistoryCursor(account, 'INBOX'), '300');
+      expect(await db.getGmailHistoryCursor(account, 'SPAM'), '500');
+    });
+  });
+}
+
+/// The real adapter with the Gmail fetch faked: each folder offers two
+/// messages, so a test can cancel or fail at a chosen point.
+class _DeltaGmailAdapter extends _TestGmailAdapter {
+  final List<String> incrementalStarts = [];
+  String? failFolder;
+  void Function()? afterIncrementalFetch;
+
+  @override
+  Future<IncrementalFetchResult> fetchMessagesIncremental({
+    required String startHistoryId,
+    String folderForLabel = 'INBOX',
+  }) async {
+    incrementalStarts.add('$folderForLabel:$startHistoryId');
+    if (folderForLabel == failFolder) throw Exception('fetch failed');
+    final result = IncrementalFetchResult(
+      emails: [_msg('m1', folderForLabel), _msg('m2', folderForLabel)],
+      newHistoryId: '300',
+      isExpired: false,
+    );
+    afterIncrementalFetch?.call();
+    return result;
+  }
+
+  @override
+  Future<List<EmailMessage>> fetchMessages({
+    required int daysBack,
+    required List<String> folderNames,
+  }) async =>
+      [_msg('m1', folderNames.first), _msg('m2', folderNames.first)];
+
+  @override
+  Future<String?> getCurrentHistoryId() async => '500';
+}
+
+/// Records which messages were evaluated and what the stored cursors held at
+/// the moment of each evaluation and when completeScan began.
+class _SpyScanProvider extends EmailScanProvider {
+  _SpyScanProvider(this._db, this._account);
+  final DatabaseHelper _db;
+  final String _account;
+
+  String? failEvaluationIn;
+  final List<String> evaluated = [];
+  final List<String?> cursorSeenAtEvaluation = [];
+  final Map<String, String?> cursorsSeenAtCompleteScan = {};
+  final List<Future<void>> reads = [];
+
+  @override
+  void updateProgress({required EmailMessage email, String? message}) {
+    super.updateProgress(email: email, message: message);
+    if (message != null && message.startsWith('Evaluating:')) {
+      if (email.folderName == failEvaluationIn) {
+        throw Exception('evaluation failed');
+      }
+      evaluated.add(email.id);
+      // Queued behind any save already awaited by the fetch, so a save made
+      // inside the fetch would be visible here.
+      reads.add(_db
+          .getGmailHistoryCursor(_account, 'INBOX')
+          .then(cursorSeenAtEvaluation.add));
+    }
+  }
+
+  @override
+  Future<void> completeScan() async {
+    for (final folder in ['INBOX', 'SPAM']) {
+      cursorsSeenAtCompleteScan[folder] =
+          await _db.getGmailHistoryCursor(_account, folder);
+    }
+    await super.completeScan();
+  }
 }
