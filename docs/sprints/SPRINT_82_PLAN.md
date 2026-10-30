@@ -911,7 +911,7 @@ prompt is written; no cron was created. Unverified: that subagents keep context 
   returning null is the normal state of pre-v17 rows. The two new `SilentlyContinue` listings follow a `Test-Path`.
   Separately, the background security review found the tag-pinned `subosito/flutter-action` in the signed job:
   fixed e46ffde6 with a policy gate (check (d)). Result: 1 finding (doc drift), fixed.
-- **5.1.5 WinWright sweep**: 2026-10-30 ~10:40, default sweep (`run-winwright-tests.ps1`, no arguments) on the
+- **5.1.5 WinWright sweep**: 2026-10-30 ~10:26, default sweep (`run-winwright-tests.ps1`, no arguments) on the
   0.23.0 DEV build at b75e2a41: 3 of 3 scripts PASS (test_f124_rule_labels 13 s, test_f320_no_rule_review 4 s, the new
   No Rule Review script, test_s75_new_controls 27 of 27 steps, 11 s), mouse steps skipped 0 (workstation unlocked), DB
   drift none, tray check PASS, the 4 DEV background tasks paused and re-enabled. Gap: the F306 suggestion note is not
@@ -926,3 +926,63 @@ prompt is written; no cron was created. Unverified: that subagents keep context 
 - **Dev DB**: `spam_filter.db.pre_v17_sprint82.bak` (8,699,904 bytes, taken 09:2x before any v17 build). The 0.23.0
   DEV build launched 10:00:46 and migrated the live DEV DB 16 -> 17: 5 suggestion columns, no rows lost
   (unmatched_emails 705 -> 707 and scan_results 14,931 -> 14,982 from scans between backup and build).
+- **5.1.9 MV rehearsal**: 2026-10-30, each MV step below carries its Rehearsed line. MV-1 (F319 Windows) and MV-2
+  (F306 Windows) rehearsed by looking in the live 0.23.0 DEV app with WinWright (screenshots `f319_*.png`,
+  `f306_popup.png`; F306 note read from the accessibility tree). MV-3 and MV-4 not rehearsable here (the phones have
+  0.21.0 and adb is blocked); closest rehearsal named in each step. MV-5 blocked on Apple enrollment approval
+  (stopping criterion 2).
+
+# Manual Validation (Phase 5.3)
+
+- **Standing facts (Harold)**: Fold notification access for the app is ON and stays on (Sprint 81). 0.22.0 is not
+  uploaded; the next store release is 0.23.0 with combined notes (U1, 2026-10-30). Never asked again.
+
+- **MV-1 (Windows DEV, F319)**: preconditions: the 0.23.0 DEV app is open (title "MyEmailSpamFilter [DEV]", footer
+  "Version 0.23.0 [DEV]") on Review No Rule Items; the four DEV background tasks run every 5 minutes (PT5M) and post a
+  toast after each account's scan, with the window open (F243). Steps: note the "No rule (N)" chip; click any other
+  window so the DEV title bar turns grey; wait for a DEV toast whose text has "No rule" above 0 for an account whose new
+  mail has no rule; click the toast. Expected: the DEV window comes forward and the list already shows the new row(s)
+  and the chip's new count, with no Refresh press and no message bar.
+  Rehearsed: 2026-10-30, by looking (WinWright on PID 53040): chip "No rule (6)"; Notepad took focus (grey DEV
+  title bar); one marked row inserted into the live DEV DB from a separate process (`scratchpad\f319_row.py add`), the
+  unfocused window still showed 6 (`f319_unfocused.png`); the window was brought forward (`ww_activate_window`) and
+  showed "No rule (7)" with the row `rehearsal@f319-rehearsal.example`, no message bar (`f319_after.png`); row removed,
+  list back to 6 (`f319_restored.png`). Interval PT5M: `Get-ScheduledTask`; toast after every completed account scan:
+  `background_scan_windows_worker.dart:286`; scans run with the window open: log line "Foreground UI is running;
+  background scan proceeds" at 10:30:01. The toast click itself was not rehearsed (it is unchanged: it brings the window
+  forward through the single-instance hand-off, `main.cpp:118-130`, which is what Harold reported it already does).
+- **MV-2 (Windows DEV, F306)**: preconditions: the 0.23.0 DEV app is open. Steps: open Scan History; tap the
+  `kimmeyharold@aol.com` account filter chip; open the 10:00 AM row "Background scan - kimmeyharold@aol.com -
+  Read-Only - completed" (2026-10-30); in its results, tap `ellen@filehostingdedicatedserver.com` (No Rule, YELLOW).
+  Expected: in the pop-up, the Block Entire Domain button has a heavier border and the word "Suggested", with the value
+  `@*.filehostingdedicatedserver.com`; scroll down below Block Subject: the note "Suggested rule. Sender authentication
+  (SPF/DKIM/DMARC) did not fully pass for this email. Pattern: @(?:[a-z0-9-]+\.)*filehostingdedicatedserver\.com$".
+  Then tap a GREEN row in the same results (sender checks passed): no "Suggested" anywhere. Optional (AC-2): tap the
+  suggested button; Manage Rules then shows a block rule with exactly that regex (this creates a real DEV rule; delete
+  it after if wanted). On Review No Rule Items, only rows written by a 0.23.0 scan carry a suggestion (Q2 = 1, stored at
+  scan time); today 0 rows do (DEV DB, read-only count), because the IMAP cursor does not re-read mail seen before the 0.23.0 launch. The Results
+  route computes it on display (`results_display_screen.dart:68`), so it works on older scans.
+  Rehearsed: 2026-10-30, by looking (WinWright on PID 53040) along exactly this route: Block Entire Domain showed
+  "Suggested" and `@*.filehostingdedicatedserver.com` (`f306_popup.png`); the note text above was read from the
+  accessibility tree. The GREEN-row check and the optional tap were not rehearsed live; they are covered by
+  `email_detail_popup_suggestion_test.dart` 11 PASS (no suggestion renders nothing; tap saves the builder's pattern),
+  `f306_review_screen_suggestion_test.dart` 2 PASS and `rule_suggestion_test.dart` 16 PASS.
+- **MV-3 (Fold, 0.23.0 closed test, F319 + F306)**: preconditions: Harold uploads the 0.23.0 AAB to Play closed
+  testing and the Fold updates (the top bar of Review No Rule Items shows "Version 0.23.0"); background scanning is
+  ON (15 minutes per the recorded closed-test setup; not read today, the phone cannot be reached from here).
+  Steps: open the app on Review No Rule Items, then press Home (the app stays in the background); wait for a scan
+  notification with "No rule" above 0; tap it. Expected: the app comes forward and the list already shows the new
+  item(s), no Refresh. If a new YELLOW item appears, its pop-up shows "Suggested" as in MV-2; Block Subject and the
+  regex note fit the Fold's cover screen width with no clipping.
+  Not rehearsable here (no device; adb is blocked). Closest rehearsal: MV-1 (same shared Dart on Windows); F319 T-1
+  and T-3 (`no_rule_review_screen_test.dart`); pop-up at 360 and 411 dp in `email_detail_popup_suggestion_test.dart`.
+  Known: the existing Skip row overflows 77 px at 360 wide in the TEST font with or without a suggestion (the test font
+  is wider than the real font); watch the Skip row on the cover screen.
+- **MV-4 (Fold, Task 4 F303 and Task 7 F315)**: after the 0.23.0 update, connect the Fold over USB (file transfer)
+  and I run `scripts\pull-phone-screenshots.ps1 -Sprint 82`. I read the `[new-mail-diagnostics]` line from the first
+  start after the update AND a later start (no `error:` field), and count no-UID lines ("message has no valid IMAP
+  UID", "FETCH answer had no UID"); the same for the S24+ if connected.
+  Not rehearsable now (the phones have 0.21.0). Closest rehearsal: Windows DEV logs 0 no-UID lines in 1,171
+  `scan/persist` lines (Task 7 interim).
+- **MV-5 (iPhone, Tasks 1-3)**: waits on Apple's approval of enrollment `R6QG2A9SHS` (stopping criterion 2, external).
+  Then `docs/IOS_SETUP.md` Parts B-D one at a time, the first TestFlight run, and the Task 3 device check.

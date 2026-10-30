@@ -1,12 +1,12 @@
 {
     "_description": "Sprint status file that persists across context compaction. Update after each phase/sub-phase completion.",
-    "_last_updated": "2026-10-30T09:58:42-04:00",
+    "_last_updated": "2026-10-30T10:39:00-04:00",
     "_usage": "Read this file after context compaction to restore sprint approval state and progress.",
     "_staleness_note": "This file had drifted 15 sprints (last updated at Sprint 35, 2026-04-19) before being refreshed at Sprint 50 close-out. It is a Phase 7.7 checklist item -- update it at every sprint close-out, not opportunistically.",
     "current_sprint": {
         "number": 82,
         "branch": "feature/20261027_Sprint_82",
-        "status": "Phase 4 Sprint Execution",
+        "status": "Phase 5.3 Manual Validation",
         "status_detail": "Plan approved 2026-10-30 (Q1=1 Q2=1 Q3=1 Q4=2 Q5=1 Q6=1, Q-S1=1, Q-S2=1; U1: 0.22.0 not uploaded, 0.23.0 notes combine 0.22.0 and 0.23.0). Cards #522-#532 created; #509 (Task 1) and #510 (Task 2) carried. Version 0.23.0+20. Task 4 (F303 Fold) moves to Manual Validation (needs a 0.23.0 closed-test build).",
         "plan_approved": true,
         "pr_number": 521,
@@ -62,8 +62,8 @@
     ],
     "blocking_issues": [],
     "next_actions": [
-        "Sprint 82 Phase 4: Tasks 0, 5, 9, 11, 12 done; Task 8 F306 done except Block Body (late question); Task 2 signed job written (first run waits on Task 1 secrets).",
-        "Next: Windows DEV build (v17 migration on the real DEV DB; backup spam_filter.db.pre_v17_sprint82.bak), Task 10 F320 WinWright script, 5.1.x checks, 5.1.9 rehearsal, then Manual Validation handoff with the late questions (F312 probe credential method; F306 Block Body value)."
+        "Sprint 82 at Phase 5.3 Manual Validation: Tasks 0, 5, 8 (except Block Body), 9, 10, 11, 12 done; 5.1.2, 5.1.5, 5.1.6, 5.1.9 and 5.2 recorded in SPRINT_82_PLAN.md 'Phase 5 evidence'; MV-1 to MV-5 in 'Manual Validation (Phase 5.3)'. AAB 0.23.0+20 built (mobile-app/dist/android-0.23.0+20/app-prod-release.aab) for Harold to upload to closed testing.",
+        "Waiting on Harold: MV results; late questions (F312 probe credential method; F306 Block Body value; iCloud DEV app password; first-party actions SHA pins). Tasks 1-3 wait on Apple enrollment R6QG2A9SHS (criterion 2). Tasks 4 and 7 read phone logs after the 0.23.0 Fold update. Then 7.7.1 reviews on the draft PR + retrospective prompt in one turn."
     ],
     "next_sprint_targeted": {
         "number": 82,

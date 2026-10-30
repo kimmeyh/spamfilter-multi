@@ -11,7 +11,11 @@ Android-only diagnostic fixes; `test`, `docs` and `chore` entries.
 
 ---
 
-Review No Rule Items now shows why an email may be spam and adds a Create rule button. Planned for this release: each No Rule email can carry one suggested rule, highlighted in its pop-up with the exact rule and the reason, and a new Block Body button.
+Review No Rule Items now shows why an email may be spam and adds a Create rule button. When an email's sender checks (SPF, DKIM, DMARC) did not fully pass, its pop-up marks one rule as "Suggested" and shows the exact rule and the reason; you still choose whether to apply it.
+
+The No Rule list now updates by itself when you return to the app, so the emails a background scan just reported are already listed.
+
+A Gmail scan that is stopped or fails part way no longer skips the mail it had not finished checking.
 
 Gmail accounts: Google asks you to sign in again about once a week while the app is in testing. The app now notifies you, at most once a day per account, when an account needs that sign-in.
 

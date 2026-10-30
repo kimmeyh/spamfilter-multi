@@ -13,11 +13,13 @@ Paste the en-US block below into the Play Console release-notes field, tags incl
 ---
 
 <en-US>
-No Rule review shows why an email may be spam, with a Create rule button.
+No Rule review shows why an email may be spam, and suggests one rule when sender checks did not fully pass.
+
+The No Rule list updates when you return to the app, so a scan notification's new emails are there.
 
 Gmail testers: the app now notifies you when Google needs the weekly sign-in.
 
-A renamed or deleted Gmail label or folder now shows as "Folder not found", and Spam and custom labels no longer skip waiting mail.
+A renamed or deleted Gmail label now shows as "Folder not found", and a stopped Gmail scan no longer skips mail.
 
 Reliability fixes for mail servers that omit message IDs and for the diagnostic log.
 </en-US>
