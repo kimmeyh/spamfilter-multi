@@ -911,6 +911,12 @@ prompt is written; no cron was created. Unverified: that subagents keep context 
   returning null is the normal state of pre-v17 rows. The two new `SilentlyContinue` listings follow a `Test-Path`.
   Separately, the background security review found the tag-pinned `subosito/flutter-action` in the signed job:
   fixed e46ffde6 with a policy gate (check (d)). Result: 1 finding (doc drift), fixed.
+- **5.1.5 WinWright sweep**: 2026-10-30 ~10:40, default sweep (`run-winwright-tests.ps1`, no arguments) on the
+  0.23.0 DEV build at b75e2a41: 3 of 3 scripts PASS (test_f124_rule_labels 13 s, test_f320_no_rule_review 4 s, the new
+  No Rule Review script, test_s75_new_controls 27 of 27 steps, 11 s), mouse steps skipped 0 (workstation unlocked), DB
+  drift none, tray check PASS, the 4 DEV background tasks paused and re-enabled. Gap: the F306 suggestion note is not
+  in any WinWright script (no DEV row carries a suggestion; Task 10 result).
+  sweep-head: b75e2a41
 - **5.1.6 Runtime Launch Gate**: N/A -- no Android config touched this sprint (`git diff origin/develop...HEAD --
   mobile-app/android/app/src`: empty).
 - **5.1.6 Architecture docs**: `ARCHITECTURE.md` rows for F314 (cursor timing), v17 schema, F319 (resume reload) and
