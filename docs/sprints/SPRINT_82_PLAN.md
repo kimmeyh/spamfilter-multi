@@ -957,7 +957,7 @@ prompt is written; no cron was created. Unverified: that subagents keep context 
   Expected: in the pop-up, the Block Entire Domain button has a heavier border and the word "Suggested", with the value
   `@*.filehostingdedicatedserver.com`; scroll down below Block Subject: the note "Suggested rule. Sender authentication
   (SPF/DKIM/DMARC) did not fully pass for this email. Pattern: @(?:[a-z0-9-]+\.)*filehostingdedicatedserver\.com$".
-  Then tap a GREEN row in the same results (sender checks passed): no "Suggested" anywhere. Optional (AC-2): tap the
+  Then tap `MaggiedLaw@pamelamaggied.com` in the same results (GREEN, sender checks passed): no "Suggested" anywhere. Optional (AC-2): tap the
   suggested button; Manage Rules then shows a block rule with exactly that regex (this creates a real DEV rule; delete
   it after if wanted). On Review No Rule Items, only rows written by a 0.23.0 scan carry a suggestion (Q2 = 1, stored at
   scan time); today 0 rows do (DEV DB, read-only count), because the IMAP cursor does not re-read mail seen before the 0.23.0 launch. The Results
