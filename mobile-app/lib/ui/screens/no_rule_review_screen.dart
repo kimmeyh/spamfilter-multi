@@ -102,7 +102,20 @@ EmailMessage noRuleRowToMessage(UnmatchedEmail email) => EmailMessage(
       authClassificationOverride: email.authClassification,
     );
 
-class _NoRuleReviewScreenState extends State<NoRuleReviewScreen> {
+/// F319 (Sprint 82): whether a lifecycle change should quietly reload the
+/// list. Only `resumed` reloads, and never while the screen is gone or one of
+/// its own actions is running (that action reloads the list itself and
+/// reports its own sweep count). Pure so the rule is testable on its own.
+@visibleForTesting
+bool shouldReloadOnLifecycle({
+  required AppLifecycleState state,
+  required bool mounted,
+  required int ownActionsInFlight,
+}) =>
+    state == AppLifecycleState.resumed && mounted && ownActionsInFlight == 0;
+
+class _NoRuleReviewScreenState extends State<NoRuleReviewScreen>
+    with WidgetsBindingObserver {
   final Logger _logger = Logger();
   final DatabaseHelper _dbHelper = DatabaseHelper();
   late final UnmatchedEmailStore _unmatchedStore;
@@ -150,6 +163,7 @@ class _NoRuleReviewScreenState extends State<NoRuleReviewScreen> {
   void initState() {
     super.initState();
     _unmatchedStore = UnmatchedEmailStore(_dbHelper);
+    WidgetsBinding.instance.addObserver(this);
     _loadItems();
     try {
       _rules = context.read<RuleSetProvider>();
@@ -174,8 +188,38 @@ class _NoRuleReviewScreenState extends State<NoRuleReviewScreen> {
     }
   }
 
+  /// F319 (Sprint 82): reload quietly when the app comes back to the
+  /// foreground. A background scan writes its No Rule rows from another
+  /// process (the Windows worker) or isolate (the Android WorkManager), so
+  /// this screen never hears of them; before this, a tap on the scan-complete
+  /// notification showed the old list until the user pressed Refresh.
+  /// Mirrors the resume observers in account_selection_screen.dart,
+  /// battery_optimization_row.dart and new_mail_trigger_row.dart.
+  ///
+  /// Shared Dart code (ADR-0042). What `resumed` means per platform:
+  /// - Windows: the window regains focus. Whether a toast tap brings the
+  ///   window forward is UNVERIFIED here; manual validation checks it.
+  /// - Android: `onResume`, after the notification intent brings the
+  ///   singleTop activity forward.
+  /// - iOS: the app becomes active.
+  ///
+  /// No message is shown (the list simply updates). A reload already running
+  /// when this fires is not guarded against: both loads read the same rows
+  /// and the sweep is idempotent, so the later one to finish wins harmlessly.
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (shouldReloadOnLifecycle(
+      state: state,
+      mounted: mounted,
+      ownActionsInFlight: _ownActionsInFlight,
+    )) {
+      _loadItems(showSpinner: false);
+    }
+  }
+
   @override
   void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
     _rules?.removeListener(_onRulesChanged);
     _searchController.dispose();
     _searchFocusNode.dispose();
@@ -490,6 +534,8 @@ class _NoRuleReviewScreenState extends State<NoRuleReviewScreen> {
       accountEmail: item.accountEmail,
       // Every row here is unaddressed, so Skip always applies.
       showSkip: true,
+      // F306: the suggestion stored at scan time (null for older rows).
+      suggestion: item.email.suggestion,
       itemKey: itemKey,
       anchorPosition: anchorPosition,
       anchorSize: anchorSize,

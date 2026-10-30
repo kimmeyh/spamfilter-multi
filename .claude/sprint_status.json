@@ -1,22 +1,22 @@
 {
     "_description": "Sprint status file that persists across context compaction. Update after each phase/sub-phase completion.",
-    "_last_updated": "2026-10-27T23:45:00-04:00",
+    "_last_updated": "2026-10-30T10:39:00-04:00",
     "_usage": "Read this file after context compaction to restore sprint approval state and progress.",
     "_staleness_note": "This file had drifted 15 sprints (last updated at Sprint 35, 2026-04-19) before being refreshed at Sprint 50 close-out. It is a Phase 7.7 checklist item -- update it at every sprint close-out, not opportunistically.",
     "current_sprint": {
-        "number": 81,
-        "branch": "feature/20261023_Sprint_81",
-        "status": "Phase 7.7 Final Code Reviews",
-        "status_detail": "7.7.5 gate passed 2026-10-27: PR #507 set ready (gh pr ready), CI run 2 on c262b0ee. 7.7.1 reviews, retrospective (Harold 1-12 Very Good), IMP-1/2/3/4/5/7 applied (IMP-6 -> F318), improvement review fixed (2ae82a26), log-lock race fixed (c262b0ee). Task 1 AC-2/AC-3 (#509) and Task 2 signing + TestFlight (#510) MOVED to Sprint 82 (Harold 2026-10-26); the PR body says 'Part of' for both, so the merge leaves them open (closingIssuesReferences verified: 508, 511-519).",
+        "number": 82,
+        "branch": "feature/20261027_Sprint_82",
+        "status": "Phase 5.3 Manual Validation",
+        "status_detail": "Plan approved 2026-10-30 (Q1=1 Q2=1 Q3=1 Q4=2 Q5=1 Q6=1, Q-S1=1, Q-S2=1; U1: 0.22.0 not uploaded, 0.23.0 notes combine 0.22.0 and 0.23.0). Cards #522-#532 created; #509 (Task 1) and #510 (Task 2) carried. Version 0.23.0+20. Task 4 (F303 Fold) moves to Manual Validation (needs a 0.23.0 closed-test build).",
         "plan_approved": true,
-        "pr_number": 507,
-        "version": "0.22.0+19"
+        "pr_number": 521,
+        "version": "0.23.0+20"
     },
     "previous_sprint": {
-        "number": 80,
-        "branch": "feature/20261018_Sprint_80",
-        "pr": "#490 -> develop (merged 2026-10-23, f301cdee), #506 develop -> main (2d81264a), tag v0.21.0",
-        "deliverables": "F294 (ADR-0049), F295 (ADR-0050, iOS cards), F296, F298, F276, F269, F267, F268, F204, F292 closed, F299 closed; MV Tasks 15-17; MV76-1 done except R-2 (Fold log); F277 closed. 7.7.1 fixes; F302, F303 to Sprint 81. Process: reviews before the retro, PR draft to 7.7.5, one improvement review, CI twice. Version 0.21.0+18. Only #491 auto-closed (comma list in 'Closes'); 18 cards to close by hand."
+        "number": 81,
+        "branch": "feature/20261023_Sprint_81",
+        "pr": "#507 -> develop (merged 2026-10-27, b79fa361), #520 develop -> main (763753be)",
+        "deliverables": "F67b code, F302, F303 code, F259, F301, F271, F278, F300, IMP-2b; version 0.22.0+19. 7.7.1 reviews before the retro (first time); improvement review fixes; diagnostic-log lock race fixed. #508 and #511-#519 closed by the merge; #509 (F67a) and #510 (F304 signing + TestFlight) open, moved to Sprint 82. CI run 2 green on 65518ba4 (run 40627456689)."
     },
     "github_issues": {
         "sprint_73": "#428 (open, MV74-1), #422 (open, MV74-3), #430 closed, #434 (open, MV74-2), #431 closed, #432 closed, #433 (open, MV74-3). Also closed in pass 1: #426 (superseded by #428), #427 (leftover captured as F236).",
@@ -29,7 +29,8 @@
         "sprint_79_closed": "Closed by the PR #480 merge (Closes keywords, develop default branch) 2026-10-18: #481 #482 #483 #484 #485 #486 #487 #488. Open for Sprint 80: #471 (with #433, #428), #472.",
         "sprint_79": "Task 0 #481 (version), Task 1 #471 (MV76-1; inside it #433 F205, #428 MV74-1), Task 2 #472 (F277), Task 3 #482 (F286), Task 4 #483 (F287), Task 5 #484 (F288), Task 6 #485 (F291), Task 7 #486 (F292), Task 8 #487 (F293)",
         "sprint_81": "Task 0 #508, Task 1 #509 (F67a, stays open -> Sprint 82), Task 2 #510 (F304, stays open -> Sprint 82), Task 3 #511 (F67b), Task 4 #512 (F302), Task 5 #513 (F303), Task 6 #514 (F259), Task 7 #515 (F301), Task 8 #516 (F271), Task 9 #517 (F278), Task 10 #518 (F300), Task 11 #519 (IMP-2b). Before merge (2026-10-27): #508 #511 #512 #514 #515 #517 #518 #519 CLOSED; #513 #516 OPEN (closed by the merge).",
-        "sprint_80": "Task 0 #491, Task 1 #471 (with #433 F205, #428 MV74-1), Task 2 #472 (F277), Task 3 #492 (F292), Task 4 #493 (F294), Task 5 #494 (F295), Task 6 #495 (F296), Task 7 #496 (F298), Task 8 #497 (F267), Task 9 #498 (F268), Task 10 #499 (F269), Task 12 #500 (F299), Task 13 #501 (F276), Task 14 #502 (F204), Task 15 #503, Task 16 #504, Task 17 #505. F289 removed (Q4b = 2)."
+        "sprint_80": "Task 0 #491, Task 1 #471 (with #433 F205, #428 MV74-1), Task 2 #472 (F277), Task 3 #492 (F292), Task 4 #493 (F294), Task 5 #494 (F295), Task 6 #495 (F296), Task 7 #496 (F298), Task 8 #497 (F267), Task 9 #498 (F268), Task 10 #499 (F269), Task 12 #500 (F299), Task 13 #501 (F276), Task 14 #502 (F204), Task 15 #503, Task 16 #504, Task 17 #505. F289 removed (Q4b = 2).",
+        "sprint_82": "Task 0 #522, Task 1 #509, Task 2 #510, Task 3 #523, Task 4 #524, Task 5 #525, Task 6 #526, Task 7 #527, Task 8 #528, Task 9 #529, Task 10 #530, Task 11 #531, Task 12 #532"
     },
     "_github_issues_note": "Sprint 66 cards created at Phase 3.3.1 (2026-09-07): #387 GP-19, #388 GP-4. Close by hand at Post-Merge Cleanup.",
     "test_metrics": {
@@ -38,7 +39,8 @@
         "winwright": "2026-10-17 sweep-head 80d92c6: f124 PASS 29/29, s75 PASS 27/27 (re-run alone; first launch in the full sweep failed, cause unknown), no skipped steps, DB drift none",
         "analyzer": "clean",
         "mutations": "Sprint 77: F258 M1/M2/M4 + L1/L2, F245 21, F192 25, SEC-8b 16, F264 24, R76-1 5, merge M1/M2, F-PRECHECK 15 -- all KILLED",
-        "as_of": "2026-10-27, Sprint 81 Phase 7 (suite); other lines as dated"
+        "as_of": "2026-10-27, Sprint 81 Phase 7 (suite); other lines as dated",
+        "sprint_82_phase4": "2026-10-30 09:56: flutter test 3340 passed / 15 skipped / 0 failed; flutter analyze clean (after F306 e03248b1)"
     },
     "store_release": {
         "status_0_15_3": "NOT SUBMITTED TO EITHER STORE. Harold, 2026-09-22: \"not pushing to either store this time\". Phase 8.3 explicitly N/A for this cycle.",
@@ -60,9 +62,8 @@
     ],
     "blocking_issues": [],
     "next_actions": [
-        "Harold: merge PR #507 into develop (Claude never merges). Then verify #508 and #511-#519 closed and #509/#510 stayed open; close any missed card without asking.",
-        "On merge: branch feature/<date>_Sprint_82 from the Sprint 81 feature branch (Phase 6.6), then Phase 8: develop -> main PR + tag v0.22.0 (Harold), 0.22.0 MSIX + AAB (versionCode 19), refinement pass 1 and pass 2.",
-        "Sprint 82 start: MV-2 Fold diagnostics line after the 0.22.0 closed-test update; iOS Part A walked one part at a time, enrolling with Harold's EXISTING Apple ID (the iCloud test email account; Harold 2026-10-27), so no new Apple Account."
+        "Sprint 82 at Phase 5.3 Manual Validation: Tasks 0, 5, 8 (except Block Body), 9, 10, 11, 12 done; 5.1.2, 5.1.5, 5.1.6, 5.1.9 and 5.2 recorded in SPRINT_82_PLAN.md 'Phase 5 evidence'; MV-1 to MV-5 in 'Manual Validation (Phase 5.3)'. AAB 0.23.0+20 built (mobile-app/dist/android-0.23.0+20/app-prod-release.aab) for Harold to upload to closed testing.",
+        "Waiting on Harold: MV results; late questions (F312 probe credential method; F306 Block Body value; iCloud DEV app password; first-party actions SHA pins). Tasks 1-3 wait on Apple enrollment R6QG2A9SHS (criterion 2). Tasks 4 and 7 read phone logs after the 0.23.0 Fold update. Then 7.7.1 reviews on the draft PR + retrospective prompt in one turn."
     ],
     "next_sprint_targeted": {
         "number": 82,

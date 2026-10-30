@@ -451,7 +451,11 @@ Bold = mandatory. _Italic_ = optional (include only when the trigger applies). T
           both are covered (or that only one exists).
        6. Report judgment calls and anything not done -- never commit or push.
        7. For every new throw, rethrow or early exit: list each catch between it and
-          its handler (file:line) and what each does with it (Sprint 81 retro IMP-3). -->
+          its handler (file:line) and what each does with it (Sprint 81 retro IMP-3).
+       8. Paste the "Progress and restart" block (docs/SPRINT_EXECUTION_WORKFLOW.md,
+          Phase 7, "Progress and restart -- canonical block") VERBATIM into the
+          prompt, so a usage-limit stop loses nothing and a restart skips finished
+          work (F317, Sprint 82). -->
 **Delegation checklist included in the sub-agent prompt** (when delegated): yes / N/A
 
 **Executed-by** (filled at completion): <model that actually executed> -- <one line why, MANDATORY whenever it deviates from the assignment>   <!-- MANDATORY at completion (Sprint 49 retro IMP-3; justification hardened Sprint 50 retro IMP-7) -->

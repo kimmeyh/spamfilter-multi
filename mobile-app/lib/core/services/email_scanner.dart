@@ -506,6 +506,11 @@ class EmailScanner {
       // network) ends as an error instead of "completed".
       var foldersMissing = 0;
       var foldersFailed = 0;
+      // F314 (Sprint 82): the new Gmail historyId of each folder whose fetch
+      // AND evaluation finished, held here until the results are durable (saved
+      // after completeScan). A folder that is cancelled or fails never gets an
+      // entry, so it keeps its old cursor and the next scan re-reads its delta.
+      final pendingGmailCursors = <String, String>{};
       String? firstFetchError;
       Object? firstFetchCause;
       for (final folderName in folderNames) {
@@ -590,11 +595,13 @@ class EmailScanner {
           // identical per-batch evaluation and body-truncated retention.
           diag('fetch', 'folder "$folderName" begin');
           final folderWatch = Stopwatch()..start();
+          String? folderHistoryId;
           final folderMessages = await _fetchFolderMessages(
             platform: platform,
             folderName: folderName,
             daysBack: daysBack,
             onBatch: batchSink,
+            onNewGmailHistoryId: (id) => folderHistoryId = id,
           );
           for (var i = 0;
               i < folderMessages.length;
@@ -647,6 +654,13 @@ class EmailScanner {
               ),
               message: 'No emails found in "$folderName", continuing...',
             );
+          }
+
+          // F314: last statement of the try, so any throw above (a cancel, a
+          // fetch or evaluation failure, a session failure) skips it.
+          final newHistoryId = folderHistoryId;
+          if (newHistoryId != null) {
+            pendingGmailCursors[folderName] = newHistoryId;
           }
         } on ScanCancelledException {
           // F224 (Sprint 73): a cancel must NOT be absorbed here.
@@ -1181,6 +1195,14 @@ class EmailScanner {
       }
       await scanProvider.completeScan();
 
+      // F314 (Sprint 82): the results (actions, No Rule rows) are persisted
+      // by completeScan, so this is the earliest point at which the Gmail
+      // history cursors may move. A cancel, a failure or a kill before here
+      // leaves the old cursors and the next scan evaluates the same delta
+      // again; re-evaluation is safe (the No Rule upsert keeps one row per
+      // email, and an action on an already-filed message is idempotent).
+      await _savePendingGmailCursors(pendingGmailCursors);
+
       // Sprint 38 Round 1 (F86 revised, post-retro 2026-05-16): reload
       // rules + safe senders from the DB so the NEXT scan picks up any
       // rule changes the user made during this scan or while reviewing
@@ -1341,6 +1363,26 @@ class EmailScanner {
       }
     }
   }
+  /// F314 (Sprint 82): save the Gmail history cursors held back during the
+  /// scan. A failed save is logged and the folder keeps its old cursor, which
+  /// only means the next scan re-reads that delta (safe), so it does not fail
+  /// a scan whose results are already stored.
+  Future<void> _savePendingGmailCursors(Map<String, String> pending) async {
+    if (pending.isEmpty) return;
+    final dbHelper = DatabaseHelper();
+    for (final entry in pending.entries) {
+      try {
+        await dbHelper.setGmailHistoryCursor(
+            accountId, entry.key, entry.value);
+        AppLogger.scan('Step 7: Persisted historyId=${entry.value} for '
+            '$accountId folder "${entry.key}"');
+      } catch (e) {
+        AppLogger.warning('F314: could not save the Gmail history cursor for '
+            'folder "${entry.key}" (the next scan re-reads its delta): $e');
+      }
+    }
+  }
+
   /// F202 R-6: true only when [folderName] is confidently ABSENT from the
   /// account's folder list (matched case-insensitively on id or display
   /// name). A listing failure answers false, so the fetch error is still
@@ -1780,9 +1822,12 @@ class EmailScanner {
   ///   3. **Other** (demo, etc.): provider-agnostic full-folder fetch via
   ///      `platform.fetchMessages` -- no cursor, no incremental.
   ///
-  /// All three paths persist the new cursor after a successful scan so the
+  /// The IMAP paths persist the new cursor after a successful scan so the
   /// next scan resumes correctly. After a Gmail-expiry fallback or an IMAP
-  /// first scan, the cursor is captured for the next run.
+  /// first scan, the cursor is captured for the next run. F314 (Sprint 82):
+  /// the Gmail path does NOT save inside the fetch; it reports the new
+  /// historyId through [onNewGmailHistoryId] and the scan saves it after the
+  /// results are durable.
   /// F177 (Sprint 62): [onBatch], when provided, streams m=20 batches from
   /// the IMAP path (which then returns an empty list). The Gmail and
   /// generic paths still return whole lists -- their caller (scanInbox
@@ -1796,9 +1841,11 @@ class EmailScanner {
     required String folderName,
     required int daysBack,
     Future<void> Function(List<EmailMessage> batch)? onBatch,
+    void Function(String historyId)? onNewGmailHistoryId,
   }) async {
     if (platform is GmailApiAdapter) {
-      return _fetchFolderMessagesGmail(platform, folderName, daysBack);
+      return _fetchFolderMessagesGmail(platform, folderName, daysBack,
+          onNewHistoryId: onNewGmailHistoryId);
     }
     if (platform is GenericIMAPAdapter) {
       return _fetchFolderMessagesImap(platform, folderName, daysBack,
@@ -1811,11 +1858,19 @@ class EmailScanner {
     );
   }
 
+  /// F314 (Sprint 82): this method READS the folder's history cursor but never
+  /// WRITES a new one. The new historyId goes to [onNewHistoryId] and the scan
+  /// saves it only after the folder's results are durable (see the end of
+  /// [scanInbox]). It used to be saved here, inside the fetch, so a scan that
+  /// was cancelled, failed or killed after the fetch skipped those messages
+  /// for good. The one write left here clears an expired cursor, which only
+  /// forces a full fetch.
   Future<List<EmailMessage>> _fetchFolderMessagesGmail(
     GmailApiAdapter gmail,
     String folderName,
-    int daysBack,
-  ) async {
+    int daysBack, {
+    void Function(String historyId)? onNewHistoryId,
+  }) async {
     final dbHelper = DatabaseHelper();
     // F259 (Sprint 81): the cursor is per account AND folder. It used to be
     // per account, so the first folder scanned (INBOX) saved the account's
@@ -1843,9 +1898,9 @@ class EmailScanner {
       );
       final newHistoryId = await gmail.getCurrentHistoryId();
       if (newHistoryId != null) {
-        await dbHelper.setGmailHistoryCursor(accountId, folderName, newHistoryId);
-        AppLogger.scan('Step 4: Persisted historyId=$newHistoryId for $accountId '
-            'folder "$folderName"');
+        onNewHistoryId?.call(newHistoryId);
+        AppLogger.scan('Step 4: Captured historyId=$newHistoryId for '
+            'folder "$folderName" (saved after the scan is durable)');
       }
       return messages;
     }
@@ -1873,18 +1928,20 @@ class EmailScanner {
       );
       final newHistoryId = await gmail.getCurrentHistoryId();
       if (newHistoryId != null) {
-        await dbHelper.setGmailHistoryCursor(accountId, folderName, newHistoryId);
-        AppLogger.scan('Step 4: Re-captured historyId=$newHistoryId after expiry');
+        onNewHistoryId?.call(newHistoryId);
+        AppLogger.scan('Step 4: Re-captured historyId=$newHistoryId after '
+            'expiry (saved after the scan is durable)');
       }
       return messages;
     }
 
-    // Incremental scan succeeded. Persist the new historyId for next time.
-    if (result.newHistoryId != null) {
-      await dbHelper.setGmailHistoryCursor(
-          accountId, folderName, result.newHistoryId);
-      AppLogger.scan(
-          'Step 4: Persisted new historyId=${result.newHistoryId} after incremental scan');
+    // Incremental scan succeeded. Hand the new historyId to the scan, which
+    // saves it for next time once the results are durable.
+    final nextHistoryId = result.newHistoryId;
+    if (nextHistoryId != null) {
+      onNewHistoryId?.call(nextHistoryId);
+      AppLogger.scan('Step 4: Captured new historyId=$nextHistoryId after '
+          'incremental scan (saved after the scan is durable)');
     }
     return result.emails;
   }

@@ -12,6 +12,7 @@ import 'package:logger/logger.dart';
 
 import '../models/evaluation_result.dart';
 import '../services/diagnostic_logger.dart';
+import '../services/rule_suggestion.dart';
 import 'database_helper.dart';
 
 /// The detail the diagnostic log gets when a current rule or safe sender
@@ -80,6 +81,11 @@ class UnmatchedEmail {
   /// and for rows with no signal.
   final String? heuristicSignals;
 
+  /// F306 (Sprint 82): the one rule suggested for this row, computed at scan
+  /// time (see [RuleSuggestion]). Null for rows written before v17 and for
+  /// rows with no suggestion. Stored as five nullable columns.
+  final RuleSuggestion? suggestion;
+
   UnmatchedEmail({
     this.id,
     required this.scanResultId,
@@ -98,6 +104,7 @@ class UnmatchedEmail {
     this.lastSeenAt,
     this.authClassification,
     this.heuristicSignals,
+    this.suggestion,
   });
 
   /// Convert model to database map
@@ -121,6 +128,7 @@ class UnmatchedEmail {
         'last_seen_at': (lastSeenAt ?? createdAt).millisecondsSinceEpoch,
         'auth_classification': authClassification,
         'heuristic_signals': heuristicSignals,
+        ...RuleSuggestion.toColumns(suggestion),
       };
 
   /// Create model from database map
@@ -150,6 +158,7 @@ class UnmatchedEmail {
             : null,
         authClassification: map['auth_classification'] as String?,
         heuristicSignals: map['heuristic_signals'] as String?,
+        suggestion: RuleSuggestion.fromColumns(map),
       );
 
   /// Create copy with optional field updates
@@ -171,6 +180,7 @@ class UnmatchedEmail {
     DateTime? lastSeenAt,
     String? authClassification,
     String? heuristicSignals,
+    RuleSuggestion? suggestion,
   }) =>
       UnmatchedEmail(
         id: id ?? this.id,
@@ -193,6 +203,7 @@ class UnmatchedEmail {
         lastSeenAt: lastSeenAt ?? this.lastSeenAt,
         authClassification: authClassification ?? this.authClassification,
         heuristicSignals: heuristicSignals ?? this.heuristicSignals,
+        suggestion: suggestion ?? this.suggestion,
       );
 
   @override
@@ -319,6 +330,13 @@ class UnmatchedEmailStore {
   /// codes are incomplete, so a refreshed row keeps the codes it already has
   /// instead of losing them until the next good scan. New rows still store
   /// what was computed.
+  ///
+  /// F306 (Sprint 82): the five `suggestion_*` columns are REFRESHED on every
+  /// sighting (they ride in [UnmatchedEmail.toMap]). The suggestion is a pure
+  /// function of the sender and the auth class, both stored on the same row
+  /// and both refreshed here, so recomputing cannot go stale and needs no
+  /// keep-stored flag. A null suggestion writes five nulls and clears an old
+  /// one.
   Future<List<UnmatchedUpsertResult>> upsertUnmatchedEmails(
       List<UnmatchedEmail> emails,
       {bool keepStoredHeuristicSignals = false}) async {

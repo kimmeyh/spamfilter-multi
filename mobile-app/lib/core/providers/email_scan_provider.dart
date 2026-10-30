@@ -20,6 +20,7 @@ import '../services/background_scan_core.dart' show BackgroundScanCore;
 import '../services/diagnostic_logger.dart';
 import '../services/heuristic_signals.dart';
 import '../services/imap_uid.dart';
+import '../services/rule_suggestion.dart';
 import '../services/scan_coordinator.dart';
 import '../../core/utils/pattern_normalization.dart';
 import '../../util/redact.dart';
@@ -831,6 +832,14 @@ class EmailScanProvider extends ChangeNotifier {
                               .name,
                       context: heuristicContext,
                     ),
+                  ),
+                  // F306: the one suggested rule (pattern from the quick-action
+                  // builder), computed from the same classification stored
+                  // above. Manual and background scans both pass here.
+                  suggestion: RuleSuggestion.suggest(
+                    fromEmail: r.email.from,
+                    authClassification:
+                        AuthResultsParser.classifyHeaders(r.email.headers).name,
                   ),
                 ))
             .toList();

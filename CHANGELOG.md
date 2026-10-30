@@ -26,6 +26,19 @@ Format: `- **type**: Description (Issue #N)` where type is feat|fix|chore|docs
 
 ## [Unreleased]
 
+### 2026-10-30 (Sprint 82)
+
+- **feat**: The No Rule email pop-up suggests one rule: when an email's sender authentication did not fully pass, the Block Entire Domain button (or Block Email for a common provider such as gmail.com) is marked "Suggested", with the exact rule and the reason shown under it; you still tap to apply it, and an email that failed authentication is never suggested as a safe sender. The database moves to version 17 to store the suggestion (Issue #528)
+- **chore**: The CI and iOS workflows pin the third-party Flutter setup action to a commit SHA (v2.23.0), and the signed iOS job passes its secrets only to the steps that use them; a policy test fails on any third-party action pinned by tag (Issue #510)
+- **docs**: Every delegated sprint agent now carries one "Progress and restart" block: it saves its progress to a file, and a restart after a usage limit or a closed session resumes from that file without repeating a release or store action; `scripts/agent-work-status.ps1` shows each agent's state and any mutation lock with its age (Issue #532)
+- **fix**: The No Rule list reloads by itself when the app comes back to the foreground, so tapping a background scan's "No rule 3" notification shows those 3 emails without pressing Refresh (Issue #529)
+- **fix**: A Gmail scan that is cancelled, fails or is closed before it finishes no longer skips mail: the Gmail history position for a folder is saved only after that scan's results are stored, so the next scan reads those messages again (Issue #525)
+- **chore**: The iOS build workflow gains a signed build that uploads to TestFlight, started by hand; it reads the Apple and Gmail sign-in values from repository secrets and deletes them after the build (Issue #510)
+- **docs**: The 7.7.1 toolkit review prompts list every changed file, and each reviewer reports how many it read, so no changed file is reviewed by Copilot alone (Issue #531)
+- **chore**: Version 0.23.0+20 for Sprint 82; 0.22.0 is not uploaded to the stores, so the 0.23.0 store notes cover 0.22.0 and 0.23.0 (Issue #522)
+
+## [0.22.0] - 2026-10-27
+
 ### 2026-10-27 (Sprint 81, improvement review fixes)
 - **fix**: The "Folder not found: <name>" line and the "N already filed" chip now show after a scan that completes with no listed messages, where the screen falls back to the last saved scan; before, both were hidden in exactly that case (Issue #514)
 - **fix**: The diagnostic log no longer loses lines when several background tasks write at once: a missed log lock is retried 5 ms apart instead of three times back to back (found by the full test suite; 100 of 100 probe rounds clean under load after the fix)

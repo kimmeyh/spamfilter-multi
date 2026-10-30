@@ -92,7 +92,7 @@ title and closes it at end-of-run. Consequences for script authors:
 > `test_text_selection`, `test_f25_rule_test_tool`, and `test_f35_rule_edit`. See ALL_SPRINTS_MASTER_PLAN.md
 > F100 and docs/TESTING_STRATEGY.md (two-harness section).
 
-The default sweep runs the 2 scripts below and must stay CURSOR-FREE (F284, Sprint 78): no `ww_click`,
+The default sweep runs the 3 scripts below and must stay CURSOR-FREE (F284, Sprint 78): no `ww_click`,
 `ww_hover`, `ww_drag_drop`, `ww_scroll`, `ww_keyboard`, `ww_type` or `ww_select_text` step, so it can run
 while the PC is in use or locked. `test/policy/winwright_script_strings_test.dart` fails on any such step
 (one KNOWN PENDING exception: the two `ww_hover` steps in `test_s75_new_controls.json`, awaiting the F284
@@ -120,6 +120,30 @@ testing layer, not a parity gap.
 |--------|--------|--------|
 | `test_f124_rule_labels.json` | F124: Manage Rules category/sub-type display -- row accessible names, the details dialog's labelled `Category`/`Sub-Type` fields and their values, and all 7 filter chips (each paired with the `Clear` button that exists only while a filter is active) | S51 F129 (new) |
 | `test_s75_new_controls.json` | Sprint 75 controls: Sort chip, Scan History Clear history (cancel only), Settings export toggle (`ww_set_checked`, restored), Account tab folder rows | S75 Task 7 |
+| `test_f320_no_rule_review.json` | F320: Review No Rule Items (the default screen) -- opens the first listed item's pop-up and resolves Skip, the safe-sender row (`Exact Email`, `Exact Domain`, `Entire Domain`) and the block row (`Block Email`, `Block Exact Domain`, `Block Entire Domain`, `Block Subject`). See "F320 script" below | S82 Task 10 |
+
+### F320 script: `test_f320_no_rule_review.json` (Sprint 82, Task 10)
+
+- **Covers**: the app opens on Review No Rule Items; a listed item opens its pop-up; the pop-up carries Skip and
+  the 3 safe-sender and 4 block-rule buttons under their exact accessible names. Steps are `ww_window_state`,
+  `ww_invoke` (the row only) and `ww_focus` (the read-only probe), so the script runs on a locked workstation.
+- **Why `ww_focus` and not `ww_get_value`**: the script runner cannot replay `ww_get_value` (probed 2026-10-30,
+  "Replay of 'ww_get_value' is not supported by the script runner"; the runner then fails the script as skipped
+  steps, exit 3). `ww_focus` resolves the selector, fails the step when nothing matches within `stepTimeoutMs`,
+  and presses nothing. This corrects the "UNVERIFIED" `ww_get_value` row in the control table above.
+- **Row source**: any unaddressed No Rule item in the DEV DB's latest scan of any account (the DEV DB had 7 on
+  2026-10-30, 28 unprocessed yellow rows beyond those). No seed script; the script reads and invokes nothing that
+  writes. An empty list fails the row step by design.
+- **Pop-up stays open at the end**: the pop-up has no Close button, and Skip opens the NEXT item's pop-up. Dismiss
+  needs a tap outside it or Escape (cursor-class). The runner closes the whole app when the script ends.
+- **Does NOT cover**: (1) the F306 `Suggested` marker, the `<label>, suggested rule` name and the suggestion note
+  -- a suggestion is written to a row only by a scan that sees an authentication-YELLOW email as No Rule, and
+  the DEV DB had 0 of 707 rows with `suggestion_kind` set (all 113 yellow rows predate schema v17; a DEV manual
+  AOL scan on 2026-10-30 re-listed 2 green rows and refreshed none of them). No deterministic source exists, so
+  `test/ui/widgets/email_detail_popup_suggestion_test.dart` stays the only guard. (2) what a button DOES when
+  tapped (no rule is created here; `no_rule_review_screen_test.dart` covers it). (3) that the buttons are
+  enabled or correctly colored. (4) there is no `Block Body` button in the pop-up; the block row ends at
+  `Block Subject`.
 
 The create/lifecycle flows below are kept as the F99 reference and remain EXCLUDED from any default
 sweep -- their reliable unattended execution lives in `integration_test`:

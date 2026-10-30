@@ -524,7 +524,7 @@ This change was introduced after Sprint 36 kickoff skipped Phase 1 (prior "OPTIO
   - Sonnet available for escalation if needed
   - Opus available for complex issues
   - **Track every approved task in the harness task list** (TaskCreate at Phase 3.7 approval; TaskUpdate as statuses change) so the not-done inventory is mechanical, not recalled (Sprint 49 retro IMP-1).
-  - **Record "Executed-by" per task at completion** (Sprint 49 retro IMP-3): the model that actually executed vs the plan's assignment, with a one-line why on any deviation. Delegate genuinely mechanical tasks to cheaper-tier subagents when not tightly coupled to in-flight context.
+  - **Record "Executed-by" per task at completion** (Sprint 49 retro IMP-3): the model that actually executed vs the plan's assignment, with a one-line why on any deviation. Delegate genuinely mechanical tasks to cheaper-tier subagents when not tightly coupled to in-flight context. Every delegated prompt carries the Progress and restart block (F317).
   - **Recorded justification when NOT completed by the planned model** [WARNING] MANDATORY (Sprint 50 retro IMP-7, Harold 2026-07-26): assignment is cheapest-first at plan time, but the session model frequently executes everything (Sprint 50: 10/10 items assigned Haiku/Sonnet, 10/10 executed by the session model). That is ACCEPTABLE -- what is not acceptable is leaving it unexplained. Whenever `Executed-by` differs from the plan's `Model:` assignment, the same line MUST carry a concrete reason, not a restatement. Use one of these shapes:
     - `in-session -- tightly coupled to in-flight context (<what context>)` (e.g. mid-debug state, an open live-DB apply window, a decision just made with Harold)
     - `in-session -- delegation round-trip exceeds the task itself (<N>m task)` (genuinely mechanical but sub-round-trip work)
@@ -638,7 +638,7 @@ This change was introduced after Sprint 36 kickoff skipped Phase 1 (prior "OPTIO
     - `pr-review-toolkit:type-design-analyzer` - when sprint introduces or refactors types
     - `pr-review-toolkit:pr-test-analyzer` - when sprint adds new functionality (test coverage analysis)
   - **Process**:
-    1. Run `pr-review-toolkit:code-reviewer` agent with git diff as input
+    1. Run `pr-review-toolkit:code-reviewer` agent with git diff as input (the prompt carries the Progress and restart block)
     2. **Related-patterns grep (MECHANICAL - always run)**: Instruct the reviewer to grep the codebase for patterns adjacent to the sprint changes. This is not optional -- it catches cross-cutting gaps that look file-scoped during implementation. Examples:
        - If sprint changes logging in file X, grep for similar `_logger.` sites in other files
        - If sprint adds validation in method Y, grep for other call sites that lack the same validation
@@ -1120,12 +1120,71 @@ Before Phase 7, if context usage is high (>70%), user can optionally run `/compa
 - Identifies potential issues early
 - Builds team knowledge base
 
+#### Progress and restart -- canonical block for every agent the sprint process starts (F317, Sprint 82)
+
+Harold, 2026-10-30 (Sprint 82 Q5 = 1): *"every agent the sprint process starts writes its progress to files as it works and reads them when it starts, so a stop at a usage limit loses nothing and a restart skips finished work; an hourly wake-up resumes any agent that stopped; and a resumed agent never repeats a release or store action."*
+
+**Rule**: every prompt that starts a subagent (7.7.1 toolkit reviews, the 7.7.1 improvement review, a background CI-fix agent, a delegated task from 4.1 or from the SPRINT_PLANNING.md delegation checklist) pastes the block below VERBATIM. Other places in this document refer to it as "the Progress and restart block". A policy test (`mobile-app/test/policy/progress_and_restart_block_test.dart`) fails when the block or one of those references is removed.
+
+```text
+PROGRESS AND RESTART (apply to yourself)
+1. Your progress folder is <SCRATCH>\<task-name>\ . <SCRATCH> is the session
+   scratchpad, or the gitignored mobile-app/test/scratch/. Never use the tracked tree.
+2. FIRST ACTION: read <SCRATCH>\<task-name>\progress.md and the other files in that
+   folder. Skip every unit marked DONE. Do not redo finished work.
+3. After EACH unit, save progress with the Write tool (not a shell redirect).
+   Reviewer: save each file reviewed and each finding (file:line, severity, text).
+   Edit task: save each file finished. Script task: save each step finished.
+4. progress.md format. One line per unit: "UNIT <name>: DONE" or "UNIT <name>: STARTED".
+   Then "LAST STEP: <one line>". The LAST line is "STATUS: FINISHED" and you write it
+   only after everything else is saved.
+5. MUTATION LOCK: if you hold one (.claude\mutation-locks\), your first action on a
+   restart is to restore the file (git diff, or your saved original), verify it is
+   byte for byte restored, then call Remove-MutationLock. Never commit while a lock
+   is held. Check ages with Get-MutationLockInfo.
+6. NEVER repeat a release or store action: Phase 8 develop merge, an MSIX build from
+   spamfilter-multi-prod, a Google Play or Microsoft Store upload or submission, a
+   tag. First check it is not already done (git log, git tag, the console) and
+   record the check in progress.md. If it is done, skip it and say so.
+7. Your final reply starts with "Resumed: <what was skipped and from which step>" or
+   "Resumed: nothing (fresh start)".
+```
+
+**Usage limits (verified 2026-10-30, Claude Code 2.1.314 from `claude --version`)**. Source: https://code.claude.com/docs/en/interactive-mode#wait-for-a-usage-limit-to-reset
+- VERIFIED: *"Claude Code waits in the open session and continues the task on its own after the limit resets. Automatic continue is on by default in interactive sessions signed in with a claude.ai subscription. Requires Claude Code v2.1.234 or later."*
+- VERIFIED: re-arm is limited: *"re-arms the wait on its own at most twice in a row, then stops"*.
+- VERIFIED: *"Claude Code doesn't start the wait on its own ... A reset more than 24 hours away: a weekly limit can reset days out."* In that case the options menu offers the wait by hand.
+- VERIFIED: *"Claude Code doesn't offer the wait at all ... Background sessions and `-p` runs"*, and the wait ends when *"You exit Claude Code: the wait doesn't restart when you resume the session."*
+- VERIFIED: the setting is named `autoContinueAtUsageLimit`. It is set in neither `~/.claude/settings.json`, `~/.claude/settings.local.json` nor the project settings files, so the default (on) applies. The settings-reference page lists the key but its default text was not reached in the fetch, so the default is taken from the interactive-mode page only.
+- UNVERIFIED: that subagents stop with the session and keep context only for a SendMessage resume in the same session. None of the three pages says this. The block above does not depend on it.
+- Scheduled tasks (https://code.claude.com/docs/en/scheduled-tasks): *"Recurring tasks automatically expire 7 days after creation. The task fires one final time, then deletes itself."* *"Tasks only fire while Claude Code is running and idle."* *"A scheduled prompt fires between your turns, not while Claude is mid-response."* A recurring hourly task runs 0 to 30 minutes late (jitter).
+
+**Status script (R-3)**: `powershell -NoProfile -ExecutionPolicy Bypass -File scripts\agent-work-status.ps1` (read-only). It lists each agent task folder as not started, started with nothing saved, in progress (with the last step), or finished (`STATUS: FINISHED`), the held mutation locks with their age, and the sprint phase from `.claude/sprint_status.json`.
+
+**Hourly wake-up prompt (R-4)**. The coordinating session starts it with CronCreate, recurring, cron `53 * * * *` (an off-minute), when it launches the first agent of a phase. It expires after 7 days; report the expiry date to Harold when you create it and re-create it if the sprint runs longer. Paste this text as the cron prompt:
+
+```text
+HOURLY WAKE-UP
+1. If a turn is running, do nothing.
+2. Run scripts\agent-work-status.ps1.
+3. For each agent that stopped without its final report (state "in progress" or
+   "started with nothing saved"), send SendMessage: "Continue where you stopped.
+   Read your progress files first; do not redo finished work."
+4. Report any mutation lock older than one hour. Do not commit while a lock is held.
+5. If nothing stalled, continue the phase's next action per the Phase Auto-Advance
+   Rule (state it in one sentence, then execute it). Never repeat a release or
+   store action.
+6. If nothing stalled and nothing is pending, reply with one line.
+7. End the reply with the status-footer script line, and keep the closing convention
+   sprint-auto-advance.ps1 matches (no unfinished commitment as the last sentence).
+```
+
 **[CRITICAL] PHASE 7 ORDER -- the final code reviews come FIRST (Harold, 2026-10-23, Sprint 80 Q3 = 1; from Sprint 81 on)**:
-1. Manual Validation (5.3) complete -> in ONE turn, with the PR still DRAFT: start BOTH 7.7.1 final code reviews (Copilot by hand + pr-review-toolkit code-reviewer and silent-failure-hunter), and send the retrospective prompt (7.3 Step 1).
+1. Manual Validation (5.3) complete -> in ONE turn, with the PR still DRAFT: start BOTH 7.7.1 final code reviews (Copilot by hand + pr-review-toolkit code-reviewer and silent-failure-hunter), and send the retrospective prompt (7.3 Step 1). Each toolkit prompt carries the Progress and restart block.
 2. While Harold writes his feedback, fix the 7.7.1 findings, prevention first (the 7.7.1 rules below are unchanged).
 3. The retrospective uses the findings as input: list them by CLASS (silent failure, missing reload, wrong doc comment, ...) in the Claude draft. Every RECURRING class gets an improvement proposal at 7.5 (a card acceptance criterion, a stronger 5.1.2 F-PRECHECK class, a gate). **A class is recurring if two or more findings in this sprint share it, or if it appears in an earlier sprint's 7.7.1 evidence line.** A single finding of a new class gets its root cause written down; an improvement for it is optional.
 4. Apply the approved improvements (7.7).
-5. **7.7.1 improvement review -- ONE pass**: run pr-review-toolkit code-reviewer and silent-failure-hunter on ONLY the improvement commits. A finding whose fix is under the 7.7.1 size limit (under 4 code files AND under 600 lines) is fixed now; a larger one goes to the next sprint's Phase 1 refinement. The fixes from this pass are not reviewed again. Record the result on the 7.7.1 evidence line. **In the same turn, start CI run 1 on the draft branch** (`gh workflow run ci.yml --ref <sprint-branch>`) and fix any failure alongside the review findings.
+5. **7.7.1 improvement review -- ONE pass**: run pr-review-toolkit code-reviewer and silent-failure-hunter on ONLY the improvement commits. A finding whose fix is under the 7.7.1 size limit (under 4 code files AND under 600 lines) is fixed now; a larger one goes to the next sprint's Phase 1 refinement. The fixes from this pass are not reviewed again. Record the result on the 7.7.1 evidence line. Each toolkit prompt carries the Progress and restart block. **In the same turn, start CI run 1 on the draft branch** (`gh workflow run ci.yml --ref <sprint-branch>`) and fix any failure alongside the review findings.
 6. `gh pr ready <PR#>`, then **CI run 2** green on that HEAD (it fires on `ready_for_review`).
 7. 7.7.5 final gate and the readiness announcement.
 
@@ -1324,12 +1383,13 @@ Before conducting sprint review, build and test the Windows desktop app:
 - [ ] **7.7.1 FINAL CODE REVIEWS -- Copilot AND pr-review-toolkit** (MANDATORY, Harold 2026-10-06; moved BEFORE the retrospective 2026-10-23)
   - **Trigger**: the moment Manual Validation (5.3) is complete -- the first action of Phase 7. Start it in the same turn as the retrospective prompt (7.3 Step 1), with the PR still DRAFT (do NOT run `gh pr ready`; Copilot can be requested by hand on a draft -- standing fact, Harold 2026-10-23). Fix the findings while Harold writes his feedback; do the sprint-completion docs (7.7 Step 7b) while the reviews run.
   - **Feed the retrospective**: once the findings are dispositioned, list them by CLASS in the Claude Code Development Team draft (7.3 Step 2, Categories 2 Testing Approach and 9 Process Issues). At 7.5, every RECURRING class gets an improvement proposal aimed at PREVENTING it upstream: a card acceptance criterion, a stronger 5.1.2 F-PRECHECK class, a policy test, a hook. **A class is recurring if two or more findings in this sprint share it, or if it appears in an earlier sprint's 7.7.1 evidence line** (Harold, 2026-10-23, Q4 = 1). A single finding of a new class gets its root cause written down in the draft; an improvement for it is optional.
-  - **7.7.1 improvement review -- ONE pass** (after 7.7 Step 7a): run `pr-review-toolkit:code-reviewer` and `pr-review-toolkit:silent-failure-hunter` on ONLY the retrospective improvement commits (`git diff <last 7.7.1 fix commit>..HEAD`). Copilot is not requested again unless Harold asks. Disposition as below, with two differences (Harold, 2026-10-23, Q4 = 1 and Q5 = 2):
+  - **7.7.1 improvement review -- ONE pass** (after 7.7 Step 7a): run `pr-review-toolkit:code-reviewer` and `pr-review-toolkit:silent-failure-hunter` on ONLY the retrospective improvement commits (`git diff <last 7.7.1 fix commit>..HEAD`), each prompt carrying the Progress and restart block. Copilot is not requested again unless Harold asks. Disposition as below, with two differences (Harold, 2026-10-23, Q4 = 1 and Q5 = 2):
     1. A finding whose fix is under the size limit below (under 4 code files AND under 600 lines) is fixed now, without asking. A finding at or over the limit is NOT asked and NOT fixed: it goes to the next sprint's Phase 1 refinement (a line in `SPRINT_<N+1>_PLAN.md` carry-ins and a master-plan backlog entry) and is named in the 7.7.5 message.
     2. **There is no second pass.** The fixes from the improvement review are tested and pushed, but not reviewed again. Without this bound, review, retrospective and review could loop.
-    **CI run 1** (Harold, 2026-10-23, Q6): in the same turn as the improvement review, start CI on the draft branch -- `gh workflow run ci.yml --ref <sprint-branch>`, then `gh run watch <run-id>` (`gh run list --workflow ci.yml --branch <sprint-branch> --limit 1` gives the id). Fix any failure with the review findings, under the same rules. Record `CI run 1 <result>` on the evidence line.
+    **CI run 1** (Harold, 2026-10-23, Q6): in the same turn as the improvement review, start CI on the draft branch -- `gh workflow run ci.yml --ref <sprint-branch>`, then `gh run watch <run-id>` (`gh run list --workflow ci.yml --branch <sprint-branch> --limit 1` gives the id). Fix any failure with the review findings, under the same rules. A background CI-fix agent carries the Progress and restart block. Record `CI run 1 <result>` on the evidence line.
     If there were no improvement commits, write "no improvement commits" on the evidence line and still run CI run 1. This keeps what the old order gave: the retrospective's own hooks, scripts and docs are reviewed before merge.
   - **Name the excluded files in every toolkit review prompt** (7.7.1 and the improvement review): the agent must not read or report on the `0*` files at the repo root (Harold's working documents) or anything under `archive/` -- the repository rule in CLAUDE.md "Documentation Structure". Copilot's scope cannot be set; a Copilot comment on those files is answered N/A with that reason.
+  - **List every changed file in every toolkit review prompt** (F318, Sprint 82; Sprint 81 retro IMP-6). Paste the output of `git diff --name-only origin/develop...HEAD` (for the improvement review: `git diff --name-only <last 7.7.1 fix commit>..HEAD`), minus the `0*` files at the repo root and `archive/`, into the code-reviewer and silent-failure-hunter prompts as "Files to review (N)". A prompt that names directories instead of files is how Sprint 81's `mobile-app/scripts/build-with-secrets.ps1` was reviewed by Copilot alone. Each reviewer's report must end with "Files read: M of N" and name every file it did not read, with the reason. Record both numbers on the evidence line (`files given N / confirmed read M`); a gap is a finding to close before 7.7.5, by reading the missing files or sending them to a second toolkit pass.
   - **Why first** (Harold, 2026-10-23): *"retrospectives and suggested improvements should come after the PR reviews are completed - in order to find suggested improvements that would prevent them from occurring (improved sprint cards, checklist gates...)"*. See the Phase 7 order block at the top of Phase 7.
   - **Why the reviews still see the final code**: Manual Validation fixes are all in before Phase 7 starts, and the improvement review covers what the retrospective adds. History (2026-10-06): before 7.7.1 existed Copilot reviewed automatically when the PR left draft, and Claude's only review was 5.1.1, before Manual Validation. In Sprint 76 that left ~500 lines of Manual Validation fixes (lib/ and android/) reviewed by Copilot only, and the retrospective's new hook and build gate reviewed by nobody. The late Claude pass then found 2 HIGH defects in that code. **5.1.1 was REMOVED the same day (Harold)**: there is no code review before Manual Validation any more; 7.7.1 reviews what will actually merge, using the 5.1.1 procedure (related-patterns grep, test-assertion sibling sweep, two-phase review for cross-cutting policies).
   - **Automatic Copilot review is OFF.** The repository ruleset's "Automatically request Copilot code review" rule was removed 2026-10-06 (ruleset now "PR Rules (All Branches)"). Do not re-enable it. If a Copilot review appears that nobody requested, someone's PERSONAL Copilot setting ("Automatic Copilot code review", github.com/settings/copilot) is on -- the repo cannot disable that source.
@@ -1337,7 +1397,7 @@ Before conducting sprint review, build and test the Windows desktop app:
     1. **Copilot, requested by hand** with the GraphQL `requestReviews` mutation (bot id `BOT_kgDOCnlnWA`, `union: true`) -- the procedure and its verification are in the `copilot-pr-review` skill. Verify the request through GraphQL `reviewRequests` or the issue timeline, NEVER the REST `requested_reviewers` endpoint (it does not list bot reviewers). Wait by polling reviews with a `startswith("copilot")` match (the REST login carries a `[bot]` suffix).
     2. **`pr-review-toolkit:code-reviewer`** on the FULL sprint diff (`origin/develop...HEAD`), with the related-patterns / sibling grep and, for any new exception type, the catch-chain walk (CLAUDE.md, Sprint 73/75 rules).
     3. **`pr-review-toolkit:silent-failure-hunter`** on the same diff.
-    Run the two toolkit agents in the background. Name all three launches in the next message to Harold.
+    Run the two toolkit agents in the background. Name all three launches in the next message to Harold. Paste the Progress and restart block into both toolkit prompts (F317).
   - **Disposition every finding** (all three sources) with these fields: **What** (quoted or summarized), **Why** (context), **Impact** (what changes if addressed), **Recommendation** -- `Fix now` (with proposed change), `Add to backlog` (title + rationale), or `Not applicable` (reasoning). **Fix review findings WITHOUT asking** (Harold, 2026-10-08, Sprint 77: *"I asked for a numbered list for alternatives ... as the Question and Answer format - I did not realize I had asked for that to be applied to all PR review identified fixes - that is not needed. None of these needed approval from the Chief Architect or Chief Developer."*). Ask Harold -- as a numbered list he can answer by digit -- ONLY for a finding whose fix is a decision-class change (architecture, a prior development decision, or sprint scope; CLAUDE.md "Decision-Class Taxonomy") or that you recommend sending to the backlog or marking not applicable (both are scope decisions). Everything else is fixed, tested, pushed and REPORTED afterwards with its What / Why / prevention / fix, in the 7.7.1 evidence line and the readiness message.
   - **SIZE LIMIT on fixing without asking** (Harold, 2026-10-09): fix a finding without asking ONLY when it can be resolved effectively by changing **fewer than 4 code files AND fewer than 600 lines of code**. If the effective fix needs **4 or more code files, OR 600 or more lines**, STOP and ask Harold before writing it -- as a numbered list: the finding, the proposed fix, its file count and line estimate, and the alternatives (for example, a smaller instance fix now plus a backlog card for the prevention).
     - **Counting**: per finding (findings resolved by one shared change count together). Code files are production, script and hook source (`mobile-app/lib/`, `mobile-app/android/`, `mobile-app/windows/`, `scripts/`, `.claude/hooks/*.ps1`). Tests, test helpers, hook test cases and fixtures, and docs do NOT count. Lines are added plus removed in the counted files (`git diff --numstat`).
@@ -1353,7 +1413,7 @@ Before conducting sprint review, build and test the Windows desktop app:
   - **Apply** approved `Fix now` items as commits on the sprint branch, each with a mutation check when it guards a bug (`scripts/mutation-test.ps1`), then analyzer + full suite green and push. File approved `Add to backlog` items in ALL_SPRINTS_MASTER_PLAN.md. Reply to and resolve every Copilot thread.
   - **No automatic re-review.** A fix commit does not trigger Copilot again. If the fixes change behavior substantially, say so to Harold and offer one more 7.7.1 round; do not run it unasked.
   - **Record the evidence** in `SPRINT_N_PLAN.md` as ONE canonical bullet (the close-out hook `verify-closeout-complete.ps1` check 3d-2 blocks a close-out claim from Sprint 77 on if it is missing, empty, or `PENDING`):
-    `- **7.7.1 final code reviews**: <date>, Copilot <result>; code-reviewer <counts>; silent-failure-hunter <counts>; <Fix now / backlog / N/A dispositions, each Fix now with its code-file / line count>; commits <hashes>; improvement review <result, or "no improvement commits">; CI run 1 <result>`
+    `- **7.7.1 final code reviews**: <date>, Copilot <result>; files given N / confirmed read M (code-reviewer), M (silent-failure-hunter); code-reviewer <counts>; silent-failure-hunter <counts>; <Fix now / backlog / N/A dispositions, each Fix now with its code-file / line count>; commits <hashes>; improvement review <result, or "no improvement commits">; CI run 1 <result>`
   - **Skip condition**: none for the toolkit reviews. If Copilot genuinely cannot be attached (the request returns an error), record that on the marker line and continue with the toolkit reviews.
   - **Model**: top tier (Fable/Opus) for the disposition analysis.
 
