@@ -6,7 +6,70 @@ Do not stop between tasks as they are all approved, please continue to complete 
 Do not stop to ask questions unless meeting the criteria in \docs\SPRINT_STOPPING_CRITERIA.md
 If questions must be asked, ask as late as possible - do everything that can be done (all tasks and parts of tasks, without the answer to the question(s), then ask the question(s)
 ---------------------------------------------------------------------------------------------------------
+  Questions (answer these with your approval)
+q1. 1 q2 1 q3 1 q4 2 (try this and see how it goes) q5 1 q6 1 q-s1 1 q-s2 1 u1 no plan to upload 0.22.0 and will wait for 0.23.0 is complete (noting that the release notes will nee to be combined release notes for 0.22 and 0.23.0
+
+  Q1. F314: when is the Gmail history cursor saved? This would change a prior development decision. Today the cursor is saved during the fetch
+  (email_scanner.dart:1846, 1876, 1884). If the scan is cancelled, fails or the app is killed after the fetch, those emails are never evaluated. You see
+  nothing; the mail just stays unprocessed.
+  1. Hold the new cursor in memory, and save it for each folder only after that folder is evaluated. A folder cancelled part way keeps the old cursor,
+     so the next scan reads that batch again. I check first that a second read is safe (no duplicate rows, no second action). (Recommended)
+  2. Same as 1, but a folder cancelled part way saves a cursor up to the last email evaluated. Smaller re-read, more code, and needs a design read
+     first.
+  3. Keep the save during the fetch, and add a "fetched but not evaluated" record that the next scan finishes first. This is a second mechanism beside
+     the cursor.
+  4. Backlog it.
+
+  Q2. F306: store the suggestion on the No Rule row? This would change a prior development decision. Your design makes the suggestion at scan time, so
+  it must be stored for the pop-up to show later.
+  1. One suggestion per row in new columns (database version 17): safe or block, the rule type, the exact regex and a reason. A body rule keeps only the
+     regex, never body text. (Recommended)
+  2. Compute the suggestion when the pop-up opens and store nothing. This differs from your "at scan time" design.
+  3. Store email and domain suggestions only in this sprint; subject and body suggestions come later.
+
+  Q3. Task 6: a read-only header probe for the F312 and F305 counts? The probe opens the DEV AOL account read-only, so no email is marked read, moved or
+  flagged. It reads only the headers of emails already in the content history, matched by Message-ID, and it keeps counts only. AOL holds 1,468 of the
+  1,548 emails.
+  1. Approve the probe on AOL. (Recommended)
+  2. AOL plus Gmail through the Gmail API (more setup; Gmail has 76 emails).
+  3. No probe: add a DEV-only log line and count over the sprint. Slower, because Windows DEV runs no background scans.
+
+  Q4. F306: when to decide what a suggestion is based on?
+  1. I ask you one numbered question as soon as Task 6's counts exist, with the counts in the question. F306 work that does not depend on the answer
+     goes ahead meanwhile. (Recommended)
+  2. I decide by a fixed rule now: a signal is used only if it fires on at least 10 percent of No Rule emails and agrees with at least 80 percent of
+     your 69 decisions. I report the result, and there is no mid-sprint question.
+
+  Q5. F317: is this the right requirement? "Every agent the sprint process starts writes its progress to files as it works and reads them when it
+  starts. A stop at a usage limit then loses nothing, and a restart skips finished work. An hourly wake-up resumes any agent that stopped, and a resumed
+  agent never repeats a release or store action."
+  1. Yes.
+  2. Not quite (say what differs).
+
+  Q6. F319: what should a notification tap do?
+  1. The No Rule list reloads every time the app comes back to the front, on Windows, Android and iPhone, for all accounts. It shows the same list as
+     the refresh icon, without its message. One small change and full parity. (Recommended)
+  2. Option 1, plus a tap opens No Rule Review filtered to that notification's account. Android and iPhone can carry the account in the notification. On
+     Windows, a tap starts a second copy of the app that hands focus to the running one and exits, so passing the account needs a new Windows-only
+     hand-off. That adds about 90-150 minutes and is unverified until tested.
+  3. Option 1 now, and option 2's account filter to the backlog.
+
+  Q-S1. Model assignments as in the plan:
+  1. Approve.
+
+  Q-S2. Version 0.23.0+20 (a minor bump, because F306 is a new feature):
+  1. Approve.
+
+  U1. The 0.22.0 store uploads (still open). Task 4 cannot start until the Fold has the 0.22.0 closed-test build. Your answer also decides whether the
+  version-bump commit records 0.22.0 as the last Play upload.
+  1. Both are uploaded (or will be today).
+  2. Not yet; I will tell you when.
+
+
+
 Sprint 82 Scope should include the below items. Please complete sprint planning (/docs/sprint_planning.md) for the below items and present for approval.  Note that everything needs to take into account the Windows App, Android app and the iPhone app with the ADR stating that everything should be functionally and UI the same unless it cannot be - and where it cannot be it should be implemented as a platform exception for what is needed -- this applies to all backend code, frontend code, data, architecture, development, security, testing, deployment.
+  - F67a remainder: Apple enrollment with your existing Apple ID, the iOS OAuth client and the App Store Connect API key. These are your console steps;
+    about 30m for me, plus Apple's wait.
   - F304 remainder: signing and the first TestFlight upload (~90-180m plus a 120m time-box for signing).
   - F67b remainder: the iPhone device check once a TestFlight build exists (~60-120m).
   - F303 remainder: the Fold diagnostics line after the 0.22.0 closed-test update (~10m plus a log pull).
@@ -19,13 +82,10 @@ Sprint 82 Scope should include the below items. Please complete sprint planning 
   - F318: the 7.7.1 review prompt lists every changed file (~15m).
   - F317: keep delegated agent work safe across usage limits (~120-240m).
   - WinWright coverage of No Rule Review: an item from the Sprint 82 stub with no card id yet (~30-60m). I give it a card id at Phase 3.
+- add to backlog for this sprint - when going from a notification to the app (windows, android currently) it opens the "No Rules" screen, but does not refresh the screen. So while the notification may say, "No rule 3 Deleted 2 Safe 0" the "No Rules" screens opens up with none (or whatever was there the last time the user was on the screen if the app is still running in the background). Is there a way to trigger a refresh on the screen so when "No rule 3 Deleted 2 Safe 0" shows in the notification the user is taken to the screen and it shows the 3 No rule items. Noting this is per background job notification. Noting if the user manually does a refresh via the icon, then it shows the current list of no rule items.
 
 
 
-  Recommendation for Sprint 82
-
-  Theme: finish the iOS path to a TestFlight build on your iPhone, fix the Gmail cursor bug, count the evidence for F312 and F315, and start the No Rule
-  suggestion on measured signals.
 
   Recommended scope (minutes; the remainders are my estimates):
   - F67a remainder: Apple enrollment with your existing Apple ID, the iOS OAuth client and the App Store Connect API key. These are your console steps;
@@ -255,8 +315,6 @@ Sprint 82 Scope should include the below items. Please complete sprint planning 
   - Platform: Android
   - These traces are C:/D: cross-drive noise. Tonight's AAB build printed dozens of them and still succeeded.
   - Options: set kotlin.incremental=false (measure the build-time cost first), or move the pub cache to D:. The value is preventive only.
-
-
 
 ---------------------------------------------------------------------------------------------------------
 Sprint 81 Scope should include the below items. Please complete sprint planning (/docs/sprint_planning.md) for the below items and present for approval.  Note that everything needs to take into account the Windows App, Android app and the iPhone app with the ADR stating that everything should be functionally and UI the same unless it cannot be - and where it cannot be it should be implemented as a platform exception for what is needed -- this applies to all backend code, frontend code, data, architecture, development, security, testing, deployment.

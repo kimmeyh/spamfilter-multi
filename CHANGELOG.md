@@ -26,6 +26,12 @@ Format: `- **type**: Description (Issue #N)` where type is feat|fix|chore|docs
 
 ## [Unreleased]
 
+### 2026-10-30 (Sprint 82)
+
+- **chore**: Version 0.23.0+20 for Sprint 82; 0.22.0 is not uploaded to the stores, so the 0.23.0 store notes cover 0.22.0 and 0.23.0 (Issue #522)
+
+## [0.22.0] - 2026-10-27
+
 ### 2026-10-27 (Sprint 81, improvement review fixes)
 - **fix**: The "Folder not found: <name>" line and the "N already filed" chip now show after a scan that completes with no listed messages, where the screen falls back to the last saved scan; before, both were hidden in exactly that case (Issue #514)
 - **fix**: The diagnostic log no longer loses lines when several background tasks write at once: a missed log lock is retried 5 ms apart instead of three times back to back (found by the full test suite; 100 of 100 probe rounds clean under load after the fix)

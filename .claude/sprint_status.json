@@ -6,11 +6,11 @@
     "current_sprint": {
         "number": 82,
         "branch": "feature/20261027_Sprint_82",
-        "status": "Phase 3 Sprint Planning (plan drafted, awaiting 3.7 approval)",
-        "status_detail": "Harold selected Sprint 82 scope 2026-10-30 (Phase 8.4 recommendation plus F319 notification refresh). SPRINT_82_PLAN.md drafted with Tasks 0-12 and questions Q1-Q6, Q-S1, Q-S2; F319 and F320 added to the master plan; draft PR created at 3.3.1. 0.22.0 uploads not yet reported by Harold (U1). Next: Phase 3.7 approval, then 3.7.0 cards (reuse #509, #510), 3.7.0b bump to 0.23.0+20, 3.7.1 PR body.",
-        "plan_approved": false,
+        "status": "Phase 4 Sprint Execution",
+        "status_detail": "Plan approved 2026-10-30 (Q1=1 Q2=1 Q3=1 Q4=2 Q5=1 Q6=1, Q-S1=1, Q-S2=1; U1: 0.22.0 not uploaded, 0.23.0 notes combine 0.22.0 and 0.23.0). Cards #522-#532 created; #509 (Task 1) and #510 (Task 2) carried. Version 0.23.0+20. Task 4 (F303 Fold) moves to Manual Validation (needs a 0.23.0 closed-test build).",
+        "plan_approved": true,
         "pr_number": 521,
-        "version": "0.22.0+19 (Sprint 82 bump happens at 3.7.0b)"
+        "version": "0.23.0+20"
     },
     "previous_sprint": {
         "number": 81,
@@ -29,7 +29,8 @@
         "sprint_79_closed": "Closed by the PR #480 merge (Closes keywords, develop default branch) 2026-10-18: #481 #482 #483 #484 #485 #486 #487 #488. Open for Sprint 80: #471 (with #433, #428), #472.",
         "sprint_79": "Task 0 #481 (version), Task 1 #471 (MV76-1; inside it #433 F205, #428 MV74-1), Task 2 #472 (F277), Task 3 #482 (F286), Task 4 #483 (F287), Task 5 #484 (F288), Task 6 #485 (F291), Task 7 #486 (F292), Task 8 #487 (F293)",
         "sprint_81": "Task 0 #508, Task 1 #509 (F67a, stays open -> Sprint 82), Task 2 #510 (F304, stays open -> Sprint 82), Task 3 #511 (F67b), Task 4 #512 (F302), Task 5 #513 (F303), Task 6 #514 (F259), Task 7 #515 (F301), Task 8 #516 (F271), Task 9 #517 (F278), Task 10 #518 (F300), Task 11 #519 (IMP-2b). Before merge (2026-10-27): #508 #511 #512 #514 #515 #517 #518 #519 CLOSED; #513 #516 OPEN (closed by the merge).",
-        "sprint_80": "Task 0 #491, Task 1 #471 (with #433 F205, #428 MV74-1), Task 2 #472 (F277), Task 3 #492 (F292), Task 4 #493 (F294), Task 5 #494 (F295), Task 6 #495 (F296), Task 7 #496 (F298), Task 8 #497 (F267), Task 9 #498 (F268), Task 10 #499 (F269), Task 12 #500 (F299), Task 13 #501 (F276), Task 14 #502 (F204), Task 15 #503, Task 16 #504, Task 17 #505. F289 removed (Q4b = 2)."
+        "sprint_80": "Task 0 #491, Task 1 #471 (with #433 F205, #428 MV74-1), Task 2 #472 (F277), Task 3 #492 (F292), Task 4 #493 (F294), Task 5 #494 (F295), Task 6 #495 (F296), Task 7 #496 (F298), Task 8 #497 (F267), Task 9 #498 (F268), Task 10 #499 (F269), Task 12 #500 (F299), Task 13 #501 (F276), Task 14 #502 (F204), Task 15 #503, Task 16 #504, Task 17 #505. F289 removed (Q4b = 2).",
+        "sprint_82": "Task 0 #522, Task 1 #509, Task 2 #510, Task 3 #523, Task 4 #524, Task 5 #525, Task 6 #526, Task 7 #527, Task 8 #528, Task 9 #529, Task 10 #530, Task 11 #531, Task 12 #532"
     },
     "_github_issues_note": "Sprint 66 cards created at Phase 3.3.1 (2026-09-07): #387 GP-19, #388 GP-4. Close by hand at Post-Merge Cleanup.",
     "test_metrics": {

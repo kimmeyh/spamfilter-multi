@@ -1,6 +1,7 @@
 # Sprint 82 Plan
 
-**Status**: DRAFT, waiting for Phase 3.7 approval. Scope selected by Harold at Phase 8.4 pass 2 (2026-10-30).
+**Status**: APPROVED 2026-10-30 (Harold: *"All Sprint tasks and sub-tasks are approved."*). Scope selected by Harold
+at Phase 8.4 pass 2 (2026-10-30).
 **Branch**: `feature/20261027_Sprint_82` | **PR**: draft, created at 3.3.1 (stays draft until 7.7.5)
 **Planner**: Opus 5.5 (top tier, `SPRINT_PLANNING.md:94-110`). Phase 3.2.2.1 audits by spot reads and one read-only
 query of the DEV content history on 2026-10-30; file:line evidence is in each card.
@@ -178,7 +179,31 @@ signals; F312 Step 1 needs a probe because no header count is stored. Both merge
 - **F317 / F318**: process docs only (`SPRINT_EXECUTION_WORKFLOW.md`, scripts, hook tests).
 - No ADR conflicts found.
 
-## Decision questions (answer before approval)
+## Phase 3.7 answers (Harold, 2026-10-30)
+
+Verbatim: *"q1. 1 q2 1 q3 1 q4 2 (try this and see how it goes) q5 1 q6 1 q-s1 1 q-s2 1 u1 no plan to upload 0.22.0
+and will wait for 0.23.0 is complete (noting that the release notes will nee to be combined release notes for 0.22
+and 0.23.0"* and *"All Sprint tasks and sub-tasks are approved. Do not stop between tasks as they are all approved,
+please continue to complete all tasks and without addition approvals until Manual Validation, providing your
+recommendation for Manual Validation steps. Do not stop to ask questions unless meeting the criteria in
+\docs\SPRINT_STOPPING_CRITERIA.md If questions must be asked, ask as late as possible - do everything that can be
+done (all tasks and parts of tasks, without the answer to the question(s), then ask the question(s)"*.
+
+- **Q1 = 1**: F314 saves the cursor per folder after evaluation; a part-way folder keeps the old cursor.
+- **Q2 = 1**: F306 stores one suggestion per No Rule row (v17); body rules keep the regex only.
+- **Q3 = 1**: Task 6 read-only header probe on the DEV AOL account.
+- **Q4 = 2** ("try this and see how it goes"): the F306 basis is chosen by the fixed rule (a signal is used only
+  when it fires on at least 10 percent of No Rule rows and agrees with at least 80 percent of the 69 decisions); the
+  result is reported, no mid-sprint question.
+- **Q5 = 1**: the F317 requirement echo is confirmed.
+- **Q6 = 1**: F319 reloads on every return to the foreground, all accounts, all three platforms.
+- **Q-S1 = 1, Q-S2 = 1**: models as assigned; version 0.23.0+20.
+- **U1**: 0.22.0 will NOT be uploaded. The next store release is 0.23.0, and its release notes combine 0.22.0 and
+  0.23.0 (Task 0 R-2). Consequence for Task 4 (F303 Fold check): it needs a 0.23.0 closed-test build on the Fold, so
+  it moves to Manual Validation (a 0.23.0 AAB for closed testing is built at 5.3).
+- **F312 Step 2 and F315 Step 2**: still asked only if their counts are above zero, as late as possible.
+
+## Decision questions as asked (answered above)
 
 **Q1. F314 (Class 2): when the Gmail history cursor is saved.** This would change a prior development decision:
 today the scanner saves the new historyId during the FETCH (`email_scanner.dart:1846, 1876, 1884`). If the scan is
@@ -253,9 +278,9 @@ list is not reloaded (cause in the card).
 
 **Requirements**:
 - R-1: `pubspec.yaml` `version: 0.23.0+20`, `msix_config.msix_version: 0.23.0.0`.
-- R-2: Same commit: provisional `RELEASE_NOTES_0.23.0_windows.md` and `_play.md`; the Dev row in
-  `STORE_VERSION_STATUS.md` -> 0.23.0+20; "Last uploaded to Play" moves to 0.22.0 (versionCode 19) only if Harold
-  has reported that upload (U1).
+- R-2: Same commit: provisional `RELEASE_NOTES_0.23.0_windows.md` and `_play.md` that COMBINE 0.22.0 and 0.23.0
+  (U1: 0.22.0 is never uploaded); the Dev row in `STORE_VERSION_STATUS.md` -> 0.23.0+20; the 0.22.0 section marked
+  "not submitted, superseded by 0.23.0 (Harold 2026-10-30)"; "Last uploaded to Play" stays 0.21.0 (versionCode 18).
 - R-3: iOS takes the same version and build number (ADR-0043).
 
 **Affected components / files**: `mobile-app/pubspec.yaml`, `docs/STORE_VERSION_STATUS.md`, `docs/store-assets/`.
