@@ -420,8 +420,9 @@ Source: `docs/research/R76-3_HEURISTICS_ML_GENAI_SPAM_IDENTIFICATION.md` (Issue 
   If the count is zero, close the card with the counts as evidence.
 - Phase: Core App Quality (security)
 - Platform: All (shared Dart)
-- Defect: both adapters build the header map with last-wins assignment (`generic_imap_adapter.dart:2418-2419`,
-  `gmail_client.dart:282-285`). enough_mail 2.1.7 keeps headers in message order, top first
+- Defect: both adapters build the header map with last-wins assignment (`generic_imap_adapter.dart:2432`; the live
+  Gmail path is `gmail_api_adapter.dart:1330`; `gmail_client.dart:284` has no caller outside its file -- corrected
+  2026-10-30, Sprint 82 Phase 3.2.2.1). enough_mail 2.1.7 keeps headers in message order, top first
   (`parser_helper.dart:143-176`). The receiving provider PREPENDS its Authentication-Results header (RFC 8601 sections
   2.1 and 4.1), so with two or more of them the map keeps the BOTTOM one: an earlier hop's, or one the sender wrote.
   RFC 8601 section 7.1: a forged field that is not stripped means "the MUA could inappropriately trust it".
@@ -548,6 +549,27 @@ Source: `docs/research/R76-3_HEURISTICS_ML_GENAI_SPAM_IDENTIFICATION.md` (Issue 
   output of `git diff --name-only origin/develop...HEAD`, minus `0*` files at the repo root and `archive/`.
 - R-2: each reviewer's report confirms every listed file was read, or names the files it skipped and why.
 - AC: the Sprint 82 7.7.1 evidence line records the file count given and the count confirmed read.
+
+**F319. BUG: the No Rule list does not reload when the app comes back from a notification (~45-90m) Priority 30 -- TARGET SPRINT 82 (Harold 2026-10-30) -- NEW 2026-10-30**
+- Phase: Core App Quality
+- Platform: All (shared Dart, `no_rule_review_screen.dart`)
+- Harold (2026-10-30): a background-scan notification says "No rule 3 Deleted 2 Safe 0", but tapping it shows the
+  old No Rule list (none, or what was there before) until the refresh icon is pressed.
+- Cause (code read 2026-10-30): the notification has no tap callback or payload (`scan_complete_notifier.dart:182-191`),
+  so a tap only brings the running app forward; No Rule Review is the default screen, and it reloads only on open,
+  on rule changes, after its own actions and on Refresh -- never on resume. The rows were written by another process
+  (Windows worker) or isolate (Android WorkManager).
+- Fix: reload quietly on `AppLifecycleState.resumed`, mirroring `account_selection_screen.dart:135`. Option: a tap
+  opens the screen filtered to the notification's account (Windows needs a new hand-off; Sprint 82 Q6).
+- Details: `docs/sprints/SPRINT_82_PLAN.md` Task 9.
+
+**F320. WinWright coverage of No Rule Review (~30-60m plus a 60m discovery time-box) Priority 30 -- TARGET SPRINT 82 (Harold 2026-10-30) -- NEW 2026-10-30 (Sprint 81 5.1.5 gap)**
+- Phase: Testing
+- Platform: Windows (test tool); Android and iOS covered by the shared widget tests
+- The default WinWright scripts never open Review No Rule Items, so the Sprint 81 sweep could not reach the F271
+  chips. One pattern-only script (no cursor steps) opens the screen and one pop-up without creating a rule; rows come
+  from a dev DB copy the runner restores. Does not replace HOLD F289.
+- Details: `docs/sprints/SPRINT_82_PLAN.md` Task 10.
 
 **F273. Privacy policy and Data safety revision for the content history and learning (~60m) Priority 40**
 - Phase: Core App Quality

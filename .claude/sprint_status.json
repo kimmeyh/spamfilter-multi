@@ -1,13 +1,13 @@
 {
     "_description": "Sprint status file that persists across context compaction. Update after each phase/sub-phase completion.",
-    "_last_updated": "2026-10-27T23:58:00-04:00",
+    "_last_updated": "2026-10-30T12:00:00-04:00",
     "_usage": "Read this file after context compaction to restore sprint approval state and progress.",
     "_staleness_note": "This file had drifted 15 sprints (last updated at Sprint 35, 2026-04-19) before being refreshed at Sprint 50 close-out. It is a Phase 7.7 checklist item -- update it at every sprint close-out, not opportunistically.",
     "current_sprint": {
         "number": 82,
         "branch": "feature/20261027_Sprint_82",
-        "status": "Phase 8.4 Backlog Refinement pass 2",
-        "status_detail": "Phase 8 Release Cycle for Sprint 81. Pass 1 (completeness sweep) 2026-10-27: shipped cards pruned, F303/F67a/F67b trimmed, Sprint 82 stub present. 8.3 started 2026-10-27: release notes re-derived (317e1f90), tag v0.22.0 on main 763753be pushed, prod worktree pulled to 763753be; MSIX 0.22.0.0 and AAB 0.22.0 (versionCode 19) BUILT + VERIFIED, uploads are Harold's; STORE_VERSION_STATUS.md updated. 8.4 pass 2 slate presented 2026-10-27, waiting for Harold's scope selection. Earlier plan: 8.3 store release (0.22.0 MSIX from the prod worktree on main 763753be; AAB versionCode 19), then 8.4 pass 2 (scope selection by Harold), then Phase 3. Sprint 82 version bump at 3.7.0b.",
+        "status": "Phase 3 Sprint Planning (plan drafted, awaiting 3.7 approval)",
+        "status_detail": "Harold selected Sprint 82 scope 2026-10-30 (Phase 8.4 recommendation plus F319 notification refresh). SPRINT_82_PLAN.md drafted with Tasks 0-12 and questions Q1-Q6, Q-S1, Q-S2; F319 and F320 added to the master plan; draft PR created at 3.3.1. 0.22.0 uploads not yet reported by Harold (U1). Next: Phase 3.7 approval, then 3.7.0 cards (reuse #509, #510), 3.7.0b bump to 0.23.0+20, 3.7.1 PR body.",
         "plan_approved": false,
         "pr_number": null,
         "version": "0.22.0+19 (Sprint 82 bump happens at 3.7.0b)"
