@@ -667,6 +667,23 @@ same pop-up widget on all three; the half-width row is checked at phone width (A
 
 **Definition of Done**: default DoD plus: the Signal fires on line filled; dev DB backed up before the migration.
 
+**Result (Phase 4)**: R-1, R-2, R-4, R-5, R-6 done (Sonnet); R-3 Block Body and AC-4 HELD for Harold's late
+question (what value a Block Body rule takes; no row stores a body). `lib/core/services/rule_suggestion.dart`: pure
+`RuleSuggestion.suggest` (basis: auth YELLOW -> block; common-provider sender -> Block Email, else Block Entire
+Domain on the root domain); a generic guard drops any safe suggestion for RED; patterns only from
+`RuleQuickActionService.safeSenderPatternFor` / `blockPatternFor`. Schema v17: five nullable `suggestion_*` columns on
+`unmatched_emails`, written at scan time in `email_scan_provider.dart` (the only `UnmatchedEmail` writer; manual and
+background), recomputed on a re-seen row. Pop-up: the button whose kind, type and value equal the suggestion gets a
+2 px border, the text "Suggested" and the semantics label "<label>, suggested rule"; under it the regex and the
+reason. No Rule Review passes the stored suggestion; Results computes it for No Rule rows (`suggestionForResult`).
+Tests: 41 in 5 new files; mutation 18 of 18 KILLED (RED guard, predicate, provider choice, pop-up kind check, note,
+border, semantics, both call sites, store write/read/refresh, scan compute, results filters, migration ALTER and
+fresh schema). AC-5 rehearsal: a copy of the backed-up DEV DB (`spam_filter.db.pre_v17_sprint82.bak`) migrated 16 ->
+17 through the real `DatabaseHelper`; all 12 tables kept their row counts (unmatched_emails 705, scan_results
+14,931, email_actions 19,235, rules 2,209). Noted for phone validation: the existing Skip row overflows 77 px at 360
+wide in the test font with or without a suggestion (pre-existing; the test font is wider than the real one).
+Not caught: the basis firing on live mail (fixed strings in tests); a real screen reader's announcement.
+
 **Model**: Sonnet -- *why not Haiku*: a data migration plus a new UI element plus a scoring rule across shared code.
 **Delegation checklist included**: yes (if delegated). **Step-types**: UI-NEW, SVC-NEW, DB-MIGRATE, TEST-WIDGET.
 **Est-Effort**: 180-300m (unverified).

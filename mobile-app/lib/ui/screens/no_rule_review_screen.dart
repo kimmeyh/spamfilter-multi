@@ -534,6 +534,8 @@ class _NoRuleReviewScreenState extends State<NoRuleReviewScreen>
       accountEmail: item.accountEmail,
       // Every row here is unaddressed, so Skip always applies.
       showSkip: true,
+      // F306: the suggestion stored at scan time (null for older rows).
+      suggestion: item.email.suggestion,
       itemKey: itemKey,
       anchorPosition: anchorPosition,
       anchorSize: anchorSize,

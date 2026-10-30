@@ -91,7 +91,14 @@ abstract class RuleDatabaseProvider {
 ///      Sprint 81). Comma-joined short reason CODES (for example
 ///      `reply_to_differs,auth_failed`) computed at scan time from headers;
 ///      no header text is stored. Existing rows stay NULL (no chips).
-const int databaseVersion = 16;
+///
+/// v17: Add five nullable TEXT columns to unmatched_emails (F306, Sprint 82):
+///      suggestion_kind, suggestion_type, suggestion_value,
+///      suggestion_pattern, suggestion_reason. The one rule suggested for the
+///      No Rule row, computed at scan time (a reason CODE, never body text).
+///      Additive; existing rows stay NULL (no suggestion). Rolling back means
+///      ignoring the columns.
+const int databaseVersion = 17;
 
 /// SQLite database helper - singleton pattern
 class DatabaseHelper implements RuleDatabaseProvider {
@@ -372,6 +379,11 @@ class DatabaseHelper implements RuleDatabaseProvider {
         auth_classification TEXT,
         last_seen_at INTEGER,
         heuristic_signals TEXT,
+        suggestion_kind TEXT,
+        suggestion_type TEXT,
+        suggestion_value TEXT,
+        suggestion_pattern TEXT,
+        suggestion_reason TEXT,
         FOREIGN KEY (scan_result_id) REFERENCES scan_results(id) ON DELETE CASCADE
       );
     ''');
@@ -755,6 +767,32 @@ class DatabaseHelper implements RuleDatabaseProvider {
             'ALTER TABLE unmatched_emails ADD COLUMN heuristic_signals TEXT;');
       }
       _logger.i('v16 migration complete');
+    }
+
+    if (oldVersion < 17) {
+      // v17: F306 (Sprint 82) -- the suggested rule on No Rule rows. Nullable
+      // and additive; guarded like v16 (a partial test schema may lack the
+      // table, and a fresh-install table already has the columns).
+      _logger.i('Applying v17 migration: adding unmatched_emails.suggestion_*');
+      final unmatchedInfo =
+          await db.rawQuery('PRAGMA table_info(unmatched_emails)');
+      final unmatchedColumns =
+          unmatchedInfo.map((r) => r['name'] as String).toSet();
+      if (unmatchedColumns.isNotEmpty) {
+        for (final column in const [
+          'suggestion_kind',
+          'suggestion_type',
+          'suggestion_value',
+          'suggestion_pattern',
+          'suggestion_reason',
+        ]) {
+          if (!unmatchedColumns.contains(column)) {
+            await db.execute(
+                'ALTER TABLE unmatched_emails ADD COLUMN $column TEXT;');
+          }
+        }
+      }
+      _logger.i('v17 migration complete');
     }
   }
 

@@ -28,6 +28,7 @@ Format: `- **type**: Description (Issue #N)` where type is feat|fix|chore|docs
 
 ### 2026-10-30 (Sprint 82)
 
+- **feat**: The No Rule email pop-up suggests one rule: when an email's sender authentication did not fully pass, the Block Entire Domain button (or Block Email for a common provider such as gmail.com) is marked "Suggested", with the exact rule and the reason shown under it; you still tap to apply it, and an email that failed authentication is never suggested as a safe sender. The database moves to version 17 to store the suggestion (Issue #528)
 - **chore**: The CI and iOS workflows pin the third-party Flutter setup action to a commit SHA (v2.23.0), and the signed iOS job passes its secrets only to the steps that use them; a policy test fails on any third-party action pinned by tag (Issue #510)
 - **docs**: Every delegated sprint agent now carries one "Progress and restart" block: it saves its progress to a file, and a restart after a usage limit or a closed session resumes from that file without repeating a release or store action; `scripts/agent-work-status.ps1` shows each agent's state and any mutation lock with its age (Issue #532)
 - **fix**: The No Rule list reloads by itself when the app comes back to the foreground, so tapping a background scan's "No rule 3" notification shows those 3 emails without pressing Refresh (Issue #529)
