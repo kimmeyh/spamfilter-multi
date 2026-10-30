@@ -43,7 +43,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - uses: subosito/flutter-action@v2
+      - uses: subosito/flutter-action@1a449444c387b1966244ae4d4f8c696479add0b2 # v2.23.0
         with:
           flutter-version-file: .fvmrc
           channel: 'stable'
@@ -63,14 +63,12 @@ jobs:
     defaults:
       run:
         working-directory: mobile-app
-    env:
-      APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
-      ASC_KEY_ID: ${{ secrets.ASC_KEY_ID }}
-      ASC_ISSUER_ID: ${{ secrets.ASC_ISSUER_ID }}
+    # Secrets are set per step, never at job level, so the third-party
+    # flutter-action step never sees them (Sprint 82 security review).
     steps:
       - uses: actions/checkout@v4
 
-      - uses: subosito/flutter-action@v2
+      - uses: subosito/flutter-action@1a449444c387b1966244ae4d4f8c696479add0b2 # v2.23.0
         with:
           flutter-version-file: .fvmrc
           channel: 'stable'
@@ -80,6 +78,9 @@ jobs:
       # otherwise surfaces as an unrelated xcodebuild signing error.
       - name: Check the six signing and sign-in secrets exist
         env:
+          APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
+          ASC_KEY_ID: ${{ secrets.ASC_KEY_ID }}
+          ASC_ISSUER_ID: ${{ secrets.ASC_ISSUER_ID }}
           ASC_KEY_P8: ${{ secrets.ASC_KEY_P8 }}
           IOS_GMAIL_CLIENT_ID: ${{ secrets.IOS_GMAIL_CLIENT_ID }}
           IOS_GMAIL_REVERSED_CLIENT_ID: ${{ secrets.IOS_GMAIL_REVERSED_CLIENT_ID }}
@@ -96,6 +97,7 @@ jobs:
       # xcodebuild looks for it. Both are deleted in the last step.
       - name: Write Secrets.xcconfig and the API key file
         env:
+          ASC_KEY_ID: ${{ secrets.ASC_KEY_ID }}
           ASC_KEY_P8: ${{ secrets.ASC_KEY_P8 }}
           IOS_GMAIL_CLIENT_ID: ${{ secrets.IOS_GMAIL_CLIENT_ID }}
           IOS_GMAIL_REVERSED_CLIENT_ID: ${{ secrets.IOS_GMAIL_REVERSED_CLIENT_ID }}
@@ -120,6 +122,10 @@ jobs:
       # in the repository.
       - name: xcodebuild archive (signed)
         working-directory: mobile-app/ios
+        env:
+          APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
+          ASC_KEY_ID: ${{ secrets.ASC_KEY_ID }}
+          ASC_ISSUER_ID: ${{ secrets.ASC_ISSUER_ID }}
         run: |
           xcodebuild archive \
             -workspace Runner.xcworkspace -scheme Runner -configuration Release \
@@ -135,6 +141,10 @@ jobs:
       # it appears in TestFlight after Apple's processing.
       - name: xcodebuild -exportArchive (upload to TestFlight)
         working-directory: mobile-app/ios
+        env:
+          APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
+          ASC_KEY_ID: ${{ secrets.ASC_KEY_ID }}
+          ASC_ISSUER_ID: ${{ secrets.ASC_ISSUER_ID }}
         run: |
           cat > "$RUNNER_TEMP/ExportOptions.plist" <<PLIST
           <?xml version="1.0" encoding="UTF-8"?>

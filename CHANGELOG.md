@@ -28,6 +28,7 @@ Format: `- **type**: Description (Issue #N)` where type is feat|fix|chore|docs
 
 ### 2026-10-30 (Sprint 82)
 
+- **chore**: The CI and iOS workflows pin the third-party Flutter setup action to a commit SHA (v2.23.0), and the signed iOS job passes its secrets only to the steps that use them; a policy test fails on any third-party action pinned by tag (Issue #510)
 - **docs**: Every delegated sprint agent now carries one "Progress and restart" block: it saves its progress to a file, and a restart after a usage limit or a closed session resumes from that file without repeating a release or store action; `scripts/agent-work-status.ps1` shows each agent's state and any mutation lock with its age (Issue #532)
 - **fix**: The No Rule list reloads by itself when the app comes back to the foreground, so tapping a background scan's "No rule 3" notification shows those 3 emails without pressing Refresh (Issue #529)
 - **fix**: A Gmail scan that is cancelled, fails or is closed before it finishes no longer skips mail: the Gmail history position for a folder is saved only after that scan's results are stored, so the next scan reads those messages again (Issue #525)
