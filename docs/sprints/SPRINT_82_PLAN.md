@@ -800,6 +800,20 @@ suggestion row is removed (mutation).
 
 **Definition of Done**: default DoD plus: README lists the script and its row source.
 
+**Result (Phase 4)**: script done, AC-1 PARTLY met (Sonnet). `test_f320_no_rule_review.json` (13 steps, pattern-only:
+`ww_window_state`, `ww_invoke`, `ww_focus`) opens the first No Rule row's pop-up and resolves Skip, the safe-sender
+row (Exact Email, Exact Domain, Entire Domain) and the block buttons (Block Email, Block Exact Domain, Block Entire
+Domain, Block Subject); no quick action or Skip is invoked. Two passes in a row, 13 of 13 each, DB drift none (rules
+2209, safe_senders 465, app_settings 15). Mutation: the Block Subject and Exact Email labels each KILLED the script (2
+of 2, full rebuild per mutant). NOT met: the "fails when the suggestion note is removed" half. R-3 time-box result:
+0 of 707 rows carry a suggestion; the 28 unprocessed YELLOW rows predate v17, and a DEV manual AOL scan (scan 21808,
+177 emails) re-saw only 2 green rows, so no fixed suggestion-bearing row exists; the script does not assert the
+note (the widget test `email_detail_popup_suggestion_test.dart` guards it). Rows with a suggestion appear only when a
+scan writes a new YELLOW No Rule row. Findings: `ww_get_value` cannot be replayed by the script runner; a selector
+containing the bullet character is mangled (ASCII `name*='No rule'` used); the pop-up has no Close control, so the
+script ends with it open and the runner closes the app. Not caught: the suggestion marker and note; what a tap does;
+which row opens. Parity: Windows-only test tool (declared exception); Android and iOS rely on the shared widget tests.
+
 **Model**: Sonnet -- *why not Haiku*: WinWright discovery has walls nothing predicts (CODING_VELOCITY note).
 **Step-types**: WINWRIGHT-SCRIPT, WINWRIGHT-DISCOVERY [no-history, time-boxed]. **Est-Effort**: 30-60m + 60m time-box.
 

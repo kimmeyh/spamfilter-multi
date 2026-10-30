@@ -1,0 +1,40 @@
+{
+  "version": "1",
+  "appId": "",
+  "mode": "test",
+  "attachTitle": "MyEmailSpamFilter [DEV]",
+  "description": "Sprint 82 Task 10 (F320, Issue #530): WinWright coverage of Review No Rule Items, the app's default screen. Opens the first listed item's pop-up and resolves every control in it: Skip, the Add to Safe Senders row (Exact Email, Exact Domain, Entire Domain) and the Create Block Rule row (Block Email, Block Exact Domain, Block Entire Domain, Block Subject). PATTERN STEPS ONLY (ww_window_state, ww_invoke, ww_focus): no cursor tool, so it runs on a locked workstation. ww_focus is the read-only probe because the script runner cannot replay ww_get_value or ww_assert (it skips them and the runner turns a skip into a failure); a ww_focus step fails when its selector resolves nothing within stepTimeoutMs, and it presses nothing. STATE: nothing is created or changed. Only the row is invoked (it opens the pop-up). No quick-action button and not Skip is ever invoked (Skip opens the next item's pop-up; a quick action creates a rule). The pop-up has no Close button; it is dismissed by tapping outside it or Escape, both cursor-class input, so the script ENDS with the pop-up open and the runner closes the whole app when the script finishes (README 'App Lifecycle'). PRECONDITION: at least one unaddressed No Rule item in the DEV DB's latest scan of any account (an empty list fails step 3 by design). NOT COVERED: the F306 'Suggested' marker and suggestion note -- no deterministic row source exists in the DEV DB (see README, test_f320_no_rule_review.json), so those stay covered by test/ui/widgets/email_detail_popup_suggestion_test.dart only.",
+  "runConfig": {
+    "captureScreenshots": false,
+    "screenshotFormat": "png",
+    "screenshotOnFailureOnly": false,
+    "continueOnFailure": false,
+    "stepTimeoutMs": 60000,
+    "maxFailures": 0
+  },
+  "testCases": [
+    {
+      "id": "F320-NR-1",
+      "title": "Review No Rule Items: an item's pop-up shows the safe-sender row and the block-rule row (no rule created)",
+      "steps": [
+        { "_comment": "PRIMING QUERY: builds the Flutter semantics tree (README 'Three harness behaviours').",
+          "tool": "ww_window_state", "state": "restore" },
+        { "_comment": "PROOF the app opened on Review No Rule Items (the default screen): this top-bar button exists on that screen. ww_focus presses nothing.",
+          "tool": "ww_focus", "selector": "type=Button[name='Re-check the last scan (does not fetch new mail)']" },
+        { "_comment": "Open the first listed item. Only a row button has 'No rule' in its name (ASCII only: the runner drops the bullet character from a selector). The 'Create rule for' buttons and the top bar do not match.",
+          "tool": "ww_invoke", "selector": "type=Button[name*='No rule']" },
+        { "_comment": "PROOF the pop-up opened: Skip exists only inside it.",
+          "tool": "ww_focus", "selector": "type=Button[name='Skip']" },
+        { "tool": "ww_focus", "selector": "type=Text[name='Add to Safe Senders']" },
+        { "tool": "ww_focus", "selector": "type=Button[name='Exact Email']" },
+        { "tool": "ww_focus", "selector": "type=Button[name='Exact Domain']" },
+        { "tool": "ww_focus", "selector": "type=Button[name='Entire Domain']" },
+        { "tool": "ww_focus", "selector": "type=Text[name='Create Block Rule']" },
+        { "tool": "ww_focus", "selector": "type=Button[name='Block Email']" },
+        { "tool": "ww_focus", "selector": "type=Button[name='Block Exact Domain']" },
+        { "tool": "ww_focus", "selector": "type=Button[name='Block Entire Domain']" },
+        { "tool": "ww_focus", "selector": "type=Button[name='Block Subject']" }
+      ]
+    }
+  ]
+}
