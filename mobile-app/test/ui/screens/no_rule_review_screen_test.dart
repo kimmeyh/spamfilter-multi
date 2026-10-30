@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter/semantics.dart';
 import 'package:flutter/services.dart';
@@ -1126,9 +1128,8 @@ void main() {
   });
 
   // What this does NOT catch: whether the OS delivers `resumed` on a
-  // notification tap (manual validation covers that), and it tests the guard
-  // as a pure rule: the State passes its real _ownActionsInFlight to it, but
-  // a mutant that passes a constant 0 there is not killed by this test.
+  // notification tap (manual validation covers that), or whether the State
+  // passes its real _ownActionsInFlight to the rule (T-3 covers that wiring).
   test('F319 T-2: resume does not reload while an own action is in flight '
       'or the screen is unmounted; only resumed reloads', () {
     bool reload(AppLifecycleState s, {bool mounted = true, int inFlight = 0}) =>
@@ -1148,4 +1149,86 @@ void main() {
       expect(reload(s), isFalse, reason: '$s must not reload');
     }
   });
+
+  // F319 T-3: the WIRING of the guard. A real quick action is held in flight
+  // (the rule write waits on a gate) while the app resumes; the screen must
+  // not reload, so rows written meanwhile stay unlisted until the action's
+  // own reload. Kills the mutant that passes a constant 0 instead of
+  // _ownActionsInFlight (the T-2 gap).
+  //
+  // What this does NOT catch: a resume that lands between the action's end
+  // and its own reload (the action's reload lists the rows anyway).
+  testWidgets(
+      'F319 T-3: resume during an own quick action does not reload the list',
+      (tester) async {
+    tester.view.physicalSize = const Size(1200, 2400);
+    tester.view.devicePixelRatio = 1.0;
+    addTearDown(tester.view.resetPhysicalSize);
+    addTearDown(tester.view.resetDevicePixelRatio);
+
+    final gated = _GatedRuleSetProvider();
+    gated.initializeForTesting(
+      databaseStore: RuleDatabaseStore(testHelper.dbHelper),
+      safeSenderStore: SafeSenderDatabaseStore(testHelper.dbHelper),
+    );
+    ruleProvider = gated;
+
+    await tester.runAsync(() async {
+      await gated.loadRules();
+      await gated.loadSafeSenders();
+      await testHelper.createTestAccount('gmail-a@example.com');
+      registerSavedAccount('gmail-a@example.com');
+      await insertCompletedScan('gmail-a@example.com',
+          completedAtMs: 1000, noRuleCount: 1);
+      await mountAndLoad(tester);
+    });
+    expect(noRuleChip(1), findsOneWidget, reason: 'precondition: 1 row');
+
+    await tester.runAsync(() async {
+      await tester.tap(find.text('sender0@spam.example').first);
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 300));
+      await tester.tap(find.text('Block Entire Domain'));
+      await tester.pump();
+      // Wait until the action is parked inside addRule.
+      for (var i = 0; i < 50 && !gated.entered.isCompleted; i++) {
+        await Future<void>.delayed(const Duration(milliseconds: 20));
+      }
+      expect(gated.entered.isCompleted, isTrue,
+          reason: 'precondition: the quick action reached addRule');
+
+      await insertCompletedScan('gmail-a@example.com',
+          completedAtMs: 2000, noRuleCount: 3);
+      tester.binding.handleAppLifecycleStateChanged(AppLifecycleState.paused);
+      tester.binding.handleAppLifecycleStateChanged(AppLifecycleState.resumed);
+      await Future<void>.delayed(const Duration(milliseconds: 800));
+      await tester.pump();
+    });
+
+    expect(noRuleChip(1), findsOneWidget,
+        reason: 'no reload while the own action is in flight');
+    expect(noRuleChip(3), findsNothing);
+
+    await tester.runAsync(() async {
+      gated.release.complete();
+      await Future<void>.delayed(const Duration(milliseconds: 800));
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 300));
+    });
+    await closePopups(tester);
+  });
+}
+
+/// F319 T-3: holds addRule until [release] completes, so a test can act
+/// while a quick action is in flight.
+class _GatedRuleSetProvider extends RuleSetProvider {
+  final Completer<void> entered = Completer<void>();
+  final Completer<void> release = Completer<void>();
+
+  @override
+  Future<void> addRule(Rule rule) async {
+    if (!entered.isCompleted) entered.complete();
+    await release.future;
+    return super.addRule(rule);
+  }
 }

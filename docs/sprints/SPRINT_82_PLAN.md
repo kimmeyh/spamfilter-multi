@@ -738,6 +738,14 @@ foregrounds the window for both the unpackaged DEV build and the MSIX build; che
 
 **Definition of Done**: default DoD plus: AC-3 observed on Windows and Android.
 
+**Result (Phase 4)**: code done (Sonnet; T-3 by the coordinator). `NoRuleReviewScreen` mixes in
+`WidgetsBindingObserver`; `didChangeAppLifecycleState` reloads quietly when the pure `shouldReloadOnLifecycle` rule
+says so (resumed, mounted, no own action in flight). Tests: T-1 resume lists 3 rows written outside the screen with
+no SnackBar; T-2 the pure rule; T-3 a real quick action held in flight (gated `addRule`) blocks the resume reload.
+Mutation 5 of 5 KILLED (reload skipped, observer not registered, in-flight guard removed, any state reloads, guard
+wired to a constant 0 -- the last SURVIVED the agent's tests and is killed by T-3). Not caught: whether the OS
+delivers `resumed` on a notification tap (Windows toast tap is unverified; AC-3 at Manual Validation).
+
 **Model**: Sonnet -- *why not Haiku*: lifecycle timing beside in-flight actions and an open pop-up needs care.
 **Delegation checklist included**: yes. **Step-types**: UI-MOVE, TEST-WIDGET. **Est-Effort**: 45-90m (Q6 = 2 adds
 90-150m).
@@ -839,6 +847,15 @@ action.
 **Tests to write**: T-1 (AC-2) hook test case; T-2 (AC-1) a script run on fabricated files in the scratchpad.
 
 **Definition of Done**: default DoD plus: hook suite green.
+
+**Result (Phase 4)**: done (Sonnet). Canonical "Progress and restart" block in `SPRINT_EXECUTION_WORKFLOW.md`
+(Phase 7, before the ORDER block), referenced from 4.1, 5.1.1, Phase 7 order steps 1 and 5, and three 7.7.1
+bullets; delegation checklist item 8 in `SPRINT_PLANNING.md`. Usage-limit facts quoted from
+code.claude.com (Claude Code 2.1.314; automatic continue on by default; not for background or `-p` runs; not
+restarted after exit; recurring tasks expire after 7 days). `scripts/agent-work-status.ps1` (read-only; AC-1 shown on
+a fabricated 4-state folder plus a held lock); read-only `Get-MutationLockInfo` in `mutation-lock.ps1`. Policy test
+`progress_and_restart_block_test.dart` 3 of 3, mutation 5 of 5 KILLED; hook suite 138 of 138. The hourly wake-up
+prompt is written; no cron was created. Unverified: that subagents keep context only for a same-session resume.
 
 **Model**: Sonnet -- *why not Haiku*: process design across several prompts, a script and a hook test.
 **Step-types**: HOOK, DOCS. **Est-Effort**: 120-240m (unverified).
