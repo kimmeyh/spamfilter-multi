@@ -876,3 +876,33 @@ prompt is written; no cron was created. Unverified: that subagents keep context 
 
 **Model**: Sonnet -- *why not Haiku*: process design across several prompts, a script and a hook test.
 **Step-types**: HOOK, DOCS. **Est-Effort**: 120-240m (unverified).
+
+---
+
+# Phase 5 evidence
+
+- **5.1.2 F-PRECHECK**: 2026-10-30 ~10:10, six classes run by the main session over the sprint diff
+  (`git diff origin/develop...HEAD`: 9 `lib` files, `scripts/agent-work-status.ps1`, `.claude/hooks/mutation-lock.ps1`,
+  `ci.yml`, `ios.yml`; no `android/app/src` or `ios/Runner` change). (1) Mirror sites: manual and background scans
+  both write No Rule rows through the one `UnmatchedEmail(` site (`email_scan_provider.dart:839`) and both reach the
+  F314 save through `scanInbox`; both pop-up callers pass the suggestion (`no_rule_review_screen.dart`,
+  `results_display_screen.dart:1923`); the SHA pin is in both workflows; no new `Platform.is` gate. (2) Helper wiring:
+  every new helper has a runtime caller (`RuleSuggestion.suggest` at the scan write and Results; the pattern builders
+  in both quick actions; `_savePendingGmailCursors` at `email_scanner.dart:1204`; `shouldReloadOnLifecycle` at
+  `no_rule_review_screen.dart:211`). (3) Doc drift: FOUND -- `ARCHITECTURE.md` described neither F319's resume reload
+  nor F306's pop-up highlight; both rows updated with this record. `databaseVersion` doc names v17. (4) Fragile parsing:
+  no new `split`/`indexOf`/`substring` in `lib`. (5) API scope: no new external call; the cursor save keeps its
+  (account, folder) scope. (6) Silent failure: one new catch (`_savePendingGmailCursors`) logs at warning; the user
+  need not learn of it because the old cursor stays and the next scan re-reads the delta (Q1 = 1). `fromColumns`
+  returning null is the normal state of pre-v17 rows. The two new `SilentlyContinue` listings follow a `Test-Path`.
+  Separately, the background security review found the tag-pinned `subosito/flutter-action` in the signed job:
+  fixed e46ffde6 with a policy gate (check (d)). Result: 1 finding (doc drift), fixed.
+- **5.1.6 Runtime Launch Gate**: N/A -- no Android config touched this sprint (`git diff origin/develop...HEAD --
+  mobile-app/android/app/src`: empty).
+- **5.1.6 Architecture docs**: `ARCHITECTURE.md` rows for F314 (cursor timing), v17 schema, F319 (resume reload) and
+  F306 (pop-up suggestion) current.
+- **5.2 full suite**: 2026-10-30 09:56 at e03248b1: `flutter test` 3340 passed, 15 skipped, 0 failed; `flutter analyze`
+  clean. The 5.1.7 redaction and 5.1.8 version gates run in that suite.
+- **Dev DB**: `spam_filter.db.pre_v17_sprint82.bak` (8,699,904 bytes, taken 09:2x before any v17 build). The 0.23.0
+  DEV build launched 10:00:46 and migrated the live DEV DB 16 -> 17: 5 suggestion columns, no rows lost
+  (unmatched_emails 705 -> 707 and scan_results 14,931 -> 14,982 from scans between backup and build).
