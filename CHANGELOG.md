@@ -28,6 +28,7 @@ Format: `- **type**: Description (Issue #N)` where type is feat|fix|chore|docs
 
 ### 2026-10-30 (Sprint 82)
 
+- **docs**: The 7.7.1 toolkit review prompts list every changed file, and each reviewer reports how many it read, so no changed file is reviewed by Copilot alone (Issue #531)
 - **chore**: Version 0.23.0+20 for Sprint 82; 0.22.0 is not uploaded to the stores, so the 0.23.0 store notes cover 0.22.0 and 0.23.0 (Issue #522)
 
 ## [0.22.0] - 2026-10-27
