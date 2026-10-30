@@ -9,7 +9,7 @@
         "status": "Phase 3 Sprint Planning (plan drafted, awaiting 3.7 approval)",
         "status_detail": "Harold selected Sprint 82 scope 2026-10-30 (Phase 8.4 recommendation plus F319 notification refresh). SPRINT_82_PLAN.md drafted with Tasks 0-12 and questions Q1-Q6, Q-S1, Q-S2; F319 and F320 added to the master plan; draft PR created at 3.3.1. 0.22.0 uploads not yet reported by Harold (U1). Next: Phase 3.7 approval, then 3.7.0 cards (reuse #509, #510), 3.7.0b bump to 0.23.0+20, 3.7.1 PR body.",
         "plan_approved": false,
-        "pr_number": null,
+        "pr_number": 521,
         "version": "0.22.0+19 (Sprint 82 bump happens at 3.7.0b)"
     },
     "previous_sprint": {
