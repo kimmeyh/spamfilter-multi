@@ -969,7 +969,7 @@ prompt is written; no cron was created. Unverified: that subagents keep context 
   `f306_popup.png`; F306 note read from the accessibility tree). MV-3 and MV-4 not rehearsable here (the phones have
   0.21.0 and adb is blocked); closest rehearsal named in each step. MV-5 blocked on Apple enrollment approval
   (stopping criterion 2).
-- **7.7.1 final code reviews**: 2026-10-31. Copilot requested by hand 12:17 (GraphQL + timeline verified), review
+- **7.7.1 final code reviews**: 2026-10-31. Summary: improvement review 0H/8M/15L, all fixed; CI run 1 and CI run 2 success (details below). Copilot requested by hand 12:17 (GraphQL + timeline verified), review
   16:24Z: 0 comments. Toolkit, 49 files given each: code-reviewer 0H/3M/3L (files given 49 / confirmed read 40; 9
   not fully read are plan, backlog and test files, names in its report), silent-failure-hunter 2H/6M/3L (files given
   49 / confirmed read 25 fully, 24 docs and tests grep-checked, names in its report). 15 distinct findings (2 found by
