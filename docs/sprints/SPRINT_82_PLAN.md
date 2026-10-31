@@ -295,6 +295,8 @@ list is not reloaded (cause in the card).
 
 **Definition of Done**: None -- default DoD only.
 
+**Executed-by**: main session (Opus 5.5) ~10 min -- deviates from Haiku: bundled with the plan-approval commit (1102132f), not worth a hand-off.
+
 **Model**: Haiku. **Step-types**: DOCS. **Est-Effort**: 10-15m.
 
 ## Task 1 -- F67a remainder: iOS prerequisites (#509, Priority 2)
@@ -329,6 +331,8 @@ MSIX versus AAB.
 **Tests to write**: none (external setup). T-1 (AC-1 to AC-3): `gh secret list` shows the six names (names only).
 
 **Definition of Done**: default DoD plus: no secret value in any committed file.
+
+**Executed-by**: main session (Opus 5.5) ~60 min -- deviates from Haiku: a live enrollment walkthrough with Harold. Remainder waits on Apple (criterion 2).
 
 **Model**: Haiku -- docs. **Step-types**: DOCS. **Est-Effort**: ~30m + Harold's time + Apple's wait.
 
@@ -371,6 +375,8 @@ Play) keep theirs. Declared deployment exception.
 
 **Definition of Done**: default DoD plus: AC-2 observed on Harold's iPhone.
 
+**Executed-by**: main session (Opus 5.5) ~30 min + ~10 min security fix = ~40 min -- deviates from Sonnet: written inline with the CI pin work. First run waits on Task 1 secrets.
+
 **Model**: Sonnet -- *why not Haiku*: Apple signing in CI, multi-step, no project history.
 **Step-types**: CI [no-history], DOCS. **Est-Effort**: 90-180m + 120m time-boxed signing discovery.
 
@@ -405,6 +411,8 @@ second time-box). Rollback: revert the job steps; the unsigned job stays.
 
 **Definition of Done**: default DoD plus: results recorded per step.
 
+**Executed-by**: main session (Opus 5.5) ~5 min (MV-5 step only) -- the device check waits on a TestFlight build (criterion 2).
+
 **Model**: Sonnet -- *why not Haiku*: diagnosing a platform difference needs judgment across three platforms.
 **Step-types**: MANUAL, DOCS. **Est-Effort**: 60-120m + Harold's phone time.
 
@@ -430,6 +438,8 @@ per ADR-0049.
 **Tests to write**: none (code tested in Sprint 81).
 
 **Definition of Done**: None -- default DoD only.
+
+**Executed-by**: main session (Opus 5.5) ~5 min (MV-4 step only) -- the log read moved to Sprint 83 Manual Validation (Harold, 2026-10-31).
 
 **Model**: Haiku. **Step-types**: MANUAL. **Est-Effort**: ~10m + a log pull.
 
@@ -476,6 +486,8 @@ claimed: the change depends on no OS behavior.
 - T-2 (AC-2) -- TEST-UNIT: completed scan saves per folder.
 
 **Definition of Done**: default DoD plus: the delegation checklist in the sub-agent prompt.
+
+**Executed-by**: Sonnet agent ~30 min + lead review ~5 min = ~35 min.
 
 **Model**: Sonnet -- *why not Haiku*: changes when a stored value is written across a multi-step scan, with callers
 on three entry paths. **Delegation checklist included**: yes.
@@ -531,6 +543,8 @@ measures is shared Dart on all three platforms.
 **Tests to write**: none (analysis); the probe prints its match rate so a silent zero is visible.
 
 **Definition of Done**: None -- default DoD only (no CHANGELOG line; no app change).
+
+**Executed-by**: main session (Opus 5.5) ~15 min (F305 count) + ~25 min (F312 probe) = ~40 min -- deviates from Sonnet: the probe used the DEV credential in memory (Q1 = 1), kept in the lead session.
 
 **Model**: Sonnet -- *why not Haiku*: IMAP read-only safety and RFC 8601 parsing need care.
 **Step-types**: DATA, IMAP. **Est-Effort**: 45-75m.
@@ -603,6 +617,8 @@ DEV and the Android phones (iOS has no build yet).
 **Tests to write**: none.
 
 **Definition of Done**: None -- default DoD only.
+
+**Executed-by**: main session (Opus 5.5) ~10 min (Windows count) -- deviates from Haiku: a read-only log count done inline. Phone part moved to Sprint 83.
 
 **Model**: Haiku. **Step-types**: DATA. **Est-Effort**: ~30m.
 
@@ -696,6 +712,8 @@ fresh schema). AC-5 rehearsal: a copy of the backed-up DEV DB (`spam_filter.db.p
 wide in the test font with or without a suggestion (pre-existing; the test font is wider than the real one).
 Not caught: the basis firing on live mail (fixed strings in tests); a real screen reader's announcement.
 
+**Executed-by**: Sonnet agent ~40 min + lead review ~15 min = ~55 min.
+
 **Model**: Sonnet -- *why not Haiku*: a data migration plus a new UI element plus a scoring rule across shared code.
 **Delegation checklist included**: yes (if delegated). **Step-types**: UI-NEW, SVC-NEW, DB-MIGRATE, TEST-WIDGET.
 **Est-Effort**: 180-300m (unverified).
@@ -775,6 +793,8 @@ Mutation 5 of 5 KILLED (reload skipped, observer not registered, in-flight guard
 wired to a constant 0 -- the last SURVIVED the agent's tests and is killed by T-3). Not caught: whether the OS
 delivers `resumed` on a notification tap (Windows toast tap is unverified; AC-3 at Manual Validation).
 
+**Executed-by**: Sonnet agent ~25 min + lead ~10 min (T-3 test) = ~35 min. Unplanned Manual Validation fixes in the lead session (Opus 5.5): MV-1 handler ~60 min, build swap ~15 min, closed-app click ~45 min.
+
 **Model**: Sonnet -- *why not Haiku*: lifecycle timing beside in-flight actions and an open pop-up needs care.
 **Delegation checklist included**: yes. **Step-types**: UI-MOVE, TEST-WIDGET. **Est-Effort**: 45-90m (Q6 = 2 adds
 90-150m).
@@ -826,6 +846,8 @@ containing the bullet character is mangled (ASCII `name*='No rule'` used); the p
 script ends with it open and the runner closes the app. Not caught: the suggestion marker and note; what a tap does;
 which row opens. Parity: Windows-only test tool (declared exception); Android and iOS rely on the shared widget tests.
 
+**Executed-by**: Sonnet agent ~20 min + lead ~5 min (sweep) = ~25 min.
+
 **Model**: Sonnet -- *why not Haiku*: WinWright discovery has walls nothing predicts (CODING_VELOCITY note).
 **Step-types**: WINWRIGHT-SCRIPT, WINWRIGHT-DISCOVERY [no-history, time-boxed]. **Est-Effort**: 30-60m + 60m time-box.
 
@@ -849,6 +871,8 @@ which row opens. Parity: Windows-only test tool (declared exception); Android an
 **Tests to write**: none (process); AC-1 is the check.
 
 **Definition of Done**: None -- default DoD only.
+
+**Executed-by**: main session (Opus 5.5) ~10 min -- deviates from Haiku: a short doc edit done inline.
 
 **Model**: Haiku. **Step-types**: DOCS. **Est-Effort**: ~15m.
 
@@ -899,6 +923,8 @@ restarted after exit; recurring tasks expire after 7 days). `scripts/agent-work-
 a fabricated 4-state folder plus a held lock); read-only `Get-MutationLockInfo` in `mutation-lock.ps1`. Policy test
 `progress_and_restart_block_test.dart` 3 of 3, mutation 5 of 5 KILLED; hook suite 138 of 138. The hourly wake-up
 prompt is written; no cron was created. Unverified: that subagents keep context only for a same-session resume.
+
+**Executed-by**: Sonnet agent ~30 min + lead review ~5 min = ~35 min.
 
 **Model**: Sonnet -- *why not Haiku*: process design across several prompts, a script and a hook test.
 **Step-types**: HOOK, DOCS. **Est-Effort**: 120-240m (unverified).
