@@ -563,7 +563,19 @@ so a shipped build could not use them even if they passed. Signal "Signal fires 
 of 254 No Rule rows; agrees with 5 of 6 decisions.** The basis is a list in code, so a change of basis is a one-line
 change (reported at Manual Validation, per "try this and see how it goes").
 
-**F312 Step 1**: NOT RUN. The approved probe method (Q3 = 1) assumed AOL credentials in `secrets.dev.json`; that file
+**F312 Step 1 (run 2026-10-31, Harold Q1 = 1)**: credential read in memory from the DEV secure store by
+`scratchpad/task6/f312_probe_launch.ps1`; `f312_probe.py` opened Inbox, Bulk and Bulk Mail with EXAMINE (asserted
+read-only before any fetch) and `BODY.PEEK[HEADER]`; counts only. Matched 196 of 1,560 content-history AOL emails
+(1,364 are no longer in those folders). Authentication-Results headers per email: 1 on 190, 0 on 6, 2 or more on 0.
+A lower header's dmarc differs from the top one: **0**. Top header authserv-id: AOL/Yahoo on 189, another server on
+**1** (a header the provider did not write, the case F312 guards against). Silent-zero check: the first run fetched
+`HEADER.FIELDS (MESSAGE-ID AUTHENTICATION-RESULTS)` and read 0 headers on all 192 matches; a full-header fetch of 5
+Inbox messages showed one each, so AOL's field fetch omits the header -- the probe now fetches full headers. One
+connection dropped on LIST (EOF) in the first attempt; cause unknown, the rerun succeeded. R-5: the differing count
+is zero (close F312), but the one foreign authserv-id is a question for Harold. The launcher and probe stay in the
+session scratchpad (swept by `clean-temp-scripts.ps1`); the credential-reading path is not promoted to `scripts/`.
+
+**Earlier note (2026-10-30)**: NOT RUN. The approved probe method (Q3 = 1) assumed AOL credentials in `secrets.dev.json`; that file
 holds only the Gmail client IDs, and the AOL app password is only in the DEV app's encrypted Windows secure store.
 Reading it from a script would extract a stored password, which was not approved. Asked at the end of execution
 (late question).
@@ -949,8 +961,39 @@ prompt is written; no cron was created. Unverified: that subagents keep context 
   showed "No rule (7)" with the row `rehearsal@f319-rehearsal.example`, no message bar (`f319_after.png`); row removed,
   list back to 6 (`f319_restored.png`). Interval PT5M: `Get-ScheduledTask`; toast after every completed account scan:
   `background_scan_windows_worker.dart:286`; scans run with the window open: log line "Foreground UI is running;
-  background scan proceeds" at 10:30:01. The toast click itself was not rehearsed (it is unchanged: it brings the window
-  forward through the single-instance hand-off, `main.cpp:118-130`, which is what Harold reported it already does).
+  background scan proceeds" at 10:30:01. CORRECTED 2026-10-31: the toast click was not rehearsed, and the claim that it
+  "brings the window forward through the single-instance hand-off, `main.cpp:118-130`" was never checked. It was
+  false: a click starts nothing (see the MV-1 result). Class: a mechanism asserted in an MV step without verification
+  (Sprint 70 IMP-2 applied to MV steps, Sprint 75 IMP-5; the rehearsal looked at the reload, not at the click).
+  **Result (Harold, 2026-10-31): FAIL.** "Clicked on the notification. It did not switch to the app (Dev window did
+  not come forward). App did not switch to the 'Review No Rule Items' page, and the page was not refreshed."
+  Cause (verified): `flutter_local_notifications_windows` 3.1.1 (`src/plugin.cpp:150-172`) writes only
+  `AppUserModelId\MyEmailSpamFilter.Dev\CustomActivator` and calls `CoRegisterClassObject` in the calling process;
+  it never writes `CLSID\{guid}\LocalServer32` (registry read 2026-10-31: absent). Only the background worker
+  registered, and it exits after posting, so a click reached no process. No Dart code handled a click at all.
+  Fix: `NotificationTapHandler` (UI process registers with the same settings; a click brings the window forward on
+  Windows and pops to Review No Rule Items on every platform); `msix_config.toast_activator` with the prod GUID for
+  the Store build. A click while the app is CLOSED on the unpackaged DEV build still starts nothing (question).
+- **MV-1b (Windows DEV, notification click, re-test after the fix)**: preconditions: the DEV app built 2026-10-31
+  10:52 is OPEN (any screen; it may be minimized), and Windows notifications for "MyEmailSpamFilter" are on. The
+  four DEV background tasks post a toast after each account scan, every 5 minutes. Steps: open Scan History (or any
+  screen other than Review No Rule Items); minimize the DEV window or click another window; when a DEV toast appears,
+  click it (or click it later in the notification center, Win+N). Expected: the DEV window comes forward (restored if
+  minimized) and shows Review No Rule Items, with that scan's new emails listed and no Refresh press.
+  Rehearsed: 2026-10-31 ~10:54, by looking, on PID 11848: (1) with no background worker running, the DEV activator
+  class was reachable (`[Activator]::CreateInstance` on `{06668ccd-...}`), so the UI registered it; (2) DEV window
+  minimized behind Notepad with Scan History open; `scratchpad\toast_activate.ps1` made the exact call Windows makes on
+  a click (`INotificationActivationCallback::Activate`); the window was restored, took the foreground, and showed
+  Review No Rule Items with Scan History closed (`mv1_after_activate.png`). NOT rehearsed: a click on a real toast in
+  the shell, and a click while that toast's background worker is still running (both processes register the same
+  class; which one Windows picks is unverified -- if a click right after the toast appears does nothing, try again
+  from Win+N a few seconds later and tell me). Not covered: a click while the DEV app is CLOSED starts nothing
+  (question).
+  **Owner step for the Store build (Phase 8.3)**: on the installed 0.23.0 MSIX, click one background-scan toast with
+  the app OPEN and one with it CLOSED, and record both results before the store notes claim the click works
+  (`msix_config.toast_activator`, prod GUID; argument `-ToastActivated`, ignored by `BackgroundModeService`, which
+  matches `--background-scan` with `contains`). The 0.23.0+20 AAB built 2026-10-30 predates this fix: do not upload
+  it; rebuild after 7.7.1.
 - **MV-2 (Windows DEV, F306)**: preconditions: the 0.23.0 DEV app is open. Steps: open Scan History; tap the
   `kimmeyharold@aol.com` account filter chip; open the 10:00 AM row "Background scan - kimmeyharold@aol.com -
   Read-Only - completed" (2026-10-30); in its results, tap `ellen@filehostingdedicatedserver.com` (No Rule, YELLOW).
@@ -967,7 +1010,12 @@ prompt is written; no cron was created. Unverified: that subagents keep context 
   accessibility tree. The GREEN-row check and the optional tap were not rehearsed live; they are covered by
   `email_detail_popup_suggestion_test.dart` 11 PASS (no suggestion renders nothing; tap saves the builder's pattern),
   `f306_review_screen_suggestion_test.dart` 2 PASS and `rule_suggestion_test.dart` 16 PASS.
-- **MV-3 (Fold, 0.23.0 closed test, F319 + F306)**: preconditions: Harold uploads the 0.23.0 AAB to Play closed
+  **Result (Harold, 2026-10-31): PASS** ("Otherwise looks good"). His note "Not seeing a split between the body and
+  subject tile" is R-3 (Block Subject and Block Body share one row), held with Block Body; Q2 = 3 defers both to an
+  F306 v2 backlog card.
+- **MV-3 (Fold, 0.23.0 closed test, F319 + F306)**: MOVED to Sprint 83 Manual Validation (Harold, 2026-10-31:
+  "This can't be done until after this sprint. Can you make this a Manual Validation on the next sprint").
+  Preconditions: Harold uploads the 0.23.0 AAB to Play closed
   testing and the Fold updates (the top bar of Review No Rule Items shows "Version 0.23.0"); background scanning is
   ON (15 minutes per the recorded closed-test setup; not read today, the phone cannot be reached from here).
   Steps: open the app on Review No Rule Items, then press Home (the app stays in the background); wait for a scan
@@ -978,7 +1026,8 @@ prompt is written; no cron was created. Unverified: that subagents keep context 
   and T-3 (`no_rule_review_screen_test.dart`); pop-up at 360 and 411 dp in `email_detail_popup_suggestion_test.dart`.
   Known: the existing Skip row overflows 77 px at 360 wide in the TEST font with or without a suggestion (the test font
   is wider than the real font); watch the Skip row on the cover screen.
-- **MV-4 (Fold, Task 4 F303 and Task 7 F315)**: after the 0.23.0 update, connect the Fold over USB (file transfer)
+- **MV-4 (Fold, Task 4 F303 and Task 7 F315)**: MOVED to Sprint 83 Manual Validation, with Tasks 4 and 7's phone
+  part (Harold, 2026-10-31, same words as MV-3). After the 0.23.0 update, connect the Fold over USB (file transfer)
   and I run `scripts\pull-phone-screenshots.ps1 -Sprint 82`. I read the `[new-mail-diagnostics]` line from the first
   start after the update AND a later start (no `error:` field), and count no-UID lines ("message has no valid IMAP
   UID", "FETCH answer had no UID"); the same for the S24+ if connected.
@@ -986,3 +1035,10 @@ prompt is written; no cron was created. Unverified: that subagents keep context 
   `scan/persist` lines (Task 7 interim).
 - **MV-5 (iPhone, Tasks 1-3)**: waits on Apple's approval of enrollment `R6QG2A9SHS` (stopping criterion 2, external).
   Then `docs/IOS_SETUP.md` Parts B-D one at a time, the first TestFlight run, and the Task 3 device check.
+
+- **Decisions at Manual Validation (Harold, 2026-10-31)**: Q1 = 1 (read the DEV AOL credential for the F312 probe;
+  run, results in Task 6). Q2 = 3 (Block Body and the R-3 split row go to an F306 v2 backlog card; value options:
+  first link domain with the body fetched when the pop-up opens, or pick from the body's link domains). Q3: "manual
+  scan just completed successfully" (DEV DB shows every DEV iCloud scan since 2026-10-30 10:52 failing, so the
+  success was most likely on a phone; re-asked). Q4 = 2 (GitHub's own `actions/*` stay on version tags; third-party
+  actions stay pinned to SHAs by policy check (d)).

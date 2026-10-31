@@ -1,6 +1,6 @@
 {
     "_description": "Sprint status file that persists across context compaction. Update after each phase/sub-phase completion.",
-    "_last_updated": "2026-10-30T10:39:00-04:00",
+    "_last_updated": "2026-10-31T10:55:22-04:00",
     "_usage": "Read this file after context compaction to restore sprint approval state and progress.",
     "_staleness_note": "This file had drifted 15 sprints (last updated at Sprint 35, 2026-04-19) before being refreshed at Sprint 50 close-out. It is a Phase 7.7 checklist item -- update it at every sprint close-out, not opportunistically.",
     "current_sprint": {
@@ -63,11 +63,11 @@
     "blocking_issues": [],
     "next_actions": [
         "Sprint 82 at Phase 5.3 Manual Validation: Tasks 0, 5, 8 (except Block Body), 9, 10, 11, 12 done; 5.1.2, 5.1.5, 5.1.6, 5.1.9 and 5.2 recorded in SPRINT_82_PLAN.md 'Phase 5 evidence'; MV-1 to MV-5 in 'Manual Validation (Phase 5.3)'. AAB 0.23.0+20 built (mobile-app/dist/android-0.23.0+20/app-prod-release.aab) for Harold to upload to closed testing.",
-        "Waiting on Harold: MV results; late questions (F312 probe credential method; F306 Block Body value; iCloud DEV app password; first-party actions SHA pins). Tasks 1-3 wait on Apple enrollment R6QG2A9SHS (criterion 2). Tasks 4 and 7 read phone logs after the 0.23.0 Fold update. Then 7.7.1 reviews on the draft PR + retrospective prompt in one turn."
+        "MV results 2026-10-31: MV-1 FAIL (notification click did nothing) -> fixed (NotificationTapHandler + msix toast_activator), MV-1b re-test handed over; MV-2 PASS; MV-3 and MV-4 MOVED to Sprint 83 Manual Validation (Harold). Q1 = 1 (F312 probe run: 0 differing, 1 foreign authserv-id), Q2 = 3 (F306 v2 backlog), Q4 = 2 (actions/* stay on tags). 8.3 owner step: click a toast on the installed 0.23.0 MSIX (app open and closed) before the store notes claim it; the 10-30 AAB is stale, rebuild after 7.7.1. Waiting on Harold: MV-1b; DEV-closed click question; F312 close-or-fix question; iCloud DEV re-ask. Tasks 1-3 wait on Apple enrollment R6QG2A9SHS (criterion 2). Then 7.7.1 reviews on the draft PR + retrospective prompt in one turn."
     ],
     "next_sprint_targeted": {
-        "number": 82,
-        "stub": "docs/sprints/SPRINT_82_PLAN.md",
-        "committed": "0.22.0 store builds; MV-2 Fold diagnostics line; F67a/F304 remainder (Apple Account, enrollment, signing, TestFlight); backlog targets F306 (+TLD ideas, F312 count first), F314, F315, F317, F318, WinWright coverage of No Rule Review"
+        "number": 83,
+        "stub": "(written at Sprint 82 close-out)",
+        "committed": "Manual Validation carried from Sprint 82 (Harold, 2026-10-31): MV-3 Fold F319 + F306 on the 0.23.0 closed test, MV-4 Fold diagnostics line and no-UID count (Tasks 4 and 7). Backlog card: F306 v2 (Block Body + the R-3 Subject/Body split row; value: first link domain with a body fetch, or pick from the body's link domains). Tasks 1-3 if Apple approves."
     }
 }

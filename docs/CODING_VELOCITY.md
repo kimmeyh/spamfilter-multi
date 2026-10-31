@@ -290,6 +290,9 @@ Every Item that is implemented gets ONE row here the moment it is picked up -- s
 | Task 10: F320 WinWright No Rule Review script (#530) | 82 | DONE | 30-60 + 60 time-box | 30-60 | ~20 (Sonnet agent) + ~5 sweep | ~25 | Approximate (b75e2a41, b46f63d5). 13 pattern-only steps; sweep 3 of 3 PASS. Suggestion note not scriptable (no DEV row carries one). |
 | Task 11: F318 toolkit prompt lists every changed file (#531) | 82 | DONE | ~15 | ~15 | ~10 | ~10 | Approximate (580a30a4). |
 | Task 12: F317 delegated work safe across usage limits (#532) | 82 | DONE | 120-240 | 120-240 | ~30 (Sonnet agent) + ~5 review | ~35 | Approximate (b5378068). Progress and restart block, Get-MutationLockInfo, agent-work-status.ps1, policy test. |
+| MV-1 fix: notification click opens No Rule review (#529) | 82 | DONE | -- | -- | ~45 | ~60 | UNPLANNED, found at Manual Validation (Harold, 2026-10-31). Recorded at completion (10:55). Cause traced into flutter_local_notifications_windows 3.1.1 plugin.cpp (no LocalServer32; only the exiting worker registered). Handler + msix toast_activator; 5 tests, 5 of 5 mutants KILLED; rehearsed by an Activate call on the live DEV app. |
+| MV-1 side fix: build swap pauses background tasks (#529) | 82 | DONE | -- | -- | ~10 | ~15 | UNPLANNED. The first MV-1 build failed: a DEV scan held app_links_plugin.dll during the swap and dist\dev lost data\ (the Sprint 80 failure, narrowed then, not closed). Pause/wait/re-enable added; second build passed with 4 tasks paused and restored. |
+| Task 6 (part): F312 Step 1 probe (#526) | 82 | DONE | 45-75 | 45-75 | ~25 | ~25 | Recorded at completion. Q1 = 1 (DEV credential, in memory). 196 matched; 0 differing; 1 foreign authserv-id. Caught a silent zero: AOL's HEADER.FIELDS omits Authentication-Results; switched to full headers. |
 
 ## Can the missing sprints (48-69) be reconstructed from git? -- TESTED 2026-09-19, answer: NO
 
