@@ -980,8 +980,9 @@ prompt is written; no cron was created. Unverified: that subagents keep context 
   holder guard fails loudly and matches hidden paths by name (M-3; DEV build stopped 2 scans, 4 tasks re-enabled),
   WinWright selectors `name^=` (code-reviewer M-3), iOS reversed client ID form check (L-2), status script per-folder
   try (L-3), wake-up step 5 reports only outside 3.7-5.3 (code-reviewer L-2; cron re-created), "neighbor" spelling.
-  AWAITING HAROLD'S DECISION (decision-class): M-4 F306 suggestion on temperror/permerror, M-5 tap pops unsaved forms,
-  M-6 unverified two-process click. Full suite 3,351 passed / 15 skipped / 0 failed; analyze clean; hook suite
+  Harold's decisions (2026-10-31, Q1 = 4, Q2 = 2, Q3 = 3): M-4 (F306 suggestion on temperror/permerror) goes to the
+  F306 v2 backlog card; M-5 (tap pops unsaved forms): a tap navigates only when no unsaved input would be lost
+  (scope question pending, see Decisions round 4); M-6 (unverified two-process click) moves to Sprint 83 with an MV step. Full suite 3,351 passed / 15 skipped / 0 failed; analyze clean; hook suite
   138/138.
 
 # Manual Validation (Phase 5.3)
@@ -1113,3 +1114,7 @@ prompt is written; no cron was created. Unverified: that subagents keep context 
 - **Decisions, round 3 (Harold, 2026-10-31)**: MV-1c PASS; the DEV closed-app click "worked as expected". Harold
   re-enabled the iCloud per-account background scan (every 5 minutes). Manual Validation is COMPLETE for this sprint
   (MV-3 and MV-4 moved to Sprint 83; MV-5 waits on Apple). Phase 7 starts: 7.7.1 reviews and the retrospective prompt.
+- **Decisions, round 4 (Harold, 2026-10-31)**: 7.7.1 Q1 = 4 (M-4 to the F306 v2 backlog card), Q2 = 2 (M-5: a
+  notification tap navigates only when no unsaved input would be lost), Q3 = 3 (M-6 to Sprint 83 with a Manual
+  Validation step: click account 1's notification while the worker scans). Q2 needs 4+ code files for exact per-screen
+  tracking, so its scope is asked first (Harold 2026-10-09 size rule).
