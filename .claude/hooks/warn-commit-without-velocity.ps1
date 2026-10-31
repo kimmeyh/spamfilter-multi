@@ -65,7 +65,10 @@ try {
     # The message: the command text itself (covers -m) plus any -F file.
     $text = $cmd
     $unreadMessage = $null
-    $f = [regex]::Match($cmd, '(?:^|\s)-F\s+("([^"]+)"|''([^'']+)''|(\S+))')
+    # Only an -F that belongs to the git commit itself: the command text can
+    # hold other text with '-F' in it (a here-string commit message did, the
+    # first time this hook ran).
+    $f = [regex]::Match($cmd, '\bgit\b[^\n;&|]*?\bcommit\b[^\n;&|]*?\s-F\s+("([^"]+)"|''([^'']+)''|(\S+))')
     if ($f.Success) {
         $path = @($f.Groups[2].Value, $f.Groups[3].Value, $f.Groups[4].Value) |
             Where-Object { $_ } | Select-Object -First 1
