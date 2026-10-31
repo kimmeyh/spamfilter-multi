@@ -1119,3 +1119,6 @@ prompt is written; no cron was created. Unverified: that subagents keep context 
   notification tap navigates only when no unsaved input would be lost), Q3 = 3 (M-6 to Sprint 83 with a Manual
   Validation step: click account 1's notification while the worker scans). Q2 needs 4+ code files for exact per-screen
   tracking, so its scope is asked first (Harold 2026-10-09 size rule).
+- **Decisions, round 5 (Harold, 2026-10-31)**: Q4 = 2 (cautious check, fixed 21575189). Q5 = 2: the `news_`
+  plus digits sender-shape suggestion goes to the F306 v2 backlog item (DEV: 2,225 emails, 102 domains, all AOL Bulk). Harold's
+  retrospective feedback received: all categories Very Good, Categories 13 and 14 none, no questions.
