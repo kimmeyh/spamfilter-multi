@@ -20,10 +20,13 @@
 ///    accounts exist (F135). That screen reloads on the `resumed` event the
 ///    foreground change produces (F319, `shouldReloadOnLifecycle`).
 ///    7.7.1 M-5 (Harold Q4 = 2): it does NOT pop while a dialog, or a screen
-///    with a text field, is open above the first route, because popping
-///    would discard what the user typed. The app then shows a message that
-///    says so ([keptOpenMessage]). This check is cautious: it also stops
-///    when nothing was typed, because no screen reports unsaved input.
+///    with an editable text field that holds text, is open above the first
+///    route, because popping could discard what the user typed. The app then
+///    shows [keptOpenMessage] and writes a diagnostic line. Cautious: the
+///    screens do not report unsaved input, so a PREFILLED field (Settings >
+///    General retention days, the scan interval) also stops it. Empty and
+///    read-only fields (search boxes, SelectableText) do not. Input outside a
+///    text field (a checkbox, a folder pick) is not detected.
 ///
 /// A click while the app is CLOSED starts it (`-ToastActivated`): the Store
 /// build through its manifest (`msix_config.toast_activator`), the unpackaged
@@ -46,6 +49,8 @@ import 'windows_system_tray_service.dart';
 
 /// Keeps the navigator's current routes, so a tap can see what is open.
 /// `MaterialApp.navigatorObservers` must include [NotificationTapHandler.routeStack].
+/// A route of a disposed navigator can stay in [routes]; readers skip any
+/// route that is not `isActive`, which is the guard against stale entries.
 class RouteStackObserver extends NavigatorObserver {
   final List<Route<dynamic>> routes = <Route<dynamic>>[];
 
@@ -84,8 +89,8 @@ class NotificationTapHandler {
 
   /// What the user sees when a tap leaves the open screen in place.
   static const String keptOpenMessage =
-      'The notification did not close your open screen, so nothing you '
-      'typed is lost. Close it to see Review No Rule Items.';
+      'A screen is open, so the notification did not close it. Go back to '
+      'Review No Rule Items when you are done.';
 
   /// Registers the UI process for notification taps. Call once, after
   /// `runApp`, in the foreground process only (never the background worker).
@@ -133,8 +138,8 @@ class NotificationTapHandler {
   }
 
   /// Why popping [openRoutes] to the first route could lose input, or null
-  /// when it cannot: a dialog (any [PopupRoute]) or a screen holding a text
-  /// field above the first route.
+  /// when it cannot: a dialog (any [PopupRoute]) or a screen holding an
+  /// editable text field with text in it, above the first route.
   @visibleForTesting
   static String? inputAtRisk(List<Route<dynamic>> openRoutes) {
     for (final route in openRoutes) {
@@ -152,7 +157,10 @@ class NotificationTapHandler {
     var found = false;
     void visit(Element element) {
       if (found) return;
-      if (element.widget is EditableText) {
+      final widget = element.widget;
+      if (widget is EditableText &&
+          !widget.readOnly &&
+          widget.controller.text.isNotEmpty) {
         found = true;
         return;
       }
@@ -184,17 +192,27 @@ class NotificationTapHandler {
       _note('no navigator yet; the app shows its start screen');
       return;
     }
-    final risk = inputAtRisk(openRoutes);
-    if (risk != null) {
-      _logger.i('Notification tap: open screen kept ($risk)');
-      final messenger = ScaffoldMessenger.maybeOf(navigator.context);
-      if (messenger == null) {
-        _note('open screen kept ($risk) and no messenger to say so');
-      } else {
-        messenger.showSnackBar(const SnackBar(content: Text(keptOpenMessage)));
+    // Nothing awaits this Future (the plugin callback returns void) and the
+    // app has no global error handler, so a failure below would reach only
+    // the console, which a release build does not keep.
+    try {
+      final risk = inputAtRisk(openRoutes);
+      if (risk != null) {
+        _note('open screen kept ($risk)');
+        final messenger = ScaffoldMessenger.maybeOf(navigator.context);
+        if (messenger == null) {
+          _note('no messenger to show the kept-open message');
+        } else {
+          messenger.showSnackBar(const SnackBar(
+            content: Text(keptOpenMessage),
+            duration: Duration(seconds: 8),
+          ));
+        }
+        return;
       }
-      return;
+      navigator.popUntil((route) => route.isFirst);
+    } catch (e) {
+      _note('tap failed: ${DiagnosticLogger.describeError(e)}');
     }
-    navigator.popUntil((route) => route.isFirst);
   }
 }

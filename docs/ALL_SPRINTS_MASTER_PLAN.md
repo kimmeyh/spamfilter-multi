@@ -581,7 +581,7 @@ Source: `docs/research/R76-3_HEURISTICS_ML_GENAI_SPAM_IDENTIFICATION.md` (Issue 
   incorporate based on need for the existing scripts). Probably want to do an initial small set so we can work out
   the bugs. Also all Claude/Codex tools (skills, hooks...) that are primarily deterministic should be converted to
   python while those that really need GenAI can stay as .md files)."*
-- Size today (counted 2026-10-31): `.claude/hooks/` 10 `.ps1` (~2,190 lines, plus the `test-cases/` suite run by
+- Size today (counted 2026-10-31): `.claude/hooks/` 11 `.ps1` (~2,300 lines, plus the `test-cases/` suite run by
   `run-test-cases.ps1`); `scripts/` 14 `.ps1` (~2,020 lines); `mobile-app/scripts/` 31 `.ps1` (~5,640 lines); 10
   skills in `.claude/skills/` (all `.md`; each is classified deterministic or GenAI).
 - Prior art to review first (sibling repos, read only):
@@ -602,7 +602,7 @@ Source: `docs/research/R76-3_HEURISTICS_ML_GENAI_SPAM_IDENTIFICATION.md` (Issue 
 - Out of scope: Windows-only build steps that call Windows tools (MSIX, Task Scheduler, WinWright) keep a Windows
   path, wrapped in Python only where that adds value.
 - Note (Sprint 82 retro IMP-3, Harold 2026-10-31): a both-shells test harness is not needed, because this conversion
-  replaces the scripts. Fact (`.claude/settings.json`, read 2026-10-31): all 7 hook registrations, and the documented
+  replaces the scripts. Fact (`.claude/settings.json`, read 2026-10-31): all 8 hook registrations, and the documented
   build commands, run `powershell` (Windows PowerShell 5.1), while the Claude Code PowerShell tool runs 7; both
   shells are in use until the conversion.
 

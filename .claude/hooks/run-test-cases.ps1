@@ -57,6 +57,25 @@ $pass = 0
 $fail = 0
 $errFile = Join-Path ([System.IO.Path]::GetTempPath()) ("hook_stderr_{0}.txt" -f ([guid]::NewGuid()))
 
+# velocity-warn cases run against REAL git state (improvement review H3): two
+# throwaway repos, one with docs/CODING_VELOCITY.md modified, one with it
+# staged. Case payloads name them as {{REPO_MODIFIED}} and {{REPO_STAGED}}.
+$fixtureRoot = Join-Path ([System.IO.Path]::GetTempPath()) ("hook_repos_{0}" -f ([guid]::NewGuid()))
+$fixtureRepos = @{}
+foreach ($kind in 'MODIFIED', 'STAGED') {
+    $repo = Join-Path $fixtureRoot $kind.ToLower()
+    New-Item -ItemType Directory -Force (Join-Path $repo 'docs'), (Join-Path $repo 'mobile-app') | Out-Null
+    git -C $repo init -q 2>$null
+    Set-Content -LiteralPath (Join-Path $repo 'docs\CODING_VELOCITY.md') 'v1'
+    Set-Content -LiteralPath (Join-Path $repo 'a.txt') 'a'
+    Set-Content -LiteralPath (Join-Path $repo 'mobile-app\keep.txt') 'k'
+    git -C $repo add -A 2>$null
+    git -C $repo -c user.email=t@t -c user.name=t commit -q -m init 2>$null
+    Set-Content -LiteralPath (Join-Path $repo 'docs\CODING_VELOCITY.md') 'v2'
+    if ($kind -eq 'STAGED') { git -C $repo add docs/CODING_VELOCITY.md 2>$null }
+    $fixtureRepos[$kind] = $repo.Replace('\', '/')
+}
+
 foreach ($route in $routes.Keys | Sort-Object) {
     $dir  = if ($route) { Join-Path $casesDir $route } else { $casesDir }
     $hook = Join-Path $PSScriptRoot $routes[$route]
@@ -78,13 +97,20 @@ foreach ($route in $routes.Keys | Sort-Object) {
         }
 
         $label = if ($route) { "$route/$name" } else { $name }
-        $payload = Get-Content -Raw -LiteralPath $case.FullName
+        $payload = (Get-Content -Raw -LiteralPath $case.FullName).
+            Replace('{{REPO_MODIFIED}}', $fixtureRepos['MODIFIED']).
+            Replace('{{REPO_STAGED}}', $fixtureRepos['STAGED'])
         # Invoke the hook in a child powershell.exe so its 'exit' does not
         # terminate us. Redirect stderr to a temp file so the corrective
         # message (emitted on block) is not surfaced as a NativeCommandError.
         $stdout = ($payload | & powershell.exe -NoProfile -ExecutionPolicy Bypass -File $hook 2>$errFile) -join "`n"
         $actual = $LASTEXITCODE
-        $warned = $stdout -match 'additionalContext'
+        # Parse it: a stdout that merely CONTAINS the word is not a warning
+        # Claude Code can read (improvement review H7).
+        $warned = $false
+        if ($stdout) {
+            try { $warned = [bool](($stdout | ConvertFrom-Json).hookSpecificOutput.additionalContext) } catch { $warned = $false }
+        }
         $warnOk = if ($name -like 'warn-*') { $warned } elseif ($name -like 'allow-*') { -not $warned } else { $true }
 
         if ($actual -eq $expected -and $warnOk) {
@@ -98,6 +124,7 @@ foreach ($route in $routes.Keys | Sort-Object) {
 }
 
 Remove-Item -LiteralPath $errFile -ErrorAction SilentlyContinue
+Remove-Item -LiteralPath $fixtureRoot -Recurse -Force -ErrorAction SilentlyContinue
 
 Write-Host ""
 Write-Host ("Result: {0} passed, {1} failed, {2} total" -f $pass, $fail, ($pass + $fail))

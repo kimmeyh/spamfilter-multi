@@ -981,10 +981,23 @@ prompt is written; no cron was created. Unverified: that subagents keep context 
   WinWright selectors `name^=` (code-reviewer M-3), iOS reversed client ID form check (L-2), status script per-folder
   try (L-3), wake-up step 5 reports only outside 3.7-5.3 (code-reviewer L-2; cron re-created), "neighbor" spelling.
   Harold's decisions (2026-10-31, Q1 = 4, Q2 = 2, Q3 = 3): M-4 (F306 suggestion on temperror/permerror) goes to the
-  F306 v2 backlog card; M-5 (tap pops unsaved forms): a tap navigates only when no unsaved input would be lost
-  (Q4 = 2, cautious check: FIXED, a tap pops nothing while a dialog or a text-field screen is open and shows a
+  F306 v2 backlog card; M-5 (tap pops unsaved forms): a tap navigates only when no unsaved input in a dialog or a text field would be lost
+  (Q4 = 2, cautious check: FIXED, a tap pops nothing while a dialog, or a screen whose editable text field holds text, is open and shows a
   message; mutants 5/5 KILLED; suite 3,356 / 15 / 0, analyze clean); M-6 (unverified two-process click) moves to Sprint 83 with an MV step. Full suite 3,351 passed / 15 skipped / 0 failed; analyze clean; hook suite
   138/138.
+  Improvement review (2026-10-31, ONE pass, `git diff 579f2195..HEAD`: the M-5 fix plus the retrospective
+  improvements db41dd0d): code-reviewer 0H/2M/8L (files given 30 / confirmed read 30), silent-failure-hunter
+  0H/6M/7L (files given 30 / confirmed read 30: 19 in full or by diff, 11 grep-checked). All fixed (under the size
+  limit: 3 code files): tap handler -- a failure after the first await goes to the diagnostic log, a kept screen
+  writes `notify/tap`, empty and read-only fields (search boxes, SelectableText) no longer block, message reworded
+  so it is always true, 8 s duration; velocity hook -- repo root from `rev-parse` (subdirectory cwd), errors and
+  unreadable `-F` files and git state reported instead of silent, `commit -a`/`add -u`/`add docs/` count as
+  staging, Git Bash `/c/` paths; inline `python -c` guard -- `-X utf8`, `-Ic`, `python3.12`, Bash `$'...'`,
+  PowerShell `@'...'@`, PowerShell backtick escape, message wording; runner -- fixture repos for real git state,
+  JSON-parsed warnings; docs -- F321 counts, plan decision line narrowed (class 7), CHANGELOG and ARCHITECTURE
+  text. Mutants: tap 4/4 KILLED (one first SURVIVED, a log test added); velocity 2/2 KILLED (always-warn; subdirectory root). Suite 3,360 /
+  15 / 0, analyze clean, hooks 161/161. CI run 1 (41246467526, at db41dd0d): success (Analyze and Test,
+  Windows Build, Android Build).
 
 # Manual Validation (Phase 5.3)
 
@@ -1116,7 +1129,7 @@ prompt is written; no cron was created. Unverified: that subagents keep context 
   re-enabled the iCloud per-account background scan (every 5 minutes). Manual Validation is COMPLETE for this sprint
   (MV-3 and MV-4 moved to Sprint 83; MV-5 waits on Apple). Phase 7 starts: 7.7.1 reviews and the retrospective prompt.
 - **Decisions, round 4 (Harold, 2026-10-31)**: 7.7.1 Q1 = 4 (M-4 to the F306 v2 backlog card), Q2 = 2 (M-5: a
-  notification tap navigates only when no unsaved input would be lost), Q3 = 3 (M-6 to Sprint 83 with a Manual
+  notification tap navigates only when no unsaved input would be lost; Q4 = 2 narrowed it to dialogs and text fields), Q3 = 3 (M-6 to Sprint 83 with a Manual
   Validation step: click account 1's notification while the worker scans). Q2 needs 4+ code files for exact per-screen
   tracking, so its scope is asked first (Harold 2026-10-09 size rule).
 - **Decisions, round 5 (Harold, 2026-10-31)**: Q4 = 2 (cautious check, fixed 21575189). Q5 = 2: the `news_`

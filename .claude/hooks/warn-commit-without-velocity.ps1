@@ -23,52 +23,99 @@
     Warn, not block (Harold, 2026-10-31): a partial commit of a task is valid.
 
 .NOTES
-    Exit 0 always. Fails open on any error.
+    Exit 0 always. An unparseable payload is ignored silently (fail open);
+    any later error, an unreadable -F file, or unreadable git state is
+    REPORTED through additionalContext ("the check did not run"), so a broken
+    gate does not look like a passing one.
     Tests: .claude/hooks/test-cases/velocity-warn/ (run-test-cases.ps1;
     warn-* cases must print the warning, allow-* cases must print nothing).
 #>
 
 $ErrorActionPreference = 'Stop'
 
+function Send-Context([string]$text) {
+    $out = @{
+        hookSpecificOutput = @{
+            hookEventName     = 'PreToolUse'
+            additionalContext = $text
+        }
+    } | ConvertTo-Json -Depth 4 -Compress
+    [Console]::Out.Write($out)
+}
+
 try {
     $raw = [Console]::In.ReadToEnd()
     if ([string]::IsNullOrWhiteSpace($raw)) { exit 0 }
     $payload = $raw | ConvertFrom-Json
+} catch {
+    exit 0  # unparseable payload: fail open (a hook that throws blocks every call)
+}
 
+try {
     $tool = [string]$payload.tool_name
     if ($tool -and $tool -ne 'Bash' -and $tool -ne 'PowerShell') { exit 0 }
     $cmd = [string]$payload.tool_input.command
     if ([string]::IsNullOrWhiteSpace($cmd)) { exit 0 }
     if ($cmd -notmatch '\bgit\b[^\n;&|]*\bcommit\b') { exit 0 }
 
-    $root = [string]$payload.cwd
-    if ([string]::IsNullOrWhiteSpace($root)) { $root = $env:CLAUDE_PROJECT_DIR }
-    if ([string]::IsNullOrWhiteSpace($root)) { exit 0 }
+    $cwd = [string]$payload.cwd
+    if ([string]::IsNullOrWhiteSpace($cwd)) { $cwd = $env:CLAUDE_PROJECT_DIR }
+    if ([string]::IsNullOrWhiteSpace($cwd)) { exit 0 }
 
     # The message: the command text itself (covers -m) plus any -F file.
     $text = $cmd
+    $unreadMessage = $null
     $f = [regex]::Match($cmd, '(?:^|\s)-F\s+("([^"]+)"|''([^'']+)''|(\S+))')
     if ($f.Success) {
         $path = @($f.Groups[2].Value, $f.Groups[3].Value, $f.Groups[4].Value) |
             Where-Object { $_ } | Select-Object -First 1
-        if (-not [IO.Path]::IsPathRooted($path)) { $path = Join-Path $root $path }
-        if (Test-Path -LiteralPath $path) {
-            $text += "`n" + [IO.File]::ReadAllText($path)
+        # A Git Bash path (/c/Users/...) is rooted for .NET but on the wrong
+        # drive; map it to C:\Users\...
+        if ($path -match '^/([A-Za-z])/(.*)$') { $path = "$($Matches[1]):\$($Matches[2])" }
+        if ($path -match '[$%]') {
+            $unreadMessage = "$path (a variable the hook cannot expand)"
+        } else {
+            if (-not [IO.Path]::IsPathRooted($path)) { $path = Join-Path $cwd $path }
+            if (Test-Path -LiteralPath $path) {
+                $text += "`n" + [IO.File]::ReadAllText($path)
+            } else {
+                $unreadMessage = "$path (not found)"
+            }
         }
     }
-    if ($text -notmatch '(?i)\bCloses\s+#\d+|\bTask\s+\d+\b') { exit 0 }
+    $closesTask = $text -match '(?i)\bCloses\s+#\d+|\bTask\s+\d+\b'
+    if (-not $closesTask) {
+        if ($unreadMessage) {
+            Send-Context ("[WARNING] Sprint 82 retro IMP-7: the commit message file " +
+                "$unreadMessage could not be read, so the CODING_VELOCITY check did " +
+                "not run. If this commit closes a task, confirm its velocity row " +
+                "and Executed-by line are in it.")
+        }
+        exit 0
+    }
 
     # Windows PowerShell 5.1 turns a native command's stderr line into an
-    # error record; under 'Stop' a git warning would end in the catch and the
-    # hook would stay silent. Git output is read under 'Continue'.
+    # error record; under 'Stop' a git warning would end in the catch. Git
+    # output is read under 'Continue', and each exit code is checked.
     $ErrorActionPreference = 'Continue'
     $velocity = 'docs/CODING_VELOCITY.md'
+    # Paths from the repo root: a pathspec is relative to -C, so a session in
+    # mobile-app\ would otherwise look for mobile-app/docs/... (review M2).
+    $root = git -C $cwd rev-parse --show-toplevel 2>$null
+    if ($LASTEXITCODE -ne 0 -or -not $root) {
+        Send-Context ("[WARNING] Sprint 82 retro IMP-7: this commit closes a task, " +
+            "but git state could not be read from '$cwd', so the CODING_VELOCITY " +
+            "check did not run. Confirm the velocity row is in the commit.")
+        exit 0
+    }
     $staged = @(git -C $root diff --cached --name-only 2>$null)
     if ($staged -contains $velocity) { exit 0 }
     $modified = @(git -C $root status --porcelain -- $velocity 2>$null) |
         Where-Object { $_ }
-    $stagesAll = $cmd -match '\bgit\s+add\s+(-A\b|--all\b|\.(\s|$))'
-    $namesIt = $cmd -match 'CODING_VELOCITY\.md'
+    $stagesAll = ($cmd -match '\bgit\s+add\s+(-A\b|--all\b|-u\b|--update\b|\.(?=\s|$|[;&|]))') -or
+        ($cmd -match '\bgit\b[^\n;&|]*\bcommit\b[^\n;&|]*\s-[A-Za-z]*a') -or
+        ($cmd -match '\bgit\b[^\n;&|]*\bcommit\b[^\n;&|]*\s--all\b')
+    $namesIt = $cmd -match '\bgit\s+add\b[^\n;&|]*(CODING_VELOCITY\.md|\sdocs/?(?=\s|$|[;&|]))'
     if ($modified.Count -gt 0 -and ($stagesAll -or $namesIt)) { exit 0 }
 
     $why = if ($modified.Count -gt 0) {
@@ -76,19 +123,16 @@ try {
     } else {
         'it has no change'
     }
-    $msg = "[WARNING] Sprint 82 retro IMP-7: this commit closes a task " +
+    Send-Context ("[WARNING] Sprint 82 retro IMP-7: this commit closes a task " +
         "('Closes #N' or 'Task N') but $velocity is not in it ($why). " +
         "CODING_VELOCITY.md Rule 4: record the actual minutes, and the card's " +
         "Executed-by line, at task completion -- read the clock with Get-Date " +
-        "first (IMP-6). If this commit is only part of the task, ignore this."
-    $out = @{
-        hookSpecificOutput = @{
-            hookEventName     = 'PreToolUse'
-            additionalContext = $msg
-        }
-    } | ConvertTo-Json -Depth 4 -Compress
-    [Console]::Out.Write($out)
+        "first (IMP-6). If this commit is only part of the task, ignore this.")
     exit 0
 } catch {
-    exit 0  # fail open
+    # Still exit 0 (the hook only warns), but say the check did not run, so
+    # a broken gate is not mistaken for a passing one (review H1).
+    Send-Context ("[WARNING] warn-commit-without-velocity.ps1 failed: " +
+        "$($_.Exception.Message). The CODING_VELOCITY check did not run.")
+    exit 0
 }

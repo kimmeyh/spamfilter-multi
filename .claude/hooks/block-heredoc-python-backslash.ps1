@@ -67,27 +67,36 @@ if ($cmd -match 'allow_heredoc_backslash') { exit 0 }
 # and the PowerShell tool (the hook is registered for both; before this, line 51
 # exited on anything but Bash). Sprint 82: a `python -c` edit with backslashes
 # failed its anchor; only the script's own assert stopped it. An escaped quote
-# (\") inside a double-quoted program is shell quoting, not program text, so it
-# alone does not block.
-$inline = [regex]::new('(?:^|[\s;&|(/\\])(?:python3?|py)(?:\.exe)?(?:\s+-[A-Za-z0-9]+)*?\s+-c\s+(["''])')
+# inside a double-quoted program (\" in Bash, `" in PowerShell) is shell
+# quoting, not program text, so it alone does not block.
+# Improvement review H5: also versioned names (python3.12), flags that take a
+# value (-X utf8, -W ignore), combined flags (-Ic), Bash $'...' and PowerShell
+# @'...'@ quoting.
+$inline = [regex]::new('(?:^|[\s;&|(/\\])(?:python(?:\d+(?:\.\d+)?)?|py)(?:\.exe)?(?:\s+(?:-[XW]\s+\S+|-[A-Za-z0-9]+))*?\s+-[A-Za-z]*c\s+([$@]?)(["''])')
+$esc = if ($tool -eq 'PowerShell') { '`' } else { '\' }
 foreach ($m in $inline.Matches($cmd)) {
-    $q = $m.Groups[1].Value
+    $q = $m.Groups[2].Value
     $start = $m.Index + $m.Length
     $i = $start
+    if ($m.Groups[1].Value -eq '@') {
+        # PowerShell here-string: it ends at the quote followed by @.
+        $i = $cmd.IndexOf($q + '@', $start)
+        if ($i -lt 0) { $i = $cmd.Length }
+    }
     while ($i -lt $cmd.Length) {
-        if ($cmd[$i] -eq $q -and -not ($q -eq '"' -and $i -gt $start -and $cmd[$i - 1] -eq '\')) { break }
+        if ($cmd[$i] -eq $q -and -not ($q -eq '"' -and $i -gt $start -and [string]$cmd[$i - 1] -eq $esc)) { break }
         $i++
     }
     $code = $cmd.Substring($start, $i - $start)
-    if ($q -eq '"') { $code = $code.Replace('\"', '') }
+    if ($q -eq '"') { $code = $code.Replace($esc + '"', '') }
     if ($code.Contains('\')) {
         [Console]::Error.WriteLine(@"
 [BLOCKED] Python run inline (-c) with a backslash in the program text.
 
 CLAUDE.md IMP-3 (Sprint 72; inline form enforced from the Sprint 82 retro,
-IMP-5): the shell and then Python both read the backslashes, and the program
-that runs is not the one written -- an anchor with \n or \\ silently stops
-matching.
+IMP-5): Python reads the backslashes as escapes (and in double quotes the
+shell reads them first), so the program that runs is not the one written --
+an anchor with \n or \\ silently stops matching.
 
 Do this instead:
   1. Write the script to a FILE in the scratchpad with the Write tool.

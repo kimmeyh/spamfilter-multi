@@ -276,7 +276,7 @@ only when No Rule is greater than 0 (F322).
   5.1.9 "Every rehearsal line cites its evidence" (NOT REHEARSED otherwise); `TESTING_STRATEGY.md` "A test must be
   able to fail" gains the note rule.
 - **IMP-3 Both-shells harness** -- NOT DONE (Harold: replaced by the Python conversion, F321). Fact recorded in F321:
-  the 7 hook registrations and the documented build commands run `powershell` (Windows PowerShell 5.1), while the
+  the 8 hook registrations (7 before IMP-7) and the documented build commands run `powershell` (Windows PowerShell 5.1), while the
   Claude Code PowerShell tool runs 7, so both shells are in use until F321.
 - **IMP-4 "Could not check" inputs on the Signal fires on line** -- APPLIED. `SPRINT_PLANNING.md` card template line;
   `CLAUDE.md` sub-bullet under Sprint 81 IMP-2.
