@@ -1171,8 +1171,11 @@ HOURLY WAKE-UP
    "started with nothing saved"), send SendMessage: "Continue where you stopped.
    Read your progress files first; do not redo finished work."
 4. Report any mutation lock older than one hour. Do not commit while a lock is held.
-5. If nothing stalled, continue the phase's next action per the Phase Auto-Advance
-   Rule (state it in one sentence, then execute it). Never repeat a release or
+5. If nothing stalled, read current_sprint.status. Between Phase 3.7 approval and
+   Phase 5.3 Manual Validation, continue the phase's next action per the Phase
+   Auto-Advance Rule (state it in one sentence, then execute it). Outside that
+   window (Manual Validation, the retrospective, Phase 8), only report: Harold
+   drives those steps, and his input is never presumed. Never repeat a release or
    store action.
 6. If nothing stalled and nothing is pending, reply with one line.
 7. End the reply with the status-footer script line, and keep the closing convention

@@ -969,6 +969,20 @@ prompt is written; no cron was created. Unverified: that subagents keep context 
   `f306_popup.png`; F306 note read from the accessibility tree). MV-3 and MV-4 not rehearsable here (the phones have
   0.21.0 and adb is blocked); closest rehearsal named in each step. MV-5 blocked on Apple enrollment approval
   (stopping criterion 2).
+- **7.7.1 final code reviews**: 2026-10-31. Copilot requested by hand 12:17 (GraphQL + timeline verified), review
+  16:24Z: 0 comments. Toolkit, 49 files given each: code-reviewer 0H/3M/3L (files given 49 / confirmed read 40; 9
+  not fully read are plan, backlog and test files, names in its report), silent-failure-hunter 2H/6M/3L (files given
+  49 / confirmed read 25 fully, 24 docs and tests grep-checked, names in its report). 15 distinct findings (2 found by
+  both). FIXED: H-1 F314 cursor moves after a failed store (`completeScan` returns stored/not, scan screen text,
+  `scan/persist` diag line; mutants 3/3 KILLED), H-2 tap failures console-only (DiagnosticLogger `notify/tap`; 1/1
+  KILLED), main.cpp registry result logged and Debug builds skip the registration (M-1, L-1; Windows build compiled),
+  `Get-MutationLockInfo` PowerShell 7 age (M-2; probe: PS 5 age 0, PS 7 age 0, was -240) and per-file try, build swap
+  holder guard fails loudly and matches hidden paths by name (M-3; DEV build stopped 2 scans, 4 tasks re-enabled),
+  WinWright selectors `name^=` (code-reviewer M-3), iOS reversed client ID form check (L-2), status script per-folder
+  try (L-3), wake-up step 5 reports only outside 3.7-5.3 (code-reviewer L-2; cron re-created), "neighbor" spelling.
+  AWAITING HAROLD'S DECISION (decision-class): M-4 F306 suggestion on temperror/permerror, M-5 tap pops unsaved forms,
+  M-6 unverified two-process click. Full suite 3,351 passed / 15 skipped / 0 failed; analyze clean; hook suite
+  138/138.
 
 # Manual Validation (Phase 5.3)
 

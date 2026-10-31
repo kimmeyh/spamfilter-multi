@@ -26,14 +26,15 @@
         { "_comment": "PROOF the pop-up opened: Skip exists only inside it.",
           "tool": "ww_focus", "selector": "type=Button[name='Skip']" },
         { "tool": "ww_focus", "selector": "type=Text[name='Add to Safe Senders']" },
-        { "tool": "ww_focus", "selector": "type=Button[name='Exact Email']" },
-        { "tool": "ww_focus", "selector": "type=Button[name='Exact Domain']" },
-        { "tool": "ww_focus", "selector": "type=Button[name='Entire Domain']" },
+        { "_comment": "7.7.1 M-3: starts-with (^=), because an F306 suggested button is named '<label>, suggested rule'. Not *=: 'Exact Domain' is inside 'Block Exact Domain'.",
+          "tool": "ww_focus", "selector": "type=Button[name^='Exact Email']" },
+        { "tool": "ww_focus", "selector": "type=Button[name^='Exact Domain']" },
+        { "tool": "ww_focus", "selector": "type=Button[name^='Entire Domain']" },
         { "tool": "ww_focus", "selector": "type=Text[name='Create Block Rule']" },
-        { "tool": "ww_focus", "selector": "type=Button[name='Block Email']" },
-        { "tool": "ww_focus", "selector": "type=Button[name='Block Exact Domain']" },
-        { "tool": "ww_focus", "selector": "type=Button[name='Block Entire Domain']" },
-        { "tool": "ww_focus", "selector": "type=Button[name='Block Subject']" }
+        { "tool": "ww_focus", "selector": "type=Button[name^='Block Email']" },
+        { "tool": "ww_focus", "selector": "type=Button[name^='Block Exact Domain']" },
+        { "tool": "ww_focus", "selector": "type=Button[name^='Block Entire Domain']" },
+        { "tool": "ww_focus", "selector": "type=Button[name^='Block Subject']" }
       ]
     }
   ]

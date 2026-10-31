@@ -28,11 +28,14 @@
 /// yet).
 library;
 
+import 'dart:async';
+
 import 'package:flutter/widgets.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:logger/logger.dart';
 
 import '../platform/platform_capabilities.dart';
+import 'diagnostic_logger.dart';
 import 'scan_complete_notifier.dart';
 import 'windows_system_tray_service.dart';
 
@@ -45,7 +48,7 @@ class NotificationTapHandler {
   /// `runApp`, in the foreground process only (never the background worker).
   ///
   /// Returns whether the plugin registered. Best-effort: a failure leaves
-  /// taps doing what they did before and is logged.
+  /// taps doing what they did before and is written to the diagnostic log.
   static Future<bool> initialize({
     required GlobalKey<NavigatorState> navigatorKey,
   }) async {
@@ -64,14 +67,25 @@ class NotificationTapHandler {
         ),
       );
       if (ok != true) {
-        _logger.w('Notification tap handling did NOT register '
-            '(plugin returned $ok); a tap will not open No Rule review');
+        _note('did NOT register (plugin returned $ok); a tap will not open '
+            'No Rule review');
       }
       return ok == true;
     } catch (e) {
-      _logger.w('Notification tap handling failed to register: $e');
+      _note('failed to register: ${DiagnosticLogger.describeError(e)}');
       return false;
     }
+  }
+
+  /// 7.7.1 H-2: the console log is not kept in a release build, so every
+  /// failure here also goes to the diagnostic log (Settings > General).
+  static void _note(String detail) {
+    _logger.w('Notification tap: $detail');
+    unawaited(DiagnosticLogger.log(
+      kind: DiagnosticLogger.kindInfo,
+      context: 'notify/tap',
+      detail: detail,
+    ));
   }
 
   /// What one tap does. [bringToFront] runs only when [hasDesktopWindow].
@@ -85,12 +99,12 @@ class NotificationTapHandler {
       try {
         await bringToFront();
       } catch (e) {
-        _logger.w('Notification tap: could not bring the window forward: $e');
+        _note('could not bring the window forward: '
+            '${DiagnosticLogger.describeError(e)}');
       }
     }
     if (navigator == null) {
-      _logger.w('Notification tap: no navigator yet; the app shows its '
-          'start screen');
+      _note('no navigator yet; the app shows its start screen');
       return;
     }
     navigator.popUntil((route) => route.isFirst);

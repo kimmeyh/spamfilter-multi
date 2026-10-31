@@ -136,7 +136,9 @@ testing layer, not a parity gap.
   writes. An empty list fails the row step by design.
 - **Pop-up stays open at the end**: the pop-up has no Close button, and Skip opens the NEXT item's pop-up. Dismiss
   needs a tap outside it or Escape (cursor-class). The runner closes the whole app when the script ends.
-- **Does NOT cover**: (1) the F306 `Suggested` marker, the `<label>, suggested rule` name and the suggestion note
+- **Does NOT cover**: (1) the F306 `Suggested` marker, the `<label>, suggested rule` name and the suggestion note.
+  The button selectors use starts-with (`name^=`), so a row that DOES carry a suggestion still passes (7.7.1 M-3;
+  an exact `name=` failed on such a row, and DEV background scans write them every 5 minutes)
   -- a suggestion is written to a row only by a scan that sees an authentication-YELLOW email as No Rule, and
   the DEV DB had 0 of 707 rows with `suggestion_kind` set (all 113 yellow rows predate schema v17; a DEV manual
   AOL scan on 2026-10-30 re-listed 2 green rows and refreshed none of them). No deterministic source exists, so

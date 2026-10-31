@@ -109,13 +109,15 @@ void main() {
           success: true,
         );
 
-    Future<void> runScan(List<EmailActionResult> results,
-        {String scanType = 'background'}) async {
+    Future<EmailScanProvider> runScan(List<EmailActionResult> results,
+        {String scanType = 'background',
+        UnmatchedEmailStore? unmatchedStore,
+        void Function(bool stored)? onCompleted}) async {
       final provider = EmailScanProvider()
         ..initializeScanMode(mode: ScanMode.readOnly);
       provider.initializePersistence(
         scanResultStore: ScanResultStore(testHelper.dbHelper),
-        unmatchedEmailStore: store,
+        unmatchedEmailStore: unmatchedStore ?? store,
         databaseHelper: testHelper.dbHelper,
       );
       provider.setCurrentAccountId('acct-a');
@@ -125,8 +127,31 @@ void main() {
           foldersScanned: ['INBOX'],
           platformId: 'test-platform');
       results.forEach(provider.recordResult);
-      await provider.completeScan();
+      final stored = await provider.completeScan();
+      onCompleted?.call(stored);
+      return provider;
     }
+
+    // 7.7.1 H-1 (F314): a failed store is REPORTED, so the scanner keeps the
+    // Gmail cursors, and the user sees it on the scan screen.
+    // What this does NOT catch: a failure inside markScanCompleted alone (same
+    // catch, not exercised separately) and the background worker's notice,
+    // which reads only the diagnostic log line.
+    test('7.7.1 H-1: completeScan returns false and says so when the No Rule '
+        'rows cannot be stored; true when they are', () async {
+      bool? ok;
+      await runScan([result('1', 'a@calm-example.com', const {})],
+          onCompleted: (s) => ok = s);
+      expect(ok, isTrue);
+
+      final failing = await runScan(
+          [result('2', 'b@calm-example.com', const {})],
+          unmatchedStore: _ThrowingUnmatchedStore(testHelper.dbHelper),
+          onCompleted: (s) => ok = s);
+      expect(ok, isFalse,
+          reason: 'the upsert threw, so the results are not stored');
+      expect(failing.statusMessage, contains('could not be saved'));
+    });
 
     // A mixed result: SPF pass, DKIM none. Classified YELLOW by
     // AuthResultsParser (same rule f96 tests rely on); asserted below so a
@@ -232,7 +257,7 @@ void main() {
       await v16.close();
     }
 
-    test('adds the five columns, keeps every row and neighbour column, and a '
+    test('adds the five columns, keeps every row and neighbor column, and a '
         'write after the upgrade stores a suggestion', () async {
       await buildV16Fixture();
 
@@ -281,4 +306,16 @@ void main() {
       expect(await db.query('unmatched_emails'), hasLength(2));
     });
   });
+}
+
+/// 7.7.1 H-1: a No Rule store whose write fails (a locked or full database).
+class _ThrowingUnmatchedStore extends UnmatchedEmailStore {
+  _ThrowingUnmatchedStore(super.db);
+
+  @override
+  Future<List<UnmatchedUpsertResult>> upsertUnmatchedEmails(
+      List<UnmatchedEmail> emails,
+      {bool keepStoredHeuristicSignals = false}) async {
+    throw StateError('database is locked');
+  }
 }

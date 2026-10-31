@@ -89,6 +89,15 @@ jobs:
           for name in APPLE_TEAM_ID ASC_KEY_ID ASC_ISSUER_ID ASC_KEY_P8 IOS_GMAIL_CLIENT_ID IOS_GMAIL_REVERSED_CLIENT_ID; do
             if [ -z "${!name}" ]; then echo "::error::repository secret $name is not set (docs/IOS_SETUP.md Part D)"; missing=1; fi
           done
+          # 7.7.1 L-2: present is not enough. The reversed ID must be the client
+          # ID with its dot-separated parts reversed, or the build uploads and
+          # Google sign-in fails only in TestFlight.
+          if [ "$missing" = 0 ]; then
+            expected=$(printf '%s' "$IOS_GMAIL_CLIENT_ID" | awk -F. '{for (i = NF; i > 0; i--) printf "%s%s", $i, (i > 1 ? "." : "")}')
+            if [ "$IOS_GMAIL_REVERSED_CLIENT_ID" != "$expected" ]; then
+              echo "::error::IOS_GMAIL_REVERSED_CLIENT_ID is not the reverse of IOS_GMAIL_CLIENT_ID (docs/IOS_SETUP.md Part D)"; missing=1
+            fi
+          fi
           exit $missing
 
       # Info.plist reads the Gmail client IDs from Secrets.xcconfig

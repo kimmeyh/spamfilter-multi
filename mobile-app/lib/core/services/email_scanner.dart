@@ -1193,7 +1193,7 @@ class EmailScanner {
             'touching the scan provider');
         return;
       }
-      await scanProvider.completeScan();
+      final resultsStored = await scanProvider.completeScan();
 
       // F314 (Sprint 82): the results (actions, No Rule rows) are persisted
       // by completeScan, so this is the earliest point at which the Gmail
@@ -1201,7 +1201,19 @@ class EmailScanner {
       // leaves the old cursors and the next scan evaluates the same delta
       // again; re-evaluation is safe (the No Rule upsert keeps one row per
       // email, and an action on an already-filed message is idempotent).
-      await _savePendingGmailCursors(pendingGmailCursors);
+      // 7.7.1 H-1: completeScan reports a failed store instead of throwing,
+      // so the cursors move only when it returns true. (The IMAP
+      // oldest-No-Rule cursor below needs no guard: it points AT the oldest
+      // No Rule UID, so those emails are read again anyway.)
+      if (resultsStored) {
+        await _savePendingGmailCursors(pendingGmailCursors);
+      } else if (pendingGmailCursors.isNotEmpty) {
+        AppLogger.warning('F314: scan results were not stored; Gmail '
+            'history cursors NOT moved for ${pendingGmailCursors.length} '
+            'folder(s)');
+        _diag('cursor', 'results not stored; Gmail cursors kept for '
+            '${pendingGmailCursors.length} folder(s)');
+      }
 
       // Sprint 38 Round 1 (F86 revised, post-retro 2026-05-16): reload
       // rules + safe senders from the DB so the NEXT scan picks up any

@@ -67,19 +67,41 @@ static std::wstring AppVersionForLogs() {
 // it could send a Store toast to an unpackaged exe. The GUID must equal
 // ScanCompleteNotifier.windowsGuid for DEV (gate:
 // test/policy/msix_config_test.dart). Best-effort: a failure leaves the
-// open-app click working.
+// open-app click working, and is written to the background-scan log
+// (7.7.1 M-1). Not in a Debug build (7.7.1 L-1): `flutter run` starts a
+// temporary runner exe, and pointing the class at it would make a later
+// closed-app click start nothing or the debug exe (same reason main.dart
+// registers Task Scheduler entries only in release mode).
+static void LogBackgroundStartup(const std::wstring& message);
+
 static void RegisterDevToastActivator(const std::wstring& exePath) {
+#ifdef _DEBUG
+  (void)exePath;
+  return;
+#else
   UINT32 len = 0;
-  if (GetCurrentPackageFullName(&len, nullptr) != APPMODEL_ERROR_NO_PACKAGE) {
+  const LONG pkg = GetCurrentPackageFullName(&len, nullptr);
+  if (pkg == ERROR_INSUFFICIENT_BUFFER) {
     return;  // packaged: the manifest declares the class
+  }
+  if (pkg != APPMODEL_ERROR_NO_PACKAGE) {
+    LogBackgroundStartup(L"DEV toast activator not registered: package check "
+                         L"returned " + std::to_wstring(pkg));
+    return;
   }
   const std::wstring key =
       L"Software\\Classes\\CLSID\\{06668ccd-ce68-41ea-9eb4-e1070255a7f3}"
       L"\\LocalServer32";
   const std::wstring value = L"\"" + exePath + L"\" -ToastActivated";
-  RegSetKeyValueW(HKEY_CURRENT_USER, key.c_str(), nullptr, REG_SZ,
-                  value.c_str(),
-                  static_cast<DWORD>((value.size() + 1) * sizeof(wchar_t)));
+  const LSTATUS rc = RegSetKeyValueW(
+      HKEY_CURRENT_USER, key.c_str(), nullptr, REG_SZ, value.c_str(),
+      static_cast<DWORD>((value.size() + 1) * sizeof(wchar_t)));
+  if (rc != ERROR_SUCCESS) {
+    LogBackgroundStartup(L"DEV toast activator not registered: "
+                         L"RegSetKeyValueW returned " + std::to_wstring(rc) +
+                         L"; a click with the app closed will not start it");
+  }
+#endif
 }
 
 static void LogBackgroundStartup(const std::wstring& message) {

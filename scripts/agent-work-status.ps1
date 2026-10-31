@@ -61,7 +61,14 @@ if (-not $ScratchFolder -or -not (Test-Path $ScratchFolder)) {
             Write-Host ("  {0}: not started" -f $t.Name)
             continue
         }
-        $lines = @(Get-Content -Path $pf -Encoding UTF8 | Where-Object { $_.Trim() -ne '' })
+        # 7.7.1 L-3: a progress file that cannot be read (an agent writing it at
+        # this moment) is reported, and the other folders are still listed.
+        try {
+            $lines = @(Get-Content -Path $pf -Encoding UTF8 -ErrorAction Stop | Where-Object { $_.Trim() -ne '' })
+        } catch {
+            Write-Host ("  {0}: progress.md unreadable ({1}); check again" -f $t.Name, $_.Exception.Message)
+            continue
+        }
         $units = @($lines | Where-Object { $_ -match '^UNIT .+: (DONE|STARTED)\s*$' })
         $done = @($units | Where-Object { $_ -match ': DONE\s*$' }).Count
         $finished = ($lines.Count -gt 0) -and ($lines[-1].Trim() -eq 'STATUS: FINISHED')

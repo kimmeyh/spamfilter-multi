@@ -472,9 +472,10 @@ void main() {
   // What these tests do NOT catch: a process KILL between completeScan and the
   // cursor save (the next scan re-reads the delta, which is the designed
   // outcome and is safe because the No Rule upsert keeps one row per email);
-  // a completeScan whose own persistence silently failed (it logs and
-  // continues, so the cursor still moves); and the real Gmail answer (the
-  // adapter's fetch is faked here, so history.list itself is not exercised).
+  // and the real Gmail answer (the adapter's fetch is faked here, so
+  // history.list itself is not exercised). A completeScan whose persistence
+  // failed is covered by T-3 here (the scanner honors the result) and by
+  // f306_suggestion_storage_test.dart (the provider reports it, 7.7.1 H-1).
   group('F314: the Gmail history cursor moves only after evaluation', () {
     late DatabaseTestHelper testHelper;
     late RuleSetProvider ruleProvider;
@@ -495,13 +496,14 @@ void main() {
 
     Future<_SpyScanProvider> scanWith(
         _DeltaGmailAdapter adapter, List<String> folders,
-        {String? failEvaluationIn}) async {
+        {String? failEvaluationIn, bool resultsNotStored = false}) async {
       final previous =
           PlatformRegistry.overrideFactoryForTest('test', () => adapter);
       addTearDown(
           () => PlatformRegistry.overrideFactoryForTest('test', previous));
       final provider = _SpyScanProvider(testHelper.dbHelper, account)
         ..failEvaluationIn = failEvaluationIn
+        ..reportResultsNotStored = resultsNotStored
         ..initializeScanMode(mode: ScanMode.readOnly);
       await EmailScanner(
         platformId: 'test',
@@ -585,6 +587,28 @@ void main() {
       expect(await db.getGmailHistoryCursor(account, 'INBOX'), '300');
       expect(await db.getGmailHistoryCursor(account, 'SPAM'), '500');
     });
+
+    test('T-3 (7.7.1 H-1): when completeScan reports the results were NOT '
+        'stored, no cursor moves and the next scan reads the same delta',
+        () async {
+      final db = testHelper.dbHelper;
+      await db.setGmailHistoryCursor(account, 'INBOX', '100');
+      final adapter = _DeltaGmailAdapter();
+
+      final first =
+          await scanWith(adapter, ['INBOX', 'SPAM'], resultsNotStored: true);
+
+      expect(first.evaluated, isNotEmpty,
+          reason: 'the messages were evaluated; only the store failed');
+      expect(await db.getGmailHistoryCursor(account, 'INBOX'), '100',
+          reason: 'the results were not stored, so the cursor must stay');
+      expect(await db.getGmailHistoryCursor(account, 'SPAM'), isNull);
+
+      await scanWith(adapter, ['INBOX']);
+      expect(adapter.incrementalStarts, ['INBOX:100', 'INBOX:100'],
+          reason: 'the next scan starts from the OLD cursor again');
+      expect(await db.getGmailHistoryCursor(account, 'INBOX'), '300');
+    });
   });
 }
 
@@ -630,6 +654,9 @@ class _SpyScanProvider extends EmailScanProvider {
   final String _account;
 
   String? failEvaluationIn;
+
+  /// 7.7.1 H-1: makes completeScan report that the results were NOT stored.
+  bool reportResultsNotStored = false;
   final List<String> evaluated = [];
   final List<String?> cursorSeenAtEvaluation = [];
   final Map<String, String?> cursorsSeenAtCompleteScan = {};
@@ -652,11 +679,12 @@ class _SpyScanProvider extends EmailScanProvider {
   }
 
   @override
-  Future<void> completeScan() async {
+  Future<bool> completeScan() async {
     for (final folder in ['INBOX', 'SPAM']) {
       cursorsSeenAtCompleteScan[folder] =
           await _db.getGmailHistoryCursor(_account, folder);
     }
-    await super.completeScan();
+    final stored = await super.completeScan();
+    return stored && !reportResultsNotStored;
   }
 }

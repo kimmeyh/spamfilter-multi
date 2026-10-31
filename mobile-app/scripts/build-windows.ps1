@@ -307,14 +307,32 @@ if (Test-Path $buildTarget) {
         # pattern), wait until no process runs from the variant dir, and
         # re-enable exactly the paused tasks in the finally.
         $variantFull = (Join-Path (Get-Location).Path $variantDir).TrimEnd('\') + '\'
+        # 7.7.1 M-3: a failed process listing must not read as "no holders" (the
+        # wait would pass at once and Remove-Item would hit the MV-1 failure),
+        # and a holder whose ExecutablePath is hidden (it runs elevated while
+        # this build does not) is matched by its exe name instead.
         $getHolders = {
-            @(Get-CimInstance Win32_Process -ErrorAction SilentlyContinue |
-                Where-Object { $_.ExecutablePath -and $_.ExecutablePath.StartsWith($variantFull, [System.StringComparison]::OrdinalIgnoreCase) })
+            try {
+                $all = @(Get-CimInstance Win32_Process -ErrorAction Stop)
+            } catch {
+                throw "Holder guard could not list processes ($_); not touching $variantDir."
+            }
+            @($all | Where-Object {
+                if ($_.ExecutablePath) {
+                    $_.ExecutablePath.StartsWith($variantFull, [System.StringComparison]::OrdinalIgnoreCase)
+                } else {
+                    $_.Name -eq $variantExeName
+                }
+            })
         }
         $pausedSwapTasks = @()
         try {
             try {
-                $pausedSwapTasks = @(Get-ScheduledTask -TaskName 'SpamFilterBackgroundScan_*' -ErrorAction SilentlyContinue |
+                # 7.7.1 M-3: list all tasks with -ErrorAction Stop, so a failed
+                # listing reaches the warning below instead of pausing nothing
+                # in silence (a wildcard -TaskName with no match is an error).
+                $pausedSwapTasks = @(Get-ScheduledTask -ErrorAction Stop |
+                    Where-Object { $_.TaskName -like 'SpamFilterBackgroundScan_*' } |
                     Where-Object { ($_.TaskName -like '*_Dev') -eq ($Environment -eq 'dev') -and $_.State -ne 'Disabled' })
                 foreach ($t in $pausedSwapTasks) {
                     $null = Disable-ScheduledTask -TaskName $t.TaskName -TaskPath $t.TaskPath -ErrorAction Stop
