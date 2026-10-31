@@ -989,6 +989,9 @@ prompt is written; no cron was created. Unverified: that subagents keep context 
   class; which one Windows picks is unverified -- if a click right after the toast appears does nothing, try again
   from Win+N a few seconds later and tell me). Not covered: a click while the DEV app is CLOSED starts nothing
   (question).
+  **Result (Harold, 2026-10-31): PASS.** "MV-1 now working - clicked on a notification for kimmeyharold@aol.com
+  that said 2 No rule and it opened the app to the Review No Rule Items screen with an updated list". This is the
+  real shell click the rehearsal could not cover.
   **Owner step for the Store build (Phase 8.3)**: on the installed 0.23.0 MSIX, click one background-scan toast with
   the app OPEN and one with it CLOSED, and record both results before the store notes claim the click works
   (`msix_config.toast_activator`, prod GUID; argument `-ToastActivated`, ignored by `BackgroundModeService`, which
