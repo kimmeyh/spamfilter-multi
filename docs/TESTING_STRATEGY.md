@@ -1069,6 +1069,11 @@ return null for the no-UID marker, so the test passed with or without the fix).
 - **When a value, field or name is renamed or removed, grep `test/` for the old literal in the
   same commit**, and update or delete each hit. A test of something that no longer exists passes
   for the wrong reason.
+- **A "what this test does NOT catch" note is checked against the promises (Sprint 82 retro
+  IMP-2).** If the note names a behavior that the card, its ARCHITECTURE row or its CHANGELOG
+  line promises, that is a finding: close the gap or narrow the promise in the same commit
+  (5.1.2 class 7). Sprint 82: the F314 test header named "a failed store still moves the
+  cursor" while three documents promised the opposite; the 7.7.1 review found it (H-1).
 
 
 ## Mutation-test locks (Sprint 65)

@@ -261,3 +261,35 @@ sprint's 7.7.1 line.
 ### Low Priority (Future)
 
 None.
+
+## Improvement Decisions
+
+Harold, 2026-10-31, verbatim: *"now: imp-1, 2, 4, 5, 6, 7 | imp-3 - not needed now as soon to be replaced with
+python (only needs to check PowerShell 7 anyways)"*. Also: *"Can you backlog for future sprint(s) - Converting all
+the PowerShell scripts to OS agnostic python scripts ..."* (F321) and, for the next sprint, a notification that fires
+only when No Rule is greater than 0 (F322).
+
+- **IMP-1 The 5.1.2 silent-failure walk covers every language** -- APPLIED. `SPRINT_EXECUTION_WORKFLOW.md` 5.1.2
+  class 6 gains the listed search (pattern in the workflow) over changed files of every type; `SPRINT_CHECKLIST.md`
+  5.1.2 line updated.
+- **IMP-2 A "does NOT catch" note against a promise; rehearsal lines cite evidence** -- APPLIED. 5.1.2 class 7 (new);
+  5.1.9 "Every rehearsal line cites its evidence" (NOT REHEARSED otherwise); `TESTING_STRATEGY.md` "A test must be
+  able to fail" gains the note rule.
+- **IMP-3 Both-shells harness** -- NOT DONE (Harold: replaced by the Python conversion, F321). Fact recorded in F321:
+  the 7 hook registrations and the documented build commands run `powershell` (Windows PowerShell 5.1), while the
+  Claude Code PowerShell tool runs 7, so both shells are in use until F321.
+- **IMP-4 "Could not check" inputs on the Signal fires on line** -- APPLIED. `SPRINT_PLANNING.md` card template line;
+  `CLAUDE.md` sub-bullet under Sprint 81 IMP-2.
+- **IMP-5 The backslash hook blocks python -c** -- APPLIED. `block-heredoc-python-backslash.ps1` checks the inline
+  form in the Bash AND PowerShell tools (it exited on anything but Bash before, although registered for both); 6 new
+  test cases (3 block, 3 allow); hook suite 144/144.
+- **IMP-6 Clock times come from the clock in the same turn** -- APPLIED. `CLAUDE.md` bullet; memory
+  `feedback_timestamp_footer.md`.
+- **IMP-7 Velocity row in the task's closing commit** -- APPLIED. New `warn-commit-without-velocity.ps1`
+  (PreToolUse, Bash and PowerShell, registered in `.claude/settings.json`): exit 0 always; when a commit message
+  carries `Closes #N` or `Task N` and `docs/CODING_VELOCITY.md` will not be in the commit, it returns
+  `hookSpecificOutput.additionalContext` (stderr on exit 0 never reaches the model, per the Claude Code hooks page,
+  read 2026-10-31). `run-test-cases.ps1` gains a `warn-*` prefix (exit 0 plus the warning) and checks that `allow-*`
+  cases print none; 5 cases in `test-cases/velocity-warn/`; a scratch-repo probe covered the staged, `git add -A`,
+  named-file and other-file-only paths (5/5 as intended). The probe also found that under Windows PowerShell 5.1 a
+  git stderr line would have ended the hook silently; git output is read under `Continue`.

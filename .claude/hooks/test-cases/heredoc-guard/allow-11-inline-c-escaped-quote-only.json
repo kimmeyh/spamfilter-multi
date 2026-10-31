@@ -1,0 +1,1 @@
+{"session_id": "hg-allow-11", "cwd": "D:/Data/Harold/github/spamfilter-multi", "hook_event_name": "PreToolUse", "tool_name": "Bash", "tool_input": {"command": "python -c \"print(\\\"hi\\\")\""}}

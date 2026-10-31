@@ -28,6 +28,8 @@ Format: `- **type**: Description (Issue #N)` where type is feat|fix|chore|docs
 
 ### 2026-10-31 (Sprint 82)
 
+- **docs**: Sprint 82 retrospective improvements: the 5.1.2 silent-failure search covers every language in the diff; a test's "does NOT catch" note is checked against what the docs promise, and every Manual Validation rehearsal line cites its evidence; a signal names its "could not check" inputs; clock times are read from the clock (Sprint 82 retro IMP-1, 2, 4, 6)
+- **chore**: The backslash hook also blocks `python -c` with a backslash, in the Bash and PowerShell tools; a new hook warns when a task-closing commit leaves out its CODING_VELOCITY row (Sprint 82 retro IMP-5, IMP-7)
 - **fix**: When a scan's results cannot be saved (for example a locked database), the scan screen now says "Scan complete, but its results could not be saved. The next scan checks these emails again.", and a Gmail scan keeps its read position so the next scan reads those emails again; before, the failure was silent and those emails could be skipped for good (Issue #525)
 - **fix**: A notification click no longer closes an open dialog or a screen with a text field, so typed input is not lost; the app says so and you close the screen to see Review No Rule Items (Issue #529)
 - **fix**: A failed notification-click registration, and a failed window raise, are written to the diagnostic log (Issue #529)

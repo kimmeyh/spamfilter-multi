@@ -571,6 +571,66 @@ Source: `docs/research/R76-3_HEURISTICS_ML_GENAI_SPAM_IDENTIFICATION.md` (Issue 
   from a dev DB copy the runner restores. Does not replace HOLD F289.
 - Details: `docs/sprints/SPRINT_82_PLAN.md` Task 10.
 
+**F321. Convert the repo's PowerShell scripts and deterministic Claude tools to OS-agnostic Python, starting with a small pilot set (pilot ~120-240m, estimate unverified; full conversion over several sprints) Priority 35 -- NEW 2026-10-31 (Harold, Sprint 82 retrospective)**
+- Phase: Process / Tooling
+- Platform: Development process on Windows, Linux, Unix, WSL and macOS (scripts, hooks, skills). The app is not
+  affected.
+- Harold (2026-10-31): *"Converting all the PowerShell scripts to OS agnostic python scripts (Windows, Linux, Unix,
+  WSL, macOS) - there should be a small set of common tools that all the scripts can use for determining
+  OS/hardware and then tools that make it agnostic (file paths, date/time... - research common differences and
+  incorporate based on need for the existing scripts). Probably want to do an initial small set so we can work out
+  the bugs. Also all Claude/Codex tools (skills, hooks...) that are primarily deterministic should be converted to
+  python while those that really need GenAI can stay as .md files)."*
+- Size today (counted 2026-10-31): `.claude/hooks/` 10 `.ps1` (~2,190 lines, plus the `test-cases/` suite run by
+  `run-test-cases.ps1`); `scripts/` 14 `.ps1` (~2,020 lines); `mobile-app/scripts/` 31 `.ps1` (~5,640 lines); 10
+  skills in `.claude/skills/` (all `.md`; each is classified deterministic or GenAI).
+- Prior art to review first (sibling repos, read only):
+  - `hsbc-qfraud-phase2/.claude/hooks/hooklib.py` (F78, its Sprint 16): one shared module for hook payload reading,
+    repo root, path normalizing, git calls and allow/block exit codes; every hook fails open on a malformed payload;
+    hooks are registered as `python "${CLAUDE_PROJECT_DIR}/.claude/hooks/<name>.py"`. Its header records that the
+    measured OS-specific needs were few, and that path separators were the one real difference.
+  - `EvidenceBasedDB/.claude/hooks/*.py` (Python versions of several hooks this repo still has in PowerShell:
+    mutation lock, close-out check, sprint cards, stash guard).
+- R-1 Common layer: a small shared Python package (OS and hardware detection, paths, date and time with time zones,
+  process and subprocess calls, encoding of stdin/stdout, line endings, home and app-data folders, tool lookup by
+  environment variable). Research the common differences and include only what the converted scripts need.
+- R-2 Pilot: convert a small set first (for example the hook library plus 2-3 hooks and their test cases, and one
+  `scripts/` helper), run them on Windows and on the CI Linux runner, and record the defects found before the rest.
+- R-3 Classify every skill and hook: deterministic (convert to Python) or needs GenAI (stays `.md`). Record the list.
+- R-4 Each converted script keeps its interface (parameters, exit codes, output a gate matches on) or updates every
+  caller and doc in the same commit; the hook suite runs green after each conversion.
+- Out of scope: Windows-only build steps that call Windows tools (MSIX, Task Scheduler, WinWright) keep a Windows
+  path, wrapped in Python only where that adds value.
+- Note (Sprint 82 retro IMP-3, Harold 2026-10-31): a both-shells test harness is not needed, because this conversion
+  replaces the scripts. Fact (`.claude/settings.json`, read 2026-10-31): all 7 hook registrations, and the documented
+  build commands, run `powershell` (Windows PowerShell 5.1), while the Claude Code PowerShell tool runs 7; both
+  shells are in use until the conversion.
+
+**F322. Notification choice: notify only when No Rule is greater than 0 (~60-120m, estimate unverified) Priority 30 -- TARGET SPRINT 83 (Harold 2026-10-31, "add to backlog for next sprint") -- NEW 2026-10-31**
+- Phase: Core App Quality
+- Platform: All (Windows, Android, iPhone); same behavior and setting everywhere per ADR-0042, with a declared
+  exception only where a platform cannot.
+- Harold (2026-10-31): *"is there more notification functionality that can be added: a sub-notification type that
+  only notifies if No Rule is > 0 as most users would want to be notified if there are No Rules to be addressed, but
+  otherwise the Notification is not valuable (may be different for Windows, Android and iPhone - but do the same for
+  all if possible"*.
+- Today (code read 2026-10-31): every COMPLETED background scan posts one notification per account through the
+  shared `ScanCompleteNotifier.post` (`scan_complete_notifier.dart:109`), called from the Windows worker
+  (`background_scan_windows_worker.dart:286`) and the Android worker (`android_background_scan_worker.dart:486`).
+  Only a skipped scan is silent (`BackgroundScanCore.completeAccount`). The only off switch is the OS setting.
+- R-1: a setting with the choices "Every completed scan" and "Only when there are No Rule items" (default to be
+  decided by Harold at planning), per app, decided in the shared notifier or `BackgroundScanCore` so both workers
+  and the future iPhone worker obey it.
+- R-2: the setting lives on one named screen (Settings > Background or Notifications; name it in the card) with the
+  same text on every platform.
+- R-3: research other notification choices worth offering (for example a daily summary, quiet hours, per-account
+  choice) and list them for Harold; build only what he selects.
+- AC: with the "No Rule items only" choice, a scan with No Rule 0 posts nothing and a scan with No Rule 1 or more
+  posts the usual notification; both paths tested in the shared code; the sign-in-needed notification is not
+  affected.
+- Signal fires on: No Rule count of the completed scan; count on DEV data at planning how many completed background
+  scans had No Rule 0 (from `scan_results` / `background_scan_log`).
+
 **F273. Privacy policy and Data safety revision for the content history and learning (~60m) Priority 40**
 - Phase: Core App Quality
 - Platform: All (one policy; Play and Microsoft Store)

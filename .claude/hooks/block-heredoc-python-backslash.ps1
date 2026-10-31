@@ -32,6 +32,10 @@
         the command times out (twice in Sprint 75).
     Single backslashes in a non-Python heredoc stay allowed.
 
+    Sprint 82 retro IMP-5 extends it to the INLINE form: `python -c "..."`
+    (python, python3, py, path-prefixed) whose program text has a backslash,
+    in the Bash AND the PowerShell tool.
+
 .NOTES
     Exit 0 = allow; Exit 2 = block (stderr fed to Claude).
     Bypass: include the literal token allow_heredoc_backslash in the command.
@@ -48,7 +52,8 @@ try {
     exit 0  # unparseable payload: fail open
 }
 
-if ($payload.tool_name -and $payload.tool_name -ne 'Bash') { exit 0 }
+$tool = [string]$payload.tool_name
+if ($tool -and $tool -ne 'Bash' -and $tool -ne 'PowerShell') { exit 0 }
 
 $cmd = $null
 if ($payload.tool_input -and $payload.tool_input.command) {
@@ -56,6 +61,48 @@ if ($payload.tool_input -and $payload.tool_input.command) {
 }
 if ([string]::IsNullOrWhiteSpace($cmd)) { exit 0 }
 if ($cmd -match 'allow_heredoc_backslash') { exit 0 }
+
+# Sprint 82 retro IMP-5: an INLINE program (`python -c "..."`, `py -3 -c '...'`)
+# has the same two escaping layers as a heredoc and is checked in BOTH the Bash
+# and the PowerShell tool (the hook is registered for both; before this, line 51
+# exited on anything but Bash). Sprint 82: a `python -c` edit with backslashes
+# failed its anchor; only the script's own assert stopped it. An escaped quote
+# (\") inside a double-quoted program is shell quoting, not program text, so it
+# alone does not block.
+$inline = [regex]::new('(?:^|[\s;&|(/\\])(?:python3?|py)(?:\.exe)?(?:\s+-[A-Za-z0-9]+)*?\s+-c\s+(["''])')
+foreach ($m in $inline.Matches($cmd)) {
+    $q = $m.Groups[1].Value
+    $start = $m.Index + $m.Length
+    $i = $start
+    while ($i -lt $cmd.Length) {
+        if ($cmd[$i] -eq $q -and -not ($q -eq '"' -and $i -gt $start -and $cmd[$i - 1] -eq '\')) { break }
+        $i++
+    }
+    $code = $cmd.Substring($start, $i - $start)
+    if ($q -eq '"') { $code = $code.Replace('\"', '') }
+    if ($code.Contains('\')) {
+        [Console]::Error.WriteLine(@"
+[BLOCKED] Python run inline (-c) with a backslash in the program text.
+
+CLAUDE.md IMP-3 (Sprint 72; inline form enforced from the Sprint 82 retro,
+IMP-5): the shell and then Python both read the backslashes, and the program
+that runs is not the one written -- an anchor with \n or \\ silently stops
+matching.
+
+Do this instead:
+  1. Write the script to a FILE in the scratchpad with the Write tool.
+  2. Run it by path:  python -I "<scratchpad>/script.py"
+  3. The script asserts its anchors matched before writing.
+
+If the backslash is genuinely safe here, re-run with the literal token
+allow_heredoc_backslash in the command.
+"@)
+        exit 2
+    }
+}
+
+# The heredoc and bare-cat checks below are Bash shapes only.
+if ($tool -eq 'PowerShell') { exit 0 }
 
 # Every heredoc opener; the body is checked when the SAME LINE runs a Python
 # interpreter -- before the << (`python - <<EOF`) or after it
