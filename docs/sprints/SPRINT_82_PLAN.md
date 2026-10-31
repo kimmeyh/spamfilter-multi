@@ -982,7 +982,8 @@ prompt is written; no cron was created. Unverified: that subagents keep context 
   try (L-3), wake-up step 5 reports only outside 3.7-5.3 (code-reviewer L-2; cron re-created), "neighbor" spelling.
   Harold's decisions (2026-10-31, Q1 = 4, Q2 = 2, Q3 = 3): M-4 (F306 suggestion on temperror/permerror) goes to the
   F306 v2 backlog card; M-5 (tap pops unsaved forms): a tap navigates only when no unsaved input would be lost
-  (scope question pending, see Decisions round 4); M-6 (unverified two-process click) moves to Sprint 83 with an MV step. Full suite 3,351 passed / 15 skipped / 0 failed; analyze clean; hook suite
+  (Q4 = 2, cautious check: FIXED, a tap pops nothing while a dialog or a text-field screen is open and shows a
+  message; mutants 5/5 KILLED; suite 3,356 / 15 / 0, analyze clean); M-6 (unverified two-process click) moves to Sprint 83 with an MV step. Full suite 3,351 passed / 15 skipped / 0 failed; analyze clean; hook suite
   138/138.
 
 # Manual Validation (Phase 5.3)

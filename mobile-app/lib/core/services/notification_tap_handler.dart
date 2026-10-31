@@ -19,6 +19,11 @@
 /// 2. PARITY: pops to the first route, which is Review No Rule Items when
 ///    accounts exist (F135). That screen reloads on the `resumed` event the
 ///    foreground change produces (F319, `shouldReloadOnLifecycle`).
+///    7.7.1 M-5 (Harold Q4 = 2): it does NOT pop while a dialog, or a screen
+///    with a text field, is open above the first route, because popping
+///    would discard what the user typed. The app then shows a message that
+///    says so ([keptOpenMessage]). This check is cautious: it also stops
+///    when nothing was typed, because no screen reports unsaved input.
 ///
 /// A click while the app is CLOSED starts it (`-ToastActivated`): the Store
 /// build through its manifest (`msix_config.toast_activator`), the unpackaged
@@ -30,7 +35,7 @@ library;
 
 import 'dart:async';
 
-import 'package:flutter/widgets.dart';
+import 'package:flutter/material.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:logger/logger.dart';
 
@@ -39,10 +44,48 @@ import 'diagnostic_logger.dart';
 import 'scan_complete_notifier.dart';
 import 'windows_system_tray_service.dart';
 
+/// Keeps the navigator's current routes, so a tap can see what is open.
+/// `MaterialApp.navigatorObservers` must include [NotificationTapHandler.routeStack].
+class RouteStackObserver extends NavigatorObserver {
+  final List<Route<dynamic>> routes = <Route<dynamic>>[];
+
+  @override
+  void didPush(Route<dynamic> route, Route<dynamic>? previousRoute) =>
+      routes.add(route);
+
+  @override
+  void didPop(Route<dynamic> route, Route<dynamic>? previousRoute) =>
+      routes.remove(route);
+
+  @override
+  void didRemove(Route<dynamic> route, Route<dynamic>? previousRoute) =>
+      routes.remove(route);
+
+  @override
+  void didReplace({Route<dynamic>? newRoute, Route<dynamic>? oldRoute}) {
+    final i = oldRoute == null ? -1 : routes.indexOf(oldRoute);
+    if (newRoute == null) {
+      if (i >= 0) routes.removeAt(i);
+    } else if (i >= 0) {
+      routes[i] = newRoute;
+    } else {
+      routes.add(newRoute);
+    }
+  }
+}
+
 class NotificationTapHandler {
   NotificationTapHandler._();
 
   static final Logger _logger = Logger();
+
+  /// The app's route observer for [handleTap] (7.7.1 M-5).
+  static final RouteStackObserver routeStack = RouteStackObserver();
+
+  /// What the user sees when a tap leaves the open screen in place.
+  static const String keptOpenMessage =
+      'The notification did not close your open screen, so nothing you '
+      'typed is lost. Close it to see Review No Rule Items.';
 
   /// Registers the UI process for notification taps. Call once, after
   /// `runApp`, in the foreground process only (never the background worker).
@@ -64,6 +107,7 @@ class NotificationTapHandler {
           navigator: navigatorKey.currentState,
           hasDesktopWindow: PlatformCapabilities.current.hasDesktopWindow,
           bringToFront: WindowsSystemTrayService.bringWindowToFront,
+          openRoutes: routeStack.routes,
         ),
       );
       if (ok != true) {
@@ -88,12 +132,45 @@ class NotificationTapHandler {
     ));
   }
 
+  /// Why popping [openRoutes] to the first route could lose input, or null
+  /// when it cannot: a dialog (any [PopupRoute]) or a screen holding a text
+  /// field above the first route.
+  @visibleForTesting
+  static String? inputAtRisk(List<Route<dynamic>> openRoutes) {
+    for (final route in openRoutes) {
+      if (!route.isActive || route.isFirst) continue;
+      if (route is PopupRoute) return 'a dialog is open';
+      if (route is ModalRoute && _hasTextField(route.subtreeContext)) {
+        return 'a screen with a text field is open';
+      }
+    }
+    return null;
+  }
+
+  static bool _hasTextField(BuildContext? context) {
+    if (context == null) return false;
+    var found = false;
+    void visit(Element element) {
+      if (found) return;
+      if (element.widget is EditableText) {
+        found = true;
+        return;
+      }
+      element.visitChildren(visit);
+    }
+
+    context.visitChildElements(visit);
+    return found;
+  }
+
   /// What one tap does. [bringToFront] runs only when [hasDesktopWindow].
+  /// [openRoutes] is the navigator's route list ([routeStack] in the app).
   @visibleForTesting
   static Future<void> handleTap({
     required NavigatorState? navigator,
     required bool hasDesktopWindow,
     required Future<void> Function() bringToFront,
+    List<Route<dynamic>> openRoutes = const <Route<dynamic>>[],
   }) async {
     if (hasDesktopWindow) {
       try {
@@ -105,6 +182,17 @@ class NotificationTapHandler {
     }
     if (navigator == null) {
       _note('no navigator yet; the app shows its start screen');
+      return;
+    }
+    final risk = inputAtRisk(openRoutes);
+    if (risk != null) {
+      _logger.i('Notification tap: open screen kept ($risk)');
+      final messenger = ScaffoldMessenger.maybeOf(navigator.context);
+      if (messenger == null) {
+        _note('open screen kept ($risk) and no messenger to say so');
+      } else {
+        messenger.showSnackBar(const SnackBar(content: Text(keptOpenMessage)));
+      }
       return;
     }
     navigator.popUntil((route) => route.isFirst);

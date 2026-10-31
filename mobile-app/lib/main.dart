@@ -637,7 +637,11 @@ class SpamFilterApp extends StatelessWidget {
             darkTheme: AppTheme.darkTheme,
             themeMode: ThemeMode.system, // Follow system theme preference
             // Track navigation events for account list refresh
-            navigatorObservers: [routeObserver],
+            // Notification taps check the open routes (7.7.1 M-5)
+            navigatorObservers: [
+              routeObserver,
+              NotificationTapHandler.routeStack,
+            ],
             // Initialize rules after providers are created
             home: const _AppInitializer(),
           ),

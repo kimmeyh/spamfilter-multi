@@ -118,6 +118,92 @@ void main() {
     expect(log(), contains('no navigator yet'));
   });
 
+  // 7.7.1 M-5 (Harold Q4 = 2): a tap must not discard typed input.
+  // What these tests do NOT catch: input held outside a text field (a
+  // checkbox or a folder selection on an open screen) is still discarded;
+  // the cautious check looks only for text fields and dialogs.
+  group('7.7.1 M-5: keeps a screen with input open', () {
+    late RouteStackObserver observer;
+
+    Future<void> pumpApp(WidgetTester tester) async {
+      observer = RouteStackObserver();
+      await tester.pumpWidget(MaterialApp(
+        navigatorKey: navKey,
+        navigatorObservers: [observer],
+        home: const Scaffold(body: Text('home: No Rule review')),
+      ));
+    }
+
+    Future<void> tap(WidgetTester tester) async {
+      await NotificationTapHandler.handleTap(
+        navigator: navKey.currentState,
+        hasDesktopWindow: false,
+        bringToFront: () async {},
+        openRoutes: observer.routes,
+      );
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 750));
+    }
+
+    testWidgets('a screen with a text field stays open and the message shows',
+        (tester) async {
+      await pumpApp(tester);
+      navKey.currentState!.push(MaterialPageRoute<void>(
+          builder: (_) => const Scaffold(body: TextField())));
+      await tester.pumpAndSettle();
+      await tester.enterText(find.byType(TextField), 'typed rule');
+      await tap(tester);
+      expect(find.text('typed rule'), findsOneWidget);
+      expect(find.text(NotificationTapHandler.keptOpenMessage), findsOneWidget);
+    });
+
+    testWidgets('an open dialog stays open', (tester) async {
+      await pumpApp(tester);
+      showDialog<void>(
+        context: navKey.currentContext!,
+        builder: (_) => const AlertDialog(content: Text('Delete rule?')),
+      );
+      await tester.pumpAndSettle();
+      await tap(tester);
+      expect(find.text('Delete rule?'), findsOneWidget);
+    });
+
+    testWidgets('a screen without input is still closed', (tester) async {
+      await pumpApp(tester);
+      navKey.currentState!.push(MaterialPageRoute<void>(
+          builder: (_) => const Scaffold(body: Text('Scan History'))));
+      await tester.pumpAndSettle();
+      await tap(tester);
+      await tester.pumpAndSettle();
+      expect(find.text('Scan History'), findsNothing);
+      expect(find.text('home: No Rule review'), findsOneWidget);
+      expect(find.text(NotificationTapHandler.keptOpenMessage), findsNothing);
+    });
+
+    testWidgets('a text field on the first route does not block', (tester) async {
+      observer = RouteStackObserver();
+      await tester.pumpWidget(MaterialApp(
+        navigatorKey: navKey,
+        navigatorObservers: [observer],
+        home: const Scaffold(body: TextField()),
+      ));
+      expect(NotificationTapHandler.inputAtRisk(observer.routes), isNull);
+    });
+
+    testWidgets('a closed dialog no longer blocks', (tester) async {
+      await pumpApp(tester);
+      showDialog<void>(
+        context: navKey.currentContext!,
+        builder: (_) => const AlertDialog(content: Text('Delete rule?')),
+      );
+      await tester.pumpAndSettle();
+      navKey.currentState!.pop();
+      await tester.pumpAndSettle();
+      expect(observer.routes, hasLength(1));
+      expect(NotificationTapHandler.inputAtRisk(observer.routes), isNull);
+    });
+  });
+
   test('the UI registers under the same Windows app ID and GUID as the poster',
       () {
     final windows = ScanCompleteNotifier.initializationSettings.windows!;

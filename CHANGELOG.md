@@ -29,6 +29,7 @@ Format: `- **type**: Description (Issue #N)` where type is feat|fix|chore|docs
 ### 2026-10-31 (Sprint 82)
 
 - **fix**: When a scan's results cannot be saved (for example a locked database), the scan screen now says "Scan complete, but its results could not be saved. The next scan checks these emails again.", and a Gmail scan keeps its read position so the next scan reads those emails again; before, the failure was silent and those emails could be skipped for good (Issue #525)
+- **fix**: A notification click no longer closes an open dialog or a screen with a text field, so typed input is not lost; the app says so and you close the screen to see Review No Rule Items (Issue #529)
 - **fix**: A failed notification-click registration, and a failed window raise, are written to the diagnostic log (Issue #529)
 - **fix**: While the app is open, clicking a background-scan notification on Windows now brings the app window forward and opens Review No Rule Items, with the new emails listed; before, the click did nothing. On Android a tap now also opens Review No Rule Items when the app was already open on another screen. The Store build declares the notification's activation class; a click on the installed Store build is checked at the release install before the store notes may claim it (Issue #529)
 - **fix**: On the Windows DEV build, clicking a background-scan notification while the app is closed now starts the app on Review No Rule Items (Issue #529)
