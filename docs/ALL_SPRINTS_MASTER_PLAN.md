@@ -4,7 +4,7 @@
 
 **Audience**: Claude Code models planning sprints; User prioritizing future work
 
-**Last Updated**: 2026-10-23 (Sprint 80 Phase 7.7: Past Sprint Summary row, Last Completed Sprint, Sprint 80 scope line; MV76-1, F277, F276, F267, F268, F269, F204, F292, F294, F295, F296, F298, F299 removed (done or closed); F289 kept in the backlog; earlier 2026-10-22: F301 added, ADR-0050 accepted; earlier 2026-10-18 (Sprint 79 Phase 7.7: Past Sprint Summary row, Last Completed Sprint, F286/F287/F288/F291/F293/F297 removed (done), carry-in heading to Sprint 80; earlier 2026-10-16: Sprint 79 remainders moved to Sprint 80: MV76-1, F277, F292; added F299; earlier 2026-10-15: added F296, F297 and F298; earlier: Sprint 78 Phase 7.7: Last Completed Sprint, Past Sprint Summary row, completed cards removed, Sprint 79 carry-ins)
+**Last Updated**: 2026-10-31 (Sprint 82 Phase 7.7: Past Sprint Summary row, Last Completed Sprint, Sprint 82 scope line; F306, F312, F314, F317, F318, F319, F320 removed (done or closed); F323 (F306 v2) and F324 added; F303, F315, F67a, F304, F67b retargeted to Sprint 83; earlier 2026-10-31: F321, F322 added); earlier 2026-10-23 (Sprint 80 Phase 7.7: Past Sprint Summary row, Last Completed Sprint, Sprint 80 scope line; MV76-1, F277, F276, F267, F268, F269, F204, F292, F294, F295, F296, F298, F299 removed (done or closed); F289 kept in the backlog; earlier 2026-10-22: F301 added, ADR-0050 accepted; earlier 2026-10-18 (Sprint 79 Phase 7.7: Past Sprint Summary row, Last Completed Sprint, F286/F287/F288/F291/F293/F297 removed (done), carry-in heading to Sprint 80; earlier 2026-10-16: Sprint 79 remainders moved to Sprint 80: MV76-1, F277, F292; added F299; earlier 2026-10-15: added F296, F297 and F298; earlier: Sprint 78 Phase 7.7: Last Completed Sprint, Past Sprint Summary row, completed cards removed, Sprint 79 carry-ins)
 
 ## How to Maintain This Document
 
@@ -149,6 +149,7 @@ Historical sprint information lives in individual documents in `docs/sprints/` a
 | 79 | docs/sprints/SPRINT_79_SUMMARY.md | [OK] Complete | Oct 13-18, 2026 (PR #480 -> develop; 0.20.0+17. F286 per-account Android notification, F287 Windows toast (ADR-0048), F288 develop default branch, F291 locked-PC sweep, F293, F297 reload after import, F292 runner; Task 1: MV-7 periodic skip + skip after the wait, IMAP 120 s response limit, scheduler log lines, workmanager 0.10.10 stop line. Phone remainders (MV76-1, F277, F292) moved to Sprint 80) |
 | 80 | docs/sprints/SPRINT_80_SUMMARY.md | [OK] Complete | Oct 18-23, 2026 (PR #490 -> develop; 0.21.0+18. F294 platform seam (ADR-0049), F295 iPhone readiness (ADR-0050), F296 CI Flutter version, F298 reload after edits, F276 Review hides gone mail, F269 import Merge, F267/F268 rule tools, F204 AAB gates; MV: Task 15 window at once, Task 16 tray icon and menu, Task 17 Android new-mail diagnostics; F277 and MV76-1 closed, R-2 to the Phase 8 Fold log) |
 | 81 | docs/sprints/SPRINT_81_SUMMARY.md | [OK] Complete | Oct 23-27, 2026 (PR #507 -> develop; 0.22.0+19. F67b iOS project (unsigned build green on macos-26), F302 IMAP no-UID constant, F303 Android diagnostics per field, F259 missing label shown + Gmail cursor per folder, F301 sign-in notification, F271 No Rule reason chips + Create rule, F278, F300, IMP-2b; first sprint with 7.7.1 reviews before the retrospective; F67a/F304 signing and TestFlight and MV-2 moved to Sprint 82) |
+| 82 | docs/sprints/SPRINT_82_SUMMARY.md | [OK] Complete | Oct 27-31, 2026 (PR #521 -> develop; 0.23.0+20. F306 suggested rule in the No Rule pop-up (schema v17), F314 Gmail cursor after evaluation, F319 No Rule list reloads on resume and a notification click opens it (Windows open and closed), F312 closed with counts, F315 Windows count 0, F317, F318, F320; F67a/F304/F67b wait on Apple; MV-3/MV-4 Fold checks to Sprint 83) |
 
 **Key Achievements**: See CHANGELOG.md for detailed feature history.
 
@@ -156,14 +157,25 @@ Historical sprint information lives in individual documents in `docs/sprints/` a
 
 ## Last Completed Sprint
 
-**Sprint 81** (2026-10-23 -- 2026-10-27; PR #507 -> develop; version 0.22.0+19)
-- **Type**: iPhone start (project and unsigned build), three data defects, Gmail sign-in visibility, No Rule reasons; Windows + Android parity on every card (ADR-0042, ADR-0049); iOS answers declared (ADR-0050).
-- **F67b (#511)** iOS project, Info.plist, AppDelegate, `PlatformCapabilities` iOS answers; unsigned build green on `macos-26` (run 40012148625). **F302 (#512)** IMAP no-UID constant (schema v14). **F303 (#513)** Android diagnostics field by field. **F259 (#514)** Gmail history cursor per folder (schema v15) and "Folder not found: <name>" on Results. **F301 (#515)** ADR-0029 Phase 1 visible: a daily "Gmail sign-in needed" notification, 1-hour retry on a failed post. **F271 (#516)** No Rule reason chips (schema v16) and "Create rule"; the Blocked TLD chip removed at 7.7.1. **F278 (#517)**, **F300 (#518)**, **IMP-2b (#519)** closed. **Version (#508)** 0.22.0+19.
-- **Moved to Sprint 82 (Harold 2026-10-26)**: F67a (#509) and the F304 signing and TestFlight part (#510) -- the Apple Account could not be created; MV-2 Fold diagnostics line.
-- **7.7.1 final code reviews** (first sprint with the reviews BEFORE the retrospective): Copilot 0 comments; code-reviewer 1 M / 8 L; silent-failure-hunter 6 M / 7 L; Harold Q1-Q7 -> F314-F317; improvement review 1 H / 2 M / 8 L fixed in 2ae82a26; the full suite found a diagnostic-log lock race (lines lost under load), fixed in c262b0ee. Details: `SPRINT_81_PLAN.md` "Phase 7 evidence".
-- **Results**: suite 3,287 passed / 15 skipped / 0 failed at c262b0ee, analyzer clean; MV-1 PASS with direction -> F306/F307; MV-3 OK. Retro: Harold categories 1-12 Very Good; IMP-1, 2, 3, 4, 5, 7 applied; IMP-6 -> F318.
+**Sprint 82** (2026-10-27 -- 2026-10-31; PR #521 -> develop; version 0.23.0+20)
+- **Type**: No Rule suggestions and refresh, one Gmail data-loss bug, evidence counts before fixes, three process
+  gaps; iOS waits on Apple. Windows + Android + iPhone parity on every card (ADR-0042, ADR-0049, ADR-0050).
+- **F306 (#528)** one suggested rule in the No Rule pop-up, stored at scan time (schema v17). **F314 (#525)** the
+  Gmail cursor moves only after the results are stored; a failed store now shows on the scan screen. **F319 (#529)**
+  the No Rule list reloads on resume, and a notification click opens Review No Rule Items (Windows DEV open and
+  closed; Store build checked at 8.3). **Task 6 (#526)** F312 closed with counts (196 matched, 0 differing). **F320
+  (#530)**, **F318 (#531)**, **F317 (#532)**, **Version (#522)** 0.23.0+20.
+- **Open, to Sprint 83**: Tasks 1-3 (#509, #510, #523) wait on Apple enrollment `R6QG2A9SHS`; Task 4 (#524) and
+  Task 7's phone count (#527) are Manual Validation MV-4; MV-3 Fold F319 + F306.
+- **7.7.1 final code reviews**: Copilot 0 comments; code-reviewer 0H/3M/3L; silent-failure-hunter 2H/6M/3L (49 files
+  each); all fixed except M-4 (F323) and M-6 (Sprint 83 MV step); improvement review 0H/8M/15L, all fixed. Details:
+  `SPRINT_82_PLAN.md` "Phase 5 evidence".
+- **Results**: suite 3,360 passed / 15 skipped / 0 failed, analyzer clean; hook suite 162/162; MV-1b, MV-1c and
+  MV-2 PASS. Retro: Harold all categories Very Good; IMP-1, 2, 4, 5, 6, 7 applied; IMP-3 replaced by F321.
 
 ## Next Sprint Candidates
+
+**Sprint 82 scope -- COMPLETE 2026-10-31 (PR #521)**: version (#522), F314 (#525), Task 6 probe and F312 (#526), F306 (#528), F319 (#529), F320 (#530), F318 (#531), F317 (#532). Open and carried to Sprint 83: F67a (#509), F304 (#510), F67b (#523) on Apple; F303 Fold check (#524) and F315 phone count (#527) as Manual Validation MV-4. Plan: `docs/sprints/SPRINT_82_PLAN.md`.
 
 **Sprint 81 scope -- COMPLETE 2026-10-27 (PR #507)**: version (#508), F67b code (#511), F302 (#512), F303 code (#513), F259 (#514), F301 (#515), F271 (#516), F278 (#517), F300 (#518), IMP-2b (#519). F67a (#509) and the F304 signing and TestFlight part (#510) moved to Sprint 82 by Harold (both cards open); the F303 Fold check and the F67b device check also remain. Merged to develop (b79fa361) and main (#520, 763753be) 2026-10-27; #508 and #511-#519 closed by the merge. Plan: `docs/sprints/SPRINT_81_PLAN.md`.
 
@@ -185,11 +197,11 @@ Historical sprint information lives in individual documents in `docs/sprints/` a
 
 All incomplete items in relative priority order. Priority in increments of 10; items that can sprint together in increments of 2. HOLD items grouped at bottom. See [Feature and Bug Details](#feature-and-bug-details) for deep-dive specs. See [BACKLOG_REFINEMENT.md](BACKLOG_REFINEMENT.md) for presentation format rules.
 
-### Backlog from the Sprint 80 7.7.1 final code reviews (Harold, 2026-10-23: Q1 = 2, Q2 = 1) -- F302 shipped Sprint 81; F303 Fold check REMAINS (Sprint 82)
+### Backlog from the Sprint 80 7.7.1 final code reviews (Harold, 2026-10-23: Q1 = 2, Q2 = 1) -- F302 shipped Sprint 81; F303 Fold check REMAINS (Sprint 83 MV-4)
 
 Each item is fixed PREVENTION FIRST (SPRINT_EXECUTION_WORKFLOW.md 7.7.1).
 
-**F303. Android new-mail diagnostics: each field reported on its own -- REMAINDER: Fold check of the diagnostic line (~10m plus a phone log pull) Priority 18 -- target Sprint 82 (code shipped Sprint 81, #513 closed; Harold 2026-10-25: "bring this back up in the next sprint")**
+**F303. Android new-mail diagnostics: each field reported on its own -- REMAINDER: Fold check of the diagnostic line (~10m plus a phone log pull) Priority 18 -- target Sprint 83 Manual Validation MV-4 (moved by Harold 2026-10-31; code shipped Sprint 81, #513 closed; Sprint 82 card #524 stays open)**
 - Phase: Android / Google Play Readiness
 - Platform: Android only (the new-mail trigger exists only on Android; declared platform behavior per ADR-0049)
 - Origin: `MainActivity.kt` `"diagnostics"` (about lines 203-218) builds the whole map in one expression. If any one field throws (package manager, prefs, `installedMailApps()`), the catch at about line 222 returns `result.success(null)` and writes the cause to logcat only. adb is blocked on both phones by company policy, so on a real phone the cause is never seen; the Dart side logs only "diagnostics unavailable". (Correction to the Sprint 80 Q2 wording: the cause does NOT reach the diagnostic log today.)
@@ -267,44 +279,39 @@ Source: `docs/research/R76-3_HEURISTICS_ML_GENAI_SPAM_IDENTIFICATION.md` (Issue 
 - Note (2026-10-25): the DEV content history (ADR-0047) already stores Reply-To, List-Unsubscribe and the auth class
   for every scanned email, and settled the Sprint 81 finding (see SPRINT_81_PLAN.md "F271 finding"). At card time,
   check whether R-1 is still needed or R-2 can run on the content history alone.
+- Sprint 82 Task 6 (2026-10-30) counted the signals on the DEV content history; F306 v1 is built on those counts
+  (`SPRINT_82_PLAN.md` "Task 6 results"). R-2 (widen the signals) remains.
 - Parity: shared Dart, no platform branch. Depends on: F271 (done Sprint 81).
 
-**F306. Suggested rule in the No Rule Item pop-up: one highlighted safe-sender or block suggestion with its regex and reason (~180-300m, estimate unverified) Priority 34 -- TARGET SPRINT 82 (Harold 2026-10-25) -- NEW 2026-10-25 (Sprint 81 Manual Validation, Harold's design)**
-- Harold (2026-10-25): the suggestion is created at the time the No Rule outcome is decided, as part of the
-  background and manual scans (not when the pop-up opens).
+**F323. F306 v2: more suggestion kinds and a "could not check" rule for the No Rule pop-up (~120-240m, estimate unverified) Priority 34 -- NEW 2026-10-31 (Sprint 82 Manual Validation Q2 = 3, 7.7.1 Q1 = 4, retro Q5 = 2)**
 - Phase: Core App Quality
-- Platform: All (shared Dart; the pop-up is `email_detail_popup.dart`)
-- Harold's design (2026-10-25, verbatim): *"the hueuristics/genai/ai analyis of a no rules should result in a user
-  suggestion: 1a) a safe sender rule 1b) what type of rule (exact email, exact domain, entire domain 1c) the rule
-  format 1d) why to do as suggested OR 2a) a delete rule 2b) what type of rule (exact email, exact domain, entire
-  domain, subject, body 2c) the rule to be added with exact regex (including if for subject, body or body URL) 2d) why
-  to do as suggested. Plan is to use the same Safe Sender Folder and Deleted Rule Folder. Hoping to integrate new rules
-  into the current No Rule Item pop-up - possibly by highlighting the suggestion with a colored/shaded/bolded border -
-  noting that Block Body would split the current space used by Block Subject."*
-- R-1: the analysis yields at most ONE suggestion per No Rule email: either a safe sender (Exact Email, Exact Domain,
-  Entire Domain) or a block rule (Block Email, Block Exact Domain, Block Entire Domain, Block Subject, Block Body or
-  body URL).
-- R-2: the pop-up highlights the suggested button (colored, shaded or bold border) and shows the exact regex and a
-  one-sentence reason next to it. The user still taps to apply; a suggestion never acts on mail.
-- R-3: a new Block Body button shares the row Block Subject uses today (two half-width cells).
-- R-4: the rule is saved through the existing quick actions, so the same Safe Sender Folder and Deleted Rule Folder
-  apply.
-- Open design points (to settle at card time, before code):
-  - The basis for a suggestion. F271's signals fired on 0 of 14 real rows (see F305), so header signals alone would
-    leave most emails with no suggestion. ML (F272) and GenAI depend on the R76-4 Class-1 decisions.
-  - Body and body-URL suggestions need the body. No Rule rows do not store it (SEC-14), so it is fetched when the
-    pop-up opens, or only the suggested pattern is computed at scan time and stored.
-- DMARC input (Harold asked 2026-10-25 which providers do not check it): every suggestion reads the receiving
-  provider's DMARC result itself, on every provider. Large providers check DMARC, but a failure can still be DELIVERED:
-  to the Junk folder (DEV content history 2026-10-25: both RED emails were in AOL Bulk), or when the sending domain
-  publishes `p=none` or no record. Generic IMAP hosts are unverified.
-- TLD signal ideas (Harold Q1 = 1, 2026-10-26, when the Sprint 81 "Blocked TLD" chip was removed because an enabled
-  TLD rule already blocks the mail -- DEV had 443 TLD rules, all enabled): (a) "Often-abused TLD": the sender's TLD is
-  on a published most-abused-TLD list (source and license chosen in F311); (b) "TLD your safe senders never use":
-  none of the user's safe senders uses the sender's TLD (own data only, no network). Either can feed a block
-  suggestion. Do NOT reuse the stored code `blocked_tld` (old rows hold it; `decode` drops it).
-- Parity: shared Dart, no platform branch. Depends on: F305 (signal evidence); F272 or GenAI for anything past header
-  signals.
+- Platform: All (shared Dart; the pop-up is `email_detail_popup.dart`, the builder `rule_suggestion.dart`)
+- Origin: F306 v1 shipped in Sprint 82 (#528): one suggestion (Block Entire Domain, or Block Email for a common
+  provider) when sender authentication did not fully pass; stored at scan time (schema v17). Harold moved these to v2:
+- R-1 (MV Q2 = 3): a Block Body button, sharing the row Block Subject uses today (two half-width cells; Harold at MV-2:
+  "Not seeing a split between the body and subject tile"). Value options: the first link domain, with the body
+  fetched when the pop-up opens, or a pick from the body's link domains.
+- R-2 (7.7.1 M-4, Q1 = 4): no suggestion, or a "could not check" note, when the auth result is temperror or
+  permerror. Today a temperror or permerror counts as "did not fully pass" and can suggest Block Entire Domain, which
+  is destructive advice built on a check that did not run.
+- R-3 (retro Q5 = 2): a sender-name-shape suggestion when one shape spans many new domains. DEV evidence
+  (2026-10-31, read-only): every `news_` sender is `news_` plus 4-6 digits; 2,225 emails from 102 domains, all in AOL
+  Bulk, none in the Inbox, none a safe sender; 100 current No Rule senders from 76 domains, at most 5 per domain.
+- Signal fires on (per SPRINT_PLANNING.md): count each new signal on DEV data at card time, including the inputs that
+  mean "could not check" and what the pop-up shows for them.
+- Parity: shared Dart, no platform branch. Depends on: F306 (done Sprint 82).
+
+**F324. Show the user when a re-added account has background scanning off (~45-90m, estimate unverified) Priority 36 -- NEW 2026-10-31 (Sprint 82 retrospective, Category 14)**
+- Phase: Core App Quality
+- Platform: All (shared Dart)
+- Origin: Sprint 82 Manual Validation Q3. Harold renewed the iCloud app-specific password and re-added the account.
+  Re-adding dropped the per-account background override, and the DEV app-wide default is off, so the worker logged
+  "Background scans disabled ... skipping" every 5 minutes from 11:52. The skip reached only the diagnostic log; the
+  user saw no sign that the account had stopped background scanning (Sprint 81 IMP-1 class).
+- R-1: when an account is added or re-added and its effective background setting is off, the screen the user lands
+  on says so, with the control that turns it on (name the screen and the exact text in the card, Sprint 81 IMP-1).
+- R-2: decide (numbered question to Harold) whether a re-added account keeps its old per-account override.
+- Parity: shared Dart; the Windows and Android background paths both read the same setting.
 
 **F307. Remove the "Create rule" page (RuleQuickAddScreen) -- target Sprint 86 (~30-60m) Priority 36 -- NEW 2026-10-25 (Harold)**
 - Phase: Core App Quality
@@ -411,30 +418,6 @@ Source: `docs/research/R76-3_HEURISTICS_ML_GENAI_SPAM_IDENTIFICATION.md` (Issue 
   change. A downloaded list checked on the device avoids the per-email disclosure but needs a licence for
   redistribution.
 
-**F312. BUG: the auth parser can read a sender-planted Authentication-Results header instead of the receiver's (~60-120m) Priority 31 -- TARGET SPRINT 82, with F306 (Harold 2026-10-25) -- NEW 2026-10-25 (found while answering Harold's spoofing question)**
-- Harold (2026-10-25): Sprint 82 with F306, *"starting with a count of how many emails have more than one
-  Authentication-Results header, and fixed only if the count shows the problem occurs"*.
-- Step 1 (always): count, on DEV, the emails with two or more Authentication-Results headers, per provider and folder,
-  and how many of those have a lower header whose verdict differs from the top one. Record the counts in the sprint plan.
-- Step 2 (only if Step 1 finds emails whose lower header differs from the top one): apply the fix direction and AC below.
-  If the count is zero, close the card with the counts as evidence.
-- Phase: Core App Quality (security)
-- Platform: All (shared Dart)
-- Defect: both adapters build the header map with last-wins assignment (`generic_imap_adapter.dart:2432`; the live
-  Gmail path is `gmail_api_adapter.dart:1330`; `gmail_client.dart:284` has no caller outside its file -- corrected
-  2026-10-30, Sprint 82 Phase 3.2.2.1). enough_mail 2.1.7 keeps headers in message order, top first
-  (`parser_helper.dart:143-176`). The receiving provider PREPENDS its Authentication-Results header (RFC 8601 sections
-  2.1 and 4.1), so with two or more of them the map keeps the BOTTOM one: an earlier hop's, or one the sender wrote.
-  RFC 8601 section 7.1: a forged field that is not stripped means "the MUA could inappropriately trust it".
-- Effect: a phishing email that carries a forged `dmarc=pass` lower in its headers can read GREEN and skip the RED
-  warning before the user makes it a safe sender. F309 and F310 rest on this check.
-- Unverified: the Gmail API header order (assumed to be message order), and how often real mail carries two or more
-  Authentication-Results headers. Settle both with a test fixture and a DEV content-history count.
-- Fix direction: read the TOP-MOST Authentication-Results header, and accept it only when its authserv-id is the
-  account's own provider (for example AOL, Yahoo or Google). If the authserv-id is not the provider's, show grey, not
-  green. The Development decision is how the provider id list is kept.
-- AC: a fixture with a forged `dmarc=pass` below a real `dmarc=fail` classifies RED. Mutation-verify it.
-
 **F313. Evaluate the No Rule recommender: hide the rules, recommend, compare (~90-150m) Priority 40 -- NEW 2026-10-25 (Harold)**
 - Phase: Core App Quality
 - Platform: Windows DEV (developer tool, extends F267)
@@ -454,23 +437,7 @@ Source: `docs/research/R76-3_HEURISTICS_ML_GENAI_SPAM_IDENTIFICATION.md` (Issue 
 - R-4: rerun after each recommender change; record the scores in the sprint plan.
 - Depends on: F267, F306; the miners F308, F310.
 
-**F314. BUG: the Gmail history cursor is saved before the fetched mail is evaluated (~90-150m) Priority 30 -- TARGET SPRINT 82 (Harold Q3 = 1, 2026-10-26) -- NEW 2026-10-26 (Sprint 81 7.7.1 silent-failure M-6, pre-existing)**
-- Phase: Core App Quality
-- Platform: All (shared Dart, `email_scanner.dart`)
-- Defect: the scanner persists the new historyId inside the Gmail fetch step (Step 4) (`email_scanner.dart:1846`, `:1876`,
-  `:1884`), before the messages are evaluated and acted on. If the scan is cancelled, fails, or the app is killed after
-  the fetch, the next scan starts after those messages and they are never evaluated.
-- Design first (Class 2 development decision, written into the card before code): hold the new historyId per folder
-  in memory and persist it only after that folder's messages are evaluated (and actions applied in a live mode).
-  Decide what a partial folder (cancelled mid-evaluation) does. Proposed default: keep the old cursor and
-  re-evaluate the whole delta next time; verify at design time that re-evaluating is safe (the F203 already-filed check
-  and the No Rule upsert are expected to make it so -- unverified).
-- Callers to enumerate (CLAUDE.md IMP-1): every `setGmailHistoryCursor` call and every reader of the
-  `gmail_history_id` cursor, including the background scan path.
-- AC: a scan cancelled after the fetch and before evaluation leaves the stored historyId unchanged; the next scan
-  evaluates the same messages. Mutation-verified.
-
-**F315. Count IMAP messages that arrive with no UID; design a date cursor only if any occur (~30m count, design TBD) Priority 32 -- TARGET SPRINT 82 (Harold Q4 = 1, 2026-10-26) -- NEW 2026-10-26 (Sprint 81 7.7.1 code-review L-6)**
+**F315. Count IMAP messages that arrive with no UID; design a date cursor only if any occur (~30m count, design TBD) Priority 32 -- Step 1 phone count TARGET SPRINT 83 MV-4 (Windows DEV: 0 no-UID in 1,171 `scan/persist` lines, Sprint 82 Task 7; card #527 stays open) -- NEW 2026-10-26 (Sprint 81 7.7.1 code-review L-6)**
 - Phase: Core App Quality
 - Platform: All (shared IMAP adapter)
 - Background: the oldest-no-rule cursor (`account_folder_cursors`, type `oldest_no_rule_uid`) holds a UID. A No Rule
@@ -502,74 +469,6 @@ Source: `docs/research/R76-3_HEURISTICS_ML_GENAI_SPAM_IDENTIFICATION.md` (Issue 
   folder cannot be written)".
 - AC: with the probe forced to fail (`debugWritableOverride = false`), the diagnostic line is written and the Settings
   line shows the fallback path. Mutation-verified. Paths above are from the code; confirm on disk at card time.
-
-**F317. Keep delegated agent work safe across usage limits; restart where it stopped (~120-240m, estimate unverified) Priority 30 -- TARGET SPRINT 82 (Harold 2026-10-26) -- NEW 2026-10-26**
-- Phase: Process / tooling
-- Platform: Development environment (Claude Code on Windows)
-- Harold (2026-10-26, verbatim request quoted in his prompt): *"can we make future agent runs setup to not loose
-  anything if we cross current or weekly session limits and can re-start them so that they know what was done and
-  what was not done and can pickup with minimal interruption"*. Source prompt: written 2026-10-26 in an
-  EvidenceBasedDB session (Sprint 13, Task G); its general form is `AGENT_RESTART_PROMPT_general.md` in that repo.
-- Claims to verify at card time (UNVERIFIED here, from the source prompt): interactive sessions (Claude Code v2.1.234+)
-  wait for a usage limit and continue when the reset is under 24 hours away (`autoContinueAtUsageLimit`, on by
-  default, re-armed at most twice); background sessions and `-p` runs do not wait; the weekly limit usually resets
-  more than 24 hours ahead; subagents stop with the session and keep context only for a SendMessage resume in the same
-  session. Sources: code.claude.com/docs/en/interactive-mode#wait-for-a-usage-limit-to-reset,
-  /settings-reference#autocontinueatusagelimit, /scheduled-tasks. Record `claude --version` and both settings files.
-- R-1: a "Progress and restart" section in every subagent launch prompt the repo keeps (7.7.1 toolkit reviews, the
-  improvement review, the background CI-fix agent, delegated mechanical tasks). The agent reads its progress files in
-  its own scratch folder (session scratchpad or gitignored `test/scratch/`, never the tree) and skips finished units;
-  a reviewer saves each file reviewed and each finding as found; an edit task saves which files are done; files are
-  written with the Write tool; the final reply says what was resumed and from where.
-- R-2: mutation locks across a stop: on start, an agent holding a lock restores the file first (from `git diff` or
-  the saved original), verifies it, then calls `Remove-MutationLock`. The wake-up prompt reports any lock older than
-  one hour and does not commit while one is held.
-- R-3: `scripts/agent-work-status.ps1` (named for the job, `.SYNOPSIS` header): from files only, each agent task's state
-  (not started / started with nothing saved / in progress and how far / finished), held mutation locks, and the sprint
-  phase from `.claude/sprint_status.json`. Stores nothing.
-- R-4: a wake-up prompt in the coordinating session (CronCreate, hourly at an off-minute such as :53): nothing if a
-  turn is running; resume each agent that stopped without its final report (SendMessage: "Continue where you
-  stopped. Read your progress files first; do not redo finished work."); continue the phase's next action per the
-  auto-advance rule; one line when nothing stalled. Replies end with the status footer script and keep the closing
-  convention `sprint-auto-advance.ps1` matches (Sprint 70 IMP-3). Report its expiry (7 days).
-- R-5: never repeat a published or release action on resume: Phase 8 (develop merge, Store release, MSIX build from
-  `spamfilter-multi-prod`) and anything sent to Google Play or the Microsoft Store is checked for "already done"
-  first; a resumed agent never re-uploads, re-submits or re-tags.
-- R-6: a hook test case or test that fails if a launch prompt loses its restart section; proven red by cutting the
-  section, then restored. Any hook change runs `.claude\hooks\run-test-cases.ps1`.
-- Records: `SPRINT_EXECUTION_WORKFLOW.md` (where agents are launched), CHANGELOG, the sprint card, dated, with the
-  request quoted. Echo the requirement back in one sentence and confirm with Harold before touching more than one file.
-
-**F318. The 7.7.1 toolkit review prompt lists every changed file (~15m) Priority 30 -- TARGET SPRINT 82 (Harold, Sprint 81 retro IMP-6 "backlog for next sprint", 2026-10-26) -- NEW 2026-10-26**
-- Phase: Process
-- Platform: Development process (`docs/SPRINT_EXECUTION_WORKFLOW.md` 7.7.1)
-- Defect: the Sprint 81 code-reviewer prompt named directories, so `mobile-app/scripts/build-with-secrets.ps1`
-  (Task 11, `Start-AdbServerDetached`) was reviewed by Copilot only.
-- R-1: the 7.7.1 toolkit prompt (code-reviewer and silent-failure-hunter, and the improvement review) includes the
-  output of `git diff --name-only origin/develop...HEAD`, minus `0*` files at the repo root and `archive/`.
-- R-2: each reviewer's report confirms every listed file was read, or names the files it skipped and why.
-- AC: the Sprint 82 7.7.1 evidence line records the file count given and the count confirmed read.
-
-**F319. BUG: the No Rule list does not reload when the app comes back from a notification (~45-90m) Priority 30 -- TARGET SPRINT 82 (Harold 2026-10-30) -- NEW 2026-10-30**
-- Phase: Core App Quality
-- Platform: All (shared Dart, `no_rule_review_screen.dart`)
-- Harold (2026-10-30): a background-scan notification says "No rule 3 Deleted 2 Safe 0", but tapping it shows the
-  old No Rule list (none, or what was there before) until the refresh icon is pressed.
-- Cause (code read 2026-10-30): the notification has no tap callback or payload (`scan_complete_notifier.dart:182-191`),
-  so a tap only brings the running app forward; No Rule Review is the default screen, and it reloads only on open,
-  on rule changes, after its own actions and on Refresh -- never on resume. The rows were written by another process
-  (Windows worker) or isolate (Android WorkManager).
-- Fix: reload quietly on `AppLifecycleState.resumed`, mirroring `account_selection_screen.dart:135`. Option: a tap
-  opens the screen filtered to the notification's account (Windows needs a new hand-off; Sprint 82 Q6).
-- Details: `docs/sprints/SPRINT_82_PLAN.md` Task 9.
-
-**F320. WinWright coverage of No Rule Review (~30-60m plus a 60m discovery time-box) Priority 30 -- TARGET SPRINT 82 (Harold 2026-10-30) -- NEW 2026-10-30 (Sprint 81 5.1.5 gap)**
-- Phase: Testing
-- Platform: Windows (test tool); Android and iOS covered by the shared widget tests
-- The default WinWright scripts never open Review No Rule Items, so the Sprint 81 sweep could not reach the F271
-  chips. One pattern-only script (no cursor steps) opens the screen and one pop-up without creating a rule; rows come
-  from a dev DB copy the runner restores. Does not replace HOLD F289.
-- Details: `docs/sprints/SPRINT_82_PLAN.md` Task 10.
 
 **F321. Convert the repo's PowerShell scripts and deterministic Claude tools to OS-agnostic Python, starting with a small pilot set (pilot ~120-240m, estimate unverified; full conversion over several sprints) Priority 35 -- NEW 2026-10-31 (Harold, Sprint 82 retrospective)**
 - Phase: Process / Tooling
@@ -1063,7 +962,7 @@ F67b starts by generating the iOS project.
 
 Source: `docs/research/F295_IOS_READINESS.md`. These replace the iOS parts of F67 and F95 (ADR-0050 accepted 2026-10-22); Linux and macOS stay on F67, and the Windows/Android multi-variant polish stays on F95.
 
-**F67a. iOS prerequisites: Apple Developer enrollment, build machine, test iPhone, iOS OAuth client (~45-90m plus Apple lead time) Priority 2 -- target Sprint 81 (OFF HOLD 2026-10-23) -- REMAINDER TO SPRINT 82 (Harold 2026-10-26)**
+**F67a. iOS prerequisites: Apple Developer enrollment, build machine, test iPhone, iOS OAuth client (~45-90m plus Apple lead time) Priority 2 -- target Sprint 81 (OFF HOLD 2026-10-23) -- REMAINDER TO SPRINT 83 (waits on Apple's enrollment approval `R6QG2A9SHS`; card open)**
 - Sprint 81 status: walkthroughs DONE (`docs/IOS_SETUP.md` Parts A-D). AC-2/AC-3 (enrollment, iOS OAuth client, App
   Store Connect API key) moved to Sprint 82 by Harold, 2026-10-26: *"move to next sprint"*. Creating a new Apple
   Account on the web failed about six times 2026-10-26/27 (Apple's generic refusal). Harold 2026-10-27: enroll with his
@@ -1083,7 +982,7 @@ Source: `docs/research/F295_IOS_READINESS.md`. These replace the iOS parts of F6
   verification for the iOS client.
 - Depends on: none (Harold's go decision 2026-10-23; ADR-0050 accepted 2026-10-22).
 
-**F304. iOS build machine and signed build pipeline to TestFlight (~90-180m plus a 120m time-boxed signing setup) Priority 4 -- target Sprint 81 (NEW 2026-10-23) -- REMAINDER TO SPRINT 82 (Harold 2026-10-26)**
+**F304. iOS build machine and signed build pipeline to TestFlight (~90-180m plus a 120m time-boxed signing setup) Priority 4 -- target Sprint 81 (NEW 2026-10-23) -- REMAINDER TO SPRINT 83 (waits on Apple's enrollment approval `R6QG2A9SHS`; card open)**
 - Sprint 81 status: the unsigned `macos-26` compile job is DONE (run 40012148625 green). Signing and the first
   TestFlight build moved to Sprint 82 with F67a (they need the Apple account and API key).
 - Phase: Build and Release Infrastructure
@@ -1099,7 +998,7 @@ Source: `docs/research/F295_IOS_READINESS.md`. These replace the iOS parts of F6
 - AC: one command produces a signed build that installs on Harold's iPhone through TestFlight internal testing.
 - Depends on: F67a (enrollment and account type).
 
-**F67b. iOS first build and foreground parity validation (~180-300m) Priority 6 -- target Sprint 81 (code), Sprint 82 (device check) (OFF HOLD 2026-10-23)**
+**F67b. iOS first build and foreground parity validation (~180-300m) Priority 6 -- target Sprint 81 (code), Sprint 83 (device check, waits on the first TestFlight build; #523 open) (OFF HOLD 2026-10-23)**
 - Sprint 81 status: code DONE (#511 closed: project, Info.plist, AppDelegate, `PlatformCapabilities` iOS answers;
   unsigned build green, run 40012148625). REMAINDER: the device check (smoke test, IMAP scan, Gmail sign-in, rules,
   review screens, export to Files, notification permission) once F304 delivers a TestFlight build.

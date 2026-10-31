@@ -998,6 +998,12 @@ prompt is written; no cron was created. Unverified: that subagents keep context 
   text. Mutants: tap 4/4 KILLED (one first SURVIVED, a log test added); velocity 2/2 KILLED (always-warn; subdirectory root). Suite 3,360 /
   15 / 0, analyze clean, hooks 161/161. CI run 1 (41246467526, at db41dd0d): success (Analyze and Test,
   Windows Build, Android Build).
+  After the improvement-review commit, the new velocity hook warned falsely on its first live use: it read
+  "-F files" inside a here-string commit message as a message file. Fixed in e291ccbc (the -F match belongs to
+  the git commit only; test allow-8; mutant VEL-c KILLED; hooks 162/162). Not reviewed again (one pass).
+  7.7.5: PR marked ready 2026-10-31 18:48; CI run 2 (41249847153, at e291ccbc): success (Analyze and Test,
+  Windows Build Verification, Android Build Verification). PR body: 8 Closes, 5 Part of (#509, #510, #523, #524,
+  #527 stay open for Sprint 83).
 
 # Manual Validation (Phase 5.3)
 

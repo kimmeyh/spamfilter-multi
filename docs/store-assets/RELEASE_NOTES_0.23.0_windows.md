@@ -1,7 +1,10 @@
 # Release notes -- 0.23.0 -- Microsoft Store
 
-PROVISIONAL (Sprint 82 Phase 3.7.0b, 2026-10-30). Re-derive from the finished CHANGELOG at Phase 7.7 and again at
-Phase 8.3 (STORE_RELEASE_PROCESS.md Step 1b).
+Re-derived from the finished CHANGELOG at Sprint 82 Phase 7.7 (2026-10-31). Re-check at Phase 8.3
+(STORE_RELEASE_PROCESS.md Step 1b).
+
+**Not claimed yet**: the notification click. Windows: add it only after the Phase 8.3 owner step clicks a toast on the
+installed Store build with the app open AND closed, and both work.
 
 **Range**: everything after 0.21.0 (the last version on the Store). 0.22.0 was never uploaded (Harold, 2026-10-30), so
 this file covers the CHANGELOG sections `[0.22.0]` and `[Unreleased]` (0.23.0).
@@ -15,7 +18,7 @@ Review No Rule Items now shows why an email may be spam and adds a Create rule b
 
 The No Rule list now updates by itself when you return to the app, so the emails a background scan just reported are already listed.
 
-A Gmail scan that is stopped or fails part way no longer skips the mail it had not finished checking.
+A Gmail scan that is stopped or fails part way no longer skips the mail it had not finished checking. If a scan's results cannot be saved, the scan screen now says so, and the next scan checks those emails again.
 
 Gmail accounts: Google asks you to sign in again about once a week while the app is in testing. The app now notifies you, at most once a day per account, when an account needs that sign-in.
 
