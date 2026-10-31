@@ -997,6 +997,18 @@ prompt is written; no cron was created. Unverified: that subagents keep context 
   (`msix_config.toast_activator`, prod GUID; argument `-ToastActivated`, ignored by `BackgroundModeService`, which
   matches `--background-scan` with `contains`). The 0.23.0+20 AAB built 2026-10-30 predates this fix: do not upload
   it; rebuild after 7.7.1.
+- **MV-1c (Windows DEV, click while the app is CLOSED, Q1 = 1)**: preconditions: the DEV app built 2026-10-31 ~12:00
+  has been started once since that build (it writes the registration at start); then it is CLOSED (title-bar X). DEV
+  background scans keep posting notifications while it is closed. Steps: close the DEV app; wait for a DEV
+  notification; click it. Expected: the DEV app starts and opens on Review No Rule Items, with that scan's emails listed.
+  Rehearsed: 2026-10-31 ~12:03, by looking: `LocalServer32` read back as `"...\dist\dev\MyEmailSpamFilter-Dev.exe"
+  -ToastActivated`; DEV window closed, 0 DEV processes; `scratchpad\toast_activate.ps1` (the call Windows makes on a
+  click) started the app (`-ToastActivated -Embedding`, PID 45472) and returned in 3.1 s; the window opened on Review
+  No Rule Items (`mv1c_cold_start.png`). NOT rehearsed: a click on a real notification in the shell.
+  Build regression found on the way (mine, 10:5x): the new swap wait read `.Count` on `& $getHolders`, which returns a
+  single CimInstance (no Count in Windows PowerShell 5.1) when exactly one scan runs, so it skipped the stop and the
+  11:57 build hit the same half-deleted `dist\dev` (three DEV scans were running). Fixed with `@(& $getHolders)` at all
+  three call sites; verified by a 5.1 probe (bare: Count empty; wrapped: 1) and a clean swap.
 - **MV-2 (Windows DEV, F306)**: preconditions: the 0.23.0 DEV app is open. Steps: open Scan History; tap the
   `kimmeyharold@aol.com` account filter chip; open the 10:00 AM row "Background scan - kimmeyharold@aol.com -
   Read-Only - completed" (2026-10-30); in its results, tap `ellen@filehostingdedicatedserver.com` (No Rule, YELLOW).
@@ -1045,3 +1057,15 @@ prompt is written; no cron was created. Unverified: that subagents keep context 
   scan just completed successfully" (DEV DB shows every DEV iCloud scan since 2026-10-30 10:52 failing, so the
   success was most likely on a phone; re-asked). Q4 = 2 (GitHub's own `actions/*` stay on version tags; third-party
   actions stay pinned to SHAs by policy check (d)).
+- **Decisions, round 2 (Harold, 2026-10-31)**: MV-1b PASS (a real click on a "2 No rule" AOL toast opened Review
+  No Rule Items with an updated list). Q1 = 1: build the closed-app click for DEV now -- `main.cpp`
+  `RegisterDevToastActivator` writes the DEV class's `LocalServer32` (DEV and unpackaged only; the prod class is the
+  Store manifest's), gated by `msix_config_test`, 3 of 3 mutants killed. Q2 = 1: close F312 with the Task 6 counts;
+  Harold on the one foreign authserv-id: "the outlook email management system includes a gmail account and could
+  still end up in the kimmeyharold@aol.com folders" (forwarded mail legitimately carries another server's header).
+  Q3: Harold renewed the iCloud app-specific password; his DEV manual scan at 11:49 completed. The iCloud worker log
+  shows the sequence: 10:37-10:42 the app's own lockout (AuthRateLimitedException), 10:47-11:02 "IMAP login rejected:
+  [AUTHENTICATIONFAILED]" (the old password was revoked), 11:07-11:47 "not found among saved accounts" (the account
+  was removed and re-added), from 11:52 "Background scans disabled ... skipping": re-adding dropped the per-account
+  background override and the DEV app-wide default is off. Both skip reasons reach only the log; the user sees no
+  sign that a re-added account stopped background scanning (finding for the retrospective, Sprint 81 IMP-1 class).

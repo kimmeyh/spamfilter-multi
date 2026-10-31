@@ -20,9 +20,12 @@
 ///    accounts exist (F135). That screen reloads on the `resumed` event the
 ///    foreground change produces (F319, `shouldReloadOnLifecycle`).
 ///
-/// Not covered: a click while the app is CLOSED on the unpackaged Windows
-/// build (no `LocalServer32` registration, so Windows starts nothing), and
-/// iOS (the notifier has no Darwin settings yet).
+/// A click while the app is CLOSED starts it (`-ToastActivated`): the Store
+/// build through its manifest (`msix_config.toast_activator`), the unpackaged
+/// DEV build through the `LocalServer32` that `main.cpp`
+/// `RegisterDevToastActivator` writes. The started UI registers here and then
+/// receives the click. Not covered: iOS (the notifier has no Darwin settings
+/// yet).
 library;
 
 import 'package:flutter/widgets.dart';

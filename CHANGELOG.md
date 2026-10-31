@@ -29,6 +29,7 @@ Format: `- **type**: Description (Issue #N)` where type is feat|fix|chore|docs
 ### 2026-10-31 (Sprint 82)
 
 - **fix**: While the app is open, clicking a background-scan notification on Windows now brings the app window forward and opens Review No Rule Items, with the new emails listed; before, the click did nothing. On Android a tap now also opens Review No Rule Items when the app was already open on another screen. The Store build declares the notification's activation class; a click on the installed Store build is checked at the release install before the store notes may claim it (Issue #529)
+- **fix**: On the Windows DEV build, clicking a background-scan notification while the app is closed now starts the app on Review No Rule Items (Issue #529)
 - **chore**: The Windows build script pauses the environment's background-scan tasks while it replaces the app folder, and waits until no copy of the app runs from it, so a scan starting mid-build can no longer leave a half-deleted folder that will not start (Issue #529)
 
 ### 2026-10-30 (Sprint 82)

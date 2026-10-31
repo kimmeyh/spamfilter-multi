@@ -326,7 +326,7 @@ if (Test-Path $buildTarget) {
                 Write-Warning "Could not pause $Environment background-scan tasks: $_ -- a scan may start during the swap."
             }
 
-            $holders = & $getHolders
+            $holders = @(& $getHolders)
             if ($holders.Count -gt 0) {
                 Write-Host "       Stopping $($holders.Count) process(es) running from $variantDir" -ForegroundColor Yellow
                 # PR #490 7.7.1: name each one, so a background scan stopped part-way
@@ -339,11 +339,11 @@ if (Test-Path $buildTarget) {
             }
             # Wait (max 15 s) until nothing runs from the variant dir.
             $deadline = (Get-Date).AddSeconds(15)
-            while (((& $getHolders).Count -gt 0) -and ((Get-Date) -lt $deadline)) {
+            while ((@(& $getHolders).Count -gt 0) -and ((Get-Date) -lt $deadline)) {
                 (& $getHolders) | ForEach-Object { Stop-Process -Id $_.ProcessId -Force -ErrorAction SilentlyContinue }
                 Start-Sleep -Milliseconds 500
             }
-            if ((& $getHolders).Count -gt 0) {
+            if (@(& $getHolders).Count -gt 0) {
                 Write-Host "[ERROR] A process still runs from $variantDir after 15 s; not touching it (the old build stays usable)." -ForegroundColor Red
                 exit 1
             }

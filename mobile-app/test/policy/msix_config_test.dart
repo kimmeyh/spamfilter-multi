@@ -294,6 +294,30 @@ void main() {
               'msix_config.toast_activator.clsid.');
     });
 
+    // Harold Q1 = 1 (2026-10-31): the unpackaged DEV build registers its own
+    // LocalServer32 in main.cpp so a click can START the closed app. What
+    // this does NOT catch: whether Windows starts the exe on a click (checked
+    // by looking in the MV rehearsal).
+    test('main.cpp registers the DEV GUID, never the prod (Store) one', () {
+      final cpp = File('windows/runner/main.cpp').readAsStringSync();
+      final notifier =
+          File('lib/core/services/scan_complete_notifier.dart').readAsStringSync();
+      final devGuid = RegExp(r"isDev\s*\?\s*'([0-9a-f-]{36})'")
+          .firstMatch(notifier)
+          ?.group(1);
+      expect(devGuid, isNotNull,
+          reason: 'ScanCompleteNotifier.windowsGuid DEV value not found');
+      expect(cpp, contains('CLSID\\\\{$devGuid}'),
+          reason: 'main.cpp must register the same DEV GUID the app uses.');
+      expect(cpp, isNot(contains('f5b1ae09-8027-4b72-9444-07d620fe3fdc')),
+          reason: 'The prod GUID is the Store MSIX manifest class; an HKCU '
+              'LocalServer32 for it could send Store toasts to an '
+              'unpackaged exe.');
+      expect(cpp, contains('if (std::string(SPAMFILTER_APP_ENV) != "prod") {\n'
+          '      RegisterDevToastActivator('),
+          reason: 'The registration must be DEV-only.');
+    });
+
     test('toast_activator.arguments never start a background scan', () {
       final args =
           (msixConfig['toast_activator'] as YamlMap)['arguments'].toString();
