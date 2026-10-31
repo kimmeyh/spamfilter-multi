@@ -1009,6 +1009,7 @@ prompt is written; no cron was created. Unverified: that subagents keep context 
   single CimInstance (no Count in Windows PowerShell 5.1) when exactly one scan runs, so it skipped the stop and the
   11:57 build hit the same half-deleted `dist\dev` (three DEV scans were running). Fixed with `@(& $getHolders)` at all
   three call sites; verified by a 5.1 probe (bare: Count empty; wrapped: 1) and a clean swap.
+  **Result (Harold, 2026-10-31): PASS** ("MV-1c working as expected"; Q1 "worked as expected").
 - **MV-2 (Windows DEV, F306)**: preconditions: the 0.23.0 DEV app is open. Steps: open Scan History; tap the
   `kimmeyharold@aol.com` account filter chip; open the 10:00 AM row "Background scan - kimmeyharold@aol.com -
   Read-Only - completed" (2026-10-30); in its results, tap `ellen@filehostingdedicatedserver.com` (No Rule, YELLOW).
@@ -1069,3 +1070,6 @@ prompt is written; no cron was created. Unverified: that subagents keep context 
   was removed and re-added), from 11:52 "Background scans disabled ... skipping": re-adding dropped the per-account
   background override and the DEV app-wide default is off. Both skip reasons reach only the log; the user sees no
   sign that a re-added account stopped background scanning (finding for the retrospective, Sprint 81 IMP-1 class).
+- **Decisions, round 3 (Harold, 2026-10-31)**: MV-1c PASS; the DEV closed-app click "worked as expected". Harold
+  re-enabled the iCloud per-account background scan (every 5 minutes). Manual Validation is COMPLETE for this sprint
+  (MV-3 and MV-4 moved to Sprint 83; MV-5 waits on Apple). Phase 7 starts: 7.7.1 reviews and the retrospective prompt.
