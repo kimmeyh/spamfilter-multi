@@ -6,7 +6,7 @@
     "current_sprint": {
         "number": 82,
         "branch": "feature/20261027_Sprint_82",
-        "status": "Phase 7.7.5 complete -- PR #521 READY for final approval (CI run 2 green at e291ccbc); next: Harold merges, then Phase 8 (6.6 next branch from this branch, 8.1 main merge, 8.2 pass 1, 8.3 0.23.0 store release)",
+        "status": "Phase 7.7 Sprint Review (7.7.5 done) -- PR #521 READY for final approval (CI run 2 green at e291ccbc); next: Harold merges, then Phase 8 (6.6 next branch from this branch, 8.1 main merge, 8.2 pass 1, 8.3 0.23.0 store release)",
         "status_detail": "Plan approved 2026-10-30 (Q1=1 Q2=1 Q3=1 Q4=2 Q5=1 Q6=1, Q-S1=1, Q-S2=1; U1: 0.22.0 not uploaded, 0.23.0 notes combine 0.22.0 and 0.23.0). Cards #522-#532 created; #509 (Task 1) and #510 (Task 2) carried. Version 0.23.0+20. Task 4 (F303 Fold) moves to Manual Validation (needs a 0.23.0 closed-test build).",
         "plan_approved": true,
         "pr_number": 521,
