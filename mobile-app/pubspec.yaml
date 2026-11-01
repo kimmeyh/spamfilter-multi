@@ -1,6 +1,6 @@
 name: my_email_spam_filter
 description: Cross-platform email spam filter app
-version: 0.22.0+19
+version: 0.23.0+20
 publish_to: 'none'
 
 environment:
@@ -150,7 +150,7 @@ msix_config:
   publisher_display_name: Kimmey Consulting - Ohio
   identity_name: KimmeyConsulting-Ohio.MyEmailSpamFilter
   publisher: CN=84EA8722-0CA5-4EC0-9B10-07EE79B66062
-  msix_version: 0.22.0.0
+  msix_version: 0.23.0.0
   logo_path: assets/icon/icon.png
   capabilities: internetClient, internetClientServer, privateNetworkClientServer
   # F148 (Sprint 56): stable App Execution Alias so background-scan scheduled
@@ -159,6 +159,15 @@ msix_config:
   # C:\Program Files\WindowsApps\...\ path (which breaks on every update).
   # MUST match WindowsTaskSchedulerService._executionAliasFileName exactly.
   execution_alias: myemailspamfilter.exe
+  # Sprint 82 MV-1: the class a click on the app's toast activates. msix
+  # 3.16.13 writes desktop:ToastNotificationActivation plus a com:ExeServer for
+  # it (appx_manifest.dart:164-174). clsid MUST equal the prod
+  # ScanCompleteNotifier.windowsGuid (gate: test/policy/msix_config_test.dart).
+  # The arguments start the UI (no --background-scan) when the app is closed.
+  toast_activator:
+    clsid: f5b1ae09-8027-4b72-9444-07d620fe3fdc
+    arguments: -ToastActivated
+    display_name: MyEmailSpamFilter
   # For Store submission: store: true, install_certificate: false
   # For local MSIX testing: store: false, install_certificate: true
   store: true

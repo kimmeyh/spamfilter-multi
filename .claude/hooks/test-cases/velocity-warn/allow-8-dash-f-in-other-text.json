@@ -1,0 +1,1 @@
+{"session_id": "vw-allow-8", "cwd": "{{REPO_MODIFIED}}", "hook_event_name": "PreToolUse", "tool_name": "PowerShell", "tool_input": {"command": "Set-Content -Path msg.txt -Value 'unreadable -F files are reported'\ngit status --short; git add -A; git commit -q -m \"docs: notes\""}}

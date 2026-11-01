@@ -1,0 +1,1 @@
+{"session_id": "vw-allow-5", "cwd": "{{REPO_MODIFIED}}/mobile-app", "hook_event_name": "PreToolUse", "tool_name": "PowerShell", "tool_input": {"command": "git status --short; git add -A; git commit -q -m \"fix: x\" -m \"Closes #529\""}}

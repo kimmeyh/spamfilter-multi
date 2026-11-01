@@ -1,0 +1,1 @@
+{"session_id": "vw-allow-2", "cwd": "Z:/velocity-warn-no-repo", "hook_event_name": "PreToolUse", "tool_name": "Bash", "tool_input": {"command": "gh issue view 529 --json title --jq '.title'  # Task 3, Closes #529"}}

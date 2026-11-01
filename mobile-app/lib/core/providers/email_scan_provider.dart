@@ -20,6 +20,7 @@ import '../services/background_scan_core.dart' show BackgroundScanCore;
 import '../services/diagnostic_logger.dart';
 import '../services/heuristic_signals.dart';
 import '../services/imap_uid.dart';
+import '../services/rule_suggestion.dart';
 import '../services/scan_coordinator.dart';
 import '../../core/utils/pattern_normalization.dart';
 import '../../util/redact.dart';
@@ -631,7 +632,14 @@ class EmailScanProvider extends ChangeNotifier {
   /// [NEW] PHASE 3.3: Always calls notifyListeners() to ensure final UI update,
   /// regardless of throttling state (provides complete final counts)
   /// [NEW] SPRINT 4: Complete scan and persist final results
-  Future<void> completeScan() async {
+  ///
+  /// Returns whether this scan's results (counts, email actions, No Rule
+  /// rows) are stored (Sprint 82 7.7.1 H-1). False only when persistence is
+  /// configured and storing them failed, or the scan's row was never
+  /// created. A caller must then NOT move any read cursor past these
+  /// emails (F314): the next scan has to read them again. The failure is
+  /// shown in [statusMessage] and written to the diagnostic log.
+  Future<bool> completeScan() async {
     _stopHeartbeat();
     _status = ScanStatus.completed;
     _scanEndTime = DateTime.now();  // PR #335 review: freeze the duration
@@ -644,6 +652,13 @@ class EmailScanProvider extends ChangeNotifier {
         '$_deletedCount deleted, $_movedCount moved, $_safeSendersCount safe senders, $_errorCount errors');
 
     // [NEW] SPRINT 4: Mark scan result as completed and persist final counts
+    var resultsStored = true;
+    if (_scanResultStore != null && _currentScanResultId == null &&
+        _results.isNotEmpty) {
+      // 7.7.1 H-1: startScan could not create the row, so nothing below
+      // can store these results.
+      resultsStored = false;
+    }
     if (_scanResultStore != null && _currentScanResultId != null) {
       try {
         // Persist final counts before marking as completed
@@ -660,10 +675,24 @@ class EmailScanProvider extends ChangeNotifier {
         _logger.i('Marked scan result as completed with counts: id=$_currentScanResultId');
 
         // Persist individual email actions for historical "View Results" display
-        await _persistEmailActions();
+        resultsStored = await _persistEmailActions();
       } catch (e) {
         _logger.e('Failed to mark scan completed: $e');
+        resultsStored = false;
       }
+    }
+    if (!resultsStored) {
+      // 7.7.1 H-1: the user sees this on the scan screen; the console log
+      // is not kept in a release build (7.7.1 L-8).
+      _statusMessage = 'Scan complete, but its results could not be '
+          'saved. The next scan checks these emails again.';
+      await DiagnosticLogger.log(
+        kind: DiagnosticLogger.kindScan,
+        context: 'scan/persist',
+        detail: '${Redact.accountId(_currentAccountId)} row '
+            '$_currentScanResultId: results NOT stored '
+            '(${_results.length} result(s)); read cursors are kept',
+      );
     }
 
     notifyListeners();  // Final update always sent (bypasses throttling)
@@ -685,16 +714,19 @@ class EmailScanProvider extends ChangeNotifier {
         _logger.w('Post-scan retention cleanup failed: $e');
       }
     }
+    return resultsStored;
   }
 
   /// Persist individual email actions to database for historical "View Results"
   ///
   /// Batch-inserts all results at scan completion for performance.
   /// Allows "View Results" to display detailed email list from past scans.
-  Future<void> _persistEmailActions() async {
-    if (_databaseHelper == null || _currentScanResultId == null || _results.isEmpty) {
-      return;
-    }
+  ///
+  /// Returns false when the results could not be stored (7.7.1 H-1).
+  /// Nothing to store, or no database configured, counts as stored.
+  Future<bool> _persistEmailActions() async {
+    if (_databaseHelper == null || _results.isEmpty) return true;
+    if (_currentScanResultId == null) return false;
 
     try {
       final actions = _results.map((r) => <String, dynamic>{
@@ -832,6 +864,14 @@ class EmailScanProvider extends ChangeNotifier {
                       context: heuristicContext,
                     ),
                   ),
+                  // F306: the one suggested rule (pattern from the quick-action
+                  // builder), computed from the same classification stored
+                  // above. Manual and background scans both pass here.
+                  suggestion: RuleSuggestion.suggest(
+                    fromEmail: r.email.from,
+                    authClassification:
+                        AuthResultsParser.classifyHeaders(r.email.headers).name,
+                  ),
                 ))
             .toList();
         if (unmatched.isNotEmpty) {
@@ -865,7 +905,9 @@ class EmailScanProvider extends ChangeNotifier {
       }
     } catch (e) {
       _logger.e('Failed to persist email actions: $e');
+      return false;
     }
+    return true;
   }
 
   /// F156/Sprint 60: make sure the accounts row backing scan_results' FK

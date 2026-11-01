@@ -119,6 +119,62 @@ class RuleQuickActionService {
   })  : _conflictResolver = conflictResolver ?? RuleConflictResolver(),
         _logger = logger ?? Logger();
 
+  /// The safe-sender pattern [addSafeSender] saves for [type] and [value], or
+  /// null for an unknown type or an empty value.
+  ///
+  /// F306 (Sprint 82): ONE builder, used by [addSafeSender] and by the No Rule
+  /// suggestion, so the regex the pop-up shows is exactly the one saved.
+  static String? safeSenderPatternFor(String type, String value) {
+    final trimmed = value.trim();
+    if (trimmed.isEmpty) return null;
+    // Copilot review (Sprint 46): RegExp.escape (consistent with
+    // PatternGeneration / ManualRulePatternGenerator) instead of escaping
+    // only '.'/'@' -- valid addresses can contain regex metacharacters
+    // (e.g. plus-addressing: bob+tag@x.com).
+    switch (type) {
+      case 'exact':
+        return '^${RegExp.escape(trimmed)}\$';
+      case 'exactDomain':
+        // Copilot round 5: normalize the leading '@' so a bare-domain
+        // caller cannot silently create an ineffective pattern.
+        final domainValue = trimmed.startsWith('@') ? trimmed : '@$trimmed';
+        return '^[^@\\s]+${RegExp.escape(domainValue)}\$';
+      case 'entireDomain':
+        return r'^[^@\s]+@(?:[a-z0-9-]+\.)*' + RegExp.escape(trimmed) + r'$';
+      default:
+        return null;
+    }
+  }
+
+  /// The block-rule pattern [createBlockRule] saves for [type] and [value],
+  /// or null for an unknown type or an empty or degenerate value.
+  ///
+  /// F306 (Sprint 82): shared with the No Rule suggestion; see
+  /// [safeSenderPatternFor].
+  static String? blockPatternFor(String type, String value) {
+    final trimmed = value.trim();
+    // Copilot review (Sprint 46): the entireDomain shape with '' would
+    // produce a match-everything pattern, and '@'/'@null' inputs create junk
+    // rules.
+    if (trimmed.isEmpty || trimmed == '@' || trimmed == '@null') return null;
+    switch (type) {
+      case 'from':
+        return '^${RegExp.escape(trimmed)}\$';
+      case 'exactDomain':
+        // Copilot round 5: normalize the leading '@' -- a bare-domain value
+        // would produce a suffix-matching pattern (example\.com$ also
+        // matches user@notexample.com).
+        final domainValue = trimmed.startsWith('@') ? trimmed : '@$trimmed';
+        return '${RegExp.escape(domainValue)}\$';
+      case 'entireDomain':
+        return r'@(?:[a-z0-9-]+\.)*' + RegExp.escape(trimmed) + r'$';
+      case 'subject':
+        return RegExp.escape(trimmed);
+      default:
+        return null;
+    }
+  }
+
   /// Adds a safe-sender pattern. [type] is one of 'exact', 'exactDomain',
   /// 'entireDomain'. [senderEmailForConflictCheck] should be the full
   /// sender email address (used to remove conflicting block rules), and
@@ -142,28 +198,18 @@ class RuleQuickActionService {
         );
       }
 
-      String pattern;
       String displayMessage;
 
-      // Copilot review (Sprint 46): RegExp.escape (consistent with
-      // PatternGeneration / ManualRulePatternGenerator) instead of escaping
-      // only '.'/'@' -- valid addresses can contain regex metacharacters
-      // (e.g. plus-addressing: bob+tag@x.com).
+      // F306 (Sprint 82): the pattern comes from the shared builder.
       switch (type) {
         case 'exact':
-          pattern = '^${RegExp.escape(trimmed)}\$';
           displayMessage = 'Added "$trimmed" to Safe Senders';
           break;
         case 'exactDomain':
-          // Copilot round 5: normalize the leading '@' so a bare-domain
-          // caller cannot silently create an ineffective pattern.
           final domainValue = trimmed.startsWith('@') ? trimmed : '@$trimmed';
-          pattern = '^[^@\\s]+${RegExp.escape(domainValue)}\$';
           displayMessage = 'Added exact domain "$domainValue" to Safe Senders';
           break;
         case 'entireDomain':
-          pattern =
-              r'^[^@\s]+@(?:[a-z0-9-]+\.)*' + RegExp.escape(trimmed) + r'$';
           displayMessage = 'Added entire domain "*.$trimmed" to Safe Senders';
           break;
         default:
@@ -173,6 +219,7 @@ class RuleQuickActionService {
             displayMessage: 'Unknown safe sender type: $type',
           );
       }
+      final pattern = safeSenderPatternFor(type, trimmed)!;
 
       // F128 (Copilot review, PR #278): the idempotency check reads the
       // provider cache, which returns an EMPTY list when unloaded -- that
@@ -276,35 +323,25 @@ class RuleQuickActionService {
         );
       }
 
-      String pattern;
       String ruleName;
       String displayMessage;
 
-      // Copilot review (Sprint 46): RegExp.escape (consistent with
-      // PatternGeneration / ManualRulePatternGenerator) instead of escaping
-      // only '.'/'@' -- valid addresses can contain regex metacharacters.
+      // F306 (Sprint 82): the pattern comes from the shared builder.
       switch (type) {
         case 'from':
-          pattern = '^${RegExp.escape(trimmed)}\$';
           ruleName = 'Block_${_sanitizeForRuleName(trimmed)}';
           displayMessage = 'Created rule to block email "$trimmed"';
           break;
         case 'exactDomain':
-          // Copilot round 5: normalize the leading '@' -- a bare-domain
-          // value would produce a suffix-matching pattern (example\.com$
-          // also matches user@notexample.com).
           final domainValue = trimmed.startsWith('@') ? trimmed : '@$trimmed';
-          pattern = '${RegExp.escape(domainValue)}\$';
           ruleName = 'Block_ExactDomain_${_sanitizeForRuleName(domainValue)}';
           displayMessage = 'Created rule to block exact domain "$domainValue"';
           break;
         case 'entireDomain':
-          pattern = r'@(?:[a-z0-9-]+\.)*' + RegExp.escape(trimmed) + r'$';
           ruleName = 'Block_EntireDomain_${_sanitizeForRuleName(trimmed)}';
           displayMessage = 'Created rule to block entire domain "*.$trimmed"';
           break;
         case 'subject':
-          pattern = RegExp.escape(trimmed);
           ruleName =
               'Block_Subject_${_sanitizeForRuleName(trimmed.substring(0, trimmed.length.clamp(0, 40)))}';
           displayMessage = 'Created rule to block subject containing "$trimmed"';
@@ -316,6 +353,7 @@ class RuleQuickActionService {
             displayMessage: 'Unknown block rule type: $type',
           );
       }
+      final pattern = blockPatternFor(type, trimmed)!;
 
       // MT-2 (Sprint 50): idempotent create -- rule names are derived
       // deterministically from the pattern, and rules.name is UNIQUE, so a

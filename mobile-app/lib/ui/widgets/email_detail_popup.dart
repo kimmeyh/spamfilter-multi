@@ -25,6 +25,7 @@ import '../../core/models/email_message.dart';
 import '../../core/models/evaluation_result.dart';
 import '../../core/providers/email_scan_provider.dart';
 import '../../core/services/email_body_parser.dart';
+import '../../core/services/rule_suggestion.dart';
 import '../../core/utils/pattern_normalization.dart';
 import 'result_list_pieces.dart';
 
@@ -137,8 +138,13 @@ Widget buildInlineActionButton({
   // TAPPABLE -- the F47 "Proceed Anyway" warning still guards it -- the dim
   // only says "Exact Email is the better choice here".
   bool dimmed = false,
+  // F306 (Sprint 82): this is the rule the scan suggests. Not color alone
+  // (ADR-0037): a heavier border, the visible text "Suggested", and a
+  // semantics label that names it.
+  bool suggested = false,
 }) {
   final bool enabled = onTap != null;
+  final bool emphasized = isMatched || suggested;
   final Color effectiveColor = !enabled
       ? Colors.grey.shade400
       : dimmed
@@ -163,7 +169,7 @@ Widget buildInlineActionButton({
     button: true,
     enabled: enabled,
     excludeSemantics: true,
-    label: label,
+    label: suggested ? '$label, suggested rule' : label,
     hint: subtitle,
     onTap: onTap,
     child: Tooltip(
@@ -180,13 +186,13 @@ Widget buildInlineActionButton({
           padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
           decoration: BoxDecoration(
             border: Border.all(
-              color: isMatched
+              color: emphasized
                   ? effectiveColor
                   : effectiveColor.withValues(alpha: 0.3),
-              width: isMatched ? 2 : 1, // Thicker border for matched rule
+              width: emphasized ? 2 : 1, // Thicker border for matched rule
             ),
             borderRadius: BorderRadius.circular(8),
-            color: isMatched
+            color: emphasized
                 ? effectiveColor.withValues(
                     alpha: 0.15) // Darker shade for matched
                 : effectiveColor.withValues(alpha: 0.05),
@@ -225,6 +231,15 @@ Widget buildInlineActionButton({
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
                   ),
+                  if (suggested)
+                    Text(
+                      'Suggested',
+                      style: TextStyle(
+                        fontSize: 10,
+                        fontWeight: FontWeight.bold,
+                        color: effectiveColor,
+                      ),
+                    ),
                 ],
               ),
               // Item 2: Green checkmark in top-right corner for matched rule
@@ -247,6 +262,50 @@ Widget buildInlineActionButton({
                 ),
             ],
           ),
+        ),
+      ),
+    ),
+  );
+}
+
+/// F306 (Sprint 82): the exact regex the suggested button saves and the
+/// one-sentence reason, shown under the button row. Plain text on the pop-up's
+/// own [SelectionArea], so the user can copy the regex. The regex wraps (no
+/// ellipsis) so the whole rule is readable at phone width.
+Widget _buildSuggestionNote(
+    RuleSuggestion suggestion, Color accent, Color textColor) {
+  return Semantics(
+    container: true,
+    label: 'Suggested rule. ${suggestion.reasonText} '
+        'Pattern: ${suggestion.pattern}',
+    child: Container(
+      key: const ValueKey('suggestion-note'),
+      width: double.infinity,
+      padding: const EdgeInsets.all(10),
+      decoration: BoxDecoration(
+        border: Border.all(color: accent.withValues(alpha: 0.6)),
+        borderRadius: BorderRadius.circular(6),
+        color: accent.withValues(alpha: 0.05),
+      ),
+      child: ExcludeSemantics(
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              suggestion.reasonText,
+              style: TextStyle(fontSize: 12, color: textColor),
+            ),
+            const SizedBox(height: 4),
+            Text(
+              suggestion.pattern,
+              key: const ValueKey('suggestion-pattern'),
+              style: TextStyle(
+                fontSize: 11,
+                fontFamily: 'monospace',
+                color: textColor,
+              ),
+            ),
+          ],
         ),
       ),
     ),
@@ -327,6 +386,9 @@ void showEmailDetailPopup(
   GlobalKey? itemKey,
   Offset? anchorPosition,
   Size? anchorSize,
+  // F306 (Sprint 82): the one rule the scan suggests, or null. It only
+  // highlights a button and shows the regex and reason; the user still taps.
+  RuleSuggestion? suggestion,
 }) {
   final email = result.email;
   final bodyParser = EmailBodyParser();
@@ -353,6 +415,18 @@ void showEmailDetailPopup(
   // actions are dimmed, and the amber hint below says why.
   final isProviderSender = rawSenderDomain != null &&
       CommonEmailProviders.isCommonProvider(rawSenderDomain);
+  // F306: a button is highlighted only when the suggestion names its kind and
+  // type AND the exact value the button passes, so the regex shown under the
+  // buttons is the one the tap saves.
+  bool isSuggested(QuickActionKind kind, String type, String? value) =>
+      suggestion != null &&
+      value != null &&
+      suggestion.kind ==
+          (kind == QuickActionKind.safeSender
+              ? kSuggestionKindSafe
+              : kSuggestionKindBlock) &&
+      suggestion.type == type &&
+      suggestion.value == value;
   // F21: the effective evaluation (re-evaluated after inline rule assignment)
   final matchedRule = effectiveEval?.matchedRule ?? '';
   final isDeleted = effectiveEval?.shouldDelete == true;
@@ -364,6 +438,23 @@ void showEmailDetailPopup(
   final displaySubject =
       cleanedSubject.isNotEmpty ? cleanedSubject : '(No subject)';
 
+  // The note (regex and reason) shows only when a button above it carries the
+  // highlight, so the regex on screen is always one a tap can save.
+  final suggestionValues = <String, String?>{
+    '$kSuggestionKindSafe/exact': normalizedSenderEmail,
+    '$kSuggestionKindSafe/exactDomain':
+        rawSenderDomain == null ? null : '@$rawSenderDomain',
+    '$kSuggestionKindSafe/entireDomain': rawRootDomain ?? rawSenderDomain,
+    '$kSuggestionKindBlock/from': rawSenderEmail,
+    '$kSuggestionKindBlock/exactDomain':
+        rawSenderDomain == null ? null : '@$rawSenderDomain',
+    '$kSuggestionKindBlock/entireDomain': rawRootDomain ?? rawSenderDomain,
+    if (cleanedSubject.isNotEmpty && cleanedSubject != '(No subject)')
+      '$kSuggestionKindBlock/subject': cleanedSubject,
+  };
+  final showSuggestionNote = suggestion != null &&
+      suggestionValues['${suggestion.kind}/${suggestion.type}'] ==
+          suggestion.value;
   // Format date/time
   final dateStr = formatReceivedDateForDisplay(email.receivedDate);
 
@@ -756,6 +847,10 @@ void showEmailDetailPopup(
                                       isMatched: isSafeSender &&
                                           effectiveEval?.matchedPatternType ==
                                               'exact_email',
+                                      suggested: isSuggested(
+                                          QuickActionKind.safeSender,
+                                          'exact',
+                                          normalizedSenderEmail),
                                       // Normalized email (plus-signs stripped)
                                       // to match SafeSenderList evaluation.
                                       onTap: () => choose(QuickActionRequest(
@@ -786,6 +881,10 @@ void showEmailDetailPopup(
                                                 effectiveEval
                                                         ?.matchedPatternType ==
                                                     'exact_domain',
+                                            suggested: isSuggested(
+                                                QuickActionKind.safeSender,
+                                                'exactDomain',
+                                                '@$rawSenderDomain'),
                                             onTap: () => chooseDomain(
                                                 QuickActionRequest(
                                                   kind:
@@ -819,6 +918,11 @@ void showEmailDetailPopup(
                                                 effectiveEval
                                                         ?.matchedPatternType ==
                                                     'entire_domain',
+                                            suggested: isSuggested(
+                                                QuickActionKind.safeSender,
+                                                'entireDomain',
+                                                rawRootDomain ??
+                                                    rawSenderDomain),
                                             onTap: () => chooseDomain(
                                                 QuickActionRequest(
                                                   kind:
@@ -835,6 +939,13 @@ void showEmailDetailPopup(
                                 ],
                               ),
                             ),
+                            if (suggestion != null &&
+                                showSuggestionNote &&
+                                suggestion.kind == kSuggestionKindSafe) ...[
+                              const SizedBox(height: 8),
+                              _buildSuggestionNote(
+                                  suggestion, Colors.green, detailColor),
+                            ],
                             const SizedBox(height: 12),
 
                             // === BLOCK RULE SECTION ===
@@ -863,6 +974,10 @@ void showEmailDetailPopup(
                                       isMatched: isDeleted &&
                                           effectiveEval?.matchedPatternType ==
                                               'exact_email',
+                                      suggested: isSuggested(
+                                          QuickActionKind.blockRule,
+                                          'from',
+                                          rawSenderEmail),
                                       onTap: () => choose(QuickActionRequest(
                                         kind: QuickActionKind.blockRule,
                                         type: 'from',
@@ -891,6 +1006,10 @@ void showEmailDetailPopup(
                                                 effectiveEval
                                                         ?.matchedPatternType ==
                                                     'exact_domain',
+                                            suggested: isSuggested(
+                                                QuickActionKind.blockRule,
+                                                'exactDomain',
+                                                '@$rawSenderDomain'),
                                             onTap: () => chooseDomain(
                                                 QuickActionRequest(
                                                   kind:
@@ -924,6 +1043,11 @@ void showEmailDetailPopup(
                                                 effectiveEval
                                                         ?.matchedPatternType ==
                                                     'entire_domain',
+                                            suggested: isSuggested(
+                                                QuickActionKind.blockRule,
+                                                'entireDomain',
+                                                rawRootDomain ??
+                                                    rawSenderDomain),
                                             onTap: () => chooseDomain(
                                                 QuickActionRequest(
                                                   kind:
@@ -955,6 +1079,10 @@ void showEmailDetailPopup(
                                   isMatched: isDeleted &&
                                       effectiveEval?.matchedPatternType ==
                                           'subject',
+                                  suggested: isSuggested(
+                                      QuickActionKind.blockRule,
+                                      'subject',
+                                      cleanedSubject),
                                   onTap: () => choose(QuickActionRequest(
                                     kind: QuickActionKind.blockRule,
                                     type: 'subject',
@@ -963,6 +1091,13 @@ void showEmailDetailPopup(
                                   )),
                                 ),
                               ),
+                            ],
+                            if (suggestion != null &&
+                                showSuggestionNote &&
+                                suggestion.kind == kSuggestionKindBlock) ...[
+                              const SizedBox(height: 8),
+                              _buildSuggestionNote(
+                                  suggestion, Colors.red, detailColor),
                             ],
                           ],
                         ),

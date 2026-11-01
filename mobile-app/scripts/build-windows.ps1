@@ -298,30 +298,92 @@ if (Test-Path $buildTarget) {
         # instances. Its open exe/dll handles made Remove-Item delete data\
         # and then fail, leaving a variant dir that cannot start. Stop every
         # process running from the variant dir immediately before the swap.
+        #
+        # Sprint 82 MV-1: the stop alone did not close the window. A scheduled
+        # scan started again (or the stopped one still held app_links_plugin.dll)
+        # within the 1 s sleep, Remove-Item deleted data\ and failed, and
+        # dist\dev could not start (2026-10-31). Now: pause this environment's
+        # ENABLED background tasks for the swap (the WinWright runner's F243
+        # pattern), wait until no process runs from the variant dir, and
+        # re-enable exactly the paused tasks in the finally.
         $variantFull = (Join-Path (Get-Location).Path $variantDir).TrimEnd('\') + '\'
-        $holders = Get-CimInstance Win32_Process -ErrorAction SilentlyContinue |
-            Where-Object { $_.ExecutablePath -and $_.ExecutablePath.StartsWith($variantFull, [System.StringComparison]::OrdinalIgnoreCase) }
-        if ($holders) {
-            Write-Host "       Stopping $(@($holders).Count) process(es) running from $variantDir" -ForegroundColor Yellow
-            # PR #490 7.7.1: name each one, so a background scan stopped part-way
-            # can be told from the app window in the build output.
-            foreach ($h in @($holders)) {
-                $role = if ($h.CommandLine -match '--background-scan') { 'background scan' } else { 'app window' }
-                Write-Host "         PID $($h.ProcessId) ($role)" -ForegroundColor Yellow
+        # 7.7.1 M-3: a failed process listing must not read as "no holders" (the
+        # wait would pass at once and Remove-Item would hit the MV-1 failure),
+        # and a holder whose ExecutablePath is hidden (it runs elevated while
+        # this build does not) is matched by its exe name instead.
+        $getHolders = {
+            try {
+                $all = @(Get-CimInstance Win32_Process -ErrorAction Stop)
+            } catch {
+                throw "Holder guard could not list processes ($_); not touching $variantDir."
             }
-            $holders | ForEach-Object { Stop-Process -Id $_.ProcessId -Force -ErrorAction SilentlyContinue }
-            Start-Sleep -Milliseconds 1000
+            @($all | Where-Object {
+                if ($_.ExecutablePath) {
+                    $_.ExecutablePath.StartsWith($variantFull, [System.StringComparison]::OrdinalIgnoreCase)
+                } else {
+                    $_.Name -eq $variantExeName
+                }
+            })
         }
+        $pausedSwapTasks = @()
+        try {
+            try {
+                # 7.7.1 M-3: list all tasks with -ErrorAction Stop, so a failed
+                # listing reaches the warning below instead of pausing nothing
+                # in silence (a wildcard -TaskName with no match is an error).
+                $pausedSwapTasks = @(Get-ScheduledTask -ErrorAction Stop |
+                    Where-Object { $_.TaskName -like 'SpamFilterBackgroundScan_*' } |
+                    Where-Object { ($_.TaskName -like '*_Dev') -eq ($Environment -eq 'dev') -and $_.State -ne 'Disabled' })
+                foreach ($t in $pausedSwapTasks) {
+                    $null = Disable-ScheduledTask -TaskName $t.TaskName -TaskPath $t.TaskPath -ErrorAction Stop
+                }
+                if ($pausedSwapTasks.Count -gt 0) {
+                    Write-Host "       Paused $($pausedSwapTasks.Count) $Environment background-scan task(s) for the swap" -ForegroundColor Yellow
+                }
+            } catch {
+                Write-Warning "Could not pause $Environment background-scan tasks: $_ -- a scan may start during the swap."
+            }
 
-        # Recreate variant dir cleanly so resources/dlls match the latest build.
-        if (Test-Path $variantDir) {
-            Remove-Item -Path $variantDir -Recurse -Force
-        }
-        Copy-Item -Path $sourceDir -Destination $variantDir -Recurse
-        # Rename the .exe inside the variant dir to the env-specific name.
-        $copiedExe = Join-Path $variantDir "MyEmailSpamFilter.exe"
-        if ((Test-Path $copiedExe) -and ($variantExeName -ne "MyEmailSpamFilter.exe")) {
-            Rename-Item -Path $copiedExe -NewName $variantExeName
+            $holders = @(& $getHolders)
+            if ($holders.Count -gt 0) {
+                Write-Host "       Stopping $($holders.Count) process(es) running from $variantDir" -ForegroundColor Yellow
+                # PR #490 7.7.1: name each one, so a background scan stopped part-way
+                # can be told from the app window in the build output.
+                foreach ($h in $holders) {
+                    $role = if ($h.CommandLine -match '--background-scan') { 'background scan' } else { 'app window' }
+                    Write-Host "         PID $($h.ProcessId) ($role)" -ForegroundColor Yellow
+                }
+                $holders | ForEach-Object { Stop-Process -Id $_.ProcessId -Force -ErrorAction SilentlyContinue }
+            }
+            # Wait (max 15 s) until nothing runs from the variant dir.
+            $deadline = (Get-Date).AddSeconds(15)
+            while ((@(& $getHolders).Count -gt 0) -and ((Get-Date) -lt $deadline)) {
+                (& $getHolders) | ForEach-Object { Stop-Process -Id $_.ProcessId -Force -ErrorAction SilentlyContinue }
+                Start-Sleep -Milliseconds 500
+            }
+            if (@(& $getHolders).Count -gt 0) {
+                Write-Host "[ERROR] A process still runs from $variantDir after 15 s; not touching it (the old build stays usable)." -ForegroundColor Red
+                exit 1
+            }
+
+            # Recreate variant dir cleanly so resources/dlls match the latest build.
+            if (Test-Path $variantDir) {
+                Remove-Item -Path $variantDir -Recurse -Force
+            }
+            Copy-Item -Path $sourceDir -Destination $variantDir -Recurse
+            # Rename the .exe inside the variant dir to the env-specific name.
+            $copiedExe = Join-Path $variantDir "MyEmailSpamFilter.exe"
+            if ((Test-Path $copiedExe) -and ($variantExeName -ne "MyEmailSpamFilter.exe")) {
+                Rename-Item -Path $copiedExe -NewName $variantExeName
+            }
+        } finally {
+            foreach ($t in $pausedSwapTasks) {
+                try {
+                    $null = Enable-ScheduledTask -TaskName $t.TaskName -TaskPath $t.TaskPath -ErrorAction Stop
+                } catch {
+                    Write-Warning "Could not re-enable '$($t.TaskName)': $_ -- re-enable it in Task Scheduler."
+                }
+            }
         }
         if (Test-Path $variantBuildTarget) {
             Write-Host "       Variant build: $variantBuildTarget" -ForegroundColor Green
