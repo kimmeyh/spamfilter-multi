@@ -478,9 +478,12 @@ _**Decision-class interrupts**_: Q3 (Class 2 if removal stops deleting a setting
 - R-1 (v1, stored data only): candidates are senders seen in No Rule mail at least N times (N set by the DEV count,
   stated in the card), whose stored authentication is GREEN (DMARC pass), never deleted by a rule or by the user, not
   already a safe sender.
-- R-2: the Safe Senders screen shows "Suggested safe senders" above the list; each row has Accept (adds the exact
-  email safe sender through the existing quick action) and Reject (hides it; the reject is stored so it does not come
-  back).
+- R-2: the Safe Senders screen shows "Suggested safe senders" above the list; each row has Accept and Reject (hides
+  it; the reject is stored so it does not come back). Accept offers the three safe-sender choices the add-rule pop-up
+  already has (Exact Email, Exact Domain, Entire Domain) with the app's recommended one highlighted, and adds the one
+  the user taps through the existing quick action (Harold, Q7-echo = 2, 2026-11-01: *"When adding a rule it highlights
+  Exact email, Exact domain or Entire domain - based on the app recommendation"*). The card states the rule that picks
+  the recommendation and its DEV count per choice.
 - R-3: nothing is added without a tap. Device contacts are not used (new permission, out of scope).
 - R-4 (Q7, Harold 2026-11-01: *"should be based on my email address not the users and can be done similar to
   F308"*): the Sent-folder part is NOT an in-app read of users' mail. A developer tool reads Harold's own DEV account
@@ -510,7 +513,8 @@ also lists suggested senders at the top, each with Accept and Reject.
 
 **Acceptance criteria**:
 - AC-1: a sender meeting R-1 is listed; a sender with any non-GREEN email, any delete, or already safe is not.
-- AC-2: Accept adds an exact-email safe sender and removes the row; Reject hides the row across a restart.
+- AC-2: Accept shows Exact Email, Exact Domain and Entire Domain with the recommended one highlighted; the tapped one
+  is added and the row is removed; Reject hides the row across a restart.
 - AC-3: the DEV count of candidates is recorded in the card before release.
 
 **Tests to write**:
@@ -861,3 +865,6 @@ Windows secure store.
 
 **Q-S1. Models as assigned**: 1 approve.
 **Q-S2. Version 0.24.0+21** (MINOR, F322 and F270 are `feat`): 1 approve.
+
+**Answers 2026-11-01 (Harold)**: Q7-echo = 2 (Accept highlights the recommended Exact Email, Exact Domain or Entire
+Domain; Task 5 R-2 and AC-2 updated); Q-S1 = 1; Q-S2 = 1. Q-A (plan approval) still open.
