@@ -9,7 +9,7 @@
         "status": "Phase 3.7 Plan Approval -- SPRINT_83_PLAN.md drafted (Tasks 0-12, Q1-Q10, Q-S1, Q-S2); waiting on Harold. Phase 8.3: 0.23.0 MSIX and AAB BUILT + VERIFIED, uploads are Harold's",
         "status_detail": "Scope selected by Harold 2026-10-31 (8.4 pass 2). iOS #509 #510 #523 not in scope (Apple call Monday). F325 = Sprint 83 copy of F152.",
         "plan_approved": false,
-        "pr_number": null,
+        "pr_number": 534,
         "version": "0.23.0+20"
     },
     "previous_sprint": {
