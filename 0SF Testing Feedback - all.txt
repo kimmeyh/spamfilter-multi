@@ -12,12 +12,13 @@ Sprint 83 Manual Validation Feedback
   3. Wait for a background-scan notification that shows "No rule" above 0.
   4. Take a screenshot of the notification, then tap it.
   5. Expected: the app comes forward on Review No Rule Items, and the new items are already listed without pressing Refresh. Take a screenshot.
-waiting
+done
+
   MV-3b. Tapping a scan notification with the app closed
   1. Swipe the app away from the recent-apps list.
   2. Wait for the next background-scan notification with "No rule" above 0, and tap it.
   3. Expected: the app opens on Review No Rule Items with the new items listed. Take a screenshot.
-waiting
+done
 
   MV-3c. The "Suggested" pop-up on the cover screen
   1. Fold the phone. On the cover screen, open Review No Rule Items.
@@ -25,8 +26,8 @@ waiting
   3. Expected: the pop-up marks one rule as "Suggested" (Block Entire Domain, or Block Email for a common provider like Gmail) and shows the exact rule
      and the reason.
   4. Also expected: the Block Subject row and the rule note fit with no cut-off text. Scroll to the Skip row at the bottom, and check that nothing is
-     clipped there. Take a screenshot at the top and at the bottom.
-waiting
+     clipped there. Take a screenshot at the top and at the bottom
+Not seeing the Block Body section (or is that a future backlog item).
 
   MV-4. The Fold log, for F303 (#524) and F315 (#527)
   1. When you have done enough of MV-3 for the log to have a few scans, connect the Fold to the PC over USB and choose File transfer.

@@ -9,6 +9,29 @@ If questions must be asked, ask as late as possible - do everything that can be 
 Sprint 8n Scope should include the below items. Please complete sprint planning (/docs/sprint_planning.md) for the below items and present for approval.  Note that everything needs to take into account the Windows App, Android app and the iPhone app with the ADR stating that everything should be functionally and UI the same unless it cannot be - and where it cannot be it should be implemented as a platform exception for what is needed -- this applies to all backend code, frontend code, data, architecture, development, security, testing, deployment.
 
 ---------------------------------------------------------------------------------------------------------
+More question and sprint plan approval:
+  Q7-echo. Is my reading of your Q7 answer correct?
+  - You wrote: "should be based on my email address not the users and can be done similar to F308".
+  - My reading, now in Task 5 (F270) of the plan:
+    - v1 (in the app): the Safe Senders screen gets a "Suggested safe senders" section.
+      - Candidates come from stored No Rule history: senders seen N or more times, all GREEN (DMARC pass), never deleted, and not already safe senders.
+      - Each row has Accept (adds an exact-email safe sender) and Reject (hides it, also after a restart).
+      - Nothing is added without a tap.
+When adding a rule it highlights Exact email, Exact domain or Entire domain - based on the app recommendation
+    - Sent-folder part: this is NOT an in-app read of a user's mail. A developer tool, like F308, reads your own DEV account's Sent folder, read-only.
+      - It finds reply pairs: people you wrote to who also send you mail.
+      - It gives you a report and candidate safe-sender patterns to review.
+      - No user's Sent folder is read, so the privacy policy does not change.
+    - This adds about 30-60m to Task 5 (was 120-180m, now 150-240m).
+  2. Not quite: see line added above
+
+  Q-S1. Model for each task (cheapest model that can do the job).
+  1. Approve.
+
+  Q-S2. Version 0.24.0+21.
+  1. Approve.
+
+
   Decision questions:
 Q1. 1 q2. 1 q3. 3 (this is common practice for phone and windows apps, so would seem reasonable for adding and removing email addresses from our app) do a deep dive to ensure only what is needed on a re-add is kept, everything that needs to be refreshed with a re-add is refreshed... q4. the first link that doesn't exactly match the email address domain (unless that is in the safe sender exact/entire domains, then skip the first and pick another. If there are none, then don't provide a recommended body rule) q5. 1 q7 should be based on my email address not the users and can be done similar to F308 q6. 1 q8 1 q9. 1 (ensure there are backlog items for everything not included in F321) q10. 1
 
