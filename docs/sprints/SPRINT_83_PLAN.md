@@ -1,57 +1,816 @@
-# Sprint 83 Plan -- STUB (carry-ins from Sprint 82)
+# Sprint 83 Plan
 
-**Status**: STUB, not approved. Scope is selected at Phase 8.4 (Backlog Refinement pass 2) and planned at
-Phase 3; this stub only records what Sprint 82 carried in.
+**Status**: DRAFT -- presented for Phase 3.7 approval 2026-10-31. Scope selected by Harold at Phase 8.4 pass 2
+(2026-10-31).
+**Branch**: `feature/20261031_Sprint_83` (cut from the Sprint 82 branch, Phase 6.6) | **PR**: draft, created at 3.3.1
+(stays draft until 7.7.5)
+**Planner**: Opus 5.5 (top tier, `SPRINT_PLANNING.md:94-110`). Phase 3.2.2.1 audits by spot reads on 2026-10-31;
+file:line evidence is in each card.
 
-## Start of sprint
+## Objective
 
-- **0.23.0 store updates** (Phase 8.3 of the Sprint 82 cycle) -- the Microsoft Store MSIX and the Google Play
-  closed-test AAB for 0.23.0+20. 0.22.0 was never uploaded, so the 0.23.0 notes cover both
-  (`docs/store-assets/RELEASE_NOTES_0.23.0_*.md`). **Rebuild the AAB first**: the 0.23.0+20 AAB built 2026-10-30
-  predates the notification-click fix; do not upload it. Serialize the Windows and Android builds.
-- **Owner step for the Store build (Phase 8.3)**: on the installed 0.23.0 MSIX, click one background-scan toast with
-  the app OPEN and one with it CLOSED, and record both results. Only then may the Windows notes claim the click
-  (`msix_config.toast_activator`, prod GUID; argument `-ToastActivated`).
+Finish the 0.23.0 checks on the phones (MV-3, MV-4, M-6). Give the user control over scan notifications (F322). Stop
+the destructive F306 suggestion on a check that did not run, and add the next suggestion kinds (F323). Tell the user
+when a re-added account has background scanning off (F324). Start the recommendation work on the safe-sender side
+(F270, F309, F310) and widen the delete side (F305 R-2, F308). Start the Python conversion of the tooling with a pilot
+(F321). Quiet the Android build noise (F237). Run a first-run evaluation (F325, a copy of the F152 template).
 
-## Manual Validation carried from Sprint 82 (Harold, 2026-10-31)
+**Scope (Harold, 2026-10-31, verbatim)**: *"Sprint 83 Scope should include the below items. Please complete sprint
+planning (/docs/sprint_planning.md) for the below items and present for approval."* The items: the Manual Validation
+carry-ins (MV-3, MV-4, M-6); F322 (*"For android I know there are Notification sub-settings and this is where the
+setting should go for Android - discuss if this was not what you were going to do. For other platforms I am not sure
+if this is possible to do the same way or not."*); F323; F324; F303; and *"Also"* F270, F315, F305, F323, F308, F321,
+F309, F310, F237, F152 (*"Add a copy of F152 for this sprint"*).
 
-Harold: *"This can't be done until after this sprint. Can you make this a Manual Validation on the next sprint"*.
+Card id assigned here: the Sprint 83 copy of F152 is **F325**. F303 and F315 are the MV-4 checks (cards #524 and
+#527), so they are one task with MV-3 and M-6. F323 appears twice in the scope list; it is one task.
 
-- **MV-3 (Fold, 0.23.0 closed test, F319 + F306)**: after the Fold updates (Review No Rule Items top bar shows
-  "Version 0.23.0"), with background scanning on: open Review No Rule Items, press Home, wait for a scan notification
-  with "No rule" above 0, tap it. Expected: the app comes forward and the list already shows the new item(s), no
-  Refresh. A new YELLOW item's pop-up shows "Suggested"; Block Subject and the regex note fit the cover screen with
-  no clipping (watch the Skip row). A pass lets the Play notes claim the tap.
-- **MV-4 (Fold, Task 4 F303 #524 and Task 7 F315 #527)**: connect the Fold over USB (file transfer); run
-  `scripts\pull-phone-screenshots.ps1 -Sprint 83`. Read the `[new-mail-diagnostics]` line from the first start after
-  the update AND a later start (no `error:` field). Count no-UID lines ("message has no valid IMAP UID", "FETCH answer
-  had no UID"); the same for the S24+ if connected. Windows DEV had 0 in 1,171 `scan/persist` lines.
-- **M-6 MV step (7.7.1, Harold Q3 = 3)**: click account 1's notification while that account's background worker is
-  still scanning (two processes register the same activation class; which one Windows picks is unverified).
-- **MV-5 (iPhone, Tasks 1-3)**: waits on Apple's approval of enrollment `R6QG2A9SHS` (stopping criterion 2). Then
-  `docs/IOS_SETUP.md` Parts B-D one at a time, the first TestFlight run, and the F67b device check.
+**iOS (Harold, 2026-10-31)**: *"q1 it will be Monday afternoon before I can call about it."* Apple has not approved
+enrollment `R6QG2A9SHS`. F67a (#509), F304 (#510) and F67b (#523) are NOT in this scope and stay open. If Apple
+approves during the sprint, adding them is a scope change for Harold to approve then.
 
-## Carry-ins from the Sprint 82 retrospective
+**Parity (Harold, 2026-10-30 and 2026-10-31, verbatim)**: *"everything needs to take into account the Windows App,
+Android app and the iPhone app with the ADR stating that everything should be functionally and UI the same unless it
+cannot be - and where it cannot be it should be implemented as a platform exception for what is needed -- this
+applies to all backend code, frontend code, data, architecture, development, security, testing, deployment."* Every
+card has a **Parity (ADR-0042 / ADR-0049 / ADR-0050)** line naming the Windows, Android and iOS paths. It either
+claims parity and names the OS behavior assumed identical, or declares the exception. iOS answers come from
+`PlatformCapabilities` (ADR-0049) and ADR-0050. No new bare `Platform.isX` checks (the F294 policy test refuses them).
+The iPhone build cannot be run this sprint (Apple), so iOS paths are proven by tests and the unsigned `ios.yml` build.
 
-- Category 13 (Claude): the MV-3, MV-4 and M-6 steps above; the 8.3 Store toast click check; the 0.23.0 AAB rebuild.
-- **IMP-1 (live)**: the 5.1.2 silent-failure walk covers every language in the diff.
-- **IMP-2 (live)**: a test's "does NOT catch" note is checked against what the docs promise; every Manual Validation
-  rehearsal line cites its evidence (otherwise NOT REHEARSED).
-- **IMP-4 (live)**: a card's "Signal fires on" line names the inputs that mean "could not check".
-- **IMP-5 (live)**: the backslash hook also blocks `python -c` with a backslash, in both shells.
-- **IMP-6 (live)**: every clock time in a reply or record comes from the clock in the same turn.
-- **IMP-7 (live)**: `warn-commit-without-velocity.ps1` warns when a task-closing commit leaves out its velocity row.
+**Prevention first** (Harold, 2026-10-06): every defect fix states its prevention first, extending the connected
+existing control, then the instance fix.
+
+## Phase 2 and 3 checks (2026-10-31)
+
+- Top-tier model: Opus 5.5. DONE.
+- 2.2 / 3.1 Sprint number: 83 (Sprint 82 merged: PR #521 -> develop `f34be0d7`; develop -> main PR #533 `8f588043`,
+  tag `v0.23.0`). DONE.
+- 2.3 Sprint 82 cards: #522, #525, #526, #528-#532 closed by the merge; #509, #510, #523, #524, #527 open as intended
+  ("Part of"). DONE.
+- 2.4 Working tree clean; all work pushed. DONE.
+- 2.6 Dependency check (`dart pub outdated`, 2026-10-31): 107 packages; discontinued: `js` (transitive); direct
+  packages a major version behind: app_links, battery_plus, connectivity_plus, enough_mail, file_picker,
+  flutter_appauth, flutter_secure_storage, googleapis, package_info_plus, syncfusion_flutter_xlsio. No security
+  advisory found by this check. No action this sprint (a dependency change needs Harold's approval); recorded.
+- Phase 8 cycle: 8.1 main merge done; 8.2 pass 1 done (f70e44bd); 8.3 0.23.0 MSIX and AAB built and verified
+  (e996f784), uploads are Harold's; 8.4 pass 2 scope selected (above). DONE.
+- 3.2.1 `docs/sprints/SPRINT_82_SUMMARY.md` exists; the Past Sprint Summary row for 82 exists. DONE.
+- 3.2.2 this file. DONE (draft).
+- 3.3 Branch `feature/20261031_Sprint_83` exists and is pushed. DONE.
+- 3.3.1 Draft PR: created with this plan (number recorded in `.claude/sprint_status.json`).
+- 3.4 / 3.5 Cards: created at 3.7.0, the first action after approval (one per task). #524 and #527 are reused for
+  Task 1 (no duplicates).
+- 3.6.1 Architecture Impact Check: below.
+
+## Tasks, order, models and estimates
+
+Estimates are minutes. Cards keep the backlog estimates Harold selected; re-estimates cite their reason.
+`[no-history]` marks a step-type with no samples in `CODING_VELOCITY.md`.
+
+- **Task 0 -- Version bump 0.24.0+21** (3.7.0b). MINOR: F322 and F270 are user-facing `feat`s. Haiku. 10-15m.
+- **Task 1 -- Manual Validation carry-ins** (MV-3, MV-4 = F303 #524 + F315 #527, M-6). Main session. 30-45m plus
+  Harold's phone time; waits on the 0.23.0 Play rollout reaching the Fold.
+- **Task 2 -- F322**: notification choice "only when there are No Rule items". Sonnet. 60-120m -> 90-150m (3.2.2.2:
+  Android channel split and the Android 7.x fallback, see the card).
+- **Task 3 -- F323**: F306 v2 (Block Body, "could not check", `news_` sender shape). Sonnet. 120-240m.
+- **Task 4 -- F324**: tell the user when an added account has background scanning off. Sonnet. 45-90m.
+- **Task 5 -- F270 v1**: suggested safe senders from stored history. Sonnet. 150m -> 120-180m.
+- **Task 6 -- F305 R-2**: widen the No Rule signals, proposed from the DEV content history. Sonnet. 60-90m.
+- **Task 7 -- F308**: mine AOL Trash2 for delete-rule patterns (developer tool). Sonnet. 180-300m.
+- **Task 8 -- F309**: research a trusted-sender source. Sonnet. 60-90m (research).
+- **Task 9 -- F310**: mine safe-sender mail for safe-sender patterns (developer tool). Sonnet. 120-240m.
+- **Task 10 -- F321 pilot**: Python common layer, the hook library and a small pilot set. Sonnet. 120-240m.
+- **Task 11 -- F237**: quiet the Kotlin daemon traces in the Android build. Haiku. 20-40m.
+- **Task 12 -- F325 (copy of F152)**: first-run evaluation on Windows and Android. Main session, interactive with
+  Harold. 120-180m plus Harold's time.
+- **Conditional (asked first, not in the total)**: F315 Step 2 date-cursor design, only if the MV-4 count is above
+  zero (Class 1); F305 R-2 signal changes, asked as one numbered question with the counts.
+- **Unplanned allowance (named, not padded into cards)**: Manual Validation fixes, phone rounds and 7.7.1 review
+  fixes, 150-250m.
+
+**Total**: Tasks 0-12 about 1,125-1,945 minutes, plus the 150-250 allowance, plus Harold's phone and first-run time.
+
+**When can Harold come back (first Manual Validation handoff)**: Task 1 runs as soon as the Fold has 0.23.0 from Play
+(Harold's upload). For the code tasks, about 12-18 hours of wall-clock serially; with the parallel blocks below,
+about 7-10 hours.
+
+**Order**:
+1. 3.7.0 cards (#524, #527 reused), 3.7.0b version bump, 3.7.1 PR body.
+2. Parallel block A (sub-agents, different files): Task 2 F322, Task 4 F324, Task 11 F237 (no build may run while
+   another build runs; F237's timing builds are serialized with any other build), Task 8 F309 research.
+3. Parallel block B: Task 3 F323, Task 6 F305 R-2 (both read the content history; Task 6 only reads), Task 10 F321.
+4. Task 7 F308 (needs Q5's answer for the Trash2 read), then Task 9 F310 (same tool mode), then Task 5 F270 (uses
+   Task 9's findings where they apply; v1 does not depend on them).
+5. Task 1 whenever the Fold has 0.23.0; Task 12 F325 with Harold at a time he chooses (needs an empty first-run
+   state, see the card).
+
+**Single interactive session -- model deviation note** (`SPRINT_PLANNING.md:358-379`, option (b)): Tasks 2, 3, 4, 6,
+8, 10 and 11 are delegated to sub-agents on their assigned tier before Manual Validation, with the delegation
+checklist and the "Progress and restart" block verbatim. Tasks 1 and 12 are interactive and run in the main session.
+Anything run in the main session executes on the session model, and its `Executed-by` line cites this note.
+
+**Code reviews**: the 7.7.1 pair (Copilot by hand on the draft + pr-review-toolkit code-reviewer and
+silent-failure-hunter, with the changed-file list), started with the retrospective prompt at Manual Validation
+complete.
+
+**Cards**: created at Phase 3.7.0. One "Closes #N" per card in the PR body.
+
+**Always-confirm actions covered by this approval** (`SPRINT_EXECUTION_WORKFLOW.md` Standing Approval Inventory), so
+they are not asked again: (a) Task 0 the version bump; (b) Task 2 a new Android notification channel (created once,
+cannot be changed later by the app) and any database setting key it needs; (c) Task 10 changes under `.claude/` and
+`.claude/settings.json` hook registrations for the pilot hooks only, with `.claude\hooks\run-test-cases.ps1` green
+after each change; (d) Task 11 one line in `mobile-app/android/gradle.properties` if Q8 selects it; (e) Task 7 and
+Task 9 read-only use of the DEV content history and the DEV database. Not covered, still asked: Q5 (reading the DEV
+AOL credential), any dependency version change, any edit to `secrets.*.json`.
+
+## Phase 3.2.2.1 branch-state verification (summary)
+
+- **MV-3 / MV-4 / M-6**: need 0.23.0 on the Fold. The 0.23.0 AAB (versionCode 20) is built and verified
+  (`mobile-app\dist\android-0.23.0+20\app-prod-release.aab`); the upload is Harold's. F303 code shipped Sprint 81
+  (5b87e362); F315's marker and per-scan count line exist (`imap_uid.dart:18`, `generic_imap_adapter.dart:1745-1750`).
+- **F322: confirmed open.** One Android channel today, `background_scan_channel`
+  (`scan_complete_notifier.dart:91-95`), and a separate `sign_in_needed_channel` (`:156-160`). `post` takes
+  `noRule` (`:112`) but posts for every completed scan. No setting exists. Android `minSdk` resolves to 24
+  (`android/app/build.gradle.kts`); channels exist only from API 26.
+- **F323: confirmed open, and R-2 needs more input than the code passes today.** `RuleSuggestion.suggest`
+  (`rule_suggestion.dart:150-176`) receives only the class NAME (`green`/`yellow`/`red`/`grey`). `classify`
+  (`auth_results_parser.dart:153-180`) maps temperror and permerror to YELLOW, so the YELLOW basis
+  (`:183-204`) suggests Block Entire Domain on a check that did not run. The two callers are
+  `email_scan_provider.dart:870` (scan time) and `results_display_screen.dart:74` (pop-up time).
+- **F324: confirmed, cause found.** `DataDeletionService.deleteAccountData` deletes every `account_settings` row for
+  the account (`data_deletion_service.dart:99-103`), including `background_enabled`. A re-added account then
+  resolves through `getEffectiveBackgroundEnabled` (`settings_store.dart:1071-1077`) to the app-wide default, which
+  is off on DEV. The worker skips it (`android_background_scan_worker.dart:339-343`; the Windows worker reads the same
+  setting) and only the log says so.
+- **F270: confirmed open.** No "Suggested safe senders" text in `lib/`. The screen is
+  `safe_senders_management_screen.dart`.
+- **F305 R-2: open.** R-1 not needed (Sprint 82 Task 6 counted the signals on the content history).
+- **F308 / F310: open.** The tools to extend exist: `mobile-app/tool/rule_eval/` (F267) and
+  `mobile-app/tool/rule_miner/` (F268). The content history is `content_history_store.dart`.
+- **F309: open** (research; nothing in `docs/research/`).
+- **F321: open.** No Python hook exists in `.claude/hooks/`.
+- **F237: open.** `mobile-app/android/gradle.properties` has no Kotlin setting.
+- **F325 (F152 copy): new.** The template is `ALL_SPRINTS_MASTER_PLAN.md` F152 (method and the 7-section checklist).
+
+**Phase 3.2.2.2 (re-estimates)**: F322 60-120m -> 90-150m (the Android channel split and the Android 7.x fallback
+add work). F270 150m -> 120-180m (v1 only, Q4). No other card changed.
+
+## Phase 3.6.1 Architecture Impact Check
+
+- **ADR-0048 (notifications, one plugin)** and **ADR-0049 (PlatformCapabilities)**: F322 adds a notification
+  choice. If Q1 = 1 or 2, Android's OS channel settings are a declared platform exception, recorded in ADR-0049's
+  table and ARCHITECTURE.md (the ScanCompleteNotifier row) in the same commit.
+- **Data model**: F322 adds one app setting (no schema change; `app_settings` key). F323 may add a suggestion type
+  and reason codes (stored in the existing v17 columns; no schema change expected; the card checks first). F324 none
+  (Q3 decides whether removal keeps the setting).
+- **ADR-0047 (content history, DEV only)**: Tasks 6, 7 and 9 read it; F308 may add rows from the AOL Trash2 read
+  (DEV only).
+- **F321**: a new tooling language for hooks and scripts. A short ADR (ADR-0051, "Python for deterministic
+  tooling") is written in Task 10, because it changes how every hook is registered.
+- **F270**: a new list on the Safe Senders screen (ARCHITECTURE.md screen list).
+- No ADR conflicts found.
+
+## Carried from the Sprint 82 close-out (stub content, kept)
+
+- **0.23.0 store release (Phase 8.3, Sprint 82 cycle)**: the MSIX and AAB are built and verified
+  (`STORE_VERSION_STATUS.md`). Owner step on the installed 0.23.0 MSIX: click one background-scan toast with the app
+  OPEN and one with it CLOSED, and record both; only then may the Windows notes claim the click. Also open: the Step
+  4.2 Gmail sign-in URL check on the installed Store build.
+- **Retro carry-ins (live rules)**: IMP-1 the 5.1.2 silent-failure walk covers every language in the diff; IMP-2 a
+  test's "does NOT catch" note is checked against what the docs promise, and every Manual Validation rehearsal line
+  cites its evidence (otherwise NOT REHEARSED); IMP-4 a card's "Signal fires on" line names the "could not check"
+  inputs; IMP-5 the backslash hook blocks `python -c` with a backslash in both shells; IMP-6 every clock time in a
+  reply or record comes from the clock in the same turn; IMP-7 `warn-commit-without-velocity.ps1` warns when a
+  task-closing commit leaves out its velocity row. IMP-3 was replaced by F321 (Task 10).
 - **Standing facts (Harold)**: Fold notification access for the app is ON and stays on. The iCloud DEV account's
   per-account background scan is on, every 5 minutes (re-enabled 2026-10-31).
 
-## Targeted at Sprint 83 (backlog cards)
+---
 
-- **F322** notify only when No Rule is greater than 0 (Harold 2026-10-31, "add to backlog for next sprint").
-- **F67a (#509), F304 (#510), F67b (#523)** remainders, when Apple approves.
+# Cards
 
-## Open cards carried
+## Task 0 -- Version bump 0.24.0+21 (3.7.0b)
 
-- #509, #510, #523 (iOS, Apple), #524 (F303 Fold check), #527 (F315 phone count). The Sprint 82 PR body lists them
-  as "Part of", so the merge leaves them open.
+**Value**: This lets a tester tell the Sprint 83 build from the 0.23.0 store builds.
 
-Details: `docs/ALL_SPRINTS_MASTER_PLAN.md` (F303, F315, F322, F323, F324, F67a, F304, F67b and the backlog).
+**Requirements**:
+- R-1: `version: 0.24.0+21` and `msix_version: 0.24.0.0`; every version literal follows (`version_consistency_test`).
+- R-2: PROVISIONAL `docs/store-assets/RELEASE_NOTES_0.24.0_windows.md` and `_play.md` (range: after 0.23.0).
+- R-3: if Harold has reported the 0.23.0 Play upload by then, move "Last uploaded to Play" to 0.23.0 (versionCode 20)
+  in `STORE_VERSION_STATUS.md` in the same commit; otherwise leave it.
+
+**Affected components / files**: `mobile-app/pubspec.yaml`; version literals found by the gate; the two notes files;
+`docs/STORE_VERSION_STATUS.md` (Dev row).
+
+**Acceptance criteria**:
+- AC-1: `version_consistency_test`, `dev_version_ahead_test` and `release_notes_test` pass.
+
+**Tests to write**: none new (the three gates are the tests).
+
+**Definition of Done**: None -- default DoD only.
+
+**Model**: Haiku -- mechanical edits guarded by three gates.
+
+**Step-types**: DOCS, SVC-EDIT. **Est-Effort**: 10-15m.
+
+## Task 1 -- Manual Validation carry-ins: MV-3, MV-4 (F303 #524, F315 #527), M-6
+
+**Value**: This proves the 0.23.0 notification tap and the F306 pop-up on a phone, and closes two evidence cards.
+
+**Requirements**:
+- R-1 (MV-3, Fold, 0.23.0 closed test): after the Fold updates (Settings top bar shows "Version 0.23.0"), with
+  background scanning on: open Review No Rule Items, press Home, wait for a scan notification with "No rule" above 0,
+  tap it. Expected: the app comes forward and the list already shows the new items, with no Refresh. A new YELLOW
+  item's pop-up shows "Suggested"; Block Subject and the regex note fit the cover screen with no clipping (watch the
+  Skip row). A pass lets the next Play notes mention the tap.
+- R-2 (MV-4): Harold connects the Fold over USB (file transfer); Claude runs `scripts\pull-phone-screenshots.ps1
+  -Sprint 83` and reads the `[new-mail-diagnostics]` line from the first start after the update AND a later start
+  (every field present, no `error:` field: closes F303 #524). Count no-UID lines ("message has no valid IMAP UID",
+  "FETCH answer had no UID") per account and folder, the same for the S24+ if connected; record with the Windows DEV
+  count (0 in 1,171 `scan/persist` lines). Zero closes F315 #527 with the counts; above zero raises the F315 Step 2
+  Class 1 question.
+- R-3 (M-6, Windows DEV): click account 1's notification while that account's background worker is still scanning
+  (two processes register the same activation class). Record which process handles the click and whether Review No
+  Rule Items opens.
+
+**Affected components / files**: none (validation); `docs/sprints/SPRINT_83_PLAN.md` results; the Play notes if MV-3
+passes.
+
+**Existing behavior relied on**: the F319 resume reload and click routing -- verified at MV-1b/MV-1c on Windows DEV
+(`SPRINT_82_PLAN.md` Manual Validation); Android path from the same shared code, not yet run on a phone.
+
+**Dependencies / blockers**: Harold uploads the 0.23.0 AAB to closed testing; the Fold receives the update.
+
+**Acceptance criteria**:
+- AC-1: MV-3, MV-4 and M-6 each recorded PASS or FAIL with evidence (screenshot name or log line).
+- AC-2: #524 and #527 closed with their counts, or kept open with the reason.
+
+**Tests to write**: none (manual validation; failures become fixes under the allowance).
+
+**Definition of Done**: rehearsal note per Sprint 77 IMP-1: each step's preconditions are checked on DEV first where
+possible (the Windows M-6 step), and each rehearsal line cites its evidence.
+
+**Parity (ADR-0042 / ADR-0049 / ADR-0050)**: MV-3 is the Android run of shared code already passed on Windows; iOS
+waits on TestFlight (Apple). MV-4 F303 is Android only (declared, ADR-0049). F315 is the shared IMAP adapter on all
+three platforms. M-6 is Windows only (the toast activator is Windows's activation model).
+
+**Model**: main session -- interactive with Harold's phone.
+
+**Step-types**: MANUAL-VALIDATION, LOG-READ. **Est-Effort**: 30-45m plus Harold's time.
+
+## Task 2 -- F322: notification choice "only when there are No Rule items" (Priority 30)
+
+**Value**: This lets the user be told only when there is mail to review, instead of after every scan.
+
+**Requirements**:
+- R-0 (audit first, platform facts): confirm from each vendor's own documentation, cited in the card at execution:
+  Android lets the user change or silence each notification channel in system settings and the app can open one
+  channel's settings with `ACTION_CHANNEL_NOTIFICATION_SETTINGS` (VERIFIED 2026-10-31,
+  developer.android.com/develop/ui/views/notifications/channels: "Users can modify the settings for notification
+  channels"; channels exist from Android 8.0, API 26); Windows has no app-defined sub-settings for a desktop app's
+  toasts (UNVERIFIED); iOS has no user-visible per-category notification switches (UNVERIFIED). If either unverified
+  fact is false, the card follows the vendor page and records it.
+- R-1: the choice has two values, "Every completed scan" and "Only when there are No Rule items". It is decided in
+  shared code (`ScanCompleteNotifier.post` or `BackgroundScanCore`), so the Windows worker, the Android worker and the
+  future iPhone worker all obey it. Default: Q2.
+- R-2 (by Q1): where the user sets it, per platform (see Q1 for the options). The text is the same on every
+  platform.
+- R-3: the sign-in-needed notification (`sign_in_needed_channel`) is not affected.
+- R-4: research other notification choices worth offering (a daily summary, quiet hours, per-account choice) and list
+  them for Harold with what each needs per platform; build only what he selects (a later card).
+
+**Affected components / files**:
+- `mobile-app/lib/core/services/scan_complete_notifier.dart:91-128` -- the choice; Android channel(s).
+- `mobile-app/lib/core/storage/settings_store.dart` -- one app setting.
+- `mobile-app/lib/ui/screens/settings_screen.dart` -- the control (Settings > Background, next to the scan
+  frequency; the exact place named at execution).
+- `mobile-app/android/app/src/main/kotlin/.../MainActivity.kt` -- only if Q1 = 1 or 2 (open the channel settings).
+
+**Existing abstraction checked**: `ScanCompleteNotifier` (one post path for both workers, ADR-0048);
+`PlatformCapabilities` for the Android-only branch (ADR-0049).
+
+**Existing behavior relied on**: every completed background scan posts one notification per account through
+`ScanCompleteNotifier.post` (`scan_complete_notifier.dart:109`), called from the Windows worker
+(`background_scan_windows_worker.dart:286`) and the Android worker (`android_background_scan_worker.dart:486`) -- read
+2026-10-31.
+
+**User-reachable control**: Settings > Background, "Scan notifications": "Every completed scan" / "Only when there
+are No Rule items" (Windows, iPhone, and Android by Q1). On Android with Q1 = 1, the row reads "Scan notifications"
+and opens Android's notification settings for this app, where the two channels are listed.
+
+**Observable behavior -- before / after**: BEFORE: a notification after every completed background scan, even "No
+rule 0". AFTER: with "Only when there are No Rule items", a scan with No Rule 0 posts nothing; a scan with No Rule 1
+or more posts the usual notification.
+
+**Dependencies / blockers**: Q1, Q2.
+
+**Non-functional requirements**: Platform: no bare `Platform.isX`; the Android branch through `PlatformCapabilities`.
+An Android channel's behavior cannot be changed by the app after it is created (Android docs), so channel ids and
+importance are chosen once and recorded in the card.
+
+**Acceptance criteria**:
+- AC-1: with "Only when there are No Rule items", a completed scan with No Rule 0 posts nothing, and one with No Rule
+  1 posts one notification; with "Every completed scan", both post (shared-code test, both workers' call paths).
+- AC-2: the sign-in-needed notification posts in both settings.
+- AC-3: the control is on the named screen with the same text on Windows and Android (widget test per platform
+  answer from `PlatformCapabilities`).
+- AC-4 (Q1 = 1 or 2): on Android 8.0+, the two channels exist with the names shown in the card; on Android 7.x
+  (API 24-25, no channels) the in-app choice applies.
+
+**Tests to write**:
+- T-1 (AC-1, AC-2) -- TEST-UNIT `test/unit/services/scan_complete_notifier_test.dart`: the choice gates the post;
+  sign-in unaffected.
+- T-2 (AC-3) -- TEST-WIDGET `test/ui/screens/settings_screen_test.dart`: the control, its text and the saved value.
+- T-3 (AC-4) -- TEST-UNIT: the channel picked for a No Rule 0 scan versus a No Rule 1 scan.
+
+**Definition of Done**: default DoD PLUS ADR-0049's exception table and ARCHITECTURE.md updated if Q1 = 1 or 2.
+
+**Parity (ADR-0042 / ADR-0049 / ADR-0050)**: the decision (post or not) is shared Dart on all three. Where the user
+sets it is Q1; options 1 and 2 declare an Android exception (OS channel settings). iOS uses the in-app choice and is
+proven by T-1 and T-2 (no device this sprint).
+
+**Model**: Sonnet -- a shared decision plus one declared platform exception across 3-4 files; beyond Haiku's
+heuristics.
+
+**Step-types**: SVC-EDIT, UI-ADD, NATIVE-ANDROID, TEST-UNIT, TEST-WIDGET. **Est-Effort**: 90-150m.
+
+_**Decision-class interrupts**_: Q1 (Class 2, where the setting lives), Q2 (default).
+
+## Task 3 -- F323: F306 v2 -- Block Body, "could not check", and the `news_` sender shape (Priority 34)
+
+**Value**: This prevents a destructive suggestion built on a check that did not run, and adds the next two
+suggestion kinds.
+
+**Requirements**:
+- R-2 FIRST (prevention, 7.7.1 M-4): `suggest` receives the per-method results (SPF, DKIM, DMARC), not only the class
+  name. When any method is temperror or permerror, there is no suggestion, and the pop-up shows "Could not check
+  this sender (the mail server's check did not finish)" in place of the "Suggested" mark. Both callers
+  (`email_scan_provider.dart:870`, `results_display_screen.dart:74`) pass the results.
+- R-1 (MV Q2 = 3): a Block Body button sharing the row Block Subject uses today, as two half-width cells. Its value
+  is set by Q4.
+- R-3 (retro Q5 = 2): a sender-shape suggestion for `news_` plus 4-6 digits at any domain, as a From-header regex
+  block rule, by Q6.
+- R-4: no new stored column unless a check shows the v17 columns cannot hold the new kinds (the card states which).
+
+**Affected components / files**:
+- `mobile-app/lib/core/services/rule_suggestion.dart:150-204` -- input, the "could not check" result, new bases.
+- `mobile-app/lib/core/services/auth_results_parser.dart` -- read only (method results are already parsed).
+- `mobile-app/lib/core/providers/email_scan_provider.dart:870` and `ui/screens/results_display_screen.dart:74` --
+  callers.
+- `mobile-app/lib/ui/widgets/email_detail_popup.dart` -- the Block Body cell and the "could not check" note.
+- `mobile-app/lib/core/services/rule_quick_action_service.dart` -- the body and sender-shape patterns.
+
+**Existing abstraction checked**: `RuleSuggestion` basis list (`rule_suggestion.dart:178`) and its RED guard;
+`RuleQuickActionService.blockPatternFor`.
+
+**Callers of any guard being changed**: `RuleSuggestion.suggest` has two callers (scan time and pop-up time); both
+gain the method results; the change makes both return null on temperror or permerror.
+
+**Signal fires on**: R-2 fires when any of SPF, DKIM, DMARC is temperror or permerror; the DEV count is taken at card
+time from the content history (it stores `auth_class` only, so the count needs the headers: the card names the
+method, for example the Sprint 82 probe's counts or a DEV scan-time tally). R-3 fires on `news_<4-6 digits>@`: on DEV
+2,225 emails from 102 domains, all in AOL Bulk, none a safe sender; 100 current No Rule senders from 76 domains
+(2026-10-31). Inputs that mean "could not check": temperror, permerror, no auth headers (GREY); for these the pop-up
+shows the "could not check" note (temperror/permerror) or nothing (GREY, unchanged).
+
+**Observable behavior -- before / after**: BEFORE: a YELLOW sender with a temperror can show "Suggested" on Block
+Entire Domain; Block Subject has its own row; no sender-shape suggestion. AFTER: that sender shows "Could not check
+this sender"; Block Subject and Block Body share one row; a `news_123456@...` sender shows "Suggested" on the shape
+rule (by Q6).
+
+**Dependencies / blockers**: Q4, Q6.
+
+**Acceptance criteria**:
+- AC-1: temperror or permerror on any method returns no suggestion and the pop-up shows the note (both callers).
+- AC-2: a YELLOW sender with softfail and no error still gets the F306 suggestion (no regression).
+- AC-3: the Block Body cell shares the row with Block Subject and saves the Q4 value as a body rule.
+- AC-4: a `news_<digits>` sender gets the shape suggestion; a `news_` sender with letters after it does not.
+- AC-5: a RED sender is never suggested as a safe sender (the existing guard still holds).
+
+**Tests to write**:
+- T-1 (AC-1, AC-2, AC-5) -- TEST-UNIT `test/unit/services/rule_suggestion_test.dart`.
+- T-2 (AC-1, AC-3) -- TEST-WIDGET `test/ui/widgets/email_detail_popup_test.dart`, including a narrow width (the Fold
+  cover screen).
+- T-3 (AC-4) -- TEST-UNIT: the shape regex against matching and non-matching senders.
+
+**Definition of Done**: default DoD PLUS each test's "what this does NOT catch" line; mutation-verified.
+
+**Parity (ADR-0042 / ADR-0049 / ADR-0050)**: shared Dart and one shared widget on all three; the narrow-width test
+covers the Fold cover screen and small iPhones. No platform branch.
+
+**Model**: Sonnet -- three related changes across the builder, two callers and the pop-up.
+
+**Step-types**: SVC-EDIT, UI-ADD, TEST-UNIT, TEST-WIDGET. **Est-Effort**: 120-240m.
+
+## Task 4 -- F324: tell the user when an added account has background scanning off (Priority 36)
+
+**Value**: This prevents an account from silently stopping background scans after it is re-added.
+
+**Requirements**:
+- R-1 (prevention first): when an account is added or re-added and `getEffectiveBackgroundEnabled` is false, the
+  Account Selection screen shows, under that account, "Background scanning is off for this account" with a "Turn on"
+  button that sets the per-account setting (the same setting as Settings > Background).
+- R-2: Q3 decides whether removing an account keeps its background setting for a later re-add.
+- R-3: the worker's skip line stays in the diagnostic log (evidence for Claude); R-1 is the user's view.
+
+**Affected components / files**:
+- `mobile-app/lib/ui/screens/account_selection_screen.dart` -- the line and the button.
+- `mobile-app/lib/core/storage/settings_store.dart:1071-1077` -- read only (the resolver).
+- `mobile-app/lib/core/services/data_deletion_service.dart:99-103` -- only if Q3 = 2 or 3.
+
+**Existing abstraction checked**: `SettingsStore.getEffectiveBackgroundEnabled` (the three-tier resolver; Sprint 72
+IMP-5: use it, do not re-implement it).
+
+**Existing behavior relied on**: account removal deletes every `account_settings` row
+(`data_deletion_service.dart:99-103`); the resolver then returns the app-wide default (`settings_store.dart:1076`) --
+read 2026-10-31.
+
+**User-reachable control**: Account Selection screen, under the account: "Background scanning is off for this
+account" and a "Turn on" button.
+
+**Observable behavior -- before / after**: BEFORE: a re-added account shows nothing; background scans for it stop and
+only the log says why. AFTER: the account's row says background scanning is off, with "Turn on".
+
+**Dependencies / blockers**: Q3.
+
+**Acceptance criteria**:
+- AC-1: Given an account whose effective background setting is off, When the Account Selection screen shows, Then
+  the line and the button show under it; for an account with it on, nothing shows.
+- AC-2: "Turn on" sets the per-account setting to true and the line goes away.
+- AC-3 (Q3 = 2 or 3): removing and re-adding an account keeps its background setting.
+
+**Tests to write**:
+- T-1 (AC-1, AC-2) -- TEST-WIDGET `test/ui/screens/account_selection_screen_test.dart`.
+- T-2 (AC-3) -- TEST-UNIT `test/unit/services/data_deletion_service_test.dart` (if Q3 = 2 or 3).
+
+**Definition of Done**: None -- default DoD only.
+
+**Parity (ADR-0042 / ADR-0049 / ADR-0050)**: shared Dart screen and resolver on all three; the Windows and Android
+workers read the same setting. iOS background (F67c) is not built yet; the line uses the same resolver.
+
+**Model**: Sonnet -- touches the account screen and possibly the deletion service; a resolver must be reused, not
+copied.
+
+**Step-types**: UI-ADD, SVC-EDIT, TEST-WIDGET. **Est-Effort**: 45-90m.
+
+_**Decision-class interrupts**_: Q3 (Class 2 if removal stops deleting a setting).
+
+## Task 5 -- F270 v1: suggested safe senders from stored history (Priority 30)
+
+**Value**: This protects senders the user trusts before a broad block rule catches them (fewer false positives).
+
+**Requirements**:
+- R-1 (v1, stored data only): candidates are senders seen in No Rule mail at least N times (N set by the DEV count,
+  stated in the card), whose stored authentication is GREEN (DMARC pass), never deleted by a rule or by the user, not
+  already a safe sender.
+- R-2: the Safe Senders screen shows "Suggested safe senders" above the list; each row has Accept (adds the exact
+  email safe sender through the existing quick action) and Reject (hides it; the reject is stored so it does not come
+  back).
+- R-3: nothing is added without a tap. Device contacts are not used (new permission, out of scope).
+- R-4: v2 (Sent-folder recipients) is not built; it needs the privacy policy change first (Q7).
+
+**Affected components / files**:
+- `mobile-app/lib/ui/screens/safe_senders_management_screen.dart` -- the section.
+- a new shared service in `lib/core/services/` that reads the No Rule rows (scan results, not the DEV-only content
+  history, so it works in prod builds).
+- `settings_store.dart` or a small table for rejected candidates (the card checks which existing store fits first).
+
+**Existing abstraction checked**: the safe-sender quick action (`RuleQuickActionService.safeSenderPatternFor`); the
+No Rule row store used by Review No Rule Items.
+
+**Signal fires on**: Fires when a sender has N or more No Rule emails, all GREEN, never deleted, not a safe sender; on
+DEV data it fires on <count at card time> senders. Inputs that mean "could not check": GREY (no auth headers),
+temperror, permerror; for these the sender is not a candidate.
+
+**User-reachable control**: Safe Senders screen, "Suggested safe senders", Accept / Reject per row.
+
+**Observable behavior -- before / after**: BEFORE: the Safe Senders screen lists only saved safe senders. AFTER: it
+also lists suggested senders at the top, each with Accept and Reject.
+
+**Dependencies / blockers**: Q7 (v1 only). F266, F267 done.
+
+**Acceptance criteria**:
+- AC-1: a sender meeting R-1 is listed; a sender with any non-GREEN email, any delete, or already safe is not.
+- AC-2: Accept adds an exact-email safe sender and removes the row; Reject hides the row across a restart.
+- AC-3: the DEV count of candidates is recorded in the card before release.
+
+**Tests to write**:
+- T-1 (AC-1) -- TEST-UNIT for the candidate service.
+- T-2 (AC-2) -- TEST-WIDGET `test/ui/screens/safe_senders_management_screen_test.dart`.
+
+**Definition of Done**: default DoD PLUS mutation-verified T-1.
+
+**Parity (ADR-0042 / ADR-0049 / ADR-0050)**: shared Dart service and screen on all three; data from the shared scan
+store. No platform branch.
+
+**Model**: Sonnet -- a new service plus UI plus a stored reject list.
+
+**Step-types**: SVC-ADD, UI-ADD, DATA, TEST-UNIT, TEST-WIDGET. **Est-Effort**: 120-180m.
+
+## Task 6 -- F305 R-2: widen the No Rule signals (Priority 33)
+
+**Value**: This finds which extra signals would mark No Rule spam, by count, before any change.
+
+**Requirements**:
+- R-1: on the DEV content history (read only), count candidate signals on No Rule rows and on Harold's 69+ decisions:
+  bulk mail without `List-Id` where stored, Reply-To domain differing from From domain, missing List-Unsubscribe,
+  and the Sprint 82 Task 6 header counts.
+- R-2: present the result as ONE numbered decision for Harold (which signals to add, with counts), asked as late as
+  possible; no signal is changed before his answer.
+- R-3: if approved, the change is a basis or chip in shared Dart, with the "Signal fires on" line.
+
+**Affected components / files**: read-only query scripts (scratchpad); results in this plan; code only after the
+decision.
+
+**Signal fires on**: each candidate is counted on DEV (N of M No Rule rows and agreement with the decisions).
+"Could not check": a row without the stored field is counted apart and never as a hit.
+
+**Dependencies / blockers**: none to count; Harold's decision to change.
+
+**Acceptance criteria**:
+- AC-1: a count table (as a bullet list) per candidate signal is recorded in this plan.
+- AC-2: the decision question is asked with the counts.
+
+**Tests to write**: none for the count; any approved change carries its own tests.
+
+**Parity (ADR-0042 / ADR-0049 / ADR-0050)**: analysis only (DEV, Windows); any approved signal is shared Dart.
+
+**Model**: Sonnet -- query design and interpretation on real data.
+
+**Step-types**: DATA-ANALYSIS. **Est-Effort**: 60-90m.
+
+## Task 7 -- F308: mine the AOL Trash2 history for delete-rule patterns (Priority 35)
+
+**Value**: This finds subject, body and sender patterns that predict a delete rule, as candidates for suggestions.
+
+**Requirements** (from the backlog card, Harold 2026-10-25):
+- R-1: a read-only read of the DEV AOL Trash2 folder into the content history (ADR-0047), method by Q5. Yahoo is not
+  read.
+- R-2: extend `tool/rule_miner` (F268) with a mode that learns what delete-rule matches have in common (subject
+  regex, body regex, body-URL domains, sender local-part shapes, header values, and AND-combinations), then scores
+  each candidate with `tool/rule_eval` (F267) against No Rule and safe-sender mail. A candidate is reported only when
+  it almost never hits a safe sender (the threshold stated in the report).
+- R-3: report by kind: single-part and combinations (`type: "AND"` rules need no grammar change,
+  `docs/RULE_FORMAT.md` lines 75-89).
+- R-4: output is a report and candidate YAML for Harold; nothing is imported or applied.
+- R-5: one record per email (dedup across accounts by Message-ID; by From + Date + Subject when there is none).
+- R-6: hand-deleted items are their own group and weigh neither for nor against a candidate.
+
+**Affected components / files**: `mobile-app/tool/rule_miner/`, `mobile-app/tool/rule_eval/` (developer tools);
+`docs/research/F308_TRASH2_MINING.md` (report).
+
+**Existing abstraction checked**: `rule_miner_core.dart`, `rule_eval_core.dart`; `ContentHistoryStore` keys
+(SHA-256 of account + Message-ID).
+
+**Dependencies / blockers**: Q5.
+
+**Acceptance criteria**:
+- AC-1: the report lists candidates by kind with hit counts on delete, No Rule and safe-sender mail.
+- AC-2: no candidate in the report matches more than the stated threshold of safe-sender mail.
+- AC-3: dedup and hand-delete rules are covered by tool tests.
+
+**Tests to write**:
+- T-1 (AC-2, AC-3) -- TEST-UNIT `test/tool/rule_miner_test.dart`: the new mode on fixture rows (dedup, hand-delete
+  group, threshold).
+
+**Definition of Done**: default DoD PLUS the report committed; no change to the app's rules.
+
+**Parity (ADR-0042 / ADR-0049 / ADR-0050)**: developer tool on Windows DEV; its output feeds shared Dart suggestions
+on all three. Declared: tooling, not app code.
+
+**Model**: Sonnet -- pattern mining design with a self-grading risk (F313 R-2 time split noted for later).
+
+**Step-types**: TOOL-ADD, DATA-ANALYSIS, TEST-UNIT. **Est-Effort**: 180-300m.
+
+_**Risk & rollback**_: the Trash2 read must not change the mailbox; EXAMINE and BODY.PEEK (or the app's read-only
+scan mode, verified before the run) prevent it.
+
+## Task 8 -- F309: research a global "trusted sender" source (Priority 37)
+
+**Value**: This answers whether a trusted-sender source can support safe-sender suggestions, and at what cost.
+
+**Requirements**:
+- R-1: from primary sources only, assess `.gov` (CISA eligibility), Tranco, BIMI with a Verified Mark Certificate,
+  and any other source found: what it proves, size, update cadence, license for a shipped app, and whether the app
+  can read it from received headers.
+- R-2: state, for each, how it combines with `dmarc=pass` from the receiving provider; it is only ever a suggestion.
+- R-3: name the decision class (bundled list: new data source; network fetch: Class 1 and a privacy-policy change).
+
+**Affected components / files**: `docs/research/F309_TRUSTED_SENDER_SOURCES.md`.
+
+**Acceptance criteria**:
+- AC-1: every claim cites a primary source with its date; unverified claims are marked.
+- AC-2: a recommendation and its decision class are stated for Harold.
+
+**Tests to write**: none (research).
+
+**Parity (ADR-0042 / ADR-0049 / ADR-0050)**: research only; any result would be shared Dart.
+
+**Model**: Sonnet -- primary-source research with license reading.
+
+**Step-types**: RESEARCH. **Est-Effort**: 60-90m.
+
+## Task 9 -- F310: mine safe-sender mail for safe-sender patterns (Priority 38)
+
+**Value**: This finds what safe-sender mail has in common, as candidates for safe-sender suggestions.
+
+**Requirements** (from the backlog card):
+- R-1: learn what safe-sender mail has in common that No Rule spam does not (DMARC pass, aligned DKIM, long sender
+  history, reply threads, transactional subjects, few tracking links).
+- R-2: score each candidate with `tool/rule_eval` against delete-rule mail; report only those that almost never match
+  spam.
+- R-3: a safe-sender suggestion always requires DMARC pass; content alone never suggests a safe sender.
+- R-4: output is a report only.
+
+**Affected components / files**: `mobile-app/tool/rule_miner/` (the Task 7 mode, safe side);
+`docs/research/F310_SAFE_SENDER_MINING.md`.
+
+**Dependencies / blockers**: Task 7 (shares the mode).
+
+**Acceptance criteria**:
+- AC-1: the report lists candidates with hit counts on safe-sender and delete mail.
+- AC-2: no candidate without a DMARC-pass condition is reported as a safe-sender suggestion.
+
+**Tests to write**:
+- T-1 (AC-2) -- TEST-UNIT `test/tool/rule_miner_test.dart`: the DMARC requirement in the safe mode.
+
+**Parity (ADR-0042 / ADR-0049 / ADR-0050)**: developer tool (Windows DEV); output feeds shared Dart (F270).
+
+**Model**: Sonnet -- the mirror of Task 7.
+
+**Step-types**: TOOL-ADD, DATA-ANALYSIS, TEST-UNIT. **Est-Effort**: 120-240m.
+
+## Task 10 -- F321 pilot: Python for deterministic tooling (Priority 35)
+
+**Value**: This starts moving the tooling to one language that runs on Windows, Linux, Unix, WSL and macOS.
+
+**Requirements**:
+- R-1: a small shared Python layer under `.claude/hooks/lib/` (or `scripts/pylib/`, named in the ADR): payload
+  reading, repo root, path normalizing, git calls, allow/block exit codes, UTF-8 stdin/stdout. Every hook fails open
+  on a malformed payload. Prior art read first: `hsbc-qfraud-phase2/.claude/hooks/hooklib.py`,
+  `EvidenceBasedDB/.claude/hooks/*.py` (read only).
+- R-2: pilot set (Q9): convert it, keep each hook's interface (exit codes, the message a gate matches on), register
+  it in `.claude/settings.json`, and keep the PowerShell test cases running against it.
+- R-3: run the pilot on Windows and on the CI Linux runner; record the defects found.
+- R-4: classify every hook, script and skill as deterministic (convert later) or GenAI (stays `.md`); record the list
+  in the ADR.
+- R-5: ADR-0051 "Python for deterministic tooling" records the layer, the registration form and the conversion
+  order.
+
+**Affected components / files**: `.claude/hooks/` (pilot hooks), `.claude/settings.json` (pilot registrations),
+`.claude/hooks/test-cases/` (unchanged cases, new runner support if needed), `docs/adr/0051-*.md`.
+
+**Callers of any guard being changed**: each pilot hook is a gate; its callers are the Claude Code tool events it is
+registered on; the card lists each with its matcher.
+
+**Acceptance criteria**:
+- AC-1: `.claude\hooks\run-test-cases.ps1` passes with the pilot hooks in Python (the same case count as before).
+- AC-2: each pilot hook BLOCKs on its block cases and ALLOWs on its allow cases (`scripts/test-hook.ps1`).
+- AC-3: the pilot's Python tests pass on the CI Linux runner.
+
+**Tests to write**:
+- T-1 (AC-1, AC-2) -- the existing hook test cases, run against the Python hooks; mutation-verified per hook.
+- T-2 (AC-3) -- a pytest file for the shared layer, run in CI.
+
+**Definition of Done**: default DoD PLUS ADR-0051 accepted by Harold (asked as late as possible) and the hook suite
+green.
+
+**Parity (ADR-0042 / ADR-0049 / ADR-0050)**: development process, not the app. The goal is OS independence of the
+tooling; Windows-only build steps (MSIX, Task Scheduler, WinWright) keep a Windows path (out of scope).
+
+**Model**: Sonnet -- a cross-cutting tooling change with a test harness; not Haiku-shaped.
+
+**Step-types**: HOOK, TOOL-ADD, TEST-UNIT, DOCS. **Est-Effort**: 120-240m.
+
+_**Risk & rollback**_: a broken hook can block every tool call. Each pilot hook is registered only after its cases
+pass; rollback is the previous `settings.json` registration (one commit).
+
+## Task 11 -- F237: quiet the Kotlin daemon traces in the Android build (Priority 38)
+
+**Value**: This prevents the non-fatal traces from being read as a build failure again.
+
+**Requirements**:
+- R-1: measure two release AAB builds (current settings, then the Q8 option), serialized with any other build, and
+  record the wall-clock of each.
+- R-2: apply the Q8 option if its cost is acceptable to Harold (asked with the numbers, as late as possible);
+  otherwise record the numbers and close with a note in TROUBLESHOOTING.md.
+
+**Affected components / files**: `mobile-app/android/gradle.properties` (one line) or the `PUB_CACHE` location;
+`docs/TROUBLESHOOTING.md`.
+
+**Acceptance criteria**:
+- AC-1: the second build's log has no "Daemon compilation failed" trace, or the reason it still does is recorded.
+- AC-2: both build times are recorded.
+
+**Tests to write**: none (build configuration; the build is the test).
+
+**Parity (ADR-0042 / ADR-0049 / ADR-0050)**: Android build only (declared: Kotlin compilation exists only in the
+Android build).
+
+**Model**: Haiku -- one property and two timed builds.
+
+**Step-types**: BUILD-CONFIG. **Est-Effort**: 20-40m (plus two build runs).
+
+_**Risk & rollback**_: a slower build; rollback is removing the line.
+
+## Task 12 -- F325 (copy of F152): first-run evaluation, Sprint 83 run
+
+**Value**: This finds what a new user stumbles on in the first minutes, as backlog items.
+
+**Requirements** (method from the F152 template):
+- R-1: static pass first (an Explore agent reads the first-run path) to form a baseline.
+- R-2: live pass on Windows with a release-equivalent build and a genuinely empty data folder (the DEV data folder is
+  backed up first and restored byte for byte after; verified). Harold drives; Claude records against the 7 sections
+  (Installation and Launch, First-Run Orientation, Completing the Primary Task, Feedback and Confirmation, Emotional
+  Experience, Environment Compatibility, Quick User Feedback Capture).
+- R-3: live pass on Android on a clean install (an emulator, so the Fold's closed-test data is not touched), by Q10.
+- R-4: iPhone: not possible this sprint (no TestFlight build); recorded as a gap, run when F67b's device check runs.
+- R-5: findings become backlog cards sized like F151; nothing is fixed in this task.
+
+**Affected components / files**: `docs/research/F325_FIRST_RUN_EVALUATION_S83.md`; new backlog cards in the master
+plan.
+
+**Dependencies / blockers**: Harold's time; Q10.
+
+**Acceptance criteria**:
+- AC-1: each of the 7 sections has findings or "no issues" per platform run.
+- AC-2: the data folder backup and restore are verified (hash before and after).
+- AC-3: every finding is a backlog card with effort in minutes.
+
+**Tests to write**: none (evaluation).
+
+**Parity (ADR-0042 / ADR-0049 / ADR-0050)**: Windows and Android runs; iOS declared as not runnable this sprint
+(Apple), not a design exception.
+
+**Model**: main session -- interactive with Harold.
+
+**Step-types**: UX-EVAL. **Est-Effort**: 120-180m plus Harold's time.
+
+---
+
+# Decision questions (for Phase 3.7)
+
+**Q1. F322 (Class 2): where the user sets "notify only when there are No Rule items".** You asked whether Android's
+notification sub-settings should hold it. My plan was an in-app setting on all three platforms. Facts: Android lets
+the user change or silence each notification CHANNEL in system settings, and the app can open that screen directly
+(Google's page, read 2026-10-31); channels exist from Android 8.0, and this app supports Android 7.0+ (minSdk 24), so
+7.x needs the in-app setting anyway. Windows and iPhone: I found no OS place for an app's own sub-settings (not yet
+verified from Microsoft's and Apple's pages; the card verifies first).
+1. Android: two channels, "Scans with No Rule items" and "Scans with nothing to review"; the user turns the second
+   off in Android's settings; the app's Settings row opens that screen. Windows and iPhone: the in-app choice. A
+   declared Android exception. Matches your direction (recommended).
+2. Option 1, and ALSO the in-app choice on Android (two controls on Android for one outcome; more to explain).
+3. The in-app choice on all three, same UI; Android keeps one channel (full parity, ignores Android's sub-settings).
+
+**Q2. F322 default.** What a user gets before changing anything.
+1. "Only when there are No Rule items" (quieter; what you said most users want) (recommended).
+2. "Every completed scan" (today's behavior; no change for current testers).
+
+**Q3. F324 (Class 2 for options 2 and 3): what removing an account does to its background setting.** Today removal
+deletes all of the account's settings (`data_deletion_service.dart:99-103`), so a re-added account falls back to the
+app-wide default (off on DEV), which is what happened to iCloud.
+1. Keep the deletion (removal means "forget this account"); the Account Selection screen shows "Background scanning
+   is off for this account" with "Turn on" (recommended).
+2. Keep the background setting across removal (removal stops deleting `background_enabled`), plus the screen line.
+3. Keep ALL account settings across removal for the same address, plus the screen line.
+
+**Q4. F323 R-1: the Block Body button's value.**
+1. The first link domain in the body, fetched when the pop-up opens (one tap) (recommended).
+2. A pick list of the body's link domains (more control, one more step).
+
+**Q5. F308 R-1: how to read the AOL Trash2 folder (DEV, read only).** The AOL app password is only in the DEV app's
+Windows secure store.
+1. A read-only probe like Sprint 82 Task 6 (IMAP EXAMINE, BODY.PEEK), with the DEV AOL credential read in memory from
+   the secure store, never written or printed (recommended).
+2. You run a DEV manual scan of the AOL account with only Trash2 selected; AOL's DEV manual mode is read-only
+   (checked again before you run it).
+3. Claude drives that DEV manual scan through WinWright (I notify you before and after).
+
+**Q6. F323 R-3: what the `news_` suggestion is.**
+1. A From-header regex rule matching `news_` plus 4-6 digits at any domain, offered as "Suggested" on a new "Block
+   sender pattern" action in the pop-up (recommended).
+2. Keep Block Entire Domain for these senders and only add the reason text "news_ sender pattern" (no new rule
+   type; 76 domains would still need 76 rules).
+
+**Q7. F270 scope.**
+1. v1 only: stored No Rule history; v2 (Sent folder) waits for the privacy policy change (recommended).
+2. v1 and v2 this sprint (adds the privacy policy and Data safety review).
+
+**Q8. F237 option.**
+1. `kotlin.incremental=false` in `gradle.properties`, measured first (recommended).
+2. Move the pub cache to `D:` with `PUB_CACHE` (a machine change, every project).
+3. Record the measurements only; change nothing.
+
+**Q9. F321 pilot set.**
+1. The shared layer plus three hooks: `block-blind-staging`, `block-heredoc-python-backslash`, `mutation-lock`
+   (with `block-commit-during-mutation`), and one `scripts/` helper (`agent-work-status`) (recommended).
+2. The shared layer plus one hook only (`block-blind-staging`) for the smallest first step.
+3. Name a different set.
+
+**Q10. F325 Android run.**
+1. A clean install on the Android emulator (no phone data touched) (recommended).
+2. A clean install on the S24+ (real device; its current data is backed up and restored).
+
+**Q-S1. Models as assigned**: 1 approve.
+**Q-S2. Version 0.24.0+21** (MINOR, F322 and F270 are `feat`): 1 approve.
