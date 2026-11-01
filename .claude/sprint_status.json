@@ -1,12 +1,12 @@
 {
     "_description": "Sprint status file that persists across context compaction. Update after each phase/sub-phase completion.",
-    "_last_updated": "2026-10-31T23:17:18-04:00",
+    "_last_updated": "2026-10-31T23:28:12-04:00",
     "_usage": "Read this file after context compaction to restore sprint approval state and progress.",
     "_staleness_note": "This file had drifted 15 sprints (last updated at Sprint 35, 2026-04-19) before being refreshed at Sprint 50 close-out. It is a Phase 7.7 checklist item -- update it at every sprint close-out, not opportunistically.",
     "current_sprint": {
         "number": 83,
         "branch": "feature/20261031_Sprint_83",
-        "status": "Phase 8.3 Store Release -- 8.1 main merge done (8f588043, tag v0.23.0); 8.2 pass 1 done; building 0.23.0 MSIX (prod worktree) then AAB (dev worktree, serialized); next: Harold uploads both, then 8.4 pass 2 scope selection",
+        "status": "Phase 8.3 Store Release -- 8.1 main merge done (8f588043, tag v0.23.0); 8.2 pass 1 done; 0.23.0 MSIX and AAB BUILT + VERIFIED (STORE_VERSION_STATUS.md); waiting: Harold uploads both, then 8.4 pass 2 scope selection",
         "status_detail": "Sprint 83 branch opened from feature/20261027_Sprint_82 (6.6). Stub: docs/sprints/SPRINT_83_PLAN.md.",
         "plan_approved": false,
         "pr_number": null,
