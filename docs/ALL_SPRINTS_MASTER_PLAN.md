@@ -175,7 +175,7 @@ Historical sprint information lives in individual documents in `docs/sprints/` a
 
 ## Next Sprint Candidates
 
-**Sprint 82 scope -- COMPLETE 2026-10-31 (PR #521)**: version (#522), F314 (#525), Task 6 probe and F312 (#526), F306 (#528), F319 (#529), F320 (#530), F318 (#531), F317 (#532). Open and carried to Sprint 83: F67a (#509), F304 (#510), F67b (#523) on Apple; F303 Fold check (#524) and F315 phone count (#527) as Manual Validation MV-4. Plan: `docs/sprints/SPRINT_82_PLAN.md`.
+**Sprint 82 scope -- COMPLETE 2026-10-31 (PR #521)**: version (#522), F314 (#525), Task 6 probe and F312 (#526), F306 (#528), F319 (#529), F320 (#530), F318 (#531), F317 (#532). Open and carried to Sprint 83: F67a (#509), F304 (#510), F67b (#523) on Apple; F303 Fold check (#524) and F315 phone count (#527) as Manual Validation MV-4. Merged to develop (f34be0d7) and main (#533, 8f588043) 2026-10-31, tagged v0.23.0; #522, #525, #526 and #528-#532 closed by the merge. Plan: `docs/sprints/SPRINT_82_PLAN.md`.
 
 **Sprint 81 scope -- COMPLETE 2026-10-27 (PR #507)**: version (#508), F67b code (#511), F302 (#512), F303 code (#513), F259 (#514), F301 (#515), F271 (#516), F278 (#517), F300 (#518), IMP-2b (#519). F67a (#509) and the F304 signing and TestFlight part (#510) moved to Sprint 82 by Harold (both cards open); the F303 Fold check and the F67b device check also remain. Merged to develop (b79fa361) and main (#520, 763753be) 2026-10-27; #508 and #511-#519 closed by the merge. Plan: `docs/sprints/SPRINT_81_PLAN.md`.
 
@@ -193,7 +193,7 @@ Historical sprint information lives in individual documents in `docs/sprints/` a
 
 **Sprint 74 scope -- COMPLETE 2026-09-29 (PR #440)** (Phase 8.4 pass 2, selected by Harold 2026-09-24): MV74-1 (#428), MV74-2 (#434), MV74-3 (#422, #433), F202 (#438), F222 (#437), F232 (#422), F206 (#439), F205 (#433). Plan: `docs/sprints/SPRINT_74_PLAN.md`.
 
-**Last Reviewed**: October 27, 2026 (Sprint 81 cycle, Phase 8.2 pass-1 COMPLETENESS SWEEP -- no scope selected: PR #507 merged to develop (b79fa361) and main (#520, 763753be); Sprint 82 branch opened from the Sprint 81 branch; #508 and #511-#519 closed by the merge and #509/#510 stayed open as intended (PR body "Part of"); Sprint 81 plan, retrospective and summary present; Sprint 82 stub present; shipped cards pruned: F302, F259, F278, F271, F300, F301; F303, F67a, F67b trimmed to their remainders.) Previous: October 23, 2026 (Sprint 80 cycle, Phase 8.2 pass-1 COMPLETENESS SWEEP -- no scope selected: PR #490 merged to develop (f301cdee) and main (#506, 2d81264a), tagged v0.21.0; Sprint 81 branch opened from the Sprint 80 branch; only #491 closed on merge -- the PR body used 'Closes #491, #492, ...', and GitHub applies the keyword to the first issue only, so the template now uses one keyword per card and the other 18 are closed by hand; Sprint 80 plan, retrospective and summary present; Sprint 81 stub present; F205 pruned (classified in Sprint 80 Task 1 R-7); F300's acceptance criterion moved back from F301; F246 and F259 given effort, Phase and Platform.)
+**Last Reviewed**: October 31, 2026 (Sprint 82 cycle, Phase 8.2 pass-1 COMPLETENESS SWEEP -- no scope selected: PR #521 merged to develop (f34be0d7) and main (#533, 8f588043), tagged v0.23.0; Sprint 83 branch opened from the Sprint 82 branch; #522, #525, #526, #528-#532 closed by the merge and #509, #510, #523, #524, #527 stayed open as intended (PR body "Part of"); Sprint 82 plan, retrospective and summary present; Sprint 83 stub present; shipped cards were pruned at close-out (F306, F312, F314, F317-F320); F67c and F67d targets corrected to "after Apple approval", because both need the F67b device check, which waits on enrollment `R6QG2A9SHS`.) Previous: October 27, 2026 (Sprint 81 cycle, Phase 8.2 pass-1 COMPLETENESS SWEEP -- no scope selected: PR #507 merged to develop (b79fa361) and main (#520, 763753be); Sprint 82 branch opened from the Sprint 81 branch; #508 and #511-#519 closed by the merge and #509/#510 stayed open as intended (PR body "Part of"); Sprint 81 plan, retrospective and summary present; Sprint 82 stub present; shipped cards pruned: F302, F259, F278, F271, F300, F301; F303, F67a, F67b trimmed to their remainders.) Previous: October 23, 2026 (Sprint 80 cycle, Phase 8.2 pass-1 COMPLETENESS SWEEP -- no scope selected: PR #490 merged to develop (f301cdee) and main (#506, 2d81264a), tagged v0.21.0; Sprint 81 branch opened from the Sprint 80 branch; only #491 closed on merge -- the PR body used 'Closes #491, #492, ...', and GitHub applies the keyword to the first issue only, so the template now uses one keyword per card and the other 18 are closed by hand; Sprint 80 plan, retrospective and summary present; Sprint 81 stub present; F205 pruned (classified in Sprint 80 Task 1 R-7); F300's acceptance criterion moved back from F301; F246 and F259 given effort, Phase and Platform.)
 
 All incomplete items in relative priority order. Priority in increments of 10; items that can sprint together in increments of 2. HOLD items grouped at bottom. See [Feature and Bug Details](#feature-and-bug-details) for deep-dive specs. See [BACKLOG_REFINEMENT.md](BACKLOG_REFINEMENT.md) for presentation format rules.
 
@@ -1015,7 +1015,7 @@ Source: `docs/research/F295_IOS_READINESS.md`. These replace the iOS parts of F6
 - Settles UNVERIFIED items: custom-scheme browser fallback, Files app visibility, `drawsUnderSystemBars`.
 - Depends on: F67a; F304 for the device check; F294 seam (merged Sprint 80).
 
-**F67c. iOS background scan spike on a real iPhone (~120-240m plus a 7-day observation window) Priority 8 -- target Sprint 82, result Sprint 83 (OFF HOLD 2026-10-23)**
+**F67c. iOS background scan spike on a real iPhone (~120-240m plus a 7-day observation window) Priority 8 -- target: the sprint after Apple approves enrollment `R6QG2A9SHS` (was Sprint 82; not started, it needs the F67b device check) (OFF HOLD 2026-10-23)**
 - Phase: Multi-Platform Readiness
 - Platform: iOS
 - Scope: `BGAppRefreshTask` per the ADR-0050 exception (interval is a floor; a time-boxed scan slice that resumes
@@ -1027,7 +1027,7 @@ Source: `docs/research/F295_IOS_READINESS.md`. These replace the iOS parts of F6
   keychain accessibility, background notification.
 - Depends on: F67b; a test iPhone. Start the 7-day window early in Sprint 82. Outcome may change the Gmail renewal design (a Class 2 decision to surface).
 
-**F67d. iOS store readiness: privacy manifest, App Privacy, listing, TestFlight, upload (~150-240m plus App Review time) Priority 12 -- target Sprint 83 (OFF HOLD 2026-10-23)**
+**F67d. iOS store readiness: privacy manifest, App Privacy, listing, TestFlight, upload (~150-240m plus App Review time) Priority 12 -- target: after the F67b device check, which waits on Apple's enrollment approval `R6QG2A9SHS` (was Sprint 83) (OFF HOLD 2026-10-23)**
 - Phase: Build and Release Infrastructure
 - Platform: iOS
 - Scope: Xcode privacy report on an archive; app `PrivacyInfo.xcprivacy` with the required-reason entries the report

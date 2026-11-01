@@ -1,22 +1,23 @@
 {
     "_description": "Sprint status file that persists across context compaction. Update after each phase/sub-phase completion.",
-    "_last_updated": "2026-10-31T18:57:55-04:00",
+    "_last_updated": "2026-10-31T23:17:18-04:00",
     "_usage": "Read this file after context compaction to restore sprint approval state and progress.",
     "_staleness_note": "This file had drifted 15 sprints (last updated at Sprint 35, 2026-04-19) before being refreshed at Sprint 50 close-out. It is a Phase 7.7 checklist item -- update it at every sprint close-out, not opportunistically.",
     "current_sprint": {
-        "number": 82,
-        "branch": "feature/20261027_Sprint_82",
-        "status": "Phase 7.7 Sprint Review (7.7.5 done) -- PR #521 READY for final approval (CI run 2 green at e291ccbc); next: Harold merges, then Phase 8 (6.6 next branch from this branch, 8.1 main merge, 8.2 pass 1, 8.3 0.23.0 store release)",
-        "status_detail": "Plan approved 2026-10-30 (Q1=1 Q2=1 Q3=1 Q4=2 Q5=1 Q6=1, Q-S1=1, Q-S2=1; U1: 0.22.0 not uploaded, 0.23.0 notes combine 0.22.0 and 0.23.0). Cards #522-#532 created; #509 (Task 1) and #510 (Task 2) carried. Version 0.23.0+20. Task 4 (F303 Fold) moves to Manual Validation (needs a 0.23.0 closed-test build).",
-        "plan_approved": true,
-        "pr_number": 521,
+        "number": 83,
+        "branch": "feature/20261031_Sprint_83",
+        "status": "Phase 8.3 Store Release -- 8.1 main merge done (8f588043, tag v0.23.0); 8.2 pass 1 done; building 0.23.0 MSIX (prod worktree) then AAB (dev worktree, serialized); next: Harold uploads both, then 8.4 pass 2 scope selection",
+        "status_detail": "Sprint 83 branch opened from feature/20261027_Sprint_82 (6.6). Stub: docs/sprints/SPRINT_83_PLAN.md.",
+        "plan_approved": false,
+        "pr_number": null,
         "version": "0.23.0+20"
     },
     "previous_sprint": {
-        "number": 81,
-        "branch": "feature/20261023_Sprint_81",
-        "pr": "#507 -> develop (merged 2026-10-27, b79fa361), #520 develop -> main (763753be)",
-        "deliverables": "F67b code, F302, F303 code, F259, F301, F271, F278, F300, IMP-2b; version 0.22.0+19. 7.7.1 reviews before the retro (first time); improvement review fixes; diagnostic-log lock race fixed. #508 and #511-#519 closed by the merge; #509 (F67a) and #510 (F304 signing + TestFlight) open, moved to Sprint 82. CI run 2 green on 65518ba4 (run 40627456689)."
+        "number": 82,
+        "branch": "feature/20261027_Sprint_82",
+        "pr_number": 521,
+        "result": "Merged to develop f34be0d7 and main (#533) 8f588043 on 2026-10-31; tag v0.23.0. Closed by the merge: #522 #525 #526 #528-#532. Open as intended: #509 #510 #523 #524 #527.",
+        "docs": "docs/sprints/SPRINT_82_PLAN.md, SPRINT_82_RETROSPECTIVE.md, SPRINT_82_SUMMARY.md"
     },
     "github_issues": {
         "sprint_73": "#428 (open, MV74-1), #422 (open, MV74-3), #430 closed, #434 (open, MV74-2), #431 closed, #432 closed, #433 (open, MV74-3). Also closed in pass 1: #426 (superseded by #428), #427 (leftover captured as F236).",
