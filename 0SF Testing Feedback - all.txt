@@ -7,6 +7,55 @@ Manual Validation complete
 Sprint 8n Manual Validation Feedback 
 
 ---------------------------------------------------------------------------------------------------------
+Sprint 82 Manual Validation Feedback 
+
+  Manual Validation steps
+
+  - MV-1 (Windows DEV, F319): the No Rule list updates when the app comes forward
+Clicked on the notification. It did not switch tot he app (Dev window did not come forward). App did not switch to the "Review No Rule Items" page, and the page was not refreshed.
+  - MV-2 (Windows DEV, F306): suggested rule in the pop-up
+Not seeing a split between the body and subject tile (or is that an item for the next sprint?)
+Otherwise looks good
+  - MV-3 (Fold, 0.23.0 closed test, F319 and F306)
+This can't be done until after this sprint. Can you make this a Manual Validation on the next sprint
+  - MV-4 (Fold, Tasks 4 and 7): diagnostics and no-UID count
+This can't be done until after this sprint. Can you make this a Manual Validation on the next sprint
+
+  Questions
+q1 1 q2 c q3 manual scan just completed successfully q4 b
+
+  1. F312 probe: how do I get a read-only AOL sign-in? This decides how the Task 6 header probe reads AOL mail headers to count the F312 Step 1 signal.
+     It does not change any mail. The DEV app's AOL password is stored encrypted in the Windows secure store, and I may not read it without your
+     approval.
+     a. Approve me reading the DEV app's stored AOL credential, used only for this probe.
+     b. You put an AOL app password in a temporary file outside the repo; I delete the file after the probe.
+     c. Add a DEV-only header count to the app instead. It fills during the next DEV AOL scan, with no separate sign-in, but it costs a small code
+        change.
+     d. Skip the probe this sprint and move it to the backlog.
+1
+  2. F306: should there be a Block Body suggestion? This decides whether the pop-up can also suggest a rule based on links in the body. Today it
+     suggests only sender-based rules. The No Rule rows do not store the body.
+     a. Suggest the first link domain, fetching the body when the pop-up opens. This needs a network call per pop-up.
+     b. Show the body's link domains and let you pick one. Same fetch, more UI.
+     c. Defer this to an F306 v2 backlog card.
+     d. Drop it.
+  3. iCloud DEV scans have failed since 10-29. This decides whether we fix the account now and whether the app needs a clearer notice. 400 of the last
+     400 DEV iCloud background scans failed with "Too many failed sign-in attempts. Try again at 10:52." The oldest failure is 10-29 00:57. Scan History
+     shows the error in red on each iCloud row; there is no notification. The cause is unverified. It fits two Apple emails: "Your Apple Account
+     password has been reset" (10-28) and "has been unlocked" (10-30). Apple support article 102654 says a password reset revokes all app-specific
+     passwords.
+     a. You create a new iCloud app-specific password and enter it in the DEV app's account settings. I then confirm that the next scans succeed.
+     b. Open a backlog card for a clear "sign in again" notice when IMAP sign-in keeps failing (like the Gmail one in this release).
+     c. Both 1 and 2.
+     d. Leave it as is.
+  4. Pin GitHub's own actions to commit SHAs? This decides whether actions/* steps in ci.yml and ios.yml are also locked to a SHA. The third-party
+     subosito/flutter-action is already pinned, and a policy test enforces that for non-GitHub actions.
+     a. Pin actions/* too, and extend the policy test to cover them.
+     b. Leave them on version tags (GitHub-owned).
+     c. Backlog card.
+
+
+---------------------------------------------------------------------------------------------------------
 Sprint 81 Manual Validation Feedback 
 
 HK:

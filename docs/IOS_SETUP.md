@@ -23,11 +23,18 @@ Decision: enroll as an **Individual**, the same account type as Microsoft and Go
 Facts:
 - **VERIFIED** (developer.apple.com/help/account/membership/D-U-N-S/, read 2026-10-23): *"If you're enrolling as an
   individual, you don't need a D-U-N-S Number."*
-- **UNVERIFIED**: the fee is 99 USD per year.
-- **UNVERIFIED**: the enrollment needs an Apple Account with two-factor authentication on, and Apple shows your
-  personal legal name as the seller on the App Store for an Individual account. Read the seller name from the
-  enrollment screen and record it in "Results" and in `LEGAL_ENTITY.md`.
-- **UNVERIFIED**: Apple's review of an Individual enrollment can take from minutes to a few days.
+- **VERIFIED** (developer.apple.com/programs/enroll/ and /help/account/membership/program-enrollment/, read
+  2026-10-28): the fee is 99 USD per membership year. The Apple Account needs two-factor authentication on, and its
+  first and last name must be your legal name (an alias or nickname delays approval). *"Your name will be displayed
+  as the seller name of your apps on the App Store."* P.O. boxes are not accepted. On the web, an Individual must pay
+  with their own credit card, or Apple asks for a government photo ID.
+- **VERIFIED** (developer.apple.com/help/account/membership/enrolling-in-the-app/, read 2026-10-28): the Apple
+  Developer app path needs an iPhone with Face ID, Touch ID or a passcode, iCloud signed in, and the same device for
+  the whole enrollment. It asks for a photo of a passport or driver's license, then Individual, then the License
+  Agreement, then an auto-renewing subscription paid from the Apple Account (gift-card balance not accepted).
+- **VERIFIED** (program-enrollment page): no membership confirmation within 24 hours of purchase means contact
+  Apple Developer Support with your Enrollment ID.
+- **UNVERIFIED**: how long Apple's review takes; the pages give no time.
 
 Steps:
 1. Choose the Apple Account. Recommended: the same dedicated address as Play (`myemailspamfilter.dev@gmail.com`),
@@ -127,3 +134,11 @@ signing. `ci.yml` does not read them.
     email account -- instead of a new dedicated one. No new Apple Account is needed. The address is not written
     here (this file is public); it is the iCloud test account. Two-factor authentication on that account is still
     to be confirmed at enrollment.
+  - 2026-10-27: the Apple Developer Program License Agreement was saved as a PDF, kept OUTSIDE the repo (the repo is
+    public and the text is Apple's): `D:\Data\Harold\spamfilter-multi\Apple_Developer_Program_License_Agreement_LC644S5URF 20261027.pdf`.
+    UNVERIFIED: whether `LC644S5URF` in the file name is the Apple Team ID; read it from the Membership page in Part A
+    and record it here (F304 signing needs it; it is not a secret).
+  - 2026-10-28: in the Apple Developer app (iPad), sign-in with the iCloud address showed the account's AOL address
+    (inference: the same Apple Account, two addresses), and **Enroll Now** was greyed out. Cause: the web enrollment
+    from 2026-10-27 already exists, Enrollment ID `R6QG2A9SHS` (a support reference, not a secret). Continue on the
+    web, not in the app. `LC644S5URF` is therefore not the Enrollment ID.

@@ -35,6 +35,7 @@ import '../../core/services/email_body_parser.dart';
 import '../../core/services/pattern_compiler.dart';
 import '../../core/services/rule_evaluator.dart';
 import '../../core/services/rule_quick_action_service.dart';
+import '../../core/services/rule_suggestion.dart';
 import '../../core/storage/database_helper.dart';
 import '../../core/services/scan_coordinator.dart'; // F212 (Sprint 70)
 import '../../core/storage/scan_result_store.dart';
@@ -58,6 +59,24 @@ export '../widgets/result_list_pieces.dart'
         formatReceivedDateForDisplay,
         formatReceivedDayForRow;
 import '../../core/services/export_directories.dart';
+
+/// F306 (Sprint 82): the suggested rule for [result], or null. A matched or
+/// safe-sender result gets none. The auth class is the stored snapshot when
+/// there is one (history), else parsed from the live headers. Top-level so a
+/// test can reach every branch without driving the filter drop-down.
+@visibleForTesting
+RuleSuggestion? suggestionForResult(
+    EmailActionResult result, EvaluationResult? effectiveEval) {
+  final isNoRule = result.action == EmailActionType.none &&
+      (effectiveEval?.matchedRule ?? '').isEmpty &&
+      effectiveEval?.isSafeSender != true;
+  if (!isNoRule) return null;
+  return RuleSuggestion.suggest(
+    fromEmail: result.email.from,
+    authClassification: result.email.authClassificationOverride ??
+        AuthResultsParser.classifyHeaders(result.email.headers).name,
+  );
+}
 
 /// Displays summary of scan results bound to EmailScanProvider.
 ///
@@ -1899,6 +1918,10 @@ class _ResultsDisplayScreenState extends State<ResultsDisplayScreen> {
         onTap: (tileKey) => _showEmailDetailSheet(result, itemKey: tileKey),
       );
 
+  /// F306 (Sprint 82): the suggested rule for a No Rule [result], else null.
+  RuleSuggestion? _noRuleSuggestionFor(EmailActionResult result) =>
+      suggestionForResult(result, _getEffectiveEvaluation(result));
+
   /// Show positioned popup with email details and inline quick actions
   /// Issue 6: CSS-like positioning - show popup below/above email item
   ///
@@ -1924,6 +1947,9 @@ class _ResultsDisplayScreenState extends State<ResultsDisplayScreen> {
       // F136/F230: Skip only under the "No rule" filter, where an unaddressed
       // sequence exists to advance through.
       showSkip: _filter == EmailActionType.none,
+      // F306: only a No Rule result gets a suggestion. The same pure function
+      // the scan used, so it equals what the scan stored.
+      suggestion: _noRuleSuggestionFor(result),
       itemKey: itemKey,
       anchorPosition: anchorPosition,
       anchorSize: anchorSize,

@@ -219,7 +219,11 @@ class WindowsSystemTrayService with WindowListener {
   }
 
   /// Show window and bring to front
-  Future<void> _showWindow() async {
+  Future<void> _showWindow() => bringWindowToFront();
+
+  /// Shows the window and brings it to the front. Shared by the tray menu and
+  /// a notification click (`NotificationTapHandler`, Sprint 82 MV-1).
+  static Future<void> bringWindowToFront() async {
     await windowManager.show();
     await windowManager.focus();
     await windowManager.setAlwaysOnTop(true);

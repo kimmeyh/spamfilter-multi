@@ -1,0 +1,1 @@
+{"session_id": "vw-allow-6", "cwd": "{{REPO_MODIFIED}}", "hook_event_name": "PreToolUse", "tool_name": "Bash", "tool_input": {"command": "git commit -am \"Task 3: done\""}}

@@ -149,6 +149,30 @@ void main() {
     });
     }
 
+    // (d) Sprint 82 (security review of the signed TestFlight job): a
+    // third-party action pinned by a tag can be moved to new code by its
+    // owner, and ios.yml runs it in a job that holds the App Store Connect
+    // key. Every action not owned by GitHub (`actions/`) must be pinned to a
+    // full commit SHA. Not caught: a SHA that is itself malicious, or an
+    // action under .github/actions/ (none exist).
+    for (final workflowPath in _workflowPaths) {
+      final name = workflowPath.split('/').last;
+      test('(d) $name pins every third-party action to a commit SHA', () {
+        final uses = RegExp(r'uses:\s*([^@\s]+)@(\S+)');
+        final sha = RegExp(r'^[0-9a-f]{40}$');
+        final unpinned = [
+          for (final l in File(workflowPath).readAsLinesSync())
+            if (uses.firstMatch(l) case final m?)
+              if (!m.group(1)!.startsWith('actions/') &&
+                  !sha.hasMatch(m.group(2)!))
+                l.trim(),
+        ];
+        expect(unpinned, isEmpty,
+            reason: '$name uses a third-party action by tag. Pin it to the '
+                'full commit SHA with the tag in a comment: $unpinned');
+      });
+    }
+
     test('(c) the local SDK running this test matches .fvmrc', () {
       final recorded = _fvmrcVersion();
       final local = _localSdkVersion();

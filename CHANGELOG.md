@@ -26,6 +26,30 @@ Format: `- **type**: Description (Issue #N)` where type is feat|fix|chore|docs
 
 ## [Unreleased]
 
+### 2026-10-31 (Sprint 82)
+
+- **docs**: Sprint 82 retrospective improvements: the 5.1.2 silent-failure search covers every language in the diff; a test's "does NOT catch" note is checked against what the docs promise, and every Manual Validation rehearsal line cites its evidence; a signal names its "could not check" inputs; clock times are read from the clock (Sprint 82 retro IMP-1, 2, 4, 6)
+- **chore**: The backslash hook also blocks `python -c` with a backslash, in the Bash and PowerShell tools; a new hook warns when a task-closing commit leaves out its CODING_VELOCITY row (Sprint 82 retro IMP-5, IMP-7)
+- **fix**: When a scan's results cannot be saved (for example a locked database), the scan screen now says "Scan complete, but its results could not be saved. The next scan checks these emails again.", and a Gmail scan keeps its read position so the next scan reads those emails again; before, the failure was silent and those emails could be skipped for good (Issue #525)
+- **fix**: A notification click no longer closes an open dialog or a screen whose text field holds text, so typed input is not lost; the app shows "A screen is open, so the notification did not close it. Go back to Review No Rule Items when you are done." (Issue #529)
+- **fix**: A failed notification-click registration, and a failed window raise, are written to the diagnostic log (Issue #529)
+- **fix**: While the app is open, clicking a background-scan notification on Windows now brings the app window forward and opens Review No Rule Items, with the new emails listed; before, the click did nothing. On Android a tap now also opens Review No Rule Items when the app was already open on another screen. The Store build declares the notification's activation class; a click on the installed Store build is checked at the release install before the store notes may claim it (Issue #529)
+- **fix**: On the Windows DEV build, clicking a background-scan notification while the app is closed now starts the app on Review No Rule Items (Issue #529)
+- **chore**: The Windows build script pauses the environment's background-scan tasks while it replaces the app folder, and waits until no copy of the app runs from it, so a scan starting mid-build can no longer leave a half-deleted folder that will not start (Issue #529)
+
+### 2026-10-30 (Sprint 82)
+
+- **feat**: The No Rule email pop-up suggests one rule: when an email's sender authentication did not fully pass, the Block Entire Domain button (or Block Email for a common provider such as gmail.com) is marked "Suggested", with the exact rule and the reason shown under it; you still tap to apply it, and an email that failed authentication is never suggested as a safe sender. The database moves to version 17 to store the suggestion (Issue #528)
+- **chore**: The CI and iOS workflows pin the third-party Flutter setup action to a commit SHA (v2.23.0), and the signed iOS job passes its secrets only to the steps that use them; a policy test fails on any third-party action pinned by tag (Issue #510)
+- **docs**: Every delegated sprint agent now carries one "Progress and restart" block: it saves its progress to a file, and a restart after a usage limit or a closed session resumes from that file without repeating a release or store action; `scripts/agent-work-status.ps1` shows each agent's state and any mutation lock with its age (Issue #532)
+- **fix**: The No Rule list reloads by itself when the app comes back to the foreground, so tapping a background scan's "No rule 3" notification shows those 3 emails without pressing Refresh (Issue #529)
+- **fix**: A Gmail scan that is cancelled, fails or is closed before it finishes no longer skips mail: the Gmail history position for a folder is saved only after that scan's results are stored, so the next scan reads those messages again (Issue #525)
+- **chore**: The iOS build workflow gains a signed build that uploads to TestFlight, started by hand; it reads the Apple and Gmail sign-in values from repository secrets and deletes them after the build (Issue #510)
+- **docs**: The 7.7.1 toolkit review prompts list every changed file, and each reviewer reports how many it read, so no changed file is reviewed by Copilot alone (Issue #531)
+- **chore**: Version 0.23.0+20 for Sprint 82; 0.22.0 is not uploaded to the stores, so the 0.23.0 store notes cover 0.22.0 and 0.23.0 (Issue #522)
+
+## [0.22.0] - 2026-10-27
+
 ### 2026-10-27 (Sprint 81, improvement review fixes)
 - **fix**: The "Folder not found: <name>" line and the "N already filed" chip now show after a scan that completes with no listed messages, where the screen falls back to the last saved scan; before, both were hidden in exactly that case (Issue #514)
 - **fix**: The diagnostic log no longer loses lines when several background tasks write at once: a missed log lock is retried 5 ms apart instead of three times back to back (found by the full test suite; 100 of 100 probe rounds clean under load after the fix)

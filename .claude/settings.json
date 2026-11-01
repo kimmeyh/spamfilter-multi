@@ -30,6 +30,11 @@
             "type": "command",
             "command": "powershell -NoProfile -ExecutionPolicy Bypass -File \"${CLAUDE_PROJECT_DIR}\\.claude\\hooks\\block-blind-staging.ps1\"",
             "timeout": 15
+          },
+          {
+            "type": "command",
+            "command": "powershell -NoProfile -ExecutionPolicy Bypass -File \"${CLAUDE_PROJECT_DIR}\\.claude\\hooks\\warn-commit-without-velocity.ps1\"",
+            "timeout": 15
           }
         ]
       },

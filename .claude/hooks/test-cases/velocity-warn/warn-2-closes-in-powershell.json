@@ -1,0 +1,1 @@
+{"session_id": "vw-warn-2", "cwd": "Z:/velocity-warn-no-repo", "hook_event_name": "PreToolUse", "tool_name": "PowerShell", "tool_input": {"command": "git commit -q -m \"fix: tap keeps the form\" -m \"Closes #529\""}}

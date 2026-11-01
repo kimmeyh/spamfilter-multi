@@ -1,0 +1,1 @@
+{"session_id": "hg-allow-12", "cwd": "D:/Data/Harold/github/spamfilter-multi", "hook_event_name": "PreToolUse", "tool_name": "PowerShell", "tool_input": {"command": "python -I \"C:\\Users\\kimme\\AppData\\Local\\Temp\\claude\\x\\scratchpad\\edit.py\"; Get-Content C:\\Users\\kimme\\x.txt; cat > out.txt"}}

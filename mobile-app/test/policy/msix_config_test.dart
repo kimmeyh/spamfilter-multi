@@ -272,4 +272,58 @@ void main() {
               'not a display name. It never changes.');
     });
   });
+
+  // Sprint 82 MV-1: a Store (packaged) build delivers a toast click through
+  // the manifest's ToastNotificationActivation class. It must be the GUID the
+  // app registers in-process (ScanCompleteNotifier.windowsGuid, prod), or a
+  // click reaches nothing -- the same silent failure MV-1 found on DEV.
+  // What this does NOT catch: whether Windows actually delivers the click on
+  // the installed MSIX (checked by hand at the Store release install).
+  group('MSIX toast activator (Sprint 82 MV-1)', () {
+    test('toast_activator.clsid is the prod GUID the app registers', () {
+      final toast = msixConfig['toast_activator'];
+      expect(toast, isA<YamlMap>(),
+          reason: 'Without toast_activator the Store build declares no '
+              'class for a notification click.');
+      expect((toast as YamlMap)['clsid'].toString().toLowerCase(),
+          'f5b1ae09-8027-4b72-9444-07d620fe3fdc');
+      final notifier =
+          File('lib/core/services/scan_complete_notifier.dart').readAsStringSync();
+      expect(notifier, contains("'f5b1ae09-8027-4b72-9444-07d620fe3fdc'"),
+          reason: 'The prod windowsGuid in ScanCompleteNotifier must match '
+              'msix_config.toast_activator.clsid.');
+    });
+
+    // Harold Q1 = 1 (2026-10-31): the unpackaged DEV build registers its own
+    // LocalServer32 in main.cpp so a click can START the closed app. What
+    // this does NOT catch: whether Windows starts the exe on a click (checked
+    // by looking in the MV rehearsal).
+    test('main.cpp registers the DEV GUID, never the prod (Store) one', () {
+      final cpp = File('windows/runner/main.cpp').readAsStringSync();
+      final notifier =
+          File('lib/core/services/scan_complete_notifier.dart').readAsStringSync();
+      final devGuid = RegExp(r"isDev\s*\?\s*'([0-9a-f-]{36})'")
+          .firstMatch(notifier)
+          ?.group(1);
+      expect(devGuid, isNotNull,
+          reason: 'ScanCompleteNotifier.windowsGuid DEV value not found');
+      expect(cpp, contains('CLSID\\\\{$devGuid}'),
+          reason: 'main.cpp must register the same DEV GUID the app uses.');
+      expect(cpp, isNot(contains('f5b1ae09-8027-4b72-9444-07d620fe3fdc')),
+          reason: 'The prod GUID is the Store MSIX manifest class; an HKCU '
+              'LocalServer32 for it could send Store toasts to an '
+              'unpackaged exe.');
+      expect(cpp, contains('if (std::string(SPAMFILTER_APP_ENV) != "prod") {\n'
+          '      RegisterDevToastActivator('),
+          reason: 'The registration must be DEV-only.');
+    });
+
+    test('toast_activator.arguments never start a background scan', () {
+      final args =
+          (msixConfig['toast_activator'] as YamlMap)['arguments'].toString();
+      expect(args, isNot(contains('--background-scan')),
+          reason: 'A click must start the UI (main.cpp: any command line '
+              'without --background-scan), never a headless scan.');
+    });
+  });
 }

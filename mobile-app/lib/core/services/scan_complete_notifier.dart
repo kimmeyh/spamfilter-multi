@@ -73,6 +73,21 @@ class ScanCompleteNotifier {
       ? '06668ccd-ce68-41ea-9eb4-e1070255a7f3'
       : 'f5b1ae09-8027-4b72-9444-07d620fe3fdc';
 
+  /// The plugin settings BOTH processes register with: the background worker
+  /// that posts, and the UI process that receives a click
+  /// (`NotificationTapHandler`). On Windows a click is delivered only to a
+  /// running process registered under the toast's app ID and GUID, so the two
+  /// must never differ -- hence one getter.
+  static InitializationSettings get initializationSettings =>
+      InitializationSettings(
+        android: const AndroidInitializationSettings('@mipmap/ic_launcher'),
+        windows: WindowsInitializationSettings(
+          appName: windowsAppName,
+          appUserModelId: windowsAppUserModelId,
+          guid: windowsGuid,
+        ),
+      );
+
   static const AndroidNotificationDetails _androidDetails =
       AndroidNotificationDetails(
     'background_scan_channel',
@@ -179,16 +194,7 @@ class ScanCompleteNotifier {
     required NotificationDetails details,
   }) async {
     final plugin = FlutterLocalNotificationsPlugin();
-    await plugin.initialize(
-      settings: InitializationSettings(
-        android: const AndroidInitializationSettings('@mipmap/ic_launcher'),
-        windows: WindowsInitializationSettings(
-          appName: windowsAppName,
-          appUserModelId: windowsAppUserModelId,
-          guid: windowsGuid,
-        ),
-      ),
-    );
+    await plugin.initialize(settings: initializationSettings);
     // Sprint 79 7.7.1 M-5: on Android `show` returns normally when the user
     // denied POST_NOTIFICATIONS (Android 13+) or turned the app's
     // notifications off, and nothing appears. Ask first, and report it as a

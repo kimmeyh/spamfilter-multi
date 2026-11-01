@@ -40,6 +40,7 @@ import 'ui/theme/app_theme.dart';
 import 'package:workmanager/workmanager.dart';
 import 'core/services/android_background_scan_worker.dart';
 import 'core/services/new_mail_trigger.dart';
+import 'core/services/notification_tap_handler.dart';
 import 'core/platform/platform_capabilities.dart';
 
 /// Global RouteObserver for tracking navigation events
@@ -346,10 +347,10 @@ void main(List<String> args) async {
           'line in the diagnostic log)');
     }
 
-    // F287 (Sprint 79): no notification start-up step. The background-scan
-    // toast is posted (and the plugin initialized) by ScanCompleteNotifier in
-    // the background-scan process itself; the former WindowsNotificationService
-    // initialized here was never called afterwards.
+    // F287 (Sprint 79): the background-scan toast is posted (and the plugin
+    // initialized) by ScanCompleteNotifier in the background-scan process
+    // itself. Sprint 82 MV-1: the UI process ALSO registers, after runApp
+    // (NotificationTapHandler), to receive a click.
 
     // Only manage Task Scheduler in release mode.
     // In debug mode: Platform.resolvedExecutable points to a temporary runner path
@@ -396,6 +397,11 @@ void main(List<String> args) async {
   }
 
   runApp(const SpamFilterApp());
+
+  // Sprint 82 MV-1: register THIS (UI) process for notification taps, so a
+  // click brings the app forward on Review No Rule Items. The background
+  // worker returned above and never reaches this line.
+  unawaited(NotificationTapHandler.initialize(navigatorKey: navigatorKey));
 
   if (reconcileTasksAfterStart) {
     unawaited(_reconcileWindowsBackgroundTasks());
@@ -631,7 +637,11 @@ class SpamFilterApp extends StatelessWidget {
             darkTheme: AppTheme.darkTheme,
             themeMode: ThemeMode.system, // Follow system theme preference
             // Track navigation events for account list refresh
-            navigatorObservers: [routeObserver],
+            // Notification taps check the open routes (7.7.1 M-5)
+            navigatorObservers: [
+              routeObserver,
+              NotificationTapHandler.routeStack,
+            ],
             // Initialize rules after providers are created
             home: const _AppInitializer(),
           ),

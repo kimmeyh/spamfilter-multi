@@ -22,14 +22,36 @@ Partner Center before saying anything about the Store version.
 
 | | Version | Last verified | Notes |
 |---|---|---|---|
-| **Live/certified on Store** (cache) | 0.19.0.0 | 2026-10-19 (Harold, Sprint 80 plan Q8 = 1: the Store-installed app showed Version 0.19.0; no screenshot; Partner Center not observed by Claude). 0.20.0.0 submitted 2026-10-18, in process | Built from the prod worktree at `main` 757d6a0; self-test PASS 6/6. Previous: 0.18.0.0 (2026-10-10, installed-build screenshot); 0.17.0.0 (2026-10-04); 0.17.6.0 was Submission 31. Step 4.2 Gmail sign-in URL check on the installed build not yet reported. |
-| **Live on Google Play** (cache) | 0.19.0 (versionCode 16) | 2026-10-13 (**DEVICE-VERIFIED**: Fold diagnostic log `diag_v0.19.0_2026-10-13.log` `app start (foreground) -- v0.19.0 env=prod platform=android` at 14:16:49, pulled over MTP; Play Console not observed) | **Closed testing (Alpha) only -- NOT production.** Previous: 0.18.0 (versionCode 15), 0.17.6 (versionCode 14). |
-| **Last uploaded to Play (any track)** | 0.20.0 (versionCode 17) | 2026-10-18 | 0.21.0 (versionCode 18) AAB built 2026-10-23; its upload is NOT yet reported by Harold, so this row stays at 0.20.0 until he reports it. Closed testing (Alpha), uploaded by Harold ("both store updates are in process"); not yet seen on the Fold. Previous: 0.19.0 (versionCode 16). Sprint 76 retro IMP-2: Play refuses a versionCode it has already received on ANY track, so this row -- not the Live row -- is what the next build must exceed. UPDATE IT in the same commit that bumps `pubspec.yaml` after Harold reports an upload (never before the bump, or the suite goes red on the current build). Enforced by `dev_version_ahead_test` and by `build-with-secrets.ps1 -Output aab`. |
-| **Dev worktree** (authoritative -- mirrors `pubspec.yaml`) | 0.22.0+19 | 2026-10-23 | Bumped at Sprint 81 plan approval (Phase 3.7.0b). MINOR: F271 (No Rule reasons) is `feat`. versionCode 19 (0.21.0 / 18 is built for Play, upload not yet reported). Previous: 0.21.0+18 (Sprint 80). Gates: `version_consistency_test`, `dev_version_ahead_test`. |
+| **Live/certified on Store** (cache) | 0.21.0.0 | 2026-10-24 (Harold's report: 0.21.0 installed from the Microsoft Store; no screenshot; Partner Center not observed by Claude). 0.22.0.0 built 2026-10-27, not yet submitted | Built from the prod worktree at `main` 2d81264a; self-test PASS 6/6. Previous: 0.19.0.0 (2026-10-19, Harold); 0.18.0.0 (2026-10-10, installed-build screenshot). Step 4.2 Gmail sign-in URL check on the installed build not yet reported. |
+| **Live on Google Play** (cache) | 0.21.0 (versionCode 18) | 2026-10-24 (Harold's report: 0.21.0 installed from Google Play on the Fold; Play Console not observed by Claude) | **Closed testing (Alpha) only -- NOT production.** Previous: 0.19.0 (versionCode 16, DEVICE-VERIFIED 2026-10-13); 0.20.0 (versionCode 17) was uploaded 2026-10-18. |
+| **Last uploaded to Play (any track)** | 0.21.0 (versionCode 18) | 2026-10-24 | Updated 2026-10-27 from Harold's 2026-10-24 report that 0.21.0 is installed from Play (an install proves the upload). The pubspec was already bumped to 0.22.0+19 at Sprint 81 3.7.0b, so this follows the bump, as required. 0.22.0 (versionCode 19) AAB built 2026-10-27, upload not yet reported. Closed testing (Alpha). Previous: 0.20.0 (versionCode 17). Sprint 76 retro IMP-2: Play refuses a versionCode it has already received on ANY track, so this row -- not the Live row -- is what the next build must exceed. UPDATE IT in the same commit that bumps `pubspec.yaml` after Harold reports an upload (never before the bump, or the suite goes red on the current build). Enforced by `dev_version_ahead_test` and by `build-with-secrets.ps1 -Output aab`. |
+| **Dev worktree** (authoritative -- mirrors `pubspec.yaml`) | 0.23.0+20 | 2026-10-30 | Bumped at Sprint 82 plan approval (Phase 3.7.0b). MINOR: F306 (No Rule suggested rule) is `feat`. versionCode 20. 0.22.0 (versionCode 19) is NOT uploaded (Harold 2026-10-30): the next store release is 0.23.0 and its notes combine 0.22.0 and 0.23.0. Previous: 0.22.0+19 (Sprint 81). Gates: `version_consistency_test`, `dev_version_ahead_test`. |
+
+## 0.22.0 -- Sprint 81 cycle Phase 8.3 (2026-10-27)
+
+**NOT SUBMITTED -- superseded by 0.23.0 (Harold, 2026-10-30: "no plan to upload 0.22.0 and will wait for 0.23.0").**
+The 0.23.0 release notes combine 0.22.0 and 0.23.0. "Last uploaded to Play" stays 0.21.0 (versionCode 18).
+
+**BUILT + VERIFIED, NOT YET SUBMITTED** (waiting for Harold's uploads). The Live rows stay at 0.21.0 until Harold
+reports each install; "Last uploaded to Play" moves to 0.22.0 (versionCode 19) in the same commit as the Sprint 82
+version bump (Phase 3.7.0b), never before it.
+
+- **MSIX 0.22.0.0 -- BUILT + VERIFIED**: prod worktree pulled (42 commits behind) to `main` 763753be (tag `v0.22.0`,
+  annotated, pushed); `msix_config_test` 12/12; build log shows `APP_ENV=prod` and `secrets.prod.json`;
+  `--release-self-test --expected-version=0.22.0` RESULT: PASS (6/6); manifest Identity `Version="0.22.0.0"`; 18.7 MB.
+  `D:\Data\Harold\github\spamfilter-multi-prod\mobile-app\build\windows\x64\runner\Release\my_email_spam_filter.msix`.
+  Open: Step 4.2 Gmail sign-in URL check on the installed Store build.
+- **AAB 0.22.0 (versionCode 19) -- BUILT + VERIFIED**: dev worktree at 317e1f90 (`git diff 763753be HEAD -- mobile-app`
+  empty, so the app code is identical to `main`); the script's IMP-2 check "versionCode 19 is above the last uploaded
+  (17)" (run before this file moved the row to 18); F204 checks targetSdkVersion 36 and `AD_ID` absent; read from the
+  artifact: versionName 0.22.0, package `com.myemailspamfilter` with no `.dev`, Gmail OAuth scheme present; 68.1 MB.
+  `D:\Data\Harold\github\spamfilter-multi\mobile-app\dist\android-0.22.0+19\app-prod-release.aab`.
+- Release notes: `docs/store-assets/RELEASE_NOTES_0.22.0_windows.md` (963 / 1,500) and `_play.md` (418 / 500);
+  `release_notes_test.dart` passes.
 
 ## 0.21.0 -- Sprint 80 cycle Phase 8.3 (2026-10-23)
 
-**BUILT + VERIFIED, NOT YET SUBMITTED** (waiting for Harold's uploads). The Live rows and "Last uploaded to Play" stay
+**LIVE on both stores (Harold's report, 2026-10-24).** Originally: BUILT + VERIFIED, NOT YET SUBMITTED (waiting for Harold's uploads). The Live rows and "Last uploaded to Play" stay
 unchanged until Harold reports each upload; "Last uploaded to Play" moves to 0.21.0 (versionCode 18) in the same
 commit as the Sprint 81 version bump (Phase 3.7.0b), never before it.
 

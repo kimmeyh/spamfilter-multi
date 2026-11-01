@@ -103,3 +103,43 @@ function Get-MutationLock {
         Write-Host "[mutation-lock] $($info.file) -- $($info.reason) (held by $($info.agent))"
     }
 }
+
+# Read-only (F317, Sprint 82): returns one object per held lock with its age in
+# minutes, so a wake-up or status script can report a lock left behind by a
+# stopped agent. Does not print, create or remove anything.
+function Get-MutationLockInfo {
+    $lockDir = Get-MutationLockDir
+    if (-not (Test-Path $lockDir)) { return @() }
+    $now = (Get-Date).ToUniversalTime()
+    @(Get-ChildItem -Path $lockDir -Filter '*.json' -ErrorAction SilentlyContinue | ForEach-Object {
+        # 7.7.1 L-3 sibling: one unreadable lock file must not hide the others.
+        $lockPath = $_.FullName
+        try {
+            $info = Get-Content $lockPath -Raw -ErrorAction Stop | ConvertFrom-Json
+            # 7.7.1 M-2: PowerShell 7's ConvertFrom-Json already returns a
+            # [datetime] (Kind Utc) for an ISO string. Parsing that again turned it
+            # into a zone-less string, and the age came out shifted by the UTC
+            # offset (-240 minutes for a fresh lock). Use the [datetime] as is;
+            # parse only a string (Windows PowerShell 5.1).
+            $c = $info.createdUtc
+            $created = if ($c -is [datetime]) { $c } else {
+                [datetime]::Parse($c, [System.Globalization.CultureInfo]::InvariantCulture, [System.Globalization.DateTimeStyles]::RoundtripKind)
+            }
+            [PSCustomObject]@{
+                file       = $info.file
+                reason     = $info.reason
+                agent      = $info.agent
+                createdUtc = $info.createdUtc
+                ageMinutes = [math]::Round(($now - $created.ToUniversalTime()).TotalMinutes, 0)
+            }
+        } catch {
+            [PSCustomObject]@{
+                file       = $lockPath
+                reason     = "unreadable lock file: $($_.Exception.Message)"
+                agent      = $null
+                createdUtc = $null
+                ageMinutes = $null
+            }
+        }
+    })
+}

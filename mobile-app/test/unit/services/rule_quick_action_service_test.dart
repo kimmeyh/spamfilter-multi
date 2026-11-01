@@ -422,4 +422,65 @@ void main() {
               'overrides the block rule the user just re-applied');
     });
   });
+
+  // F306 (Sprint 82): the No Rule suggestion shows the regex these builders
+  // return, so the regex the pop-up shows must be the one the action saves.
+  // Not caught: a pop-up that builds its own string instead of calling them.
+  group('F306 shared pattern builders', () {
+    test('every safe-sender type saves exactly the builder pattern', () async {
+      const cases = {
+        'exact': 'bob+tag@x.com',
+        'exactDomain': 'x.com',
+        'entireDomain': 'x.com',
+      };
+      for (final entry in cases.entries) {
+        final result = await service.addSafeSender(
+          value: entry.value,
+          type: entry.key,
+          senderEmailForConflictCheck: 'bob+tag@x.com',
+        );
+        expect(result.createdSafeSenderPattern,
+            RuleQuickActionService.safeSenderPatternFor(entry.key, entry.value),
+            reason: entry.key);
+      }
+    });
+
+    test('every block type saves exactly the builder pattern', () async {
+      const cases = {
+        'from': 'bob@spam.example',
+        'exactDomain': '@spam.example',
+        'entireDomain': 'spam.example',
+        'subject': 'Win a prize',
+      };
+      for (final entry in cases.entries) {
+        await service.createBlockRule(
+          type: entry.key,
+          value: entry.value,
+          senderEmailForConflictCheck:
+              entry.key == 'subject' ? null : 'bob@spam.example',
+        );
+        final expected =
+            RuleQuickActionService.blockPatternFor(entry.key, entry.value);
+        final saved = provider.rules.rules.expand((r) => [
+              ...r.conditions.header,
+              ...r.conditions.subject,
+            ]);
+        expect(saved, contains(expected), reason: entry.key);
+      }
+    });
+
+    test('empty, degenerate and unknown inputs build no pattern', () {
+      expect(RuleQuickActionService.safeSenderPatternFor('exact', ' '), isNull);
+      expect(RuleQuickActionService.safeSenderPatternFor('nope', 'a@b.c'),
+          isNull);
+      expect(RuleQuickActionService.blockPatternFor('from', '@'), isNull);
+      expect(RuleQuickActionService.blockPatternFor('from', '@null'), isNull);
+      expect(RuleQuickActionService.blockPatternFor('nope', 'a@b.c'), isNull);
+      expect(RuleQuickActionService.blockPatternFor('exactDomain', 'b.c'),
+          r'@b\.c$');
+      expect(
+          RuleQuickActionService.safeSenderPatternFor('entireDomain', 'b.c'),
+          r'^[^@\s]+@(?:[a-z0-9-]+\.)*b\.c$');
+    });
+  });
 }
