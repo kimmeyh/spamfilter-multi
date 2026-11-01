@@ -74,13 +74,16 @@ Estimates are minutes. Cards keep the backlog estimates Harold selected; re-esti
 - **Task 2 -- F322**: notification choice "only when there are No Rule items". Sonnet. 60-120m -> 90-150m (3.2.2.2:
   Android channel split and the Android 7.x fallback, see the card).
 - **Task 3 -- F323**: F306 v2 (Block Body, "could not check", `news_` sender shape). Sonnet. 120-240m.
-- **Task 4 -- F324**: tell the user when an added account has background scanning off. Sonnet. 45-90m.
-- **Task 5 -- F270 v1**: suggested safe senders from stored history. Sonnet. 150m -> 120-180m.
+- **Task 4 -- F324**: keep an account's settings across removal (Q3 = 3, deep dive) and tell the user when an added
+  account has background scanning off. Sonnet. 45-90m -> 90-150m (Q3 deep dive).
+- **Task 5 -- F270**: suggested safe senders from stored history, plus Sent-folder reply-pair mining of Harold's own
+  mail (Q7). Sonnet. 150m -> 150-240m.
 - **Task 6 -- F305 R-2**: widen the No Rule signals, proposed from the DEV content history. Sonnet. 60-90m.
 - **Task 7 -- F308**: mine AOL Trash2 for delete-rule patterns (developer tool). Sonnet. 180-300m.
 - **Task 8 -- F309**: research a trusted-sender source. Sonnet. 60-90m (research).
 - **Task 9 -- F310**: mine safe-sender mail for safe-sender patterns (developer tool). Sonnet. 120-240m.
-- **Task 10 -- F321 pilot**: Python common layer, the hook library and a small pilot set. Sonnet. 120-240m.
+- **Task 10 -- F321 pilot**: Python common layer, the hook library and a small pilot set, plus backlog cards for the
+  rest (Q9). Sonnet. 120-240m -> 135-255m.
 - **Task 11 -- F237**: quiet the Kotlin daemon traces in the Android build. Haiku. 20-40m.
 - **Task 12 -- F325 (copy of F152)**: first-run evaluation on Windows and Android. Main session, interactive with
   Harold. 120-180m plus Harold's time.
@@ -89,7 +92,8 @@ Estimates are minutes. Cards keep the backlog estimates Harold selected; re-esti
 - **Unplanned allowance (named, not padded into cards)**: Manual Validation fixes, phone rounds and 7.7.1 review
   fixes, 150-250m.
 
-**Total**: Tasks 0-12 about 1,125-1,945 minutes, plus the 150-250 allowance, plus Harold's phone and first-run time.
+**Total**: Tasks 0-12 about 1,215-2,080 minutes (after the Phase 3.7 answers), plus the 150-250 allowance, plus
+Harold's phone and first-run time.
 
 **When can Harold come back (first Manual Validation handoff)**: Task 1 runs as soon as the Fold has 0.23.0 from Play
 (Harold's upload). For the code tasks, about 12-18 hours of wall-clock serially; with the parallel blocks below,
@@ -348,7 +352,9 @@ suggestion kinds.
   this sender (the mail server's check did not finish)" in place of the "Suggested" mark. Both callers
   (`email_scan_provider.dart:870`, `results_display_screen.dart:74`) pass the results.
 - R-1 (MV Q2 = 3): a Block Body button sharing the row Block Subject uses today, as two half-width cells. Its value
-  is set by Q4.
+  (Q4, Harold 2026-11-01): the domain of the FIRST body link whose domain does not exactly match the sender's email
+  domain, skipping any link domain that is a safe sender (exact domain or entire domain); if no link qualifies, no
+  Block Body suggestion is shown. The body is fetched when the pop-up opens.
 - R-3 (retro Q5 = 2): a sender-shape suggestion for `news_` plus 4-6 digits at any domain, as a From-header regex
   block rule, by Q6.
 - R-4: no new stored column unless a check shows the v17 columns cannot hold the new kinds (the card states which).
@@ -411,7 +417,15 @@ covers the Fold cover screen and small iPhones. No platform branch.
 - R-1 (prevention first): when an account is added or re-added and `getEffectiveBackgroundEnabled` is false, the
   Account Selection screen shows, under that account, "Background scanning is off for this account" with a "Turn on"
   button that sets the per-account setting (the same setting as Settings > Background).
-- R-2: Q3 decides whether removing an account keeps its background setting for a later re-add.
+- R-2 (Q3 = 3, Harold 2026-11-01: keep the account's settings across removal for the same address, *"do a deep dive
+  to ensure only what is needed on a re-add is kept, everything that needs to be refreshed with a re-add is
+  refreshed"*): first list EVERY per-account store (each `account_settings` key, scan results and No Rule rows, the
+  Gmail history cursor and the oldest-No-Rule cursor per folder, the background schedule rows, the sign-in-required
+  flag, credentials and tokens, the DEV content history) and classify each as KEEP (user choices: folders, scan modes,
+  background on/off and frequency, days back, target folders, new-mail trigger), REFRESH (anything tied to the old
+  sign-in or server state: credentials, tokens, sign-in-required flag, cursors, schedule rows) or DELETE (scan data
+  the user chose to remove). Record the table in this card with file:line for each, then implement it.
+  `DataDeletionService.deleteAccountData` keeps the KEEP set; the add flow refreshes the REFRESH set.
 - R-3: the worker's skip line stays in the diagnostic log (evidence for Claude); R-1 is the user's view.
 
 **Affected components / files**:
@@ -468,7 +482,11 @@ _**Decision-class interrupts**_: Q3 (Class 2 if removal stops deleting a setting
   email safe sender through the existing quick action) and Reject (hides it; the reject is stored so it does not come
   back).
 - R-3: nothing is added without a tap. Device contacts are not used (new permission, out of scope).
-- R-4: v2 (Sent-folder recipients) is not built; it needs the privacy policy change first (Q7).
+- R-4 (Q7, Harold 2026-11-01: *"should be based on my email address not the users and can be done similar to
+  F308"*): the Sent-folder part is NOT an in-app read of users' mail. A developer tool reads Harold's own DEV account
+  Sent folder read-only (the Task 7 probe method) and finds reply pairs: recipients Harold wrote to who also send him
+  mail. The result is a report and candidate safe-sender patterns for Harold to review, like F308; nothing reads a
+  user's Sent folder, so no privacy-policy change is needed.
 
 **Affected components / files**:
 - `mobile-app/lib/ui/screens/safe_senders_management_screen.dart` -- the section.
@@ -657,6 +675,9 @@ scan mode, verified before the run) prevent it.
   in the ADR.
 - R-5: ADR-0051 "Python for deterministic tooling" records the layer, the registration form and the conversion
   order.
+- R-6 (Q9, Harold 2026-11-01: *"ensure there are backlog items for everything not included in F321"*): backlog cards
+  in the master plan for every hook, `scripts/` script, `mobile-app/scripts/` script and deterministic skill the pilot
+  does not convert, grouped in batches a sprint can take, each with its effort in minutes.
 
 **Affected components / files**: `.claude/hooks/` (pilot hooks), `.claude/settings.json` (pilot registrations),
 `.claude/hooks/test-cases/` (unchanged cases, new runner support if needed), `docs/adr/0051-*.md`.
@@ -749,7 +770,33 @@ plan.
 
 ---
 
-# Decision questions (for Phase 3.7)
+# Phase 3.7 answers (Harold, 2026-11-01)
+
+Verbatim: *"Q1. 1 q2. 1 q3. 3 (this is common practice for phone and windows apps, so would seem reasonable for adding
+and removing email addresses from our app) do a deep dive to ensure only what is needed on a re-add is kept,
+everything that needs to be refreshed with a re-add is refreshed... q4. the first link that doesn't exactly match the
+email address domain (unless that is in the safe sender exact/entire domains, then skip the first and pick another.
+If there are none, then don't provide a recommended body rule) q5. 1 q7 should be based on my email address not the
+users and can be done similar to F308 q6. 1 q8 1 q9. 1 (ensure there are backlog items for everything not included in
+F321) q10. 1"*
+
+- **Q1 = 1**: Android two channels with the app's Settings row opening Android's settings; Windows and iPhone the
+  in-app choice; a declared Android exception (ADR-0049). Android 7.x (no channels) uses the in-app choice.
+- **Q2 = 1**: default "Only when there are No Rule items".
+- **Q3 = 3** with a deep dive: Task 4 R-2 (below).
+- **Q4**: Task 3 R-1 value rule (below).
+- **Q5 = 1**: read-only probe with the DEV AOL credential read in memory (Task 7).
+- **Q6 = 1**: "Block sender pattern" From-header regex for `news_` plus 4-6 digits.
+- **Q7**: Task 5 (below): the Sent-folder part is mined from Harold's own mail by a developer tool, like F308.
+- **Q8 = 1**: `kotlin.incremental=false`, measured first.
+- **Q9 = 1**: the pilot set as listed, plus backlog cards for everything F321 does not convert (Task 10 R-6).
+- **Q10 = 1**: Android first-run run on the emulator.
+
+**Re-estimates from the answers (3.2.2.2)**: Task 4 F324 45-90m -> 90-150m (the deep dive across every per-account
+store). Task 5 F270 120-180m -> 150-240m (adds the Sent-folder mining on Harold's mail). Task 10 F321 120-240m ->
+135-255m (the remaining-conversion backlog cards). **Total** about 1,215-2,080 minutes plus the 150-250 allowance.
+
+# Decision questions (for Phase 3.7, answered above)
 
 **Q1. F322 (Class 2): where the user sets "notify only when there are No Rule items".** You asked whether Android's
 notification sub-settings should hold it. My plan was an in-app setting on all three platforms. Facts: Android lets
