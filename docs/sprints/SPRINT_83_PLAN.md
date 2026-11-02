@@ -651,6 +651,11 @@ scan mode, verified before the run) prevent it.
 
 **Step-types**: RESEARCH. **Est-Effort**: 60-90m.
 
+**Result (Phase 4)**: Report at `docs/research/F309_TRUSTED_SENDER_SOURCES.md`. No source proves a sender is safe; each is
+a hint on top of `dmarc=pass`. Recommendation: bundle a CC0 `.gov` snapshot as a hint chip in Task 5 (Tranco has no
+stated license; BIMI headers are unproven until a DEV probe). Decision class: new data source (a run-time fetch would be
+Class 1 plus a privacy-policy change). Harold answers the numbered question in the report.
+
 ## Task 9 -- F310: mine safe-sender mail for safe-sender patterns (Priority 38)
 
 **Value**: This finds what safe-sender mail has in common, as candidates for safe-sender suggestions.

@@ -300,6 +300,7 @@ Every Item that is implemented gets ONE row here the moment it is picked up -- s
 | 7.7.1 improvement review + fixes (21 findings, 3 code files) | 82 | DONE | -- | -- | ~31 | ~31 | Recorded at completion: reviews launched 18:04 (footer), fixes committed 18:35 (Get-Date). Main session (Opus 5.5); two background toolkit agents (~9 min each). Includes two mutation runs (~15 min). Tap 4/4, velocity 2/2 mutants KILLED; suite 3,360 green; hooks 161/161. |
 | Velocity hook -F anchor fix + 7.7 close-out (notes, PR body, master plan, Sprint 83 stub, summary) | 82 | DONE | -- | -- | ~21 | ~21 | Recorded at completion: from 18:35 (d2562f67 commit time) to 18:56 (date). Hook fix e291ccbc 18:48; mutant VEL-c KILLED; Play notes cut to fit 500 characters (gate caught 527). |
 | Task 0: version 0.24.0+21 (#535) | 83 | DONE | 10-15 | 10-15 | ~16 | ~16 | Recorded at completion (2026-11-01 22:35). Main session, not Haiku: 3.7.0b runs in the same turn as approval (SPRINT_EXECUTION_WORKFLOW.md 3.7.0b), so delegating would cost more than the edit. Gates 12 of 12 pass. |
+| Task 8: F309 trusted-sender source research (#542) | 83 | DONE | 60-90 | 60-90 | ~11 (Sonnet agent, 688 s) + ~3 review | ~14 | Recorded at completion (2026-11-02 01:06). Report docs/research/F309_TRUSTED_SENDER_SOURCES.md; recommends a bundled CC0 .gov hint (new data source); Harold's numbered question is asked at Manual Validation. Far under the band: research only, 33 tool calls. |
 
 ## Can the missing sprints (48-69) be reconstructed from git? -- TESTED 2026-09-19, answer: NO
 
