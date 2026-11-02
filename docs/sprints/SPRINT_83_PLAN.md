@@ -580,6 +580,76 @@ decision.
 
 **Step-types**: DATA-ANALYSIS. **Est-Effort**: 60-90m.
 
+**Result (Phase 4)** (2026-11-02):
+
+**Method**: a COPY of the DEV `content_history.db` (copied 2026-11-02 01:18:38) and of `spam_filter.db` with its `-wal`
+and `-shm` (copied 01:19:41) was queried read-only (`mode=ro`) by `s83_task6/f305_r2.py` in the session scratchpad,
+run with `python -I`. The real files were not written. Counts only: no address, subject or header text. The Q4 rule
+from Sprint 82 is the pass test: fires on at least 10 percent of No Rule rows AND agrees with at least 80 percent of
+the decisions it fires on (at least 5 decisions). A row without the stored field is "could not check": counted apart
+and never a hit. Population now: 1,827 rows; **302 No Rule** (Sprint 82 counted 254 of 1,551); **86 decisions** by
+Harold (safe 56: exact 48, exact domain 8; block 30: entire domain 27, email 3). Sprint 82 had 69 (42 safe, 27 block).
+Decision rows come from all outcomes, because a decided row's outcome changes once its rule exists (39 of the 86 still
+read No Rule). "Agrees" means a block signal on a block decision, or a safe signal on a safe decision.
+
+**Fields stored per email** (`content_history`): `from_address`, `reply_to`, `return_path_domain`, `auth_class`,
+`list_unsubscribe` (0 or 1), `user_decision`. **Not stored**: `List-Id`, `Precedence`, the Authentication-Results
+header count and authserv-id. The main database holds one proxy: `unmatched_emails.heuristic_signals` carries the
+`bulk_no_unsubscribe` chip result for rows written since v16 (first one 2026-10-23).
+
+- **Bulk mail without List-Id**: CANNOT be counted. `List-Id` and `Precedence` are not stored (Sprint 82 planned to
+  read them in the header probe; its recorded results hold only the F312 Authentication-Results counts, so no
+  List-Id or Precedence count exists). What would settle it: either store two columns (`list_id_present`,
+  `precedence_bulk`) in the content history and rescan, or rerun a Sprint 82 style read-only header probe that counts
+  them. The closest stored proxy is the existing `bulk_no_unsubscribe` chip (S1 below).
+- **S1 bulk mail with no List-Unsubscribe (existing chip proxy)**: fires on 28 of 302 No Rule rows (9%); could not
+  check 147 (no stored row, or only a pre-v16 row). Decisions: block 3 of 30 (23 could not check), safe 0 of 56 (46
+  could not check). Agreement 3 of 3 (100%), too few decisions. Fails (rate 9%, 3 decisions).
+- **S2 Reply-To domain differs from From domain (existing chip)**: 27 of 302 (9%); could not check 3. Decisions:
+  block 7 of 30, safe 2 of 56. Agreement 7 of 9 (78%). Fails by a near miss on both tests (Sprint 82: 26, 7 of 9).
+- **S3 missing List-Unsubscribe**: 131 of 302 (43%); could not check 0. Decisions: block 17 of 30, safe 44 of 56.
+  Agreement 17 of 61 (28%). Fails. It fires mostly on mail Harold marked safe, so it is a weak spam signal here.
+  (Its opposite, List-Unsubscribe present, is 171 of 302 (57%); block 13, safe 12; 13 of 25 (52%); fails.)
+- **S4 Return-Path domain differs from From domain**: 19 of 302 (6%); could not check 13 (no stored Return-Path).
+  Decisions: block 0 of 30, safe 3 of 56. Agreement 0 of 3. Fails; it points to legitimate mail (sending services).
+- **S5 Reply-To header present at all**: 162 of 302 (54%). Decisions: block 20, safe 22. Agreement 20 of 42 (48%). Fails.
+- **S6 auth yellow (the Sprint 82 basis)**: 53 of 302 (18%); could not check 0. Decisions: block 6, safe 1. Agreement
+  6 of 7 (86%). **PASSES**. Sprint 82: 35 of 254 (14%), 5 of 6.
+- **S7 auth red**: 3 of 302 (1%); 0 decisions. Fails (rate). **S8 auth green** (suggests safe): 246 (81%); block 24,
+  safe 55; 55 of 79 (70%); fails. **S9 free-mail sender** (suggests safe): 7 (2%); 10 of 12 (83%); fails (rate).
+- **Combinations**: S3 and S2 together: 26 (9%), 7 of 8 (88%), fails (rate). S3 and S4: 5 (2%), 0 of 1, fails. S4 and
+  S2: 0 hits. S3 and S6 (missing unsubscribe AND auth yellow): 39 (13%), 5 of 6 (83%), PASSES, but it is a subset of
+  S6 (39 of S6's 53), so it adds no new rows; it only narrows S6.
+- **History signals (DEV only, ADR-0047, time split as in Sprint 82)**: domain deleted before: 20 (7%), 2 of 8 (25%),
+  fails. Domain made safe before: 27 (9%), 22 of 22 (100%), fails by rate only. Sender deleted before: 10 (3%), 2 of 3.
+  Sender made safe before: 18 (6%), 15 of 15 (100%), fails by rate only. A shipped build has no content history, so
+  none of these could ship.
+- **Header counts from Sprint 82 (not recountable; the header count is not stored)**: Authentication-Results headers
+  per email: 1 on 190, 0 on 6, 2 or more on 0; a lower header differs: 0; foreign authserv-id on the top header: 1.
+  Matched 196 of 1,560. No new count was possible without an IMAP probe, which this task does not run.
+- **Added coverage over S6 alone** (No Rule rows that S6 does not already reach): S2 adds 23 (union 76 of 302, 25%;
+  on decisions, 12 block and 3 safe, so 12 of 15 (80%), which meets the Q4 rule); S1 adds 11 (union 64, 21%). S6 alone
+  gives 53 (18%).
+
+**Reading**: only auth yellow passes alone. Reply-To differs is the one near miss, and it passes the Q4 rule when it is
+added to yellow (union 76 of 302; 12 of 15 decisions), but on 15 decisions one more wrong decision drops it below 80
+percent. Missing List-Unsubscribe and Return-Path differs do not predict a delete in Harold's decisions. Bulk without
+List-Id cannot be judged from stored data.
+
+**Decision for Harold (R-2 / AC-2)**: which signals should F306 suggestions use for Block, beyond the current auth
+yellow? Nothing changes before your answer.
+1. Add none. Keep auth yellow only (53 of 302 No Rule rows, 18%; 6 of 7 decisions agree).
+2. Add Reply-To differs (S2) as a second Block basis. The suggestion then reaches 76 of 302 rows (25%) instead of 53
+   (18%); 12 of the 15 decisions it touches are blocks (80%). S2 alone is 7 of 9 (78%), a near miss, and 23 more rows
+   are reached. Small sample: one wrong decision moves it below 80 percent.
+3. Add the existing bulk chip (S1) as a Block basis. It adds 11 rows (union 64, 21%) but has only 3 decisions behind it
+   (all blocks) and 147 rows could not be checked, so the evidence is thin.
+4. Add the safe-direction history signals (domain or sender made safe before): 22 of 22 and 15 of 15 decisions agree,
+   but they reach only 27 (9%) and 18 (6%) rows and exist only in DEV builds, so a shipped app could not use them. Not
+   recommended for shipping.
+5. Backlog: store `List-Id` and `Precedence` in the content history (two columns, schema change, then rescan) or run
+   a read-only header probe, then count bulk-without-List-Id before choosing. No signal added this sprint.
+
 ## Task 7 -- F308: mine the AOL Trash2 history for delete-rule patterns (Priority 35)
 
 **Value**: This finds subject, body and sender patterns that predict a delete rule, as candidates for suggestions.
