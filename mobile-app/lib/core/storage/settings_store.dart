@@ -30,6 +30,17 @@ import '../../util/redact.dart';
 /// final accountFolders = await store.getAccountFolders('gmail-user@gmail.com');
 /// await store.setAccountFolders('gmail-user@gmail.com', ['INBOX', 'Spam']);
 /// ```
+/// F322 (Sprint 83): which completed background scans post a notification.
+/// The setting is read by the shared [ScanCompleteNotifier] on every platform
+/// (and on Android 8.0+ the Android notification channels apply instead).
+enum ScanNotifyChoice {
+  /// Every completed scan posts one notification.
+  every,
+
+  /// Only a scan with at least one No Rule item posts one.
+  noRuleOnly,
+}
+
 class SettingsStore {
   final DatabaseHelper _dbHelper;
   final Logger _logger = Logger();
@@ -45,6 +56,8 @@ class SettingsStore {
   static const String keyBackgroundScanEnabled = 'background_scan_enabled';
   static const String keyBackgroundScanFrequency = 'background_scan_frequency';
   static const String keyBackgroundScanMode = 'background_scan_mode';
+  /// F322 (Sprint 83): [ScanNotifyChoice] name; absent means the default.
+  static const String keyScanNotifyChoice = 'scan_notify_choice';
   static const String keyBackgroundScanFolders = 'background_scan_folders';
   static const String keyCsvExportDirectory = 'csv_export_directory';
   static const String keyBackgroundScanDebugCsv = 'background_scan_debug_csv';
@@ -90,6 +103,9 @@ class SettingsStore {
   // app storage; F206 moved them to a folder the user sees, so a default of ON
   // would drop new files there after every scan with no warning.
   static const bool defaultBackgroundScanDebugCsv = false;
+  /// F322 Q2 = 1 (Harold, 2026-11-01): quiet by default.
+  static const ScanNotifyChoice defaultScanNotifyChoice =
+      ScanNotifyChoice.noRuleOnly;
 
   // F113 (Sprint 47): provider-keyed default scan folders. When an account
   // has no per-account folder selection, the effective default depends on the
@@ -312,6 +328,20 @@ class SettingsStore {
   /// Set the scan mode for background scans
   Future<void> setBackgroundScanMode(ScanMode mode) async {
     await _setAppSetting(keyBackgroundScanMode, mode.name, 'string');
+  }
+
+  /// F322: which completed background scans post a notification. An absent or
+  /// unrecognized stored value reads as [defaultScanNotifyChoice].
+  Future<ScanNotifyChoice> getScanNotifyChoice() async {
+    final value = await _getAppSetting(keyScanNotifyChoice);
+    for (final c in ScanNotifyChoice.values) {
+      if (c.name == value) return c;
+    }
+    return defaultScanNotifyChoice;
+  }
+
+  Future<void> setScanNotifyChoice(ScanNotifyChoice choice) async {
+    await _setAppSetting(keyScanNotifyChoice, choice.name, 'string');
   }
 
   /// Get the default folders to scan for background scans

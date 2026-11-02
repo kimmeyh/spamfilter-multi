@@ -26,6 +26,7 @@ import 'package:sqflite_common_ffi/sqflite_ffi.dart';
 import 'package:my_email_spam_filter/core/providers/email_scan_provider.dart';
 import 'package:my_email_spam_filter/core/providers/rule_set_provider.dart';
 import 'package:my_email_spam_filter/core/services/background_scan_core.dart';
+import 'package:my_email_spam_filter/core/services/scan_complete_notifier.dart';
 import 'package:my_email_spam_filter/core/services/scan_coordinator.dart';
 import 'package:my_email_spam_filter/core/storage/scan_result_store.dart';
 import 'package:my_email_spam_filter/core/storage/settings_store.dart';
@@ -521,7 +522,7 @@ void main() {
         export: () async => calls.add('export'),
         notify: () async {
           calls.add('notify');
-          return true;
+          return ScanNotificationOutcome.posted;
         },
       );
       expect(calls, isEmpty);
@@ -537,7 +538,7 @@ void main() {
         export: () async => calls.add('export'),
         notify: () async {
           calls.add('notify');
-          return true;
+          return ScanNotificationOutcome.posted;
         },
       );
       expect(calls, ['export', 'notify']);

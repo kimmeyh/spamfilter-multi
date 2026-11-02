@@ -33,6 +33,7 @@ import '../storage/settings_store.dart';
 import 'diagnostic_logger.dart';
 import 'email_scanner.dart';
 import 'gmail_sign_in_notifier.dart';
+import 'scan_complete_notifier.dart' show ScanNotificationOutcome;
 import 'scan_coordinator.dart';
 
 /// Result of scanning a single account in the background.
@@ -107,7 +108,7 @@ class BackgroundScanCore {
   static Future<void> completeAccount(
     AccountScanOutcome outcome, {
     required Future<void> Function() export,
-    required Future<bool> Function() notify,
+    required Future<ScanNotificationOutcome> Function() notify,
   }) async {
     void postLog(String detail) => unawaited(DiagnosticLogger.log(
           kind: DiagnosticLogger.kindScan,
@@ -125,9 +126,13 @@ class BackgroundScanCore {
     await export();
     postLog('export step done');
     // Sprint 79 7.7.1 M-4: the real outcome, not an unconditional "done".
-    postLog((await notify())
-        ? 'notification posted'
-        : 'notification NOT posted (reason on the line above)');
+    postLog(switch (await notify()) {
+      ScanNotificationOutcome.posted => 'notification posted',
+      ScanNotificationOutcome.skippedByChoice =>
+        'notification skipped (your notification choice: nothing to review)',
+      ScanNotificationOutcome.failed =>
+        'notification NOT posted (reason on the line above)',
+    });
   }
 
   static final Logger _logger = Logger();

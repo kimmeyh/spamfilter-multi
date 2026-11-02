@@ -29,6 +29,7 @@ Format: `- **type**: Description (Issue #N)` where type is feat|fix|chore|docs
 ### 2026-11-01 (Sprint 83)
 
 - **chore**: Version 0.24.0+21 for Sprint 83, so a tester can tell this build from the 0.23.0 store builds (Issue #535)
+- **feat**: You can now choose which background scans notify you. Settings > Background > "Scan notifications" offers "Every completed scan" or "Only when there are No Rule items" (the default), so a scan with nothing to review no longer interrupts you. On Android 8 and newer the row opens Android's notification settings, where you can turn off "Scans with nothing to review"; the notification channel "Background Scans" is replaced by "Scans with No Rule items" and "Scans with nothing to review" (Issue #536)
 
 ## [0.23.0] - 2026-10-31
 

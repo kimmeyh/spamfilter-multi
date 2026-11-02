@@ -14,6 +14,7 @@ import 'package:my_email_spam_filter/core/platform/platform_capabilities.dart';
 import 'package:my_email_spam_filter/core/providers/email_scan_provider.dart';
 import 'package:my_email_spam_filter/core/services/scan_complete_notifier.dart';
 import 'package:my_email_spam_filter/core/services/scan_notification_text.dart';
+import 'package:my_email_spam_filter/core/storage/settings_store.dart';
 
 class _Shown {
   final int id;
@@ -35,14 +36,19 @@ void main() {
       required NotificationDetails details,
     }) async =>
         shown.add(_Shown(id, title, body, details));
+    // F322: never reach the real plugin; Android here is 8.0+ (channels).
+    ScanCompleteNotifier.channelsSupportedOverride = () async => true;
+    ScanCompleteNotifier.choiceOverride = () async => ScanNotifyChoice.every;
   });
 
   tearDown(() {
     ScanCompleteNotifier.showOverride = null;
+    ScanCompleteNotifier.channelsSupportedOverride = null;
+    ScanCompleteNotifier.choiceOverride = null;
     PlatformCapabilities.debugOverride = null;
   });
 
-  Future<bool> postReadOnly() => ScanCompleteNotifier.post(
+  Future<ScanNotificationOutcome> postReadOnly() => ScanCompleteNotifier.post(
         accountId: 'kimmeyharold@aol.com',
         mode: ScanMode.readOnly,
         noRule: 9,
@@ -61,7 +67,7 @@ void main() {
     expect(s.title, 'Back. scan k*@aol read-only completed');
     expect(s.body, 'No rule 9 <s>Deleted 1</s> <s>Safe 0</s>');
     expect(s.details.android, isNotNull);
-    expect(s.details.android!.channelId, 'background_scan_channel');
+    expect(s.details.android!.channelId, ScanCompleteNotifier.noRuleChannelId);
     final style = s.details.android!.styleInformation;
     expect(style, isA<DefaultStyleInformation>());
     expect((style as DefaultStyleInformation).htmlFormatContent, isTrue);
@@ -113,13 +119,13 @@ void main() {
         throw StateError('no notifier');
     // Sprint 79 7.7.1 M-4: completes, AND reports that nothing was posted, so
     // the worker's step line cannot read "posted".
-    expect(await postReadOnly(), isFalse);
+    expect(await postReadOnly(), ScanNotificationOutcome.failed);
   });
 
   test('7.7.1 M-4: a posted notification reports true', () async {
     PlatformCapabilities.debugOverride =
         const PlatformCapabilities(HostPlatform.android);
-    expect(await postReadOnly(), isTrue);
+    expect(await postReadOnly(), ScanNotificationOutcome.posted);
   });
 
   // 7.7.1 M-5 / M-4 wiring. What these do NOT catch: whether
@@ -137,11 +143,12 @@ void main() {
   test('source gate: both workers log the real outcome, not "done"', () {
     final core =
         File('lib/core/services/background_scan_core.dart').readAsStringSync();
-    expect(core, contains("? 'notification posted'"));
+    expect(core, contains("=> 'notification posted'"));
     expect(core, isNot(contains("'notification step done'")));
     final win = File('lib/core/services/background_scan_windows_worker.dart')
         .readAsStringSync();
     expect(win, contains('final posted = await ScanCompleteNotifier.post('));
+    expect(win, contains('ScanNotificationOutcome.skippedByChoice'));
     expect(win, isNot(contains("'Completion notification step done'")));
   });
 

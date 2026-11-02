@@ -33,6 +33,7 @@ class MainActivity : FlutterActivity() {
         const val CHANNEL = "com.myemailspamfilter/doze_alarm"
         const val BATTERY_CHANNEL = "com.myemailspamfilter/battery"
         const val NEW_MAIL_CHANNEL = "com.myemailspamfilter/new_mail_trigger"
+        const val NOTIFICATION_SETTINGS_CHANNEL = "com.myemailspamfilter/notification_settings"
     }
 
     /**
@@ -142,6 +143,39 @@ class MainActivity : FlutterActivity() {
                         result.success(true)
                     } catch (t: Throwable) {
                         Log.e("MainActivity", "open app settings failed: ${t.message}")
+                        result.success(false)
+                    }
+                }
+
+                else -> result.notImplemented()
+            }
+        }
+
+        // F322 (Sprint 83): the page where the user silences one of the scan
+        // notification channels. API 26+ has ACTION_APP_NOTIFICATION_SETTINGS
+        // (lists the app's channels); older Android has no channels, so the
+        // app's App info page is the nearest page. A failure is reported as
+        // false, never thrown.
+        MethodChannel(
+            flutterEngine.dartExecutor.binaryMessenger,
+            NOTIFICATION_SETTINGS_CHANNEL,
+        ).setMethodCallHandler { call, result ->
+            when (call.method) {
+                "openAppNotificationSettings" -> {
+                    try {
+                        val intent = if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.O) {
+                            Intent(Settings.ACTION_APP_NOTIFICATION_SETTINGS)
+                                .putExtra(Settings.EXTRA_APP_PACKAGE, packageName)
+                        } else {
+                            Intent(
+                                Settings.ACTION_APPLICATION_DETAILS_SETTINGS,
+                                Uri.fromParts("package", packageName, null),
+                            )
+                        }
+                        startActivity(intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK))
+                        result.success(true)
+                    } catch (t: Throwable) {
+                        Log.e("MainActivity", "open notification settings failed: ${t.message}")
                         result.success(false)
                     }
                 }

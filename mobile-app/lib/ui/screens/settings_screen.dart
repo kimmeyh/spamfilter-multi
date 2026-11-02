@@ -34,6 +34,7 @@ import '../../util/redact.dart';
 import '../../adapters/email_providers/email_provider.dart' show Credentials;
 import '../widgets/app_bar_with_exit.dart';
 import '../widgets/battery_optimization_row.dart'; // F252 (Sprint 76)
+import '../widgets/scan_notifications_row.dart'; // F322 (Sprint 83)
 import '../widgets/new_mail_trigger_row.dart'; // F253 (Sprint 76)
 import '../widgets/scan_interval_control.dart'; // F264 (Sprint 77)
 import '../widgets/content_history_row.dart';
@@ -1694,6 +1695,11 @@ class _SettingsScreenState extends State<SettingsScreen> with SingleTickerProvid
               },
             ),
           ),
+        // F322 (Sprint 83): which completed scans notify. App-wide, so it is
+        // shown regardless of this account's background switch (the new-mail
+        // trigger scans too). Same text on every platform; Android 8.0+ opens
+        // Android's own notification settings instead (ADR-0049 exception).
+        const ScanNotificationsRow(),
         // F253 + F264: event-driven scans from mail-app notifications, per
         // ACCOUNT. NOT gated on this account's background switch (review M-1,
         // Sprint 76). Android only; HIDDEN on Windows (Q10 = 1, ADR-0044's

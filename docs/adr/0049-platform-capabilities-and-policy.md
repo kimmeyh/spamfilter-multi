@@ -79,6 +79,17 @@ Behavior is unchanged on Windows and Android for every site. "C" = capability, "
   through the document URI).
 - `scan_complete_notifier.dart:60` -- C `notificationDelivery` (`androidChannel` / `windowsToast` / `undecided`; shared
   plugin, Android channel setup).
+- `scan_complete_notifier.dart` `post` (F322, Sprint 83) -- WHICH completed scans notify. Declared Android exception
+  (ADR-0042), reading the SAME getter `notificationDelivery == androidChannel`: on Android 8.0+ (API 26+, channels
+  exist) the OS notification channels are the choice. Every scan posts, on `scan_with_no_rule_channel` ("Scans with No
+  Rule items") when No Rule is above 0, else on `scan_nothing_to_review_channel` ("Scans with nothing to review"); the
+  user silences the second in Android's settings and the in-app choice is NOT read. Windows, iOS and Android 7.x
+  (API 24-25, no channels; detected by the plugin listing no channels): the in-app choice
+  `SettingsStore.getScanNotifyChoice` (default "Only when there are No Rule items"), Settings > Background > "Scan
+  notifications", same text everywhere. Reason: Android is the one host where the OS already offers a per-category
+  switch (developer.android.com/develop/ui/views/notifications/channels, read 2026-11-02); two controls for one
+  outcome on Android would disagree. Tests: `test/unit/services/scan_complete_notifier_test.dart` (each answer),
+  `test/ui/screens/settings_scan_notifications_test.dart` (each control).
 - `google_auth_service.dart:184` -- C `googleSignInFlow` (`nativeWithBrowserFallback` Android, `native` iOS,
   `browserLoopback` desktop); `:187` same getter; `:220`, `:698` browser fallback after native failure -- same getter;
   `:282` stored refresh-token renewal -- C `renewsGmailWithStoredRefreshToken` (Android true).
