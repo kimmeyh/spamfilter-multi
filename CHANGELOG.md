@@ -26,6 +26,12 @@ Format: `- **type**: Description (Issue #N)` where type is feat|fix|chore|docs
 
 ## [Unreleased]
 
+### 2026-11-01 (Sprint 83)
+
+- **chore**: Version 0.24.0+21 for Sprint 83, so a tester can tell this build from the 0.23.0 store builds (Issue #535)
+
+## [0.23.0] - 2026-10-31
+
 ### 2026-10-31 (Sprint 82)
 
 - **docs**: Sprint 82 retrospective improvements: the 5.1.2 silent-failure search covers every language in the diff; a test's "does NOT catch" note is checked against what the docs promise, and every Manual Validation rehearsal line cites its evidence; a signal names its "could not check" inputs; clock times are read from the clock (Sprint 82 retro IMP-1, 2, 4, 6)

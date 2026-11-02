@@ -1,7 +1,7 @@
 # Sprint 83 Plan
 
-**Status**: DRAFT -- presented for Phase 3.7 approval 2026-10-31. Scope selected by Harold at Phase 8.4 pass 2
-(2026-10-31).
+**Status**: APPROVED by Harold 2026-11-01 10:18pm (Q-A). Scope selected by Harold at Phase 8.4 pass 2 (2026-10-31).
+Cards: Task 0 #535, Task 1 #524 + #527 (reused), Tasks 2-12 #536-#546.
 **Branch**: `feature/20261031_Sprint_83` (cut from the Sprint 82 branch, Phase 6.6) | **PR**: draft, created at 3.3.1
 (stays draft until 7.7.5)
 **Planner**: Opus 5.5 (top tier, `SPRINT_PLANNING.md:94-110`). Phase 3.2.2.1 audits by spot reads on 2026-10-31;
@@ -75,9 +75,10 @@ Estimates are minutes. Cards keep the backlog estimates Harold selected; re-esti
   Android channel split and the Android 7.x fallback, see the card).
 - **Task 3 -- F323**: F306 v2 (Block Body, "could not check", `news_` sender shape). Sonnet. 120-240m.
 - **Task 4 -- F324**: keep an account's settings across removal (Q3 = 3, deep dive) and tell the user when an added
-  account has background scanning off. Sonnet. 45-90m -> 90-150m (Q3 deep dive).
+  account has background scanning off; plus "Sign In Again" for iCloud (R-4, added 2026-11-01). Sonnet. 45-90m ->
+  90-150m (Q3 deep dive) -> 120-195m (R-4).
 - **Task 5 -- F270**: suggested safe senders from stored history, plus Sent-folder reply-pair mining of Harold's own
-  mail (Q7). Sonnet. 150m -> 150-240m.
+  mail (Q7). Sonnet. 150m -> 150-240m -> 165-270m (Q7-echo: Accept offers the three choices).
 - **Task 6 -- F305 R-2**: widen the No Rule signals, proposed from the DEV content history. Sonnet. 60-90m.
 - **Task 7 -- F308**: mine AOL Trash2 for delete-rule patterns (developer tool). Sonnet. 180-300m.
 - **Task 8 -- F309**: research a trusted-sender source. Sonnet. 60-90m (research).
@@ -92,8 +93,8 @@ Estimates are minutes. Cards keep the backlog estimates Harold selected; re-esti
 - **Unplanned allowance (named, not padded into cards)**: Manual Validation fixes, phone rounds and 7.7.1 review
   fixes, 150-250m.
 
-**Total**: Tasks 0-12 about 1,215-2,080 minutes (after the Phase 3.7 answers), plus the 150-250 allowance, plus
-Harold's phone and first-run time.
+**Total**: Tasks 0-12 about 1,260-2,155 minutes (after the Phase 3.7 answers, Q7-echo and Task 4 R-4), plus the
+150-250 allowance, plus Harold's phone and first-run time.
 
 **When can Harold come back (first Manual Validation handoff)**: Task 1 runs as soon as the Fold has 0.23.0 from Play
 (Harold's upload). For the code tasks, about 12-18 hours of wall-clock serially; with the parallel blocks below,
@@ -261,6 +262,18 @@ three platforms. M-6 is Windows only (the toast activator is Windows's activatio
 
 **Model**: main session -- interactive with Harold's phone.
 
+**Results so far (phone pull 2026-11-01, `validation-screenshots/sprint-83/`, Fold on 0.23.0)**:
+- MV-3a (warm tap): PASS (Harold 2026-11-01). Notification "Back. scan ... completed, No rule 1" posted 8:13am; at
+  8:22am the cover screen showed Review No Rule Items with the new item; no app-start log line at 8:22.
+- MV-3b (cold tap): PASS. Two cold starts 14:44:01 and 14:44:28 with `action=SELECT_NOTIFICATION`; at 2:44pm the inner
+  screen showed Review No Rule Items with the item.
+- MV-3c ("Suggested" on a YELLOW item): NOT TESTABLE yet. The only No Rule item is RED ("Sign-in check failed"), so
+  no mark is correct. The 2:45pm cover-screen pop-up showed no clipping. Harold's choice is open.
+- MV-4 F303 (#524): PASS. Three `[new-mail-diagnostics]` lines, every field present, no `error:` field.
+- MV-4 F315 (#527): PASS. 0 no-UID lines in 86 completed scans (2026-10-31 11:55pm to 2026-11-01 2:50pm); Windows DEV
+  0 in 1,171. The F315 Step 2 conditional is not needed.
+- M-6 (Windows DEV): open.
+
 **Step-types**: MANUAL-VALIDATION, LOG-READ. **Est-Effort**: 30-45m plus Harold's time.
 
 ## Task 2 -- F322: notification choice "only when there are No Rule items" (Priority 30)
@@ -427,6 +440,11 @@ covers the Fold cover screen and small iPhones. No platform branch.
   the user chose to remove). Record the table in this card with file:line for each, then implement it.
   `DataDeletionService.deleteAccountData` keeps the KEEP set; the add flow refreshes the REFRESH set.
 - R-3: the worker's skip line stays in the diagnostic log (evidence for Claude); R-1 is the user's view.
+- R-4 (added by Harold 2026-11-01, iCloud answer = 1): when an iCloud account's sign-in fails
+  (`AUTHENTICATIONFAILED`; 17 background errors on the Fold 2026-10-29 to 2026-11-01), the Select Account screen shows
+  "Sign In Again" for it, the same control Gmail shows today. The card first finds why Gmail gets the control and
+  iCloud does not (which flag sets it, and which error paths set that flag), then extends the connected existing
+  mechanism to IMAP authentication failures (prevention first), for every IMAP provider, not iCloud only.
 
 **Affected components / files**:
 - `mobile-app/lib/ui/screens/account_selection_screen.dart` -- the line and the button.
@@ -466,7 +484,7 @@ workers read the same setting. iOS background (F67c) is not built yet; the line 
 **Model**: Sonnet -- touches the account screen and possibly the deletion service; a resolver must be reused, not
 copied.
 
-**Step-types**: UI-ADD, SVC-EDIT, TEST-WIDGET. **Est-Effort**: 45-90m.
+**Step-types**: UI-ADD, SVC-EDIT, TEST-WIDGET. **Est-Effort**: 120-195m (45-90m backlog; Q3 deep dive; R-4).
 
 _**Decision-class interrupts**_: Q3 (Class 2 if removal stops deleting a setting).
 
@@ -528,7 +546,7 @@ store. No platform branch.
 
 **Model**: Sonnet -- a new service plus UI plus a stored reject list.
 
-**Step-types**: SVC-ADD, UI-ADD, DATA, TEST-UNIT, TEST-WIDGET. **Est-Effort**: 120-180m.
+**Step-types**: SVC-ADD, UI-ADD, DATA, TEST-UNIT, TEST-WIDGET. **Est-Effort**: 165-270m (Q7 and Q7-echo).
 
 ## Task 6 -- F305 R-2: widen the No Rule signals (Priority 33)
 
@@ -867,4 +885,11 @@ Windows secure store.
 **Q-S2. Version 0.24.0+21** (MINOR, F322 and F270 are `feat`): 1 approve.
 
 **Answers 2026-11-01 (Harold)**: Q7-echo = 2 (Accept highlights the recommended Exact Email, Exact Domain or Entire
-Domain; Task 5 R-2 and AC-2 updated); Q-S1 = 1; Q-S2 = 1. Q-A (plan approval) still open.
+Domain; Task 5 R-2 and AC-2 updated); Q-S1 = 1; Q-S2 = 1.
+
+**Approval 2026-11-01 10:18pm (Harold)**: Q-A = approved (*"All Sprint tasks and sub-tasks are approved. Do not
+stop between tasks as they are all approved, please continue to complete all tasks and without addition approvals
+until Manual Validation"*). MV-3a = yes (PASS). iCloud = 1 (*"yes"*: "Sign In Again" for iCloud added to Task 4
+as R-4). Open, asked again at Manual Validation: MV-3c (wait for a YELLOW item, or accept the clipping check and
+move "Suggested" to this sprint's Manual Validation) and the Record question (0.23.0 on the Fold from the Play
+closed test).

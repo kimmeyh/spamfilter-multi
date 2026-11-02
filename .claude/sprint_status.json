@@ -1,14 +1,14 @@
 {
     "_description": "Sprint status file that persists across context compaction. Update after each phase/sub-phase completion.",
-    "_last_updated": "2026-10-31T23:51:16-04:00",
+    "_last_updated": "2026-11-01T22:25:21-05:00",
     "_usage": "Read this file after context compaction to restore sprint approval state and progress.",
     "_staleness_note": "This file had drifted 15 sprints (last updated at Sprint 35, 2026-04-19) before being refreshed at Sprint 50 close-out. It is a Phase 7.7 checklist item -- update it at every sprint close-out, not opportunistically.",
     "current_sprint": {
         "number": 83,
         "branch": "feature/20261031_Sprint_83",
-        "status": "Phase 3.7 Plan Approval -- SPRINT_83_PLAN.md drafted (Tasks 0-12, Q1-Q10, Q-S1, Q-S2); waiting on Harold. Phase 8.3: 0.23.0 MSIX and AAB BUILT + VERIFIED, uploads are Harold's",
-        "status_detail": "Scope selected by Harold 2026-10-31 (8.4 pass 2). iOS #509 #510 #523 not in scope (Apple call Monday). F325 = Sprint 83 copy of F152.",
-        "plan_approved": false,
+        "status": "Phase 3.7 Plan Approved 2026-11-01 10:18pm -- 3.7.0 cards done; 3.7.0b version bump next",
+        "status_detail": "Q-A approved; MV-3a PASS; iCloud Sign In Again added to Task 4 (R-4). Open for Manual Validation: MV-3c choice, Record question. iOS #509 #510 #523 not in scope.",
+        "plan_approved": true,
         "pr_number": 534,
         "version": "0.23.0+20"
     },
@@ -32,7 +32,8 @@
         "sprint_81": "Task 0 #508, Task 1 #509 (F67a, stays open -> Sprint 82), Task 2 #510 (F304, stays open -> Sprint 82), Task 3 #511 (F67b), Task 4 #512 (F302), Task 5 #513 (F303), Task 6 #514 (F259), Task 7 #515 (F301), Task 8 #516 (F271), Task 9 #517 (F278), Task 10 #518 (F300), Task 11 #519 (IMP-2b). Before merge (2026-10-27): #508 #511 #512 #514 #515 #517 #518 #519 CLOSED; #513 #516 OPEN (closed by the merge).",
         "sprint_80": "Task 0 #491, Task 1 #471 (with #433 F205, #428 MV74-1), Task 2 #472 (F277), Task 3 #492 (F292), Task 4 #493 (F294), Task 5 #494 (F295), Task 6 #495 (F296), Task 7 #496 (F298), Task 8 #497 (F267), Task 9 #498 (F268), Task 10 #499 (F269), Task 12 #500 (F299), Task 13 #501 (F276), Task 14 #502 (F204), Task 15 #503, Task 16 #504, Task 17 #505. F289 removed (Q4b = 2).",
         "sprint_82": "Task 0 #522, Task 1 #509, Task 2 #510, Task 3 #523, Task 4 #524, Task 5 #525, Task 6 #526, Task 7 #527, Task 8 #528, Task 9 #529, Task 10 #530, Task 11 #531, Task 12 #532",
-        "sprint_82_close": "PR #521 body: Closes #522 #525 #526 #528 #529 #530 #531 #532; Part of #509 #510 #523 #524 #527 (stay open for Sprint 83). Verify after the merge."
+        "sprint_82_close": "PR #521 body: Closes #522 #525 #526 #528 #529 #530 #531 #532; Part of #509 #510 #523 #524 #527 (stay open for Sprint 83). Verify after the merge.",
+        "sprint_83": "Task 0 #535, Task 1 #524 + #527 (reused), Task 2 #536, Task 3 #537, Task 4 #538, Task 5 #539, Task 6 #540, Task 7 #541, Task 8 #542, Task 9 #543, Task 10 #544, Task 11 #545, Task 12 #546"
     },
     "_github_issues_note": "Sprint 66 cards created at Phase 3.3.1 (2026-09-07): #387 GP-19, #388 GP-4. Close by hand at Post-Merge Cleanup.",
     "test_metrics": {
