@@ -22,6 +22,7 @@ import 'package:sqflite_common_ffi/sqflite_ffi.dart';
 import 'package:my_email_spam_filter/core/models/email_message.dart';
 import 'package:my_email_spam_filter/core/models/evaluation_result.dart';
 import 'package:my_email_spam_filter/core/providers/email_scan_provider.dart';
+import 'package:my_email_spam_filter/core/services/auth_results_parser.dart';
 import 'package:my_email_spam_filter/core/services/rule_quick_action_service.dart';
 import 'package:my_email_spam_filter/core/services/rule_suggestion.dart';
 import 'package:my_email_spam_filter/core/storage/database_helper.dart';
@@ -47,7 +48,10 @@ void main() {
   tearDown(() async => testHelper.tearDown());
 
   final suggestion = RuleSuggestion.suggest(
-      fromEmail: 'a@mail.shop-example.com', authClassification: 'yellow')!;
+      fromEmail: 'a@mail.shop-example.com',
+      authClassification: 'yellow',
+      authResult:
+          AuthResultsParser.syntheticResultFor(AuthClassification.yellow))!;
 
   group('store round trip', () {
     late int scan;
@@ -193,6 +197,27 @@ void main() {
         expect(rows['2']!['suggestion_pattern'], isNull);
       });
     }
+
+    // F323 R-2 / AC-1 (scan caller): a temperror stores the "could not check"
+    // note in the SAME five columns, not a block rule. What this does NOT
+    // catch: the Results-screen caller (f306_results_suggestion_test.dart).
+    test('F323: a temperror row stores the could-not-check note, no rule',
+        () async {
+      await runScan([
+        result('1', 'a@mail.shop-example.com', const {
+          'authentication-results':
+              'mx.example; spf=temperror smtp.mailfrom=shop-example.com; '
+                  'dkim=none; dmarc=none',
+        }),
+      ]);
+      final db = await testHelper.dbHelper.database;
+      final row = (await db.query('unmatched_emails')).single;
+      expect(row['suggestion_kind'], 'none');
+      expect(row['suggestion_reason'], 'auth_could_not_check');
+      final back = (await store.getUnmatchedEmailById(row['id'] as int))!;
+      expect(back.suggestion!.isCouldNotCheck, isTrue);
+      expect(back.suggestion!.isBlock, isFalse);
+    });
   });
 
   group('DB v17: the REAL upgrade of a v16 database', () {

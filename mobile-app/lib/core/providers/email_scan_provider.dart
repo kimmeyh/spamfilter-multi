@@ -871,6 +871,9 @@ class EmailScanProvider extends ChangeNotifier {
                     fromEmail: r.email.from,
                     authClassification:
                         AuthResultsParser.classifyHeaders(r.email.headers).name,
+                    // F323 R-2: the per-method verdicts, so a temperror or
+                    // permerror stores the "could not check" note, not a rule.
+                    authResult: AuthResultsParser.parse(r.email.headers),
                   ),
                 ))
             .toList();

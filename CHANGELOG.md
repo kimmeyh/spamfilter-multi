@@ -37,6 +37,9 @@ Format: `- **type**: Description (Issue #N)` where type is feat|fix|chore|docs
 - **feat**: Removing an account now keeps your folder, scan mode, days back, target folder and background choices for that address, so adding it again finds them; the old sign-in state and scan positions are cleared (Issue #538)
 - **fix**: An email account (iCloud, AOL, Yahoo or a custom server) whose password the provider rejects now shows "Sign In Again" in the account list, the way Gmail does, and its background scans are skipped with one notice a day instead of failing every run (Issue #538)
 - **fix**: Removing an account now also clears its failed-password count, which used to survive because it was stored under a different key (Issue #538)
+- **fix**: The No Rule Item pop-up no longer suggests a rule when the mail server's check of the sender (SPF, DKIM or DMARC) did not finish. It shows "Could not check this sender (the mail server's check did not finish)" in place of the "Suggested" mark (Issue #537)
+- **feat**: The No Rule Item pop-up has a "Block Body" button next to "Block Subject", sharing one row. It reads the message when the pop-up opens and offers the domain of the first link that is not the sender's own domain and not a safe sender; it saves a body rule for that domain. The button says "Loading...", "No outside link" or "Could not read message" when it cannot offer one (Issue #537)
+- **feat**: A sender named "news_" followed by 4 to 6 digits, at any domain, now gets a suggested "Block sender pattern" button that saves a From-header rule for that shape (Issue #537)
 
 ## [0.23.0] - 2026-10-31
 

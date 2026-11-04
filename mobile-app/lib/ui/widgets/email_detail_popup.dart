@@ -19,8 +19,10 @@
 library;
 
 import 'package:flutter/material.dart';
+import 'package:logger/logger.dart';
 
 import '../../core/data/common_email_providers.dart';
+import '../../core/services/body_link_domain.dart';
 import '../../core/models/email_message.dart';
 import '../../core/models/evaluation_result.dart';
 import '../../core/providers/email_scan_provider.dart';
@@ -268,6 +270,115 @@ Widget buildInlineActionButton({
   );
 }
 
+/// F323 R-2 (Sprint 83): shown in place of the "Suggested" mark when the mail
+/// server's SPF, DKIM or DMARC check did not finish. No rule is suggested.
+Widget _buildCouldNotCheckNote(Color textColor) {
+  return Semantics(
+    container: true,
+    label: RuleSuggestion.couldNotCheckText,
+    child: Container(
+      key: const ValueKey('could-not-check-note'),
+      width: double.infinity,
+      padding: const EdgeInsets.all(10),
+      decoration: BoxDecoration(
+        border: Border.all(color: Colors.grey.withValues(alpha: 0.6)),
+        borderRadius: BorderRadius.circular(6),
+        color: Colors.grey.withValues(alpha: 0.05),
+      ),
+      child: ExcludeSemantics(
+        child: Text(
+          RuleSuggestion.couldNotCheckText,
+          style: TextStyle(fontSize: 12, color: textColor),
+        ),
+      ),
+    ),
+  );
+}
+
+/// F323 R-1 (Sprint 83): the Block Body cell. The subtitle says what the cell
+/// knows: "Loading...", the link domain, "No outside link" (the body was read
+/// and no link qualifies) or "Could not read message" (offline, a scan holds the
+/// account, sign-in needed, or the message has no text part). Only the domain
+/// case is tappable; the tap saves a body rule for that domain.
+Widget _buildBlockBodyCell({
+  required Future<BodyLinkResult>? bodyFuture,
+  required bool isDeleted,
+  required String? matchedPatternType,
+  required void Function(QuickActionRequest) choose,
+}) {
+  Widget cell(BodyLinkResult r) {
+    final domain = r.domain;
+    final String subtitle;
+    switch (r.outcome) {
+      case BodyLinkOutcome.loading:
+        subtitle = 'Loading...';
+      case BodyLinkOutcome.found:
+        subtitle = domain!;
+      case BodyLinkOutcome.noOutsideLink:
+        subtitle = 'No outside link';
+      case BodyLinkOutcome.couldNotLoad:
+        subtitle = 'Could not read message';
+    }
+    return buildInlineActionButton(
+      icon: Icons.article_outlined,
+      label: 'Block Body',
+      subtitle: subtitle,
+      color: Colors.orange,
+      isMatched: isDeleted && matchedPatternType == 'body',
+      onTap: r.outcome == BodyLinkOutcome.found
+          ? () => choose(QuickActionRequest(
+                kind: QuickActionKind.blockRule,
+                type: 'body',
+                value: domain!,
+                // Other emails are held as a 100-character preview only, so
+                // this predicts nothing beyond what the preview shows.
+                covers: (o) => o.body.toLowerCase().contains(domain),
+              ))
+          : null,
+    );
+  }
+
+  if (bodyFuture == null) {
+    return buildInlineActionButton(
+      icon: Icons.article_outlined,
+      label: 'Block Body',
+      subtitle: 'Not available',
+      color: Colors.orange,
+      onTap: null,
+    );
+  }
+  return FutureBuilder<BodyLinkResult>(
+    future: bodyFuture,
+    initialData: const BodyLinkResult.loading(),
+    builder: (context, snap) =>
+        cell(snap.data ?? const BodyLinkResult.couldNotLoad()),
+  );
+}
+
+/// F323 R-1: reads the body, then finds the Block Body value. Never throws:
+/// any failure is [BodyLinkResult.couldNotLoad], which the cell shows as
+/// "Could not read message". The log keeps the error class only (SEC-14).
+Future<BodyLinkResult> _resolveBodyLink({
+  required Future<String> Function() loadBody,
+  required String? senderDomain,
+  required bool Function(String) isSafeDomain,
+}) async {
+  try {
+    final body = await loadBody();
+    final domain = firstOutsideLinkDomain(
+      body: body,
+      senderDomain: senderDomain,
+      isSafeDomain: isSafeDomain,
+    );
+    return domain == null
+        ? const BodyLinkResult.noOutsideLink()
+        : BodyLinkResult.found(domain);
+  } catch (e) {
+    Logger().w('Block Body: message body not read (${e.runtimeType})');
+    return const BodyLinkResult.couldNotLoad();
+  }
+}
+
 /// F306 (Sprint 82): the exact regex the suggested button saves and the
 /// one-sentence reason, shown under the button row. Plain text on the pop-up's
 /// own [SelectionArea], so the user can copy the regex. The regex wraps (no
@@ -389,6 +500,12 @@ void showEmailDetailPopup(
   // F306 (Sprint 82): the one rule the scan suggests, or null. It only
   // highlights a button and shows the regex and reason; the user still taps.
   RuleSuggestion? suggestion,
+  // F323 R-1 (Sprint 83): reads this message's full body, for the Block Body
+  // choice. Null means the screen cannot read a body (the choice shows "Not
+  // available"). It runs once, when the pop-up opens, and may throw.
+  Future<String> Function()? loadBody,
+  // F323 R-1: whether a link domain is a safe sender (exact or entire domain).
+  bool Function(String linkDomain)? isSafeLinkDomain,
 }) {
   final email = result.email;
   final bodyParser = EmailBodyParser();
@@ -451,7 +568,18 @@ void showEmailDetailPopup(
     '$kSuggestionKindBlock/entireDomain': rawRootDomain ?? rawSenderDomain,
     if (cleanedSubject.isNotEmpty && cleanedSubject != '(No subject)')
       '$kSuggestionKindBlock/subject': cleanedSubject,
+    // F323 R-3: the sender-shape button exists only for a matching sender, so
+    // its value is always the one the suggestion names.
+    '$kSuggestionKindBlock/$kSuggestionTypeSenderShape': kSenderShapeNewsDigits,
   };
+  // F323 R-1: started once when the pop-up opens (not on each rebuild).
+  final Future<BodyLinkResult>? bodyFuture = loadBody == null
+      ? null
+      : _resolveBodyLink(
+          loadBody: loadBody,
+          senderDomain: rawSenderDomain,
+          isSafeDomain: isSafeLinkDomain ?? (_) => false,
+        );
   final showSuggestionNote = suggestion != null &&
       suggestionValues['${suggestion.kind}/${suggestion.type}'] ==
           suggestion.value;
@@ -477,6 +605,13 @@ void showEmailDetailPopup(
       PatternNormalization.cleanSubjectForDisplay(o.subject)
           .toLowerCase()
           .contains(cleanedSubject.toLowerCase());
+
+  // F323 R-3: another email from a `news_` plus 4-6 digits sender.
+  bool coversNewsShape(EmailMessage o) {
+    final address = bodyParser.extractEmailAddress(o.from);
+    final at = address.indexOf('@');
+    return at > 0 && RegExp(r'^news_[0-9]{4,6}$').hasMatch(address.substring(0, at));
+  }
 
   // Issue 6: Calculate position for CSS-like popup positioning
   Offset? itemPosition = anchorPosition;
@@ -1064,33 +1199,95 @@ void showEmailDetailPopup(
                                 ],
                               ),
                             ),
-                            if (cleanedSubject.isNotEmpty &&
-                                cleanedSubject != '(No subject)') ...[
+                            // F323 R-1: Block Subject and Block Body share one
+                            // row as two half-width cells (both stay in place
+                            // when one does not apply; a cell that does not
+                            // apply is a disabled placeholder, like the grid
+                            // above).
+                            const SizedBox(height: 8),
+                            IntrinsicHeight(
+                              child: Row(
+                                crossAxisAlignment: CrossAxisAlignment.stretch,
+                                children: [
+                                  Expanded(
+                                    child: cleanedSubject.isNotEmpty &&
+                                            cleanedSubject != '(No subject)'
+                                        ? buildInlineActionButton(
+                                            icon: Icons.subject,
+                                            label: 'Block Subject',
+                                            subtitle: cleanedSubject.length > 20
+                                                ? '${cleanedSubject.substring(0, 20)}...'
+                                                : cleanedSubject,
+                                            color: Colors.orange,
+                                            isMatched: isDeleted &&
+                                                effectiveEval
+                                                        ?.matchedPatternType ==
+                                                    'subject',
+                                            suggested: isSuggested(
+                                                QuickActionKind.blockRule,
+                                                'subject',
+                                                cleanedSubject),
+                                            onTap: () =>
+                                                choose(QuickActionRequest(
+                                              kind: QuickActionKind.blockRule,
+                                              type: 'subject',
+                                              value: cleanedSubject,
+                                              covers: coversSubject,
+                                            )),
+                                          )
+                                        : buildInlineActionButton(
+                                            icon: Icons.subject,
+                                            label: 'Block Subject',
+                                            subtitle: 'Not available',
+                                            color: Colors.orange,
+                                            onTap: null,
+                                          ),
+                                  ),
+                                  const SizedBox(width: 8),
+                                  Expanded(
+                                    child: _buildBlockBodyCell(
+                                      bodyFuture: bodyFuture,
+                                      isDeleted: isDeleted,
+                                      matchedPatternType:
+                                          effectiveEval?.matchedPatternType,
+                                      choose: choose,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                            // F323 R-3: shown only for a sender whose name has
+                            // the shape, and then always as "Suggested".
+                            if (suggestion != null &&
+                                suggestion.kind == kSuggestionKindBlock &&
+                                suggestion.type ==
+                                    kSuggestionTypeSenderShape) ...[
                               const SizedBox(height: 8),
                               SizedBox(
                                 width: double.infinity,
                                 child: buildInlineActionButton(
-                                  icon: Icons.subject,
-                                  label: 'Block Subject',
-                                  subtitle: cleanedSubject.length > 20
-                                      ? '${cleanedSubject.substring(0, 20)}...'
-                                      : cleanedSubject,
-                                  color: Colors.orange,
-                                  isMatched: isDeleted &&
-                                      effectiveEval?.matchedPatternType ==
-                                          'subject',
+                                  icon: Icons.rule,
+                                  label: 'Block sender pattern',
+                                  subtitle: 'news_ plus 4-6 digits, any domain',
+                                  color: Colors.red,
                                   suggested: isSuggested(
                                       QuickActionKind.blockRule,
-                                      'subject',
-                                      cleanedSubject),
+                                      kSuggestionTypeSenderShape,
+                                      kSenderShapeNewsDigits),
                                   onTap: () => choose(QuickActionRequest(
                                     kind: QuickActionKind.blockRule,
-                                    type: 'subject',
-                                    value: cleanedSubject,
-                                    covers: coversSubject,
+                                    type: kSuggestionTypeSenderShape,
+                                    value: kSenderShapeNewsDigits,
+                                    covers: coversNewsShape,
                                   )),
                                 ),
                               ),
+                            ],
+                            // F323 R-2: in place of the "Suggested" mark.
+                            if (suggestion != null &&
+                                suggestion.isCouldNotCheck) ...[
+                              const SizedBox(height: 8),
+                              _buildCouldNotCheckNote(detailColor),
                             ],
                             if (suggestion != null &&
                                 showSuggestionNote &&

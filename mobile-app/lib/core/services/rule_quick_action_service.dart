@@ -170,6 +170,19 @@ class RuleQuickActionService {
         return r'@(?:[a-z0-9-]+\.)*' + RegExp.escape(trimmed) + r'$';
       case 'subject':
         return RegExp.escape(trimmed);
+      case 'body':
+        // F323 R-1: the domain of a link in the body. The body is lowercased
+        // before it is matched. The two look-arounds keep `evil.com` from
+        // matching inside `notevil.com` or `evil.community`; a plain escaped
+        // domain would, and a block rule deletes mail.
+        return '(?<![a-z0-9-])${RegExp.escape(trimmed.toLowerCase())}'
+            '(?![a-z0-9-])';
+      case 'senderShape':
+        // F323 R-3: only the one known shape; any other value is not a rule.
+        // Matched against the lowercased From address, so the digits must be
+        // followed at once by the `@` (letters after `news_` do not match).
+        if (trimmed == 'news_digits') return r'^news_[0-9]{4,6}@';
+        return null;
       default:
         return null;
     }
@@ -346,6 +359,26 @@ class RuleQuickActionService {
               'Block_Subject_${_sanitizeForRuleName(trimmed.substring(0, trimmed.length.clamp(0, 40)))}';
           displayMessage = 'Created rule to block subject containing "$trimmed"';
           break;
+        case 'body':
+          // F323 R-1: [value] is the domain of a link in the body.
+          ruleName =
+              'Block_Body_${_sanitizeForRuleName(trimmed.toLowerCase())}';
+          displayMessage =
+              'Created rule to block mail whose body links to "$trimmed"';
+          break;
+        case 'senderShape':
+          // F323 R-3: only the one known shape has a pattern.
+          if (blockPatternFor(type, trimmed) == null) {
+            _logger.w('Unknown sender shape: $trimmed');
+            return RuleQuickActionResult(
+              success: false,
+              displayMessage: 'Unknown sender pattern: $trimmed',
+            );
+          }
+          ruleName = 'Block_SenderShape_${_sanitizeForRuleName(trimmed)}';
+          displayMessage =
+              'Created rule to block senders named news_ plus 4 to 6 digits';
+          break;
         default:
           _logger.w('Unknown block rule type: $type');
           return RuleQuickActionResult(
@@ -376,7 +409,11 @@ class RuleQuickActionService {
       // RuleEvaluator), so the sender the user just blocked would keep
       // arriving. The idempotent fast-path skips the INSERT, not the cleanup.
       ConflictResolutionResult conflicts = ConflictResolutionResult.empty;
-      if (type != 'subject' && senderEmailForConflictCheck != null) {
+      // F323: a body rule, like a subject rule, is not about the sender, so it
+      // never removes the sender's safe-sender entries.
+      if (type != 'subject' &&
+          type != 'body' &&
+          senderEmailForConflictCheck != null) {
         conflicts = await _conflictResolver.removeConflictingSafeSenders(
           emailAddress: senderEmailForConflictCheck,
           ruleProvider: ruleProvider,
@@ -435,6 +472,21 @@ class RuleQuickActionService {
           sourceDomain = trimmed;
           executionOrder = 60;
           break;
+        case 'body':
+          // F323 R-1: a body rule, 'keyword' like every body phrase rule.
+          patternCategory = 'body';
+          patternSubType = 'keyword';
+          sourceDomain = trimmed.toLowerCase();
+          executionOrder = 50; // F187: body keyword rules are all at 50
+          break;
+        case 'senderShape':
+          // F323 R-3: a From-header rule. 'exact_email' is the closest of the
+          // known sub-types (Manage Rules lists it as "Exact Email").
+          patternCategory = 'header_from';
+          patternSubType = 'exact_email';
+          sourceDomain = trimmed;
+          executionOrder = 40;
+          break;
         default:
           patternCategory = 'header_from';
           patternSubType = 'exact_domain';
@@ -444,7 +496,9 @@ class RuleQuickActionService {
 
       final conditions = type == 'subject'
           ? RuleConditions(type: 'OR', subject: [pattern])
-          : RuleConditions(type: 'OR', header: [pattern]);
+          : type == 'body'
+              ? RuleConditions(type: 'OR', body: [pattern])
+              : RuleConditions(type: 'OR', header: [pattern]);
 
       final rule = Rule(
         name: ruleName,

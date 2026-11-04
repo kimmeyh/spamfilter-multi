@@ -18,6 +18,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:provider/provider.dart';
 
 import 'package:my_email_spam_filter/core/providers/rule_set_provider.dart';
+import 'package:my_email_spam_filter/core/services/auth_results_parser.dart';
 import 'package:my_email_spam_filter/core/services/rule_suggestion.dart';
 import 'package:my_email_spam_filter/core/storage/database_helper.dart';
 import 'package:my_email_spam_filter/core/storage/rule_database_store.dart';
@@ -108,7 +109,10 @@ void main() {
       authClassification: 'yellow',
       suggestion: withSuggestion
           ? RuleSuggestion.suggest(
-              fromEmail: from, authClassification: 'yellow')
+              fromEmail: from,
+              authClassification: 'yellow',
+              authResult: AuthResultsParser.syntheticResultFor(
+                  AuthClassification.yellow))
           : null,
     ));
   }
@@ -142,7 +146,9 @@ void main() {
     await openPopup(tester);
     final s = RuleSuggestion.suggest(
         fromEmail: 'offers@mail.shop-example.com',
-        authClassification: 'yellow')!;
+        authClassification: 'yellow',
+        authResult:
+            AuthResultsParser.syntheticResultFor(AuthClassification.yellow))!;
     expect(find.text('Suggested'), findsOneWidget);
     expect(find.text(s.pattern), findsOneWidget);
     expect(find.text(s.reasonText), findsOneWidget);

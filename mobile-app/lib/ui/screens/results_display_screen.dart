@@ -35,6 +35,7 @@ import '../../core/services/email_body_parser.dart';
 import '../../core/services/pattern_compiler.dart';
 import '../../core/services/rule_evaluator.dart';
 import '../../core/services/rule_quick_action_service.dart';
+import '../../core/services/popup_body_fetcher.dart'; // F323
 import '../../core/services/rule_suggestion.dart';
 import '../../core/storage/database_helper.dart';
 import '../../core/services/scan_coordinator.dart'; // F212 (Sprint 70)
@@ -71,10 +72,19 @@ RuleSuggestion? suggestionForResult(
       (effectiveEval?.matchedRule ?? '').isEmpty &&
       effectiveEval?.isSafeSender != true;
   if (!isNoRule) return null;
+  final override = result.email.authClassificationOverride;
+  final overrideClass = AuthResultsParser.classificationFromName(override);
+  final parsed = AuthResultsParser.parse(result.email.headers);
   return RuleSuggestion.suggest(
     fromEmail: result.email.from,
-    authClassification: result.email.authClassificationOverride ??
-        AuthResultsParser.classifyHeaders(result.email.headers).name,
+    authClassification:
+        override ?? AuthResultsParser.classifyHeaders(result.email.headers).name,
+    // F323 R-2: per-method verdicts. A stored snapshot (saved scan) has no
+    // headers, so its synthetic result carries no error: a "could not check"
+    // cannot be re-detected there (the live scan stored it on the review row).
+    authResult: parsed.isEmpty && overrideClass != null
+        ? AuthResultsParser.syntheticResultFor(overrideClass)
+        : parsed,
   );
 }
 
@@ -1922,6 +1932,31 @@ class _ResultsDisplayScreenState extends State<ResultsDisplayScreen> {
   RuleSuggestion? _noRuleSuggestionFor(EmailActionResult result) =>
       suggestionForResult(result, _getEffectiveEvaluation(result));
 
+  /// F323 R-1: whether [result] is a No Rule result (same test as
+  /// [suggestionForResult]).
+  bool _isNoRuleResult(EmailActionResult result) {
+    final eval = _getEffectiveEvaluation(result);
+    return result.action == EmailActionType.none &&
+        (eval?.matchedRule ?? '').isEmpty &&
+        eval?.isSafeSender != true;
+  }
+
+  /// F323 R-1: reads the full body of [result]'s message for Block Body. Its id
+  /// and folder are the provider's, so the provider fetch can find it.
+  Future<String> _loadBodyFor(EmailActionResult result) =>
+      PopupBodyFetcher().fetch(
+        platformId: widget.platformId,
+        accountId: widget.accountId,
+        message: result.email,
+      );
+
+  /// F323 R-1: whether a link domain is a safe sender (exact or entire domain).
+  bool _isSafeLinkDomain(String domain) {
+    final safe =
+        Provider.of<RuleSetProvider>(context, listen: false).safeSenders;
+    return safe.findMatch('link@$domain') != null;
+  }
+
   /// Show positioned popup with email details and inline quick actions
   /// Issue 6: CSS-like positioning - show popup below/above email item
   ///
@@ -1950,6 +1985,11 @@ class _ResultsDisplayScreenState extends State<ResultsDisplayScreen> {
       // F306: only a No Rule result gets a suggestion. The same pure function
       // the scan used, so it equals what the scan stored.
       suggestion: _noRuleSuggestionFor(result),
+      // F323 R-1: Block Body reads the body when the pop-up opens, for a No
+      // Rule result only (a matched or safe email has its answer already, and
+      // a body read opens a mail session).
+      loadBody: _isNoRuleResult(result) ? () => _loadBodyFor(result) : null,
+      isSafeLinkDomain: _isSafeLinkDomain,
       itemKey: itemKey,
       anchorPosition: anchorPosition,
       anchorSize: anchorSize,
@@ -3386,7 +3426,9 @@ class _ResultsDisplayScreenState extends State<ResultsDisplayScreen> {
     // F39 (Sprint 46): rule-persistence core is shared with the
     // cross-account "No rule" review screen via RuleQuickActionService.
     final service = RuleQuickActionService(ruleProvider: ruleProvider);
-    final senderEmailForConflictCheck = type != 'subject' && email != null
+    // F323: a body rule, like a subject rule, is not about the sender.
+    final senderEmailForConflictCheck =
+        type != 'subject' && type != 'body' && email != null
         ? EmailBodyParser().extractEmailAddress(email.from).toLowerCase().trim()
         : null;
     // Sprint 74 MV (Harold): a subject rule tapped from a saved scan never

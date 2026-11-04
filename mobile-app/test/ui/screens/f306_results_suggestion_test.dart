@@ -164,6 +164,24 @@ void main() {
       });
       expect(suggestionForResult(r, EvaluationResult.noMatch()), isNotNull);
     });
+
+    // F323 R-2 / AC-1 (Results caller). What this does NOT catch: a SAVED scan
+    // opened from history, which has only the stored class and no headers, so a
+    // temperror cannot be re-detected there (the scan stored it on the review
+    // row instead).
+    for (final bad in ['temperror', 'permerror']) {
+      test('live headers with an SPF $bad: the could-not-check note, no rule',
+          () {
+        final r = res(EmailActionType.none, headers: {
+          'authentication-results':
+              'mx; spf=$bad; dkim=none; dmarc=none',
+        });
+        final s = suggestionForResult(r, EvaluationResult.noMatch());
+        expect(s, isNotNull);
+        expect(s!.isCouldNotCheck, isTrue);
+        expect(s.isBlock, isFalse);
+      });
+    }
   });
 
   testWidgets('a GREEN No Rule result gets none', (tester) async {

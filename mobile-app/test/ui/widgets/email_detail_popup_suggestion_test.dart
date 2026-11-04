@@ -20,6 +20,7 @@ import 'package:flutter_test/flutter_test.dart';
 
 import 'package:my_email_spam_filter/core/models/email_message.dart';
 import 'package:my_email_spam_filter/core/providers/email_scan_provider.dart';
+import 'package:my_email_spam_filter/core/services/auth_results_parser.dart';
 import 'package:my_email_spam_filter/core/services/rule_quick_action_service.dart';
 import 'package:my_email_spam_filter/core/services/rule_suggestion.dart';
 import 'package:my_email_spam_filter/ui/widgets/email_detail_popup.dart';
@@ -77,7 +78,11 @@ Future<List<QuickActionRequest>> _open(
 }
 
 RuleSuggestion _yellow(String from) =>
-    RuleSuggestion.suggest(fromEmail: from, authClassification: 'yellow')!;
+    RuleSuggestion.suggest(
+        fromEmail: from,
+        authClassification: 'yellow',
+        authResult:
+            AuthResultsParser.syntheticResultFor(AuthClassification.yellow))!;
 
 /// The border width of the button cell that holds [label].
 double _borderWidth(WidgetTester tester, String label) {

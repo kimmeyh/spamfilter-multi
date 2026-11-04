@@ -16,6 +16,7 @@ import '../../core/services/content_history.dart';
 import '../../core/services/email_body_parser.dart';
 import '../../core/services/heuristic_signals.dart';
 import '../../core/services/pattern_compiler.dart';
+import '../../core/services/popup_body_fetcher.dart'; // F323
 import '../../core/services/rule_evaluator.dart';
 import '../../core/services/rule_quick_action_service.dart';
 import '../../core/storage/database_helper.dart';
@@ -525,6 +526,31 @@ class _NoRuleReviewScreenState extends State<NoRuleReviewScreen>
 
   // --- Pop-up and quick actions (F283) ---
 
+  /// F323 R-1: the full body of [item]'s message. The row's shared model uses
+  /// the synthetic id `unmatched-<row id>`, which no provider knows, so the
+  /// message is rebuilt with the PROVIDER id and folder stored at scan time.
+  /// The platform is the account id's prefix (`{platform}-{email}`).
+  Future<String> _loadBodyFor(_NoRuleItem item) {
+    final providerId = item.email.providerIdentifierValue;
+    final dash = item.accountId.indexOf('-');
+    if (providerId.isEmpty || dash <= 0) {
+      return Future<String>.error(PopupBodyUnavailable('no provider id'));
+    }
+    return PopupBodyFetcher().fetch(
+      platformId: item.accountId.substring(0, dash),
+      accountId: item.accountId,
+      message: EmailMessage(
+        id: providerId,
+        from: item.email.fromEmail,
+        subject: item.email.subject ?? '',
+        body: '',
+        headers: const {},
+        receivedDate: item.email.emailDate ?? item.email.createdAt,
+        folderName: item.email.folderName,
+      ),
+    );
+  }
+
   void _openPopup(_NoRuleItem item,
       {GlobalKey? itemKey, Offset? anchorPosition, Size? anchorSize}) {
     showEmailDetailPopup(
@@ -536,6 +562,13 @@ class _NoRuleReviewScreenState extends State<NoRuleReviewScreen>
       showSkip: true,
       // F306: the suggestion stored at scan time (null for older rows).
       suggestion: item.email.suggestion,
+      // F323 R-1: Block Body reads the body when the pop-up opens.
+      loadBody: () => _loadBodyFor(item),
+      isSafeLinkDomain: (domain) =>
+          Provider.of<RuleSetProvider>(context, listen: false)
+              .safeSenders
+              .findMatch('link@$domain') !=
+          null,
       itemKey: itemKey,
       anchorPosition: anchorPosition,
       anchorSize: anchorSize,
@@ -663,8 +696,11 @@ class _NoRuleReviewScreenState extends State<NoRuleReviewScreen>
       result = await service.createBlockRule(
         type: request.type,
         value: request.value,
+        // F323: a body rule, like a subject rule, is not about the sender.
         senderEmailForConflictCheck:
-            request.type == 'subject' ? null : senderEmail,
+            request.type == 'subject' || request.type == 'body'
+                ? null
+                : senderEmail,
         sourceDescription: 'No Rule Review screen',
       );
     }
