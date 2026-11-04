@@ -676,6 +676,46 @@ Source: `docs/research/R76-3_HEURISTICS_ML_GENAI_SPAM_IDENTIFICATION.md` (Issue 
   F329 rules.
 - AC: the list of deleted and kept files with the grep evidence.
 
+**F341. F325 part B: live first-run evaluation on Windows and the Android emulator (~90-150m, estimate unverified) Priority 32 -- NEW 2026-11-04 (Sprint 83 MV, Harold: "Wait this to a future sprint")**
+- Phase: Core App Quality
+- Platform: Windows and Android (emulator); iPhone when it ships.
+- Part A (static pass) is done: `docs/research/F325_FIRST_RUN_EVALUATION_S83.md`, with 10 live-run checks listed.
+- Do: run a clean first install on each platform and walk the 10 checks; record what a new user sees.
+- Static findings to confirm live: the Help walkthrough is outdated; the Gmail "Recommended" labels contradict each
+  other; "Turn on" does not request the notification permission; raw exception text reaches users; the GitHub
+  feedback address is plain text, not a link.
+- AC: each check has a result with a screenshot or log line; each confirmed finding becomes its own card.
+
+**F342. Fold background log: AOL unfinished scans and errors, iCloud errors (~30-90m, estimate unverified) Priority 34 -- NEW 2026-11-04 (Sprint 83 MV Q10 = 2, backlog)**
+- Phase: Core App Quality
+- Platform: Android (seen on the Fold); check Windows for the same pattern.
+- Evidence (Sprint 83 MV, Fold diagnostic log): AOL 2 unfinished scans and 2 errors; iCloud 11 errors. The error
+  text is not yet classified (unverified which code path raised each).
+- Do: pull the log over MTP, group the errors by message and stack, and name the cause of each group, or write
+  "cause unknown" plus what would settle it.
+- AC: every error group has a cause or a stated next check; a fix card for each real defect.
+
+**F343. F309 trusted-sender hint: decide after Sprint 83 Task 5 ships (~15m decision, estimate unverified) Priority 45 -- NEW 2026-11-04 (Sprint 83 MV Q5 = 6, backlog)**
+- Phase: Core App Quality
+- Platform: All.
+- Harold deferred the F309 trusted-sender hint in Sprint 83 MV (Q5 = 6).
+- Do: once Sprint 83 Task 5 is in use, ask Harold again whether the hint is still wanted, with the DEV count of
+  rows where it would fire.
+- AC: a recorded yes (then a sized card) or no (then close).
+
+**F344. Prompts: rewrite the deterministic ones as Python tools; shared helpers for the rest (~60-120m audit, estimate unverified) Priority 39 -- NEW 2026-11-04 (Sprint 83 MV Q8, ADR-0051 acceptance)**
+- Phase: Process / Tooling
+- Platform: Development process.
+- Harold (2026-11-04, Q8): *"prompt that can be easily rewritten deterministically should be rewritten. If there are
+  common tools needed by prompts that can be written deterministically (python), then these helper tools should be
+  written and then used by the prompts."* Python 3.14 preferred.
+- Scope: prompts outside skills (agent briefs in `docs/`, hook-delivered prompts such as the hourly wake-up, review
+  prompts). Skill scripts are F339; do not duplicate them.
+- Do: list each prompt, mark it deterministic, hybrid or GenAI; for deterministic and hybrid ones, name the Python
+  helper that does the fixed part. Build the helpers used by two or more prompts first.
+- AC: the inventory with a disposition per prompt; the shared helpers exist under `scripts/` with `.SYNOPSIS`
+  headers and are called by the prompts.
+
 **F322. Notification choice: notify only when No Rule is greater than 0 (~60-120m, estimate unverified) Priority 30 -- TARGET SPRINT 83 (Harold 2026-10-31, "add to backlog for next sprint") -- NEW 2026-10-31**
 - Phase: Core App Quality
 - Platform: All (Windows, Android, iPhone); same behavior and setting everywhere per ADR-0042, with a declared

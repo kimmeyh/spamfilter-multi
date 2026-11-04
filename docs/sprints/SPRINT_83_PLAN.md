@@ -1273,3 +1273,41 @@ closed test).
     row branch, not the page).
   - A-2 / W-8 F325 first-run: NOT REHEARSED by design (a live evaluation with Harold; the DEV data folder backup and
     hash are part of the step).
+
+### Manual Validation results and answers (Harold, 2026-11-04)
+
+**Standing facts (Harold)**
+- 2026-11-04: *"if a phone image reads 0.??.?? then you can assume the play store update has happened - I have no
+  other way at this time to install it."* A phone screenshot that shows the version is the evidence that the Play
+  update installed. Do not ask again. (The Fold screenshots 115712, 115744 and 115825 show 0.23.0.)
+
+**Step results**
+- Image 20 (Select Account): rows opened red before the account was read. Fixed in ec5f94b8 ("Checking account..."
+  while loading). Re-validation pending on the rebuilt app.
+- W-1: Harold asked for "Only when one or more No Rule items". Done in 92692871. Re-validation pending.
+- W-3: working as expected; image 24 showed Block Subject, Block Body and others cut off at the default window size.
+  Fixed in 42d7e722 (Q1 = 1, the pop-up grows to fit, compact header). Re-validation pending.
+- W-4, W-5: working as expected.
+- W-6 (M-6): image 21 shows the toasts; image 22, app open: the snackbar "A screen is open, so the notification did
+  not close it. Go back to Review No Rule Items when you are done."; image 23, app closed: the app opens on Review No
+  Rule Items. PASS.
+- A-1: Harold asked that Android use the same text as Windows ("Only when one or more No Rule items" and "Every
+  Completed Scan"). Open question (it changes the Q1 = 1 Android channel exception).
+- A-2 / W-8 F325 live run: Harold: *"Wait this to a future sprint"* (Class 3, approved by Harold). Card F341.
+
+**Answers**
+- Q1 = 1: pop-up fix as proposed (42d7e722).
+- Q2: *"can you fix it to only suggest Block if a check finishes"*. Done in 92692871 (a saved scan without headers
+  gets no Block suggestion).
+- Q3 = 1: MV-3c waits for a YELLOW item.
+- Q4: yes, see the standing fact.
+- Q5 = 6: F309 trusted-sender hint to the backlog (F343).
+- Q6 = 2: chip reads "Reply-to email mismatch", and the mismatch suggests Block. Done in 62546100.
+- Q7 = 1: keep `kotlin.incremental=false`.
+- Q8: Python 3.14 preferred; deterministic prompts rewritten; shared Python helpers for prompts; 3 hooks and
+  agent-work-status accepted. ADR-0051 Accepted in 359b21ae; prompts card F344. Hook interpreter move asked
+  separately.
+- Q9: approved as written, except the `news_` item. Harold: *"no, it suggests block entire domain for the domain of
+  each email that matches the pattern in the email address"*. Echo question open before coding.
+- Q10 = 2: Fold background log errors to the backlog (F342).
+- Recorded 17:57.
