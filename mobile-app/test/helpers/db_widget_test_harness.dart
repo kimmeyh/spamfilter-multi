@@ -30,14 +30,34 @@ import 'package:flutter_test/flutter_test.dart';
 /// site) and `no_rule_review_screen_test.dart` for full worked examples,
 /// including the DatabaseHelper-singleton + TestAppPaths setup from
 /// `database_test_helper.dart`.
+///
+/// `readyWhen` (Sprint 83): a fixed `settleDelay` is a guess about machine
+/// speed. Under load (parallel agents, a full suite at -j 2) the load chain can
+/// take longer than 800 ms, and the test then runs against the loading
+/// spinner (s75_t7 failed this way: "No element" for `Scrollable`). Pass a
+/// finder that matches only once the screen has loaded; the helper then keeps
+/// pumping until it matches, up to `readyTimeout`, and fails loudly with a
+/// clear message if it never does. Without `readyWhen`, behavior is unchanged.
 Future<void> mountAndLoadDbWidget(
   WidgetTester tester,
   Widget widget, {
   Duration settleDelay = const Duration(milliseconds: 800),
+  Finder? readyWhen,
+  Duration readyTimeout = const Duration(seconds: 15),
 }) async {
   await tester.pumpWidget(widget);
   // Real-event-loop time for initState's DB load chain to complete.
   await Future<void>.delayed(settleDelay);
   await tester.pump(); // flush the load's setState
   await tester.pump(const Duration(milliseconds: 50));
+  if (readyWhen == null) return;
+  final deadline = DateTime.now().add(readyTimeout);
+  while (readyWhen.evaluate().isEmpty) {
+    if (DateTime.now().isAfter(deadline)) {
+      throw TestFailure('mountAndLoadDbWidget: the screen did not become '
+          'ready within $readyTimeout (readyWhen: $readyWhen)');
+    }
+    await Future<void>.delayed(const Duration(milliseconds: 100));
+    await tester.pump();
+  }
 }
