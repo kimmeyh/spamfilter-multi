@@ -1,0 +1,1 @@
+{"session_id":"cl-violation-1-active-lock-plain-commit","cwd":"{{LOCK_ACTIVE}}","hook_event_name":"PreToolUse","tool_name":"Bash","tool_input":{"command":"git commit -q -m x"}}

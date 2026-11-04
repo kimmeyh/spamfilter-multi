@@ -1,6 +1,14 @@
 # Mutation-lock helpers for agents that deliberately break a tracked file to
 # verify a test goes red.
 #
+# F321 (Sprint 83, ADR-0051): THIN POWERSHELL SHIM. The logic now lives in
+# .claude/hooks/lib/mutation_lock.py (standard-library Python, runs on Windows,
+# Linux and macOS). The functions below keep the interface that
+# scripts/mutation-test.ps1, scripts/agent-work-status.ps1 and CLAUDE.md call.
+# The lock files are unchanged (same folder, name rule and four JSON fields), so
+# a lock written by the old PowerShell code is read by the Python code and the
+# other way round.
+#
 # CONTRACT (two lines around every mutation):
 #
 #   . .claude\hooks\mutation-lock.ps1
@@ -8,13 +16,37 @@
 #   # ... break it, run the test, confirm RED, restore it ...
 #   Remove-MutationLock
 #
-# While a lock is held, `block-commit-during-mutation.ps1` refuses any
+# While a lock is held, `block-commit-during-mutation.py` refuses any
 # `git commit` in this repository. See that file's header for the two Sprint 65
 # incidents that made this necessary.
 #
 # The lock is advisory in one direction only: it does not stop the agent from
 # mutating (that would defeat the verification), it stops the PERMANENT RECORD
 # from capturing the temporary state.
+
+$script:MutationLockPy = Join-Path $PSScriptRoot 'lib\mutation_lock.py'
+
+function Get-MutationLockPython {
+    $cmd = Get-Command python, python3, py -ErrorAction SilentlyContinue | Select-Object -First 1
+    if (-not $cmd) { throw 'mutation-lock: python was not found on PATH (the lock library is Python; see ADR-0051).' }
+    $cmd.Source
+}
+
+# Run the Python library and return its stdout lines. A non-zero exit throws, so
+# a lock that was not written never looks like a lock that was.
+function Invoke-MutationLockPython([string[]]$Arguments) {
+    $py = Get-MutationLockPython
+    $savedPref = $ErrorActionPreference
+    $ErrorActionPreference = 'Continue'
+    try {
+        $out = & $py $script:MutationLockPy @Arguments 2>&1
+        $code = $LASTEXITCODE
+    } finally {
+        $ErrorActionPreference = $savedPref
+    }
+    if ($code -ne 0) { throw "mutation-lock: python exited $code`: $($out -join ' ')" }
+    @($out | ForEach-Object { "$_" })
+}
 
 function Get-MutationLockDir {
     $projectDir = $env:CLAUDE_PROJECT_DIR
@@ -39,26 +71,8 @@ function New-MutationLock {
         [Parameter(Mandatory)][string]$Reason,
         [string]$Agent = 'unnamed-agent'
     )
-
-    $lockDir = Get-MutationLockDir
-    if (-not (Test-Path $lockDir)) {
-        New-Item -ItemType Directory -Path $lockDir -Force | Out-Null
-    }
-
-    # One lock file per mutated file, so two agents mutating different files
-    # do not clobber each other's lock -- and so the block message can name
-    # exactly which files are unsafe to commit.
-    $safeName = ($File -replace '[\\/:*?"<>|]', '_') + '.json'
-    $lockPath = Join-Path $lockDir $safeName
-
-    [PSCustomObject]@{
-        file       = $File
-        reason     = $Reason
-        agent      = $Agent
-        createdUtc = (Get-Date).ToUniversalTime().ToString('o')
-    } | ConvertTo-Json | Set-Content -Path $lockPath -Encoding UTF8
-
-    Write-Host "[mutation-lock] HELD on $File -- commits are blocked until Remove-MutationLock."
+    Invoke-MutationLockPython @('new', '--file', $File, '--reason', $Reason, '--agent', $Agent) |
+        ForEach-Object { Write-Host $_ }
 }
 
 function Remove-MutationLock {
@@ -68,78 +82,25 @@ function Remove-MutationLock {
         # case: an agent restores everything it broke before reporting.
         [string]$File
     )
-
-    $lockDir = Get-MutationLockDir
-    if (-not (Test-Path $lockDir)) { return }
-
-    if ($File) {
-        $safeName = ($File -replace '[\\/:*?"<>|]', '_') + '.json'
-        $lockPath = Join-Path $lockDir $safeName
-        if (Test-Path $lockPath) {
-            Remove-Item $lockPath -Force
-            Write-Host "[mutation-lock] RELEASED on $File."
-        }
-    } else {
-        $count = @(Get-ChildItem -Path $lockDir -Filter '*.json' -ErrorAction SilentlyContinue).Count
-        Get-ChildItem -Path $lockDir -Filter '*.json' -ErrorAction SilentlyContinue |
-            Remove-Item -Force
-        Write-Host "[mutation-lock] RELEASED $count lock(s)."
-    }
+    $arguments = @('remove')
+    if ($File) { $arguments += @('--file', $File) }
+    Invoke-MutationLockPython $arguments | ForEach-Object { Write-Host $_ }
 }
 
 function Get-MutationLock {
-    $lockDir = Get-MutationLockDir
-    if (-not (Test-Path $lockDir)) {
-        Write-Host "[mutation-lock] none held."
-        return
-    }
-    $locks = @(Get-ChildItem -Path $lockDir -Filter '*.json' -ErrorAction SilentlyContinue)
-    if ($locks.Count -eq 0) {
-        Write-Host "[mutation-lock] none held."
-        return
-    }
-    foreach ($lock in $locks) {
-        $info = Get-Content $lock.FullName -Raw | ConvertFrom-Json
-        Write-Host "[mutation-lock] $($info.file) -- $($info.reason) (held by $($info.agent))"
-    }
+    Invoke-MutationLockPython @('list') | ForEach-Object { Write-Host $_ }
 }
 
 # Read-only (F317, Sprint 82): returns one object per held lock with its age in
 # minutes, so a wake-up or status script can report a lock left behind by a
-# stopped agent. Does not print, create or remove anything.
+# stopped agent. Does not print, create or remove anything. An unreadable lock
+# file is reported (reason "unreadable lock file: ...", ageMinutes empty) and
+# does not hide the others.
 function Get-MutationLockInfo {
-    $lockDir = Get-MutationLockDir
-    if (-not (Test-Path $lockDir)) { return @() }
-    $now = (Get-Date).ToUniversalTime()
-    @(Get-ChildItem -Path $lockDir -Filter '*.json' -ErrorAction SilentlyContinue | ForEach-Object {
-        # 7.7.1 L-3 sibling: one unreadable lock file must not hide the others.
-        $lockPath = $_.FullName
-        try {
-            $info = Get-Content $lockPath -Raw -ErrorAction Stop | ConvertFrom-Json
-            # 7.7.1 M-2: PowerShell 7's ConvertFrom-Json already returns a
-            # [datetime] (Kind Utc) for an ISO string. Parsing that again turned it
-            # into a zone-less string, and the age came out shifted by the UTC
-            # offset (-240 minutes for a fresh lock). Use the [datetime] as is;
-            # parse only a string (Windows PowerShell 5.1).
-            $c = $info.createdUtc
-            $created = if ($c -is [datetime]) { $c } else {
-                [datetime]::Parse($c, [System.Globalization.CultureInfo]::InvariantCulture, [System.Globalization.DateTimeStyles]::RoundtripKind)
-            }
-            [PSCustomObject]@{
-                file       = $info.file
-                reason     = $info.reason
-                agent      = $info.agent
-                createdUtc = $info.createdUtc
-                ageMinutes = [math]::Round(($now - $created.ToUniversalTime()).TotalMinutes, 0)
-            }
-        } catch {
-            [PSCustomObject]@{
-                file       = $lockPath
-                reason     = "unreadable lock file: $($_.Exception.Message)"
-                agent      = $null
-                createdUtc = $null
-                ageMinutes = $null
-            }
-        }
-    })
+    $json = (Invoke-MutationLockPython @('info')) -join ''
+    if (-not $json.Trim()) { return @() }
+    # Windows PowerShell 5.1 returns a JSON array as ONE object; piping it through
+    # ForEach-Object enumerates it in 5.1 and 7 alike (found by the shim check).
+    $parsed = $json | ConvertFrom-Json
+    @($parsed | ForEach-Object { $_ })
 }

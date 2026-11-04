@@ -35,6 +35,17 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
+      - name: Python hook layer tests (F321, ADR-0051)
+        # Sprint 83 Task 10: the Python hooks and their shared layer
+        # (.claude/hooks/lib/) are standard library only, so there is nothing
+        # to install. The job default working directory is mobile-app/, so this
+        # step resets it to the repo root. The tests replay the recorded hook
+        # cases (staging-guard, heredoc-guard, commit-lock) through each hook,
+        # which proves the hooks on Linux, not only the library. The ubuntu
+        # runner has python3; a bare `python` is not guaranteed.
+        working-directory: .
+        run: python3 .claude/hooks/tests/test_pylib.py
+
       - uses: subosito/flutter-action@1a449444c387b1966244ae4d4f8c696479add0b2 # v2.23.0
         with:
           flutter-version-file: .fvmrc

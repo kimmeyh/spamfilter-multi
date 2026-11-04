@@ -1,0 +1,1 @@
+{"session_id":"cl-violation-7","cwd":"{{LOCK_ACTIVE}}","hook_event_name":"PreToolUse","tool_name":"Bash","tool_input":{"command":"git commit -m \"note: allow_mutation_commit appears here as text\""}}

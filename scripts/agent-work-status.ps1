@@ -4,7 +4,10 @@
   progress, held mutation locks with their age, and the sprint phase.
 
 .DESCRIPTION
-  F317 (Sprint 82). Read-only: it stores nothing and changes nothing.
+  F317 (Sprint 82); Python since F321 (Sprint 83, ADR-0051). This file is a thin
+  entry point: the hourly wake-up still runs `scripts\agent-work-status.ps1`, and
+  it calls `scripts\agent-work-status.py`, which holds the logic. The output
+  format is unchanged. Read-only: it stores nothing and changes nothing.
 
   Convention (docs/SPRINT_EXECUTION_WORKFLOW.md, "Progress and restart"): each
   agent keeps <ScratchFolder>\<task-name>\progress.md with lines
@@ -33,69 +36,13 @@ param(
 )
 
 $ErrorActionPreference = 'Stop'
-$repo = Split-Path -Parent $PSScriptRoot
-. (Join-Path $repo '.claude\hooks\mutation-lock.ps1')
+$py = Get-Command python, python3, py -ErrorAction SilentlyContinue | Select-Object -First 1
+if (-not $py) { Write-Error 'agent-work-status: python was not found on PATH (see ADR-0051).'; exit 2 }
 
-if (-not $ScratchFolder) {
-    $root = Join-Path $env:LOCALAPPDATA 'Temp\claude\D--Data-Harold-github-spamfilter-multi'
-    if (Test-Path $root) {
-        $newest = Get-ChildItem -Path $root -Directory |
-            ForEach-Object { Join-Path $_.FullName 'scratchpad' } |
-            Where-Object { Test-Path $_ } |
-            ForEach-Object { Get-Item $_ } |
-            Sort-Object LastWriteTime -Descending | Select-Object -First 1
-        if ($newest) { $ScratchFolder = $newest.FullName }
-    }
-}
+# The Python script writes UTF-8; make this host read it as UTF-8 (no BOM).
+try { [Console]::OutputEncoding = New-Object System.Text.UTF8Encoding($false) } catch { }
 
-Write-Host "Scratch folder: $ScratchFolder"
-Write-Host 'Agent tasks:'
-if (-not $ScratchFolder -or -not (Test-Path $ScratchFolder)) {
-    Write-Host '  (scratch folder not found)'
-} else {
-    $tasks = @(Get-ChildItem -Path $ScratchFolder -Directory -ErrorAction SilentlyContinue)
-    if ($tasks.Count -eq 0) { Write-Host '  (no task folders)' }
-    foreach ($t in $tasks) {
-        $pf = Join-Path $t.FullName 'progress.md'
-        if (-not (Test-Path $pf)) {
-            Write-Host ("  {0}: not started" -f $t.Name)
-            continue
-        }
-        # 7.7.1 L-3: a progress file that cannot be read (an agent writing it at
-        # this moment) is reported, and the other folders are still listed.
-        try {
-            $lines = @(Get-Content -Path $pf -Encoding UTF8 -ErrorAction Stop | Where-Object { $_.Trim() -ne '' })
-        } catch {
-            Write-Host ("  {0}: progress.md unreadable ({1}); check again" -f $t.Name, $_.Exception.Message)
-            continue
-        }
-        $units = @($lines | Where-Object { $_ -match '^UNIT .+: (DONE|STARTED)\s*$' })
-        $done = @($units | Where-Object { $_ -match ': DONE\s*$' }).Count
-        $finished = ($lines.Count -gt 0) -and ($lines[-1].Trim() -eq 'STATUS: FINISHED')
-        if ($finished) {
-            Write-Host ("  {0}: finished ({1} unit(s) done)" -f $t.Name, $done)
-        } elseif ($units.Count -eq 0 -and -not ($lines | Where-Object { $_ -match '^LAST STEP:' })) {
-            Write-Host ("  {0}: started, nothing saved" -f $t.Name)
-        } else {
-            $last = @($lines | Where-Object { $_ -match '^LAST STEP:' }) | Select-Object -Last 1
-            if (-not $last) { $last = $units | Select-Object -Last 1 }
-            Write-Host ("  {0}: in progress ({1}/{2} unit(s) done) -- {3}" -f $t.Name, $done, $units.Count, $last)
-        }
-    }
-}
-
-Write-Host 'Mutation locks:'
-$locks = @(Get-MutationLockInfo)
-if ($locks.Count -eq 0) { Write-Host '  none held' }
-foreach ($l in $locks) {
-    $flag = if ($l.ageMinutes -gt 60) { ' [OVER 1 HOUR]' } else { '' }
-    Write-Host ("  {0} -- {1} (agent {2}, {3} min){4}" -f $l.file, $l.reason, $l.agent, $l.ageMinutes, $flag)
-}
-
-$statusFile = Join-Path $repo '.claude\sprint_status.json'
-$phase = 'unknown'
-if (Test-Path $statusFile) {
-    $j = Get-Content $statusFile -Raw -Encoding UTF8 | ConvertFrom-Json
-    if ($j.current_sprint) { $phase = "Sprint $($j.current_sprint.number): $($j.current_sprint.status)" }
-}
-Write-Host "Sprint phase: $phase"
+$arguments = @()
+if ($ScratchFolder) { $arguments += @('--scratch-folder', $ScratchFolder) }
+& $py.Source (Join-Path $PSScriptRoot 'agent-work-status.py') @arguments
+exit $LASTEXITCODE

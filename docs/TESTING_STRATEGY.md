@@ -1106,7 +1106,7 @@ New-MutationLock -File "docs/SOME_FILE.md" -Reason "flip X to prove the gate fai
 Remove-MutationLock
 ```
 
-While a lock is held, `.claude/hooks/block-commit-during-mutation.ps1` (a PreToolUse hook)
+While a lock is held, `.claude/hooks/block-commit-during-mutation.py` (a PreToolUse hook)
 refuses any `git commit` in the repository and names the locked files. `Get-MutationLock`
 lists what is held.
 

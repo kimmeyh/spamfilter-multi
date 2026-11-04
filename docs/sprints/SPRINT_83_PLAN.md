@@ -821,6 +821,49 @@ tooling; Windows-only build steps (MSIX, Task Scheduler, WinWright) keep a Windo
 _**Risk & rollback**_: a broken hook can block every tool call. Each pilot hook is registered only after its cases
 pass; rollback is the previous `settings.json` registration (one commit).
 
+**Result (Phase 4)**: Done 2026-11-02. ADR-0051 (Proposed): `docs/adr/0051-python-for-deterministic-tooling.md`.
+- Files: layer `.claude/hooks/lib/{common,hooklib,mutation_lock}.py`; hooks `.claude/hooks/block-blind-staging.py`,
+  `block-heredoc-python-backslash.py`, `block-commit-during-mutation.py` (the three `.ps1` originals are deleted);
+  `.claude/hooks/mutation-lock.ps1` is now a thin shim (same four functions, same lock files);
+  `scripts/agent-work-status.py` with `scripts/agent-work-status.ps1` kept as the entry point (output diffed against
+  the old script on a fixture with every task state and one lock: 0 differing lines); tests
+  `.claude/hooks/tests/test_pylib.py` (stdlib `unittest`, 33 tests) and `test-mutation-lock-shim.ps1`; 14 new cases in
+  `.claude/hooks/test-cases/commit-lock/` (that hook had none); `run-test-cases.ps1` runs `.py` routes, builds the lock
+  fixtures per case and takes `-OnlyRoute`; `scripts/test-hook.ps1` runs `.py` hooks; CI step "Python hook layer
+  tests" in the `analyze-and-test` job (`python3`, `working-directory: .`); CLAUDE.md and TESTING_STRATEGY.md hook file
+  names updated.
+- Case counts (`run-test-cases.ps1`): before 162 passed, 0 failed; after 176 passed, 0 failed (162 unchanged cases, now
+  against the Python hooks for staging-guard 24 and heredoc-guard 30, plus 14 new commit-lock cases). The final run
+  was one `run-test-cases.ps1 -OnlyRoute` process per route, all at once (55 top level, 25 closeout, 8 sprint-cards,
+  8 stash-guard, 12 velocity-warn, 14 commit-lock, 24 staging-guard, 30 heredoc-guard), because one serial run takes
+  over an hour on this loaded machine. `test-hook.ps1` ALLOW and BLOCK spot checks on the Python hooks: PASS.
+- Mutation (`scripts/mutation-test.ps1`, command checks, specs written with the Write tool): 29 mutants, all KILLED
+  (staging 7, heredoc 6, commit gate 6, library 5, agent-work-status 3, PowerShell shim 2). First run: C2 (override token read from the quoted message) and P2 (shim ignores `-File`) SURVIVED
+  and L5 (BOM) had a bad anchor. Fixes: a new case `violation-7-override-token-inside-quoted-message` and a bystander
+  lock in the shim check; second run killed all three. No INVALID mutant.
+- Registration form: `python "${CLAUDE_PROJECT_DIR}/.claude/hooks/<name>.py"` (forward slashes, one command). The exact
+  string was run through PowerShell with `CLAUDE_PROJECT_DIR` set: exit 2 and the message for `git add -A`. The live
+  harness reads the main checkout's `settings.json`, so the first live run happens after merge.
+- Defects found (Windows unless noted): (1) Windows PowerShell 5.1 `ConvertFrom-Json` returns a JSON array as ONE
+  object, so `Get-MutationLockInfo` reported one lock for two (found by the shim check; fixed by piping through
+  `ForEach-Object`); (2) the old commit gate wrote its BLOCK message with `Write-Host` (stdout) while Claude Code
+  feeds Claude the stderr of an exit-2 hook, so the reason may never have reached Claude (now stderr; unverified how
+  the harness displayed it before); (3) text-mode stdin and stdout on Windows use cp1252: a non-ASCII command would
+  fail to decode (fail open on a real violation) or fail to encode (exit 1, block lost); the layer reads bytes and
+  uses `errors=replace`, test `..._under_cp1252`; (4) Python 3.11 rejects an inline `(?i)` that is not at pattern
+  start, and PowerShell `-match` is case-insensitive while `-cmatch` is not (flags carried per call); (5) the first
+  runner fixtures for commit-lock were built once at start, and the 30-minute suite made the lock stale before its
+  case ran (now built per case); (6) a bare `python` start costs ~2.9 s on this heavily loaded machine (hook 3.2 s,
+  `powershell.exe -Command exit 0` 3.6 s), so lazy imports keep a hook near interpreter start; the numbers are under
+  load, not a benchmark. Linux: the CI step is in place but has not run (no push, no PR run in this task).
+- Backlog: F326 to F340 in `docs/ALL_SPRINTS_MASTER_PLAN.md` (H1 to H4 hooks and test tooling, S1 to S7 scripts, Windows
+  bound decisions, one-off audit, skills, memory scripts audit), sizes in minutes. F321 now carries a pilot note.
+- Judgment calls: layer under `.claude/hooks/lib/` (named in the ADR); `.py` file names keep hyphens; the commit gate
+  block text moved to stderr and gained `timeout: 15` and honors the payload `cwd` when `CLAUDE_PROJECT_DIR` is unset;
+  `agent-work-status` resolves the lock folder from the repo root first (environment still wins); old `.ps1` hooks
+  deleted rather than kept beside the Python ones; no `python3 || python` fallback (stdin is consumed by the first
+  run); ADR acceptance left to Harold.
+
 ## Task 11 -- F237: quiet the Kotlin daemon traces in the Android build (Priority 38)
 
 **Value**: This prevents the non-fatal traces from being read as a build failure again.

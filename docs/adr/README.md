@@ -56,6 +56,7 @@ This directory contains Architectural Decision Records for the spamfilter-multi 
 | [0048](0048-background-scan-notifications-one-plugin.md) | Background-Scan Completion Notifications Through One Plugin on Both Platforms | Accepted | 2026-10-13 |
 | [0049](0049-platform-capabilities-and-policy.md) | Platform Capabilities and Platform Policy -- One Seam for Every Platform Difference | Accepted | 2026-10-19 |
 | [0050](0050-ios-parity-exceptions.md) | iOS Parity Exceptions Against ADR-0042 (Best-Effort Background Scans; No New-Mail Trigger) | Accepted | 2026-10-19 |
+| [0051](0051-python-for-deterministic-tooling.md) | Python for Deterministic Tooling (Shared Hook Layer, Registration Form, Conversion Order) | Proposed | 2026-11-01 |
 
 ## Creating a New ADR
 

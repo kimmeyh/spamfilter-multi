@@ -1,0 +1,1 @@
+{"session_id":"cl-allow-6-no-command","cwd":"{{LOCK_ACTIVE}}","hook_event_name":"PreToolUse","tool_name":"Write","tool_input":{"file_path":"a.txt","content":"x"}}

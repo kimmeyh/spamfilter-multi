@@ -504,6 +504,177 @@ Source: `docs/research/R76-3_HEURISTICS_ML_GENAI_SPAM_IDENTIFICATION.md` (Issue 
   replaces the scripts. Fact (`.claude/settings.json`, read 2026-10-31): all 8 hook registrations, and the documented
   build commands, run `powershell` (Windows PowerShell 5.1), while the Claude Code PowerShell tool runs 7; both
   shells are in use until the conversion.
+- Sprint 83 Task 10 (Harold, Q9 = 1): the PILOT is done: the shared layer `.claude/hooks/lib/` (ADR-0051, Proposed),
+  `block-blind-staging`, `block-heredoc-python-backslash`, `block-commit-during-mutation`, the mutation lock library
+  (the `mutation-lock.ps1` shim keeps the PowerShell interface) and `scripts/agent-work-status`. The rest is split into
+  the batch cards F326 to F340 below (Harold, 2026-11-01: *"ensure there are backlog items for everything not
+  included in F321"*). Suggested order: F326, F327, F328, F329, then F330 to F338, then F339 and F340. Batch sizes are
+  estimates in minutes, unverified; the pilot actuals are in the Sprint 83 plan, Task 10 Result.
+
+**F326. Python conversion batch H1: three small PreToolUse hooks (~90-150m, estimate unverified) Priority 35 -- NEW 2026-11-01 (Sprint 83 Task 10, F321 R-6)**
+- Phase: Process / Tooling
+- Platform: Development process (Windows, Linux, macOS, WSL). The app is not affected.
+- Files (423 lines): `.claude/hooks/block-carry-forward-stash.ps1` (109), `require-sprint-cards.ps1` (174),
+  `warn-commit-without-velocity.ps1` (140). All deterministic.
+- Do: port each with the F321 layer (`.claude/hooks/lib/`), keeping exit codes, bypass tokens (`allow_stash`) and the
+  message text a gate matches on; register in `.claude/settings.json` after its cases pass; keep the
+  `test-cases/stash-guard`, `sprint-cards` and `velocity-warn` folders running (the `warn-*` cases need the
+  `hookSpecificOutput.additionalContext` JSON on stdout unchanged).
+- Care: `warn-commit-without-velocity` and `require-sprint-cards` call `git` against the real repo; use
+  `common.git`. `require-sprint-cards` reads `.claude/sprint_status.json` and a PR check; keep its fail-open path.
+- AC: `run-test-cases.ps1` passes with the same case count; each hook mutation-verified (`scripts/mutation-test.ps1`,
+  `command` check); the Python replay in `.claude/hooks/tests/test_pylib.py` gains the three folders.
+
+**F327. Python conversion batch H2: verify-closeout-complete Stop hook (~120-200m, estimate unverified) Priority 35 -- NEW 2026-11-01 (Sprint 83 Task 10, F321 R-6)**
+- Phase: Process / Tooling
+- Platform: Development process.
+- File (515 lines): `.claude/hooks/verify-closeout-complete.ps1`. Deterministic: file and `git` checks against the
+  sprint plan, `sprint_status.json`, open issues and the PR.
+- Do: port; keep every check number and message the hook, `SPRINT_CHECKLIST.md` and CLAUDE.md cite (for example
+  "check 3d-2"); the `test-cases/closeout` folder (25 cases, many fixtures) must pass unchanged.
+- Care: this hook reads markdown with CRLF and LF endings and non-ASCII text; read with `utf-8-sig` and test one CRLF
+  fixture. `gh` calls go through a non-raising wrapper like `common.git` and fail open.
+- AC: same as F326; plus a mutation per check family (at least 6 mutants).
+
+**F328. Python conversion batch H3: sprint-auto-advance Stop hook (~150-260m, estimate unverified) Priority 35 -- NEW 2026-11-01 (Sprint 83 Task 10, F321 R-6)**
+- Phase: Process / Tooling
+- Platform: Development process.
+- File (756 lines): `.claude/hooks/sprint-auto-advance.ps1`, the largest hook; its patterns are the F193 evidence gate
+  and the commitment and question detectors. Deterministic regex heuristics. CLAUDE.md IMP-3 (Sprint 70) warns that
+  the gate matches the SHAPE of messages: re-run the whole suite after any output convention change.
+- Do: port pattern by pattern, one commit per pattern group; the top-level `test-cases/*.json` cases and the
+  `fixtures/` sprints are the contract. PowerShell `-match` is case-insensitive and `-cmatch` is not: carry the flag
+  per call (this hook has the most patterns).
+- AC: same as F326; the Stop registration swaps to `python "${CLAUDE_PROJECT_DIR}/.claude/hooks/sprint-auto-advance.py"`
+  only after every case passes; a mutation per gate (1b, 1c, F193 markers).
+
+**F329. Python conversion batch H4: the hook test tooling, then retire the PowerShell shims (~150-250m, estimate unverified) Priority 36 -- NEW 2026-11-01 (Sprint 83 Task 10, F321 R-6)**
+- Phase: Process / Tooling
+- Platform: Development process.
+- Files (608 lines): `.claude/hooks/run-test-cases.ps1` (131 plus the Sprint 83 `.py` route support),
+  `.claude/hooks/status-footer.ps1` (160), `scripts/test-hook.ps1` (150 plus `.py` dispatch),
+  `scripts/mutation-test.ps1` (167).
+- Do: convert last among the hooks, because they run all of them. The Python runner keeps the allow-, violation- and
+  warn- rules and the fixture repos. `status-footer.ps1` prints the date, time and sprint phase footer line: keep its
+  output format byte for byte. `mutation-test` keeps the baseline, INVALID and restore-byte-for-byte rules (Sprint 74
+  and 75 retro).
+- Retire: `.claude/hooks/mutation-lock.ps1` and `scripts/agent-work-status.ps1` shims only after every caller (grep
+  `mutation-lock.ps1`, `agent-work-status.ps1`, the hourly wake-up, CLAUDE.md, docs) is updated in the same commit.
+- AC: the Python runner reports the same case counts as the PowerShell runner did (record both); `mutation-test` kills
+  its own sample spec; docs and CLAUDE.md command lines updated.
+
+**F330. Python conversion batch S1: repo helper scripts (~150-250m, estimate unverified) Priority 37 -- NEW 2026-11-01 (Sprint 83 Task 10, F321 R-6)**
+- Phase: Process / Tooling
+- Platform: Development process.
+- Files (713 lines): `scripts/clean-temp-scripts.ps1` (151), `scripts/run-full-suite.ps1` (132),
+  `scripts/validate-yaml-rules.ps1` (239), `scripts/test-regex-patterns.ps1` (191). All deterministic.
+- Care: `validate-yaml-rules` and `test-regex-patterns` parse YAML and .NET regex; list the Python `re` differences
+  first (named groups `(?<n>)` versus `(?P<n>)`, inline flag position). YAML parsing needs a dependency (PyYAML) the
+  standard library lacks, and a dependency change needs Harold's approval: the card first checks whether a minimal
+  reader of this repo's restricted YAML (single-quoted strings, lists) is enough, and asks Harold only if not.
+- AC: each script keeps its parameters and exit codes (or every caller and doc is updated in the same commit); a
+  `unittest` file per script; the `/validate-rules` skill still works.
+
+**F331. Python conversion batch S2: Claude and MCP set-up scripts, test mail servers (~90-150m, estimate unverified) Priority 37 -- NEW 2026-11-01 (Sprint 83 Task 10, F321 R-6)**
+- Phase: Process / Tooling
+- Platform: Development process.
+- Files (473 lines): `scripts/install-custom-mcp.ps1` (121), `scripts/setup-claude-mcp.ps1` (203),
+  `scripts/start-test-imap-servers.ps1` (149). Deterministic. The MCP scripts edit the Claude MCP configuration
+  (JSON): use `common.find_tool` for `claude` and `node`, and write the user-level file with a backup.
+- AC: parameters and exit codes kept; `start-test-imap-servers` still starts the test servers the way
+  `TESTING_STRATEGY.md` documents (verify the command on the card's day, do not assume).
+
+**F332. Python conversion batch S3: phone log health and the battery arm script (~90-150m, estimate unverified) Priority 37 -- NEW 2026-11-01 (Sprint 83 Task 10, F321 R-6)**
+- Phase: Process / Tooling
+- Platform: Development process.
+- Files: `scripts/phone-log-health.ps1` (267), `mobile-app/scripts/r76_battery_arm.sh`. Deterministic log parsing.
+  `pull-phone-screenshots.ps1` is NOT here: it is Windows-bound (F337).
+- AC: the same report lines for two Sprint 82 phone log samples kept as fixtures; `unittest` file.
+
+**F333. Python conversion batch S4: mobile-app check and gate scripts (~180-300m, estimate unverified) Priority 37 -- NEW 2026-11-01 (Sprint 83 Task 10, F321 R-6)**
+- Phase: Process / Tooling
+- Platform: Development process (checks the Flutter app, not part of it).
+- Files (about 750 lines): `mobile-app/scripts/check-log-redaction.ps1` (113), `check-version-consistency.ps1`
+  (125), `validate-content-manifest.ps1` (143), `verify-aab-play-requirements.ps1` (305), `update_iana_tlds.ps1` (66)
+  and `update_iana_tlds.sh`. Deterministic.
+- Care: `verify-aab-play-requirements` reads a built bundle (zip and manifest bytes): Python `zipfile` covers it;
+  confirm the two F204 gaps it asserts are still the Play requirements (do not carry the old text forward unread).
+  `check-version-consistency` pairs with the `version_consistency` Dart test: keep both in step.
+- AC: each keeps its exit codes; the Dart gate tests that call them still pass; `unittest` file per script.
+
+**F334. Python conversion batch S5: mobile-app test runners and test mail (~150-250m, estimate unverified) Priority 37 -- NEW 2026-11-01 (Sprint 83 Task 10, F321 R-6)**
+- Phase: Process / Tooling
+- Platform: Development process.
+- Files (about 870 lines): `mobile-app/scripts/run-tests.ps1` (120), `run-integration-tests.ps1` (102),
+  `monitor-tests.ps1` (169), `check_scans.ps1` (18), `check_task.ps1` (16), `test-background-scan-skip.ps1` (215),
+  `generate-test-emails.ps1` (229), `ww-test-helper.sh`; `send-test-emails.py` is already Python (reuse its code).
+- Care: `run-tests` and `monitor-tests` wrap `flutter test` with progress output; the CLAUDE.md rule on background
+  logs (write the FULL output to a file, trim on read) applies.
+- AC: parameters kept; `unittest` file per script.
+
+**F335. Python conversion batch S6: Android build scripts (~180-300m, estimate unverified) Priority 37 -- NEW 2026-11-01 (Sprint 83 Task 10, F321 R-6)**
+- Phase: Process / Tooling
+- Platform: Development process. Android builds already run on Linux in CI (`android-build` job).
+- Files (1,231 lines): `mobile-app/scripts/build-with-secrets.ps1` (953), `build-with-secrets-clean.ps1` (254; likely
+  redundant: confirm and delete instead of converting), `build-apk.ps1` (24).
+- Care: CLAUDE.md Sprint 66 IMP-1: `build-with-secrets.ps1 -Output aab` injects the gradle properties the SEC-9 gate
+  needs; the Python version must inject the same ones, and the card proves it by building an AAB. Never run it at
+  the same time as a Windows build (`build/` is shared).
+- AC: a debug APK and a release AAB build from the Python entry point; the SEC-9 gate still fires when a property is
+  removed (mutation).
+
+**F336. Python conversion batch S7: emulator, adb and Android helper scripts (~150-260m, estimate unverified) Priority 37 -- NEW 2026-11-01 (Sprint 83 Task 10, F321 R-6)**
+- Phase: Process / Tooling
+- Platform: Development process (Android tooling; the phones cannot use adb, the emulator can).
+- Files (about 800 lines): `mobile-app/scripts/run-emulator.ps1` (83), `start-emulator.ps1` (54),
+  `setup-android-oauth.ps1` (157), `export-tokens-for-android.ps1` (114), `capture-diagnostic-logs.ps1` (303),
+  `enable-screen-reader-flag.ps1` (46), `fix-flutter-git.ps1` (57).
+- Care: resolve tools through the environment (`ANDROID_HOME`, `common.find_tool`), never a hardcoded path (CLAUDE.md
+  Sprint 67 IMP-3: this machine has two SDK installs).
+- AC: each script runs against the emulator (launch it, leave it running); a `unittest` for the path resolution.
+
+**F337. Windows-bound scripts: decide per file, add thin Python entry points where useful (~90-150m, estimate unverified) Priority 38 -- NEW 2026-11-01 (Sprint 83 Task 10, F321 R-6)**
+- Phase: Process / Tooling
+- Platform: Windows only by nature (MSIX, WinWright, Windows Error Reporting, MTP through the Windows shell).
+- Files: `mobile-app/scripts/build-windows.ps1` (577), `build-msix.ps1` (238; DEPRECATED, CLAUDE.md says do not use:
+  delete), `launch-msix.ps1` (68), `create-test-cert.ps1` (24), `generate-appinstaller.ps1` (126),
+  `run-winwright-tests.ps1` (962), `winwright-db-snapshot.ps1` (435); `scripts/enable-crash-dumps.ps1` (72),
+  `scripts/pull-phone-screenshots.ps1` (286).
+- Do: per file, record "stays PowerShell" (with the reason) or "Python entry that calls PowerShell on Windows and
+  exits with a clear message elsewhere". Delete `build-msix.ps1` and update its references. No conversion of the
+  Windows tool calls themselves.
+- AC: every file has a recorded decision in the ADR-0051 classification; the deleted script has no remaining
+  reference (grep).
+
+**F338. Audit the rule-data one-off scripts: delete, keep or convert (~45-90m, estimate unverified) Priority 38 -- NEW 2026-11-01 (Sprint 83 Task 10, F321 R-6)**
+- Phase: Process / Tooling
+- Platform: Development process.
+- Files: `mobile-app/scripts/cleanup-url-body-rules.ps1` (129), `fix-header-patterns.ps1` (42); Dart one-offs
+  `cleanup_body_rules.dart`, `dedup_rules.dart`, `fix_tld_rules.dart`, `fix_wildcard_tld.dart`,
+  `remove_ambiguous_tld_rules.dart`, `repair_safe_sender_types.dart`, `split_rules.dart`, `tld_audit_and_gapfill.dart`;
+  Python `rebuild_rules_yaml.py`; `split_edge_cases.txt`. Rules are in the database since Sprint 20, so most one-offs
+  may be dead.
+- Do: for each, grep for a caller; delete the dead ones, convert none that nothing calls. Record the result.
+- AC: a list of kept and deleted files with the evidence (no caller found, or the caller named).
+
+**F339. Skills: a script for the deterministic part, the skill stays a short `.md` (~120-200m, estimate unverified) Priority 38 -- NEW 2026-11-01 (Sprint 83 Task 10, F321 R-6)**
+- Phase: Process / Tooling
+- Platform: Development process.
+- Skills: deterministic `startup-check` (130 lines), `full-test` (40), `validate-rules` (31), `deploy-debug` (32); hybrid
+  `phase-check` (71) and `memory-save` (139: the script gathers the facts, the model writes the resume string).
+  `plan-sprint`, `backlog-refinement` and `first-principles` are GenAI and stay `.md` (no work).
+- Do: one Python script per skill under `scripts/`, and the skill `.md` runs it and keeps only the instructions about
+  what to do with the output. `startup-check` keeps the staleness checks of `sprint_status.json`.
+- AC: each skill produces the same report as before on the current repo (compare outputs); the skills still load.
+
+**F340. Audit the `.claude/scripts/` memory scripts and the retired `memory-restore` skill (~20-40m, estimate unverified) Priority 40 -- NEW 2026-11-01 (Sprint 83 Task 10, F321 R-6)**
+- Phase: Process / Tooling
+- Platform: Development process.
+- Files: `.claude/scripts/archive-memory.ps1` (47), `check-memory-on-startup.ps1` (34), `save-memory.ps1` (85);
+  `.claude/skills/memory-restore/` (RETIRED in Sprint 51; `.claude/memory/current.md` is frozen at Sprint 39).
+- Do: grep for callers (settings, hooks, skills, docs). Delete what nothing calls; convert any survivor under the
+  F329 rules.
+- AC: the list of deleted and kept files with the grep evidence.
 
 **F322. Notification choice: notify only when No Rule is greater than 0 (~60-120m, estimate unverified) Priority 30 -- TARGET SPRINT 83 (Harold 2026-10-31, "add to backlog for next sprint") -- NEW 2026-10-31**
 - Phase: Core App Quality

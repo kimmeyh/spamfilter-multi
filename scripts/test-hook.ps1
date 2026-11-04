@@ -24,7 +24,9 @@
   twenty-line throwaway.
 
 .PARAMETER HookPath
-  The hook to run. Relative paths resolve against `.claude/hooks/`.
+  The hook to run. Relative paths resolve against `.claude/hooks/`. A `.py` hook runs
+  under python (F321, Sprint 83); any other file runs under PowerShell. A bare name with
+  no extension is not guessed: give `block-blind-staging.py` or `.ps1`.
 
 .PARAMETER Command
   A shell command to wrap as a Bash tool-call payload (PreToolUse shape).
@@ -120,7 +122,14 @@ if ($Json) {
     exit 2
 }
 
-$stderr = $payload | & powershell -NoProfile -ExecutionPolicy Bypass -File $resolved 2>&1
+# F321 (Sprint 83): a Python hook (.py) runs under python; every other hook runs under PowerShell.
+if ($resolved -like '*.py') {
+    $py = (Get-Command python, python3 -ErrorAction SilentlyContinue | Select-Object -First 1).Source
+    if (-not $py) { Write-Output 'python not found on PATH (needed for a .py hook).'; exit 2 }
+    $stderr = $payload | & $py $resolved 2>&1
+} else {
+    $stderr = $payload | & powershell -NoProfile -ExecutionPolicy Bypass -File $resolved 2>&1
+}
 $code = $LASTEXITCODE
 
 $verdict = if ($code -eq 0) { 'ALLOW' } else { "BLOCK (exit $code)" }

@@ -30,6 +30,7 @@ Format: `- **type**: Description (Issue #N)` where type is feat|fix|chore|docs
 
 - **chore**: Version 0.24.0+21 for Sprint 83, so a tester can tell this build from the 0.23.0 store builds (Issue #535)
 - **feat**: You can now choose which background scans notify you. Settings > Background > "Scan notifications" offers "Every completed scan" or "Only when there are No Rule items" (the default), so a scan with nothing to review no longer interrupts you. On Android 8 and newer the row opens Android's notification settings, where you can turn off "Scans with nothing to review"; the notification channel "Background Scans" is replaced by "Scans with No Rule items" and "Scans with nothing to review" (Issue #536)
+- **chore**: Python pilot for the repo tooling (F321, ADR-0051 Proposed): a standard-library-only hook layer in `.claude/hooks/lib/`, three hooks (blind staging, heredoc backslash, commit during mutation), the mutation lock library and `scripts/agent-work-status` now run as OS-agnostic Python with the same exit codes and messages; the PowerShell `mutation-lock.ps1` and `agent-work-status.ps1` stay as thin entry points; a `unittest` step runs on the CI Linux runner; the commit-during-mutation block message now goes to stderr, where Claude can read it; backlog cards F326 to F340 cover everything not converted (Issue #544)
 
 ## [0.23.0] - 2026-10-31
 
