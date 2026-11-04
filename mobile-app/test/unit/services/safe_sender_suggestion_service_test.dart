@@ -144,4 +144,38 @@ void main() {
     expect(await SettingsStore(h.dbHelper).getRejectedSafeSenderSuggestions(),
         {'nope@ok.example', 'two@ok.example'});
   });
+
+  // 5.1.2 F10. What this does NOT catch: the screen passing the real rules
+  // (the screen builds the predicate from RuleSetProvider).
+  test('a sender a block rule matches is not suggested', () async {
+    await addNoRule('blocked@b.example', 'green', times: 3);
+    await addNoRule('fine@b.example', 'green', times: 3);
+    final list = await service.findCandidates(
+      rejected: {},
+      safePatterns: const [],
+      isBlocked: (a) => a == 'blocked@b.example',
+    );
+    expect(list.map((c) => c.address), ['fine@b.example']);
+  });
+
+  // 5.1.2 F3. What this does NOT catch: the screen's error text (it shows the
+  // thrown error in the existing "Could not hide the suggestion" snackbar).
+  test('a damaged reject list is not overwritten by the next reject',
+      () async {
+    final db = await h.dbHelper.database;
+    await db.insert('app_settings', {
+      'key': SettingsStore.keyRejectedSafeSenderSuggestions,
+      'value': '{not json',
+      'value_type': 'json',
+      'date_modified': 0,
+    });
+    final store = SettingsStore(h.dbHelper);
+    expect(await store.getRejectedSafeSenderSuggestions(), isEmpty);
+    await expectLater(
+        store.rejectSafeSenderSuggestion('x@ok.example'), throwsStateError);
+    final row = await db.query('app_settings',
+        where: 'key = ?',
+        whereArgs: [SettingsStore.keyRejectedSafeSenderSuggestions]);
+    expect(row.single['value'], '{not json');
+  });
 }

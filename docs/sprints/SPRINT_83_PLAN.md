@@ -1195,3 +1195,32 @@ until Manual Validation"*). MV-3a = yes (PASS). iCloud = 1 (*"yes"*: "Sign In Ag
 as R-4). Open, asked again at Manual Validation: MV-3c (wait for a YELLOW item, or accept the clipping check and
 move "Suggested" to this sprint's Manual Validation) and the Record question (0.23.0 on the Fold from the Play
 closed test).
+
+---
+
+# Phase 5 evidence
+
+- **5.1.2 F-PRECHECK**: 2026-11-04, seven classes run by a read-only agent over `git diff origin/develop...HEAD` at
+  fb4f6c1f (Dart, Kotlin, PowerShell, Python, YAML; no C++, Swift or shell). Classes 1 (mirror sites) and 2 (helper
+  wiring) clean. 10 findings, 9 fixed in this commit, 1 asked at Manual Validation:
+  - F1 MEDIUM (class 6) `_finishAccountAdded`: a failed `refreshForReAdd` was logged only, under "[OK] saved". Fixed:
+    an orange SnackBar names the account and says to remove and add it again if scans look wrong.
+  - F5 MEDIUM (class 4) Review No Rule Items `_loadBodyFor` split the platform id at the first dash (`gmail-imap-`
+    read as `gmail`, `jean-luc@aol.com` as `jean`; the Sprint 47 class). Fixed: `BackgroundScanCore.resolvePlatformId`
+    (stored id first). Grep of the other new `indexOf('-')` sites: line 337 is older display-only code; no others.
+  - F6 MEDIUM (class 6) `hooklib.run` failed open with exit 0, whose stderr Claude Code never shows
+    (https://code.claude.com/docs/en/hooks, read 2026-11-04). Fixed: exit 1 (`HOOK_ERROR`), a non-blocking error with
+    a visible notice; no hook sets `onFailure`. Hook suites: test_pylib 33 OK, run-test-cases 176 of 176.
+  - F8 MEDIUM (class 7) a saved scan's pop-up cannot re-detect a temperror, so it still suggests Block where AC-1,
+    the CHANGELOG and both release notes promise it does not. NOT fixed: both fixes change a prior decision; asked
+    at Manual Validation.
+  - F10 LOW-MEDIUM (class 5) a suggested safe sender could be one a block rule matches; Accept then deleted that
+    rule. Fixed: new `RuleConflictResolver.hasConflictingRule` (the check Accept runs, removes nothing) passed as
+    `findCandidates(isBlocked:)`.
+  - F2 LOW `isCovered` swallow: now `on FormatException` with a warning. F3 LOW a damaged reject list was overwritten
+    (earlier rejections came back): reject now throws `StateError`, shown by the existing snackbar. F4 LOW the
+    notification row showed the default as saved after a read failure: now says so. F7 LOW the enum took the class
+    dartdoc: moved. F9 LOW `/startup-check` gains a hook-interpreter check.
+  - Tests: new cases for F3, F4, F10 and `hasConflictingRule`. Not covered by a test: F1 (SnackBar after a failed
+    refresh) and F5 (the call site; `resolvePlatformId` has its own tests). Full suite 2026-11-04 7:19am at
+    6bc6ca72 plus these fixes: 3554 passed, 15 skipped, 0 failed; `flutter analyze` no issues.

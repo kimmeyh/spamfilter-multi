@@ -692,15 +692,18 @@ class _AccountSetupScreenState extends State<AccountSetupScreen> {
     // F324 (Sprint 83, Q3 = 3): the new sign-in starts clean. The user's
     // choices and scan history are kept; the old sign-in's flag, lockout count
     // and (unless this is a plain password repair) scan positions are cleared.
-    // Best effort: a failure here leaves a stale flag that the next successful
-    // sign-in clears, so it is logged and the add continues.
+    // A failure does not stop the add (the credentials are already saved), but
+    // it can leave the old scan positions in place, so the user is told after
+    // the scan-mode read (5.1.2 F1).
     // Started here and awaited BEFORE the scan screen opens, so the first scan
     // never runs against the old positions; it overlaps the scan-mode read
     // below instead of adding a second sequential database wait.
+    var refreshFailed = false;
     final refresh = DataDeletionService()
         .refreshForReAdd(accountId,
             resetServerState: widget.signInAgainFor == null)
         .then<void>((_) {}, onError: (Object e) {
+      refreshFailed = true;
       _logger.w('F324: could not clear the old sign-in state for '
           '${Redact.accountId(accountId)}: $e');
     });
@@ -720,6 +723,16 @@ class _AccountSetupScreenState extends State<AccountSetupScreen> {
     scanProvider.initializeScanMode(mode: manualScanMode);
     await refresh;
     if (!mounted) return;
+    if (refreshFailed) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Could not clear the old sign-in data for $email. '
+              'If scans look wrong, remove the account and add it again.'),
+          backgroundColor: Colors.orange,
+          duration: const Duration(seconds: 8),
+        ),
+      );
+    }
 
     Navigator.of(context).pushReplacement(
       MaterialPageRoute(

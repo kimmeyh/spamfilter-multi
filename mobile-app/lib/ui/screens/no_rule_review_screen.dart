@@ -12,6 +12,7 @@ import '../../core/providers/email_scan_provider.dart';
 import '../../core/providers/rule_set_provider.dart';
 import '../../core/providers/selected_account_provider.dart';
 import '../../core/services/auth_results_parser.dart';
+import '../../core/services/background_scan_core.dart' show BackgroundScanCore;
 import '../../core/services/content_history.dart';
 import '../../core/services/email_body_parser.dart';
 import '../../core/services/heuristic_signals.dart';
@@ -530,14 +531,17 @@ class _NoRuleReviewScreenState extends State<NoRuleReviewScreen>
   /// the synthetic id `unmatched-<row id>`, which no provider knows, so the
   /// message is rebuilt with the PROVIDER id and folder stored at scan time.
   /// The platform is the account id's prefix (`{platform}-{email}`).
-  Future<String> _loadBodyFor(_NoRuleItem item) {
+  Future<String> _loadBodyFor(_NoRuleItem item) async {
     final providerId = item.email.providerIdentifierValue;
-    final dash = item.accountId.indexOf('-');
-    if (providerId.isEmpty || dash <= 0) {
-      return Future<String>.error(PopupBodyUnavailable('no provider id'));
-    }
+    if (providerId.isEmpty) throw PopupBodyUnavailable('no provider id');
+    // 5.1.2 F5: the platform id stored when the account was added, then the
+    // dash-before-@ inference. A first-dash split read `gmail-imap-...` as
+    // `gmail` and `jean-luc@aol.com` as `jean` (the Sprint 47 class).
+    final platformId = await BackgroundScanCore.resolvePlatformId(
+        SecureCredentialsStore(), item.accountId);
+    if (platformId == null) throw PopupBodyUnavailable('no platform id');
     return PopupBodyFetcher().fetch(
-      platformId: item.accountId.substring(0, dash),
+      platformId: platformId,
       accountId: item.accountId,
       message: EmailMessage(
         id: providerId,

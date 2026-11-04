@@ -28,6 +28,14 @@ class _MemoryStore extends SettingsStore {
   }
 }
 
+class _UnreadableStore extends _MemoryStore {
+  _UnreadableStore() : super(ScanNotifyChoice.noRuleOnly);
+
+  @override
+  Future<ScanNotifyChoice> getScanNotifyChoice() async =>
+      throw StateError('database is locked');
+}
+
 void main() {
   tearDown(() => PlatformCapabilities.debugOverride = null);
 
@@ -148,6 +156,23 @@ void main() {
       expect(find.byKey(const Key('scan_notifications_open_failed')),
           findsOneWidget);
     });
+  });
+
+  // 5.1.2 F4. What this does NOT catch: a real database read error (the fake
+  // store throws directly).
+  testWidgets('a choice that cannot be read says so; saving clears it',
+      (tester) async {
+    final store = _UnreadableStore();
+    await pumpRow(tester, HostPlatform.windows, store: store);
+    expect(find.byKey(const Key('scan_notifications_load_failed')),
+        findsOneWidget);
+    await tester.tap(find.byKey(const Key('scan_notifications_choice')));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Every completed scan').last);
+    await tester.pumpAndSettle();
+    expect(store.value, ScanNotifyChoice.every);
+    expect(find.byKey(const Key('scan_notifications_load_failed')),
+        findsNothing);
   });
 
   test('source gate: the Background tab builds the row', () {

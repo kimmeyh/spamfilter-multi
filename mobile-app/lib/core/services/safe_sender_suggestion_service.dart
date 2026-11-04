@@ -138,8 +138,8 @@ class SafeSenderSuggestionService {
     for (final p in safePatterns) {
       try {
         if (RegExp(p, caseSensitive: false).hasMatch(address)) return true;
-      } catch (_) {
-        continue;
+      } on FormatException catch (e) {
+        Logger().w('F270: a safe-sender pattern does not compile: $e');
       }
     }
     return false;
@@ -148,11 +148,14 @@ class SafeSenderSuggestionService {
   /// The candidates, most No Rule emails first (ties by address).
   ///
   /// [rejected] holds lowercase addresses the user rejected. [safePatterns]
-  /// are the saved safe-sender regexes. Throws on a database error: the caller
+  /// are the saved safe-sender regexes. [isBlocked] is true for an address a
+  /// block rule matches; such a sender is not suggested, because Accept would
+  /// remove that rule (5.1.2 F10). Throws on a database error: the caller
   /// shows it (a check that did not run is not "no suggestions").
   Future<List<SafeSenderCandidate>> findCandidates({
     required Set<String> rejected,
     required List<String> safePatterns,
+    bool Function(String address)? isBlocked,
     int minCount = kSuggestionMinCount,
   }) async {
     final db = await _db.database;
@@ -189,6 +192,7 @@ class SafeSenderSuggestionService {
       if (deleted.contains(address)) return;
       if (rejected.contains(address)) return;
       if (isCovered(address, safePatterns)) return;
+      if (isBlocked != null && isBlocked(address)) return;
       final choices = choicesFor(address);
       if (choices == null) return;
       result.add(

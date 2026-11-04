@@ -147,7 +147,10 @@ class HooklibTests(unittest.TestCase):
                 "def decide(p):\n    raise RuntimeError('boom')\n"
                 "hooklib.run('boom', decide)\n" % str(HOOKS / "lib"), encoding="utf-8")
             done = subprocess.run([sys.executable, str(script)], input=b"{}", capture_output=True, timeout=60)
-        self.assertEqual(done.returncode, 0)
+        # 1, not 0: a non-blocking error whose note Claude Code shows (5.1.2 F6).
+        # Exit 0 would hide the note; exit 2 would block the command.
+        self.assertEqual(done.returncode, hooklib.HOOK_ERROR)
+        self.assertEqual(hooklib.HOOK_ERROR, 1)
         self.assertIn(b"internal error, command allowed", done.stderr)
 
 

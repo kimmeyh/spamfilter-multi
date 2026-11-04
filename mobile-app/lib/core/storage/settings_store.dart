@@ -5,6 +5,17 @@ import 'database_helper.dart';
 import '../providers/email_scan_provider.dart';
 import '../../util/redact.dart';
 
+/// F322 (Sprint 83): which completed background scans post a notification.
+/// The setting is read by the shared [ScanCompleteNotifier] on every platform
+/// (and on Android 8.0+ the Android notification channels apply instead).
+enum ScanNotifyChoice {
+  /// Every completed scan posts one notification.
+  every,
+
+  /// Only a scan with at least one No Rule item posts one.
+  noRuleOnly,
+}
+
 /// Settings storage for app-wide and per-account configuration
 ///
 /// This store provides:
@@ -30,17 +41,6 @@ import '../../util/redact.dart';
 /// final accountFolders = await store.getAccountFolders('gmail-user@gmail.com');
 /// await store.setAccountFolders('gmail-user@gmail.com', ['INBOX', 'Spam']);
 /// ```
-/// F322 (Sprint 83): which completed background scans post a notification.
-/// The setting is read by the shared [ScanCompleteNotifier] on every platform
-/// (and on Android 8.0+ the Android notification channels apply instead).
-enum ScanNotifyChoice {
-  /// Every completed scan posts one notification.
-  every,
-
-  /// Only a scan with at least one No Rule item posts one.
-  noRuleOnly,
-}
-
 class SettingsStore {
   final DatabaseHelper _dbHelper;
   final Logger _logger = Logger();
@@ -355,22 +355,35 @@ class SettingsStore {
   Future<Set<String>> getRejectedSafeSenderSuggestions() async {
     final value = await _getAppSetting(keyRejectedSafeSenderSuggestions);
     if (value == null) return <String>{};
-    try {
-      final decoded = jsonDecode(value);
-      if (decoded is List) {
-        return decoded.whereType<String>().toSet();
-      }
-    } catch (_) {
-      // Fall through: the caller shows suggestions again rather than hiding
-      // them all, and the next reject rewrites the list.
-    }
+    final decoded = _decodeRejected(value);
+    if (decoded != null) return decoded;
+    // The caller shows suggestions again rather than hiding them all.
     _logger.w('F270: the rejected-suggestions list could not be read');
     return <String>{};
   }
 
+  /// The stored rejected list, or null when [value] is not a JSON list.
+  static Set<String>? _decodeRejected(String value) {
+    try {
+      final decoded = jsonDecode(value);
+      if (decoded is List) return decoded.whereType<String>().toSet();
+    } on FormatException {
+      // Not JSON: reported by the caller.
+    }
+    return null;
+  }
+
   /// Adds [address] (lowercased) to the rejected list.
+  ///
+  /// Throws [StateError] when the stored list cannot be read, instead of
+  /// writing a new list over it: that would erase every earlier rejection and
+  /// bring those senders back (5.1.2 F3). The screen shows the error.
   Future<void> rejectSafeSenderSuggestion(String address) async {
-    final rejected = await getRejectedSafeSenderSuggestions();
+    final value = await _getAppSetting(keyRejectedSafeSenderSuggestions);
+    final rejected = value == null ? <String>{} : _decodeRejected(value);
+    if (rejected == null) {
+      throw StateError('the saved list of rejected suggestions is damaged');
+    }
     rejected.add(address.trim().toLowerCase());
     final db = await _dbHelper.database;
     await db.insert(

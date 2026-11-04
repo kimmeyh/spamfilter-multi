@@ -61,6 +61,7 @@ class _ScanNotificationsRowState extends State<ScanNotificationsRow> {
   bool? _useAndroidChannels;
   bool _openFailed = false;
   bool _saveFailed = false;
+  bool _loadFailed = false;
 
   @override
   void initState() {
@@ -76,10 +77,14 @@ class _ScanNotificationsRowState extends State<ScanNotificationsRow> {
           ScanCompleteNotifier.ensureAndroidChannels)();
     }
     var choice = SettingsStore.defaultScanNotifyChoice;
+    var loadFailed = false;
     if (!channels) {
       try {
         choice = await _store.getScanNotifyChoice();
       } catch (e) {
+        // 5.1.2 F4: the dropdown then shows the default, which may not be the
+        // saved choice, so the row says so.
+        loadFailed = true;
         _logger.w('Could not read the scan notification choice: $e');
       }
     }
@@ -87,6 +92,7 @@ class _ScanNotificationsRowState extends State<ScanNotificationsRow> {
     setState(() {
       _useAndroidChannels = channels;
       _choice = choice;
+      _loadFailed = loadFailed;
     });
   }
 
@@ -98,6 +104,7 @@ class _ScanNotificationsRowState extends State<ScanNotificationsRow> {
     });
     try {
       await _store.setScanNotifyChoice(choice);
+      if (mounted) setState(() => _loadFailed = false);
     } catch (e) {
       _logger.e('Could not save the scan notification choice: $e');
       if (!mounted) return;
@@ -168,6 +175,12 @@ class _ScanNotificationsRowState extends State<ScanNotificationsRow> {
                 if (value != null) _select(value);
               },
             ),
+            if (_loadFailed)
+              Text(
+                  'Could not read the saved choice. The choice shown may not '
+                  'be the one saved; pick one to save it.',
+                  key: const Key('scan_notifications_load_failed'),
+                  style: textTheme.bodySmall),
             if (_saveFailed)
               Text('Could not save this choice. The previous choice is kept.',
                   key: const Key('scan_notifications_save_failed'),

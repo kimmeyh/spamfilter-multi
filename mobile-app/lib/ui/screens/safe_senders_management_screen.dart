@@ -20,6 +20,7 @@ import '../../core/platform/platform_capabilities.dart';
 import '../../core/providers/rule_set_provider.dart';
 import '../../core/services/rule_quick_action_service.dart'
     show RuleQuickActionService, reloadRulesAfterWrite;
+import '../../core/services/rule_conflict_resolver.dart';
 import '../../core/services/safe_sender_suggestion_service.dart';
 import '../../core/storage/database_helper.dart';
 import '../../core/storage/settings_store.dart';
@@ -183,7 +184,7 @@ class _SafeSendersManagementScreenState
         );
       }
     }
-    if (ok) await _loadSuggestions();
+    if (ok && mounted) await _loadSuggestions();
     if (mounted) {
       setState(() => _isLoading = false);
     }
@@ -195,11 +196,17 @@ class _SafeSendersManagementScreenState
   /// shown in the section, not only logged: "no suggestions" and "could not
   /// check" must read differently.
   Future<void> _loadSuggestions() async {
+    // 5.1.2 F10: a sender a block rule matches is not suggested; Accept would
+    // remove that rule (the same check Accept runs).
+    final rules = Provider.of<RuleSetProvider>(context, listen: false).rules;
+    final resolver = RuleConflictResolver();
     try {
       final rejected = await _settings.getRejectedSafeSenderSuggestions();
       final found = await _suggestionService.findCandidates(
         rejected: rejected,
         safePatterns: _safeSenders.map((s) => s.pattern).toList(),
+        isBlocked: (address) =>
+            resolver.hasConflictingRule(emailAddress: address, rules: rules),
       );
       _suggestions = found;
       _suggestionsError = null;
