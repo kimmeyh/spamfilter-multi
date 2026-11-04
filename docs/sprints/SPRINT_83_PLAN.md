@@ -1051,6 +1051,14 @@ Android build).
 
 _**Risk & rollback**_: a slower build; rollback is removing the line.
 
+**Result (Phase 4)**: two release AAB builds, run alone one after the other (2026-11-04). Build 1, current settings:
+570 s, exit 0, 30 "Daemon compilation failed" / "Could not close incremental caches" lines. Build 2 with
+`kotlin.incremental=false`: 405 s, exit 0, 0 such lines (AC-1, AC-2). The line is committed in
+`mobile-app/android/gradle.properties` with a comment; `docs/TROUBLESHOOTING.md` records the numbers. Build 2 was not
+slower, so there is no cost to weigh; R-2 still asks Harold at Manual Validation whether to keep it. Executed by the
+main session (Opus), not Haiku: the two builds must be serialized with the merges in this session, so a delegated
+agent would wait on the same queue.
+
 ## Task 12 -- F325 (copy of F152): first-run evaluation, Sprint 83 run
 
 **Value**: This finds what a new user stumbles on in the first minutes, as backlog items.
