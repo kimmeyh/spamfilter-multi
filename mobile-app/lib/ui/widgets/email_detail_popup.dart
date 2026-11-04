@@ -847,45 +847,78 @@ void showEmailDetailPopup(
                             ),
                             const SizedBox(height: 8),
                             // Date/time and the account (F283 R-6).
+                            // Sprint 83: the date and the account sit in a
+                            // Wrap, so on a narrow window (Fold cover screen,
+                            // 344 px) the account moves to a second line
+                            // instead of the Row overflowing (it overflowed
+                            // by 93 px there when the date, the account and
+                            // Skip shared one line).
                             Row(
                               children: [
-                                Icon(Icons.schedule,
-                                    size: 14, color: detailColor),
-                                const SizedBox(width: 4),
-                                Text(
-                                  dateStr,
-                                  // F216 (Sprint 75, Harold "2. a"): matches
-                                  // the folder/subject/rule line above.
-                                  style: Theme.of(context)
-                                      .textTheme
-                                      .bodyMedium
-                                      ?.copyWith(color: detailColor),
-                                ),
-                                if (accountEmail.isNotEmpty) ...[
-                                  const SizedBox(width: 12),
-                                  Icon(Icons.account_circle_outlined,
-                                      size: 14, color: detailColor),
-                                  const SizedBox(width: 4),
-                                  // F230: BOUNDED. Flexible + ellipsis makes a
-                                  // long account email yield instead of the row
-                                  // breaking when Skip shares the row.
-                                  Flexible(
-                                    child: Text(
-                                      accountEmail,
-                                      overflow: TextOverflow.ellipsis,
-                                      style: Theme.of(context)
-                                          .textTheme
-                                          .bodyMedium
-                                          ?.copyWith(color: detailColor),
-                                    ),
+                                Expanded(
+                                  child: Wrap(
+                                    spacing: 12,
+                                    runSpacing: 4,
+                                    crossAxisAlignment:
+                                        WrapCrossAlignment.center,
+                                    children: [
+                                      Row(
+                                        mainAxisSize: MainAxisSize.min,
+                                        children: [
+                                          Icon(Icons.schedule,
+                                              size: 14, color: detailColor),
+                                          const SizedBox(width: 4),
+                                          // BOUNDED: with Skip on the row the
+                                          // Wrap can be narrower than the date
+                                          // (175 px at 344 px wide); Flexible
+                                          // lets the date wrap, not overflow.
+                                          Flexible(
+                                            child: Text(
+                                              dateStr,
+                                              // F216 (Sprint 75, Harold "2. a"):
+                                              // matches the folder/subject/rule
+                                              // line above.
+                                              style: Theme.of(context)
+                                                  .textTheme
+                                                  .bodyMedium
+                                                  ?.copyWith(
+                                                      color: detailColor),
+                                            ),
+                                          ),
+                                        ],
+                                      ),
+                                      if (accountEmail.isNotEmpty)
+                                        Row(
+                                          mainAxisSize: MainAxisSize.min,
+                                          children: [
+                                            Icon(Icons.account_circle_outlined,
+                                                size: 14, color: detailColor),
+                                            const SizedBox(width: 4),
+                                            // F230: BOUNDED. Flexible +
+                                            // ellipsis makes a long account
+                                            // email yield inside its line.
+                                            Flexible(
+                                              child: Text(
+                                                accountEmail,
+                                                overflow: TextOverflow.ellipsis,
+                                                style: Theme.of(context)
+                                                    .textTheme
+                                                    .bodyMedium
+                                                    ?.copyWith(
+                                                        color: detailColor),
+                                              ),
+                                            ),
+                                          ],
+                                        ),
+                                    ],
                                   ),
-                                ],
+                                ),
                                 // F230 (Sprint 72): Skip lives at the bottom
                                 // right of this section, where there is room.
                                 // Shown only where an unaddressed sequence
                                 // exists to advance through ([showSkip]).
                                 if (showSkip) ...[
-                                  const Spacer(),
+                                  const SizedBox(width: 8),
                                   _buildSkipButton(detailColor, () {
                                     Navigator.pop(dialogContext);
                                     onSkip(itemPosition, itemSize);

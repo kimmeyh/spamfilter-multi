@@ -107,10 +107,11 @@ void main() {
 
     testWidgets('narrow window (Fold cover screen, 344 px): no overflow, '
         'both cells readable', (tester) async {
-      // The date/account row above the buttons already overflows at this width
-      // (seen in the Sprint 83 probe, email_detail_popup.dart "Date/time" Row,
-      // not part of F323). So collect the errors and require that NONE comes
-      // from a button row: those are Rows directly under an IntrinsicHeight.
+      // Sprint 83: the date/account row used to overflow by 93 px at this
+      // width; it now wraps. So NO layout error is allowed anywhere in the
+      // pop-up, not only in the button rows.
+      // What this does NOT catch: overflow with a larger OS font scale, or
+      // with the Skip button shown (this pop-up is opened without a sequence).
       final errors = <String>[];
       final prev = FlutterError.onError;
       FlutterError.onError =
@@ -120,10 +121,12 @@ void main() {
           size: const Size(344, 740),
           subject: 'A fairly long subject line for the cell',
           loadBody: () async => 'https://a-rather-long-domain-name.example/x');
-      tester.takeException();
-      final inButtonRows =
-          errors.where((e) => e.contains('creator: Row ← IntrinsicHeight'));
-      expect(inButtonRows, isEmpty, reason: inButtonRows.join('\n'));
+      // Restore the handler BEFORE asserting: a failing expect while the
+      // override is active is swallowed into `errors` and the binding then
+      // reports "A test overrode FlutterError.onError" instead of the cause.
+      FlutterError.onError = prev;
+      expect(tester.takeException(), isNull);
+      expect(errors, isEmpty, reason: errors.join('\n'));
       final subject = _cell(tester, 'Block Subject');
       final body = _cell(tester, 'Block Body');
       expect(subject.top, body.top);
