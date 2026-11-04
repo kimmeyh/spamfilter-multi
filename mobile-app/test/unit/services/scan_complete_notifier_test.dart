@@ -56,13 +56,13 @@ void main() {
 
   group('T-1 Windows and iPhone: the in-app choice (shared code)', () {
     for (final host in [HostPlatform.windows, HostPlatform.ios]) {
-      test('${host.name}: "Only when there are No Rule items", No Rule 0 posts '
+      test('${host.name}: "Only when one or more No Rule items", No Rule 0 posts '
           'nothing and reports a skip, not a failure', () async {
         expect(await post(host, 0), ScanNotificationOutcome.skippedByChoice);
         expect(shown, isEmpty);
       });
 
-      test('${host.name}: "Only when there are No Rule items", No Rule 1 posts '
+      test('${host.name}: "Only when one or more No Rule items", No Rule 1 posts '
           'one notification', () async {
         expect(await post(host, 1), ScanNotificationOutcome.posted);
         expect(shown, hasLength(1));
@@ -89,7 +89,7 @@ void main() {
   group('T-1 Android 7.x (no channels): the in-app choice applies', () {
     setUp(() => android8Plus = false);
 
-    test('"Only when there are No Rule items", No Rule 0 posts nothing',
+    test('"Only when one or more No Rule items", No Rule 0 posts nothing',
         () async {
       expect(await post(HostPlatform.android, 0),
           ScanNotificationOutcome.skippedByChoice);
@@ -111,7 +111,7 @@ void main() {
 
   group('T-3 Android 8.0+: the channel is the choice', () {
     test('No Rule 0 posts on the "nothing to review" channel, even with the '
-        'in-app choice on "Only when there are No Rule items"', () async {
+        'in-app choice on "Only when one or more No Rule items"', () async {
       expect(
           await post(HostPlatform.android, 0), ScanNotificationOutcome.posted);
       final a = shown.single.android!;
@@ -173,7 +173,7 @@ void main() {
     });
     tearDown(() async => helper.tearDown());
 
-    test('Q2 = 1: the default is "Only when there are No Rule items"',
+    test('Q2 = 1: the default is "Only when one or more No Rule items"',
         () async {
       expect(await store.getScanNotifyChoice(), ScanNotifyChoice.noRuleOnly);
     });

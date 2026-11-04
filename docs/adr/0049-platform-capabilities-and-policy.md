@@ -85,7 +85,7 @@ Behavior is unchanged on Windows and Android for every site. "C" = capability, "
   Rule items") when No Rule is above 0, else on `scan_nothing_to_review_channel` ("Scans with nothing to review"); the
   user silences the second in Android's settings and the in-app choice is NOT read. Windows, iOS and Android 7.x
   (API 24-25, no channels; detected by the plugin listing no channels): the in-app choice
-  `SettingsStore.getScanNotifyChoice` (default "Only when there are No Rule items"), Settings > Background > "Scan
+  `SettingsStore.getScanNotifyChoice` (default "Only when one or more No Rule items"), Settings > Background > "Scan
   notifications", same text everywhere. Reason: Android is the one host where the OS already offers a per-category
   switch (developer.android.com/develop/ui/views/notifications/channels, read 2026-11-02); two controls for one
   outcome on Android would disagree. Tests: `test/unit/services/scan_complete_notifier_test.dart` (each answer),

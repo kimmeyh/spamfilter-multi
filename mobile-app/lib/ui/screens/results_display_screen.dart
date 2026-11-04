@@ -75,7 +75,7 @@ RuleSuggestion? suggestionForResult(
   final override = result.email.authClassificationOverride;
   final overrideClass = AuthResultsParser.classificationFromName(override);
   final parsed = AuthResultsParser.parse(result.email.headers);
-  return RuleSuggestion.suggest(
+  final suggestion = RuleSuggestion.suggest(
     fromEmail: result.email.from,
     authClassification:
         override ?? AuthResultsParser.classifyHeaders(result.email.headers).name,
@@ -86,6 +86,12 @@ RuleSuggestion? suggestionForResult(
         ? AuthResultsParser.syntheticResultFor(overrideClass)
         : parsed,
   );
+  // Sprint 83 MV Q2 (Harold, 2026-11-04: "only suggest Block if a check
+  // finishes"; 5.1.2 F8): with no headers (a saved scan), nothing shows the
+  // check finished, so no Block is suggested. A safe-sender suggestion is not
+  // destructive and stays.
+  if (parsed.isEmpty && suggestion != null && suggestion.isBlock) return null;
+  return suggestion;
 }
 
 /// Displays summary of scan results bound to EmailScanProvider.

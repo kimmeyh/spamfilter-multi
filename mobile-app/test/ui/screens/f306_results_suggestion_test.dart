@@ -104,13 +104,16 @@ void main() {
     });
   }
 
-  testWidgets('a YELLOW No Rule result gets the suggestion', (tester) async {
+  // Sprint 83 MV Q2 (Harold: "only suggest Block if a check finishes"): a saved
+  // scan has no headers, so nothing shows the check finished -- no "Suggested".
+  testWidgets('a saved-scan YELLOW No Rule result gets no Block suggestion',
+      (tester) async {
     await mount(tester);
     await tester.tap(find.text('yellow@shop-example.com'));
     await tester.pumpAndSettle();
     expect(find.text('Create Block Rule'), findsOneWidget);
-    expect(find.text('Suggested'), findsOneWidget);
-    expect(find.byKey(const ValueKey('suggestion-pattern')), findsOneWidget);
+    expect(find.text('Suggested'), findsNothing);
+    expect(find.byKey(const ValueKey('suggestion-pattern')), findsNothing);
   });
 
   group('suggestionForResult (every branch)', () {
@@ -131,11 +134,24 @@ void main() {
           success: true,
         );
 
-    test('No Rule + stored YELLOW suggests', () {
+    // Sprint 83 MV Q2. What this does NOT catch: the Review No Rule Items
+    // screen, which reads the suggestion the scan stored (its own tests).
+    test('No Rule + stored YELLOW with no headers: no Block suggestion', () {
       expect(
           suggestionForResult(res(EmailActionType.none, auth: 'yellow'),
               EvaluationResult.noMatch()),
-          isNotNull);
+          isNull);
+    });
+
+    test('No Rule + stored YELLOW with headers that show the check finished: '
+        'the Block suggestion', () {
+      final s = suggestionForResult(
+          res(EmailActionType.none, auth: 'yellow', headers: const {
+            'authentication-results': 'mx; spf=softfail; dkim=none; dmarc=none',
+          }),
+          EvaluationResult.noMatch());
+      expect(s, isNotNull);
+      expect(s!.isBlock, isTrue);
     });
 
     test('a result a rule matched gets none, even when YELLOW', () {
@@ -165,10 +181,8 @@ void main() {
       expect(suggestionForResult(r, EvaluationResult.noMatch()), isNotNull);
     });
 
-    // F323 R-2 / AC-1 (Results caller). What this does NOT catch: a SAVED scan
-    // opened from history, which has only the stored class and no headers, so a
-    // temperror cannot be re-detected there (the scan stored it on the review
-    // row instead).
+    // F323 R-2 / AC-1 (Results caller). A SAVED scan has no headers, so it gets
+    // no Block suggestion at all (Sprint 83 MV Q2, tested above).
     for (final bad in ['temperror', 'permerror']) {
       test('live headers with an SPF $bad: the could-not-check note, no rule',
           () {

@@ -11,7 +11,7 @@ import '../../core/storage/settings_store.dart';
 /// Which completed background scans tell the user. The text is the same on
 /// every platform:
 /// - "Every completed scan"
-/// - "Only when there are No Rule items" (the default, Q2 = 1)
+/// - "Only when one or more No Rule items" (the default, Q2 = 1)
 ///
 /// Where the user sets it differs, by the Sprint 83 Q1 = 1 decision
 /// (ADR-0042 / ADR-0049 declared exception, `ScanCompleteNotifier`):
@@ -40,7 +40,7 @@ class ScanNotificationsRow extends StatefulWidget {
 
   static const String title = 'Scan notifications';
   static const String everyLabel = 'Every completed scan';
-  static const String noRuleOnlyLabel = 'Only when there are No Rule items';
+  static const String noRuleOnlyLabel = 'Only when one or more No Rule items';
   static const String androidHelp =
       'Android decides which scans notify you. Open Android notification '
       'settings and turn off "Scans with nothing to review" to be told only '

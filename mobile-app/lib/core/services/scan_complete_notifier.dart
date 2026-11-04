@@ -23,7 +23,7 @@
 /// F322 (Sprint 83): WHICH completed scans notify.
 /// - Windows, iPhone and Android 7.x (API 24-25, no channels): the in-app
 ///   choice (`SettingsStore.getScanNotifyChoice`, Settings > Background >
-///   "Scan notifications"). Default "Only when there are No Rule items": a scan
+///   "Scan notifications"). Default "Only when one or more No Rule items": a scan
 ///   with No Rule 0 posts nothing ([ScanNotificationOutcome.skippedByChoice]).
 /// - DECLARED EXCEPTION (choice), Android 8.0+ (API 26+): the OS owns the
 ///   choice. EVERY completed scan posts, on one of two channels picked by the

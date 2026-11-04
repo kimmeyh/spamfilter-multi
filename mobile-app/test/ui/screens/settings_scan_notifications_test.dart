@@ -66,11 +66,11 @@ void main() {
         await pumpRow(tester, host,
             store: _MemoryStore(ScanNotifyChoice.noRuleOnly));
         expect(find.text('Scan notifications'), findsOneWidget);
-        expect(find.text('Only when there are No Rule items'), findsOneWidget);
+        expect(find.text('Only when one or more No Rule items'), findsOneWidget);
         await tester.tap(find.byKey(const Key('scan_notifications_choice')));
         await tester.pumpAndSettle();
         expect(find.text('Every completed scan'), findsWidgets);
-        expect(find.text('Only when there are No Rule items'), findsWidgets);
+        expect(find.text('Only when one or more No Rule items'), findsWidgets);
         expect(find.byKey(const Key('scan_notifications_open')), findsNothing);
       });
 
@@ -101,7 +101,7 @@ void main() {
         await tester.pumpAndSettle();
         expect(find.byKey(const Key('scan_notifications_save_failed')),
             findsOneWidget);
-        expect(find.text('Only when there are No Rule items'), findsOneWidget);
+        expect(find.text('Only when one or more No Rule items'), findsOneWidget);
       });
     });
   }
