@@ -1224,3 +1224,22 @@ closed test).
   - Tests: new cases for F3, F4, F10 and `hasConflictingRule`. Not covered by a test: F1 (SnackBar after a failed
     refresh) and F5 (the call site; `resolvePlatformId` has its own tests). Full suite 2026-11-04 7:19am at
     6bc6ca72 plus these fixes: 3554 passed, 15 skipped, 0 failed; `flutter analyze` no issues.
+- **5.1.5 WinWright sweep**: 2026-11-04 ~9:20, default sweep (`run-winwright-tests.ps1`, no arguments) on the 0.24.0
+  DEV build of 3817aeb6: test_f124_rule_labels PASS (29 s), test_s75_new_controls PASS on retry (27 of 27, 23 s),
+  test_f320_no_rule_review FAIL twice at step 2 ("No main window found" after step 1 passed). Rerun alone
+  (`-TestName f320`, ~9:30): PASS 13 of 13, so F323's pop-up changes did not break its selectors. Cause of the
+  sweep failure UNKNOWN (not "transient"): a process sampler saw windowless DEV processes at launch in both the
+  failing and the passing run, so that alone does not explain it; settle by logging the PID WinWright attaches to on
+  a failing step. Mouse steps skipped 0 (unlocked), DB drift none, tray check PASS, the 4 DEV background tasks paused
+  and re-enabled. Live checks of the changed screens (WinWright, read-only, screenshots in the scratchpad):
+  Settings > Background shows "Scan notifications" = "Only when there are No Rule items" (F322); the account list
+  shows the 4 DEV accounts with no background-off line and no Sign In Again (none applies today; F324); the No Rule
+  pop-up shows the `news_` "Block sender pattern, suggested rule" button and note (F323 R-3). FOUND: (1) Block Body
+  read "Could not read message" on 3 of 3 AOL items; fixed a86a4fa6 (read `fetchContentText`, HTML fallback) and
+  re-checked on the rebuilt app: "No outside link" on 2 of 2 (the content history holds 47 and 97 characters with no
+  link for these); (2) the desktop pop-up is capped at 60% of the window (432 of 720 logical px) while its content is
+  451 px (no suggestion) to 614 px (with the `news_` suggestion), so the bottom row and the suggestion are cut off
+  (Harold, 2026-11-04, two screenshots); in a window Harold made taller (1280x1160 logical) everything fits, but
+  Harold: *"image 18 was the default window size"* -- the requirement is that every row shows at the DEFAULT size.
+  Decision asked at Manual Validation. Manage Safe Senders not yet checked live.
+  sweep-head: 3817aeb6
