@@ -671,7 +671,6 @@ void showEmailDetailPopup(
       // MediaQueryData.fromView cannot be consumed by anything.
       final mediaQuery = MediaQueryData.fromView(View.of(context));
       final screenSize = mediaQuery.size;
-      final screenHeight = screenSize.height;
       // F178 (Sprint 62, found by Harold with screenshots): on a phone,
       // `size.height` includes the system status/navigation bar areas, so
       // the Sprint 60 clamp below let the popup's BOTTOM sit under the
@@ -681,8 +680,6 @@ void showEmailDetailPopup(
       // this is a no-op there (ADR-0042: parity by construction).
       final safeTop = mediaQuery.padding.top;
       final safeBottom = mediaQuery.padding.bottom;
-      final safeScreenBottom = screenHeight - safeBottom;
-      final safeHeight = screenHeight - safeTop - safeBottom;
       // F178 round 2 (Harold, Sprint 62 MV): on COMPACT widths the popup
       // is TIED TO THE BOTTOM of the safe area and grows upward as large
       // as its content needs -- the same pattern the Windows app uses at
@@ -692,94 +689,78 @@ void showEmailDetailPopup(
       // and bottom-anchoring guarantees the bottom actions ("Block
       // Subject") are always at a fixed, reachable place.
       final isCompactWidth = screenSize.width < 600;
-      final popupHeight = isCompactWidth
-          ? safeHeight - 24 // grow toward the top, small breathing gap
-          : safeHeight * 0.6; // desktop: within safe area (Sprint 60 cap)
+      // Sprint 83 MV Q1 = 1 (Harold, screenshots of a cut-off Block Subject /
+      // Block Body at the DEFAULT window size and on the unfolded Fold): the
+      // wide pop-up is no longer capped at 60% of the safe height. It is
+      // measured first and placed by [EmailPopupPlacement], which keeps the
+      // Sprint 46 / Sprint 60 / F178 placement rules but works from the REAL
+      // height, so the whole pop-up fits whenever the screen can hold it and
+      // scrolls only when the content is taller than the safe area.
+      final isNoRuleResult =
+          result.action == EmailActionType.none && matchedRule.isEmpty;
 
-      // Calculate position
-      double? top;
-      double? bottom;
-
-      // Sprint 60 MV (Harold): the popup must FIT fully inside the window
-      // for EVERY visible row. `popupHeight` is an estimate the real
-      // content can exceed, and the branches below never clamped `top` --
-      // so for rows near the TOP of the list the popup started low enough
-      // that its bottom rows ("Block Subject") were clipped off-window.
-      // Two-part fix: (1) every `top` is clamped so top + popupHeight stays
-      // on-screen; (2) the popup itself is hard-capped at `popupHeight`
-      // (see the ConstrainedBox below), so the clamp is against the REAL
-      // maximum height, with the existing inner SingleChildScrollView as
-      // the graceful fallback if content ever exceeds the cap.
-      // F178: clamp against the SAFE bottom, and never above the safe top.
-      final maxTop = (safeScreenBottom - popupHeight - 8)
-          .clamp(safeTop + 8.0, screenHeight);
-
-      if (isCompactWidth) {
-        // Bottom-anchored: Positioned(bottom:) measures from the STACK's
-        // bottom (the full screen with useSafeArea: false), so the system
-        // inset is added explicitly. The ConstrainedBox cap lets content
-        // grow upward to popupHeight; shorter content hugs the bottom.
-        bottom = safeBottom;
-      } else if (itemPosition != null && itemSize != null) {
-        final itemBottom = itemPosition.dy + itemSize.height;
-        final spaceBelow = safeScreenBottom - itemBottom;
-        final spaceAbove = itemPosition.dy;
-        // Sprint 46 manual-testing feedback (Harold 2026-07-11): when the
-        // screen has room, drop the popup one additional email-height lower
-        // (the clicked tile's own height is the best available estimate of
-        // one list item) so the NEXT item in the list stays visible above
-        // the popup -- after acting on this email the user can immediately
-        // click the next one instead of it being covered.
-        final oneItemGap = itemSize.height;
-
-        if (spaceBelow >= popupHeight + oneItemGap) {
-          // Show one email lower, keeping the next list item clickable
-          top = (itemBottom + oneItemGap + 8).clamp(0.0, maxTop);
-        } else if (spaceBelow >= popupHeight) {
-          // Show directly below email (no room to also expose the next item)
-          top = (itemBottom + 8).clamp(0.0, maxTop);
-        } else if (spaceAbove - safeTop >= popupHeight + 8) {
-          // Show above email. PR #335 cowork review: the +8 belongs in the
-          // guard too -- with spaceAbove in [popupHeight, popupHeight+8)
-          // the 8px gap pushed the popup's top edge up to 8px off-window.
-          // Sprint 62 code review (M-1): spaceAbove measures from y=0, but
-          // only the space below safeTop is usable -- without subtracting
-          // it, a top inset (large-screen Android/foldable; zero on
-          // desktop) let the popup's top edge extend into the status bar.
-          bottom = screenHeight - itemPosition.dy + 8; // 8px gap
-        } else {
-          // Not enough room above or below -- as high as needed to fit.
-          top = itemPosition.dy.clamp(0.0, maxTop);
-        }
-      }
+      // Header pieces shared by the wide and the compact layouts.
+      final detailStyle = Theme.of(context)
+          .textTheme
+          .bodyMedium
+          ?.copyWith(color: detailColor);
+      // F230 (Sprint 72): a theme style, not a literal size -- theme styles
+      // honour the OS font-size accessibility setting (ADR-0037). Sprint 78
+      // MV-1 (Harold): the sender line's color (theme onSurface), regular
+      // weight. F216 (Sprint 75): the date and the account use the same style.
+      Widget subtitleText() => Text(
+            '${email.folderName} • $displaySubject • ${matchedRule.isNotEmpty ? matchedRule : "No rule"}',
+            style: detailStyle,
+            maxLines: 2,
+            overflow: TextOverflow.ellipsis,
+          );
+      Widget dateItem() => Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Icon(Icons.schedule, size: 14, color: detailColor),
+              const SizedBox(width: 4),
+              // BOUNDED: the Wrap can be narrower than the date (175 px at
+              // 344 px wide); Flexible lets the date wrap, not overflow.
+              Flexible(child: Text(dateStr, style: detailStyle)),
+            ],
+          );
+      Widget accountItem() => Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Icon(Icons.account_circle_outlined,
+                  size: 14, color: detailColor),
+              const SizedBox(width: 4),
+              // F230: BOUNDED. Flexible + ellipsis makes a long account email
+              // yield inside its line.
+              Flexible(
+                child: Text(accountEmail,
+                    overflow: TextOverflow.ellipsis, style: detailStyle),
+              ),
+            ],
+          );
+      Widget skipButton() => _buildSkipButton(detailColor, () {
+            Navigator.pop(dialogContext);
+            onSkip(itemPosition, itemSize);
+          });
 
       return Stack(
         children: [
-          Positioned(
-            top: top,
-            bottom: bottom,
-            left: 16,
-            right: 16,
+          Positioned.fill(
             // F151e (Sprint 58) / Sprint 60 MV round 3 (Harold): on desktop the
             // popup's LEFT edge sits around 35% of the width and it extends to
             // the right edge, so the rows' sender and subject stay visible on
             // the left; on compact widths it takes the FULL width (it covers
-            // the list anyway). FractionallySizedBox scales with the window.
-            child: FractionallySizedBox(
-              alignment: Alignment.centerRight,
-              // Sprint 62 code review (M-2): reuse the fromView-based
-              // isCompactWidth so position math and width factor cannot
-              // disagree when the inherited MediaQuery diverges from the
-              // raw view size.
-              widthFactor: isCompactWidth ? 1.0 : 0.65,
-              child: ConstrainedBox(
-                // maxHeight (Sprint 60 MV): the hard cap that makes the
-                // clamped `top` a real fit guarantee -- content beyond the
-                // cap scrolls inside the popup instead of clipping off the
-                // window's bottom edge. Width is governed by widthFactor
-                // alone (PR #335 cowork review).
-                constraints: BoxConstraints(maxHeight: popupHeight),
-                child: Material(
+            // the list anyway). F178: compact widths are tied to the bottom of
+            // the safe area and grow upward.
+            child: CustomSingleChildLayout(
+              delegate: EmailPopupPlacement(
+                isCompactWidth: isCompactWidth,
+                safeTop: safeTop,
+                safeBottom: safeBottom,
+                itemTop: itemPosition?.dy,
+                itemHeight: itemSize?.height,
+              ),
+              child: Material(
                   elevation: 8,
                   borderRadius: BorderRadius.circular(12),
                   child: SelectionArea(
@@ -789,8 +770,10 @@ void showEmailDetailPopup(
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            // Handle bar
-                            Center(
+                            // Handle bar: the bottom-sheet cue, so compact
+                            // widths only (Sprint 83 MV Q1: on a wide dialog it
+                            // was 16 px that did nothing).
+                            if (isCompactWidth) Center(
                               child: Container(
                                 width: 40,
                                 height: 4,
@@ -820,6 +803,14 @@ void showEmailDetailPopup(
                                     overflow: TextOverflow.ellipsis,
                                   ),
                                 ),
+                                // Sprint 83 MV Q1 (Harold): on a wide pop-up
+                                // Skip sits left of the check. F230 kept it off
+                                // this row because at 411 px it truncated the
+                                // sender, so compact widths keep it below.
+                                if (showSkip && !isCompactWidth) ...[
+                                  const SizedBox(width: 8),
+                                  skipButton(),
+                                ],
                                 const SizedBox(width: 8),
                                 result.success
                                     ? const Icon(Icons.check,
@@ -829,122 +820,79 @@ void showEmailDetailPopup(
                               ],
                             ),
                             const SizedBox(height: 4),
-                            // Subtitle line: folder • subject • rule
-                            Text(
-                              '${email.folderName} • $displaySubject • ${matchedRule.isNotEmpty ? matchedRule : "No rule"}',
-                              // F230 (Sprint 72): a theme style, not a literal
-                              // size -- theme styles honour the OS font-size
-                              // accessibility setting (ADR-0037). One shared
-                              // change, no platform exception (Harold).
-                              // Sprint 78 MV-1 (Harold): the sender line's
-                              // color (theme onSurface), regular weight.
-                              style: Theme.of(context)
-                                  .textTheme
-                                  .bodyMedium
-                                  ?.copyWith(color: detailColor),
-                              maxLines: 2,
-                              overflow: TextOverflow.ellipsis,
-                            ),
-                            const SizedBox(height: 8),
-                            // Date/time and the account (F283 R-6).
-                            // Sprint 83: the date and the account sit in a
-                            // Wrap, so on a narrow window (Fold cover screen,
-                            // 344 px) the account moves to a second line
-                            // instead of the Row overflowing (it overflowed
-                            // by 93 px there when the date, the account and
-                            // Skip shared one line).
-                            Row(
-                              children: [
-                                Expanded(
-                                  child: Wrap(
-                                    spacing: 12,
-                                    runSpacing: 4,
-                                    crossAxisAlignment:
-                                        WrapCrossAlignment.center,
-                                    children: [
-                                      Row(
-                                        mainAxisSize: MainAxisSize.min,
-                                        children: [
-                                          Icon(Icons.schedule,
-                                              size: 14, color: detailColor),
-                                          const SizedBox(width: 4),
-                                          // BOUNDED: with Skip on the row the
-                                          // Wrap can be narrower than the date
-                                          // (175 px at 344 px wide); Flexible
-                                          // lets the date wrap, not overflow.
-                                          Flexible(
-                                            child: Text(
-                                              dateStr,
-                                              // F216 (Sprint 75, Harold "2. a"):
-                                              // matches the folder/subject/rule
-                                              // line above.
-                                              style: Theme.of(context)
-                                                  .textTheme
-                                                  .bodyMedium
-                                                  ?.copyWith(
-                                                      color: detailColor),
-                                            ),
-                                          ),
-                                        ],
-                                      ),
-                                      if (accountEmail.isNotEmpty)
-                                        Row(
-                                          mainAxisSize: MainAxisSize.min,
-                                          children: [
-                                            Icon(Icons.account_circle_outlined,
-                                                size: 14, color: detailColor),
-                                            const SizedBox(width: 4),
-                                            // F230: BOUNDED. Flexible +
-                                            // ellipsis makes a long account
-                                            // email yield inside its line.
-                                            Flexible(
-                                              child: Text(
-                                                accountEmail,
-                                                overflow: TextOverflow.ellipsis,
-                                                style: Theme.of(context)
-                                                    .textTheme
-                                                    .bodyMedium
-                                                    ?.copyWith(
-                                                        color: detailColor),
-                                              ),
-                                            ),
-                                          ],
-                                        ),
-                                    ],
+                            // Subtitle line: folder • subject • rule. Sprint 83
+                            // MV Q1: on a wide pop-up the date and the account
+                            // follow it in one Wrap (they move to the next line
+                            // only when the subject is long).
+                            if (!isCompactWidth)
+                              Wrap(
+                                spacing: 12,
+                                runSpacing: 4,
+                                crossAxisAlignment: WrapCrossAlignment.center,
+                                children: [
+                                  subtitleText(),
+                                  dateItem(),
+                                  if (accountEmail.isNotEmpty) accountItem(),
+                                ],
+                              )
+                            else ...[
+                              subtitleText(),
+                              const SizedBox(height: 8),
+                              // Date/time and the account (F283 R-6), compact
+                              // widths. Sprint 83: a Wrap, so on the Fold cover
+                              // screen (344 px) the account moves to a second
+                              // line instead of the Row overflowing (93 px
+                              // when the date, the account and Skip shared one
+                              // line).
+                              Row(
+                                children: [
+                                  Expanded(
+                                    child: Wrap(
+                                      spacing: 12,
+                                      runSpacing: 4,
+                                      crossAxisAlignment:
+                                          WrapCrossAlignment.center,
+                                      children: [
+                                        dateItem(),
+                                        if (accountEmail.isNotEmpty)
+                                          accountItem(),
+                                      ],
+                                    ),
+                                  ),
+                                  // F230 (Sprint 72): on compact widths Skip
+                                  // lives at the bottom right of this section.
+                                  // Shown only where an unaddressed sequence
+                                  // exists to advance through ([showSkip]).
+                                  if (showSkip) ...[
+                                    const SizedBox(width: 8),
+                                    skipButton(),
+                                  ],
+                                ],
+                              ),
+                            ],
+                            // Action result badge. Sprint 83 MV Q1: hidden for
+                            // a No Rule result, whose subtitle already says
+                            // "No rule" ("No matching rule" repeated it).
+                            if (!isNoRuleResult) ...[
+                              const SizedBox(height: 8),
+                              Container(
+                                padding: const EdgeInsets.symmetric(
+                                    horizontal: 8, vertical: 4),
+                                decoration: BoxDecoration(
+                                  color: resultActionColor(result.action)
+                                      .withValues(alpha: 0.15),
+                                  borderRadius: BorderRadius.circular(4),
+                                ),
+                                child: Text(
+                                  resultActionDescription(result),
+                                  style: TextStyle(
+                                    fontSize: 11,
+                                    fontWeight: FontWeight.w500,
+                                    color: resultActionColor(result.action),
                                   ),
                                 ),
-                                // F230 (Sprint 72): Skip lives at the bottom
-                                // right of this section, where there is room.
-                                // Shown only where an unaddressed sequence
-                                // exists to advance through ([showSkip]).
-                                if (showSkip) ...[
-                                  const SizedBox(width: 8),
-                                  _buildSkipButton(detailColor, () {
-                                    Navigator.pop(dialogContext);
-                                    onSkip(itemPosition, itemSize);
-                                  }),
-                                ],
-                              ],
-                            ),
-                            const SizedBox(height: 8),
-                            // Action result badge
-                            Container(
-                              padding: const EdgeInsets.symmetric(
-                                  horizontal: 8, vertical: 4),
-                              decoration: BoxDecoration(
-                                color: resultActionColor(result.action)
-                                    .withValues(alpha: 0.15),
-                                borderRadius: BorderRadius.circular(4),
                               ),
-                              child: Text(
-                                resultActionDescription(result),
-                                style: TextStyle(
-                                  fontSize: 11,
-                                  fontWeight: FontWeight.w500,
-                                  color: resultActionColor(result.action),
-                                ),
-                              ),
-                            ),
+                            ],
                             const Divider(height: 20),
 
                             // === SHARED PROVIDER HINT ===
@@ -1335,11 +1283,96 @@ void showEmailDetailPopup(
                     ),
                   ), // Close SelectionArea
                 ), // Close Material
-              ), // Close ConstrainedBox
-            ), // Close FractionallySizedBox
-          ), // Close Positioned
+            ), // Close CustomSingleChildLayout
+          ), // Close Positioned.fill
         ],
       );
     },
   );
+}
+
+/// Sprint 83 MV Q1: places the email-detail pop-up from its MEASURED size.
+///
+/// Wide (>= 600 px): 65% of the width, right-aligned; the height grows to the
+/// content up to the safe height minus 16. The position keeps the earlier
+/// rules (Sprint 46: one row lower when there is room, so the next row stays
+/// visible; then directly below; then above; else as high as needed), and the
+/// result is clamped so the whole pop-up sits inside the safe area.
+///
+/// Compact (< 600 px, F178): full width, tied to the bottom of the safe area,
+/// growing upward to the safe height minus 24.
+///
+/// ADR-0042: one rule for every platform, chosen by width, not by platform;
+/// the safe insets are zero on desktop.
+@visibleForTesting
+class EmailPopupPlacement extends SingleChildLayoutDelegate {
+  EmailPopupPlacement({
+    required this.isCompactWidth,
+    required this.safeTop,
+    required this.safeBottom,
+    this.itemTop,
+    this.itemHeight,
+  });
+
+  final bool isCompactWidth;
+  final double safeTop;
+  final double safeBottom;
+  final double? itemTop;
+  final double? itemHeight;
+
+  static const double _side = 16;
+  static const double _gap = 8;
+
+  @override
+  BoxConstraints getConstraintsForChild(BoxConstraints constraints) {
+    final size = constraints.biggest;
+    final available = (size.width - 2 * _side).clamp(0.0, double.infinity);
+    final width = isCompactWidth ? available : available * 0.65;
+    final safeHeight = size.height - safeTop - safeBottom;
+    final maxHeight = (isCompactWidth ? safeHeight - 24 : safeHeight - 2 * _gap)
+        .clamp(0.0, double.infinity);
+    return BoxConstraints(
+        minWidth: width, maxWidth: width, maxHeight: maxHeight);
+  }
+
+  @override
+  Offset getPositionForChild(Size size, Size childSize) {
+    final left = size.width - _side - childSize.width;
+    final safeScreenBottom = size.height - safeBottom;
+    final h = childSize.height;
+    if (isCompactWidth) return Offset(left, safeScreenBottom - h);
+
+    final minTop = safeTop + _gap;
+    final maxTop = (safeScreenBottom - h - _gap) < minTop
+        ? minTop
+        : safeScreenBottom - h - _gap;
+    double top;
+    final rowTop = itemTop;
+    final rowHeight = itemHeight;
+    if (rowTop == null || rowHeight == null) {
+      top = minTop;
+    } else {
+      final rowBottom = rowTop + rowHeight;
+      final spaceBelow = safeScreenBottom - rowBottom;
+      if (spaceBelow >= h + rowHeight + 2 * _gap) {
+        // One row lower, so the next row stays clickable (Sprint 46).
+        top = rowBottom + rowHeight + _gap;
+      } else if (spaceBelow >= h + 2 * _gap) {
+        top = rowBottom + _gap;
+      } else if (rowTop - safeTop >= h + 2 * _gap) {
+        top = rowTop - _gap - h; // above the row
+      } else {
+        top = rowTop; // as high as needed to fit (clamped below)
+      }
+    }
+    return Offset(left, top.clamp(minTop, maxTop));
+  }
+
+  @override
+  bool shouldRelayout(EmailPopupPlacement oldDelegate) =>
+      oldDelegate.isCompactWidth != isCompactWidth ||
+      oldDelegate.safeTop != safeTop ||
+      oldDelegate.safeBottom != safeBottom ||
+      oldDelegate.itemTop != itemTop ||
+      oldDelegate.itemHeight != itemHeight;
 }

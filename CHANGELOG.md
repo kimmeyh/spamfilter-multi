@@ -30,6 +30,7 @@ Format: `- **type**: Description (Issue #N)` where type is feat|fix|chore|docs
 - **fix**: Select Account no longer shows every account as a red "Missing credentials" row while it loads; it shows "Checking account..." until the account is read, and red only when it truly has no saved sign-in (Issue #538)
 - **fix**: A saved scan opened from Scan History no longer marks a Block choice as "Suggested": without the message headers the app cannot tell the sender check finished (Issue #537)
 - **chore**: The scan notification choice now reads "Only when one or more No Rule items" (Issue #536)
+- **fix**: The email details pop-up no longer cuts off Block Subject and Block Body at the default Windows window or on a wide phone screen: it grows to fit its content and stays on screen, and its header is shorter (Skip beside the check mark, the date and account on the folder/subject line, no "No matching rule" tag) (Issue #537)
 
 ### 2026-11-01 (Sprint 83)
 
