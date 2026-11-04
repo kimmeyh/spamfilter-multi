@@ -57,7 +57,8 @@ abstract class SpamFilterPlatform {
   Future<EmailMessage> fetchFullBody(EmailMessage message);
 
   /// R76-4 (Sprint 78, ADR-0047 item 6): the plain text of ONE message, for
-  /// the dev-only content history. Unlike [fetchFullBody] (used by body rules
+  /// the dev-only content history and (Sprint 83, F323) the pop-up's Block
+  /// Body read (`PopupBodyFetcher`). Unlike [fetchFullBody] (used by body rules
   /// and NOT changed), an HTML-only body is converted to text and a nested
   /// multipart tree is walked. Null ONLY when the message has no text; a
   /// failed fetch THROWS [ContentFetchException] (7.7.1 silent-failure M-3: a

@@ -4,10 +4,9 @@
 /// that the session is closed, the claim row is gone and the lease is free.
 ///
 /// What these tests do NOT catch (one line each):
-///   - a real IMAP or Gmail fetch (the platform is a fake; both real adapters
-///     swallow a failed fetch and return the message unchanged, which this
-///     class turns into an empty-body throw, tested here with a fake that
-///     does the same);
+///   - a real IMAP or Gmail fetch (the platform is a fake; the real
+///     fetchContentText throws on a failed fetch, and a fake that throws
+///     stands in for it);
 ///   - a background scan in ANOTHER process holding the account (the busy
 ///     case is simulated by a claim seam that throws);
 ///   - the default seams (PlatformRegistry, SecureCredentialsStore): tests
@@ -27,14 +26,31 @@ import 'package:my_email_spam_filter/core/storage/scan_result_store.dart';
 import '../../helpers/database_test_helper.dart';
 
 class _FakePlatform implements SpamFilterPlatform {
-  _FakePlatform({this.body = 'see https://x.example', this.throwOnFetch});
+  _FakePlatform({
+    this.body = 'see https://x.example',
+    this.throwOnFetch,
+    this.contentText,
+    this.throwOnContent,
+  });
   final String body;
   final Object? throwOnFetch;
+
+  /// What fetchContentText returns; null = the named no-op (demo, mock) or a
+  /// message with no text.
+  final String? contentText;
+  final Object? throwOnContent;
   final List<String> calls = [];
 
   @override
   Future<void> loadCredentials(Credentials credentials) async =>
       calls.add('load');
+
+  @override
+  Future<String?> fetchContentText(EmailMessage message) async {
+    calls.add('content');
+    if (throwOnContent != null) throw throwOnContent!;
+    return contentText;
+  }
 
   @override
   Future<EmailMessage> fetchFullBody(EmailMessage message) async {
@@ -129,18 +145,39 @@ void main() {
     final body = await fetcher(p)
         .fetch(platformId: 'aol', accountId: account, message: _msg());
     expect(body, 'see https://x.example');
-    expect(p.calls, ['load', 'fetch', 'disconnect']);
+    expect(p.calls, ['load', 'content', 'fetch', 'disconnect']);
     await expectNothingHeld();
   });
 
-  test('an empty body (failed fetch or no text part) throws and releases',
-      () async {
-    final p = _FakePlatform(body: '  ');
+  // 5.1.9 rehearsal: the rule-path body is text/plain only, so an HTML-only
+  // message read as empty. What this does NOT catch: the real adapters' HTML
+  // conversion (generic_imap_adapter / gmail_api_adapter fetchContentText).
+  test('content text (an HTML-only message as text) is used first', () async {
+    final p = _FakePlatform(body: '', contentText: 'html as text https://y.example');
+    final body = await fetcher(p)
+        .fetch(platformId: 'aol', accountId: account, message: _msg());
+    expect(body, 'html as text https://y.example');
+    expect(p.calls, ['load', 'content', 'disconnect']);
+    await expectNothingHeld();
+  });
+
+  test('a failed content fetch is rethrown, not read as "no text"', () async {
+    final p = _FakePlatform(throwOnContent: StateError('fetch failed'));
+    await expectLater(
+        fetcher(p)
+            .fetch(platformId: 'aol', accountId: account, message: _msg()),
+        throwsA(isA<StateError>()));
+    expect(p.calls, ['load', 'content', 'disconnect']);
+    await expectNothingHeld();
+  });
+
+  test('no text anywhere throws and releases', () async {
+    final p = _FakePlatform(body: '  ', contentText: ' ');
     await expectLater(
         fetcher(p)
             .fetch(platformId: 'aol', accountId: account, message: _msg()),
         throwsA(isA<PopupBodyUnavailable>()));
-    expect(p.calls, ['load', 'fetch', 'disconnect']);
+    expect(p.calls, ['load', 'content', 'fetch', 'disconnect']);
     await expectNothingHeld();
   });
 

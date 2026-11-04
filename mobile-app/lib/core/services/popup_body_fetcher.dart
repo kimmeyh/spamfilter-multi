@@ -8,12 +8,14 @@
 /// the account, [fetch] throws and the pop-up shows "Could not read message";
 /// it never blocks the pop-up and never shows an error dialog.
 ///
-/// FAILURE: every provider's `fetchFullBody` swallows a failed fetch and
-/// returns the message unchanged (gmail_api_adapter.dart `fetchFullBody` catch;
-/// generic_imap_adapter.dart `_fetchMimeMessage` catch). A failed fetch and a
-/// message with no text part both come back with an empty body, so [fetch]
-/// throws [PopupBodyUnavailable] for an empty body. The caller cannot tell the
-/// two apart, and says "Could not read message" for both.
+/// TEXT: read with `fetchContentText` (text/plain, else the HTML part as
+/// text), not the rule-path `fetchFullBody`, which keeps text/plain only and so
+/// read every HTML-only message as empty. `fetchFullBody` remains the fallback
+/// for providers whose `fetchContentText` is the named no-op (demo, mock).
+///
+/// FAILURE: `fetchContentText` THROWS on a failed IMAP or Gmail fetch; the
+/// throw reaches the caller. No text at all throws [PopupBodyUnavailable]. The
+/// pop-up says "Could not read message" for both.
 ///
 /// ADR-0042: shared Dart. Windows and Android both use it through the same
 /// `SpamFilterPlatform` interface (Gmail API, IMAP).
@@ -111,9 +113,19 @@ class PopupBodyFetcher {
         }
         await platform.loadCredentials(credentials);
       }
+      // 5.1.9 rehearsal (Sprint 83): [SpamFilterPlatform.fetchContentText]
+      // first. The rule-path body ([fetchFullBody]) is the text/plain part
+      // ONLY, so an HTML-only message read as empty and showed "Could not read
+      // message" on 3 of 3 live DEV AOL items. fetchContentText falls back to
+      // the HTML part as text, and THROWS on a failed fetch (IMAP, Gmail).
+      final text = await platform.fetchContentText(message);
+      if (text != null && text.trim().isNotEmpty) return text;
+      // Null: no text in the message, or a provider without a real
+      // fetchContentText (demo, mock: the mixin's named no-op), whose
+      // fetchFullBody returns the body it already has.
       final full = await platform.fetchFullBody(message);
       if (full.body.trim().isEmpty) {
-        throw PopupBodyUnavailable('empty body (failed fetch or no text part)');
+        throw PopupBodyUnavailable('no text in the message');
       }
       return full.body;
     } finally {
