@@ -113,11 +113,16 @@ void main() {
       'scans with the SAME resolved platform', (tester) async {
     registerLegacyAccount('aol');
 
+    // _loadSavedAccounts has a deliberate 500ms sync delay; the per-row
+    // FutureBuilder resolves after that. F324 (Sprint 83): each row now also
+    // reads two settings from the database, so the window is the one the
+    // F239 screen test uses (real time, rebuild, real time, rebuild).
     await tester.runAsync(() async {
       await tester.pumpWidget(buildScreen());
-      // _loadSavedAccounts has a deliberate 500ms sync delay; the per-row
-      // FutureBuilder resolves after that.
-      await Future<void>.delayed(const Duration(milliseconds: 700));
+      await Future<void>.delayed(const Duration(milliseconds: 900));
+      await tester.pump();
+      await Future<void>.delayed(const Duration(milliseconds: 600));
+      await tester.pump();
     });
     await tester.pump();
     await tester.pump(const Duration(milliseconds: 300));
@@ -149,5 +154,17 @@ void main() {
     expect(find.byType(ScanProgressScreen), findsOneWidget,
         reason: 'a legacy account whose row displays a resolved platform must '
             'reach the scan screen with that SAME platform');
+    // F324 (Sprint 83): a rebuild re-reads each row's settings from the
+    // database. A read started under the fake clock holds a 10 s timer until
+    // it completes on real time, so end by removing the screen (no new reads),
+    // letting the reads in flight finish on real time, then flushing.
+    await tester.runAsync(() => tester.pumpWidget(const SizedBox()));
+    // The row's fetch is a chain of reads (sign-in flag, background setting,
+    // app-wide default); each link needs real time, then a flush.
+    for (var i = 0; i < 5; i++) {
+      await tester.runAsync(
+          () => Future<void>.delayed(const Duration(milliseconds: 300)));
+      await tester.pump();
+    }
   });
 }

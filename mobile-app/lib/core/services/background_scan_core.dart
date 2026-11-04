@@ -22,7 +22,7 @@ import 'package:flutter/foundation.dart' show visibleForTesting;
 import 'package:logger/logger.dart';
 
 import '../../adapters/email_providers/spam_filter_platform.dart'
-    show GmailSignInRequiredException;
+    show AuthenticationException, GmailSignInRequiredException;
 import '../../adapters/storage/secure_credentials_store.dart';
 import '../../util/redact.dart';
 import '../providers/email_scan_provider.dart';
@@ -366,6 +366,33 @@ class BackgroundScanCore {
     return s.contains('database is locked') || s.contains('(code 5)');
   }
 
+  /// R-4 (Sprint 83): the platform ids served by `GenericIMAPAdapter`
+  /// (`platform_registry.dart`), whose `AuthenticationException` is a refused
+  /// login. Gmail OAuth and the demo platform are not in it.
+  static const Set<String> imapPlatformIds = {
+    'aol',
+    'gmail-imap',
+    'yahoo',
+    'icloud',
+    'imap',
+  };
+
+  /// R-4 (Sprint 83): the skip reason for an IMAP login the provider refused.
+  static const String imapSignInRequiredReason =
+      'The email server rejected the sign-in; enter the password again';
+
+  /// R-4: the name the notification uses for the provider. Only the title
+  /// needs a name; an unknown platform id reads as "Email".
+  static String _imapProviderName(String platformId) =>
+      switch (platformId.toLowerCase()) {
+        'aol' => 'AOL',
+        'yahoo' => 'Yahoo',
+        'icloud' => 'iCloud',
+        'outlook' => 'Outlook',
+        'gmail-imap' => 'Gmail',
+        _ => 'Email',
+      };
+
   static Future<AccountScanOutcome> _scanAccountOnce({
     required String accountId,
     required String platformId,
@@ -504,6 +531,33 @@ class BackgroundScanCore {
           accountId: accountId, settingsStore: settingsStore);
       return AccountScanOutcome.skipped(
           GmailSignInRequiredException.reason, scanProvider,
+          needsSignIn: true);
+    } on AuthenticationException {
+      // R-4 (Sprint 83, F324): an IMAP provider (iCloud, AOL, Yahoo, custom)
+      // REFUSED the login (`generic_imap_adapter.dart` `classifyLoginRefusal`
+      // -> credentials). The same handling as the Gmail sign-in skip above: a
+      // skip (not a failure, so nothing retries it on a timer and the failed
+      // login is not repeated into the provider's lockout), the account is
+      // already flagged "Sign In Again" by the adapter, and the user is told
+      // once a day. Gmail's own plain AuthenticationException (an outage, not
+      // a refused sign-in; see gmail_api_adapter.dart "Gmail OAuth not
+      // established") stays a failure: only IMAP platform ids are skipped. A
+      // network error is a
+      // ConnectionException, a different type, and never arrives here.
+      if (!imapPlatformIds.contains(platformId)) rethrow;
+      _logger.i('Background scan SKIPPED for ${Redact.accountId(accountId)}: '
+          '$imapSignInRequiredReason');
+      unawaited(DiagnosticLogger.scanEvent(
+          scanType: 'background',
+          accountId: accountId,
+          stage: 'skip',
+          detail: 'needs sign-in: $imapSignInRequiredReason'));
+      await GmailSignInNotifier.notifyIfDue(
+          accountId: accountId,
+          settingsStore: settingsStore,
+          providerName: _imapProviderName(platformId));
+      return AccountScanOutcome.skipped(
+          imapSignInRequiredReason, scanProvider,
           needsSignIn: true);
     } on TimeoutException {
       final minutes = ScanCoordinator.scanTimeout.inMinutes;

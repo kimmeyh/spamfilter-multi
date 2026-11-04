@@ -120,8 +120,9 @@ class ScanNotificationText {
   /// F301 (Sprint 81): title of the "Gmail sign-in needed" notification. The
   /// account is masked like the completion title, so a lock screen does not
   /// show the full address.
-  static String signInNeededTitle(String accountId) =>
-      'Gmail sign-in needed for ${maskAccount(accountId)}';
+  static String signInNeededTitle(String accountId,
+          {String providerName = 'Gmail'}) =>
+      '$providerName sign-in needed for ${maskAccount(accountId)}';
 
   /// F301: body of the sign-in notification. It promises exactly two things the
   /// app does: this account is skipped by background scans while it needs

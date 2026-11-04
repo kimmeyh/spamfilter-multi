@@ -14,6 +14,7 @@ import '../../adapters/storage/secure_credentials_store.dart';
 import '../../core/providers/email_scan_provider.dart';
 import '../../core/security/imap_certificate_trust.dart';
 import '../../core/security/imap_host_policy.dart';
+import '../../core/services/data_deletion_service.dart';
 import '../../core/storage/settings_store.dart';
 import '../../util/error_messages.dart';
 import '../../util/redact.dart';
@@ -51,10 +52,18 @@ class AccountSetupScreen extends StatefulWidget {
   /// Human-readable platform name for display
   final String platformDisplayName;
 
+  /// R-4 (Sprint 83, F324): set when the account list's "Sign In Again" opens
+  /// this form for a saved IMAP account whose provider refused the login. The
+  /// address is filled in, the "Account already added" question is skipped
+  /// for it (the user is repairing it, not replacing it), and saving clears
+  /// the "needs sign-in" state without resetting the scan positions.
+  final String? signInAgainFor;
+
   const AccountSetupScreen({
     super.key,
     required this.platformId,
     required this.platformDisplayName,
+    this.signInAgainFor,
   });
 
   /// SEC-8b: shown when Save goes ahead because the server could not be
@@ -153,6 +162,8 @@ class _AccountSetupScreenState extends State<AccountSetupScreen> {
   @override
   void initState() {
     super.initState();
+    final repairing = widget.signInAgainFor;
+    if (repairing != null) _emailController.text = repairing;
     _emailController.addListener(() {
       // Username follows the email address until the user edits it.
       if (_isCustomImap && !_usernameEdited) {
@@ -562,8 +573,15 @@ class _AccountSetupScreenState extends State<AccountSetupScreen> {
   /// already added as AOL) used to overwrite that account's sign-in with no
   /// warning. Re-adding is also how a user enters a new app password, so the
   /// add is confirmed, not blocked. True = go ahead.
-  Future<bool> _confirmReplaceExisting(String accountId) =>
-      confirmReplaceExistingAccount(context, _credStore, accountId);
+  Future<bool> _confirmReplaceExisting(String accountId) async {
+    // R-4: not asked when the user came from "Sign In Again" for this very
+    // address (the question guards against replacing an account by accident).
+    final repairing = widget.signInAgainFor;
+    if (repairing != null && repairing.toLowerCase() == accountId.toLowerCase()) {
+      return true;
+    }
+    return confirmReplaceExistingAccount(context, _credStore, accountId);
+  }
 
   /// Save credentials and proceed to scan screen
   ///
@@ -671,6 +689,21 @@ class _AccountSetupScreenState extends State<AccountSetupScreen> {
     required String platformId,
     required String displayName,
   }) async {
+    // F324 (Sprint 83, Q3 = 3): the new sign-in starts clean. The user's
+    // choices and scan history are kept; the old sign-in's flag, lockout count
+    // and (unless this is a plain password repair) scan positions are cleared.
+    // Best effort: a failure here leaves a stale flag that the next successful
+    // sign-in clears, so it is logged and the add continues.
+    // Started here and awaited BEFORE the scan screen opens, so the first scan
+    // never runs against the old positions; it overlaps the scan-mode read
+    // below instead of adding a second sequential database wait.
+    final refresh = DataDeletionService()
+        .refreshForReAdd(accountId,
+            resetServerState: widget.signInAgainFor == null)
+        .then<void>((_) {}, onError: (Object e) {
+      _logger.w('F324: could not clear the old sign-in state for '
+          '${Redact.accountId(accountId)}: $e');
+    });
     if (!mounted) return;
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
@@ -685,6 +718,7 @@ class _AccountSetupScreenState extends State<AccountSetupScreen> {
     final settingsStore = SettingsStore();
     final manualScanMode = await settingsStore.getManualScanMode();
     scanProvider.initializeScanMode(mode: manualScanMode);
+    await refresh;
     if (!mounted) return;
 
     Navigator.of(context).pushReplacement(

@@ -31,6 +31,7 @@ import '../../core/models/evaluation_result.dart';
 import '../../core/security/auth_rate_limiter.dart';
 import '../../core/security/imap_certificate_trust.dart';
 import '../../core/storage/database_helper.dart';
+import '../../core/storage/settings_store.dart';
 import '../storage/secure_credentials_store.dart';
 import 'custom_imap_settings.dart';
 import 'spam_filter_platform.dart';
@@ -244,6 +245,8 @@ class GenericIMAPAdapter with BatchOperationsMixin
 
       // SEC-22: successful auth clears any accrued failure count.
       await rateLimiter.recordSuccess(rateLimitAccountId);
+      // R-4 (Sprint 83): a successful sign-in clears "Sign In Again".
+      await _setSignInRequired(credentials, false);
 
       // Log server capabilities for diagnostics (custom keyword support, etc.)
       final capabilities = _imapClient?.serverInfo.capabilities ?? [];
@@ -2002,6 +2005,29 @@ class GenericIMAPAdapter with BatchOperationsMixin
           .recordFailure('$platformId-${credentials.email}');
     } catch (limiterError) {
       _logger.w('Auth rate limiter write failed: $limiterError');
+    }
+    // R-4 (Sprint 83, F324): the same refusal also flags the account for
+    // "Sign In Again", exactly as the Gmail adapter does for its sign-in. The
+    // call sites are the ones that hold a REFUSED LOGIN
+    // ([AuthenticationException]); a network error or a busy server never
+    // reaches here.
+    await _setSignInRequired(credentials, true);
+  }
+
+  /// R-4 (Sprint 83, F324): record whether this IMAP account needs the user to
+  /// enter the password again. Reuses the Gmail flag
+  /// (`SettingsStore.getGmailSignInRequired`, the one the account list reads),
+  /// so there is ONE "needs sign-in" state. Best effort, like the Gmail
+  /// adapter: a failed write must never replace the sign-in result. Skipped
+  /// for an unsaved account (the setup form's Test Connection carries no
+  /// `accountId`).
+  Future<void> _setSignInRequired(Credentials credentials, bool required) async {
+    final accountId = credentials.additionalParams?['accountId'];
+    if (accountId == null || accountId.isEmpty) return;
+    try {
+      await SettingsStore().setGmailSignInRequired(accountId, required);
+    } catch (e) {
+      _logger.w('R-4: could not record the IMAP sign-in state: $e');
     }
   }
 

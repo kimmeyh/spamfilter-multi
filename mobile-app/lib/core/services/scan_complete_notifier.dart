@@ -281,13 +281,17 @@ class ScanCompleteNotifier {
   ///
   /// Returns whether it was posted. A failure (including notifications turned
   /// off in the OS) never escapes and is written to the diagnostic log.
-  static Future<bool> postSignInNeeded({required String accountId}) {
+  static Future<bool> postSignInNeeded({
+    required String accountId,
+    String providerName = 'Gmail',
+  }) {
     final details = _isAndroid
         ? const NotificationDetails(android: _signInAndroidDetails)
         : const NotificationDetails(windows: WindowsNotificationDetails());
     return _deliver(
       id: ScanNotificationText.signInNeededId(accountId),
-      title: ScanNotificationText.signInNeededTitle(accountId),
+      title: ScanNotificationText.signInNeededTitle(accountId,
+          providerName: providerName),
       body: ScanNotificationText.signInNeededBody,
       details: details,
       what: 'sign-in-needed',

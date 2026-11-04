@@ -5,6 +5,9 @@ import '../../core/providers/selected_account_provider.dart';
 import '../../adapters/storage/secure_credentials_store.dart';
 import '../../core/storage/settings_store.dart';
 import '../../core/services/data_deletion_service.dart';
+import '../../core/services/background_scan_scheduler.dart';
+import '../../core/services/scan_interval.dart';
+import 'account_setup_screen.dart';
 import '../../core/utils/platform_inference.dart';
 import '../../util/redact.dart';
 import '../../adapters/email_providers/platform_registry.dart';
@@ -35,6 +38,11 @@ class AccountDisplayData {
   /// the user, so the row offers "Sign In Again".
   final bool signInRequired;
 
+  /// R-1 (Sprint 83, F324): this account's EFFECTIVE background-scan setting
+  /// (`SettingsStore.getEffectiveBackgroundEnabled`). False shows "Background
+  /// scanning is off for this account" and a "Turn on" button.
+  final bool backgroundEnabled;
+
   /// MV-Q8 (Sprint 77): the saved server of a Custom IMAP account, so the
   /// row says "App Password" for a known app-password server. Null otherwise.
   final String? imapHost;
@@ -43,6 +51,7 @@ class AccountDisplayData {
     required this.email,
     required this.platformId,
     this.signInRequired = false,
+    this.backgroundEnabled = true,
     this.imapHost,
   });
 
@@ -54,6 +63,7 @@ class AccountDisplayData {
           email == other.email &&
           platformId == other.platformId &&
           signInRequired == other.signInRequired &&
+          backgroundEnabled == other.backgroundEnabled &&
           imapHost == other.imapHost;
 
   @override
@@ -61,6 +71,7 @@ class AccountDisplayData {
       email.hashCode ^
       platformId.hashCode ^
       signInRequired.hashCode ^
+      backgroundEnabled.hashCode ^
       imapHost.hashCode;
 }
 
@@ -257,20 +268,33 @@ class _AccountSelectionScreenState extends State<AccountSelectionScreen> with Wi
       _logger.d('[OK] Loaded account data: email=${Redact.email(email)}, platformId=$platformId for accountId=${Redact.accountId(accountId)}');
 
       // F239: the flag the Gmail adapter sets when renewal needed the user.
+      // R-4 (Sprint 83, F324): the IMAP adapter sets the SAME flag when a
+      // provider refuses the login (iCloud, AOL, Yahoo, custom), so it is read
+      // for every platform.
       var signInRequired = false;
-      if (platformId == 'gmail') {
-        try {
-          signInRequired =
-              await SettingsStore().getGmailSignInRequired(accountId);
-        } catch (e) {
-          _logger.w('F239: could not read the Gmail sign-in state: $e');
-        }
+      try {
+        signInRequired =
+            await SettingsStore().getGmailSignInRequired(accountId);
+      } catch (e) {
+        _logger.w('F239: could not read the sign-in state: $e');
+      }
+
+      // R-1 (Sprint 83, F324): the resolver the scan worker uses (the
+      // per-account setting, then the app-wide default), never a copy. An
+      // unreadable setting shows nothing rather than a false claim.
+      var backgroundEnabled = true;
+      try {
+        backgroundEnabled =
+            await SettingsStore().getEffectiveBackgroundEnabled(accountId);
+      } catch (e) {
+        _logger.w('F324: could not read the background setting: $e');
       }
 
       return AccountDisplayData(
         email: email,
         platformId: platformId,
         signInRequired: signInRequired,
+        backgroundEnabled: backgroundEnabled,
         imapHost: _customImapHost(platformId, creds.additionalParams),
       );
     } catch (e) {
@@ -279,6 +303,19 @@ class _AccountSelectionScreenState extends State<AccountSelectionScreen> with Wi
       return null;
     }
   }
+
+  /// R-1 (Sprint 83, F324): the line under an account whose background
+  /// scanning is off, and the button label. Public so tests pin the words.
+  static const String backgroundOffText =
+      'Background scanning is off for this account';
+  static const String turnOnLabel = 'Turn on';
+
+  /// R-4 (Sprint 83): why the row offers Sign In Again. Gmail keeps its F239
+  /// wording; an IMAP provider says the server rejected the sign-in.
+  String _signInNeededText(String platformId, String platformName) =>
+      platformId == 'gmail'
+          ? 'Gmail needs you to sign in again'
+          : '$platformName rejected the sign-in. Enter your password again.';
 
   /// Get platform display name from platformId
   String _getPlatformName(String platformId) {
@@ -691,11 +728,64 @@ class _AccountSelectionScreenState extends State<AccountSelectionScreen> with Wi
   /// account leaves a valid selection intact.
   /// F239: repair the sign-in of an existing Gmail account. The account keeps
   /// its id, settings and history -- nothing is deleted.
-  Future<void> _signInAgain(String accountId) async {
+  Future<void> _signInAgain(String accountId, String platformId) async {
+    if (platformId != 'gmail') {
+      // R-4 (Sprint 83, F324): an IMAP account (iCloud, AOL, Yahoo, custom)
+      // repairs through the existing add-account form, which is how a new app
+      // password is entered ("Re-adding is also how a user enters a new app
+      // password", account_setup_screen.dart). The address is filled in and
+      // the "Account already added" question is skipped for it.
+      await Navigator.push<void>(
+        context,
+        MaterialPageRoute(
+          builder: (_) => AccountSetupScreen(
+            // The Gmail app-password form lives under the 'gmail' entry.
+            platformId: platformId == 'gmail-imap' ? 'gmail' : platformId,
+            platformDisplayName: _getPlatformName(platformId),
+            signInAgainFor: accountId,
+          ),
+        ),
+      );
+      if (mounted) setState(() => _accountDataCache.remove(accountId));
+      return;
+    }
     final signedIn = await SignInAgain.run(context, accountId);
     if (signedIn && mounted) {
       setState(() => _accountDataCache.remove(accountId));
     }
+  }
+
+  /// R-1 (Sprint 83, F324): turn this account's background scanning on. Writes
+  /// the same per-account setting as Settings > Background > Enable Background
+  /// Scanning and schedules through the same platform factory, so the line
+  /// does not claim a scan that nothing runs (the F161 failure shape).
+  Future<void> _turnOnBackground(String accountId) async {
+    final messenger = ScaffoldMessenger.of(context);
+    try {
+      final settings = SettingsStore();
+      await settings.setAccountBackgroundEnabled(accountId, true);
+      final scheduler = BackgroundScanSchedulerFactory.instance;
+      final minutes = await settings.getEffectiveBackgroundFrequency(accountId);
+      if (scheduler.isSupported && ScanInterval.validate(minutes) == null) {
+        final scheduled = await scheduler.schedule(
+            accountId: accountId,
+            intervalMinutes: minutes,
+            caller: 'account list: turn on background');
+        if (!scheduled) {
+          _logger.e('F324: scheduling returned false for '
+              '${Redact.accountId(accountId)}');
+          messenger.showSnackBar(const SnackBar(
+              content: Text('Background scanning is on, but it could not be '
+                  'scheduled. Open Settings > Background to check it.')));
+        }
+      }
+    } catch (e) {
+      _logger.e('F324: could not turn on background scanning: $e');
+      messenger.showSnackBar(
+          SnackBar(content: Text('Could not turn on background scanning: $e')));
+      return;
+    }
+    if (mounted) setState(() => _accountDataCache.remove(accountId));
   }
 
   Future<void> _deleteAccount(String accountId) async {
@@ -712,8 +802,10 @@ class _AccountSelectionScreenState extends State<AccountSelectionScreen> with Wi
           '- Saved credentials / OAuth tokens\n'
           '- Scan history for this account\n'
           '- Unmatched emails captured in past scans\n'
-          '- Per-account settings and overrides\n\n'
-          'App-wide rules and other accounts are preserved.',
+          '- Sign-in state and saved scan positions\n\n'
+          'Your folder, scan and background choices for this address are '
+          'kept, so adding it again finds them. App-wide rules and other '
+          'accounts are preserved.',
         ),
         actions: [
           TextButton(
@@ -1024,17 +1116,46 @@ class _AccountSelectionScreenState extends State<AccountSelectionScreen> with Wi
                           ),
                           subtitle: Padding(
                             padding: const EdgeInsets.only(top: 4),
-                            child: Text(
-                              // F239: say why the row offers Sign In Again.
-                              displayData.signInRequired
-                                  ? '$accountId\nGmail needs you to sign in again'
-                                  : accountId,
-                              style: TextStyle(
-                                fontSize: 12,
-                                color: displayData.signInRequired
-                                    ? Theme.of(context).colorScheme.error
-                                    : Colors.grey[600],
-                              ),
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(
+                                  // F239: say why the row offers Sign In
+                                  // Again. R-4: an IMAP provider that refused
+                                  // the login says so, in its own words.
+                                  displayData.signInRequired
+                                      ? '$accountId\n${_signInNeededText(displayData.platformId, platformName)}'
+                                      : accountId,
+                                  style: TextStyle(
+                                    fontSize: 12,
+                                    color: displayData.signInRequired
+                                        ? Theme.of(context).colorScheme.error
+                                        : Colors.grey[600],
+                                  ),
+                                ),
+                                // R-1 (Sprint 83, F324).
+                                if (!displayData.backgroundEnabled)
+                                  Wrap(
+                                    crossAxisAlignment:
+                                        WrapCrossAlignment.center,
+                                    children: [
+                                      Text(
+                                        backgroundOffText,
+                                        key: Key('background_off_$accountId'),
+                                        style: TextStyle(
+                                          fontSize: 12,
+                                          color: Colors.grey[600],
+                                        ),
+                                      ),
+                                      TextButton(
+                                        key: Key('turn_on_background_$accountId'),
+                                        onPressed: () =>
+                                            _turnOnBackground(accountId),
+                                        child: const Text(turnOnLabel),
+                                      ),
+                                    ],
+                                  ),
+                              ],
                             ),
                           ),
                           trailing: Row(
@@ -1043,7 +1164,8 @@ class _AccountSelectionScreenState extends State<AccountSelectionScreen> with Wi
                               if (displayData.signInRequired)
                                 TextButton(
                                   key: Key('sign_in_again_$accountId'),
-                                  onPressed: () => _signInAgain(accountId),
+                                  onPressed: () => _signInAgain(
+                                      accountId, displayData.platformId),
                                   child: const Text(SignInAgain.label),
                                 ),
                               IconButton(

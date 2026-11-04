@@ -505,6 +505,95 @@ copied.
 
 _**Decision-class interrupts**_: Q3 (Class 2 if removal stops deleting a setting).
 
+**R-2 deep dive: every per-account store (Phase 4, read 2026-11-02; Q3 = 3 approves the Class 2 change)**
+
+KEEP (user choices; `account_settings` rows, kept on removal and on re-add; key -> getter in `settings_store.dart`):
+- `folders` (574), `scan_mode` (592), `manual_scan_mode` (839), `manual_scan_folders` (857),
+  `background_scan_mode` (879), `background_scan_folders` (897), `manual_days_back` (919), `background_days_back`
+  (937): the folders, scan modes and days back the user chose.
+- `background_enabled` (610), `background_frequency` (684), `new_mail_trigger` (621): background on/off, frequency, the
+  new-mail trigger.
+- `deleted_rule_folder` (778), `safe_sender_folder` (795): the target folders the user chose.
+
+REFRESH (tied to the old sign-in or server state; cleared on removal, and cleared again on re-add):
+- `account_settings` key `gmail_sign_in_required` (641) and `gmail_sign_in_notified_at` (661): the sign-in-required flag
+  and the once-a-day notice time.
+- Credentials and tokens in secure storage (`SecureCredentialsStore.deleteCredentials`, `data_deletion_service.dart` credential
+  block): removed on removal; replaced by the add flow.
+- `account_folder_cursors` (`database_helper.dart:212`): the Gmail history cursor and the oldest-No-Rule cursor per
+  folder. A new sign-in or server can have different UIDs and history ids.
+- `background_scan_schedule` (`database_helper.dart:350`): next-run rows.
+- `auth_rate_limit` (`database_helper.dart:416`): a failed-password lockout count must not follow a new password.
+- `accounts` row (`database_helper.dart:196`, `last_history_id`).
+- `account_settings` key `schedule_slot` (`settings_store.dart:744`): an internal start-stagger allocation, not a user
+  choice. Deleted on removal (as today), so the slot is freed; the next schedule allocates again.
+
+DELETE (scan data; the user chose to remove it, as today): `scan_results` (`database_helper.dart:224`), `email_actions`,
+`unmatched_emails` (both reached through `scan_result_id`), `background_scan_log` (`database_helper.dart:397`), and the DEV
+content history rows (`ContentHistoryStore.deleteAccount`).
+
+Callers of `deleteAccountData` (Sprint 72 IMP-1; grep over `lib/` and `test/`):
+- `account_selection_screen.dart` `_deleteAccount` (the only code caller): the user-visible delete button. After Q3 = 3 it keeps the KEEP set, so the
+  confirmation text no longer says "Per-account settings and overrides" are removed; it says the folder, scan and
+  background choices are kept for the same address.
+- `Settings > General > Reset App > Delete All Data` does NOT call it: it calls `wipeAllData` (`DatabaseHelper.deleteAllData`),
+  which still deletes every row, including the KEEP set. "Delete all my data" therefore still deletes everything.
+- Tests: `test/unit/services/data_deletion_service_test.dart` and `test/policy/r76_4_content_history_policy_test.dart`
+  (group R7: asserts every account table is cleared; the KEEP rows are `account_settings` only, which that test treats
+  through the existing path).
+
+**R-4 cause: why Gmail gets "Sign In Again" and IMAP does not (read 2026-11-02)**
+- The control shows when `AccountDisplayData.signInRequired` is true (`account_selection_screen.dart:1043`). That value was
+  read ONLY for `platformId == 'gmail'` (`account_selection_screen.dart:261-268`) from the `account_settings` flag
+  `gmail_sign_in_required` (`settings_store.dart:641`).
+- The flag is set ONLY by `GmailApiAdapter._setSignInRequired` (`gmail_api_adapter.dart:330-337`) on the paths that throw
+  `GmailSignInRequiredException` (`gmail_api_adapter.dart:233-244, 300, 319`), and cleared at `gmail_api_adapter.dart:254, 271, 308`
+  and `sign_in_again.dart:59`.
+- The IMAP adapter turns a refused login (`AUTHENTICATIONFAILED`, `AUTHORIZATIONFAILED`, `EXPIRED`, or a plain `NO`) into a
+  plain `AuthenticationException` (`generic_imap_adapter.dart:505-508`, classified at 564-579). It only counts the failure for the
+  lockout (`_recordSignInFailure`, `generic_imap_adapter.dart:1999-2006`, called at 255 and at the reconnect, 2047). No flag, no
+  skip, no notification. The worker has a catch for `GmailSignInRequiredException` only
+  (`background_scan_core.dart:471`), so the IMAP failure was counted as a failed scan on every run (the 17 phone errors).
+- A network error is a `ConnectionException` (`generic_imap_adapter.dart:272-278`) and a busy server is a
+  `UserFacingConnectionException` (`generic_imap_adapter.dart:509-514`, classification 534-539); neither is an
+  `AuthenticationException`, so neither sets the flag.
+
+**Result (Phase 4)** (2026-11-02, Sonnet; not committed)
+- KEEP / REFRESH / DELETE: as listed above. `DataDeletionService.deleteAccountData` now deletes `account_settings` rows
+  with an allowlist (`accountSettingKeysKept`, 13 keys), so a key added later is deleted unless classified; the policy
+  test `account_settings_classification_test` fails until a new key is classified. New `refreshForReAdd` clears the old
+  sign-in state on re-add. The failed-password count was keyed `platform-address` and removal deleted by the bare
+  address, so it survived removal; fixed (`_deleteRateLimit`).
+- Callers of `deleteAccountData`: only `_deleteAccount` on the Account Selection screen (dialog text changed to say the
+  choices are kept). `wipeAllData` (Reset App > Delete All Data) is unchanged and still deletes everything.
+- R-4 cause: see above. Fix extends the same flag: `_recordSignInFailure` in `generic_imap_adapter.dart` (the one place a
+  refused login is recorded, first sign-in and mid-scan reconnect) sets `gmail_sign_in_required`; a successful
+  `loadCredentials` clears it. The worker (`background_scan_core.dart`) skips an IMAP refusal (platform ids aol,
+  gmail-imap, yahoo, icloud, imap) and posts the once-a-day notice with the provider named (`providerName` through
+  `GmailSignInNotifier`, `ScanCompleteNotifier.postSignInNeeded`, `ScanNotificationText.signInNeededTitle`). Gmail's plain
+  `AuthenticationException` and the demo platform still fail. Catches between the throw (`generic_imap_adapter.dart:~508`)
+  and the handler: `loadCredentials` catch (flag, rethrow), `email_scanner` per-folder catch (`isSessionFatal` rethrows),
+  `email_scanner` outer catch (`errorScan`, rethrow), `finally` disconnect, then the new worker catch (skip).
+- Files: `data_deletion_service.dart`, `generic_imap_adapter.dart`, `background_scan_core.dart`,
+  `account_selection_screen.dart`, `account_setup_screen.dart`, `gmail_sign_in_notifier.dart`,
+  `scan_complete_notifier.dart` (only `postSignInNeeded` gained `providerName`), `scan_notification_text.dart`
+  (`signInNeededTitle` gained `providerName`), `CHANGELOG.md`; tests below.
+- Tests: 31 new or updated tests pass (data deletion + classification gate 13, IMAP flag 6, worker skip 3, background-off
+  and Sign In Again screen 7, repair flow 2). Existing tests adjusted for the screen's extra database reads:
+  `account_selection_legacy_platform_test.dart` (mount and end windows). Mutation: 16 mutants, all KILLED
+  (`scripts/mutation-test.ps1`, command form with `flutter test --timeout 4x`; M14 to M16 re-run after the last edit to
+  `account_setup_screen.dart`). `flutter analyze`: no issues. Full suite (`--timeout 4x -j 2`): 3383 passed, 15 skipped,
+  2 failed in `f302_no_valid_imap_uid_test.dart` (timing under machine load; the file passes alone, 16 of 16).
+- User-visible controls: Account Selection list, under the account: "Background scanning is off for this account" and
+  "Turn on"; for an IMAP account whose provider rejected the password: "<Provider> rejected the sign-in. Enter your
+  password again." and "Sign In Again" (opens the add-account form with the address filled in). Notification title for
+  that skip: "<Provider> sign-in needed for <masked address>".
+- Judgment calls: reused the Gmail-named flag getters instead of renaming; "Turn on" does not request the Android
+  notification permission; 'gmail-imap' repair opens the 'gmail' form (pick app password), custom 'imap' needs the server
+  fields retyped; kept folder keys could mismatch if the address returns under a different provider (the F202 missing-folder
+  skip covers it); the removed account's `schedule_slot` is still freed. ADR-0042: shared Dart on Windows and Android;
+  scheduling goes through `BackgroundScanSchedulerFactory` (Task Scheduler / WorkManager), faked in tests.
+
 ## Task 5 -- F270 v1: suggested safe senders from stored history (Priority 30)
 
 **Value**: This protects senders the user trusts before a broad block rule catches them (fewer false positives).

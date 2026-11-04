@@ -1,13 +1,13 @@
 {
     "_description": "Sprint status file that persists across context compaction. Update after each phase/sub-phase completion.",
-    "_last_updated": "2026-11-01T22:48:44-05:00",
+    "_last_updated": "2026-11-03T23:20",
     "_usage": "Read this file after context compaction to restore sprint approval state and progress.",
     "_staleness_note": "This file had drifted 15 sprints (last updated at Sprint 35, 2026-04-19) before being refreshed at Sprint 50 close-out. It is a Phase 7.7 checklist item -- update it at every sprint close-out, not opportunistically.",
     "current_sprint": {
         "number": 83,
         "branch": "feature/20261031_Sprint_83",
-        "status": "Phase 4 Execution -- 3.7.0 cards, 3.7.0b bump (7fd96f82), 3.7.1 PR body done; block A running: Task 2 F322 (worktree), Task 4 F324 (worktree), Task 8 F309; Task 11 runs alone later",
-        "status_detail": "Q-A approved; MV-3a PASS; iCloud Sign In Again added to Task 4 (R-4). Open for Manual Validation: MV-3c choice, Record question. iOS #509 #510 #523 not in scope.",
+        "status": "Phase 4 Execution",
+        "status_detail": "Done: Task 0, 1 (carry-ins), 2 (7541e6ac), 6, 8, 10 (9f52b7c4). Running in worktrees: Task 4 F324, Task 7 F308. Next: Task 4 merge, Task 3, Task 9, Task 5; Task 11 alone; pre-Sprint-83 test fixes.",
         "plan_approved": true,
         "pr_number": 534,
         "version": "0.23.0+20"
