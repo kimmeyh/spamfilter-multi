@@ -19,8 +19,15 @@
   mail a delete rule caught in Trash2 and scores against No Rule and safe-sender
   mail. OutYaml then holds the F308 candidates (single parts and AND pairs).
 
+.PARAMETER Safe
+  F310 safe mode: learn what safe-sender mail has in common that delete-rule mail
+  does not, and report sender-domain and signal candidates that require the auth
+  gate (stored auth class green). OutYaml then holds safe_senders patterns.
+  Trash2Jsonl is optional in this mode (extra delete-rule mail, auth unknown).
+
 .PARAMETER ShowPhrases
   Trash2 mode: print phrase text in the report (default prints ids and counts).
+  Safe mode: print sender domains.
 
 .EXAMPLE
   powershell -NoProfile -ExecutionPolicy Bypass -File tool\rule_miner\rule_miner.ps1 -DbDir C:\temp\dbcopy -OutYaml C:\temp\proposed.yaml
@@ -30,6 +37,7 @@ param(
     [Parameter(Mandatory)][string]$OutYaml,
     [string]$OutReport = '',
     [string]$Trash2Jsonl = '',
+    [switch]$Safe,
     [switch]$ShowPhrases
 )
 $ErrorActionPreference = 'Stop'
@@ -40,7 +48,7 @@ $env:RULE_MINER_DB_DIR = (Resolve-Path -LiteralPath $DbDir).Path
 # the session started, so a relative path could land in the repository.
 $resolve = { param($p) $ExecutionContext.SessionState.Path.GetUnresolvedProviderPathFromPSPath($p) }
 $env:RULE_MINER_OUT_YAML = & $resolve $OutYaml
-$env:RULE_MINER_MODE = if ($Trash2Jsonl) { 'trash2' } else { '' }
+$env:RULE_MINER_MODE = if ($Safe) { 'safe' } elseif ($Trash2Jsonl) { 'trash2' } else { '' }
 $env:RULE_MINER_TRASH_JSONL = if ($Trash2Jsonl) { (Resolve-Path -LiteralPath $Trash2Jsonl).Path } else { '' }
 $env:RULE_MINER_SHOW_PHRASES = if ($ShowPhrases) { '1' } else { '' }
 $env:RULE_MINER_OUT_REPORT = if ($OutReport) { & $resolve $OutReport } else { '' }

@@ -876,6 +876,18 @@ Class 1 plus a privacy-policy change). Harold answers the numbered question in t
 
 **Step-types**: TOOL-ADD, DATA-ANALYSIS, TEST-UNIT. **Est-Effort**: 120-240m.
 
+**Result (Phase 4)**: built 2026-11-04 (Sonnet 5.5 sub-agent; not committed). New safe mode in `tool/rule_miner`
+(`safe_miner_core.dart`, `rule_miner.ps1 -Safe`) reusing the Task 7 corpus builder, dedup, thresholds and domain guard.
+Every candidate carries the auth gate; a candidate without it never passes (AC-2). **The stored data has only the auth
+class (green, yellow, red, grey), not a DMARC verdict**, so the gate is `green` (a proxy); delete-rule mail with an
+unknown class (Trash2 only) counts as a hit. Threshold: at least 5 gate-proven safe-sender emails, at most 2 delete-rule
+hits AND at most 0.5 percent of 4,127 delete-rule emails (987 with a known class). Result: 46 candidates scored, 31
+reported (30 sender domains, 22 already matched by a current safe-sender pattern, 1 new domain that covers 5 No Rule
+emails; plus 1 signal pair). No signal passes alone. Report: `docs/research/F310_SAFE_SENDER_MINING.md`. Tests: new
+`test/unit/tool/rule_miner_safe_test.dart` (the card's `test/tool/rule_miner_test.dart` path does not exist), 25 pass; 24
+mutants all KILLED; Task 7's 24 and F268's 10 tests still pass. Shared edits: `HistorySample.authClass` and
+`CorpusEntry` auth/time/outcome fields, `domainGuard` made public.
+
 ## Task 10 -- F321 pilot: Python for deterministic tooling (Priority 35)
 
 **Value**: This starts moving the tooling to one language that runs on Windows, Linux, Unix, WSL and macOS.

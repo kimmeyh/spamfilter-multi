@@ -53,7 +53,13 @@ class HistorySample {
     this.messageId,
     this.outcome = '',
     this.receivedAtMs,
+    this.authClass,
   });
+
+  /// content_history `auth_class` (`green`, `yellow`, `red`, `grey`); null when
+  /// not stored (an `email_actions`-only email, or an old fixture). Added for
+  /// F310. Not used by F267 or F308.
+  final String? authClass;
 
   /// RFC 5322 Message-ID without angle brackets, lowercase; null when unknown.
   /// Added for F308 (dedup against the Trash2 read). Not used by F267.
@@ -250,6 +256,7 @@ Future<History> loadHistory(String dbDir, {String? appData}) async {
             'SELECT account_id, message_id, provider_id, from_address, '
             'reply_to, return_path_domain, subject, outcome, user_decision, '
             'list_unsubscribe, body_text, '
+            '${cols.contains('auth_class') ? 'auth_class' : 'NULL AS auth_class'}, '
             '${cols.contains('received_at') ? 'received_at' : 'NULL AS received_at'} '
             'FROM content_history');
         historyRows = rows.length;
@@ -304,6 +311,7 @@ Future<History> loadHistory(String dbDir, {String? appData}) async {
             messageId: normalizeMessageId(msgId),
             outcome: outcome,
             receivedAtMs: r['received_at'] as int?,
+            authClass: _blankToNull(r['auth_class'] as String?),
           ));
         }
       } finally {

@@ -152,6 +152,9 @@ class CorpusEntry {
     required String body,
     required Map<String, String> headers,
     required this.hasHeaders,
+    this.authClass,
+    this.receivedAtMs,
+    this.outcome = '',
   })  : from = from.toLowerCase().trim(),
         subject = subject.toLowerCase().trim(),
         body = body.toLowerCase().trim(),
@@ -173,6 +176,17 @@ class CorpusEntry {
   /// True when the header values are real (content history or Trash2). False
   /// for an email_actions-only row, which carries no headers at all.
   final bool hasHeaders;
+
+  /// F310: stored authentication class (`green`, `yellow`, `red`, `grey`), or
+  /// null when it is not known (a Trash2 email with no history row).
+  final String? authClass;
+
+  /// F310: received time in epoch milliseconds, when known.
+  final int? receivedAtMs;
+
+  /// F310: content_history outcome (`delete`, `safe_sender`, `no_rule`), or
+  /// empty when unknown.
+  final String outcome;
 
   /// The strings a header pattern is tested against, as the evaluator does.
   final List<String> headerTests;
@@ -292,6 +306,11 @@ Future<Corpus> buildCorpus({
       body: r.body,
       headers: r.headers,
       hasHeaders: true,
+      // F310: the Trash2 read has no auth header; the matching history row
+      // (when there is one) carries the stored class.
+      authClass: matched.map((s) => s.authClass).whereType<String>().firstOrNull,
+      receivedAtMs: r.dateMs,
+      outcome: matched.map((s) => s.outcome).where((o) => o.isNotEmpty).firstOrNull ?? '',
     ));
   }
 
@@ -315,6 +334,9 @@ Future<Corpus> buildCorpus({
       body: s.body,
       headers: s.headers,
       hasHeaders: s.source == 'content_history',
+      authClass: s.authClass,
+      receivedAtMs: s.receivedAtMs,
+      outcome: s.outcome,
     ));
   }
 
@@ -524,7 +546,7 @@ class _Raw {
 String _hostPattern(String domain) =>
     'https?://(?:[a-z0-9-]+\\.)*${domain.split('.').map(RegExp.escape).join('\\.')}\\b';
 
-String? _domainGuard(String domain) => overBroadReason(MinedCandidate(
+String? domainGuard(String domain) => overBroadReason(MinedCandidate(
     id: '',
     kind: CandidateKind.domain,
     key: domain,
@@ -669,10 +691,10 @@ List<TrashCandidate> generateSingles(Corpus corpus,
     String? broad;
     switch (r.kind) {
       case TrashKind.senderDomain || TrashKind.bodyUrlDomain:
-        broad = _domainGuard(r.key);
+        broad = domainGuard(r.key);
       case TrashKind.headerValue:
         final parts = r.key.split(' ');
-        if (parts.length == 2 && parts[1].contains('.')) broad = _domainGuard(parts[1]);
+        if (parts.length == 2 && parts[1].contains('.')) broad = domainGuard(parts[1]);
       case TrashKind.subjectPhrase || TrashKind.bodyPhrase:
         broad = overBroadReason(MinedCandidate(
             id: '',

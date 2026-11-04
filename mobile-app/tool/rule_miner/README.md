@@ -120,6 +120,32 @@ It holds private mail text: keep it, the YAML and the report out of the repo.
   stored body.
 - Output is a report and candidate YAML. Nothing is imported or applied.
 
+## Safe mode (F310, Sprint 83)
+
+`rule_miner.ps1 -DbDir <copy> -Safe -OutYaml <file> [-Trash2Jsonl <file>] [-OutReport <file>] [-ShowPhrases]`
+
+The mirror of the trash2 mode. It learns what safe-sender mail has in common that
+delete-rule mail does not, and scores each candidate against the delete-rule mail
+(history mail with outcome `delete`, plus the Trash2 JSONL when given). Method and
+results: `docs/research/F310_SAFE_SENDER_MINING.md`.
+
+- Candidates: one per sender domain with at least 5 gate-proven safe-sender
+  emails; five signals (reply-thread subject, transactional subject word, at most
+  2 body links, no List-Unsubscribe header, sender domain seen 5+ times over 90+
+  days); and every pair of signals.
+- **The gate (R-3, AC-2)**: every suggestion requires the stored auth class
+  `green`. A candidate built without the gate is never reported, whatever its
+  score. The gate is a PROXY: stored data holds the class only, not a DMARC
+  verdict (green = every SPF/DKIM/DMARC method that returned a verdict passed).
+  The runtime suggestion (F270) must test DMARC pass from the raw header.
+- Threshold: at least 5 gate-proven safe-sender emails, at most 2 delete-rule hits
+  AND at most 0.5 percent of the delete-rule mail it could be checked on.
+  Delete-rule mail with an unknown auth class counts as a hit when its content
+  matches (a check that did not run is not "clean").
+- Output: a report (counts; domain names only with `-ShowPhrases`) and
+  `safe_senders` YAML for the reported sender domains. The YAML cannot carry the
+  DMARC condition; it is a list to review, not to import as is. Report only (R-4).
+
 ## Safety (R-4)
 
 - Inputs come from a COPY folder only. Any path under
@@ -152,3 +178,7 @@ a live path are all rejected.
 `flutter test test/unit/tool/rule_miner_trash2_test.dart` covers the trash2 mode
 on in-memory fixtures: dedup, the hand-deleted group, the safe-sender threshold,
 AND pairs, equal-candidate collapse and the account-name guard.
+
+`flutter test test/unit/tool/rule_miner_safe_test.dart` covers the safe mode: the
+auth gate (a candidate without it is never reported), the delete-rule threshold
+including unknown-auth mail, the signals and the history loader's `auth_class`.

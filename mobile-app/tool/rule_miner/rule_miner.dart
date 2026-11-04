@@ -15,6 +15,7 @@ import 'package:sqflite_common_ffi/sqflite_ffi.dart';
 
 import '../rule_eval/rule_eval_core.dart';
 import 'rule_miner_core.dart';
+import 'safe_miner_core.dart';
 import 'trash_miner_core.dart';
 
 void main() {
@@ -34,6 +35,18 @@ void main() {
         print(refusal);
         fail(refusal);
       }
+    }
+    if (env['RULE_MINER_MODE'] == 'safe') {
+      // F310 safe mode: the Trash2 JSONL is optional (extra delete-rule mail
+      // with an unknown auth class); the history copy is the main input.
+      final jsonl = env['RULE_MINER_TRASH_JSONL'] ?? '';
+      final sr = await mineSafe(jsonl.isEmpty ? <TrashRecord>[] : readTrashJsonl(jsonl), dbDir);
+      final sreport = renderSafeReport(sr, showDomains: env['RULE_MINER_SHOW_PHRASES'] == '1');
+      writeSafeOutput(outYaml, renderSafeYaml(sr.reported));
+      if (outReport.isNotEmpty) writeSafeOutput(outReport, sreport);
+      // ignore: avoid_print
+      print('\n$sreport');
+      return;
     }
     if (env['RULE_MINER_MODE'] == 'trash2') {
       // F308 trash2 mode: the JSONL is private mail text read by the probe.
