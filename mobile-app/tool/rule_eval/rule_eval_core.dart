@@ -50,7 +50,21 @@ class HistorySample {
     required this.headers,
     required this.label,
     required this.noRuleLaterDeleted,
+    this.messageId,
+    this.outcome = '',
+    this.receivedAtMs,
   });
+
+  /// RFC 5322 Message-ID without angle brackets, lowercase; null when unknown.
+  /// Added for F308 (dedup against the Trash2 read). Not used by F267.
+  final String? messageId;
+
+  /// content_history `outcome` (`delete`, `safe_sender`, `no_rule`); empty for
+  /// an `email_actions`-only email. Added for F308.
+  final String outcome;
+
+  /// Received time in epoch milliseconds when known. Added for F308.
+  final int? receivedAtMs;
 
   /// `content_history` (has a body) or `email_actions` (no body).
   final String source;
@@ -228,10 +242,16 @@ Future<History> loadHistory(String dbDir, {String? appData}) async {
     if (historyPresent) {
       final hist = await openReadOnly(historyPath);
       try {
+        // received_at exists in the real schema; a small test fixture may omit it.
+        final cols = (await hist.rawQuery('PRAGMA table_info(content_history)'))
+            .map((c) => c['name'] as String)
+            .toSet();
         final rows = await hist.rawQuery(
             'SELECT account_id, message_id, provider_id, from_address, '
             'reply_to, return_path_domain, subject, outcome, user_decision, '
-            'list_unsubscribe, body_text FROM content_history');
+            'list_unsubscribe, body_text, '
+            '${cols.contains('received_at') ? 'received_at' : 'NULL AS received_at'} '
+            'FROM content_history');
         historyRows = rows.length;
         for (final r in rows) {
           final account = r['account_id'] as String;
@@ -281,6 +301,9 @@ Future<History> loadHistory(String dbDir, {String? appData}) async {
             headers: headers,
             label: label,
             noRuleLaterDeleted: noRuleLater,
+            messageId: normalizeMessageId(msgId),
+            outcome: outcome,
+            receivedAtMs: r['received_at'] as int?,
           ));
         }
       } finally {
@@ -304,6 +327,7 @@ Future<History> loadHistory(String dbDir, {String? appData}) async {
         headers: const {},
         label: label,
         noRuleLaterDeleted: g.firstAction == 'none' && g.anyDelete,
+        messageId: normalizeMessageId(g.msgId),
       ));
     }
 
@@ -323,6 +347,13 @@ Future<History> loadHistory(String dbDir, {String? appData}) async {
 }
 
 String? _blankToNull(String? v) => (v == null || v.trim().isEmpty) ? null : v;
+
+/// Message-ID without angle brackets or spaces, lowercase; null when blank.
+String? normalizeMessageId(String? v) {
+  if (v == null) return null;
+  final t = v.trim().replaceAll(RegExp(r'^<+|>+$'), '').trim().toLowerCase();
+  return t.isEmpty ? null : t;
+}
 
 /// The report for one candidate rule.
 class RuleReport {

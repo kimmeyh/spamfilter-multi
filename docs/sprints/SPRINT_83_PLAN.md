@@ -802,6 +802,20 @@ on all three. Declared: tooling, not app code.
 _**Risk & rollback**_: the Trash2 read must not change the mailbox; EXAMINE and BODY.PEEK (or the app's read-only
 scan mode, verified before the run) prevent it.
 
+**Result (Phase 4)**: Q5 = 1 run. A scratch probe read the DEV AOL `Trash2` folder with IMAP EXAMINE (read-only asserted
+before the first fetch) and `BODY.PEEK` only; the credential came from the DEV secure store in memory and was never
+written, printed or put on a command line. 10,000 messages read (905 duplicates dropped by Message-ID or From + Date +
+Subject). New `tool/rule_miner` trash2 mode (`trash_miner_core.dart`, `rule_miner.ps1 -Trash2Jsonl`): 3,809 rule-deleted
+(the only pool), 4,593 hand-deleted (neutral), 350 No Rule, 1,459 safe-sender. Threshold: at least 5 rule-deleted
+matches, at most 2 safe-sender hits AND at most 0.5 percent of checkable safe-sender mail. Reported: **178 single-part
+candidates and 3 AND pairs**, 29 of them hit No Rule mail; strongest are the sender shapes `news_` plus digits (262
+rule-deleted, 69 No Rule, 0 safe-sender) and `otp-` plus digits (1,453, 3, 0), both F267 PASS. Report:
+`docs/research/F308_TRASH2_MINING.md`; candidate YAML stays in the scratchpad (private phrases), nothing imported. AC-1 and
+AC-2 met; AC-3 by 24 new tests in `test/unit/tool/rule_miner_trash2_test.dart` (a new file: the existing
+`rule_miner_test.dart` is untouched), 19 mutants KILLED (two first survived and got tests). Caveat for Harold: the safe
+list measures only senders already marked safe, so newsletter boilerplate and shared image hosts pass with zero hits
+and remain risky.
+
 ## Task 8 -- F309: research a global "trusted sender" source (Priority 37)
 
 **Value**: This answers whether a trusted-sender source can support safe-sender suggestions, and at what cost.

@@ -15,6 +15,7 @@ import 'package:sqflite_common_ffi/sqflite_ffi.dart';
 
 import '../rule_eval/rule_eval_core.dart';
 import 'rule_miner_core.dart';
+import 'trash_miner_core.dart';
 
 void main() {
   test('rule_miner', () async {
@@ -33,6 +34,20 @@ void main() {
         print(refusal);
         fail(refusal);
       }
+    }
+    if (env['RULE_MINER_MODE'] == 'trash2') {
+      // F308 trash2 mode: the JSONL is private mail text read by the probe.
+      final trashJsonl = env['RULE_MINER_TRASH_JSONL'] ?? '';
+      if (trashJsonl.isEmpty) {
+        fail('trash2 mode needs RULE_MINER_TRASH_JSONL (use rule_miner.ps1 -Trash2Jsonl).');
+      }
+      final tr = await mineTrash(readTrashJsonl(trashJsonl), dbDir);
+      final treport = renderTrashReport(tr, showPhrases: env['RULE_MINER_SHOW_PHRASES'] == '1');
+      writeTrashOutput(outYaml, renderTrashYaml([...tr.reported(tr.singles), ...tr.reported(tr.combos)]));
+      if (outReport.isNotEmpty) writeTrashOutput(outReport, treport);
+      // ignore: avoid_print
+      print('\n$treport');
+      return;
     }
     final result = await mine(dbDir);
     final report = renderMinerReport(result);

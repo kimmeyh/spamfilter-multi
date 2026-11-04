@@ -89,6 +89,37 @@ The report holds counts, ids and domains only. A phrase candidate is listed by
 id and word count, never by its text. A PASS phrase appears in the YAML, which
 you review before importing.
 
+## Trash2 mode (F308, Sprint 83)
+
+`rule_miner.ps1 -DbDir <copy> -Trash2Jsonl <file> -OutYaml <file> [-OutReport <file>] [-ShowPhrases]`
+
+It learns what the mail in the DEV AOL "Trash2" folder that a delete rule caught
+has in common, then scores each candidate against No Rule mail and safe-sender
+mail from the DB copy. The JSONL is written by a read-only probe (IMAP EXAMINE
+and `BODY.PEEK` only; see `docs/research/F308_TRASH2_MINING.md` for the method).
+It holds private mail text: keep it, the YAML and the report out of the repo.
+
+- Groups (R-5, R-6): one record per email (Message-ID, else From + Date +
+  Subject). A Trash2 email a current delete rule matches is **rule-deleted** (the
+  only mining pool). One no delete rule matches is **hand-deleted**: counted for
+  information, never for or against a candidate. A Trash2 email from a current
+  safe sender is safe-sender mail.
+- Kinds (R-2, R-3): subject phrase, body phrase, body-URL domain, sender domain,
+  sender local-part shape (`news_` plus digits), header value (Reply-To domain,
+  Return-Path domain, List-Unsubscribe present), and AND pairs of two parts in
+  different fields (`type: AND`, `docs/RULE_FORMAT.md`).
+- Threshold: at least 5 rule-deleted matches, at most 2 safe-sender hits AND at
+  most 0.5 percent of the safe-sender mail the candidate could be checked on, and
+  at least one hit on No Rule or hand-deleted mail (otherwise it adds nothing).
+  A candidate that cannot be checked on any safe-sender mail is not reported.
+  An AND pair is built only from parts that fail alone.
+- Equal candidates collapse: one candidate per identical set of matched emails.
+  A phrase containing an account name is dropped before ranking.
+- Not checked: headers other than Reply-To, Return-Path and List-Unsubscribe
+  (the content history stores no others); body text of history rows with no
+  stored body.
+- Output is a report and candidate YAML. Nothing is imported or applied.
+
 ## Safety (R-4)
 
 - Inputs come from a COPY folder only. Any path under
@@ -117,3 +148,7 @@ you review before importing.
 temp folder: a planted domain, subject phrase and body phrase are proposed and
 PASS; a covered domain, a safe-sender hit, an F266 failure, over-broad shapes and
 a live path are all rejected.
+
+`flutter test test/unit/tool/rule_miner_trash2_test.dart` covers the trash2 mode
+on in-memory fixtures: dedup, the hand-deleted group, the safe-sender threshold,
+AND pairs, equal-candidate collapse and the account-name guard.
