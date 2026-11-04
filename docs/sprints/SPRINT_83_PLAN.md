@@ -641,7 +641,7 @@ Callers of `deleteAccountData` (Sprint 72 IMP-1; grep over `lib/` and `test/`):
 No Rule row store used by Review No Rule Items.
 
 **Signal fires on**: Fires when a sender has N or more No Rule emails, all GREEN, never deleted, not a safe sender; on
-DEV data it fires on <count at card time> senders. Inputs that mean "could not check": GREY (no auth headers),
+DEV data (read-only copy, 814 No Rule rows from 559 senders) it fires on 6 senders at N = 3 (14 at N = 2, 2 at N = 5); N = 3 is the shipped value. Recommended choice at N = 3: Entire Domain 6, Exact Email 0, Exact Domain 0. Inputs that mean "could not check": GREY (no auth headers),
 temperror, permerror; for these the sender is not a candidate.
 
 **User-reachable control**: Safe Senders screen, "Suggested safe senders", Accept / Reject per row.
@@ -669,6 +669,34 @@ store. No platform branch.
 **Model**: Sonnet -- a new service plus UI plus a stored reject list.
 
 **Step-types**: SVC-ADD, UI-ADD, DATA, TEST-UNIT, TEST-WIDGET. **Est-Effort**: 165-270m (Q7 and Q7-echo).
+
+**Result (Phase 4)**: built 2026-11-04 (Sonnet 5.5 sub-agent; not committed).
+- User-visible change: Settings > Manage Safe Senders (all three platforms) shows a card titled "Suggested safe senders (N)" above the list,
+  with the line "Seen at least 3 times in No Rule mail, every email passed authentication, none deleted. Nothing is added until you tap."
+  Each row shows the address, "<n> No Rule emails", and the buttons "Accept" and "Reject". Accept opens "Add as safe sender" with three
+  buttons: "Exact Email: <address>", "Exact Domain: @<domain>", "Entire Domain: @*.<root>"; the recommended one is filled and ends with
+  "(recommended)". The tap runs the existing `RuleQuickActionService.addSafeSender` (snackbar text is that service's, for example
+  "Added entire domain "*.<root>" to Safe Senders"). Reject shows "Suggestion hidden for <address>" and the address is stored. A failed
+  check shows "Suggested safe senders could not be checked: <error>" in red in the same place; with nothing to suggest, the card is absent.
+- Candidate rule (R-1): at least 3 stored No Rule emails from the sender, EVERY one with stored auth class green (grey, yellow, red, null
+  all remove the sender: "could not check" is not a pass), no `email_actions` delete from it, no `availability_status = 'deleted'` row, no
+  saved safe sender covers it, not rejected. Green is the stored class, a proxy for DMARC pass (the F310 caveat).
+- Recommendation rule (Q7-echo): the F306 pop-up rule. A shared email provider gets Exact Email; any other sender gets Entire Domain on the
+  root domain; Exact Domain is offered, never recommended. Same builders as the tap saves (`safeSenderPatternFor`).
+- DEV count (AC-3), read-only copy, Python mirror of the Dart rules (provider list approximated): 6 candidates at N = 3 (49 senders with 3+
+  emails, 43 all green, 20 with no delete, 6 not already safe); 14 at N = 2; 2 at N = 5. Entire Domain 6, Exact Email 0, Exact Domain 0.
+- Store (no schema change, no decision-class item): rejects are a JSON list in `app_settings` key `rejected_safe_sender_suggestions`
+  (`SettingsStore.rejectSafeSenderSuggestion`; not written to the debug log, it holds addresses). A new table was not needed.
+- Existing abstraction checked: `RuleQuickActionService.safeSenderPatternFor` (reused for every pattern); `SettingsStore` app_settings (reused,
+  its private setter bypassed on purpose so addresses stay out of the debug log); `UnmatchedEmailStore` (no cross-account read of
+  from/auth/availability exists, so one direct read-only query); `RuleSuggestion` (F306, block-only, scan-time: its recommendation rule is
+  mirrored, the file is untouched because Task 3 owns it).
+- R-4 done: `tool/rule_miner` reply-pair mode (`reply_pair_core.dart`, `rule_miner.ps1 -SentJsonl`), probe read the DEV Sent folder read-only
+  (170 messages, recipients only). Result: 35 recipients, 5 reply pairs, all 5 already safe senders, 0 new candidates. Report (counts only):
+  `docs/research/F270_REPLY_PAIRS.md`.
+- Tests: T-1 7 pass, T-2 5 pass (includes a 344 px wide view), reply-pair 5 pass; 24 mutants KILLED (16 + 8).
+- ADR-0042/0049/0050: service and section are shared Dart, identical on Windows, Android and iPhone; the reply-pair tool is a Windows DEV
+  developer tool with no Android path (same as F308/F310).
 
 ## Task 6 -- F305 R-2: widen the No Rule signals (Priority 33)
 

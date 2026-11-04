@@ -146,6 +146,27 @@ results: `docs/research/F310_SAFE_SENDER_MINING.md`.
   `safe_senders` YAML for the reported sender domains. The YAML cannot carry the
   DMARC condition; it is a list to review, not to import as is. Report only (R-4).
 
+## Reply-pair mode (F270 R-4, Sprint 83)
+
+`rule_miner.ps1 -DbDir <copy> -SentJsonl <file> -OutYaml <file> [-OutReport <file>] [-ShowPhrases]`
+
+Finds addresses you wrote to that also sent you mail ("reply pairs"). It is a
+developer tool run on the developer's own account (Harold, Q7: "based on my email
+address not the users"); no app code reads any user's Sent folder.
+
+- The JSONL comes from a read-only probe (IMAP EXAMINE, `BODY.PEEK` of the To, Cc,
+  Date and Message-ID headers only). One line per Sent email:
+  `{"to": ["a@b.example"], "date_ms": 1}`. Recipient addresses only: no subject and
+  no body are read.
+- Your own addresses (the copy's `accounts` table) are excluded.
+- **The gate**: a pair is a candidate only when every stored email from the sender
+  (`unmatched_emails` and `email_actions`) has auth class `green`, no rule deleted
+  mail from them, and no saved safe sender covers them. Any other stored class
+  (grey, yellow, red, unknown) is reported as not gated, never as a candidate.
+- Output: counts always; addresses only with `-ShowPhrases`; YAML of proposed
+  `safe_senders` patterns (the recommended choice of the in-app service: Exact
+  Email for a shared provider, Entire Domain otherwise). Report only.
+
 ## Safety (R-4)
 
 - Inputs come from a COPY folder only. Any path under

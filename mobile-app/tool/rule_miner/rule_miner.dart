@@ -16,6 +16,7 @@ import 'package:sqflite_common_ffi/sqflite_ffi.dart';
 import '../rule_eval/rule_eval_core.dart';
 import 'rule_miner_core.dart';
 import 'safe_miner_core.dart';
+import 'reply_pair_core.dart';
 import 'trash_miner_core.dart';
 
 void main() {
@@ -35,6 +36,20 @@ void main() {
         print(refusal);
         fail(refusal);
       }
+    }
+    if (env['RULE_MINER_MODE'] == 'replypairs') {
+      // F270 R-4: the JSONL holds recipient addresses of Harold's Sent mail.
+      final sentJsonl = env['RULE_MINER_SENT_JSONL'] ?? '';
+      if (sentJsonl.isEmpty) {
+        fail('replypairs mode needs RULE_MINER_SENT_JSONL (use rule_miner.ps1 -SentJsonl).');
+      }
+      final rr = await mineReplyPairs(readSentJsonl(sentJsonl), dbDir);
+      final rreport = renderReplyPairReport(rr, showAddresses: env['RULE_MINER_SHOW_PHRASES'] == '1');
+      writeOutput(outYaml, renderReplyPairYaml(rr));
+      if (outReport.isNotEmpty) writeOutput(outReport, rreport);
+      // ignore: avoid_print
+      print('\n$rreport');
+      return;
     }
     if (env['RULE_MINER_MODE'] == 'safe') {
       // F310 safe mode: the Trash2 JSONL is optional (extra delete-rule mail

@@ -19,6 +19,14 @@
   mail a delete rule caught in Trash2 and scores against No Rule and safe-sender
   mail. OutYaml then holds the F308 candidates (single parts and AND pairs).
 
+.PARAMETER SentJsonl
+  F270 R-4 reply-pair mode: the JSONL written by the read-only Sent-folder probe
+  (recipient addresses only, one line per Sent email: {"to": [...], "date_ms": n};
+  private data, keep it out of the repository). Reports addresses you wrote to
+  that also sent you mail, gated on stored auth class green, no rule delete and
+  not already safe. OutYaml then holds proposed safe_senders patterns.
+  ShowPhrases prints the candidate addresses in the report.
+
 .PARAMETER Safe
   F310 safe mode: learn what safe-sender mail has in common that delete-rule mail
   does not, and report sender-domain and signal candidates that require the auth
@@ -37,6 +45,7 @@ param(
     [Parameter(Mandatory)][string]$OutYaml,
     [string]$OutReport = '',
     [string]$Trash2Jsonl = '',
+    [string]$SentJsonl = '',
     [switch]$Safe,
     [switch]$ShowPhrases
 )
@@ -48,7 +57,8 @@ $env:RULE_MINER_DB_DIR = (Resolve-Path -LiteralPath $DbDir).Path
 # the session started, so a relative path could land in the repository.
 $resolve = { param($p) $ExecutionContext.SessionState.Path.GetUnresolvedProviderPathFromPSPath($p) }
 $env:RULE_MINER_OUT_YAML = & $resolve $OutYaml
-$env:RULE_MINER_MODE = if ($Safe) { 'safe' } elseif ($Trash2Jsonl) { 'trash2' } else { '' }
+$env:RULE_MINER_MODE = if ($Safe) { 'safe' } elseif ($Trash2Jsonl) { 'trash2' } elseif ($SentJsonl) { 'replypairs' } else { '' }
+$env:RULE_MINER_SENT_JSONL = if ($SentJsonl) { (Resolve-Path -LiteralPath $SentJsonl).Path } else { '' }
 $env:RULE_MINER_TRASH_JSONL = if ($Trash2Jsonl) { (Resolve-Path -LiteralPath $Trash2Jsonl).Path } else { '' }
 $env:RULE_MINER_SHOW_PHRASES = if ($ShowPhrases) { '1' } else { '' }
 $env:RULE_MINER_OUT_REPORT = if ($OutReport) { & $resolve $OutReport } else { '' }

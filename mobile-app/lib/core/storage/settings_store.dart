@@ -58,6 +58,9 @@ class SettingsStore {
   static const String keyBackgroundScanMode = 'background_scan_mode';
   /// F322 (Sprint 83): [ScanNotifyChoice] name; absent means the default.
   static const String keyScanNotifyChoice = 'scan_notify_choice';
+  /// F270 v1 (Sprint 83): JSON list of rejected suggested-safe-sender addresses.
+  static const String keyRejectedSafeSenderSuggestions =
+      'rejected_safe_sender_suggestions';
   static const String keyBackgroundScanFolders = 'background_scan_folders';
   static const String keyCsvExportDirectory = 'csv_export_directory';
   static const String keyBackgroundScanDebugCsv = 'background_scan_debug_csv';
@@ -342,6 +345,44 @@ class SettingsStore {
 
   Future<void> setScanNotifyChoice(ScanNotifyChoice choice) async {
     await _setAppSetting(keyScanNotifyChoice, choice.name, 'string');
+  }
+
+  /// F270 v1 (Sprint 83): the sender addresses the user rejected on Manage Safe
+  /// Senders ("Suggested safe senders"), lowercase, so a rejected suggestion
+  /// does not come back. Stored as one JSON list in `app_settings` (no new
+  /// table). The value is NOT written to the debug log (it holds addresses),
+  /// which is why this does not go through [_setAppSetting].
+  Future<Set<String>> getRejectedSafeSenderSuggestions() async {
+    final value = await _getAppSetting(keyRejectedSafeSenderSuggestions);
+    if (value == null) return <String>{};
+    try {
+      final decoded = jsonDecode(value);
+      if (decoded is List) {
+        return decoded.whereType<String>().toSet();
+      }
+    } catch (_) {
+      // Fall through: the caller shows suggestions again rather than hiding
+      // them all, and the next reject rewrites the list.
+    }
+    _logger.w('F270: the rejected-suggestions list could not be read');
+    return <String>{};
+  }
+
+  /// Adds [address] (lowercased) to the rejected list.
+  Future<void> rejectSafeSenderSuggestion(String address) async {
+    final rejected = await getRejectedSafeSenderSuggestions();
+    rejected.add(address.trim().toLowerCase());
+    final db = await _dbHelper.database;
+    await db.insert(
+      'app_settings',
+      {
+        'key': keyRejectedSafeSenderSuggestions,
+        'value': jsonEncode(rejected.toList()..sort()),
+        'value_type': 'json',
+        'date_modified': DateTime.now().millisecondsSinceEpoch,
+      },
+      conflictAlgorithm: ConflictAlgorithm.replace,
+    );
   }
 
   /// Get the default folders to scan for background scans
