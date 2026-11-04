@@ -1241,5 +1241,35 @@ closed test).
   451 px (no suggestion) to 614 px (with the `news_` suggestion), so the bottom row and the suggestion are cut off
   (Harold, 2026-11-04, two screenshots); in a window Harold made taller (1280x1160 logical) everything fits, but
   Harold: *"image 18 was the default window size"* -- the requirement is that every row shows at the DEFAULT size.
-  Decision asked at Manual Validation. Manage Safe Senders not yet checked live.
+  Android has the same cut-off: three Fold inner-screen screenshots of 0.23.0 (Harold, 2026-11-03 11:57-11:58,
+  `validation-screenshots/sprint-83/Screenshot_20261103_115712`, `115744`, `115825`) show the authentication note
+  under Block Subject cut off on 2 of 3 items (the two with an SPF failure); the third, with no note, fits. The
+  unfolded Fold is wider than 600 logical px, so it takes the same desktop branch and 60% cap as Windows.
+  Decision asked at Manual Validation. Manage Safe Senders checked live (2026-11-04, time not recorded): "Suggested safe senders (1)",
+  karinreale@dandyblend.com, 7 No Rule emails, Accept and Reject shown (F321).
   sweep-head: 3817aeb6
+- **5.1.9 MV rehearsal**: 2026-11-04, on the 0.24.0 DEV build of a86a4fa6 (PID 66460). The live part was done in the
+  5.1.5 checks above (read-only, WinWright). The steps that change state were rehearsed by their tests only: before 10:15
+  the DEV window had a No Rule pop-up open (Harold using it), so WinWright clicked nothing. Step tests, 12 files
+  (`settings_scan_notifications_test`, `scan_complete_notifier_test` under unit/services, `f323_popup_body_fetcher_test`,
+  `f323_email_detail_popup_test`, `f323_block_rules_test`, `f323_body_link_domain_test`,
+  `safe_senders_management_screen_test`, `safe_sender_suggestion_service_test`, `f324_background_off_test`,
+  `f324_repair_flow_test`, `f324_imap_sign_in_skip_test`, `f324_imap_sign_in_flag_test`): 102 of 102 passed, read
+  10:15. Per step:
+  - W-1 F322 row shows "Only when there are No Rule items": LIVE (5.1.5). Changing it and the value surviving a
+    reopen: TEST only (T-2).
+  - W-2 F322 effect (no toast for a No Rule 0 scan): TEST only (T-1). Precondition checked: the 4 DEV background
+    tasks exist (3 Ready, yahoo Running, read before 10:15).
+  - W-3 F323 Block Subject and Block Body in one row, Block Body subtitle, `news_` "Block sender pattern": LIVE
+    (5.1.5, "No outside link" 2 of 2 after a86a4fa6). Tapping a found domain creates a rule: TEST only.
+  - W-4 F324 background-off line and "Turn on": TEST only. No DEV account has background off, so the precondition
+    is that Harold turns one off first; the step says so.
+  - W-5 F321 suggestion card: LIVE (1 suggestion). Accept / Reject: TEST only (both change data Harold validates).
+  - W-6 M-6 toast click during a running worker: NOT REHEARSED (needs a real toast from a running scan).
+    Precondition written into the step: under the new default a toast posts only for a scan with No Rule above 0,
+    so the step sets "Every completed scan" first and restores it after.
+  - W-7 date/account wrap at a narrow width: TEST only (f216 date-row test, F323 344 px test).
+  - A-1 F322 Android row and the native settings page: NOT REHEARSED (no Android 0.24.0 build yet; tests cover the
+    row branch, not the page).
+  - A-2 / W-8 F325 first-run: NOT REHEARSED by design (a live evaluation with Harold; the DEV data folder backup and
+    hash are part of the step).
