@@ -2,7 +2,10 @@
 
 ## Status
 
-Proposed (Sprint 83, F321, GitHub #544). Harold accepts it late in Sprint 83 (Definition of Done for Task 10).
+Accepted (Harold, 2026-11-04, Sprint 83 Manual Validation Q8): *"yes, python 3.14 is currently preferred, prompt that
+can be easily rewritten deterministically should be rewritten. If there are common tools needed by prompts that can be
+written deterministically (python), then these helper tools should be written and then used by the prompts. Accept 3
+hooks and agent-work-status."* Proposed in Sprint 83 (F321, GitHub #544).
 
 ## Date
 
@@ -31,6 +34,18 @@ Two further facts shaped the decision:
 Deterministic tooling is written in Python 3 using the standard library only. A dependency change needs Harold's
 approval, so there are no pip installs. A tool that needs judgment (writing, ranking, reviewing) stays a Markdown
 prompt (skill, command or agent).
+
+Additions at acceptance (Harold, 2026-11-04):
+
+- **Interpreter**: Python 3.14 is the preferred version. On this machine the `py` launcher defaults to 3.14, while
+  `python` on PATH, which the hook registrations call, is 3.12.10 (both read 2026-11-04). Until the registrations
+  change, code must run on 3.12 as well; CI uses its runner's Python. Moving the hooks to 3.14 is a settings change
+  asked separately.
+- **Prompts**: a prompt (skill, command or agent) whose steps can be written deterministically is rewritten as a tool.
+  Only the parts that need judgment stay Markdown.
+- **Helper tools for prompts**: when several prompts need the same deterministic step (read a file's format, count
+  rows, check a gate, build a footer), that step becomes a Python helper, and the prompts call it instead of
+  repeating the step in prose.
 
 ### The shared layer: `.claude/hooks/lib/`
 
