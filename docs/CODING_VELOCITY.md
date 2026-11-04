@@ -307,6 +307,7 @@ Every Item that is implemented gets ONE row here the moment it is picked up -- s
 | Task 4: F324 account settings, background-off line, IMAP Sign In Again (#538) | 83 | DONE | 120-195 | 120-195 | time not recorded (Sonnet agent across a 5-hour and a weekly limit stop; last run 4,913 s) | time not recorded | Recorded late at merge (2026-11-04 04:51); merged 1a3a7a0a, plus s75_t7 harness fix e28ad8bd. 16 of 16 mutants KILLED. |
 | Task 7: F308 AOL Trash2 delete-rule mining (#541) | 83 | DONE | 180-300 | 180-300 | ~123 (Sonnet agent, 7,375 s) + ~10 merge | ~133 | Recorded at merge (2026-11-04 04:51); merged 610f72aa. 10,000 Trash2 messages (read only); 181 candidates; 19 of 19 mutants KILLED. |
 | Task 9: F310 safe-sender mining (#543) | 83 | DONE | 120-240 | 120-240 | ~96 (Sonnet agent, 5,774 s) + ~10 merge | ~106 | Recorded at merge (2026-11-04 04:51); merged 5b2e6994. 31 candidates; DMARC gate via stored auth class green; 24 of 24 mutants KILLED. |
+| Task 3: F323 F306 v2, could-not-check, Block Body, news_ pattern (#537) | 83 | DONE | 120-240 | 120-240 | ~157 (Sonnet agent, 9,412 s across one usage-limit stop) + ~10 merge | ~167 | Recorded at merge (2026-11-04 05:43); merged a038c089. 129 tests in touched files; 13 of 13 mutants KILLED. R-2 DEV count not derivable (auth class only). |
 
 ## Can the missing sprints (48-69) be reconstructed from git? -- TESTED 2026-09-19, answer: NO
 
