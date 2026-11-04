@@ -44,7 +44,9 @@ class HeuristicSignal {
   /// Plain-English chip labels. An unknown code (a row written by a newer
   /// build) has no label and is skipped by [labelFor] callers.
   static const Map<String, String> labels = {
-    replyToDiffers: 'Reply-To differs',
+    // Sprint 83 MV Q6 (Harold): renamed from "Reply-To differs". The stored
+    // code is unchanged, so rows already written keep their chip.
+    replyToDiffers: 'Reply-to email mismatch',
     authFailed: 'Sign-in check failed',
     lookalikeDomain: 'Lookalike domain',
     bulkNoUnsubscribe: 'No unsubscribe link',
@@ -140,22 +142,8 @@ class HeuristicSignals {
     // YELLOW and GREY are common for legitimate mail and are not a signal.
     if (authClassificationName == 'red') found.add(HeuristicSignal.authFailed);
 
-    // reply_to_differs: compared by registrable domain, so
-    // `mail.example.com` against `example.com` is NOT a hit.
-    // A Reply-To may list several addresses. normalizeFromHeader takes the
-    // first `<...>`, but with bare addresses (`a@x.com, b@y.com`) it would
-    // strip the comma and join them, so cut at the first comma first.
-    var rawReplyTo = h['reply-to'];
-    if (rawReplyTo != null && !rawReplyTo.contains('<')) {
-      rawReplyTo = rawReplyTo.split(',').first;
-    }
-    final replyTo = PatternNormalization.normalizeFromHeader(rawReplyTo);
-    final replyDomain = _domainOf(replyTo);
-    if (senderDomain != null && replyDomain != null) {
-      if (PatternNormalization.extractRootDomain(senderDomain) !=
-          PatternNormalization.extractRootDomain(replyDomain)) {
-        found.add(HeuristicSignal.replyToDiffers);
-      }
+    if (replyToMismatch(headers: headers, from: from)) {
+      found.add(HeuristicSignal.replyToDiffers);
     }
 
     if (senderDomain != null) {
@@ -176,6 +164,33 @@ class HeuristicSignals {
     }
 
     return [for (final c in HeuristicSignal.all) if (found.contains(c)) c];
+  }
+
+  /// reply_to_differs: true when the Reply-To's registrable domain differs from
+  /// the sender's, so `mail.example.com` against `example.com` is NOT a hit.
+  /// The ONE implementation: the review-row chip ([compute]) and the F306
+  /// Block suggestion (Sprint 83 MV Q6) both call it.
+  static bool replyToMismatch({
+    required Map<String, String> headers,
+    required String from,
+  }) {
+    final senderDomain =
+        _domainOf(PatternNormalization.normalizeFromHeader(from));
+    String? rawReplyTo;
+    for (final e in headers.entries) {
+      if (e.key.toLowerCase() == 'reply-to') rawReplyTo = e.value;
+    }
+    // A Reply-To may list several addresses. normalizeFromHeader takes the
+    // first `<...>`, but with bare addresses (`a@x.com, b@y.com`) it would
+    // strip the comma and join them, so cut at the first comma first.
+    if (rawReplyTo != null && !rawReplyTo.contains('<')) {
+      rawReplyTo = rawReplyTo.split(',').first;
+    }
+    final replyDomain =
+        _domainOf(PatternNormalization.normalizeFromHeader(rawReplyTo));
+    if (senderDomain == null || replyDomain == null) return false;
+    return PatternNormalization.extractRootDomain(senderDomain) !=
+        PatternNormalization.extractRootDomain(replyDomain);
   }
 
   /// Lookalike rule (documented, deliberately narrow to keep false positives

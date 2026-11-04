@@ -32,6 +32,7 @@ import '../../core/services/email_scanner.dart' show safeSenderAlreadyInTarget;
 import '../../core/services/app_version.dart';
 import '../../util/redact.dart';
 import '../../core/services/email_body_parser.dart';
+import '../../core/services/heuristic_signals.dart' show HeuristicSignals;
 import '../../core/services/pattern_compiler.dart';
 import '../../core/services/rule_evaluator.dart';
 import '../../core/services/rule_quick_action_service.dart';
@@ -85,6 +86,9 @@ RuleSuggestion? suggestionForResult(
     authResult: parsed.isEmpty && overrideClass != null
         ? AuthResultsParser.syntheticResultFor(overrideClass)
         : parsed,
+    // Sprint 83 MV Q6 = 2: the scan's check, from the live headers.
+    replyToMismatch: HeuristicSignals.replyToMismatch(
+        headers: result.email.headers, from: result.email.from),
   );
   // Sprint 83 MV Q2 (Harold, 2026-11-04: "only suggest Block if a check
   // finishes"; 5.1.2 F8): with no headers (a saved scan), nothing shows the

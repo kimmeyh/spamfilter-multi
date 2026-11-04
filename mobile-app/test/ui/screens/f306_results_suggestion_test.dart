@@ -181,6 +181,19 @@ void main() {
       expect(suggestionForResult(r, EvaluationResult.noMatch()), isNotNull);
     });
 
+    test('Sprint 83 MV Q6: live headers with a Reply-To at another domain '
+        '(check passed): Block, "Reply-to email mismatch"', () {
+      final s = suggestionForResult(
+          res(EmailActionType.none, headers: const {
+            'authentication-results': 'mx; spf=pass; dkim=pass; dmarc=pass',
+            'reply-to': 'claims@elsewhere-example.net',
+          }),
+          EvaluationResult.noMatch());
+      expect(s, isNotNull);
+      expect(s!.isBlock, isTrue);
+      expect(s.reasonCode, 'reply_to_mismatch');
+    });
+
     // F323 R-2 / AC-1 (Results caller). A SAVED scan has no headers, so it gets
     // no Block suggestion at all (Sprint 83 MV Q2, tested above).
     for (final bad in ['temperror', 'permerror']) {

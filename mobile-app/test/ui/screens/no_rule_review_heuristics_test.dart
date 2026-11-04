@@ -152,7 +152,7 @@ void main() {
     });
 
     expect(find.text('Sign-in check failed'), findsOneWidget);
-    expect(find.text('Reply-To differs'), findsOneWidget);
+    expect(find.text('Reply-to email mismatch'), findsOneWidget);
     // Only the flagged row has chips: two chips for two codes, none else.
     expect(reasonChips, findsNWidgets(2));
     expect(find.text('Lookalike domain'), findsNothing);

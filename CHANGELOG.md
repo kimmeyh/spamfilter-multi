@@ -31,6 +31,7 @@ Format: `- **type**: Description (Issue #N)` where type is feat|fix|chore|docs
 - **fix**: A saved scan opened from Scan History no longer marks a Block choice as "Suggested": without the message headers the app cannot tell the sender check finished (Issue #537)
 - **chore**: The scan notification choice now reads "Only when one or more No Rule items" (Issue #536)
 - **fix**: The email details pop-up no longer cuts off Block Subject and Block Body at the default Windows window or on a wide phone screen: it grows to fit its content and stays on screen, and its header is shorter (Skip beside the check mark, the date and account on the folder/subject line, no "No matching rule" tag) (Issue #537)
+- **feat**: A No Rule email whose Reply-To address is on a different domain than the sender now gets a "Suggested" Block choice, and its review chip reads "Reply-to email mismatch" (Issue #540)
 
 ### 2026-11-01 (Sprint 83)
 

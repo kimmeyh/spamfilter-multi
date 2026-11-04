@@ -43,6 +43,52 @@ RuleSuggestion? _suggest(String from, String? cls,
     );
 
 void main() {
+  // Sprint 83 MV Q6 = 2 (Harold): a Reply-To mismatch is a Block basis. What
+  // this does NOT catch: the header comparison itself (heuristic_signals_test
+  // covers HeuristicSignals.replyToMismatch) and the two callers' wiring.
+  group('Reply-to email mismatch suggests a block rule', () {
+    RuleSuggestion? withMismatch(String from, String? cls,
+            {EmailAuthResult authResult = _finished}) =>
+        RuleSuggestion.suggest(
+          fromEmail: from,
+          authClassification: cls,
+          authResult: authResult,
+          replyToMismatch: true,
+        );
+
+    test('a GREEN sender with a mismatch: Block Entire Domain, its reason', () {
+      final s = withMismatch('offers@mail.shop-example.com', 'green')!;
+      expect(s.isBlock, isTrue);
+      expect(s.type, 'entireDomain');
+      expect(s.value, 'shop-example.com');
+      expect(s.reasonCode, kSuggestionReasonReplyToMismatch);
+      expect(s.reasonText, startsWith('Reply-to email mismatch'));
+    });
+
+    test('a shared-provider sender: Block Email', () {
+      final s = withMismatch('some.one@gmail.com', 'grey')!;
+      expect(s.type, 'from');
+      expect(s.value, 'some.one@gmail.com');
+    });
+
+    test('no mismatch: a GREEN sender gets none', () {
+      expect(_suggest('offers@mail.shop-example.com', 'green'), isNull);
+    });
+
+    test('YELLOW is reported first (its reason wins)', () {
+      expect(withMismatch('offers@shop-example.com', 'yellow')!.reasonCode,
+          kSuggestionReasonAuthYellow);
+    });
+
+    test('a check that did not finish still gives the note, no rule', () {
+      final s = withMismatch('offers@shop-example.com', 'green',
+          authResult: _with(AuthMethodResult.temperror, AuthMethodResult.none,
+              AuthMethodResult.none))!;
+      expect(s.isCouldNotCheck, isTrue);
+      expect(s.isBlock, isFalse);
+    });
+  });
+
   group('yellow authentication suggests a block rule', () {
     test('non-provider sender: Block Entire Domain on the root domain', () {
       final s = _suggest('Deals <offers@mail.shop-example.com>', 'yellow')!;

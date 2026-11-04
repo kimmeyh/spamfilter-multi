@@ -198,6 +198,22 @@ void main() {
       });
     }
 
+    // Sprint 83 MV Q6 = 2 (scan caller): a GREEN row whose Reply-To is at
+    // another domain stores the Block suggestion with its own reason.
+    test('a GREEN row with a mismatched Reply-To stores the Block suggestion',
+        () async {
+      await runScan([
+        result('1', 'a@calm-example.com',
+            {...greenHeaders, 'reply-to': 'claims@elsewhere-example.net'}),
+      ]);
+      final db = await testHelper.dbHelper.database;
+      final row = (await db.query('unmatched_emails')).single;
+      expect(row['auth_classification'], 'green');
+      expect(row['suggestion_kind'], 'block');
+      expect(row['suggestion_value'], 'calm-example.com');
+      expect(row['suggestion_reason'], 'reply_to_mismatch');
+    });
+
     // F323 R-2 / AC-1 (scan caller): a temperror stores the "could not check"
     // note in the SAME five columns, not a block rule. What this does NOT
     // catch: the Results-screen caller (f306_results_suggestion_test.dart).

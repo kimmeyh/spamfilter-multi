@@ -63,6 +63,10 @@ const String kSuggestionReasonAuthYellow = 'auth_yellow';
 /// F323 R-3: reason code for the `news_` plus digits sender shape.
 const String kSuggestionReasonSenderShape = 'sender_shape';
 
+/// Sprint 83 MV Q6 = 2 (Harold, F305 R-2): reason code for a Reply-To whose
+/// domain differs from the sender's ("Reply-to email mismatch").
+const String kSuggestionReasonReplyToMismatch = 'reply_to_mismatch';
+
 /// F323 R-2: reason code of the "could not check" note.
 const String kSuggestionReasonCouldNotCheck = 'auth_could_not_check';
 
@@ -149,6 +153,9 @@ class RuleSuggestion {
       case kSuggestionReasonSenderShape:
         return 'The sender name is "news_" followed by 4 to 6 digits, a '
             'pattern used by bulk mail that changes its domain.';
+      case kSuggestionReasonReplyToMismatch:
+        return 'Reply-to email mismatch: replies would go to a different '
+            'domain than the sender address.';
       case kSuggestionReasonCouldNotCheck:
         return couldNotCheckText;
       default:
@@ -217,16 +224,28 @@ class RuleSuggestion {
   /// [couldNotCheckNote] and NO basis runs, so no rule is proposed. The guard
   /// runs before the basis list, so a basis added later cannot bypass it.
   ///
+  /// [replyToMismatch] (Sprint 83 MV Q6 = 2): the Reply-To's domain differs
+  /// from the sender's (`HeuristicSignals.replyToMismatch`). It is the last
+  /// basis: a `news_` shape or a YELLOW class is reported first.
+  ///
   /// [basis] replaces the basis list in tests only.
   static RuleSuggestion? suggest({
     required String fromEmail,
     required String? authClassification,
     required EmailAuthResult authResult,
+    bool replyToMismatch = false,
     @visibleForTesting List<SuggestionBasis>? basis,
   }) {
     if (authCheckFailed(authResult)) return couldNotCheckNote;
     final auth = AuthResultsParser.classificationFromName(authClassification);
-    for (final b in basis ?? _bases) {
+    final bases = basis ??
+        [
+          ..._bases,
+          if (replyToMismatch)
+            (String from, AuthClassification? _) =>
+                _senderBlock(from, kSuggestionReasonReplyToMismatch),
+        ];
+    for (final b in bases) {
       final draft = b(fromEmail, auth);
       if (draft == null) continue;
       // R-5 / AC-3: a RED email is never suggested as a safe sender.
@@ -280,6 +299,12 @@ class RuleSuggestion {
   static SuggestionDraft? _authYellowBlock(
       String fromEmail, AuthClassification? auth) {
     if (auth != AuthClassification.yellow) return null;
+    return _senderBlock(fromEmail, kSuggestionReasonAuthYellow);
+  }
+
+  /// The block a sender-based basis proposes: Block Email for a shared email
+  /// provider, otherwise Block Entire Domain on the root domain.
+  static SuggestionDraft? _senderBlock(String fromEmail, String reasonCode) {
     final parser = EmailBodyParser();
     final address = parser.extractEmailAddress(fromEmail);
     final domain = parser.extractDomainFromEmail(fromEmail);
@@ -289,14 +314,14 @@ class RuleSuggestion {
         kind: kSuggestionKindBlock,
         type: 'from',
         value: address,
-        reasonCode: kSuggestionReasonAuthYellow,
+        reasonCode: reasonCode,
       );
     }
     return (
       kind: kSuggestionKindBlock,
       type: 'entireDomain',
       value: PatternNormalization.extractRootDomain(domain) ?? domain,
-      reasonCode: kSuggestionReasonAuthYellow,
+      reasonCode: reasonCode,
     );
   }
 }
