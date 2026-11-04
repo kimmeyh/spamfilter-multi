@@ -34,6 +34,7 @@ import '../../helpers/database_test_helper.dart';
 
 const _icloud = 'someone@icloud.com';
 const _offText = 'Background scanning is off for this account';
+const _checkingText = 'Checking account...';
 
 class _FakeScheduler implements BackgroundScanScheduler {
   final calls = <String>[];
@@ -193,6 +194,10 @@ void main() {
 
       expect(find.text(_offText), findsNothing);
       expect(turnOn, findsNothing);
+      // Sprint 83 MV: a finished load shows the normal row, no loading line.
+      expect(find.text(_checkingText), findsNothing);
+      expect(find.textContaining('Missing credentials'), findsNothing);
+      expect(find.text(_icloud), findsWidgets);
     });
 
     testWidgets('an account with no setting of its own follows the app-wide '
@@ -220,6 +225,44 @@ void main() {
       expect(find.text(_offText), findsOneWidget,
           reason: 'the per-account OFF wins, as in the worker');
     });
+  });
+
+  // Sprint 83 MV (Harold, image 20): every row opened red ("Missing
+  // credentials") until its data loaded. What these do NOT catch: how long the
+  // real load takes on a device (the neutral row only says it is loading).
+  group('loading row', () {
+    testWidgets('while an account is still loading, the row is neutral, not '
+        'the red "Missing credentials" row', (tester) async {
+      await seedIcloud(tester);
+      tester.view.physicalSize = const Size(1400, 1000);
+      tester.view.devicePixelRatio = 1.0;
+      addTearDown(tester.view.resetPhysicalSize);
+      addTearDown(tester.view.resetDevicePixelRatio);
+      // Let the account LIST load (500 ms delay + secure storage), then stop
+      // real time: the row's own reads stay pending, as on a slow start.
+      await tester.runAsync(() async {
+        await tester.pumpWidget(screen());
+        await Future<void>.delayed(const Duration(milliseconds: 900));
+      });
+      await tester.pump();
+
+      expect(find.byKey(const ValueKey('account_loading_$_icloud')),
+          findsOneWidget);
+      expect(find.text(_checkingText),
+          findsOneWidget);
+      expect(find.textContaining('Missing credentials'), findsNothing);
+
+      // The row's reads are still pending by design; unmount and drain them.
+      await tester.pumpWidget(const SizedBox());
+      await tester.runAsync(
+          () => Future<void>.delayed(const Duration(milliseconds: 1500)));
+      await tester.pump(const Duration(seconds: 2));
+    });
+    // The finished-load half (the loading row goes away) is asserted in
+    // 'an account with background on shows neither' above. Not covered: the
+    // red row for a finished load with no credentials (the fake store drops
+    // the account from the index with its credentials, so it cannot be seeded
+    // here); the code path is the unchanged `displayData == null` branch.
   });
 
   group('R-4: Sign In Again for an IMAP account', () {

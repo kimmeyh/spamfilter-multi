@@ -310,6 +310,9 @@ class _AccountSelectionScreenState extends State<AccountSelectionScreen> with Wi
       'Background scanning is off for this account';
   static const String turnOnLabel = 'Turn on';
 
+  /// Sprint 83 MV: the neutral line shown while an account is still loading.
+  static const String checkingAccountText = 'Checking account...';
+
   /// R-4 (Sprint 83): why the row offers Sign In Again. Gmail keeps its F239
   /// wording; an IMAP provider says the server rejected the sign-in.
   String _signInNeededText(String platformId, String platformName) =>
@@ -1003,6 +1006,34 @@ class _AccountSelectionScreenState extends State<AccountSelectionScreen> with Wi
                       }
 
                       final displayData = snapshot.data;
+                      // Sprint 83 MV (Harold, image 20): while the account is
+                      // still loading, data is null too. Showing the red
+                      // "Missing credentials" row then claimed a problem
+                      // nobody had found; F324's two extra settings reads made
+                      // the wait long enough to see. A neutral row shows until
+                      // the load finishes; red only for a finished load.
+                      if (displayData == null &&
+                          snapshot.connectionState != ConnectionState.done) {
+                        return Card(
+                          key: ValueKey('account_loading_$accountId'),
+                          margin: const EdgeInsets.only(bottom: 12),
+                          elevation: 2,
+                          child: ListTile(
+                            leading: const CircleAvatar(
+                              child: SizedBox(
+                                width: 18,
+                                height: 18,
+                                child:
+                                    CircularProgressIndicator(strokeWidth: 2),
+                              ),
+                            ),
+                            title: Text(accountId,
+                                style: const TextStyle(fontSize: 14)),
+                            subtitle: const Text(checkingAccountText,
+                                style: TextStyle(fontSize: 12)),
+                          ),
+                        );
+                      }
                       if (displayData == null) {
                         // Fallback if data couldn't be loaded - show delete option
                         // F129 (Sprint 51): same semantics treatment as the
