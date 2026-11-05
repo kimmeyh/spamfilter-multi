@@ -7,7 +7,7 @@
         "number": 83,
         "branch": "feature/20261031_Sprint_83",
         "status": "Phase 7.7 Final Code Reviews",
-        "status_detail": "Manual Validation complete (Harold, 2026-11-04). 7.7.1: Copilot COMMENTED (3 inline, fixed c1d9a2c6), code-reviewer and silent-failure-hunter run (pass 1 and pass 2); fixes bab21526, 76f8a2bb, 4308c893, c1d9a2c6 and later. Waiting on Harold for Q1 (H-1 Block Body on HTML-only mail), Q2 (refused-login repeat), Q3 (re-save lockout). Next: remaining non-decision fixes, the 7.7.1 evidence line, the retrospective (Harold's feedback received).",
+        "status_detail": "Manual Validation complete (Harold, 2026-11-04). 7.7.1: Copilot COMMENTED (3 inline, fixed c1d9a2c6), code-reviewer and silent-failure-hunter run (pass 1 and pass 2); fixes bab21526, 76f8a2bb, 4308c893, c1d9a2c6 and later. Waiting on Harold for Q1 (H-1 Block Body on HTML-only mail), Q2 (refused-login repeat), Q3 (re-save lockout). All non-decision findings fixed (c1d9a2c6, d91ee027, d7168716, 4f9ffe5b); 7.7.1 evidence line in the plan; retrospective draft docs/sprints/SPRINT_83_RETROSPECTIVE.md with IMP-1 to IMP-4 awaiting Harold. Full suite 2026-11-05: 3,587 passed / 15 skipped / 8 failed (5 pass alone; 3 Task Scheduler tests time out, Get-ScheduledTask 7-21 s on this machine, cause unknown). Copilot replies not posted (classifier blocked the GitHub write).",
         "plan_approved": true,
         "pr_number": 534,
         "version": "0.23.0+20"

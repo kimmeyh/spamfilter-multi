@@ -1273,6 +1273,23 @@ closed test).
     row branch, not the page).
   - A-2 / W-8 F325 first-run: NOT REHEARSED by design (a live evaluation with Harold; the DEV data folder backup and
     hash are part of the step).
+- **7.7.1 final code reviews**: 2026-11-04 to 2026-11-05, on the draft PR #534. Copilot requested by hand (GraphQL);
+  review COMMENTED 2026-11-05 04:35 UTC with 3 inline comments (2 MEDIUM, 1 LOW): agent-work-status newest scratchpad
+  (already fixed in 4308c893), test-hook python lookup (fixed c1d9a2c6 the other way: only "python", what
+  `.claude/settings.json` runs), a test anchored on a comment (fixed c1d9a2c6). The replies on the 3 threads were
+  NOT posted: the auto-mode classifier blocked the write. code-reviewer pass 1 (49 of 125 files read; the gap closed
+  by pass 2, 75 of 76 files read) and silent-failure-hunter (49 of 52 production files read): 1 HIGH shared (H-1
+  Block Body on HTML-only mail), CR M-1 to M-4, L-1 to L-4; SFH M-1 to M-3, L-1 to L-7 and 2 LOW; pass 2 F1 HIGH,
+  F2 to F13. Dispositions: fixed without asking (each fix under 4 code files and 600 lines): bab21526 (3 code files,
+  268 lines: one background-enable path, CR M-1 / SFH M-2), 76f8a2bb (5 code files, 50 lines, three separate
+  fixes: one IMAP id list, Sign In Again replace resets positions, news_ reason text), 4308c893 (7 code files, 122
+  lines, six separate fixes: test-hook verdict F1 / SFH M-3, quoted bypass tokens L-7, atomic lock write L-2,
+  remove warning L-3, scratchpad lookup L-4 / L-1, pop-up read wait CR M-2), c1d9a2c6 (2 code files, 19 lines:
+  Copilot, F8), d91ee027 (3 code files, 38 lines: notifier off channel, miner -SentJsonl guard, F3 to F7, F9 to F13),
+  d7168716 (3 code files, 94 lines: SFH L-5 reset, unreadable sign-in state), 4f9ffe5b (docs: CR M-4). Asked
+  Harold (decision class), answers pending: Q1 H-1 Block Body on HTML-only mail, Q2 SFH M-1 refused-login repeat
+  (also covers CR M-3, pop-up logins counting toward the lockout, which the M-2 wait only reduces), Q3 a re-save
+  clears the sign-in flag and the lockout count. Every guard fix mutation-checked: all KILLED.
 
 ### Manual Validation results and answers (Harold, 2026-11-04)
 
