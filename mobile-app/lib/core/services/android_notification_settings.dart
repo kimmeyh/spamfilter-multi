@@ -3,8 +3,8 @@ import 'package:flutter/services.dart';
 import 'package:logger/logger.dart';
 
 /// F322 (Sprint 83): opens Android's notification settings page for this app,
-/// where the scan notification channels ("Scans with No Rule items", "Scans
-/// with nothing to review") are listed and the user can silence one.
+/// where the scan notification channels ("One or more No Rule Items", "Every
+/// Completed Scan") are listed and the user can silence one.
 ///
 /// ADR-0042 / ADR-0049: Android only (declared exception, `ScanCompleteNotifier`
 /// "choice"). The native side is `MainActivity` (`ACTION_APP_NOTIFICATION_SETTINGS`,

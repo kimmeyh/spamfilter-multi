@@ -10,16 +10,16 @@ import '../../core/storage/settings_store.dart';
 ///
 /// Which completed background scans tell the user. The text is the same on
 /// every platform:
-/// - "Every completed scan"
+/// - "Every Completed Scan" (Harold's spelling, Sprint 83 MV 2026-11-04)
 /// - "Only when one or more No Rule items" (the default, Q2 = 1)
 ///
 /// Where the user sets it differs, by the Sprint 83 Q1 = 1 decision
 /// (ADR-0042 / ADR-0049 declared exception, `ScanCompleteNotifier`):
 /// - Windows, iPhone and Android 7.x (no channels): this in-app choice.
 /// - Android 8.0+: Android owns the choice. The row opens Android's
-///   notification settings for the app, where "Scans with No Rule items" and
-///   "Scans with nothing to review" are listed; the user turns the second one
-///   off. The in-app choice is not shown (it would disagree with the channel
+///   notification settings for the app, where "One or more No Rule Items" and
+///   "Every Completed Scan" are listed; the user turns the second one off to
+///   be told only about scans with No Rule items. The in-app choice is not shown (it would disagree with the channel
 ///   settings).
 class ScanNotificationsRow extends StatefulWidget {
   const ScanNotificationsRow({
@@ -39,12 +39,12 @@ class ScanNotificationsRow extends StatefulWidget {
   final Future<bool> Function()? openAndroidSettings;
 
   static const String title = 'Scan notifications';
-  static const String everyLabel = 'Every completed scan';
+  static const String everyLabel = 'Every Completed Scan';
   static const String noRuleOnlyLabel = 'Only when one or more No Rule items';
   static const String androidHelp =
       'Android decides which scans notify you. Open Android notification '
-      'settings and turn off "Scans with nothing to review" to be told only '
-      'when there are No Rule items.';
+      'settings: leave "One or more No Rule Items" on, and turn off "Every '
+      'Completed Scan" to be told only when there are No Rule items.';
   static const String openButtonLabel = 'Open notification settings';
 
   @override

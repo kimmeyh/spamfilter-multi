@@ -1325,3 +1325,17 @@ closed test).
   mislead (the channels are two separate on/off groups); options asked.
 - Question C: "2?". Open, asked again with a recommendation.
 - Question D = 2: hooks stay on 3.12; the move is in F344.
+
+**Re-validation round 3 (Harold, 2026-11-04, on the 9:56pm build of 90e924fb)**
+- 1 notification list opens below: good.
+- 2 `news_` sender: worked as expected. `news_9280@yaltrong.com` showed no "Suggested": the DEV row (id 8440) was
+  saved 2026-11-02 20:35, before the suggestion code, and not seen since (suggestion columns null). Rows re-seen
+  tonight (`news_60463@condauietrl.net`, `news_026174@eachieved.com`) store Block Entire Domain, reason
+  sender_shape. Question E = 1: leave older rows; they get a suggestion when a scan sees them again.
+- Questions B and C: Harold: *"There should be a sub-notification level for "Every Completed Scan" on/off and "One or
+  more No Rule Items" -- there does not need to be 3 sub-notification levels"*. The two Android channels are renamed
+  "Every Completed Scan" (No Rule 0) and "One or more No Rule Items" (No Rule above 0); ids unchanged; each channel's
+  description says what it covers. Windows option 1 reads "Every Completed Scan".
+- Harold (standing fact, 2026-11-04): production Android has one notification category, "Background Scans". The two
+  channels arrive with the 0.24.0 release (the app deletes `background_scan_channel` when it creates them), so no user
+  has seen the earlier names.

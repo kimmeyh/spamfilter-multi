@@ -69,7 +69,7 @@ void main() {
         expect(find.text('Only when one or more No Rule items'), findsOneWidget);
         await tester.tap(find.byKey(const Key('scan_notifications_choice')));
         await tester.pumpAndSettle();
-        expect(find.text('Every completed scan'), findsWidgets);
+        expect(find.text('Every Completed Scan'), findsWidgets);
         expect(find.text('Only when one or more No Rule items'), findsWidgets);
         expect(find.byKey(const Key('scan_notifications_open')), findsNothing);
       });
@@ -87,24 +87,24 @@ void main() {
         await tester.tap(find.byKey(const Key('scan_notifications_choice')));
         await tester.pumpAndSettle();
         final firstItemTop =
-            tester.getTopLeft(find.text('Every completed scan').last).dy;
+            tester.getTopLeft(find.text('Every Completed Scan').last).dy;
         expect(firstItemTop, greaterThanOrEqualTo(controlBottom));
       });
 
-      testWidgets('choosing "Every completed scan" saves it', (tester) async {
+      testWidgets('choosing "Every Completed Scan" saves it', (tester) async {
         final store = _MemoryStore(ScanNotifyChoice.noRuleOnly);
         await pumpRow(tester, host, store: store);
         await tester.tap(find.byKey(const Key('scan_notifications_choice')));
         await tester.pumpAndSettle();
-        await tester.tap(find.text('Every completed scan').last);
+        await tester.tap(find.text('Every Completed Scan').last);
         await tester.pumpAndSettle();
         expect(store.value, ScanNotifyChoice.every);
       });
 
-      testWidgets('a saved "Every completed scan" is shown on open',
+      testWidgets('a saved "Every Completed Scan" is shown on open',
           (tester) async {
         await pumpRow(tester, host, store: _MemoryStore(ScanNotifyChoice.every));
-        expect(find.text('Every completed scan'), findsOneWidget);
+        expect(find.text('Every Completed Scan'), findsOneWidget);
       });
 
       testWidgets('a failed save keeps the old value and says so',
@@ -114,7 +114,7 @@ void main() {
         await pumpRow(tester, host, store: store);
         await tester.tap(find.byKey(const Key('scan_notifications_choice')));
         await tester.pumpAndSettle();
-        await tester.tap(find.text('Every completed scan').last);
+        await tester.tap(find.text('Every Completed Scan').last);
         await tester.pumpAndSettle();
         expect(find.byKey(const Key('scan_notifications_save_failed')),
             findsOneWidget);
@@ -140,7 +140,7 @@ void main() {
       await pumpRow(tester, HostPlatform.android,
           store: _MemoryStore(ScanNotifyChoice.noRuleOnly), channels: true);
       expect(find.text('Scan notifications'), findsOneWidget);
-      expect(find.textContaining('Scans with nothing to review'),
+      expect(find.textContaining('turn off "Every Completed Scan"'),
           findsOneWidget);
       expect(find.text('Open notification settings'), findsOneWidget);
       expect(
@@ -185,7 +185,7 @@ void main() {
         findsOneWidget);
     await tester.tap(find.byKey(const Key('scan_notifications_choice')));
     await tester.pumpAndSettle();
-    await tester.tap(find.text('Every completed scan').last);
+    await tester.tap(find.text('Every Completed Scan').last);
     await tester.pumpAndSettle();
     expect(store.value, ScanNotifyChoice.every);
     expect(find.byKey(const Key('scan_notifications_load_failed')),

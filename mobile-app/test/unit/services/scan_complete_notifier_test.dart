@@ -116,7 +116,8 @@ void main() {
           await post(HostPlatform.android, 0), ScanNotificationOutcome.posted);
       final a = shown.single.android!;
       expect(a.channelId, ScanCompleteNotifier.nothingToReviewChannelId);
-      expect(a.channelName, 'Scans with nothing to review');
+      expect(a.channelName, 'Every Completed Scan');
+      expect(a.channelDescription, contains('Turn this off'));
       expect(a.importance, Importance.low);
     });
 
@@ -124,7 +125,7 @@ void main() {
       await post(HostPlatform.android, 1);
       final a = shown.single.android!;
       expect(a.channelId, ScanCompleteNotifier.noRuleChannelId);
-      expect(a.channelName, 'Scans with No Rule items');
+      expect(a.channelName, 'One or more No Rule Items');
       expect(a.importance, Importance.low);
     });
 

@@ -87,15 +87,27 @@ class ScanCompleteNotifier {
   /// (no sound, same as the retired `background_scan_channel`). An id and its
   /// importance cannot be changed by the app after the channel exists, so
   /// these are chosen once (Sprint 83 Task 2 card).
+  ///
+  /// Names (Sprint 83 MV, Harold 2026-11-04): the two sub-notifications are
+  /// "Every Completed Scan" and "One or more No Rule Items", the Windows
+  /// wording. Each channel is an on/off switch for its own scans: with both on
+  /// every scan notifies; with "Every Completed Scan" off only scans with No
+  /// Rule items notify. The descriptions, shown under each name in Android's
+  /// settings, say this. The ids are unchanged; production (0.23.x) has only
+  /// the retired channel, so no user has seen the earlier names.
   static const String noRuleChannelId = 'scan_with_no_rule_channel';
-  static const String noRuleChannelName = 'Scans with No Rule items';
+  static const String noRuleChannelName = 'One or more No Rule Items';
+  static const String noRuleChannelDescription =
+      'Scans that found one or more No Rule items.';
 
   /// F322: channel for a scan with nothing to review (No Rule 0). The user
   /// silences this one in Android's settings.
   static const String nothingToReviewChannelId =
       'scan_nothing_to_review_channel';
-  static const String nothingToReviewChannelName =
-      'Scans with nothing to review';
+  static const String nothingToReviewChannelName = 'Every Completed Scan';
+  static const String nothingToReviewChannelDescription =
+      'Scans with nothing to review. Turn this off to be told only when there '
+      'are No Rule items.';
 
   /// The pre-Sprint 83 channel. Never posted to again; deleted when the new
   /// channels are created so Android's list does not show a dead entry.
@@ -149,7 +161,7 @@ class ScanCompleteNotifier {
       AndroidNotificationDetails(
     noRuleChannelId,
     noRuleChannelName,
-    channelDescription: 'Background scans that found mail with no rule',
+    channelDescription: noRuleChannelDescription,
     importance: Importance.low,
     priority: Priority.low,
     showWhen: true,
@@ -160,7 +172,7 @@ class ScanCompleteNotifier {
       AndroidNotificationDetails(
     nothingToReviewChannelId,
     nothingToReviewChannelName,
-    channelDescription: 'Background scans that found nothing to review',
+    channelDescription: nothingToReviewChannelDescription,
     importance: Importance.low,
     priority: Priority.low,
     showWhen: true,
@@ -192,13 +204,13 @@ class ScanCompleteNotifier {
       await android.createNotificationChannel(const AndroidNotificationChannel(
         noRuleChannelId,
         noRuleChannelName,
-        description: 'Background scans that found mail with no rule',
+        description: noRuleChannelDescription,
         importance: Importance.low,
       ));
       await android.createNotificationChannel(const AndroidNotificationChannel(
         nothingToReviewChannelId,
         nothingToReviewChannelName,
-        description: 'Background scans that found nothing to review',
+        description: nothingToReviewChannelDescription,
         importance: Importance.low,
       ));
       await android.deleteNotificationChannel(channelId: retiredChannelId);

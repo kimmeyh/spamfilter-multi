@@ -81,8 +81,9 @@ Behavior is unchanged on Windows and Android for every site. "C" = capability, "
   plugin, Android channel setup).
 - `scan_complete_notifier.dart` `post` (F322, Sprint 83) -- WHICH completed scans notify. Declared Android exception
   (ADR-0042), reading the SAME getter `notificationDelivery == androidChannel`: on Android 8.0+ (API 26+, channels
-  exist) the OS notification channels are the choice. Every scan posts, on `scan_with_no_rule_channel` ("Scans with No
-  Rule items") when No Rule is above 0, else on `scan_nothing_to_review_channel` ("Scans with nothing to review"); the
+  exist) the OS notification channels are the choice. Every scan posts, on `scan_with_no_rule_channel` ("One or more No
+  Rule Items") when No Rule is above 0, else on `scan_nothing_to_review_channel` ("Every Completed Scan"; names set by
+  Harold in Sprint 83 MV, 2026-11-04, to match the Windows wording); the
   user silences the second in Android's settings and the in-app choice is NOT read. Windows, iOS and Android 7.x
   (API 24-25, no channels; detected by the plugin listing no channels): the in-app choice
   `SettingsStore.getScanNotifyChoice` (default "Only when one or more No Rule items"), Settings > Background > "Scan
