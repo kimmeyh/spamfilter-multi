@@ -253,10 +253,15 @@ functions). Does that make more sense and align to the KISS principle/12-factor 
 discussion before deciding what to do. imp-2 b imp-3 the script should never crash with a success. Update the
 script as needed imp-4 do now | Review questions Q1 1 q2 1 q3 2 q4 did it use gh cli? 1"*
 
-- **IMP-1**: DISCUSSION PENDING (Harold asked a question before deciding). Facts given in reply: the 3 class A
-  copies were already merged into one shared function or list by the 7.7.1 fixes (bab21526, 76f8a2bb,
-  c1d9a2c6); the other 3 of the 6 are class D (test names), not code copies. IMP-1 is a self-review check that
-  catches the NEXT copy. The Q1 fix applied the principle: one `selectBodyText` and one Gmail decoder.
+- **IMP-1**: done, option 1 (planning plus a self-review backstop). Harold, 2026-11-05: *"imp-1 I believe this is a
+  addition to sprint planning when developing the plan and when writing a sprint card - is that what you were
+  suggesting as I can't tell"*, then *"imp-1 1"*. Facts given in reply: the 3 class A copies were already merged
+  into one shared function or list by the 7.7.1 fixes (bab21526, 76f8a2bb, c1d9a2c6); the other 3 of the 6 are
+  class D (test names), not code copies; the Q1 fix applied the principle (one `selectBodyText`, one Gmail
+  decoder). Applied: `SPRINT_PLANNING.md` card template gains the mandatory "Existing code reused" line (a new
+  caller of a user action, a new list, a new pattern: name the existing code and call it);
+  `SPRINT_EXECUTION_WORKFLOW.md` 5.1.2 class 1 gains "Call it, do not copy it" (check the code against that line
+  and look for copies the card did not foresee) and class 7 gains "The test NAME against its checks".
 - **IMP-2**: part (b) only. `SPRINT_EXECUTION_WORKFLOW.md` 5.4: an MV answer that renames or changes a behavior
   records `Swept: grep '<old text>' -> N hits fixed`. Part (a), the ADR status policy test, is not done.
 - **IMP-3**: done. `scripts/test-hook.ps1` exits 1 when the hook it runs crashes, with or without `-ExpectBlock` /
