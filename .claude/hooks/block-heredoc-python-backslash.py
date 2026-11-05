@@ -23,6 +23,7 @@ import re
 import sys
 
 sys.path.insert(0, os.path.join(os.path.dirname(os.path.abspath(__file__)), "lib"))
+import common  # noqa: E402
 import hooklib  # noqa: E402
 
 BYPASS = re.compile(r"allow_heredoc_backslash", re.I)
@@ -134,7 +135,7 @@ def decide(payload: dict) -> hooklib.Verdict:
     if tool and tool.lower() not in ("bash", "powershell"):
         return hooklib.allow()
     cmd = hooklib.command_of(payload)
-    if not cmd.strip() or BYPASS.search(cmd):
+    if not cmd.strip() or BYPASS.search(common.strip_quoted(cmd)):
         return hooklib.allow()
 
     if inline_program_has_backslash(cmd, tool):

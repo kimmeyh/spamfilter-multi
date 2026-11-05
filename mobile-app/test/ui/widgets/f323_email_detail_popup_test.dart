@@ -90,6 +90,42 @@ final _yellowOk =
     AuthResultsParser.syntheticResultFor(AuthClassification.yellow);
 
 void main() {
+  // 7.7.1 code-reviewer M-2. What this does NOT catch: a read that already
+  // started when the pop-up closes (it still runs to the end).
+  group('the body read waits, and a closed pop-up never reads', () {
+    setUp(() => emailPopupBodyReadDelay = const Duration(milliseconds: 400));
+    tearDown(() => emailPopupBodyReadDelay = Duration.zero);
+
+    testWidgets('closed before the wait ends: the body is never read',
+        (tester) async {
+      var reads = 0;
+      await _open(tester, settle: false, loadBody: () async {
+        reads++;
+        return 'https://other.example/x';
+      });
+      await tester.pump(const Duration(milliseconds: 100));
+      Navigator.of(tester.element(find.text('Block Subject'))).pop();
+      await tester.pump(const Duration(milliseconds: 600));
+      await tester.pumpAndSettle();
+      expect(reads, 0);
+    });
+
+    testWidgets('left open: the body is read once, after the wait',
+        (tester) async {
+      var reads = 0;
+      await _open(tester, settle: false, loadBody: () async {
+        reads++;
+        return 'https://other.example/x';
+      });
+      await tester.pump(const Duration(milliseconds: 100));
+      expect(reads, 0);
+      await tester.pump(const Duration(milliseconds: 400));
+      await tester.pumpAndSettle();
+      expect(reads, 1);
+      expect(find.text('other.example'), findsOneWidget);
+    });
+  });
+
   group('R-1: Block Subject and Block Body share one row', () {
     testWidgets('same row, two cells, each at most half the width',
         (tester) async {

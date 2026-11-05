@@ -574,10 +574,19 @@ void showEmailDetailPopup(
     '$kSuggestionKindBlock/$kSuggestionTypeSenderShape': kSenderShapeNewsDigits,
   };
   // F323 R-1: started once when the pop-up opens (not on each rebuild).
+  // 7.7.1 code-reviewer M-2: after [emailPopupBodyReadDelay], and only if the
+  // pop-up is still open, so a rapid Skip does not connect for every item.
+  var popupClosed = false;
   final Future<BodyLinkResult>? bodyFuture = loadBody == null
       ? null
       : _resolveBodyLink(
-          loadBody: loadBody,
+          loadBody: () async {
+            await Future<void>.delayed(emailPopupBodyReadDelay);
+            if (popupClosed) {
+              throw StateError('pop-up closed before the body read started');
+            }
+            return loadBody();
+          },
           senderDomain: rawSenderDomain,
           isSafeDomain: isSafeLinkDomain ?? (_) => false,
         );
@@ -1289,8 +1298,17 @@ void showEmailDetailPopup(
         ],
       );
     },
-  );
+  ).whenComplete(() => popupClosed = true);
 }
+
+/// Sprint 83 7.7.1 (code-reviewer M-2): how long a pop-up waits before it
+/// starts the body read. Each read takes the account's scan lease and logs in
+/// to the mail server, and it cannot be cancelled once started; rapid Skip
+/// through Review No Rule Items used to queue one read per item behind the one
+/// global lease. A pop-up closed within this time never connects. Tests set it
+/// to zero (`flutter_test_config.dart`).
+@visibleForTesting
+Duration emailPopupBodyReadDelay = const Duration(milliseconds: 400);
 
 /// Sprint 83 MV Q1: places the email-detail pop-up from its MEASURED size.
 ///

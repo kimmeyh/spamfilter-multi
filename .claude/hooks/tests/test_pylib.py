@@ -48,6 +48,23 @@ def load_hook(filename: str):
     return module
 
 
+_SAVED_PROJECT_DIR = None
+
+
+def setUpModule():
+    """Sprint 83 7.7.1 (code-reviewer pass 2 F2): in-process tests call mutation_lock and
+    decide(), which prefer CLAUDE_PROJECT_DIR over the folder the test passes. With the
+    variable set (a hook context, a dev shell), remove_lock(None) would delete the REAL repo's
+    live locks. Clear it for the whole module; restore it afterwards."""
+    global _SAVED_PROJECT_DIR
+    _SAVED_PROJECT_DIR = os.environ.pop("CLAUDE_PROJECT_DIR", None)
+
+
+def tearDownModule():
+    if _SAVED_PROJECT_DIR is not None:
+        os.environ["CLAUDE_PROJECT_DIR"] = _SAVED_PROJECT_DIR
+
+
 def clean_env(**extra) -> dict:
     env = {k: v for k, v in os.environ.items() if k != "CLAUDE_PROJECT_DIR"}
     env.update(extra)
@@ -338,6 +355,28 @@ class AgentWorkStatusTests(unittest.TestCase):
         self.assertEqual(lines[7], "Mutation locks:")
         self.assertRegex(lines[8], r"^  old\.md -- test \(agent unit-test, 7[45] min\) \[OVER 1 HOUR\]$")
         self.assertRegex(lines[9], r"^Sprint phase: (Sprint \S+: .+|unknown)$")
+
+    def test_default_lookup_finds_this_projects_newest_session_under_any_parent(self):
+        """Sprint 83 7.7.1 (code-reviewer L-4, silent-failure-hunter L-1): sessions live under
+        <temp>/claude/<hash>/<session>/scratchpad. The lookup must find the newest session of
+        THIS project there, and never another project's newer session."""
+        spec = importlib.util.spec_from_file_location("aws", REPO / "scripts" / "agent-work-status.py")
+        aws = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(aws)
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp) / "claude"
+            old = root / aws.PROJECT_SLUG / "old-session" / "scratchpad"
+            mine = root / "b424hash" / "mine-session" / "scratchpad"
+            other = root / "b424hash" / "other-project-session" / "scratchpad"
+            for i, p in enumerate([old, mine, other]):
+                p.mkdir(parents=True)
+                t = 1_700_000_000 + i * 100
+                os.utime(p, (t, t))
+            aws.claude_temp_roots = lambda: [root]
+            aws.project_session_ids = lambda: {"mine-session", "old-session"}
+            self.assertEqual(aws.newest_scratchpad(), mine)
+            aws.project_session_ids = lambda: set()
+            self.assertEqual(aws.newest_scratchpad(), old)
 
     def test_no_locks_and_missing_scratch_folder(self):
         with tempfile.TemporaryDirectory() as tmp:

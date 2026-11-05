@@ -41,23 +41,52 @@ UNIT_DONE = re.compile(r": DONE\s*$", re.I)
 LAST_STEP = re.compile(r"^LAST STEP:", re.I)
 
 
-def session_roots() -> list[Path]:
+def claude_temp_roots() -> list[Path]:
+    """The folders that hold session temp folders: <temp>/claude."""
     local = os.environ.get("LOCALAPPDATA")
     roots = []
     if local:
-        roots.append(Path(local) / "Temp" / "claude" / PROJECT_SLUG)
-    roots.append(Path(tempfile.gettempdir()) / "claude" / PROJECT_SLUG)
-    return roots
+        roots.append(Path(local) / "Temp" / "claude")
+    roots.append(Path(tempfile.gettempdir()) / "claude")
+    seen, out = set(), []
+    for r in roots:
+        key = str(r).lower()
+        if key not in seen:
+            seen.add(key)
+            out.append(r)
+    return out
+
+
+def project_session_ids() -> set[str]:
+    """Session ids of THIS project: one <id>.jsonl transcript each under
+    ~/.claude/projects/<slug>/. Used so another project's session is never picked."""
+    folder = Path.home() / ".claude" / "projects" / PROJECT_SLUG
+    if not folder.is_dir():
+        return set()
+    return {p.stem for p in folder.glob("*.jsonl")}
 
 
 def newest_scratchpad() -> Path | None:
-    for root in session_roots():
+    """Sprint 83 7.7.1 (code-reviewer L-4, silent-failure-hunter L-1): sessions now live under
+    <temp>/claude/<hash>/<session>/scratchpad, not only under the project slug, so the old
+    slug-only lookup reported an OLD session's agents and hid the live ones. Searches every
+    <temp>/claude/*/<session>/scratchpad whose <session> is a transcript of this project (or
+    sits under the project slug), newest first."""
+    ids = project_session_ids()
+    pads: list[Path] = []
+    for root in claude_temp_roots():
         if not root.is_dir():
             continue
-        pads = [d / "scratchpad" for d in root.iterdir() if (d / "scratchpad").is_dir()]
-        if pads:
-            return max(pads, key=lambda p: p.stat().st_mtime)
-    return None
+        for parent in root.iterdir():
+            if not parent.is_dir():
+                continue
+            for session in parent.iterdir():
+                pad = session / "scratchpad"
+                if pad.is_dir() and (session.name in ids or parent.name == PROJECT_SLUG):
+                    pads.append(pad)
+    if not pads:
+        return None
+    return max(pads, key=lambda p: p.stat().st_mtime)
 
 
 def task_line(task: Path) -> str:

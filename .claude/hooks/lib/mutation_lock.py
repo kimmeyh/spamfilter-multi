@@ -22,6 +22,7 @@ from __future__ import annotations
 
 import argparse
 import json
+import os
 import re
 import sys
 from datetime import datetime
@@ -50,7 +51,13 @@ def new_lock(file: str, reason: str, agent: str = "unnamed-agent",
     path = folder / safe_name(file)
     record = {"file": file, "reason": reason, "agent": agent,
               "createdUtc": common.format_utc(now or common.utc_now())}
-    path.write_text(json.dumps(record, indent=4) + "\n", encoding="utf-8")
+    # Sprint 83 7.7.1 (silent-failure-hunter L-2): write a temp file and rename it into place,
+    # so the commit gate never reads a half-written lock (it treats an unparseable lock as
+    # stale and deletes it, which would let a commit through mid-mutation). The temp name ends
+    # in .tmp, so lock_files() (*.json) never lists it.
+    tmp = path.with_name(path.name + ".tmp")
+    tmp.write_text(json.dumps(record, indent=4) + "\n", encoding="utf-8")
+    os.replace(tmp, path)
     return path
 
 
@@ -126,6 +133,14 @@ def main(argv: list[str] | None = None) -> int:
         if args.file:
             if remove_lock(args.file):
                 print(f"[mutation-lock] RELEASED on {args.file}.")
+            else:
+                # Sprint 83 7.7.1 (silent-failure-hunter L-3): a release under a different
+                # spelling of the path used to print nothing, leaving the lock held (commits
+                # blocked for 15 minutes). Exit stays 0 so a release in a finally block does not
+                # fail its caller, but the miss is now visible.
+                held = [row["file"] for row in lock_info()]
+                print(f"[mutation-lock] WARNING: no lock held for {args.file}; held: "
+                      f"{', '.join(map(str, held)) if held else 'none'}", file=sys.stderr)
         elif lock_dir().is_dir():
             print(f"[mutation-lock] RELEASED {remove_lock()} lock(s).")
     elif args.action == "list":

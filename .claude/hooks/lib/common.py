@@ -56,6 +56,17 @@ def read_stdin_text() -> str:
     return data.decode("utf-8", errors="replace").lstrip("\ufeff")
 
 
+_QUOTED_SPAN = re.compile(r"\"[^\"]*\"|'[^']*'")
+
+
+def strip_quoted(text: str) -> str:
+    """The command with every "..." and '...' span emptied. Sprint 83 7.7.1 (silent-failure-hunter
+    L-7): every hook looks for its bypass token in THIS text, so a token that only appears inside
+    a quoted commit message or string never disarms a guard (block-commit-during-mutation already
+    worked this way; block-blind-staging and block-heredoc-python-backslash did not)."""
+    return _QUOTED_SPAN.sub('""', text)
+
+
 def normalize_path(text: str) -> str:
     """One spelling for comparisons: forward slashes. Windows hands back backslashes."""
     return text.replace("\\", "/")

@@ -43,7 +43,8 @@
   A complete payload, for a hook shape the switches above do not cover.
 
 .PARAMETER ExpectBlock
-  Assert the hook BLOCKS (non-zero exit). Exits 1 if it does not, so this can
+  Assert the hook BLOCKS (exit 2; any other non-zero exit is a hook error that
+  ALLOWS the command and fails this check). Exits 1 if it does not, so this can
   gate a script.
 
 .PARAMETER ExpectAllow
@@ -132,7 +133,15 @@ if ($resolved -like '*.py') {
 }
 $code = $LASTEXITCODE
 
-$verdict = if ($code -eq 0) { 'ALLOW' } else { "BLOCK (exit $code)" }
+# Sprint 83 7.7.1 (code-reviewer pass 2 F1 HIGH, silent-failure-hunter M-3):
+# Claude Code blocks ONLY on exit 2. Any other non-zero exit is a hook ERROR
+# and the command is ALLOWED (a crashed Python hook exits HOOK_ERROR = 1,
+# hooklib.py). Reporting it as BLOCK let -ExpectBlock pass a hook that was off.
+$verdict = switch ($code) {
+    0       { 'ALLOW' }
+    2       { 'BLOCK (exit 2)' }
+    default { "HOOK ERROR (exit $code, the command is ALLOWED)" }
+}
 Write-Output "hook    : $(Split-Path -Leaf $resolved)"
 Write-Output "cwd     : $Cwd"
 Write-Output "verdict : $verdict"
@@ -143,14 +152,14 @@ if ($stderr) {
 
 # Assertions last, so the diagnostic output is always visible even on failure --
 # a probe that fails silently is worse than no probe.
-if ($ExpectBlock -and $code -eq 0) {
+if ($ExpectBlock -and $code -ne 2) {
     Write-Output ''
-    Write-Output 'FAIL: expected BLOCK, got ALLOW.'
+    Write-Output "FAIL: expected BLOCK (exit 2), got $verdict."
     exit 1
 }
 if ($ExpectAllow -and $code -ne 0) {
     Write-Output ''
-    Write-Output 'FAIL: expected ALLOW, got BLOCK.'
+    Write-Output "FAIL: expected ALLOW (exit 0), got $verdict."
     exit 1
 }
 if ($ExpectBlock -or $ExpectAllow) {
