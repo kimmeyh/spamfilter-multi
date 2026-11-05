@@ -26,6 +26,10 @@ Format: `- **type**: Description (Issue #N)` where type is feat|fix|chore|docs
 
 ## [Unreleased]
 
+### 2026-11-05 (Sprint 83 final code reviews)
+- **fix**: When the saved list of hidden safe-sender suggestions is damaged, Reject now explains it and offers "Reset", which clears that list and hides the suggestion; before, every Reject failed with no way out (Issue #539)
+- **fix**: The account list says "Could not check whether this account needs a new sign-in" and offers Sign In Again when the account's sign-in state cannot be read; before, the row looked healthy (Issue #538)
+
 ### 2026-11-04 (Sprint 83 Manual Validation)
 - **fix**: Select Account no longer shows every account as a red "Missing credentials" row while it loads; it shows "Checking account..." until the account is read, and red only when it truly has no saved sign-in (Issue #538)
 - **fix**: A saved scan opened from Scan History no longer marks a Block choice as "Suggested": without the message headers the app cannot tell the sender check finished (Issue #537)

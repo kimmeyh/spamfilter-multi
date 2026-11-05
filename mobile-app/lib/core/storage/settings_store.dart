@@ -373,6 +373,18 @@ class SettingsStore {
     return null;
   }
 
+  /// Deletes the rejected list, so every hidden suggestion can come back.
+  ///
+  /// Sprint 83 7.7.1 (silent-failure-hunter L-5): the only way out of a
+  /// damaged list. Before it, every later Reject failed with the same error
+  /// and the user could not hide any suggestion again. The screen offers it
+  /// as "Reset hidden suggestions" on that error.
+  Future<void> resetRejectedSafeSenderSuggestions() async {
+    final db = await _dbHelper.database;
+    await db.delete('app_settings',
+        where: 'key = ?', whereArgs: [keyRejectedSafeSenderSuggestions]);
+  }
+
   /// Adds [address] (lowercased) to the rejected list.
   ///
   /// Throws [StateError] when the stored list cannot be read, instead of
@@ -381,9 +393,7 @@ class SettingsStore {
   Future<void> rejectSafeSenderSuggestion(String address) async {
     final value = await _getAppSetting(keyRejectedSafeSenderSuggestions);
     final rejected = value == null ? <String>{} : _decodeRejected(value);
-    if (rejected == null) {
-      throw StateError('the saved list of rejected suggestions is damaged');
-    }
+    if (rejected == null) throw RejectedSuggestionsDamagedError();
     rejected.add(address.trim().toLowerCase());
     final db = await _dbHelper.database;
     await db.insert(
@@ -1292,4 +1302,13 @@ class ProviderFolderDefaults {
     this.safeSenderFolder,
     this.deletedRuleFolder,
   });
+}
+
+/// Thrown by [SettingsStore.rejectSafeSenderSuggestion] when the stored
+/// rejected list is not a JSON list. A [StateError], so earlier callers that
+/// catch StateError still do; its own type lets the screen offer the reset
+/// ([SettingsStore.resetRejectedSafeSenderSuggestions]).
+class RejectedSuggestionsDamagedError extends StateError {
+  RejectedSuggestionsDamagedError()
+      : super('the saved list of hidden suggestions is damaged');
 }

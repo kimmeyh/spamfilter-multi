@@ -37,6 +37,11 @@ class AccountDisplayData {
   /// the user, so the row offers "Sign In Again".
   final bool signInRequired;
 
+  /// Sprint 83 7.7.1 (silent-failure-hunter LOW): the sign-in flag could not
+  /// be read. Before, the row then looked healthy; now it says so and offers
+  /// "Sign In Again" (signing in again is harmless when it was not needed).
+  final bool signInStateUnknown;
+
   /// R-1 (Sprint 83, F324): this account's EFFECTIVE background-scan setting
   /// (`SettingsStore.getEffectiveBackgroundEnabled`). False shows "Background
   /// scanning is off for this account" and a "Turn on" button.
@@ -50,6 +55,7 @@ class AccountDisplayData {
     required this.email,
     required this.platformId,
     this.signInRequired = false,
+    this.signInStateUnknown = false,
     this.backgroundEnabled = true,
     this.imapHost,
   });
@@ -62,6 +68,7 @@ class AccountDisplayData {
           email == other.email &&
           platformId == other.platformId &&
           signInRequired == other.signInRequired &&
+          signInStateUnknown == other.signInStateUnknown &&
           backgroundEnabled == other.backgroundEnabled &&
           imapHost == other.imapHost;
 
@@ -70,6 +77,7 @@ class AccountDisplayData {
       email.hashCode ^
       platformId.hashCode ^
       signInRequired.hashCode ^
+      signInStateUnknown.hashCode ^
       backgroundEnabled.hashCode ^
       imapHost.hashCode;
 }
@@ -92,6 +100,15 @@ class AccountDisplayData {
 /// [NEW] PHASE 2 SPRINT 3: Account persistence between app runs
 class AccountSelectionScreen extends StatefulWidget {
   const AccountSelectionScreen({super.key});
+
+  /// Test seam: replaces the read of an account's sign-in flag.
+  @visibleForTesting
+  static Future<bool> Function(String accountId)? debugReadSignInRequired;
+
+  /// Sprint 83 7.7.1: the line under an account whose sign-in flag could not
+  /// be read. Public so tests pin the words.
+  static const String signInUnknownText =
+      'Could not check whether this account needs a new sign-in';
 
   @override
   State<AccountSelectionScreen> createState() => _AccountSelectionScreenState();
@@ -271,11 +288,13 @@ class _AccountSelectionScreenState extends State<AccountSelectionScreen> with Wi
       // provider refuses the login (iCloud, AOL, Yahoo, custom), so it is read
       // for every platform.
       var signInRequired = false;
+      var signInStateUnknown = false;
       try {
-        signInRequired =
-            await SettingsStore().getGmailSignInRequired(accountId);
+        signInRequired = await (AccountSelectionScreen.debugReadSignInRequired ??
+            SettingsStore().getGmailSignInRequired)(accountId);
       } catch (e) {
         _logger.w('F239: could not read the sign-in state: $e');
+        signInStateUnknown = true;
       }
 
       // R-1 (Sprint 83, F324): the resolver the scan worker uses (the
@@ -293,6 +312,7 @@ class _AccountSelectionScreenState extends State<AccountSelectionScreen> with Wi
         email: email,
         platformId: platformId,
         signInRequired: signInRequired,
+        signInStateUnknown: signInStateUnknown,
         backgroundEnabled: backgroundEnabled,
         imapHost: _customImapHost(platformId, creds.additionalParams),
       );
@@ -1156,6 +1176,15 @@ class _AccountSelectionScreenState extends State<AccountSelectionScreen> with Wi
                                         : Colors.grey[600],
                                   ),
                                 ),
+                                if (displayData.signInStateUnknown)
+                                  Text(
+                                    AccountSelectionScreen.signInUnknownText,
+                                    key: Key('sign_in_unknown_$accountId'),
+                                    style: TextStyle(
+                                      fontSize: 12,
+                                      color: Colors.grey[600],
+                                    ),
+                                  ),
                                 // R-1 (Sprint 83, F324).
                                 if (!displayData.backgroundEnabled)
                                   Wrap(
@@ -1184,7 +1213,8 @@ class _AccountSelectionScreenState extends State<AccountSelectionScreen> with Wi
                           trailing: Row(
                             mainAxisSize: MainAxisSize.min,
                             children: [
-                              if (displayData.signInRequired)
+                              if (displayData.signInRequired ||
+                                  displayData.signInStateUnknown)
                                 TextButton(
                                   key: Key('sign_in_again_$accountId'),
                                   onPressed: () => _signInAgain(

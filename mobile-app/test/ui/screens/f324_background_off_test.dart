@@ -278,6 +278,22 @@ void main() {
       expect(find.textContaining('Gmail needs you'), findsNothing);
     });
 
+    // Sprint 83 7.7.1 (silent-failure-hunter LOW): an unreadable flag made
+    // the row look healthy. Would NOT catch: a flag read that returns a wrong
+    // value without throwing.
+    testWidgets('a sign-in flag that cannot be read says so and offers Sign '
+        'In Again', (tester) async {
+      await seedIcloud(tester);
+      AccountSelectionScreen.debugReadSignInRequired =
+          (_) async => throw StateError('db locked');
+      addTearDown(() => AccountSelectionScreen.debugReadSignInRequired = null);
+      await mount(tester);
+      expect(find.text(AccountSelectionScreen.signInUnknownText),
+          findsOneWidget);
+      expect(signInAgain, findsOneWidget);
+      expect(find.textContaining('rejected the sign-in'), findsNothing);
+    });
+
     testWidgets('an iCloud account that is not flagged (a network error sets '
         'no flag) offers nothing', (tester) async {
       await seedIcloud(tester);

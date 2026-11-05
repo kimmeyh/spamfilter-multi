@@ -230,6 +230,25 @@ class _SafeSendersManagementScreenState
           content: Text('Suggestion hidden for ${c.address}'),
           duration: const Duration(seconds: 3),
         ));
+    } on RejectedSuggestionsDamagedError catch (e) {
+      // Sprint 83 7.7.1 (silent-failure-hunter L-5): without a way out,
+      // every later Reject failed with this error. The action deletes the
+      // damaged list and hides this suggestion.
+      _logger.e('F270: reject suggestion failed', error: e);
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+          // A short action label: "Reset hidden suggestions" overflowed the
+          // snackbar by 90 px on the Fold cover screen (344 px).
+          content: const Text('Could not hide the suggestion: the saved list '
+              'of hidden suggestions is damaged. Tap Reset to clear that list '
+              'and hide this one (suggestions you hid before can come back).'),
+          duration: const Duration(seconds: 10),
+          action: SnackBarAction(
+            label: 'Reset',
+            onPressed: () => _resetHiddenAndReject(c),
+          ),
+        ));
+      }
     } catch (e) {
       _logger.e('F270: reject suggestion failed', error: e);
       if (mounted) {
@@ -240,6 +259,20 @@ class _SafeSendersManagementScreenState
     } finally {
       _suggestionsBusy.remove(c.address);
     }
+  }
+
+  Future<void> _resetHiddenAndReject(SafeSenderCandidate c) async {
+    try {
+      await _settings.resetRejectedSafeSenderSuggestions();
+    } catch (e) {
+      _logger.e('F270: reset hidden suggestions failed', error: e);
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+            content: Text('Could not reset the hidden suggestions: $e')));
+      }
+      return;
+    }
+    await _rejectSuggestion(c);
   }
 
   Future<void> _acceptSuggestion(SafeSenderCandidate c) async {

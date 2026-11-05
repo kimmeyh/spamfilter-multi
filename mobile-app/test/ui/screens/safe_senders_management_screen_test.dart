@@ -133,6 +133,44 @@ void main() {
     });
   });
 
+  // Sprint 83 7.7.1 (silent-failure-hunter L-5): a damaged hidden list made
+  // every Reject fail with no way out. Would NOT catch: a list damaged in a
+  // way that still decodes as a JSON list (it reads as valid).
+  testWidgets('a damaged hidden list offers a reset, and the reset hides it',
+      (tester) async {
+    // The Fold cover screen at its real height, so the snackbar is on screen.
+    tester.view.physicalSize = const Size(344, 882);
+    tester.view.devicePixelRatio = 1.0;
+    addTearDown(tester.view.resetPhysicalSize);
+    addTearDown(tester.view.resetDevicePixelRatio);
+    await tester.runAsync(() async {
+      await seed();
+      final db = await h.testHelper.dbHelper.database;
+      await db.insert('app_settings', {
+        'key': 'rejected_safe_sender_suggestions',
+        'value': '{not json',
+        'value_type': 'json',
+        'date_modified': 0,
+      });
+      await mount(tester);
+      await tapAndLetDbRun(tester, find.text('Reject'),
+          until: () => shown('hidden suggestions is damaged'));
+      expect(find.text('Reset'), findsOneWidget);
+      expect(tester.takeException(), isNull, reason: 'fits 344 px');
+      expect(find.text(sender), findsOneWidget, reason: 'not hidden yet');
+      // Let the snackbar finish sliding in; mid-animation it is below the
+      // screen and a tap misses.
+      await tester.pump(const Duration(seconds: 1));
+      await tapAndLetDbRun(tester, find.text('Reset'),
+          until: () => shown('Suggestion hidden for'));
+      expect(find.text(sender), findsNothing);
+      final row = await db.query('app_settings',
+          where: 'key = ?', whereArgs: ['rejected_safe_sender_suggestions']);
+      expect(row.single['value'], '["$sender"]');
+      expect(tester.takeException(), isNull);
+    });
+  });
+
   testWidgets('a failed check shows its error, not an empty list',
       (tester) async {
     narrowView(tester);
