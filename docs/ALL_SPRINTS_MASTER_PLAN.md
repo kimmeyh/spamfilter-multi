@@ -715,6 +715,9 @@ Source: `docs/research/R76-3_HEURISTICS_ML_GENAI_SPAM_IDENTIFICATION.md` (Issue 
   helper that does the fixed part. Build the helpers used by two or more prompts first.
 - AC: the inventory with a disposition per prompt; the shared helpers exist under `scripts/` with `.SYNOPSIS`
   headers and are called by the prompts.
+- Also (Sprint 83 MV Question D = 2, Harold 2026-11-04): move the hook registrations in `.claude/settings*.json` from
+  `python` (3.12.10 on PATH) to Python 3.14 (`py -3.14`), then run `.claude\hooks\run-test-cases.ps1`. A `.claude`
+  settings change: confirm with Harold at the start of that sprint.
 
 **F322. Notification choice: notify only when No Rule is greater than 0 (~60-120m, estimate unverified) Priority 30 -- TARGET SPRINT 83 (Harold 2026-10-31, "add to backlog for next sprint") -- NEW 2026-10-31**
 - Phase: Core App Quality

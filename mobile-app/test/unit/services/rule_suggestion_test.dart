@@ -247,23 +247,46 @@ void main() {
     });
   });
 
+  // Sprint 83 MV Q9 = 2 (Harold, 2026-11-04): a news_ sender is SUGGESTED
+  // Block Entire Domain on its own domain, not the shape rule.
+  // What these do NOT catch: whether the pop-up shows the shape button (that
+  // is f323_email_detail_popup_test).
   group('F323 R-3 / AC-4: the news_ plus digits sender shape', () {
-    test('4, 5 and 6 digits match, at any domain, with any auth class', () {
+    test('4, 5 and 6 digits match, at any domain, with any auth class; the '
+        'suggestion is Block Entire Domain on that domain', () {
       for (final digits in ['1234', '12345', '123456']) {
         for (final cls in ['green', 'yellow', 'grey', 'red']) {
-          final s = _suggest('News <news_$digits@whatever-${digits}x.example>', cls)!;
+          final domain = 'whatever-${digits}x.com';
+          final s = _suggest('News <news_$digits@$domain>', cls)!;
           expect(s.kind, 'block', reason: '$digits $cls');
-          expect(s.type, 'senderShape');
-          expect(s.value, 'news_digits');
+          expect(s.type, 'entireDomain');
+          expect(s.value, domain);
           expect(s.reasonCode, 'sender_shape');
-          expect(s.pattern, r'^news_[0-9]{4,6}@');
+          expect(RuleSuggestion.isNewsShapeSender('news_$digits@$domain'),
+              isTrue);
         }
       }
     });
 
-    test('the shape wins over the YELLOW domain basis for the same sender', () {
+    test('each matching email gets its own root domain', () {
+      expect(_suggest('news_5555@mail.shop-example.com', 'green')!.value,
+          'shop-example.com');
+      expect(_suggest('news_6666@other-store.com', 'green')!.value,
+          'other-store.com');
+    });
+
+    test('at a shared provider the suggestion is Block Email, not the whole '
+        'provider', () {
+      final s = _suggest('news_1234@gmail.com', 'green')!;
+      expect(s.type, 'from');
+      expect(s.value, 'news_1234@gmail.com');
+      expect(s.reasonCode, 'sender_shape');
+    });
+
+    test('the shape reason wins over the YELLOW basis for the same sender', () {
       final s = _suggest('news_5555@mail.shop-example.com', 'yellow')!;
-      expect(s.type, 'senderShape');
+      expect(s.reasonCode, 'sender_shape');
+      expect(s.type, 'entireDomain');
     });
 
     final nonMatching = [
@@ -280,6 +303,7 @@ void main() {
     for (final addr in nonMatching) {
       test('$addr gets no shape suggestion (green sender)', () {
         expect(_suggest(addr, 'green'), isNull);
+        expect(RuleSuggestion.isNewsShapeSender(addr), isFalse);
       });
     }
 

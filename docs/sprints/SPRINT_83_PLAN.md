@@ -1311,3 +1311,17 @@ closed test).
   each email that matches the pattern in the email address"*. Echo question open before coding.
 - Q10 = 2: Fold background log errors to the backlog (F342).
 - Recorded 17:57.
+
+**Re-validation round 2 (Harold, 2026-11-04, on the 6:04pm build of 3d2f78a5)**
+- 1 Select Account loading: OK.
+- 2 W-1 text: OK, but the list opened upward over "Scan notifications". Harold: *"can you switch it to a drop-down (it
+  will overlap "Test", but that is better than overlapping "Scan Notifications"*. Fixed: the list opens below.
+- 3 pop-up at the default window size: looks good on Windows.
+- 4 saved-scan Block suggestion: Harold knows of no YELLOW saved-scan item (test evidence only).
+- 5 Reply-to chip: Harold knows of no matching item (test evidence only).
+- Question A (Q9) = 2: keep "Block sender pattern", but Block Entire Domain is the Suggested item. Harold: *"while
+  very common, it it is too short and possible for a potential safe sender to use to be the Suggestion"*. Done.
+- Question B (A-1): keep the Android channels, name them like Windows. Open: the exact Windows names would
+  mislead (the channels are two separate on/off groups); options asked.
+- Question C: "2?". Open, asked again with a recommendation.
+- Question D = 2: hooks stay on 3.12; the move is in F344.

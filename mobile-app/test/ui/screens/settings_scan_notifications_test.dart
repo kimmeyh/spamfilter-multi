@@ -74,6 +74,23 @@ void main() {
         expect(find.byKey(const Key('scan_notifications_open')), findsNothing);
       });
 
+      // Sprint 83 MV (Harold): the list opened upward over the title. What
+      // this does NOT catch: a window so short that Flutter must move the menu
+      // up to keep it on screen.
+      testWidgets('the list opens BELOW the control, not over the title',
+          (tester) async {
+        await pumpRow(tester, host,
+            store: _MemoryStore(ScanNotifyChoice.noRuleOnly));
+        final controlBottom = tester
+            .getBottomLeft(find.byKey(const Key('scan_notifications_choice')))
+            .dy;
+        await tester.tap(find.byKey(const Key('scan_notifications_choice')));
+        await tester.pumpAndSettle();
+        final firstItemTop =
+            tester.getTopLeft(find.text('Every completed scan').last).dy;
+        expect(firstItemTop, greaterThanOrEqualTo(controlBottom));
+      });
+
       testWidgets('choosing "Every completed scan" saves it', (tester) async {
         final store = _MemoryStore(ScanNotifyChoice.noRuleOnly);
         await pumpRow(tester, host, store: store);

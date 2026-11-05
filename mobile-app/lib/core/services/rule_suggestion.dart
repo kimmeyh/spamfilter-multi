@@ -25,7 +25,11 @@
 ///   pop-up can say so. The note rides in the same five stored columns with
 ///   kind `none`; see [kSuggestionKindNone].
 /// - R-3 sender shape: `news_` followed by 4-6 digits at any domain. It is
-///   checked before the YELLOW basis, because it is the narrower statement.
+///   checked before the YELLOW basis. Sprint 83 MV Q9 = 2 (Harold,
+///   2026-11-04): the SUGGESTED rule is Block Entire Domain on that email's
+///   own domain (Block Email for a shared provider), not the shape rule, which
+///   is too broad to suggest. The pop-up still offers "Block sender pattern"
+///   for any matching sender ([isNewsShapeSender]).
 /// - R-1 Block Body is NOT a stored suggestion: its value comes from the
 ///   message body, which is never persisted (SEC-14), so the pop-up computes
 ///   it when it opens. See `body_link_domain.dart`.
@@ -152,7 +156,8 @@ class RuleSuggestion {
             'for this email.';
       case kSuggestionReasonSenderShape:
         return 'The sender name is "news_" followed by 4 to 6 digits, a '
-            'pattern used by bulk mail that changes its domain.';
+            'pattern used by bulk mail. "Block sender pattern" blocks this '
+            'name at any domain.';
       case kSuggestionReasonReplyToMismatch:
         return 'Reply-to email mismatch: replies would go to a different '
             'domain than the sender address.';
@@ -276,21 +281,26 @@ class RuleSuggestion {
   /// The regex the saved rule uses lives in `RuleQuickActionService`.
   static final RegExp _newsShapeLocalPart = RegExp(r'^news_[0-9]{4,6}$');
 
-  /// F323 R-3 (retro Q5 = 2, Q6 = 1): `news_` plus 4 to 6 digits, at ANY
-  /// domain. Letters after `news_` do not match (`news_abc@` is not this
-  /// shape). Only the local part is read.
-  static SuggestionDraft? _newsShapeBlock(
-      String fromEmail, AuthClassification? auth) {
+  /// F323 R-3: true when the sender's name (local part) is `news_` plus 4 to
+  /// 6 digits, at ANY domain. Letters after `news_` do not match (`news_abc@`
+  /// is not this shape). Only the local part is read. The pop-up shows
+  /// "Block sender pattern" when this is true.
+  static bool isNewsShapeSender(String fromEmail) {
     final address = EmailBodyParser().extractEmailAddress(fromEmail);
     final at = address.indexOf('@');
-    if (at <= 0) return null;
-    if (!_newsShapeLocalPart.hasMatch(address.substring(0, at))) return null;
-    return (
-      kind: kSuggestionKindBlock,
-      type: kSuggestionTypeSenderShape,
-      value: kSenderShapeNewsDigits,
-      reasonCode: kSuggestionReasonSenderShape,
-    );
+    if (at <= 0) return false;
+    return _newsShapeLocalPart.hasMatch(address.substring(0, at));
+  }
+
+  /// Sprint 83 MV Q9 = 2 (Harold, 2026-11-04): a `news_` sender is SUGGESTED
+  /// Block Entire Domain on its own domain (Block Email at a shared provider),
+  /// with the sender-shape reason. The shape rule is offered, not suggested:
+  /// Harold: "it is too short and possible for a potential safe sender to use
+  /// to be the Suggestion".
+  static SuggestionDraft? _newsShapeBlock(
+      String fromEmail, AuthClassification? auth) {
+    if (!isNewsShapeSender(fromEmail)) return null;
+    return _senderBlock(fromEmail, kSuggestionReasonSenderShape);
   }
 
   /// YELLOW authentication -> block. Mirrors the pop-up buttons' values:

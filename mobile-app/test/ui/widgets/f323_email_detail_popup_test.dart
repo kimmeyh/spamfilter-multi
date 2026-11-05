@@ -257,27 +257,35 @@ void main() {
 
   group('R-3 / AC-4: the sender-shape button', () {
     RuleSuggestion shape() => RuleSuggestion.suggest(
-        fromEmail: 'news_123456@any.example',
+        fromEmail: 'news_123456@any-shop.com',
         authClassification: 'green',
         authResult: _yellowOk)!;
 
-    testWidgets('shown as Suggested for a news_ sender; the tap saves the '
-        'shape rule', (tester) async {
+    // Sprint 83 MV Q9 = 2: the button is OFFERED; Block Entire Domain is the
+    // Suggested one. What this does NOT catch: a news_ row stored by an older
+    // build (its stored suggestion still names the shape rule).
+    testWidgets('a news_ sender: the shape button is offered, Block Entire '
+        'Domain is Suggested; the tap saves the shape rule', (tester) async {
       final requests = await _open(tester,
-          from: 'news_123456@any.example', suggestion: shape());
+          from: 'news_123456@any-shop.com', suggestion: shape());
       expect(find.text('Block sender pattern'), findsOneWidget);
-      expect(
-          find.descendant(
-              of: find.ancestor(
-                  of: find.text('Block sender pattern'),
-                  matching: find.byType(InkWell)),
-              matching: find.text('Suggested')),
-          findsOneWidget);
-      expect(find.text(r'^news_[0-9]{4,6}@'), findsOneWidget);
+      Finder suggestedIn(String label) => find.descendant(
+          of: find
+              .ancestor(of: find.text(label), matching: find.byType(InkWell))
+              .first,
+          matching: find.text('Suggested'));
+      expect(suggestedIn('Block sender pattern'), findsNothing);
+      expect(suggestedIn('Block Entire Domain'), findsOneWidget);
       await tester.tap(find.text('Block sender pattern'));
       await tester.pumpAndSettle();
       expect(requests.single.type, 'senderShape');
       expect(requests.single.value, 'news_digits');
+    });
+
+    testWidgets('a news_ sender with no suggestion still gets the button',
+        (tester) async {
+      await _open(tester, from: 'news_1234@any-shop.com');
+      expect(find.text('Block sender pattern'), findsOneWidget);
     });
 
     testWidgets('absent for an ordinary sender and for news_ with letters',

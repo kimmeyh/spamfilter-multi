@@ -32,6 +32,8 @@ Format: `- **type**: Description (Issue #N)` where type is feat|fix|chore|docs
 - **chore**: The scan notification choice now reads "Only when one or more No Rule items" (Issue #536)
 - **fix**: The email details pop-up no longer cuts off Block Subject and Block Body at the default Windows window or on a wide phone screen: it grows to fit its content and stays on screen, and its header is shorter (Skip beside the check mark, the date and account on the folder/subject line, no "No matching rule" tag) (Issue #537)
 - **feat**: A No Rule email whose Reply-To address is on a different domain than the sender now gets a "Suggested" Block choice, and its review chip reads "Reply-to email mismatch" (Issue #540)
+- **fix**: The Scan notifications choice now opens its list below the control; before, the list opened upward and covered the "Scan notifications" title (Issue #536)
+- **feat**: For a `news_` plus digits sender the pop-up now marks Block Entire Domain on that email's own domain as "Suggested" (Block Email at a shared provider such as gmail.com); "Block sender pattern" is still offered for every such sender, but not suggested (Issue #537)
 
 ### 2026-11-01 (Sprint 83)
 

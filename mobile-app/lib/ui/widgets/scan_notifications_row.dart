@@ -157,23 +157,44 @@ class _ScanNotificationsRowState extends State<ScanNotificationsRow> {
                   key: const Key('scan_notifications_open_failed'),
                   style: textTheme.bodySmall),
           ] else ...[
-            DropdownButton<ScanNotifyChoice>(
-              key: const Key('scan_notifications_choice'),
-              isExpanded: true,
-              value: _choice,
-              items: const [
-                DropdownMenuItem(
-                  value: ScanNotifyChoice.every,
-                  child: Text(ScanNotificationsRow.everyLabel),
+            // Sprint 83 MV (Harold, 2026-11-04): the list opens BELOW the
+            // control. A DropdownButton places the selected item over the
+            // button, so with the second value selected the list opened
+            // upward and covered the "Scan notifications" title.
+            LayoutBuilder(
+              builder: (context, constraints) =>
+                  PopupMenuButton<ScanNotifyChoice>(
+                key: const Key('scan_notifications_choice'),
+                position: PopupMenuPosition.under,
+                tooltip: ScanNotificationsRow.title,
+                initialValue: _choice,
+                constraints:
+                    BoxConstraints(minWidth: constraints.maxWidth),
+                onSelected: _select,
+                itemBuilder: (context) => const [
+                  PopupMenuItem(
+                    value: ScanNotifyChoice.every,
+                    child: Text(ScanNotificationsRow.everyLabel),
+                  ),
+                  PopupMenuItem(
+                    value: ScanNotifyChoice.noRuleOnly,
+                    child: Text(ScanNotificationsRow.noRuleOnlyLabel),
+                  ),
+                ],
+                child: Padding(
+                  padding: const EdgeInsets.symmetric(vertical: 8),
+                  child: Row(
+                    children: [
+                      Expanded(
+                        child: Text(_choice == ScanNotifyChoice.every
+                            ? ScanNotificationsRow.everyLabel
+                            : ScanNotificationsRow.noRuleOnlyLabel),
+                      ),
+                      const Icon(Icons.arrow_drop_down),
+                    ],
+                  ),
                 ),
-                DropdownMenuItem(
-                  value: ScanNotifyChoice.noRuleOnly,
-                  child: Text(ScanNotificationsRow.noRuleOnlyLabel),
-                ),
-              ],
-              onChanged: (value) {
-                if (value != null) _select(value);
-              },
+              ),
             ),
             if (_loadFailed)
               Text(

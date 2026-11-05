@@ -569,7 +569,8 @@ void showEmailDetailPopup(
     if (cleanedSubject.isNotEmpty && cleanedSubject != '(No subject)')
       '$kSuggestionKindBlock/subject': cleanedSubject,
     // F323 R-3: the sender-shape button exists only for a matching sender, so
-    // its value is always the one the suggestion names.
+    // its value is always news_digits (a row stored before Sprint 83 MV Q9
+    // can still name it).
     '$kSuggestionKindBlock/$kSuggestionTypeSenderShape': kSenderShapeNewsDigits,
   };
   // F323 R-1: started once when the pop-up opens (not on each rebuild).
@@ -1237,12 +1238,12 @@ void showEmailDetailPopup(
                                 ],
                               ),
                             ),
-                            // F323 R-3: shown only for a sender whose name has
-                            // the shape, and then always as "Suggested".
-                            if (suggestion != null &&
-                                suggestion.kind == kSuggestionKindBlock &&
-                                suggestion.type ==
-                                    kSuggestionTypeSenderShape) ...[
+                            // F323 R-3: shown for any sender whose name has the
+                            // shape. Sprint 83 MV Q9 = 2: it is OFFERED, not
+                            // suggested (the suggestion is Block Entire Domain);
+                            // only a row stored by an older build still marks it.
+                            if (RuleSuggestion.isNewsShapeSender(
+                                email.from)) ...[
                               const SizedBox(height: 8),
                               SizedBox(
                                 width: double.infinity,
