@@ -5,8 +5,7 @@ import '../../core/providers/selected_account_provider.dart';
 import '../../adapters/storage/secure_credentials_store.dart';
 import '../../core/storage/settings_store.dart';
 import '../../core/services/data_deletion_service.dart';
-import '../../core/services/background_scan_scheduler.dart';
-import '../../core/services/scan_interval.dart';
+import '../../core/services/background_scan_enabler.dart';
 import 'account_setup_screen.dart';
 import '../../core/utils/platform_inference.dart';
 import '../../util/redact.dart';
@@ -758,29 +757,22 @@ class _AccountSelectionScreenState extends State<AccountSelectionScreen> with Wi
     }
   }
 
-  /// R-1 (Sprint 83, F324): turn this account's background scanning on. Writes
-  /// the same per-account setting as Settings > Background > Enable Background
-  /// Scanning and schedules through the same platform factory, so the line
-  /// does not claim a scan that nothing runs (the F161 failure shape).
+  /// R-1 (Sprint 83, F324): turn this account's background scanning on.
+  /// Sprint 83 7.7.1 (code-reviewer M-1, silent-failure-hunter M-2): through
+  /// the shared [BackgroundScanEnabler.turnOn], the same path as Settings >
+  /// Background > Enable Background Scanning: the Windows scheduler lock, the
+  /// Android notification permission request, and a message for every result
+  /// that schedules nothing.
   Future<void> _turnOnBackground(String accountId) async {
     final messenger = ScaffoldMessenger.of(context);
     try {
-      final settings = SettingsStore();
-      await settings.setAccountBackgroundEnabled(accountId, true);
-      final scheduler = BackgroundScanSchedulerFactory.instance;
-      final minutes = await settings.getEffectiveBackgroundFrequency(accountId);
-      if (scheduler.isSupported && ScanInterval.validate(minutes) == null) {
-        final scheduled = await scheduler.schedule(
-            accountId: accountId,
-            intervalMinutes: minutes,
-            caller: 'account list: turn on background');
-        if (!scheduled) {
-          _logger.e('F324: scheduling returned false for '
-              '${Redact.accountId(accountId)}');
-          messenger.showSnackBar(const SnackBar(
-              content: Text('Background scanning is on, but it could not be '
-                  'scheduled. Open Settings > Background to check it.')));
-        }
+      final result = await BackgroundScanEnabler.turnOn(
+          accountId: accountId, caller: 'account list: turn on background');
+      final message = BackgroundScanEnabler.messageFor(result);
+      if (message != null) {
+        _logger.w('F324: turn on for ${Redact.accountId(accountId)}: '
+            '${result.name}');
+        messenger.showSnackBar(SnackBar(content: Text(message)));
       }
     } catch (e) {
       _logger.e('F324: could not turn on background scanning: $e');

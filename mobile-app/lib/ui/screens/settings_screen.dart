@@ -7,7 +7,6 @@ import '../../core/services/app_version.dart';
 import '../../core/services/data_deletion_service.dart';
 import '../../core/services/default_rule_set_service.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 import '../../core/providers/selected_account_provider.dart';
@@ -35,6 +34,7 @@ import '../../adapters/email_providers/email_provider.dart' show Credentials;
 import '../widgets/app_bar_with_exit.dart';
 import '../widgets/battery_optimization_row.dart'; // F252 (Sprint 76)
 import '../widgets/scan_notifications_row.dart'; // F322 (Sprint 83)
+import '../../core/services/background_scan_enabler.dart'; // Sprint 83 7.7.1
 import '../widgets/new_mail_trigger_row.dart'; // F253 (Sprint 76)
 import '../widgets/scan_interval_control.dart'; // F264 (Sprint 77)
 import '../widgets/content_history_row.dart';
@@ -1506,61 +1506,39 @@ class _SettingsScreenState extends State<SettingsScreen> with SingleTickerProvid
       final accountId = _requireAccountId;
       final scheduler = BackgroundScanSchedulerFactory.instance;
 
+      bool success;
+      if (enabled) {
+        // Sprint 83 7.7.1 (code-reviewer M-1): the shared enabler validates
+        // the interval (F264), requests POST_NOTIFICATIONS (F161 R-2) and
+        // schedules; the account list's "Turn on" uses the same path. Every
+        // result now shows a message: an unsupported platform or an invalid
+        // interval used to return here with only a log line.
+        final minutes = _backgroundScanFrequency;
+        final result = await BackgroundScanEnabler.schedule(
+            accountId: accountId,
+            minutes: minutes,
+            caller: 'settings: background on',
+            scheduler: scheduler);
+        if (result == BackgroundEnableResult.scheduled) {
+          _logger.i('Scheduled background scan updated: '
+              '${ScanInterval.label(minutes)} '
+              'via ${scheduler.mechanismLabel}');
+        }
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+              content: Text(result == BackgroundEnableResult.scheduled
+                  ? 'Background scan scheduled every '
+                      '${ScanInterval.label(minutes)}'
+                  : BackgroundScanEnabler.messageFor(result)!)));
+        }
+        return;
+      }
       if (!scheduler.isSupported) {
         _logger.w('Background scheduling unsupported on this platform '
             '(${scheduler.mechanismLabel})');
         return;
       }
-
-      bool success;
-      if (enabled) {
-        // F264 (Sprint 77): the gate is the shared range check, not a lookup
-        // in a fixed list. The old `ScanFrequency.fromMinutes(...)` returned
-        // "disabled" for 120 and 240 minutes -- values this screen itself
-        // offered -- so saving them persisted the override, scheduled
-        // NOTHING and showed no message. The control cannot produce a value
-        // that fails this check; it stays as a defensive guard that LOGS.
-        final minutes = _backgroundScanFrequency;
-        final invalid = ScanInterval.validate(minutes);
-        if (invalid != null) {
-          _logger.w('Not scheduling: interval $minutes minutes is invalid '
-              '($invalid)');
-          return;
-        }
-
-        // F161 R-2: POST_NOTIFICATIONS is requested HERE, at the moment the
-        // user enables the feature whose completion notification needs it --
-        // contextual, and gated on the call site actually existing (the
-        // Android worker's completion notification). No-op on non-Android.
-        await _requestNotificationPermissionIfNeeded();
-
-        success = await scheduler.schedule(
-            accountId: accountId,
-            intervalMinutes: minutes,
-            caller: 'settings: background on');
-
-        if (success) {
-          _logger.i('Scheduled background scan updated: '
-              '${ScanInterval.label(minutes)} '
-              'via ${scheduler.mechanismLabel}');
-          if (mounted) {
-            ScaffoldMessenger.of(context).showSnackBar(
-              SnackBar(
-                  content: Text('Background scan scheduled every '
-                      '${ScanInterval.label(minutes)}')),
-            );
-          }
-        } else {
-          _logger.e('Background scan scheduling returned false '
-              '(${scheduler.mechanismLabel})');
-          if (mounted) {
-            ScaffoldMessenger.of(context).showSnackBar(
-              const SnackBar(
-                  content: Text('Failed to schedule background scan')),
-            );
-          }
-        }
-      } else {
+      {
         success = await scheduler.cancel(accountId,
             caller: 'settings: background off');
         if (success) {
@@ -1818,19 +1796,8 @@ class _SettingsScreenState extends State<SettingsScreen> with SingleTickerProvid
   /// premise: never prompt for a permission with no call site behind it).
   /// Best-effort: a denied permission degrades to no notification; the scan
   /// and its persistence are unaffected.
-  Future<void> _requestNotificationPermissionIfNeeded() async {
-    if (!PlatformCapabilities.current.requestsNotificationPermissionAtRuntime) {
-      return;
-    }
-    try {
-      await FlutterLocalNotificationsPlugin()
-          .resolvePlatformSpecificImplementation<
-              AndroidFlutterLocalNotificationsPlugin>()
-          ?.requestNotificationsPermission();
-    } catch (e) {
-      _logger.w('Notification permission request failed: $e');
-    }
-  }
+  Future<void> _requestNotificationPermissionIfNeeded() =>
+      BackgroundScanEnabler.requestNotificationPermissionIfNeeded();
 
   Future<void> _runTestBackgroundScan() async {
     setState(() => _isTestingScan = true);
