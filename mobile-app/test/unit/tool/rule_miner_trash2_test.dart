@@ -175,6 +175,28 @@ void main() {
       expect(b.score.safeSender, a.score.safeSender, reason: 'safe-sender hits unchanged');
       expect(b.score.handDeleted, 30, reason: 'counted for information only');
     });
+
+    // Sprint 83 7.7.1 pass-2 F9: README and the F308 doc now say a candidate
+    // whose only new coverage is hand-deleted mail is still REPORTED. This
+    // pins it. Would NOT catch: the order among several such candidates.
+    test('a candidate whose only new coverage is hand-deleted mail is reported',
+        () async {
+      final pos = positives();
+      final noCoverage = await run(pos.records, [...pos.samples, ...safeMail(100, 0)]);
+      final c0 = phraseCandidate(noCoverage)!;
+      expect(c0.score.passes, isTrue);
+      expect(noCoverage.reported(noCoverage.singles), isNot(contains(c0)),
+          reason: 'no No Rule and no hand-deleted hit: nothing new to cover');
+
+      final hand = [
+        for (var i = 0; i < 5; i++) rec('h$i@x', 'z@hand$i.example', '$kPhrase handmade $i')
+      ];
+      final r = await run([...pos.records, ...hand], [...pos.samples, ...safeMail(100, 0)]);
+      final c = phraseCandidate(r)!;
+      expect(c.score.noRule, 0);
+      expect(c.score.handDeleted, 5);
+      expect(r.reported(r.singles), contains(c));
+    });
   });
 
   group('R-2 threshold', () {

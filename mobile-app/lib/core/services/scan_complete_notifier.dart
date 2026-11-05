@@ -83,6 +83,14 @@ class ScanCompleteNotifier {
   @visibleForTesting
   static Future<bool> Function()? channelsSupportedOverride;
 
+  /// Ids of the channels the user turned off in Android's settings, read by
+  /// the last [ensureAndroidChannels]. Sprint 83 7.7.1: a post to an off
+  /// channel shows nothing and `show` still returns normally, so the worker
+  /// logged "posted" for a scan the user had silenced. Tests set it together
+  /// with [channelsSupportedOverride] (which skips the read).
+  @visibleForTesting
+  static Set<String> offChannelIds = const {};
+
   /// F322: channel for a scan with at least one No Rule item. Importance LOW
   /// (no sound, same as the retired `background_scan_channel`). An id and its
   /// importance cannot be changed by the app after the channel exists, so
@@ -215,6 +223,13 @@ class ScanCompleteNotifier {
       ));
       await android.deleteNotificationChannel(channelId: retiredChannelId);
       final channels = await android.getNotificationChannels();
+      // Sprint 83 7.7.1: the LIVE importance (the plugin reads
+      // NotificationChannel.getImportance(), FlutterLocalNotificationsPlugin
+      // .java:2276), so a channel the user turned off reads Importance.none.
+      offChannelIds = {
+        for (final c in channels ?? const <AndroidNotificationChannel>[])
+          if (c.importance == Importance.none) c.id,
+      };
       return channels?.any((c) => c.id == noRuleChannelId) ?? false;
     } catch (e) {
       _logger.w('Notification channel setup failed: $e');
@@ -262,6 +277,19 @@ class ScanCompleteNotifier {
     final channelsHonored = android && await ensureAndroidChannels();
     if (!channelsHonored && noRule == 0) {
       if (await _readChoice() == ScanNotifyChoice.noRuleOnly) {
+        return ScanNotificationOutcome.skippedByChoice;
+      }
+    }
+    if (channelsHonored) {
+      final channelId = androidDetailsFor(noRule).channelId;
+      if (offChannelIds.contains(channelId)) {
+        // The user's choice, made in Android's settings: not an error.
+        await DiagnosticLogger.log(
+          kind: DiagnosticLogger.kindScan,
+          context: 'scan/post',
+          detail: 'notification not shown: channel $channelId is turned off '
+              'in Android settings',
+        );
         return ScanNotificationOutcome.skippedByChoice;
       }
     }

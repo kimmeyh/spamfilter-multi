@@ -1,28 +1,27 @@
 # Release notes -- 0.24.0 -- Google Play
 
-PROVISIONAL (Sprint 83 Phase 3.7.0b, 2026-11-01). Re-derive from the finished CHANGELOG at Phase 7.7 and again at
-Phase 8.3 (STORE_RELEASE_PROCESS.md Step 1b, GOOGLE_PLAY_RELEASE_PROCESS.md Step 2).
+Re-derived from the finished CHANGELOG at Sprint 83 Phase 7.7 (2026-11-05). Re-check at Phase 8.3
+(STORE_RELEASE_PROCESS.md Step 1b, GOOGLE_PLAY_RELEASE_PROCESS.md Step 2), and again if the open 7.7.1 decisions
+(Block Body on HTML-only mail, the refused-password retry) change what ships.
 
 **Range**: everything after 0.23.0 (versionCode 20). If 0.23.0 was never uploaded to Play, widen the range at Phase
 8.3 to everything after the last upload (`STORE_VERSION_STATUS.md` "Last uploaded to Play"). This build is
 versionCode 21.
 
-**Not claimed yet**: the planned items below. Each line stays only if its Sprint 83 task ships and passes Manual
-Validation.
-
-**Excluded from this file**: the iOS project and iOS build workflow; developer tools; `test`, `docs` and `chore`
-entries.
+**Excluded from this file**: the iOS project and iOS build workflow; developer tools (the rule miner, the Python
+hook layer); `test`, `docs` and `chore` entries. Smaller fixes are left out for the 500-character limit: the Select
+Account loading state, the saved-scan "Suggested" mark, the pop-up layout, the failed-password count on removal.
 
 Paste the en-US block below into the Play Console release-notes field, tags included.
 
 ---
 
 <en-US>
-Choose to be notified only when a scan finds emails to review, from Android's notification settings for the app.
+Choose which scans notify you: Android's notification settings for the app list "Every Completed Scan" and "One or more No Rule Items".
 
-Suggested safe senders: the Safe Senders screen lists senders you may trust, to accept or reject.
+Manage Safe Senders suggests senders you may trust, to accept or reject.
 
-No Rule review: no rule is suggested when a sender check could not finish, and Block Body is added.
+No Rule review adds Block Body, suggests a block when Reply-To is on another domain, and suggests nothing when a sender check could not finish.
 
-Re-adding an account keeps its settings, and the account list says when background scanning is off.
+A rejected iCloud, AOL or Yahoo password now shows Sign In Again. Re-adding an account keeps its settings.
 </en-US>

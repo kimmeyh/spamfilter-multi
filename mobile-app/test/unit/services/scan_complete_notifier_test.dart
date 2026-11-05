@@ -39,6 +39,7 @@ void main() {
     ScanCompleteNotifier.showOverride = null;
     ScanCompleteNotifier.choiceOverride = null;
     ScanCompleteNotifier.channelsSupportedOverride = null;
+    ScanCompleteNotifier.offChannelIds = const {};
     PlatformCapabilities.debugOverride = null;
   });
 
@@ -127,6 +128,23 @@ void main() {
       expect(a.channelId, ScanCompleteNotifier.noRuleChannelId);
       expect(a.channelName, 'One or more No Rule Items');
       expect(a.importance, Importance.low);
+    });
+
+    // Sprint 83 7.7.1: a post to a channel the user turned off shows nothing
+    // and the plugin's show() still returns normally, so the worker logged
+    // "posted". Would NOT catch: the plugin reporting a stale importance.
+    test('a channel turned off in Android settings is a skip, not "posted"',
+        () async {
+      ScanCompleteNotifier.offChannelIds = {
+        ScanCompleteNotifier.nothingToReviewChannelId
+      };
+      expect(await post(HostPlatform.android, 0),
+          ScanNotificationOutcome.skippedByChoice);
+      expect(shown, isEmpty);
+      // The other channel is still on.
+      expect(
+          await post(HostPlatform.android, 1), ScanNotificationOutcome.posted);
+      expect(shown, hasLength(1));
     });
 
     test('the two channel ids differ and neither is the retired one', () {

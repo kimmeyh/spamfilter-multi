@@ -504,7 +504,7 @@ Source: `docs/research/R76-3_HEURISTICS_ML_GENAI_SPAM_IDENTIFICATION.md` (Issue 
   replaces the scripts. Fact (`.claude/settings.json`, read 2026-10-31): all 8 hook registrations, and the documented
   build commands, run `powershell` (Windows PowerShell 5.1), while the Claude Code PowerShell tool runs 7; both
   shells are in use until the conversion.
-- Sprint 83 Task 10 (Harold, Q9 = 1): the PILOT is done: the shared layer `.claude/hooks/lib/` (ADR-0051, Proposed),
+- Sprint 83 Task 10 (Harold, Q9 = 1): the PILOT is done: the shared layer `.claude/hooks/lib/` (ADR-0051, Accepted 2026-11-04),
   `block-blind-staging`, `block-heredoc-python-backslash`, `block-commit-during-mutation`, the mutation lock library
   (the `mutation-lock.ps1` shim keeps the PowerShell interface) and `scripts/agent-work-status`. The rest is split into
   the batch cards F326 to F340 below (Harold, 2026-11-01: *"ensure there are backlog items for everything not

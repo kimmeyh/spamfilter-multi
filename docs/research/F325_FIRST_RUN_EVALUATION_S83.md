@@ -1,8 +1,9 @@
 # F325: First-Run Evaluation, Sprint 83 (copy of the F152 template)
 
 **Status**: step 1 (static pass) DONE 2026-11-04. Steps 2-3 (live runs: Windows release-equivalent build with an
-empty data folder; Android clean install on the emulator, Q10 = 1) run with Harold at Manual Validation. iPhone: not
-runnable this sprint (no TestFlight build); recorded as a gap.
+empty data folder; Android clean install on the emulator) moved to the backlog card F341 (Harold, Sprint 83 Manual
+Validation, 2026-11-04: "Wait this to a future sprint"); not run in Sprint 83. iPhone: not runnable this sprint (no
+TestFlight build); recorded as a gap.
 
 **Build**: 0.24.0+21, branch `feature/20261031_Sprint_83`. All paths are under `mobile-app/`.
 
@@ -75,8 +76,10 @@ the live run; findings become backlog cards after it (R-5), and nothing is fixed
 
 - Below 600 px the toolbar collapses and Results uses a compact layout (`standard_app_bar_actions.dart:428-439`;
   `results_display_screen.dart:1095`). V
-- The email-detail pop-up height cap (60%) cuts off rows at the default Windows window and on the unfolded Fold; see
-  `SPRINT_83_PLAN.md` "Phase 5 evidence" (measured). V
+- The email-detail pop-up height cap cut off rows at the default Windows window and on the unfolded Fold; see
+  `SPRINT_83_PLAN.md` "Phase 5 evidence" (measured). That measurement was taken with a 60% cap (432 of 720 logical
+  px). The current code no longer uses 60%: the cap is the safe-area height minus 16 px on wide windows and minus 24
+  px on compact widths (`lib/ui/widgets/email_detail_popup.dart:1350-1352`). Not re-measured live (F341). V
 - No Fold hinge or posture handling. Fold behavior and DPI other than 125% H.
 
 ## 7. Quick User Feedback Capture

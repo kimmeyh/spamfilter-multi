@@ -54,8 +54,13 @@ void main() {
     expect(results.contains('authResult:'), isTrue);
   });
 
-  test('body and sender-shape rules never remove the sender safe senders', () {
+  // Sprint 83 7.7.1 pass-2 F7: the old name also claimed sender-shape rules.
+  // They are sender rules (like Block Email), so they DO clear that sender's
+  // conflicting safe-sender entry; only subject and body rules skip it.
+  test('body rules never remove the sender safe senders', () {
     expect(results.contains("type != 'body'"), isTrue);
     expect(review.contains("request.type == 'body'"), isTrue);
+    expect(results.contains("type != 'senderShape'"), isFalse);
+    expect(review.contains("request.type == 'senderShape'"), isFalse);
   });
 }

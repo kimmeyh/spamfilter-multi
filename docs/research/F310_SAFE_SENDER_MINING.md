@@ -16,7 +16,7 @@ is imported, applied or bundled. No mailbox was read for this task and no creden
   delete-rule hit). On history alone, 3 more pairs pass; adding the Trash2 delete-rule mail (auth class unknown) removes
   them.
 - **The DMARC requirement (R-3) cannot be met exactly.** Stored data keeps one auth class per email (green, yellow, red,
-  grey), not the DMARC verdict and not DKIM alignment. The gate is the stored class `green` (a proxy). The runtime
+  grey), not the DMARC verdict and not DKIM alignment. The gate is the stored class `green`, a proxy for DMARC pass (not the same thing). The runtime
   suggestion (F270) must read the raw `Authentication-Results` header.
 - The gate changed nothing on this data: 31 candidates meet the threshold on content alone, 31 are reported, and 0 pass
   only because of the gate. It is a safety rule, not a filter that earned its keep here.

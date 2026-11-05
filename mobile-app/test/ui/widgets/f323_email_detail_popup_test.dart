@@ -324,9 +324,14 @@ void main() {
       expect(find.text('Block sender pattern'), findsOneWidget);
     });
 
-    testWidgets('absent for an ordinary sender and for news_ with letters',
-        (tester) async {
+    testWidgets('absent for an ordinary sender', (tester) async {
       await _open(tester);
+      expect(find.text('Block sender pattern'), findsNothing);
+    });
+
+    // Sprint 83 7.7.1 pass-2 F6: the name above promised this case.
+    testWidgets('absent for news_ followed by letters', (tester) async {
+      await _open(tester, from: 'news_abcd@any-shop.com');
       expect(find.text('Block sender pattern'), findsNothing);
     });
   });

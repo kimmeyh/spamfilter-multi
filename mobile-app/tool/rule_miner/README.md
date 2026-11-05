@@ -101,8 +101,10 @@ It holds private mail text: keep it, the YAML and the report out of the repo.
 
 - Groups (R-5, R-6): one record per email (Message-ID, else From + Date +
   Subject). A Trash2 email a current delete rule matches is **rule-deleted** (the
-  only mining pool). One no delete rule matches is **hand-deleted**: counted for
-  information, never for or against a candidate. A Trash2 email from a current
+  only mining pool). One no delete rule matches is **hand-deleted**: it never
+  feeds the mining pool and never fails a candidate, but a hit on it counts as new
+  coverage, so a candidate that hits only hand-deleted mail is still reported
+  (listed after the ones that hit No Rule mail). A Trash2 email from a current
   safe sender is safe-sender mail.
 - Kinds (R-2, R-3): subject phrase, body phrase, body-URL domain, sender domain,
   sender local-part shape (`news_` plus digits), header value (Reply-To domain,
@@ -136,7 +138,8 @@ results: `docs/research/F310_SAFE_SENDER_MINING.md`.
 - **The gate (R-3, AC-2)**: every suggestion requires the stored auth class
   `green`. A candidate built without the gate is never reported, whatever its
   score. The gate is a PROXY: stored data holds the class only, not a DMARC
-  verdict (green = every SPF/DKIM/DMARC method that returned a verdict passed).
+  verdict (green = every SPF/DKIM/DMARC method that returned a verdict passed, so
+  green is a proxy for DMARC pass, not the same thing).
   The runtime suggestion (F270) must test DMARC pass from the raw header.
 - Threshold: at least 5 gate-proven safe-sender emails, at most 2 delete-rule hits
   AND at most 0.5 percent of the delete-rule mail it could be checked on.

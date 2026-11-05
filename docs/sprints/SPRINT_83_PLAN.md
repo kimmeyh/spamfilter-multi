@@ -288,7 +288,7 @@ three platforms. M-6 is Windows only (the toast activator is Windows's activatio
   channels"; channels exist from Android 8.0, API 26); Windows has no app-defined sub-settings for a desktop app's
   toasts (UNVERIFIED); iOS has no user-visible per-category notification switches (UNVERIFIED). If either unverified
   fact is false, the card follows the vendor page and records it.
-- R-1: the choice has two values, "Every completed scan" and "Only when there are No Rule items". It is decided in
+- R-1: the choice has two values, "Every completed scan" (renamed in Manual Validation 2026-11-04: Every Completed Scan) and "Only when there are No Rule items" (renamed in Manual Validation 2026-11-04: Only when one or more No Rule items). It is decided in
   shared code (`ScanCompleteNotifier.post` or `BackgroundScanCore`), so the Windows worker, the Android worker and the
   future iPhone worker all obey it. Default: Q2.
 - R-2 (by Q1): where the user sets it, per platform (see Q1 for the options). The text is the same on every
@@ -327,7 +327,7 @@ An Android channel's behavior cannot be changed by the app after it is created (
 importance are chosen once and recorded in the card.
 
 **Acceptance criteria**:
-- AC-1: with "Only when there are No Rule items", a completed scan with No Rule 0 posts nothing, and one with No Rule
+- AC-1: with "Only when there are No Rule items" (renamed in Manual Validation 2026-11-04: Only when one or more No Rule items), a completed scan with No Rule 0 posts nothing, and one with No Rule
   1 posts one notification; with "Every completed scan", both post (shared-code test, both workers' call paths).
 - AC-2: the sign-in-needed notification posts in both settings.
 - AC-3: the control is on the named screen with the same text on Windows and Android (widget test per platform
@@ -349,8 +349,8 @@ proven by T-1 and T-2 (no device this sprint).
 
 **Result (Phase 4)**: built 2026-11-02 (Sonnet 5.5 sub-agent).
 - **What**: `ScanCompleteNotifier.post` now decides WHETHER to notify (shared Dart, so the Windows worker, the Android worker and the future iPhone worker all obey it) and returns `ScanNotificationOutcome` (`posted` / `skippedByChoice` / `failed`) instead of a bool, so both workers' log lines tell a deliberate skip from a failure. Setting: one `app_settings` key `scan_notify_choice` (`every` / `noRuleOnly`), no schema change, default `noRuleOnly` (Q2 = 1).
-- **User-visible control**: Settings > Background tab, directly under the "Scan every" control, a row titled "Scan notifications". Windows, iPhone and Android 7.x: a dropdown with "Every completed scan" and "Only when there are No Rule items" (default). Android 8.0+: help text "Android decides which scans notify you. Open Android notification settings and turn off "Scans with nothing to review" to be told only when there are No Rule items." and a button "Open notification settings" (native `ACTION_APP_NOTIFICATION_SETTINGS`, falls back to App info below API 26). If the page cannot be opened the row says so.
-- **Android channels (chosen once, cannot change later)**: `scan_with_no_rule_channel` "Scans with No Rule items", Importance.low; `scan_nothing_to_review_channel` "Scans with nothing to review", Importance.low (low = no sound, the same as the old channel, so current testers see no change in loudness). The channel is picked by the No Rule count (above 0 = first).
+- **User-visible control**: Settings > Background tab, directly under the "Scan every" control, a row titled "Scan notifications". Windows, iPhone and Android 7.x: a dropdown with "Every completed scan" and "Only when there are No Rule items" (default) (renamed in Manual Validation 2026-11-04: Every Completed Scan and Only when one or more No Rule items). Android 8.0+: help text "Android decides which scans notify you. Open Android notification settings and turn off "Scans with nothing to review" (renamed in Manual Validation 2026-11-04: Every Completed Scan) to be told only when there are No Rule items." and a button "Open notification settings" (native `ACTION_APP_NOTIFICATION_SETTINGS`, falls back to App info below API 26). If the page cannot be opened the row says so.
+- **Android channels (chosen once, cannot change later)**: `scan_with_no_rule_channel` "Scans with No Rule items" (renamed in Manual Validation 2026-11-04: One or more No Rule Items), Importance.low; `scan_nothing_to_review_channel` "Scans with nothing to review" (renamed in Manual Validation 2026-11-04: Every Completed Scan), Importance.low (low = no sound, the same as the old channel, so current testers see no change in loudness). The channel is picked by the No Rule count (above 0 = first).
 - **Interaction of the in-app choice and the channels (judgment call, Q1 = 1)**: on Android 8.0+ EVERY completed scan posts and the in-app choice is NOT read and NOT shown (two controls for one outcome would disagree; the user silences channel 2 in Android). Android 8.0+ is detected without an API level: `ensureAndroidChannels()` creates both channels and asks the plugin for its channel list, which is empty below 8.0 (flutter_local_notifications 22.3.2, `platform_flutter_local_notifications.dart:584`). A failure of that probe falls back to the in-app choice (it can only silence what the user asked to silence) and is written to the diagnostic log. A choice that cannot be read notifies.
 - **Old `background_scan_channel`**: never posted to again and DELETED (`deleteNotificationChannel`) when the new channels are created, so Android's list shows no dead entry. Side effect: a tester who had silenced the old channel gets notifications on the new ones until they silence a new one (they were all Importance.low, so this is quiet).
 - **R-3**: `postSignInNeeded` and `sign_in_needed_channel` untouched; tested under both choices.
@@ -616,7 +616,7 @@ Callers of `deleteAccountData` (Sprint 72 IMP-1; grep over `lib/` and `test/`):
 
 **Requirements**:
 - R-1 (v1, stored data only): candidates are senders seen in No Rule mail at least N times (N set by the DEV count,
-  stated in the card), whose stored authentication is GREEN (DMARC pass), never deleted by a rule or by the user, not
+  stated in the card), whose stored authentication is GREEN (DMARC pass) (Sprint 83 7.7.1: green is a proxy for DMARC pass, not the same thing), never deleted by a rule or by the user, not
   already a safe sender.
 - R-2: the Safe Senders screen shows "Suggested safe senders" above the list; each row has Accept and Reject (hides
   it; the reject is stored so it does not come back). Accept offers the three safe-sender choices the add-rule pop-up
@@ -899,7 +899,7 @@ Class 1 plus a privacy-policy change). Harold answers the numbered question in t
   history, reply threads, transactional subjects, few tracking links).
 - R-2: score each candidate with `tool/rule_eval` against delete-rule mail; report only those that almost never match
   spam.
-- R-3: a safe-sender suggestion always requires DMARC pass; content alone never suggests a safe sender.
+- R-3: a safe-sender suggestion always requires DMARC pass; content alone never suggests a safe sender. (Sprint 83 7.7.1: green is a proxy for DMARC pass, not the same thing.)
 - R-4: output is a report only.
 
 **Affected components / files**: `mobile-app/tool/rule_miner/` (the Task 7 mode, safe side);

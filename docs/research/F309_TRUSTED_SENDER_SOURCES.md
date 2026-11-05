@@ -110,7 +110,7 @@
 
 ## How each combines with dmarc=pass (R-2)
 
-- Rule for all: the candidate must already be GREEN (DMARC pass) under the Task 5 rules. A list match never
+- Rule for all: the candidate must already be GREEN under the Task 5 rules. Stored green is a proxy for DMARC pass, not the same thing: DMARC pass is not kept per email. A list match never
   replaces it.
 - `.gov` match plus GREEN: show a hint on the suggestion row ("Government domain"). Suggest only. The user taps
   Accept.

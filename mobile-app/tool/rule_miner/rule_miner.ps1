@@ -50,6 +50,12 @@ param(
     [switch]$ShowPhrases
 )
 $ErrorActionPreference = 'Stop'
+# Sprint 83 7.7.1: -SentJsonl is read only in reply-pair mode. With -Safe or
+# -Trash2Jsonl the mode precedence below silently ignored it, so a run the
+# developer meant as reply-pair produced a different report. Refuse instead.
+if ($SentJsonl -and ($Safe -or $Trash2Jsonl)) {
+    throw '-SentJsonl is used only in reply-pair mode; do not give it with -Safe or -Trash2Jsonl.'
+}
 $app = Split-Path -Parent (Split-Path -Parent $PSScriptRoot)
 $env:RULE_MINER_DB_DIR = (Resolve-Path -LiteralPath $DbDir).Path
 # PR #490 7.7.1: resolved against the CURRENT PowerShell location. The .NET

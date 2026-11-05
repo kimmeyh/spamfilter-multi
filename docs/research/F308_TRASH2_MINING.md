@@ -38,7 +38,8 @@ here is imported, applied or bundled.
 - **Rule-deleted (the only mining pool)**: 3,809. A Trash2 email that a current delete rule matches, or whose history
   outcome is `delete`.
 - **Hand-deleted (own group, neutral)**: 4,593. In Trash2 and no delete rule matches. Counted per candidate for
-  information, never for or against it.
+  information. It never feeds the mining pool and never fails a candidate, but a hit on it counts as new coverage (a
+  candidate that hits only hand-deleted mail is still reported, after the ones that hit No Rule mail).
 - **No Rule**: 350 history emails. **Safe-sender**: 1,459 (history mail from a current safe sender, plus Trash2 mail
   from one). 541 other history emails are not counted.
 - Current rules read: 2,212.
@@ -113,7 +114,8 @@ No URL domain hits No Rule. The strongest by hand-deleted hits: imgur.com 1,616 
 zupimages.net 363 / 0 / 632 / 0, baleama.com 198 / 0 / 226 / 0, lynkmedia.net 126 / 0 / 237 / 0. A Reply-To domain
 (keys4us.com: 23 / 0 / 247 / 0) is the one header candidate. Several subject phrases cover hundreds of hand-deleted
 emails (for example a "your photos and videos will be deleted" family: 106 / 0 / 219 / 0). Under R-6 these are
-information for Harold, not evidence for or against.
+information for Harold. They are listed because hand-deleted hits count as new coverage, but they are not evidence
+that the rule is right.
 
 ## Caveats and what was NOT checked
 
