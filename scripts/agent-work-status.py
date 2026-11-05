@@ -7,7 +7,8 @@ this one (the hourly wake-up still runs scripts\\agent-work-status.ps1).
 
 Convention (docs/SPRINT_EXECUTION_WORKFLOW.md, "Progress and restart"): each agent keeps
 <scratch folder>/<task-name>/progress.md with lines "UNIT <name>: DONE|STARTED", "LAST STEP:
-<text>" and, last, "STATUS: FINISHED".
+<text>", "RUN STARTED|STOPPED <yyyy-mm-dd HH:MM>" (Sprint 83 retro IMP-4; a finished task shows
+the summed run time) and, last, "STATUS: FINISHED".
 
 State per task folder:
     not started                    no progress.md in the folder
@@ -39,6 +40,40 @@ PROJECT_SLUG = "D--Data-Harold-github-spamfilter-multi"
 UNIT = re.compile(r"^UNIT .+: (DONE|STARTED)\s*$", re.I)
 UNIT_DONE = re.compile(r": DONE\s*$", re.I)
 LAST_STEP = re.compile(r"^LAST STEP:", re.I)
+RUN_MARK = re.compile(r"^RUN (STARTED|STOPPED)\s+(\d{4}-\d{2}-\d{2} \d{1,2}:\d{2})\s*$", re.I)
+
+
+def run_time(lines: list[str]) -> str:
+    """Sprint 83 retro IMP-4: the agent's total run time from its "RUN STARTED <time>" /
+    "RUN STOPPED <time>" lines, so a run split by usage-limit stops still has a total.
+    Never reports 0 for "unknown" (IMP-3): no RUN lines is "time not recorded", a start with
+    no stop says so, and a line that does not parse is named."""
+    from datetime import datetime
+    marks = []
+    for ln in lines:
+        if not ln.upper().startswith("RUN "):
+            continue
+        m = RUN_MARK.match(ln.strip())
+        if not m:
+            return f"run time unknown (bad line: {ln.strip()})"
+        marks.append((m.group(1).upper(), datetime.strptime(m.group(2), "%Y-%m-%d %H:%M")))
+    if not marks:
+        return "time not recorded"
+    total, start, open_runs = 0.0, None, 0
+    for kind, when in marks:
+        if kind == "STARTED":
+            if start is not None:
+                open_runs += 1  # a run that stopped without a RUN STOPPED line
+            start = when
+        elif start is not None:
+            total += (when - start).total_seconds() / 60
+            start = None
+    if start is not None:
+        open_runs += 1
+    text = f"run time {round(total)} min"
+    if open_runs:
+        text += f" + {open_runs} run(s) with no RUN STOPPED"
+    return text
 
 
 def claude_temp_roots() -> list[Path]:
@@ -103,7 +138,7 @@ def task_line(task: Path) -> str:
     units = [ln for ln in lines if UNIT.match(ln)]
     done = sum(1 for ln in units if UNIT_DONE.search(ln))
     if lines and lines[-1].strip().upper() == "STATUS: FINISHED":
-        return f"  {task.name}: finished ({done} unit(s) done)"
+        return f"  {task.name}: finished ({done} unit(s) done; {run_time(lines)})"
     steps = [ln for ln in lines if LAST_STEP.match(ln)]
     if not units and not steps:
         return f"  {task.name}: started, nothing saved"

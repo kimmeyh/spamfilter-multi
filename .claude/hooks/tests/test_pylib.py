@@ -350,11 +350,26 @@ class AgentWorkStatusTests(unittest.TestCase):
             "  a_not_started: not started",
             "  b_empty: started, nothing saved",
             "  c_progress: in progress (1/2 unit(s) done) -- LAST STEP: wrote two",
-            "  d_finished: finished (1 unit(s) done)",
+            "  d_finished: finished (1 unit(s) done; time not recorded)",
             "  e_units_only: in progress (0/1 unit(s) done) -- UNIT only: STARTED"])
         self.assertEqual(lines[7], "Mutation locks:")
         self.assertRegex(lines[8], r"^  old\.md -- test \(agent unit-test, 7[45] min\) \[OVER 1 HOUR\]$")
         self.assertRegex(lines[9], r"^Sprint phase: (Sprint \S+: .+|unknown)$")
+
+    def test_run_time_adds_up_runs_split_by_stops(self):
+        """Sprint 83 retro IMP-4: a task split by usage-limit stops still has a total, and
+        an unknown time is never reported as 0 (IMP-3)."""
+        spec = importlib.util.spec_from_file_location("aws_rt", REPO / "scripts" / "agent-work-status.py")
+        aws = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(aws)
+        self.assertEqual(aws.run_time([
+            "RUN STARTED 2026-11-05 01:00", "UNIT a: DONE", "RUN STOPPED 2026-11-05 01:40",
+            "RUN STARTED 2026-11-05 06:00", "RUN STOPPED 2026-11-05 06:25"]), "run time 65 min")
+        self.assertEqual(aws.run_time(["UNIT a: DONE"]), "time not recorded")
+        self.assertEqual(aws.run_time([
+            "RUN STARTED 2026-11-05 01:00", "RUN STARTED 2026-11-05 02:00",
+            "RUN STOPPED 2026-11-05 02:10"]), "run time 10 min + 1 run(s) with no RUN STOPPED")
+        self.assertTrue(aws.run_time(["RUN STARTED soon"]).startswith("run time unknown"))
 
     def test_default_lookup_finds_this_projects_newest_session_under_any_parent(self):
         """Sprint 83 7.7.1 (code-reviewer L-4, silent-failure-hunter L-1): sessions live under

@@ -50,6 +50,13 @@
 .PARAMETER ExpectAllow
   Assert the hook ALLOWS (exit 0). Exits 1 if it does not.
 
+.NOTES
+  Exit codes: 0 = the probe ran and every assertion held; 1 = an assertion
+  failed OR the hook crashed (any exit other than 0 or 2); 2 = this script
+  could not run the hook. A crashed hook is never reported as success, with or
+  without -ExpectBlock / -ExpectAllow (Sprint 83 retro IMP-3, Harold: "the
+  script should never crash with a success").
+
 .EXAMPLE
   # Does the stash guard still catch a real stash?
   scripts\test-hook.ps1 stash-guard.ps1 -Command 'git stash push -m wip' -ExpectBlock
@@ -133,11 +140,24 @@ if ($resolved -like '*.py') {
         Write-Output 'python not found on PATH. .claude/settings.json runs hooks with "python", so the real hook cannot run either.'
         exit 2
     }
-    $stderr = $payload | & $py $resolved 2>&1
+}
+# Sprint 83 retro IMP-3: under Windows PowerShell 5.1 with ErrorActionPreference
+# 'Stop', "2>&1" turns the hook's FIRST stderr line into a terminating
+# NativeCommandError, so this script died (exit 1) on every hook that BLOCKS
+# with a message -- -ExpectBlock failed on a hook that worked. The hook's
+# stderr is its verdict text, not a probe error: read it with 'Continue'.
+$ErrorActionPreference = 'Continue'
+# A stderr line arrives as an ErrorRecord whose TargetObject is the original
+# text (a blank line would otherwise print as "RemoteException").
+$asText = { if ($_ -is [System.Management.Automation.ErrorRecord]) { "$($_.TargetObject)" } else { "$_" } }
+if ($resolved -like '*.py') {
+    $stderr = $payload | & $py $resolved 2>&1 | ForEach-Object $asText
 } else {
-    $stderr = $payload | & powershell -NoProfile -ExecutionPolicy Bypass -File $resolved 2>&1
+    $stderr = $payload | & powershell -NoProfile -ExecutionPolicy Bypass -File $resolved 2>&1 |
+        ForEach-Object $asText
 }
 $code = $LASTEXITCODE
+$ErrorActionPreference = 'Stop'
 
 # Sprint 83 7.7.1 (code-reviewer pass 2 F1 HIGH, silent-failure-hunter M-3):
 # Claude Code blocks ONLY on exit 2. Any other non-zero exit is a hook ERROR
@@ -168,7 +188,16 @@ if ($ExpectAllow -and $code -ne 0) {
     Write-Output "FAIL: expected ALLOW (exit 0), got $verdict."
     exit 1
 }
+# Sprint 83 retro IMP-3: a crashed hook fails the probe even with no -Expect
+# switch. Before this, a plain probe of a crashed hook printed "HOOK ERROR" and
+# still exited 0, so a caller that read only the exit code saw success.
+if ($code -ne 0 -and $code -ne 2) {
+    Write-Output ''
+    Write-Output "FAIL: the hook crashed ($verdict)."
+    exit 1
+}
 if ($ExpectBlock -or $ExpectAllow) {
     Write-Output ''
     Write-Output 'PASS'
 }
+exit 0

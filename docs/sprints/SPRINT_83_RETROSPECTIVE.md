@@ -247,4 +247,28 @@ None.
 
 ## Improvement Decisions
 
-Awaiting Harold.
+Harold, 2026-11-05, verbatim: *"imp-1 why are we copying code - can't we take the 6 copies and merge them into
+one and then, if needed, the prior copied section can have code before/after to do what is needed (or seperate
+functions). Does that make more sense and align to the KISS principle/12-factor app better - note this is a
+discussion before deciding what to do. imp-2 b imp-3 the script should never crash with a success. Update the
+script as needed imp-4 do now | Review questions Q1 1 q2 1 q3 2 q4 did it use gh cli? 1"*
+
+- **IMP-1**: DISCUSSION PENDING (Harold asked a question before deciding). Facts given in reply: the 3 class A
+  copies were already merged into one shared function or list by the 7.7.1 fixes (bab21526, 76f8a2bb,
+  c1d9a2c6); the other 3 of the 6 are class D (test names), not code copies. IMP-1 is a self-review check that
+  catches the NEXT copy. The Q1 fix applied the principle: one `selectBodyText` and one Gmail decoder.
+- **IMP-2**: part (b) only. `SPRINT_EXECUTION_WORKFLOW.md` 5.4: an MV answer that renames or changes a behavior
+  records `Swept: grep '<old text>' -> N hits fixed`. Part (a), the ADR status policy test, is not done.
+- **IMP-3**: done. `scripts/test-hook.ps1` exits 1 when the hook it runs crashes, with or without `-ExpectBlock` /
+  `-ExpectAllow` (before: exit 0 without a switch). Found while proving it on a REAL hook: under Windows
+  PowerShell 5.1 the script died (exit 1) on every Python hook that blocks with a message, because
+  `$ErrorActionPreference = 'Stop'` made the hook's stderr a terminating error; fixed. Probe, 8 cases (real
+  `block-blind-staging.py` BLOCK / ALLOW with both switches, a crashing hook with and without a switch, synthetic
+  block and allow, and the PowerShell stash guard): all as expected. Prevention: the 5.1.2 question "what does it
+  print and return when its input matched nothing, the call did nothing, or the thing it runs crashed?" for every
+  script, hook and tool, and the rule in `TESTING_STRATEGY.md` "Testing Tools and Scripts".
+- **IMP-4**: done. The Progress and restart block adds `RUN STARTED` / `RUN STOPPED <yyyy-mm-dd HH:MM>` lines;
+  `agent-work-status` prints the summed run time on a finished task, "time not recorded" when there are no RUN
+  lines (never 0), and names a run with no stop. Test: `test_pylib` `test_run_time_adds_up_runs_split_by_stops`.
+- **Q1 = 1, Q2 = 1, Q3 = 2**: done in c9f21abf (5 mutants, all KILLED).
+- **Q4 = 1** (yes, it was the GitHub CLI, `gh api`): the 3 replies are posted and the 3 threads resolved.
