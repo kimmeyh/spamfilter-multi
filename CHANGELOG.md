@@ -27,6 +27,9 @@ Format: `- **type**: Description (Issue #N)` where type is feat|fix|chore|docs
 ## [Unreleased]
 
 ### 2026-11-05 (Sprint 83 final code reviews)
+- **fix**: Body rules now match the text of an email that has only an HTML part (the HTML is read as text, the same text the pop-up's Block Body reads); before, a Block Body rule saved from such an email could never match it. Gmail also reads a plain-text part nested inside the message, not only one at the top level (Issue #537)
+- **fix**: An IMAP account (AOL, Yahoo, iCloud, custom) that shows "Sign In Again" is no longer signed in to by background scans or by the No Rule pop-up until the user signs in again; before, every background run and every pop-up sent the refused password again, and each one counted toward the provider's lockout (Issue #538)
+- **fix**: Saving an account's password again clears "Sign In Again" but keeps the failed-sign-in lockout count until a sign-in succeeds; before, a re-save reset the count even when the new password was never tried (Issue #538)
 - **fix**: When the saved list of hidden safe-sender suggestions is damaged, Reject now explains it and offers "Reset", which clears that list and hides the suggestion; before, every Reject failed with no way out (Issue #539)
 - **fix**: The account list says "Could not check whether this account needs a new sign-in" and offers Sign In Again when the account's sign-in state cannot be read; before, the row looked healthy (Issue #538)
 

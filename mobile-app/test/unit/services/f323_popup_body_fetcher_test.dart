@@ -108,8 +108,10 @@ void main() {
   PopupBodyFetcher fetcher(_FakePlatform? platform,
       {Future<ScanLease> Function(String)? lease,
       Future<InteractiveScanClaim> Function(String)? claim,
-      bool credentials = true}) {
+      bool credentials = true,
+      Future<bool> Function(String)? signInRequired}) {
     return PopupBodyFetcher(
+      signInRequiredReader: signInRequired ?? (_) async => false,
       platformFactory: (_) => platform,
       credentialsLoader: (_) async =>
           credentials ? Credentials(email: 'a@b.example', password: 'x') : null,
@@ -236,6 +238,42 @@ void main() {
         throwsA(isA<PopupBodyUnavailable>()));
     expect(p.calls, ['disconnect']);
     await expectNothingHeld();
+  });
+
+  // Sprint 83 7.7.1 (Harold Q2 = 1). Would NOT catch: the background skip
+  // (f324_imap_sign_in_skip_test) or a flag that was never set.
+  test('a flagged IMAP account: no lease, no claim, no login', () async {
+    final p = _FakePlatform();
+    var leased = false;
+    await expectLater(
+        fetcher(p,
+                signInRequired: (_) async => true,
+                lease: (id) async {
+                  leased = true;
+                  return ScanCoordinator.instance
+                      .acquire(scanType: 'reprocess', accountId: id);
+                })
+            .fetch(platformId: 'aol', accountId: account, message: _msg()),
+        throwsA(isA<PopupBodyUnavailable>()
+            .having((e) => e.why, 'why', 'sign-in required')));
+    expect(p.calls, isEmpty, reason: 'no login sent to the provider');
+    expect(leased, isFalse);
+    await expectNothingHeld();
+  });
+
+  test('an unreadable flag lets the read go ahead', () async {
+    final p = _FakePlatform();
+    final body = await fetcher(p,
+            signInRequired: (_) async => throw StateError('damaged'))
+        .fetch(platformId: 'aol', accountId: account, message: _msg());
+    expect(body, 'see https://x.example');
+  });
+
+  test('the flag is not read for a non-IMAP platform (Gmail)', () async {
+    final p = _FakePlatform();
+    final body = await fetcher(p, signInRequired: (_) async => true)
+        .fetch(platformId: 'gmail', accountId: account, message: _msg());
+    expect(body, 'see https://x.example');
   });
 
   test('an unknown platform throws and releases', () async {

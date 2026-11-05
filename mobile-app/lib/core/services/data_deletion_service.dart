@@ -255,8 +255,9 @@ class DataDeletionService {
   /// server follows the new credentials. The user's choices
   /// ([accountSettingKeysKept]) and the scan history are left alone.
   ///
-  /// Always cleared: the sign-in-required flag and its notice time, and the
-  /// failed-password lockout count. With [resetServerState] (a new account or a
+  /// Always cleared: the sign-in-required flag and its notice time. NOT
+  /// cleared: the failed-password lockout count, which resets only on a
+  /// successful login (7.7.1 Q3 = 2). With [resetServerState] (a new account or a
   /// replaced one, not a plain password repair) also the per-folder cursors,
   /// the legacy history id and the background schedule rows, because a new
   /// server or mailbox can have different UIDs and history ids.
@@ -276,7 +277,10 @@ class DataDeletionService {
           'gmail_sign_in_notified_at',
         ],
       );
-      await _deleteRateLimit(txn, accountId);
+      // Sprint 83 7.7.1 (Harold Q3 = 2): the failed-password lockout count is
+      // NOT cleared here. Saving a password proves nothing; the count resets
+      // only when a login succeeds (`AuthRateLimiter.recordSuccess` in
+      // `GenericIMAPAdapter.loadCredentials`). Account delete still clears it.
       if (resetServerState) {
         await txn.delete('account_folder_cursors',
             where: 'account_id = ?', whereArgs: [accountId]);

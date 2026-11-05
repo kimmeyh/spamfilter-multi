@@ -9,9 +9,16 @@
 /// it never blocks the pop-up and never shows an error dialog.
 ///
 /// TEXT: read with `fetchContentText` (text/plain, else the HTML part as
-/// text), not the rule-path `fetchFullBody`, which keeps text/plain only and so
-/// read every HTML-only message as empty. `fetchFullBody` remains the fallback
-/// for providers whose `fetchContentText` is the named no-op (demo, mock).
+/// text). Since Sprint 83 7.7.1 (Harold Q1 = 1) the rule path `fetchFullBody`
+/// selects the same text, so a Block Body rule matches the text read here;
+/// `fetchContentText` is kept because it THROWS on a failed fetch where
+/// `fetchFullBody` degrades. `fetchFullBody` remains the fallback for
+/// providers whose `fetchContentText` is the named no-op (demo, mock).
+///
+/// SIGN-IN: an IMAP account flagged "Sign In Again" is not read (Sprint 83
+/// 7.7.1, Harold Q2 = 1): no login is sent, so opening pop-ups does not add
+/// refused logins toward the provider's lockout. The cell shows "Could not
+/// read message"; the account list shows "Sign In Again".
 ///
 /// FAILURE: `fetchContentText` THROWS on a failed IMAP or Gmail fetch; the
 /// throw reaches the caller. No text at all throws [PopupBodyUnavailable]. The
@@ -33,6 +40,7 @@ import '../../adapters/storage/secure_credentials_store.dart';
 import '../models/email_message.dart';
 import '../storage/database_helper.dart';
 import '../storage/scan_result_store.dart';
+import '../storage/settings_store.dart';
 import 'scan_coordinator.dart';
 
 /// The body could not be read, or the message has no text part.
@@ -51,7 +59,10 @@ class PopupBodyFetcher {
     Future<Credentials?> Function(String accountId)? credentialsLoader,
     Future<ScanLease> Function(String accountId)? leaseAcquirer,
     Future<InteractiveScanClaim> Function(String accountId)? claimer,
-  })  : _platformFactory = platformFactory ?? PlatformRegistry.getPlatform,
+    Future<bool> Function(String accountId)? signInRequiredReader,
+  })  : _signInRequiredReader = signInRequiredReader ??
+            ((id) => SettingsStore().getGmailSignInRequired(id)),
+        _platformFactory = platformFactory ?? PlatformRegistry.getPlatform,
         _credentialsLoader = credentialsLoader ??
             ((id) => SecureCredentialsStore().getCredentials(id)),
         _leaseAcquirer = leaseAcquirer ??
@@ -72,6 +83,7 @@ class PopupBodyFetcher {
   final Future<Credentials?> Function(String accountId) _credentialsLoader;
   final Future<ScanLease> Function(String accountId) _leaseAcquirer;
   final Future<InteractiveScanClaim> Function(String accountId) _claimer;
+  final Future<bool> Function(String accountId) _signInRequiredReader;
 
   static final Logger _logger = Logger();
 
@@ -92,6 +104,22 @@ class PopupBodyFetcher {
     required EmailMessage message,
   }) async {
     if (debugDisabled) throw PopupBodyUnavailable('disabled in tests');
+    // Sprint 83 7.7.1 (Harold Q2 = 1): no login for an IMAP account flagged
+    // "Sign In Again"; the provider already refused its password, and each
+    // retry counts toward the provider's lockout. Checked before the lease, so
+    // nothing is opened. A flag that cannot be READ lets the read go ahead
+    // (the same login a scan would make); it is logged.
+    if (PlatformRegistry.imapPlatformIds.contains(platformId)) {
+      bool flagged;
+      try {
+        flagged = await _signInRequiredReader(accountId);
+      } catch (e) {
+        _logger.w('Block Body fetch: sign-in state not readable '
+            '(${e.runtimeType}); reading the message');
+        flagged = false;
+      }
+      if (flagged) throw PopupBodyUnavailable('sign-in required');
+    }
     ScanLease? lease;
     InteractiveScanClaim? claim;
     SpamFilterPlatform? platform;
@@ -114,10 +142,8 @@ class PopupBodyFetcher {
         await platform.loadCredentials(credentials);
       }
       // 5.1.9 rehearsal (Sprint 83): [SpamFilterPlatform.fetchContentText]
-      // first. The rule-path body ([fetchFullBody]) is the text/plain part
-      // ONLY, so an HTML-only message read as empty and showed "Could not read
-      // message" on 3 of 3 live DEV AOL items. fetchContentText falls back to
-      // the HTML part as text, and THROWS on a failed fetch (IMAP, Gmail).
+      // first. It selects the same text as the rule path (text/plain, else
+      // the HTML part as text) and THROWS on a failed fetch (IMAP, Gmail).
       final text = await platform.fetchContentText(message);
       if (text != null && text.trim().isNotEmpty) return text;
       // Null: no text in the message, or a provider without a real

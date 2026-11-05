@@ -223,7 +223,9 @@ void main() {
           await testHelper.dbHelper.getGmailHistoryCursor(accountA, 'INBOX'),
           isNull);
       final db = await testHelper.dbHelper.database;
-      expect(await db.query('auth_rate_limit'), isEmpty);
+      // 7.7.1 Q3 = 2: the lockout count is kept until a login succeeds.
+      expect((await db.query('auth_rate_limit')).map((r) => r['account_id']),
+          ['icloud-$accountA']);
       expect(await settings.getAccountBackgroundEnabled(accountA), isTrue,
           reason: 'a user choice is not a re-add refresh');
     });
@@ -235,8 +237,13 @@ void main() {
 
       expect(await settings.getGmailSignInRequired(accountA), isFalse);
       final db = await testHelper.dbHelper.database;
-      expect(await db.query('auth_rate_limit'), isEmpty,
-          reason: 'a new password must not start locked out');
+      // Sprint 83 7.7.1 (Harold Q3 = 2): saving a password proves nothing, so
+      // the lockout count stays until a login succeeds. Would NOT catch: a
+      // successful login that fails to reset the count (auth_rate_limiter_test
+      // covers recordSuccess).
+      expect((await db.query('auth_rate_limit')).map((r) => r['account_id']),
+          ['icloud-$accountA'],
+          reason: 'a re-save must not reset the lockout count');
       expect(
           await testHelper.dbHelper.getGmailHistoryCursor(accountA, 'INBOX'),
           '99');

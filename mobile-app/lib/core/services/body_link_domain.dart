@@ -8,10 +8,12 @@
 ///
 /// The text read here must be the text the saved rule will be matched against.
 /// `RuleEvaluator` matches a body rule against the body that
-/// `SpamFilterPlatform.fetchFullBody` returns (the text/plain part), so the
-/// pop-up passes exactly that string. An HTML-only message with no text part
-/// has no links here, and so gets no Block Body suggestion. That is the stated
-/// boundary, not a defect: a rule built from HTML links could never fire on it.
+/// `SpamFilterPlatform.fetchFullBody` returns. Since Sprint 83 7.7.1 (Harold
+/// Q1 = 1) that is the text/plain part, else the HTML part converted to text
+/// (`content_text_extractor.dart` `selectBodyText`), the same text the pop-up
+/// reads with `fetchContentText`. Links are found in the TEXT: an HTML link
+/// whose address appears only in its `href` attribute is not in the text, so
+/// it is not a candidate here and a rule could not match it either.
 ///
 /// SEC-14: the body is read in memory for the pop-up and never stored. Only the
 /// resulting domain reaches a rule.

@@ -690,8 +690,9 @@ class _AccountSetupScreenState extends State<AccountSetupScreen> {
     required String displayName,
   }) async {
     // F324 (Sprint 83, Q3 = 3): the new sign-in starts clean. The user's
-    // choices and scan history are kept; the old sign-in's flag, lockout count
-    // and (unless this is a plain password repair) scan positions are cleared.
+    // choices and scan history are kept; the old sign-in's flag and (unless
+    // this is a plain password repair) scan positions are cleared. 7.7.1
+    // Q3 = 2: the lockout count is kept until a login succeeds.
     // A failure does not stop the add (the credentials are already saved), but
     // it can leave the old scan positions in place, so the user is told after
     // the scan-mode read (5.1.2 F1).

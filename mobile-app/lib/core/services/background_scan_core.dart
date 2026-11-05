@@ -427,6 +427,41 @@ class BackgroundScanCore {
       return AccountScanOutcome.skipped(reason, EmailScanProvider());
     }
 
+    // Sprint 83 7.7.1 (Harold Q2 = 1): an IMAP account flagged "Sign In
+    // Again" gets NO background login until the user signs in again (a
+    // re-save clears the flag; so does any successful login, such as a
+    // manual scan). Before, every background run sent the refused password
+    // again, and each refusal counted toward the provider's lockout. The user
+    // is still reminded once a day, as for the first refusal. A flag that
+    // cannot be READ lets the scan go ahead (the login decides, as before);
+    // it is logged. Gmail is unchanged: its renewal sends no password.
+    if (imapPlatformIds.contains(platformId)) {
+      bool flagged;
+      try {
+        flagged = await settingsStore.getGmailSignInRequired(accountId);
+      } catch (e) {
+        _logger.w('Sign-in state not readable for '
+            '${Redact.accountId(accountId)} ($e); scanning');
+        flagged = false;
+      }
+      if (flagged) {
+        _logger.i('Background scan SKIPPED for ${Redact.accountId(accountId)} '
+            'before login: $imapSignInRequiredReason');
+        unawaited(DiagnosticLogger.scanEvent(
+            scanType: 'background',
+            accountId: accountId,
+            stage: 'skip',
+            detail: 'flagged, no login: $imapSignInRequiredReason'));
+        await GmailSignInNotifier.notifyIfDue(
+            accountId: accountId,
+            settingsStore: settingsStore,
+            providerName: _imapProviderName(platformId));
+        return AccountScanOutcome.skipped(
+            imapSignInRequiredReason, EmailScanProvider(),
+            needsSignIn: true);
+      }
+    }
+
     // Get effective background scan settings for this account
     final scanMode = await settingsStore.getEffectiveScanMode(
       accountId,
@@ -532,8 +567,8 @@ class BackgroundScanCore {
       // R-4 (Sprint 83, F324): an IMAP provider (iCloud, AOL, Yahoo, custom)
       // REFUSED the login (`generic_imap_adapter.dart` `classifyLoginRefusal`
       // -> credentials). The same handling as the Gmail sign-in skip above: a
-      // skip (not a failure, so nothing retries it on a timer and the failed
-      // login is not repeated into the provider's lockout), the account is
+      // skip (not a failure, so nothing retries it on a timer), the account is
+      // then skipped BEFORE login on later runs (the flag check above); it is
       // already flagged "Sign In Again" by the adapter, and the user is told
       // once a day. Gmail's own plain AuthenticationException (an outage, not
       // a refused sign-in; see gmail_api_adapter.dart "Gmail OAuth not

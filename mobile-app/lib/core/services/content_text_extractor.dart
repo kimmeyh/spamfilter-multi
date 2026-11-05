@@ -1,12 +1,13 @@
-/// R76-4 (Sprint 78, ADR-0047): plain text from an email body, for the
-/// dev-only content history.
+/// R76-4 (Sprint 78, ADR-0047): plain text from an email body. First written
+/// for the dev-only content history; since Sprint 83 7.7.1 (Harold Q1 = 1) it
+/// is also the text body rules match against, so a Block Body rule made from
+/// the pop-up matches the text the pop-up read.
 ///
 /// Pure functions, so both adapters share ONE copy and tests need no network:
-/// - [htmlToText]: a readable text version of an HTML-only body (the IMAP and
-///   Gmail rule paths keep text/plain only and drop HTML-only bodies, which is
-///   NOT changed -- rule matching is out of scope for R76-4).
-/// - [gmailPartText]: walks a Gmail payload's NESTED multipart tree (the rule
-///   path looks one level deep only).
+/// - [selectBodyText]: the one rule for which part is "the text": text/plain
+///   when it has content, else the HTML part converted with [htmlToText].
+/// - [htmlToText]: a readable text version of an HTML-only body.
+/// - [gmailPartText]: walks a Gmail payload's NESTED multipart tree.
 /// - [capContentText]: the 64 KB cap (ADR-0047 item 5), cut on a character
 ///   boundary.
 library;
@@ -91,11 +92,17 @@ String _decodeEntities(String s) {
 }
 
 /// Gmail body data is base64url; decoded leniently (padding optional).
-String _decodeGmailData(String data) {
-  var normalized = data.replaceAll('-', '+').replaceAll('_', '/');
-  final pad = normalized.length % 4;
-  if (pad != 0) normalized = normalized.padRight(normalized.length + 4 - pad, '=');
-  return utf8.decode(base64.decode(normalized), allowMalformed: true);
+/// F185 (Sprint 63) contract: input that is not base64url comes back as the
+/// raw string (never throws, so one bad part cannot drop a message from a
+/// scan); malformed UTF-8 is replaced. Sprint 83 7.7.1: the ONE Gmail decoder
+/// (`GmailApiAdapter.decodeGmailBodyData` calls it).
+String decodeGmailData(String data) {
+  try {
+    return utf8.decode(base64Url.decode(base64Url.normalize(data)),
+        allowMalformed: true);
+  } catch (_) {
+    return data;
+  }
 }
 
 /// The text of a Gmail payload: the first text/plain part anywhere in the
@@ -106,7 +113,7 @@ String? gmailPartText(gmail.MessagePart? part) {
   String? find(gmail.MessagePart p, String mime) {
     final isAttachment = (p.filename ?? '').isNotEmpty;
     if (!isAttachment && p.mimeType == mime && p.body?.data != null) {
-      return _decodeGmailData(p.body!.data!);
+      return decodeGmailData(p.body!.data!);
     }
     for (final child in p.parts ?? const <gmail.MessagePart>[]) {
       final found = find(child, mime);
@@ -115,9 +122,17 @@ String? gmailPartText(gmail.MessagePart? part) {
     return null;
   }
 
-  final plain = find(part, 'text/plain');
+  return selectBodyText(
+      plain: find(part, 'text/plain'), html: find(part, 'text/html'));
+}
+
+/// The text of a message from its decoded parts: [plain] when it has content;
+/// else [html] converted with [htmlToText]; else [plain] (null or blank).
+/// Sprint 83 7.7.1 (Harold Q1 = 1): the ONE selection used by the pop-up read
+/// (`fetchContentText`) and the rule path (IMAP `_convertMimeMessage`, Gmail
+/// `_convertGmailMessage` via [gmailPartText]), so the two cannot differ.
+String? selectBodyText({String? plain, String? html}) {
   if (plain != null && plain.trim().isNotEmpty) return plain;
-  final html = find(part, 'text/html');
   if (html != null) return htmlToText(html);
   return plain;
 }

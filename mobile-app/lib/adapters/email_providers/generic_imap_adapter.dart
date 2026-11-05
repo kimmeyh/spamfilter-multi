@@ -2372,19 +2372,23 @@ class GenericIMAPAdapter with BatchOperationsMixin
   /// R76-4 (Sprint 78, ADR-0047): the message's plain text for the dev-only
   /// content history -- text/plain when present, else the HTML part converted
   /// to text (enough_mail searches nested parts for both). The rule path
-  /// ([fetchFullBody]) is unchanged.
+  /// ([fetchFullBody]) selects the same text ([_mimeText]); this method
+  /// differs only in that a failed fetch throws.
   @override
   Future<String?> fetchContentText(EmailMessage message) async {
     // A failed fetch THROWS (7.7.1 silent-failure M-3): it is not "no text".
     final mime = await _fetchMimeMessage(message, 'fetchContentText',
         throwOnFailure: true);
     if (mime == null) return null;
-    final plain = mime.decodeTextPlainPart();
-    if (plain != null && plain.trim().isNotEmpty) return plain;
-    final html = mime.decodeTextHtmlPart();
-    if (html != null) return htmlToText(html);
-    return plain;
+    return _mimeText(mime);
   }
+
+  /// Sprint 83 7.7.1 (Harold Q1 = 1): the message text for BOTH the rule path
+  /// and the pop-up read -- text/plain, else the HTML part as text
+  /// ([selectBodyText]). Before, the rule path kept text/plain only, so a Block
+  /// Body rule saved from an HTML-only message could never match it.
+  static String? _mimeText(MimeMessage mime) => selectBodyText(
+      plain: mime.decodeTextPlainPart(), html: mime.decodeTextHtmlPart());
 
   /// One message's full MIME source, or null (logged) when it cannot be
   /// fetched. Shared by [fetchFullBody] and [fetchContentText]. With
@@ -2451,6 +2455,11 @@ class GenericIMAPAdapter with BatchOperationsMixin
     }
   }
 
+  /// Test seam: the rule-path conversion ([fetchFullBody] and the scan fetch).
+  @visibleForTesting
+  EmailMessage debugConvertMimeMessage(MimeMessage mime, String folderName) =>
+      _convertMimeMessage(mime, folderName);
+
   EmailMessage _convertMimeMessage(MimeMessage mimeMessage, String folderName) {
     final headersMap = <String, String>{};
     if (mimeMessage.headers != null) {
@@ -2497,7 +2506,7 @@ class GenericIMAPAdapter with BatchOperationsMixin
       id: messageId,
       from: mimeMessage.from?.first.email ?? '',
       subject: mimeMessage.decodeSubject() ?? '',
-      body: mimeMessage.decodeTextPlainPart() ?? '',
+      body: _mimeText(mimeMessage) ?? '',
       headers: headersMap,
       receivedDate: mimeMessage.decodeDate() ?? DateTime.now(),
       folderName: folderName,

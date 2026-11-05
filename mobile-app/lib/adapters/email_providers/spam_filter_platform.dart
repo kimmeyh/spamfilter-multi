@@ -58,9 +58,11 @@ abstract class SpamFilterPlatform {
 
   /// R76-4 (Sprint 78, ADR-0047 item 6): the plain text of ONE message, for
   /// the dev-only content history and (Sprint 83, F323) the pop-up's Block
-  /// Body read (`PopupBodyFetcher`). Unlike [fetchFullBody] (used by body rules
-  /// and NOT changed), an HTML-only body is converted to text and a nested
-  /// multipart tree is walked. Null ONLY when the message has no text; a
+  /// Body read (`PopupBodyFetcher`). It selects the same text as
+  /// [fetchFullBody] (Sprint 83 7.7.1, Harold Q1 = 1: text/plain, else the
+  /// HTML part as text, nested parts walked; `content_text_extractor.dart`
+  /// `selectBodyText`). Unlike [fetchFullBody], which degrades to the message
+  /// it was given, it reports failure. Null ONLY when the message has no text; a
   /// failed fetch THROWS [ContentFetchException] (7.7.1 silent-failure M-3: a
   /// null for both stored a failed fetch permanently as "no body", and later
   /// sightings never fetch again). Providers without a real implementation

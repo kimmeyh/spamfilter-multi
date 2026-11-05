@@ -146,4 +146,40 @@ void main() {
     await expectLater(scan(), throwsA(isA<ConnectionException>()));
     expect(titles, isEmpty);
   });
+
+  // Sprint 83 7.7.1 (Harold Q2 = 1): a flagged IMAP account gets no login.
+  // Would NOT catch: a pop-up read of a flagged account (f323_popup_body_
+  // fetcher_test covers that), or a flag the adapter never set (covered by
+  // f324_imap_sign_in_flag_test).
+  test('a flagged account is skipped BEFORE login, and the user is still '
+      'told once a day', () async {
+    var logins = 0;
+    usePlatform(() => _CountingPlatform(() => logins++));
+    await SettingsStore(testHelper.dbHelper).setGmailSignInRequired(_acct, true);
+
+    final outcome = await scan();
+
+    expect(logins, 0, reason: 'no refused login sent again to the provider');
+    expect(outcome.skipped, isTrue);
+    expect(outcome.needsSignIn, isTrue);
+    expect(outcome.skippedReason, BackgroundScanCore.imapSignInRequiredReason);
+    expect(titles, hasLength(1));
+  });
+
+  test('an account that is not flagged still logs in', () async {
+    var logins = 0;
+    usePlatform(() => _CountingPlatform(() => logins++));
+    await scan();
+    expect(logins, 1);
+  });
+}
+
+class _CountingPlatform extends MockEmailProvider {
+  _CountingPlatform(this.onLogin);
+  final void Function() onLogin;
+  @override
+  Future<void> loadCredentials(Credentials credentials) async {
+    onLogin();
+    throw AuthenticationException('IMAP login rejected: AUTHENTICATIONFAILED');
+  }
 }
