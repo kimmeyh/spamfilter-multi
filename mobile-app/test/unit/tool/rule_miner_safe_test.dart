@@ -18,6 +18,7 @@ import 'dart:io';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:my_email_spam_filter/core/models/rule_set.dart';
 import 'package:my_email_spam_filter/core/models/safe_sender_list.dart';
+import 'package:my_email_spam_filter/core/services/rule_quick_action_service.dart';
 import 'package:path/path.dart' as p;
 import 'package:sqflite_common_ffi/sqflite_ffi.dart';
 
@@ -102,6 +103,11 @@ void main() {
     test('a domain with enough green safe-sender mail and no spam is reported', () async {
       final r = await run([...safeFrom('goodco.example', 6), ...spamFrom('junk.example', 30)]);
       expect(reportedDomain(r, 'goodco.example'), isTrue);
+      // Sprint 83 7.7.1 pass-2 F8: the suggested pattern is the one the app
+      // saves for a safe sender (Add Safe Sender > entire domain), not the
+      // block-rule shape. Would NOT catch: a wrong builder in the app itself.
+      expect(domainOf(r, 'goodco.example')!.candidate.safePattern,
+          RuleQuickActionService.safeSenderPatternFor('entireDomain', 'goodco.example'));
       expect(r.reported.every((s) => s.candidate.gated), isTrue);
     });
 

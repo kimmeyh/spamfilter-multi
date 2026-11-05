@@ -35,6 +35,8 @@ library;
 import 'package:my_email_spam_filter/core/models/rule_set.dart';
 import 'package:my_email_spam_filter/core/models/safe_sender_list.dart';
 import 'package:my_email_spam_filter/core/services/pattern_compiler.dart';
+import 'package:my_email_spam_filter/core/services/rule_quick_action_service.dart'
+    show RuleQuickActionService;
 
 import '../rule_eval/rule_eval_core.dart';
 import 'rule_miner_core.dart';
@@ -357,7 +359,12 @@ List<SafeCandidate> generateSafeCandidates(
       continue;
     }
     k++;
-    final pattern = domainPattern(d);
+    // Sprint 83 7.7.1 (pass-2 F8): the SAFE-SENDER shape from the one builder
+    // the app saves with (F306), not domainPattern(), which is the BLOCK-rule
+    // shape. The block shape imported as a safe sender is typed differently
+    // in Manage Safe Senders than one the app adds.
+    final pattern =
+        RuleQuickActionService.safeSenderPatternFor('entireDomain', d)!;
     final re = compiler.compile(pattern);
     out.add(SafeCandidate(
         id: 'D${k.toString().padLeft(3, '0')}',

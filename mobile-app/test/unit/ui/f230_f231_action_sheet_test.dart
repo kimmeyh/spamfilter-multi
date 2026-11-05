@@ -57,7 +57,9 @@ void main() {
       final senderRowStart = popup.indexOf('displaySenderEmail,');
       expect(senderRowStart, greaterThan(-1));
       // The sender Row ends at the subtitle line; Skip must not be before it.
-      final subtitleIdx = popup.indexOf('// Subtitle line', senderRowStart);
+      // Anchored on code (the first subtitleText() call), not on a comment
+      // (Copilot PR #534): a comment can be reworded without a layout change.
+      final subtitleIdx = popup.indexOf('subtitleText(),', senderRowStart);
       expect(subtitleIdx, greaterThan(senderRowStart));
       final window = popup.substring(senderRowStart, subtitleIdx);
       // Sprint 83 MV Q1 (Harold): on a WIDE pop-up Skip sits left of the check

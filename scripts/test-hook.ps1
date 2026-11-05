@@ -125,8 +125,14 @@ if ($Json) {
 
 # F321 (Sprint 83): a Python hook (.py) runs under python; every other hook runs under PowerShell.
 if ($resolved -like '*.py') {
-    $py = (Get-Command python, python3 -ErrorAction SilentlyContinue | Select-Object -First 1).Source
-    if (-not $py) { Write-Output 'python not found on PATH (needed for a .py hook).'; exit 2 }
+    # Sprint 83 7.7.1 (Copilot PR #534): ONLY "python", the interpreter .claude/settings.json
+    # runs every hook with. A fallback (python3, py) would let this test pass on a machine
+    # where Claude Code itself cannot start the hook, so the hook would be off and the test green.
+    $py = (Get-Command python -ErrorAction SilentlyContinue | Select-Object -First 1).Source
+    if (-not $py) {
+        Write-Output 'python not found on PATH. .claude/settings.json runs hooks with "python", so the real hook cannot run either.'
+        exit 2
+    }
     $stderr = $payload | & $py $resolved 2>&1
 } else {
     $stderr = $payload | & powershell -NoProfile -ExecutionPolicy Bypass -File $resolved 2>&1
