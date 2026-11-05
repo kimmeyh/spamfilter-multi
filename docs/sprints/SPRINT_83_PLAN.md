@@ -1339,3 +1339,11 @@ closed test).
 - Harold (standing fact, 2026-11-04): production Android has one notification category, "Background Scans". The two
   channels arrive with the 0.24.0 release (the app deletes `background_scan_channel` when it creates them), so no user
   has seen the earlier names.
+
+**Re-validation round 4 and close (Harold, 2026-11-04)**
+- On the 10:55pm build of f07575af: the Scan notifications list reads "Every Completed Scan" / "Only when one or more
+  No Rule items": as expected.
+- Harold: *"Manual Validation complete"*. MV-3c (YELLOW item) stays open as its own carry (Q3 = 1); the F325 live run
+  is F341.
+- Phase 7 started 23:09: Copilot requested by hand (GraphQL lists `copilot-pull-request-reviewer`), code-reviewer and
+  silent-failure-hunter started on 125 files.
