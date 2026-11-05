@@ -16,6 +16,7 @@ import '../storage/content_history_store.dart';
 import 'package:logger/logger.dart';
 import 'package:sqflite/sqflite.dart' show Transaction;
 
+import '../../adapters/email_providers/platform_registry.dart' show PlatformRegistry;
 import '../../adapters/storage/secure_credentials_store.dart';
 import '../../util/redact.dart';
 import '../storage/database_helper.dart';
@@ -228,13 +229,9 @@ class DataDeletionService {
   /// The platform ids the IMAP adapter puts in front of the address to form
   /// its rate-limit key (`'$platformId-${credentials.email}'`,
   /// `generic_imap_adapter.dart` `loadCredentials` and `_recordSignInFailure`).
-  static const List<String> _rateLimitPlatformIds = [
-    'aol',
-    'gmail-imap',
-    'yahoo',
-    'icloud',
-    'imap',
-  ];
+  /// Sprint 83 7.7.1: the registry owns the list; this is an alias, not a copy.
+  static const Set<String> _rateLimitPlatformIds =
+      PlatformRegistry.imapPlatformIds;
 
   /// F324 (Sprint 83): the lockout count is keyed by `platform-address`, so a
   /// delete by the bare address (the old code) never matched it and a removed

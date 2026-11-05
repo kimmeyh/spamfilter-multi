@@ -20,6 +20,21 @@ class PlatformRegistry {
   /// Private constructor to prevent instantiation
   PlatformRegistry._();
 
+  /// The platform ids whose adapter is a [GenericIMAPAdapter] (a password
+  /// login an IMAP server can refuse). Sprint 83 7.7.1 (code-reviewer L-2,
+  /// silent-failure-hunter L-6): the ONE list. The background sign-in skip
+  /// (`BackgroundScanCore.imapPlatformIds`) and the lockout clear on removal
+  /// (`DataDeletionService`) both read it; `platform_registry_imap_ids_test`
+  /// fails when it disagrees with [_factories]. Add a new IMAP provider here
+  /// and to [_factories] together.
+  static const Set<String> imapPlatformIds = {
+    'aol',
+    'gmail-imap',
+    'yahoo',
+    'icloud',
+    'imap',
+  };
+
   /// Factory methods for creating platform adapters
   static final Map<String, SpamFilterPlatform Function()> _factories = {
     'aol': () => GenericIMAPAdapter.aol(),

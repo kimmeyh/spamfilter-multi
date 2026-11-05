@@ -23,6 +23,7 @@ import 'package:logger/logger.dart';
 
 import '../../adapters/email_providers/spam_filter_platform.dart'
     show AuthenticationException, GmailSignInRequiredException;
+import '../../adapters/email_providers/platform_registry.dart' show PlatformRegistry;
 import '../../adapters/storage/secure_credentials_store.dart';
 import '../../util/redact.dart';
 import '../providers/email_scan_provider.dart';
@@ -368,14 +369,9 @@ class BackgroundScanCore {
 
   /// R-4 (Sprint 83): the platform ids served by `GenericIMAPAdapter`
   /// (`platform_registry.dart`), whose `AuthenticationException` is a refused
-  /// login. Gmail OAuth and the demo platform are not in it.
-  static const Set<String> imapPlatformIds = {
-    'aol',
-    'gmail-imap',
-    'yahoo',
-    'icloud',
-    'imap',
-  };
+  /// login. Gmail OAuth and the demo platform are not in it. Sprint 83 7.7.1:
+  /// the registry owns the list; this is an alias, not a copy.
+  static const Set<String> imapPlatformIds = PlatformRegistry.imapPlatformIds;
 
   /// R-4 (Sprint 83): the skip reason for an IMAP login the provider refused.
   static const String imapSignInRequiredReason =

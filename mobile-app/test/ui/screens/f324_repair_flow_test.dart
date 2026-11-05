@@ -144,6 +144,33 @@ void main() {
     await endTest(tester);
   });
 
+  // 7.7.1 code-reviewer L-3. What this does NOT catch: a Gmail account (its
+  // Sign In Again runs a different flow, SignInAgain.run).
+  testWidgets('Sign In Again for one account, address edited to ANOTHER '
+      'existing account: Replace resets that account\'s scan position',
+      (tester) async {
+    await seedFlaggedAccount(tester);
+    await open(tester, signInAgainFor: 'someone-else@aol.com');
+
+    await tester.enterText(
+        find.widgetWithText(TextField, 'someone-else@aol.com'), _acct);
+    await enterPasswordAndSave(tester);
+    expect(find.text('Account already added'), findsOneWidget);
+
+    await tester.tap(find.text('Replace'));
+    await tester.pump(const Duration(milliseconds: 100));
+    await tester.runAsync(
+        () => Future<void>.delayed(const Duration(milliseconds: 600)));
+    await tester.pump(const Duration(milliseconds: 100));
+
+    final cursor = await tester.runAsync(
+        () => DatabaseHelper().getGmailHistoryCursor(_acct, 'INBOX'));
+    expect(cursor, isNull,
+        reason: 'a different account replaced through Sign In Again starts '
+            'clean');
+    await endTest(tester);
+  });
+
   testWidgets('adding the same address again (not Sign In Again) asks first, '
       'then clears the old flag AND the scan position, keeping the choice',
       (tester) async {

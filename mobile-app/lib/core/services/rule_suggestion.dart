@@ -155,9 +155,12 @@ class RuleSuggestion {
         return 'Sender authentication (SPF/DKIM/DMARC) did not fully pass '
             'for this email.';
       case kSuggestionReasonSenderShape:
+        // 7.7.1 code-reviewer L-1: this text sits under the SUGGESTED rule
+        // (Block Entire Domain, or Block Email at a shared provider), so it
+        // explains that rule, not the "Block sender pattern" button.
         return 'The sender name is "news_" followed by 4 to 6 digits, a '
-            'pattern used by bulk mail. "Block sender pattern" blocks this '
-            'name at any domain.';
+            'pattern used by bulk mail, so its domain is suggested for '
+            'blocking.';
       case kSuggestionReasonReplyToMismatch:
         return 'Reply-to email mismatch: replies would go to a different '
             'domain than the sender address.';

@@ -700,8 +700,11 @@ class _AccountSetupScreenState extends State<AccountSetupScreen> {
     // below instead of adding a second sequential database wait.
     var refreshFailed = false;
     final refresh = DataDeletionService()
+        // 7.7.1 code-reviewer L-3: keep the scan positions only when this
+        // save repairs the SAME account. Sign In Again edited to a different
+        // existing address replaces that account, so its positions reset.
         .refreshForReAdd(accountId,
-            resetServerState: widget.signInAgainFor == null)
+            resetServerState: widget.signInAgainFor != accountId)
         .then<void>((_) {}, onError: (Object e) {
       refreshFailed = true;
       _logger.w('F324: could not clear the old sign-in state for '
