@@ -1304,7 +1304,7 @@ closed test).
     row branch, not the page).
   - A-2 / W-8 F325 first-run: NOT REHEARSED by design (a live evaluation with Harold; the DEV data folder backup and
     hash are part of the step).
-- **7.7.1 final code reviews**: 2026-11-04 to 2026-11-05, on the draft PR #534. Copilot requested by hand (GraphQL);
+- **7.7.1 final code reviews**: 2026-11-04 to 2026-11-05, on the draft PR #534; improvement review 1 MEDIUM, fixed cc55d2aa (details below); CI run 1 green. Copilot requested by hand (GraphQL);
   review COMMENTED 2026-11-05 04:35 UTC with 3 inline comments (2 MEDIUM, 1 LOW): agent-work-status newest scratchpad
   (already fixed in 4308c893), test-hook python lookup (fixed c1d9a2c6 the other way: only "python", what
   `.claude/settings.json` runs), a test anchored on a comment (fixed c1d9a2c6). The replies on the 3 threads were
