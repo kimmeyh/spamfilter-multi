@@ -51,7 +51,7 @@ void main() {
         const MaterialApp(home: Scaffold(body: Text('harness ready'))),
       );
       await tester.pumpAndSettle();
-      expect(find.text('harness ready'), findsNothing); // F345 AC-5 DELIBERATE FAILURE - reverted in the next commit
+      expect(find.text('harness ready'), findsOneWidget);
     });
   });
 }
