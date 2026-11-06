@@ -1,5 +1,5 @@
 import 'dart:async';
-import 'dart:convert' show base64Url, jsonDecode, utf8;
+import 'dart:convert' show jsonDecode;
 import 'dart:io' show HttpException, Platform, SocketException, TlsException;
 import 'package:flutter/foundation.dart' show visibleForTesting;
 import 'package:enough_mail/codecs.dart' show DateCodec;
@@ -1251,8 +1251,9 @@ class GmailApiAdapter with BatchOperationsMixin
 
   /// R76-4 (Sprint 78, ADR-0047): the message's plain text for the dev-only
   /// content history, walking the NESTED multipart tree and converting an
-  /// HTML-only body ([gmailPartText]). The rule path ([fetchFullBody]) is
-  /// unchanged.
+  /// HTML-only body ([gmailPartText]). The rule path ([fetchFullBody]) selects
+  /// the same text (Sprint 83 7.7.1); this method differs only in that a
+  /// failed fetch throws.
   @override
   Future<String?> fetchContentText(EmailMessage message) async {
     if (_gmailApi == null || message.id.isEmpty) return null;
@@ -1295,17 +1296,18 @@ class GmailApiAdapter with BatchOperationsMixin
       // against base64 text and could essentially never match on the Gmail
       // path (pre-existing since the adapter's origin; made load-bearing by
       // F180's on-demand body fetch). Decode before use.
-      String body = '';
-      if (gmailMessage.payload?.body?.data != null) {
-        body = decodeGmailBodyData(gmailMessage.payload!.body!.data!);
-      } else if (gmailMessage.payload?.parts != null) {
-        for (var part in gmailMessage.payload!.parts!) {
-          if (part.mimeType == 'text/plain' && part.body?.data != null) {
-            body = decodeGmailBodyData(part.body!.data!);
-            break;
-          }
-        }
-      }
+      //
+      // Sprint 83 7.7.1 (Harold Q1 = 1): the same text the pop-up reads
+      // ([gmailPartText]: text/plain anywhere in the nested tree, else the
+      // HTML part as text). Before, this kept a top-level text/plain part only,
+      // so a Block Body rule saved from an HTML-only message never matched it.
+      // A format=metadata message has no body data, so its body stays ''.
+      // A top-level body with no recognized text mimeType is still decoded,
+      // as before (F185 behavior kept).
+      final payload = gmailMessage.payload;
+      final topData = payload?.body?.data;
+      final String body = gmailPartText(payload) ??
+          (topData != null ? decodeGmailData(topData) : '');
 
       // F222 (Sprint 74): see resolveGmailReceivedDate -- the previous
       // DateTime.tryParse on the RFC 2822 header returned null for every real
@@ -1386,14 +1388,8 @@ class GmailApiAdapter with BatchOperationsMixin
   /// static so the decoding contract is directly unit-testable. Undecodable
   /// input degrades to the raw string (never throws inside conversion);
   /// malformed UTF-8 is replaced rather than fatal.
-  static String decodeGmailBodyData(String data) {
-    try {
-      return utf8.decode(base64Url.decode(base64Url.normalize(data)),
-          allowMalformed: true);
-    } catch (_) {
-      return data;
-    }
-  }
+  /// Sprint 83 7.7.1: delegates to the one decoder, [decodeGmailData].
+  static String decodeGmailBodyData(String data) => decodeGmailData(data);
 
   /// Map folder name to Gmail label ID
   /// Sprint 76 (Harold Q4): the labels a Gmail "move" adds and removes.

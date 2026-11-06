@@ -294,10 +294,16 @@ class BackgroundScanWindowsWorker {
             // Sprint 79 7.7.1 M-4: the always-on log states the outcome. The
             // failure's reason goes to the opt-in diagnostic log, so without
             // this line a failed toast read "done" here.
-            await _bgLog(posted
-                ? 'Completion notification posted'
-                : 'Completion notification NOT posted (see the diagnostic '
-                    'log for the reason)');
+            await _bgLog(switch (posted) {
+              ScanNotificationOutcome.posted =>
+                'Completion notification posted',
+              ScanNotificationOutcome.skippedByChoice =>
+                'Completion notification skipped (your notification choice: '
+                    'nothing to review)',
+              ScanNotificationOutcome.failed =>
+                'Completion notification NOT posted (see the diagnostic '
+                    'log for the reason)',
+            });
 
             successCount++;
           } catch (e, stackTrace) {

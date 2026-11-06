@@ -89,6 +89,87 @@ The report holds counts, ids and domains only. A phrase candidate is listed by
 id and word count, never by its text. A PASS phrase appears in the YAML, which
 you review before importing.
 
+## Trash2 mode (F308, Sprint 83)
+
+`rule_miner.ps1 -DbDir <copy> -Trash2Jsonl <file> -OutYaml <file> [-OutReport <file>] [-ShowPhrases]`
+
+It learns what the mail in the DEV AOL "Trash2" folder that a delete rule caught
+has in common, then scores each candidate against No Rule mail and safe-sender
+mail from the DB copy. The JSONL is written by a read-only probe (IMAP EXAMINE
+and `BODY.PEEK` only; see `docs/research/F308_TRASH2_MINING.md` for the method).
+It holds private mail text: keep it, the YAML and the report out of the repo.
+
+- Groups (R-5, R-6): one record per email (Message-ID, else From + Date +
+  Subject). A Trash2 email a current delete rule matches is **rule-deleted** (the
+  only mining pool). One no delete rule matches is **hand-deleted**: it never
+  feeds the mining pool and never fails a candidate, but a hit on it counts as new
+  coverage, so a candidate that hits only hand-deleted mail is still reported
+  (listed after the ones that hit No Rule mail). A Trash2 email from a current
+  safe sender is safe-sender mail.
+- Kinds (R-2, R-3): subject phrase, body phrase, body-URL domain, sender domain,
+  sender local-part shape (`news_` plus digits), header value (Reply-To domain,
+  Return-Path domain, List-Unsubscribe present), and AND pairs of two parts in
+  different fields (`type: AND`, `docs/RULE_FORMAT.md`).
+- Threshold: at least 5 rule-deleted matches, at most 2 safe-sender hits AND at
+  most 0.5 percent of the safe-sender mail the candidate could be checked on, and
+  at least one hit on No Rule or hand-deleted mail (otherwise it adds nothing).
+  A candidate that cannot be checked on any safe-sender mail is not reported.
+  An AND pair is built only from parts that fail alone.
+- Equal candidates collapse: one candidate per identical set of matched emails.
+  A phrase containing an account name is dropped before ranking.
+- Not checked: headers other than Reply-To, Return-Path and List-Unsubscribe
+  (the content history stores no others); body text of history rows with no
+  stored body.
+- Output is a report and candidate YAML. Nothing is imported or applied.
+
+## Safe mode (F310, Sprint 83)
+
+`rule_miner.ps1 -DbDir <copy> -Safe -OutYaml <file> [-Trash2Jsonl <file>] [-OutReport <file>] [-ShowPhrases]`
+
+The mirror of the trash2 mode. It learns what safe-sender mail has in common that
+delete-rule mail does not, and scores each candidate against the delete-rule mail
+(history mail with outcome `delete`, plus the Trash2 JSONL when given). Method and
+results: `docs/research/F310_SAFE_SENDER_MINING.md`.
+
+- Candidates: one per sender domain with at least 5 gate-proven safe-sender
+  emails; five signals (reply-thread subject, transactional subject word, at most
+  2 body links, no List-Unsubscribe header, sender domain seen 5+ times over 90+
+  days); and every pair of signals.
+- **The gate (R-3, AC-2)**: every suggestion requires the stored auth class
+  `green`. A candidate built without the gate is never reported, whatever its
+  score. The gate is a PROXY: stored data holds the class only, not a DMARC
+  verdict (green = every SPF/DKIM/DMARC method that returned a verdict passed, so
+  green is a proxy for DMARC pass, not the same thing).
+  The runtime suggestion (F270) must test DMARC pass from the raw header.
+- Threshold: at least 5 gate-proven safe-sender emails, at most 2 delete-rule hits
+  AND at most 0.5 percent of the delete-rule mail it could be checked on.
+  Delete-rule mail with an unknown auth class counts as a hit when its content
+  matches (a check that did not run is not "clean").
+- Output: a report (counts; domain names only with `-ShowPhrases`) and
+  `safe_senders` YAML for the reported sender domains. The YAML cannot carry the
+  DMARC condition; it is a list to review, not to import as is. Report only (R-4).
+
+## Reply-pair mode (F270 R-4, Sprint 83)
+
+`rule_miner.ps1 -DbDir <copy> -SentJsonl <file> -OutYaml <file> [-OutReport <file>] [-ShowPhrases]`
+
+Finds addresses you wrote to that also sent you mail ("reply pairs"). It is a
+developer tool run on the developer's own account (Harold, Q7: "based on my email
+address not the users"); no app code reads any user's Sent folder.
+
+- The JSONL comes from a read-only probe (IMAP EXAMINE, `BODY.PEEK` of the To, Cc,
+  Date and Message-ID headers only). One line per Sent email:
+  `{"to": ["a@b.example"], "date_ms": 1}`. Recipient addresses only: no subject and
+  no body are read.
+- Your own addresses (the copy's `accounts` table) are excluded.
+- **The gate**: a pair is a candidate only when every stored email from the sender
+  (`unmatched_emails` and `email_actions`) has auth class `green`, no rule deleted
+  mail from them, and no saved safe sender covers them. Any other stored class
+  (grey, yellow, red, unknown) is reported as not gated, never as a candidate.
+- Output: counts always; addresses only with `-ShowPhrases`; YAML of proposed
+  `safe_senders` patterns (the recommended choice of the in-app service: Exact
+  Email for a shared provider, Entire Domain otherwise). Report only.
+
 ## Safety (R-4)
 
 - Inputs come from a COPY folder only. Any path under
@@ -117,3 +198,11 @@ you review before importing.
 temp folder: a planted domain, subject phrase and body phrase are proposed and
 PASS; a covered domain, a safe-sender hit, an F266 failure, over-broad shapes and
 a live path are all rejected.
+
+`flutter test test/unit/tool/rule_miner_trash2_test.dart` covers the trash2 mode
+on in-memory fixtures: dedup, the hand-deleted group, the safe-sender threshold,
+AND pairs, equal-candidate collapse and the account-name guard.
+
+`flutter test test/unit/tool/rule_miner_safe_test.dart` covers the safe mode: the
+auth gate (a candidate without it is never reported), the delete-rule threshold
+including unknown-auth mail, the signals and the history loader's `auth_class`.

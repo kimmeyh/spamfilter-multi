@@ -57,12 +57,23 @@ void main() {
       final senderRowStart = popup.indexOf('displaySenderEmail,');
       expect(senderRowStart, greaterThan(-1));
       // The sender Row ends at the subtitle line; Skip must not be before it.
-      final subtitleIdx = popup.indexOf("'\${email.folderName}", senderRowStart);
+      // Anchored on code (the first subtitleText() call), not on a comment
+      // (Copilot PR #534): a comment can be reworded without a layout change.
+      final subtitleIdx = popup.indexOf('subtitleText(),', senderRowStart);
       expect(subtitleIdx, greaterThan(senderRowStart));
       final window = popup.substring(senderRowStart, subtitleIdx);
+      // Sprint 83 MV Q1 (Harold): on a WIDE pop-up Skip sits left of the check
+      // on the sender row (there is room there); at compact widths, where
+      // F230's truncation happened, it must stay off. The rendered check is
+      // f83_popup_layout_test.dart.
       expect(window.contains('_buildSkipButton('), isFalse,
           reason: 'THE ASSERTION THAT WAS MISSING: Skip immediately after the '
               'Expanded sender is what truncated the address at 411px');
+      final skipUses = RegExp(r'skipButton\(\)').allMatches(window).length;
+      if (skipUses > 0) {
+        expect(window.contains('if (showSkip && !isCompactWidth)'), isTrue,
+            reason: 'Skip on the sender row only on wide widths');
+      }
     });
 
     test('Skip is still present, just relocated', () {

@@ -17,6 +17,23 @@
 /// block-only, so a test injects a hypothetical always-safe basis through
 /// `basis` to prove the guard on its own.
 ///
+/// F323 (Sprint 83) adds three things:
+/// - R-2 "could not check": when SPF, DKIM or DMARC is temperror or permerror
+///   the mail server's check did not finish, so [suggest] proposes NO rule
+///   (a suggestion built on a check that did not run is destructive advice).
+///   It returns a NOTE instead ([RuleSuggestion.isCouldNotCheck]) so the
+///   pop-up can say so. The note rides in the same five stored columns with
+///   kind `none`; see [kSuggestionKindNone].
+/// - R-3 sender shape: `news_` followed by 4-6 digits at any domain. It is
+///   checked before the YELLOW basis. Sprint 83 MV Q9 = 2 (Harold,
+///   2026-11-04): the SUGGESTED rule is Block Entire Domain on that email's
+///   own domain (Block Email for a shared provider), not the shape rule, which
+///   is too broad to suggest. The pop-up still offers "Block sender pattern"
+///   for any matching sender ([isNewsShapeSender]).
+/// - R-1 Block Body is NOT a stored suggestion: its value comes from the
+///   message body, which is never persisted (SEC-14), so the pop-up computes
+///   it when it opens. See `body_link_domain.dart`.
+///
 /// SEC-14: only codes and short rule values are kept; no body text.
 ///
 /// ADR-0042: pure shared Dart. It runs the same on Windows, Android and iOS,
@@ -47,9 +64,34 @@ typedef SuggestionBasis = SuggestionDraft? Function(
 /// Reason code for the YELLOW basis.
 const String kSuggestionReasonAuthYellow = 'auth_yellow';
 
+/// F323 R-3: reason code for the `news_` plus digits sender shape.
+const String kSuggestionReasonSenderShape = 'sender_shape';
+
+/// Sprint 83 MV Q6 = 2 (Harold, F305 R-2): reason code for a Reply-To whose
+/// domain differs from the sender's ("Reply-to email mismatch").
+const String kSuggestionReasonReplyToMismatch = 'reply_to_mismatch';
+
+/// F323 R-2: reason code of the "could not check" note.
+const String kSuggestionReasonCouldNotCheck = 'auth_could_not_check';
+
 /// The stored `suggestion_kind` values.
 const String kSuggestionKindSafe = 'safe';
 const String kSuggestionKindBlock = 'block';
+
+/// F323 R-2 (R-4: no new column): a NOTE, not a rule. The five v17 columns hold
+/// it as kind `none`, type [kSuggestionNoteType], value [kSuggestionNoteValue]
+/// and pattern [kSuggestionNotePattern]. The pattern is a documented sentinel:
+/// nothing runs it, because a note has no button. An older build reads such a
+/// row as a suggestion that no button matches, so it shows nothing.
+const String kSuggestionKindNone = 'none';
+const String kSuggestionNoteType = 'note';
+const String kSuggestionNoteValue = 'auth_check';
+const String kSuggestionNotePattern = '-';
+
+/// F323 R-3: the quick-action type and value of the sender-shape rule. The
+/// regex is built in `RuleQuickActionService.blockPatternFor`.
+const String kSuggestionTypeSenderShape = 'senderShape';
+const String kSenderShapeNewsDigits = 'news_digits';
 
 @immutable
 class RuleSuggestion {
@@ -79,6 +121,32 @@ class RuleSuggestion {
 
   bool get isBlock => kind == kSuggestionKindBlock;
 
+  /// F323 R-2: true for the "could not check" note. A note proposes no rule.
+  bool get isCouldNotCheck =>
+      kind == kSuggestionKindNone &&
+      reasonCode == kSuggestionReasonCouldNotCheck;
+
+  /// The note stored when the sender's authentication could not be checked.
+  static const RuleSuggestion couldNotCheckNote = RuleSuggestion(
+    kind: kSuggestionKindNone,
+    type: kSuggestionNoteType,
+    value: kSuggestionNoteValue,
+    pattern: kSuggestionNotePattern,
+    reasonCode: kSuggestionReasonCouldNotCheck,
+  );
+
+  /// F323 R-2: the exact sentence the pop-up shows in place of "Suggested".
+  static const String couldNotCheckText =
+      "Could not check this sender (the mail server's check did not finish)";
+
+  /// F323 R-2: true when any of SPF, DKIM, DMARC is temperror or permerror.
+  /// Both mean "the check did not finish", not a verdict on the sender.
+  static bool authCheckFailed(EmailAuthResult r) =>
+      _isCheckError(r.spf) || _isCheckError(r.dkim) || _isCheckError(r.dmarc);
+
+  static bool _isCheckError(AuthMethodResult m) =>
+      m == AuthMethodResult.temperror || m == AuthMethodResult.permerror;
+
   /// One plain sentence for the user. Unknown codes (a row written by a newer
   /// build) get a generic sentence, never an empty line.
   String get reasonText {
@@ -86,6 +154,18 @@ class RuleSuggestion {
       case kSuggestionReasonAuthYellow:
         return 'Sender authentication (SPF/DKIM/DMARC) did not fully pass '
             'for this email.';
+      case kSuggestionReasonSenderShape:
+        // 7.7.1 code-reviewer L-1: this text sits under the SUGGESTED rule
+        // (Block Entire Domain, or Block Email at a shared provider), so it
+        // explains that rule, not the "Block sender pattern" button.
+        return 'The sender name is "news_" followed by 4 to 6 digits, a '
+            'pattern used by bulk mail, so its domain is suggested for '
+            'blocking.';
+      case kSuggestionReasonReplyToMismatch:
+        return 'Reply-to email mismatch: replies would go to a different '
+            'domain than the sender address.';
+      case kSuggestionReasonCouldNotCheck:
+        return couldNotCheckText;
       default:
         return 'This rule fits the email.';
     }
@@ -143,17 +223,37 @@ class RuleSuggestion {
   /// The suggestion for a No Rule email, or null.
   ///
   /// [fromEmail] is the raw From header. [authClassification] is the stored
-  /// class name (`green`/`yellow`/`red`/`grey`) or null. Pure: it depends only
-  /// on these two inputs, so a re-seen row recomputes the same answer.
+  /// class name (`green`/`yellow`/`red`/`grey`) or null. [authResult] is the
+  /// per-method SPF, DKIM and DMARC verdicts (F323 R-2). It is REQUIRED, so a
+  /// future caller cannot skip the guard by omission. Pure: it depends only on
+  /// these inputs, so a re-seen row recomputes the same answer.
+  ///
+  /// Guard (F323 R-2): when any method is temperror or permerror the result is
+  /// [couldNotCheckNote] and NO basis runs, so no rule is proposed. The guard
+  /// runs before the basis list, so a basis added later cannot bypass it.
+  ///
+  /// [replyToMismatch] (Sprint 83 MV Q6 = 2): the Reply-To's domain differs
+  /// from the sender's (`HeuristicSignals.replyToMismatch`). It is the last
+  /// basis: a `news_` shape or a YELLOW class is reported first.
   ///
   /// [basis] replaces the basis list in tests only.
   static RuleSuggestion? suggest({
     required String fromEmail,
     required String? authClassification,
+    required EmailAuthResult authResult,
+    bool replyToMismatch = false,
     @visibleForTesting List<SuggestionBasis>? basis,
   }) {
+    if (authCheckFailed(authResult)) return couldNotCheckNote;
     final auth = AuthResultsParser.classificationFromName(authClassification);
-    for (final b in basis ?? _bases) {
+    final bases = basis ??
+        [
+          ..._bases,
+          if (replyToMismatch)
+            (String from, AuthClassification? _) =>
+                _senderBlock(from, kSuggestionReasonReplyToMismatch),
+        ];
+    for (final b in bases) {
       final draft = b(fromEmail, auth);
       if (draft == null) continue;
       // R-5 / AC-3: a RED email is never suggested as a safe sender.
@@ -175,7 +275,36 @@ class RuleSuggestion {
     return null;
   }
 
-  static final List<SuggestionBasis> _bases = [_authYellowBlock];
+  static final List<SuggestionBasis> _bases = [
+    _newsShapeBlock,
+    _authYellowBlock,
+  ];
+
+  /// The sender-shape local part: `news_` then 4 to 6 digits and nothing else.
+  /// The regex the saved rule uses lives in `RuleQuickActionService`.
+  static final RegExp _newsShapeLocalPart = RegExp(r'^news_[0-9]{4,6}$');
+
+  /// F323 R-3: true when the sender's name (local part) is `news_` plus 4 to
+  /// 6 digits, at ANY domain. Letters after `news_` do not match (`news_abc@`
+  /// is not this shape). Only the local part is read. The pop-up shows
+  /// "Block sender pattern" when this is true.
+  static bool isNewsShapeSender(String fromEmail) {
+    final address = EmailBodyParser().extractEmailAddress(fromEmail);
+    final at = address.indexOf('@');
+    if (at <= 0) return false;
+    return _newsShapeLocalPart.hasMatch(address.substring(0, at));
+  }
+
+  /// Sprint 83 MV Q9 = 2 (Harold, 2026-11-04): a `news_` sender is SUGGESTED
+  /// Block Entire Domain on its own domain (Block Email at a shared provider),
+  /// with the sender-shape reason. The shape rule is offered, not suggested:
+  /// Harold: "it is too short and possible for a potential safe sender to use
+  /// to be the Suggestion".
+  static SuggestionDraft? _newsShapeBlock(
+      String fromEmail, AuthClassification? auth) {
+    if (!isNewsShapeSender(fromEmail)) return null;
+    return _senderBlock(fromEmail, kSuggestionReasonSenderShape);
+  }
 
   /// YELLOW authentication -> block. Mirrors the pop-up buttons' values:
   /// Block Email passes the extracted address; Block Entire Domain passes the
@@ -183,6 +312,12 @@ class RuleSuggestion {
   static SuggestionDraft? _authYellowBlock(
       String fromEmail, AuthClassification? auth) {
     if (auth != AuthClassification.yellow) return null;
+    return _senderBlock(fromEmail, kSuggestionReasonAuthYellow);
+  }
+
+  /// The block a sender-based basis proposes: Block Email for a shared email
+  /// provider, otherwise Block Entire Domain on the root domain.
+  static SuggestionDraft? _senderBlock(String fromEmail, String reasonCode) {
     final parser = EmailBodyParser();
     final address = parser.extractEmailAddress(fromEmail);
     final domain = parser.extractDomainFromEmail(fromEmail);
@@ -192,14 +327,14 @@ class RuleSuggestion {
         kind: kSuggestionKindBlock,
         type: 'from',
         value: address,
-        reasonCode: kSuggestionReasonAuthYellow,
+        reasonCode: reasonCode,
       );
     }
     return (
       kind: kSuggestionKindBlock,
       type: 'entireDomain',
       value: PatternNormalization.extractRootDomain(domain) ?? domain,
-      reasonCode: kSuggestionReasonAuthYellow,
+      reasonCode: reasonCode,
     );
   }
 }

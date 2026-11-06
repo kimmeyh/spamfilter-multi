@@ -22,7 +22,8 @@ import 'package:flutter/foundation.dart' show visibleForTesting;
 import 'package:logger/logger.dart';
 
 import '../../adapters/email_providers/spam_filter_platform.dart'
-    show GmailSignInRequiredException;
+    show AuthenticationException, GmailSignInRequiredException;
+import '../../adapters/email_providers/platform_registry.dart' show PlatformRegistry;
 import '../../adapters/storage/secure_credentials_store.dart';
 import '../../util/redact.dart';
 import '../providers/email_scan_provider.dart';
@@ -33,6 +34,7 @@ import '../storage/settings_store.dart';
 import 'diagnostic_logger.dart';
 import 'email_scanner.dart';
 import 'gmail_sign_in_notifier.dart';
+import 'scan_complete_notifier.dart' show ScanNotificationOutcome;
 import 'scan_coordinator.dart';
 
 /// Result of scanning a single account in the background.
@@ -107,7 +109,7 @@ class BackgroundScanCore {
   static Future<void> completeAccount(
     AccountScanOutcome outcome, {
     required Future<void> Function() export,
-    required Future<bool> Function() notify,
+    required Future<ScanNotificationOutcome> Function() notify,
   }) async {
     void postLog(String detail) => unawaited(DiagnosticLogger.log(
           kind: DiagnosticLogger.kindScan,
@@ -125,9 +127,13 @@ class BackgroundScanCore {
     await export();
     postLog('export step done');
     // Sprint 79 7.7.1 M-4: the real outcome, not an unconditional "done".
-    postLog((await notify())
-        ? 'notification posted'
-        : 'notification NOT posted (reason on the line above)');
+    postLog(switch (await notify()) {
+      ScanNotificationOutcome.posted => 'notification posted',
+      ScanNotificationOutcome.skippedByChoice =>
+        'notification skipped (your notification choice: nothing to review)',
+      ScanNotificationOutcome.failed =>
+        'notification NOT posted (reason on the line above)',
+    });
   }
 
   static final Logger _logger = Logger();
@@ -361,6 +367,28 @@ class BackgroundScanCore {
     return s.contains('database is locked') || s.contains('(code 5)');
   }
 
+  /// R-4 (Sprint 83): the platform ids served by `GenericIMAPAdapter`
+  /// (`platform_registry.dart`), whose `AuthenticationException` is a refused
+  /// login. Gmail OAuth and the demo platform are not in it. Sprint 83 7.7.1:
+  /// the registry owns the list; this is an alias, not a copy.
+  static const Set<String> imapPlatformIds = PlatformRegistry.imapPlatformIds;
+
+  /// R-4 (Sprint 83): the skip reason for an IMAP login the provider refused.
+  static const String imapSignInRequiredReason =
+      'The email server rejected the sign-in; enter the password again';
+
+  /// R-4: the name the notification uses for the provider. Only the title
+  /// needs a name; an unknown platform id reads as "Email".
+  static String _imapProviderName(String platformId) =>
+      switch (platformId.toLowerCase()) {
+        'aol' => 'AOL',
+        'yahoo' => 'Yahoo',
+        'icloud' => 'iCloud',
+        'outlook' => 'Outlook',
+        'gmail-imap' => 'Gmail',
+        _ => 'Email',
+      };
+
   static Future<AccountScanOutcome> _scanAccountOnce({
     required String accountId,
     required String platformId,
@@ -397,6 +425,41 @@ class BackgroundScanCore {
           stage: 'skip',
           detail: reason));
       return AccountScanOutcome.skipped(reason, EmailScanProvider());
+    }
+
+    // Sprint 83 7.7.1 (Harold Q2 = 1): an IMAP account flagged "Sign In
+    // Again" gets NO background login until the user signs in again (a
+    // re-save clears the flag; so does any successful login, such as a
+    // manual scan). Before, every background run sent the refused password
+    // again, and each refusal counted toward the provider's lockout. The user
+    // is still reminded once a day, as for the first refusal. A flag that
+    // cannot be READ lets the scan go ahead (the login decides, as before);
+    // it is logged. Gmail is unchanged: its renewal sends no password.
+    if (imapPlatformIds.contains(platformId)) {
+      bool flagged;
+      try {
+        flagged = await settingsStore.getGmailSignInRequired(accountId);
+      } catch (e) {
+        _logger.w('Sign-in state not readable for '
+            '${Redact.accountId(accountId)} ($e); scanning');
+        flagged = false;
+      }
+      if (flagged) {
+        _logger.i('Background scan SKIPPED for ${Redact.accountId(accountId)} '
+            'before login: $imapSignInRequiredReason');
+        unawaited(DiagnosticLogger.scanEvent(
+            scanType: 'background',
+            accountId: accountId,
+            stage: 'skip',
+            detail: 'flagged, no login: $imapSignInRequiredReason'));
+        await GmailSignInNotifier.notifyIfDue(
+            accountId: accountId,
+            settingsStore: settingsStore,
+            providerName: _imapProviderName(platformId));
+        return AccountScanOutcome.skipped(
+            imapSignInRequiredReason, EmailScanProvider(),
+            needsSignIn: true);
+      }
     }
 
     // Get effective background scan settings for this account
@@ -499,6 +562,33 @@ class BackgroundScanCore {
           accountId: accountId, settingsStore: settingsStore);
       return AccountScanOutcome.skipped(
           GmailSignInRequiredException.reason, scanProvider,
+          needsSignIn: true);
+    } on AuthenticationException {
+      // R-4 (Sprint 83, F324): an IMAP provider (iCloud, AOL, Yahoo, custom)
+      // REFUSED the login (`generic_imap_adapter.dart` `classifyLoginRefusal`
+      // -> credentials). The same handling as the Gmail sign-in skip above: a
+      // skip (not a failure, so nothing retries it on a timer), the account is
+      // then skipped BEFORE login on later runs (the flag check above); it is
+      // already flagged "Sign In Again" by the adapter, and the user is told
+      // once a day. Gmail's own plain AuthenticationException (an outage, not
+      // a refused sign-in; see gmail_api_adapter.dart "Gmail OAuth not
+      // established") stays a failure: only IMAP platform ids are skipped. A
+      // network error is a
+      // ConnectionException, a different type, and never arrives here.
+      if (!imapPlatformIds.contains(platformId)) rethrow;
+      _logger.i('Background scan SKIPPED for ${Redact.accountId(accountId)}: '
+          '$imapSignInRequiredReason');
+      unawaited(DiagnosticLogger.scanEvent(
+          scanType: 'background',
+          accountId: accountId,
+          stage: 'skip',
+          detail: 'needs sign-in: $imapSignInRequiredReason'));
+      await GmailSignInNotifier.notifyIfDue(
+          accountId: accountId,
+          settingsStore: settingsStore,
+          providerName: _imapProviderName(platformId));
+      return AccountScanOutcome.skipped(
+          imapSignInRequiredReason, scanProvider,
           needsSignIn: true);
     } on TimeoutException {
       final minutes = ScanCoordinator.scanTimeout.inMinutes;

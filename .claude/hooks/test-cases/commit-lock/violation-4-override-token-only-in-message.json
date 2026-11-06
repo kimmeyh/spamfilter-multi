@@ -1,0 +1,1 @@
+{"session_id":"cl-violation-4-override-token-only-in-message","cwd":"{{LOCK_ACTIVE}}","hook_event_name":"PreToolUse","tool_name":"Bash","tool_input":{"command":"git commit -m \"explain allow_mutation_commit\""}}

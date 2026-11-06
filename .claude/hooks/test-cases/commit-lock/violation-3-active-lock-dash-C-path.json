@@ -1,0 +1,1 @@
+{"session_id":"cl-violation-3-active-lock-dash-C-path","cwd":"{{LOCK_ACTIVE}}","hook_event_name":"PreToolUse","tool_name":"PowerShell","tool_input":{"command":"git -C D:/repo commit -F msg.txt"}}

@@ -20,6 +20,20 @@
 ///   setting turns notifications off (Android POST_NOTIFICATIONS / app
 ///   notification settings; Windows Settings > System > Notifications).
 ///
+/// F322 (Sprint 83): WHICH completed scans notify.
+/// - Windows, iPhone and Android 7.x (API 24-25, no channels): the in-app
+///   choice (`SettingsStore.getScanNotifyChoice`, Settings > Background >
+///   "Scan notifications"). Default "Only when one or more No Rule items": a scan
+///   with No Rule 0 posts nothing ([ScanNotificationOutcome.skippedByChoice]).
+/// - DECLARED EXCEPTION (choice), Android 8.0+ (API 26+): the OS owns the
+///   choice. EVERY completed scan posts, on one of two channels picked by the
+///   No Rule count ([noRuleChannelId] / [nothingToReviewChannelId]); the user
+///   silences the second in Android's notification settings, and the in-app
+///   choice is NOT read (two controls for one outcome would disagree).
+///   Android: developer.android.com/develop/ui/views/notifications/channels
+///   ("Users can modify the settings for notification channels"). The
+///   sign-in-needed notification is never gated (R-3).
+///
 /// Best-effort by design: a notification failure must never fail the scan --
 /// the scan's persistence is the record; the notification is a courtesy. A
 /// failure is written to the diagnostic log so it is not silent.
@@ -31,6 +45,7 @@ import 'package:logger/logger.dart';
 
 import '../providers/email_scan_provider.dart' show ScanMode;
 import '../platform/platform_capabilities.dart';
+import '../storage/settings_store.dart';
 import 'app_environment.dart';
 import 'diagnostic_logger.dart';
 import 'scan_notification_text.dart';
@@ -43,8 +58,68 @@ typedef ScanNotificationShow = Future<void> Function({
   required NotificationDetails details,
 });
 
+/// What [ScanCompleteNotifier.post] did, so a worker's log line can tell a
+/// deliberate skip from a failure.
+enum ScanNotificationOutcome {
+  /// Handed to the OS.
+  posted,
+
+  /// The user's choice says no notification for this scan (not an error).
+  skippedByChoice,
+
+  /// The post failed (reason in the diagnostic log).
+  failed,
+}
+
 class ScanCompleteNotifier {
   ScanCompleteNotifier._();
+
+  /// Test seam: replaces the read of the saved [ScanNotifyChoice].
+  @visibleForTesting
+  static Future<ScanNotifyChoice> Function()? choiceOverride;
+
+  /// Test seam: replaces the "does this Android have notification channels"
+  /// probe (true = Android 8.0+).
+  @visibleForTesting
+  static Future<bool> Function()? channelsSupportedOverride;
+
+  /// Ids of the channels the user turned off in Android's settings, read by
+  /// the last [ensureAndroidChannels]. Sprint 83 7.7.1: a post to an off
+  /// channel shows nothing and `show` still returns normally, so the worker
+  /// logged "posted" for a scan the user had silenced. Tests set it together
+  /// with [channelsSupportedOverride] (which skips the read).
+  @visibleForTesting
+  static Set<String> offChannelIds = const {};
+
+  /// F322: channel for a scan with at least one No Rule item. Importance LOW
+  /// (no sound, same as the retired `background_scan_channel`). An id and its
+  /// importance cannot be changed by the app after the channel exists, so
+  /// these are chosen once (Sprint 83 Task 2 card).
+  ///
+  /// Names (Sprint 83 MV, Harold 2026-11-04): the two sub-notifications are
+  /// "Every Completed Scan" and "One or more No Rule Items", the Windows
+  /// wording. Each channel is an on/off switch for its own scans: with both on
+  /// every scan notifies; with "Every Completed Scan" off only scans with No
+  /// Rule items notify. The descriptions, shown under each name in Android's
+  /// settings, say this. The ids are unchanged; production (0.23.x) has only
+  /// the retired channel, so no user has seen the earlier names.
+  static const String noRuleChannelId = 'scan_with_no_rule_channel';
+  static const String noRuleChannelName = 'One or more No Rule Items';
+  static const String noRuleChannelDescription =
+      'Scans that found one or more No Rule items.';
+
+  /// F322: channel for a scan with nothing to review (No Rule 0). The user
+  /// silences this one in Android's settings.
+  static const String nothingToReviewChannelId =
+      'scan_nothing_to_review_channel';
+  static const String nothingToReviewChannelName = 'Every Completed Scan';
+  static const String nothingToReviewChannelDescription =
+      'Scans with nothing to review. Turn this off to be told only when there '
+      'are No Rule items.';
+
+  /// The pre-Sprint 83 channel. Never posted to again; deleted when the new
+  /// channels are created so Android's list does not show a dead entry.
+  static const String retiredChannelId = 'background_scan_channel';
 
   static final Logger _logger = Logger();
 
@@ -88,25 +163,107 @@ class ScanCompleteNotifier {
         ),
       );
 
-  static const AndroidNotificationDetails _androidDetails =
+  // F286: the body is HTML so `<s>` renders as strikethrough; the plugin
+  // passes it to Html.fromHtml when this flag is set.
+  static const AndroidNotificationDetails _noRuleAndroidDetails =
       AndroidNotificationDetails(
-    'background_scan_channel',
-    'Background Scans',
-    channelDescription: 'Results of scheduled background email scans',
+    noRuleChannelId,
+    noRuleChannelName,
+    channelDescription: noRuleChannelDescription,
     importance: Importance.low,
     priority: Priority.low,
     showWhen: true,
-    // F286: the body is HTML so `<s>` renders as strikethrough; the plugin
-    // passes it to Html.fromHtml when this flag is set.
     styleInformation: DefaultStyleInformation(true, false),
   );
 
+  static const AndroidNotificationDetails _nothingToReviewAndroidDetails =
+      AndroidNotificationDetails(
+    nothingToReviewChannelId,
+    nothingToReviewChannelName,
+    channelDescription: nothingToReviewChannelDescription,
+    importance: Importance.low,
+    priority: Priority.low,
+    showWhen: true,
+    styleInformation: DefaultStyleInformation(true, false),
+  );
+
+  /// The details for a completed scan on Android: the channel follows the
+  /// No Rule count (T-3).
+  @visibleForTesting
+  static AndroidNotificationDetails androidDetailsFor(int noRule) =>
+      noRule > 0 ? _noRuleAndroidDetails : _nothingToReviewAndroidDetails;
+
+  /// Creates both channels (so Android's settings list them before the first
+  /// post) and deletes the retired one. Returns true when this Android has
+  /// channels (8.0+): the plugin lists them only there ("On older versions, it
+  /// will return an empty list", flutter_local_notifications 22.3.2,
+  /// `platform_flutter_local_notifications.dart:584`). Any failure returns
+  /// false, which makes the in-app choice apply (the safe direction: it can
+  /// only silence a scan the user asked to silence) and is logged.
+  static Future<bool> ensureAndroidChannels() async {
+    final override = channelsSupportedOverride;
+    if (override != null) return override();
+    try {
+      final plugin = FlutterLocalNotificationsPlugin();
+      await plugin.initialize(settings: initializationSettings);
+      final android = plugin.resolvePlatformSpecificImplementation<
+          AndroidFlutterLocalNotificationsPlugin>();
+      if (android == null) return false;
+      await android.createNotificationChannel(const AndroidNotificationChannel(
+        noRuleChannelId,
+        noRuleChannelName,
+        description: noRuleChannelDescription,
+        importance: Importance.low,
+      ));
+      await android.createNotificationChannel(const AndroidNotificationChannel(
+        nothingToReviewChannelId,
+        nothingToReviewChannelName,
+        description: nothingToReviewChannelDescription,
+        importance: Importance.low,
+      ));
+      await android.deleteNotificationChannel(channelId: retiredChannelId);
+      final channels = await android.getNotificationChannels();
+      // Sprint 83 7.7.1: the LIVE importance (the plugin reads
+      // NotificationChannel.getImportance(), FlutterLocalNotificationsPlugin
+      // .java:2276), so a channel the user turned off reads Importance.none.
+      offChannelIds = {
+        for (final c in channels ?? const <AndroidNotificationChannel>[])
+          if (c.importance == Importance.none) c.id,
+      };
+      return channels?.any((c) => c.id == noRuleChannelId) ?? false;
+    } catch (e) {
+      _logger.w('Notification channel setup failed: $e');
+      await DiagnosticLogger.log(
+        kind: DiagnosticLogger.kindScan,
+        context: 'scan/post',
+        detail: 'notification channel setup FAILED (the in-app choice '
+            'applies): ${DiagnosticLogger.describeError(e)}',
+      );
+      return false;
+    }
+  }
+
+  static Future<ScanNotifyChoice> _readChoice() async {
+    try {
+      return await (choiceOverride ?? SettingsStore().getScanNotifyChoice)();
+    } catch (e) {
+      // A failed read must not hide a scan with mail to review: notify.
+      await DiagnosticLogger.log(
+        kind: DiagnosticLogger.kindScan,
+        context: 'scan/post',
+        detail: 'notification choice unreadable (notifying): '
+            '${DiagnosticLogger.describeError(e)}',
+      );
+      return ScanNotifyChoice.every;
+    }
+  }
+
   /// Posts the notification for one account's completed background scan.
   ///
-  /// Returns whether it was posted (Sprint 79 7.7.1 M-4): the worker's step
-  /// line reports the real outcome instead of an unconditional "done". A
-  /// failure never escapes -- the scan itself has already succeeded.
-  static Future<bool> post({
+  /// Returns what happened (Sprint 79 7.7.1 M-4, F322): the worker's step line
+  /// reports the real outcome instead of an unconditional "done". A failure
+  /// never escapes -- the scan itself has already succeeded.
+  static Future<ScanNotificationOutcome> post({
     required String accountId,
     required ScanMode mode,
     required int noRule,
@@ -115,6 +272,27 @@ class ScanCompleteNotifier {
     required int errors,
   }) async {
     final android = _isAndroid;
+    // F322. Android 8.0+: the channels are the choice (every scan posts, on
+    // the channel the No Rule count picks). Everywhere else: the in-app choice.
+    final channelsHonored = android && await ensureAndroidChannels();
+    if (!channelsHonored && noRule == 0) {
+      if (await _readChoice() == ScanNotifyChoice.noRuleOnly) {
+        return ScanNotificationOutcome.skippedByChoice;
+      }
+    }
+    if (channelsHonored) {
+      final channelId = androidDetailsFor(noRule).channelId;
+      if (offChannelIds.contains(channelId)) {
+        // The user's choice, made in Android's settings: not an error.
+        await DiagnosticLogger.log(
+          kind: DiagnosticLogger.kindScan,
+          context: 'scan/post',
+          detail: 'notification not shown: channel $channelId is turned off '
+              'in Android settings',
+        );
+        return ScanNotificationOutcome.skippedByChoice;
+      }
+    }
     final text = ScanNotificationText.build(
       accountId: accountId,
       mode: mode,
@@ -124,12 +302,15 @@ class ScanCompleteNotifier {
       errors: errors,
     );
     final details = android
-        ? const NotificationDetails(android: _androidDetails)
+        ? NotificationDetails(android: androidDetailsFor(noRule))
         : const NotificationDetails(windows: WindowsNotificationDetails());
     final body = android ? text.htmlBody : text.plainBody;
     final id = ScanNotificationText.notificationId(accountId);
-    return _deliver(
+    final posted = await _deliver(
         id: id, title: text.title, body: body, details: details, what: 'scan');
+    return posted
+        ? ScanNotificationOutcome.posted
+        : ScanNotificationOutcome.failed;
   }
 
   /// F301 (Sprint 81): tells the user a Gmail background scan was skipped
@@ -140,13 +321,17 @@ class ScanCompleteNotifier {
   ///
   /// Returns whether it was posted. A failure (including notifications turned
   /// off in the OS) never escapes and is written to the diagnostic log.
-  static Future<bool> postSignInNeeded({required String accountId}) {
+  static Future<bool> postSignInNeeded({
+    required String accountId,
+    String providerName = 'Gmail',
+  }) {
     final details = _isAndroid
         ? const NotificationDetails(android: _signInAndroidDetails)
         : const NotificationDetails(windows: WindowsNotificationDetails());
     return _deliver(
       id: ScanNotificationText.signInNeededId(accountId),
-      title: ScanNotificationText.signInNeededTitle(accountId),
+      title: ScanNotificationText.signInNeededTitle(accountId,
+          providerName: providerName),
       body: ScanNotificationText.signInNeededBody,
       details: details,
       what: 'sign-in-needed',

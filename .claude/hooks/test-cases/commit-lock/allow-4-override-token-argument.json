@@ -1,0 +1,1 @@
+{"session_id":"cl-allow-4-override-token-argument","cwd":"{{LOCK_ACTIVE}}","hook_event_name":"PreToolUse","tool_name":"Bash","tool_input":{"command":"allow_mutation_commit git commit -q -m x"}}

@@ -173,14 +173,15 @@ void main() {
       final subtitleFontSize = _renderedFontSize(tester, subtitleFinder);
       expect(subtitleFontSize, isNotNull);
 
-      // The date/domain Row carries the schedule icon; both the date Text
-      // and (when a domain is present) the domain Text are its descendant
-      // Texts, in that order.
+      // The date/domain line carries the schedule icon; both the date Text
+      // and (when a domain is present) the domain Text are descendant Texts
+      // of the Wrap that holds the line (Sprint 83: a Wrap, so the line can
+      // break on a narrow window), in that order.
       final dateRowFinder = find
           .ancestor(
             of: find.descendant(
                 of: popupFinder, matching: find.byIcon(Icons.schedule)),
-            matching: find.byType(Row),
+            matching: find.byType(Wrap),
           )
           .first;
       final rowTextFinders =

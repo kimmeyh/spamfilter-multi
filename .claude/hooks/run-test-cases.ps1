@@ -18,8 +18,9 @@
       test-cases/stash-guard/*.json      -> block-carry-forward-stash.ps1 (PreToolUse)
       test-cases/closeout/*.json         -> verify-closeout-complete.ps1 (Stop)
       test-cases/sprint-cards/*.json     -> require-sprint-cards.ps1 (PreToolUse)
-      test-cases/heredoc-guard/*.json    -> block-heredoc-python-backslash.ps1 (PreToolUse)
-      test-cases/staging-guard/*.json    -> block-blind-staging.ps1 (PreToolUse)
+      test-cases/heredoc-guard/*.json    -> block-heredoc-python-backslash.py (PreToolUse)
+      test-cases/staging-guard/*.json    -> block-blind-staging.py (PreToolUse)
+      test-cases/commit-lock/*.json      -> block-commit-during-mutation.py (PreToolUse; F321, Sprint 83)
       test-cases/velocity-warn/*.json    -> warn-commit-without-velocity.ps1 (PreToolUse)
 
     Prints a per-case PASS/FAIL line and a summary. Exits 0 if all pass, 1 if
@@ -36,6 +37,10 @@
       powershell -NoProfile -ExecutionPolicy Bypass -File "$PSScriptRoot\run-test-cases.ps1"
 #>
 
+# Optional: run only these routes (folder names such as 'staging-guard'; '(top)' is the top level).
+# Omit to run everything, which is what AC-1 and the pre-commit run do.
+param([string[]]$OnlyRoute)
+
 # Native stderr from the blocked correction must NOT be treated as terminating.
 $ErrorActionPreference = 'Continue'
 
@@ -48,10 +53,15 @@ $routes = @{
     'stash-guard'  = 'block-carry-forward-stash.ps1'
     'closeout'     = 'verify-closeout-complete.ps1'
     'sprint-cards' = 'require-sprint-cards.ps1'
-    'heredoc-guard' = 'block-heredoc-python-backslash.ps1'   # Sprint 74 retro IMP-6
-    'staging-guard' = 'block-blind-staging.ps1'              # Sprint 76 retro IMP-4
+    'heredoc-guard' = 'block-heredoc-python-backslash.py'    # Sprint 74 retro IMP-6; Python since F321 (Sprint 83)
+    'staging-guard' = 'block-blind-staging.py'               # Sprint 76 retro IMP-4; Python since F321 (Sprint 83)
+    'commit-lock'   = 'block-commit-during-mutation.py'      # F321 (Sprint 83): first test cases for this hook
     'velocity-warn' = 'warn-commit-without-velocity.ps1'     # Sprint 82 retro IMP-7
 }
+
+# F321 (Sprint 83, ADR-0051): a hook file ending in .py runs under python, any
+# other under Windows PowerShell. Both take the payload on stdin.
+$pythonExe = (Get-Command python, python3 -ErrorAction SilentlyContinue | Select-Object -First 1).Source
 
 $pass = 0
 $fail = 0
@@ -76,7 +86,37 @@ foreach ($kind in 'MODIFIED', 'STAGED') {
     $fixtureRepos[$kind] = $repo.Replace('\', '/')
 }
 
+# commit-lock cases (F321, Sprint 83) run against real lock folders built fresh
+# for every run, because a lock goes stale after 15 minutes and a fixed
+# createdUtc in a committed file would flip the cases. Placeholders in the case
+# payload's cwd: {{LOCK_ACTIVE}} one fresh lock; {{LOCK_STALE}} one 60 minutes
+# old (the hook deletes it); {{LOCK_BAD}} an unparseable lock (treated as
+# stale); {{LOCK_NONE}} a project with no lock folder.
+# The folders are rebuilt IMMEDIATELY BEFORE EACH commit-lock case (New-LockRepos):
+# this suite runs for many minutes, and a fixture built once at start was stale
+# by the time its case ran.
+function New-LockRepos([string]$caseName) {
+$lockRepos = @{}
+foreach ($kind in 'ACTIVE', 'STALE', 'BAD', 'NONE') {
+    $project = Join-Path $fixtureRoot ("lock_{0}_{1}" -f $caseName, $kind.ToLower())
+    New-Item -ItemType Directory -Force (Join-Path $project '.claude') | Out-Null
+    if ($kind -ne 'NONE') {
+        $lockDir = Join-Path $project '.claude\mutation-locks'
+        New-Item -ItemType Directory -Force $lockDir | Out-Null
+        $created = if ($kind -eq 'STALE') { (Get-Date).ToUniversalTime().AddMinutes(-60) } else { (Get-Date).ToUniversalTime() }
+        $body = if ($kind -eq 'BAD') { '{not json' } else {
+            (@{ file = 'a.md'; reason = 'runner fixture'; agent = 'run-test-cases'; createdUtc = $created.ToString('o') } | ConvertTo-Json)
+        }
+        Set-Content -LiteralPath (Join-Path $lockDir 'a.md.json') -Value $body -Encoding UTF8
+    }
+    $lockRepos[$kind] = $project.Replace('\', '/')
+}
+return $lockRepos
+}
+
 foreach ($route in $routes.Keys | Sort-Object) {
+    $routeKey = if ($route) { $route } else { '(top)' }
+    if ($OnlyRoute -and ($routeKey -notin $OnlyRoute)) { continue }
     $dir  = if ($route) { Join-Path $casesDir $route } else { $casesDir }
     $hook = Join-Path $PSScriptRoot $routes[$route]
 
@@ -97,14 +137,32 @@ foreach ($route in $routes.Keys | Sort-Object) {
         }
 
         $label = if ($route) { "$route/$name" } else { $name }
+        $lockRepos = if ($route -eq 'commit-lock') { New-LockRepos $name } else { @{ ACTIVE = ''; STALE = ''; BAD = ''; NONE = '' } }
         $payload = (Get-Content -Raw -LiteralPath $case.FullName).
             Replace('{{REPO_MODIFIED}}', $fixtureRepos['MODIFIED']).
-            Replace('{{REPO_STAGED}}', $fixtureRepos['STAGED'])
-        # Invoke the hook in a child powershell.exe so its 'exit' does not
+            Replace('{{REPO_STAGED}}', $fixtureRepos['STAGED']).
+            Replace('{{LOCK_ACTIVE}}', $lockRepos['ACTIVE']).
+            Replace('{{LOCK_STALE}}', $lockRepos['STALE']).
+            Replace('{{LOCK_BAD}}', $lockRepos['BAD']).
+            Replace('{{LOCK_NONE}}', $lockRepos['NONE'])
+        # Invoke the hook in a child process so its 'exit' does not
         # terminate us. Redirect stderr to a temp file so the corrective
         # message (emitted on block) is not surfaced as a NativeCommandError.
-        $stdout = ($payload | & powershell.exe -NoProfile -ExecutionPolicy Bypass -File $hook 2>$errFile) -join "`n"
-        $actual = $LASTEXITCODE
+        # commit-lock cases: the hook must find its lock folder from the payload
+        # cwd, so CLAUDE_PROJECT_DIR is cleared for the child (it would win).
+        $savedProjectDir = $env:CLAUDE_PROJECT_DIR
+        if ($route -eq 'commit-lock') { $env:CLAUDE_PROJECT_DIR = $null }
+        try {
+            if ($hook -like '*.py') {
+                if (-not $pythonExe) { throw 'python not found on PATH (needed for the .py hook routes).' }
+                $stdout = ($payload | & $pythonExe $hook 2>$errFile) -join "`n"
+            } else {
+                $stdout = ($payload | & powershell.exe -NoProfile -ExecutionPolicy Bypass -File $hook 2>$errFile) -join "`n"
+            }
+            $actual = $LASTEXITCODE
+        } finally {
+            $env:CLAUDE_PROJECT_DIR = $savedProjectDir
+        }
         # Parse it: a stdout that merely CONTAINS the word is not a warning
         # Claude Code can read (improvement review H7).
         $warned = $false

@@ -63,6 +63,7 @@ class GmailSignInNotifier {
   static Future<bool> notifyIfDue({
     required String accountId,
     required SettingsStore settingsStore,
+    String providerName = 'Gmail',
   }) async {
     final label = Redact.accountId(accountId);
     final at = now();
@@ -106,7 +107,8 @@ class GmailSignInNotifier {
         );
       }
       final posted =
-          await ScanCompleteNotifier.postSignInNeeded(accountId: accountId);
+          await ScanCompleteNotifier.postSignInNeeded(
+              accountId: accountId, providerName: providerName);
       // 7.7.1 improvement review M-1: the log line states the retry that is
       // actually scheduled, and a failed retry write reaches the diagnostic
       // log (a release build keeps no console log).

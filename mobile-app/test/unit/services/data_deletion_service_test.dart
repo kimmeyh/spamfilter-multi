@@ -1,6 +1,9 @@
 import 'package:flutter_test/flutter_test.dart';
 
 import 'package:my_email_spam_filter/adapters/storage/secure_credentials_store.dart';
+import 'package:my_email_spam_filter/core/providers/email_scan_provider.dart'
+    show ScanMode;
+import 'package:my_email_spam_filter/core/security/auth_rate_limiter.dart';
 import 'package:my_email_spam_filter/core/services/data_deletion_service.dart';
 import 'package:my_email_spam_filter/core/storage/scan_result_store.dart';
 import 'package:my_email_spam_filter/core/storage/settings_store.dart';
@@ -111,18 +114,76 @@ void main() {
       expect(remainingScans.first.id, scanB);
     });
 
-    test('removes per-account settings but preserves app-wide settings',
+    test('F324 (Q3 = 3): keeps the account\'s choices, deletes its sign-in '
+        'state, and leaves app-wide settings and other accounts alone',
         () async {
       final settings = SettingsStore(testHelper.dbHelper);
       await settings.setManualScanDaysBack(14); // app-wide
       await settings.setAccountManualDaysBack(accountA, 7);
       await settings.setAccountManualDaysBack(accountB, 21);
+      await settings.setAccountBackgroundEnabled(accountA, true);
+      await settings.setAccountBackgroundFrequency(accountA, 30);
+      await settings.setAccountFolders(accountA, ['INBOX', 'Junk']);
+      await settings.setAccountBackgroundScanMode(accountA, ScanMode.readOnly);
+      await settings.setAccountNewMailTrigger(accountA, true);
+      await settings.setAccountSafeSenderFolder(accountA, 'Safe');
+      await settings.setAccountDeletedRuleFolder(accountA, 'Bin');
+      await settings.setGmailSignInRequired(accountA, true);
+      await settings.setGmailSignInNotifiedAt(accountA, DateTime(2026, 11, 1));
+      await settings.getOrAllocateScheduleSlot(accountA);
+
+      final report = await service.deleteAccountData(accountA);
+
+      // KEEP: the user's choices survive.
+      expect(await settings.getManualScanDaysBack(), 14);
+      expect(await settings.getAccountManualDaysBack(accountA), 7);
+      expect(await settings.getAccountBackgroundEnabled(accountA), isTrue);
+      expect(await settings.getAccountBackgroundFrequency(accountA), 30);
+      expect(await settings.getAccountFolders(accountA), ['INBOX', 'Junk']);
+      expect(await settings.getAccountBackgroundScanMode(accountA),
+          ScanMode.readOnly);
+      expect(await settings.getAccountNewMailTrigger(accountA), isTrue);
+      expect(await settings.getAccountSafeSenderFolder(accountA), 'Safe');
+      expect(await settings.getAccountDeletedRuleFolder(accountA), 'Bin');
+      expect(await settings.getAccountManualDaysBack(accountB), 21);
+      // REFRESH: the old sign-in state does not survive.
+      expect(await settings.getGmailSignInRequired(accountA), isFalse);
+      expect(await settings.getGmailSignInNotifiedAt(accountA), isNull);
+      final left = (await settings.getAccountOverrides(accountA)).keys.toSet();
+      expect(left.difference(accountSettingKeysKept), isEmpty,
+          reason: 'only classified KEEP keys may remain');
+      expect(report.accountSettingsDeleted, 3);
+      expect(report.accountSettingsKept, 8);
+    });
+
+    test('F324: scan positions, schedule rows and the lockout count are '
+        'cleared on removal', () async {
+      await testHelper.dbHelper.setGmailHistoryCursor(accountA, 'INBOX', '123');
+      final db = await testHelper.dbHelper.database;
+      await db.insert('background_scan_schedule', {
+        'account_id': accountA,
+        'folders': '[]',
+      });
+      await AuthRateLimiter(testHelper.dbHelper).recordFailure('aol-$accountA');
+      await AuthRateLimiter(testHelper.dbHelper).recordFailure(accountA);
 
       await service.deleteAccountData(accountA);
 
-      expect(await settings.getManualScanDaysBack(), 14);
-      expect(await settings.getAccountManualDaysBack(accountA), isNull);
-      expect(await settings.getAccountManualDaysBack(accountB), 21);
+      expect(
+          await testHelper.dbHelper.getGmailHistoryCursor(accountA, 'INBOX'),
+          isNull);
+      expect(await db.query('background_scan_schedule'), isEmpty);
+      // The adapter keys the lockout by 'platform-address'; the bare address
+      // key is the older shape. Both go.
+      expect(await db.query('auth_rate_limit'), isEmpty);
+    });
+
+    test('F324: the lockout count of ANOTHER account survives', () async {
+      final db = await testHelper.dbHelper.database;
+      await AuthRateLimiter(testHelper.dbHelper).recordFailure('aol-$accountB');
+      await service.deleteAccountData(accountA);
+      final rows = await db.query('auth_rate_limit');
+      expect(rows.map((r) => r['account_id']), ['aol-$accountB']);
     });
 
     test('deletes credentials for the target account only', () async {
@@ -138,6 +199,61 @@ void main() {
       expect(report.scanResultsDeleted, 0);
       expect(report.unmatchedEmailsDeleted, 0);
       expect(report.credentialsDeleted, isTrue);
+    });
+  });
+
+  group('refreshForReAdd (F324)', () {
+    Future<void> seed(SettingsStore settings) async {
+      await settings.setGmailSignInRequired(accountA, true);
+      await settings.setGmailSignInNotifiedAt(accountA, DateTime(2026, 11, 1));
+      await settings.setAccountBackgroundEnabled(accountA, true);
+      await testHelper.dbHelper.setGmailHistoryCursor(accountA, 'INBOX', '99');
+      await AuthRateLimiter(testHelper.dbHelper).recordFailure('icloud-$accountA');
+    }
+
+    test('a replaced account loses the old sign-in state and scan positions, '
+        'and keeps the user\'s choices', () async {
+      final settings = SettingsStore(testHelper.dbHelper);
+      await seed(settings);
+      await service.refreshForReAdd(accountA, resetServerState: true);
+
+      expect(await settings.getGmailSignInRequired(accountA), isFalse);
+      expect(await settings.getGmailSignInNotifiedAt(accountA), isNull);
+      expect(
+          await testHelper.dbHelper.getGmailHistoryCursor(accountA, 'INBOX'),
+          isNull);
+      final db = await testHelper.dbHelper.database;
+      // 7.7.1 Q3 = 2: the lockout count is kept until a login succeeds.
+      expect((await db.query('auth_rate_limit')).map((r) => r['account_id']),
+          ['icloud-$accountA']);
+      expect(await settings.getAccountBackgroundEnabled(accountA), isTrue,
+          reason: 'a user choice is not a re-add refresh');
+    });
+
+    test('a plain password repair keeps the scan positions', () async {
+      final settings = SettingsStore(testHelper.dbHelper);
+      await seed(settings);
+      await service.refreshForReAdd(accountA, resetServerState: false);
+
+      expect(await settings.getGmailSignInRequired(accountA), isFalse);
+      final db = await testHelper.dbHelper.database;
+      // Sprint 83 7.7.1 (Harold Q3 = 2): saving a password proves nothing, so
+      // the lockout count stays until a login succeeds. Would NOT catch: a
+      // successful login that fails to reset the count (auth_rate_limiter_test
+      // covers recordSuccess).
+      expect((await db.query('auth_rate_limit')).map((r) => r['account_id']),
+          ['icloud-$accountA'],
+          reason: 'a re-save must not reset the lockout count');
+      expect(
+          await testHelper.dbHelper.getGmailHistoryCursor(accountA, 'INBOX'),
+          '99');
+    });
+
+    test('another account is untouched', () async {
+      final settings = SettingsStore(testHelper.dbHelper);
+      await settings.setGmailSignInRequired(accountB, true);
+      await service.refreshForReAdd(accountA, resetServerState: true);
+      expect(await settings.getGmailSignInRequired(accountB), isTrue);
     });
   });
 

@@ -1,22 +1,23 @@
 {
     "_description": "Sprint status file that persists across context compaction. Update after each phase/sub-phase completion.",
-    "_last_updated": "2026-10-31T18:57:55-04:00",
+    "_last_updated": "2026-11-05T19:29",
     "_usage": "Read this file after context compaction to restore sprint approval state and progress.",
     "_staleness_note": "This file had drifted 15 sprints (last updated at Sprint 35, 2026-04-19) before being refreshed at Sprint 50 close-out. It is a Phase 7.7 checklist item -- update it at every sprint close-out, not opportunistically.",
     "current_sprint": {
-        "number": 82,
-        "branch": "feature/20261027_Sprint_82",
-        "status": "Phase 7.7 Sprint Review (7.7.5 done) -- PR #521 READY for final approval (CI run 2 green at e291ccbc); next: Harold merges, then Phase 8 (6.6 next branch from this branch, 8.1 main merge, 8.2 pass 1, 8.3 0.23.0 store release)",
-        "status_detail": "Plan approved 2026-10-30 (Q1=1 Q2=1 Q3=1 Q4=2 Q5=1 Q6=1, Q-S1=1, Q-S2=1; U1: 0.22.0 not uploaded, 0.23.0 notes combine 0.22.0 and 0.23.0). Cards #522-#532 created; #509 (Task 1) and #510 (Task 2) carried. Version 0.23.0+20. Task 4 (F303 Fold) moves to Manual Validation (needs a 0.23.0 closed-test build).",
+        "number": 83,
+        "branch": "feature/20261031_Sprint_83",
+        "status": "Phase 7.7 Final Code Reviews",
+        "status_detail": "Manual Validation complete (Harold, 2026-11-04). 7.7.1: Copilot COMMENTED (3 inline, fixed c1d9a2c6), code-reviewer and silent-failure-hunter run (pass 1 and pass 2); fixes bab21526, 76f8a2bb, 4308c893, c1d9a2c6 and later. All non-decision findings fixed (c1d9a2c6, d91ee027, d7168716, 4f9ffe5b); 7.7.1 evidence line in the plan. Harold 2026-11-05: Q1 = 1, Q2 = 1, Q3 = 2 done in c9f21abf; Q4 = 1, Copilot replies posted and threads resolved; IMP-2 (b), IMP-3 and IMP-4 applied; IMP-1 = 1 (planning card line plus 5.1.2 backstop) applied (aca1fa3b). Improvement review: code-reviewer 1 MEDIUM (Gmail HTML-only link addresses), Harold Q5 = 1, fixed; silent-failure-hunter stopped by Harold; CI run 1 green. PR #534 set ready 2026-11-05; CI run 2 (42133702181) green. Close-out docs done (summary, master plan, Sprint 84 stub, Executed-by lines, release notes). Next: WinWright sweep at HEAD (lib/ui changed after sweep-head 3817aeb6), then the readiness announcement. Full suite 2026-11-05 (before c9f21abf): 3,587 passed / 15 skipped / 8 failed (5 pass alone; 3 Task Scheduler tests time out, Get-ScheduledTask 7-21 s on this machine, cause unknown).",
         "plan_approved": true,
-        "pr_number": 521,
+        "pr_number": 534,
         "version": "0.23.0+20"
     },
     "previous_sprint": {
-        "number": 81,
-        "branch": "feature/20261023_Sprint_81",
-        "pr": "#507 -> develop (merged 2026-10-27, b79fa361), #520 develop -> main (763753be)",
-        "deliverables": "F67b code, F302, F303 code, F259, F301, F271, F278, F300, IMP-2b; version 0.22.0+19. 7.7.1 reviews before the retro (first time); improvement review fixes; diagnostic-log lock race fixed. #508 and #511-#519 closed by the merge; #509 (F67a) and #510 (F304 signing + TestFlight) open, moved to Sprint 82. CI run 2 green on 65518ba4 (run 40627456689)."
+        "number": 82,
+        "branch": "feature/20261027_Sprint_82",
+        "pr_number": 521,
+        "result": "Merged to develop f34be0d7 and main (#533) 8f588043 on 2026-10-31; tag v0.23.0. Closed by the merge: #522 #525 #526 #528-#532. Open as intended: #509 #510 #523 #524 #527.",
+        "docs": "docs/sprints/SPRINT_82_PLAN.md, SPRINT_82_RETROSPECTIVE.md, SPRINT_82_SUMMARY.md"
     },
     "github_issues": {
         "sprint_73": "#428 (open, MV74-1), #422 (open, MV74-3), #430 closed, #434 (open, MV74-2), #431 closed, #432 closed, #433 (open, MV74-3). Also closed in pass 1: #426 (superseded by #428), #427 (leftover captured as F236).",
@@ -31,7 +32,8 @@
         "sprint_81": "Task 0 #508, Task 1 #509 (F67a, stays open -> Sprint 82), Task 2 #510 (F304, stays open -> Sprint 82), Task 3 #511 (F67b), Task 4 #512 (F302), Task 5 #513 (F303), Task 6 #514 (F259), Task 7 #515 (F301), Task 8 #516 (F271), Task 9 #517 (F278), Task 10 #518 (F300), Task 11 #519 (IMP-2b). Before merge (2026-10-27): #508 #511 #512 #514 #515 #517 #518 #519 CLOSED; #513 #516 OPEN (closed by the merge).",
         "sprint_80": "Task 0 #491, Task 1 #471 (with #433 F205, #428 MV74-1), Task 2 #472 (F277), Task 3 #492 (F292), Task 4 #493 (F294), Task 5 #494 (F295), Task 6 #495 (F296), Task 7 #496 (F298), Task 8 #497 (F267), Task 9 #498 (F268), Task 10 #499 (F269), Task 12 #500 (F299), Task 13 #501 (F276), Task 14 #502 (F204), Task 15 #503, Task 16 #504, Task 17 #505. F289 removed (Q4b = 2).",
         "sprint_82": "Task 0 #522, Task 1 #509, Task 2 #510, Task 3 #523, Task 4 #524, Task 5 #525, Task 6 #526, Task 7 #527, Task 8 #528, Task 9 #529, Task 10 #530, Task 11 #531, Task 12 #532",
-        "sprint_82_close": "PR #521 body: Closes #522 #525 #526 #528 #529 #530 #531 #532; Part of #509 #510 #523 #524 #527 (stay open for Sprint 83). Verify after the merge."
+        "sprint_82_close": "PR #521 body: Closes #522 #525 #526 #528 #529 #530 #531 #532; Part of #509 #510 #523 #524 #527 (stay open for Sprint 83). Verify after the merge.",
+        "sprint_83": "Task 0 #535, Task 1 #524 + #527 (reused), Task 2 #536, Task 3 #537, Task 4 #538, Task 5 #539, Task 6 #540, Task 7 #541, Task 8 #542, Task 9 #543, Task 10 #544, Task 11 #545, Task 12 #546"
     },
     "_github_issues_note": "Sprint 66 cards created at Phase 3.3.1 (2026-09-07): #387 GP-19, #388 GP-4. Close by hand at Post-Merge Cleanup.",
     "test_metrics": {

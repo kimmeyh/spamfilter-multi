@@ -115,30 +115,7 @@ class RuleConflictResolver {
     int removedCount = 0;
 
     for (final rule in List<Rule>.from(rules.rules)) {
-      // Check from conditions
-      if (rule.conditions.from.isEmpty && rule.conditions.header.isEmpty) continue;
-
-      bool ruleMatchesEmail = false;
-
-      // Check from conditions
-      for (final fromPattern in rule.conditions.from) {
-        if (_patternMatchesEmail(fromPattern, normalizedEmail)) {
-          ruleMatchesEmail = true;
-          break;
-        }
-      }
-
-      // Check header conditions (which also match from)
-      if (!ruleMatchesEmail) {
-        for (final headerPattern in rule.conditions.header) {
-          if (_patternMatchesEmail(headerPattern, normalizedEmail)) {
-            ruleMatchesEmail = true;
-            break;
-          }
-        }
-      }
-
-      if (ruleMatchesEmail) {
+      if (_ruleMatchesEmail(rule, normalizedEmail)) {
         descriptions.add('Rule "${rule.name}" matches this email');
         try {
           await ruleProvider.removeRule(rule.name);
@@ -159,6 +136,29 @@ class RuleConflictResolver {
       conflictsRemoved: removedCount,
       conflictDescriptions: descriptions,
     );
+  }
+
+  /// True when [removeConflictingRules] would remove at least one rule for
+  /// [emailAddress]. Removes nothing. Used to keep a safe-sender suggestion
+  /// from silently deleting a block rule when accepted (Sprint 83 5.1.2 F10).
+  bool hasConflictingRule({
+    required String emailAddress,
+    required RuleSet rules,
+  }) {
+    final normalizedEmail = emailAddress.toLowerCase().trim();
+    return rules.rules.any((rule) => _ruleMatchesEmail(rule, normalizedEmail));
+  }
+
+  /// Whether a from or header condition of [rule] matches [normalizedEmail].
+  bool _ruleMatchesEmail(Rule rule, String normalizedEmail) {
+    for (final pattern in rule.conditions.from) {
+      if (_patternMatchesEmail(pattern, normalizedEmail)) return true;
+    }
+    // Header conditions also match the From address.
+    for (final pattern in rule.conditions.header) {
+      if (_patternMatchesEmail(pattern, normalizedEmail)) return true;
+    }
+    return false;
   }
 
   /// Check if a regex pattern matches an email address

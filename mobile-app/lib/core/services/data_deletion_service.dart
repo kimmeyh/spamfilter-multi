@@ -14,7 +14,9 @@ library;
 
 import '../storage/content_history_store.dart';
 import 'package:logger/logger.dart';
+import 'package:sqflite/sqflite.dart' show Transaction;
 
+import '../../adapters/email_providers/platform_registry.dart' show PlatformRegistry;
 import '../../adapters/storage/secure_credentials_store.dart';
 import '../../util/redact.dart';
 import '../storage/database_helper.dart';
@@ -25,6 +27,9 @@ class DeletionReport {
   final int emailActionsDeleted;
   final int unmatchedEmailsDeleted;
   final int accountSettingsDeleted;
+
+  /// F324 (Sprint 83): `account_settings` rows kept (the user's choices).
+  final int accountSettingsKept;
   final int backgroundScheduleEntriesDeleted;
   final bool credentialsDeleted;
 
@@ -33,10 +38,46 @@ class DeletionReport {
     this.emailActionsDeleted = 0,
     this.unmatchedEmailsDeleted = 0,
     this.accountSettingsDeleted = 0,
+    this.accountSettingsKept = 0,
     this.backgroundScheduleEntriesDeleted = 0,
     this.credentialsDeleted = false,
   });
 }
+
+/// F324 (Sprint 83, Q3 = 3, Harold 2026-11-01): the `account_settings` keys
+/// that survive removing an account, so adding the same address back finds the
+/// choices the user made (folders, scan modes, background on/off and frequency,
+/// days back, target folders, new-mail trigger). Every other key is in
+/// [accountSettingKeysRefreshed] and is deleted.
+///
+/// Prevention: the policy test `account_settings_classification_test` fails
+/// when a key used by `SettingsStore` is in neither set, so a new key is
+/// classified on purpose and is never kept or lost by accident.
+const Set<String> accountSettingKeysKept = {
+  'folders',
+  'scan_mode',
+  'manual_scan_mode',
+  'manual_scan_folders',
+  'background_scan_mode',
+  'background_scan_folders',
+  'manual_days_back',
+  'background_days_back',
+  'background_enabled',
+  'background_frequency',
+  'new_mail_trigger',
+  'deleted_rule_folder',
+  'safe_sender_folder',
+};
+
+/// F324: keys tied to the old sign-in, or an internal allocation. Deleted on
+/// removal. The first two are also cleared again on re-add
+/// ([DataDeletionService.refreshForReAdd]); `schedule_slot` is not, because a
+/// saved slot never moves (`SettingsStore.getOrAllocateScheduleSlot`).
+const Set<String> accountSettingKeysRefreshed = {
+  'gmail_sign_in_required',
+  'gmail_sign_in_notified_at',
+  'schedule_slot',
+};
 
 /// Service that tears down user data at the account or app level.
 class DataDeletionService {
@@ -63,6 +104,7 @@ class DataDeletionService {
     int emails = 0;
     int unmatched = 0;
     int accountSettings = 0;
+    int accountSettingsKept = 0;
     int scheduleEntries = 0;
     bool credsDeleted = false;
 
@@ -96,11 +138,23 @@ class DataDeletionService {
         whereArgs: [accountId],
       );
 
+      // F324 (Q3 = 3): keep the user's choices; delete the rest (the
+      // sign-in state and internal allocations). An allowlist, so a new key
+      // is deleted unless it is classified as kept.
+      final keptPlaceholders =
+          List.filled(accountSettingKeysKept.length, '?').join(',');
       accountSettings = await txn.delete(
         'account_settings',
+        where: 'account_id = ? AND setting_key NOT IN ($keptPlaceholders)',
+        whereArgs: [accountId, ...accountSettingKeysKept],
+      );
+      accountSettingsKept = (await txn.query(
+        'account_settings',
+        columns: ['setting_key'],
         where: 'account_id = ?',
         whereArgs: [accountId],
-      );
+      ))
+          .length;
 
       // Drop any future background-scan schedule rows for this account.
       scheduleEntries = await txn.delete(
@@ -112,11 +166,7 @@ class DataDeletionService {
       // Rate-limit state (SEC-22) keyed by accountId too. No catch here or
       // above (7.7.1 silent-failure M-4, the whole class): every table is
       // created by `_createTables` or its migration, so a failure is real.
-      await txn.delete(
-        'auth_rate_limit',
-        where: 'account_id = ?',
-        whereArgs: [accountId],
-      );
+      await _deleteRateLimit(txn, accountId);
 
       // R76-4 R7 (Sprint 78, prevention: `r76_4_content_history_policy_test`,
       // group "R7", fails when a table holding account data is missing from
@@ -165,13 +215,81 @@ class DataDeletionService {
       emailActionsDeleted: emails,
       unmatchedEmailsDeleted: unmatched,
       accountSettingsDeleted: accountSettings,
+      accountSettingsKept: accountSettingsKept,
       backgroundScheduleEntriesDeleted: scheduleEntries,
       credentialsDeleted: credsDeleted,
     );
     _logger.i('Account deletion complete: scans=$scans, emails=$emails, '
-        'unmatched=$unmatched, accountSettings=$accountSettings, '
+        'unmatched=$unmatched, accountSettings=$accountSettings '
+        '(kept $accountSettingsKept), '
         'schedule=$scheduleEntries, creds=$credsDeleted');
     return report;
+  }
+
+  /// The platform ids the IMAP adapter puts in front of the address to form
+  /// its rate-limit key (`'$platformId-${credentials.email}'`,
+  /// `generic_imap_adapter.dart` `loadCredentials` and `_recordSignInFailure`).
+  /// Sprint 83 7.7.1: the registry owns the list; this is an alias, not a copy.
+  static const Set<String> _rateLimitPlatformIds =
+      PlatformRegistry.imapPlatformIds;
+
+  /// F324 (Sprint 83): the lockout count is keyed by `platform-address`, so a
+  /// delete by the bare address (the old code) never matched it and a removed
+  /// account's failed-password count survived. Clears the bare key and every
+  /// `platform-address` key for the address.
+  Future<void> _deleteRateLimit(Transaction txn,String accountId) async {
+    final ids = [
+      accountId,
+      for (final p in _rateLimitPlatformIds) '$p-$accountId',
+    ];
+    final placeholders = List.filled(ids.length, '?').join(',');
+    await txn.delete(
+      'auth_rate_limit',
+      where: 'account_id IN ($placeholders)',
+      whereArgs: ids,
+    );
+  }
+
+  /// F324 (Sprint 83): clear everything tied to the OLD sign-in of [accountId]
+  /// when the address is added again, so nothing from the old sign-in or
+  /// server follows the new credentials. The user's choices
+  /// ([accountSettingKeysKept]) and the scan history are left alone.
+  ///
+  /// Always cleared: the sign-in-required flag and its notice time. NOT
+  /// cleared: the failed-password lockout count, which resets only on a
+  /// successful login (7.7.1 Q3 = 2). With [resetServerState] (a new account or a
+  /// replaced one, not a plain password repair) also the per-folder cursors,
+  /// the legacy history id and the background schedule rows, because a new
+  /// server or mailbox can have different UIDs and history ids.
+  ///
+  /// No catch: every table is created by `_createTables` or its migration, so
+  /// a failure is real and the caller reports it.
+  Future<void> refreshForReAdd(String accountId,
+      {required bool resetServerState}) async {
+    final db = await _dbHelper.database;
+    await db.transaction((txn) async {
+      await txn.delete(
+        'account_settings',
+        where: 'account_id = ? AND setting_key IN (?, ?)',
+        whereArgs: [
+          accountId,
+          'gmail_sign_in_required',
+          'gmail_sign_in_notified_at',
+        ],
+      );
+      // Sprint 83 7.7.1 (Harold Q3 = 2): the failed-password lockout count is
+      // NOT cleared here. Saving a password proves nothing; the count resets
+      // only when a login succeeds (`AuthRateLimiter.recordSuccess` in
+      // `GenericIMAPAdapter.loadCredentials`). Account delete still clears it.
+      if (resetServerState) {
+        await txn.delete('account_folder_cursors',
+            where: 'account_id = ?', whereArgs: [accountId]);
+        await txn.delete('background_scan_schedule',
+            where: 'account_id = ?', whereArgs: [accountId]);
+        await txn.update('accounts', {'last_history_id': null},
+            where: 'account_id = ?', whereArgs: [accountId]);
+      }
+    });
   }
 
   /// Wipe every table and every credential. Returns the app to a
