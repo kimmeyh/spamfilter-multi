@@ -1273,7 +1273,12 @@ closed test).
   unfolded Fold is wider than 600 logical px, so it takes the same desktop branch and 60% cap as Windows.
   Decision asked at Manual Validation. Manage Safe Senders checked live (2026-11-04, time not recorded): "Suggested safe senders (1)",
   karinreale@dandyblend.com, 7 No Rule emails, Accept and Reject shown (F321).
-  sweep-head: 3817aeb6
+  First sweep ran at 3817aeb6. **Re-run at close-out** (2026-11-05, finished by 19:34 by the clock; start time not recorded), because 11
+  `mobile-app/lib/ui` commits landed after it (Manual Validation and 7.7.1 fixes): default sweep on a DEV build of
+  cc55d2aa (`build-windows.ps1`, exit 0): test_f124_rule_labels PASS (16 s), test_f320_no_rule_review PASS (6 s),
+  test_s75_new_controls PASS (12 s); 3 passed, 0 failed; tray icon PASS; input desktop unlocked, mouse steps skipped
+  0; DB drift none.
+  sweep-head: cc55d2aa
 - **5.1.9 MV rehearsal**: 2026-11-04, on the 0.24.0 DEV build of a86a4fa6 (PID 66460). The live part was done in the
   5.1.5 checks above (read-only, WinWright). The steps that change state were rehearsed by their tests only: before 10:15
   the DEV window had a No Rule pop-up open (Harold using it), so WinWright clicked nothing. Step tests, 12 files
