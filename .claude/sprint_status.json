@@ -1,13 +1,13 @@
 {
     "_description": "Sprint status file that persists across context compaction. Update after each phase/sub-phase completion.",
-    "_last_updated": "2026-11-05T20:07",
+    "_last_updated": "2026-11-06T00:18",
     "_usage": "Read this file after context compaction to restore sprint approval state and progress.",
     "_staleness_note": "This file had drifted 15 sprints (last updated at Sprint 35, 2026-04-19) before being refreshed at Sprint 50 close-out. It is a Phase 7.7 checklist item -- update it at every sprint close-out, not opportunistically.",
     "current_sprint": {
         "number": 84,
         "branch": "feature/20261105_Sprint_84",
-        "status": "Phase 8.3 Microsoft Store Release",
-        "status_detail": "Phase 8 for the Sprint 83 cycle. 8.1 done (Harold, #547). 8.2 pass-1 sweep: cards closed, triad present, master plan rolled, Sprint 84 stub present, tag v0.24.0. 8.3: MSIX 0.24.0.0 build from the prod worktree (pulled 60 commits to 0a65fd22), then the Play AAB 0.24.0+21 (serialized). 8.4 scope selection waits for Harold after the uploads are in process.",
+        "status": "Phase 8.4 Backlog Refinement pass 2",
+        "status_detail": "Phase 8 for the Sprint 83 cycle. 8.3 done: 0.24.0 MSIX and AAB built and verified (e8f70c95); Harold 2026-11-06: Microsoft Store 0.23.0 live, 0.24.0 in certification; Play 0.24.0 (versionCode 21) uploaded to closed testing, in review. Apple enrollment R6QG2A9SHS still pending, so F67a, F304 and F67b are out of Sprint 84. 8.4: Harold selects scope from the 20-item slate.",
         "plan_approved": false,
         "pr_number": null,
         "version": "0.24.0+21"
@@ -66,9 +66,8 @@
     ],
     "blocking_issues": [],
     "next_actions": [
-        "8.3: verify the MSIX (self-test, manifest, size), then build and verify the AAB; Harold uploads both.",
-        "Harold: confirm whether 0.23.0 was submitted to the Microsoft Store (STORE_VERSION_STATUS Store row is 0.21.0, verified 2026-10-24) -- it decides the Windows notes range.",
-        "8.4 pass-2 scope selection: Harold selects from the 20-item list; then Phase 3 planning for Sprint 84."
+        "8.4 pass-2 scope selection: Harold selects from the 20-item list (Apple items excluded while enrollment is pending).",
+        "Phase 3 for Sprint 84; at 3.7.0b bump the version and move \"Last uploaded to Play\" to 0.24.0 (versionCode 21) in the same commit."
     ],
     "next_sprint_targeted": {
         "number": 84,
