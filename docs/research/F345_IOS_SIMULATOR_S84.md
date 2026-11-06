@@ -91,13 +91,31 @@ R-2 table (ran / did not run, with the reason; counts are from run 3 unless note
   The same code runs on Windows, so the test failed there too since that commit (by code reading; a local Windows run
   was started and abandoned because it builds the Windows app). Fix in this round: the test wraps the screen in
   `ChangeNotifierProvider<RuleSetProvider>`. Not excluded.
-- safe_sender_lifecycle_test.dart: RAN, FAILED in run 1. It has the same missing provider (fixed the same way), but it
-  failed EARLIER, at `scrollUntilVisible` for the Save button (`Bad state: No element`, after 50 drags the keyed button
-  was never built). Cause NOT established. EXCLUDED from the verdict for now and re-run in the diagnostic step.
-- folder_picker_test.dart: RAN, FAILED in run 1 at the last assertion (`Church` not found after clearing the search,
-  line 64). A headless probe with `debugDefaultTargetPlatformOverride = TargetPlatform.iOS` passes, so Dart-level
-  iOS behavior is not the cause. Cause NOT established. Hypothesis, UNVERIFIED: the on-screen keyboard that a real
-  iOS text field raises leaves the list almost no height. EXCLUDED from the verdict for now; diagnostic re-run.
+- safe_sender_lifecycle_test.dart: RAN, FAILED in run 1 and in every diagnostic re-run (runs 3 and 5). EXCLUDED from the
+  verdict. It has the same missing provider as rule_lifecycle (fixed the same way) but fails earlier, in
+  `scrollUntilVisible` for the Save button: `Bad state: No element` from `Iterable.single` in
+  `WidgetController.element`, the last line of `dragUntilVisible` (Flutter 3.47.4 `controller.dart:2489`), which means the
+  keyed Save button was still absent after the loop's 50 drags of 200 points. Probe evidence (run 5, iPhone 17, 1206 x
+  2622 px at dpr 3): before typing the Save button exists (`saveButton=1`); after `enterText` it is gone
+  (`saveButton=0`; the form grew); a single vertical drag of 400 points on `find.byType(Scrollable).first` brings it
+  back (`saveButton=1`). The number of Scrollable widgets varies between 2 and 3 across drags (2, 3, 2, 2, 3, 3), so `.first` is not a stable
+  target. The test passes `find.byType(Scrollable).first` as the scrollable, and `scrollUntilVisible` takes its drag
+  AXIS from that widget, so if `.first` is the single-line TextField's horizontal Scrollable the 50 drags are horizontal
+  and never scroll the form. Cause: NOT established (that is a hypothesis); run 6's probe prints each Scrollable's axis,
+  position and rect and replays the exact call, which settles it. If confirmed it is a test-side defect (a fragile
+  finder), not an app defect, and the fix is one line in the test: a `find.byType(Scrollable)` narrowed to the vertical
+  one (for example `find.byWidgetPredicate`), checked on Windows too.
+- folder_picker_test.dart: RAN, FAILED in run 1 and in every diagnostic re-run (runs 3 and 5), always at line 64
+  (`Church` not found after clearing the search). EXCLUDED from the verdict. A headless probe with
+  `debugDefaultTargetPlatformOverride = TargetPlatform.iOS` passes, so Dart-level iOS behavior is not the cause. Run 5
+  probe evidence: after clearing, the search controller text is empty (`controller=""`), `Inbox` and `Bulk Mail` are shown,
+  but only 3 of 4 `RadioListTile`s are built (4 at the start); the 4th, `Church`, the last in the list, is missing. So the filter state is correct and the list is not building its last
+  item, which points at the lazily built `ListView.builder` window (viewport plus 250 points of cache) being smaller than
+  at the start. The run 5 probe printed the view insets as objects, not numbers, so whether the on-screen keyboard shrinks
+  the viewport is still UNVERIFIED; run 6's probe prints the four inset numbers, every tile's rect and the ListView rect.
+  If the ListView is short after the first `enterText`, the cause is the Simulator keyboard (an environment effect, the
+  test would need `tester.testTextInput.hide()` or the Simulator's hardware-keyboard setting, not an app change);
+  if the ListView is full height, it is an app or framework defect in the single-select list and needs its own card.
 - read_only_flows_test.dart: RAN in run 1, 5 passed, 1 FAILED: `F25: Rule Test tool runs a plaintext pattern`, "A
   RenderFlex overflowed by 27 pixels on the bottom" at `lib/ui/screens/rule_test_screen.dart:523`, constraints
   `0<=h<=63`. A real layout defect at a phone viewport, found by the Simulator. Fixed by commit c9130577 (the four

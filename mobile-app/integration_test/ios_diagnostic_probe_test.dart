@@ -27,13 +27,26 @@ const bool _on = bool.fromEnvironment('IOS_PROBE');
 
 void _facts(WidgetTester tester, String stage) {
   final v = tester.view;
+  // viewInsets and padding are FakeViewPadding objects: print the four numbers.
+  String pad(dynamic p) =>
+      '(l=${p.left} t=${p.top} r=${p.right} b=${p.bottom})';
   // ignore: avoid_print
   print('PROBE [$stage] physicalSize=${v.physicalSize} dpr=${v.devicePixelRatio} '
-      'viewInsets=${v.viewInsets} padding=${v.padding} '
+      'viewInsets=${pad(v.viewInsets)} padding=${pad(v.padding)} '
       'textFields=${find.byType(TextField).evaluate().length} '
       'scrollables=${find.byType(Scrollable).evaluate().length} '
       'radioTiles=${find.byType(RadioListTile<String>).evaluate().length} '
       'saveButton=${find.byKey(WidgetKeys.saveRuleButton).evaluate().length}');
+  final scrollables = find.byType(Scrollable);
+  for (var i = 0; i < scrollables.evaluate().length; i++) {
+    final w = tester.widget<Scrollable>(scrollables.at(i));
+    final st = tester.state<ScrollableState>(scrollables.at(i));
+    final rect = tester.getRect(scrollables.at(i));
+    // ignore: avoid_print
+    print('PROBE   scrollable[$i] axis=${w.axisDirection} '
+        'pixels=${st.position.pixels} max=${st.position.maxScrollExtent} '
+        'viewport=${st.position.viewportDimension} rect=$rect');
+  }
 }
 
 void main() {
@@ -80,6 +93,13 @@ void main() {
           'Inbox=${find.text('Inbox').evaluate().length} '
           'Bulk=${find.text('Bulk Mail').evaluate().length}');
       _facts(tester, 'picker after clear');
+      final tiles = find.byType(RadioListTile<String>);
+      for (var i = 0; i < tiles.evaluate().length; i++) {
+        // ignore: avoid_print
+        print('PROBE   tile[$i] rect=${tester.getRect(tiles.at(i))}');
+      }
+      // ignore: avoid_print
+      print('PROBE   ListView rect=${tester.getRect(find.byType(ListView).first)}');
     }, skip: !_on);
 
     testWidgets('safe sender form: state after entering the domain', (tester) async {
@@ -98,6 +118,20 @@ void main() {
       // ignore: avoid_print
       print('PROBE safe sender after enterText: controller="${field.controller?.text}"');
       _facts(tester, 'safe sender after enterText');
+      // Exact replay of what safe_sender_lifecycle_test.dart does.
+      try {
+        await tester.scrollUntilVisible(
+          find.byKey(WidgetKeys.saveRuleButton),
+          200.0,
+          scrollable: find.byType(Scrollable).first,
+        );
+        // ignore: avoid_print
+        print('PROBE replay of scrollUntilVisible: OK');
+      } catch (e) {
+        // ignore: avoid_print
+        print('PROBE replay of scrollUntilVisible: FAILED $e');
+      }
+      _facts(tester, 'safe sender after replay');
       for (var i = 0; i < 5; i++) {
         final s = find.byType(Scrollable);
         if (s.evaluate().isEmpty) break;
