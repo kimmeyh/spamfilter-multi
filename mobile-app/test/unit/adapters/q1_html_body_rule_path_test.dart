@@ -8,9 +8,12 @@
 /// that goes back to text/plain only fails here (Sprint 73 IMP-3: correct
 /// helper, wrong wiring).
 ///
-/// Would NOT catch: an HTML link whose address is only in its href attribute
-/// (htmlToText drops attributes, so neither the pop-up nor the rule sees it;
-/// that boundary is stated in `body_link_domain.dart`).
+/// Q5 = 1 (improvement review): an HTML link keeps its address in the text,
+/// so a body rule on a domain that appears only in an href still matches a
+/// Gmail single-part HTML message (before Q1 those rules saw the raw HTML).
+///
+/// Would NOT catch: a link address that is not http(s) or www (for example an
+/// unquoted href or a relative URL); htmlToText keeps quoted http(s)/www only.
 library;
 
 import 'dart:convert';
@@ -21,6 +24,7 @@ import 'package:googleapis/gmail/v1.dart' as gmail;
 
 import 'package:my_email_spam_filter/adapters/email_providers/generic_imap_adapter.dart';
 import 'package:my_email_spam_filter/adapters/email_providers/gmail_api_adapter.dart';
+import 'package:my_email_spam_filter/core/services/content_text_extractor.dart';
 
 String _b64(String s) => base64Url.encode(utf8.encode(s));
 
@@ -62,6 +66,27 @@ void main() {
           .debugConvertMimeMessage(mime, 'INBOX');
       expect(msg.body, contains('plain words'));
       expect(msg.body, isNot(contains('html words')));
+    });
+  });
+
+  group('htmlToText link addresses (Q5 = 1)', () {
+    test('a web link keeps its address after the link text', () {
+      expect(htmlToText('<a class="b" HREF=\'http://x.example/p\'>Go <b>now</b></a>'),
+          'Go now (http://x.example/p)');
+      expect(htmlToText('<a href="www.y.example">Shop</a>'),
+          'Shop (www.y.example)');
+    });
+
+    test('an address already in the link text is not repeated', () {
+      expect(htmlToText('<a href="https://z.example">https://z.example</a>'),
+          'https://z.example');
+    });
+
+    test('mailto, anchors and javascript links keep only their text', () {
+      expect(
+          htmlToText('<a href="mailto:a@b.example">Mail</a> '
+              '<a href="#top">Top</a> <a href="javascript:void(0)">X</a>'),
+          'Mail Top X');
     });
   });
 
@@ -111,6 +136,27 @@ void main() {
       );
       final converted = GmailApiAdapter().debugConvertGmailMessage(msg, 'INBOX');
       expect(converted!.body, 'nested plain');
+    });
+
+    test('a single-part HTML message keeps an href-only link address', () {
+      // Q5 = 1: before Q1 this shape gave rules the raw HTML, so a body rule
+      // on spam-only-in-href.example matched it. It must still match.
+      final msg = gmail.Message(
+        id: 'm4',
+        payload: gmail.MessagePart(
+          mimeType: 'text/html',
+          headers: [h('From', 'promo@shop.example')],
+          body: gmail.MessagePartBody(
+              data: _b64('<p><a href="https://spam-only-in-href.example/x?a=1'
+                  '&amp;b=2">Click here</a></p>')),
+        ),
+      );
+      final converted = GmailApiAdapter().debugConvertGmailMessage(msg, 'INBOX');
+      expect(converted!.body,
+          'Click here (https://spam-only-in-href.example/x?a=1&b=2)');
+      expect(RegExp(r'spam-only-in-href\.example').hasMatch(converted.body),
+          isTrue,
+          reason: 'a body rule on the href-only domain still matches');
     });
 
     test('a metadata-only message has an empty body', () {

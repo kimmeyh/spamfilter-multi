@@ -1277,7 +1277,8 @@ closed test).
   review COMMENTED 2026-11-05 04:35 UTC with 3 inline comments (2 MEDIUM, 1 LOW): agent-work-status newest scratchpad
   (already fixed in 4308c893), test-hook python lookup (fixed c1d9a2c6 the other way: only "python", what
   `.claude/settings.json` runs), a test anchored on a comment (fixed c1d9a2c6). The replies on the 3 threads were
-  NOT posted: the auto-mode classifier blocked the write. code-reviewer pass 1 (49 of 125 files read; the gap closed
+  first blocked by the auto-mode classifier; after Harold's Q4 = 1 (2026-11-05) they were posted with gh and all 3
+  threads resolved. code-reviewer pass 1 (49 of 125 files read; the gap closed
   by pass 2, 75 of 76 files read) and silent-failure-hunter (49 of 52 production files read): 1 HIGH shared (H-1
   Block Body on HTML-only mail), CR M-1 to M-4, L-1 to L-4; SFH M-1 to M-3, L-1 to L-7 and 2 LOW; pass 2 F1 HIGH,
   F2 to F13. Dispositions: fixed without asking (each fix under 4 code files and 600 lines): bab21526 (3 code files,
@@ -1287,9 +1288,17 @@ closed test).
   remove warning L-3, scratchpad lookup L-4 / L-1, pop-up read wait CR M-2), c1d9a2c6 (2 code files, 19 lines:
   Copilot, F8), d91ee027 (3 code files, 38 lines: notifier off channel, miner -SentJsonl guard, F3 to F7, F9 to F13),
   d7168716 (3 code files, 94 lines: SFH L-5 reset, unreadable sign-in state), 4f9ffe5b (docs: CR M-4). Asked
-  Harold (decision class), answers pending: Q1 H-1 Block Body on HTML-only mail, Q2 SFH M-1 refused-login repeat
+  Harold (decision class): Q1 H-1 Block Body on HTML-only mail, Q2 SFH M-1 refused-login repeat
   (also covers CR M-3, pop-up logins counting toward the lockout, which the M-2 wait only reduces), Q3 a re-save
-  clears the sign-in flag and the lockout count. Every guard fix mutation-checked: all KILLED.
+  clears the sign-in flag and the lockout count. Harold 2026-11-05: Q1 = 1, Q2 = 1, Q3 = 2, fixed in c9f21abf (5
+  mutants KILLED). Every guard fix mutation-checked: all KILLED.
+  **Improvement review 1 MEDIUM, fixed** (2026-11-05, scope c9f21abf, aef6b4b0, aca1fa3b): code-reviewer found 1
+  MEDIUM, otherwise clean. The Q1 change turned a Gmail single-part HTML body from raw HTML into text without link
+  addresses, so a body rule on a domain found only in an href stopped matching. Harold Q5 = 1: `htmlToText` keeps
+  each http(s)/www link address after the link text, for the pop-up and the rules alike (1 code file plus a doc
+  comment; 4 new tests; 3 mutants KILLED). silent-failure-hunter: stopped by Harold before it reported ("unreasonably
+  broad for such a small code change"). CI run 1 (42129542458, workflow_dispatch on the draft branch): all 3 jobs
+  green.
 
 ### Manual Validation results and answers (Harold, 2026-11-04)
 

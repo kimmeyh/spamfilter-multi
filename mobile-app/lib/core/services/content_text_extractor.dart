@@ -21,7 +21,16 @@ const int kContentHistoryMaxBodyBytes = 64 * 1024;
 
 /// A readable text version of [html]: script/style/head removed, line breaks
 /// at block elements, tags dropped, the common entities decoded, runs of blank
-/// lines collapsed. Not a full HTML renderer -- enough for a training corpus.
+/// lines collapsed. Not a full HTML renderer.
+///
+/// A link keeps its web address: `<a href="https://x.example/p">Click</a>`
+/// becomes `Click (https://x.example/p)`; when the link text already contains
+/// the address it is not repeated. Sprint 83 7.7.1 improvement review (Harold
+/// Q5 = 1): this text is what body rules match (see [selectBodyText]); before
+/// Q1 a Gmail HTML-only message gave rules the raw HTML, so a rule on a domain
+/// that appears only in an href matched it. Dropping the address here would
+/// silently stop that rule. Only http(s) and www addresses are kept; mailto,
+/// `#` anchors and javascript are dropped as before.
 String htmlToText(String html) {
   var s = html;
   s = s.replaceAll(
@@ -29,6 +38,14 @@ String htmlToText(String html) {
           caseSensitive: false, dotAll: true),
       ' ');
   s = s.replaceAll(RegExp(r'<!--.*?-->', dotAll: true), ' ');
+  s = s.replaceAllMapped(_anchorPattern, (m) {
+    final url = (m.group(2) ?? '').trim();
+    final inner = m.group(3) ?? '';
+    final isWeb = RegExp(r'^(https?://|www\.)', caseSensitive: false)
+        .hasMatch(url);
+    if (!isWeb || inner.contains(url)) return ' $inner ';
+    return ' $inner ($url) ';
+  });
   s = s.replaceAll(RegExp(r'<br\s*/?>', caseSensitive: false), '\n');
   s = s.replaceAll(
       RegExp(r'</(p|div|li|tr|h[1-6]|table|ul|ol|blockquote)\s*>',
@@ -50,6 +67,13 @@ String htmlToText(String html) {
   }
   return out.join('\n');
 }
+
+/// An `<a ... href="URL" ...>TEXT</a>` element: group 2 is URL, group 3 is
+/// TEXT (which may still hold tags; they are removed after).
+final RegExp _anchorPattern = RegExp(
+    r'''<a\b[^>]*?\bhref\s*=\s*(["'])(.*?)\1[^>]*>(.*?)</a\s*>''',
+    caseSensitive: false,
+    dotAll: true);
 
 String _decodeEntities(String s) {
   const named = {

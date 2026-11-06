@@ -11,9 +11,10 @@
 /// `SpamFilterPlatform.fetchFullBody` returns. Since Sprint 83 7.7.1 (Harold
 /// Q1 = 1) that is the text/plain part, else the HTML part converted to text
 /// (`content_text_extractor.dart` `selectBodyText`), the same text the pop-up
-/// reads with `fetchContentText`. Links are found in the TEXT: an HTML link
-/// whose address appears only in its `href` attribute is not in the text, so
-/// it is not a candidate here and a rule could not match it either.
+/// reads with `fetchContentText`. Links are found in the TEXT. An HTML link
+/// keeps its http(s) or www address in that text (`htmlToText`, Sprint 83
+/// 7.7.1 improvement review, Harold Q5 = 1), so a link whose address is only in
+/// its `href` attribute is a candidate here and a rule can match it.
 ///
 /// SEC-14: the body is read in memory for the pop-up and never stored. Only the
 /// resulting domain reaches a rule.
