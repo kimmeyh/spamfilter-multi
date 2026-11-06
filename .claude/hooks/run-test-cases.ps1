@@ -16,7 +16,7 @@
     no test coverage at all and their false positives went unnoticed):
       test-cases/*.json                  -> sprint-auto-advance.ps1  (Stop)
       test-cases/stash-guard/*.json      -> block-carry-forward-stash.py (PreToolUse)
-      test-cases/closeout/*.json         -> verify-closeout-complete.ps1 (Stop)
+      test-cases/closeout/*.json         -> verify-closeout-complete.py (Stop; Python since F327, Sprint 84)
       test-cases/sprint-cards/*.json     -> require-sprint-cards.py (PreToolUse)
       test-cases/heredoc-guard/*.json    -> block-heredoc-python-backslash.py (PreToolUse)
       test-cases/staging-guard/*.json    -> block-blind-staging.py (PreToolUse)
@@ -51,7 +51,7 @@ if (-not (Test-Path -LiteralPath $casesDir)) { throw "Cases dir not found: $case
 $routes = @{
     ''             = 'sprint-auto-advance.ps1'
     'stash-guard'  = 'block-carry-forward-stash.py'          # Sprint 84 F326; Python since F321 (Sprint 83 ADR-0051)
-    'closeout'     = 'verify-closeout-complete.ps1'
+    'closeout'     = 'verify-closeout-complete.py'           # Sprint 84 F327; Python since F321 (Sprint 83 ADR-0051)
     'sprint-cards' = 'require-sprint-cards.py'               # Sprint 84 F326; Python since F321 (Sprint 83 ADR-0051)
     'heredoc-guard' = 'block-heredoc-python-backslash.py'    # Sprint 74 retro IMP-6; Python since F321 (Sprint 83)
     'staging-guard' = 'block-blind-staging.py'               # Sprint 76 retro IMP-4; Python since F321 (Sprint 83)

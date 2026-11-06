@@ -559,7 +559,7 @@ Windows (this machine) and on Linux and macOS (CI and a future Mac for iOS): R-5
 **Model**: Sonnet -- *why not the cheaper tier*: 515 lines with many check families and exact parsing quirks the
 close-out depends on; a port that changes one quirk silently disables a gate.
 **Delegation checklist included in the sub-agent prompt** (when delegated): yes
-**Executed-by** (filled at completion):
+**Executed-by** (filled at completion): Sonnet sub-agent, as assigned (2026-11-06 11:10-12:33). verify-closeout-complete.py: 26 closeout cases pass (new CRLF case violation-15), full hook suite 179/179 (baseline 178 plus one); test_pylib.py 58 OK on Windows (Linux CI pending, AC-3); parity probe 0 mismatches over 45 payloads; 15 mutants KILLED (3 first SURVIVED, tests added). New common.gh() wrapper (never raises, 8 s timeout). Deviation: mutants ran focused test_pylib tests, not the 30-minute full suite per mutant.
 **Step-types**: HOOK, TEST-UNIT. **Est-Effort**: 120-200m.
 
 ## Task 7 -- F328: Python batch H3, sprint-auto-advance Stop hook (Priority 35)

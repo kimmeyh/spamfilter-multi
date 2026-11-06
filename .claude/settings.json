@@ -59,7 +59,7 @@
           },
           {
             "type": "command",
-            "command": "powershell -NoProfile -ExecutionPolicy Bypass -File \"${CLAUDE_PROJECT_DIR}\\.claude\\hooks\\verify-closeout-complete.ps1\"",
+            "command": "python \"${CLAUDE_PROJECT_DIR}/.claude/hooks/verify-closeout-complete.py\"",
             "timeout": 20
           }
         ]

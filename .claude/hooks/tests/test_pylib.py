@@ -9,7 +9,8 @@ Three groups:
   2. the pilot hooks end to end through a subprocess (stdin payload in, exit code and stderr out),
      including the Windows defect class: non-ASCII text while the console code page is cp1252;
   3. a REPLAY of every PowerShell-suite case for the ported hooks (test-cases/staging-guard,
-     heredoc-guard, commit-lock; Sprint 84 F326: stash-guard, sprint-cards, velocity-warn) through
+     heredoc-guard, commit-lock; Sprint 84 F326: stash-guard, sprint-cards, velocity-warn; F327:
+     closeout, the Stop hook, with gh stubbed so no case needs the network) through
      the Python `decide` functions. This is what makes the
      Linux CI run prove the hooks, not only the library. allow-* expects exit 0 and violation-*
      expects exit 2, the same rule run-test-cases.ps1 applies.
@@ -442,7 +443,11 @@ def warning_of(stdout: str):
         return None
 
 
-def replay_cases(test_case, hook_file: str, folder: str):
+REPO_POSIX = REPO.as_posix()
+RECORDED_REPO = "D:/Data/Harold/github/spamfilter-multi"  # where the closeout cases name their fixtures
+
+
+def replay_cases(test_case, hook_file: str, folder: str, stub_gh: bool = False):
     """Run every recorded case in test-cases/<folder> through the hook's decide().
 
     allow-* expects exit 0 and no warning; warn-* expects exit 0 and a warning; violation-* expects
@@ -450,6 +455,11 @@ def replay_cases(test_case, hook_file: str, folder: str):
     module = load_hook(hook_file)
     files = sorted((CASES / folder).glob("*.json"))
     test_case.assertGreater(len(files), 5, f"no cases found in {folder}")
+    if stub_gh:
+        # Closeout cases must not depend on the network or a signed-in gh: with no GitHub answer
+        # check 3c skips (fails open), which is what every recorded case expects.
+        test_case.addCleanup(setattr, common, "gh", common.gh)
+        common.gh = lambda *args, **kwargs: (1, "")
     with tempfile.TemporaryDirectory() as tmp:
         fixtures = {}
         now = datetime.now(timezone.utc)
@@ -465,7 +475,7 @@ def replay_cases(test_case, hook_file: str, folder: str):
         for key, value in make_velocity_repos(Path(tmp) / "repos").items():
             fixtures["REPO_" + key] = value
         for case in files:
-            text = case.read_text(encoding="utf-8")
+            text = case.read_text(encoding="utf-8").replace(RECORDED_REPO, REPO_POSIX)
             for key, value in fixtures.items():
                 text = text.replace("{{" + key + "}}", value)
             expected = 2 if case.stem.startswith("violation-") else 0
@@ -478,7 +488,7 @@ def replay_cases(test_case, hook_file: str, folder: str):
                 if case.stem.startswith("allow-"):
                     test_case.assertIsNone(warning, "an allow-* case must print no warning")
                 if expected == 2:
-                    test_case.assertTrue(verdict.stderr.startswith("[BLOCKED]"), verdict.stderr[:60])
+                    test_case.assertTrue(verdict.stderr.startswith("[BLOCKED"), verdict.stderr[:60])
 
 
 class ReplayTests(unittest.TestCase):
@@ -499,6 +509,9 @@ class ReplayTests(unittest.TestCase):
 
     def test_velocity_warn_cases(self):
         replay_cases(self, "warn-commit-without-velocity.py", "velocity-warn")
+
+    def test_closeout_cases(self):
+        replay_cases(self, "verify-closeout-complete.py", "closeout", stub_gh=True)
 
 
 class PortedHookTests(unittest.TestCase):
@@ -602,6 +615,235 @@ class PortedHookTests(unittest.TestCase):
         self.assertEqual(verdict.code, 0)
         self.assertIn("did not run", warning_of(verdict.stdout) or "")
         self.assertIn("simulated git failure", warning_of(verdict.stdout) or "")
+
+    # ---- verify-closeout-complete (F327) -------------------------------------------------------
+    CLOSEOUT_MESSAGE = "Sprint 77 is fully closed out. Ready for the next sprint."
+
+    def closeout_payload(self, fixture: str, **extra) -> dict:
+        payload = {"cwd": str(CASES / "fixtures" / fixture), "branch_override": "feature/20261010_Sprint_77",
+                   "dirty_zero_files_override": "", "skip_git_checks": True,
+                   "last_assistant_message": self.CLOSEOUT_MESSAGE}
+        payload.update(extra)
+        return payload
+
+    def test_closeout_crlf_plan_still_blocks_on_a_placeholder_executed_by(self):
+        """R-2: the plan keeps its CRLF and BOM. A reader that left the carriage return in the value
+        would call the seeded Executed-by line filled. Does NOT catch CRLF handling in checks other
+        than 3d-3 (3d and 3d-2 are covered by their own LF fixtures)."""
+        module = load_hook("verify-closeout-complete.py")
+        plan = CASES / "fixtures" / "crlf-plan-sprint" / "docs" / "sprints" / "SPRINT_77_PLAN.md"
+        raw = plan.read_bytes()
+        self.assertTrue(raw.startswith(b"\xef\xbb\xbf") and b"\r\n" in raw, "fixture lost its CRLF or BOM")
+        text = module.read_markdown(str(plan))
+        self.assertIn("\r\n", text, "read_markdown must keep CRLF (text mode would hide it)")
+        self.assertFalse(text.startswith("﻿"), "read_markdown must remove the BOM")
+        verdict = module.decide(self.closeout_payload("crlf-plan-sprint"))
+        self.assertEqual(verdict.code, 2)
+        self.assertIn("1 task card(s) whose '**Executed-by**' line is still empty", verdict.stderr)
+        self.assertNotIn("7.7.1 final code reviews", verdict.stderr)  # the CRLF 7.7.1 line itself parsed fine
+
+    def test_closeout_block_names_check_text_and_bullets_each_violation(self):
+        """Does NOT catch a changed wording inside a violation; the first line, the intro and the
+        bypass paragraph are pinned."""
+        module = load_hook("verify-closeout-complete.py")
+        verdict = module.decide(self.closeout_payload("executed-by-empty-sprint"))
+        self.assertEqual(verdict.code, 2)
+        lines = verdict.stderr.splitlines()
+        self.assertEqual(lines[0], "[BLOCKED by verify-closeout-complete hook]")
+        self.assertIn("SPRINT_CHECKLIST.md artifacts contradict that:", verdict.stderr)
+        self.assertTrue(any(line.startswith("  - SPRINT_77_PLAN.md has 1 task card(s) whose") for line in lines))
+        self.assertIn("include 'allow_stop_hook_bypass', or state explicitly which item does not", verdict.stderr)
+
+    def test_closeout_open_issues_block_only_after_the_pr_merged_and_gh_failure_fails_open(self):
+        """Check 3c with fake git and gh answers. Does NOT catch the real gh JSON shape (state and
+        mergedAt for an unmerged PR); the parity probe in the sprint plan covers that against live gh."""
+        module = load_hook("verify-closeout-complete.py")
+        real_git, real_gh = common.git, common.gh
+        self.addCleanup(setattr, common, "git", real_git)
+        self.addCleanup(setattr, common, "gh", real_gh)
+
+        def fake_git(*args, **kwargs):
+            if args[:2] == ("remote", "get-url"):
+                return 0, "https://github.com/example/repo.git\n"
+            if args[:2] == ("branch", "--show-current"):
+                return 0, "feature/20261030_Sprint_81\n"
+            return real_git(*args, **kwargs)
+
+        def fake_gh(pr_state, issues):
+            def run(*args, **kwargs):
+                if args[:2] == ("pr", "list"):
+                    return pr_state
+                return issues
+            return run
+
+        payload = self.closeout_payload("improvement-review-present-sprint",
+                                        branch_override="feature/20261030_Sprint_81")
+        common.git = fake_git
+        # Merged PR and an open card: blocks, naming the card.
+        common.gh = fake_gh((0, '[{"state":"MERGED","mergedAt":"2026-11-01T00:00:00Z"}]'), (0, '[{"number":12}]'))
+        verdict = module.decide(payload)
+        self.assertEqual(verdict.code, 2)
+        self.assertIn("GitHub issues labeled 'sprint' are still OPEN: #12.", verdict.stderr)
+        # PR still open: the open card is the correct state.
+        common.gh = fake_gh((0, '[{"state":"OPEN","mergedAt":null}]'), (0, '[{"number":12}]'))
+        self.assertEqual(module.decide(payload).code, 0)
+        # gh fails (not installed, offline, timeout): fail open.
+        common.gh = fake_gh((1, ""), (1, ""))
+        self.assertEqual(module.decide(payload).code, 0)
+        # gh prints text that is not JSON: fail open.
+        common.gh = fake_gh((0, "rate limited"), (0, "rate limited"))
+        self.assertEqual(module.decide(payload).code, 0)
+
+    def test_closeout_claim_and_mid_sprint_patterns(self):
+        """Gate 2: a mid-sprint signal beats a claim; each claim shape fires; case does not matter.
+        Does NOT catch a new phrasing nobody listed (the patterns are deliberately narrow)."""
+        module = load_hook("verify-closeout-complete.py")
+        for claim in ("The sprint is now complete.", "Close-out was finished.", "READY FOR THE NEXT SPRINT",
+                      "All the checklist items are done.", "Everything through the post-merge section.",
+                      "Sprint 77 is closed."):
+            self.assertTrue(module.claims_closeout(claim), claim)
+        for mid in ("Sprint status: the sprint is complete.", "Task 3 is blocked; the sprint is complete.",
+                    "Stopping criterion 2 met; the sprint is complete.", "It remains blocked; sprint is done.",
+                    "Still running. The sprint is complete."):
+            self.assertFalse(module.claims_closeout(mid), mid)
+        self.assertFalse(module.claims_closeout("Task 1 is complete."))
+
+    def test_closeout_previous_summary_3b_and_velocity_rows_3b2(self):
+        """Checks 3b and 3b-2 in a throwaway project. Does NOT catch a velocity row whose sprint column
+        holds a different number with the same digits (for example 177 versus 77); the regex needs the
+        cell to be exactly the sprint number between pipes."""
+        module = load_hook("verify-closeout-complete.py")
+        with tempfile.TemporaryDirectory() as tmp:
+            project = Path(tmp)
+            (project / ".claude").mkdir()
+            (project / ".claude" / "sprint_status.json").write_text(
+                json.dumps({"current_sprint": {"number": 77}}), encoding="utf-8")
+            sprints = project / "docs" / "sprints"
+            sprints.mkdir(parents=True)
+            payload = self.closeout_payload("final-review-missing-sprint")
+            payload["cwd"] = str(project)
+
+            self.assertEqual(module.decide(payload).code, 0)  # nothing to complain about yet
+            (sprints / "SPRINT_76_RETROSPECTIVE.md").write_text("retro", encoding="utf-8")
+            verdict = module.decide(payload)
+            self.assertEqual(verdict.code, 2)
+            self.assertIn("docs/sprints/SPRINT_76_SUMMARY.md is missing (Phase 3.2.1 MANDATORY", verdict.stderr)
+            (sprints / "SPRINT_76_SUMMARY.md").write_text("summary", encoding="utf-8")
+            self.assertEqual(module.decide(payload).code, 0)
+
+            velocity = project / "docs" / "CODING_VELOCITY.md"
+            velocity.write_text("| F1 | 177 | DONE | 1 |\n| F2 | 77 | PLANNED | 1 |\n", encoding="utf-8")
+            verdict = module.decide(payload)
+            self.assertEqual(verdict.code, 2)
+            self.assertIn("docs/CODING_VELOCITY.md has NO Actuals Log row for Sprint 77.", verdict.stderr)
+            velocity.write_text("| F1 | 77 | done | 1 |\n", encoding="utf-8")  # case-insensitive, as -notmatch was
+            self.assertEqual(module.decide(payload).code, 0)
+
+    def test_closeout_status_age_3a(self):
+        """Check 3a staleness: a LIVE status file older than 30 days is flagged; the same file under
+        test-cases/fixtures/ is not. Does NOT catch a date format the parser rejects (that is skipped,
+        as the PowerShell did)."""
+        module = load_hook("verify-closeout-complete.py")
+        status = {"_last_updated": "2020-01-01T00:00", "current_sprint": {"number": 77}}
+        with tempfile.TemporaryDirectory() as tmp:
+            for sub, expect_flag in (("live", True), ("test-cases/fixtures/x", False)):
+                project = Path(tmp) / sub
+                (project / ".claude").mkdir(parents=True)
+                (project / ".claude" / "sprint_status.json").write_text(json.dumps(status), encoding="utf-8")
+                payload = self.closeout_payload("final-review-missing-sprint")
+                payload["cwd"] = str(project)
+                verdict = module.decide(payload)
+                self.assertEqual(" days old." in verdict.stderr, expect_flag, sub)
+            fresh = Path(tmp) / "fresh"
+            (fresh / ".claude").mkdir(parents=True)
+            status["_last_updated"] = datetime.now().strftime("%Y-%m-%dT%H:%M")
+            (fresh / ".claude" / "sprint_status.json").write_text(json.dumps(status), encoding="utf-8")
+            payload = self.closeout_payload("final-review-missing-sprint")
+            payload["cwd"] = str(fresh)
+            self.assertNotIn(" days old.", module.decide(payload).stderr)
+
+    def test_closeout_sweep_head_check_3e(self):
+        """Check 3e with fake git answers (the recorded cases all set skip_git_checks). Does NOT catch
+        the real `git log` range syntax; the parity probe ran that against this repo."""
+        module = load_hook("verify-closeout-complete.py")
+        real_git = common.git
+        self.addCleanup(setattr, common, "git", real_git)
+        sweep = "  - sweep-head: 0123abc\n"
+        plan_text = ("- **5.1.2 F-PRECHECK**: ok\n- **5.1.5 WinWright sweep**: ok\n{sweep}"
+                     "- **7.7.1 final code reviews**: 2026-10-10, done\n")
+        status = {"current_sprint": {"number": 77, "plan_approved": True, "pr_number": 1}}
+
+        def run(has_sweep_head, log=None, diffs=()):
+            calls = []
+
+            def fake_git(*args, **kwargs):
+                calls.append(args)
+                if args[0] == "log":
+                    return log
+                if args[0] == "diff":
+                    return diffs[sum(1 for c in calls if c[0] == "diff") - 1]
+                return real_git(*args, **kwargs)
+
+            with tempfile.TemporaryDirectory() as tmp:
+                project = Path(tmp)
+                (project / ".claude").mkdir()
+                (project / ".claude" / "sprint_status.json").write_text(json.dumps(status), encoding="utf-8")
+                (project / "docs" / "sprints").mkdir(parents=True)
+                (project / "docs" / "sprints" / "SPRINT_77_PLAN.md").write_text(
+                    plan_text.format(sweep=sweep if has_sweep_head else ""), encoding="utf-8")
+                payload = self.closeout_payload("final-review-missing-sprint", skip_git_checks=False)
+                payload["cwd"] = str(project)
+                common.git = fake_git
+                return module.decide(payload), calls
+
+        verdict, calls = run(True, log=(0, "a1 ui\nb2 ui\n"))
+        self.assertEqual(verdict.code, 2)
+        self.assertIn("sweep-head: 0123abc, but lib/ui commits exist AFTER it: 2 commit(s)", verdict.stderr)
+        self.assertIn(("log", "--oneline", "0123abc..HEAD", "--", "mobile-app/lib/ui"), calls)
+        self.assertEqual(run(True, log=(1, "a1 ui\n"))[0].code, 0)   # hash not resolvable: skip
+        self.assertEqual(run(True, log=(0, ""))[0].code, 0)          # no newer UI commits
+        verdict, _ = run(False, diffs=[(0, "mobile-app/lib/ui/x.dart\n")])
+        self.assertEqual(verdict.code, 2)
+        self.assertIn("records no 'sweep-head: <hash>' line", verdict.stderr)
+        verdict, calls = run(False, diffs=[(1, ""), (0, "mobile-app/lib/ui/x.dart\n")])  # origin/develop missing
+        self.assertEqual(verdict.code, 2)
+        self.assertIn("develop...HEAD", [c[2] for c in calls if c[0] == "diff"])
+        self.assertEqual(run(False, diffs=[(1, ""), (1, "")])[0].code, 0)
+        self.assertEqual(run(False, diffs=[(0, "")])[0].code, 0)
+
+    def test_closeout_unexpected_exception_is_a_visible_hook_error_not_a_pass(self):
+        """R-6. The plan path is a FOLDER, so reading it raises OSError, which no check swallows.
+        Expect exit 1 and the one-line notice, never exit 0 with no sign. Does NOT catch an exception
+        inside hooklib.run's own handler."""
+        status = {"current_sprint": {"number": 77, "plan_approved": True, "pr_number": 1}}
+        with tempfile.TemporaryDirectory() as tmp:
+            project = Path(tmp)
+            (project / ".claude").mkdir()
+            (project / ".claude" / "sprint_status.json").write_text(json.dumps(status), encoding="utf-8")
+            (project / "docs" / "sprints" / "SPRINT_77_PLAN.md").mkdir(parents=True)
+            payload = self.closeout_payload("final-review-missing-sprint")
+            payload["cwd"] = str(project)
+            code, _out, err = run_hook("verify-closeout-complete.py", json.dumps(payload).encode("utf-8"))
+        self.assertEqual(code, hooklib.HOOK_ERROR, err)
+        self.assertIn("[verify-closeout-complete] internal error", err)
+
+    def test_closeout_malformed_payloads_and_non_sprint_branches_allow(self):
+        """Does NOT catch a malformed payload that ALSO claims close-out; there is no such payload."""
+        for stdin in (b"", b"not json", b"[1]", b'{"last_assistant_message": 5}'):
+            self.assertEqual(run_hook("verify-closeout-complete.py", stdin)[0], 0, stdin)
+        module = load_hook("verify-closeout-complete.py")
+        self.assertEqual(module.decide(self.closeout_payload("final-review-missing-sprint",
+                                                             branch_override="main")).code, 0)
+        self.assertEqual(module.decide(self.closeout_payload(
+            "final-review-missing-sprint",
+            branch_override="feature/20261010_Sprint_77_allow_stop_hook_bypass")).code, 0)
+
+    def test_settings_registers_the_closeout_stop_hook_in_python_form(self):
+        """Does NOT catch Claude Code failing to run the command; it pins the registration text."""
+        settings = json.loads((REPO / ".claude" / "settings.json").read_text(encoding="utf-8"))
+        commands = [h["command"] for group in settings["hooks"]["Stop"] for h in group["hooks"]]
+        matching = [c for c in commands if "verify-closeout-complete" in c]
+        self.assertEqual(matching, ['python "${CLAUDE_PROJECT_DIR}/.claude/hooks/verify-closeout-complete.py"'])
 
 
 if __name__ == "__main__":

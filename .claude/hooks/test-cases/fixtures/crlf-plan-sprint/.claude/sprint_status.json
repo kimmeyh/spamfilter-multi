@@ -1,0 +1,12 @@
+{
+  "_description": "Test fixture: Sprint 77 at close-out, plan approved with PR recorded. The plan file has CRLF line endings and a BOM; the Executed-by line is a seeded placeholder, so check 3d-3 must still block (a port that leaves the carriage return in the value would call the line filled).",
+  "_last_updated": "2026-10-10T20:00:00Z",
+  "current_sprint": {
+    "number": 77,
+    "branch": "feature/20261010_Sprint_77",
+    "status": "Phase 7.7 close-out",
+    "plan_approved": true,
+    "pr_number": 460,
+    "pr_url": "https://github.com/kimmeyh/spamfilter-multi/pull/460"
+  }
+}

@@ -173,6 +173,12 @@ to be classified; they are listed here so the inventory is complete.
 - Sprint 84 F326 (GitHub #554), 2026-11-06: `warn-commit-without-velocity.ps1` converted to `warn-commit-without-velocity.py`
   (velocity-warn, 12 recorded cases). Its JSON warning matches the PowerShell output except one trailing CRLF that the
   shared layer adds on Windows. Registered in Python form.
+- Sprint 84 F327 (GitHub #555), 2026-11-06: `verify-closeout-complete.ps1` (Stop hook) converted to
+  `verify-closeout-complete.py` (closeout, 25 recorded cases plus one CRLF case). This is the first hook that calls `gh`,
+  so the layer gained `common.gh()`, the same never-raising `(exit code, stdout)` shape as `git()`, with an 8 second
+  timeout so the hook's two possible calls fit its 20 second budget. A missing, offline or slow `gh` skips check 3c (fail
+  open), as the PowerShell `catch { }` did. Markdown is read as bytes and decoded `utf-8-sig`, so CRLF survives. Registered
+  in Python form under `Stop`; the `.ps1` is kept until F329.
 
 ### Conversion order
 
