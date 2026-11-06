@@ -680,3 +680,9 @@ membership and Apple's privacy rules; each try is a 10-15 minute CI round.
 
 _**Risk & rollback**_: a Simulator job that is slow or flaky costs CI time; it runs on the iOS paths and by hand only, and
 rollback is deleting the job.
+
+## Phase 5 evidence
+
+- **5.2 tests and analyze**: 2026-11-06. `flutter analyze`: No issues found. `flutter test --concurrency=4`: 3,619 passed, 15 skipped, 3 failed; all three are the known Task Scheduler 30 s timeouts (`windows_task_scheduler_service_test` x2, `powershell_script_generator_test` x1), code and tests unchanged since b00669e4, `Get-ScheduledTask` for a missing task timed at 7.1 s in-process; tracked as F349 (a4e7323d). The first run at the default concurrency also had 2 F302 timing failures; they pass alone and at `--concurrency=4` (TESTING_STRATEGY.md:31).
+- **Android JVM unit tests**: N/A -- the sprint diff touches no file under `mobile-app/android/app/src` (the F280 Kotlin change was reverted uncommitted).
+- **5.1.5 WinWright sweep**: 2026-11-06 15:24-15:34, sweep-head: 33d452fc (newer than the last lib/ui commit c9130577), DEV build from `build-windows.ps1` (exit 0), workstation unlocked, 3 scripts: test_f320_no_rule_review PASS, test_s75_new_controls PASS, test_f124_rule_labels FAIL twice at step 2 "No main window found" (step 1 passed), then PASS 29/29 run alone at 15:35-15:41 (318 s; Sprint 83 recorded 16-29 s). Cause of the in-sweep failure unknown; a `ww_list_windows` capture at the failing step would settle it. Tray icon PASS; DB drift none.

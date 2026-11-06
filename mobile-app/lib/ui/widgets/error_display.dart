@@ -29,57 +29,57 @@ class ErrorDisplay extends StatelessWidget {
     // overflowing; in a normal one the scroll view never engages.
     return Center(
       child: SingleChildScrollView(
-      child: Padding(
-        padding: const EdgeInsets.all(32.0),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            // Error icon
-            Icon(
-              icon,
-              size: 80,
-              color: colorScheme.error,
-            ),
-            const SizedBox(height: 24),
-
-            // Title
-            Text(
-              title,
-              style: textTheme.headlineSmall?.copyWith(
-                color: colorScheme.onSurface,
-                fontWeight: FontWeight.bold,
+        child: Padding(
+          padding: const EdgeInsets.all(32.0),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              // Error icon
+              Icon(
+                icon,
+                size: 80,
+                color: colorScheme.error,
               ),
-              textAlign: TextAlign.center,
-            ),
-            const SizedBox(height: 12),
+              const SizedBox(height: 24),
 
-            // Error message
-            Text(
-              message,
-              style: textTheme.bodyLarge?.copyWith(
-                color: colorScheme.onSurface.withOpacity(0.7),
-              ),
-              textAlign: TextAlign.center,
-            ),
-
-            // Action button
-            if (actionLabel != null && onActionPressed != null) ...[
-              const SizedBox(height: 32),
-              ElevatedButton.icon(
-                onPressed: onActionPressed,
-                icon: const Icon(Icons.refresh),
-                label: Text(actionLabel!),
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: colorScheme.error,
-                  foregroundColor: colorScheme.onError,
-                  padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+              // Title
+              Text(
+                title,
+                style: textTheme.headlineSmall?.copyWith(
+                  color: colorScheme.onSurface,
+                  fontWeight: FontWeight.bold,
                 ),
+                textAlign: TextAlign.center,
               ),
+              const SizedBox(height: 12),
+
+              // Error message
+              Text(
+                message,
+                style: textTheme.bodyLarge?.copyWith(
+                  color: colorScheme.onSurface.withOpacity(0.7),
+                ),
+                textAlign: TextAlign.center,
+              ),
+
+              // Action button
+              if (actionLabel != null && onActionPressed != null) ...[
+                const SizedBox(height: 32),
+                ElevatedButton.icon(
+                  onPressed: onActionPressed,
+                  icon: const Icon(Icons.refresh),
+                  label: Text(actionLabel!),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: colorScheme.error,
+                    foregroundColor: colorScheme.onError,
+                    padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+                  ),
+                ),
+              ],
             ],
-          ],
+          ),
         ),
-      ),
       ),
     );
   }

@@ -541,6 +541,17 @@ Source: `docs/research/R76-3_HEURISTICS_ML_GENAI_SPAM_IDENTIFICATION.md` (Issue 
   tests a timeout sized from the measurement with the reason in a comment, or replace the real query with the
   existing seam. Do not raise the timeout without the measurement.
 
+**F351. AppBar action icons overflow on narrow phones (~60-120m) Priority 46 -- NEW 2026-11-06 (Sprint 84 5.1.9 rehearsal)**
+- Phase: Core App Quality
+- Platform: All (shared `StandardAppBarActions` builder); seen in widget tests at phone widths.
+- Evidence: Scan History in a widget test (`test/ui/screens/scan_history_narrow_test.dart` setup) overflows by 24 px in
+  the AppBar's trailing slot at 360 logical px wide (and at 320); 384 (S24+) and 412 (Fold) pass. Scan History shows
+  two screen icons (Clear, Reload) plus the shared Accounts, Settings, Help and exit icons. Predates Sprint 84 (the
+  builder is unchanged this sprint). Not reported on a real phone; whether any shipped phone is under 384 wide is unknown.
+- Do: measure the narrowest width each screen fits (one widget test per screen with `StandardAppBarActions`); then
+  decide one shared rule (for example, move the lowest-priority icons into an overflow menu below a width), applied in
+  the builder so every screen follows it. Decision for Harold: which icons may go into the menu.
+
 **F343. F309 trusted-sender hint: decide after Sprint 83 Task 5 ships (~15m decision, estimate unverified) Priority 45 -- NEW 2026-11-04 (Sprint 83 MV Q5 = 6, backlog)**
 - Phase: Core App Quality
 - Platform: All.

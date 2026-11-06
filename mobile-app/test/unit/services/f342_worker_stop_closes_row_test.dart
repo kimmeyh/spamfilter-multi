@@ -24,6 +24,7 @@ import 'package:workmanager/workmanager.dart' show StopReason;
 import 'package:my_email_spam_filter/core/providers/email_scan_provider.dart';
 import 'package:my_email_spam_filter/core/services/android_background_scan_worker.dart';
 import 'package:my_email_spam_filter/core/services/background_scan_core.dart';
+import 'package:my_email_spam_filter/core/storage/database_helper.dart';
 import 'package:my_email_spam_filter/core/storage/scan_result_store.dart';
 import 'package:my_email_spam_filter/core/storage/unmatched_email_store.dart';
 
@@ -82,12 +83,20 @@ void main() {
 
     test('the default closer (no seam) reaches the registry', () async {
       // Proves onWorkerStopped's own default wiring, not only the helper.
-      // The default builds ScanResultStore(DatabaseHelper()), a different
-      // database than the test one, so only the call path is asserted: it
-      // must not throw and must not hold the teardown.
+      // The default calls BackgroundScanCore.closeInFlightScansAsInterrupted
+      // (DatabaseHelper()). DatabaseHelper() is a singleton and the test
+      // helper's dbHelper is that same instance, so the default closer writes
+      // to the test database and the row can be read back.
+      // Does NOT catch: a default closer that targets a different database
+      // file on a phone (the singleton is shared here by construction).
+      final id = provider.currentScanResultId!;
+      expect(identical(helper.dbHelper, DatabaseHelper()), isTrue);
       final sw = Stopwatch()..start();
       await onWorkerStopped('t', StopReason.timeout, write: (_) async {});
       expect(sw.elapsed, lessThan(const Duration(seconds: 6)));
+      final row = (await store.getScanResultById(id))!;
+      expect(row.status, 'interrupted');
+      expect(row.errorMessage, BackgroundScanCore.stoppedByPhoneReason);
     });
 
     test('a scan that finished before the stop keeps its status', () async {
@@ -125,6 +134,17 @@ void main() {
           write: (d) async => lines.add(d), closeScans: () async => 1);
       expect(lines, hasLength(2));
       expect(lines.last, contains('closed 1 in-progress scan row(s)'));
+    });
+
+    test('a failed close writes a diagnostic line, not only logcat', () async {
+      // Does NOT catch: a failing log write; that path swallows by design.
+      final lines = <String>[];
+      await onWorkerStopped('t', StopReason.timeout,
+          write: (d) async => lines.add(d),
+          closeScans: () async => throw StateError('db locked'));
+      expect(lines, hasLength(2));
+      expect(lines.last, contains('could not close the stopped scan row'));
+      expect(lines.last, contains('db locked'));
     });
 
     test('wiring: _scanAccountOnce registers and unregisters the provider',

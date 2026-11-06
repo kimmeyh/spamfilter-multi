@@ -152,27 +152,40 @@ Future<void> _closeStoppedScanRows({
   Future<void> Function(String detail)? write,
   Future<int> Function()? closeScans,
 }) async {
+  Future<void> report(String detail) => (write ??
+          (d) => DiagnosticLogger.log(
+                kind: DiagnosticLogger.kindScan,
+                context: 'worker/android',
+                detail: d,
+              ))(detail)
+      .timeout(const Duration(seconds: 2));
+  int closed;
   try {
-    final closed = await (closeScans ??
+    closed = await (closeScans ??
             () => BackgroundScanCore.closeInFlightScansAsInterrupted(
                 DatabaseHelper()))()
         .timeout(const Duration(seconds: 2));
-    if (closed > 0) {
-      AndroidBackgroundScanWorker._logger
-          .w('[worker/android] closed $closed in-progress scan row(s)');
-      await (write ??
-              (d) => DiagnosticLogger.log(
-                    kind: DiagnosticLogger.kindScan,
-                    context: 'worker/android',
-                    detail: d,
-                  ))('closed $closed in-progress scan row(s) as interrupted')
-          .timeout(const Duration(seconds: 2));
-    }
   } catch (e) {
-    // The logcat line is all that can be reported: the database write or
-    // the log write failed or timed out. The reaper closes the row later.
+    // The database write failed or timed out; the reaper closes the row
+    // later. Logcat first, then the diagnostic log, so the failure is in the
+    // log a tester sends and not only in logcat (Sprint 84 self-review F6-4).
     AndroidBackgroundScanWorker._logger
         .w('[worker/android] could not close the stopped scan row: $e');
+    try {
+      await report('could not close the stopped scan row: $e');
+    } catch (_) {
+      // The log write is what failed; the logcat line above has the failure.
+    }
+    return;
+  }
+  if (closed > 0) {
+    AndroidBackgroundScanWorker._logger
+        .w('[worker/android] closed $closed in-progress scan row(s)');
+    try {
+      await report('closed $closed in-progress scan row(s) as interrupted');
+    } catch (_) {
+      // The log write failed or timed out; the logcat line above has it.
+    }
   }
 }
 
