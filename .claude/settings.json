@@ -23,12 +23,12 @@
           },
           {
             "type": "command",
-            "command": "powershell -NoProfile -ExecutionPolicy Bypass -File \"${CLAUDE_PROJECT_DIR}\\.claude\\hooks\\block-heredoc-python-backslash.ps1\"",
+            "command": "python \"${CLAUDE_PROJECT_DIR}/.claude/hooks/block-heredoc-python-backslash.py\"",
             "timeout": 15
           },
           {
             "type": "command",
-            "command": "powershell -NoProfile -ExecutionPolicy Bypass -File \"${CLAUDE_PROJECT_DIR}\\.claude\\hooks\\block-blind-staging.ps1\"",
+            "command": "python \"${CLAUDE_PROJECT_DIR}/.claude/hooks/block-blind-staging.py\"",
             "timeout": 15
           },
           {
@@ -43,7 +43,8 @@
         "hooks": [
           {
             "type": "command",
-            "command": "powershell -NoProfile -ExecutionPolicy Bypass -File \"${CLAUDE_PROJECT_DIR}\\.claude\\hooks\\block-commit-during-mutation.ps1\""
+            "command": "python \"${CLAUDE_PROJECT_DIR}/.claude/hooks/block-commit-during-mutation.py\"",
+            "timeout": 15
           }
         ]
       }

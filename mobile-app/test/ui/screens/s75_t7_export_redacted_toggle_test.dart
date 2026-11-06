@@ -52,7 +52,8 @@ void main() {
 
     await tester.runAsync(() async {
       await mountAndLoadDbWidget(
-          tester, MaterialApp(home: SettingsScreen(key: UniqueKey())));
+          tester, MaterialApp(home: SettingsScreen(key: UniqueKey())),
+          readyWhen: find.byType(Scrollable));
     });
     await tester.scrollUntilVisible(toggle, 200.0,
         scrollable: find.byType(Scrollable).first);
@@ -80,7 +81,8 @@ void main() {
     // re-entering Settings) must load the persisted value, not default off.
     await tester.runAsync(() async {
       await mountAndLoadDbWidget(
-          tester, MaterialApp(home: SettingsScreen(key: UniqueKey())));
+          tester, MaterialApp(home: SettingsScreen(key: UniqueKey())),
+          readyWhen: find.byType(Scrollable));
     });
     await tester.scrollUntilVisible(toggle, 200.0,
         scrollable: find.byType(Scrollable).first);

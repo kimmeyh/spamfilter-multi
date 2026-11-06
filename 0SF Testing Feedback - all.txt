@@ -7,6 +7,145 @@ Manual Validation complete
 Sprint 8n Manual Validation Feedback 
 
 ---------------------------------------------------------------------------------------------------------
+Sprint 84 Manual Validation Feedback:
+  1. W-1 (F322): Settings > Background > "Scan notifications" reads "Only when there are No Rule items". Change it to "Every completed scan", leave
+     Settings, open it again, and confirm the change was saved.
+Can we update to "Only when one or more No Rule items"
+  2. W-6 (M-6): with "Every completed scan" still set, wait for a toast while that account's background scan is still running, then click it. Record
+     which window comes forward and whether Review No Rule Items opens.
+see image 21 showing notification cards
+see image 22 showing what happens if app is already open when clicking on a notification 
+see image 23 showing what happens if the app was closed when clicking on a notification
+  3. W-2 (F322): set it back to "Only when there are No Rule items". A scan with No Rule 0 then posts no toast; a scan with No Rule 1 or more posts one.
+
+  4. W-3 (F323): Review No Rule Items > open an item:
+     - Block Subject and Block Body are on one row.
+     - Block Body shows a domain, "No outside link" or "Could not read message".
+     - A news_ plus digits sender shows "Block sender pattern" marked "Suggested".
+     - Tapping a domain creates a real rule, so tap only if you want one.
+Working as expected
+see image 24 where block subject and block body and others are cut off on default sized screen. 
+  5. W-4 (F324): Settings > Background > switch one account's background scanning off. Go back to Select Account. That account shows "Background
+     scanning is off for this account" and "Turn on". Tap "Turn on", and the line goes away. I then check that the account's Task Scheduler task is
+     still there.
+Working as expected
+  6. W-5 (F270): Settings > Manage Safe Senders shows "Suggested safe senders (1)": karinreale@dandyblend.com, 7 No Rule emails.
+     - Accept shows Exact Email, Exact Domain and Entire Domain; Entire Domain is marked "(recommended)".
+     - Accept adds the safe sender. Reject hides the row permanently.
+Working as expected
+  7. W-7: drag the window narrow, to about 400 px. The date and account wrap to a second line with no overflow stripe.
+  8. A-1 (F322, Android emulator): I build 0.24.0 first. Then Settings > Background shows "Open notification settings". The page it opens lists "Scans
+     with No Rule items" and "Scans with nothing to review".
+Can we make these the same as for Windows (no need to be different text): "Only when one or more No Rule items" and "Every Completed Scan"
+  9. F325 live first-run (Windows, then the Android emulator): we do this together at a time you choose. I back up and hash the DEV data folder first,
+     and restore it after. The 10 checks are in the report.
+Wait this to a future sprint
+
+  Questions
+q1 1, q2 can you fix it to only suggest Block if a check finishes q3 1 q4 yes as you have images that confirm this, correct? if a phone image reads 0.??.?? then you can assume the play store update has happened - I have no other way at this time to install it. q5 6 q6 2 update to "Reply-to email mismatch"  q7 1 q8 yes, python 3.14 is currently preferred, prompt that can be easily rewritten deterministically should be rewritten. If there are common tools needed by prompts that can be written deterministically (python), then these helper tools should be written and then used by the prompts. Accept 3 hooks and agent-work-status. q9 """Task 3: a news_ sender gets the shape rule, not Block Entire Domain.""" - no, it suggests block entire domain for the domain of each email that matches the pattern in the email address - let me know if confused. Approve the rest as written q10. 2
+
+  Q1. Pop-up size (Windows and Fold inner screen, same rule on both).
+  1. Compact the header and grow to fit the content (recommended):
+     - Remove the handle in the dialog layout.
+     - Put the date and account on the subtitle line.
+     - Move Skip next to the check on wide windows only.
+     - Hide the badge for No Rule items.
+     - Let the height grow to the content, up to the window, moved up so it stays on screen. A scrollbar appears only when the content is taller than
+       the window.
+  2. Option 1, but Skip stays where it is. This saves about 40 px less and keeps the Sprint 72 decision.
+  3. Grow to fit only, with no header change.
+  4. Compact the header only. Items with a suggestion still scroll at the default size.
+  5. Backlog.
+
+  Q2. F8. A saved scan's pop-up still suggests Block after a check that could not finish. The AC, the CHANGELOG and both release notes promise that it
+  does not.
+  1. Narrow the promise in those four texts.
+  2. For a stored YELLOW result without headers, show no suggestion.
+  3. Read the stored suggestion row instead.
+
+  Q3. MV-3c ("Suggested" on a YELLOW item on the Fold). The only item today is RED.
+  1. Wait for a YELLOW item.
+  2. Accept the clipping check, and move "Suggested" into this sprint's checks.
+
+  Q4. Record. May I record MV-3 as run on 0.23.0 (versionCode 20) installed from the Play closed test? I rebuilt this question from a one-line note in
+  the plan.
+  1. Yes.
+  2. No; it was installed another way.
+
+  Q5. F309. Should Task 5 suggestions get a "why trusted" hint?
+  1. Do nothing.
+  2. Bundle a .gov snapshot (CC0) as a hint chip, refreshed by hand each release.
+  3. Option 2, plus a DEV BIMI probe and a "Verified brand logo" hint if the headers exist.
+  4. Tranco, which is blocked until its license is confirmed.
+  5. A run-time fetch. This is Class 1 and needs a privacy-policy change.
+  6. Backlog. Ask again after Task 5 ships.
+
+  Q6. F305 R-2. Which signals should Block suggestions use besides auth YELLOW? The counts are from 302 No Rule rows.
+  1. None. Today this reaches 53 rows, with 6 of 7 decisions agreeing.
+  2. Add "Reply-To differs". This reaches 76 rows, with 12 of 15 decisions agreeing, but the sample is small.
+  3. Add the bulk chip. It adds 11 rows, but only 3 decisions back it.
+  4. Add the "made safe before" history. It is DEV only, so a shipped app could not use it.
+  5. Backlog. Store List-Id and Precedence first.
+
+  Q7. F237. Keep kotlin.incremental=false? With it, the build took 405 s with 0 trace lines. Without it, 570 s with 30 trace lines.
+  1. Keep it.
+  2. Remove it.
+
+  Q8. ADR-0051 (Python for deterministic tooling).
+  - Hooks and scripts that need no judgment are written in Python 3, standard library only.
+  - Prompts stay in Markdown.
+  - The pilot converted three hooks and agent-work-status.
+  1. Accept.
+  2. Revise (name what).
+
+  Q9. Judgment calls in Tasks 3, 4, 5 and 9:
+  - Task 3: Block Body now reads the HTML part when there is no text part.
+  - Task 3: a news_ sender gets the shape rule, not Block Entire Domain.
+  - Task 3: a body rule uses look-arounds, so a link to notevil.com does not match a rule for evil.com.
+  - Task 4: "Turn on" does not ask for Android's notification permission. The F325 static pass flags this for new Android users.
+  - Tasks 5 and 9: the stored GREEN class stands in for a DMARC pass.
+  1. Approve all.
+  2. Change some (name them).
+
+  Q10. Fold background log. AOL has 2 scans that never finished and 2 errors. iCloud has 11 errors, possibly the password failure that F324 R-4 now
+  handles (unverified).
+  1. Look at them now.
+  2. Backlog card.
+
+---------------------------------------------------------------------------------------------------------
+Sprint 83 Manual Validation Feedback 
+
+  MV-3a. Tapping a scan notification on the main (inner) screen
+  1. Open the app and go to Review No Rule Items. Note how many items it shows.
+  2. Press Home. Leave the app in the background. Do not swipe it away.
+  3. Wait for a background-scan notification that shows "No rule" above 0.
+  4. Take a screenshot of the notification, then tap it.
+  5. Expected: the app comes forward on Review No Rule Items, and the new items are already listed without pressing Refresh. Take a screenshot.
+done
+
+  MV-3b. Tapping a scan notification with the app closed
+  1. Swipe the app away from the recent-apps list.
+  2. Wait for the next background-scan notification with "No rule" above 0, and tap it.
+  3. Expected: the app opens on Review No Rule Items with the new items listed. Take a screenshot.
+done
+
+  MV-3c. The "Suggested" pop-up on the cover screen
+  1. Fold the phone. On the cover screen, open Review No Rule Items.
+  2. Tap a new item that has a YELLOW sender-check badge. A new item is one scanned since 0.23.0 was installed; older rows have no stored suggestion.
+  3. Expected: the pop-up marks one rule as "Suggested" (Block Entire Domain, or Block Email for a common provider like Gmail) and shows the exact rule
+     and the reason.
+  4. Also expected: the Block Subject row and the rule note fit with no cut-off text. Scroll to the Skip row at the bottom, and check that nothing is
+     clipped there. Take a screenshot at the top and at the bottom
+Not seeing the Block Body section (or is that a future backlog item).
+
+  MV-4. The Fold log, for F303 (#524) and F315 (#527)
+  1. When you have done enough of MV-3 for the log to have a few scans, connect the Fold to the PC over USB and choose File transfer.
+  2. Tell me it is connected. I run scripts\pull-phone-screenshots.ps1 -Sprint 83, which pulls the screenshots and the log.
+  3. I then read the log:
+     - The [new-mail-diagnostics] line from two app starts: every field is present, and none shows error:.
+     - The count of messages with no UID, per account and folder.
+
+---------------------------------------------------------------------------------------------------------
 Sprint 82 Manual Validation Feedback 
 
   Manual Validation steps

@@ -5,6 +5,17 @@ import 'database_helper.dart';
 import '../providers/email_scan_provider.dart';
 import '../../util/redact.dart';
 
+/// F322 (Sprint 83): which completed background scans post a notification.
+/// The setting is read by the shared [ScanCompleteNotifier] on every platform
+/// (and on Android 8.0+ the Android notification channels apply instead).
+enum ScanNotifyChoice {
+  /// Every completed scan posts one notification.
+  every,
+
+  /// Only a scan with at least one No Rule item posts one.
+  noRuleOnly,
+}
+
 /// Settings storage for app-wide and per-account configuration
 ///
 /// This store provides:
@@ -45,6 +56,11 @@ class SettingsStore {
   static const String keyBackgroundScanEnabled = 'background_scan_enabled';
   static const String keyBackgroundScanFrequency = 'background_scan_frequency';
   static const String keyBackgroundScanMode = 'background_scan_mode';
+  /// F322 (Sprint 83): [ScanNotifyChoice] name; absent means the default.
+  static const String keyScanNotifyChoice = 'scan_notify_choice';
+  /// F270 v1 (Sprint 83): JSON list of rejected suggested-safe-sender addresses.
+  static const String keyRejectedSafeSenderSuggestions =
+      'rejected_safe_sender_suggestions';
   static const String keyBackgroundScanFolders = 'background_scan_folders';
   static const String keyCsvExportDirectory = 'csv_export_directory';
   static const String keyBackgroundScanDebugCsv = 'background_scan_debug_csv';
@@ -90,6 +106,9 @@ class SettingsStore {
   // app storage; F206 moved them to a folder the user sees, so a default of ON
   // would drop new files there after every scan with no warning.
   static const bool defaultBackgroundScanDebugCsv = false;
+  /// F322 Q2 = 1 (Harold, 2026-11-01): quiet by default.
+  static const ScanNotifyChoice defaultScanNotifyChoice =
+      ScanNotifyChoice.noRuleOnly;
 
   // F113 (Sprint 47): provider-keyed default scan folders. When an account
   // has no per-account folder selection, the effective default depends on the
@@ -312,6 +331,81 @@ class SettingsStore {
   /// Set the scan mode for background scans
   Future<void> setBackgroundScanMode(ScanMode mode) async {
     await _setAppSetting(keyBackgroundScanMode, mode.name, 'string');
+  }
+
+  /// F322: which completed background scans post a notification. An absent or
+  /// unrecognized stored value reads as [defaultScanNotifyChoice].
+  Future<ScanNotifyChoice> getScanNotifyChoice() async {
+    final value = await _getAppSetting(keyScanNotifyChoice);
+    for (final c in ScanNotifyChoice.values) {
+      if (c.name == value) return c;
+    }
+    return defaultScanNotifyChoice;
+  }
+
+  Future<void> setScanNotifyChoice(ScanNotifyChoice choice) async {
+    await _setAppSetting(keyScanNotifyChoice, choice.name, 'string');
+  }
+
+  /// F270 v1 (Sprint 83): the sender addresses the user rejected on Manage Safe
+  /// Senders ("Suggested safe senders"), lowercase, so a rejected suggestion
+  /// does not come back. Stored as one JSON list in `app_settings` (no new
+  /// table). The value is NOT written to the debug log (it holds addresses),
+  /// which is why this does not go through [_setAppSetting].
+  Future<Set<String>> getRejectedSafeSenderSuggestions() async {
+    final value = await _getAppSetting(keyRejectedSafeSenderSuggestions);
+    if (value == null) return <String>{};
+    final decoded = _decodeRejected(value);
+    if (decoded != null) return decoded;
+    // The caller shows suggestions again rather than hiding them all.
+    _logger.w('F270: the rejected-suggestions list could not be read');
+    return <String>{};
+  }
+
+  /// The stored rejected list, or null when [value] is not a JSON list.
+  static Set<String>? _decodeRejected(String value) {
+    try {
+      final decoded = jsonDecode(value);
+      if (decoded is List) return decoded.whereType<String>().toSet();
+    } on FormatException {
+      // Not JSON: reported by the caller.
+    }
+    return null;
+  }
+
+  /// Deletes the rejected list, so every hidden suggestion can come back.
+  ///
+  /// Sprint 83 7.7.1 (silent-failure-hunter L-5): the only way out of a
+  /// damaged list. Before it, every later Reject failed with the same error
+  /// and the user could not hide any suggestion again. The screen offers it
+  /// as "Reset hidden suggestions" on that error.
+  Future<void> resetRejectedSafeSenderSuggestions() async {
+    final db = await _dbHelper.database;
+    await db.delete('app_settings',
+        where: 'key = ?', whereArgs: [keyRejectedSafeSenderSuggestions]);
+  }
+
+  /// Adds [address] (lowercased) to the rejected list.
+  ///
+  /// Throws [StateError] when the stored list cannot be read, instead of
+  /// writing a new list over it: that would erase every earlier rejection and
+  /// bring those senders back (5.1.2 F3). The screen shows the error.
+  Future<void> rejectSafeSenderSuggestion(String address) async {
+    final value = await _getAppSetting(keyRejectedSafeSenderSuggestions);
+    final rejected = value == null ? <String>{} : _decodeRejected(value);
+    if (rejected == null) throw RejectedSuggestionsDamagedError();
+    rejected.add(address.trim().toLowerCase());
+    final db = await _dbHelper.database;
+    await db.insert(
+      'app_settings',
+      {
+        'key': keyRejectedSafeSenderSuggestions,
+        'value': jsonEncode(rejected.toList()..sort()),
+        'value_type': 'json',
+        'date_modified': DateTime.now().millisecondsSinceEpoch,
+      },
+      conflictAlgorithm: ConflictAlgorithm.replace,
+    );
   }
 
   /// Get the default folders to scan for background scans
@@ -1208,4 +1302,13 @@ class ProviderFolderDefaults {
     this.safeSenderFolder,
     this.deletedRuleFolder,
   });
+}
+
+/// Thrown by [SettingsStore.rejectSafeSenderSuggestion] when the stored
+/// rejected list is not a JSON list. A [StateError], so earlier callers that
+/// catch StateError still do; its own type lets the screen offer the reset
+/// ([SettingsStore.resetRejectedSafeSenderSuggestions]).
+class RejectedSuggestionsDamagedError extends StateError {
+  RejectedSuggestionsDamagedError()
+      : super('the saved list of hidden suggestions is damaged');
 }

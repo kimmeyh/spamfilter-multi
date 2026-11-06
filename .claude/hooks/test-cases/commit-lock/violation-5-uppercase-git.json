@@ -1,0 +1,1 @@
+{"session_id":"cl-violation-5-uppercase-git","cwd":"{{LOCK_ACTIVE}}","hook_event_name":"PreToolUse","tool_name":"Bash","tool_input":{"command":"GIT COMMIT -q -m x"}}

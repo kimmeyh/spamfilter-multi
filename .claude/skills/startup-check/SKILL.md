@@ -45,6 +45,8 @@ Execute these checks in parallel and report a summary:
 
 2. **GitHub CLI**: Run gh issue list --limit 1
 
+2.1. **Hook interpreter** (Sprint 83 5.1.2 F9, ADR-0051): Run `python -c "import sys; print(sys.version)"`. The Python hooks in `.claude/settings.json` call bare `python`; if it is missing, or resolves to the Microsoft Store stub (it prints a "Python was not found" message or opens the Store), every Python guard is OFF and nothing else reports it. Report it as failed and Ready = No.
+
 2.5. **Sprint Phase 3.7 Approval Verification Gate** (Sprint 36 retro IMP-3)
 
    **When**: If the current branch matches feature/*Sprint* AND docs/sprints/SPRINT_N_PLAN.md exists for the current sprint number.
@@ -103,6 +105,7 @@ Report results in this format:
 Startup Check:
 - Git: [branch] with [N uncommitted files / clean]
 - GitHub CLI: [working/failed]
+- Hook interpreter: [python <version> / FAILED -- Python hooks are off]
 - Phase 3.7 Approval: [verified (source) / NOT VERIFIED -- present plan summary and ask / N/A (not on a sprint feature branch)]
 - Release Cycle: [N/A / IN PHASE 8 -- name the step: 8.1 main merge (parallel) / 8.2 refinement pass 1 (completeness sweep) / 8.3 Store release / 8.4 refinement pass 2 (scope selection)] <!-- F170 (Sprint 61): the window between a sprint PR merging and the next scope selection is PHASE 8, defined in SPRINT_EXECUTION_WORKFLOW.md "Phase 8: The Release Cycle". A session resumed mid-cycle reads current_sprint.status to locate itself; pr_number null + plan_approved false is the NORMAL pre-kickoff state here, not a missing-artifact finding. -->
 - Ready: [Yes/No]

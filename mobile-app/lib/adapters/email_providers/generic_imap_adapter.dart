@@ -31,6 +31,7 @@ import '../../core/models/evaluation_result.dart';
 import '../../core/security/auth_rate_limiter.dart';
 import '../../core/security/imap_certificate_trust.dart';
 import '../../core/storage/database_helper.dart';
+import '../../core/storage/settings_store.dart';
 import '../storage/secure_credentials_store.dart';
 import 'custom_imap_settings.dart';
 import 'spam_filter_platform.dart';
@@ -244,6 +245,8 @@ class GenericIMAPAdapter with BatchOperationsMixin
 
       // SEC-22: successful auth clears any accrued failure count.
       await rateLimiter.recordSuccess(rateLimitAccountId);
+      // R-4 (Sprint 83): a successful sign-in clears "Sign In Again".
+      await _setSignInRequired(credentials, false);
 
       // Log server capabilities for diagnostics (custom keyword support, etc.)
       final capabilities = _imapClient?.serverInfo.capabilities ?? [];
@@ -2003,6 +2006,29 @@ class GenericIMAPAdapter with BatchOperationsMixin
     } catch (limiterError) {
       _logger.w('Auth rate limiter write failed: $limiterError');
     }
+    // R-4 (Sprint 83, F324): the same refusal also flags the account for
+    // "Sign In Again", exactly as the Gmail adapter does for its sign-in. The
+    // call sites are the ones that hold a REFUSED LOGIN
+    // ([AuthenticationException]); a network error or a busy server never
+    // reaches here.
+    await _setSignInRequired(credentials, true);
+  }
+
+  /// R-4 (Sprint 83, F324): record whether this IMAP account needs the user to
+  /// enter the password again. Reuses the Gmail flag
+  /// (`SettingsStore.getGmailSignInRequired`, the one the account list reads),
+  /// so there is ONE "needs sign-in" state. Best effort, like the Gmail
+  /// adapter: a failed write must never replace the sign-in result. Skipped
+  /// for an unsaved account (the setup form's Test Connection carries no
+  /// `accountId`).
+  Future<void> _setSignInRequired(Credentials credentials, bool required) async {
+    final accountId = credentials.additionalParams?['accountId'];
+    if (accountId == null || accountId.isEmpty) return;
+    try {
+      await SettingsStore().setGmailSignInRequired(accountId, required);
+    } catch (e) {
+      _logger.w('R-4: could not record the IMAP sign-in state: $e');
+    }
   }
 
   Future<void> _checkAndReconnect() async {
@@ -2346,19 +2372,23 @@ class GenericIMAPAdapter with BatchOperationsMixin
   /// R76-4 (Sprint 78, ADR-0047): the message's plain text for the dev-only
   /// content history -- text/plain when present, else the HTML part converted
   /// to text (enough_mail searches nested parts for both). The rule path
-  /// ([fetchFullBody]) is unchanged.
+  /// ([fetchFullBody]) selects the same text ([_mimeText]); this method
+  /// differs only in that a failed fetch throws.
   @override
   Future<String?> fetchContentText(EmailMessage message) async {
     // A failed fetch THROWS (7.7.1 silent-failure M-3): it is not "no text".
     final mime = await _fetchMimeMessage(message, 'fetchContentText',
         throwOnFailure: true);
     if (mime == null) return null;
-    final plain = mime.decodeTextPlainPart();
-    if (plain != null && plain.trim().isNotEmpty) return plain;
-    final html = mime.decodeTextHtmlPart();
-    if (html != null) return htmlToText(html);
-    return plain;
+    return _mimeText(mime);
   }
+
+  /// Sprint 83 7.7.1 (Harold Q1 = 1): the message text for BOTH the rule path
+  /// and the pop-up read -- text/plain, else the HTML part as text
+  /// ([selectBodyText]). Before, the rule path kept text/plain only, so a Block
+  /// Body rule saved from an HTML-only message could never match it.
+  static String? _mimeText(MimeMessage mime) => selectBodyText(
+      plain: mime.decodeTextPlainPart(), html: mime.decodeTextHtmlPart());
 
   /// One message's full MIME source, or null (logged) when it cannot be
   /// fetched. Shared by [fetchFullBody] and [fetchContentText]. With
@@ -2425,6 +2455,11 @@ class GenericIMAPAdapter with BatchOperationsMixin
     }
   }
 
+  /// Test seam: the rule-path conversion ([fetchFullBody] and the scan fetch).
+  @visibleForTesting
+  EmailMessage debugConvertMimeMessage(MimeMessage mime, String folderName) =>
+      _convertMimeMessage(mime, folderName);
+
   EmailMessage _convertMimeMessage(MimeMessage mimeMessage, String folderName) {
     final headersMap = <String, String>{};
     if (mimeMessage.headers != null) {
@@ -2471,7 +2506,7 @@ class GenericIMAPAdapter with BatchOperationsMixin
       id: messageId,
       from: mimeMessage.from?.first.email ?? '',
       subject: mimeMessage.decodeSubject() ?? '',
-      body: mimeMessage.decodeTextPlainPart() ?? '',
+      body: _mimeText(mimeMessage) ?? '',
       headers: headersMap,
       receivedDate: mimeMessage.decodeDate() ?? DateTime.now(),
       folderName: folderName,

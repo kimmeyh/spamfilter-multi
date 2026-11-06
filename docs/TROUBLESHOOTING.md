@@ -756,6 +756,16 @@ the lines above as fatal while the build was still running:
    Never `Stop-Process -Name java`.
 4. No AV change is needed. Norton was suspected and was NOT the cause.
 
-**Optional, not applied: removing the noise.** Either move the pub cache to `D:`
-(set `PUB_CACHE`, then `flutter pub get`) or add `kotlin.incremental=false` to
-`mobile-app/android/gradle.properties`. Neither is needed for a working build.
+**Applied in Sprint 83 (F237): `kotlin.incremental=false`** in
+`mobile-app/android/gradle.properties`. Measured on two release AAB builds
+through `build-with-secrets.ps1 -BuildType release -Output aab`, one after the
+other with nothing else building (2026-11-04):
+
+- Current settings: 570 s, exit 0, 30 daemon trace lines.
+- `kotlin.incremental=false`: 405 s, exit 0, 0 daemon trace lines.
+
+The second build was not slower. The time difference is not attributed to the
+setting: the first build ran after an idle period and may have had cold caches.
+If the traces come back, check that the line is still in `gradle.properties`.
+Rollback is removing the line. The other option, moving the pub cache to `D:`
+(set `PUB_CACHE`, then `flutter pub get`), was not needed.

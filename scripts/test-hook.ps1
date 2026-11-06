@@ -24,7 +24,9 @@
   twenty-line throwaway.
 
 .PARAMETER HookPath
-  The hook to run. Relative paths resolve against `.claude/hooks/`.
+  The hook to run. Relative paths resolve against `.claude/hooks/`. A `.py` hook runs
+  under python (F321, Sprint 83); any other file runs under PowerShell. A bare name with
+  no extension is not guessed: give `block-blind-staging.py` or `.ps1`.
 
 .PARAMETER Command
   A shell command to wrap as a Bash tool-call payload (PreToolUse shape).
@@ -41,11 +43,19 @@
   A complete payload, for a hook shape the switches above do not cover.
 
 .PARAMETER ExpectBlock
-  Assert the hook BLOCKS (non-zero exit). Exits 1 if it does not, so this can
+  Assert the hook BLOCKS (exit 2; any other non-zero exit is a hook error that
+  ALLOWS the command and fails this check). Exits 1 if it does not, so this can
   gate a script.
 
 .PARAMETER ExpectAllow
   Assert the hook ALLOWS (exit 0). Exits 1 if it does not.
+
+.NOTES
+  Exit codes: 0 = the probe ran and every assertion held; 1 = an assertion
+  failed OR the hook crashed (any exit other than 0 or 2); 2 = this script
+  could not run the hook. A crashed hook is never reported as success, with or
+  without -ExpectBlock / -ExpectAllow (Sprint 83 retro IMP-3, Harold: "the
+  script should never crash with a success").
 
 .EXAMPLE
   # Does the stash guard still catch a real stash?
@@ -120,10 +130,44 @@ if ($Json) {
     exit 2
 }
 
-$stderr = $payload | & powershell -NoProfile -ExecutionPolicy Bypass -File $resolved 2>&1
+# F321 (Sprint 83): a Python hook (.py) runs under python; every other hook runs under PowerShell.
+if ($resolved -like '*.py') {
+    # Sprint 83 7.7.1 (Copilot PR #534): ONLY "python", the interpreter .claude/settings.json
+    # runs every hook with. A fallback (python3, py) would let this test pass on a machine
+    # where Claude Code itself cannot start the hook, so the hook would be off and the test green.
+    $py = (Get-Command python -ErrorAction SilentlyContinue | Select-Object -First 1).Source
+    if (-not $py) {
+        Write-Output 'python not found on PATH. .claude/settings.json runs hooks with "python", so the real hook cannot run either.'
+        exit 2
+    }
+}
+# Sprint 83 retro IMP-3: under Windows PowerShell 5.1 with ErrorActionPreference
+# 'Stop', "2>&1" turns the hook's FIRST stderr line into a terminating
+# NativeCommandError, so this script died (exit 1) on every hook that BLOCKS
+# with a message -- -ExpectBlock failed on a hook that worked. The hook's
+# stderr is its verdict text, not a probe error: read it with 'Continue'.
+$ErrorActionPreference = 'Continue'
+# A stderr line arrives as an ErrorRecord whose TargetObject is the original
+# text (a blank line would otherwise print as "RemoteException").
+$asText = { if ($_ -is [System.Management.Automation.ErrorRecord]) { "$($_.TargetObject)" } else { "$_" } }
+if ($resolved -like '*.py') {
+    $stderr = $payload | & $py $resolved 2>&1 | ForEach-Object $asText
+} else {
+    $stderr = $payload | & powershell -NoProfile -ExecutionPolicy Bypass -File $resolved 2>&1 |
+        ForEach-Object $asText
+}
 $code = $LASTEXITCODE
+$ErrorActionPreference = 'Stop'
 
-$verdict = if ($code -eq 0) { 'ALLOW' } else { "BLOCK (exit $code)" }
+# Sprint 83 7.7.1 (code-reviewer pass 2 F1 HIGH, silent-failure-hunter M-3):
+# Claude Code blocks ONLY on exit 2. Any other non-zero exit is a hook ERROR
+# and the command is ALLOWED (a crashed Python hook exits HOOK_ERROR = 1,
+# hooklib.py). Reporting it as BLOCK let -ExpectBlock pass a hook that was off.
+$verdict = switch ($code) {
+    0       { 'ALLOW' }
+    2       { 'BLOCK (exit 2)' }
+    default { "HOOK ERROR (exit $code, the command is ALLOWED)" }
+}
 Write-Output "hook    : $(Split-Path -Leaf $resolved)"
 Write-Output "cwd     : $Cwd"
 Write-Output "verdict : $verdict"
@@ -134,17 +178,26 @@ if ($stderr) {
 
 # Assertions last, so the diagnostic output is always visible even on failure --
 # a probe that fails silently is worse than no probe.
-if ($ExpectBlock -and $code -eq 0) {
+if ($ExpectBlock -and $code -ne 2) {
     Write-Output ''
-    Write-Output 'FAIL: expected BLOCK, got ALLOW.'
+    Write-Output "FAIL: expected BLOCK (exit 2), got $verdict."
     exit 1
 }
 if ($ExpectAllow -and $code -ne 0) {
     Write-Output ''
-    Write-Output 'FAIL: expected ALLOW, got BLOCK.'
+    Write-Output "FAIL: expected ALLOW (exit 0), got $verdict."
+    exit 1
+}
+# Sprint 83 retro IMP-3: a crashed hook fails the probe even with no -Expect
+# switch. Before this, a plain probe of a crashed hook printed "HOOK ERROR" and
+# still exited 0, so a caller that read only the exit code saw success.
+if ($code -ne 0 -and $code -ne 2) {
+    Write-Output ''
+    Write-Output "FAIL: the hook crashed ($verdict)."
     exit 1
 }
 if ($ExpectBlock -or $ExpectAllow) {
     Write-Output ''
     Write-Output 'PASS'
 }
+exit 0

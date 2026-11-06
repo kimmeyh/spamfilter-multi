@@ -1,0 +1,1 @@
+{"session_id":"cl-allow-2-active-lock-non-commit","cwd":"{{LOCK_ACTIVE}}","hook_event_name":"PreToolUse","tool_name":"Bash","tool_input":{"command":"git status --short && git add a.txt"}}

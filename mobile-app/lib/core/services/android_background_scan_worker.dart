@@ -479,7 +479,7 @@ class AndroidBackgroundScanWorker {
   /// (the Windows worker uses the same one): the title names the account, the
   /// body lists "No rule" first, the ID is per account, and a count the scan
   /// mode did not act on is struck through.
-  static Future<bool> _notifyScanComplete({
+  static Future<ScanNotificationOutcome> _notifyScanComplete({
     required String accountId,
     required AccountScanOutcome outcome,
   }) =>

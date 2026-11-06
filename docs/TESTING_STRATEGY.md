@@ -766,6 +766,8 @@ void main() {
 
 ## Testing Tools and Scripts
 
+**A tool never reports success when it did nothing (Sprint 83 retro IMP-3, Harold: *"the script should never crash with a success"*).** Every script, hook and tool in this repo answers three cases before it ships: the input matched nothing, the call it made did nothing, and the thing it runs crashed. Each prints what happened and none of them exits 0 as a pass. A verdict mapping (`switch` on an exit code, a status string) always has a default branch that reports an error. Model: `scripts/test-hook.ps1` -- exit 2 is BLOCK, 0 is ALLOW, any other exit is "HOOK ERROR" and the probe exits 1 with or without `-ExpectBlock` / `-ExpectAllow`. Prove it by feeding the tool the failing case (a hook that crashes, an empty input) and reading the exit code.
+
 ### Test Monitoring Script
 
 **Location**: `mobile-app/scripts/monitor-tests.ps1`
@@ -1106,7 +1108,7 @@ New-MutationLock -File "docs/SOME_FILE.md" -Reason "flip X to prove the gate fai
 Remove-MutationLock
 ```
 
-While a lock is held, `.claude/hooks/block-commit-during-mutation.ps1` (a PreToolUse hook)
+While a lock is held, `.claude/hooks/block-commit-during-mutation.py` (a PreToolUse hook)
 refuses any `git commit` in the repository and names the locked files. `Get-MutationLock`
 lists what is held.
 

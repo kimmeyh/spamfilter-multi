@@ -297,4 +297,36 @@ void main() {
       expect(ConflictResolutionResult.empty.conflictsRemoved, 0);
     });
   });
+
+  // Sprint 83 5.1.2 F10. What this does NOT catch: the suggestion list using
+  // it (see safe_sender_suggestion_service_test).
+  group('hasConflictingRule', () {
+    test('agrees with removeConflictingRules and removes nothing', () async {
+      provider.addTestRule(_createRule(
+          name: 'BlockShop', from: [r'@(?:[a-z0-9-]+\.)*shop\.example$']));
+      provider.addTestRule(_createRule(
+          name: 'HeaderOther', header: [r'@other\.example$']));
+      provider.addTestRule(_createRule(
+          name: 'SubjectOnly', subject: [r'orders@safe\.example']));
+
+      expect(
+          resolver.hasConflictingRule(
+              emailAddress: 'Orders@Mail.Shop.Example', rules: provider.rules),
+          isTrue);
+      expect(
+          resolver.hasConflictingRule(
+              emailAddress: 'a@other.example', rules: provider.rules),
+          isTrue);
+      // A subject condition is not a sender conflict, as in removeConflictingRules.
+      expect(
+          resolver.hasConflictingRule(
+              emailAddress: 'orders@safe.example', rules: provider.rules),
+          isFalse);
+      expect(provider.removedRules, isEmpty);
+
+      final removed = await resolver.removeConflictingRules(
+          emailAddress: 'orders@safe.example', ruleProvider: provider);
+      expect(removed.conflictsFound, 0);
+    });
+  });
 }

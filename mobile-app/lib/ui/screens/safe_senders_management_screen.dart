@@ -19,8 +19,11 @@ import 'package:provider/provider.dart';
 import '../../core/platform/platform_capabilities.dart';
 import '../../core/providers/rule_set_provider.dart';
 import '../../core/services/rule_quick_action_service.dart'
-    show reloadRulesAfterWrite;
+    show RuleQuickActionService, reloadRulesAfterWrite;
+import '../../core/services/rule_conflict_resolver.dart';
+import '../../core/services/safe_sender_suggestion_service.dart';
 import '../../core/storage/database_helper.dart';
+import '../../core/storage/settings_store.dart';
 import '../../core/storage/safe_sender_database_store.dart';
 import '../widgets/copy_all_shortcut.dart';
 import '../widgets/list_selection_controller.dart';
@@ -94,6 +97,13 @@ class _SafeSendersManagementScreenState
     with ListSelectionController<SafeSendersManagementScreen> {
   final Logger _logger = Logger();
   late final SafeSenderDatabaseStore _store;
+  // F270 v1 (Sprint 83): "Suggested safe senders" from stored No Rule history.
+  final SafeSenderSuggestionService _suggestionService =
+      SafeSenderSuggestionService();
+  final SettingsStore _settings = SettingsStore();
+  List<SafeSenderCandidate> _suggestions = [];
+  String? _suggestionsError;
+  final Set<String> _suggestionsBusy = {};
   List<SafeSenderPattern> _safeSenders = [];
   List<SafeSenderPattern> _filteredSenders = [];
   bool _isLoading = true;
@@ -174,10 +184,224 @@ class _SafeSendersManagementScreenState
         );
       }
     }
+    if (ok && mounted) await _loadSuggestions();
     if (mounted) {
       setState(() => _isLoading = false);
     }
     return ok;
+  }
+
+  /// F270 v1: recompute the suggestions from the stored No Rule history, the
+  /// saved safe senders (already loaded) and the rejected list. A failure is
+  /// shown in the section, not only logged: "no suggestions" and "could not
+  /// check" must read differently.
+  Future<void> _loadSuggestions() async {
+    // 5.1.2 F10: a sender a block rule matches is not suggested; Accept would
+    // remove that rule (the same check Accept runs).
+    final rules = Provider.of<RuleSetProvider>(context, listen: false).rules;
+    final resolver = RuleConflictResolver();
+    try {
+      final rejected = await _settings.getRejectedSafeSenderSuggestions();
+      final found = await _suggestionService.findCandidates(
+        rejected: rejected,
+        safePatterns: _safeSenders.map((s) => s.pattern).toList(),
+        isBlocked: (address) =>
+            resolver.hasConflictingRule(emailAddress: address, rules: rules),
+      );
+      _suggestions = found;
+      _suggestionsError = null;
+    } catch (e, st) {
+      _logger.e('F270: suggested safe senders failed', error: e, stackTrace: st);
+      _suggestions = [];
+      _suggestionsError = '$e';
+    }
+  }
+
+  Future<void> _rejectSuggestion(SafeSenderCandidate c) async {
+    if (!_suggestionsBusy.add(c.address)) return;
+    try {
+      await _settings.rejectSafeSenderSuggestion(c.address);
+      if (!mounted) return;
+      setState(() => _suggestions =
+          _suggestions.where((s) => s.address != c.address).toList());
+      ScaffoldMessenger.of(context)
+        ..hideCurrentSnackBar()
+        ..showSnackBar(SnackBar(
+          content: Text('Suggestion hidden for ${c.address}'),
+          duration: const Duration(seconds: 3),
+        ));
+    } on RejectedSuggestionsDamagedError catch (e) {
+      // Sprint 83 7.7.1 (silent-failure-hunter L-5): without a way out,
+      // every later Reject failed with this error. The action deletes the
+      // damaged list and hides this suggestion.
+      _logger.e('F270: reject suggestion failed', error: e);
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+          // A short action label: "Reset hidden suggestions" overflowed the
+          // snackbar by 90 px on the Fold cover screen (344 px).
+          content: const Text('Could not hide the suggestion: the saved list '
+              'of hidden suggestions is damaged. Tap Reset to clear that list '
+              'and hide this one (suggestions you hid before can come back).'),
+          duration: const Duration(seconds: 10),
+          action: SnackBarAction(
+            label: 'Reset',
+            onPressed: () => _resetHiddenAndReject(c),
+          ),
+        ));
+      }
+    } catch (e) {
+      _logger.e('F270: reject suggestion failed', error: e);
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Could not hide the suggestion: $e')),
+        );
+      }
+    } finally {
+      _suggestionsBusy.remove(c.address);
+    }
+  }
+
+  Future<void> _resetHiddenAndReject(SafeSenderCandidate c) async {
+    try {
+      await _settings.resetRejectedSafeSenderSuggestions();
+    } catch (e) {
+      _logger.e('F270: reset hidden suggestions failed', error: e);
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+            content: Text('Could not reset the hidden suggestions: $e')));
+      }
+      return;
+    }
+    await _rejectSuggestion(c);
+  }
+
+  Future<void> _acceptSuggestion(SafeSenderCandidate c) async {
+    if (_suggestionsBusy.contains(c.address)) return;
+    final choice = await showDialog<SafeSenderChoice>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('Add as safe sender'),
+        content: SingleChildScrollView(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              Text(c.address),
+              const SizedBox(height: 12),
+              for (final choice in c.choices) ...[
+                choice.recommended
+                    ? FilledButton(
+                        onPressed: () => Navigator.pop(ctx, choice),
+                        child: Text('${choice.label} (recommended)',
+                            textAlign: TextAlign.center),
+                      )
+                    : OutlinedButton(
+                        onPressed: () => Navigator.pop(ctx, choice),
+                        child:
+                            Text(choice.label, textAlign: TextAlign.center),
+                      ),
+                const SizedBox(height: 8),
+              ],
+            ],
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx),
+            child: const Text('Cancel'),
+          ),
+        ],
+      ),
+    );
+    if (choice == null || !mounted) return;
+    _suggestionsBusy.add(c.address);
+    try {
+      final provider = Provider.of<RuleSetProvider>(context, listen: false);
+      final result = await RuleQuickActionService(ruleProvider: provider)
+          .addSafeSender(
+        value: choice.value,
+        type: choice.type,
+        senderEmailForConflictCheck: c.address,
+      );
+      if (!mounted) return;
+      ScaffoldMessenger.of(context)
+        ..hideCurrentSnackBar()
+        ..showSnackBar(SnackBar(content: Text(result.displayMessage)));
+      if (result.success) await _loadSafeSenders();
+    } finally {
+      _suggestionsBusy.remove(c.address);
+    }
+  }
+
+  /// The "Suggested safe senders" section above the list (F270 v1). Hidden
+  /// when there is nothing to show; a failed check shows its error instead.
+  Widget _buildSuggestionsSection() {
+    if (_isLoading) return const SizedBox.shrink();
+    if (_suggestionsError != null) {
+      return Padding(
+        padding: const EdgeInsets.fromLTRB(16, 0, 16, 8),
+        child: Text(
+          'Suggested safe senders could not be checked: $_suggestionsError',
+          style: TextStyle(color: Colors.red.shade700, fontSize: 13),
+        ),
+      );
+    }
+    if (_suggestions.isEmpty) return const SizedBox.shrink();
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(16, 0, 16, 8),
+      child: Card(
+        margin: EdgeInsets.zero,
+        child: ExpansionTile(
+          initiallyExpanded: true,
+          title: Text('Suggested safe senders (${_suggestions.length})'),
+          subtitle: Text(
+              'Seen at least $kSuggestionMinCount times in No Rule mail, every '
+              'email passed authentication, none deleted. Nothing is added '
+              'until you tap.',
+              style: const TextStyle(fontSize: 12)),
+          children: [
+            ConstrainedBox(
+              constraints: const BoxConstraints(maxHeight: 180),
+              child: ListView(
+                shrinkWrap: true,
+                children: [
+                  for (final c in _suggestions)
+                    Padding(
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 16, vertical: 4),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(c.address,
+                              overflow: TextOverflow.ellipsis,
+                              style:
+                                  const TextStyle(fontWeight: FontWeight.w600)),
+                          Text('${c.count} No Rule emails',
+                              style: TextStyle(
+                                  fontSize: 12, color: Colors.grey.shade600)),
+                          Wrap(
+                            spacing: 8,
+                            children: [
+                              TextButton(
+                                onPressed: () => _acceptSuggestion(c),
+                                child: const Text('Accept'),
+                              ),
+                              TextButton(
+                                onPressed: () => _rejectSuggestion(c),
+                                child: const Text('Reject'),
+                              ),
+                            ],
+                          ),
+                        ],
+                      ),
+                    ),
+                ],
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
   }
 
   void _applyFilter() {
@@ -555,6 +779,9 @@ class _SafeSendersManagementScreenState
               ),
             ),
             const SizedBox(height: 8),
+
+            // F270 v1: suggested safe senders
+            _buildSuggestionsSection(),
 
             // Safe senders list
             Expanded(

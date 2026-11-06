@@ -26,6 +26,7 @@ import 'package:my_email_spam_filter/core/models/email_message.dart';
 import 'package:my_email_spam_filter/core/providers/email_scan_provider.dart';
 import 'package:my_email_spam_filter/core/providers/rule_set_provider.dart';
 import 'package:my_email_spam_filter/core/services/background_scan_core.dart';
+import 'package:my_email_spam_filter/core/services/scan_complete_notifier.dart';
 import 'package:my_email_spam_filter/core/services/scan_coordinator.dart';
 import 'package:my_email_spam_filter/core/storage/scan_result_store.dart';
 import 'package:my_email_spam_filter/core/storage/settings_store.dart';
@@ -109,7 +110,10 @@ void main() {
     var notified = false;
     await BackgroundScanCore.completeAccount(outcome,
         export: () async => exported = true,
-        notify: () async => notified = true);
+        notify: () async {
+          notified = true;
+          return ScanNotificationOutcome.posted;
+        });
     expect(exported, isFalse);
     expect(notified, isFalse, reason: 'no "scan complete" for a stopped scan');
   });

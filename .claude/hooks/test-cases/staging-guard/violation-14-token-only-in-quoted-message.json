@@ -1,0 +1,1 @@
+{"session_id": "sg-violation-14-token-only-in-quoted-message", "cwd": "D:/Data/Harold/github/spamfilter-multi", "hook_event_name": "PreToolUse", "tool_name": "Bash", "tool_input": {"command": "git add -A; git commit -m \"docs: explain allow_blind_staging\""}}

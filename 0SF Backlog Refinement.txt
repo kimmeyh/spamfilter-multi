@@ -6,6 +6,352 @@ Do not stop between tasks as they are all approved, please continue to complete 
 Do not stop to ask questions unless meeting the criteria in \docs\SPRINT_STOPPING_CRITERIA.md
 If questions must be asked, ask as late as possible - do everything that can be done (all tasks and parts of tasks, without the answer to the question(s), then ask the question(s)
 ---------------------------------------------------------------------------------------------------------
+Sprint 8n Scope should include the below items. Please complete sprint planning (/docs/sprint_planning.md) for the below items and present for approval.  Note that everything needs to take into account the Windows App, Android app and the iPhone app with the ADR stating that everything should be functionally and UI the same unless it cannot be - and where it cannot be it should be implemented as a platform exception for what is needed -- this applies to all backend code, frontend code, data, architecture, development, security, testing, deployment.
+
+---------------------------------------------------------------------------------------------------------
+More question and sprint plan approval:
+  Q7-echo. Is my reading of your Q7 answer correct?
+  - You wrote: "should be based on my email address not the users and can be done similar to F308".
+  - My reading, now in Task 5 (F270) of the plan:
+    - v1 (in the app): the Safe Senders screen gets a "Suggested safe senders" section.
+      - Candidates come from stored No Rule history: senders seen N or more times, all GREEN (DMARC pass), never deleted, and not already safe senders.
+      - Each row has Accept (adds an exact-email safe sender) and Reject (hides it, also after a restart).
+      - Nothing is added without a tap.
+When adding a rule it highlights Exact email, Exact domain or Entire domain - based on the app recommendation
+    - Sent-folder part: this is NOT an in-app read of a user's mail. A developer tool, like F308, reads your own DEV account's Sent folder, read-only.
+      - It finds reply pairs: people you wrote to who also send you mail.
+      - It gives you a report and candidate safe-sender patterns to review.
+      - No user's Sent folder is read, so the privacy policy does not change.
+    - This adds about 30-60m to Task 5 (was 120-180m, now 150-240m).
+  2. Not quite: see line added above
+
+  Q-S1. Model for each task (cheapest model that can do the job).
+  1. Approve.
+
+  Q-S2. Version 0.24.0+21.
+  1. Approve.
+
+
+  Decision questions:
+Q1. 1 q2. 1 q3. 3 (this is common practice for phone and windows apps, so would seem reasonable for adding and removing email addresses from our app) do a deep dive to ensure only what is needed on a re-add is kept, everything that needs to be refreshed with a re-add is refreshed... q4. the first link that doesn't exactly match the email address domain (unless that is in the safe sender exact/entire domains, then skip the first and pick another. If there are none, then don't provide a recommended body rule) q5. 1 q7 should be based on my email address not the users and can be done similar to F308 q6. 1 q8 1 q9. 1 (ensure there are backlog items for everything not included in F321) q10. 1
+
+  Q1. F322: where the user sets "notify only when there are No Rule items".
+  1. Android uses two channels, "Scans with No Rule items" and "Scans with nothing to review". The user turns the second off in Android's settings, and
+     a Settings row in the app opens that screen. Windows and iPhone use an in-app choice. This is a declared Android exception and matches your
+     direction (recommended).
+  2. Option 1, plus the in-app choice on Android too. That is two controls on Android for one outcome.
+  3. The in-app choice on all three, with the same UI. Android keeps one channel and does not use its sub-settings.
+
+  Q2. F322: the default before the user changes anything.
+  1. "Only when there are No Rule items" (recommended).
+  2. "Every completed scan", which is today's behavior.
+
+  Q3. F324: what removing an account does to its background setting. Today removal deletes all of the account's settings, so a re-added account falls
+  back to the app-wide default.
+  1. Keep the deletion. The Account Selection screen shows "Background scanning is off for this account" with a "Turn on" button (recommended).
+  2. Keep the background setting when an account is removed, plus that screen line.
+  3. Keep all account settings for the same address when it is removed, plus that screen line.
+
+  Q4. F323: the Block Body button's value.
+  1. The first link domain in the body, fetched when the pop-up opens (recommended).
+  2. A pick list of the body's link domains.
+
+  Q5. F308: how to read the DEV AOL Trash2 folder, read-only. The AOL app password exists only in the DEV app's Windows secure store.
+  1. A read-only probe like Sprint 82 Task 6. It reads the credential in memory only, never writes or prints it, and never changes the mailbox
+     (recommended).
+  2. You run a DEV manual scan of AOL with only Trash2 selected. AOL's DEV manual mode is read-only, and I check that again first.
+  3. I drive that DEV manual scan with WinWright, and notify you before and after.
+
+  Q6. F323: what the news_ suggestion is.
+  1. A From-address regex rule matching news_ plus 4-6 digits at any domain, offered as "Suggested" on a new "Block sender pattern" button
+     (recommended).
+  2. Keep Block Entire Domain and only add the reason "news_ sender pattern". On DEV these senders span 76 domains, so this needs 76 rules.
+
+  Q7. F270 scope.
+  1. Version 1 only: stored No Rule history. Version 2 (the Sent folder) waits for a privacy policy change (recommended).
+  2. Both versions now, including the privacy policy and Data safety review.
+
+  Q8. F237: which fix.
+  1. Add kotlin.incremental=false to gradle.properties, after measuring the build time with and without it (recommended).
+  2. Move the pub cache to D:. This is a machine-wide change that affects every project.
+  3. Record the measurements only and change nothing.
+
+  Q9. F321: the pilot set.
+  1. The shared Python layer plus these hooks: block-blind-staging, block-heredoc-python-backslash, and mutation-lock with block-commit-during-mutation,
+     plus the agent-work-status script (recommended).
+  2. The shared layer plus block-blind-staging only.
+  3. Name a different set.
+
+  Q10. F325: the Android first-run run.
+  1. A clean install on the Android emulator, so no phone data is touched (recommended).
+  2. A clean install on the S24+, with its data backed up and restored.
+
+  Q-S1. Models as assigned in the plan:
+  1. Approve.
+
+  Q-S2. Version 0.24.0+21:
+  1. Approve.
+
+
+Sprint 83 Scope should include the below items. Please complete sprint planning (/docs/sprint_planning.md) for the below items and present for approval.  Note that everything needs to take into account the Windows App, Android app and the iPhone app with the ADR stating that everything should be functionally and UI the same unless it cannot be - and where it cannot be it should be implemented as a platform exception for what is needed -- this applies to all backend code, frontend code, data, architecture, development, security, testing, deployment.
+  1. Manual Validation carry-ins (about 30-45m of my work, plus your phone time). These are MV-3 (Fold tap on a scan notification, plus the F306 pop-up
+     on the cover screen), MV-4 (F303 #524 and F315 #527, read from the Fold log) and the M-6 click step. All three need 0.23.0 on the Fold, so they
+     come first after the Play rollout. If MV-3 passes, the Play notes can mention the tap.
+  2. F322 (60-120m). You targeted it at Sprint 83. It adds a setting to notify only when No Rule is above 0, the same on every platform.
+For android I know there are Notification sub-settings and this is where the setting should go for Android - discuss if this was not what you were going to do.
+For other platforms I am not sure if this is possible to do the same way or not.
+  3. F323 (120-240m). Its R-2 part stops a destructive suggestion: Block Entire Domain is offered when the sender check did not run (temperror or
+     permerror). R-1 (the Block Body button) and R-3 (news_ senders) build on the F306 work just shipped.
+  4. F324 (45-90m). A re-added account can silently lose background scanning, and the user is not told. Sprint 82 found this on your own iCloud account.
+  - F303. Android new-mail diagnostics: each field reported on its own -- REMAINDER: Fold check of the diagnostic line (~10m plus a phone log pull)
+    Priority 18
+Also
+  - F270. Safe-sender discovery: propose safe senders from history for review (~150m) Priority 30
+  - F315. Count IMAP messages that arrive with no UID; design a date cursor only if any occur (~30m count, design TBD) Priority 32
+  - F305. DEV-only diagnostic: which signal headers each No Rule email had, then widen the F271 signals (~60-90m) Priority 33
+  - F323. F306 v2: more suggestion kinds and a "could not check" rule for the No Rule pop-up (~120-240m, estimate unverified) Priority 34
+  - F308. Mine the AOL Trash2 history for delete-rule patterns that generalize to No Rule mail (~180-300m, estimate unverified) Priority 35
+  - F321. Convert the repo's PowerShell scripts and deterministic Claude tools to OS-agnostic Python, starting with a small pilot set (pilot ~120-240m,
+    estimate unverified) Priority 35
+  - F309. Research: a global "trusted sender" source for safe-sender suggestions (~60-90m research) Priority 37
+  - F310. Mine safe-sender mail for patterns that suggest a safe-sender rule for No Rule mail (~120-240m, estimate unverified) Priority 38
+  - F237. Quiet the non-fatal Kotlin "Daemon compilation failed" traces in the Android build (~20-40m) Priority 38
+  - F152. Periodic User-Centric First-Run Evaluation (~2-3h per review, plus fix-item time if findings warrant) Priority 
+Add a copy of F152 for this sprint
+
+
+
+ Recommendation for Sprint 83
+
+  This recommendation is my view; the scope is yours to select. I recommend a short, user-facing sprint built around the 0.23.0 phone checks:
+
+  1. Manual Validation carry-ins (about 30-45m of my work, plus your phone time). These are MV-3 (Fold tap on a scan notification, plus the F306 pop-up
+     on the cover screen), MV-4 (F303 #524 and F315 #527, read from the Fold log) and the M-6 click step. All three need 0.23.0 on the Fold, so they
+     come first after the Play rollout. If MV-3 passes, the Play notes can mention the tap.
+  2. F322 (60-120m). You targeted it at Sprint 83. It adds a setting to notify only when No Rule is above 0, the same on every platform.
+  3. F323 (120-240m). Its R-2 part stops a destructive suggestion: Block Entire Domain is offered when the sender check did not run (temperror or
+     permerror). R-1 (the Block Body button) and R-3 (news_ senders) build on the F306 work just shipped.
+  4. F324 (45-90m). A re-added account can silently lose background scanning, and the user is not told. Sprint 82 found this on your own iCloud account.
+  5. iOS F67a, F304, F67b (Priority 2-6), only if Apple has approved enrollment R6QG2A9SHS. Otherwise they stay open and waiting, as now.
+
+  The total is about 255-495m plus the phone checks. F321 (the Python conversion pilot, 120-240m) is the best addition if you want a larger sprint. It
+  is your request, and it replaced retro IMP-3.
+
+  Candidates at a glance
+
+  - F67a. iOS prerequisites: Apple Developer enrollment, build machine, test iPhone, iOS OAuth client (~45-90m plus Apple lead time) Priority 2
+  - F304. iOS build machine and signed build pipeline to TestFlight (~90-180m plus a 120m time-boxed signing setup) Priority 4
+  - F67b. iOS first build and foreground parity validation (~180-300m) Priority 6
+  - F67c. iOS background scan spike on a real iPhone (~120-240m plus a 7-day observation window) Priority 8
+  - F67d. iOS store readiness: privacy manifest, App Privacy, listing, TestFlight, upload (~150-240m plus App Review time) Priority 12
+  - F303. Android new-mail diagnostics: each field reported on its own -- REMAINDER: Fold check of the diagnostic line (~10m plus a phone log pull)
+    Priority 18
+  - F95 (revised). iOS variants: dev and prod side by side on one iPhone (~60-120m) Priority 24
+  - F270. Safe-sender discovery: propose safe senders from history for review (~150m) Priority 30
+  - F322. Notification choice: notify only when No Rule is greater than 0 (~60-120m, estimate unverified) Priority 30
+  - F315. Count IMAP messages that arrive with no UID; design a date cursor only if any occur (~30m count, design TBD) Priority 32
+  - F305. DEV-only diagnostic: which signal headers each No Rule email had, then widen the F271 signals (~60-90m) Priority 33
+  - F323. F306 v2: more suggestion kinds and a "could not check" rule for the No Rule pop-up (~120-240m, estimate unverified) Priority 34
+  - F308. Mine the AOL Trash2 history for delete-rule patterns that generalize to No Rule mail (~180-300m, estimate unverified) Priority 35
+  - F321. Convert the repo's PowerShell scripts and deterministic Claude tools to OS-agnostic Python, starting with a small pilot set (pilot ~120-240m,
+    estimate unverified) Priority 35
+  - F280. Doze network availability for alarm scans (~45-60m) Priority 36
+  - F324. Show the user when a re-added account has background scanning off (~45-90m, estimate unverified) Priority 36
+  - F307. Remove the "Create rule" page (RuleQuickAddScreen) -- target Sprint 86 (~30-60m) Priority 36
+  - F309. Research: a global "trusted sender" source for safe-sender suggestions (~60-90m research) Priority 37
+  - F310. Mine safe-sender mail for patterns that suggest a safe-sender rule for No Rule mail (~120-240m, estimate unverified) Priority 38
+  - F237. Quiet the non-fatal Kotlin "Daemon compilation failed" traces in the Android build (~20-40m) Priority 38
+
+  ON HOLD Candidates
+
+  - F265. Android Gmail native one-pick sign-in -- revisit only when a second device reproduces the failure Priority HOLD
+  - F274. On-device GenAI rule explanations (~240m) Priority HOLD
+  - F275. Cloud GenAI classification (~360m) Priority HOLD
+  - F246. Android Gmail background renewal through a server-side token exchange (~30m scope-matched spike retry; the server path is a Class-1 decision,
+    not estimated) Priority HOLD
+  - F165. Cross-device rules-DB sharing -- user cloud storage (iCloud/OneDrive/Box/Google Drive) exploration + hosted-tier option (~half-day
+    exploration) Priority HOLD
+  - F173. Periodic "Test Coverage and Appropriate Testing" Deep Dive (~4-8h per review) Priority HOLD
+  - F183. Upstream civyk-winwright request: script-runner replay support for ww_wait (~15m to file, then external) Priority HOLD
+  - F179. Subject-blocking phrase picker -- user selects (or GenAI recommends) the blocking SUBSET of a subject (~3-5h) Priority HOLD
+  - F152. Periodic User-Centric First-Run Evaluation (~2-3h per review, plus fix-item time if findings warrant) Priority HOLD
+  - F189. Periodic Skills Audit -- what tooling would make sprints, development, recovery and prevention measurably better (~4-8h per review,
+    research-led) Priority HOLD
+  - GP-4. Gmail API OAuth Verification / CASA -- THE SUBMISSION ITSELF (~40-80h) Priority HOLD
+  - F199-b. Partner Center publisher display name -- the last surface of the LLC rename (~15m once reopened) Priority HOLD
+  - F285. Re-ask: keep or delete email_detail_view.dart (~5m) Priority HOLD
+  - F289. WinWright default sweep with no mouse steps (~30-60m) Priority HOLD
+  - F111. Periodic Windows App Store upload readiness verification (~110-175m per review) Priority HOLD
+  - F139. Local-install smoke test for a release-candidate MSIX (~30-50m per review) Priority HOLD
+  - F70. Periodic Security Deep Dive (~4-8h per review) Priority HOLD
+  - F130. Periodic Process-Docs Consistency Deep Dive ([no-history] -- unbounded discovery) Priority HOLD
+  - F71. Periodic Architecture Deep Dive (~4-8h per review) Priority HOLD
+  - F201. Periodic Web Property Accuracy Re-Review -- myemailspamfilter.com + GitHub Pages (~1-2h per review, plus fix time if findings warrant)
+    Priority HOLD
+  - F63. Responsive design framework -- [SUPERSEDED 2026-08-03 by Sprint 54 F141's per-screen findings] Priority HOLD
+  - F6. Provider-Specific Optimizations (~10-12h) Priority HOLD
+  - SEC-11b. Database-at-rest encryption via SQLite3MultipleCiphers (sqlite3mc) + plaintext-to-encrypted migration (~8-12h) Priority HOLD
+  - F106. SEC-11b verification-window cleanup (~30m) Priority HOLD
+  - H1. GenAI Pattern Suggestions - Crowdsourced Spam Intelligence (TBD) Priority HOLD
+  - H2. Rule Pattern Consistency - Domain Matching Standards (~4-6h) Priority HOLD
+  - H3. Requirements Documentation System (TBD) Priority HOLD
+  - H4. Sent Messages Scan for Safe Senders (~12-16h) Priority HOLD
+  - H5. Outlook.com / Office 365 email provider adapter (~16-20h) Priority HOLD
+
+  Details
+
+  F67a. iOS prerequisites: Apple Developer enrollment, build machine, test iPhone, iOS OAuth client (~45-90m plus Apple lead time) Priority 2
+  - Phase: Multi-Platform Readiness
+  - Platform: iOS
+  - Walkthroughs are done (docs/IOS_SETUP.md Parts A-D). What remains:
+    - Apple's approval of enrollment R6QG2A9SHS, which you made with your existing Apple ID.
+    - The iOS OAuth client, bundle ID com.myemailspamfilter.
+    - The App Store Connect API key.
+  - You do the console steps; I write the walkthroughs and record the results. Card #509 is open.
+  - Depends on: Apple's approval (external).
+
+  F304. iOS build machine and signed build pipeline to TestFlight (~90-180m plus a 120m time-boxed signing setup) Priority 4
+  - Phase: Build and Release Infrastructure
+  - Platform: iOS (build tooling)
+  - The unsigned macos-26 compile job is done (run 40012148625). The signed ios-testflight job is written. What remains is signing with the API key and
+    the first TestFlight upload.
+  - AC: one command produces a signed build that installs on your iPhone through TestFlight. Card #510 is open.
+  - Depends on: F67a.
+
+  F67b. iOS first build and foreground parity validation (~180-300m) Priority 6
+  - Phase: Multi-Platform Readiness
+  - Platform: iOS
+  - The code is done (Sprint 81: project, Info.plist, AppDelegate, PlatformCapabilities).
+  - What remains is the device check on the first TestFlight build: smoke test, IMAP scan, Gmail sign-in, rules, review screens, export to Files, and
+    notification permission. Card #523 is open.
+  - Depends on: F67a, F304.
+
+  F67c. iOS background scan spike on a real iPhone (~120-240m plus a 7-day observation window) Priority 8
+  - Phase: Multi-Platform Readiness
+  - Platform: iOS
+  - BGAppRefreshTask per the ADR-0050 exception. The test is a locked-phone run with two Gmail accounts and one IMAP account, logging every background
+    launch for 7 days.
+  - It also covers the completion notification, a Background App Refresh "off" warning, and a decision on BGContinuedProcessingTask.
+  - Pass 1 correction: it is now targeted at the sprint after Apple approves (it was Sprint 82).
+  - Depends on: F67b, a test iPhone.
+
+  F67d. iOS store readiness: privacy manifest, App Privacy, listing, TestFlight, upload (~150-240m plus App Review time) Priority 12
+  - Phase: Build and Release Infrastructure
+  - Platform: iOS
+  - Covers PrivacyInfo.xcprivacy, the App Privacy answers ("Data Not Collected"), the listing and screenshots, the TestFlight groups, and an IMAP demo
+    account for App Review.
+  - Pass 1 correction: it now comes after the F67b device check (it was Sprint 83).
+  - Depends on: F67b.
+
+  F303. Android new-mail diagnostics: each field reported on its own -- REMAINDER: Fold check of the diagnostic line (~10m plus a phone log pull)
+  Priority 18
+  - Phase: Android / Google Play Readiness
+  - Platform: Android only (declared platform behavior per ADR-0049)
+  - The code shipped in Sprint 81. What remains is reading the [new-mail-diagnostics] line from the Fold log: every field present and no error:. This is
+    Sprint 83 MV-4, card #524.
+  - Depends on: 0.23.0 on the Fold.
+
+  F95 (revised). iOS variants: dev and prod side by side on one iPhone (~60-120m) Priority 24
+  - Phase: Build and Release Infrastructure
+  - Platform: iOS
+  - Separate bundle IDs for dev and prod (ADR-0035 on iOS), separate OAuth clients or URL schemes, and TestFlight as the store channel.
+  - Depends on: F67b.
+
+  F270. Safe-sender discovery: propose safe senders from history for review (~150m) Priority 30
+  - Phase: Core App Quality
+  - Platform: All
+  - v1 lists repeated No Rule senders that pass DMARC and were never deleted, on a "Suggested safe senders" list on the Safe Senders screen. You accept
+    or reject each one; nothing is added silently.
+  - v2 adds Sent-folder recipients, which needs a privacy policy update.
+  - Depends on: F266, F267 (done).
+
+  F322. Notification choice: notify only when No Rule is greater than 0 (~60-120m, estimate unverified) Priority 30
+  - Phase: Core App Quality
+  - Platform: All (Windows, Android, iPhone; same setting everywhere per ADR-0042)
+  - You targeted this at Sprint 83 (2026-10-31).
+  - Today, every completed background scan posts a notification (scan_complete_notifier.dart:109).
+  - R-1: a setting with two choices, "Every completed scan" and "Only when there are No Rule items". It is decided in shared code, so both workers and
+    the future iPhone worker obey it.
+  - R-2: the setting is on one named screen, with the same text on every platform.
+  - R-3: list other notification options (daily summary, quiet hours, per account) for you to choose from.
+
+  F315. Count IMAP messages that arrive with no UID; design a date cursor only if any occur (~30m count, design TBD) Priority 32
+  - Phase: Core App Quality
+  - Platform: All (shared IMAP adapter)
+  - Windows DEV had 0 such messages in 1,171 scan/persist lines. The phone count is Sprint 83 MV-4, card #527.
+  - If the count is 0, the card closes with the counts. If it is above 0, the date-cursor design is a Class 1 question for you.
+
+  F305. DEV-only diagnostic: which signal headers each No Rule email had, then widen the F271 signals (~60-90m) Priority 33
+  - Phase: Core App Quality
+  - Platform: All (shared Dart; DEV builds only)
+  - The Task 6 counts are done (Sprint 82). R-2 remains: propose wider signals, for example bulk mail without List-Id, as a numbered decision for you
+    before any change.
+  - Depends on: F271 (done).
+
+  F323. F306 v2: more suggestion kinds and a "could not check" rule for the No Rule pop-up (~120-240m, estimate unverified) Priority 34
+  - Phase: Core App Quality
+  - Platform: All (shared Dart: email_detail_popup.dart, rule_suggestion.dart)
+  - R-1: a Block Body button that shares the row with Block Subject.
+  - R-2: no suggestion, or a "could not check" note, on temperror or permerror. Today those results can suggest Block Entire Domain.
+  - R-3: a news_<digits> sender-shape suggestion. DEV has 2,225 such emails from 102 domains, all in AOL Bulk, and none is a safe sender.
+  - Depends on: F306 (done).
+
+  F308. Mine the AOL Trash2 history for delete-rule patterns that generalize to No Rule mail (~180-300m, estimate unverified) Priority 35
+  - Phase: Core App Quality
+  - Platform: Windows DEV (developer analysis; the results feed F306 on all platforms)
+  - R-1: a read-only DEV scan of AOL Trash2 into the content history. Yahoo is not scanned.
+  - R-2 and R-3: learn what delete-rule matches share (subject, body, sender shape, combinations), and score each candidate against safe-sender mail.
+  - R-4: the output is a report and candidate YAML, and nothing is applied. Items you deleted by hand are reported as their own group and do not count
+    as spam.
+  - Depends on: F267, F268 (done).
+
+  F321. Convert the repo's PowerShell scripts and deterministic Claude tools to OS-agnostic Python, starting with a small pilot set (pilot ~120-240m,
+  estimate unverified) Priority 35
+  - Phase: Process / Tooling
+  - Platform: development process (Windows, Linux, Unix, WSL, macOS); the app is not affected
+  - R-1: a small shared Python layer for OS, paths, time, subprocess and encoding.
+  - R-2: a pilot converting the hook library, 2-3 hooks with their test cases, and one scripts/ helper, run on Windows and on the CI Linux runner.
+  - R-3: classify every skill and hook as deterministic or needing GenAI.
+  - R-4: interfaces are kept, and the hook suite stays green.
+
+  F280. Doze network availability for alarm scans (~45-60m) Priority 36
+  - Phase: Core App Quality
+  - Platform: Android
+  - Under forced Doze, 2 of 3 alarm scans failed at DNS, not at login. The cause is unverified.
+
+  F324. Show the user when a re-added account has background scanning off (~45-90m, estimate unverified) Priority 36
+  - Phase: Core App Quality
+  - Platform: All (shared Dart)
+  - Re-adding the iCloud account dropped its background setting. The skip reached only the log.
+  - R-1: the screen the user lands on says so, with the control that turns it on.
+  - R-2: a numbered question to you on whether a re-added account keeps its old setting.
+
+  F307. Remove the "Create rule" page (RuleQuickAddScreen) -- target Sprint 86 (~30-60m) Priority 36
+  - Phase: Core App Quality
+  - Platform: All
+  - This removes rule_quick_add_screen.dart and its two callers, after confirming F306 covers what the page did. You set the target as Sprint 86.
+  - Depends on: F306.
+
+  F309. Research: a global "trusted sender" source for safe-sender suggestions (~60-90m research) Priority 37
+  - Phase: Core App Quality (research only)
+  - Platform: All (the result feeds F270 and F306)
+  - Leads: .gov, Tranco, and BIMI with a Verified Mark Certificate. Each counts only with a dmarc=pass from the receiving provider.
+  - It would only ever be a suggestion, never an automatic safe sender. A bundled list is a new data source; a network fetch is Class 1.
+
+  F310. Mine safe-sender mail for patterns that suggest a safe-sender rule for No Rule mail (~120-240m, estimate unverified) Priority 38
+  - Phase: Core App Quality
+  - Platform: Windows DEV (developer analysis; the results feed F270 and F306)
+  - This mirrors F308 for safe senders. A suggestion always requires DMARC pass, and content alone never suggests a safe sender. The output is a report
+    only.
+  - Depends on: F267, F312 (done).
+
+  F237. Quiet the non-fatal Kotlin "Daemon compilation failed" traces in the Android build (~20-40m) Priority 38
+  - Phase: Core App Quality
+  - Platform: Android
+  - Tonight's AAB build printed these traces again; they are harmless C:/D: drive noise.
+  - Options: kotlin.incremental=false, or move the pub cache to D:. Measure the build-time cost first. The value is preventive only.
+---------------------------------------------------------------------------------------------------------
+
   Questions (answer these with your approval)
 Decisions prior to sprint start:
 D2. 1 d3. 1 d4 whatever seeds are needed, no time cap - does this make sense?
