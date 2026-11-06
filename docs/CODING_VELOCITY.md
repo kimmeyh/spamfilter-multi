@@ -314,6 +314,7 @@ Every Item that is implemented gets ONE row here the moment it is picked up -- s
 | Task 11: F237 kotlin.incremental=false (#545) | 83 | DONE | 20-40 | 20-40 | ~16 hands-on + builds 570 s and 405 s (~16) | ~32 | Recorded at completion (2026-11-04 06:33). 30 daemon traces to 0; build 2 not slower. Keeping the line is asked at Manual Validation. |
 | Task 0: version 0.24.1+22 (#549) | 84 | DONE | 10-15 | 10-15 | ~15 | ~15 | Recorded at completion (2026-11-06 08:41). Main session, not Haiku: 3.7.0b runs in the same turn as approval (SPRINT_EXECUTION_WORKFLOW.md 3.7.0b), so delegating would cost more than the edit. Gates run before commit. |
 | Task 2: F342 Fold background errors (#551) | 84 | DONE | 30-90 | 30-90 | ~104 | ~104 | Recorded at completion (2026-11-06 10:33, agent Get-Date; started 08:49). Sonnet sub-agent as assigned. 11 logs, 9 groups, 1 fix (3 code files, 118 lines), 7 tests, 7/7 mutants KILLED. Over the estimate: the count spanned 11 logs, not 8, and the fix needed a 4-to-3 file rework to meet the Q1 limit. |
+| Task 5: F326 hooks H1 to Python (#554) | 84 | DONE | 90-150 | 90-150 | ~109 | ~109 | Recorded at completion (2026-11-06 10:40, agent Get-Date; started 08:51). Haiku sub-agent as assigned. 3 hooks, 178/178 suite, 11/11 mutants KILLED, parity probe 0 mismatches. |
 
 ## Can the missing sprints (48-69) be reconstructed from git? -- TESTED 2026-09-19, answer: NO
 

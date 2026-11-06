@@ -164,6 +164,16 @@ obsolete since the Sprint 51 retirement of `/memory-restore`; F340 audits them a
 `.claude/commands/` (5) and `.claude/agents/` (5) are prompts to a model and stay `.md`. The brief did not ask for them
 to be classified; they are listed here so the inventory is complete.
 
+### Conversion log
+
+- Sprint 84 F326 (GitHub #554), 2026-11-06: `block-carry-forward-stash.ps1` converted to `block-carry-forward-stash.py`
+  (stash-guard, 8 recorded cases). Registered in `.claude/settings.json` in Python form; the `.ps1` is kept until F329.
+- Sprint 84 F326 (GitHub #554), 2026-11-06: `require-sprint-cards.ps1` converted to `require-sprint-cards.py`
+  (sprint-cards, 8 recorded cases). It makes no `gh` call, so the layer gained no `gh` wrapper. Registered in Python form.
+- Sprint 84 F326 (GitHub #554), 2026-11-06: `warn-commit-without-velocity.ps1` converted to `warn-commit-without-velocity.py`
+  (velocity-warn, 12 recorded cases). Its JSON warning matches the PowerShell output except one trailing CRLF that the
+  shared layer adds on Windows. Registered in Python form.
+
 ### Conversion order
 
 Smallest and most used first, harness last: F326, F327, F328 (hooks), then F329 (the test tooling, which switches

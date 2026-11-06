@@ -15,13 +15,13 @@
     previously hard-wired to sprint-auto-advance.ps1, so the other hooks had
     no test coverage at all and their false positives went unnoticed):
       test-cases/*.json                  -> sprint-auto-advance.ps1  (Stop)
-      test-cases/stash-guard/*.json      -> block-carry-forward-stash.ps1 (PreToolUse)
+      test-cases/stash-guard/*.json      -> block-carry-forward-stash.py (PreToolUse)
       test-cases/closeout/*.json         -> verify-closeout-complete.ps1 (Stop)
-      test-cases/sprint-cards/*.json     -> require-sprint-cards.ps1 (PreToolUse)
+      test-cases/sprint-cards/*.json     -> require-sprint-cards.py (PreToolUse)
       test-cases/heredoc-guard/*.json    -> block-heredoc-python-backslash.py (PreToolUse)
       test-cases/staging-guard/*.json    -> block-blind-staging.py (PreToolUse)
       test-cases/commit-lock/*.json      -> block-commit-during-mutation.py (PreToolUse; F321, Sprint 83)
-      test-cases/velocity-warn/*.json    -> warn-commit-without-velocity.ps1 (PreToolUse)
+      test-cases/velocity-warn/*.json    -> warn-commit-without-velocity.py (PreToolUse)
 
     Prints a per-case PASS/FAIL line and a summary. Exits 0 if all pass, 1 if
     any fail.
@@ -50,13 +50,13 @@ if (-not (Test-Path -LiteralPath $casesDir)) { throw "Cases dir not found: $case
 # subdirectory name -> hook script
 $routes = @{
     ''             = 'sprint-auto-advance.ps1'
-    'stash-guard'  = 'block-carry-forward-stash.ps1'
+    'stash-guard'  = 'block-carry-forward-stash.py'          # Sprint 84 F326; Python since F321 (Sprint 83 ADR-0051)
     'closeout'     = 'verify-closeout-complete.ps1'
-    'sprint-cards' = 'require-sprint-cards.ps1'
+    'sprint-cards' = 'require-sprint-cards.py'               # Sprint 84 F326; Python since F321 (Sprint 83 ADR-0051)
     'heredoc-guard' = 'block-heredoc-python-backslash.py'    # Sprint 74 retro IMP-6; Python since F321 (Sprint 83)
     'staging-guard' = 'block-blind-staging.py'               # Sprint 76 retro IMP-4; Python since F321 (Sprint 83)
     'commit-lock'   = 'block-commit-during-mutation.py'      # F321 (Sprint 83): first test cases for this hook
-    'velocity-warn' = 'warn-commit-without-velocity.ps1'     # Sprint 82 retro IMP-7
+    'velocity-warn' = 'warn-commit-without-velocity.py'      # Sprint 82 retro IMP-7; Python since Sprint 84 F326
 }
 
 # F321 (Sprint 83, ADR-0051): a hook file ending in .py runs under python, any

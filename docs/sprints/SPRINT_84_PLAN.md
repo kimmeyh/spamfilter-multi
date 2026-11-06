@@ -518,7 +518,7 @@ Windows (this machine) and on Linux and macOS (CI and a future Mac for iOS): R-5
 
 **Model**: Haiku -- the cheapest tier fits a line-by-line port where the existing case suites are the oracle.
 **Delegation checklist included in the sub-agent prompt** (when delegated): yes
-**Executed-by** (filled at completion):
+**Executed-by** (filled at completion): Haiku sub-agent, as assigned (2026-11-06 08:51-10:40). Three hooks ported; hook suite 178/178 before and after (main session re-ran it: 178/178); test_pylib.py 47 OK on Windows (Linux CI pending, AC-3); PowerShell vs Python parity probe 0 mismatches over 28 cases; 11 mutants KILLED (stash-M2 first SURVIVED, a test was added). R-2 judgment (main session): the Python velocity hook ends stdout with one trailing newline that the PowerShell did not; Claude Code parses the JSON, so the content is identical and the shared hooklib layer is not changed. .ps1 files kept for F329.
 **Step-types**: HOOK, TEST-UNIT. **Est-Effort**: 90-150m.
 
 ## Task 6 -- F327: Python batch H2, verify-closeout-complete Stop hook (Priority 35)

@@ -8,8 +8,9 @@ Three groups:
   1. the shared layer (common.py, hooklib.py, mutation_lock.py);
   2. the pilot hooks end to end through a subprocess (stdin payload in, exit code and stderr out),
      including the Windows defect class: non-ASCII text while the console code page is cp1252;
-  3. a REPLAY of every PowerShell-suite case for the pilot hooks (test-cases/staging-guard,
-     heredoc-guard, commit-lock) through the Python `decide` functions. This is what makes the
+  3. a REPLAY of every PowerShell-suite case for the ported hooks (test-cases/staging-guard,
+     heredoc-guard, commit-lock; Sprint 84 F326: stash-guard, sprint-cards, velocity-warn) through
+     the Python `decide` functions. This is what makes the
      Linux CI run prove the hooks, not only the library. allow-* expects exit 0 and violation-*
      expects exit 2, the same rule run-test-cases.ps1 applies.
 
@@ -173,7 +174,8 @@ class HooklibTests(unittest.TestCase):
 
 class PilotHookProcessTests(unittest.TestCase):
     HOOK_FILES = ("block-blind-staging.py", "block-heredoc-python-backslash.py",
-                  "block-commit-during-mutation.py")
+                  "block-commit-during-mutation.py", "block-carry-forward-stash.py",
+                  "require-sprint-cards.py", "warn-commit-without-velocity.py")
 
     def test_every_hook_fails_open_on_malformed_payloads(self):
         for hook in self.HOOK_FILES:
@@ -224,7 +226,10 @@ class PilotHookProcessTests(unittest.TestCase):
             self.assertTrue((HOOKS / hook).exists())
         self.assertFalse([c for c in commands if "block-blind-staging.ps1" in c
                           or "block-heredoc-python-backslash.ps1" in c
-                          or "block-commit-during-mutation.ps1" in c], "old PowerShell registration remains")
+                          or "block-commit-during-mutation.ps1" in c
+                          or "block-carry-forward-stash.ps1" in c
+                          or "require-sprint-cards.ps1" in c
+                          or "warn-commit-without-velocity.ps1" in c], "old PowerShell registration remains")
 
 
 class MutationLockTests(unittest.TestCase):
@@ -402,8 +407,46 @@ class AgentWorkStatusTests(unittest.TestCase):
         self.assertIn("  none held", lines)
 
 
+def git_run(repo: Path, *args: str) -> None:
+    subprocess.run(["git", "-C", str(repo), *args], check=True, capture_output=True)
+
+
+def make_velocity_repos(root: Path) -> dict:
+    """Two throwaway git repos for the velocity-warn cases, as run-test-cases.ps1 builds them:
+    one with docs/CODING_VELOCITY.md modified, one with it staged."""
+    repos = {}
+    for kind in ("MODIFIED", "STAGED"):
+        repo = root / kind.lower()
+        (repo / "docs").mkdir(parents=True)
+        (repo / "mobile-app").mkdir()
+        git_run(repo, "init", "-q")
+        (repo / "docs" / "CODING_VELOCITY.md").write_text("v1", encoding="utf-8")
+        (repo / "a.txt").write_text("a", encoding="utf-8")
+        (repo / "mobile-app" / "keep.txt").write_text("k", encoding="utf-8")
+        git_run(repo, "add", "-A")
+        git_run(repo, "-c", "user.email=t@t", "-c", "user.name=t", "commit", "-q", "-m", "init")
+        (repo / "docs" / "CODING_VELOCITY.md").write_text("v2", encoding="utf-8")
+        if kind == "STAGED":
+            git_run(repo, "add", "docs/CODING_VELOCITY.md")
+        repos[kind] = str(repo).replace("\\", "/")
+    return repos
+
+
+def warning_of(stdout: str):
+    """The additionalContext text of a hookSpecificOutput JSON, or None (the runner's rule)."""
+    if not stdout:
+        return None
+    try:
+        return json.loads(stdout)["hookSpecificOutput"]["additionalContext"]
+    except (ValueError, KeyError, TypeError):
+        return None
+
+
 def replay_cases(test_case, hook_file: str, folder: str):
-    """Run every recorded case in test-cases/<folder> through the hook's decide()."""
+    """Run every recorded case in test-cases/<folder> through the hook's decide().
+
+    allow-* expects exit 0 and no warning; warn-* expects exit 0 and a warning; violation-* expects
+    exit 2 and a [BLOCKED] message. The same rule run-test-cases.ps1 applies."""
     module = load_hook(hook_file)
     files = sorted((CASES / folder).glob("*.json"))
     test_case.assertGreater(len(files), 5, f"no cases found in {folder}")
@@ -419,14 +462,21 @@ def replay_cases(test_case, hook_file: str, folder: str):
             folder_path.mkdir()
             make(folder_path)
             fixtures[key] = str(folder_path).replace("\\", "/")
+        for key, value in make_velocity_repos(Path(tmp) / "repos").items():
+            fixtures["REPO_" + key] = value
         for case in files:
             text = case.read_text(encoding="utf-8")
             for key, value in fixtures.items():
                 text = text.replace("{{" + key + "}}", value)
-            expected = 0 if case.stem.startswith("allow-") else 2
+            expected = 2 if case.stem.startswith("violation-") else 0
             with test_case.subTest(case=f"{folder}/{case.stem}"):
                 verdict = module.decide(json.loads(text))
                 test_case.assertEqual(verdict.code, expected)
+                warning = warning_of(verdict.stdout)
+                if case.stem.startswith("warn-"):
+                    test_case.assertIsNotNone(warning, "a warn-* case must print a warning")
+                if case.stem.startswith("allow-"):
+                    test_case.assertIsNone(warning, "an allow-* case must print no warning")
                 if expected == 2:
                     test_case.assertTrue(verdict.stderr.startswith("[BLOCKED]"), verdict.stderr[:60])
 
@@ -440,6 +490,118 @@ class ReplayTests(unittest.TestCase):
 
     def test_commit_lock_cases(self):
         replay_cases(self, "block-commit-during-mutation.py", "commit-lock")
+
+    def test_stash_guard_cases(self):
+        replay_cases(self, "block-carry-forward-stash.py", "stash-guard")
+
+    def test_sprint_cards_cases(self):
+        replay_cases(self, "require-sprint-cards.py", "sprint-cards")
+
+    def test_velocity_warn_cases(self):
+        replay_cases(self, "warn-commit-without-velocity.py", "velocity-warn")
+
+
+class PortedHookTests(unittest.TestCase):
+    """Behavior the recorded cases do not state in full: the message text, the JSON shape, and
+    the exception path (R-6). Each test names what it does NOT catch in its docstring."""
+
+    def test_stash_block_message_is_the_gate_text(self):
+        """Does NOT catch a changed wording in the second paragraph; the first line is pinned."""
+        module = load_hook("block-carry-forward-stash.py")
+        verdict = module.decide({"tool_input": {"command": "git stash push -m x"}})
+        self.assertEqual(verdict.code, 2)
+        self.assertTrue(verdict.stderr.startswith(
+            "[BLOCKED] git stash is disallowed for branch carry-forward."))
+        self.assertIn("re-run the command with the literal token allow_stash", verdict.stderr)
+
+    def test_stash_bypass_token_in_raw_command_allows(self):
+        """Does NOT catch a bypass token that is only inside a quoted string; the PowerShell hook
+        also honored one there, so the port keeps that (parity), it is not a defect to fix here."""
+        module = load_hook("block-carry-forward-stash.py")
+        verdict = module.decide({"tool_input": {"command": "echo \"allow_stash\"; git stash"}})
+        self.assertEqual(verdict.code, 0)
+
+    def test_stash_heredoc_body_without_quotes_is_data(self):
+        """A heredoc body that names `git stash` outside any quotes is data, not an invocation.
+        The recorded allow-3 case quotes its text, so the single-quote pass removes it anyway and
+        cannot tell whether the heredoc pass runs. Does NOT catch a heredoc with a different
+        delimiter spelling (`<<EOF` versus `<<'EOF'`); the regex accepts both, not tested here."""
+        module = load_hook("block-carry-forward-stash.py")
+        command = "cat <<EOF\ngit stash push\nEOF"
+        self.assertEqual(module.decide({"tool_input": {"command": command}}).code, 0)
+
+    def test_stash_top_level_command_field_is_checked(self):
+        """Does NOT catch a stash issued through a tool whose payload carries no command field."""
+        module = load_hook("block-carry-forward-stash.py")
+        self.assertEqual(module.decide({"command": "git stash"}).code, 2)
+
+    def test_sprint_cards_block_names_the_missing_pr_and_cards(self):
+        """Does NOT catch a sprint whose status file is valid but names a PR that does not exist
+        on GitHub; the hook reads the file, not the remote."""
+        module = load_hook("require-sprint-cards.py")
+        status = {"github_issues": [], "current_sprint": {"number": 84, "plan_approved": True}}
+        with tempfile.TemporaryDirectory() as tmp:
+            path = Path(tmp) / "status.json"
+            path.write_text(json.dumps(status), encoding="utf-8")
+            verdict = module.decide({"tool_input": {"command": "git commit -m x"},
+                                     "status_path_override": str(path)})
+        self.assertEqual(verdict.code, 2)
+        self.assertIn("[BLOCKED] Sprint 84 is missing a Phase 3.3.1 deliverable: GitHub issue cards "
+                      "(`github_issues` is empty) AND a draft PR (`pr_number` is null).", verdict.stderr)
+
+    def test_sprint_cards_unreadable_status_fails_open(self):
+        """Does NOT catch a status file that parses but holds the wrong values; that is the
+        recorded cases' job."""
+        module = load_hook("require-sprint-cards.py")
+        with tempfile.TemporaryDirectory() as tmp:
+            path = Path(tmp) / "status.json"
+            path.write_bytes(b"\xff\xfe not json")
+            verdict = module.decide({"tool_input": {"command": "git commit -m x"},
+                                     "status_path_override": str(path)})
+        self.assertEqual(verdict.code, 0)
+
+    def test_velocity_warning_is_hook_specific_output_json(self):
+        """Does NOT catch a warning that Claude Code fails to display for another reason; it pins
+        the JSON shape the runner and Claude Code both read."""
+        module = load_hook("warn-commit-without-velocity.py")
+        with tempfile.TemporaryDirectory() as tmp:
+            cwd = make_velocity_repos(Path(tmp))["MODIFIED"]  # fixed state: velocity modified, not staged
+            verdict = module.decide({"tool_name": "Bash", "cwd": cwd,
+                                     "tool_input": {"command": "git commit -m \"fix: x\" -m \"Closes #9\""}})
+        self.assertEqual(verdict.code, 0)
+        body = json.loads(verdict.stdout)
+        self.assertEqual(body["hookSpecificOutput"]["hookEventName"], "PreToolUse")
+        self.assertIn("CODING_VELOCITY", body["hookSpecificOutput"]["additionalContext"])
+
+    def test_velocity_names_an_unexpandable_message_file(self):
+        """Does NOT catch a -F path that is a real file under a different spelling; it pins only
+        the warning text for a path with a shell variable in it."""
+        module = load_hook("warn-commit-without-velocity.py")
+        with tempfile.TemporaryDirectory() as tmp:
+            cwd = make_velocity_repos(Path(tmp))["MODIFIED"]
+            verdict = module.decide({"tool_name": "Bash", "cwd": cwd, "tool_input": {
+                "command": "git add a.txt; git commit -F \"$SCRATCH/msg.txt\""}})
+        self.assertIn("$SCRATCH/msg.txt (a variable the hook cannot expand)", warning_of(verdict.stdout) or "")
+
+    def test_velocity_exception_is_reported_not_silent(self):
+        """R-6: an exception inside the check must surface as a warning that the check did not run.
+        Does NOT catch an exception raised before decide() is entered (hooklib.run covers that with
+        exit 1); it does not prove git itself works on the Windows runner."""
+        module = load_hook("warn-commit-without-velocity.py")
+        real_git = common.git
+
+        def broken_git(*args, **kwargs):
+            raise RuntimeError("simulated git failure")
+
+        module.common.git = broken_git
+        try:
+            verdict = module.decide({"tool_name": "Bash", "cwd": str(REPO),
+                                     "tool_input": {"command": "git commit -m \"Closes #9\""}})
+        finally:
+            module.common.git = real_git
+        self.assertEqual(verdict.code, 0)
+        self.assertIn("did not run", warning_of(verdict.stdout) or "")
+        self.assertIn("simulated git failure", warning_of(verdict.stdout) or "")
 
 
 if __name__ == "__main__":
