@@ -1000,6 +1000,15 @@ Source: `docs/research/F295_IOS_READINESS.md`. These replace the iOS parts of F6
 - Settles UNVERIFIED items: custom-scheme browser fallback, Files app visibility, `drawsUnderSystemBars`.
 - Depends on: F67a; F304 for the device check; F294 seam (merged Sprint 80).
 
+**F345. iOS Simulator smoke and screen check on the macos-26 runner, plus the privacy manifest (~120-210m) Priority 7 -- NEW 2026-11-06 (Harold Q1 = 1, Sprint 84 Task 8)**
+- Phase: Multi-Platform Readiness
+- Platform: iOS (CI, Simulator); no Apple approval needed (unsigned Simulator build).
+- Do: an `ios-simulator` job in `ios.yml`: Simulator build, the integration tests that can run there, first-run
+  screenshots on iPhone and iPad sizes as an artifact; `PrivacyInfo.xcprivacy` in the Runner target from Apple's current
+  required-reason API list. Records what the Simulator does NOT prove (Gmail sign-in, the notification prompt, real
+  background scheduling) in ADR-0050 and TESTING_STRATEGY.md.
+- Moves the code-level part of F67b forward; the F67b device check (#523) stays open.
+
 **F67c. iOS background scan spike on a real iPhone (~120-240m plus a 7-day observation window) Priority 8 -- target: the sprint after Apple approves enrollment `R6QG2A9SHS` (was Sprint 82; not started, it needs the F67b device check) (OFF HOLD 2026-10-23)**
 - Phase: Multi-Platform Readiness
 - Platform: iOS
