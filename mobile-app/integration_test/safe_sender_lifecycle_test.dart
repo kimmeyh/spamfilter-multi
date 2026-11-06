@@ -60,6 +60,9 @@ void main() {
       // Entire Domain is the default safe-sender type. Enter the domain.
       await tester.enterText(find.byType(TextField).first, domain);
       await tester.pumpAndSettle();
+      // F345: close the soft keyboard (iOS) before scrolling; a drag that starts
+      // on the focused text field is taken by the field, not the form.
+      await dismissKeyboard(tester);
 
       // Scroll the lazily-built Save Rule button into view (ListView), then tap.
       await tester.scrollUntilVisible(

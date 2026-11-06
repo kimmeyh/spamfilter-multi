@@ -91,31 +91,27 @@ R-2 table (ran / did not run, with the reason; counts are from run 3 unless note
   The same code runs on Windows, so the test failed there too since that commit (by code reading; a local Windows run
   was started and abandoned because it builds the Windows app). Fix in this round: the test wraps the screen in
   `ChangeNotifierProvider<RuleSetProvider>`. Not excluded.
-- safe_sender_lifecycle_test.dart: RAN, FAILED in run 1 and in every diagnostic re-run (runs 3 and 5). EXCLUDED from the
-  verdict. It has the same missing provider as rule_lifecycle (fixed the same way) but fails earlier, in
-  `scrollUntilVisible` for the Save button: `Bad state: No element` from `Iterable.single` in
-  `WidgetController.element`, the last line of `dragUntilVisible` (Flutter 3.47.4 `controller.dart:2489`), which means the
-  keyed Save button was still absent after the loop's 50 drags of 200 points. Probe evidence (run 5, iPhone 17, 1206 x
-  2622 px at dpr 3): before typing the Save button exists (`saveButton=1`); after `enterText` it is gone
-  (`saveButton=0`; the form grew); a single vertical drag of 400 points on `find.byType(Scrollable).first` brings it
-  back (`saveButton=1`). The number of Scrollable widgets varies between 2 and 3 across drags (2, 3, 2, 2, 3, 3), so `.first` is not a stable
-  target. The test passes `find.byType(Scrollable).first` as the scrollable, and `scrollUntilVisible` takes its drag
-  AXIS from that widget, so if `.first` is the single-line TextField's horizontal Scrollable the 50 drags are horizontal
-  and never scroll the form. Cause: NOT established (that is a hypothesis); run 6's probe prints each Scrollable's axis,
-  position and rect and replays the exact call, which settles it. If confirmed it is a test-side defect (a fragile
-  finder), not an app defect, and the fix is one line in the test: a `find.byType(Scrollable)` narrowed to the vertical
-  one (for example `find.byWidgetPredicate`), checked on Windows too.
-- folder_picker_test.dart: RAN, FAILED in run 1 and in every diagnostic re-run (runs 3 and 5), always at line 64
-  (`Church` not found after clearing the search). EXCLUDED from the verdict. A headless probe with
-  `debugDefaultTargetPlatformOverride = TargetPlatform.iOS` passes, so Dart-level iOS behavior is not the cause. Run 5
-  probe evidence: after clearing, the search controller text is empty (`controller=""`), `Inbox` and `Bulk Mail` are shown,
-  but only 3 of 4 `RadioListTile`s are built (4 at the start); the 4th, `Church`, the last in the list, is missing. So the filter state is correct and the list is not building its last
-  item, which points at the lazily built `ListView.builder` window (viewport plus 250 points of cache) being smaller than
-  at the start. The run 5 probe printed the view insets as objects, not numbers, so whether the on-screen keyboard shrinks
-  the viewport is still UNVERIFIED; run 6's probe prints the four inset numbers, every tile's rect and the ListView rect.
-  If the ListView is short after the first `enterText`, the cause is the Simulator keyboard (an environment effect, the
-  test would need `tester.testTextInput.hide()` or the Simulator's hardware-keyboard setting, not an app change);
-  if the ListView is full height, it is an app or framework defect in the single-select list and needs its own card.
+- safe_sender_lifecycle_test.dart and folder_picker_test.dart: RAN, FAILED in runs 1 to 6 (run 6 is the probe run). SAME
+  CAUSE, from run 6 probe numbers (iPhone 17, 402 x 874 points, dpr 3): after `enterText` the iOS soft keyboard stays open.
+  `viewInsets.bottom` goes from 0 to 1005 px (335 points). Windows has no soft keyboard, which is why the tests pass there.
+  - folder_picker_test: the single-select `ListView` is 505 points tall at the start (rect 325 to 830) and 170 points tall
+    after the first `enterText` (rect 325 to 495), and stays 170 after the search is cleared. Rows are 72 points; three
+    are built (tops 325, 397, 469) and the 4th (`Church`, top 541) is not. The assertion at line 64 needs row 4 on screen.
+    (The 250-point cache extent did not build it either; the exact reason is a framework detail not needed for the fix.)
+  - safe_sender_lifecycle_test: after `enterText` the form `ListView` is 402 points tall (rect 137 to 539), `pixels` 95,
+    `maxScrollExtent` 349. The exact replay of the test's `scrollUntilVisible` fails with `Bad state: No element`, and the
+    form is left at 275 of 349, short of the Save button, with the same 275 after five more drags. `scrollable[0]` is the
+    vertical form list, so the earlier hypothesis that `.first` was the horizontal text-field scrollable is FALSE. What
+    stops the drags is not proven by one number: the drag starts at the centre of that list, (201, 338), and the focused
+    text field's box (inner rect 314 to 338, plus its decoration) covers that point, so the field most likely takes the
+    gesture. That part is a strong inference, not a measurement. The fix does not depend on it: with the keyboard closed
+    the form is 737 points tall and the field is not under the drag.
+  FIX (test side, no app change; three files, 25 lines): `dismissKeyboard(tester)` in `integration_test/helpers/app_harness.dart`
+  (drops focus, pumps 600 ms, `pumpAndSettle`), called in folder_picker_test.dart before the final assertion and in
+  safe_sender_lifecycle_test.dart after `enterText` and before `scrollUntilVisible`. On Windows it only drops focus.
+  EVIDENCE it passes: none yet on iOS. The files stay in EXCLUDED_TESTS for ONE more run and re-run in the diagnostics step
+  of `ios-simulator`; when that step shows both passing, move them into the gate. Windows result: both PASS with the fix (`flutter test integration_test/<file> -d windows`: safe_sender_lifecycle 1 passed, folder_picker 1 passed; no other build was running).
+  The probe test was deleted (explained; it is in git history, commit ace8f854 and earlier).
 - read_only_flows_test.dart: RAN in run 1, 5 passed, 1 FAILED: `F25: Rule Test tool runs a plaintext pattern`, "A
   RenderFlex overflowed by 27 pixels on the bottom" at `lib/ui/screens/rule_test_screen.dart:523`, constraints
   `0<=h<=63`. A real layout defect at a phone viewport, found by the Simulator. Fixed by commit c9130577 (the four
