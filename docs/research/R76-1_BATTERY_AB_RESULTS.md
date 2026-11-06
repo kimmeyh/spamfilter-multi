@@ -315,6 +315,40 @@ in the worker; (C) same, charger plugged in.
 than 20 percent, add the wait; otherwise record the cause and close.
 **Notes**: A DNS failure on a real account would look like a skipped scan and delay mail handling by one interval.
 
+**Results (Sprint 84 Task 3, F280, #552, emulator `pixel34_updated` Google APIs API 34, emulator 36.2.12.0, adb
+36.0.0-13206524, dev 0.24.1, 2026-11-06)**: interval 5 on both test accounts (`r761test1@aol.com`,
+`r761test2@yahoo.com`; their saved credentials are rejected by the servers, so "reached login" means the worker got
+through DNS and TCP to the IMAP `AUTHENTICATIONFAILED` reply). Each arm: 2 minutes screen off, `deviceidle force-idle`,
+20-minute window, `r76_battery_arm.sh` plus a logcat capture and a `dumpsys jobscheduler` poll every 2 s. The fix was
+the Task 3 change (`networkConstraint` shared by both requests), measured in arms B and C only.
+- **R-1 (constraints, `dumpsys jobscheduler`)**: the unfixed Doze-alarm one-off (jobs 1538, 1539, 12:02) showed no
+  `CONNECTIVITY` constraint; the periodic jobs (1531, 1535, 1537) showed `TIMING_DELAY CONNECTIVITY [0x90000000]`. With
+  the fix the Doze jobs (1556-1559, 1570-1575) show `CONNECTIVITY [0x10000000]`. The notification request's constraint
+  was NOT captured on the emulator (the test accounts are flagged "sign-in needed" after the first rejected login and
+  new-mail scanning is off); its constraint is read from source only (`DozeScanTrigger.kt`, now the shared value). UNVERIFIED by dumpsys.
+- **Arm A (as today)**: 3 alarm wakes x 2 accounts = 6 alarm scans. `Failed host lookup`: 0 of 6 (logcat and diagnostic
+  log). Reached login: 2 (the 12:02 wake). The other 4 skipped as "flagged, no login" (the first rejected login sets the
+  sign-in-needed flag, and a flagged scan never touches the network), so only 2 scans could test DNS. Start delay 4 s,
+  1 s, 1 s. App wakelock 21 s 357 ms (batterystats, uid u0a194).
+- **Arm B (fix)**: 2 wakes x 2 = 4 alarm scans. `Failed host lookup`: 0 of 4. Reached login: 2 (13:10); 2 flagged. Start
+  delay 4 s, 3 s. App wakelock 27 s 551 ms.
+- **Arm C (fix, charger)**: 13:49 wake: 2 scans reached login (delay 5 s, 6 s); 13:58 wake: 2 flagged (delay 3 s). A
+  third wake (14:07) started at the window end and its log lines were not captured. `Failed host lookup`: 0. Wakelock
+  not available: batterystats does not list the app while the device reports a charger.
+- **Rule outcome (R-5)**: arm A failed at DNS in 0 percent of testable scans (0 of 2; 0 of 6 overall), below the 25
+  percent threshold, so the defect did NOT occur on the emulator. The rule says to record the cause and close: the
+  emulator network stays up in forced deep idle, which the Fold's does not necessarily do. Raw wakelock rose 29 percent
+  in B against A (21.4 s to 27.6 s), above the 20 percent line, but the arms hold different numbers of wakes and a
+  different amount of screen use, so that figure is not a clean comparison. Context: Task 2 found 0 `Failed host
+  lookup` lines on doze-alarm runs in 11 Fold logs (`docs/research/F342_FOLD_BACKGROUND_ERRORS_S84.md`), so no
+  evidence of the defect exists on either device. Sample size is small (2 testable scans per arm); this is a
+  non-reproduction, not a proof that it cannot occur. Recommendation: revert the constraint (Q2 decision pending with Harold).
+- **Platform parity (R-6)**: Android WorkManager constraint (this change); Windows `-RunOnlyIfNetworkAvailable`
+  (`powershell_script_generator.dart:63`); iOS: Apple's `BGAppRefreshTaskRequest` page
+  (`developer.apple.com/tutorials/data/documentation/backgroundtasks/bgapprefreshtaskrequest.json`, read 2026-11-06)
+  lists no properties and one initializer, so it has no network requirement; `requiresNetworkConnectivity` ("A Boolean
+  specifying if the processing task requires network connectivity.") belongs to `BGProcessingTaskRequest`. F67c input.
+
 ## Original plan for arms 3-6 (kept for the record; superseded by the section above)
 
 Prerequisites: F264 built into the dev debug APK (per-account new-mail mapping, interval unit plus number, the
