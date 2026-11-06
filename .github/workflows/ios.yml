@@ -190,3 +190,194 @@ jobs:
         run: |
           rm -f ios/Flutter/Secrets.xcconfig
           rm -rf "$RUNNER_TEMP/asc"
+
+  # Sprint 84 Task 8 (F345): the integration tests and the first-run screens on
+  # the iOS Simulator. No signing and no secret: the Google client IDs stay
+  # empty, as in ios-build. Runs on the same triggers as ios-build (a push that
+  # changes mobile-app/ios/** or this file, and workflow_dispatch).
+  #
+  # The checkout, Flutter setup and pub get steps are COPIED from ios-build, not
+  # shared: a composite action or a YAML anchor would mean editing ios-build and
+  # ios-testflight, which cannot be tested on this Windows machine, and the card
+  # says those two jobs do not change. The Flutter action SHA is the same.
+  #
+  # The job FAILS when a test file fails, when a file runs zero tests, when the
+  # total of passed tests is zero, or when the privacy manifest is not in the
+  # built .app (Sprint 83 IMP-3: never green on nothing).
+  ios-simulator:
+    name: iOS Simulator tests and screens
+    runs-on: macos-26
+    timeout-minutes: 75
+    defaults:
+      run:
+        working-directory: mobile-app
+    env:
+      # Integration test files NOT run on the Simulator, one name per word, with
+      # the reason (R-2). A test that cannot run is listed here; it is never
+      # edited to pass. Keep this empty until a CI run shows a file that cannot
+      # run on iOS; none of the nine needs a real account or a network sign-in
+      # (all use the isolated temp database harness).
+      EXCLUDED_TESTS: ''
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: subosito/flutter-action@1a449444c387b1966244ae4d4f8c696479add0b2 # v2.23.0
+        with:
+          flutter-version-file: .fvmrc
+          channel: 'stable'
+          cache: true
+
+      - name: flutter pub get
+        run: flutter pub get
+
+      # Newest installed iOS runtime; an iPhone and an iPad on it. Names are
+      # read from the runner, not fixed, so an image update does not break the
+      # job (runner image macos-26 lists iPhone 17 and iPad (A16) on iOS 26.5,
+      # actions/runner-images macos-26-arm64-Readme.md, image 20261026.0455.2).
+      - name: Pick an iPhone and an iPad Simulator
+        id: sims
+        run: |
+          xcrun simctl list devices available -j > "$RUNNER_TEMP/sims.json"
+          python3 - "$RUNNER_TEMP/sims.json" >> "$GITHUB_OUTPUT" <<'PY'
+          import json, re, sys
+          data = json.load(open(sys.argv[1]))["devices"]
+          runtimes = []
+          for key, devs in data.items():
+              m = re.search(r"iOS-(\d+)-(\d+)", key)
+              if m and devs:
+                  runtimes.append(((int(m.group(1)), int(m.group(2))), devs))
+          if not runtimes:
+              sys.exit("no iOS runtime with devices")
+          runtimes.sort(key=lambda r: r[0])
+          devs = runtimes[-1][1]
+          def pick(prefix, preferred):
+              cands = [d for d in devs if d["name"].startswith(prefix) and d.get("isAvailable", True)]
+              for want in preferred:
+                  for d in cands:
+                      if d["name"] == want:
+                          return d
+              if not cands:
+                  sys.exit("no simulator starting with " + prefix)
+              return cands[0]
+          phone = pick("iPhone", ["iPhone 17", "iPhone 17 Pro"])
+          pad = pick("iPad", ["iPad (A16)", "iPad Pro 11-inch (M5)"])
+          print("iphone_id=" + phone["udid"])
+          print("iphone_name=" + phone["name"])
+          print("ipad_id=" + pad["udid"])
+          print("ipad_name=" + pad["name"])
+          print("runtime=" + ".".join(str(x) for x in runtimes[-1][0]))
+          PY
+
+      - name: Boot both Simulators
+        run: |
+          echo "iPhone: ${{ steps.sims.outputs.iphone_name }} (iOS ${{ steps.sims.outputs.runtime }})"
+          echo "iPad:   ${{ steps.sims.outputs.ipad_name }} (iOS ${{ steps.sims.outputs.runtime }})"
+          for id in "${{ steps.sims.outputs.iphone_id }}" "${{ steps.sims.outputs.ipad_id }}"; do
+            xcrun simctl boot "$id"
+            xcrun simctl bootstatus "$id" -b
+          done
+          xcrun simctl list devices booted
+
+      - name: flutter build ios (simulator, debug, no signing)
+        run: flutter build ios --simulator --debug
+
+      # R-4 / AC-4 / T-2: the privacy manifest must be inside the built .app.
+      # Also list every manifest in the bundle (Flutter engine and plugins ship
+      # their own) so the run shows what Apple's merged report would read.
+      - name: Check the privacy manifest is in the built app
+        run: |
+          app=build/ios/iphonesimulator/Runner.app
+          test -d "$app" || { echo "::error::$app not found"; exit 1; }
+          echo "Privacy manifests inside the bundle:"
+          find "$app" -name 'PrivacyInfo.xcprivacy' | sort
+          if [ ! -f "$app/PrivacyInfo.xcprivacy" ]; then
+            echo "::error::Runner.app/PrivacyInfo.xcprivacy is missing: the file is not in the Runner target Resources"
+            exit 1
+          fi
+          plutil -lint "$app/PrivacyInfo.xcprivacy"
+          plutil -p "$app/PrivacyInfo.xcprivacy"
+
+      # One flutter test process per file, as scripts/run-integration-tests.ps1
+      # does on Windows (TESTING_STRATEGY.md "Execution model"). The first-run
+      # screens test needs dart-defines and has its own step below.
+      - name: Run the integration tests on the iPhone Simulator
+        env:
+          UDID: ${{ steps.sims.outputs.iphone_id }}
+        run: |
+          set +e
+          mkdir -p "$RUNNER_TEMP/it-logs"
+          summary="$GITHUB_STEP_SUMMARY"
+          { echo "### Integration tests on ${{ steps.sims.outputs.iphone_name }} (iOS ${{ steps.sims.outputs.runtime }})"; echo; echo "| File | Result | Passed |"; echo "| --- | --- | --- |"; } >> "$summary"
+          total=0; bad=0; ran=0
+          for f in integration_test/*_test.dart; do
+            name=$(basename "$f")
+            [ "$name" = "ios_first_run_screens_test.dart" ] && continue
+            case " $EXCLUDED_TESTS " in
+              *" $name "*) echo "EXCLUDED $name"; echo "| $name | excluded | - |" >> "$summary"; continue;;
+            esac
+            ran=$((ran + 1))
+            flutter test "$f" -d "${UDID}" > "$RUNNER_TEMP/it-logs/$name.log" 2>&1
+            code=$?
+            n=$(grep -oE '\+[0-9]+' "$RUNNER_TEMP/it-logs/$name.log" | tail -1 | tr -d '+')
+            n=${n:-0}
+            if [ "$code" -ne 0 ]; then
+              result="FAILED (exit $code)"; bad=$((bad + 1))
+            elif [ "$n" -eq 0 ]; then
+              result="FAILED (zero tests ran)"; bad=$((bad + 1))
+            else
+              result="passed"
+            fi
+            total=$((total + n))
+            echo "$name: $result, $n passed"
+            echo "| $name | $result | $n |" >> "$summary"
+            [ "$code" -ne 0 ] && tail -40 "$RUNNER_TEMP/it-logs/$name.log"
+          done
+          echo "Files run: $ran, passed tests: $total, failed files: $bad"
+          echo "" >> "$summary"; echo "Files run: $ran. Passed tests: $total. Failed files: $bad." >> "$summary"
+          if [ "$ran" -eq 0 ] || [ "$total" -eq 0 ]; then
+            echo "::error::zero integration tests ran on the Simulator"; exit 1
+          fi
+          [ "$bad" -eq 0 ] || { echo "::error::$bad integration test file(s) failed"; exit 1; }
+
+      # The smoke test also runs on the iPad size: the app targets both
+      # (TARGETED_DEVICE_FAMILY = "1,2").
+      - name: Run the smoke test on the iPad Simulator
+        env:
+          UDID: ${{ steps.sims.outputs.ipad_id }}
+        run: |
+          # Redirect, not a pipe: a pipe without pipefail would hide a failed run.
+          flutter test integration_test/app_boot_smoke_test.dart -d "${UDID}" > "$RUNNER_TEMP/it-logs/ipad-smoke.log" 2>&1 || { tail -40 "$RUNNER_TEMP/it-logs/ipad-smoke.log"; exit 1; }
+          tail -5 "$RUNNER_TEMP/it-logs/ipad-smoke.log"
+          n=$(grep -oE '\+[0-9]+' "$RUNNER_TEMP/it-logs/ipad-smoke.log" | tail -1 | tr -d '+')
+          [ "${n:-0}" -gt 0 ] || { echo "::error::zero tests ran on the iPad Simulator"; exit 1; }
+
+      # R-3 / AC-3: five first-run screens on each device size. The test writes
+      # PNG files to a folder on the Mac (a Simulator app runs as a Mac process);
+      # it fails when a file is not written. A whole-screen simctl capture is
+      # added as a second source.
+      - name: Capture the first-run screens (iPhone and iPad)
+        run: |
+          shots="$RUNNER_TEMP/screens"
+          mkdir -p "$shots"
+          flutter test integration_test/ios_first_run_screens_test.dart -d "${{ steps.sims.outputs.iphone_id }}" \
+            --dart-define=SCREENSHOT_DIR="$shots" --dart-define=SCREENSHOT_LABEL=iphone
+          xcrun simctl io "${{ steps.sims.outputs.iphone_id }}" screenshot "$shots/iphone-simctl-last.png"
+          flutter test integration_test/ios_first_run_screens_test.dart -d "${{ steps.sims.outputs.ipad_id }}" \
+            --dart-define=SCREENSHOT_DIR="$shots" --dart-define=SCREENSHOT_LABEL=ipad
+          xcrun simctl io "${{ steps.sims.outputs.ipad_id }}" screenshot "$shots/ipad-simctl-last.png"
+          ls -l "$shots"
+          for label in iphone ipad; do
+            c=$(ls "$shots" | grep -c "^$label-[1-5]-" || true)
+            [ "$c" -eq 5 ] || { echo "::error::expected 5 $label screens, found $c"; exit 1; }
+          done
+
+      - name: Upload the screens and test logs
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: ios-simulator-screens-and-logs
+          path: |
+            ${{ runner.temp }}/screens
+            ${{ runner.temp }}/it-logs
+          if-no-files-found: warn
+          retention-days: 14

@@ -91,6 +91,25 @@ link, and TestFlight are submission tasks of the same kind as Google Play's Data
 not require Sign in with Apple for a mail client. Shipping needs a Mac on macOS Tahoe 26.2 or later, Xcode 26, and
 an Apple Developer Program membership (the LLC's enrollment path is UNVERIFIED).
 
+### What the Simulator does not prove (Sprint 84, F345, R-5)
+
+From Sprint 84 the `ios-simulator` job (`.github/workflows/ios.yml`) runs the shared integration tests and captures the
+first-run screens on an iPhone-size and an iPad-size iOS Simulator (`docs/TESTING_STRATEGY.md`, "iOS test level"). It is
+a test level, not an exception to ADR-0042. It does NOT prove:
+
+- Gmail sign-in on iOS (empty client IDs; no sign-in is run). Only a TestFlight build on a device proves it.
+- The notification permission prompt and real notification delivery (Exception 2 and
+  `requestsNotificationPermissionAtRuntime`).
+- Real background scheduling: the `BGAppRefreshTask` timing of Exception 1 is the device's scheduler; no background
+  scan runs on the Simulator.
+- Real-device performance, memory and battery.
+- The signed build: entitlements, provisioning profile, Keychain access groups, App Store processing.
+- The Files-app export folder (`exportLocation`, UNVERIFIED above).
+
+The privacy manifest (`mobile-app/ios/Runner/PrivacyInfo.xcprivacy`, F345 R-4) is iOS-only by Apple's rule. Android's
+equivalent is the Play Data safety form (GP-10) and Windows has none. This is the declared platform exception for that
+file; it changes no user-visible behavior. Evidence and reason codes: `docs/research/F345_IOS_SIMULATOR_S84.md`.
+
 ## Alternatives Considered
 
 ### Treat iOS background scanning as unsupported (`none`)

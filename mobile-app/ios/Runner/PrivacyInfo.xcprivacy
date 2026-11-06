@@ -1,0 +1,50 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<!--
+  Sprint 84 F345 (R-4). App-level privacy manifest. Sources, read 2026-11-06:
+  https://developer.apple.com/documentation/bundleresources/privacy-manifest-files
+  https://developer.apple.com/documentation/bundleresources/describing-use-of-required-reason-api
+  https://developer.apple.com/documentation/bundleresources/app-privacy-configuration/nsprivacyaccessedapitypes/nsprivacyaccessedapitype
+
+  Tracking: none. No tracking domains. No data types collected (ADR-0030: no
+  backend; mail goes only between the device and the user's own mail provider).
+
+  Required-reason API: one category is declared, for the app's own Dart code.
+    NSPrivacyAccessedAPICategoryFileTimestamp, reason C617.1. Apple: "Declare
+    this reason to access the timestamps, size, or other metadata of files
+    inside the app container, app group container, or the app's CloudKit
+    container." Used by lib/adapters/storage/local_rule_store.dart (backup file
+    statSync().modified) and lib/core/services/diagnostic_logger.dart
+    (lock file lastModified), both inside the app container. Timestamps are not
+    sent off the device.
+
+  Plugins that ship their own manifest (each is bundled by its own target; this
+  file does not repeat their entries, per Apple: a third-party SDK reports its
+  own use): app_links, file_picker, flutter_appauth, flutter_local_notifications,
+  flutter_secure_storage_darwin, google_sign_in_ios, msal_auth,
+  package_info_plus, path_provider_foundation, sqflite_darwin, url_launcher_ios,
+  webview_flutter_wkwebview, workmanager_apple. battery_plus 5.0.3 and
+  connectivity_plus 5.0.2 ship none; their ios sources contain none of the
+  required-reason APIs (checked by grep, F345 card).
+-->
+<plist version="1.0">
+<dict>
+	<key>NSPrivacyTracking</key>
+	<false/>
+	<key>NSPrivacyTrackingDomains</key>
+	<array/>
+	<key>NSPrivacyCollectedDataTypes</key>
+	<array/>
+	<key>NSPrivacyAccessedAPITypes</key>
+	<array>
+		<dict>
+			<key>NSPrivacyAccessedAPIType</key>
+			<string>NSPrivacyAccessedAPICategoryFileTimestamp</string>
+			<key>NSPrivacyAccessedAPITypeReasons</key>
+			<array>
+				<string>C617.1</string>
+			</array>
+		</dict>
+	</array>
+</dict>
+</plist>
