@@ -196,16 +196,26 @@ jobs:
   # empty, as in ios-build. Runs on the same triggers as ios-build (a push that
   # changes mobile-app/ios/** or this file, and workflow_dispatch).
   #
+  # TWO JOBS, run in parallel on two macOS runners (GitHub allows 5 concurrent
+  # macOS jobs on every plan, docs.github.com/en/actions/reference/limits). One
+  # job did not fit its 75 minutes in run 2 (42252630431). Measured there:
+  # boot of both Simulators 11.5 min, explicit simulator build 17.1 min, the
+  # first test file 9.4 min and later files about 4 to 5 min each (every
+  # `flutter test <file>` runs its own Xcode build), first-run screens about 9 min
+  # per device. ios-simulator carries the verdict (build, manifest, tests);
+  # ios-simulator-screens carries the screens and the diagnostic re-run.
+  #
   # The checkout, Flutter setup and pub get steps are COPIED from ios-build, not
   # shared: a composite action or a YAML anchor would mean editing ios-build and
   # ios-testflight, which cannot be tested on this Windows machine, and the card
-  # says those two jobs do not change. The Flutter action SHA is the same.
+  # says those two jobs do not change. The Flutter action SHA is the same. The
+  # simulator pick step is copied between the two new jobs for the same reason.
   #
-  # The job FAILS when a test file fails, when a file runs zero tests, when the
-  # total of passed tests is zero, or when the privacy manifest is not in the
+  # ios-simulator FAILS when a test file fails, when a file runs zero tests, when
+  # the total of passed tests is zero, or when the privacy manifest is not in the
   # built .app (Sprint 83 IMP-3: never green on nothing).
   ios-simulator:
-    name: iOS Simulator tests and screens
+    name: iOS Simulator tests
     runs-on: macos-26
     timeout-minutes: 75
     defaults:
@@ -215,17 +225,13 @@ jobs:
       # Integration test files NOT in the verdict, one name per word, with the
       # reason (R-2). A test that cannot run is listed here; it is never edited
       # to pass. None of the nine needs a real account or a network sign-in.
-      # Run 1 (42236034252) results, details in docs/research/F345_IOS_SIMULATOR_S84.md:
-      #  sprint62_surfaces_test.dart: STALE on every platform. Its F175 cases
-      #    expect the dialog "Background scan in progress" and the button "Wait and
-      #    start"; the app shows "A scan is already running" with OK (Sprint 74/75,
-      #    scan_progress_screen.dart showScanAlreadyRunningDialog).
-      #  folder_picker_test.dart, read_only_flows_test.dart,
-      #  safe_sender_lifecycle_test.dart: failed on the Simulator only, cause NOT
-      #    yet established (hypothesis, unverified: the on-screen keyboard). They
-      #    run again, outside the verdict, in the "Diagnostic re-run" step.
-      EXCLUDED_TESTS: 'sprint62_surfaces_test.dart folder_picker_test.dart read_only_flows_test.dart safe_sender_lifecycle_test.dart'
-      DIAGNOSTIC_TESTS: 'folder_picker_test.dart read_only_flows_test.dart safe_sender_lifecycle_test.dart'
+      # Details: docs/research/F345_IOS_SIMULATOR_S84.md section 2.
+      #  sprint62_surfaces_test.dart: STALE on every platform (the F175 cases and
+      #    one F178/F176 case; cases named in the research document).
+      #  folder_picker_test.dart, safe_sender_lifecycle_test.dart: failed on the
+      #    Simulator in run 1, cause NOT yet established. They run again, outside
+      #    the verdict, in ios-simulator-screens (the diagnostic step).
+      EXCLUDED_TESTS: 'sprint62_surfaces_test.dart folder_picker_test.dart safe_sender_lifecycle_test.dart'
     steps:
       - uses: actions/checkout@v4
 
@@ -276,18 +282,13 @@ jobs:
           print("runtime=" + ".".join(str(x) for x in runtimes[-1][0]))
           PY
 
-      # Best effort, UNVERIFIED for a headless boot: with a hardware keyboard
-      # connected the Simulator does not raise the on-screen keyboard, which on a
-      # phone leaves a text-entry screen only a few dozen points of height.
-      - name: Boot both Simulators
+      # Only the iPhone boots here: the iPad is used by ios-simulator-screens.
+      - name: Boot the iPhone Simulator
         run: |
-          defaults write com.apple.iphonesimulator ConnectHardwareKeyboard -bool true
           echo "iPhone: ${{ steps.sims.outputs.iphone_name }} (iOS ${{ steps.sims.outputs.runtime }})"
-          echo "iPad:   ${{ steps.sims.outputs.ipad_name }} (iOS ${{ steps.sims.outputs.runtime }})"
-          for id in "${{ steps.sims.outputs.iphone_id }}" "${{ steps.sims.outputs.ipad_id }}"; do
-            xcrun simctl boot "$id"
-            xcrun simctl bootstatus "$id" -b
-          done
+          defaults write com.apple.iphonesimulator ConnectHardwareKeyboard -bool true
+          xcrun simctl boot "${{ steps.sims.outputs.iphone_id }}"
+          xcrun simctl bootstatus "${{ steps.sims.outputs.iphone_id }}" -b
           xcrun simctl list devices booted
 
       - name: flutter build ios (simulator, debug, no signing)
@@ -311,7 +312,7 @@ jobs:
 
       # One flutter test process per file, as scripts/run-integration-tests.ps1
       # does on Windows (TESTING_STRATEGY.md "Execution model"). The first-run
-      # screens test needs dart-defines and has its own step below.
+      # screens test needs dart-defines and runs in ios-simulator-screens.
       - name: Run the integration tests on the iPhone Simulator
         env:
           UDID: ${{ steps.sims.outputs.iphone_id }}
@@ -351,42 +352,114 @@ jobs:
           fi
           [ "$bad" -eq 0 ] || { echo "::error::$bad integration test file(s) failed"; exit 1; }
 
-      # The smoke test also runs on the iPad size: the app targets both
-      # (TARGETED_DEVICE_FAMILY = "1,2").
-      - name: Run the smoke test on the iPad Simulator
+      - name: Upload the test logs
         if: ${{ !cancelled() }}
-        env:
-          UDID: ${{ steps.sims.outputs.ipad_id }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: ios-simulator-test-logs
+          path: ${{ runner.temp }}/it-logs
+          if-no-files-found: warn
+          retention-days: 14
+
+  # Second job of F345: the first-run screens on an iPhone-size and an iPad-size
+  # Simulator (R-3, AC-3), and the diagnostic re-run of the excluded files. The
+  # iPad leg is the screens test; a separate iPad smoke run was dropped (run 2
+  # measured 8.8 min for it) because the screens test boots the same temp-DB
+  # harness on the iPad and renders five screens there. The smoke test itself
+  # runs on the iPhone in ios-simulator (AC-1). No explicit build step: each
+  # `flutter test` builds its own app.
+  ios-simulator-screens:
+    name: iOS Simulator screens
+    runs-on: macos-26
+    timeout-minutes: 75
+    defaults:
+      run:
+        working-directory: mobile-app
+    env:
+      # Files re-run OUTSIDE the verdict (continue-on-error) so their full logs
+      # reach the artifact. Same two files that ios-simulator excludes with
+      # "cause not established".
+      DIAGNOSTIC_TESTS: 'folder_picker_test.dart safe_sender_lifecycle_test.dart'
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: subosito/flutter-action@1a449444c387b1966244ae4d4f8c696479add0b2 # v2.23.0
+        with:
+          flutter-version-file: .fvmrc
+          channel: 'stable'
+          cache: true
+
+      - name: flutter pub get
+        run: flutter pub get
+
+      # Newest installed iOS runtime; an iPhone and an iPad on it. Names are
+      # read from the runner, not fixed, so an image update does not break the
+      # job (runner image macos-26 lists iPhone 17 and iPad (A16) on iOS 26.5,
+      # actions/runner-images macos-26-arm64-Readme.md, image 20261026.0455.2).
+      - name: Pick an iPhone and an iPad Simulator
+        id: sims
         run: |
-          # Redirect, not a pipe: a pipe without pipefail would hide a failed run.
-          flutter test integration_test/app_boot_smoke_test.dart -d "${UDID}" > "$RUNNER_TEMP/it-logs/ipad-smoke.log" 2>&1 || { tail -40 "$RUNNER_TEMP/it-logs/ipad-smoke.log"; exit 1; }
-          tail -5 "$RUNNER_TEMP/it-logs/ipad-smoke.log"
-          n=$(grep -oE '[0-9]+ tests? passed' "$RUNNER_TEMP/it-logs/ipad-smoke.log" | tail -1 | grep -oE '^[0-9]+' || true)
-          [ "${n:-0}" -gt 0 ] || { echo "::error::zero tests ran on the iPad Simulator"; exit 1; }
+          xcrun simctl list devices available -j > "$RUNNER_TEMP/sims.json"
+          python3 - "$RUNNER_TEMP/sims.json" >> "$GITHUB_OUTPUT" <<'PY'
+          import json, re, sys
+          data = json.load(open(sys.argv[1]))["devices"]
+          runtimes = []
+          for key, devs in data.items():
+              m = re.search(r"iOS-(\d+)-(\d+)", key)
+              if m and devs:
+                  runtimes.append(((int(m.group(1)), int(m.group(2))), devs))
+          if not runtimes:
+              sys.exit("no iOS runtime with devices")
+          runtimes.sort(key=lambda r: r[0])
+          devs = runtimes[-1][1]
+          def pick(prefix, preferred):
+              cands = [d for d in devs if d["name"].startswith(prefix) and d.get("isAvailable", True)]
+              for want in preferred:
+                  for d in cands:
+                      if d["name"] == want:
+                          return d
+              if not cands:
+                  sys.exit("no simulator starting with " + prefix)
+              return cands[0]
+          phone = pick("iPhone", ["iPhone 17", "iPhone 17 Pro"])
+          pad = pick("iPad", ["iPad (A16)", "iPad Pro 11-inch (M5)"])
+          print("iphone_id=" + phone["udid"])
+          print("iphone_name=" + phone["name"])
+          print("ipad_id=" + pad["udid"])
+          print("ipad_name=" + pad["name"])
+          print("runtime=" + ".".join(str(x) for x in runtimes[-1][0]))
+          PY
+
+      - name: Boot both Simulators
+        run: |
+          echo "iPhone: ${{ steps.sims.outputs.iphone_name }} (iOS ${{ steps.sims.outputs.runtime }})"
+          echo "iPad:   ${{ steps.sims.outputs.ipad_name }} (iOS ${{ steps.sims.outputs.runtime }})"
+          defaults write com.apple.iphonesimulator ConnectHardwareKeyboard -bool true
+          for id in "${{ steps.sims.outputs.iphone_id }}" "${{ steps.sims.outputs.ipad_id }}"; do
+            xcrun simctl boot "$id"
+            xcrun simctl bootstatus "$id" -b
+          done
+          xcrun simctl list devices booted
 
       # R-3 / AC-3: five first-run screens on each device size. The test writes
-      # PNG files to a folder on the Mac (a Simulator app runs as a Mac process);
-      # it fails when a file is not written. A whole-screen simctl capture is
-      # added as a second source.
+      # PNG files to a folder on the Mac (a Simulator app runs as a Mac process;
+      # run 2 proved the write reaches the runner disk) and fails when a file
+      # is not written.
       - name: Capture the first-run screens (iPhone and iPad)
-        if: ${{ !cancelled() }}
         run: |
           shots="$RUNNER_TEMP/screens"
           mkdir -p "$shots"
           flutter test integration_test/ios_first_run_screens_test.dart -d "${{ steps.sims.outputs.iphone_id }}" \
             --dart-define=SCREENSHOT_DIR="$shots" --dart-define=SCREENSHOT_LABEL=iphone
-          xcrun simctl io "${{ steps.sims.outputs.iphone_id }}" screenshot "$shots/iphone-simctl-last.png"
           flutter test integration_test/ios_first_run_screens_test.dart -d "${{ steps.sims.outputs.ipad_id }}" \
             --dart-define=SCREENSHOT_DIR="$shots" --dart-define=SCREENSHOT_LABEL=ipad
-          xcrun simctl io "${{ steps.sims.outputs.ipad_id }}" screenshot "$shots/ipad-simctl-last.png"
           ls -l "$shots"
           for label in iphone ipad; do
             c=$(ls "$shots" | grep -c "^$label-[1-5]-" || true)
             [ "$c" -eq 5 ] || { echo "::error::expected 5 $label screens, found $c"; exit 1; }
           done
 
-      # NOT part of the verdict (continue-on-error). Re-runs the files whose iOS
-      # failure has no established cause so their full logs are in the artifact.
+      # NOT part of the verdict (continue-on-error).
       - name: Diagnostic re-run of excluded files (not part of the verdict)
         if: ${{ !cancelled() }}
         continue-on-error: true
@@ -394,6 +467,7 @@ jobs:
           UDID: ${{ steps.sims.outputs.iphone_id }}
         run: |
           set +e
+          mkdir -p "$RUNNER_TEMP/it-logs"
           {
             echo "### Diagnostic re-run (NOT part of the verdict)"; echo
             echo "| File | Result | Passed |"; echo "| --- | --- | --- |"
@@ -407,8 +481,8 @@ jobs:
           done
           exit 0
 
-      - name: Upload the screens and test logs
-        if: always()
+      - name: Upload the screens and diagnostic logs
+        if: ${{ !cancelled() }}
         uses: actions/upload-artifact@v4
         with:
           name: ios-simulator-screens-and-logs

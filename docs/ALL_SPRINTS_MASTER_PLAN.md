@@ -517,6 +517,17 @@ Source: `docs/research/R76-3_HEURISTICS_ML_GENAI_SPAM_IDENTIFICATION.md` (Issue 
   (`imap_certificate_trust.dart:371`, F342 research group 5).
 - Do: log which phase (DNS lookup, TCP connect, TLS handshake) timed out and the network type at the time.
 
+**F348. Update the stale sprint62_surfaces integration tests (~45-60m) Priority 42 -- NEW 2026-11-06 (Sprint 84 F345 iOS Simulator run 1)**
+- Phase: Core App Quality
+- Platform: All (shared integration test); found on the iOS Simulator, stale on every platform by code reading.
+- Evidence (`docs/research/F345_IOS_SIMULATOR_S84.md` section 2): two F175 cases (lines 121 and 150) expect the dialog
+  "Background scan in progress" and the button "Wait and start"; the app shows "A scan is already running" with OK
+  (`scan_progress_screen.dart` showScanAlreadyRunningDialog), and the check is per account since Sprint 74 while the
+  test seeds the row under another account. The F175 negative case (line 182) passes for a weak reason. The F178/F176
+  case fails at line 271 (`AccountEmailLabel` text not found); stale or iOS-only is unknown: run it on Windows first.
+- Do: rewrite the F175 cases to the current dialog and per-account rule; make the negative case seed the same account;
+  settle the F178/F176 cause; then put `sprint62_surfaces_test.dart` back in the iOS Simulator gate.
+
 **F343. F309 trusted-sender hint: decide after Sprint 83 Task 5 ships (~15m decision, estimate unverified) Priority 45 -- NEW 2026-11-04 (Sprint 83 MV Q5 = 6, backlog)**
 - Phase: Core App Quality
 - Platform: All.

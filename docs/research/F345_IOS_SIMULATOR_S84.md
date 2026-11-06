@@ -9,10 +9,25 @@ UNVERIFIED until a run fills it.
 `ios-simulator` in `.github/workflows/ios.yml`, runner `macos-26`. It starts on the same triggers as `ios-build`
 (a push that changes `mobile-app/ios/**` or the workflow file, and `workflow_dispatch`).
 
-Steps: checkout, Flutter (`.fvmrc`), `pub get`, pick an iPhone and an iPad Simulator on the newest iOS runtime, boot
-both, `flutter build ios --simulator --debug` (no signing, no secret, Google client IDs empty), check the privacy
-manifest is in the built `.app`, run the integration tests (one `flutter test` process per file), run the smoke test
-on the iPad, capture the first-run screens on both sizes, upload screens and logs.
+From run 3 the work is split into two jobs that run in parallel on two macOS runners (GitHub allows 5 concurrent macOS
+jobs on every plan: https://docs.github.com/en/actions/reference/limits, read 2026-11-06; each job is limited to 6
+hours, the job sets 75 minutes):
+- `ios-simulator` (the verdict): checkout, Flutter (`.fvmrc`), `pub get`, pick an iPhone and an iPad Simulator on the
+  newest iOS runtime, boot the iPhone, `flutter build ios --simulator --debug` (no signing, no secret, Google client IDs
+  empty), check the privacy manifest is in the built `.app`, run the integration tests (one `flutter test` process per
+  file) on the iPhone, upload the logs.
+- `ios-simulator-screens`: same setup, boot both Simulators, capture the first-run screens on both sizes, diagnostic
+  re-run of the two excluded files with unknown cause (outside the verdict), upload screens and logs. The separate iPad
+  smoke run of runs 1-2 was dropped (8.8 min); the iPad leg is the screens test, which seeds the same temp-DB harness
+  and renders five screens at iPad size.
+
+Why the split (run 2, id 42252630431, measured from the job log, one job): checkout and Flutter 1.0 min; boot of both
+Simulators 11.5 min; explicit simulator build 17.1 min (Xcode build 826.7 s); integration tests for five files 25.0
+min (first file 9.4 min, later files 3.4 to 4.9 min each, because every `flutter test <file>` runs its own Xcode
+build); iPad smoke 8.8 min; screens 9.8 min before the 75-minute limit cancelled the job. The files cannot share one
+build: each test file is its own app entry point. Estimate for run 3: ios-simulator about 1 + 6 + 17 + 9.4 + 5 x 4.8 =
+57 min; ios-simulator-screens about 1 + 11.5 + 2 x 9 + 2 x 5 + 1 = 42 min. Option if still too slow: drop the explicit
+build step from ios-simulator (17 min) and take the manifest from the first test build.
 
 Shared steps: the checkout, Flutter and `pub get` steps are copied from `ios-build`, not shared. A composite action or
 YAML anchor would mean editing `ios-build` and `ios-testflight`, which cannot be tested on this Windows machine and
@@ -47,6 +62,11 @@ CI run 1 (id 42236034252, commit 1bdc8018, iPhone 17, iOS 26.5): 4 of 9 files pa
 sprint52, visual_layout), 5 failed (folder_picker, read_only_flows, rule_lifecycle, safe_sender_lifecycle, sprint62). The job's pass counter was wrong in run 1 (it read the
 progress marker `+N`, which the GitHub reporter does not print as the final number); fixed to read "N tests passed".
 
+CI run 2 (id 42252630431, commit 36656495): gate green for the five files it ran (smoke 1, help_deep_link 32,
+rule_lifecycle 1, sprint52 2, visual_layout 2 = 38 passed tests; counter fixed), with folder_picker, read_only_flows,
+safe_sender_lifecycle and sprint62 excluded. The privacy manifest step passed. The job was then cancelled by its
+75-minute limit (see section 1).
+
 R-2 table (ran / did not run, with the reason):
 - app_boot_smoke_test.dart: RAN, passed (1 test). AC-1 file.
 - help_deep_link_test.dart: RAN, passed.
@@ -67,19 +87,31 @@ R-2 table (ran / did not run, with the reason):
   line 64). A headless probe with `debugDefaultTargetPlatformOverride = TargetPlatform.iOS` passes, so Dart-level
   iOS behavior is not the cause. Cause NOT established. Hypothesis, UNVERIFIED: the on-screen keyboard that a real
   iOS text field raises leaves the list almost no height. EXCLUDED from the verdict for now; diagnostic re-run.
-- read_only_flows_test.dart: RAN, 5 passed, 1 FAILED: `F25: Rule Test tool runs a plaintext pattern`, "A RenderFlex
-  overflowed by 27 pixels on the bottom" at `lib/ui/screens/rule_test_screen.dart:523`, constraints `0<=h<=63`,
-  inside Column <- Padding <- Center <- Expanded. That is a real layout defect at a phone viewport (63 points of
-  height is the keyboard case again, or a genuinely cramped result pane). It affects the shared UI, so an Android phone
-  is likely to show it too. Not fixed here (lib is out of scope for this task). EXCLUDED from the verdict; diagnostic
-  re-run. Decision for the main session: card the overflow, or fix it and un-exclude the file.
-- sprint62_surfaces_test.dart: RAN, 1 passed, 3 FAILED, STALE on every platform for two of the three: the F175
-  cases expect the dialog title "Background scan in progress" and the button "Wait and start", and
-  `processedCount > 0` after it. The app now shows "A scan is already running" with an "OK" button and a "Stop the
-  background scan and start mine" action (`scan_progress_screen.dart` `showScanAlreadyRunningDialog`, lines near 837-857;
-  the comment at the call site says Sprint 74 removed "Wait and start"). The third failure (F178 + F176,
-  `AccountEmailLabel` text not found at line 271) was not analyzed. EXCLUDED from the verdict; needs a card to update
-  the test to the Sprint 74/75 behavior.
+- read_only_flows_test.dart: RAN in run 1, 5 passed, 1 FAILED: `F25: Rule Test tool runs a plaintext pattern`, "A
+  RenderFlex overflowed by 27 pixels on the bottom" at `lib/ui/screens/rule_test_screen.dart:523`, constraints
+  `0<=h<=63`. A real layout defect at a phone viewport, found by the Simulator. Fixed by commit c9130577 (the four
+  Center > Padding > Column empty states became Center > SingleChildScrollView, with a phone-size widget test). Back in
+  the gate from run 3; passing there is UNVERIFIED until the run.
+- sprint62_surfaces_test.dart: RAN, 1 passed, 3 FAILED. EXCLUDED from the verdict. Cases, by test name:
+  1. `F175: a FRESH in_progress background scan raises the wait dialog; Cancel starts nothing` (line 121): FAILS at
+     `expect(find.text('Background scan in progress'), findsOneWidget)` (line 138), 0 widgets. Two stale reasons, both from
+     code reading, not from a run on Windows: (a) the dialog is now titled `A scan is already running`
+     (`scan_progress_screen.dart` `showScanAlreadyRunningDialog`, around line 837) and offers `OK` and the action
+     `stopBackgroundScanActionLabel`, not `Cancel` and `Wait and start`; (b) the check became per ACCOUNT in Sprint 74
+     (`scanResultStore.getActiveScanForAccount(accountId)`, call site comment "Harold Q4"), while the test seeds the
+     background row under `bg-holder@example.com` and starts the scan as `demo-it@example.com`, so no row matches.
+  2. `F175: Wait-and-start proceeds -- the scan actually runs after the dialog` (line 150): taps the removed `Wait and
+     start` button; the following `processedCount > 0` check (line 177) then fails. Same two reasons.
+  3. `F175 negative: a STALE in_progress row ... must NOT raise the dialog` (line 182): PASSED. It passes for a weak
+     reason, because no dialog is raised for the other account either; it would not catch the stale-row rule.
+  4. `F178 + F176: at compact width with a bottom inset, the popup is bottom-anchored in the safe area with Block
+     Subject reachable; the summary carries the account email label` (line 214): FAILS at line 271,
+     `expect(find.text('aol-user@aol.com'), findsWidgets)`, 0 widgets, message "AccountEmailLabel must render the
+     account email". Cause NOT established: it may be stale, or it may be iOS-specific (the test overrides
+     `tester.view.physicalSize` and `padding`, which a real-device binding may ignore). A card should first run it on
+     Windows to tell the two apart.
+  Needed for a card: update cases 1 and 2 to the Sprint 74/75 behavior (same account for the seeded row and the scan; the
+  `A scan is already running` title; `OK`; the stop-background action), fix case 3 so it can fail, and settle case 4.
 
 Not one of the nine: `ios_first_run_screens_test.dart` (new, F345 R-3). It skips itself unless `SCREENSHOT_DIR` is
 passed, so on Windows it is one skipped file in `run-integration-tests.ps1`.
@@ -91,8 +123,15 @@ passed, so on Windows it is one skipped file in `run-integration-tests.ps1`.
 3 Add Account AOL form (`AccountSetupScreen`), 4 Settings, 5 Help. Names are `iphone-N-name.png` and `ipad-N-name.png`.
 The screens are pumped directly, not reached by taps, because `xcrun simctl` cannot tap. They show the same widgets
 as the real routes but not the transition into them. Where the PNG goes: a Simulator app is a process on the Mac, so a
-File write to an absolute Mac path should reach the runner disk (UNVERIFIED until the first run). The test fails when a
+File write to an absolute Mac path reaches the runner disk (verified in run 2). The test fails when a
 file is not written, and the job adds a whole-screen `xcrun simctl io screenshot` per device as a second source.
+
+Run 2 (id 42252630431): the iPhone leg wrote all five PNG files to the Mac path and the artifact holds them
+(`iphone-1-empty-state.png` through `iphone-5-help.png`), so the host-path write works (verified, no longer
+UNVERIFIED). `iphone-1-empty-state.png` was opened: it shows the Select Account screen with "No Accounts Yet", the
+Add Account and "Try Demo Mode instead" actions, version "V0.24.1 [DEV]". The whole-screen `xcrun simctl io screenshot`
+fallback captured only the Simulator home screen (the test app had exited), so it adds nothing and was removed in run
+3. The iPad leg did not finish in run 2 (job timeout), so there are no iPad screens yet.
 
 ## 4. R-4 privacy manifest
 
@@ -131,7 +170,16 @@ Plugins at the versions in `pubspec.lock`, checked in the local pub cache (file 
   sqflite_darwin 2.4.2, url_launcher_ios 6.3.6, webview_flutter_wkwebview 3.23.5, workmanager_apple 0.9.11.
 - Ship none: battery_plus 5.0.3 and connectivity_plus 5.0.2. Their `ios/Classes` sources contain no `UserDefaults`,
   `stat(`, `systemUptime`, `mach_absolute_time`, `volumeAvailable` or `activeInputModes` (grep, 2026-11-06). The
-  Flutter engine (Flutter.framework) ships its own manifest in current Flutter; UNVERIFIED here, the job lists it.
+  Flutter engine (Flutter.framework) ships its own manifest (verified in the run 2 bundle listing below).
+
+AC-4 evidence (run 2, step "Check the privacy manifest is in the built app"): `build/ios/iphonesimulator/Runner.app/PrivacyInfo.xcprivacy:
+OK` (plutil -lint), and `plutil -p` printed the file: tracking false, no domains, no collected data, FileTimestamp
+`C617.1`. The same step listed 28 manifests in the bundle, so the earlier UNVERIFIED point is settled:
+`Frameworks/Flutter.framework/PrivacyInfo.xcprivacy` exists (the engine ships its own), as do bundles for app_links,
+file_picker, flutter_appauth, flutter_local_notifications, flutter_secure_storage_darwin, google_sign_in_ios,
+package_info_plus, path_provider_foundation, sqflite_darwin, and the native SDKs AppAuth, GoogleSignIn,
+GoogleUtilities, GTMAppAuth, GTMSessionFetcher, MSAL, Promises, Reachability (connectivity_plus), SDWebImage, SwiftyGif
+and TOCropViewController. battery_plus has no bundle in that list, consistent with the grep result above.
 
 Project membership: `project.pbxproj` gains a `PBXFileReference` (F345A0010000000000000001), a `PBXBuildFile`
 (F345A0020000000000000002), a Runner group entry and a Runner "Resources" phase entry. Both IDs were checked absent
