@@ -203,7 +203,7 @@ jobs:
   # first test file 9.4 min and later files about 4 to 5 min each (every
   # `flutter test <file>` runs its own Xcode build), first-run screens about 9 min
   # per device. ios-simulator carries the verdict (build, manifest, tests);
-  # ios-simulator-screens carries the screens and the diagnostic re-run.
+  # ios-simulator-screens carries the screens.
   #
   # The checkout, Flutter setup and pub get steps are COPIED from ios-build, not
   # shared: a composite action or a YAML anchor would mean editing ios-build and
@@ -229,9 +229,11 @@ jobs:
       #  sprint62_surfaces_test.dart: STALE on every platform (the F175 cases and
       #    one F178/F176 case; cases named in the research document).
       #  folder_picker_test.dart, safe_sender_lifecycle_test.dart: failed on the
-      #    Simulator in run 1, cause NOT yet established. They run again, outside
-      #    the verdict, in ios-simulator-screens (the diagnostic step).
+      #    Simulator in run 1, cause NOT yet established (run 3 diagnostics: still
+      #    failing). They run again, outside the verdict, in the diagnostics step
+      #    below, with ios_diagnostic_probe_test.dart printing the facts.
       EXCLUDED_TESTS: 'sprint62_surfaces_test.dart folder_picker_test.dart safe_sender_lifecycle_test.dart'
+      DIAGNOSTIC_TESTS: 'folder_picker_test.dart safe_sender_lifecycle_test.dart'
     steps:
       - uses: actions/checkout@v4
 
@@ -324,7 +326,7 @@ jobs:
           total=0; bad=0; ran=0
           for f in integration_test/*_test.dart; do
             name=$(basename "$f")
-            [ "$name" = "ios_first_run_screens_test.dart" ] && continue
+            case "$name" in ios_first_run_screens_test.dart|ios_diagnostic_probe_test.dart) continue;; esac
             case " $EXCLUDED_TESTS " in
               *" $name "*) echo "EXCLUDED $name"; echo "| $name | excluded | - |" >> "$summary"; continue;;
             esac
@@ -352,6 +354,35 @@ jobs:
           fi
           [ "$bad" -eq 0 ] || { echo "::error::$bad integration test file(s) failed"; exit 1; }
 
+      # NOT part of the verdict (continue-on-error). Re-runs the two files whose
+      # iOS failure has no established cause (run 3 diagnostics: both still fail),
+      # then the probe that prints the facts (view insets, widget counts) so the
+      # cause can be read from the log. Moved here from ios-simulator-screens
+      # (69 of 75 minutes in run 3); this job has the room (33 of 75).
+      - name: Diagnostics for the excluded files (not part of the verdict)
+        if: ${{ !cancelled() }}
+        continue-on-error: true
+        env:
+          UDID: ${{ steps.sims.outputs.iphone_id }}
+        run: |
+          set +e
+          mkdir -p "$RUNNER_TEMP/it-logs"
+          {
+            echo "### Diagnostics (NOT part of the verdict)"; echo
+            echo "| File | Result | Passed |"; echo "| --- | --- | --- |"
+          } >> "$GITHUB_STEP_SUMMARY"
+          flutter test integration_test/ios_diagnostic_probe_test.dart -d "${UDID}" \
+            --dart-define=IOS_PROBE=1 > "$RUNNER_TEMP/it-logs/diag-probe.log" 2>&1
+          echo "probe exit $?"; grep "PROBE" "$RUNNER_TEMP/it-logs/diag-probe.log" | cut -c1-400
+          for name in $DIAGNOSTIC_TESTS; do
+            flutter test "integration_test/$name" -d "${UDID}" > "$RUNNER_TEMP/it-logs/diag-$name.log" 2>&1
+            code=$?
+            n=$(grep -oE '[0-9]+ tests? passed' "$RUNNER_TEMP/it-logs/diag-$name.log" | tail -1 | grep -oE '^[0-9]+' || true)
+            echo "diagnostic $name: exit $code, ${n:-0} passed"
+            echo "| $name | exit $code | ${n:-0} |" >> "$GITHUB_STEP_SUMMARY"
+          done
+          exit 0
+
       - name: Upload the test logs
         if: ${{ !cancelled() }}
         uses: actions/upload-artifact@v4
@@ -362,7 +393,7 @@ jobs:
           retention-days: 14
 
   # Second job of F345: the first-run screens on an iPhone-size and an iPad-size
-  # Simulator (R-3, AC-3), and the diagnostic re-run of the excluded files. The
+  # Simulator (R-3, AC-3). The
   # iPad leg is the screens test; a separate iPad smoke run was dropped (run 2
   # measured 8.8 min for it) because the screens test boots the same temp-DB
   # harness on the iPad and renders five screens there. The smoke test itself
@@ -375,11 +406,6 @@ jobs:
     defaults:
       run:
         working-directory: mobile-app
-    env:
-      # Files re-run OUTSIDE the verdict (continue-on-error) so their full logs
-      # reach the artifact. Same two files that ios-simulator excludes with
-      # "cause not established".
-      DIAGNOSTIC_TESTS: 'folder_picker_test.dart safe_sender_lifecycle_test.dart'
     steps:
       - uses: actions/checkout@v4
 
@@ -459,35 +485,11 @@ jobs:
             [ "$c" -eq 5 ] || { echo "::error::expected 5 $label screens, found $c"; exit 1; }
           done
 
-      # NOT part of the verdict (continue-on-error).
-      - name: Diagnostic re-run of excluded files (not part of the verdict)
-        if: ${{ !cancelled() }}
-        continue-on-error: true
-        env:
-          UDID: ${{ steps.sims.outputs.iphone_id }}
-        run: |
-          set +e
-          mkdir -p "$RUNNER_TEMP/it-logs"
-          {
-            echo "### Diagnostic re-run (NOT part of the verdict)"; echo
-            echo "| File | Result | Passed |"; echo "| --- | --- | --- |"
-          } >> "$GITHUB_STEP_SUMMARY"
-          for name in $DIAGNOSTIC_TESTS; do
-            flutter test "integration_test/$name" -d "${UDID}" > "$RUNNER_TEMP/it-logs/diag-$name.log" 2>&1
-            code=$?
-            n=$(grep -oE '[0-9]+ tests? passed' "$RUNNER_TEMP/it-logs/diag-$name.log" | tail -1 | grep -oE '^[0-9]+' || true)
-            echo "diagnostic $name: exit $code, ${n:-0} passed"
-            echo "| $name | exit $code | ${n:-0} |" >> "$GITHUB_STEP_SUMMARY"
-          done
-          exit 0
-
-      - name: Upload the screens and diagnostic logs
+      - name: Upload the screens
         if: ${{ !cancelled() }}
         uses: actions/upload-artifact@v4
         with:
           name: ios-simulator-screens-and-logs
-          path: |
-            ${{ runner.temp }}/screens
-            ${{ runner.temp }}/it-logs
+          path: ${{ runner.temp }}/screens
           if-no-files-found: warn
           retention-days: 14

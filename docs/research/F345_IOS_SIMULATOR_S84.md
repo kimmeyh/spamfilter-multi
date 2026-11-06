@@ -67,13 +67,24 @@ rule_lifecycle 1, sprint52 2, visual_layout 2 = 38 passed tests; counter fixed),
 safe_sender_lifecycle and sprint62 excluded. The privacy manifest step passed. The job was then cancelled by its
 75-minute limit (see section 1).
 
-R-2 table (ran / did not run, with the reason):
-- app_boot_smoke_test.dart: RAN, passed (1 test). AC-1 file.
-- help_deep_link_test.dart: RAN, passed.
+CI run 3 (id 42268050125, commit 145d56a3, GREEN): `ios-simulator` 33 min, success; `ios-simulator-screens` 69 min, success
+(close to the 75-minute limit; the diagnostic step that ran there in run 3 now lives in `ios-simulator`, which has the
+room, to give the screens job about 10 minutes more margin); `ios-build` and the Build Verification job success;
+TestFlight job skipped. Passed tests per file from the downloaded logs: app_boot_smoke 1, help_deep_link 32,
+read_only_flows 6, rule_lifecycle 1, sprint52 2, visual_layout 2 = 44 passed tests in 6 files. Diagnostic re-run (outside
+the verdict, with `ConnectHardwareKeyboard` set before boot): folder_picker 0 passed 1 failed at the same line 64;
+safe_sender_lifecycle 0 passed 1 failed, still `Bad state: No element` from scrollUntilVisible (now line 65 after the
+provider wrap). The keyboard preference did not fix either, so the on-screen keyboard hypothesis is NOT confirmed (the
+preference may not apply to a headless boot). `integration_test/ios_diagnostic_probe_test.dart` (new, asserts nothing,
+skips unless `IOS_PROBE=1`) prints view insets, widget counts and controller text at each step; run 4 shows the cause.
+
+R-2 table (ran / did not run, with the reason; counts are from run 3 unless noted):
+- app_boot_smoke_test.dart: RAN, PASSED (1 test), run 3 and run 2. AC-1 file.
+- help_deep_link_test.dart: RAN, PASSED (32 tests).
 - sprint52_surfaces_test.dart: RAN, passed (one case skipped by the test itself on non-Windows,
   `skip: !Platform.isWindows`).
-- visual_layout_test.dart: RAN, passed (2 tests).
-- rule_lifecycle_test.dart: RAN, FAILED in run 1 for a reason that is NOT iOS: `ManualRuleCreateScreen._saveRule` calls
+- visual_layout_test.dart: RAN, PASSED (2 tests).
+- rule_lifecycle_test.dart: RAN, now PASSED (1 test, runs 2 and 3). FAILED in run 1 for a reason that is NOT iOS: `ManualRuleCreateScreen._saveRule` calls
   `Provider.of<RuleSetProvider>` (`manual_rule_create_screen.dart:266`, added by commit 32059a86, Sprint 83 F298, PR #490,
   2026-10-23) and the test pumped the screen without a provider, so Save threw `ProviderNotFoundException`
   ("The following ProviderNotFoundException was thrown running a test"; the later `inTest` assertion is a consequence).
@@ -91,7 +102,7 @@ R-2 table (ran / did not run, with the reason):
   RenderFlex overflowed by 27 pixels on the bottom" at `lib/ui/screens/rule_test_screen.dart:523`, constraints
   `0<=h<=63`. A real layout defect at a phone viewport, found by the Simulator. Fixed by commit c9130577 (the four
   Center > Padding > Column empty states became Center > SingleChildScrollView, with a phone-size widget test). Back in
-  the gate from run 3; passing there is UNVERIFIED until the run.
+  the gate from run 3: RAN, PASSED (6 of 6 tests), verified in the run 3 log.
 - sprint62_surfaces_test.dart: RAN, 1 passed, 3 FAILED. EXCLUDED from the verdict. Cases, by test name:
   1. `F175: a FRESH in_progress background scan raises the wait dialog; Cancel starts nothing` (line 121): FAILS at
      `expect(find.text('Background scan in progress'), findsOneWidget)` (line 138), 0 widgets. Two stale reasons, both from
@@ -202,12 +213,27 @@ before the edit. AC-4 proof: the job step "Check the privacy manifest is in the 
 
 ## 6. AC-5 failing-path proof (apply in a later CI round, then revert)
 
+Prepared 2026-11-06 after run 3. One run shows it: the verdict job `ios-simulator` turns red in about 33 minutes. The
+`ios-simulator-screens` job is not part of the proof and can be cancelled once `ios-simulator` has finished.
+
 Ready-to-apply mutation, done by the main session on the feature branch and reverted in the next commit:
 in `mobile-app/integration_test/app_boot_smoke_test.dart`, change `expect(find.text('harness ready'), findsOneWidget);`
 to `expect(find.text('harness ready'), findsNothing);`. Expected: the step "Run the integration tests on the iPhone
 Simulator" prints `app_boot_smoke_test.dart: FAILED (exit 1), 0 passed`, the job is red. Second mutation for the
 zero-tests rule: set `EXCLUDED_TESTS` to all nine file names in the workflow env. Expected: the step fails with
 "zero integration tests ran on the Simulator". Record both run ids here, then revert both edits.
+
+## 6.1 R-3 screens, run 3 artifact
+
+Artifact `ios-simulator-screens-and-logs`, ten PNG files (iPhone 17 and iPad (A16), iOS 26.5): `iphone-` and `ipad-` with
+1-empty-state, 2-add-account, 3-add-account-aol-form, 4-settings, 5-help (sizes 70 KB to 550 KB, none empty). Opened:
+`iphone-1-empty-state.png` and `ipad-4-settings.png`. Observations for Task 4 (read from the images, not from code):
+- iPad Settings, General tab, shows "Export folder: Documents/MyEmailSpamFilter_Dev (default)" and the Content history
+  text "in a file on this computer"; "this computer" is desktop wording on a phone or tablet. The folder shown is
+  the dev default. ADR-0050 says the export folder is the app's Documents folder shown in the Files app, which is
+  UNVERIFIED on a device.
+- The iPad layout is the phone layout stretched: full-width buttons and a 90-day text box at tablet width.
+- The screens are the Simulator's debug build ("[DEV]" and version 0.24.1 are shown).
 
 ## 7. Parity (ADR-0042 / ADR-0049 / ADR-0050)
 
