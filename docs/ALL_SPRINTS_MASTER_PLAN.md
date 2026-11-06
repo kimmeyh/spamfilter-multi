@@ -503,6 +503,20 @@ Source: `docs/research/R76-3_HEURISTICS_ML_GENAI_SPAM_IDENTIFICATION.md` (Issue 
   "cause unknown" plus what would settle it.
 - AC: every error group has a cause or a stated next check; a fix card for each real defect.
 
+**F346. Log the device state when WorkManager stops a background scan (~30m) Priority 38 -- NEW 2026-11-06 (Sprint 84 F342 group 4)**
+- Phase: Core App Quality
+- Platform: Android (WorkManager stop; declared Android exception). Windows and iOS: no equivalent stop event.
+- Evidence: 3 AOL worker stops with `reason=deviceState raw=4` on the Fold (10-29, 11-02 x2); which device state fired
+  is unknown (`docs/research/F342_FOLD_BACKGROUND_ERRORS_S84.md` group 4).
+- Do: at `onWorkerStopped`, log power-save mode, device-idle mode and thermal status, so the next stop names its cause.
+
+**F347. Log the phase and network type of an IMAP connect timeout (~45m) Priority 40 -- NEW 2026-11-06 (Sprint 84 F342 group 5)**
+- Phase: Core App Quality
+- Platform: All (shared IMAP adapter); seen on the Fold only.
+- Evidence: 2 AOL 20-second connect timeouts on 10-30; the log has no DNS, TCP or TLS phase, so the cause is unknown
+  (`imap_certificate_trust.dart:371`, F342 research group 5).
+- Do: log which phase (DNS lookup, TCP connect, TLS handshake) timed out and the network type at the time.
+
 **F343. F309 trusted-sender hint: decide after Sprint 83 Task 5 ships (~15m decision, estimate unverified) Priority 45 -- NEW 2026-11-04 (Sprint 83 MV Q5 = 6, backlog)**
 - Phase: Core App Quality
 - Platform: All.

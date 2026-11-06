@@ -340,7 +340,11 @@ worker or the native trigger is an Android exception and is declared as such.
 **Model**: Sonnet -- *why not the cheaper tier*: naming a cause means tracing each message through the scanner, the
 IMAP adapter and the worker; counting alone would fit Haiku, the cause does not.
 **Delegation checklist included in the sub-agent prompt** (when delegated): yes
-**Executed-by** (filled at completion):
+**Executed-by** (filled at completion): Sonnet sub-agent, as assigned (2026-11-06 08:49-10:33). 9 groups; 1 real
+defect fixed (group 4, stopped worker leaves the scan row in progress; 3 code files, 118 lines, Q1 limit met; 7 tests,
+7 of 7 mutants KILLED); iCloud group needs Harold to re-enter the app-specific password (Manual Validation); backlog
+F346, F347; nothing handed to F280 (0 `Failed host lookup` on doze-alarm runs). Main session re-ran the two test files
+together (27 pass) and `flutter analyze` (clean).
 **Step-types**: DIAG `[no-history]`, SVC-EDIT, TEST-UNIT, DOCS. **Est-Effort**: 30-90m.
 
 ## Task 3 -- F280: Doze network availability for alarm scans (Priority 36)
