@@ -278,7 +278,7 @@ three platforms. M-6 is Windows only (the toast activator is Windows's activatio
 
 **Step-types**: MANUAL-VALIDATION, LOG-READ. **Est-Effort**: 30-45m plus Harold's time.
 
-**Executed-by**: main session (Opus), interactive (single-session note above). Part A (MV-3a, MV-3b, MV-4 phone evidence) and part B (M-6, Manual Validation W-6): time not recorded (phone pulls and log reads; started before the IMP-4 RUN lines existed). MV-3c carried (Q3 = 1).
+**Executed-by**: main session (Opus), interactive (single-session note above). Part A (MV-3a, MV-3b, MV-4 phone evidence) and part B (M-6, Manual Validation W-6): time not recorded (phone pulls and log reads; started before the IMP-4 RUN lines existed). MV-3c carried (Q3 = 1). Harold, 2026-11-05 (close-out question = 1): keep "time not recorded"; the close-out hook's minutes check (3d-3) does not apply to this line, because no evidence of the time exists and a number would be a guess.
 
 ## Task 2 -- F322: notification choice "only when there are No Rule items" (Priority 30)
 
@@ -373,7 +373,7 @@ heuristics.
 
 **Step-types**: SVC-EDIT, UI-ADD, NATIVE-ANDROID, TEST-UNIT, TEST-WIDGET. **Est-Effort**: 90-150m.
 
-**Executed-by**: Sonnet worktree agent, merged 7541e6ac. Time not recorded (two usage-limit stops; the start times were not kept, the gap IMP-4 closes).
+**Executed-by**: Sonnet worktree agent, merged 7541e6ac. Time not recorded (two usage-limit stops; the start times were not kept, the gap IMP-4 closes). Harold, 2026-11-05 (close-out question = 1): keep "time not recorded"; the close-out hook's minutes check (3d-3) does not apply to this line, because no evidence of the time exists and a number would be a guess.
 
 _**Decision-class interrupts**_: Q1 (Class 2, where the setting lives), Q2 (default).
 
