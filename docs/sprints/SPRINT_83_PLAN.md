@@ -219,6 +219,8 @@ add work). F270 150m -> 120-180m (v1 only, Q4). No other card changed.
 
 **Step-types**: DOCS, SVC-EDIT. **Est-Effort**: 10-15m.
 
+**Executed-by**: main session (Opus), not Haiku: 3.7.0b runs in the same turn as approval. ~16 min.
+
 ## Task 1 -- Manual Validation carry-ins: MV-3, MV-4 (F303 #524, F315 #527), M-6
 
 **Value**: This proves the 0.23.0 notification tap and the F306 pop-up on a phone, and closes two evidence cards.
@@ -275,6 +277,8 @@ three platforms. M-6 is Windows only (the toast activator is Windows's activatio
 - M-6 (Windows DEV): open.
 
 **Step-types**: MANUAL-VALIDATION, LOG-READ. **Est-Effort**: 30-45m plus Harold's time.
+
+**Executed-by**: main session (Opus), interactive (single-session note above). Part A (MV-3a, MV-3b, MV-4 phone evidence) and part B (M-6, Manual Validation W-6): time not recorded (phone pulls and log reads; started before the IMP-4 RUN lines existed). MV-3c carried (Q3 = 1).
 
 ## Task 2 -- F322: notification choice "only when there are No Rule items" (Priority 30)
 
@@ -369,6 +373,8 @@ heuristics.
 
 **Step-types**: SVC-EDIT, UI-ADD, NATIVE-ANDROID, TEST-UNIT, TEST-WIDGET. **Est-Effort**: 90-150m.
 
+**Executed-by**: Sonnet worktree agent, merged 7541e6ac. Time not recorded (two usage-limit stops; the start times were not kept, the gap IMP-4 closes).
+
 _**Decision-class interrupts**_: Q1 (Class 2, where the setting lives), Q2 (default).
 
 ## Task 3 -- F323: F306 v2 -- Block Body, "could not check", and the `news_` sender shape (Priority 34)
@@ -438,6 +444,8 @@ covers the Fold cover screen and small iPhones. No platform branch.
 **Model**: Sonnet -- three related changes across the builder, two callers and the pop-up.
 
 **Step-types**: SVC-EDIT, UI-ADD, TEST-UNIT, TEST-WIDGET. **Est-Effort**: 120-240m.
+
+**Executed-by**: Sonnet agent ~157 min (9,412 s across one usage-limit stop) + lead merge ~10 min = ~167 min.
 
 **Result (Phase 4)** (2026-11-04, Sonnet; not committed)
 - **R-2 (done first)**: `RuleSuggestion.suggest` takes a REQUIRED `authResult`; any temperror or permerror returns a NOTE before any basis runs. Caller walk (CLAUDE.md IMP-1): (1) `email_scan_provider.dart` (manual and background scans): passes `AuthResultsParser.parse(headers)`; a temperror row now stores the note instead of a block rule. (2) `suggestionForResult` in `results_display_screen.dart` (pop-up time): passes the parsed live headers; a saved scan from history has only the stored class and no headers, so it gets a synthetic no-error result and CANNOT show the note (boundary, stated). No third caller exists (grep of `lib/` and `test/`); four test files that called `suggest` were updated.
@@ -518,6 +526,8 @@ workers read the same setting. iOS background (F67c) is not built yet; the line 
 copied.
 
 **Step-types**: UI-ADD, SVC-EDIT, TEST-WIDGET. **Est-Effort**: 120-195m (45-90m backlog; Q3 deep dive; R-4).
+
+**Executed-by**: Sonnet agent, merged 1a3a7a0a. At least ~82 min (last run 4,913 s); the runs before a 5-hour and a weekly limit stop were not recorded.
 
 _**Decision-class interrupts**_: Q3 (Class 2 if removal stops deleting a setting).
 
@@ -670,6 +680,8 @@ store. No platform branch.
 
 **Step-types**: SVC-ADD, UI-ADD, DATA, TEST-UNIT, TEST-WIDGET. **Est-Effort**: 165-270m (Q7 and Q7-echo).
 
+**Executed-by**: Sonnet agent ~61 min (3,645 s) + lead merge ~10 min = ~71 min.
+
 **Result (Phase 4)**: built 2026-11-04 (Sonnet 5.5 sub-agent; not committed).
 - User-visible change: Settings > Manage Safe Senders (all three platforms) shows a card titled "Suggested safe senders (N)" above the list,
   with the line "Seen at least 3 times in No Rule mail, every email passed authentication, none deleted. Nothing is added until you tap."
@@ -729,6 +741,8 @@ decision.
 **Model**: Sonnet -- query design and interpretation on real data.
 
 **Step-types**: DATA-ANALYSIS. **Est-Effort**: 60-90m.
+
+**Executed-by**: Sonnet agent ~23 min (1,364 s) + lead review ~3 min = ~26 min.
 
 **Result (Phase 4)** (2026-11-02):
 
@@ -843,6 +857,8 @@ on all three. Declared: tooling, not app code.
 
 **Step-types**: TOOL-ADD, DATA-ANALYSIS, TEST-UNIT. **Est-Effort**: 180-300m.
 
+**Executed-by**: Sonnet agent ~123 min (7,375 s) + lead merge ~10 min = ~133 min.
+
 _**Risk & rollback**_: the Trash2 read must not change the mailbox; EXAMINE and BODY.PEEK (or the app's read-only
 scan mode, verified before the run) prevent it.
 
@@ -885,6 +901,8 @@ and remain risky.
 
 **Step-types**: RESEARCH. **Est-Effort**: 60-90m.
 
+**Executed-by**: Sonnet agent ~11 min (688 s) + lead review ~3 min = ~14 min.
+
 **Result (Phase 4)**: Report at `docs/research/F309_TRUSTED_SENDER_SOURCES.md`. No source proves a sender is safe; each is
 a hint on top of `dmarc=pass`. Recommendation: bundle a CC0 `.gov` snapshot as a hint chip in Task 5 (Tranco has no
 stated license; BIMI headers are unproven until a DEV probe). Decision class: new data source (a run-time fetch would be
@@ -919,6 +937,8 @@ Class 1 plus a privacy-policy change). Harold answers the numbered question in t
 **Model**: Sonnet -- the mirror of Task 7.
 
 **Step-types**: TOOL-ADD, DATA-ANALYSIS, TEST-UNIT. **Est-Effort**: 120-240m.
+
+**Executed-by**: Sonnet agent ~96 min (5,774 s) + lead merge ~10 min = ~106 min.
 
 **Result (Phase 4)**: built 2026-11-04 (Sonnet 5.5 sub-agent; not committed). New safe mode in `tool/rule_miner`
 (`safe_miner_core.dart`, `rule_miner.ps1 -Safe`) reusing the Task 7 corpus builder, dedup, thresholds and domain guard.
@@ -976,6 +996,8 @@ tooling; Windows-only build steps (MSIX, Task Scheduler, WinWright) keep a Windo
 **Model**: Sonnet -- a cross-cutting tooling change with a test harness; not Haiku-shaped.
 
 **Step-types**: HOOK, TOOL-ADD, TEST-UNIT, DOCS. **Est-Effort**: 120-240m.
+
+**Executed-by**: Sonnet agent, merged 9f52b7c4. At least ~89 min (5,359 s); earlier runs not recorded.
 
 _**Risk & rollback**_: a broken hook can block every tool call. Each pilot hook is registered only after its cases
 pass; rollback is the previous `settings.json` registration (one commit).
@@ -1049,6 +1071,8 @@ Android build).
 
 **Step-types**: BUILD-CONFIG. **Est-Effort**: 20-40m (plus two build runs).
 
+**Executed-by**: main session (Opus; single-session note above), not Haiku. ~16 min hands-on + ~16 min of builds = ~32 min.
+
 _**Risk & rollback**_: a slower build; rollback is removing the line.
 
 **Result (Phase 4)**: two release AAB builds, run alone one after the other (2026-11-04). Build 1, current settings:
@@ -1091,6 +1115,8 @@ plan.
 **Model**: main session -- interactive with Harold.
 
 **Step-types**: UX-EVAL. **Est-Effort**: 120-180m plus Harold's time.
+
+**Executed-by**: part A (static pass): Explore agent ~10 min (574 s) + lead spot-check ~8 min = ~18 min. Part B (live run) moved to F341 by Harold (Class 3, 2026-11-04).
 
 ---
 

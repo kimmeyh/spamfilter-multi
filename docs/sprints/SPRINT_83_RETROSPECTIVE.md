@@ -3,7 +3,7 @@
 **Sprint**: 83 -- F322 scan notification choice, F323 F306 v2 (could-not-check, Block Body, news_ sender shape), F324
 account settings and IMAP Sign In Again, F270 v1 suggested safe senders, F305 R-2 signal counts, F308 / F310 rule
 mining, F309 research, F321 Python tooling pilot, F237, F325 static pass, MV-3 / MV-4 phone evidence (0.24.0)
-**PR**: #534 (feature/20261031_Sprint_83 -> develop), DRAFT until 7.7.5
+**PR**: #534 (feature/20261031_Sprint_83 -> develop), set ready at 7.7.5 (2026-11-05)
 **Date**: 2026-11-05
 **Manual Validation**: complete (Harold, 2026-11-04: "Manual Validation complete"; re-validation rounds 2 to 4 PASS;
 F325 live run moved to F341)
@@ -18,7 +18,8 @@ proposal.
 Reviews: Copilot COMMENTED, 3 inline (2 MEDIUM, 1 LOW). code-reviewer pass 1 (49 of 125 files read) and pass 2 (75 of
 76 files read, closing the gap); silent-failure-hunter (49 of 52 production files read). One HIGH found by both (H-1).
 Fix commits bab21526, 76f8a2bb, 4308c893, c1d9a2c6, d91ee027, d7168716, 4f9ffe5b; every guard fix mutation-checked,
-all KILLED. Three decisions wait on Harold (Q1 to Q3). "Recurring" = two or more this sprint, or in an earlier
+all KILLED. Three decisions went to Harold (Q1 to Q3; answered 2026-11-05: Q1 = 1, Q2 = 1, Q3 = 2, fixed in
+c9f21abf). "Recurring" = two or more this sprint, or in an earlier
 sprint's 7.7.1 line.
 
 - **A. A second copy that drifts from the first** (recurring: 3 this sprint; Sprint 72 C-2b
@@ -182,7 +183,8 @@ sprint's 7.7.1 line.
 - **Product Owner**: none
 - **Scrum Master**: none
 - **Lead Developer**: none
-- **Claude Code Development Team**: None beyond any 7.7.1 decision (Q1 to Q3) that Harold sends to the backlog.
+- **Claude Code Development Team**: None. (The 7.7.1 decisions Q1 to Q3 and Q5 were fixed in this sprint; none went
+  to the backlog.)
 
 ## Completeness Validation (Phase 7.3/7.4 exit gate)
 

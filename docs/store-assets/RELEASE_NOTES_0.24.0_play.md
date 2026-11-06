@@ -1,8 +1,8 @@
 # Release notes -- 0.24.0 -- Google Play
 
-Re-derived from the finished CHANGELOG at Sprint 83 Phase 7.7 (2026-11-05). Re-check at Phase 8.3
-(STORE_RELEASE_PROCESS.md Step 1b, GOOGLE_PLAY_RELEASE_PROCESS.md Step 2), and again if the open 7.7.1 decisions
-(Block Body on HTML-only mail, the refused-password retry) change what ships.
+Re-derived from the finished CHANGELOG at Sprint 83 Phase 7.7 (2026-11-05), and updated the same day for the 7.7.1
+decisions (Harold Q1 = 1 body rules read HTML-only mail as text, Q2 = 1 no login while Sign In Again shows, Q5 = 1
+link addresses kept). Re-check at Phase 8.3 (STORE_RELEASE_PROCESS.md Step 1b, GOOGLE_PLAY_RELEASE_PROCESS.md Step 2).
 
 **Range**: everything after 0.23.0 (versionCode 20). If 0.23.0 was never uploaded to Play, widen the range at Phase
 8.3 to everything after the last upload (`STORE_VERSION_STATUS.md` "Last uploaded to Play"). This build is
@@ -24,4 +24,6 @@ Manage Safe Senders suggests senders you may trust, to accept or reject.
 No Rule review adds Block Body, suggests a block when Reply-To is on another domain, and suggests nothing when a sender check could not finish.
 
 A rejected iCloud, AOL or Yahoo password now shows Sign In Again. Re-adding an account keeps its settings.
+
+Body rules now match HTML-only mail.
 </en-US>
