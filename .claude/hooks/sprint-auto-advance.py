@@ -387,7 +387,9 @@ def decide(payload: dict) -> hooklib.Verdict:
     if not last_message:
         return hooklib.allow()
     trimmed = last_message.rstrip()
-    ends_with_question = trimmed.endswith("?")
+    # The footer is removed first, as matches_commitment does: an end-anchored check is coupled to the
+    # message's closing line (CLAUDE.md IMP-3, Sprint 70). Before Sprint 84 a footer hid a bare '?'.
+    ends_with_question = FOOTER.sub("", trimmed).rstrip().endswith("?")
     matched_phrase = any(p.search(last_message) for p in PROC_PATTERNS)
     matched_commitment = matches_commitment(trimmed)
     if not (ends_with_question or matched_phrase or matched_commitment):

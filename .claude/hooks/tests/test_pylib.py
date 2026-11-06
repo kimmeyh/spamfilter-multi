@@ -1043,7 +1043,11 @@ class AutoAdvanceTests(unittest.TestCase):
         """Does NOT catch a procedural phrase absent from the 13 patterns; the list is carried over unchanged."""
         cwd = self.project(plan=self.PLAN_OK)
         self.assertEqual(self.decide(cwd, "Task 2 is done?").code, 2)
-        self.assertEqual(self.decide(cwd, "Task 2 is done?\n\n" + FOOTERS[0]).code, 0)   # the footer hides a bare '?': unchanged behavior
+        # Sprint 84 (Harold Q2): the footer no longer hides a bare '?'. Does NOT catch a closing line shaped
+        # unlike FOOTER (for example a footer with seconds), which still hides it.
+        for footer in FOOTERS:
+            self.assertEqual(self.decide(cwd, "Task 2 is done?\n\n" + footer).code, 2, footer)
+        self.assertEqual(self.decide(cwd, "Is it done? Yes, it is done.\n\n" + FOOTERS[0]).code, 0)   # '?' mid-message only
         for phrase in ("Should I continue", "Which option is better", "Let me know if that works", "Is this OK",
                        "Do you want me to push", "What should I do", "Awaiting your approval", "or wait"):
             self.assertEqual(self.decide(cwd, phrase + ".").code, 2, phrase)
