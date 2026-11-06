@@ -970,7 +970,7 @@ artifact (GP-8/GP-3 verifies, Sprint 64 chain validation).
 - **iOS Simulator test level** (Sprint 84, F345): two more jobs in `ios.yml`, `ios-simulator` (builds for the Simulator,
   checks `PrivacyInfo.xcprivacy` is inside the built `.app`, runs each shared `integration_test` file on an iPhone
   Simulator) and `ios-simulator-screens` (captures the five first-run screens on an iPhone and an iPad Simulator).
-  Three files are excluded from the verdict and re-run as diagnostics (`EXCLUDED_TESTS`); see `docs/TESTING_STRATEGY.md`
+  One stale file is excluded from the verdict (`EXCLUDED_TESTS`: sprint62_surfaces, F348); see `docs/TESTING_STRATEGY.md`
   "iOS test level" and ADR-0050 "What the Simulator does not prove".
 - **Privacy manifest** (F345 R-4): `mobile-app/ios/Runner/PrivacyInfo.xcprivacy` declares no tracking, no collected data
   types and one required-reason category (`NSPrivacyAccessedAPICategoryFileTimestamp`, reason `C617.1`, for app-container

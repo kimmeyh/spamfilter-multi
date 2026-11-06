@@ -228,16 +228,12 @@ jobs:
       # Details: docs/research/F345_IOS_SIMULATOR_S84.md section 2.
       #  sprint62_surfaces_test.dart: STALE on every platform (the F175 cases and
       #    one F178/F176 case; cases named in the research document).
-      #  folder_picker_test.dart, safe_sender_lifecycle_test.dart: failed on the
-      #    Simulator in runs 1 to 6. Cause (run 6 probe numbers): the iOS soft
-      #    keyboard stays open after enterText (viewInsets.bottom 1005 px) and
-      #    leaves the list 170 of 874 points. Fixed in the tests by
-      #    dismissKeyboard (helpers/app_harness.dart). They stay out of the
-      #    verdict for ONE more run, re-run in the diagnostics step below; when
-      #    that step shows both passing, move both names out of EXCLUDED_TESTS
-      #    and delete the step and DIAGNOSTIC_TESTS.
-      EXCLUDED_TESTS: 'sprint62_surfaces_test.dart folder_picker_test.dart safe_sender_lifecycle_test.dart'
-      DIAGNOSTIC_TESTS: 'folder_picker_test.dart safe_sender_lifecycle_test.dart'
+      # folder_picker_test.dart and safe_sender_lifecycle_test.dart were excluded
+      # in runs 1 to 6: the iOS soft keyboard stayed open after enterText and
+      # shrank the list. Fixed by dismissKeyboard (helpers/app_harness.dart);
+      # both passed on the Simulator in run 7 (42306527432) and are in the
+      # verdict from run 8.
+      EXCLUDED_TESTS: 'sprint62_surfaces_test.dart'
     steps:
       - uses: actions/checkout@v4
 
@@ -358,30 +354,6 @@ jobs:
           fi
           [ "$bad" -eq 0 ] || { echo "::error::$bad integration test file(s) failed"; exit 1; }
 
-      # NOT part of the verdict (continue-on-error). Re-runs the two files whose
-      # iOS failure was the soft keyboard, now with dismissKeyboard in the tests,
-      # to show they pass before they enter the verdict.
-      - name: Diagnostics for the excluded files (not part of the verdict)
-        if: ${{ !cancelled() }}
-        continue-on-error: true
-        env:
-          UDID: ${{ steps.sims.outputs.iphone_id }}
-        run: |
-          set +e
-          mkdir -p "$RUNNER_TEMP/it-logs"
-          {
-            echo "### Diagnostics (NOT part of the verdict)"; echo
-            echo "| File | Result | Passed |"; echo "| --- | --- | --- |"
-          } >> "$GITHUB_STEP_SUMMARY"
-          for name in $DIAGNOSTIC_TESTS; do
-            flutter test "integration_test/$name" -d "${UDID}" > "$RUNNER_TEMP/it-logs/diag-$name.log" 2>&1
-            code=$?
-            n=$(grep -oE '[0-9]+ tests? passed' "$RUNNER_TEMP/it-logs/diag-$name.log" | tail -1 | grep -oE '^[0-9]+' || true)
-            echo "diagnostic $name: exit $code, ${n:-0} passed"
-            echo "| $name | exit $code | ${n:-0} |" >> "$GITHUB_STEP_SUMMARY"
-          done
-          exit 0
-
       - name: Upload the test logs
         if: ${{ !cancelled() }}
         uses: actions/upload-artifact@v4
@@ -398,10 +370,13 @@ jobs:
   # harness on the iPad and renders five screens there. The smoke test itself
   # runs on the iPhone in ios-simulator (AC-1). No explicit build step: each
   # `flutter test` builds its own app.
+  # Limit 100 minutes: run 5 took 69 minutes, and run 7 (42306527432) was
+  # cancelled at the old 75-minute limit while capturing the screens (each
+  # `flutter test` does its own Xcode build). Build sharing is an F350 lead.
   ios-simulator-screens:
     name: iOS Simulator screens
     runs-on: macos-26
-    timeout-minutes: 75
+    timeout-minutes: 100
     defaults:
       run:
         working-directory: mobile-app

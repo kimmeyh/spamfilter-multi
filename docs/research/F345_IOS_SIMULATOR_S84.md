@@ -109,8 +109,10 @@ R-2 table (ran / did not run, with the reason; counts are from run 3 unless note
   FIX (test side, no app change; three files, 25 lines): `dismissKeyboard(tester)` in `integration_test/helpers/app_harness.dart`
   (drops focus, pumps 600 ms, `pumpAndSettle`), called in folder_picker_test.dart before the final assertion and in
   safe_sender_lifecycle_test.dart after `enterText` and before `scrollUntilVisible`. On Windows it only drops focus.
-  EVIDENCE it passes: none yet on iOS. The files stay in EXCLUDED_TESTS for ONE more run and re-run in the diagnostics step
-  of `ios-simulator`; when that step shows both passing, move them into the gate. Windows result: both PASS with the fix (`flutter test integration_test/<file> -d windows`: safe_sender_lifecycle 1 passed, folder_picker 1 passed; no other build was running).
+  EVIDENCE it passes on iOS: run 7 (42306527432, commit 1b5c9f64), diagnostics step: folder_picker_test.dart exit 0,
+  1 passed; safe_sender_lifecycle_test.dart exit 0, 1 passed. Both moved into the gate and the diagnostics step removed
+  (run 8). Run 7 also cancelled `ios-simulator-screens` at its 75-minute limit while capturing (run 5 took 69 minutes;
+  no screens change in run 7); the limit is now 100 minutes. Windows result: both PASS with the fix (`flutter test integration_test/<file> -d windows`: safe_sender_lifecycle 1 passed, folder_picker 1 passed; no other build was running).
   The probe test was deleted (explained; it is in git history, commit ace8f854 and earlier).
 - read_only_flows_test.dart: RAN in run 1, 5 passed, 1 FAILED: `F25: Rule Test tool runs a plaintext pattern`, "A
   RenderFlex overflowed by 27 pixels on the bottom" at `lib/ui/screens/rule_test_screen.dart:523`, constraints
