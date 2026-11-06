@@ -10,7 +10,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:integration_test/integration_test.dart';
+import 'package:provider/provider.dart';
 
+import 'package:my_email_spam_filter/core/providers/rule_set_provider.dart';
 import 'package:my_email_spam_filter/core/storage/database_helper.dart';
 import 'package:my_email_spam_filter/ui/screens/manual_rule_create_screen.dart';
 import 'package:my_email_spam_filter/ui/testing/widget_keys.dart';
@@ -42,8 +44,16 @@ void main() {
       expect(await _safeSenderExists(db, expectedPattern), isFalse,
           reason: 'precondition: the test safe sender must not already exist');
 
-      await tester.pumpWidget(MaterialApp(
-        home: const ManualRuleCreateScreen(mode: ManualRuleMode.safeSender),
+      // F345 (Sprint 84): the save path takes RuleSetProvider (F298, Sprint 83
+      // PR #490, commit 32059a86: `Provider.of<RuleSetProvider>` in
+      // ManualRuleCreateScreen._saveRule). The screen was pumped bare, so Save
+      // threw ProviderNotFoundException on EVERY platform. A fresh, uninitialized
+      // provider is enough: reloadRulesAfterWrite never throws.
+      await tester.pumpWidget(ChangeNotifierProvider<RuleSetProvider>(
+        create: (_) => RuleSetProvider(),
+        child: MaterialApp(
+          home: const ManualRuleCreateScreen(mode: ManualRuleMode.safeSender),
+        ),
       ));
       await tester.pumpAndSettle();
 
