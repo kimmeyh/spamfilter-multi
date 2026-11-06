@@ -528,6 +528,19 @@ Source: `docs/research/R76-3_HEURISTICS_ML_GENAI_SPAM_IDENTIFICATION.md` (Issue 
 - Do: rewrite the F175 cases to the current dialog and per-account rule; make the negative case seed the same account;
   settle the F178/F176 cause; then put `sprint62_surfaces_test.dart` back in the iOS Simulator gate.
 
+**F349. Windows Task Scheduler tests time out on the dev machine (~45-60m) Priority 44 -- NEW 2026-11-06 (Sprint 84 Phase 5.2)**
+- Phase: Core App Quality
+- Platform: Windows Desktop (the tests run real PowerShell; CI ubuntu does not run them).
+- Evidence: Sprint 83 7.7.1 and Sprint 84 5.2 full suites (`--concurrency=4`): 3 tests time out at 30 s
+  (`windows_task_scheduler_service_test` taskExists / getScheduleStatus for a missing task, and
+  `powershell_script_generator_test` "the real New-ScheduledTaskTrigger gets a StartBoundary in the past"). They pass
+  alone. Timed 2026-11-06 14:58: `Get-ScheduledTask` for a missing task takes 7.1 s in-process and 8 to 13 s with a
+  PowerShell start; a bare PowerShell start takes 0.9 s. So the query is slow, not the process start. Last boot
+  2026-10-30, so the Sprint 83 "re-time after a reboot" check has not run. Code and tests unchanged since b00669e4.
+- Do: re-time after a reboot; if still slow, find why the query is slow (cause unknown), then either give these
+  tests a timeout sized from the measurement with the reason in a comment, or replace the real query with the
+  existing seam. Do not raise the timeout without the measurement.
+
 **F343. F309 trusted-sender hint: decide after Sprint 83 Task 5 ships (~15m decision, estimate unverified) Priority 45 -- NEW 2026-11-04 (Sprint 83 MV Q5 = 6, backlog)**
 - Phase: Core App Quality
 - Platform: All.
