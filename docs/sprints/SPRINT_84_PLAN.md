@@ -684,5 +684,68 @@ rollback is deleting the job.
 ## Phase 5 evidence
 
 - **5.2 tests and analyze**: 2026-11-06. `flutter analyze`: No issues found. `flutter test --concurrency=4`: 3,619 passed, 15 skipped, 3 failed; all three are the known Task Scheduler 30 s timeouts (`windows_task_scheduler_service_test` x2, `powershell_script_generator_test` x1), code and tests unchanged since b00669e4, `Get-ScheduledTask` for a missing task timed at 7.1 s in-process; tracked as F349 (a4e7323d). The first run at the default concurrency also had 2 F302 timing failures; they pass alone and at `--concurrency=4` (TESTING_STRATEGY.md:31).
+- **5.1.2 F-PRECHECK**: ran 2026-11-06 16:30-16:44 (Sonnet sub-agent) over `git diff origin/develop...HEAD` in Dart, Python, YAML and PowerShell; 7 classes; 14 findings, 0 HIGH. Fixed: F7-1 CHANGELOG F342 claim narrowed, F7-2/F3-1 default-closer test proves the row and its comment names the real call, F6-4 failed close writes a diagnostic line, F7-3 short-viewport tests for ErrorDisplay and the Settings placeholder, indentation (36b724ac; 4 mutants KILLED); F6-1/F6-2/F6-3 hook checks that could not run now print a systemMessage notice (e7960261; 6 mutants KILLED; rendering of systemMessage on Stop/PreToolUse unverified). Need-not-know with reason: F6-5 (rethrow caught by F6-4), F6-6 (ios.yml fails closed). Open: F1-1 four sibling empty states (4 code files: asked at Manual Validation, Question A); F6-7 the two iOS-excluded files (F345 run 6 probe, in progress). Classes 2, 4, 5 clean. 5.1.6 Android runtime launch gate: N/A -- no Android config file touched.
 - **Android JVM unit tests**: N/A -- the sprint diff touches no file under `mobile-app/android/app/src` (the F280 Kotlin change was reverted uncommitted).
 - **5.1.5 WinWright sweep**: 2026-11-06 15:24-15:34, sweep-head: 33d452fc (newer than the last lib/ui commit c9130577), DEV build from `build-windows.ps1` (exit 0), workstation unlocked, 3 scripts: test_f320_no_rule_review PASS, test_s75_new_controls PASS, test_f124_rule_labels FAIL twice at step 2 "No main window found" (step 1 passed), then PASS 29/29 run alone at 15:35-15:41 (318 s; Sprint 83 recorded 16-29 s). Cause of the in-sweep failure unknown; a `ww_list_windows` capture at the failing step would settle it. Tray icon PASS; DB drift none.
+
+## Manual Validation (Phase 5.3) -- steps, rehearsed 2026-11-06
+
+**Standing facts (Harold)**, carried forward from Sprint 83: Fold notification access for the app is ON and stays on. A
+phone screenshot that shows a version (for example "Version 0.24.0") is the evidence the Play update installed; do not
+ask again. The iCloud DEV account's per-account background scan is on, every 5 minutes.
+
+**Builds**: Windows DEV 0.24.1+22 from `build-windows.ps1` (exit 0, 2026-11-06 15:20). Android emulator DEV 0.24.1+22
+from `build-with-secrets.ps1 -BuildType debug -InstallToEmulator` (exit 0, 2026-11-06 16:30). The Fold has the 0.24.0
+closed-test build; 0.24.1 reaches it only after the Play release, so 0.24.1-only phone checks are listed as carry-ins.
+
+- **MV-1 (Windows DEV, then the Fold): re-enter the iCloud app-specific password (F342 group 1).** Precondition: the
+  iCloud account is flagged; the Windows DEV database shows `gmail_sign_in_required = true` for the iCloud account
+  only (AOL, Gmail, Yahoo not flagged). Steps: create a new app-specific password at account.apple.com > Sign-In and
+  Security > App-Specific Passwords. In the app, open the account list (Select Account). The iCloud row reads
+  "iCloud Mail rejected the sign-in. Enter your password again." with a "Sign In Again" button. Press it; the address
+  is already filled in and no "Account already added" question appears; paste the new password and save. Expected:
+  the iCloud row no longer shows the message; within 5 minutes Scan History shows a new iCloud Background row that is
+  not an error. Repeat on the Fold (0.24.0 has the same Sign In Again flow).
+  Rehearsed: 2026-11-06, flag read from a copy of the DEV database (`account_settings`, iCloud only); row text from
+  `account_selection_screen.dart:338-341`; the repair flow by `f324_repair_flow_test` and `f324_background_off_test`
+  (12 tests pass: address filled, no duplicate question, saving clears the flag). NOT REHEARSED: the real iCloud
+  sign-in (Harold's Apple account).
+- **MV-2 (Windows Production, Q3 = 3 note): older No Rule rows get their "Suggested" mark after a full rescan.**
+  Precondition: in the production app, Review No Rule Items shows `news_40693@citorisc.net` with no "Suggested" mark
+  (Harold's screenshot, 2026-11-06). Steps: Settings > the account > Scan Range: tick "Scan all emails" ("No date
+  filter - scans entire mailbox"), run a Manual Scan of the folder that holds that message, then open Review No Rule
+  Items. Expected: the `news_` rows still in the folder show "Suggested" on Block Entire Domain. A row for a message
+  no longer in the folder keeps no mark (the scan cannot see it again). Then set the Scan Range back to its old value.
+  Why "Scan all emails": the No Rule cursor is clamped to the scan range (S38-CI-4), so a short range does not re-read
+  mail from 2026-09-24; "Scan all emails" bypasses the cursor (`email_scanner.dart:1995-2004`).
+  Rehearsed: 2026-11-06, `f306_suggestion_storage_test` "a re-seen row refreshes the suggestion, and null clears it"
+  and `f306_review_screen_suggestion_test` (10 tests pass); the clamp by `email_scanner_no_rule_cursor_cap_test`
+  (8 pass). NOT REHEARSED: a live IMAP scan of the production account.
+- **MV-3 (Windows DEV): Rule Test messages in a short window (#557).** Steps: Settings > Manage Rules > the "Test a
+  pattern against sample emails" icon. Drag the window's bottom edge up to its minimum (800 x 600 pixels,
+  `flutter_window.cpp:71-72`). Expected: "Enter a pattern and press Test..." shows with no yellow-and-black stripes;
+  type `zzqqxx-no-such-sender` and press Test: "No matches found in N sample emails." shows the same way and scrolls.
+  Rehearsed: 2026-11-06, `rule_test_screen_test` group "short phone viewport (no overflow)" (390x560 and 320x480,
+  prompt and no-match states) and the new ErrorDisplay and Settings placeholder short-viewport tests (54 tests pass in
+  the changed files). The 800 x 600 Windows window was not looked at.
+- **MV-4 (Fold, Task 1 R-2): 0.24.0 notification channels.** Steps: Android Settings > Apps > MyEmailSpamFilter >
+  Notifications. Expected: two channels, "Every Completed Scan" and "One or more No Rule Items", and no
+  `background_scan_channel`. Screenshot it. Rehearsed: NOT REHEARSED on a device (the emulator has 0.24.1; the channel
+  set is the same code); evidence of 0.24.0 on the Fold: the 2026-11-06 Fold screenshot reading "Version 0.24.0".
+- **MV-5 (Fold, Task 1 R-1, MV-3c): a YELLOW No Rule item's pop-up on the cover screen.** Only when a YELLOW No Rule
+  item appears. Expected: one rule is marked "Suggested"; Block Subject, the regex note and the Skip row fit with no
+  clipping. Screenshot it. Rehearsed: carried from Sprint 83 (Windows proven in Sprint 83 MV); NOT REHEARSED on the
+  cover screen width.
+- **MV-6 (Task 4, F341, with Harold): live first-run evaluation.** Windows: a backup of the DEV data folder, a clean
+  first run, then the backup restored. Android: the emulator (no phone data touched). iOS: the ten Simulator screens
+  from CI run 5 (iPhone and iPad: empty state, add account, AOL form, Settings, Help). Observations already found on
+  the iPad screens: Settings > General shows "Export folder: Documents/MyEmailSpamFilter_Dev (default)" with the text
+  "in a file on this computer" (desktop wording on a tablet), and the iPad layout is the phone layout stretched to
+  full width. Rehearsed: the iOS screens are CI artifacts (run 42287768277); the Windows and emulator passes are the
+  live evaluation itself.
+
+**Carry-ins after 0.24.1 reaches the Fold (Phase 8)**
+- F342 on the phone: after Android stops a background scan, Scan History shows a Background row "Not finished" with
+  "The phone stopped this background scan before it finished. The next scan will try again." in grey, and the
+  diagnostic log has "closed N in-progress scan row(s) as interrupted". Rehearsed: `f342_worker_stop_closes_row_test`
+  and `scan_history_narrow_test` (412 and 384 wide). Not rehearsed on a device.
