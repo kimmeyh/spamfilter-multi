@@ -76,7 +76,7 @@ the verdict, with `ConnectHardwareKeyboard` set before boot): folder_picker 0 pa
 safe_sender_lifecycle 0 passed 1 failed, still `Bad state: No element` from scrollUntilVisible (now line 65 after the
 provider wrap). The keyboard preference did not fix either, so the on-screen keyboard hypothesis is NOT confirmed (the
 preference may not apply to a headless boot). `integration_test/ios_diagnostic_probe_test.dart` (new, asserts nothing,
-skips unless `IOS_PROBE=1`) prints view insets, widget counts and controller text at each step; run 4 shows the cause.
+skips unless `IOS_PROBE=true`) prints view insets, widget counts and controller text at each step. Run 4 (42280459842) skipped it: the job passed `IOS_PROBE=1` and `bool.fromEnvironment` is true only for the text `true`; run 5 passes `true`.
 
 R-2 table (ran / did not run, with the reason; counts are from run 3 unless noted):
 - app_boot_smoke_test.dart: RAN, PASSED (1 test), run 3 and run 2. AC-1 file.
@@ -222,6 +222,12 @@ to `expect(find.text('harness ready'), findsNothing);`. Expected: the step "Run 
 Simulator" prints `app_boot_smoke_test.dart: FAILED (exit 1), 0 passed`, the job is red. Second mutation for the
 zero-tests rule: set `EXCLUDED_TESTS` to all nine file names in the workflow env. Expected: the step fails with
 "zero integration tests ran on the Simulator". Record both run ids here, then revert both edits.
+
+**Result (2026-11-06):** the first mutation was applied in 685581b5 and reverted in aee05994. `workflow_dispatch` run
+42280552958 on 685581b5: `ios-simulator` FAILED with `app_boot_smoke_test.dart: FAILED (exit 1), 0 passed` and
+`##[error]1 integration test file(s) failed` (the other five files passed); `ios-simulator-screens` passed. AC-5 is met.
+The second (zero-tests) mutation was not run: AC-5 asks for one failing-path proof, and the zero-tests rule is a
+separate guard that this run does not prove.
 
 ## 6.1 R-3 screens, run 3 artifact
 

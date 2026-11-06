@@ -372,7 +372,7 @@ jobs:
             echo "| File | Result | Passed |"; echo "| --- | --- | --- |"
           } >> "$GITHUB_STEP_SUMMARY"
           flutter test integration_test/ios_diagnostic_probe_test.dart -d "${UDID}" \
-            --dart-define=IOS_PROBE=1 > "$RUNNER_TEMP/it-logs/diag-probe.log" 2>&1
+            --dart-define=IOS_PROBE=true > "$RUNNER_TEMP/it-logs/diag-probe.log" 2>&1
           echo "probe exit $?"; grep "PROBE" "$RUNNER_TEMP/it-logs/diag-probe.log" | cut -c1-400
           for name in $DIAGNOSTIC_TESTS; do
             flutter test "integration_test/$name" -d "${UDID}" > "$RUNNER_TEMP/it-logs/diag-$name.log" 2>&1

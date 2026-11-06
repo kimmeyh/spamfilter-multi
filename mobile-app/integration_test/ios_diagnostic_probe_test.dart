@@ -5,7 +5,7 @@
 // `ios-simulator` runs it outside the verdict and uploads the log. Delete it
 // when both failures are explained.
 //
-// It skips itself unless the job passes --dart-define=IOS_PROBE=1, so on Windows
+// It skips itself unless the job passes --dart-define=IOS_PROBE=true, so on Windows
 // it is one skipped file. Output lines start with "PROBE ".
 //
 // WHAT THIS DOES NOT CATCH: nothing, it asserts nothing. It only reports.
