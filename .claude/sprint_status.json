@@ -1,16 +1,16 @@
 {
     "_description": "Sprint status file that persists across context compaction. Update after each phase/sub-phase completion.",
-    "_last_updated": "2026-11-06T00:45",
+    "_last_updated": "2026-11-06T08:45",
     "_usage": "Read this file after context compaction to restore sprint approval state and progress.",
     "_staleness_note": "This file had drifted 15 sprints (last updated at Sprint 35, 2026-04-19) before being refreshed at Sprint 50 close-out. It is a Phase 7.7 checklist item -- update it at every sprint close-out, not opportunistically.",
     "current_sprint": {
         "number": 84,
         "branch": "feature/20261105_Sprint_84",
-        "status": "Phase 3.7 Plan Approval",
-        "status_detail": "Scope selected 2026-11-06 (8.4 pass 2): MV-3c, F342, F341, F280, F326, F327, F328, F345. SPRINT_84_PLAN.md drafted; draft PR #548 (3.3.1). Waiting for Harold: Q-A approval, Q1 (F342 fixes), Q2 (F280 Class 2 change). Cards are created at 3.7.0 after approval.",
-        "plan_approved": false,
+        "status": "Phase 4 Execution",
+        "status_detail": "Plan APPROVED 2026-11-06 (Q1 = 1, Q2 = 2, Q3 = 3). Cards #549-#557. Version 0.24.1+22 (3.7.0b). Parallel block A: F326 (Haiku), F345 (Sonnet), F342 (Sonnet).",
+        "plan_approved": true,
         "pr_number": 548,
-        "version": "0.24.0+21"
+        "version": "0.24.1+22"
     },
     "previous_sprint": {
         "number": "83",
@@ -33,7 +33,8 @@
         "sprint_80": "Task 0 #491, Task 1 #471 (with #433 F205, #428 MV74-1), Task 2 #472 (F277), Task 3 #492 (F292), Task 4 #493 (F294), Task 5 #494 (F295), Task 6 #495 (F296), Task 7 #496 (F298), Task 8 #497 (F267), Task 9 #498 (F268), Task 10 #499 (F269), Task 12 #500 (F299), Task 13 #501 (F276), Task 14 #502 (F204), Task 15 #503, Task 16 #504, Task 17 #505. F289 removed (Q4b = 2).",
         "sprint_82": "Task 0 #522, Task 1 #509, Task 2 #510, Task 3 #523, Task 4 #524, Task 5 #525, Task 6 #526, Task 7 #527, Task 8 #528, Task 9 #529, Task 10 #530, Task 11 #531, Task 12 #532",
         "sprint_82_close": "PR #521 body: Closes #522 #525 #526 #528 #529 #530 #531 #532; Part of #509 #510 #523 #524 #527 (stay open for Sprint 83). Verify after the merge.",
-        "sprint_83": "Task 0 #535, Task 1 #524 + #527 (reused), Task 2 #536, Task 3 #537, Task 4 #538, Task 5 #539, Task 6 #540, Task 7 #541, Task 8 #542, Task 9 #543, Task 10 #544, Task 11 #545, Task 12 #546"
+        "sprint_83": "Task 0 #535, Task 1 #524 + #527 (reused), Task 2 #536, Task 3 #537, Task 4 #538, Task 5 #539, Task 6 #540, Task 7 #541, Task 8 #542, Task 9 #543, Task 10 #544, Task 11 #545, Task 12 #546",
+        "sprint_84": "Task 0 #549, Task 1 #550, Task 2 #551, Task 3 #552, Task 4 #553, Task 5 #554, Task 6 #555, Task 7 #556, Task 8 #557"
     },
     "_github_issues_note": "Sprint 66 cards created at Phase 3.3.1 (2026-09-07): #387 GP-19, #388 GP-4. Close by hand at Post-Merge Cleanup.",
     "test_metrics": {
@@ -66,8 +67,9 @@
     ],
     "blocking_issues": [],
     "next_actions": [
-        "Harold: answer Q-A, Q1, Q2 in SPRINT_84_PLAN.md.",
-        "After approval: 3.7.0 cards, 3.7.0b bump to 0.24.1+22 (and \"Last uploaded to Play\" to 0.24.0 versionCode 21), 3.7.1 PR body, then parallel block A (F326, F345, F342)."
+        "Parallel block A: Task 5 F326, Task 8 F345, Task 2 F342 (sub-agents).",
+        "Then Task 3 F280 (after F342; Q2 = 2: ask Harold with the numbers before final), Task 6 F327, Task 7 F328 (serial).",
+        "Task 4 F341 with Harold; Task 1 when a YELLOW No Rule item appears. Q3 = 3 rescan note goes into Manual Validation."
     ],
     "next_sprint_targeted": {
         "number": 84,

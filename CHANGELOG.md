@@ -26,6 +26,12 @@ Format: `- **type**: Description (Issue #N)` where type is feat|fix|chore|docs
 
 ## [Unreleased]
 
+### 2026-11-06 (Sprint 84)
+
+- **chore**: Version 0.24.1+22 for Sprint 84, so a tester can tell this build from the 0.24.0 store builds (Issue #549)
+
+## [0.24.0] - 2026-11-05
+
 ### 2026-11-05 (Sprint 83 final code reviews)
 - **fix**: When the app reads an HTML-only email as text, each link keeps its web address after the link text ("Click here (https://...)"), so a body rule on a domain that appears only in a link still matches a Gmail HTML-only email, and the No Rule pop-up's Block Body choice can offer that domain (Issue #537)
 - **fix**: Body rules now match the text of an email that has only an HTML part (the HTML is read as text, the same text the pop-up's Block Body reads); before, a Block Body rule saved from such an email could never match it. Gmail also reads a plain-text part nested inside the message, not only one at the top level (Issue #537)

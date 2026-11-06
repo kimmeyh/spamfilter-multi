@@ -1,6 +1,9 @@
 # Sprint 84 Plan
 
-**Status**: DRAFT, waiting for Phase 3.7 approval (Q-A, Q3; Q1 and Q2 answered 2026-11-06). Scope selected by Harold at Phase 8.4 pass 2 (2026-11-06).
+**Status**: APPROVED 2026-11-06 (Harold: *"q3 3"* plus the standard approval text, *"Sprint plan approved as
+amended (with any comments I provided), proceed with execution. All Sprint tasks and sub-tasks are approved."*). Q1 = 1,
+Q2 = 2, Q3 = 3. Cards: Task 0 #549, Task 1 #550, Task 2 #551, Task 3 #552, Task 4 #553, Task 5 #554, Task 6 #555,
+Task 7 #556, Task 8 #557. Scope selected by Harold at Phase 8.4 pass 2 (2026-11-06).
 **Branch**: `feature/20261105_Sprint_84` (cut from the Sprint 83 branch, Phase 6.6) | **PR**: draft, created at 3.3.1
 (stays draft until 7.7.5)
 **Planner**: Opus 5.5 (top tier, `SPRINT_PLANNING.md:94-110`). Phase 3.2.2.1 audits by spot reads on 2026-11-06;
@@ -192,7 +195,8 @@ WorkManager may then hold the scan until the network is up, which in deep Doze c
 **Answers (Harold, 2026-11-06)**: *"q1. 1 q2 2"*. Q1 = 1: a F342 defect is fixed this sprint when the fix is under 4
 code files and 600 lines; larger ones become backlog cards. Q2 = 2: F280 runs the experiment and the fix with its test
 on the branch, then ASKS Harold with the arm A and arm B numbers before the Doze-alarm request change is committed as
-final. Q-A is still open.
+final. Q-A = approved (2026-11-06). Q3 = 3: no code change; a full rescan of the affected folders re-sees the older
+rows and fills their stored suggestion. This is a Manual Validation note for Harold, not a card.
 
 **Q3. New finding (2026-11-06): the Review No Rule Items pop-up shows no "Suggested" button on older rows.** Harold's
 Windows screenshot: `news_40693@citorisc.net` shows Block Entire Domain with no "Suggested" mark, although a `news_`

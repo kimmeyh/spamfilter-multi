@@ -312,6 +312,7 @@ Every Item that is implemented gets ONE row here the moment it is picked up -- s
 | Task 1 part A: MV-3a, MV-3b, MV-4 phone evidence (F303 #524, F315 #527) | 83 | DONE | 30-45 | 30-45 | time not recorded (phone pulls and log reads 2026-11-01) | time not recorded | Recorded late (2026-11-04 10:25). MV-3a and MV-3b PASS; #524 and #527 closed with counts. Part B (M-6 on Windows DEV, MV-3c) runs in this Manual Validation with Harold; its row is added when run. |
 | Task 12 part A: F325 static pass (#546) | 83 | DONE | 120-180 | 120-180 | ~10 (Explore agent, 574 s) + ~8 spot-check and report | ~18 | Recorded at completion (2026-11-04 10:36). docs/research/F325_FIRST_RUN_EVALUATION_S83.md; 3 of 3 spot-checked claims match. Part B (live Windows and Android emulator runs) runs in this Manual Validation with Harold; its row is added when run. |
 | Task 11: F237 kotlin.incremental=false (#545) | 83 | DONE | 20-40 | 20-40 | ~16 hands-on + builds 570 s and 405 s (~16) | ~32 | Recorded at completion (2026-11-04 06:33). 30 daemon traces to 0; build 2 not slower. Keeping the line is asked at Manual Validation. |
+| Task 0: version 0.24.1+22 (#549) | 84 | DONE | 10-15 | 10-15 | ~15 | ~15 | Recorded at completion (2026-11-06 08:41). Main session, not Haiku: 3.7.0b runs in the same turn as approval (SPRINT_EXECUTION_WORKFLOW.md 3.7.0b), so delegating would cost more than the edit. Gates run before commit. |
 
 ## Can the missing sprints (48-69) be reconstructed from git? -- TESTED 2026-09-19, answer: NO
 
