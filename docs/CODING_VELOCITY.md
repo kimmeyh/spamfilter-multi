@@ -316,6 +316,7 @@ Every Item that is implemented gets ONE row here the moment it is picked up -- s
 | Task 2: F342 Fold background errors (#551) | 84 | DONE | 30-90 | 30-90 | ~104 | ~104 | Recorded at completion (2026-11-06 10:33, agent Get-Date; started 08:49). Sonnet sub-agent as assigned. 11 logs, 9 groups, 1 fix (3 code files, 118 lines), 7 tests, 7/7 mutants KILLED. Over the estimate: the count spanned 11 logs, not 8, and the fix needed a 4-to-3 file rework to meet the Q1 limit. |
 | Task 5: F326 hooks H1 to Python (#554) | 84 | DONE | 90-150 | 90-150 | ~109 | ~109 | Recorded at completion (2026-11-06 10:40, agent Get-Date; started 08:51). Haiku sub-agent as assigned. 3 hooks, 178/178 suite, 11/11 mutants KILLED, parity probe 0 mismatches. |
 | Task 6: F327 closeout hook to Python (#555) | 84 | DONE | 120-200 | 120-200 | ~83 | ~83 | Recorded at completion (2026-11-06 12:33, agent Get-Date; started 11:10). Sonnet sub-agent as assigned. 26/26 closeout, 179/179 suite, 15/15 mutants KILLED, parity 0/45 mismatches. |
+| Task 7: F328 auto-advance hook to Python (#556) | 84 | DONE | 150-260 | 150-260 | ~97 + ~7 review | ~104 | Recorded at completion (2026-11-06 14:39; agent 12:55-14:32). Sonnet sub-agent as assigned. 195/195 suite (16 new R-5 cases), test_pylib 74 OK, 19/19 mutants KILLED, parity 1 of 454 payloads differ (non-JSON stdin: .ps1 exit 1, .py exit 0, neither blocks). |
 
 ## Can the missing sprints (48-69) be reconstructed from git? -- TESTED 2026-09-19, answer: NO
 

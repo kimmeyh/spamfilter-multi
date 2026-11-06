@@ -10,7 +10,8 @@ Three groups:
      including the Windows defect class: non-ASCII text while the console code page is cp1252;
   3. a REPLAY of every PowerShell-suite case for the ported hooks (test-cases/staging-guard,
      heredoc-guard, commit-lock; Sprint 84 F326: stash-guard, sprint-cards, velocity-warn; F327:
-     closeout, the Stop hook, with gh stubbed so no case needs the network) through
+     closeout, the Stop hook, with gh stubbed so no case needs the network; F328: the top-level
+     sprint-auto-advance cases) through
      the Python `decide` functions. This is what makes the
      Linux CI run prove the hooks, not only the library. allow-* expects exit 0 and violation-*
      expects exit 2, the same rule run-test-cases.ps1 applies.
@@ -513,6 +514,10 @@ class ReplayTests(unittest.TestCase):
     def test_closeout_cases(self):
         replay_cases(self, "verify-closeout-complete.py", "closeout", stub_gh=True)
 
+    def test_sprint_auto_advance_cases(self):
+        """F328: the top-level cases (folder ""), the contract for the Stop hook, 71 files at the port."""
+        replay_cases(self, "sprint-auto-advance.py", "")
+
 
 class PortedHookTests(unittest.TestCase):
     """Behavior the recorded cases do not state in full: the message text, the JSON shape, and
@@ -844,6 +849,263 @@ class PortedHookTests(unittest.TestCase):
         commands = [h["command"] for group in settings["hooks"]["Stop"] for h in group["hooks"]]
         matching = [c for c in commands if "verify-closeout-complete" in c]
         self.assertEqual(matching, ['python "${CLAUDE_PROJECT_DIR}/.claude/hooks/verify-closeout-complete.py"'])
+
+
+FOOTERS = ("11/06/2026 12:40pm | Sprint 84 Phase 4 Execution",   # current format (Sprint 70 and later)
+           "09/18/2026 12:22am | Phase 4.2 Testing Cycle (Per Task)",   # the format the Sprint 70 fix saw
+           "9/8/2026 1:05PM | Sprint 70 Phase 5.3 Manual Validation",   # one-digit month, upper-case PM
+           "11/06/2026 12:40pm")                                       # no phase half
+
+
+class AutoAdvanceTests(unittest.TestCase):
+    """F328: sprint-auto-advance.py (the Stop hook). The recorded cases pin the common shapes; these pin the
+    shapes they do not: every gate on its own, the footer coupling (CLAUDE.md IMP-3, Sprint 70), the F193
+    marker rules, the PowerShell value comparisons, and the exception path (R-6)."""
+
+    ASK = "Task 2 is done. Want me to proceed to Task 3?"
+    VEL_OK = "| Task 1 | 84 | DONE | x |\n"
+    PLAN_OK = ("# Sprint 84 Plan\n\n**Status**: APPROVED\n\n"
+               "- **5.1.2 F-PRECHECK**: 2026-11-01, all six clean\n"
+               "- **5.1.5 WinWright sweep**: N/A -- no lib/ui change this sprint\n"
+               "- **5.1.9 MV rehearsal**: ran every step on the build\n"
+               "## Task 1 -- thing\n")
+
+    def setUp(self):
+        self.module = load_hook("sprint-auto-advance.py")
+        self.tmp = tempfile.TemporaryDirectory()
+        self.addCleanup(self.tmp.cleanup)
+
+    def project(self, number=84, status="Phase 4 Execution", approved=True, plan=None, velocity=None,
+                retro=False, status_file=True, plan_number=None, status_number=None):
+        """A throwaway project folder; returns its path as text."""
+        root = Path(self.tmp.name) / f"p{len(list(Path(self.tmp.name).iterdir()))}"
+        (root / ".claude").mkdir(parents=True)
+        (root / "docs" / "sprints").mkdir(parents=True)
+        if status_file:
+            current = {"number": status_number if status_number is not None else number, "status": status}
+            if approved != "missing":
+                current["plan_approved"] = approved
+            (root / ".claude" / "sprint_status.json").write_text(json.dumps({"current_sprint": current}), encoding="utf-8")
+        if plan is not None:
+            (root / "docs" / "sprints" / f"SPRINT_{plan_number or number}_PLAN.md").write_bytes(plan.encode("utf-8"))
+        if retro:
+            (root / "docs" / "sprints" / f"SPRINT_{number}_RETROSPECTIVE.md").write_text("retro", encoding="utf-8")
+        if velocity is not None:
+            (root / "docs").mkdir(exist_ok=True)
+            (root / "docs" / "CODING_VELOCITY.md").write_text(velocity, encoding="utf-8")
+        return str(root)
+
+    def decide(self, cwd, message, number=84, branch=None):
+        return self.module.decide({"cwd": cwd, "last_assistant_message": message,
+                                   "branch_override": branch or f"feature/20261105_Sprint_{number}"})
+
+    # ---- Gate 1 / 1b / 1c ---------------------------------------------------------------------------
+    def test_gate1_branch_rules(self):
+        """Does NOT catch a branch the git call itself would report differently; branch_override replaces git."""
+        cwd = self.project(plan=self.PLAN_OK)
+        self.assertEqual(self.decide(cwd, self.ASK).code, 2)
+        for branch in ("main", "develop", "feature/20261105_Sprint_84_extra", "feature/x_Sprint_84",
+                       "feature/20261105_Sprint_84_allow_stop_hook_bypass"):
+            self.assertEqual(self.decide(cwd, self.ASK, branch=branch).code, 0, branch)
+        self.assertEqual(self.module.decide({"cwd": cwd, "last_assistant_message": self.ASK}).code, 0)  # git: not a repo
+
+    def test_gate1b_window_opens_at_plan_approval(self):
+        """Does NOT catch a plan whose Status line sits below line 20; the PowerShell read 20 lines too."""
+        no_plan = self.project(plan=None)
+        self.assertEqual(self.decide(no_plan, self.ASK).code, 0)                       # Phase 1: no plan file
+        unapproved = self.project(approved=False, plan=self.PLAN_OK)
+        self.assertEqual(self.decide(unapproved, self.ASK).code, 0)                    # status file: drafted
+        for approved in ("false", 0):
+            self.assertEqual(self.decide(self.project(approved=approved, plan=self.PLAN_OK), self.ASK).code, 0, approved)
+        for approved in (True, None, "missing", 1):
+            self.assertEqual(self.decide(self.project(approved=approved, plan=self.PLAN_OK), self.ASK).code, 2, approved)
+        draft = "# Plan\n**Status**: DRAFT -- awaiting approval\n"
+        self.assertEqual(self.decide(self.project(status_file=False, plan=draft), self.ASK).code, 0)   # plan line, no status file
+        self.assertEqual(self.decide(self.project(plan=draft), self.ASK).code, 0)                      # status names THIS sprint as approved, the plan line still exempts
+        # a status file naming ANOTHER sprint must not let a historical DRAFT line exempt this one
+        self.assertEqual(self.decide(self.project(plan=draft, status_number=83), self.ASK).code, 2)
+        late = "\n" * 25 + draft
+        self.assertEqual(self.decide(self.project(status_file=False, plan=late), self.ASK).code, 2)
+
+    def test_gate1c_window_closes_at_manual_validation_and_prose_does_not_close_it(self):
+        """Does NOT catch a status string shaped unlike the listed ones; those fall through to the retro-file test."""
+        closed = ("Phase 5.3 Manual Validation -- awaiting Harold", "Sprint 84 phase 7 retro", "CLOSE-OUT (Phase 7.7.5).",
+                  "Sprint 69 NOT PLANNED, NOT APPROVED. Phase 8 Release Cycle", "Executing (Phase 5.3)", "completed",
+                  "Sprint 84 Release Cycle")
+        for status in closed:
+            cwd = self.project(status=status, plan=self.PLAN_OK, velocity=self.VEL_OK)
+            self.assertEqual(self.decide(cwd, self.ASK).code, 0, status)
+        prose = ("Sprint 84 Phase 4 EXECUTION. Plan APPROVED with standing approval through Manual Validation.",
+                 "Phase 4 Execution", "", "Executing (Phase 4)", "Executing (Phase 5.2)")
+        for status in prose:
+            # full evidence and velocity rows: a wrongly closed window would then ALLOW (F193 passes), so a 2 here
+            # is the question gate alone, not the evidence gate blocking by accident
+            cwd = self.project(status=status, plan=self.PLAN_OK, velocity=self.VEL_OK)
+            self.assertEqual(self.decide(cwd, self.ASK).code, 2, status)
+        self.assertEqual(self.decide(self.project(retro=True, plan=self.PLAN_OK), self.ASK).code, 0)   # retro file
+        # a retro file of ANOTHER sprint (status names 83) exempts nothing
+        other = self.project(status_number=83, plan=self.PLAN_OK)
+        (Path(other) / "docs" / "sprints" / "SPRINT_84_RETROSPECTIVE.md").write_text("old", encoding="utf-8")
+        self.assertEqual(self.decide(other, self.ASK).code, 2)
+
+    # ---- F193 evidence gate -------------------------------------------------------------------------
+    def mv(self, plan, number=84, velocity=VEL_OK, approved=True):
+        cwd = self.project(number=number, status="Phase 5.3 Manual Validation", approved=approved, plan=plan, velocity=velocity)
+        return self.decide(cwd, "Ready.", number=number)
+
+    def test_f193_marker_rules(self):
+        """Does NOT catch a marker recorded in a table row; the gate wants the bullet form, as the PowerShell did."""
+        self.assertEqual(self.mv(self.PLAN_OK).code, 0)
+        ok_empty_with_detail = self.PLAN_OK.replace("2026-11-01, all six clean", "\n  1. mirror sync: CLEAN")
+        self.assertEqual(self.mv(ok_empty_with_detail).code, 0)
+        bad = {
+            "pending": self.PLAN_OK.replace("2026-11-01, all six clean", "PENDING"),
+            "tbd": self.PLAN_OK.replace("2026-11-01, all six clean", "  tbd later"),
+            "bare N/A": self.PLAN_OK.replace("N/A -- no lib/ui change this sprint", "N/A"),
+            # The value is empty ONLY when the marker is the last line: anywhere else the greedy \s* after the colon
+            # reads on into the NEXT line and captures that as the value (carried over unchanged from the
+            # PowerShell). So the "indented detail follows" branch is reachable only at the end of the file too,
+            # and ok_empty_with_detail above passes because (.*) captured the detail line, not through that branch.
+            "empty value": self.PLAN_OK.replace("- **5.1.2 F-PRECHECK**: 2026-11-01, all six clean\n", "")
+                           + "- **5.1.2 F-PRECHECK**:\n",
+            "prose only": self.PLAN_OK.replace("- **5.1.2 F-PRECHECK**: 2026-11-01, all six clean", "The 5.1.2 F-PRECHECK was run."),
+            "absent": self.PLAN_OK.replace("- **5.1.5 WinWright sweep**: N/A -- no lib/ui change this sprint\n", ""),
+        }
+        for name, plan in bad.items():
+            verdict = self.mv(plan)
+            self.assertEqual(verdict.code, 2, name)
+            self.assertTrue(verdict.stderr.startswith("[BLOCKED by sprint-auto-advance -- F193 Phase 5 evidence gate]"))
+        self.assertIn("5.1.2 F-PRECHECK", self.mv(bad["pending"]).stderr)
+        self.assertIn("5.1.5 WinWright sweep", self.mv(bad["absent"]).stderr)
+        self.assertEqual(self.mv(self.PLAN_OK.replace("N/A -- no lib/ui change", "n/a: no lib/ui change")).code, 0)
+
+    def test_f193_sprint_thresholds_and_approval_scope(self):
+        """Does NOT catch a sprint number above 99; the thresholds are plain integers."""
+        no_rehearsal = "\n".join(line for line in self.PLAN_OK.splitlines() if "5.1.9" not in line) + "\n"
+        self.assertEqual(self.mv(no_rehearsal, number=77).code, 0)    # 5.1.9 starts at Sprint 78
+        v78 = self.mv(no_rehearsal, number=78)
+        self.assertEqual(v78.code, 2)
+        self.assertIn("5.1.9 MV rehearsal", v78.stderr)
+        self.assertEqual(self.mv("# plan\n", number=62).code, 0)      # before Sprint 63 nothing is checked
+        self.assertEqual(self.mv("# plan\n", number=63, approved=False).code, 0)   # not approved: the gate does not run
+        self.assertEqual(self.mv("# plan\n", number=63).code, 2)
+
+    def test_f193_velocity_rows_need_one_task_row_per_card(self):
+        """Does NOT catch a row for the wrong sprint number inside the first column; the pattern keys on column 2."""
+        plan = self.PLAN_OK + "## Task 2 -- other\n"
+        rows = ("| planning | 84 | DONE | x |\n| Task 1 | 84 | DONE | x |\n")
+        self.assertEqual(self.mv(plan, velocity=rows).code, 2)   # 1 task row (planning excluded), 2 cards
+        message = self.mv(plan, velocity=rows).stderr
+        self.assertIn("CODING_VELOCITY.md task actuals rows (1 found for Sprint 84, 2 needed", message)
+        self.assertEqual(self.mv(plan, velocity=rows + "| Task 2 | 84 | MOVED | x |\n").code, 0)
+        self.assertEqual(self.mv(plan, velocity=rows + "| Task 2 | 83 | DONE | x |\n").code, 2)
+        self.assertEqual(self.mv(plan, number=84, velocity=None).code, 2)       # no velocity file at all: 0 rows
+        self.assertEqual(self.mv(self.PLAN_OK, number=78, velocity=None).code, 0)   # before Sprint 79: not checked
+
+    def test_f193_crlf_plan_keeps_working(self):
+        """Does NOT catch a lone CR line ending; no plan in this repo uses one."""
+        crlf = self.PLAN_OK.replace("\n", "\r\n")
+        self.assertEqual(self.mv(crlf).code, 0)
+        self.assertEqual(self.mv(crlf.replace("2026-11-01, all six clean", "PENDING")).code, 2)
+        self.assertEqual(self.mv(crlf.replace("2026-11-01, all six clean", "\r\n  1. detail line")).code, 0)
+
+    # ---- Gate 2 / 3 : the footer coupling ------------------------------------------------------------
+    COMMITMENTS = ("Starting the sign-in fix now.", "I'll start the sign-in fix.", "Let me start the sign-in fix.",
+                   "Next: F169, the dropdown.", "Up next is F169.", "F169 is next.", "Done, and next I will wire it.",
+                   "On to the sign-in fix.", "Going to task 3.", "Now executing the fix.", "Run the suite now.",
+                   "Time to start the fix.", "Done, which I will verify.")
+
+    def test_every_commitment_form_is_still_caught_with_every_footer(self):
+        """IMP-3 (Sprint 70): an END-ANCHORED pattern dies silently when the closing convention changes. Does NOT catch
+        a footer shaped unlike the four tried here (the strip regex is the only code that knows the footer's shape)."""
+        cwd = self.project(plan=self.PLAN_OK)
+        for message in self.COMMITMENTS:
+            self.assertEqual(self.decide(cwd, message).code, 2, "bare: " + message)
+            for footer in FOOTERS:
+                verdict = self.decide(cwd, f"Task 2 is done. {message}\n\n{footer}")
+                self.assertEqual(verdict.code, 2, f"{message!r} + {footer!r}")
+
+    def test_descriptive_and_copular_sentences_are_not_commitments(self):
+        """Does NOT catch a descriptive sentence this list does not contain; the exclusion is the PowerShell list."""
+        cwd = self.project(plan=self.PLAN_OK)
+        for message in ("Starting the app was not required.", "The retry is continuing with the same backoff.",
+                        "The count is reported next.", "The MSIX is ready to upload.", "It was proceeding with the fix.",
+                        "Diagnostics are written to the log, and the count is reported next.", "Done."):
+            for footer in ("", "\n\n" + FOOTERS[0]):
+                self.assertEqual(self.decide(cwd, message + footer).code, 0, message)
+        # FORM 6 lookbehind (six fixed-width lookbehinds in place of one .NET variable-width one)
+        self.assertEqual(self.decide(cwd, "Continuing with the retry.").code, 2)
+        for copula in ("is", "are", "was", "were", "been", "being"):
+            self.assertEqual(self.decide(cwd, f"It {copula} continuing with the retry.").code, 0, copula)
+        self.assertEqual(self.decide(cwd, "Insisting is continuing with the retry.").code, 0)
+
+    def test_questions_phrases_and_the_whitelist(self):
+        """Does NOT catch a procedural phrase absent from the 13 patterns; the list is carried over unchanged."""
+        cwd = self.project(plan=self.PLAN_OK)
+        self.assertEqual(self.decide(cwd, "Task 2 is done?").code, 2)
+        self.assertEqual(self.decide(cwd, "Task 2 is done?\n\n" + FOOTERS[0]).code, 0)   # the footer hides a bare '?': unchanged behavior
+        for phrase in ("Should I continue", "Which option is better", "Let me know if that works", "Is this OK",
+                       "Do you want me to push", "What should I do", "Awaiting your approval", "or wait"):
+            self.assertEqual(self.decide(cwd, phrase + ".").code, 2, phrase)
+        for legit in ("Stopping criterion 2: blocked. Want me to proceed?", "The plan is ambiguous here. Should I proceed?",
+                      "This would change the approved sprint scope. Should I proceed?", "Decision is yours. Which option?",
+                      "Please provide retrospective feedback. Should I continue?", "Critical bug found. Should I stop?"):
+            self.assertEqual(self.decide(cwd, legit).code, 0, legit)
+        self.assertEqual(self.decide(cwd, "").code, 0)
+
+    def test_block_messages_are_the_gate_text(self):
+        """Does NOT catch a changed wording past the first line and the named fields; those are pinned."""
+        cwd = self.project(plan=self.PLAN_OK)
+        verdict = self.decide(cwd, self.ASK)
+        self.assertEqual(verdict.stderr.splitlines()[0], "[BLOCKED by sprint-auto-advance hook]")
+        self.assertIn("on branch 'feature/20261105_Sprint_84' (a sprint feature branch)", verdict.stderr)
+        self.assertIn("Hook source: .claude/hooks/sprint-auto-advance.py", verdict.stderr)
+        self.assertEqual(verdict.stdout, "")
+
+    # ---- value comparisons and the exception path ------------------------------------------------------
+    def test_powershell_value_comparisons(self):
+        """Does NOT catch a JSON array or object as the value; PowerShell never equals a boolean either."""
+        eq = self.module.ps_eq_bool
+        for value, want, expected in ((True, True, True), (False, False, True), (True, False, False), (False, True, False),
+                                      (1, True, True), (0, False, True), (2, True, False), ("False", False, True),
+                                      ("true", True, True), ("yes", True, False), (None, False, False), (None, True, False),
+                                      ([], False, False), ({}, True, False)):
+            self.assertEqual(eq(value, want), expected, (value, want))
+        self.assertEqual(self.module.ps_str(84.0), "84")
+        self.assertEqual(self.module.ps_str(None), "")
+        self.assertEqual(self.module.ps_str("84"), "84")
+
+    def test_unexpected_exception_is_a_visible_hook_error_not_a_pass(self):
+        """R-6. The plan path is a FOLDER: the Gate 1b read swallows that (the PowerShell catch), the F193 read
+        does not, so the process exits 1 with the one-line notice. Does NOT catch an error inside hooklib.run."""
+        cwd = self.project(status="Phase 5.3 Manual Validation", plan=None)
+        (Path(cwd) / "docs" / "sprints" / "SPRINT_84_PLAN.md").mkdir()
+        payload = {"cwd": cwd, "last_assistant_message": "x", "branch_override": "feature/20261105_Sprint_84"}
+        code, _out, err = run_hook("sprint-auto-advance.py", json.dumps(payload).encode("utf-8"))
+        self.assertEqual(code, hooklib.HOOK_ERROR, err)
+        self.assertIn("[sprint-auto-advance] internal error", err)
+
+    def test_malformed_input_and_status_files(self):
+        """Does NOT catch a status file that parses but holds the wrong types; load_status treats it as 'not this sprint'."""
+        for stdin in (b"", b"  ", b"not json", b"{}", b"[1]"):
+            self.assertEqual(run_hook("sprint-auto-advance.py", stdin)[0], 0, stdin)
+        self.assertEqual(self.module.decide({"last_assistant_message": 5, "branch_override": "main"}).code, 0)
+        for text in ("{bad", "[]", '{"current_sprint": 5}', '{"current_sprint": {"number": [1]}}'):
+            cwd = self.project(status_file=False, plan=self.PLAN_OK)
+            (Path(cwd) / ".claude" / "sprint_status.json").write_text(text, encoding="utf-8")
+            self.assertEqual(self.decide(cwd, self.ASK).code, 2, text)   # unreadable status: normal blocking resumes
+        cwd = self.project(status_file=False, plan=self.PLAN_OK)
+        (Path(cwd) / ".claude" / "sprint_status.json").write_bytes(
+            b"\xef\xbb\xbf" + json.dumps({"current_sprint": {"number": 84, "plan_approved": False}}).encode("utf-8"))
+        self.assertEqual(self.decide(cwd, self.ASK).code, 0)            # a BOM does not hide the file
+
+    def test_settings_registers_the_auto_advance_stop_hook_in_python_form_with_its_timeout(self):
+        """Does NOT catch Claude Code failing to run the command; it pins the registration text and timeout."""
+        settings = json.loads((REPO / ".claude" / "settings.json").read_text(encoding="utf-8"))
+        entries = [h for group in settings["hooks"]["Stop"] for h in group["hooks"] if "sprint-auto-advance" in h["command"]]
+        self.assertEqual([e["command"] for e in entries],
+                         ['python "${CLAUDE_PROJECT_DIR}/.claude/hooks/sprint-auto-advance.py"'])
+        self.assertEqual(entries[0]["timeout"], 15)
 
 
 if __name__ == "__main__":

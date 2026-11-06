@@ -179,6 +179,15 @@ to be classified; they are listed here so the inventory is complete.
   timeout so the hook's two possible calls fit its 20 second budget. A missing, offline or slow `gh` skips check 3c (fail
   open), as the PowerShell `catch { }` did. Markdown is read as bytes and decoded `utf-8-sig`, so CRLF survives. Registered
   in Python form under `Stop`; the `.ps1` is kept until F329.
+- Sprint 84 F328 (GitHub #556), 2026-11-06: `sprint-auto-advance.ps1` (Stop hook, 756 lines) converted to
+  `sprint-auto-advance.py` (top-level route, 55 recorded cases plus 16 footer cases added for R-5). All 13 commitment
+  patterns, 13 question patterns and 40 whitelist patterns keep their order and text; every one is compiled
+  case-insensitive (the source has no `-cmatch`). One .NET construct has no Python spelling: FORM 6's variable-width
+  lookbehind `(?<!\b(is|are|was|were|been|being)\s)` became six fixed-width lookbehinds. JSON `-eq $true` and `-eq $false`
+  comparisons are reproduced by `ps_eq_bool`. One deliberate difference (R-6): the PowerShell wrapped the whole F193
+  evidence evaluation in `try { } catch { }`, so an unreadable plan or velocity file fell through silently; the Python
+  lets that exception reach `hooklib.run` (exit 1, a visible hook error). Only the status-file and plan-head reads keep
+  the swallow. Registered in Python form under `Stop`; the `.ps1` is kept until F329.
 
 ### Conversion order
 

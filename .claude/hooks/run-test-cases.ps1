@@ -14,7 +14,7 @@
     Hook routing is by DIRECTORY (F130-S51 R-2, Sprint 51 -- the harness was
     previously hard-wired to sprint-auto-advance.ps1, so the other hooks had
     no test coverage at all and their false positives went unnoticed):
-      test-cases/*.json                  -> sprint-auto-advance.ps1  (Stop)
+      test-cases/*.json                  -> sprint-auto-advance.py   (Stop; Python since F328, Sprint 84)
       test-cases/stash-guard/*.json      -> block-carry-forward-stash.py (PreToolUse)
       test-cases/closeout/*.json         -> verify-closeout-complete.py (Stop; Python since F327, Sprint 84)
       test-cases/sprint-cards/*.json     -> require-sprint-cards.py (PreToolUse)
@@ -49,7 +49,7 @@ if (-not (Test-Path -LiteralPath $casesDir)) { throw "Cases dir not found: $case
 
 # subdirectory name -> hook script
 $routes = @{
-    ''             = 'sprint-auto-advance.ps1'
+    ''             = 'sprint-auto-advance.py'    # Sprint 84 F328; Python since F321 (Sprint 83 ADR-0051)
     'stash-guard'  = 'block-carry-forward-stash.py'          # Sprint 84 F326; Python since F321 (Sprint 83 ADR-0051)
     'closeout'     = 'verify-closeout-complete.py'           # Sprint 84 F327; Python since F321 (Sprint 83 ADR-0051)
     'sprint-cards' = 'require-sprint-cards.py'               # Sprint 84 F326; Python since F321 (Sprint 83 ADR-0051)

@@ -602,7 +602,7 @@ close-out depends on; a port that changes one quirk silently disables a gate.
 **Model**: Sonnet -- *why not the cheaper tier*: the most patterns of any hook, with case flags per call and
 message-shape coupling that has silently disabled this gate before (Sprint 70).
 **Delegation checklist included in the sub-agent prompt** (when delegated): yes
-**Executed-by** (filled at completion):
+**Executed-by** (filled at completion): Sonnet sub-agent, as assigned (2026-11-06 12:55-14:32). sprint-auto-advance.py with the same gate order, patterns and block text; Stop registration swapped to the .py last, after the mutation run; .ps1 kept for F329. Hook suite 195/195 (main session re-ran it: 195/195); test_pylib.py 74 OK on Windows (Linux CI pending, AC-3); parity probe 1 of 454 payloads differ (non-JSON stdin; neither blocks); 19 mutants KILLED. R-6 deviation: an unreadable plan or velocity file now exits 1 visibly instead of the .ps1's silent catch. Open finding (not applied; changes live gate behavior): the ? detector is end-anchored to the raw message, so a footer hides a trailing question mark; asked at Manual Validation.
 **Step-types**: HOOK, TEST-UNIT. **Est-Effort**: 150-260m.
 
 ## Task 8 -- F345: iOS Simulator smoke and screen check on the macos-26 runner, plus the privacy manifest (NEW)
