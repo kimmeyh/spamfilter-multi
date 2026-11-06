@@ -120,6 +120,10 @@ def gh(*args: str, cwd: str | os.PathLike | None = None, timeout: int = 8) -> tu
     The default timeout is 8 seconds so the two calls the close-out hook can make (16 seconds at
     most) finish inside that hook's 20 second budget in settings.json; a slow gh is then skipped
     instead of the whole hook being killed.
+
+    Sprint 84 5.1.2 F6-1: the failure code tells the caller WHY, so it can print a notice that the
+    check did not run: GH_NOT_FOUND (127) when gh is not installed, GH_TIMEOUT (124) when it timed
+    out, 1 for any other launch failure; gh's own non-zero exit code passes through unchanged.
     """
     import subprocess
 
@@ -128,8 +132,25 @@ def gh(*args: str, cwd: str | os.PathLike | None = None, timeout: int = 8) -> tu
             ["gh", *args], cwd=str(cwd) if cwd else None, capture_output=True,
             text=True, encoding="utf-8", errors="replace", timeout=timeout, check=False)
         return done.returncode, done.stdout
+    except FileNotFoundError:
+        return GH_NOT_FOUND, ""
+    except subprocess.TimeoutExpired:
+        return GH_TIMEOUT, ""
     except Exception:  # noqa: BLE001
         return 1, ""
+
+
+GH_NOT_FOUND = 127
+GH_TIMEOUT = 124
+
+
+def gh_failure_reason(code: int) -> str:
+    """Words for a non-zero gh() code, for a 'check did not run' notice."""
+    if code == GH_NOT_FOUND:
+        return "gh is not installed"
+    if code == GH_TIMEOUT:
+        return "gh timed out"
+    return f"gh exit code {code}"
 
 
 def find_tool(*names: str) -> str | None:

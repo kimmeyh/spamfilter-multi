@@ -351,8 +351,18 @@ def check_velocity_rows(cwd: str, sprint_num: int, violations: list):
             f"| <Item> | {sprint_num} | DONE | <est> | <est-wall> | <act> | <act-wall> | <notes> |")
 
 
-def check_open_issues(cwd: str, violations: list):
-    """3c: open sprint-labeled GitHub issues, POST-MERGE ONLY. Any git or gh failure skips the check."""
+def check_open_issues(cwd: str, violations: list, notices=None):
+    """3c: open sprint-labeled GitHub issues, POST-MERGE ONLY. Any git or gh failure skips the check.
+
+    Sprint 84 5.1.2 F6-1: a gh failure still fails OPEN, but adds a notice to `notices` so the user
+    learns that check 3c did not run (a silent skip looked the same as "no open cards")."""
+    if notices is None:
+        notices = []
+
+    def skipped(reason: str):
+        notices.append(f"check 3c did not run: gh unavailable ({reason})")
+
+    _code, remote = common.git("remote", "get-url", "origin", cwd=cwd)
     _code, remote = common.git("remote", "get-url", "origin", cwd=cwd)
     repo_url = remote.strip()
     _code, branch_out = common.git("branch", "--show-current", cwd=cwd)
@@ -362,11 +372,15 @@ def check_open_issues(cwd: str, violations: list):
     code, pr_json = common.gh("pr", "list", "--repo", repo_url, "--head", branch, "--state", "all",
                               "--json", "state,mergedAt", cwd=cwd)
     pr_merged = False
-    if code == 0 and pr_json.strip():
+    if code != 0:
+        skipped(common.gh_failure_reason(code))
+        return
+    if pr_json.strip():
         try:
             prs = json.loads(pr_json)
         except ValueError:
-            return  # unreadable gh output: skip, as the PowerShell catch { } did
+            skipped("unreadable gh output")  # fail open, as the PowerShell catch { } did
+            return
         for pr in prs if isinstance(prs, list) else []:
             if isinstance(pr, dict) and (str(pr.get("state")).lower() == "merged" or _truthy(pr.get("mergedAt"))):
                 pr_merged = True
@@ -374,11 +388,16 @@ def check_open_issues(cwd: str, violations: list):
         return
     code, issue_json = common.gh("issue", "list", "--repo", repo_url, "--label", "sprint", "--state", "open",
                                  "--json", "number", cwd=cwd)
-    if code != 0 or not issue_json.strip():
+    if code != 0:
+        skipped(common.gh_failure_reason(code))
+        return
+    if not issue_json.strip():
+        skipped("empty gh output")
         return
     try:
         open_issues = json.loads(issue_json)
     except ValueError:
+        skipped("unreadable gh output")
         return
     if isinstance(open_issues, list) and open_issues:
         nums = ", ".join(f"#{issue.get('number')}" for issue in open_issues if isinstance(issue, dict))
@@ -451,8 +470,11 @@ def decide(payload: dict) -> hooklib.Verdict:
     check_executed_by(status, cwd, sprint_num, violations)
     check_previous_summary(cwd, sprint_num, violations)
     check_velocity_rows(cwd, sprint_num, violations)
-    check_open_issues(cwd, violations)
+    notices: list = []
+    check_open_issues(cwd, violations, notices)
 
+    for line in notices:
+        hooklib.notice(line)   # hooklib.run delivers it: systemMessage on allow, "Note:" on a block
     if not violations:
         return hooklib.allow()
     return hooklib.block(BLOCK_TEMPLATE.format(bullets="\n".join(f"  - {v}" for v in violations)))

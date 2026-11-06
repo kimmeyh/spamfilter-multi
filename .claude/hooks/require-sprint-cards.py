@@ -62,7 +62,9 @@ def read_status(path: str):
     try:
         with open(path, encoding="utf-8-sig") as handle:
             return json.load(handle)
-    except (OSError, ValueError):
+    except (OSError, ValueError) as exc:
+        # Sprint 84 5.1.2 F6-2: the file EXISTS, so the gate turning off must be visible.
+        hooklib.notice(f"sprint_status.json unreadable ({type(exc).__name__}: {exc}); sprint gates skipped")
         return None
 
 

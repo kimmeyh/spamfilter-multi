@@ -188,6 +188,14 @@ to be classified; they are listed here so the inventory is complete.
   evidence evaluation in `try { } catch { }`, so an unreadable plan or velocity file fell through silently; the Python
   lets that exception reach `hooklib.run` (exit 1, a visible hook error). Only the status-file and plan-head reads keep
   the swallow. Registered in Python form under `Stop`; the `.ps1` is kept until F329.
+- Sprint 84 5.1.2 F6, 2026-11-06: fail-open stays, but it is no longer silent. A `gh` failure in check 3c of
+  `verify-closeout-complete.py` now gives the notice "check 3c did not run: gh unavailable (<reason>)"; an existing but
+  unreadable `sprint_status.json` gives "sprint_status.json unreadable (<error>); sprint gates skipped"; `hooklib.run`
+  gives "[<hook>] input unreadable (<why>); allowed without checking" for non-empty input that is not a JSON object. All
+  three still allow (exit 0). Claude Code never shows stderr of a hook that exits 0, so `hooklib.notice()` queues the
+  text and `hooklib.run` delivers it as the `systemMessage` stdout field, merged into any JSON the hook already prints
+  (one object), or as a "Note:" paragraph in the stderr reason on a block. A hook with plain-text stdout
+  (`block-commit-during-mutation`) gets the notice on stderr, which is not shown.
 
 ### Conversion order
 

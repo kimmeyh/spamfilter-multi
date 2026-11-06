@@ -80,6 +80,14 @@ def run_hook(filename: str, stdin: bytes, **extra_env):
     return done.returncode, done.stdout.decode("utf-8", "replace"), done.stderr.decode("utf-8", "replace")
 
 
+def drain_notices() -> list:
+    """The notices queued by hooklib.notice in this process, and forget them (5.1.2 F6)."""
+    got = list(hooklib._PENDING)
+    hooklib._PENDING.clear()
+    hooklib._NOTICES_SEEN.clear()
+    return got
+
+
 def write_lock(project: Path, file: str, created: datetime, bom: bool = False, raw: str | None = None):
     folder = project / ".claude" / "mutation-locks"
     folder.mkdir(parents=True, exist_ok=True)
@@ -172,6 +180,70 @@ class HooklibTests(unittest.TestCase):
         self.assertEqual(done.returncode, hooklib.HOOK_ERROR)
         self.assertEqual(hooklib.HOOK_ERROR, 1)
         self.assertIn(b"internal error, command allowed", done.stderr)
+
+
+    def test_run_notices_unreadable_input_but_still_allows(self):
+        """5.1.2 F6-3. Does NOT catch a hook that ignores a parsed-but-wrong payload (a JSON object with
+        the wrong keys); only input that is not a JSON object is noticed. Does not prove Claude Code
+        displays the systemMessage; it pins the one-object JSON on stdout and exit 0."""
+        for stdin in (b"not json", b"[1,2]", b"42"):
+            code, out, err = run_hook("require-sprint-cards.py", stdin)
+            self.assertEqual((code, err), (0, ""), stdin)
+            text = json.loads(out)["systemMessage"]
+            self.assertIn("[require-sprint-cards] input unreadable (", text, stdin)
+        for stdin in (b"", b"  \n", b"{}"):
+            code, out, err = run_hook("require-sprint-cards.py", stdin)
+            self.assertEqual((code, out, err), (0, "", ""), stdin)
+
+    def test_apply_notices_merges_into_one_json_object_or_the_block_reason(self):
+        """5.1.2 F6-2/F6-3 merge rule. Does NOT catch a hook whose JSON stdout is nested differently from a
+        top-level object; and PLAIN TEXT stdout (block-commit-during-mutation) gets the notice on stderr,
+        which Claude Code does not show at exit 0, so that case is not made visible."""
+        apply = hooklib.apply_notices
+        self.assertEqual(apply(hooklib.allow(), []), hooklib.allow())
+        self.assertEqual(json.loads(apply(hooklib.allow(), ["a", "b"]).stdout), {"systemMessage": "a; b"})
+        own = json.dumps({"hookSpecificOutput": {"hookEventName": "PreToolUse", "additionalContext": "w"}})
+        merged = apply(hooklib.allow(stdout=own), ["n"])
+        self.assertEqual(json.loads(merged.stdout), {"hookSpecificOutput": {
+            "hookEventName": "PreToolUse", "additionalContext": "w"}, "systemMessage": "n"})
+        self.assertEqual(len(merged.stdout.splitlines()), 1)
+        again = apply(hooklib.allow(stdout=hooklib.system_message("old")), ["n"])
+        self.assertEqual(json.loads(again.stdout), {"systemMessage": "old; n"})
+        blocked = apply(hooklib.block("[BLOCKED] x"), ["n"])
+        self.assertEqual((blocked.code, blocked.stderr, blocked.stdout), (2, "[BLOCKED] x\n\nNote: n", ""))
+        text = apply(hooklib.allow(stdout="plain notes"), ["n"])
+        self.assertEqual((text.stdout, text.stderr), ("plain notes", "Note: n"))
+
+    def test_run_merges_a_notice_into_the_json_the_hook_prints(self):
+        """5.1.2 F6-2 end to end. Does NOT catch a hook that prints several JSON lines; it pins one object."""
+        with tempfile.TemporaryDirectory() as tmp:
+            script = Path(tmp) / "jsonhook.py"
+            script.write_text(
+                "import sys\nsys.path.insert(0, %r)\nimport hooklib\n"
+                "def decide(p):\n    hooklib.notice('gate skipped')\n"
+                "    return hooklib.allow(stdout='{\"hookSpecificOutput\": {\"additionalContext\": \"w\"}}')\n"
+                "hooklib.run('jsonhook', decide)\n" % str(HOOKS / "lib"), encoding="utf-8")
+            done = subprocess.run([sys.executable, str(script)], input=b"{}", capture_output=True, timeout=60)
+        self.assertEqual((done.returncode, done.stderr), (0, b""))
+        body = json.loads(done.stdout.decode("utf-8"))
+        self.assertEqual(body["systemMessage"], "gate skipped")
+        self.assertEqual(body["hookSpecificOutput"]["additionalContext"], "w")
+
+    def test_gh_failure_codes_name_the_reason(self):
+        """5.1.2 F6-1. Does NOT catch a gh that exits non-zero for a reason of its own; that code passes
+        through and is only worded as 'gh exit code N'."""
+        import subprocess as sp
+        real_run = sp.run
+        self.addCleanup(setattr, sp, "run", real_run)
+        for exc, code, words in ((FileNotFoundError("gh"), common.GH_NOT_FOUND, "not installed"),
+                                 (sp.TimeoutExpired("gh", 1), common.GH_TIMEOUT, "timed out"),
+                                 (OSError("boom"), 1, "exit code 1")):
+            def boom(*a, _e=exc, **k):
+                raise _e
+            sp.run = boom
+            got, out = common.gh("pr", "list")
+            self.assertEqual((got, out), (code, ""))
+            self.assertIn(words, common.gh_failure_reason(got))
 
 
 class PilotHookProcessTests(unittest.TestCase):
@@ -578,6 +650,34 @@ class PortedHookTests(unittest.TestCase):
                                      "status_path_override": str(path)})
         self.assertEqual(verdict.code, 0)
 
+    def test_status_unreadable_notice_only_when_the_file_exists(self):
+        """5.1.2 F6-2. Does NOT catch a status file that parses but holds the wrong shape, and does not
+        prove Claude Code shows the systemMessage; it pins that the notice is queued for run()."""
+        cards = load_hook("require-sprint-cards.py")
+        advance = load_hook("sprint-auto-advance.py")
+        with tempfile.TemporaryDirectory() as tmp:
+            bad = Path(tmp) / "status.json"
+            bad.write_bytes(b"\xff\xfe not json")
+            cwd = Path(tmp) / "proj"
+            (cwd / ".claude").mkdir(parents=True)
+            (cwd / ".claude" / "sprint_status.json").write_bytes(b"{bad")
+            for label, call in (
+                    ("cards", lambda: cards.decide({"tool_input": {"command": "git commit -m x"},
+                                                    "status_path_override": str(bad)})),
+                    ("advance", lambda: advance.load_status(str(cwd)))):
+                drain_notices()
+                call()
+                queued = drain_notices()
+                self.assertEqual(len(queued), 1, label)
+                self.assertIn("sprint_status.json unreadable (", queued[0], label)
+                self.assertIn("; sprint gates skipped", queued[0], label)
+            # A MISSING file is the normal non-sprint state: silent.
+            drain_notices()
+            cards.decide({"tool_input": {"command": "git commit -m x"},
+                          "status_path_override": str(Path(tmp) / "absent.json")})
+            advance.load_status(str(Path(tmp) / "nowhere"))
+            self.assertEqual(drain_notices(), [])
+
     def test_velocity_warning_is_hook_specific_output_json(self):
         """Does NOT catch a warning that Claude Code fails to display for another reason; it pins
         the JSON shape the runner and Claude Code both read."""
@@ -698,6 +798,39 @@ class PortedHookTests(unittest.TestCase):
         # gh prints text that is not JSON: fail open.
         common.gh = fake_gh((0, "rate limited"), (0, "rate limited"))
         self.assertEqual(module.decide(payload).code, 0)
+
+    def test_closeout_gh_failure_prints_a_notice_and_still_allows(self):
+        """5.1.2 F6-1: a gh failure fails open WITH a systemMessage that check 3c did not run. Does NOT catch
+        a git failure (no remote or branch), which still skips check 3c without a notice."""
+        module = load_hook("verify-closeout-complete.py")
+        real_git, real_gh = common.git, common.gh
+        self.addCleanup(setattr, common, "git", real_git)
+        self.addCleanup(setattr, common, "gh", real_gh)
+        common.git = lambda *a, **k: (0, "feature/20261030_Sprint_81\n" if a[:1] == ("branch",)
+                                      else "https://github.com/example/repo.git\n")
+        payload = self.closeout_payload("improvement-review-present-sprint",
+                                        branch_override="feature/20261030_Sprint_81")
+        merged = (0, '[{"state":"MERGED","mergedAt":"2026-11-01T00:00:00Z"}]')
+        cases = ((lambda *a, **k: (common.GH_NOT_FOUND, ""), "gh is not installed"),
+                 (lambda *a, **k: (common.GH_TIMEOUT, ""), "gh timed out"),
+                 (lambda *a, **k: (0, "rate limited") if a[:2] == ("pr", "list") else (0, ""), "unreadable gh output"),
+                 (lambda *a, **k: merged if a[:2] == ("pr", "list") else (1, ""), "gh exit code 1"),
+                 (lambda *a, **k: merged if a[:2] == ("pr", "list") else (0, "  "), "empty gh output"))
+        for fake, words in cases:
+            common.gh = fake
+            drain_notices()
+            verdict = module.decide(payload)
+            self.assertEqual(verdict.code, 0, words)
+            queued = drain_notices()
+            self.assertEqual(len(queued), 1, words)
+            shown = json.loads(hooklib.apply_notices(verdict, queued).stdout)["systemMessage"]
+            self.assertIn("check 3c did not run: gh unavailable (", shown, words)
+            self.assertIn(words, shown)
+        # gh works and nothing is open: no notice.
+        common.gh = lambda *a, **k: merged if a[:2] == ("pr", "list") else (0, "[]")
+        drain_notices()
+        verdict = module.decide(payload)
+        self.assertEqual((verdict.code, verdict.stdout, drain_notices()), (0, "", []))
 
     def test_closeout_claim_and_mid_sprint_patterns(self):
         """Gate 2: a mid-sprint signal beats a claim; each claim shape fires; case does not matter.

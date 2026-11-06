@@ -84,7 +84,9 @@ def load_status(cwd: str):
         return None, {}
     try:
         data = json.loads(read_markdown(path))
-    except (OSError, ValueError):
+    except (OSError, ValueError) as exc:
+        # Sprint 84 5.1.2 F6-2: the file EXISTS, so the gates turning off must be visible.
+        hooklib.notice(f"sprint_status.json unreadable ({type(exc).__name__}: {exc}); sprint gates skipped")
         return None, {}
     current = data.get("current_sprint") if isinstance(data, dict) else None
     return data, current if isinstance(current, dict) else {}
