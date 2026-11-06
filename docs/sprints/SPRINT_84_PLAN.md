@@ -198,6 +198,12 @@ on the branch, then ASKS Harold with the arm A and arm B numbers before the Doze
 final. Q-A = approved (2026-11-06). Q3 = 3: no code change; a full rescan of the affected folders re-sees the older
 rows and fills their stored suggestion. This is a Manual Validation note for Harold, not a card.
 
+**Mid-sprint answers (Harold, 2026-11-06 16:13)**: *"q1 a. revert q2 a fix it now"*. F280 Q = 1, revert: the arms
+showed 0 `Failed host lookup` in each arm (R-5 threshold 25 percent), so the `DozeScanTrigger.kt` network constraint
+and its test were removed; the results stay in `R76-1_BATTERY_AB_RESULTS.md`; F280 closes as "did not reproduce on the
+emulator". Auto-advance `?` finding Q = 1, fix now: `sprint-auto-advance.py` removes the status footer before the
+end-of-message `?` check (case violation-55, test updated, mutant KILLED, hook suite 196/196), under Task 7.
+
 **Q3. New finding (2026-11-06): the Review No Rule Items pop-up shows no "Suggested" button on older rows.** Harold's
 Windows screenshot: `news_40693@citorisc.net` shows Block Entire Domain with no "Suggested" mark, although a `news_`
 plus 4-6 digits sender is suggested Block Entire Domain since Sprint 83 MV Q9 = 2 (`rule_suggestion.dart:298-307`).
@@ -422,7 +428,7 @@ lands.
 **Model**: Sonnet -- *why not the cheaper tier*: emulator Doze measurement plus a native WorkManager change judged by a
 decision rule; Haiku-shaped only for the one-line constraint.
 **Delegation checklist included in the sub-agent prompt** (when delegated): yes
-**Executed-by** (filled at completion):
+**Executed-by** (filled at completion): Sonnet sub-agent, as assigned (2026-11-06 11:09-14:15). R77-BAT-4 arms A (unfixed), B (fix), C (fix, charger) on pixel34_updated API 34: 0 Failed host lookup in each arm (2 testable scans per arm; the test accounts are rejected at login and then skipped); dumpsys shows the Doze one-off gained CONNECTIVITY with the fix. T-1 4 tests, 4 of 4 mutants KILLED. R-5: under 25 percent, so revert. Harold (2026-11-06 16:13, mid-sprint Q = 1): revert; the Kotlin change and its test were removed, not committed. Results committed in R76-1_BATTERY_AB_RESULTS.md (91cec1de). iOS: BGAppRefreshTaskRequest has no network property (F67c input).
 **Step-types**: NATIVE-AND `[no-history]`, TEST-UNIT, DOCS. **Est-Effort**: 60-120m.
 
 _**Risk & rollback**_: a constraint that holds scans too long in Doze is the risk Q2 names; rollback is reverting the one

@@ -342,7 +342,7 @@ the Task 3 change (`networkConstraint` shared by both requests), measured in arm
   different amount of screen use, so that figure is not a clean comparison. Context: Task 2 found 0 `Failed host
   lookup` lines on doze-alarm runs in 11 Fold logs (`docs/research/F342_FOLD_BACKGROUND_ERRORS_S84.md`), so no
   evidence of the defect exists on either device. Sample size is small (2 testable scans per arm); this is a
-  non-reproduction, not a proof that it cannot occur. Recommendation: revert the constraint (Q2 decision pending with Harold).
+  non-reproduction, not a proof that it cannot occur. Recommendation: revert the constraint. Decision (Harold, 2026-11-06 16:13): revert; the change was not committed.
 - **Platform parity (R-6)**: Android WorkManager constraint (this change); Windows `-RunOnlyIfNetworkAvailable`
   (`powershell_script_generator.dart:63`); iOS: Apple's `BGAppRefreshTaskRequest` page
   (`developer.apple.com/tutorials/data/documentation/backgroundtasks/bgapprefreshtaskrequest.json`, read 2026-11-06)
