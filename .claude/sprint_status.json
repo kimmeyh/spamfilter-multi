@@ -1,15 +1,15 @@
 {
     "_description": "Sprint status file that persists across context compaction. Update after each phase/sub-phase completion.",
-    "_last_updated": "2026-11-06T00:18",
+    "_last_updated": "2026-11-06T00:45",
     "_usage": "Read this file after context compaction to restore sprint approval state and progress.",
     "_staleness_note": "This file had drifted 15 sprints (last updated at Sprint 35, 2026-04-19) before being refreshed at Sprint 50 close-out. It is a Phase 7.7 checklist item -- update it at every sprint close-out, not opportunistically.",
     "current_sprint": {
         "number": 84,
         "branch": "feature/20261105_Sprint_84",
-        "status": "Phase 8.4 Backlog Refinement pass 2",
-        "status_detail": "Phase 8 for the Sprint 83 cycle. 8.3 done: 0.24.0 MSIX and AAB built and verified (e8f70c95); Harold 2026-11-06: Microsoft Store 0.23.0 live, 0.24.0 in certification; Play 0.24.0 (versionCode 21) uploaded to closed testing, in review. Apple enrollment R6QG2A9SHS still pending, so F67a, F304 and F67b are out of Sprint 84. 8.4: Harold selects scope from the 20-item slate.",
+        "status": "Phase 3.7 Plan Approval",
+        "status_detail": "Scope selected 2026-11-06 (8.4 pass 2): MV-3c, F342, F341, F280, F326, F327, F328, F345. SPRINT_84_PLAN.md drafted; draft PR #548 (3.3.1). Waiting for Harold: Q-A approval, Q1 (F342 fixes), Q2 (F280 Class 2 change). Cards are created at 3.7.0 after approval.",
         "plan_approved": false,
-        "pr_number": null,
+        "pr_number": 548,
         "version": "0.24.0+21"
     },
     "previous_sprint": {
@@ -66,8 +66,8 @@
     ],
     "blocking_issues": [],
     "next_actions": [
-        "8.4 pass-2 scope selection: Harold selects from the 20-item list (Apple items excluded while enrollment is pending).",
-        "Phase 3 for Sprint 84; at 3.7.0b bump the version and move \"Last uploaded to Play\" to 0.24.0 (versionCode 21) in the same commit."
+        "Harold: answer Q-A, Q1, Q2 in SPRINT_84_PLAN.md.",
+        "After approval: 3.7.0 cards, 3.7.0b bump to 0.24.1+22 (and \"Last uploaded to Play\" to 0.24.0 versionCode 21), 3.7.1 PR body, then parallel block A (F326, F345, F342)."
     ],
     "next_sprint_targeted": {
         "number": 84,
