@@ -1,6 +1,6 @@
 # Sprint 84 Plan
 
-**Status**: DRAFT, waiting for Phase 3.7 approval. Scope selected by Harold at Phase 8.4 pass 2 (2026-11-06).
+**Status**: DRAFT, waiting for Phase 3.7 approval (Q-A, Q3; Q1 and Q2 answered 2026-11-06). Scope selected by Harold at Phase 8.4 pass 2 (2026-11-06).
 **Branch**: `feature/20261105_Sprint_84` (cut from the Sprint 83 branch, Phase 6.6) | **PR**: draft, created at 3.3.1
 (stays draft until 7.7.5)
 **Planner**: Opus 5.5 (top tier, `SPRINT_PLANNING.md:94-110`). Phase 3.2.2.1 audits by spot reads on 2026-11-06;
@@ -188,6 +188,28 @@ WorkManager may then hold the scan until the network is up, which in deep Doze c
    fix (arm B) stops it without raising wakelock time by more than 20 percent; otherwise ask me with the numbers
    (recommended).
 2. Always ask me with the results before changing the request.
+
+**Answers (Harold, 2026-11-06)**: *"q1. 1 q2 2"*. Q1 = 1: a F342 defect is fixed this sprint when the fix is under 4
+code files and 600 lines; larger ones become backlog cards. Q2 = 2: F280 runs the experiment and the fix with its test
+on the branch, then ASKS Harold with the arm A and arm B numbers before the Doze-alarm request change is committed as
+final. Q-A is still open.
+
+**Q3. New finding (2026-11-06): the Review No Rule Items pop-up shows no "Suggested" button on older rows.** Harold's
+Windows screenshot: `news_40693@citorisc.net` shows Block Entire Domain with no "Suggested" mark, although a `news_`
+plus 4-6 digits sender is suggested Block Entire Domain since Sprint 83 MV Q9 = 2 (`rule_suggestion.dart:298-307`).
+Cause: the review screen shows only the suggestion stored at scan time (`no_rule_review_screen.dart:568`,
+`item.email.suggestion`); a row is refreshed only when a scan sees the email again (`unmatched_email_store.dart:334`).
+Evidence (read-only copy of the production database): 220 unaddressed rows, 0 with a stored suggestion; 68 are `news_`
+senders, all stored 2026-09-24 19:08 and never seen again. The Results screen recomputes the suggestion
+(`results_display_screen.dart:79`), so the two screens disagree for the same email. Same shared code on all three
+platforms (no platform exception).
+1. Add a card to Sprint 84 (Sonnet, about 60-120m): when a row has no stored suggestion, compute it when the pop-up
+   opens. Old rows store the sender and the auth class but not the per-method SPF/DKIM/DMARC verdicts that the F323
+   R-2 "could not check" guard needs, so the card first proves whether the stored class can stand in for that guard;
+   if not, it reads the message headers when the pop-up opens, and shows no suggestion when they cannot be read.
+   Covers every existing row with no rescan (recommended).
+2. Backlog card only; this sprint does not change it.
+3. No code: a full rescan of the affected folders re-sees the rows and fills the suggestion.
 
 ---
 
