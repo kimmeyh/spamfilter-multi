@@ -1,23 +1,23 @@
 {
     "_description": "Sprint status file that persists across context compaction. Update after each phase/sub-phase completion.",
-    "_last_updated": "2026-11-05T19:29",
+    "_last_updated": "2026-11-05T20:07",
     "_usage": "Read this file after context compaction to restore sprint approval state and progress.",
     "_staleness_note": "This file had drifted 15 sprints (last updated at Sprint 35, 2026-04-19) before being refreshed at Sprint 50 close-out. It is a Phase 7.7 checklist item -- update it at every sprint close-out, not opportunistically.",
     "current_sprint": {
-        "number": 83,
-        "branch": "feature/20261031_Sprint_83",
-        "status": "Phase 7.7 Final Code Reviews",
-        "status_detail": "Manual Validation complete (Harold, 2026-11-04). 7.7.1: Copilot COMMENTED (3 inline, fixed c1d9a2c6), code-reviewer and silent-failure-hunter run (pass 1 and pass 2); fixes bab21526, 76f8a2bb, 4308c893, c1d9a2c6 and later. All non-decision findings fixed (c1d9a2c6, d91ee027, d7168716, 4f9ffe5b); 7.7.1 evidence line in the plan. Harold 2026-11-05: Q1 = 1, Q2 = 1, Q3 = 2 done in c9f21abf; Q4 = 1, Copilot replies posted and threads resolved; IMP-2 (b), IMP-3 and IMP-4 applied; IMP-1 = 1 (planning card line plus 5.1.2 backstop) applied (aca1fa3b). Improvement review: code-reviewer 1 MEDIUM (Gmail HTML-only link addresses), Harold Q5 = 1, fixed; silent-failure-hunter stopped by Harold; CI run 1 green. PR #534 set ready 2026-11-05; CI run 2 (42133702181) green. Close-out docs done (summary, master plan, Sprint 84 stub, Executed-by lines, release notes). Next: WinWright sweep at HEAD (lib/ui changed after sweep-head 3817aeb6), then the readiness announcement. Full suite 2026-11-05 (before c9f21abf): 3,587 passed / 15 skipped / 8 failed (5 pass alone; 3 Task Scheduler tests time out, Get-ScheduledTask 7-21 s on this machine, cause unknown).",
-        "plan_approved": true,
-        "pr_number": 534,
-        "version": "0.23.0+20"
+        "number": 84,
+        "branch": "feature/20261105_Sprint_84",
+        "status": "Phase 8.3 Microsoft Store Release",
+        "status_detail": "Phase 8 for the Sprint 83 cycle. 8.1 done (Harold, #547). 8.2 pass-1 sweep: cards closed, triad present, master plan rolled, Sprint 84 stub present, tag v0.24.0. 8.3: MSIX 0.24.0.0 build from the prod worktree (pulled 60 commits to 0a65fd22), then the Play AAB 0.24.0+21 (serialized). 8.4 scope selection waits for Harold after the uploads are in process.",
+        "plan_approved": false,
+        "pr_number": null,
+        "version": "0.24.0+21"
     },
     "previous_sprint": {
-        "number": 82,
-        "branch": "feature/20261027_Sprint_82",
-        "pr_number": 521,
-        "result": "Merged to develop f34be0d7 and main (#533) 8f588043 on 2026-10-31; tag v0.23.0. Closed by the merge: #522 #525 #526 #528-#532. Open as intended: #509 #510 #523 #524 #527.",
-        "docs": "docs/sprints/SPRINT_82_PLAN.md, SPRINT_82_RETROSPECTIVE.md, SPRINT_82_SUMMARY.md"
+        "number": "83",
+        "branch": "feature/20261031_Sprint_83",
+        "pr_number": "534",
+        "result": "Merged to develop 8bee2ce0 and main (#547) 0a65fd22 on 2026-11-05 (UTC 2026-11-06); tag v0.24.0 (annotated, pushed). Closed by the merge: #535-#546. Open as intended: #509 #510 #523 (Apple).",
+        "docs": "docs/sprints/SPRINT_83_PLAN.md, SPRINT_83_RETROSPECTIVE.md, SPRINT_83_SUMMARY.md"
     },
     "github_issues": {
         "sprint_73": "#428 (open, MV74-1), #422 (open, MV74-3), #430 closed, #434 (open, MV74-2), #431 closed, #432 closed, #433 (open, MV74-3). Also closed in pass 1: #426 (superseded by #428), #427 (leftover captured as F236).",
@@ -66,15 +66,13 @@
     ],
     "blocking_issues": [],
     "next_actions": [
-        "Harold: review and merge PR #521 -> develop (Claude never merges).",
-        "On merge: 6.6 open feature/<date>_Sprint_83 FROM feature/20261027_Sprint_82 (not develop, no stash); verify #522 #525 #526 #528-#532 closed and #509 #510 #523 #524 #527 open.",
-        "Phase 8: 8.1 Harold merges develop -> main (parallel); 8.2 pass-1 completeness sweep; 8.3 0.23.0 store release: rebuild the AAB (the 10-30 AAB predates the click fix; serialize builds), MSIX from the prod worktree, Store toast click owner step (app open and closed) before the Windows notes claim the click; 8.4 pass-2 scope selection.",
-        "Sprint 83 stub: docs/sprints/SPRINT_83_PLAN.md (MV-3, MV-4, M-6 click step, F322, iOS when Apple approves).",
-        "Rebuild the stale DEV Windows app (predates the M-5 fix) at a suitable point."
+        "8.3: verify the MSIX (self-test, manifest, size), then build and verify the AAB; Harold uploads both.",
+        "Harold: confirm whether 0.23.0 was submitted to the Microsoft Store (STORE_VERSION_STATUS Store row is 0.21.0, verified 2026-10-24) -- it decides the Windows notes range.",
+        "8.4 pass-2 scope selection: Harold selects from the 20-item list; then Phase 3 planning for Sprint 84."
     ],
     "next_sprint_targeted": {
-        "number": 83,
-        "stub": "docs/sprints/SPRINT_83_PLAN.md (written 2026-10-31 at Sprint 82 close-out)",
-        "committed": "Sprint 83 Manual Validation: MV-3 Fold F319 + F306, MV-4 Fold diagnostics and no-UID count (#524, #527), the M-6 click step. F322. iOS Tasks 1-3 (#509, #510, #523) when Apple approves R6QG2A9SHS. Backlog: F323 (F306 v2), F324."
+        "number": 84,
+        "stub": "docs/sprints/SPRINT_84_PLAN.md (written 2026-11-05 at Sprint 83 close-out)",
+        "committed": "MV-3c (YELLOW item), MV-5 iOS when Apple approves; scope from 8.4."
     }
 }
