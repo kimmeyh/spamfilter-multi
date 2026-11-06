@@ -365,5 +365,36 @@ void main() {
         expect(find.textContaining('Generated regex:'), findsNothing);
       });
     });
+
+    // Sprint 84 (F345 iOS Simulator run 1): on an iPhone-size screen the
+    // results area is short, and the empty-state Column overflowed by 27
+    // pixels (read_only_flows_test F25). A phone-size, short viewport must
+    // render every empty state with no layout exception.
+    // What this does NOT catch: an overflow at a size other than the two
+    // below, or one that appears only with the on-screen keyboard open.
+    group('short phone viewport (no overflow)', () {
+      for (final size in const [Size(390, 560), Size(320, 480)]) {
+        testWidgets('prompt and no-match states fit at ${size.width}x${size.height}',
+            (tester) async {
+          tester.view.devicePixelRatio = 1.0;
+          tester.view.physicalSize = size;
+          addTearDown(tester.view.reset);
+
+          await tester.pumpWidget(buildTestWidget());
+          await tester.pumpAndSettle();
+          expect(tester.takeException(), isNull,
+              reason: 'the "Enter a pattern" state must not overflow');
+          expect(find.textContaining('Enter a pattern'), findsOneWidget);
+
+          // A pattern that matches no demo email shows the no-match state.
+          await tester.enterText(find.byType(TextField), r'zzqqxx-no-such-sender');
+          await tester.tap(find.text('Test'));
+          await tester.pumpAndSettle();
+          expect(tester.takeException(), isNull,
+              reason: 'the "No matches found" state must not overflow');
+          expect(find.textContaining('No matches found'), findsOneWidget);
+        });
+      }
+    });
   });
 }

@@ -24,10 +24,15 @@ class ErrorDisplay extends StatelessWidget {
     final colorScheme = Theme.of(context).colorScheme;
     final textTheme = Theme.of(context).textTheme;
 
+    // Sprint 84 (F345 run 1): the same overflow-proof shape as EmptyState
+    // (Sprint 60 MV). In a short viewport the content scrolls instead of
+    // overflowing; in a normal one the scroll view never engages.
     return Center(
+      child: SingleChildScrollView(
       child: Padding(
         padding: const EdgeInsets.all(32.0),
         child: Column(
+          mainAxisSize: MainAxisSize.min,
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
             // Error icon
@@ -74,6 +79,7 @@ class ErrorDisplay extends StatelessWidget {
             ],
           ],
         ),
+      ),
       ),
     );
   }

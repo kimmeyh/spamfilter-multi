@@ -30,6 +30,7 @@ Format: `- **type**: Description (Issue #N)` where type is feat|fix|chore|docs
 
 - **chore**: Version 0.24.1+22 for Sprint 84, so a tester can tell this build from the 0.24.0 store builds (Issue #549)
 - **fix**: When Android stops a background scan before it finishes, the scan now shows in Scan History as "The phone stopped this background scan before it finished. The next scan will try again." and the next scan starts at once. Before, the stopped scan blocked the account for 9 to 12 minutes (Issue #551)
+- **fix**: On a small phone screen, the Rule Test tool's messages ("Enter a pattern and press Test...", "No matches found...") scroll instead of being cut off; the same fix covers the shared error display and the Settings "Select an account to view its settings." message. Found by the new iOS Simulator test run (Issue #557)
 
 ## [0.24.0] - 2026-11-05
 
