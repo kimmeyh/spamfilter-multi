@@ -26,6 +26,15 @@ Format: `- **type**: Description (Issue #N)` where type is feat|fix|chore|docs
 
 ## [Unreleased]
 
+### 2026-11-06 (Sprint 84)
+
+- **chore**: Version 0.24.1+22 for Sprint 84, so a tester can tell this build from the 0.24.0 store builds (Issue #549)
+- **fix**: When Android stops a background scan before it finishes, the scan now shows in Scan History as "The phone stopped this background scan before it finished. The next scan will try again." and its row is closed as interrupted at once, so the next scan is not blocked by an open row. Before, the stopped scan blocked the account for 9 to 12 minutes (Issue #551)
+- **fix**: On a small phone screen, the Rule Test tool's messages ("Enter a pattern and press Test...", "No matches found...") scroll instead of being cut off; the same fix covers the shared error display and the Settings "Select an account to view its settings." message. Found by the new iOS Simulator test run (Issue #557)
+- **fix**: On a phone-width screen, the Scan History filter chips (All, Manual, Background) move to a second line instead of running off the right edge (Issue #557)
+
+## [0.24.0] - 2026-11-05
+
 ### 2026-11-05 (Sprint 83 final code reviews)
 - **fix**: When the app reads an HTML-only email as text, each link keeps its web address after the link text ("Click here (https://...)"), so a body rule on a domain that appears only in a link still matches a Gmail HTML-only email, and the No Rule pop-up's Block Body choice can offer that domain (Issue #537)
 - **fix**: Body rules now match the text of an email that has only an HTML part (the HTML is read as text, the same text the pop-up's Block Body reads); before, a Block Body rule saved from such an email could never match it. Gmail also reads a plain-text part nested inside the message, not only one at the top level (Issue #537)

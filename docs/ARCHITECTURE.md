@@ -667,7 +667,15 @@ same rule to COMPLETED scans, and a run that waited for another scan of the acco
 asks again after the wait (`skipAfterWait`). When WorkManager stops a running worker,
 the worker logs `stopped by WorkManager before it finished: reason=<AndroidX name>
 raw=<n>` (needs workmanager_android 0.10.9+, which delivers the stop on the main
-thread). Every schedule and cancel writes a `[scheduler/<platform>]` line, naming a
+thread). F342 (Sprint 84): the same stop handler (`onWorkerStopped`,
+`android_background_scan_worker.dart`) then closes the `in_progress` `scan_results`
+row of any scan running in that worker as `interrupted`, with the reason "The phone
+stopped this background scan before it finished. The next scan will try again."
+(shown on the row in Scan History). The write is bounded to 2 seconds and is
+conditional on `in_progress` (`BackgroundScanCore.closeInFlightScansAsInterrupted`,
+reading the `_inFlightScans` registry), so the run WorkManager restarts is not
+refused by a row nobody is beating; the claim's heartbeat reaper stays the backstop
+when the write does not finish. Every schedule and cancel writes a `[scheduler/<platform>]` line, naming a
 Doze alarm that failed to arm or cancel.
 
 **Measuring and enabling unattended scans** (F252, Sprint 76; Android only, a
@@ -959,6 +967,14 @@ artifact (GP-8/GP-3 verifies, Sprint 64 chain validation).
   compile (`flutter build ios --no-codesign`); signing with an App Store Connect API key and TestFlight upload follow
   (F304, `docs/IOS_SETUP.md`). Its Flutter version comes from `.fvmrc` (F296 gate covers it). It reads its own
   repository secrets; `ci.yml` stays secret-free (F127).
+- **iOS Simulator test level** (Sprint 84, F345): two more jobs in `ios.yml`, `ios-simulator` (builds for the Simulator,
+  checks `PrivacyInfo.xcprivacy` is inside the built `.app`, runs each shared `integration_test` file on an iPhone
+  Simulator) and `ios-simulator-screens` (captures the five first-run screens on an iPhone and an iPad Simulator).
+  One stale file is excluded from the verdict (`EXCLUDED_TESTS`: sprint62_surfaces, F348); see `docs/TESTING_STRATEGY.md`
+  "iOS test level" and ADR-0050 "What the Simulator does not prove".
+- **Privacy manifest** (F345 R-4): `mobile-app/ios/Runner/PrivacyInfo.xcprivacy` declares no tracking, no collected data
+  types and one required-reason category (`NSPrivacyAccessedAPICategoryFileTimestamp`, reason `C617.1`, for app-container
+  file timestamps); each plugin ships its own manifest. iOS-only by Apple's rule (ADR-0050).
 - Keychain for secure storage.
 
 ### macOS

@@ -18,6 +18,8 @@ import 'package:integration_test/integration_test.dart';
 import 'package:my_email_spam_filter/adapters/email_providers/spam_filter_platform.dart';
 import 'package:my_email_spam_filter/ui/screens/folder_selection_screen.dart';
 
+import 'helpers/app_harness.dart' show dismissKeyboard;
+
 void main() {
   IntegrationTestWidgetsFlutterBinding.ensureInitialized();
 
@@ -61,6 +63,8 @@ void main() {
       // Clearing the search restores the full list.
       await tester.enterText(find.byType(TextField).first, '');
       await tester.pumpAndSettle();
+      // F345: the soft keyboard (iOS) leaves the list too short to build row 4.
+      await dismissKeyboard(tester);
       expect(find.text('Church'), findsOneWidget);
     });
   });

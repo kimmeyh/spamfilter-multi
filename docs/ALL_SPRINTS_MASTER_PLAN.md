@@ -200,7 +200,7 @@ Historical sprint information lives in individual documents in `docs/sprints/` a
 
 **Sprint 74 scope -- COMPLETE 2026-09-29 (PR #440)** (Phase 8.4 pass 2, selected by Harold 2026-09-24): MV74-1 (#428), MV74-2 (#434), MV74-3 (#422, #433), F202 (#438), F222 (#437), F232 (#422), F206 (#439), F205 (#433). Plan: `docs/sprints/SPRINT_74_PLAN.md`.
 
-**Last Reviewed**: October 31, 2026 (Sprint 82 cycle, Phase 8.2 pass-1 COMPLETENESS SWEEP -- no scope selected: PR #521 merged to develop (f34be0d7) and main (#533, 8f588043), tagged v0.23.0; Sprint 83 branch opened from the Sprint 82 branch; #522, #525, #526, #528-#532 closed by the merge and #509, #510, #523, #524, #527 stayed open as intended (PR body "Part of"); Sprint 82 plan, retrospective and summary present; Sprint 83 stub present; shipped cards were pruned at close-out (F306, F312, F314, F317-F320); F67c and F67d targets corrected to "after Apple approval", because both need the F67b device check, which waits on enrollment `R6QG2A9SHS`.) Previous: October 27, 2026 (Sprint 81 cycle, Phase 8.2 pass-1 COMPLETENESS SWEEP -- no scope selected: PR #507 merged to develop (b79fa361) and main (#520, 763753be); Sprint 82 branch opened from the Sprint 81 branch; #508 and #511-#519 closed by the merge and #509/#510 stayed open as intended (PR body "Part of"); Sprint 81 plan, retrospective and summary present; Sprint 82 stub present; shipped cards pruned: F302, F259, F278, F271, F300, F301; F303, F67a, F67b trimmed to their remainders.) Previous: October 23, 2026 (Sprint 80 cycle, Phase 8.2 pass-1 COMPLETENESS SWEEP -- no scope selected: PR #490 merged to develop (f301cdee) and main (#506, 2d81264a), tagged v0.21.0; Sprint 81 branch opened from the Sprint 80 branch; only #491 closed on merge -- the PR body used 'Closes #491, #492, ...', and GitHub applies the keyword to the first issue only, so the template now uses one keyword per card and the other 18 are closed by hand; Sprint 80 plan, retrospective and summary present; Sprint 81 stub present; F205 pruned (classified in Sprint 80 Task 1 R-7); F300's acceptance criterion moved back from F301; F246 and F259 given effort, Phase and Platform.)
+**Last Reviewed**: November 5, 2026 (Sprint 83 cycle, Phase 8.2 pass-1 COMPLETENESS SWEEP -- no scope selected: PR #534 merged to develop (8bee2ce0) and main (#547, 0a65fd22), tagged v0.24.0; Sprint 84 branch opened from the Sprint 83 branch; #535-#546 closed by the merge and #509, #510, #523 stayed open as intended (Apple); Sprint 83 plan, retrospective and summary present; Sprint 84 stub present; shipped cards were pruned at close-out (F237, F270, F303, F305, F308-F310, F315, F321-F325).) Previous: October 31, 2026 (Sprint 82 cycle, Phase 8.2 pass-1 COMPLETENESS SWEEP -- no scope selected: PR #521 merged to develop (f34be0d7) and main (#533, 8f588043), tagged v0.23.0; Sprint 83 branch opened from the Sprint 82 branch; #522, #525, #526, #528-#532 closed by the merge and #509, #510, #523, #524, #527 stayed open as intended (PR body "Part of"); Sprint 82 plan, retrospective and summary present; Sprint 83 stub present; shipped cards were pruned at close-out (F306, F312, F314, F317-F320); F67c and F67d targets corrected to "after Apple approval", because both need the F67b device check, which waits on enrollment `R6QG2A9SHS`.) Previous: October 27, 2026 (Sprint 81 cycle, Phase 8.2 pass-1 COMPLETENESS SWEEP -- no scope selected: PR #507 merged to develop (b79fa361) and main (#520, 763753be); Sprint 82 branch opened from the Sprint 81 branch; #508 and #511-#519 closed by the merge and #509/#510 stayed open as intended (PR body "Part of"); Sprint 81 plan, retrospective and summary present; Sprint 82 stub present; shipped cards pruned: F302, F259, F278, F271, F300, F301; F303, F67a, F67b trimmed to their remainders.) Previous: October 23, 2026 (Sprint 80 cycle, Phase 8.2 pass-1 COMPLETENESS SWEEP -- no scope selected: PR #490 merged to develop (f301cdee) and main (#506, 2d81264a), tagged v0.21.0; Sprint 81 branch opened from the Sprint 80 branch; only #491 closed on merge -- the PR body used 'Closes #491, #492, ...', and GitHub applies the keyword to the first issue only, so the template now uses one keyword per card and the other 18 are closed by hand; Sprint 80 plan, retrospective and summary present; Sprint 81 stub present; F205 pruned (classified in Sprint 80 Task 1 R-7); F300's acceptance criterion moved back from F301; F246 and F259 given effort, Phase and Platform.)
 
 All incomplete items in relative priority order. Priority in increments of 10; items that can sprint together in increments of 2. HOLD items grouped at bottom. See [Feature and Bug Details](#feature-and-bug-details) for deep-dive specs. See [BACKLOG_REFINEMENT.md](BACKLOG_REFINEMENT.md) for presentation format rules.
 
@@ -502,6 +502,140 @@ Source: `docs/research/R76-3_HEURISTICS_ML_GENAI_SPAM_IDENTIFICATION.md` (Issue 
 - Do: pull the log over MTP, group the errors by message and stack, and name the cause of each group, or write
   "cause unknown" plus what would settle it.
 - AC: every error group has a cause or a stated next check; a fix card for each real defect.
+
+**F346. Log the device state when WorkManager stops a background scan (~30m) Priority 38 -- NEW 2026-11-06 (Sprint 84 F342 group 4)**
+- Phase: Core App Quality
+- Platform: Android (WorkManager stop; declared Android exception). Windows and iOS: no equivalent stop event.
+- Evidence: 3 AOL worker stops with `reason=deviceState raw=4` on the Fold (10-29, 11-02 x2); which device state fired
+  is unknown (`docs/research/F342_FOLD_BACKGROUND_ERRORS_S84.md` group 4).
+- Do: at `onWorkerStopped`, log power-save mode, device-idle mode and thermal status, so the next stop names its cause.
+
+**F347. Log the phase and network type of an IMAP connect timeout (~45m) Priority 40 -- NEW 2026-11-06 (Sprint 84 F342 group 5)**
+- Phase: Core App Quality
+- Platform: All (shared IMAP adapter); seen on the Fold only.
+- Evidence: 2 AOL 20-second connect timeouts on 10-30; the log has no DNS, TCP or TLS phase, so the cause is unknown
+  (`imap_certificate_trust.dart:371`, F342 research group 5).
+- Do: log which phase (DNS lookup, TCP connect, TLS handshake) timed out and the network type at the time.
+
+**F348. Update the stale sprint62_surfaces integration tests (~45-60m) Priority 42 -- NEW 2026-11-06 (Sprint 84 F345 iOS Simulator run 1)**
+- Phase: Core App Quality
+- Platform: All (shared integration test); found on the iOS Simulator, stale on every platform by code reading.
+- Evidence (`docs/research/F345_IOS_SIMULATOR_S84.md` section 2): two F175 cases (lines 121 and 150) expect the dialog
+  "Background scan in progress" and the button "Wait and start"; the app shows "A scan is already running" with OK
+  (`scan_progress_screen.dart` showScanAlreadyRunningDialog), and the check is per account since Sprint 74 while the
+  test seeds the row under another account. The F175 negative case (line 182) passes for a weak reason. The F178/F176
+  case fails at line 271 (`AccountEmailLabel` text not found); stale or iOS-only is unknown: run it on Windows first.
+- Do: rewrite the F175 cases to the current dialog and per-account rule; make the negative case seed the same account;
+  settle the F178/F176 cause; then put `sprint62_surfaces_test.dart` back in the iOS Simulator gate.
+
+**F350. Risk-based test analysis: effective, and as efficient and quick as reasonably possible (~150-210m) Priority 10 -- NEW 2026-11-07 (Harold, Sprint 84: "highest priority")**
+- Phase: Tooling and Process
+- Platform: N/A (Flutter tests, integration tests, WinWright, the hook suites, the CI workflows, and the sprint steps that order them).
+- Why (measured in Sprint 84): 342 Dart test files (~3,634 tests), 11 integration_test files, 6 WinWright scripts, 236
+  hook cases and test_pylib. Local full suite 4 min 25 s (default concurrency, 6 failures) / 6 min 51 s (concurrency 4,
+  3 failures), all known F349 timeouts. CI: Analyze and Test ~8 min; iOS gate 33 min; iOS screens 45-69 min (one Xcode
+  build per test file). WinWright 8 min 22 s for 3 scripts. test_pylib 4 min 40 s under load. Phase 5 runs its steps
+  one after another and CI repeats the full suite twice; "fix approved" to "verified commit" is not measured. Defects
+  still passed the tests in Sprints 70 (F220), 72 (F233), 76 (POSIX lock) and 81 (failures only in the log).
+- Scope (6 parts):
+  1. Inventory made by a script that can run again: per test file, what it guards, kind, measured local and CI time,
+     where it runs, when it last caught a real defect, risk tier.
+  2. Effectiveness: gates that cannot fail or repeat another gate; source-text gates with no behavior test beside them;
+     defect classes from Sprints 78-84 that no test caught, each with the cheapest test that would have caught it;
+     tests that fail for unrelated reasons (F349, F302).
+  3. Efficiency: cost of each test kind in each place it runs; why local runs are slow (concurrency 2/4/6/8, antivirus,
+     real-PowerShell tests, the 500-message tests); the Sprint 84 timeline for two tasks with the steps that could run in
+     parallel (start CI early by hand; changed-file tests during Phase 4; WinWright while the full suite runs; one Xcode
+     build shared across iOS test files).
+  4. Risk-based tiers: risk = likelihood x impact (ISTQB CTFL v4.0.1 section 5.2, to be re-read). High impact: code that
+     can delete or move mail, credentials, the scan coordinator, background workers, DB migrations, release gates. High
+     likelihood: high recent churn. Proposal: high-tier tests on every change; others when their file or an imported file
+     changes; a shared-file change runs everything; CI full suite as backstop; local runs start with last failures.
+     Learned test selection rejected (not enough failure history).
+  5. Mutation-proof policy: re-run a proof when the guarded code, the test or a shared helper changes; measure what the
+     policy would have missed in Sprints 70-84; decide whether proof spec files are kept in the repository.
+  6. Which full runs are needed, and where (scope question Q1 still open with Harold): the full suite runs three times
+     per sprint today. Decide whether an earlier CI run 1 can replace the local Phase 5 full run (local runs still cover
+     real-PowerShell tests, WinWright and devices), and whether the iOS screens job runs on every change or only at
+     sprint end.
+- Deliverable: `docs/research/F350_RISK_BASED_TESTING.md`; each recommendation asked as a numbered decision, prevention
+  first; approved ones become cards or updates to the testing and workflow docs and the CI files.
+- AC-1 the inventory covers every test file and a policy test fails when a new test file is missing from it; AC-2 every
+  time is measured, with command and date; AC-3 the Sprint 84 timeline is rebuilt from the records; AC-4 every outside
+  source is fetched and quoted or marked unverified; AC-5 a stated target (for example a small fix verified in its
+  development time plus about 15 minutes); AC-6 no test is removed or skipped without Harold's decision.
+- Depends on: nothing (F349 is an input). Model: Sonnet for the inventory script and measurements; the planner for the
+  tiers and recommendations. Reference: the HSBC F180 card.
+
+**F352. Default email account (~120-240m, estimate unverified until the open decisions are answered) Priority 12 -- NEW 2026-11-07 (Harold, Sprint 84 MV: "add to backlog for next sprint")**
+- Phase: Core App Quality
+- Platform: All (shared Flutter screens and `SettingsStore`).
+- Request (Harold, 2026-11-07): let the user set one email account as the default, or no default. The user can set an
+  account as default and can remove the setting. The default shows on Select Account and on Settings > Account. When
+  the app starts, the default account is the currently selected account; the app still works normally when the user
+  selects another account during the session.
+- Today: `SelectedAccountProvider` (`selected_account_provider.dart:17-23`) is session-only and "deliberately NOT
+  persisted" (F135, Harold 2026-07-30), with the note "If that changes, persist via `SettingsStore`; do not add a second
+  source of truth here." The start screen is Review No Rule Items when accounts exist (`main_navigation_screen.dart:92-94`).
+  Screens that read the selection: Settings (335, 351), Scan History (99), Review No Rule Items (245), Help (138).
+- Design direction: one stored app-wide value (`default_account_id` in `SettingsStore`); at startup it seeds
+  `SelectedAccountProvider` once; selecting another account changes only the session; deleting the default account
+  clears the default. This changes the F135 decision (session selection starts empty), so Harold's answer is the decision
+  record.
+- Open decisions (asked 2026-11-07): where the control lives; what the default changes at startup.
+- AC (draft): the control is on the screen Harold picks; both screens show which account is the default; removing it
+  returns to "no default"; a restart opens with the default selected and account-scoped screens skip the picker; picking
+  another account works as today; deleting the default account leaves no default and no stale id.
+
+**F353. Four empty states can overflow on a short screen (~30-45m plus a WinWright re-sweep) Priority 48 -- NEW 2026-11-07 (Sprint 84 5.1.2 F1-1, Harold Question A = 3: backlog)**
+- Phase: Core App Quality
+- Platform: All (shared Flutter screens).
+- Evidence: Sprint 84 5.1.2 class 1 (mirror sites). The Folder Selection error, the Manage Rules search with no match,
+  the Manage Safe Senders search with no match and the Gmail sign-in error use the same `Center > Column` shape that
+  36b724ac fixed elsewhere. Estimate: they need about 126 px, and about 74 px is left with the keyboard open. Not seen
+  on a device.
+- Do: apply the 36b724ac scrollable layout to the four screens with a short-viewport widget test each; sprint with F351.
+
+**F354. Windows DEV keeps its account credentials in the production-named folder (~60-120m, estimate unverified) Priority 14 (proposed) -- NEW 2026-11-07 (Sprint 84 MV-6)**
+- Phase: Core App Quality
+- Platform: Windows Desktop (Android and iOS keep secure storage per package; not affected).
+- Evidence (2026-11-07): the DEV exe version resource is Company `MyEmailSpamFilter`, Product `MyEmailSpamFilter`.
+  `flutter_secure_storage_windows` 4.1.0 writes `flutter_secure_storage.dat` to `getApplicationSupportDirectory()`
+  (`flutter_secure_storage_windows_ffi.dart:234,253`), which is `%APPDATA%\MyEmailSpamFilter\MyEmailSpamFilter\`.
+  ADR-0035 separates DEV data by the `_Dev` suffix, but only `AppPaths` applies it. A DEV run with an empty
+  `MyEmailSpamFilter_Dev` folder still found saved accounts. The `MyEmailSpamFilter_Dev\flutter_secure_storage.dat`
+  (630 bytes, 2026-03-15) is not read; Sprint 51 F130 copied a store there as a fix, which could not have worked.
+- Impact: DEV account changes (add, delete, sign in again) write the same credential file a production non-MSIX
+  build uses. Whether the Store MSIX app reads the same file is unverified: its package folder has no private copy,
+  which suggests it does. If it does, deleting an account in DEV removes its production credentials.
+- Do: confirm which file the Store app reads (Process Monitor, or a log line); give DEV its own store (for example a
+  DEV product name or a store path option), with a one-time copy so DEV keeps its accounts; a test that DEV and prod
+  resolve different credential paths. Check every other caller of `getApplicationSupportDirectory()` for the same gap.
+- Decision class: architecture (ADR-0035 data separation); fix approach is Harold's decision.
+
+**F349. Windows Task Scheduler tests time out on the dev machine (~45-60m) Priority 44 -- NEW 2026-11-06 (Sprint 84 Phase 5.2)**
+- Phase: Core App Quality
+- Platform: Windows Desktop (the tests run real PowerShell; CI ubuntu does not run them).
+- Evidence: Sprint 83 7.7.1 and Sprint 84 5.2 full suites (`--concurrency=4`): 3 tests time out at 30 s
+  (`windows_task_scheduler_service_test` taskExists / getScheduleStatus for a missing task, and
+  `powershell_script_generator_test` "the real New-ScheduledTaskTrigger gets a StartBoundary in the past"). They pass
+  alone. Timed 2026-11-06 14:58: `Get-ScheduledTask` for a missing task takes 7.1 s in-process and 8 to 13 s with a
+  PowerShell start; a bare PowerShell start takes 0.9 s. So the query is slow, not the process start. Last boot
+  2026-10-30, so the Sprint 83 "re-time after a reboot" check has not run. Code and tests unchanged since b00669e4.
+- Do: re-time after a reboot; if still slow, find why the query is slow (cause unknown), then either give these
+  tests a timeout sized from the measurement with the reason in a comment, or replace the real query with the
+  existing seam. Do not raise the timeout without the measurement.
+
+**F351. AppBar action icons overflow on narrow phones (~60-120m) Priority 46 -- NEW 2026-11-06 (Sprint 84 5.1.9 rehearsal)**
+- Phase: Core App Quality
+- Platform: All (shared `StandardAppBarActions` builder); seen in widget tests at phone widths.
+- Evidence: Scan History in a widget test (`test/ui/screens/scan_history_narrow_test.dart` setup) overflows by 24 px in
+  the AppBar's trailing slot at 360 logical px wide (and at 320); 384 (S24+) and 412 (Fold) pass. Scan History shows
+  two screen icons (Clear, Reload) plus the shared Accounts, Settings, Help and exit icons. Predates Sprint 84 (the
+  builder is unchanged this sprint). Not reported on a real phone; whether any shipped phone is under 384 wide is unknown.
+- Do: measure the narrowest width each screen fits (one widget test per screen with `StandardAppBarActions`); then
+  decide one shared rule (for example, move the lowest-priority icons into an overflow menu below a width), applied in
+  the builder so every screen follows it. Decision for Harold: which icons may go into the menu.
 
 **F343. F309 trusted-sender hint: decide after Sprint 83 Task 5 ships (~15m decision, estimate unverified) Priority 45 -- NEW 2026-11-04 (Sprint 83 MV Q5 = 6, backlog)**
 - Phase: Core App Quality
@@ -999,6 +1133,15 @@ Source: `docs/research/F295_IOS_READINESS.md`. These replace the iOS parts of F6
   screens, export to Files, notification permission.
 - Settles UNVERIFIED items: custom-scheme browser fallback, Files app visibility, `drawsUnderSystemBars`.
 - Depends on: F67a; F304 for the device check; F294 seam (merged Sprint 80).
+
+**F345. iOS Simulator smoke and screen check on the macos-26 runner, plus the privacy manifest (~120-210m) Priority 7 -- NEW 2026-11-06 (Harold Q1 = 1, Sprint 84 Task 8)**
+- Phase: Multi-Platform Readiness
+- Platform: iOS (CI, Simulator); no Apple approval needed (unsigned Simulator build).
+- Do: an `ios-simulator` job in `ios.yml`: Simulator build, the integration tests that can run there, first-run
+  screenshots on iPhone and iPad sizes as an artifact; `PrivacyInfo.xcprivacy` in the Runner target from Apple's current
+  required-reason API list. Records what the Simulator does NOT prove (Gmail sign-in, the notification prompt, real
+  background scheduling) in ADR-0050 and TESTING_STRATEGY.md.
+- Moves the code-level part of F67b forward; the F67b device check (#523) stays open.
 
 **F67c. iOS background scan spike on a real iPhone (~120-240m plus a 7-day observation window) Priority 8 -- target: the sprint after Apple approves enrollment `R6QG2A9SHS` (was Sprint 82; not started, it needs the F67b device check) (OFF HOLD 2026-10-23)**
 - Phase: Multi-Platform Readiness

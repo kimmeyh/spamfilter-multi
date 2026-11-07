@@ -7,6 +7,228 @@ Do not stop to ask questions unless meeting the criteria in \docs\SPRINT_STOPPIN
 If questions must be asked, ask as late as possible - do everything that can be done (all tasks and parts of tasks, without the answer to the question(s), then ask the question(s)
 ---------------------------------------------------------------------------------------------------------
 Sprint 8n Scope should include the below items. Please complete sprint planning (/docs/sprint_planning.md) for the below items and present for approval.  Note that everything needs to take into account the Windows App, Android app and the iPhone app with the ADR stating that everything should be functionally and UI the same unless it cannot be - and where it cannot be it should be implemented as a platform exception for what is needed -- this applies to all backend code, frontend code, data, architecture, development, security, testing, deployment.
+---------------------------------------------------------------------------------------------------------
+
+
+---------------------------------------------------------------------------------------------------------
+Sprint 84 Scope should include the below items. Please complete sprint planning (/docs/sprint_planning.md) for the below items and present for approval.  Note that everything needs to take into account the Windows App, Android app and the iPhone app with the ADR stating that everything should be functionally and UI the same unless it cannot be - and where it cannot be it should be implemented as a platform exception for what is needed -- this applies to all backend code, frontend code, data, architecture, development, security, testing, deployment.
+  - Carry-ins:
+    - MV-3c, a YELLOW item on the Fold.
+  - F342 Fold background log errors (~30-90m): real errors on a real phone. AOL had 2 errors and 2 unfinished scans, and iCloud had 11 errors, with no
+    cause named yet. Highest user value for the time.
+  - F341 live first-run evaluation (~90-150m plus your time): confirms 5 static findings a new user would hit.
+  - F280 Doze network for alarm scans (~45-60m): 2 of 3 Android alarm scans under forced Doze failed at DNS, not at login.
+  - F326, F327, F328 Python hooks H1 to H3 (~360-610m): these continue the F321 pilot while it is fresh. The hooks run on every turn, so they are the
+    most valuable batches.
+
+Questions:
+  1. 0.23.0 was submitted and is live. 0.24.0 was submitted and is in process
+  2. Has Apple approved enrollment R6QG2A9SHS? The answer decides whether F67a, F304 and F67b belong in Sprint 84.
+     - 2 = No, still pending.
+
+  Recommendation for Sprint 84
+
+  Version 0.25.0 if any feat is selected, else 0.24.1. Scope:
+
+  - Carry-ins:
+    - MV-3c, a YELLOW item on the Fold.
+    - F67a, F304 and F67b, only if Apple has approved enrollment R6QG2A9SHS.
+  - F342 Fold background log errors (~30-90m): real errors on a real phone. AOL had 2 errors and 2 unfinished scans, and iCloud had 11 errors, with no
+    cause named yet. Highest user value for the time.
+  - F341 live first-run evaluation (~90-150m plus your time): confirms 5 static findings a new user would hit.
+  - F280 Doze network for alarm scans (~45-60m): 2 of 3 Android alarm scans under forced Doze failed at DNS, not at login.
+  - F326, F327, F328 Python hooks H1 to H3 (~360-610m): these continue the F321 pilot while it is fresh. The hooks run on every turn, so they are the
+    most valuable batches.
+
+  Total: about 525-910m plus your time. Sprint 83 was about 1,260-2,155m.
+
+  I do not recommend these for Sprint 84:
+  - F307: you set it for Sprint 86.
+  - F95: it needs the F67b device check.
+  - F329 to F336: later Python batches. F329 depends on H1 to H3, and the S batches are lower value than the hooks.
+
+  Candidates at a glance
+
+  - F67a. iOS prerequisites: Apple Developer enrollment, build machine, test iPhone, iOS OAuth client (~45-90m plus Apple lead time) Priority 2
+  - F304. iOS build machine and signed build pipeline to TestFlight (~90-180m plus a 120m time-boxed signing setup) Priority 4
+  - F67b. iOS first build and foreground parity validation (~180-300m) Priority 6
+  - F67c. iOS background scan spike on a real iPhone (~120-240m plus a 7-day observation window) Priority 8
+  - F67d. iOS store readiness: privacy manifest, App Privacy, listing, TestFlight, upload (~150-240m plus App Review time) Priority 12
+  - F95 (revised). iOS variants: dev and prod side by side on one iPhone (~60-120m) Priority 24
+  - F341. F325 part B: live first-run evaluation on Windows and the Android emulator (~90-150m) Priority 32
+  - F342. Fold background log: AOL unfinished scans and errors, iCloud errors (~30-90m) Priority 34
+  - F326. Python conversion batch H1: three small PreToolUse hooks (~90-150m) Priority 35
+  - F327. Python conversion batch H2: verify-closeout-complete Stop hook (~120-200m) Priority 35
+  - F328. Python conversion batch H3: sprint-auto-advance Stop hook (~150-260m) Priority 35
+  - F280. Doze network availability for alarm scans (~45-60m) Priority 36
+  - F307. Remove the "Create rule" page (RuleQuickAddScreen) -- target Sprint 86 (~30-60m) Priority 36
+  - F329. Python conversion batch H4: the hook test tooling, then retire the PowerShell shims (~150-250m) Priority 36
+  - F330. Python conversion batch S1: repo helper scripts (~150-250m) Priority 37
+  - F331. Python conversion batch S2: Claude and MCP set-up scripts, test mail servers (~90-150m) Priority 37
+  - F332. Python conversion batch S3: phone log health and the battery arm script (~90-150m) Priority 37
+  - F333. Python conversion batch S4: mobile-app check and gate scripts (~180-300m) Priority 37
+  - F334. Python conversion batch S5: mobile-app test runners and test mail (~150-250m) Priority 37
+  - F335. Python conversion batch S6: Android build scripts (~180-300m) Priority 37
+
+  ON HOLD Candidates
+
+  - F265. Android Gmail native one-pick sign-in -- revisit only when a second device reproduces the failure Priority HOLD
+  - F274. On-device GenAI rule explanations (~240m) Priority HOLD
+  - F275. Cloud GenAI classification (~360m) Priority HOLD
+  - F246. Android Gmail background renewal through a server-side token exchange (~30m spike retry; server path not estimated) Priority HOLD
+  - F165. Cross-device rules-DB sharing -- user cloud storage exploration + hosted-tier option (~half-day exploration) Priority HOLD
+  - F173. Periodic "Test Coverage and Appropriate Testing" Deep Dive (~4-8h per review) Priority HOLD
+  - F183. Upstream civyk-winwright request: script-runner replay support for ww_wait (~15m to file, then external) Priority HOLD
+  - F179. Subject-blocking phrase picker (~3-5h) Priority HOLD
+  - GP-4. Gmail API OAuth Verification / CASA -- the submission itself (~40-80h) Priority HOLD
+  - F199-b. Partner Center publisher display name -- the last surface of the LLC rename (~15m once reopened) Priority HOLD
+  - F285. Re-ask: keep or delete email_detail_view.dart (~5m) Priority HOLD
+  - F289. WinWright default sweep with no mouse steps (~30-60m) Priority HOLD
+  - F111. Periodic Windows App Store upload readiness verification (~110-175m per review) Priority HOLD
+  - F139. Local-install smoke test for a release-candidate MSIX (~30-50m per review) Priority HOLD
+  - F70. Periodic Security Deep Dive (~4-8h per review) Priority HOLD
+  - F71. Periodic Architecture Deep Dive (~4-8h per review) Priority HOLD
+  - F63. Responsive design framework -- superseded by Sprint 54 F141 (no estimate) Priority HOLD
+  - F6. Provider-Specific Optimizations (~10-12h) Priority HOLD
+  - SEC-11b. Database-at-rest encryption via sqlite3mc + plaintext-to-encrypted migration (~8-12h) Priority HOLD
+  - F106. SEC-11b verification-window cleanup (~30m) Priority HOLD
+  - H1. GenAI Pattern Suggestions - Crowdsourced Spam Intelligence (TBD) Priority HOLD
+  - H2. Rule Pattern Consistency - Domain Matching Standards (~4-6h) Priority HOLD
+  - H3. Requirements Documentation System (TBD) Priority HOLD
+  - H4. Sent Messages Scan for Safe Senders (~12-16h) Priority HOLD
+  - H5. Outlook.com / Office 365 email provider adapter (~16-20h) Priority HOLD
+
+  F67a. iOS prerequisites: Apple Developer enrollment, build machine, test iPhone, iOS OAuth client (~45-90m plus Apple lead time) Priority 2
+  - Phase: Multi-Platform Readiness
+  - Platform: iOS
+  - The walkthroughs are done (docs/IOS_SETUP.md Parts A-D). Enrollment R6QG2A9SHS uses your existing Apple ID and waits on Apple's approval; card #509
+    is open.
+  - Remaining: the iOS OAuth client in Google Cloud Console (bundle ID com.myemailspamfilter), the App Store Connect API key, and the secrets.
+  - Depends on: Apple's enrollment approval.
+
+  F304. iOS build machine and signed build pipeline to TestFlight (~90-180m plus a 120m time-boxed signing setup) Priority 4
+  - Phase: Build and Release Infrastructure
+  - Platform: iOS (build tooling)
+  - The unsigned macos-26 compile job is done. Remaining: sign with the App Store Connect API key and upload to TestFlight from a workflow_dispatch job,
+    with the secrets kept in repository secrets.
+  - AC: one command produces a signed build that installs on your iPhone through TestFlight internal testing.
+  - Depends on: F67a.
+
+  F67b. iOS first build and foreground parity validation (~180-300m) Priority 6
+  - Phase: Multi-Platform Readiness
+  - Platform: iOS
+  - The code is done (#511). Remaining (#523): the device check, covering the smoke test, IMAP scan, Gmail sign-in, rules, review screens, export to
+    Files and the notification permission.
+  - Depends on: F304's first TestFlight build.
+
+  F67c. iOS background scan spike on a real iPhone (~120-240m plus a 7-day observation window) Priority 8
+  - Phase: Multi-Platform Readiness
+  - Platform: iOS
+  - Run BGAppRefreshTask per the ADR-0050 exception, with a locked-phone run on two Gmail accounts and one IMAP account. Log every background launch for
+    7 days. Add the completion notification and the "Background App Refresh is off" warning.
+  - Depends on: F67b. The outcome may change the Gmail renewal design (a Class 2 decision).
+
+  F67d. iOS store readiness: privacy manifest, App Privacy, listing, TestFlight, upload (~150-240m plus App Review time) Priority 12
+  - Phase: Build and Release Infrastructure
+  - Platform: iOS
+  - The privacy manifest from the Xcode privacy report; App Privacy answers (expected "Data Not Collected"); the listing, screenshots and review notes;
+    an IMAP demo account for App Review.
+  - Depends on: F67b.
+
+  F95 (revised). iOS variants: dev and prod side by side on one iPhone (~60-120m) Priority 24
+  - Phase: Build and Release Infrastructure
+  - Platform: iOS
+  - Separate dev and prod bundle IDs, OAuth clients or URL schemes, keychain and data (ADR-0035 on iOS).
+  - Depends on: F67b.
+
+  F341. F325 part B: live first-run evaluation on Windows and the Android emulator (~90-150m) Priority 32
+  - Phase: Core App Quality
+  - Platform: Windows and Android (emulator)
+  - Run a clean first install on each platform and walk the 10 checks from the part A report.
+  - Static findings to confirm live:
+    - the Help walkthrough is outdated
+    - the Gmail "Recommended" labels contradict each other
+    - "Turn on" does not request the notification permission
+    - raw exception text reaches users
+    - the feedback address is not a link
+  - AC: each check has a result with a screenshot or log line; each confirmed finding becomes a card.
+
+  F342. Fold background log: AOL unfinished scans and errors, iCloud errors (~30-90m) Priority 34
+  - Phase: Core App Quality
+  - Platform: Android (check Windows for the same pattern)
+  - Evidence: AOL had 2 unfinished scans and 2 errors, and iCloud had 11 errors. They are not yet classified.
+  - Pull the log over MTP, group the errors, and name the cause of each group, or write "cause unknown" plus what would settle it.
+  - AC: every group has a cause or a next check, and each real defect gets a fix card.
+
+  F326. Python conversion batch H1: three small PreToolUse hooks (~90-150m) Priority 35
+  - Phase: Process / Tooling
+  - Platform: Development process
+  - Port the stash guard, the sprint-cards gate and the velocity warning (423 lines) with the F321 layer. Keep the exit codes, the bypass tokens and the
+    message text.
+  - AC: the hook suite passes with the same case count, and each hook is mutation-verified.
+
+  F327. Python conversion batch H2: verify-closeout-complete Stop hook (~120-200m) Priority 35
+  - Phase: Process / Tooling
+  - Platform: Development process
+  - Port the 515-line close-out hook. Keep every check number and message, and the 25 close-out cases must pass unchanged. Read files as utf-8-sig, and
+    make gh calls fail open.
+  - Port the 756-line auto-advance hook pattern by pattern, carrying case sensitivity per call. The test cases and fixtures are the contract.
+  - AC: the registration changes only after every case passes; one mutant per gate.
+
+  F280. Doze network availability for alarm scans (~45-60m) Priority 36
+  - Phase: Core App Quality
+  - Platform: Android
+  - Under forced Doze, 2 of 3 alarm scans failed at DNS rather than at login (cause unverified; R77-BAT-4).
+
+  F307. Remove the "Create rule" page (RuleQuickAddScreen) -- target Sprint 86 (~30-60m) Priority 36
+  - Phase: Core App Quality
+  - Platform: All
+  - Remove rule_quick_add_screen.dart and its two callers, after confirming F306 covers its four condition buckets.
+  - Target: Sprint 86 (your choice, 2026-10-25). Depends on: F306.
+
+  F329. Python conversion batch H4: the hook test tooling, then retire the PowerShell shims (~150-250m) Priority 36
+  - Phase: Process / Tooling
+  - Platform: Development process
+  - Port run-test-cases, status-footer (output byte for byte), test-hook and mutation-test. Retire the PowerShell shims only after every caller is
+    updated.
+  - Depends on: F326 to F328.
+
+  F330. Python conversion batch S1: repo helper scripts (~150-250m) Priority 37
+  - Phase: Process / Tooling
+  - Platform: Development process
+  - Port clean-temp-scripts, run-full-suite, validate-yaml-rules and test-regex-patterns. YAML may need PyYAML, a dependency that needs your approval,
+    so a minimal reader is checked first.
+
+  F331. Python conversion batch S2: Claude and MCP set-up scripts, test mail servers (~90-150m) Priority 37
+  - Phase: Process / Tooling
+  - Platform: Development process
+  - Port install-custom-mcp, setup-claude-mcp and start-test-imap-servers. Back up the MCP configuration file before writing it.
+
+  F332. Python conversion batch S3: phone log health and the battery arm script (~90-150m) Priority 37
+  - Phase: Process / Tooling
+  - Platform: Development process
+  - Port phone-log-health and r76_battery_arm.sh. AC: the same report lines for two Sprint 82 phone-log fixtures.
+
+  F333. Python conversion batch S4: mobile-app check and gate scripts (~180-300m) Priority 37
+  - Phase: Process / Tooling
+  - Platform: Development process
+  - Port the redaction, version-consistency, content-manifest, AAB Play-requirements and IANA TLD scripts. Re-check the F204 Play requirements against
+    Google's current text.
+
+  F334. Python conversion batch S5: mobile-app test runners and test mail (~150-250m) Priority 37
+  - Phase: Process / Tooling
+  - Platform: Development process
+  - Port run-tests, run-integration-tests, monitor-tests, the background-skip test, and test-email generation. Full output goes to a file.
+
+  F335. Python conversion batch S6: Android build scripts (~180-300m) Priority 37
+  - Phase: Process / Tooling
+  - Platform: Development process
+  - Port build-with-secrets (953 lines) and drop build-with-secrets-clean if it is redundant. The SEC-9 gradle properties must still be injected, proved
+    by an AAB build and a mutation.
+
+  Two questions, both about the releases:
+
+
 
 ---------------------------------------------------------------------------------------------------------
 More question and sprint plan approval:

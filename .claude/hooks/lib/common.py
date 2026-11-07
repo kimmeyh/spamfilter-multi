@@ -7,6 +7,7 @@ what the pilot hooks and scripts needed, measured by grepping the PowerShell the
     project root       CLAUDE_PROJECT_DIR, else walk up from a start folder
     path normalizing   one spelling for comparisons (Windows backslash versus POSIX slash)
     git calls          subprocess, never raising
+    gh calls           subprocess, never raising (F327, Sprint 84: the first hook that needs GitHub)
     UTC time           parsing the ISO 8601 text the lock files hold, and the current time
     tool lookup        the first of several command names that is installed
 
@@ -108,6 +109,48 @@ def git(*args: str, cwd: str | os.PathLike | None = None, timeout: int = 15) -> 
         return done.returncode, done.stdout
     except Exception:  # noqa: BLE001
         return 1, ""
+
+
+def gh(*args: str, cwd: str | os.PathLike | None = None, timeout: int = 8) -> tuple[int, str]:
+    """Run the GitHub CLI and return (exit code, stdout). Never raises, same shape as git().
+
+    A missing gh, a network failure, a timeout and a non-zero exit all return a non-zero code, so
+    the caller can fail OPEN: a close-out check that needs GitHub declines to check when GitHub is
+    unreachable (F327; verify-closeout-complete.ps1 swallowed the same cases with `catch { }`).
+    The default timeout is 8 seconds so the two calls the close-out hook can make (16 seconds at
+    most) finish inside that hook's 20 second budget in settings.json; a slow gh is then skipped
+    instead of the whole hook being killed.
+
+    Sprint 84 5.1.2 F6-1: the failure code tells the caller WHY, so it can print a notice that the
+    check did not run: GH_NOT_FOUND (127) when gh is not installed, GH_TIMEOUT (124) when it timed
+    out, 1 for any other launch failure; gh's own non-zero exit code passes through unchanged.
+    """
+    import subprocess
+
+    try:
+        done = subprocess.run(
+            ["gh", *args], cwd=str(cwd) if cwd else None, capture_output=True,
+            text=True, encoding="utf-8", errors="replace", timeout=timeout, check=False)
+        return done.returncode, done.stdout
+    except FileNotFoundError:
+        return GH_NOT_FOUND, ""
+    except subprocess.TimeoutExpired:
+        return GH_TIMEOUT, ""
+    except Exception:  # noqa: BLE001
+        return 1, ""
+
+
+GH_NOT_FOUND = 127
+GH_TIMEOUT = 124
+
+
+def gh_failure_reason(code: int) -> str:
+    """Words for a non-zero gh() code, for a 'check did not run' notice."""
+    if code == GH_NOT_FOUND:
+        return "gh is not installed"
+    if code == GH_TIMEOUT:
+        return "gh timed out"
+    return f"gh exit code {code}"
 
 
 def find_tool(*names: str) -> str | None:
