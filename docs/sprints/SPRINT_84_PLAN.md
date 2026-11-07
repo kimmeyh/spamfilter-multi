@@ -706,6 +706,19 @@ closed-test build; 0.24.1 reaches it only after the Play release, so 0.24.1-only
   with the part 6 text; the first re-asks named "part 6" without saying what it was.
 - New request: a default email account (card F352, next sprint); placement and startup questions asked.
 
+**Manual Validation results, round 2 (Harold, 2026-11-07)**:
+- MV-1: not complete yet (Harold). The DEV database still shows iCloud `gmail_sign_in_required = true` (read before the MV-6 swap; time not recorded).
+- MV-2: N/A, precondition gone. Harold: "no older no rule rows exist". The suggestion refresh stays proven by
+  `f306_suggestion_storage_test` and `f306_review_screen_suggestion_test` (rehearsal, 10 pass).
+- MV-3: PASS ("working as expected").
+- MV-4: PASS ("Working as expected"); Task 1 R-2 (0.24.0 channel check) done.
+- MV-5: open, carried again with MV-3c: "Don't currently have any yellow no rule items".
+- MV-6: Harold "REady"; live first-run evaluation started. Pre-flight: an empty DEV folder would be seeded from
+  PRODUCTION (`dev_environment_seeder.dart:43-62`) and from the January `com.example` folder
+  (`app_identity_migration.dart:59-80`), so the clean folder holds only the `.dev_seeded` and `.migration_complete`
+  markers (a Store customer has neither source folder, so both steps do nothing for them too). No scheduled task runs
+  the app; Credential Manager has no app entries, so the plugin read-through cannot add old tokens.
+
 - **MV-1 (Windows DEV, then the Fold): re-enter the iCloud app-specific password (F342 group 1).** Precondition: the
   iCloud account is flagged; the Windows DEV database shows `gmail_sign_in_required = true` for the iCloud account
   only (AOL, Gmail, Yahoo not flagged). Steps: create a new app-specific password at account.apple.com > Sign-In and
