@@ -675,7 +675,7 @@ Windows. Android integration tests in CI are not in scope (recorded). The privac
 **Model**: Sonnet -- *why not the cheaper tier*: a new CI job on a platform this machine cannot run, Xcode project
 membership and Apple's privacy rules; each try is a 10-15 minute CI round.
 **Delegation checklist included in the sub-agent prompt** (when delegated): yes
-**Executed-by** (filled at completion):
+**Executed-by** (filled at completion): Sonnet sub-agent, as assigned (2026-11-06 08:54 to about 17:30, across CI runs 1-7); the main session committed, dispatched runs 7 and 8 and made the run 8 gate change. CI run 8 (42315379298, commit 3ff3f581) GREEN: `ios-simulator` 8 files, 46 tests passed, 0 failed (sprint62_surfaces excluded, F348), privacy manifest in the built app; `ios-simulator-screens` success in 45 min (limit raised 75 -> 100 after run 7 was cancelled at 75 min 39 s). AC-5 proven by a red run (aee05994). The two files excluded in runs 1-6 failed because the iOS soft keyboard stayed open (run 6 probe); fixed by `dismissKeyboard` in the tests, no app change.
 **Step-types**: CI `[no-history]`, TEST-INTEGRATION, DOCS. **Est-Effort**: 120-210m.
 
 _**Risk & rollback**_: a Simulator job that is slow or flaky costs CI time; it runs on the iOS paths and by hand only, and
