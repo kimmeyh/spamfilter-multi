@@ -514,6 +514,19 @@ Reactive state using Provider pattern (ADR-0009).
 
 **UI Binding**: UI screens use `context.watch<EmailScanProvider>()` for reactive updates
 
+#### SelectedAccountProvider
+
+**Purpose**: The account chosen during this session (F135, Sprint 51). The account picker is lazy: it opens only when
+no account is selected AND the destination needs one (Settings > Account, Manual Scan and Background tabs, Manual /
+Live Scan). Settings > General, Review No Rule Items and Scan History are cross-account and never prompt.
+
+**Persistence**: the session selection is NOT persisted; it resets when the app closes (F135, Harold 2026-07-30).
+**Approved change, not yet built** ([ADR-0052](adr/0052-default-account-persisted.md), Harold 2026-11-07, card F352):
+an optional default account, stored once as `default_account_id` in `SettingsStore` and set or removed only on
+Select Account (Settings > Account shows a label). At startup the default seeds this provider once; the start screen
+does not change; picking another account changes only the session; deleting the default account clears the default;
+background scans do not read it.
+
 ---
 
 ## Data Flow

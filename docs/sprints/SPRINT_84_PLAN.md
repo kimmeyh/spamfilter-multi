@@ -728,6 +728,18 @@ closed-test build; 0.24.1 reaches it only after the Play release, so 0.24.1-only
   shared `.dat` unchanged (last written 2026-10-31 11:48). Evidence folder kept:
   `%APPDATA%\MyEmailSpamFilter\MyEmailSpamFilter_Dev_mv6firstrun_20261107_1421`. How to continue is asked (MV-6 Q).
 
+**Manual Validation decisions, round 2 (Harold, 2026-11-07, answered after the 18:39 message)**: "q1. a q2. a q3 a q4. b
+q5. a q6. a and update the architecture documents as needed with this decision".
+- q1 = a (MV-6): the first-run screens are reviewed on a clean Android emulator; Windows gets only its own checks with
+  the accounts present (window size and DPI, resize to 800 x 600, Ctrl+R / F5, browser Gmail sign-in). Production
+  data is not touched.
+- q2 = a: F354 is Priority 14, next sprint.
+- q3 = a: F350 keeps part 6.
+- q4 = b (F352 D1): the default is set or removed only on Select Account; Settings > Account shows a label.
+- q5 = a (F352 D2): same start screen, with the default account selected at startup.
+- q6 = a (F352 D3): the F135 decision changes for the default only; the session selection stays unpersisted.
+  Recorded as ADR-0052 (Accepted) and in `docs/ARCHITECTURE.md` "SelectedAccountProvider". Code changes are F352.
+
 - **MV-1 (Windows DEV, then the Fold): re-enter the iCloud app-specific password (F342 group 1).** Precondition: the
   iCloud account is flagged; the Windows DEV database shows `gmail_sign_in_required = true` for the iCloud account
   only (AOL, Gmail, Yahoo not flagged). Steps: create a new app-specific password at account.apple.com > Sign-In and

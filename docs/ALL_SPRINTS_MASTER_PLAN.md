@@ -554,7 +554,7 @@ Source: `docs/research/R76-3_HEURISTICS_ML_GENAI_SPAM_IDENTIFICATION.md` (Issue 
      Learned test selection rejected (not enough failure history).
   5. Mutation-proof policy: re-run a proof when the guarded code, the test or a shared helper changes; measure what the
      policy would have missed in Sprints 70-84; decide whether proof spec files are kept in the repository.
-  6. Which full runs are needed, and where (scope question Q1 still open with Harold): the full suite runs three times
+  6. Which full runs are needed, and where (kept: Harold, 2026-11-07, q3 = a): the full suite runs three times
      per sprint today. Decide whether an earlier CI run 1 can replace the local Phase 5 full run (local runs still cover
      real-PowerShell tests, WinWright and devices), and whether the iOS screens job runs on every change or only at
      sprint end.
@@ -567,7 +567,7 @@ Source: `docs/research/R76-3_HEURISTICS_ML_GENAI_SPAM_IDENTIFICATION.md` (Issue 
 - Depends on: nothing (F349 is an input). Model: Sonnet for the inventory script and measurements; the planner for the
   tiers and recommendations. Reference: the HSBC F180 card.
 
-**F352. Default email account (~120-240m, estimate unverified until the open decisions are answered) Priority 12 -- NEW 2026-11-07 (Harold, Sprint 84 MV: "add to backlog for next sprint")**
+**F352. Default email account (~120-240m, estimate unverified) Priority 12 -- NEW 2026-11-07 (Harold, Sprint 84 MV: "add to backlog for next sprint")**
 - Phase: Core App Quality
 - Platform: All (shared Flutter screens and `SettingsStore`).
 - Request (Harold, 2026-11-07): let the user set one email account as the default, or no default. The user can set an
@@ -582,10 +582,15 @@ Source: `docs/research/R76-3_HEURISTICS_ML_GENAI_SPAM_IDENTIFICATION.md` (Issue 
   `SelectedAccountProvider` once; selecting another account changes only the session; deleting the default account
   clears the default. This changes the F135 decision (session selection starts empty), so Harold's answer is the decision
   record.
-- Open decisions (asked 2026-11-07): where the control lives; what the default changes at startup.
-- AC (draft): the control is on the screen Harold picks; both screens show which account is the default; removing it
-  returns to "no default"; a restart opens with the default selected and account-scoped screens skip the picker; picking
-  another account works as today; deleting the default account leaves no default and no stale id.
+- Decisions (Harold, 2026-11-07): q4 = b, the default is set or removed only on Select Account, and Settings > Account
+  shows a read-only label; q5 = a, the start screen does not change and the default is selected at startup; q6 = a,
+  the F135 decision changes for the default only (ADR-0052, Accepted). No automatic default for a single account;
+  background scans do not change.
+- AC (draft): AC-1 each Select Account row has a control that sets or removes the default, and the default row is
+  marked; AC-2 Settings > Account shows a label when the shown account is the default; AC-3 removing it returns to "no
+  default"; AC-4 a restart opens on the same start screen with the default selected, and account-scoped screens skip
+  the picker; AC-5 picking another account works as today and is not kept after a restart; AC-6 deleting the default
+  account leaves no default and no stale id; AC-7 one `default_account_id` key in `SettingsStore`, no second store.
 
 **F353. Four empty states can overflow on a short screen (~30-45m plus a WinWright re-sweep) Priority 48 -- NEW 2026-11-07 (Sprint 84 5.1.2 F1-1, Harold Question A = 3: backlog)**
 - Phase: Core App Quality
@@ -596,7 +601,7 @@ Source: `docs/research/R76-3_HEURISTICS_ML_GENAI_SPAM_IDENTIFICATION.md` (Issue 
   on a device.
 - Do: apply the 36b724ac scrollable layout to the four screens with a short-viewport widget test each; sprint with F351.
 
-**F354. Windows DEV keeps its account credentials in the production-named folder (~60-120m, estimate unverified) Priority 14 (proposed) -- NEW 2026-11-07 (Sprint 84 MV-6)**
+**F354. Windows DEV keeps its account credentials in the production-named folder (~60-120m, estimate unverified) Priority 14 (Harold, 2026-11-07, q2 = a) -- NEW 2026-11-07 (Sprint 84 MV-6)**
 - Phase: Core App Quality
 - Platform: Windows Desktop (Android and iOS keep secure storage per package; not affected).
 - Evidence (2026-11-07): the DEV exe version resource is Company `MyEmailSpamFilter`, Product `MyEmailSpamFilter`.
