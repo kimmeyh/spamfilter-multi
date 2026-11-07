@@ -718,6 +718,15 @@ closed-test build; 0.24.1 reaches it only after the Play release, so 0.24.1-only
   (`app_identity_migration.dart:59-80`), so the clean folder holds only the `.dev_seeded` and `.migration_complete`
   markers (a Store customer has neither source folder, so both steps do nothing for them too). No scheduled task runs
   the app; Credential Manager has no app entries, so the plugin read-through cannot add old tokens.
+- MV-6 Windows attempt 1 (2026-11-07 14:14-14:21): DEV closed, 286 files hashed, folder renamed to a backup, clean
+  folder with the two markers, DEV launched. It opened on Review No Rule Items, not Account Selection, so saved
+  accounts were still found. Cause: the DEV exe version resource is Company `MyEmailSpamFilter`, Product
+  `MyEmailSpamFilter`, and `flutter_secure_storage_windows` 4.1.0 keeps `flutter_secure_storage.dat` in
+  `getApplicationSupportDirectory()` itself (`flutter_secure_storage_windows_ffi.dart:234,253`); the `_Dev` suffix is
+  applied only by `AppPaths`. So DEV credentials live in `%APPDATA%\MyEmailSpamFilter\MyEmailSpamFilter\`, the
+  production-named folder (card F354). Not a clean first run; stopped, and restored: 286 of 286 hashes match;
+  shared `.dat` unchanged (last written 2026-10-31 11:48). Evidence folder kept:
+  `%APPDATA%\MyEmailSpamFilter\MyEmailSpamFilter_Dev_mv6firstrun_20261107_1421`. How to continue is asked (MV-6 Q).
 
 - **MV-1 (Windows DEV, then the Fold): re-enter the iCloud app-specific password (F342 group 1).** Precondition: the
   iCloud account is flagged; the Windows DEV database shows `gmail_sign_in_required = true` for the iCloud account

@@ -596,6 +596,23 @@ Source: `docs/research/R76-3_HEURISTICS_ML_GENAI_SPAM_IDENTIFICATION.md` (Issue 
   on a device.
 - Do: apply the 36b724ac scrollable layout to the four screens with a short-viewport widget test each; sprint with F351.
 
+**F354. Windows DEV keeps its account credentials in the production-named folder (~60-120m, estimate unverified) Priority 14 (proposed) -- NEW 2026-11-07 (Sprint 84 MV-6)**
+- Phase: Core App Quality
+- Platform: Windows Desktop (Android and iOS keep secure storage per package; not affected).
+- Evidence (2026-11-07): the DEV exe version resource is Company `MyEmailSpamFilter`, Product `MyEmailSpamFilter`.
+  `flutter_secure_storage_windows` 4.1.0 writes `flutter_secure_storage.dat` to `getApplicationSupportDirectory()`
+  (`flutter_secure_storage_windows_ffi.dart:234,253`), which is `%APPDATA%\MyEmailSpamFilter\MyEmailSpamFilter\`.
+  ADR-0035 separates DEV data by the `_Dev` suffix, but only `AppPaths` applies it. A DEV run with an empty
+  `MyEmailSpamFilter_Dev` folder still found saved accounts. The `MyEmailSpamFilter_Dev\flutter_secure_storage.dat`
+  (630 bytes, 2026-03-15) is not read; Sprint 51 F130 copied a store there as a fix, which could not have worked.
+- Impact: DEV account changes (add, delete, sign in again) write the same credential file a production non-MSIX
+  build uses. Whether the Store MSIX app reads the same file is unverified: its package folder has no private copy,
+  which suggests it does. If it does, deleting an account in DEV removes its production credentials.
+- Do: confirm which file the Store app reads (Process Monitor, or a log line); give DEV its own store (for example a
+  DEV product name or a store path option), with a one-time copy so DEV keeps its accounts; a test that DEV and prod
+  resolve different credential paths. Check every other caller of `getApplicationSupportDirectory()` for the same gap.
+- Decision class: architecture (ADR-0035 data separation); fix approach is Harold's decision.
+
 **F349. Windows Task Scheduler tests time out on the dev machine (~45-60m) Priority 44 -- NEW 2026-11-06 (Sprint 84 Phase 5.2)**
 - Phase: Core App Quality
 - Platform: Windows Desktop (the tests run real PowerShell; CI ubuntu does not run them).
