@@ -528,6 +528,74 @@ Source: `docs/research/R76-3_HEURISTICS_ML_GENAI_SPAM_IDENTIFICATION.md` (Issue 
 - Do: rewrite the F175 cases to the current dialog and per-account rule; make the negative case seed the same account;
   settle the F178/F176 cause; then put `sprint62_surfaces_test.dart` back in the iOS Simulator gate.
 
+**F350. Risk-based test analysis: effective, and as efficient and quick as reasonably possible (~150-210m) Priority 10 -- NEW 2026-11-07 (Harold, Sprint 84: "highest priority")**
+- Phase: Tooling and Process
+- Platform: N/A (Flutter tests, integration tests, WinWright, the hook suites, the CI workflows, and the sprint steps that order them).
+- Why (measured in Sprint 84): 342 Dart test files (~3,634 tests), 11 integration_test files, 6 WinWright scripts, 236
+  hook cases and test_pylib. Local full suite 4 min 25 s (default concurrency, 6 failures) / 6 min 51 s (concurrency 4,
+  3 failures), all known F349 timeouts. CI: Analyze and Test ~8 min; iOS gate 33 min; iOS screens 45-69 min (one Xcode
+  build per test file). WinWright 8 min 22 s for 3 scripts. test_pylib 4 min 40 s under load. Phase 5 runs its steps
+  one after another and CI repeats the full suite twice; "fix approved" to "verified commit" is not measured. Defects
+  still passed the tests in Sprints 70 (F220), 72 (F233), 76 (POSIX lock) and 81 (failures only in the log).
+- Scope (6 parts):
+  1. Inventory made by a script that can run again: per test file, what it guards, kind, measured local and CI time,
+     where it runs, when it last caught a real defect, risk tier.
+  2. Effectiveness: gates that cannot fail or repeat another gate; source-text gates with no behavior test beside them;
+     defect classes from Sprints 78-84 that no test caught, each with the cheapest test that would have caught it;
+     tests that fail for unrelated reasons (F349, F302).
+  3. Efficiency: cost of each test kind in each place it runs; why local runs are slow (concurrency 2/4/6/8, antivirus,
+     real-PowerShell tests, the 500-message tests); the Sprint 84 timeline for two tasks with the steps that could run in
+     parallel (start CI early by hand; changed-file tests during Phase 4; WinWright while the full suite runs; one Xcode
+     build shared across iOS test files).
+  4. Risk-based tiers: risk = likelihood x impact (ISTQB CTFL v4.0.1 section 5.2, to be re-read). High impact: code that
+     can delete or move mail, credentials, the scan coordinator, background workers, DB migrations, release gates. High
+     likelihood: high recent churn. Proposal: high-tier tests on every change; others when their file or an imported file
+     changes; a shared-file change runs everything; CI full suite as backstop; local runs start with last failures.
+     Learned test selection rejected (not enough failure history).
+  5. Mutation-proof policy: re-run a proof when the guarded code, the test or a shared helper changes; measure what the
+     policy would have missed in Sprints 70-84; decide whether proof spec files are kept in the repository.
+  6. Which full runs are needed, and where (scope question Q1 still open with Harold): the full suite runs three times
+     per sprint today. Decide whether an earlier CI run 1 can replace the local Phase 5 full run (local runs still cover
+     real-PowerShell tests, WinWright and devices), and whether the iOS screens job runs on every change or only at
+     sprint end.
+- Deliverable: `docs/research/F350_RISK_BASED_TESTING.md`; each recommendation asked as a numbered decision, prevention
+  first; approved ones become cards or updates to the testing and workflow docs and the CI files.
+- AC-1 the inventory covers every test file and a policy test fails when a new test file is missing from it; AC-2 every
+  time is measured, with command and date; AC-3 the Sprint 84 timeline is rebuilt from the records; AC-4 every outside
+  source is fetched and quoted or marked unverified; AC-5 a stated target (for example a small fix verified in its
+  development time plus about 15 minutes); AC-6 no test is removed or skipped without Harold's decision.
+- Depends on: nothing (F349 is an input). Model: Sonnet for the inventory script and measurements; the planner for the
+  tiers and recommendations. Reference: the HSBC F180 card.
+
+**F352. Default email account (~120-240m, estimate unverified until the open decisions are answered) Priority 12 -- NEW 2026-11-07 (Harold, Sprint 84 MV: "add to backlog for next sprint")**
+- Phase: Core App Quality
+- Platform: All (shared Flutter screens and `SettingsStore`).
+- Request (Harold, 2026-11-07): let the user set one email account as the default, or no default. The user can set an
+  account as default and can remove the setting. The default shows on Select Account and on Settings > Account. When
+  the app starts, the default account is the currently selected account; the app still works normally when the user
+  selects another account during the session.
+- Today: `SelectedAccountProvider` (`selected_account_provider.dart:17-23`) is session-only and "deliberately NOT
+  persisted" (F135, Harold 2026-07-30), with the note "If that changes, persist via `SettingsStore`; do not add a second
+  source of truth here." The start screen is Review No Rule Items when accounts exist (`main_navigation_screen.dart:92-94`).
+  Screens that read the selection: Settings (335, 351), Scan History (99), Review No Rule Items (245), Help (138).
+- Design direction: one stored app-wide value (`default_account_id` in `SettingsStore`); at startup it seeds
+  `SelectedAccountProvider` once; selecting another account changes only the session; deleting the default account
+  clears the default. This changes the F135 decision (session selection starts empty), so Harold's answer is the decision
+  record.
+- Open decisions (asked 2026-11-07): where the control lives; what the default changes at startup.
+- AC (draft): the control is on the screen Harold picks; both screens show which account is the default; removing it
+  returns to "no default"; a restart opens with the default selected and account-scoped screens skip the picker; picking
+  another account works as today; deleting the default account leaves no default and no stale id.
+
+**F353. Four empty states can overflow on a short screen (~30-45m plus a WinWright re-sweep) Priority 48 -- NEW 2026-11-07 (Sprint 84 5.1.2 F1-1, Harold Question A = 3: backlog)**
+- Phase: Core App Quality
+- Platform: All (shared Flutter screens).
+- Evidence: Sprint 84 5.1.2 class 1 (mirror sites). The Folder Selection error, the Manage Rules search with no match,
+  the Manage Safe Senders search with no match and the Gmail sign-in error use the same `Center > Column` shape that
+  36b724ac fixed elsewhere. Estimate: they need about 126 px, and about 74 px is left with the keyboard open. Not seen
+  on a device.
+- Do: apply the 36b724ac scrollable layout to the four screens with a short-viewport widget test each; sprint with F351.
+
 **F349. Windows Task Scheduler tests time out on the dev machine (~45-60m) Priority 44 -- NEW 2026-11-06 (Sprint 84 Phase 5.2)**
 - Phase: Core App Quality
 - Platform: Windows Desktop (the tests run real PowerShell; CI ubuntu does not run them).

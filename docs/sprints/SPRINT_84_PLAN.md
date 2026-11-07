@@ -699,6 +699,13 @@ ask again. The iCloud DEV account's per-account background scan is on, every 5 m
 from `build-with-secrets.ps1 -BuildType debug -InstallToEmulator` (exit 0, 2026-11-06 16:30). The Fold has the 0.24.0
 closed-test build; 0.24.1 reaches it only after the Play release, so 0.24.1-only phone checks are listed as carry-ins.
 
+**Manual Validation decisions (Harold, 2026-11-07 13:30)**:
+- Question A (5.1.2 F1-1, four sibling empty states that can overflow on a short screen) = 3: backlog all four, no
+  change this sprint. Card F353 in the master plan.
+- F350 review Q2 = highest priority: F350 is Priority 10 in the master plan. F350 Q1 (scope, part 6) is re-asked
+  with the part 6 text; the first re-asks named "part 6" without saying what it was.
+- New request: a default email account (card F352, next sprint); placement and startup questions asked.
+
 - **MV-1 (Windows DEV, then the Fold): re-enter the iCloud app-specific password (F342 group 1).** Precondition: the
   iCloud account is flagged; the Windows DEV database shows `gmail_sign_in_required = true` for the iCloud account
   only (AOL, Gmail, Yahoo not flagged). Steps: create a new app-specific password at account.apple.com > Sign-In and
