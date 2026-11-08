@@ -252,7 +252,7 @@ platforms (no platform exception).
 
 **Model**: Haiku -- the cheapest tier fits a mechanical bump with three gates as the oracle.
 **Delegation checklist included in the sub-agent prompt** (when delegated): N/A (main session, with 3.7.0).
-**Executed-by** (filled at completion):
+**Executed-by** (filled at completion): main session (Opus), not Haiku: 3.7.0b runs in the same turn as plan approval, so a sub-agent would cost more than the task. ~15 min (CODING_VELOCITY row, recorded 2026-11-06 08:41). Three policy gates pass.
 **Step-types**: DOCS, DATA. **Est-Effort**: 10-15m.
 
 ## Task 1 -- Manual Validation carry-ins (MV-3c; 0.24.0 Android channel check)
@@ -285,7 +285,7 @@ ADR-0049 table); Windows and iOS have no channels.
 **Definition of Done**: AC-1 only (no code).
 
 **Model**: main session (interactive with Harold) -- N/A.
-**Executed-by** (filled at completion):
+**Executed-by** (filled at completion): main session (Opus) with Harold, as assigned. 0 min recorded: the actual minutes were not logged (Claude's step writing and Harold's phone time). R-2 done (MV-4 PASS, "Working as expected"); R-1 (MV-3c, as MV-5) carried again: no YELLOW No Rule item on the Fold.
 **Step-types**: MANUAL. **Est-Effort**: 10-20m plus Harold's phone time.
 
 ## Task 2 -- F342: Fold background log errors (AOL unfinished scans and errors, iCloud errors) (Priority 34)
@@ -346,7 +346,7 @@ worker or the native trigger is an Android exception and is declared as such.
 **Model**: Sonnet -- *why not the cheaper tier*: naming a cause means tracing each message through the scanner, the
 IMAP adapter and the worker; counting alone would fit Haiku, the cause does not.
 **Delegation checklist included in the sub-agent prompt** (when delegated): yes
-**Executed-by** (filled at completion): Sonnet sub-agent, as assigned (2026-11-06 08:49-10:33). 9 groups; 1 real
+**Executed-by** (filled at completion): Sonnet sub-agent, as assigned (2026-11-06 08:49-10:33), ~104 min. 9 groups; 1 real
 defect fixed (group 4, stopped worker leaves the scan row in progress; 3 code files, 118 lines, Q1 limit met; 7 tests,
 7 of 7 mutants KILLED); iCloud group needs Harold to re-enter the app-specific password (Manual Validation); backlog
 F346, F347; nothing handed to F280 (0 `Failed host lookup` on doze-alarm runs). Main session re-ran the two test files
@@ -428,7 +428,7 @@ lands.
 **Model**: Sonnet -- *why not the cheaper tier*: emulator Doze measurement plus a native WorkManager change judged by a
 decision rule; Haiku-shaped only for the one-line constraint.
 **Delegation checklist included in the sub-agent prompt** (when delegated): yes
-**Executed-by** (filled at completion): Sonnet sub-agent, as assigned (2026-11-06 11:09-14:15). R77-BAT-4 arms A (unfixed), B (fix), C (fix, charger) on pixel34_updated API 34: 0 Failed host lookup in each arm (2 testable scans per arm; the test accounts are rejected at login and then skipped); dumpsys shows the Doze one-off gained CONNECTIVITY with the fix. T-1 4 tests, 4 of 4 mutants KILLED. R-5: under 25 percent, so revert. Harold (2026-11-06 16:13, mid-sprint Q = 1): revert; the Kotlin change and its test were removed, not committed. Results committed in R76-1_BATTERY_AB_RESULTS.md (91cec1de). iOS: BGAppRefreshTaskRequest has no network property (F67c input).
+**Executed-by** (filled at completion): Sonnet sub-agent, as assigned (2026-11-06 11:09-14:15), ~186 min plus ~5 min main-session revert. R77-BAT-4 arms A (unfixed), B (fix), C (fix, charger) on pixel34_updated API 34: 0 Failed host lookup in each arm (2 testable scans per arm; the test accounts are rejected at login and then skipped); dumpsys shows the Doze one-off gained CONNECTIVITY with the fix. T-1 4 tests, 4 of 4 mutants KILLED. R-5: under 25 percent, so revert. Harold (2026-11-06 16:13, mid-sprint Q = 1): revert; the Kotlin change and its test were removed, not committed. Results committed in R76-1_BATTERY_AB_RESULTS.md (91cec1de). iOS: BGAppRefreshTaskRequest has no network property (F67c input).
 **Step-types**: NATIVE-AND `[no-history]`, TEST-UNIT, DOCS. **Est-Effort**: 60-120m.
 
 _**Risk & rollback**_: a constraint that holds scans too long in Doze is the risk Q2 names; rollback is reverting the one
@@ -474,7 +474,7 @@ iOS screens. A finding on one platform is checked on the other two before it is 
 **Definition of Done**: AC-1 to AC-4; no code.
 
 **Model**: main session (interactive with Harold) -- N/A.
-**Executed-by** (filled at completion):
+**Executed-by** (filled at completion): main session (Opus) with Harold, as assigned. ~22 min recorded (Windows attempt 1, 2026-11-07 14:14-14:21, 7 min; Android emulator leg 19:06-19:21, 15 min); the pre-MV preparation and the Windows checks were not timed. Partly done: the Android leg and the Windows checks are recorded under MV-6; the rest moved to the next sprint on F341 (Harold: "mv-6 move to next sprint").
 **Step-types**: MANUAL, DOCS. **Est-Effort**: 105-165m plus Harold's time.
 
 ## Task 5 -- F326: Python batch H1, three small PreToolUse hooks (Priority 35)
@@ -524,7 +524,7 @@ Windows (this machine) and on Linux and macOS (CI and a future Mac for iOS): R-5
 
 **Model**: Haiku -- the cheapest tier fits a line-by-line port where the existing case suites are the oracle.
 **Delegation checklist included in the sub-agent prompt** (when delegated): yes
-**Executed-by** (filled at completion): Haiku sub-agent, as assigned (2026-11-06 08:51-10:40). Three hooks ported; hook suite 178/178 before and after (main session re-ran it: 178/178); test_pylib.py 47 OK on Windows (Linux CI pending, AC-3); PowerShell vs Python parity probe 0 mismatches over 28 cases; 11 mutants KILLED (stash-M2 first SURVIVED, a test was added). R-2 judgment (main session): the Python velocity hook ends stdout with one trailing newline that the PowerShell did not; Claude Code parses the JSON, so the content is identical and the shared hooklib layer is not changed. .ps1 files kept for F329.
+**Executed-by** (filled at completion): Haiku sub-agent, as assigned (2026-11-06 08:51-10:40), ~109 min. Three hooks ported; hook suite 178/178 before and after (main session re-ran it: 178/178); test_pylib.py 47 OK on Windows (Linux CI pending, AC-3); PowerShell vs Python parity probe 0 mismatches over 28 cases; 11 mutants KILLED (stash-M2 first SURVIVED, a test was added). R-2 judgment (main session): the Python velocity hook ends stdout with one trailing newline that the PowerShell did not; Claude Code parses the JSON, so the content is identical and the shared hooklib layer is not changed. .ps1 files kept for F329.
 **Step-types**: HOOK, TEST-UNIT. **Est-Effort**: 90-150m.
 
 ## Task 6 -- F327: Python batch H2, verify-closeout-complete Stop hook (Priority 35)
@@ -565,7 +565,7 @@ Windows (this machine) and on Linux and macOS (CI and a future Mac for iOS): R-5
 **Model**: Sonnet -- *why not the cheaper tier*: 515 lines with many check families and exact parsing quirks the
 close-out depends on; a port that changes one quirk silently disables a gate.
 **Delegation checklist included in the sub-agent prompt** (when delegated): yes
-**Executed-by** (filled at completion): Sonnet sub-agent, as assigned (2026-11-06 11:10-12:33). verify-closeout-complete.py: 26 closeout cases pass (new CRLF case violation-15), full hook suite 179/179 (baseline 178 plus one); test_pylib.py 58 OK on Windows (Linux CI pending, AC-3); parity probe 0 mismatches over 45 payloads; 15 mutants KILLED (3 first SURVIVED, tests added). New common.gh() wrapper (never raises, 8 s timeout). Deviation: mutants ran focused test_pylib tests, not the 30-minute full suite per mutant.
+**Executed-by** (filled at completion): Sonnet sub-agent, as assigned (2026-11-06 11:10-12:33), ~83 min. verify-closeout-complete.py: 26 closeout cases pass (new CRLF case violation-15), full hook suite 179/179 (baseline 178 plus one); test_pylib.py 58 OK on Windows (Linux CI pending, AC-3); parity probe 0 mismatches over 45 payloads; 15 mutants KILLED (3 first SURVIVED, tests added). New common.gh() wrapper (never raises, 8 s timeout). Deviation: mutants ran focused test_pylib tests, not the 30-minute full suite per mutant.
 **Step-types**: HOOK, TEST-UNIT. **Est-Effort**: 120-200m.
 
 ## Task 7 -- F328: Python batch H3, sprint-auto-advance Stop hook (Priority 35)
@@ -608,7 +608,7 @@ close-out depends on; a port that changes one quirk silently disables a gate.
 **Model**: Sonnet -- *why not the cheaper tier*: the most patterns of any hook, with case flags per call and
 message-shape coupling that has silently disabled this gate before (Sprint 70).
 **Delegation checklist included in the sub-agent prompt** (when delegated): yes
-**Executed-by** (filled at completion): Sonnet sub-agent, as assigned (2026-11-06 12:55-14:32). sprint-auto-advance.py with the same gate order, patterns and block text; Stop registration swapped to the .py last, after the mutation run; .ps1 kept for F329. Hook suite 195/195 (main session re-ran it: 195/195); test_pylib.py 74 OK on Windows (Linux CI pending, AC-3); parity probe 1 of 454 payloads differ (non-JSON stdin; neither blocks); 19 mutants KILLED. R-6 deviation: an unreadable plan or velocity file now exits 1 visibly instead of the .ps1's silent catch. Open finding (not applied; changes live gate behavior): the ? detector is end-anchored to the raw message, so a footer hides a trailing question mark; asked at Manual Validation.
+**Executed-by** (filled at completion): Sonnet sub-agent, as assigned (2026-11-06 12:55-14:32), ~97 min plus ~7 min main-session review. sprint-auto-advance.py with the same gate order, patterns and block text; Stop registration swapped to the .py last, after the mutation run; .ps1 kept for F329. Hook suite 195/195 (main session re-ran it: 195/195); test_pylib.py 74 OK on Windows (Linux CI pending, AC-3); parity probe 1 of 454 payloads differ (non-JSON stdin; neither blocks); 19 mutants KILLED. R-6 deviation: an unreadable plan or velocity file now exits 1 visibly instead of the .ps1's silent catch. Open finding (not applied; changes live gate behavior): the ? detector is end-anchored to the raw message, so a footer hides a trailing question mark; asked at Manual Validation.
 **Step-types**: HOOK, TEST-UNIT. **Est-Effort**: 150-260m.
 
 ## Task 8 -- F345: iOS Simulator smoke and screen check on the macos-26 runner, plus the privacy manifest (NEW)
@@ -675,7 +675,7 @@ Windows. Android integration tests in CI are not in scope (recorded). The privac
 **Model**: Sonnet -- *why not the cheaper tier*: a new CI job on a platform this machine cannot run, Xcode project
 membership and Apple's privacy rules; each try is a 10-15 minute CI round.
 **Delegation checklist included in the sub-agent prompt** (when delegated): yes
-**Executed-by** (filled at completion): Sonnet sub-agent, as assigned (2026-11-06 08:54 to about 17:30, across CI runs 1-7); the main session committed, dispatched runs 7 and 8 and made the run 8 gate change. CI run 8 (42315379298, commit 3ff3f581) GREEN: `ios-simulator` 8 files, 46 tests passed, 0 failed (sprint62_surfaces excluded, F348), privacy manifest in the built app; `ios-simulator-screens` success in 45 min (limit raised 75 -> 100 after run 7 was cancelled at 75 min 39 s). AC-5 proven by a red run (aee05994). The two files excluded in runs 1-6 failed because the iOS soft keyboard stayed open (run 6 probe); fixed by `dismissKeyboard` in the tests, no app change.
+**Executed-by** (filled at completion): Sonnet sub-agent, as assigned (2026-11-06 08:54 to about 17:30, across CI runs 1-7; active minutes not logged, 0 min recorded, wall clock 08:54-19:44 is 650 min); the main session committed, dispatched runs 7 and 8 and made the run 8 gate change. CI run 8 (42315379298, commit 3ff3f581) GREEN: `ios-simulator` 8 files, 46 tests passed, 0 failed (sprint62_surfaces excluded, F348), privacy manifest in the built app; `ios-simulator-screens` success in 45 min (limit raised 75 -> 100 after run 7 was cancelled at 75 min 39 s). AC-5 proven by a red run (aee05994). The two files excluded in runs 1-6 failed because the iOS soft keyboard stayed open (run 6 probe); fixed by `dismissKeyboard` in the tests, no app change.
 **Step-types**: CI `[no-history]`, TEST-INTEGRATION, DOCS. **Est-Effort**: 120-210m.
 
 _**Risk & rollback**_: a Simulator job that is slow or flaky costs CI time; it runs on the iOS paths and by hand only, and

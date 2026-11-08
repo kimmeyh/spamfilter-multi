@@ -1,13 +1,13 @@
 {
     "_description": "Sprint status file that persists across context compaction. Update after each phase/sub-phase completion.",
-    "_last_updated": "2026-11-07T20:45",
+    "_last_updated": "2026-11-08T16:41",
     "_usage": "Read this file after context compaction to restore sprint approval state and progress.",
     "_staleness_note": "This file had drifted 15 sprints (last updated at Sprint 35, 2026-04-19) before being refreshed at Sprint 50 close-out. It is a Phase 7.7 checklist item -- update it at every sprint close-out, not opportunistically.",
     "current_sprint": {
         "number": 84,
         "branch": "feature/20261105_Sprint_84",
         "status": "Phase 7.7 Final Code Reviews (7.7.1)",
-        "status_detail": "Manual Validation complete 2026-11-07 (Harold q1 = a). 7.7.1 reviews in: Copilot (2 comments), code-reviewer (3 M, 5 L), silent-failure-hunter (6 M, 13 L); fixes in progress. Retrospective feedback recorded. Earlier: handed to Harold 2026-11-06 20:11. Tasks 0, 2, 3 (reverted), 5, 6, 7, 8 DONE; Tasks 1 and 4 run during Manual Validation. 5.1.2, 5.1.5 (sweep-head 24ad4e04) and 5.1.9 recorded. iOS CI run 8 green. Open questions: Question A (F1-1, four empty states), F350 review Q1 and Q2.",
+        "status_detail": "Manual Validation complete 2026-11-07 (Harold q1 = a). 7.7.1 reviews done: Copilot 1 H / 1 L, code-reviewer 3 M / 5 L, silent-failure-hunter 6 M / 13 L, all fixed (0e80c9fb, a71025e0, 9eb90397, d4178c5b, 98477e31) or decided (q1 = c, q2 = a, q3 = a, q4 faster). Retrospective done, Harold all Very Good; improvements applied (3b2550dc, 2a940092, dd2782f0). Improvement review done (21d2171d); CI run 1 42457200807 green. Completion docs written (SPRINT_84_SUMMARY.md, master plan, CHANGELOG, velocity, Executed-by, SPRINT_85_PLAN.md stub). Next: 7.7.5 gh pr ready 548, CI run 2 green, then the readiness announcement.",
         "plan_approved": true,
         "pr_number": 548,
         "version": "0.24.1+22"
@@ -34,18 +34,18 @@
         "sprint_82": "Task 0 #522, Task 1 #509, Task 2 #510, Task 3 #523, Task 4 #524, Task 5 #525, Task 6 #526, Task 7 #527, Task 8 #528, Task 9 #529, Task 10 #530, Task 11 #531, Task 12 #532",
         "sprint_82_close": "PR #521 body: Closes #522 #525 #526 #528 #529 #530 #531 #532; Part of #509 #510 #523 #524 #527 (stay open for Sprint 83). Verify after the merge.",
         "sprint_83": "Task 0 #535, Task 1 #524 + #527 (reused), Task 2 #536, Task 3 #537, Task 4 #538, Task 5 #539, Task 6 #540, Task 7 #541, Task 8 #542, Task 9 #543, Task 10 #544, Task 11 #545, Task 12 #546",
-        "sprint_84": "Task 0 #549, Task 1 #550, Task 2 #551, Task 3 #552, Task 4 #553, Task 5 #554, Task 6 #555, Task 7 #556, Task 8 #557"
+        "sprint_84": "Task 0 #549, Task 1 #550, Task 2 #551, Task 3 #552, Task 4 #553, Task 5 #554, Task 6 #555, Task 7 #556, Task 8 #557",
+        "sprint_84_close": "PR #548 body: Closes #549-#557. #550 (MV-3c carried to the Sprint 85 stub) and #553 (remainder on F341) close with the merge; their open work is tracked in the stub and the master plan. Open as intended: #509 #510 #523 (Apple)."
     },
     "_github_issues_note": "Sprint 66 cards created at Phase 3.3.1 (2026-09-07): #387 GP-19, #388 GP-4. Close by hand at Post-Merge Cleanup.",
     "test_metrics": {
-        "suite": "3,360 passed / 15 skipped / 0 failed (2026-10-31, Sprint 82 improvement review); analyzer clean",
-        "policy_suite": "release_notes_test 5/5 (2026-10-31, 0.23.0 notes re-derived); hook suite 162/162 (2026-10-31)",
-        "winwright": "2026-10-17 sweep-head 80d92c6: f124 PASS 29/29, s75 PASS 27/27 (re-run alone; first launch in the full sweep failed, cause unknown), no skipped steps, DB drift none",
+        "suite": "3,619 passed / 15 skipped / 3 failed (2026-11-06, --concurrency=4; the 3 are the known Task Scheduler timeouts, F349); analyzer clean",
+        "policy_suite": "hook suite 208/208 and test_pylib 95 OK (2026-11-08, 7.7.1 improvement review)",
+        "winwright": "2026-11-06 19:51-20:09 sweep-head 24ad4e04: test_f124_rule_labels 29/29, test_f320_no_rule_review 13/13, test_s75_new_controls 27/27; tray icon PASS; DB drift none",
         "analyzer": "clean",
-        "mutations": "Sprint 77: F258 M1/M2/M4 + L1/L2, F245 21, F192 25, SEC-8b 16, F264 24, R76-1 5, merge M1/M2, F-PRECHECK 15 -- all KILLED",
-        "as_of": "2026-10-31, Sprint 82 Phase 7.7",
-        "sprint_82_phase4": "2026-10-30 09:56: flutter test 3340 passed / 15 skipped / 0 failed; flutter analyze clean (after F306 e03248b1)",
-        "ci": "CI run 1 41246467526 at db41dd0d success; CI run 2 41249847153 at e291ccbc success"
+        "mutations": "Sprint 84: F326 11, F327 15, F328 19, F342 7, 5.1.2 fixes 10, 7.7.1 hook fixes 18, improvement review 3 -- all KILLED",
+        "as_of": "2026-11-08, Sprint 84 Phase 7.7",
+        "ci": "CI run 1 42457200807 (workflow_dispatch on 2a940092) success; CI run 2 at 7.7.5"
     },
     "store_release": {
         "status_0_15_3": "NOT SUBMITTED TO EITHER STORE. Harold, 2026-09-22: \"not pushing to either store this time\". Phase 8.3 explicitly N/A for this cycle.",
@@ -67,13 +67,13 @@
     ],
     "blocking_issues": [],
     "next_actions": [
-        "Parallel block A: Task 5 F326, Task 8 F345, Task 2 F342 (sub-agents).",
-        "Then Task 3 F280 (after F342; Q2 = 2: ask Harold with the numbers before final), Task 6 F327, Task 7 F328 (serial).",
-        "Task 4 F341 with Harold; Task 1 when a YELLOW No Rule item appears. Q3 = 3 rescan note goes into Manual Validation."
+        "7.7.5: gh pr ready 548; gh pr checks 548 --watch until CI run 2 is green; final PR update if needed; then the one readiness announcement to Harold.",
+        "After merge (Harold): open the Sprint 85 branch from feature/20261105_Sprint_84; verify #549-#557 closed; Phase 8 (main merge, refinement pass 1, 0.24.1 store release, pass 2).",
+        "Phase 8 carry-ins: the F342 Fold check after 0.24.1 (feeds F357), MV-3c when a YELLOW item appears; Harold reboots before F355."
     ],
     "next_sprint_targeted": {
-        "number": 84,
-        "stub": "docs/sprints/SPRINT_84_PLAN.md (written 2026-11-05 at Sprint 83 close-out)",
-        "committed": "MV-3c (YELLOW item), MV-5 iOS when Apple approves; scope from 8.4."
+        "number": 85,
+        "stub": "docs/sprints/SPRINT_85_PLAN.md (written 2026-11-08 at Sprint 84 close-out)",
+        "committed": "0.24.1 store updates, the F342 Fold check (F357), MV-3c (YELLOW item), iOS when Apple approves; scope from 8.4."
     }
 }
