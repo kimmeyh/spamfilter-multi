@@ -172,7 +172,9 @@ get it to go faster, otherwise a"*
 - q1: c -- backlog until the Fold check; recorded in F357.
 - q2: a -- backlog card F357, decided with the F342 Fold evidence.
 - q3: Harold asked what a "hook notice" is and what it looks like, after the other items. Explained in the session
-  2026-11-08; the decision is still open.
+  2026-11-08 (a notice reports a check that could not run; on allow it is sent as a `systemMessage`, on a block it
+  is added as "Note: ..."). Harold, 2026-11-08, verbatim: *"q3. a"*. a -- backlog: added to F329 as a step. A hook
+  skips a check on purpose in a live session and Harold takes a screenshot of the warning line (about 15 minutes).
 - q4: "can you get it to go faster, otherwise a": faster, so `.claude/settings.json` is unchanged (20 seconds).
   `verify-closeout-complete.py` runs its two gh calls at the same time and gives all git and gh calls one
   15 second budget; a call with no time left is not made and its check adds a "did not run" notice. Each git

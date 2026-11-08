@@ -356,7 +356,7 @@ Source: `docs/research/R76-3_HEURISTICS_ML_GENAI_SPAM_IDENTIFICATION.md` (Issue 
 - AC: same as F326; the Stop registration swaps to `python "${CLAUDE_PROJECT_DIR}/.claude/hooks/sprint-auto-advance.py"`
   only after every case passes; a mutation per gate (1b, 1c, F193 markers).
 
-**F329. Python conversion batch H4: the hook test tooling, then retire the PowerShell shims (~210-340m with the i2 fault-injection test, estimate unverified) Priority 36 -- NEW 2026-11-01 (Sprint 83 Task 10, F321 R-6)**
+**F329. Python conversion batch H4: the hook test tooling, then retire the PowerShell shims (~225-355m with the i2 fault-injection test and the q3 notice check, estimate unverified) Priority 36 -- NEW 2026-11-01 (Sprint 83 Task 10, F321 R-6)**
 - Phase: Process / Tooling
 - Platform: Development process.
 - Files (608 lines): `.claude/hooks/run-test-cases.ps1` (131 plus the Sprint 83 `.py` route support),
@@ -374,6 +374,10 @@ Source: `docs/research/R76-3_HEURISTICS_ML_GENAI_SPAM_IDENTIFICATION.md` (Issue 
   hook with `git` and `gh` forced to fail (not found, non-zero exit, timeout) and asserts that each check ends in a
   violation or a notice, never a silent pass. Evidence: hook checks that skipped silently in Sprints 82, 83 and 84
   (9 findings in the Sprint 84 7.7.1 reviews). About 60-90 minutes.
+- Added 2026-11-08 (Sprint 84 retro q3 = a): confirm how a hook notice shows on Harold's screen. Make a hook skip a
+  check on purpose in a live session (on allow the notice is a `systemMessage`; on a block it is "Note: ..."), and
+  Harold takes a screenshot of the warning line. Record the screenshot path in the sprint plan. Evidence: no live
+  notice has been seen yet (Sprint 84 SF L13). About 15 minutes.
 
 **F330. Python conversion batch S1: repo helper scripts (~150-250m, estimate unverified) Priority 37 -- NEW 2026-11-01 (Sprint 83 Task 10, F321 R-6)**
 - Phase: Process / Tooling
