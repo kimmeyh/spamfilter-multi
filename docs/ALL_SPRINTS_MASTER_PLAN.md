@@ -370,6 +370,10 @@ Source: `docs/research/R76-3_HEURISTICS_ML_GENAI_SPAM_IDENTIFICATION.md` (Issue 
   `mutation-lock.ps1`, `agent-work-status.ps1`, the hourly wake-up, CLAUDE.md, docs) is updated in the same commit.
 - AC: the Python runner reports the same case counts as the PowerShell runner did (record both); `mutation-test` kills
   its own sample spec; docs and CLAUDE.md command lines updated.
+- Added 2026-11-08 (Sprint 84 retro i2 = b): a fault-injection test in `test_pylib.py`. It runs each Stop and PreToolUse
+  hook with `git` and `gh` forced to fail (not found, non-zero exit, timeout) and asserts that each check ends in a
+  violation or a notice, never a silent pass. Evidence: hook checks that skipped silently in Sprints 82, 83 and 84
+  (9 findings in the Sprint 84 7.7.1 reviews). About 60-90 minutes.
 
 **F330. Python conversion batch S1: repo helper scripts (~150-250m, estimate unverified) Priority 37 -- NEW 2026-11-01 (Sprint 83 Task 10, F321 R-6)**
 - Phase: Process / Tooling
@@ -516,6 +520,31 @@ Source: `docs/research/R76-3_HEURISTICS_ML_GENAI_SPAM_IDENTIFICATION.md` (Issue 
   what holds the main thread (the background engine start, or work the app does at that moment) and fix it.
 - AC: the step is repeated on a release build and recorded; a confirmed freeze has a fix and a test, or the card
   closes with the evidence that it does not repeat.
+
+**F356. Android first-run polish (~45-90m, estimate unverified) Priority 50 -- NEW 2026-11-08 (Sprint 84 retro i8 = a)**
+- Phase: Core App Quality
+- Platform: Android (seen on a clean emulator install, Sprint 84 F341 round 2/3); check Windows for the shared text.
+- Observations from the Sprint 84 Android first run (`SPRINT_84_PLAN.md` F341 round 2/3):
+  1. A demo scan is labeled "Live Scan".
+  2. In Read-Only mode it is not clear what "Deleted (not processed)" means.
+  3. The Help walkthrough is out of date.
+  4. No message appears after the user refuses the notification permission.
+  5. Some titles are cut off.
+  6. The "Background" tab label breaks inside the word ("Backgrou / nd").
+- Do: confirm each one on the current build, then fix it or close it with a reason.
+- AC: each observation has a fix with a test, or a written reason it stays; a screenshot of each fixed screen.
+
+**F357. Background scan rows marked `interrupted`: the recent-scan check and the completion overwrite (~30-60m, estimate unverified) Priority 34 -- NEW 2026-11-08 (Sprint 84 retro q2 = a, q1 = c; decide with the F342 Fold evidence)**
+- Phase: Core App Quality
+- Platform: Android (WorkManager); check Windows for the shared code.
+- q2: the recent-scan check counts the `interrupted` row that F342 writes when Android stops a scan, so a restart from
+  a Doze alarm is skipped until the scan interval has passed. Do: make the check ignore `interrupted` rows, if the
+  Fold evidence shows the restart is wanted.
+- q1: if a scan finishes in the milliseconds before the stop handler runs, the completion or error write replaces
+  `interrupted` (`scan_result_store.dart:419`, `:458`). Recommendation at the retro: N/A, because "completed" is the
+  more accurate record; Harold chose to decide it with the Fold evidence.
+- Depends on: the F342 Fold check after 0.24.1 (the carry-in in `SPRINT_84_PLAN.md`).
+- AC: both decisions recorded with the Fold log lines that support them; a test for any change.
 
 **F342. Fold background log: AOL unfinished scans and errors, iCloud errors (~30-90m, estimate unverified) Priority 34 -- NEW 2026-11-04 (Sprint 83 MV Q10 = 2, backlog)**
 - Phase: Core App Quality

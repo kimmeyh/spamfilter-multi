@@ -151,6 +151,31 @@ original), D (pointers to the old hooks were not grepped after the port).
 - **Lead Developer**: none
 - **Claude Code Development Team**: Already carded this sprint: F352, F353, F354, F355; F341 updated with what is left. Candidates from the Android first run that are not yet cards (for the Step 5 proposals): the demo scan labelled "Live Scan", the Read-Only meaning of "Deleted (not processed)", the outdated walkthrough, no message after notifications are refused, cut titles and the "Backgrou / nd" tab label.
 
+## Improvement Decisions
+
+Harold, 2026-11-08, verbatim: *"i1. e i2. b. i3. a i4. a i5. a i6. a i7. e. i8. a q1. c q2. a q3. more details on
+what a "hook notice" is and what it looks like (do all the other i and q items first before providing) q4. can you
+get it to go faster, otherwise a"*
+
+- i1: e -- skip this sprint, track. Release notes keep the manual 7.7 re-derive step; no Source line and no test.
+  Track: if class A (text that promises more than shipped) recurs in the Sprint 85 7.7.1 reviews, propose i1 again.
+- i2: b -- backlog. Added to F329 (the fault-injection test for every hook).
+- i3: a -- done. `SPRINT_PLANNING.md` card template: new "Port of existing code" line.
+- i4: a -- done. `SPRINT_PLANNING.md` card template: new "Old name search" line.
+- i5: a -- done. `SPRINT_EXECUTION_WORKFLOW.md` 5.1.9 and `SPRINT_CHECKLIST.md`: each new guard test is listed with
+  its mutation verdict.
+- i6: a -- done. `SPRINT_EXECUTION_WORKFLOW.md` 5.1.2 class 1: the search for a code shape covers nested forms.
+- i7: e -- skip this sprint, track. Track: if a first-run attempt is wasted again by a stored item that was missed,
+  propose i7 again.
+- i8: a -- one backlog card, F356 "Android first-run polish".
+- q1: c -- backlog until the Fold check; recorded in F357.
+- q2: a -- backlog card F357, decided with the F342 Fold evidence.
+- q3: Harold asked what a "hook notice" is and what it looks like, after the other items. Explained in the session
+  2026-11-08; the decision is still open.
+- q4: "can you get it to go faster, otherwise a": faster, so `.claude/settings.json` is unchanged (20 seconds).
+  `verify-closeout-complete.py` now runs its two gh calls at the same time and gives all git and gh calls one
+  15 second budget; a call with no time left is not made and its check adds a "did not run" notice.
+
 ## Completeness Validation (Phase 7.3/7.4 exit gate)
 
 - [x] All 14 categories are present
