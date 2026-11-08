@@ -1,8 +1,8 @@
 // Sprint 84, F345 (R-3) -- first-run screens captured as PNG files on the iOS
 // Simulator, one set per device size (iPhone, iPad).
 //
-// This is NOT one of the nine regression files. It exists so the `ios-simulator`
-// job in .github/workflows/ios.yml can hand Harold the first-run screens before
+// This is NOT one of the nine regression files. It exists so the
+// `ios-simulator-screens` job in .github/workflows/ios.yml can hand Harold the first-run screens before
 // a real iPhone exists (they feed Sprint 84 Task 4 R-4). It skips itself unless
 // the job passes the output folder, so `scripts/run-integration-tests.ps1` on
 // Windows runs it as a skipped test.
@@ -12,8 +12,14 @@
 //     --dart-define=SCREENSHOT_DIR=<folder> --dart-define=SCREENSHOT_LABEL=iphone
 //
 // The Simulator runs the app as a process on the Mac, so a Dart File write to an
-// absolute Mac path reaches the Mac disk (UNVERIFIED until the first CI run; the
-// job also takes a whole-screen `xcrun simctl io screenshot` as a fallback).
+// absolute Mac path reaches the Mac disk (proven by the F345 CI runs, see
+// docs/research/F345_IOS_SIMULATOR_S84.md). There is no `simctl io screenshot`
+// fallback: the job fails when fewer than 5 PNG files arrive per device.
+//
+// Skipping: `testWidgets` takes `skip` only as a bool (flutter_test
+// widget_tester.dart:151), which drops the reason. `group` takes a String reason
+// (test_compat.dart:208), so the skip is set once on the group and the runner
+// prints why (Sprint 84 7.7.1, Copilot).
 //
 // WHAT THIS DOES NOT CATCH: it proves each screen builds and paints on an iOS
 // device size. It asserts nothing about the screen text. A screen that painted
@@ -45,6 +51,10 @@ const String _label = String.fromEnvironment('SCREENSHOT_LABEL', defaultValue: '
 
 void main() {
   IntegrationTestWidgetsFlutterBinding.ensureInitialized();
+
+  // Null runs the group; a String skips it and the runner prints the reason.
+  final String? skipReason =
+      _dir.isEmpty ? 'SCREENSHOT_DIR not set (iOS Simulator job only)' : null;
 
   group('F345 first-run screens ($_label)', () {
     HarnessSession? session;
@@ -96,15 +106,13 @@ void main() {
       expect(File(path).lengthSync(), greaterThan(1000));
     }
 
-    final skipReason = _dir.isEmpty ? 'SCREENSHOT_DIR not set (iOS Simulator job only)' : null;
-
     testWidgets('empty state (no accounts)', (tester) async {
       await shoot(tester, '1-empty-state', const AccountSelectionScreen());
-    }, skip: skipReason != null);
+    });
 
     testWidgets('Add Account (choose provider)', (tester) async {
       await shoot(tester, '2-add-account', const PlatformSelectionScreen());
-    }, skip: skipReason != null);
+    });
 
     testWidgets('Add Account (AOL form)', (tester) async {
       await shoot(
@@ -112,14 +120,14 @@ void main() {
         '3-add-account-aol-form',
         const AccountSetupScreen(platformId: 'aol', platformDisplayName: 'AOL'),
       );
-    }, skip: skipReason != null);
+    });
 
     testWidgets('Settings', (tester) async {
       await shoot(tester, '4-settings', const SettingsScreen(accountId: 'test-account'));
-    }, skip: skipReason != null);
+    });
 
     testWidgets('Help', (tester) async {
       await shoot(tester, '5-help', const HelpScreen());
-    }, skip: skipReason != null);
-  });
+    });
+  }, skip: skipReason);
 }
