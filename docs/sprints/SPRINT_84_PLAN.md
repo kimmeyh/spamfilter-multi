@@ -739,6 +739,41 @@ q5. a q6. a and update the architecture documents as needed with this decision".
 - q5 = a (F352 D2): same start screen, with the default account selected at startup.
 - q6 = a (F352 D3): the F135 decision changes for the default only; the session selection stays unpersisted.
   Recorded as ADR-0052 (Accepted) and in `docs/ARCHITECTURE.md` "SelectedAccountProvider". Code changes are F352.
+- MV-6 Android leg (2026-11-07 19:06-19:21, emulator `pixel34_updated`, Android 14, 2 GB RAM). The emulator DEV app
+  (built 11/06 12:57, before 36b724ac) was uninstalled; a fresh DEV debug 0.24.1 was built and installed at 19:06
+  (first build failed: the sqlite3 hook could not rename its downloaded `.tmp` file, cause unknown; the download
+  folder under `.dart_tool` was deleted and the second build passed). Checks from `F325_FIRST_RUN_EVALUATION_S83.md`
+  "What the live run checks first":
+  - Clean start: Select Account, "No Accounts Yet", Add Account and "Try Demo Mode instead"; no permission prompt.
+  - Check 4: the notification permission is asked when Settings > Background > Enable Background Scanning is turned
+    on. After "Don't allow", scanning stays on and the screen does not say that notifications are off.
+  - Check 1: the Results title says "Read-Only"; the default filter is "No rule: 12"; the dropdown says
+    "Deleted (not processed): 26 / These emails matched a delete rule." and does not say they were not deleted
+    because the mode is Read-Only.
+  - Demo scan Results say "Live Scan": `results_display_screen.dart:1400-1401` sets that label for any live result,
+    demo included.
+  - Check 5: the demo Manual Scan shows both "Start Live Scan" and "Start Demo Scan (Testing)".
+  - Check 3: the AOL setup dialog steps are low-contrast grey, the address is plain text (not a link), and step 2
+    and 4 say "click" on a phone.
+  - Check 7 and 2: the First-Use Walkthrough lists Outlook.com and ProtonMail, says tap "Start Scan" (the buttons
+    are "Start Live Scan" and "Start Demo Scan (Testing)") and the "+" button (the empty screen has "Add
+    Account"). Help > Account Setup recommends a Gmail App Password (IMAP); the provider list shows Gmail by
+    OAuth.
+  - Check 10: no way to send feedback; `feedback|contact|support@|report a bug` has 0 matches in `lib/ui/` and
+    `assets/content/`.
+  - Layout at 1080 x 2340: titles cut to "Man..." and "Setti..."; the Settings tab reads "Backgrou / nd"; "Back to
+    Accounts" wraps; Settings > General says content history is kept "in a file on this computer".
+  - Background on the Demo account: the worker ran at once and logged "Account d***@example.com not found among
+    saved accounts; nothing to scan".
+  - ANR: "MyEmailSpamFilter [DEV] isn't responding" at 19:13 (logcat: Input dispatching timed out, 5000 ms), while
+    the background worker started. Main thread in `BackgroundWorker.executeBackgroundTask` (workmanager,
+    `BackgroundWorker.kt:439`) -> `FlutterJNI.dispatchPlatformMessage`, waiting in ART. The dialog came back at
+    19:18 and 19:20 with no second ANR line in logcat. Emulator: 2 GB RAM, 1.24 GB of 1.5 GB swap in use. Cause
+    unknown; emulator memory pressure on a debug build is possible but not proven. Settles by: the same step on
+    a release build (the Fold) or an emulator with more RAM. Evidence: scratchpad `mv6_android\` (21 screenshots,
+    three logcat files, `bugreport_anr.zip`).
+  - Not checked on Android: check 6 (relaunch after adding a real account) and the Gmail native sign-in (check 2);
+    both need a real account. Check 9 is the Fold.
 
 - **MV-1 (Windows DEV, then the Fold): re-enter the iCloud app-specific password (F342 group 1).** Precondition: the
   iCloud account is flagged; the Windows DEV database shows `gmail_sign_in_required = true` for the iCloud account
