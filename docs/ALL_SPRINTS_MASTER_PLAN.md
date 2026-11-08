@@ -493,6 +493,13 @@ Source: `docs/research/R76-3_HEURISTICS_ML_GENAI_SPAM_IDENTIFICATION.md` (Issue 
   other; "Turn on" does not request the notification permission; raw exception text reaches users; the GitHub
   feedback address is plain text, not a link.
 - AC: each check has a result with a screenshot or log line; each confirmed finding becomes its own card.
+- Sprint 84 (Task 4, moved to the next sprint by Harold 2026-11-07, "mv-6 move to next sprint"): DONE on a clean
+  Android emulator: checks 1, 3, 4, 5, 7 and 10, plus layout notes (results in `SPRINT_84_PLAN.md` round 2/3).
+  Windows: the clean run is blocked by F354 (shared credential file), so Windows gets its own checks with accounts
+  present (Harold q1 = a): 1280 x 720 at 125% and 800 x 600 done; Ctrl+R / F5 not settled; the browser Gmail
+  sign-in needs Harold. LEFT: check 6 (relaunch after adding a real account), check 2 (Gmail sign-in, both
+  platforms), check 9 (Fold), the iOS Simulator screens, and a card per confirmed finding. Also LEFT: the ANR seen
+  when background scanning was turned on in the emulator debug build (cause unknown; repeat on a release build).
 
 **F342. Fold background log: AOL unfinished scans and errors, iCloud errors (~30-90m, estimate unverified) Priority 34 -- NEW 2026-11-04 (Sprint 83 MV Q10 = 2, backlog)**
 - Phase: Core App Quality

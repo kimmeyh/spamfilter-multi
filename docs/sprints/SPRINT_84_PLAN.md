@@ -759,8 +759,8 @@ q5. a q6. a and update the architecture documents as needed with this decision".
     are "Start Live Scan" and "Start Demo Scan (Testing)") and the "+" button (the empty screen has "Add
     Account"). Help > Account Setup recommends a Gmail App Password (IMAP); the provider list shows Gmail by
     OAuth.
-  - Check 10: no way to send feedback; `feedback|contact|support@|report a bug` has 0 matches in `lib/ui/` and
-    `assets/content/`.
+  - Check 10: Help shows the GitHub issues address as plain text (`help_screen.dart:369`), not a link; no other
+    feedback path seen. (Corrected 19:26: a first search used a file filter that matched nothing and reported 0.)
   - Layout at 1080 x 2340: titles cut to "Man..." and "Setti..."; the Settings tab reads "Backgrou / nd"; "Back to
     Accounts" wraps; Settings > General says content history is kept "in a file on this computer".
   - Background on the Demo account: the worker ran at once and logged "Account d***@example.com not found among
@@ -774,6 +774,15 @@ q5. a q6. a and update the architecture documents as needed with this decision".
     three logcat files, `bugreport_anr.zip`).
   - Not checked on Android: check 6 (relaunch after adding a real account) and the Gmail native sign-in (check 2);
     both need a real account. Check 9 is the Fold.
+- MV-6 Windows (2026-11-07, DEV window with Harold's accounts): the window is 1600 x 900 at 125% = 1280 x 720; at
+  800 x 600 the Results screen fits, with the title cut ("Results - ..."); F5 on Results showed no visible
+  change (not settled). The window was put back to 1280 x 720.
+
+**Manual Validation results, round 3 (Harold, 2026-11-07)**:
+- MV-1: PASS. Harold: "mv-1 all steps completed and working as expected". The DEV database no longer has the
+  iCloud `gmail_sign_in_required` row.
+- MV-6: moved to the next sprint. Harold: "mv-6 move to next sprint". The remaining work is on card F341 in the
+  master plan; the Android and partial Windows results above stay as its evidence.
 
 - **MV-1 (Windows DEV, then the Fold): re-enter the iCloud app-specific password (F342 group 1).** Precondition: the
   iCloud account is flagged; the Windows DEV database shows `gmail_sign_in_required = true` for the iCloud account
