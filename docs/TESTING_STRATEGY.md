@@ -454,11 +454,13 @@ cd mobile-app/scripts
 
 ### iOS test level: the Simulator job (Sprint 84, F345)
 
-iOS has no Mac on this machine, so the iOS leg of the `integration_test` files runs in CI: the `ios-simulator` job in
-`.github/workflows/ios.yml` on the `macos-26` runner. It builds for the iOS Simulator (no signing, no secret), boots an
-iPhone-size and an iPad-size Simulator, runs each integration test file in its own `flutter test` process, and captures
-the first-run screens as PNG files (`integration_test/ios_first_run_screens_test.dart`, which skips itself unless the
-job passes `SCREENSHOT_DIR`). It also checks `PrivacyInfo.xcprivacy` is inside the built `.app`.
+iOS has no Mac on this machine, so the iOS leg of the `integration_test` files runs in CI, in two jobs in
+`.github/workflows/ios.yml` on the `macos-26` runner. Both build for the iOS Simulator (no signing, no secret).
+- **`ios-simulator`**: boots an iPhone-size Simulator, runs each integration test file in its own `flutter test`
+  process, and checks `PrivacyInfo.xcprivacy` is inside the built `.app`.
+- **`ios-simulator-screens`**: boots an iPhone-size and an iPad-size Simulator and captures the first-run screens as
+  PNG files (`integration_test/ios_first_run_screens_test.dart`, which skips itself unless the job passes
+  `SCREENSHOT_DIR`). It fails when a device has fewer than 5 screens. There is no `simctl io screenshot` fallback.
 
 - **Start it**: `gh workflow run ios.yml --ref <branch>`, or by a push that changes `mobile-app/ios/**`.
 - **It cannot go green on nothing**: it fails on a failed file, on a file that ran zero tests, on zero passed tests in

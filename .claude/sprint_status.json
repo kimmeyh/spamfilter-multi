@@ -1,21 +1,21 @@
 {
     "_description": "Sprint status file that persists across context compaction. Update after each phase/sub-phase completion.",
-    "_last_updated": "2026-11-06T20:11",
+    "_last_updated": "2026-11-07T20:45",
     "_usage": "Read this file after context compaction to restore sprint approval state and progress.",
     "_staleness_note": "This file had drifted 15 sprints (last updated at Sprint 35, 2026-04-19) before being refreshed at Sprint 50 close-out. It is a Phase 7.7 checklist item -- update it at every sprint close-out, not opportunistically.",
     "current_sprint": {
         "number": 84,
         "branch": "feature/20261105_Sprint_84",
-        "status": "Phase 7.7.1 Final Code Reviews",
-        "status_detail": "Handed to Harold 2026-11-06 20:11. Tasks 0, 2, 3 (reverted), 5, 6, 7, 8 DONE; Tasks 1 and 4 run during Manual Validation. 5.1.2, 5.1.5 (sweep-head 24ad4e04) and 5.1.9 recorded. iOS CI run 8 green. Open questions: Question A (F1-1, four empty states), F350 review Q1 and Q2.",
+        "status": "Phase 7.7 Final Code Reviews (7.7.1)",
+        "status_detail": "Manual Validation complete 2026-11-07 (Harold q1 = a). 7.7.1 reviews in: Copilot (2 comments), code-reviewer (3 M, 5 L), silent-failure-hunter (6 M, 13 L); fixes in progress. Retrospective feedback recorded. Earlier: handed to Harold 2026-11-06 20:11. Tasks 0, 2, 3 (reverted), 5, 6, 7, 8 DONE; Tasks 1 and 4 run during Manual Validation. 5.1.2, 5.1.5 (sweep-head 24ad4e04) and 5.1.9 recorded. iOS CI run 8 green. Open questions: Question A (F1-1, four empty states), F350 review Q1 and Q2.",
         "plan_approved": true,
         "pr_number": 548,
         "version": "0.24.1+22"
     },
     "previous_sprint": {
-        "number": "83",
+        "number": 83,
         "branch": "feature/20261031_Sprint_83",
-        "pr_number": "534",
+        "pr_number": 534,
         "result": "Merged to develop 8bee2ce0 and main (#547) 0a65fd22 on 2026-11-05 (UTC 2026-11-06); tag v0.24.0 (annotated, pushed). Closed by the merge: #535-#546. Open as intended: #509 #510 #523 (Apple).",
         "docs": "docs/sprints/SPRINT_83_PLAN.md, SPRINT_83_RETROSPECTIVE.md, SPRINT_83_SUMMARY.md"
     },

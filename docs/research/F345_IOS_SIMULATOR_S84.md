@@ -151,7 +151,8 @@ passed, so on Windows it is one skipped file in `run-integration-tests.ps1`.
 The screens are pumped directly, not reached by taps, because `xcrun simctl` cannot tap. They show the same widgets
 as the real routes but not the transition into them. Where the PNG goes: a Simulator app is a process on the Mac, so a
 File write to an absolute Mac path reaches the runner disk (verified in run 2). The test fails when a
-file is not written, and the job adds a whole-screen `xcrun simctl io screenshot` per device as a second source.
+file is not written. [Corrected 2026-11-07, 7.7.1 review: the planned whole-screen `xcrun simctl io screenshot`
+second source was not built; the `ios-simulator-screens` job instead fails when a device has fewer than 5 PNG files.]
 
 Run 2 (id 42252630431): the iPhone leg wrote all five PNG files to the Mac path and the artifact holds them
 (`iphone-1-empty-state.png` through `iphone-5-help.png`), so the host-path write works (verified, no longer

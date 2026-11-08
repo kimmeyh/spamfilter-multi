@@ -1,14 +1,15 @@
 # Release notes -- 0.24.1 -- Google Play
 
-PROVISIONAL (Sprint 84 Phase 3.7.0b, 2026-11-06). Re-derive from the finished CHANGELOG at Phase 7.7 and again at
-Phase 8.3 (STORE_RELEASE_PROCESS.md Step 1b, GOOGLE_PLAY_RELEASE_PROCESS.md Step 2).
+Re-derived at Phase 7.7 (Sprint 84 7.7.1 review, 2026-11-07) from the CHANGELOG `[Unreleased]` block (Issues #551,
+#557). Re-derive again at Phase 8.3 (STORE_RELEASE_PROCESS.md Step 1b, GOOGLE_PLAY_RELEASE_PROCESS.md Step 2).
 
 **Range**: everything after 0.24.0 (versionCode 21). If 0.24.0 was never uploaded to Play, widen the range at Phase
 8.3 to everything after the last upload (`STORE_VERSION_STATUS.md` "Last uploaded to Play"). This build is
 versionCode 22.
 
-**Not claimed yet**: the planned items below. Each line stays only if its Sprint 84 task ships and passes Manual
-Validation. F280 (Doze network) also needs Harold's Q2 = 2 decision before its line is kept.
+**Not claimed**: F280 (Doze-alarm scans wait for a network). It was reverted (Harold, 2026-11-06 16:13) and does not
+ship. F342 is claimed only as far as it is proven: Scan History shows a reason for a stopped scan. That the next scan
+starts sooner is not claimed until the Fold check after 0.24.1 confirms it.
 
 **Excluded from this file**: the iOS project, the iOS Simulator CI job and the iOS privacy manifest; developer tools
 (the Python hooks); `test`, `docs` and `chore` entries.
@@ -18,7 +19,7 @@ Paste the en-US block below into the Play Console release-notes field, tags incl
 ---
 
 <en-US>
-Background scans that run while the phone is idle wait for a network connection instead of failing.
+Scan History now explains when a background scan was stopped before it finished.
 
-Fixes for background scan errors found on a test phone.
+Small-screen fixes: the Rule Test messages and the Scan History filter chips no longer run off the screen.
 </en-US>

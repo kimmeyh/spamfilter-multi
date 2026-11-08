@@ -93,9 +93,10 @@ an Apple Developer Program membership (the LLC's enrollment path is UNVERIFIED).
 
 ### What the Simulator does not prove (Sprint 84, F345, R-5)
 
-From Sprint 84 the `ios-simulator` job (`.github/workflows/ios.yml`) runs the shared integration tests and captures the
-first-run screens on an iPhone-size and an iPad-size iOS Simulator (`docs/TESTING_STRATEGY.md`, "iOS test level"). It is
-a test level, not an exception to ADR-0042. It does NOT prove:
+From Sprint 84 two jobs in `.github/workflows/ios.yml` run on the iOS Simulator: `ios-simulator` runs the shared
+integration tests on an iPhone-size Simulator, and `ios-simulator-screens` captures the first-run screens on an
+iPhone-size and an iPad-size Simulator (`docs/TESTING_STRATEGY.md`, "iOS test level"). They are a test level, not an
+exception to ADR-0042. It does NOT prove:
 
 - Gmail sign-in on iOS (empty client IDs; no sign-in is run). Only a TestFlight build on a device proves it.
 - The notification permission prompt and real notification delivery (Exception 2 and

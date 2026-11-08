@@ -622,6 +622,11 @@ Source: `docs/research/R76-3_HEURISTICS_ML_GENAI_SPAM_IDENTIFICATION.md` (Issue 
   the Manage Safe Senders search with no match and the Gmail sign-in error use the same `Center > Column` shape that
   36b724ac fixed elsewhere. Estimate: they need about 126 px, and about 74 px is left with the keyboard open. Not seen
   on a device.
+- Added by the Sprint 84 7.7.1 code review (grep `Center(child: Column(` and `Center(child: Padding(... Column(` in
+  `lib/ui`): `scan_history_screen.dart:541` `_buildEmptyState` (no `mainAxisSize.min`, inside the `Expanded` at :362;
+  the Sprint 84 chip `Wrap` makes the header above it taller on a narrow screen), `email_detail_view.dart:876`,
+  `scan_progress_screen.dart:546`, `rules_ready_gate.dart:50` and `:65`, `gmail_webview_oauth_screen.dart:187`.
+  For each, either apply the fix or record why it cannot get short. The estimate above covers the first four only.
 - Do: apply the 36b724ac scrollable layout to the four screens with a short-viewport widget test each; sprint with F351.
 
 **F354. Windows DEV keeps its account credentials in the production-named folder (~60-120m, estimate unverified) Priority 14 (Harold, 2026-11-07, q2 = a) -- NEW 2026-11-07 (Sprint 84 MV-6)**
