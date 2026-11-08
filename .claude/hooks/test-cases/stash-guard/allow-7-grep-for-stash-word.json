@@ -1,0 +1,1 @@
+{"session_id": "allow-7-grep-for-stash-word", "cwd": "D:/Data/Harold/github/spamfilter-multi", "hook_event_name": "PreToolUse", "tool_name": "Bash", "tool_input": {"command": "git log --grep stash"}}

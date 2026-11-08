@@ -113,6 +113,27 @@ def _ps_int(value) -> int:
     raise ValueError(f"cannot convert {type(value).__name__} to int")
 
 
+GIT_BAD_REVISION = 128
+"""git's exit code for 'fatal: bad revision' (an unknown commit). common.git returns 1 for a git it could
+not launch or that timed out, so 128 means the REPO answered "no such commit", not "git is broken"."""
+
+
+def load_plan(cwd: str, sprint_num: int, violations: list):
+    """The sprint plan text, or None after recording a violation once (checks 3d, 3d-2 and 3d-3 share it).
+
+    Sprint 84 7.7.1: callers run only for an APPROVED plan, and an approved plan with no file used to pass
+    all three checks in silence. The missing file is itself the violation."""
+    plan_path = os.path.join(cwd, f"docs/sprints/SPRINT_{sprint_num}_PLAN.md")
+    if os.path.exists(plan_path):
+        return read_markdown(plan_path)
+    message = (f"docs/sprints/SPRINT_{sprint_num}_PLAN.md is MISSING although sprint_status.json says the plan is "
+               "approved, so checks 3d (Phase 5 evidence), 3d-2 (7.7.1 reviews) and 3d-3 (Executed-by) cannot run. "
+               "Restore the plan file (it is the record those checks read).")
+    if message not in violations:
+        violations.append(message)
+    return None
+
+
 def _sprint_of(status):
     sprint = status.get("current_sprint") if isinstance(status, dict) else None
     return sprint if isinstance(sprint, dict) else None
@@ -167,8 +188,20 @@ def check_status(cwd: str, sprint_num: int, violations: list):
     status = None
     try:
         status = json.loads(read_markdown(status_path))
+    except (OSError, ValueError):
+        violations.append(".claude/sprint_status.json is not valid JSON.")
+        return None
+    try:
         sprint = _sprint_of(status)
-        status_sprint = _ps_int(sprint.get("number") if sprint else None)
+        raw_number = sprint.get("number") if sprint else None
+        try:
+            status_sprint = _ps_int(raw_number)
+        except (ValueError, TypeError, OverflowError):
+            # Sprint 84 7.7.1: valid JSON with a number that is not a number. Do not call it invalid JSON.
+            violations.append(
+                f".claude/sprint_status.json current_sprint.number is {raw_number!r}, which is not a whole number "
+                f"(the branch is Sprint {sprint_num}) -- the file is wrong or stale.")
+            status_sprint = sprint_num
         if status_sprint != sprint_num:
             violations.append(
                 f".claude/sprint_status.json current_sprint.number is {status_sprint} but the branch is Sprint {sprint_num} "
@@ -182,8 +215,8 @@ def check_status(cwd: str, sprint_num: int, violations: list):
             age = _status_age_days(str(last_updated))
             if age is not None and age > 30:
                 violations.append(f".claude/sprint_status.json _last_updated is {age:,.0f} days old.")
-    except (OSError, ValueError, TypeError):
-        violations.append(".claude/sprint_status.json is not valid JSON.")
+    except (OSError, ValueError, TypeError) as exc:
+        violations.append(f".claude/sprint_status.json could not be checked ({type(exc).__name__}: {exc}).")
     return status if isinstance(status, dict) else None
 
 
@@ -208,7 +241,10 @@ def check_zero_files(payload: dict, cwd: str, violations: list):
         text = str(override)
         items = [text] if text.strip() else None
     else:
-        _code, out = common.git("status", "--porcelain", "--", "0*", cwd=cwd)
+        code, out = common.git("status", "--porcelain", "--", "0*", cwd=cwd)
+        if code != 0:
+            # Sprint 84 7.7.1: a failed `git status` was read as "no uncommitted files". Still fails open, visibly.
+            hooklib.notice(f"check 3a-2 did not run: git status exit {code}")
         lines = [line for line in out.splitlines() if line]
         items = lines or None
     if items:
@@ -223,10 +259,9 @@ def check_phase5_evidence(payload: dict, status, cwd: str, sprint_num: int, viol
     """3d (Sprint 63+): Phase 5 evidence markers in the plan; 3e: sweep-head versus later lib/ui commits."""
     if not (sprint_num >= 63 and status is not None and _plan_approved(status)):
         return
-    plan_path = os.path.join(cwd, f"docs/sprints/SPRINT_{sprint_num}_PLAN.md")
-    if not os.path.exists(plan_path):
+    plan_text = load_plan(cwd, sprint_num, violations)
+    if plan_text is None:
         return
-    plan_text = read_markdown(plan_path)
     for name, pattern in EVIDENCE:
         if not pattern.search(plan_text):
             violations.append(
@@ -241,7 +276,15 @@ def check_phase5_evidence(payload: dict, status, cwd: str, sprint_num: int, viol
         sweep_head = match.group(1)
         code, newer_ui = common.git("log", "--oneline", f"{sweep_head}..HEAD", "--", "mobile-app/lib/ui", cwd=cwd)
         lines = [line for line in newer_ui.splitlines() if line]
-        if code == 0 and lines:
+        if code == GIT_BAD_REVISION:
+            # Sprint 84 7.7.1: a typo'd or rebased-away hash made `git log` fail and the check passed in silence.
+            violations.append(
+                f"The WinWright sweep artifact records sweep-head: {sweep_head}, which is not a commit in this repo "
+                f"(git log exit {code}). Re-run the sweep at HEAD and record the real commit, so close-out can prove "
+                "the sweep covered the FINAL UI (a rebase or a typo leaves a hash that no longer exists).")
+        elif code != 0:
+            hooklib.notice(f"check 3e did not run: git log exit {code}")
+        elif lines:
             violations.append(
                 f"The WinWright sweep artifact records sweep-head: {sweep_head}, but lib/ui commits exist AFTER it: "
                 f"{len(lines)} commit(s). The sweep proved an OLDER UI; re-run it at HEAD and update sweep-head (this is the "
@@ -250,7 +293,10 @@ def check_phase5_evidence(payload: dict, status, cwd: str, sprint_num: int, viol
         code, ui_changed = common.git("diff", "--name-only", "origin/develop...HEAD", "--", "mobile-app/lib/ui", cwd=cwd)
         if code != 0:
             code, ui_changed = common.git("diff", "--name-only", "develop...HEAD", "--", "mobile-app/lib/ui", cwd=cwd)
-        if ui_changed.strip():
+            if code != 0:
+                # Sprint 84 7.7.1: both diffs failed, so "no UI change" was an assumption, not a result.
+                hooklib.notice(f"check 3e did not run: git diff against origin/develop and develop failed (exit {code})")
+        if code == 0 and ui_changed.strip():
             violations.append(
                 f"This sprint changed mobile-app/lib/ui but SPRINT_{sprint_num}_PLAN.md's sweep artifact records no "
                 "'sweep-head: <hash>' line. Record the commit the sweep ran at so close-out can prove the sweep covered the "
@@ -261,10 +307,10 @@ def check_final_reviews(status, cwd: str, sprint_num: int, violations: list):
     """3d-2 (Sprint 77+): the 7.7.1 final code reviews bullet carries evidence (first line only)."""
     if not (sprint_num >= 77 and status is not None and _plan_approved(status)):
         return
-    plan_path = os.path.join(cwd, f"docs/sprints/SPRINT_{sprint_num}_PLAN.md")
-    if not os.path.exists(plan_path):
+    plan_text = load_plan(cwd, sprint_num, violations)
+    if plan_text is None:
         return
-    match = FINAL_REVIEWS.search(read_markdown(plan_path))
+    match = FINAL_REVIEWS.search(plan_text)
     if not match:
         violations.append(
             f"SPRINT_{sprint_num}_PLAN.md has no '- **7.7.1 final code reviews**: <evidence>' line. Phase 7.7.1 runs BOTH "
@@ -291,10 +337,9 @@ def check_executed_by(status, cwd: str, sprint_num: int, violations: list):
     """3d-3 (Sprint 77+): every task card's Executed-by line is filled, with minutes from Sprint 78."""
     if not (sprint_num >= 77 and status is not None and _plan_approved(status)):
         return
-    plan_path = os.path.join(cwd, f"docs/sprints/SPRINT_{sprint_num}_PLAN.md")
-    if not os.path.exists(plan_path):
+    plan_text = load_plan(cwd, sprint_num, violations)
+    if plan_text is None:
         return
-    plan_text = read_markdown(plan_path)
     empty = 0
     no_minutes = 0
     matches = list(EXECUTED_BY.finditer(plan_text))
@@ -351,23 +396,35 @@ def check_velocity_rows(cwd: str, sprint_num: int, violations: list):
             f"| <Item> | {sprint_num} | DONE | <est> | <est-wall> | <act> | <act-wall> | <notes> |")
 
 
+GIT_CALL_TIMEOUT = 5
+"""Seconds allowed for each git call on the check 3c path (common.git defaults to 15)."""
+
+
 def check_open_issues(cwd: str, violations: list, notices=None):
     """3c: open sprint-labeled GitHub issues, POST-MERGE ONLY. Any git or gh failure skips the check.
+
+    Time budget (settings.json gives the hook 20 seconds): this path makes two git calls (5 seconds each)
+    and up to two gh calls (8 seconds each), 26 seconds if every call hangs. Each call normally returns in
+    milliseconds, so the limits are a backstop per call, not a promise that the whole hook ends in 20.
 
     Sprint 84 5.1.2 F6-1: a gh failure still fails OPEN, but adds a notice to `notices` so the user
     learns that check 3c did not run (a silent skip looked the same as "no open cards")."""
     if notices is None:
         notices = []
 
-    def skipped(reason: str):
-        notices.append(f"check 3c did not run: gh unavailable ({reason})")
+    def skipped(reason: str, why: str = "gh unavailable"):
+        notices.append(f"check 3c did not run: {why} ({reason})")
 
-    _code, remote = common.git("remote", "get-url", "origin", cwd=cwd)
-    _code, remote = common.git("remote", "get-url", "origin", cwd=cwd)
+    # Sprint 84 7.7.1: one `git remote get-url` (it was called twice), and a 5 second limit per git call.
+    remote_code, remote = common.git("remote", "get-url", "origin", cwd=cwd, timeout=GIT_CALL_TIMEOUT)
     repo_url = remote.strip()
-    _code, branch_out = common.git("branch", "--show-current", cwd=cwd)
+    branch_code, branch_out = common.git("branch", "--show-current", cwd=cwd, timeout=GIT_CALL_TIMEOUT)
     branch = branch_out.strip()
-    if not repo_url or not branch:
+    if not repo_url:
+        skipped(f"git remote get-url origin exit {remote_code}" if remote_code != 0 else "no origin URL", "git")
+        return
+    if not branch:
+        skipped(f"git branch --show-current exit {branch_code}" if branch_code != 0 else "detached HEAD, no branch", "git")
         return
     code, pr_json = common.gh("pr", "list", "--repo", repo_url, "--head", branch, "--state", "all",
                               "--json", "state,mergedAt", cwd=cwd)
@@ -447,8 +504,11 @@ def decide(payload: dict) -> hooklib.Verdict:
     if override:
         branch = override.strip()
     else:
-        _code, out = common.git("branch", "--show-current", cwd=cwd)
+        code, out = common.git("branch", "--show-current", cwd=cwd)
         branch = out.strip()
+        if code != 0:
+            # Sprint 84 7.7.1: a failed `git branch` looked like "no branch" and allowed the whole gate silently.
+            hooklib.notice(f"git branch --show-current failed (exit {code}) in {cwd}; verify-closeout-complete gate skipped")
     if not branch or BRANCH_BYPASS.search(branch):
         return hooklib.allow()
     found = SPRINT_BRANCH.search(branch)

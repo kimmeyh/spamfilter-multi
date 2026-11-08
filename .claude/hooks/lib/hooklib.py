@@ -157,8 +157,11 @@ def run(name: str, decide: Callable[[dict], Verdict]) -> None:
             notice(f"[{name}] input unreadable ({problem}); allowed without checking")
         verdict = apply_notices(decide(parse_payload(raw)), list(_PENDING))
     except Exception as exc:  # noqa: BLE001 - fail open by design, see module docstring
-        # One line: the hook-error notice shows only the first stderr line.
-        sys.stderr.write(f"[{name}] internal error, command allowed: {type(exc).__name__}: {exc}\n")
+        # Claude Code shows only the FIRST stderr line of a hook error, so that line carries the essential
+        # text: the error, and how many queued notices follow on the lines after it (Sprint 84 7.7.1).
+        reason = f"{type(exc).__name__}: {exc}".replace("\r", " ").replace("\n", " ")
+        follow = f"; {len(_PENDING)} notice(s) follow" if _PENDING else ""
+        sys.stderr.write(f"[{name}] internal error, command allowed: {reason}{follow}\n")
         for queued in _PENDING:
             sys.stderr.write(f"Note: {queued}\n")
         sys.exit(HOOK_ERROR)

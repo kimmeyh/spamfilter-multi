@@ -954,7 +954,14 @@ class PortedHookTests(unittest.TestCase):
         self.assertEqual(verdict.code, 2)
         self.assertIn("sweep-head: 0123abc, but lib/ui commits exist AFTER it: 2 commit(s)", verdict.stderr)
         self.assertIn(("log", "--oneline", "0123abc..HEAD", "--", "mobile-app/lib/ui"), calls)
-        self.assertEqual(run(True, log=(1, "a1 ui\n"))[0].code, 0)   # hash not resolvable: skip
+        # Sprint 84 7.7.1 finding 1: git exit 128 = "no such commit" is a VIOLATION, not a skip.
+        verdict, _ = run(True, log=(128, ""))
+        self.assertEqual(verdict.code, 2)
+        self.assertIn("sweep-head: 0123abc, which is not a commit in this repo (git log exit 128)", verdict.stderr)
+        # Any other git failure (could not launch, timeout) still fails open, but with a notice.
+        drain_notices()
+        self.assertEqual(run(True, log=(1, "a1 ui\n"))[0].code, 0)
+        self.assertEqual([n for n in drain_notices() if "3e" in n], ["check 3e did not run: git log exit 1"])
         self.assertEqual(run(True, log=(0, ""))[0].code, 0)          # no newer UI commits
         verdict, _ = run(False, diffs=[(0, "mobile-app/lib/ui/x.dart\n")])
         self.assertEqual(verdict.code, 2)
@@ -962,8 +969,201 @@ class PortedHookTests(unittest.TestCase):
         verdict, calls = run(False, diffs=[(1, ""), (0, "mobile-app/lib/ui/x.dart\n")])  # origin/develop missing
         self.assertEqual(verdict.code, 2)
         self.assertIn("develop...HEAD", [c[2] for c in calls if c[0] == "diff"])
+        drain_notices()
         self.assertEqual(run(False, diffs=[(1, ""), (1, "")])[0].code, 0)
+        queued = [n for n in drain_notices() if "3e" in n]  # finding 1: both diffs failed -> a notice, not silence
+        self.assertEqual(len(queued), 1)
+        self.assertIn("check 3e did not run: git diff", queued[0])
         self.assertEqual(run(False, diffs=[(0, "")])[0].code, 0)
+        self.assertEqual([n for n in drain_notices() if "3e" in n], [])
+
+    def closeout_project(self, tmp, number=77, plan=None, status_extra=None, current_extra=None):
+        """A throwaway project with an approved-plan status file (and a plan when `plan` is text)."""
+        project = Path(tmp)
+        (project / ".claude").mkdir(parents=True, exist_ok=True)
+        current = {"number": number, "plan_approved": True, "pr_number": 1}
+        current.update(current_extra or {})
+        body = {"current_sprint": current}
+        body.update(status_extra or {})
+        (project / ".claude" / "sprint_status.json").write_text(json.dumps(body), encoding="utf-8")
+        if plan is not None:
+            (project / "docs" / "sprints").mkdir(parents=True, exist_ok=True)
+            (project / "docs" / "sprints" / f"SPRINT_{number}_PLAN.md").write_text(plan, encoding="utf-8")
+        return project
+
+    def test_closeout_missing_plan_file_is_one_violation_not_a_pass(self):
+        """7.7.1 finding 3: an approved plan with no plan file used to pass 3d, 3d-2 and 3d-3 in silence.
+        Does NOT catch a plan file that exists but is empty; the evidence checks report that themselves."""
+        module = load_hook("verify-closeout-complete.py")
+        with tempfile.TemporaryDirectory() as tmp:
+            project = self.closeout_project(tmp)
+            payload = self.closeout_payload("final-review-missing-sprint")
+            payload["cwd"] = str(project)
+            verdict = module.decide(payload)
+            self.assertEqual(verdict.code, 2)
+            self.assertEqual(verdict.stderr.count("SPRINT_77_PLAN.md is MISSING"), 1, verdict.stderr)
+            # Plan not approved: the file is not owed yet, so no violation.
+            project = self.closeout_project(Path(tmp) / "draft", current_extra={"plan_approved": False})
+            payload["cwd"] = str(project)
+            self.assertNotIn("is MISSING", module.decide(payload).stderr)
+
+    def test_closeout_non_numeric_sprint_number_has_its_own_message(self):
+        """7.7.1 finding 4. Does NOT catch a number that is numeric text such as "77"; that is accepted
+        on purpose (the PowerShell [int] cast did the same)."""
+        module = load_hook("verify-closeout-complete.py")
+        with tempfile.TemporaryDirectory() as tmp:
+            project = self.closeout_project(tmp, current_extra={"number": "seventy-seven"})
+            payload = self.closeout_payload("final-review-missing-sprint")
+            payload["cwd"] = str(project)
+            verdict = module.decide(payload)
+            self.assertEqual(verdict.code, 2)
+            self.assertIn("current_sprint.number is 'seventy-seven', which is not a whole number", verdict.stderr)
+            self.assertNotIn("not valid JSON", verdict.stderr)
+            (project / ".claude" / "sprint_status.json").write_text("{bad", encoding="utf-8")
+            self.assertIn("is not valid JSON", module.decide(payload).stderr)
+
+    def test_closeout_git_failures_in_3a2_and_3c_are_noticed_not_silent(self):
+        """7.7.1 findings 1 and 2: a failed `git status` (3a-2) and a missing remote or branch (3c) add notices;
+        3c calls `git remote get-url` once. Does NOT catch a git that fails only for the sub-call after
+        the first (the fakes answer every call of a kind alike)."""
+        module = load_hook("verify-closeout-complete.py")
+        real_git = common.git
+        self.addCleanup(setattr, common, "git", real_git)
+        calls = []
+
+        def fake_git(*args, **kwargs):
+            calls.append((args, kwargs))
+            if args[:1] == ("status",):
+                return 128, ""
+            if args[:2] == ("remote", "get-url"):
+                return answers["remote"]
+            if args[:2] == ("branch", "--show-current"):
+                return answers["branch"]
+            return real_git(*args, **kwargs)
+
+        answers = {"remote": (0, ""), "branch": (0, "feature/x\n")}
+        with tempfile.TemporaryDirectory() as tmp:
+            project = self.closeout_project(tmp)
+            payload = self.closeout_payload("final-review-missing-sprint", dirty_zero_files_override=None)
+            payload["cwd"] = str(project)
+            common.git = fake_git
+            for remote, branch, words in (((0, ""), (0, "feature/x\n"), "no origin URL"),
+                                          ((128, ""), (0, "feature/x\n"), "git remote get-url origin exit 128"),
+                                          ((0, "https://x/y.git\n"), (0, ""), "detached HEAD, no branch"),
+                                          ((0, "https://x/y.git\n"), (128, ""), "git branch --show-current exit 128")):
+                answers.update(remote=remote, branch=branch)
+                calls.clear()
+                drain_notices()
+                module.decide(payload)
+                queued = drain_notices()
+                self.assertIn("check 3a-2 did not run: git status exit 128", queued, words)
+                self.assertTrue(any("check 3c did not run: git (" in n and words in n for n in queued), (words, queued))
+                self.assertEqual(sum(1 for args, _ in calls if args[:2] == ("remote", "get-url")), 1, words)
+                for args, kw in calls:
+                    if args[:2] in (("remote", "get-url"), ("branch", "--show-current")):
+                        self.assertEqual(kw.get("timeout"), module.GIT_CALL_TIMEOUT, (words, args))
+
+    def test_branch_lookup_failure_is_noticed_by_both_stop_hooks(self):
+        """7.7.1 finding 6: a failed `git branch` was an empty branch name and the gate allowed silently. A
+        detached HEAD (exit 0, empty output) stays silent. Does NOT catch a branch NAME git reports wrongly."""
+        self.addCleanup(setattr, common, "git", common.git)
+        for hook in ("verify-closeout-complete.py", "sprint-auto-advance.py"):
+            module = load_hook(hook)
+            payload = {"cwd": str(CASES / "fixtures" / "final-review-missing-sprint"),
+                       "last_assistant_message": self.CLOSEOUT_MESSAGE}
+            common.git = lambda *a, **k: (128, "")
+            drain_notices()
+            self.assertEqual(module.decide(payload).code, 0, hook)
+            queued = drain_notices()
+            self.assertEqual(len(queued), 1, (hook, queued))
+            self.assertIn("git branch --show-current failed (exit 128)", queued[0], hook)
+            common.git = lambda *a, **k: (0, "")
+            self.assertEqual(module.decide(payload).code, 0, hook)
+            self.assertEqual(drain_notices(), [], hook)
+
+    def test_status_file_that_is_not_an_object_is_noticed(self):
+        """7.7.1 finding 5. Does NOT catch a status file that is an object with no current_sprint; that is
+        the normal state outside a sprint and stays silent."""
+        cards = load_hook("require-sprint-cards.py")
+        advance = load_hook("sprint-auto-advance.py")
+        with tempfile.TemporaryDirectory() as tmp:
+            listing = Path(tmp) / "status.json"
+            listing.write_text("[1, 2]", encoding="utf-8")
+            cwd = Path(tmp) / "proj"
+            (cwd / ".claude").mkdir(parents=True)
+            (cwd / ".claude" / "sprint_status.json").write_text("[1, 2]", encoding="utf-8")
+            for label, call in (
+                    ("cards", lambda: cards.decide({"tool_input": {"command": "git commit -m x"},
+                                                    "status_path_override": str(listing)})),
+                    ("advance", lambda: advance.load_status(str(cwd)))):
+                drain_notices()
+                call()
+                queued = drain_notices()
+                self.assertEqual(len(queued), 1, label)
+                self.assertIn("is a JSON list, not an object; sprint gates skipped", queued[0], label)
+            (cwd / ".claude" / "sprint_status.json").write_text("{}", encoding="utf-8")
+            drain_notices()
+            advance.load_status(str(cwd))
+            self.assertEqual(drain_notices(), [])
+
+    def test_velocity_empty_cwd_warns_when_the_commit_could_close_a_task(self):
+        """7.7.1 finding 7. Does NOT catch a commit whose task reference lives only in a message file we
+        cannot name (a -F path held in a variable); the -F form is warned about, a heredoc message is
+        searched as command text."""
+        module = load_hook("warn-commit-without-velocity.py")
+        saved = os.environ.pop("CLAUDE_PROJECT_DIR", None)
+        if saved is not None:
+            self.addCleanup(os.environ.__setitem__, "CLAUDE_PROJECT_DIR", saved)
+        for command in ('git commit -m "Closes #12"', 'git commit -m "Task 4 done"', "git commit -F msg.txt"):
+            verdict = module.decide({"tool_name": "Bash", "tool_input": {"command": command}})
+            warning = warning_of(verdict.stdout)
+            self.assertIsNotNone(warning, command)
+            self.assertIn("payload has no working directory", warning, command)
+        self.assertEqual(module.decide({"tool_name": "Bash", "tool_input": {"command": 'git commit -m "fix"'}}).stdout, "")
+
+    def test_stash_guard_read_only_form_never_hides_a_state_change(self):
+        """7.7.1 finding 8. Does NOT catch `git --git-dir x stash` (a global option whose value is a
+        separate word other than -C and -c); that form is not recognized."""
+        module = load_hook("block-carry-forward-stash.py")
+
+        def code(command):
+            return module.decide({"tool_input": {"command": command}}).code
+        for command in ("git stash list && git stash pop", "git stash show; git stash drop", "git -C somedir stash",
+                        "git -C \"a b\" stash push", "git -c core.x=1 stash", "git --no-pager stash",
+                        "git stash list | cat && git -C d stash apply"):
+            self.assertEqual(code(command), 2, command)
+        for command in ("git stash list", "git -C d stash show -p", "git stash list && git stash show",
+                        "git log --grep stash", "git commit -m \"git -C d stash\"", "echo stash"):
+            self.assertEqual(code(command), 0, command)
+
+    def test_sprint_cards_gate_sees_commit_after_global_options(self):
+        """7.7.1 finding 8. Does NOT catch a commit made through an alias (`git ci`) or a script."""
+        module = load_hook("require-sprint-cards.py")
+        status = CASES / "fixtures" / "status_approved_no_cards.json"
+        for command in ("git -C somedir commit -m x", "git -c user.name=x commit -m x", "git --no-pager commit -m x",
+                        "git add -A && git -C d commit -m x"):
+            verdict = module.decide({"tool_input": {"command": command}, "status_path_override": str(status)})
+            self.assertEqual(verdict.code, 2, command)
+        for command in ("git -C d log", "git -C d status", "git log --grep commit", "gh issue create --title \"git -C d commit\""):
+            verdict = module.decide({"tool_input": {"command": command}, "status_path_override": str(status)})
+            self.assertEqual(verdict.code, 0, command)
+
+    def test_internal_error_first_stderr_line_carries_the_essentials(self):
+        """7.7.1 finding 9: Claude Code shows only the first stderr line of a hook error. Does NOT catch how
+        Claude Code truncates a very long first line."""
+        with tempfile.TemporaryDirectory() as tmp:
+            script = Path(tmp) / "boom2.py"
+            script.write_text(
+                "import sys\nsys.path.insert(0, %r)\nimport hooklib\n"
+                "def decide(p):\n    hooklib.notice('gate skipped')\n    hooklib.notice('second')\n"
+                "    raise RuntimeError('line one\\nline two')\n"
+                "hooklib.run('boom2', decide)\n" % str(HOOKS / "lib"), encoding="utf-8")
+            done = subprocess.run([sys.executable, str(script)], input=b"{}", capture_output=True, timeout=60)
+        lines = done.stderr.decode("utf-8").splitlines()
+        self.assertEqual(done.returncode, hooklib.HOOK_ERROR)
+        self.assertEqual(lines[0], "[boom2] internal error, command allowed: RuntimeError: line one line two; "
+                                   "2 notice(s) follow")
+        self.assertEqual(lines[1:], ["Note: gate skipped", "Note: second"])
 
     def test_closeout_unexpected_exception_is_a_visible_hook_error_not_a_pass(self):
         """R-6. The plan path is a FOLDER, so reading it raises OSError, which no check swallows.

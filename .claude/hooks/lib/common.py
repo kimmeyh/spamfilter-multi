@@ -68,6 +68,19 @@ def strip_quoted(text: str) -> str:
     return _QUOTED_SPAN.sub('""', text)
 
 
+# Sprint 84 7.7.1 (finding 8): `git -C <dir> stash` and `git -c k=v commit` name the subcommand AFTER
+# global options, so `git\s+stash` missed them. Options tolerated between `git` and the subcommand:
+# `-C <dir>`, `-c <k=v>` (the argument may have been emptied by quote stripping, so it is optional),
+# and flags such as `--no-pager` or `--git-dir=x`. A word that is not an option ends the run, so
+# `git log --grep stash` does NOT read as a stash call.
+_GIT_GLOBAL_OPTIONS = r"(?:\s+(?:-[Cc](?:\s+\S+)?|--?[A-Za-z][\w-]*(?:=\S+)?))*"
+
+
+def git_subcommand_regex(subcommand: str, *, trailing: str = r"\b") -> re.Pattern:
+    """Compiled, case-insensitive pattern for `git [global options] <subcommand>`; `trailing` follows it."""
+    return re.compile(r"\bgit" + _GIT_GLOBAL_OPTIONS + r"\s+" + subcommand + trailing, re.IGNORECASE)
+
+
 def normalize_path(text: str) -> str:
     """One spelling for comparisons: forward slashes. Windows hands back backslashes."""
     return text.replace("\\", "/")
@@ -117,9 +130,11 @@ def gh(*args: str, cwd: str | os.PathLike | None = None, timeout: int = 8) -> tu
     A missing gh, a network failure, a timeout and a non-zero exit all return a non-zero code, so
     the caller can fail OPEN: a close-out check that needs GitHub declines to check when GitHub is
     unreachable (F327; verify-closeout-complete.ps1 swallowed the same cases with `catch { }`).
-    The default timeout is 8 seconds so the two calls the close-out hook can make (16 seconds at
-    most) finish inside that hook's 20 second budget in settings.json; a slow gh is then skipped
-    instead of the whole hook being killed.
+    The default timeout is 8 seconds per call. The close-out hook can make two gh calls (16 seconds
+    at most) after two git calls limited to 5 seconds each, so its worst case is 26 seconds against
+    the 20 second timeout in settings.json (Sprint 84 7.7.1: the earlier text claimed the sum fit).
+    Each call normally returns in milliseconds; the per-call limit only stops one slow call from
+    consuming the whole budget by itself.
 
     Sprint 84 5.1.2 F6-1: the failure code tells the caller WHY, so it can print a notice that the
     check did not run: GH_NOT_FOUND (127) when gh is not installed, GH_TIMEOUT (124) when it timed

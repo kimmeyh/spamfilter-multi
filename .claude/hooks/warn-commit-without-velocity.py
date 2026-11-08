@@ -94,6 +94,13 @@ def check(payload: dict) -> hooklib.Verdict:
 
     cwd = hooklib.cwd_of(payload) or os.environ.get("CLAUDE_PROJECT_DIR", "")
     if not cwd.strip():
+        # Sprint 84 7.7.1: with no working folder the message file and git state cannot be read. Say so when
+        # the commit could be task-closing (its text names a task, or its message is in a -F file we cannot open).
+        if CLOSES_TASK.search(cmd) or MESSAGE_FILE.search(cmd):
+            return send_context(
+                "[WARNING] Sprint 82 retro IMP-7: this commit may close a task, but the hook payload has no "
+                "working directory (and CLAUDE_PROJECT_DIR is unset), so the CODING_VELOCITY check did not run. "
+                "Confirm the velocity row is in the commit.")
         return hooklib.allow()
 
     text, unreadable = message_text(cmd, cwd)

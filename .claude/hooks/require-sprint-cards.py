@@ -26,6 +26,7 @@ import re
 import sys
 
 sys.path.insert(0, os.path.join(os.path.dirname(os.path.abspath(__file__)), "lib"))
+import common  # noqa: E402
 import hooklib  # noqa: E402
 
 HOOKS_DIR = os.path.dirname(os.path.abspath(__file__))
@@ -33,7 +34,8 @@ BYPASS = re.compile(r"allow_no_cards", re.I)
 HEREDOC = re.compile(r"<<-?\s*'?\"?([A-Za-z_][A-Za-z0-9_]*)'?\"?.*?^\s*\1\s*$", re.S | re.M)
 SINGLE_QUOTED = re.compile(r"'[^']*'")
 DOUBLE_QUOTED = re.compile(r'"[^"]*"')
-GIT_COMMIT = re.compile(r"git\s+commit\b", re.I)
+# Sprint 84 7.7.1 (finding 8): `git -C <dir> commit` and `git -c k=v commit` are commits too.
+GIT_COMMIT = common.git_subcommand_regex("commit")
 
 
 def command_text(payload: dict) -> str:
@@ -165,6 +167,10 @@ def decide(payload: dict) -> hooklib.Verdict:
         return hooklib.allow()
 
     status = read_status(status_path(payload))
+    if status is not None and not isinstance(status, dict):
+        # Sprint 84 7.7.1: the file parsed but is not an object (for example a list), so the gate
+        # cannot read it. It still fails open, but the user is told.
+        hooklib.notice(f"sprint_status.json is a JSON {type(status).__name__}, not an object; sprint gates skipped")
     if not isinstance(status, dict):
         return hooklib.allow()
     sprint = status.get("current_sprint")

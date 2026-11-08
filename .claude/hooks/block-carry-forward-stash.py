@@ -6,7 +6,9 @@ carry-forward rule: create the next branch, then COMMIT the uncommitted files; n
 forward (Sprint 47 retro Proposal 3).
 
   - ALLOWS a command that does not invoke `git stash`, a command carrying the literal token
-    `allow_stash`, and read-only `git stash list` / `git stash show`.
+    `allow_stash`, and read-only `git stash list` / `git stash show`
+    (also after global options such as `git -C <dir>`). A read-only form never hides a state-changing one in
+    the same command: `git stash list && git stash pop` blocks.
   - BLOCKS any other `git stash` form (bare `git stash`, push, save, pop, apply, drop, clear).
   - The text of quoted strings and heredoc bodies is data, not an invocation, so it is removed
     before the match (F130-S51 R-2). The bypass token is searched in the RAW command, as the
@@ -20,6 +22,7 @@ import re
 import sys
 
 sys.path.insert(0, os.path.join(os.path.dirname(os.path.abspath(__file__)), "lib"))
+import common  # noqa: E402
 import hooklib  # noqa: E402
 
 BYPASS = re.compile(r"allow_stash", re.I)
@@ -27,8 +30,10 @@ BYPASS = re.compile(r"allow_stash", re.I)
 HEREDOC = re.compile(r"<<-?\s*'?\"?([A-Za-z_][A-Za-z0-9_]*)'?\"?.*?^\s*\1\s*$", re.S | re.M)
 SINGLE_QUOTED = re.compile(r"'[^']*'")
 DOUBLE_QUOTED = re.compile(r'"[^"]*"')
-READ_ONLY = re.compile(r"git\s+stash\s+(list|show)\b", re.I)
-STATE_CHANGING = re.compile(r"git\s+stash\b", re.I)
+# Sprint 84 7.7.1 (finding 8): global options (`git -C dir stash`) are tolerated, and the read-only forms
+# are REMOVED from the scan before the state-changing test, so `git stash list && git stash pop` blocks.
+READ_ONLY = common.git_subcommand_regex(r"stash\s+(?:list|show)")
+STATE_CHANGING = common.git_subcommand_regex("stash")
 
 MESSAGE = "\n".join([
     "[BLOCKED] git stash is disallowed for branch carry-forward.",
@@ -69,9 +74,8 @@ def decide(payload: dict) -> hooklib.Verdict:
     cmd = command_text(payload)
     if not cmd.strip() or BYPASS.search(cmd):
         return hooklib.allow()
-    scan = invocation_text(cmd)
-    if READ_ONLY.search(scan):
-        return hooklib.allow()
+    # Remove the read-only forms first: one of them must not hide a state-changing form in the same command.
+    scan = READ_ONLY.sub(" ", invocation_text(cmd))
     if STATE_CHANGING.search(scan):
         return hooklib.block(MESSAGE)
     return hooklib.allow()

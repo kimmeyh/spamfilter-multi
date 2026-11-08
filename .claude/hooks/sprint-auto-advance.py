@@ -88,7 +88,11 @@ def load_status(cwd: str):
         # Sprint 84 5.1.2 F6-2: the file EXISTS, so the gates turning off must be visible.
         hooklib.notice(f"sprint_status.json unreadable ({type(exc).__name__}: {exc}); sprint gates skipped")
         return None, {}
-    current = data.get("current_sprint") if isinstance(data, dict) else None
+    if not isinstance(data, dict):
+        # Sprint 84 7.7.1: parsed but not an object (for example a list): the gates cannot read it.
+        hooklib.notice(f"sprint_status.json is a JSON {type(data).__name__}, not an object; sprint gates skipped")
+        return None, {}
+    current = data.get("current_sprint")
     return data, current if isinstance(current, dict) else {}
 
 
@@ -350,8 +354,12 @@ def decide(payload: dict) -> hooklib.Verdict:
     if override:
         branch = override.strip()
     else:
-        _code, out = common.git("branch", "--show-current", cwd=cwd)
+        code, out = common.git("branch", "--show-current", cwd=cwd)
         branch = out.strip()
+        if code != 0:
+            # Sprint 84 7.7.1: a failed `git branch` looked like "no branch" and allowed the whole gate silently.
+            # Still fails open; a detached HEAD exits 0 with empty output and stays silent.
+            hooklib.notice(f"git branch --show-current failed (exit {code}) in {cwd}; sprint-auto-advance gate skipped")
     if not branch:
         return hooklib.allow()
     if re.search(r"allow_stop_hook_bypass", branch, I):
