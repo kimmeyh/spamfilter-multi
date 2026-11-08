@@ -16,6 +16,9 @@ Port rules (R-4): parsing is carried over exactly, not improved.
 Fail-open and failure rules (R-3, R-6):
   - `git` and `gh` go through common.git and common.gh, which never raise. A missing or slow gh skips the
     GitHub check, exactly as the PowerShell `catch { }` did.
+  - Every git and gh call shares one time budget (HOOK_BUDGET_SECONDS), so the hook always returns before
+    the 20 second limit in settings.json. A call with no time left is not made; its check adds a
+    "did not run" notice (Sprint 84 retro q4).
   - Nothing else is swallowed. An unexpected exception reaches hooklib.run, which prints a one-line
     "internal error" notice and exits 1 (a visible hook error, the action is not silently passed).
 
@@ -25,6 +28,8 @@ import json
 import os
 import re
 import sys
+import time
+from concurrent.futures import ThreadPoolExecutor
 from datetime import datetime
 
 sys.path.insert(0, os.path.join(os.path.dirname(os.path.abspath(__file__)), "lib"))
@@ -241,10 +246,10 @@ def check_zero_files(payload: dict, cwd: str, violations: list):
         text = str(override)
         items = [text] if text.strip() else None
     else:
-        code, out = common.git("status", "--porcelain", "--", "0*", cwd=cwd)
+        code, out = _git("status", "--porcelain", "--", "0*", cwd=cwd)
         if code != 0:
             # Sprint 84 7.7.1: a failed `git status` was read as "no uncommitted files". Still fails open, visibly.
-            hooklib.notice(f"check 3a-2 did not run: git status exit {code}")
+            hooklib.notice(f"check 3a-2 did not run: git status {_exit_words(code)}")
         lines = [line for line in out.splitlines() if line]
         items = lines or None
     if items:
@@ -274,7 +279,7 @@ def check_phase5_evidence(payload: dict, status, cwd: str, sprint_num: int, viol
     match = SWEEP_HEAD.search(plan_text)
     if match:
         sweep_head = match.group(1)
-        code, newer_ui = common.git("log", "--oneline", f"{sweep_head}..HEAD", "--", "mobile-app/lib/ui", cwd=cwd)
+        code, newer_ui = _git("log", "--oneline", f"{sweep_head}..HEAD", "--", "mobile-app/lib/ui", cwd=cwd)
         lines = [line for line in newer_ui.splitlines() if line]
         if code == GIT_BAD_REVISION:
             # Sprint 84 7.7.1: a typo'd or rebased-away hash made `git log` fail and the check passed in silence.
@@ -283,19 +288,19 @@ def check_phase5_evidence(payload: dict, status, cwd: str, sprint_num: int, viol
                 f"(git log exit {code}). Re-run the sweep at HEAD and record the real commit, so close-out can prove "
                 "the sweep covered the FINAL UI (a rebase or a typo leaves a hash that no longer exists).")
         elif code != 0:
-            hooklib.notice(f"check 3e did not run: git log exit {code}")
+            hooklib.notice(f"check 3e did not run: git log {_exit_words(code)}")
         elif lines:
             violations.append(
                 f"The WinWright sweep artifact records sweep-head: {sweep_head}, but lib/ui commits exist AFTER it: "
                 f"{len(lines)} commit(s). The sweep proved an OLDER UI; re-run it at HEAD and update sweep-head (this is the "
                 "Sprint 61 F169 rot class -- a UI change shipped after the last sweep).")
     else:
-        code, ui_changed = common.git("diff", "--name-only", "origin/develop...HEAD", "--", "mobile-app/lib/ui", cwd=cwd)
+        code, ui_changed = _git("diff", "--name-only", "origin/develop...HEAD", "--", "mobile-app/lib/ui", cwd=cwd)
         if code != 0:
-            code, ui_changed = common.git("diff", "--name-only", "develop...HEAD", "--", "mobile-app/lib/ui", cwd=cwd)
+            code, ui_changed = _git("diff", "--name-only", "develop...HEAD", "--", "mobile-app/lib/ui", cwd=cwd)
             if code != 0:
                 # Sprint 84 7.7.1: both diffs failed, so "no UI change" was an assumption, not a result.
-                hooklib.notice(f"check 3e did not run: git diff against origin/develop and develop failed (exit {code})")
+                hooklib.notice(f"check 3e did not run: git diff against origin/develop and develop failed ({_exit_words(code)})")
         if code == 0 and ui_changed.strip():
             violations.append(
                 f"This sprint changed mobile-app/lib/ui but SPRINT_{sprint_num}_PLAN.md's sweep artifact records no "
@@ -397,15 +402,65 @@ def check_velocity_rows(cwd: str, sprint_num: int, violations: list):
 
 
 GIT_CALL_TIMEOUT = 5
-"""Seconds allowed for each git call on the check 3c path (common.git defaults to 15)."""
+"""Seconds allowed for each git call (common.git defaults to 15)."""
+
+GH_CALL_TIMEOUT = 8
+"""Seconds allowed for each gh call (the common.gh default)."""
+
+HOOK_BUDGET_SECONDS = 15
+"""Seconds that ALL git and gh calls of one run may use together (Sprint 84 retro q4, Harold 2026-11-08:
+"can you get it to go faster"). settings.json stops the hook at 20 seconds; the other 5 cover Python
+start-up and the reply. Before the budget, the worst case was 26 seconds on the check 3c path alone, so a
+hung call let Claude Code stop the hook and every check after it was lost without a word."""
+
+OUT_OF_TIME = 124
+"""Exit code returned for a git call that was not made because the budget was used up (the timeout code
+common.gh uses)."""
+
+_deadline = [None]
+
+
+def _start_budget() -> None:
+    _deadline[0] = time.monotonic() + HOOK_BUDGET_SECONDS
+
+
+def _call_timeout(limit: int):
+    """The timeout for the next call: its own limit, cut to the time left. None when under 1 second is left."""
+    if _deadline[0] is None:
+        return limit
+    left = _deadline[0] - time.monotonic()
+    if left < 1:
+        return None
+    return min(limit, int(left))
+
+
+def _git(*args: str, cwd: str):
+    timeout = _call_timeout(GIT_CALL_TIMEOUT)
+    if timeout is None:
+        return OUT_OF_TIME, ""
+    return common.git(*args, cwd=cwd, timeout=timeout)
+
+
+def _gh(*args: str, cwd: str):
+    timeout = _call_timeout(GH_CALL_TIMEOUT)
+    if timeout is None:
+        return common.GH_TIMEOUT, ""
+    return common.gh(*args, cwd=cwd, timeout=timeout)
+
+
+def _exit_words(code: int) -> str:
+    """Words for a failed git call in a notice."""
+    if code == OUT_OF_TIME:
+        return f"exit {code}, the hook's {HOOK_BUDGET_SECONDS} second time budget was used up"
+    return f"exit {code}"
 
 
 def check_open_issues(cwd: str, violations: list, notices=None):
     """3c: open sprint-labeled GitHub issues, POST-MERGE ONLY. Any git or gh failure skips the check.
 
-    Time budget (settings.json gives the hook 20 seconds): this path makes two git calls (5 seconds each)
-    and up to two gh calls (8 seconds each), 26 seconds if every call hangs. Each call normally returns in
-    milliseconds, so the limits are a backstop per call, not a promise that the whole hook ends in 20.
+    Time (Sprint 84 retro q4): the two gh calls run at the same time, so this path waits for the slower
+    one, not the sum. The issue list is fetched even when the PR has not merged, and is then not used. All
+    calls share HOOK_BUDGET_SECONDS, so the hook returns before the 20 second limit in settings.json.
 
     Sprint 84 5.1.2 F6-1: a gh failure still fails OPEN, but adds a notice to `notices` so the user
     learns that check 3c did not run (a silent skip looked the same as "no open cards")."""
@@ -416,18 +471,23 @@ def check_open_issues(cwd: str, violations: list, notices=None):
         notices.append(f"check 3c did not run: {why} ({reason})")
 
     # Sprint 84 7.7.1: one `git remote get-url` (it was called twice), and a 5 second limit per git call.
-    remote_code, remote = common.git("remote", "get-url", "origin", cwd=cwd, timeout=GIT_CALL_TIMEOUT)
+    remote_code, remote = _git("remote", "get-url", "origin", cwd=cwd)
     repo_url = remote.strip()
-    branch_code, branch_out = common.git("branch", "--show-current", cwd=cwd, timeout=GIT_CALL_TIMEOUT)
+    branch_code, branch_out = _git("branch", "--show-current", cwd=cwd)
     branch = branch_out.strip()
     if not repo_url:
-        skipped(f"git remote get-url origin exit {remote_code}" if remote_code != 0 else "no origin URL", "git")
+        skipped(f"git remote get-url origin {_exit_words(remote_code)}" if remote_code != 0 else "no origin URL", "git")
         return
     if not branch:
-        skipped(f"git branch --show-current exit {branch_code}" if branch_code != 0 else "detached HEAD, no branch", "git")
+        skipped(f"git branch --show-current {_exit_words(branch_code)}" if branch_code != 0 else "detached HEAD, no branch", "git")
         return
-    code, pr_json = common.gh("pr", "list", "--repo", repo_url, "--head", branch, "--state", "all",
+    with ThreadPoolExecutor(max_workers=2) as pool:
+        pr_call = pool.submit(_gh, "pr", "list", "--repo", repo_url, "--head", branch, "--state", "all",
                               "--json", "state,mergedAt", cwd=cwd)
+        issue_call = pool.submit(_gh, "issue", "list", "--repo", repo_url, "--label", "sprint", "--state", "open",
+                                 "--json", "number", cwd=cwd)
+        code, pr_json = pr_call.result()
+        issue_result = issue_call.result()
     pr_merged = False
     if code != 0:
         skipped(common.gh_failure_reason(code))
@@ -443,8 +503,7 @@ def check_open_issues(cwd: str, violations: list, notices=None):
                 pr_merged = True
     if not pr_merged:
         return
-    code, issue_json = common.gh("issue", "list", "--repo", repo_url, "--label", "sprint", "--state", "open",
-                                 "--json", "number", cwd=cwd)
+    code, issue_json = issue_result
     if code != 0:
         skipped(common.gh_failure_reason(code))
         return
@@ -491,6 +550,7 @@ apply and why."""
 
 
 def decide(payload: dict) -> hooklib.Verdict:
+    _start_budget()
     cwd = hooklib.cwd_of(payload) or os.getcwd()
     if payload.get("repo_override"):
         cwd = str(payload["repo_override"])
@@ -504,11 +564,11 @@ def decide(payload: dict) -> hooklib.Verdict:
     if override:
         branch = override.strip()
     else:
-        code, out = common.git("branch", "--show-current", cwd=cwd)
+        code, out = _git("branch", "--show-current", cwd=cwd)
         branch = out.strip()
         if code != 0:
             # Sprint 84 7.7.1: a failed `git branch` looked like "no branch" and allowed the whole gate silently.
-            hooklib.notice(f"git branch --show-current failed (exit {code}) in {cwd}; verify-closeout-complete gate skipped")
+            hooklib.notice(f"git branch --show-current failed ({_exit_words(code)}) in {cwd}; verify-closeout-complete gate skipped")
     if not branch or BRANCH_BYPASS.search(branch):
         return hooklib.allow()
     found = SPRINT_BRANCH.search(branch)

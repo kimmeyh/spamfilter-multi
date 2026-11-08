@@ -28,6 +28,7 @@ import os
 import subprocess
 import sys
 import tempfile
+import time
 import unittest
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
@@ -847,6 +848,61 @@ class PortedHookTests(unittest.TestCase):
         drain_notices()
         verdict = module.decide(payload)
         self.assertEqual((verdict.code, verdict.stdout, drain_notices()), (0, "", []))
+
+    def test_closeout_budget_used_up_makes_no_call_and_says_which_checks_did_not_run(self):
+        """Sprint 84 retro q4: every git and gh call shares HOOK_BUDGET_SECONDS. With no time left no call
+        is made, the hook still answers, and each skipped check is named. Does NOT catch a single call
+        that ignores its timeout (subprocess enforces it, not this hook)."""
+        module = load_hook("verify-closeout-complete.py")
+        self.addCleanup(setattr, common, "git", common.git)
+        self.addCleanup(setattr, common, "gh", common.gh)
+        calls = []
+        common.git = lambda *a, **k: calls.append(("git", a)) or (0, "")
+        common.gh = lambda *a, **k: calls.append(("gh", a)) or (0, "[]")
+        module.HOOK_BUDGET_SECONDS = 0
+        payload = self.closeout_payload("improvement-review-present-sprint",
+                                        branch_override="feature/20261030_Sprint_81",
+                                        dirty_zero_files_override=None)
+        drain_notices()
+        verdict = module.decide(payload)
+        queued = drain_notices()
+        self.assertEqual(calls, [])
+        self.assertIn(verdict.code, (0, 2))
+        self.assertIn("check 3a-2 did not run: git status exit 124, the hook's 0 second time budget was used up",
+                      queued)
+        self.assertTrue(any(n.startswith("check 3c did not run: git (git remote get-url origin exit 124")
+                            for n in queued), queued)
+        # With the normal budget each call gets its own limit.
+        module.HOOK_BUDGET_SECONDS = 15
+        timeouts = []
+        common.git = lambda *a, **k: timeouts.append(k.get("timeout")) or (0, "x\n")
+        common.gh = lambda *a, **k: timeouts.append(k.get("timeout")) or (0, "[]")
+        module.decide(payload)
+        self.assertEqual(sorted(set(timeouts)), [module.GIT_CALL_TIMEOUT, module.GH_CALL_TIMEOUT])
+
+    def test_closeout_gh_calls_run_at_the_same_time(self):
+        """Sprint 84 retro q4: check 3c waits for the slower gh call, not the sum of both. Does NOT catch a
+        slow git call before them (the budget test covers the total)."""
+        module = load_hook("verify-closeout-complete.py")
+        self.addCleanup(setattr, common, "git", common.git)
+        self.addCleanup(setattr, common, "gh", common.gh)
+        common.git = lambda *a, **k: (0, "feature/20261030_Sprint_81\n" if a[:1] == ("branch",)
+                                      else "https://github.com/example/repo.git\n")
+
+        def slow_gh(*args, **kwargs):
+            time.sleep(1.0)
+            if args[:2] == ("pr", "list"):
+                return 0, '[{"state":"MERGED","mergedAt":"2026-11-01T00:00:00Z"}]'
+            return 0, '[{"number":12}]'
+
+        common.gh = slow_gh
+        payload = self.closeout_payload("improvement-review-present-sprint",
+                                        branch_override="feature/20261030_Sprint_81")
+        started = time.monotonic()
+        verdict = module.decide(payload)
+        took = time.monotonic() - started
+        self.assertIn("still OPEN: #12.", verdict.stderr)
+        self.assertLess(took, 1.8, f"the two gh calls took {took:.2f} s, so they ran one after the other")
 
     def test_closeout_claim_and_mid_sprint_patterns(self):
         """Gate 2: a mid-sprint signal beats a claim; each claim shape fires; case does not matter.

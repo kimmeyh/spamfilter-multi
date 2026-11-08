@@ -130,11 +130,10 @@ def gh(*args: str, cwd: str | os.PathLike | None = None, timeout: int = 8) -> tu
     A missing gh, a network failure, a timeout and a non-zero exit all return a non-zero code, so
     the caller can fail OPEN: a close-out check that needs GitHub declines to check when GitHub is
     unreachable (F327; verify-closeout-complete.ps1 swallowed the same cases with `catch { }`).
-    The default timeout is 8 seconds per call. The close-out hook can make two gh calls (16 seconds
-    at most) after two git calls limited to 5 seconds each, so its worst case is 26 seconds against
-    the 20 second timeout in settings.json (Sprint 84 7.7.1: the earlier text claimed the sum fit).
-    Each call normally returns in milliseconds; the per-call limit only stops one slow call from
-    consuming the whole budget by itself.
+    The default timeout is 8 seconds per call; the per-call limit stops one slow call from using a
+    hook's whole time. A hook that makes several calls keeps its own total budget: the close-out hook
+    runs its two gh calls at the same time and shares one 15 second budget across all its git and gh
+    calls, so it returns before the 20 second limit in settings.json (Sprint 84 retro q4).
 
     Sprint 84 5.1.2 F6-1: the failure code tells the caller WHY, so it can print a notice that the
     check did not run: GH_NOT_FOUND (127) when gh is not installed, GH_TIMEOUT (124) when it timed
