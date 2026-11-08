@@ -7,7 +7,10 @@ block (stderr to Claude), bypass token `allow_no_cards`, same gate message text.
     so a commit MESSAGE that mentions `git commit` does not trip the gate).
   - ALLOWS when `.claude/sprint_status.json` is missing or unreadable (fail open), when
     `current_sprint.plan_approved` is not set (pre-approval commits are legitimate), or when BOTH
-    `github_issues` is non-empty AND `current_sprint.pr_number` is set.
+    the CURRENT sprint has cards AND `current_sprint.pr_number` is set. `github_issues` is a dict keyed
+    `sprint_<N>` in the real status file; only the current sprint's entry counts (Sprint 84 7.7.1,
+    Copilot: the PowerShell original and the first port counted ANY non-empty dict, so a sprint with
+    no cards passed because earlier sprints had some). A list (old fixtures) counts when non-empty.
   - ALLOWS a command carrying the literal bypass token `allow_no_cards` (checked on the raw command,
     as the PowerShell hook did).
   - BLOCKS a `git commit` once the plan is approved and either deliverable is missing.
@@ -74,16 +77,31 @@ def _non_empty(value) -> bool:
 
 
 def _has_items(value) -> bool:
-    """PowerShell `$cards -and @($cards).Count -gt 0`."""
+    """Non-empty list, or a non-blank string such as "Task 0 #549, Task 1 #550"."""
     if isinstance(value, list):
         return len(value) > 0
+    if isinstance(value, str):
+        return value.strip() != ""
     return bool(value)
+
+
+def current_sprint_has_cards(issues, number) -> bool:
+    """True when the CURRENT sprint has recorded cards.
+
+    Real file: a dict keyed `sprint_<N>` (one entry per sprint, plus notes), so only
+    `issues["sprint_<number>"]` counts. Legacy fixtures: a plain list for the current sprint.
+    """
+    if isinstance(issues, dict):
+        if number is None or str(number) == "":
+            return False
+        return _has_items(issues.get("sprint_%s" % number))
+    return _has_items(issues)
 
 
 def missing_message(number, has_cards: bool, has_pr: bool) -> str:
     missing = []
     if not has_cards:
-        missing.append("GitHub issue cards (`github_issues` is empty)")
+        missing.append("GitHub issue cards (`github_issues` has no entry for this sprint)")
     if not has_pr:
         missing.append("a draft PR (`pr_number` is null)")
     missing_text = " AND ".join(missing)
@@ -93,7 +111,7 @@ def missing_message(number, has_cards: bool, has_pr: bool) -> str:
         fixes.append("\n".join([
             "  Cards:",
             '    gh issue create --title "<F-number>: <title>" --label sprint --body "<scope>"',
-            '    -> record the numbers in .claude/sprint_status.json "github_issues": [<n>, ...]',
+            '    -> record them in .claude/sprint_status.json "github_issues": {"sprint_<N>": "Task 0 #<n>, ..."}',
         ]))
     if not has_pr:
         fixes.append("\n".join([
@@ -153,7 +171,7 @@ def decide(payload: dict) -> hooklib.Verdict:
     if not isinstance(sprint, dict) or not sprint.get("plan_approved"):
         return hooklib.allow()
 
-    has_cards = _has_items(status.get("github_issues"))
+    has_cards = current_sprint_has_cards(status.get("github_issues"), sprint.get("number"))
     has_pr = _non_empty(sprint.get("pr_number"))
     if has_cards and has_pr:
         return hooklib.allow()

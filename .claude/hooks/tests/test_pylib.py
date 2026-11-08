@@ -637,7 +637,23 @@ class PortedHookTests(unittest.TestCase):
                                      "status_path_override": str(path)})
         self.assertEqual(verdict.code, 2)
         self.assertIn("[BLOCKED] Sprint 84 is missing a Phase 3.3.1 deliverable: GitHub issue cards "
-                      "(`github_issues` is empty) AND a draft PR (`pr_number` is null).", verdict.stderr)
+                      "(`github_issues` has no entry for this sprint) AND a draft PR (`pr_number` is null).",
+                      verdict.stderr)
+
+    def test_sprint_cards_count_only_the_current_sprint_entry(self):
+        """Sprint 84 7.7.1 (Copilot HIGH): the real file keys cards by `sprint_<N>`; an entry for an
+        EARLIER sprint must not satisfy the gate. Does NOT catch a current entry that names cards
+        which do not exist on GitHub; the hook reads the file, not the remote."""
+        module = load_hook("require-sprint-cards.py")
+        has = module.current_sprint_has_cards
+        self.assertFalse(has({"sprint_83": "Task 1 #540", "note": "x"}, 84))
+        self.assertFalse(has({"sprint_84": "  "}, 84))
+        self.assertFalse(has({"sprint_84": []}, 84))
+        self.assertFalse(has({"sprint_84": "Task 1 #550"}, None))
+        self.assertTrue(has({"sprint_83": "Task 1 #540", "sprint_84": "Task 0 #549"}, 84))
+        self.assertTrue(has({"sprint_84": [549]}, "84"))
+        self.assertTrue(has([901], 84))
+        self.assertFalse(has([], 84))
 
     def test_sprint_cards_unreadable_status_fails_open(self):
         """Does NOT catch a status file that parses but holds the wrong values; that is the

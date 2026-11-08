@@ -1,0 +1,14 @@
+{
+  "current_sprint": {
+    "number": 99,
+    "branch": "feature/29990101_Sprint_99",
+    "plan_approved": true,
+    "pr_number": 999,
+    "status": "Phase 4 execution"
+  },
+  "_fixture": "Sprint 84 7.7.1 (Copilot): real dict shape with the current sprint 99 recorded. require-sprint-cards must ALLOW.",
+  "github_issues": {
+    "sprint_98": "Task 1 #902",
+    "sprint_99": "Task 0 #903, Task 1 #904"
+  }
+}
