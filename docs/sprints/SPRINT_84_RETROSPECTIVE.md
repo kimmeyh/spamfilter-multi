@@ -159,7 +159,8 @@ get it to go faster, otherwise a"*
 
 - i1: e -- skip this sprint, track. Release notes keep the manual 7.7 re-derive step; no Source line and no test.
   Track: if class A (text that promises more than shipped) recurs in the Sprint 85 7.7.1 reviews, propose i1 again.
-- i2: b -- backlog. Added to F329 (the fault-injection test for every hook).
+- i2: b -- backlog. Added to F329 (the hook test tooling card), which now also holds the fault-injection test for
+  every hook; its estimate is now ~210-340m.
 - i3: a -- done. `SPRINT_PLANNING.md` card template: new "Port of existing code" line.
 - i4: a -- done. `SPRINT_PLANNING.md` card template: new "Old name search" line.
 - i5: a -- done. `SPRINT_EXECUTION_WORKFLOW.md` 5.1.9 and `SPRINT_CHECKLIST.md`: each new guard test is listed with
@@ -173,8 +174,12 @@ get it to go faster, otherwise a"*
 - q3: Harold asked what a "hook notice" is and what it looks like, after the other items. Explained in the session
   2026-11-08; the decision is still open.
 - q4: "can you get it to go faster, otherwise a": faster, so `.claude/settings.json` is unchanged (20 seconds).
-  `verify-closeout-complete.py` now runs its two gh calls at the same time and gives all git and gh calls one
-  15 second budget; a call with no time left is not made and its check adds a "did not run" notice.
+  `verify-closeout-complete.py` runs its two gh calls at the same time and gives all git and gh calls one
+  15 second budget; a call with no time left is not made and its check adds a "did not run" notice. Each git
+  call now has 5 seconds (it had 15). The improvement review found that on Windows a subprocess timeout did not
+  end a process whose child held the output pipe (a 2 second timeout took 11 seconds), so the budget alone was
+  not a hard limit: `common.git` and `common.gh` now kill the whole process tree on a timeout, and a watchdog
+  ends the hook at 17 seconds with a visible "close-out NOT verified" hook error.
 
 ## Completeness Validation (Phase 7.3/7.4 exit gate)
 

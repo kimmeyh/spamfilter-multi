@@ -356,7 +356,7 @@ Source: `docs/research/R76-3_HEURISTICS_ML_GENAI_SPAM_IDENTIFICATION.md` (Issue 
 - AC: same as F326; the Stop registration swaps to `python "${CLAUDE_PROJECT_DIR}/.claude/hooks/sprint-auto-advance.py"`
   only after every case passes; a mutation per gate (1b, 1c, F193 markers).
 
-**F329. Python conversion batch H4: the hook test tooling, then retire the PowerShell shims (~150-250m, estimate unverified) Priority 36 -- NEW 2026-11-01 (Sprint 83 Task 10, F321 R-6)**
+**F329. Python conversion batch H4: the hook test tooling, then retire the PowerShell shims (~210-340m with the i2 fault-injection test, estimate unverified) Priority 36 -- NEW 2026-11-01 (Sprint 83 Task 10, F321 R-6)**
 - Phase: Process / Tooling
 - Platform: Development process.
 - Files (608 lines): `.claude/hooks/run-test-cases.ps1` (131 plus the Sprint 83 `.py` route support),

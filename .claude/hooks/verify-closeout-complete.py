@@ -16,9 +16,10 @@ Port rules (R-4): parsing is carried over exactly, not improved.
 Fail-open and failure rules (R-3, R-6):
   - `git` and `gh` go through common.git and common.gh, which never raise. A missing or slow gh skips the
     GitHub check, exactly as the PowerShell `catch { }` did.
-  - Every git and gh call shares one time budget (HOOK_BUDGET_SECONDS), so the hook always returns before
-    the 20 second limit in settings.json. A call with no time left is not made; its check adds a
-    "did not run" notice (Sprint 84 retro q4).
+  - Every git and gh call shares one time budget (HOOK_BUDGET_SECONDS). A call with no time left is not
+    made; its check adds a "did not run" notice (Sprint 84 retro q4). A watchdog ends the hook at
+    HARD_STOP_SECONDS with a visible "close-out NOT verified" hook error, whatever its child processes do,
+    so Claude Code (20 seconds in settings.json) never stops it silently.
   - Nothing else is swallowed. An unexpected exception reaches hooklib.run, which prints a one-line
     "internal error" notice and exits 1 (a visible hook error, the action is not silently passed).
 
@@ -409,13 +410,17 @@ GH_CALL_TIMEOUT = 8
 
 HOOK_BUDGET_SECONDS = 15
 """Seconds that ALL git and gh calls of one run may use together (Sprint 84 retro q4, Harold 2026-11-08:
-"can you get it to go faster"). settings.json stops the hook at 20 seconds; the other 5 cover Python
-start-up and the reply. Before the budget, the worst case was 26 seconds on the check 3c path alone, so a
-hung call let Claude Code stop the hook and every check after it was lost without a word."""
+"can you get it to go faster"). Before the budget, the worst case was 26 seconds on the check 3c path
+alone, so a hung call let Claude Code stop the hook (20 seconds) and every check after it was lost without
+a word. Each git call now has 5 seconds, not the common.git default of 15 (gate 1, 3a-2, 3e included)."""
 
-OUT_OF_TIME = 124
-"""Exit code returned for a git call that was not made because the budget was used up (the timeout code
-common.gh uses)."""
+HARD_STOP_SECONDS = 17
+"""The watchdog ends the hook here even if a child process ignores its kill (Sprint 84 improvement
+review H-1). 3 seconds remain before the 20 second limit in settings.json."""
+
+OUT_OF_TIME = -1000
+"""Code for a call that was NOT MADE because the budget was used up. No process returns it, so it cannot
+be confused with common.TIMEOUT (124, a call that ran past its own limit) or 128 (a bad revision)."""
 
 _deadline = [None]
 
@@ -444,15 +449,46 @@ def _git(*args: str, cwd: str):
 def _gh(*args: str, cwd: str):
     timeout = _call_timeout(GH_CALL_TIMEOUT)
     if timeout is None:
-        return common.GH_TIMEOUT, ""
+        return OUT_OF_TIME, ""
     return common.gh(*args, cwd=cwd, timeout=timeout)
 
 
 def _exit_words(code: int) -> str:
     """Words for a failed git call in a notice."""
     if code == OUT_OF_TIME:
-        return f"exit {code}, the hook's {HOOK_BUDGET_SECONDS} second time budget was used up"
+        return f"not run, the hook's {HOOK_BUDGET_SECONDS} second time budget was used up"
+    if code == common.TIMEOUT:
+        return f"exit {code}, git took longer than its {GIT_CALL_TIMEOUT} second limit"
     return f"exit {code}"
+
+
+def _gh_skip(code: int) -> tuple:
+    """(reason, why) for a 'check 3c did not run' notice after a failed gh call."""
+    if code == OUT_OF_TIME:
+        return (f"the gh calls were not made, the hook's {HOOK_BUDGET_SECONDS} second time budget was used up",
+                "time budget")
+    return common.gh_failure_reason(code), "gh unavailable"
+
+
+def _hard_stop() -> None:
+    """Watchdog action: say what is known, then end the process with a visible hook error."""
+    pending = list(hooklib._PENDING)
+    follow = f"; {len(pending)} notice(s) follow" if pending else ""
+    sys.stderr.write(f"[verify-closeout-complete] checks did not finish in {HARD_STOP_SECONDS} seconds; "
+                     f"close-out NOT verified, stop allowed{follow}\n")
+    for queued in pending:
+        sys.stderr.write(f"Note: {queued}\n")
+    sys.stderr.flush()
+    os._exit(hooklib.HOOK_ERROR)
+
+
+def _start_watchdog():
+    import threading
+
+    timer = threading.Timer(HARD_STOP_SECONDS, _hard_stop)
+    timer.daemon = True
+    timer.start()
+    return timer
 
 
 def check_open_issues(cwd: str, violations: list, notices=None):
@@ -460,7 +496,7 @@ def check_open_issues(cwd: str, violations: list, notices=None):
 
     Time (Sprint 84 retro q4): the two gh calls run at the same time, so this path waits for the slower
     one, not the sum. The issue list is fetched even when the PR has not merged, and is then not used. All
-    calls share HOOK_BUDGET_SECONDS, so the hook returns before the 20 second limit in settings.json.
+    calls share HOOK_BUDGET_SECONDS; the watchdog (HARD_STOP_SECONDS) covers a call that does not end.
 
     Sprint 84 5.1.2 F6-1: a gh failure still fails OPEN, but adds a notice to `notices` so the user
     learns that check 3c did not run (a silent skip looked the same as "no open cards")."""
@@ -490,7 +526,7 @@ def check_open_issues(cwd: str, violations: list, notices=None):
         issue_result = issue_call.result()
     pr_merged = False
     if code != 0:
-        skipped(common.gh_failure_reason(code))
+        skipped(*_gh_skip(code))
         return
     if pr_json.strip():
         try:
@@ -505,7 +541,7 @@ def check_open_issues(cwd: str, violations: list, notices=None):
         return
     code, issue_json = issue_result
     if code != 0:
-        skipped(common.gh_failure_reason(code))
+        skipped(*_gh_skip(code))
         return
     if not issue_json.strip():
         skipped("empty gh output")
@@ -601,4 +637,8 @@ def decide(payload: dict) -> hooklib.Verdict:
 
 
 if __name__ == "__main__":
-    hooklib.run("verify-closeout-complete", decide)
+    _watchdog = _start_watchdog()
+    try:
+        hooklib.run("verify-closeout-complete", decide)
+    finally:
+        _watchdog.cancel()

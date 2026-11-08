@@ -234,14 +234,31 @@ class HooklibTests(unittest.TestCase):
         """5.1.2 F6-1. Does NOT catch a gh that exits non-zero for a reason of its own; that code passes
         through and is only worded as 'gh exit code N'."""
         import subprocess as sp
-        real_run = sp.run
-        self.addCleanup(setattr, sp, "run", real_run)
-        for exc, code, words in ((FileNotFoundError("gh"), common.GH_NOT_FOUND, "not installed"),
-                                 (sp.TimeoutExpired("gh", 1), common.GH_TIMEOUT, "timed out"),
-                                 (OSError("boom"), 1, "exit code 1")):
-            def boom(*a, _e=exc, **k):
-                raise _e
-            sp.run = boom
+        self.addCleanup(setattr, sp, "Popen", sp.Popen)
+        self.addCleanup(setattr, common, "_kill_tree", common._kill_tree)
+        common._kill_tree = lambda proc: None
+
+        class HangingPopen:
+            pid = 0
+
+            def __init__(self, *a, **k):
+                self.calls = 0
+
+            def communicate(self, timeout=None):
+                self.calls += 1
+                if self.calls == 1:
+                    raise sp.TimeoutExpired("gh", timeout)
+                return "", ""
+
+        for fake, code, words in ((FileNotFoundError("gh"), common.GH_NOT_FOUND, "not installed"),
+                                  (HangingPopen, common.GH_TIMEOUT, "timed out"),
+                                  (OSError("boom"), 1, "exit code 1")):
+            if isinstance(fake, Exception):
+                def boom(*a, _e=fake, **k):
+                    raise _e
+                sp.Popen = boom
+            else:
+                sp.Popen = fake
             got, out = common.gh("pr", "list")
             self.assertEqual((got, out), (code, ""))
             self.assertIn(words, common.gh_failure_reason(got))
@@ -851,8 +868,8 @@ class PortedHookTests(unittest.TestCase):
 
     def test_closeout_budget_used_up_makes_no_call_and_says_which_checks_did_not_run(self):
         """Sprint 84 retro q4: every git and gh call shares HOOK_BUDGET_SECONDS. With no time left no call
-        is made, the hook still answers, and each skipped check is named. Does NOT catch a single call
-        that ignores its timeout (subprocess enforces it, not this hook)."""
+        is made, the hook still answers, and each skipped check is named. Does NOT catch a call that does
+        not end; the watchdog test and the tree-kill test cover that."""
         module = load_hook("verify-closeout-complete.py")
         self.addCleanup(setattr, common, "git", common.git)
         self.addCleanup(setattr, common, "gh", common.gh)
@@ -867,10 +884,10 @@ class PortedHookTests(unittest.TestCase):
         verdict = module.decide(payload)
         queued = drain_notices()
         self.assertEqual(calls, [])
-        self.assertIn(verdict.code, (0, 2))
-        self.assertIn("check 3a-2 did not run: git status exit 124, the hook's 0 second time budget was used up",
+        self.assertEqual(verdict.code, 0)  # this fixture has no violation; the skips are notices, not blocks
+        self.assertIn("check 3a-2 did not run: git status not run, the hook's 0 second time budget was used up",
                       queued)
-        self.assertTrue(any(n.startswith("check 3c did not run: git (git remote get-url origin exit 124")
+        self.assertTrue(any(n.startswith("check 3c did not run: git (git remote get-url origin not run, the hook's")
                             for n in queued), queued)
         # With the normal budget each call gets its own limit.
         module.HOOK_BUDGET_SECONDS = 15
@@ -879,6 +896,71 @@ class PortedHookTests(unittest.TestCase):
         common.gh = lambda *a, **k: timeouts.append(k.get("timeout")) or (0, "[]")
         module.decide(payload)
         self.assertEqual(sorted(set(timeouts)), [module.GIT_CALL_TIMEOUT, module.GH_CALL_TIMEOUT])
+
+    def test_closeout_budget_used_up_before_gh_names_the_budget_not_gh(self):
+        """Improvement review M-1: the git calls of 3c succeed, then the budget is gone, so the gh calls are
+        not made; the notice names the budget, never "gh timed out". Does NOT catch a gh call that starts and
+        then runs long (that one is a real gh timeout)."""
+        module = load_hook("verify-closeout-complete.py")
+        self.addCleanup(setattr, common, "git", common.git)
+        self.addCleanup(setattr, common, "gh", common.gh)
+        gh_calls = []
+
+        def git_that_uses_up_the_budget(*args, **kwargs):
+            if args[:1] == ("branch",):
+                module._deadline[0] = time.monotonic()
+                return 0, "feature/20261030_Sprint_81\n"
+            return 0, "https://github.com/example/repo.git\n"
+
+        common.git = git_that_uses_up_the_budget
+        common.gh = lambda *a, **k: gh_calls.append(a) or (0, "[]")
+        payload = self.closeout_payload("improvement-review-present-sprint",
+                                        branch_override="feature/20261030_Sprint_81")
+        drain_notices()
+        module.decide(payload)
+        queued = drain_notices()
+        self.assertEqual(gh_calls, [])
+        self.assertTrue(any(n.startswith("check 3c did not run: time budget (the gh calls were not made")
+                            for n in queued), queued)
+        self.assertFalse(any("gh timed out" in n for n in queued), queued)
+
+    def test_timeout_kills_the_whole_process_tree(self):
+        """Improvement review H-1: a grandchild that holds the output pipe no longer keeps the caller waiting
+        past the timeout (subprocess.run waited 11 s on a 2 s timeout). Does NOT catch a process that
+        taskkill cannot end (the watchdog covers the hook), and does NOT catch a missing tree kill on its
+        own: the bounded second wait still returns in time and only leaves the grandchild running."""
+        holder = ("import subprocess, sys, time; "
+                  "subprocess.Popen([sys.executable, '-c', 'import time; time.sleep(30)']); time.sleep(30)")
+        started = time.monotonic()
+        code, out = common._run([sys.executable, "-c", holder], None, 1)
+        took = time.monotonic() - started
+        self.assertEqual((code, out), (common.TIMEOUT, ""))
+        self.assertLess(took, 8, f"a 1 second timeout took {took:.1f} s")
+
+    def test_closeout_watchdog_ends_a_hung_hook_with_a_visible_error(self):
+        """Improvement review H-1: whatever its calls do, the hook ends at HARD_STOP_SECONDS with exit 1 and a
+        first stderr line saying close-out was NOT verified. Does NOT catch Claude Code failing to show a
+        hook error (q3)."""
+        script = (
+            "import importlib.util, sys, time\n"
+            f"sys.path.insert(0, {str(HOOKS / 'lib')!r})\n"
+            "import common, hooklib\n"
+            f"spec = importlib.util.spec_from_file_location('vcc', {str(HOOKS / 'verify-closeout-complete.py')!r})\n"
+            "m = importlib.util.module_from_spec(spec); spec.loader.exec_module(m)\n"
+            "common.git = lambda *a, **k: (time.sleep(30), (0, ''))[1]\n"
+            "m.HARD_STOP_SECONDS = 1\n"
+            "w = m._start_watchdog()\n"
+            "hooklib.run('verify-closeout-complete', m.decide)\n")
+        payload = {"cwd": str(CASES / "fixtures" / "final-review-missing-sprint"),
+                   "last_assistant_message": self.CLOSEOUT_MESSAGE}
+        started = time.monotonic()
+        done = subprocess.run([sys.executable, "-I", "-c", script], input=json.dumps(payload).encode("utf-8"),
+                              capture_output=True, timeout=25)
+        took = time.monotonic() - started
+        first = done.stderr.decode("utf-8", "replace").splitlines()[:1]
+        self.assertEqual(done.returncode, hooklib.HOOK_ERROR, done.stderr)
+        self.assertLess(took, 8, f"the watchdog took {took:.1f} s")
+        self.assertTrue(first and "close-out NOT verified" in first[0], first)
 
     def test_closeout_gh_calls_run_at_the_same_time(self):
         """Sprint 84 retro q4: check 3c waits for the slower gh call, not the sum of both. Does NOT catch a
@@ -890,7 +972,7 @@ class PortedHookTests(unittest.TestCase):
                                       else "https://github.com/example/repo.git\n")
 
         def slow_gh(*args, **kwargs):
-            time.sleep(1.0)
+            time.sleep(2.0)
             if args[:2] == ("pr", "list"):
                 return 0, '[{"state":"MERGED","mergedAt":"2026-11-01T00:00:00Z"}]'
             return 0, '[{"number":12}]'
@@ -902,7 +984,7 @@ class PortedHookTests(unittest.TestCase):
         verdict = module.decide(payload)
         took = time.monotonic() - started
         self.assertIn("still OPEN: #12.", verdict.stderr)
-        self.assertLess(took, 1.8, f"the two gh calls took {took:.2f} s, so they ran one after the other")
+        self.assertLess(took, 3.5, f"the two gh calls took {took:.2f} s, so they ran one after the other")
 
     def test_closeout_claim_and_mid_sprint_patterns(self):
         """Gate 2: a mid-sprint signal beats a claim; each claim shape fires; case does not matter.
