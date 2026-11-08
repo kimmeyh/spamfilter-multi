@@ -843,3 +843,34 @@ q5. a q6. a and update the architecture documents as needed with this decision".
   "The phone stopped this background scan before it finished. The next scan will try again." in grey, and the
   diagnostic log has "closed N in-progress scan row(s) as interrupted". Rehearsed: `f342_worker_stop_closes_row_test`
   and `scan_history_narrow_test` (412 and 384 wide). Not rehearsed on a device.
+  Added 2026-11-07 (7.7.1): the row is now closed BEFORE the diagnostic-log write, and the reason for an app cancel
+  (AndroidX raw stop reason 1) is "Background scanning was turned off while this scan ran." This check is the only
+  evidence for the narrowed claim: watch whether the run WorkManager starts right after the stop now proceeds (a scan
+  start within seconds of the "closed N" line). Until then CHANGELOG and ARCHITECTURE claim only the busy retry.
+
+## Phase 7.7.1 final code reviews
+
+- **7.7.1 final code reviews**: Copilot (requested by hand 2026-11-07 19:36, state COMMENTED, 2 inline: 1 HIGH, 1 LOW; both fixed, replied and resolved); pr-review-toolkit code-reviewer (0 C / 0 H / 3 M / 5 L; files given 73, read 66, diff-only for 6 docs, 7 grep-sampled) and silent-failure-hunter (0 C / 0 H / 6 M / 13 L; files given 73, read 67, 2 partial, 4 process docs not read), both started 19:36 in the background on the DRAFT PR #548, `git diff origin/develop...HEAD`, `0*` and `archive/` excluded. Fix commits: 0e80c9fb, a71025e0, 9eb90397, d4178c5b, 98477e31. Five pairs were the same issue (CR M1 = SF M2, CR M2 = SF M3, CR L1 in SF M5, CR L3 = SF L10, CR L5 = SF M6).
+- Disposition, by finding (fixed without asking unless marked QUESTION):
+  - Copilot H (require-sprint-cards counted any non-empty dict): fixed 0e80c9fb, mutation KILLED.
+  - Copilot L (iOS screens test dropped its skip reason): fixed 9eb90397 (reason on `group`).
+  - CR M1 / SF M2 (F342 closes the row after the log write) and CR M1 claims: fixed d4178c5b; claims narrowed in code,
+    CHANGELOG and ARCHITECTURE; the Doze-alarm recent-scan behavior is QUESTION q2.
+  - SF M1 (F342 reason text for an app cancel): fixed d4178c5b. The reviewer's enum mapping was wrong; the fix keys on
+    the AndroidX raw value 1 (plugin `stop_reason.dart:21` numbers it 3).
+  - CR M2 / SF M3 (0.24.1 release notes claimed reverted F280 and Windows background fixes): fixed a71025e0.
+  - CR M3 (CLAUDE.md and `.codex/hooks.json` pointed at unregistered `.ps1` hooks): fixed a71025e0.
+  - SF M4, M5, L4, L5, L6, L7, L8, L9, CR L1 (hook checks skipped silently): fixed 98477e31, 18 mutations KILLED.
+  - SF M6 / CR L5 (stash guard `list && pop` and `git -C` bypasses): fixed 98477e31.
+  - CR L2 (six more `Center > Column` empty states): added to F353 (a71025e0).
+  - CR L3 / SF L10 (iOS docs and header described one job and a fallback that does not exist): fixed a71025e0, 9eb90397.
+  - CR L4 (F342 wiring test was text-only): replaced by two behavior tests, d4178c5b, mutations KILLED.
+  - SF L1 (closed count lost on a partial failure): logged before the rethrow, d4178c5b (logcat only).
+  - SF L2 (completion or error writes can overwrite `interrupted`): QUESTION q1.
+  - SF L3 (registration before the `try`): moved inside, d4178c5b (verified by reading; no seam throws the constructor).
+  - SF L11 (Rule Test short-viewport tests unproven): settled 2026-11-07; removing the scroll view from either
+    state is KILLED by `rule_test_screen_test.dart` (scripts/mutation-test.ps1, 2 of 2).
+  - SF L12 (`previous_sprint` numbers became strings): restored to integers, a71025e0; no code reader found.
+  - SF L13 (hook notices reach the user only if `systemMessage` is rendered): QUESTION q3.
+  - New from the hook fix: the closeout worst case is 26 s against the 20 s hook timeout (stated in the docstrings
+    now): QUESTION q4.

@@ -14,8 +14,35 @@ ending the sprint": "none".
 
 ## 7.7.1 findings by class
 
-[Added when the three 7.7.1 reviews (Copilot, code-reviewer, silent-failure-hunter,
-started 2026-11-07 19:36) are dispositioned.]
+Reviews (started 2026-11-07 19:36, PR #548 DRAFT): Copilot 1 High / 1 Low; code-reviewer 0 C / 0 H / 3 M / 5 L
+(66 of 73 files read); silent-failure-hunter 0 C / 0 H / 6 M / 13 L (67 of 73 read). Five pairs were the same issue.
+All fixed without asking except four questions (q1-q4). Fix commits 0e80c9fb, a71025e0, 9eb90397, d4178c5b, 98477e31.
+Full disposition: `SPRINT_84_PLAN.md` "Phase 7.7.1 final code reviews".
+
+- **Class A -- user-visible text or a record promises behavior that is not proven or did not ship** (5): the 0.24.1
+  release notes claimed reverted F280 and a Windows fix that is Android-only (CR M2 = SF M3); F342 "restart is not
+  refused" in code, CHANGELOG and ARCHITECTURE (CR M1); the F342 reason promised a next scan after an app cancel
+  (SF M1); the iOS test header named a screenshot fallback that does not exist (CR L3 = SF L10). RECURRING: Sprint 81
+  class B, Sprint 82 (F314 "results stored first"), Sprint 83 (0.24.0 notes still PROVISIONAL at 7.7). -> i1.
+- **Class B -- a hook check returns silently when its input fails** (9): closeout 3e, 3a-2, 3c, 3d (missing plan),
+  the non-JSON message, a non-object status file, a failed `git branch`, an empty cwd, the internal-error first line
+  (SF M4, M5, L4-L9, CR L1). RECURRING: Sprint 82 IMP-1, Sprint 83 F6-1 (fixed for `gh` only). -> i2.
+- **Class C -- a port copies a defect of its original** (3): the card gate counted any non-empty dict (Copilot H);
+  the stash guard allowed `list && pop` and `git -C` (SF M6 = CR L5); a missing plan passed 3d (SF L4). Parity probes
+  proved the port equal to a defective original. RECURRING with Sprint 83 IMP-1 (a second copy that drifts). -> i3.
+- **Class D -- pointers left on the old file after a migration** (2): CLAUDE.md and `.codex/hooks.json` named the
+  unregistered `.ps1` hooks (CR M3); the iOS docs described one job after the split (CR L3). RECURRING with Sprint 83
+  (ADR-0051 "Proposed" in three files after acceptance). -> i4.
+- **Class E -- a test that cannot fail for the defect it names** (2): the F342 wiring test was a source-text check
+  (CR L4); the Rule Test short-viewport tests had no mutation record (SF L11; mutation run 2026-11-07, 2 of 2 KILLED,
+  so the tests were good, the record was missing). RECURRING (Sprint 73 IMP-3). -> i5.
+- **Class F -- mirror sites missed by a narrow grep** (1 here, plus 5.1.2 F1-1 this sprint): six more empty states
+  (CR L2), added to F353. -> i6.
+- **Single findings, root cause recorded**: F342 handler order (CR M1 = SF M2): the Sprint 79 stop handler wrote its
+  log line first, and the F342 close was appended after it without asking what runs if the process dies mid-handler.
+  SF L1 (count lost), SF L3 (registration outside `try`), SF L12 (ints written as strings by a hand edit).
+  Questions: SF L2 (q1), the Doze-alarm recent-scan check (q2), SF L13 notice rendering (q3), the 26 s worst case
+  against the 20 s hook timeout (q4).
 
 ## Sprint 84 Retrospective Feedback
 
@@ -31,7 +58,8 @@ started 2026-11-07 19:36) are dispositioned.]
 - **Product Owner**: Very Good
 - **Scrum Master**: Very Good
 - **Lead Developer**: Very Good
-- **Claude Code Development Team**: Every code task mutation-checked its new tests (Task 2 7/7, Task 5 11/11, Task 6 15/15, Task 7 19/19 KILLED) and the hook ports ran parity probes against the PowerShell originals (Task 6 0/45, Task 7 1 of 454 payloads, explained). F280 did not reproduce on three emulator arms, so the constraint was reverted on Harold's call instead of shipping an untested fix. Gap: the clean Android first run found an ANR (F355) that no test covers: turning on background scanning starts the worker at once, and no test runs that path with a real engine. 7.7.1 classes: [added after the reviews].
+- **Claude Code Development Team**: Every code task mutation-checked its new tests (Task 2 7/7, Task 5 11/11, Task 6 15/15, Task 7 19/19 KILLED) and the hook ports ran parity probes against the PowerShell originals (Task 6 0/45, Task 7 1 of 454 payloads, explained). F280 did not reproduce on three emulator arms, so the constraint was reverted on Harold's call instead of shipping an untested fix. Gap: the clean Android first run found an ANR (F355) that no test covers: turning on background scanning starts the worker at once, and no test runs that path with a real engine. 7.7.1 classes: B (nine hook checks that skipped silently had no
+failure-path case) and E (a text-only wiring test; a layout test with no mutation record).
 
 ### 3. Effort Accuracy
 
@@ -80,7 +108,9 @@ started 2026-11-07 19:36) are dispositioned.]
 - **Product Owner**: Very Good
 - **Scrum Master**: Very Good
 - **Lead Developer**: Very Good
-- **Claude Code Development Team**: Own-process slips: (1) the MV-6 pre-flight checked two seeding paths but not where the credential plugin keeps its file, so the clean run was not clean (F354); (2) a zero-result search was reported as a finding without checking that the filter matched any file (check 10); (3) the emulator DEV app was a day old (before 36b724ac); this was caught before the evaluation, by comparing install time with the last `lib/` commit. 7.7.1 classes: [added after the reviews].
+- **Claude Code Development Team**: Own-process slips: (1) the MV-6 pre-flight checked two seeding paths but not where the credential plugin keeps its file, so the clean run was not clean (F354); (2) a zero-result search was reported as a finding without checking that the filter matched any file (check 10); (3) the emulator DEV app was a day old (before 36b724ac); this was caught before the evaluation, by comparing install time with the last `lib/` commit. 7.7.1 classes: A (release notes
+marked "re-derive at 7.7" were not re-derived before the reviews), C (the Python port proved parity with a defective
+original), D (pointers to the old hooks were not grepped after the port).
 
 ### 10. Risk Management
 
