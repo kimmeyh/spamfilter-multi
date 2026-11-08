@@ -7,7 +7,7 @@
         "number": 84,
         "branch": "feature/20261105_Sprint_84",
         "status": "Phase 7.7 Final Code Reviews (7.7.1)",
-        "status_detail": "Manual Validation complete 2026-11-07 (Harold q1 = a). 7.7.1 reviews done: Copilot 1 H / 1 L, code-reviewer 3 M / 5 L, silent-failure-hunter 6 M / 13 L, all fixed (0e80c9fb, a71025e0, 9eb90397, d4178c5b, 98477e31) or decided (q1 = c, q2 = a, q3 = a, q4 faster). Retrospective done, Harold all Very Good; improvements applied (3b2550dc, 2a940092, dd2782f0). Improvement review done (21d2171d); CI run 1 42457200807 green. Completion docs written (SPRINT_84_SUMMARY.md, master plan, CHANGELOG, velocity, Executed-by, SPRINT_85_PLAN.md stub). Next: 7.7.5 gh pr ready 548, CI run 2 green, then the readiness announcement.",
+        "status_detail": "Manual Validation complete 2026-11-07 (Harold q1 = a). 7.7.1 reviews done: Copilot 1 H / 1 L, code-reviewer 3 M / 5 L, silent-failure-hunter 6 M / 13 L, all fixed (0e80c9fb, a71025e0, 9eb90397, d4178c5b, 98477e31) or decided (q1 = c, q2 = a, q3 = a, q4 faster). Retrospective done, Harold all Very Good; improvements applied (3b2550dc, 2a940092, dd2782f0). Improvement review done (21d2171d); CI run 1 42457200807 green. Completion docs written (SPRINT_84_SUMMARY.md, master plan, CHANGELOG, velocity, Executed-by, SPRINT_85_PLAN.md stub). 7.7.5 done 2026-11-08: PR 548 marked ready, CI run 2 42528115315 green on a32aeeaf, PR description final, readiness announced. Waiting on Harold to merge.",
         "plan_approved": true,
         "pr_number": 548,
         "version": "0.24.1+22"
@@ -67,7 +67,7 @@
     ],
     "blocking_issues": [],
     "next_actions": [
-        "7.7.5: gh pr ready 548; gh pr checks 548 --watch until CI run 2 is green; final PR update if needed; then the one readiness announcement to Harold.",
+        "7.7.5 DONE 2026-11-08 (CI run 2 42528115315 green). Harold reviews and merges PR 548.",
         "After merge (Harold): open the Sprint 85 branch from feature/20261105_Sprint_84; verify #549-#557 closed; Phase 8 (main merge, refinement pass 1, 0.24.1 store release, pass 2).",
         "Phase 8 carry-ins: the F342 Fold check after 0.24.1 (feeds F357), MV-3c when a YELLOW item appears; Harold reboots before F355."
     ],
