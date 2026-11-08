@@ -6,7 +6,7 @@
     "current_sprint": {
         "number": 84,
         "branch": "feature/20261105_Sprint_84",
-        "status": "Phase 5.3 Manual Validation",
+        "status": "Phase 7.7.1 Final Code Reviews",
         "status_detail": "Handed to Harold 2026-11-06 20:11. Tasks 0, 2, 3 (reverted), 5, 6, 7, 8 DONE; Tasks 1 and 4 run during Manual Validation. 5.1.2, 5.1.5 (sweep-head 24ad4e04) and 5.1.9 recorded. iOS CI run 8 green. Open questions: Question A (F1-1, four empty states), F350 review Q1 and Q2.",
         "plan_approved": true,
         "pr_number": 548,

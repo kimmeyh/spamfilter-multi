@@ -501,6 +501,22 @@ Source: `docs/research/R76-3_HEURISTICS_ML_GENAI_SPAM_IDENTIFICATION.md` (Issue 
   platforms), check 9 (Fold), the iOS Simulator screens, and a card per confirmed finding. Also LEFT: the ANR seen
   when background scanning was turned on in the emulator debug build (cause unknown; repeat on a release build).
 
+**F355. Android "isn't responding" when background scanning is turned on (~30-90m, estimate unverified) Priority 16 -- NEW 2026-11-07 (Sprint 84 MV-6, Harold: "push it to next sprint and I will reboot before then")**
+- Phase: Core App Quality
+- Platform: Android (seen on the emulator, debug build); check the Fold release build.
+- Evidence (2026-11-07 19:13, emulator `pixel34_updated`, Android 14, DEV debug 0.24.1): Settings > Background >
+  Enable Background Scanning started the worker at once; logcat "ANR ... Input dispatching timed out ... Waited
+  5000ms". Main thread in `BackgroundWorker.executeBackgroundTask` (workmanager `BackgroundWorker.kt:439`) ->
+  `FlutterJNI.dispatchPlatformMessage`, waiting in ART. The dialog came back at 19:18 and 19:20. The emulator had
+  2 GB RAM with 1.24 GB of 1.5 GB swap in use. Evidence in the Sprint 84 session scratchpad `mv6_android\`
+  (`bugreport_anr.zip`, logcat). Cause unknown.
+- Harold (2026-11-07): it can probably be reconciled with a reboot, but there should be sufficient virtual memory;
+  he reboots before the next sprint.
+- Do: after the reboot, repeat the step on the emulator (debug and release) and on the Fold; if it repeats, find
+  what holds the main thread (the background engine start, or work the app does at that moment) and fix it.
+- AC: the step is repeated on a release build and recorded; a confirmed freeze has a fix and a test, or the card
+  closes with the evidence that it does not repeat.
+
 **F342. Fold background log: AOL unfinished scans and errors, iCloud errors (~30-90m, estimate unverified) Priority 34 -- NEW 2026-11-04 (Sprint 83 MV Q10 = 2, backlog)**
 - Phase: Core App Quality
 - Platform: Android (seen on the Fold); check Windows for the same pattern.

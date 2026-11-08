@@ -783,6 +783,11 @@ q5. a q6. a and update the architecture documents as needed with this decision".
   iCloud `gmail_sign_in_required` row.
 - MV-6: moved to the next sprint. Harold: "mv-6 move to next sprint". The remaining work is on card F341 in the
   master plan; the Android and partial Windows results above stay as its evidence.
+- Harold, 2026-11-07 (verbatim): "q1 a q2. can probably be reconciled with a reboot, however, there should be
+  sufficient virtual memory cache. push it to next sprint and I will reboot before then."
+  - q1 = a: Manual Validation is COMPLETE. MV-5 becomes a Phase 8 carry-in (below). Phase 7 starts: 7.7.1 final code
+    reviews on the draft PR #548 and the retrospective prompt, in one turn.
+  - q2: the emulator ANR goes to the next sprint as card F355; Harold reboots before then.
 
 - **MV-1 (Windows DEV, then the Fold): re-enter the iCloud app-specific password (F342 group 1).** Precondition: the
   iCloud account is flagged; the Windows DEV database shows `gmail_sign_in_required = true` for the iCloud account
@@ -831,6 +836,9 @@ q5. a q6. a and update the architecture documents as needed with this decision".
   live evaluation itself.
 
 **Carry-ins after 0.24.1 reaches the Fold (Phase 8)**
+- MV-5 (Harold q1 = a, 2026-11-07): when a YELLOW No Rule item appears on the Fold, open its pop-up on the cover
+  screen. Expected: one rule is marked "Suggested"; Block Subject, the regex note and the Skip row fit with no
+  clipping. Screenshot it.
 - F342 on the phone: after Android stops a background scan, Scan History shows a Background row "Not finished" with
   "The phone stopped this background scan before it finished. The next scan will try again." in grey, and the
   diagnostic log has "closed N in-progress scan row(s) as interrupted". Rehearsed: `f342_worker_stop_closes_row_test`
