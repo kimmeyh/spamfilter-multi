@@ -682,13 +682,20 @@ the worker logs `stopped by WorkManager before it finished: reason=<AndroidX nam
 raw=<n>` (needs workmanager_android 0.10.9+, which delivers the stop on the main
 thread). F342 (Sprint 84): the same stop handler (`onWorkerStopped`,
 `android_background_scan_worker.dart`) then closes the `in_progress` `scan_results`
-row of any scan running in that worker as `interrupted`, with the reason "The phone
-stopped this background scan before it finished. The next scan will try again."
-(shown on the row in Scan History). The write is bounded to 2 seconds and is
-conditional on `in_progress` (`BackgroundScanCore.closeInFlightScansAsInterrupted`,
-reading the `_inFlightScans` registry), so the run WorkManager restarts is not
-refused by a row nobody is beating; the claim's heartbeat reaper stays the backstop
-when the write does not finish. Every schedule and cancel writes a `[scheduler/<platform>]` line, naming a
+row of any scan running in that worker as `interrupted`, BEFORE it writes the
+diagnostic log (Sprint 84 7.7.1: the log write can hold its lock for 2 seconds and the
+process may die). The reason shown in Scan History is "The phone stopped this
+background scan before it finished. The next scan will try again.", or, for the
+AndroidX raw stop reason 1 (`CANCELLED_BY_APP`: background scanning turned off),
+"Background scanning was turned off while this scan ran." The raw value is used
+because the plugin's Dart `StopReason` enum numbers the reasons differently
+(`workmanager_platform_interface` 0.10.5 `stop_reason.dart:21`). The write is bounded
+to 2 seconds and is conditional on `in_progress`
+(`BackgroundScanCore.closeInFlightScansAsInterrupted`, reading the `_inFlightScans`
+registry), so the busy retry no longer waits out the heartbeat window. Not proven on a
+phone: whether the restart that follows at once now runs (Fold check after 0.24.1); a
+Doze-alarm restart is still held by the recent-scan check. The claim's heartbeat
+reaper stays the backstop when the write does not finish. Every schedule and cancel writes a `[scheduler/<platform>]` line, naming a
 Doze alarm that failed to arm or cancel.
 
 **Measuring and enabling unattended scans** (F252, Sprint 76; Android only, a

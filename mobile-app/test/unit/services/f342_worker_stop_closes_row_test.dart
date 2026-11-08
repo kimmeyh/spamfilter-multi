@@ -13,13 +13,23 @@
 /// platform timing guarantee; a `closed N in-progress scan row(s)` line in a
 /// Fold log would), and whether `_scanAccountOnce` registers the provider
 /// (guarded by the source-text wiring test, which proves the text exists, not
-/// that it runs on a phone).
+/// that it runs on a phone). The registry is also driven through the real
+/// `scanAccount` with a probe platform (register during the scan, unregister
+/// after, including a throwing scan); that cannot show a throwing
+/// EmailScanner constructor.
 library;
 
-import 'dart:io';
+import 'dart:async';
 
 import 'package:flutter_test/flutter_test.dart';
+import 'package:sqflite/sqflite.dart' show Database;
 import 'package:workmanager/workmanager.dart' show StopReason;
+
+import 'package:my_email_spam_filter/adapters/email_providers/mock_email_provider.dart';
+import 'package:my_email_spam_filter/adapters/email_providers/platform_registry.dart';
+import 'package:my_email_spam_filter/core/models/email_message.dart';
+import 'package:my_email_spam_filter/core/providers/rule_set_provider.dart';
+import 'package:my_email_spam_filter/core/storage/settings_store.dart';
 
 import 'package:my_email_spam_filter/core/providers/email_scan_provider.dart';
 import 'package:my_email_spam_filter/core/services/android_background_scan_worker.dart';
@@ -72,7 +82,7 @@ void main() {
     test('the handler marks the running row interrupted with the reason',
         () async {
       final id = provider.currentScanResultId!;
-      await onWorkerStopped('t', StopReason.timeout,
+      await onWorkerStopped('t', StopReason.preempt,
           write: (_) async {},
           closeScans: () =>
               BackgroundScanCore.closeInFlightScansAsInterrupted(helper.dbHelper));
@@ -92,7 +102,7 @@ void main() {
       final id = provider.currentScanResultId!;
       expect(identical(helper.dbHelper, DatabaseHelper()), isTrue);
       final sw = Stopwatch()..start();
-      await onWorkerStopped('t', StopReason.timeout, write: (_) async {});
+      await onWorkerStopped('t', StopReason.preempt, write: (_) async {});
       expect(sw.elapsed, lessThan(const Duration(seconds: 6)));
       final row = (await store.getScanResultById(id))!;
       expect(row.status, 'interrupted');
@@ -118,10 +128,10 @@ void main() {
 
     test('a failing or hanging closer does not hold the teardown', () async {
       final sw = Stopwatch()..start();
-      await onWorkerStopped('t', StopReason.timeout,
+      await onWorkerStopped('t', StopReason.preempt,
           write: (_) async {},
           closeScans: () async => throw StateError('db'));
-      await onWorkerStopped('t', StopReason.timeout,
+      await onWorkerStopped('t', StopReason.preempt,
           write: (_) async {},
           closeScans: () =>
               Future<int>.delayed(const Duration(seconds: 30), () => 1));
@@ -130,7 +140,7 @@ void main() {
 
     test('the closed-rows line is written when a row was closed', () async {
       final lines = <String>[];
-      await onWorkerStopped('t', StopReason.timeout,
+      await onWorkerStopped('t', StopReason.preempt,
           write: (d) async => lines.add(d), closeScans: () async => 1);
       expect(lines, hasLength(2));
       expect(lines.last, contains('closed 1 in-progress scan row(s)'));
@@ -139,7 +149,7 @@ void main() {
     test('a failed close writes a diagnostic line, not only logcat', () async {
       // Does NOT catch: a failing log write; that path swallows by design.
       final lines = <String>[];
-      await onWorkerStopped('t', StopReason.timeout,
+      await onWorkerStopped('t', StopReason.preempt,
           write: (d) async => lines.add(d),
           closeScans: () async => throw StateError('db locked'));
       expect(lines, hasLength(2));
@@ -147,13 +157,139 @@ void main() {
       expect(lines.last, contains('db locked'));
     });
 
-    test('wiring: _scanAccountOnce registers and unregisters the provider',
-        () {
-      final src = File('lib/core/services/background_scan_core.dart')
-          .readAsStringSync();
-      expect(src, contains('_inFlightScans[accountId] = scanProvider;'));
-      expect(src, contains('_inFlightScans.remove(accountId);'));
-      expect(src, contains('if (identical(_inFlightScans[accountId], scanProvider))'));
+    test('the row is closed BEFORE the diagnostic-log write runs (7.7.1 M1)',
+        () async {
+      // The write seam records what the row looked like when the FIRST log
+      // line (the stop line) was written. Order swapped back, it reads
+      // in_progress. Does NOT catch: a log write that is slow on a phone (the
+      // seam is instant here); only the order is proven.
+      final id = provider.currentScanResultId!;
+      final statusAtFirstWrite = <String>[];
+      await onWorkerStopped('t', StopReason.preempt, write: (d) async {
+        if (statusAtFirstWrite.isEmpty) {
+          statusAtFirstWrite
+              .add((await store.getScanResultById(id))!.status);
+        }
+      },
+          closeScans: () => BackgroundScanCore.closeInFlightScansAsInterrupted(
+              helper.dbHelper));
+      expect(statusAtFirstWrite, ['interrupted']);
+    });
+
+    test('the row is closed even when the log write never finishes (M1)',
+        () async {
+      // Does NOT catch: a process killed before the close starts.
+      final id = provider.currentScanResultId!;
+      await onWorkerStopped('t', StopReason.preempt,
+          write: (_) => Completer<void>().future,
+          closeScans: () => BackgroundScanCore.closeInFlightScansAsInterrupted(
+              helper.dbHelper));
+      expect((await store.getScanResultById(id))!.status, 'interrupted');
+    });
+
+    test('an app cancellation (AndroidX raw 1) stores the turned-off reason',
+        () async {
+      // AndroidX CANCELLED_BY_APP is 1; the plugin's Dart enum names raw 1
+      // `timeout`. Does NOT catch: the plugin delivering a different raw value
+      // for a cancel on some Android version (verified from the plugin source
+      // and the AndroidX table, not on a device).
+      final id = provider.currentScanResultId!;
+      expect(StopReason.fromRawValue(kAndroidxStopCancelledByApp),
+          StopReason.timeout);
+      await onWorkerStopped('t', StopReason.fromRawValue(1), write: (_) async {});
+      final row = (await store.getScanResultById(id))!;
+      expect(row.status, 'interrupted');
+      expect(row.errorMessage, BackgroundScanCore.stoppedByAppReason);
+      expect(row.errorMessage, isNot(contains('next scan')));
+    });
+
+    test('the reason text follows the raw value, not the plugin enum name', () {
+      // The plugin's cancelledByApp (raw 3) is AndroidX TIMEOUT: a phone stop.
+      // Does NOT catch: the text shown in Scan History (covered by
+      // scan_history_narrow_test for the phone text).
+      expect(scanRowReasonFor(StopReason.cancelledByApp),
+          BackgroundScanCore.stoppedByPhoneReason);
+      expect(scanRowReasonFor(StopReason.fromRawValue(1)),
+          BackgroundScanCore.stoppedByAppReason);
+      expect(scanRowReasonFor(StopReason.deviceState),
+          BackgroundScanCore.stoppedByPhoneReason);
+    });
+
+    test('a partial close failure still rethrows the first error', () async {
+      // Does NOT catch: the count log line itself (logcat only, no seam).
+      BackgroundScanCore.debugClearInFlight();
+      BackgroundScanCore.debugRegisterInFlight(accountId, provider);
+      await expectLater(
+          BackgroundScanCore.closeInFlightScansAsInterrupted(
+              _FailingDatabaseHelper()),
+          throwsA(isA<StateError>()));
+    });
+
+    group('_scanAccountOnce registry (behavior)', () {
+      const scanAccount = 'acct-reg';
+      late _ProbePlatform probe;
+
+      setUp(() async {
+        // The outer setUp registered a provider; start from an empty registry.
+        BackgroundScanCore.debugClearInFlight();
+        await helper.createTestAccount(scanAccount);
+        probe = _ProbePlatform();
+        final previous =
+            PlatformRegistry.overrideFactoryForTest('demo', () => probe);
+        addTearDown(
+            () => PlatformRegistry.overrideFactoryForTest('demo', previous));
+      });
+
+      Future<AccountScanOutcome> scan() => BackgroundScanCore.scanAccount(
+            accountId: scanAccount,
+            platformId: 'demo',
+            ruleSetProvider: RuleSetProvider(),
+            settingsStore: SettingsStore(helper.dbHelper),
+            scanResultStore: ScanResultStore(helper.dbHelper),
+          );
+
+      test('registered during the scan, unregistered after it', () async {
+        // Does NOT catch: registration order relative to the EmailScanner
+        // constructor (it cannot be made to throw here).
+        await scan();
+        expect(probe.countDuringFetch, 1);
+        expect(BackgroundScanCore.debugInFlightCount, 0);
+      });
+
+      test('unregistered when the scan throws', () async {
+        probe.throwOnFetch = true;
+        try {
+          await scan();
+        } catch (_) {
+          // Whether the scanner absorbs or rethrows the error, the registry
+          // must be empty afterwards.
+        }
+        expect(probe.countDuringFetch, 1);
+        expect(BackgroundScanCore.debugInFlightCount, 0);
+      });
     });
   });
+}
+
+class _ProbePlatform extends MockEmailProvider {
+  int? countDuringFetch;
+  bool throwOnFetch = false;
+
+  @override
+  Future<List<EmailMessage>> fetchMessages({
+    required int daysBack,
+    required List<String> folderNames,
+  }) {
+    countDuringFetch = BackgroundScanCore.debugInFlightCount;
+    if (throwOnFetch) throw StateError('boom');
+    return super.fetchMessages(daysBack: daysBack, folderNames: folderNames);
+  }
+}
+
+class _FailingDatabaseHelper implements DatabaseHelper {
+  @override
+  Future<Database> get database async => throw StateError('db gone');
+
+  @override
+  dynamic noSuchMethod(Invocation invocation) => super.noSuchMethod(invocation);
 }

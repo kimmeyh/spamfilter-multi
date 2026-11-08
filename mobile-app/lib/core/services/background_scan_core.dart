@@ -403,12 +403,24 @@ class BackgroundScanCore {
       'The phone stopped this background scan before it finished. The next '
       'scan will try again.';
 
+  /// F342 (Sprint 84, 7.7.1 M1): the reason written when the APP cancelled the
+  /// work (the user turned background scanning off, which calls
+  /// `cancelDetailed` in `background_scan_scheduler.dart`). It makes no
+  /// promise of a next scan, because there may not be one.
+  static const String stoppedByAppReason =
+      'Background scanning was turned off while this scan ran.';
+
   /// F342 (Sprint 84): mark the `in_progress` row of every scan running in
-  /// this isolate `interrupted`, so the run WorkManager restarts at once is
-  /// not refused by a row nobody is beating. Returns the rows closed. Throws
-  /// the first database error after trying every scan.
+  /// this isolate `interrupted`, so the row is closed within seconds and a
+  /// busy retry no longer waits out the heartbeat window. A Doze-alarm run is
+  /// still governed by the recent-scan check, not by this close. Returns the
+  /// rows closed. Throws the first database error after trying every scan;
+  /// when some rows did close first, their count is logged before the throw
+  /// (7.7.1 L1). [reason] is the text stored on the row (default: the phone
+  /// stopped the scan).
   static Future<int> closeInFlightScansAsInterrupted(
-      DatabaseHelper databaseHelper) async {
+      DatabaseHelper databaseHelper,
+      {String reason = stoppedByPhoneReason}) async {
     var closed = 0;
     Object? firstError;
     for (final provider in _inFlightScans.values.toList()) {
@@ -421,7 +433,7 @@ class BackgroundScanCore {
         final db = await databaseHelper.database;
         final n = await db.update(
           'scan_results',
-          {'status': 'interrupted', 'error_message': stoppedByPhoneReason},
+          {'status': 'interrupted', 'error_message': reason},
           where: 'id = ? AND status = ?',
           whereArgs: [id, 'in_progress'],
         );
@@ -430,7 +442,13 @@ class BackgroundScanCore {
         firstError ??= e;
       }
     }
-    if (firstError != null) throw firstError;
+    if (firstError != null) {
+      // The caller sees only the error, so the rows that DID close are
+      // reported here, before the rethrow.
+      _logger.w('[worker/android] closed $closed in-progress scan row(s) '
+          'before a database error: $firstError');
+      throw firstError;
+    }
     return closed;
   }
 
@@ -543,15 +561,6 @@ class BackgroundScanCore {
     // Create a headless scan provider (no UI listeners in background mode)
     final scanProvider = EmailScanProvider();
     scanProvider.initializeScanMode(mode: scanMode);
-    _inFlightScans[accountId] = scanProvider;
-
-    // Create and run the email scanner
-    final scanner = EmailScanner(
-      platformId: platformId,
-      accountId: accountId,
-      ruleSetProvider: ruleSetProvider,
-      scanProvider: scanProvider,
-    );
 
     // F175 (Sprint 62): hard timeout on the whole background scan. A hung
     // scan (dead socket, provider stall) used to sit `in_progress` forever
@@ -569,6 +578,17 @@ class BackgroundScanCore {
     // survives the screen being left. Both paths read
     // ScanCoordinator.scanTimeout, so they tighten together.
     try {
+      // F342 (7.7.1 L3): registered INSIDE the try, so the `finally` below
+      // unregisters it even when the EmailScanner constructor throws.
+      _inFlightScans[accountId] = scanProvider;
+
+      // Create and run the email scanner
+      final scanner = EmailScanner(
+        platformId: platformId,
+        accountId: accountId,
+        ruleSetProvider: ruleSetProvider,
+        scanProvider: scanProvider,
+      );
       await scanner
           .scanInbox(
             daysBack: daysBack,

@@ -29,7 +29,7 @@ Format: `- **type**: Description (Issue #N)` where type is feat|fix|chore|docs
 ### 2026-11-06 (Sprint 84)
 
 - **chore**: Version 0.24.1+22 for Sprint 84, so a tester can tell this build from the 0.24.0 store builds (Issue #549)
-- **fix**: When Android stops a background scan before it finishes, the scan now shows in Scan History as "The phone stopped this background scan before it finished. The next scan will try again." and its row is closed as interrupted at once, so the next scan is not blocked by an open row. Before, the stopped scan blocked the account for 9 to 12 minutes (Issue #551)
+- **fix**: When Android stops a background scan before it finishes, the scan now shows in Scan History as "The phone stopped this background scan before it finished. The next scan will try again." (or, when the app itself cancelled the run because background scanning was turned off, "Background scanning was turned off while this scan ran."). Its row is closed as interrupted within seconds, before the stop is logged, so the busy retry no longer waits out the 9 to 12 minute heartbeat window. Not yet proven on a phone: whether the restart that follows at once now runs; a restart from a Doze alarm is still held by the recent-scan check (Issue #551)
 - **fix**: On a small phone screen, the Rule Test tool's messages ("Enter a pattern and press Test...", "No matches found...") scroll instead of being cut off; the same fix covers the shared error display and the Settings "Select an account to view its settings." message. Found by the new iOS Simulator test run (Issue #557)
 - **fix**: On a phone-width screen, the Scan History filter chips (All, Manual, Background) move to a second line instead of running off the right edge (Issue #557)
 
