@@ -7,6 +7,7 @@ what the pilot hooks and scripts needed, measured by grepping the PowerShell the
     project root       CLAUDE_PROJECT_DIR, else walk up from a start folder
     path normalizing   one spelling for comparisons (Windows backslash versus POSIX slash)
     git calls          subprocess, never raising
+    gh calls           subprocess, never raising (F327, Sprint 84: the first hook that needs GitHub)
     UTC time           parsing the ISO 8601 text the lock files hold, and the current time
     tool lookup        the first of several command names that is installed
 
@@ -67,6 +68,19 @@ def strip_quoted(text: str) -> str:
     return _QUOTED_SPAN.sub('""', text)
 
 
+# Sprint 84 7.7.1 (finding 8): `git -C <dir> stash` and `git -c k=v commit` name the subcommand AFTER
+# global options, so `git\s+stash` missed them. Options tolerated between `git` and the subcommand:
+# `-C <dir>`, `-c <k=v>` (the argument may have been emptied by quote stripping, so it is optional),
+# and flags such as `--no-pager` or `--git-dir=x`. A word that is not an option ends the run, so
+# `git log --grep stash` does NOT read as a stash call.
+_GIT_GLOBAL_OPTIONS = r"(?:\s+(?:-[Cc](?:\s+\S+)?|--?[A-Za-z][\w-]*(?:=\S+)?))*"
+
+
+def git_subcommand_regex(subcommand: str, *, trailing: str = r"\b") -> re.Pattern:
+    """Compiled, case-insensitive pattern for `git [global options] <subcommand>`; `trailing` follows it."""
+    return re.compile(r"\bgit" + _GIT_GLOBAL_OPTIONS + r"\s+" + subcommand + trailing, re.IGNORECASE)
+
+
 def normalize_path(text: str) -> str:
     """One spelling for comparisons: forward slashes. Windows hands back backslashes."""
     return text.replace("\\", "/")
@@ -96,18 +110,91 @@ def find_project_root(start: str | os.PathLike | None = None) -> Path:
     return here
 
 
-def git(*args: str, cwd: str | os.PathLike | None = None, timeout: int = 15) -> tuple[int, str]:
-    """Run git and return (exit code, stdout). Never raises: a hook that crashes because git is
-    missing or slow is worse than one that declines to check."""
+TIMEOUT = 124
+"""Exit code git() and gh() return when a call ran past its own time limit."""
+
+
+def _kill_tree(proc) -> None:
+    """Kill a process and every process it started. Never raises."""
     import subprocess
 
     try:
-        done = subprocess.run(
-            ["git", *args], cwd=str(cwd) if cwd else None, capture_output=True,
-            text=True, encoding="utf-8", errors="replace", timeout=timeout, check=False)
-        return done.returncode, done.stdout
+        if os.name == "nt":
+            subprocess.run(["taskkill", "/T", "/F", "/PID", str(proc.pid)], capture_output=True,
+                           timeout=3, check=False)
+        proc.kill()
+    except Exception:  # noqa: BLE001
+        pass
+
+
+def _run(argv: list, cwd, timeout: int) -> tuple[int, str]:
+    """Run a program and return (exit code, stdout); (TIMEOUT, "") when it runs past `timeout`.
+
+    On a timeout the WHOLE process tree is killed. subprocess.run kills only the direct child and
+    then waits with no limit, so a grandchild that holds the output pipe kept the caller waiting:
+    a 2 second timeout took 11 seconds through the Git for Windows launcher, which starts the real
+    git as a child (Sprint 84 improvement review H-1). Raises FileNotFoundError when the program is
+    not installed; the callers map it."""
+    import subprocess
+
+    proc = subprocess.Popen(argv, cwd=str(cwd) if cwd else None, stdin=subprocess.DEVNULL,
+                            stdout=subprocess.PIPE, stderr=subprocess.PIPE,
+                            text=True, encoding="utf-8", errors="replace")
+    try:
+        out, _err = proc.communicate(timeout=timeout)
+        return proc.returncode, out
+    except subprocess.TimeoutExpired:
+        _kill_tree(proc)
+        try:
+            proc.communicate(timeout=1)
+        except Exception:  # noqa: BLE001 - the pipes may stay open if the kill failed; do not wait again
+            pass
+        return TIMEOUT, ""
+
+
+def git(*args: str, cwd: str | os.PathLike | None = None, timeout: int = 15) -> tuple[int, str]:
+    """Run git and return (exit code, stdout). Never raises: a hook that crashes because git is
+    missing or slow is worse than one that declines to check. TIMEOUT (124) when the call ran past
+    `timeout` (the process tree is killed); 1 for any launch failure."""
+    try:
+        return _run(["git", *args], cwd, timeout)
     except Exception:  # noqa: BLE001
         return 1, ""
+
+
+def gh(*args: str, cwd: str | os.PathLike | None = None, timeout: int = 8) -> tuple[int, str]:
+    """Run the GitHub CLI and return (exit code, stdout). Never raises, same shape as git().
+
+    A missing gh, a network failure, a timeout and a non-zero exit all return a non-zero code, so
+    the caller can fail OPEN: a close-out check that needs GitHub declines to check when GitHub is
+    unreachable (F327; verify-closeout-complete.ps1 swallowed the same cases with `catch { }`).
+    The default timeout is 8 seconds per call; on a timeout the process tree is killed (see _run). A
+    hook that makes several calls keeps its own total budget: the close-out hook shares one 15 second
+    budget across its git and gh calls and has a watchdog that ends it at 17 seconds (Sprint 84 retro q4).
+
+    Sprint 84 5.1.2 F6-1: the failure code tells the caller WHY, so it can print a notice that the
+    check did not run: GH_NOT_FOUND (127) when gh is not installed, GH_TIMEOUT (124) when it timed
+    out, 1 for any other launch failure; gh's own non-zero exit code passes through unchanged.
+    """
+    try:
+        return _run(["gh", *args], cwd, timeout)
+    except FileNotFoundError:
+        return GH_NOT_FOUND, ""
+    except Exception:  # noqa: BLE001
+        return 1, ""
+
+
+GH_NOT_FOUND = 127
+GH_TIMEOUT = TIMEOUT
+
+
+def gh_failure_reason(code: int) -> str:
+    """Words for a non-zero gh() code, for a 'check did not run' notice."""
+    if code == GH_NOT_FOUND:
+        return "gh is not installed"
+    if code == GH_TIMEOUT:
+        return "gh timed out"
+    return f"gh exit code {code}"
 
 
 def find_tool(*names: str) -> str | None:

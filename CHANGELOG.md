@@ -26,6 +26,22 @@ Format: `- **type**: Description (Issue #N)` where type is feat|fix|chore|docs
 
 ## [Unreleased]
 
+### 2026-11-08 (Sprint 84 final code reviews and retrospective)
+
+- **chore**: The close-out Stop hook always answers inside its 20 second limit: its two `gh` calls run at the same time, all `git` and `gh` calls share one 15 second budget, a timed-out call ends its whole process tree on Windows, and a watchdog ends the hook at 17 seconds with "close-out NOT verified"; a check with no time left says it did not run (Sprint 84 retrospective q4 and improvement review)
+- **chore**: Hooks no longer pass a check silently when `git` or `gh` fails: each such check names what did not run; the `git stash` and `git -C` bypasses of the staging and stash guards are closed; `require-sprint-cards` counts only the current sprint's cards (Sprint 84 final code reviews, Issue #556)
+
+### 2026-11-06 (Sprint 84)
+
+- **chore**: Python ports of the hooks: the three PreToolUse guards (F326), the close-out Stop hook (F327) and the phase auto-advance Stop hook (F328), with the same cases passing before and after; the PowerShell copies stay until F329 (Issues #554, #555, #556)
+- **chore**: An iOS Simulator CI job runs the integration tests and a first-run screen check on macOS, and the iOS app has a privacy manifest (`PrivacyInfo.xcprivacy`) (F345, Issue #557)
+- **chore**: Version 0.24.1+22 for Sprint 84, so a tester can tell this build from the 0.24.0 store builds (Issue #549)
+- **fix**: When Android stops a background scan before it finishes, the scan now shows in Scan History as "The phone stopped this background scan before it finished. The next scan will try again." (or, when the app itself cancelled the run because background scanning was turned off, "Background scanning was turned off while this scan ran."). Its row is closed as interrupted within seconds, before the stop is logged, so the busy retry no longer waits out the 9 to 12 minute heartbeat window. Not yet proven on a phone: whether the restart that follows at once now runs; a restart from a Doze alarm is still held by the recent-scan check (Issue #551)
+- **fix**: On a small phone screen, the Rule Test tool's messages ("Enter a pattern and press Test...", "No matches found...") scroll instead of being cut off; the same fix covers the shared error display and the Settings "Select an account to view its settings." message. Found by the new iOS Simulator test run (Issue #557)
+- **fix**: On a phone-width screen, the Scan History filter chips (All, Manual, Background) move to a second line instead of running off the right edge (Issue #557)
+
+## [0.24.0] - 2026-11-05
+
 ### 2026-11-05 (Sprint 83 final code reviews)
 - **fix**: When the app reads an HTML-only email as text, each link keeps its web address after the link text ("Click here (https://...)"), so a body rule on a domain that appears only in a link still matches a Gmail HTML-only email, and the No Rule pop-up's Block Body choice can offer that domain (Issue #537)
 - **fix**: Body rules now match the text of an email that has only an HTML part (the HTML is read as text, the same text the pop-up's Block Body reads); before, a Block Body rule saved from such an email could never match it. Gmail also reads a plain-text part nested inside the message, not only one at the top level (Issue #537)

@@ -1,0 +1,15 @@
+{
+  "current_sprint": {
+    "number": 99,
+    "branch": "feature/29990101_Sprint_99",
+    "plan_approved": true,
+    "pr_number": 999,
+    "status": "Phase 4 execution"
+  },
+  "_fixture": "Sprint 84 7.7.1 (Copilot): real dict shape; EARLIER sprints have cards, the current sprint 99 has none. require-sprint-cards must BLOCK (the old check passed any non-empty dict).",
+  "github_issues": {
+    "sprint_97": "Task 1 #901",
+    "sprint_98": "Task 1 #902",
+    "note": "cards per sprint"
+  }
+}

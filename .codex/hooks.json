@@ -5,7 +5,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "powershell -NoProfile -ExecutionPolicy Bypass -File \"${CLAUDE_PROJECT_DIR}\\.claude\\hooks\\sprint-auto-advance.ps1\"",
+            "command": "python \"${CLAUDE_PROJECT_DIR}/.claude/hooks/sprint-auto-advance.py\"",
             "timeout": 15
           }
         ]

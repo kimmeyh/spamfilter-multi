@@ -108,19 +108,28 @@ Future<void> onWorkerStopped(
   String taskName,
   StopReason reason, {
   Future<void> Function(String detail)? write,
+  Future<int> Function()? closeScans,
 }) async {
   final detail = describeWorkerStop(running: _runningWork, reason: reason);
+  Future<void> report(String line) => (write ??
+          (d) => DiagnosticLogger.log(
+                kind: DiagnosticLogger.kindScan,
+                context: 'worker/android',
+                detail: d,
+              ))(line)
+      .timeout(const Duration(seconds: 2));
   // Logcat first: it needs no database or file lock, so it shows the handler
-  // ran even when the diagnostic-log write below cannot finish in time.
+  // ran even when nothing below can finish in time.
   AndroidBackgroundScanWorker._logger.w('[worker/android] $detail');
+  // Sprint 84 7.7.1 M1: close the row BEFORE the diagnostic-log write. The
+  // log write can wait up to 2 s behind the file lock, the restart arrives
+  // about 50 ms after the stop (docs/research/F342_FOLD_BACKGROUND_ERRORS_S84.md
+  // group 4), and a stop for memory pressure can end the process in that
+  // window. The close keeps its own 2 s bound.
+  final closedLine =
+      await _closeStoppedScanRows(reason: reason, closeScans: closeScans);
   try {
-    await (write ??
-            (d) => DiagnosticLogger.log(
-                  kind: DiagnosticLogger.kindScan,
-                  context: 'worker/android',
-                  detail: d,
-                ))(detail)
-        .timeout(const Duration(seconds: 2));
+    await report(detail);
   } catch (_) {
     // Nothing to report to: the log write itself is what failed. In practice
     // only the 2 s TimeoutException lands here -- `DiagnosticLogger.log`
@@ -128,6 +137,79 @@ Future<void> onWorkerStopped(
     // stop. The timed-out write keeps running and may still hold the log lock
     // when the engine is torn down (Sprint 79 7.7.1 review L-1).
   }
+  if (closedLine == null) return;
+  try {
+    await report(closedLine);
+  } catch (_) {
+    // The log write failed or timed out; logcat has the same line.
+  }
+}
+
+/// The AndroidX `WorkInfo.STOP_REASON_CANCELLED_BY_APP` value. NOT the
+/// plugin's `StopReason.cancelledByApp`: the plugin's Dart enum numbers its
+/// values differently from AndroidX (its `cancelledByApp` is 3, which is
+/// AndroidX TIMEOUT, and AndroidX 1 lands on the plugin's `timeout`), and the
+/// plugin passes the AndroidX integer through unchanged
+/// (`BackgroundWorker.kt:262,277`, workmanager_android 0.10.9). See
+/// [androidStopReasonName].
+const int kAndroidxStopCancelledByApp = 1;
+
+/// The text stored on the scan row for a worker stop: the app's own
+/// cancellation (background scanning turned off) or, for every other reason,
+/// the phone stopping the scan. Keys on [StopReason.rawValue], see
+/// [kAndroidxStopCancelledByApp].
+@visibleForTesting
+String scanRowReasonFor(StopReason reason) =>
+    reason.rawValue == kAndroidxStopCancelledByApp
+        ? BackgroundScanCore.stoppedByAppReason
+        : BackgroundScanCore.stoppedByPhoneReason;
+
+/// F342 (Sprint 84): close the `scan_results` row of the scan this worker was
+/// running. Fold logs 2026-10-29 and 2026-11-02 (3 scans): WorkManager stopped
+/// the worker 7-13 s into a scan (`reason=deviceState`), before the first
+/// 30 s heartbeat. The row stayed `in_progress` for 545-744 s, so the run
+/// WorkManager restarted 50 ms later, and its busy-retry 2.5-4.5 minutes
+/// later, were both refused by the dead row.
+///
+/// With the row closed within seconds, the busy retry no longer waits out the
+/// heartbeat window. A Doze-alarm restart is still governed by the
+/// recent-scan check (`getLatestScanStart(id, completedOnly: !dozeAlarm)`),
+/// and an immediate periodic restart is unproven on a device.
+///
+/// workmanager_android 0.10.9 calls this handler before it tears the engine
+/// down (`BackgroundWorker.kt:260-293`), and the engine teardown is what ends
+/// the scan, so the row has no live owner after this point. The write is
+/// conditional on `in_progress` (`status = 'in_progress'` in the update's WHERE),
+/// so a scan that finished a moment before the stop keeps its own status.
+/// Bounded at 2 s; the claim's heartbeat reaper
+/// ([ScanResultStore.claimAccountScan]) stays the backstop when this write
+/// does not finish. Android only: Windows has no WorkManager.
+///
+/// Returns the diagnostic line the caller writes after the stop line (the
+/// closed count, or the failure), or null when no row was closed.
+Future<String?> _closeStoppedScanRows({
+  required StopReason reason,
+  Future<int> Function()? closeScans,
+}) async {
+  int closed;
+  try {
+    closed = await (closeScans ??
+            () => BackgroundScanCore.closeInFlightScansAsInterrupted(
+                DatabaseHelper(),
+                reason: scanRowReasonFor(reason)))()
+        .timeout(const Duration(seconds: 2));
+  } catch (e) {
+    // The database write failed or timed out; the reaper closes the row
+    // later. Logcat now; the caller writes the same text to the diagnostic
+    // log so a tester's log has it too (Sprint 84 self-review F6-4).
+    final line = 'could not close the stopped scan row: $e';
+    AndroidBackgroundScanWorker._logger.w('[worker/android] $line');
+    return line;
+  }
+  if (closed <= 0) return null;
+  AndroidBackgroundScanWorker._logger
+      .w('[worker/android] closed $closed in-progress scan row(s)');
+  return 'closed $closed in-progress scan row(s) as interrupted';
 }
 
 /// What this isolate's worker is running, for the stop line. One worker per

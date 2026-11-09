@@ -514,6 +514,19 @@ Reactive state using Provider pattern (ADR-0009).
 
 **UI Binding**: UI screens use `context.watch<EmailScanProvider>()` for reactive updates
 
+#### SelectedAccountProvider
+
+**Purpose**: The account chosen during this session (F135, Sprint 51). The account picker is lazy: it opens only when
+no account is selected AND the destination needs one (Settings > Account, Manual Scan and Background tabs, Manual /
+Live Scan). Settings > General, Review No Rule Items and Scan History are cross-account and never prompt.
+
+**Persistence**: the session selection is NOT persisted; it resets when the app closes (F135, Harold 2026-07-30).
+**Approved change, not yet built** ([ADR-0052](adr/0052-default-account-persisted.md), Harold 2026-11-07, card F352):
+an optional default account, stored once as `default_account_id` in `SettingsStore` and set or removed only on
+Select Account (Settings > Account shows a label). At startup the default seeds this provider once; the start screen
+does not change; picking another account changes only the session; deleting the default account clears the default;
+background scans do not read it.
+
 ---
 
 ## Data Flow
@@ -667,7 +680,22 @@ same rule to COMPLETED scans, and a run that waited for another scan of the acco
 asks again after the wait (`skipAfterWait`). When WorkManager stops a running worker,
 the worker logs `stopped by WorkManager before it finished: reason=<AndroidX name>
 raw=<n>` (needs workmanager_android 0.10.9+, which delivers the stop on the main
-thread). Every schedule and cancel writes a `[scheduler/<platform>]` line, naming a
+thread). F342 (Sprint 84): the same stop handler (`onWorkerStopped`,
+`android_background_scan_worker.dart`) then closes the `in_progress` `scan_results`
+row of any scan running in that worker as `interrupted`, BEFORE it writes the
+diagnostic log (Sprint 84 7.7.1: the log write can hold its lock for 2 seconds and the
+process may die). The reason shown in Scan History is "The phone stopped this
+background scan before it finished. The next scan will try again.", or, for the
+AndroidX raw stop reason 1 (`CANCELLED_BY_APP`: background scanning turned off),
+"Background scanning was turned off while this scan ran." The raw value is used
+because the plugin's Dart `StopReason` enum numbers the reasons differently
+(`workmanager_platform_interface` 0.10.5 `stop_reason.dart:21`). The write is bounded
+to 2 seconds and is conditional on `in_progress`
+(`BackgroundScanCore.closeInFlightScansAsInterrupted`, reading the `_inFlightScans`
+registry), so the busy retry no longer waits out the heartbeat window. Not proven on a
+phone: whether the restart that follows at once now runs (Fold check after 0.24.1); a
+Doze-alarm restart is still held by the recent-scan check. The claim's heartbeat
+reaper stays the backstop when the write does not finish. Every schedule and cancel writes a `[scheduler/<platform>]` line, naming a
 Doze alarm that failed to arm or cancel.
 
 **Measuring and enabling unattended scans** (F252, Sprint 76; Android only, a
@@ -959,6 +987,14 @@ artifact (GP-8/GP-3 verifies, Sprint 64 chain validation).
   compile (`flutter build ios --no-codesign`); signing with an App Store Connect API key and TestFlight upload follow
   (F304, `docs/IOS_SETUP.md`). Its Flutter version comes from `.fvmrc` (F296 gate covers it). It reads its own
   repository secrets; `ci.yml` stays secret-free (F127).
+- **iOS Simulator test level** (Sprint 84, F345): two more jobs in `ios.yml`, `ios-simulator` (builds for the Simulator,
+  checks `PrivacyInfo.xcprivacy` is inside the built `.app`, runs each shared `integration_test` file on an iPhone
+  Simulator) and `ios-simulator-screens` (captures the five first-run screens on an iPhone and an iPad Simulator).
+  One stale file is excluded from the verdict (`EXCLUDED_TESTS`: sprint62_surfaces, F348); see `docs/TESTING_STRATEGY.md`
+  "iOS test level" and ADR-0050 "What the Simulator does not prove".
+- **Privacy manifest** (F345 R-4): `mobile-app/ios/Runner/PrivacyInfo.xcprivacy` declares no tracking, no collected data
+  types and one required-reason category (`NSPrivacyAccessedAPICategoryFileTimestamp`, reason `C617.1`, for app-container
+  file timestamps); each plugin ships its own manifest. iOS-only by Apple's rule (ADR-0050).
 - Keychain for secure storage.
 
 ### macOS

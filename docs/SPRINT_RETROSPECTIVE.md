@@ -85,9 +85,9 @@ Sprint retrospectives are integrated into Phase 7 of the sprint execution workfl
 
 5. **Step 4 -- Combine and display** (7.4.5): Display the combined retrospective in chat using the no-borders format documented in `docs/SPRINT_EXECUTION_WORKFLOW.md` Phase 7.3 Step 4. Both feedback sets shown together per category.
 
-6. **Step 5 -- Propose improvements from combined feedback** (7.5): Claude reviews combined retrospective and proposes improvements of any type (process, code, tests, architecture, docs, tooling). Sources include all 14 categories from both feedback sets, plus Harold's explicit suggestions. Format per proposal: Title / Source / Type / Effort / Recommendation. Display in chat -- do NOT auto-apply.
+6. **Step 5 -- Propose improvements from combined feedback** (7.5): Claude reviews combined retrospective and proposes improvements of any type (process, code, tests, architecture, docs, tooling). Sources include all 14 categories from both feedback sets, plus Harold's explicit suggestions. Format per proposal: numbered `i1`-`i<n>` with the fields and lettered options a.-z. in `SPRINT_EXECUTION_WORKFLOW.md` Phase 7.3 STEP 5 (Harold, 2026-11-07). Display in chat -- do NOT auto-apply.
 
-7. **Step 6 -- Harold decides: apply now or add to backlog** (7.6): Claude asks Harold for explicit decision per proposal: (a) apply now, (b) add to backlog, (c) skip. Default expectation: most improvements faster to do now before next sprint. Blanket disposition acceptable. Record decisions in retrospective "Improvement Decisions" section.
+7. **Step 6 -- Harold decides: apply now or add to backlog** (7.6): Claude asks Harold for the option letter of each proposal: `i1. a i2. c ...` or `all as recommended`. Default expectation: most improvements faster to do now before next sprint. Blanket disposition acceptable. Record decisions in retrospective "Improvement Decisions" section.
 
 8. **Step 7 -- Apply approved improvements + sprint completion docs** (7.7): For each "apply now" proposal, implement as additional commits on the existing sprint branch. For each "add to backlog" proposal, add to `ALL_SPRINTS_MASTER_PLAN.md`. For each "skip" proposal, note in retrospective. Then perform mandatory sprint completion updates (CHANGELOG, master plan Last Completed Sprint, summary doc, ARCHITECTURE.md if changed).
 
@@ -562,6 +562,8 @@ After receiving user feedback, Claude analyzes and proposes improvements:
 4. **Prioritize**: High/Medium/Low based on impact and effort
 5. **Estimate Effort**: How long to implement each improvement?
 
+[SUPERSEDED 2026-11-07] Present proposals in the `i1`-`i<n>` format in `SPRINT_EXECUTION_WORKFLOW.md` Phase 7.3 STEP 5; the template below is kept for history only.
+
 **Analysis Template**:
 
 ```markdown
@@ -586,6 +588,8 @@ After receiving user feedback, Claude analyzes and proposes improvements:
 ```
 
 ### User Approval (Phase 7.5)
+
+[SUPERSEDED 2026-11-07] Harold answers with option letters (`i1. a i2. c ...` or `all as recommended`); see `SPRINT_EXECUTION_WORKFLOW.md` Phase 7.3 STEP 5 and STEP 6.
 
 User reviews proposed improvements and selects:
 - **Implement Now**: Apply before merging PR
@@ -862,6 +866,8 @@ Group recommendations by **implementation order** based on dependencies:
 - These improve the process itself
 
 ### Presentation Template
+
+[SUPERSEDED 2026-11-07] Present proposals in the `i1`-`i<n>` format in `SPRINT_EXECUTION_WORKFLOW.md` Phase 7.3 STEP 5; the template below is kept for history only.
 
 ```markdown
 ## Sprint N Retrospective Recommendations

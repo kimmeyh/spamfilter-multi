@@ -142,6 +142,30 @@ void main() {
             'latch makes the automatic path one-shot');
   });
 
+  // Sprint 84 self-review F7-3: the placeholder scrolls in a short area. The
+  // 360x240 case (landscape phone, keyboard open) is the one short enough to
+  // fail without the scroll view. What this does NOT catch: an overflow in the
+  // Settings AppBar or tab bar itself, or text scaling above 1.0.
+  for (final size in const [Size(390, 560), Size(320, 480), Size(360, 240)]) {
+    testWidgets(
+        'the unresolved-account placeholder fits at '
+        '${size.width}x${size.height}', (tester) async {
+      tester.view.devicePixelRatio = 1.0;
+      tester.view.physicalSize = size;
+      addTearDown(tester.view.reset);
+
+      await tester.pumpWidget(const MaterialApp(home: SettingsScreen()));
+      await tester.pump();
+      await tester.tap(find.text('Account'));
+      await tester.pumpAndSettle();
+
+      expect(find.text('Select an account to view its settings.'),
+          findsOneWidget);
+      expect(tester.takeException(), isNull,
+          reason: 'the placeholder must scroll, not overflow, in a short area');
+    });
+  }
+
   testWidgets(
       'with ONE saved account, entering a scoped tab auto-resolves and '
       'replaces the placeholder', (tester) async {
