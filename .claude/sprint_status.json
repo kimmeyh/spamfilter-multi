@@ -1,23 +1,23 @@
 {
     "_description": "Sprint status file that persists across context compaction. Update after each phase/sub-phase completion.",
-    "_last_updated": "2026-11-08T16:41",
+    "_last_updated": "2026-11-08T23:39:34-05:00",
     "_usage": "Read this file after context compaction to restore sprint approval state and progress.",
     "_staleness_note": "This file had drifted 15 sprints (last updated at Sprint 35, 2026-04-19) before being refreshed at Sprint 50 close-out. It is a Phase 7.7 checklist item -- update it at every sprint close-out, not opportunistically.",
     "current_sprint": {
-        "number": 84,
-        "branch": "feature/20261105_Sprint_84",
-        "status": "Phase 7.7 Final Code Reviews (7.7.1)",
-        "status_detail": "Manual Validation complete 2026-11-07 (Harold q1 = a). 7.7.1 reviews done: Copilot 1 H / 1 L, code-reviewer 3 M / 5 L, silent-failure-hunter 6 M / 13 L, all fixed (0e80c9fb, a71025e0, 9eb90397, d4178c5b, 98477e31) or decided (q1 = c, q2 = a, q3 = a, q4 faster). Retrospective done, Harold all Very Good; improvements applied (3b2550dc, 2a940092, dd2782f0). Improvement review done (21d2171d); CI run 1 42457200807 green. Completion docs written (SPRINT_84_SUMMARY.md, master plan, CHANGELOG, velocity, Executed-by, SPRINT_85_PLAN.md stub). 7.7.5 done 2026-11-08: PR 548 marked ready, CI run 2 42528115315 green on a32aeeaf, PR description final, readiness announced. Waiting on Harold to merge.",
-        "plan_approved": true,
-        "pr_number": 548,
+        "number": 85,
+        "branch": "feature/20261108_Sprint_85",
+        "status": "Phase 8.3 Microsoft Store Release",
+        "status_detail": "Phase 8 for the Sprint 84 cycle. 8.1 done (Harold, #558). 8.2 pass-1 sweep: cards closed, triad present, master plan rolled, Sprint 85 stub present, tag v0.24.1. 8.3: MSIX 0.24.1.0 from the prod worktree on main 962a1b25, then the Play AAB 0.24.1+22 (serialized). 8.4 scope selection waits for Harold after the uploads are in process.",
+        "plan_approved": false,
+        "pr_number": null,
         "version": "0.24.1+22"
     },
     "previous_sprint": {
-        "number": 83,
-        "branch": "feature/20261031_Sprint_83",
-        "pr_number": 534,
-        "result": "Merged to develop 8bee2ce0 and main (#547) 0a65fd22 on 2026-11-05 (UTC 2026-11-06); tag v0.24.0 (annotated, pushed). Closed by the merge: #535-#546. Open as intended: #509 #510 #523 (Apple).",
-        "docs": "docs/sprints/SPRINT_83_PLAN.md, SPRINT_83_RETROSPECTIVE.md, SPRINT_83_SUMMARY.md"
+        "number": 84,
+        "branch": "feature/20261105_Sprint_84",
+        "pr_number": 548,
+        "result": "Merged to develop cc251012 and main (#558) 962a1b25 on 2026-11-08 (UTC 2026-11-09); tag v0.24.1 (annotated, pushed). Closed by the merge: #549-#557. Open as intended: #509 #510 #523 (Apple).",
+        "docs": "docs/sprints/SPRINT_84_PLAN.md, SPRINT_84_RETROSPECTIVE.md, SPRINT_84_SUMMARY.md"
     },
     "github_issues": {
         "sprint_73": "#428 (open, MV74-1), #422 (open, MV74-3), #430 closed, #434 (open, MV74-2), #431 closed, #432 closed, #433 (open, MV74-3). Also closed in pass 1: #426 (superseded by #428), #427 (leftover captured as F236).",
@@ -67,9 +67,9 @@
     ],
     "blocking_issues": [],
     "next_actions": [
-        "7.7.5 DONE 2026-11-08 (CI run 2 42528115315 green). Harold reviews and merges PR 548.",
-        "After merge (Harold): open the Sprint 85 branch from feature/20261105_Sprint_84; verify #549-#557 closed; Phase 8 (main merge, refinement pass 1, 0.24.1 store release, pass 2).",
-        "Phase 8 carry-ins: the F342 Fold check after 0.24.1 (feeds F357), MV-3c when a YELLOW item appears; Harold reboots before F355."
+        "8.3: build and verify the MSIX 0.24.1.0 (self-test, manifest, size), then build and verify the AAB 0.24.1+22; Harold uploads both.",
+        "8.4 pass-2 scope selection: Harold selects from the 20-item list; then Phase 3 planning for Sprint 85.",
+        "Carry-ins: the F342 Fold check after 0.24.1 (feeds F357), MV-3c when a YELLOW item appears; Harold reboots before F355."
     ],
     "next_sprint_targeted": {
         "number": 85,

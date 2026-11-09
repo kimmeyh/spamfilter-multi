@@ -4,7 +4,7 @@
 **Branch**: `feature/20261105_Sprint_84` | **PR**: #548 -> develop
 **Version**: 0.24.1+22 (bumped at plan approval; PATCH, the user-facing changes are `fix` entries)
 **Suite**: 3,619 passed, 15 skipped, 3 failed (local run 2026-11-06 at `--concurrency=4`; the 3 failures are the
-known Task Scheduler 30 s timeouts, F349) | CI run 1 green (42457200807, all three jobs); CI run 2 runs at 7.7.5 |
+known Task Scheduler 30 s timeouts, F349) | CI run 1 green (42457200807, all three jobs); CI run 2 green (42528115315, at 7.7.5) |
 Analyzer clean | Hook suite 208/208 | test_pylib 95 OK
 
 ## What this sprint was for
