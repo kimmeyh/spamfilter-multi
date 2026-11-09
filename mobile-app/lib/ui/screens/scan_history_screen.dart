@@ -412,13 +412,15 @@ class _ScanHistoryScreenState extends State<ScanHistoryScreen> {
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
       child: Align(
         alignment: Alignment.centerLeft,
-        child: Row(
-          mainAxisSize: MainAxisSize.min,
+        // Sprint 84 5.1.9 rehearsal: a Row of three chips overflowed on a
+        // phone-width screen in the widget tests (412 and 360 wide, by 26 px).
+        // Wrap moves a chip to the next line instead, as the count labels do.
+        child: Wrap(
+          spacing: 8,
+          runSpacing: 4,
           children: [
             _buildFilterChip('All', 'all'),
-            const SizedBox(width: 8),
             _buildFilterChip('Manual', 'manual'),
-            const SizedBox(width: 8),
             _buildFilterChip('Background', 'background'),
           ],
         ),

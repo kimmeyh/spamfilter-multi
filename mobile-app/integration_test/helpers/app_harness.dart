@@ -36,6 +36,7 @@
 
 import 'dart:io';
 
+import 'package:flutter/widgets.dart' show FocusManager;
 import 'package:flutter_test/flutter_test.dart';
 import 'package:sqflite_common_ffi/sqflite_ffi.dart';
 
@@ -127,6 +128,23 @@ Future<HarnessSession> _newSessionWithSeededDb() async {
 
   await DefaultRuleSetService(db).seedIfEmpty();
   return HarnessSession._(tempDir);
+}
+
+/// F345 (Sprint 84): closes the on-screen keyboard after `enterText`.
+///
+/// On a phone, `enterText` focuses the field and the real soft keyboard opens
+/// (iOS Simulator run 6: `viewInsets.bottom` 1005 px = 335 points of a 874 point
+/// screen). The screen then has only a fraction of its height: a list shows
+/// fewer rows (folder_picker_test: the 4th of 4 rows was never built), and a
+/// scroll gesture that starts on the focused text field is taken by the field
+/// (safe_sender_lifecycle_test: the form stopped at 275 of 349 points). Windows
+/// has no soft keyboard, so there this only drops focus and changes nothing.
+/// The extra pump gives the keyboard's hide animation time to reach the
+/// view metrics before pumpAndSettle.
+Future<void> dismissKeyboard(WidgetTester tester) async {
+  FocusManager.instance.primaryFocus?.unfocus();
+  await tester.pump(const Duration(milliseconds: 600));
+  await tester.pumpAndSettle();
 }
 
 /// Fails the test immediately if [dbPath] is NOT under the OS temp root -- the

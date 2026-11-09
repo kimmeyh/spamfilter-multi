@@ -667,6 +667,7 @@ This change was introduced after Sprint 36 kickoff skipped Phase 1 (prior "OPTIO
     1. **Mirror/parallel-site sync**: did the diff touch one of a known twin pair? (Dart gate + its PS1 CLI mirror; manual + background scan paths; two call sites of one helper; dev + prod worktree configs; **local Windows host + CI Linux host**.) ACTION: for each changed file, name its sibling and `grep` it for the same change; update or state why not. (Sprint 47: `check-version-consistency.ps1` header claimed a sweep its `$dirs` did not do.)
        - **Platform-gated widgets are a parallel-site pair (Sprint 50 retro IMP-3)**: the local suite runs on Windows, CI runs on `ubuntu-latest`. Any assertion about a widget behind `if (Platform.isWindows)` (or any other `Platform.is*` gate) MUST be platform-aware -- `expect(finder, Platform.isWindows ? findsOneWidget : findsNothing)` -- or it passes locally and fails CI. ACTION: after writing a widget test, grep the widget's build site for `Platform.is` and make the expectation match. (Sprint 50: the MT-3 entry-point assertion passed on Windows and failed the ubuntu job; caught at the Phase 6.1.1 gate, fixed in `3405a40`.)
        - **Call it, do not copy it (Sprint 83 retro IMP-1)**: ACTION: for each card's "Existing code reused" line, `grep` the named function or constant and confirm the new code CALLS it. Then search the diff for code the card did not foresee: a new caller of an existing user action, a new list of ids, platforms or keys, a new regex shape. For each, name the existing code and change the new code to call it, or write why none exists. (Sprint 83: three 7.7.1 findings were copies that drifted -- "Turn on" from the account list, the IMAP id list, the safe-sender pattern.)
+       - **Nested forms of a shape (Sprint 84 retro i6)**: a search for a code shape (for example `Center` around `Column`) also finds it with wrappers between the two (`Center(child: Padding(child: Column(`). ACTION: search the outer and inner names with any text between them, multiline (Grep `Center\([\s\S]{0,300}?Column\(` with `multiline: true`), and read each hit. Not gated; the 7.7.1 review is the backstop. (Sprint 84: the 5.1.2 search found 4 empty states; the 7.7.1 review found 6 more (CR L2), now in F353.)
     2. **Helper wired into the PRODUCTION path**: does a new/changed resolver or helper actually get CALLED by the runtime path, not just the settings/display path? ACTION: `grep -rn "<helperName>" lib/` and confirm at least one call site is on the scan/runtime path. (Sprint 47: `getEffectiveFolders` was display-only; scans still used the raw getter.)
     3. **Doc-comment-vs-code drift**: did a changed default/behavior leave a stale doc comment? ACTION: for every changed constant/default, read the doc comment ABOVE it and any comment that names its value. (Sprint 47: `defaultLiveScanDebugCsv` comment said `false` after the value became `true`.)
     4. **Fragile input parsing**: does new parsing split on a positional delimiter where the input format varies? ACTION: list each new `split`/`indexOf`/`substring` on user- or id-shaped input; prefer domain/content matching. (Sprint 47: accountId dash-split broke on dashed local-parts.)
@@ -759,6 +760,11 @@ This change was introduced after Sprint 36 kickoff skipped Phase 1 (prior "OPTIO
     app") without evidence for it reads `NOT REHEARSED: <what is missing>`, never PASS, and the step is not handed
     over as rehearsed. (Sprint 82: the MV-1 rehearsal said the click reaches the app, reasoned from the plugin's API;
     the plugin registers only the process that called `initialize`, and the click failed in Harold's hands.)
+  - **Guard tests carry their mutation verdict (Sprint 84 retro i5)**: the 5.1.9 evidence lists each NEW test that
+    guards a fix or a gate, with its verdict: `KILLED (<spec or command>)`, or `not mutated: <reason>`. A guard test
+    with no verdict is a finding before handover. Not gated: the F193 gate checks only that the 5.1.9 marker
+    exists, so the 7.7.1 review is the backstop. (Sprint 84 7.7.1: a wiring test checked only source text and could
+    not fail (CR L4); a layout test had no mutation record (SF L11; 2 of 2 KILLED when run afterwards).)
   - **Record**: each MV step in the plan carries `Rehearsed: <date>, <how>, <observed result>`, and the plan's
     Phase 5 evidence carries `- **5.1.9 MV rehearsal**: <date>, <N> steps rehearsed (<how>), <M> not rehearsable
     (<why>)`. `sprint-auto-advance.ps1` (F193 evidence gate) refuses to declare Manual Validation from Sprint 78
@@ -1348,12 +1354,33 @@ Before conducting sprint review, build and test the Windows desktop app:
   - Any "proposed improvements" Harold included in his Step 1 reply
   - Cross-cutting themes that emerge when both feedback sets are read together
 
-  Format each proposal:
-  - **Title**: short summary
-  - **Source**: which category / which role surfaced it
-  - **Type**: process / code / tests / architecture / docs / tooling
-  - **Effort**: rough estimate (S/M/L or hours)
-  - **Recommendation**: apply now or add to backlog (with one-sentence rationale)
+  **Format each proposal (Harold, 2026-11-07).** The long-term goal is to be effective over many sprints, while being as efficient as reasonably possible and aligned with the architecture, agile and software engineering practices of this repository, including risk-based and automated testing. Number the proposals `i1` to `i<n>`. Give each one these fields, in this order:
+
+  ```
+  i<n>. <brief title>
+  - What it is: <the change, in one or two sentences>
+  - Source: <the category and role, or the 7.7.1 finding class, that produced it>
+  - What it prevents and/or catches: <the failure, with the concrete instance>
+  - Prevention or control: <prevention | control | both>
+  - Extends: <the existing gate, hook, checklist item, test or helper it extends, or "new">
+  - Long-term value: <what improves in every later sprint>
+  - Evidence: <how many times it occurred (sprints, counts), the time lost, and the efficiency gained and how>
+  - Effort: <minutes, and the number of files>
+  - Options:
+    - a. (Recommendation) <option; now or backlog; effort>. Pro: <...>. Con: <...>.
+    - b. <option>. Pro: <...>. Con: <...>.
+  ```
+
+  - **Prevention first, as early as possible.** "What it prevents" names the earliest stage that can stop the failure, in this order: sprint process, backlog item, sprint card, development, testing. A proposal that only catches the failure says so, and says why prevention is not practical.
+  - **Options are letters a. to z.** Each option says whether it is done now or sent to the backlog, its effort, and its pros and cons. Exactly one option carries "(Recommendation)". The usual order, using only the options that apply:
+    - a. the best option, done now (or in the backlog if its effort requires it)
+    - b. the best option, sent to the backlog because of its time or the number of files it changes
+    - c. the next best alternative
+    - d. the alternative after c
+    - e. skip for this sprint, but track it in case it repeats in future sprints
+    - f. skip
+  - **Retrospective questions and decisions** that are not improvements use the same layout, numbered `q1` to `q<n>`, with "What it decides" in place of "What it is" and the fields that apply (evidence, and lettered options with pros, cons and one recommendation).
+  - Re-present every unanswered proposal in full in each later message (CLAUDE.md "RE-PRESENT them in full").
 
   **[WARNING] MANDATORY completeness gate before displaying (Sprint 50 retro IMP-2)**: proposals are generated MECHANICALLY from the feedback, not from memory of the sprint. Before displaying, walk Harold's feedback line-by-line, category 1 through 14, and for EACH category state one of:
   - the numbered proposal(s) that category produced, or
@@ -1367,15 +1394,10 @@ Before conducting sprint review, build and test the Windows desktop app:
 
   Claude asks Harold for an explicit decision on each proposal. Default expectation (per Sprint 34 retro guidance): "almost all are faster to do now before the next sprint -- exceptions are directed to backlog."
 
-  Prompt format:
-  > For each proposal above, please indicate:
-  > (a) apply now in this sprint
-  > (b) add to backlog for a future sprint
-  > (c) skip / no change
-  >
-  > A blanket "all now" or "all backlog" answer is acceptable if you want to apply the same disposition across all proposals.
+  Prompt format (Harold, 2026-11-07):
+  > Answer with one letter per proposal, for example `i1. a i2. c i3. b`, or `all as recommended`.
 
-  Wait for Harold's reply. Record his decisions inline in the retrospective document under a new "Improvement Decisions" section.
+  The chosen option says whether the work is done now, sent to the backlog, tracked, or skipped; Step 7 acts on that. Wait for Harold's reply. Record his decisions inline in the retrospective document under a new "Improvement Decisions" section, one line per proposal (`i1: a -- <option text>`).
 
   **STEP 7 (Phase 7.7) -- Apply approved improvements as part of the current sprint**
 
@@ -1475,11 +1497,11 @@ Before conducting sprint review, build and test the Windows desktop app:
   - Review the combined retrospective for improvement opportunities
   - Sources: any of the 14 categories from either Harold or Claude, plus Harold's explicit suggestions, plus cross-cutting themes, plus the **7.7.1 findings by class** (every class that recurs from an earlier sprint's 7.7.1 line MUST get a prevention proposal -- Harold, 2026-10-23)
   - Improvements may be of ANY type: process, code, tests, architecture, documentation, tooling
-  - Format per proposal: Title / Source / Type / Effort / Recommendation
+  - Format per proposal: `i1`-`i<n>` with What it is / Source / What it prevents and/or catches / Prevention or control / Extends / Long-term value / Evidence / Effort / lettered Options a.-z. with pros, cons and one (Recommendation) -- the template is in STEP 5 above (Harold, 2026-11-07)
   - Display all proposals in chat for Harold's review -- do NOT auto-apply
 
 - [ ] **7.6 Harold Decides: Apply Now or Add to Backlog** (Updated Sprint 34, Step 6 of Retrospective Protocol)
-  - Ask Harold for explicit decision on each proposal: (a) apply now, (b) add to backlog, (c) skip
+  - Ask Harold for the option letter of each proposal: `i1. a i2. c ...` or `all as recommended` (Harold, 2026-11-07)
   - Default expectation: most improvements are faster to do now before the next sprint
   - Blanket disposition (all now / all backlog) acceptable
   - Record Harold's decisions in retrospective document under "Improvement Decisions" section

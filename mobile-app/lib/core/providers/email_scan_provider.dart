@@ -109,6 +109,11 @@ class EmailScanProvider extends ChangeNotifier {
   ScanResultStore? _scanResultStore;
   UnmatchedEmailStore? _unmatchedEmailStore;
   int? _currentScanResultId;  // Track current scan result for persistence
+
+  /// The `scan_results` row this scan holds, or null before the claim is
+  /// granted and after the scan ends. Read by the Android worker's stop
+  /// handler (F342, Sprint 84) to close the row of a scan WorkManager killed.
+  int? get currentScanResultId => _currentScanResultId;
   Timer? _heartbeatTimer;  // MV74-2 (Sprint 74): liveness for OTHER isolates
   DatabaseHelper? _databaseHelper;  // For email_actions persistence
 

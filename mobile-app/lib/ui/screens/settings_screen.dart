@@ -1218,26 +1218,29 @@ class _SettingsScreenState extends State<SettingsScreen> with SingleTickerProvid
   ///   with no way to follow it. The button clears the latch and re-runs the
   ///   resolver.
   Widget _buildUnresolvedAccountPlaceholder() {
+    // Sprint 84: overflow-proof in a short viewport (the EmptyState pattern).
     return Center(
-      child: Padding(
-        padding: const EdgeInsets.all(24),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            const Text(
-              'Select an account to view its settings.',
-              textAlign: TextAlign.center,
-            ),
-            const SizedBox(height: 16),
-            ElevatedButton.icon(
-              icon: const Icon(Icons.people),
-              label: const Text('Choose Account'),
-              onPressed: () {
-                _accountResolutionAttempted = false;
-                _resolveAccountForScopedTab();
-              },
-            ),
-          ],
+      child: SingleChildScrollView(
+        child: Padding(
+          padding: const EdgeInsets.all(24),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              const Text(
+                'Select an account to view its settings.',
+                textAlign: TextAlign.center,
+              ),
+              const SizedBox(height: 16),
+              ElevatedButton.icon(
+                icon: const Icon(Icons.people),
+                label: const Text('Choose Account'),
+                onPressed: () {
+                  _accountResolutionAttempted = false;
+                  _resolveAccountForScopedTab();
+                },
+              ),
+            ],
+          ),
         ),
       ),
     );

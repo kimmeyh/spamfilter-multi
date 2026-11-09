@@ -13,12 +13,12 @@
         "hooks": [
           {
             "type": "command",
-            "command": "powershell -NoProfile -ExecutionPolicy Bypass -File \"${CLAUDE_PROJECT_DIR}\\.claude\\hooks\\block-carry-forward-stash.ps1\"",
+            "command": "python \"${CLAUDE_PROJECT_DIR}/.claude/hooks/block-carry-forward-stash.py\"",
             "timeout": 15
           },
           {
             "type": "command",
-            "command": "powershell -NoProfile -ExecutionPolicy Bypass -File \"${CLAUDE_PROJECT_DIR}\\.claude\\hooks\\require-sprint-cards.ps1\"",
+            "command": "python \"${CLAUDE_PROJECT_DIR}/.claude/hooks/require-sprint-cards.py\"",
             "timeout": 15
           },
           {
@@ -33,7 +33,7 @@
           },
           {
             "type": "command",
-            "command": "powershell -NoProfile -ExecutionPolicy Bypass -File \"${CLAUDE_PROJECT_DIR}\\.claude\\hooks\\warn-commit-without-velocity.ps1\"",
+            "command": "python \"${CLAUDE_PROJECT_DIR}/.claude/hooks/warn-commit-without-velocity.py\"",
             "timeout": 15
           }
         ]
@@ -54,12 +54,12 @@
         "hooks": [
           {
             "type": "command",
-            "command": "powershell -NoProfile -ExecutionPolicy Bypass -File \"${CLAUDE_PROJECT_DIR}\\.claude\\hooks\\sprint-auto-advance.ps1\"",
+            "command": "python \"${CLAUDE_PROJECT_DIR}/.claude/hooks/sprint-auto-advance.py\"",
             "timeout": 15
           },
           {
             "type": "command",
-            "command": "powershell -NoProfile -ExecutionPolicy Bypass -File \"${CLAUDE_PROJECT_DIR}\\.claude\\hooks\\verify-closeout-complete.ps1\"",
+            "command": "python \"${CLAUDE_PROJECT_DIR}/.claude/hooks/verify-closeout-complete.py\"",
             "timeout": 20
           }
         ]

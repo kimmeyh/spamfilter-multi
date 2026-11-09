@@ -164,6 +164,39 @@ obsolete since the Sprint 51 retirement of `/memory-restore`; F340 audits them a
 `.claude/commands/` (5) and `.claude/agents/` (5) are prompts to a model and stay `.md`. The brief did not ask for them
 to be classified; they are listed here so the inventory is complete.
 
+### Conversion log
+
+- Sprint 84 F326 (GitHub #554), 2026-11-06: `block-carry-forward-stash.ps1` converted to `block-carry-forward-stash.py`
+  (stash-guard, 8 recorded cases). Registered in `.claude/settings.json` in Python form; the `.ps1` is kept until F329.
+- Sprint 84 F326 (GitHub #554), 2026-11-06: `require-sprint-cards.ps1` converted to `require-sprint-cards.py`
+  (sprint-cards, 8 recorded cases). It makes no `gh` call, so the layer gained no `gh` wrapper. Registered in Python form.
+- Sprint 84 F326 (GitHub #554), 2026-11-06: `warn-commit-without-velocity.ps1` converted to `warn-commit-without-velocity.py`
+  (velocity-warn, 12 recorded cases). Its JSON warning matches the PowerShell output except one trailing CRLF that the
+  shared layer adds on Windows. Registered in Python form.
+- Sprint 84 F327 (GitHub #555), 2026-11-06: `verify-closeout-complete.ps1` (Stop hook) converted to
+  `verify-closeout-complete.py` (closeout, 25 recorded cases plus one CRLF case). This is the first hook that calls `gh`,
+  so the layer gained `common.gh()`, the same never-raising `(exit code, stdout)` shape as `git()`, with an 8 second
+  timeout so the hook's two possible calls fit its 20 second budget. A missing, offline or slow `gh` skips check 3c (fail
+  open), as the PowerShell `catch { }` did. Markdown is read as bytes and decoded `utf-8-sig`, so CRLF survives. Registered
+  in Python form under `Stop`; the `.ps1` is kept until F329.
+- Sprint 84 F328 (GitHub #556), 2026-11-06: `sprint-auto-advance.ps1` (Stop hook, 756 lines) converted to
+  `sprint-auto-advance.py` (top-level route, 55 recorded cases plus 16 footer cases added for R-5). All 13 commitment
+  patterns, 13 question patterns and 40 whitelist patterns keep their order and text; every one is compiled
+  case-insensitive (the source has no `-cmatch`). One .NET construct has no Python spelling: FORM 6's variable-width
+  lookbehind `(?<!\b(is|are|was|were|been|being)\s)` became six fixed-width lookbehinds. JSON `-eq $true` and `-eq $false`
+  comparisons are reproduced by `ps_eq_bool`. One deliberate difference (R-6): the PowerShell wrapped the whole F193
+  evidence evaluation in `try { } catch { }`, so an unreadable plan or velocity file fell through silently; the Python
+  lets that exception reach `hooklib.run` (exit 1, a visible hook error). Only the status-file and plan-head reads keep
+  the swallow. Registered in Python form under `Stop`; the `.ps1` is kept until F329.
+- Sprint 84 5.1.2 F6, 2026-11-06: fail-open stays, but it is no longer silent. A `gh` failure in check 3c of
+  `verify-closeout-complete.py` now gives the notice "check 3c did not run: gh unavailable (<reason>)"; an existing but
+  unreadable `sprint_status.json` gives "sprint_status.json unreadable (<error>); sprint gates skipped"; `hooklib.run`
+  gives "[<hook>] input unreadable (<why>); allowed without checking" for non-empty input that is not a JSON object. All
+  three still allow (exit 0). Claude Code never shows stderr of a hook that exits 0, so `hooklib.notice()` queues the
+  text and `hooklib.run` delivers it as the `systemMessage` stdout field, merged into any JSON the hook already prints
+  (one object), or as a "Note:" paragraph in the stderr reason on a block. A hook with plain-text stdout
+  (`block-commit-during-mutation`) gets the notice on stderr, which is not shown.
+
 ### Conversion order
 
 Smallest and most used first, harness last: F326, F327, F328 (hooks), then F329 (the test tooling, which switches

@@ -7,6 +7,65 @@ Manual Validation complete
 Sprint 8n Manual Validation Feedback 
 
 ---------------------------------------------------------------------------------------------------------
+Sprint 84 Manual Validation Feedback - round 2:
+  - MV-1 (Windows DEV, then the Fold): enter the iCloud app-specific password again.
+    a. Create a new app-specific password at account.apple.com > Sign-In and Security > App-Specific Passwords.
+    b. In the app, open Select Account. The iCloud row reads "iCloud Mail rejected the sign-in. Enter your password again." and has a "Sign In Again"
+       button.
+    c. Press "Sign In Again". The address is already filled in, and no "Account already added" question appears.
+    d. Paste the new password and save.
+    e. Expected: the message is gone from the iCloud row. Within 5 minutes, Scan History shows a new iCloud Background row with no error.
+    f. Do the same steps on the Fold.
+not complete yet, but update the rest of the items
+  - MV-2 (Windows Production): older No Rule rows get the "Suggested" mark after a full rescan.
+    a. Settings > the account > Scan Range: tick "Scan all emails".
+    b. Run a Manual Scan of the folder that holds news_40693@citorisc.net.
+    c. Open Review No Rule Items. Expected: each news_ row still in that folder shows "Suggested" on Block Entire Domain. A row whose message is no
+       longer in the folder stays unmarked.
+    d. Set the Scan Range back to its old value.
+no older no rule rows exist
+  - MV-3 (Windows DEV): Rule Test messages in a short window.
+    a. Settings > Manage Rules > the "Test a pattern against sample emails" icon.
+    b. Drag the window's bottom edge up to the minimum size (800 x 600).
+    c. Expected: "Enter a pattern and press Test..." shows with no yellow-and-black overflow stripes.
+    d. Type zzqqxx-no-such-sender and press Test. Expected: "No matches found in N sample emails." shows with no stripes and scrolls.
+working as expected
+  - MV-4 (Fold): 0.24.0 notification channels.
+    a. Android Settings > Apps > MyEmailSpamFilter > Notifications.
+    b. Expected: two channels, "Every Completed Scan" and "One or more No Rule Items", and no background_scan_channel.
+    c. Take a screenshot.
+Working as expected
+  - MV-5 (Fold cover screen): the pop-up for a YELLOW No Rule item. Do this step only when a YELLOW No Rule item appears. Expected: one rule is marked
+    "Suggested", and Block Subject, the regex note and the Skip row all fit with no clipping. Take a screenshot.
+Don’t currently have any yellow no rule items
+  - MV-6 (with you): live first-run evaluation.
+    - Windows: I back up the DEV data folder, do a clean first run, then restore the backup.
+    - Android: the emulator. No phone data is touched.
+    - iOS: the ten Simulator screens from CI run 5. I already found two iPad issues:
+      - Settings > General says "in a file on this computer". That is desktop wording on a tablet.
+      - The iPad layout is the phone layout stretched to full width.
+REady
+
+  Open questions:
+
+  Question A (F1-1): Four empty states can overflow on a short screen: the Folder Selection error, the Manage Rules search with no match, the Manage
+  Safe Senders search with no match, and the Gmail sign-in error. My estimate is that they need 126 px, but only 74 px is left when the keyboard is
+  open. A fix touches 4 code files, so it needs your approval.
+  1. Fix all four now. I recommend this: 30-45 minutes plus a WinWright re-sweep.
+  2. Fix the two search screens now and put the other two in the backlog.
+  3. Put all four in the backlog.
+
+  F350 review Q1 (scope). F350 is the risk-based testing efficiency card you asked for, with the HSBC F180 card as the reference.
+  1. Keep the scope as written.
+  2. Remove part 6.
+  3. Add something. Tell me what.
+
+  F350 review Q2 (priority):
+  1. P30.
+  2. P10.
+  3. Another number.
+
+
 Sprint 84 Manual Validation Feedback:
   1. W-1 (F322): Settings > Background > "Scan notifications" reads "Only when there are No Rule items". Change it to "Every completed scan", leave
      Settings, open it again, and confirm the change was saved.

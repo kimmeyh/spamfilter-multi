@@ -455,8 +455,14 @@ class _RuleTestScreenState extends State<RuleTestScreen> {
   }
 
   Widget _buildResults() {
+    // Sprint 84 (F345 iOS Simulator run 1, read_only_flows_test F25): the
+    // results area is an Expanded below the form; on a phone it can be about
+    // 60 pixels tall, and the Column below overflowed by 27 pixels. Each
+    // empty state uses the EmptyState shape (Sprint 60 MV): Center over a
+    // SingleChildScrollView, so it scrolls in a short area instead.
     if (!_hasTestedOnce && _sampleEmails.isEmpty) {
       return Center(
+        child: SingleChildScrollView(
         child: Padding(
           padding: const EdgeInsets.all(32),
           child: Text(
@@ -466,11 +472,13 @@ class _RuleTestScreenState extends State<RuleTestScreen> {
             style: TextStyle(color: Colors.grey.shade600),
           ),
         ),
+        ),
       );
     }
 
     if (!_hasTestedOnce) {
       return Center(
+        child: SingleChildScrollView(
         child: Padding(
           padding: const EdgeInsets.all(32),
           child: Column(
@@ -513,11 +521,13 @@ class _RuleTestScreenState extends State<RuleTestScreen> {
             ],
           ),
         ),
+        ),
       );
     }
 
     if (_testResults.isEmpty) {
       return Center(
+        child: SingleChildScrollView(
         child: Padding(
           padding: const EdgeInsets.all(32),
           child: Column(
@@ -533,6 +543,7 @@ class _RuleTestScreenState extends State<RuleTestScreen> {
               ),
             ],
           ),
+        ),
         ),
       );
     }

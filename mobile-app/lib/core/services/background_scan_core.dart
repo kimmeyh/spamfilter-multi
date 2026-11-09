@@ -389,6 +389,83 @@ class BackgroundScanCore {
         _ => 'Email',
       };
 
+  /// F342 (Sprint 84): the providers of the scans running in THIS isolate,
+  /// by account id, so the Android worker's stop handler can close the row
+  /// of a scan WorkManager is killing. Written only by [_scanAccountOnce];
+  /// read only by [closeInFlightScansAsInterrupted]. Windows (a separate
+  /// process per run, no WorkManager) never reads it.
+  static final Map<String, EmailScanProvider> _inFlightScans = {};
+
+  /// F342 (Sprint 84): the reason written on a scan row when Android stopped
+  /// the background worker (WorkManager stop reason, e.g. Doze or battery
+  /// saver) while the scan ran. Shown on the scan's row in Scan History.
+  static const String stoppedByPhoneReason =
+      'The phone stopped this background scan before it finished. The next '
+      'scan will try again.';
+
+  /// F342 (Sprint 84, 7.7.1 M1): the reason written when the APP cancelled the
+  /// work (the user turned background scanning off, which calls
+  /// `cancelDetailed` in `background_scan_scheduler.dart`). It makes no
+  /// promise of a next scan, because there may not be one.
+  static const String stoppedByAppReason =
+      'Background scanning was turned off while this scan ran.';
+
+  /// F342 (Sprint 84): mark the `in_progress` row of every scan running in
+  /// this isolate `interrupted`, so the row is closed within seconds and a
+  /// busy retry no longer waits out the heartbeat window. A Doze-alarm run is
+  /// still governed by the recent-scan check, not by this close. Returns the
+  /// rows closed. Throws the first database error after trying every scan;
+  /// when some rows did close first, their count is logged before the throw
+  /// (7.7.1 L1). [reason] is the text stored on the row (default: the phone
+  /// stopped the scan).
+  static Future<int> closeInFlightScansAsInterrupted(
+      DatabaseHelper databaseHelper,
+      {String reason = stoppedByPhoneReason}) async {
+    var closed = 0;
+    Object? firstError;
+    for (final provider in _inFlightScans.values.toList()) {
+      final id = provider.currentScanResultId;
+      if (id == null) continue;
+      try {
+        // Conditional on `in_progress`: a scan that finished a moment before
+        // the stop keeps its own status (unlike
+        // `ScanResultStore.markScanCancelled`, which writes unconditionally).
+        final db = await databaseHelper.database;
+        final n = await db.update(
+          'scan_results',
+          {'status': 'interrupted', 'error_message': reason},
+          where: 'id = ? AND status = ?',
+          whereArgs: [id, 'in_progress'],
+        );
+        if (n > 0) closed++;
+      } catch (e) {
+        firstError ??= e;
+      }
+    }
+    if (firstError != null) {
+      // The caller sees only the error, so the rows that DID close are
+      // reported here, before the rethrow.
+      _logger.w('[worker/android] closed $closed in-progress scan row(s) '
+          'before a database error: $firstError');
+      throw firstError;
+    }
+    return closed;
+  }
+
+  /// Test seam: how many scans this isolate has registered.
+  @visibleForTesting
+  static int get debugInFlightCount => _inFlightScans.length;
+
+  /// Test seam: register [provider] as running for [accountId].
+  @visibleForTesting
+  static void debugRegisterInFlight(
+          String accountId, EmailScanProvider provider) =>
+      _inFlightScans[accountId] = provider;
+
+  /// Test seam: forget every registered scan.
+  @visibleForTesting
+  static void debugClearInFlight() => _inFlightScans.clear();
+
   static Future<AccountScanOutcome> _scanAccountOnce({
     required String accountId,
     required String platformId,
@@ -485,14 +562,6 @@ class BackgroundScanCore {
     final scanProvider = EmailScanProvider();
     scanProvider.initializeScanMode(mode: scanMode);
 
-    // Create and run the email scanner
-    final scanner = EmailScanner(
-      platformId: platformId,
-      accountId: accountId,
-      ruleSetProvider: ruleSetProvider,
-      scanProvider: scanProvider,
-    );
-
     // F175 (Sprint 62): hard timeout on the whole background scan. A hung
     // scan (dead socket, provider stall) used to sit `in_progress` forever
     // with no error; now it is failed loudly. Dart's timeout does not
@@ -509,6 +578,17 @@ class BackgroundScanCore {
     // survives the screen being left. Both paths read
     // ScanCoordinator.scanTimeout, so they tighten together.
     try {
+      // F342 (7.7.1 L3): registered INSIDE the try, so the `finally` below
+      // unregisters it even when the EmailScanner constructor throws.
+      _inFlightScans[accountId] = scanProvider;
+
+      // Create and run the email scanner
+      final scanner = EmailScanner(
+        platformId: platformId,
+        accountId: accountId,
+        ruleSetProvider: ruleSetProvider,
+        scanProvider: scanProvider,
+      );
       await scanner
           .scanInbox(
             daysBack: daysBack,
@@ -614,6 +694,12 @@ class BackgroundScanCore {
       await scanProvider
           .errorScan('Scan timed out after $minutes minutes (F175)');
       rethrow;
+    } finally {
+      // F342: identical-check, so a later scan of the same account that has
+      // already registered itself is not unregistered by this one.
+      if (identical(_inFlightScans[accountId], scanProvider)) {
+        _inFlightScans.remove(accountId);
+      }
     }
 
     // F238 (Sprint 75): the scanner swallows a cancel (a normal outcome for
