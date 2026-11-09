@@ -27,6 +27,31 @@ Partner Center before saying anything about the Store version.
 | **Last uploaded to Play (any track)** | 0.24.0 (versionCode 21) | 2026-11-06 | Updated 2026-11-06 (Sprint 84 Phase 3.7.0b, in the bump commit to 0.24.1+22) from Harold's report that 0.24.0 (versionCode 21) is uploaded to closed testing; the Fold screenshot of 2026-11-06 shows Version 0.24.0 installed. Previous: 0.23.0 (versionCode 20), updated 2026-11-05 from the 0.23.0 Fold screenshots. Previous update 2026-10-27 from Harold's 2026-10-24 report that 0.21.0 is installed from Play (an install proves the upload). The pubspec was already bumped to 0.22.0+19 at Sprint 81 3.7.0b, so this follows the bump, as required. 0.22.0 (versionCode 19) AAB built 2026-10-27, upload not yet reported. Closed testing (Alpha). Previous: 0.20.0 (versionCode 17). Sprint 76 retro IMP-2: Play refuses a versionCode it has already received on ANY track, so this row -- not the Live row -- is what the next build must exceed. UPDATE IT in the same commit that bumps `pubspec.yaml` after Harold reports an upload (never before the bump, or the suite goes red on the current build). Enforced by `dev_version_ahead_test` and by `build-with-secrets.ps1 -Output aab`. |
 | **Dev worktree** (authoritative -- mirrors `pubspec.yaml`) | 0.24.1+22 | 2026-11-06 | Bumped at Sprint 84 plan approval (Phase 3.7.0b). PATCH: no Sprint 84 card adds a user-facing `feat` (F280 and F342 are `fix`; F345 is CI and an iOS resource; F326-F328 are tooling). versionCode 22. "Last uploaded to Play" moved to 0.24.0 (versionCode 21) in the same commit. Previous: 0.24.0+21 (Sprint 83). Gates: `version_consistency_test`, `dev_version_ahead_test`. |
 
+## 0.24.1 -- Sprint 84 cycle Phase 8.3 (2026-11-08 / 2026-11-09)
+
+**BUILT + VERIFIED, NOT YET SUBMITTED.** The Live rows above stay unchanged until Harold reports each upload; "Last
+uploaded to Play" moves to 0.24.1 (versionCode 22) in the same commit as the Sprint 85 version bump (Phase 3.7.0b).
+
+- **MSIX 0.24.1.0 -- BUILT + VERIFIED** (finished 23:58 on 2026-11-08): prod worktree pulled (59 commits behind) to
+  `main` 962a1b25 (tag `v0.24.1`, annotated, pushed); release policy gates 26/26; build log shows `APP_ENV=prod` and
+  `secrets.prod.json`; `--release-self-test --expected-version=0.24.1` RESULT: PASS (6/6); manifest Identity
+  `Version="0.24.1.0"`; 17.8 MB.
+  `D:\Data\Harold\github\spamfilter-multi-prod\mobile-app\build\windows\x64\runner\Release\my_email_spam_filter.msix`.
+  Open: the Step 4.2 Gmail sign-in URL check on the installed Store build.
+- **AAB 0.24.1 (versionCode 22) -- BUILT + VERIFIED** (finished 01:09 on 2026-11-09): dev worktree on
+  `feature/20261108_Sprint_85` at 53670f58 (`git diff origin/main HEAD -- mobile-app` empty, so the app code is
+  identical to `main` 962a1b25); the script's IMP-2 check "versionCode 22 is above the last uploaded (21)"; F204
+  checks targetSdkVersion 36 and `AD_ID` absent; read from the artifact: versionName 0.24.1, no `.dev` package, Gmail
+  OAuth scheme present; 68.4 MB.
+  `D:\Data\Harold\github\spamfilter-multi\mobile-app\dist\android-0.24.1+22\app-prod-release.aab`.
+  Build note: the first three builds failed in the `sqlite3` 3.1.4 native-asset hook. GitHub answered its download
+  of the prebuilt Android libraries (`github.com/simolus3/sqlite3.dart/releases/download/sqlite3-3.1.4/`) with an
+  HTTP 504 page about half the time (checked by direct requests 00:35-00:50; the API path served the same file with
+  the right hash; githubstatus.com said "All Systems Operational"). The hook does not check the HTTP status
+  (`description.dart:183-197`), so it saved the 92-byte error page and its hash check stopped the build. A bounded
+  retry (delete the failed `.tmp` download folders, rebuild) succeeded on its first attempt. No code or dependency
+  change.
+
 ## 0.24.0 -- Sprint 83 cycle Phase 8.3 (2026-11-05)
 
 **SUBMITTED to both stores** (Harold's report, 2026-11-06): Microsoft Store in certification; Google Play closed
