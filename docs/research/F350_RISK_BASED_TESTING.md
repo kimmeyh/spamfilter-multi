@@ -1,7 +1,7 @@
 # F350: Risk-based testing -- effective, and as efficient and quick as reasonably possible
 
-Sprint 85, Task 2 (Issue #562). Status: DRAFT (R-1 committed) -- R-3 local timings PENDING (need an idle machine); R-7 decisions
-PENDING (Harold).
+Sprint 85, Task 2 (Issue #562). Status: DRAFT (R-1, R-2 and R-5 written) -- R-3 local timings PENDING (need an idle
+machine); R-6 and R-7 PENDING (R-7 decisions are Harold's).
 
 ## Summary (BLUF)
 
@@ -13,6 +13,11 @@ PENDING (Harold).
   all seven sprints. No test kind in the suite targets either class.
 - No automated test runs on an Android emulator or device. Four of the escaped defects in Sprints 78-84 were found only
   on an emulator or a phone.
+- 16 of the 49 policy gates can pass when nothing matched, and 19 were never shown to fail. Five pairs or groups
+  repeat each other.
+- Mutation proofs are many (about 850 mutants in Sprints 74-84) but 13 proven tests later missed their defect. Re-running
+  the same mutants would have changed the verdict in 1 of the 13; the cheaper checks are mutating the call site and
+  asserting a match count.
 - A risk tier (ISTQB likelihood x impact) can be computed from the repository. Today's rule puts 112 of 397 artifacts
   (28 percent) in the high tier, which is too many to be "the fast set". R-4 proposes a tighter rule.
 
@@ -104,7 +109,64 @@ Defects found only in one environment:
 
 ### Gates that cannot fail, or repeat another gate
 
-PENDING: cross-check of the 49 policy files against their mutation records. To be filled before the decisions.
+The 49 files in `mobile-app/test/policy/` (`section_scope.dart` is a helper), read one by one on 2026-11-10 against
+the plans, retrospectives and `CODING_VELOCITY.md` of every sprint. Four of the vacuity findings below were checked
+again by hand at file:line before they were written here (android_signing, legal_docs, version_consistency,
+gmail_label_id_gate).
+
+Kind: 44 read source or docs as text, 4 mix text and runtime checks, 1 runs app code (`gmail_label_id_gate`).
+
+Proof that the gate can fail:
+- 22 have a recorded KILLED or red result. For six of them the proof covers one test of several (factory_call_site,
+  msix_config, version_consistency, winwright_script_strings, behavioral_coverage first version, screen_version_line).
+- 8 have only a card-level mutant count that does not name the file.
+- 19 were never shown to fail: android_icon_assets, android_minify, android_network_security, android_signing,
+  app_content_declarations, cited_test_names, data_residency, debug_allowlist_gate, dev_version_ahead,
+  doc_control_chars, f219_task_affinity, legal_docs (planned only), log_redaction, play_listing_assets,
+  provider_setup_steps, stale_footer, system_inset_wiring, test_inventory_coverage, tester_instructions.
+
+Gates that pass when nothing matched (16). The pattern is the Sprint 69 F210 class: green because nothing matched looks
+the same as green because nothing is wrong.
+- `android_signing_test.dart:37`: `git ls-files` exit code is never checked. If git fails, the list is empty and the
+  test passes.
+- `legal_docs_test.dart:110`, `:147`: a missing served page is skipped. With both pages gone, both tests pass.
+- `version_consistency_test.dart:101`: a missing folder is skipped, and nothing asserts that any version literal was
+  found.
+- `gmail_label_id_gate_test.dart:175-182` (and three more loops): the loop asserts each recorded label id, but nothing
+  asserts that a call was recorded. With no call, it passes.
+- `msix_config_test.dart:152-206`: the secrets tests are generated per file found; zero files gives zero tests.
+- `play_listing_assets_test.dart:136-155`: an absent asset is skipped with a print. The file itself records that the
+  mutation was not re-run after a rewrite (`:270-303`).
+- No count of matched items: behavioral_coverage (`:112-133`), f298_rule_write_reload_gate (`:48-57`),
+  log_redaction (`:58-66`), screen_version_line_wiring (`:59-96`), system_inset_wiring (`:59-103`).
+- Whole-file `contains()` that a comment can satisfy: f219_task_affinity (`:71`, `appAuthRedirectScheme`), the
+  Sprint 70 SEC-9 class; android_minify (`:29`).
+- app_content_declarations (`:155`) takes the text to the end of the file, the defect `section_scope.dart:11-17`
+  exists to prevent.
+- Self-checks that cannot fail: appbar_action_order (`:64-70`, a literal checked against itself), text_contrast
+  (`:47-54`, tests a copy of the regex, not `failingGrey`).
+- release_notes: missing files and separators `return` or `continue` (`:60`, `:97`, `:150-178`).
+- Five more are low risk (no count, but a narrow scan): data_safety_declarations, doc_control_chars,
+  provider_setup_steps, stale_footer, test_inventory_coverage (skipped on non-Windows hosts without Python).
+
+Duplicates (5 groups, 11 files):
+- `dev_version_ahead_test.dart:190-210` and `version_consistency_test.dart:134-162`: both compare `msix_version` with
+  the pubspec version. version_consistency is stricter.
+- `msix_config_test.dart:53-65` and `r76_4_content_history_policy_test.dart:44-52`: both require
+  `--dart-define=APP_ENV=prod` in `windows_build_args`.
+- `android_client_id_test.dart:82-92`, `:130-145` and `f219_task_affinity_test.dart:70-74`: `appAuthRedirectScheme`;
+  f219 is the weaker copy (comments not stripped).
+- `data_residency_test.dart:31-47` and `app_content_declarations_test.dart:128-146`: ad SDK ban lists overlap.
+- `platform_check_seam_test.dart:104-118` bans `Platform.isX` in all of `lib/` outside `core/platform`, which
+  subsumes `f142_android_nav_removal_test.dart:34` and `factory_call_site_test.dart:61-70`.
+
+Text-only gates with no behavior test beside them: 28 of 44. Ten of them guard app code or build configuration, not
+docs: android_client_id, android_minify, android_network_security, android_signing, f219_task_affinity,
+gmail_scope_parity, msix_config, provider_setup_steps, stale_footer, text_contrast.
+
+Hook cases: `.claude/hooks/test-cases/` holds 208 JSON cases (72 at the top level; closeout 27, commit-lock 14,
+heredoc-guard 31, sprint-cards 14, staging-guard 25, stash-guard 13, velocity-warn 12). They feed a payload to the
+real hook, so they are behavior tests. They were not analyzed case by case.
 
 ## R-3: Efficiency
 
@@ -172,8 +234,44 @@ Proposal (for decision):
 
 ## R-5: Mutation-proof policy
 
-PENDING: the Sprints 70-84 count of proofs a "re-run when the guarded code, the test or a shared helper changes" rule
-would have triggered, and how many of those would have changed the verdict.
+Volume: about 850 mutants in Sprints 74-84 (about 45 in S74, rising to about 140 in S83), plus about 16 proof records
+without mutant counts in Sprints 70-73. Approximate: one proof can appear in a plan, a retrospective and
+`CODING_VELOCITY.md`. `SPRINT_71_RETROSPECTIVE.md` does not exist and `SPRINT_71_PLAN.md` records no mutation.
+
+Cases where a test was mutation-proven and then found not to guard the defect: 13. For each, git was read to see what
+changed between the proof and the discovery.
+
+- S70 F220 first test (e6e2a4da; found at 5.1.1, f180ad08). The handler file changed; the defect was the lease, which
+  no mutant touched.
+- S70 F220 replacement (f180ad08; PR #418 C-2): the test asserted against its own harness copy.
+- S72 F233 (070d3fee; Manual Validation): no toggle existed. The tests used the `debugSetEnabled` seam.
+- S72 F232 (26f591b4; 5.1.1): the screen-load caller and the cross-account leak were never tested.
+- S73 F234 (344a139e; review C-2): the feature was inert from its first commit; the text gate still matched.
+- S73 F234 after the fix (0e4267ab): the pure function was tested; the mutation SURVIVED at the call site. The re-run
+  found it before ship.
+- S73 F224 (83d72e69): a review mutation passed all 14 tests.
+- S73 F229 wiring gate (f1dcbde5; PR #435 C-2) and S73 behavioral_coverage (142b9990; PR #435 I-2): gates that matched
+  nothing.
+- S76 4-isolate lock test (M188 KILLED): correct on Windows, wrong on Android (POSIX locks are per process).
+- S81 F302 gate v1 (fd12e065; 7.7.1) and v2 (b5268a50; improvement review): missed identifierValue, then a swap and
+  a tear-off.
+- S84 F342 wiring test (5a315e47, 7 of 7; 7.7.1 L4 and M1): text-only, and the handler order was wrong. A re-run
+  after 36b724ac (4 KILLED) still missed it.
+
+Would a "re-run when the guarded code, the test or a shared helper changes" rule have triggered before discovery? In 7
+of 13 (S70 F220 first, S72 F233, S72 F232, S73 F234 twice, S81 F302 v1, S84 F342). Would the re-run have changed the
+verdict? In 1 of 13 (S73 F234 after the fix, which is how that gap was found). In the other triggered cases the re-run
+repeats a mutation the test already kills, because the defect lies outside what was mutated.
+
+Conclusion: re-running the same mutants buys little. The 13 cases fail in three ways, and each has a cheaper check:
+- the defect is outside the mutated code (wiring, a second caller, the other half): mutate the CALL SITE and every
+  caller, which is the Sprint 72 IMP-1 and Sprint 73 IMP-3 rules;
+- the gate matches nothing: assert a non-zero match count in every source gate (16 files above lack one);
+- the platform differs: test on the platform that ships (Sprint 76 IMP-3).
+
+Where specs live: no mutation spec is tracked (`git grep -l '"find"' -- '*.json'` is empty). Specs exist only in
+ignored scratch folders, so a proof cannot be re-run from the repository. `scripts/mutation-test.ps1:51` points its
+example at a path outside the repo.
 
 ## R-6: Which full runs are needed
 
