@@ -441,7 +441,16 @@ Each new guard test is mutation-checked (retro i5).
 **Model**: Sonnet -- *why not Haiku*: it changes startup selection semantics across five screens and the account-delete
 path; the "caller safe by accident" check (IMP-1) needs judgment.
 **Delegation checklist included in the sub-agent prompt** (when delegated): yes
-**Executed-by** (filled at completion):
+**Executed-by** (filled at completion): Sonnet sub-agent as assigned, 2026-11-10 15:25-17:40. One key
+(`default_account_id`) in `SettingsStore`; `SelectedAccountProvider.createSeeded` seeds before `runApp` (a stale id is
+cleared; an error starts the provider empty); `DataDeletionService.deleteAccountData` clears the default inside the same
+transaction; star control on the healthy Select Account row, "Default account" mark, read-only label in Settings >
+Account. Callers: the resolver (`account_selection_screen.dart:654-676`) returns the seeded default and skips the
+picker; settings_screen:335 accepts it only if the account is saved; scan_history:99, no_rule_review:245 and help:138
+now start pre-filtered to the default (none acts on mail); the delete path `:845` is unchanged. 21 tests (12 unit, 9
+widget, one at 360 px), 11/11 mutants KILLED, `flutter analyze` clean. Full suite +3669 ~15 -5: 4 are F349 Task
+Scheduler timeouts, 1 is a gitignored `test/scratch` file. Not covered: a real restart and phone layout (Manual
+Validation).
 **Step-types**: SVC-EDIT, UI-ADD, TEST-UNIT, TEST-WIDGET, DOCS. **Est-Effort**: 120-240m.
 
 ## Task 4 -- F354: Windows DEV keeps its account credentials in the production-named folder (Priority 14)
@@ -922,7 +931,15 @@ in the follow-up commit; the fixtures use Sprint 83 and 84 samples, the newest a
 
 **Model**: Sonnet -- *why not Haiku*: a binary protobuf reader and release gates where a silent pass ships a bad bundle.
 **Delegation checklist included in the sub-agent prompt** (when delegated): yes
-**Executed-by** (filled at completion):
+**Executed-by** (filled at completion): Sonnet sub-agent as assigned, 2026-11-10 16:17-17:39. Five ports, six originals
+deleted; `build-with-secrets.ps1:657` calls the Python AAB check. Outputs identical to the originals on the repo, the
+0.24.1 AAB (targetSdk 36, AD_ID absent) and the live IANA list (version 2026111000, 1436 TLDs). Port fixes: the IANA
+updater validated nothing it downloaded; the AAB reader checked a protobuf length after moving the cursor. 50
+unittests, 66 mutants KILLED (two first SURVIVED and got stronger tests). R-2 sources fetched 2026-11-10: targetSdk 36
+is Google's requirement (developer.android.com target-sdk page); "AD_ID absent" is NOT a Google requirement, it is this
+project's rule matching its Data safety answer (support.google.com answer 6048248). Follow-ups: version consistency
+does not sweep `.py`; ADR-0038 claims the manifest check runs at the end of `build-windows.ps1`, and no such call
+exists.
 **Step-types**: PORT-PY `[no-history]`, TEST-UNIT. **Est-Effort**: 180-300m.
 
 ## Task 14 -- F334: Python batch S5: mobile-app test runners and test mail (Priority 37)

@@ -152,6 +152,11 @@ def compile_net(pattern: str) -> tuple[re.Pattern, list[str]]:
     translated = translate(pattern)
     with warnings.catch_warnings(record=True) as caught:
         warnings.simplefilter("always")
+        # re caches compiled patterns and returns a cached one WITHOUT parsing it again, so a warning
+        # raised at parse time is raised only the first time a pattern is seen in a process. Purge first,
+        # so every call reports its warnings (found Sprint 85: a second compile of the same pattern was
+        # silently warning-free).
+        re.purge()
         try:
             compiled = re.compile(translated, re.IGNORECASE)
         except re.error as exc:

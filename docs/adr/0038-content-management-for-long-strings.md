@@ -96,7 +96,7 @@ Files live in `pubspec.yaml` under `flutter.assets:` and are bundled into the ap
 
 ### Validation Strategy: Build-Time Generator Script
 
-A new `mobile-app/scripts/validate-content-manifest.ps1` script runs as a pre-commit check (and via CI when we have CI):
+A new `mobile-app/scripts/validate-content-manifest.py` script runs as a pre-commit check (and via CI when we have CI):
 
 1. Parse `assets/content/manifest.yaml`
 2. For every key, assert the referenced `.md` file exists
@@ -104,7 +104,7 @@ A new `mobile-app/scripts/validate-content-manifest.ps1` script runs as a pre-co
 4. For the `help:` keys, assert every `HelpSection` enum value (read from `lib/ui/screens/help_screen.dart`) has a corresponding manifest entry
 5. Exit non-zero on any mismatch with a clear diff
 
-This script is wired into the **end of `build-windows.ps1`** before launch so a missing asset stops the build, and it is also exposed as `mobile-app/scripts/validate-content-manifest.ps1` for standalone invocation.
+This script is wired into the **end of `build-windows.ps1`** before launch so a missing asset stops the build, and it is also exposed as `mobile-app/scripts/validate-content-manifest.py` for standalone invocation.
 
 ### Test Strategy
 

@@ -106,7 +106,7 @@ Plus `CLAUDE.md` (Windows App Data Directory section + Version line) if the comm
 ```powershell
 cd mobile-app
 flutter test test/policy/version_consistency_test.dart   # the authoritative gate (runs in the full suite)
-.\scripts\check-version-consistency.ps1                   # equivalent CLI (-SelfTest for offline self-check)
+python scripts\check-version-consistency.py              # equivalent CLI (--self-test for offline self-check)
 ```
 
 The gate greps `lib/` + `windows/runner/` + `scripts/` for app-version literals (`_v<X.Y.Z>.log` log tokens and `Version <X.Y.Z>` display strings) and asserts every one matches `pubspec.yaml`. It ignores dependency-version references in comments. This is what caught (and now prevents) the F105/main.cpp miss. The manual `grep -rn "v0\.5\." ...` audit remains a quick sanity check, but the gate is the real backstop.

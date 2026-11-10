@@ -100,6 +100,13 @@ class WarningTests(unittest.TestCase):
         _compiled, notes = rd.compile_net("[[a]")
         self.assertTrue(any("FutureWarning" in n for n in notes), notes)
 
+    def test_warning_is_returned_on_every_compile(self):
+        # re's pattern cache skips parsing on a repeat, which once made the second report warning-free.
+        # Does NOT catch: a warning Python raises at match time rather than at parse time.
+        for _ in range(2):
+            _compiled, notes = rd.compile_net("[[b]")
+            self.assertTrue(any("FutureWarning" in n for n in notes), notes)
+
     def test_clean_pattern_has_no_notes(self):
         self.assertEqual(rd.compile_net(r"^a@b\.com$")[1], [])
 

@@ -654,7 +654,8 @@ try {
             Write-Host "[ERROR] F204: no bundle at $apkPath to verify against Google Play requirements." -ForegroundColor Red
             exit 1
         }
-        & powershell -NoProfile -ExecutionPolicy Bypass -File (Join-Path $PSScriptRoot 'verify-aab-play-requirements.ps1') -AabPath $apkPath
+        # F333 (Sprint 85): the check is Python now; Task 15 converts this script.
+        & python (Join-Path $PSScriptRoot 'verify-aab-play-requirements.py') --aab-path $apkPath
         if ($LASTEXITCODE -ne 0) {
             Write-Host "[ERROR] F204: the built bundle does not meet Google Play requirements (targetSdkVersion >= 36, no AD_ID). Do NOT upload it." -ForegroundColor Red
             exit 1

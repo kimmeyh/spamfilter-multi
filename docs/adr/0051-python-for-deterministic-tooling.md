@@ -131,6 +131,11 @@ Converted in Sprint 85 (originals deleted in the same change; port review and te
   translation; patterns it cannot translate are reported NOT CHECKED, never as valid).
 - F331: `scripts/install-custom-mcp.py`, `scripts/setup-claude-mcp.py`, `scripts/start-test-imap-servers.py`, plus the
   shared helper `scripts/mcp_config.py` (read, back up and write the Claude Code MCP configuration, `~/.claude.json`).
+- F333: `mobile-app/scripts/check-log-redaction.py`, `check-version-consistency.py`, `validate-content-manifest.py`,
+  `verify-aab-play-requirements.py`, `update_iana_tlds.py` (replaces both the `.ps1` and the `.sh`).
+- F334: `mobile-app/scripts/run-tests.py`, `check_scans.py`, `generate-test-emails.py`, plus the shared helper
+  `mobile-app/scripts/flutter_support.py`. Ported, originals kept until proven at Phase 5: `run-integration-tests`,
+  `monitor-tests`, `test-background-scan-skip`. Windows-bound (F337): `check_task.ps1`, `ww-test-helper.sh`.
 
 `scripts/`:
 - Converted by the pilot: `agent-work-status`.
@@ -143,7 +148,8 @@ Converted in Sprint 85 (originals deleted in the same change; port review and te
   `test-imap/` (fixtures).
 
 `mobile-app/scripts/`:
-- Deterministic, convert later: `check-log-redaction`, `check-version-consistency`, `validate-content-manifest`,
+- Deterministic, convert later (F333 and F334 converted in Sprint 85, see above): `check-log-redaction`,
+  `check-version-consistency`, `validate-content-manifest`,
   `verify-aab-play-requirements`, `update_iana_tlds.ps1`, `update_iana_tlds.sh` (F333); `run-tests`,
   `run-integration-tests`, `monitor-tests`, `check_scans`, `check_task`, `test-background-scan-skip`,
   `generate-test-emails`, `ww-test-helper.sh` (F334); `build-with-secrets`, `build-with-secrets-clean`, `build-apk`

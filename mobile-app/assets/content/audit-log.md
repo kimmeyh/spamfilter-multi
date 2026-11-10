@@ -75,4 +75,4 @@ Phase 2 migrated all 20 Help sections to `assets/content/help/*.md`.
 
 Phase 3 audit found no other Dart string literals over the 500-character threshold that qualify as user-facing content. Settings tabs and other screens use short single-sentence explainers; no migration warranted.
 
-The audit will be re-run in any future sprint that adds substantial new prose to a Dart source file (e.g., F74 FAQ section in Help, F75 Help walkthrough). Future ADR-0038 violations should fail the build via `scripts/validate-content-manifest.ps1` once the validator's drift-detection scope is extended to include a "no long prose in `.dart`" check (out of scope for Sprint 38 -- tracked separately).
+The audit will be re-run in any future sprint that adds substantial new prose to a Dart source file (e.g., F74 FAQ section in Help, F75 Help walkthrough). Future ADR-0038 violations should fail the build via `scripts/validate-content-manifest.py` once the validator's drift-detection scope is extended to include a "no long prose in `.dart`" check (out of scope for Sprint 38 -- tracked separately).
