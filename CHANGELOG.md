@@ -26,6 +26,12 @@ Format: `- **type**: Description (Issue #N)` where type is feat|fix|chore|docs
 
 ## [Unreleased]
 
+### 2026-11-10 (Sprint 85)
+
+- **chore**: Version 0.25.0+23 for Sprint 85, so a tester can tell this build from the 0.24.1 store builds (Issue #560)
+
+## [0.24.1] - 2026-11-08
+
 ### 2026-11-08 (Sprint 84 final code reviews and retrospective)
 
 - **chore**: The close-out Stop hook always answers inside its 20 second limit: its two `gh` calls run at the same time, all `git` and `gh` calls share one 15 second budget, a timed-out call ends its whole process tree on Windows, and a watchdog ends the hook at 17 seconds with "close-out NOT verified"; a check with no time left says it did not run (Sprint 84 retrospective q4 and improvement review)

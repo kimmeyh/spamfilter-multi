@@ -1,8 +1,9 @@
 # Sprint 85 Plan
 
-**Status**: DRAFT for approval (Phase 3.7). Scope selected by Harold at Phase 8.4 pass 2 (2026-11-10).
-**Branch**: `feature/20261108_Sprint_85` (cut from the Sprint 84 branch, Phase 6.6) | **PR**: draft, created at 3.3.1
-(stays draft until 7.7.5)
+**Status**: APPROVED by Harold 2026-11-10 (Phase 3.7; see "Approval record" below). Scope selected at Phase 8.4
+pass 2 (2026-11-10).
+**Branch**: `feature/20261108_Sprint_85` (cut from the Sprint 84 branch, Phase 6.6) | **PR**: #559 (draft until 7.7.5)
+**Cards**: #560-#575 (Task 0-15)
 **Planner**: Opus 5.5 (top tier, `SPRINT_PLANNING.md:94-110`). Phase 3.2.2.1 audits by spot reads on 2026-11-10;
 file:line evidence is in each card.
 
@@ -189,6 +190,19 @@ changed.
 - **Standing facts (Harold)**: a phone screenshot that shows the app version proves the Play update installed
   (2026-11-04). Fold notification access for the app is ON and stays on. The iCloud DEV account's per-account
   background scan is on, every 5 minutes.
+
+## Approval record (Phase 3.7, Harold, 2026-11-10)
+
+Harold: *"q1. 1 q2. 2 q3. 1"* and *"Sprint plan approved as amended (with any comments I provided), proceed with
+execution. All Sprint tasks and sub-tasks are approved."*
+
+- Q-A: approved as amended.
+- Q1 = 1: version 0.25.0+23.
+- Q2 = 2: DEV gets its own product name in the Windows exe version resource; every DEV support-folder path moves to a
+  DEV folder, including the credential file; `AppPaths` drops its own `_Dev` suffix on Windows; a one-time copy keeps
+  DEV's accounts; production files are never moved or deleted. Task 4 R-1 still runs first, as evidence for the
+  change and its callers.
+- Q3 = 1: `build-with-secrets.ps1` is deleted (ADR-0051); CLAUDE.md and every release doc move to the Python command.
 
 ## Questions for approval (Phase 3.7)
 

@@ -1,16 +1,16 @@
 {
     "_description": "Sprint status file that persists across context compaction. Update after each phase/sub-phase completion.",
-    "_last_updated": "2026-11-10T09:05:00",
+    "_last_updated": "2026-11-10T15:22:04",
     "_usage": "Read this file after context compaction to restore sprint approval state and progress.",
     "_staleness_note": "This file had drifted 15 sprints (last updated at Sprint 35, 2026-04-19) before being refreshed at Sprint 50 close-out. It is a Phase 7.7 checklist item -- update it at every sprint close-out, not opportunistically.",
     "current_sprint": {
         "number": 85,
         "branch": "feature/20261108_Sprint_85",
-        "status": "Phase 3.7 Plan Approval",
-        "status_detail": "Sprint 85 plan committed (aa316133) and draft PR #559 created; waiting for Harold: Q-A approval, Q1 version 0.25.0+23, Q2 F354 approach, Q3 F335 command after the Python port.",
-        "plan_approved": false,
+        "status": "Phase 4 Execution",
+        "status_detail": "Plan approved by Harold 2026-11-10 (Q-A as amended; Q1 = 1 version 0.25.0+23; Q2 = 2 DEV gets its own product name in the Windows exe; Q3 = 1 delete build-with-secrets.ps1 and update docs). Cards #560-#575 created at 3.7.0.",
+        "plan_approved": true,
         "pr_number": 559,
-        "version": "0.24.1+22"
+        "version": "0.25.0+23"
     },
     "previous_sprint": {
         "number": 84,
@@ -35,7 +35,8 @@
         "sprint_82_close": "PR #521 body: Closes #522 #525 #526 #528 #529 #530 #531 #532; Part of #509 #510 #523 #524 #527 (stay open for Sprint 83). Verify after the merge.",
         "sprint_83": "Task 0 #535, Task 1 #524 + #527 (reused), Task 2 #536, Task 3 #537, Task 4 #538, Task 5 #539, Task 6 #540, Task 7 #541, Task 8 #542, Task 9 #543, Task 10 #544, Task 11 #545, Task 12 #546",
         "sprint_84": "Task 0 #549, Task 1 #550, Task 2 #551, Task 3 #552, Task 4 #553, Task 5 #554, Task 6 #555, Task 7 #556, Task 8 #557",
-        "sprint_84_close": "PR #548 body: Closes #549-#557. #550 (MV-3c carried to the Sprint 85 stub) and #553 (remainder on F341) close with the merge; their open work is tracked in the stub and the master plan. Open as intended: #509 #510 #523 (Apple)."
+        "sprint_84_close": "PR #548 body: Closes #549-#557. #550 (MV-3c carried to the Sprint 85 stub) and #553 (remainder on F341) close with the merge; their open work is tracked in the stub and the master plan. Open as intended: #509 #510 #523 (Apple).",
+        "sprint_85": "Task 0 #560, Task 1 #561, Task 2 #562 (F350), Task 3 #563 (F352), Task 4 #564 (F354), Task 5 #565 (F355), Task 6 #566 (F357), Task 7 #567 (F341), Task 8 #568 (F307), Task 9 #569 (F329), Task 10 #570 (F330), Task 11 #571 (F331), Task 12 #572 (F332), Task 13 #573 (F333), Task 14 #574 (F334), Task 15 #575 (F335)"
     },
     "_github_issues_note": "Sprint 66 cards created at Phase 3.3.1 (2026-09-07): #387 GP-19, #388 GP-4. Close by hand at Post-Merge Cleanup.",
     "test_metrics": {
@@ -68,8 +69,8 @@
     ],
     "blocking_issues": [],
     "next_actions": [
-        "3.7: Harold answers Q-A, Q1, Q2, Q3 in docs/sprints/SPRINT_85_PLAN.md.",
-        "After approval: 3.7.0 cards, 3.7.0b version bump with 'Last uploaded to Play' -> 0.24.1 (versionCode 22), 3.7.1 PR body.",
+        "3.7.0b version bump 0.25.0+23 with provisional notes and 'Last uploaded to Play' -> 0.24.1 (22); 3.7.1 PR body with Closes #560-#575.",
+        "Phase 4 per the plan Order: parallel block A (F352, F330, F331, F332, F350 inventory), block B (F333, F334, F307, F354 audit), F335 alone for builds, F329 last among tooling.",
         "Carry-ins: the F342 Fold check after 0.24.1 (feeds F357), MV-3c when a YELLOW item appears; Harold reboots before F355."
     ],
     "next_sprint_targeted": {
