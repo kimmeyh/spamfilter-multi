@@ -5,7 +5,7 @@
 // persisted to safe_senders, then deletes it. Runs against an isolated temp DB.
 //
 // Run: flutter test integration_test/safe_sender_lifecycle_test.dart
-//   (or .\scripts\run-integration-tests.ps1 -TestName safe_sender)
+//   (or python scripts\run-integration-tests.py --test-name safe_sender)
 
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';

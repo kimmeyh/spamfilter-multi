@@ -46,6 +46,14 @@ jobs:
         working-directory: .
         run: python3 .claude/hooks/tests/test_pylib.py
 
+      - name: Python script tests (ADR-0051, Sprint 85)
+        # Every Python port in scripts/ and mobile-app/scripts/ has a unittest
+        # module in scripts/tests/. Without this step none of them ran in CI,
+        # so a port that breaks on Linux (the POSIX branches are written but
+        # were tested on Windows only) would pass. Standard library only.
+        working-directory: .
+        run: python3 -I -m unittest discover -s scripts/tests -v
+
       - uses: subosito/flutter-action@1a449444c387b1966244ae4d4f8c696479add0b2 # v2.23.0
         with:
           flutter-version-file: .fvmrc

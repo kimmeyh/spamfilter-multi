@@ -431,13 +431,13 @@ The desktop app has **two complementary E2E harnesses**. They are not redundant 
 | Strength | true end-to-end + accessibility coverage; real window | deterministic; immune to UIA-exposure / DPI / cursor / dialog-settle flakiness |
 | Weakness | flaky on Flutter dialog/picker-**settle** boundaries (no wait/assert primitive in the `run` runner) -> F56 create/save + F37 picker excluded | not a real window; needs a test seam to bypass live IMAP/credential fetch |
 | DB safety | create-then-delete + pre/post DB-snapshot drift guard | isolated temp DB per test (`AppPaths.testOverrideBaseDir`); never touches dev DB |
-| Runner | `mobile-app/scripts/run-winwright-tests.ps1` (6 read-only scripts) | `mobile-app/scripts/run-integration-tests.ps1` (one `flutter test` **process per file**) |
+| Runner | `mobile-app/scripts/run-winwright-tests.ps1` (6 read-only scripts) | `mobile-app/scripts/run-integration-tests.py` (one `flutter test` **process per file**) |
 
 **Which to use:**
 - **WinWright** -- read-only navigation / accessibility-tree coverage on the real window (the 6 green scripts).
 - **`integration_test`** -- anything that crosses a Flutter dialog/picker-**settle** boundary or writes to the DB: the rule + safe-sender **create/save/delete lifecycle** (absorbs F56), the **folder-picker** search/render (absorbs F37), and **layout-regression** bounds assertions (absorbs F76).
 
-**Execution model (Harold direction 2026-06-20):** `run-integration-tests.ps1` runs **each `*_test.dart` file in its own `flutter test` process.** The app's process-wide singletons (`DatabaseHelper`, the fire-and-forget `RuleSetProvider.initialize()` async tail) bleed across files in a single shared `flutter test integration_test/` process; per-file processes are the standard Flutter isolation pattern for stateful apps. **WITHIN a file, multiple `testWidgets` share one process and reset via the harness -- there is NO app shutdown between tests** (the WinWright lane relaunches the app per script ONLY because `winwright run` force-closes it; `integration_test` has no such constraint).
+**Execution model (Harold direction 2026-06-20):** `run-integration-tests.py` runs **each `*_test.dart` file in its own `flutter test` process.** The app's process-wide singletons (`DatabaseHelper`, the fire-and-forget `RuleSetProvider.initialize()` async tail) bleed across files in a single shared `flutter test integration_test/` process; per-file processes are the standard Flutter isolation pattern for stateful apps. **WITHIN a file, multiple `testWidgets` share one process and reset via the harness -- there is NO app shutdown between tests** (the WinWright lane relaunches the app per script ONLY because `winwright run` force-closes it; `integration_test` has no such constraint).
 
 **DB isolation:** every `integration_test` boots against an isolated temp dir via `AppPaths.testOverrideBaseDir` (a test-only static seam, null in production). Two helper modes in `integration_test/helpers/app_harness.dart`:
 - `bootDbOnly` (preferred) -- seeds a fresh temp DB with the bundled rules (awaited, deterministic); the test pumps the specific screen(s) it exercises.
@@ -448,8 +448,8 @@ The desktop app has **two complementary E2E harnesses**. They are not redundant 
 **Run:**
 ```powershell
 cd mobile-app/scripts
-.\run-integration-tests.ps1                 # all integration_test files, one process each
-.\run-integration-tests.ps1 -TestName lifecycle   # only files matching *lifecycle*
+python run-integration-tests.py                 # all integration_test files, one process each
+python run-integration-tests.py --test-name lifecycle   # only files matching *lifecycle*
 ```
 
 ### iOS test level: the Simulator job (Sprint 84, F345)
@@ -587,10 +587,10 @@ open coverage/html/index.html
 
 ### Test Monitoring
 
-**Use Test Monitoring Script** (`mobile-app/scripts/monitor-tests.ps1`):
+**Use Test Monitoring Script** (`mobile-app/scripts/monitor-tests.py`):
 ```powershell
 cd mobile-app\scripts
-.\monitor-tests.ps1
+python monitor-tests.py
 ```
 
 **Features**:
@@ -789,14 +789,14 @@ void main() {
 
 ### Test Monitoring Script
 
-**Location**: `mobile-app/scripts/monitor-tests.ps1`
+**Location**: `mobile-app/scripts/monitor-tests.py`
 
 **Purpose**: Real-time test execution monitoring with pass/fail tracking
 
 **Usage**:
 ```powershell
 cd mobile-app\scripts
-.\monitor-tests.ps1
+python monitor-tests.py
 ```
 
 **Output**:
@@ -810,26 +810,24 @@ Starting at: 2026-01-31 10:30:00
 
 ### YAML Validation Script
 
-**Location**: `scripts/validate-yaml-rules.ps1` (repo root, NOT `mobile-app/scripts/`)
+**Location**: `scripts/validate-yaml-rules.py` (repo root, NOT `mobile-app/scripts/`)
 
 **Purpose**: Validate `rules.yaml` and `rules_safe_senders.yaml` for syntax errors
 
 **Usage**:
 ```powershell
-cd mobile-app\scripts
-.\validate-yaml-rules.ps1
+python scripts/validate-yaml-rules.py     # from the repository root
 ```
 
 ### Regex Pattern Tester
 
-**Location**: `scripts/test-regex-patterns.ps1` (repo root, NOT `mobile-app/scripts/`)
+**Location**: `scripts/test-regex-patterns.py` (repo root, NOT `mobile-app/scripts/`)
 
 **Purpose**: Test regex patterns against sample emails
 
 **Usage**:
 ```powershell
-cd mobile-app\scripts
-.\test-regex-patterns.ps1 -Pattern "^spam@.*\.com$" -TestString "spam@example.com"
+python scripts/test-regex-patterns.py --pattern "^spam@.*\.com$" --test-string "spam@example.com"
 ```
 
 ---

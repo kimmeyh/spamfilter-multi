@@ -447,8 +447,8 @@ echo | openssl s_client -connect github.com:443 -servername github.com 2>/dev/nu
 
 **Claude Code MCP Tools**:
 - Custom MCP server for email rule testing (`scripts/email-rule-tester-mcp/`)
-- YAML validation script (`scripts/validate-yaml-rules.ps1`)
-- Regex pattern tester (`scripts/test-regex-patterns.ps1`)
+- YAML validation script (`scripts/validate-yaml-rules.py`)
+- Regex pattern tester (`scripts/test-regex-patterns.py`)
 - 10 custom skills, each a directory under `.claude/skills/` containing a `SKILL.md` (there is no `.claude/skills.json`)
 - 3 enforcement hooks as `.ps1` scripts under `.claude/hooks/`, registered in `.claude/settings.json` (there is no `.claude/hooks.json`): `sprint-auto-advance`, `block-carry-forward-stash`, `verify-closeout-complete`. A fourth script, `run-test-cases.ps1`, is the hooks' own test harness, not a hook.
 
@@ -607,7 +607,7 @@ echo | openssl s_client -connect github.com:443 -servername github.com 2>/dev/nu
 
 **Solution**: Validate patterns with:
 ```powershell
-.\scripts\validate-yaml-rules.ps1 -TestRegex
+python scripts/validate-yaml-rules.py --test-regex
 ```
 
 ### UI updates too frequently during scan

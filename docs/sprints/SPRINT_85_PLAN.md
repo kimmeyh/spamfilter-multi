@@ -957,7 +957,16 @@ in the follow-up commit; the fixtures use Sprint 83 and 84 samples, the newest a
 
 **Model**: Haiku -- wrappers around `flutter test` and mail generation, with the test runs as the oracle.
 **Delegation checklist included in the sub-agent prompt** (when delegated): yes
-**Executed-by** (filled at completion):
+**Executed-by** (filled at completion): Haiku sub-agent as assigned, 2026-11-10 16:17 to about 17:30 (handback received
+by 17:38). PARTIAL until Phase 5. Ported and originals deleted: `run-tests`, `check_scans`, `generate-test-emails`, with
+the shared helper `flutter_support.py`. Ported, original KEPT until proven on an idle machine:
+`run-integration-tests` (selection and argv identical; no real integration run yet), `monitor-tests` (both full-suite
+runs completed, failing sets differed while other agents edited the tree), `test-background-scan-skip` (real `.exe` run
+not done; `build-windows.ps1:517` still calls the `.ps1`). Windows-bound, listed for F337: `check_task.ps1` (Task
+Scheduler), `ww-test-helper.sh` (WinWright MCP helper; no callers, hardcoded session ids). AC-1 PASS (run-tests on
+`app_paths_data_dir_test.dart`: 5 passed, same as `flutter test`). 55 unittests, 14/14 mutants KILLED. Remaining (Phase
+5, main session): the three proofs, then delete the three originals, switch `build-windows.ps1:517`, and update
+ADR-0040:52,56.
 **Step-types**: PORT-PY `[no-history]`, TEST-UNIT. **Est-Effort**: 150-250m.
 
 ## Task 15 -- F335: Python batch S6: Android build scripts (Priority 37)
