@@ -232,6 +232,19 @@ Proposal (for decision):
 - The full suite stays in CI as the backstop. Local runs start with the tests that failed last.
 - Learned test selection: rejected (not enough failure history).
 
+Tight rule, computed on the 2026-11-10 inventory (400 artifacts; the script itself is unchanged, the count comes from
+its JSON):
+- Impact from the categories only, churn 40 or more: 61 files (unit 43, widget 9, integration 5, policy 4). By reason
+  (a file can have several): deletes or moves mail 32, background workers 25, credentials 16, scan coordinator 11,
+  credentials and transport security 2, migrations 1.
+- The same rule with churn 25 or more: 84 files.
+- Only 4 of the 49 policy files were high because of the blanket "policy = high" rule alone; the other 45 policy files
+  stay where their categories put them. Policy gates are fast text checks, so they can run on every change whatever
+  their tier.
+- Limit: impact is read from imports, so a test that imports a mail-moving file for a type counts as mail-moving
+  (example: `diagnostic_logger_test.dart`). The rule over-includes; it does not miss a file that imports the code.
+- Its run time is not yet measured (R-3 needs an idle machine).
+
 ## R-5: Mutation-proof policy
 
 Volume: about 850 mutants in Sprints 74-84 (about 45 in S74, rising to about 140 in S83), plus about 16 proof records
