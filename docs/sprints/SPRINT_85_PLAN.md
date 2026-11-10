@@ -714,6 +714,19 @@ Sprint 85.
 
 **Definition of Done**: default task-level DoD.
 
+**Result (Phase 4) -- R-1 audit (Haiku sub-agent, 2026-11-10; claims re-checked in the source by the main session)**:
+- From header: COVERED by the pop-up (Block Email, Block Exact Domain, Block Entire Domain;
+  `email_detail_popup.dart:1103-1187`, `rule_quick_action_service.dart:447-464`).
+- Subject: COVERED (Block Subject, `email_detail_popup.dart:1206-1227`, `rule_quick_action_service.dart:465-474`).
+- Body text (a free phrase): NOT COVERED. The pop-up's only body action, Block Body, uses the domain of the first
+  outside link (`body_link_domain.dart:67-93`).
+- Body URL: PARTIAL (a link domain, not a URL pattern).
+- BUT the page never offered Subject, Body or Body URL either: only `_fromPatternController` is ever filled
+  (`rule_quick_add_screen.dart:110`); no field binds the other three controllers (`:49-51`), so their conditions are
+  always empty (`:193-201`); the "Edit pattern" button is `onPressed: () {}` (`:715-719`). The page makes From-only
+  rules today, and its Edit button is a control that does nothing.
+- Card rule applied: a kind not covered means STOP before removal. Nothing removed. Decision held for Harold at Manual
+  Validation (asked late, per the approval). Removal work is ready to run in one agent pass once decided.
 **Model**: Haiku -- the cheapest tier fits a removal with a written coverage check and the analyzer and suite as oracles.
 **Delegation checklist included in the sub-agent prompt** (when delegated): yes
 **Executed-by** (filled at completion):
