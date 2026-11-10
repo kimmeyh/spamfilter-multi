@@ -29,8 +29,9 @@ Partner Center before saying anything about the Store version.
 
 ## 0.24.1 -- Sprint 84 cycle Phase 8.3 (2026-11-08 / 2026-11-09)
 
-**BUILT + VERIFIED, NOT YET SUBMITTED.** The Live rows above stay unchanged until Harold reports each upload; "Last
-uploaded to Play" moves to 0.24.1 (versionCode 22) in the same commit as the Sprint 85 version bump (Phase 3.7.0b).
+**SUBMITTED to both stores** (Harold's report, 2026-11-10: *"store and play updates in process"*). Not yet observed
+live. "Last uploaded to Play" moves to 0.24.1 (versionCode 22) in the same commit as the Sprint 85 version bump
+(Phase 3.7.0b), never before it. Originally: BUILT + VERIFIED, NOT YET SUBMITTED.
 
 - **MSIX 0.24.1.0 -- BUILT + VERIFIED** (finished 23:58 on 2026-11-08): prod worktree pulled (59 commits behind) to
   `main` 962a1b25 (tag `v0.24.1`, annotated, pushed); release policy gates 26/26; build log shows `APP_ENV=prod` and
