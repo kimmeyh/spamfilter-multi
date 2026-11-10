@@ -1,15 +1,15 @@
 {
     "_description": "Sprint status file that persists across context compaction. Update after each phase/sub-phase completion.",
-    "_last_updated": "2026-11-10T08:53:06-05:00",
+    "_last_updated": "2026-11-10T09:05:00",
     "_usage": "Read this file after context compaction to restore sprint approval state and progress.",
     "_staleness_note": "This file had drifted 15 sprints (last updated at Sprint 35, 2026-04-19) before being refreshed at Sprint 50 close-out. It is a Phase 7.7 checklist item -- update it at every sprint close-out, not opportunistically.",
     "current_sprint": {
         "number": 85,
         "branch": "feature/20261108_Sprint_85",
-        "status": "Phase 3.2 Sprint Planning",
-        "status_detail": "Sprint 85 planning. 8.3 done: 0.24.1 MSIX and AAB submitted (Harold, 2026-11-10). 8.4 scope selected by Harold 2026-11-10: F350, F352, F354, F355, F357, F341, F307, F329-F335; Apple not approved (2 b), so F67a/F304/F67b stay out. Plan draft next, then the draft PR and approval.",
+        "status": "Phase 3.7 Plan Approval",
+        "status_detail": "Sprint 85 plan committed (aa316133) and draft PR #559 created; waiting for Harold: Q-A approval, Q1 version 0.25.0+23, Q2 F354 approach, Q3 F335 command after the Python port.",
         "plan_approved": false,
-        "pr_number": null,
+        "pr_number": 559,
         "version": "0.24.1+22"
     },
     "previous_sprint": {
@@ -68,7 +68,7 @@
     ],
     "blocking_issues": [],
     "next_actions": [
-        "3.2.2: draft docs/sprints/SPRINT_85_PLAN.md for Harold's scope; 3.3.1 draft PR; present for approval (3.7).",
+        "3.7: Harold answers Q-A, Q1, Q2, Q3 in docs/sprints/SPRINT_85_PLAN.md.",
         "After approval: 3.7.0 cards, 3.7.0b version bump with 'Last uploaded to Play' -> 0.24.1 (versionCode 22), 3.7.1 PR body.",
         "Carry-ins: the F342 Fold check after 0.24.1 (feeds F357), MV-3c when a YELLOW item appears; Harold reboots before F355."
     ],
