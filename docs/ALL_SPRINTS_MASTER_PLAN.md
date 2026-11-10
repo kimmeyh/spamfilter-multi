@@ -356,7 +356,7 @@ Source: `docs/research/R76-3_HEURISTICS_ML_GENAI_SPAM_IDENTIFICATION.md` (Issue 
 - Phase: Process / Tooling
 - Platform: Development process.
 - Files (473 lines): `scripts/install-custom-mcp.ps1` (121), `scripts/setup-claude-mcp.ps1` (203),
-  `scripts/start-test-imap-servers.ps1` (149). Deterministic. The MCP scripts edit the Claude MCP configuration
+  `scripts/start-test-imap-servers.ps1` (149). Deterministic. Ported to `scripts/*.py` in Sprint 85 (F331). The MCP scripts edit the Claude MCP configuration
   (JSON): use `common.find_tool` for `claude` and `node`, and write the user-level file with a backup.
 - AC: parameters and exit codes kept; `start-test-imap-servers` still starts the test servers the way
   `TESTING_STRATEGY.md` documents (verify the command on the card's day, do not assume).
@@ -364,7 +364,7 @@ Source: `docs/research/R76-3_HEURISTICS_ML_GENAI_SPAM_IDENTIFICATION.md` (Issue 
 **F332. Python conversion batch S3: phone log health and the battery arm script (~90-150m, estimate unverified) Priority 37 -- NEW 2026-11-01 (Sprint 83 Task 10, F321 R-6)**
 - Phase: Process / Tooling
 - Platform: Development process.
-- Files: `scripts/phone-log-health.ps1` (267), `mobile-app/scripts/r76_battery_arm.sh`. Deterministic log parsing.
+- Files: `scripts/phone-log-health.py` (was `.ps1`, 267 lines), `mobile-app/scripts/r76_battery_arm.py` (was `.sh`). Deterministic log parsing.
   `pull-phone-screenshots.ps1` is NOT here: it is Windows-bound (F337).
 - AC: the same report lines for two Sprint 82 phone log samples kept as fixtures; `unittest` file.
 
@@ -1675,7 +1675,7 @@ The Windows dev/prod current implementation requires a rebuild to switch -- only
 
 **Required FAQ topics**:
 - **What is a TLD (Top-Level Domain)?** -- explain TLD concept (.com, .uk, .xyz), how the app's TLD block rules work, why blocking a TLD is heavy-handed (blocks everything from that TLD), and when to use entire-domain rules instead.
-- **What is the IANA TLD list and why does the app use it?** -- explain IANA's role as the authority for valid TLDs, why the app rejects fake TLDs (`.com444`, `.whatevericanthinkof`), how the list is updated (`scripts/update_iana_tlds.sh`), and what to do if a real new TLD is rejected (file an issue).
+- **What is the IANA TLD list and why does the app use it?** -- explain IANA's role as the authority for valid TLDs, why the app rejects fake TLDs (`.com444`, `.whatevericanthinkof`), how the list is updated (`mobile-app/scripts/update_iana_tlds.py`), and what to do if a real new TLD is rejected (file an issue).
 - **What is the difference between Entire Domain, Exact Domain, Exact Email, and Top-Level Domain?** -- with concrete examples and matched/unmatched email lists for each.
 - **What is a Safe Sender?** -- explain whitelist precedence over block rules.
 - **Why does the scanner skip some emails?** -- explain Read-Only mode, default folders setting, retention.

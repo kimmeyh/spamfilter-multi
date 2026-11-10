@@ -183,7 +183,7 @@ If you see catastrophic backtracking warnings:
 
 ## See Also
 
-- `validate-yaml-rules.ps1` - PowerShell validation script (standalone)
-- `test-regex-patterns.ps1` - PowerShell regex tester (standalone)
+- `validate-yaml-rules.py` - Python validation script (standalone)
+- `test-regex-patterns.py` - Python regex tester (standalone)
 - `memory-bank/yaml-schemas.md` - YAML schema documentation
 - `memory-bank/regex-conventions.md` - Regex pattern conventions

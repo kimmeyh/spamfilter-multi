@@ -640,7 +640,7 @@ spamfilter-multi/
 
 ### Codex Tooling
 - **Custom MCP Server**: `scripts/email-rule-tester-mcp/`
-- **Validation Scripts**: `scripts/validate-yaml-rules.ps1`, `scripts/test-regex-patterns.ps1`
+- **Validation Scripts**: `scripts/validate-yaml-rules.py`, `scripts/test-regex-patterns.py`
 - **Skills**:
   - `/startup-check` - Environment health check and memory restore
   - `/phase-check` - Sprint phase transition checkpoint (verify phase complete, preview next phase)

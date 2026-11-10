@@ -501,6 +501,44 @@ file before and after; back up the DEV store first. Rollback: restore the DEV ba
 
 _**Decision-class interrupts**_: Class 1 (ADR-0035): Q2.
 
+**Result (Phase 4) -- R-1 audit (2026-11-10, main session, read-only)**:
+- Folder rule: `path_provider_windows` 2.3.0 (`pubspec.lock`) returns `RoamingAppData\<CompanyName>\<ProductName>` from
+  the exe version resource (`path_provider_windows_real.dart:119-120`, `:180-215`). Every build had CompanyName and
+  ProductName `MyEmailSpamFilter` (`Runner.rc:92`, `:98`).
+- Credential file: `flutter_secure_storage.dat` in that folder, no path option (`flutter_secure_storage_windows_ffi.dart:234`,
+  `:252-258`); DPAPI, user scope, no entropy, flags 0 (`:404-411`), so a byte copy decrypts for the same user.
+- Store app (MSIX): shares the file. Microsoft (learn.microsoft.com desktop-to-uwp-behind-the-scenes, ms.date
+  2026-09-30): *"If the file is opened from the real AppData location, then no virtualization for that file occurs."*
+  Observed: `%LOCALAPPDATA%\Packages\KimmeyConsulting-Ohio.MyEmailSpamFilter_3t07cykjy5226` has no redirected app data;
+  the production DB in `%APPDATA%\MyEmailSpamFilter\MyEmailSpamFilter` was written at 08:37 on 2026-11-10. The card's
+  risk is CONFIRMED: a DEV account delete removed the production sign-in.
+- Also found: a stale `MyEmailSpamFilter_Dev\flutter_secure_storage.dat` (630 bytes, 2026-03-15) that a DEV folder switch
+  would have loaded; `%APPDATA%\com.example\spam_filter_mobile` still exists and the DEV folder has no
+  `.migration_complete`, so `AppIdentityMigration` would have copied February data into DEV.
+- The 11 `getApplicationSupportDirectory()` callers, DEV before -> DEV after (prod and MSIX unchanged in every row):
+  - `app_paths.dart:69` data root: `..._Dev` (suffix added) -> `..._Dev` (support folder already DEV; suffix not re-added,
+    `AppPaths.dataDirectoryPath`).
+  - `main.dart:161` background log, `background_scan_windows_worker.dart:42` log, `diagnostic_logger.dart:191` fallback
+    log, `live_scan_logger.dart:44` log: each appended the suffix by hand -> each now calls `AppPaths.dataDirectoryPath`
+    (without it each would have become `..._Dev_Dev`).
+  - `app_identity_migration.dart:33`, `:45`: `.parent.parent` (Roaming) and the new folder -> now skipped in DEV (production
+    only), see above.
+  - `dev_environment_seeder.dart:33`: uses `.parent` (`Roaming\MyEmailSpamFilter`) -> same parent either way; unchanged.
+  - `export_directories.dart:271`: last-resort export fallback -> the DEV folder instead of the production folder (better).
+  - `app_paths.dart:43`: a doc comment, not a call.
+  - The credential plugin itself (not in `lib/`): production-named folder -> DEV folder.
+- Tooling that runs the same exe: `build-windows.ps1` and the WinWright runner launch the DEV exe by path (no change);
+  the DEV Task Scheduler task runs the DEV exe, whose background path now runs `DevCredentialSeparation` first.
+
+**Result (Phase 4) -- R-2/R-3 fix (Q2 = 2)**: `Runner.rc` ProductName from `SPAMFILTER_PRODUCT_NAME`
+(`MyEmailSpamFilter_Dev` when `SPAMFILTER_IS_DEV`, set by `runner/CMakeLists.txt` when `SPAMFILTER_APP_ENV` is not
+`prod`); `AppPaths.dataDirectoryPath` as the one place the suffix is applied (prevention: gate
+`test/policy/data_dir_suffix_single_source_test.dart`); `DevCredentialSeparation` (one-time copy, keeps an earlier DEV
+file as `.pre_f354_<timestamp>`, marker only after success, never writes the production file); `AppIdentityMigration`
+production-only; capability `PlatformCapabilities.sharesCredentialStoreAcrossEnvironments` (ADR-0049). ADR-0035 Sprint 85
+update; ADR-0049 site mapping. Where does the USER learn of a failed copy (5.1.2): DEV-only; the DEV app shows no
+accounts and the log says `F354: DEV credential separation failed, will retry next launch`; it retries at every launch.
+
 ## Task 5 -- F355: Android "isn't responding" when background scanning is turned on (Priority 16)
 
 **Value**: This settles whether turning on background scans can freeze the Android app.
@@ -759,7 +797,12 @@ port.
 **Model**: Sonnet -- *why not Haiku*: regex-dialect translation and a YAML reader decision; a silent difference would
 pass a bad rule.
 **Delegation checklist included in the sub-agent prompt** (when delegated): yes
-**Executed-by** (filled at completion):
+**Executed-by** (filled at completion): Sonnet sub-agent as assigned, 2026-11-10 15:26-17:05. Port review found 24
+defects in the originals, recorded before the port (the largest: `validate-yaml-rules.ps1` lost every regex error
+through a variable-scope defect, and its default paths never existed, so `/validate-rules` always failed). 87
+unittests, 64 of 64 mutants KILLED. R-3: the line scan is enough (rules.yaml 1824 single-quoted items, 0 double-quoted,
+0 non-empty flow lists), so no PyYAML. Old-name hits: CLAUDE.md:193 and :813 updated; CHANGELOG.md:189,
+CODING_VELOCITY.md:243 and sprint docs kept as history.
 **Step-types**: PORT-PY `[no-history]`, TEST-UNIT, DOCS. **Est-Effort**: 150-250m.
 
 ## Task 11 -- F331: Python batch S2: Claude and MCP set-up scripts, test mail servers (Priority 37)
@@ -798,7 +841,13 @@ stop.
 
 **Model**: Haiku -- the cheapest tier fits deterministic set-up scripts with a dry-run oracle.
 **Delegation checklist included in the sub-agent prompt** (when delegated): yes
-**Executed-by** (filled at completion):
+**Executed-by** (filled at completion): Haiku sub-agent as assigned, 2026-11-10 15:27-16:47. The originals wrote
+`~/.claude/config.json`, which Claude Code does not read for MCP servers (it reads `~/.claude.json`,
+https://code.claude.com/docs/en/mcp), so their registration never took effect; the port writes `~/.claude.json` with a
+backup first. 32 unittests, 16 of 16 mutants KILLED. AC-1 dry run matches the original's entries (temporary profile);
+AC-2 live: GreenMail and Dovecot started, ports 3993, 143 and 993 accepted connections, `--stop` closed all three.
+R-3: TESTING_STRATEGY.md names no start command; the command is in SPRINT_77_PLAN.md:387 and the script header.
+Old-name hits: docs updated; SPRINT_77_PLAN.md and this plan's R-1 kept as history.
 **Step-types**: PORT-PY `[no-history]`, TEST-UNIT. **Est-Effort**: 90-150m.
 
 ## Task 12 -- F332: Python batch S3: phone log health and the battery arm script (Priority 37)
@@ -832,7 +881,9 @@ stop.
 
 **Model**: Haiku -- deterministic log parsing with fixtures as the oracle.
 **Delegation checklist included in the sub-agent prompt** (when delegated): yes
-**Executed-by** (filled at completion):
+**Executed-by** (filled at completion): Haiku sub-agent as assigned, 2026-11-10 15:27 to the 16:43 commit (3356c223).
+Phone report P1-P11 mutants KILLED. The fixture logs missed that commit (`.gitignore:150 *.log`) and were force-added
+in the follow-up commit; the fixtures use Sprint 83 and 84 samples, the newest available, not Sprint 82.
 **Step-types**: PORT-PY `[no-history]`, TEST-UNIT. **Est-Effort**: 90-150m.
 
 ## Task 13 -- F333: Python batch S4: mobile-app check and gate scripts (Priority 37)

@@ -5,11 +5,11 @@
 ```powershell
 # Install custom MCP server
 cd scripts
-.\install-custom-mcp.ps1
+python install-custom-mcp.py
 
 # (Optional) Install GitHub MCP
 $env:GITHUB_TOKEN = "ghp_your_token_here"
-.\setup-claude-mcp.ps1 -InstallGitHub
+python setup-claude-mcp.py --install-github
 
 # Restart Claude Code
 ```
@@ -45,14 +45,14 @@ $env:GITHUB_TOKEN = "ghp_your_token_here"
 
 ```powershell
 # Validate YAML rules
-.\scripts\validate-yaml-rules.ps1
-.\scripts\validate-yaml-rules.ps1 -TestRegex
+python scripts/validate-yaml-rules.py
+python scripts/validate-yaml-rules.py --test-regex
 
 # Test regex pattern
-.\scripts\test-regex-patterns.ps1 `
-  -Pattern "^spam@.*\.com$" `
-  -TestString "spam@example.com" `
-  -PerformanceTest
+python scripts/test-regex-patterns.py `
+  --pattern "^spam@.*\.com$" `
+  --test-string "spam@example.com" `
+  --performance-test
 
 # Build with emulator auto-start
 .\mobile-app\scripts\build-with-secrets.ps1 `
@@ -114,7 +114,7 @@ Returns: Rule matched, actions to take
 ### Debug Performance
 1. Ask Claude: "Validate rules.yaml for performance"
 2. Fix slow patterns
-3. Test: `.\scripts\test-regex-patterns.ps1 -PerformanceTest`
+3. Test: `python scripts/test-regex-patterns.py --pattern <pattern> --performance-test`
 4. Re-validate
 
 ---
@@ -127,13 +127,13 @@ Returns: Rule matched, actions to take
 └── hooks.json     # Automated hooks
 
 scripts/
-├── validate-yaml-rules.ps1       # YAML validator
-├── test-regex-patterns.ps1       # Regex tester
-├── install-custom-mcp.ps1        # MCP installer
+├── validate-yaml-rules.py        # YAML validator
+├── test-regex-patterns.py        # Regex tester
+├── install-custom-mcp.py         # MCP installer
 └── email-rule-tester-mcp/        # Custom MCP server
     └── server.js
 
-~/.claude/config.json              # MCP configuration
+~/.claude.json                     # MCP configuration (user scope, key mcpServers)
 ```
 
 ---
@@ -148,7 +148,7 @@ node scripts/email-rule-tester-mcp/server.js  # Test server
 
 **Hook not running?**
 ```powershell
-.\scripts\validate-yaml-rules.ps1  # Test manually
+python scripts/validate-yaml-rules.py  # Test manually
 Get-ExecutionPolicy                # Check policy
 ```
 

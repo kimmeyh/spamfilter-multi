@@ -126,11 +126,16 @@ Hooks (`.claude/hooks/`):
 
 Converted in Sprint 85 (originals deleted in the same change; port review and tests in `SPRINT_85_PLAN.md`):
 - F332: `scripts/phone-log-health.py`, `mobile-app/scripts/r76_battery_arm.py` (was `.sh`; moved from F336).
+- F330: `scripts/clean-temp-scripts.py`, `scripts/run-full-suite.py`, `scripts/validate-yaml-rules.py`,
+  `scripts/test-regex-patterns.py`, plus the shared helper `scripts/regex_dialect.py` (.NET to Python `re`
+  translation; patterns it cannot translate are reported NOT CHECKED, never as valid).
+- F331: `scripts/install-custom-mcp.py`, `scripts/setup-claude-mcp.py`, `scripts/start-test-imap-servers.py`, plus the
+  shared helper `scripts/mcp_config.py` (read, back up and write the Claude Code MCP configuration, `~/.claude.json`).
 
 `scripts/`:
 - Converted by the pilot: `agent-work-status`.
-- Deterministic, convert later: `test-hook`, `mutation-test` (F329); `clean-temp-scripts`, `run-full-suite`,
-  `validate-yaml-rules`, `test-regex-patterns` (F330); `install-custom-mcp`, `setup-claude-mcp`,
+- Deterministic, convert later: `test-hook`, `mutation-test` (F329). Converted in Sprint 85: `clean-temp-scripts`,
+  `run-full-suite`, `validate-yaml-rules`, `test-regex-patterns` (F330); `install-custom-mcp`, `setup-claude-mcp`,
   `start-test-imap-servers` (F331); `phone-log-health` (F332).
 - Windows-bound, decide per file (F337): `enable-crash-dumps` (Windows Error Reporting), `pull-phone-screenshots`
   (MTP through the Windows shell COM).

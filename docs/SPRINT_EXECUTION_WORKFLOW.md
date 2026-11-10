@@ -664,7 +664,7 @@ This change was introduced after Sprint 36 kickoff skipped Phase 1 (prior "OPTIO
 - [ ] **5.1.2 Pre-PR Self-Review Checklist -- the seven recurring review-finding classes** (F-PRECHECK, Sprint 49 -- MANDATORY)
   - **Purpose**: catch the finding classes that external review (Copilot) has surfaced repeatedly across sprints (23 comments over 6 rounds in Sprint 46; 4 real findings in Sprint 47; the F119 family) BEFORE the PR exists. Each class has a concrete detection ACTION -- run it against the sprint diff, do not just read the list.
   - **The seven classes + detection actions**:
-    1. **Mirror/parallel-site sync**: did the diff touch one of a known twin pair? (Dart gate + its PS1 CLI mirror; manual + background scan paths; two call sites of one helper; dev + prod worktree configs; **local Windows host + CI Linux host**.) ACTION: for each changed file, name its sibling and `grep` it for the same change; update or state why not. (Sprint 47: `check-version-consistency.ps1` header claimed a sweep its `$dirs` did not do.)
+    1. **Mirror/parallel-site sync**: did the diff touch one of a known twin pair? (Dart gate + its Python CLI mirror; manual + background scan paths; two call sites of one helper; dev + prod worktree configs; **local Windows host + CI Linux host**.) ACTION: for each changed file, name its sibling and `grep` it for the same change; update or state why not. (Sprint 47: `check-version-consistency.py` header claimed a sweep its `$dirs` did not do.)
        - **Platform-gated widgets are a parallel-site pair (Sprint 50 retro IMP-3)**: the local suite runs on Windows, CI runs on `ubuntu-latest`. Any assertion about a widget behind `if (Platform.isWindows)` (or any other `Platform.is*` gate) MUST be platform-aware -- `expect(finder, Platform.isWindows ? findsOneWidget : findsNothing)` -- or it passes locally and fails CI. ACTION: after writing a widget test, grep the widget's build site for `Platform.is` and make the expectation match. (Sprint 50: the MT-3 entry-point assertion passed on Windows and failed the ubuntu job; caught at the Phase 6.1.1 gate, fixed in `3405a40`.)
        - **Call it, do not copy it (Sprint 83 retro IMP-1)**: ACTION: for each card's "Existing code reused" line, `grep` the named function or constant and confirm the new code CALLS it. Then search the diff for code the card did not foresee: a new caller of an existing user action, a new list of ids, platforms or keys, a new regex shape. For each, name the existing code and change the new code to call it, or write why none exists. (Sprint 83: three 7.7.1 findings were copies that drifted -- "Turn on" from the account list, the IMAP id list, the safe-sender pattern.)
        - **Nested forms of a shape (Sprint 84 retro i6)**: a search for a code shape (for example `Center` around `Column`) also finds it with wrappers between the two (`Center(child: Padding(child: Column(`). ACTION: search the outer and inner names with any text between them, multiline (Grep `Center\([\s\S]{0,300}?Column\(` with `multiline: true`), and read each hit. Not gated; the 7.7.1 review is the backstop. (Sprint 84: the 5.1.2 search found 4 empty states; the 7.7.1 review found 6 more (CR L2), now in F353.)
@@ -732,7 +732,7 @@ This change was introduced after Sprint 36 kickoff skipped Phase 1 (prior "OPTIO
        the test performs the step's taps and entries and asserts what the step tells Harold he will see. These
        run headless or in-engine, with no mouse, keyboard or screen takeover. Keep the test when it guards a
        sprint change; otherwise it can live in `test/scratch/`.
-    2. **Data, scanner and IMAP steps** through the local test servers (`scripts/start-test-imap-servers.ps1`),
+    2. **Data, scanner and IMAP steps** through the local test servers (`scripts/start-test-imap-servers.py`),
        database queries on a COPY of the dev DB, and the diagnostic log.
     3. **WinWright ONLY when a Flutter test cannot prove the step** (the real Windows window, tray, notifications,
        native dialogs). Those rehearsal steps run in the SAME session as the 5.1.5 sweep, so the laptop is taken
@@ -775,7 +775,7 @@ This change was introduced after Sprint 36 kickoff skipped Phase 1 (prior "OPTIO
     already said to trace preconditions; tracing by reading did not prevent it, so the step is now RUN, not read.
 
 - [ ] **5.2 Run Complete Test Suite**
-  - Execute full test suite through the evidence runner (F292, Sprint 79): `powershell -NoProfile -ExecutionPolicy Bypass -File scripts\run-full-suite.ps1 -Label <sprint>-5.2`. It runs `flutter test --concurrency=4` and records boot time, page file, DEV app state, commit charge every 30 s, TEST-RUNNER load failures, and STALLED after 10 minutes without output. Record its RESULT line in the plan's 5.2 entry. A run that loses test files or stalls is a finding with its machine state attached, never "flaky".
+  - Execute full test suite through the evidence runner (F292, Sprint 79): `python scripts/run-full-suite.py --label <sprint>-5.2`. It runs `flutter test --concurrency=4` and records boot time, page file, DEV app state, commit charge every 30 s, TEST-RUNNER load failures, and STALLED after 10 minutes without output. Record its RESULT line in the plan's 5.2 entry. A run that loses test files or stalls is a finding with its machine state attached, never "flaky".
   - Verify all tests pass (not just new ones)
   - Check code analysis: `flutter analyze`
   - Ensure zero errors introduced
@@ -789,14 +789,14 @@ This change was introduced after Sprint 36 kickoff skipped Phase 1 (prior "OPTIO
     - **Example - Monitoring script**: Execute script on test suite to verify it works
     - **Example - API changes**: Verify all callers updated and tests cover new behavior
   - **Test New Tools** (MANDATORY when creating test tooling):
-    - When creating scripts or tools (like monitor-tests.ps1, validation scripts), validate they work on actual data
+    - When creating scripts or tools (like monitor-tests.py, validation scripts), validate they work on actual data
     - Do NOT commit tools without running them on real test suite/data
-    - Example: Run monitor-tests.ps1 on full test suite to verify output format and accuracy
+    - Example: Run monitor-tests.py on full test suite to verify output format and accuracy
     - Example: Run YAML validation script on actual rules.yaml to verify it catches errors
   - **Tool Documentation Requirement** (MANDATORY for new scripts/tools):
     - Include example output or demo in comments/README for all new tools
     - Show what success looks like and what failure looks like
-    - Example: monitor-tests.ps1 should include sample output in file header comments
+    - Example: monitor-tests.py should include sample output in file header comments
     - Example: YAML validation script should show example error messages in README
     - Makes tools self-documenting and easier to use
   - **Cross-Platform Validation** (MANDATORY for scripts/commands):
@@ -804,19 +804,19 @@ This change was introduced after Sprint 36 kickoff skipped Phase 1 (prior "OPTIO
     - Verify path separators work cross-platform (use `/` not `\\` in grep patterns)
     - Test PowerShell scripts on Windows PowerShell 5.1 AND PowerShell 7+
     - Document platform-specific requirements in script comments
-    - Example: Test monitor-tests.ps1 on both PowerShell versions
+    - Example: Test monitor-tests.py on both PowerShell versions
     - Example: Verify grep patterns work with forward slashes on Windows
   - Document validation results:
     - "[OK] Task B risk mitigation validated: App runs, logs appear in console with correct keywords"
     - "[OK] Task C risk mitigation validated: Coverage report generated, shows 85% coverage"
-    - "[OK] Task D tool validation: monitor-tests.ps1 executed on test suite, correctly identified 3 slow tests"
+    - "[OK] Task D tool validation: monitor-tests.py executed on test suite, correctly identified 3 slow tests"
     - "[OK] Task D cross-platform validation: Script tested on PowerShell 5.1 and PowerShell 7, both work correctly"
   - If validation fails, fix issues before proceeding to Phase 6
 
 - [ ] **5.2.2 Monitor Test Execution (Optional - For Debugging)**
   - Use parallel test monitoring to track long-running tests
-  - Script: `mobile-app/scripts/monitor-tests.ps1`
-  - Usage: `.\monitor-tests.ps1 -OutputFile test-output.txt`
+  - Script: `mobile-app/scripts/monitor-tests.py`
+  - Usage: `python monitor-tests.py --output test-output.txt`
   - Features:
     - Real-time test progress monitoring
     - Identifies slow tests
