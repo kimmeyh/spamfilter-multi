@@ -7,7 +7,7 @@ Sprint 84, Task 2. Written 2026-11-06. All account names are masked. No sender a
 - Eleven unique Fold diagnostic logs: `validation-screenshots/sprint-83/diag_v0.21.0_2026-10-29..31`, `diag_v0.23.0_2026-10-31..11-03`, and `validation-screenshots/sprint-84/diag_v0.23.0_2026-11-04..06`, `diag_v0.24.0_2026-11-06`.
   The sprint-83 copy of `diag_v0.23.0_2026-11-04.log` (pulled 10:06) is a subset of the sprint-84 copy (pulled 23:51) and was left out.
 - Span: 2026-10-29 to 2026-11-06 08:12. Builds: 0.21.0 (10-29..31), 0.23.0 (10-31..11-06 00:45), 0.24.0 (11-06 from 00:54).
-- Counts come from `scripts/phone-log-health.ps1` and were cross-checked with a second parser over the same lines (they agree).
+- Counts come from `scripts/phone-log-health.py` (the Python port of `phone-log-health.ps1`, F332; the same report) and were cross-checked with a second parser over the same lines (they agree).
 - Windows DEV: the per-account `dev_background_scan_*_v0.21.0..v0.24.0.log` files in the DEV logs folder, searched for the exact message strings below.
 
 Health script output over all eleven logs (full span):

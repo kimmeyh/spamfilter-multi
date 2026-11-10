@@ -124,6 +124,9 @@ Hooks (`.claude/hooks/`):
   (F326); `verify-closeout-complete` (F327); `sprint-auto-advance` (F328); `run-test-cases`, `status-footer` (F329).
 - GenAI: none. Every hook is a regex or file check.
 
+Converted in Sprint 85 (originals deleted in the same change; port review and tests in `SPRINT_85_PLAN.md`):
+- F332: `scripts/phone-log-health.py`, `mobile-app/scripts/r76_battery_arm.py` (was `.sh`; moved from F336).
+
 `scripts/`:
 - Converted by the pilot: `agent-work-status`.
 - Deterministic, convert later: `test-hook`, `mutation-test` (F329); `clean-temp-scripts`, `run-full-suite`,

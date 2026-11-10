@@ -25,7 +25,7 @@ Note: the Documents rule copies every .csv under Documents, which can include
 another app's CSV files; the destination is gitignored, so none can be committed.
 
 After copying, it prints a background-scan health summary of the diagnostic
-logs in the -Days window (phone-log-health.ps1, Sprint 78 retro IMP-2): per
+logs in the -Days window (phone-log-health.py, Sprint 78 retro IMP-2; Python since F332): per
 account scans per hour, errors, scans that never finished, triggers, and a
 FLAG for each problem. Read the FLAG lines on every pull.
 
@@ -278,8 +278,8 @@ $names | Sort-Object -Unique | ForEach-Object {
 $diagLogs = @(Get-ChildItem -LiteralPath $Dest -Filter 'diag_*.log' -File -ErrorAction SilentlyContinue |
     Where-Object { $d = Get-NameDate $_.Name; -not $d -or $d -ge (Get-Date).Date.AddDays(-$Days) })
 if ($diagLogs.Count -gt 0) {
-    & (Join-Path $PSScriptRoot 'phone-log-health.ps1') -Path ($diagLogs | ForEach-Object { $_.FullName })
-    'For one run: phone-log-health.ps1 -Path <log> -Since <start> -IntervalMinutes <n> -SingleAccount'
+    & python (Join-Path $PSScriptRoot 'phone-log-health.py') --path @($diagLogs | ForEach-Object { $_.FullName })
+    'For one run: python scripts/phone-log-health.py --path <log> --since <start> --interval-minutes <n> --single-account'
 } else {
     # 7.7.1 silent-failure L-3: say so, or a skipped check reads as a clean one.
     "--- background scan health: NOT checked -- no diag_*.log in the last $Days day(s) in $Dest ---"

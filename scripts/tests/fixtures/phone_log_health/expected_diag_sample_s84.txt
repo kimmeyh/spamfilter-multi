@@ -1,0 +1,5 @@
+--- background scan health (1 log(s), interval 15 min) ---
+acct1***@example.com: starts=31 completed=29 error=1 unfinished=0 skips=0 | triggers doze-alarm=27 periodic=26 | 4.38/hour, median gap 14.9 min | interval 10m (log)
+acct2***@example.com: starts=2 error=2 unfinished=0 skips=0 | triggers periodic=2 | -/hour, median gap 300 min | interval 15m (assumed)
+FLAG: acct1***@example.com has 1 scan error(s).
+FLAG: acct2***@example.com has 2 scan error(s).

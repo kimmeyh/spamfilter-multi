@@ -1,0 +1,2 @@
+--- background scan health (1 log(s), interval 15 min) ---
+WARNING: 0 scan lines recognized in 1 log(s) -- log format changed, or no background scan ran. Health NOT checked.
