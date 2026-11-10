@@ -104,6 +104,10 @@ class SettingsScreen extends StatefulWidget {
   /// behavior change -- the field is nullable, not removed.
   final String? accountId;
 
+  /// F352 (ADR-0052): the read-only label on Settings > Account when the shown
+  /// account is the default. It is set on Select Account only.
+  static const String defaultAccountLabel = 'Default account';
+
   /// Subtitle of the "Pin Google OAuth certificates" switch, per platform
   /// (Sprint 77 Phase 5.1.2 F-PRECHECK). On Windows the switch controls the
   /// pinned Google sign-in and token renewal calls; on Android sign-in goes
@@ -189,6 +193,10 @@ class _SettingsScreenState extends State<SettingsScreen> with SingleTickerProvid
   // Loaded once during _loadSettings so the header renders synchronously
   // without per-tab FutureBuilders. Empty string while loading.
   String _accountEmail = '';
+
+  /// F352 (ADR-0052): the stored default account, read in [_loadSettings].
+  /// Null = no default (or unreadable, which is logged and shows no label).
+  String? _defaultAccountId;
 
   /// The account actually in use. Seeded from `_requireAccountId` and filled in
   /// lazily when the user first opens an account-scoped tab (F133-S52 R-10).
@@ -489,6 +497,14 @@ class _SettingsScreenState extends State<SettingsScreen> with SingleTickerProvid
         _accountEmail = creds?.email ?? '';
       } catch (_) {
         _accountEmail = '';
+      }
+
+      // F352: is the shown account the default? Read-only here.
+      try {
+        _defaultAccountId = await _settingsStore.getDefaultAccountId();
+      } catch (e) {
+        _defaultAccountId = null;
+        _logger.w('F352: could not read the default account: $e');
       }
 
       // [UPDATED] ISSUE #123: Load per-account settings (with app-wide fallback)
@@ -1282,6 +1298,31 @@ class _SettingsScreenState extends State<SettingsScreen> with SingleTickerProvid
             // header card. Mirrors the same card shown on Manual Scan and
             // Background tabs.
             _buildAccountHeaderCard(),
+            // F352 (ADR-0052): read-only; the default is set on Select Account.
+            if (_defaultAccountId != null &&
+                _defaultAccountId == _resolvedAccountId)
+              Semantics(
+                container: true,
+                label: SettingsScreen.defaultAccountLabel,
+                child: ExcludeSemantics(
+                  child: Padding(
+                    padding: const EdgeInsets.only(top: 8, left: 4),
+                    child: Row(
+                      children: [
+                        Icon(Icons.star,
+                            size: 18,
+                            color: Theme.of(context).colorScheme.primary),
+                        const SizedBox(width: 8),
+                        Text(
+                          SettingsScreen.defaultAccountLabel,
+                          key: const Key('settings_default_account_label'),
+                          style: Theme.of(context).textTheme.bodyMedium,
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              ),
             const SizedBox(height: 24),
 
             // Folder configuration section

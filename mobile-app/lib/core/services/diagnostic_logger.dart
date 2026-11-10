@@ -9,6 +9,7 @@ import 'package:path_provider/path_provider.dart';
 import '../../util/redact.dart';
 import '../storage/settings_store.dart';
 import 'app_environment.dart';
+import '../../adapters/storage/app_paths.dart';
 import 'app_version.dart';
 import 'export_directories.dart';
 
@@ -190,7 +191,7 @@ class DiagnosticLogger {
     } catch (_) {
       final appSupport = await getApplicationSupportDirectory();
       _cachedDir = path.join(
-        '${appSupport.path}${AppEnvironment.dataDirSuffix}',
+        AppPaths.dataDirectoryPath(appSupport.path),
         'logs',
       );
       return _cachedDir!;

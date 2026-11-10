@@ -502,7 +502,19 @@ declared in the ADR-0049 table.
 **Model**: Opus (main session) -- *why not Sonnet*: credential storage, a Class-1 decision, and a migration where a
 mistake loses production sign-ins.
 **Delegation checklist included in the sub-agent prompt** (when delegated): N/A (main session).
-**Executed-by** (filled at completion):
+**Executed-by** (filled at completion): Opus main session as assigned, 2026-11-10, interleaved with agent reviews
+(active time not recorded). Code: `Runner.rc` ProductName from `SPAMFILTER_IS_DEV` (CMake sets it when the env is not
+prod); `AppPaths.dataDirectoryPath` the one place the `_Dev` suffix is applied (5 callers moved to it);
+`DevCredentialSeparation` before any credential read; `AppIdentityMigration` production-only;
+`PlatformCapabilities.sharesCredentialStoreAcrossEnvironments`. Tests: 4 new files plus the capability tests (53 with
+the F352 files, all pass); M1-M10 mutants KILLED; `flutter analyze` clean. Real-file proof (DEV build 0.25.0+23,
+17:57): the exe ProductName is `MyEmailSpamFilter_Dev`; the production `flutter_secure_storage.dat` is unchanged (hash
+prefix 464DC179B98A1F67 and 11/07 timestamp before and after); DEV holds an identical copy; the March DEV file is kept as
+`.pre_f354_20261110_175703`; marker written; the 17:58 Task Scheduler worker on the new exe found all 4 accounts and
+scanned Yahoo successfully; the UI tree shows the home screen. Backups of both files before the run:
+`<SCRATCH>\s85_f354\backup\`. Callers checked after the fact: `DevEnvironmentSeeder` uses the support folder's
+PARENT, so it resolves the same folders. A blank `ww_screenshot` during the check was the monitor being asleep, not the
+app (README note added). The marker is now consumed on this machine; MV re-checks the result, not the first copy.
 **Step-types**: DIAG `[no-history]`, NATIVE-WIN, SVC-EDIT, TEST-UNIT, DOCS. **Est-Effort**: 60-120m.
 
 _**Risk & rollback**_: risk: DEV loses its accounts, or a production file is touched. Mitigation: hash the production

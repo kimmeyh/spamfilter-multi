@@ -19,6 +19,7 @@ import 'core/services/windows_task_scheduler_service.dart';
 import 'core/services/per_account_bg_migration.dart';
 import 'core/services/app_environment.dart';
 import 'core/services/dev_environment_seeder.dart';
+import 'core/services/dev_credential_separation.dart';
 import 'core/services/background_scan_scheduler.dart';
 import 'core/services/f264_upgrade_migration.dart';
 import 'core/storage/settings_store.dart';
@@ -154,14 +155,31 @@ void main(List<String> args) async {
   // Detect background mode from command-line arguments
   BackgroundModeService.initialize(args);
 
+  // F354 (Sprint 85): a Windows DEV build has its own credential file. Runs
+  // before ANY credential read, in the UI and the Task Scheduler (background)
+  // paths alike. Never writes the production-named file.
+  try {
+    final result = await DevCredentialSeparation.run(
+      supportDir: await getApplicationSupportDirectory(),
+      sharedStore:
+          PlatformCapabilities.current.sharesCredentialStoreAcrossEnvironments,
+      isDev: AppEnvironment.isDev,
+    );
+    if (result == DevCredentialResult.copied) {
+      Logger().i('F354: DEV credentials separated from production');
+    }
+  } catch (e) {
+    Logger().w('F354: DEV credential separation skipped: $e');
+  }
+
   // If running in background mode (launched by Task Scheduler), execute scan and exit
   if (BackgroundModeService.isBackgroundMode) {
     // Use file-based logging since headless mode has no console
     // [UPDATED] Issue #218: Use path_provider for MSIX sandbox compatibility
     final appSupport = await getApplicationSupportDirectory();
-    final envSuffix = AppEnvironment.dataDirSuffix;
     final logPrefix = AppEnvironment.logPrefix;
-    final logDir = Directory('${appSupport.path}$envSuffix\\logs');
+    final logDir =
+        Directory('${AppPaths.dataDirectoryPath(appSupport.path)}\\logs');
     await logDir.create(recursive: true);
     // F-VERSION-DERIVE (Sprint 49): runtime version (pubspec-backed via
     // package_info_plus), never a hardcoded literal that drifts on a bump.
@@ -396,7 +414,17 @@ void main(List<String> args) async {
     unawaited(_logNewMailTriggerOutcome());
   }
 
-  runApp(const SpamFilterApp());
+  // F352 (ADR-0052): seed the session selection from the stored default
+  // account BEFORE the first screen is built. Never throws (createSeeded logs
+  // and starts empty).
+  final defaultStore = SettingsStore();
+  final seededSelection = await SelectedAccountProvider.createSeeded(
+    readDefault: defaultStore.getDefaultAccountId,
+    listAccounts: SecureCredentialsStore().getSavedAccounts,
+    clearDefault: defaultStore.clearDefaultAccountId,
+  );
+
+  runApp(SpamFilterApp(selectedAccount: seededSelection));
 
   // Sprint 82 MV-1: register THIS (UI) process for notification taps, so a
   // click brings the app forward on Review No Rule Items. The background
@@ -584,7 +612,11 @@ Future<void> _logNewMailTriggerOutcome() async {
 }
 
 class SpamFilterApp extends StatelessWidget {
-  const SpamFilterApp({super.key});
+  /// F352 (ADR-0052): the session selection, already seeded from the stored
+  /// default account. Null (tests) means a provider that starts empty.
+  final SelectedAccountProvider? selectedAccount;
+
+  const SpamFilterApp({super.key, this.selectedAccount});
 
   @override
   Widget build(BuildContext context) {
@@ -601,9 +633,10 @@ class SpamFilterApp extends StatelessWidget {
         ),
         // F135 (Sprint 51 retro IMP-3): session-scoped selected account, so
         // account-scoped destinations stop re-prompting once the user has
-        // chosen. Deliberately not persisted -- see the class doc.
+        // chosen. The session selection is not persisted; only the default
+        // account is (ADR-0052) -- see the class doc.
         ChangeNotifierProvider(
-          create: (_) => SelectedAccountProvider(),
+          create: (_) => selectedAccount ?? SelectedAccountProvider(),
         ),
       ],
       child: Shortcuts(

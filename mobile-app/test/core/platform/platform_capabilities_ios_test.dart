@@ -38,6 +38,8 @@ void main() {
     'hasDesktopWindow': (c) => c.hasDesktopWindow,
     'hasSystemTray': (c) => c.hasSystemTray,
     'canBeMsixPackaged': (c) => c.canBeMsixPackaged,
+    'sharesCredentialStoreAcrossEnvironments': (c) =>
+        c.sharesCredentialStoreAcrossEnvironments,
     'backgroundScanMechanism': (c) => c.backgroundScanMechanism,
     'hasNewMailNotificationTrigger': (c) => c.hasNewMailNotificationTrigger,
     'socketsCloseWhenBackgrounded': (c) => c.socketsCloseWhenBackgrounded,
@@ -68,6 +70,7 @@ void main() {
     'hasDesktopWindow': false,
     'hasSystemTray': false,
     'canBeMsixPackaged': false,
+    'sharesCredentialStoreAcrossEnvironments': false,
     'backgroundScanMechanism': BackgroundScanMechanism.bgAppRefresh,
     'hasNewMailNotificationTrigger': false,
     'socketsCloseWhenBackgrounded': true,

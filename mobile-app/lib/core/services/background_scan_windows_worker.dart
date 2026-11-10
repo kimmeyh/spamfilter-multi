@@ -40,8 +40,7 @@ class BackgroundScanWindowsWorker {
   static Future<String> _getLogDir() async {
     if (_cachedLogDir != null) return _cachedLogDir!;
     final appSupport = await getApplicationSupportDirectory();
-    final envSuffix = AppEnvironment.dataDirSuffix;
-    _cachedLogDir = '${appSupport.path}$envSuffix\\logs';
+    _cachedLogDir = '${AppPaths.dataDirectoryPath(appSupport.path)}\\logs';
     return _cachedLogDir!;
   }
 

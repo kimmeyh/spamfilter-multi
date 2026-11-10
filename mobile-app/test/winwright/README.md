@@ -77,6 +77,11 @@ title and closes it at end-of-run. Consequences for script authors:
    .\enable-screen-reader-flag.ps1 enable
    ```
 
+   **A blank tree or an all-white screenshot is not evidence that the app is blank** (Sprint 85, F354 check). With the
+   flag off, the tree holds only the title bar. With the monitor asleep, `ww_screenshot` returns a white client area
+   and a .NET `CopyFromScreen` fails with "The handle is invalid", while the app is fully built. Turn the flag on and
+   read the tree (`ww_get_snapshot`) before concluding anything from a picture; turn it off afterwards.
+
 3. **WinWright doctor passes**:
    ```powershell
    C:\Tools\WinWright\Civyk.WinWright.Mcp.exe doctor

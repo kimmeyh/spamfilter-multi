@@ -127,6 +127,18 @@ class PlatformCapabilities {
   /// Windows: true. Android: false. iOS: false.
   bool get canBeMsixPackaged => host == HostPlatform.windows;
 
+  /// DEV and production builds would share one secure-storage credential file
+  /// unless the app separates them (F354, Sprint 85; ADR-0035). Windows: true
+  /// (`flutter_secure_storage_windows` keeps one file in the app-support
+  /// folder, which a DEV build reaches only through its own product name, and
+  /// a one-time copy moves DEV's accounts there: `DevCredentialSeparation`).
+  /// Android: false (the keystore-backed store is per applicationId, and DEV is
+  /// `com.myemailspamfilter.dev`, `android/app/build.gradle.kts:126`). iOS:
+  /// false (the keychain is per bundle ID; there is no separate iOS DEV build
+  /// today, so a future one gets its own bundle ID and keychain).
+  bool get sharesCredentialStoreAcrossEnvironments =>
+      host == HostPlatform.windows;
+
   /// How background scans start. Windows: [BackgroundScanMechanism.taskScheduler].
   /// Android: [BackgroundScanMechanism.workManager]. iOS:
   /// [BackgroundScanMechanism.bgAppRefresh], best effort (ADR-0050 Exception 1).
