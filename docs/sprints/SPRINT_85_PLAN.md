@@ -451,6 +451,17 @@ now start pre-filtered to the default (none acts on mail); the delete path `:845
 widget, one at 360 px), 11/11 mutants KILLED, `flutter analyze` clean. Full suite +3669 ~15 -5: 4 are F349 Task
 Scheduler timeouts, 1 is a gitignored `test/scratch` file. Not covered: a real restart and phone layout (Manual
 Validation).
+Phase 5 follow-ups (main session, 2026-11-10): (1) MV rehearsal on the pixel34 emulator (412 dp): a Gmail row needing
+sign-in showed its address one letter per line, because the trailing Row held "Sign In Again" plus the new star, play
+and delete; even a healthy row's title was 80 dp at 360 dp. Fix: below 600 dp the icons go on their own line under the
+subtitle, and "Sign In Again" sits under its reason (`account_selection_screen.dart`); guard
+`account_row_phone_width_test.dart` (360 and 412 dp, both states; 2/2 mutants KILLED). The earlier 360 px test checked
+only for an overflow error, not a squeezed title. (2) 5.1.2 M1: an EMPTY account list (what a failed credential read
+returns) no longer clears the stored default (2 tests, mutant KILLED). (3) L9: a source-order test that `main()` builds
+the seeded provider before `runApp` and passes it in (mutant KILLED). (4) L2: the unused `clearDefaultAccountIfMatches`
+removed. (5) L3: one source for the "Default account" words (`SettingsScreen.defaultAccountLabel`). (6) L7 decision:
+the "Missing credentials" error row has no star on purpose: it cannot scan, and its one action, delete, also clears a
+default on it (comment in the code). AC-1 reads "each row that can scan".
 **Step-types**: SVC-EDIT, UI-ADD, TEST-UNIT, TEST-WIDGET, DOCS. **Est-Effort**: 120-240m.
 
 ## Task 4 -- F354: Windows DEV keeps its account credentials in the production-named folder (Priority 14)
@@ -558,7 +569,11 @@ _**Decision-class interrupts**_: Class 1 (ADR-0035): Q2.
 file as `.pre_f354_<timestamp>`, marker only after success, never writes the production file); `AppIdentityMigration`
 production-only; capability `PlatformCapabilities.sharesCredentialStoreAcrossEnvironments` (ADR-0049). ADR-0035 Sprint 85
 update; ADR-0049 site mapping. Where does the USER learn of a failed copy (5.1.2): DEV-only; the DEV app shows no
-accounts and the log says `F354: DEV credential separation failed, will retry next launch`; it retries at every launch.
+accounts; it retries at every launch. CORRECTED by the 5.1.2 review (M3): the original text said "the log says ...",
+but `Logger` writes nothing in a release build (`logger-2.7.0/lib/src/filters/development_filter.dart:7`, "In release
+mode ALL logs are omitted"; default filter at `logger.dart:23`), and the DEV app is a release build. Now the reason is
+kept (`DevCredentialSeparation.lastError`) and written to the background scan log (always on) and the diagnostic log
+(when on), after each can be opened (`main.dart`).
 
 ## Task 5 -- F355: Android "isn't responding" when background scanning is turned on (Priority 16)
 
@@ -1094,6 +1109,7 @@ built AAB checked for the OAuth scheme (`GOOGLE_PLAY_RELEASE_PROCESS.md` Step 4)
 ## Phase 5 evidence
 
 - **5.2 tests and analyze**: 2026-11-10 21:04-21:09 at e110499b. `python scripts/run-full-suite.py --concurrency 6`: 3,672 passed, 15 skipped, 0 failed, 0 load failures. `flutter analyze`: No issues found (21:10). A stale gitignored probe, `test/scratch/s84_mv_f342_history_rehearsal_test.dart`, failed earlier full runs; it was backed up to the scratchpad and deleted.
+- **5.1.2 F-PRECHECK**: ran 2026-11-10 21:04-21:41 (sub-agent, read-only) over `git diff origin/develop...HEAD` in Dart, Python, PowerShell, YAML and JSON; 7 classes; 3 MEDIUM, 6 LOW (+ unverified suspicions), 0 HIGH. Fixed 21:42-22:36 (main session): M1 an empty account list no longer clears the default (`selected_account_provider.dart`); M2 `setup-android-oauth.ps1` ran the deleted `build-with-secrets.ps1` (now the `.py`, with a missing-file check), prevention = new gate `scripts/tests/test_no_runs_of_missing_scripts.py` (any live line that runs a script file no tracked path has; mutant KILLED); M3 `Logger` is silent in release builds, so the F354 failure reason now goes to the background scan log and the diagnostic log, card text corrected (mutants KILLED); L1 `mutation-test.py` reports a check that could not start (127, 9009, OSError) as NOT RUN, never KILLED; L2 unused helper removed; L3 one label source; L4 two script hints updated; L6 the test-hook tests FAIL instead of skip on CI when `python` is missing; L7 decision recorded (no star on the error row); L9 source-order test for the seed (mutant KILLED). Held for Harold: L5 (`.claude/settings.local.json:50` runs the deleted `validate-yaml-rules.ps1`; a settings change needs approval). Not fixed, LOW, recorded: L8 `validate-yaml-rules.py` passes with 0 patterns (same as the PowerShell original); test-inventory.py:586 and :646 quiet fallbacks; phone-log-health.py:76 skips bad timestamps. Also found in the MV rehearsal and fixed: the Select Account phone-row layout (F352 card). One unexplained failure: the first run of `test_mutation_test.py` after the L1 edit failed 1 test under the Android build's load (64.9 s against 42 s); output not kept; 3 later runs 31/31.
 - **Android JVM unit tests**: N/A -- the sprint diff touches no file under `mobile-app/android/app/src`.
 - **5.1.6 runtime launch gate**: N/A -- `build.gradle.kts` changed in comments and message text only (F335); no manifest, plugin or native change.
 - **5.1.5 WinWright sweep**: 2026-11-10, sweep-head: e110499b (newer than the last `lib/` commit 7fea8327), DEV build from `build-windows.ps1`, workstation unlocked, 3 scripts. Sweep 21:10-21:16: test_f320_no_rule_review PASS; test_f124_rule_labels and test_s75_new_controls FAIL (every cursor step, "SetCursorPos failed") while an unsecured screen saver (`Mystify.scr`) had run since 17:19. The lock gate reported "unlocked", which is correct: Microsoft's "Desktops" page states "Unsecured screen savers run on Winsta0\Default", so the saver did not switch the input desktop; the mechanism is unknown. After the saver process was ended: test_s75_new_controls 27/27 PASS (21:21); test_f124_rule_labels failed once at step 29 ("IsEnabled [#30010] is not supported" on the second Back; its retry failed at step 2, "No main window found", the Sprint 84 symptom), then 29/29 PASS run alone (21:22-21:23). Tray icon PASS; DB drift none in every run. Prevention: the runner now ends a running unsecured screen saver in its preflight and says so (`Stop-UnsecuredScreenSaver`, `run-winwright-tests.ps1`); it leaves a secure saver alone and fails loudly if a saver cannot be ended. Tested both ways (saver running: ended, 1 -> 0 processes; none running: empty list).

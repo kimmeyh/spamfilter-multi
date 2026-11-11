@@ -158,6 +158,12 @@ void main(List<String> args) async {
   // F354 (Sprint 85): a Windows DEV build has its own credential file. Runs
   // before ANY credential read, in the UI and the Task Scheduler (background)
   // paths alike. Never writes the production-named file.
+  //
+  // Sprint 85 5.1.2 M3: `Logger` writes NOTHING in a release build (logger
+  // 2.7.0 DevelopmentFilter), and the DEV app is a release build. A failure is
+  // kept here and written to a FILE once one can be opened: the diagnostic log
+  // (foreground, below) and the background scan log (background path).
+  String? f354Problem;
   try {
     final result = await DevCredentialSeparation.run(
       supportDir: await getApplicationSupportDirectory(),
@@ -167,10 +173,14 @@ void main(List<String> args) async {
     );
     if (result == DevCredentialResult.copied) {
       Logger().i('F354: DEV credentials separated from production');
+    } else if (result == DevCredentialResult.failed) {
+      f354Problem = 'DEV credential separation failed, will retry next '
+          'launch: ${DevCredentialSeparation.lastError ?? 'no detail'}';
     }
   } catch (e) {
-    Logger().w('F354: DEV credential separation skipped: $e');
+    f354Problem = 'DEV credential separation skipped: $e';
   }
+  if (f354Problem != null) Logger().w('F354: $f354Problem');
 
   // If running in background mode (launched by Task Scheduler), execute scan and exit
   if (BackgroundModeService.isBackgroundMode) {
@@ -209,6 +219,7 @@ void main(List<String> args) async {
         .toList();
     await bgLog('Args: $redactedArgs');
     await bgLog('Executable: ${Platform.resolvedExecutable}');
+    if (f354Problem != null) await bgLog('F354: $f354Problem');
 
     try {
       // F98 (ADR-0039): pass the per-account id parsed from --account-id so the
@@ -407,6 +418,13 @@ void main(List<String> args) async {
   // is on -- the file exists as soon as logging is on, and it names the
   // build that wrote everything after it.
   unawaited(DiagnosticLogger.appEvent('app start (foreground)'));
+  if (f354Problem != null) {
+    unawaited(DiagnosticLogger.failure(
+      context: 'F354',
+      kind: DiagnosticLogger.kindException,
+      reason: DiagnosticLogger.scrub(f354Problem),
+    ));
+  }
   // F253 review HIGH-3 (Sprint 76): the new-mail listener is native and cannot
   // write this log, so copy its last recorded outcome here. Android only
   // (ADR-0044); once per foreground start.

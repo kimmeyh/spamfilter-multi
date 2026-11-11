@@ -649,13 +649,8 @@ class SettingsStore {
     await _deleteAppSetting(keyDefaultAccountId);
   }
 
-  /// Clear the default only when it is [accountId]. Used by account deletion
-  /// so deleting a DIFFERENT account keeps the default (R-6).
-  Future<void> clearDefaultAccountIfMatches(String accountId) async {
-    if (await getDefaultAccountId() == accountId) {
-      await clearDefaultAccountId();
-    }
-  }
+  // Account deletion clears the default inside its own transaction
+  // (DataDeletionService.deleteAccountData, R-6), so there is no helper here.
 
   // ============================================================
   // Export Settings

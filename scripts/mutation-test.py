@@ -43,7 +43,7 @@ wrapping `timeout` command) cannot be handled by any program: the mutant stays i
 script in a short `timeout`; give a slow check its own "timeout" in the spec.
 
 Exit 0 when every mutation was KILLED; exit 1 when any SURVIVED, was INVALID, TIMED OUT, failed its baseline,
-or could not run; exit 2 for an unreadable spec.
+or was NOT RUN (the check could not start: exit 127 or 9009); exit 2 for an unreadable spec.
 
 What this does NOT catch: a mutant that is red for a reason other than the guarded behavior but is not a
 compile error (a test that fails for any change to the file passes this check); a check that is red because of
@@ -76,11 +76,19 @@ COMPILE_ERROR = re.compile(
     r'|^(?:SyntaxError|IndentationError|TabError):')
 
 
+# Exit codes a shell gives when it cannot find or start the command: 127 (POSIX sh, and this script's own
+# could-not-start code), 9009 (cmd.exe). Sprint 85 5.1.2 L1: with "baseline": false these were KILLED.
+NOT_STARTED_CODES = (127, 9009)
+
+
 class CheckResult:
-    def __init__(self, code: int, output: str, timed_out: bool = False):
+    def __init__(self, code: int, output: str, timed_out: bool = False, not_started: bool = False):
         self.code = code
         self.output = output
         self.timed_out = timed_out
+        # True when the check never ran (no flutter, the command could not start, or the shell could not
+        # find it). Such a run proves nothing about the mutant, so it is NOT RUN, never KILLED.
+        self.not_started = not_started or code in NOT_STARTED_CODES
 
 
 def kill_tree(proc) -> None:
@@ -104,7 +112,7 @@ def invoke_check(spec: dict, repo: Path) -> CheckResult:
     if spec.get("test"):
         flutter = shutil.which("flutter")
         if not flutter:
-            return CheckResult(127, "flutter was not found on PATH")
+            return CheckResult(127, "flutter was not found on PATH", not_started=True)
         argv: object = [flutter, "test", str(spec["test"])]
         cwd, shell = repo / "mobile-app", False
     else:
@@ -120,7 +128,7 @@ def invoke_check(spec: dict, repo: Path) -> CheckResult:
                                 stdout=subprocess.PIPE, stderr=subprocess.STDOUT,
                                 start_new_session=(os.name != "nt"))
     except OSError as exc:
-        return CheckResult(127, f"could not start the check: {exc}")
+        return CheckResult(127, f"could not start the check: {exc}", not_started=True)
     try:
         out, _ = proc.communicate(timeout=timeout)
     except subprocess.TimeoutExpired:
@@ -236,6 +244,9 @@ def run_mutations(specs: list, repo: Path, progress=None) -> tuple[list, bool]:
             check = invoke_check(spec, repo)
             if check.timed_out:
                 results.append(f"{name}: TIMED OUT -- the check ran past its limit and was stopped; not counted KILLED")
+                all_killed = False
+            elif check.not_started:
+                results.append(f"{name}: NOT RUN -- the check did not start (exit {check.code}); not counted KILLED")
                 all_killed = False
             elif check.code == 0:
                 results.append(f"{name}: SURVIVED")

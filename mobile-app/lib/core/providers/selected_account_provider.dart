@@ -55,6 +55,14 @@ class SelectedAccountProvider extends ChangeNotifier {
       final accounts = await listAccounts();
       if (accounts.contains(defaultId)) {
         provider.select(defaultId);
+      } else if (accounts.isEmpty) {
+        // Sprint 85 5.1.2 M1: an EMPTY list is also what a failed credential
+        // read returns (SecureCredentialsStore.getSavedAccounts), and on
+        // Windows DEV a failed F354 copy leaves no credential file at this
+        // launch. Clearing here would erase the user's choice over a read
+        // problem. Keep it; a real delete clears it in its own transaction
+        // (DataDeletionService).
+        Logger().w('No accounts read; keeping the stored default');
       } else {
         Logger().w('Default account no longer exists; clearing it');
         await clearDefault();

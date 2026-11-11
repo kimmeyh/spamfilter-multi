@@ -101,6 +101,25 @@ void main() {
     expect(await run(), DevCredentialResult.failed);
     expect(marker().existsSync(), isFalse);
     expect(hash(prodFile()), before);
+    // Sprint 85 5.1.2 M3: the reason reaches main.dart, which writes it to a
+    // log FILE (Logger is silent in a release build).
+    expect(DevCredentialSeparation.lastError, isNotNull);
+
+    Directory(devFile().path).deleteSync();
+    expect(await run(), DevCredentialResult.copied);
+    expect(DevCredentialSeparation.lastError, isNull,
+        reason: 'a later success clears the old reason');
+  });
+
+  test('main.dart writes a separation failure to the background log AND the '
+      'diagnostic log (M3)', () {
+    final src = File('lib/main.dart').readAsStringSync();
+    expect(src, contains('DevCredentialSeparation.lastError'));
+    expect(src, contains("await bgLog('F354: \$f354Problem')"));
+    final diag = src.indexOf("context: 'F354'");
+    expect(diag, greaterThan(0));
+    expect(src.lastIndexOf('DiagnosticLogger.failure(', diag),
+        greaterThan(src.indexOf("appEvent('app start (foreground)')")));
   });
 
   test('not applicable off Windows, in production, or from a pre-F354 exe '

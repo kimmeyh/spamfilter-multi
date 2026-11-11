@@ -105,7 +105,8 @@ class SettingsScreen extends StatefulWidget {
   final String? accountId;
 
   /// F352 (ADR-0052): the read-only label on Settings > Account when the shown
-  /// account is the default. It is set on Select Account only.
+  /// account is the default. It is set on Select Account only, whose row mark
+  /// uses this same constant (AccountSelectionScreen.defaultAccountLabel).
   static const String defaultAccountLabel = 'Default account';
 
   /// Subtitle of the "Pin Google OAuth certificates" switch, per platform

@@ -28,6 +28,8 @@ Format: `- **type**: Description (Issue #N)` where type is feat|fix|chore|docs
 
 ### 2026-11-10 (Sprint 85)
 
+- **fix**: On a phone, the Select Account rows now show the account address in full. The row buttons moved to their own line under the account details, and "Sign In Again" sits under its reason. Before, an account that needed sign-in showed its address one letter per line down the screen (Issue #563)
+- **fix**: If the app cannot read your saved accounts at startup, it keeps your default account instead of removing it (Issue #563)
 - **feat**: You can now choose one of your email accounts as the default on the Select Account screen. The app opens on that account, so Settings and scans no longer ask which account to use. You can remove the default at any time, and deleting the default account clears it (Issue #563)
 - **fix**: Windows development builds keep their own account sign-ins. A development build and the Microsoft Store app shared one credential file, so removing an account in a development build also removed it from the installed app. Development builds now copy the sign-ins once into their own folder and never change the installed app's file (Issue #564)
 - **chore**: Version 0.25.0+23 for Sprint 85, so a tester can tell this build from the 0.24.1 store builds (Issue #560)

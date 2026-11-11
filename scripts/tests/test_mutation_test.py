@@ -102,6 +102,20 @@ class VerdictTests(MutationTestBase):
         lines, _ = self.run_one(baseline=False)
         self.assertEqual(lines, ["M1: KILLED"])
 
+    def test_check_that_cannot_start_is_not_run_never_killed(self):
+        # Sprint 85 5.1.2 L1: with "baseline": false a missing command used to read KILLED.
+        for code in (127, 9009):
+            (self.repo / "check.py").write_text(f"import sys\nsys.exit({code})\n", encoding="utf-8")
+            lines, ok = self.run_one(baseline=False)
+            self.assertEqual(len(lines), 1)
+            self.assertTrue(lines[0].startswith("M1: NOT RUN -- the check did not start"), lines[0])
+            self.assertFalse(ok)
+            self.assertEqual((self.repo / "mod.py").read_text(), MOD)
+        with mock.patch.object(mt.subprocess, "Popen", side_effect=OSError("no such program")):
+            lines, ok = self.run_one(baseline=False)
+        self.assertTrue(lines[0].startswith("M1: NOT RUN"), lines[0])
+        self.assertFalse(ok)
+
     def test_baseline_runs_once_per_distinct_check(self):
         specs = [self.spec(name="A"), self.spec(name="B")]
         mt.run_mutations(specs, self.repo)

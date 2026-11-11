@@ -16,6 +16,7 @@ import contextlib
 import importlib.util
 import io
 import json
+import os
 import shutil
 import sys
 import tempfile
@@ -32,8 +33,19 @@ ECHO = ("import sys\nd = sys.stdin.buffer.read().decode('utf-8')\nprint('GOT ' +
         "sys.stderr.write('stderr-line\\n')\nsys.exit({code})\n")
 
 
-@unittest.skipUnless(shutil.which("python"), "test-hook.py runs hooks with 'python' on PATH, as settings.json does")
+PYTHON_ON_PATH = bool(shutil.which("python"))
+
+
+# Locally a missing `python` skips. On CI (GitHub sets CI=true) it FAILS instead (Sprint 85 5.1.2 L6): a skip
+# there would let the workflow go green without one of these tests having run.
+@unittest.skipUnless(PYTHON_ON_PATH or os.environ.get("CI"),
+                     "test-hook.py runs hooks with 'python' on PATH, as settings.json does")
 class ProbeTests(unittest.TestCase):
+    @classmethod
+    def setUpClass(cls):
+        if not PYTHON_ON_PATH:
+            raise AssertionError("CI is set but no `python` is on PATH: test-hook.py cannot run hooks here")
+
     def setUp(self):
         self.tmp = tempfile.TemporaryDirectory()
         self.addCleanup(self.tmp.cleanup)

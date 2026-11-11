@@ -76,6 +76,11 @@ class DevCredentialSeparation {
   /// The production product folder name (Runner.rc ProductName for prod).
   static const String productionFolderName = 'MyEmailSpamFilter';
 
+  /// Why the last [run] returned [DevCredentialResult.failed] (null after any
+  /// other result). main.dart writes it to a log FILE: `Logger` writes nothing
+  /// in a release build, which the DEV app is (Sprint 85 5.1.2 M3).
+  static String? lastError;
+
   /// Runs the one-time copy when [sharedStore] (PlatformCapabilities.sharesCredentialStoreAcrossEnvironments) and [isDev] are true and
   /// [supportDir] is the DEV product folder (its name ends with [devSuffix]).
   ///
@@ -87,6 +92,7 @@ class DevCredentialSeparation {
     String devSuffix = '_Dev',
     DateTime Function()? now,
   }) async {
+    lastError = null;
     if (!sharedStore || !isDev) return DevCredentialResult.notApplicable;
     final devPath = supportDir.path.replaceAll(RegExp(r'[\\/]+$'), '');
     if (!p.basename(devPath).endsWith(devSuffix)) {
@@ -129,6 +135,7 @@ class DevCredentialSeparation {
     } catch (e) {
       // No marker: the next launch retries. The production-named file was
       // only read, so it is unchanged whatever failed here.
+      lastError = e.toString();
       _log.w('F354: DEV credential separation failed, will retry next '
           'launch: $e');
       return DevCredentialResult.failed;

@@ -9,6 +9,8 @@
 /// and the real OS keystore (a fake credential store stands in).
 library;
 
+import 'dart:io';
+
 import 'package:flutter_test/flutter_test.dart';
 
 import 'package:my_email_spam_filter/adapters/storage/secure_credentials_store.dart';
@@ -73,14 +75,6 @@ void main() {
       expect(rows, hasLength(1));
       expect(rows.single['value'], a);
       expect(SettingsStore.keyDefaultAccountId, 'default_account_id');
-    });
-
-    test('clearDefaultAccountIfMatches clears only a matching id', () async {
-      await store.setDefaultAccountId(a);
-      await store.clearDefaultAccountIfMatches(b);
-      expect(await store.getDefaultAccountId(), a);
-      await store.clearDefaultAccountIfMatches(a);
-      expect(await store.getDefaultAccountId(), isNull);
     });
 
     // Would NOT catch: a different writer storing the id under another key.
@@ -160,6 +154,40 @@ void main() {
       expect(p.hasSelection, isFalse);
     });
 
+    test('an EMPTY account list (what a failed credential read returns) keeps '
+        'the stored default (Sprint 85 5.1.2 M1)', () async {
+      final cleared = <String>[];
+      final p = await seed(a, const [], cleared: cleared);
+      expect(p.hasSelection, isFalse);
+      expect(cleared, isEmpty,
+          reason: 'a read problem must not erase the user\'s default');
+    });
+
+    test('a THROWING account list keeps the stored default', () async {
+      final cleared = <String>[];
+      final p = await SelectedAccountProvider.createSeeded(
+        readDefault: () async => a,
+        listAccounts: () async => throw StateError('keystore locked'),
+        clearDefault: () async => cleared.add('cleared'),
+      );
+      expect(p.hasSelection, isFalse);
+      expect(cleared, isEmpty);
+    });
+
+    test('main() seeds the provider before runApp and passes it in (L9)', () {
+      // Source-order check, like dev_credential_separation_test.dart: main()
+      // itself is not runnable in a test.
+      final src = File('lib/main.dart').readAsStringSync();
+      final seedAt = src.indexOf('SelectedAccountProvider.createSeeded(');
+      final runAt =
+          src.indexOf('runApp(SpamFilterApp(selectedAccount: seededSelection))');
+      expect(seedAt, greaterThan(0), reason: 'main() must call createSeeded');
+      expect(runAt, greaterThan(seedAt),
+          reason: 'the seeded provider must reach the app it was built for');
+      expect(src.contains('final seededSelection = await SelectedAccountProvider'
+          '.createSeeded('), isTrue);
+    });
+
     test('picking another account changes only the session, not the store',
         () async {
       await store.setDefaultAccountId(a);
@@ -182,8 +210,8 @@ void main() {
       expect(restarted.accountId, a);
     });
 
-    // Would NOT catch: main.dart not calling createSeeded (it is wired in
-    // main(), which no test runs); the screen test covers the provider
-    // consumer, and Manual Validation covers the real restart.
+    // Would NOT catch: SpamFilterApp ignoring the provider it is given (the
+    // screen test covers the consumer), and the real restart (Manual
+    // Validation).
   });
 }
