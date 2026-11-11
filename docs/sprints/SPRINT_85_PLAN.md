@@ -1151,3 +1151,50 @@ built AAB checked for the OAuth scheme (`GOOGLE_PLAY_RELEASE_PROCESS.md` Step 4)
 - **5.1.6 runtime launch gate**: N/A -- `build.gradle.kts` changed in comments and message text only (F335); no manifest, plugin or native change.
 - **5.1.5 WinWright sweep**: 2026-11-10, sweep-head: e110499b (newer than the last `lib/` commit 7fea8327), DEV build from `build-windows.ps1`, workstation unlocked, 3 scripts. Sweep 21:10-21:16: test_f320_no_rule_review PASS; test_f124_rule_labels and test_s75_new_controls FAIL (every cursor step, "SetCursorPos failed") while an unsecured screen saver (`Mystify.scr`) had run since 17:19. The lock gate reported "unlocked", which is correct: Microsoft's "Desktops" page states "Unsecured screen savers run on Winsta0\Default", so the saver did not switch the input desktop; the mechanism is unknown. After the saver process was ended: test_s75_new_controls 27/27 PASS (21:21); test_f124_rule_labels failed once at step 29 ("IsEnabled [#30010] is not supported" on the second Back; its retry failed at step 2, "No main window found", the Sprint 84 symptom), then 29/29 PASS run alone (21:22-21:23). Tray icon PASS; DB drift none in every run. Prevention: the runner now ends a running unsecured screen saver in its preflight and says so (`Stop-UnsecuredScreenSaver`, `run-winwright-tests.ps1`); it leaves a secure saver alone and fails loudly if a saver cannot be ended. Tested both ways (saver running: ended, 1 -> 0 processes; none running: empty list).
   sweep-head: e110499b
+
+## Manual Validation (Phase 5.3) -- DRAFT, not handed over
+
+**Standing facts (Harold)**, carried forward from Sprint 84: a phone screenshot that shows the app version proves the
+Play update installed (2026-11-04). Fold notification access for the app is ON and stays on. The iCloud DEV account's
+per-account background scan is on, every 5 minutes.
+
+**Builds**: Windows DEV 0.25.0+23 at the final head: BLOCKED. `build-windows.ps1` fails with MSB8036 (Windows SDK
+10.0.22621.0 not found) since the Visual Studio update of 2026-11-10: Windows Installer removed SDK 10.1.26100.9457
+22:25-22:29 (Application log, MsiInstaller 1034) and put back only Kits Configuration Installer, EULA and WPT at 22:34.
+That removed the shared `Windows Kits\10\SDKManifest.xml` and the `Microsoft SDKs\Windows\v10.0` registry key (both
+views); the 22621 files are present, but its `UAP.props:5` finds `WindowsSdkDir` from `SDKManifest.xml`. The DEV app
+now running (`mobile-app\dist\dev`, restarted 23:29) is the 17:57 build, before 8011e99b. Android: Play bundle
+0.25.0+23 built 2026-11-10 23:40 from 322f5c70 (`build-with-secrets.py --build-type release --env prod --output aab`,
+exit 0; Play check OK: targetSdkVersion 36, no AD_ID permission):
+`D:\Data\Harold\github\spamfilter-multi\mobile-app\dist\android-0.25.0+23\app-prod-release.aab` (71,749,606 B).
+
+**Live facts read 2026-11-10 23:36 (F354)**: production `%APPDATA%\MyEmailSpamFilter\MyEmailSpamFilter\
+flutter_secure_storage.dat` 1,382 B, written 11/07 19:22, SHA-256 prefix 464DC179B98A1F67 (same as before the F354
+run); the DEV copy is identical; the March DEV file is kept as `.pre_f354_20261110_175703`; marker written 11/10 17:57.
+
+**Steps (draft; each is rehearsed before handover, 5.1.9)**:
+- MV-1 (Windows DEV, F352 default account): Select Account, star on one account row; the row shows "Default account".
+  Close the app fully and start it again: it opens on Review No Rule Items with that account selected and no account
+  picker; Settings > Account shows "Default account". Then Select Account, star again to remove it; after a restart the
+  picker asks again. Rehearsed: widget and unit tests (21 F352 tests and `account_row_phone_width_test`, all KILLED
+  mutants listed in the F352 card). NOT REHEARSED: the real restart on Windows (needs the new DEV build) and how
+  "close fully" works (window close versus tray Exit) on this build.
+- MV-2 (Windows DEV and Store app, F354): the DEV app lists its 4 accounts; the Store app still signs in to its
+  accounts. Claude hashes the production credential file before and after. Rehearsed: hash read above; DEV account
+  list NOT REHEARSED on the new build.
+- MV-3 (Fold, F355 R-2): Settings > Background > Enable Background Scanning; wait 20 s; any "isn't responding"
+  dialog? Screenshot either way. Rehearsed on the emulator only (F355 R-1: 9 tries, 0 ANR); the Fold itself cannot be
+  rehearsed.
+- MV-4 (Fold, Task 1 R-1, decides F357): a screenshot of Settings showing the version; Claude pulls the diagnostic log
+  over MTP and checks the three F342 items. Not rehearsable (Fold only).
+- MV-5 (Fold, Task 1 R-2, MV-3c): when a YELLOW No Rule item exists, open its pop-up: one rule "Suggested"; Block
+  Subject, the regex note and the Skip row fit the cover screen. Not rehearsable (needs a YELLOW item on the Fold).
+- MV-6 (F341 R-2 and R-3, with Harold): check 2 (Gmail sign-in: Windows browser versus Android native) and check 9
+  (Fold folded and unfolded: Results, the pop-up and the toolbar near 600 px).
+- MV-7 (F329 R-6): Claude makes a hook skip a check on purpose in this session; Harold takes a screenshot of the
+  warning line as it shows on his screen.
+
+**Decisions to ask at handover** (each with evidence and options): F307 removal (the R-1 audit); the Windows client
+secret in the Android build (F335); the `.codex` hook copy (F329); F350 R-7 recommendations (R-2 to R-6 of the
+research file); F357 q1 and q2 (after MV-4); `.claude/settings.local.json:50` runs the deleted
+`validate-yaml-rules.ps1` (5.1.2 L5); the Windows SDK repair. Mention: the F331 and F333 follow-ups.
