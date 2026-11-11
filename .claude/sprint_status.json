@@ -1,12 +1,12 @@
 {
     "_description": "Sprint status file that persists across context compaction. Update after each phase/sub-phase completion.",
-    "_last_updated": "2026-11-10T15:22:04",
+    "_last_updated": "2026-11-10T21:03:30",
     "_usage": "Read this file after context compaction to restore sprint approval state and progress.",
     "_staleness_note": "This file had drifted 15 sprints (last updated at Sprint 35, 2026-04-19) before being refreshed at Sprint 50 close-out. It is a Phase 7.7 checklist item -- update it at every sprint close-out, not opportunistically.",
     "current_sprint": {
         "number": 85,
         "branch": "feature/20261108_Sprint_85",
-        "status": "Phase 4 Execution",
+        "status": "Phase 5 Review and Testing",
         "status_detail": "Plan approved by Harold 2026-11-10 (Q-A as amended; Q1 = 1 version 0.25.0+23; Q2 = 2 DEV gets its own product name in the Windows exe; Q3 = 1 delete build-with-secrets.ps1 and update docs). Cards #560-#575 created at 3.7.0.",
         "plan_approved": true,
         "pr_number": 559,
