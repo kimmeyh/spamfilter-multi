@@ -1,7 +1,7 @@
 # F350: Risk-based testing -- effective, and as efficient and quick as reasonably possible
 
-Sprint 85, Task 2 (Issue #562). Status: DRAFT (R-1, R-2 and R-5 written) -- R-3 local timings PENDING (need an idle
-machine); R-6 and R-7 PENDING (R-7 decisions are Harold's).
+Sprint 85, Task 2 (Issue #562). Status: DRAFT (R-1 to R-6 written) -- R-7 decisions PENDING (Harold, at Manual
+Validation).
 
 ## Summary (BLUF)
 
@@ -11,6 +11,8 @@ machine); R-6 and R-7 PENDING (R-7 decisions are Harold's).
 - The tests mostly miss the same defect classes, sprint after sprint. In Sprints 78-84, 180 defects escaped the tests
   and were found by review or by Harold. The two largest classes, silent swallows (42) and false comments (18), occur in
   all seven sprints. No test kind in the suite targets either class.
+- On an idle machine the full local suite takes 3 min 39 s at concurrency 6 and every tracked test passes, including
+  the F349 tests that fail on a loaded machine. Slow local runs come from load beside the suite, not the suite.
 - No automated test runs on an Android emulator or device. Four of the escaped defects in Sprints 78-84 were found only
   on an emulator or a phone.
 - 16 of the 49 policy gates can pass when nothing matched, and 19 were never shown to fail. Five pairs or groups
@@ -180,12 +182,38 @@ real hook, so they are behavior tests. They were not analyzed case by case.
   `--concurrency=4` (3 failures, all F349).
 - WinWright: 8 min 22 s for 3 scripts (Sprint 84).
 - Local per-file time: the 3-file sample from 2026-11-10 (109-178 s each) was taken on a loaded machine and is NOT a
-  baseline. PENDING: re-measure on an idle machine.
+  baseline. The idle re-measure is below (slowest file alone: 60 s).
 
 ### Why local runs are slow
 
-PENDING (idle machine): full suite at `--concurrency` 2, 4, 6 and 8; one run with the Defender exclusion state
-recorded; the real-PowerShell tests and the 500-message tests timed alone.
+Measured 2026-11-10 19:05-19:25 with `python scripts/run-full-suite.py --concurrency <n>`, one run after another, no
+build running. Machine: 32 logical CPUs, 64 GB RAM. Background load: one Chrome process at about 0.7 of a core, the DEV
+app with its 5-minute background scans, two idle Gradle daemons. Defender real-time protection on; the exclusion list
+cannot be read without administrator rights, so it is not recorded.
+
+Full suite, wall clock (3,674 passed, 15 skipped in every run):
+- concurrency 2: 487 s (8 min 7 s)
+- concurrency 4 (the runner default): 273 s (4 min 33 s)
+- concurrency 6: 219 s (3 min 39 s)
+- concurrency 8: 206 s (3 min 26 s)
+- Gain stops near 6: going from 6 to 8 saves 13 s. Peak committed memory was 45.8-46.6 GB at every level, so memory
+  is not the limit.
+
+The one failure in every run was `test/scratch/s84_mv_f342_history_rehearsal_test.dart`, a gitignored Sprint 84
+rehearsal probe left on disk. `flutter test` runs `test/scratch/` like any other folder, so a leftover probe makes the
+suite red. It was copied to the scratchpad and deleted. Every tracked test passed.
+
+The three F349 Task Scheduler tests passed in all four runs, including at concurrency 8. In Sprint 84 they timed out
+on a loaded machine. So F349 is load-dependent: the tests wait on real `Get-ScheduledTask` calls (7.1 s for a missing
+task), and a busy machine pushes them past the 30 s timeout.
+
+Slow files, each run alone (time includes about 15-19 s of Flutter start-up per file):
+- `windows_task_scheduler_service_test.dart`: 60.1 s (41 s of test time, 11 tests; real PowerShell calls).
+- `powershell_script_generator_test.dart`: 19.1 s (5 s of test time, 17 tests).
+- `f302_no_valid_uid_log_window_test.dart` (the 500-message loop): 15.2 s (1 s of test time, 3 tests).
+
+Why local runs were slow before: Sprint 84 measured 6 min 51 s at concurrency 4 on a machine running builds and
+agents; today's idle run at the same level took 4 min 33 s. The slowness is load from other work, not the suite.
 
 ### Sprint 84 timeline, two tasks (AC-3, rebuilt from git and CODING_VELOCITY.md)
 
@@ -291,7 +319,19 @@ example at a path outside the repo.
 Today, per sprint: local 5.2 full suite; CI run 1 (by hand, at 7.7.1); CI run 2 (at `gh pr ready`). `ios.yml` runs on
 `workflow_dispatch` or a push that touches `mobile-app/ios/**` or `ios.yml`.
 
-PENDING: recommendation with the measured timings.
+Recommendation, from the timings above:
+- Keep ONE local full run at 5.2, at concurrency 6 (3 min 39 s idle), with no build or agent running beside it. A
+  run on a loaded machine costs more time and gives false F349 failures.
+- Before that run, refuse to start when `test/scratch/` holds a `_test.dart` file (prevention for the leftover-probe
+  failure above), or exclude the folder.
+- Start CI run 1 by hand at the first task commit, not at 7.7.1; it then finds Linux-only failures while the task is
+  fresh. CI run 2 at `gh pr ready` stays.
+- `ios.yml` keeps its path trigger; no change.
+- During Phase 4, each task runs its changed files' tests and their importers (seconds to a minute), so 5.2 confirms
+  rather than discovers.
+
+Per change, the target in AC-5 then costs: the tight tier (61 files; not timed as a set, but the full 400 take 3 min 39
+s at concurrency 6, so the tier is under that) plus the changed files' own tests.
 
 ## R-7: Decisions
 
