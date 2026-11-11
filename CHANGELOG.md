@@ -36,7 +36,7 @@ Format: `- **type**: Description (Issue #N)` where type is feat|fix|chore|docs
 - **chore**: `phone-log-health` and the R76 battery arm ported to Python (ADR-0051) (Issue #572)
 - **chore**: the log-redaction, version-consistency, content-manifest, AAB Play-requirements and IANA TLD scripts ported to Python (ADR-0051). The IANA updater now refuses a download that is not a valid TLD list, instead of overwriting the tracked file with it (Issue #573)
 - **chore**: the Android build scripts ported to Python: `build-with-secrets.py` (same checks: SEC-9 client id property, release signing, versionCode above the last Play upload, F204 bundle check, `dist\` copy) and `build-apk.py`, which now makes a signed, credentialed APK. `build-with-secrets-clean.ps1` was deleted: it could not build a working release. The build no longer prints the client id prefix or the AOL address, and a bundle that fails the F204 check is no longer copied to `dist\` (ADR-0051) (Issue #575)
-- **chore**: `run-tests`, `check_scans` and `generate-test-emails` ported to Python; `run-integration-tests`, `monitor-tests` and `test-background-scan-skip` ported with their originals kept until proven (ADR-0051) (Issue #574)
+- **chore**: `run-tests`, `check_scans` and `generate-test-emails` ported to Python; `run-integration-tests`, `monitor-tests` and `test-background-scan-skip` ported and proven side by side, originals deleted; `build-windows.ps1 -RunIntegrationTests` now runs the Python check and fails if the check script is missing (ADR-0051) (Issue #574)
 - **chore**: `scripts/test-inventory.py` lists every test artifact with a likelihood x impact risk tier; a policy test keeps it complete; CI now runs the Python script tests on Linux (Issue #562)
 
 ## [0.24.1] - 2026-11-08

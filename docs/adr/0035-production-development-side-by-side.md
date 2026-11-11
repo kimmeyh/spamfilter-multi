@@ -306,6 +306,11 @@ Background-scan mode now performs a **read-only mutex probe** at startup. If the
 
 ### Integration Test Pattern (Sprint 38, reusable)
 
+Sprint 85 update (F334, ADR-0051): the script is now `mobile-app/scripts/test-background-scan-skip.py`, run by
+`build-windows.ps1 -RunIntegrationTests` or as `python -I test-background-scan-skip.py [--environment prod]`. Since
+Sprint 75 (F243) it asserts the opposite of the Sprint 38 version: with the UI open, the background launch RUNS. The
+`.ps1` named below and in "Files Changed" above is the Sprint 38 original, kept here as history.
+
 `mobile-app/scripts/test-background-scan-skip.ps1` establishes a pattern for testing `main.cpp` startup-logic changes that cannot be expressed in `flutter test` (because they involve launching the real `.exe` and verifying real OS-level state like mutexes, log files, or process lifecycle). The pattern:
 
 1. Resolve the variant `.exe` produced by `build-windows.ps1` (parameterized by `-Environment`).

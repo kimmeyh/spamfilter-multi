@@ -134,8 +134,10 @@ Converted in Sprint 85 (originals deleted in the same change; port review and te
 - F333: `mobile-app/scripts/check-log-redaction.py`, `check-version-consistency.py`, `validate-content-manifest.py`,
   `verify-aab-play-requirements.py`, `update_iana_tlds.py` (replaces both the `.ps1` and the `.sh`).
 - F334: `mobile-app/scripts/run-tests.py`, `check_scans.py`, `generate-test-emails.py`, plus the shared helper
-  `mobile-app/scripts/flutter_support.py`. Ported, originals kept until proven at Phase 5: `run-integration-tests`,
-  `monitor-tests`, `test-background-scan-skip`. Windows-bound (F337): `check_task.ps1`, `ww-test-helper.sh`.
+  `mobile-app/scripts/flutter_support.py`; then `run-integration-tests.py`, `monitor-tests.py` and
+  `test-background-scan-skip.py`, whose originals were deleted after a side-by-side proof on an idle machine (same
+  results; `build-windows.ps1 -RunIntegrationTests` calls the Python check). Windows-bound (F337): `check_task.ps1`,
+  `ww-test-helper.sh`.
 - F335: `mobile-app/scripts/build-with-secrets.py` and `build-apk.py` (now a thin wrapper that forwards to the
   credentialed release build). `build-with-secrets-clean.ps1` was deleted, not ported: it had no flavor, no SEC-9
   gradle property and no release signing, so it could not build a working bundle.

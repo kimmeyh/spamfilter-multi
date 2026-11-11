@@ -513,19 +513,21 @@ Write-Host ""
 # is no persistent .exe to test against.
 if ($RunIntegrationTests -and -not $Debug) {
     Write-Host ""
-    Write-Host "Running PowerShell integration tests..." -ForegroundColor Cyan
-    $integrationTest = Join-Path $PSScriptRoot "test-background-scan-skip.ps1"
-    if (Test-Path $integrationTest) {
-        & $integrationTest -Environment $Environment
-        if ($LASTEXITCODE -ne 0) {
-            Write-Host "[FAIL] Integration test failed (exit code $LASTEXITCODE)" -ForegroundColor Red
-            Write-Host "       Build artifact preserved at $variantBuildTarget for diagnosis." -ForegroundColor Yellow
-            exit $LASTEXITCODE
-        }
-        Write-Host "[OK] Integration tests passed" -ForegroundColor Green
-    } else {
-        Write-Host "[WARNING] $integrationTest not found; skipping" -ForegroundColor Yellow
+    Write-Host "Running native integration tests..." -ForegroundColor Cyan
+    # F334 (Sprint 85): the check is Python now (ADR-0051). A missing script FAILS the run:
+    # -RunIntegrationTests asked for the check, so skipping it would report a pass that never ran.
+    $integrationTest = Join-Path $PSScriptRoot "test-background-scan-skip.py"
+    if (-not (Test-Path $integrationTest)) {
+        Write-Host "[FAIL] $integrationTest not found; the requested integration test cannot run" -ForegroundColor Red
+        exit 1
     }
+    & python -I $integrationTest --environment $Environment
+    if ($LASTEXITCODE -ne 0) {
+        Write-Host "[FAIL] Integration test failed (exit code $LASTEXITCODE)" -ForegroundColor Red
+        Write-Host "       Build artifact preserved at $variantBuildTarget for diagnosis." -ForegroundColor Yellow
+        exit $LASTEXITCODE
+    }
+    Write-Host "[OK] Integration tests passed" -ForegroundColor Green
 }
 
 if ($RunAfterBuild) {

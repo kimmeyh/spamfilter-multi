@@ -1009,6 +1009,14 @@ Scheduler), `ww-test-helper.sh` (WinWright MCP helper; no callers, hardcoded ses
 `app_paths_data_dir_test.dart`: 5 passed, same as `flutter test`). 55 unittests, 14/14 mutants KILLED. Remaining (Phase
 5, main session): the three proofs, then delete the three originals, switch `build-windows.ps1:517`, and update
 ADR-0040:52,56.
+DONE 2026-11-10 19:29-19:46 (main session, Opus, idle machine; logs in the scratchpad `s85_f334\proof_*`):
+`run-integration-tests` old and new both passed `app_boot_smoke_test.dart` (exit 0), and both warn and exit 0 when no
+file matches. `monitor-tests` on an unchanged tree (HEAD fcdb97c4): old and new both 3,687 total, 3,672 passed, 15
+skipped, 0 failed. The original reported 0 tests and exit 0 when started outside `mobile-app\` (no `test` folder), and
+printed an empty exit code; the port has neither defect. `test-background-scan-skip` old and new both PASS against the
+DEV exe (same four assertions 1a-1d). `build-windows.ps1` now runs the Python check, and a missing check script FAILS
+the run instead of a warning and skip; the exact block was run in a harness both ways (missing: exit 1; present: the
+real check passed). Originals deleted; ADR-0040, ADR-0035 and ADR-0051 updated.
 **Step-types**: PORT-PY `[no-history]`, TEST-UNIT. **Est-Effort**: 150-250m.
 
 ## Task 15 -- F335: Python batch S6: Android build scripts (Priority 37)

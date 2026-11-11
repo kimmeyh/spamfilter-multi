@@ -49,11 +49,12 @@ Run **two complementary E2E harnesses**, not one, and not a replacement:
 2. **Flutter `integration_test` (in-VM)** -- the robust lane for anything that
    crosses a dialog/picker-settle boundary or writes to the DB: rule + safe-sender
    create/delete lifecycle (was F56), folder picker (was F37), and layout-bounds
-   regression (was F76). Runner: `scripts/run-integration-tests.ps1`.
+   regression (was F76). Runner: `mobile-app/scripts/run-integration-tests.py` (the
+   `.ps1` original was ported to Python in Sprint 85, F334, ADR-0051).
 
 Supporting decisions:
 
-- **Per-file process isolation**: `run-integration-tests.ps1` runs each
+- **Per-file process isolation**: `run-integration-tests.py` runs each
   `integration_test/*_test.dart` in its **own `flutter test` process**. The app's
   process-wide singletons (`DatabaseHelper`, the fire-and-forget
   `RuleSetProvider.initialize()` async tail) bleed across files in a single shared
