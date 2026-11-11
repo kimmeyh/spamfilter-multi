@@ -42,6 +42,7 @@ import 'package:my_email_spam_filter/core/storage/scan_result_store.dart';
 import 'package:my_email_spam_filter/core/storage/unmatched_email_store.dart';
 
 import '../../helpers/database_test_helper.dart';
+import '../../helpers/diagnostic_log_reader.dart';
 
 /// Answers presence from a fixed map; records what it was asked.
 class _FakeChecker implements MessagePresenceChecker {
@@ -373,9 +374,8 @@ void main() {
       final diagDir = Directory.systemTemp.createTempSync('f276_diag_');
       DiagnosticLogger.debugSetEnabled(true);
       DiagnosticLogger.debugSetDir(diagDir.path);
-      addTearDown(() {
-        DiagnosticLogger.debugSetEnabled(null);
-        DiagnosticLogger.debugSetDir(null);
+      addTearDown(() async {
+        await DiagnosticLogger.debugReset();
         // Other scan-stage lines may still hold the file open (unawaited
         // writes); a temp folder left behind is harmless.
         try {
@@ -388,11 +388,7 @@ void main() {
 
       expect(platform.asked, isNotEmpty);
       expect(await listed(scanAccount), {'keep1'});
-      String diag() => diagDir
-          .listSync(recursive: true)
-          .whereType<File>()
-          .map((f) => f.readAsStringSync())
-          .join('\n');
+      String diag() => readDiagnosticLog(diagDir);
       for (var i = 0; i < 40 && !diag().contains('presence check failed'); i++) {
         await Future<void>.delayed(const Duration(milliseconds: 50));
       }

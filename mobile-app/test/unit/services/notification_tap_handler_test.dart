@@ -12,6 +12,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:my_email_spam_filter/core/services/diagnostic_logger.dart';
 import 'package:my_email_spam_filter/core/services/notification_tap_handler.dart';
 import 'package:my_email_spam_filter/core/services/scan_complete_notifier.dart';
+import '../../helpers/diagnostic_log_reader.dart';
 
 void main() {
   final navKey = GlobalKey<NavigatorState>();
@@ -90,9 +91,8 @@ void main() {
     final dir = Directory.systemTemp.createTempSync('tap_diag_');
     DiagnosticLogger.debugSetEnabled(true);
     DiagnosticLogger.debugSetDir(dir.path);
-    addTearDown(() {
-      DiagnosticLogger.debugSetEnabled(null);
-      DiagnosticLogger.debugSetDir(null);
+    addTearDown(() async {
+      await DiagnosticLogger.debugReset();
       try {
         dir.deleteSync(recursive: true);
       } on FileSystemException catch (_) {}
@@ -102,11 +102,7 @@ void main() {
       hasDesktopWindow: true,
       bringToFront: () async => throw StateError('window_manager failed'),
     );
-    String log() => dir
-        .listSync(recursive: true)
-        .whereType<File>()
-        .map((f) => f.readAsStringSync())
-        .join('\n');
+    String log() => readDiagnosticLog(dir);
     final deadline = DateTime.now().add(const Duration(seconds: 10));
     while (!(log().contains('no navigator yet') &&
             log().contains('could not bring the window forward')) &&
@@ -176,9 +172,8 @@ void main() {
       final dir = Directory.systemTemp.createTempSync('tap_kept_');
       DiagnosticLogger.debugSetEnabled(true);
       DiagnosticLogger.debugSetDir(dir.path);
-      addTearDown(() {
-        DiagnosticLogger.debugSetEnabled(null);
-        DiagnosticLogger.debugSetDir(null);
+      addTearDown(() async {
+        await DiagnosticLogger.debugReset();
         try {
           dir.deleteSync(recursive: true);
         } on FileSystemException catch (_) {}
@@ -198,11 +193,7 @@ void main() {
           bringToFront: () async {},
           openRoutes: observer.routes,
         );
-        String log() => dir
-            .listSync(recursive: true)
-            .whereType<File>()
-            .map((f) => f.readAsStringSync())
-            .join('\n');
+        String log() => readDiagnosticLog(dir);
         final deadline = DateTime.now().add(const Duration(seconds: 10));
         while (!log().contains('open screen kept') &&
             DateTime.now().isBefore(deadline)) {
@@ -252,9 +243,8 @@ void main() {
       final dir = Directory.systemTemp.createTempSync('tap_fail_');
       DiagnosticLogger.debugSetEnabled(true);
       DiagnosticLogger.debugSetDir(dir.path);
-      addTearDown(() {
-        DiagnosticLogger.debugSetEnabled(null);
-        DiagnosticLogger.debugSetDir(null);
+      addTearDown(() async {
+        await DiagnosticLogger.debugReset();
         try {
           dir.deleteSync(recursive: true);
         } on FileSystemException catch (_) {}
@@ -265,11 +255,7 @@ void main() {
         bringToFront: () async {},
         openRoutes: [_ThrowingRoute()],
       );
-      String log() => dir
-          .listSync(recursive: true)
-          .whereType<File>()
-          .map((f) => f.readAsStringSync())
-          .join('\n');
+      String log() => readDiagnosticLog(dir);
       final deadline = DateTime.now().add(const Duration(seconds: 10));
       while (!log().contains('tap failed') &&
           DateTime.now().isBefore(deadline)) {

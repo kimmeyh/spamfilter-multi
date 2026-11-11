@@ -141,6 +141,32 @@ class DiagnosticLogger {
   @visibleForTesting
   static void debugSetDir(String? dir) => _cachedDir = dir;
 
+  /// Test seam: wait for every queued write, then clear the test folder and
+  /// the enabled override. Tests call this in tearDown instead of
+  /// `debugSetDir(null)`.
+  ///
+  /// Why (Sprint 85 Phase 5.2): a queued write resolves its folder when it
+  /// RUNS, not when the line is logged. Without the wait, lines logged by one
+  /// test were written 200-700 ms later into the NEXT test's temp folder,
+  /// after that test's tearDown had deleted it (about 90 `f259_diag_*`
+  /// folders were left in %TEMP%), and a test could start with another
+  /// test's writes still queued ahead of its own. Gate:
+  /// `test/policy/diagnostic_logger_reset_test.dart`.
+  @visibleForTesting
+  static Future<void> debugReset() async {
+    // A log() call joins the queue only after its own `await _enabled()`, so
+    // yield a whole event-loop turn (every pending microtask runs), then wait
+    // for the tail, and repeat until no new write has joined.
+    Future<void> tail;
+    do {
+      await Future<void>.delayed(Duration.zero);
+      tail = _writeTail;
+      await tail;
+    } while (!identical(tail, _writeTail));
+    _cachedDir = null;
+    _cachedEnabled = null;
+  }
+
   /// Resolve the directory the log is written to.
   ///
   /// The export folder's `diagnostics` subfolder (F206, Sprint 74): the

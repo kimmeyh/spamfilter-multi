@@ -36,6 +36,7 @@ import 'package:my_email_spam_filter/core/storage/scan_result_store.dart';
 import 'package:my_email_spam_filter/core/storage/settings_store.dart';
 
 import '../../helpers/database_test_helper.dart';
+import '../../helpers/diagnostic_log_reader.dart';
 
 const _account = 'someone@example.com';
 
@@ -120,7 +121,7 @@ void main() {
     PlatformRegistry.overrideFactoryForTest('aol', previous);
     BackgroundScanCore.busyWait = (d) => Future<void>.delayed(d);
     EmailScanProvider.debugHeartbeatIntervalOverride = null;
-    DiagnosticLogger.debugSetDir(null);
+    await DiagnosticLogger.debugReset();
     DiagnosticLogger.debugSetEnabled(null);
     TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
         .setMockMethodCallHandler(secureStorage, null);
@@ -131,11 +132,7 @@ void main() {
   Future<String> readLog() async {
     await DiagnosticLogger.log(
         kind: DiagnosticLogger.kindInfo, context: 'test', detail: 'flush');
-    final buffer = StringBuffer();
-    await for (final e in logDir.list()) {
-      if (e is File) buffer.write(await e.readAsString());
-    }
-    return buffer.toString();
+    return readDiagnosticLog(logDir);
   }
 
   /// Runs the background scan on [platform]; returns (outcome, row, log).
