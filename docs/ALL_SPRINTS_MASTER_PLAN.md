@@ -502,6 +502,19 @@ Source: `docs/research/R76-3_HEURISTICS_ML_GENAI_SPAM_IDENTIFICATION.md` (Issue 
 - Do: confirm each one on the current build, then fix it or close it with a reason.
 - AC: each observation has a fix with a test, or a written reason it stays; a screenshot of each fixed screen.
 
+**F358. "All reviewed" shows before any scan has run (~30-60m, estimate unverified) Priority 52 -- NEW 2026-11-10 (Sprint 85 F341 R-1 check 6, R-6)**
+- Phase: Core App Quality
+- Platform: All (shared `no_rule_review_screen.dart`); confirmed on the Android emulator, Windows check pending (F341 R-4).
+- Evidence: a fresh 0.25.0 release install, one Custom IMAP account added and never scanned, app restarted. The start
+  screen read "No unaddressed items" / "All "No rule" emails have been reviewed." while Scan History showed no scan.
+  The text is chosen only by `_allItems.isEmpty` (`no_rule_review_screen.dart:1031-1043`); nothing checks whether a
+  scan ran.
+- Do: when no scan has completed for the selected account(s), show a "No scan yet" state with a Scan action; keep
+  "All reviewed" for the case where a scan ran and every No rule item was addressed.
+- Signal fires on: an account with zero completed scans (count on DEV data before shipping, ADR-0047).
+- AC: a widget test for each state (no scan; scan with zero No rule items; filters hiding items); screenshots on
+  Windows and Android.
+
 **F357. Background scan rows marked `interrupted`: the recent-scan check and the completion overwrite (~30-60m, estimate unverified) Priority 34 -- NEW 2026-11-08 (Sprint 84 retro q2 = a, q1 = c; decide with the F342 Fold evidence)**
 - Phase: Core App Quality
 - Platform: Android (WorkManager); check Windows for the shared code.

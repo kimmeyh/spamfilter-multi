@@ -713,6 +713,18 @@ No rule (0), All Accounts (0); Scan History totals all 0 (no scan ever ran). CON
 Also seen: the toolbar title "Review No Rule Items" is not visible (its text box is 68 px wide, F356 observation 1
 family); on Custom IMAP setup, Username comes before Email Address. Screens: `<SCRATCH>\s85_f355\c6_relaunch.png`,
 `c6_history.png`, `c_5.png`.
+**Result (Phase 5) -- R-5, iOS Simulator** (iOS run 42916648939 on this branch, job "iOS Simulator screens" success;
+10 screens, iPhone and iPad, in `<SCRATCH>\s85_ios_screens\`): compared with the Android emulator captures
+(`r_start.png`, `d_add.png`, `d1_settings.png`). Start screen, provider list and AOL form match in text and order.
+Differences: (a) no back arrow on the iOS screens: the test opens each screen as the first route
+(`ios_first_run_screens_test.dart:85`, `home: screen`), so not a parity gap; (b) light theme on iOS versus dark on the
+emulator: device setting, not a gap; (c) the iPad puts the version in the toolbar: the wide layout, same as Windows.
+Shared defects seen on both phones: "Backgrou / nd" tab wrap (F356 observation 6) and "in a file on this computer"
+on a phone (F356 observation 7).
+**Result (Phase 5) -- R-6**: check 6 is a new card, F358 ("All reviewed" shows before any scan has run,
+`no_rule_review_screen.dart:1031-1043`). The hidden "Review No Rule Items" title joins F356 observation 5 (titles cut
+off). Username before Email on Custom IMAP setup: recorded here only; not a defect on its own (the server may use a
+user name that is not the address).
 **Step-types**: MANUAL, DOCS. **Est-Effort**: 90-150m.
 
 ## Task 8 -- F307: Remove the "Create rule" page (RuleQuickAddScreen) (Priority 36)
