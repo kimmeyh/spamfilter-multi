@@ -203,7 +203,7 @@ For any sprint item that adds a capability **X** on top of an external tool **Y*
   8. **Build and Launch Application** (MANDATORY - Phase 5.3 in SPRINT_EXECUTION_WORKFLOW.md)
      - Claude Code MUST build and launch the app BEFORE declaring ready for manual validation
      - Windows: `cd mobile-app/scripts && .\build-windows.ps1`
-     - Android: `cd mobile-app/scripts && .\build-with-secrets.ps1 -BuildType debug -InstallToEmulator`
+     - Android: `cd mobile-app/scripts && python build-with-secrets.py --build-type debug --install-to-emulator`
      - Verify build succeeds and app launches without errors
      - User should NOT have to build the app themselves
 

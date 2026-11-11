@@ -55,11 +55,11 @@ python scripts/test-regex-patterns.py `
   --performance-test
 
 # Build with emulator auto-start
-.\mobile-app\scripts\build-with-secrets.ps1 `
-  -BuildType debug `
-  -InstallToEmulator `
-  -StartEmulator `
-  -SkipUninstall
+python mobile-app\scripts\build-with-secrets.py `
+  --build-type debug `
+  --install-to-emulator `
+  --start-emulator `
+  --skip-uninstall
 ```
 
 ---
@@ -155,7 +155,7 @@ Get-ExecutionPolicy                # Check policy
 **Skill fails?**
 ```powershell
 # Test command directly
-.\mobile-app\scripts\build-with-secrets.ps1 -BuildType debug -InstallToEmulator
+python mobile-app\scripts\build-with-secrets.py --build-type debug --install-to-emulator
 ```
 
 ---

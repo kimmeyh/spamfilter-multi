@@ -141,9 +141,10 @@ caller waits for the redirect to close and never returns (Sprint 80: about 11 ho
 builds ended "Done!" and stayed open; `gradlew --stop` did not close one; `adb kill-server` closed both within 6
 seconds. A 10-line probe reproduced it only WITH the redirect (inline start and capture alone closed normally).
 
-- **Prevented in the script (Sprint 81)**: `build-with-secrets.ps1` starts the server with `Start-AdbServerDetached`
-  (`Start-Process -PassThru` + `WaitForExit()`; NOT `-Wait`, which on Windows PowerShell 5.1 waits for the whole
-  process tree, server included). Running `adb devices` before the build does NOT help: the script kills that
+- **Prevented in the script (Sprint 81)**: `build-with-secrets.py` starts the server with `Adb.start_server`
+  (`subprocess.Popen` with stdin, stdout and stderr on DEVNULL and DETACHED_PROCESS, then `wait()`; the old
+  PowerShell script used `Start-Process -PassThru` + `WaitForExit()`, NOT `-Wait`, which on Windows PowerShell 5.1
+  waited for the whole process tree, server included). Running `adb devices` before the build does NOT help: the script kills that
   server and starts its own.
 - **Not covered**: the failure path that runs `flutter emulators --launch` (flutter may start adb inline), and any
   other tool that starts adb under a redirect.

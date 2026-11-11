@@ -15,7 +15,7 @@ Builds and deploys the debug APK to an Android emulator, preserving existing app
 Run the build script with the following options:
 
 ```powershell
-powershell -NoProfile -ExecutionPolicy Bypass -File mobile-app/scripts/build-with-secrets.ps1 -BuildType debug -InstallToEmulator -StartEmulator -SkipUninstall
+python mobile-app/scripts/build-with-secrets.py --build-type debug --install-to-emulator --start-emulator --skip-uninstall
 ```
 
 ## Options

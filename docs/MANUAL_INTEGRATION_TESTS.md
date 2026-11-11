@@ -55,7 +55,7 @@ cd mobile-app/scripts
 
 **Prerequisites**:
 - Android emulator running (or physical device connected)
-- `build-with-secrets.ps1` script configured
+- `build-with-secrets.py` script configured
 - Google Play Services available on emulator
 
 **Build Instructions**:
@@ -64,7 +64,7 @@ cd mobile-app/scripts
 cd mobile-app/scripts
 
 # Build, install, and run on emulator
-.\build-with-secrets.ps1 -BuildType debug -InstallToEmulator -Run
+python build-with-secrets.py --build-type debug --install-to-emulator --run
 
 # App launches on emulator
 ```

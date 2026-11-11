@@ -290,7 +290,7 @@ def run_self_test(aab_path: Path | None, minimum: int) -> int:
     real = aab_path or find_real_bundle()
     if real is None or not real.exists():
         print("[SELFTEST FAIL] No real bundle found under mobile-app/dist/android-*/app-prod-release.aab. "
-              "Build one with build-with-secrets.ps1 -Output aab or pass --aab-path.")
+              "Build one with build-with-secrets.py --output aab or pass --aab-path.")
         return 1
     print("[INFO] Real bundle: %s" % real)
     try:

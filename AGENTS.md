@@ -327,13 +327,13 @@ For the full end-to-end procedure (version bump 5-file checklist, `secrets.prod.
 cd mobile-app/scripts
 
 # Build release APK
-.\build-apk.ps1
+python build-apk.py
 
 # Build with secrets and install to emulator
-powershell -NoProfile -ExecutionPolicy Bypass -Command "cd D:\Data\Harold\github\spamfilter-multi\mobile-app\scripts; .\build-with-secrets.ps1 -BuildType debug -InstallToEmulator"
+powershell -NoProfile -ExecutionPolicy Bypass -Command "cd D:\Data\Harold\github\spamfilter-multi\mobile-app\scripts; python build-with-secrets.py --build-type debug --install-to-emulator"
 
 # Launch emulator and run
-powershell -NoProfile -ExecutionPolicy Bypass -Command "cd D:\Data\Harold\github\spamfilter-multi\mobile-app\scripts; .\build-with-secrets.ps1 -BuildType debug -Run"
+powershell -NoProfile -ExecutionPolicy Bypass -Command "cd D:\Data\Harold\github\spamfilter-multi\mobile-app\scripts; python build-with-secrets.py --build-type debug --run"
 ```
 
 ### Testing
@@ -342,7 +342,7 @@ powershell -NoProfile -ExecutionPolicy Bypass -Command "cd D:\Data\Harold\github
 cd mobile-app
 
 # Run all tests (81 tests)
-powershell -NoProfile -ExecutionPolicy Bypass -Command "cd D:\Data\Harold\github\spamfilter-multi\mobile-app\scripts; .\build-with-secrets.ps1 -BuildType debug -InstallToEmulator"
+powershell -NoProfile -ExecutionPolicy Bypass -Command "cd D:\Data\Harold\github\spamfilter-multi\mobile-app\scripts; python build-with-secrets.py --build-type debug --install-to-emulator"
 
 # Run specific test file
 flutter test test/unit/rule_evaluator_test.dart
@@ -421,7 +421,7 @@ For complete structure, pattern conventions, examples, and validation rules, see
 2. **Fill credentials**:
    - **Gmail**: OAuth credentials from Google Cloud Console
    - **AOL**: Email and app password from AOL account settings
-3. **Build with secrets**: Use `scripts/build-with-secrets.ps1` (auto-injects `--dart-define-from-file`)
+3. **Build with secrets**: Use `scripts/build-with-secrets.py` (auto-injects `--dart-define-from-file`)
 
 ### Gmail OAuth Setup
 
@@ -506,7 +506,7 @@ For comprehensive troubleshooting, see `docs/TROUBLESHOOTING.md`.
 2. **Secrets**: Configure `secrets.dev.json` with Gmail and/or AOL credentials
 3. **Build**:
    - Windows: `.\scripts\build-windows.ps1`
-   - Android: `.\scripts\build-with-secrets.ps1 -BuildType debug -InstallToEmulator`
+   - Android: `python scripts\build-with-secrets.py --build-type debug --install-to-emulator`
 4. **Test**: `flutter test` (verify all 185 tests passing)
 5. **Analyze**: `flutter analyze` (ensure 0 issues)
 

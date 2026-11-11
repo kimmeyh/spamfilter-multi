@@ -164,7 +164,7 @@ Business logic and domain services.
 
 **Android build flavors (F94, Sprint 63; ADR-0035 / ADR-0042)**: `dev` / `prod`
 productFlavors mirror the Windows APP_ENV split -- `--flavor` and `--dart-define=APP_ENV` are
-passed in lockstep (`build-with-secrets.ps1 -Env dev|prod`, default `prod` = the registered
+passed in lockstep (`build-with-secrets.py --env dev|prod`, default `prod` = the registered
 package with working Google Sign-In). The applicationId split (`com.myemailspamfilter[.dev]`)
 is the DECLARED ADR-0042 platform exception: Android side-by-side install requires distinct
 OS-level identity, which Windows achieves with mutex + data-dir suffix alone. The dev flavor
@@ -930,7 +930,7 @@ mobile-app/
 
 #### Android release-build chain (Sprint 64: SEC-9, GP-2/ADR-0027, GP-9, SEC-4)
 
-Release builds are produced by `build-with-secrets.ps1 -BuildType release` (`-Output aab`
+Release builds are produced by `build-with-secrets.py --build-type release` (`--output aab`
 for the Play bundle) and differ from debug builds by four injected/enabled layers, all
 declared ADR-0042 platform exceptions (Android store/build infrastructure; the Windows
 analogue is the MSIX pipeline):

@@ -1049,7 +1049,18 @@ itself as the integration check.
 **Model**: Sonnet -- *why not Haiku*: the release-signing path and the SEC-9 credential gate; a dropped property ships a
 credential-less build (the F119 class).
 **Delegation checklist included in the sub-agent prompt** (when delegated): yes
-**Executed-by** (filled at completion):
+**Executed-by** (filled at completion): Sonnet sub-agent as assigned, 2026-11-10 18:12-18:58. R-1:
+`build-with-secrets-clean.ps1` deleted, not ported (no flavor, no SEC-9 property, no release signing). Port review: 17
+defects fixed (among them the client id prefix and the AOL address printed to the log, refusals that ran after the clean,
+and a bundle copied to `dist\` before the F204 check). AC-1: debug APK and release AAB built from the Python entry point;
+the AAB passed F204 and is at `mobile-app\dist\android-0.25.0+23\app-prod-release.aab` (not uploaded). AC-2: the
+SEC-9 property mutant is KILLED and the gradle gate is unchanged; no live release build was run with the property
+removed. AC-3: versionCode at or below 22 refused (mutant KILLED). 17 unittests, 20/20 mutants KILLED; main session
+re-ran 290 Python and 26 Dart policy tests, all pass. Not done: `--install-to-emulator` and `--run` were not run on a
+device; the cause of one 22-minute gradle hang on the first debug attempt is unknown (the second attempt passed).
+Held for Manual Validation: every key of `secrets.dev.json`, including `WINDOWS_GMAIL_DESKTOP_CLIENT_SECRET`, is passed
+to the Android release build, and shared code reads it (`gmail_windows_oauth_handler.dart:29-32`). Old behavior, kept
+by the port; a decision for Harold.
 **Step-types**: PORT-PY `[no-history]`, TEST-UNIT, BUILD. **Est-Effort**: 180-300m.
 
 _**Risk & rollback**_: risk: a release bundle built without a credential property. Mitigation: AC-2 mutation, and the

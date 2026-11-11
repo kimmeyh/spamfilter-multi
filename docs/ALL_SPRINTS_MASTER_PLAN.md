@@ -1497,7 +1497,7 @@ The Windows dev/prod current implementation requires a rebuild to switch -- only
 - Define `dev`, `prod`, `store` flavors with distinct `applicationIdSuffix`
 - Add Manifest Placeholder for app name
 - Generate distinct icons per flavor (or use icon overlay)
-- Update build scripts (`build-with-secrets.ps1`) to take a flavor parameter
+- Update build scripts (`build-with-secrets.py`, the Sprint 85 F335 port; it already takes `--env dev|prod`) to take a flavor parameter
 - Test: install all 3 variants on emulator side-by-side
 - Note: Cannot fully test "store" flavor until app is in Google Play (use `prod` flavor as proxy with different applicationId)
 

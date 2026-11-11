@@ -61,7 +61,7 @@ If any check fails, **STOP and resolve with user before accepting work**.
 2. Configure `secrets.dev.json` with Gmail and/or AOL credentials
 3. Build:
    - Windows: `.\scripts\build-windows.ps1`
-   - Android: `.\scripts\build-with-secrets.ps1 -BuildType debug -InstallToEmulator`
+   - Android: `python scripts\build-with-secrets.py --build-type debug --install-to-emulator`
 
 **Per-change verification loop** (give Claude 2-3x quality improvement):
 1. Make changes
@@ -161,7 +161,7 @@ into `develop` only.
 - Don't produce ANY process deliverable (backlog-refinement presentation, retrospective, release checklist, sprint plan card, ADR) without READING its authoritative format/template section IN THE SAME TURN immediately beforehand. These are deterministic processes -- mirror the template exactly, never reproduce it from memory. (Sprint 45 IMP-1; re-violated Sprints 49-50 -> hardened Sprint 50, Harold 2026-07-24.)
   - **IMP-4 (Sprint 70): when a HOOK enforces the format, the HOOK is the authoritative source, not the prose doc.** Read its patterns before producing the artifact. (Sprint 70: the F193 evidence gate blocked Manual Validation a SECOND time when the work was fully done -- I had written the three artifacts as `###` headings while the gate requires a bullet whose label is the marker name (`- **5.1.1 automated code review**: <evidence>`). The patterns are four lines in `sprint-auto-advance.py` (the registered hook since the Sprint 84 Python port; the `.ps1` copy is unregistered until F329 deletes it). That strictness is deliberate: an earlier version matched `^.*5\.1\.1.*$` and was satisfied by retrospective PROSE mentioning "the 5.1.1 reviewer" while the real marker still read PENDING. Pure waste -- the work was complete and the block cost a full cycle.)
 - **Don't investigate a test/script/build failure before checking whether it is ALREADY KNOWN.** Grep the runner, its README, and the script's own header for the failing test name FIRST. (Sprint 52 IMP-3: I re-ran the two `test_f56_*` WinWright scripts, hit their dialog-settle failure, and treated it as new evidence -- `run-winwright-tests.ps1:237` already named that exact symptom and listed both scripts as deliberately excluded. ~20 minutes spent re-deriving a documented fact.)
-- **Don't hand-write a command for a repo script without reading its interface FIRST.** Read the `param()` block / `.PARAMETER` docs in the same turn, then invoke the script -- never reconstruct its arguments from memory and never bypass it by calling the underlying tool directly. (Sprint 66 IMP-1: needing a Play upload bundle, I hand-wrote `flutter build appbundle --release --flavor prod ...` and it failed at `android/app/build.gradle.kts:70` on the SEC-9 gate -- "androidGmailClientId gradle property is missing for a RELEASE build" -- because I had dropped the gradle properties the script injects from `secrets.*.json`. `build-with-secrets.ps1` already had `-Output aab`, built for exactly that job, and its `[ValidateSet('apk','aab')]` line would have told me in one read. The gate that caught it exists because F119 shipped a credential-less build to the Microsoft Store; bypassing a wrapper script is how you re-enter that failure mode.)
+- **Don't hand-write a command for a repo script without reading its interface FIRST.** Read the `param()` block / `.PARAMETER` docs in the same turn, then invoke the script -- never reconstruct its arguments from memory and never bypass it by calling the underlying tool directly. (Sprint 66 IMP-1: needing a Play upload bundle, I hand-wrote `flutter build appbundle --release --flavor prod ...` and it failed at `android/app/build.gradle.kts:70` on the SEC-9 gate -- "androidGmailClientId gradle property is missing for a RELEASE build" -- because I had dropped the gradle properties the script injects from `secrets.*.json`. `build-with-secrets.ps1` already had `-Output aab`, built for exactly that job, and its `[ValidateSet('apk','aab')]` line would have told me in one read. Since Sprint 85 (F335) the script is `build-with-secrets.py`; its `--help` and argparse block are the interface to read, and `--output aab` is the same option. The gate that caught it exists because F119 shipped a credential-less build to the Microsoft Store; bypassing a wrapper script is how you re-enter that failure mode.)
 - **After modifying a hook, RUN THAT HOOK'S OWN TEST SUITE before moving on.** One command: `powershell -NoProfile -ExecutionPolicy Bypass -File .claude\hooks\run-test-cases.ps1`. It pipes every case in `.claude/hooks/test-cases/` through the hooks and asserts exit codes. (Sprint 67 IMP-2: the F193 evidence gate shipped and broke **6 of that hook's own allow-cases**, including `allow-2-no-question`, whose entire premise is that a turn ending in a period is not a violation. I had edited `sprint-auto-advance.ps1` and never run the suite that tests it -- the regression was found by a code review two commits later, not by me. A gate that blocks correct work is worse than no gate, because it trains bypass.)
   - **IMP-3 (Sprint 70): run it after ANY change to output conventions too, not only after editing a hook.** Gates match on the SHAPE of messages, so a formatting preference can silently disable one. (Sprint 70: Harold asked for a timestamp footer on milestone replies. Every commitment pattern in `sprint-auto-advance.ps1` was anchored `[.!]\s*$` -- the commitment had to be the LAST thing in the message -- so the new footer made them permanently unmatchable. I then announced starting a task and ended the turn TWICE, and the gate built to catch exactly that said nothing. Nothing announced the gate had gone quiet; it just stopped working. **An END-ANCHORED pattern is coupled to the message's closing convention.**)
 - **Resolve a tool's path through its configured environment variable, never a hardcoded one.** `$env:ANDROID_HOME\emulator\emulator.exe`, not `%LOCALAPPDATA%\Android\Sdk\emulator\emulator.exe`. Before reporting any tool as broken, print the version of the binary you actually invoked and confirm it is the one the environment points at. (Sprint 67 IMP-3: I declared the Android emulator an unfixable SDK fault after ONE failed launch. This machine has TWO Android SDK installs -- `C:\Android\android-sdk` at emulator **36.2.12.0**, which `ANDROID_HOME` correctly points at, and a 2019 leftover at `%LOCALAPPDATA%` at **29.3.4.0**, which I hardcoded. Emulator 29 predates the kernel format Android 34 images use, so it produced "Can't find 'Linux version' string in kernel image file" -- an error that reads like a corrupt image and is really a version mismatch. Nothing was broken. Harold refused the conclusion because the emulator is the only pre-Store Android test path; the fix was one command. The general shape: **an environmental blocker reported without checking the environment's own configuration**, and on a machine with two toolchain installs a hardcoded path silently selects the wrong one.)
@@ -576,14 +576,14 @@ For the full end-to-end procedure (version bump 5-file checklist, `secrets.prod.
 ```powershell
 cd mobile-app/scripts
 
-# Build release APK
-.\build-apk.ps1
+# Build release APK (signed, credentialed; forwards to build-with-secrets.py)
+python build-apk.py
 
 # Build with secrets and install to emulator
-powershell -NoProfile -ExecutionPolicy Bypass -Command "cd D:\Data\Harold\github\spamfilter-multi\mobile-app\scripts; .\build-with-secrets.ps1 -BuildType debug -InstallToEmulator"
+python D:\Data\Harold\github\spamfilter-multi\mobile-app\scripts\build-with-secrets.py --build-type debug --install-to-emulator
 
 # Launch emulator and run
-powershell -NoProfile -ExecutionPolicy Bypass -Command "cd D:\Data\Harold\github\spamfilter-multi\mobile-app\scripts; .\build-with-secrets.ps1 -BuildType debug -Run"
+python D:\Data\Harold\github\spamfilter-multi\mobile-app\scripts\build-with-secrets.py --build-type debug --run
 ```
 
 ### Testing
@@ -591,8 +591,8 @@ powershell -NoProfile -ExecutionPolicy Bypass -Command "cd D:\Data\Harold\github
 ```powershell
 cd mobile-app
 
-# Run all tests (81 tests)
-powershell -NoProfile -ExecutionPolicy Bypass -Command "cd D:\Data\Harold\github\spamfilter-multi\mobile-app\scripts; .\build-with-secrets.ps1 -BuildType debug -InstallToEmulator"
+# Run all tests
+flutter test
 
 # Run specific test file
 flutter test test/unit/rule_evaluator_test.dart
@@ -671,7 +671,7 @@ For complete structure, pattern conventions, examples, and validation rules, see
 2. **Fill credentials**:
    - **Gmail**: OAuth credentials from Google Cloud Console
    - **AOL**: Email and app password from AOL account settings
-3. **Build with secrets**: Use `scripts/build-with-secrets.ps1` (auto-injects `--dart-define-from-file`)
+3. **Build with secrets**: Use `scripts/build-with-secrets.py` (auto-injects `--dart-define-from-file`)
 
 ### Gmail OAuth Setup
 

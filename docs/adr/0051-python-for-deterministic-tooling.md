@@ -136,6 +136,9 @@ Converted in Sprint 85 (originals deleted in the same change; port review and te
 - F334: `mobile-app/scripts/run-tests.py`, `check_scans.py`, `generate-test-emails.py`, plus the shared helper
   `mobile-app/scripts/flutter_support.py`. Ported, originals kept until proven at Phase 5: `run-integration-tests`,
   `monitor-tests`, `test-background-scan-skip`. Windows-bound (F337): `check_task.ps1`, `ww-test-helper.sh`.
+- F335: `mobile-app/scripts/build-with-secrets.py` and `build-apk.py` (now a thin wrapper that forwards to the
+  credentialed release build). `build-with-secrets-clean.ps1` was deleted, not ported: it had no flavor, no SEC-9
+  gradle property and no release signing, so it could not build a working bundle.
 
 `scripts/`:
 - Converted by the pilot: `agent-work-status`.
@@ -152,8 +155,8 @@ Converted in Sprint 85 (originals deleted in the same change; port review and te
   `check-version-consistency`, `validate-content-manifest`,
   `verify-aab-play-requirements`, `update_iana_tlds.ps1`, `update_iana_tlds.sh` (F333); `run-tests`,
   `run-integration-tests`, `monitor-tests`, `check_scans`, `check_task`, `test-background-scan-skip`,
-  `generate-test-emails`, `ww-test-helper.sh` (F334); `build-with-secrets`, `build-with-secrets-clean`, `build-apk`
-  (F335); `run-emulator`, `start-emulator`, `setup-android-oauth`, `export-tokens-for-android`,
+  `generate-test-emails`, `ww-test-helper.sh` (F334); `build-with-secrets`, `build-apk` (F335, converted in Sprint 85;
+  `build-with-secrets-clean` deleted); `run-emulator`, `start-emulator`, `setup-android-oauth`, `export-tokens-for-android`,
   `capture-diagnostic-logs`, `enable-screen-reader-flag`, `fix-flutter-git`, `r76_battery_arm.sh` (F336);
   `cleanup-url-body-rules`, `fix-header-patterns` (F338).
 - Windows-bound (F337): `build-windows`, `build-msix` (deprecated; delete candidate), `launch-msix`,

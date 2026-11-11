@@ -192,13 +192,7 @@ $env:PYTHONIOENCODING = 'utf-8'
 # Rest of script...
 ```
 
-Update `build-with-secrets.ps1`:
-```powershell
-# At script start
-$env:PYTHONIOENCODING = 'utf-8'
-
-# Rest of script...
-```
+`build-with-secrets.py` needs no such setting: it is Python and sets UTF-8 console output itself.
 
 ---
 
@@ -285,13 +279,13 @@ cd mobile-app/scripts
 cd mobile-app/scripts
 
 # Build release APK
-.\build-apk.ps1
+python build-apk.py
 
 # Build debug and install to emulator
-.\build-with-secrets.ps1 -BuildType debug -InstallToEmulator
+python build-with-secrets.py --build-type debug --install-to-emulator
 
 # Launch emulator and run
-.\build-with-secrets.ps1 -BuildType debug -Run
+python build-with-secrets.py --build-type debug --run
 ```
 
 ### Script Parameters
@@ -299,12 +293,12 @@ cd mobile-app/scripts
 | Script | Parameters | Purpose |
 |--------|-----------|---------|
 | `build-windows.ps1` | `-RunAfterBuild:$false` | Build without running |
-| `build-with-secrets.ps1` | `-BuildType debug\|release` | Android build type |
-| `build-with-secrets.ps1` | `-InstallToEmulator` | Install to emulator |
-| `build-with-secrets.ps1` | `-Run` | Launch app after build |
-| `build-with-secrets.ps1` | `-StartEmulator` | Start emulator first |
-| `build-with-secrets.ps1` | `-EmulatorName "name"` | Specific emulator |
-| `build-with-secrets.ps1` | `-SkipUninstall` | Don't uninstall old version |
+| `build-with-secrets.py` | `--build-type debug\|release` | Android build type |
+| `build-with-secrets.py` | `--install-to-emulator` | Install to emulator |
+| `build-with-secrets.py` | `--run` | Launch app after build |
+| `build-with-secrets.py` | `--start-emulator` | Start emulator first |
+| `build-with-secrets.py` | `--emulator-name "name"` | Specific emulator |
+| `build-with-secrets.py` | `--skip-uninstall` | Don't uninstall old version |
 
 ---
 

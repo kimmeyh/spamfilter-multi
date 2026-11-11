@@ -116,7 +116,7 @@ days" belongs here.
 
 ```powershell
 cd D:\Data\Harold\github\spamfilter-multi\mobile-app\scripts
-.\build-with-secrets.ps1 -BuildType release -Output aab
+python build-with-secrets.py --build-type release --output aab
 ```
 
 ### If the build fails on `GeneratedPluginRegistrant.java` (2026-09-14)
@@ -138,7 +138,7 @@ was run.
 cd D:\Data\Harold\github\spamfilter-multi\mobile-app
 Remove-Item android\app\src\main\java\io\flutter\plugins\GeneratedPluginRegistrant.java
 cd scripts
-.\build-with-secrets.ps1 -BuildType release -Output aab
+python build-with-secrets.py --build-type release --output aab
 ```
 
 Deleting it is safe: it is gitignored generated output, not source. `flutter pub get` rewrites it

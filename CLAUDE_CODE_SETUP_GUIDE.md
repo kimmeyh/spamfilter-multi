@@ -455,7 +455,7 @@ Claude will use `test_regex_pattern` tool and show performance analysis.
 **Symptom**: Running `/skill deploy-debug` fails
 
 **Solutions**:
-1. Verify `scripts/build-with-secrets.ps1` exists
+1. Verify `scripts/build-with-secrets.py` exists
 2. Check working directory in skill definition
 3. Use absolute paths in `.claude/skills.json`
 4. Test command manually in PowerShell

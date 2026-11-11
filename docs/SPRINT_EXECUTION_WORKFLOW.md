@@ -467,7 +467,7 @@ This change was introduced after Sprint 36 kickoff skipped Phase 1 (prior "OPTIO
   - `git add` / `git commit` (single logical commits per task or task batch)
   - `git push` to the sprint feature branch (`feature/YYYYMMDD_Sprint_N`)
   - PR creation against `develop` and PR description / body updates on the sprint PR
-  - Build commands: `build-windows.ps1`, `flutter test`, `flutter analyze`, `build-with-secrets.ps1` (for sprint-relevant build types)
+  - Build commands: `build-windows.ps1`, `flutter test`, `flutter analyze`, `build-with-secrets.py` (for sprint-relevant build types)
   - Launching the desktop app for manual validation (Phase 5.3)
   - WinWright MCP interactions per the conditional + state-restoration rule (`docs/TESTING_STRATEGY.md` Desktop E2E section)
   - SQLite reads against the dev DB for diagnostic purposes
@@ -915,7 +915,7 @@ After Phase 5.2 all tests pass, context can be compacted for efficiency:
   **Pre-Testing Checklist** (Claude Code completes BEFORE handing to user):
   - [ ] **5.3.a Build the application**
     - Windows: `cd mobile-app/scripts && .\build-windows.ps1`
-    - Android: `cd mobile-app/scripts && .\build-with-secrets.ps1 -BuildType debug -InstallToEmulator`
+    - Android: `cd mobile-app/scripts && python build-with-secrets.py --build-type debug --install-to-emulator`
     - Monitor build output for errors or warnings
     - If build fails: Fix errors, retry, document any issues
   - [ ] **5.3.b Verify build succeeded** without errors
@@ -1717,7 +1717,7 @@ cd mobile-app
 flutter build windows
 
 # Android
-./scripts/build-apk.ps1
+python scripts/build-apk.py
 
 # Run app
 flutter run
